@@ -1,8 +1,14 @@
+/**
+ * Settings Tab UI
+ * Plugin settings configuration interface
+ */
 import { App, PluginSettingTab, Setting } from "obsidian";
-import type ShadowAnkiPlugin from "./main";
-import { DEFAULT_SETTINGS, AI_MODELS, AIModelKey } from "./constants";
+import type ShadowAnkiPlugin from "../../main";
+import { DEFAULT_SETTINGS, AI_MODELS, AIModelKey } from "../../constants";
 
-// Settings interface
+/**
+ * Plugin settings interface
+ */
 export interface ShadowAnkiSettings {
     openRouterApiKey: string;
     aiModel: AIModelKey;
@@ -14,7 +20,9 @@ export interface ShadowAnkiSettings {
 // Re-export for convenience
 export { DEFAULT_SETTINGS };
 
-// Settings Tab UI
+/**
+ * Settings tab for Shadow Anki plugin
+ */
 export class ShadowAnkiSettingTab extends PluginSettingTab {
     plugin: ShadowAnkiPlugin;
 
