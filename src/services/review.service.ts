@@ -23,6 +23,8 @@ export interface QueueBuildOptions {
     reviewedToday?: Set<string>;
     /** New cards already studied today */
     newCardsStudiedToday?: number;
+    /** Filter by deck name (null = all decks) */
+    deckFilter?: string | null;
 }
 
 /**
@@ -42,8 +44,14 @@ export class ReviewService {
         const reviewedToday = options.reviewedToday ?? new Set<string>();
         const newCardsStudiedToday = options.newCardsStudiedToday ?? 0;
 
+        // Filter by deck if specified
+        let filteredCards = allCards;
+        if (options.deckFilter) {
+            filteredCards = allCards.filter(card => card.deck === options.deckFilter);
+        }
+
         // Filter out already reviewed cards
-        const availableCards = allCards.filter(
+        const availableCards = filteredCards.filter(
             (card) => !reviewedToday.has(card.id)
         );
 

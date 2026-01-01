@@ -830,3 +830,74 @@
 	background: rgba(59, 130, 246, 0.2);
 	color: var(--color-blue, #3b82f6);
 }
+
+/* ============================================
+   DECK SELECTION MODAL STYLES
+   ============================================ */
+
+.shadow-anki-deck-modal {
+	min-width: 400px;
+}
+
+.shadow-anki-deck-modal h2 {
+	margin: 0 0 16px 0;
+	font-size: 18px;
+	font-weight: 600;
+}
+
+.shadow-anki-deck-divider {
+	margin: 16px 0;
+	border: none;
+	border-top: 1px solid var(--background-modifier-border);
+}
+
+.shadow-anki-deck-empty {
+	color: var(--text-muted);
+	text-align: center;
+	padding: 24px 16px;
+}
+
+/* Deck stats badges */
+.shadow-anki-deck-stats {
+	display: flex;
+	gap: 8px;
+	align-items: center;
+	margin-right: 12px;
+}
+
+.shadow-anki-stat-badge {
+	font-size: 11px;
+	font-weight: 500;
+	padding: 2px 8px;
+	border-radius: 10px;
+}
+
+.shadow-anki-stat-badge.shadow-anki-stat-new {
+	background: rgba(74, 222, 128, 0.2);
+	color: var(--color-green, #4ade80);
+}
+
+.shadow-anki-stat-badge.shadow-anki-stat-due {
+	background: rgba(59, 130, 246, 0.2);
+	color: var(--color-blue, #3b82f6);
+}
+
+.shadow-anki-stat-badge.shadow-anki-stat-done {
+	background: rgba(156, 163, 175, 0.2);
+	color: var(--text-muted);
+}
+
+/* Setting row adjustments in modal */
+.shadow-anki-deck-modal .setting-item {
+	border-bottom: none;
+	padding: 8px 0;
+}
+
+.shadow-anki-deck-modal .setting-item-info {
+	flex: 1;
+}
+
+.shadow-anki-deck-modal .setting-item-control {
+	display: flex;
+	align-items: center;
+}

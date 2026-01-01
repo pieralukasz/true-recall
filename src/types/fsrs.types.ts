@@ -52,6 +52,8 @@ export interface FSRSFlashcardItem {
     filePath: string;
     /** Dane FSRS */
     fsrs: FSRSCardData;
+    /** Nazwa decka (z frontmatter lub domyślna) */
+    deck: string;
 }
 
 /**
@@ -205,6 +207,48 @@ export interface DailyStats {
     newRemaining: number;
     /** Data (YYYY-MM-DD) */
     date: string;
+}
+
+/**
+ * Persistent daily statistics stored in .shadow-anki/stats.json
+ */
+export interface PersistentDailyStats {
+    /** Date in YYYY-MM-DD format */
+    date: string;
+    /** IDs of cards reviewed today (for exclusion from queue) */
+    reviewedCardIds: string[];
+    /** Count of new cards studied today (for daily limit) */
+    newCardsStudied: number;
+    /** Total reviews completed today */
+    reviewsCompleted: number;
+    /** Total time spent reviewing in ms */
+    totalTimeMs: number;
+}
+
+/**
+ * Persistent stats file structure
+ */
+export interface PersistentStatsData {
+    /** Schema version for migrations */
+    version: number;
+    /** Last update timestamp (ISO string) */
+    lastUpdated: string;
+    /** Daily stats keyed by date (YYYY-MM-DD) */
+    daily: Record<string, PersistentDailyStats>;
+}
+
+/**
+ * Deck information
+ */
+export interface DeckInfo {
+    /** Deck name (unique identifier) */
+    name: string;
+    /** Number of cards in this deck */
+    cardCount: number;
+    /** Due cards count */
+    dueCount: number;
+    /** New cards count */
+    newCount: number;
 }
 
 /**

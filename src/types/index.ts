@@ -38,6 +38,9 @@ export type {
     OptimizationResult,
     DailyStats,
     ReviewViewMode,
+    PersistentDailyStats,
+    PersistentStatsData,
+    DeckInfo,
 } from "./fsrs.types";
 
 export {

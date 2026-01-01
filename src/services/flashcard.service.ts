@@ -6,8 +6,11 @@ import { App, TFile, normalizePath, WorkspaceLeaf } from "obsidian";
 import { FLASHCARD_CONFIG } from "../constants";
 import { type FlashcardItem, type FlashcardChange } from "../validation";
 import { FileError } from "../errors";
-import type { ShadowAnkiSettings, FSRSCardData, FSRSFlashcardItem } from "../types";
-import { createDefaultFSRSData } from "../types";
+import type { ShadowAnkiSettings, FSRSCardData, FSRSFlashcardItem, DeckInfo } from "../types";
+import { createDefaultFSRSData, State } from "../types";
+
+/** Default deck name for cards without explicit deck assignment */
+const DEFAULT_DECK = "Knowledge";
 
 /**
  * Flashcard file information
@@ -369,15 +372,31 @@ export class FlashcardManager {
         return `\n${FLASHCARD_CONFIG.sourceContentStartMarker}\n${noteContent}\n${FLASHCARD_CONFIG.sourceContentEndMarker}\n`;
     }
 
-    private generateFrontmatter(sourceFile: TFile): string {
+    private generateFrontmatter(sourceFile: TFile, deck: string = DEFAULT_DECK): string {
         return `---
 source_link: "[[${sourceFile.basename}]]"
 tags: [flashcards/auto]
+deck: "${deck}"
 ---
 
 # Flashcards for [[${sourceFile.basename}]]
 
 `;
+    }
+
+    /**
+     * Extract deck name from frontmatter
+     */
+    private extractDeckFromFrontmatter(content: string): string {
+        const frontmatterMatch = content.match(/^---\n([\s\S]*?)\n---/);
+        if (!frontmatterMatch) {
+            return DEFAULT_DECK;
+        }
+
+        const frontmatter = frontmatterMatch[1] ?? "";
+        const deckMatch = frontmatter.match(/^deck:\s*["']?([^"'\n]+)["']?/m);
+
+        return deckMatch?.[1]?.trim() ?? DEFAULT_DECK;
     }
 
     private getLeafForFile(file: TFile): WorkspaceLeaf {
@@ -496,6 +515,39 @@ tags: [flashcards/auto]
     }
 
     /**
+     * Get all unique deck names with their statistics
+     */
+    async getAllDecks(): Promise<DeckInfo[]> {
+        const allCards = await this.getAllFSRSCards();
+        const deckMap = new Map<string, FSRSFlashcardItem[]>();
+
+        for (const card of allCards) {
+            const deck = card.deck;
+            if (!deckMap.has(deck)) {
+                deckMap.set(deck, []);
+            }
+            deckMap.get(deck)!.push(card);
+        }
+
+        const now = new Date();
+        const decks: DeckInfo[] = [];
+
+        for (const [name, cards] of deckMap) {
+            decks.push({
+                name,
+                cardCount: cards.length,
+                dueCount: cards.filter(c => {
+                    const dueDate = new Date(c.fsrs.due);
+                    return dueDate <= now && c.fsrs.state !== State.New;
+                }).length,
+                newCount: cards.filter(c => c.fsrs.state === State.New).length,
+            });
+        }
+
+        return decks.sort((a, b) => a.name.localeCompare(b.name));
+    }
+
+    /**
      * Extract flashcards with FSRS data from a single file
      */
     async extractFSRSCards(file: TFile): Promise<FSRSFlashcardItem[]> {
@@ -513,6 +565,9 @@ tags: [flashcards/auto]
         const fsrsPattern = new RegExp(
             `${FLASHCARD_CONFIG.fsrsDataPrefix}(.+?)${FLASHCARD_CONFIG.fsrsDataSuffix}`
         );
+
+        // Extract deck from frontmatter (applies to all cards in file)
+        const deck = this.extractDeckFromFrontmatter(content);
 
         for (let i = 0; i < lines.length; i++) {
             const line = lines[i] ?? "";
@@ -569,6 +624,7 @@ tags: [flashcards/auto]
                         lineNumber: questionLineNumber,
                         filePath,
                         fsrs: fsrsData,
+                        deck,
                     });
                 }
             }

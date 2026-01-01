@@ -7,3 +7,4 @@ export { FlashcardManager, type FlashcardInfo } from "./flashcard.service";
 export { FSRSService } from "./fsrs.service";
 export { ReviewService, type QueueBuildOptions } from "./review.service";
 export { StatsService, type GlobalFlashcardStats } from "./stats.service";
+export { SessionPersistenceService } from "./session-persistence.service";

@@ -16,3 +16,6 @@ export * from "./settings";
 
 // Review components
 export * from "./review";
+
+// Modals
+export * from "./modals";

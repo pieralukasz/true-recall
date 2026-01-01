@@ -326,6 +326,7 @@ export class DiffCard extends BaseComponent {
             }
         }, true); // capture: true
     }
+
 }
 
 /**
