@@ -1,11 +1,12 @@
 import { ItemView, WorkspaceLeaf, TFile, Notice, MarkdownRenderer } from "obsidian";
 import { VIEW_TYPE_FLASHCARD_PANEL } from "./constants";
-import { FlashcardManager, FlashcardInfo, FlashcardItem } from "./flashcardManager";
+import { FlashcardManager, FlashcardInfo, FlashcardItem, FlashcardChange, DiffResult } from "./flashcardManager";
 import { OpenRouterService } from "./api";
 import { AnkiService } from "./ankiService";
 import type ShadowAnkiPlugin from "./main";
 
 type ProcessingStatus = "none" | "exists" | "processing";
+type ViewMode = "list" | "diff";
 
 export class FlashcardPanelView extends ItemView {
     private plugin: ShadowAnkiPlugin;
@@ -16,6 +17,8 @@ export class FlashcardPanelView extends ItemView {
     private status: ProcessingStatus = "none";
     private renderVersion = 0; // Prevents race conditions in async renders
     private isFlashcardFile = false; // True when viewing a flashcards_ file
+    private viewMode: ViewMode = "list";
+    private diffResult: DiffResult | null = null; // Holds pending diff changes
 
     // UI elements
     private headerEl!: HTMLElement;
@@ -68,6 +71,8 @@ export class FlashcardPanelView extends ItemView {
     async handleFileChange(file: TFile | null): Promise<void> {
         this.currentFile = file;
         this.status = "none";
+        this.viewMode = "list";
+        this.diffResult = null;
         await this.updateView();
     }
 
@@ -121,6 +126,12 @@ export class FlashcardPanelView extends ItemView {
         // Show loader if processing
         if (this.status === "processing") {
             this.renderProcessingState();
+            return;
+        }
+
+        // Show diff view if in diff mode
+        if (this.viewMode === "diff" && this.diffResult) {
+            await this.renderDiffState();
             return;
         }
 
@@ -295,6 +306,135 @@ export class FlashcardPanelView extends ItemView {
         );
     }
 
+    // Render diff view for proposed changes
+    private async renderDiffState(): Promise<void> {
+        if (!this.diffResult || !this.currentFile) return;
+
+        const diffEl = this.mainContentEl.createDiv({ cls: "shadow-anki-diff" });
+
+        // Header with count
+        const acceptedCount = this.diffResult.changes.filter(c => c.accepted).length;
+        const totalCount = this.diffResult.changes.length;
+
+        const headerEl = diffEl.createDiv({ cls: "shadow-anki-diff-header" });
+        headerEl.createSpan({
+            text: `Proposed Changes (${acceptedCount}/${totalCount} selected)`,
+            cls: "shadow-anki-diff-title"
+        });
+
+        // No changes case
+        if (this.diffResult.changes.length === 0) {
+            diffEl.createDiv({
+                text: "No changes needed. Flashcards are up to date.",
+                cls: "shadow-anki-diff-empty"
+            });
+            return;
+        }
+
+        // Render each change
+        const changesContainer = diffEl.createDiv({ cls: "shadow-anki-diff-changes" });
+        const flashcardPath = this.flashcardManager.getFlashcardPath(this.currentFile);
+
+        for (let i = 0; i < this.diffResult.changes.length; i++) {
+            const change = this.diffResult.changes[i];
+            if (!change) continue;
+
+            const cardEl = changesContainer.createDiv({
+                cls: `shadow-anki-diff-card shadow-anki-diff-card--${change.type.toLowerCase()} ${change.accepted ? "" : "shadow-anki-diff-card--rejected"}`
+            });
+
+            // Card header with type badge and toggle
+            const cardHeader = cardEl.createDiv({ cls: "shadow-anki-diff-card-header" });
+
+            // Type badge
+            const badgeEl = cardHeader.createSpan({
+                cls: `shadow-anki-diff-badge shadow-anki-diff-badge--${change.type.toLowerCase()}`
+            });
+            badgeEl.setText(change.type);
+
+            // Toggle checkbox
+            const toggleEl = cardHeader.createEl("input", {
+                type: "checkbox",
+                cls: "shadow-anki-diff-toggle"
+            });
+            toggleEl.checked = change.accepted;
+            toggleEl.addEventListener("change", () => {
+                change.accepted = toggleEl.checked;
+                cardEl.toggleClass("shadow-anki-diff-card--rejected", !change.accepted);
+                void this.updateView(); // Re-render to update count
+            });
+
+            // For DELETED: show card to be removed with reason
+            if (change.type === "DELETED") {
+                const deletedSection = cardEl.createDiv({ cls: "shadow-anki-diff-deleted-content" });
+
+                const delQ = deletedSection.createDiv({ cls: "shadow-anki-diff-question" });
+                delQ.createSpan({ text: "Q: ", cls: "shadow-anki-card-label" });
+                const delQContent = delQ.createDiv({ cls: "shadow-anki-md-content" });
+                await this.renderMarkdown(delQContent, change.question, flashcardPath);
+
+                const delA = deletedSection.createDiv({ cls: "shadow-anki-diff-answer" });
+                delA.createSpan({ text: "A: ", cls: "shadow-anki-card-label" });
+                const delAContent = delA.createDiv({ cls: "shadow-anki-md-content" });
+                await this.renderMarkdown(delAContent, change.answer, flashcardPath);
+
+                // Show reason if available
+                if (change.reason) {
+                    cardEl.createDiv({
+                        text: `Reason: ${change.reason}`,
+                        cls: "shadow-anki-diff-reason"
+                    });
+                }
+            }
+            // For MODIFIED: show old version first
+            else if (change.type === "MODIFIED" && change.originalQuestion) {
+                const oldSection = cardEl.createDiv({ cls: "shadow-anki-diff-old" });
+                oldSection.createDiv({ text: "OLD:", cls: "shadow-anki-diff-label" });
+
+                const oldQ = oldSection.createDiv({ cls: "shadow-anki-diff-question" });
+                oldQ.createSpan({ text: "Q: ", cls: "shadow-anki-card-label" });
+                const oldQContent = oldQ.createDiv({ cls: "shadow-anki-md-content" });
+                await this.renderMarkdown(oldQContent, change.originalQuestion, flashcardPath);
+
+                const oldA = oldSection.createDiv({ cls: "shadow-anki-diff-answer" });
+                oldA.createSpan({ text: "A: ", cls: "shadow-anki-card-label" });
+                const oldAContent = oldA.createDiv({ cls: "shadow-anki-md-content" });
+                await this.renderMarkdown(oldAContent, change.originalAnswer || "", flashcardPath);
+
+                // Arrow separator
+                cardEl.createDiv({ cls: "shadow-anki-diff-arrow", text: "↓" });
+
+                // New version for MODIFIED
+                const newSection = cardEl.createDiv({ cls: "shadow-anki-diff-new" });
+                newSection.createDiv({ text: "NEW:", cls: "shadow-anki-diff-label" });
+
+                const newQ = newSection.createDiv({ cls: "shadow-anki-diff-question" });
+                newQ.createSpan({ text: "Q: ", cls: "shadow-anki-card-label" });
+                const newQContent = newQ.createDiv({ cls: "shadow-anki-md-content" });
+                await this.renderMarkdown(newQContent, change.question, flashcardPath);
+
+                const newA = newSection.createDiv({ cls: "shadow-anki-diff-answer" });
+                newA.createSpan({ text: "A: ", cls: "shadow-anki-card-label" });
+                const newAContent = newA.createDiv({ cls: "shadow-anki-md-content" });
+                await this.renderMarkdown(newAContent, change.answer, flashcardPath);
+            }
+            // For NEW: show only the new card
+            else if (change.type === "NEW") {
+                const newSection = cardEl.createDiv({ cls: "shadow-anki-diff-new" });
+
+                const newQ = newSection.createDiv({ cls: "shadow-anki-diff-question" });
+                newQ.createSpan({ text: "Q: ", cls: "shadow-anki-card-label" });
+                const newQContent = newQ.createDiv({ cls: "shadow-anki-md-content" });
+                await this.renderMarkdown(newQContent, change.question, flashcardPath);
+
+                const newA = newSection.createDiv({ cls: "shadow-anki-diff-answer" });
+                newA.createSpan({ text: "A: ", cls: "shadow-anki-card-label" });
+                const newAContent = newA.createDiv({ cls: "shadow-anki-md-content" });
+                await this.renderMarkdown(newAContent, change.answer, flashcardPath);
+            }
+        }
+    }
+
     private formatDate(date: Date): string {
         const now = new Date();
         const isToday = date.toDateString() === now.toDateString();
@@ -318,6 +458,28 @@ export class FlashcardPanelView extends ItemView {
             return;
         }
 
+        // Diff mode footer
+        if (this.viewMode === "diff" && this.diffResult) {
+            const acceptedCount = this.diffResult.changes.filter(c => c.accepted).length;
+
+            // Apply button
+            const applyBtn = this.footerEl.createEl("button", {
+                cls: "shadow-anki-btn-primary"
+            });
+            applyBtn.setText(`Apply Selected (${acceptedCount})`);
+            applyBtn.disabled = acceptedCount === 0;
+            applyBtn.addEventListener("click", () => this.handleApplyDiff());
+
+            // Cancel button
+            const cancelBtn = this.footerEl.createEl("button", {
+                text: "Cancel",
+                cls: "shadow-anki-btn-secondary"
+            });
+            cancelBtn.addEventListener("click", () => this.handleCancelDiff());
+
+            return;
+        }
+
         // Don't show Generate/Update buttons for flashcard files
         if (!this.isFlashcardFile) {
             // Main action button
@@ -329,7 +491,7 @@ export class FlashcardPanelView extends ItemView {
                 mainBtn.setText("Processing...");
                 mainBtn.disabled = true;
             } else if (this.status === "exists") {
-                mainBtn.setText("Update (Append new)");
+                mainBtn.setText("Update Flashcards");
                 mainBtn.addEventListener("click", () => this.handleUpdate());
             } else {
                 mainBtn.setText("Generate Flashcards");
@@ -337,7 +499,7 @@ export class FlashcardPanelView extends ItemView {
             }
         }
 
-        // Sync button (always show)
+        // Sync button (always show in list mode)
         const syncBtn = this.footerEl.createEl("button", {
             text: "Force Sync (Anki)",
             cls: "shadow-anki-btn-sync"
@@ -399,22 +561,61 @@ export class FlashcardPanelView extends ItemView {
             const info = await this.flashcardManager.getFlashcardInfo(this.currentFile);
             const content = await this.app.vault.read(this.currentFile);
 
-            const newFlashcards = await this.openRouterService.generateFlashcards(
+            // Use diff-based generation
+            const diffResult = await this.openRouterService.generateFlashcardsDiff(
                 content,
-                info.questions // Pass existing questions as blocklist
+                info.flashcards
             );
 
-            // Check if AI returned no new cards indicator
-            if (newFlashcards.trim() === "NO_NEW_CARDS") {
-                new Notice("No new information to add. Flashcards are up to date.");
+            // Check if no changes
+            if (diffResult.changes.length === 0) {
+                new Notice("No changes needed. Flashcards are up to date.");
                 this.status = "exists";
                 await this.updateView();
                 return;
             }
 
-            await this.flashcardManager.appendFlashcards(this.currentFile, newFlashcards);
+            // Switch to diff view
+            this.diffResult = diffResult;
+            this.viewMode = "diff";
+            this.status = "exists";
+            await this.updateView();
 
-            new Notice(`Added new flashcards for ${this.currentFile.basename}`);
+        } catch (error) {
+            new Notice(`Error: ${error instanceof Error ? error.message : String(error)}`);
+            this.status = "exists";
+            await this.updateView();
+        }
+    }
+
+    private async handleApplyDiff(): Promise<void> {
+        if (!this.currentFile || !this.diffResult) return;
+
+        const acceptedChanges = this.diffResult.changes.filter(c => c.accepted);
+        if (acceptedChanges.length === 0) {
+            new Notice("No changes selected");
+            return;
+        }
+
+        try {
+            await this.flashcardManager.applyDiffChanges(
+                this.currentFile,
+                this.diffResult.changes,
+                this.diffResult.existingFlashcards
+            );
+
+            const newCount = acceptedChanges.filter(c => c.type === "NEW").length;
+            const modifiedCount = acceptedChanges.filter(c => c.type === "MODIFIED").length;
+            const deletedCount = acceptedChanges.filter(c => c.type === "DELETED").length;
+
+            let message = "Applied: ";
+            const parts = [];
+            if (newCount > 0) parts.push(`${newCount} new`);
+            if (modifiedCount > 0) parts.push(`${modifiedCount} modified`);
+            if (deletedCount > 0) parts.push(`${deletedCount} deleted`);
+            message += parts.join(", ");
+
+            new Notice(message);
 
             if (this.plugin.settings.autoSyncToAnki) {
                 await this.handleSync();
@@ -423,7 +624,15 @@ export class FlashcardPanelView extends ItemView {
             new Notice(`Error: ${error instanceof Error ? error.message : String(error)}`);
         }
 
-        this.status = "exists";
+        // Return to list view
+        this.viewMode = "list";
+        this.diffResult = null;
+        await this.updateView();
+    }
+
+    private async handleCancelDiff(): Promise<void> {
+        this.viewMode = "list";
+        this.diffResult = null;
         await this.updateView();
     }
 
