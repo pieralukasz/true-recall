@@ -1,4 +1,4 @@
-import { ItemView, WorkspaceLeaf, TFile, Notice } from "obsidian";
+import { ItemView, WorkspaceLeaf, TFile, Notice, MarkdownRenderer } from "obsidian";
 import { VIEW_TYPE_FLASHCARD_PANEL } from "./constants";
 import { FlashcardManager, FlashcardInfo, FlashcardItem } from "./flashcardManager";
 import { OpenRouterService } from "./api";
@@ -118,6 +118,12 @@ export class FlashcardPanelView extends ItemView {
         const currentVersion = ++this.renderVersion;
         this.mainContentEl.empty();
 
+        // Show loader if processing
+        if (this.status === "processing") {
+            this.renderProcessingState();
+            return;
+        }
+
         if (!this.currentFile) {
             this.isFlashcardFile = false;
             this.renderEmptyState("Open a note to see flashcard options");
@@ -152,8 +158,30 @@ export class FlashcardPanelView extends ItemView {
         if (!info.exists) {
             await this.renderNoFlashcardsState(currentVersion);
         } else {
-            this.renderPreviewState(info);
+            await this.renderPreviewState(info);
         }
+    }
+
+    private renderProcessingState(): void {
+        const processingEl = this.mainContentEl.createDiv({ cls: "shadow-anki-processing" });
+
+        // Spinner
+        const spinnerEl = processingEl.createDiv({ cls: "shadow-anki-spinner" });
+        spinnerEl.innerHTML = `<svg viewBox="0 0 24 24" width="32" height="32">
+            <circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="3" fill="none" stroke-dasharray="31.4 31.4" stroke-linecap="round">
+                <animateTransform attributeName="transform" type="rotate" dur="1s" from="0 12 12" to="360 12 12" repeatCount="indefinite"/>
+            </circle>
+        </svg>`;
+
+        // Text
+        processingEl.createDiv({
+            text: "Generating flashcards...",
+            cls: "shadow-anki-processing-text"
+        });
+        processingEl.createDiv({
+            text: "AI is analyzing your note",
+            cls: "shadow-anki-processing-subtext"
+        });
     }
 
     private renderEmptyState(message: string): void {
@@ -181,7 +209,7 @@ export class FlashcardPanelView extends ItemView {
         }
     }
 
-    private renderPreviewState(info: FlashcardInfo): void {
+    private async renderPreviewState(info: FlashcardInfo): Promise<void> {
         const previewEl = this.mainContentEl.createDiv({ cls: "shadow-anki-preview" });
 
         // Card count and last modified
@@ -202,7 +230,10 @@ export class FlashcardPanelView extends ItemView {
         if (info.flashcards.length > 0) {
             const cardsContainer = previewEl.createDiv({ cls: "shadow-anki-cards-container" });
 
-            info.flashcards.forEach((card, index) => {
+            for (let index = 0; index < info.flashcards.length; index++) {
+                const card = info.flashcards[index];
+                if (!card) continue;
+
                 const cardEl = cardsContainer.createDiv({ cls: "shadow-anki-card" });
 
                 // Card header with actions
@@ -211,7 +242,8 @@ export class FlashcardPanelView extends ItemView {
                 // Question
                 const questionEl = cardHeader.createDiv({ cls: "shadow-anki-card-question" });
                 questionEl.createSpan({ text: "Q: ", cls: "shadow-anki-card-label" });
-                this.renderTextWithWikilinks(questionEl, card.question);
+                const questionContent = questionEl.createDiv({ cls: "shadow-anki-md-content" });
+                await this.renderMarkdown(questionContent, card.question, info.filePath);
 
                 // Action buttons
                 const actionsEl = cardHeader.createDiv({ cls: "shadow-anki-card-actions" });
@@ -241,43 +273,26 @@ export class FlashcardPanelView extends ItemView {
                 // Answer
                 const answerEl = cardEl.createDiv({ cls: "shadow-anki-card-answer" });
                 answerEl.createSpan({ text: "A: ", cls: "shadow-anki-card-label" });
-                this.renderTextWithWikilinks(answerEl, card.answer);
+                const answerContent = answerEl.createDiv({ cls: "shadow-anki-md-content" });
+                await this.renderMarkdown(answerContent, card.answer, info.filePath);
 
                 // Separator (except for last card)
                 if (index < info.flashcards.length - 1) {
                     cardsContainer.createDiv({ cls: "shadow-anki-card-separator" });
                 }
-            });
+            }
         }
     }
 
-    // Render text with [[wikilinks]] styled as Obsidian internal links
-    private renderTextWithWikilinks(container: HTMLElement, text: string): void {
-        // Regex to match [[wikilinks]] and **bold**
-        const parts = text.split(/(\[\[[^\]]+\]\]|\*\*[^*]+\*\*)/g);
-
-        parts.forEach(part => {
-            if (part.startsWith("[[") && part.endsWith("]]")) {
-                // Wikilink - extract link text
-                const linkText = part.slice(2, -2);
-                const linkEl = container.createSpan({
-                    text: linkText,
-                    cls: "shadow-anki-wikilink"
-                });
-                // Make it clickable
-                linkEl.addEventListener("click", () => {
-                    const file = this.app.metadataCache.getFirstLinkpathDest(linkText, "");
-                    if (file) {
-                        void this.app.workspace.getLeaf("tab").openFile(file);
-                    }
-                });
-            } else if (part.startsWith("**") && part.endsWith("**")) {
-                // Bold text
-                container.createEl("strong", { text: part.slice(2, -2) });
-            } else if (part) {
-                container.createSpan({ text: part });
-            }
-        });
+    // Render markdown content using Obsidian's native renderer
+    private async renderMarkdown(container: HTMLElement, text: string, sourcePath: string): Promise<void> {
+        await MarkdownRenderer.render(
+            this.app,
+            text,
+            container,
+            sourcePath,
+            this
+        );
     }
 
     private formatDate(date: Date): string {
