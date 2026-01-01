@@ -12,6 +12,17 @@
 	padding: 8px;
 }
 
+/* Container flex styles */
+.shadow-anki-content-container {
+	flex: 1;
+	overflow-y: auto;
+	min-height: 0;
+}
+
+.shadow-anki-footer-container {
+	flex-shrink: 0;
+}
+
 /* Header Section */
 .shadow-anki-header {
 	border-bottom: 1px solid var(--background-modifier-border);

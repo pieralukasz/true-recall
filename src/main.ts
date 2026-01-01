@@ -1,10 +1,12 @@
 import { Plugin, TFile } from "obsidian";
-import { ShadowAnkiSettings, ShadowAnkiSettingTab, DEFAULT_SETTINGS } from "./settings";
 import { VIEW_TYPE_FLASHCARD_PANEL } from "./constants";
-import { FlashcardPanelView } from "./view";
-import { FlashcardManager } from "./flashcardManager";
-import { OpenRouterService } from "./api";
-import { AnkiService } from "./ankiService";
+import { FlashcardManager, OpenRouterService, AnkiService } from "./services";
+import {
+    FlashcardPanelView,
+    ShadowAnkiSettingTab,
+    type ShadowAnkiSettings,
+    DEFAULT_SETTINGS,
+} from "./ui";
 
 export default class ShadowAnkiPlugin extends Plugin {
     settings!: ShadowAnkiSettings;

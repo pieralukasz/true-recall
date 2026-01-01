@@ -23,6 +23,53 @@ export const DEFAULT_SETTINGS = {
 	storeSourceContent: false,
 };
 
+// ===== API Configuration =====
+
+/**
+ * OpenRouter API configuration
+ */
+export const API_CONFIG = {
+	endpoint: "https://openrouter.ai/api/v1/chat/completions",
+	timeout: 60000, // 60 seconds
+	defaultTemperature: 0.7,
+	defaultMaxTokens: 4000,
+	retryAttempts: 3,
+	retryDelay: 1000, // 1 second
+} as const;
+
+/**
+ * AnkiConnect configuration
+ */
+export const ANKI_CONFIG = {
+	endpoint: "http://127.0.0.1:8765",
+	version: 6,
+	timeout: 10000, // 10 seconds
+} as const;
+
+// ===== UI Configuration =====
+
+/**
+ * UI-related constants
+ */
+export const UI_CONFIG = {
+	maxTitleLength: 30,
+	animationDuration: 150, // ms
+	debounceDelay: 300, // ms
+} as const;
+
+// ===== Flashcard Configuration =====
+
+/**
+ * Flashcard file naming and format constants
+ */
+export const FLASHCARD_CONFIG = {
+	filePrefix: "flashcards_",
+	defaultFolder: "Flashcards",
+	tag: "#flashcard",
+	sourceContentStartMarker: "<!-- SOURCE_NOTE_CONTENT",
+	sourceContentEndMarker: "END_SOURCE_NOTE_CONTENT -->",
+} as const;
+
 // System prompt for flashcard generation
 export const SYSTEM_PROMPT = `You are an expert flashcard generator. Your task is to analyze the provided text and generate flashcards.
 
