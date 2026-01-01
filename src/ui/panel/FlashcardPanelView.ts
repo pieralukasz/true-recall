@@ -11,7 +11,7 @@ import {
     MarkdownRenderer,
 } from "obsidian";
 import { VIEW_TYPE_FLASHCARD_PANEL } from "../../constants";
-import { FlashcardManager, OpenRouterService, AnkiService } from "../../services";
+import { FlashcardManager, OpenRouterService } from "../../services";
 import { PanelStateManager } from "../../state";
 import { PanelHeader } from "./PanelHeader";
 import { PanelContent } from "./PanelContent";
@@ -26,7 +26,6 @@ export class FlashcardPanelView extends ItemView {
     private plugin: ShadowAnkiPlugin;
     private flashcardManager: FlashcardManager;
     private openRouterService: OpenRouterService;
-    private ankiService: AnkiService;
     private stateManager: PanelStateManager;
 
     // UI Components
@@ -47,7 +46,6 @@ export class FlashcardPanelView extends ItemView {
         this.plugin = plugin;
         this.flashcardManager = plugin.flashcardManager;
         this.openRouterService = plugin.openRouterService;
-        this.ankiService = plugin.ankiService;
         this.stateManager = new PanelStateManager();
     }
 
@@ -225,10 +223,6 @@ export class FlashcardPanelView extends ItemView {
             }
 
             new Notice(`Generated flashcards for ${state.currentFile.basename}`);
-
-            if (this.plugin.settings.autoSyncToAnki) {
-                await this.handleSync();
-            }
         } catch (error) {
             new Notice(`Error: ${error instanceof Error ? error.message : String(error)}`);
         }
@@ -306,10 +300,6 @@ export class FlashcardPanelView extends ItemView {
             if (counts.modified > 0) parts.push(`${counts.modified} modified`);
             if (counts.deleted > 0) parts.push(`${counts.deleted} deleted`);
             new Notice(`Applied: ${parts.join(", ")}`);
-
-            if (this.plugin.settings.autoSyncToAnki) {
-                await this.handleSync();
-            }
         } catch (error) {
             new Notice(`Error: ${error instanceof Error ? error.message : String(error)}`);
         }
@@ -347,33 +337,6 @@ export class FlashcardPanelView extends ItemView {
         });
     }
 
-    private async handleSync(): Promise<void> {
-        try {
-            const commandIds = [
-                "obsidian-to-anki-plugin:scan-vault",
-                "obsidian-to-anki:scan-vault",
-            ];
-
-            let executed = false;
-            for (const commandId of commandIds) {
-                // @ts-expect-error - executeCommandById exists but not in types
-                const result = this.app.commands.executeCommandById(commandId);
-                if (result !== false) {
-                    executed = true;
-                    break;
-                }
-            }
-
-            if (executed) {
-                new Notice("Triggered Anki sync");
-            } else {
-                new Notice("obsidian-to-anki plugin not found. Please install it for Anki sync.");
-            }
-        } catch {
-            new Notice("Failed to sync. Is obsidian-to-anki plugin installed?");
-        }
-    }
-
     private async handleOpenFlashcardFile(): Promise<void> {
         const state = this.stateManager.getState();
         if (state.currentFile) {
@@ -395,16 +358,6 @@ export class FlashcardPanelView extends ItemView {
     private async handleRemoveCard(card: FlashcardItem): Promise<void> {
         const state = this.stateManager.getState();
         if (!state.currentFile) return;
-
-        if (card.ankiId) {
-            const ankiAvailable = await this.ankiService.isAvailable();
-            if (ankiAvailable) {
-                const deleted = await this.ankiService.deleteNotes([card.ankiId]);
-                new Notice(deleted ? "Removed from Anki" : "Could not remove from Anki (card may already be deleted)");
-            } else {
-                new Notice("Anki not running - removing from file only");
-            }
-        }
 
         const removed = state.isFlashcardFile
             ? await this.flashcardManager.removeFlashcardDirect(state.currentFile, card.lineNumber)

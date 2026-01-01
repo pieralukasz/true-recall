@@ -494,3 +494,269 @@
 	padding-top: 8px;
 	border-top: 1px solid var(--background-modifier-border);
 }
+
+/* ============================================
+   REVIEW VIEW STYLES
+   ============================================ */
+
+.shadow-anki-review {
+	display: flex;
+	flex-direction: column;
+	height: 100%;
+	background: var(--background-primary);
+}
+
+/* Review Header */
+.shadow-anki-review-header {
+	display: flex;
+	justify-content: space-between;
+	align-items: center;
+	padding: 12px 16px;
+	border-bottom: 1px solid var(--background-modifier-border);
+	background: var(--background-secondary);
+}
+
+.shadow-anki-review-close,
+.shadow-anki-review-edit {
+	background: none;
+	border: none;
+	cursor: pointer;
+	color: var(--text-muted);
+	padding: 4px;
+	border-radius: 4px;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+}
+
+.shadow-anki-review-close:hover,
+.shadow-anki-review-edit:hover {
+	background: var(--background-modifier-hover);
+	color: var(--text-normal);
+}
+
+.shadow-anki-review-progress-text {
+	font-size: 14px;
+	font-weight: 600;
+	color: var(--text-normal);
+}
+
+/* Card Container */
+.shadow-anki-review-card-container {
+	flex: 1;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	padding: 32px;
+	overflow-y: auto;
+}
+
+.shadow-anki-review-card {
+	max-width: 700px;
+	width: 100%;
+	text-align: center;
+}
+
+/* Question */
+.shadow-anki-review-question {
+	font-size: 1.4em;
+	line-height: 1.6;
+	color: var(--text-normal);
+	margin-bottom: 24px;
+}
+
+.shadow-anki-review-question p {
+	margin: 0;
+}
+
+/* Divider */
+.shadow-anki-review-divider {
+	border: none;
+	border-top: 1px solid var(--background-modifier-border);
+	margin: 24px 0;
+}
+
+/* Answer */
+.shadow-anki-review-answer {
+	font-size: 1.2em;
+	line-height: 1.6;
+	color: var(--text-muted);
+}
+
+.shadow-anki-review-answer p {
+	margin: 0;
+}
+
+/* Buttons Container */
+.shadow-anki-review-buttons {
+	display: flex;
+	justify-content: center;
+	gap: 12px;
+	padding: 20px 16px;
+	border-top: 1px solid var(--background-modifier-border);
+	background: var(--background-secondary);
+	flex-wrap: wrap;
+}
+
+/* Base Button Style */
+.shadow-anki-btn {
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	gap: 4px;
+	padding: 12px 24px;
+	border: none;
+	border-radius: 8px;
+	cursor: pointer;
+	font-weight: 500;
+	font-size: 14px;
+	min-width: 80px;
+	transition: transform 0.1s ease, filter 0.1s ease;
+}
+
+.shadow-anki-btn:hover {
+	filter: brightness(1.1);
+}
+
+.shadow-anki-btn:active {
+	transform: scale(0.98);
+}
+
+/* Show Answer Button */
+.shadow-anki-btn-show {
+	background: var(--interactive-accent);
+	color: var(--text-on-accent);
+	padding: 16px 48px;
+}
+
+/* Rating Buttons */
+.shadow-anki-btn-again {
+	background: var(--color-red, #ef4444);
+	color: white;
+}
+
+.shadow-anki-btn-hard {
+	background: var(--color-orange, #f97316);
+	color: white;
+}
+
+.shadow-anki-btn-good {
+	background: var(--color-green, #22c55e);
+	color: white;
+}
+
+.shadow-anki-btn-easy {
+	background: var(--color-cyan, #06b6d4);
+	color: white;
+}
+
+.shadow-anki-btn-label {
+	font-weight: 600;
+}
+
+.shadow-anki-btn-time {
+	font-size: 11px;
+	opacity: 0.9;
+}
+
+/* Progress Bar */
+.shadow-anki-review-progress {
+	padding: 0 16px 12px;
+	background: var(--background-secondary);
+}
+
+.shadow-anki-progress-bar {
+	height: 4px;
+	background: var(--background-modifier-border);
+	border-radius: 2px;
+	overflow: hidden;
+}
+
+.shadow-anki-progress-fill {
+	height: 100%;
+	background: var(--interactive-accent);
+	transition: width 0.3s ease;
+}
+
+/* Empty State */
+.shadow-anki-review-empty {
+	text-align: center;
+	padding: 48px 24px;
+}
+
+.shadow-anki-review-empty-icon {
+	font-size: 48px;
+	margin-bottom: 16px;
+}
+
+.shadow-anki-review-empty-text {
+	font-size: 16px;
+	color: var(--text-muted);
+	margin-bottom: 24px;
+}
+
+/* Summary */
+.shadow-anki-review-summary {
+	text-align: center;
+	padding: 32px 24px;
+	max-width: 400px;
+	margin: 0 auto;
+}
+
+.shadow-anki-review-summary h2 {
+	font-size: 24px;
+	margin: 0 0 24px 0;
+	color: var(--text-normal);
+}
+
+.shadow-anki-review-stats {
+	display: grid;
+	grid-template-columns: repeat(2, 1fr);
+	gap: 12px;
+	margin-bottom: 24px;
+}
+
+.shadow-anki-stat-item {
+	padding: 12px;
+	background: var(--background-secondary);
+	border-radius: 8px;
+}
+
+.shadow-anki-stat-label {
+	font-size: 12px;
+	color: var(--text-muted);
+	margin-bottom: 4px;
+}
+
+.shadow-anki-stat-value {
+	font-size: 20px;
+	font-weight: 600;
+	color: var(--text-normal);
+}
+
+/* Stat colors */
+.stat-again .shadow-anki-stat-value {
+	color: var(--color-red, #ef4444);
+}
+
+.stat-hard .shadow-anki-stat-value {
+	color: var(--color-orange, #f97316);
+}
+
+.stat-good .shadow-anki-stat-value {
+	color: var(--color-green, #22c55e);
+}
+
+.stat-easy .shadow-anki-stat-value {
+	color: var(--color-cyan, #06b6d4);
+}
+
+.shadow-anki-review-summary-buttons {
+	display: flex;
+	gap: 12px;
+	justify-content: center;
+}
+
+.shadow-anki-review-summary-buttons .shadow-anki-btn {
+	padding: 12px 32px;
+}
