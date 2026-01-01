@@ -125,7 +125,10 @@ export class OpenRouterService {
 					const type = c.type as "NEW" | "MODIFIED" | "DELETED";
 
 					// For DELETED, we get question/answer from existing flashcards
-					if (type === "DELETED" && typeof c.originalQuestion === "string") {
+					if (
+						type === "DELETED" &&
+						typeof c.originalQuestion === "string"
+					) {
 						const originalQuestion = String(c.originalQuestion);
 						const existing = existingFlashcards.find(
 							(f) => f.question === originalQuestion
@@ -138,24 +141,31 @@ export class OpenRouterService {
 							originalQuestion,
 							originalAnswer: existing?.answer,
 							originalLineNumber: existing?.lineNumber,
-							reason: typeof c.reason === "string" ? c.reason : undefined,
+							reason:
+								typeof c.reason === "string"
+									? c.reason
+									: undefined,
 							accepted: false, // DELETED defaults to rejected (user must explicitly accept)
 						};
 					}
 
 					// For NEW and MODIFIED
-					const question = typeof c.question === "string" ? c.question : "";
+					const question =
+						typeof c.question === "string" ? c.question : "";
 					const answer = typeof c.answer === "string" ? c.answer : "";
 
 					const result: FlashcardChange = {
 						type,
 						question,
 						answer,
-						accepted: type === "MODIFIED", // Only MODIFIED defaults to accepted, NEW requires manual approval
+						accepted: true,
 					};
 
 					// For MODIFIED, find the original flashcard
-					if (type === "MODIFIED" && typeof c.originalQuestion === "string") {
+					if (
+						type === "MODIFIED" &&
+						typeof c.originalQuestion === "string"
+					) {
 						const originalQuestion = String(c.originalQuestion);
 						result.originalQuestion = originalQuestion;
 
