@@ -1,11 +1,12 @@
 import { Plugin, TFile, Notice } from "obsidian";
 import { VIEW_TYPE_FLASHCARD_PANEL, VIEW_TYPE_REVIEW } from "./constants";
-import { FlashcardManager, OpenRouterService, FSRSService, StatsService } from "./services";
+import { FlashcardManager, OpenRouterService, FSRSService, StatsService, SessionPersistenceService } from "./services";
 import { extractFSRSSettings } from "./types";
 import {
     FlashcardPanelView,
     ReviewView,
     ShadowAnkiSettingTab,
+    DeckSelectionModal,
     type ShadowAnkiSettings,
     DEFAULT_SETTINGS,
 } from "./ui";
@@ -16,6 +17,7 @@ export default class ShadowAnkiPlugin extends Plugin {
     openRouterService!: OpenRouterService;
     fsrsService!: FSRSService;
     statsService!: StatsService;
+    sessionPersistence!: SessionPersistenceService;
 
     async onload(): Promise<void> {
         await this.loadSettings();
@@ -31,6 +33,11 @@ export default class ShadowAnkiPlugin extends Plugin {
         const fsrsSettings = extractFSRSSettings(this.settings);
         this.fsrsService = new FSRSService(fsrsSettings);
         this.statsService = new StatsService(this.flashcardManager, this.fsrsService);
+
+        // Initialize session persistence service
+        this.sessionPersistence = new SessionPersistenceService(this.app);
+        // Clean up old stats on startup (keep last 30 days)
+        void this.sessionPersistence.cleanupOldStats();
 
         // Register the sidebar view
         this.registerView(
@@ -76,6 +83,13 @@ export default class ShadowAnkiPlugin extends Plugin {
             id: "start-review",
             name: "Start review session",
             callback: () => void this.startReviewSession()
+        });
+
+        // Review session for Knowledge deck (direct, no modal)
+        this.addCommand({
+            id: "start-review-knowledge",
+            name: "Start review session (Knowledge)",
+            callback: () => void this.openReviewView("Knowledge")
         });
 
         // Migrate flashcards command
@@ -205,13 +219,40 @@ export default class ShadowAnkiPlugin extends Plugin {
             return;
         }
 
-        // Open review view based on settings
+        // Get all decks and show selection modal
+        const decks = await this.flashcardManager.getAllDecks();
+
+        // If no flashcards found, show notice
+        if (decks.length === 0) {
+            new Notice("No flashcards found. Generate some flashcards first!");
+            return;
+        }
+
+        // Show deck selection modal
+        const modal = new DeckSelectionModal(this.app, decks);
+        const result = await modal.openAndWait();
+
+        if (result.cancelled) {
+            return;
+        }
+
+        // Open review view with selected deck
+        await this.openReviewView(result.selectedDeck);
+    }
+
+    /**
+     * Open the review view with optional deck filter
+     */
+    private async openReviewView(deckFilter: string | null): Promise<void> {
+        const { workspace } = this.app;
+
         if (this.settings.reviewMode === "fullscreen") {
             // Open in main area
             const leaf = workspace.getLeaf(true);
             await leaf.setViewState({
                 type: VIEW_TYPE_REVIEW,
                 active: true,
+                state: { deckFilter },
             });
             workspace.revealLeaf(leaf);
         } else {
@@ -221,6 +262,7 @@ export default class ShadowAnkiPlugin extends Plugin {
                 await rightLeaf.setViewState({
                     type: VIEW_TYPE_REVIEW,
                     active: true,
+                    state: { deckFilter },
                 });
                 workspace.revealLeaf(rightLeaf);
             }

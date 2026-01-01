@@ -3,13 +3,17 @@
  * Main view for spaced repetition review sessions
  * Can be displayed in fullscreen (main area) or panel (sidebar)
  */
-import { ItemView, WorkspaceLeaf, MarkdownRenderer, Notice } from "obsidian";
+import { ItemView, WorkspaceLeaf, MarkdownRenderer, Notice, type ViewStateResult } from "obsidian";
 import { Rating, State, type Grade } from "ts-fsrs";
 import { VIEW_TYPE_REVIEW } from "../../constants";
-import { FSRSService, ReviewService, FlashcardManager } from "../../services";
+import { FSRSService, ReviewService, FlashcardManager, SessionPersistenceService } from "../../services";
 import { ReviewStateManager } from "../../state";
 import { extractFSRSSettings, type FSRSFlashcardItem, type SchedulingPreview } from "../../types";
 import type ShadowAnkiPlugin from "../../main";
+
+interface ReviewViewState extends Record<string, unknown> {
+    deckFilter?: string | null;
+}
 
 /**
  * Review View for conducting flashcard review sessions
@@ -20,6 +24,10 @@ export class ReviewView extends ItemView {
     private reviewService: ReviewService;
     private flashcardManager: FlashcardManager;
     private stateManager: ReviewStateManager;
+    private sessionPersistence: SessionPersistenceService;
+
+    // Deck filter (null = all decks)
+    private deckFilter: string | null = null;
 
     // UI Elements
     private headerEl!: HTMLElement;
@@ -36,10 +44,29 @@ export class ReviewView extends ItemView {
         this.flashcardManager = plugin.flashcardManager;
         this.stateManager = new ReviewStateManager();
         this.reviewService = new ReviewService();
+        this.sessionPersistence = plugin.sessionPersistence;
 
         // Initialize FSRS service with current settings
         const fsrsSettings = extractFSRSSettings(plugin.settings);
         this.fsrsService = new FSRSService(fsrsSettings);
+    }
+
+    /**
+     * Set view state (including deck filter)
+     */
+    async setState(state: unknown, result: ViewStateResult): Promise<void> {
+        const viewState = state as ReviewViewState | null;
+        this.deckFilter = viewState?.deckFilter ?? null;
+        await super.setState(state, result);
+    }
+
+    /**
+     * Get current view state
+     */
+    getState(): ReviewViewState {
+        return {
+            deckFilter: this.deckFilter,
+        };
     }
 
     getViewType(): string {
@@ -94,10 +121,17 @@ export class ReviewView extends ItemView {
                 return;
             }
 
-            // Build review queue
+            // Get persistent stats for today
+            const reviewedToday = await this.sessionPersistence.getReviewedToday();
+            const newCardsStudiedToday = await this.sessionPersistence.getNewCardsStudiedToday();
+
+            // Build review queue with persistent stats and deck filter
             const queue = this.reviewService.buildQueue(allCards, this.fsrsService, {
                 newCardsLimit: this.plugin.settings.newCardsPerDay,
                 reviewsLimit: this.plugin.settings.reviewsPerDay,
+                reviewedToday,
+                newCardsStudiedToday,
+                deckFilter: this.deckFilter,
             });
 
             if (queue.length === 0) {
@@ -617,13 +651,18 @@ export class ReviewView extends ItemView {
         const card = this.stateManager.getCurrentCard();
         if (!card) return;
 
+        const responseTime = Date.now() - this.stateManager.getState().questionShownTime;
+
         // Process the answer
         const { updatedCard } = this.reviewService.processAnswer(
             card,
             rating,
             this.fsrsService,
-            Date.now() - this.stateManager.getState().questionShownTime
+            responseTime
         );
+
+        // Check if this was a new card (before state update)
+        const isNewCard = card.fsrs.state === State.New;
 
         // Save to file
         try {
@@ -635,6 +674,13 @@ export class ReviewView extends ItemView {
             );
         } catch (error) {
             console.error("Error saving card:", error);
+        }
+
+        // Record to persistent storage
+        try {
+            await this.sessionPersistence.recordReview(card.id, isNewCard, responseTime);
+        } catch (error) {
+            console.error("Error recording review to persistent storage:", error);
         }
 
         // Record the answer
