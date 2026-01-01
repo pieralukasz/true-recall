@@ -1,8 +1,209 @@
-/*
+/* Shadow Anki Settings Styles */
+.shadow-anki-api-input {
+    width: 300px;
+}
 
-This CSS file will be included with your plugin, and
-available in the app when your plugin is enabled.
+/* Shadow Anki Panel Styles */
 
-If your plugin does not need CSS, delete this file.
+.shadow-anki-panel {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    padding: 12px;
+}
 
-*/
+/* Header Section */
+.shadow-anki-header {
+    border-bottom: 1px solid var(--background-modifier-border);
+    padding-bottom: 12px;
+    margin-bottom: 12px;
+}
+
+.shadow-anki-title-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.shadow-anki-status {
+    font-size: 12px;
+    flex-shrink: 0;
+}
+
+.shadow-anki-title {
+    font-weight: 600;
+    font-size: 14px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    color: var(--text-normal);
+    flex: 1;
+}
+
+.shadow-anki-open-btn {
+    cursor: pointer;
+    opacity: 0.7;
+    font-size: 14px;
+    padding: 2px 4px;
+    border-radius: 4px;
+    flex-shrink: 0;
+}
+
+.shadow-anki-open-btn:hover {
+    opacity: 1;
+    background-color: var(--background-modifier-hover);
+}
+
+/* Content Section */
+.shadow-anki-content {
+    flex: 1;
+    overflow-y: auto;
+}
+
+.shadow-anki-empty,
+.shadow-anki-no-cards {
+    color: var(--text-muted);
+    text-align: center;
+    padding: 24px 12px;
+}
+
+.shadow-anki-no-cards p {
+    margin: 8px 0;
+}
+
+.shadow-anki-word-count {
+    font-size: 12px;
+    color: var(--text-faint);
+}
+
+/* Preview State */
+.shadow-anki-preview {
+    padding: 8px 0;
+}
+
+.shadow-anki-card-count {
+    font-size: 15px;
+    font-weight: 500;
+    margin: 0 0 8px 0;
+    color: var(--text-normal);
+}
+
+.shadow-anki-meta {
+    font-size: 12px;
+    color: var(--text-muted);
+    margin: 4px 0;
+}
+
+/* Meta Row */
+.shadow-anki-meta-row {
+    margin-bottom: 12px;
+}
+
+.shadow-anki-meta-row .shadow-anki-card-count {
+    font-size: 13px;
+    font-weight: 500;
+    margin: 0;
+}
+
+.shadow-anki-meta-row .shadow-anki-meta {
+    font-size: 13px;
+    margin: 0;
+}
+
+/* Flashcard Cards */
+.shadow-anki-cards-container {
+    margin-bottom: 12px;
+}
+
+.shadow-anki-card {
+    padding: 10px;
+    background: var(--background-secondary);
+    border-radius: 6px;
+    margin-bottom: 8px;
+}
+
+.shadow-anki-card-question,
+.shadow-anki-card-answer {
+    font-size: 13px;
+    line-height: 1.5;
+    color: var(--text-normal);
+}
+
+.shadow-anki-card-question {
+    margin-bottom: 6px;
+}
+
+.shadow-anki-card-label {
+    font-weight: 600;
+    color: var(--text-muted);
+}
+
+.shadow-anki-card-separator {
+    height: 1px;
+    background: var(--background-modifier-border);
+    margin: 4px 0;
+    display: none; /* Cards already have margin-bottom */
+}
+
+/* Wikilinks - styled like Obsidian internal links */
+.shadow-anki-wikilink {
+    color: var(--link-color);
+    cursor: pointer;
+    text-decoration: none;
+}
+
+.shadow-anki-wikilink:hover {
+    color: var(--link-color-hover);
+    text-decoration: underline;
+}
+
+/* Footer Section */
+.shadow-anki-footer {
+    border-top: 1px solid var(--background-modifier-border);
+    padding-top: 12px;
+    margin-top: auto;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+/* Buttons */
+.shadow-anki-btn-primary {
+    background-color: var(--interactive-accent);
+    color: var(--text-on-accent);
+    border: none;
+    padding: 10px 16px;
+    border-radius: 6px;
+    cursor: pointer;
+    font-weight: 500;
+    font-size: 14px;
+    width: 100%;
+    transition: background-color 0.15s ease;
+}
+
+.shadow-anki-btn-primary:hover:not(:disabled) {
+    background-color: var(--interactive-accent-hover);
+}
+
+.shadow-anki-btn-primary:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+}
+
+.shadow-anki-btn-secondary,
+.shadow-anki-btn-sync {
+    background-color: var(--background-modifier-border);
+    color: var(--text-normal);
+    border: none;
+    padding: 8px 12px;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 13px;
+    width: 100%;
+    transition: background-color 0.15s ease;
+}
+
+.shadow-anki-btn-secondary:hover,
+.shadow-anki-btn-sync:hover {
+    background-color: var(--background-modifier-hover);
+}
