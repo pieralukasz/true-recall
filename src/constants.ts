@@ -1,7 +1,16 @@
-// View type identifier for the sidebar panel
+import type { ShadowAnkiSettings } from "./types/settings.types";
+
+// ===== View Types =====
+
+/** View type identifier for the sidebar panel */
 export const VIEW_TYPE_FLASHCARD_PANEL = "shadow-anki-flashcard-panel";
 
-// AI Models available via OpenRouter
+/** View type identifier for the review session */
+export const VIEW_TYPE_REVIEW = "shadow-anki-review";
+
+// ===== AI Models =====
+
+/** AI Models available via OpenRouter */
 export const AI_MODELS = {
 	"google/gemini-3-flash-preview": "Gemini 3 Flash (Google)",
 	"google/gemini-2.5-pro-preview": "Gemini 2.5 Pro (Google)",
@@ -14,20 +23,70 @@ export const AI_MODELS = {
 
 export type AIModelKey = keyof typeof AI_MODELS;
 
-// Default settings values
-export const DEFAULT_SETTINGS = {
+// ===== Default Settings =====
+
+/** Default plugin settings */
+export const DEFAULT_SETTINGS: ShadowAnkiSettings = {
+	// AI Generation
 	openRouterApiKey: "",
 	aiModel: "google/gemini-3-flash-preview" as AIModelKey,
 	flashcardsFolder: "Flashcards",
-	autoSyncToAnki: true,
-	storeSourceContent: false,
+	storeSourceContent: true, // Włączone dla lepszego diff
+
+	// FSRS Algorithm
+	fsrsRequestRetention: 0.9, // 90% retention
+	fsrsMaximumInterval: 36500, // 100 lat
+	newCardsPerDay: 20,
+	reviewsPerDay: 200,
+
+	// FSRS Learning Steps
+	learningSteps: [1, 10], // 1min, 10min
+	relearningSteps: [10], // 10min
+	graduatingInterval: 1, // 1 dzień
+	easyInterval: 4, // 4 dni
+
+	// FSRS Parameters
+	fsrsWeights: null, // null = domyślne wagi ts-fsrs
+	lastOptimization: null,
+
+	// UI
+	reviewMode: "fullscreen",
+	showNextReviewTime: true,
+	autoAdvance: false,
+	showProgress: true,
 };
+
+// ===== FSRS Default Weights =====
+
+/**
+ * Domyślne wagi FSRS v5 (19 parametrów)
+ * @see https://github.com/open-spaced-repetition/fsrs4anki/wiki/The-Algorithm
+ */
+export const DEFAULT_FSRS_WEIGHTS = [
+	0.40255, // w0: initial stability for Again
+	1.18385, // w1: initial stability for Hard
+	3.173, // w2: initial stability for Good
+	15.69105, // w3: initial stability for Easy
+	7.1949, // w4: difficulty at first review
+	0.5345, // w5: difficulty change factor
+	1.4604, // w6: difficulty change rate
+	0.0046, // w7: mean reversion
+	1.54575, // w8: recall stability increase
+	0.1192, // w9: stability exponent
+	1.01925, // w10: retrievability factor
+	1.9395, // w11: forget stability base
+	0.11, // w12: difficulty factor for forget
+	0.29605, // w13: stability factor for forget
+	2.2698, // w14: retrievability factor for forget
+	0.2315, // w15: hard penalty
+	2.9898, // w16: easy bonus
+	0.51655, // w17: short-term stability factor
+	0.6621, // w18: short-term stability offset
+] as const;
 
 // ===== API Configuration =====
 
-/**
- * OpenRouter API configuration
- */
+/** OpenRouter API configuration */
 export const API_CONFIG = {
 	endpoint: "https://openrouter.ai/api/v1/chat/completions",
 	timeout: 60000, // 60 seconds
@@ -37,20 +96,9 @@ export const API_CONFIG = {
 	retryDelay: 1000, // 1 second
 } as const;
 
-/**
- * AnkiConnect configuration
- */
-export const ANKI_CONFIG = {
-	endpoint: "http://127.0.0.1:8765",
-	version: 6,
-	timeout: 10000, // 10 seconds
-} as const;
-
 // ===== UI Configuration =====
 
-/**
- * UI-related constants
- */
+/** UI-related constants */
 export const UI_CONFIG = {
 	maxTitleLength: 30,
 	animationDuration: 150, // ms
@@ -59,18 +107,35 @@ export const UI_CONFIG = {
 
 // ===== Flashcard Configuration =====
 
-/**
- * Flashcard file naming and format constants
- */
+/** Flashcard file naming and format constants */
 export const FLASHCARD_CONFIG = {
 	filePrefix: "flashcards_",
 	defaultFolder: "Flashcards",
 	tag: "#flashcard",
 	sourceContentStartMarker: "<!-- SOURCE_NOTE_CONTENT",
 	sourceContentEndMarker: "END_SOURCE_NOTE_CONTENT -->",
+	fsrsDataPrefix: "<!--fsrs:",
+	fsrsDataSuffix: "-->",
+	reviewHistoryFile: ".review-history.json",
 } as const;
 
-// System prompt for flashcard generation
+// ===== FSRS Configuration =====
+
+/** FSRS algorithm configuration */
+export const FSRS_CONFIG = {
+	/** Minimalna liczba powtórek do optymalizacji */
+	minReviewsForOptimization: 400,
+	/** Zalecana liczba powtórek do optymalizacji */
+	recommendedReviewsForOptimization: 1000,
+	/** Minimalna retencja */
+	minRetention: 0.7,
+	/** Maksymalna retencja */
+	maxRetention: 0.99,
+} as const;
+
+// ===== System Prompts =====
+
+/** System prompt for flashcard generation */
 export const SYSTEM_PROMPT = `You are an expert flashcard generator. Your task is to analyze the provided text and generate flashcards.
 
 ROLE: Expert Flashcard Architect (SuperMemo Mastery).
@@ -115,7 +180,7 @@ Reddening of the skin
 How does advanced **[[rosacea]]** manifest? #flashcard
 **[[Papulopustular changes]]**`;
 
-// System prompt for update mode (diff-based)
+/** System prompt for update mode (diff-based) */
 export const UPDATE_SYSTEM_PROMPT = `You are an expert flashcard generator working in DIFF MODE.
 
 Your task is to analyze the note content and compare it with existing flashcards to propose:
@@ -175,6 +240,6 @@ CRITICAL RULES - READ CAREFULLY:
 EXISTING FLASHCARDS:
 `;
 
-// OpenRouter API endpoint
+/** OpenRouter API endpoint */
 export const OPENROUTER_API_URL =
 	"https://openrouter.ai/api/v1/chat/completions";

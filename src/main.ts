@@ -1,8 +1,9 @@
-import { Plugin, TFile } from "obsidian";
-import { VIEW_TYPE_FLASHCARD_PANEL } from "./constants";
-import { FlashcardManager, OpenRouterService, AnkiService } from "./services";
+import { Plugin, TFile, Notice } from "obsidian";
+import { VIEW_TYPE_FLASHCARD_PANEL, VIEW_TYPE_REVIEW } from "./constants";
+import { FlashcardManager, OpenRouterService } from "./services";
 import {
     FlashcardPanelView,
+    ReviewView,
     ShadowAnkiSettingTab,
     type ShadowAnkiSettings,
     DEFAULT_SETTINGS,
@@ -12,7 +13,6 @@ export default class ShadowAnkiPlugin extends Plugin {
     settings!: ShadowAnkiSettings;
     flashcardManager!: FlashcardManager;
     openRouterService!: OpenRouterService;
-    ankiService!: AnkiService;
 
     async onload(): Promise<void> {
         await this.loadSettings();
@@ -23,7 +23,6 @@ export default class ShadowAnkiPlugin extends Plugin {
             this.settings.openRouterApiKey,
             this.settings.aiModel
         );
-        this.ankiService = new AnkiService();
 
         // Register the sidebar view
         this.registerView(
@@ -31,9 +30,15 @@ export default class ShadowAnkiPlugin extends Plugin {
             (leaf) => new FlashcardPanelView(leaf, this)
         );
 
-        // Add ribbon icon to open the panel
-        this.addRibbonIcon("layers", "Shadow Anki", () => {
-            void this.activateView();
+        // Register the review view
+        this.registerView(
+            VIEW_TYPE_REVIEW,
+            (leaf) => new ReviewView(leaf, this)
+        );
+
+        // Add ribbon icon to start review
+        this.addRibbonIcon("brain", "Shadow Anki - Study", () => {
+            void this.startReviewSession();
         });
 
         // Register commands
@@ -55,6 +60,33 @@ export default class ShadowAnkiPlugin extends Plugin {
                     return true;
                 }
                 return false;
+            }
+        });
+
+        // Review session command
+        this.addCommand({
+            id: "start-review",
+            name: "Start review session",
+            callback: () => void this.startReviewSession()
+        });
+
+        // Migrate flashcards command
+        this.addCommand({
+            id: "migrate-to-fsrs",
+            name: "Migrate flashcards to FSRS format",
+            callback: async () => {
+                const result = await this.flashcardManager.migrateToFSRS();
+                new Notice(`Migration complete: ${result.migrated}/${result.total} cards migrated`);
+            }
+        });
+
+        // Remove all FSRS data (for testing)
+        this.addCommand({
+            id: "remove-all-fsrs",
+            name: "Remove all FSRS data (for testing)",
+            callback: async () => {
+                const result = await this.flashcardManager.removeAllFSRSData();
+                new Notice(`Removed FSRS: ${result.entriesRemoved} entries from ${result.filesModified} files`);
             }
         });
 
@@ -134,5 +166,42 @@ export default class ShadowAnkiPlugin extends Plugin {
                 void view.handleFileChange(file);
             }
         });
+    }
+
+    // Start a review session
+    async startReviewSession(): Promise<void> {
+        const { workspace } = this.app;
+
+        // Check if review view already exists
+        const existingLeaves = workspace.getLeavesOfType(VIEW_TYPE_REVIEW);
+        if (existingLeaves.length > 0) {
+            // Focus existing review view
+            const leaf = existingLeaves[0];
+            if (leaf) {
+                workspace.revealLeaf(leaf);
+            }
+            return;
+        }
+
+        // Open review view based on settings
+        if (this.settings.reviewMode === "fullscreen") {
+            // Open in main area
+            const leaf = workspace.getLeaf(true);
+            await leaf.setViewState({
+                type: VIEW_TYPE_REVIEW,
+                active: true,
+            });
+            workspace.revealLeaf(leaf);
+        } else {
+            // Open in right panel
+            const rightLeaf = workspace.getRightLeaf(false);
+            if (rightLeaf) {
+                await rightLeaf.setViewState({
+                    type: VIEW_TYPE_REVIEW,
+                    active: true,
+                });
+                workspace.revealLeaf(rightLeaf);
+            }
+        }
     }
 }

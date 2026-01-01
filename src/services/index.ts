@@ -3,5 +3,6 @@
  */
 
 export { OpenRouterService, type DiffResult } from "./openrouter.service";
-export { AnkiService, type AnkiNoteInfo } from "./anki.service";
 export { FlashcardManager, type FlashcardInfo } from "./flashcard.service";
+export { FSRSService } from "./fsrs.service";
+export { ReviewService, type QueueBuildOptions } from "./review.service";

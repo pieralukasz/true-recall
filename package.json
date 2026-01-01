@@ -30,6 +30,7 @@
 	},
 	"dependencies": {
 		"obsidian": "latest",
+		"ts-fsrs": "^5.2.3",
 		"zod": "^4.3.4"
 	}
 }

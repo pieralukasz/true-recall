@@ -6,7 +6,8 @@ import { App, TFile, normalizePath, WorkspaceLeaf } from "obsidian";
 import { FLASHCARD_CONFIG } from "../constants";
 import { type FlashcardItem, type FlashcardChange } from "../validation";
 import { FileError } from "../errors";
-import type { ShadowAnkiSettings } from "../types";
+import type { ShadowAnkiSettings, FSRSCardData, FSRSFlashcardItem } from "../types";
+import { createDefaultFSRSData } from "../types";
 
 /**
  * Flashcard file information
@@ -466,5 +467,325 @@ tags: [flashcards/auto]
         }
 
         return lines;
+    }
+
+    // ===== FSRS Methods =====
+
+    /**
+     * Get all flashcards with FSRS data from all flashcard files
+     */
+    async getAllFSRSCards(): Promise<FSRSFlashcardItem[]> {
+        const allCards: FSRSFlashcardItem[] = [];
+        const folderPath = normalizePath(this.settings.flashcardsFolder);
+        const folder = this.app.vault.getAbstractFileByPath(folderPath);
+
+        if (!folder) {
+            return allCards;
+        }
+
+        // Get all markdown files in the flashcards folder
+        const files = this.app.vault.getMarkdownFiles().filter(
+            (file) => file.path.startsWith(folderPath + "/") &&
+                      file.name.startsWith(FLASHCARD_CONFIG.filePrefix)
+        );
+
+        for (const file of files) {
+            const cards = await this.extractFSRSCards(file);
+            allCards.push(...cards);
+        }
+
+        return allCards;
+    }
+
+    /**
+     * Extract flashcards with FSRS data from a single file
+     */
+    async extractFSRSCards(file: TFile): Promise<FSRSFlashcardItem[]> {
+        const content = await this.app.vault.read(file);
+        return this.parseFSRSFlashcards(content, file.path);
+    }
+
+    /**
+     * Parse flashcard content and extract FSRS data
+     */
+    private parseFSRSFlashcards(content: string, filePath: string): FSRSFlashcardItem[] {
+        const flashcards: FSRSFlashcardItem[] = [];
+        const lines = content.split("\n");
+        const flashcardPattern = new RegExp(`^(.+?)\\s*${FLASHCARD_CONFIG.tag}\\s*$`);
+        const fsrsPattern = new RegExp(
+            `${FLASHCARD_CONFIG.fsrsDataPrefix}(.+?)${FLASHCARD_CONFIG.fsrsDataSuffix}`
+        );
+
+        for (let i = 0; i < lines.length; i++) {
+            const line = lines[i] ?? "";
+            const match = line.match(flashcardPattern);
+
+            if (match?.[1]) {
+                const question = match[1].trim();
+                const questionLineNumber = i + 1;
+                const answerLines: string[] = [];
+                let fsrsData: FSRSCardData | null = null;
+
+                i++;
+                while (i < lines.length) {
+                    const answerLine = lines[i] ?? "";
+
+                    // Check for FSRS data comment
+                    const fsrsMatch = answerLine.match(fsrsPattern);
+                    if (fsrsMatch?.[1]) {
+                        try {
+                            fsrsData = JSON.parse(fsrsMatch[1]) as FSRSCardData;
+                        } catch {
+                            // Invalid JSON, skip
+                        }
+                        i++;
+                        continue;
+                    }
+
+                    // Skip ID: lines (legacy)
+                    if (answerLine.match(/^ID:\s*\d+/)) {
+                        i++;
+                        continue;
+                    }
+
+                    if (answerLine.trim() === "" || this.isFlashcardLine(answerLine)) {
+                        i--;
+                        break;
+                    }
+
+                    answerLines.push(answerLine);
+                    i++;
+                }
+
+                const answer = answerLines.join("\n").trim();
+                if (question) {
+                    // Generate FSRS data if not present
+                    if (!fsrsData) {
+                        fsrsData = createDefaultFSRSData(this.generateCardId());
+                    }
+
+                    flashcards.push({
+                        id: fsrsData.id,
+                        question,
+                        answer,
+                        lineNumber: questionLineNumber,
+                        filePath,
+                        fsrs: fsrsData,
+                    });
+                }
+            }
+        }
+
+        return flashcards;
+    }
+
+    /**
+     * Update FSRS data for a specific card in a file
+     */
+    async updateCardFSRS(
+        filePath: string,
+        cardId: string,
+        newFSRSData: FSRSCardData,
+        lineNumber: number
+    ): Promise<void> {
+        const file = this.app.vault.getAbstractFileByPath(filePath);
+        if (!(file instanceof TFile)) {
+            throw new FileError("Flashcard file not found", filePath, "read");
+        }
+
+        const content = await this.app.vault.read(file);
+        const lines = content.split("\n");
+        const flashcardPattern = new RegExp(`^(.+?)\\s*${FLASHCARD_CONFIG.tag}\\s*$`);
+        const fsrsPattern = new RegExp(
+            `${FLASHCARD_CONFIG.fsrsDataPrefix}(.+?)${FLASHCARD_CONFIG.fsrsDataSuffix}`
+        );
+
+        let modified = false;
+
+        for (let i = 0; i < lines.length; i++) {
+            const line = lines[i] ?? "";
+            const match = line.match(flashcardPattern);
+
+            if (match) {
+                // Found a flashcard, look for FSRS data in next lines
+                let foundFsrs = false;
+                let fsrsLineIndex = -1;
+
+                for (let j = i + 1; j < lines.length; j++) {
+                    const checkLine = lines[j] ?? "";
+                    if (checkLine.trim() === "" || this.isFlashcardLine(checkLine)) {
+                        break;
+                    }
+
+                    const fsrsMatch = checkLine.match(fsrsPattern);
+                    if (fsrsMatch?.[1]) {
+                        try {
+                            const existingData = JSON.parse(fsrsMatch[1]) as FSRSCardData;
+                            if (existingData.id === cardId) {
+                                foundFsrs = true;
+                                fsrsLineIndex = j;
+                                break;
+                            }
+                        } catch {
+                            // Invalid JSON
+                        }
+                    }
+                }
+
+                if (foundFsrs && fsrsLineIndex >= 0) {
+                    // Update existing FSRS line
+                    lines[fsrsLineIndex] = this.serializeFSRSData(newFSRSData);
+                    modified = true;
+                    break;
+                } else if (i === lineNumber - 1) {
+                    // Card without FSRS - insert new FSRS data after answer
+                    let insertIndex = i + 1;
+                    while (insertIndex < lines.length) {
+                        const checkLine = lines[insertIndex] ?? "";
+                        if (checkLine.trim() === "" || this.isFlashcardLine(checkLine)) {
+                            break;
+                        }
+                        insertIndex++;
+                    }
+                    lines.splice(insertIndex, 0, this.serializeFSRSData(newFSRSData));
+                    modified = true;
+                    break;
+                }
+            }
+        }
+
+        if (modified) {
+            const newContent = lines.join("\n");
+            await this.app.vault.modify(file, newContent);
+        }
+    }
+
+    /**
+     * Migrate all existing flashcards to include FSRS data
+     */
+    async migrateToFSRS(): Promise<{ migrated: number; total: number }> {
+        const folderPath = normalizePath(this.settings.flashcardsFolder);
+        const files = this.app.vault.getMarkdownFiles().filter(
+            (file) => file.path.startsWith(folderPath + "/") &&
+                      file.name.startsWith(FLASHCARD_CONFIG.filePrefix)
+        );
+
+        let migrated = 0;
+        let total = 0;
+
+        for (const file of files) {
+            const result = await this.migrateFileFSRS(file);
+            migrated += result.migrated;
+            total += result.total;
+        }
+
+        return { migrated, total };
+    }
+
+    /**
+     * Migrate a single file to FSRS format
+     */
+    private async migrateFileFSRS(file: TFile): Promise<{ migrated: number; total: number }> {
+        const content = await this.app.vault.read(file);
+        const lines = content.split("\n");
+        const flashcardPattern = new RegExp(`^(.+?)\\s*${FLASHCARD_CONFIG.tag}\\s*$`);
+        const fsrsPattern = new RegExp(
+            `${FLASHCARD_CONFIG.fsrsDataPrefix}(.+?)${FLASHCARD_CONFIG.fsrsDataSuffix}`
+        );
+
+        let migrated = 0;
+        let total = 0;
+        const insertions: { index: number; line: string }[] = [];
+
+        for (let i = 0; i < lines.length; i++) {
+            const line = lines[i] ?? "";
+            const match = line.match(flashcardPattern);
+
+            if (match) {
+                total++;
+
+                // Check if this card already has FSRS data
+                let hasFsrs = false;
+                let endOfCard = i + 1;
+
+                for (let j = i + 1; j < lines.length; j++) {
+                    const checkLine = lines[j] ?? "";
+                    if (checkLine.trim() === "" || this.isFlashcardLine(checkLine)) {
+                        endOfCard = j;
+                        break;
+                    }
+                    if (checkLine.match(fsrsPattern)) {
+                        hasFsrs = true;
+                        break;
+                    }
+                    endOfCard = j + 1;
+                }
+
+                if (!hasFsrs) {
+                    // Need to add FSRS data
+                    const fsrsData = createDefaultFSRSData(this.generateCardId());
+                    insertions.push({
+                        index: endOfCard,
+                        line: this.serializeFSRSData(fsrsData),
+                    });
+                    migrated++;
+                }
+            }
+        }
+
+        // Apply insertions in reverse order to preserve indices
+        insertions.sort((a, b) => b.index - a.index);
+        for (const insertion of insertions) {
+            lines.splice(insertion.index, 0, insertion.line);
+        }
+
+        if (migrated > 0) {
+            const newContent = lines.join("\n");
+            await this.app.vault.modify(file, newContent);
+        }
+
+        return { migrated, total };
+    }
+
+    /**
+     * Serialize FSRS data to comment format
+     */
+    private serializeFSRSData(data: FSRSCardData): string {
+        return `${FLASHCARD_CONFIG.fsrsDataPrefix}${JSON.stringify(data)}${FLASHCARD_CONFIG.fsrsDataSuffix}`;
+    }
+
+    /**
+     * Generate unique card ID
+     */
+    private generateCardId(): string {
+        return crypto.randomUUID();
+    }
+
+    /**
+     * Remove all FSRS data from all flashcard files (for testing)
+     */
+    async removeAllFSRSData(): Promise<{ filesModified: number; entriesRemoved: number }> {
+        const folderPath = normalizePath(this.settings.flashcardsFolder);
+        const files = this.app.vault.getMarkdownFiles().filter(
+            (file) => file.path.startsWith(folderPath + "/") &&
+                      file.name.startsWith(FLASHCARD_CONFIG.filePrefix)
+        );
+
+        let filesModified = 0;
+        let entriesRemoved = 0;
+        const fsrsPattern = /<!--fsrs:\{.*?\}-->\n?/g;
+
+        for (const file of files) {
+            const content = await this.app.vault.read(file);
+            const matches = content.match(fsrsPattern);
+            if (matches && matches.length > 0) {
+                const newContent = content.replace(fsrsPattern, "");
+                await this.app.vault.modify(file, newContent);
+                filesModified++;
+                entriesRemoved += matches.length;
+            }
+        }
+
+        return { filesModified, entriesRemoved };
     }
 }

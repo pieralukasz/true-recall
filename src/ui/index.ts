@@ -13,3 +13,6 @@ export * from "./panel";
 
 // Settings
 export * from "./settings";
+
+// Review components
+export * from "./review";
