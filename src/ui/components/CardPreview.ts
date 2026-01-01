@@ -69,6 +69,9 @@ export class CardPreview extends BaseComponent {
 
 		// Answer section
 		this.renderAnswer();
+
+		// Setup internal link handler
+		this.setupInternalLinkHandler();
 	}
 
 	private renderQuestion(header: HTMLElement): void {
@@ -153,6 +156,36 @@ export class CardPreview extends BaseComponent {
 				handlers.onDelete?.(flashcard);
 			});
 		}
+	}
+
+	/**
+	 * Setup click handler for internal links
+	 * Uses capture phase to intercept before Obsidian's handlers
+	 */
+	private setupInternalLinkHandler(): void {
+		if (!this.element) return;
+
+		const { filePath, handlers } = this.props;
+
+		this.element.addEventListener("click", (e: MouseEvent) => {
+			const linkEl = (e.target as HTMLElement).closest("a.internal-link");
+			if (!linkEl) return;
+
+			e.preventDefault();
+			e.stopPropagation();
+			e.stopImmediatePropagation();
+
+			const href = linkEl.getAttribute("data-href");
+			if (!href) return;
+
+			// Open in existing tab if available
+			const existingLeaf = handlers.app.workspace.getMostRecentLeaf();
+			if (existingLeaf) {
+				void handlers.app.workspace.openLinkText(href, filePath, false);
+			} else {
+				void handlers.app.workspace.openLinkText(href, filePath, "tab");
+			}
+		}, true); // capture: true
 	}
 
 	/**
