@@ -315,7 +315,6 @@ Odpowiedź pierwsza
 
 Pytanie drugie? #flashcard
 Odpowiedź druga
-ID: 1234567890
 ```
 
 **Zasady generowania fiszek (z SYSTEM_PROMPT):**
@@ -418,7 +417,6 @@ PanelState = {
 FlashcardItem = {
   question: string,
   answer: string,
-  ankiId?: number,         // ID w Anki
   lineNumber: number       // Linia w pliku
 }
 

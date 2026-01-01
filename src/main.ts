@@ -1,6 +1,7 @@
 import { Plugin, TFile, Notice } from "obsidian";
 import { VIEW_TYPE_FLASHCARD_PANEL, VIEW_TYPE_REVIEW } from "./constants";
-import { FlashcardManager, OpenRouterService } from "./services";
+import { FlashcardManager, OpenRouterService, FSRSService, StatsService } from "./services";
+import { extractFSRSSettings } from "./types";
 import {
     FlashcardPanelView,
     ReviewView,
@@ -13,6 +14,8 @@ export default class ShadowAnkiPlugin extends Plugin {
     settings!: ShadowAnkiSettings;
     flashcardManager!: FlashcardManager;
     openRouterService!: OpenRouterService;
+    fsrsService!: FSRSService;
+    statsService!: StatsService;
 
     async onload(): Promise<void> {
         await this.loadSettings();
@@ -23,6 +26,11 @@ export default class ShadowAnkiPlugin extends Plugin {
             this.settings.openRouterApiKey,
             this.settings.aiModel
         );
+
+        // Initialize FSRS and Stats services
+        const fsrsSettings = extractFSRSSettings(this.settings);
+        this.fsrsService = new FSRSService(fsrsSettings);
+        this.statsService = new StatsService(this.flashcardManager, this.fsrsService);
 
         // Register the sidebar view
         this.registerView(
@@ -90,6 +98,16 @@ export default class ShadowAnkiPlugin extends Plugin {
             }
         });
 
+        // Remove legacy Anki IDs
+        this.addCommand({
+            id: "remove-legacy-ids",
+            name: "Remove legacy Anki IDs from flashcards",
+            callback: async () => {
+                const result = await this.flashcardManager.removeAllLegacyIds();
+                new Notice(`Removed ${result.idsRemoved} legacy IDs from ${result.filesModified} files`);
+            }
+        });
+
         // Register settings tab
         this.addSettingTab(new ShadowAnkiSettingTab(this.app, this));
 
@@ -129,6 +147,10 @@ export default class ShadowAnkiPlugin extends Plugin {
                 this.settings.openRouterApiKey,
                 this.settings.aiModel
             );
+        }
+        if (this.fsrsService) {
+            const fsrsSettings = extractFSRSSettings(this.settings);
+            this.fsrsService.updateSettings(fsrsSettings);
         }
     }
 

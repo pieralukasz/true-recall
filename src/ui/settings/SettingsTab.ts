@@ -243,6 +243,17 @@ export class ShadowAnkiSettingTab extends PluginSettingTab {
                     await this.plugin.saveSettings();
                 }));
 
+        // Show Review Header Stats
+        new Setting(containerEl)
+            .setName("Show header stats")
+            .setDesc("Display new/learning/due counters in review session header")
+            .addToggle(toggle => toggle
+                .setValue(this.plugin.settings.showReviewHeaderStats)
+                .onChange(async (value) => {
+                    this.plugin.settings.showReviewHeaderStats = value;
+                    await this.plugin.saveSettings();
+                }));
+
         // ===== FSRS Parameters Section =====
         containerEl.createEl("h2", { text: "FSRS Parameters" });
 

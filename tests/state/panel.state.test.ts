@@ -28,9 +28,9 @@ function createMockFlashcardInfo(exists: boolean = true): FlashcardInfo {
         cardCount: exists ? 3 : 0,
         questions: exists ? ["Q1", "Q2", "Q3"] : [],
         flashcards: exists ? [
-            { question: "Q1", answer: "A1", ankiId: null, lineNumber: 1 },
-            { question: "Q2", answer: "A2", ankiId: 123, lineNumber: 5 },
-            { question: "Q3", answer: "A3", ankiId: null, lineNumber: 9 },
+            { question: "Q1", answer: "A1", lineNumber: 1 },
+            { question: "Q2", answer: "A2", lineNumber: 5 },
+            { question: "Q3", answer: "A3", lineNumber: 9 },
         ] : [],
         lastModified: exists ? Date.now() : null,
     };

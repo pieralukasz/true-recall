@@ -47,7 +47,6 @@ describe("Zod Schemas", () => {
             const data = {
                 question: "What is TypeScript?",
                 answer: "A typed superset of JavaScript",
-                ankiId: 12345,
                 lineNumber: 10,
             };
 
@@ -59,24 +58,10 @@ describe("Zod Schemas", () => {
             }
         });
 
-        it("should accept null ankiId", () => {
-            const data = {
-                question: "Test",
-                answer: "Answer",
-                ankiId: null,
-                lineNumber: 1,
-            };
-
-            const result = FlashcardItemSchema.safeParse(data);
-
-            expect(result.success).toBe(true);
-        });
-
         it("should reject empty question", () => {
             const data = {
                 question: "",
                 answer: "Answer",
-                ankiId: null,
                 lineNumber: 1,
             };
 
@@ -89,7 +74,6 @@ describe("Zod Schemas", () => {
             const data = {
                 question: "Question",
                 answer: "Answer",
-                ankiId: null,
                 lineNumber: 0,
             };
 
@@ -102,7 +86,6 @@ describe("Zod Schemas", () => {
             const data = {
                 question: "Question",
                 answer: "Answer",
-                ankiId: null,
                 lineNumber: 1.5,
             };
 
