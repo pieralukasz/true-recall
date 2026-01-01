@@ -1,11 +1,10 @@
 {
-	"id": "sample-plugin",
-	"name": "Sample Plugin",
+	"id": "shadow-anki",
+	"name": "Shadow Anki",
 	"version": "1.0.0",
 	"minAppVersion": "0.15.0",
-	"description": "Demonstrates some of the capabilities of the Obsidian API.",
-	"author": "Obsidian",
-	"authorUrl": "https://obsidian.md",
-	"fundingUrl": "https://obsidian.md/pricing",
-	"isDesktopOnly": false
+	"description": "Generate AI-powered flashcards from notes, stored in shadow files for clean source notes. Uses OpenRouter for multi-provider AI access.",
+	"author": "Lukasz Piera",
+	"authorUrl": "",
+	"isDesktopOnly": true
 }
