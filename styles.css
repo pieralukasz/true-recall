@@ -122,11 +122,19 @@
     margin-bottom: 8px;
 }
 
+.shadow-anki-card-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 8px;
+}
+
 .shadow-anki-card-question,
 .shadow-anki-card-answer {
     font-size: 13px;
     line-height: 1.5;
     color: var(--text-normal);
+    flex: 1;
 }
 
 .shadow-anki-card-question {
@@ -136,6 +144,26 @@
 .shadow-anki-card-label {
     font-weight: 600;
     color: var(--text-muted);
+}
+
+.shadow-anki-card-actions {
+    display: flex;
+    gap: 4px;
+    flex-shrink: 0;
+}
+
+.shadow-anki-card-btn {
+    cursor: pointer;
+    opacity: 0.6;
+    font-size: 12px;
+    padding: 2px 4px;
+    border-radius: 4px;
+    transition: opacity 0.15s ease, background-color 0.15s ease;
+}
+
+.shadow-anki-card-btn:hover {
+    opacity: 1;
+    background-color: var(--background-modifier-hover);
 }
 
 .shadow-anki-card-separator {
