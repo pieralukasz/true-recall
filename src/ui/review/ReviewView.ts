@@ -4,7 +4,7 @@
  * Can be displayed in fullscreen (main area) or panel (sidebar)
  */
 import { ItemView, WorkspaceLeaf, MarkdownRenderer, Notice } from "obsidian";
-import { Rating, type Grade } from "ts-fsrs";
+import { Rating, State, type Grade } from "ts-fsrs";
 import { VIEW_TYPE_REVIEW } from "../../constants";
 import { FSRSService, ReviewService, FlashcardManager } from "../../services";
 import { ReviewStateManager } from "../../state";
@@ -154,6 +154,17 @@ export class ReviewView extends ItemView {
         closeBtn.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>`;
         closeBtn.addEventListener("click", () => this.handleClose());
 
+        // Stats badges (if enabled)
+        if (this.plugin.settings.showReviewHeaderStats) {
+            const remaining = this.calculateRemainingByType();
+            const statsContainer = this.headerEl.createDiv({
+                cls: "shadow-anki-review-header-stats",
+            });
+            this.renderHeaderStatBadge(statsContainer, "new", remaining.new);
+            this.renderHeaderStatBadge(statsContainer, "learning", remaining.learning);
+            this.renderHeaderStatBadge(statsContainer, "due", remaining.due);
+        }
+
         // Progress text
         this.headerEl.createDiv({
             cls: "shadow-anki-review-progress-text",
@@ -167,6 +178,36 @@ export class ReviewView extends ItemView {
         });
         editBtn.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg>`;
         editBtn.addEventListener("click", () => this.handleEdit());
+    }
+
+    /**
+     * Calculate remaining cards by type in the current queue
+     */
+    private calculateRemainingByType(): { new: number; learning: number; due: number } {
+        const state = this.stateManager.getState();
+        const remaining = state.queue.slice(state.currentIndex);
+
+        return {
+            new: remaining.filter((c) => c.fsrs.state === State.New).length,
+            learning: remaining.filter(
+                (c) => c.fsrs.state === State.Learning || c.fsrs.state === State.Relearning
+            ).length,
+            due: remaining.filter((c) => c.fsrs.state === State.Review).length,
+        };
+    }
+
+    /**
+     * Render a single stat badge in the header
+     */
+    private renderHeaderStatBadge(
+        container: HTMLElement,
+        type: "new" | "learning" | "due",
+        count: number
+    ): void {
+        const badge = container.createDiv({
+            cls: `shadow-anki-review-stat-badge shadow-anki-review-stat-badge--${type}`,
+        });
+        badge.createSpan({ text: String(count) });
     }
 
     /**

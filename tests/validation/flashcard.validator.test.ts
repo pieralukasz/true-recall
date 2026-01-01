@@ -219,34 +219,18 @@ describe("Flashcard Validator", () => {
 			const item = {
 				question: "What is Zod?",
 				answer: "A TypeScript-first schema validation library",
-				ankiId: 12345,
 				lineNumber: 10,
 			};
 
 			const result = validateFlashcardItem(item);
 
 			expect(result.question).toBe("What is Zod?");
-			expect(result.ankiId).toBe(12345);
-		});
-
-		it("should accept null ankiId", () => {
-			const item = {
-				question: "Test",
-				answer: "Answer",
-				ankiId: null,
-				lineNumber: 1,
-			};
-
-			const result = validateFlashcardItem(item);
-
-			expect(result.ankiId).toBeNull();
 		});
 
 		it("should throw for empty question", () => {
 			const item = {
 				question: "",
 				answer: "Answer",
-				ankiId: null,
 				lineNumber: 1,
 			};
 
@@ -257,7 +241,6 @@ describe("Flashcard Validator", () => {
 			const item = {
 				question: "Question",
 				answer: "Answer",
-				ankiId: null,
 				lineNumber: -1,
 			};
 
@@ -268,8 +251,8 @@ describe("Flashcard Validator", () => {
 	describe("validateFlashcardItems", () => {
 		it("should validate array of items", () => {
 			const items = [
-				{ question: "Q1", answer: "A1", ankiId: null, lineNumber: 1 },
-				{ question: "Q2", answer: "A2", ankiId: 123, lineNumber: 5 },
+				{ question: "Q1", answer: "A1", lineNumber: 1 },
+				{ question: "Q2", answer: "A2", lineNumber: 5 },
 			];
 
 			const result = validateFlashcardItems(items);
@@ -282,13 +265,11 @@ describe("Flashcard Validator", () => {
 				{
 					question: "Valid",
 					answer: "Valid",
-					ankiId: null,
 					lineNumber: 1,
 				},
 				{
 					question: "",
 					answer: "Invalid",
-					ankiId: null,
 					lineNumber: 2,
 				},
 			];
@@ -305,13 +286,11 @@ describe("Flashcard Validator", () => {
 			{
 				question: "Original question",
 				answer: "Original answer",
-				ankiId: 12345,
 				lineNumber: 10,
 			},
 			{
 				question: "Another question",
 				answer: "Another answer",
-				ankiId: null,
 				lineNumber: 20,
 			},
 		];

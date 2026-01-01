@@ -6,7 +6,6 @@
 export interface FlashcardItem {
     question: string;
     answer: string;
-    ankiId: number | null; // ID from Anki (from ID: line)
     lineNumber: number; // Line number in the flashcard file (for editing)
 }
 
