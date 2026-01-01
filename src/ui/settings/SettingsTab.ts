@@ -221,6 +221,28 @@ export class ShadowAnkiSettingTab extends PluginSettingTab {
                 });
             });
 
+        // Show Review Header
+        new Setting(containerEl)
+            .setName("Show review header")
+            .setDesc("Display header with close button, stats and progress in review session")
+            .addToggle(toggle => toggle
+                .setValue(this.plugin.settings.showReviewHeader)
+                .onChange(async (value) => {
+                    this.plugin.settings.showReviewHeader = value;
+                    await this.plugin.saveSettings();
+                }));
+
+        // Show Review Header Stats
+        new Setting(containerEl)
+            .setName("Show header stats")
+            .setDesc("Display new/learning/due counters in review session header")
+            .addToggle(toggle => toggle
+                .setValue(this.plugin.settings.showReviewHeaderStats)
+                .onChange(async (value) => {
+                    this.plugin.settings.showReviewHeaderStats = value;
+                    await this.plugin.saveSettings();
+                }));
+
         // Show Next Review Time
         new Setting(containerEl)
             .setName("Show next review time")
@@ -240,17 +262,6 @@ export class ShadowAnkiSettingTab extends PluginSettingTab {
                 .setValue(this.plugin.settings.showProgress)
                 .onChange(async (value) => {
                     this.plugin.settings.showProgress = value;
-                    await this.plugin.saveSettings();
-                }));
-
-        // Show Review Header Stats
-        new Setting(containerEl)
-            .setName("Show header stats")
-            .setDesc("Display new/learning/due counters in review session header")
-            .addToggle(toggle => toggle
-                .setValue(this.plugin.settings.showReviewHeaderStats)
-                .onChange(async (value) => {
-                    this.plugin.settings.showReviewHeaderStats = value;
                     await this.plugin.saveSettings();
                 }));
 

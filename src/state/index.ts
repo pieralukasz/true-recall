@@ -17,4 +17,5 @@ export {
     createReviewStateManager,
     type ReviewStateListener,
     type ReviewStateSelector,
+    type EditModeState,
 } from "./review.state";
