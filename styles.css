@@ -9,14 +9,14 @@
     display: flex;
     flex-direction: column;
     height: 100%;
-    padding: 12px;
+    padding: 8px;
 }
 
 /* Header Section */
 .shadow-anki-header {
     border-bottom: 1px solid var(--background-modifier-border);
-    padding-bottom: 12px;
-    margin-bottom: 12px;
+    padding-bottom: 8px;
+    margin-bottom: 8px;
 }
 
 .shadow-anki-title-row {
@@ -64,7 +64,7 @@
 .shadow-anki-no-cards {
     color: var(--text-muted);
     text-align: center;
-    padding: 24px 12px;
+    padding: 16px 8px;
 }
 
 .shadow-anki-no-cards p {
@@ -82,8 +82,8 @@
     flex-direction: column;
     align-items: center;
     justify-content: center;
-    padding: 48px 12px;
-    gap: 16px;
+    padding: 24px 8px;
+    gap: 12px;
 }
 
 .shadow-anki-spinner {
@@ -125,7 +125,7 @@
 
 /* Meta Row */
 .shadow-anki-meta-row {
-    margin-bottom: 12px;
+    margin-bottom: 8px;
 }
 
 .shadow-anki-meta-row .shadow-anki-card-count {
@@ -141,14 +141,14 @@
 
 /* Flashcard Cards */
 .shadow-anki-cards-container {
-    margin-bottom: 12px;
+    margin-bottom: 8px;
 }
 
 .shadow-anki-card {
-    padding: 10px;
+    padding: 8px;
     background: var(--background-secondary);
     border-radius: 6px;
-    margin-bottom: 8px;
+    margin-bottom: 6px;
 }
 
 .shadow-anki-card-header {
@@ -224,14 +224,29 @@
     margin: 0;
 }
 
+/* Poprawka dla linków w markdown content */
+.shadow-anki-md-content a.internal-link,
+.shadow-anki-md-content a.external-link,
+.shadow-anki-md-content a {
+    color: var(--link-color);
+    cursor: pointer;
+    text-decoration: none;
+    pointer-events: auto;
+}
+
+.shadow-anki-md-content a:hover {
+    color: var(--link-color-hover);
+    text-decoration: underline;
+}
+
 /* Footer Section */
 .shadow-anki-footer {
     border-top: 1px solid var(--background-modifier-border);
-    padding-top: 12px;
+    padding-top: 8px;
     margin-top: auto;
     display: flex;
     flex-direction: column;
-    gap: 8px;
+    gap: 6px;
 }
 
 /* Buttons */
@@ -239,7 +254,7 @@
     background-color: var(--interactive-accent);
     color: var(--text-on-accent);
     border: none;
-    padding: 10px 16px;
+    padding: 8px 12px;
     border-radius: 6px;
     cursor: pointer;
     font-weight: 500;
@@ -262,7 +277,7 @@
     background-color: var(--background-modifier-border);
     color: var(--text-normal);
     border: none;
-    padding: 8px 12px;
+    padding: 6px 10px;
     border-radius: 6px;
     cursor: pointer;
     font-size: 13px;
@@ -273,4 +288,159 @@
 .shadow-anki-btn-secondary:hover,
 .shadow-anki-btn-sync:hover {
     background-color: var(--background-modifier-hover);
+}
+
+/* ============================================
+   DIFF VIEW STYLES
+   ============================================ */
+
+.shadow-anki-diff {
+    padding: 8px 0;
+}
+
+.shadow-anki-diff-header {
+    margin-bottom: 12px;
+}
+
+.shadow-anki-diff-title {
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--text-normal);
+}
+
+.shadow-anki-diff-empty {
+    color: var(--text-muted);
+    text-align: center;
+    padding: 24px 12px;
+}
+
+.shadow-anki-diff-changes {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+/* Diff Card Base */
+.shadow-anki-diff-card {
+    padding: 12px;
+    background: var(--background-secondary);
+    border-radius: 6px;
+    border-left: 3px solid var(--text-muted);
+    transition: opacity 0.2s ease;
+}
+
+/* Card type variants */
+.shadow-anki-diff-card--new {
+    border-left-color: var(--color-green, #4ade80);
+}
+
+.shadow-anki-diff-card--modified {
+    border-left-color: var(--color-orange, #fb923c);
+}
+
+.shadow-anki-diff-card--deleted {
+    border-left-color: var(--color-red, #f87171);
+}
+
+/* Rejected/unselected state */
+.shadow-anki-diff-card--rejected {
+    opacity: 0.5;
+}
+
+/* Card Header */
+.shadow-anki-diff-card-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 10px;
+}
+
+/* Type Badges */
+.shadow-anki-diff-badge {
+    font-size: 10px;
+    font-weight: 600;
+    text-transform: uppercase;
+    padding: 2px 6px;
+    border-radius: 4px;
+    color: white;
+}
+
+.shadow-anki-diff-badge--new {
+    background-color: var(--color-green, #4ade80);
+    color: #000;
+}
+
+.shadow-anki-diff-badge--modified {
+    background-color: var(--color-orange, #fb923c);
+    color: #000;
+}
+
+.shadow-anki-diff-badge--deleted {
+    background-color: var(--color-red, #f87171);
+    color: #fff;
+}
+
+/* Toggle Checkbox */
+.shadow-anki-diff-toggle {
+    cursor: pointer;
+    width: 16px;
+    height: 16px;
+}
+
+/* Old/New Sections */
+.shadow-anki-diff-old {
+    padding: 8px;
+    background: rgba(255, 100, 100, 0.08);
+    border-radius: 4px;
+    margin-bottom: 4px;
+}
+
+.shadow-anki-diff-new {
+    padding: 8px;
+    background: rgba(100, 255, 100, 0.08);
+    border-radius: 4px;
+}
+
+.shadow-anki-diff-label {
+    font-size: 10px;
+    font-weight: 600;
+    text-transform: uppercase;
+    color: var(--text-muted);
+    margin-bottom: 4px;
+}
+
+.shadow-anki-diff-arrow {
+    text-align: center;
+    color: var(--text-muted);
+    font-size: 16px;
+    padding: 4px 0;
+}
+
+/* Question and Answer in Diff */
+.shadow-anki-diff-question,
+.shadow-anki-diff-answer {
+    font-size: 13px;
+    line-height: 1.5;
+    color: var(--text-normal);
+}
+
+.shadow-anki-diff-question {
+    margin-bottom: 4px;
+}
+
+/* Deleted card content */
+.shadow-anki-diff-deleted-content {
+    padding: 8px;
+    background: rgba(248, 113, 113, 0.08);
+    border-radius: 4px;
+}
+
+/* Reason for deletion */
+.shadow-anki-diff-reason {
+    font-size: 11px;
+    color: var(--text-muted);
+    font-style: italic;
+    margin-top: 8px;
+    padding-top: 8px;
+    border-top: 1px solid var(--background-modifier-border);
 }

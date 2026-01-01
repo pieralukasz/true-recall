@@ -1,5 +1,6 @@
 import { requestUrl, RequestUrlParam } from "obsidian";
-import { SYSTEM_PROMPT, UPDATE_PROMPT_PREFIX, OPENROUTER_API_URL, AIModelKey } from "./constants";
+import { SYSTEM_PROMPT, UPDATE_SYSTEM_PROMPT, OPENROUTER_API_URL, AIModelKey } from "./constants";
+import { FlashcardChange, FlashcardItem, DiffResult } from "./flashcardManager";
 
 // OpenRouter API response types
 interface ChatMessage {
@@ -34,30 +35,127 @@ export class OpenRouterService {
         this.model = model;
     }
 
-    // Generate flashcards from note content
-    async generateFlashcards(
-        noteContent: string,
-        existingQuestions?: string[]
-    ): Promise<string> {
+    // Generate flashcards from note content (for initial generation)
+    async generateFlashcards(noteContent: string): Promise<string> {
         if (!this.apiKey) {
             throw new Error("OpenRouter API key not configured. Please add your API key in settings.");
         }
 
         const messages: ChatMessage[] = [
-            { role: "system", content: SYSTEM_PROMPT }
+            { role: "system", content: SYSTEM_PROMPT },
+            { role: "user", content: noteContent }
         ];
 
-        // Build user message
-        let userContent = noteContent;
+        const content = await this.callOpenRouter(messages);
+        return content.trim();
+    }
 
-        // If updating, add blocklist of existing questions
-        if (existingQuestions && existingQuestions.length > 0) {
-            const blocklist = existingQuestions.map((q, i) => `${i + 1}. ${q}`).join("\n");
-            userContent = UPDATE_PROMPT_PREFIX + blocklist + "\n\n---\n\nNOTE CONTENT:\n" + noteContent;
+    // Generate flashcard diff for update mode
+    async generateFlashcardsDiff(
+        noteContent: string,
+        existingFlashcards: FlashcardItem[]
+    ): Promise<DiffResult> {
+        if (!this.apiKey) {
+            throw new Error("OpenRouter API key not configured. Please add your API key in settings.");
         }
 
-        messages.push({ role: "user", content: userContent });
+        // Build the existing flashcards list for the prompt
+        const existingList = existingFlashcards
+            .map((f, i) => `${i + 1}. Q: ${f.question}\n   A: ${f.answer}`)
+            .join("\n\n");
 
+        const systemPrompt = UPDATE_SYSTEM_PROMPT + existingList;
+
+        const messages: ChatMessage[] = [
+            { role: "system", content: systemPrompt },
+            { role: "user", content: `NOTE CONTENT:\n${noteContent}` }
+        ];
+
+        const content = await this.callOpenRouter(messages);
+
+        // Parse JSON response
+        return this.parseDiffResponse(content, existingFlashcards);
+    }
+
+    // Parse AI response and enrich with original data
+    private parseDiffResponse(content: string, existingFlashcards: FlashcardItem[]): DiffResult {
+        // Try to extract JSON from response (AI might include extra text)
+        const jsonMatch = content.match(/\{[\s\S]*\}/);
+        if (!jsonMatch) {
+            // No JSON found - might be empty or error
+            if (content.includes("NO_NEW_CARDS") || content.trim() === "") {
+                return { changes: [], existingFlashcards };
+            }
+            throw new Error("Invalid response format: no JSON found");
+        }
+
+        try {
+            const parsed = JSON.parse(jsonMatch[0]) as { changes?: unknown[] };
+
+            if (!parsed.changes || !Array.isArray(parsed.changes)) {
+                return { changes: [], existingFlashcards };
+            }
+
+            const changes: FlashcardChange[] = parsed.changes.map((change: unknown) => {
+                const c = change as Record<string, unknown>;
+                const type = c.type as "NEW" | "MODIFIED" | "DELETED";
+
+                // For DELETED, we get question/answer from existing flashcards
+                if (type === "DELETED" && c.originalQuestion) {
+                    const originalQuestion = String(c.originalQuestion);
+                    const existing = existingFlashcards.find(
+                        f => f.question === originalQuestion
+                    );
+
+                    return {
+                        type,
+                        question: existing?.question || originalQuestion,
+                        answer: existing?.answer || "",
+                        originalQuestion,
+                        originalAnswer: existing?.answer,
+                        originalLineNumber: existing?.lineNumber,
+                        reason: c.reason ? String(c.reason) : undefined,
+                        accepted: false // DELETED defaults to rejected (user must explicitly accept)
+                    };
+                }
+
+                // For NEW and MODIFIED
+                const question = String(c.question || "");
+                const answer = String(c.answer || "");
+
+                const result: FlashcardChange = {
+                    type,
+                    question,
+                    answer,
+                    accepted: true // NEW and MODIFIED default to accepted
+                };
+
+                // For MODIFIED, find the original flashcard
+                if (type === "MODIFIED" && c.originalQuestion) {
+                    const originalQuestion = String(c.originalQuestion);
+                    result.originalQuestion = originalQuestion;
+
+                    // Find matching existing flashcard
+                    const existing = existingFlashcards.find(
+                        f => f.question === originalQuestion
+                    );
+                    if (existing) {
+                        result.originalAnswer = existing.answer;
+                        result.originalLineNumber = existing.lineNumber;
+                    }
+                }
+
+                return result;
+            });
+
+            return { changes, existingFlashcards };
+        } catch {
+            throw new Error("Failed to parse AI response as JSON");
+        }
+    }
+
+    // Common OpenRouter API call
+    private async callOpenRouter(messages: ChatMessage[]): Promise<string> {
         const requestBody = {
             model: this.model,
             messages: messages,
@@ -90,16 +188,15 @@ export class OpenRouterService {
                 throw new Error("No content in OpenRouter response");
             }
 
-            return content.trim();
+            return content;
         } catch (error) {
             if (error instanceof Error) {
-                // Re-throw with more context if it's a network error
                 if (error.message.includes("net::")) {
                     throw new Error("Network error: Unable to connect to OpenRouter. Please check your internet connection.");
                 }
                 throw error;
             }
-            throw new Error(`Failed to generate flashcards: ${String(error)}`);
+            throw new Error(`Failed to call OpenRouter: ${String(error)}`);
         }
     }
 }

@@ -67,12 +67,61 @@ Reddening of the skin
 How does advanced **[[rosacea]]** manifest? #flashcard
 **[[Papulopustular changes]]**`;
 
-// Prompt prefix for update/append mode (with blocklist)
-export const UPDATE_PROMPT_PREFIX = `IMPORTANT: The following questions ALREADY EXIST. Do NOT duplicate them. Create NEW flashcards ONLY for information NOT covered by these existing questions.
+// System prompt for update mode (diff-based)
+export const UPDATE_SYSTEM_PROMPT = `You are an expert flashcard generator working in DIFF MODE.
 
-If ALL information is already covered, return ONLY: NO_NEW_CARDS
+Your task is to analyze the note content and compare it with existing flashcards to propose:
+1. NEW flashcards for information not yet covered
+2. MODIFIED flashcards where existing ones can be improved
+3. DELETED flashcards where information is no longer in the note
 
-EXISTING QUESTIONS (DO NOT DUPLICATE):
+FLASHCARD CREATION RULES (same as standard mode):
+- Questions and answers must be as SHORT as possible
+- One flashcard = ONE piece of information
+- Formulate questions and answers UNAMBIGUOUSLY
+- BOLD the keyword in every question using **bold**
+- Wrap key terms in **[[backlinks]]** (bold backlinks)
+- Use <br><br> to split long questions/answers into logical parts
+
+OUTPUT FORMAT - Return ONLY valid JSON:
+{
+  "changes": [
+    {
+      "type": "NEW",
+      "question": "What is **[[term]]**?",
+      "answer": "Definition here"
+    },
+    {
+      "type": "MODIFIED",
+      "originalQuestion": "exact original question text from existing list",
+      "question": "improved question with **[[term]]**",
+      "answer": "improved or corrected answer"
+    },
+    {
+      "type": "DELETED",
+      "originalQuestion": "exact question text to delete",
+      "reason": "brief reason why this should be deleted"
+    }
+  ]
+}
+
+CRITICAL RULES - READ CAREFULLY:
+
+1. **CHECK EACH EXISTING FLASHCARD**: Go through EVERY flashcard in the existing list and verify if its topic appears in the note content.
+
+2. **DELETED** - If a flashcard mentions a topic/concept/term that is NOT mentioned ANYWHERE in the note content, you MUST propose DELETED.
+   - Example: Note talks about "algorithms and YouTube" but flashcard asks about "Vietnam and heroin" → DELETED (reason: "Topic not in note")
+   - Be thorough - if the key concept from the question doesn't appear in the note, propose deletion
+
+3. **MODIFIED** - If the flashcard topic IS in the note but wording/formatting can be improved
+
+4. **NEW** - If there's information in the note not covered by any flashcard
+
+5. "originalQuestion" MUST exactly match one from the existing list (character for character)
+
+6. If truly no changes needed (all flashcards match note content perfectly), return: {"changes": []}
+
+EXISTING FLASHCARDS:
 `;
 
 // OpenRouter API endpoint
