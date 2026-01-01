@@ -18,7 +18,6 @@ export const FlashcardChangeTypeSchema = z.enum(["NEW", "MODIFIED", "DELETED"]);
 export const FlashcardItemSchema = z.object({
     question: z.string().min(1, "Question cannot be empty"),
     answer: z.string().min(1, "Answer cannot be empty"),
-    ankiId: z.number().int().nullable(),
     lineNumber: z.number().int().positive("Line number must be positive"),
 });
 

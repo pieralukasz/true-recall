@@ -10,12 +10,6 @@ Problem: AI czasem generuje dziwne pytania. Obecnie w trybie Diff mogę tylko za
 
 Rozwiązanie: Pozwolić edytować pole tekstowe "New Question/Answer" zanim kliknę "Apply". To pozwoli poprawić halucynacje AI w locie.
 
-Uniezależnienie od obsidian-to-anki:
-
-Ryzyko: Obecna dokumentacja sugeruje użycie innego pluginu do tworzenia kart. To tworzy łańcuch zależności. Jeśli tamten plugin przestanie być wspierany, Twój traci połowę funkcjonalności.
-
-Zmiana: Zaimplementować pełną obsługę AnkiConnect w AnkiService.
-
 Dodatek: Obsługa Deck Mapping. W ustawieniach lub we frontmatterze notatki zdefiniować, do jakiej talii w Anki mają trafiać fiszki (np. anki-deck: Medycyna::Anatomia).
 
 Generowanie kontekstowe (Backlinks Awareness):

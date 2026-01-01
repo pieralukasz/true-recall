@@ -69,14 +69,6 @@ export class CardPreview extends BaseComponent {
 
 		// Answer section
 		this.renderAnswer();
-
-		// // Anki ID if exists
-		// if (flashcard.ankiId) {
-		//     this.element.createDiv({
-		//         text: `Anki ID: ${flashcard.ankiId}`,
-		//         cls: "shadow-anki-card-id",
-		//     });
-		// }
 	}
 
 	private renderQuestion(header: HTMLElement): void {

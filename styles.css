@@ -760,3 +760,40 @@
 .shadow-anki-review-summary-buttons .shadow-anki-btn {
 	padding: 12px 32px;
 }
+
+/* ============================================
+   REVIEW HEADER STATS
+   ============================================ */
+
+.shadow-anki-review-header-stats {
+	display: flex;
+	align-items: center;
+	gap: 6px;
+}
+
+.shadow-anki-review-stat-badge {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	min-width: 20px;
+	height: 20px;
+	padding: 0 6px;
+	border-radius: 10px;
+	font-size: 11px;
+	font-weight: 600;
+}
+
+.shadow-anki-review-stat-badge--new {
+	background: rgba(74, 222, 128, 0.2);
+	color: var(--color-green, #4ade80);
+}
+
+.shadow-anki-review-stat-badge--learning {
+	background: rgba(251, 146, 60, 0.2);
+	color: var(--color-orange, #fb923c);
+}
+
+.shadow-anki-review-stat-badge--due {
+	background: rgba(59, 130, 246, 0.2);
+	color: var(--color-blue, #3b82f6);
+}

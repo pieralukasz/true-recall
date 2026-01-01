@@ -322,15 +322,13 @@ export class FlashcardManager {
                 const question = match[1].trim();
                 const questionLineNumber = i + 1;
                 const answerLines: string[] = [];
-                let ankiId: number | null = null;
 
                 i++;
                 while (i < lines.length) {
                     const answerLine = lines[i] ?? "";
-                    const idMatch = answerLine.match(/^ID:\s*(\d+)/);
 
-                    if (idMatch?.[1]) {
-                        ankiId = parseInt(idMatch[1], 10);
+                    // Skip legacy ID lines
+                    if (/^ID:\s*\d+/.test(answerLine)) {
                         i++;
                         continue;
                     }
@@ -346,7 +344,7 @@ export class FlashcardManager {
 
                 const answer = answerLines.join("\n").trim();
                 if (question) {
-                    flashcards.push({ question, answer, ankiId, lineNumber: questionLineNumber });
+                    flashcards.push({ question, answer, lineNumber: questionLineNumber });
                 }
             }
         }
@@ -787,5 +785,33 @@ tags: [flashcards/auto]
         }
 
         return { filesModified, entriesRemoved };
+    }
+
+    /**
+     * Remove all legacy Anki IDs from flashcard files
+     */
+    async removeAllLegacyIds(): Promise<{ filesModified: number; idsRemoved: number }> {
+        const folderPath = normalizePath(this.settings.flashcardsFolder);
+        const files = this.app.vault.getMarkdownFiles().filter(
+            (file) => file.path.startsWith(folderPath + "/") &&
+                      file.name.startsWith(FLASHCARD_CONFIG.filePrefix)
+        );
+
+        let filesModified = 0;
+        let idsRemoved = 0;
+        const idPattern = /^ID:\s*\d+\n?/gm;
+
+        for (const file of files) {
+            const content = await this.app.vault.read(file);
+            const matches = content.match(idPattern);
+            if (matches && matches.length > 0) {
+                const newContent = content.replace(idPattern, "");
+                await this.app.vault.modify(file, newContent);
+                filesModified++;
+                idsRemoved += matches.length;
+            }
+        }
+
+        return { filesModified, idsRemoved };
     }
 }
