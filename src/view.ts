@@ -31,6 +31,7 @@ export class FlashcardPanelView extends ItemView {
 	private isFlashcardFile = false; // True when viewing a flashcards_ file
 	private viewMode: ViewMode = "list";
 	private diffResult: DiffResult | null = null; // Holds pending diff changes
+	private userInstructions = ""; // User's additional instructions for AI
 
 	// UI elements
 	private headerEl!: HTMLElement;
@@ -299,7 +300,11 @@ export class FlashcardPanelView extends ItemView {
 				if (!card) continue;
 
 				const cardEl = cardsContainer.createDiv({
-					cls: "shadow-anki-card",
+					cls: "shadow-anki-card clickable",
+				});
+				cardEl.style.cursor = "pointer";
+				cardEl.addEventListener("click", () => {
+					void this.handleEditCard(card);
 				});
 
 				// Card header with actions
@@ -329,15 +334,15 @@ export class FlashcardPanelView extends ItemView {
 					cls: "shadow-anki-card-actions",
 				});
 
-				// Edit button
-				const editBtn = actionsEl.createSpan({
+				// Copy button
+				const copyBtn = actionsEl.createSpan({
 					cls: "shadow-anki-card-btn clickable-icon",
-					attr: { "aria-label": "Edit flashcard" },
+					attr: { "aria-label": "Copy flashcard" },
 				});
-				editBtn.setText("✏️");
-				editBtn.addEventListener("click", (e) => {
+				copyBtn.setText("📋");
+				copyBtn.addEventListener("click", (e) => {
 					e.stopPropagation();
-					void this.handleEditCard(card);
+					void this.handleCopyCard(card);
 				});
 
 				// Remove button
@@ -411,6 +416,23 @@ export class FlashcardPanelView extends ItemView {
 		headerEl.createSpan({
 			text: `Proposed Changes (${acceptedCount}/${totalCount} selected)`,
 			cls: "shadow-anki-diff-title",
+		});
+
+		// Select All / Deselect All button
+		const allSelected = acceptedCount === totalCount;
+		const selectAllBtn = headerEl.createEl("button", {
+			text: allSelected ? "Deselect All" : "Select All",
+			cls: "shadow-anki-btn-secondary",
+		});
+		selectAllBtn.style.marginLeft = "auto";
+		selectAllBtn.style.padding = "4px 8px";
+		selectAllBtn.style.fontSize = "12px";
+		selectAllBtn.addEventListener("click", () => {
+			const newState = !allSelected;
+			for (const change of this.diffResult!.changes) {
+				change.accepted = newState;
+			}
+			void this.updateView();
 		});
 
 		// No changes case
@@ -650,11 +672,45 @@ export class FlashcardPanelView extends ItemView {
 				(c) => c.accepted
 			).length;
 
+			// Instructions input for regenerate
+			const instructionsContainer = this.footerEl.createDiv({
+				cls: "shadow-anki-instructions-container",
+			});
+			const instructionsInput = instructionsContainer.createEl(
+				"textarea",
+				{
+					cls: "shadow-anki-instructions-input",
+					placeholder:
+						"Additional instructions (e.g., 'make shorter', 'focus on X')...",
+				}
+			);
+			instructionsInput.value = this.userInstructions;
+			instructionsInput.placeholder =
+				"Additional instructions (e.g., 'make shorter', 'focus on X')...";
+			instructionsInput.addEventListener("input", () => {
+				this.userInstructions = instructionsInput.value;
+			});
+
+			// Buttons row
+			const buttonsRow = this.footerEl.createDiv({
+				cls: "shadow-anki-buttons-row",
+			});
+
+			// Regenerate button
+			const regenerateBtn = buttonsRow.createEl("button", {
+				text: "Regenerate",
+				cls: "shadow-anki-btn-secondary",
+			});
+			regenerateBtn.addEventListener(
+				"click",
+				() => void this.handleUpdate()
+			);
+
 			// Apply button
-			const applyBtn = this.footerEl.createEl("button", {
+			const applyBtn = buttonsRow.createEl("button", {
 				cls: "shadow-anki-btn-primary",
 			});
-			applyBtn.setText(`Apply Selected (${acceptedCount})`);
+			applyBtn.setText(`Apply (${acceptedCount})`);
 			applyBtn.disabled = acceptedCount === 0;
 			applyBtn.addEventListener(
 				"click",
@@ -662,7 +718,7 @@ export class FlashcardPanelView extends ItemView {
 			);
 
 			// Cancel button
-			const cancelBtn = this.footerEl.createEl("button", {
+			const cancelBtn = buttonsRow.createEl("button", {
 				text: "Cancel",
 				cls: "shadow-anki-btn-secondary",
 			});
@@ -676,6 +732,25 @@ export class FlashcardPanelView extends ItemView {
 
 		// Don't show Generate/Update buttons for flashcard files
 		if (!this.isFlashcardFile) {
+			// Instructions input
+			const instructionsContainer = this.footerEl.createDiv({
+				cls: "shadow-anki-instructions-container",
+			});
+			const instructionsInput = instructionsContainer.createEl(
+				"textarea",
+				{
+					cls: "shadow-anki-instructions-input",
+					placeholder: "Instructions for AI (optional)...",
+				}
+			);
+			instructionsInput.value = this.userInstructions;
+			instructionsInput.placeholder =
+				"Additional instructions (e.g., 'make shorter', 'focus on X')...";
+			instructionsInput.disabled = this.status === "processing";
+			instructionsInput.addEventListener("input", () => {
+				this.userInstructions = instructionsInput.value;
+			});
+
 			// Main action button
 			const mainBtn = this.footerEl.createEl("button", {
 				cls: "shadow-anki-btn-primary",
@@ -698,13 +773,6 @@ export class FlashcardPanelView extends ItemView {
 				);
 			}
 		}
-
-		// Sync button (always show in list mode)
-		const syncBtn = this.footerEl.createEl("button", {
-			text: "Force sync (Anki)",
-			cls: "shadow-anki-btn-sync",
-		});
-		syncBtn.addEventListener("click", () => void this.handleSync());
 	}
 
 	// Action handlers
@@ -722,7 +790,8 @@ export class FlashcardPanelView extends ItemView {
 		try {
 			const content = await this.app.vault.read(this.currentFile);
 			const flashcards = await this.openRouterService.generateFlashcards(
-				content
+				content,
+				this.userInstructions || undefined
 			);
 
 			// Check if AI returned no new cards indicator
@@ -737,6 +806,14 @@ export class FlashcardPanelView extends ItemView {
 				this.currentFile,
 				flashcards
 			);
+
+			// Store source content if enabled
+			if (this.plugin.settings.storeSourceContent) {
+				await this.flashcardManager.updateSourceContent(
+					this.currentFile,
+					content
+				);
+			}
 
 			new Notice(`Generated flashcards for ${this.currentFile.basename}`);
 
@@ -772,15 +849,28 @@ export class FlashcardPanelView extends ItemView {
 				this.currentFile
 			);
 			const content = await this.app.vault.read(this.currentFile);
+
+			// Get old note content if stored
+			const oldNoteContent =
+				await this.flashcardManager.extractSourceContent(
+					this.currentFile
+				);
+
 			console.debug("=== Calling generateFlashcardsDiff ===");
 			console.debug("File:", this.currentFile.path);
 			console.debug("Flashcards found:", info.flashcards.length);
+			console.debug(
+				"Old note content:",
+				oldNoteContent ? "found" : "not found"
+			);
 
 			// Use diff-based generation
 			const diffResult =
 				await this.openRouterService.generateFlashcardsDiff(
 					content,
-					info.flashcards
+					info.flashcards,
+					this.userInstructions || undefined,
+					oldNoteContent ?? undefined
 				);
 
 			// Check if no changes
@@ -825,6 +915,17 @@ export class FlashcardPanelView extends ItemView {
 				this.diffResult.existingFlashcards
 			);
 
+			// Update stored source content if enabled
+			if (this.plugin.settings.storeSourceContent) {
+				const currentContent = await this.app.vault.read(
+					this.currentFile
+				);
+				await this.flashcardManager.updateSourceContent(
+					this.currentFile,
+					currentContent
+				);
+			}
+
 			const newCount = acceptedChanges.filter(
 				(c) => c.type === "NEW"
 			).length;
@@ -858,6 +959,7 @@ export class FlashcardPanelView extends ItemView {
 		// Return to list view
 		this.viewMode = "list";
 		this.diffResult = null;
+		this.userInstructions = ""; // Clear instructions after applying
 		await this.updateView();
 	}
 
@@ -965,5 +1067,11 @@ export class FlashcardPanelView extends ItemView {
 		} else {
 			new Notice("Failed to remove flashcard from file");
 		}
+	}
+
+	private async handleCopyCard(card: FlashcardItem): Promise<void> {
+		const text = `Q: ${card.question}\nA: ${card.answer}`;
+		await navigator.clipboard.writeText(text);
+		new Notice("Copied to clipboard");
 	}
 }
