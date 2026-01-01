@@ -195,13 +195,29 @@ tags: [flashcards/auto]
         return flashcardFile;
     }
 
-    // Open flashcard file in a new tab
+    // Find existing leaf with file or create new one
+    private getLeafForFile(file: TFile): import("obsidian").WorkspaceLeaf {
+        // Check if file is already open in a tab
+        const leaves = this.app.workspace.getLeavesOfType("markdown");
+        for (const leaf of leaves) {
+            const view = leaf.view as { file?: TFile };
+            if (view.file?.path === file.path) {
+                return leaf;
+            }
+        }
+        // File not open, create new tab
+        return this.app.workspace.getLeaf("tab");
+    }
+
+    // Open flashcard file (reuse existing tab if open)
     async openFlashcardFile(sourceFile: TFile): Promise<void> {
         const flashcardPath = this.getFlashcardPath(sourceFile);
         const flashcardFile = this.app.vault.getAbstractFileByPath(flashcardPath);
 
         if (flashcardFile instanceof TFile) {
-            await this.app.workspace.getLeaf("tab").openFile(flashcardFile);
+            const leaf = this.getLeafForFile(flashcardFile);
+            await leaf.openFile(flashcardFile);
+            this.app.workspace.setActiveLeaf(leaf, { focus: true });
         }
     }
 
@@ -215,10 +231,11 @@ tags: [flashcards/auto]
         }
     }
 
-    // Open any file at a specific line (used when viewing flashcard file directly)
+    // Open any file at a specific line (reuse existing tab if open)
     async openFileAtLine(file: TFile, lineNumber: number): Promise<void> {
-        const leaf = this.app.workspace.getLeaf("tab");
+        const leaf = this.getLeafForFile(file);
         await leaf.openFile(file);
+        this.app.workspace.setActiveLeaf(leaf, { focus: true });
         // Set cursor to the specific line
         const view = leaf.view;
         if (view && "editor" in view) {

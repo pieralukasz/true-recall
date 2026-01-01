@@ -76,6 +76,35 @@
     color: var(--text-faint);
 }
 
+/* Processing/Loading State */
+.shadow-anki-processing {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 48px 12px;
+    gap: 16px;
+}
+
+.shadow-anki-spinner {
+    color: var(--interactive-accent);
+}
+
+.shadow-anki-spinner svg {
+    display: block;
+}
+
+.shadow-anki-processing-text {
+    font-size: 14px;
+    font-weight: 500;
+    color: var(--text-normal);
+}
+
+.shadow-anki-processing-subtext {
+    font-size: 12px;
+    color: var(--text-muted);
+}
+
 /* Preview State */
 .shadow-anki-preview {
     padding: 8px 0;
@@ -183,6 +212,16 @@
 .shadow-anki-wikilink:hover {
     color: var(--link-color-hover);
     text-decoration: underline;
+}
+
+/* Markdown content rendered by Obsidian */
+.shadow-anki-md-content {
+    display: inline;
+}
+
+.shadow-anki-md-content p {
+    display: inline;
+    margin: 0;
 }
 
 /* Footer Section */
