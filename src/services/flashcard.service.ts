@@ -659,6 +659,86 @@ tags: [flashcards/auto]
     }
 
     /**
+     * Update card content (question and answer) in the file
+     * Used for inline editing during review
+     */
+    async updateCardContent(
+        filePath: string,
+        lineNumber: number,
+        newQuestion: string,
+        newAnswer: string
+    ): Promise<void> {
+        const file = this.app.vault.getAbstractFileByPath(filePath);
+        if (!(file instanceof TFile)) {
+            throw new FileError("Flashcard file not found", filePath, "read");
+        }
+
+        const content = await this.app.vault.read(file);
+        const lines = content.split("\n");
+        const questionLineIndex = lineNumber - 1;
+
+        if (questionLineIndex < 0 || questionLineIndex >= lines.length) {
+            return;
+        }
+
+        // Update question line (preserve #flashcard tag)
+        lines[questionLineIndex] = `${newQuestion} ${FLASHCARD_CONFIG.tag}`;
+
+        // Find answer range (from question+1 to empty line, next card, or FSRS comment)
+        let answerStartIndex = questionLineIndex + 1;
+        let answerEndIndex = answerStartIndex;
+
+        for (let i = answerStartIndex; i < lines.length; i++) {
+            const line = lines[i] ?? "";
+
+            // Stop at empty line
+            if (line.trim() === "") {
+                answerEndIndex = i;
+                break;
+            }
+
+            // Stop at next flashcard
+            if (this.isFlashcardLine(line)) {
+                answerEndIndex = i;
+                break;
+            }
+
+            // Stop at FSRS data (but we need to preserve it)
+            if (line.includes(FLASHCARD_CONFIG.fsrsDataPrefix)) {
+                answerEndIndex = i;
+                break;
+            }
+
+            answerEndIndex = i + 1;
+        }
+
+        // Get FSRS data line if it exists
+        const fsrsLine = lines[answerEndIndex]?.includes(FLASHCARD_CONFIG.fsrsDataPrefix)
+            ? lines[answerEndIndex]
+            : null;
+
+        // Remove old answer lines
+        const linesToRemove = answerEndIndex - answerStartIndex;
+        lines.splice(answerStartIndex, linesToRemove);
+
+        // Insert new answer lines
+        const newAnswerLines = newAnswer.split("\n");
+        lines.splice(answerStartIndex, 0, ...newAnswerLines);
+
+        // Re-add FSRS data if it existed (after new answer)
+        if (fsrsLine) {
+            const fsrsIndex = answerStartIndex + newAnswerLines.length;
+            // Check if FSRS is already there (in case answer didn't change length)
+            if (!lines[fsrsIndex]?.includes(FLASHCARD_CONFIG.fsrsDataPrefix)) {
+                lines.splice(fsrsIndex, 0, fsrsLine);
+            }
+        }
+
+        const newContent = lines.join("\n");
+        await this.app.vault.modify(file, newContent);
+    }
+
+    /**
      * Migrate all existing flashcards to include FSRS data
      */
     async migrateToFSRS(): Promise<{ migrated: number; total: number }> {

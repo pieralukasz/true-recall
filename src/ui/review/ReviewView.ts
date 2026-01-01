@@ -68,11 +68,15 @@ export class ReviewView extends ItemView {
         // Subscribe to state changes
         this.unsubscribe = this.stateManager.subscribe(() => this.render());
 
+        // Register keyboard shortcuts
+        document.addEventListener("keydown", this.handleKeyDown);
+
         // Start session automatically
         await this.startSession();
     }
 
     async onClose(): Promise<void> {
+        document.removeEventListener("keydown", this.handleKeyDown);
         this.unsubscribe?.();
         this.stateManager.reset();
     }
@@ -132,7 +136,13 @@ export class ReviewView extends ItemView {
             return;
         }
 
-        this.renderHeader();
+        if (this.plugin.settings.showReviewHeader) {
+            this.headerEl.style.display = "";
+            this.renderHeader();
+        } else {
+            this.headerEl.style.display = "none";
+            this.headerEl.empty();
+        }
         this.renderCard();
         this.renderButtons();
         this.renderProgress();
@@ -219,31 +229,201 @@ export class ReviewView extends ItemView {
         const card = this.stateManager.getCurrentCard();
         if (!card) return;
 
+        const editState = this.stateManager.getEditState();
         const cardEl = this.cardContainerEl.createDiv({ cls: "shadow-anki-review-card" });
 
         // Question
         const questionEl = cardEl.createDiv({ cls: "shadow-anki-review-question" });
-        void MarkdownRenderer.render(
-            this.app,
-            card.question,
-            questionEl,
-            card.filePath,
-            this
-        );
+        if (editState.active && editState.field === "question") {
+            // Edit mode - contenteditable
+            this.renderEditableField(questionEl, card.question, "question");
+        } else {
+            // View mode - markdown
+            void MarkdownRenderer.render(
+                this.app,
+                card.question,
+                questionEl,
+                card.filePath,
+                this
+            );
+            questionEl.addEventListener("click", (e: MouseEvent) => {
+                this.handleFieldClick(e, "question", card.filePath);
+            });
+        }
 
         // Answer (if revealed)
         if (this.stateManager.isAnswerRevealed()) {
             cardEl.createDiv({ cls: "shadow-anki-review-divider" });
 
             const answerEl = cardEl.createDiv({ cls: "shadow-anki-review-answer" });
-            void MarkdownRenderer.render(
-                this.app,
-                card.answer,
-                answerEl,
-                card.filePath,
-                this
-            );
+            if (editState.active && editState.field === "answer") {
+                // Edit mode - contenteditable
+                this.renderEditableField(answerEl, card.answer, "answer");
+            } else {
+                // View mode - markdown
+                void MarkdownRenderer.render(
+                    this.app,
+                    card.answer,
+                    answerEl,
+                    card.filePath,
+                    this
+                );
+                answerEl.addEventListener("click", (e: MouseEvent) => {
+                    this.handleFieldClick(e, "answer", card.filePath);
+                });
+            }
         }
+    }
+
+    /**
+     * Handle click on question/answer field
+     * - Normal click on backlink = navigate to note
+     * - Cmd/Ctrl+click anywhere = start edit mode
+     */
+    private handleFieldClick(
+        e: MouseEvent,
+        field: "question" | "answer",
+        filePath: string
+    ): void {
+        const linkEl = (e.target as HTMLElement).closest("a.internal-link");
+
+        if (linkEl) {
+            e.preventDefault();
+            e.stopPropagation();
+            const href = linkEl.getAttribute("data-href");
+
+            if (e.metaKey || e.ctrlKey) {
+                // Cmd/Ctrl+click on link = edit mode
+                this.startEdit(field);
+            } else if (href) {
+                // Normal click on link = navigate to note
+                // Use getMostRecentLeaf to find an existing leaf (not the review view)
+                const existingLeaf = this.app.workspace.getMostRecentLeaf();
+                if (existingLeaf && existingLeaf !== this.leaf) {
+                    // Open in existing leaf
+                    void this.app.workspace.openLinkText(href, filePath, false);
+                } else {
+                    // No suitable existing leaf, open in new tab
+                    void this.app.workspace.openLinkText(href, filePath, "tab");
+                }
+            }
+        } else if (e.metaKey || e.ctrlKey) {
+            // Cmd/Ctrl+click outside link = edit mode
+            this.startEdit(field);
+        }
+    }
+
+    /**
+     * Start editing a field (question or answer)
+     */
+    private startEdit(field: "question" | "answer"): void {
+        // Don't start editing answer if not revealed
+        if (field === "answer" && !this.stateManager.isAnswerRevealed()) {
+            return;
+        }
+        this.stateManager.startEdit(field);
+        this.renderCard();
+    }
+
+    /**
+     * Render an editable field (contenteditable div)
+     */
+    private renderEditableField(
+        container: HTMLElement,
+        content: string,
+        field: "question" | "answer"
+    ): void {
+        const editEl = container.createDiv({
+            cls: "shadow-anki-review-editable",
+            attr: {
+                contenteditable: "true",
+                "data-field": field,
+            },
+        });
+        editEl.textContent = content;
+
+        // Event listeners
+        editEl.addEventListener("blur", () => void this.saveEdit());
+        editEl.addEventListener("keydown", (e) => this.handleEditKeydown(e, field));
+
+        // Auto-focus after a small delay to ensure DOM is ready
+        setTimeout(() => {
+            editEl.focus();
+            // Move cursor to end
+            const range = document.createRange();
+            const sel = window.getSelection();
+            range.selectNodeContents(editEl);
+            range.collapse(false);
+            sel?.removeAllRanges();
+            sel?.addRange(range);
+        }, 10);
+    }
+
+    /**
+     * Handle keydown events in edit mode
+     */
+    private handleEditKeydown(e: KeyboardEvent, currentField: "question" | "answer"): void {
+        if (e.key === "Escape") {
+            e.preventDefault();
+            void this.saveEdit();
+        } else if (e.key === "Tab") {
+            e.preventDefault();
+            // Switch between question and answer
+            const nextField = currentField === "question" ? "answer" : "question";
+            // Only switch to answer if it's revealed
+            if (nextField === "answer" && !this.stateManager.isAnswerRevealed()) {
+                return;
+            }
+            void this.saveEdit().then(() => {
+                this.startEdit(nextField);
+            });
+        }
+        // Ctrl+Z, Ctrl+B, Ctrl+I, Ctrl+U are handled natively by contenteditable
+    }
+
+    /**
+     * Save the current edit to file
+     */
+    private async saveEdit(): Promise<void> {
+        const card = this.stateManager.getCurrentCard();
+        const editState = this.stateManager.getEditState();
+        if (!card || !editState.active) return;
+
+        const editEl = this.cardContainerEl.querySelector('[contenteditable="true"]') as HTMLElement;
+        if (!editEl) return;
+
+        const newContent = editEl.textContent ?? "";
+        const newQuestion = editState.field === "question" ? newContent : card.question;
+        const newAnswer = editState.field === "answer" ? newContent : card.answer;
+
+        // Only save if content actually changed
+        const hasChanges =
+            (editState.field === "question" && newContent !== editState.originalQuestion) ||
+            (editState.field === "answer" && newContent !== editState.originalAnswer);
+
+        if (hasChanges) {
+            try {
+                // Save to file
+                await this.flashcardManager.updateCardContent(
+                    card.filePath,
+                    card.lineNumber,
+                    newQuestion,
+                    newAnswer
+                );
+
+                // Update card in state
+                this.stateManager.updateCurrentCardContent(newQuestion, newAnswer);
+
+                new Notice("Card updated");
+            } catch (error) {
+                console.error("Error saving card content:", error);
+                new Notice("Failed to save card");
+            }
+        }
+
+        // Exit edit mode
+        this.stateManager.cancelEdit();
+        this.renderCard();
     }
 
     /**
@@ -382,6 +562,51 @@ export class ReviewView extends ItemView {
     }
 
     // ===== Event Handlers =====
+
+    /**
+     * Handle keyboard shortcuts for review actions
+     */
+    private handleKeyDown = (e: KeyboardEvent): void => {
+        // Ignore if typing in input/textarea or contenteditable
+        if (
+            e.target instanceof HTMLInputElement ||
+            e.target instanceof HTMLTextAreaElement ||
+            (e.target instanceof HTMLElement && e.target.isContentEditable)
+        ) {
+            return;
+        }
+
+        const state = this.stateManager.getState();
+        if (!state.isActive || this.stateManager.isComplete()) return;
+
+        if (!this.stateManager.isAnswerRevealed()) {
+            // Show answer on Space
+            if (e.code === "Space") {
+                e.preventDefault();
+                this.handleShowAnswer();
+            }
+        } else {
+            // Rating buttons: 1=Again, 2=Hard, 3=Good, 4=Easy
+            switch (e.key) {
+                case "1":
+                    e.preventDefault();
+                    void this.handleAnswer(Rating.Again);
+                    break;
+                case "2":
+                    e.preventDefault();
+                    void this.handleAnswer(Rating.Hard);
+                    break;
+                case "3":
+                    e.preventDefault();
+                    void this.handleAnswer(Rating.Good);
+                    break;
+                case "4":
+                    e.preventDefault();
+                    void this.handleAnswer(Rating.Easy);
+                    break;
+            }
+        }
+    };
 
     private handleShowAnswer(): void {
         this.stateManager.revealAnswer();

@@ -54,6 +54,7 @@ export const DEFAULT_SETTINGS: ShadowAnkiSettings = {
 	showNextReviewTime: true,
 	autoAdvance: false,
 	showProgress: true,
+	showReviewHeader: true,
 	showReviewHeaderStats: true,
 };
 
