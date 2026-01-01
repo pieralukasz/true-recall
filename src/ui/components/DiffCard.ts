@@ -2,13 +2,14 @@
  * Diff Card Component
  * Displays a flashcard change with accept/reject functionality
  */
-import type { App, Component, MarkdownRenderer } from "obsidian";
+import type { App, Component, MarkdownRenderer, WorkspaceLeaf } from "obsidian";
 import type { FlashcardChange } from "../../types";
 import { BaseComponent } from "../component.base";
 
 export interface DiffCardHandlers {
     app: App;
     component: Component;
+    leaf?: WorkspaceLeaf;
     onAccept?: (change: FlashcardChange, index: number) => void;
     onReject?: (change: FlashcardChange, index: number) => void;
 }
@@ -261,6 +262,9 @@ export class DiffCard extends BaseComponent {
                 handlers.component
             );
         }
+
+        // Setup click handler for internal links on the content container
+        this.setupInternalLinkHandler(content);
     }
 
     /**
@@ -292,6 +296,35 @@ export class DiffCard extends BaseComponent {
         if (checkbox) {
             checkbox.checked = this.acceptedState;
         }
+    }
+
+    /**
+     * Setup click handler for internal links on container
+     * Uses capture phase to intercept before Obsidian's handlers
+     */
+    private setupInternalLinkHandler(container: HTMLElement): void {
+        const { filePath, handlers } = this.props;
+
+        // Use capture phase to intercept before Obsidian's default handlers
+        container.addEventListener("click", (e: MouseEvent) => {
+            const linkEl = (e.target as HTMLElement).closest("a.internal-link");
+            if (!linkEl) return;
+
+            e.preventDefault();
+            e.stopPropagation();
+            e.stopImmediatePropagation();
+
+            const href = linkEl.getAttribute("data-href");
+            if (!href) return;
+
+            // Open in existing tab if available, otherwise new tab
+            const existingLeaf = handlers.app.workspace.getMostRecentLeaf();
+            if (existingLeaf && existingLeaf !== handlers.leaf) {
+                void handlers.app.workspace.openLinkText(href, filePath, false);
+            } else {
+                void handlers.app.workspace.openLinkText(href, filePath, "tab");
+            }
+        }, true); // capture: true
     }
 }
 
