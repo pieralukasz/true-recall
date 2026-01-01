@@ -4,11 +4,13 @@ import { VIEW_TYPE_FLASHCARD_PANEL } from "./constants";
 import { FlashcardPanelView } from "./view";
 import { FlashcardManager } from "./flashcardManager";
 import { OpenRouterService } from "./api";
+import { AnkiService } from "./ankiService";
 
 export default class ShadowAnkiPlugin extends Plugin {
     settings!: ShadowAnkiSettings;
     flashcardManager!: FlashcardManager;
     openRouterService!: OpenRouterService;
+    ankiService!: AnkiService;
 
     async onload(): Promise<void> {
         await this.loadSettings();
@@ -19,6 +21,7 @@ export default class ShadowAnkiPlugin extends Plugin {
             this.settings.openRouterApiKey,
             this.settings.aiModel
         );
+        this.ankiService = new AnkiService();
 
         // Register the sidebar view
         this.registerView(
