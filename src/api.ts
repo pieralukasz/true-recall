@@ -41,15 +41,23 @@ export class OpenRouterService {
 	}
 
 	// Generate flashcards from note content (for initial generation)
-	async generateFlashcards(noteContent: string): Promise<string> {
+	async generateFlashcards(
+		noteContent: string,
+		userInstructions?: string
+	): Promise<string> {
 		if (!this.apiKey) {
 			throw new Error(
 				"OpenRouter API key not configured. Please add your API key in settings."
 			);
 		}
 
+		let systemPrompt = SYSTEM_PROMPT;
+		if (userInstructions?.trim()) {
+			systemPrompt += `\n\nADDITIONAL USER INSTRUCTIONS:\n${userInstructions.trim()}`;
+		}
+
 		const messages: ChatMessage[] = [
-			{ role: "system", content: SYSTEM_PROMPT },
+			{ role: "system", content: systemPrompt },
 			{ role: "user", content: noteContent },
 		];
 
@@ -60,7 +68,9 @@ export class OpenRouterService {
 	// Generate flashcard diff for update mode
 	async generateFlashcardsDiff(
 		noteContent: string,
-		existingFlashcards: FlashcardItem[]
+		existingFlashcards: FlashcardItem[],
+		userInstructions?: string,
+		oldNoteContent?: string
 	): Promise<DiffResult> {
 		if (!this.apiKey) {
 			throw new Error(
@@ -73,17 +83,33 @@ export class OpenRouterService {
 			.map((f, i) => `${i + 1}. Q: ${f.question}\n   A: ${f.answer}`)
 			.join("\n\n");
 
-		const systemPrompt = UPDATE_SYSTEM_PROMPT + existingList;
+		let systemPrompt = UPDATE_SYSTEM_PROMPT + existingList;
+
+		// Add user instructions if provided
+		if (userInstructions?.trim()) {
+			systemPrompt += `\n\nADDITIONAL USER INSTRUCTIONS:\n${userInstructions.trim()}`;
+		}
+
+		// Build user message with optional old note content for comparison
+		let userMessage = `NOTE CONTENT:\n${noteContent}`;
+		if (oldNoteContent?.trim()) {
+			userMessage = `PREVIOUS NOTE VERSION:\n${oldNoteContent}\n\n---\n\nCURRENT NOTE VERSION:\n${noteContent}\n\nPlease analyze what changed between the two versions and update flashcards accordingly.`;
+		}
 
 		const messages: ChatMessage[] = [
 			{ role: "system", content: systemPrompt },
-			{ role: "user", content: `NOTE CONTENT:\n${noteContent}` },
+			{ role: "user", content: userMessage },
 		];
 
 		// DEBUG: Log what we're sending
 		console.warn("=== SENDING TO AI ===");
 		console.warn("Existing flashcards count:", existingFlashcards.length);
 		console.warn("Note content length:", noteContent.length);
+		console.warn("Old note content:", oldNoteContent ? "provided" : "none");
+		console.warn(
+			"User instructions:",
+			userInstructions ? "provided" : "none"
+		);
 		console.warn("=====================");
 
 		const content = await this.callOpenRouter(messages);
@@ -158,7 +184,7 @@ export class OpenRouterService {
 						type,
 						question,
 						answer,
-						accepted: true,
+						accepted: type === "NEW" ? true : false, // NEW defaults to accepted
 					};
 
 					// For MODIFIED, find the original flashcard

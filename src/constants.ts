@@ -3,23 +3,24 @@ export const VIEW_TYPE_FLASHCARD_PANEL = "shadow-anki-flashcard-panel";
 
 // AI Models available via OpenRouter
 export const AI_MODELS = {
-    "google/gemini-3-flash-preview": "Gemini 3 Flash (Google)",
-    "google/gemini-2.5-pro-preview": "Gemini 2.5 Pro (Google)",
-    "openai/gpt-5.1": "GPT-5.1 (OpenAI)",
-    "openai/gpt-4o": "GPT-4o (OpenAI)",
-    "anthropic/claude-opus-4.5": "Claude Opus 4.5 (Anthropic)",
-    "anthropic/claude-sonnet-4": "Claude Sonnet 4 (Anthropic)",
-    "meta-llama/llama-4-maverick": "Llama 4 Maverick (Meta)"
+	"google/gemini-3-flash-preview": "Gemini 3 Flash (Google)",
+	"google/gemini-2.5-pro-preview": "Gemini 2.5 Pro (Google)",
+	"openai/gpt-5.1": "GPT-5.1 (OpenAI)",
+	"openai/gpt-4o": "GPT-4o (OpenAI)",
+	"anthropic/claude-opus-4.5": "Claude Opus 4.5 (Anthropic)",
+	"anthropic/claude-sonnet-4": "Claude Sonnet 4 (Anthropic)",
+	"meta-llama/llama-4-maverick": "Llama 4 Maverick (Meta)",
 } as const;
 
 export type AIModelKey = keyof typeof AI_MODELS;
 
 // Default settings values
 export const DEFAULT_SETTINGS = {
-    openRouterApiKey: "",
-    aiModel: "google/gemini-3-flash-preview" as AIModelKey,
-    flashcardsFolder: "Flashcards",
-    autoSyncToAnki: true
+	openRouterApiKey: "",
+	aiModel: "google/gemini-3-flash-preview" as AIModelKey,
+	flashcardsFolder: "Flashcards",
+	autoSyncToAnki: true,
+	storeSourceContent: false,
 };
 
 // System prompt for flashcard generation
@@ -50,7 +51,7 @@ MANDATORY RULES:
 FORMATTING:
 - Backlinks: Wrap key scientific terms and main subjects in **[[backlinks]]** (bold backlinks).
 - Use **[[term|alias]]** for context/readability when needed.
-- Line Breaks: Use <br><br> to split questions/answers longer than 10 words into logical parts.
+- Line Breaks: Use <br><br> to split questions/answers longer than 6 words into logical parts. It's important.
 - No Separators: Do NOT place --- between flashcards.
 
 ANTI-RULES:
@@ -72,7 +73,7 @@ export const UPDATE_SYSTEM_PROMPT = `You are an expert flashcard generator worki
 
 Your task is to analyze the note content and compare it with existing flashcards to propose:
 1. NEW flashcards for information not yet covered
-2. MODIFIED flashcards where existing ones can be improved
+2. MODIFIED flashcards where existing ones contain ERRORS or MISSING DATA
 3. DELETED flashcards where information is no longer in the note
 
 FLASHCARD CREATION RULES (same as standard mode):
@@ -81,7 +82,7 @@ FLASHCARD CREATION RULES (same as standard mode):
 - Formulate questions and answers UNAMBIGUOUSLY
 - BOLD the keyword in every question using **bold**
 - Wrap key terms in **[[backlinks]]** (bold backlinks)
-- Use <br><br> to split long questions/answers into logical parts
+- Use <br><br> to split questions/answers into logical parts
 
 OUTPUT FORMAT - Return ONLY valid JSON:
 {
@@ -110,19 +111,23 @@ CRITICAL RULES - READ CAREFULLY:
 1. **CHECK EACH EXISTING FLASHCARD**: Go through EVERY flashcard in the existing list and verify if its topic appears in the note content.
 
 2. **DELETED** - If a flashcard mentions a topic/concept/term that is NOT mentioned ANYWHERE in the note content, you MUST propose DELETED.
-   - Example: Note talks about "algorithms and YouTube" but flashcard asks about "Vietnam and heroin" → DELETED (reason: "Topic not in note")
-   - Be thorough - if the key concept from the question doesn't appear in the note, propose deletion
+   - Example: Note talks about "algorithms" but flashcard asks about "Vietnam history" → DELETED (reason: "Topic not in note")
 
-3. **MODIFIED** - If the flashcard topic IS in the note but wording/formatting can be improved
+3. **MODIFIED** - USE EXTREME CAUTION. ONLY modify a flashcard if it is FACTUALLY WRONG or SERIOUSLY MISFORMATTED.
+   - **STABILITY OVER PERFECTION**: If the existing flashcard is correct and usable, DO NOT MODIFY IT.
+   - **STRICTLY FORBIDDEN**: Do NOT propose modifications for stylistic choices, synonyms, slight rephrasing, or different bolding placement if the current one is acceptable.
+   - Example of BAD modification (DO NOT DO THIS): Changing "What is **X**?" to "What defines **X**?". This is unnecessary churn.
+   - Only modify if the answer is outdated based on the new note text.
 
-4. **NEW** - If there's information in the note not covered by any flashcard
+4. **NEW** - If there's information in the note not covered by any flashcard.
 
-5. "originalQuestion" MUST exactly match one from the existing list (character for character)
+5. "originalQuestion" MUST exactly match one from the existing list (character for character).
 
-6. If truly no changes needed (all flashcards match note content perfectly), return: {"changes": []}
+6. If truly no changes needed (all flashcards match note content perfectly and are correct), return: {"changes": []}
 
 EXISTING FLASHCARDS:
 `;
 
 // OpenRouter API endpoint
-export const OPENROUTER_API_URL = "https://openrouter.ai/api/v1/chat/completions";
+export const OPENROUTER_API_URL =
+	"https://openrouter.ai/api/v1/chat/completions";
