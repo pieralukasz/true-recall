@@ -8,6 +8,7 @@ export interface ShadowAnkiSettings {
     aiModel: AIModelKey;
     flashcardsFolder: string;
     autoSyncToAnki: boolean;
+    storeSourceContent: boolean;
 }
 
 // Re-export for convenience
@@ -80,6 +81,17 @@ export class ShadowAnkiSettingTab extends PluginSettingTab {
                 .setValue(this.plugin.settings.autoSyncToAnki)
                 .onChange(async (value) => {
                     this.plugin.settings.autoSyncToAnki = value;
+                    await this.plugin.saveSettings();
+                }));
+
+        // 5. Store Source Content toggle
+        new Setting(containerEl)
+            .setName("Store source content")
+            .setDesc("Save note content in flashcard file for better diff comparison")
+            .addToggle(toggle => toggle
+                .setValue(this.plugin.settings.storeSourceContent)
+                .onChange(async (value) => {
+                    this.plugin.settings.storeSourceContent = value;
                     await this.plugin.saveSettings();
                 }));
     }

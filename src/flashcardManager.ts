@@ -157,6 +157,52 @@ export class FlashcardManager {
         }
     }
 
+    // Extract source note content from flashcard file (stored in HTML comment)
+    async extractSourceContent(sourceFile: TFile): Promise<string | null> {
+        const flashcardPath = this.getFlashcardPath(sourceFile);
+        const flashcardFile = this.app.vault.getAbstractFileByPath(flashcardPath);
+
+        if (!(flashcardFile instanceof TFile)) {
+            return null;
+        }
+
+        const content = await this.app.vault.read(flashcardFile);
+        const match = content.match(/<!-- SOURCE_NOTE_CONTENT\n([\s\S]*?)\nEND_SOURCE_NOTE_CONTENT -->/);
+        return match?.[1] ?? null;
+    }
+
+    // Generate source content block (HTML comment)
+    private generateSourceContentBlock(noteContent: string): string {
+        return `\n<!-- SOURCE_NOTE_CONTENT\n${noteContent}\nEND_SOURCE_NOTE_CONTENT -->\n`;
+    }
+
+    // Update or add source content in flashcard file
+    async updateSourceContent(sourceFile: TFile, noteContent: string): Promise<void> {
+        const flashcardPath = this.getFlashcardPath(sourceFile);
+        const flashcardFile = this.app.vault.getAbstractFileByPath(flashcardPath);
+
+        if (!(flashcardFile instanceof TFile)) {
+            return;
+        }
+
+        const content = await this.app.vault.read(flashcardFile);
+        const sourceBlock = this.generateSourceContentBlock(noteContent);
+
+        // Check if source content block already exists
+        const existingMatch = content.match(/<!-- SOURCE_NOTE_CONTENT\n[\s\S]*?\nEND_SOURCE_NOTE_CONTENT -->/);
+
+        let newContent: string;
+        if (existingMatch) {
+            // Replace existing block
+            newContent = content.replace(existingMatch[0], sourceBlock.trim());
+        } else {
+            // Append at end of file
+            newContent = content.trimEnd() + "\n" + sourceBlock;
+        }
+
+        await this.app.vault.modify(flashcardFile, newContent);
+    }
+
     // Generate frontmatter for a new flashcard file
     private generateFrontmatter(sourceFile: TFile): string {
         return `---
