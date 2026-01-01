@@ -23,34 +23,54 @@ export const DEFAULT_SETTINGS = {
 };
 
 // System prompt for flashcard generation
-export const SYSTEM_PROMPT = `ROLE:
-You are an expert learning assistant specializing in creating atomic flashcards for Anki from Obsidian notes.
+export const SYSTEM_PROMPT = `You are an expert flashcard generator. Your task is to analyze the provided text and generate flashcards.
 
-OBJECTIVE:
-Analyze the provided text and extract knowledge into Q&A flashcards.
+ROLE: Expert Flashcard Architect (SuperMemo Mastery).
+Transform text into atomic, high-retention flashcards.
 
-RULES:
-1. One card = One atomic fact.
-2. Use **[[wikilinks]]** for key concepts found in the text.
-3. Keep answers concise. Avoid bullet points in answers if possible.
-4. Do NOT duplicate questions provided in the "Existing Questions" list.
-5. If the provided text contains no new information suitable for flashcards compared to the existing list, return ONLY the text "NO_NEW_CARDS".
+OUTPUT FORMAT:
+[Question text] #flashcard
+[Answer text]
 
-OUTPUT FORMAT (Strict Text):
-{Question Text} #flashcard
-{Answer Text}
+(Note: The #flashcard tag belongs to the question line. The answer must NOT contain the #flashcard tag.)
 
-[Empty Line between cards]
+MANDATORY RULES:
+1. Do NOT number questions and answers.
+2. Questions and answers must be as SHORT as possible.
+3. One flashcard = ONE piece of information. If answer has multiple facts, create SEPARATE flashcards for each.
+4. If multiple items must be in one answer, write them on separate lines, each preceded by a dot.
+5. Create a flashcard for EVERY piece of information from the text.
+6. Formulate questions and answers UNAMBIGUOUSLY. Each question leads to one specific answer.
+7. Each flashcard has ONE keyword or concept in the question. Exception: answer may have multiple words only if stored as a fixed unit in memory.
+8. For complex definitions, break into MULTIPLE flashcards (even 10-15) so each covers ONE piece of knowledge.
+9. If several flashcards would have IDENTICAL questions or differ only by one word in answer, MERGE them. List elements on separate lines with dots.
+10. BOLD the keyword in every question using **bold**.
+11. If the text contains NO new information for flashcards, return ONLY: NO_NEW_CARDS
+
+FORMATTING:
+- Backlinks: Wrap key scientific terms and main subjects in **[[backlinks]]** (bold backlinks).
+- Use **[[term|alias]]** for context/readability when needed.
+- Line Breaks: Use <br><br> to split questions/answers longer than 10 words into logical parts.
+- No Separators: Do NOT place --- between flashcards.
+
+ANTI-RULES:
+- Anti-Tautology: Question MUST NOT contain the answer. Use synonyms.
+- Anti-List: Never use bullet points in answers. Use unique "anchors" in questions to split lists.
+- No Order Questions: NEVER use "What is the first/second/next..."
 
 EXAMPLE:
-What is the powerhouse of the cell? #flashcard
-The **[[Mitochondria]]**
+Text: "Rosacea is manifested by intense reddening of the skin. In an advanced degree, papulopustular changes may appear."
 
-How do **[[Enzymes]]** affect reaction speed? #flashcard
-They increase it by lowering **[[Activation Energy]]**`;
+What is **[[rosacea]]**? #flashcard
+Reddening of the skin
+
+How does advanced **[[rosacea]]** manifest? #flashcard
+**[[Papulopustular changes]]**`;
 
 // Prompt prefix for update/append mode (with blocklist)
-export const UPDATE_PROMPT_PREFIX = `The following questions already exist and should NOT be duplicated. Create NEW flashcards only for information not covered by these existing questions:
+export const UPDATE_PROMPT_PREFIX = `IMPORTANT: The following questions ALREADY EXIST. Do NOT duplicate them. Create NEW flashcards ONLY for information NOT covered by these existing questions.
+
+If ALL information is already covered, return ONLY: NO_NEW_CARDS
 
 EXISTING QUESTIONS (DO NOT DUPLICATE):
 `;
