@@ -9,6 +9,24 @@ export interface FlashcardItem {
     lineNumber: number; // Line number in the flashcard file (for editing)
 }
 
+// Represents a proposed change (new, modified, or deleted flashcard)
+export interface FlashcardChange {
+    type: "NEW" | "MODIFIED" | "DELETED";
+    question: string;
+    answer: string;
+    originalQuestion?: string; // For MODIFIED/DELETED - exact match from existing
+    originalAnswer?: string;   // For MODIFIED/DELETED - filled from existing flashcards
+    originalLineNumber?: number; // For MODIFIED/DELETED - line number of original
+    reason?: string;           // For DELETED - reason for deletion
+    accepted: boolean;         // UI state for accept/reject
+}
+
+// Result of diff generation
+export interface DiffResult {
+    changes: FlashcardChange[];
+    existingFlashcards: FlashcardItem[]; // All existing flashcards for reference
+}
+
 // Flashcard file data structure
 export interface FlashcardInfo {
     exists: boolean;
@@ -294,5 +312,104 @@ tags: [flashcards/auto]
         await this.app.vault.modify(flashcardFile, newContent);
 
         return true;
+    }
+
+    // Apply accepted diff changes to the flashcard file
+    async applyDiffChanges(
+        sourceFile: TFile,
+        changes: FlashcardChange[],
+        existingFlashcards: FlashcardItem[]
+    ): Promise<TFile> {
+        const flashcardPath = this.getFlashcardPath(sourceFile);
+        const flashcardFile = this.app.vault.getAbstractFileByPath(flashcardPath);
+
+        if (!(flashcardFile instanceof TFile)) {
+            throw new Error("Flashcard file not found");
+        }
+
+        const content = await this.app.vault.read(flashcardFile);
+        const lines = content.split("\n");
+
+        // Process DELETED changes first (remove lines)
+        // Sort by line number descending to avoid index shifts
+        const deletedChanges = changes
+            .filter(c => c.type === "DELETED" && c.accepted && c.originalLineNumber)
+            .sort((a, b) => (b.originalLineNumber ?? 0) - (a.originalLineNumber ?? 0));
+
+        for (const change of deletedChanges) {
+            const lineIndex = (change.originalLineNumber ?? 0) - 1;
+            if (lineIndex < 0 || lineIndex >= lines.length) continue;
+
+            // Find the end of this flashcard block
+            let endIndex = lineIndex + 1;
+            while (endIndex < lines.length) {
+                const line = lines[endIndex] ?? "";
+                if (line.trim() === "" || line.match(/^.+?\s*#flashcard\s*$/)) {
+                    break;
+                }
+                endIndex++;
+            }
+
+            // Also remove trailing empty line if present
+            if (endIndex < lines.length && (lines[endIndex] ?? "").trim() === "") {
+                endIndex++;
+            }
+
+            // Remove the flashcard block
+            lines.splice(lineIndex, endIndex - lineIndex);
+        }
+
+        // Process MODIFIED changes (replace in place)
+        // Sort by line number descending to avoid index shifts
+        const modifiedChanges = changes
+            .filter(c => c.type === "MODIFIED" && c.accepted && c.originalLineNumber)
+            .sort((a, b) => (b.originalLineNumber ?? 0) - (a.originalLineNumber ?? 0));
+
+        for (const change of modifiedChanges) {
+            const lineIndex = (change.originalLineNumber ?? 0) - 1;
+            if (lineIndex < 0 || lineIndex >= lines.length) continue;
+
+            // Find the end of this flashcard block
+            let endIndex = lineIndex + 1;
+            while (endIndex < lines.length) {
+                const line = lines[endIndex] ?? "";
+                if (line.trim() === "" || line.match(/^.+?\s*#flashcard\s*$/)) {
+                    break;
+                }
+                endIndex++;
+            }
+
+            // Build new flashcard content
+            const newFlashcardLines = [
+                `${change.question} #flashcard`,
+                change.answer
+            ];
+
+            // Replace old flashcard with new one
+            lines.splice(lineIndex, endIndex - lineIndex, ...newFlashcardLines);
+        }
+
+        // Process NEW changes (append at end)
+        const newChanges = changes.filter(c => c.type === "NEW" && c.accepted);
+
+        if (newChanges.length > 0) {
+            // Ensure there's a blank line before new cards
+            const lastLine = lines[lines.length - 1] ?? "";
+            if (lastLine.trim() !== "") {
+                lines.push("");
+            }
+
+            for (const change of newChanges) {
+                lines.push(`${change.question} #flashcard`);
+                lines.push(change.answer);
+                lines.push("");
+            }
+        }
+
+        // Write updated content
+        const newContent = lines.join("\n").trimEnd() + "\n";
+        await this.app.vault.modify(flashcardFile, newContent);
+
+        return flashcardFile;
     }
 }
