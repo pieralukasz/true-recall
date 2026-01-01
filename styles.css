@@ -587,6 +587,39 @@
 	margin: 0;
 }
 
+/* Editable fields (inline edit during review) */
+.shadow-anki-review-editable {
+	border: 2px solid var(--interactive-accent);
+	border-radius: 6px;
+	padding: 12px;
+	background: var(--background-primary);
+	min-height: 40px;
+	outline: none;
+	white-space: pre-wrap;
+	font-family: var(--font-monospace);
+	font-size: 1em;
+	line-height: 1.6;
+	color: var(--text-normal);
+}
+
+.shadow-anki-review-editable:focus {
+	box-shadow: 0 0 0 3px var(--interactive-accent-hover);
+}
+
+/* Visual indicator that field is editable (Cmd+click) */
+.shadow-anki-review-question:not(:has(.shadow-anki-review-editable)),
+.shadow-anki-review-answer:not(:has(.shadow-anki-review-editable)) {
+	border-radius: 6px;
+	padding: 8px;
+	margin: -8px;
+	transition: background 0.15s ease;
+}
+
+.shadow-anki-review-question:not(:has(.shadow-anki-review-editable)):hover,
+.shadow-anki-review-answer:not(:has(.shadow-anki-review-editable)):hover {
+	background: var(--background-modifier-hover);
+}
+
 /* Buttons Container */
 .shadow-anki-review-buttons {
 	display: flex;
@@ -604,7 +637,7 @@
 	flex-direction: column;
 	align-items: center;
 	gap: 4px;
-	padding: 12px 24px;
+	padding: 20px 28px;
 	border: none;
 	border-radius: 8px;
 	cursor: pointer;
@@ -626,7 +659,7 @@
 .shadow-anki-btn-show {
 	background: var(--interactive-accent);
 	color: var(--text-on-accent);
-	padding: 16px 48px;
+	padding: 24px 48px;
 }
 
 /* Rating Buttons */

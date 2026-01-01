@@ -26,6 +26,16 @@ export type ReviewStateListener = (
 export type ReviewStateSelector<T> = (state: ReviewSessionState) => T;
 
 /**
+ * Edit mode state for inline editing during review
+ */
+export interface EditModeState {
+    active: boolean;
+    field: "question" | "answer" | null;
+    originalQuestion: string;
+    originalAnswer: string;
+}
+
+/**
  * Review State Manager
  * Manages the state of a review session with reactive updates
  */
@@ -33,6 +43,12 @@ export class ReviewStateManager {
     private state: ReviewSessionState;
     private listeners: Set<ReviewStateListener> = new Set();
     private schedulingPreview: SchedulingPreview | null = null;
+    private editMode: EditModeState = {
+        active: false,
+        field: null,
+        originalQuestion: "",
+        originalAnswer: "",
+    };
 
     constructor() {
         this.state = createDefaultSessionState();
@@ -359,6 +375,72 @@ export class ReviewStateManager {
      */
     getRemainingCount(): number {
         return Math.max(0, this.state.queue.length - this.state.currentIndex);
+    }
+
+    // ===== Edit Mode Methods =====
+
+    /**
+     * Get current edit mode state
+     */
+    getEditState(): EditModeState {
+        return { ...this.editMode };
+    }
+
+    /**
+     * Start editing a field (question or answer)
+     */
+    startEdit(field: "question" | "answer"): void {
+        const card = this.getCurrentCard();
+        if (!card) return;
+
+        this.editMode = {
+            active: true,
+            field,
+            originalQuestion: card.question,
+            originalAnswer: card.answer,
+        };
+    }
+
+    /**
+     * Cancel edit mode without saving
+     */
+    cancelEdit(): void {
+        this.editMode = {
+            active: false,
+            field: null,
+            originalQuestion: "",
+            originalAnswer: "",
+        };
+    }
+
+    /**
+     * Check if currently in edit mode
+     */
+    isEditing(): boolean {
+        return this.editMode.active;
+    }
+
+    /**
+     * Update current card's content in the queue (after saving to file)
+     */
+    updateCurrentCardContent(newQuestion: string, newAnswer: string): void {
+        const card = this.getCurrentCard();
+        if (!card) return;
+
+        const newQueue = [...this.state.queue];
+        const updatedCard = {
+            ...card,
+            question: newQuestion,
+            answer: newAnswer,
+        };
+        newQueue[this.state.currentIndex] = updatedCard;
+
+        const prevState = this.state;
+        this.state = {
+            ...this.state,
+            queue: newQueue,
+        };
+        this.notifyListeners(prevState);
     }
 
     // ===== Private Methods =====
