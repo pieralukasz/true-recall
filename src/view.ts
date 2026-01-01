@@ -1,7 +1,8 @@
 import { ItemView, WorkspaceLeaf, TFile, Notice } from "obsidian";
 import { VIEW_TYPE_FLASHCARD_PANEL } from "./constants";
-import { FlashcardManager, FlashcardInfo } from "./flashcardManager";
+import { FlashcardManager, FlashcardInfo, FlashcardItem } from "./flashcardManager";
 import { OpenRouterService } from "./api";
+import { AnkiService } from "./ankiService";
 import type ShadowAnkiPlugin from "./main";
 
 type ProcessingStatus = "none" | "exists" | "processing";
@@ -10,9 +11,11 @@ export class FlashcardPanelView extends ItemView {
     private plugin: ShadowAnkiPlugin;
     private flashcardManager: FlashcardManager;
     private openRouterService: OpenRouterService;
+    private ankiService: AnkiService;
     private currentFile: TFile | null = null;
     private status: ProcessingStatus = "none";
     private renderVersion = 0; // Prevents race conditions in async renders
+    private isFlashcardFile = false; // True when viewing a flashcards_ file
 
     // UI elements
     private headerEl!: HTMLElement;
@@ -24,6 +27,7 @@ export class FlashcardPanelView extends ItemView {
         this.plugin = plugin;
         this.flashcardManager = plugin.flashcardManager;
         this.openRouterService = plugin.openRouterService;
+        this.ankiService = plugin.ankiService;
     }
 
     getViewType(): string {
@@ -115,17 +119,29 @@ export class FlashcardPanelView extends ItemView {
         this.mainContentEl.empty();
 
         if (!this.currentFile) {
+            this.isFlashcardFile = false;
             this.renderEmptyState("Open a note to see flashcard options");
             return;
         }
 
         // Only process markdown files
         if (this.currentFile.extension !== "md") {
+            this.isFlashcardFile = false;
             this.renderEmptyState("Select a markdown file");
             return;
         }
 
-        const info = await this.flashcardManager.getFlashcardInfo(this.currentFile);
+        // Check if this is a flashcard file itself
+        this.isFlashcardFile = this.currentFile.basename.startsWith("flashcards_");
+
+        let info: FlashcardInfo;
+        if (this.isFlashcardFile) {
+            // Viewing a flashcard file directly - show its contents
+            info = await this.flashcardManager.getFlashcardInfoDirect(this.currentFile);
+        } else {
+            // Viewing a source note - look for its flashcard file
+            info = await this.flashcardManager.getFlashcardInfo(this.currentFile);
+        }
 
         // Check if this render is still current (prevents race condition)
         if (currentVersion !== this.renderVersion) return;
@@ -189,10 +205,38 @@ export class FlashcardPanelView extends ItemView {
             info.flashcards.forEach((card, index) => {
                 const cardEl = cardsContainer.createDiv({ cls: "shadow-anki-card" });
 
+                // Card header with actions
+                const cardHeader = cardEl.createDiv({ cls: "shadow-anki-card-header" });
+
                 // Question
-                const questionEl = cardEl.createDiv({ cls: "shadow-anki-card-question" });
+                const questionEl = cardHeader.createDiv({ cls: "shadow-anki-card-question" });
                 questionEl.createSpan({ text: "Q: ", cls: "shadow-anki-card-label" });
                 this.renderTextWithWikilinks(questionEl, card.question);
+
+                // Action buttons
+                const actionsEl = cardHeader.createDiv({ cls: "shadow-anki-card-actions" });
+
+                // Edit button
+                const editBtn = actionsEl.createSpan({
+                    cls: "shadow-anki-card-btn clickable-icon",
+                    attr: { "aria-label": "Edit flashcard" }
+                });
+                editBtn.setText("✏️");
+                editBtn.addEventListener("click", (e) => {
+                    e.stopPropagation();
+                    void this.handleEditCard(card);
+                });
+
+                // Remove button
+                const removeBtn = actionsEl.createSpan({
+                    cls: "shadow-anki-card-btn clickable-icon",
+                    attr: { "aria-label": "Remove flashcard" }
+                });
+                removeBtn.setText("🗑️");
+                removeBtn.addEventListener("click", (e) => {
+                    e.stopPropagation();
+                    void this.handleRemoveCard(card);
+                });
 
                 // Answer
                 const answerEl = cardEl.createDiv({ cls: "shadow-anki-card-answer" });
@@ -259,23 +303,26 @@ export class FlashcardPanelView extends ItemView {
             return;
         }
 
-        // Main action button
-        const mainBtn = this.footerEl.createEl("button", {
-            cls: "shadow-anki-btn-primary"
-        });
+        // Don't show Generate/Update buttons for flashcard files
+        if (!this.isFlashcardFile) {
+            // Main action button
+            const mainBtn = this.footerEl.createEl("button", {
+                cls: "shadow-anki-btn-primary"
+            });
 
-        if (this.status === "processing") {
-            mainBtn.setText("Processing...");
-            mainBtn.disabled = true;
-        } else if (this.status === "exists") {
-            mainBtn.setText("Update (Append new)");
-            mainBtn.addEventListener("click", () => this.handleUpdate());
-        } else {
-            mainBtn.setText("Generate Flashcards");
-            mainBtn.addEventListener("click", () => this.handleGenerate());
+            if (this.status === "processing") {
+                mainBtn.setText("Processing...");
+                mainBtn.disabled = true;
+            } else if (this.status === "exists") {
+                mainBtn.setText("Update (Append new)");
+                mainBtn.addEventListener("click", () => this.handleUpdate());
+            } else {
+                mainBtn.setText("Generate Flashcards");
+                mainBtn.addEventListener("click", () => this.handleGenerate());
+            }
         }
 
-        // Sync button
+        // Sync button (always show)
         const syncBtn = this.footerEl.createEl("button", {
             text: "Force Sync (Anki)",
             cls: "shadow-anki-btn-sync"
@@ -396,6 +443,54 @@ export class FlashcardPanelView extends ItemView {
     private async handleOpenFlashcardFile(): Promise<void> {
         if (this.currentFile) {
             await this.flashcardManager.openFlashcardFile(this.currentFile);
+        }
+    }
+
+    private async handleEditCard(card: FlashcardItem): Promise<void> {
+        if (!this.currentFile) return;
+
+        if (this.isFlashcardFile) {
+            // Viewing flashcard file directly - open at line
+            await this.flashcardManager.openFileAtLine(this.currentFile, card.lineNumber);
+        } else {
+            // Viewing source file - open its flashcard file at line
+            await this.flashcardManager.openFlashcardFileAtLine(this.currentFile, card.lineNumber);
+        }
+    }
+
+    private async handleRemoveCard(card: FlashcardItem): Promise<void> {
+        if (!this.currentFile) return;
+
+        // If the card has an Anki ID, try to delete from Anki first
+        if (card.ankiId) {
+            const ankiAvailable = await this.ankiService.isAvailable();
+            if (ankiAvailable) {
+                const deleted = await this.ankiService.deleteNotes([card.ankiId]);
+                if (deleted) {
+                    new Notice("Removed from Anki");
+                } else {
+                    new Notice("Could not remove from Anki (card may already be deleted)");
+                }
+            } else {
+                new Notice("Anki not running - removing from file only");
+            }
+        }
+
+        // Remove from the flashcard file
+        let removed: boolean;
+        if (this.isFlashcardFile) {
+            // Viewing flashcard file directly
+            removed = await this.flashcardManager.removeFlashcardDirect(this.currentFile, card.lineNumber);
+        } else {
+            // Viewing source file - remove from its flashcard file
+            removed = await this.flashcardManager.removeFlashcard(this.currentFile, card.lineNumber);
+        }
+
+        if (removed) {
+            new Notice("Flashcard removed");
+            await this.updateView();
+        } else {
+            new Notice("Failed to remove flashcard from file");
         }
     }
 }
