@@ -64,29 +64,31 @@ export const DEFAULT_SETTINGS: ShadowAnkiSettings = {
 // ===== FSRS Default Weights =====
 
 /**
- * Domyślne wagi FSRS v5 (19 parametrów)
+ * Domyślne wagi FSRS v6 (21 parametrów)
  * @see https://github.com/open-spaced-repetition/fsrs4anki/wiki/The-Algorithm
  */
 export const DEFAULT_FSRS_WEIGHTS = [
-	0.40255, // w0: initial stability for Again
-	1.18385, // w1: initial stability for Hard
-	3.173, // w2: initial stability for Good
-	15.69105, // w3: initial stability for Easy
-	7.1949, // w4: difficulty at first review
-	0.5345, // w5: difficulty change factor
-	1.4604, // w6: difficulty change rate
-	0.0046, // w7: mean reversion
-	1.54575, // w8: recall stability increase
-	0.1192, // w9: stability exponent
-	1.01925, // w10: retrievability factor
-	1.9395, // w11: forget stability base
-	0.11, // w12: difficulty factor for forget
-	0.29605, // w13: stability factor for forget
-	2.2698, // w14: retrievability factor for forget
-	0.2315, // w15: hard penalty
-	2.9898, // w16: easy bonus
-	0.51655, // w17: short-term stability factor
-	0.6621, // w18: short-term stability offset
+	0.212, // w0: initial stability for Again
+	1.2931, // w1: initial stability for Hard
+	2.3065, // w2: initial stability for Good
+	8.2956, // w3: initial stability for Easy
+	6.4133, // w4: difficulty weight
+	0.8334, // w5: difficulty decay
+	3.0194, // w6: difficulty base
+	0.001, // w7: hard penalty
+	1.8722, // w8: easy bonus
+	0.1666, // w9: mean reversion weight
+	0.796, // w10: recall stability weight
+	1.4835, // w11: lapse stability base
+	0.0614, // w12: lapse difficulty weight
+	0.2629, // w13: lapse stability weight
+	1.6483, // w14: lapse retrievability weight
+	0.6014, // w15: hard interval modifier
+	1.8729, // w16: easy interval modifier
+	0.5425, // w17: short-term stability factor
+	0.0912, // w18: short-term stability offset
+	0.0658, // w19: same-day stability exponent
+	0.1542, // w20: forgetting curve decay
 ] as const;
 
 // ===== API Configuration =====
