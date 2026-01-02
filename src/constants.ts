@@ -8,6 +8,9 @@ export const VIEW_TYPE_FLASHCARD_PANEL = "shadow-anki-flashcard-panel";
 /** View type identifier for the review session */
 export const VIEW_TYPE_REVIEW = "shadow-anki-review";
 
+/** View type identifier for the statistics panel */
+export const VIEW_TYPE_STATS = "shadow-anki-stats";
+
 // ===== AI Models =====
 
 /** AI Models available via OpenRouter */

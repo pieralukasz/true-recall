@@ -1,5 +1,5 @@
 import { Plugin, TFile, Notice } from "obsidian";
-import { VIEW_TYPE_FLASHCARD_PANEL, VIEW_TYPE_REVIEW } from "./constants";
+import { VIEW_TYPE_FLASHCARD_PANEL, VIEW_TYPE_REVIEW, VIEW_TYPE_STATS } from "./constants";
 import { FlashcardManager, OpenRouterService, FSRSService, StatsService, SessionPersistenceService } from "./services";
 import { extractFSRSSettings } from "./types";
 import {
@@ -10,6 +10,7 @@ import {
     type ShadowAnkiSettings,
     DEFAULT_SETTINGS,
 } from "./ui";
+import { StatsView } from "./ui/stats";
 
 export default class ShadowAnkiPlugin extends Plugin {
     settings!: ShadowAnkiSettings;
@@ -36,8 +37,7 @@ export default class ShadowAnkiPlugin extends Plugin {
 
         // Initialize session persistence service
         this.sessionPersistence = new SessionPersistenceService(this.app);
-        // Clean up old stats on startup (keep last 30 days)
-        void this.sessionPersistence.cleanupOldStats();
+        // Note: We no longer clean up old stats - they're kept for the statistics panel
 
         // Register the sidebar view
         this.registerView(
@@ -51,9 +51,20 @@ export default class ShadowAnkiPlugin extends Plugin {
             (leaf) => new ReviewView(leaf, this)
         );
 
+        // Register the statistics view
+        this.registerView(
+            VIEW_TYPE_STATS,
+            (leaf) => new StatsView(leaf, this)
+        );
+
         // Add ribbon icon to start review
         this.addRibbonIcon("brain", "Shadow Anki - Study", () => {
             void this.startReviewSession();
+        });
+
+        // Add ribbon icon to open statistics
+        this.addRibbonIcon("bar-chart-2", "Shadow Anki - Statistics", () => {
+            void this.openStatsView();
         });
 
         // Register commands
@@ -120,6 +131,13 @@ export default class ShadowAnkiPlugin extends Plugin {
                 const result = await this.flashcardManager.removeAllLegacyIds();
                 new Notice(`Removed ${result.idsRemoved} legacy IDs from ${result.filesModified} files`);
             }
+        });
+
+        // Statistics panel command
+        this.addCommand({
+            id: "open-statistics",
+            name: "Open statistics panel",
+            callback: () => void this.openStatsView()
         });
 
         // Register settings tab
@@ -267,5 +285,36 @@ export default class ShadowAnkiPlugin extends Plugin {
                 workspace.revealLeaf(rightLeaf);
             }
         }
+    }
+
+    /**
+     * Open the statistics view
+     */
+    async openStatsView(): Promise<void> {
+        const { workspace } = this.app;
+
+        // Check if stats view already exists
+        const existingLeaves = workspace.getLeavesOfType(VIEW_TYPE_STATS);
+        if (existingLeaves.length > 0) {
+            // Focus existing stats view
+            const leaf = existingLeaves[0];
+            if (leaf) {
+                workspace.revealLeaf(leaf);
+                // Refresh the view
+                const view = leaf.view;
+                if (view instanceof StatsView) {
+                    void view.refresh();
+                }
+            }
+            return;
+        }
+
+        // Open in main area
+        const leaf = workspace.getLeaf(true);
+        await leaf.setViewState({
+            type: VIEW_TYPE_STATS,
+            active: true,
+        });
+        workspace.revealLeaf(leaf);
     }
 }
