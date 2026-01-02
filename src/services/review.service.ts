@@ -10,6 +10,7 @@ import type {
     DailyStats,
 } from "../types/fsrs.types";
 import type { FSRSService } from "./fsrs.service";
+import { LEARN_AHEAD_LIMIT_MINUTES } from "../constants";
 
 /**
  * Options for building review queue
@@ -33,7 +34,8 @@ export interface QueueBuildOptions {
 export class ReviewService {
     /**
      * Build a review queue from all available cards
-     * Order: Learning/Relearning cards first, then due Review cards, then New cards
+     * Order (Anki-like): Due Learning → Review → New → Pending Learning
+     * Pending learning cards go at the END so waiting screen only shows when all other cards are done
      */
     buildQueue(
         allCards: FSRSFlashcardItem[],
@@ -57,9 +59,22 @@ export class ReviewService {
             return isLearning || !reviewedToday.has(card.id);
         });
 
-        // 1. Get ALL learning and relearning cards (highest priority)
-        // Include all learning cards regardless of due time - waiting screen will handle countdown
-        const learningCards = fsrsService.getLearningCards(availableCards);
+        // 1. Get learning and relearning cards, split by due status
+        // Learn ahead limit (like Anki)
+        const learnAheadTime = new Date(now.getTime() + LEARN_AHEAD_LIMIT_MINUTES * 60 * 1000);
+        const allLearningCards = fsrsService.getLearningCards(availableCards);
+
+        // Due learning cards: due now or within learn-ahead window (highest priority)
+        const dueLearningCards = allLearningCards.filter((card) => {
+            const dueDate = new Date(card.fsrs.due);
+            return dueDate <= learnAheadTime;
+        });
+
+        // Pending learning cards: beyond learn-ahead window (shown at END, after new cards)
+        const pendingLearningCards = allLearningCards.filter((card) => {
+            const dueDate = new Date(card.fsrs.due);
+            return dueDate > learnAheadTime;
+        });
 
         // 2. Get due review cards
         const reviewCards = fsrsService.getReviewCards(availableCards, now);
@@ -72,11 +87,17 @@ export class ReviewService {
         );
         const newCards = fsrsService.getNewCards(availableCards, remainingNewSlots);
 
-        // Combine in order: learning first, then review, then new
+        // Combine in Anki order:
+        // 1. Due learning cards (within learn-ahead window) - highest priority
+        // 2. Review cards
+        // 3. New cards
+        // 4. Pending learning cards (beyond learn-ahead) - at the END
+        // This way, waiting screen only shows when all other cards are done
         const queue: FSRSFlashcardItem[] = [
-            ...fsrsService.sortByDue(learningCards),
+            ...fsrsService.sortByDue(dueLearningCards),
             ...fsrsService.sortByDue(limitedReviewCards),
             ...newCards,
+            ...fsrsService.sortByDue(pendingLearningCards),
         ];
 
         return queue;

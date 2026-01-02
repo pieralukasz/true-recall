@@ -701,17 +701,19 @@ export class ReviewView extends ItemView {
             this.renderSummary();
         });
 
-        // Start countdown timer - update every second
-        this.waitingTimer = setInterval(() => {
-            const remaining = this.stateManager.getTimeUntilNextDue();
-            if (remaining <= 0) {
-                // Card is now due, re-render to show it
-                this.clearWaitingTimer();
-                this.render();
-            } else {
-                countdownEl.textContent = this.formatCountdown(remaining);
-            }
-        }, 1000);
+        // Start countdown timer - update every second (only if there's time to wait)
+        if (timeUntilDue > 0) {
+            this.waitingTimer = setInterval(() => {
+                const remaining = this.stateManager.getTimeUntilNextDue();
+                if (remaining <= 0) {
+                    // Card is now due, re-render to show it
+                    this.clearWaitingTimer();
+                    this.render();
+                } else {
+                    countdownEl.textContent = this.formatCountdown(remaining);
+                }
+            }, 1000);
+        }
     }
 
     /**
@@ -946,17 +948,6 @@ export class ReviewView extends ItemView {
         }
 
         new Notice("Card suspended");
-    }
-
-    private async handleEdit(): Promise<void> {
-        const card = this.stateManager.getCurrentCard();
-        if (!card) return;
-
-        // Open the file at the card's line number
-        await this.flashcardManager.openFileAtLine(
-            this.app.vault.getAbstractFileByPath(card.filePath) as any,
-            card.lineNumber
-        );
     }
 
     private handleOpenNote(): void {
