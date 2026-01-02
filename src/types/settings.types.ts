@@ -58,6 +58,8 @@ export interface ShadowAnkiSettings {
     showReviewHeader: boolean;
     /** Pokaż statystyki new/learning/due w nagłówku Review */
     showReviewHeaderStats: boolean;
+    /** Ukryj pliki flashcards z panelu Linked mentions */
+    hideFlashcardsFromBacklinks: boolean;
 }
 
 /**

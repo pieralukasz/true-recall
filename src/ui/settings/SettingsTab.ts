@@ -265,6 +265,17 @@ export class ShadowAnkiSettingTab extends PluginSettingTab {
                     await this.plugin.saveSettings();
                 }));
 
+        // Hide flashcards from backlinks
+        new Setting(containerEl)
+            .setName("Hide flashcards from backlinks")
+            .setDesc("Hide flashcard files from Linked mentions panel")
+            .addToggle(toggle => toggle
+                .setValue(this.plugin.settings.hideFlashcardsFromBacklinks)
+                .onChange(async (value) => {
+                    this.plugin.settings.hideFlashcardsFromBacklinks = value;
+                    await this.plugin.saveSettings();
+                }));
+
         // ===== FSRS Parameters Section =====
         containerEl.createEl("h2", { text: "FSRS Parameters" });
 

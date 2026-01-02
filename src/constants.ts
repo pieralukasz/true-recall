@@ -59,6 +59,7 @@ export const DEFAULT_SETTINGS: ShadowAnkiSettings = {
 	showProgress: true,
 	showReviewHeader: true,
 	showReviewHeaderStats: true,
+	hideFlashcardsFromBacklinks: true,
 };
 
 // ===== FSRS Default Weights =====
@@ -127,6 +128,9 @@ export const FLASHCARD_CONFIG = {
 } as const;
 
 // ===== FSRS Configuration =====
+
+/** Learn ahead limit in minutes (like Anki) - cards can be shown early if nothing else to study */
+export const LEARN_AHEAD_LIMIT_MINUTES = 20;
 
 /** FSRS algorithm configuration */
 export const FSRS_CONFIG = {
