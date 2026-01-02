@@ -197,18 +197,22 @@ export class StatsView extends ItemView {
 		this.futureDueEl.empty();
 		this.futureDueEl.createEl("h3", { text: "Future Due" });
 
+		// Create all elements synchronously BEFORE async calls to prevent race conditions
+		const canvasContainer = this.futureDueEl.createDiv({ cls: "stats-chart-container" });
+		const canvas = canvasContainer.createEl("canvas", { cls: "stats-chart-canvas" });
+		const summaryEl = this.futureDueEl.createDiv({ cls: "stats-chart-summary" });
+
 		const data = await this.statsCalculator.getFutureDueStats(this.currentRange);
 
 		if (data.length === 0) {
+			this.futureDueEl.empty();
+			this.futureDueEl.createEl("h3", { text: "Future Due" });
 			this.futureDueEl.createDiv({
 				cls: "stats-no-data",
 				text: "No data available",
 			});
 			return;
 		}
-
-		const canvasContainer = this.futureDueEl.createDiv({ cls: "stats-chart-container" });
-		const canvas = canvasContainer.createEl("canvas", { cls: "stats-chart-canvas" });
 
 		// Destroy existing chart if present
 		if (this.charts.has("futureDue")) {
@@ -257,10 +261,9 @@ export class StatsView extends ItemView {
 		});
 		this.charts.set("futureDue", chart);
 
-		// Summary below chart
+		// Fill the summary element (already created synchronously above)
 		const total = data.reduce((sum, d) => sum + d.count, 0);
 		const avg = data.length > 0 ? Math.round(total / data.length) : 0;
-		const summaryEl = this.futureDueEl.createDiv({ cls: "stats-chart-summary" });
 		summaryEl.createDiv({ text: `Total: ${total} reviews` });
 		summaryEl.createDiv({ text: `Average: ${avg} reviews/day` });
 	}
@@ -269,18 +272,28 @@ export class StatsView extends ItemView {
 		this.reviewHistoryEl.empty();
 		this.reviewHistoryEl.createEl("h3", { text: "Review History" });
 
-		const data = await this.statsCalculator.getReviewHistory(this.currentRange);
+		// Create all elements synchronously BEFORE any async calls
+		// This prevents race conditions where multiple renders add duplicate elements
+		const canvasContainer = this.reviewHistoryEl.createDiv({ cls: "stats-chart-container" });
+		const canvas = canvasContainer.createEl("canvas", { cls: "stats-chart-canvas" });
+		const summaryEl = this.reviewHistoryEl.createDiv({ cls: "stats-chart-summary" });
+
+		// Now fetch data asynchronously
+		const [data, rangeSummary] = await Promise.all([
+			this.statsCalculator.getReviewHistory(this.currentRange),
+			this.statsCalculator.getRangeSummary(this.currentRange),
+		]);
 
 		if (data.length === 0) {
+			// Clear and show no data message
+			this.reviewHistoryEl.empty();
+			this.reviewHistoryEl.createEl("h3", { text: "Review History" });
 			this.reviewHistoryEl.createDiv({
 				cls: "stats-no-data",
 				text: "No data available",
 			});
 			return;
 		}
-
-		const canvasContainer = this.reviewHistoryEl.createDiv({ cls: "stats-chart-container" });
-		const canvas = canvasContainer.createEl("canvas", { cls: "stats-chart-canvas" });
 
 		if (this.charts.has("reviewHistory")) {
 			this.charts.get("reviewHistory")!.destroy();
@@ -345,9 +358,7 @@ export class StatsView extends ItemView {
 		});
 		this.charts.set("reviewHistory", chart);
 
-		// Summary
-		const rangeSummary = await this.statsCalculator.getRangeSummary(this.currentRange);
-		const summaryEl = this.reviewHistoryEl.createDiv({ cls: "stats-chart-summary" });
+		// Fill the summary element (already created synchronously above)
 		summaryEl.createDiv({
 			text: `Days studied: ${rangeSummary.daysStudied} of ${rangeSummary.totalDays} (${Math.round((rangeSummary.daysStudied / rangeSummary.totalDays) * 100)}%)`,
 		});
@@ -360,7 +371,8 @@ export class StatsView extends ItemView {
 		this.cardCountsEl.createEl("h3", { text: "Card Counts" });
 
 		const breakdown = await this.statsCalculator.getCardMaturityBreakdown();
-		const total = breakdown.new + breakdown.learning + breakdown.young + breakdown.mature;
+		const activeTotal = breakdown.new + breakdown.learning + breakdown.young + breakdown.mature;
+		const total = activeTotal + breakdown.suspended;
 
 		if (total === 0) {
 			this.cardCountsEl.createDiv({
@@ -372,7 +384,7 @@ export class StatsView extends ItemView {
 
 		const chartRow = this.cardCountsEl.createDiv({ cls: "stats-counts-row" });
 
-		// Chart
+		// Chart (only active cards, suspended shown separately)
 		const canvasContainer = chartRow.createDiv({ cls: "stats-chart-container-small" });
 		const canvas = canvasContainer.createEl("canvas", { cls: "stats-chart-canvas-small" });
 
@@ -380,19 +392,30 @@ export class StatsView extends ItemView {
 			this.charts.get("cardCounts")!.destroy();
 		}
 
+		const chartData = [breakdown.new, breakdown.learning, breakdown.young, breakdown.mature];
+		const chartLabels = ["New", "Learning", "Young", "Mature"];
+		const chartColors = [
+			"rgba(74, 222, 128, 0.8)", // New - green
+			"rgba(251, 146, 60, 0.8)", // Learning - orange
+			"rgba(59, 130, 246, 0.8)", // Young - blue
+			"rgba(139, 92, 246, 0.8)", // Mature - purple
+		];
+
+		// Add suspended to chart if any
+		if (breakdown.suspended > 0) {
+			chartData.push(breakdown.suspended);
+			chartLabels.push("Suspended");
+			chartColors.push("rgba(107, 114, 128, 0.8)"); // Suspended - gray
+		}
+
 		const chart = new Chart(canvas, {
 			type: "doughnut",
 			data: {
-				labels: ["New", "Learning", "Young", "Mature"],
+				labels: chartLabels,
 				datasets: [
 					{
-						data: [breakdown.new, breakdown.learning, breakdown.young, breakdown.mature],
-						backgroundColor: [
-							"rgba(74, 222, 128, 0.8)", // New - green
-							"rgba(251, 146, 60, 0.8)", // Learning - orange
-							"rgba(59, 130, 246, 0.8)", // Young - blue
-							"rgba(139, 92, 246, 0.8)", // Mature - purple
-						],
+						data: chartData,
+						backgroundColor: chartColors,
 					},
 				],
 			},
@@ -414,6 +437,11 @@ export class StatsView extends ItemView {
 			{ label: "Young", value: breakdown.young, color: "#3b82f6" },
 			{ label: "Mature", value: breakdown.mature, color: "#8b5cf6" },
 		];
+
+		// Add suspended to legend if any
+		if (breakdown.suspended > 0) {
+			items.push({ label: "Suspended", value: breakdown.suspended, color: "#6b7280" });
+		}
 
 		for (const item of items) {
 			const row = legendEl.createDiv({ cls: "stats-legend-item" });

@@ -795,6 +795,52 @@
 	padding: 12px 32px;
 }
 
+/* Waiting Screen (for learning cards) */
+.shadow-anki-review-waiting {
+	text-align: center;
+	padding: 32px 24px;
+	max-width: 400px;
+	margin: 0 auto;
+}
+
+.shadow-anki-review-waiting h2 {
+	font-size: 24px;
+	margin: 0 0 16px 0;
+	color: var(--text-normal);
+}
+
+.shadow-anki-waiting-message {
+	color: var(--text-muted);
+	margin: 0 0 24px 0;
+}
+
+.shadow-anki-waiting-countdown {
+	margin-bottom: 24px;
+}
+
+.shadow-anki-waiting-label {
+	color: var(--text-muted);
+	font-size: 14px;
+	margin: 0 0 8px 0;
+}
+
+.shadow-anki-countdown-timer {
+	font-size: 48px;
+	font-weight: 700;
+	color: var(--interactive-accent);
+	font-variant-numeric: tabular-nums;
+}
+
+.shadow-anki-review-waiting-buttons {
+	display: flex;
+	gap: 12px;
+	justify-content: center;
+}
+
+.shadow-anki-review-waiting-buttons .shadow-anki-btn {
+	padding: 12px 32px;
+}
+
 /* ============================================
    REVIEW HEADER STATS
    ============================================ */

@@ -39,8 +39,8 @@ export interface ShadowAnkiSettings {
     /** Interwał dla "Easy" w dniach (domyślnie 4) */
     easyInterval: number;
 
-    // ===== FSRS Parameters (17 weights) =====
-    /** Wagi FSRS (null = domyślne, lub tablica 17 liczb po optymalizacji) */
+    // ===== FSRS Parameters (21 weights for v6) =====
+    /** Wagi FSRS (null = domyślne v6, lub tablica 17/19/21 liczb po optymalizacji) */
     fsrsWeights: number[] | null;
     /** Data ostatniej optymalizacji (ISO string lub null) */
     lastOptimization: string | null;

@@ -50,17 +50,16 @@ export class ReviewService {
             filteredCards = allCards.filter(card => card.deck === options.deckFilter);
         }
 
-        // Filter out already reviewed cards
-        const availableCards = filteredCards.filter(
-            (card) => !reviewedToday.has(card.id)
-        );
-
-        // 1. Get learning and relearning cards (highest priority, always due)
-        const learningCards = fsrsService.getLearningCards(availableCards);
-        const dueLearningCards = learningCards.filter((card) => {
-            const dueDate = new Date(card.fsrs.due);
-            return dueDate <= now;
+        // Filter out already reviewed cards, BUT keep learning/relearning cards
+        // (they need multiple reviews per day)
+        const availableCards = filteredCards.filter((card) => {
+            const isLearning = card.fsrs.state === State.Learning || card.fsrs.state === State.Relearning;
+            return isLearning || !reviewedToday.has(card.id);
         });
+
+        // 1. Get ALL learning and relearning cards (highest priority)
+        // Include all learning cards regardless of due time - waiting screen will handle countdown
+        const learningCards = fsrsService.getLearningCards(availableCards);
 
         // 2. Get due review cards
         const reviewCards = fsrsService.getReviewCards(availableCards, now);
@@ -75,7 +74,7 @@ export class ReviewService {
 
         // Combine in order: learning first, then review, then new
         const queue: FSRSFlashcardItem[] = [
-            ...fsrsService.sortByDue(dueLearningCards),
+            ...fsrsService.sortByDue(learningCards),
             ...fsrsService.sortByDue(limitedReviewCards),
             ...newCards,
         ];

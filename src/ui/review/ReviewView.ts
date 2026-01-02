@@ -51,6 +51,9 @@ export class ReviewView extends ItemView {
     // State subscription
     private unsubscribe: (() => void) | null = null;
 
+    // Timer for waiting screen countdown
+    private waitingTimer: ReturnType<typeof setInterval> | null = null;
+
     constructor(leaf: WorkspaceLeaf, plugin: ShadowAnkiPlugin) {
         super(leaf);
         this.plugin = plugin;
@@ -118,7 +121,18 @@ export class ReviewView extends ItemView {
     async onClose(): Promise<void> {
         document.removeEventListener("keydown", this.handleKeyDown);
         this.unsubscribe?.();
+        this.clearWaitingTimer();
         this.stateManager.reset();
+    }
+
+    /**
+     * Clear the waiting screen timer
+     */
+    private clearWaitingTimer(): void {
+        if (this.waitingTimer) {
+            clearInterval(this.waitingTimer);
+            this.waitingTimer = null;
+        }
     }
 
     /**
@@ -138,12 +152,20 @@ export class ReviewView extends ItemView {
                 return;
             }
 
+            // Filter out suspended cards
+            const activeCards = allCards.filter((c) => !c.fsrs.suspended);
+
+            if (activeCards.length === 0) {
+                this.renderEmptyState("All cards are suspended. Unsuspend some cards to start reviewing.");
+                return;
+            }
+
             // Get persistent stats for today
             const reviewedToday = await this.sessionPersistence.getReviewedToday();
             const newCardsStudiedToday = await this.sessionPersistence.getNewCardsStudiedToday();
 
             // Build review queue with persistent stats and deck filter
-            const queue = this.reviewService.buildQueue(allCards, this.fsrsService, {
+            const queue = this.reviewService.buildQueue(activeCards, this.fsrsService, {
                 newCardsLimit: this.plugin.settings.newCardsPerDay,
                 reviewsLimit: this.plugin.settings.reviewsPerDay,
                 reviewedToday,
@@ -186,6 +208,15 @@ export class ReviewView extends ItemView {
             this.renderSummary();
             return;
         }
+
+        // Check if waiting for learning cards (Anki-like behavior)
+        if (this.stateManager.isWaitingForLearningCards()) {
+            this.renderWaitingScreen();
+            return;
+        }
+
+        // Clear waiting timer if we're showing a card
+        this.clearWaitingTimer();
 
         if (this.plugin.settings.showReviewHeader) {
             this.headerEl.style.display = "";
@@ -417,6 +448,39 @@ export class ReviewView extends ItemView {
     }
 
     /**
+     * Convert contenteditable HTML to markdown text with <br> for line breaks
+     */
+    private convertEditableToMarkdown(editEl: HTMLElement): string {
+        let html = editEl.innerHTML;
+
+        // Normalize different browser line break representations:
+        // - Chrome/Safari: <div>text</div> or <br>
+        // - Firefox: <br>
+        // - Edge: <p>text</p>
+
+        // Replace <br> tags with newline
+        html = html.replace(/<br\s*\/?>/gi, "\n");
+
+        // Replace closing </div> and </p> with newline (opening tags create blocks)
+        html = html.replace(/<\/div>/gi, "\n");
+        html = html.replace(/<\/p>/gi, "\n");
+
+        // Remove remaining HTML tags
+        html = html.replace(/<[^>]*>/g, "");
+
+        // Decode HTML entities
+        const textarea = document.createElement("textarea");
+        textarea.innerHTML = html;
+        const text = textarea.value;
+
+        // Trim trailing newlines but preserve internal ones
+        const trimmed = text.replace(/\n+$/, "");
+
+        // Replace remaining newlines with <br>
+        return trimmed.replace(/\n/g, "<br>");
+    }
+
+    /**
      * Save the current edit to file
      */
     private async saveEdit(): Promise<void> {
@@ -427,7 +491,7 @@ export class ReviewView extends ItemView {
         const editEl = this.cardContainerEl.querySelector('[contenteditable="true"]') as HTMLElement;
         if (!editEl) return;
 
-        const newContent = editEl.textContent ?? "";
+        const newContent = this.convertEditableToMarkdown(editEl);
         const newQuestion = editState.field === "question" ? newContent : card.question;
         const newAnswer = editState.field === "answer" ? newContent : card.answer;
 
@@ -586,6 +650,82 @@ export class ReviewView extends ItemView {
     }
 
     /**
+     * Render waiting screen for learning cards (Anki-like behavior)
+     */
+    private renderWaitingScreen(): void {
+        this.clearWaitingTimer();
+        this.headerEl.empty();
+        this.cardContainerEl.empty();
+        this.buttonsEl.empty();
+        this.progressEl.empty();
+
+        const timeUntilDue = this.stateManager.getTimeUntilNextDue();
+        const pendingCards = this.stateManager.getPendingLearningCards();
+
+        const waitingEl = this.cardContainerEl.createDiv({ cls: "shadow-anki-review-waiting" });
+        waitingEl.createEl("h2", { text: "Congratulations!" });
+        waitingEl.createEl("p", {
+            text: "You've reviewed all available cards.",
+            cls: "shadow-anki-waiting-message"
+        });
+
+        // Countdown display
+        const countdownContainer = waitingEl.createDiv({ cls: "shadow-anki-waiting-countdown" });
+        countdownContainer.createEl("p", {
+            text: `${pendingCards.length} learning card${pendingCards.length === 1 ? '' : 's'} due in:`,
+            cls: "shadow-anki-waiting-label"
+        });
+        const countdownEl = countdownContainer.createDiv({
+            cls: "shadow-anki-countdown-timer",
+            text: this.formatCountdown(timeUntilDue)
+        });
+
+        // Buttons
+        const buttonsEl = waitingEl.createDiv({ cls: "shadow-anki-review-waiting-buttons" });
+
+        const waitBtn = buttonsEl.createEl("button", {
+            cls: "shadow-anki-btn shadow-anki-btn-primary",
+            text: "Wait",
+        });
+        waitBtn.addEventListener("click", () => {
+            // Just keep waiting, timer will auto-refresh
+        });
+
+        const endBtn = buttonsEl.createEl("button", {
+            cls: "shadow-anki-btn shadow-anki-btn-secondary",
+            text: "End Session",
+        });
+        endBtn.addEventListener("click", () => {
+            this.clearWaitingTimer();
+            this.stateManager.endSession();
+            this.renderSummary();
+        });
+
+        // Start countdown timer - update every second
+        this.waitingTimer = setInterval(() => {
+            const remaining = this.stateManager.getTimeUntilNextDue();
+            if (remaining <= 0) {
+                // Card is now due, re-render to show it
+                this.clearWaitingTimer();
+                this.render();
+            } else {
+                countdownEl.textContent = this.formatCountdown(remaining);
+            }
+        }, 1000);
+    }
+
+    /**
+     * Format milliseconds as MM:SS countdown
+     */
+    private formatCountdown(ms: number): string {
+        if (ms <= 0) return "0:00";
+        const totalSeconds = Math.ceil(ms / 1000);
+        const minutes = Math.floor(totalSeconds / 60);
+        const seconds = totalSeconds % 60;
+        return `${minutes}:${seconds.toString().padStart(2, '0')}`;
+    }
+
+    /**
      * Update scheduling preview for current card
      */
     private updateSchedulingPreview(): void {
@@ -619,6 +759,13 @@ export class ReviewView extends ItemView {
         if ((e.metaKey || e.ctrlKey) && e.key === "z") {
             e.preventDefault();
             void this.handleUndo();
+            return;
+        }
+
+        // Shift+1 = Suspend card
+        if (e.shiftKey && e.key === "!") {
+            e.preventDefault();
+            void this.handleSuspend();
             return;
         }
 
@@ -764,6 +911,41 @@ export class ReviewView extends ItemView {
 
         // Update UI
         this.updateSchedulingPreview();
+    }
+
+    /**
+     * Suspend the current card (Shift+1)
+     * Card will be excluded from future reviews until unsuspended
+     */
+    private async handleSuspend(): Promise<void> {
+        const card = this.stateManager.getCurrentCard();
+        if (!card) return;
+
+        // Mark card as suspended
+        const updatedFsrs = { ...card.fsrs, suspended: true };
+
+        try {
+            await this.flashcardManager.updateCardFSRS(
+                card.filePath,
+                card.id,
+                updatedFsrs,
+                card.lineNumber
+            );
+        } catch (error) {
+            console.error("Error suspending card:", error);
+            new Notice("Failed to suspend card");
+            return;
+        }
+
+        // Remove from current queue
+        this.stateManager.removeCurrentCard();
+
+        // Update scheduling preview for next card
+        if (!this.stateManager.isComplete()) {
+            this.updateSchedulingPreview();
+        }
+
+        new Notice("Card suspended");
     }
 
     private async handleEdit(): Promise<void> {
