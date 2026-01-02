@@ -19,3 +19,6 @@ export * from "./review";
 
 // Modals
 export * from "./modals";
+
+// Statistics
+export * from "./stats";

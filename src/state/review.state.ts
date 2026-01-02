@@ -322,6 +322,53 @@ export class ReviewStateManager {
         this.notifyListeners(prevState);
     }
 
+    /**
+     * Undo the last answer - go back to previous card with restored data
+     */
+    undoLastAnswer(previousIndex: number, restoredCard: FSRSFlashcardItem): void {
+        if (!this.state.isActive) {
+            return;
+        }
+
+        const prevState = this.state;
+
+        // Restore the card in the queue
+        const newQueue = [...this.state.queue];
+        newQueue[previousIndex] = restoredCard;
+
+        // Remove the last result
+        const newResults = this.state.results.slice(0, -1);
+
+        // Revert stats (decrement reviewed count and rating count)
+        const lastResult = this.state.results[this.state.results.length - 1];
+        const stats = { ...this.state.stats };
+        if (lastResult) {
+            stats.reviewed = Math.max(0, stats.reviewed - 1);
+            if (lastResult.rating === 1) stats.again = Math.max(0, stats.again - 1);
+            else if (lastResult.rating === 2) stats.hard = Math.max(0, stats.hard - 1);
+            else if (lastResult.rating === 3) stats.good = Math.max(0, stats.good - 1);
+            else if (lastResult.rating === 4) stats.easy = Math.max(0, stats.easy - 1);
+
+            // Revert card type counts
+            if (lastResult.previousState === 0) stats.newCards = Math.max(0, stats.newCards - 1);
+            else if (lastResult.previousState === 1 || lastResult.previousState === 3)
+                stats.learningCards = Math.max(0, stats.learningCards - 1);
+            else if (lastResult.previousState === 2) stats.reviewCards = Math.max(0, stats.reviewCards - 1);
+        }
+
+        this.state = {
+            ...this.state,
+            queue: newQueue,
+            currentIndex: previousIndex,
+            isAnswerRevealed: false,
+            questionShownTime: Date.now(),
+            results: newResults,
+            stats,
+        };
+        this.schedulingPreview = null;
+        this.notifyListeners(prevState);
+    }
+
     // ===== Progress & Stats Methods =====
 
     /**

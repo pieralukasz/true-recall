@@ -509,15 +509,17 @@
 /* Review Header */
 .shadow-anki-review-header {
 	display: flex;
-	justify-content: space-between;
+	justify-content: center;
 	align-items: center;
 	padding: 12px 16px;
 	border-bottom: 1px solid var(--background-modifier-border);
 	background: var(--background-secondary);
+	position: relative;
 }
 
-.shadow-anki-review-close,
-.shadow-anki-review-edit {
+.shadow-anki-review-open-note {
+	position: absolute;
+	right: 16px;
 	background: none;
 	border: none;
 	cursor: pointer;
@@ -529,8 +531,7 @@
 	justify-content: center;
 }
 
-.shadow-anki-review-close:hover,
-.shadow-anki-review-edit:hover {
+.shadow-anki-review-open-note:hover {
 	background: var(--background-modifier-hover);
 	color: var(--text-normal);
 }
@@ -900,4 +901,241 @@
 .shadow-anki-deck-modal .setting-item-control {
 	display: flex;
 	align-items: center;
+}
+
+/* ============================================
+   STATISTICS VIEW STYLES
+   ============================================ */
+
+.shadow-anki-stats {
+	padding: 16px;
+	overflow-y: auto;
+	height: 100%;
+}
+
+.shadow-anki-stats-section {
+	margin-bottom: 24px;
+	padding: 16px;
+	background: var(--background-secondary);
+	border-radius: 8px;
+}
+
+.shadow-anki-stats-section h3 {
+	margin: 0 0 16px 0;
+	font-size: 16px;
+	font-weight: 600;
+	color: var(--text-normal);
+}
+
+/* Today Summary */
+.stats-today-empty {
+	color: var(--text-muted);
+	font-style: italic;
+	margin-bottom: 16px;
+}
+
+.stats-today-grid {
+	display: grid;
+	grid-template-columns: repeat(3, 1fr);
+	gap: 12px;
+	margin-bottom: 16px;
+}
+
+.stats-card {
+	text-align: center;
+	padding: 12px;
+	background: var(--background-primary);
+	border-radius: 6px;
+}
+
+.stats-card-value {
+	font-size: 24px;
+	font-weight: 700;
+	color: var(--text-normal);
+}
+
+.stats-card-label {
+	font-size: 12px;
+	color: var(--text-muted);
+	margin-top: 4px;
+}
+
+.stats-today-summary {
+	font-size: 13px;
+	color: var(--text-muted);
+}
+
+.stats-today-summary > div {
+	margin-bottom: 4px;
+}
+
+/* Range Selector */
+.shadow-anki-stats-range-selector {
+	display: flex;
+	gap: 8px;
+	margin-bottom: 16px;
+	flex-wrap: wrap;
+}
+
+.shadow-anki-stats-range-btn {
+	padding: 6px 12px;
+	border: 1px solid var(--background-modifier-border);
+	border-radius: 6px;
+	background: var(--background-secondary);
+	color: var(--text-muted);
+	cursor: pointer;
+	font-size: 13px;
+	transition: all 0.15s ease;
+}
+
+.shadow-anki-stats-range-btn:hover {
+	background: var(--background-modifier-hover);
+}
+
+.shadow-anki-stats-range-btn.active {
+	background: var(--interactive-accent);
+	color: var(--text-on-accent);
+	border-color: var(--interactive-accent);
+}
+
+/* Chart Containers */
+.stats-chart-container {
+	width: 100%;
+	height: 200px;
+	position: relative;
+}
+
+.stats-chart-container-small {
+	width: 180px;
+	height: 180px;
+	position: relative;
+	flex-shrink: 0;
+}
+
+.stats-chart-canvas,
+.stats-chart-canvas-small {
+	width: 100% !important;
+	height: 100% !important;
+}
+
+.stats-no-data {
+	color: var(--text-muted);
+	text-align: center;
+	padding: 40px 20px;
+	font-style: italic;
+}
+
+.stats-chart-summary {
+	margin-top: 12px;
+	font-size: 13px;
+	color: var(--text-muted);
+}
+
+.stats-chart-summary > div {
+	margin-bottom: 4px;
+}
+
+/* Card Counts */
+.stats-counts-row {
+	display: flex;
+	gap: 24px;
+	align-items: flex-start;
+}
+
+.stats-counts-legend {
+	flex: 1;
+	display: flex;
+	flex-direction: column;
+	gap: 8px;
+}
+
+.stats-legend-item {
+	display: flex;
+	align-items: center;
+	gap: 8px;
+	font-size: 13px;
+}
+
+.stats-legend-color {
+	width: 12px;
+	height: 12px;
+	border-radius: 2px;
+	flex-shrink: 0;
+}
+
+.stats-legend-value {
+	margin-left: auto;
+	color: var(--text-muted);
+}
+
+/* Calendar Heatmap */
+.stats-calendar-year {
+	text-align: center;
+	font-size: 14px;
+	font-weight: 600;
+	margin-bottom: 12px;
+	color: var(--text-normal);
+}
+
+.stats-calendar-day-labels {
+	display: none; /* Hidden for now, can be enabled for full calendar */
+}
+
+.stats-calendar-grid {
+	display: flex;
+	gap: 2px;
+	flex-wrap: nowrap;
+	overflow-x: auto;
+	padding-bottom: 8px;
+}
+
+.stats-calendar-week {
+	display: flex;
+	flex-direction: column;
+	gap: 2px;
+}
+
+.stats-calendar-cell {
+	width: 10px;
+	height: 10px;
+	border-radius: 2px;
+	cursor: pointer;
+}
+
+.stats-calendar-cell.future {
+	opacity: 0.3;
+}
+
+.stats-calendar-cell.level-0 {
+	background: var(--background-modifier-border);
+}
+
+.stats-calendar-cell.level-1 {
+	background: rgba(74, 222, 128, 0.3);
+}
+
+.stats-calendar-cell.level-2 {
+	background: rgba(74, 222, 128, 0.5);
+}
+
+.stats-calendar-cell.level-3 {
+	background: rgba(74, 222, 128, 0.7);
+}
+
+.stats-calendar-cell.level-4 {
+	background: rgba(74, 222, 128, 0.9);
+}
+
+.stats-calendar-legend {
+	display: flex;
+	align-items: center;
+	justify-content: flex-end;
+	gap: 4px;
+	margin-top: 8px;
+	font-size: 11px;
+	color: var(--text-muted);
+}
+
+.stats-calendar-legend .stats-calendar-cell {
+	cursor: default;
 }

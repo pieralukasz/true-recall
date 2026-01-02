@@ -2,7 +2,7 @@
  * Settings Tab UI
  * Plugin settings configuration interface
  */
-import { App, PluginSettingTab, Setting } from "obsidian";
+import { App, Notice, PluginSettingTab, Setting } from "obsidian";
 import type ShadowAnkiPlugin from "../../main";
 import { DEFAULT_SETTINGS, AI_MODELS, FSRS_CONFIG } from "../../constants";
 import type { AIModelKey } from "../../constants";
@@ -297,11 +297,50 @@ export class ShadowAnkiSettingTab extends PluginSettingTab {
                     this.display(); // Refresh
                 }));
 
-        // Current Weights (read-only display)
-        if (this.plugin.settings.fsrsWeights) {
-            new Setting(containerEl)
-                .setName("Current weights")
-                .setDesc(this.plugin.settings.fsrsWeights.slice(0, 5).map(w => w.toFixed(2)).join(", ") + "...");
-        }
+        // Custom Weights Input
+        const currentWeights = this.plugin.settings.fsrsWeights;
+        const weightsString = currentWeights ? currentWeights.join(", ") : "";
+
+        new Setting(containerEl)
+            .setName("Custom FSRS weights")
+            .setDesc("Enter 17, 19, or 21 comma-separated values (from FSRS optimizer). Leave empty to use defaults.")
+            .addTextArea(text => {
+                text.inputEl.rows = 3;
+                text.inputEl.cols = 50;
+                text.inputEl.style.width = "100%";
+                text.inputEl.style.fontFamily = "monospace";
+                text.inputEl.style.fontSize = "12px";
+                text
+                    .setPlaceholder("0.40255, 1.18385, 3.173, 15.69105, ...")
+                    .setValue(weightsString)
+                    .onChange(async (value) => {
+                        const trimmed = value.trim();
+                        if (trimmed === "") {
+                            this.plugin.settings.fsrsWeights = null;
+                            await this.plugin.saveSettings();
+                            return;
+                        }
+
+                        // Parse weights
+                        const parts = trimmed.split(",").map(s => parseFloat(s.trim()));
+
+                        // Validate - accept FSRS v4.5 (17), v5 (19), or v6 (21)
+                        const validLengths = [17, 19, 21];
+                        if (!validLengths.includes(parts.length)) {
+                            new Notice(`Invalid weights count: ${parts.length}. Expected 17, 19, or 21 values.`);
+                            return;
+                        }
+
+                        if (parts.some(n => isNaN(n))) {
+                            new Notice("Invalid weights: some values are not numbers.");
+                            return;
+                        }
+
+                        this.plugin.settings.fsrsWeights = parts;
+                        this.plugin.settings.lastOptimization = new Date().toISOString();
+                        await this.plugin.saveSettings();
+                        new Notice("FSRS weights saved!");
+                    });
+            });
     }
 }

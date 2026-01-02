@@ -41,6 +41,12 @@ export type {
     PersistentDailyStats,
     PersistentStatsData,
     DeckInfo,
+    ExtendedDailyStats,
+    CardMaturityBreakdown,
+    FutureDueEntry,
+    TodaySummary,
+    StreakInfo,
+    StatsTimeRange,
 } from "./fsrs.types";
 
 export {
