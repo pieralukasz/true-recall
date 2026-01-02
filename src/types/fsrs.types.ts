@@ -34,6 +34,8 @@ export interface FSRSCardData {
     scheduledDays: number;
     /** Aktualny krok nauki (dla Learning/Relearning) */
     learningStep: number;
+    /** Czy karta jest zawieszona (nie pojawia się w review) */
+    suspended?: boolean;
 }
 
 /**
@@ -235,6 +237,86 @@ export interface PersistentStatsData {
     lastUpdated: string;
     /** Daily stats keyed by date (YYYY-MM-DD) */
     daily: Record<string, PersistentDailyStats>;
+}
+
+// ===== Statistics Panel Types =====
+
+/**
+ * Extended daily stats with rating breakdown for statistics panel
+ */
+export interface ExtendedDailyStats extends PersistentDailyStats {
+    /** Again rating count */
+    again: number;
+    /** Hard rating count */
+    hard: number;
+    /** Good rating count */
+    good: number;
+    /** Easy rating count */
+    easy: number;
+    /** New cards reviewed (state was New) */
+    newCards: number;
+    /** Learning/relearning cards reviewed */
+    learningCards: number;
+    /** Review cards studied */
+    reviewCards: number;
+}
+
+/**
+ * Card maturity breakdown for pie chart
+ * Young: Review cards with interval < 21 days
+ * Mature: Review cards with interval >= 21 days
+ */
+export interface CardMaturityBreakdown {
+    new: number;
+    learning: number;
+    young: number;
+    mature: number;
+    suspended: number;
+}
+
+/**
+ * Future due prediction entry for bar chart
+ */
+export interface FutureDueEntry {
+    /** Date in YYYY-MM-DD format */
+    date: string;
+    /** Cards due on this date */
+    count: number;
+    /** Cumulative backlog up to this date */
+    cumulative: number;
+}
+
+/**
+ * Time range for statistics charts
+ */
+export type StatsTimeRange = "backlog" | "1m" | "3m" | "1y" | "all";
+
+/**
+ * Today summary for statistics panel
+ */
+export interface TodaySummary {
+    /** Total cards studied */
+    studied: number;
+    /** Time spent in minutes */
+    minutes: number;
+    /** New cards studied */
+    newCards: number;
+    /** Review cards studied */
+    reviewCards: number;
+    /** Again count */
+    again: number;
+    /** Correct rate (good+easy / total) */
+    correctRate: number;
+}
+
+/**
+ * Streak information
+ */
+export interface StreakInfo {
+    /** Current streak in days */
+    current: number;
+    /** Longest streak in days */
+    longest: number;
 }
 
 /**

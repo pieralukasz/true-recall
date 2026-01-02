@@ -29,6 +29,7 @@
 		"vitest": "^1.6.1"
 	},
 	"dependencies": {
+		"chart.js": "^4.5.1",
 		"obsidian": "latest",
 		"ts-fsrs": "^5.2.3",
 		"zod": "^4.3.4"

@@ -8,3 +8,4 @@ export { FSRSService } from "./fsrs.service";
 export { ReviewService, type QueueBuildOptions } from "./review.service";
 export { StatsService, type GlobalFlashcardStats } from "./stats.service";
 export { SessionPersistenceService } from "./session-persistence.service";
+export { StatsCalculatorService } from "./stats-calculator.service";

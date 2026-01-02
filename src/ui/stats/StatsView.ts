@@ -1,0 +1,499 @@
+/**
+ * Statistics View
+ * Displays comprehensive statistics similar to Anki's stats panel
+ */
+import { ItemView, WorkspaceLeaf } from "obsidian";
+import {
+	Chart,
+	CategoryScale,
+	LinearScale,
+	BarElement,
+	BarController,
+	ArcElement,
+	DoughnutController,
+	Title,
+	Tooltip,
+	Legend,
+} from "chart.js";
+import { VIEW_TYPE_STATS } from "../../constants";
+import { StatsCalculatorService } from "../../services/stats-calculator.service";
+import type ShadowAnkiPlugin from "../../main";
+import type { StatsTimeRange } from "../../types";
+
+// Register Chart.js components
+Chart.register(
+	CategoryScale,
+	LinearScale,
+	BarElement,
+	BarController,
+	ArcElement,
+	DoughnutController,
+	Title,
+	Tooltip,
+	Legend
+);
+
+export class StatsView extends ItemView {
+	private plugin: ShadowAnkiPlugin;
+	private statsCalculator: StatsCalculatorService;
+	private charts: Map<string, Chart> = new Map();
+	private currentRange: StatsTimeRange = "1m";
+
+	// Container elements
+	private todayEl!: HTMLElement;
+	private rangeSelectorEl!: HTMLElement;
+	private futureDueEl!: HTMLElement;
+	private reviewHistoryEl!: HTMLElement;
+	private cardCountsEl!: HTMLElement;
+	private calendarEl!: HTMLElement;
+
+	constructor(leaf: WorkspaceLeaf, plugin: ShadowAnkiPlugin) {
+		super(leaf);
+		this.plugin = plugin;
+		this.statsCalculator = new StatsCalculatorService(
+			plugin.fsrsService,
+			plugin.flashcardManager,
+			plugin.sessionPersistence
+		);
+	}
+
+	getViewType(): string {
+		return VIEW_TYPE_STATS;
+	}
+
+	getDisplayText(): string {
+		return "Statistics";
+	}
+
+	getIcon(): string {
+		return "bar-chart-2";
+	}
+
+	async onOpen(): Promise<void> {
+		const container = this.containerEl.children[1] as HTMLElement;
+		container.empty();
+		container.addClass("shadow-anki-stats");
+
+		// Create section containers
+		this.createSections(container);
+
+		// Initial render
+		await this.refresh();
+	}
+
+	async onClose(): Promise<void> {
+		// Destroy all charts to prevent memory leaks
+		for (const chart of this.charts.values()) {
+			chart.destroy();
+		}
+		this.charts.clear();
+	}
+
+	private createSections(container: HTMLElement): void {
+		// 1. Today Summary Section
+		this.todayEl = container.createDiv({ cls: "shadow-anki-stats-section stats-today" });
+
+		// 2. Time Range Selector
+		this.rangeSelectorEl = container.createDiv({ cls: "shadow-anki-stats-range-selector" });
+		this.createRangeButtons();
+
+		// 3. Future Due Section (bar chart)
+		this.futureDueEl = container.createDiv({ cls: "shadow-anki-stats-section stats-future" });
+
+		// 4. Review History Section (stacked bar chart)
+		this.reviewHistoryEl = container.createDiv({ cls: "shadow-anki-stats-section stats-history" });
+
+		// 5. Card Counts Section (pie chart)
+		this.cardCountsEl = container.createDiv({ cls: "shadow-anki-stats-section stats-counts" });
+
+		// 6. Calendar Heatmap Section
+		this.calendarEl = container.createDiv({ cls: "shadow-anki-stats-section stats-calendar" });
+	}
+
+	private createRangeButtons(): void {
+		const ranges: { label: string; value: StatsTimeRange }[] = [
+			{ label: "Backlog", value: "backlog" },
+			{ label: "1 Month", value: "1m" },
+			{ label: "3 Months", value: "3m" },
+			{ label: "1 Year", value: "1y" },
+			{ label: "All", value: "all" },
+		];
+
+		for (const range of ranges) {
+			const btn = this.rangeSelectorEl.createEl("button", {
+				text: range.label,
+				cls: `shadow-anki-stats-range-btn ${this.currentRange === range.value ? "active" : ""}`,
+			});
+			btn.addEventListener("click", () => void this.setRange(range.value));
+		}
+	}
+
+	private async setRange(range: StatsTimeRange): Promise<void> {
+		this.currentRange = range;
+
+		// Update button states
+		const buttons = this.rangeSelectorEl.querySelectorAll(".shadow-anki-stats-range-btn");
+		const rangeOrder: StatsTimeRange[] = ["backlog", "1m", "3m", "1y", "all"];
+		buttons.forEach((btn, i) => {
+			btn.classList.toggle("active", rangeOrder[i] === range);
+		});
+
+		// Re-render charts
+		await Promise.all([
+			this.renderFutureDueChart(),
+			this.renderReviewHistoryChart(),
+		]);
+	}
+
+	async refresh(): Promise<void> {
+		await Promise.all([
+			this.renderTodaySummary(),
+			this.renderFutureDueChart(),
+			this.renderReviewHistoryChart(),
+			this.renderCardCountsChart(),
+			this.renderCalendarHeatmap(),
+		]);
+	}
+
+	// ===== Section Renderers =====
+
+	private async renderTodaySummary(): Promise<void> {
+		this.todayEl.empty();
+		this.todayEl.createEl("h3", { text: "Today" });
+
+		const summary = await this.statsCalculator.getTodaySummary();
+		const streak = await this.statsCalculator.getStreakInfo();
+		const rangeSummary = await this.statsCalculator.getRangeSummary(this.currentRange);
+
+		if (summary.studied === 0) {
+			this.todayEl.createDiv({
+				cls: "stats-today-empty",
+				text: "No cards have been studied today.",
+			});
+		}
+
+		const grid = this.todayEl.createDiv({ cls: "stats-today-grid" });
+
+		this.createStatCard(grid, "Studied", summary.studied.toString());
+		this.createStatCard(grid, "Minutes", summary.minutes.toString());
+		this.createStatCard(grid, "New", summary.newCards.toString());
+		this.createStatCard(grid, "Again", summary.again.toString());
+		this.createStatCard(grid, "Correct", `${Math.round(summary.correctRate * 100)}%`);
+		this.createStatCard(grid, "Streak", `${streak.current}d`);
+
+		// Additional summary
+		const summaryEl = this.todayEl.createDiv({ cls: "stats-today-summary" });
+		summaryEl.createDiv({ text: `Due tomorrow: ${rangeSummary.dueTomorrow} reviews` });
+		summaryEl.createDiv({ text: `Daily load: ~${rangeSummary.dailyLoad} reviews/day` });
+	}
+
+	private createStatCard(container: HTMLElement, label: string, value: string): void {
+		const card = container.createDiv({ cls: "stats-card" });
+		card.createDiv({ cls: "stats-card-value", text: value });
+		card.createDiv({ cls: "stats-card-label", text: label });
+	}
+
+	private async renderFutureDueChart(): Promise<void> {
+		this.futureDueEl.empty();
+		this.futureDueEl.createEl("h3", { text: "Future Due" });
+
+		const data = await this.statsCalculator.getFutureDueStats(this.currentRange);
+
+		if (data.length === 0) {
+			this.futureDueEl.createDiv({
+				cls: "stats-no-data",
+				text: "No data available",
+			});
+			return;
+		}
+
+		const canvasContainer = this.futureDueEl.createDiv({ cls: "stats-chart-container" });
+		const canvas = canvasContainer.createEl("canvas", { cls: "stats-chart-canvas" });
+
+		// Destroy existing chart if present
+		if (this.charts.has("futureDue")) {
+			this.charts.get("futureDue")!.destroy();
+		}
+
+		// Format labels to show just day/month
+		const labels = data.map((d) => {
+			const date = new Date(d.date);
+			return `${date.getDate()}/${date.getMonth() + 1}`;
+		});
+
+		const chart = new Chart(canvas, {
+			type: "bar",
+			data: {
+				labels,
+				datasets: [
+					{
+						label: "Cards Due",
+						data: data.map((d) => d.count),
+						backgroundColor: "rgba(59, 130, 246, 0.7)",
+						borderColor: "rgb(59, 130, 246)",
+						borderWidth: 1,
+					},
+				],
+			},
+			options: {
+				responsive: true,
+				maintainAspectRatio: false,
+				plugins: {
+					legend: { display: false },
+				},
+				scales: {
+					y: {
+						beginAtZero: true,
+						ticks: { precision: 0 },
+					},
+					x: {
+						ticks: {
+							maxRotation: 45,
+							minRotation: 45,
+						},
+					},
+				},
+			},
+		});
+		this.charts.set("futureDue", chart);
+
+		// Summary below chart
+		const total = data.reduce((sum, d) => sum + d.count, 0);
+		const avg = data.length > 0 ? Math.round(total / data.length) : 0;
+		const summaryEl = this.futureDueEl.createDiv({ cls: "stats-chart-summary" });
+		summaryEl.createDiv({ text: `Total: ${total} reviews` });
+		summaryEl.createDiv({ text: `Average: ${avg} reviews/day` });
+	}
+
+	private async renderReviewHistoryChart(): Promise<void> {
+		this.reviewHistoryEl.empty();
+		this.reviewHistoryEl.createEl("h3", { text: "Review History" });
+
+		const data = await this.statsCalculator.getReviewHistory(this.currentRange);
+
+		if (data.length === 0) {
+			this.reviewHistoryEl.createDiv({
+				cls: "stats-no-data",
+				text: "No data available",
+			});
+			return;
+		}
+
+		const canvasContainer = this.reviewHistoryEl.createDiv({ cls: "stats-chart-container" });
+		const canvas = canvasContainer.createEl("canvas", { cls: "stats-chart-canvas" });
+
+		if (this.charts.has("reviewHistory")) {
+			this.charts.get("reviewHistory")!.destroy();
+		}
+
+		const labels = data.map((d) => {
+			const date = new Date(d.date);
+			return `${date.getDate()}/${date.getMonth() + 1}`;
+		});
+
+		const chart = new Chart(canvas, {
+			type: "bar",
+			data: {
+				labels,
+				datasets: [
+					{
+						label: "Again",
+						data: data.map((d) => d.again ?? 0),
+						backgroundColor: "rgba(239, 68, 68, 0.7)",
+					},
+					{
+						label: "Hard",
+						data: data.map((d) => d.hard ?? 0),
+						backgroundColor: "rgba(249, 115, 22, 0.7)",
+					},
+					{
+						label: "Good",
+						data: data.map((d) => d.good ?? 0),
+						backgroundColor: "rgba(34, 197, 94, 0.7)",
+					},
+					{
+						label: "Easy",
+						data: data.map((d) => d.easy ?? 0),
+						backgroundColor: "rgba(6, 182, 212, 0.7)",
+					},
+				],
+			},
+			options: {
+				responsive: true,
+				maintainAspectRatio: false,
+				plugins: {
+					legend: {
+						position: "bottom",
+						labels: { boxWidth: 12 },
+					},
+				},
+				scales: {
+					x: {
+						stacked: true,
+						ticks: {
+							maxRotation: 45,
+							minRotation: 45,
+						},
+					},
+					y: {
+						stacked: true,
+						beginAtZero: true,
+						ticks: { precision: 0 },
+					},
+				},
+			},
+		});
+		this.charts.set("reviewHistory", chart);
+
+		// Summary
+		const rangeSummary = await this.statsCalculator.getRangeSummary(this.currentRange);
+		const summaryEl = this.reviewHistoryEl.createDiv({ cls: "stats-chart-summary" });
+		summaryEl.createDiv({
+			text: `Days studied: ${rangeSummary.daysStudied} of ${rangeSummary.totalDays} (${Math.round((rangeSummary.daysStudied / rangeSummary.totalDays) * 100)}%)`,
+		});
+		summaryEl.createDiv({ text: `Total: ${rangeSummary.totalReviews} reviews` });
+		summaryEl.createDiv({ text: `Average: ${rangeSummary.avgPerDay} reviews/day` });
+	}
+
+	private async renderCardCountsChart(): Promise<void> {
+		this.cardCountsEl.empty();
+		this.cardCountsEl.createEl("h3", { text: "Card Counts" });
+
+		const breakdown = await this.statsCalculator.getCardMaturityBreakdown();
+		const total = breakdown.new + breakdown.learning + breakdown.young + breakdown.mature;
+
+		if (total === 0) {
+			this.cardCountsEl.createDiv({
+				cls: "stats-no-data",
+				text: "No cards found",
+			});
+			return;
+		}
+
+		const chartRow = this.cardCountsEl.createDiv({ cls: "stats-counts-row" });
+
+		// Chart
+		const canvasContainer = chartRow.createDiv({ cls: "stats-chart-container-small" });
+		const canvas = canvasContainer.createEl("canvas", { cls: "stats-chart-canvas-small" });
+
+		if (this.charts.has("cardCounts")) {
+			this.charts.get("cardCounts")!.destroy();
+		}
+
+		const chart = new Chart(canvas, {
+			type: "doughnut",
+			data: {
+				labels: ["New", "Learning", "Young", "Mature"],
+				datasets: [
+					{
+						data: [breakdown.new, breakdown.learning, breakdown.young, breakdown.mature],
+						backgroundColor: [
+							"rgba(74, 222, 128, 0.8)", // New - green
+							"rgba(251, 146, 60, 0.8)", // Learning - orange
+							"rgba(59, 130, 246, 0.8)", // Young - blue
+							"rgba(139, 92, 246, 0.8)", // Mature - purple
+						],
+					},
+				],
+			},
+			options: {
+				responsive: true,
+				maintainAspectRatio: false,
+				plugins: {
+					legend: { display: false },
+				},
+			},
+		});
+		this.charts.set("cardCounts", chart);
+
+		// Legend with percentages
+		const legendEl = chartRow.createDiv({ cls: "stats-counts-legend" });
+		const items = [
+			{ label: "New", value: breakdown.new, color: "#4ade80" },
+			{ label: "Learning", value: breakdown.learning, color: "#fb923c" },
+			{ label: "Young", value: breakdown.young, color: "#3b82f6" },
+			{ label: "Mature", value: breakdown.mature, color: "#8b5cf6" },
+		];
+
+		for (const item of items) {
+			const row = legendEl.createDiv({ cls: "stats-legend-item" });
+			row.createSpan({ cls: "stats-legend-color" }).style.backgroundColor = item.color;
+			row.createSpan({ text: `${item.label}` });
+			row.createSpan({
+				cls: "stats-legend-value",
+				text: `${item.value} (${Math.round((item.value / total) * 100)}%)`,
+			});
+		}
+	}
+
+	private async renderCalendarHeatmap(): Promise<void> {
+		this.calendarEl.empty();
+		this.calendarEl.createEl("h3", { text: "Activity Calendar" });
+
+		const allStats = await this.statsCalculator.sessionPersistence.getAllDailyStats();
+
+		// Header with year navigation
+		const today = new Date();
+		const yearLabel = this.calendarEl.createDiv({ cls: "stats-calendar-year" });
+		yearLabel.createEl("span", { text: today.getFullYear().toString() });
+
+		// Create calendar grid (last 365 days, 53 weeks x 7 days)
+		const calendarGrid = this.calendarEl.createDiv({ cls: "stats-calendar-grid" });
+
+		// Day labels (Mon, Wed, Fri)
+		const dayLabels = this.calendarEl.createDiv({ cls: "stats-calendar-day-labels" });
+		for (const day of ["", "Mon", "", "Wed", "", "Fri", ""]) {
+			dayLabels.createSpan({ text: day });
+		}
+
+		// Calculate starting point (53 weeks ago, aligned to Sunday)
+		const startDate = new Date(today);
+		startDate.setDate(startDate.getDate() - 364);
+		// Align to Sunday
+		const dayOfWeek = startDate.getDay();
+		startDate.setDate(startDate.getDate() - dayOfWeek);
+
+		// Create grid by weeks (columns) then days (rows)
+		for (let week = 0; week < 53; week++) {
+			const weekColumn = calendarGrid.createDiv({ cls: "stats-calendar-week" });
+
+			for (let day = 0; day < 7; day++) {
+				const cellDate = new Date(startDate);
+				cellDate.setDate(cellDate.getDate() + week * 7 + day);
+
+				const dateKey = cellDate.toISOString().split("T")[0]!;
+				const stats = allStats[dateKey];
+				const count = stats?.reviewsCompleted ?? 0;
+
+				const cell = weekColumn.createDiv({
+					cls: `stats-calendar-cell ${this.getHeatmapLevel(count)}`,
+				});
+
+				// Only show cells for dates up to today
+				if (cellDate > today) {
+					cell.addClass("future");
+				}
+
+				// Tooltip
+				cell.setAttribute("aria-label", `${dateKey}: ${count} reviews`);
+				cell.setAttribute("title", `${dateKey}: ${count} reviews`);
+			}
+		}
+
+		// Legend
+		const legend = this.calendarEl.createDiv({ cls: "stats-calendar-legend" });
+		legend.createSpan({ text: "Less" });
+		for (let i = 0; i <= 4; i++) {
+			legend.createDiv({ cls: `stats-calendar-cell level-${i}` });
+		}
+		legend.createSpan({ text: "More" });
+	}
+
+	private getHeatmapLevel(count: number): string {
+		if (count === 0) return "level-0";
+		if (count < 10) return "level-1";
+		if (count < 25) return "level-2";
+		if (count < 50) return "level-3";
+		return "level-4";
+	}
+}

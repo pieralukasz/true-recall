@@ -18,6 +18,16 @@ interface ReviewViewState extends Record<string, unknown> {
 /**
  * Review View for conducting flashcard review sessions
  */
+/**
+ * Undo entry for reverting a card answer
+ */
+interface UndoEntry {
+    card: FSRSFlashcardItem;
+    originalFsrs: FSRSFlashcardItem["fsrs"];
+    wasNewCard: boolean;
+    previousIndex: number;
+}
+
 export class ReviewView extends ItemView {
     private plugin: ShadowAnkiPlugin;
     private fsrsService: FSRSService;
@@ -28,6 +38,9 @@ export class ReviewView extends ItemView {
 
     // Deck filter (null = all decks)
     private deckFilter: string | null = null;
+
+    // Undo stack for reverting answers
+    private undoStack: UndoEntry[] = [];
 
     // UI Elements
     private headerEl!: HTMLElement;
@@ -113,6 +126,10 @@ export class ReviewView extends ItemView {
      */
     async startSession(): Promise<void> {
         try {
+            // Update FSRS service with latest settings
+            const fsrsSettings = extractFSRSSettings(this.plugin.settings);
+            this.fsrsService.updateSettings(fsrsSettings);
+
             // Get all cards
             const allCards = await this.flashcardManager.getAllFSRSCards();
 
@@ -183,22 +200,12 @@ export class ReviewView extends ItemView {
     }
 
     /**
-     * Render header with close button and progress
+     * Render header with stats and open note button
      */
     private renderHeader(): void {
         this.headerEl.empty();
 
-        const progress = this.stateManager.getProgress();
-
-        // Close button
-        const closeBtn = this.headerEl.createEl("button", {
-            cls: "shadow-anki-review-close clickable-icon",
-            attr: { "aria-label": "Close review" },
-        });
-        closeBtn.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>`;
-        closeBtn.addEventListener("click", () => this.handleClose());
-
-        // Stats badges (if enabled)
+        // Stats badges (centered)
         if (this.plugin.settings.showReviewHeaderStats) {
             const remaining = this.calculateRemainingByType();
             const statsContainer = this.headerEl.createDiv({
@@ -209,19 +216,13 @@ export class ReviewView extends ItemView {
             this.renderHeaderStatBadge(statsContainer, "due", remaining.due);
         }
 
-        // Progress text
-        this.headerEl.createDiv({
-            cls: "shadow-anki-review-progress-text",
-            text: `${progress.current} / ${progress.total}`,
+        // Open note button (right side)
+        const openNoteBtn = this.headerEl.createEl("button", {
+            cls: "shadow-anki-review-open-note clickable-icon",
+            attr: { "aria-label": "Open note" },
         });
-
-        // Edit button (placeholder for now)
-        const editBtn = this.headerEl.createEl("button", {
-            cls: "shadow-anki-review-edit clickable-icon",
-            attr: { "aria-label": "Edit card" },
-        });
-        editBtn.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg>`;
-        editBtn.addEventListener("click", () => this.handleEdit());
+        openNoteBtn.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path><polyline points="15 3 21 3 21 9"></polyline><line x1="10" y1="14" x2="21" y2="3"></line></svg>`;
+        openNoteBtn.addEventListener("click", () => this.handleOpenNote());
     }
 
     /**
@@ -588,6 +589,10 @@ export class ReviewView extends ItemView {
      * Update scheduling preview for current card
      */
     private updateSchedulingPreview(): void {
+        // Always update FSRS with latest settings (in case user changed them)
+        const fsrsSettings = extractFSRSSettings(this.plugin.settings);
+        this.fsrsService.updateSettings(fsrsSettings);
+
         const card = this.stateManager.getCurrentCard();
         if (card) {
             const preview = this.fsrsService.getSchedulingPreview(card.fsrs);
@@ -607,6 +612,13 @@ export class ReviewView extends ItemView {
             e.target instanceof HTMLTextAreaElement ||
             (e.target instanceof HTMLElement && e.target.isContentEditable)
         ) {
+            return;
+        }
+
+        // Cmd+Z (Mac) or Ctrl+Z (Windows/Linux) for undo
+        if ((e.metaKey || e.ctrlKey) && e.key === "z") {
+            e.preventDefault();
+            void this.handleUndo();
             return;
         }
 
@@ -651,7 +663,19 @@ export class ReviewView extends ItemView {
         const card = this.stateManager.getCurrentCard();
         if (!card) return;
 
+        const currentIndex = this.stateManager.getState().currentIndex;
         const responseTime = Date.now() - this.stateManager.getState().questionShownTime;
+
+        // Check if this was a new card (before state update)
+        const isNewCard = card.fsrs.state === State.New;
+
+        // Store undo entry BEFORE making changes
+        this.undoStack.push({
+            card: { ...card },
+            originalFsrs: { ...card.fsrs },
+            wasNewCard: isNewCard,
+            previousIndex: currentIndex,
+        });
 
         // Process the answer
         const { updatedCard } = this.reviewService.processAnswer(
@@ -660,9 +684,6 @@ export class ReviewView extends ItemView {
             this.fsrsService,
             responseTime
         );
-
-        // Check if this was a new card (before state update)
-        const isNewCard = card.fsrs.state === State.New;
 
         // Save to file
         try {
@@ -676,9 +697,15 @@ export class ReviewView extends ItemView {
             console.error("Error saving card:", error);
         }
 
-        // Record to persistent storage
+        // Record to persistent storage (with extended stats for statistics panel)
         try {
-            await this.sessionPersistence.recordReview(card.id, isNewCard, responseTime);
+            await this.sessionPersistence.recordReview(
+                card.id,
+                isNewCard,
+                responseTime,
+                rating,
+                card.fsrs.state // previousState before the answer
+            );
         } catch (error) {
             console.error("Error recording review to persistent storage:", error);
         }
@@ -702,12 +729,60 @@ export class ReviewView extends ItemView {
         }
     }
 
+    /**
+     * Undo the last answer (Cmd+Z)
+     */
+    private async handleUndo(): Promise<void> {
+        const undoEntry = this.undoStack.pop();
+        if (!undoEntry) {
+            return; // Nothing to undo
+        }
+
+        const { card, originalFsrs, wasNewCard, previousIndex } = undoEntry;
+
+        // Restore original FSRS data to file
+        try {
+            await this.flashcardManager.updateCardFSRS(
+                card.filePath,
+                card.id,
+                originalFsrs,
+                card.lineNumber
+            );
+        } catch (error) {
+            console.error("Error restoring card FSRS:", error);
+        }
+
+        // Remove from persistent storage
+        try {
+            await this.sessionPersistence.removeLastReview(card.id, wasNewCard);
+        } catch (error) {
+            console.error("Error removing review from persistent storage:", error);
+        }
+
+        // Restore state - go back to previous card
+        this.stateManager.undoLastAnswer(previousIndex, { ...card, fsrs: originalFsrs });
+
+        // Update UI
+        this.updateSchedulingPreview();
+    }
+
     private async handleEdit(): Promise<void> {
         const card = this.stateManager.getCurrentCard();
         if (!card) return;
 
         // Open the file at the card's line number
         await this.flashcardManager.openFileAtLine(
+            this.app.vault.getAbstractFileByPath(card.filePath) as any,
+            card.lineNumber
+        );
+    }
+
+    private handleOpenNote(): void {
+        const card = this.stateManager.getCurrentCard();
+        if (!card) return;
+
+        // Open the flashcard file at the card's line
+        void this.flashcardManager.openFileAtLine(
             this.app.vault.getAbstractFileByPath(card.filePath) as any,
             card.lineNumber
         );

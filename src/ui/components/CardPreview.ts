@@ -45,7 +45,8 @@ export class CardPreview extends BaseComponent {
 		this.element = this.container.createDiv({
 			cls: "shadow-anki-card clickable",
 		});
-		this.element.style.cursor = "pointer";
+
+		this.element.setCssProps({ cursor: "pointer" });
 
 		// Click on card to edit
 		if (handlers.onEdit) {
@@ -167,25 +168,39 @@ export class CardPreview extends BaseComponent {
 
 		const { filePath, handlers } = this.props;
 
-		this.element.addEventListener("click", (e: MouseEvent) => {
-			const linkEl = (e.target as HTMLElement).closest("a.internal-link");
-			if (!linkEl) return;
+		this.element.addEventListener(
+			"click",
+			(e: MouseEvent) => {
+				const linkEl = (e.target as HTMLElement).closest(
+					"a.internal-link"
+				);
+				if (!linkEl) return;
 
-			e.preventDefault();
-			e.stopPropagation();
-			e.stopImmediatePropagation();
+				e.preventDefault();
+				e.stopPropagation();
+				e.stopImmediatePropagation();
 
-			const href = linkEl.getAttribute("data-href");
-			if (!href) return;
+				const href = linkEl.getAttribute("data-href");
+				if (!href) return;
 
-			// Open in existing tab if available
-			const existingLeaf = handlers.app.workspace.getMostRecentLeaf();
-			if (existingLeaf) {
-				void handlers.app.workspace.openLinkText(href, filePath, false);
-			} else {
-				void handlers.app.workspace.openLinkText(href, filePath, "tab");
-			}
-		}, true); // capture: true
+				// Open in existing tab if available
+				const existingLeaf = handlers.app.workspace.getMostRecentLeaf();
+				if (existingLeaf) {
+					void handlers.app.workspace.openLinkText(
+						href,
+						filePath,
+						false
+					);
+				} else {
+					void handlers.app.workspace.openLinkText(
+						href,
+						filePath,
+						"tab"
+					);
+				}
+			},
+			true
+		); // capture: true
 	}
 
 	/**
