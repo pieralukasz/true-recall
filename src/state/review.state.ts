@@ -271,7 +271,7 @@ export class ReviewStateManager {
 
     /**
      * Move to the next card
-     * @returns true if moved to next card, false if no more cards
+     * @returns true if there are more cards, false if session is complete
      */
     nextCard(): boolean {
         if (!this.state.isActive) {
@@ -279,11 +279,10 @@ export class ReviewStateManager {
         }
 
         const nextIndex = this.state.currentIndex + 1;
-        if (nextIndex >= this.state.queue.length) {
-            return false;
-        }
-
         const prevState = this.state;
+
+        // Always increment index, even if no more cards
+        // This ensures isComplete() returns true when we've reviewed all cards
         this.state = {
             ...this.state,
             currentIndex: nextIndex,
@@ -292,7 +291,8 @@ export class ReviewStateManager {
         };
         this.schedulingPreview = null;
         this.notifyListeners(prevState);
-        return true;
+
+        return nextIndex < this.state.queue.length;
     }
 
     /**
@@ -422,6 +422,103 @@ export class ReviewStateManager {
      */
     getRemainingCount(): number {
         return Math.max(0, this.state.queue.length - this.state.currentIndex);
+    }
+
+    /**
+     * Default learn ahead limit in minutes (like Anki)
+     */
+    private static readonly LEARN_AHEAD_LIMIT_MINUTES = 20;
+
+    /**
+     * Check if a card is due now (or within learn ahead limit)
+     */
+    isCardDueNow(card: FSRSFlashcardItem): boolean {
+        const dueDate = new Date(card.fsrs.due);
+        const now = new Date();
+        const learnAheadTime = new Date(
+            now.getTime() + ReviewStateManager.LEARN_AHEAD_LIMIT_MINUTES * 60 * 1000
+        );
+        return dueDate <= learnAheadTime;
+    }
+
+    /**
+     * Get pending learning cards (not yet due) from remaining queue
+     */
+    getPendingLearningCards(): FSRSFlashcardItem[] {
+        const remaining = this.state.queue.slice(this.state.currentIndex);
+        return remaining.filter((card) => {
+            const isLearning = card.fsrs.state === 1 || card.fsrs.state === 3;
+            return isLearning && !this.isCardDueNow(card);
+        });
+    }
+
+    /**
+     * Get time until next learning card is due (in ms)
+     * Returns 0 if no pending learning cards or card is already due
+     */
+    getTimeUntilNextDue(): number {
+        const pending = this.getPendingLearningCards();
+        if (pending.length === 0) return 0;
+
+        // Find the soonest due card
+        const now = Date.now();
+        let soonest = Infinity;
+
+        for (const card of pending) {
+            const dueTime = new Date(card.fsrs.due).getTime();
+            const timeUntil = dueTime - now;
+            if (timeUntil > 0 && timeUntil < soonest) {
+                soonest = timeUntil;
+            }
+        }
+
+        return soonest === Infinity ? 0 : soonest;
+    }
+
+    /**
+     * Check if we're in "waiting for learning cards" state
+     * This is true when:
+     * - Session is active
+     * - Current card exists but is not due yet
+     * - All previous cards have been reviewed
+     */
+    isWaitingForLearningCards(): boolean {
+        if (!this.state.isActive) return false;
+
+        const currentCard = this.getCurrentCard();
+        if (!currentCard) return false;
+
+        // Check if current card is a learning/relearning card that's not due yet
+        const isLearning = currentCard.fsrs.state === 1 || currentCard.fsrs.state === 3;
+        if (!isLearning) return false;
+
+        return !this.isCardDueNow(currentCard);
+    }
+
+    /**
+     * Remove current card from queue (for suspend/delete)
+     */
+    removeCurrentCard(): void {
+        if (!this.state.isActive) {
+            return;
+        }
+
+        const prevState = this.state;
+        const newQueue = [...this.state.queue];
+        newQueue.splice(this.state.currentIndex, 1);
+
+        this.state = {
+            ...this.state,
+            queue: newQueue,
+            isAnswerRevealed: false,
+            questionShownTime: Date.now(),
+            stats: {
+                ...this.state.stats,
+                total: newQueue.length,
+            },
+        };
+        this.schedulingPreview = null;
+        this.notifyListeners(prevState);
     }
 
     // ===== Edit Mode Methods =====
