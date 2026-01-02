@@ -2,7 +2,7 @@
  * Review State Manager
  * Centralized state management for the review session
  */
-import type { Grade } from "ts-fsrs";
+import { State, Rating, type Grade } from "ts-fsrs";
 import type {
     FSRSFlashcardItem,
     ReviewResult,
@@ -11,6 +11,7 @@ import type {
     SchedulingPreview,
 } from "../types/fsrs.types";
 import { createDefaultSessionState } from "../types/fsrs.types";
+import { LEARN_AHEAD_LIMIT_MINUTES } from "../constants";
 
 /**
  * State listener type
@@ -243,16 +244,16 @@ export class ReviewStateManager {
         // Update stats
         const stats = { ...this.state.stats };
         stats.reviewed++;
-        if (rating === 1) stats.again++;
-        else if (rating === 2) stats.hard++;
-        else if (rating === 3) stats.good++;
-        else if (rating === 4) stats.easy++;
+        if (rating === Rating.Again) stats.again++;
+        else if (rating === Rating.Hard) stats.hard++;
+        else if (rating === Rating.Good) stats.good++;
+        else if (rating === Rating.Easy) stats.easy++;
 
         // Count card types
-        if (currentCard.fsrs.state === 0) stats.newCards++;
-        else if (currentCard.fsrs.state === 1 || currentCard.fsrs.state === 3)
+        if (currentCard.fsrs.state === State.New) stats.newCards++;
+        else if (currentCard.fsrs.state === State.Learning || currentCard.fsrs.state === State.Relearning)
             stats.learningCards++;
-        else if (currentCard.fsrs.state === 2) stats.reviewCards++;
+        else if (currentCard.fsrs.state === State.Review) stats.reviewCards++;
 
         // Update queue with new card data
         const newQueue = [...this.state.queue];
@@ -344,16 +345,16 @@ export class ReviewStateManager {
         const stats = { ...this.state.stats };
         if (lastResult) {
             stats.reviewed = Math.max(0, stats.reviewed - 1);
-            if (lastResult.rating === 1) stats.again = Math.max(0, stats.again - 1);
-            else if (lastResult.rating === 2) stats.hard = Math.max(0, stats.hard - 1);
-            else if (lastResult.rating === 3) stats.good = Math.max(0, stats.good - 1);
-            else if (lastResult.rating === 4) stats.easy = Math.max(0, stats.easy - 1);
+            if (lastResult.rating === Rating.Again) stats.again = Math.max(0, stats.again - 1);
+            else if (lastResult.rating === Rating.Hard) stats.hard = Math.max(0, stats.hard - 1);
+            else if (lastResult.rating === Rating.Good) stats.good = Math.max(0, stats.good - 1);
+            else if (lastResult.rating === Rating.Easy) stats.easy = Math.max(0, stats.easy - 1);
 
             // Revert card type counts
-            if (lastResult.previousState === 0) stats.newCards = Math.max(0, stats.newCards - 1);
-            else if (lastResult.previousState === 1 || lastResult.previousState === 3)
+            if (lastResult.previousState === State.New) stats.newCards = Math.max(0, stats.newCards - 1);
+            else if (lastResult.previousState === State.Learning || lastResult.previousState === State.Relearning)
                 stats.learningCards = Math.max(0, stats.learningCards - 1);
-            else if (lastResult.previousState === 2) stats.reviewCards = Math.max(0, stats.reviewCards - 1);
+            else if (lastResult.previousState === State.Review) stats.reviewCards = Math.max(0, stats.reviewCards - 1);
         }
 
         this.state = {
@@ -425,18 +426,13 @@ export class ReviewStateManager {
     }
 
     /**
-     * Default learn ahead limit in minutes (like Anki)
-     */
-    private static readonly LEARN_AHEAD_LIMIT_MINUTES = 20;
-
-    /**
      * Check if a card is due now (or within learn ahead limit)
      */
     isCardDueNow(card: FSRSFlashcardItem): boolean {
         const dueDate = new Date(card.fsrs.due);
         const now = new Date();
         const learnAheadTime = new Date(
-            now.getTime() + ReviewStateManager.LEARN_AHEAD_LIMIT_MINUTES * 60 * 1000
+            now.getTime() + LEARN_AHEAD_LIMIT_MINUTES * 60 * 1000
         );
         return dueDate <= learnAheadTime;
     }
@@ -447,7 +443,7 @@ export class ReviewStateManager {
     getPendingLearningCards(): FSRSFlashcardItem[] {
         const remaining = this.state.queue.slice(this.state.currentIndex);
         return remaining.filter((card) => {
-            const isLearning = card.fsrs.state === 1 || card.fsrs.state === 3;
+            const isLearning = card.fsrs.state === State.Learning || card.fsrs.state === State.Relearning;
             return isLearning && !this.isCardDueNow(card);
         });
     }
@@ -489,7 +485,7 @@ export class ReviewStateManager {
         if (!currentCard) return false;
 
         // Check if current card is a learning/relearning card that's not due yet
-        const isLearning = currentCard.fsrs.state === 1 || currentCard.fsrs.state === 3;
+        const isLearning = currentCard.fsrs.state === State.Learning || currentCard.fsrs.state === State.Relearning;
         if (!isLearning) return false;
 
         return !this.isCardDueNow(currentCard);

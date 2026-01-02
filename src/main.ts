@@ -1,6 +1,6 @@
 import { Plugin, TFile, Notice } from "obsidian";
 import { VIEW_TYPE_FLASHCARD_PANEL, VIEW_TYPE_REVIEW, VIEW_TYPE_STATS } from "./constants";
-import { FlashcardManager, OpenRouterService, FSRSService, StatsService, SessionPersistenceService } from "./services";
+import { FlashcardManager, OpenRouterService, FSRSService, StatsService, SessionPersistenceService, BacklinksFilterService } from "./services";
 import { extractFSRSSettings } from "./types";
 import {
     FlashcardPanelView,
@@ -19,6 +19,7 @@ export default class ShadowAnkiPlugin extends Plugin {
     fsrsService!: FSRSService;
     statsService!: StatsService;
     sessionPersistence!: SessionPersistenceService;
+    backlinksFilter!: BacklinksFilterService;
 
     async onload(): Promise<void> {
         await this.loadSettings();
@@ -38,6 +39,12 @@ export default class ShadowAnkiPlugin extends Plugin {
         // Initialize session persistence service
         this.sessionPersistence = new SessionPersistenceService(this.app);
         // Note: We no longer clean up old stats - they're kept for the statistics panel
+
+        // Initialize backlinks filter service
+        this.backlinksFilter = new BacklinksFilterService();
+        if (this.settings.hideFlashcardsFromBacklinks) {
+            this.backlinksFilter.enable();
+        }
 
         // Register the sidebar view
         this.registerView(
@@ -160,6 +167,8 @@ export default class ShadowAnkiPlugin extends Plugin {
     }
 
     onunload(): void {
+        // Disable backlinks filter
+        this.backlinksFilter?.disable();
         // Obsidian automatically handles leaf cleanup when plugin unloads
     }
 
@@ -183,6 +192,13 @@ export default class ShadowAnkiPlugin extends Plugin {
         if (this.fsrsService) {
             const fsrsSettings = extractFSRSSettings(this.settings);
             this.fsrsService.updateSettings(fsrsSettings);
+        }
+        if (this.backlinksFilter) {
+            if (this.settings.hideFlashcardsFromBacklinks) {
+                this.backlinksFilter.enable();
+            } else {
+                this.backlinksFilter.disable();
+            }
         }
     }
 
