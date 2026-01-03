@@ -36,7 +36,7 @@ export class DeckSelectionModal extends Modal {
     onOpen(): void {
         const { contentEl } = this;
         contentEl.empty();
-        contentEl.addClass("shadow-anki-deck-modal");
+        contentEl.addClass("episteme-deck-modal");
 
         // Title
         contentEl.createEl("h2", { text: "Select deck to study" });
@@ -63,7 +63,7 @@ export class DeckSelectionModal extends Modal {
 
         // Divider
         if (this.decks.length > 0) {
-            contentEl.createEl("hr", { cls: "shadow-anki-deck-divider" });
+            contentEl.createEl("hr", { cls: "episteme-deck-divider" });
         }
 
         // Individual decks
@@ -85,7 +85,7 @@ export class DeckSelectionModal extends Modal {
         if (this.decks.length === 0) {
             contentEl.createEl("p", {
                 text: "No flashcards found. Generate some flashcards first!",
-                cls: "shadow-anki-deck-empty",
+                cls: "episteme-deck-empty",
             });
         }
     }
@@ -122,25 +122,25 @@ export class DeckSelectionModal extends Modal {
         newCount: number,
         dueCount: number
     ): void {
-        const statsContainer = settingEl.createDiv({ cls: "shadow-anki-deck-stats" });
+        const statsContainer = settingEl.createDiv({ cls: "episteme-deck-stats" });
 
         if (newCount > 0) {
             statsContainer.createSpan({
-                cls: "shadow-anki-stat-badge shadow-anki-stat-new",
+                cls: "episteme-stat-badge episteme-stat-new",
                 text: `${newCount} new`,
             });
         }
 
         if (dueCount > 0) {
             statsContainer.createSpan({
-                cls: "shadow-anki-stat-badge shadow-anki-stat-due",
+                cls: "episteme-stat-badge episteme-stat-due",
                 text: `${dueCount} due`,
             });
         }
 
         if (newCount === 0 && dueCount === 0) {
             statsContainer.createSpan({
-                cls: "shadow-anki-stat-badge shadow-anki-stat-done",
+                cls: "episteme-stat-badge episteme-stat-done",
                 text: "all done",
             });
         }

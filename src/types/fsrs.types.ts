@@ -1,5 +1,5 @@
 /**
- * FSRS Types for Shadow Anki
+ * FSRS Types for Episteme
  * Typy do integracji z ts-fsrs dla natywnego systemu SRS
  */
 
@@ -212,7 +212,7 @@ export interface DailyStats {
 }
 
 /**
- * Persistent daily statistics stored in .shadow-anki/stats.json
+ * Persistent daily statistics stored in .episteme/stats.json
  */
 export interface PersistentDailyStats {
     /** Date in YYYY-MM-DD format */

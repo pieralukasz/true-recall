@@ -28,11 +28,11 @@ export interface DiffCardProps {
 function getChangeTypeClass(type: FlashcardChange["type"]): string {
     switch (type) {
         case "NEW":
-            return "shadow-anki-diff-card--new";
+            return "episteme-diff-card--new";
         case "MODIFIED":
-            return "shadow-anki-diff-card--modified";
+            return "episteme-diff-card--modified";
         case "DELETED":
-            return "shadow-anki-diff-card--deleted";
+            return "episteme-diff-card--deleted";
         default:
             return "";
     }
@@ -78,7 +78,7 @@ export class DiffCard extends BaseComponent {
 
         // Create card wrapper
         this.element = this.container.createDiv({
-            cls: `shadow-anki-diff-card ${getChangeTypeClass(change.type)}`,
+            cls: `episteme-diff-card ${getChangeTypeClass(change.type)}`,
         });
 
         // Update visual state based on accepted status
@@ -94,7 +94,7 @@ export class DiffCard extends BaseComponent {
         if (change.type === "DELETED" && change.reason) {
             this.element.createDiv({
                 text: `Reason: ${change.reason}`,
-                cls: "shadow-anki-diff-reason",
+                cls: "episteme-diff-reason",
             });
         }
     }
@@ -105,18 +105,18 @@ export class DiffCard extends BaseComponent {
         if (!this.element) return;
 
         const header = this.element.createDiv({
-            cls: "shadow-anki-diff-card-header",
+            cls: "episteme-diff-card-header",
         });
 
         // Type badge
         const badge = header.createSpan({
-            cls: `shadow-anki-diff-badge shadow-anki-diff-badge--${change.type.toLowerCase()}`,
+            cls: `episteme-diff-badge episteme-diff-badge--${change.type.toLowerCase()}`,
         });
         badge.textContent = getChangeTypeLabel(change.type);
 
         // Checkbox toggle
         const checkbox = header.createEl("input", {
-            cls: "shadow-anki-diff-toggle",
+            cls: "episteme-diff-toggle",
             attr: { type: "checkbox" },
         });
         checkbox.checked = this.acceptedState;
@@ -137,21 +137,21 @@ export class DiffCard extends BaseComponent {
         if (!this.element) return;
 
         const content = this.element.createDiv({
-            cls: "shadow-anki-diff-content",
+            cls: "episteme-diff-content",
         });
 
         // For MODIFIED - show original (crossed out) and new
         if (change.type === "MODIFIED" && change.originalQuestion) {
             // Original question (strikethrough)
             const originalQ = content.createDiv({
-                cls: "shadow-anki-diff-original",
+                cls: "episteme-diff-original",
             });
             originalQ.createSpan({
                 text: "Q (old): ",
-                cls: "shadow-anki-card-label shadow-anki-diff-label-old",
+                cls: "episteme-card-label episteme-diff-label-old",
             });
             const origQContent = originalQ.createDiv({
-                cls: "shadow-anki-md-content shadow-anki-strikethrough",
+                cls: "episteme-md-content episteme-strikethrough",
             });
             void markdownRenderer.render(
                 handlers.app,
@@ -165,14 +165,14 @@ export class DiffCard extends BaseComponent {
         // New/Modified question
         if (change.type !== "DELETED") {
             const questionEl = content.createDiv({
-                cls: "shadow-anki-diff-question",
+                cls: "episteme-diff-question",
             });
             questionEl.createSpan({
                 text: change.type === "MODIFIED" ? "Q (new): " : "Q: ",
-                cls: `shadow-anki-card-label ${change.type === "MODIFIED" ? "shadow-anki-diff-label-new" : ""}`,
+                cls: `episteme-card-label ${change.type === "MODIFIED" ? "episteme-diff-label-new" : ""}`,
             });
             const qContent = questionEl.createDiv({
-                cls: "shadow-anki-md-content",
+                cls: "episteme-md-content",
             });
             void markdownRenderer.render(
                 handlers.app,
@@ -184,14 +184,14 @@ export class DiffCard extends BaseComponent {
         } else {
             // For DELETED - show question being deleted
             const questionEl = content.createDiv({
-                cls: "shadow-anki-diff-question shadow-anki-diff-deleted-content",
+                cls: "episteme-diff-question episteme-diff-deleted-content",
             });
             questionEl.createSpan({
                 text: "Q: ",
-                cls: "shadow-anki-card-label",
+                cls: "episteme-card-label",
             });
             const qContent = questionEl.createDiv({
-                cls: "shadow-anki-md-content shadow-anki-strikethrough",
+                cls: "episteme-md-content episteme-strikethrough",
             });
             void markdownRenderer.render(
                 handlers.app,
@@ -205,14 +205,14 @@ export class DiffCard extends BaseComponent {
         // For MODIFIED - show original answer (crossed out)
         if (change.type === "MODIFIED" && change.originalAnswer) {
             const originalA = content.createDiv({
-                cls: "shadow-anki-diff-original",
+                cls: "episteme-diff-original",
             });
             originalA.createSpan({
                 text: "A (old): ",
-                cls: "shadow-anki-card-label shadow-anki-diff-label-old",
+                cls: "episteme-card-label episteme-diff-label-old",
             });
             const origAContent = originalA.createDiv({
-                cls: "shadow-anki-md-content shadow-anki-strikethrough",
+                cls: "episteme-md-content episteme-strikethrough",
             });
             void markdownRenderer.render(
                 handlers.app,
@@ -226,14 +226,14 @@ export class DiffCard extends BaseComponent {
         // New/Modified answer
         if (change.type !== "DELETED") {
             const answerEl = content.createDiv({
-                cls: "shadow-anki-diff-answer",
+                cls: "episteme-diff-answer",
             });
             answerEl.createSpan({
                 text: change.type === "MODIFIED" ? "A (new): " : "A: ",
-                cls: `shadow-anki-card-label ${change.type === "MODIFIED" ? "shadow-anki-diff-label-new" : ""}`,
+                cls: `episteme-card-label ${change.type === "MODIFIED" ? "episteme-diff-label-new" : ""}`,
             });
             const aContent = answerEl.createDiv({
-                cls: "shadow-anki-md-content",
+                cls: "episteme-md-content",
             });
             void markdownRenderer.render(
                 handlers.app,
@@ -245,14 +245,14 @@ export class DiffCard extends BaseComponent {
         } else {
             // For DELETED - show answer being deleted
             const answerEl = content.createDiv({
-                cls: "shadow-anki-diff-answer shadow-anki-diff-deleted-content",
+                cls: "episteme-diff-answer episteme-diff-deleted-content",
             });
             answerEl.createSpan({
                 text: "A: ",
-                cls: "shadow-anki-card-label",
+                cls: "episteme-card-label",
             });
             const aContent = answerEl.createDiv({
-                cls: "shadow-anki-md-content shadow-anki-strikethrough",
+                cls: "episteme-md-content episteme-strikethrough",
             });
             void markdownRenderer.render(
                 handlers.app,
@@ -286,13 +286,13 @@ export class DiffCard extends BaseComponent {
         if (!this.element) return;
 
         if (this.acceptedState) {
-            this.element.removeClass("shadow-anki-diff-card--rejected");
+            this.element.removeClass("episteme-diff-card--rejected");
         } else {
-            this.element.addClass("shadow-anki-diff-card--rejected");
+            this.element.addClass("episteme-diff-card--rejected");
         }
 
         // Update checkbox state
-        const checkbox = this.element.querySelector(".shadow-anki-diff-toggle") as HTMLInputElement;
+        const checkbox = this.element.querySelector(".episteme-diff-toggle") as HTMLInputElement;
         if (checkbox) {
             checkbox.checked = this.acceptedState;
         }

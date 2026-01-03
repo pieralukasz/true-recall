@@ -43,7 +43,7 @@ export class CardPreview extends BaseComponent {
 		const { flashcard, handlers, showActions = true } = this.props;
 
 		this.element = this.container.createDiv({
-			cls: "shadow-anki-card clickable",
+			cls: "episteme-card clickable",
 		});
 
 		this.element.setCssProps({ cursor: "pointer" });
@@ -57,7 +57,7 @@ export class CardPreview extends BaseComponent {
 
 		// Card header with actions
 		const cardHeader = this.element.createDiv({
-			cls: "shadow-anki-card-header",
+			cls: "episteme-card-header",
 		});
 
 		// Question section
@@ -79,14 +79,14 @@ export class CardPreview extends BaseComponent {
 		const { flashcard, filePath, handlers, markdownRenderer } = this.props;
 
 		const questionEl = header.createDiv({
-			cls: "shadow-anki-card-question",
+			cls: "episteme-card-question",
 		});
 		questionEl.createSpan({
 			text: "Q: ",
-			cls: "shadow-anki-card-label",
+			cls: "episteme-card-label",
 		});
 		const questionContent = questionEl.createDiv({
-			cls: "shadow-anki-md-content",
+			cls: "episteme-md-content",
 		});
 
 		// Render markdown
@@ -105,14 +105,14 @@ export class CardPreview extends BaseComponent {
 		if (!this.element) return;
 
 		const answerEl = this.element.createDiv({
-			cls: "shadow-anki-card-answer",
+			cls: "episteme-card-answer",
 		});
 		answerEl.createSpan({
 			text: "A: ",
-			cls: "shadow-anki-card-label",
+			cls: "episteme-card-label",
 		});
 		const answerContent = answerEl.createDiv({
-			cls: "shadow-anki-md-content",
+			cls: "episteme-md-content",
 		});
 
 		// Render markdown
@@ -129,13 +129,13 @@ export class CardPreview extends BaseComponent {
 		const { flashcard, handlers } = this.props;
 
 		const actionsEl = header.createDiv({
-			cls: "shadow-anki-card-actions",
+			cls: "episteme-card-actions",
 		});
 
 		// Copy button
 		if (handlers.onCopy) {
 			const copyBtn = actionsEl.createSpan({
-				cls: "shadow-anki-card-btn clickable-icon",
+				cls: "episteme-card-btn clickable-icon",
 				attr: { "aria-label": "Copy flashcard" },
 			});
 			copyBtn.textContent = "\u{1F4CB}"; // clipboard emoji
@@ -148,7 +148,7 @@ export class CardPreview extends BaseComponent {
 		// Delete button
 		if (handlers.onDelete) {
 			const removeBtn = actionsEl.createSpan({
-				cls: "shadow-anki-card-btn clickable-icon",
+				cls: "episteme-card-btn clickable-icon",
 				attr: { "aria-label": "Remove flashcard" },
 			});
 			removeBtn.textContent = "\u{1F5D1}"; // trash emoji

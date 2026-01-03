@@ -55,7 +55,7 @@ export class PanelContent extends BaseComponent {
         }
 
         this.element = this.container.createDiv({
-            cls: "shadow-anki-content",
+            cls: "episteme-content",
         });
 
         const { status, viewMode, diffResult, currentFile } = this.props;
@@ -114,7 +114,7 @@ export class PanelContent extends BaseComponent {
         if (!this.element) return;
 
         const stateEl = this.element.createDiv({
-            cls: "shadow-anki-no-cards",
+            cls: "episteme-no-cards",
         });
 
         stateEl.createEl("p", { text: EmptyStateMessages.NO_FLASHCARDS });
@@ -126,27 +126,27 @@ export class PanelContent extends BaseComponent {
         if (!this.element || !flashcardInfo) return;
 
         const previewEl = this.element.createDiv({
-            cls: "shadow-anki-preview",
+            cls: "episteme-preview",
         });
 
         // Card count and last modified
-        const metaEl = previewEl.createDiv({ cls: "shadow-anki-meta-row" });
+        const metaEl = previewEl.createDiv({ cls: "episteme-meta-row" });
         metaEl.createSpan({
             text: `${flashcardInfo.cardCount} flashcard${flashcardInfo.cardCount !== 1 ? "s" : ""}`,
-            cls: "shadow-anki-card-count",
+            cls: "episteme-card-count",
         });
         if (flashcardInfo.lastModified) {
             const date = new Date(flashcardInfo.lastModified);
             metaEl.createSpan({
                 text: ` \u2022 ${this.formatDate(date)}`,
-                cls: "shadow-anki-meta",
+                cls: "episteme-meta",
             });
         }
 
         // Flashcard list
         if (flashcardInfo.flashcards.length > 0) {
             const cardsContainer = previewEl.createDiv({
-                cls: "shadow-anki-cards-container",
+                cls: "episteme-cards-container",
             });
 
             for (let index = 0; index < flashcardInfo.flashcards.length; index++) {
@@ -170,7 +170,7 @@ export class PanelContent extends BaseComponent {
                 // Separator (except for last card)
                 if (index < flashcardInfo.flashcards.length - 1) {
                     cardsContainer.createDiv({
-                        cls: "shadow-anki-card-separator",
+                        cls: "episteme-card-separator",
                     });
                 }
             }
@@ -183,24 +183,24 @@ export class PanelContent extends BaseComponent {
         if (!this.element || !diffResult || !currentFile) return;
 
         const diffEl = this.element.createDiv({
-            cls: "shadow-anki-diff",
+            cls: "episteme-diff",
         });
 
         // Header with count
         const acceptedCount = diffResult.changes.filter((c) => c.accepted).length;
         const totalCount = diffResult.changes.length;
 
-        const headerEl = diffEl.createDiv({ cls: "shadow-anki-diff-header" });
+        const headerEl = diffEl.createDiv({ cls: "episteme-diff-header" });
         headerEl.createSpan({
             text: `Proposed Changes (${acceptedCount}/${totalCount} selected)`,
-            cls: "shadow-anki-diff-title",
+            cls: "episteme-diff-title",
         });
 
         // Select All / Deselect All button
         const allSelected = acceptedCount === totalCount;
         const selectAllBtn = headerEl.createEl("button", {
             text: allSelected ? "Deselect All" : "Select All",
-            cls: "shadow-anki-btn-secondary",
+            cls: "episteme-btn-secondary",
         });
         selectAllBtn.style.marginLeft = "auto";
         selectAllBtn.style.padding = "4px 8px";
@@ -216,14 +216,14 @@ export class PanelContent extends BaseComponent {
         if (diffResult.changes.length === 0) {
             diffEl.createDiv({
                 text: "No changes needed. Flashcards are up to date.",
-                cls: "shadow-anki-diff-empty",
+                cls: "episteme-diff-empty",
             });
             return;
         }
 
         // Render each change
         const changesContainer = diffEl.createDiv({
-            cls: "shadow-anki-diff-changes",
+            cls: "episteme-diff-changes",
         });
 
         for (let i = 0; i < diffResult.changes.length; i++) {

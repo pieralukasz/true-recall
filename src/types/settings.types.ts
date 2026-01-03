@@ -6,9 +6,9 @@ import type { AIModelKey } from "../constants";
 import type { ReviewViewMode } from "./fsrs.types";
 
 /**
- * Ustawienia pluginu Shadow Anki
+ * Ustawienia pluginu Episteme
  */
-export interface ShadowAnkiSettings {
+export interface EpistemeSettings {
     // ===== AI Generation Settings =====
     /** Klucz API OpenRouter */
     openRouterApiKey: string;
@@ -60,6 +60,8 @@ export interface ShadowAnkiSettings {
     showReviewHeaderStats: boolean;
     /** Ukryj pliki flashcards z panelu Linked mentions */
     hideFlashcardsFromBacklinks: boolean;
+    /** Pokaż wskazówki gestów dotykowych na mobilnych (iOS/Android) */
+    showTouchHints: boolean;
 }
 
 /**
@@ -77,7 +79,7 @@ export interface FSRSSettings {
 /**
  * Wyciąga ustawienia FSRS z głównych ustawień
  */
-export function extractFSRSSettings(settings: ShadowAnkiSettings): FSRSSettings {
+export function extractFSRSSettings(settings: EpistemeSettings): FSRSSettings {
     return {
         requestRetention: settings.fsrsRequestRetention,
         maximumInterval: settings.fsrsMaximumInterval,

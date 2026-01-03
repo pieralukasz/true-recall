@@ -6,7 +6,7 @@ import { App, TFile, normalizePath, WorkspaceLeaf } from "obsidian";
 import { FLASHCARD_CONFIG } from "../constants";
 import { type FlashcardItem, type FlashcardChange } from "../validation";
 import { FileError } from "../errors";
-import type { ShadowAnkiSettings, FSRSCardData, FSRSFlashcardItem, DeckInfo } from "../types";
+import type { EpistemeSettings, FSRSCardData, FSRSFlashcardItem, DeckInfo } from "../types";
 import { createDefaultFSRSData, State } from "../types";
 
 /** Default deck name for cards without explicit deck assignment */
@@ -29,9 +29,9 @@ export interface FlashcardInfo {
  */
 export class FlashcardManager {
     private app: App;
-    private settings: ShadowAnkiSettings;
+    private settings: EpistemeSettings;
 
-    constructor(app: App, settings: ShadowAnkiSettings) {
+    constructor(app: App, settings: EpistemeSettings) {
         this.app = app;
         this.settings = settings;
     }
@@ -39,7 +39,7 @@ export class FlashcardManager {
     /**
      * Update settings reference
      */
-    updateSettings(settings: ShadowAnkiSettings): void {
+    updateSettings(settings: EpistemeSettings): void {
         this.settings = settings;
     }
 

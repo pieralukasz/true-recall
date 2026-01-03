@@ -191,8 +191,8 @@ export class OpenRouterService {
             headers: {
                 Authorization: `Bearer ${this.apiKey}`,
                 "Content-Type": "application/json",
-                "HTTP-Referer": "obsidian://shadow-anki",
-                "X-Title": "Shadow Anki",
+                "HTTP-Referer": "obsidian://episteme",
+                "X-Title": "Episteme",
             },
             body: JSON.stringify(requestBody),
         };

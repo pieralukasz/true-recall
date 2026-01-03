@@ -1,6 +1,12 @@
 import esbuild from "esbuild";
 import process from "process";
 import { builtinModules } from 'node:module';
+import { copyFileSync, writeFileSync, existsSync, mkdirSync } from "fs";
+import { join } from "path";
+import dotenv from "dotenv";
+
+// Load .env file
+dotenv.config();
 
 const banner =
 `/*
@@ -10,6 +16,46 @@ if you want to view the source, please visit the github repository of this plugi
 `;
 
 const prod = (process.argv[2] === "production");
+const PLUGIN_ID = "episteme";
+const VAULT_PATH = process.env.VAULT;
+
+// Determine output paths
+const projectOutfile = "main.js";
+const vaultPluginDir = VAULT_PATH
+	? join(VAULT_PATH, ".obsidian", "plugins", PLUGIN_ID)
+	: null;
+
+// Ensure vault plugin directory exists
+if (vaultPluginDir && !existsSync(vaultPluginDir)) {
+	mkdirSync(vaultPluginDir, { recursive: true });
+}
+
+// Copy static files to vault
+function copyToVault() {
+	if (!vaultPluginDir) return;
+
+	try {
+		// Copy main.js
+		copyFileSync(projectOutfile, join(vaultPluginDir, "main.js"));
+
+		// Copy manifest.json and styles.css if they exist
+		if (existsSync("manifest.json")) {
+			copyFileSync("manifest.json", join(vaultPluginDir, "manifest.json"));
+		}
+		if (existsSync("styles.css")) {
+			copyFileSync("styles.css", join(vaultPluginDir, "styles.css"));
+		}
+
+		// Create .hotreload file for hot-reload plugin
+		if (!prod) {
+			writeFileSync(join(vaultPluginDir, ".hotreload"), "");
+		}
+
+		console.log(`✓ Copied to vault: ${vaultPluginDir}`);
+	} catch (err) {
+		console.error("Failed to copy to vault:", err.message);
+	}
+}
 
 const context = await esbuild.context({
 	banner: {
@@ -37,8 +83,16 @@ const context = await esbuild.context({
 	logLevel: "info",
 	sourcemap: prod ? false : "inline",
 	treeShaking: true,
-	outfile: "main.js",
+	outfile: projectOutfile,
 	minify: prod,
+	plugins: [{
+		name: "copy-to-vault",
+		setup(build) {
+			build.onEnd(() => {
+				copyToVault();
+			});
+		}
+	}],
 });
 
 if (prod) {

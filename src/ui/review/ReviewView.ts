@@ -3,13 +3,14 @@
  * Main view for spaced repetition review sessions
  * Can be displayed in fullscreen (main area) or panel (sidebar)
  */
-import { ItemView, WorkspaceLeaf, MarkdownRenderer, Notice, type ViewStateResult } from "obsidian";
+import { ItemView, WorkspaceLeaf, MarkdownRenderer, Notice, Platform, type ViewStateResult } from "obsidian";
 import { Rating, State, type Grade } from "ts-fsrs";
 import { VIEW_TYPE_REVIEW } from "../../constants";
 import { FSRSService, ReviewService, FlashcardManager, SessionPersistenceService } from "../../services";
 import { ReviewStateManager } from "../../state";
 import { extractFSRSSettings, type FSRSFlashcardItem, type SchedulingPreview } from "../../types";
-import type ShadowAnkiPlugin from "../../main";
+import { SwipeGestureHandler } from "../components";
+import type EpistemePlugin from "../../main";
 
 interface ReviewViewState extends Record<string, unknown> {
     deckFilter?: string | null;
@@ -29,7 +30,7 @@ interface UndoEntry {
 }
 
 export class ReviewView extends ItemView {
-    private plugin: ShadowAnkiPlugin;
+    private plugin: EpistemePlugin;
     private fsrsService: FSRSService;
     private reviewService: ReviewService;
     private flashcardManager: FlashcardManager;
@@ -54,7 +55,10 @@ export class ReviewView extends ItemView {
     // Timer for waiting screen countdown
     private waitingTimer: ReturnType<typeof setInterval> | null = null;
 
-    constructor(leaf: WorkspaceLeaf, plugin: ShadowAnkiPlugin) {
+    // Touch gesture handler for mobile
+    private swipeHandler: SwipeGestureHandler | null = null;
+
+    constructor(leaf: WorkspaceLeaf, plugin: EpistemePlugin) {
         super(leaf);
         this.plugin = plugin;
         this.flashcardManager = plugin.flashcardManager;
@@ -100,13 +104,13 @@ export class ReviewView extends ItemView {
     async onOpen(): Promise<void> {
         const container = this.containerEl.children[1] as HTMLElement;
         container.empty();
-        container.addClass("shadow-anki-review");
+        container.addClass("episteme-review");
 
         // Create UI structure
-        this.headerEl = container.createDiv({ cls: "shadow-anki-review-header" });
-        this.cardContainerEl = container.createDiv({ cls: "shadow-anki-review-card-container" });
-        this.buttonsEl = container.createDiv({ cls: "shadow-anki-review-buttons" });
-        this.progressEl = container.createDiv({ cls: "shadow-anki-review-progress" });
+        this.headerEl = container.createDiv({ cls: "episteme-review-header" });
+        this.cardContainerEl = container.createDiv({ cls: "episteme-review-card-container" });
+        this.buttonsEl = container.createDiv({ cls: "episteme-review-buttons" });
+        this.progressEl = container.createDiv({ cls: "episteme-review-progress" });
 
         // Subscribe to state changes
         this.unsubscribe = this.stateManager.subscribe(() => this.render());
@@ -114,12 +118,19 @@ export class ReviewView extends ItemView {
         // Register keyboard shortcuts
         document.addEventListener("keydown", this.handleKeyDown);
 
+        // Initialize touch gestures for mobile
+        if (Platform.isMobile) {
+            this.swipeHandler = new SwipeGestureHandler(this.cardContainerEl);
+        }
+
         // Start session automatically
         await this.startSession();
     }
 
     async onClose(): Promise<void> {
         document.removeEventListener("keydown", this.handleKeyDown);
+        this.swipeHandler?.destroy();
+        this.swipeHandler = null;
         this.unsubscribe?.();
         this.clearWaitingTimer();
         this.stateManager.reset();
@@ -228,6 +239,33 @@ export class ReviewView extends ItemView {
         this.renderCard();
         this.renderButtons();
         this.renderProgress();
+
+        // Update touch gesture handlers for mobile
+        this.updateSwipeHandlers();
+    }
+
+    /**
+     * Update swipe gesture handlers based on current review state
+     */
+    private updateSwipeHandlers(): void {
+        if (!this.swipeHandler) return;
+
+        if (!this.stateManager.isAnswerRevealed()) {
+            // Before answer revealed: tap or swipe up to show answer
+            this.swipeHandler.setHandlers({
+                onTap: () => this.handleShowAnswer(),
+                onSwipeUp: () => this.handleShowAnswer(),
+            });
+        } else {
+            // After answer revealed: swipe to rate
+            this.swipeHandler.setHandlers({
+                onSwipeLeft: () => void this.handleAnswer(Rating.Again),
+                onSwipeRight: () => void this.handleAnswer(Rating.Good),
+                onSwipeUp: () => void this.handleAnswer(Rating.Easy),
+                onSwipeDown: () => void this.handleAnswer(Rating.Hard),
+                onTap: () => void this.handleAnswer(Rating.Good),
+            });
+        }
     }
 
     /**
@@ -240,7 +278,7 @@ export class ReviewView extends ItemView {
         if (this.plugin.settings.showReviewHeaderStats) {
             const remaining = this.calculateRemainingByType();
             const statsContainer = this.headerEl.createDiv({
-                cls: "shadow-anki-review-header-stats",
+                cls: "episteme-review-header-stats",
             });
             this.renderHeaderStatBadge(statsContainer, "new", remaining.new);
             this.renderHeaderStatBadge(statsContainer, "learning", remaining.learning);
@@ -249,7 +287,7 @@ export class ReviewView extends ItemView {
 
         // Open note button (right side)
         const openNoteBtn = this.headerEl.createEl("button", {
-            cls: "shadow-anki-review-open-note clickable-icon",
+            cls: "episteme-review-open-note clickable-icon",
             attr: { "aria-label": "Open note" },
         });
         openNoteBtn.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path><polyline points="15 3 21 3 21 9"></polyline><line x1="10" y1="14" x2="21" y2="3"></line></svg>`;
@@ -281,7 +319,7 @@ export class ReviewView extends ItemView {
         count: number
     ): void {
         const badge = container.createDiv({
-            cls: `shadow-anki-review-stat-badge shadow-anki-review-stat-badge--${type}`,
+            cls: `episteme-review-stat-badge episteme-review-stat-badge--${type}`,
         });
         badge.createSpan({ text: String(count) });
     }
@@ -296,10 +334,10 @@ export class ReviewView extends ItemView {
         if (!card) return;
 
         const editState = this.stateManager.getEditState();
-        const cardEl = this.cardContainerEl.createDiv({ cls: "shadow-anki-review-card" });
+        const cardEl = this.cardContainerEl.createDiv({ cls: "episteme-review-card" });
 
         // Question
-        const questionEl = cardEl.createDiv({ cls: "shadow-anki-review-question" });
+        const questionEl = cardEl.createDiv({ cls: "episteme-review-question" });
         if (editState.active && editState.field === "question") {
             // Edit mode - contenteditable
             this.renderEditableField(questionEl, card.question, "question");
@@ -319,9 +357,9 @@ export class ReviewView extends ItemView {
 
         // Answer (if revealed)
         if (this.stateManager.isAnswerRevealed()) {
-            cardEl.createDiv({ cls: "shadow-anki-review-divider" });
+            cardEl.createDiv({ cls: "episteme-review-divider" });
 
-            const answerEl = cardEl.createDiv({ cls: "shadow-anki-review-answer" });
+            const answerEl = cardEl.createDiv({ cls: "episteme-review-answer" });
             if (editState.active && editState.field === "answer") {
                 // Edit mode - contenteditable
                 this.renderEditableField(answerEl, card.answer, "answer");
@@ -400,7 +438,7 @@ export class ReviewView extends ItemView {
         field: "question" | "answer"
     ): void {
         const editEl = container.createDiv({
-            cls: "shadow-anki-review-editable",
+            cls: "episteme-review-editable",
             attr: {
                 contenteditable: "true",
                 "data-field": field,
@@ -531,20 +569,30 @@ export class ReviewView extends ItemView {
     private renderButtons(): void {
         this.buttonsEl.empty();
 
+        // Show touch hints on mobile
+        if (Platform.isMobile && this.plugin.settings.showTouchHints) {
+            const hint = this.buttonsEl.createDiv({ cls: "episteme-touch-hint" });
+            if (!this.stateManager.isAnswerRevealed()) {
+                hint.setText("Tap card or swipe up to reveal answer");
+            } else {
+                hint.setText("Swipe: ← Again | → Good | ↑ Easy | ↓ Hard");
+            }
+        }
+
         if (!this.stateManager.isAnswerRevealed()) {
             // Show answer button
             const showBtn = this.buttonsEl.createEl("button", {
-                cls: "shadow-anki-btn shadow-anki-btn-show",
+                cls: "episteme-btn episteme-btn-show",
                 text: "Show Answer",
             });
             showBtn.addEventListener("click", () => this.handleShowAnswer());
         } else {
             // Rating buttons
             const preview = this.stateManager.getSchedulingPreview();
-            this.renderRatingButton("Again", Rating.Again, "shadow-anki-btn-again", preview?.again.interval);
-            this.renderRatingButton("Hard", Rating.Hard, "shadow-anki-btn-hard", preview?.hard.interval);
-            this.renderRatingButton("Good", Rating.Good, "shadow-anki-btn-good", preview?.good.interval);
-            this.renderRatingButton("Easy", Rating.Easy, "shadow-anki-btn-easy", preview?.easy.interval);
+            this.renderRatingButton("Again", Rating.Again, "episteme-btn-again", preview?.again.interval);
+            this.renderRatingButton("Hard", Rating.Hard, "episteme-btn-hard", preview?.hard.interval);
+            this.renderRatingButton("Good", Rating.Good, "episteme-btn-good", preview?.good.interval);
+            this.renderRatingButton("Easy", Rating.Easy, "episteme-btn-easy", preview?.easy.interval);
         }
     }
 
@@ -557,12 +605,12 @@ export class ReviewView extends ItemView {
         cls: string,
         interval?: string
     ): void {
-        const btn = this.buttonsEl.createEl("button", { cls: `shadow-anki-btn ${cls}` });
+        const btn = this.buttonsEl.createEl("button", { cls: `episteme-btn ${cls}` });
 
-        btn.createDiv({ cls: "shadow-anki-btn-label", text: label });
+        btn.createDiv({ cls: "episteme-btn-label", text: label });
 
         if (interval && this.plugin.settings.showNextReviewTime) {
-            btn.createDiv({ cls: "shadow-anki-btn-time", text: interval });
+            btn.createDiv({ cls: "episteme-btn-time", text: interval });
         }
 
         btn.addEventListener("click", () => this.handleAnswer(rating));
@@ -580,8 +628,8 @@ export class ReviewView extends ItemView {
 
         const progress = this.stateManager.getProgress();
 
-        const progressBar = this.progressEl.createDiv({ cls: "shadow-anki-progress-bar" });
-        const progressFill = progressBar.createDiv({ cls: "shadow-anki-progress-fill" });
+        const progressBar = this.progressEl.createDiv({ cls: "episteme-progress-bar" });
+        const progressFill = progressBar.createDiv({ cls: "episteme-progress-fill" });
         progressFill.style.width = `${progress.percentage}%`;
     }
 
@@ -594,12 +642,12 @@ export class ReviewView extends ItemView {
         this.buttonsEl.empty();
         this.progressEl.empty();
 
-        const emptyEl = this.cardContainerEl.createDiv({ cls: "shadow-anki-review-empty" });
-        emptyEl.createDiv({ cls: "shadow-anki-review-empty-icon", text: "🎉" });
-        emptyEl.createDiv({ cls: "shadow-anki-review-empty-text", text: message });
+        const emptyEl = this.cardContainerEl.createDiv({ cls: "episteme-review-empty" });
+        emptyEl.createDiv({ cls: "episteme-review-empty-icon", text: "🎉" });
+        emptyEl.createDiv({ cls: "episteme-review-empty-text", text: message });
 
         const closeBtn = emptyEl.createEl("button", {
-            cls: "shadow-anki-btn shadow-anki-btn-primary",
+            cls: "episteme-btn episteme-btn-primary",
             text: "Close",
         });
         closeBtn.addEventListener("click", () => this.handleClose());
@@ -616,10 +664,10 @@ export class ReviewView extends ItemView {
 
         const stats = this.stateManager.getStats();
 
-        const summaryEl = this.cardContainerEl.createDiv({ cls: "shadow-anki-review-summary" });
+        const summaryEl = this.cardContainerEl.createDiv({ cls: "episteme-review-summary" });
         summaryEl.createEl("h2", { text: "Session Complete!" });
 
-        const statsEl = summaryEl.createDiv({ cls: "shadow-anki-review-stats" });
+        const statsEl = summaryEl.createDiv({ cls: "episteme-review-stats" });
 
         this.renderStatItem(statsEl, "Total Reviewed", stats.reviewed.toString());
         this.renderStatItem(statsEl, "Again", stats.again.toString(), "stat-again");
@@ -631,10 +679,10 @@ export class ReviewView extends ItemView {
         const durationSec = Math.floor((stats.duration % 60000) / 1000);
         this.renderStatItem(statsEl, "Duration", `${durationMin}m ${durationSec}s`);
 
-        const buttonsEl = summaryEl.createDiv({ cls: "shadow-anki-review-summary-buttons" });
+        const buttonsEl = summaryEl.createDiv({ cls: "episteme-review-summary-buttons" });
 
         const closeBtn = buttonsEl.createEl("button", {
-            cls: "shadow-anki-btn shadow-anki-btn-primary",
+            cls: "episteme-btn episteme-btn-primary",
             text: "Close",
         });
         closeBtn.addEventListener("click", () => this.handleClose());
@@ -644,9 +692,9 @@ export class ReviewView extends ItemView {
      * Render a stat item
      */
     private renderStatItem(container: HTMLElement, label: string, value: string, cls?: string): void {
-        const itemEl = container.createDiv({ cls: `shadow-anki-stat-item ${cls ?? ""}` });
-        itemEl.createDiv({ cls: "shadow-anki-stat-label", text: label });
-        itemEl.createDiv({ cls: "shadow-anki-stat-value", text: value });
+        const itemEl = container.createDiv({ cls: `episteme-stat-item ${cls ?? ""}` });
+        itemEl.createDiv({ cls: "episteme-stat-label", text: label });
+        itemEl.createDiv({ cls: "episteme-stat-value", text: value });
     }
 
     /**
@@ -662,29 +710,29 @@ export class ReviewView extends ItemView {
         const timeUntilDue = this.stateManager.getTimeUntilNextDue();
         const pendingCards = this.stateManager.getPendingLearningCards();
 
-        const waitingEl = this.cardContainerEl.createDiv({ cls: "shadow-anki-review-waiting" });
+        const waitingEl = this.cardContainerEl.createDiv({ cls: "episteme-review-waiting" });
         waitingEl.createEl("h2", { text: "Congratulations!" });
         waitingEl.createEl("p", {
             text: "You've reviewed all available cards.",
-            cls: "shadow-anki-waiting-message"
+            cls: "episteme-waiting-message"
         });
 
         // Countdown display
-        const countdownContainer = waitingEl.createDiv({ cls: "shadow-anki-waiting-countdown" });
+        const countdownContainer = waitingEl.createDiv({ cls: "episteme-waiting-countdown" });
         countdownContainer.createEl("p", {
             text: `${pendingCards.length} learning card${pendingCards.length === 1 ? '' : 's'} due in:`,
-            cls: "shadow-anki-waiting-label"
+            cls: "episteme-waiting-label"
         });
         const countdownEl = countdownContainer.createDiv({
-            cls: "shadow-anki-countdown-timer",
+            cls: "episteme-countdown-timer",
             text: this.formatCountdown(timeUntilDue)
         });
 
         // Buttons
-        const buttonsEl = waitingEl.createDiv({ cls: "shadow-anki-review-waiting-buttons" });
+        const buttonsEl = waitingEl.createDiv({ cls: "episteme-review-waiting-buttons" });
 
         const waitBtn = buttonsEl.createEl("button", {
-            cls: "shadow-anki-btn shadow-anki-btn-primary",
+            cls: "episteme-btn episteme-btn-primary",
             text: "Wait",
         });
         waitBtn.addEventListener("click", () => {
@@ -692,7 +740,7 @@ export class ReviewView extends ItemView {
         });
 
         const endBtn = buttonsEl.createEl("button", {
-            cls: "shadow-anki-btn shadow-anki-btn-secondary",
+            cls: "episteme-btn episteme-btn-secondary",
             text: "End Session",
         });
         endBtn.addEventListener("click", () => {

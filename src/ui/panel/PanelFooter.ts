@@ -46,7 +46,7 @@ export class PanelFooter extends BaseComponent {
         }
 
         this.element = this.container.createDiv({
-            cls: "shadow-anki-footer",
+            cls: "episteme-footer",
         });
 
         // Diff mode footer
@@ -71,13 +71,13 @@ export class PanelFooter extends BaseComponent {
 
         // Buttons row
         const buttonsRow = this.element.createDiv({
-            cls: "shadow-anki-buttons-row",
+            cls: "episteme-buttons-row",
         });
 
         // Regenerate button
         const regenerateBtn = buttonsRow.createEl("button", {
             text: "Regenerate",
-            cls: "shadow-anki-btn-secondary",
+            cls: "episteme-btn-secondary",
         });
         if (onUpdate) {
             this.events.addEventListener(regenerateBtn, "click", onUpdate);
@@ -85,7 +85,7 @@ export class PanelFooter extends BaseComponent {
 
         // Apply button
         const applyBtn = buttonsRow.createEl("button", {
-            cls: "shadow-anki-btn-primary",
+            cls: "episteme-btn-primary",
         });
         applyBtn.textContent = `Apply (${acceptedCount})`;
         applyBtn.disabled = acceptedCount === 0;
@@ -96,7 +96,7 @@ export class PanelFooter extends BaseComponent {
         // Cancel button
         const cancelBtn = buttonsRow.createEl("button", {
             text: "Cancel",
-            cls: "shadow-anki-btn-secondary",
+            cls: "episteme-btn-secondary",
         });
         if (onCancelDiff) {
             this.events.addEventListener(cancelBtn, "click", onCancelDiff);
@@ -121,7 +121,7 @@ export class PanelFooter extends BaseComponent {
 
         // Main action button
         const mainBtn = this.element.createEl("button", {
-            cls: "shadow-anki-btn-primary",
+            cls: "episteme-btn-primary",
         });
 
         if (status === "processing") {
@@ -147,11 +147,11 @@ export class PanelFooter extends BaseComponent {
         if (!this.element) return;
 
         const instructionsContainer = this.element.createDiv({
-            cls: "shadow-anki-instructions-container",
+            cls: "episteme-instructions-container",
         });
 
         this.instructionsInput = instructionsContainer.createEl("textarea", {
-            cls: "shadow-anki-instructions-input",
+            cls: "episteme-instructions-input",
             placeholder,
         });
         this.instructionsInput.disabled = disabled;

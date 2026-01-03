@@ -47,19 +47,19 @@ export class PanelHeader extends BaseComponent {
         const { currentFile, status, onOpenFlashcardFile } = this.props;
 
         this.element = this.container.createDiv({
-            cls: "shadow-anki-header",
+            cls: "episteme-header",
         });
 
         const titleRow = this.element.createDiv({
-            cls: "shadow-anki-title-row",
+            cls: "episteme-title-row",
         });
 
         // Status indicator
-        const statusEl = titleRow.createSpan({ cls: "shadow-anki-status" });
+        const statusEl = titleRow.createSpan({ cls: "episteme-status" });
         statusEl.textContent = getStatusIcon(status);
 
         // Note title
-        const titleEl = titleRow.createSpan({ cls: "shadow-anki-title" });
+        const titleEl = titleRow.createSpan({ cls: "episteme-title" });
         if (currentFile) {
             titleEl.textContent = currentFile.basename;
         } else {
@@ -69,7 +69,7 @@ export class PanelHeader extends BaseComponent {
         // Open flashcard file icon button (only when flashcards exist)
         if (status === "exists" && currentFile && onOpenFlashcardFile) {
             const openBtn = titleRow.createSpan({
-                cls: "shadow-anki-open-btn clickable-icon",
+                cls: "episteme-open-btn clickable-icon",
             });
             openBtn.textContent = "\u{1F4C4}"; // document emoji
             openBtn.setAttribute("aria-label", "Open flashcard file");

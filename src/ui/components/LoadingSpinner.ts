@@ -33,26 +33,26 @@ export class LoadingSpinner extends BaseComponent {
 		}
 
 		this.element = this.container.createDiv({
-			cls: "shadow-anki-processing",
+			cls: "episteme-processing",
 		});
 
 		// Spinner SVG
 		const spinnerEl = this.element.createDiv({
-			cls: "shadow-anki-spinner",
+			cls: "episteme-spinner",
 		});
 		this.createSpinnerSVG(spinnerEl);
 
 		// Message text
 		this.messageEl = this.element.createDiv({
 			text: this.props.message,
-			cls: "shadow-anki-processing-text",
+			cls: "episteme-processing-text",
 		});
 
 		// Sub-message text
 		if (this.props.subMessage) {
 			this.subMessageEl = this.element.createDiv({
 				text: this.props.subMessage,
-				cls: "shadow-anki-processing-subtext",
+				cls: "episteme-processing-subtext",
 			});
 		}
 	}
@@ -77,7 +77,7 @@ export class LoadingSpinner extends BaseComponent {
 		} else if (subMessage && this.element) {
 			this.subMessageEl = this.element.createDiv({
 				text: subMessage,
-				cls: "shadow-anki-processing-subtext",
+				cls: "episteme-processing-subtext",
 			});
 		}
 	}

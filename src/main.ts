@@ -1,19 +1,19 @@
-import { Plugin, TFile, Notice } from "obsidian";
+import { Plugin, TFile, Notice, Platform } from "obsidian";
 import { VIEW_TYPE_FLASHCARD_PANEL, VIEW_TYPE_REVIEW, VIEW_TYPE_STATS } from "./constants";
 import { FlashcardManager, OpenRouterService, FSRSService, StatsService, SessionPersistenceService, BacklinksFilterService } from "./services";
 import { extractFSRSSettings } from "./types";
 import {
     FlashcardPanelView,
     ReviewView,
-    ShadowAnkiSettingTab,
+    EpistemeSettingTab,
     DeckSelectionModal,
-    type ShadowAnkiSettings,
+    type EpistemeSettings,
     DEFAULT_SETTINGS,
 } from "./ui";
 import { StatsView } from "./ui/stats";
 
-export default class ShadowAnkiPlugin extends Plugin {
-    settings!: ShadowAnkiSettings;
+export default class EpistemePlugin extends Plugin {
+    settings!: EpistemeSettings;
     flashcardManager!: FlashcardManager;
     openRouterService!: OpenRouterService;
     fsrsService!: FSRSService;
@@ -65,12 +65,12 @@ export default class ShadowAnkiPlugin extends Plugin {
         );
 
         // Add ribbon icon to start review
-        this.addRibbonIcon("brain", "Shadow Anki - Study", () => {
+        this.addRibbonIcon("brain", "Episteme - Study", () => {
             void this.startReviewSession();
         });
 
         // Add ribbon icon to open statistics
-        this.addRibbonIcon("bar-chart-2", "Shadow Anki - Statistics", () => {
+        this.addRibbonIcon("bar-chart-2", "Episteme - Statistics", () => {
             void this.openStatsView();
         });
 
@@ -148,7 +148,7 @@ export default class ShadowAnkiPlugin extends Plugin {
         });
 
         // Register settings tab
-        this.addSettingTab(new ShadowAnkiSettingTab(this.app, this));
+        this.addSettingTab(new EpistemeSettingTab(this.app, this));
 
         // Listen for active file changes
         this.registerEvent(
@@ -173,7 +173,7 @@ export default class ShadowAnkiPlugin extends Plugin {
     }
 
     async loadSettings(): Promise<void> {
-        this.settings = Object.assign({}, DEFAULT_SETTINGS, await this.loadData() as Partial<ShadowAnkiSettings>);
+        this.settings = Object.assign({}, DEFAULT_SETTINGS, await this.loadData() as Partial<EpistemeSettings>);
     }
 
     async saveSettings(): Promise<void> {
@@ -210,14 +210,23 @@ export default class ShadowAnkiPlugin extends Plugin {
         let leaf = workspace.getLeavesOfType(VIEW_TYPE_FLASHCARD_PANEL)[0];
 
         if (!leaf) {
-            // Create new leaf in right sidebar
-            const rightLeaf = workspace.getRightLeaf(false);
-            if (rightLeaf) {
-                await rightLeaf.setViewState({
+            if (Platform.isMobile) {
+                // On mobile, open in main area (no sidebar support)
+                leaf = workspace.getLeaf(true);
+                await leaf.setViewState({
                     type: VIEW_TYPE_FLASHCARD_PANEL,
                     active: true
                 });
-                leaf = rightLeaf;
+            } else {
+                // Desktop: use right sidebar
+                const rightLeaf = workspace.getRightLeaf(false);
+                if (rightLeaf) {
+                    await rightLeaf.setViewState({
+                        type: VIEW_TYPE_FLASHCARD_PANEL,
+                        active: true
+                    });
+                    leaf = rightLeaf;
+                }
             }
         }
 
@@ -280,7 +289,8 @@ export default class ShadowAnkiPlugin extends Plugin {
     private async openReviewView(deckFilter: string | null): Promise<void> {
         const { workspace } = this.app;
 
-        if (this.settings.reviewMode === "fullscreen") {
+        // Force fullscreen on mobile (no sidebar support)
+        if (Platform.isMobile || this.settings.reviewMode === "fullscreen") {
             // Open in main area
             const leaf = workspace.getLeaf(true);
             await leaf.setViewState({
@@ -290,7 +300,7 @@ export default class ShadowAnkiPlugin extends Plugin {
             });
             workspace.revealLeaf(leaf);
         } else {
-            // Open in right panel
+            // Desktop: Open in right panel
             const rightLeaf = workspace.getRightLeaf(false);
             if (rightLeaf) {
                 await rightLeaf.setViewState({
