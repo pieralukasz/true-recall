@@ -15,8 +15,12 @@ interface ReviewViewState extends Record<string, unknown> {
     deckFilter?: string | null;
     // Custom session filters
     sourceNoteFilter?: string;
+    sourceNoteFilters?: string[];
     filePathFilter?: string;
     createdTodayOnly?: boolean;
+    createdThisWeek?: boolean;
+    weakCardsOnly?: boolean;
+    stateFilter?: "due" | "learning" | "new";
     ignoreDailyLimits?: boolean;
 }
 
@@ -31,6 +35,8 @@ interface UndoEntry {
     originalFsrs: FSRSFlashcardItem["fsrs"];
     wasNewCard: boolean;
     previousIndex: number;
+    rating: Grade;
+    previousState: State;
 }
 
 export class ReviewView extends ItemView {
@@ -46,8 +52,12 @@ export class ReviewView extends ItemView {
 
     // Custom session filters
     private sourceNoteFilter?: string;
+    private sourceNoteFilters?: string[];
     private filePathFilter?: string;
     private createdTodayOnly?: boolean;
+    private createdThisWeek?: boolean;
+    private weakCardsOnly?: boolean;
+    private stateFilter?: "due" | "learning" | "new";
     private ignoreDailyLimits?: boolean;
 
     // Undo stack for reverting answers
@@ -85,8 +95,12 @@ export class ReviewView extends ItemView {
         const viewState = state as ReviewViewState | null;
         this.deckFilter = viewState?.deckFilter ?? null;
         this.sourceNoteFilter = viewState?.sourceNoteFilter;
+        this.sourceNoteFilters = viewState?.sourceNoteFilters;
         this.filePathFilter = viewState?.filePathFilter;
         this.createdTodayOnly = viewState?.createdTodayOnly;
+        this.createdThisWeek = viewState?.createdThisWeek;
+        this.weakCardsOnly = viewState?.weakCardsOnly;
+        this.stateFilter = viewState?.stateFilter;
         this.ignoreDailyLimits = viewState?.ignoreDailyLimits;
         await super.setState(state, result);
 
@@ -101,8 +115,12 @@ export class ReviewView extends ItemView {
         return {
             deckFilter: this.deckFilter,
             sourceNoteFilter: this.sourceNoteFilter,
+            sourceNoteFilters: this.sourceNoteFilters,
             filePathFilter: this.filePathFilter,
             createdTodayOnly: this.createdTodayOnly,
+            createdThisWeek: this.createdThisWeek,
+            weakCardsOnly: this.weakCardsOnly,
+            stateFilter: this.stateFilter,
             ignoreDailyLimits: this.ignoreDailyLimits,
         };
     }
@@ -207,8 +225,12 @@ export class ReviewView extends ItemView {
                 newReviewMix: this.plugin.settings.newReviewMix,
                 // Custom session filters
                 sourceNoteFilter: this.sourceNoteFilter,
+                sourceNoteFilters: this.sourceNoteFilters,
                 filePathFilter: this.filePathFilter,
                 createdTodayOnly: this.createdTodayOnly,
+                createdThisWeek: this.createdThisWeek,
+                weakCardsOnly: this.weakCardsOnly,
+                stateFilter: this.stateFilter,
                 ignoreDailyLimits: this.ignoreDailyLimits,
             });
 
@@ -831,6 +853,7 @@ export class ReviewView extends ItemView {
                     void this.handleAnswer(Rating.Hard);
                     break;
                 case "3":
+                case " ": // Space bar also triggers Good
                     e.preventDefault();
                     void this.handleAnswer(Rating.Good);
                     break;
@@ -863,6 +886,8 @@ export class ReviewView extends ItemView {
             originalFsrs: { ...card.fsrs },
             wasNewCard: isNewCard,
             previousIndex: currentIndex,
+            rating,
+            previousState: card.fsrs.state,
         });
 
         // Process the answer
@@ -926,7 +951,7 @@ export class ReviewView extends ItemView {
             return; // Nothing to undo
         }
 
-        const { card, originalFsrs, wasNewCard, previousIndex } = undoEntry;
+        const { card, originalFsrs, wasNewCard, previousIndex, rating, previousState } = undoEntry;
 
         // Restore original FSRS data to file
         try {
@@ -940,9 +965,9 @@ export class ReviewView extends ItemView {
             console.error("Error restoring card FSRS:", error);
         }
 
-        // Remove from persistent storage
+        // Remove from persistent storage (with full stats revert)
         try {
-            await this.sessionPersistence.removeLastReview(card.id, wasNewCard);
+            await this.sessionPersistence.removeLastReview(card.id, wasNewCard, rating, previousState);
         } catch (error) {
             console.error("Error removing review from persistent storage:", error);
         }
