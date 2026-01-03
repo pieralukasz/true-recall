@@ -17,8 +17,9 @@ import {
 } from "chart.js";
 import { VIEW_TYPE_STATS } from "../../constants";
 import { StatsCalculatorService } from "../../services/stats-calculator.service";
+import { CardPreviewModal } from "../modals";
 import type EpistemePlugin from "../../main";
-import type { StatsTimeRange } from "../../types";
+import type { StatsTimeRange, CardMaturityBreakdown, FutureDueEntry } from "../../types";
 
 // Register Chart.js components
 Chart.register(
@@ -39,11 +40,13 @@ export class StatsView extends ItemView {
 	private charts: Map<string, Chart> = new Map();
 	private currentRange: StatsTimeRange = "1m";
 
+	// Data for click handlers
+	private futureDueData: FutureDueEntry[] = [];
+
 	// Container elements
 	private todayEl!: HTMLElement;
 	private rangeSelectorEl!: HTMLElement;
 	private futureDueEl!: HTMLElement;
-	private reviewHistoryEl!: HTMLElement;
 	private cardCountsEl!: HTMLElement;
 	private calendarEl!: HTMLElement;
 
@@ -100,13 +103,10 @@ export class StatsView extends ItemView {
 		// 3. Future Due Section (bar chart)
 		this.futureDueEl = container.createDiv({ cls: "episteme-stats-section stats-future" });
 
-		// 4. Review History Section (stacked bar chart)
-		this.reviewHistoryEl = container.createDiv({ cls: "episteme-stats-section stats-history" });
-
-		// 5. Card Counts Section (pie chart)
+		// 4. Card Counts Section (pie chart)
 		this.cardCountsEl = container.createDiv({ cls: "episteme-stats-section stats-counts" });
 
-		// 6. Calendar Heatmap Section
+		// 5. Calendar Heatmap Section
 		this.calendarEl = container.createDiv({ cls: "episteme-stats-section stats-calendar" });
 	}
 
@@ -139,17 +139,13 @@ export class StatsView extends ItemView {
 		});
 
 		// Re-render charts
-		await Promise.all([
-			this.renderFutureDueChart(),
-			this.renderReviewHistoryChart(),
-		]);
+		await this.renderFutureDueChart();
 	}
 
 	async refresh(): Promise<void> {
 		await Promise.all([
 			this.renderTodaySummary(),
 			this.renderFutureDueChart(),
-			this.renderReviewHistoryChart(),
 			this.renderCardCountsChart(),
 			this.renderCalendarHeatmap(),
 		]);
@@ -202,7 +198,9 @@ export class StatsView extends ItemView {
 		const canvas = canvasContainer.createEl("canvas", { cls: "stats-chart-canvas" });
 		const summaryEl = this.futureDueEl.createDiv({ cls: "stats-chart-summary" });
 
-		const data = await this.statsCalculator.getFutureDueStats(this.currentRange);
+		// Use filled version for proper day-by-day display
+		const data = await this.statsCalculator.getFutureDueStatsFilled(this.currentRange);
+		this.futureDueData = data; // Store for click handler
 
 		if (data.length === 0) {
 			this.futureDueEl.empty();
@@ -225,6 +223,9 @@ export class StatsView extends ItemView {
 			return `${date.getDate()}/${date.getMonth() + 1}`;
 		});
 
+		// Calculate maxTicksLimit based on range
+		const maxTicks = this.getMaxTicksForRange();
+
 		const chart = new Chart(canvas, {
 			type: "bar",
 			data: {
@@ -244,6 +245,17 @@ export class StatsView extends ItemView {
 				maintainAspectRatio: false,
 				plugins: {
 					legend: { display: false },
+					tooltip: {
+						callbacks: {
+							title: (items) => {
+								if (items.length > 0) {
+									const index = items[0]!.dataIndex;
+									return this.formatDateForDisplay(data[index]!.date);
+								}
+								return "";
+							},
+						},
+					},
 				},
 				scales: {
 					y: {
@@ -254,8 +266,18 @@ export class StatsView extends ItemView {
 						ticks: {
 							maxRotation: 45,
 							minRotation: 45,
+							maxTicksLimit: maxTicks,
 						},
 					},
+				},
+				onClick: (_event, elements) => {
+					if (elements.length > 0) {
+						const index = elements[0]!.index;
+						const entry = data[index];
+						if (entry && entry.count > 0) {
+							void this.openCardPreviewForDate(entry.date);
+						}
+					}
 				},
 			},
 		});
@@ -268,102 +290,35 @@ export class StatsView extends ItemView {
 		summaryEl.createDiv({ text: `Average: ${avg} reviews/day` });
 	}
 
-	private async renderReviewHistoryChart(): Promise<void> {
-		this.reviewHistoryEl.empty();
-		this.reviewHistoryEl.createEl("h3", { text: "Review History" });
-
-		// Create all elements synchronously BEFORE any async calls
-		// This prevents race conditions where multiple renders add duplicate elements
-		const canvasContainer = this.reviewHistoryEl.createDiv({ cls: "stats-chart-container" });
-		const canvas = canvasContainer.createEl("canvas", { cls: "stats-chart-canvas" });
-		const summaryEl = this.reviewHistoryEl.createDiv({ cls: "stats-chart-summary" });
-
-		// Now fetch data asynchronously
-		const [data, rangeSummary] = await Promise.all([
-			this.statsCalculator.getReviewHistory(this.currentRange),
-			this.statsCalculator.getRangeSummary(this.currentRange),
-		]);
-
-		if (data.length === 0) {
-			// Clear and show no data message
-			this.reviewHistoryEl.empty();
-			this.reviewHistoryEl.createEl("h3", { text: "Review History" });
-			this.reviewHistoryEl.createDiv({
-				cls: "stats-no-data",
-				text: "No data available",
-			});
-			return;
+	private getMaxTicksForRange(): number {
+		switch (this.currentRange) {
+			case "1y":
+				return 12; // Show ~monthly labels
+			case "3m":
+				return 13; // Show ~weekly labels
+			case "1m":
+				return 15; // Show every other day
+			default:
+				return 30;
 		}
+	}
 
-		if (this.charts.has("reviewHistory")) {
-			this.charts.get("reviewHistory")!.destroy();
-		}
-
-		const labels = data.map((d) => {
-			const date = new Date(d.date);
-			return `${date.getDate()}/${date.getMonth() + 1}`;
+	private formatDateForDisplay(isoDate: string): string {
+		const date = new Date(isoDate);
+		return date.toLocaleDateString(undefined, {
+			weekday: "short",
+			year: "numeric",
+			month: "short",
+			day: "numeric",
 		});
+	}
 
-		const chart = new Chart(canvas, {
-			type: "bar",
-			data: {
-				labels,
-				datasets: [
-					{
-						label: "Again",
-						data: data.map((d) => d.again ?? 0),
-						backgroundColor: "rgba(239, 68, 68, 0.7)",
-					},
-					{
-						label: "Hard",
-						data: data.map((d) => d.hard ?? 0),
-						backgroundColor: "rgba(249, 115, 22, 0.7)",
-					},
-					{
-						label: "Good",
-						data: data.map((d) => d.good ?? 0),
-						backgroundColor: "rgba(34, 197, 94, 0.7)",
-					},
-					{
-						label: "Easy",
-						data: data.map((d) => d.easy ?? 0),
-						backgroundColor: "rgba(6, 182, 212, 0.7)",
-					},
-				],
-			},
-			options: {
-				responsive: true,
-				maintainAspectRatio: false,
-				plugins: {
-					legend: {
-						position: "bottom",
-						labels: { boxWidth: 12 },
-					},
-				},
-				scales: {
-					x: {
-						stacked: true,
-						ticks: {
-							maxRotation: 45,
-							minRotation: 45,
-						},
-					},
-					y: {
-						stacked: true,
-						beginAtZero: true,
-						ticks: { precision: 0 },
-					},
-				},
-			},
-		});
-		this.charts.set("reviewHistory", chart);
-
-		// Fill the summary element (already created synchronously above)
-		summaryEl.createDiv({
-			text: `Days studied: ${rangeSummary.daysStudied} of ${rangeSummary.totalDays} (${Math.round((rangeSummary.daysStudied / rangeSummary.totalDays) * 100)}%)`,
-		});
-		summaryEl.createDiv({ text: `Total: ${rangeSummary.totalReviews} reviews` });
-		summaryEl.createDiv({ text: `Average: ${rangeSummary.avgPerDay} reviews/day` });
+	private async openCardPreviewForDate(date: string): Promise<void> {
+		const cards = await this.statsCalculator.getCardsDueOnDate(date);
+		new CardPreviewModal(this.plugin.app, {
+			title: `Cards due: ${this.formatDateForDisplay(date)}`,
+			cards,
+		}).open();
 	}
 
 	private async renderCardCountsChart(): Promise<void> {
@@ -429,29 +384,47 @@ export class StatsView extends ItemView {
 		});
 		this.charts.set("cardCounts", chart);
 
-		// Legend with percentages
+		// Legend with percentages - clickable
 		const legendEl = chartRow.createDiv({ cls: "stats-counts-legend" });
-		const items = [
-			{ label: "New", value: breakdown.new, color: "#4ade80" },
-			{ label: "Learning", value: breakdown.learning, color: "#fb923c" },
-			{ label: "Young", value: breakdown.young, color: "#3b82f6" },
-			{ label: "Mature", value: breakdown.mature, color: "#8b5cf6" },
+		const items: { label: string; value: number; color: string; category: keyof CardMaturityBreakdown }[] = [
+			{ label: "New", value: breakdown.new, color: "#4ade80", category: "new" },
+			{ label: "Learning", value: breakdown.learning, color: "#fb923c", category: "learning" },
+			{ label: "Young", value: breakdown.young, color: "#3b82f6", category: "young" },
+			{ label: "Mature", value: breakdown.mature, color: "#8b5cf6", category: "mature" },
 		];
 
 		// Add suspended to legend if any
 		if (breakdown.suspended > 0) {
-			items.push({ label: "Suspended", value: breakdown.suspended, color: "#6b7280" });
+			items.push({ label: "Suspended", value: breakdown.suspended, color: "#6b7280", category: "suspended" });
 		}
 
 		for (const item of items) {
-			const row = legendEl.createDiv({ cls: "stats-legend-item" });
+			const row = legendEl.createDiv({ cls: "stats-legend-item stats-legend-clickable" });
 			row.createSpan({ cls: "stats-legend-color" }).style.backgroundColor = item.color;
 			row.createSpan({ text: `${item.label}` });
 			row.createSpan({
 				cls: "stats-legend-value",
 				text: `${item.value} (${Math.round((item.value / total) * 100)}%)`,
 			});
+
+			// Click handler to show cards in this category
+			if (item.value > 0) {
+				row.addEventListener("click", () => {
+					void this.openCardPreviewForCategory(item.category, item.label);
+				});
+			}
 		}
+	}
+
+	private async openCardPreviewForCategory(
+		category: keyof CardMaturityBreakdown,
+		label: string
+	): Promise<void> {
+		const cards = await this.statsCalculator.getCardsByCategory(category);
+		new CardPreviewModal(this.plugin.app, {
+			title: `${label} Cards (${cards.length})`,
+			cards,
+		}).open();
 	}
 
 	private async renderCalendarHeatmap(): Promise<void> {

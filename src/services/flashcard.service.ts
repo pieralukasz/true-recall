@@ -487,6 +487,15 @@ deck: "${deck}"
 		return deckMatch?.[1]?.trim() ?? DEFAULT_DECK;
 	}
 
+	/**
+	 * Extract source_link from frontmatter
+	 * Returns the note name from source_link: "[[NoteName]]"
+	 */
+	private extractSourceLinkFromContent(content: string): string | null {
+		const match = content.match(/source_link:\s*"\[\[([^\]]+)\]\]"/);
+		return match?.[1] ?? null;
+	}
+
 	private getLeafForFile(file: TFile): WorkspaceLeaf {
 		const leaves = this.app.workspace.getLeavesOfType("markdown");
 		for (const leaf of leaves) {
@@ -626,7 +635,8 @@ deck: "${deck}"
 		for (const file of files) {
 			const content = await this.app.vault.read(file);
 			const deck = this.extractDeckFromFrontmatter(content);
-			const cards = this.parseAllFlashcards(content, file.path, deck);
+			const sourceNoteName = this.extractSourceLinkFromContent(content);
+			const cards = this.parseAllFlashcards(content, file.path, deck, sourceNoteName);
 			allCards.push(...cards);
 		}
 
@@ -641,7 +651,8 @@ deck: "${deck}"
 	private parseAllFlashcards(
 		content: string,
 		filePath: string,
-		deck: string
+		deck: string,
+		sourceNoteName: string | null
 	): FSRSFlashcardItem[] {
 		const flashcards: FSRSFlashcardItem[] = [];
 		const lines = content.split("\n");
@@ -669,7 +680,8 @@ deck: "${deck}"
 						currentAnswerLines.join("\n").trim(),
 						currentLineNumber,
 						filePath,
-						deck
+						deck,
+						sourceNoteName ?? undefined
 					);
 					flashcards.push(card);
 				}
@@ -704,6 +716,7 @@ deck: "${deck}"
 					filePath,
 					fsrs: fsrsData,
 					deck,
+					sourceNoteName: sourceNoteName ?? undefined,
 				});
 
 				// Reset for next card
@@ -729,7 +742,8 @@ deck: "${deck}"
 						currentAnswerLines.join("\n").trim(),
 						currentLineNumber,
 						filePath,
-						deck
+						deck,
+						sourceNoteName ?? undefined
 					);
 					flashcards.push(card);
 					currentQuestion = "";
@@ -752,7 +766,8 @@ deck: "${deck}"
 				currentAnswerLines.join("\n").trim(),
 				currentLineNumber,
 				filePath,
-				deck
+				deck,
+				sourceNoteName ?? undefined
 			);
 			flashcards.push(card);
 		}
@@ -769,7 +784,8 @@ deck: "${deck}"
 		answer: string,
 		lineNumber: number,
 		filePath: string,
-		deck: string
+		deck: string,
+		sourceNoteName?: string
 	): FSRSFlashcardItem {
 		const id = this.generateCardId();
 		const fsrsData = createDefaultFSRSData(id);
@@ -784,6 +800,7 @@ deck: "${deck}"
 			filePath,
 			fsrs: fsrsData,
 			deck,
+			sourceNoteName,
 		};
 	}
 

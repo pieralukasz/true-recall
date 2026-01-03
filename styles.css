@@ -1085,7 +1085,8 @@
 .stats-counts-row {
 	display: flex;
 	gap: 24px;
-	align-items: flex-start;
+	align-items: center;
+	justify-content: center;
 }
 
 .stats-counts-legend {
@@ -1184,6 +1185,147 @@
 
 .stats-calendar-legend .stats-calendar-cell {
 	cursor: default;
+}
+
+/* ============================================
+   CARD PREVIEW MODAL STYLES
+   ============================================ */
+
+.episteme-card-preview-modal {
+	width: 90vw;
+	max-width: 800px;
+}
+
+.episteme-card-preview-modal h2 {
+	margin: 0 0 8px 0;
+	font-size: 18px;
+	font-weight: 600;
+	text-align: center;
+}
+
+.episteme-card-preview-count {
+	text-align: center;
+	font-size: 13px;
+	color: var(--text-muted);
+	margin-bottom: 16px;
+}
+
+.episteme-card-preview-list {
+	max-height: 60vh;
+	overflow-y: auto;
+	display: flex;
+	flex-direction: column;
+	gap: 12px;
+}
+
+.episteme-card-preview-empty {
+	text-align: center;
+	color: var(--text-muted);
+	padding: 32px;
+	font-style: italic;
+}
+
+.episteme-card-preview-item {
+	padding: 12px;
+	background: var(--background-secondary);
+	border-radius: 8px;
+	border-left: 3px solid var(--interactive-accent);
+	word-wrap: break-word;
+	overflow-wrap: break-word;
+}
+
+.episteme-card-preview-question {
+	font-weight: 600;
+	font-size: 14px;
+	color: var(--text-normal);
+	margin-bottom: 6px;
+	line-height: 1.4;
+	word-wrap: break-word;
+	overflow-wrap: break-word;
+}
+
+.episteme-card-preview-answer {
+	font-size: 13px;
+	color: var(--text-muted);
+	margin-bottom: 8px;
+	line-height: 1.4;
+	word-wrap: break-word;
+	overflow-wrap: break-word;
+}
+
+.episteme-card-preview-info {
+	display: flex;
+	gap: 12px;
+	font-size: 11px;
+	color: var(--text-faint);
+	margin-bottom: 8px;
+}
+
+.episteme-card-preview-footer {
+	display: flex;
+	justify-content: space-between;
+	align-items: center;
+	padding-top: 8px;
+	border-top: 1px solid var(--background-modifier-border);
+}
+
+.episteme-card-preview-source {
+	font-size: 12px;
+	color: var(--link-color);
+	cursor: pointer;
+	text-decoration: none;
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+	max-width: 70%;
+}
+
+.episteme-card-preview-source:hover {
+	text-decoration: underline;
+	color: var(--link-color-hover);
+}
+
+.episteme-card-preview-open-btn {
+	font-size: 12px;
+	padding: 4px 12px;
+	background: var(--interactive-accent);
+	color: var(--text-on-accent);
+	border: none;
+	border-radius: 4px;
+	cursor: pointer;
+	transition: background-color 0.15s ease;
+}
+
+.episteme-card-preview-open-btn:hover {
+	background: var(--interactive-accent-hover);
+}
+
+/* Clickable legend items */
+.stats-legend-clickable {
+	cursor: pointer;
+	padding: 6px 8px;
+	margin: -6px -8px;
+	border-radius: 6px;
+	transition: background-color 0.15s ease;
+}
+
+.stats-legend-clickable:hover {
+	background: var(--background-modifier-hover);
+}
+
+/* ============================================
+   STATS VIEW STYLE IMPROVEMENTS
+   ============================================ */
+
+/* Better centering for stats sections */
+.episteme-stats {
+	max-width: 900px;
+	margin: 0 auto;
+}
+
+/* Improved chart cursor for clickable bars */
+.stats-future .stats-chart-canvas {
+	cursor: pointer;
 }
 
 /* ============================================
@@ -1303,6 +1445,30 @@
 		min-width: 18px;
 		height: 18px;
 		font-size: 10px;
+	}
+
+	/* Card preview modal - mobile adjustments */
+	.episteme-card-preview-modal {
+		width: 95vw;
+		max-width: none;
+	}
+
+	.episteme-card-preview-list {
+		max-height: 50vh;
+	}
+
+	.episteme-card-preview-footer {
+		flex-direction: column;
+		gap: 8px;
+		align-items: flex-start;
+	}
+
+	.episteme-card-preview-source {
+		max-width: 100%;
+	}
+
+	.episteme-card-preview-open-btn {
+		width: 100%;
 	}
 }
 
