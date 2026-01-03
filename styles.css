@@ -1546,3 +1546,78 @@
 		padding: 10px 16px;
 	}
 }
+
+/* ============================================
+   CUSTOM SESSION MODAL STYLES
+   ============================================ */
+
+.episteme-custom-session-modal {
+	min-width: 400px;
+}
+
+.episteme-custom-session-modal h2 {
+	margin: 0 0 16px 0;
+	font-size: 18px;
+	font-weight: 600;
+}
+
+.episteme-custom-session-modal h3 {
+	margin: 8px 0;
+	font-size: 14px;
+	font-weight: 500;
+	color: var(--text-muted);
+}
+
+.episteme-modal-divider {
+	margin: 16px 0;
+	border: none;
+	border-top: 1px solid var(--background-modifier-border);
+}
+
+.episteme-file-list {
+	max-height: 300px;
+	overflow-y: auto;
+}
+
+.episteme-file-list-empty {
+	padding: 16px;
+	text-align: center;
+	color: var(--text-muted);
+	font-style: italic;
+}
+
+.episteme-file-list .setting-item {
+	padding: 8px 0;
+	border-bottom: 1px solid var(--background-modifier-border);
+}
+
+.episteme-file-list .setting-item:last-child {
+	border-bottom: none;
+}
+
+/* Setting row adjustments in custom session modal */
+.episteme-custom-session-modal .setting-item {
+	border-bottom: none;
+	padding: 8px 0;
+}
+
+.episteme-custom-session-modal .setting-item-info {
+	flex: 1;
+}
+
+.episteme-custom-session-modal .setting-item-control {
+	display: flex;
+	align-items: center;
+}
+
+/* Mobile adjustments for custom session modal */
+@media screen and (max-width: 600px) {
+	.episteme-custom-session-modal {
+		min-width: auto;
+		width: 100%;
+	}
+
+	.episteme-file-list {
+		max-height: 200px;
+	}
+}

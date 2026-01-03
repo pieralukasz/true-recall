@@ -198,13 +198,18 @@ export class ReviewService {
 
         // 2. Get due review cards
         const reviewCards = fsrsService.getReviewCards(availableCards, now);
-        let limitedReviewCards = reviewCards.slice(0, options.reviewsLimit);
+        // If ignoreDailyLimits, don't limit review cards
+        const effectiveReviewsLimit = options.ignoreDailyLimits ? reviewCards.length : options.reviewsLimit;
+        let limitedReviewCards = reviewCards.slice(0, effectiveReviewsLimit);
 
-        // 3. Get new cards (respect daily limit)
-        const remainingNewSlots = Math.max(
-            0,
-            options.newCardsLimit - newCardsStudiedToday
-        );
+        // 3. Get new cards (respect daily limit unless ignoreDailyLimits)
+        let remainingNewSlots: number;
+        if (options.ignoreDailyLimits) {
+            // No limit for custom sessions
+            remainingNewSlots = Infinity;
+        } else {
+            remainingNewSlots = Math.max(0, options.newCardsLimit - newCardsStudiedToday);
+        }
         let newCards = fsrsService.getNewCards(availableCards, remainingNewSlots);
 
         // Apply sorting to new cards

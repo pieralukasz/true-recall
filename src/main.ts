@@ -1,8 +1,10 @@
-import { Plugin, TFile, Notice, Platform } from "obsidian";
+import { Plugin, TFile, Notice, Platform, normalizePath } from "obsidian";
+import { State } from "ts-fsrs";
 import {
 	VIEW_TYPE_FLASHCARD_PANEL,
 	VIEW_TYPE_REVIEW,
 	VIEW_TYPE_STATS,
+	FLASHCARD_CONFIG,
 } from "./constants";
 import {
 	FlashcardManager,
@@ -19,6 +21,7 @@ import {
 	ReviewView,
 	EpistemeSettingTab,
 	DeckSelectionModal,
+	CustomSessionModal,
 	type EpistemeSettings,
 	DEFAULT_SETTINGS,
 } from "./ui";
@@ -131,6 +134,36 @@ export default class EpistemePlugin extends Plugin {
 			callback: () => void this.openReviewView("Knowledge"),
 		});
 
+		// Custom review session command
+		this.addCommand({
+			id: "start-custom-review",
+			name: "Start custom review session",
+			callback: () => void this.startCustomReviewSession(),
+		});
+
+		// Review flashcards from current note
+		this.addCommand({
+			id: "review-current-note",
+			name: "Review flashcards from current note",
+			checkCallback: (checking) => {
+				const file = this.app.workspace.getActiveFile();
+				if (file && file.extension === "md" && !file.name.startsWith(FLASHCARD_CONFIG.filePrefix)) {
+					if (!checking) {
+						void this.reviewCurrentNote();
+					}
+					return true;
+				}
+				return false;
+			},
+		});
+
+		// Review today's new cards
+		this.addCommand({
+			id: "review-todays-cards",
+			name: "Review today's new cards",
+			callback: () => void this.reviewTodaysCards(),
+		});
+
 		// Statistics panel command
 		this.addCommand({
 			id: "open-statistics",
@@ -166,6 +199,22 @@ export default class EpistemePlugin extends Plugin {
 
 		// Register settings tab
 		this.addSettingTab(new EpistemeSettingTab(this.app, this));
+
+		// Register file context menu for custom review
+		this.registerEvent(
+			this.app.workspace.on("file-menu", (menu, file) => {
+				if (file instanceof TFile && file.extension === "md") {
+					// Don't show on flashcard files themselves
+					if (file.name.startsWith(FLASHCARD_CONFIG.filePrefix)) return;
+
+					menu.addItem((item) => {
+						item.setTitle("Review flashcards from this note")
+							.setIcon("brain")
+							.onClick(() => void this.reviewNoteFlashcards(file));
+					});
+				}
+			})
+		);
 
 		// Listen for active file changes
 		this.registerEvent(
@@ -371,5 +420,184 @@ export default class EpistemePlugin extends Plugin {
 			active: true,
 		});
 		workspace.revealLeaf(leaf);
+	}
+
+	/**
+	 * Start a custom review session with the modal
+	 */
+	async startCustomReviewSession(): Promise<void> {
+		const { workspace } = this.app;
+
+		// Check for existing review view
+		const existingLeaves = workspace.getLeavesOfType(VIEW_TYPE_REVIEW);
+		if (existingLeaves.length > 0) {
+			void workspace.revealLeaf(existingLeaves[0]!);
+			return;
+		}
+
+		const allCards = await this.flashcardManager.getAllFSRSCards();
+		if (allCards.length === 0) {
+			new Notice("No flashcards found. Generate some flashcards first!");
+			return;
+		}
+
+		// Get flashcard files
+		const folderPath = normalizePath(this.settings.flashcardsFolder);
+		const flashcardFiles = this.app.vault
+			.getMarkdownFiles()
+			.filter(
+				(f) =>
+					f.path.startsWith(folderPath + "/") &&
+					f.name.startsWith(FLASHCARD_CONFIG.filePrefix)
+			);
+
+		const currentFile = this.app.workspace.getActiveFile();
+		const currentNoteName =
+			currentFile && !currentFile.name.startsWith(FLASHCARD_CONFIG.filePrefix)
+				? currentFile.basename
+				: null;
+
+		const modal = new CustomSessionModal(this.app, {
+			currentNoteName,
+			allCards,
+			flashcardFiles,
+		});
+
+		const result = await modal.openAndWait();
+		if (result.cancelled) return;
+
+		await this.openReviewViewWithFilters({
+			deckFilter: null,
+			sourceNoteFilter: result.sourceNoteFilter,
+			filePathFilter: result.filePathFilter,
+			createdTodayOnly: result.createdTodayOnly,
+			ignoreDailyLimits: result.ignoreDailyLimits,
+		});
+	}
+
+	/**
+	 * Review flashcards from current note
+	 */
+	async reviewCurrentNote(): Promise<void> {
+		const file = this.app.workspace.getActiveFile();
+		if (!file) {
+			new Notice("No active note");
+			return;
+		}
+		await this.reviewNoteFlashcards(file);
+	}
+
+	/**
+	 * Review flashcards linked to a specific note
+	 */
+	async reviewNoteFlashcards(file: TFile): Promise<void> {
+		// Skip if it's a flashcard file
+		if (file.name.startsWith(FLASHCARD_CONFIG.filePrefix)) {
+			new Notice(
+				"This is a flashcard file. Select the original source note instead."
+			);
+			return;
+		}
+
+		const allCards = await this.flashcardManager.getAllFSRSCards();
+		const noteCards = allCards.filter(
+			(c) => c.sourceNoteName === file.basename
+		);
+
+		if (noteCards.length === 0) {
+			new Notice(`No flashcards found for "${file.basename}"`);
+			return;
+		}
+
+		// Count available cards (new or due)
+		const now = new Date();
+		const availableCards = noteCards.filter((c) => {
+			if (c.fsrs.state === State.New) return true;
+			return new Date(c.fsrs.due) <= now;
+		});
+
+		if (availableCards.length === 0) {
+			new Notice(
+				`No cards due for "${file.basename}". All ${noteCards.length} cards are scheduled for later.`
+			);
+			return;
+		}
+
+		await this.openReviewViewWithFilters({
+			deckFilter: null,
+			sourceNoteFilter: file.basename,
+			ignoreDailyLimits: true,
+		});
+	}
+
+	/**
+	 * Review today's new cards
+	 */
+	async reviewTodaysCards(): Promise<void> {
+		const allCards = await this.flashcardManager.getAllFSRSCards();
+
+		const todayStart = new Date();
+		todayStart.setHours(0, 0, 0, 0);
+		const now = new Date();
+
+		const todaysCards = allCards.filter((c) => {
+			const createdAt = c.fsrs.createdAt;
+			if (!createdAt || createdAt < todayStart.getTime()) return false;
+			// Only show new or due
+			if (c.fsrs.state === State.New) return true;
+			return new Date(c.fsrs.due) <= now;
+		});
+
+		if (todaysCards.length === 0) {
+			new Notice("No new cards created today");
+			return;
+		}
+
+		await this.openReviewViewWithFilters({
+			deckFilter: null,
+			createdTodayOnly: true,
+			ignoreDailyLimits: true,
+		});
+	}
+
+	/**
+	 * Open review view with custom filters
+	 */
+	private async openReviewViewWithFilters(filters: {
+		deckFilter?: string | null;
+		sourceNoteFilter?: string;
+		filePathFilter?: string;
+		createdTodayOnly?: boolean;
+		ignoreDailyLimits?: boolean;
+	}): Promise<void> {
+		const { workspace } = this.app;
+
+		const state = {
+			deckFilter: filters.deckFilter ?? null,
+			sourceNoteFilter: filters.sourceNoteFilter,
+			filePathFilter: filters.filePathFilter,
+			createdTodayOnly: filters.createdTodayOnly,
+			ignoreDailyLimits: filters.ignoreDailyLimits,
+		};
+
+		if (Platform.isMobile || this.settings.reviewMode === "fullscreen") {
+			const leaf = workspace.getLeaf(true);
+			await leaf.setViewState({
+				type: VIEW_TYPE_REVIEW,
+				active: true,
+				state,
+			});
+			void workspace.revealLeaf(leaf);
+		} else {
+			const rightLeaf = workspace.getRightLeaf(false);
+			if (rightLeaf) {
+				await rightLeaf.setViewState({
+					type: VIEW_TYPE_REVIEW,
+					active: true,
+					state,
+				});
+				void workspace.revealLeaf(rightLeaf);
+			}
+		}
 	}
 }
