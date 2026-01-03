@@ -629,7 +629,7 @@
 	padding: 20px 16px;
 	border-top: 1px solid var(--background-modifier-border);
 	background: var(--background-secondary);
-	flex-wrap: wrap;
+	flex-wrap: nowrap;
 }
 
 /* Base Button Style */
@@ -1228,17 +1228,19 @@
 	/* Rating buttons - touch-friendly targets */
 	.episteme-review-buttons {
 		padding: 16px 8px;
-		gap: 8px;
+		gap: 6px;
 	}
 
 	.episteme-btn {
-		padding: 16px 20px;
-		min-width: 70px;
+		padding: 14px 12px;
+		min-width: auto;
 		min-height: 60px;
+		flex: 1;
 	}
 
 	.episteme-btn-show {
 		padding: 20px 32px;
+		flex: none;
 	}
 
 	/* Deck selection modal */
@@ -1310,9 +1312,14 @@
 		font-size: 1.1em;
 	}
 
+	.episteme-review-buttons {
+		gap: 4px;
+	}
+
 	.episteme-btn {
-		padding: 14px 16px;
-		min-width: 60px;
+		padding: 12px 8px;
+		min-width: auto;
+		flex: 1;
 	}
 
 	.stats-today-grid {

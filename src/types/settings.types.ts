@@ -6,6 +6,21 @@ import type { AIModelKey } from "../constants";
 import type { ReviewViewMode } from "./fsrs.types";
 
 /**
+ * Display order for new cards
+ */
+export type NewCardOrder = "random" | "oldest-first" | "newest-first";
+
+/**
+ * Display order for review cards
+ */
+export type ReviewOrder = "due-date" | "random" | "due-date-random";
+
+/**
+ * How to mix new cards with reviews
+ */
+export type NewReviewMix = "show-after-reviews" | "mix-with-reviews" | "show-before-reviews";
+
+/**
  * Ustawienia pluginu Episteme
  */
 export interface EpistemeSettings {
@@ -62,6 +77,14 @@ export interface EpistemeSettings {
     hideFlashcardsFromBacklinks: boolean;
     /** Pokaż wskazówki gestów dotykowych na mobilnych (iOS/Android) */
     showTouchHints: boolean;
+
+    // ===== Display Order Settings =====
+    /** Kolejność nowych kart */
+    newCardOrder: NewCardOrder;
+    /** Kolejność kart do powtórki */
+    reviewOrder: ReviewOrder;
+    /** Jak mieszać nowe karty z powtórkami */
+    newReviewMix: NewReviewMix;
 }
 
 /**

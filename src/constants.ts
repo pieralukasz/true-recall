@@ -61,6 +61,11 @@ export const DEFAULT_SETTINGS: EpistemeSettings = {
 	showReviewHeaderStats: true,
 	hideFlashcardsFromBacklinks: true,
 	showTouchHints: true, // Show touch gesture hints on mobile
+
+	// Display Order
+	newCardOrder: "random",
+	reviewOrder: "due-date",
+	newReviewMix: "mix-with-reviews",
 };
 
 // ===== FSRS Default Weights =====

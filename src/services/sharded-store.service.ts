@@ -12,14 +12,9 @@ const MAX_HISTORY_ENTRIES = 20;
 
 /**
  * Entry stored in a shard file
- * Includes optional metadata for linking back to markdown
+ * Contains only FSRS scheduling data (filePath/lineNumber come from file parsing)
  */
-export interface ShardEntry extends FSRSCardData {
-	/** File path where this card lives (for content retrieval) */
-	filePath?: string;
-	/** Line number of the question in the file */
-	lineNumber?: number;
-}
+export interface ShardEntry extends FSRSCardData {}
 
 /**
  * Shard file structure

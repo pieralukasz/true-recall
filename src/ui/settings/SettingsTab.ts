@@ -6,7 +6,7 @@ import { App, Notice, PluginSettingTab, Setting } from "obsidian";
 import type EpistemePlugin from "../../main";
 import { DEFAULT_SETTINGS, AI_MODELS, FSRS_CONFIG } from "../../constants";
 import type { AIModelKey } from "../../constants";
-import type { EpistemeSettings, ReviewViewMode } from "../../types";
+import type { EpistemeSettings, ReviewViewMode, NewCardOrder, ReviewOrder, NewReviewMix } from "../../types";
 
 // Re-export for convenience
 export { DEFAULT_SETTINGS };
@@ -286,6 +286,54 @@ export class EpistemeSettingTab extends PluginSettingTab {
                     this.plugin.settings.showTouchHints = value;
                     await this.plugin.saveSettings();
                 }));
+
+        // ===== Display Order Section =====
+        containerEl.createEl("h2", { text: "Display Order" });
+
+        // New Card Order
+        new Setting(containerEl)
+            .setName("New card order")
+            .setDesc("How to order new cards in the review queue")
+            .addDropdown(dropdown => {
+                dropdown.addOption("random", "Random");
+                dropdown.addOption("oldest-first", "Oldest first (by position in file)");
+                dropdown.addOption("newest-first", "Newest first (by position in file)");
+                dropdown.setValue(this.plugin.settings.newCardOrder);
+                dropdown.onChange(async (value) => {
+                    this.plugin.settings.newCardOrder = value as NewCardOrder;
+                    await this.plugin.saveSettings();
+                });
+            });
+
+        // Review Card Order
+        new Setting(containerEl)
+            .setName("Review order")
+            .setDesc("How to order cards due for review")
+            .addDropdown(dropdown => {
+                dropdown.addOption("due-date", "By due date");
+                dropdown.addOption("random", "Random");
+                dropdown.addOption("due-date-random", "Due date, then random");
+                dropdown.setValue(this.plugin.settings.reviewOrder);
+                dropdown.onChange(async (value) => {
+                    this.plugin.settings.reviewOrder = value as ReviewOrder;
+                    await this.plugin.saveSettings();
+                });
+            });
+
+        // New/Review Mix
+        new Setting(containerEl)
+            .setName("New/review mix")
+            .setDesc("When to show new cards relative to reviews")
+            .addDropdown(dropdown => {
+                dropdown.addOption("mix-with-reviews", "Mix with reviews");
+                dropdown.addOption("show-after-reviews", "Show after reviews");
+                dropdown.addOption("show-before-reviews", "Show before reviews");
+                dropdown.setValue(this.plugin.settings.newReviewMix);
+                dropdown.onChange(async (value) => {
+                    this.plugin.settings.newReviewMix = value as NewReviewMix;
+                    await this.plugin.saveSettings();
+                });
+            });
 
         // ===== FSRS Parameters Section =====
         containerEl.createEl("h2", { text: "FSRS Parameters" });

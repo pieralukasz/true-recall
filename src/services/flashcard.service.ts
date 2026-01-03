@@ -20,6 +20,16 @@ import type { ShardedStoreService, ShardEntry } from "./sharded-store.service";
 const DEFAULT_DECK = "Knowledge";
 
 /**
+ * Result of scanning vault for new flashcards
+ */
+export interface ScanResult {
+	totalCards: number;
+	newCardsProcessed: number;
+	filesProcessed: number;
+	orphanedRemoved: number;
+}
+
+/**
  * Flashcard file information
  */
 export interface FlashcardInfo {
@@ -594,146 +604,17 @@ deck: "${deck}"
 
 	/**
 	 * Get all flashcards with FSRS data from all flashcard files
-	 * When sharded store is available, uses store for O(1) performance
+	 * Scans all files and handles both existing cards (from store) and new cards (without block ID)
 	 */
 	async getAllFSRSCards(): Promise<FSRSFlashcardItem[]> {
-		// Fast path: use sharded store if available
-		if (this.hasStore()) {
-			return this.getAllFSRSCardsFromStore();
+		if (!this.store) {
+			throw new Error("Sharded store not initialized. Please restart Obsidian.");
 		}
 
-		// Fallback: parse from files (legacy mode)
-		return this.getAllFSRSCardsFromFiles();
-	}
-
-	/**
-	 * Get all cards from sharded store (O(1) per card)
-	 */
-	private async getAllFSRSCardsFromStore(): Promise<FSRSFlashcardItem[]> {
-		if (!this.store) return [];
-
-		const storeEntries = this.store.getAll();
-		const allCards: FSRSFlashcardItem[] = [];
-
-		// Group entries by file for efficient content parsing
-		const entriesByFile = new Map<string, ShardEntry[]>();
-		for (const entry of storeEntries) {
-			if (!entry.filePath) continue;
-			const existing = entriesByFile.get(entry.filePath) || [];
-			existing.push(entry);
-			entriesByFile.set(entry.filePath, existing);
-		}
-
-		// Parse each file once to get question/answer content
-		for (const [filePath, entries] of entriesByFile) {
-			const file = this.app.vault.getAbstractFileByPath(filePath);
-			if (!(file instanceof TFile)) continue;
-
-			const content = await this.app.vault.read(file);
-			const deck = this.extractDeckFromFrontmatter(content);
-			const cardContent = this.parseCardContentByBlockId(content);
-
-			for (const entry of entries) {
-				const contentData = cardContent.get(entry.id);
-				if (contentData) {
-					allCards.push({
-						id: entry.id,
-						question: contentData.question,
-						answer: contentData.answer,
-						lineNumber: contentData.lineNumber,
-						filePath: filePath,
-						fsrs: entry,
-						deck,
-					});
-				}
-			}
-		}
-
-		return allCards;
-	}
-
-	/**
-	 * Parse card content (Q&A) by block ID from file content
-	 */
-	private parseCardContentByBlockId(content: string): Map<string, { question: string; answer: string; lineNumber: number }> {
-		const result = new Map<string, { question: string; answer: string; lineNumber: number }>();
-		const lines = content.split("\n");
-		const flashcardPattern = new RegExp(
-			`^(.+?)\\s*${FLASHCARD_CONFIG.tag}\\s*$`
-		);
-		// Match both old fsrs- format and new UUID format
-		const blockIdPattern = /^\^(fsrs-[a-zA-Z0-9]+|[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12})$/i;
-
-		let currentQuestion = "";
-		let currentAnswerLines: string[] = [];
-		let currentLineNumber = 0;
-
-		for (let i = 0; i < lines.length; i++) {
-			const line = lines[i] ?? "";
-			const flashcardMatch = line.match(flashcardPattern);
-
-			if (flashcardMatch?.[1]) {
-				// Save previous card if we have a block ID for it
-				// (handled when we find the block ID)
-
-				// Start new card
-				currentQuestion = flashcardMatch[1].trim();
-				currentLineNumber = i + 1;
-				currentAnswerLines = [];
-				continue;
-			}
-
-			// Check for block ID
-			const blockIdMatch = line.match(blockIdPattern);
-			if (blockIdMatch?.[1] && currentQuestion) {
-				const blockId = blockIdMatch[1];
-				result.set(blockId, {
-					question: currentQuestion,
-					answer: currentAnswerLines.join("\n").trim(),
-					lineNumber: currentLineNumber,
-				});
-				continue;
-			}
-
-			// Skip FSRS comments (legacy)
-			if (line.includes(FLASHCARD_CONFIG.fsrsDataPrefix)) {
-				continue;
-			}
-
-			// Skip legacy ID lines
-			if (line.match(/^ID:\s*\d+/)) {
-				continue;
-			}
-
-			// Empty line = potential end of card (if no block ID found yet)
-			if (line.trim() === "") {
-				// Don't reset if we haven't found the block ID yet
-				// The block ID might be after the empty line
-				continue;
-			}
-
-			// Part of answer
-			if (currentQuestion) {
-				currentAnswerLines.push(line);
-			}
-		}
-
-		return result;
-	}
-
-	/**
-	 * Get all cards from files (legacy, O(n) files)
-	 */
-	private async getAllFSRSCardsFromFiles(): Promise<FSRSFlashcardItem[]> {
 		const allCards: FSRSFlashcardItem[] = [];
 		const folderPath = normalizePath(this.settings.flashcardsFolder);
-		const folder = this.app.vault.getAbstractFileByPath(folderPath);
 
-		if (!folder) {
-			return allCards;
-		}
-
-		// Get all markdown files in the flashcards folder
+		// Get all flashcard files
 		const files = this.app.vault
 			.getMarkdownFiles()
 			.filter(
@@ -743,11 +624,167 @@ deck: "${deck}"
 			);
 
 		for (const file of files) {
-			const cards = await this.extractFSRSCards(file);
+			const content = await this.app.vault.read(file);
+			const deck = this.extractDeckFromFrontmatter(content);
+			const cards = this.parseAllFlashcards(content, file.path, deck);
 			allCards.push(...cards);
 		}
 
 		return allCards;
+	}
+
+	/**
+	 * Parse all flashcards from file content
+	 * - Cards with block ID: get FSRS from store
+	 * - Cards without block ID: create new FSRS, add to store
+	 */
+	private parseAllFlashcards(
+		content: string,
+		filePath: string,
+		deck: string
+	): FSRSFlashcardItem[] {
+		const flashcards: FSRSFlashcardItem[] = [];
+		const lines = content.split("\n");
+		const flashcardPattern = new RegExp(
+			`^(.+?)\\s*${FLASHCARD_CONFIG.tag}\\s*$`
+		);
+		// Match both old fsrs- format and new UUID format
+		const blockIdPattern =
+			/^\^(fsrs-[a-zA-Z0-9]+|[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12})$/i;
+
+		let currentQuestion = "";
+		let currentAnswerLines: string[] = [];
+		let currentLineNumber = 0;
+		let foundBlockId = false;
+
+		for (let i = 0; i < lines.length; i++) {
+			const line = lines[i] ?? "";
+			const flashcardMatch = line.match(flashcardPattern);
+
+			if (flashcardMatch?.[1]) {
+				// Process previous card if exists and has no block ID
+				if (currentQuestion && !foundBlockId) {
+					const card = this.createNewCard(
+						currentQuestion,
+						currentAnswerLines.join("\n").trim(),
+						currentLineNumber,
+						filePath,
+						deck
+					);
+					flashcards.push(card);
+				}
+
+				// Start new card
+				currentQuestion = flashcardMatch[1].trim();
+				currentLineNumber = i + 1;
+				currentAnswerLines = [];
+				foundBlockId = false;
+				continue;
+			}
+
+			// Check for block ID
+			const blockIdMatch = line.match(blockIdPattern);
+			if (blockIdMatch?.[1] && currentQuestion) {
+				const blockId = blockIdMatch[1];
+				foundBlockId = true;
+
+				// Get from store or create new entry
+				let fsrsData = this.store!.get(blockId);
+				if (!fsrsData) {
+					// Block ID exists in file but not in store - create entry
+					fsrsData = createDefaultFSRSData(blockId);
+					this.store!.set(blockId, fsrsData);
+				}
+
+				flashcards.push({
+					id: blockId,
+					question: currentQuestion,
+					answer: currentAnswerLines.join("\n").trim(),
+					lineNumber: currentLineNumber,
+					filePath,
+					fsrs: fsrsData,
+					deck,
+				});
+
+				// Reset for next card
+				currentQuestion = "";
+				currentAnswerLines = [];
+				continue;
+			}
+
+			// Skip FSRS comments (legacy) and ID lines
+			if (
+				line.includes(FLASHCARD_CONFIG.fsrsDataPrefix) ||
+				line.match(/^ID:\s*\d+/)
+			) {
+				continue;
+			}
+
+			// Empty line - potential end of card without block ID
+			if (line.trim() === "") {
+				// If we have a complete card without block ID, save it
+				if (currentQuestion && currentAnswerLines.length > 0 && !foundBlockId) {
+					const card = this.createNewCard(
+						currentQuestion,
+						currentAnswerLines.join("\n").trim(),
+						currentLineNumber,
+						filePath,
+						deck
+					);
+					flashcards.push(card);
+					currentQuestion = "";
+					currentAnswerLines = [];
+					foundBlockId = false;
+				}
+				continue;
+			}
+
+			// Part of answer
+			if (currentQuestion) {
+				currentAnswerLines.push(line);
+			}
+		}
+
+		// Process last card if no block ID
+		if (currentQuestion && !foundBlockId) {
+			const card = this.createNewCard(
+				currentQuestion,
+				currentAnswerLines.join("\n").trim(),
+				currentLineNumber,
+				filePath,
+				deck
+			);
+			flashcards.push(card);
+		}
+
+		return flashcards;
+	}
+
+	/**
+	 * Create a new card and add it to store
+	 * Does NOT add block ID to file yet (will be added on first review)
+	 */
+	private createNewCard(
+		question: string,
+		answer: string,
+		lineNumber: number,
+		filePath: string,
+		deck: string
+	): FSRSFlashcardItem {
+		const id = this.generateCardId();
+		const fsrsData = createDefaultFSRSData(id);
+
+		this.store!.set(id, fsrsData);
+
+		return {
+			id,
+			question,
+			answer,
+			lineNumber,
+			filePath,
+			fsrs: fsrsData,
+			deck,
+		};
 	}
 
 	/**
@@ -785,100 +822,6 @@ deck: "${deck}"
 	}
 
 	/**
-	 * Extract flashcards with FSRS data from a single file
-	 */
-	async extractFSRSCards(file: TFile): Promise<FSRSFlashcardItem[]> {
-		const content = await this.app.vault.read(file);
-		return this.parseFSRSFlashcards(content, file.path);
-	}
-
-	/**
-	 * Parse flashcard content and extract FSRS data
-	 */
-	private parseFSRSFlashcards(
-		content: string,
-		filePath: string
-	): FSRSFlashcardItem[] {
-		const flashcards: FSRSFlashcardItem[] = [];
-		const lines = content.split("\n");
-		const flashcardPattern = new RegExp(
-			`^(.+?)\\s*${FLASHCARD_CONFIG.tag}\\s*$`
-		);
-		const fsrsPattern = new RegExp(
-			`${FLASHCARD_CONFIG.fsrsDataPrefix}(.+?)${FLASHCARD_CONFIG.fsrsDataSuffix}`
-		);
-
-		// Extract deck from frontmatter (applies to all cards in file)
-		const deck = this.extractDeckFromFrontmatter(content);
-
-		for (let i = 0; i < lines.length; i++) {
-			const line = lines[i] ?? "";
-			const match = line.match(flashcardPattern);
-
-			if (match?.[1]) {
-				const question = match[1].trim();
-				const questionLineNumber = i + 1;
-				const answerLines: string[] = [];
-				let fsrsData: FSRSCardData | null = null;
-
-				i++;
-				while (i < lines.length) {
-					const answerLine = lines[i] ?? "";
-
-					// Check for FSRS data comment
-					const fsrsMatch = answerLine.match(fsrsPattern);
-					if (fsrsMatch?.[1]) {
-						try {
-							fsrsData = JSON.parse(fsrsMatch[1]) as FSRSCardData;
-						} catch {
-							// Invalid JSON, skip
-						}
-						i++;
-						continue;
-					}
-
-					// Skip ID: lines (legacy)
-					if (answerLine.match(/^ID:\s*\d+/)) {
-						i++;
-						continue;
-					}
-
-					if (
-						answerLine.trim() === "" ||
-						this.isFlashcardLine(answerLine)
-					) {
-						i--;
-						break;
-					}
-
-					answerLines.push(answerLine);
-					i++;
-				}
-
-				const answer = answerLines.join("\n").trim();
-				if (question) {
-					// Generate FSRS data if not present
-					if (!fsrsData) {
-						fsrsData = createDefaultFSRSData(this.generateCardId());
-					}
-
-					flashcards.push({
-						id: fsrsData.id,
-						question,
-						answer,
-						lineNumber: questionLineNumber,
-						filePath,
-						fsrs: fsrsData,
-						deck,
-					});
-				}
-			}
-		}
-
-		return flashcards;
-	}
-
-	/**
 	 * Update FSRS data for a specific card
 	 * When store is available, updates store (fast, no file I/O)
 	 * Otherwise falls back to inline comment update (legacy)
@@ -893,11 +836,7 @@ deck: "${deck}"
 		// Fast path: use sharded store
 		if (this.hasStore() && this.store) {
 			const existing = this.store.get(cardId);
-			const entry: ShardEntry = {
-				...newFSRSData,
-				filePath,
-				lineNumber,
-			};
+			const entry: ShardEntry = { ...newFSRSData };
 
 			// Append review to history if provided
 			if (reviewLogEntry) {
@@ -914,6 +853,10 @@ deck: "${deck}"
 			}
 
 			this.store.set(cardId, entry);
+
+			// Ensure block ID exists in file (for new cards created during this session)
+			await this.ensureBlockIdInFile(filePath, cardId, lineNumber);
+
 			return;
 		}
 
@@ -923,6 +866,44 @@ deck: "${deck}"
 			filePath,
 			"write"
 		);
+	}
+
+	/**
+	 * Ensure block ID exists in file for a card
+	 * Adds ^uuid after the answer if not present
+	 */
+	private async ensureBlockIdInFile(
+		filePath: string,
+		cardId: string,
+		lineNumber: number
+	): Promise<void> {
+		const file = this.app.vault.getAbstractFileByPath(filePath);
+		if (!(file instanceof TFile)) return;
+
+		const content = await this.app.vault.read(file);
+		const lines = content.split("\n");
+
+		// Find end of card (answer section)
+		let insertIndex = lineNumber; // Start after question (lineNumber is 1-based)
+		while (insertIndex < lines.length) {
+			const line = lines[insertIndex] ?? "";
+
+			// Check if block ID already exists
+			if (line.match(/^\^[a-f0-9-]+$/i)) {
+				return; // Already has block ID
+			}
+
+			// Stop at empty line or next flashcard
+			if (line.trim() === "" || this.isFlashcardLine(line)) {
+				break;
+			}
+
+			insertIndex++;
+		}
+
+		// Insert block ID before empty line or at end of answer
+		lines.splice(insertIndex, 0, `^${cardId}`);
+		await this.app.vault.modify(file, lines.join("\n"));
 	}
 
 	/**
@@ -1013,5 +994,147 @@ deck: "${deck}"
 	 */
 	private generateCardId(): string {
 		return crypto.randomUUID();
+	}
+
+	// ===== Scan Vault Methods =====
+
+	/**
+	 * Scan vault for flashcards and add FSRS IDs to new cards
+	 * - Scans all flashcard files
+	 * - Generates UUID for cards without block ID
+	 * - Adds block ID to markdown file
+	 * - Saves FSRS data to sharded store
+	 * - Removes orphaned cards from store (cards deleted from files)
+	 */
+	async scanVault(): Promise<ScanResult> {
+		if (!this.store) {
+			throw new Error("Sharded store not initialized. Please restart Obsidian.");
+		}
+
+		let totalCards = 0;
+		let newCardsProcessed = 0;
+		let filesProcessed = 0;
+
+		// Collect all block IDs found in files
+		const foundBlockIds = new Set<string>();
+
+		const folderPath = normalizePath(this.settings.flashcardsFolder);
+		const files = this.app.vault.getMarkdownFiles()
+			.filter(file =>
+				file.path.startsWith(folderPath + "/") &&
+				file.name.startsWith(FLASHCARD_CONFIG.filePrefix)
+			);
+
+		for (const file of files) {
+			const result = await this.scanAndAddIdsToFile(file, foundBlockIds);
+			totalCards += result.total;
+			newCardsProcessed += result.newIds;
+			filesProcessed++;
+		}
+
+		// Cleanup: remove orphaned cards from store
+		const orphanedRemoved = this.removeOrphanedCards(foundBlockIds);
+
+		// Force save store immediately
+		await this.store.saveNow();
+
+		return { totalCards, newCardsProcessed, filesProcessed, orphanedRemoved };
+	}
+
+	/**
+	 * Scan a single file and add block IDs to cards that don't have them
+	 * Also collects all found block IDs into the provided Set
+	 */
+	private async scanAndAddIdsToFile(
+		file: TFile,
+		foundBlockIds: Set<string>
+	): Promise<{ total: number; newIds: number }> {
+		const content = await this.app.vault.read(file);
+		const lines = content.split("\n");
+		const flashcardPattern = new RegExp(`^(.+?)\\s*${FLASHCARD_CONFIG.tag}\\s*$`);
+		const blockIdPattern = /^\^(fsrs-[a-zA-Z0-9]+|[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12})$/i;
+
+		let total = 0;
+		let newIds = 0;
+		let modified = false;
+		let i = 0;
+
+		while (i < lines.length) {
+			const line = lines[i] ?? "";
+			const flashcardMatch = line.match(flashcardPattern);
+
+			if (flashcardMatch?.[1]) {
+				total++;
+
+				// Find end of answer and check for block ID
+				let answerEndIndex = i + 1;
+				let hasBlockId = false;
+				let existingBlockId = "";
+
+				while (answerEndIndex < lines.length) {
+					const currentLine = lines[answerEndIndex] ?? "";
+					const blockIdMatch = currentLine.match(blockIdPattern);
+
+					if (blockIdMatch?.[1]) {
+						hasBlockId = true;
+						existingBlockId = blockIdMatch[1];
+						foundBlockIds.add(existingBlockId);
+						break;
+					}
+
+					if (currentLine.trim() === "" || this.isFlashcardLine(currentLine)) {
+						break;
+					}
+
+					answerEndIndex++;
+				}
+
+				if (!hasBlockId) {
+					// Generate new ID and create FSRS data
+					const id = this.generateCardId();
+					const fsrsData = createDefaultFSRSData(id);
+					this.store!.set(id, fsrsData);
+
+					// Insert block ID into lines array
+					lines.splice(answerEndIndex, 0, `^${id}`);
+
+					// Track the new ID
+					foundBlockIds.add(id);
+
+					newIds++;
+					modified = true;
+					// Increment answerEndIndex to account for inserted line
+					answerEndIndex++;
+				}
+
+				i = answerEndIndex + 1;
+			} else {
+				i++;
+			}
+		}
+
+		// Save modified content back to file
+		if (modified) {
+			await this.app.vault.modify(file, lines.join("\n"));
+		}
+
+		return { total, newIds };
+	}
+
+	/**
+	 * Remove cards from store that no longer exist in markdown files
+	 */
+	private removeOrphanedCards(foundBlockIds: Set<string>): number {
+		const storeIds = this.store!.keys();
+		let removed = 0;
+
+		for (const storeId of storeIds) {
+			if (!foundBlockIds.has(storeId)) {
+				this.store!.delete(storeId);
+				removed++;
+			}
+		}
+
+		return removed;
 	}
 }

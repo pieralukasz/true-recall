@@ -9,6 +9,7 @@ import type {
     ReviewSessionStats,
     DailyStats,
 } from "../types/fsrs.types";
+import type { NewCardOrder, ReviewOrder, NewReviewMix } from "../types/settings.types";
 import type { FSRSService } from "./fsrs.service";
 import { LEARN_AHEAD_LIMIT_MINUTES } from "../constants";
 
@@ -26,12 +27,90 @@ export interface QueueBuildOptions {
     newCardsStudiedToday?: number;
     /** Filter by deck name (null = all decks) */
     deckFilter?: string | null;
+    /** Order for new cards */
+    newCardOrder?: NewCardOrder;
+    /** Order for review cards */
+    reviewOrder?: ReviewOrder;
+    /** How to mix new cards with reviews */
+    newReviewMix?: NewReviewMix;
 }
 
 /**
  * Service for managing review sessions
  */
 export class ReviewService {
+    /**
+     * Shuffle an array using Fisher-Yates algorithm
+     */
+    private shuffle<T>(array: T[]): T[] {
+        const result = [...array];
+        for (let i = result.length - 1; i > 0; i--) {
+            const j = Math.floor(Math.random() * (i + 1));
+            [result[i], result[j]] = [result[j]!, result[i]!];
+        }
+        return result;
+    }
+
+    /**
+     * Interleave two arrays (distribute items evenly)
+     */
+    private interleave<T>(primary: T[], secondary: T[]): T[] {
+        if (secondary.length === 0) return [...primary];
+        if (primary.length === 0) return [...secondary];
+
+        const result: T[] = [];
+        const ratio = primary.length / secondary.length;
+        let primaryIndex = 0;
+        let secondaryIndex = 0;
+
+        while (primaryIndex < primary.length || secondaryIndex < secondary.length) {
+            // Add primary cards based on ratio
+            const targetPrimary = Math.floor((secondaryIndex + 1) * ratio);
+            while (primaryIndex < targetPrimary && primaryIndex < primary.length) {
+                result.push(primary[primaryIndex]!);
+                primaryIndex++;
+            }
+            // Add one secondary card
+            if (secondaryIndex < secondary.length) {
+                result.push(secondary[secondaryIndex]!);
+                secondaryIndex++;
+            }
+        }
+        // Add remaining primary cards
+        while (primaryIndex < primary.length) {
+            result.push(primary[primaryIndex]!);
+            primaryIndex++;
+        }
+
+        return result;
+    }
+
+    /**
+     * Sort cards by creation date (oldest first)
+     * Falls back to card ID for cards without createdAt (backward compatibility)
+     */
+    private sortByCreatedAt(cards: FSRSFlashcardItem[]): FSRSFlashcardItem[] {
+        return [...cards].sort((a, b) => {
+            const aTime = a.fsrs.createdAt ?? 0;
+            const bTime = b.fsrs.createdAt ?? 0;
+            if (aTime !== bTime) return aTime - bTime;
+            // Fallback to ID for deterministic order
+            return a.id.localeCompare(b.id);
+        });
+    }
+
+    /**
+     * Sort cards by creation date (newest first)
+     */
+    private sortByCreatedAtDesc(cards: FSRSFlashcardItem[]): FSRSFlashcardItem[] {
+        return [...cards].sort((a, b) => {
+            const aTime = a.fsrs.createdAt ?? 0;
+            const bTime = b.fsrs.createdAt ?? 0;
+            if (aTime !== bTime) return bTime - aTime;
+            return b.id.localeCompare(a.id);
+        });
+    }
+
     /**
      * Build a review queue from all available cards
      * Order (Anki-like): Due Learning → Review → New → Pending Learning
@@ -45,6 +124,11 @@ export class ReviewService {
         const now = new Date();
         const reviewedToday = options.reviewedToday ?? new Set<string>();
         const newCardsStudiedToday = options.newCardsStudiedToday ?? 0;
+
+        // Get display order settings (with defaults)
+        const newCardOrder = options.newCardOrder ?? "random";
+        const reviewOrder = options.reviewOrder ?? "due-date";
+        const newReviewMix = options.newReviewMix ?? "mix-with-reviews";
 
         // Filter by deck if specified
         let filteredCards = allCards;
@@ -78,25 +162,77 @@ export class ReviewService {
 
         // 2. Get due review cards
         const reviewCards = fsrsService.getReviewCards(availableCards, now);
-        const limitedReviewCards = reviewCards.slice(0, options.reviewsLimit);
+        let limitedReviewCards = reviewCards.slice(0, options.reviewsLimit);
 
         // 3. Get new cards (respect daily limit)
         const remainingNewSlots = Math.max(
             0,
             options.newCardsLimit - newCardsStudiedToday
         );
-        const newCards = fsrsService.getNewCards(availableCards, remainingNewSlots);
+        let newCards = fsrsService.getNewCards(availableCards, remainingNewSlots);
 
-        // Combine in Anki order:
-        // 1. Due learning cards (within learn-ahead window) - highest priority
-        // 2. Review cards
-        // 3. New cards
-        // 4. Pending learning cards (beyond learn-ahead) - at the END
-        // This way, waiting screen only shows when all other cards are done
+        // Apply sorting to new cards
+        switch (newCardOrder) {
+            case "random":
+                newCards = this.shuffle(newCards);
+                break;
+            case "oldest-first":
+                newCards = this.sortByCreatedAt(newCards);
+                break;
+            case "newest-first":
+                newCards = this.sortByCreatedAtDesc(newCards);
+                break;
+        }
+
+        // Apply sorting to review cards
+        switch (reviewOrder) {
+            case "due-date":
+                limitedReviewCards = fsrsService.sortByDue(limitedReviewCards);
+                break;
+            case "random":
+                limitedReviewCards = this.shuffle(limitedReviewCards);
+                break;
+            case "due-date-random":
+                // Sort by due date, then shuffle cards with same due date
+                limitedReviewCards = fsrsService.sortByDue(limitedReviewCards);
+                // Group by due date (day level) and shuffle within groups
+                const groupedByDue = new Map<string, FSRSFlashcardItem[]>();
+                for (const card of limitedReviewCards) {
+                    const dueDay = new Date(card.fsrs.due).toISOString().split("T")[0] ?? "";
+                    if (!groupedByDue.has(dueDay)) {
+                        groupedByDue.set(dueDay, []);
+                    }
+                    groupedByDue.get(dueDay)!.push(card);
+                }
+                // Shuffle within each group
+                limitedReviewCards = [];
+                for (const [, group] of groupedByDue) {
+                    limitedReviewCards.push(...this.shuffle(group));
+                }
+                break;
+        }
+
+        // Combine based on mix setting
+        // Learning cards always go at specific positions (due ones first, pending ones last)
+        let mainQueue: FSRSFlashcardItem[];
+
+        switch (newReviewMix) {
+            case "show-after-reviews":
+                mainQueue = [...limitedReviewCards, ...newCards];
+                break;
+            case "show-before-reviews":
+                mainQueue = [...newCards, ...limitedReviewCards];
+                break;
+            case "mix-with-reviews":
+            default:
+                mainQueue = this.interleave(limitedReviewCards, newCards);
+                break;
+        }
+
+        // Final queue: Due learning (highest priority) → Main queue → Pending learning (lowest)
         const queue: FSRSFlashcardItem[] = [
             ...fsrsService.sortByDue(dueLearningCards),
-            ...fsrsService.sortByDue(limitedReviewCards),
-            ...newCards,
+            ...mainQueue,
             ...fsrsService.sortByDue(pendingLearningCards),
         ];
 

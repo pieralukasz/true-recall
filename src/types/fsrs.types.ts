@@ -53,6 +53,8 @@ export interface FSRSCardData {
     suspended?: boolean;
     /** Review history for FSRS optimization (last 20 reviews, optional) */
     history?: CardReviewLogEntry[];
+    /** Timestamp utworzenia karty (Unix ms, opcjonalny dla kompatybilności wstecznej) */
+    createdAt?: number;
 }
 
 /**
@@ -370,6 +372,7 @@ export function createDefaultFSRSData(id: string): FSRSCardData {
         lastReview: null,
         scheduledDays: 0,
         learningStep: 0,
+        createdAt: Date.now(),
     };
 }
 
