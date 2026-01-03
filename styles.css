@@ -982,7 +982,7 @@
 
 .stats-today-grid {
 	display: grid;
-	grid-template-columns: repeat(3, 1fr);
+	grid-template-columns: repeat(2, 1fr);
 	gap: 12px;
 	margin-bottom: 16px;
 }
@@ -1084,13 +1084,12 @@
 /* Card Counts */
 .stats-counts-row {
 	display: flex;
-	gap: 24px;
+	gap: 32px;
 	align-items: center;
 	justify-content: center;
 }
 
 .stats-counts-legend {
-	flex: 1;
 	display: flex;
 	flex-direction: column;
 	gap: 8px;
@@ -1551,8 +1550,17 @@
    CUSTOM SESSION MODAL STYLES
    ============================================ */
 
+/* Position close button at modal corner */
+.modal:has(.episteme-custom-session-modal) .modal-close-button {
+	position: absolute;
+	top: 8px;
+	right: 8px;
+	z-index: 10;
+}
+
 .episteme-custom-session-modal {
-	min-width: 400px;
+	width: 500px;
+	max-width: 90vw;
 }
 
 .episteme-custom-session-modal h2 {
@@ -1562,7 +1570,7 @@
 }
 
 .episteme-custom-session-modal h3 {
-	margin: 8px 0;
+	margin: 8px 0 12px 0;
 	font-size: 14px;
 	font-weight: 500;
 	color: var(--text-muted);
@@ -1574,6 +1582,180 @@
 	border-top: 1px solid var(--background-modifier-border);
 }
 
+/* Quick Actions */
+.episteme-quick-actions {
+	display: grid;
+	grid-template-columns: repeat(2, 1fr);
+	gap: 8px;
+	/* max-width: 400px; */
+}
+
+.episteme-quick-action-btn {
+	display: flex;
+	flex-direction: row;
+	align-items: center;
+	justify-content: space-between;
+	gap: 8px;
+	padding: 12px 16px;
+	background: var(--background-secondary);
+	border: 1px solid var(--background-modifier-border);
+	border-radius: 8px;
+	cursor: pointer;
+	transition: all 0.15s ease;
+	font-size: 14px;
+	font-weight: 500;
+	color: var(--text-normal);
+}
+
+.episteme-quick-action-btn:hover:not(:disabled) {
+	background: var(--background-modifier-hover);
+	border-color: var(--interactive-accent);
+}
+
+.episteme-quick-action-btn:disabled,
+.episteme-quick-action-btn.episteme-btn-disabled {
+	opacity: 0.5;
+	cursor: not-allowed;
+}
+
+.episteme-quick-action-stats {
+	font-size: 12px;
+	font-weight: 400;
+	color: var(--text-muted);
+}
+
+.episteme-stat-muted {
+	color: var(--text-faint);
+}
+
+/* Search Input */
+.episteme-search-container {
+	margin-bottom: 12px;
+}
+
+.episteme-search-input {
+	width: 100%;
+	padding: 10px 12px;
+	border: 1px solid var(--background-modifier-border);
+	border-radius: 6px;
+	background: var(--background-primary);
+	color: var(--text-normal);
+	font-size: 14px;
+}
+
+.episteme-search-input:focus {
+	outline: none;
+	border-color: var(--interactive-accent);
+}
+
+.episteme-search-input::placeholder {
+	color: var(--text-muted);
+}
+
+/* Note List */
+.episteme-note-list {
+	max-height: 350px;
+	overflow-y: auto;
+	margin-bottom: 16px;
+}
+
+.episteme-note-list-empty {
+	padding: 24px 16px;
+	text-align: center;
+	color: var(--text-muted);
+	font-style: italic;
+}
+
+/* Note Table */
+.episteme-note-table {
+	width: 100%;
+	border-collapse: collapse;
+	table-layout: fixed;
+}
+
+.episteme-note-table th,
+.episteme-note-table td {
+	padding: 10px 12px;
+	text-align: left;
+	border-bottom: 1px solid var(--background-modifier-border);
+}
+
+.episteme-note-table th {
+	font-size: 12px;
+	font-weight: 600;
+	color: var(--text-muted);
+	text-transform: uppercase;
+	letter-spacing: 0.5px;
+	background: var(--background-secondary);
+	position: sticky;
+	top: 0;
+	z-index: 1;
+}
+
+.episteme-note-checkbox-col {
+	width: 40px;
+	text-align: center !important;
+}
+
+.episteme-note-name-col {
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+}
+
+.episteme-note-stats-col {
+	width: 140px;
+	text-align: right !important;
+}
+
+/* Note Row */
+.episteme-note-row {
+	transition: background-color 0.1s ease;
+}
+
+.episteme-note-row--clickable {
+	cursor: pointer;
+}
+
+.episteme-note-row--clickable:hover {
+	background: var(--background-modifier-hover);
+}
+
+.episteme-note-row--completed {
+	opacity: 0.6;
+}
+
+/* Completed tick */
+.episteme-completed-tick {
+	color: var(--color-green, #22c55e);
+	font-size: 16px;
+	font-weight: 600;
+}
+
+/* Stats text */
+.episteme-note-stats-text {
+	font-size: 12px;
+	color: var(--text-muted);
+}
+
+/* Start Button */
+.episteme-start-button-container {
+	display: flex;
+	justify-content: flex-end;
+}
+
+.episteme-start-session-btn {
+	padding: 12px 24px;
+	font-size: 14px;
+	font-weight: 500;
+}
+
+.episteme-start-session-btn:disabled {
+	opacity: 0.5;
+	cursor: not-allowed;
+}
+
+/* Legacy file list (keeping for backwards compat) */
 .episteme-file-list {
 	max-height: 300px;
 	overflow-y: auto;
@@ -1586,30 +1768,6 @@
 	font-style: italic;
 }
 
-.episteme-file-list .setting-item {
-	padding: 8px 0;
-	border-bottom: 1px solid var(--background-modifier-border);
-}
-
-.episteme-file-list .setting-item:last-child {
-	border-bottom: none;
-}
-
-/* Setting row adjustments in custom session modal */
-.episteme-custom-session-modal .setting-item {
-	border-bottom: none;
-	padding: 8px 0;
-}
-
-.episteme-custom-session-modal .setting-item-info {
-	flex: 1;
-}
-
-.episteme-custom-session-modal .setting-item-control {
-	display: flex;
-	align-items: center;
-}
-
 /* Mobile adjustments for custom session modal */
 @media screen and (max-width: 600px) {
 	.episteme-custom-session-modal {
@@ -1617,7 +1775,23 @@
 		width: 100%;
 	}
 
-	.episteme-file-list {
-		max-height: 200px;
+	.episteme-quick-actions {
+		grid-template-columns: 1fr;
+	}
+
+	.episteme-note-list {
+		max-height: 250px;
+	}
+
+	.episteme-note-stats-col {
+		width: 80px;
+	}
+
+	.episteme-start-button-container {
+		justify-content: stretch;
+	}
+
+	.episteme-start-session-btn {
+		width: 100%;
 	}
 }
