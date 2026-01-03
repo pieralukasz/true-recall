@@ -10,8 +10,23 @@ export { State, Rating, Grade };
 export type { Card as FSRSCard };
 
 /**
- * Metadane FSRS przechowywane w pliku Markdown
- * Format: <!--fsrs:{"id":"abc123","due":"2025-01-15",...}-->
+ * Single review log entry stored per-card for FSRS optimization
+ * Compact format: ~50 bytes per entry
+ */
+export interface CardReviewLogEntry {
+    /** Timestamp of review (Unix ms) */
+    t: number;
+    /** Rating: 1=Again, 2=Hard, 3=Good, 4=Easy */
+    r: Grade;
+    /** Scheduled days at time of review */
+    s: number;
+    /** Elapsed days since last review */
+    e: number;
+}
+
+/**
+ * Metadane FSRS przechowywane w sharded store
+ * Format: JSON in .episteme/store/{shard}.json
  */
 export interface FSRSCardData {
     /** Unikalny ID fiszki (UUID) */
@@ -36,6 +51,8 @@ export interface FSRSCardData {
     learningStep: number;
     /** Czy karta jest zawieszona (nie pojawia się w review) */
     suspended?: boolean;
+    /** Review history for FSRS optimization (last 20 reviews, optional) */
+    history?: CardReviewLogEntry[];
 }
 
 /**

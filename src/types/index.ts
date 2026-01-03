@@ -26,6 +26,7 @@ export { extractFSRSSettings } from "./settings.types";
 
 // FSRS types
 export type {
+    CardReviewLogEntry,
     FSRSCardData,
     FSRSFlashcardItem,
     ReviewResult,
