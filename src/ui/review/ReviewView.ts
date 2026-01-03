@@ -13,6 +13,11 @@ import type EpistemePlugin from "../../main";
 
 interface ReviewViewState extends Record<string, unknown> {
     deckFilter?: string | null;
+    // Custom session filters
+    sourceNoteFilter?: string;
+    filePathFilter?: string;
+    createdTodayOnly?: boolean;
+    ignoreDailyLimits?: boolean;
 }
 
 /**
@@ -38,6 +43,12 @@ export class ReviewView extends ItemView {
 
     // Deck filter (null = all decks)
     private deckFilter: string | null = null;
+
+    // Custom session filters
+    private sourceNoteFilter?: string;
+    private filePathFilter?: string;
+    private createdTodayOnly?: boolean;
+    private ignoreDailyLimits?: boolean;
 
     // Undo stack for reverting answers
     private undoStack: UndoEntry[] = [];
@@ -68,12 +79,19 @@ export class ReviewView extends ItemView {
     }
 
     /**
-     * Set view state (including deck filter)
+     * Set view state (including deck filter and custom session filters)
      */
     async setState(state: unknown, result: ViewStateResult): Promise<void> {
         const viewState = state as ReviewViewState | null;
         this.deckFilter = viewState?.deckFilter ?? null;
+        this.sourceNoteFilter = viewState?.sourceNoteFilter;
+        this.filePathFilter = viewState?.filePathFilter;
+        this.createdTodayOnly = viewState?.createdTodayOnly;
+        this.ignoreDailyLimits = viewState?.ignoreDailyLimits;
         await super.setState(state, result);
+
+        // Start session after filters are set
+        await this.startSession();
     }
 
     /**
@@ -82,6 +100,10 @@ export class ReviewView extends ItemView {
     getState(): ReviewViewState {
         return {
             deckFilter: this.deckFilter,
+            sourceNoteFilter: this.sourceNoteFilter,
+            filePathFilter: this.filePathFilter,
+            createdTodayOnly: this.createdTodayOnly,
+            ignoreDailyLimits: this.ignoreDailyLimits,
         };
     }
 
@@ -114,8 +136,7 @@ export class ReviewView extends ItemView {
         // Register keyboard shortcuts
         document.addEventListener("keydown", this.handleKeyDown);
 
-        // Start session automatically
-        await this.startSession();
+        // Note: startSession() is called from setState() after filters are applied
     }
 
     async onClose(): Promise<void> {
@@ -174,7 +195,7 @@ export class ReviewView extends ItemView {
             const reviewedToday = await this.sessionPersistence.getReviewedToday();
             const newCardsStudiedToday = await this.sessionPersistence.getNewCardsStudiedToday();
 
-            // Build review queue with persistent stats, deck filter, and display order settings
+            // Build review queue with persistent stats, deck filter, custom session filters, and display order settings
             const queue = this.reviewService.buildQueue(activeCards, this.fsrsService, {
                 newCardsLimit: this.plugin.settings.newCardsPerDay,
                 reviewsLimit: this.plugin.settings.reviewsPerDay,
@@ -184,6 +205,11 @@ export class ReviewView extends ItemView {
                 newCardOrder: this.plugin.settings.newCardOrder,
                 reviewOrder: this.plugin.settings.reviewOrder,
                 newReviewMix: this.plugin.settings.newReviewMix,
+                // Custom session filters
+                sourceNoteFilter: this.sourceNoteFilter,
+                filePathFilter: this.filePathFilter,
+                createdTodayOnly: this.createdTodayOnly,
+                ignoreDailyLimits: this.ignoreDailyLimits,
             });
 
             if (queue.length === 0) {
