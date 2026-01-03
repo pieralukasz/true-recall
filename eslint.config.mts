@@ -11,10 +11,8 @@ export default tseslint.config(
 			},
 			parserOptions: {
 				projectService: {
-					allowDefaultProject: [
-						'eslint.config.js',
-						'manifest.json'
-					]
+					allowDefaultProject: ['eslint.config.js', 'manifest.json'],
+					defaultProject: 'tsconfig.eslint.json'
 				},
 				tsconfigRootDir: import.meta.dirname,
 				extraFileExtensions: ['.json']
@@ -22,6 +20,12 @@ export default tseslint.config(
 		},
 	},
 	...obsidianmd.configs.recommended,
+	{
+		files: ["tests/**/*.ts"],
+		rules: {
+			"import/no-extraneous-dependencies": ["error", { devDependencies: true }]
+		}
+	},
 	globalIgnores([
 		"node_modules",
 		"dist",
