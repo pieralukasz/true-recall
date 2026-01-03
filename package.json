@@ -1,7 +1,7 @@
 {
 	"name": "obsidian-episteme",
 	"version": "0.1.0",
-	"description": "AI-powered flashcard generation and spaced repetition for Obsidian",
+	"description": "Spaced repetition and flashcard generation powered by AI for Obsidian",
 	"main": "main.js",
 	"type": "module",
 	"scripts": {

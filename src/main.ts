@@ -1,346 +1,423 @@
 import { Plugin, TFile, Notice, Platform } from "obsidian";
-import { VIEW_TYPE_FLASHCARD_PANEL, VIEW_TYPE_REVIEW, VIEW_TYPE_STATS } from "./constants";
-import { FlashcardManager, OpenRouterService, FSRSService, StatsService, SessionPersistenceService, BacklinksFilterService } from "./services";
+import {
+	VIEW_TYPE_FLASHCARD_PANEL,
+	VIEW_TYPE_REVIEW,
+	VIEW_TYPE_STATS,
+} from "./constants";
+import {
+	FlashcardManager,
+	OpenRouterService,
+	FSRSService,
+	StatsService,
+	SessionPersistenceService,
+	BacklinksFilterService,
+	ShardedStoreService,
+	MigrationService,
+} from "./services";
 import { extractFSRSSettings } from "./types";
 import {
-    FlashcardPanelView,
-    ReviewView,
-    EpistemeSettingTab,
-    DeckSelectionModal,
-    type EpistemeSettings,
-    DEFAULT_SETTINGS,
+	FlashcardPanelView,
+	ReviewView,
+	EpistemeSettingTab,
+	DeckSelectionModal,
+	type EpistemeSettings,
+	DEFAULT_SETTINGS,
 } from "./ui";
 import { StatsView } from "./ui/stats";
 
 export default class EpistemePlugin extends Plugin {
-    settings!: EpistemeSettings;
-    flashcardManager!: FlashcardManager;
-    openRouterService!: OpenRouterService;
-    fsrsService!: FSRSService;
-    statsService!: StatsService;
-    sessionPersistence!: SessionPersistenceService;
-    backlinksFilter!: BacklinksFilterService;
+	settings!: EpistemeSettings;
+	flashcardManager!: FlashcardManager;
+	openRouterService!: OpenRouterService;
+	fsrsService!: FSRSService;
+	statsService!: StatsService;
+	sessionPersistence!: SessionPersistenceService;
+	backlinksFilter!: BacklinksFilterService;
+	shardedStore!: ShardedStoreService;
+	migrationService!: MigrationService;
 
-    async onload(): Promise<void> {
-        await this.loadSettings();
+	async onload(): Promise<void> {
+		await this.loadSettings();
 
-        // Initialize services
-        this.flashcardManager = new FlashcardManager(this.app, this.settings);
-        this.openRouterService = new OpenRouterService(
-            this.settings.openRouterApiKey,
-            this.settings.aiModel
-        );
+		// Initialize services
+		this.flashcardManager = new FlashcardManager(this.app, this.settings);
+		this.openRouterService = new OpenRouterService(
+			this.settings.openRouterApiKey,
+			this.settings.aiModel
+		);
 
-        // Initialize FSRS and Stats services
-        const fsrsSettings = extractFSRSSettings(this.settings);
-        this.fsrsService = new FSRSService(fsrsSettings);
-        this.statsService = new StatsService(this.flashcardManager, this.fsrsService);
+		// Initialize FSRS and Stats services
+		const fsrsSettings = extractFSRSSettings(this.settings);
+		this.fsrsService = new FSRSService(fsrsSettings);
+		this.statsService = new StatsService(
+			this.flashcardManager,
+			this.fsrsService
+		);
 
-        // Initialize session persistence service
-        this.sessionPersistence = new SessionPersistenceService(this.app);
-        // Note: We no longer clean up old stats - they're kept for the statistics panel
+		// Initialize session persistence service
+		this.sessionPersistence = new SessionPersistenceService(this.app);
+		// Note: We no longer clean up old stats - they're kept for the statistics panel
 
-        // Initialize backlinks filter service
-        this.backlinksFilter = new BacklinksFilterService();
-        if (this.settings.hideFlashcardsFromBacklinks) {
-            this.backlinksFilter.enable();
-        }
+		// Initialize sharded store for FSRS data
+		this.shardedStore = new ShardedStoreService(this.app);
+		// Load store data in background (non-blocking)
+		void this.shardedStore.load().then(() => {
+			// Connect store to flashcard manager after loading
+			this.flashcardManager.setStore(this.shardedStore);
+		});
 
-        // Register the sidebar view
-        this.registerView(
-            VIEW_TYPE_FLASHCARD_PANEL,
-            (leaf) => new FlashcardPanelView(leaf, this)
-        );
+		// Initialize migration service
+		this.migrationService = new MigrationService(
+			this.app,
+			this.shardedStore,
+			this.settings.flashcardsFolder
+		);
 
-        // Register the review view
-        this.registerView(
-            VIEW_TYPE_REVIEW,
-            (leaf) => new ReviewView(leaf, this)
-        );
+		// Initialize backlinks filter service
+		this.backlinksFilter = new BacklinksFilterService();
+		if (this.settings.hideFlashcardsFromBacklinks) {
+			this.backlinksFilter.enable();
+		}
 
-        // Register the statistics view
-        this.registerView(
-            VIEW_TYPE_STATS,
-            (leaf) => new StatsView(leaf, this)
-        );
+		// Register the sidebar view
+		this.registerView(
+			VIEW_TYPE_FLASHCARD_PANEL,
+			(leaf) => new FlashcardPanelView(leaf, this)
+		);
 
-        // Add ribbon icon to start review
-        this.addRibbonIcon("brain", "Episteme - Study", () => {
-            void this.startReviewSession();
-        });
+		// Register the review view
+		this.registerView(
+			VIEW_TYPE_REVIEW,
+			(leaf) => new ReviewView(leaf, this)
+		);
 
-        // Add ribbon icon to open statistics
-        this.addRibbonIcon("bar-chart-2", "Episteme - Statistics", () => {
-            void this.openStatsView();
-        });
+		// Register the statistics view
+		this.registerView(VIEW_TYPE_STATS, (leaf) => new StatsView(leaf, this));
 
-        // Register commands
-        this.addCommand({
-            id: "open-flashcard-panel",
-            name: "Open flashcard panel",
-            callback: () => void this.activateView()
-        });
+		// Add ribbon icon to start review
+		this.addRibbonIcon("brain", "Episteme - Study", () => {
+			void this.startReviewSession();
+		});
 
-        this.addCommand({
-            id: "generate-flashcards",
-            name: "Generate flashcards for current note",
-            checkCallback: (checking) => {
-                const file = this.app.workspace.getActiveFile();
-                if (file && file.extension === "md") {
-                    if (!checking) {
-                        void this.activateView();
-                    }
-                    return true;
-                }
-                return false;
-            }
-        });
+		// Add ribbon icon to open statistics
+		this.addRibbonIcon("bar-chart-2", "Episteme - Statistics", () => {
+			void this.openStatsView();
+		});
 
-        // Review session command
-        this.addCommand({
-            id: "start-review",
-            name: "Start review session",
-            callback: () => void this.startReviewSession()
-        });
+		// Register commands
+		this.addCommand({
+			id: "open-flashcard-panel",
+			name: "Open flashcard panel",
+			callback: () => void this.activateView(),
+		});
 
-        // Review session for Knowledge deck (direct, no modal)
-        this.addCommand({
-            id: "start-review-knowledge",
-            name: "Start review session (Knowledge)",
-            callback: () => void this.openReviewView("Knowledge")
-        });
+		this.addCommand({
+			id: "generate-flashcards",
+			name: "Generate flashcards for current note",
+			checkCallback: (checking) => {
+				const file = this.app.workspace.getActiveFile();
+				if (file && file.extension === "md") {
+					if (!checking) {
+						void this.activateView();
+					}
+					return true;
+				}
+				return false;
+			},
+		});
 
-        // Migrate flashcards command
-        this.addCommand({
-            id: "migrate-to-fsrs",
-            name: "Migrate flashcards to FSRS format",
-            callback: async () => {
-                const result = await this.flashcardManager.migrateToFSRS();
-                new Notice(`Migration complete: ${result.migrated}/${result.total} cards migrated`);
-            }
-        });
+		// Review session command
+		this.addCommand({
+			id: "start-review",
+			name: "Start review session",
+			callback: () => void this.startReviewSession(),
+		});
 
-        // Remove all FSRS data (for testing)
-        this.addCommand({
-            id: "remove-all-fsrs",
-            name: "Remove all FSRS data (for testing)",
-            callback: async () => {
-                const result = await this.flashcardManager.removeAllFSRSData();
-                new Notice(`Removed FSRS: ${result.entriesRemoved} entries from ${result.filesModified} files`);
-            }
-        });
+		// Review session for Knowledge deck (direct, no modal)
+		this.addCommand({
+			id: "start-review-knowledge",
+			name: "Start review session (Knowledge)",
+			callback: () => void this.openReviewView("Knowledge"),
+		});
 
-        // Remove legacy Anki IDs
-        this.addCommand({
-            id: "remove-legacy-ids",
-            name: "Remove legacy Anki IDs from flashcards",
-            callback: async () => {
-                const result = await this.flashcardManager.removeAllLegacyIds();
-                new Notice(`Removed ${result.idsRemoved} legacy IDs from ${result.filesModified} files`);
-            }
-        });
+		// Migrate to sharded store (new architecture)
+		this.addCommand({
+			id: "migrate-to-sharded-store",
+			name: "Migrate to sharded store (performance upgrade)",
+			callback: async () => {
+				new Notice("Running migration analysis...");
+				const dryRun = await this.migrationService.dryRun();
 
-        // Statistics panel command
-        this.addCommand({
-            id: "open-statistics",
-            name: "Open statistics panel",
-            callback: () => void this.openStatsView()
-        });
+				if (dryRun.cardsToExtract === 0) {
+					new Notice(
+						"No cards found to migrate. Run 'Migrate to FSRS format' first."
+					);
+					return;
+				}
 
-        // Register settings tab
-        this.addSettingTab(new EpistemeSettingTab(this.app, this));
+				new Notice(
+					`Found ${dryRun.cardsToExtract} cards in ${dryRun.filesToClean} files. ` +
+						`Will remove ${dryRun.legacyIdsToRemove} legacy IDs and ${dryRun.duplicateFsrsToRemove} duplicate FSRS blocks. ` +
+						`Starting migration...`
+				);
 
-        // Listen for active file changes
-        this.registerEvent(
-            this.app.workspace.on("file-open", (file) => {
-                this.updatePanelView(file);
-            })
-        );
+				const result = await this.migrationService.migrate();
 
-        // Also listen for active leaf changes (covers more scenarios)
-        this.registerEvent(
-            this.app.workspace.on("active-leaf-change", () => {
-                const file = this.app.workspace.getActiveFile();
-                this.updatePanelView(file);
-            })
-        );
-    }
+				if (result.success) {
+					new Notice(
+						`Migration complete! ${result.cardsExtracted} cards moved to sharded store. ` +
+							`${result.filesCleaned} files cleaned. Backup at: ${result.backupPath}`
+					);
+				} else {
+					new Notice(`Migration failed: ${result.errors.join(", ")}`);
+				}
+			},
+		});
 
-    onunload(): void {
-        // Disable backlinks filter
-        this.backlinksFilter?.disable();
-        // Obsidian automatically handles leaf cleanup when plugin unloads
-    }
+		// Verify store integrity
+		this.addCommand({
+			id: "verify-store-integrity",
+			name: "Verify store integrity",
+			callback: async () => {
+				const result = await this.migrationService.verifyIntegrity();
+				new Notice(
+					`Store: ${result.storeCount} cards | Files: ${result.fileCount} block IDs | ` +
+						`Orphaned: ${result.orphanedInStore.length} | Missing: ${result.missingFromStore.length}`
+				);
+			},
+		});
 
-    async loadSettings(): Promise<void> {
-        this.settings = Object.assign({}, DEFAULT_SETTINGS, await this.loadData() as Partial<EpistemeSettings>);
-    }
+		// Update block IDs to full UUID format
+		this.addCommand({
+			id: "update-block-ids",
+			name: "Update block IDs to full UUID format",
+			callback: async () => {
+				new Notice("Updating block IDs...");
+				const result = await this.migrationService.updateBlockIdsToUUID();
+				new Notice(
+					`Updated ${result.blockIdsUpdated} block IDs in ${result.filesModified} files`
+				);
+			},
+		});
 
-    async saveSettings(): Promise<void> {
-        await this.saveData(this.settings);
+		// Statistics panel command
+		this.addCommand({
+			id: "open-statistics",
+			name: "Open statistics panel",
+			callback: () => void this.openStatsView(),
+		});
 
-        // Update services with new settings
-        if (this.flashcardManager) {
-            this.flashcardManager.updateSettings(this.settings);
-        }
-        if (this.openRouterService) {
-            this.openRouterService.updateCredentials(
-                this.settings.openRouterApiKey,
-                this.settings.aiModel
-            );
-        }
-        if (this.fsrsService) {
-            const fsrsSettings = extractFSRSSettings(this.settings);
-            this.fsrsService.updateSettings(fsrsSettings);
-        }
-        if (this.backlinksFilter) {
-            if (this.settings.hideFlashcardsFromBacklinks) {
-                this.backlinksFilter.enable();
-            } else {
-                this.backlinksFilter.disable();
-            }
-        }
-    }
+		// Register settings tab
+		this.addSettingTab(new EpistemeSettingTab(this.app, this));
 
-    // Activate the sidebar view
-    async activateView(): Promise<void> {
-        const { workspace } = this.app;
+		// Listen for active file changes
+		this.registerEvent(
+			this.app.workspace.on("file-open", (file) => {
+				this.updatePanelView(file);
+			})
+		);
 
-        // Check if view already exists
-        let leaf = workspace.getLeavesOfType(VIEW_TYPE_FLASHCARD_PANEL)[0];
+		// Also listen for active leaf changes (covers more scenarios)
+		this.registerEvent(
+			this.app.workspace.on("active-leaf-change", () => {
+				const file = this.app.workspace.getActiveFile();
+				this.updatePanelView(file);
+			})
+		);
+	}
 
-        if (!leaf) {
-            if (Platform.isMobile) {
-                // On mobile, open in main area (no sidebar support)
-                leaf = workspace.getLeaf(true);
-                await leaf.setViewState({
-                    type: VIEW_TYPE_FLASHCARD_PANEL,
-                    active: true
-                });
-            } else {
-                // Desktop: use right sidebar
-                const rightLeaf = workspace.getRightLeaf(false);
-                if (rightLeaf) {
-                    await rightLeaf.setViewState({
-                        type: VIEW_TYPE_FLASHCARD_PANEL,
-                        active: true
-                    });
-                    leaf = rightLeaf;
-                }
-            }
-        }
+	onunload(): void {
+		// Disable backlinks filter
+		this.backlinksFilter?.disable();
 
-        // Reveal and focus the leaf
-        if (leaf) {
-            void workspace.revealLeaf(leaf);
-        }
-    }
+		// Save sharded store immediately on unload
+		if (this.shardedStore) {
+			void this.shardedStore.saveNow();
+		}
 
-    // Update the panel view with current file
-    private updatePanelView(file: TFile | null): void {
-        const leaves = this.app.workspace.getLeavesOfType(VIEW_TYPE_FLASHCARD_PANEL);
-        leaves.forEach(leaf => {
-            const view = leaf.view;
-            if (view instanceof FlashcardPanelView) {
-                void view.handleFileChange(file);
-            }
-        });
-    }
+		// Obsidian automatically handles leaf cleanup when plugin unloads
+	}
 
-    // Start a review session
-    async startReviewSession(): Promise<void> {
-        const { workspace } = this.app;
+	async loadSettings(): Promise<void> {
+		this.settings = Object.assign(
+			{},
+			DEFAULT_SETTINGS,
+			(await this.loadData()) as Partial<EpistemeSettings>
+		);
+	}
 
-        // Check if review view already exists
-        const existingLeaves = workspace.getLeavesOfType(VIEW_TYPE_REVIEW);
-        if (existingLeaves.length > 0) {
-            // Focus existing review view
-            const leaf = existingLeaves[0];
-            if (leaf) {
-                workspace.revealLeaf(leaf);
-            }
-            return;
-        }
+	async saveSettings(): Promise<void> {
+		await this.saveData(this.settings);
 
-        // Get all decks and show selection modal
-        const decks = await this.flashcardManager.getAllDecks();
+		// Update services with new settings
+		if (this.flashcardManager) {
+			this.flashcardManager.updateSettings(this.settings);
+		}
+		if (this.openRouterService) {
+			this.openRouterService.updateCredentials(
+				this.settings.openRouterApiKey,
+				this.settings.aiModel
+			);
+		}
+		if (this.fsrsService) {
+			const fsrsSettings = extractFSRSSettings(this.settings);
+			this.fsrsService.updateSettings(fsrsSettings);
+		}
+		if (this.migrationService) {
+			this.migrationService.setFlashcardsFolder(
+				this.settings.flashcardsFolder
+			);
+		}
+		if (this.backlinksFilter) {
+			if (this.settings.hideFlashcardsFromBacklinks) {
+				this.backlinksFilter.enable();
+			} else {
+				this.backlinksFilter.disable();
+			}
+		}
+	}
 
-        // If no flashcards found, show notice
-        if (decks.length === 0) {
-            new Notice("No flashcards found. Generate some flashcards first!");
-            return;
-        }
+	// Activate the sidebar view
+	async activateView(): Promise<void> {
+		const { workspace } = this.app;
 
-        // Show deck selection modal
-        const modal = new DeckSelectionModal(this.app, decks);
-        const result = await modal.openAndWait();
+		// Check if view already exists
+		let leaf = workspace.getLeavesOfType(VIEW_TYPE_FLASHCARD_PANEL)[0];
 
-        if (result.cancelled) {
-            return;
-        }
+		if (!leaf) {
+			if (Platform.isMobile) {
+				// On mobile, open in main area (no sidebar support)
+				leaf = workspace.getLeaf(true);
+				await leaf.setViewState({
+					type: VIEW_TYPE_FLASHCARD_PANEL,
+					active: true,
+				});
+			} else {
+				// Desktop: use right sidebar
+				const rightLeaf = workspace.getRightLeaf(false);
+				if (rightLeaf) {
+					await rightLeaf.setViewState({
+						type: VIEW_TYPE_FLASHCARD_PANEL,
+						active: true,
+					});
+					leaf = rightLeaf;
+				}
+			}
+		}
 
-        // Open review view with selected deck
-        await this.openReviewView(result.selectedDeck);
-    }
+		// Reveal and focus the leaf
+		if (leaf) {
+			void workspace.revealLeaf(leaf);
+		}
+	}
 
-    /**
-     * Open the review view with optional deck filter
-     */
-    private async openReviewView(deckFilter: string | null): Promise<void> {
-        const { workspace } = this.app;
+	// Update the panel view with current file
+	private updatePanelView(file: TFile | null): void {
+		const leaves = this.app.workspace.getLeavesOfType(
+			VIEW_TYPE_FLASHCARD_PANEL
+		);
+		leaves.forEach((leaf) => {
+			const view = leaf.view;
+			if (view instanceof FlashcardPanelView) {
+				void view.handleFileChange(file);
+			}
+		});
+	}
 
-        // Force fullscreen on mobile (no sidebar support)
-        if (Platform.isMobile || this.settings.reviewMode === "fullscreen") {
-            // Open in main area
-            const leaf = workspace.getLeaf(true);
-            await leaf.setViewState({
-                type: VIEW_TYPE_REVIEW,
-                active: true,
-                state: { deckFilter },
-            });
-            workspace.revealLeaf(leaf);
-        } else {
-            // Desktop: Open in right panel
-            const rightLeaf = workspace.getRightLeaf(false);
-            if (rightLeaf) {
-                await rightLeaf.setViewState({
-                    type: VIEW_TYPE_REVIEW,
-                    active: true,
-                    state: { deckFilter },
-                });
-                workspace.revealLeaf(rightLeaf);
-            }
-        }
-    }
+	// Start a review session
+	async startReviewSession(): Promise<void> {
+		const { workspace } = this.app;
 
-    /**
-     * Open the statistics view
-     */
-    async openStatsView(): Promise<void> {
-        const { workspace } = this.app;
+		// Check if review view already exists
+		const existingLeaves = workspace.getLeavesOfType(VIEW_TYPE_REVIEW);
+		if (existingLeaves.length > 0) {
+			// Focus existing review view
+			const leaf = existingLeaves[0];
+			if (leaf) {
+				workspace.revealLeaf(leaf);
+			}
+			return;
+		}
 
-        // Check if stats view already exists
-        const existingLeaves = workspace.getLeavesOfType(VIEW_TYPE_STATS);
-        if (existingLeaves.length > 0) {
-            // Focus existing stats view
-            const leaf = existingLeaves[0];
-            if (leaf) {
-                workspace.revealLeaf(leaf);
-                // Refresh the view
-                const view = leaf.view;
-                if (view instanceof StatsView) {
-                    void view.refresh();
-                }
-            }
-            return;
-        }
+		// Get all decks and show selection modal
+		const decks = await this.flashcardManager.getAllDecks();
 
-        // Open in main area
-        const leaf = workspace.getLeaf(true);
-        await leaf.setViewState({
-            type: VIEW_TYPE_STATS,
-            active: true,
-        });
-        workspace.revealLeaf(leaf);
-    }
+		// If no flashcards found, show notice
+		if (decks.length === 0) {
+			new Notice("No flashcards found. Generate some flashcards first!");
+			return;
+		}
+
+		// Show deck selection modal
+		const modal = new DeckSelectionModal(this.app, decks);
+		const result = await modal.openAndWait();
+
+		if (result.cancelled) {
+			return;
+		}
+
+		// Open review view with selected deck
+		await this.openReviewView(result.selectedDeck);
+	}
+
+	/**
+	 * Open the review view with optional deck filter
+	 */
+	private async openReviewView(deckFilter: string | null): Promise<void> {
+		const { workspace } = this.app;
+
+		// Force fullscreen on mobile (no sidebar support)
+		if (Platform.isMobile || this.settings.reviewMode === "fullscreen") {
+			// Open in main area
+			const leaf = workspace.getLeaf(true);
+			await leaf.setViewState({
+				type: VIEW_TYPE_REVIEW,
+				active: true,
+				state: { deckFilter },
+			});
+			workspace.revealLeaf(leaf);
+		} else {
+			// Desktop: Open in right panel
+			const rightLeaf = workspace.getRightLeaf(false);
+			if (rightLeaf) {
+				await rightLeaf.setViewState({
+					type: VIEW_TYPE_REVIEW,
+					active: true,
+					state: { deckFilter },
+				});
+				workspace.revealLeaf(rightLeaf);
+			}
+		}
+	}
+
+	/**
+	 * Open the statistics view
+	 */
+	async openStatsView(): Promise<void> {
+		const { workspace } = this.app;
+
+		// Check if stats view already exists
+		const existingLeaves = workspace.getLeavesOfType(VIEW_TYPE_STATS);
+		if (existingLeaves.length > 0) {
+			// Focus existing stats view
+			const leaf = existingLeaves[0];
+			if (leaf) {
+				workspace.revealLeaf(leaf);
+				// Refresh the view
+				const view = leaf.view;
+				if (view instanceof StatsView) {
+					void view.refresh();
+				}
+			}
+			return;
+		}
+
+		// Open in main area
+		const leaf = workspace.getLeaf(true);
+		await leaf.setViewState({
+			type: VIEW_TYPE_STATS,
+			active: true,
+		});
+		workspace.revealLeaf(leaf);
+	}
 }
