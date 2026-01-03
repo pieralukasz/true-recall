@@ -1,11 +1,11 @@
-/* Shadow Anki Settings Styles */
-.shadow-anki-api-input {
+/* Episteme Settings Styles */
+.episteme-api-input {
 	width: 300px;
 }
 
-/* Shadow Anki Panel Styles */
+/* Episteme Panel Styles */
 
-.shadow-anki-panel {
+.episteme-panel {
 	display: flex;
 	flex-direction: column;
 	height: 100%;
@@ -13,35 +13,35 @@
 }
 
 /* Container flex styles */
-.shadow-anki-content-container {
+.episteme-content-container {
 	flex: 1;
 	overflow-y: auto;
 	min-height: 0;
 }
 
-.shadow-anki-footer-container {
+.episteme-footer-container {
 	flex-shrink: 0;
 }
 
 /* Header Section */
-.shadow-anki-header {
+.episteme-header {
 	border-bottom: 1px solid var(--background-modifier-border);
 	padding-bottom: 8px;
 	margin-bottom: 8px;
 }
 
-.shadow-anki-title-row {
+.episteme-title-row {
 	display: flex;
 	align-items: center;
 	gap: 8px;
 }
 
-.shadow-anki-status {
+.episteme-status {
 	font-size: 12px;
 	flex-shrink: 0;
 }
 
-.shadow-anki-title {
+.episteme-title {
 	font-weight: 600;
 	font-size: 14px;
 	overflow: hidden;
@@ -51,7 +51,7 @@
 	flex: 1;
 }
 
-.shadow-anki-open-btn {
+.episteme-open-btn {
 	cursor: pointer;
 	opacity: 0.7;
 	font-size: 14px;
@@ -60,35 +60,35 @@
 	flex-shrink: 0;
 }
 
-.shadow-anki-open-btn:hover {
+.episteme-open-btn:hover {
 	opacity: 1;
 	background-color: var(--background-modifier-hover);
 }
 
 /* Content Section */
-.shadow-anki-content {
+.episteme-content {
 	flex: 1;
 	overflow-y: auto;
 }
 
-.shadow-anki-empty,
-.shadow-anki-no-cards {
+.episteme-empty,
+.episteme-no-cards {
 	color: var(--text-muted);
 	text-align: center;
 	padding: 16px 8px;
 }
 
-.shadow-anki-no-cards p {
+.episteme-no-cards p {
 	margin: 8px 0;
 }
 
-.shadow-anki-word-count {
+.episteme-word-count {
 	font-size: 12px;
 	color: var(--text-faint);
 }
 
 /* Processing/Loading State */
-.shadow-anki-processing {
+.episteme-processing {
 	display: flex;
 	flex-direction: column;
 	align-items: center;
@@ -97,102 +97,102 @@
 	gap: 12px;
 }
 
-.shadow-anki-spinner {
+.episteme-spinner {
 	color: var(--interactive-accent);
 }
 
-.shadow-anki-spinner svg {
+.episteme-spinner svg {
 	display: block;
 }
 
-.shadow-anki-processing-text {
+.episteme-processing-text {
 	font-size: 14px;
 	font-weight: 500;
 	color: var(--text-normal);
 }
 
-.shadow-anki-processing-subtext {
+.episteme-processing-subtext {
 	font-size: 12px;
 	color: var(--text-muted);
 }
 
 /* Preview State */
-.shadow-anki-preview {
+.episteme-preview {
 	padding: 8px 0;
 }
 
-.shadow-anki-card-count {
+.episteme-card-count {
 	font-size: 15px;
 	font-weight: 500;
 	margin: 0 0 8px 0;
 	color: var(--text-normal);
 }
 
-.shadow-anki-meta {
+.episteme-meta {
 	font-size: 12px;
 	color: var(--text-muted);
 	margin: 4px 0;
 }
 
 /* Meta Row */
-.shadow-anki-meta-row {
+.episteme-meta-row {
 	margin-bottom: 8px;
 }
 
-.shadow-anki-meta-row .shadow-anki-card-count {
+.episteme-meta-row .episteme-card-count {
 	font-size: 13px;
 	font-weight: 500;
 	margin: 0;
 }
 
-.shadow-anki-meta-row .shadow-anki-meta {
+.episteme-meta-row .episteme-meta {
 	font-size: 13px;
 	margin: 0;
 }
 
 /* Flashcard Cards */
-.shadow-anki-cards-container {
+.episteme-cards-container {
 	margin-bottom: 8px;
 }
 
-.shadow-anki-card {
+.episteme-card {
 	padding: 8px 0px;
 	background: var(--background-secondary);
 	border-radius: 6px;
 	margin-bottom: 6px;
 }
 
-.shadow-anki-card-header {
+.episteme-card-header {
 	display: flex;
 	justify-content: space-between;
 	align-items: flex-start;
 	gap: 8px;
 }
 
-.shadow-anki-card-question,
-.shadow-anki-card-answer {
+.episteme-card-question,
+.episteme-card-answer {
 	font-size: 13px;
 	line-height: 1.5;
 	color: var(--text-normal);
 	flex: 1;
 }
 
-.shadow-anki-card-question {
+.episteme-card-question {
 	margin-bottom: 6px;
 }
 
-.shadow-anki-card-label {
+.episteme-card-label {
 	font-weight: 600;
 	color: var(--text-muted);
 }
 
-.shadow-anki-card-actions {
+.episteme-card-actions {
 	display: flex;
 	gap: 4px;
 	flex-shrink: 0;
 }
 
-.shadow-anki-card-btn {
+.episteme-card-btn {
 	cursor: pointer;
 	opacity: 0.6;
 	font-size: 12px;
@@ -201,12 +201,12 @@
 	transition: opacity 0.15s ease, background-color 0.15s ease;
 }
 
-.shadow-anki-card-btn:hover {
+.episteme-card-btn:hover {
 	opacity: 1;
 	background-color: var(--background-modifier-hover);
 }
 
-.shadow-anki-card-separator {
+.episteme-card-separator {
 	height: 1px;
 	background: var(--background-modifier-border);
 	margin: 4px 0;
@@ -214,44 +214,44 @@
 }
 
 /* Wikilinks - styled like Obsidian internal links */
-.shadow-anki-wikilink {
+.episteme-wikilink {
 	color: var(--link-color);
 	cursor: pointer;
 	text-decoration: none;
 }
 
-.shadow-anki-wikilink:hover {
+.episteme-wikilink:hover {
 	color: var(--link-color-hover);
 	text-decoration: underline;
 }
 
 /* Markdown content rendered by Obsidian */
-.shadow-anki-md-content {
+.episteme-md-content {
 	display: inline;
 }
 
-.shadow-anki-md-content p {
+.episteme-md-content p {
 	display: inline;
 	margin: 0;
 }
 
 /* Poprawka dla linków w markdown content */
-.shadow-anki-md-content a.internal-link,
-.shadow-anki-md-content a.external-link,
-.shadow-anki-md-content a {
+.episteme-md-content a.internal-link,
+.episteme-md-content a.external-link,
+.episteme-md-content a {
 	color: var(--link-color);
 	cursor: pointer;
 	text-decoration: none;
 	pointer-events: auto;
 }
 
-.shadow-anki-md-content a:hover {
+.episteme-md-content a:hover {
 	color: var(--link-color-hover);
 	text-decoration: underline;
 }
 
 /* Footer Section */
-.shadow-anki-footer {
+.episteme-footer {
 	border-top: 1px solid var(--background-modifier-border);
 	padding-top: 8px;
 	margin-top: auto;
@@ -261,11 +261,11 @@
 }
 
 /* Instructions Input */
-.shadow-anki-instructions-container {
+.episteme-instructions-container {
 	margin-bottom: 6px;
 }
 
-.shadow-anki-instructions-input {
+.episteme-instructions-input {
 	width: 100%;
 	min-height: 50px;
 	max-height: 100px;
@@ -279,28 +279,28 @@
 	resize: vertical;
 }
 
-.shadow-anki-instructions-input:focus {
+.episteme-instructions-input:focus {
 	outline: none;
 	border-color: var(--interactive-accent);
 }
 
-.shadow-anki-instructions-input::placeholder {
+.episteme-instructions-input::placeholder {
 	color: var(--text-muted);
 }
 
 /* Buttons Row (for diff view) */
-.shadow-anki-buttons-row {
+.episteme-buttons-row {
 	display: flex;
 	gap: 6px;
 }
 
-.shadow-anki-buttons-row .shadow-anki-btn-primary,
-.shadow-anki-buttons-row .shadow-anki-btn-secondary {
+.episteme-buttons-row .episteme-btn-primary,
+.episteme-buttons-row .episteme-btn-secondary {
 	flex: 1;
 }
 
 /* Buttons */
-.shadow-anki-btn-primary {
+.episteme-btn-primary {
 	background-color: var(--interactive-accent);
 	color: var(--text-on-accent);
 	border: none;
@@ -313,17 +313,17 @@
 	transition: background-color 0.15s ease;
 }
 
-.shadow-anki-btn-primary:hover:not(:disabled) {
+.episteme-btn-primary:hover:not(:disabled) {
 	background-color: var(--interactive-accent-hover);
 }
 
-.shadow-anki-btn-primary:disabled {
+.episteme-btn-primary:disabled {
 	opacity: 0.6;
 	cursor: not-allowed;
 }
 
-.shadow-anki-btn-secondary,
-.shadow-anki-btn-sync {
+.episteme-btn-secondary,
+.episteme-btn-sync {
 	background-color: var(--background-modifier-border);
 	color: var(--text-normal);
 	border: none;
@@ -335,8 +335,8 @@
 	transition: background-color 0.15s ease;
 }
 
-.shadow-anki-btn-secondary:hover,
-.shadow-anki-btn-sync:hover {
+.episteme-btn-secondary:hover,
+.episteme-btn-sync:hover {
 	background-color: var(--background-modifier-hover);
 }
 
@@ -344,34 +344,34 @@
    DIFF VIEW STYLES
    ============================================ */
 
-.shadow-anki-diff {
+.episteme-diff {
 	padding: 8px 0;
 }
 
-.shadow-anki-diff-header {
+.episteme-diff-header {
 	margin-bottom: 12px;
 }
 
-.shadow-anki-diff-title {
+.episteme-diff-title {
 	font-size: 14px;
 	font-weight: 600;
 	color: var(--text-normal);
 }
 
-.shadow-anki-diff-empty {
+.episteme-diff-empty {
 	color: var(--text-muted);
 	text-align: center;
 	padding: 24px 12px;
 }
 
-.shadow-anki-diff-changes {
+.episteme-diff-changes {
 	display: flex;
 	flex-direction: column;
 	gap: 12px;
 }
 
 /* Diff Card Base */
-.shadow-anki-diff-card {
+.episteme-diff-card {
 	padding: 12px;
 	background: var(--background-secondary);
 	border-radius: 6px;
@@ -380,25 +380,25 @@
 }
 
 /* Card type variants */
-.shadow-anki-diff-card--new {
+.episteme-diff-card--new {
 	border-left-color: var(--color-green, #4ade80);
 }
 
-.shadow-anki-diff-card--modified {
+.episteme-diff-card--modified {
 	border-left-color: var(--color-orange, #fb923c);
 }
 
-.shadow-anki-diff-card--deleted {
+.episteme-diff-card--deleted {
 	border-left-color: var(--color-red, #f87171);
 }
 
 /* Rejected/unselected state */
-.shadow-anki-diff-card--rejected {
+.episteme-diff-card--rejected {
 	opacity: 0.5;
 }
 
 /* Card Header */
-.shadow-anki-diff-card-header {
+.episteme-diff-card-header {
 	display: flex;
 	justify-content: space-between;
 	align-items: center;
@@ -406,7 +406,7 @@
 }
 
 /* Type Badges */
-.shadow-anki-diff-badge {
+.episteme-diff-badge {
 	font-size: 10px;
 	font-weight: 600;
 	text-transform: uppercase;
@@ -415,43 +415,43 @@
 	color: white;
 }
 
-.shadow-anki-diff-badge--new {
+.episteme-diff-badge--new {
 	background-color: var(--color-green, #4ade80);
 	color: #000;
 }
 
-.shadow-anki-diff-badge--modified {
+.episteme-diff-badge--modified {
 	background-color: var(--color-orange, #fb923c);
 	color: #000;
 }
 
-.shadow-anki-diff-badge--deleted {
+.episteme-diff-badge--deleted {
 	background-color: var(--color-red, #f87171);
 	color: #fff;
 }
 
 /* Toggle Checkbox */
-.shadow-anki-diff-toggle {
+.episteme-diff-toggle {
 	cursor: pointer;
 	width: 16px;
 	height: 16px;
 }
 
 /* Old/New Sections */
-.shadow-anki-diff-old {
+.episteme-diff-old {
 	padding: 8px;
 	background: rgba(255, 100, 100, 0.08);
 	border-radius: 4px;
 	margin-bottom: 4px;
 }
 
-.shadow-anki-diff-new {
+.episteme-diff-new {
 	padding: 8px;
 	background: rgba(100, 255, 100, 0.08);
 	border-radius: 4px;
 }
 
-.shadow-anki-diff-label {
+.episteme-diff-label {
 	font-size: 10px;
 	font-weight: 600;
 	text-transform: uppercase;
@@ -459,7 +459,7 @@
 	margin-bottom: 4px;
 }
 
-.shadow-anki-diff-arrow {
+.episteme-diff-arrow {
 	text-align: center;
 	color: var(--text-muted);
 	font-size: 16px;
@@ -467,26 +467,26 @@
 }
 
 /* Question and Answer in Diff */
-.shadow-anki-diff-question,
-.shadow-anki-diff-answer {
+.episteme-diff-question,
+.episteme-diff-answer {
 	font-size: 13px;
 	line-height: 1.5;
 	color: var(--text-normal);
 }
 
-.shadow-anki-diff-question {
+.episteme-diff-question {
 	margin-bottom: 4px;
 }
 
 /* Deleted card content */
-.shadow-anki-diff-deleted-content {
+.episteme-diff-deleted-content {
 	padding: 8px;
 	background: rgba(248, 113, 113, 0.08);
 	border-radius: 4px;
 }
 
 /* Reason for deletion */
-.shadow-anki-diff-reason {
+.episteme-diff-reason {
 	font-size: 11px;
 	color: var(--text-muted);
 	font-style: italic;
@@ -499,7 +499,7 @@
    REVIEW VIEW STYLES
    ============================================ */
 
-.shadow-anki-review {
+.episteme-review {
 	display: flex;
 	flex-direction: column;
 	height: 100%;
@@ -507,7 +507,7 @@
 }
 
 /* Review Header */
-.shadow-anki-review-header {
+.episteme-review-header {
 	display: flex;
 	justify-content: center;
 	align-items: center;
@@ -517,7 +517,7 @@
 	position: relative;
 }
 
-.shadow-anki-review-open-note {
+.episteme-review-open-note {
 	position: absolute;
 	right: 16px;
 	background: none;
@@ -531,19 +531,19 @@
 	justify-content: center;
 }
 
-.shadow-anki-review-open-note:hover {
+.episteme-review-open-note:hover {
 	background: var(--background-modifier-hover);
 	color: var(--text-normal);
 }
 
-.shadow-anki-review-progress-text {
+.episteme-review-progress-text {
 	font-size: 14px;
 	font-weight: 600;
 	color: var(--text-normal);
 }
 
 /* Card Container */
-.shadow-anki-review-card-container {
+.episteme-review-card-container {
 	flex: 1;
 	display: flex;
 	align-items: center;
@@ -552,44 +552,44 @@
 	overflow-y: auto;
 }
 
-.shadow-anki-review-card {
+.episteme-review-card {
 	max-width: 700px;
 	width: 100%;
 	text-align: center;
 }
 
 /* Question */
-.shadow-anki-review-question {
+.episteme-review-question {
 	font-size: 1.4em;
 	line-height: 1.6;
 	color: var(--text-normal);
 	margin-bottom: 24px;
 }
 
-.shadow-anki-review-question p {
+.episteme-review-question p {
 	margin: 0;
 }
 
 /* Divider */
-.shadow-anki-review-divider {
+.episteme-review-divider {
 	border: none;
 	border-top: 1px solid var(--background-modifier-border);
 	margin: 24px 0;
 }
 
 /* Answer */
-.shadow-anki-review-answer {
+.episteme-review-answer {
 	font-size: 1.2em;
 	line-height: 1.6;
 	color: var(--text-muted);
 }
 
-.shadow-anki-review-answer p {
+.episteme-review-answer p {
 	margin: 0;
 }
 
 /* Editable fields (inline edit during review) */
-.shadow-anki-review-editable {
+.episteme-review-editable {
 	border: 2px solid var(--interactive-accent);
 	border-radius: 6px;
 	padding: 12px;
@@ -603,26 +603,26 @@
 	color: var(--text-normal);
 }
 
-.shadow-anki-review-editable:focus {
+.episteme-review-editable:focus {
 	box-shadow: 0 0 0 3px var(--interactive-accent-hover);
 }
 
 /* Visual indicator that field is editable (Cmd+click) */
-.shadow-anki-review-question:not(:has(.shadow-anki-review-editable)),
-.shadow-anki-review-answer:not(:has(.shadow-anki-review-editable)) {
+.episteme-review-question:not(:has(.episteme-review-editable)),
+.episteme-review-answer:not(:has(.episteme-review-editable)) {
 	border-radius: 6px;
 	padding: 8px;
 	margin: -8px;
 	transition: background 0.15s ease;
 }
 
-.shadow-anki-review-question:not(:has(.shadow-anki-review-editable)):hover,
-.shadow-anki-review-answer:not(:has(.shadow-anki-review-editable)):hover {
+.episteme-review-question:not(:has(.episteme-review-editable)):hover,
+.episteme-review-answer:not(:has(.episteme-review-editable)):hover {
 	background: var(--background-modifier-hover);
 }
 
 /* Buttons Container */
-.shadow-anki-review-buttons {
+.episteme-review-buttons {
 	display: flex;
 	justify-content: center;
 	gap: 12px;
@@ -633,7 +633,7 @@
 }
 
 /* Base Button Style */
-.shadow-anki-btn {
+.episteme-btn {
 	display: flex;
 	flex-direction: column;
 	align-items: center;
@@ -648,196 +648,196 @@
 	transition: transform 0.1s ease, filter 0.1s ease;
 }
 
-.shadow-anki-btn:hover {
+.episteme-btn:hover {
 	filter: brightness(1.1);
 }
 
-.shadow-anki-btn:active {
+.episteme-btn:active {
 	transform: scale(0.98);
 }
 
 /* Show Answer Button */
-.shadow-anki-btn-show {
+.episteme-btn-show {
 	background: var(--interactive-accent);
 	color: var(--text-on-accent);
 	padding: 24px 48px;
 }
 
 /* Rating Buttons */
-.shadow-anki-btn-again {
+.episteme-btn-again {
 	background: var(--color-red, #ef4444);
 	color: white;
 }
 
-.shadow-anki-btn-hard {
+.episteme-btn-hard {
 	background: var(--color-orange, #f97316);
 	color: white;
 }
 
-.shadow-anki-btn-good {
+.episteme-btn-good {
 	background: var(--color-green, #22c55e);
 	color: white;
 }
 
-.shadow-anki-btn-easy {
+.episteme-btn-easy {
 	background: var(--color-cyan, #06b6d4);
 	color: white;
 }
 
-.shadow-anki-btn-label {
+.episteme-btn-label {
 	font-weight: 600;
 }
 
-.shadow-anki-btn-time {
+.episteme-btn-time {
 	font-size: 11px;
 	opacity: 0.9;
 }
 
 /* Progress Bar */
-.shadow-anki-review-progress {
+.episteme-review-progress {
 	padding: 0 16px 12px;
 	background: var(--background-secondary);
 }
 
-.shadow-anki-progress-bar {
+.episteme-progress-bar {
 	height: 4px;
 	background: var(--background-modifier-border);
 	border-radius: 2px;
 	overflow: hidden;
 }
 
-.shadow-anki-progress-fill {
+.episteme-progress-fill {
 	height: 100%;
 	background: var(--interactive-accent);
 	transition: width 0.3s ease;
 }
 
 /* Empty State */
-.shadow-anki-review-empty {
+.episteme-review-empty {
 	text-align: center;
 	padding: 48px 24px;
 }
 
-.shadow-anki-review-empty-icon {
+.episteme-review-empty-icon {
 	font-size: 48px;
 	margin-bottom: 16px;
 }
 
-.shadow-anki-review-empty-text {
+.episteme-review-empty-text {
 	font-size: 16px;
 	color: var(--text-muted);
 	margin-bottom: 24px;
 }
 
 /* Summary */
-.shadow-anki-review-summary {
+.episteme-review-summary {
 	text-align: center;
 	padding: 32px 24px;
 	max-width: 400px;
 	margin: 0 auto;
 }
 
-.shadow-anki-review-summary h2 {
+.episteme-review-summary h2 {
 	font-size: 24px;
 	margin: 0 0 24px 0;
 	color: var(--text-normal);
 }
 
-.shadow-anki-review-stats {
+.episteme-review-stats {
 	display: grid;
 	grid-template-columns: repeat(2, 1fr);
 	gap: 12px;
 	margin-bottom: 24px;
 }
 
-.shadow-anki-stat-item {
+.episteme-stat-item {
 	padding: 12px;
 	background: var(--background-secondary);
 	border-radius: 8px;
 }
 
-.shadow-anki-stat-label {
+.episteme-stat-label {
 	font-size: 12px;
 	color: var(--text-muted);
 	margin-bottom: 4px;
 }
 
-.shadow-anki-stat-value {
+.episteme-stat-value {
 	font-size: 20px;
 	font-weight: 600;
 	color: var(--text-normal);
 }
 
 /* Stat colors */
-.stat-again .shadow-anki-stat-value {
+.stat-again .episteme-stat-value {
 	color: var(--color-red, #ef4444);
 }
 
-.stat-hard .shadow-anki-stat-value {
+.stat-hard .episteme-stat-value {
 	color: var(--color-orange, #f97316);
 }
 
-.stat-good .shadow-anki-stat-value {
+.stat-good .episteme-stat-value {
 	color: var(--color-green, #22c55e);
 }
 
-.stat-easy .shadow-anki-stat-value {
+.stat-easy .episteme-stat-value {
 	color: var(--color-cyan, #06b6d4);
 }
 
-.shadow-anki-review-summary-buttons {
+.episteme-review-summary-buttons {
 	display: flex;
 	gap: 12px;
 	justify-content: center;
 }
 
-.shadow-anki-review-summary-buttons .shadow-anki-btn {
+.episteme-review-summary-buttons .episteme-btn {
 	padding: 12px 32px;
 }
 
 /* Waiting Screen (for learning cards) */
-.shadow-anki-review-waiting {
+.episteme-review-waiting {
 	text-align: center;
 	padding: 32px 24px;
 	max-width: 400px;
 	margin: 0 auto;
 }
 
-.shadow-anki-review-waiting h2 {
+.episteme-review-waiting h2 {
 	font-size: 24px;
 	margin: 0 0 16px 0;
 	color: var(--text-normal);
 }
 
-.shadow-anki-waiting-message {
+.episteme-waiting-message {
 	color: var(--text-muted);
 	margin: 0 0 24px 0;
 }
 
-.shadow-anki-waiting-countdown {
+.episteme-waiting-countdown {
 	margin-bottom: 24px;
 }
 
-.shadow-anki-waiting-label {
+.episteme-waiting-label {
 	color: var(--text-muted);
 	font-size: 14px;
 	margin: 0 0 8px 0;
 }
 
-.shadow-anki-countdown-timer {
+.episteme-countdown-timer {
 	font-size: 48px;
 	font-weight: 700;
 	color: var(--interactive-accent);
 	font-variant-numeric: tabular-nums;
 }
 
-.shadow-anki-review-waiting-buttons {
+.episteme-review-waiting-buttons {
 	display: flex;
 	gap: 12px;
 	justify-content: center;
 }
 
-.shadow-anki-review-waiting-buttons .shadow-anki-btn {
+.episteme-review-waiting-buttons .episteme-btn {
 	padding: 12px 32px;
 }
 
@@ -845,13 +845,13 @@
    REVIEW HEADER STATS
    ============================================ */
 
-.shadow-anki-review-header-stats {
+.episteme-review-header-stats {
 	display: flex;
 	align-items: center;
 	gap: 6px;
 }
 
-.shadow-anki-review-stat-badge {
+.episteme-review-stat-badge {
 	display: flex;
 	align-items: center;
 	justify-content: center;
@@ -863,17 +863,17 @@
 	font-weight: 600;
 }
 
-.shadow-anki-review-stat-badge--new {
+.episteme-review-stat-badge--new {
 	background: rgba(74, 222, 128, 0.2);
 	color: var(--color-green, #4ade80);
 }
 
-.shadow-anki-review-stat-badge--learning {
+.episteme-review-stat-badge--learning {
 	background: rgba(251, 146, 60, 0.2);
 	color: var(--color-orange, #fb923c);
 }
 
-.shadow-anki-review-stat-badge--due {
+.episteme-review-stat-badge--due {
 	background: rgba(59, 130, 246, 0.2);
 	color: var(--color-blue, #3b82f6);
 }
@@ -882,69 +882,69 @@
    DECK SELECTION MODAL STYLES
    ============================================ */
 
-.shadow-anki-deck-modal {
+.episteme-deck-modal {
 	min-width: 400px;
 }
 
-.shadow-anki-deck-modal h2 {
+.episteme-deck-modal h2 {
 	margin: 0 0 16px 0;
 	font-size: 18px;
 	font-weight: 600;
 }
 
-.shadow-anki-deck-divider {
+.episteme-deck-divider {
 	margin: 16px 0;
 	border: none;
 	border-top: 1px solid var(--background-modifier-border);
 }
 
-.shadow-anki-deck-empty {
+.episteme-deck-empty {
 	color: var(--text-muted);
 	text-align: center;
 	padding: 24px 16px;
 }
 
 /* Deck stats badges */
-.shadow-anki-deck-stats {
+.episteme-deck-stats {
 	display: flex;
 	gap: 8px;
 	align-items: center;
 	margin-right: 12px;
 }
 
-.shadow-anki-stat-badge {
+.episteme-stat-badge {
 	font-size: 11px;
 	font-weight: 500;
 	padding: 2px 8px;
 	border-radius: 10px;
 }
 
-.shadow-anki-stat-badge.shadow-anki-stat-new {
+.episteme-stat-badge.episteme-stat-new {
 	background: rgba(74, 222, 128, 0.2);
 	color: var(--color-green, #4ade80);
 }
 
-.shadow-anki-stat-badge.shadow-anki-stat-due {
+.episteme-stat-badge.episteme-stat-due {
 	background: rgba(59, 130, 246, 0.2);
 	color: var(--color-blue, #3b82f6);
 }
 
-.shadow-anki-stat-badge.shadow-anki-stat-done {
+.episteme-stat-badge.episteme-stat-done {
 	background: rgba(156, 163, 175, 0.2);
 	color: var(--text-muted);
 }
 
 /* Setting row adjustments in modal */
-.shadow-anki-deck-modal .setting-item {
+.episteme-deck-modal .setting-item {
 	border-bottom: none;
 	padding: 8px 0;
 }
 
-.shadow-anki-deck-modal .setting-item-info {
+.episteme-deck-modal .setting-item-info {
 	flex: 1;
 }
 
-.shadow-anki-deck-modal .setting-item-control {
+.episteme-deck-modal .setting-item-control {
 	display: flex;
 	align-items: center;
 }
@@ -953,20 +953,20 @@
    STATISTICS VIEW STYLES
    ============================================ */
 
-.shadow-anki-stats {
+.episteme-stats {
 	padding: 16px;
 	overflow-y: auto;
 	height: 100%;
 }
 
-.shadow-anki-stats-section {
+.episteme-stats-section {
 	margin-bottom: 24px;
 	padding: 16px;
 	background: var(--background-secondary);
 	border-radius: 8px;
 }
 
-.shadow-anki-stats-section h3 {
+.episteme-stats-section h3 {
 	margin: 0 0 16px 0;
 	font-size: 16px;
 	font-weight: 600;
@@ -1016,14 +1016,14 @@
 }
 
 /* Range Selector */
-.shadow-anki-stats-range-selector {
+.episteme-stats-range-selector {
 	display: flex;
 	gap: 8px;
 	margin-bottom: 16px;
 	flex-wrap: wrap;
 }
 
-.shadow-anki-stats-range-btn {
+.episteme-stats-range-btn {
 	padding: 6px 12px;
 	border: 1px solid var(--background-modifier-border);
 	border-radius: 6px;
@@ -1034,11 +1034,11 @@
 	transition: all 0.15s ease;
 }
 
-.shadow-anki-stats-range-btn:hover {
+.episteme-stats-range-btn:hover {
 	background: var(--background-modifier-hover);
 }
 
-.shadow-anki-stats-range-btn.active {
+.episteme-stats-range-btn.active {
 	background: var(--interactive-accent);
 	color: var(--text-on-accent);
 	border-color: var(--interactive-accent);
@@ -1184,4 +1184,170 @@
 
 .stats-calendar-legend .stats-calendar-cell {
 	cursor: default;
+}
+
+/* ============================================
+   MOBILE RESPONSIVE STYLES
+   ============================================ */
+
+/* Touch hint for mobile */
+.episteme-touch-hint {
+	text-align: center;
+	font-size: 12px;
+	color: var(--text-muted);
+	padding: 8px;
+	margin-bottom: 8px;
+}
+
+/* Mobile-specific adjustments */
+@media screen and (max-width: 600px) {
+	/* Settings panel - fix overflow */
+	.episteme-api-input {
+		width: 100%;
+		max-width: 100%;
+	}
+
+	/* Review card container - adjusted padding for mobile */
+	.episteme-review-card-container {
+		padding: 16px;
+	}
+
+	.episteme-review-card {
+		max-width: 100%;
+	}
+
+	/* Question and answer - slightly smaller fonts on mobile */
+	.episteme-review-question {
+		font-size: 1.2em;
+	}
+
+	.episteme-review-answer {
+		font-size: 1em;
+	}
+
+	/* Rating buttons - touch-friendly targets */
+	.episteme-review-buttons {
+		padding: 16px 8px;
+		gap: 8px;
+	}
+
+	.episteme-btn {
+		padding: 16px 20px;
+		min-width: 70px;
+		min-height: 60px;
+	}
+
+	.episteme-btn-show {
+		padding: 20px 32px;
+	}
+
+	/* Deck selection modal */
+	.episteme-deck-modal {
+		min-width: auto;
+		width: 100%;
+	}
+
+	/* Statistics view adjustments */
+	.episteme-stats {
+		padding: 12px;
+	}
+
+	.stats-today-grid {
+		grid-template-columns: repeat(2, 1fr);
+	}
+
+	.stats-chart-container {
+		height: 180px;
+	}
+
+	.stats-counts-row {
+		flex-direction: column;
+		gap: 16px;
+	}
+
+	.stats-chart-container-small {
+		width: 150px;
+		height: 150px;
+		margin: 0 auto;
+	}
+
+	/* Calendar heatmap - smaller cells */
+	.stats-calendar-cell {
+		width: 8px;
+		height: 8px;
+	}
+
+	/* Panel styles */
+	.episteme-panel {
+		padding: 12px;
+	}
+
+	/* Card preview in panel */
+	.episteme-card {
+		padding: 12px;
+	}
+
+	/* Review summary stats grid */
+	.episteme-review-stats {
+		grid-template-columns: repeat(2, 1fr);
+	}
+
+	.episteme-review-summary {
+		padding: 24px 16px;
+	}
+
+	/* Header stat badges - smaller on mobile */
+	.episteme-review-stat-badge {
+		min-width: 18px;
+		height: 18px;
+		font-size: 10px;
+	}
+}
+
+/* Extra small screens (iPhone SE, etc.) */
+@media screen and (max-width: 375px) {
+	.episteme-review-question {
+		font-size: 1.1em;
+	}
+
+	.episteme-btn {
+		padding: 14px 16px;
+		min-width: 60px;
+	}
+
+	.stats-today-grid {
+		grid-template-columns: 1fr;
+	}
+}
+
+/* iOS-specific safe area handling */
+@supports (padding-bottom: env(safe-area-inset-bottom)) {
+	.episteme-review-buttons {
+		padding-bottom: calc(16px + env(safe-area-inset-bottom));
+	}
+
+	.episteme-review-progress {
+		padding-bottom: calc(12px + env(safe-area-inset-bottom));
+	}
+}
+
+/* Larger touch targets for all interactive elements on touch devices */
+@media (hover: none) and (pointer: coarse) {
+	.episteme-card-btn {
+		padding: 8px 12px;
+		font-size: 14px;
+	}
+
+	.episteme-open-btn {
+		padding: 8px 12px;
+	}
+
+	.episteme-btn-primary,
+	.episteme-btn-secondary {
+		padding: 12px 16px;
+	}
+
+	.stats-range-btn {
+		padding: 10px 16px;
+	}
 }

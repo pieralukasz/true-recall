@@ -2,7 +2,7 @@
  * Central export for settings UI
  */
 export {
-    ShadowAnkiSettingTab,
-    type ShadowAnkiSettings,
+    EpistemeSettingTab,
+    type EpistemeSettings,
     DEFAULT_SETTINGS,
 } from "./SettingsTab";

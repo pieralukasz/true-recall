@@ -28,3 +28,8 @@ export {
     type DiffCardHandlers,
     type DiffCardProps,
 } from "./DiffCard";
+
+export {
+    SwipeGestureHandler,
+    type SwipeHandlers,
+} from "./SwipeGestureHandler";

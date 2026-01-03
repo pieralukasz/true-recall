@@ -1,6 +1,6 @@
 /**
  * Flashcard Panel View
- * Main panel view for the Shadow Anki plugin
+ * Main panel view for the Episteme plugin
  * Uses PanelStateManager and UI components for clean architecture
  */
 import {
@@ -17,13 +17,13 @@ import { PanelHeader } from "./PanelHeader";
 import { PanelContent } from "./PanelContent";
 import { PanelFooter } from "./PanelFooter";
 import type { FlashcardItem, FlashcardChange } from "../../types";
-import type ShadowAnkiPlugin from "../../main";
+import type EpistemePlugin from "../../main";
 
 /**
  * Main flashcard panel view
  */
 export class FlashcardPanelView extends ItemView {
-    private plugin: ShadowAnkiPlugin;
+    private plugin: EpistemePlugin;
     private flashcardManager: FlashcardManager;
     private openRouterService: OpenRouterService;
     private stateManager: PanelStateManager;
@@ -41,7 +41,7 @@ export class FlashcardPanelView extends ItemView {
     // State subscription
     private unsubscribe: (() => void) | null = null;
 
-    constructor(leaf: WorkspaceLeaf, plugin: ShadowAnkiPlugin) {
+    constructor(leaf: WorkspaceLeaf, plugin: EpistemePlugin) {
         super(leaf);
         this.plugin = plugin;
         this.flashcardManager = plugin.flashcardManager;
@@ -54,7 +54,7 @@ export class FlashcardPanelView extends ItemView {
     }
 
     getDisplayText(): string {
-        return "Shadow Anki";
+        return "Episteme";
     }
 
     getIcon(): string {
@@ -64,12 +64,12 @@ export class FlashcardPanelView extends ItemView {
     async onOpen(): Promise<void> {
         const container = this.containerEl.children[1] as HTMLElement;
         container.empty();
-        container.addClass("shadow-anki-panel");
+        container.addClass("episteme-panel");
 
         // Create container elements
-        this.headerContainer = container.createDiv({ cls: "shadow-anki-header-container" });
-        this.contentContainer = container.createDiv({ cls: "shadow-anki-content-container" });
-        this.footerContainer = container.createDiv({ cls: "shadow-anki-footer-container" });
+        this.headerContainer = container.createDiv({ cls: "episteme-header-container" });
+        this.contentContainer = container.createDiv({ cls: "episteme-content-container" });
+        this.footerContainer = container.createDiv({ cls: "episteme-footer-container" });
 
         // Subscribe to state changes
         this.unsubscribe = this.stateManager.subscribe(() => this.render());

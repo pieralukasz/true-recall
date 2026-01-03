@@ -1,12 +1,12 @@
 /**
  * Session Persistence Service
- * Handles persistent storage of daily review statistics in .shadow-anki/stats.json
+ * Handles persistent storage of daily review statistics in .episteme/stats.json
  */
 import { App, TFile, normalizePath } from "obsidian";
 import { State, Rating } from "ts-fsrs";
 import type { PersistentStatsData, PersistentDailyStats, ExtendedDailyStats, Grade } from "../types";
 
-const STATS_FOLDER = ".shadow-anki";
+const STATS_FOLDER = ".episteme";
 const STATS_FILE = "stats.json";
 const CURRENT_VERSION = 2;
 
