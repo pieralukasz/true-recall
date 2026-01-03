@@ -10,6 +10,7 @@ export interface PanelHeaderProps {
     currentFile: TFile | null;
     status: ProcessingStatus;
     onOpenFlashcardFile?: () => void;
+    onReviewFlashcards?: () => void;
 }
 
 /**
@@ -44,7 +45,7 @@ export class PanelHeader extends BaseComponent {
             this.events.cleanup();
         }
 
-        const { currentFile, status, onOpenFlashcardFile } = this.props;
+        const { currentFile, status, onOpenFlashcardFile, onReviewFlashcards } = this.props;
 
         this.element = this.container.createDiv({
             cls: "episteme-header",
@@ -66,16 +67,31 @@ export class PanelHeader extends BaseComponent {
             titleEl.textContent = "No note selected";
         }
 
-        // Open flashcard file icon button (only when flashcards exist)
-        if (status === "exists" && currentFile && onOpenFlashcardFile) {
-            const openBtn = titleRow.createSpan({
-                cls: "episteme-open-btn clickable-icon",
-            });
-            openBtn.textContent = "\u{1F4C4}"; // document emoji
-            openBtn.setAttribute("aria-label", "Open flashcard file");
-            this.events.addEventListener(openBtn, "click", () => {
-                onOpenFlashcardFile();
-            });
+        // Action buttons (only when flashcards exist)
+        if (status === "exists" && currentFile) {
+            // Review flashcards button
+            if (onReviewFlashcards) {
+                const reviewBtn = titleRow.createSpan({
+                    cls: "episteme-review-btn clickable-icon",
+                });
+                reviewBtn.textContent = "\u{1F9E0}"; // brain emoji
+                reviewBtn.setAttribute("aria-label", "Review flashcards from this note");
+                this.events.addEventListener(reviewBtn, "click", () => {
+                    onReviewFlashcards();
+                });
+            }
+
+            // Open flashcard file button
+            if (onOpenFlashcardFile) {
+                const openBtn = titleRow.createSpan({
+                    cls: "episteme-open-btn clickable-icon",
+                });
+                openBtn.textContent = "\u{1F4C4}"; // document emoji
+                openBtn.setAttribute("aria-label", "Open flashcard file");
+                this.events.addEventListener(openBtn, "click", () => {
+                    onOpenFlashcardFile();
+                });
+            }
         }
     }
 
