@@ -20,7 +20,6 @@ import {
 	FlashcardPanelView,
 	ReviewView,
 	EpistemeSettingTab,
-	DeckSelectionModal,
 	CustomSessionModal,
 	type EpistemeSettings,
 	DEFAULT_SETTINGS,
@@ -120,18 +119,11 @@ export default class EpistemePlugin extends Plugin {
 			},
 		});
 
-		// Review session command
+		// Review session command (defaults to Knowledge deck)
 		this.addCommand({
 			id: "start-review",
 			name: "Start review session",
 			callback: () => void this.startReviewSession(),
-		});
-
-		// Review session for Knowledge deck (direct, no modal)
-		this.addCommand({
-			id: "start-review-knowledge",
-			name: "Start review session (Knowledge)",
-			callback: () => void this.openReviewView("Knowledge"),
 		});
 
 		// Custom review session command
@@ -325,7 +317,7 @@ export default class EpistemePlugin extends Plugin {
 		});
 	}
 
-	// Start a review session
+	// Start a review session (defaults to Knowledge deck)
 	async startReviewSession(): Promise<void> {
 		const { workspace } = this.app;
 
@@ -340,25 +332,8 @@ export default class EpistemePlugin extends Plugin {
 			return;
 		}
 
-		// Get all decks and show selection modal
-		const decks = await this.flashcardManager.getAllDecks();
-
-		// If no flashcards found, show notice
-		if (decks.length === 0) {
-			new Notice("No flashcards found. Generate some flashcards first!");
-			return;
-		}
-
-		// Show deck selection modal
-		const modal = new DeckSelectionModal(this.app, decks);
-		const result = await modal.openAndWait();
-
-		if (result.cancelled) {
-			return;
-		}
-
-		// Open review view with selected deck
-		await this.openReviewView(result.selectedDeck);
+		// Open review view with Knowledge deck (default)
+		await this.openReviewView("Knowledge");
 	}
 
 	/**
@@ -469,8 +444,12 @@ export default class EpistemePlugin extends Plugin {
 		await this.openReviewViewWithFilters({
 			deckFilter: null,
 			sourceNoteFilter: result.sourceNoteFilter,
+			sourceNoteFilters: result.sourceNoteFilters,
 			filePathFilter: result.filePathFilter,
 			createdTodayOnly: result.createdTodayOnly,
+			createdThisWeek: result.createdThisWeek,
+			weakCardsOnly: result.weakCardsOnly,
+			stateFilter: result.stateFilter,
 			ignoreDailyLimits: result.ignoreDailyLimits,
 		});
 	}
@@ -566,8 +545,12 @@ export default class EpistemePlugin extends Plugin {
 	private async openReviewViewWithFilters(filters: {
 		deckFilter?: string | null;
 		sourceNoteFilter?: string;
+		sourceNoteFilters?: string[];
 		filePathFilter?: string;
 		createdTodayOnly?: boolean;
+		createdThisWeek?: boolean;
+		weakCardsOnly?: boolean;
+		stateFilter?: "due" | "learning" | "new";
 		ignoreDailyLimits?: boolean;
 	}): Promise<void> {
 		const { workspace } = this.app;
@@ -575,8 +558,12 @@ export default class EpistemePlugin extends Plugin {
 		const state = {
 			deckFilter: filters.deckFilter ?? null,
 			sourceNoteFilter: filters.sourceNoteFilter,
+			sourceNoteFilters: filters.sourceNoteFilters,
 			filePathFilter: filters.filePathFilter,
 			createdTodayOnly: filters.createdTodayOnly,
+			createdThisWeek: filters.createdThisWeek,
+			weakCardsOnly: filters.weakCardsOnly,
+			stateFilter: filters.stateFilter,
 			ignoreDailyLimits: filters.ignoreDailyLimits,
 		};
 

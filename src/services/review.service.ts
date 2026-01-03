@@ -37,10 +37,18 @@ export interface QueueBuildOptions {
     // Custom session filters
     /** Filter by source note name (sourceNoteName field) */
     sourceNoteFilter?: string;
+    /** Filter by multiple source note names */
+    sourceNoteFilters?: string[];
     /** Filter by flashcard file path */
     filePathFilter?: string;
     /** Only include cards created today */
     createdTodayOnly?: boolean;
+    /** Only include cards created in the last 7 days */
+    createdThisWeek?: boolean;
+    /** Only include weak cards (stability < 7 days) */
+    weakCardsOnly?: boolean;
+    /** Filter by card state: due, learning, or new */
+    stateFilter?: "due" | "learning" | "new";
     /** Ignore daily limits for custom sessions */
     ignoreDailyLimits?: boolean;
 }
@@ -143,8 +151,13 @@ export class ReviewService {
         // Apply custom session filters first
         let filteredCards = allCards;
 
-        // Filter by source note name
-        if (options.sourceNoteFilter) {
+        // Filter by source note name(s)
+        if (options.sourceNoteFilters && options.sourceNoteFilters.length > 0) {
+            const noteSet = new Set(options.sourceNoteFilters);
+            filteredCards = filteredCards.filter(
+                card => card.sourceNoteName && noteSet.has(card.sourceNoteName)
+            );
+        } else if (options.sourceNoteFilter) {
             filteredCards = filteredCards.filter(
                 card => card.sourceNoteName === options.sourceNoteFilter
             );
@@ -164,6 +177,40 @@ export class ReviewService {
             filteredCards = filteredCards.filter(card => {
                 const createdAt = card.fsrs.createdAt;
                 return createdAt && createdAt >= todayStart.getTime();
+            });
+        }
+
+        // Filter to only cards created this week (last 7 days)
+        if (options.createdThisWeek) {
+            const weekAgo = new Date();
+            weekAgo.setDate(weekAgo.getDate() - 7);
+            weekAgo.setHours(0, 0, 0, 0);
+            filteredCards = filteredCards.filter(card => {
+                const createdAt = card.fsrs.createdAt;
+                return createdAt && createdAt >= weekAgo.getTime();
+            });
+        }
+
+        // Filter weak cards (stability < 7 days)
+        if (options.weakCardsOnly) {
+            filteredCards = filteredCards.filter(
+                card => card.fsrs.stability < 7
+            );
+        }
+
+        // Filter by state
+        if (options.stateFilter) {
+            filteredCards = filteredCards.filter(card => {
+                switch (options.stateFilter) {
+                    case "new":
+                        return card.fsrs.state === State.New;
+                    case "learning":
+                        return card.fsrs.state === State.Learning || card.fsrs.state === State.Relearning;
+                    case "due":
+                        return card.fsrs.state === State.Review;
+                    default:
+                        return true;
+                }
             });
         }
 

@@ -227,7 +227,12 @@ export class SessionPersistenceService {
 	/**
 	 * Remove the last review (for undo functionality)
 	 */
-	async removeLastReview(cardId: string, wasNewCard: boolean): Promise<void> {
+	async removeLastReview(
+		cardId: string,
+		wasNewCard: boolean,
+		rating?: Grade,
+		previousState?: State
+	): Promise<void> {
 		const stats = await this.loadStats();
 		const today = this.getTodayKey();
 
@@ -235,7 +240,7 @@ export class SessionPersistenceService {
 			return; // Nothing to undo
 		}
 
-		const dayStats = stats.daily[today]!;
+		const dayStats = stats.daily[today] as ExtendedDailyStats;
 
 		// Decrement counters
 		dayStats.reviewsCompleted = Math.max(0, dayStats.reviewsCompleted - 1);
@@ -245,6 +250,25 @@ export class SessionPersistenceService {
 				0,
 				dayStats.newCardsStudied - 1
 			);
+		}
+
+		// Revert rating breakdown
+		if (rating !== undefined) {
+			if (rating === Rating.Again) dayStats.again = Math.max(0, dayStats.again - 1);
+			else if (rating === Rating.Hard) dayStats.hard = Math.max(0, dayStats.hard - 1);
+			else if (rating === Rating.Good) dayStats.good = Math.max(0, dayStats.good - 1);
+			else if (rating === Rating.Easy) dayStats.easy = Math.max(0, dayStats.easy - 1);
+		}
+
+		// Revert card type breakdown
+		if (previousState !== undefined) {
+			if (previousState === State.New) {
+				dayStats.newCards = Math.max(0, dayStats.newCards - 1);
+			} else if (previousState === State.Learning || previousState === State.Relearning) {
+				dayStats.learningCards = Math.max(0, dayStats.learningCards - 1);
+			} else if (previousState === State.Review) {
+				dayStats.reviewCards = Math.max(0, dayStats.reviewCards - 1);
+			}
 		}
 
 		// Note: We don't remove cardId from reviewedCardIds because:

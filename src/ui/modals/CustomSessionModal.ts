@@ -2,18 +2,23 @@
  * Custom Session Modal
  * Allows user to select custom review session type and filters
  */
-import { App, Modal, Setting, TFile } from "obsidian";
+import { App, Modal, TFile } from "obsidian";
 import { State } from "ts-fsrs";
 import type { FSRSFlashcardItem } from "../../types";
+import { LEARN_AHEAD_LIMIT_MINUTES } from "../../constants";
 
-export type CustomSessionType = "current-note" | "created-today" | "select-file";
+export type CustomSessionType = "current-note" | "created-today" | "created-this-week" | "weak-cards" | "all-cards" | "select-notes" | "state-filter";
 
 export interface CustomSessionResult {
     cancelled: boolean;
     sessionType: CustomSessionType | null;
     sourceNoteFilter?: string;
+    sourceNoteFilters?: string[];
     filePathFilter?: string;
     createdTodayOnly?: boolean;
+    createdThisWeek?: boolean;
+    weakCardsOnly?: boolean;
+    stateFilter?: "due" | "learning" | "new";
     ignoreDailyLimits: boolean;
 }
 
@@ -23,10 +28,12 @@ export interface CustomSessionModalOptions {
     flashcardFiles: TFile[];
 }
 
-interface CardCounts {
+interface NoteStats {
+    noteName: string;
     total: number;
     newCount: number;
     dueCount: number;
+    isCompleted: boolean;
 }
 
 /**
@@ -36,6 +43,12 @@ export class CustomSessionModal extends Modal {
     private options: CustomSessionModalOptions;
     private resolvePromise: ((result: CustomSessionResult) => void) | null = null;
     private hasSelected = false;
+
+    // Multi-select state
+    private selectedNotes: Set<string> = new Set();
+    private searchQuery = "";
+    private noteListEl: HTMLElement | null = null;
+    private startButtonEl: HTMLButtonElement | null = null;
 
     constructor(app: App, options: CustomSessionModalOptions) {
         super(app);
@@ -57,38 +70,27 @@ export class CustomSessionModal extends Modal {
         contentEl.empty();
         contentEl.addClass("episteme-custom-session-modal");
 
+        // Header
         contentEl.createEl("h2", { text: "Custom Review Session" });
 
-        const counts = this.calculateCounts();
+        // Quick actions section
+        this.renderQuickActions(contentEl);
 
-        // Option 1: Current note
-        this.renderOption(
-            contentEl,
-            "current-note",
-            "Review cards from current note",
-            this.options.currentNoteName
-                ? `Cards linked to "${this.options.currentNoteName}"`
-                : "No note currently open",
-            counts.currentNote,
-            !this.options.currentNoteName || counts.currentNote.total === 0
-        );
+        // Divider
+        contentEl.createEl("hr", { cls: "episteme-modal-divider" });
 
-        // Option 2: New cards created today
-        this.renderOption(
-            contentEl,
-            "created-today",
-            "Review today's new cards",
-            "Cards created today that are new or due",
-            counts.createdToday,
-            counts.createdToday.total === 0
-        );
+        // Notes section header
+        contentEl.createEl("h3", { text: "Or select notes to review:" });
 
-        // Divider and file list
-        if (this.options.flashcardFiles.length > 0) {
-            contentEl.createEl("hr", { cls: "episteme-modal-divider" });
-            contentEl.createEl("h3", { text: "Or select a flashcard file:" });
-            this.renderFileList(contentEl, counts.byFile);
-        }
+        // Search input
+        this.renderSearchInput(contentEl);
+
+        // Note table
+        this.noteListEl = contentEl.createDiv({ cls: "episteme-note-list" });
+        this.renderNoteTable();
+
+        // Start button
+        this.renderStartButton(contentEl);
     }
 
     onClose(): void {
@@ -105,203 +107,565 @@ export class CustomSessionModal extends Modal {
         }
     }
 
-    private calculateCounts(): {
-        currentNote: CardCounts;
-        createdToday: CardCounts;
-        byFile: Map<string, { file: TFile } & CardCounts>;
-    } {
+    private renderQuickActions(container: HTMLElement): void {
+        const quickActionsEl = container.createDiv({ cls: "episteme-quick-actions" });
+
         const now = new Date();
         const todayStart = new Date();
         todayStart.setHours(0, 0, 0, 0);
 
-        const cards = this.options.allCards;
+        // Stats
+        const todayStats = this.getTodayStats(now, todayStart);
+        const thisWeekStats = this.getThisWeekStats(now);
+        const allCardsStats = this.getAllCardsStats(now);
 
-        // Helper: only new OR due cards (no future scheduled)
-        const isAvailable = (card: FSRSFlashcardItem): boolean => {
-            if (card.fsrs.state === State.New) return true;
-            return new Date(card.fsrs.due) <= now;
-        };
-
-        // Current note cards
-        const currentNoteCards = this.options.currentNoteName
-            ? cards.filter(
-                  (c) =>
-                      c.sourceNoteName === this.options.currentNoteName &&
-                      isAvailable(c)
-              )
-            : [];
-
-        // Created today cards
-        const createdTodayCards = cards.filter((c) => {
-            const createdAt = c.fsrs.createdAt;
-            return (
-                createdAt &&
-                createdAt >= todayStart.getTime() &&
-                isAvailable(c)
-            );
+        // Today button
+        const todayBtn = quickActionsEl.createEl("button", {
+            cls: "episteme-quick-action-btn",
         });
-
-        // By file
-        const byFile = new Map<string, { file: TFile } & CardCounts>();
-        for (const file of this.options.flashcardFiles) {
-            const fileCards = cards.filter(
-                (c) => c.filePath === file.path && isAvailable(c)
-            );
-            byFile.set(file.path, {
-                file,
-                total: fileCards.length,
-                newCount: fileCards.filter((c) => c.fsrs.state === State.New)
-                    .length,
-                dueCount: fileCards.filter((c) => c.fsrs.state !== State.New)
-                    .length,
+        todayBtn.createSpan({ text: "Today" });
+        if (todayStats.total > 0) {
+            todayBtn.createSpan({
+                cls: "episteme-quick-action-stats",
+                text: this.formatStats(todayStats.newCount, todayStats.dueCount),
             });
+            todayBtn.addEventListener("click", () => this.selectTodaysCards());
+        } else {
+            todayBtn.createSpan({
+                cls: "episteme-quick-action-stats episteme-stat-muted",
+                text: "no cards",
+            });
+            todayBtn.disabled = true;
+            todayBtn.addClass("episteme-btn-disabled");
         }
 
-        return {
-            currentNote: {
-                total: currentNoteCards.length,
-                newCount: currentNoteCards.filter(
-                    (c) => c.fsrs.state === State.New
-                ).length,
-                dueCount: currentNoteCards.filter(
-                    (c) => c.fsrs.state !== State.New
-                ).length,
-            },
-            createdToday: {
-                total: createdTodayCards.length,
-                newCount: createdTodayCards.filter(
-                    (c) => c.fsrs.state === State.New
-                ).length,
-                dueCount: createdTodayCards.filter(
-                    (c) => c.fsrs.state !== State.New
-                ).length,
-            },
-            byFile,
-        };
+        // Week button
+        const thisWeekBtn = quickActionsEl.createEl("button", {
+            cls: "episteme-quick-action-btn",
+        });
+        thisWeekBtn.createSpan({ text: "Week" });
+        if (thisWeekStats.total > 0) {
+            thisWeekBtn.createSpan({
+                cls: "episteme-quick-action-stats",
+                text: this.formatStats(thisWeekStats.newCount, thisWeekStats.dueCount),
+            });
+            thisWeekBtn.addEventListener("click", () => this.selectThisWeek());
+        } else {
+            thisWeekBtn.createSpan({
+                cls: "episteme-quick-action-stats episteme-stat-muted",
+                text: "no cards",
+            });
+            thisWeekBtn.disabled = true;
+            thisWeekBtn.addClass("episteme-btn-disabled");
+        }
+
+        // All cards button
+        const allCardsBtn = quickActionsEl.createEl("button", {
+            cls: "episteme-quick-action-btn",
+        });
+        allCardsBtn.createSpan({ text: "All" });
+        if (allCardsStats.total > 0) {
+            allCardsBtn.createSpan({
+                cls: "episteme-quick-action-stats",
+                text: this.formatStats(allCardsStats.newCount, allCardsStats.dueCount),
+            });
+            allCardsBtn.addEventListener("click", () => this.selectAllCards());
+        } else {
+            allCardsBtn.createSpan({
+                cls: "episteme-quick-action-stats episteme-stat-muted",
+                text: "no cards",
+            });
+            allCardsBtn.disabled = true;
+            allCardsBtn.addClass("episteme-btn-disabled");
+        }
+
+        // State stats
+        const dueStats = this.getDueStats(now);
+        const learningStats = this.getLearningStats(now);
+        const newStats = this.getNewStats(now);
+
+        // Due button
+        const dueBtn = quickActionsEl.createEl("button", {
+            cls: "episteme-quick-action-btn",
+        });
+        dueBtn.createSpan({ text: "Due" });
+        if (dueStats.total > 0) {
+            dueBtn.createSpan({
+                cls: "episteme-quick-action-stats",
+                text: this.formatStats(dueStats.newCount, dueStats.dueCount),
+            });
+            dueBtn.addEventListener("click", () => this.selectByState("due"));
+        } else {
+            dueBtn.createSpan({
+                cls: "episteme-quick-action-stats episteme-stat-muted",
+                text: "no cards",
+            });
+            dueBtn.disabled = true;
+            dueBtn.addClass("episteme-btn-disabled");
+        }
+
+        // Learning button
+        const learningBtn = quickActionsEl.createEl("button", {
+            cls: "episteme-quick-action-btn",
+        });
+        learningBtn.createSpan({ text: "Learning" });
+        if (learningStats.total > 0) {
+            learningBtn.createSpan({
+                cls: "episteme-quick-action-stats",
+                text: this.formatStats(learningStats.newCount, learningStats.dueCount),
+            });
+            learningBtn.addEventListener("click", () => this.selectByState("learning"));
+        } else {
+            learningBtn.createSpan({
+                cls: "episteme-quick-action-stats episteme-stat-muted",
+                text: "no cards",
+            });
+            learningBtn.disabled = true;
+            learningBtn.addClass("episteme-btn-disabled");
+        }
+
+        // New button
+        const newBtn = quickActionsEl.createEl("button", {
+            cls: "episteme-quick-action-btn",
+        });
+        newBtn.createSpan({ text: "New" });
+        if (newStats.total > 0) {
+            newBtn.createSpan({
+                cls: "episteme-quick-action-stats",
+                text: this.formatStats(newStats.newCount, newStats.dueCount),
+            });
+            newBtn.addEventListener("click", () => this.selectByState("new"));
+        } else {
+            newBtn.createSpan({
+                cls: "episteme-quick-action-stats episteme-stat-muted",
+                text: "no cards",
+            });
+            newBtn.disabled = true;
+            newBtn.addClass("episteme-btn-disabled");
+        }
     }
 
-    private renderOption(
-        container: HTMLElement,
-        type: CustomSessionType,
-        name: string,
-        desc: string,
-        counts: CardCounts,
-        disabled: boolean
-    ): void {
-        const setting = new Setting(container).setName(name).setDesc(desc);
+    private renderSearchInput(container: HTMLElement): void {
+        const searchContainer = container.createDiv({ cls: "episteme-search-container" });
+        const searchInput = searchContainer.createEl("input", {
+            cls: "episteme-search-input",
+            type: "text",
+            placeholder: "Search notes...",
+        });
 
-        this.addStatsBadge(setting.settingEl, counts.newCount, counts.dueCount);
-
-        setting.addButton((btn) => {
-            btn.setButtonText(counts.total > 0 ? "Study" : "No cards").setDisabled(
-                disabled
-            );
-            if (!disabled) {
-                btn.setCta();
-                btn.onClick(() => this.selectOption(type));
-            }
+        searchInput.addEventListener("input", (e) => {
+            this.searchQuery = (e.target as HTMLInputElement).value.toLowerCase();
+            this.renderNoteTable();
         });
     }
 
-    private renderFileList(
-        container: HTMLElement,
-        byFile: Map<string, { file: TFile } & CardCounts>
-    ): void {
-        const listEl = container.createDiv({ cls: "episteme-file-list" });
+    private renderNoteTable(): void {
+        if (!this.noteListEl) return;
+        this.noteListEl.empty();
 
-        if (byFile.size === 0) {
-            listEl.createDiv({
-                cls: "episteme-file-list-empty",
-                text: "No flashcard files found",
+        const allNoteStats = this.getAllNoteStats();
+
+        // Filter by search query
+        const filteredStats = allNoteStats.filter((stat) =>
+            stat.noteName.toLowerCase().includes(this.searchQuery)
+        );
+
+        // Sort: notes with cards first, then completed, alphabetically within groups
+        filteredStats.sort((a, b) => {
+            // Notes with available cards first
+            const aHasCards = a.newCount > 0 || a.dueCount > 0;
+            const bHasCards = b.newCount > 0 || b.dueCount > 0;
+            if (aHasCards && !bHasCards) return -1;
+            if (!aHasCards && bHasCards) return 1;
+
+            // Completed last
+            if (a.isCompleted && !b.isCompleted) return 1;
+            if (!a.isCompleted && b.isCompleted) return -1;
+
+            // Alphabetical
+            return a.noteName.localeCompare(b.noteName);
+        });
+
+        if (filteredStats.length === 0) {
+            this.noteListEl.createDiv({
+                cls: "episteme-note-list-empty",
+                text: this.searchQuery ? "No notes match your search" : "No notes with flashcards found",
             });
             return;
         }
 
-        // Sort files by name
-        const sortedEntries = Array.from(byFile.entries()).sort((a, b) =>
-            a[1].file.basename.localeCompare(b[1].file.basename)
-        );
+        // Create table
+        const table = this.noteListEl.createEl("table", { cls: "episteme-note-table" });
 
-        for (const [filePath, data] of sortedEntries) {
-            // Remove "flashcards_" prefix for display
-            const displayName = data.file.basename.replace(/^flashcards_/, "");
+        // Header
+        const thead = table.createEl("thead");
+        const headerRow = thead.createEl("tr");
 
-            const setting = new Setting(listEl)
-                .setName(displayName)
-                .setDesc(`${data.total} available cards`);
-
-            this.addStatsBadge(setting.settingEl, data.newCount, data.dueCount);
-
-            setting.addButton((btn) => {
-                btn.setButtonText(data.total > 0 ? "Study" : "No cards").setDisabled(
-                    data.total === 0
-                );
-                if (data.total > 0) {
-                    btn.onClick(() => this.selectFile(filePath));
-                }
-            });
-        }
-    }
-
-    private addStatsBadge(
-        settingEl: HTMLElement,
-        newCount: number,
-        dueCount: number
-    ): void {
-        const statsContainer = settingEl.createDiv({
-            cls: "episteme-deck-stats",
+        // Select all checkbox
+        const selectAllTh = headerRow.createEl("th", { cls: "episteme-note-checkbox-col" });
+        const selectAllCheckbox = selectAllTh.createEl("input", { type: "checkbox" });
+        selectAllCheckbox.addEventListener("change", () => {
+            if (selectAllCheckbox.checked) {
+                // Select all visible notes with available cards
+                filteredStats.forEach((stat) => {
+                    if (stat.newCount > 0 || stat.dueCount > 0) {
+                        this.selectedNotes.add(stat.noteName);
+                    }
+                });
+            } else {
+                this.selectedNotes.clear();
+            }
+            this.renderNoteTable();
+            this.updateStartButton();
         });
 
-        if (newCount > 0) {
-            statsContainer.createSpan({
-                cls: "episteme-stat-badge episteme-stat-new",
-                text: `${newCount} new`,
+        headerRow.createEl("th", { text: "Note", cls: "episteme-note-name-col" });
+        headerRow.createEl("th", { text: "Cards", cls: "episteme-note-stats-col" });
+
+        // Body
+        const tbody = table.createEl("tbody");
+
+        for (const stat of filteredStats) {
+            const row = tbody.createEl("tr", {
+                cls: stat.isCompleted ? "episteme-note-row episteme-note-row--completed" : "episteme-note-row",
             });
+
+            // Checkbox cell
+            const checkboxTd = row.createEl("td", { cls: "episteme-note-checkbox-col" });
+            const hasCards = stat.newCount > 0 || stat.dueCount > 0;
+
+            if (hasCards) {
+                const checkbox = checkboxTd.createEl("input", { type: "checkbox" });
+                checkbox.checked = this.selectedNotes.has(stat.noteName);
+                checkbox.addEventListener("change", () => {
+                    if (checkbox.checked) {
+                        this.selectedNotes.add(stat.noteName);
+                    } else {
+                        this.selectedNotes.delete(stat.noteName);
+                    }
+                    this.updateStartButton();
+                });
+
+                // Make whole row clickable
+                row.addEventListener("click", (e) => {
+                    if ((e.target as HTMLElement).tagName !== "INPUT") {
+                        checkbox.checked = !checkbox.checked;
+                        if (checkbox.checked) {
+                            this.selectedNotes.add(stat.noteName);
+                        } else {
+                            this.selectedNotes.delete(stat.noteName);
+                        }
+                        this.updateStartButton();
+                    }
+                });
+                row.addClass("episteme-note-row--clickable");
+            } else if (stat.isCompleted) {
+                // Show tick in checkbox column for completed notes
+                checkboxTd.createSpan({
+                    cls: "episteme-completed-tick",
+                    text: "\u2713",
+                });
+            }
+
+            // Note name cell
+            row.createEl("td", {
+                text: stat.noteName,
+                cls: "episteme-note-name-col",
+            });
+
+            // Stats cell
+            const statsTd = row.createEl("td", { cls: "episteme-note-stats-col" });
+            if (stat.newCount > 0 || stat.dueCount > 0) {
+                statsTd.createSpan({
+                    cls: "episteme-note-stats-text",
+                    text: this.formatStats(stat.newCount, stat.dueCount),
+                });
+            } else {
+                statsTd.createSpan({
+                    cls: "episteme-stat-muted",
+                    text: "done",
+                });
+            }
         }
 
-        if (dueCount > 0) {
-            statsContainer.createSpan({
-                cls: "episteme-stat-badge episteme-stat-due",
-                text: `${dueCount} due`,
-            });
-        }
+        // Update select all checkbox state
+        const availableNotes = filteredStats.filter((s) => s.newCount > 0 || s.dueCount > 0);
+        const allSelected = availableNotes.length > 0 && availableNotes.every((s) => this.selectedNotes.has(s.noteName));
+        selectAllCheckbox.checked = allSelected;
+        selectAllCheckbox.indeterminate = !allSelected && availableNotes.some((s) => this.selectedNotes.has(s.noteName));
+    }
 
-        if (newCount === 0 && dueCount === 0) {
-            statsContainer.createSpan({
-                cls: "episteme-stat-badge episteme-stat-done",
-                text: "no cards",
-            });
+    private renderStartButton(container: HTMLElement): void {
+        const buttonContainer = container.createDiv({ cls: "episteme-start-button-container" });
+        this.startButtonEl = buttonContainer.createEl("button", {
+            cls: "mod-cta episteme-start-session-btn",
+            text: "Start session",
+        });
+        this.startButtonEl.disabled = true;
+        this.startButtonEl.addEventListener("click", () => this.startSelectedSession());
+        this.updateStartButton();
+    }
+
+    private updateStartButton(): void {
+        if (!this.startButtonEl) return;
+
+        const count = this.selectedNotes.size;
+        if (count === 0) {
+            this.startButtonEl.disabled = true;
+            this.startButtonEl.textContent = "Select notes to start";
+        } else {
+            this.startButtonEl.disabled = false;
+            this.startButtonEl.textContent = count === 1
+                ? "Start session (1 note)"
+                : `Start session (${count} notes)`;
         }
     }
 
-    private selectOption(type: CustomSessionType): void {
+    private formatStats(newCount: number, dueCount: number): string {
+        const parts: string[] = [];
+        if (newCount > 0) parts.push(`${newCount} new`);
+        if (dueCount > 0) parts.push(`${dueCount} due`);
+        return parts.join(" \u00b7 ") || "no cards";
+    }
+
+    private getCurrentNoteStats(now: Date): NoteStats | null {
+        if (!this.options.currentNoteName) return null;
+
+        const cards = this.options.allCards.filter(
+            (c) => c.sourceNoteName === this.options.currentNoteName
+        );
+
+        const availableCards = cards.filter((c) => this.isCardAvailable(c, now));
+        const newCount = availableCards.filter((c) => c.fsrs.state === State.New).length;
+        const dueCount = availableCards.filter((c) => c.fsrs.state !== State.New).length;
+
+        // Check if completed (no new cards remaining for this note)
+        const allNewCards = cards.filter((c) => c.fsrs.state === State.New);
+        const isCompleted = allNewCards.length === 0 && cards.length > 0;
+
+        return {
+            noteName: this.options.currentNoteName,
+            total: availableCards.length,
+            newCount,
+            dueCount,
+            isCompleted,
+        };
+    }
+
+    private getTodayStats(now: Date, todayStart: Date): { total: number; newCount: number; dueCount: number } {
+        const cards = this.options.allCards.filter((c) => {
+            const createdAt = c.fsrs.createdAt;
+            return createdAt && createdAt >= todayStart.getTime() && this.isCardAvailable(c, now);
+        });
+
+        return {
+            total: cards.length,
+            newCount: cards.filter((c) => c.fsrs.state === State.New).length,
+            dueCount: cards.filter((c) => c.fsrs.state !== State.New).length,
+        };
+    }
+
+    private getAllCardsStats(now: Date): { total: number; newCount: number; dueCount: number } {
+        const cards = this.options.allCards.filter((c) => this.isCardAvailable(c, now));
+
+        return {
+            total: cards.length,
+            newCount: cards.filter((c) => c.fsrs.state === State.New).length,
+            dueCount: cards.filter((c) => c.fsrs.state !== State.New).length,
+        };
+    }
+
+    private getWeakCardsStats(now: Date): { total: number; newCount: number; dueCount: number } {
+        // Weak cards: stability < 7 days (excluding new cards which have no stability yet)
+        const cards = this.options.allCards.filter((c) => {
+            if (!this.isCardAvailable(c, now)) return false;
+            // New cards don't have meaningful stability, so we include them
+            if (c.fsrs.state === State.New) return true;
+            return c.fsrs.stability < 7;
+        });
+
+        return {
+            total: cards.length,
+            newCount: cards.filter((c) => c.fsrs.state === State.New).length,
+            dueCount: cards.filter((c) => c.fsrs.state !== State.New).length,
+        };
+    }
+
+    private getThisWeekStats(now: Date): { total: number; newCount: number; dueCount: number } {
+        const weekAgo = new Date();
+        weekAgo.setDate(weekAgo.getDate() - 7);
+        weekAgo.setHours(0, 0, 0, 0);
+
+        const cards = this.options.allCards.filter((c) => {
+            const createdAt = c.fsrs.createdAt;
+            return createdAt && createdAt >= weekAgo.getTime() && this.isCardAvailable(c, now);
+        });
+
+        return {
+            total: cards.length,
+            newCount: cards.filter((c) => c.fsrs.state === State.New).length,
+            dueCount: cards.filter((c) => c.fsrs.state !== State.New).length,
+        };
+    }
+
+    private getAllNoteStats(): NoteStats[] {
+        const now = new Date();
+        const noteMap = new Map<string, FSRSFlashcardItem[]>();
+
+        // Group cards by source note
+        for (const card of this.options.allCards) {
+            if (!card.sourceNoteName) continue;
+            const existing = noteMap.get(card.sourceNoteName) || [];
+            existing.push(card);
+            noteMap.set(card.sourceNoteName, existing);
+        }
+
+        const stats: NoteStats[] = [];
+
+        for (const [noteName, cards] of noteMap) {
+            const availableCards = cards.filter((c) => this.isCardAvailable(c, now));
+            const newCount = availableCards.filter((c) => c.fsrs.state === State.New).length;
+            const dueCount = availableCards.filter((c) => c.fsrs.state !== State.New).length;
+
+            // Check if completed (no new cards remaining for this note)
+            const allNewCards = cards.filter((c) => c.fsrs.state === State.New);
+            const isCompleted = allNewCards.length === 0 && cards.length > 0;
+
+            stats.push({
+                noteName,
+                total: availableCards.length,
+                newCount,
+                dueCount,
+                isCompleted,
+            });
+        }
+
+        return stats;
+    }
+
+    private isCardAvailable(card: FSRSFlashcardItem, now: Date): boolean {
+        if (card.fsrs.state === State.New) return true;
+        return new Date(card.fsrs.due) <= now;
+    }
+
+    private selectCurrentNote(): void {
+        if (!this.options.currentNoteName) return;
+
         this.hasSelected = true;
         if (this.resolvePromise) {
-            const result: CustomSessionResult = {
+            this.resolvePromise({
                 cancelled: false,
-                sessionType: type,
+                sessionType: "current-note",
+                sourceNoteFilter: this.options.currentNoteName,
                 ignoreDailyLimits: true,
-            };
-
-            if (type === "current-note" && this.options.currentNoteName) {
-                result.sourceNoteFilter = this.options.currentNoteName;
-            } else if (type === "created-today") {
-                result.createdTodayOnly = true;
-            }
-
-            this.resolvePromise(result);
+            });
             this.resolvePromise = null;
         }
         this.close();
     }
 
-    private selectFile(filePath: string): void {
+    private selectTodaysCards(): void {
         this.hasSelected = true;
         if (this.resolvePromise) {
             this.resolvePromise({
                 cancelled: false,
-                sessionType: "select-file",
-                filePathFilter: filePath,
+                sessionType: "created-today",
+                createdTodayOnly: true,
+                ignoreDailyLimits: true,
+            });
+            this.resolvePromise = null;
+        }
+        this.close();
+    }
+
+    private selectThisWeek(): void {
+        this.hasSelected = true;
+        if (this.resolvePromise) {
+            this.resolvePromise({
+                cancelled: false,
+                sessionType: "created-this-week",
+                createdThisWeek: true,
+                ignoreDailyLimits: true,
+            });
+            this.resolvePromise = null;
+        }
+        this.close();
+    }
+
+    private selectWeakCards(): void {
+        this.hasSelected = true;
+        if (this.resolvePromise) {
+            this.resolvePromise({
+                cancelled: false,
+                sessionType: "weak-cards",
+                weakCardsOnly: true,
+                ignoreDailyLimits: true,
+            });
+            this.resolvePromise = null;
+        }
+        this.close();
+    }
+
+    private selectAllCards(): void {
+        this.hasSelected = true;
+        if (this.resolvePromise) {
+            this.resolvePromise({
+                cancelled: false,
+                sessionType: "all-cards",
+                ignoreDailyLimits: true,
+            });
+            this.resolvePromise = null;
+        }
+        this.close();
+    }
+
+    private getDueStats(now: Date): { total: number; newCount: number; dueCount: number } {
+        const cards = this.options.allCards.filter((c) => {
+            if (c.fsrs.state !== State.Review) return false;
+            return new Date(c.fsrs.due) <= now;
+        });
+        return { total: cards.length, newCount: 0, dueCount: cards.length };
+    }
+
+    private getLearningStats(now: Date): { total: number; newCount: number; dueCount: number } {
+        const learnAheadTime = new Date(now.getTime() + LEARN_AHEAD_LIMIT_MINUTES * 60 * 1000);
+        const cards = this.options.allCards.filter((c) => {
+            if (c.fsrs.state !== State.Learning && c.fsrs.state !== State.Relearning) return false;
+            return new Date(c.fsrs.due) <= learnAheadTime;
+        });
+        return { total: cards.length, newCount: 0, dueCount: cards.length };
+    }
+
+    private getNewStats(_now: Date): { total: number; newCount: number; dueCount: number } {
+        const cards = this.options.allCards.filter((c) => c.fsrs.state === State.New);
+        return { total: cards.length, newCount: cards.length, dueCount: 0 };
+    }
+
+    private selectByState(stateFilter: "due" | "learning" | "new"): void {
+        this.hasSelected = true;
+        if (this.resolvePromise) {
+            this.resolvePromise({
+                cancelled: false,
+                sessionType: "state-filter",
+                stateFilter,
+                ignoreDailyLimits: true,
+            });
+            this.resolvePromise = null;
+        }
+        this.close();
+    }
+
+    private startSelectedSession(): void {
+        if (this.selectedNotes.size === 0) return;
+
+        this.hasSelected = true;
+        if (this.resolvePromise) {
+            const noteFilters = Array.from(this.selectedNotes);
+
+            this.resolvePromise({
+                cancelled: false,
+                sessionType: "select-notes",
+                sourceNoteFilters: noteFilters,
                 ignoreDailyLimits: true,
             });
             this.resolvePromise = null;
