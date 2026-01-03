@@ -39,11 +39,14 @@ export class StatsCalculatorService {
 		const allCards = await this.flashcardManager.getAllFSRSCards();
 
 		return {
-			new: allCards.filter((c) => !c.fsrs.suspended && c.fsrs.state === State.New).length,
+			new: allCards.filter(
+				(c) => !c.fsrs.suspended && c.fsrs.state === State.New
+			).length,
 			learning: allCards.filter(
 				(c) =>
 					!c.fsrs.suspended &&
-					(c.fsrs.state === State.Learning || c.fsrs.state === State.Relearning)
+					(c.fsrs.state === State.Learning ||
+						c.fsrs.state === State.Relearning)
 			).length,
 			young: allCards.filter(
 				(c) =>
@@ -114,7 +117,9 @@ export class StatsCalculatorService {
 	 * Get historical review data for reviews chart
 	 * @param range Time range: '1m' | '3m' | '1y' | 'all'
 	 */
-	async getReviewHistory(range: StatsTimeRange): Promise<ExtendedDailyStats[]> {
+	async getReviewHistory(
+		range: StatsTimeRange
+	): Promise<ExtendedDailyStats[]> {
 		const endDate = new Date();
 		const startDate = this.calculateStartDate(endDate, range);
 
@@ -128,7 +133,8 @@ export class StatsCalculatorService {
 	 * Get today's summary statistics
 	 */
 	async getTodaySummary(): Promise<TodaySummary> {
-		const todayStats = await this.sessionPersistence.getTodayStats() as ExtendedDailyStats;
+		const todayStats =
+			(await this.sessionPersistence.getTodayStats()) as ExtendedDailyStats;
 
 		const totalRatings =
 			(todayStats.again ?? 0) +
@@ -185,7 +191,10 @@ export class StatsCalculatorService {
 			checkDate = new Date(lastStudyDate);
 			while (true) {
 				const checkKey = checkDate.toISOString().split("T")[0]!;
-				if (allStats[checkKey] && allStats[checkKey]!.reviewsCompleted > 0) {
+				if (
+					allStats[checkKey] &&
+					allStats[checkKey].reviewsCompleted > 0
+				) {
 					currentStreak++;
 					checkDate.setDate(checkDate.getDate() - 1);
 				} else {
@@ -207,7 +216,8 @@ export class StatsCalculatorService {
 				tempStreak = 1;
 			} else {
 				const dayDiff = Math.floor(
-					(currentDate.getTime() - prevDate.getTime()) / (1000 * 60 * 60 * 24)
+					(currentDate.getTime() - prevDate.getTime()) /
+						(1000 * 60 * 60 * 24)
 				);
 				if (dayDiff === 1) {
 					tempStreak++;
@@ -247,8 +257,13 @@ export class StatsCalculatorService {
 			(endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24)
 		);
 
-		const daysStudied = history.filter((d) => d.reviewsCompleted > 0).length;
-		const totalReviews = history.reduce((sum, d) => sum + d.reviewsCompleted, 0);
+		const daysStudied = history.filter(
+			(d) => d.reviewsCompleted > 0
+		).length;
+		const totalReviews = history.reduce(
+			(sum, d) => sum + d.reviewsCompleted,
+			0
+		);
 
 		// Calculate due tomorrow
 		const tomorrow = new Date();
