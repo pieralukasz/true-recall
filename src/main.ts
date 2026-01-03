@@ -12,7 +12,6 @@ import {
 	SessionPersistenceService,
 	BacklinksFilterService,
 	ShardedStoreService,
-	MigrationService,
 } from "./services";
 import { extractFSRSSettings } from "./types";
 import {
@@ -34,7 +33,6 @@ export default class EpistemePlugin extends Plugin {
 	sessionPersistence!: SessionPersistenceService;
 	backlinksFilter!: BacklinksFilterService;
 	shardedStore!: ShardedStoreService;
-	migrationService!: MigrationService;
 
 	async onload(): Promise<void> {
 		await this.loadSettings();
@@ -65,13 +63,6 @@ export default class EpistemePlugin extends Plugin {
 			// Connect store to flashcard manager after loading
 			this.flashcardManager.setStore(this.shardedStore);
 		});
-
-		// Initialize migration service
-		this.migrationService = new MigrationService(
-			this.app,
-			this.shardedStore,
-			this.settings.flashcardsFolder
-		);
 
 		// Initialize backlinks filter service
 		this.backlinksFilter = new BacklinksFilterService();
@@ -140,71 +131,37 @@ export default class EpistemePlugin extends Plugin {
 			callback: () => void this.openReviewView("Knowledge"),
 		});
 
-		// Migrate to sharded store (new architecture)
-		this.addCommand({
-			id: "migrate-to-sharded-store",
-			name: "Migrate to sharded store (performance upgrade)",
-			callback: async () => {
-				new Notice("Running migration analysis...");
-				const dryRun = await this.migrationService.dryRun();
-
-				if (dryRun.cardsToExtract === 0) {
-					new Notice(
-						"No cards found to migrate. Run 'Migrate to FSRS format' first."
-					);
-					return;
-				}
-
-				new Notice(
-					`Found ${dryRun.cardsToExtract} cards in ${dryRun.filesToClean} files. ` +
-						`Will remove ${dryRun.legacyIdsToRemove} legacy IDs and ${dryRun.duplicateFsrsToRemove} duplicate FSRS blocks. ` +
-						`Starting migration...`
-				);
-
-				const result = await this.migrationService.migrate();
-
-				if (result.success) {
-					new Notice(
-						`Migration complete! ${result.cardsExtracted} cards moved to sharded store. ` +
-							`${result.filesCleaned} files cleaned. Backup at: ${result.backupPath}`
-					);
-				} else {
-					new Notice(`Migration failed: ${result.errors.join(", ")}`);
-				}
-			},
-		});
-
-		// Verify store integrity
-		this.addCommand({
-			id: "verify-store-integrity",
-			name: "Verify store integrity",
-			callback: async () => {
-				const result = await this.migrationService.verifyIntegrity();
-				new Notice(
-					`Store: ${result.storeCount} cards | Files: ${result.fileCount} block IDs | ` +
-						`Orphaned: ${result.orphanedInStore.length} | Missing: ${result.missingFromStore.length}`
-				);
-			},
-		});
-
-		// Update block IDs to full UUID format
-		this.addCommand({
-			id: "update-block-ids",
-			name: "Update block IDs to full UUID format",
-			callback: async () => {
-				new Notice("Updating block IDs...");
-				const result = await this.migrationService.updateBlockIdsToUUID();
-				new Notice(
-					`Updated ${result.blockIdsUpdated} block IDs in ${result.filesModified} files`
-				);
-			},
-		});
-
 		// Statistics panel command
 		this.addCommand({
 			id: "open-statistics",
 			name: "Open statistics panel",
 			callback: () => void this.openStatsView(),
+		});
+
+		// Scan vault command - add FSRS IDs to new flashcards and cleanup orphaned
+		this.addCommand({
+			id: "scan-vault",
+			name: "Scan vault for new flashcards",
+			callback: async () => {
+				try {
+					new Notice("Scanning vault for flashcards...");
+					const result = await this.flashcardManager.scanVault();
+
+					// Build message with cleanup info
+					let message = `Scan complete! Found ${result.totalCards} cards`;
+					if (result.newCardsProcessed > 0) {
+						message += `, added ${result.newCardsProcessed} new`;
+					}
+					if (result.orphanedRemoved > 0) {
+						message += `, removed ${result.orphanedRemoved} orphaned`;
+					}
+					message += ` in ${result.filesProcessed} files.`;
+
+					new Notice(message);
+				} catch (error) {
+					new Notice(`Scan failed: ${error instanceof Error ? error.message : "Unknown error"}`);
+				}
+			},
 		});
 
 		// Register settings tab
@@ -262,11 +219,6 @@ export default class EpistemePlugin extends Plugin {
 		if (this.fsrsService) {
 			const fsrsSettings = extractFSRSSettings(this.settings);
 			this.fsrsService.updateSettings(fsrsSettings);
-		}
-		if (this.migrationService) {
-			this.migrationService.setFlashcardsFolder(
-				this.settings.flashcardsFolder
-			);
 		}
 		if (this.backlinksFilter) {
 			if (this.settings.hideFlashcardsFromBacklinks) {
