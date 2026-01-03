@@ -13,6 +13,7 @@ import type {
 	TodaySummary,
 	StreakInfo,
 	StatsTimeRange,
+	FSRSFlashcardItem,
 } from "../types";
 
 /**
@@ -350,5 +351,122 @@ export class StatsCalculatorService {
 		}
 
 		return startDate;
+	}
+
+	/**
+	 * Get future due stats with filled-in missing days
+	 * Returns one entry per day for the entire range (30, 90, 365 days)
+	 */
+	async getFutureDueStatsFilled(
+		range: StatsTimeRange
+	): Promise<FutureDueEntry[]> {
+		const allCards = await this.flashcardManager.getAllFSRSCards();
+		const today = new Date();
+		today.setHours(0, 0, 0, 0);
+		const endDate = this.calculateEndDate(today, range);
+
+		// For backlog, return the existing sparse data
+		if (range === "backlog") {
+			return this.getFutureDueStats(range);
+		}
+
+		// Generate all days in range
+		const dueMap = new Map<string, number>();
+		const currentDate = new Date(today);
+
+		while (currentDate <= endDate) {
+			const dateKey = currentDate.toISOString().split("T")[0]!;
+			dueMap.set(dateKey, 0);
+			currentDate.setDate(currentDate.getDate() + 1);
+		}
+
+		// Count cards for each day
+		for (const card of allCards) {
+			if (card.fsrs.state === State.New || card.fsrs.suspended) continue;
+
+			const dueDate = new Date(card.fsrs.due);
+			dueDate.setHours(0, 0, 0, 0);
+			const dateKey = dueDate.toISOString().split("T")[0]!;
+
+			if (dueMap.has(dateKey)) {
+				dueMap.set(dateKey, dueMap.get(dateKey)! + 1);
+			}
+		}
+
+		// Convert to sorted array with cumulative
+		const entries = Array.from(dueMap.entries())
+			.map(([date, count]) => ({ date, count }))
+			.sort((a, b) => a.date.localeCompare(b.date));
+
+		let cumulative = 0;
+		return entries.map((entry) => {
+			cumulative += entry.count;
+			return {
+				date: entry.date,
+				count: entry.count,
+				cumulative,
+			};
+		});
+	}
+
+	/**
+	 * Get cards due on a specific date
+	 * @param date ISO date string (YYYY-MM-DD)
+	 */
+	async getCardsDueOnDate(date: string): Promise<FSRSFlashcardItem[]> {
+		const allCards = await this.flashcardManager.getAllFSRSCards();
+		const targetDate = new Date(date);
+		targetDate.setHours(0, 0, 0, 0);
+
+		return allCards.filter((card) => {
+			if (card.fsrs.state === State.New || card.fsrs.suspended) return false;
+
+			const dueDate = new Date(card.fsrs.due);
+			dueDate.setHours(0, 0, 0, 0);
+
+			return dueDate.getTime() === targetDate.getTime();
+		});
+	}
+
+	/**
+	 * Get cards by maturity category
+	 * @param category Category key from CardMaturityBreakdown
+	 */
+	async getCardsByCategory(
+		category: keyof CardMaturityBreakdown
+	): Promise<FSRSFlashcardItem[]> {
+		const allCards = await this.flashcardManager.getAllFSRSCards();
+
+		switch (category) {
+			case "new":
+				return allCards.filter(
+					(c) => !c.fsrs.suspended && c.fsrs.state === State.New
+				);
+			case "learning":
+				return allCards.filter(
+					(c) =>
+						!c.fsrs.suspended &&
+						(c.fsrs.state === State.Learning ||
+							c.fsrs.state === State.Relearning)
+				);
+			case "young":
+				return allCards.filter(
+					(c) =>
+						!c.fsrs.suspended &&
+						c.fsrs.state === State.Review &&
+						c.fsrs.scheduledDays < 21
+				);
+			case "mature":
+				return allCards.filter(
+					(c) =>
+						!c.fsrs.suspended &&
+						c.fsrs.state === State.Review &&
+						c.fsrs.scheduledDays >= 21
+				);
+			case "suspended":
+				return allCards.filter((c) => c.fsrs.suspended);
+			default:
+				return [];
+		}
 	}
 }

@@ -75,6 +75,8 @@ export interface FSRSFlashcardItem {
     fsrs: FSRSCardData;
     /** Nazwa decka (z frontmatter lub domyślna) */
     deck: string;
+    /** Nazwa oryginalnej notatki źródłowej (z frontmatter source_link) */
+    sourceNoteName?: string;
 }
 
 /**
