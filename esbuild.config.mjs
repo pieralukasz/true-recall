@@ -3,10 +3,6 @@ import process from "process";
 import { builtinModules } from 'node:module';
 import { copyFileSync, writeFileSync, existsSync, mkdirSync } from "fs";
 import { join } from "path";
-import dotenv from "dotenv";
-
-// Load .env file
-dotenv.config();
 
 const banner =
 `/*
