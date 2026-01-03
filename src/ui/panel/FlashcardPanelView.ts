@@ -146,6 +146,11 @@ export class FlashcardPanelView extends ItemView {
             currentFile: state.currentFile,
             status: state.status,
             onOpenFlashcardFile: () => void this.handleOpenFlashcardFile(),
+            onReviewFlashcards: () => {
+                if (state.currentFile) {
+                    void this.plugin.reviewNoteFlashcards(state.currentFile);
+                }
+            },
         });
         this.headerComponent.render();
 
