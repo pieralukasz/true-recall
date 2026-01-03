@@ -9,7 +9,6 @@ import { VIEW_TYPE_REVIEW } from "../../constants";
 import { FSRSService, ReviewService, FlashcardManager, SessionPersistenceService } from "../../services";
 import { ReviewStateManager } from "../../state";
 import { extractFSRSSettings, type FSRSFlashcardItem, type SchedulingPreview } from "../../types";
-import { SwipeGestureHandler } from "../components";
 import type EpistemePlugin from "../../main";
 
 interface ReviewViewState extends Record<string, unknown> {
@@ -54,9 +53,6 @@ export class ReviewView extends ItemView {
 
     // Timer for waiting screen countdown
     private waitingTimer: ReturnType<typeof setInterval> | null = null;
-
-    // Touch gesture handler for mobile
-    private swipeHandler: SwipeGestureHandler | null = null;
 
     constructor(leaf: WorkspaceLeaf, plugin: EpistemePlugin) {
         super(leaf);
@@ -118,19 +114,17 @@ export class ReviewView extends ItemView {
         // Register keyboard shortcuts
         document.addEventListener("keydown", this.handleKeyDown);
 
-        // Initialize touch gestures for mobile
-        if (Platform.isMobile) {
-            this.swipeHandler = new SwipeGestureHandler(this.cardContainerEl);
-        }
-
         // Start session automatically
         await this.startSession();
     }
 
     async onClose(): Promise<void> {
+        // Flush store to disk before closing
+        if (this.plugin.shardedStore) {
+            await this.plugin.shardedStore.flush();
+        }
+
         document.removeEventListener("keydown", this.handleKeyDown);
-        this.swipeHandler?.destroy();
-        this.swipeHandler = null;
         this.unsubscribe?.();
         this.clearWaitingTimer();
         this.stateManager.reset();
@@ -151,6 +145,11 @@ export class ReviewView extends ItemView {
      */
     async startSession(): Promise<void> {
         try {
+            // Sync with disk to get changes from other devices (iCloud sync)
+            if (this.plugin.shardedStore) {
+                await this.plugin.shardedStore.mergeFromDisk();
+            }
+
             // Update FSRS service with latest settings
             const fsrsSettings = extractFSRSSettings(this.plugin.settings);
             this.fsrsService.updateSettings(fsrsSettings);
@@ -175,13 +174,16 @@ export class ReviewView extends ItemView {
             const reviewedToday = await this.sessionPersistence.getReviewedToday();
             const newCardsStudiedToday = await this.sessionPersistence.getNewCardsStudiedToday();
 
-            // Build review queue with persistent stats and deck filter
+            // Build review queue with persistent stats, deck filter, and display order settings
             const queue = this.reviewService.buildQueue(activeCards, this.fsrsService, {
                 newCardsLimit: this.plugin.settings.newCardsPerDay,
                 reviewsLimit: this.plugin.settings.reviewsPerDay,
                 reviewedToday,
                 newCardsStudiedToday,
                 deckFilter: this.deckFilter,
+                newCardOrder: this.plugin.settings.newCardOrder,
+                reviewOrder: this.plugin.settings.reviewOrder,
+                newReviewMix: this.plugin.settings.newReviewMix,
             });
 
             if (queue.length === 0) {
@@ -239,33 +241,6 @@ export class ReviewView extends ItemView {
         this.renderCard();
         this.renderButtons();
         this.renderProgress();
-
-        // Update touch gesture handlers for mobile
-        this.updateSwipeHandlers();
-    }
-
-    /**
-     * Update swipe gesture handlers based on current review state
-     */
-    private updateSwipeHandlers(): void {
-        if (!this.swipeHandler) return;
-
-        if (!this.stateManager.isAnswerRevealed()) {
-            // Before answer revealed: tap or swipe up to show answer
-            this.swipeHandler.setHandlers({
-                onTap: () => this.handleShowAnswer(),
-                onSwipeUp: () => this.handleShowAnswer(),
-            });
-        } else {
-            // After answer revealed: swipe to rate
-            this.swipeHandler.setHandlers({
-                onSwipeLeft: () => void this.handleAnswer(Rating.Again),
-                onSwipeRight: () => void this.handleAnswer(Rating.Good),
-                onSwipeUp: () => void this.handleAnswer(Rating.Easy),
-                onSwipeDown: () => void this.handleAnswer(Rating.Hard),
-                onTap: () => void this.handleAnswer(Rating.Good),
-            });
-        }
     }
 
     /**
@@ -568,16 +543,6 @@ export class ReviewView extends ItemView {
      */
     private renderButtons(): void {
         this.buttonsEl.empty();
-
-        // Show touch hints on mobile
-        if (Platform.isMobile && this.plugin.settings.showTouchHints) {
-            const hint = this.buttonsEl.createDiv({ cls: "episteme-touch-hint" });
-            if (!this.stateManager.isAnswerRevealed()) {
-                hint.setText("Tap card or swipe up to reveal answer");
-            } else {
-                hint.setText("Swipe: ← Again | → Good | ↑ Easy | ↓ Hard");
-            }
-        }
 
         if (!this.stateManager.isAnswerRevealed()) {
             // Show answer button

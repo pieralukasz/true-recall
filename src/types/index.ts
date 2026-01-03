@@ -21,7 +21,13 @@ export type {
 } from "./api.types";
 
 // Settings types
-export type { EpistemeSettings, FSRSSettings } from "./settings.types";
+export type {
+    EpistemeSettings,
+    FSRSSettings,
+    NewCardOrder,
+    ReviewOrder,
+    NewReviewMix,
+} from "./settings.types";
 export { extractFSRSSettings } from "./settings.types";
 
 // FSRS types
