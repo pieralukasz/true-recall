@@ -1,15 +1,15 @@
-import type { ShadowAnkiSettings } from "./types/settings.types";
+import type { EpistemeSettings } from "./types/settings.types";
 
 // ===== View Types =====
 
 /** View type identifier for the sidebar panel */
-export const VIEW_TYPE_FLASHCARD_PANEL = "shadow-anki-flashcard-panel";
+export const VIEW_TYPE_FLASHCARD_PANEL = "episteme-flashcard-panel";
 
 /** View type identifier for the review session */
-export const VIEW_TYPE_REVIEW = "shadow-anki-review";
+export const VIEW_TYPE_REVIEW = "episteme-review";
 
 /** View type identifier for the statistics panel */
-export const VIEW_TYPE_STATS = "shadow-anki-stats";
+export const VIEW_TYPE_STATS = "episteme-stats";
 
 // ===== AI Models =====
 
@@ -29,7 +29,7 @@ export type AIModelKey = keyof typeof AI_MODELS;
 // ===== Default Settings =====
 
 /** Default plugin settings */
-export const DEFAULT_SETTINGS: ShadowAnkiSettings = {
+export const DEFAULT_SETTINGS: EpistemeSettings = {
 	// AI Generation
 	openRouterApiKey: "",
 	aiModel: "google/gemini-3-flash-preview" as AIModelKey,
@@ -60,6 +60,7 @@ export const DEFAULT_SETTINGS: ShadowAnkiSettings = {
 	showReviewHeader: true,
 	showReviewHeaderStats: true,
 	hideFlashcardsFromBacklinks: true,
+	showTouchHints: true, // Show touch gesture hints on mobile
 };
 
 // ===== FSRS Default Weights =====

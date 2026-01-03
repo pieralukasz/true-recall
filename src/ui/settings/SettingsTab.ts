@@ -3,22 +3,22 @@
  * Plugin settings configuration interface
  */
 import { App, Notice, PluginSettingTab, Setting } from "obsidian";
-import type ShadowAnkiPlugin from "../../main";
+import type EpistemePlugin from "../../main";
 import { DEFAULT_SETTINGS, AI_MODELS, FSRS_CONFIG } from "../../constants";
 import type { AIModelKey } from "../../constants";
-import type { ShadowAnkiSettings, ReviewViewMode } from "../../types";
+import type { EpistemeSettings, ReviewViewMode } from "../../types";
 
 // Re-export for convenience
 export { DEFAULT_SETTINGS };
-export type { ShadowAnkiSettings };
+export type { EpistemeSettings };
 
 /**
- * Settings tab for Shadow Anki plugin
+ * Settings tab for Episteme plugin
  */
-export class ShadowAnkiSettingTab extends PluginSettingTab {
-    plugin: ShadowAnkiPlugin;
+export class EpistemeSettingTab extends PluginSettingTab {
+    plugin: EpistemePlugin;
 
-    constructor(app: App, plugin: ShadowAnkiPlugin) {
+    constructor(app: App, plugin: EpistemePlugin) {
         super(app, plugin);
         this.plugin = plugin;
     }
@@ -40,7 +40,7 @@ export class ShadowAnkiSettingTab extends PluginSettingTab {
             .setDesc("Your openrouter.ai API key for flashcard generation")
             .addText(text => {
                 text.inputEl.type = "password";
-                text.inputEl.addClass("shadow-anki-api-input");
+                text.inputEl.addClass("episteme-api-input");
                 text.setPlaceholder("Enter API key")
                     .setValue(this.plugin.settings.openRouterApiKey)
                     .onChange(async (value) => {
@@ -273,6 +273,17 @@ export class ShadowAnkiSettingTab extends PluginSettingTab {
                 .setValue(this.plugin.settings.hideFlashcardsFromBacklinks)
                 .onChange(async (value) => {
                     this.plugin.settings.hideFlashcardsFromBacklinks = value;
+                    await this.plugin.saveSettings();
+                }));
+
+        // Show touch hints on mobile
+        new Setting(containerEl)
+            .setName("Show touch hints")
+            .setDesc("Display swipe gesture hints during review on mobile devices")
+            .addToggle(toggle => toggle
+                .setValue(this.plugin.settings.showTouchHints)
+                .onChange(async (value) => {
+                    this.plugin.settings.showTouchHints = value;
                     await this.plugin.saveSettings();
                 }));
 

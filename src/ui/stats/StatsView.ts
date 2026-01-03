@@ -17,7 +17,7 @@ import {
 } from "chart.js";
 import { VIEW_TYPE_STATS } from "../../constants";
 import { StatsCalculatorService } from "../../services/stats-calculator.service";
-import type ShadowAnkiPlugin from "../../main";
+import type EpistemePlugin from "../../main";
 import type { StatsTimeRange } from "../../types";
 
 // Register Chart.js components
@@ -34,7 +34,7 @@ Chart.register(
 );
 
 export class StatsView extends ItemView {
-	private plugin: ShadowAnkiPlugin;
+	private plugin: EpistemePlugin;
 	private statsCalculator: StatsCalculatorService;
 	private charts: Map<string, Chart> = new Map();
 	private currentRange: StatsTimeRange = "1m";
@@ -47,7 +47,7 @@ export class StatsView extends ItemView {
 	private cardCountsEl!: HTMLElement;
 	private calendarEl!: HTMLElement;
 
-	constructor(leaf: WorkspaceLeaf, plugin: ShadowAnkiPlugin) {
+	constructor(leaf: WorkspaceLeaf, plugin: EpistemePlugin) {
 		super(leaf);
 		this.plugin = plugin;
 		this.statsCalculator = new StatsCalculatorService(
@@ -72,7 +72,7 @@ export class StatsView extends ItemView {
 	async onOpen(): Promise<void> {
 		const container = this.containerEl.children[1] as HTMLElement;
 		container.empty();
-		container.addClass("shadow-anki-stats");
+		container.addClass("episteme-stats");
 
 		// Create section containers
 		this.createSections(container);
@@ -91,23 +91,23 @@ export class StatsView extends ItemView {
 
 	private createSections(container: HTMLElement): void {
 		// 1. Today Summary Section
-		this.todayEl = container.createDiv({ cls: "shadow-anki-stats-section stats-today" });
+		this.todayEl = container.createDiv({ cls: "episteme-stats-section stats-today" });
 
 		// 2. Time Range Selector
-		this.rangeSelectorEl = container.createDiv({ cls: "shadow-anki-stats-range-selector" });
+		this.rangeSelectorEl = container.createDiv({ cls: "episteme-stats-range-selector" });
 		this.createRangeButtons();
 
 		// 3. Future Due Section (bar chart)
-		this.futureDueEl = container.createDiv({ cls: "shadow-anki-stats-section stats-future" });
+		this.futureDueEl = container.createDiv({ cls: "episteme-stats-section stats-future" });
 
 		// 4. Review History Section (stacked bar chart)
-		this.reviewHistoryEl = container.createDiv({ cls: "shadow-anki-stats-section stats-history" });
+		this.reviewHistoryEl = container.createDiv({ cls: "episteme-stats-section stats-history" });
 
 		// 5. Card Counts Section (pie chart)
-		this.cardCountsEl = container.createDiv({ cls: "shadow-anki-stats-section stats-counts" });
+		this.cardCountsEl = container.createDiv({ cls: "episteme-stats-section stats-counts" });
 
 		// 6. Calendar Heatmap Section
-		this.calendarEl = container.createDiv({ cls: "shadow-anki-stats-section stats-calendar" });
+		this.calendarEl = container.createDiv({ cls: "episteme-stats-section stats-calendar" });
 	}
 
 	private createRangeButtons(): void {
@@ -122,7 +122,7 @@ export class StatsView extends ItemView {
 		for (const range of ranges) {
 			const btn = this.rangeSelectorEl.createEl("button", {
 				text: range.label,
-				cls: `shadow-anki-stats-range-btn ${this.currentRange === range.value ? "active" : ""}`,
+				cls: `episteme-stats-range-btn ${this.currentRange === range.value ? "active" : ""}`,
 			});
 			btn.addEventListener("click", () => void this.setRange(range.value));
 		}
@@ -132,7 +132,7 @@ export class StatsView extends ItemView {
 		this.currentRange = range;
 
 		// Update button states
-		const buttons = this.rangeSelectorEl.querySelectorAll(".shadow-anki-stats-range-btn");
+		const buttons = this.rangeSelectorEl.querySelectorAll(".episteme-stats-range-btn");
 		const rangeOrder: StatsTimeRange[] = ["backlog", "1m", "3m", "1y", "all"];
 		buttons.forEach((btn, i) => {
 			btn.classList.toggle("active", rangeOrder[i] === range);

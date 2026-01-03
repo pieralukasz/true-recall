@@ -11,6 +11,14 @@ export class BacklinksFilterService {
     enable(): void {
         if (this.observer) return;
 
+        // Check if backlinks pane exists before setting up observer
+        // On mobile, the UI structure may be different or unavailable
+        const backlinksPane = document.querySelector(".backlink-pane");
+        if (!backlinksPane) {
+            // Backlinks pane not found - this is normal on mobile or when panel is closed
+            // We'll still set up the observer to catch when it appears
+        }
+
         this.observer = new MutationObserver(() => {
             this.debouncedHide();
         });
@@ -20,8 +28,10 @@ export class BacklinksFilterService {
             subtree: true,
         });
 
-        // Hide existing entries immediately
-        this.hideFlashcardEntries();
+        // Hide existing entries immediately if pane exists
+        if (backlinksPane) {
+            this.hideFlashcardEntries();
+        }
     }
 
     disable(): void {

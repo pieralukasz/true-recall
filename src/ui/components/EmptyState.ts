@@ -30,13 +30,13 @@ export class EmptyState extends BaseComponent {
         }
 
         this.element = this.container.createDiv({
-            cls: "shadow-anki-empty",
+            cls: "episteme-empty",
         });
 
         // Optional icon
         if (this.props.icon) {
             const iconEl = this.element.createDiv({
-                cls: "shadow-anki-empty-icon",
+                cls: "episteme-empty-icon",
             });
             iconEl.textContent = this.props.icon;
         }
@@ -44,14 +44,14 @@ export class EmptyState extends BaseComponent {
         // Message
         this.element.createDiv({
             text: this.props.message,
-            cls: "shadow-anki-empty-message",
+            cls: "episteme-empty-message",
         });
 
         // Optional action button
         if (this.props.actionLabel && this.props.onAction) {
             const actionBtn = this.element.createEl("button", {
                 text: this.props.actionLabel,
-                cls: "shadow-anki-empty-action mod-cta",
+                cls: "episteme-empty-action mod-cta",
             });
             this.events.addEventListener(actionBtn, "click", () => {
                 this.props.onAction?.();
@@ -64,7 +64,7 @@ export class EmptyState extends BaseComponent {
      */
     setMessage(message: string): void {
         this.props.message = message;
-        const messageEl = this.element?.querySelector(".shadow-anki-empty-message");
+        const messageEl = this.element?.querySelector(".episteme-empty-message");
         if (messageEl) {
             messageEl.textContent = message;
         }

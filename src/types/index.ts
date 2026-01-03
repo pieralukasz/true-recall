@@ -21,7 +21,7 @@ export type {
 } from "./api.types";
 
 // Settings types
-export type { ShadowAnkiSettings, FSRSSettings } from "./settings.types";
+export type { EpistemeSettings, FSRSSettings } from "./settings.types";
 export { extractFSRSSettings } from "./settings.types";
 
 // FSRS types
