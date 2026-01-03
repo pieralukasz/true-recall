@@ -1191,9 +1191,17 @@
    CARD PREVIEW MODAL STYLES
    ============================================ */
 
+/* Position close button at modal corner */
+.modal:has(.episteme-card-preview-modal) .modal-close-button {
+	position: absolute;
+	top: 8px;
+	right: 8px;
+	z-index: 10;
+}
+
 .episteme-card-preview-modal {
-	width: 90vw;
-	max-width: 800px;
+	min-width: 400px;
+	max-width: 90vw;
 }
 
 .episteme-card-preview-modal h2 {
@@ -1216,6 +1224,12 @@
 	display: flex;
 	flex-direction: column;
 	gap: 12px;
+}
+
+/* Markdown content - word wrap */
+.episteme-card-preview-modal .episteme-md-content {
+	word-wrap: break-word;
+	overflow-wrap: break-word;
 }
 
 .episteme-card-preview-empty {
@@ -1251,6 +1265,14 @@
 	line-height: 1.4;
 	word-wrap: break-word;
 	overflow-wrap: break-word;
+	/* Blur effect - revealed on hover */
+	filter: blur(4px);
+	transition: filter 0.2s ease;
+	cursor: pointer;
+}
+
+.episteme-card-preview-answer:hover {
+	filter: none;
 }
 
 .episteme-card-preview-info {
