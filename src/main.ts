@@ -416,16 +416,6 @@ export default class EpistemePlugin extends Plugin {
 			return;
 		}
 
-		// Get flashcard files
-		const folderPath = normalizePath(this.settings.flashcardsFolder);
-		const flashcardFiles = this.app.vault
-			.getMarkdownFiles()
-			.filter(
-				(f) =>
-					f.path.startsWith(folderPath + "/") &&
-					f.name.startsWith(FLASHCARD_CONFIG.filePrefix)
-			);
-
 		const currentFile = this.app.workspace.getActiveFile();
 		const currentNoteName =
 			currentFile && !currentFile.name.startsWith(FLASHCARD_CONFIG.filePrefix)
@@ -435,7 +425,6 @@ export default class EpistemePlugin extends Plugin {
 		const modal = new CustomSessionModal(this.app, {
 			currentNoteName,
 			allCards,
-			flashcardFiles,
 		});
 
 		const result = await modal.openAndWait();

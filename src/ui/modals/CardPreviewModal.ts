@@ -2,9 +2,10 @@
  * Card Preview Modal
  * Displays a list of flashcards with preview and navigation to source note
  */
-import { App, Component, MarkdownRenderer, Modal, TFile } from "obsidian";
+import { App, Component, MarkdownRenderer, TFile } from "obsidian";
 import type { FSRSFlashcardItem } from "../../types";
 import { formatIntervalDays } from "../../types";
+import { BaseModal } from "./BaseModal";
 
 export interface CardPreviewModalOptions {
 	title: string;
@@ -14,31 +15,29 @@ export interface CardPreviewModalOptions {
 /**
  * Modal for previewing a list of flashcards
  */
-export class CardPreviewModal extends Modal {
+export class CardPreviewModal extends BaseModal {
 	private options: CardPreviewModalOptions;
 	private component: Component;
 
 	constructor(app: App, options: CardPreviewModalOptions) {
-		super(app);
+		super(app, { title: options.title, width: "500px" });
 		this.options = options;
 		this.component = new Component();
 	}
 
 	onOpen(): void {
 		this.component.load();
-		const { contentEl } = this;
-		contentEl.empty();
-		contentEl.addClass("episteme-card-preview-modal");
+		super.onOpen();
+		this.contentEl.addClass("episteme-card-preview-modal");
+	}
 
-		// Title
-		contentEl.createEl("h2", { text: this.options.title });
-
+	protected renderBody(container: HTMLElement): void {
 		// Cards count
-		const countEl = contentEl.createDiv({ cls: "episteme-card-preview-count" });
+		const countEl = container.createDiv({ cls: "episteme-card-preview-count" });
 		countEl.setText(`${this.options.cards.length} cards`);
 
 		// Cards list
-		const listEl = contentEl.createDiv({ cls: "episteme-card-preview-list" });
+		const listEl = container.createDiv({ cls: "episteme-card-preview-list" });
 
 		if (this.options.cards.length === 0) {
 			listEl.createDiv({

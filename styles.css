@@ -546,7 +546,7 @@
 .episteme-review-card-container {
 	flex: 1;
 	display: flex;
-	align-items: center;
+	align-items: flex-start;
 	justify-content: center;
 	padding: 32px;
 	overflow-y: auto;
@@ -879,18 +879,57 @@
 }
 
 /* ============================================
-   DECK SELECTION MODAL STYLES
+   BASE MODAL STYLES
    ============================================ */
 
-.episteme-deck-modal {
-	min-width: 400px;
+/* Modal container - fit to content */
+.modal:has(.episteme-modal) {
+	width: fit-content;
 }
 
-.episteme-deck-modal h2 {
-	margin: 0 0 16px 0;
+/* Remove default modal-content padding */
+.modal:has(.episteme-modal) .modal-content {
+	padding: 0;
+}
+
+/* Modal header with title */
+.episteme-modal-header {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	padding: 10px 12px;
+	padding-right: 40px; /* Space for close button */
+	border-bottom: 1px solid var(--background-modifier-border);
+}
+
+.episteme-modal-header h2 {
+	margin: 0;
 	font-size: 18px;
 	font-weight: 600;
 }
+
+/* Position close button in header area */
+.modal:has(.episteme-modal) .modal-close-button {
+	position: absolute;
+	top: 8px;
+	right: 10px;
+}
+
+/* Modal body */
+.episteme-modal-body {
+	padding: 10px 12px;
+}
+
+/* Common modal divider */
+.episteme-modal-divider {
+	margin: 16px 0;
+	border: none;
+	border-top: 1px solid var(--background-modifier-border);
+}
+
+/* ============================================
+   DECK SELECTION MODAL STYLES
+   ============================================ */
 
 .episteme-deck-divider {
 	margin: 16px 0;
@@ -1189,26 +1228,6 @@
 /* ============================================
    CARD PREVIEW MODAL STYLES
    ============================================ */
-
-/* Position close button at modal corner */
-.modal:has(.episteme-card-preview-modal) .modal-close-button {
-	position: absolute;
-	top: 8px;
-	right: 8px;
-	z-index: 10;
-}
-
-.episteme-card-preview-modal {
-	min-width: 400px;
-	max-width: 90vw;
-}
-
-.episteme-card-preview-modal h2 {
-	margin: 0 0 8px 0;
-	font-size: 18px;
-	font-weight: 600;
-	text-align: center;
-}
 
 .episteme-card-preview-count {
 	text-align: center;
@@ -1550,36 +1569,11 @@
    CUSTOM SESSION MODAL STYLES
    ============================================ */
 
-/* Position close button at modal corner */
-.modal:has(.episteme-custom-session-modal) .modal-close-button {
-	position: absolute;
-	top: 8px;
-	right: 8px;
-	z-index: 10;
-}
-
-.episteme-custom-session-modal {
-	width: 500px;
-	max-width: 90vw;
-}
-
-.episteme-custom-session-modal h2 {
-	margin: 0 0 16px 0;
-	font-size: 18px;
-	font-weight: 600;
-}
-
 .episteme-custom-session-modal h3 {
 	margin: 8px 0 12px 0;
 	font-size: 14px;
 	font-weight: 500;
 	color: var(--text-muted);
-}
-
-.episteme-modal-divider {
-	margin: 16px 0;
-	border: none;
-	border-top: 1px solid var(--background-modifier-border);
 }
 
 /* Quick Actions */
