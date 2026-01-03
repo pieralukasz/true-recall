@@ -2,7 +2,7 @@
  * Card Preview Modal
  * Displays a list of flashcards with preview and navigation to source note
  */
-import { App, Modal, TFile } from "obsidian";
+import { App, Component, MarkdownRenderer, Modal, TFile } from "obsidian";
 import type { FSRSFlashcardItem } from "../../types";
 import { formatIntervalDays } from "../../types";
 
@@ -16,13 +16,16 @@ export interface CardPreviewModalOptions {
  */
 export class CardPreviewModal extends Modal {
 	private options: CardPreviewModalOptions;
+	private component: Component;
 
 	constructor(app: App, options: CardPreviewModalOptions) {
 		super(app);
 		this.options = options;
+		this.component = new Component();
 	}
 
 	onOpen(): void {
+		this.component.load();
 		const { contentEl } = this;
 		contentEl.empty();
 		contentEl.addClass("episteme-card-preview-modal");
@@ -48,9 +51,13 @@ export class CardPreviewModal extends Modal {
 		for (const card of this.options.cards) {
 			this.renderCard(listEl, card);
 		}
+
+		// Setup internal link handler for wiki links
+		this.setupInternalLinkHandler();
 	}
 
 	onClose(): void {
+		this.component.unload();
 		const { contentEl } = this;
 		contentEl.empty();
 	}
@@ -58,13 +65,27 @@ export class CardPreviewModal extends Modal {
 	private renderCard(container: HTMLElement, card: FSRSFlashcardItem): void {
 		const item = container.createDiv({ cls: "episteme-card-preview-item" });
 
-		// Question (truncated)
+		// Question - render markdown
 		const questionEl = item.createDiv({ cls: "episteme-card-preview-question" });
-		questionEl.setText(this.truncateText(this.stripMarkdown(card.question), 120));
+		const questionContent = questionEl.createDiv({ cls: "episteme-md-content" });
+		void MarkdownRenderer.render(
+			this.app,
+			card.question,
+			questionContent,
+			card.filePath,
+			this.component
+		);
 
-		// Answer (truncated)
+		// Answer - render markdown (blurred by CSS, revealed on hover)
 		const answerEl = item.createDiv({ cls: "episteme-card-preview-answer" });
-		answerEl.setText(this.truncateText(this.stripMarkdown(card.answer), 200));
+		const answerContent = answerEl.createDiv({ cls: "episteme-md-content" });
+		void MarkdownRenderer.render(
+			this.app,
+			card.answer,
+			answerContent,
+			card.filePath,
+			this.component
+		);
 
 		// Card info row (interval, stability)
 		const infoEl = item.createDiv({ cls: "episteme-card-preview-info" });
@@ -136,29 +157,30 @@ export class CardPreviewModal extends Modal {
 		}
 	}
 
-	private truncateText(text: string, maxLength: number): string {
-		if (text.length <= maxLength) return text;
-		return text.substring(0, maxLength - 3) + "...";
-	}
+	/**
+	 * Setup click handler for internal links (wiki links)
+	 * Uses capture phase to intercept before Obsidian's handlers
+	 */
+	private setupInternalLinkHandler(): void {
+		const { contentEl } = this;
 
-	private stripMarkdown(text: string): string {
-		return (
-			text
-				// Remove wiki links [[link]] or [[link|display]]
-				.replace(/\[\[([^\]|]+)\|?([^\]]*)\]\]/g, (_: string, link: string, display: string) => display || link)
-				// Remove markdown links [text](url)
-				.replace(/\[([^\]]+)\]\([^)]+\)/g, "$1")
-				// Remove bold/italic
-				.replace(/[*_]{1,3}([^*_]+)[*_]{1,3}/g, "$1")
-				// Remove code blocks
-				.replace(/`{1,3}[^`]+`{1,3}/g, "")
-				// Remove headers
-				.replace(/^#{1,6}\s+/gm, "")
-				// Remove line breaks
-				.replace(/\n/g, " ")
-				// Normalize whitespace
-				.replace(/\s+/g, " ")
-				.trim()
-		);
+		contentEl.addEventListener(
+			"click",
+			(e: MouseEvent) => {
+				const linkEl = (e.target as HTMLElement).closest("a.internal-link");
+				if (!linkEl) return;
+
+				e.preventDefault();
+				e.stopPropagation();
+				e.stopImmediatePropagation();
+
+				const href = linkEl.getAttribute("data-href");
+				if (!href) return;
+
+				// Open link in existing tab
+				void this.app.workspace.openLinkText(href, "", false);
+			},
+			true
+		); // capture: true
 	}
 }

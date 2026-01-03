@@ -33,6 +33,16 @@ export interface QueueBuildOptions {
     reviewOrder?: ReviewOrder;
     /** How to mix new cards with reviews */
     newReviewMix?: NewReviewMix;
+
+    // Custom session filters
+    /** Filter by source note name (sourceNoteName field) */
+    sourceNoteFilter?: string;
+    /** Filter by flashcard file path */
+    filePathFilter?: string;
+    /** Only include cards created today */
+    createdTodayOnly?: boolean;
+    /** Ignore daily limits for custom sessions */
+    ignoreDailyLimits?: boolean;
 }
 
 /**
@@ -130,10 +140,36 @@ export class ReviewService {
         const reviewOrder = options.reviewOrder ?? "due-date";
         const newReviewMix = options.newReviewMix ?? "mix-with-reviews";
 
-        // Filter by deck if specified
+        // Apply custom session filters first
         let filteredCards = allCards;
+
+        // Filter by source note name
+        if (options.sourceNoteFilter) {
+            filteredCards = filteredCards.filter(
+                card => card.sourceNoteName === options.sourceNoteFilter
+            );
+        }
+
+        // Filter by flashcard file path
+        if (options.filePathFilter) {
+            filteredCards = filteredCards.filter(
+                card => card.filePath === options.filePathFilter
+            );
+        }
+
+        // Filter to only cards created today
+        if (options.createdTodayOnly) {
+            const todayStart = new Date();
+            todayStart.setHours(0, 0, 0, 0);
+            filteredCards = filteredCards.filter(card => {
+                const createdAt = card.fsrs.createdAt;
+                return createdAt && createdAt >= todayStart.getTime();
+            });
+        }
+
+        // Filter by deck if specified
         if (options.deckFilter) {
-            filteredCards = allCards.filter(card => card.deck === options.deckFilter);
+            filteredCards = filteredCards.filter(card => card.deck === options.deckFilter);
         }
 
         // Filter out already reviewed cards, BUT keep learning/relearning cards

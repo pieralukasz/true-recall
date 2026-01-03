@@ -14,6 +14,7 @@ import type {
 	StreakInfo,
 	StatsTimeRange,
 	FSRSFlashcardItem,
+	RetentionEntry,
 } from "../types";
 
 /**
@@ -301,6 +302,53 @@ export class StatsCalculatorService {
 		};
 	}
 
+	/**
+	 * Get retention rate history for line chart
+	 * Retention = (Good + Easy) / Total reviews
+	 */
+	async getRetentionHistory(range: StatsTimeRange): Promise<RetentionEntry[]> {
+		const allStats = await this.sessionPersistence.getAllDailyStats();
+		const today = new Date();
+		today.setHours(0, 0, 0, 0);
+
+		const startDate = this.calculateStartDate(today, range);
+
+		// Helper for local date formatting
+		const formatLocalDate = (d: Date): string => {
+			const year = d.getFullYear();
+			const month = String(d.getMonth() + 1).padStart(2, "0");
+			const day = String(d.getDate()).padStart(2, "0");
+			return `${year}-${month}-${day}`;
+		};
+
+		const startDateStr = formatLocalDate(startDate);
+		const todayStr = formatLocalDate(today);
+
+		const entries: RetentionEntry[] = [];
+
+		for (const [date, stats] of Object.entries(allStats)) {
+			// Filter by date range
+			if (date < startDateStr || date > todayStr) continue;
+
+			// Calculate total reviews with rating breakdown
+			const again = (stats as ExtendedDailyStats).again ?? 0;
+			const hard = (stats as ExtendedDailyStats).hard ?? 0;
+			const good = (stats as ExtendedDailyStats).good ?? 0;
+			const easy = (stats as ExtendedDailyStats).easy ?? 0;
+
+			const total = again + hard + good + easy;
+			if (total === 0) continue;
+
+			// Retention = correct answers (good + easy) / total
+			const correct = good + easy;
+			const retention = Math.round((correct / total) * 100);
+
+			entries.push({ date, retention, total });
+		}
+
+		return entries.sort((a, b) => a.date.localeCompare(b.date));
+	}
+
 	// ===== Private helpers =====
 
 	private calculateEndDate(today: Date, range: StatsTimeRange): Date {
@@ -370,12 +418,21 @@ export class StatsCalculatorService {
 			return this.getFutureDueStats(range);
 		}
 
+		// Helper to format date as local YYYY-MM-DD (not UTC)
+		// toISOString() converts to UTC which shifts dates in UTC+X timezones
+		const formatLocalDate = (d: Date): string => {
+			const year = d.getFullYear();
+			const month = String(d.getMonth() + 1).padStart(2, "0");
+			const day = String(d.getDate()).padStart(2, "0");
+			return `${year}-${month}-${day}`;
+		};
+
 		// Generate all days in range
 		const dueMap = new Map<string, number>();
 		const currentDate = new Date(today);
 
 		while (currentDate <= endDate) {
-			const dateKey = currentDate.toISOString().split("T")[0]!;
+			const dateKey = formatLocalDate(currentDate);
 			dueMap.set(dateKey, 0);
 			currentDate.setDate(currentDate.getDate() + 1);
 		}
@@ -386,7 +443,7 @@ export class StatsCalculatorService {
 
 			const dueDate = new Date(card.fsrs.due);
 			dueDate.setHours(0, 0, 0, 0);
-			const dateKey = dueDate.toISOString().split("T")[0]!;
+			const dateKey = formatLocalDate(dueDate);
 
 			if (dueMap.has(dateKey)) {
 				dueMap.set(dateKey, dueMap.get(dateKey)! + 1);
@@ -415,7 +472,11 @@ export class StatsCalculatorService {
 	 */
 	async getCardsDueOnDate(date: string): Promise<FSRSFlashcardItem[]> {
 		const allCards = await this.flashcardManager.getAllFSRSCards();
-		const targetDate = new Date(date);
+
+		// Parse date as local (not UTC) - date format is "YYYY-MM-DD"
+		// Using new Date("YYYY-MM-DD") parses as UTC which causes off-by-one errors
+		const [year, month, day] = date.split("-").map(Number);
+		const targetDate = new Date(year!, month! - 1, day!); // month is 0-indexed
 		targetDate.setHours(0, 0, 0, 0);
 
 		return allCards.filter((card) => {

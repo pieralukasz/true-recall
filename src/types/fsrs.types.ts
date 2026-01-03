@@ -313,6 +313,18 @@ export interface FutureDueEntry {
 export type StatsTimeRange = "backlog" | "1m" | "3m" | "1y" | "all";
 
 /**
+ * Retention rate entry for retention chart
+ */
+export interface RetentionEntry {
+    /** Date in YYYY-MM-DD format */
+    date: string;
+    /** Retention rate 0-100% */
+    retention: number;
+    /** Total reviews that day */
+    total: number;
+}
+
+/**
  * Today summary for statistics panel
  */
 export interface TodaySummary {

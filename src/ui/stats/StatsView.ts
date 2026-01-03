@@ -11,6 +11,9 @@ import {
 	BarController,
 	ArcElement,
 	DoughnutController,
+	LineElement,
+	LineController,
+	PointElement,
 	Title,
 	Tooltip,
 	Legend,
@@ -19,7 +22,7 @@ import { VIEW_TYPE_STATS } from "../../constants";
 import { StatsCalculatorService } from "../../services/stats-calculator.service";
 import { CardPreviewModal } from "../modals";
 import type EpistemePlugin from "../../main";
-import type { StatsTimeRange, CardMaturityBreakdown, FutureDueEntry } from "../../types";
+import type { StatsTimeRange, CardMaturityBreakdown, FutureDueEntry, RetentionEntry } from "../../types";
 
 // Register Chart.js components
 Chart.register(
@@ -29,6 +32,9 @@ Chart.register(
 	BarController,
 	ArcElement,
 	DoughnutController,
+	LineElement,
+	LineController,
+	PointElement,
 	Title,
 	Tooltip,
 	Legend
@@ -47,6 +53,7 @@ export class StatsView extends ItemView {
 	private todayEl!: HTMLElement;
 	private rangeSelectorEl!: HTMLElement;
 	private futureDueEl!: HTMLElement;
+	private retentionEl!: HTMLElement;
 	private cardCountsEl!: HTMLElement;
 	private calendarEl!: HTMLElement;
 
@@ -103,10 +110,13 @@ export class StatsView extends ItemView {
 		// 3. Future Due Section (bar chart)
 		this.futureDueEl = container.createDiv({ cls: "episteme-stats-section stats-future" });
 
-		// 4. Card Counts Section (pie chart)
+		// 4. Retention Rate Section (line chart)
+		this.retentionEl = container.createDiv({ cls: "episteme-stats-section stats-retention" });
+
+		// 5. Card Counts Section (pie chart)
 		this.cardCountsEl = container.createDiv({ cls: "episteme-stats-section stats-counts" });
 
-		// 5. Calendar Heatmap Section
+		// 6. Calendar Heatmap Section
 		this.calendarEl = container.createDiv({ cls: "episteme-stats-section stats-calendar" });
 	}
 
@@ -139,13 +149,17 @@ export class StatsView extends ItemView {
 		});
 
 		// Re-render charts
-		await this.renderFutureDueChart();
+		await Promise.all([
+			this.renderFutureDueChart(),
+			this.renderRetentionChart(),
+		]);
 	}
 
 	async refresh(): Promise<void> {
 		await Promise.all([
 			this.renderTodaySummary(),
 			this.renderFutureDueChart(),
+			this.renderRetentionChart(),
 			this.renderCardCountsChart(),
 			this.renderCalendarHeatmap(),
 		]);
@@ -319,6 +333,108 @@ export class StatsView extends ItemView {
 			title: `Cards due: ${this.formatDateForDisplay(date)}`,
 			cards,
 		}).open();
+	}
+
+	private async renderRetentionChart(): Promise<void> {
+		this.retentionEl.empty();
+		this.retentionEl.createEl("h3", { text: "Retention Rate" });
+
+		// Create elements synchronously before async calls
+		const canvasContainer = this.retentionEl.createDiv({ cls: "stats-chart-container" });
+		const canvas = canvasContainer.createEl("canvas", { cls: "stats-chart-canvas" });
+		const summaryEl = this.retentionEl.createDiv({ cls: "stats-chart-summary" });
+
+		const data = await this.statsCalculator.getRetentionHistory(this.currentRange);
+
+		if (data.length === 0) {
+			this.retentionEl.empty();
+			this.retentionEl.createEl("h3", { text: "Retention Rate" });
+			this.retentionEl.createDiv({
+				cls: "stats-no-data",
+				text: "No review history available",
+			});
+			return;
+		}
+
+		// Destroy existing chart if present
+		if (this.charts.has("retention")) {
+			this.charts.get("retention")!.destroy();
+		}
+
+		// Format labels to show day/month
+		const labels = data.map((d) => {
+			const date = new Date(d.date);
+			return `${date.getDate()}/${date.getMonth() + 1}`;
+		});
+
+		const maxTicks = this.getMaxTicksForRange();
+
+		const chart = new Chart(canvas, {
+			type: "line",
+			data: {
+				labels,
+				datasets: [
+					{
+						label: "Retention %",
+						data: data.map((d) => d.retention),
+						borderColor: "rgb(34, 197, 94)",
+						backgroundColor: "rgba(34, 197, 94, 0.1)",
+						fill: true,
+						tension: 0.3,
+						pointRadius: data.length > 30 ? 0 : 3,
+						pointHoverRadius: 5,
+					},
+				],
+			},
+			options: {
+				responsive: true,
+				maintainAspectRatio: false,
+				plugins: {
+					legend: { display: false },
+					tooltip: {
+						callbacks: {
+							title: (items) => {
+								if (items.length > 0) {
+									const index = items[0]!.dataIndex;
+									return this.formatDateForDisplay(data[index]!.date);
+								}
+								return "";
+							},
+							label: (context) => {
+								const index = context.dataIndex;
+								const entry = data[index];
+								return entry ? `${entry.retention}% (${entry.total} reviews)` : "";
+							},
+						},
+					},
+				},
+				scales: {
+					y: {
+						min: 0,
+						max: 100,
+						ticks: {
+							callback: (value) => `${value}%`,
+						},
+					},
+					x: {
+						ticks: {
+							maxRotation: 45,
+							minRotation: 45,
+							maxTicksLimit: maxTicks,
+						},
+					},
+				},
+			},
+		});
+		this.charts.set("retention", chart);
+
+		// Summary: average retention
+		const avgRetention = data.length > 0
+			? Math.round(data.reduce((sum, d) => sum + d.retention, 0) / data.length)
+			: 0;
+		const totalReviews = data.reduce((sum, d) => sum + d.total, 0);
+		summaryEl.createDiv({ text: `Average: ${avgRetention}%` });
+		summaryEl.createDiv({ text: `Total reviews: ${totalReviews}` });
 	}
 
 	private async renderCardCountsChart(): Promise<void> {

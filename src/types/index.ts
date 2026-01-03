@@ -54,6 +54,7 @@ export type {
     TodaySummary,
     StreakInfo,
     StatsTimeRange,
+    RetentionEntry,
 } from "./fsrs.types";
 
 export {
