@@ -617,7 +617,9 @@ deck: "${deck}"
 	 */
 	async getAllFSRSCards(): Promise<FSRSFlashcardItem[]> {
 		if (!this.store) {
-			throw new Error("Sharded store not initialized. Please restart Obsidian.");
+			throw new Error(
+				"Sharded store not initialized. Please restart Obsidian."
+			);
 		}
 
 		const allCards: FSRSFlashcardItem[] = [];
@@ -636,7 +638,12 @@ deck: "${deck}"
 			const content = await this.app.vault.read(file);
 			const deck = this.extractDeckFromFrontmatter(content);
 			const sourceNoteName = this.extractSourceLinkFromContent(content);
-			const cards = this.parseAllFlashcards(content, file.path, deck, sourceNoteName);
+			const cards = this.parseAllFlashcards(
+				content,
+				file.path,
+				deck,
+				sourceNoteName
+			);
 			allCards.push(...cards);
 		}
 
@@ -736,7 +743,11 @@ deck: "${deck}"
 			// Empty line - potential end of card without block ID
 			if (line.trim() === "") {
 				// If we have a complete card without block ID, save it
-				if (currentQuestion && currentAnswerLines.length > 0 && !foundBlockId) {
+				if (
+					currentQuestion &&
+					currentAnswerLines.length > 0 &&
+					!foundBlockId
+				) {
 					const card = this.createNewCard(
 						currentQuestion,
 						currentAnswerLines.join("\n").trim(),
@@ -857,7 +868,9 @@ deck: "${deck}"
 
 			// Append review to history if provided
 			if (reviewLogEntry) {
-				const history = existing?.history || [];
+				const history: CardReviewLogEntry[] =
+					(existing?.history as CardReviewLogEntry[] | undefined) ||
+					[];
 				history.push(reviewLogEntry);
 				// Keep only last 20 entries
 				if (history.length > 20) {
@@ -1005,7 +1018,6 @@ deck: "${deck}"
 		await this.app.vault.modify(file, newContent);
 	}
 
-
 	/**
 	 * Generate unique card ID
 	 */
@@ -1025,7 +1037,9 @@ deck: "${deck}"
 	 */
 	async scanVault(): Promise<ScanResult> {
 		if (!this.store) {
-			throw new Error("Sharded store not initialized. Please restart Obsidian.");
+			throw new Error(
+				"Sharded store not initialized. Please restart Obsidian."
+			);
 		}
 
 		let totalCards = 0;
@@ -1036,10 +1050,12 @@ deck: "${deck}"
 		const foundBlockIds = new Set<string>();
 
 		const folderPath = normalizePath(this.settings.flashcardsFolder);
-		const files = this.app.vault.getMarkdownFiles()
-			.filter(file =>
-				file.path.startsWith(folderPath + "/") &&
-				file.name.startsWith(FLASHCARD_CONFIG.filePrefix)
+		const files = this.app.vault
+			.getMarkdownFiles()
+			.filter(
+				(file) =>
+					file.path.startsWith(folderPath + "/") &&
+					file.name.startsWith(FLASHCARD_CONFIG.filePrefix)
 			);
 
 		for (const file of files) {
@@ -1055,7 +1071,12 @@ deck: "${deck}"
 		// Force save store immediately
 		await this.store.saveNow();
 
-		return { totalCards, newCardsProcessed, filesProcessed, orphanedRemoved };
+		return {
+			totalCards,
+			newCardsProcessed,
+			filesProcessed,
+			orphanedRemoved,
+		};
 	}
 
 	/**
@@ -1068,8 +1089,11 @@ deck: "${deck}"
 	): Promise<{ total: number; newIds: number }> {
 		const content = await this.app.vault.read(file);
 		const lines = content.split("\n");
-		const flashcardPattern = new RegExp(`^(.+?)\\s*${FLASHCARD_CONFIG.tag}\\s*$`);
-		const blockIdPattern = /^\^(fsrs-[a-zA-Z0-9]+|[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12})$/i;
+		const flashcardPattern = new RegExp(
+			`^(.+?)\\s*${FLASHCARD_CONFIG.tag}\\s*$`
+		);
+		const blockIdPattern =
+			/^\^(fsrs-[a-zA-Z0-9]+|[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12})$/i;
 
 		let total = 0;
 		let newIds = 0;
@@ -1099,7 +1123,10 @@ deck: "${deck}"
 						break;
 					}
 
-					if (currentLine.trim() === "" || this.isFlashcardLine(currentLine)) {
+					if (
+						currentLine.trim() === "" ||
+						this.isFlashcardLine(currentLine)
+					) {
 						break;
 					}
 

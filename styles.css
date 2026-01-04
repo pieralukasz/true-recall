@@ -656,6 +656,55 @@
 	transform: scale(0.98);
 }
 
+/* Buttons Wrapper - contains main buttons + menu icon */
+.episteme-buttons-wrapper {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	width: 100%;
+	position: relative;
+}
+
+/* Main buttons container */
+.episteme-buttons-main {
+	display: flex;
+	justify-content: center;
+	gap: 12px;
+	flex-wrap: nowrap;
+}
+
+/* Menu button (gear/more icon) - positioned at right edge */
+.episteme-btn-menu {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	width: 40px;
+	height: 40px;
+	padding: 0;
+	border: none;
+	border-radius: 8px;
+	background: var(--background-modifier-hover);
+	color: var(--text-muted);
+	cursor: pointer;
+	transition: background 0.15s ease, color 0.15s ease;
+	position: absolute;
+	right: 0;
+}
+
+.episteme-btn-menu:hover {
+	background: var(--background-modifier-border);
+	color: var(--text-normal);
+}
+
+.episteme-btn-menu:active {
+	transform: scale(0.95);
+}
+
+.episteme-btn-menu svg {
+	width: 18px;
+	height: 18px;
+}
+
 /* Show Answer Button */
 .episteme-btn-show {
 	background: var(--interactive-accent);
@@ -697,6 +746,10 @@
 .episteme-review-progress {
 	padding: 0 16px 12px;
 	background: var(--background-secondary);
+}
+
+.episteme-review-progress:empty {
+	display: none;
 }
 
 .episteme-progress-bar {
@@ -1423,6 +1476,12 @@
 	.episteme-btn-show {
 		padding: 20px 32px;
 		flex: none;
+	}
+
+	/* Menu button - mobile */
+	.episteme-btn-menu {
+		width: 44px;
+		height: 44px;
 	}
 
 	/* Deck selection modal */

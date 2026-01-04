@@ -3,7 +3,7 @@
  * Main view for spaced repetition review sessions
  * Can be displayed in fullscreen (main area) or panel (sidebar)
  */
-import { ItemView, WorkspaceLeaf, MarkdownRenderer, Notice, Platform, type ViewStateResult } from "obsidian";
+import { ItemView, WorkspaceLeaf, MarkdownRenderer, Notice, Platform, normalizePath, Menu, setIcon, type ViewStateResult } from "obsidian";
 import { Rating, State, type Grade } from "ts-fsrs";
 import { VIEW_TYPE_REVIEW } from "../../constants";
 import { FSRSService, ReviewService, FlashcardManager, SessionPersistenceService } from "../../services";
@@ -376,6 +376,10 @@ export class ReviewView extends ItemView {
             questionEl.addEventListener("click", (e: MouseEvent) => {
                 this.handleFieldClick(e, "question", card.filePath);
             });
+            // Long press on mobile to edit
+            if (Platform.isMobile) {
+                this.addLongPressListener(questionEl, () => this.startEdit("question"));
+            }
         }
 
         // Answer (if revealed)
@@ -398,8 +402,37 @@ export class ReviewView extends ItemView {
                 answerEl.addEventListener("click", (e: MouseEvent) => {
                     this.handleFieldClick(e, "answer", card.filePath);
                 });
+                // Long press on mobile to edit
+                if (Platform.isMobile) {
+                    this.addLongPressListener(answerEl, () => this.startEdit("answer"));
+                }
             }
         }
+    }
+
+    /**
+     * Add long press listener for mobile editing
+     */
+    private addLongPressListener(
+        element: HTMLElement,
+        callback: () => void,
+        duration = 500
+    ): void {
+        let timer: number | null = null;
+
+        element.addEventListener("touchstart", () => {
+            timer = window.setTimeout(() => {
+                callback();
+            }, duration);
+        });
+
+        element.addEventListener("touchend", () => {
+            if (timer) clearTimeout(timer);
+        });
+
+        element.addEventListener("touchmove", () => {
+            if (timer) clearTimeout(timer);
+        });
     }
 
     /**
@@ -592,9 +625,22 @@ export class ReviewView extends ItemView {
     private renderButtons(): void {
         this.buttonsEl.empty();
 
+        // Hide buttons when in edit mode (prevents keyboard from pushing buttons up on mobile)
+        if (this.stateManager.getEditState().active) {
+            this.buttonsEl.style.display = "none";
+            return;
+        }
+        this.buttonsEl.style.display = "";
+
+        // Create wrapper for buttons layout
+        const buttonsWrapper = this.buttonsEl.createDiv({ cls: "episteme-buttons-wrapper" });
+
+        // Main buttons container (left/center)
+        const mainButtonsEl = buttonsWrapper.createDiv({ cls: "episteme-buttons-main" });
+
         if (!this.stateManager.isAnswerRevealed()) {
             // Show answer button
-            const showBtn = this.buttonsEl.createEl("button", {
+            const showBtn = mainButtonsEl.createEl("button", {
                 cls: "episteme-btn episteme-btn-show",
                 text: "Show Answer",
             });
@@ -602,23 +648,101 @@ export class ReviewView extends ItemView {
         } else {
             // Rating buttons
             const preview = this.stateManager.getSchedulingPreview();
-            this.renderRatingButton("Again", Rating.Again, "episteme-btn-again", preview?.again.interval);
-            this.renderRatingButton("Hard", Rating.Hard, "episteme-btn-hard", preview?.hard.interval);
-            this.renderRatingButton("Good", Rating.Good, "episteme-btn-good", preview?.good.interval);
-            this.renderRatingButton("Easy", Rating.Easy, "episteme-btn-easy", preview?.easy.interval);
+            this.renderRatingButton(mainButtonsEl, "Again", Rating.Again, "episteme-btn-again", preview?.again.interval);
+            this.renderRatingButton(mainButtonsEl, "Hard", Rating.Hard, "episteme-btn-hard", preview?.hard.interval);
+            this.renderRatingButton(mainButtonsEl, "Good", Rating.Good, "episteme-btn-good", preview?.good.interval);
+            this.renderRatingButton(mainButtonsEl, "Easy", Rating.Easy, "episteme-btn-easy", preview?.easy.interval);
         }
+
+        // Actions menu button (always visible)
+        const menuBtn = buttonsWrapper.createEl("button", {
+            cls: "episteme-btn-menu",
+            attr: { "aria-label": "Card actions" }
+        });
+        setIcon(menuBtn, "more-vertical");
+        menuBtn.addEventListener("click", (e) => this.showActionsMenu(e));
+    }
+
+    /**
+     * Show actions menu for current card
+     */
+    private showActionsMenu(event: MouseEvent): void {
+        const menu = new Menu();
+
+        menu.addItem((item) =>
+            item
+                .setTitle("Create Zettel")
+                .setIcon("file-plus")
+                .onClick(() => this.handleCreateZettel())
+        );
+
+        menu.addItem((item) =>
+            item
+                .setTitle("Suspend Card")
+                .setIcon("pause")
+                .onClick(() => this.handleSuspend())
+        );
+
+        menu.addItem((item) =>
+            item
+                .setTitle("Edit Card")
+                .setIcon("pencil")
+                .onClick(() => this.enterEditMode())
+        );
+
+        menu.addItem((item) =>
+            item
+                .setTitle("Open Source Note")
+                .setIcon("external-link")
+                .onClick(() => this.handleOpenSourceNote())
+        );
+
+        menu.showAtMouseEvent(event);
+    }
+
+    /**
+     * Open the source note (not the flashcard file)
+     */
+    private handleOpenSourceNote(): void {
+        const card = this.stateManager.getCurrentCard();
+        if (!card || !card.sourceNoteName) {
+            new Notice("Source note not found");
+            return;
+        }
+
+        // Find the source note file by name
+        const files = this.app.vault.getMarkdownFiles();
+        const sourceFile = files.find(f => f.basename === card.sourceNoteName);
+
+        if (sourceFile) {
+            void this.app.workspace.openLinkText(sourceFile.path, "", false);
+        } else {
+            new Notice(`Source note "${card.sourceNoteName}" not found`);
+        }
+    }
+
+    /**
+     * Enter edit mode for current card
+     */
+    private enterEditMode(): void {
+        const card = this.stateManager.getCurrentCard();
+        if (!card) return;
+
+        this.stateManager.startEdit("question");
+        this.renderCard();
     }
 
     /**
      * Render a single rating button
      */
     private renderRatingButton(
+        container: HTMLElement,
         label: string,
         rating: Grade,
         cls: string,
         interval?: string
     ): void {
-        const btn = this.buttonsEl.createEl("button", { cls: `episteme-btn ${cls}` });
+        const btn = container.createEl("button", { cls: `episteme-btn ${cls}` });
 
         btn.createDiv({ cls: "episteme-btn-label", text: label });
 
@@ -631,6 +755,7 @@ export class ReviewView extends ItemView {
 
     /**
      * Render progress bar
+     * Note: CSS :empty selector hides this element when empty (no gap from padding)
      */
     private renderProgress(): void {
         this.progressEl.empty();
@@ -868,6 +993,41 @@ export class ReviewView extends ItemView {
     private handleShowAnswer(): void {
         this.stateManager.revealAnswer();
         this.updateSchedulingPreview();
+    }
+
+    private async handleCreateZettel(): Promise<void> {
+        const card = this.stateManager.getCurrentCard();
+        if (!card) return;
+
+        const zettelFolder = this.plugin.settings.zettelFolder;
+        const folderPath = normalizePath(zettelFolder);
+
+        // Ensure folder exists
+        if (!this.app.vault.getAbstractFileByPath(folderPath)) {
+            await this.app.vault.createFolder(folderPath);
+        }
+
+        // Find unique filename (Untitled, Untitled 1, Untitled 2, ...)
+        let filePath = normalizePath(`${folderPath}/Untitled.md`);
+        let counter = 1;
+        while (this.app.vault.getAbstractFileByPath(filePath)) {
+            filePath = normalizePath(`${folderPath}/Untitled ${counter}.md`);
+            counter++;
+        }
+
+        // Build content
+        const sourceNote = card.sourceNoteName || "Unknown";
+        const content = `${card.question}
+
+${card.answer}
+
+---
+Source: [[${sourceNote}]]
+`;
+
+        // Create file and open it
+        await this.app.vault.create(filePath, content);
+        await this.app.workspace.openLinkText(filePath, "", true);
     }
 
     private async handleAnswer(rating: Grade): Promise<void> {
