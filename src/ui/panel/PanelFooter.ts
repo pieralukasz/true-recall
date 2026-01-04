@@ -13,10 +13,14 @@ export interface PanelFooterProps {
     viewMode: ViewMode;
     diffResult: DiffResult | null;
     isFlashcardFile: boolean;
+    // Selection info for bulk move button
+    selectedCount?: number;
     onGenerate?: () => void;
     onUpdate?: () => void;
     onApplyDiff?: () => void;
     onCancelDiff?: () => void;
+    onMoveSelected?: () => void;
+    onDeleteSelected?: () => void;
 }
 
 /**
@@ -104,11 +108,20 @@ export class PanelFooter extends BaseComponent {
     }
 
     private renderNormalFooter(): void {
-        const { status, isFlashcardFile, onGenerate, onUpdate } = this.props;
+        const { status, isFlashcardFile, selectedCount, onGenerate, onUpdate, onMoveSelected } = this.props;
 
         if (!this.element) return;
 
-        // Don't show Generate/Update buttons for flashcard files
+        // Show "Move selected" button whenever cards are selected (for temporary cards)
+        if (selectedCount && selectedCount > 0 && onMoveSelected) {
+            const moveBtn = this.element.createEl("button", {
+                cls: "episteme-btn-primary episteme-move-selected-btn",
+            });
+            moveBtn.textContent = `Move selected (${selectedCount})`;
+            this.events.addEventListener(moveBtn, "click", onMoveSelected);
+        }
+
+        // Don't show other buttons for flashcard files
         if (isFlashcardFile) {
             return;
         }
