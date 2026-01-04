@@ -49,6 +49,8 @@ export interface QueueBuildOptions {
     weakCardsOnly?: boolean;
     /** Filter by card state: due, learning, or new */
     stateFilter?: "due" | "learning" | "new";
+    /** Only include temporary cards (from Literature Notes) */
+    temporaryOnly?: boolean;
     /** Ignore daily limits for custom sessions */
     ignoreDailyLimits?: boolean;
 }
@@ -212,6 +214,11 @@ export class ReviewService {
                         return true;
                 }
             });
+        }
+
+        // Filter by temporary status (cards from Literature Notes)
+        if (options.temporaryOnly) {
+            filteredCards = filteredCards.filter(card => card.isTemporary === true);
         }
 
         // Filter by deck if specified

@@ -8,3 +8,8 @@ export {
     type CustomSessionType,
     type CustomSessionModalOptions,
 } from "./CustomSessionModal";
+export {
+    MoveCardModal,
+    type MoveCardResult,
+    type MoveCardModalOptions,
+} from "./MoveCardModal";

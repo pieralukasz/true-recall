@@ -558,6 +558,29 @@
 	text-align: center;
 }
 
+/* Temporary Badge (for cards from Literature Notes) */
+.episteme-review-temporary-badge {
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	margin-bottom: 16px;
+	padding: 8px 16px;
+	background: linear-gradient(135deg, #ffc107, #ffb300);
+	border-radius: 8px;
+	color: #000;
+}
+
+.episteme-review-temporary-badge .episteme-badge-text {
+	font-size: 0.75em;
+	font-weight: 700;
+	letter-spacing: 0.1em;
+}
+
+.episteme-review-temporary-badge .episteme-badge-hint {
+	font-size: 0.65em;
+	opacity: 0.7;
+}
+
 /* Question */
 .episteme-review-question {
 	font-size: 1.4em;
@@ -1672,6 +1695,17 @@
 	cursor: not-allowed;
 }
 
+/* Temporary button styling */
+.episteme-quick-action-btn--temporary {
+	border-color: #ffc107;
+	background: linear-gradient(135deg, rgba(255, 193, 7, 0.1), rgba(255, 179, 0, 0.1));
+}
+
+.episteme-quick-action-btn--temporary:hover:not(:disabled) {
+	background: linear-gradient(135deg, rgba(255, 193, 7, 0.2), rgba(255, 179, 0, 0.2));
+	border-color: #ffb300;
+}
+
 .episteme-quick-action-stats {
 	font-size: 12px;
 	font-weight: 400;
@@ -1848,4 +1882,148 @@
 	.episteme-start-session-btn {
 		width: 100%;
 	}
+}
+
+/* ========================================
+   Move Card Modal
+   ======================================== */
+
+.episteme-move-card-modal .episteme-modal-info {
+	color: var(--text-muted);
+	font-size: 13px;
+	margin-bottom: 16px;
+}
+
+/* Tag filter buttons */
+.episteme-move-filters {
+	display: flex;
+	gap: 8px;
+	margin-bottom: 12px;
+}
+
+.episteme-filter-btn {
+	padding: 6px 12px;
+	border: 1px solid var(--background-modifier-border);
+	border-radius: 4px;
+	background: var(--background-primary);
+	cursor: pointer;
+	font-size: 13px;
+	transition: all 0.15s ease;
+}
+
+.episteme-filter-btn:hover {
+	background: var(--background-modifier-hover);
+}
+
+.episteme-filter-btn.active {
+	background: var(--interactive-accent);
+	color: var(--text-on-accent);
+	border-color: var(--interactive-accent);
+}
+
+/* Suggested notes section (from backlinks) */
+.episteme-suggested-section {
+	margin-bottom: 16px;
+	padding-bottom: 12px;
+	border-bottom: 1px solid var(--background-modifier-border);
+}
+
+.episteme-suggested-title {
+	font-size: 12px;
+	color: var(--text-muted);
+	margin: 0 0 8px 0;
+	font-weight: 500;
+	text-transform: uppercase;
+	letter-spacing: 0.5px;
+}
+
+.episteme-note-suggested {
+	background: rgba(var(--interactive-accent-rgb), 0.08);
+	border-left: 3px solid var(--interactive-accent);
+	border-radius: 4px;
+	margin-bottom: 4px;
+}
+
+.episteme-note-suggested:hover {
+	background: rgba(var(--interactive-accent-rgb), 0.15);
+}
+
+.episteme-move-note-list {
+	border: 1px solid var(--background-modifier-border);
+	border-radius: 6px;
+}
+
+.episteme-note-item {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	padding: 10px 12px;
+	border-bottom: 1px solid var(--background-modifier-border);
+	cursor: pointer;
+	transition: background-color 0.1s ease;
+}
+
+.episteme-note-item:last-child {
+	border-bottom: none;
+}
+
+.episteme-note-item:hover {
+	background: var(--background-modifier-hover);
+}
+
+.episteme-note-info {
+	display: flex;
+	align-items: center;
+	gap: 8px;
+	overflow: hidden;
+	flex: 1;
+}
+
+.episteme-note-icon {
+	flex-shrink: 0;
+}
+
+.episteme-note-name {
+	font-weight: 500;
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+}
+
+.episteme-note-path {
+	font-size: 12px;
+	color: var(--text-muted);
+	margin-left: 8px;
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+}
+
+.episteme-note-select-btn {
+	flex-shrink: 0;
+	padding: 4px 12px;
+	border-radius: 4px;
+	background: var(--interactive-accent);
+	color: var(--text-on-accent);
+	border: none;
+	cursor: pointer;
+	font-size: 13px;
+	opacity: 0;
+	transition: opacity 0.1s ease;
+}
+
+.episteme-note-item:hover .episteme-note-select-btn {
+	opacity: 1;
+}
+
+.episteme-note-select-btn:hover {
+	background: var(--interactive-accent-hover);
+}
+
+.episteme-note-list-more {
+	padding: 12px;
+	text-align: center;
+	color: var(--text-muted);
+	font-size: 12px;
+	font-style: italic;
 }
