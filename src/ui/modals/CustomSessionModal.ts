@@ -19,6 +19,7 @@ export interface CustomSessionResult {
 	createdThisWeek?: boolean;
 	weakCardsOnly?: boolean;
 	stateFilter?: "due" | "learning" | "new";
+	temporaryOnly?: boolean;
 	ignoreDailyLimits: boolean;
 }
 
@@ -239,6 +240,27 @@ export class CustomSessionModal extends BaseModal {
 			});
 			newBtn.disabled = true;
 			newBtn.addClass("episteme-btn-disabled");
+		}
+
+		// Temporary button (cards from Literature Notes)
+		const temporaryStats = this.getTemporaryStats(now);
+		const tempBtn = quickActionsEl.createEl("button", {
+			cls: "episteme-quick-action-btn episteme-quick-action-btn--temporary",
+		});
+		tempBtn.createSpan({ text: "Temporary" });
+		if (temporaryStats.total > 0) {
+			tempBtn.createSpan({
+				cls: "episteme-quick-action-stats",
+				text: this.formatStats(temporaryStats.newCount, temporaryStats.dueCount),
+			});
+			tempBtn.addEventListener("click", () => this.selectTemporaryCards());
+		} else {
+			tempBtn.createSpan({
+				cls: "episteme-quick-action-stats episteme-stat-muted",
+				text: "no cards",
+			});
+			tempBtn.disabled = true;
+			tempBtn.addClass("episteme-btn-disabled");
 		}
 	}
 
@@ -568,6 +590,15 @@ export class CustomSessionModal extends BaseModal {
 		return { total: cards.length, newCount: cards.length, dueCount: 0 };
 	}
 
+	private getTemporaryStats(now: Date): { total: number; newCount: number; dueCount: number } {
+		const cards = this.options.allCards.filter((c) => c.isTemporary && this.isCardAvailable(c, now));
+		return {
+			total: cards.length,
+			newCount: cards.filter((c) => c.fsrs.state === State.New).length,
+			dueCount: cards.filter((c) => c.fsrs.state !== State.New).length,
+		};
+	}
+
 	private selectByState(stateFilter: "due" | "learning" | "new"): void {
 		this.hasSelected = true;
 		if (this.resolvePromise) {
@@ -575,6 +606,20 @@ export class CustomSessionModal extends BaseModal {
 				cancelled: false,
 				sessionType: "state-filter",
 				stateFilter,
+				ignoreDailyLimits: true,
+			});
+			this.resolvePromise = null;
+		}
+		this.close();
+	}
+
+	private selectTemporaryCards(): void {
+		this.hasSelected = true;
+		if (this.resolvePromise) {
+			this.resolvePromise({
+				cancelled: false,
+				sessionType: "state-filter",
+				temporaryOnly: true,
 				ignoreDailyLimits: true,
 			});
 			this.resolvePromise = null;

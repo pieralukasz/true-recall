@@ -11,6 +11,7 @@ export interface CardPreviewHandlers {
 	component: Component;
 	onEdit?: (card: FlashcardItem) => void;
 	onCopy?: (card: FlashcardItem) => void;
+	onMove?: (card: FlashcardItem) => void;
 	onDelete?: (card: FlashcardItem) => void;
 }
 
@@ -142,6 +143,19 @@ export class CardPreview extends BaseComponent {
 			this.events.addEventListener(copyBtn, "click", (e) => {
 				e.stopPropagation();
 				handlers.onCopy?.(flashcard);
+			});
+		}
+
+		// Move button
+		if (handlers.onMove) {
+			const moveBtn = actionsEl.createSpan({
+				cls: "episteme-card-btn clickable-icon",
+				attr: { "aria-label": "Move flashcard to another note" },
+			});
+			moveBtn.textContent = "\u{1F4E4}"; // outbox emoji (📤)
+			this.events.addEventListener(moveBtn, "click", (e) => {
+				e.stopPropagation();
+				handlers.onMove?.(flashcard);
 			});
 		}
 
