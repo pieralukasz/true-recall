@@ -18,8 +18,13 @@ export interface PanelContentHandlers {
     onEditCard?: (card: FlashcardItem) => void;
     onCopyCard?: (card: FlashcardItem) => void;
     onDeleteCard?: (card: FlashcardItem) => void;
+    onMoveCard?: (card: FlashcardItem) => void;
     onChangeAccept?: (change: FlashcardChange, index: number, accepted: boolean) => void;
     onSelectAll?: (selected: boolean) => void;
+    // Selection handlers for temporary cards bulk move
+    onToggleCardSelection?: (lineNumber: number) => void;
+    onSelectAllTemporary?: () => void;
+    onClearSelection?: () => void;
 }
 
 export interface PanelContentProps {
@@ -29,6 +34,8 @@ export interface PanelContentProps {
     flashcardInfo: FlashcardInfo | null;
     diffResult: DiffResult | null;
     isFlashcardFile: boolean;
+    // Selection state for temporary cards bulk move
+    selectedCardLineNumbers?: Set<number>;
     handlers: PanelContentHandlers;
 }
 
@@ -121,7 +128,7 @@ export class PanelContent extends BaseComponent {
     }
 
     private renderPreviewState(): void {
-        const { flashcardInfo, handlers } = this.props;
+        const { flashcardInfo, handlers, selectedCardLineNumbers } = this.props;
 
         if (!this.element || !flashcardInfo) return;
 
@@ -143,6 +150,11 @@ export class PanelContent extends BaseComponent {
             });
         }
 
+        // Temporary cards controls (only show for temporary files)
+        if (flashcardInfo.isTemporary && flashcardInfo.flashcards.length > 0) {
+            this.renderTemporaryControls(previewEl, flashcardInfo.flashcards.length);
+        }
+
         // Flashcard list
         if (flashcardInfo.flashcards.length > 0) {
             const cardsContainer = previewEl.createDiv({
@@ -153,7 +165,22 @@ export class PanelContent extends BaseComponent {
                 const card = flashcardInfo.flashcards[index];
                 if (!card) continue;
 
-                const cardPreview = createCardPreview(cardsContainer, {
+                // Card wrapper for checkbox + card layout (only for temporary)
+                const cardWrapper = cardsContainer.createDiv({
+                    cls: flashcardInfo.isTemporary ? "episteme-card-wrapper" : "",
+                });
+
+                // Checkbox for temporary cards only
+                if (flashcardInfo.isTemporary && handlers.onToggleCardSelection) {
+                    const checkbox = cardWrapper.createEl("input", { type: "checkbox" });
+                    checkbox.checked = selectedCardLineNumbers?.has(card.lineNumber) ?? false;
+                    checkbox.addClass("episteme-card-checkbox");
+                    this.events.addEventListener(checkbox, "change", () => {
+                        handlers.onToggleCardSelection?.(card.lineNumber);
+                    });
+                }
+
+                const cardPreview = createCardPreview(cardWrapper, {
                     flashcard: card,
                     filePath: flashcardInfo.filePath,
                     handlers: {
@@ -162,6 +189,7 @@ export class PanelContent extends BaseComponent {
                         onEdit: handlers.onEditCard,
                         onCopy: handlers.onCopyCard,
                         onDelete: handlers.onDeleteCard,
+                        onMove: handlers.onMoveCard,
                     },
                     markdownRenderer: handlers.markdownRenderer,
                 });
@@ -175,6 +203,35 @@ export class PanelContent extends BaseComponent {
                 }
             }
         }
+    }
+
+    private renderTemporaryControls(container: HTMLElement, cardCount: number): void {
+        const { handlers, selectedCardLineNumbers } = this.props;
+        const selectedCount = selectedCardLineNumbers?.size ?? 0;
+
+        const controlsEl = container.createDiv({ cls: "episteme-temporary-controls" });
+
+        // Temporary badge
+        controlsEl.createSpan({
+            text: `⏳ ${cardCount} temporary`,
+            cls: "episteme-temp-count",
+        });
+
+        // Select all checkbox with label
+        const selectAllContainer = controlsEl.createDiv({ cls: "episteme-select-all-container" });
+        const selectAllCheckbox = selectAllContainer.createEl("input", { type: "checkbox" });
+        selectAllCheckbox.checked = selectedCount === cardCount && cardCount > 0;
+        selectAllCheckbox.indeterminate = selectedCount > 0 && selectedCount < cardCount;
+
+        selectAllContainer.createSpan({ text: "Select all" });
+
+        this.events.addEventListener(selectAllCheckbox, "change", () => {
+            if (selectAllCheckbox.checked) {
+                handlers.onSelectAllTemporary?.();
+            } else {
+                handlers.onClearSelection?.();
+            }
+        });
     }
 
     private renderDiffState(): void {

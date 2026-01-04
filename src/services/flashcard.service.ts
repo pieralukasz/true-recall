@@ -39,6 +39,8 @@ export interface FlashcardInfo {
 	questions: string[];
 	flashcards: FlashcardItem[];
 	lastModified: number | null;
+	/** Whether this flashcard file contains temporary cards (from Literature Notes) */
+	isTemporary?: boolean;
 }
 
 /**
@@ -379,6 +381,8 @@ export class FlashcardManager {
 		const content = await this.app.vault.read(file);
 		const flashcards = this.extractFlashcards(content);
 		const questions = flashcards.map((f) => f.question);
+		const status = this.extractStatusFromFrontmatter(content);
+		const isTemporary = status === 'temporary';
 
 		return {
 			exists: true,
@@ -387,6 +391,7 @@ export class FlashcardManager {
 			questions,
 			flashcards,
 			lastModified: file.stat.mtime,
+			isTemporary,
 		};
 	}
 
@@ -396,6 +401,7 @@ export class FlashcardManager {
 		const flashcardPattern = new RegExp(
 			`^(.+?)\\s*${FLASHCARD_CONFIG.tag}\\s*$`
 		);
+		const blockIdPattern = /^\^([a-zA-Z0-9-]+)$/;
 
 		for (let i = 0; i < lines.length; i++) {
 			const line = lines[i] ?? "";
@@ -405,6 +411,7 @@ export class FlashcardManager {
 				const question = match[1].trim();
 				const questionLineNumber = i + 1;
 				const answerLines: string[] = [];
+				let cardId: string | undefined;
 
 				i++;
 				while (i < lines.length) {
@@ -412,6 +419,14 @@ export class FlashcardManager {
 
 					// Skip legacy ID lines
 					if (/^ID:\s*\d+/.test(answerLine)) {
+						i++;
+						continue;
+					}
+
+					// Check for block ID (^uuid)
+					const blockIdMatch = answerLine.match(blockIdPattern);
+					if (blockIdMatch?.[1]) {
+						cardId = blockIdMatch[1];
 						i++;
 						continue;
 					}
@@ -434,6 +449,7 @@ export class FlashcardManager {
 						question,
 						answer,
 						lineNumber: questionLineNumber,
+						id: cardId,
 					});
 				}
 			}
@@ -1270,6 +1286,13 @@ deck: "${deck}"${statusLine}
 			);
 		}
 
+		// Ensure store is fully loaded before scanning
+		if (!this.store.isReady()) {
+			throw new Error(
+				"Store is still loading. Please wait a moment and try again."
+			);
+		}
+
 		let totalCards = 0;
 		let newCardsProcessed = 0;
 		let filesProcessed = 0;
@@ -1397,6 +1420,12 @@ deck: "${deck}"${statusLine}
 	 * Remove cards from store that no longer exist in markdown files
 	 */
 	private removeOrphanedCards(foundBlockIds: Set<string>): number {
+		// Safety check: if no flashcards were found in files, skip cleanup
+		// This prevents accidentally removing all cards when scanning fails
+		if (foundBlockIds.size === 0) {
+			return 0;
+		}
+
 		const storeIds = this.store!.keys();
 		let removed = 0;
 

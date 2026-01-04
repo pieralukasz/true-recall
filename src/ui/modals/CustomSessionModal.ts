@@ -112,6 +112,27 @@ export class CustomSessionModal extends BaseModal {
 		const todayStart = new Date();
 		todayStart.setHours(0, 0, 0, 0);
 
+		// Active Note button (current note)
+		const currentNoteStats = this.getCurrentNoteStats(now);
+		const activeNoteBtn = quickActionsEl.createEl("button", {
+			cls: "episteme-quick-action-btn",
+		});
+		activeNoteBtn.createSpan({ text: "Active Note" });
+		if (currentNoteStats && currentNoteStats.total > 0) {
+			activeNoteBtn.createSpan({
+				cls: "episteme-quick-action-stats",
+				text: this.formatStats(currentNoteStats.newCount, currentNoteStats.dueCount),
+			});
+			activeNoteBtn.addEventListener("click", () => this.selectCurrentNote());
+		} else {
+			activeNoteBtn.createSpan({
+				cls: "episteme-quick-action-stats episteme-stat-muted",
+				text: currentNoteStats ? "done" : "no cards",
+			});
+			activeNoteBtn.disabled = true;
+			activeNoteBtn.addClass("episteme-btn-disabled");
+		}
+
 		// Stats
 		const todayStats = this.getTodayStats(now, todayStart);
 		const thisWeekStats = this.getThisWeekStats(now);
@@ -245,7 +266,7 @@ export class CustomSessionModal extends BaseModal {
 		// Temporary button (cards from Literature Notes)
 		const temporaryStats = this.getTemporaryStats(now);
 		const tempBtn = quickActionsEl.createEl("button", {
-			cls: "episteme-quick-action-btn episteme-quick-action-btn--temporary",
+			cls: "episteme-quick-action-btn",
 		});
 		tempBtn.createSpan({ text: "Temporary" });
 		if (temporaryStats.total > 0) {
@@ -262,6 +283,7 @@ export class CustomSessionModal extends BaseModal {
 			tempBtn.disabled = true;
 			tempBtn.addClass("episteme-btn-disabled");
 		}
+
 	}
 
 	private renderSearchInput(container: HTMLElement): void {
@@ -525,6 +547,38 @@ export class CustomSessionModal extends BaseModal {
 	private isCardAvailable(card: FSRSFlashcardItem, now: Date): boolean {
 		if (card.fsrs.state === State.New) return true;
 		return new Date(card.fsrs.due) <= now;
+	}
+
+	private getCurrentNoteStats(now: Date): { total: number; newCount: number; dueCount: number } | null {
+		if (!this.options.currentNoteName) return null;
+
+		const cards = this.options.allCards.filter(
+			(c) => c.sourceNoteName === this.options.currentNoteName && this.isCardAvailable(c, now)
+		);
+
+		if (cards.length === 0) return null;
+
+		return {
+			total: cards.length,
+			newCount: cards.filter((c) => c.fsrs.state === State.New).length,
+			dueCount: cards.filter((c) => c.fsrs.state !== State.New).length,
+		};
+	}
+
+	private selectCurrentNote(): void {
+		if (!this.options.currentNoteName) return;
+
+		this.hasSelected = true;
+		if (this.resolvePromise) {
+			this.resolvePromise({
+				cancelled: false,
+				sessionType: "current-note",
+				sourceNoteFilter: this.options.currentNoteName,
+				ignoreDailyLimits: true,
+			});
+			this.resolvePromise = null;
+		}
+		this.close();
 	}
 
 	private selectTodaysCards(): void {

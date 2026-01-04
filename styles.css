@@ -1695,17 +1695,6 @@
 	cursor: not-allowed;
 }
 
-/* Temporary button styling */
-.episteme-quick-action-btn--temporary {
-	border-color: #ffc107;
-	background: linear-gradient(135deg, rgba(255, 193, 7, 0.1), rgba(255, 179, 0, 0.1));
-}
-
-.episteme-quick-action-btn--temporary:hover:not(:disabled) {
-	background: linear-gradient(135deg, rgba(255, 193, 7, 0.2), rgba(255, 179, 0, 0.2));
-	border-color: #ffb300;
-}
-
 .episteme-quick-action-stats {
 	font-size: 12px;
 	font-weight: 400;
@@ -2026,4 +2015,76 @@
 	color: var(--text-muted);
 	font-size: 12px;
 	font-style: italic;
+}
+
+/* ========================================
+   Temporary Cards Bulk Selection
+   ======================================== */
+
+/* Temporary cards controls bar */
+.episteme-temporary-controls {
+	display: flex;
+	align-items: center;
+	gap: 12px;
+	padding: 8px 12px;
+	background: linear-gradient(
+		135deg,
+		rgba(255, 193, 7, 0.1),
+		rgba(255, 179, 0, 0.05)
+	);
+	border: 1px solid rgba(255, 193, 7, 0.3);
+	border-radius: 6px;
+	margin-bottom: 12px;
+}
+
+.episteme-temp-count {
+	font-size: 12px;
+	font-weight: 500;
+	color: #d4a106;
+}
+
+.episteme-select-all-container {
+	display: flex;
+	align-items: center;
+	gap: 6px;
+	margin-left: auto;
+	font-size: 12px;
+	color: var(--text-muted);
+	cursor: pointer;
+}
+
+.episteme-select-all-container input[type="checkbox"] {
+	cursor: pointer;
+}
+
+/* Card wrapper with checkbox */
+.episteme-card-wrapper {
+	display: flex;
+	align-items: center;
+	gap: 8px;
+}
+
+.episteme-card-wrapper .episteme-card {
+	flex: 1;
+}
+
+.episteme-card-checkbox {
+	flex-shrink: 0;
+	cursor: pointer;
+	width: 16px;
+	height: 16px;
+}
+
+/* Move selected button in footer */
+.episteme-move-selected-btn {
+	margin-top: 4px !important;
+	margin-bottom: 8px;
+	align-self: center;
+	background: linear-gradient(135deg, #ffc107, #ffb300) !important;
+	color: #000 !important;
+	font-weight: 600;
+}
+
+.episteme-move-selected-btn:hover {
+	background: linear-gradient(135deg, #ffca28, #ffc107) !important;
 }
