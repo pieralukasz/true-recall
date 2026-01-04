@@ -60,12 +60,16 @@ export const DEFAULT_SETTINGS: EpistemeSettings = {
 	showReviewHeader: true,
 	showReviewHeaderStats: true,
 	hideFlashcardsFromBacklinks: true,
+	updateLinkedMentionsCount: true,
 	showTouchHints: true, // Show touch gesture hints on mobile
 
 	// Display Order
 	newCardOrder: "random",
 	reviewOrder: "due-date",
 	newReviewMix: "mix-with-reviews",
+
+	// Zettelkasten
+	zettelFolder: "Zettel",
 };
 
 // ===== FSRS Default Weights =====

@@ -75,6 +75,8 @@ export interface EpistemeSettings {
     showReviewHeaderStats: boolean;
     /** Ukryj pliki flashcards z panelu Linked mentions */
     hideFlashcardsFromBacklinks: boolean;
+    /** Aktualizuj licznik Linked mentions po ukryciu flashcards */
+    updateLinkedMentionsCount: boolean;
     /** Pokaż wskazówki gestów dotykowych na mobilnych (iOS/Android) */
     showTouchHints: boolean;
 
@@ -85,6 +87,10 @@ export interface EpistemeSettings {
     reviewOrder: ReviewOrder;
     /** Jak mieszać nowe karty z powtórkami */
     newReviewMix: NewReviewMix;
+
+    // ===== Zettelkasten Settings =====
+    /** Folder na notatki zettelkasten tworzone z fiszek */
+    zettelFolder: string;
 }
 
 /**
