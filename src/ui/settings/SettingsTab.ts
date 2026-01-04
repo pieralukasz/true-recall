@@ -276,6 +276,17 @@ export class EpistemeSettingTab extends PluginSettingTab {
                     await this.plugin.saveSettings();
                 }));
 
+        // Update Linked mentions count
+        new Setting(containerEl)
+            .setName("Update Linked mentions count")
+            .setDesc("Update the count displayed next to 'Linked mentions' after hiding flashcards")
+            .addToggle(toggle => toggle
+                .setValue(this.plugin.settings.updateLinkedMentionsCount)
+                .onChange(async (value) => {
+                    this.plugin.settings.updateLinkedMentionsCount = value;
+                    await this.plugin.saveSettings();
+                }));
+
         // Show touch hints on mobile
         new Setting(containerEl)
             .setName("Show touch hints")
@@ -334,6 +345,21 @@ export class EpistemeSettingTab extends PluginSettingTab {
                     await this.plugin.saveSettings();
                 });
             });
+
+        // ===== Zettelkasten Section =====
+        containerEl.createEl("h2", { text: "Zettelkasten" });
+
+        // Zettel Folder
+        new Setting(containerEl)
+            .setName("Zettel folder")
+            .setDesc("Folder where zettel notes created from flashcards will be stored")
+            .addText(text => text
+                .setPlaceholder("Zettel")
+                .setValue(this.plugin.settings.zettelFolder)
+                .onChange(async (value) => {
+                    this.plugin.settings.zettelFolder = value || "Zettel";
+                    await this.plugin.saveSettings();
+                }));
 
         // ===== FSRS Parameters Section =====
         containerEl.createEl("h2", { text: "FSRS Parameters" });

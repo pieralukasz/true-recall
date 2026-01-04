@@ -68,6 +68,7 @@ export default class EpistemePlugin extends Plugin {
 
 		// Initialize backlinks filter service
 		this.backlinksFilter = new BacklinksFilterService();
+		this.backlinksFilter.setUpdateCount(this.settings.updateLinkedMentionsCount);
 		if (this.settings.hideFlashcardsFromBacklinks) {
 			this.backlinksFilter.enable();
 		}
@@ -262,6 +263,7 @@ export default class EpistemePlugin extends Plugin {
 			this.fsrsService.updateSettings(fsrsSettings);
 		}
 		if (this.backlinksFilter) {
+			this.backlinksFilter.setUpdateCount(this.settings.updateLinkedMentionsCount);
 			if (this.settings.hideFlashcardsFromBacklinks) {
 				this.backlinksFilter.enable();
 			} else {
