@@ -1,77 +1,100 @@
-# Plan: Metodologia Zarządzania Wiedzą - Zettelkasten + Fiszki
+# Knowledge Management Methodology: Zettelkasten + Flashcards (Complete System)
 
-## Diagnoza problemów
+## System Philosophy
 
-**Obecny stan:**
-- `#mind/concept` używany do WSZYSTKIEGO - pustych connectorów i pełnych definicji
-- Brak jasnych zasad: co jest Concept, co jest Zettle
-- Duplikacja treści między Literature Note → Concept → Zettle
-- Friction przy przenoszeniu wiedzy między poziomami
+The goal is to create an **Operating System for the Mind** that supports the process:
+**UNDERSTAND → REMEMBER → CREATE**
 
----
-
-## Finalna Metodologia: Kompletny system tagów
-
-### Przegląd wszystkich tagów `#mind/`
-
-| Tag | Tytuł | Cel | Fiszki |
-|-----|-------|-----|--------|
-| `#mind/concept` | TERMIN (słowo) | Definicja + fakty | TAK |
-| `#mind/zettel` | CLAIM (zdanie) | Twoja myśl/teza | TAK |
-| `#mind/question` | PYTANIE (?) | Pytanie bez odpowiedzi | NIE |
-| `#mind/protocol` | "How to...?" | Idealne rozwiązanie/procedura | TAK |
-| `#mind/hub` | Temat do eksploracji | Punkt wejścia do "trains of thought" | NIE |
-| `#mind/structure` | Temat do pisania | Sandbox do organizacji artykułu | NIE |
-| `#mind/index` | Szeroka kategoria | Pusty connector/backlink | NIE |
-| `#mind/person` | Imię i nazwisko | Osoba (autor, ekspert, etc.) | NIE |
-
-### Przegląd tagów `#input/` (źródła)
-
-| Tag | Użycie |
-|-----|--------|
-| `#input/book` | Książka |
-| `#input/article` | Artykuł |
-| `#input/course` | Kurs |
+The system separates:
+- **Raw data** (Literature, Fleeting)
+- **Structure and navigation** (Index, Hub, Structure)
+- **Understanding and theory** (Concept, Zettel, Person)
+- **Application and practice** (Protocol, Application)
 
 ---
 
-### Szczegółowy opis każdego typu
+## Final Methodology: Complete Tag System
+
+### Overview of all `#mind/` tags
+
+| Tag | Title | Purpose | Flashcards |
+|-----|-------|---------|------------|
+| `#mind/concept` | TERM (word) | Definition + facts (Understanding) | YES |
+| `#mind/zettel` | CLAIM (sentence) | Your thought/thesis (Theory) | YES |
+| `#mind/application` | CONCLUSION (sentence) | Real-life proof/Case Study (Practice) | YES |
+| `#mind/protocol` | "How to...?" | Ideal solution/procedure | YES |
+| `#mind/question` | QUESTION (?) | Unanswered question | NO |
+| `#mind/hub` | Exploration topic | Entry point to "trains of thought" | NO |
+| `#mind/structure` | Writing topic | Sandbox for article organization | NO |
+| `#mind/index` | Broad category | Empty connector/backlink | NO |
+| `#mind/person` | Full name | Person (author, expert, etc.) | NO |
+
+### Overview of `#input/` tags (sources and capture)
+
+| Tag | Usage |
+|-----|-------|
+| `#input/fleeting` | Quick thought, voice note, "rough draft" |
+| `#input/book` | Book |
+| `#input/article` | Article |
+| `#input/course` | Course |
+
+---
+
+## Detailed Description of Each Type
+
+---
+
+### 0. FLEETING NOTE (`#input/fleeting`)
+**Title:** Timestamp or loose topic (e.g., `Quick thought 2025-01-05`)
+**Flashcards:** NO
+
+**Purpose:** Lightning-fast capture of a thought before it escapes. This is your brain's "inbox".
+
+**Content:**
+- Voice notes (transcriptions)
+- Quick sketches on a napkin
+- Screenshots to check later
+
+**Rule:** Fleeting note is **EPHEMERAL**.
+- After processing (Step 2), the note is deleted or archived
+- It doesn't remain in the main graph as a knowledge node
 
 ---
 
 ### 1. CONCEPT (`#mind/concept`)
-**Tytuł:** TERMIN (słowo/nazwa)
-**Fiszki:** TAK - główne źródło fiszek!
+**Title:** TERM (word/name)
+**Flashcards:** YES - main source of flashcards!
 
-**Zawartość:**
-- Bullet-pointy z informacjami O TYM TERMINIE
-- Każdy bullet = jedna informacja (własnymi słowami!)
-- Linki do źródeł `([[literatura|źródło]])`
+**Content:**
+- Bullet points with information ABOUT THIS TERM
+- Each bullet = one piece of information (in your own words!)
+- Links to sources `([[literature|source]])`
 
-**Przykład:** `nucleus accumbens.md`
+**Example:** `nucleus accumbens.md`
 ```markdown
 ---
 tags: ["#mind/concept"]
-aliases: [jądra półleżące, NAc]
+aliases: [NAc]
 ---
 
-- Komponent [[basal ganglia]] w [[ventral striatum]].
-- Otrzymuje [[dopamine]] z [[VTA]].
-- Służy do TWORZENIA [[habit]], nie do utrzymania.
+- Component of [[basal ganglia]] in [[ventral striatum]].
+- Receives [[dopamine]] from [[VTA]].
+- Used for BUILDING [[habit]], not maintaining it.
 ```
 
 ---
 
-### 2. ZETTLE (`#mind/zettel`)
-**Tytuł:** CLAIM/TEZA (pełne zdanie twierdzące)
-**Fiszki:** TAK
+### 2. ZETTEL (`#mind/zettel`)
+**Title:** CLAIM/THESIS (full declarative sentence)
+**Flashcards:** YES
 
-**Zawartość:**
-- Tekst ciągły rozwijający tezę z tytułu
-- Linki do Concepts które wspierają claim
-- "See also" z powiązanymi Zettle
+**Content:**
+- Continuous text developing the thesis from the title (synthesis, explaining "why")
+- Links to Concepts that support the claim
+- "See also" with related Zettels
+- Your own reflections, analogies, metaphors
 
-**Przykład:** `serotonin inhibits dopamine release.md`
+**Example:** `serotonin inhibits dopamine release.md`
 ```markdown
 ---
 tags: ["#mind/zettel"]
@@ -87,51 +110,49 @@ See also:
 
 ---
 
-### 3. QUESTION (`#mind/question`)
-**Tytuł:** PYTANIE (kończy się na "?")
-**Fiszki:** NIE (jeszcze nie ma odpowiedzi!)
+### 3. APPLICATION (`#mind/application`)
+**Title:** CONCLUSION FROM ACTION (full sentence about your experience)
+**Flashcards:** YES
 
-**Cel:** Pytanie na które NIE MASZ jeszcze odpowiedzi.
+**Purpose:** Empirical proof (Case Study). Answer to the question: "Does this work for me?".
 
-**Zawartość:**
-- Rozwinięcie pytania
-- Kontekst dlaczego to pytanie
-- Linki do powiązanych notatek
+**Content:**
+- Context of the situation
+- Result (what happened)
+- Link to Zettel/Concept (theory that explains it)
 
-**Workflow:**
-1. Tworzysz question gdy masz pytanie bez odpowiedzi
-2. Zbierasz informacje, czytasz źródła
-3. Kiedy znajdziesz odpowiedź → tworzysz Zettle (claim) i linkujesz
-4. Question może zostać jako "archiwum pytania" lub można go usunąć
-
-**Przykład:** `why do i feel aversion to effort?.md`
+**Example:** `cold shower in the morning eliminated need for coffee.md`
 ```markdown
 ---
-tags: ["#mind/question"]
-created: "[[2025-12-20]]"
+tags: ["#mind/application"]
+date: [[2025-01-04]]
 ---
 
-* Cannot learn language actively, feel a wall.
-* Cannot go exercise, always find excuse.
+I replaced my morning coffee with 3 minutes of cold water.
+Effect: Stable energy until 2pm, no crash.
+
+This confirms:
+- [[cold water stimulates dopamine release]]
 ```
 
 ---
 
 ### 4. PROTOCOL (`#mind/protocol`)
-**Tytuł:** "How to...?" (idealne rozwiązanie)
-**Fiszki:** TAK
+**Title:** "How to...?" (ideal solution)
+**Flashcards:** YES
 
-**Cel:** Konkretna procedura/protokół do osiągnięcia celu. "Idealne rozwiązanie" do którego linkujesz różne Zettle.
+**Purpose:** Concrete procedure/algorithm for action.
 
-**Różnica od Zettle:**
-- Zettle = pojedynczy claim/fakt
-- Protocol = ZBIÓR kroków/procedura
+**Difference from Zettel/Application:**
+- Zettel = Theory/Fact
+- Application = One-time proof
+- Protocol = Repeatable instruction (set of steps)
 
-**Zawartość:**
-- Numerowane kroki
-- Linki do Concepts i Zettle które wspierają każdy krok
+**Content:**
+- Numbered steps
+- Links to Concepts and Zettels that justify each step
 
-**Przykład:** `how to change habit?.md`
+**Example:** `how to change habit?.md`
 ```markdown
 ---
 tags: ["#mind/protocol"]
@@ -145,22 +166,45 @@ source: [["nawykologia (course)"]]
 
 ---
 
-### 5. HUB (`#mind/hub`)
-**Tytuł:** Temat do eksploracji
-**Fiszki:** NIE
+### 5. QUESTION (`#mind/question`)
+**Title:** QUESTION (ends with "?")
+**Flashcards:** NO (no answer yet!)
 
-**Cel:** Punkt wejścia do "trains of thought" w zettelkasten. Używasz gdy chcesz EKSPLOROWAĆ co masz na dany temat.
+**Purpose:** Open loop. A question you're seeking an answer to.
 
-**Różnica od Structure:**
-- Hub = "Gdzie są moje notatki o X?" (mapa)
-- Structure = "Jak zorganizować X do napisania?" (sandbox)
+**Workflow:**
+1. Create Question
+2. Gather information (Incubator)
+3. Find answer → Create Zettel → Link Zettel to Question
 
-**Zawartość:**
-- Linki do POCZĄTKÓW wątków myślowych
-- Grupowanie po kategoriach
-- NIE zawiera treści - tylko nawigacja
+**Example:** `why do i feel aversion to effort?.md`
+```markdown
+---
+tags: ["#mind/question"]
+created: "[[2025-12-20]]"
+---
 
-**Przykład:** `how to build proper understanding?.md`
+* Cannot learn language actively, feel a wall.
+* Cannot go exercise, always find excuse.
+```
+
+---
+
+### 6. HUB (`#mind/hub`)
+**Title:** Topic for exploration
+**Flashcards:** NO
+
+**Purpose:** Entry point to "trains of thought". Map of existing knowledge.
+
+**Difference from Structure:**
+- Hub = Map of terrain ("What do I already know?")
+- Structure = Construction plan ("What do I want to create?")
+
+**Content:**
+- Links to BEGINNINGS of thought threads
+- Grouping by categories
+
+**Example:** `how to build proper understanding?.md`
 ```markdown
 ---
 tags: ["#mind/hub"]
@@ -177,33 +221,28 @@ Techniques:
 
 ---
 
-### 6. STRUCTURE (`#mind/structure`)
-**Tytuł:** Temat do pisania/organizacji
-**Fiszki:** NIE
+### 7. STRUCTURE (`#mind/structure`)
+**Title:** Topic for writing/organization
+**Flashcards:** NO
 
-**Cel:** Sandbox do ORGANIZOWANIA pomysłów przed napisaniem artykułu/tekstu.
+**Purpose:** Sandbox for organizing ideas before creating output (article, video).
 
-**Różnica od Hub:**
-- Hub = eksploracja, nawigacja
-- Structure = rozwój, organizacja do pisania
+**Content:**
+- Outline (sketch)
+- Arrangement of Zettels in logical narrative sequence
 
-**Zawartość:**
-- Ułożone pomysły w logicznej kolejności
-- Komentarze o relacjach między pomysłami
-- Szkic/outline artykułu
-
-**Przykład:** `how to change habit?.md` (gdy rozwijasz do artykułu)
+**Example:** `article - how to change habit outline.md`
 ```markdown
 ---
 tags: ["#mind/structure"]
 ---
 
 ## Intro
-- Problem z nawykami...
+- Problem with habits...
 
 ## Main argument
 1. [[new habits should adhere to our identity]]
-   - Rozwinięcie...
+   - Elaboration...
 2. ...
 
 ## Conclusion
@@ -211,21 +250,16 @@ tags: ["#mind/structure"]
 
 ---
 
-### 7. INDEX (`#mind/index`)
-**Tytuł:** Szeroka kategoria
-**Fiszki:** NIE
+### 8. INDEX (`#mind/index`)
+**Title:** Broad category
+**Flashcards:** NO
 
-**Cel:** Pusty connector/backlink. Używasz gdy potrzebujesz linka ale nie masz jeszcze definicji.
+**Purpose:** Empty connector/backlink. Only to group topics in the graph.
 
-**Różnica od Hub:**
-- Index = PUSTY (tylko aliasy i tag)
-- Hub = MA TREŚĆ (linki do wątków)
+**Content:**
+- Only YAML frontmatter + possibly automatic backlinks list
 
-**Zawartość:**
-- Tylko YAML frontmatter
-- ZERO bullet-pointów
-
-**Przykład:** `productivity.md`
+**Example:** `productivity.md`
 ```markdown
 ---
 tags: ["#mind/index"]
@@ -235,18 +269,17 @@ aliases: [produktywność]
 
 ---
 
-### 8. PERSON (`#mind/person`)
-**Tytuł:** Imię i nazwisko
-**Fiszki:** NIE
+### 9. PERSON (`#mind/person`)
+**Title:** Full name
+**Flashcards:** NO
 
-**Cel:** Notatka o osobie (autor, ekspert, historyczna postać).
+**Purpose:** Note about an author/expert.
 
-**Zawartość:**
-- Aliasy (nazwisko, pseudonim)
-- Cytaty
-- Linki do ich prac/pomysłów
+**Content:**
+- Who is this person?
+- Main ideas (links to this author's Zettels)
 
-**Przykład:** `richard feynman.md`
+**Example:** `richard feynman.md`
 ```markdown
 ---
 tags: ["#mind/person"]
@@ -254,315 +287,279 @@ aliases: [Feynman]
 ---
 
 > "If you think you understand quantum mechanics, you don't understand quantum mechanics"
+
+Known for:
+- [[feynman technique]]
 ```
 
 ---
 
-### 9. LITERATURE NOTE (`#input/*`)
-**Tytuł:** Tytuł źródła
-**Fiszki:** NIE (archiwum)
+### 10. LITERATURE NOTE (`#input/*`)
+**Title:** Source title
+**Tags:** `#input/book`, `#input/article`, `#input/course`
+**Flashcards:** NO
 
-**Tagi:** `#input/book`, `#input/article`, `#input/course`
+**Purpose:** Archive. Capture of raw information from the source.
 
-**Cel:** Przechwycenie surowych informacji ze źródła.
-
-**Zawartość:**
-- Cytaty
-- Surowe notatki
-- Backlinki do terminów
-
----
-
-## Workflow: Od źródła do wiedzy
-
-### Kluczowe podejście: UNDERSTAND → REMEMBER (nie odwrotnie!)
-
-**Dlaczego NIE klasyczne Bloom (Remember → Understand):**
-- Zapamiętywanie bez zrozumienia = strata czasu
-- W Anki robiłeś fiszki z surowych faktów → zapamiętywałeś rzeczy których nie potrzebowałeś
-- Lepiej: najpierw ZROZUM (przez pisanie), potem UTRWALAJ (fiszki)
+**Content:**
+- Quotes
+- Raw notes
+- Backlinks to terms
 
 ---
 
-### Krok 1: CAPTURE (podczas czytania/słuchania)
+## Gardening: What When Knowledge Changes? (Truth Update)
+
+Knowledge is not static. What's true today may be wrong tomorrow.
+
+**Rule:** Don't delete old notes (unless simple typos/errors). Preserve the history of thought evolution.
+
+### Scenario: "Carbs at Night Make You Fat"
+
+You have an old Zettel: `carbs at night cause weight gain.md`.
+New research (and your understanding) indicates: `total calorie intake dictates weight loss.md`.
+
+### Deprecation Protocol (Withdrawal):
+
+**1. Create a NEW Zettel with new, correct knowledge:**
+- Title: `total calorie intake dictates weight loss, not timing.md`
+- Content: Description of new knowledge + sources
+
+**2. Update the OLD Zettel** (`carbs at...`):
+- Add a warning at the very top
+- Add a link to the new note that "supersedes" this knowledge
+- (Optionally) Add tag `#status/deprecated` or `#status/outdated`
+
+**Example of OLD Zettel after update:**
+```markdown
+---
+tags: ["#mind/zettel", "#status/deprecated"]
+---
+
+> [!WARNING] DEPRECATED / OUTDATED
+> This knowledge has been updated. Current understanding of the topic is here:
+> → [[total calorie intake dictates weight loss, not timing]]
+
+(Here is the old content about carbs making you fat...)
 ```
-Źródło → Literature Note
-```
-- Zapisuj cytaty i notatki w Literature Note
-- Twórz `[[backlinki]]` do terminów które zauważasz
-- NIE przetwarzaj od razu - to jest przechwycenie
+
+### Why Do We Do This?
+
+- **Historical context:** You see how your thinking evolved
+- **Link safety:** If other notes linked to the "old truth", links won't break. Clicking them takes you to the old Zettel, but you immediately see the redirect to the new truth
+- **Bloom (Evaluate):** The very process of deciding something is outdated and why is an act of evaluation (Evaluate) - the highest level of learning
 
 ---
 
-### Krok 2: ELABORATE + CREATE (jeden proces!)
+## Workflow: From Source to Knowledge
+
+### Key Approach: UNDERSTAND → REMEMBER → CREATE
+
+**Why NOT classic Bloom (Remember → Understand):**
+- Memorizing without understanding = waste of time
+- First UNDERSTAND (through writing/elaboration), then RETAIN (flashcards)
+
+---
+
+### Step 1: CAPTURE (While reading / living)
 ```
-Literature Note → Concept / Zettle
+Source / Thought → Literature Note / Fleeting Note
 ```
 
-**To jest JEDEN krok - uczysz się PRZEZ tworzenie notatek!**
+- **Fleeting Note:** Quick dump of thought (voice, text) "on the go"
+- **Literature Note:** Notes made while consuming content
 
-**Jak to działa w praktyce:**
-1. Czytasz Literature Note
-2. Piszesz własnymi słowami do Concept/Zettle (= elaboracja)
-3. Jeśli czegoś nie rozumiesz → zadajesz pytania AI
-4. Tworzysz notatkę i uczysz się JEDNOCZEŚNIE
+---
 
-**Techniki podczas pisania:**
-- Brain dump do AI → AI formatuje
-- Pisanie własnymi słowami (technika Feynmana)
-- Łączenie z istniejącą wiedzą: "Jak to się ma do [[concept X]]?"
-- Zadawanie pytań: "Dlaczego to działa?"
-
-**Pytanie decyzyjne:**
+### Step 2: ELABORATE + CREATE (Learning Process)
 ```
-Czy ta informacja DOTYCZY konkretnego TERMINU?
+Fleeting/Literature → Concept / Zettel / Application / Protocol
+```
+
+**This is ONE step - you learn BY creating notes!**
+
+1. Review Inbox (Fleeting Notes)
+2. Ask questions: "What term is this about?", "Is this true?", "How does this relate to my life?"
+3. Write in your own words (Feynman Technique)
+4. Connect with existing knowledge
+5. Delete Fleeting Note after processing
+
+**Decision question:**
+```
+Is this information...
     │
-    ├─ TAK → Bullet-point do Concept (własnymi słowami!)
-    │
-    └─ NIE (to jest CLAIM/TEZA) → Nowy Zettle
+    ├─ Defining a term? → Concept
+    ├─ A thesis/mechanism? → Zettel
+    ├─ My experience? → Application
+    └─ A procedure? → Protocol
 ```
-
-**Bloom:** UNDERSTAND + APPLY + ANALYZE (poziomy 2-4) - wszystko naraz!
 
 ---
 
-### Krok 2b: INKUBATOR (dla nieznanych niewiadomych)
+### Step 2b: INCUBATOR (For unknowns)
 
-**Problem:** Nie wiesz, czego nie wiesz. Niektóre informacje WYDAJĄ SIĘ nieważne, ale później okazują się kluczowe.
+**Problem:** You encounter something interesting but don't know where it fits.
+**Solution:** Tag `#review/later`.
 
-**Rozwiązanie:** Jeśli nie wiesz czy coś jest ważne - **nie wyrzucaj, nie przetwarzaj od razu**.
-
-```
-Czytam Literature Note i trafiam na informację:
-    │
-    ├─ Wiem że ważne → ELABORATE + CREATE (Concept/Zettle)
-    │
-    └─ Nie wiem czy ważne → Zostaw z tagiem #review/later
-                            Wróć po czasie gdy masz więcej kontekstu
-```
-
-**Tag `#review/later`:**
-- Dodaj do fragmentu lub całej notatki gdy:
-  - Nie rozumiesz jeszcze
-  - Nie wiesz czy będzie potrzebne
-  - Wydaje się ciekawe ale nie wiesz gdzie pasuje
-
-**Cykliczny przegląd (np. co tydzień):**
-- Przeglądasz notatki z `#review/later`
-- Z nową wiedzą decydujesz:
-  - Teraz rozumiem → ELABORATE + CREATE
-  - Nadal nie wiem → zostaw na później
-  - Niepotrzebne → usuń tag
+**Cyclical review:**
+- Once a week review `#review/later`
+- Decision: Elaborate (understood) / Delete (irrelevant) / Keep (still waiting)
 
 ---
 
-### Krok 3: REVIEW (spaced repetition + fiszki)
-- Przeglądaj fiszki (AI generuje z Concept/Zettle)
-- Podczas review mogą pojawić się nowe wnioski → nowe Zettle
+### Step 3: REVIEW & GARDENING (Retention and Maintenance)
+
+- **Flashcards:** AI generates from Concept, Zettel, Application, Protocol
+- **Spaced Repetition:** Regular reviews
+- **Gardening:** When during review you notice an error or outdated knowledge → Apply the Deprecation Protocol
 
 ---
 
-## Cały workflow wizualnie:
+## Complete Workflow Visually:
 
 ```
 ┌─────────────────────────────────────────────────────────────────┐
-│  ŹRÓDŁO (książka, artykuł, kurs)                                │
+│  INPUT: Sources, Thoughts, Voice                                │
+│  → Creating Literature Note / Fleeting Note                     │
 └─────────────────────────────────────────────────────────────────┘
                               │
                               ▼
 ┌─────────────────────────────────────────────────────────────────┐
-│  1. CAPTURE: Literature Note                                    │
-│     Cytaty, surowe notatki, backlinki                          │
+│  PROCESSING (Elaboration)                                       │
+│  Review Literature/Fleeting → Decision                          │
 └─────────────────────────────────────────────────────────────────┘
                               │
               ┌───────────────┴───────────────┐
               ▼                               ▼
 ┌──────────────────────────┐    ┌──────────────────────────────┐
-│  Wiem że ważne           │    │  Nie wiem czy ważne          │
+│  Know it's important     │    │  Don't know if important     │
 │           │              │    │           │                  │
 │           ▼              │    │           ▼                  │
-│  2. ELABORATE + CREATE   │    │  2b. INKUBATOR               │
-│     Concept / Zettle     │    │      #review/later           │
-│     → UNDERSTAND+APPLY   │    │      Wróć po czasie          │
-└──────────────────────────┘    └──────────────────────────────┘
-              │                               │
-              │         ┌─────────────────────┘
-              │         │ (cykliczny przegląd)
+│  2. ELABORATE + CREATE   │    │  2b. INCUBATOR               │
+│  Concept/Zettel/App      │    │      #review/later           │
+│  Protocol                │    │      Return later            │
+│     → UNDERSTAND+APPLY   │    └──────────────────────────────┘
+└──────────────────────────┘              │
+              │                           │
+              │         ┌─────────────────┘
               ▼         ▼
 ┌─────────────────────────────────────────────────────────────────┐
-│  3. REVIEW: Fiszki (AI generuje) + Spaced repetition            │
-│     Utrwalanie + generowanie nowych pomysłów                    │
-│     → Bloom: REMEMBER                                           │
+│  3. REVIEW & GARDENING                                          │
+│     Flashcards + Truth Update (Deprecation of old theses)       │
 └─────────────────────────────────────────────────────────────────┘
 ```
 
 ---
 
-## Kluczowy insight: Odwrócona kolejność Blooma
+## Decision Tree: What to Create?
 
 ```
-KLASYCZNE BLOOM:           TWÓJ WORKFLOW:
-─────────────────          ─────────────────
-1. REMEMBER     ←────────  3. REVIEW (fiszki, AI generuje)
-2. UNDERSTAND   ←────────  2. ELABORATE+CREATE (pisanie)
-3. APPLY        ←────────  2. ELABORATE+CREATE (pytania)
-4. ANALYZE      ←────────  2. ELABORATE+CREATE (łączenie)
-5. EVALUATE                Zettle z opinią
-6. CREATE                  Brain dump, pisanie
-
-Kolejność jest ODWRÓCONA - i to jest OK!
-Najpierw ROZUMIESZ (przez pisanie), potem PAMIĘTASZ (fiszki).
-```
-
----
-
-## Drzewo decyzyjne: Co utworzyć?
-
-```
-Mam informację z Literature Note którą chcę zapamiętać
+I have information I want to process
     │
-    ├─ Czy dotyczy konkretnego TERMINU?
-    │   │
-    │   ├─ TAK → Czy Concept dla tego terminu istnieje?
-    │   │         ├─ TAK → Dodaj bullet-point do istniejącego Concept
-    │   │         └─ NIE → Stwórz nowy Concept (tytuł = termin)
-    │   │
-    │   └─ NIE (to jest CLAIM/TEZA)
-    │           └─ Stwórz Zettle (tytuł = pełne zdanie)
+    ├─ Does it define a TERM?
+    │   └─ YES → Concept (bullet-point)
     │
-    └─ Potrzebuję tylko backlinku dla szerokiej kategorii?
-            └─ Stwórz Index (np. `neuroscience.md`)
+    ├─ Is it a THESIS/MECHANISM (how something works)?
+    │   └─ YES → Zettel
+    │
+    ├─ Is it MY EXPERIENCE (case study)?
+    │   └─ YES → Application
+    │
+    ├─ Is it a PROCEDURE (how to do something)?
+    │   └─ YES → Protocol
+    │
+    ├─ Is it a QUESTION without an answer?
+    │   └─ YES → Question
+    │
+    └─ Do I just need a backlink for a broad category?
+            └─ Create Index
 ```
 
 ---
 
-## Zasady rozwiązujące duplikację
+## Rules Solving Duplication (Single Source of Truth)
 
-### Single Source of Truth:
+| Information Type | Where It LIVES | Example |
+|------------------|----------------|---------|
+| Raw quote | Literature Note | "Bailey writes..." |
+| Quick thought | Fleeting Note | "Check if carbs make you fat" |
+| Info about term | Concept (bullet) | `- Receives dopamine from VTA` |
+| Thesis/Mechanism | Zettel | `serotonin inhibits dopamine...` |
+| Real-life proof | Application | `cold shower worked for me...` |
+| Procedure | Protocol | `how to change habit...` |
 
-| Typ informacji | Gdzie ŻYJE | Przykład |
-|----------------|------------|----------|
-| Surowy cytat | Literature Note | "Bailey pisze że..." |
-| Info o terminie X | Concept X (bullet) | `- Otrzymuje dopaminę z VTA` |
-| Claim/Teza | Zettle | `serotonin inhibits dopamine release.md` |
-
-### Linkowanie zamiast kopiowania:
-
-**W Concept Note:**
-```markdown
-- Otrzymuje [[dopamine]] z [[VTA]]. ([[nawykologia (course)|źródło]])
-```
-
-**W Zettle:**
-```markdown
-High [[serotonin]] can inhibit [[dopamine]] firing.
-```
-→ Linki do Concepts, nie powtarzanie ich definicji
+**Rule:** Link, don't copy.
+In a Zettel you write: "This supports [[concept]]", not redefine the concept.
 
 ---
 
-## Przykład praktyczny
-
-**Czytasz artykuł o fleeting notes. W Literature Note masz:**
-```
-"A fleeting note is a note that is typically taken when you think of something"
-"Fleeting notes are simply the notes you've been taking your entire life"
-"Not all of your fleeting notes will become permanent zettels"
-Hmm, czyli moje notatki głosowe to fleeting notes...
-```
-
-**Po przetworzeniu:**
-
-1. **Concept: `fleeting notes.md`** (bo informacje dotyczą TERMINU "fleeting notes")
-```markdown
-- Notatka robiona gdy chcesz coś zapamiętać. ([[what is a fleeting note?|źródło]])
-- To są notatki które robiłeś całe życie - nic specjalnego.
-- Nie wszystkie staną się permanentnymi zettlami.
-```
-
-2. **Zettle:** `my voice notes are fleeting notes.md` (bo to TWÓJ wniosek)
-```markdown
-Moje [[notatki głosowe]] to nic innego jak [[fleeting notes]].
-Nagrywam je gdy coś chcę zapamiętać, bez formalnej struktury.
-```
-
-3. **Literature Note:** Cytaty zostają jako archiwum
-
-4. **Fiszki:** Z Concept `fleeting notes.md` i Zettle
-
----
-
-## Migracja istniejących notatek
-
-**Dla obecnych `#mind/concept`:**
-- Tytuł = TERMIN → zostaw jako `#mind/concept`
-- Tytuł = ZDANIE → zmień na `#mind/zettel`
-- PUSTY (tylko jako link) → zmień na `#mind/index` LUB dodaj bullet-pointy
-
-**Dla obecnych `#mind/zettel`:**
-- Tytuł = ZDANIE → zostaw jako `#mind/zettel`
-- Tytuł = TERMIN (np. `collagen.md`) → zmień na `#mind/concept`
-
-**Nie musisz migrować wszystkiego naraz** - rób to stopniowo.
-
----
-
-## Mapowanie na Taksonomię Blooma
+## Mapping to Bloom's Taxonomy
 
 ```
-BLOOM'S TAXONOMY              TWÓJ WORKFLOW
+BLOOM'S TAXONOMY              YOUR WORKFLOW
 ─────────────────────────────────────────────────────
-6. CREATE                     Brain dump do AI, pisanie Zettle
-5. EVALUATE                   Zettle z opinią/oceną
-4. ANALYZE                    Tworzenie Zettle z relacjami
+6. CREATE                     Structure (writing), Protocol (new methods)
+5. EVALUATE                   Gardening (deprecation), Application (assessment)
+4. ANALYZE                    Zettel (relations), Hub (mapping)
 ─────────────────────────────────────────────────────
-3. APPLY                      ELABORATE - "Jak to użyć?"
-2. UNDERSTAND                 ELABORATE - własnymi słowami
+3. APPLY                      Protocol (how to use?), Application (usage)
+2. UNDERSTAND                 Concept (definition), Zettel (explanation)
 ─────────────────────────────────────────────────────
-1. REMEMBER                   Fiszki + spaced repetition
+1. REMEMBER                   Flashcards + Spaced Repetition
 ```
 
-**Kluczowy insight:** ELABORATE (krok 2) pokrywa poziomy UNDERSTAND i APPLY, których brakowało w starym workflow!
+---
+
+## Summary
+
+### All Note Types:
+
+| Tag | Title | Purpose | Flashcards |
+|-----|-------|---------|------------|
+| `#input/fleeting` | Timestamp/topic | Quick thought (inbox) | NO |
+| `#input/*` | Source title | Archive (book/article/course) | NO |
+| `#mind/concept` | TERM (word) | Definition + facts | YES |
+| `#mind/zettel` | CLAIM (sentence) | Your thought/thesis | YES |
+| `#mind/application` | CONCLUSION (sentence) | Real-life proof/Case Study | YES |
+| `#mind/protocol` | "How to...?" | Ideal solution/procedure | YES |
+| `#mind/question` | QUESTION (?) | Unanswered question | NO |
+| `#mind/hub` | Exploration topic | Entry point to threads | NO |
+| `#mind/structure` | Writing topic | Sandbox for organization | NO |
+| `#mind/index` | Broad category | Empty connector | NO |
+| `#mind/person` | Full name | Person | NO |
+
+### Workflow (UNDERSTAND → REMEMBER → CREATE):
+
+1. **CAPTURE** - Fleeting Note / Literature Note (capture)
+2. **ELABORATE + CREATE** - Concept/Zettel/Application/Protocol (learning through writing!)
+   - **2b. INCUBATOR** - `#review/later` for unknown unknowns
+3. **REVIEW & GARDENING** - Flashcards (AI generates) + Spaced repetition + Deprecation Protocol
+
+### Where Information Goes:
+
+- **Defines a TERM** → Concept (bullet-point)
+- **Is a THESIS/MECHANISM** → Zettel
+- **Is MY EXPERIENCE** → Application
+- **Is a PROCEDURE** → Protocol
+- **Is a QUESTION** → Question
+- **Context/quote** → stays in Literature Note
+- **Quick thought** → Fleeting Note (then process or delete)
+
+### Navigation and Organization:
+
+- **Hub** - "Where are my notes about X?" (exploration)
+- **Structure** - "How to organize this for an article?" (writing)
+- **Index** - empty connector/backlink
+
+### Gardening:
+
+- Don't delete old Zettels - deprecate them
+- Tag `#status/deprecated` + link to new truth
+- Preserve the history of thought evolution
 
 ---
 
-## Podsumowanie
-
-### Wszystkie typy notatek:
-
-| Tag | Tytuł | Cel | Fiszki |
-|-----|-------|-----|--------|
-| `#input/*` | Tytuł źródła | Archiwum (book/article/course) | NIE |
-| `#mind/concept` | TERMIN (słowo) | Definicja + fakty | TAK |
-| `#mind/zettel` | CLAIM (zdanie) | Twoja myśl/teza | TAK |
-| `#mind/question` | PYTANIE (?) | Pytanie bez odpowiedzi | NIE |
-| `#mind/protocol` | "How to...?" | Idealne rozwiązanie/procedura | TAK |
-| `#mind/hub` | Temat eksploracji | Punkt wejścia do wątków | NIE |
-| `#mind/structure` | Temat pisania | Sandbox do organizacji | NIE |
-| `#mind/index` | Szeroka kategoria | Pusty connector | NIE |
-| `#mind/person` | Imię i nazwisko | Osoba | NIE |
-
-### Workflow (UNDERSTAND → REMEMBER):
-1. **CAPTURE** - Literature Note (przechwycenie)
-2. **ELABORATE + CREATE** - Concept/Zettle/Protocol (uczenie się przez pisanie!)
-   - **2b. INKUBATOR** - `#review/later` dla nieznanych niewiadomych
-3. **REVIEW** - Fiszki (AI generuje) + Spaced repetition
-
-### Gdzie trafiają informacje:
-- **Dotyczy TERMINU X** → bullet w Concept X
-- **To jest CLAIM/TEZA** → nowy Zettle
-- **To jest PROCEDURA "How to"** → Protocol
-- **PYTANIE bez odpowiedzi** → Question (potem → Zettle gdy znajdziesz)
-- **Kontekst/cytat** → zostaje w Literature Note
-
-### Nawigacja i organizacja:
-- **Hub** - "Gdzie są moje notatki o X?" (eksploracja)
-- **Structure** - "Jak to zorganizować do artykułu?" (pisanie)
-- **Index** - pusty connector/backlink
-
----
-
-## Źródła
+## Sources
 
 - [Getting Started - Zettelkasten Method](https://zettelkasten.de/overview/)
 - [Create Zettel from Reading Notes According to the Principle of Atomicity](https://zettelkasten.de/posts/create-zettel-from-reading-notes/)
