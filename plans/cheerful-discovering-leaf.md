@@ -378,6 +378,38 @@ Fleeting/Literature → Concept / Zettel / Application / Protocol
 
 **This is ONE step - you learn BY creating notes!**
 
+#### Alternative Path: Literature Note → Temporary Flashcards → Proper Notes
+
+**When to use this path:**
+- You struggle to process Literature Notes immediately
+- The material is dense or unfamiliar
+- You're not sure what's important yet
+
+**How it works:**
+
+1. **Create temporary flashcards directly from Literature Note**
+   - Don't worry about perfect structure
+   - Just capture what seems interesting
+   - Tag them as `#status/temporary` or keep them in a separate deck
+
+2. **Review these flashcards for a few days**
+   - Spaced repetition builds initial understanding
+   - You start seeing patterns and connections
+   - Your brain processes the material passively
+
+3. **Return to Literature Note after a few days**
+   - Now you UNDERSTAND what's important
+   - Create proper Concepts and Zettels
+   - Move flashcards to the correct notes (or regenerate them)
+   - Delete the temporary flashcards
+
+**Why this works:**
+- Flashcards force active recall even before deep understanding
+- Time + repetition = clarity on what matters
+- You avoid the "blank page paralysis" of immediate processing
+
+**Important:** This is a BRIDGE, not the default. If you can process directly from Literature/Fleeting → proper notes, do that. Use this path only when stuck.
+
 1. Review Inbox (Fleeting Notes)
 2. Ask questions: "What term is this about?", "Is this true?", "How does this relate to my life?"
 3. Write in your own words (Feynman Technique)
