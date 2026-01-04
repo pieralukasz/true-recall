@@ -162,6 +162,7 @@ export class FlashcardManager {
 
 	/**
 	 * Create a new flashcard file
+	 * Automatically sets status: temporary for Literature Notes (#input/* tags)
 	 */
 	async createFlashcardFile(
 		sourceFile: TFile,
@@ -170,7 +171,8 @@ export class FlashcardManager {
 		await this.ensureFolderExists();
 
 		const flashcardPath = this.getFlashcardPath(sourceFile);
-		const frontmatter = this.generateFrontmatter(sourceFile);
+		const isLiterature = await this.isLiteratureNote(sourceFile);
+		const frontmatter = this.generateFrontmatter(sourceFile, DEFAULT_DECK, { temporary: isLiterature });
 		const fullContent = frontmatter + flashcardContent;
 
 		const existing = this.app.vault.getAbstractFileByPath(flashcardPath);
@@ -459,12 +461,14 @@ export class FlashcardManager {
 
 	private generateFrontmatter(
 		sourceFile: TFile,
-		deck: string = DEFAULT_DECK
+		deck: string = DEFAULT_DECK,
+		options: { temporary?: boolean } = {}
 	): string {
+		const statusLine = options.temporary ? '\nstatus: temporary' : '';
 		return `---
 source_link: "[[${sourceFile.basename}]]"
 tags: [flashcards/auto]
-deck: "${deck}"
+deck: "${deck}"${statusLine}
 ---
 
 # Flashcards for [[${sourceFile.basename}]]
@@ -485,6 +489,61 @@ deck: "${deck}"
 		const deckMatch = frontmatter.match(/^deck:\s*["']?([^"'\n]+)["']?/m);
 
 		return deckMatch?.[1]?.trim() ?? DEFAULT_DECK;
+	}
+
+	/**
+	 * Check if a source note is a Literature Note (has #input/ tags)
+	 * Literature Notes generate temporary flashcards that should be moved later
+	 */
+	private async isLiteratureNote(sourceFile: TFile): Promise<boolean> {
+		const content = await this.app.vault.read(sourceFile);
+
+		// Check for #input/ tags in content (inline tags)
+		const inputTagPattern = /#input\//i;
+		if (inputTagPattern.test(content)) {
+			return true;
+		}
+
+		// Check frontmatter tags
+		const frontmatterMatch = content.match(/^---\n([\s\S]*?)\n---/);
+		if (frontmatterMatch) {
+			const frontmatter = frontmatterMatch[1] ?? "";
+			// Match tags array format: tags: [input/book, other/tag]
+			const tagsArrayMatch = frontmatter.match(/^tags:\s*\[([^\]]+)\]/m);
+			if (tagsArrayMatch) {
+				const tags = tagsArrayMatch[1]?.split(',').map(t => t.trim()) ?? [];
+				if (tags.some(t => t.startsWith('input/'))) {
+					return true;
+				}
+			}
+			// Match tags list format: tags:\n  - input/book
+			const tagsListPattern = /^tags:\s*\n(\s+-\s+\S+\s*)+/m;
+			const tagsListMatch = frontmatter.match(tagsListPattern);
+			if (tagsListMatch) {
+				const tagLines = tagsListMatch[0].match(/-\s+(\S+)/g) ?? [];
+				const tags = tagLines.map(t => t.replace(/^-\s+/, ''));
+				if (tags.some(t => t.startsWith('input/'))) {
+					return true;
+				}
+			}
+		}
+
+		return false;
+	}
+
+	/**
+	 * Extract status from flashcard file frontmatter
+	 */
+	private extractStatusFromFrontmatter(content: string): string | null {
+		const frontmatterMatch = content.match(/^---\n([\s\S]*?)\n---/);
+		if (!frontmatterMatch) {
+			return null;
+		}
+
+		const frontmatter = frontmatterMatch[1] ?? "";
+		const statusMatch = frontmatter.match(/^status:\s*(\w+)/m);
+
+		return statusMatch?.[1] ?? null;
 	}
 
 	/**
@@ -609,6 +668,165 @@ deck: "${deck}"
 		return lines;
 	}
 
+	// ===== Move Card Methods =====
+
+	/**
+	 * Move a flashcard from one file to another
+	 * Preserves UUID so FSRS data stays intact
+	 * Respects temporary status: cards moved to #mind/* notes lose temporary status
+	 *
+	 * @param cardId - UUID of the flashcard to move
+	 * @param sourceFilePath - Path to the source flashcard file
+	 * @param targetNotePath - Path to the target note (not flashcard file)
+	 * @returns true if successful, false otherwise
+	 */
+	async moveCard(
+		cardId: string,
+		sourceFilePath: string,
+		targetNotePath: string
+	): Promise<boolean> {
+		// 1. Get source file
+		const sourceFile = this.app.vault.getAbstractFileByPath(sourceFilePath);
+		if (!(sourceFile instanceof TFile)) {
+			throw new FileError("Source flashcard file not found", sourceFilePath, "read");
+		}
+
+		// 2. Extract card data from source file
+		const sourceContent = await this.app.vault.read(sourceFile);
+		const cardData = this.extractCardById(sourceContent, cardId);
+		if (!cardData) {
+			throw new FileError(`Flashcard with ID ${cardId} not found in file`, sourceFilePath, "read");
+		}
+
+		// 3. Get or create target flashcard file
+		const targetNote = this.app.vault.getAbstractFileByPath(targetNotePath);
+		if (!(targetNote instanceof TFile)) {
+			throw new FileError("Target note not found", targetNotePath, "read");
+		}
+
+		const targetFlashcardPath = this.getFlashcardPath(targetNote);
+		let targetFile = this.app.vault.getAbstractFileByPath(targetFlashcardPath);
+
+		// 4. Check if target note is a Literature Note (determines temporary status)
+		const isTargetLiteratureNote = await this.isLiteratureNote(targetNote);
+
+		// 5. Prepare the flashcard text to add
+		const flashcardText = `${cardData.question} ${FLASHCARD_CONFIG.tag}\n${cardData.answer}\n^${cardId}`;
+
+		// 6. Add to target file
+		if (targetFile instanceof TFile) {
+			// Append to existing file
+			const targetContent = await this.app.vault.read(targetFile);
+			const newContent = targetContent.trimEnd() + "\n\n" + flashcardText + "\n";
+			await this.app.vault.modify(targetFile, newContent);
+		} else {
+			// Create new flashcard file with appropriate temporary status
+			await this.ensureFolderExists();
+			const frontmatter = this.generateFrontmatter(targetNote, DEFAULT_DECK, { temporary: isTargetLiteratureNote });
+			const fullContent = frontmatter + flashcardText + "\n";
+			await this.app.vault.create(targetFlashcardPath, fullContent);
+		}
+
+		// 7. Remove from source file
+		const newSourceContent = this.removeCardFromContent(sourceContent, cardData.startLine, cardData.endLine);
+		await this.app.vault.modify(sourceFile, newSourceContent);
+
+		return true;
+	}
+
+	/**
+	 * Extract a flashcard by its UUID from file content
+	 * Parses backwards from ^uuid to find the question line with #flashcard
+	 */
+	private extractCardById(content: string, cardId: string): {
+		question: string;
+		answer: string;
+		startLine: number;
+		endLine: number;
+	} | null {
+		const lines = content.split("\n");
+		const blockIdPattern = new RegExp(`^\\^${cardId}$`, "i");
+		const flashcardPattern = new RegExp(`^(.+?)\\s*${FLASHCARD_CONFIG.tag}\\s*$`);
+
+		// Find the line with ^cardId
+		let blockIdLineIndex = -1;
+		for (let i = 0; i < lines.length; i++) {
+			if (blockIdPattern.test(lines[i] ?? "")) {
+				blockIdLineIndex = i;
+				break;
+			}
+		}
+
+		if (blockIdLineIndex === -1) {
+			return null;
+		}
+
+		// Parse backwards to find question line
+		let questionLineIndex = -1;
+		const answerLines: string[] = [];
+
+		for (let i = blockIdLineIndex - 1; i >= 0; i--) {
+			const line = lines[i] ?? "";
+			const flashcardMatch = line.match(flashcardPattern);
+
+			if (flashcardMatch?.[1]) {
+				questionLineIndex = i;
+				break;
+			}
+
+			// Skip empty lines at the end
+			if (answerLines.length === 0 && line.trim() === "") {
+				continue;
+			}
+
+			// Skip legacy FSRS comments
+			if (line.includes(FLASHCARD_CONFIG.fsrsDataPrefix)) {
+				continue;
+			}
+
+			answerLines.unshift(line);
+		}
+
+		if (questionLineIndex === -1) {
+			return null;
+		}
+
+		const questionLine = lines[questionLineIndex] ?? "";
+		const questionMatch = questionLine.match(flashcardPattern);
+		const question = questionMatch?.[1]?.trim() ?? "";
+
+		return {
+			question,
+			answer: answerLines.join("\n").trim(),
+			startLine: questionLineIndex,
+			endLine: blockIdLineIndex,
+		};
+	}
+
+	/**
+	 * Remove a card from content by line range
+	 * Also removes trailing empty lines
+	 */
+	private removeCardFromContent(content: string, startLine: number, endLine: number): string {
+		const lines = content.split("\n");
+
+		// Extend endLine to include trailing empty lines
+		let actualEndLine = endLine;
+		while (actualEndLine + 1 < lines.length && (lines[actualEndLine + 1] ?? "").trim() === "") {
+			actualEndLine++;
+		}
+
+		// Remove the lines
+		lines.splice(startLine, actualEndLine - startLine + 1);
+
+		// Also remove leading empty lines if any (after previous card)
+		while (startLine > 0 && startLine < lines.length && (lines[startLine] ?? "").trim() === "" && (lines[startLine - 1] ?? "").trim() === "") {
+			lines.splice(startLine, 1);
+		}
+
+		return lines.join("\n");
+	}
+
 	// ===== FSRS Methods =====
 
 	/**
@@ -638,11 +856,14 @@ deck: "${deck}"
 			const content = await this.app.vault.read(file);
 			const deck = this.extractDeckFromFrontmatter(content);
 			const sourceNoteName = this.extractSourceLinkFromContent(content);
+			const status = this.extractStatusFromFrontmatter(content);
+			const isTemporary = status === 'temporary';
 			const cards = this.parseAllFlashcards(
 				content,
 				file.path,
 				deck,
-				sourceNoteName
+				sourceNoteName,
+				isTemporary
 			);
 			allCards.push(...cards);
 		}
@@ -659,7 +880,8 @@ deck: "${deck}"
 		content: string,
 		filePath: string,
 		deck: string,
-		sourceNoteName: string | null
+		sourceNoteName: string | null,
+		isTemporary: boolean = false
 	): FSRSFlashcardItem[] {
 		const flashcards: FSRSFlashcardItem[] = [];
 		const lines = content.split("\n");
@@ -688,7 +910,8 @@ deck: "${deck}"
 						currentLineNumber,
 						filePath,
 						deck,
-						sourceNoteName ?? undefined
+						sourceNoteName ?? undefined,
+						isTemporary
 					);
 					flashcards.push(card);
 				}
@@ -724,6 +947,7 @@ deck: "${deck}"
 					fsrs: fsrsData,
 					deck,
 					sourceNoteName: sourceNoteName ?? undefined,
+					isTemporary,
 				});
 
 				// Reset for next card
@@ -754,7 +978,8 @@ deck: "${deck}"
 						currentLineNumber,
 						filePath,
 						deck,
-						sourceNoteName ?? undefined
+						sourceNoteName ?? undefined,
+						isTemporary
 					);
 					flashcards.push(card);
 					currentQuestion = "";
@@ -778,7 +1003,8 @@ deck: "${deck}"
 				currentLineNumber,
 				filePath,
 				deck,
-				sourceNoteName ?? undefined
+				sourceNoteName ?? undefined,
+				isTemporary
 			);
 			flashcards.push(card);
 		}
@@ -796,7 +1022,8 @@ deck: "${deck}"
 		lineNumber: number,
 		filePath: string,
 		deck: string,
-		sourceNoteName?: string
+		sourceNoteName?: string,
+		isTemporary: boolean = false
 	): FSRSFlashcardItem {
 		const id = this.generateCardId();
 		const fsrsData = createDefaultFSRSData(id);
@@ -812,6 +1039,7 @@ deck: "${deck}"
 			fsrs: fsrsData,
 			deck,
 			sourceNoteName,
+			isTemporary,
 		};
 	}
 

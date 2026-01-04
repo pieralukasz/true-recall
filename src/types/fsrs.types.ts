@@ -77,6 +77,8 @@ export interface FSRSFlashcardItem {
     deck: string;
     /** Nazwa oryginalnej notatki źródłowej (z frontmatter source_link) */
     sourceNoteName?: string;
+    /** Whether this card is temporary (from Literature Note, awaiting processing) */
+    isTemporary?: boolean;
 }
 
 /**

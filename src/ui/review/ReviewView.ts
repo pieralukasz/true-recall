@@ -9,6 +9,7 @@ import { VIEW_TYPE_REVIEW } from "../../constants";
 import { FSRSService, ReviewService, FlashcardManager, SessionPersistenceService } from "../../services";
 import { ReviewStateManager } from "../../state";
 import { extractFSRSSettings, type FSRSFlashcardItem, type SchedulingPreview } from "../../types";
+import { MoveCardModal } from "../modals";
 import type EpistemePlugin from "../../main";
 
 interface ReviewViewState extends Record<string, unknown> {
@@ -21,6 +22,7 @@ interface ReviewViewState extends Record<string, unknown> {
     createdThisWeek?: boolean;
     weakCardsOnly?: boolean;
     stateFilter?: "due" | "learning" | "new";
+    temporaryOnly?: boolean;
     ignoreDailyLimits?: boolean;
 }
 
@@ -58,6 +60,7 @@ export class ReviewView extends ItemView {
     private createdThisWeek?: boolean;
     private weakCardsOnly?: boolean;
     private stateFilter?: "due" | "learning" | "new";
+    private temporaryOnly?: boolean;
     private ignoreDailyLimits?: boolean;
 
     // Undo stack for reverting answers
@@ -101,6 +104,7 @@ export class ReviewView extends ItemView {
         this.createdThisWeek = viewState?.createdThisWeek;
         this.weakCardsOnly = viewState?.weakCardsOnly;
         this.stateFilter = viewState?.stateFilter;
+        this.temporaryOnly = viewState?.temporaryOnly;
         this.ignoreDailyLimits = viewState?.ignoreDailyLimits;
         await super.setState(state, result);
 
@@ -121,6 +125,7 @@ export class ReviewView extends ItemView {
             createdThisWeek: this.createdThisWeek,
             weakCardsOnly: this.weakCardsOnly,
             stateFilter: this.stateFilter,
+            temporaryOnly: this.temporaryOnly,
             ignoreDailyLimits: this.ignoreDailyLimits,
         };
     }
@@ -231,6 +236,7 @@ export class ReviewView extends ItemView {
                 createdThisWeek: this.createdThisWeek,
                 weakCardsOnly: this.weakCardsOnly,
                 stateFilter: this.stateFilter,
+                temporaryOnly: this.temporaryOnly,
                 ignoreDailyLimits: this.ignoreDailyLimits,
             });
 
@@ -358,6 +364,13 @@ export class ReviewView extends ItemView {
 
         const editState = this.stateManager.getEditState();
         const cardEl = this.cardContainerEl.createDiv({ cls: "episteme-review-card" });
+
+        // Temporary badge (for cards from Literature Notes)
+        if (card.isTemporary) {
+            const tempBadge = cardEl.createDiv({ cls: "episteme-review-temporary-badge" });
+            tempBadge.createSpan({ text: "TEMPORARY", cls: "episteme-badge-text" });
+            tempBadge.createSpan({ text: "Press M to move", cls: "episteme-badge-hint" });
+        }
 
         // Question
         const questionEl = cardEl.createDiv({ cls: "episteme-review-question" });
@@ -672,6 +685,13 @@ export class ReviewView extends ItemView {
 
         menu.addItem((item) =>
             item
+                .setTitle("Move Card (M)")
+                .setIcon("folder-input")
+                .onClick(() => this.handleMoveCard())
+        );
+
+        menu.addItem((item) =>
+            item
                 .setTitle("Create Zettel")
                 .setIcon("file-plus")
                 .onClick(() => this.handleCreateZettel())
@@ -958,6 +978,13 @@ export class ReviewView extends ItemView {
             return;
         }
 
+        // M = Move card to another note
+        if (e.key === "m" || e.key === "M") {
+            e.preventDefault();
+            void this.handleMoveCard();
+            return;
+        }
+
         const state = this.stateManager.getState();
         if (!state.isActive || this.stateManager.isComplete()) return;
 
@@ -1138,6 +1165,50 @@ Source: [[${sourceNote}]]
 
         // Update UI
         this.updateSchedulingPreview();
+    }
+
+    /**
+     * Move the current card to another note (M key)
+     */
+    private async handleMoveCard(): Promise<void> {
+        const card = this.stateManager.getCurrentCard();
+        if (!card) return;
+
+        // Open move modal with card content for backlink suggestions
+        const modal = new MoveCardModal(this.app, {
+            cardCount: 1,
+            sourceNoteName: card.sourceNoteName,
+            flashcardsFolder: this.plugin.settings.flashcardsFolder,
+            cardQuestion: card.question,
+            cardAnswer: card.answer,
+        });
+
+        const result = await modal.openAndWait();
+        if (result.cancelled || !result.targetNotePath) return;
+
+        try {
+            // Move the card
+            const success = await this.flashcardManager.moveCard(
+                card.id,
+                card.filePath,
+                result.targetNotePath
+            );
+
+            if (success) {
+                // Remove from current queue (card no longer exists in original file)
+                this.stateManager.removeCurrentCard();
+
+                // Update scheduling preview for next card
+                if (!this.stateManager.isComplete()) {
+                    this.updateSchedulingPreview();
+                }
+
+                new Notice("Card moved successfully");
+            }
+        } catch (error) {
+            console.error("Error moving card:", error);
+            new Notice(`Failed to move card: ${error instanceof Error ? error.message : String(error)}`);
+        }
     }
 
     /**
