@@ -750,6 +750,7 @@
 
 .episteme-review-progress:empty {
 	display: none;
+	padding: 0;
 }
 
 .episteme-progress-bar {

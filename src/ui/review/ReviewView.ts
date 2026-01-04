@@ -483,6 +483,7 @@ export class ReviewView extends ItemView {
         }
         this.stateManager.startEdit(field);
         this.renderCard();
+        this.renderButtons(); // Hide buttons when entering edit mode (prevents keyboard overlap on mobile)
     }
 
     /**
