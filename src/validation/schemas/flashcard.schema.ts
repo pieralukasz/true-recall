@@ -19,6 +19,7 @@ export const FlashcardItemSchema = z.object({
     question: z.string().min(1, "Question cannot be empty"),
     answer: z.string().min(1, "Answer cannot be empty"),
     lineNumber: z.number().int().positive("Line number must be positive"),
+    id: z.string().optional(),
 });
 
 // ===== Flashcard Change Schemas =====
@@ -110,6 +111,7 @@ export const FlashcardInfoSchema = z.object({
     questions: z.array(z.string()),
     flashcards: z.array(FlashcardItemSchema),
     lastModified: z.number().nullable(),
+    isTemporary: z.boolean().optional(),
 });
 
 // ===== Inferred Types from Schemas =====

@@ -441,6 +441,7 @@ export default class EpistemePlugin extends Plugin {
 			createdThisWeek: result.createdThisWeek,
 			weakCardsOnly: result.weakCardsOnly,
 			stateFilter: result.stateFilter,
+			temporaryOnly: result.temporaryOnly,
 			ignoreDailyLimits: result.ignoreDailyLimits,
 		});
 	}
@@ -542,6 +543,7 @@ export default class EpistemePlugin extends Plugin {
 		createdThisWeek?: boolean;
 		weakCardsOnly?: boolean;
 		stateFilter?: "due" | "learning" | "new";
+		temporaryOnly?: boolean;
 		ignoreDailyLimits?: boolean;
 	}): Promise<void> {
 		const { workspace } = this.app;
@@ -555,6 +557,7 @@ export default class EpistemePlugin extends Plugin {
 			createdThisWeek: filters.createdThisWeek,
 			weakCardsOnly: filters.weakCardsOnly,
 			stateFilter: filters.stateFilter,
+			temporaryOnly: filters.temporaryOnly,
 			ignoreDailyLimits: filters.ignoreDailyLimits,
 		};
 

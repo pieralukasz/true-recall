@@ -7,6 +7,8 @@ export interface FlashcardItem {
     question: string;
     answer: string;
     lineNumber: number; // Line number in the flashcard file (for editing)
+    /** Block ID (UUID) for the flashcard, if present */
+    id?: string;
 }
 
 // Type of flashcard change
@@ -38,4 +40,6 @@ export interface FlashcardInfo {
     questions: string[]; // Keep for backwards compatibility (blocklist)
     flashcards: FlashcardItem[]; // Full Q&A pairs
     lastModified: number | null;
+    /** Whether this flashcard file contains temporary cards (from Literature Notes) */
+    isTemporary?: boolean;
 }

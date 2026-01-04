@@ -16,6 +16,7 @@ import { PanelStateManager } from "../../state";
 import { PanelHeader } from "./PanelHeader";
 import { PanelContent } from "./PanelContent";
 import { PanelFooter } from "./PanelFooter";
+import { MoveCardModal } from "../modals/MoveCardModal";
 import type { FlashcardItem, FlashcardChange } from "../../types";
 import type EpistemePlugin from "../../main";
 
@@ -40,6 +41,9 @@ export class FlashcardPanelView extends ItemView {
 
     // State subscription
     private unsubscribe: (() => void) | null = null;
+
+    // Selection state for bulk move (only for temporary cards)
+    private selectedCardLineNumbers: Set<number> = new Set();
 
     constructor(leaf: WorkspaceLeaf, plugin: EpistemePlugin) {
         super(leaf);
@@ -115,6 +119,9 @@ export class FlashcardPanelView extends ItemView {
         const state = this.stateManager.getState();
         const file = state.currentFile;
 
+        // Clear selection when loading new file info
+        this.selectedCardLineNumbers.clear();
+
         if (!file || file.extension !== "md") {
             this.stateManager.setFlashcardInfo(null);
             return;
@@ -164,6 +171,8 @@ export class FlashcardPanelView extends ItemView {
             flashcardInfo: state.flashcardInfo,
             diffResult: state.diffResult,
             isFlashcardFile: state.isFlashcardFile,
+            // Selection state for temporary cards bulk move
+            selectedCardLineNumbers: this.selectedCardLineNumbers,
             handlers: {
                 app: this.app,
                 component: this,
@@ -171,8 +180,13 @@ export class FlashcardPanelView extends ItemView {
                 onEditCard: (card) => void this.handleEditCard(card),
                 onCopyCard: (card) => void this.handleCopyCard(card),
                 onDeleteCard: (card) => void this.handleRemoveCard(card),
+                onMoveCard: (card) => void this.handleMoveCard(card),
                 onChangeAccept: (change, index, accepted) => this.handleChangeAccept(change, index, accepted),
                 onSelectAll: (selected) => this.handleSelectAll(selected),
+                // Selection handlers for temporary cards
+                onToggleCardSelection: (lineNumber) => this.handleToggleCardSelection(lineNumber),
+                onSelectAllTemporary: () => this.handleSelectAllTemporary(),
+                onClearSelection: () => this.handleClearSelection(),
             },
         });
         this.contentComponent.render();
@@ -186,10 +200,13 @@ export class FlashcardPanelView extends ItemView {
             viewMode: state.viewMode,
             diffResult: state.diffResult,
             isFlashcardFile: state.isFlashcardFile,
+            // Selection info for bulk move button
+            selectedCount: this.selectedCardLineNumbers.size,
             onGenerate: () => void this.handleGenerate(),
             onUpdate: () => void this.handleUpdate(),
             onApplyDiff: () => void this.handleApplyDiff(),
             onCancelDiff: () => void this.handleCancelDiff(),
+            onMoveSelected: () => void this.handleMoveSelected(),
         });
         this.footerComponent.render();
     }
@@ -380,5 +397,118 @@ export class FlashcardPanelView extends ItemView {
         const text = `Q: ${card.question}\nA: ${card.answer}`;
         await navigator.clipboard.writeText(text);
         new Notice("Copied to clipboard");
+    }
+
+    // ===== Move Card Handlers =====
+
+    private async handleMoveCard(card: FlashcardItem): Promise<void> {
+        const state = this.stateManager.getState();
+        if (!state.flashcardInfo) return;
+
+        if (!card.id) {
+            new Notice("Cannot move card without UUID. Please regenerate flashcards.");
+            return;
+        }
+
+        const modal = new MoveCardModal(this.app, {
+            cardCount: 1,
+            flashcardsFolder: this.plugin.settings.flashcardsFolder,
+            cardQuestion: card.question,
+            cardAnswer: card.answer,
+        });
+
+        const result = await modal.openAndWait();
+        if (result.cancelled || !result.targetNotePath) return;
+
+        try {
+            await this.flashcardManager.moveCard(
+                card.id,
+                state.flashcardInfo.filePath,
+                result.targetNotePath
+            );
+            new Notice("Card moved successfully");
+            await this.loadFlashcardInfo();
+        } catch (error) {
+            new Notice(`Failed to move card: ${error instanceof Error ? error.message : String(error)}`);
+        }
+    }
+
+    // ===== Selection Handlers for Bulk Move =====
+
+    private handleToggleCardSelection(lineNumber: number): void {
+        if (this.selectedCardLineNumbers.has(lineNumber)) {
+            this.selectedCardLineNumbers.delete(lineNumber);
+        } else {
+            this.selectedCardLineNumbers.add(lineNumber);
+        }
+        this.render();
+    }
+
+    private handleSelectAllTemporary(): void {
+        const state = this.stateManager.getState();
+        if (!state.flashcardInfo?.isTemporary) return;
+
+        // Select all cards in the temporary file
+        for (const card of state.flashcardInfo.flashcards) {
+            this.selectedCardLineNumbers.add(card.lineNumber);
+        }
+        this.render();
+    }
+
+    private handleClearSelection(): void {
+        this.selectedCardLineNumbers.clear();
+        this.render();
+    }
+
+    private async handleMoveSelected(): Promise<void> {
+        const state = this.stateManager.getState();
+        if (!state.flashcardInfo || this.selectedCardLineNumbers.size === 0) return;
+
+        // Get selected cards with valid IDs
+        const selectedCards = state.flashcardInfo.flashcards.filter(
+            (card) => this.selectedCardLineNumbers.has(card.lineNumber) && card.id
+        );
+
+        if (selectedCards.length === 0) {
+            new Notice("No cards with valid UUIDs selected. Please regenerate flashcards.");
+            return;
+        }
+
+        // Open modal with first card's content for suggestions
+        const firstCard = selectedCards[0];
+        if (!firstCard) return;
+
+        const modal = new MoveCardModal(this.app, {
+            cardCount: selectedCards.length,
+            flashcardsFolder: this.plugin.settings.flashcardsFolder,
+            cardQuestion: firstCard.question,
+            cardAnswer: firstCard.answer,
+        });
+
+        const result = await modal.openAndWait();
+        if (result.cancelled || !result.targetNotePath) return;
+
+        // Move all selected cards (in reverse order to preserve line numbers)
+        const sortedCards = [...selectedCards].sort((a, b) => b.lineNumber - a.lineNumber);
+        let successCount = 0;
+
+        for (const card of sortedCards) {
+            if (!card.id) continue;
+            try {
+                await this.flashcardManager.moveCard(
+                    card.id,
+                    state.flashcardInfo.filePath,
+                    result.targetNotePath
+                );
+                successCount++;
+            } catch (error) {
+                console.error(`Failed to move card ${card.id}:`, error);
+            }
+        }
+
+        // Clear selection and refresh
+        this.selectedCardLineNumbers.clear();
+        new Notice(`Moved ${successCount} of ${selectedCards.length} cards`);
+        await this.loadFlashcardInfo();
     }
 }
