@@ -11,14 +11,14 @@ import {
 	type Grade,
 	type RecordLogItem,
 } from "ts-fsrs";
-import type { FSRSSettings } from "../types/settings.types";
+import type { FSRSSettings } from "../../types/settings.types";
 import type {
 	FSRSCardData,
 	FSRSFlashcardItem,
 	SchedulingPreview,
-} from "../types/fsrs.types";
-import { formatInterval } from "../types/fsrs.types";
-import { DEFAULT_FSRS_WEIGHTS } from "../constants";
+} from "../../types/fsrs.types";
+import { formatInterval } from "../../types/fsrs.types";
+import { DEFAULT_FSRS_WEIGHTS } from "../../constants";
 
 /**
  * Service for FSRS scheduling calculations

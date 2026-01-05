@@ -5,7 +5,7 @@
  */
 import { App, TFile, normalizePath } from "obsidian";
 import { FLASHCARD_CONFIG } from "../../constants";
-import { FlashcardManager } from "../../services/flashcard.service";
+import { FlashcardManager } from "../../services";
 import { BaseModal } from "./BaseModal";
 
 export interface MissingFlashcardsResult {
