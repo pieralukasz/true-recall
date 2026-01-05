@@ -2,8 +2,8 @@
  * Stats Service
  * Provides flashcard statistics with caching to avoid repeated file scans
  */
-import type { FlashcardManager } from "./flashcard.service";
-import type { FSRSService } from "./fsrs.service";
+import type { FlashcardManager } from "../flashcard/flashcard.service";
+import type { FSRSService } from "../core/fsrs.service";
 
 /**
  * Global flashcard statistics

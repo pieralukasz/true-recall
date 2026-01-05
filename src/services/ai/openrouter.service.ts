@@ -8,7 +8,7 @@ import {
     UPDATE_SYSTEM_PROMPT,
     API_CONFIG,
     AIModelKey,
-} from "../constants";
+} from "../../constants";
 import {
     validateOpenRouterResponse,
     extractContent,
@@ -17,12 +17,12 @@ import {
     type FlashcardItem,
     type FlashcardChange,
     type ChatMessage,
-} from "../validation";
+} from "../../validation";
 import {
     APIError,
     NetworkError,
     ConfigurationError,
-} from "../errors";
+} from "../../errors";
 
 /**
  * Result of diff generation

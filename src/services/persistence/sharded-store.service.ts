@@ -4,7 +4,7 @@
  * Provides O(1) lookups and minimal sync conflicts
  */
 import { App, normalizePath } from "obsidian";
-import type { FSRSCardData } from "../types";
+import type { FSRSCardData } from "../../types";
 
 const STORE_FOLDER = ".episteme/store";
 const DEBOUNCE_MS = 2000;

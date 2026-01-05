@@ -3,9 +3,9 @@
  * Handles flashcard file operations in the Obsidian vault
  */
 import { App, TFile, normalizePath, WorkspaceLeaf } from "obsidian";
-import { FLASHCARD_CONFIG } from "../constants";
-import { type FlashcardItem, type FlashcardChange } from "../validation";
-import { FileError } from "../errors";
+import { FLASHCARD_CONFIG } from "../../constants";
+import { type FlashcardItem, type FlashcardChange } from "../../validation";
+import { FileError } from "../../errors";
 import type {
 	EpistemeSettings,
 	FSRSCardData,
@@ -13,12 +13,12 @@ import type {
 	DeckInfo,
 	CardReviewLogEntry,
 	NoteFlashcardType,
-} from "../types";
-import { createDefaultFSRSData, State } from "../types";
-import type { ShardedStoreService, ShardEntry } from "./sharded-store.service";
-
-/** Default deck name for cards without explicit deck assignment */
-const DEFAULT_DECK = "Knowledge";
+} from "../../types";
+import { createDefaultFSRSData, State } from "../../types";
+import type { ShardedStoreService, ShardEntry } from "../persistence/sharded-store.service";
+import { FrontmatterService } from "./frontmatter.service";
+import { FlashcardParserService } from "./flashcard-parser.service";
+import { CardMoverService } from "./card-mover.service";
 
 /**
  * Result of scanning vault for new flashcards
@@ -51,10 +51,16 @@ export class FlashcardManager {
 	private app: App;
 	private settings: EpistemeSettings;
 	private store: ShardedStoreService | null = null;
+	private frontmatterService: FrontmatterService;
+	private parserService: FlashcardParserService;
+	private cardMoverService: CardMoverService;
 
 	constructor(app: App, settings: EpistemeSettings) {
 		this.app = app;
 		this.settings = settings;
+		this.frontmatterService = new FrontmatterService(app);
+		this.parserService = new FlashcardParserService();
+		this.cardMoverService = new CardMoverService();
 	}
 
 	/**
@@ -175,7 +181,7 @@ export class FlashcardManager {
 
 		const flashcardPath = this.getFlashcardPath(sourceFile);
 		const isLiterature = await this.isLiteratureNote(sourceFile);
-		const frontmatter = this.generateFrontmatter(sourceFile, DEFAULT_DECK, { temporary: isLiterature });
+		const frontmatter = this.generateFrontmatter(sourceFile, this.frontmatterService.getDefaultDeck(), { temporary: isLiterature });
 		const fullContent = frontmatter + flashcardContent;
 
 		const existing = this.app.vault.getAbstractFileByPath(flashcardPath);
@@ -397,70 +403,11 @@ export class FlashcardManager {
 	}
 
 	private extractFlashcards(content: string): FlashcardItem[] {
-		const flashcards: FlashcardItem[] = [];
-		const lines = content.split("\n");
-		const flashcardPattern = new RegExp(
-			`^(.+?)\\s*${FLASHCARD_CONFIG.tag}\\s*$`
-		);
-		const blockIdPattern = /^\^([a-zA-Z0-9-]+)$/;
-
-		for (let i = 0; i < lines.length; i++) {
-			const line = lines[i] ?? "";
-			const match = line.match(flashcardPattern);
-
-			if (match?.[1]) {
-				const question = match[1].trim();
-				const questionLineNumber = i + 1;
-				const answerLines: string[] = [];
-				let cardId: string | undefined;
-
-				i++;
-				while (i < lines.length) {
-					const answerLine = lines[i] ?? "";
-
-					// Skip legacy ID lines
-					if (/^ID:\s*\d+/.test(answerLine)) {
-						i++;
-						continue;
-					}
-
-					// Check for block ID (^uuid)
-					const blockIdMatch = answerLine.match(blockIdPattern);
-					if (blockIdMatch?.[1]) {
-						cardId = blockIdMatch[1];
-						i++;
-						continue;
-					}
-
-					if (
-						answerLine.trim() === "" ||
-						this.isFlashcardLine(answerLine)
-					) {
-						i--;
-						break;
-					}
-
-					answerLines.push(answerLine);
-					i++;
-				}
-
-				const answer = answerLines.join("\n").trim();
-				if (question) {
-					flashcards.push({
-						question,
-						answer,
-						lineNumber: questionLineNumber,
-						id: cardId,
-					});
-				}
-			}
-		}
-
-		return flashcards;
+		return this.parserService.extractFlashcards(content);
 	}
 
 	private isFlashcardLine(line: string): boolean {
-		return new RegExp(`^.+?\\s*${FLASHCARD_CONFIG.tag}\\s*$`).test(line);
+		return this.parserService.isFlashcardLine(line);
 	}
 
 	private async ensureFolderExists(): Promise<void> {
@@ -478,34 +425,17 @@ export class FlashcardManager {
 
 	private generateFrontmatter(
 		sourceFile: TFile,
-		deck: string = DEFAULT_DECK,
+		deck: string = this.frontmatterService.getDefaultDeck(),
 		options: { temporary?: boolean } = {}
 	): string {
-		const statusLine = options.temporary ? '\nstatus: temporary' : '';
-		return `---
-source_link: "[[${sourceFile.basename}]]"
-tags: [flashcards/auto]
-deck: "${deck}"${statusLine}
----
-
-# Flashcards for [[${sourceFile.basename}]]
-
-`;
+		return this.frontmatterService.generateFrontmatter(sourceFile, deck, options);
 	}
 
 	/**
 	 * Extract deck name from frontmatter
 	 */
 	private extractDeckFromFrontmatter(content: string): string {
-		const frontmatterMatch = content.match(/^---\n([\s\S]*?)\n---/);
-		if (!frontmatterMatch) {
-			return DEFAULT_DECK;
-		}
-
-		const frontmatter = frontmatterMatch[1] ?? "";
-		const deckMatch = frontmatter.match(/^deck:\s*["']?([^"'\n]+)["']?/m);
-
-		return deckMatch?.[1]?.trim() ?? DEFAULT_DECK;
+		return this.frontmatterService.extractDeckFromFrontmatter(content);
 	}
 
 	/**
@@ -513,39 +443,7 @@ deck: "${deck}"${statusLine}
 	 * Literature Notes generate temporary flashcards that should be moved later
 	 */
 	private async isLiteratureNote(sourceFile: TFile): Promise<boolean> {
-		const content = await this.app.vault.read(sourceFile);
-
-		// Check for #input/ tags in content (inline tags)
-		const inputTagPattern = /#input\//i;
-		if (inputTagPattern.test(content)) {
-			return true;
-		}
-
-		// Check frontmatter tags
-		const frontmatterMatch = content.match(/^---\n([\s\S]*?)\n---/);
-		if (frontmatterMatch) {
-			const frontmatter = frontmatterMatch[1] ?? "";
-			// Match tags array format: tags: [input/book, other/tag]
-			const tagsArrayMatch = frontmatter.match(/^tags:\s*\[([^\]]+)\]/m);
-			if (tagsArrayMatch) {
-				const tags = tagsArrayMatch[1]?.split(',').map(t => t.trim()) ?? [];
-				if (tags.some(t => t.startsWith('input/'))) {
-					return true;
-				}
-			}
-			// Match tags list format: tags:\n  - input/book
-			const tagsListPattern = /^tags:\s*\n(\s+-\s+\S+\s*)+/m;
-			const tagsListMatch = frontmatter.match(tagsListPattern);
-			if (tagsListMatch) {
-				const tagLines = tagsListMatch[0].match(/-\s+(\S+)/g) ?? [];
-				const tags = tagLines.map(t => t.replace(/^-\s+/, ''));
-				if (tags.some(t => t.startsWith('input/'))) {
-					return true;
-				}
-			}
-		}
-
-		return false;
+		return this.frontmatterService.isLiteratureNote(sourceFile);
 	}
 
 	/**
@@ -553,93 +451,21 @@ deck: "${deck}"${statusLine}
 	 * Determines what kind of flashcards should be created for a note
 	 */
 	async getNoteFlashcardType(sourceFile: TFile): Promise<NoteFlashcardType> {
-		const content = await this.app.vault.read(sourceFile);
-		const tags = this.extractAllTags(content);
-
-		// Check for #input/* tags - temporary flashcards
-		if (tags.some(t => t.startsWith("input/") || t.startsWith("#input/"))) {
-			return "temporary";
-		}
-
-		// Check for #mind/* tags
-		const mindTags = tags.filter(t => t.startsWith("mind/") || t.startsWith("#mind/"));
-
-		// Permanent flashcards: concept, zettel
-		if (mindTags.some(t => t.includes("/concept") || t.includes("/zettel"))) {
-			return "permanent";
-		}
-
-		// Maybe flashcards: application, protocol
-		if (mindTags.some(t => t.includes("/application") || t.includes("/protocol"))) {
-			return "maybe";
-		}
-
-		// No flashcards: question, hub, structure, index, person
-		if (mindTags.some(t =>
-			t.includes("/question") ||
-			t.includes("/hub") ||
-			t.includes("/structure") ||
-			t.includes("/index") ||
-			t.includes("/person")
-		)) {
-			return "none";
-		}
-
-		// Unknown - no recognized tags
-		return "unknown";
+		return this.frontmatterService.getNoteFlashcardType(sourceFile);
 	}
 
 	/**
 	 * Extract all tags from content (inline and frontmatter)
 	 */
 	private extractAllTags(content: string): string[] {
-		const tags: string[] = [];
-
-		// Extract inline tags
-		const inlineTagPattern = /#[\w/-]+/g;
-		const inlineMatches = content.match(inlineTagPattern);
-		if (inlineMatches) {
-			tags.push(...inlineMatches.map(t => t.replace(/^#/, "")));
-		}
-
-		// Extract frontmatter tags
-		const frontmatterMatch = content.match(/^---\n([\s\S]*?)\n---/);
-		if (frontmatterMatch) {
-			const frontmatter = frontmatterMatch[1] ?? "";
-
-			// Array format: tags: [input/book, mind/concept]
-			const tagsArrayMatch = frontmatter.match(/^tags:\s*\[([^\]]+)\]/m);
-			if (tagsArrayMatch) {
-				const arrayTags = tagsArrayMatch[1]?.split(",").map(t => t.trim().replace(/^["']|["']$/g, "")) ?? [];
-				tags.push(...arrayTags);
-			}
-
-			// List format: tags:\n  - input/book
-			const tagsListPattern = /^tags:\s*\n(\s+-\s+\S+\s*)+/m;
-			const tagsListMatch = frontmatter.match(tagsListPattern);
-			if (tagsListMatch) {
-				const tagLines = tagsListMatch[0].match(/-\s+(\S+)/g) ?? [];
-				const listTags = tagLines.map(t => t.replace(/^-\s+/, "").replace(/^["']|["']$/g, ""));
-				tags.push(...listTags);
-			}
-		}
-
-		return tags;
+		return this.frontmatterService.extractAllTags(content);
 	}
 
 	/**
 	 * Extract status from flashcard file frontmatter
 	 */
 	private extractStatusFromFrontmatter(content: string): string | null {
-		const frontmatterMatch = content.match(/^---\n([\s\S]*?)\n---/);
-		if (!frontmatterMatch) {
-			return null;
-		}
-
-		const frontmatter = frontmatterMatch[1] ?? "";
-		const statusMatch = frontmatter.match(/^status:\s*(\w+)/m);
-
-		return statusMatch?.[1] ?? null;
+		return this.frontmatterService.extractStatusFromFrontmatter(content);
 	}
 
 	/**
@@ -647,8 +473,7 @@ deck: "${deck}"${statusLine}
 	 * Returns the note name from source_link: "[[NoteName]]"
 	 */
 	private extractSourceLinkFromContent(content: string): string | null {
-		const match = content.match(/source_link:\s*"\[\[([^\]]+)\]\]"/);
-		return match?.[1] ?? null;
+		return this.frontmatterService.extractSourceLinkFromContent(content);
 	}
 
 	private getLeafForFile(file: TFile): WorkspaceLeaf {
@@ -807,7 +632,7 @@ deck: "${deck}"${statusLine}
 		const isTargetLiteratureNote = await this.isLiteratureNote(targetNote);
 
 		// 5. Prepare the flashcard text to add
-		const flashcardText = `${cardData.question} ${FLASHCARD_CONFIG.tag}\n${cardData.answer}\n^${cardId}`;
+		const flashcardText = this.cardMoverService.buildFlashcardText(cardData.question, cardData.answer, cardId);
 
 		// 6. Add to target file
 		if (targetFile instanceof TFile) {
@@ -818,7 +643,7 @@ deck: "${deck}"${statusLine}
 		} else {
 			// Create new flashcard file with appropriate temporary status
 			await this.ensureFolderExists();
-			const frontmatter = this.generateFrontmatter(targetNote, DEFAULT_DECK, { temporary: isTargetLiteratureNote });
+			const frontmatter = this.generateFrontmatter(targetNote, this.frontmatterService.getDefaultDeck(), { temporary: isTargetLiteratureNote });
 			const fullContent = frontmatter + flashcardText + "\n";
 			await this.app.vault.create(targetFlashcardPath, fullContent);
 		}
@@ -840,63 +665,7 @@ deck: "${deck}"${statusLine}
 		startLine: number;
 		endLine: number;
 	} | null {
-		const lines = content.split("\n");
-		const blockIdPattern = new RegExp(`^\\^${cardId}$`, "i");
-		const flashcardPattern = new RegExp(`^(.+?)\\s*${FLASHCARD_CONFIG.tag}\\s*$`);
-
-		// Find the line with ^cardId
-		let blockIdLineIndex = -1;
-		for (let i = 0; i < lines.length; i++) {
-			if (blockIdPattern.test(lines[i] ?? "")) {
-				blockIdLineIndex = i;
-				break;
-			}
-		}
-
-		if (blockIdLineIndex === -1) {
-			return null;
-		}
-
-		// Parse backwards to find question line
-		let questionLineIndex = -1;
-		const answerLines: string[] = [];
-
-		for (let i = blockIdLineIndex - 1; i >= 0; i--) {
-			const line = lines[i] ?? "";
-			const flashcardMatch = line.match(flashcardPattern);
-
-			if (flashcardMatch?.[1]) {
-				questionLineIndex = i;
-				break;
-			}
-
-			// Skip empty lines at the end
-			if (answerLines.length === 0 && line.trim() === "") {
-				continue;
-			}
-
-			// Skip legacy FSRS comments
-			if (line.includes(FLASHCARD_CONFIG.fsrsDataPrefix)) {
-				continue;
-			}
-
-			answerLines.unshift(line);
-		}
-
-		if (questionLineIndex === -1) {
-			return null;
-		}
-
-		const questionLine = lines[questionLineIndex] ?? "";
-		const questionMatch = questionLine.match(flashcardPattern);
-		const question = questionMatch?.[1]?.trim() ?? "";
-
-		return {
-			question,
-			answer: answerLines.join("\n").trim(),
-			startLine: questionLineIndex,
-			endLine: blockIdLineIndex,
-		};
+		return this.cardMoverService.extractCardById(content, cardId);
 	}
 
 	/**
@@ -904,23 +673,7 @@ deck: "${deck}"${statusLine}
 	 * Also removes trailing empty lines
 	 */
 	private removeCardFromContent(content: string, startLine: number, endLine: number): string {
-		const lines = content.split("\n");
-
-		// Extend endLine to include trailing empty lines
-		let actualEndLine = endLine;
-		while (actualEndLine + 1 < lines.length && (lines[actualEndLine + 1] ?? "").trim() === "") {
-			actualEndLine++;
-		}
-
-		// Remove the lines
-		lines.splice(startLine, actualEndLine - startLine + 1);
-
-		// Also remove leading empty lines if any (after previous card)
-		while (startLine > 0 && startLine < lines.length && (lines[startLine] ?? "").trim() === "" && (lines[startLine - 1] ?? "").trim() === "") {
-			lines.splice(startLine, 1);
-		}
-
-		return lines.join("\n");
+		return this.cardMoverService.removeCardFromContent(content, startLine, endLine);
 	}
 
 	// ===== FSRS Methods =====
@@ -1144,7 +897,7 @@ deck: "${deck}"${statusLine}
 	 * @param dayBoundaryService Optional day boundary service for accurate due counts
 	 */
 	async getAllDecks(
-		dayBoundaryService?: import("./day-boundary.service").DayBoundaryService
+		dayBoundaryService?: import("../core/day-boundary.service").DayBoundaryService
 	): Promise<DeckInfo[]> {
 		const allCards = await this.getAllFSRSCards();
 		const deckMap = new Map<string, FSRSFlashcardItem[]>();

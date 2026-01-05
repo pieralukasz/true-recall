@@ -8,10 +8,10 @@ import type {
     ReviewResult,
     ReviewSessionStats,
     DailyStats,
-} from "../types/fsrs.types";
-import type { NewCardOrder, ReviewOrder, NewReviewMix } from "../types/settings.types";
-import type { FSRSService } from "./fsrs.service";
-import { LEARN_AHEAD_LIMIT_MINUTES } from "../constants";
+} from "../../types/fsrs.types";
+import type { NewCardOrder, ReviewOrder, NewReviewMix } from "../../types/settings.types";
+import type { FSRSService } from "../core/fsrs.service";
+import { LEARN_AHEAD_LIMIT_MINUTES } from "../../constants";
 
 /**
  * Options for building review queue
@@ -422,7 +422,7 @@ export class ReviewService {
         allCards: FSRSFlashcardItem[],
         todayResults: ReviewResult[],
         settings: { newCardsPerDay: number; reviewsPerDay: number },
-        dayBoundaryService?: import("./day-boundary.service").DayBoundaryService
+        dayBoundaryService?: import("../core/day-boundary.service").DayBoundaryService
     ): DailyStats {
         const now = new Date();
         const todayStart = new Date(now);

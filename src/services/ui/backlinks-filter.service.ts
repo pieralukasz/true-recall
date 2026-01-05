@@ -1,7 +1,7 @@
 /**
  * Service to hide flashcard files from Obsidian's Linked mentions panel
  */
-import { FLASHCARD_CONFIG } from "../constants";
+import { FLASHCARD_CONFIG } from "../../constants";
 
 export class BacklinksFilterService {
 	private observer: MutationObserver | null = null;

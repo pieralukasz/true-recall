@@ -4,7 +4,7 @@
  */
 import { App, TFile, normalizePath } from "obsidian";
 import { State, Rating } from "ts-fsrs";
-import type { PersistentStatsData, PersistentDailyStats, ExtendedDailyStats, Grade } from "../types";
+import type { PersistentStatsData, PersistentDailyStats, ExtendedDailyStats, Grade } from "../../types";
 
 const STATS_FOLDER = ".episteme";
 const STATS_FILE = "stats.json";
