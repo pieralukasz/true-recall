@@ -3,9 +3,9 @@
  * Calculates statistics for the statistics panel (charts, summaries, etc.)
  */
 import { State } from "ts-fsrs";
-import type { FSRSService } from "./fsrs.service";
-import type { FlashcardManager } from "./flashcard.service";
-import type { SessionPersistenceService } from "./session-persistence.service";
+import type { FSRSService } from "../core/fsrs.service";
+import type { FlashcardManager } from "../flashcard/flashcard.service";
+import type { SessionPersistenceService } from "../persistence/session-persistence.service";
 import type {
 	CardMaturityBreakdown,
 	FutureDueEntry,
@@ -15,14 +15,13 @@ import type {
 	StatsTimeRange,
 	FSRSFlashcardItem,
 	RetentionEntry,
-} from "../types";
+} from "../../types";
 
 /**
  * Service for calculating statistics for the statistics panel
  */
 export class StatsCalculatorService {
-	// Public to allow StatsView to access for calendar
-	public sessionPersistence: SessionPersistenceService;
+	private sessionPersistence: SessionPersistenceService;
 
 	constructor(
 		private fsrsService: FSRSService,
@@ -30,6 +29,16 @@ export class StatsCalculatorService {
 		sessionPersistence: SessionPersistenceService
 	) {
 		this.sessionPersistence = sessionPersistence;
+	}
+
+	/**
+	 * Get all daily stats for calendar heatmap
+	 * Exposes sessionPersistence.getAllDailyStats() without revealing internal dependency
+	 */
+	async getAllDailyStats(): Promise<Record<string, ExtendedDailyStats>> {
+		return this.sessionPersistence.getAllDailyStats() as Promise<
+			Record<string, ExtendedDailyStats>
+		>;
 	}
 
 	/**

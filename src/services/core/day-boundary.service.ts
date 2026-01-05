@@ -3,7 +3,7 @@
  * Centralizes Anki-style day-based scheduling logic
  */
 import { State } from "ts-fsrs";
-import type { FSRSFlashcardItem } from "../types/fsrs.types";
+import type { FSRSFlashcardItem } from "../../types/fsrs.types";
 
 /**
  * Service for day-based scheduling calculations

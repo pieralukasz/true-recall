@@ -19,7 +19,7 @@ import {
 	Legend,
 } from "chart.js";
 import { VIEW_TYPE_STATS } from "../../constants";
-import { StatsCalculatorService } from "../../services/stats-calculator.service";
+import { StatsCalculatorService } from "../../services";
 import { CardPreviewModal } from "../modals";
 import type EpistemePlugin from "../../main";
 import type { StatsTimeRange, CardMaturityBreakdown, FutureDueEntry, RetentionEntry } from "../../types";
@@ -547,7 +547,7 @@ export class StatsView extends ItemView {
 		this.calendarEl.empty();
 		this.calendarEl.createEl("h3", { text: "Activity Calendar" });
 
-		const allStats = await this.statsCalculator.sessionPersistence.getAllDailyStats();
+		const allStats = await this.statsCalculator.getAllDailyStats();
 
 		// Header with year navigation
 		const today = new Date();
