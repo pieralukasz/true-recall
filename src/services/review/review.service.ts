@@ -51,6 +51,8 @@ export interface QueueBuildOptions {
     stateFilter?: "due" | "learning" | "new";
     /** Only include temporary cards (from Literature Notes) */
     temporaryOnly?: boolean;
+    /** Only include cards ready to harvest (temporary + interval >= 21 days) */
+    readyToHarvestOnly?: boolean;
     /** Ignore daily limits for custom sessions */
     ignoreDailyLimits?: boolean;
     /** Hour when new day starts (0-23, default 4 like Anki) */
@@ -221,6 +223,14 @@ export class ReviewService {
         // Filter by temporary status (cards from Literature Notes)
         if (options.temporaryOnly) {
             filteredCards = filteredCards.filter(card => card.isTemporary === true);
+        }
+
+        // Filter by harvest readiness (temporary cards with interval >= 21 days)
+        if (options.readyToHarvestOnly) {
+            const HARVEST_THRESHOLD = 21; // days
+            filteredCards = filteredCards.filter(
+                card => card.isTemporary === true && card.fsrs.scheduledDays >= HARVEST_THRESHOLD
+            );
         }
 
         // Filter by deck if specified

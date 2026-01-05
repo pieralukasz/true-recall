@@ -5,11 +5,13 @@
 import type { App, Component, TFile, MarkdownRenderer } from "obsidian";
 import { BaseComponent } from "../component.base";
 import type { ProcessingStatus, ViewMode } from "../../state";
-import type { FlashcardInfo, FlashcardItem, FlashcardChange, DiffResult, NoteFlashcardType } from "../../types";
+import type { FlashcardInfo, FlashcardItem, FlashcardChange, DiffResult, NoteFlashcardType, FSRSFlashcardItem } from "../../types";
 import { createLoadingSpinner } from "../components/LoadingSpinner";
 import { createEmptyState, EmptyStateMessages } from "../components/EmptyState";
 import { createCardPreview } from "../components/CardPreview";
 import { createDiffCard } from "../components/DiffCard";
+import type { HarvestService, HarvestStats } from "../../services";
+import { HARVEST_CONFIG } from "../../constants";
 
 export interface PanelContentHandlers {
     app: App;
@@ -25,6 +27,8 @@ export interface PanelContentHandlers {
     onToggleCardSelection?: (lineNumber: number) => void;
     onSelectAllTemporary?: () => void;
     onClearSelection?: () => void;
+    // Harvest service for maturity calculations
+    harvestService?: HarvestService;
 }
 
 export interface PanelContentProps {
@@ -38,6 +42,8 @@ export interface PanelContentProps {
     selectedCardLineNumbers?: Set<number>;
     // Note flashcard type based on tags
     noteFlashcardType?: NoteFlashcardType;
+    // FSRS cards for maturity calculations (optional)
+    fsrsCards?: FSRSFlashcardItem[];
     handlers: PanelContentHandlers;
 }
 
@@ -270,6 +276,14 @@ export class PanelContent extends BaseComponent {
                 });
                 this.childComponents.push(cardPreview);
 
+                // Maturity indicator for temporary cards
+                if (flashcardInfo.isTemporary) {
+                    const maturity = this.getCardMaturity(card, this.props.fsrsCards);
+                    if (maturity !== null) {
+                        this.renderMaturityIndicator(cardWrapper, maturity);
+                    }
+                }
+
                 // Separator (except for last card)
                 if (index < flashcardInfo.flashcards.length - 1) {
                     cardsContainer.createDiv({
@@ -281,14 +295,26 @@ export class PanelContent extends BaseComponent {
     }
 
     private renderTemporaryControls(container: HTMLElement, cardCount: number): void {
-        const { handlers, selectedCardLineNumbers } = this.props;
+        const { handlers, selectedCardLineNumbers, fsrsCards } = this.props;
         const selectedCount = selectedCardLineNumbers?.size ?? 0;
 
         const controlsEl = container.createDiv({ cls: "episteme-temporary-controls" });
 
-        // Temporary badge
+        // Calculate harvest stats if we have FSRS cards and harvest service
+        const harvestStats = this.calculateHarvestStats(fsrsCards);
+
+        // Show harvest-ready badge if any cards are ready
+        if (harvestStats && harvestStats.readyToHarvest > 0) {
+            controlsEl.createSpan({
+                text: `🌾 ${harvestStats.readyToHarvest} ready to harvest`,
+                cls: "episteme-harvest-ready-badge",
+            });
+        }
+
+        // Incubating badge (cards not yet ready)
+        const incubatingCount = harvestStats ? harvestStats.incubating : cardCount;
         controlsEl.createSpan({
-            text: `⏳ ${cardCount} temporary`,
+            text: `⏳ ${incubatingCount} incubating`,
             cls: "episteme-temp-count",
         });
 
@@ -307,6 +333,80 @@ export class PanelContent extends BaseComponent {
                 handlers.onClearSelection?.();
             }
         });
+    }
+
+    /**
+     * Calculate harvest stats from FSRS cards
+     */
+    private calculateHarvestStats(fsrsCards?: FSRSFlashcardItem[]): HarvestStats | null {
+        if (!fsrsCards || fsrsCards.length === 0) return null;
+
+        const harvestService = this.props.handlers.harvestService;
+        if (harvestService) {
+            return harvestService.getHarvestStats(fsrsCards);
+        }
+
+        // Fallback calculation without service
+        const threshold = HARVEST_CONFIG.harvestThresholdDays;
+        const temporary = fsrsCards.filter((c) => c.isTemporary);
+        const ready = temporary.filter((c) => c.fsrs.scheduledDays >= threshold);
+
+        return {
+            totalTemporary: temporary.length,
+            readyToHarvest: ready.length,
+            incubating: temporary.length - ready.length,
+            averageMaturity: 0,
+        };
+    }
+
+    /**
+     * Calculate maturity percentage for a card
+     */
+    private getCardMaturity(card: FlashcardItem, fsrsCards?: FSRSFlashcardItem[]): number | null {
+        if (!fsrsCards) return null;
+
+        // Find matching FSRS card by ID
+        const fsrsCard = fsrsCards.find((c) => c.id === card.id);
+        if (!fsrsCard || !fsrsCard.isTemporary) return null;
+
+        const harvestService = this.props.handlers.harvestService;
+        if (harvestService) {
+            return harvestService.getMaturityPercentage(fsrsCard);
+        }
+
+        // Fallback calculation
+        const threshold = HARVEST_CONFIG.harvestThresholdDays;
+        return Math.min(100, Math.round((fsrsCard.fsrs.scheduledDays / threshold) * 100));
+    }
+
+    /**
+     * Render maturity progress indicator for a temporary card
+     */
+    private renderMaturityIndicator(container: HTMLElement, maturityPercentage: number): void {
+        const maturityEl = container.createDiv({ cls: "episteme-maturity-indicator" });
+
+        // Progress bar
+        const bar = maturityEl.createDiv({ cls: "episteme-maturity-bar" });
+        const fill = bar.createDiv({ cls: "episteme-maturity-fill" });
+        fill.style.width = `${maturityPercentage}%`;
+
+        // Add ready class if 100%
+        if (maturityPercentage >= 100) {
+            fill.classList.add("episteme-maturity-ready");
+        }
+
+        // Label
+        if (maturityPercentage >= 100) {
+            maturityEl.createSpan({
+                text: "🌾 Ready",
+                cls: "episteme-maturity-label episteme-maturity-label--ready",
+            });
+        } else {
+            maturityEl.createSpan({
+                text: `${maturityPercentage}%`,
+                cls: "episteme-maturity-label",
+            });
+        }
     }
 
     private renderDiffState(): void {
