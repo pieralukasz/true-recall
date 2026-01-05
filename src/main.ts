@@ -21,6 +21,7 @@ import {
 	ReviewView,
 	EpistemeSettingTab,
 	CustomSessionModal,
+	MissingFlashcardsModal,
 	type EpistemeSettings,
 	DEFAULT_SETTINGS,
 } from "./ui";
@@ -188,6 +189,13 @@ export default class EpistemePlugin extends Plugin {
 					new Notice(`Scan failed: ${error instanceof Error ? error.message : "Unknown error"}`);
 				}
 			},
+		});
+
+		// Show notes missing flashcards
+		this.addCommand({
+			id: "show-missing-flashcards",
+			name: "Show notes missing flashcards",
+			callback: () => void this.showMissingFlashcards(),
 		});
 
 		// Register settings tab
@@ -397,6 +405,29 @@ export default class EpistemePlugin extends Plugin {
 			active: true,
 		});
 		workspace.revealLeaf(leaf);
+	}
+
+	/**
+	 * Show modal with notes missing flashcards
+	 */
+	async showMissingFlashcards(): Promise<void> {
+		const modal = new MissingFlashcardsModal(
+			this.app,
+			this.flashcardManager,
+			{ flashcardsFolder: this.settings.flashcardsFolder }
+		);
+
+		const result = await modal.openAndWait();
+		if (result.cancelled || !result.selectedNotePath) return;
+
+		// Open the selected note
+		const file = this.app.vault.getAbstractFileByPath(result.selectedNotePath);
+		if (file instanceof TFile) {
+			const leaf = this.app.workspace.getLeaf(false);
+			await leaf.openFile(file);
+			// Activate panel to allow flashcard generation
+			await this.activateView();
+		}
 	}
 
 	/**
