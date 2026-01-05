@@ -108,7 +108,7 @@ export class PanelFooter extends BaseComponent {
     }
 
     private renderNormalFooter(): void {
-        const { status, isFlashcardFile, selectedCount, onGenerate, onUpdate, onMoveSelected } = this.props;
+        const { status, isFlashcardFile, selectedCount, onGenerate, onUpdate, onMoveSelected, onDeleteSelected } = this.props;
 
         if (!this.element) return;
 
@@ -119,6 +119,15 @@ export class PanelFooter extends BaseComponent {
             });
             moveBtn.textContent = `Move selected (${selectedCount})`;
             this.events.addEventListener(moveBtn, "click", onMoveSelected);
+        }
+
+        // Show "Delete selected" button whenever cards are selected
+        if (selectedCount && selectedCount > 0 && onDeleteSelected) {
+            const deleteBtn = this.element.createEl("button", {
+                cls: "episteme-btn-danger episteme-delete-selected-btn",
+            });
+            deleteBtn.textContent = `Delete selected (${selectedCount})`;
+            this.events.addEventListener(deleteBtn, "click", onDeleteSelected);
         }
 
         // Don't show other buttons for flashcard files

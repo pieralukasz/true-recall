@@ -2088,3 +2088,17 @@
 .episteme-move-selected-btn:hover {
 	background: linear-gradient(135deg, #ffca28, #ffc107) !important;
 }
+
+/* Delete selected button in footer */
+.episteme-delete-selected-btn {
+	margin-top: 4px !important;
+	margin-bottom: 8px;
+	align-self: center;
+	background: linear-gradient(135deg, #dc3545, #c82333) !important;
+	color: #fff !important;
+	font-weight: 600;
+}
+
+.episteme-delete-selected-btn:hover {
+	background: linear-gradient(135deg, #e04555, #d32f43) !important;
+}
