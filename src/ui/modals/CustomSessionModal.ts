@@ -5,6 +5,7 @@
 import { App } from "obsidian";
 import { State } from "ts-fsrs";
 import type { FSRSFlashcardItem } from "../../types";
+import type { DayBoundaryService } from "../../services";
 import { BaseModal } from "./BaseModal";
 
 export type CustomSessionType = "current-note" | "created-today" | "created-this-week" | "weak-cards" | "all-cards" | "select-notes" | "state-filter";
@@ -26,6 +27,7 @@ export interface CustomSessionResult {
 export interface CustomSessionModalOptions {
 	currentNoteName: string | null;
 	allCards: FSRSFlashcardItem[];
+	dayBoundaryService: DayBoundaryService;
 }
 
 interface NoteStats {
@@ -545,8 +547,7 @@ export class CustomSessionModal extends BaseModal {
 	}
 
 	private isCardAvailable(card: FSRSFlashcardItem, now: Date): boolean {
-		if (card.fsrs.state === State.New) return true;
-		return new Date(card.fsrs.due) <= now;
+		return this.options.dayBoundaryService.isCardAvailable(card, now);
 	}
 
 	private getCurrentNoteStats(now: Date): { total: number; newCount: number; dueCount: number } | null {
@@ -623,11 +624,10 @@ export class CustomSessionModal extends BaseModal {
 	}
 
 	private getDueStats(now: Date): { total: number; newCount: number; dueCount: number } {
-		const cards = this.options.allCards.filter((c) => {
-			if (c.fsrs.state !== State.Review) return false;
-			return new Date(c.fsrs.due) <= now;
-		});
-		return { total: cards.length, newCount: 0, dueCount: cards.length };
+		// Use day-based scheduling for Review cards
+		const reviewCards = this.options.allCards.filter((c) => c.fsrs.state === State.Review);
+		const dueCards = this.options.dayBoundaryService.getDueCards(reviewCards, now);
+		return { total: dueCards.length, newCount: 0, dueCount: dueCards.length };
 	}
 
 	private getLearningStats(_now: Date): { total: number; newCount: number; dueCount: number } {

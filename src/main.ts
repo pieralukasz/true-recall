@@ -1,5 +1,4 @@
 import { Plugin, TFile, Notice, Platform, normalizePath } from "obsidian";
-import { State } from "ts-fsrs";
 import {
 	VIEW_TYPE_FLASHCARD_PANEL,
 	VIEW_TYPE_REVIEW,
@@ -14,6 +13,7 @@ import {
 	SessionPersistenceService,
 	BacklinksFilterService,
 	ShardedStoreService,
+	DayBoundaryService,
 } from "./services";
 import { extractFSRSSettings } from "./types";
 import {
@@ -36,6 +36,7 @@ export default class EpistemePlugin extends Plugin {
 	sessionPersistence!: SessionPersistenceService;
 	backlinksFilter!: BacklinksFilterService;
 	shardedStore!: ShardedStoreService;
+	dayBoundaryService!: DayBoundaryService;
 
 	async onload(): Promise<void> {
 		await this.loadSettings();
@@ -66,6 +67,11 @@ export default class EpistemePlugin extends Plugin {
 			// Connect store to flashcard manager after loading
 			this.flashcardManager.setStore(this.shardedStore);
 		});
+
+		// Initialize day boundary service (Anki-style day scheduling)
+		this.dayBoundaryService = new DayBoundaryService(
+			this.settings.dayStartHour
+		);
 
 		// Initialize backlinks filter service
 		this.backlinksFilter = new BacklinksFilterService();
@@ -278,6 +284,9 @@ export default class EpistemePlugin extends Plugin {
 				this.backlinksFilter.disable();
 			}
 		}
+		if (this.dayBoundaryService) {
+			this.dayBoundaryService.updateDayStartHour(this.settings.dayStartHour);
+		}
 	}
 
 	// Activate the sidebar view
@@ -458,6 +467,7 @@ export default class EpistemePlugin extends Plugin {
 		const modal = new CustomSessionModal(this.app, {
 			currentNoteName,
 			allCards,
+			dayBoundaryService: this.dayBoundaryService,
 		});
 
 		const result = await modal.openAndWait();
@@ -511,11 +521,9 @@ export default class EpistemePlugin extends Plugin {
 			return;
 		}
 
-		// Count available cards (new or due)
-		const now = new Date();
+		// Count available cards (new or due) using day-based scheduling
 		const availableCards = noteCards.filter((c) => {
-			if (c.fsrs.state === State.New) return true;
-			return new Date(c.fsrs.due) <= now;
+			return this.dayBoundaryService.isCardAvailable(c);
 		});
 
 		if (availableCards.length === 0) {
@@ -540,14 +548,12 @@ export default class EpistemePlugin extends Plugin {
 
 		const todayStart = new Date();
 		todayStart.setHours(0, 0, 0, 0);
-		const now = new Date();
 
 		const todaysCards = allCards.filter((c) => {
 			const createdAt = c.fsrs.createdAt;
 			if (!createdAt || createdAt < todayStart.getTime()) return false;
-			// Only show new or due
-			if (c.fsrs.state === State.New) return true;
-			return new Date(c.fsrs.due) <= now;
+			// Only show new or due (using day-based scheduling)
+			return this.dayBoundaryService.isCardAvailable(c);
 		});
 
 		if (todaysCards.length === 0) {

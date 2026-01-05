@@ -5,7 +5,7 @@
 import type { App, Component, TFile, MarkdownRenderer } from "obsidian";
 import { BaseComponent } from "../component.base";
 import type { ProcessingStatus, ViewMode } from "../../state";
-import type { FlashcardInfo, FlashcardItem, FlashcardChange, DiffResult } from "../../types";
+import type { FlashcardInfo, FlashcardItem, FlashcardChange, DiffResult, NoteFlashcardType } from "../../types";
 import { createLoadingSpinner } from "../components/LoadingSpinner";
 import { createEmptyState, EmptyStateMessages } from "../components/EmptyState";
 import { createCardPreview } from "../components/CardPreview";
@@ -36,6 +36,8 @@ export interface PanelContentProps {
     isFlashcardFile: boolean;
     // Selection state for temporary cards bulk move
     selectedCardLineNumbers?: Set<number>;
+    // Note flashcard type based on tags
+    noteFlashcardType?: NoteFlashcardType;
     handlers: PanelContentHandlers;
 }
 
@@ -120,11 +122,84 @@ export class PanelContent extends BaseComponent {
     private renderNoFlashcardsState(): void {
         if (!this.element) return;
 
+        const { noteFlashcardType } = this.props;
+
         const stateEl = this.element.createDiv({
             cls: "episteme-no-cards",
         });
 
-        stateEl.createEl("p", { text: EmptyStateMessages.NO_FLASHCARDS });
+        // Show note type indicator
+        this.renderNoteTypeIndicator(stateEl);
+
+        // Show appropriate message based on note type
+        const message = this.getNoFlashcardsMessage(noteFlashcardType);
+        stateEl.createEl("p", { text: message, cls: "episteme-no-cards-message" });
+    }
+
+    private renderNoteTypeIndicator(container: HTMLElement): void {
+        const { noteFlashcardType } = this.props;
+
+        if (!noteFlashcardType || noteFlashcardType === "unknown") return;
+
+        const indicatorEl = container.createDiv({ cls: "episteme-note-type-indicator" });
+
+        const config = this.getNoteTypeConfig(noteFlashcardType);
+        const badge = indicatorEl.createSpan({
+            cls: `episteme-note-type-badge episteme-note-type-badge--${noteFlashcardType}`,
+        });
+        badge.setAttribute("aria-label", config.description);
+        badge.createSpan({ text: config.icon, cls: "episteme-note-type-icon" });
+        badge.createSpan({ text: config.label });
+    }
+
+    private getNoteTypeConfig(type: NoteFlashcardType): { icon: string; label: string; description: string } {
+        switch (type) {
+            case "temporary":
+                return {
+                    icon: "⏳",
+                    label: "Temporary",
+                    description: "Literature note - create temporary flashcards to move later",
+                };
+            case "permanent":
+                return {
+                    icon: "✅",
+                    label: "Create flashcards",
+                    description: "Concept or Zettel note - create permanent flashcards",
+                };
+            case "maybe":
+                return {
+                    icon: "❓",
+                    label: "Optional",
+                    description: "Application or Protocol note - flashcards are optional",
+                };
+            case "none":
+                return {
+                    icon: "🚫",
+                    label: "No flashcards",
+                    description: "This note type should not have flashcards",
+                };
+            default:
+                return {
+                    icon: "",
+                    label: "Unknown",
+                    description: "Note type not recognized",
+                };
+        }
+    }
+
+    private getNoFlashcardsMessage(type?: NoteFlashcardType): string {
+        switch (type) {
+            case "temporary":
+                return "Create temporary flashcards from this literature note";
+            case "permanent":
+                return "Generate flashcards for this note";
+            case "maybe":
+                return "Flashcards are optional for this note type";
+            case "none":
+                return "This note type should not have flashcards";
+            default:
+                return EmptyStateMessages.NO_FLASHCARDS;
+        }
     }
 
     private renderPreviewState(): void {

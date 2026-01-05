@@ -53,6 +53,8 @@ export interface QueueBuildOptions {
     temporaryOnly?: boolean;
     /** Ignore daily limits for custom sessions */
     ignoreDailyLimits?: boolean;
+    /** Hour when new day starts (0-23, default 4 like Anki) */
+    dayStartHour?: number;
 }
 
 /**
@@ -250,8 +252,9 @@ export class ReviewService {
             return dueDate > learnAheadTime;
         });
 
-        // 2. Get due review cards
-        const reviewCards = fsrsService.getReviewCards(availableCards, now);
+        // 2. Get due review cards (using day-based scheduling like Anki)
+        const dayStartHour = options.dayStartHour ?? 4;
+        const reviewCards = fsrsService.getReviewCards(availableCards, now, dayStartHour);
         // If ignoreDailyLimits, don't limit review cards
         const effectiveReviewsLimit = options.ignoreDailyLimits ? reviewCards.length : options.reviewsLimit;
         let limitedReviewCards = reviewCards.slice(0, effectiveReviewsLimit);
@@ -413,11 +416,13 @@ export class ReviewService {
 
     /**
      * Calculate daily statistics
+     * @param dayBoundaryService Optional day boundary service for accurate due counts
      */
     calculateDailyStats(
         allCards: FSRSFlashcardItem[],
         todayResults: ReviewResult[],
-        settings: { newCardsPerDay: number; reviewsPerDay: number }
+        settings: { newCardsPerDay: number; reviewsPerDay: number },
+        dayBoundaryService?: import("./day-boundary.service").DayBoundaryService
     ): DailyStats {
         const now = new Date();
         const todayStart = new Date(now);
@@ -430,14 +435,13 @@ export class ReviewService {
             (r) => r.previousState === State.New
         ).length;
 
-        // Count due cards for today
-        const dueToday = allCards.filter((card) => {
-            const dueDate = new Date(card.fsrs.due);
-            return (
-                dueDate <= todayEnd &&
-                card.fsrs.state !== State.New
-            );
-        }).length;
+        // Count due cards for today using day-based scheduling if service provided
+        const dueToday = dayBoundaryService
+            ? dayBoundaryService.countDueCards(allCards, now)
+            : allCards.filter((card) => {
+                  const dueDate = new Date(card.fsrs.due);
+                  return dueDate <= todayEnd && card.fsrs.state !== State.New;
+              }).length;
 
         // Calculate remaining new cards
         const newRemaining = Math.max(

@@ -225,16 +225,37 @@ export class FSRSService {
 
 	/**
 	 * Get review cards (state === Review and due)
+	 * Uses day-based scheduling like Anki: all review cards due "today" are available
+	 * after the dayStartHour cutoff, regardless of exact time
+	 *
+	 * @param cards - Cards to filter
+	 * @param now - Current time (optional)
+	 * @param dayStartHour - Hour when new day starts (0-23, default 4 like Anki)
 	 */
 	getReviewCards(
 		cards: FSRSFlashcardItem[],
-		now?: Date
+		now?: Date,
+		dayStartHour = 4
 	): FSRSFlashcardItem[] {
 		const currentTime = now ?? new Date();
+
+		// Calculate "today" boundary based on dayStartHour (like Anki's "Next day starts at")
+		// If current hour < dayStartHour, we're still in "yesterday"
+		const todayBoundary = new Date(currentTime);
+		if (currentTime.getHours() < dayStartHour) {
+			todayBoundary.setDate(todayBoundary.getDate() - 1);
+		}
+		todayBoundary.setHours(dayStartHour, 0, 0, 0);
+
+		// Tomorrow boundary = end of "today"
+		const tomorrowBoundary = new Date(todayBoundary);
+		tomorrowBoundary.setDate(tomorrowBoundary.getDate() + 1);
+
 		return cards.filter((card) => {
 			if (card.fsrs.state !== State.Review) return false;
 			const dueDate = new Date(card.fsrs.due);
-			return dueDate <= currentTime;
+			// Card is due if its due date is before tomorrow's boundary
+			return dueDate < tomorrowBoundary;
 		});
 	}
 
