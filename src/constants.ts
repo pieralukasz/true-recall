@@ -157,6 +157,12 @@ export const FSRS_CONFIG = {
 	maxRetention: 0.99,
 } as const;
 
+/** Harvest configuration for Seeding → Incubation → Harvest workflow */
+export const HARVEST_CONFIG = {
+	/** Minimum interval in days for a card to be "ready to harvest" */
+	harvestThresholdDays: 21,
+} as const;
+
 // ===== System Prompts =====
 
 /** System prompt for flashcard generation */

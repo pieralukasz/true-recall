@@ -14,6 +14,7 @@ import {
 	BacklinksFilterService,
 	ShardedStoreService,
 	DayBoundaryService,
+	HarvestService,
 } from "./services";
 import { extractFSRSSettings } from "./types";
 import {
@@ -25,6 +26,8 @@ import {
 	type EpistemeSettings,
 	DEFAULT_SETTINGS,
 } from "./ui";
+import { HarvestDashboardModal } from "./ui/modals/HarvestDashboardModal";
+import { MoveCardModal } from "./ui/modals/MoveCardModal";
 import { StatsView } from "./ui/stats";
 
 export default class EpistemePlugin extends Plugin {
@@ -37,6 +40,7 @@ export default class EpistemePlugin extends Plugin {
 	backlinksFilter!: BacklinksFilterService;
 	shardedStore!: ShardedStoreService;
 	dayBoundaryService!: DayBoundaryService;
+	harvestService!: HarvestService;
 
 	async onload(): Promise<void> {
 		await this.loadSettings();
@@ -72,6 +76,9 @@ export default class EpistemePlugin extends Plugin {
 		this.dayBoundaryService = new DayBoundaryService(
 			this.settings.dayStartHour
 		);
+
+		// Initialize harvest service (Seeding → Incubation → Harvest workflow)
+		this.harvestService = new HarvestService();
 
 		// Initialize backlinks filter service
 		this.backlinksFilter = new BacklinksFilterService();
@@ -202,6 +209,13 @@ export default class EpistemePlugin extends Plugin {
 			id: "show-missing-flashcards",
 			name: "Show notes missing flashcards",
 			callback: () => void this.showMissingFlashcards(),
+		});
+
+		// Harvest dashboard command (Seeding → Incubation → Harvest workflow)
+		this.addCommand({
+			id: "open-harvest-dashboard",
+			name: "Open harvest dashboard",
+			callback: () => void this.openHarvestDashboard(),
 		});
 
 		// Register settings tab
@@ -440,6 +454,75 @@ export default class EpistemePlugin extends Plugin {
 	}
 
 	/**
+	 * Open the harvest dashboard modal
+	 * Shows temporary cards with maturity indicators for the Seeding → Incubation → Harvest workflow
+	 */
+	async openHarvestDashboard(): Promise<void> {
+		const allCards = await this.flashcardManager.getAllFSRSCards();
+		const temporaryCards = allCards.filter((c) => c.isTemporary);
+
+		if (temporaryCards.length === 0) {
+			new Notice("No temporary cards found. Seed some flashcards from Literature Notes first!");
+			return;
+		}
+
+		const modal = new HarvestDashboardModal(this.app, {
+			harvestService: this.harvestService,
+			allCards,
+			flashcardsFolder: this.settings.flashcardsFolder,
+		});
+
+		const result = await modal.openAndWait();
+		if (result.cancelled) return;
+
+		if (result.action === "review") {
+			// Start review session with ready-to-harvest filter
+			await this.openReviewViewWithFilters({
+				deckFilter: null,
+				temporaryOnly: true,
+				readyToHarvestOnly: true,
+				ignoreDailyLimits: true,
+			});
+		} else if (result.action === "move" && result.selectedCardIds.length > 0) {
+			// Find the selected cards from allCards
+			const selectedCards = allCards.filter((c) => result.selectedCardIds.includes(c.id));
+			if (selectedCards.length === 0) return;
+
+			const firstCard = selectedCards[0];
+			if (!firstCard) return;
+
+			// Open move modal
+			const moveModal = new MoveCardModal(this.app, {
+				cardCount: selectedCards.length,
+				flashcardsFolder: this.settings.flashcardsFolder,
+				cardQuestion: firstCard.question,
+				cardAnswer: firstCard.answer,
+			});
+
+			const moveResult = await moveModal.openAndWait();
+			if (moveResult.cancelled || !moveResult.targetNotePath) return;
+
+			// Move all selected cards
+			let successCount = 0;
+			for (const card of selectedCards) {
+				try {
+					await this.flashcardManager.moveCard(card.id, card.filePath, moveResult.targetNotePath);
+					successCount++;
+				} catch (error) {
+					console.error(`Failed to move card ${card.id}:`, error);
+				}
+			}
+
+			if (successCount > 0) {
+				// Get target note name for display
+				const targetFile = this.app.vault.getAbstractFileByPath(moveResult.targetNotePath);
+				const targetName = targetFile instanceof TFile ? targetFile.basename : moveResult.targetNotePath;
+				new Notice(`Moved ${successCount} card(s) to ${targetName}`);
+			}
+		}
+	}
+
+	/**
 	 * Start a custom review session with the modal
 	 */
 	async startCustomReviewSession(): Promise<void> {
@@ -483,6 +566,7 @@ export default class EpistemePlugin extends Plugin {
 			weakCardsOnly: result.weakCardsOnly,
 			stateFilter: result.stateFilter,
 			temporaryOnly: result.temporaryOnly,
+			readyToHarvestOnly: result.readyToHarvestOnly,
 			ignoreDailyLimits: result.ignoreDailyLimits,
 		});
 	}
@@ -581,6 +665,7 @@ export default class EpistemePlugin extends Plugin {
 		weakCardsOnly?: boolean;
 		stateFilter?: "due" | "learning" | "new";
 		temporaryOnly?: boolean;
+		readyToHarvestOnly?: boolean;
 		ignoreDailyLimits?: boolean;
 	}): Promise<void> {
 		const { workspace } = this.app;
@@ -595,6 +680,7 @@ export default class EpistemePlugin extends Plugin {
 			weakCardsOnly: filters.weakCardsOnly,
 			stateFilter: filters.stateFilter,
 			temporaryOnly: filters.temporaryOnly,
+			readyToHarvestOnly: filters.readyToHarvestOnly,
 			ignoreDailyLimits: filters.ignoreDailyLimits,
 		};
 

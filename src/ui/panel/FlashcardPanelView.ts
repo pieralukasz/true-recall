@@ -213,6 +213,8 @@ export class FlashcardPanelView extends ItemView {
             viewMode: state.viewMode,
             diffResult: state.diffResult,
             isFlashcardFile: state.isFlashcardFile,
+            // Note type for Seed vs Generate button
+            noteFlashcardType: state.noteFlashcardType,
             // Selection info for bulk move button
             selectedCount: this.selectedCardLineNumbers.size,
             onGenerate: () => void this.handleGenerate(),
