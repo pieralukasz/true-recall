@@ -2102,3 +2102,132 @@
 .episteme-delete-selected-btn:hover {
 	background: linear-gradient(135deg, #e04555, #d32f43) !important;
 }
+
+/* ========================================
+   Missing Flashcards Modal
+   ======================================== */
+
+.episteme-missing-flashcards-modal .episteme-modal-info {
+	color: var(--text-muted);
+	font-size: 13px;
+	margin-bottom: 16px;
+}
+
+/* Summary section at top */
+.episteme-missing-summary {
+	text-align: center;
+	padding: 16px;
+	background: var(--background-secondary);
+	border-radius: 8px;
+	margin-bottom: 16px;
+}
+
+.episteme-missing-count {
+	font-size: 32px;
+	font-weight: 700;
+	color: var(--text-normal);
+}
+
+.episteme-missing-label {
+	font-size: 13px;
+	color: var(--text-muted);
+	margin-top: 4px;
+}
+
+/* Note list specific to missing flashcards */
+.episteme-missing-note-list {
+	border: 1px solid var(--background-modifier-border);
+	border-radius: 6px;
+}
+
+/* Note item in missing flashcards list */
+.episteme-missing-note-item {
+	display: flex;
+	align-items: center;
+	gap: 12px;
+	padding: 12px;
+	border-bottom: 1px solid var(--background-modifier-border);
+	cursor: pointer;
+	transition: background-color 0.1s ease;
+}
+
+.episteme-missing-note-item:last-child {
+	border-bottom: none;
+}
+
+.episteme-missing-note-item:hover {
+	background: var(--background-modifier-hover);
+}
+
+.episteme-missing-note-info {
+	flex: 1;
+	min-width: 0;
+}
+
+.episteme-missing-note-name {
+	font-weight: 500;
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+	color: var(--text-normal);
+}
+
+.episteme-missing-note-path {
+	font-size: 11px;
+	color: var(--text-muted);
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+	margin-top: 2px;
+}
+
+/* Tag badges for note types */
+.episteme-tag-badge {
+	font-size: 10px;
+	font-weight: 600;
+	padding: 3px 8px;
+	border-radius: 10px;
+	text-transform: uppercase;
+	flex-shrink: 0;
+	letter-spacing: 0.3px;
+}
+
+.episteme-tag-badge--concept {
+	background: rgba(74, 222, 128, 0.2);
+	color: var(--color-green, #4ade80);
+}
+
+.episteme-tag-badge--zettel {
+	background: rgba(59, 130, 246, 0.2);
+	color: var(--color-blue, #3b82f6);
+}
+
+.episteme-tag-badge--application {
+	background: rgba(251, 146, 60, 0.2);
+	color: var(--color-orange, #fb923c);
+}
+
+.episteme-tag-badge--protocol {
+	background: rgba(168, 85, 247, 0.2);
+	color: #a855f7;
+}
+
+/* Mobile adjustments for missing flashcards modal */
+@media screen and (max-width: 600px) {
+	.episteme-missing-flashcards-modal {
+		min-width: auto;
+		width: 100%;
+	}
+
+	.episteme-missing-note-list {
+		max-height: 300px;
+	}
+
+	.episteme-missing-summary {
+		padding: 12px;
+	}
+
+	.episteme-missing-count {
+		font-size: 28px;
+	}
+}

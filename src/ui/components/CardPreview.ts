@@ -90,10 +90,10 @@ export class CardPreview extends BaseComponent {
 			cls: "episteme-md-content",
 		});
 
-		// Render markdown
+		// Render markdown (strip <br> tags for cleaner display)
 		void markdownRenderer.render(
 			handlers.app,
-			flashcard.question,
+			this.stripBrTags(flashcard.question),
 			questionContent,
 			filePath,
 			handlers.component
@@ -116,14 +116,22 @@ export class CardPreview extends BaseComponent {
 			cls: "episteme-md-content",
 		});
 
-		// Render markdown
+		// Render markdown (strip <br> tags for cleaner display)
 		void markdownRenderer.render(
 			handlers.app,
-			flashcard.answer,
+			this.stripBrTags(flashcard.answer),
 			answerContent,
 			filePath,
 			handlers.component
 		);
+	}
+
+	/**
+	 * Remove <br> tags from text for cleaner display
+	 * Replaces <br>, <br/>, <br /> with newlines
+	 */
+	private stripBrTags(text: string): string {
+		return text.replace(/<br\s*\/?>/gi, "\n");
 	}
 
 	private renderActions(header: HTMLElement): void {

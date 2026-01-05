@@ -13,3 +13,9 @@ export {
     type MoveCardResult,
     type MoveCardModalOptions,
 } from "./MoveCardModal";
+export {
+    MissingFlashcardsModal,
+    type MissingFlashcardsResult,
+    type NoteWithMissingFlashcards,
+    type MissingFlashcardsModalOptions,
+} from "./MissingFlashcardsModal";
