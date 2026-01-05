@@ -228,6 +228,7 @@ export class ReviewView extends ItemView {
                 newCardOrder: this.plugin.settings.newCardOrder,
                 reviewOrder: this.plugin.settings.reviewOrder,
                 newReviewMix: this.plugin.settings.newReviewMix,
+                dayStartHour: this.plugin.settings.dayStartHour,
                 // Custom session filters
                 sourceNoteFilter: this.sourceNoteFilter,
                 sourceNoteFilters: this.sourceNoteFilters,

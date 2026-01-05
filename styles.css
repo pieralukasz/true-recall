@@ -14,6 +14,8 @@
 
 /* Container flex styles */
 .episteme-content-container {
+	display: flex;
+	flex-direction: column;
 	flex: 1;
 	overflow-y: auto;
 	min-height: 0;
@@ -67,12 +69,19 @@
 
 /* Content Section */
 .episteme-content {
+	display: flex;
+	flex-direction: column;
 	flex: 1;
 	overflow-y: auto;
 }
 
 .episteme-empty,
 .episteme-no-cards {
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	justify-content: center;
+	flex: 1;
 	color: var(--text-muted);
 	text-align: center;
 	padding: 16px 8px;
@@ -2101,6 +2110,68 @@
 
 .episteme-delete-selected-btn:hover {
 	background: linear-gradient(135deg, #e04555, #d32f43) !important;
+}
+
+/* ========================================
+   Note Type Indicator
+   ======================================== */
+
+.episteme-note-type-indicator {
+	display: flex;
+	justify-content: center;
+	margin-bottom: 12px;
+}
+
+.episteme-note-type-badge {
+	display: inline-flex;
+	align-items: center;
+	font-size: 11px;
+	font-weight: 600;
+	padding: 4px 12px;
+	border-radius: 12px;
+	text-transform: uppercase;
+	letter-spacing: 0.5px;
+}
+
+.episteme-note-type-icon {
+	margin-right: 6px;
+	font-size: 12px;
+}
+
+/* Temporary - amber/yellow for literature notes */
+.episteme-note-type-badge--temporary {
+	background: rgba(251, 191, 36, 0.2);
+	color: var(--color-yellow, #fbbf24);
+}
+
+/* Permanent - green for concept/zettel */
+.episteme-note-type-badge--permanent {
+	background: rgba(74, 222, 128, 0.2);
+	color: var(--color-green, #4ade80);
+}
+
+/* Maybe - blue for application/protocol */
+.episteme-note-type-badge--maybe {
+	background: rgba(59, 130, 246, 0.2);
+	color: var(--color-blue, #3b82f6);
+}
+
+/* None - gray for non-flashcard notes */
+.episteme-note-type-badge--none {
+	background: rgba(156, 163, 175, 0.2);
+	color: var(--text-muted);
+}
+
+/* Unknown - subtle gray */
+.episteme-note-type-badge--unknown {
+	background: rgba(156, 163, 175, 0.15);
+	color: var(--text-faint);
+}
+
+.episteme-no-cards-message {
+	text-align: center;
+	color: var(--text-muted);
+	font-size: 13px;
 }
 
 /* ========================================

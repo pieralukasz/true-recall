@@ -88,6 +88,10 @@ export interface EpistemeSettings {
     /** Jak mieszać nowe karty z powtórkami */
     newReviewMix: NewReviewMix;
 
+    // ===== Scheduling Settings =====
+    /** Godzina rozpoczęcia nowego dnia (0-23, domyślnie 4 = 4:00 AM jak w Anki) */
+    dayStartHour: number;
+
     // ===== Zettelkasten Settings =====
     /** Folder na notatki zettelkasten tworzone z fiszek */
     zettelFolder: string;
