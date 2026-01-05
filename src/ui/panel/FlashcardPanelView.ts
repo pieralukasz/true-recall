@@ -207,6 +207,7 @@ export class FlashcardPanelView extends ItemView {
             onApplyDiff: () => void this.handleApplyDiff(),
             onCancelDiff: () => void this.handleCancelDiff(),
             onMoveSelected: () => void this.handleMoveSelected(),
+            onDeleteSelected: () => void this.handleDeleteSelected(),
         });
         this.footerComponent.render();
     }
@@ -509,6 +510,43 @@ export class FlashcardPanelView extends ItemView {
         // Clear selection and refresh
         this.selectedCardLineNumbers.clear();
         new Notice(`Moved ${successCount} of ${selectedCards.length} cards`);
+        await this.loadFlashcardInfo();
+    }
+
+    private async handleDeleteSelected(): Promise<void> {
+        const state = this.stateManager.getState();
+        if (!state.flashcardInfo || !state.currentFile || this.selectedCardLineNumbers.size === 0) return;
+
+        // Get selected cards sorted by line number descending (to preserve line numbers during deletion)
+        const selectedCards = state.flashcardInfo.flashcards
+            .filter(card => this.selectedCardLineNumbers.has(card.lineNumber))
+            .sort((a, b) => b.lineNumber - a.lineNumber);
+
+        if (selectedCards.length === 0) return;
+
+        // Confirm deletion
+        const confirmed = confirm(`Delete ${selectedCards.length} selected card(s)?`);
+        if (!confirmed) return;
+
+        // Delete cards from bottom to top (to preserve line numbers)
+        let successCount = 0;
+        for (const card of selectedCards) {
+            try {
+                const removed = state.isFlashcardFile
+                    ? await this.flashcardManager.removeFlashcardDirect(state.currentFile, card.lineNumber)
+                    : await this.flashcardManager.removeFlashcard(state.currentFile, card.lineNumber);
+
+                if (removed) {
+                    successCount++;
+                }
+            } catch (error) {
+                console.error(`Failed to delete card at line ${card.lineNumber}:`, error);
+            }
+        }
+
+        // Clear selection and refresh
+        this.selectedCardLineNumbers.clear();
+        new Notice(`Deleted ${successCount} of ${selectedCards.length} card(s)`);
         await this.loadFlashcardInfo();
     }
 }
