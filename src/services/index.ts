@@ -11,3 +11,4 @@ export { SessionPersistenceService } from "./session-persistence.service";
 export { StatsCalculatorService } from "./stats-calculator.service";
 export { BacklinksFilterService } from "./backlinks-filter.service";
 export { ShardedStoreService, type ShardEntry } from "./sharded-store.service";
+export { DayBoundaryService } from "./day-boundary.service";

@@ -3,7 +3,7 @@
  * Defines the state structure for the flashcard panel
  */
 import type { TFile } from "obsidian";
-import type { FlashcardInfo, DiffResult } from "../types";
+import type { FlashcardInfo, DiffResult, NoteFlashcardType } from "../types";
 import type { AppError } from "../errors";
 
 /**
@@ -34,6 +34,8 @@ export interface PanelState {
     userInstructions: string;
     /** Whether current file is a flashcard file (flashcards_*.md) */
     isFlashcardFile: boolean;
+    /** Note flashcard type based on tags (temporary, permanent, maybe, none, unknown) */
+    noteFlashcardType: NoteFlashcardType;
     /** Current error if any */
     error: AppError | null;
     /** Render version for race condition prevention */

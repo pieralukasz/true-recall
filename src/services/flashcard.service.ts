@@ -12,6 +12,7 @@ import type {
 	FSRSFlashcardItem,
 	DeckInfo,
 	CardReviewLogEntry,
+	NoteFlashcardType,
 } from "../types";
 import { createDefaultFSRSData, State } from "../types";
 import type { ShardedStoreService, ShardEntry } from "./sharded-store.service";
@@ -548,6 +549,85 @@ deck: "${deck}"${statusLine}
 	}
 
 	/**
+	 * Get note flashcard type based on tags
+	 * Determines what kind of flashcards should be created for a note
+	 */
+	async getNoteFlashcardType(sourceFile: TFile): Promise<NoteFlashcardType> {
+		const content = await this.app.vault.read(sourceFile);
+		const tags = this.extractAllTags(content);
+
+		// Check for #input/* tags - temporary flashcards
+		if (tags.some(t => t.startsWith("input/") || t.startsWith("#input/"))) {
+			return "temporary";
+		}
+
+		// Check for #mind/* tags
+		const mindTags = tags.filter(t => t.startsWith("mind/") || t.startsWith("#mind/"));
+
+		// Permanent flashcards: concept, zettel
+		if (mindTags.some(t => t.includes("/concept") || t.includes("/zettel"))) {
+			return "permanent";
+		}
+
+		// Maybe flashcards: application, protocol
+		if (mindTags.some(t => t.includes("/application") || t.includes("/protocol"))) {
+			return "maybe";
+		}
+
+		// No flashcards: question, hub, structure, index, person
+		if (mindTags.some(t =>
+			t.includes("/question") ||
+			t.includes("/hub") ||
+			t.includes("/structure") ||
+			t.includes("/index") ||
+			t.includes("/person")
+		)) {
+			return "none";
+		}
+
+		// Unknown - no recognized tags
+		return "unknown";
+	}
+
+	/**
+	 * Extract all tags from content (inline and frontmatter)
+	 */
+	private extractAllTags(content: string): string[] {
+		const tags: string[] = [];
+
+		// Extract inline tags
+		const inlineTagPattern = /#[\w/-]+/g;
+		const inlineMatches = content.match(inlineTagPattern);
+		if (inlineMatches) {
+			tags.push(...inlineMatches.map(t => t.replace(/^#/, "")));
+		}
+
+		// Extract frontmatter tags
+		const frontmatterMatch = content.match(/^---\n([\s\S]*?)\n---/);
+		if (frontmatterMatch) {
+			const frontmatter = frontmatterMatch[1] ?? "";
+
+			// Array format: tags: [input/book, mind/concept]
+			const tagsArrayMatch = frontmatter.match(/^tags:\s*\[([^\]]+)\]/m);
+			if (tagsArrayMatch) {
+				const arrayTags = tagsArrayMatch[1]?.split(",").map(t => t.trim().replace(/^["']|["']$/g, "")) ?? [];
+				tags.push(...arrayTags);
+			}
+
+			// List format: tags:\n  - input/book
+			const tagsListPattern = /^tags:\s*\n(\s+-\s+\S+\s*)+/m;
+			const tagsListMatch = frontmatter.match(tagsListPattern);
+			if (tagsListMatch) {
+				const tagLines = tagsListMatch[0].match(/-\s+(\S+)/g) ?? [];
+				const listTags = tagLines.map(t => t.replace(/^-\s+/, "").replace(/^["']|["']$/g, ""));
+				tags.push(...listTags);
+			}
+		}
+
+		return tags;
+	}
+
+	/**
 	 * Extract status from flashcard file frontmatter
 	 */
 	private extractStatusFromFrontmatter(content: string): string | null {
@@ -1061,8 +1141,11 @@ deck: "${deck}"${statusLine}
 
 	/**
 	 * Get all unique deck names with their statistics
+	 * @param dayBoundaryService Optional day boundary service for accurate due counts
 	 */
-	async getAllDecks(): Promise<DeckInfo[]> {
+	async getAllDecks(
+		dayBoundaryService?: import("./day-boundary.service").DayBoundaryService
+	): Promise<DeckInfo[]> {
 		const allCards = await this.getAllFSRSCards();
 		const deckMap = new Map<string, FSRSFlashcardItem[]>();
 
@@ -1078,13 +1161,18 @@ deck: "${deck}"${statusLine}
 		const decks: DeckInfo[] = [];
 
 		for (const [name, cards] of deckMap) {
+			// Use day-based scheduling if service provided, otherwise fallback to timestamp
+			const dueCount = dayBoundaryService
+				? dayBoundaryService.countDueCards(cards, now)
+				: cards.filter((c) => {
+						const dueDate = new Date(c.fsrs.due);
+						return dueDate <= now && c.fsrs.state !== State.New;
+					}).length;
+
 			decks.push({
 				name,
 				cardCount: cards.length,
-				dueCount: cards.filter((c) => {
-					const dueDate = new Date(c.fsrs.due);
-					return dueDate <= now && c.fsrs.state !== State.New;
-				}).length,
+				dueCount,
 				newCount: cards.filter((c) => c.fsrs.state === State.New)
 					.length,
 			});

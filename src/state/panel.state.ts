@@ -26,6 +26,7 @@ function createInitialState(): PanelState {
         diffResult: null,
         userInstructions: "",
         isFlashcardFile: false,
+        noteFlashcardType: "unknown",
         error: null,
         renderVersion: 0,
     };
@@ -129,6 +130,7 @@ export class PanelStateManager {
             diffResult: null,
             flashcardInfo: null,
             isFlashcardFile: file?.basename.startsWith("flashcards_") ?? false,
+            noteFlashcardType: "unknown",
             error: null,
         });
     }

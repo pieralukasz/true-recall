@@ -130,14 +130,25 @@ export class FlashcardPanelView extends ItemView {
         const renderVersion = this.stateManager.incrementRenderVersion();
 
         try {
-            const info = state.isFlashcardFile
-                ? await this.flashcardManager.getFlashcardInfoDirect(file)
-                : await this.flashcardManager.getFlashcardInfo(file);
+            // Load flashcard info and note type in parallel
+            const [info, noteType] = await Promise.all([
+                state.isFlashcardFile
+                    ? this.flashcardManager.getFlashcardInfoDirect(file)
+                    : this.flashcardManager.getFlashcardInfo(file),
+                // Only get note type for source notes, not flashcard files
+                state.isFlashcardFile
+                    ? Promise.resolve("unknown" as const)
+                    : this.flashcardManager.getNoteFlashcardType(file),
+            ]);
 
             // Check for race condition
             if (!this.stateManager.isCurrentRender(renderVersion)) return;
 
-            this.stateManager.setFlashcardInfo(info);
+            this.stateManager.setState({
+                flashcardInfo: info,
+                status: info?.exists ? "exists" : "none",
+                noteFlashcardType: noteType,
+            });
         } catch (error) {
             console.error("Error loading flashcard info:", error);
         }
@@ -173,6 +184,8 @@ export class FlashcardPanelView extends ItemView {
             isFlashcardFile: state.isFlashcardFile,
             // Selection state for temporary cards bulk move
             selectedCardLineNumbers: this.selectedCardLineNumbers,
+            // Note flashcard type based on tags
+            noteFlashcardType: state.noteFlashcardType,
             handlers: {
                 app: this.app,
                 component: this,

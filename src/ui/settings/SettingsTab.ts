@@ -346,6 +346,22 @@ export class EpistemeSettingTab extends PluginSettingTab {
                 });
             });
 
+        // ===== Scheduling Section =====
+        containerEl.createEl("h2", { text: "Scheduling" });
+
+        // Day Start Hour
+        new Setting(containerEl)
+            .setName("Next day starts at")
+            .setDesc("Hour when a new day begins (0-23). All review cards due 'today' become available after this time. Default: 4 (4:00 AM)")
+            .addSlider(slider => slider
+                .setLimits(0, 23, 1)
+                .setValue(this.plugin.settings.dayStartHour)
+                .setDynamicTooltip()
+                .onChange(async (value) => {
+                    this.plugin.settings.dayStartHour = value;
+                    await this.plugin.saveSettings();
+                }));
+
         // ===== Zettelkasten Section =====
         containerEl.createEl("h2", { text: "Zettelkasten" });
 

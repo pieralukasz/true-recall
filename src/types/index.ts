@@ -9,6 +9,7 @@ export type {
     FlashcardChange,
     DiffResult,
     FlashcardInfo,
+    NoteFlashcardType,
 } from "./flashcard.types";
 
 // API types
