@@ -31,12 +31,14 @@ The system separates:
 
 ### Overview of `#input/` tags (sources and capture)
 
-| Tag | Usage |
-|-----|-------|
-| `#input/fleeting` | Quick thought, voice note, "rough draft" |
-| `#input/book` | Book |
-| `#input/article` | Article |
-| `#input/course` | Course |
+| Tag | Usage | Flashcards |
+|-----|-------|------------|
+| `#input/fleeting` | Quick thought, voice note, "rough draft" | NO |
+| `#input/book` | Book | YES (temporary) |
+| `#input/article` | Article | YES (temporary) |
+| `#input/course` | Course | YES (temporary) |
+
+**Note:** Literature Notes (`#input/book`, `#input/article`, `#input/course`) use the **Seeding → Incubation → Harvest** workflow for temporary flashcards.
 
 ---
 
@@ -297,14 +299,15 @@ Known for:
 ### 10. LITERATURE NOTE (`#input/*`)
 **Title:** Source title
 **Tags:** `#input/book`, `#input/article`, `#input/course`
-**Flashcards:** NO
+**Flashcards:** YES (temporary) - via Seeding → Incubation → Harvest workflow
 
-**Purpose:** Archive. Capture of raw information from the source.
+**Purpose:** Archive. Capture of raw information from the source. Also serves as the starting point for the primary flashcard workflow.
 
 **Content:**
 - Quotes
 - Raw notes
 - Backlinks to terms
+- Temporary flashcards (during incubation period)
 
 ---
 
@@ -378,37 +381,64 @@ Fleeting/Literature → Concept / Zettel / Application / Protocol
 
 **This is ONE step - you learn BY creating notes!**
 
-#### Alternative Path: Literature Note → Temporary Flashcards → Proper Notes
+#### Primary Path for Literature Notes: Seeding → Incubation → Harvest
 
-**When to use this path:**
-- You struggle to process Literature Notes immediately
-- The material is dense or unfamiliar
-- You're not sure what's important yet
+This is the **recommended workflow** for processing Literature Notes. Instead of treating temporary flashcards as an exception, they become the natural first step for new knowledge.
 
-**How it works:**
+**The Three Phases:**
 
-1. **Create temporary flashcards directly from Literature Note**
-   - Don't worry about perfect structure
-   - Just capture what seems interesting
-   - Tag them as `#status/temporary` or keep them in a separate deck
+```
+SEEDING              INCUBATION           HARVEST
+  🌱                    ⏳                   🌾
+Create raw          Review cards        Move mature cards
+flashcards          via spaced          to permanent
+from Literature     repetition          Concepts/Zettels
+Note                (build neural       (interval ≥ 21 days)
+                    pathways)
+```
 
-2. **Review these flashcards for a few days**
-   - Spaced repetition builds initial understanding
-   - You start seeing patterns and connections
-   - Your brain processes the material passively
+**Phase 1: SEEDING (Day 0)**
 
-3. **Return to Literature Note after a few days**
-   - Now you UNDERSTAND what's important
-   - Create proper Concepts and Zettels
-   - Move flashcards to the correct notes (or regenerate them)
-   - Delete the temporary flashcards
+Click "Seed Flashcards" on any Literature Note to create temporary flashcards:
+- Don't worry about perfect structure
+- Just capture what seems interesting
+- Cards are automatically marked as temporary (yellow dot indicator)
 
-**Why this works:**
+**Phase 2: INCUBATION (Days 1-21+)**
+
+Review these flashcards through spaced repetition:
+- Neural pathways strengthen with each review
+- You start seeing patterns and connections
+- Your brain processes the material passively
+- The maturity indicator shows progress (0-100%)
+
+**Phase 3: HARVEST (When interval ≥ 21 days)**
+
+When a card's FSRS interval reaches 21+ days, it's ready to harvest:
+- The card has proven its value through successful reviews
+- You now truly UNDERSTAND what's important
+- Move the card to a permanent Concept or Zettel
+- The card transforms from temporary to permanent knowledge
+
+**Harvest Threshold: interval ≥ 21 days**
+- Based on FSRS scheduling algorithm
+- Cards reaching this interval have demonstrated strong retention
+- Use the Harvest Dashboard to see all ready-to-harvest cards
+
+**Why This Works:**
 - Flashcards force active recall even before deep understanding
 - Time + repetition = clarity on what matters
+- Natural selection: only valuable cards survive to harvest
 - You avoid the "blank page paralysis" of immediate processing
+- The 21-day threshold ensures genuine learning, not just recognition
 
-**Important:** This is a BRIDGE, not the default. If you can process directly from Literature/Fleeting → proper notes, do that. Use this path only when stuck.
+**UI Features:**
+- **Seed Flashcards button**: Green button on Literature Notes
+- **Yellow dot**: Indicates temporary cards during review
+- **Gold dot**: Indicates cards ready to harvest (interval ≥ 21 days)
+- **Maturity indicators**: Progress bars showing harvest readiness
+- **Harvest Dashboard**: Overview of all temporary cards and their status
+- **"Ready to Harvest" quick action**: Start a review session with only harvest-ready cards
 
 1. Review Inbox (Fleeting Notes)
 2. Ask questions: "What term is this about?", "Is this true?", "How does this relate to my life?"
@@ -461,19 +491,30 @@ Is this information...
 │  Review Literature/Fleeting → Decision                          │
 └─────────────────────────────────────────────────────────────────┘
                               │
-              ┌───────────────┴───────────────┐
-              ▼                               ▼
-┌──────────────────────────┐    ┌──────────────────────────────┐
-│  Know it's important     │    │  Don't know if important     │
-│           │              │    │           │                  │
-│           ▼              │    │           ▼                  │
-│  2. ELABORATE + CREATE   │    │  2b. INCUBATOR               │
-│  Concept/Zettel/App      │    │      #review/later           │
-│  Protocol                │    │      Return later            │
-│     → UNDERSTAND+APPLY   │    └──────────────────────────────┘
-└──────────────────────────┘              │
-              │                           │
-              │         ┌─────────────────┘
+      ┌───────────────────────┼───────────────────────┐
+      ▼                       ▼                       ▼
+┌──────────────┐    ┌──────────────────┐    ┌──────────────────┐
+│  Literature  │    │  Know it's       │    │  Don't know if   │
+│  Note        │    │  important       │    │  important       │
+│      │       │    │       │          │    │       │          │
+│      ▼       │    │       ▼          │    │       ▼          │
+│  SEEDING 🌱  │    │  ELABORATE +     │    │  INCUBATOR       │
+│  Temporary   │    │  CREATE          │    │  #review/later   │
+│  flashcards  │    │  Concept/Zettel  │    │  Return later    │
+│      │       │    │  App/Protocol    │    └──────────────────┘
+│      ▼       │    └──────────────────┘              │
+│  INCUBATION  │              │                       │
+│  ⏳ Review   │              │                       │
+│  (spaced rep)│              │                       │
+│      │       │              │                       │
+│      ▼       │              │                       │
+│  HARVEST 🌾  │              │                       │
+│  interval≥21d│              │                       │
+│  → Move to   │──────────────┘                       │
+│  permanent   │                                      │
+└──────────────┘                                      │
+              │                                       │
+              │         ┌─────────────────────────────┘
               ▼         ▼
 ┌─────────────────────────────────────────────────────────────────┐
 │  3. REVIEW & GARDENING                                          │
@@ -549,11 +590,11 @@ BLOOM'S TAXONOMY              YOUR WORKFLOW
 | Tag | Title | Purpose | Flashcards |
 |-----|-------|---------|------------|
 | `#input/fleeting` | Timestamp/topic | Quick thought (inbox) | NO |
-| `#input/*` | Source title | Archive (book/article/course) | NO |
-| `#mind/concept` | TERM (word) | Definition + facts | YES |
-| `#mind/zettel` | CLAIM (sentence) | Your thought/thesis | YES |
-| `#mind/application` | CONCLUSION (sentence) | Real-life proof/Case Study | YES |
-| `#mind/protocol` | "How to...?" | Ideal solution/procedure | YES |
+| `#input/*` | Source title | Archive (book/article/course) | YES (temporary) |
+| `#mind/concept` | TERM (word) | Definition + facts | YES (permanent) |
+| `#mind/zettel` | CLAIM (sentence) | Your thought/thesis | YES (permanent) |
+| `#mind/application` | CONCLUSION (sentence) | Real-life proof/Case Study | YES (permanent) |
+| `#mind/protocol` | "How to...?" | Ideal solution/procedure | YES (permanent) |
 | `#mind/question` | QUESTION (?) | Unanswered question | NO |
 | `#mind/hub` | Exploration topic | Entry point to threads | NO |
 | `#mind/structure` | Writing topic | Sandbox for organization | NO |
@@ -564,6 +605,10 @@ BLOOM'S TAXONOMY              YOUR WORKFLOW
 
 1. **CAPTURE** - Fleeting Note / Literature Note (capture)
 2. **ELABORATE + CREATE** - Concept/Zettel/Application/Protocol (learning through writing!)
+   - **2a. SEEDING → INCUBATION → HARVEST** - Primary path for Literature Notes:
+     - Seed temporary flashcards from Literature Notes
+     - Review through spaced repetition (incubation)
+     - Harvest mature cards (interval ≥ 21 days) to permanent notes
    - **2b. INCUBATOR** - `#review/later` for unknown unknowns
 3. **REVIEW & GARDENING** - Flashcards (AI generates) + Spaced repetition + Deprecation Protocol
 

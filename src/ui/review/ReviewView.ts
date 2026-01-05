@@ -366,11 +366,14 @@ export class ReviewView extends ItemView {
         const editState = this.stateManager.getEditState();
         const cardEl = this.cardContainerEl.createDiv({ cls: "episteme-review-card" });
 
-        // Temporary badge (for cards from Literature Notes)
+        // Yellow dot indicator for temporary cards (from Literature Notes)
+        // Gold/amber dot when ready to harvest (interval >= 21 days), yellow otherwise
         if (card.isTemporary) {
-            const tempBadge = cardEl.createDiv({ cls: "episteme-review-temporary-badge" });
-            tempBadge.createSpan({ text: "TEMPORARY", cls: "episteme-badge-text" });
-            tempBadge.createSpan({ text: "Press M to move", cls: "episteme-badge-hint" });
+            const isReadyToHarvest = card.fsrs.scheduledDays >= 21;
+            const dotEl = cardEl.createDiv({
+                cls: `episteme-temporary-dot ${isReadyToHarvest ? "episteme-harvest-dot" : ""}`,
+            });
+            dotEl.setAttribute("aria-label", isReadyToHarvest ? "Ready to harvest" : "Temporary card");
         }
 
         // Question

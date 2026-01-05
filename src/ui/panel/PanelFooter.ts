@@ -5,7 +5,7 @@
 import type { TFile } from "obsidian";
 import { BaseComponent } from "../component.base";
 import type { ProcessingStatus, ViewMode } from "../../state";
-import type { DiffResult } from "../../types";
+import type { DiffResult, NoteFlashcardType } from "../../types";
 
 export interface PanelFooterProps {
     currentFile: TFile | null;
@@ -13,6 +13,8 @@ export interface PanelFooterProps {
     viewMode: ViewMode;
     diffResult: DiffResult | null;
     isFlashcardFile: boolean;
+    /** Note type for determining button label (Seed vs Generate) */
+    noteFlashcardType?: NoteFlashcardType;
     // Selection info for bulk move button
     selectedCount?: number;
     onGenerate?: () => void;
@@ -108,7 +110,7 @@ export class PanelFooter extends BaseComponent {
     }
 
     private renderNormalFooter(): void {
-        const { status, isFlashcardFile, selectedCount, onGenerate, onUpdate, onMoveSelected, onDeleteSelected } = this.props;
+        const { status, isFlashcardFile, selectedCount, noteFlashcardType, onGenerate, onUpdate, onMoveSelected, onDeleteSelected } = this.props;
 
         if (!this.element) return;
 
@@ -155,7 +157,14 @@ export class PanelFooter extends BaseComponent {
                 this.events.addEventListener(mainBtn, "click", onUpdate);
             }
         } else {
-            mainBtn.textContent = "Generate flashcards";
+            // Show "Seed Flashcards" for Literature Notes (temporary type)
+            // This reinforces the Seeding → Incubation → Harvest workflow
+            if (noteFlashcardType === "temporary") {
+                mainBtn.textContent = "Seed Flashcards";
+                mainBtn.classList.add("episteme-btn-seed");
+            } else {
+                mainBtn.textContent = "Generate flashcards";
+            }
             if (onGenerate) {
                 this.events.addEventListener(mainBtn, "click", onGenerate);
             }
