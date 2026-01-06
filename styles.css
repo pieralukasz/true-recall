@@ -218,8 +218,13 @@
 .episteme-card-separator {
 	height: 1px;
 	background: var(--background-modifier-border);
-	margin: 4px 0;
-	display: none; /* Cards already have margin-bottom */
+	margin: 8px 0;
+	display: none;
+}
+
+/* Show separator for temporary cards with checkboxes */
+.episteme-card-wrapper .episteme-card-separator {
+	display: block;
 }
 
 /* Wikilinks - styled like Obsidian internal links */
@@ -567,8 +572,9 @@
 .episteme-review {
 	display: flex;
 	flex-direction: column;
-	height: 100%;
+	height: 100dvh;
 	background: var(--background-primary);
+	overflow: hidden;
 }
 
 /* Review Header */
@@ -580,6 +586,7 @@
 	border-bottom: 1px solid var(--background-modifier-border);
 	background: var(--background-secondary);
 	position: relative;
+	flex-shrink: 0;
 }
 
 .episteme-review-open-note {
@@ -610,11 +617,17 @@
 /* Card Container */
 .episteme-review-card-container {
 	flex: 1;
+	min-height: 0;
 	display: flex;
 	align-items: flex-start;
 	justify-content: center;
-	padding: 32px;
+	padding: 20px;
 	overflow-y: auto;
+}
+
+/* Reduced padding when editing flashcard (to accommodate keyboard on mobile) */
+.episteme-review-card-container--editing {
+	padding: 2px;
 }
 
 .episteme-review-card {
@@ -692,20 +705,26 @@
 }
 
 .episteme-review-editable:focus {
-	box-shadow: 0 0 0 3px var(--interactive-accent-hover);
+	box-shadow: 0 0 0 2px var(--interactive-accent);
 }
 
-/* Visual indicator that field is editable (Cmd+click) */
-.episteme-review-question:not(:has(.episteme-review-editable)),
-.episteme-review-answer:not(:has(.episteme-review-editable)) {
+/* Clear hover states when in edit mode */
+.episteme-review-card-container--editing .episteme-review-question,
+.episteme-review-card-container--editing .episteme-review-answer {
+	background: transparent !important;
+}
+
+/* Visual indicator that field is editable (Cmd+click) - not in edit mode */
+.episteme-review-card-container:not(.episteme-review-card-container--editing) .episteme-review-question:not(:has(.episteme-review-editable)),
+.episteme-review-card-container:not(.episteme-review-card-container--editing) .episteme-review-answer:not(:has(.episteme-review-editable)) {
 	border-radius: 6px;
 	padding: 8px;
 	margin: -8px;
 	transition: background 0.15s ease;
 }
 
-.episteme-review-question:not(:has(.episteme-review-editable)):hover,
-.episteme-review-answer:not(:has(.episteme-review-editable)):hover {
+.episteme-review-card-container:not(.episteme-review-card-container--editing) .episteme-review-question:not(:has(.episteme-review-editable)):hover,
+.episteme-review-card-container:not(.episteme-review-card-container--editing) .episteme-review-answer:not(:has(.episteme-review-editable)):hover {
 	background: var(--background-modifier-hover);
 }
 
@@ -718,6 +737,7 @@
 	border-top: 1px solid var(--background-modifier-border);
 	background: var(--background-secondary);
 	flex-wrap: nowrap;
+	flex-shrink: 0;
 }
 
 /* Base Button Style */
@@ -834,11 +854,17 @@
 .episteme-review-progress {
 	padding: 0 16px 12px;
 	background: var(--background-secondary);
+	flex-shrink: 0;
 }
 
 .episteme-review-progress:empty {
 	display: none;
 	padding: 0;
+}
+
+/* Hide progress bar when in edit mode (keyboard issues) */
+.episteme-review-card-container--editing ~ .episteme-review-buttons ~ .episteme-review-progress {
+	display: none;
 }
 
 .episteme-progress-bar {
@@ -1533,7 +1559,12 @@
 
 	/* Review card container - adjusted padding for mobile */
 	.episteme-review-card-container {
-		padding: 16px;
+		padding: 8px;
+	}
+
+	/* Mobile: minimal padding during edit mode */
+	.episteme-review-card-container--editing {
+		padding: 2px;
 	}
 
 	.episteme-review-card {
@@ -1549,10 +1580,10 @@
 		font-size: 1em;
 	}
 
-	/* Rating buttons - touch-friendly targets */
+	/* Rating buttons - minimal padding for mobile */
 	.episteme-review-buttons {
-		padding: 16px 8px;
-		gap: 6px;
+		padding: 8px 4px;
+		gap: 4px;
 	}
 
 	.episteme-btn {
@@ -1683,12 +1714,21 @@
 
 /* iOS-specific safe area handling */
 @supports (padding-bottom: env(safe-area-inset-bottom)) {
-	.episteme-review-buttons {
-		padding-bottom: calc(16px + env(safe-area-inset-bottom));
+	.episteme-review-buttons:not([style*="display: none"]) {
+		padding-bottom: calc(12px + env(safe-area-inset-bottom));
 	}
 
-	.episteme-review-progress {
+	.episteme-review-progress:not([style*="display: none"]) {
 		padding-bottom: calc(12px + env(safe-area-inset-bottom));
+	}
+
+	/* No extra safe area padding when editing */
+	.episteme-review-card-container--editing ~ .episteme-review-buttons {
+		padding-bottom: 8px;
+	}
+
+	.episteme-review-card-container--editing ~ .episteme-review-progress {
+		padding-bottom: 12px;
 	}
 }
 
@@ -2100,44 +2140,136 @@
 	border: 1px solid rgba(255, 193, 7, 0.3);
 	border-radius: 6px;
 	margin-bottom: 12px;
+	flex-wrap: wrap;
 }
 
-.episteme-temp-count {
+/* Badges row wrapper */
+.episteme-badges-row {
+	display: flex;
+	align-items: center;
+	gap: 8px;
+}
+
+/* Base badge styling */
+.episteme-badge {
+	display: inline-flex;
+	align-items: center;
+	gap: 6px;
+	padding: 4px 10px;
+	border-radius: 12px;
+	font-size: 12px;
+	font-weight: 500;
+	white-space: nowrap;
+}
+
+/* Incubating badge */
+.episteme-incubating-badge {
+	background: rgba(255, 193, 7, 0.15);
+	border: 1px solid rgba(255, 193, 7, 0.3);
+	color: #d4a106;
+}
+
+.episteme-incubating-count {
 	font-size: 12px;
 	font-weight: 500;
 	color: #d4a106;
 }
 
+/* Controls divider */
+.episteme-controls-divider {
+	width: 1px;
+	height: 20px;
+	background: rgba(255, 193, 7, 0.3);
+	margin: 0 8px;
+	flex-shrink: 0;
+}
+
+/* Select all container */
 .episteme-select-all-container {
 	display: flex;
 	align-items: center;
 	gap: 8px;
 	margin-left: auto;
-	font-size: 12px;
+	font-size: 13px;
 	color: var(--text-muted);
 	cursor: pointer;
+	padding: 4px 8px;
+	border-radius: 4px;
+	transition: background-color 0.15s ease;
+	user-select: none;
 }
 
+.episteme-select-all-container:hover {
+	background: rgba(255, 193, 7, 0.1);
+}
+
+.episteme-select-all-container:active {
+	background: rgba(255, 193, 7, 0.15);
+}
+
+.episteme-select-all-label {
+	cursor: pointer;
+	transition: opacity 0.15s ease;
+}
+
+.episteme-select-all-container:hover .episteme-select-all-label {
+	opacity: 0.8;
+}
+
+/* Base checkbox styling */
+input[type="checkbox"].episteme-card-checkbox,
 .episteme-select-all-container input[type="checkbox"] {
 	cursor: pointer;
+	flex-shrink: 0;
+	width: 18px;
+	height: 18px;
+	border: 2px solid var(--background-modifier-border);
+	border-radius: 4px;
+	background: var(--background-primary);
+	appearance: none;
+	transition: all 0.15s ease;
+}
+
+input[type="checkbox"].episteme-card-checkbox:hover,
+.episteme-select-all-container input[type="checkbox"]:hover {
+	border-color: var(--interactive-accent);
+}
+
+input[type="checkbox"].episteme-card-checkbox:focus,
+.episteme-select-all-container input[type="checkbox"]:focus {
+	outline: 2px solid var(--interactive-accent);
+	outline-offset: 2px;
+}
+
+input[type="checkbox"].episteme-card-checkbox:checked,
+.episteme-select-all-container input[type="checkbox"]:checked {
+	background: var(--interactive-accent);
+	border-color: var(--interactive-accent);
+	background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' fill='white'%3E%3Cpath d='M12.207 4.793a1 1 0 010 1.414l-5 5a1 1 0 01-1.414 0l-2-2a1 1 0 011.414-1.414L6.5 9.086l4.293-4.293a1 1 0 011.414 0z'/%3E%3C/svg%3E");
+	background-size: 12px;
+	background-position: center;
+	background-repeat: no-repeat;
 }
 
 /* Card wrapper with checkbox */
 .episteme-card-wrapper {
 	display: flex;
-	align-items: center;
+	align-items: flex-start;
 	gap: 8px;
+}
+
+.episteme-card-wrapper:last-child {
+	margin-bottom: 0;
 }
 
 .episteme-card-wrapper .episteme-card {
 	flex: 1;
+	margin-bottom: 0;
 }
 
 .episteme-card-checkbox {
-	flex-shrink: 0;
-	cursor: pointer;
-	width: 16px;
-	height: 16px;
+	align-self: flex-start;
+	margin-top: 4px;
 }
 
 /* Move selected button in footer */
@@ -2377,17 +2509,18 @@
 	display: flex;
 	align-items: center;
 	gap: 8px;
-	margin-top: 8px;
-	padding-top: 8px;
-	border-top: 1px solid var(--background-modifier-border);
+	margin-top: 6px;
+	padding-top: 6px;
+	border-top: 1px dashed rgba(255, 193, 7, 0.2);
 }
 
 .episteme-maturity-bar {
 	flex: 1;
-	height: 6px;
-	background: var(--background-modifier-border);
-	border-radius: 3px;
+	height: 8px;
+	background: rgba(255, 193, 7, 0.1);
+	border-radius: 4px;
 	overflow: hidden;
+	border: 1px solid rgba(255, 193, 7, 0.2);
 }
 
 .episteme-maturity-fill {
@@ -2406,6 +2539,8 @@
 	font-weight: 500;
 	color: var(--text-muted);
 	white-space: nowrap;
+	min-width: 45px;
+	text-align: right;
 }
 
 .episteme-maturity-label--ready {
@@ -2435,7 +2570,7 @@
 .episteme-harvest-ready-badge {
 	display: inline-flex;
 	align-items: center;
-	gap: 4px;
+	gap: 6px;
 	padding: 4px 10px;
 	background: linear-gradient(135deg, rgba(245, 158, 11, 0.2), rgba(217, 119, 6, 0.15));
 	border: 1px solid rgba(245, 158, 11, 0.4);
@@ -2445,11 +2580,13 @@
 	color: #f59e0b;
 	cursor: pointer;
 	transition: all 0.15s ease;
+	white-space: nowrap;
 }
 
 .episteme-harvest-ready-badge:hover {
 	background: linear-gradient(135deg, rgba(245, 158, 11, 0.3), rgba(217, 119, 6, 0.2));
 	border-color: rgba(245, 158, 11, 0.6);
+	transform: translateY(-1px);
 }
 
 /* Harvest Stats Badges in Panel */

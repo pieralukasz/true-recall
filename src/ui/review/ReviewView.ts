@@ -516,6 +516,7 @@ export class ReviewView extends ItemView {
             return;
         }
         this.stateManager.startEdit(field);
+        this.cardContainerEl.addClass("episteme-review-card-container--editing");
         this.renderCard();
         this.renderButtons(); // Hide buttons when entering edit mode (prevents keyboard overlap on mobile)
     }
@@ -551,6 +552,8 @@ export class ReviewView extends ItemView {
             range.collapse(false);
             sel?.removeAllRanges();
             sel?.addRange(range);
+            // Scroll editable field into view (important for mobile with keyboard)
+            editEl.scrollIntoView({ behavior: "smooth", block: "center" });
         }, 10);
     }
 
@@ -651,7 +654,9 @@ export class ReviewView extends ItemView {
 
         // Exit edit mode
         this.stateManager.cancelEdit();
+        this.cardContainerEl.removeClass("episteme-review-card-container--editing");
         this.renderCard();
+        this.renderButtons(); // Restore buttons after exiting edit mode
     }
 
     /**
@@ -797,14 +802,16 @@ export class ReviewView extends ItemView {
 
     /**
      * Render progress bar
-     * Note: CSS :empty selector hides this element when empty (no gap from padding)
+     * Note: Use inline style display to properly hide element (more reliable than CSS :empty)
      */
     private renderProgress(): void {
-        this.progressEl.empty();
-
         if (!this.plugin.settings.showProgress) {
+            this.progressEl.style.display = "none";
             return;
         }
+
+        this.progressEl.style.display = "";
+        this.progressEl.empty();
 
         const progress = this.stateManager.getProgress();
 
