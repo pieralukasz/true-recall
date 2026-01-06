@@ -17,6 +17,9 @@ export interface PanelFooterProps {
     noteFlashcardType?: NoteFlashcardType;
     // Selection info for bulk move button
     selectedCount?: number;
+    // Selection state for literature notes
+    hasSelection?: boolean;
+    selectedText?: string;
     onGenerate?: () => void;
     onUpdate?: () => void;
     onApplyDiff?: () => void;
@@ -44,7 +47,7 @@ export class PanelFooter extends BaseComponent {
             this.events.cleanup();
         }
 
-        const { currentFile, viewMode, diffResult } = this.props;
+        const { currentFile, viewMode, diffResult, noteFlashcardType } = this.props;
 
         // Don't render if no file or not markdown
         if (!currentFile || currentFile.extension !== "md") {
@@ -55,7 +58,13 @@ export class PanelFooter extends BaseComponent {
             cls: "episteme-footer",
         });
 
-        // Diff mode footer
+        // Literature notes never use diff mode - always use normal footer
+        if (noteFlashcardType === "temporary") {
+            this.renderNormalFooter();
+            return;
+        }
+
+        // Diff mode footer (for other note types)
         if (viewMode === "diff" && diffResult) {
             this.renderDiffFooter();
         } else {
@@ -142,6 +151,13 @@ export class PanelFooter extends BaseComponent {
             return;
         }
 
+        // ===== DIFFERENT UI FOR LITERATURE NOTES =====
+        if (noteFlashcardType === "temporary") {
+            this.renderLiteratureNoteFooter(buttonsWrapper);
+            return;
+        }
+
+        // ===== EXISTING UI FOR OTHER NOTE TYPES =====
         // Instructions input
         this.renderInstructionsInput(
             "Instructions for AI (optional)...",
@@ -162,18 +178,71 @@ export class PanelFooter extends BaseComponent {
                 this.events.addEventListener(mainBtn, "click", onUpdate);
             }
         } else {
-            // Show "Seed Flashcards" for Literature Notes (temporary type)
-            // This reinforces the Seeding → Incubation → Harvest workflow
-            if (noteFlashcardType === "temporary") {
-                mainBtn.textContent = "Seed Flashcards";
-                mainBtn.classList.add("episteme-btn-seed");
-            } else {
-                mainBtn.textContent = "Generate flashcards";
-            }
+            mainBtn.textContent = "Generate flashcards";
             if (onGenerate) {
                 this.events.addEventListener(mainBtn, "click", onGenerate);
             }
         }
+    }
+
+    /**
+     * Render footer for literature notes (selection-based generation)
+     */
+    private renderLiteratureNoteFooter(container: HTMLElement): void {
+        const { hasSelection, selectedText, onGenerate } = this.props;
+
+        if (!hasSelection || !selectedText) {
+            // Show message when no text is selected
+            const messageEl = container.createDiv({
+                cls: "episteme-selection-message",
+            });
+            messageEl.textContent = "Select text in the note to generate flashcards";
+            messageEl.addClass("episteme-selection-message--empty");
+
+            // Add icon
+            const iconEl = messageEl.createSpan({
+                cls: "episteme-selection-icon",
+            });
+            iconEl.textContent = "📝";
+            return;
+        }
+
+        // Show selection preview and generate button when text is selected
+        const selectionPreview = container.createDiv({
+            cls: "episteme-selection-preview",
+        });
+
+        const previewLabel = selectionPreview.createSpan({
+            cls: "episteme-selection-preview-label",
+            text: "Selected:",
+        });
+
+        const previewText = selectionPreview.createSpan({
+            cls: "episteme-selection-preview-text",
+            text: this.truncateText(selectedText, 100),
+        });
+        previewText.setAttribute("title", selectedText); // Show full text on hover
+
+        // Instructions input (optional)
+        this.renderInstructionsInput("Additional instructions (optional)...", false);
+
+        // Generate button
+        const generateBtn = container.createEl("button", {
+            text: "Generate flashcards from selection",
+            cls: "episteme-btn-primary episteme-btn-generate-selection",
+        });
+
+        if (onGenerate) {
+            this.events.addEventListener(generateBtn, "click", onGenerate);
+        }
+    }
+
+    /**
+     * Truncate text for preview
+     */
+    private truncateText(text: string, maxLength: number): string {
+        if (text.length <= maxLength) return text;
+        return text.substring(0, maxLength) + "...";
     }
 
     private renderInstructionsInput(
