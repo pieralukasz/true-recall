@@ -197,7 +197,7 @@
 
 .episteme-card-actions {
 	display: flex;
-	gap: 4px;
+	gap: 8px;
 	flex-shrink: 0;
 }
 
@@ -262,16 +262,30 @@
 /* Footer Section */
 .episteme-footer {
 	border-top: 1px solid var(--background-modifier-border);
-	padding-top: 8px;
+	padding: 8px 0 0 0;
 	margin-top: auto;
 	display: flex;
 	flex-direction: column;
-	gap: 6px;
+	gap: 8px;
+}
+
+/* Footer buttons wrapper for consistent spacing */
+.episteme-footer-buttons {
+	display: flex;
+	flex-direction: column;
+	gap: 8px;
+}
+
+.episteme-footer-buttons .episteme-btn-primary,
+.episteme-footer-buttons .episteme-btn-secondary,
+.episteme-footer-buttons .episteme-btn-danger,
+.episteme-footer-buttons .episteme-btn-seed {
+	width: 100%;
 }
 
 /* Instructions Input */
 .episteme-instructions-container {
-	margin-bottom: 6px;
+	margin-bottom: 8px;
 }
 
 .episteme-instructions-input {
@@ -300,26 +314,35 @@
 /* Buttons Row (for diff view) */
 .episteme-buttons-row {
 	display: flex;
-	gap: 6px;
+	gap: 8px;
 }
 
 .episteme-buttons-row .episteme-btn-primary,
-.episteme-buttons-row .episteme-btn-secondary {
+.episteme-buttons-row .episteme-btn-secondary,
+.episteme-buttons-row .episteme-btn-danger {
 	flex: 1;
 }
 
-/* Buttons */
-.episteme-btn-primary {
-	background-color: var(--interactive-accent);
-	color: var(--text-on-accent);
+/* Buttons - Base Styles */
+.episteme-btn-primary,
+.episteme-btn-secondary,
+.episteme-btn-danger,
+.episteme-btn-seed,
+.episteme-btn-sync {
 	border: none;
-	padding: 8px 12px;
+	padding: 10px 16px;
 	border-radius: 6px;
 	cursor: pointer;
 	font-weight: 500;
 	font-size: 14px;
 	width: 100%;
 	transition: background-color 0.15s ease;
+}
+
+/* Primary Button */
+.episteme-btn-primary {
+	background-color: var(--interactive-accent);
+	color: var(--text-on-accent);
 }
 
 .episteme-btn-primary:hover:not(:disabled) {
@@ -331,20 +354,53 @@
 	cursor: not-allowed;
 }
 
-.episteme-btn-secondary,
+/* Secondary Button */
+.episteme-btn-secondary {
+	background-color: var(--background-modifier-border);
+	color: var(--text-normal);
+}
+
+.episteme-btn-secondary:hover {
+	background-color: var(--background-modifier-hover);
+}
+
+/* Danger Button */
+.episteme-btn-danger {
+	background-color: var(--color-red, #ef4444);
+	color: white;
+}
+
+.episteme-btn-danger:hover:not(:disabled) {
+	background-color: var(--color-red, #dc2626);
+}
+
+.episteme-btn-danger:disabled {
+	opacity: 0.6;
+	cursor: not-allowed;
+}
+
+/* Seed Button (for Literature Notes) */
+.episteme-btn-seed {
+	background: linear-gradient(135deg, #ffc107, #ffb300);
+	color: #000;
+	font-weight: 600;
+}
+
+.episteme-btn-seed:hover:not(:disabled) {
+	background: linear-gradient(135deg, #ffca28, #ffc107);
+}
+
+.episteme-btn-seed:disabled {
+	opacity: 0.6;
+	cursor: not-allowed;
+}
+
+/* Sync Button */
 .episteme-btn-sync {
 	background-color: var(--background-modifier-border);
 	color: var(--text-normal);
-	border: none;
-	padding: 6px 10px;
-	border-radius: 6px;
-	cursor: pointer;
-	font-size: 13px;
-	width: 100%;
-	transition: background-color 0.15s ease;
 }
 
-.episteme-btn-secondary:hover,
 .episteme-btn-sync:hover {
 	background-color: var(--background-modifier-hover);
 }
@@ -2034,7 +2090,7 @@
 .episteme-temporary-controls {
 	display: flex;
 	align-items: center;
-	gap: 12px;
+	gap: 8px;
 	padding: 8px 12px;
 	background: linear-gradient(
 		135deg,
@@ -2055,7 +2111,7 @@
 .episteme-select-all-container {
 	display: flex;
 	align-items: center;
-	gap: 6px;
+	gap: 8px;
 	margin-left: auto;
 	font-size: 12px;
 	color: var(--text-muted);
@@ -2086,30 +2142,28 @@
 
 /* Move selected button in footer */
 .episteme-move-selected-btn {
-	margin-top: 4px !important;
-	margin-bottom: 8px;
+	margin: 4px 0 8px;
 	align-self: center;
-	background: linear-gradient(135deg, #ffc107, #ffb300) !important;
-	color: #000 !important;
+	background: linear-gradient(135deg, #ffc107, #ffb300);
+	color: #000;
 	font-weight: 600;
 }
 
 .episteme-move-selected-btn:hover {
-	background: linear-gradient(135deg, #ffca28, #ffc107) !important;
+	background: linear-gradient(135deg, #ffca28, #ffc107);
 }
 
 /* Delete selected button in footer */
 .episteme-delete-selected-btn {
-	margin-top: 4px !important;
-	margin-bottom: 8px;
+	margin: 4px 0 8px;
 	align-self: center;
-	background: linear-gradient(135deg, #dc3545, #c82333) !important;
-	color: #fff !important;
+	background: var(--color-red, #ef4444);
+	color: #fff;
 	font-weight: 600;
 }
 
 .episteme-delete-selected-btn:hover {
-	background: linear-gradient(135deg, #e04555, #d32f43) !important;
+	background: var(--color-red, #dc2626);
 }
 
 /* ========================================
