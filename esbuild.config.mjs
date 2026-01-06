@@ -1,7 +1,7 @@
 import esbuild from "esbuild";
 import process from "process";
 import { builtinModules } from 'node:module';
-import { copyFileSync, writeFileSync, existsSync, mkdirSync } from "fs";
+import { copyFileSync, writeFileSync, existsSync, mkdirSync, readFileSync } from "fs";
 import { join } from "path";
 
 const banner =
@@ -24,6 +24,30 @@ const vaultPluginDir = VAULT_PATH
 // Ensure vault plugin directory exists
 if (vaultPluginDir && !existsSync(vaultPluginDir)) {
 	mkdirSync(vaultPluginDir, { recursive: true });
+}
+
+// CSS files to concatenate (in correct order)
+const cssFiles = [
+	"src/ui/settings/styles.css",
+	"src/ui/components/styles.css",
+	"src/ui/panel/styles.css",
+	"src/ui/review/styles.css",
+	"src/ui/modals/styles.css",
+	"src/ui/stats/styles.css",
+	"src/ui/mobile.css",
+];
+
+// Combine CSS files into single styles.css
+function combineCSS() {
+	let combinedCSS = "";
+	cssFiles.forEach(file => {
+		if (existsSync(file)) {
+			const content = readFileSync(file, "utf-8");
+			combinedCSS += content + "\n\n";
+		}
+	});
+	writeFileSync("styles.css", combinedCSS, "utf-8");
+	console.log("✓ CSS combined into styles.css");
 }
 
 // Copy static files to vault
@@ -84,6 +108,9 @@ const context = await esbuild.context({
 	plugins: [{
 		name: "copy-to-vault",
 		setup(build) {
+			build.onStart(() => {
+				combineCSS(); // Combine CSS files before building
+			});
 			build.onEnd(() => {
 				copyToVault();
 			});
