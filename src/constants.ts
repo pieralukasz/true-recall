@@ -61,7 +61,7 @@ export const DEFAULT_SETTINGS: EpistemeSettings = {
 	showReviewHeaderStats: true,
 	hideFlashcardsFromBacklinks: true,
 	updateLinkedMentionsCount: true,
-	showTouchHints: true, // Show touch gesture hints on mobile
+	continuousCustomReviews: true,
 
 	// Display Order
 	newCardOrder: "random",

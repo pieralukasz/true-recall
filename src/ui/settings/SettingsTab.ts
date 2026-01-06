@@ -287,14 +287,14 @@ export class EpistemeSettingTab extends PluginSettingTab {
                     await this.plugin.saveSettings();
                 }));
 
-        // Show touch hints on mobile
+        // Continuous Custom Reviews
         new Setting(containerEl)
-            .setName("Show touch hints")
-            .setDesc("Display swipe gesture hints during review on mobile devices")
+            .setName("Continuous custom reviews")
+            .setDesc("Show 'Next Session' button after completing a custom review session, allowing you to quickly start another review with different filters")
             .addToggle(toggle => toggle
-                .setValue(this.plugin.settings.showTouchHints)
+                .setValue(this.plugin.settings.continuousCustomReviews)
                 .onChange(async (value) => {
-                    this.plugin.settings.showTouchHints = value;
+                    this.plugin.settings.continuousCustomReviews = value;
                     await this.plugin.saveSettings();
                 }));
 
