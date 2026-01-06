@@ -1,0 +1,901 @@
+/* =========================================
+   Base Modal Styles
+   ========================================= */
+
+/* Modal container - fit to content */
+.modal:has(.episteme-modal) {
+	width: fit-content;
+}
+
+/* Remove default modal-content padding */
+.modal:has(.episteme-modal) .modal-content {
+	padding: 0;
+}
+
+/* Modal header with title */
+.episteme-modal-header {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	padding: 10px 12px;
+	padding-right: 40px; /* Space for close button */
+	border-bottom: 1px solid var(--background-modifier-border);
+}
+
+.episteme-modal-header h2 {
+	margin: 0;
+	font-size: 18px;
+	font-weight: 600;
+}
+
+/* Position close button in header area */
+.modal:has(.episteme-modal) .modal-close-button {
+	position: absolute;
+	top: 8px;
+	right: 10px;
+}
+
+/* Modal body */
+.episteme-modal-body {
+	padding: 10px 12px;
+}
+
+/* Common modal divider */
+.episteme-modal-divider {
+	margin: 16px 0;
+	border: none;
+	border-top: 1px solid var(--background-modifier-border);
+}
+
+/* =========================================
+   Deck Selection Modal
+   ========================================= */
+
+.episteme-deck-divider {
+	margin: 16px 0;
+	border: none;
+	border-top: 1px solid var(--background-modifier-border);
+}
+
+.episteme-deck-empty {
+	color: var(--text-muted);
+	text-align: center;
+	padding: 24px 16px;
+}
+
+/* Deck stats badges */
+.episteme-deck-stats {
+	display: flex;
+	gap: 8px;
+	align-items: center;
+	margin-right: 12px;
+}
+
+.episteme-stat-badge {
+	font-size: 11px;
+	font-weight: 500;
+	padding: 2px 8px;
+	border-radius: 10px;
+}
+
+.episteme-stat-badge.episteme-stat-new {
+	background: rgba(74, 222, 128, 0.2);
+	color: var(--color-green, #4ade80);
+}
+
+.episteme-stat-badge.episteme-stat-due {
+	background: rgba(59, 130, 246, 0.2);
+	color: var(--color-blue, #3b82f6);
+}
+
+.episteme-stat-badge.episteme-stat-done {
+	background: rgba(156, 163, 175, 0.2);
+	color: var(--text-muted);
+}
+
+/* Setting row adjustments in modal */
+.episteme-deck-modal .setting-item {
+	border-bottom: none;
+	padding: 8px 0;
+}
+
+.episteme-deck-modal .setting-item-info {
+	flex: 1;
+}
+
+.episteme-deck-modal .setting-item-control {
+	display: flex;
+	align-items: center;
+}
+
+/* =========================================
+   Card Preview Modal
+   ========================================= */
+
+.episteme-card-preview-count {
+	text-align: center;
+	font-size: 13px;
+	color: var(--text-muted);
+	margin-bottom: 16px;
+}
+
+.episteme-card-preview-list {
+	max-height: 60vh;
+	overflow-y: auto;
+	display: flex;
+	flex-direction: column;
+	gap: 12px;
+}
+
+/* Markdown content - word wrap */
+.episteme-card-preview-modal .episteme-md-content {
+	word-wrap: break-word;
+	overflow-wrap: break-word;
+}
+
+.episteme-card-preview-empty {
+	text-align: center;
+	color: var(--text-muted);
+	padding: 32px;
+	font-style: italic;
+}
+
+.episteme-card-preview-item {
+	padding: 12px;
+	background: var(--background-secondary);
+	border-radius: 8px;
+	border-left: 3px solid var(--interactive-accent);
+	word-wrap: break-word;
+	overflow-wrap: break-word;
+}
+
+.episteme-card-preview-question {
+	font-weight: 600;
+	font-size: 14px;
+	color: var(--text-normal);
+	margin-bottom: 6px;
+	line-height: 1.4;
+	word-wrap: break-word;
+	overflow-wrap: break-word;
+}
+
+.episteme-card-preview-answer {
+	font-size: 13px;
+	color: var(--text-muted);
+	margin-bottom: 8px;
+	line-height: 1.4;
+	word-wrap: break-word;
+	overflow-wrap: break-word;
+	/* Blur effect - revealed on hover */
+	filter: blur(4px);
+	transition: filter 0.2s ease;
+	cursor: pointer;
+}
+
+.episteme-card-preview-answer:hover {
+	filter: none;
+}
+
+.episteme-card-preview-info {
+	display: flex;
+	gap: 12px;
+	font-size: 11px;
+	color: var(--text-faint);
+	margin-bottom: 8px;
+}
+
+.episteme-card-preview-footer {
+	display: flex;
+	justify-content: space-between;
+	align-items: center;
+	padding-top: 8px;
+	border-top: 1px solid var(--background-modifier-border);
+}
+
+.episteme-card-preview-source {
+	font-size: 12px;
+	color: var(--link-color);
+	cursor: pointer;
+	text-decoration: none;
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+	max-width: 70%;
+}
+
+.episteme-card-preview-source:hover {
+	text-decoration: underline;
+	color: var(--link-color-hover);
+}
+
+.episteme-card-preview-open-btn {
+	font-size: 12px;
+	padding: 4px 12px;
+	background: var(--interactive-accent);
+	color: var(--text-on-accent);
+	border: none;
+	border-radius: 4px;
+	cursor: pointer;
+	transition: background-color 0.15s ease;
+}
+
+.episteme-card-preview-open-btn:hover {
+	background: var(--interactive-accent-hover);
+}
+
+/* Clickable legend items */
+.stats-legend-clickable {
+	cursor: pointer;
+	padding: 6px 8px;
+	margin: -6px -8px;
+	border-radius: 6px;
+	transition: background-color 0.15s ease;
+}
+
+.stats-legend-clickable:hover {
+	background: var(--background-modifier-hover);
+}
+
+/* =========================================
+   Custom Session Modal
+   ========================================= */
+
+.episteme-custom-session-modal h3 {
+	margin: 8px 0 12px 0;
+	font-size: 14px;
+	font-weight: 500;
+	color: var(--text-muted);
+}
+
+/* Quick Actions */
+.episteme-quick-actions {
+	display: grid;
+	grid-template-columns: repeat(2, 1fr);
+	gap: 8px;
+	/* max-width: 400px; */
+}
+
+.episteme-quick-action-btn {
+	display: flex;
+	flex-direction: row;
+	align-items: center;
+	justify-content: space-between;
+	gap: 8px;
+	padding: 12px 16px;
+	background: var(--background-secondary);
+	border: 1px solid var(--background-modifier-border);
+	border-radius: 8px;
+	cursor: pointer;
+	transition: all 0.15s ease;
+	font-size: 14px;
+	font-weight: 500;
+	color: var(--text-normal);
+}
+
+.episteme-quick-action-btn:hover:not(:disabled) {
+	background: var(--background-modifier-hover);
+	border-color: var(--interactive-accent);
+}
+
+.episteme-quick-action-btn:disabled,
+.episteme-quick-action-btn.episteme-btn-disabled {
+	opacity: 0.5;
+	cursor: not-allowed;
+}
+
+.episteme-quick-action-stats {
+	font-size: 12px;
+	font-weight: 400;
+	color: var(--text-muted);
+}
+
+.episteme-stat-muted {
+	color: var(--text-faint);
+}
+
+/* Search Input */
+.episteme-search-container {
+	margin-bottom: 12px;
+}
+
+.episteme-search-input {
+	width: 100%;
+	padding: 10px 12px;
+	border: 1px solid var(--background-modifier-border);
+	border-radius: 6px;
+	background: var(--background-primary);
+	color: var(--text-normal);
+	font-size: 14px;
+}
+
+.episteme-search-input:focus {
+	outline: none;
+	border-color: var(--interactive-accent);
+}
+
+.episteme-search-input::placeholder {
+	color: var(--text-muted);
+}
+
+/* Note List */
+.episteme-note-list {
+	max-height: 350px;
+	overflow-y: auto;
+	margin-bottom: 16px;
+}
+
+.episteme-note-list-empty {
+	padding: 24px 16px;
+	text-align: center;
+	color: var(--text-muted);
+	font-style: italic;
+}
+
+/* Note Table */
+.episteme-note-table {
+	width: 100%;
+	border-collapse: collapse;
+	table-layout: fixed;
+}
+
+.episteme-note-table th,
+.episteme-note-table td {
+	padding: 10px 12px;
+	text-align: left;
+	border-bottom: 1px solid var(--background-modifier-border);
+}
+
+.episteme-note-table th {
+	font-size: 12px;
+	font-weight: 600;
+	color: var(--text-muted);
+	text-transform: uppercase;
+	letter-spacing: 0.5px;
+	background: var(--background-secondary);
+	position: sticky;
+	top: 0;
+	z-index: 1;
+}
+
+.episteme-note-checkbox-col {
+	width: 40px;
+	text-align: center !important;
+}
+
+.episteme-note-name-col {
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+}
+
+.episteme-note-stats-col {
+	width: 140px;
+	text-align: right !important;
+}
+
+/* Note Row */
+.episteme-note-row {
+	transition: background-color 0.1s ease;
+}
+
+.episteme-note-row--clickable {
+	cursor: pointer;
+}
+
+.episteme-note-row--clickable:hover {
+	background: var(--background-modifier-hover);
+}
+
+.episteme-note-row--completed {
+	opacity: 0.6;
+}
+
+/* Completed tick */
+.episteme-completed-tick {
+	color: var(--color-green, #22c55e);
+	font-size: 16px;
+	font-weight: 600;
+}
+
+/* Stats text */
+.episteme-note-stats-text {
+	font-size: 12px;
+	color: var(--text-muted);
+}
+
+/* Start Button */
+.episteme-start-button-container {
+	display: flex;
+	justify-content: flex-end;
+}
+
+.episteme-start-session-btn {
+	padding: 12px 24px;
+	font-size: 14px;
+	font-weight: 500;
+}
+
+.episteme-start-session-btn:disabled {
+	opacity: 0.5;
+	cursor: not-allowed;
+}
+
+/* Legacy file list (keeping for backwards compat) */
+.episteme-file-list {
+	max-height: 300px;
+	overflow-y: auto;
+}
+
+.episteme-file-list-empty {
+	padding: 16px;
+	text-align: center;
+	color: var(--text-muted);
+	font-style: italic;
+}
+
+/* Mobile adjustments for custom session modal */
+@media screen and (max-width: 600px) {
+	.episteme-custom-session-modal {
+		min-width: auto;
+		width: 100%;
+	}
+
+	.episteme-quick-actions {
+		grid-template-columns: 1fr;
+	}
+
+	.episteme-note-list {
+		max-height: 250px;
+	}
+
+	.episteme-note-stats-col {
+		width: 80px;
+	}
+
+	.episteme-start-button-container {
+		justify-content: stretch;
+	}
+
+	.episteme-start-session-btn {
+		width: 100%;
+	}
+}
+
+/* ========================================
+   Move Card Modal
+   ======================================== */
+
+.episteme-move-card-modal .episteme-modal-info {
+	color: var(--text-muted);
+	font-size: 13px;
+	margin-bottom: 16px;
+}
+
+/* Tag filter buttons */
+.episteme-move-filters {
+	display: flex;
+	gap: 8px;
+	margin-bottom: 12px;
+}
+
+.episteme-filter-btn {
+	padding: 6px 12px;
+	border: 1px solid var(--background-modifier-border);
+	border-radius: 4px;
+	background: var(--background-primary);
+	cursor: pointer;
+	font-size: 13px;
+	transition: all 0.15s ease;
+}
+
+.episteme-filter-btn:hover {
+	background: var(--background-modifier-hover);
+}
+
+.episteme-filter-btn.active {
+	background: var(--interactive-accent);
+	color: var(--text-on-accent);
+	border-color: var(--interactive-accent);
+}
+
+/* Suggested notes section (from backlinks) */
+.episteme-suggested-section {
+	margin-bottom: 16px;
+	padding-bottom: 12px;
+	border-bottom: 1px solid var(--background-modifier-border);
+}
+
+.episteme-suggested-title {
+	font-size: 12px;
+	color: var(--text-muted);
+	margin: 0 0 8px 0;
+	font-weight: 500;
+	text-transform: uppercase;
+	letter-spacing: 0.5px;
+}
+
+.episteme-note-suggested {
+	background: rgba(var(--interactive-accent-rgb), 0.08);
+	border-left: 3px solid var(--interactive-accent);
+	border-radius: 4px;
+	margin-bottom: 4px;
+}
+
+.episteme-move-note-list {
+	border: 1px solid var(--background-modifier-border);
+	border-radius: 6px;
+}
+
+.episteme-note-item {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	padding: 10px 12px;
+	border-bottom: 1px solid var(--background-modifier-border);
+	cursor: pointer;
+	transition: background-color 0.1s ease;
+}
+
+.episteme-note-item:last-child {
+	border-bottom: none;
+}
+
+.episteme-note-item:hover {
+	background: var(--background-modifier-hover);
+}
+
+.episteme-note-info {
+	display: flex;
+	align-items: center;
+	gap: 8px;
+	overflow: hidden;
+	flex: 1;
+}
+
+.episteme-note-icon {
+	flex-shrink: 0;
+}
+
+.episteme-note-name {
+	font-weight: 500;
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+}
+
+.episteme-note-path {
+	font-size: 12px;
+	color: var(--text-muted);
+	margin-left: 8px;
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+}
+
+.episteme-note-select-btn {
+	flex-shrink: 0;
+	padding: 4px 12px;
+	border-radius: 4px;
+	background: var(--interactive-accent);
+	color: var(--text-on-accent);
+	border: none;
+	cursor: pointer;
+	font-size: 13px;
+	opacity: 0;
+	transition: opacity 0.1s ease;
+}
+
+.episteme-note-item:hover .episteme-note-select-btn {
+	opacity: 1;
+}
+
+.episteme-note-select-btn:hover {
+	background: var(--interactive-accent-hover);
+}
+
+.episteme-note-list-more {
+	padding: 12px;
+	text-align: center;
+	color: var(--text-muted);
+	font-size: 12px;
+	font-style: italic;
+}
+
+/* ========================================
+   Missing Flashcards Modal
+   ======================================== */
+
+.episteme-missing-flashcards-modal .episteme-modal-info {
+	color: var(--text-muted);
+	font-size: 13px;
+	margin-bottom: 16px;
+}
+
+/* Summary section at top */
+.episteme-missing-summary {
+	text-align: center;
+	padding: 16px;
+	background: var(--background-secondary);
+	border-radius: 8px;
+	margin-bottom: 16px;
+}
+
+.episteme-missing-count {
+	font-size: 32px;
+	font-weight: 700;
+	color: var(--text-normal);
+}
+
+.episteme-missing-label {
+	font-size: 13px;
+	color: var(--text-muted);
+	margin-top: 4px;
+}
+
+/* Note list specific to missing flashcards */
+.episteme-missing-note-list {
+	border: 1px solid var(--background-modifier-border);
+	border-radius: 6px;
+}
+
+/* Note item in missing flashcards list */
+.episteme-missing-note-item {
+	display: flex;
+	align-items: center;
+	gap: 12px;
+	padding: 12px;
+	border-bottom: 1px solid var(--background-modifier-border);
+	cursor: pointer;
+	transition: background-color 0.1s ease;
+}
+
+.episteme-missing-note-item:last-child {
+	border-bottom: none;
+}
+
+.episteme-missing-note-item:hover {
+	background: var(--background-modifier-hover);
+}
+
+.episteme-missing-note-info {
+	flex: 1;
+	min-width: 0;
+}
+
+.episteme-missing-note-name {
+	font-weight: 500;
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+	color: var(--text-normal);
+}
+
+.episteme-missing-note-path {
+	font-size: 11px;
+	color: var(--text-muted);
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+	margin-top: 2px;
+}
+
+/* Tag badges for note types */
+.episteme-tag-badge {
+	font-size: 10px;
+	font-weight: 600;
+	padding: 3px 8px;
+	border-radius: 10px;
+	text-transform: uppercase;
+	flex-shrink: 0;
+	letter-spacing: 0.3px;
+}
+
+.episteme-tag-badge--concept {
+	background: rgba(74, 222, 128, 0.2);
+	color: var(--color-green, #4ade80);
+}
+
+.episteme-tag-badge--zettel {
+	background: rgba(59, 130, 246, 0.2);
+	color: var(--color-blue, #3b82f6);
+}
+
+.episteme-tag-badge--application {
+	background: rgba(251, 146, 60, 0.2);
+	color: var(--color-orange, #fb923c);
+}
+
+.episteme-tag-badge--protocol {
+	background: rgba(168, 85, 247, 0.2);
+	color: #a855f7;
+}
+
+/* Mobile adjustments for missing flashcards modal */
+@media screen and (max-width: 600px) {
+	.episteme-missing-flashcards-modal {
+		min-width: auto;
+		width: 100%;
+	}
+
+	.episteme-missing-note-list {
+		max-height: 300px;
+	}
+
+	.episteme-missing-summary {
+		padding: 12px;
+	}
+
+	.episteme-missing-count {
+		font-size: 28px;
+	}
+}
+
+/* ========================================
+   Harvest Dashboard Modal
+   ======================================== */
+
+.episteme-harvest-dashboard-modal {
+	min-width: 550px;
+}
+
+/* Stats Summary */
+.episteme-harvest-stats {
+	display: grid;
+	grid-template-columns: repeat(4, 1fr);
+	gap: 8px;
+	margin-bottom: 20px;
+}
+
+.episteme-harvest-stat {
+	text-align: center;
+	padding: 10px 8px;
+	background: var(--background-secondary);
+	border-radius: 6px;
+	font-size: 12px;
+	color: var(--text-muted);
+}
+
+.episteme-harvest-stat--ready {
+	background: linear-gradient(135deg, rgba(245, 158, 11, 0.15), rgba(217, 119, 6, 0.1));
+	color: #f59e0b;
+	font-weight: 600;
+}
+
+/* Section Headers */
+.episteme-harvest-section {
+	margin-bottom: 20px;
+}
+
+.episteme-harvest-section h3 {
+	font-size: 14px;
+	font-weight: 600;
+	margin: 0 0 12px 0;
+	color: var(--text-normal);
+}
+
+/* Card List */
+.episteme-harvest-list {
+	display: flex;
+	flex-direction: column;
+	gap: 8px;
+	max-height: 300px;
+	overflow-y: auto;
+}
+
+.episteme-harvest-row {
+	display: flex;
+	align-items: center;
+	gap: 12px;
+	padding: 10px 12px;
+	background: var(--background-secondary);
+	border-radius: 6px;
+	transition: background-color 0.1s ease;
+}
+
+.episteme-harvest-row:hover {
+	background: var(--background-modifier-hover);
+}
+
+.episteme-harvest-row input[type="checkbox"] {
+	flex-shrink: 0;
+	cursor: pointer;
+	width: 16px;
+	height: 16px;
+}
+
+.episteme-harvest-preview {
+	flex: 1;
+	min-width: 0;
+}
+
+.episteme-harvest-question {
+	font-size: 13px;
+	color: var(--text-normal);
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+}
+
+.episteme-harvest-source {
+	font-size: 11px;
+	color: var(--text-muted);
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+	margin-top: 2px;
+}
+
+/* Maturity in harvest row */
+.episteme-harvest-maturity {
+	display: flex;
+	align-items: center;
+	gap: 8px;
+	flex-shrink: 0;
+	width: 120px;
+}
+
+.episteme-harvest-maturity .episteme-maturity-bar {
+	width: 60px;
+}
+
+/* Empty State */
+.episteme-harvest-empty {
+	text-align: center;
+	padding: 32px 16px;
+	color: var(--text-muted);
+	font-style: italic;
+}
+
+/* Action Buttons */
+.episteme-harvest-actions {
+	display: flex;
+	flex-direction: column;
+	gap: 12px;
+	margin-top: 16px;
+	padding-top: 16px;
+	border-top: 1px solid var(--background-modifier-border);
+}
+
+.episteme-harvest-actions .episteme-btn-primary,
+.episteme-harvest-actions .episteme-btn-secondary {
+	width: 100%;
+}
+
+/* Mobile adjustments for harvest dashboard */
+@media screen and (max-width: 600px) {
+	.episteme-harvest-dashboard-modal {
+		min-width: auto;
+		width: 100%;
+	}
+
+	.episteme-harvest-stats {
+		grid-template-columns: repeat(2, 1fr);
+	}
+
+	.episteme-harvest-list {
+		max-height: 250px;
+	}
+
+	.episteme-harvest-row {
+		flex-wrap: wrap;
+	}
+
+	.episteme-harvest-maturity {
+		width: 100%;
+		margin-top: 8px;
+	}
+
+	.episteme-harvest-actions {
+		flex-direction: column;
+	}
+
+	.episteme-harvest-actions .episteme-btn-primary,
+	.episteme-harvest-actions .episteme-btn-secondary {
+		width: 100%;
+	}
+}
+
+/* Make review card container position relative for dot */
+.episteme-review-card {
+	position: relative;
+}

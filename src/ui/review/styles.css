@@ -1,0 +1,504 @@
+/* =========================================
+   Review View Styles
+   Review session UI
+   ========================================= */
+
+.episteme-review {
+	display: flex;
+	flex-direction: column;
+	height: 100dvh;
+	background: var(--background-primary);
+	overflow: hidden;
+}
+
+/* Review Header */
+.episteme-review-header {
+	display: flex;
+	justify-content: center;
+	align-items: center;
+	padding: 12px 16px;
+	border-bottom: 1px solid var(--background-modifier-border);
+	background: var(--background-secondary);
+	position: relative;
+	flex-shrink: 0;
+}
+
+.episteme-review-open-note {
+	position: absolute;
+	right: 16px;
+	background: none;
+	border: none;
+	cursor: pointer;
+	color: var(--text-muted);
+	padding: 4px;
+	border-radius: 4px;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+}
+
+.episteme-review-open-note:hover {
+	background: var(--background-modifier-hover);
+	color: var(--text-normal);
+}
+
+.episteme-review-progress-text {
+	font-size: 14px;
+	font-weight: 600;
+	color: var(--text-normal);
+}
+
+/* Card Container */
+.episteme-review-card-container {
+	flex: 1;
+	min-height: 0;
+	display: flex;
+	align-items: flex-start;
+	justify-content: center;
+	padding: 20px;
+	overflow-y: auto;
+}
+
+/* Reduced padding when editing flashcard (to accommodate keyboard on mobile) */
+.episteme-review-card-container--editing {
+	padding: 2px;
+}
+
+.episteme-review-card {
+	max-width: 700px;
+	width: 100%;
+	text-align: center;
+}
+
+/* Temporary Badge (for cards from Literature Notes) */
+.episteme-review-temporary-badge {
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	margin-bottom: 16px;
+	padding: 8px 16px;
+	background: linear-gradient(135deg, #ffc107, #ffb300);
+	border-radius: 8px;
+	color: #000;
+}
+
+.episteme-review-temporary-badge .episteme-badge-text {
+	font-size: 0.75em;
+	font-weight: 700;
+	letter-spacing: 0.1em;
+}
+
+.episteme-review-temporary-badge .episteme-badge-hint {
+	font-size: 0.65em;
+	opacity: 0.7;
+}
+
+/* Question */
+.episteme-review-question {
+	font-size: 1.4em;
+	line-height: 1.6;
+	color: var(--text-normal);
+	margin-bottom: 24px;
+}
+
+.episteme-review-question p {
+	margin: 0;
+}
+
+/* Divider */
+.episteme-review-divider {
+	border: none;
+	border-top: 1px solid var(--background-modifier-border);
+	margin: 24px 0;
+}
+
+/* Answer */
+.episteme-review-answer {
+	font-size: 1.2em;
+	line-height: 1.6;
+	color: var(--text-muted);
+}
+
+.episteme-review-answer p {
+	margin: 0;
+}
+
+/* Editable fields (inline edit during review) */
+.episteme-review-editable {
+	border: 2px solid var(--interactive-accent);
+	border-radius: 6px;
+	padding: 12px;
+	background: var(--background-primary);
+	min-height: 40px;
+	outline: none;
+	white-space: pre-wrap;
+	font-family: var(--font-monospace);
+	font-size: 1em;
+	line-height: 1.6;
+	color: var(--text-normal);
+}
+
+.episteme-review-editable:focus {
+	box-shadow: 0 0 0 2px var(--interactive-accent);
+}
+
+/* Clear hover states when in edit mode */
+.episteme-review-card-container--editing .episteme-review-question,
+.episteme-review-card-container--editing .episteme-review-answer {
+	background: transparent !important;
+}
+
+/* Visual indicator that field is editable (Cmd+click) - not in edit mode */
+.episteme-review-card-container:not(.episteme-review-card-container--editing) .episteme-review-question:not(:has(.episteme-review-editable)),
+.episteme-review-card-container:not(.episteme-review-card-container--editing) .episteme-review-answer:not(:has(.episteme-review-editable)) {
+	border-radius: 6px;
+	padding: 8px;
+	margin: -8px;
+	transition: background 0.15s ease;
+}
+
+.episteme-review-card-container:not(.episteme-review-card-container--editing) .episteme-review-question:not(:has(.episteme-review-editable)):hover,
+.episteme-review-card-container:not(.episteme-review-card-container--editing) .episteme-review-answer:not(:has(.episteme-review-editable)):hover {
+	background: var(--background-modifier-hover);
+}
+
+/* Buttons Container */
+.episteme-review-buttons {
+	display: flex;
+	justify-content: center;
+	gap: 12px;
+	padding: 20px 16px;
+	border-top: 1px solid var(--background-modifier-border);
+	background: var(--background-secondary);
+	flex-wrap: nowrap;
+	flex-shrink: 0;
+}
+
+/* Base Button Style */
+.episteme-btn {
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	gap: 4px;
+	padding: 20px 28px;
+	border: none;
+	border-radius: 8px;
+	cursor: pointer;
+	font-weight: 500;
+	font-size: 14px;
+	min-width: 80px;
+	transition: transform 0.1s ease, filter 0.1s ease;
+}
+
+.episteme-btn:hover {
+	filter: brightness(1.1);
+}
+
+.episteme-btn:active {
+	transform: scale(0.98);
+}
+
+/* Buttons Wrapper - contains main buttons + menu icon */
+.episteme-buttons-wrapper {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	width: 100%;
+	position: relative;
+}
+
+/* Main buttons container */
+.episteme-buttons-main {
+	display: flex;
+	justify-content: center;
+	gap: 12px;
+	flex-wrap: nowrap;
+}
+
+/* Menu button (gear/more icon) - positioned at right edge */
+.episteme-btn-menu {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	width: 40px;
+	height: 40px;
+	padding: 0;
+	border: none;
+	border-radius: 8px;
+	background: var(--background-modifier-hover);
+	color: var(--text-muted);
+	cursor: pointer;
+	transition: background 0.15s ease, color 0.15s ease;
+	position: absolute;
+	right: 0;
+}
+
+.episteme-btn-menu:hover {
+	background: var(--background-modifier-border);
+	color: var(--text-normal);
+}
+
+.episteme-btn-menu:active {
+	transform: scale(0.95);
+}
+
+.episteme-btn-menu svg {
+	width: 18px;
+	height: 18px;
+}
+
+/* Show Answer Button */
+.episteme-btn-show {
+	background: var(--interactive-accent);
+	color: var(--text-on-accent);
+	padding: 24px 48px;
+}
+
+/* Rating Buttons */
+.episteme-btn-again {
+	background: var(--color-red, #ef4444);
+	color: white;
+}
+
+.episteme-btn-hard {
+	background: var(--color-orange, #f97316);
+	color: white;
+}
+
+.episteme-btn-good {
+	background: var(--color-green, #22c55e);
+	color: white;
+}
+
+.episteme-btn-easy {
+	background: var(--color-cyan, #06b6d4);
+	color: white;
+}
+
+.episteme-btn-label {
+	font-weight: 600;
+}
+
+.episteme-btn-time {
+	font-size: 11px;
+	opacity: 0.9;
+}
+
+/* Progress Bar */
+.episteme-review-progress {
+	padding: 0 16px 12px;
+	background: var(--background-secondary);
+	flex-shrink: 0;
+}
+
+.episteme-review-progress:empty {
+	display: none;
+	padding: 0;
+}
+
+/* Hide progress bar when in edit mode (keyboard issues) */
+.episteme-review-card-container--editing ~ .episteme-review-buttons ~ .episteme-review-progress {
+	display: none;
+}
+
+.episteme-progress-bar {
+	height: 4px;
+	background: var(--background-modifier-border);
+	border-radius: 2px;
+	overflow: hidden;
+}
+
+.episteme-progress-fill {
+	height: 100%;
+	background: var(--interactive-accent);
+	transition: width 0.3s ease;
+}
+
+/* Empty State */
+.episteme-review-empty {
+	text-align: center;
+	padding: 48px 24px;
+}
+
+.episteme-review-empty-icon {
+	font-size: 48px;
+	margin-bottom: 16px;
+}
+
+.episteme-review-empty-text {
+	font-size: 16px;
+	color: var(--text-muted);
+	margin-bottom: 24px;
+}
+
+/* Summary */
+.episteme-review-summary {
+	text-align: center;
+	padding: 32px 24px;
+	max-width: 400px;
+	margin: 0 auto;
+}
+
+.episteme-review-summary h2 {
+	font-size: 24px;
+	margin: 0 0 24px 0;
+	color: var(--text-normal);
+}
+
+.episteme-review-stats {
+	display: grid;
+	grid-template-columns: repeat(2, 1fr);
+	gap: 12px;
+	margin-bottom: 24px;
+}
+
+.episteme-stat-item {
+	padding: 12px;
+	background: var(--background-secondary);
+	border-radius: 8px;
+}
+
+.episteme-stat-label {
+	font-size: 12px;
+	color: var(--text-muted);
+	margin-bottom: 4px;
+}
+
+.episteme-stat-value {
+	font-size: 20px;
+	font-weight: 600;
+	color: var(--text-normal);
+}
+
+/* Stat colors */
+.stat-again .episteme-stat-value {
+	color: var(--color-red, #ef4444);
+}
+
+.stat-hard .episteme-stat-value {
+	color: var(--color-orange, #f97316);
+}
+
+.stat-good .episteme-stat-value {
+	color: var(--color-green, #22c55e);
+}
+
+.stat-easy .episteme-stat-value {
+	color: var(--color-cyan, #06b6d4);
+}
+
+.episteme-review-summary-buttons {
+	display: flex;
+	gap: 12px;
+	justify-content: center;
+}
+
+.episteme-review-summary-buttons .episteme-btn {
+	padding: 12px 32px;
+}
+
+/* Waiting Screen (for learning cards) */
+.episteme-review-waiting {
+	text-align: center;
+	padding: 32px 24px;
+	max-width: 400px;
+	margin: 0 auto;
+}
+
+.episteme-review-waiting h2 {
+	font-size: 24px;
+	margin: 0 0 16px 0;
+	color: var(--text-normal);
+}
+
+.episteme-waiting-message {
+	color: var(--text-muted);
+	margin: 0 0 24px 0;
+}
+
+.episteme-waiting-countdown {
+	margin-bottom: 24px;
+}
+
+.episteme-waiting-label {
+	color: var(--text-muted);
+	font-size: 14px;
+	margin: 0 0 8px 0;
+}
+
+.episteme-countdown-timer {
+	font-size: 48px;
+	font-weight: 700;
+	color: var(--interactive-accent);
+	font-variant-numeric: tabular-nums;
+}
+
+.episteme-review-waiting-buttons {
+	display: flex;
+	gap: 12px;
+	justify-content: center;
+}
+
+.episteme-review-waiting-buttons .episteme-btn {
+	padding: 12px 32px;
+}
+
+/* ============================================
+   REVIEW HEADER STATS
+   ============================================ */
+
+.episteme-review-header-stats {
+	display: flex;
+	align-items: center;
+	gap: 6px;
+}
+
+.episteme-review-stat-badge {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	min-width: 20px;
+	height: 20px;
+	padding: 0 6px;
+	border-radius: 10px;
+	font-size: 11px;
+	font-weight: 600;
+}
+
+.episteme-review-stat-badge--new {
+	background: rgba(74, 222, 128, 0.2);
+	color: var(--color-green, #4ade80);
+}
+
+.episteme-review-stat-badge--learning {
+	background: rgba(251, 146, 60, 0.2);
+	color: var(--color-orange, #fb923c);
+}
+
+.episteme-review-stat-badge--due {
+	background: rgba(59, 130, 246, 0.2);
+	color: var(--color-blue, #3b82f6);
+}
+
+/* ============================================
+   iOS-specific safe area handling
+   ============================================ */
+
+@supports (padding-bottom: env(safe-area-inset-bottom)) {
+	.episteme-review-buttons:not([style*="display: none"]) {
+		padding-bottom: calc(12px + env(safe-area-inset-bottom));
+	}
+
+	.episteme-review-progress:not([style*="display: none"]) {
+		padding-bottom: calc(12px + env(safe-area-inset-bottom));
+	}
+
+	/* No extra safe area padding when editing */
+	.episteme-review-card-container--editing ~ .episteme-review-buttons {
+		padding-bottom: 8px;
+	}
+
+	.episteme-review-card-container--editing ~ .episteme-review-progress {
+		padding-bottom: 12px;
+	}
+}

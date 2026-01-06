@@ -23,3 +23,6 @@ data.json
 
 # Environment variables
 .env
+
+# Backup of original styles.css before CSS refactoring
+styles.css.backup

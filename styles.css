@@ -1,9 +1,173 @@
-/* Episteme Settings Styles */
+/* =========================================
+   Settings Styles
+   ======================================== */
+
 .episteme-api-input {
 	width: 300px;
 }
 
-/* Episteme Panel Styles */
+
+/* =========================================
+   Components Styles
+   Shared component styles (empty states, loading,
+   markdown rendering, note type indicators)
+   ======================================== */
+
+/* Empty States */
+.episteme-empty,
+.episteme-no-cards {
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	justify-content: center;
+	flex: 1;
+	color: var(--text-muted);
+	text-align: center;
+	padding: 16px 8px;
+}
+
+.episteme-no-cards p {
+	margin: 8px 0;
+}
+
+.episteme-word-count {
+	font-size: 12px;
+	color: var(--text-faint);
+}
+
+/* Processing/Loading State */
+.episteme-processing {
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	justify-content: center;
+	padding: 24px 8px;
+	gap: 12px;
+}
+
+.episteme-spinner {
+	color: var(--interactive-accent);
+}
+
+.episteme-spinner svg {
+	display: block;
+}
+
+.episteme-processing-text {
+	font-size: 14px;
+	font-weight: 500;
+	color: var(--text-normal);
+}
+
+.episteme-processing-subtext {
+	font-size: 12px;
+	color: var(--text-muted);
+}
+
+/* Wikilinks - styled like Obsidian internal links */
+.episteme-wikilink {
+	color: var(--link-color);
+	cursor: pointer;
+	text-decoration: none;
+}
+
+.episteme-wikilink:hover {
+	color: var(--link-color-hover);
+	text-decoration: underline;
+}
+
+/* Markdown content rendered by Obsidian */
+.episteme-md-content {
+	display: inline;
+}
+
+.episteme-md-content p {
+	display: inline;
+	margin: 0;
+}
+
+/* Poprawka dla linków w markdown content */
+.episteme-md-content a.internal-link,
+.episteme-md-content a.external-link,
+.episteme-md-content a {
+	color: var(--link-color);
+	cursor: pointer;
+	text-decoration: none;
+	pointer-events: auto;
+}
+
+.episteme-md-content a:hover {
+	color: var(--link-color-hover);
+	text-decoration: underline;
+}
+
+/* ========================================
+   Note Type Indicator
+   ======================================== */
+
+.episteme-note-type-indicator {
+	display: flex;
+	justify-content: center;
+	margin-bottom: 12px;
+}
+
+.episteme-note-type-badge {
+	display: inline-flex;
+	align-items: center;
+	font-size: 11px;
+	font-weight: 600;
+	padding: 4px 12px;
+	border-radius: 12px;
+	text-transform: uppercase;
+	letter-spacing: 0.5px;
+}
+
+.episteme-note-type-icon {
+	margin-right: 6px;
+	font-size: 12px;
+}
+
+/* Temporary - amber/yellow for literature notes */
+.episteme-note-type-badge--temporary {
+	background: rgba(251, 191, 36, 0.2);
+	color: var(--color-yellow, #fbbf24);
+}
+
+/* Permanent - green for concept/zettel */
+.episteme-note-type-badge--permanent {
+	background: rgba(74, 222, 128, 0.2);
+	color: var(--color-green, #4ade80);
+}
+
+/* Maybe - blue for application/protocol */
+.episteme-note-type-badge--maybe {
+	background: rgba(59, 130, 246, 0.2);
+	color: var(--color-blue, #3b82f6);
+}
+
+/* None - gray for non-flashcard notes */
+.episteme-note-type-badge--none {
+	background: rgba(156, 163, 175, 0.2);
+	color: var(--text-muted);
+}
+
+/* Unknown - subtle gray */
+.episteme-note-type-badge--unknown {
+	background: rgba(156, 163, 175, 0.15);
+	color: var(--text-faint);
+}
+
+.episteme-no-cards-message {
+	text-align: center;
+	color: var(--text-muted);
+	font-size: 13px;
+}
+
+
+/* =========================================
+   Panel Styles
+   Flashcard sidebar panel (header, content, footer)
+   ======================================== */
 
 .episteme-panel {
 	display: flex;
@@ -73,56 +237,6 @@
 	flex-direction: column;
 	flex: 1;
 	overflow-y: auto;
-}
-
-.episteme-empty,
-.episteme-no-cards {
-	display: flex;
-	flex-direction: column;
-	align-items: center;
-	justify-content: center;
-	flex: 1;
-	color: var(--text-muted);
-	text-align: center;
-	padding: 16px 8px;
-}
-
-.episteme-no-cards p {
-	margin: 8px 0;
-}
-
-.episteme-word-count {
-	font-size: 12px;
-	color: var(--text-faint);
-}
-
-/* Processing/Loading State */
-.episteme-processing {
-	display: flex;
-	flex-direction: column;
-	align-items: center;
-	justify-content: center;
-	padding: 24px 8px;
-	gap: 12px;
-}
-
-.episteme-spinner {
-	color: var(--interactive-accent);
-}
-
-.episteme-spinner svg {
-	display: block;
-}
-
-.episteme-processing-text {
-	font-size: 14px;
-	font-weight: 500;
-	color: var(--text-normal);
-}
-
-.episteme-processing-subtext {
-	font-size: 12px;
-	color: var(--text-muted);
 }
 
 /* Preview State */
@@ -225,43 +339,6 @@
 /* Show separator for temporary cards with checkboxes */
 .episteme-card-wrapper .episteme-card-separator {
 	display: block;
-}
-
-/* Wikilinks - styled like Obsidian internal links */
-.episteme-wikilink {
-	color: var(--link-color);
-	cursor: pointer;
-	text-decoration: none;
-}
-
-.episteme-wikilink:hover {
-	color: var(--link-color-hover);
-	text-decoration: underline;
-}
-
-/* Markdown content rendered by Obsidian */
-.episteme-md-content {
-	display: inline;
-}
-
-.episteme-md-content p {
-	display: inline;
-	margin: 0;
-}
-
-/* Poprawka dla linków w markdown content */
-.episteme-md-content a.internal-link,
-.episteme-md-content a.external-link,
-.episteme-md-content a {
-	color: var(--link-color);
-	cursor: pointer;
-	text-decoration: none;
-	pointer-events: auto;
-}
-
-.episteme-md-content a:hover {
-	color: var(--link-color-hover);
-	text-decoration: underline;
 }
 
 /* Footer Section */
@@ -565,9 +642,301 @@
 	border-top: 1px solid var(--background-modifier-border);
 }
 
-/* ============================================
-   REVIEW VIEW STYLES
-   ============================================ */
+/* ========================================
+    Temporary Cards Bulk Selection
+    ======================================== */
+
+/* Temporary cards controls bar */
+.episteme-temporary-controls {
+	display: flex;
+	align-items: center;
+	gap: 8px;
+	padding: 8px 12px;
+	background: linear-gradient(
+		135deg,
+		rgba(255, 193, 7, 0.1),
+		rgba(255, 179, 0, 0.05)
+	);
+	border: 1px solid rgba(255, 193, 7, 0.3);
+	border-radius: 6px;
+	margin-bottom: 12px;
+	flex-wrap: wrap;
+}
+
+/* Badges row wrapper */
+.episteme-badges-row {
+	display: flex;
+	align-items: center;
+	gap: 8px;
+}
+
+/* Base badge styling */
+.episteme-badge {
+	display: inline-flex;
+	align-items: center;
+	gap: 6px;
+	padding: 4px 10px;
+	border-radius: 12px;
+	font-size: 12px;
+	font-weight: 500;
+	white-space: nowrap;
+}
+
+/* Incubating badge */
+.episteme-incubating-badge {
+	background: rgba(255, 193, 7, 0.15);
+	border: 1px solid rgba(255, 193, 7, 0.3);
+	color: #d4a106;
+}
+
+.episteme-incubating-count {
+	font-size: 12px;
+	font-weight: 500;
+	color: #d4a106;
+}
+
+/* Controls divider */
+.episteme-controls-divider {
+	width: 1px;
+	height: 20px;
+	background: rgba(255, 193, 7, 0.3);
+	margin: 0 8px;
+	flex-shrink: 0;
+}
+
+/* Select all container */
+.episteme-select-all-container {
+	display: flex;
+	align-items: center;
+	gap: 8px;
+	margin-left: auto;
+	font-size: 13px;
+	color: var(--text-muted);
+	cursor: pointer;
+	padding: 4px 8px;
+	border-radius: 4px;
+	transition: background-color 0.15s ease;
+	user-select: none;
+}
+
+.episteme-select-all-container:hover {
+	background: var(--background-modifier-hover);
+}
+
+.episteme-select-all-container:active {
+	transform: scale(0.98);
+}
+
+/* Base checkbox styling */
+.episteme-checkbox-wrapper {
+	display: flex;
+	align-items: center;
+	gap: 6px;
+	user-select: none;
+}
+
+.episteme-checkbox {
+	appearance: none;
+	width: 18px;
+	height: 18px;
+	border: 2px solid var(--text-muted);
+	border-radius: 4px;
+	cursor: pointer;
+	transition: all 0.15s ease;
+	flex-shrink: 0;
+	position: relative;
+}
+
+.episteme-checkbox:hover {
+	border-color: var(--interactive-accent);
+}
+
+.episteme-checkbox:checked {
+	background: var(--interactive-accent);
+	border-color: var(--interactive-accent);
+}
+
+.episteme-checkbox:checked::after {
+	content: "✓";
+	position: absolute;
+	top: 50%;
+	left: 50%;
+	transform: translate(-50%, -50%);
+	color: var(--text-on-accent);
+	font-size: 12px;
+	font-weight: 700;
+}
+
+.episteme-checkbox:disabled {
+	opacity: 0.5;
+	cursor: not-allowed;
+}
+
+/* Card wrapper with checkbox */
+.episteme-card-wrapper {
+	display: flex;
+	align-items: flex-start;
+	gap: 8px;
+	padding: 4px 8px;
+	background: var(--background-secondary);
+	border-radius: 6px;
+	margin-bottom: 6px;
+}
+
+.episteme-card-wrapper:hover {
+	background: var(--background-modifier-hover);
+}
+
+.episteme-card-content {
+	flex: 1;
+	min-width: 0;
+}
+
+/* Move selected button in footer */
+.episteme-move-selected-btn {
+	background: var(--interactive-accent);
+	color: var(--text-on-accent);
+}
+
+.episteme-move-selected-btn:hover:not(:disabled) {
+	background: var(--interactive-accent-hover);
+}
+
+/* Delete selected button in footer */
+.episteme-delete-selected-btn {
+	background: var(--color-red, #ef4444);
+	color: white;
+}
+
+.episteme-delete-selected-btn:hover:not(:disabled) {
+	background: var(--color-red, #dc2626);
+}
+
+/* ========================================
+    Harvest Workflow Styles
+    Seeding → Incubation → Harvest
+    ======================================== */
+
+/* Seed Flashcards Button (green gradient) */
+.episteme-seed-flashcards-btn {
+	background: linear-gradient(135deg, #22c55e, #16a34a);
+	color: white;
+	font-weight: 600;
+}
+
+.episteme-seed-flashcards-btn:hover:not(:disabled) {
+	background: linear-gradient(135deg, #4ade80, #22c55e);
+}
+
+/* Maturity Indicator (progress bar under cards) */
+.episteme-maturity-indicator {
+	height: 4px;
+	background: var(--background-modifier-border);
+	border-radius: 2px;
+	overflow: hidden;
+	margin-top: 8px;
+}
+
+.episteme-maturity-bar {
+	height: 100%;
+	transition: width 0.3s ease;
+}
+
+/* Yellow Dot Indicator for Temporary Cards in Review */
+.episteme-temporary-dot {
+	position: absolute;
+	top: -4px;
+	right: -4px;
+	width: 12px;
+	height: 12px;
+	background: var(--color-yellow, #fbbf24);
+	border-radius: 50%;
+	border: 2px solid var(--background-primary);
+	box-shadow: 0 0 0 2px var(--background-secondary);
+}
+
+/* Gold/Amber dot for cards ready to harvest */
+.episteme-harvest-ready-dot {
+	background: linear-gradient(135deg, #fbbf24, #f59e0b);
+	animation: pulse-gold 2s ease-in-out infinite;
+}
+
+@keyframes pulse-gold {
+	0%, 100% {
+		opacity: 1;
+		transform: scale(1);
+	}
+	50% {
+		opacity: 0.8;
+		transform: scale(1.1);
+	}
+}
+
+/* Harvest Ready Badge (in panel content) */
+.episteme-harvest-ready-badge {
+	display: inline-flex;
+	align-items: center;
+	gap: 6px;
+	padding: 4px 10px;
+	background: linear-gradient(135deg, rgba(251, 191, 36, 0.2), rgba(245, 158, 11, 0.15));
+	border: 1px solid rgba(251, 191, 36, 0.4);
+	border-radius: 12px;
+	font-size: 11px;
+	font-weight: 600;
+	color: var(--color-yellow, #fbbf24);
+	white-space: nowrap;
+	animation: glow-yellow 3s ease-in-out infinite;
+}
+
+@keyframes glow-yellow {
+	0%, 100% {
+		box-shadow: 0 0 5px rgba(251, 191, 36, 0.3);
+	}
+	50% {
+		box-shadow: 0 0 15px rgba(251, 191, 36, 0.5);
+	}
+}
+
+/* Harvest Stats Badges in Panel */
+.episteme-harvest-stats {
+	display: flex;
+	gap: 8px;
+	align-items: center;
+	flex-wrap: wrap;
+}
+
+.episteme-harvest-stat {
+	display: flex;
+	align-items: center;
+	gap: 4px;
+	padding: 4px 8px;
+	background: var(--background-modifier-hover);
+	border-radius: 6px;
+	font-size: 11px;
+	color: var(--text-muted);
+}
+
+.episteme-harvest-stat strong {
+	color: var(--text-normal);
+	font-weight: 600;
+}
+
+/* Harvest Button in Quick Actions */
+.episteme-harvest-action-btn {
+	background: linear-gradient(135deg, #fbbf24, #f59e0b);
+	color: #000;
+	font-weight: 600;
+}
+
+.episteme-harvest-action-btn:hover:not(:disabled) {
+	background: linear-gradient(135deg, #fcd34d, #fbbf24);
+}
+
+
+/* =========================================
+   Review View Styles
+   Review session UI
+   ========================================= */
 
 .episteme-review {
 	display: flex;
@@ -1047,8 +1416,32 @@
 }
 
 /* ============================================
-   BASE MODAL STYLES
+   iOS-specific safe area handling
    ============================================ */
+
+@supports (padding-bottom: env(safe-area-inset-bottom)) {
+	.episteme-review-buttons:not([style*="display: none"]) {
+		padding-bottom: calc(12px + env(safe-area-inset-bottom));
+	}
+
+	.episteme-review-progress:not([style*="display: none"]) {
+		padding-bottom: calc(12px + env(safe-area-inset-bottom));
+	}
+
+	/* No extra safe area padding when editing */
+	.episteme-review-card-container--editing ~ .episteme-review-buttons {
+		padding-bottom: 8px;
+	}
+
+	.episteme-review-card-container--editing ~ .episteme-review-progress {
+		padding-bottom: 12px;
+	}
+}
+
+
+/* =========================================
+   Base Modal Styles
+   ========================================= */
 
 /* Modal container - fit to content */
 .modal:has(.episteme-modal) {
@@ -1095,9 +1488,9 @@
 	border-top: 1px solid var(--background-modifier-border);
 }
 
-/* ============================================
-   DECK SELECTION MODAL STYLES
-   ============================================ */
+/* =========================================
+   Deck Selection Modal
+   ========================================= */
 
 .episteme-deck-divider {
 	margin: 16px 0;
@@ -1156,246 +1549,9 @@
 	align-items: center;
 }
 
-/* ============================================
-   STATISTICS VIEW STYLES
-   ============================================ */
-
-.episteme-stats {
-	padding: 16px;
-	overflow-y: auto;
-	height: 100%;
-}
-
-.episteme-stats-section {
-	margin-bottom: 24px;
-	padding: 16px;
-	background: var(--background-secondary);
-	border-radius: 8px;
-}
-
-.episteme-stats-section h3 {
-	margin: 0 0 16px 0;
-	font-size: 16px;
-	font-weight: 600;
-	color: var(--text-normal);
-}
-
-/* Today Summary */
-.stats-today-empty {
-	color: var(--text-muted);
-	font-style: italic;
-	margin-bottom: 16px;
-}
-
-.stats-today-grid {
-	display: grid;
-	grid-template-columns: repeat(2, 1fr);
-	gap: 12px;
-	margin-bottom: 16px;
-}
-
-.stats-card {
-	text-align: center;
-	padding: 12px;
-	background: var(--background-primary);
-	border-radius: 6px;
-}
-
-.stats-card-value {
-	font-size: 24px;
-	font-weight: 700;
-	color: var(--text-normal);
-}
-
-.stats-card-label {
-	font-size: 12px;
-	color: var(--text-muted);
-	margin-top: 4px;
-}
-
-.stats-today-summary {
-	font-size: 13px;
-	color: var(--text-muted);
-}
-
-.stats-today-summary > div {
-	margin-bottom: 4px;
-}
-
-/* Range Selector */
-.episteme-stats-range-selector {
-	display: flex;
-	gap: 8px;
-	margin-bottom: 16px;
-	flex-wrap: wrap;
-}
-
-.episteme-stats-range-btn {
-	padding: 6px 12px;
-	border: 1px solid var(--background-modifier-border);
-	border-radius: 6px;
-	background: var(--background-secondary);
-	color: var(--text-muted);
-	cursor: pointer;
-	font-size: 13px;
-	transition: all 0.15s ease;
-}
-
-.episteme-stats-range-btn:hover {
-	background: var(--background-modifier-hover);
-}
-
-.episteme-stats-range-btn.active {
-	background: var(--interactive-accent);
-	color: var(--text-on-accent);
-	border-color: var(--interactive-accent);
-}
-
-/* Chart Containers */
-.stats-chart-container {
-	width: 100%;
-	height: 200px;
-	position: relative;
-}
-
-.stats-chart-container-small {
-	width: 180px;
-	height: 180px;
-	position: relative;
-	flex-shrink: 0;
-}
-
-.stats-chart-canvas,
-.stats-chart-canvas-small {
-	width: 100% !important;
-	height: 100% !important;
-}
-
-.stats-no-data {
-	color: var(--text-muted);
-	text-align: center;
-	padding: 40px 20px;
-	font-style: italic;
-}
-
-.stats-chart-summary {
-	margin-top: 12px;
-	font-size: 13px;
-	color: var(--text-muted);
-}
-
-.stats-chart-summary > div {
-	margin-bottom: 4px;
-}
-
-/* Card Counts */
-.stats-counts-row {
-	display: flex;
-	gap: 32px;
-	align-items: center;
-	justify-content: center;
-}
-
-.stats-counts-legend {
-	display: flex;
-	flex-direction: column;
-	gap: 8px;
-}
-
-.stats-legend-item {
-	display: flex;
-	align-items: center;
-	gap: 8px;
-	font-size: 13px;
-}
-
-.stats-legend-color {
-	width: 12px;
-	height: 12px;
-	border-radius: 2px;
-	flex-shrink: 0;
-}
-
-.stats-legend-value {
-	margin-left: auto;
-	color: var(--text-muted);
-}
-
-/* Calendar Heatmap */
-.stats-calendar-year {
-	text-align: center;
-	font-size: 14px;
-	font-weight: 600;
-	margin-bottom: 12px;
-	color: var(--text-normal);
-}
-
-.stats-calendar-day-labels {
-	display: none; /* Hidden for now, can be enabled for full calendar */
-}
-
-.stats-calendar-grid {
-	display: flex;
-	gap: 2px;
-	flex-wrap: nowrap;
-	overflow-x: auto;
-	padding-bottom: 8px;
-}
-
-.stats-calendar-week {
-	display: flex;
-	flex-direction: column;
-	gap: 2px;
-}
-
-.stats-calendar-cell {
-	width: 10px;
-	height: 10px;
-	border-radius: 2px;
-	cursor: pointer;
-}
-
-.stats-calendar-cell.future {
-	opacity: 0.3;
-}
-
-.stats-calendar-cell.level-0 {
-	background: var(--background-modifier-border);
-}
-
-.stats-calendar-cell.level-1 {
-	background: rgba(74, 222, 128, 0.3);
-}
-
-.stats-calendar-cell.level-2 {
-	background: rgba(74, 222, 128, 0.5);
-}
-
-.stats-calendar-cell.level-3 {
-	background: rgba(74, 222, 128, 0.7);
-}
-
-.stats-calendar-cell.level-4 {
-	background: rgba(74, 222, 128, 0.9);
-}
-
-.stats-calendar-legend {
-	display: flex;
-	align-items: center;
-	justify-content: flex-end;
-	gap: 4px;
-	margin-top: 8px;
-	font-size: 11px;
-	color: var(--text-muted);
-}
-
-.stats-calendar-legend .stats-calendar-cell {
-	cursor: default;
-}
-
-/* ============================================
-   CARD PREVIEW MODAL STYLES
-   ============================================ */
+/* =========================================
+   Card Preview Modal
+   ========================================= */
 
 .episteme-card-preview-count {
 	text-align: center;
@@ -1521,241 +1677,9 @@
 	background: var(--background-modifier-hover);
 }
 
-/* ============================================
-   STATS VIEW STYLE IMPROVEMENTS
-   ============================================ */
-
-/* Better centering for stats sections */
-.episteme-stats {
-	max-width: 900px;
-	margin: 0 auto;
-}
-
-/* Improved chart cursor for clickable bars */
-.stats-future .stats-chart-canvas {
-	cursor: pointer;
-}
-
-/* ============================================
-   MOBILE RESPONSIVE STYLES
-   ============================================ */
-
-/* Touch hint for mobile */
-.episteme-touch-hint {
-	text-align: center;
-	font-size: 12px;
-	color: var(--text-muted);
-	padding: 8px;
-	margin-bottom: 8px;
-}
-
-/* Mobile-specific adjustments */
-@media screen and (max-width: 600px) {
-	/* Settings panel - fix overflow */
-	.episteme-api-input {
-		width: 100%;
-		max-width: 100%;
-	}
-
-	/* Review card container - adjusted padding for mobile */
-	.episteme-review-card-container {
-		padding: 8px;
-	}
-
-	/* Mobile: minimal padding during edit mode */
-	.episteme-review-card-container--editing {
-		padding: 2px;
-	}
-
-	.episteme-review-card {
-		max-width: 100%;
-	}
-
-	/* Question and answer - slightly smaller fonts on mobile */
-	.episteme-review-question {
-		font-size: 1.2em;
-	}
-
-	.episteme-review-answer {
-		font-size: 1em;
-	}
-
-	/* Rating buttons - minimal padding for mobile */
-	.episteme-review-buttons {
-		padding: 8px 4px;
-		gap: 4px;
-	}
-
-	.episteme-btn {
-		padding: 14px 12px;
-		min-width: auto;
-		min-height: 60px;
-		flex: 1;
-	}
-
-	.episteme-btn-show {
-		padding: 20px 32px;
-		flex: none;
-	}
-
-	/* Menu button - mobile */
-	.episteme-btn-menu {
-		width: 44px;
-		height: 44px;
-	}
-
-	/* Deck selection modal */
-	.episteme-deck-modal {
-		min-width: auto;
-		width: 100%;
-	}
-
-	/* Statistics view adjustments */
-	.episteme-stats {
-		padding: 12px;
-	}
-
-	.stats-today-grid {
-		grid-template-columns: repeat(2, 1fr);
-	}
-
-	.stats-chart-container {
-		height: 180px;
-	}
-
-	.stats-counts-row {
-		flex-direction: column;
-		gap: 16px;
-	}
-
-	.stats-chart-container-small {
-		width: 150px;
-		height: 150px;
-		margin: 0 auto;
-	}
-
-	/* Calendar heatmap - smaller cells */
-	.stats-calendar-cell {
-		width: 8px;
-		height: 8px;
-	}
-
-	/* Panel styles */
-	.episteme-panel {
-		padding: 12px;
-	}
-
-	/* Card preview in panel */
-	.episteme-card {
-		padding: 12px;
-	}
-
-	/* Review summary stats grid */
-	.episteme-review-stats {
-		grid-template-columns: repeat(2, 1fr);
-	}
-
-	.episteme-review-summary {
-		padding: 24px 16px;
-	}
-
-	/* Header stat badges - smaller on mobile */
-	.episteme-review-stat-badge {
-		min-width: 18px;
-		height: 18px;
-		font-size: 10px;
-	}
-
-	/* Card preview modal - mobile adjustments */
-	.episteme-card-preview-modal {
-		width: 95vw;
-		max-width: none;
-	}
-
-	.episteme-card-preview-list {
-		max-height: 50vh;
-	}
-
-	.episteme-card-preview-footer {
-		flex-direction: column;
-		gap: 8px;
-		align-items: flex-start;
-	}
-
-	.episteme-card-preview-source {
-		max-width: 100%;
-	}
-
-	.episteme-card-preview-open-btn {
-		width: 100%;
-	}
-}
-
-/* Extra small screens (iPhone SE, etc.) */
-@media screen and (max-width: 375px) {
-	.episteme-review-question {
-		font-size: 1.1em;
-	}
-
-	.episteme-review-buttons {
-		gap: 4px;
-	}
-
-	.episteme-btn {
-		padding: 12px 8px;
-		min-width: auto;
-		flex: 1;
-	}
-
-	.stats-today-grid {
-		grid-template-columns: 1fr;
-	}
-}
-
-/* iOS-specific safe area handling */
-@supports (padding-bottom: env(safe-area-inset-bottom)) {
-	.episteme-review-buttons:not([style*="display: none"]) {
-		padding-bottom: calc(12px + env(safe-area-inset-bottom));
-	}
-
-	.episteme-review-progress:not([style*="display: none"]) {
-		padding-bottom: calc(12px + env(safe-area-inset-bottom));
-	}
-
-	/* No extra safe area padding when editing */
-	.episteme-review-card-container--editing ~ .episteme-review-buttons {
-		padding-bottom: 8px;
-	}
-
-	.episteme-review-card-container--editing ~ .episteme-review-progress {
-		padding-bottom: 12px;
-	}
-}
-
-/* Larger touch targets for all interactive elements on touch devices */
-@media (hover: none) and (pointer: coarse) {
-	.episteme-card-btn {
-		padding: 8px 12px;
-		font-size: 14px;
-	}
-
-	.episteme-open-btn {
-		padding: 8px 12px;
-	}
-
-	.episteme-btn-primary,
-	.episteme-btn-secondary {
-		padding: 12px 16px;
-	}
-
-	.stats-range-btn {
-		padding: 10px 16px;
-	}
-}
-
-/* ============================================
-   CUSTOM SESSION MODAL STYLES
-   ============================================ */
+/* =========================================
+   Custom Session Modal
+   ========================================= */
 
 .episteme-custom-session-modal h3 {
 	margin: 8px 0 12px 0;
@@ -2038,10 +1962,6 @@
 	margin-bottom: 4px;
 }
 
-.episteme-note-suggested:hover {
-	background: rgba(var(--interactive-accent-rgb), 0.15);
-}
-
 .episteme-move-note-list {
 	border: 1px solid var(--background-modifier-border);
 	border-radius: 6px;
@@ -2120,244 +2040,6 @@
 	color: var(--text-muted);
 	font-size: 12px;
 	font-style: italic;
-}
-
-/* ========================================
-   Temporary Cards Bulk Selection
-   ======================================== */
-
-/* Temporary cards controls bar */
-.episteme-temporary-controls {
-	display: flex;
-	align-items: center;
-	gap: 8px;
-	padding: 8px 12px;
-	background: linear-gradient(
-		135deg,
-		rgba(255, 193, 7, 0.1),
-		rgba(255, 179, 0, 0.05)
-	);
-	border: 1px solid rgba(255, 193, 7, 0.3);
-	border-radius: 6px;
-	margin-bottom: 12px;
-	flex-wrap: wrap;
-}
-
-/* Badges row wrapper */
-.episteme-badges-row {
-	display: flex;
-	align-items: center;
-	gap: 8px;
-}
-
-/* Base badge styling */
-.episteme-badge {
-	display: inline-flex;
-	align-items: center;
-	gap: 6px;
-	padding: 4px 10px;
-	border-radius: 12px;
-	font-size: 12px;
-	font-weight: 500;
-	white-space: nowrap;
-}
-
-/* Incubating badge */
-.episteme-incubating-badge {
-	background: rgba(255, 193, 7, 0.15);
-	border: 1px solid rgba(255, 193, 7, 0.3);
-	color: #d4a106;
-}
-
-.episteme-incubating-count {
-	font-size: 12px;
-	font-weight: 500;
-	color: #d4a106;
-}
-
-/* Controls divider */
-.episteme-controls-divider {
-	width: 1px;
-	height: 20px;
-	background: rgba(255, 193, 7, 0.3);
-	margin: 0 8px;
-	flex-shrink: 0;
-}
-
-/* Select all container */
-.episteme-select-all-container {
-	display: flex;
-	align-items: center;
-	gap: 8px;
-	margin-left: auto;
-	font-size: 13px;
-	color: var(--text-muted);
-	cursor: pointer;
-	padding: 4px 8px;
-	border-radius: 4px;
-	transition: background-color 0.15s ease;
-	user-select: none;
-}
-
-.episteme-select-all-container:hover {
-	background: rgba(255, 193, 7, 0.1);
-}
-
-.episteme-select-all-container:active {
-	background: rgba(255, 193, 7, 0.15);
-}
-
-.episteme-select-all-label {
-	cursor: pointer;
-	transition: opacity 0.15s ease;
-}
-
-.episteme-select-all-container:hover .episteme-select-all-label {
-	opacity: 0.8;
-}
-
-/* Base checkbox styling */
-input[type="checkbox"].episteme-card-checkbox,
-.episteme-select-all-container input[type="checkbox"] {
-	cursor: pointer;
-	flex-shrink: 0;
-	width: 18px;
-	height: 18px;
-	border: 2px solid var(--background-modifier-border);
-	border-radius: 4px;
-	background: var(--background-primary);
-	appearance: none;
-	transition: all 0.15s ease;
-}
-
-input[type="checkbox"].episteme-card-checkbox:hover,
-.episteme-select-all-container input[type="checkbox"]:hover {
-	border-color: var(--interactive-accent);
-}
-
-input[type="checkbox"].episteme-card-checkbox:focus,
-.episteme-select-all-container input[type="checkbox"]:focus {
-	outline: 2px solid var(--interactive-accent);
-	outline-offset: 2px;
-}
-
-input[type="checkbox"].episteme-card-checkbox:checked,
-.episteme-select-all-container input[type="checkbox"]:checked {
-	background: var(--interactive-accent);
-	border-color: var(--interactive-accent);
-	background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' fill='white'%3E%3Cpath d='M12.207 4.793a1 1 0 010 1.414l-5 5a1 1 0 01-1.414 0l-2-2a1 1 0 011.414-1.414L6.5 9.086l4.293-4.293a1 1 0 011.414 0z'/%3E%3C/svg%3E");
-	background-size: 12px;
-	background-position: center;
-	background-repeat: no-repeat;
-}
-
-/* Card wrapper with checkbox */
-.episteme-card-wrapper {
-	display: flex;
-	align-items: flex-start;
-	gap: 8px;
-}
-
-.episteme-card-wrapper:last-child {
-	margin-bottom: 0;
-}
-
-.episteme-card-wrapper .episteme-card {
-	flex: 1;
-	margin-bottom: 0;
-}
-
-.episteme-card-checkbox {
-	align-self: flex-start;
-	margin-top: 4px;
-}
-
-/* Move selected button in footer */
-.episteme-move-selected-btn {
-	margin: 4px 0 8px;
-	align-self: center;
-	background: linear-gradient(135deg, #ffc107, #ffb300);
-	color: #000;
-	font-weight: 600;
-}
-
-.episteme-move-selected-btn:hover {
-	background: linear-gradient(135deg, #ffca28, #ffc107);
-}
-
-/* Delete selected button in footer */
-.episteme-delete-selected-btn {
-	margin: 4px 0 8px;
-	align-self: center;
-	background: var(--color-red, #ef4444);
-	color: #fff;
-	font-weight: 600;
-}
-
-.episteme-delete-selected-btn:hover {
-	background: var(--color-red, #dc2626);
-}
-
-/* ========================================
-   Note Type Indicator
-   ======================================== */
-
-.episteme-note-type-indicator {
-	display: flex;
-	justify-content: center;
-	margin-bottom: 12px;
-}
-
-.episteme-note-type-badge {
-	display: inline-flex;
-	align-items: center;
-	font-size: 11px;
-	font-weight: 600;
-	padding: 4px 12px;
-	border-radius: 12px;
-	text-transform: uppercase;
-	letter-spacing: 0.5px;
-}
-
-.episteme-note-type-icon {
-	margin-right: 6px;
-	font-size: 12px;
-}
-
-/* Temporary - amber/yellow for literature notes */
-.episteme-note-type-badge--temporary {
-	background: rgba(251, 191, 36, 0.2);
-	color: var(--color-yellow, #fbbf24);
-}
-
-/* Permanent - green for concept/zettel */
-.episteme-note-type-badge--permanent {
-	background: rgba(74, 222, 128, 0.2);
-	color: var(--color-green, #4ade80);
-}
-
-/* Maybe - blue for application/protocol */
-.episteme-note-type-badge--maybe {
-	background: rgba(59, 130, 246, 0.2);
-	color: var(--color-blue, #3b82f6);
-}
-
-/* None - gray for non-flashcard notes */
-.episteme-note-type-badge--none {
-	background: rgba(156, 163, 175, 0.2);
-	color: var(--text-muted);
-}
-
-/* Unknown - subtle gray */
-.episteme-note-type-badge--unknown {
-	background: rgba(156, 163, 175, 0.15);
-	color: var(--text-faint);
-}
-
-.episteme-no-cards-message {
-	text-align: center;
-	color: var(--text-muted);
-	font-size: 13px;
 }
 
 /* ========================================
@@ -2487,136 +2169,6 @@ input[type="checkbox"].episteme-card-checkbox:checked,
 	.episteme-missing-count {
 		font-size: 28px;
 	}
-}
-
-/* ========================================
-   Harvest Workflow Styles
-   Seeding → Incubation → Harvest
-   ======================================== */
-
-/* Seed Flashcards Button (green gradient) */
-.episteme-btn-seed {
-	background: linear-gradient(135deg, #22c55e, #16a34a) !important;
-	color: white !important;
-}
-
-.episteme-btn-seed:hover:not(:disabled) {
-	background: linear-gradient(135deg, #4ade80, #22c55e) !important;
-}
-
-/* Maturity Indicator (progress bar under cards) */
-.episteme-maturity-indicator {
-	display: flex;
-	align-items: center;
-	gap: 8px;
-	margin-top: 6px;
-	padding-top: 6px;
-	border-top: 1px dashed rgba(255, 193, 7, 0.2);
-}
-
-.episteme-maturity-bar {
-	flex: 1;
-	height: 8px;
-	background: rgba(255, 193, 7, 0.1);
-	border-radius: 4px;
-	overflow: hidden;
-	border: 1px solid rgba(255, 193, 7, 0.2);
-}
-
-.episteme-maturity-fill {
-	height: 100%;
-	background: linear-gradient(90deg, #fbbf24, #f59e0b);
-	border-radius: 3px;
-	transition: width 0.3s ease;
-}
-
-.episteme-maturity-fill.episteme-maturity-ready {
-	background: linear-gradient(90deg, #22c55e, #16a34a);
-}
-
-.episteme-maturity-label {
-	font-size: 11px;
-	font-weight: 500;
-	color: var(--text-muted);
-	white-space: nowrap;
-	min-width: 45px;
-	text-align: right;
-}
-
-.episteme-maturity-label--ready {
-	color: var(--color-green, #22c55e);
-	font-weight: 600;
-}
-
-/* Yellow Dot Indicator for Temporary Cards in Review */
-.episteme-temporary-dot {
-	position: absolute;
-	top: 12px;
-	right: 12px;
-	width: 10px;
-	height: 10px;
-	border-radius: 50%;
-	background: #fbbf24;
-	box-shadow: 0 0 4px rgba(251, 191, 36, 0.5);
-}
-
-/* Gold/Amber dot for cards ready to harvest */
-.episteme-harvest-dot {
-	background: linear-gradient(135deg, #f59e0b, #d97706);
-	box-shadow: 0 0 6px rgba(245, 158, 11, 0.6);
-}
-
-/* Harvest Ready Badge (in panel content) */
-.episteme-harvest-ready-badge {
-	display: inline-flex;
-	align-items: center;
-	gap: 6px;
-	padding: 4px 10px;
-	background: linear-gradient(135deg, rgba(245, 158, 11, 0.2), rgba(217, 119, 6, 0.15));
-	border: 1px solid rgba(245, 158, 11, 0.4);
-	border-radius: 12px;
-	font-size: 12px;
-	font-weight: 500;
-	color: #f59e0b;
-	cursor: pointer;
-	transition: all 0.15s ease;
-	white-space: nowrap;
-}
-
-.episteme-harvest-ready-badge:hover {
-	background: linear-gradient(135deg, rgba(245, 158, 11, 0.3), rgba(217, 119, 6, 0.2));
-	border-color: rgba(245, 158, 11, 0.6);
-	transform: translateY(-1px);
-}
-
-/* Harvest Stats Badges in Panel */
-.episteme-harvest-stats-badges {
-	display: flex;
-	gap: 8px;
-	margin-bottom: 8px;
-}
-
-.episteme-incubating-badge {
-	display: inline-flex;
-	align-items: center;
-	gap: 4px;
-	padding: 4px 10px;
-	background: rgba(251, 191, 36, 0.15);
-	border: 1px solid rgba(251, 191, 36, 0.3);
-	border-radius: 12px;
-	font-size: 12px;
-	color: #fbbf24;
-}
-
-/* Harvest Button in Quick Actions */
-.episteme-harvest-btn {
-	border-color: rgba(245, 158, 11, 0.4) !important;
-	background: linear-gradient(135deg, rgba(245, 158, 11, 0.08), rgba(217, 119, 6, 0.05)) !important;
-}
-
-.episteme-harvest-btn:hover:not(:disabled) {
-	border-color: #f59e0b !important;
-	background: linear-gradient(135deg, rgba(245, 158, 11, 0.15), rgba(217, 119, 6, 0.1)) !important;
 }
 
 /* ========================================
@@ -2777,9 +2329,537 @@ input[type="checkbox"].episteme-card-checkbox:checked,
 	.episteme-harvest-actions {
 		flex-direction: column;
 	}
+
+	.episteme-harvest-actions .episteme-btn-primary,
+	.episteme-harvest-actions .episteme-btn-secondary {
+		width: 100%;
+	}
 }
 
 /* Make review card container position relative for dot */
 .episteme-review-card {
 	position: relative;
 }
+
+
+/* =========================================
+   Statistics View Styles
+   ========================================= */
+
+.episteme-stats {
+	padding: 16px;
+	overflow-y: auto;
+	height: 100%;
+}
+
+.episteme-stats-section {
+	margin-bottom: 24px;
+	padding: 16px;
+	background: var(--background-secondary);
+	border-radius: 8px;
+}
+
+.episteme-stats-section h3 {
+	margin: 0 0 16px 0;
+	font-size: 16px;
+	font-weight: 600;
+	color: var(--text-normal);
+}
+
+/* Today Summary */
+.stats-today-empty {
+	color: var(--text-muted);
+	font-style: italic;
+	margin-bottom: 16px;
+}
+
+.stats-today-grid {
+	display: grid;
+	grid-template-columns: repeat(2, 1fr);
+	gap: 12px;
+	margin-bottom: 16px;
+}
+
+.stats-card {
+	text-align: center;
+	padding: 12px;
+	background: var(--background-primary);
+	border-radius: 6px;
+}
+
+.stats-card-value {
+	font-size: 24px;
+	font-weight: 700;
+	color: var(--text-normal);
+}
+
+.stats-card-label {
+	font-size: 12px;
+	color: var(--text-muted);
+	margin-top: 4px;
+}
+
+.stats-today-summary {
+	font-size: 13px;
+	color: var(--text-muted);
+}
+
+.stats-today-summary > div {
+	margin-bottom: 4px;
+}
+
+/* Range Selector */
+.episteme-stats-range-selector {
+	display: flex;
+	gap: 8px;
+	margin-bottom: 16px;
+	flex-wrap: wrap;
+}
+
+.episteme-stats-range-btn {
+	padding: 6px 12px;
+	border: 1px solid var(--background-modifier-border);
+	border-radius: 6px;
+	background: var(--background-secondary);
+	color: var(--text-muted);
+	cursor: pointer;
+	font-size: 13px;
+	transition: all 0.15s ease;
+}
+
+.episteme-stats-range-btn:hover {
+	background: var(--background-modifier-hover);
+}
+
+.episteme-stats-range-btn.active {
+	background: var(--interactive-accent);
+	color: var(--text-on-accent);
+	border-color: var(--interactive-accent);
+}
+
+/* Chart Containers */
+.stats-chart-container {
+	width: 100%;
+	height: 200px;
+	position: relative;
+}
+
+.stats-chart-container-small {
+	width: 180px;
+	height: 180px;
+	position: relative;
+	flex-shrink: 0;
+}
+
+.stats-chart-canvas,
+.stats-chart-canvas-small {
+	width: 100% !important;
+	height: 100% !important;
+}
+
+.stats-no-data {
+	color: var(--text-muted);
+	text-align: center;
+	padding: 40px 20px;
+	font-style: italic;
+}
+
+.stats-chart-summary {
+	margin-top: 12px;
+	font-size: 13px;
+	color: var(--text-muted);
+}
+
+.stats-chart-summary > div {
+	margin-bottom: 4px;
+}
+
+/* Card Counts */
+.stats-counts-row {
+	display: flex;
+	gap: 32px;
+	align-items: center;
+	justify-content: center;
+}
+
+.stats-counts-legend {
+	display: flex;
+	flex-direction: column;
+	gap: 8px;
+}
+
+.stats-legend-item {
+	display: flex;
+	align-items: center;
+	gap: 8px;
+	font-size: 13px;
+}
+
+.stats-legend-color {
+	width: 12px;
+	height: 12px;
+	border-radius: 2px;
+	flex-shrink: 0;
+}
+
+.stats-legend-value {
+	margin-left: auto;
+	color: var(--text-muted);
+}
+
+/* Calendar Heatmap */
+.stats-calendar-year {
+	text-align: center;
+	font-size: 14px;
+	font-weight: 600;
+	margin-bottom: 12px;
+	color: var(--text-normal);
+}
+
+.stats-calendar-day-labels {
+	display: none; /* Hidden for now, can be enabled for full calendar */
+}
+
+.stats-calendar-grid {
+	display: flex;
+	gap: 2px;
+	flex-wrap: nowrap;
+	overflow-x: auto;
+	padding-bottom: 8px;
+}
+
+.stats-calendar-week {
+	display: flex;
+	flex-direction: column;
+	gap: 2px;
+}
+
+.stats-calendar-cell {
+	width: 10px;
+	height: 10px;
+	border-radius: 2px;
+	cursor: pointer;
+}
+
+.stats-calendar-cell.future {
+	opacity: 0.3;
+}
+
+.stats-calendar-cell.level-0 {
+	background: var(--background-modifier-border);
+}
+
+.stats-calendar-cell.level-1 {
+	background: rgba(74, 222, 128, 0.3);
+}
+
+.stats-calendar-cell.level-2 {
+	background: rgba(74, 222, 128, 0.5);
+}
+
+.stats-calendar-cell.level-3 {
+	background: rgba(74, 222, 128, 0.7);
+}
+
+.stats-calendar-cell.level-4 {
+	background: rgba(74, 222, 128, 0.9);
+}
+
+.stats-calendar-legend {
+	display: flex;
+	align-items: center;
+	justify-content: flex-end;
+	gap: 4px;
+	margin-top: 8px;
+	font-size: 11px;
+	color: var(--text-muted);
+}
+
+.stats-calendar-legend .stats-calendar-cell {
+	cursor: default;
+}
+
+/* Clickable legend items */
+.stats-legend-clickable {
+	cursor: pointer;
+	padding: 6px 8px;
+	margin: -6px -8px;
+	border-radius: 6px;
+	transition: background-color 0.15s ease;
+}
+
+.stats-legend-clickable:hover {
+	background: var(--background-modifier-hover);
+}
+
+/* =========================================
+   Stats View Style Improvements
+   ========================================= */
+
+/* Better centering for stats sections */
+.episteme-stats {
+	max-width: 900px;
+	margin: 0 auto;
+}
+
+/* Improved chart cursor for clickable bars */
+.stats-future .stats-chart-canvas {
+	cursor: pointer;
+}
+
+/* =========================================
+   Stats Mobile Adjustments
+   ========================================= */
+
+@media screen and (max-width: 600px) {
+	/* Statistics view adjustments */
+	.episteme-stats {
+		padding: 12px;
+	}
+
+	.stats-today-grid {
+		grid-template-columns: repeat(2, 1fr);
+	}
+
+	.stats-chart-container {
+		height: 180px;
+	}
+
+	.stats-counts-row {
+		flex-direction: column;
+		gap: 16px;
+	}
+
+	.stats-chart-container-small {
+		width: 150px;
+		height: 150px;
+		margin: 0 auto;
+	}
+
+	/* Calendar heatmap - smaller cells */
+	.stats-calendar-cell {
+		width: 8px;
+		height: 8px;
+	}
+}
+
+
+/* =========================================
+   Mobile Responsive Styles
+   All mobile overrides in one place
+   ========================================= */
+
+/* Touch hint for mobile */
+.episteme-touch-hint {
+	text-align: center;
+	font-size: 12px;
+	color: var(--text-muted);
+	padding: 8px;
+	margin-bottom: 8px;
+}
+
+/* Mobile-specific adjustments */
+@media screen and (max-width: 600px) {
+	/* Settings panel - fix overflow */
+	.episteme-api-input {
+		width: 100%;
+		max-width: 100%;
+	}
+
+	/* Review card container - adjusted padding for mobile */
+	.episteme-review-card-container {
+		padding: 8px;
+	}
+
+	/* Mobile: minimal padding during edit mode */
+	.episteme-review-card-container--editing {
+		padding: 2px;
+	}
+
+	.episteme-review-card {
+		max-width: 100%;
+	}
+
+	/* Question and answer - slightly smaller fonts on mobile */
+	.episteme-review-question {
+		font-size: 1.2em;
+	}
+
+	.episteme-review-answer {
+		font-size: 1em;
+	}
+
+	/* Rating buttons - minimal padding for mobile */
+	.episteme-review-buttons {
+		padding: 8px 4px;
+		gap: 4px;
+	}
+
+	.episteme-btn {
+		padding: 14px 12px;
+		min-width: auto;
+		min-height: 60px;
+		flex: 1;
+	}
+
+	.episteme-btn-show {
+		padding: 20px 32px;
+		flex: none;
+	}
+
+	/* Menu button - mobile */
+	.episteme-btn-menu {
+		width: 44px;
+		height: 44px;
+	}
+
+	/* Deck selection modal */
+	.episteme-deck-modal {
+		min-width: auto;
+		width: 100%;
+	}
+
+	/* Statistics view adjustments */
+	.episteme-stats {
+		padding: 12px;
+	}
+
+	.stats-today-grid {
+		grid-template-columns: repeat(2, 1fr);
+	}
+
+	.stats-chart-container {
+		height: 180px;
+	}
+
+	.stats-counts-row {
+		flex-direction: column;
+		gap: 16px;
+	}
+
+	.stats-chart-container-small {
+		width: 150px;
+		height: 150px;
+		margin: 0 auto;
+	}
+
+	/* Calendar heatmap - smaller cells */
+	.stats-calendar-cell {
+		width: 8px;
+		height: 8px;
+	}
+
+	/* Panel styles */
+	.episteme-panel {
+		padding: 12px;
+	}
+
+	/* Card preview in panel */
+	.episteme-card {
+		padding: 12px;
+	}
+
+	/* Review summary stats grid */
+	.episteme-review-stats {
+		grid-template-columns: repeat(2, 1fr);
+	}
+
+	.episteme-review-summary {
+		padding: 24px 16px;
+	}
+
+	/* Header stat badges - smaller on mobile */
+	.episteme-review-stat-badge {
+		min-width: 18px;
+		height: 18px;
+		font-size: 10px;
+	}
+
+	/* Card preview modal - mobile adjustments */
+	.episteme-card-preview-modal {
+		width: 95vw;
+		max-width: none;
+	}
+
+	.episteme-card-preview-list {
+		max-height: 50vh;
+	}
+
+	.episteme-card-preview-footer {
+		flex-direction: column;
+		gap: 8px;
+		align-items: flex-start;
+	}
+
+	.episteme-card-preview-source {
+		max-width: 100%;
+	}
+
+	.episteme-card-preview-open-btn {
+		width: 100%;
+	}
+}
+
+/* Extra small screens (iPhone SE, etc.) */
+@media screen and (max-width: 375px) {
+	.episteme-review-question {
+		font-size: 1.1em;
+	}
+
+	.episteme-review-buttons {
+		gap: 4px;
+	}
+
+	.episteme-btn {
+		padding: 12px 8px;
+		min-width: auto;
+		flex: 1;
+	}
+
+	.stats-today-grid {
+		grid-template-columns: 1fr;
+	}
+}
+
+/* iOS-specific safe area handling */
+@supports (padding-bottom: env(safe-area-inset-bottom)) {
+	.episteme-review-buttons:not([style*="display: none"]) {
+		padding-bottom: calc(12px + env(safe-area-inset-bottom));
+	}
+
+	.episteme-review-progress:not([style*="display: none"]) {
+		padding-bottom: calc(12px + env(safe-area-inset-bottom));
+	}
+
+	/* No extra safe area padding when editing */
+	.episteme-review-card-container--editing ~ .episteme-review-buttons {
+		padding-bottom: 8px;
+	}
+
+	.episteme-review-card-container--editing ~ .episteme-review-progress {
+		padding-bottom: 12px;
+	}
+}
+
+/* Larger touch targets for all interactive elements on touch devices */
+@media (hover: none) and (pointer: coarse) {
+	.episteme-card-btn {
+		padding: 8px 12px;
+		font-size: 14px;
+	}
+
+	.episteme-open-btn {
+		padding: 8px 12px;
+	}
+
+	.episteme-btn-primary,
+	.episteme-btn-secondary {
+		padding: 12px 16px;
+	}
+
+	.stats-range-btn {
+		padding: 10px 16px;
+	}
+}
+
+
