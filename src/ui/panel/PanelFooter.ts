@@ -75,9 +75,9 @@ export class PanelFooter extends BaseComponent {
             "Additional instructions (e.g., 'make shorter', 'focus on X')..."
         );
 
-        // Buttons row
+        // Buttons row wrapper
         const buttonsRow = this.element.createDiv({
-            cls: "episteme-buttons-row",
+            cls: "episteme-footer-buttons episteme-buttons-row",
         });
 
         // Regenerate button
@@ -114,10 +114,15 @@ export class PanelFooter extends BaseComponent {
 
         if (!this.element) return;
 
+        // Create footer buttons wrapper
+        const buttonsWrapper = this.element.createDiv({
+            cls: "episteme-footer-buttons",
+        });
+
         // Show "Move selected" button whenever cards are selected (for temporary cards)
         if (selectedCount && selectedCount > 0 && onMoveSelected) {
-            const moveBtn = this.element.createEl("button", {
-                cls: "episteme-btn-primary episteme-move-selected-btn",
+            const moveBtn = buttonsWrapper.createEl("button", {
+                cls: "episteme-btn-seed episteme-move-selected-btn",
             });
             moveBtn.textContent = `Move selected (${selectedCount})`;
             this.events.addEventListener(moveBtn, "click", onMoveSelected);
@@ -125,7 +130,7 @@ export class PanelFooter extends BaseComponent {
 
         // Show "Delete selected" button whenever cards are selected
         if (selectedCount && selectedCount > 0 && onDeleteSelected) {
-            const deleteBtn = this.element.createEl("button", {
+            const deleteBtn = buttonsWrapper.createEl("button", {
                 cls: "episteme-btn-danger episteme-delete-selected-btn",
             });
             deleteBtn.textContent = `Delete selected (${selectedCount})`;
@@ -144,7 +149,7 @@ export class PanelFooter extends BaseComponent {
         );
 
         // Main action button
-        const mainBtn = this.element.createEl("button", {
+        const mainBtn = buttonsWrapper.createEl("button", {
             cls: "episteme-btn-primary",
         });
 

@@ -77,8 +77,8 @@ export interface EpistemeSettings {
     hideFlashcardsFromBacklinks: boolean;
     /** Aktualizuj licznik Linked mentions po ukryciu flashcards */
     updateLinkedMentionsCount: boolean;
-    /** Pokaż wskazówki gestów dotykowych na mobilnych (iOS/Android) */
-    showTouchHints: boolean;
+    /** Pokaż przycisk "Next Session" po zakończeniu sesji niestandardowej */
+    continuousCustomReviews: boolean;
 
     // ===== Display Order Settings =====
     /** Kolejność nowych kart */

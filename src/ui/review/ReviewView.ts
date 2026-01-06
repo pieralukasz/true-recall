@@ -52,6 +52,9 @@ export class ReviewView extends ItemView {
     // Deck filter (null = all decks)
     private deckFilter: string | null = null;
 
+    // Track if this is a custom review session (with filters)
+    private isCustomSession: boolean = false;
+
     // Custom session filters
     private sourceNoteFilter?: string;
     private sourceNoteFilters?: string[];
@@ -106,6 +109,20 @@ export class ReviewView extends ItemView {
         this.stateFilter = viewState?.stateFilter;
         this.temporaryOnly = viewState?.temporaryOnly;
         this.ignoreDailyLimits = viewState?.ignoreDailyLimits;
+
+        // Detect if this is a custom review session (any custom filter is set)
+        this.isCustomSession = !!(
+            viewState?.sourceNoteFilter ||
+            (viewState?.sourceNoteFilters && viewState.sourceNoteFilters.length > 0) ||
+            viewState?.filePathFilter ||
+            viewState?.createdTodayOnly ||
+            viewState?.createdThisWeek ||
+            viewState?.weakCardsOnly ||
+            viewState?.stateFilter ||
+            viewState?.temporaryOnly ||
+            viewState?.readyToHarvestOnly
+        );
+
         await super.setState(state, result);
 
         // Start session after filters are set
@@ -844,11 +861,27 @@ export class ReviewView extends ItemView {
 
         const buttonsEl = summaryEl.createDiv({ cls: "episteme-review-summary-buttons" });
 
-        const closeBtn = buttonsEl.createEl("button", {
-            cls: "episteme-btn episteme-btn-primary",
-            text: "Close",
-        });
-        closeBtn.addEventListener("click", () => this.handleClose());
+        // Show "Next Session" button for custom sessions when setting is enabled
+        if (this.isCustomSession && this.plugin.settings.continuousCustomReviews) {
+            const nextSessionBtn = buttonsEl.createEl("button", {
+                cls: "episteme-btn episteme-btn-primary",
+                text: "Next Session",
+            });
+            nextSessionBtn.addEventListener("click", () => this.handleNextSession());
+
+            const finishBtn = buttonsEl.createEl("button", {
+                cls: "episteme-btn episteme-btn-secondary",
+                text: "Finish",
+            });
+            finishBtn.addEventListener("click", () => this.handleClose());
+        } else {
+            // Standard close button for normal sessions or when continuous mode is disabled
+            const closeBtn = buttonsEl.createEl("button", {
+                cls: "episteme-btn episteme-btn-primary",
+                text: "Close",
+            });
+            closeBtn.addEventListener("click", () => this.handleClose());
+        }
     }
 
     /**
@@ -1263,5 +1296,17 @@ Source: [[${sourceNote}]]
 
     private handleClose(): void {
         this.leaf.detach();
+    }
+
+    /**
+     * Handle "Next Session" button click - opens new custom session modal
+     */
+    private handleNextSession(): void {
+        this.leaf.detach();
+
+        // Wait for view to close, then open new custom session
+        setTimeout(() => {
+            void this.plugin.startCustomReviewSession();
+        }, 100);
     }
 }
