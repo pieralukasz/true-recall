@@ -286,7 +286,7 @@ export class PanelContent extends BaseComponent {
 
                 // Separator (except for last card)
                 if (index < flashcardInfo.flashcards.length - 1) {
-                    cardsContainer.createDiv({
+                    cardWrapper.createDiv({
                         cls: "episteme-card-separator",
                     });
                 }
@@ -303,9 +303,12 @@ export class PanelContent extends BaseComponent {
         // Calculate harvest stats if we have FSRS cards and harvest service
         const harvestStats = this.calculateHarvestStats(fsrsCards);
 
+        // Badges row
+        const badgesRow = controlsEl.createDiv({ cls: "episteme-badges-row" });
+
         // Show harvest-ready badge if any cards are ready
         if (harvestStats && harvestStats.readyToHarvest > 0) {
-            controlsEl.createSpan({
+            badgesRow.createSpan({
                 text: `🌾 ${harvestStats.readyToHarvest} ready to harvest`,
                 cls: "episteme-harvest-ready-badge",
             });
@@ -313,10 +316,15 @@ export class PanelContent extends BaseComponent {
 
         // Incubating badge (cards not yet ready)
         const incubatingCount = harvestStats ? harvestStats.incubating : cardCount;
-        controlsEl.createSpan({
-            text: `⏳ ${incubatingCount} incubating`,
-            cls: "episteme-temp-count",
-        });
+        if (incubatingCount > 0) {
+            badgesRow.createSpan({
+                text: `⏳ ${incubatingCount} incubating`,
+                cls: "episteme-badge episteme-incubating-badge",
+            });
+        }
+
+        // Divider
+        const divider = controlsEl.createDiv({ cls: "episteme-controls-divider" });
 
         // Select all checkbox with label
         const selectAllContainer = controlsEl.createDiv({ cls: "episteme-select-all-container" });
@@ -324,7 +332,23 @@ export class PanelContent extends BaseComponent {
         selectAllCheckbox.checked = selectedCount === cardCount && cardCount > 0;
         selectAllCheckbox.indeterminate = selectedCount > 0 && selectedCount < cardCount;
 
-        selectAllContainer.createSpan({ text: "Select all" });
+        const selectAllLabel = selectAllContainer.createSpan({
+            text: "Select all",
+            cls: "episteme-select-all-label",
+        });
+
+        // Make label click toggle checkbox
+        this.events.addEventListener(selectAllLabel, "click", (e) => {
+            e.stopPropagation();
+            selectAllCheckbox.click();
+        });
+
+        // Make entire container click toggle checkbox (if not clicking checkbox directly)
+        this.events.addEventListener(selectAllContainer, "click", (e) => {
+            if (e.target !== selectAllCheckbox && e.target !== selectAllLabel) {
+                selectAllCheckbox.click();
+            }
+        });
 
         this.events.addEventListener(selectAllCheckbox, "change", () => {
             if (selectAllCheckbox.checked) {
