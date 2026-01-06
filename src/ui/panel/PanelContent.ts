@@ -303,29 +303,6 @@ export class PanelContent extends BaseComponent {
         // Calculate harvest stats if we have FSRS cards and harvest service
         const harvestStats = this.calculateHarvestStats(fsrsCards);
 
-        // Badges row
-        const badgesRow = controlsEl.createDiv({ cls: "episteme-badges-row" });
-
-        // Show harvest-ready badge if any cards are ready
-        if (harvestStats && harvestStats.readyToHarvest > 0) {
-            badgesRow.createSpan({
-                text: `🌾 ${harvestStats.readyToHarvest} ready to harvest`,
-                cls: "episteme-harvest-ready-badge",
-            });
-        }
-
-        // Incubating badge (cards not yet ready)
-        const incubatingCount = harvestStats ? harvestStats.incubating : cardCount;
-        if (incubatingCount > 0) {
-            badgesRow.createSpan({
-                text: `⏳ ${incubatingCount} incubating`,
-                cls: "episteme-badge episteme-incubating-badge",
-            });
-        }
-
-        // Divider
-        const divider = controlsEl.createDiv({ cls: "episteme-controls-divider" });
-
         // Select all checkbox with label
         const selectAllContainer = controlsEl.createDiv({ cls: "episteme-select-all-container" });
         const selectAllCheckbox = selectAllContainer.createEl("input", { type: "checkbox" });
@@ -357,6 +334,29 @@ export class PanelContent extends BaseComponent {
                 handlers.onClearSelection?.();
             }
         });
+
+        // Divider
+        const divider = controlsEl.createDiv({ cls: "episteme-controls-divider" });
+
+        // Badges row
+        const badgesRow = controlsEl.createDiv({ cls: "episteme-badges-row" });
+
+        // Show harvest-ready badge if any cards are ready
+        if (harvestStats && harvestStats.readyToHarvest > 0) {
+            badgesRow.createSpan({
+                text: `🌾 ${harvestStats.readyToHarvest} ready to harvest`,
+                cls: "episteme-harvest-ready-badge",
+            });
+        }
+
+        // Incubating badge (cards not yet ready)
+        const incubatingCount = harvestStats ? harvestStats.incubating : cardCount;
+        if (incubatingCount > 0) {
+            badgesRow.createSpan({
+                text: `⏳ ${incubatingCount} incubating`,
+                cls: "episteme-badge episteme-incubating-badge",
+            });
+        }
     }
 
     /**
