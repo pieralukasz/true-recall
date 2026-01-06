@@ -805,3 +805,96 @@
 .episteme-harvest-action-btn:hover:not(:disabled) {
 	background: linear-gradient(135deg, #fcd34d, #fbbf24);
 }
+
+/* ========================================
+   Selection-Based Generation (Literature Notes)
+   ======================================== */
+
+/* Selection message (when no text selected) */
+.episteme-selection-message {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	gap: 8px;
+	padding: 16px 12px;
+	background: var(--background-secondary);
+	border: 2px dashed var(--background-modifier-border);
+	border-radius: 8px;
+	color: var(--text-muted);
+	font-size: 13px;
+	text-align: center;
+}
+
+.episteme-selection-message--empty {
+	animation: fade-in 0.3s ease;
+}
+
+.episteme-selection-icon {
+	font-size: 18px;
+	opacity: 0.7;
+}
+
+/* Selection preview (when text is selected) */
+.episteme-selection-preview {
+	display: flex;
+	align-items: flex-start;
+	gap: 8px;
+	padding: 10px 12px;
+	background: linear-gradient(
+		135deg,
+		rgba(34, 197, 94, 0.1),
+		rgba(22, 163, 74, 0.05)
+	);
+	border: 1px solid rgba(34, 197, 94, 0.3);
+	border-radius: 6px;
+	margin-bottom: 8px;
+}
+
+.episteme-selection-preview-label {
+	font-size: 11px;
+	font-weight: 600;
+	color: var(--color-green, #22c55e);
+	text-transform: uppercase;
+	white-space: nowrap;
+	flex-shrink: 0;
+}
+
+.episteme-selection-preview-text {
+	font-size: 12px;
+	color: var(--text-normal);
+	line-height: 1.4;
+	font-style: italic;
+}
+
+/* Generate from selection button */
+.episteme-btn-generate-selection {
+	background: linear-gradient(135deg, #22c55e, #16a34a);
+	color: white;
+	font-weight: 600;
+}
+
+.episteme-btn-generate-selection:hover:not(:disabled) {
+	background: linear-gradient(135deg, #4ade80, #22c55e);
+	transform: translateY(-1px);
+	box-shadow: 0 4px 12px rgba(34, 197, 94, 0.3);
+}
+
+/* Hint text in empty state */
+.episteme-no-cards-hint {
+	margin-top: 8px;
+	padding: 8px;
+	background: var(--background-secondary);
+	border-radius: 6px;
+	font-size: 12px;
+}
+
+@keyframes fade-in {
+	from {
+		opacity: 0;
+		transform: translateY(-4px);
+	}
+	to {
+		opacity: 1;
+		transform: translateY(0);
+	}
+}
