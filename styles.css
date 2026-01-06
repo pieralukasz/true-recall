@@ -709,7 +709,6 @@
 	display: flex;
 	align-items: center;
 	gap: 8px;
-	margin-left: auto;
 	font-size: 13px;
 	color: var(--text-muted);
 	cursor: pointer;
@@ -772,19 +771,54 @@
 	cursor: not-allowed;
 }
 
+/* Card checkbox styling */
+.episteme-card-checkbox {
+	appearance: none;
+	width: 18px;
+	height: 18px;
+	border: 2px solid var(--text-muted);
+	border-radius: 4px;
+	cursor: pointer;
+	flex-shrink: 0;
+	align-self: center;
+	transition: all 0.15s ease;
+	position: relative;
+}
+
+.episteme-card-checkbox:hover {
+	border-color: var(--interactive-accent);
+}
+
+.episteme-card-checkbox:checked {
+	background: var(--interactive-accent);
+	border-color: var(--interactive-accent);
+}
+
+.episteme-card-checkbox:checked::after {
+	content: "✓";
+	position: absolute;
+	top: 50%;
+	left: 50%;
+	transform: translate(-50%, -50%);
+	color: var(--text-on-accent);
+	font-size: 12px;
+	font-weight: 700;
+}
+
+.episteme-card-checkbox:disabled {
+	opacity: 0.5;
+	cursor: not-allowed;
+}
+
 /* Card wrapper with checkbox */
 .episteme-card-wrapper {
 	display: flex;
-	align-items: flex-start;
+	align-items: center;
 	gap: 8px;
-	padding: 4px 8px;
+	padding: 4px 4px 4px 0;
 	background: var(--background-secondary);
 	border-radius: 6px;
 	margin-bottom: 6px;
-}
-
-.episteme-card-wrapper:hover {
-	background: var(--background-modifier-hover);
 }
 
 .episteme-card-content {
