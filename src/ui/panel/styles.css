@@ -297,13 +297,13 @@
 
 /* Seed Button (for Literature Notes) */
 .episteme-btn-seed {
-	background: linear-gradient(135deg, #ffc107, #ffb300);
-	color: #000;
+	color: var(--text-normal);
 	font-weight: 600;
 }
 
 .episteme-btn-seed:hover:not(:disabled) {
 	background: linear-gradient(135deg, #ffca28, #ffc107);
+	color: #fff;
 }
 
 .episteme-btn-seed:disabled {
@@ -518,22 +518,22 @@
 
 /* Incubating badge */
 .episteme-incubating-badge {
-	background: rgba(255, 193, 7, 0.15);
+	background: rgba(251, 191, 36, 0.2);
 	border: 1px solid rgba(255, 193, 7, 0.3);
-	color: #d4a106;
+	color: var(--color-yellow, #fbbf24);
 }
 
 .episteme-incubating-count {
 	font-size: 12px;
 	font-weight: 500;
-	color: #d4a106;
+	color: var(--color-yellow, #fbbf24);
 }
 
 /* Controls divider */
 .episteme-controls-divider {
 	width: 1px;
 	height: 20px;
-	background: rgba(255, 193, 7, 0.3);
+	background: var(--background-modifier-border);
 	margin: 0 8px;
 	flex-shrink: 0;
 }
@@ -730,7 +730,8 @@
 }
 
 @keyframes pulse-gold {
-	0%, 100% {
+	0%,
+	100% {
 		opacity: 1;
 		transform: scale(1);
 	}
@@ -746,7 +747,11 @@
 	align-items: center;
 	gap: 6px;
 	padding: 4px 10px;
-	background: linear-gradient(135deg, rgba(251, 191, 36, 0.2), rgba(245, 158, 11, 0.15));
+	background: linear-gradient(
+		135deg,
+		rgba(251, 191, 36, 0.2),
+		rgba(245, 158, 11, 0.15)
+	);
 	border: 1px solid rgba(251, 191, 36, 0.4);
 	border-radius: 12px;
 	font-size: 11px;
@@ -757,7 +762,8 @@
 }
 
 @keyframes glow-yellow {
-	0%, 100% {
+	0%,
+	100% {
 		box-shadow: 0 0 5px rgba(251, 191, 36, 0.3);
 	}
 	50% {
@@ -792,7 +798,7 @@
 /* Harvest Button in Quick Actions */
 .episteme-harvest-action-btn {
 	background: linear-gradient(135deg, #fbbf24, #f59e0b);
-	color: #000;
+	color: var(--text-normal);
 	font-weight: 600;
 }
 
