@@ -40,6 +40,10 @@ export interface PanelState {
     error: AppError | null;
     /** Render version for race condition prevention */
     renderVersion: number;
+    /** Selected text from the active editor (for literature notes) */
+    selectedText: string;
+    /** Whether text is currently selected in the editor */
+    hasSelection: boolean;
 }
 
 /**

@@ -102,6 +102,54 @@ export class OpenRouterService {
     }
 
     /**
+     * Refine existing flashcards based on user instructions
+     * Used in the review modal to improve AI-generated flashcards
+     */
+    async refineFlashcards(
+        flashcards: FlashcardItem[],
+        userInstructions: string
+    ): Promise<FlashcardItem[]> {
+        this.validateApiKey();
+
+        // Build flashcard list for context
+        const flashcardList = flashcards
+            .map((f, i) => `${i + 1}. Q: ${f.question}\n   A: ${f.answer}`)
+            .join("\n\n");
+
+        const systemPrompt = `You are an expert flashcard refiner. Your task is to improve existing flashcards based on user instructions.
+
+CURRENT FLASHCARDS:
+${flashcardList}
+
+INSTRUCTIONS: ${userInstructions}
+
+IMPROVEMENT RULES:
+- Keep questions concise and specific
+- Ensure answers are accurate and complete
+- Maintain the markdown format: [Question] #flashcard\\n[Answer]
+- Return the improved flashcards in the same format
+- Output format: [Question text] #flashcard\\n[Answer text]`;
+
+        const messages: ChatMessage[] = [
+            { role: "system", content: systemPrompt },
+        ];
+
+        const content = await this.callAPI(messages);
+
+        // Parse refined flashcards using FlashcardParserService
+        const { FlashcardParserService } = await import("../flashcard/flashcard-parser.service");
+        const parser = new FlashcardParserService();
+        const refined = parser.extractFlashcards(content);
+
+        // If parsing failed or returned less cards, return original
+        if (refined.length === 0) {
+            return flashcards;
+        }
+
+        return refined;
+    }
+
+    /**
      * Validate that API key is configured
      */
     private validateApiKey(): void {

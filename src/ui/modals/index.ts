@@ -9,6 +9,11 @@ export {
     type CustomSessionModalOptions,
 } from "./CustomSessionModal";
 export {
+    FlashcardReviewModal,
+    type FlashcardReviewResult,
+    type FlashcardReviewModalOptions,
+} from "./FlashcardReviewModal";
+export {
     MoveCardModal,
     type MoveCardResult,
     type MoveCardModalOptions,

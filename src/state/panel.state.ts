@@ -29,6 +29,8 @@ function createInitialState(): PanelState {
         noteFlashcardType: "unknown",
         error: null,
         renderVersion: 0,
+        selectedText: "",
+        hasSelection: false,
     };
 }
 
@@ -238,6 +240,26 @@ export class PanelStateManager {
      */
     isInDiffMode(): boolean {
         return this.state.viewMode === "diff" && this.state.diffResult !== null;
+    }
+
+    /**
+     * Set selected text for literature note generation
+     */
+    setSelectedText(text: string): void {
+        this.setState({
+            selectedText: text,
+            hasSelection: text.length > 0,
+        });
+    }
+
+    /**
+     * Clear selection state
+     */
+    clearSelection(): void {
+        this.setState({
+            selectedText: "",
+            hasSelection: false,
+        });
     }
 
     // ===== Private Methods =====

@@ -972,6 +972,99 @@
 	background: linear-gradient(135deg, #fcd34d, #fbbf24);
 }
 
+/* ========================================
+   Selection-Based Generation (Literature Notes)
+   ======================================== */
+
+/* Selection message (when no text selected) */
+.episteme-selection-message {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	gap: 8px;
+	padding: 16px 12px;
+	background: var(--background-secondary);
+	border: 2px dashed var(--background-modifier-border);
+	border-radius: 8px;
+	color: var(--text-muted);
+	font-size: 13px;
+	text-align: center;
+}
+
+.episteme-selection-message--empty {
+	animation: fade-in 0.3s ease;
+}
+
+.episteme-selection-icon {
+	font-size: 18px;
+	opacity: 0.7;
+}
+
+/* Selection preview (when text is selected) */
+.episteme-selection-preview {
+	display: flex;
+	align-items: flex-start;
+	gap: 8px;
+	padding: 10px 12px;
+	background: linear-gradient(
+		135deg,
+		rgba(34, 197, 94, 0.1),
+		rgba(22, 163, 74, 0.05)
+	);
+	border: 1px solid rgba(34, 197, 94, 0.3);
+	border-radius: 6px;
+	margin-bottom: 8px;
+}
+
+.episteme-selection-preview-label {
+	font-size: 11px;
+	font-weight: 600;
+	color: var(--color-green, #22c55e);
+	text-transform: uppercase;
+	white-space: nowrap;
+	flex-shrink: 0;
+}
+
+.episteme-selection-preview-text {
+	font-size: 12px;
+	color: var(--text-normal);
+	line-height: 1.4;
+	font-style: italic;
+}
+
+/* Generate from selection button */
+.episteme-btn-generate-selection {
+	background: linear-gradient(135deg, #22c55e, #16a34a);
+	color: white;
+	font-weight: 600;
+}
+
+.episteme-btn-generate-selection:hover:not(:disabled) {
+	background: linear-gradient(135deg, #4ade80, #22c55e);
+	transform: translateY(-1px);
+	box-shadow: 0 4px 12px rgba(34, 197, 94, 0.3);
+}
+
+/* Hint text in empty state */
+.episteme-no-cards-hint {
+	margin-top: 8px;
+	padding: 8px;
+	background: var(--background-secondary);
+	border-radius: 6px;
+	font-size: 12px;
+}
+
+@keyframes fade-in {
+	from {
+		opacity: 0;
+		transform: translateY(-4px);
+	}
+	to {
+		opacity: 1;
+		transform: translateY(0);
+	}
+}
+
 
 /* =========================================
    Review View Styles
@@ -2379,6 +2472,248 @@
 /* Make review card container position relative for dot */
 .episteme-review-card {
 	position: relative;
+}
+
+/* ========================================
+   Flashcard Review Modal
+   ======================================== */
+
+/* Info section */
+.episteme-review-info {
+	color: var(--text-muted);
+	font-size: 13px;
+	margin-bottom: 16px;
+	padding: 12px;
+	background: var(--background-secondary);
+	border-radius: 6px;
+}
+
+.episteme-review-hint {
+	font-size: 11px;
+	color: var(--text-muted);
+	text-align: center;
+	margin-top: 4px;
+}
+
+.episteme-key-hint {
+	display: inline-block;
+	padding: 2px 6px;
+	background: var(--background-secondary);
+	border: 1px solid var(--background-modifier-border);
+	border-radius: 3px;
+	font-family: var(--font-monospace);
+	font-size: 10px;
+}
+
+/* Flashcards list (scrollable) */
+.episteme-review-flashcards-list {
+	max-height: 400px;
+	overflow-y: auto;
+	margin-bottom: 16px;
+	padding-right: 8px;
+}
+
+/* Empty state */
+.episteme-review-empty {
+	text-align: center;
+	color: var(--text-muted);
+	padding: 24px 16px;
+	font-style: italic;
+}
+
+/* Individual flashcard item */
+.episteme-review-card-item {
+	margin-bottom: 12px;
+	padding: 12px;
+	background: var(--background-primary);
+	border: 1px solid var(--background-modifier-border);
+	border-radius: 6px;
+	transition: all 0.15s ease;
+}
+
+.episteme-review-card-item:hover {
+	border-color: var(--interactive-accent);
+}
+
+/* View mode fields */
+.episteme-review-field {
+	position: relative;
+	cursor: pointer;
+	padding: 8px;
+	border-radius: 4px;
+	transition: background-color 0.15s ease;
+	margin-bottom: 8px;
+}
+
+.episteme-review-field:hover {
+	background: var(--background-modifier-hover);
+}
+
+.episteme-review-field-label {
+	font-size: 11px;
+	font-weight: 600;
+	color: var(--text-muted);
+	margin-bottom: 4px;
+	text-transform: uppercase;
+	letter-spacing: 0.5px;
+}
+
+.episteme-md-content {
+	font-size: 14px;
+	line-height: 1.5;
+}
+
+/* Edit mode indicator */
+.episteme-review-card-item--editing {
+	border-color: var(--interactive-accent);
+}
+
+/* Editable contenteditable */
+.episteme-review-editable {
+	padding: 8px;
+	border: 1px solid var(--interactive-accent);
+	border-radius: 4px;
+	background: var(--background-primary);
+	min-height: 60px;
+	outline: none;
+}
+
+.episteme-review-editable:focus {
+	box-shadow: 0 0 0 2px var(--interactive-accent-alpha, rgba(var(--interactive-accent-rgb), 0.2));
+}
+
+/* Card actions */
+.episteme-review-card-actions {
+	display: flex;
+	justify-content: flex-end;
+	margin-top: 8px;
+	padding-top: 8px;
+	border-top: 1px solid var(--background-modifier-border);
+}
+
+.episteme-review-delete-btn {
+	padding: 4px 12px;
+	font-size: 12px;
+	background: var(--color-red, #ef4444);
+	color: white;
+	border: none;
+	border-radius: 4px;
+	cursor: pointer;
+	transition: background-color 0.15s ease;
+}
+
+.episteme-review-delete-btn:hover {
+	background: var(--color-red-hover, #dc2626);
+}
+
+.episteme-review-restore-btn {
+	padding: 4px 12px;
+	font-size: 12px;
+	background: var(--color-green, #22c55e);
+	color: white;
+	border: none;
+	border-radius: 4px;
+	cursor: pointer;
+	transition: background-color 0.15s ease;
+}
+
+.episteme-review-restore-btn:hover {
+	background: var(--color-green-hover, #16a34a);
+}
+
+/* Refine section */
+.episteme-review-refine-section {
+	margin-bottom: 16px;
+	padding: 12px;
+	background: var(--background-secondary);
+	border-radius: 6px;
+}
+
+.episteme-review-section-title {
+	font-size: 13px;
+	font-weight: 600;
+	margin: 0 0 8px 0;
+	color: var(--text-normal);
+}
+
+.episteme-review-instructions-container {
+	margin-bottom: 8px;
+}
+
+.episteme-review-instructions-input {
+	width: 100%;
+	padding: 8px;
+	border: 1px solid var(--background-modifier-border);
+	border-radius: 4px;
+	background: var(--background-primary);
+	color: var(--text-normal);
+	font-family: var(--font-interface);
+	font-size: 13px;
+	resize: vertical;
+}
+
+.episteme-review-instructions-input:focus {
+	outline: none;
+	border-color: var(--interactive-accent);
+}
+
+.episteme-review-refine-buttons {
+	display: flex;
+	justify-content: flex-end;
+}
+
+.episteme-review-refine-btn {
+	padding: 6px 16px;
+	font-size: 13px;
+	background: var(--interactive-accent);
+	color: var(--text-on-accent);
+	border: none;
+	border-radius: 4px;
+	cursor: pointer;
+	transition: background-color 0.15s ease;
+}
+
+.episteme-review-refine-btn:hover:not(:disabled) {
+	background: var(--interactive-accent-hover);
+}
+
+.episteme-review-refine-btn:disabled {
+	opacity: 0.5;
+	cursor: not-allowed;
+}
+
+/* Action buttons */
+.episteme-review-actions {
+	padding-top: 16px;
+	border-top: 1px solid var(--background-modifier-border);
+}
+
+.episteme-review-action-buttons {
+	display: flex;
+	justify-content: flex-end;
+	gap: 12px;
+}
+
+.episteme-review-save-btn {
+	padding: 10px 20px;
+	font-size: 14px;
+	font-weight: 500;
+}
+
+.episteme-review-cancel-btn {
+	padding: 10px 20px;
+	font-size: 14px;
+	font-weight: 500;
+	background: var(--background-secondary);
+	color: var(--text-normal);
+	border: 1px solid var(--background-modifier-border);
+	border-radius: 4px;
+	cursor: pointer;
+	transition: all 0.15s ease;
+}
+
+.episteme-review-cancel-btn:hover {
+	background: var(--background-modifier-hover);
 }
 
 

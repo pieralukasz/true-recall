@@ -15,10 +15,6 @@ Chcialbym stworzyc w moim systemie opcje do szukania polaczen pomiedzy notatkami
 
 Kiedy zmieniam nawet notatki, to notatka flaschards sie nie aktualizuje. Wydaje mi sie, ze powinienem zmienic nazwy flaschards\_ na jakis specjalny UID ktory jest zarowno w notatce i w fiszce. PRzez co rozwiaze sie problem linked mentions i bedzie mozna usunac caly service.
 
----
-
--   19:31: add generating flashcaed from selected text in literature note #input/fleeting
-
--   20:44: make selection only on the literature note and later create a flashcaed based on the selection. Flashcaed creation for the literature note should be completely different. Selection text and making flashcaed, sometimes omit something if we don’t need it
-
----
+I mega wazna rzecz w momencie jak zanzaczam nowy selection zeby zrobic kolejne fiszki TUTAJ jest wykorzystywany ten prompt ktory juz jest
+normalnie w mind zettel i innych, ktory porownuje stare z nowymi i proponuje nowe itd. Tutaj chcialbym zrobic to samo ale wiadomo, stworzyc
+nowy prompt, ktory sprawdza tylko czy nie ma powtorzen z tym co juz jest TJ nie

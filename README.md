@@ -1,90 +1,209 @@
-# Obsidian Sample Plugin
+# Episteme - AI-Powered Spaced Repetition for Obsidian
 
-This is a sample plugin for Obsidian (https://obsidian.md).
+> **"Operating System for the Mind"** - UNDERSTAND → REMEMBER → CREATE
 
-This project uses TypeScript to provide type checking and documentation.
-The repo depends on the latest plugin API (obsidian.d.ts) in TypeScript Definition format, which contains TSDoc comments describing what it does.
+Episteme is a sophisticated Obsidian plugin that combines AI-powered flashcard generation with the modern FSRS v6 spaced repetition algorithm and Zettelkasten workflow.
 
-This sample plugin demonstrates some of the basic functionality the plugin API can do.
-- Adds a ribbon icon, which shows a Notice when clicked.
-- Adds a command "Open modal (simple)" which opens a Modal.
-- Adds a plugin setting tab to the settings page.
-- Registers a global click event and output 'click' to the console.
-- Registers a global interval which logs 'setInterval' to the console.
+## Features
 
-## First time developing plugins?
+### 🤖 AI-Powered Flashcard Generation
+- **Multiple AI Models**: Support for Google Gemini, OpenAI GPT, Anthropic Claude, and Meta Llama via OpenRouter
+- **Intelligent Generation**: Atomic flashcards with proper formatting, backlinks, and context
+- **Diff Mode**: Update existing flashcards based on note changes without losing stability
+- **Source Content Preservation**: Store original note content for better context and updates
 
-Quick starting guide for new plugin devs:
+### 🧠 Advanced Spaced Repetition (FSRS v6)
+- **Modern Algorithm**: FSRS v6 - state-of-the-art spacing algorithm superior to SM-2
+- **Day-Based Scheduling**: Anki-style scheduling with configurable day start hour
+- **21 Parameter Weights**: Optimizable weights for personalized learning
+- **Smart Review Queue**: Prioritizes due learning, review, and new cards intelligently
+- **Fuzzing**: ±2.5% interval randomization to prevent review bunching
 
-- Check if [someone already developed a plugin for what you want](https://obsidian.md/plugins)! There might be an existing plugin similar enough that you can partner up with.
-- Make a copy of this repo as a template with the "Use this template" button (login to GitHub if you don't see it).
-- Clone your repo to a local development folder. For convenience, you can place this folder in your `.obsidian/plugins/your-plugin-name` folder.
-- Install NodeJS, then run `npm i` in the command line under your repo folder.
-- Run `npm run dev` to compile your plugin from `main.ts` to `main.js`.
-- Make changes to `main.ts` (or create new `.ts` files). Those changes should be automatically compiled into `main.js`.
-- Reload Obsidian to load the new version of your plugin.
-- Enable plugin in settings window.
-- For updates to the Obsidian API run `npm update` in the command line under your repo folder.
+### 📚 Zettelkasten Integration
+- **Tag-Based Classification**: Automatic note type detection via tags
+- **Literature Notes** (`#input/*`): Temporary flashcards for source processing
+- **Permanent Notes** (`#mind/concept`, `#mind/zettel`): Long-term knowledge storage
+- **Harvest Workflow**: Seeding → Incubation → Harvest (21-day maturation)
 
-## Releasing new releases
+### 🎯 Flexible Review System
+- **Multiple Review Modes**: Fullscreen or sidebar
+- **Custom Sessions**: Filter by deck, source, date range, card state, weak cards
+- **Daily Limits**: Configurable limits for new cards and reviews
+- **Auto-Advance**: Optional automatic card progression
+- **Undo Support**: Cmd+Z to undo last answer
 
-- Update your `manifest.json` with your new version number, such as `1.0.1`, and the minimum Obsidian version required for your latest release.
-- Update your `versions.json` file with `"new-plugin-version": "minimum-obsidian-version"` so older versions of Obsidian can download an older version of your plugin that's compatible.
-- Create new GitHub release using your new version number as the "Tag version". Use the exact version number, don't include a prefix `v`. See here for an example: https://github.com/obsidianmd/obsidian-sample-plugin/releases
-- Upload the files `manifest.json`, `main.js`, `styles.css` as binary attachments. Note: The manifest.json file must be in two places, first the root path of your repository and also in the release.
-- Publish the release.
+### 📊 Comprehensive Statistics
+- **Retention Tracking**: Monitor your learning performance
+- **Review History**: Visualize your study patterns with Chart.js
+- **FSRS Analytics**: Understand algorithm performance and optimization
 
-> You can simplify the version bump process by running `npm version patch`, `npm version minor` or `npm version major` after updating `minAppVersion` manually in `manifest.json`.
-> The command will bump version in `manifest.json` and `package.json`, and add the entry for the new version to `versions.json`
+## Tagging System
 
-## Adding your plugin to the community plugin list
+Episteme uses a hierarchical tagging system to determine flashcard behavior:
 
-- Check the [plugin guidelines](https://docs.obsidian.md/Plugins/Releasing/Plugin+guidelines).
-- Publish an initial version.
-- Make sure you have a `README.md` file in the root of your repo.
-- Make a pull request at https://github.com/obsidianmd/obsidian-releases to add your plugin.
+### Literature Notes (`#input/*`)
+*Generate temporary flashcards for processing*
+- `#input/book` - Book notes
+- `#input/article` - Article notes
+- `#input/video` - Video notes
+- `#input/course` - Course notes
 
-## How to use
+### Permanent Notes (`#mind/*`)
 
-- Clone this repo.
-- Make sure your NodeJS is at least v16 (`node --version`).
-- `npm i` or `yarn` to install dependencies.
-- `npm run dev` to start compilation in watch mode.
+| Tag | Flashcards | Purpose |
+|-----|------------|---------|
+| `#mind/concept` | ✅ Permanent | Definitions and core facts |
+| `#mind/zettel` | ✅ Permanent | Your thoughts and theses |
+| `#mind/application` | ⚠️ Optional | Real-world case studies |
+| `#mind/protocol` | ⚠️ Optional | Procedures and how-to |
+| `#mind/question` | ❌ None | Open questions |
+| `#mind/hub` | ❌ None | Entry points |
+| `#mind/structure` | ❌ None | Writing organization |
+| `#mind/index` | ❌ None | Category connectors |
+| `#mind/person` | ❌ None | People profiles |
 
-## Manually installing the plugin
+## Workflow
 
-- Copy over `main.js`, `styles.css`, `manifest.json` to your vault `VaultFolder/.obsidian/plugins/your-plugin-id/`.
+### 1. SEEDING
+Create temporary flashcards from Literature Notes (`#input/*`)
 
-## Improve code quality with eslint
-- [ESLint](https://eslint.org/) is a tool that analyzes your code to quickly find problems. You can run ESLint against your plugin to find common bugs and ways to improve your code. 
-- This project already has eslint preconfigured, you can invoke a check by running`npm run lint`
-- Together with a custom eslint [plugin](https://github.com/obsidianmd/eslint-plugin) for Obsidan specific code guidelines.
-- A GitHub action is preconfigured to automatically lint every commit on all branches.
+### 2. INCUBATION
+Review cards through spaced repetition (FSRS algorithm)
 
-## Funding URL
+### 3. HARVEST
+After 21+ days, move mature cards to permanent Zettel notes
 
-You can include funding URLs where people who use your plugin can financially support it.
+## Installation
 
-The simple way is to set the `fundingUrl` field to your link in your `manifest.json` file:
+### Manual Installation
+1. Download the latest release
+2. Copy `main.js`, `styles.css`, and `manifest.json` to your vault's `.obsidian/plugins/episteme/` folder
+3. Enable the plugin in Obsidian settings
 
-```json
-{
-    "fundingUrl": "https://buymeacoffee.com"
-}
+### From Source
+```bash
+git clone https://github.com/yourusername/obsidian-episteme.git
+cd obsidian-episteme
+npm install
+npm run build
 ```
 
-If you have multiple URLs, you can also do:
+## Configuration
 
-```json
-{
-    "fundingUrl": {
-        "Buy Me a Coffee": "https://buymeacoffee.com",
-        "GitHub Sponsor": "https://github.com/sponsors",
-        "Patreon": "https://www.patreon.com/"
-    }
-}
+### Required Settings
+1. **OpenRouter API Key**: Get your key from [openrouter.ai](https://openrouter.ai)
+2. **AI Model**: Choose from Gemini, GPT, Claude, or Llama
+3. **Flashcards Folder**: Default is `Flashcards`
+
+### FSRS Settings
+- **Request Retention**: Target retention (70%-99%, default 90%)
+- **Maximum Interval**: Up to 100 years
+- **New Cards Per Day**: Default 20
+- **Reviews Per Day**: Default 200
+- **Learning Steps**: Default [1, 10] minutes
+- **Day Start Hour**: Default 4 AM (Anki-style)
+
+## Usage
+
+### Generate Flashcards
+1. Open a note in Obsidian
+2. Open the Episteme panel (Cmd+P → "Open flashcard panel")
+3. Click "Generate Flashcards"
+4. AI will analyze your note and create atomic flashcards
+
+### Review Flashcards
+- **Standard Review**: Click the brain icon or use "Start review session"
+- **Custom Review**: Use "Start custom review session" for advanced filtering
+- **Current Note**: Right-click file → "Review flashcards from this note"
+
+### Harvest Cards
+1. Open "Harvest Dashboard" (Cmd+P → "Open harvest dashboard")
+2. Review cards ready for harvest (21+ day interval)
+3. Select cards and move to permanent Zettel notes
+
+## Commands
+
+- `Open flashcard panel` - Toggle sidebar panel
+- `Generate flashcards for current note` - Create flashcards from active note
+- `Start review session` - Begin standard review
+- `Start custom review session` - Open custom review filters
+- `Review flashcards from current note` - Review current note's cards
+- `Review today's new cards` - Review cards created today
+- `Open statistics panel` - View learning statistics
+- `Scan vault for new flashcards` - Index new flashcards
+- `Show notes missing flashcards` - Find notes without flashcards
+- `Open harvest dashboard` - View harvestable cards
+
+## Development
+
+```bash
+# Install dependencies
+npm install
+
+# Development mode with hot reload
+npm run dev
+
+# Production build
+npm run build
+
+# Run tests
+npm test
+
+# Lint code
+npm run lint
 ```
 
-## API Documentation
+## Architecture
 
-See https://docs.obsidian.md
+```
+src/
+├── main.ts                    # Plugin entry point
+├── constants.ts               # Configuration and system prompts
+├── services/
+│   ├── core/
+│   │   ├── fsrs.service.ts   # FSRS algorithm wrapper
+│   │   └── day-boundary.service.ts
+│   ├── flashcard/
+│   │   ├── flashcard.service.ts
+│   │   ├── frontmatter.service.ts
+│   │   └── card-mover.service.ts
+│   ├── harvest/
+│   │   └── harvest.service.ts
+│   ├── persistence/
+│   │   ├── sharded-store.service.ts
+│   │   └── session-persistence.service.ts
+│   ├── stats/
+│   │   └── stats.service.ts
+│   └── open-router.service.ts
+├── ui/
+│   ├── panel/                 # Sidebar panel
+│   ├── review/                # Review view
+│   ├── stats/                 # Statistics view
+│   └── modals/                # Various modals
+└── types/                     # TypeScript definitions
+```
+
+## Dependencies
+
+- **obsidian** - Obsidian Plugin API
+- **ts-fsrs** - FSRS v6 algorithm implementation
+- **chart.js** - Statistical visualizations
+- **zod** - Schema validation
+
+## License
+
+0-BSD
+
+## Contributing
+
+Contributions are welcome! Please feel free to submit a Pull Request.
+
+## Support
+
+- Report issues on GitHub
+- Check documentation for common questions
+- Review FSRS algorithm details: [FSRS4Anki Wiki](https://github.com/open-spaced-repetition/fsrs4anki/wiki)
+
+---
+
+**Episteme** - Transform your Obsidian vault into an intelligent learning system.
