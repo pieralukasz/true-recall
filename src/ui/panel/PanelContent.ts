@@ -8,7 +8,7 @@ import type { ProcessingStatus, ViewMode } from "../../state";
 import type { FlashcardInfo, FlashcardItem, FlashcardChange, DiffResult, NoteFlashcardType, FSRSFlashcardItem } from "../../types";
 import { createLoadingSpinner } from "../components/LoadingSpinner";
 import { createEmptyState, EmptyStateMessages } from "../components/EmptyState";
-import { createCardPreview } from "../components/CardPreview";
+import { createCardReviewItem } from "../components/CardReviewItem";
 import { createDiffCard } from "../components/DiffCard";
 import type { HarvestService, HarvestStats } from "../../services";
 import { HARVEST_CONFIG } from "../../constants";
@@ -273,20 +273,15 @@ export class PanelContent extends BaseComponent {
                     });
                 }
 
-                const cardPreview = createCardPreview(cardWrapper, {
-                    flashcard: card,
+                const cardReviewItem = createCardReviewItem(cardWrapper, {
+                    card,
                     filePath: flashcardInfo.filePath,
-                    handlers: {
-                        app: handlers.app,
-                        component: handlers.component,
-                        onEdit: handlers.onEditCard,
-                        onCopy: handlers.onCopyCard,
-                        onDelete: handlers.onDeleteCard,
-                        onMove: handlers.onMoveCard,
-                    },
-                    markdownRenderer: handlers.markdownRenderer,
+                    app: handlers.app,
+                    component: handlers.component,
+                    onClick: handlers.onEditCard,
+                    onDelete: handlers.onDeleteCard,
                 });
-                this.childComponents.push(cardPreview);
+                this.childComponents.push(cardReviewItem);
 
                 // Maturity indicator for temporary cards
                 if (flashcardInfo.isTemporary) {
