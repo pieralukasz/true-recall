@@ -8,7 +8,7 @@ import type { FSRSFlashcardItem } from "../../types";
 import type { DayBoundaryService } from "../../services";
 import { BaseModal } from "./BaseModal";
 
-export type CustomSessionType = "current-note" | "created-today" | "created-this-week" | "weak-cards" | "all-cards" | "select-notes" | "state-filter";
+export type CustomSessionType = "current-note" | "created-today" | "select-notes" | "state-filter";
 
 export interface CustomSessionResult {
 	cancelled: boolean;
@@ -17,10 +17,6 @@ export interface CustomSessionResult {
 	sourceNoteFilters?: string[];
 	filePathFilter?: string;
 	createdTodayOnly?: boolean;
-	createdThisWeek?: boolean;
-	weakCardsOnly?: boolean;
-	stateFilter?: "due" | "learning" | "new";
-	temporaryOnly?: boolean;
 	/** Only include cards ready to harvest (temporary + interval >= 21 days) */
 	readyToHarvestOnly?: boolean;
 	ignoreDailyLimits: boolean;
@@ -139,8 +135,6 @@ export class CustomSessionModal extends BaseModal {
 
 		// Stats
 		const todayStats = this.getTodayStats(now, todayStart);
-		const thisWeekStats = this.getThisWeekStats(now);
-		const allCardsStats = this.getAllCardsStats(now);
 
 		// Today button
 		const todayBtn = quickActionsEl.createEl("button", {
@@ -160,132 +154,6 @@ export class CustomSessionModal extends BaseModal {
 			});
 			todayBtn.disabled = true;
 			todayBtn.addClass("episteme-btn-disabled");
-		}
-
-		// Week button
-		const thisWeekBtn = quickActionsEl.createEl("button", {
-			cls: "episteme-quick-action-btn",
-		});
-		thisWeekBtn.createSpan({ text: "Week" });
-		if (thisWeekStats.total > 0) {
-			thisWeekBtn.createSpan({
-				cls: "episteme-quick-action-stats",
-				text: this.formatStats(thisWeekStats.newCount, thisWeekStats.dueCount),
-			});
-			thisWeekBtn.addEventListener("click", () => this.selectThisWeek());
-		} else {
-			thisWeekBtn.createSpan({
-				cls: "episteme-quick-action-stats episteme-stat-muted",
-				text: "no cards",
-			});
-			thisWeekBtn.disabled = true;
-			thisWeekBtn.addClass("episteme-btn-disabled");
-		}
-
-		// All cards button
-		const allCardsBtn = quickActionsEl.createEl("button", {
-			cls: "episteme-quick-action-btn",
-		});
-		allCardsBtn.createSpan({ text: "All" });
-		if (allCardsStats.total > 0) {
-			allCardsBtn.createSpan({
-				cls: "episteme-quick-action-stats",
-				text: this.formatStats(allCardsStats.newCount, allCardsStats.dueCount),
-			});
-			allCardsBtn.addEventListener("click", () => this.selectAllCards());
-		} else {
-			allCardsBtn.createSpan({
-				cls: "episteme-quick-action-stats episteme-stat-muted",
-				text: "no cards",
-			});
-			allCardsBtn.disabled = true;
-			allCardsBtn.addClass("episteme-btn-disabled");
-		}
-
-		// State stats
-		const dueStats = this.getDueStats(now);
-		const learningStats = this.getLearningStats(now);
-		const newStats = this.getNewStats(now);
-
-		// Due button
-		const dueBtn = quickActionsEl.createEl("button", {
-			cls: "episteme-quick-action-btn",
-		});
-		dueBtn.createSpan({ text: "Due" });
-		if (dueStats.total > 0) {
-			dueBtn.createSpan({
-				cls: "episteme-quick-action-stats",
-				text: this.formatStats(dueStats.newCount, dueStats.dueCount),
-			});
-			dueBtn.addEventListener("click", () => this.selectByState("due"));
-		} else {
-			dueBtn.createSpan({
-				cls: "episteme-quick-action-stats episteme-stat-muted",
-				text: "no cards",
-			});
-			dueBtn.disabled = true;
-			dueBtn.addClass("episteme-btn-disabled");
-		}
-
-		// Learning button
-		const learningBtn = quickActionsEl.createEl("button", {
-			cls: "episteme-quick-action-btn",
-		});
-		learningBtn.createSpan({ text: "Learning" });
-		if (learningStats.total > 0) {
-			learningBtn.createSpan({
-				cls: "episteme-quick-action-stats",
-				text: this.formatStats(learningStats.newCount, learningStats.dueCount),
-			});
-			learningBtn.addEventListener("click", () => this.selectByState("learning"));
-		} else {
-			learningBtn.createSpan({
-				cls: "episteme-quick-action-stats episteme-stat-muted",
-				text: "no cards",
-			});
-			learningBtn.disabled = true;
-			learningBtn.addClass("episteme-btn-disabled");
-		}
-
-		// New button
-		const newBtn = quickActionsEl.createEl("button", {
-			cls: "episteme-quick-action-btn",
-		});
-		newBtn.createSpan({ text: "New" });
-		if (newStats.total > 0) {
-			newBtn.createSpan({
-				cls: "episteme-quick-action-stats",
-				text: this.formatStats(newStats.newCount, newStats.dueCount),
-			});
-			newBtn.addEventListener("click", () => this.selectByState("new"));
-		} else {
-			newBtn.createSpan({
-				cls: "episteme-quick-action-stats episteme-stat-muted",
-				text: "no cards",
-			});
-			newBtn.disabled = true;
-			newBtn.addClass("episteme-btn-disabled");
-		}
-
-		// Temporary button (cards from Literature Notes)
-		const temporaryStats = this.getTemporaryStats(now);
-		const tempBtn = quickActionsEl.createEl("button", {
-			cls: "episteme-quick-action-btn",
-		});
-		tempBtn.createSpan({ text: "Temporary" });
-		if (temporaryStats.total > 0) {
-			tempBtn.createSpan({
-				cls: "episteme-quick-action-stats",
-				text: this.formatStats(temporaryStats.newCount, temporaryStats.dueCount),
-			});
-			tempBtn.addEventListener("click", () => this.selectTemporaryCards());
-		} else {
-			tempBtn.createSpan({
-				cls: "episteme-quick-action-stats episteme-stat-muted",
-				text: "no cards",
-			});
-			tempBtn.disabled = true;
-			tempBtn.addClass("episteme-btn-disabled");
 		}
 
 		// Ready to Harvest button (mature temporary cards, interval >= 21 days)
@@ -497,34 +365,7 @@ export class CustomSessionModal extends BaseModal {
 	private getTodayStats(now: Date, todayStart: Date): { total: number; newCount: number; dueCount: number } {
 		const cards = this.options.allCards.filter((c) => {
 			const createdAt = c.fsrs.createdAt;
-			return createdAt && createdAt >= todayStart.getTime() && this.isCardAvailable(c, now);
-		});
-
-		return {
-			total: cards.length,
-			newCount: cards.filter((c) => c.fsrs.state === State.New).length,
-			dueCount: cards.filter((c) => c.fsrs.state !== State.New).length,
-		};
-	}
-
-	private getAllCardsStats(now: Date): { total: number; newCount: number; dueCount: number } {
-		const cards = this.options.allCards.filter((c) => this.isCardAvailable(c, now));
-
-		return {
-			total: cards.length,
-			newCount: cards.filter((c) => c.fsrs.state === State.New).length,
-			dueCount: cards.filter((c) => c.fsrs.state !== State.New).length,
-		};
-	}
-
-	private getThisWeekStats(now: Date): { total: number; newCount: number; dueCount: number } {
-		const weekAgo = new Date();
-		weekAgo.setDate(weekAgo.getDate() - 7);
-		weekAgo.setHours(0, 0, 0, 0);
-
-		const cards = this.options.allCards.filter((c) => {
-			const createdAt = c.fsrs.createdAt;
-			return createdAt && createdAt >= weekAgo.getTime() && this.isCardAvailable(c, now);
+			return createdAt && createdAt >= todayStart.getTime() && this.isCardAvailable(c, now) && !c.fsrs.suspended;
 		});
 
 		return {
@@ -619,63 +460,6 @@ export class CustomSessionModal extends BaseModal {
 		this.close();
 	}
 
-	private selectThisWeek(): void {
-		this.hasSelected = true;
-		if (this.resolvePromise) {
-			this.resolvePromise({
-				cancelled: false,
-				sessionType: "created-this-week",
-				createdThisWeek: true,
-				ignoreDailyLimits: true,
-			});
-			this.resolvePromise = null;
-		}
-		this.close();
-	}
-
-	private selectAllCards(): void {
-		this.hasSelected = true;
-		if (this.resolvePromise) {
-			this.resolvePromise({
-				cancelled: false,
-				sessionType: "all-cards",
-				ignoreDailyLimits: true,
-			});
-			this.resolvePromise = null;
-		}
-		this.close();
-	}
-
-	private getDueStats(now: Date): { total: number; newCount: number; dueCount: number } {
-		// Use day-based scheduling for Review cards
-		const reviewCards = this.options.allCards.filter((c) => c.fsrs.state === State.Review);
-		const dueCards = this.options.dayBoundaryService.getDueCards(reviewCards, now);
-		return { total: dueCards.length, newCount: 0, dueCount: dueCards.length };
-	}
-
-	private getLearningStats(_now: Date): { total: number; newCount: number; dueCount: number } {
-		// Count ALL learning/relearning cards (not just due ones)
-		// because stateFilter="learning" will load them all (including pending cards)
-		const cards = this.options.allCards.filter((c) => {
-			return c.fsrs.state === State.Learning || c.fsrs.state === State.Relearning;
-		});
-		return { total: cards.length, newCount: 0, dueCount: cards.length };
-	}
-
-	private getNewStats(_now: Date): { total: number; newCount: number; dueCount: number } {
-		const cards = this.options.allCards.filter((c) => c.fsrs.state === State.New);
-		return { total: cards.length, newCount: cards.length, dueCount: 0 };
-	}
-
-	private getTemporaryStats(now: Date): { total: number; newCount: number; dueCount: number } {
-		const cards = this.options.allCards.filter((c) => c.isTemporary && this.isCardAvailable(c, now));
-		return {
-			total: cards.length,
-			newCount: cards.filter((c) => c.fsrs.state === State.New).length,
-			dueCount: cards.filter((c) => c.fsrs.state !== State.New).length,
-		};
-	}
-
 	private getReadyToHarvestStats(now: Date): { total: number; newCount: number; dueCount: number } {
 		const HARVEST_THRESHOLD = 21; // days
 		const cards = this.options.allCards.filter(
@@ -688,41 +472,12 @@ export class CustomSessionModal extends BaseModal {
 		};
 	}
 
-	private selectByState(stateFilter: "due" | "learning" | "new"): void {
-		this.hasSelected = true;
-		if (this.resolvePromise) {
-			this.resolvePromise({
-				cancelled: false,
-				sessionType: "state-filter",
-				stateFilter,
-				ignoreDailyLimits: true,
-			});
-			this.resolvePromise = null;
-		}
-		this.close();
-	}
-
-	private selectTemporaryCards(): void {
-		this.hasSelected = true;
-		if (this.resolvePromise) {
-			this.resolvePromise({
-				cancelled: false,
-				sessionType: "state-filter",
-				temporaryOnly: true,
-				ignoreDailyLimits: true,
-			});
-			this.resolvePromise = null;
-		}
-		this.close();
-	}
-
 	private selectReadyToHarvest(): void {
 		this.hasSelected = true;
 		if (this.resolvePromise) {
 			this.resolvePromise({
 				cancelled: false,
 				sessionType: "state-filter",
-				temporaryOnly: true,
 				readyToHarvestOnly: true,
 				ignoreDailyLimits: true,
 			});
