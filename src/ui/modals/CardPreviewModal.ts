@@ -2,14 +2,16 @@
  * Card Preview Modal
  * Displays a list of flashcards with preview and navigation to source note
  */
-import { App, Component, MarkdownRenderer, TFile } from "obsidian";
+import { App, Component, MarkdownRenderer, Notice, TFile } from "obsidian";
 import type { FSRSFlashcardItem } from "../../types";
 import { formatIntervalDays } from "../../types";
 import { BaseModal } from "./BaseModal";
+import type { FlashcardManager } from "../../services";
 
 export interface CardPreviewModalOptions {
 	title: string;
 	cards: FSRSFlashcardItem[];
+	flashcardManager: FlashcardManager;
 }
 
 /**
@@ -18,11 +20,13 @@ export interface CardPreviewModalOptions {
 export class CardPreviewModal extends BaseModal {
 	private options: CardPreviewModalOptions;
 	private component: Component;
+	private flashcardManager: FlashcardManager;
 
 	constructor(app: App, options: CardPreviewModalOptions) {
-		super(app, { title: options.title, width: "500px" });
+		super(app, { title: options.title, width: "700px" });
 		this.options = options;
 		this.component = new Component();
+		this.flashcardManager = options.flashcardManager;
 	}
 
 	onOpen(): void {
@@ -62,10 +66,18 @@ export class CardPreviewModal extends BaseModal {
 	}
 
 	private renderCard(container: HTMLElement, card: FSRSFlashcardItem): void {
-		const item = container.createDiv({ cls: "episteme-card-preview-item" });
+		const itemEl = container.createDiv({
+			cls: "episteme-review-card-item",
+		});
 
-		// Question - render markdown
-		const questionEl = item.createDiv({ cls: "episteme-card-preview-question" });
+		// Content wrapper (takes remaining space)
+		const contentEl = itemEl.createDiv({ cls: "episteme-review-card-content" });
+
+		// Question field
+		const questionEl = contentEl.createDiv({
+			cls: "episteme-review-field episteme-review-field--view",
+		});
+		questionEl.createDiv({ cls: "episteme-review-field-label", text: "Question:" });
 		const questionContent = questionEl.createDiv({ cls: "episteme-md-content" });
 		void MarkdownRenderer.render(
 			this.app,
@@ -75,8 +87,11 @@ export class CardPreviewModal extends BaseModal {
 			this.component
 		);
 
-		// Answer - render markdown (blurred by CSS, revealed on hover)
-		const answerEl = item.createDiv({ cls: "episteme-card-preview-answer" });
+		// Answer field
+		const answerEl = contentEl.createDiv({
+			cls: "episteme-review-field episteme-review-field--view",
+		});
+		answerEl.createDiv({ cls: "episteme-review-field-label", text: "Answer:" });
 		const answerContent = answerEl.createDiv({ cls: "episteme-md-content" });
 		void MarkdownRenderer.render(
 			this.app,
@@ -86,49 +101,49 @@ export class CardPreviewModal extends BaseModal {
 			this.component
 		);
 
-		// Card info row (interval, stability)
-		const infoEl = item.createDiv({ cls: "episteme-card-preview-info" });
-		if (card.fsrs.scheduledDays > 0) {
-			infoEl.createSpan({
-				cls: "episteme-card-preview-interval",
-				text: `Interval: ${formatIntervalDays(card.fsrs.scheduledDays)}`,
-			});
-		}
-		if (card.fsrs.stability > 0) {
-			infoEl.createSpan({
-				cls: "episteme-card-preview-stability",
-				text: `Stability: ${formatIntervalDays(card.fsrs.stability)}`,
-			});
-		}
+		// Buttons container (right side)
+		const buttonsEl = itemEl.createDiv({ cls: "episteme-review-card-buttons" });
 
-		// Footer with source and open button
-		const footer = item.createDiv({ cls: "episteme-card-preview-footer" });
-
-		// Source note link - use sourceNoteName if available, otherwise fall back to flashcard file name
-		const noteName = card.sourceNoteName ?? this.getNoteName(card.filePath);
-		const sourceEl = footer.createEl("a", {
-			cls: "episteme-card-preview-source",
-			text: noteName,
+		// Delete button
+		const deleteBtn = buttonsEl.createEl("button", {
+			cls: "episteme-review-delete-btn",
+			attr: { "aria-label": "Delete flashcard", "title": "Delete" },
 		});
-		sourceEl.addEventListener("click", (e) => {
-			e.preventDefault();
-			void this.openSourceNote(card);
-		});
+		deleteBtn.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/></svg>`;
+		deleteBtn.addEventListener("click", () => void this.handleDeleteCard(card));
 
 		// Open button
-		const openBtn = footer.createEl("button", {
-			cls: "episteme-card-preview-open-btn",
-			text: "Open",
+		const openBtn = buttonsEl.createEl("button", {
+			cls: "episteme-review-open-btn",
+			attr: { "aria-label": "Open source note", "title": "Open" },
 		});
-		openBtn.addEventListener("click", () => {
-			void this.openSourceNote(card);
-		});
+		openBtn.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>`;
+		openBtn.addEventListener("click", () => void this.openSourceNote(card));
 	}
 
-	private getNoteName(filePath: string): string {
-		const parts = filePath.split("/");
-		const fileName = parts[parts.length - 1] ?? filePath;
-		return fileName.replace(".md", "");
+	private async handleDeleteCard(card: FSRSFlashcardItem): Promise<void> {
+		const confirmed = confirm("Delete this flashcard? This action cannot be undone.");
+		if (!confirmed) return;
+
+		const file = this.app.vault.getAbstractFileByPath(card.filePath);
+		if (!(file instanceof TFile)) {
+			new Notice("Could not find flashcard file");
+			return;
+		}
+
+		const success = await this.flashcardManager.removeFlashcardDirect(file, card.lineNumber);
+
+		if (success) {
+			new Notice("Flashcard deleted");
+			// Remove card from list
+			this.options.cards = this.options.cards.filter(c => c.id !== card.id);
+			// Re-render
+			this.renderBody(this.contentEl);
+			// Update title
+			this.updateTitle(`${this.options.cards.length} cards`);
+		} else {
+			new Notice("Failed to delete flashcard");
+		}
 	}
 
 	private async openSourceNote(card: FSRSFlashcardItem): Promise<void> {

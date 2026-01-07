@@ -2619,6 +2619,41 @@
 	height: 16px;
 }
 
+/* Buttons container on right side */
+.episteme-review-card-buttons {
+	display: flex;
+	flex-direction: column;
+	gap: 8px;
+	flex-shrink: 0;
+	align-self: center;
+}
+
+/* Open button (matching delete button style) */
+.episteme-review-open-btn {
+	width: 28px;
+	height: 28px;
+	padding: 6px;
+	background: transparent;
+	color: var(--text-muted);
+	border: none;
+	border-radius: 4px;
+	cursor: pointer;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	transition: all 0.15s ease;
+}
+
+.episteme-review-open-btn:hover {
+	background: var(--background-modifier-hover);
+	color: var(--interactive-accent);
+}
+
+.episteme-review-open-btn svg {
+	width: 16px;
+	height: 16px;
+}
+
 /* Refine section */
 .episteme-review-refine-section {
 	margin-bottom: 12px;
