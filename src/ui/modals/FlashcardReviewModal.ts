@@ -5,6 +5,7 @@
 import { App, Notice, MarkdownRenderer, Component } from "obsidian";
 import { BaseModal } from "./BaseModal";
 import type { FlashcardItem } from "../../types";
+import type { OpenRouterService } from "../../services";
 
 export interface FlashcardReviewResult {
 	cancelled: boolean;
@@ -14,6 +15,7 @@ export interface FlashcardReviewResult {
 export interface FlashcardReviewModalOptions {
 	initialFlashcards: FlashcardItem[];
 	sourceNoteName?: string;
+	openRouterService: OpenRouterService;
 }
 
 /**
@@ -36,6 +38,9 @@ export class FlashcardReviewModal extends BaseModal {
 	// Component for markdown rendering lifecycle
 	private component: Component;
 
+	// Services
+	private openRouterService: OpenRouterService;
+
 	// State
 	private flashcards: FlashcardItem[];
 	private deletedCardIds: Set<number> = new Set();
@@ -56,6 +61,7 @@ export class FlashcardReviewModal extends BaseModal {
 		this.options = options;
 		this.flashcards = [...options.initialFlashcards];  // Working copy
 		this.component = new Component();
+		this.openRouterService = options.openRouterService;
 	}
 
 	async openAndWait(): Promise<FlashcardReviewResult> {
@@ -72,15 +78,12 @@ export class FlashcardReviewModal extends BaseModal {
 	}
 
 	protected renderBody(container: HTMLElement): void {
-		// Info section
-		this.renderInfoSection(container);
+		// AI Refine section (moved to top)
+		this.renderRefineSection(container);
 
 		// Flashcards list (scrollable)
 		this.flashcardsListEl = container.createDiv({ cls: "episteme-review-flashcards-list" });
 		this.renderFlashcardsList();
-
-		// AI Refine section
-		this.renderRefineSection(container);
 
 		// Action buttons
 		this.renderActions(container);
@@ -154,8 +157,11 @@ export class FlashcardReviewModal extends BaseModal {
 		card: FlashcardItem,
 		index: number
 	): void {
+		// Content wrapper (takes remaining space)
+		const contentEl = itemEl.createDiv({ cls: "episteme-review-card-content" });
+
 		// Question field
-		const questionEl = itemEl.createDiv({
+		const questionEl = contentEl.createDiv({
 			cls: "episteme-review-field episteme-review-field--view",
 			attr: { "data-field": "question" },
 		});
@@ -171,7 +177,7 @@ export class FlashcardReviewModal extends BaseModal {
 		);
 
 		// Answer field
-		const answerEl = itemEl.createDiv({
+		const answerEl = contentEl.createDiv({
 			cls: "episteme-review-field episteme-review-field--view",
 			attr: { "data-field": "answer" },
 		});
@@ -186,11 +192,12 @@ export class FlashcardReviewModal extends BaseModal {
 			this.component
 		);
 
-		// Delete button
+		// Delete button (on right side)
 		const deleteBtn = itemEl.createEl("button", {
-			text: "Delete",
 			cls: "episteme-review-delete-btn",
+			attr: { "aria-label": "Delete flashcard", "title": "Delete" },
 		});
+		deleteBtn.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/></svg>`;
 		deleteBtn.addEventListener("click", () => this.deleteFlashcard(index));
 	}
 
@@ -209,7 +216,7 @@ export class FlashcardReviewModal extends BaseModal {
 			text: label,
 		});
 
-		// Editable contenteditable div
+		// Editable contenteditable div - show raw markdown
 		const editEl = itemEl.createDiv({
 			cls: "episteme-review-editable",
 			attr: {
@@ -218,14 +225,8 @@ export class FlashcardReviewModal extends BaseModal {
 			},
 		});
 
-		// Set content (render markdown first, then make editable)
-		const contentEl = editEl.createDiv({ cls: "episteme-md-content" });
-		void MarkdownRenderer.renderMarkdown(
-			content,
-			contentEl,
-			"",
-			this.component
-		);
+		// Set raw markdown as text content (not rendered)
+		editEl.textContent = content;
 
 		// Event listeners
 		editEl.addEventListener("blur", () => void this.saveEdit(index, field));
@@ -377,18 +378,33 @@ export class FlashcardReviewModal extends BaseModal {
 	}
 
 	private convertEditableToMarkdown(editEl: HTMLElement): string {
-		// Convert <br> to newlines, strip other HTML
 		let html = editEl.innerHTML;
+
+		// Normalize different browser line break representations:
+		// - Chrome/Safari: <div>text</div> or <br>
+		// - Firefox: <br>
+		// - Edge: <p>text</p>
+
+		// Replace <br> tags with newline
 		html = html.replace(/<br\s*\/?>/gi, "\n");
+
+		// Replace closing </div> and </p> with newline (opening tags create blocks)
 		html = html.replace(/<\/div>/gi, "\n");
 		html = html.replace(/<\/p>/gi, "\n");
+
+		// Remove remaining HTML tags
 		html = html.replace(/<[^>]*>/g, "");
 
+		// Decode HTML entities
 		const textarea = document.createElement("textarea");
 		textarea.innerHTML = html;
 		const text = textarea.value;
 
-		return text.replace(/\n+$/, "");
+		// Trim trailing newlines but preserve internal ones
+		const trimmed = text.replace(/\n+$/, "");
+
+		// Convert newlines back to <br> for flashcard format
+		return trimmed.replace(/\n/g, "<br>");
 	}
 
 	private getFinalFlashcards(): FlashcardItem[] {
@@ -427,45 +443,41 @@ export class FlashcardReviewModal extends BaseModal {
 		this.updateRefineButton();
 
 		try {
-			// Import OpenRouterService dynamically
-			const { OpenRouterService } = await import("../../services");
-			const plugin = (this.app as any).epistemePlugin;
-			const openRouterService = plugin?.openRouterService;
-
-			if (!openRouterService) {
-				new Notice("OpenRouter service not available");
-				return;
-			}
-
 			// Call refine method
-			const refined = await (openRouterService as any).refineFlashcards(
+			const refined = await this.openRouterService.refineFlashcards(
 				activeFlashcards,
 				instructions
 			);
 
-			// Update flashcards (preserve deleted ones)
+			// Replace all active (non-deleted) flashcards with the refined set
+			// This allows adding/removing/splitting flashcards
 			const activeIndices = this.flashcards
 				.map((_, i) => i)
 				.filter(i => !this.deletedCardIds.has(i));
 
-			let refinedIndex = 0;
-			for (const originalIndex of activeIndices) {
-				if (refined[refinedIndex] && this.flashcards[originalIndex]) {
-					this.flashcards[originalIndex] = {
-						...this.flashcards[originalIndex]!,
-						question: refined[refinedIndex].question,
-						answer: refined[refinedIndex].answer,
-						lineNumber: refined[refinedIndex].lineNumber ?? this.flashcards[originalIndex]!.lineNumber,
-					};
-
-					refinedIndex++;
-				}
+			// Remove active flashcards (from end to beginning to preserve indices)
+			for (const index of activeIndices.reverse()) {
+				this.flashcards.splice(index, 1);
 			}
+
+			// Clear deleted set and add refined flashcards
+			this.deletedCardIds.clear();
+			this.flashcards.push(...refined);
+
+			// Update title with new count
+			this.updateTitle(`Review Generated Flashcards (${this.flashcards.length})`);
 
 			// Re-render to show updated content
 			this.renderFlashcardsList();
+			this.updateButtons();
 
-			new Notice("Flashcards refined successfully");
+			const countChange = refined.length - activeFlashcards.length;
+			const countMsg = countChange === 0
+				? "Flashcards refined successfully"
+				: countChange > 0
+					? `Refined successfully: added ${countChange} flashcard${countChange !== 1 ? "s" : ""}`
+					: `Refined successfully: removed ${Math.abs(countChange)} flashcard${Math.abs(countChange) !== 1 ? "s" : ""}`;
+			new Notice(countMsg);
 		} catch (error) {
 			new Notice(`Refinement failed: ${error instanceof Error ? error.message : String(error)}`);
 		} finally {

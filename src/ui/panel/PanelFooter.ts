@@ -58,14 +58,11 @@ export class PanelFooter extends BaseComponent {
             cls: "episteme-footer",
         });
 
-        // Literature notes never use diff mode - always use normal footer
-        if (noteFlashcardType === "temporary") {
-            this.renderNormalFooter();
-            return;
-        }
+        const { hasSelection } = this.props;
 
-        // Diff mode footer (for other note types)
-        if (viewMode === "diff" && diffResult) {
+        // If text is selected, always use normal footer (shows selection UI)
+        // Diff mode only available when no selection and in diff state
+        if (viewMode === "diff" && diffResult && !hasSelection) {
             this.renderDiffFooter();
         } else {
             this.renderNormalFooter();
@@ -151,13 +148,14 @@ export class PanelFooter extends BaseComponent {
             return;
         }
 
-        // ===== DIFFERENT UI FOR LITERATURE NOTES =====
-        if (noteFlashcardType === "temporary") {
-            this.renderLiteratureNoteFooter(buttonsWrapper);
+        // ===== SELECTION-BASED UI (ANY NOTE TYPE WITH SELECTION) =====
+        const { hasSelection, selectedText } = this.props;
+        if (hasSelection && selectedText) {
+            this.renderSelectionFooter(buttonsWrapper);
             return;
         }
 
-        // ===== EXISTING UI FOR OTHER NOTE TYPES =====
+        // ===== NO SELECTION UI =====
         // Instructions input
         this.renderInstructionsInput(
             "Instructions for AI (optional)...",
@@ -183,45 +181,37 @@ export class PanelFooter extends BaseComponent {
                 this.events.addEventListener(mainBtn, "click", onGenerate);
             }
         }
+
+        // Hint about selection-based generation (only when no flashcards yet)
+        if (status !== "exists" && status !== "processing") {
+            const hintEl = buttonsWrapper.createDiv({
+                cls: "episteme-selection-hint",
+            });
+            hintEl.innerHTML = `<span style="font-size: 11px; color: var(--text-muted);">💡 Or select specific text to generate from selection</span>`;
+        }
     }
 
     /**
-     * Render footer for literature notes (selection-based generation)
+     * Render footer for selection-based generation (any note type with text selected)
      */
-    private renderLiteratureNoteFooter(container: HTMLElement): void {
-        const { hasSelection, selectedText, onGenerate } = this.props;
+    private renderSelectionFooter(container: HTMLElement): void {
+        const { selectedText, onGenerate } = this.props;
 
-        if (!hasSelection || !selectedText) {
-            // Show message when no text is selected
-            const messageEl = container.createDiv({
-                cls: "episteme-selection-message",
-            });
-            messageEl.textContent = "Select text in the note to generate flashcards";
-            messageEl.addClass("episteme-selection-message--empty");
-
-            // Add icon
-            const iconEl = messageEl.createSpan({
-                cls: "episteme-selection-icon",
-            });
-            iconEl.textContent = "📝";
-            return;
-        }
-
-        // Show selection preview and generate button when text is selected
+        // Show selection preview and generate button
         const selectionPreview = container.createDiv({
             cls: "episteme-selection-preview",
         });
 
-        const previewLabel = selectionPreview.createSpan({
+        selectionPreview.createSpan({
             cls: "episteme-selection-preview-label",
             text: "Selected:",
         });
 
         const previewText = selectionPreview.createSpan({
             cls: "episteme-selection-preview-text",
-            text: this.truncateText(selectedText, 100),
+            text: this.truncateText(selectedText || "", 100),
         });
-        previewText.setAttribute("title", selectedText); // Show full text on hover
+        previewText.setAttribute("title", selectedText || ""); // Show full text on hover
 
         // Instructions input (optional)
         this.renderInstructionsInput("Additional instructions (optional)...", false);

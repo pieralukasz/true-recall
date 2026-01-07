@@ -247,13 +247,13 @@ export class FlashcardPanelView extends ItemView {
             return;
         }
 
-        // ===== SELECTION-BASED GENERATION FOR LITERATURE NOTES =====
-        if (state.noteFlashcardType === "temporary") {
+        // ===== SELECTION-BASED GENERATION (ANY NOTE TYPE WITH SELECTION) =====
+        if (state.hasSelection && state.selectedText) {
             await this.handleGenerateFromSelection();
             return;
         }
 
-        // ===== EXISTING FULL-FILE GENERATION FOR OTHER NOTES =====
+        // ===== FULL-FILE GENERATION (NO SELECTION) =====
         const userInstructions = this.footerComponent?.getInstructions() || "";
         this.stateManager.startProcessing();
 
@@ -277,15 +277,22 @@ export class FlashcardPanelView extends ItemView {
             }
 
             new Notice(`Generated flashcards for ${state.currentFile.basename}`);
+            this.stateManager.finishProcessing(false);
         } catch (error) {
             new Notice(`Error: ${error instanceof Error ? error.message : String(error)}`);
+            this.stateManager.finishProcessing(false);
         }
 
-        await this.loadFlashcardInfo();
+        // Load flashcard info outside main try-catch to avoid double error handling
+        try {
+            await this.loadFlashcardInfo();
+        } catch (error) {
+            console.error("Failed to load flashcard info after generation:", error);
+        }
     }
 
     /**
-     * Generate flashcards from selected text (literature notes only)
+     * Generate flashcards from selected text (any note type with selection)
      * Opens review modal before saving
      */
     private async handleGenerateFromSelection(): Promise<void> {
@@ -330,6 +337,7 @@ export class FlashcardPanelView extends ItemView {
             const modal = new FlashcardReviewModal(this.app, {
                 initialFlashcards: generatedFlashcards,
                 sourceNoteName: state.currentFile.basename,
+                openRouterService: this.openRouterService,
             });
 
             const result = await modal.openAndWait();
@@ -667,10 +675,11 @@ export class FlashcardPanelView extends ItemView {
         await this.loadFlashcardInfo();
     }
 
-    // ===== Selection Tracking for Literature Notes =====
+    // ===== Selection Tracking for All Notes =====
 
     /**
-     * Track text selection in the active editor for literature notes
+     * Track text selection in the active editor for all note types
+     * Selection-based flashcard generation is now available for all notes
      */
     private registerSelectionTracking(): void {
         let selectionTimer: NodeJS.Timeout | null = null;
@@ -679,9 +688,12 @@ export class FlashcardPanelView extends ItemView {
         const updateSelection = () => {
             const state = this.stateManager.getState();
 
-            // Only track selection for literature notes
-            if (state.noteFlashcardType !== "temporary" || !state.currentFile) {
-                this.stateManager.clearSelection();
+            // Skip if no current file
+            if (!state.currentFile) {
+                // Only clear if there was a selection before
+                if (state.hasSelection) {
+                    this.stateManager.clearSelection();
+                }
                 return;
             }
 
@@ -694,7 +706,8 @@ export class FlashcardPanelView extends ItemView {
                 const selection = this.getCurrentSelection();
                 if (selection) {
                     this.stateManager.setSelectedText(selection);
-                } else {
+                } else if (state.hasSelection) {
+                    // Only clear if there was a selection before
                     this.stateManager.clearSelection();
                 }
             }, 300);

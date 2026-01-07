@@ -141,14 +141,14 @@ export class PanelContent extends BaseComponent {
         const message = this.getNoFlashcardsMessage(noteFlashcardType);
         stateEl.createEl("p", { text: message, cls: "episteme-no-cards-message" });
 
-        // Add helpful hint for literature notes
-        if (noteFlashcardType === "temporary") {
+        // Add helpful hint for notes that can have flashcards
+        if (noteFlashcardType && noteFlashcardType !== "none" && noteFlashcardType !== "unknown") {
             const hintEl = stateEl.createDiv({
                 cls: "episteme-no-cards-hint",
             });
             hintEl.innerHTML = `
                 <p style="margin-top: 12px; font-size: 12px; color: var(--text-muted);">
-                    💡 Select specific text in your note to create flashcards from that content only.
+                    💡 Select specific text to create flashcards from that content only.
                 </p>
             `;
         }
