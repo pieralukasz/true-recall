@@ -23,6 +23,13 @@ export {
 } from "./CardPreview";
 
 export {
+	CardReviewItem,
+	createCardReviewItem,
+	type CardReviewItemProps,
+	type CardData,
+} from "./CardReviewItem";
+
+export {
 	DiffCard,
 	createDiffCard,
 	type DiffCardHandlers,
