@@ -167,7 +167,7 @@ export class CommandDashboardModal extends BaseModal {
 				icon: "filter",
 				category: CommandCategory.REVIEW,
 				requiresActiveFile: false,
-				callback: () => this.plugin.startCustomReviewSession(),
+				callback: () => this.plugin.startReviewSession(),
 			},
 			{
 				id: "review-current-note",

@@ -8,7 +8,7 @@ import type { FSRSFlashcardItem } from "../../types";
 import type { DayBoundaryService } from "../../services";
 import { BaseModal } from "./BaseModal";
 
-export type CustomSessionType = "current-note" | "created-today" | "select-notes" | "state-filter";
+export type CustomSessionType = "current-note" | "created-today" | "select-notes" | "state-filter" | "default";
 
 export interface CustomSessionResult {
 	cancelled: boolean;
@@ -20,6 +20,8 @@ export interface CustomSessionResult {
 	/** Only include cards ready to harvest (temporary + interval >= 21 days) */
 	readyToHarvestOnly?: boolean;
 	ignoreDailyLimits: boolean;
+	/** Use default deck (Knowledge) with no filters */
+	useDefaultDeck?: boolean;
 }
 
 export interface CustomSessionModalOptions {
@@ -51,7 +53,7 @@ export class CustomSessionModal extends BaseModal {
 	private startButtonEl: HTMLButtonElement | null = null;
 
 	constructor(app: App, options: CustomSessionModalOptions) {
-		super(app, { title: "Custom Review Session", width: "500px" });
+		super(app, { title: "Review Session", width: "500px" });
 		this.options = options;
 	}
 
@@ -175,6 +177,27 @@ export class CustomSessionModal extends BaseModal {
 			});
 			harvestBtn.disabled = true;
 			harvestBtn.addClass("episteme-btn-disabled");
+		}
+
+		// Default button (Knowledge deck, no filters)
+		const defaultBtn = quickActionsEl.createEl("button", {
+			cls: "episteme-quick-action-btn episteme-default-btn",
+		});
+		defaultBtn.createSpan({ text: "Default" });
+		const allCardsStats = this.getAllCardsStats(now);
+		if (allCardsStats.total > 0) {
+			defaultBtn.createSpan({
+				cls: "episteme-quick-action-stats",
+				text: this.formatStats(allCardsStats.newCount, allCardsStats.dueCount),
+			});
+			defaultBtn.addEventListener("click", () => this.selectDefaultDeck());
+		} else {
+			defaultBtn.createSpan({
+				cls: "episteme-quick-action-stats episteme-stat-muted",
+				text: "no cards",
+			});
+			defaultBtn.disabled = true;
+			defaultBtn.addClass("episteme-btn-disabled");
 		}
 
 	}
@@ -472,6 +495,18 @@ export class CustomSessionModal extends BaseModal {
 		};
 	}
 
+	private getAllCardsStats(now: Date): { total: number; newCount: number; dueCount: number } {
+		const cards = this.options.allCards.filter((c) =>
+			this.isCardAvailable(c, now) && !c.fsrs.suspended
+		);
+
+		return {
+			total: cards.length,
+			newCount: cards.filter((c) => c.fsrs.state === State.New).length,
+			dueCount: cards.filter((c) => c.fsrs.state !== State.New).length,
+		};
+	}
+
 	private selectReadyToHarvest(): void {
 		this.hasSelected = true;
 		if (this.resolvePromise) {
@@ -480,6 +515,20 @@ export class CustomSessionModal extends BaseModal {
 				sessionType: "state-filter",
 				readyToHarvestOnly: true,
 				ignoreDailyLimits: true,
+			});
+			this.resolvePromise = null;
+		}
+		this.close();
+	}
+
+	private selectDefaultDeck(): void {
+		this.hasSelected = true;
+		if (this.resolvePromise) {
+			this.resolvePromise({
+				cancelled: false,
+				sessionType: "default",
+				useDefaultDeck: true,
+				ignoreDailyLimits: false,
 			});
 			this.resolvePromise = null;
 		}

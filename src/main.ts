@@ -147,13 +147,6 @@ export default class EpistemePlugin extends Plugin {
 			callback: () => void this.startReviewSession(),
 		});
 
-		// Custom review session command
-		this.addCommand({
-			id: "start-custom-review",
-			name: "Start custom review session",
-			callback: () => void this.startCustomReviewSession(),
-		});
-
 		// Review flashcards from current note
 		this.addCommand({
 			id: "review-current-note",
@@ -363,23 +356,54 @@ export default class EpistemePlugin extends Plugin {
 		});
 	}
 
-	// Start a review session (defaults to Knowledge deck)
+	// Start a review session (opens modal with options)
 	async startReviewSession(): Promise<void> {
 		const { workspace } = this.app;
 
-		// Check if review view already exists
+		// Check for existing review view
 		const existingLeaves = workspace.getLeavesOfType(VIEW_TYPE_REVIEW);
 		if (existingLeaves.length > 0) {
-			// Focus existing review view
-			const leaf = existingLeaves[0];
-			if (leaf) {
-				workspace.revealLeaf(leaf);
-			}
+			void workspace.revealLeaf(existingLeaves[0]!);
 			return;
 		}
 
-		// Open review view with Knowledge deck (default)
-		await this.openReviewView("Knowledge");
+		const allCards = await this.flashcardManager.getAllFSRSCards();
+		if (allCards.length === 0) {
+			new Notice("No flashcards found. Generate some flashcards first!");
+			return;
+		}
+
+		const currentFile = this.app.workspace.getActiveFile();
+		const currentNoteName =
+			currentFile && !currentFile.name.startsWith(FLASHCARD_CONFIG.filePrefix)
+				? currentFile.basename
+				: null;
+
+		const modal = new CustomSessionModal(this.app, {
+			currentNoteName,
+			allCards,
+			dayBoundaryService: this.dayBoundaryService,
+		});
+
+		const result = await modal.openAndWait();
+		if (result.cancelled) return;
+
+		// Handle "Default" option - open with Knowledge deck, no filters
+		if (result.useDefaultDeck) {
+			await this.openReviewView("Knowledge");
+			return;
+		}
+
+		// Handle other options with filters
+		await this.openReviewViewWithFilters({
+			deckFilter: null,
+			sourceNoteFilter: result.sourceNoteFilter,
+			sourceNoteFilters: result.sourceNoteFilters,
+			filePathFilter: result.filePathFilter,
+			createdTodayOnly: result.createdTodayOnly,
+			readyToHarvestOnly: result.readyToHarvestOnly,
+			ignoreDailyLimits: result.ignoreDailyLimits,
+		});
 	}
 
 	/**
@@ -534,51 +558,6 @@ export default class EpistemePlugin extends Plugin {
 				new Notice(`Moved ${successCount} card(s) to ${targetName}`);
 			}
 		}
-	}
-
-	/**
-	 * Start a custom review session with the modal
-	 */
-	async startCustomReviewSession(): Promise<void> {
-		const { workspace } = this.app;
-
-		// Check for existing review view
-		const existingLeaves = workspace.getLeavesOfType(VIEW_TYPE_REVIEW);
-		if (existingLeaves.length > 0) {
-			void workspace.revealLeaf(existingLeaves[0]!);
-			return;
-		}
-
-		const allCards = await this.flashcardManager.getAllFSRSCards();
-		if (allCards.length === 0) {
-			new Notice("No flashcards found. Generate some flashcards first!");
-			return;
-		}
-
-		const currentFile = this.app.workspace.getActiveFile();
-		const currentNoteName =
-			currentFile && !currentFile.name.startsWith(FLASHCARD_CONFIG.filePrefix)
-				? currentFile.basename
-				: null;
-
-		const modal = new CustomSessionModal(this.app, {
-			currentNoteName,
-			allCards,
-			dayBoundaryService: this.dayBoundaryService,
-		});
-
-		const result = await modal.openAndWait();
-		if (result.cancelled) return;
-
-		await this.openReviewViewWithFilters({
-			deckFilter: null,
-			sourceNoteFilter: result.sourceNoteFilter,
-			sourceNoteFilters: result.sourceNoteFilters,
-			filePathFilter: result.filePathFilter,
-			createdTodayOnly: result.createdTodayOnly,
-			readyToHarvestOnly: result.readyToHarvestOnly,
-			ignoreDailyLimits: result.ignoreDailyLimits,
-		});
 	}
 
 	/**
