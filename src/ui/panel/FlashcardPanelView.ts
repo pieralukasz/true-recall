@@ -206,6 +206,8 @@ export class FlashcardPanelView extends ItemView {
                 onToggleCardSelection: (lineNumber) => this.handleToggleCardSelection(lineNumber),
                 onSelectAllTemporary: () => this.handleSelectAllTemporary(),
                 onClearSelection: () => this.handleClearSelection(),
+                // In-place edit save handler
+                onEditSave: async (card, field, newContent) => void this.handleEditSave(card, field, newContent),
             },
         });
         this.contentComponent.render();
@@ -500,6 +502,44 @@ export class FlashcardPanelView extends ItemView {
             await this.flashcardManager.openFileAtLine(state.currentFile, card.lineNumber);
         } else {
             await this.flashcardManager.openFlashcardFileAtLine(state.currentFile, card.lineNumber);
+        }
+    }
+
+    private async handleEditSave(
+        card: FlashcardItem,
+        field: "question" | "answer",
+        newContent: string
+    ): Promise<void> {
+        const state = this.stateManager.getState();
+        if (!state.currentFile || !state.flashcardInfo) return;
+
+        const filePath = state.isFlashcardFile
+            ? state.currentFile.path
+            : this.flashcardManager.getFlashcardPath(state.currentFile);
+
+        try {
+            if (field === "question") {
+                await this.flashcardManager.updateCardContent(
+                    filePath,
+                    card.lineNumber,
+                    newContent,
+                    card.answer
+                );
+            } else {
+                await this.flashcardManager.updateCardContent(
+                    filePath,
+                    card.lineNumber,
+                    card.question,
+                    newContent
+                );
+            }
+
+            new Notice("Flashcard updated");
+
+            // Reload flashcard info to reflect changes
+            await this.loadFlashcardInfo();
+        } catch (error) {
+            new Notice(`Failed to update flashcard: ${error instanceof Error ? error.message : String(error)}`);
         }
     }
 

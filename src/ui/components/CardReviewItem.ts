@@ -4,12 +4,18 @@
  * Matches the FlashcardReviewModal design
  */
 import type { App, Component } from "obsidian";
-import { MarkdownRenderer } from "obsidian";
+import { MarkdownRenderer, Notice } from "obsidian";
 import type { FlashcardItem, FSRSFlashcardItem } from "../../types";
 import { BaseComponent } from "../component.base";
 
 // Union type for card data
 export type CardData = FlashcardItem | FSRSFlashcardItem;
+
+// Edit mode state
+interface EditMode {
+	field: "question" | "answer";
+	isEditing: boolean;
+}
 
 export interface CardReviewItemProps {
 	// Card data - supports both FlashcardItem and FSRSFlashcardItem
@@ -20,9 +26,10 @@ export interface CardReviewItemProps {
 	app: App;
 	component: Component;
 	// Optional handlers
-	onClick?: (card: CardData) => void; // For edit
+	onClick?: (card: CardData) => void; // For edit (opens file - normal click)
 	onDelete?: (card: CardData) => void;
 	onOpen?: (card: CardData) => void; // Open source note
+	onEditSave?: (card: CardData, field: "question" | "answer", newContent: string) => Promise<void>; // In-place edit save
 }
 
 /**
@@ -34,6 +41,8 @@ export class CardReviewItem extends BaseComponent {
 	// Store references to markdown content elements for internal link handling
 	private questionContentEl: HTMLElement | null = null;
 	private answerContentEl: HTMLElement | null = null;
+	// Edit mode state
+	private editMode: EditMode | null = null;
 
 	constructor(container: HTMLElement, props: CardReviewItemProps) {
 		super(container);
@@ -54,39 +63,189 @@ export class CardReviewItem extends BaseComponent {
 			cls: "episteme-review-card-item",
 		});
 
-		// Make clickable if onClick provided
-		if (onClick) {
-			this.events.addEventListener(this.element, "click", () => {
-				onClick(card);
-			});
+		// Check if we're in edit mode
+		if (this.editMode?.isEditing) {
+			this.renderEditMode();
+		} else {
+			// Make clickable if onClick provided
+			if (onClick) {
+				this.events.addEventListener(this.element, "click", () => {
+					onClick(card);
+				});
+			}
+
+			// Content wrapper (takes remaining space)
+			const contentEl = this.element.createDiv({ cls: "episteme-review-card-content" });
+
+			// Question field
+			this.renderField(contentEl, "question", card.question, filePath, app, component);
+
+			// Answer field
+			this.renderField(contentEl, "answer", card.answer, filePath, app, component);
+
+			// Buttons container (right side)
+			this.renderButtons();
+
+			// Setup internal link handler
+			this.setupInternalLinkHandler();
+		}
+	}
+
+	private renderField(
+		container: HTMLElement,
+		field: "question" | "answer",
+		content: string,
+		filePath: string,
+		app: App,
+		component: Component
+	): void {
+		const fieldEl = container.createDiv({
+			cls: "episteme-review-field episteme-review-field--view",
+		});
+		fieldEl.createDiv({ cls: "episteme-review-field-label", text: `${field === "question" ? "Question" : "Answer"}:` });
+		const fieldContent = fieldEl.createDiv({ cls: "episteme-md-content" });
+
+		if (field === "question") {
+			this.questionContentEl = fieldContent;
+		} else {
+			this.answerContentEl = fieldContent;
 		}
 
-		// Content wrapper (takes remaining space)
-		const contentEl = this.element.createDiv({ cls: "episteme-review-card-content" });
+		void MarkdownRenderer.render(app, content, fieldContent, filePath, component);
 
-		// Question field
-		const questionEl = contentEl.createDiv({
-			cls: "episteme-review-field episteme-review-field--view",
+		// Add click handler for field
+		this.events.addEventListener(fieldEl, "click", (e) => this.handleFieldClick(e, field));
+	}
+
+	private handleFieldClick(e: MouseEvent, field: "question" | "answer"): void {
+		// Cmd/Ctrl+click = edit mode
+		if (e.metaKey || e.ctrlKey) {
+			e.preventDefault();
+			e.stopPropagation();
+			this.startEdit(field);
+			return;
+		}
+
+		// Check if clicked on internal link
+		const linkEl = (e.target as HTMLElement).closest("a.internal-link");
+		if (!linkEl) {
+			// Normal click on field (not on link) - let the card's click handler deal with it
+			// We don't call onClick here to avoid double-triggering
+		}
+	}
+
+	private startEdit(field: "question" | "answer"): void {
+		if (!this.props.onEditSave) return;
+		this.editMode = { field, isEditing: true };
+		this.render();
+	}
+
+	private renderEditMode(): void {
+		const { card } = this.props;
+		if (!this.editMode || !this.element) return;
+
+		const { field } = this.editMode;
+		const content = field === "question" ? card.question : card.answer;
+		const label = field === "question" ? "Question:" : "Answer:";
+
+		// Label for the field being edited
+		const labelEl = this.element.createDiv({
+			cls: "episteme-review-field-label",
+			text: label,
 		});
-		questionEl.createDiv({ cls: "episteme-review-field-label", text: "Question:" });
-		const questionContent = questionEl.createDiv({ cls: "episteme-md-content" });
-		this.questionContentEl = questionContent;
-		void MarkdownRenderer.render(app, card.question, questionContent, filePath, component);
 
-		// Answer field
-		const answerEl = contentEl.createDiv({
-			cls: "episteme-review-field episteme-review-field--view",
+		// Editable contenteditable div - show raw markdown
+		const editEl = this.element.createDiv({
+			cls: "episteme-review-editable",
+			attr: {
+				contenteditable: "true",
+				"data-field": field,
+			},
 		});
-		answerEl.createDiv({ cls: "episteme-review-field-label", text: "Answer:" });
-		const answerContent = answerEl.createDiv({ cls: "episteme-md-content" });
-		this.answerContentEl = answerContent;
-		void MarkdownRenderer.render(app, card.answer, answerContent, filePath, component);
 
-		// Buttons container (right side)
-		this.renderButtons();
+		// Set raw markdown as text content (not rendered)
+		editEl.textContent = content;
 
-		// Setup internal link handler
-		this.setupInternalLinkHandler();
+		// Focus after delay
+		setTimeout(() => {
+			editEl.focus();
+			// Move cursor to end
+			const range = document.createRange();
+			const sel = window.getSelection();
+			if (sel && editEl.childNodes.length > 0) {
+				range.selectNodeContents(editEl);
+				range.collapse(false);
+				sel.removeAllRanges();
+				sel.addRange(range);
+			}
+		}, 10);
+
+		// Event listeners
+		this.events.addEventListener(editEl, "blur", () => void this.saveEdit(field));
+		this.events.addEventListener(editEl, "keydown", (e) => this.handleEditKeydown(e, field));
+	}
+
+	private async saveEdit(field: "question" | "answer"): Promise<void> {
+		if (!this.element || !this.props.card) return;
+
+		const editEl = this.element.querySelector(
+			`.episteme-review-editable[data-field="${field}"]`
+		) as HTMLElement;
+
+		if (!editEl) return;
+
+		// Convert HTML to markdown
+		const content = this.convertEditableToMarkdown(editEl);
+
+		// Call save handler
+		try {
+			await this.props.onEditSave?.(this.props.card, field, content);
+		} catch (error) {
+			new Notice(`Failed to save: ${error instanceof Error ? error.message : String(error)}`);
+			return;
+		}
+
+		// Exit edit mode
+		this.editMode = null;
+		this.render();
+	}
+
+	private handleEditKeydown(e: KeyboardEvent, field: "question" | "answer"): void {
+		if (e.key === "Escape") {
+			e.preventDefault();
+			void this.saveEdit(field);
+		} else if (e.key === "Tab") {
+			e.preventDefault();
+			const nextField = field === "question" ? "answer" : "question";
+			void this.saveEdit(field).then(() => {
+				this.startEdit(nextField);
+			});
+		}
+	}
+
+	private convertEditableToMarkdown(editEl: HTMLElement): string {
+		let html = editEl.innerHTML;
+
+		// Replace <br> tags with newline
+		html = html.replace(/<br\s*\/?>/gi, "\n");
+
+		// Replace closing </div> and </p> with newline (opening tags create blocks)
+		html = html.replace(/<\/div>/gi, "\n");
+		html = html.replace(/<\/p>/gi, "\n");
+
+		// Remove remaining HTML tags
+		html = html.replace(/<[^>]*>/g, "");
+
+		// Decode HTML entities
+		const textarea = document.createElement("textarea");
+		textarea.innerHTML = html;
+		const text = textarea.value;
+
+		// Trim trailing newlines but preserve internal ones
+		const trimmed = text.replace(/\n+$/, "");
+
+		// Convert newlines back to <br> for flashcard format
+		return trimmed.replace(/\n/g, "<br>");
 	}
 
 	private renderButtons(): void {

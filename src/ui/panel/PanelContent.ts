@@ -27,6 +27,8 @@ export interface PanelContentHandlers {
     onToggleCardSelection?: (lineNumber: number) => void;
     onSelectAllTemporary?: () => void;
     onClearSelection?: () => void;
+    // In-place edit save handler
+    onEditSave?: (card: FlashcardItem, field: "question" | "answer", newContent: string) => Promise<void>;
     // Harvest service for maturity calculations
     harvestService?: HarvestService;
 }
@@ -280,6 +282,7 @@ export class PanelContent extends BaseComponent {
                     component: handlers.component,
                     onClick: handlers.onEditCard,
                     onDelete: handlers.onDeleteCard,
+                    onEditSave: handlers.onEditSave,
                 });
                 this.childComponents.push(cardReviewItem);
 
