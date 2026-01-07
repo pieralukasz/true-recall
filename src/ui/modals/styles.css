@@ -1139,3 +1139,71 @@
 .episteme-review-cancel-btn:hover {
 	background: var(--background-modifier-hover);
 }
+
+/* ========================================
+   Command Dashboard Modal
+   ======================================== */
+
+.episteme-command-dashboard-modal .episteme-modal-body {
+	display: flex;
+	flex-direction: column;
+	gap: 20px;
+}
+
+.episteme-command-category-title {
+	font-size: 14px;
+	font-weight: 600;
+	color: var(--text-muted);
+	text-transform: uppercase;
+	letter-spacing: 0.5px;
+	margin: 0 0 8px 0;
+}
+
+.episteme-command-buttons-grid {
+	display: grid;
+	grid-template-columns: repeat(2, 1fr);
+	gap: 10px;
+	margin-bottom: 12px;
+}
+
+.episteme-command-btn {
+	display: flex;
+	align-items: center;
+	gap: 10px;
+	padding: 14px 16px;
+	background: var(--background-secondary);
+	border: 1px solid var(--background-modifier-border);
+	border-radius: 8px;
+	cursor: pointer;
+	font-size: 14px;
+	font-weight: 500;
+	color: var(--text-normal);
+	transition: all 0.15s ease;
+	text-align: left;
+}
+
+.episteme-command-btn:hover:not(:disabled) {
+	background: var(--background-modifier-hover);
+	border-color: var(--interactive-accent);
+	transform: translateY(-1px);
+}
+
+.episteme-command-btn:active:not(:disabled) {
+	transform: translateY(0);
+}
+
+.episteme-command-btn-icon {
+	font-size: 20px;
+	flex-shrink: 0;
+}
+
+.episteme-command-btn-label {
+	flex: 1;
+}
+
+/* Mobile responsive for command dashboard */
+@media screen and (max-width: 600px) {
+	.episteme-command-buttons-grid {
+		grid-template-columns: 1fr;
+	}
+}

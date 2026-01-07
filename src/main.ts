@@ -28,6 +28,7 @@ import {
 } from "./ui";
 import { HarvestDashboardModal } from "./ui/modals/HarvestDashboardModal";
 import { MoveCardModal } from "./ui/modals/MoveCardModal";
+import { CommandDashboardModal } from "./ui/modals";
 import { StatsView } from "./ui/stats";
 
 export default class EpistemePlugin extends Plugin {
@@ -112,6 +113,11 @@ export default class EpistemePlugin extends Plugin {
 			void this.openStatsView();
 		});
 
+		// Add ribbon icon for command dashboard
+		this.addRibbonIcon("blocks", "Episteme - Command Dashboard", () => {
+			this.openCommandDashboard();
+		});
+
 		// Register commands
 		this.addCommand({
 			id: "open-flashcard-panel",
@@ -176,6 +182,13 @@ export default class EpistemePlugin extends Plugin {
 			id: "open-statistics",
 			name: "Open statistics panel",
 			callback: () => void this.openStatsView(),
+		});
+
+		// Command dashboard command
+		this.addCommand({
+			id: "open-command-dashboard",
+			name: "Open command dashboard",
+			callback: () => this.openCommandDashboard(),
 		});
 
 		// Scan vault command - add FSRS IDs to new flashcards and cleanup orphaned
@@ -562,10 +575,6 @@ export default class EpistemePlugin extends Plugin {
 			sourceNoteFilters: result.sourceNoteFilters,
 			filePathFilter: result.filePathFilter,
 			createdTodayOnly: result.createdTodayOnly,
-			createdThisWeek: result.createdThisWeek,
-			weakCardsOnly: result.weakCardsOnly,
-			stateFilter: result.stateFilter,
-			temporaryOnly: result.temporaryOnly,
 			readyToHarvestOnly: result.readyToHarvestOnly,
 			ignoreDailyLimits: result.ignoreDailyLimits,
 		});
@@ -650,6 +659,14 @@ export default class EpistemePlugin extends Plugin {
 			createdTodayOnly: true,
 			ignoreDailyLimits: true,
 		});
+	}
+
+	/**
+	 * Open the command dashboard modal
+	 */
+	openCommandDashboard(): void {
+		const modal = new CommandDashboardModal(this.app, this);
+		modal.openAndWait();
 	}
 
 	/**
