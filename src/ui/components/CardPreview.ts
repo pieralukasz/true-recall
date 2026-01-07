@@ -28,6 +28,9 @@ export interface CardPreviewProps {
  */
 export class CardPreview extends BaseComponent {
 	private props: CardPreviewProps;
+	// Store references to markdown content elements for internal link handling
+	private questionContentEl: HTMLElement | null = null;
+	private answerContentEl: HTMLElement | null = null;
 
 	constructor(container: HTMLElement, props: CardPreviewProps) {
 		super(container);
@@ -90,6 +93,9 @@ export class CardPreview extends BaseComponent {
 			cls: "episteme-md-content",
 		});
 
+		// Store reference for internal link handler
+		this.questionContentEl = questionContent;
+
 		// Render markdown (strip <br> tags for cleaner display)
 		void markdownRenderer.render(
 			handlers.app,
@@ -115,6 +121,9 @@ export class CardPreview extends BaseComponent {
 		const answerContent = answerEl.createDiv({
 			cls: "episteme-md-content",
 		});
+
+		// Store reference for internal link handler
+		this.answerContentEl = answerContent;
 
 		// Render markdown (strip <br> tags for cleaner display)
 		void markdownRenderer.render(
@@ -184,45 +193,50 @@ export class CardPreview extends BaseComponent {
 	/**
 	 * Setup click handler for internal links
 	 * Uses capture phase to intercept before Obsidian's handlers
+	 * Now attached only to markdown content elements to avoid interfering with card clicks
 	 */
 	private setupInternalLinkHandler(): void {
-		if (!this.element) return;
-
 		const { filePath, handlers } = this.props;
 
-		this.element.addEventListener(
-			"click",
-			(e: MouseEvent) => {
-				const linkEl = (e.target as HTMLElement).closest(
-					"a.internal-link"
-				);
-				if (!linkEl) return;
+		// Get markdown content elements
+		const contentElements = [this.questionContentEl, this.answerContentEl].filter(Boolean);
 
-				e.preventDefault();
-				e.stopPropagation();
-				e.stopImmediatePropagation();
-
-				const href = linkEl.getAttribute("data-href");
-				if (!href) return;
-
-				// Open in existing tab if available
-				const existingLeaf = handlers.app.workspace.getMostRecentLeaf();
-				if (existingLeaf) {
-					void handlers.app.workspace.openLinkText(
-						href,
-						filePath,
-						false
+		// Attach handler only to markdown content, not the entire card
+		contentElements.forEach((el) => {
+			el?.addEventListener(
+				"click",
+				(e: MouseEvent) => {
+					const linkEl = (e.target as HTMLElement).closest(
+						"a.internal-link"
 					);
-				} else {
-					void handlers.app.workspace.openLinkText(
-						href,
-						filePath,
-						"tab"
-					);
-				}
-			},
-			true
-		); // capture: true
+					if (!linkEl) return;
+
+					e.preventDefault();
+					e.stopPropagation();
+					e.stopImmediatePropagation();
+
+					const href = linkEl.getAttribute("data-href");
+					if (!href) return;
+
+					// Open in existing tab if available
+					const existingLeaf = handlers.app.workspace.getMostRecentLeaf();
+					if (existingLeaf) {
+						void handlers.app.workspace.openLinkText(
+							href,
+							filePath,
+							false
+						);
+					} else {
+						void handlers.app.workspace.openLinkText(
+							href,
+							filePath,
+							"tab"
+						);
+					}
+				},
+				true
+			); // capture: true
+		});
 	}
 
 	/**

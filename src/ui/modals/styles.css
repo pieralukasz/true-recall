@@ -949,6 +949,9 @@
 
 /* Individual flashcard item */
 .episteme-review-card-item {
+	display: flex;
+	flex-direction: row;
+	gap: 12px;
 	margin-bottom: 12px;
 	padding: 12px;
 	background: var(--background-primary);
@@ -959,6 +962,12 @@
 
 .episteme-review-card-item:hover {
 	border-color: var(--interactive-accent);
+}
+
+/* Card content wrapper */
+.episteme-review-card-content {
+	flex: 1;
+	min-width: 0;
 }
 
 /* View mode fields */
@@ -1008,48 +1017,37 @@
 	box-shadow: 0 0 0 2px var(--interactive-accent-alpha, rgba(var(--interactive-accent-rgb), 0.2));
 }
 
-/* Card actions */
-.episteme-review-card-actions {
-	display: flex;
-	justify-content: flex-end;
-	margin-top: 8px;
-	padding-top: 8px;
-	border-top: 1px solid var(--background-modifier-border);
-}
-
+/* Delete button (icon on right) */
 .episteme-review-delete-btn {
-	padding: 4px 12px;
-	font-size: 12px;
-	background: var(--color-red, #ef4444);
-	color: white;
+	width: 28px;
+	height: 28px;
+	padding: 6px;
+	background: transparent;
+	color: var(--text-muted);
 	border: none;
 	border-radius: 4px;
 	cursor: pointer;
-	transition: background-color 0.15s ease;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	transition: all 0.15s ease;
+	flex-shrink: 0;
+	align-self: center;
 }
 
 .episteme-review-delete-btn:hover {
-	background: var(--color-red-hover, #dc2626);
+	background: var(--background-modifier-hover);
+	color: var(--color-red, #ef4444);
 }
 
-.episteme-review-restore-btn {
-	padding: 4px 12px;
-	font-size: 12px;
-	background: var(--color-green, #22c55e);
-	color: white;
-	border: none;
-	border-radius: 4px;
-	cursor: pointer;
-	transition: background-color 0.15s ease;
-}
-
-.episteme-review-restore-btn:hover {
-	background: var(--color-green-hover, #16a34a);
+.episteme-review-delete-btn svg {
+	width: 16px;
+	height: 16px;
 }
 
 /* Refine section */
 .episteme-review-refine-section {
-	margin-bottom: 16px;
+	margin-bottom: 12px;
 	padding: 12px;
 	background: var(--background-secondary);
 	border-radius: 6px;
