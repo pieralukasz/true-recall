@@ -16,6 +16,7 @@ export interface BaseModalOptions {
 export abstract class BaseModal extends Modal {
 	protected modalTitle: string;
 	protected modalWidth: string;
+	private headerTitleEl: HTMLElement | null = null;
 
 	constructor(app: App, options: BaseModalOptions) {
 		super(app);
@@ -43,8 +44,18 @@ export abstract class BaseModal extends Modal {
 
 	private renderHeader(container: HTMLElement): void {
 		const header = container.createDiv({ cls: "episteme-modal-header" });
-		header.createEl("h2", { text: this.modalTitle });
+		this.headerTitleEl = header.createEl("h2", { text: this.modalTitle });
 		// Close button is rendered by Obsidian, we position it via CSS
+	}
+
+	/**
+	 * Update the modal title dynamically
+	 */
+	protected updateTitle(newTitle: string): void {
+		this.modalTitle = newTitle;
+		if (this.headerTitleEl) {
+			this.headerTitleEl.textContent = newTitle;
+		}
 	}
 
 	/**
