@@ -507,6 +507,7 @@ export default class EpistemePlugin extends Plugin {
 			// Open move modal
 			const moveModal = new MoveCardModal(this.app, {
 				cardCount: selectedCards.length,
+				sourceNoteName: firstCard.sourceNoteName,
 				flashcardsFolder: this.settings.flashcardsFolder,
 				cardQuestion: firstCard.question,
 				cardAnswer: firstCard.answer,

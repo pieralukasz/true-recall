@@ -41,6 +41,10 @@ export class MoveCardModal extends BaseModal {
 	private activeTagFilter: string | null = null;
 	private filterButtonsEl: HTMLElement | null = null;
 
+	// Source filter: notes that have source field pointing to current note
+	private sourceNotes: Set<string> = new Set();
+	private sourceNotesLoaded = false;
+
 	// Suggested notes container
 	private suggestedSectionEl: HTMLElement | null = null;
 
@@ -68,6 +72,7 @@ export class MoveCardModal extends BaseModal {
 
 		// Get all valid notes (excluding flashcard files)
 		this.allNotes = this.getValidNotes();
+		// Note: Source notes are loaded lazily when Source filter is clicked
 	}
 
 	protected renderBody(container: HTMLElement): void {
@@ -111,12 +116,22 @@ export class MoveCardModal extends BaseModal {
 			{ label: "Zettels", tag: "mind/zettel" },
 		];
 
+		// Add Source filter if we have a source note name
+		if (this.options.sourceNoteName) {
+			filters.push({ label: "Source", tag: "__source__" });
+		}
+
 		for (const filter of filters) {
 			const btn = this.filterButtonsEl.createEl("button", {
 				text: filter.label,
 				cls: `episteme-filter-btn ${this.activeTagFilter === filter.tag ? "active" : ""}`,
 			});
 			btn.addEventListener("click", () => {
+				// Lazy load source notes only when Source filter is clicked
+				if (filter.tag === "__source__" && !this.sourceNotesLoaded) {
+					this.findSourceNotes();
+					this.sourceNotesLoaded = true;
+				}
 				this.activeTagFilter = filter.tag;
 				this.updateFilterButtons();
 				this.renderNoteList();
@@ -127,11 +142,16 @@ export class MoveCardModal extends BaseModal {
 	private updateFilterButtons(): void {
 		if (!this.filterButtonsEl) return;
 
-		const buttons = this.filterButtonsEl.querySelectorAll(".episteme-filter-btn");
+		const buttons = this.filterButtonsEl.querySelectorAll(".episteme-filter-btn") as NodeListOf<HTMLButtonElement>;
+
+		// Build filter list dynamically (must match renderTagFilters)
 		const filters = [null, "mind/concept", "mind/zettel"];
+		if (this.options.sourceNoteName) {
+			filters.push("__source__");
+		}
 
 		buttons.forEach((btn, index) => {
-			if (filters[index] === this.activeTagFilter) {
+			if (index < filters.length && filters[index] === this.activeTagFilter) {
 				btn.addClass("active");
 			} else {
 				btn.removeClass("active");
@@ -276,11 +296,16 @@ export class MoveCardModal extends BaseModal {
 		const filteredNotes = this.filterNotes();
 
 		if (filteredNotes.length === 0) {
-			const emptyText = this.activeTagFilter
-				? `No notes found with tag #${this.activeTagFilter}.`
-				: this.searchQuery
-				? "No notes found matching your search."
-				: "No notes available.";
+			let emptyText: string;
+			if (this.activeTagFilter === "__source__") {
+				emptyText = "No notes found with flashcards from this source note.";
+			} else if (this.activeTagFilter) {
+				emptyText = `No notes found with tag #${this.activeTagFilter}.`;
+			} else if (this.searchQuery) {
+				emptyText = "No notes found matching your search.";
+			} else {
+				emptyText = "No notes available.";
+			}
 			this.noteListEl.createEl("div", {
 				text: emptyText,
 				cls: "episteme-note-list-empty",
@@ -329,7 +354,11 @@ export class MoveCardModal extends BaseModal {
 		let notes = [...this.allNotes];
 
 		// Apply tag filter first
-		if (this.activeTagFilter) {
+		if (this.activeTagFilter === "__source__") {
+			// Source filter: show only notes that have flashcards from this source
+			notes = notes.filter(note => this.sourceNotes.has(note.basename));
+		} else if (this.activeTagFilter) {
+			// Regular tag filter
 			notes = notes.filter(note => this.noteHasTag(note, this.activeTagFilter!));
 		}
 
@@ -364,5 +393,42 @@ export class MoveCardModal extends BaseModal {
 			this.resolvePromise = null;
 		}
 		this.close();
+	}
+
+	/**
+	 * Find all notes whose frontmatter 'source' field contains current note
+	 * Uses metadataCache for fast lookup (no file reads)
+	 * Early exits after MAX_RESULTS for performance with large vaults
+	 */
+	private findSourceNotes(): void {
+		const sourceNoteName = this.options.sourceNoteName;
+		const MAX_RESULTS = 100; // Limit for performance
+
+		this.sourceNotes.clear();
+
+		if (!sourceNoteName) {
+			return;
+		}
+
+		// Check each note's source field in frontmatter
+		for (const note of this.allNotes) {
+			// Early exit after finding enough results
+			if (this.sourceNotes.size >= MAX_RESULTS) break;
+
+			const cache = this.app.metadataCache.getFileCache(note);
+			const sources = cache?.frontmatter?.source as string | string[] | undefined;
+
+			if (!sources) continue;
+
+			// source can be string or array (e.g., source: "[[note]]" or source: ["[[note1]]", "[[note2]]"])
+			const sourceArray = Array.isArray(sources) ? sources : [sources];
+			const hasSource = sourceArray.some(s =>
+				typeof s === "string" && s.includes(sourceNoteName)
+			);
+
+			if (hasSource) {
+				this.sourceNotes.add(note.basename);
+			}
+		}
 	}
 }

@@ -69,7 +69,7 @@ deck: "${deck}"${statusLine}
 	 * Returns the note name from source_link: "[[NoteName]]"
 	 */
 	extractSourceLinkFromContent(content: string): string | null {
-		const match = content.match(/source_link:\s*"\[\[([^\]]+)\]\]"/);
+		const match = content.match(/source_link:\s*"\[\[(.+?)\]\]"/);
 		return match?.[1] ?? null;
 	}
 
