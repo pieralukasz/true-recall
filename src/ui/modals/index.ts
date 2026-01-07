@@ -24,3 +24,4 @@ export {
     type NoteWithMissingFlashcards,
     type MissingFlashcardsModalOptions,
 } from "./MissingFlashcardsModal";
+export { CommandDashboardModal } from "./CommandDashboardModal";
