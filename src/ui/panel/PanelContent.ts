@@ -29,6 +29,8 @@ export interface PanelContentHandlers {
     onClearSelection?: () => void;
     // In-place edit save handler
     onEditSave?: (card: FlashcardItem, field: "question" | "answer", newContent: string) => Promise<void>;
+    // Diff edit change handler
+    onEditChange?: (change: FlashcardChange, field: "question" | "answer", newContent: string) => void;
     // Harvest service for maturity calculations
     harvestService?: HarvestService;
 }
@@ -282,6 +284,8 @@ export class PanelContent extends BaseComponent {
                     component: handlers.component,
                     onClick: handlers.onEditCard,
                     onDelete: handlers.onDeleteCard,
+                    onCopy: handlers.onCopyCard,
+                    onMove: handlers.onMoveCard,
                     onEditSave: handlers.onEditSave,
                 });
                 this.childComponents.push(cardReviewItem);
@@ -505,6 +509,7 @@ export class PanelContent extends BaseComponent {
                     component: handlers.component,
                     onAccept: (c, idx) => handlers.onChangeAccept?.(c, idx, true),
                     onReject: (c, idx) => handlers.onChangeAccept?.(c, idx, false),
+                    onEditChange: handlers.onEditChange,
                 },
                 markdownRenderer: handlers.markdownRenderer,
             });

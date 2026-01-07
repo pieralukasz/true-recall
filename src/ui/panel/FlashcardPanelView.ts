@@ -208,6 +208,8 @@ export class FlashcardPanelView extends ItemView {
                 onClearSelection: () => this.handleClearSelection(),
                 // In-place edit save handler
                 onEditSave: async (card, field, newContent) => void this.handleEditSave(card, field, newContent),
+                // Diff edit change handler
+                onEditChange: (change, field, newContent) => this.handleDiffEditChange(change, field, newContent),
             },
         });
         this.contentComponent.render();
@@ -541,6 +543,18 @@ export class FlashcardPanelView extends ItemView {
         } catch (error) {
             new Notice(`Failed to update flashcard: ${error instanceof Error ? error.message : String(error)}`);
         }
+    }
+
+    private handleDiffEditChange(
+        change: FlashcardChange,
+        field: "question" | "answer",
+        newContent: string
+    ): void {
+        // Update the FlashcardChange object in the diff result
+        change[field] = newContent;
+
+        // Re-render to show updated content
+        this.render();
     }
 
     private async handleRemoveCard(card: FlashcardItem): Promise<void> {
