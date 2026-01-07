@@ -590,8 +590,11 @@ export class FlashcardPanelView extends ItemView {
             return;
         }
 
+        const sourceNoteName = await this.getSourceNoteNameFromFile();
+
         const modal = new MoveCardModal(this.app, {
             cardCount: 1,
+            sourceNoteName: sourceNoteName,
             flashcardsFolder: this.plugin.settings.flashcardsFolder,
             cardQuestion: card.question,
             cardAnswer: card.answer,
@@ -613,18 +616,33 @@ export class FlashcardPanelView extends ItemView {
         }
     }
 
+    // ===== Scroll Position Helpers =====
+
+    private getContentScrollTop(): number {
+        return this.contentContainer?.scrollTop ?? 0;
+    }
+
+    private setContentScrollTop(scrollTop: number): void {
+        if (this.contentContainer) {
+            this.contentContainer.scrollTop = scrollTop;
+        }
+    }
+
     // ===== Selection Handlers for Bulk Move =====
 
     private handleToggleCardSelection(lineNumber: number): void {
+        const scrollTop = this.getContentScrollTop();
         if (this.selectedCardLineNumbers.has(lineNumber)) {
             this.selectedCardLineNumbers.delete(lineNumber);
         } else {
             this.selectedCardLineNumbers.add(lineNumber);
         }
         this.render();
+        requestAnimationFrame(() => this.setContentScrollTop(scrollTop));
     }
 
     private handleSelectAllTemporary(): void {
+        const scrollTop = this.getContentScrollTop();
         const state = this.stateManager.getState();
         if (!state.flashcardInfo?.isTemporary) return;
 
@@ -633,11 +651,14 @@ export class FlashcardPanelView extends ItemView {
             this.selectedCardLineNumbers.add(card.lineNumber);
         }
         this.render();
+        requestAnimationFrame(() => this.setContentScrollTop(scrollTop));
     }
 
     private handleClearSelection(): void {
+        const scrollTop = this.getContentScrollTop();
         this.selectedCardLineNumbers.clear();
         this.render();
+        requestAnimationFrame(() => this.setContentScrollTop(scrollTop));
     }
 
     private async handleMoveSelected(): Promise<void> {
@@ -658,8 +679,11 @@ export class FlashcardPanelView extends ItemView {
         const firstCard = selectedCards[0];
         if (!firstCard) return;
 
+        const sourceNoteName = await this.getSourceNoteNameFromFile();
+
         const modal = new MoveCardModal(this.app, {
             cardCount: selectedCards.length,
+            sourceNoteName: sourceNoteName,
             flashcardsFolder: this.plugin.settings.flashcardsFolder,
             cardQuestion: firstCard.question,
             cardAnswer: firstCard.answer,
@@ -795,5 +819,25 @@ export class FlashcardPanelView extends ItemView {
 
         const selectedText = selection.toString().trim();
         return selectedText.length > 0 ? selectedText : null;
+    }
+
+    /**
+     * Extract source_note name from the flashcard file
+     */
+    private async getSourceNoteNameFromFile(): Promise<string | undefined> {
+        const state = this.stateManager.getState();
+        if (!state.currentFile || !state.flashcardInfo) return undefined;
+
+        const filePath = state.flashcardInfo.filePath;
+        const file = this.app.vault.getAbstractFileByPath(filePath);
+        if (!(file instanceof TFile)) return undefined;
+
+        try {
+            const content = await this.app.vault.read(file);
+            const match = content.match(/source_link:\s*"\[\[(.+?)\]\]"/);
+            return match?.[1];
+        } catch {
+            return undefined;
+        }
     }
 }

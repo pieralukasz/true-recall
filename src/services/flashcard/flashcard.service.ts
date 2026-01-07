@@ -432,6 +432,31 @@ export class FlashcardManager {
 	}
 
 	/**
+	 * Generate frontmatter for a new flashcard file while preserving original source_link
+	 * Used when moving cards to ensure source_link points to the original literature note
+	 */
+	private generatePreservingFrontmatter(
+		originalSourceLink: string | null,
+		deck: string = this.frontmatterService.getDefaultDeck(),
+		options: { temporary?: boolean } = {}
+	): string {
+		const statusLine = options.temporary ? "\nstatus: temporary" : "";
+		// Preserve original source_link if available, otherwise use placeholder
+		const sourceLinkLine = originalSourceLink
+			? `source_link: "[[${originalSourceLink}]]"`
+			: `source_link: "[[Unknown]]"`;
+		return `---
+${sourceLinkLine}
+tags: [flashcards/auto]
+deck: "${deck}"${statusLine}
+---
+
+# Flashcards
+
+`;
+	}
+
+	/**
 	 * Extract deck name from frontmatter
 	 */
 	private extractDeckFromFrontmatter(content: string): string {
@@ -595,6 +620,7 @@ export class FlashcardManager {
 	 * Move a flashcard from one file to another
 	 * Preserves UUID so FSRS data stays intact
 	 * Respects temporary status: cards moved to #mind/* notes lose temporary status
+	 * Preserves original source_link from source flashcard file (important for Source filter)
 	 *
 	 * @param cardId - UUID of the flashcard to move
 	 * @param sourceFilePath - Path to the source flashcard file
@@ -619,7 +645,10 @@ export class FlashcardManager {
 			throw new FileError(`Flashcard with ID ${cardId} not found in file`, sourceFilePath, "read");
 		}
 
-		// 3. Get or create target flashcard file
+		// 3. Extract original source_link from source flashcard file (to preserve it)
+		const originalSourceLink = this.extractSourceLinkFromContent(sourceContent);
+
+		// 4. Get or create target flashcard file
 		const targetNote = this.app.vault.getAbstractFileByPath(targetNotePath);
 		if (!(targetNote instanceof TFile)) {
 			throw new FileError("Target note not found", targetNotePath, "read");
@@ -628,27 +657,41 @@ export class FlashcardManager {
 		const targetFlashcardPath = this.getFlashcardPath(targetNote);
 		let targetFile = this.app.vault.getAbstractFileByPath(targetFlashcardPath);
 
-		// 4. Check if target note is a Literature Note (determines temporary status)
+		// 5. Check if target note is a Literature Note (determines temporary status)
 		const isTargetLiteratureNote = await this.isLiteratureNote(targetNote);
 
-		// 5. Prepare the flashcard text to add
+		// 6. Prepare the flashcard text to add
 		const flashcardText = this.cardMoverService.buildFlashcardText(cardData.question, cardData.answer, cardId);
 
-		// 6. Add to target file
+		// 7. Add to target file
 		if (targetFile instanceof TFile) {
-			// Append to existing file
+			// Check if target file has wrong source_link (points to itself)
 			const targetContent = await this.app.vault.read(targetFile);
-			const newContent = targetContent.trimEnd() + "\n\n" + flashcardText + "\n";
+			const targetSourceLink = this.extractSourceLinkFromContent(targetContent);
+			const targetNoteName = targetNote.basename;
+
+			let updatedContent = targetContent;
+			// If target's source_link points to itself (wrong), fix it with original
+			if (targetSourceLink === targetNoteName && originalSourceLink) {
+				updatedContent = targetContent.replace(
+					/source_link:\s*"\[\[.+?\]\]"/,
+					`source_link: "[[${originalSourceLink}]]"`
+				);
+			}
+
+			// Append the new card
+			const newContent = updatedContent.trimEnd() + "\n\n" + flashcardText + "\n";
 			await this.app.vault.modify(targetFile, newContent);
 		} else {
 			// Create new flashcard file with appropriate temporary status
+			// IMPORTANT: Preserve original source_link instead of using target note
 			await this.ensureFolderExists();
-			const frontmatter = this.generateFrontmatter(targetNote, this.frontmatterService.getDefaultDeck(), { temporary: isTargetLiteratureNote });
+			const frontmatter = this.generatePreservingFrontmatter(originalSourceLink, this.frontmatterService.getDefaultDeck(), { temporary: isTargetLiteratureNote });
 			const fullContent = frontmatter + flashcardText + "\n";
 			await this.app.vault.create(targetFlashcardPath, fullContent);
 		}
 
-		// 7. Remove from source file
+		// 8. Remove from source file
 		const newSourceContent = this.removeCardFromContent(sourceContent, cardData.startLine, cardData.endLine);
 		await this.app.vault.modify(sourceFile, newSourceContent);
 
