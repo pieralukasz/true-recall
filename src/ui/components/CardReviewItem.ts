@@ -29,6 +29,8 @@ export interface CardReviewItemProps {
 	onClick?: (card: CardData) => void; // For edit (opens file - normal click)
 	onDelete?: (card: CardData) => void;
 	onOpen?: (card: CardData) => void; // Open source note
+	onCopy?: (card: CardData) => void; // Copy flashcard
+	onMove?: (card: CardData) => void; // Move flashcard
 	onEditSave?: (card: CardData, field: "question" | "answer", newContent: string) => Promise<void>; // In-place edit save
 }
 
@@ -249,7 +251,7 @@ export class CardReviewItem extends BaseComponent {
 	}
 
 	private renderButtons(): void {
-		const { card, onDelete, onOpen } = this.props;
+		const { card, onDelete, onOpen, onCopy, onMove } = this.props;
 		if (!this.element) return;
 		const buttonsEl = this.element.createDiv({ cls: "episteme-review-card-buttons" });
 
@@ -276,6 +278,32 @@ export class CardReviewItem extends BaseComponent {
 			this.events.addEventListener(openBtn, "click", (e) => {
 				e.stopPropagation();
 				onOpen(card);
+			});
+		}
+
+		// Copy button
+		if (onCopy) {
+			const copyBtn = buttonsEl.createEl("button", {
+				cls: "episteme-review-copy-btn",
+				attr: { "aria-label": "Copy flashcard", "title": "Copy" },
+			});
+			copyBtn.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>`;
+			this.events.addEventListener(copyBtn, "click", (e) => {
+				e.stopPropagation();
+				onCopy(card);
+			});
+		}
+
+		// Move button
+		if (onMove) {
+			const moveBtn = buttonsEl.createEl("button", {
+				cls: "episteme-review-move-btn",
+				attr: { "aria-label": "Move flashcard", "title": "Move" },
+			});
+			moveBtn.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="5 9 2 12 5 15"/><polyline points="9 5 12 2 15 5"/><polyline points="15 19 12 22 9 19"/><polyline points="19 9 22 12 19 15"/><line x1="2" y1="12" x2="22" y2="12"/></svg>`;
+			this.events.addEventListener(moveBtn, "click", (e) => {
+				e.stopPropagation();
+				onMove(card);
 			});
 		}
 	}

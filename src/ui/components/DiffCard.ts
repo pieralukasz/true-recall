@@ -3,8 +3,9 @@
  * Displays a flashcard change with accept/reject functionality
  */
 import type { App, Component, MarkdownRenderer, WorkspaceLeaf } from "obsidian";
-import type { FlashcardChange } from "../../types";
+import type { FlashcardChange, FlashcardItem } from "../../types";
 import { BaseComponent } from "../component.base";
+import { createCardReviewItem } from "./CardReviewItem";
 
 export interface DiffCardHandlers {
     app: App;
@@ -12,6 +13,7 @@ export interface DiffCardHandlers {
     leaf?: WorkspaceLeaf;
     onAccept?: (change: FlashcardChange, index: number) => void;
     onReject?: (change: FlashcardChange, index: number) => void;
+    onEditChange?: (change: FlashcardChange, field: "question" | "answer", newContent: string) => void;
 }
 
 export interface DiffCardProps {
@@ -131,6 +133,18 @@ export class DiffCard extends BaseComponent {
         });
     }
 
+    /**
+     * Convert FlashcardChange to FlashcardItem for CardReviewItem
+     */
+    private changeToCardData(change: FlashcardChange): FlashcardItem {
+        return {
+            question: change.question,
+            answer: change.answer,
+            lineNumber: change.originalLineNumber ?? 0,
+            id: `diff-${this.props.index}-${change.type}`,
+        };
+    }
+
     private renderContent(): void {
         const { change, filePath, handlers, markdownRenderer } = this.props;
 
@@ -140,9 +154,50 @@ export class DiffCard extends BaseComponent {
             cls: "episteme-diff-content",
         });
 
-        // For MODIFIED - show original (crossed out) and new
-        if (change.type === "MODIFIED" && change.originalQuestion) {
-            // Original question (strikethrough)
+        // For DELETED cards - use existing strikethrough rendering
+        if (change.type === "DELETED") {
+            this.renderDeletedContent(content, change, filePath, handlers, markdownRenderer);
+            this.setupInternalLinkHandler(content);
+            return;
+        }
+
+        // For MODIFIED cards - show original content first
+        if (change.type === "MODIFIED") {
+            this.renderOriginalContent(content, change, filePath, handlers, markdownRenderer);
+        }
+
+        // Use CardReviewItem for NEW/MODIFIED content
+        const cardData = this.changeToCardData(change);
+        createCardReviewItem(content, {
+            card: cardData,
+            filePath: this.props.filePath,
+            app: handlers.app,
+            component: handlers.component,
+            // No onClick (don't navigate away)
+            // No onDelete (not applicable)
+            // No onOpen (not applicable)
+            onEditSave: async (card, field, newContent) => {
+                // Update the FlashcardChange object
+                handlers.onEditChange?.(change, field, newContent);
+                // Update the card data and re-render
+                this.props.change[field] = newContent;
+                this.render();
+            },
+        });
+    }
+
+    /**
+     * Render original (strikethrough) content for MODIFIED cards
+     */
+    private renderOriginalContent(
+        content: HTMLElement,
+        change: FlashcardChange,
+        filePath: string,
+        handlers: DiffCardHandlers,
+        markdownRenderer: typeof MarkdownRenderer
+    ): void {
+        // Original question (strikethrough)
+        if (change.originalQuestion) {
             const originalQ = content.createDiv({
                 cls: "episteme-diff-original",
             });
@@ -162,48 +217,8 @@ export class DiffCard extends BaseComponent {
             );
         }
 
-        // New/Modified question
-        if (change.type !== "DELETED") {
-            const questionEl = content.createDiv({
-                cls: "episteme-diff-question",
-            });
-            questionEl.createSpan({
-                text: change.type === "MODIFIED" ? "Q (new): " : "Q: ",
-                cls: `episteme-card-label ${change.type === "MODIFIED" ? "episteme-diff-label-new" : ""}`,
-            });
-            const qContent = questionEl.createDiv({
-                cls: "episteme-md-content",
-            });
-            void markdownRenderer.render(
-                handlers.app,
-                change.question,
-                qContent,
-                filePath,
-                handlers.component
-            );
-        } else {
-            // For DELETED - show question being deleted
-            const questionEl = content.createDiv({
-                cls: "episteme-diff-question episteme-diff-deleted-content",
-            });
-            questionEl.createSpan({
-                text: "Q: ",
-                cls: "episteme-card-label",
-            });
-            const qContent = questionEl.createDiv({
-                cls: "episteme-md-content episteme-strikethrough",
-            });
-            void markdownRenderer.render(
-                handlers.app,
-                change.question,
-                qContent,
-                filePath,
-                handlers.component
-            );
-        }
-
-        // For MODIFIED - show original answer (crossed out)
-        if (change.type === "MODIFIED" && change.originalAnswer) {
+        // Original answer (strikethrough)
+        if (change.originalAnswer) {
             const originalA = content.createDiv({
                 cls: "episteme-diff-original",
             });
@@ -222,49 +237,55 @@ export class DiffCard extends BaseComponent {
                 handlers.component
             );
         }
+    }
 
-        // New/Modified answer
-        if (change.type !== "DELETED") {
-            const answerEl = content.createDiv({
-                cls: "episteme-diff-answer",
-            });
-            answerEl.createSpan({
-                text: change.type === "MODIFIED" ? "A (new): " : "A: ",
-                cls: `episteme-card-label ${change.type === "MODIFIED" ? "episteme-diff-label-new" : ""}`,
-            });
-            const aContent = answerEl.createDiv({
-                cls: "episteme-md-content",
-            });
-            void markdownRenderer.render(
-                handlers.app,
-                change.answer,
-                aContent,
-                filePath,
-                handlers.component
-            );
-        } else {
-            // For DELETED - show answer being deleted
-            const answerEl = content.createDiv({
-                cls: "episteme-diff-answer episteme-diff-deleted-content",
-            });
-            answerEl.createSpan({
-                text: "A: ",
-                cls: "episteme-card-label",
-            });
-            const aContent = answerEl.createDiv({
-                cls: "episteme-md-content episteme-strikethrough",
-            });
-            void markdownRenderer.render(
-                handlers.app,
-                change.answer,
-                aContent,
-                filePath,
-                handlers.component
-            );
-        }
+    /**
+     * Render deleted content (strikethrough) for DELETED cards
+     */
+    private renderDeletedContent(
+        content: HTMLElement,
+        change: FlashcardChange,
+        filePath: string,
+        handlers: DiffCardHandlers,
+        markdownRenderer: typeof MarkdownRenderer
+    ): void {
+        // Question being deleted
+        const questionEl = content.createDiv({
+            cls: "episteme-diff-question episteme-diff-deleted-content",
+        });
+        questionEl.createSpan({
+            text: "Q: ",
+            cls: "episteme-card-label",
+        });
+        const qContent = questionEl.createDiv({
+            cls: "episteme-md-content episteme-strikethrough",
+        });
+        void markdownRenderer.render(
+            handlers.app,
+            change.question,
+            qContent,
+            filePath,
+            handlers.component
+        );
 
-        // Setup click handler for internal links on the content container
-        this.setupInternalLinkHandler(content);
+        // Answer being deleted
+        const answerEl = content.createDiv({
+            cls: "episteme-diff-answer episteme-diff-deleted-content",
+        });
+        answerEl.createSpan({
+            text: "A: ",
+            cls: "episteme-card-label",
+        });
+        const aContent = answerEl.createDiv({
+            cls: "episteme-md-content episteme-strikethrough",
+        });
+        void markdownRenderer.render(
+            handlers.app,
+            change.answer,
+            aContent,
+            filePath,
+            handlers.component
+        );
     }
 
     /**
