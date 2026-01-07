@@ -1122,25 +1122,14 @@ Source: [[${sourceNote}]]
             previousState: card.fsrs.state,
         });
 
-        // Process the answer
-        const { updatedCard } = this.reviewService.processAnswer(
+        // Process answer and save to store (single method)
+        const { updatedCard } = await this.reviewService.gradeCard(
             card,
             rating,
             this.fsrsService,
+            this.flashcardManager,
             responseTime
         );
-
-        // Save to file
-        try {
-            await this.flashcardManager.updateCardFSRS(
-                card.filePath,
-                card.id,
-                updatedCard.fsrs,
-                card.lineNumber
-            );
-        } catch (error) {
-            console.error("Error saving card:", error);
-        }
 
         // Record to persistent storage (with extended stats for statistics panel)
         try {
@@ -1213,6 +1202,7 @@ Source: [[${sourceNote}]]
 
     /**
      * Move the current card to another note (M key)
+     * Also grades the card as "Good" before moving
      */
     private async handleMoveCard(): Promise<void> {
         const card = this.stateManager.getCurrentCard();
@@ -1231,6 +1221,14 @@ Source: [[${sourceNote}]]
         if (result.cancelled || !result.targetNotePath) return;
 
         try {
+            // Grade card as "Good" before moving (updates FSRS scheduling)
+            await this.reviewService.gradeCard(
+                card,
+                Rating.Good,
+                this.fsrsService,
+                this.flashcardManager
+            );
+
             // Move the card
             const success = await this.flashcardManager.moveCard(
                 card.id,
@@ -1247,7 +1245,7 @@ Source: [[${sourceNote}]]
                     this.updateSchedulingPreview();
                 }
 
-                new Notice("Card moved successfully");
+                new Notice("Card graded as Good and moved");
             }
         } catch (error) {
             console.error("Error moving card:", error);
