@@ -332,6 +332,7 @@ export class StatsView extends ItemView {
 		new CardPreviewModal(this.plugin.app, {
 			title: `Cards due: ${this.formatDateForDisplay(date)}`,
 			cards,
+			flashcardManager: this.plugin.flashcardManager,
 		}).open();
 	}
 
@@ -540,6 +541,7 @@ export class StatsView extends ItemView {
 		new CardPreviewModal(this.plugin.app, {
 			title: `${label} Cards (${cards.length})`,
 			cards,
+			flashcardManager: this.plugin.flashcardManager,
 		}).open();
 	}
 
