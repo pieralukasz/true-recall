@@ -878,15 +878,15 @@
 
 /* Yellow Dot Indicator for Temporary Cards in Review */
 .episteme-temporary-dot {
-	position: absolute;
-	top: -4px;
-	right: -4px;
+	display: inline-block;
 	width: 12px;
 	height: 12px;
 	background: var(--color-yellow, #fbbf24);
 	border-radius: 50%;
 	border: 2px solid var(--background-primary);
 	box-shadow: 0 0 0 2px var(--background-secondary);
+	margin-right: 8px;
+	flex-shrink: 0;
 }
 
 /* Gold/Amber dot for cards ready to harvest */
