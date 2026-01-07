@@ -381,17 +381,19 @@ export class ReviewView extends ItemView {
         if (!card) return;
 
         const editState = this.stateManager.getEditState();
-        const cardEl = this.cardContainerEl.createDiv({ cls: "episteme-review-card" });
 
         // Yellow dot indicator for temporary cards (from Literature Notes)
         // Gold/amber dot when ready to harvest (interval >= 21 days), yellow otherwise
+        // Created as sibling to card (next to it, not inside)
         if (card.isTemporary) {
             const isReadyToHarvest = card.fsrs.scheduledDays >= 21;
-            const dotEl = cardEl.createDiv({
+            const dotEl = this.cardContainerEl.createDiv({
                 cls: `episteme-temporary-dot ${isReadyToHarvest ? "episteme-harvest-dot" : ""}`,
             });
             dotEl.setAttribute("aria-label", isReadyToHarvest ? "Ready to harvest" : "Temporary card");
         }
+
+        const cardEl = this.cardContainerEl.createDiv({ cls: "episteme-review-card" });
 
         // Question
         const questionEl = cardEl.createDiv({ cls: "episteme-review-question" });
@@ -1304,14 +1306,14 @@ Source: [[${sourceNote}]]
     }
 
     /**
-     * Handle "Next Session" button click - opens new custom session modal
+     * Handle "Next Session" button click - opens new session modal
      */
     private handleNextSession(): void {
         this.leaf.detach();
 
-        // Wait for view to close, then open new custom session
+        // Wait for view to close, then open new session
         setTimeout(() => {
-            void this.plugin.startCustomReviewSession();
+            void this.plugin.startReviewSession();
         }, 100);
     }
 }
