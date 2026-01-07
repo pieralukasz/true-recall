@@ -240,6 +240,34 @@ export class FlashcardPanelView extends ItemView {
         this.footerComponent.render();
     }
 
+    /**
+     * Re-render only the footer (for selection count updates)
+     * Use this instead of full render() when only footer data changes
+     */
+    private renderFooterOnly(): void {
+        const state = this.stateManager.getState();
+        this.footerComponent?.destroy();
+        this.footerContainer.empty();
+        this.footerComponent = new PanelFooter(this.footerContainer, {
+            currentFile: state.currentFile,
+            status: state.status,
+            viewMode: state.viewMode,
+            diffResult: state.diffResult,
+            isFlashcardFile: state.isFlashcardFile,
+            noteFlashcardType: state.noteFlashcardType,
+            selectedCount: this.selectedCardLineNumbers.size,
+            hasSelection: state.hasSelection,
+            selectedText: state.selectedText,
+            onGenerate: () => void this.handleGenerate(),
+            onUpdate: () => void this.handleUpdate(),
+            onApplyDiff: () => void this.handleApplyDiff(),
+            onCancelDiff: () => void this.handleCancelDiff(),
+            onMoveSelected: () => void this.handleMoveSelected(),
+            onDeleteSelected: () => void this.handleDeleteSelected(),
+        });
+        this.footerComponent.render();
+    }
+
     // ===== Action Handlers =====
 
     private async handleGenerate(): Promise<void> {
@@ -616,33 +644,20 @@ export class FlashcardPanelView extends ItemView {
         }
     }
 
-    // ===== Scroll Position Helpers =====
-
-    private getContentScrollTop(): number {
-        return this.contentContainer?.scrollTop ?? 0;
-    }
-
-    private setContentScrollTop(scrollTop: number): void {
-        if (this.contentContainer) {
-            this.contentContainer.scrollTop = scrollTop;
-        }
-    }
-
     // ===== Selection Handlers for Bulk Move =====
 
     private handleToggleCardSelection(lineNumber: number): void {
-        const scrollTop = this.getContentScrollTop();
+        // Toggle selection state
         if (this.selectedCardLineNumbers.has(lineNumber)) {
             this.selectedCardLineNumbers.delete(lineNumber);
         } else {
             this.selectedCardLineNumbers.add(lineNumber);
         }
-        this.render();
-        requestAnimationFrame(() => this.setContentScrollTop(scrollTop));
+        // Only update footer (checkbox already toggled visually by browser)
+        this.renderFooterOnly();
     }
 
     private handleSelectAllTemporary(): void {
-        const scrollTop = this.getContentScrollTop();
         const state = this.stateManager.getState();
         if (!state.flashcardInfo?.isTemporary) return;
 
@@ -650,15 +665,14 @@ export class FlashcardPanelView extends ItemView {
         for (const card of state.flashcardInfo.flashcards) {
             this.selectedCardLineNumbers.add(card.lineNumber);
         }
+        // Full render needed to update all checkboxes
         this.render();
-        requestAnimationFrame(() => this.setContentScrollTop(scrollTop));
     }
 
     private handleClearSelection(): void {
-        const scrollTop = this.getContentScrollTop();
         this.selectedCardLineNumbers.clear();
+        // Full render needed to uncheck all checkboxes
         this.render();
-        requestAnimationFrame(() => this.setContentScrollTop(scrollTop));
     }
 
     private async handleMoveSelected(): Promise<void> {

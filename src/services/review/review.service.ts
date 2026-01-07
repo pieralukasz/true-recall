@@ -11,6 +11,7 @@ import type {
 } from "../../types/fsrs.types";
 import type { NewCardOrder, ReviewOrder, NewReviewMix } from "../../types/settings.types";
 import type { FSRSService } from "../core/fsrs.service";
+import type { FlashcardManager } from "../flashcard/flashcard.service";
 import { LEARN_AHEAD_LIMIT_MINUTES } from "../../constants";
 
 /**
@@ -391,6 +392,33 @@ export class ReviewService {
             scheduledDays: previousScheduledDays,
             elapsedDays,
         };
+
+        return { updatedCard, result };
+    }
+
+    /**
+     * Grade a card and save FSRS data to store
+     * Single method for all grading operations (answer, move, etc.)
+     */
+    async gradeCard(
+        card: FSRSFlashcardItem,
+        rating: Grade,
+        fsrsService: FSRSService,
+        flashcardManager: FlashcardManager,
+        responseTime: number = 0
+    ): Promise<{ updatedCard: FSRSFlashcardItem; result: ReviewResult }> {
+        // 1. Calculate new FSRS data
+        const { updatedCard, result } = this.processAnswer(card, rating, fsrsService, responseTime);
+
+        // 2. Save to store
+        if (card.id && card.filePath) {
+            await flashcardManager.updateCardFSRS(
+                card.filePath,
+                card.id,
+                updatedCard.fsrs,
+                card.lineNumber
+            );
+        }
 
         return { updatedCard, result };
     }
