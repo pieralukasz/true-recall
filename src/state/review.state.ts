@@ -559,6 +559,28 @@ export class ReviewStateManager {
     }
 
     /**
+     * Add a new card to the end of the queue
+     */
+    addCardToQueue(card: FSRSFlashcardItem): void {
+        if (!this.state.isActive) {
+            return;
+        }
+
+        const prevState = this.state;
+        const newQueue = [...this.state.queue, card];
+
+        this.state = {
+            ...this.state,
+            queue: newQueue,
+            stats: {
+                ...this.state.stats,
+                total: newQueue.length,
+            },
+        };
+        this.notifyListeners(prevState);
+    }
+
+    /**
      * Insert a card at a specific position in the queue (for undo bury)
      */
     insertCardAtPosition(card: FSRSFlashcardItem, position: number): void {

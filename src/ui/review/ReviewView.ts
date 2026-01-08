@@ -1440,24 +1440,17 @@ Source: [[${sourceNote}]]
         if (result.cancelled) return;
 
         try {
-            // Get the flashcard file
-            const flashcardFile = this.app.vault.getAbstractFileByPath(card.filePath);
-            if (!flashcardFile || !("path" in flashcardFile)) {
-                new Notice("Could not find flashcard file");
-                return;
-            }
+            // Add flashcard with auto-generated FSRS ID
+            const newCard = await this.flashcardManager.addSingleFlashcard(
+                card.filePath,
+                result.question,
+                result.answer
+            );
 
-            // Read existing content
-            const existingContent = await this.app.vault.read(flashcardFile as any);
+            // Add new card to current session queue
+            this.stateManager.addCardToQueue(newCard);
 
-            // Build new flashcard content
-            const newCardContent = `${result.question} #flashcard\n${result.answer}`;
-            const updatedContent = existingContent.trimEnd() + "\n\n" + newCardContent + "\n";
-
-            // Write to file
-            await this.app.vault.modify(flashcardFile as any, updatedContent);
-
-            new Notice("Flashcard added!");
+            new Notice("Flashcard added to queue!");
         } catch (error) {
             console.error("Error adding flashcard:", error);
             new Notice(`Failed to add flashcard: ${error instanceof Error ? error.message : String(error)}`);
