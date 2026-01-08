@@ -432,31 +432,6 @@ export class FlashcardManager {
 	}
 
 	/**
-	 * Generate frontmatter for a new flashcard file while preserving original source_link
-	 * Used when moving cards to ensure source_link points to the original literature note
-	 */
-	private generatePreservingFrontmatter(
-		originalSourceLink: string | null,
-		deck: string = this.frontmatterService.getDefaultDeck(),
-		options: { temporary?: boolean } = {}
-	): string {
-		const statusLine = options.temporary ? "\nstatus: temporary" : "";
-		// Preserve original source_link if available, otherwise use placeholder
-		const sourceLinkLine = originalSourceLink
-			? `source_link: "[[${originalSourceLink}]]"`
-			: `source_link: "[[Unknown]]"`;
-		return `---
-${sourceLinkLine}
-tags: [flashcards/auto]
-deck: "${deck}"${statusLine}
----
-
-# Flashcards
-
-`;
-	}
-
-	/**
 	 * Extract deck name from frontmatter
 	 */
 	private extractDeckFromFrontmatter(content: string): string {
@@ -645,10 +620,7 @@ deck: "${deck}"${statusLine}
 			throw new FileError(`Flashcard with ID ${cardId} not found in file`, sourceFilePath, "read");
 		}
 
-		// 3. Extract original source_link from source flashcard file (to preserve it)
-		const originalSourceLink = this.extractSourceLinkFromContent(sourceContent);
-
-		// 4. Get or create target flashcard file
+		// 3. Get or create target flashcard file
 		const targetNote = this.app.vault.getAbstractFileByPath(targetNotePath);
 		if (!(targetNote instanceof TFile)) {
 			throw new FileError("Target note not found", targetNotePath, "read");
@@ -665,28 +637,14 @@ deck: "${deck}"${statusLine}
 
 		// 7. Add to target file
 		if (targetFile instanceof TFile) {
-			// Check if target file has wrong source_link (points to itself)
+			// Append the new card to existing file
 			const targetContent = await this.app.vault.read(targetFile);
-			const targetSourceLink = this.extractSourceLinkFromContent(targetContent);
-			const targetNoteName = targetNote.basename;
-
-			let updatedContent = targetContent;
-			// If target's source_link points to itself (wrong), fix it with original
-			if (targetSourceLink === targetNoteName && originalSourceLink) {
-				updatedContent = targetContent.replace(
-					/source_link:\s*"\[\[.+?\]\]"/,
-					`source_link: "[[${originalSourceLink}]]"`
-				);
-			}
-
-			// Append the new card
-			const newContent = updatedContent.trimEnd() + "\n\n" + flashcardText + "\n";
+			const newContent = targetContent.trimEnd() + "\n\n" + flashcardText + "\n";
 			await this.app.vault.modify(targetFile, newContent);
 		} else {
-			// Create new flashcard file with appropriate temporary status
-			// IMPORTANT: Preserve original source_link instead of using target note
+			// Create new flashcard file with source_link pointing to target note
 			await this.ensureFolderExists();
-			const frontmatter = this.generatePreservingFrontmatter(originalSourceLink, this.frontmatterService.getDefaultDeck(), { temporary: isTargetLiteratureNote });
+			const frontmatter = this.frontmatterService.generateFrontmatter(targetNote, this.frontmatterService.getDefaultDeck(), { temporary: isTargetLiteratureNote });
 			const fullContent = frontmatter + flashcardText + "\n";
 			await this.app.vault.create(targetFlashcardPath, fullContent);
 		}

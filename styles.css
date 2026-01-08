@@ -1191,23 +1191,6 @@
 	margin: 0;
 }
 
-/* Source note backlink */
-.episteme-review-backlink {
-	margin-top: 16px;
-}
-
-.episteme-review-backlink-link {
-	color: var(--text-muted);
-	text-decoration: none;
-	font-size: 0.85em;
-	transition: color 0.15s ease;
-}
-
-.episteme-review-backlink-link:hover {
-	color: var(--link-color);
-	text-decoration: underline;
-}
-
 /* Editable fields (inline edit during review) */
 .episteme-review-editable {
 	border: 2px solid var(--interactive-accent);
@@ -3231,6 +3214,15 @@
 
 	.episteme-review-answer {
 		font-size: 1em;
+	}
+
+	/* Source note backlink */
+	.episteme-review-backlink {
+		margin-top: 12px;
+	}
+
+	.episteme-review-backlink-link {
+		font-size: 0.85em;
 	}
 
 	/* Rating buttons - minimal padding for mobile */
