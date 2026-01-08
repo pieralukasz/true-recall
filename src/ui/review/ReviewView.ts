@@ -21,7 +21,7 @@ interface ReviewViewState extends Record<string, unknown> {
     createdTodayOnly?: boolean;
     createdThisWeek?: boolean;
     weakCardsOnly?: boolean;
-    stateFilter?: "due" | "learning" | "new";
+    stateFilter?: "due" | "learning" | "new" | "buried";
     ignoreDailyLimits?: boolean;
     bypassScheduling?: boolean;
 }
@@ -30,15 +30,22 @@ interface ReviewViewState extends Record<string, unknown> {
  * Review View for conducting flashcard review sessions
  */
 /**
- * Undo entry for reverting a card answer
+ * Undo entry for reverting card actions (answer or bury)
  */
 interface UndoEntry {
+    actionType: "answer" | "bury";
     card: FSRSFlashcardItem;
     originalFsrs: FSRSFlashcardItem["fsrs"];
-    wasNewCard: boolean;
     previousIndex: number;
-    rating: Grade;
-    previousState: State;
+    // Fields only for "answer" action
+    wasNewCard?: boolean;
+    rating?: Grade;
+    previousState?: State;
+    // Fields only for "bury" action (bury note can have multiple cards)
+    additionalCards?: Array<{
+        card: FSRSFlashcardItem;
+        originalFsrs: FSRSFlashcardItem["fsrs"];
+    }>;
 }
 
 export class ReviewView extends ItemView {
@@ -62,7 +69,7 @@ export class ReviewView extends ItemView {
     private createdTodayOnly?: boolean;
     private createdThisWeek?: boolean;
     private weakCardsOnly?: boolean;
-    private stateFilter?: "due" | "learning" | "new";
+    private stateFilter?: "due" | "learning" | "new" | "buried";
     private ignoreDailyLimits?: boolean;
     private bypassScheduling?: boolean;
 
@@ -219,11 +226,33 @@ export class ReviewView extends ItemView {
                 return;
             }
 
-            // Filter out suspended cards
-            const activeCards = allCards.filter((c) => !c.fsrs.suspended);
+            // Filter out suspended and buried cards (unless reviewing buried specifically)
+            const now = new Date();
+            const activeCards = allCards.filter((c) => {
+                // Skip suspended cards always
+                if (c.fsrs.suspended) return false;
+
+                // If reviewing buried cards, ONLY include buried
+                if (this.stateFilter === "buried") {
+                    if (!c.fsrs.buriedUntil) return false;
+                    return new Date(c.fsrs.buriedUntil) > now;
+                }
+
+                // Normal mode: exclude buried cards
+                if (c.fsrs.buriedUntil) {
+                    const buriedUntil = new Date(c.fsrs.buriedUntil);
+                    if (buriedUntil > now) return false;
+                }
+
+                return true;
+            });
 
             if (activeCards.length === 0) {
-                this.renderEmptyState("All cards are suspended. Unsuspend some cards to start reviewing.");
+                if (this.stateFilter === "buried") {
+                    this.renderEmptyState("No buried cards found.");
+                } else {
+                    this.renderEmptyState("All cards are suspended or buried. Unsuspend/unbury some cards to start reviewing.");
+                }
                 return;
             }
 
@@ -816,6 +845,20 @@ export class ReviewView extends ItemView {
 
         menu.addItem((item) =>
             item
+                .setTitle("Bury Card (-)")
+                .setIcon("eye-off")
+                .onClick(() => this.handleBuryCard())
+        );
+
+        menu.addItem((item) =>
+            item
+                .setTitle("Bury Note (=)")
+                .setIcon("eye-off")
+                .onClick(() => this.handleBuryNote())
+        );
+
+        menu.addItem((item) =>
+            item
                 .setTitle("Edit Card")
                 .setIcon("pencil")
                 .onClick(() => this.enterEditMode())
@@ -1090,6 +1133,20 @@ export class ReviewView extends ItemView {
             return;
         }
 
+        // - (minus) = Bury card until tomorrow
+        if (e.key === "-") {
+            e.preventDefault();
+            void this.handleBuryCard();
+            return;
+        }
+
+        // = (equals) = Bury note (all cards from same source) until tomorrow
+        if (e.key === "=") {
+            e.preventDefault();
+            void this.handleBuryNote();
+            return;
+        }
+
         // M = Move card to another note
         if (e.key === "m" || e.key === "M") {
             e.preventDefault();
@@ -1182,6 +1239,7 @@ Source: [[${sourceNote}]]
 
         // Store undo entry BEFORE making changes
         this.undoStack.push({
+            actionType: "answer",
             card: { ...card },
             originalFsrs: { ...card.fsrs },
             wasNewCard: isNewCard,
@@ -1232,7 +1290,7 @@ Source: [[${sourceNote}]]
     }
 
     /**
-     * Undo the last answer (Cmd+Z)
+     * Undo the last action (Cmd+Z) - supports both answer and bury
      */
     private async handleUndo(): Promise<void> {
         const undoEntry = this.undoStack.pop();
@@ -1240,7 +1298,7 @@ Source: [[${sourceNote}]]
             return; // Nothing to undo
         }
 
-        const { card, originalFsrs, wasNewCard, previousIndex, rating, previousState } = undoEntry;
+        const { actionType, card, originalFsrs, previousIndex } = undoEntry;
 
         // Restore original FSRS data to file
         try {
@@ -1254,15 +1312,58 @@ Source: [[${sourceNote}]]
             console.error("Error restoring card FSRS:", error);
         }
 
-        // Remove from persistent storage (with full stats revert)
-        try {
-            await this.sessionPersistence.removeLastReview(card.id, wasNewCard, rating, previousState);
-        } catch (error) {
-            console.error("Error removing review from persistent storage:", error);
-        }
+        // Handle action-specific undo logic
+        if (actionType === "answer") {
+            const { wasNewCard, rating, previousState } = undoEntry;
+            // Remove from persistent storage (with full stats revert)
+            try {
+                await this.sessionPersistence.removeLastReview(
+                    card.id,
+                    wasNewCard ?? false,
+                    rating,
+                    previousState
+                );
+            } catch (error) {
+                console.error("Error removing review from persistent storage:", error);
+            }
 
-        // Restore state - go back to previous card
-        this.stateManager.undoLastAnswer(previousIndex, { ...card, fsrs: originalFsrs });
+            // Restore state - go back to previous card (for answer undo)
+            this.stateManager.undoLastAnswer(previousIndex, { ...card, fsrs: originalFsrs });
+        } else if (actionType === "bury") {
+            // Restore additional cards if this was a "bury note" action
+            if (undoEntry.additionalCards) {
+                for (const additionalCard of undoEntry.additionalCards) {
+                    try {
+                        await this.flashcardManager.updateCardFSRS(
+                            additionalCard.card.filePath,
+                            additionalCard.card.id,
+                            additionalCard.originalFsrs,
+                            additionalCard.card.lineNumber
+                        );
+                    } catch (error) {
+                        console.error("Error restoring additional card FSRS:", error);
+                    }
+                }
+            }
+
+            // Insert the main card back at its previous position
+            this.stateManager.insertCardAtPosition({ ...card, fsrs: originalFsrs }, previousIndex);
+
+            // Insert additional cards back (for bury note)
+            if (undoEntry.additionalCards) {
+                for (let i = 0; i < undoEntry.additionalCards.length; i++) {
+                    const additionalEntry = undoEntry.additionalCards[i];
+                    if (additionalEntry) {
+                        this.stateManager.insertCardAtPosition(
+                            { ...additionalEntry.card, fsrs: additionalEntry.originalFsrs },
+                            previousIndex + i + 1
+                        );
+                    }
+                }
+            }
+
+            new Notice("Bury undone");
+        }
 
         // Update UI
         this.updateSchedulingPreview();
@@ -1396,6 +1497,146 @@ Source: [[${sourceNote}]]
         }
 
         new Notice("Card suspended");
+    }
+
+    /**
+     * Bury the current card until tomorrow (-)
+     * Card will reappear in the next day's review
+     */
+    private async handleBuryCard(): Promise<void> {
+        const card = this.stateManager.getCurrentCard();
+        if (!card) return;
+
+        const currentIndex = this.stateManager.getState().currentIndex;
+
+        // Store undo entry BEFORE making changes
+        this.undoStack.push({
+            actionType: "bury",
+            card: { ...card },
+            originalFsrs: { ...card.fsrs },
+            previousIndex: currentIndex,
+        });
+
+        // Calculate tomorrow's date based on dayStartHour
+        const tomorrow = this.getTomorrowDate();
+        const updatedFsrs = { ...card.fsrs, buriedUntil: tomorrow.toISOString() };
+
+        try {
+            await this.flashcardManager.updateCardFSRS(
+                card.filePath,
+                card.id,
+                updatedFsrs,
+                card.lineNumber
+            );
+        } catch (error) {
+            console.error("Error burying card:", error);
+            new Notice("Failed to bury card");
+            // Remove the undo entry since the operation failed
+            this.undoStack.pop();
+            return;
+        }
+
+        // Remove from current queue
+        this.stateManager.removeCurrentCard();
+
+        // Update scheduling preview for next card
+        if (!this.stateManager.isComplete()) {
+            this.updateSchedulingPreview();
+        }
+
+        new Notice("Card buried until tomorrow");
+    }
+
+    /**
+     * Bury all cards from the same source note (=)
+     * All sibling cards will reappear in the next day's review
+     */
+    private async handleBuryNote(): Promise<void> {
+        const card = this.stateManager.getCurrentCard();
+        if (!card) return;
+
+        const sourceNoteName = card.sourceNoteName;
+        if (!sourceNoteName) {
+            // If no source note, just bury the current card
+            await this.handleBuryCard();
+            return;
+        }
+
+        // Find all cards from the same source note in the queue
+        const queue = this.stateManager.getState().queue;
+        const siblingCards = queue.filter(c => c.sourceNoteName === sourceNoteName);
+
+        const firstSibling = siblingCards[0];
+        if (siblingCards.length === 0 || !firstSibling) {
+            await this.handleBuryCard();
+            return;
+        }
+
+        const currentIndex = this.stateManager.getState().currentIndex;
+
+        // Store undo entry for all sibling cards BEFORE making changes
+        const additionalCards = siblingCards.slice(1).map(c => ({
+            card: { ...c },
+            originalFsrs: { ...c.fsrs },
+        }));
+
+        this.undoStack.push({
+            actionType: "bury",
+            card: { ...firstSibling },
+            originalFsrs: { ...firstSibling.fsrs },
+            previousIndex: currentIndex,
+            additionalCards: additionalCards.length > 0 ? additionalCards : undefined,
+        });
+
+        // Calculate tomorrow's date based on dayStartHour
+        const tomorrow = this.getTomorrowDate();
+        const buriedUntil = tomorrow.toISOString();
+
+        let buriedCount = 0;
+
+        // Bury all sibling cards
+        for (const siblingCard of siblingCards) {
+            const updatedFsrs = { ...siblingCard.fsrs, buriedUntil };
+
+            try {
+                await this.flashcardManager.updateCardFSRS(
+                    siblingCard.filePath,
+                    siblingCard.id,
+                    updatedFsrs,
+                    siblingCard.lineNumber
+                );
+                buriedCount++;
+            } catch (error) {
+                console.error(`Error burying card ${siblingCard.id}:`, error);
+            }
+        }
+
+        // Remove all buried cards from the queue
+        for (const siblingCard of siblingCards) {
+            this.stateManager.removeCardById(siblingCard.id);
+        }
+
+        // Update scheduling preview for next card
+        if (!this.stateManager.isComplete()) {
+            this.updateSchedulingPreview();
+        }
+
+        new Notice(`${buriedCount} card${buriedCount > 1 ? "s" : ""} buried until tomorrow`);
+    }
+
+    /**
+     * Calculate tomorrow's date considering dayStartHour setting
+     */
+    private getTomorrowDate(): Date {
+        const now = new Date();
+        const dayStartHour = this.plugin.settings.dayStartHour ?? 4;
+
+        // Create tomorrow's date at dayStartHour
+        const tomorrow = new Date(now);
+        tomorrow.setDate(tomorrow.getDate() + 1);
+        tomorrow.setHours(dayStartHour, 0, 0, 0);
+
+        return tomorrow;
     }
 
     private handleOpenNote(): void {

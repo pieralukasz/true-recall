@@ -22,6 +22,8 @@ export interface CustomSessionResult {
 	useDefaultDeck?: boolean;
 	/** Bypass scheduling - show all matching cards regardless of due date */
 	bypassScheduling?: boolean;
+	/** Filter by card state (due, learning, new, buried) */
+	stateFilter?: "due" | "learning" | "new" | "buried";
 }
 
 export interface CustomSessionModalOptions {
@@ -179,6 +181,26 @@ export class CustomSessionModal extends BaseModal {
 			defaultBtn.addClass("episteme-btn-disabled");
 		}
 
+		// Buried cards button
+		const buriedBtn = quickActionsEl.createEl("button", {
+			cls: "episteme-quick-action-btn",
+		});
+		buriedBtn.createSpan({ text: "Buried" });
+		const buriedStats = this.getBuriedCardsStats(now);
+		if (buriedStats.total > 0) {
+			buriedBtn.createSpan({
+				cls: "episteme-quick-action-stats",
+				text: this.formatStats(buriedStats.newCount, buriedStats.dueCount),
+			});
+			buriedBtn.addEventListener("click", () => this.selectBuriedCards());
+		} else {
+			buriedBtn.createSpan({
+				cls: "episteme-quick-action-stats episteme-stat-muted",
+				text: "none",
+			});
+			buriedBtn.disabled = true;
+			buriedBtn.addClass("episteme-btn-disabled");
+		}
 	}
 
 	private renderSearchInput(container: HTMLElement): void {
@@ -367,7 +389,7 @@ export class CustomSessionModal extends BaseModal {
 	private getTodayStats(now: Date, todayStart: Date): { total: number; newCount: number; dueCount: number } {
 		const cards = this.options.allCards.filter((c) => {
 			const createdAt = c.fsrs.createdAt;
-			return createdAt && createdAt >= todayStart.getTime() && this.isCardAvailable(c, now) && !c.fsrs.suspended;
+			return createdAt && createdAt >= todayStart.getTime() && this.isCardAvailable(c, now) && !c.fsrs.suspended && !this.isCardBuried(c, now);
 		});
 
 		return {
@@ -392,7 +414,7 @@ export class CustomSessionModal extends BaseModal {
 		const stats: NoteStats[] = [];
 
 		for (const [noteName, cards] of noteMap) {
-			const availableCards = cards.filter((c) => this.isCardAvailable(c, now));
+			const availableCards = cards.filter((c) => this.isCardAvailable(c, now) && !c.fsrs.suspended && !this.isCardBuried(c, now));
 			const newCount = availableCards.filter((c) => c.fsrs.state === State.New).length;
 			const dueCount = availableCards.filter((c) => c.fsrs.state !== State.New).length;
 
@@ -416,11 +438,29 @@ export class CustomSessionModal extends BaseModal {
 		return this.options.dayBoundaryService.isCardAvailable(card, now);
 	}
 
+	private isCardBuried(card: FSRSFlashcardItem, now: Date): boolean {
+		if (!card.fsrs.buriedUntil) return false;
+		return new Date(card.fsrs.buriedUntil) > now;
+	}
+
+	private getBuriedCardsStats(now: Date): { total: number; newCount: number; dueCount: number } {
+		const cards = this.options.allCards.filter((c) => {
+			if (!c.fsrs.buriedUntil) return false;
+			return new Date(c.fsrs.buriedUntil) > now;
+		});
+
+		return {
+			total: cards.length,
+			newCount: cards.filter((c) => c.fsrs.state === State.New).length,
+			dueCount: cards.filter((c) => c.fsrs.state !== State.New).length,
+		};
+	}
+
 	private getCurrentNoteStats(now: Date): { total: number; newCount: number; dueCount: number } | null {
 		if (!this.options.currentNoteName) return null;
 
 		const cards = this.options.allCards.filter(
-			(c) => c.sourceNoteName === this.options.currentNoteName && this.isCardAvailable(c, now)
+			(c) => c.sourceNoteName === this.options.currentNoteName && this.isCardAvailable(c, now) && !c.fsrs.suspended && !this.isCardBuried(c, now)
 		);
 
 		if (cards.length === 0) return null;
@@ -464,7 +504,7 @@ export class CustomSessionModal extends BaseModal {
 
 	private getAllCardsStats(now: Date): { total: number; newCount: number; dueCount: number } {
 		const cards = this.options.allCards.filter((c) =>
-			this.isCardAvailable(c, now) && !c.fsrs.suspended
+			this.isCardAvailable(c, now) && !c.fsrs.suspended && !this.isCardBuried(c, now)
 		);
 
 		return {
@@ -482,6 +522,21 @@ export class CustomSessionModal extends BaseModal {
 				sessionType: "default",
 				useDefaultDeck: true,
 				ignoreDailyLimits: false,
+			});
+			this.resolvePromise = null;
+		}
+		this.close();
+	}
+
+	private selectBuriedCards(): void {
+		this.hasSelected = true;
+		if (this.resolvePromise) {
+			this.resolvePromise({
+				cancelled: false,
+				sessionType: "state-filter",
+				stateFilter: "buried",
+				ignoreDailyLimits: true,
+				bypassScheduling: true,
 			});
 			this.resolvePromise = null;
 		}
