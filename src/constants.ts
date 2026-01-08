@@ -56,7 +56,6 @@ export const DEFAULT_SETTINGS: EpistemeSettings = {
 	reviewMode: "fullscreen",
 	showNextReviewTime: true,
 	autoAdvance: false,
-	showProgress: true,
 	showReviewHeader: true,
 	showReviewHeaderStats: true,
 	hideFlashcardsFromBacklinks: true,

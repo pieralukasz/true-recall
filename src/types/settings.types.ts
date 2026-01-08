@@ -67,8 +67,6 @@ export interface EpistemeSettings {
     showNextReviewTime: boolean;
     /** Automatycznie przejdź do następnej karty po odpowiedzi */
     autoAdvance: boolean;
-    /** Pokaż pasek postępu w sesji nauki */
-    showProgress: boolean;
     /** Pokaż nagłówek w sesji Review */
     showReviewHeader: boolean;
     /** Pokaż statystyki new/learning/due w nagłówku Review */

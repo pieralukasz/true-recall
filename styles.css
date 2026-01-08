@@ -1074,7 +1074,8 @@
 .episteme-review {
 	display: flex;
 	flex-direction: column;
-	height: 100dvh;
+	height: 100%;
+	min-height: 0;
 	background: var(--background-primary);
 	overflow: hidden;
 }
@@ -1352,36 +1353,6 @@
 	opacity: 0.9;
 }
 
-/* Progress Bar */
-.episteme-review-progress {
-	padding: 0 16px 12px;
-	background: var(--background-secondary);
-	flex-shrink: 0;
-}
-
-.episteme-review-progress:empty {
-	display: none;
-	padding: 0;
-}
-
-/* Hide progress bar when in edit mode (keyboard issues) */
-.episteme-review-card-container--editing ~ .episteme-review-buttons ~ .episteme-review-progress {
-	display: none;
-}
-
-.episteme-progress-bar {
-	height: 4px;
-	background: var(--background-modifier-border);
-	border-radius: 2px;
-	overflow: hidden;
-}
-
-.episteme-progress-fill {
-	height: 100%;
-	background: var(--interactive-accent);
-	transition: width 0.3s ease;
-}
-
 /* Empty State */
 .episteme-review-empty {
 	text-align: center;
@@ -1557,17 +1528,9 @@
 		padding-bottom: calc(12px + env(safe-area-inset-bottom));
 	}
 
-	.episteme-review-progress:not([style*="display: none"]) {
-		padding-bottom: calc(12px + env(safe-area-inset-bottom));
-	}
-
 	/* No extra safe area padding when editing */
 	.episteme-review-card-container--editing ~ .episteme-review-buttons {
 		padding-bottom: 8px;
-	}
-
-	.episteme-review-card-container--editing ~ .episteme-review-progress {
-		padding-bottom: 12px;
 	}
 }
 
@@ -3363,17 +3326,34 @@
 		padding-bottom: calc(12px + env(safe-area-inset-bottom));
 	}
 
-	.episteme-review-progress:not([style*="display: none"]) {
-		padding-bottom: calc(12px + env(safe-area-inset-bottom));
-	}
-
 	/* No extra safe area padding when editing */
 	.episteme-review-card-container--editing ~ .episteme-review-buttons {
 		padding-bottom: 8px;
 	}
+}
 
-	.episteme-review-card-container--editing ~ .episteme-review-progress {
-		padding-bottom: 12px;
+/* Mobile edit mode - handle iOS keyboard properly */
+@media screen and (max-width: 600px) {
+	.episteme-review-card-container--editing {
+		position: fixed;
+		top: 0;
+		left: 0;
+		right: 0;
+		bottom: 0;
+		z-index: 100;
+		background: var(--background-primary);
+		padding: 16px;
+		overflow-y: auto;
+		-webkit-overflow-scrolling: touch;
+	}
+
+	.episteme-review-card-container--editing .episteme-review-card {
+		max-width: 100%;
+		padding-bottom: 300px; /* Extra space for keyboard */
+	}
+
+	.episteme-review-card-container--editing .episteme-review-editable {
+		font-size: 16px; /* Prevent iOS zoom on focus */
 	}
 }
 
