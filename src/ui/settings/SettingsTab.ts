@@ -254,17 +254,6 @@ export class EpistemeSettingTab extends PluginSettingTab {
                     await this.plugin.saveSettings();
                 }));
 
-        // Show Progress
-        new Setting(containerEl)
-            .setName("Show progress bar")
-            .setDesc("Display progress bar during review session")
-            .addToggle(toggle => toggle
-                .setValue(this.plugin.settings.showProgress)
-                .onChange(async (value) => {
-                    this.plugin.settings.showProgress = value;
-                    await this.plugin.saveSettings();
-                }));
-
         // Hide flashcards from backlinks
         new Setting(containerEl)
             .setName("Hide flashcards from backlinks")
