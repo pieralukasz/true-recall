@@ -56,6 +56,8 @@ export interface QueueBuildOptions {
     readyToHarvestOnly?: boolean;
     /** Ignore daily limits for custom sessions */
     ignoreDailyLimits?: boolean;
+    /** Bypass scheduling - show all matching cards regardless of due date (like Anki Custom Study) */
+    bypassScheduling?: boolean;
     /** Hour when new day starts (0-23, default 4 like Anki) */
     dayStartHour?: number;
 }
@@ -251,24 +253,43 @@ export class ReviewService {
         const learnAheadTime = new Date(now.getTime() + LEARN_AHEAD_LIMIT_MINUTES * 60 * 1000);
         const allLearningCards = fsrsService.getLearningCards(availableCards);
 
-        // Due learning cards: due now or within learn-ahead window (highest priority)
-        const dueLearningCards = allLearningCards.filter((card) => {
-            const dueDate = new Date(card.fsrs.due);
-            return dueDate <= learnAheadTime;
-        });
+        let dueLearningCards: FSRSFlashcardItem[];
+        let pendingLearningCards: FSRSFlashcardItem[];
+        let limitedReviewCards: FSRSFlashcardItem[];
 
-        // Pending learning cards: beyond learn-ahead window (shown at END, after new cards)
-        const pendingLearningCards = allLearningCards.filter((card) => {
-            const dueDate = new Date(card.fsrs.due);
-            return dueDate > learnAheadTime;
-        });
+        if (options.bypassScheduling) {
+            // Bypass scheduling: include all cards regardless of due date
+            // All learning cards are treated as "due" (no pending)
+            dueLearningCards = allLearningCards;
+            pendingLearningCards = [];
 
-        // 2. Get due review cards (using day-based scheduling like Anki)
-        const dayStartHour = options.dayStartHour ?? 4;
-        const reviewCards = fsrsService.getReviewCards(availableCards, now, dayStartHour);
-        // If ignoreDailyLimits, don't limit review cards
-        const effectiveReviewsLimit = options.ignoreDailyLimits ? reviewCards.length : options.reviewsLimit;
-        let limitedReviewCards = reviewCards.slice(0, effectiveReviewsLimit);
+            // All review state cards are included, not just due ones
+            const reviewCards = availableCards.filter(
+                card => card.fsrs.state === State.Review
+            );
+            const effectiveReviewsLimit = options.ignoreDailyLimits ? reviewCards.length : options.reviewsLimit;
+            limitedReviewCards = reviewCards.slice(0, effectiveReviewsLimit);
+        } else {
+            // Normal scheduling: respect due dates
+            // Due learning cards: due now or within learn-ahead window (highest priority)
+            dueLearningCards = allLearningCards.filter((card) => {
+                const dueDate = new Date(card.fsrs.due);
+                return dueDate <= learnAheadTime;
+            });
+
+            // Pending learning cards: beyond learn-ahead window (shown at END, after new cards)
+            pendingLearningCards = allLearningCards.filter((card) => {
+                const dueDate = new Date(card.fsrs.due);
+                return dueDate > learnAheadTime;
+            });
+
+            // 2. Get due review cards (using day-based scheduling like Anki)
+            const dayStartHour = options.dayStartHour ?? 4;
+            const reviewCards = fsrsService.getReviewCards(availableCards, now, dayStartHour);
+            // If ignoreDailyLimits, don't limit review cards
+            const effectiveReviewsLimit = options.ignoreDailyLimits ? reviewCards.length : options.reviewsLimit;
+            limitedReviewCards = reviewCards.slice(0, effectiveReviewsLimit);
+        }
 
         // 3. Get new cards (respect daily limit unless ignoreDailyLimits)
         let remainingNewSlots: number;
