@@ -43,6 +43,15 @@
 		font-size: 1em;
 	}
 
+	/* Source note backlink */
+	.episteme-review-backlink {
+		margin-top: 12px;
+	}
+
+	.episteme-review-backlink-link {
+		font-size: 0.85em;
+	}
+
 	/* Rating buttons - minimal padding for mobile */
 	.episteme-review-buttons {
 		padding: 8px 4px;

@@ -403,6 +403,7 @@ export default class EpistemePlugin extends Plugin {
 			createdTodayOnly: result.createdTodayOnly,
 			readyToHarvestOnly: result.readyToHarvestOnly,
 			ignoreDailyLimits: result.ignoreDailyLimits,
+			bypassScheduling: result.bypassScheduling,
 		});
 	}
 
@@ -514,11 +515,13 @@ export default class EpistemePlugin extends Plugin {
 
 		if (result.action === "review") {
 			// Start review session with ready-to-harvest filter
+			// bypassScheduling: true allows reviewing mature cards even if not due
 			await this.openReviewViewWithFilters({
 				deckFilter: null,
 				temporaryOnly: true,
 				readyToHarvestOnly: true,
 				ignoreDailyLimits: true,
+				bypassScheduling: true,
 			});
 		} else if (result.action === "move" && result.selectedCardIds.length > 0) {
 			// Find the selected cards from allCards
@@ -664,6 +667,7 @@ export default class EpistemePlugin extends Plugin {
 		temporaryOnly?: boolean;
 		readyToHarvestOnly?: boolean;
 		ignoreDailyLimits?: boolean;
+		bypassScheduling?: boolean;
 	}): Promise<void> {
 		const { workspace } = this.app;
 
@@ -679,6 +683,7 @@ export default class EpistemePlugin extends Plugin {
 			temporaryOnly: filters.temporaryOnly,
 			readyToHarvestOnly: filters.readyToHarvestOnly,
 			ignoreDailyLimits: filters.ignoreDailyLimits,
+			bypassScheduling: filters.bypassScheduling,
 		};
 
 		if (Platform.isMobile || this.settings.reviewMode === "fullscreen") {

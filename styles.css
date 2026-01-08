@@ -878,15 +878,15 @@
 
 /* Yellow Dot Indicator for Temporary Cards in Review */
 .episteme-temporary-dot {
-	display: inline-block;
+	position: absolute;
+	top: -4px;
+	right: -4px;
 	width: 12px;
 	height: 12px;
 	background: var(--color-yellow, #fbbf24);
 	border-radius: 50%;
 	border: 2px solid var(--background-primary);
 	box-shadow: 0 0 0 2px var(--background-secondary);
-	margin-right: 8px;
-	flex-shrink: 0;
 }
 
 /* Gold/Amber dot for cards ready to harvest */
@@ -3219,6 +3219,15 @@
 
 	.episteme-review-answer {
 		font-size: 1em;
+	}
+
+	/* Source note backlink */
+	.episteme-review-backlink {
+		margin-top: 12px;
+	}
+
+	.episteme-review-backlink-link {
+		font-size: 0.85em;
 	}
 
 	/* Rating buttons - minimal padding for mobile */

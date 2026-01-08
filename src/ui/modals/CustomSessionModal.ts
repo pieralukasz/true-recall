@@ -22,6 +22,8 @@ export interface CustomSessionResult {
 	ignoreDailyLimits: boolean;
 	/** Use default deck (Knowledge) with no filters */
 	useDefaultDeck?: boolean;
+	/** Bypass scheduling - show all matching cards regardless of due date */
+	bypassScheduling?: boolean;
 }
 
 export interface CustomSessionModalOptions {
@@ -483,10 +485,12 @@ export class CustomSessionModal extends BaseModal {
 		this.close();
 	}
 
-	private getReadyToHarvestStats(now: Date): { total: number; newCount: number; dueCount: number } {
+	private getReadyToHarvestStats(_now: Date): { total: number; newCount: number; dueCount: number } {
 		const HARVEST_THRESHOLD = 21; // days
+		// Don't check isCardAvailable - ready-to-harvest cards may not be "due" today
+		// They qualify based on maturity (interval >= 21 days), not scheduling
 		const cards = this.options.allCards.filter(
-			(c) => c.isTemporary && c.fsrs.scheduledDays >= HARVEST_THRESHOLD && this.isCardAvailable(c, now)
+			(c) => c.isTemporary && c.fsrs.scheduledDays >= HARVEST_THRESHOLD && !c.fsrs.suspended
 		);
 		return {
 			total: cards.length,
@@ -515,6 +519,7 @@ export class CustomSessionModal extends BaseModal {
 				sessionType: "state-filter",
 				readyToHarvestOnly: true,
 				ignoreDailyLimits: true,
+				bypassScheduling: true,
 			});
 			this.resolvePromise = null;
 		}

@@ -24,6 +24,8 @@ interface ReviewViewState extends Record<string, unknown> {
     stateFilter?: "due" | "learning" | "new";
     temporaryOnly?: boolean;
     ignoreDailyLimits?: boolean;
+    readyToHarvestOnly?: boolean;
+    bypassScheduling?: boolean;
 }
 
 /**
@@ -65,6 +67,8 @@ export class ReviewView extends ItemView {
     private stateFilter?: "due" | "learning" | "new";
     private temporaryOnly?: boolean;
     private ignoreDailyLimits?: boolean;
+    private readyToHarvestOnly?: boolean;
+    private bypassScheduling?: boolean;
 
     // Undo stack for reverting answers
     private undoStack: UndoEntry[] = [];
@@ -109,6 +113,8 @@ export class ReviewView extends ItemView {
         this.stateFilter = viewState?.stateFilter;
         this.temporaryOnly = viewState?.temporaryOnly;
         this.ignoreDailyLimits = viewState?.ignoreDailyLimits;
+        this.readyToHarvestOnly = viewState?.readyToHarvestOnly;
+        this.bypassScheduling = viewState?.bypassScheduling;
 
         // Detect if this is a custom review session (any custom filter is set)
         this.isCustomSession = !!(
@@ -144,6 +150,8 @@ export class ReviewView extends ItemView {
             stateFilter: this.stateFilter,
             temporaryOnly: this.temporaryOnly,
             ignoreDailyLimits: this.ignoreDailyLimits,
+            readyToHarvestOnly: this.readyToHarvestOnly,
+            bypassScheduling: this.bypassScheduling,
         };
     }
 
@@ -256,6 +264,8 @@ export class ReviewView extends ItemView {
                 stateFilter: this.stateFilter,
                 temporaryOnly: this.temporaryOnly,
                 ignoreDailyLimits: this.ignoreDailyLimits,
+                readyToHarvestOnly: this.readyToHarvestOnly,
+                bypassScheduling: this.bypassScheduling,
             });
 
             if (queue.length === 0) {
@@ -442,6 +452,26 @@ export class ReviewView extends ItemView {
                 if (Platform.isMobile) {
                     this.addLongPressListener(answerEl, () => this.startEdit("answer"));
                 }
+            }
+
+            // Source note backlink
+            if (card.sourceNoteName && !editState.active) {
+                const backlinkEl = cardEl.createDiv({
+                    cls: "episteme-review-backlink"
+                });
+
+                // Create clickable link to source note
+                const linkEl = backlinkEl.createEl("a", {
+                    text: card.sourceNoteName,
+                    href: "#",
+                    cls: "episteme-review-backlink-link"
+                });
+
+                linkEl.addEventListener("click", (e: MouseEvent) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    this.handleOpenSourceNote();
+                });
             }
         }
     }
