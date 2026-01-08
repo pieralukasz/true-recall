@@ -56,10 +56,3 @@ export {
 
 // UI services
 export { BacklinksFilterService } from "./ui/backlinks-filter.service";
-
-// Harvest services (Seeding → Incubation → Harvest workflow)
-export {
-	HarvestService,
-	type HarvestableCard,
-	type HarvestStats,
-} from "./harvest/harvest.service";

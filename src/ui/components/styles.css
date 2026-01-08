@@ -118,12 +118,6 @@
 	font-size: 12px;
 }
 
-/* Temporary - amber/yellow for literature notes */
-.episteme-note-type-badge--temporary {
-	background: rgba(251, 191, 36, 0.2);
-	color: var(--color-yellow, #fbbf24);
-}
-
 /* Permanent - green for zettel */
 .episteme-note-type-badge--permanent {
 	background: rgba(74, 222, 128, 0.2);

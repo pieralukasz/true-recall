@@ -127,12 +127,6 @@
 	font-size: 12px;
 }
 
-/* Temporary - amber/yellow for literature notes */
-.episteme-note-type-badge--temporary {
-	background: rgba(251, 191, 36, 0.2);
-	color: var(--color-yellow, #fbbf24);
-}
-
 /* Permanent - green for zettel */
 .episteme-note-type-badge--permanent {
 	background: rgba(74, 222, 128, 0.2);
@@ -336,7 +330,7 @@
 	display: none;
 }
 
-/* Show separator for temporary cards with checkboxes */
+/* Show separator for cards with checkboxes */
 .episteme-card-wrapper .episteme-card-separator {
 	display: block;
 }
@@ -643,25 +637,8 @@
 }
 
 /* ========================================
-    Temporary Cards Bulk Selection
+    Bulk Selection
     ======================================== */
-
-/* Temporary cards controls bar */
-.episteme-temporary-controls {
-	display: flex;
-	align-items: center;
-	gap: 8px;
-	padding: 8px 12px;
-	background: linear-gradient(
-		135deg,
-		rgba(255, 193, 7, 0.1),
-		rgba(255, 179, 0, 0.05)
-	);
-	border: 1px solid rgba(255, 193, 7, 0.3);
-	border-radius: 6px;
-	margin-bottom: 12px;
-	flex-wrap: wrap;
-}
 
 /* Badges row wrapper */
 .episteme-badges-row {
@@ -680,19 +657,6 @@
 	font-size: 12px;
 	font-weight: 500;
 	white-space: nowrap;
-}
-
-/* Incubating badge */
-.episteme-incubating-badge {
-	background: rgba(251, 191, 36, 0.2);
-	border: 1px solid rgba(255, 193, 7, 0.3);
-	color: var(--color-yellow, #fbbf24);
-}
-
-.episteme-incubating-count {
-	font-size: 12px;
-	font-weight: 500;
-	color: var(--color-yellow, #fbbf24);
 }
 
 /* Controls divider */
@@ -844,132 +808,6 @@
 
 .episteme-delete-selected-btn:hover:not(:disabled) {
 	background: var(--color-red, #dc2626);
-}
-
-/* ========================================
-    Harvest Workflow Styles
-    Seeding → Incubation → Harvest
-    ======================================== */
-
-/* Seed Flashcards Button (green gradient) */
-.episteme-seed-flashcards-btn {
-	background: linear-gradient(135deg, #22c55e, #16a34a);
-	color: white;
-	font-weight: 600;
-}
-
-.episteme-seed-flashcards-btn:hover:not(:disabled) {
-	background: linear-gradient(135deg, #4ade80, #22c55e);
-}
-
-/* Maturity Indicator (progress bar under cards) */
-.episteme-maturity-indicator {
-	height: 4px;
-	background: var(--background-modifier-border);
-	border-radius: 2px;
-	overflow: hidden;
-	margin-top: 8px;
-}
-
-.episteme-maturity-bar {
-	height: 100%;
-	transition: width 0.3s ease;
-}
-
-/* Yellow Dot Indicator for Temporary Cards in Review */
-.episteme-temporary-dot {
-	position: absolute;
-	top: -4px;
-	right: -4px;
-	width: 12px;
-	height: 12px;
-	background: var(--color-yellow, #fbbf24);
-	border-radius: 50%;
-	border: 2px solid var(--background-primary);
-	box-shadow: 0 0 0 2px var(--background-secondary);
-}
-
-/* Gold/Amber dot for cards ready to harvest */
-.episteme-harvest-ready-dot {
-	background: linear-gradient(135deg, #fbbf24, #f59e0b);
-	animation: pulse-gold 2s ease-in-out infinite;
-}
-
-@keyframes pulse-gold {
-	0%,
-	100% {
-		opacity: 1;
-		transform: scale(1);
-	}
-	50% {
-		opacity: 0.8;
-		transform: scale(1.1);
-	}
-}
-
-/* Harvest Ready Badge (in panel content) */
-.episteme-harvest-ready-badge {
-	display: inline-flex;
-	align-items: center;
-	gap: 6px;
-	padding: 4px 10px;
-	background: linear-gradient(
-		135deg,
-		rgba(251, 191, 36, 0.2),
-		rgba(245, 158, 11, 0.15)
-	);
-	border: 1px solid rgba(251, 191, 36, 0.4);
-	border-radius: 12px;
-	font-size: 11px;
-	font-weight: 600;
-	color: var(--color-yellow, #fbbf24);
-	white-space: nowrap;
-	animation: glow-yellow 3s ease-in-out infinite;
-}
-
-@keyframes glow-yellow {
-	0%,
-	100% {
-		box-shadow: 0 0 5px rgba(251, 191, 36, 0.3);
-	}
-	50% {
-		box-shadow: 0 0 15px rgba(251, 191, 36, 0.5);
-	}
-}
-
-/* Harvest Stats Badges in Panel */
-.episteme-harvest-stats {
-	display: flex;
-	gap: 8px;
-	align-items: center;
-	flex-wrap: wrap;
-}
-
-.episteme-harvest-stat {
-	display: flex;
-	align-items: center;
-	gap: 4px;
-	padding: 4px 8px;
-	background: var(--background-modifier-hover);
-	border-radius: 6px;
-	font-size: 11px;
-	color: var(--text-muted);
-}
-
-.episteme-harvest-stat strong {
-	color: var(--text-normal);
-	font-weight: 600;
-}
-
-/* Harvest Button in Quick Actions */
-.episteme-harvest-action-btn {
-	background: linear-gradient(135deg, #fbbf24, #f59e0b);
-	color: var(--text-normal);
-	font-weight: 600;
-}
-
-.episteme-harvest-action-btn:hover:not(:disabled) {
-	background: linear-gradient(135deg, #fcd34d, #fbbf24);
 }
 
 /* ========================================
@@ -1137,29 +975,6 @@
 	max-width: 700px;
 	width: 100%;
 	text-align: center;
-}
-
-/* Temporary Badge (for cards from Literature Notes) */
-.episteme-review-temporary-badge {
-	display: flex;
-	flex-direction: column;
-	align-items: center;
-	margin-bottom: 16px;
-	padding: 8px 16px;
-	background: linear-gradient(135deg, #ffc107, #ffb300);
-	border-radius: 8px;
-	color: #000;
-}
-
-.episteme-review-temporary-badge .episteme-badge-text {
-	font-size: 0.75em;
-	font-weight: 700;
-	letter-spacing: 0.1em;
-}
-
-.episteme-review-temporary-badge .episteme-badge-hint {
-	font-size: 0.65em;
-	opacity: 0.7;
 }
 
 /* Question */
@@ -2292,176 +2107,6 @@
 	.episteme-missing-count {
 		font-size: 28px;
 	}
-}
-
-/* ========================================
-   Harvest Dashboard Modal
-   ======================================== */
-
-.episteme-harvest-dashboard-modal {
-	min-width: 550px;
-}
-
-/* Stats Summary */
-.episteme-harvest-stats {
-	display: grid;
-	grid-template-columns: repeat(4, 1fr);
-	gap: 8px;
-	margin-bottom: 20px;
-}
-
-.episteme-harvest-stat {
-	text-align: center;
-	padding: 10px 8px;
-	background: var(--background-secondary);
-	border-radius: 6px;
-	font-size: 12px;
-	color: var(--text-muted);
-}
-
-.episteme-harvest-stat--ready {
-	background: linear-gradient(135deg, rgba(245, 158, 11, 0.15), rgba(217, 119, 6, 0.1));
-	color: #f59e0b;
-	font-weight: 600;
-}
-
-/* Section Headers */
-.episteme-harvest-section {
-	margin-bottom: 20px;
-}
-
-.episteme-harvest-section h3 {
-	font-size: 14px;
-	font-weight: 600;
-	margin: 0 0 12px 0;
-	color: var(--text-normal);
-}
-
-/* Card List */
-.episteme-harvest-list {
-	display: flex;
-	flex-direction: column;
-	gap: 8px;
-	max-height: 300px;
-	overflow-y: auto;
-}
-
-.episteme-harvest-row {
-	display: flex;
-	align-items: center;
-	gap: 12px;
-	padding: 10px 12px;
-	background: var(--background-secondary);
-	border-radius: 6px;
-	transition: background-color 0.1s ease;
-}
-
-.episteme-harvest-row:hover {
-	background: var(--background-modifier-hover);
-}
-
-.episteme-harvest-row input[type="checkbox"] {
-	flex-shrink: 0;
-	cursor: pointer;
-	width: 16px;
-	height: 16px;
-}
-
-.episteme-harvest-preview {
-	flex: 1;
-	min-width: 0;
-}
-
-.episteme-harvest-question {
-	font-size: 13px;
-	color: var(--text-normal);
-	overflow: hidden;
-	text-overflow: ellipsis;
-	white-space: nowrap;
-}
-
-.episteme-harvest-source {
-	font-size: 11px;
-	color: var(--text-muted);
-	overflow: hidden;
-	text-overflow: ellipsis;
-	white-space: nowrap;
-	margin-top: 2px;
-}
-
-/* Maturity in harvest row */
-.episteme-harvest-maturity {
-	display: flex;
-	align-items: center;
-	gap: 8px;
-	flex-shrink: 0;
-	width: 120px;
-}
-
-.episteme-harvest-maturity .episteme-maturity-bar {
-	width: 60px;
-}
-
-/* Empty State */
-.episteme-harvest-empty {
-	text-align: center;
-	padding: 32px 16px;
-	color: var(--text-muted);
-	font-style: italic;
-}
-
-/* Action Buttons */
-.episteme-harvest-actions {
-	display: flex;
-	flex-direction: column;
-	gap: 12px;
-	margin-top: 16px;
-	padding-top: 16px;
-	border-top: 1px solid var(--background-modifier-border);
-}
-
-.episteme-harvest-actions .episteme-btn-primary,
-.episteme-harvest-actions .episteme-btn-secondary {
-	width: 100%;
-}
-
-/* Mobile adjustments for harvest dashboard */
-@media screen and (max-width: 600px) {
-	.episteme-harvest-dashboard-modal {
-		min-width: auto;
-		width: 100%;
-	}
-
-	.episteme-harvest-stats {
-		grid-template-columns: repeat(2, 1fr);
-	}
-
-	.episteme-harvest-list {
-		max-height: 250px;
-	}
-
-	.episteme-harvest-row {
-		flex-wrap: wrap;
-	}
-
-	.episteme-harvest-maturity {
-		width: 100%;
-		margin-top: 8px;
-	}
-
-	.episteme-harvest-actions {
-		flex-direction: column;
-	}
-
-	.episteme-harvest-actions .episteme-btn-primary,
-	.episteme-harvest-actions .episteme-btn-secondary {
-		width: 100%;
-	}
-}
-
-/* Make review card container position relative for dot */
-.episteme-review-card {
-	position: relative;
 }
 
 /* ========================================

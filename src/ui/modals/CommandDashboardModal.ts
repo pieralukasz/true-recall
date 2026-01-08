@@ -39,13 +39,6 @@ const CATEGORIES: CommandCategoryConfig[] = [
 		icon: "bar-chart-2",
 		order: 4,
 	},
-	{
-		id: CommandCategory.WORKFLOW,
-		name: "Workflow Tools",
-		description: "",
-		icon: "workflow",
-		order: 5,
-	},
 ];
 
 /**
@@ -199,16 +192,6 @@ export class CommandDashboardModal extends BaseModal {
 				callback: () => this.plugin.openStatsView(),
 			},
 
-			// WORKFLOW CATEGORY
-			{
-				id: "open-harvest-dashboard",
-				name: "Open Harvest Dashboard",
-				description: "Manage Seeding → Incubation → Harvest workflow",
-				icon: "wheat",
-				category: CommandCategory.WORKFLOW,
-				requiresActiveFile: false,
-				callback: () => this.plugin.openHarvestDashboard(),
-			},
 		];
 	}
 
@@ -277,8 +260,6 @@ export class CommandDashboardModal extends BaseModal {
 			"file-text": "📄",
 			calendar: "📅",
 			"bar-chart-2": "📊",
-			wheat: "🌾",
-			workflow: "⚙️",
 		};
 
 		return iconMap[iconName] || "⚡";

@@ -22,9 +22,7 @@ interface ReviewViewState extends Record<string, unknown> {
     createdThisWeek?: boolean;
     weakCardsOnly?: boolean;
     stateFilter?: "due" | "learning" | "new";
-    temporaryOnly?: boolean;
     ignoreDailyLimits?: boolean;
-    readyToHarvestOnly?: boolean;
     bypassScheduling?: boolean;
 }
 
@@ -65,9 +63,7 @@ export class ReviewView extends ItemView {
     private createdThisWeek?: boolean;
     private weakCardsOnly?: boolean;
     private stateFilter?: "due" | "learning" | "new";
-    private temporaryOnly?: boolean;
     private ignoreDailyLimits?: boolean;
-    private readyToHarvestOnly?: boolean;
     private bypassScheduling?: boolean;
 
     // Undo stack for reverting answers
@@ -110,9 +106,7 @@ export class ReviewView extends ItemView {
         this.createdThisWeek = viewState?.createdThisWeek;
         this.weakCardsOnly = viewState?.weakCardsOnly;
         this.stateFilter = viewState?.stateFilter;
-        this.temporaryOnly = viewState?.temporaryOnly;
         this.ignoreDailyLimits = viewState?.ignoreDailyLimits;
-        this.readyToHarvestOnly = viewState?.readyToHarvestOnly;
         this.bypassScheduling = viewState?.bypassScheduling;
 
         // Detect if this is a custom review session (any custom filter is set)
@@ -123,9 +117,7 @@ export class ReviewView extends ItemView {
             viewState?.createdTodayOnly ||
             viewState?.createdThisWeek ||
             viewState?.weakCardsOnly ||
-            viewState?.stateFilter ||
-            viewState?.temporaryOnly ||
-            viewState?.readyToHarvestOnly
+            viewState?.stateFilter
         );
 
         await super.setState(state, result);
@@ -147,9 +139,7 @@ export class ReviewView extends ItemView {
             createdThisWeek: this.createdThisWeek,
             weakCardsOnly: this.weakCardsOnly,
             stateFilter: this.stateFilter,
-            temporaryOnly: this.temporaryOnly,
             ignoreDailyLimits: this.ignoreDailyLimits,
-            readyToHarvestOnly: this.readyToHarvestOnly,
             bypassScheduling: this.bypassScheduling,
         };
     }
@@ -260,9 +250,7 @@ export class ReviewView extends ItemView {
                 createdThisWeek: this.createdThisWeek,
                 weakCardsOnly: this.weakCardsOnly,
                 stateFilter: this.stateFilter,
-                temporaryOnly: this.temporaryOnly,
                 ignoreDailyLimits: this.ignoreDailyLimits,
-                readyToHarvestOnly: this.readyToHarvestOnly,
                 bypassScheduling: this.bypassScheduling,
             });
 
@@ -390,17 +378,6 @@ export class ReviewView extends ItemView {
         const editState = this.stateManager.getEditState();
 
         const cardEl = this.cardContainerEl.createDiv({ cls: "episteme-review-card" });
-
-        // Yellow dot indicator for temporary cards (from Literature Notes)
-        // Gold/amber dot when ready to harvest (interval >= 21 days), yellow otherwise
-        // Created inside card element for proper positioning
-        if (card.isTemporary) {
-            const isReadyToHarvest = card.fsrs.scheduledDays >= 21;
-            const dotEl = cardEl.createDiv({
-                cls: `episteme-temporary-dot ${isReadyToHarvest ? "episteme-harvest-dot" : ""}`,
-            });
-            dotEl.setAttribute("aria-label", isReadyToHarvest ? "Ready to harvest" : "Temporary card");
-        }
 
         // Question
         const questionEl = cardEl.createDiv({ cls: "episteme-review-question" });
