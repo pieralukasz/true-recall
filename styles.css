@@ -1007,6 +1007,24 @@
 	margin: 0;
 }
 
+/* Source note backlink */
+.episteme-review-backlink {
+	margin-top: 24px;
+	text-align: center;
+}
+
+.episteme-review-backlink-link {
+	color: var(--text-muted);
+	font-size: 0.9em;
+	text-decoration: none;
+	opacity: 0.7;
+}
+
+.episteme-review-backlink-link:hover {
+	color: var(--text-normal);
+	opacity: 1;
+}
+
 /* Editable fields (inline edit during review) */
 .episteme-review-editable {
 	border: 2px solid var(--interactive-accent);
