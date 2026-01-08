@@ -42,7 +42,7 @@ export class FlashcardPanelView extends ItemView {
     // State subscription
     private unsubscribe: (() => void) | null = null;
 
-    // Selection state for bulk move (only for temporary cards)
+    // Selection state for bulk move
     private selectedCardLineNumbers: Set<number> = new Set();
 
     constructor(leaf: WorkspaceLeaf, plugin: EpistemePlugin) {
@@ -188,9 +188,6 @@ export class FlashcardPanelView extends ItemView {
             flashcardInfo: state.flashcardInfo,
             diffResult: state.diffResult,
             isFlashcardFile: state.isFlashcardFile,
-            // Selection state for temporary cards bulk move
-            selectedCardLineNumbers: this.selectedCardLineNumbers,
-            // Note flashcard type based on tags
             noteFlashcardType: state.noteFlashcardType,
             handlers: {
                 app: this.app,
@@ -202,13 +199,7 @@ export class FlashcardPanelView extends ItemView {
                 onMoveCard: (card) => void this.handleMoveCard(card),
                 onChangeAccept: (change, index, accepted) => this.handleChangeAccept(change, index, accepted),
                 onSelectAll: (selected) => this.handleSelectAll(selected),
-                // Selection handlers for temporary cards
-                onToggleCardSelection: (lineNumber) => this.handleToggleCardSelection(lineNumber),
-                onSelectAllTemporary: () => this.handleSelectAllTemporary(),
-                onClearSelection: () => this.handleClearSelection(),
-                // In-place edit save handler
                 onEditSave: async (card, field, newContent) => void this.handleEditSave(card, field, newContent),
-                // Diff edit change handler
                 onEditChange: (change, field, newContent) => this.handleDiffEditChange(change, field, newContent),
             },
         });
@@ -657,21 +648,8 @@ export class FlashcardPanelView extends ItemView {
         this.renderFooterOnly();
     }
 
-    private handleSelectAllTemporary(): void {
-        const state = this.stateManager.getState();
-        if (!state.flashcardInfo?.isTemporary) return;
-
-        // Select all cards in the temporary file
-        for (const card of state.flashcardInfo.flashcards) {
-            this.selectedCardLineNumbers.add(card.lineNumber);
-        }
-        // Full render needed to update all checkboxes
-        this.render();
-    }
-
     private handleClearSelection(): void {
         this.selectedCardLineNumbers.clear();
-        // Full render needed to uncheck all checkboxes
         this.render();
     }
 

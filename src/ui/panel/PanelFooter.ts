@@ -125,7 +125,7 @@ export class PanelFooter extends BaseComponent {
             cls: "episteme-footer-buttons",
         });
 
-        // Show "Move selected" button whenever cards are selected (for temporary cards)
+        // Show "Move selected" button whenever cards are selected
         if (selectedCount && selectedCount > 0 && onMoveSelected) {
             const moveBtn = buttonsWrapper.createEl("button", {
                 cls: "episteme-btn-seed episteme-move-selected-btn",

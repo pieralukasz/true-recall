@@ -5,13 +5,11 @@
 import type { App, Component, TFile, MarkdownRenderer } from "obsidian";
 import { BaseComponent } from "../component.base";
 import type { ProcessingStatus, ViewMode } from "../../state";
-import type { FlashcardInfo, FlashcardItem, FlashcardChange, DiffResult, NoteFlashcardType, FSRSFlashcardItem } from "../../types";
+import type { FlashcardInfo, FlashcardItem, FlashcardChange, DiffResult, NoteFlashcardType } from "../../types";
 import { createLoadingSpinner } from "../components/LoadingSpinner";
 import { createEmptyState, EmptyStateMessages } from "../components/EmptyState";
 import { createCardReviewItem } from "../components/CardReviewItem";
 import { createDiffCard } from "../components/DiffCard";
-import type { HarvestService, HarvestStats } from "../../services";
-import { HARVEST_CONFIG } from "../../constants";
 
 export interface PanelContentHandlers {
     app: App;
@@ -23,16 +21,10 @@ export interface PanelContentHandlers {
     onMoveCard?: (card: FlashcardItem) => void;
     onChangeAccept?: (change: FlashcardChange, index: number, accepted: boolean) => void;
     onSelectAll?: (selected: boolean) => void;
-    // Selection handlers for temporary cards bulk move
-    onToggleCardSelection?: (lineNumber: number) => void;
-    onSelectAllTemporary?: () => void;
-    onClearSelection?: () => void;
     // In-place edit save handler
     onEditSave?: (card: FlashcardItem, field: "question" | "answer", newContent: string) => Promise<void>;
     // Diff edit change handler
     onEditChange?: (change: FlashcardChange, field: "question" | "answer", newContent: string) => void;
-    // Harvest service for maturity calculations
-    harvestService?: HarvestService;
 }
 
 export interface PanelContentProps {
@@ -42,12 +34,8 @@ export interface PanelContentProps {
     flashcardInfo: FlashcardInfo | null;
     diffResult: DiffResult | null;
     isFlashcardFile: boolean;
-    // Selection state for temporary cards bulk move
-    selectedCardLineNumbers?: Set<number>;
     // Note flashcard type based on tags
     noteFlashcardType?: NoteFlashcardType;
-    // FSRS cards for maturity calculations (optional)
-    fsrsCards?: FSRSFlashcardItem[];
     handlers: PanelContentHandlers;
 }
 
@@ -176,17 +164,11 @@ export class PanelContent extends BaseComponent {
 
     private getNoteTypeConfig(type: NoteFlashcardType): { icon: string; label: string; description: string } {
         switch (type) {
-            case "temporary":
-                return {
-                    icon: "⏳",
-                    label: "Temporary",
-                    description: "Literature note - create temporary flashcards to move later",
-                };
             case "permanent":
                 return {
                     icon: "✅",
                     label: "Create flashcards",
-                    description: "Concept or Zettel note - create permanent flashcards",
+                    description: "Create flashcards from this note",
                 };
             case "maybe":
                 return {
@@ -211,8 +193,6 @@ export class PanelContent extends BaseComponent {
 
     private getNoFlashcardsMessage(type?: NoteFlashcardType): string {
         switch (type) {
-            case "temporary":
-                return "Create temporary flashcards from this literature note";
             case "permanent":
                 return "Generate flashcards for this note";
             case "maybe":
@@ -225,7 +205,7 @@ export class PanelContent extends BaseComponent {
     }
 
     private renderPreviewState(): void {
-        const { flashcardInfo, handlers, selectedCardLineNumbers } = this.props;
+        const { flashcardInfo, handlers } = this.props;
 
         if (!this.element || !flashcardInfo) return;
 
@@ -247,11 +227,6 @@ export class PanelContent extends BaseComponent {
             });
         }
 
-        // Temporary cards controls (only show for temporary files)
-        if (flashcardInfo.isTemporary && flashcardInfo.flashcards.length > 0) {
-            this.renderTemporaryControls(previewEl, flashcardInfo.flashcards.length);
-        }
-
         // Flashcard list
         if (flashcardInfo.flashcards.length > 0) {
             const cardsContainer = previewEl.createDiv({
@@ -262,20 +237,7 @@ export class PanelContent extends BaseComponent {
                 const card = flashcardInfo.flashcards[index];
                 if (!card) continue;
 
-                // Card wrapper for checkbox + card layout (only for temporary)
-                const cardWrapper = cardsContainer.createDiv({
-                    cls: flashcardInfo.isTemporary ? "episteme-card-wrapper" : "",
-                });
-
-                // Checkbox for temporary cards only
-                if (flashcardInfo.isTemporary && handlers.onToggleCardSelection) {
-                    const checkbox = cardWrapper.createEl("input", { type: "checkbox" });
-                    checkbox.checked = selectedCardLineNumbers?.has(card.lineNumber) ?? false;
-                    checkbox.addClass("episteme-card-checkbox");
-                    this.events.addEventListener(checkbox, "change", () => {
-                        handlers.onToggleCardSelection?.(card.lineNumber);
-                    });
-                }
+                const cardWrapper = cardsContainer.createDiv();
 
                 const cardReviewItem = createCardReviewItem(cardWrapper, {
                     card,
@@ -290,14 +252,6 @@ export class PanelContent extends BaseComponent {
                 });
                 this.childComponents.push(cardReviewItem);
 
-                // Maturity indicator for temporary cards
-                if (flashcardInfo.isTemporary) {
-                    const maturity = this.getCardMaturity(card, this.props.fsrsCards);
-                    if (maturity !== null) {
-                        this.renderMaturityIndicator(cardWrapper, maturity);
-                    }
-                }
-
                 // Separator (except for last card)
                 if (index < flashcardInfo.flashcards.length - 1) {
                     cardWrapper.createDiv({
@@ -305,145 +259,6 @@ export class PanelContent extends BaseComponent {
                     });
                 }
             }
-        }
-    }
-
-    private renderTemporaryControls(container: HTMLElement, cardCount: number): void {
-        const { handlers, selectedCardLineNumbers, fsrsCards } = this.props;
-        const selectedCount = selectedCardLineNumbers?.size ?? 0;
-
-        const controlsEl = container.createDiv({ cls: "episteme-temporary-controls" });
-
-        // Calculate harvest stats if we have FSRS cards and harvest service
-        const harvestStats = this.calculateHarvestStats(fsrsCards);
-
-        // Select all checkbox with label
-        const selectAllContainer = controlsEl.createDiv({ cls: "episteme-select-all-container" });
-        const selectAllCheckbox = selectAllContainer.createEl("input", { type: "checkbox" });
-        selectAllCheckbox.checked = selectedCount === cardCount && cardCount > 0;
-        selectAllCheckbox.indeterminate = selectedCount > 0 && selectedCount < cardCount;
-
-        const selectAllLabel = selectAllContainer.createSpan({
-            text: "Select all",
-            cls: "episteme-select-all-label",
-        });
-
-        // Make label click toggle checkbox
-        this.events.addEventListener(selectAllLabel, "click", (e) => {
-            e.stopPropagation();
-            selectAllCheckbox.click();
-        });
-
-        // Make entire container click toggle checkbox (if not clicking checkbox directly)
-        this.events.addEventListener(selectAllContainer, "click", (e) => {
-            if (e.target !== selectAllCheckbox && e.target !== selectAllLabel) {
-                selectAllCheckbox.click();
-            }
-        });
-
-        this.events.addEventListener(selectAllCheckbox, "change", () => {
-            if (selectAllCheckbox.checked) {
-                handlers.onSelectAllTemporary?.();
-            } else {
-                handlers.onClearSelection?.();
-            }
-        });
-
-        // Divider
-        const divider = controlsEl.createDiv({ cls: "episteme-controls-divider" });
-
-        // Badges row
-        const badgesRow = controlsEl.createDiv({ cls: "episteme-badges-row" });
-
-        // Show harvest-ready badge if any cards are ready
-        if (harvestStats && harvestStats.readyToHarvest > 0) {
-            badgesRow.createSpan({
-                text: `🌾 ${harvestStats.readyToHarvest} ready to harvest`,
-                cls: "episteme-harvest-ready-badge",
-            });
-        }
-
-        // Incubating badge (cards not yet ready)
-        const incubatingCount = harvestStats ? harvestStats.incubating : cardCount;
-        if (incubatingCount > 0) {
-            badgesRow.createSpan({
-                text: `⏳ ${incubatingCount} incubating`,
-                cls: "episteme-badge episteme-incubating-badge",
-            });
-        }
-    }
-
-    /**
-     * Calculate harvest stats from FSRS cards
-     */
-    private calculateHarvestStats(fsrsCards?: FSRSFlashcardItem[]): HarvestStats | null {
-        if (!fsrsCards || fsrsCards.length === 0) return null;
-
-        const harvestService = this.props.handlers.harvestService;
-        if (harvestService) {
-            return harvestService.getHarvestStats(fsrsCards);
-        }
-
-        // Fallback calculation without service
-        const threshold = HARVEST_CONFIG.harvestThresholdDays;
-        const temporary = fsrsCards.filter((c) => c.isTemporary);
-        const ready = temporary.filter((c) => c.fsrs.scheduledDays >= threshold);
-
-        return {
-            totalTemporary: temporary.length,
-            readyToHarvest: ready.length,
-            incubating: temporary.length - ready.length,
-            averageMaturity: 0,
-        };
-    }
-
-    /**
-     * Calculate maturity percentage for a card
-     */
-    private getCardMaturity(card: FlashcardItem, fsrsCards?: FSRSFlashcardItem[]): number | null {
-        if (!fsrsCards) return null;
-
-        // Find matching FSRS card by ID
-        const fsrsCard = fsrsCards.find((c) => c.id === card.id);
-        if (!fsrsCard || !fsrsCard.isTemporary) return null;
-
-        const harvestService = this.props.handlers.harvestService;
-        if (harvestService) {
-            return harvestService.getMaturityPercentage(fsrsCard);
-        }
-
-        // Fallback calculation
-        const threshold = HARVEST_CONFIG.harvestThresholdDays;
-        return Math.min(100, Math.round((fsrsCard.fsrs.scheduledDays / threshold) * 100));
-    }
-
-    /**
-     * Render maturity progress indicator for a temporary card
-     */
-    private renderMaturityIndicator(container: HTMLElement, maturityPercentage: number): void {
-        const maturityEl = container.createDiv({ cls: "episteme-maturity-indicator" });
-
-        // Progress bar
-        const bar = maturityEl.createDiv({ cls: "episteme-maturity-bar" });
-        const fill = bar.createDiv({ cls: "episteme-maturity-fill" });
-        fill.style.width = `${maturityPercentage}%`;
-
-        // Add ready class if 100%
-        if (maturityPercentage >= 100) {
-            fill.classList.add("episteme-maturity-ready");
-        }
-
-        // Label
-        if (maturityPercentage >= 100) {
-            maturityEl.createSpan({
-                text: "🌾 Ready",
-                cls: "episteme-maturity-label episteme-maturity-label--ready",
-            });
-        } else {
-            maturityEl.createSpan({
-                text: `${maturityPercentage}%`,
-                cls: "episteme-maturity-label",
-            });
         }
     }
 

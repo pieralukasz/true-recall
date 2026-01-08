@@ -40,8 +40,6 @@ export interface FlashcardInfo {
 	questions: string[];
 	flashcards: FlashcardItem[];
 	lastModified: number | null;
-	/** Whether this flashcard file contains temporary cards (from Literature Notes) */
-	isTemporary?: boolean;
 }
 
 /**
@@ -171,7 +169,6 @@ export class FlashcardManager {
 
 	/**
 	 * Create a new flashcard file
-	 * Automatically sets status: temporary for Literature Notes (#input/* tags)
 	 */
 	async createFlashcardFile(
 		sourceFile: TFile,
@@ -180,8 +177,7 @@ export class FlashcardManager {
 		await this.ensureFolderExists();
 
 		const flashcardPath = this.getFlashcardPath(sourceFile);
-		const isLiterature = await this.isLiteratureNote(sourceFile);
-		const frontmatter = this.generateFrontmatter(sourceFile, this.frontmatterService.getDefaultDeck(), { temporary: isLiterature });
+		const frontmatter = this.generateFrontmatter(sourceFile, this.frontmatterService.getDefaultDeck());
 		const fullContent = frontmatter + flashcardContent;
 
 		const existing = this.app.vault.getAbstractFileByPath(flashcardPath);
@@ -388,8 +384,6 @@ export class FlashcardManager {
 		const content = await this.app.vault.read(file);
 		const flashcards = this.extractFlashcards(content);
 		const questions = flashcards.map((f) => f.question);
-		const status = this.extractStatusFromFrontmatter(content);
-		const isTemporary = status === 'temporary';
 
 		return {
 			exists: true,
@@ -398,7 +392,6 @@ export class FlashcardManager {
 			questions,
 			flashcards,
 			lastModified: file.stat.mtime,
-			isTemporary,
 		};
 	}
 
@@ -425,10 +418,9 @@ export class FlashcardManager {
 
 	private generateFrontmatter(
 		sourceFile: TFile,
-		deck: string = this.frontmatterService.getDefaultDeck(),
-		options: { temporary?: boolean } = {}
+		deck: string = this.frontmatterService.getDefaultDeck()
 	): string {
-		return this.frontmatterService.generateFrontmatter(sourceFile, deck, options);
+		return this.frontmatterService.generateFrontmatter(sourceFile, deck);
 	}
 
 	/**
@@ -440,7 +432,6 @@ export class FlashcardManager {
 
 	/**
 	 * Check if a source note is a Literature Note (has #input/ tags)
-	 * Literature Notes generate temporary flashcards that should be moved later
 	 */
 	private async isLiteratureNote(sourceFile: TFile): Promise<boolean> {
 		return this.frontmatterService.isLiteratureNote(sourceFile);
@@ -459,13 +450,6 @@ export class FlashcardManager {
 	 */
 	private extractAllTags(content: string): string[] {
 		return this.frontmatterService.extractAllTags(content);
-	}
-
-	/**
-	 * Extract status from flashcard file frontmatter
-	 */
-	private extractStatusFromFrontmatter(content: string): string | null {
-		return this.frontmatterService.extractStatusFromFrontmatter(content);
 	}
 
 	/**
@@ -594,7 +578,6 @@ export class FlashcardManager {
 	/**
 	 * Move a flashcard from one file to another
 	 * Preserves UUID so FSRS data stays intact
-	 * Respects temporary status: cards moved to #mind/* notes lose temporary status
 	 * Preserves original source_link from source flashcard file (important for Source filter)
 	 *
 	 * @param cardId - UUID of the flashcard to move
@@ -629,13 +612,10 @@ export class FlashcardManager {
 		const targetFlashcardPath = this.getFlashcardPath(targetNote);
 		let targetFile = this.app.vault.getAbstractFileByPath(targetFlashcardPath);
 
-		// 5. Check if target note is a Literature Note (determines temporary status)
-		const isTargetLiteratureNote = await this.isLiteratureNote(targetNote);
-
-		// 6. Prepare the flashcard text to add
+		// 5. Prepare the flashcard text to add
 		const flashcardText = this.cardMoverService.buildFlashcardText(cardData.question, cardData.answer, cardId);
 
-		// 7. Add to target file
+		// 6. Add to target file
 		if (targetFile instanceof TFile) {
 			// Append the new card to existing file
 			const targetContent = await this.app.vault.read(targetFile);
@@ -644,7 +624,7 @@ export class FlashcardManager {
 		} else {
 			// Create new flashcard file with source_link pointing to target note
 			await this.ensureFolderExists();
-			const frontmatter = this.frontmatterService.generateFrontmatter(targetNote, this.frontmatterService.getDefaultDeck(), { temporary: isTargetLiteratureNote });
+			const frontmatter = this.frontmatterService.generateFrontmatter(targetNote, this.frontmatterService.getDefaultDeck());
 			const fullContent = frontmatter + flashcardText + "\n";
 			await this.app.vault.create(targetFlashcardPath, fullContent);
 		}
@@ -706,14 +686,11 @@ export class FlashcardManager {
 			const content = await this.app.vault.read(file);
 			const deck = this.extractDeckFromFrontmatter(content);
 			const sourceNoteName = this.extractSourceLinkFromContent(content);
-			const status = this.extractStatusFromFrontmatter(content);
-			const isTemporary = status === 'temporary';
 			const cards = this.parseAllFlashcards(
 				content,
 				file.path,
 				deck,
-				sourceNoteName,
-				isTemporary
+				sourceNoteName
 			);
 			allCards.push(...cards);
 		}
@@ -730,8 +707,7 @@ export class FlashcardManager {
 		content: string,
 		filePath: string,
 		deck: string,
-		sourceNoteName: string | null,
-		isTemporary: boolean = false
+		sourceNoteName: string | null
 	): FSRSFlashcardItem[] {
 		const flashcards: FSRSFlashcardItem[] = [];
 		const lines = content.split("\n");
@@ -760,8 +736,7 @@ export class FlashcardManager {
 						currentLineNumber,
 						filePath,
 						deck,
-						sourceNoteName ?? undefined,
-						isTemporary
+						sourceNoteName ?? undefined
 					);
 					flashcards.push(card);
 				}
@@ -797,7 +772,6 @@ export class FlashcardManager {
 					fsrs: fsrsData,
 					deck,
 					sourceNoteName: sourceNoteName ?? undefined,
-					isTemporary,
 				});
 
 				// Reset for next card
@@ -828,8 +802,7 @@ export class FlashcardManager {
 						currentLineNumber,
 						filePath,
 						deck,
-						sourceNoteName ?? undefined,
-						isTemporary
+						sourceNoteName ?? undefined
 					);
 					flashcards.push(card);
 					currentQuestion = "";
@@ -853,8 +826,7 @@ export class FlashcardManager {
 				currentLineNumber,
 				filePath,
 				deck,
-				sourceNoteName ?? undefined,
-				isTemporary
+				sourceNoteName ?? undefined
 			);
 			flashcards.push(card);
 		}
@@ -872,8 +844,7 @@ export class FlashcardManager {
 		lineNumber: number,
 		filePath: string,
 		deck: string,
-		sourceNoteName?: string,
-		isTemporary: boolean = false
+		sourceNoteName?: string
 	): FSRSFlashcardItem {
 		const id = this.generateCardId();
 		const fsrsData = createDefaultFSRSData(id);
@@ -889,7 +860,6 @@ export class FlashcardManager {
 			fsrs: fsrsData,
 			deck,
 			sourceNoteName,
-			isTemporary,
 		};
 	}
 

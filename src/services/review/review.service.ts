@@ -50,10 +50,6 @@ export interface QueueBuildOptions {
     weakCardsOnly?: boolean;
     /** Filter by card state: due, learning, or new */
     stateFilter?: "due" | "learning" | "new";
-    /** Only include temporary cards (from Literature Notes) */
-    temporaryOnly?: boolean;
-    /** Only include cards ready to harvest (temporary + interval >= 21 days) */
-    readyToHarvestOnly?: boolean;
     /** Ignore daily limits for custom sessions */
     ignoreDailyLimits?: boolean;
     /** Bypass scheduling - show all matching cards regardless of due date (like Anki Custom Study) */
@@ -221,19 +217,6 @@ export class ReviewService {
                         return true;
                 }
             });
-        }
-
-        // Filter by temporary status (cards from Literature Notes)
-        if (options.temporaryOnly) {
-            filteredCards = filteredCards.filter(card => card.isTemporary === true);
-        }
-
-        // Filter by harvest readiness (temporary cards with interval >= 21 days)
-        if (options.readyToHarvestOnly) {
-            const HARVEST_THRESHOLD = 21; // days
-            filteredCards = filteredCards.filter(
-                card => card.isTemporary === true && card.fsrs.scheduledDays >= HARVEST_THRESHOLD
-            );
         }
 
         // Filter by deck if specified

@@ -170,7 +170,7 @@
 	display: none;
 }
 
-/* Show separator for temporary cards with checkboxes */
+/* Show separator for cards with checkboxes */
 .episteme-card-wrapper .episteme-card-separator {
 	display: block;
 }
@@ -477,25 +477,8 @@
 }
 
 /* ========================================
-    Temporary Cards Bulk Selection
+    Bulk Selection
     ======================================== */
-
-/* Temporary cards controls bar */
-.episteme-temporary-controls {
-	display: flex;
-	align-items: center;
-	gap: 8px;
-	padding: 8px 12px;
-	background: linear-gradient(
-		135deg,
-		rgba(255, 193, 7, 0.1),
-		rgba(255, 179, 0, 0.05)
-	);
-	border: 1px solid rgba(255, 193, 7, 0.3);
-	border-radius: 6px;
-	margin-bottom: 12px;
-	flex-wrap: wrap;
-}
 
 /* Badges row wrapper */
 .episteme-badges-row {
@@ -514,19 +497,6 @@
 	font-size: 12px;
 	font-weight: 500;
 	white-space: nowrap;
-}
-
-/* Incubating badge */
-.episteme-incubating-badge {
-	background: rgba(251, 191, 36, 0.2);
-	border: 1px solid rgba(255, 193, 7, 0.3);
-	color: var(--color-yellow, #fbbf24);
-}
-
-.episteme-incubating-count {
-	font-size: 12px;
-	font-weight: 500;
-	color: var(--color-yellow, #fbbf24);
 }
 
 /* Controls divider */
@@ -678,132 +648,6 @@
 
 .episteme-delete-selected-btn:hover:not(:disabled) {
 	background: var(--color-red, #dc2626);
-}
-
-/* ========================================
-    Harvest Workflow Styles
-    Seeding → Incubation → Harvest
-    ======================================== */
-
-/* Seed Flashcards Button (green gradient) */
-.episteme-seed-flashcards-btn {
-	background: linear-gradient(135deg, #22c55e, #16a34a);
-	color: white;
-	font-weight: 600;
-}
-
-.episteme-seed-flashcards-btn:hover:not(:disabled) {
-	background: linear-gradient(135deg, #4ade80, #22c55e);
-}
-
-/* Maturity Indicator (progress bar under cards) */
-.episteme-maturity-indicator {
-	height: 4px;
-	background: var(--background-modifier-border);
-	border-radius: 2px;
-	overflow: hidden;
-	margin-top: 8px;
-}
-
-.episteme-maturity-bar {
-	height: 100%;
-	transition: width 0.3s ease;
-}
-
-/* Yellow Dot Indicator for Temporary Cards in Review */
-.episteme-temporary-dot {
-	position: absolute;
-	top: -4px;
-	right: -4px;
-	width: 12px;
-	height: 12px;
-	background: var(--color-yellow, #fbbf24);
-	border-radius: 50%;
-	border: 2px solid var(--background-primary);
-	box-shadow: 0 0 0 2px var(--background-secondary);
-}
-
-/* Gold/Amber dot for cards ready to harvest */
-.episteme-harvest-ready-dot {
-	background: linear-gradient(135deg, #fbbf24, #f59e0b);
-	animation: pulse-gold 2s ease-in-out infinite;
-}
-
-@keyframes pulse-gold {
-	0%,
-	100% {
-		opacity: 1;
-		transform: scale(1);
-	}
-	50% {
-		opacity: 0.8;
-		transform: scale(1.1);
-	}
-}
-
-/* Harvest Ready Badge (in panel content) */
-.episteme-harvest-ready-badge {
-	display: inline-flex;
-	align-items: center;
-	gap: 6px;
-	padding: 4px 10px;
-	background: linear-gradient(
-		135deg,
-		rgba(251, 191, 36, 0.2),
-		rgba(245, 158, 11, 0.15)
-	);
-	border: 1px solid rgba(251, 191, 36, 0.4);
-	border-radius: 12px;
-	font-size: 11px;
-	font-weight: 600;
-	color: var(--color-yellow, #fbbf24);
-	white-space: nowrap;
-	animation: glow-yellow 3s ease-in-out infinite;
-}
-
-@keyframes glow-yellow {
-	0%,
-	100% {
-		box-shadow: 0 0 5px rgba(251, 191, 36, 0.3);
-	}
-	50% {
-		box-shadow: 0 0 15px rgba(251, 191, 36, 0.5);
-	}
-}
-
-/* Harvest Stats Badges in Panel */
-.episteme-harvest-stats {
-	display: flex;
-	gap: 8px;
-	align-items: center;
-	flex-wrap: wrap;
-}
-
-.episteme-harvest-stat {
-	display: flex;
-	align-items: center;
-	gap: 4px;
-	padding: 4px 8px;
-	background: var(--background-modifier-hover);
-	border-radius: 6px;
-	font-size: 11px;
-	color: var(--text-muted);
-}
-
-.episteme-harvest-stat strong {
-	color: var(--text-normal);
-	font-weight: 600;
-}
-
-/* Harvest Button in Quick Actions */
-.episteme-harvest-action-btn {
-	background: linear-gradient(135deg, #fbbf24, #f59e0b);
-	color: var(--text-normal);
-	font-weight: 600;
-}
-
-.episteme-harvest-action-btn:hover:not(:disabled) {
-	background: linear-gradient(135deg, #fcd34d, #fbbf24);
 }
 
 /* ========================================

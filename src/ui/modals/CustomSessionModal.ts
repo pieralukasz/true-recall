@@ -17,8 +17,6 @@ export interface CustomSessionResult {
 	sourceNoteFilters?: string[];
 	filePathFilter?: string;
 	createdTodayOnly?: boolean;
-	/** Only include cards ready to harvest (temporary + interval >= 21 days) */
-	readyToHarvestOnly?: boolean;
 	ignoreDailyLimits: boolean;
 	/** Use default deck (Knowledge) with no filters */
 	useDefaultDeck?: boolean;

@@ -4,13 +4,12 @@
 
 /**
  * Note flashcard type based on tags
- * - temporary: #input/* notes (Literature Notes) - create temporary flashcards
- * - permanent: #mind/zettel - create permanent flashcards
+ * - permanent: #mind/zettel, #input/* - create flashcards
  * - maybe: #mind/application, #mind/protocol - flashcards optional
  * - none: #mind/question, #mind/hub, #mind/structure, #mind/index, #mind/person - no flashcards
  * - unknown: no recognized tags
  */
-export type NoteFlashcardType = "temporary" | "permanent" | "maybe" | "none" | "unknown";
+export type NoteFlashcardType = "permanent" | "maybe" | "none" | "unknown";
 
 // Single flashcard with question and answer
 export interface FlashcardItem {
@@ -50,6 +49,4 @@ export interface FlashcardInfo {
     questions: string[]; // Keep for backwards compatibility (blocklist)
     flashcards: FlashcardItem[]; // Full Q&A pairs
     lastModified: number | null;
-    /** Whether this flashcard file contains temporary cards (from Literature Notes) */
-    isTemporary?: boolean;
 }

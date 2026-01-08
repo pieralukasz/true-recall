@@ -19,14 +19,12 @@ export class FrontmatterService {
 	 */
 	generateFrontmatter(
 		sourceFile: TFile,
-		deck: string = DEFAULT_DECK,
-		options: { temporary?: boolean } = {}
+		deck: string = DEFAULT_DECK
 	): string {
-		const statusLine = options.temporary ? "\nstatus: temporary" : "";
 		return `---
 source_link: "[[${sourceFile.basename}]]"
 tags: [flashcards/auto]
-deck: "${deck}"${statusLine}
+deck: "${deck}"
 ---
 
 # Flashcards for [[${sourceFile.basename}]]
@@ -47,21 +45,6 @@ deck: "${deck}"${statusLine}
 		const deckMatch = frontmatter.match(/^deck:\s*["']?([^"'\n]+)["']?/m);
 
 		return deckMatch?.[1]?.trim() ?? DEFAULT_DECK;
-	}
-
-	/**
-	 * Extract status from flashcard file frontmatter
-	 */
-	extractStatusFromFrontmatter(content: string): string | null {
-		const frontmatterMatch = content.match(/^---\n([\s\S]*?)\n---/);
-		if (!frontmatterMatch) {
-			return null;
-		}
-
-		const frontmatter = frontmatterMatch[1] ?? "";
-		const statusMatch = frontmatter.match(/^status:\s*(\w+)/m);
-
-		return statusMatch?.[1] ?? null;
 	}
 
 	/**
@@ -174,9 +157,9 @@ deck: "${deck}"${statusLine}
 		const content = await this.app.vault.read(sourceFile);
 		const tags = this.extractAllTags(content);
 
-		// Check for #input/* tags - temporary flashcards
+		// Check for #input/* tags - permanent flashcards (Literature Notes)
 		if (tags.some((t) => t.startsWith("input/") || t.startsWith("#input/"))) {
-			return "temporary";
+			return "permanent";
 		}
 
 		// Check for #mind/* tags
