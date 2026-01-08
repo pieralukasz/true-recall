@@ -111,7 +111,6 @@ export const FlashcardInfoSchema = z.object({
     questions: z.array(z.string()),
     flashcards: z.array(FlashcardItemSchema),
     lastModified: z.number().nullable(),
-    isTemporary: z.boolean().optional(),
 });
 
 // ===== Inferred Types from Schemas =====
