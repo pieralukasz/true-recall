@@ -1211,6 +1211,38 @@
 	box-shadow: 0 0 0 2px var(--interactive-accent);
 }
 
+/* Edit Toolbar */
+.episteme-edit-toolbar {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 4px;
+	padding: 8px 0;
+	margin-top: 8px;
+	border-top: 1px solid var(--background-modifier-border);
+}
+
+.episteme-edit-toolbar-btn {
+	padding: 6px 10px;
+	font-size: 12px;
+	font-weight: 600;
+	background: var(--background-modifier-hover);
+	border: 1px solid var(--background-modifier-border);
+	border-radius: 4px;
+	cursor: pointer;
+	color: var(--text-normal);
+	font-family: var(--font-monospace);
+	transition: background 0.15s ease, color 0.15s ease;
+}
+
+.episteme-edit-toolbar-btn:hover {
+	background: var(--interactive-accent);
+	color: var(--text-on-accent);
+}
+
+.episteme-edit-toolbar-btn:active {
+	transform: scale(0.95);
+}
+
 /* Clear hover states when in edit mode */
 .episteme-review-card-container--editing .episteme-review-question,
 .episteme-review-card-container--editing .episteme-review-answer {
@@ -3156,9 +3188,10 @@
 		max-width: 100%;
 	}
 
-	/* Review card container - adjusted padding for mobile */
+	/* Review card container - padding for mobile + space for fixed buttons */
 	.episteme-review-card-container {
 		padding: 8px;
+		padding-bottom: 100px; /* Space for fixed buttons at bottom */
 	}
 
 	/* Mobile: minimal padding during edit mode */
@@ -3188,10 +3221,26 @@
 		font-size: 0.85em;
 	}
 
-	/* Rating buttons - minimal padding for mobile */
+	/* Edit toolbar - larger touch targets on mobile */
+	.episteme-edit-toolbar {
+		justify-content: center;
+	}
+
+	.episteme-edit-toolbar-btn {
+		padding: 10px 14px;
+		font-size: 14px;
+		min-height: 44px; /* Touch target */
+	}
+
+	/* Rating buttons - fixed to bottom on mobile */
 	.episteme-review-buttons {
+		position: fixed;
+		bottom: 0;
+		left: 0;
+		right: 0;
 		padding: 8px 4px;
 		gap: 4px;
+		z-index: 10;
 	}
 
 	.episteme-btn {
@@ -3320,7 +3369,7 @@
 	}
 }
 
-/* iOS-specific safe area handling */
+/* iOS-specific safe area handling (desktop/tablet only) */
 @supports (padding-bottom: env(safe-area-inset-bottom)) {
 	.episteme-review-buttons:not([style*="display: none"]) {
 		padding-bottom: calc(12px + env(safe-area-inset-bottom));
@@ -3329,6 +3378,13 @@
 	/* No extra safe area padding when editing */
 	.episteme-review-card-container--editing ~ .episteme-review-buttons {
 		padding-bottom: 8px;
+	}
+}
+
+/* On mobile, fixed buttons don't need extra safe area padding (Obsidian handles it) */
+@media screen and (max-width: 600px) {
+	.episteme-review-buttons:not([style*="display: none"]) {
+		padding-bottom: 8px !important; /* Override safe area, just minimal padding */
 	}
 }
 
