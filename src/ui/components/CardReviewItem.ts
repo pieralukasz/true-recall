@@ -31,6 +31,7 @@ export interface CardReviewItemProps {
 	onOpen?: (card: CardData) => void; // Open source note
 	onCopy?: (card: CardData) => void; // Copy flashcard
 	onMove?: (card: CardData) => void; // Move flashcard
+	onUnbury?: (card: CardData) => void; // Unbury card
 	onEditSave?: (card: CardData, field: "question" | "answer", newContent: string) => Promise<void>; // In-place edit save
 }
 
@@ -251,9 +252,23 @@ export class CardReviewItem extends BaseComponent {
 	}
 
 	private renderButtons(): void {
-		const { card, onDelete, onOpen, onCopy, onMove } = this.props;
+		const { card, onDelete, onOpen, onCopy, onMove, onUnbury } = this.props;
 		if (!this.element) return;
 		const buttonsEl = this.element.createDiv({ cls: "episteme-review-card-buttons" });
+
+		// Unbury button (shows first if available)
+		if (onUnbury) {
+			const unburyBtn = buttonsEl.createEl("button", {
+				cls: "episteme-review-unbury-btn",
+				attr: { "aria-label": "Unbury card", "title": "Unbury" },
+			});
+			// Eye icon (opposite of eye-off used for bury)
+			unburyBtn.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>`;
+			this.events.addEventListener(unburyBtn, "click", (e) => {
+				e.stopPropagation();
+				onUnbury(card);
+			});
+		}
 
 		// Delete button
 		if (onDelete) {

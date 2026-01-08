@@ -51,6 +51,8 @@ export interface FSRSCardData {
     learningStep: number;
     /** Czy karta jest zawieszona (nie pojawia się w review) */
     suspended?: boolean;
+    /** Data do której karta jest buried (ISO string) - automatycznie odblokuje się po tej dacie */
+    buriedUntil?: string;
     /** Review history for FSRS optimization (last 20 reviews, optional) */
     history?: CardReviewLogEntry[];
     /** Timestamp utworzenia karty (Unix ms, opcjonalny dla kompatybilności wstecznej) */
@@ -293,6 +295,7 @@ export interface CardMaturityBreakdown {
     young: number;
     mature: number;
     suspended: number;
+    buried: number;
 }
 
 /**

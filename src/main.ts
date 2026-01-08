@@ -380,6 +380,17 @@ export default class EpistemePlugin extends Plugin {
 			return;
 		}
 
+		// Handle state filter (including buried cards)
+		if (result.stateFilter) {
+			await this.openReviewViewWithFilters({
+				deckFilter: null,
+				stateFilter: result.stateFilter,
+				ignoreDailyLimits: result.ignoreDailyLimits,
+				bypassScheduling: result.bypassScheduling,
+			});
+			return;
+		}
+
 		// Handle other options with filters
 		await this.openReviewViewWithFilters({
 			deckFilter: null,
@@ -576,7 +587,7 @@ export default class EpistemePlugin extends Plugin {
 		createdTodayOnly?: boolean;
 		createdThisWeek?: boolean;
 		weakCardsOnly?: boolean;
-		stateFilter?: "due" | "learning" | "new";
+		stateFilter?: "due" | "learning" | "new" | "buried";
 		ignoreDailyLimits?: boolean;
 		bypassScheduling?: boolean;
 	}): Promise<void> {

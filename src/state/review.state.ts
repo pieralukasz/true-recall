@@ -517,6 +517,76 @@ export class ReviewStateManager {
         this.notifyListeners(prevState);
     }
 
+    /**
+     * Remove a specific card from queue by ID (for bury note)
+     */
+    removeCardById(cardId: string): void {
+        if (!this.state.isActive) {
+            return;
+        }
+
+        const prevState = this.state;
+        const cardIndex = this.state.queue.findIndex(c => c.id === cardId);
+
+        if (cardIndex === -1) {
+            return; // Card not found
+        }
+
+        const newQueue = [...this.state.queue];
+        newQueue.splice(cardIndex, 1);
+
+        // Adjust currentIndex if needed
+        let newIndex = this.state.currentIndex;
+        if (cardIndex < this.state.currentIndex) {
+            newIndex = Math.max(0, newIndex - 1);
+        } else if (cardIndex === this.state.currentIndex && newIndex >= newQueue.length) {
+            newIndex = Math.max(0, newQueue.length - 1);
+        }
+
+        this.state = {
+            ...this.state,
+            queue: newQueue,
+            currentIndex: newIndex,
+            isAnswerRevealed: false,
+            questionShownTime: Date.now(),
+            stats: {
+                ...this.state.stats,
+                total: newQueue.length,
+            },
+        };
+        this.schedulingPreview = null;
+        this.notifyListeners(prevState);
+    }
+
+    /**
+     * Insert a card at a specific position in the queue (for undo bury)
+     */
+    insertCardAtPosition(card: FSRSFlashcardItem, position: number): void {
+        if (!this.state.isActive) {
+            return;
+        }
+
+        const prevState = this.state;
+        const newQueue = [...this.state.queue];
+
+        // Clamp position to valid range
+        const clampedPosition = Math.max(0, Math.min(position, newQueue.length));
+        newQueue.splice(clampedPosition, 0, card);
+
+        this.state = {
+            ...this.state,
+            queue: newQueue,
+            isAnswerRevealed: false,
+            questionShownTime: Date.now(),
+            stats: {
+                ...this.state.stats,
+                total: newQueue.length,
+            },
+        };
+        this.schedulingPreview = null;
+        this.notifyListeners(prevState);
+    }
+
     // ===== Edit Mode Methods =====
 
     /**

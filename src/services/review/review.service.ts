@@ -48,8 +48,8 @@ export interface QueueBuildOptions {
     createdThisWeek?: boolean;
     /** Only include weak cards (stability < 7 days) */
     weakCardsOnly?: boolean;
-    /** Filter by card state: due, learning, or new */
-    stateFilter?: "due" | "learning" | "new";
+    /** Filter by card state: due, learning, new, or buried */
+    stateFilter?: "due" | "learning" | "new" | "buried";
     /** Ignore daily limits for custom sessions */
     ignoreDailyLimits?: boolean;
     /** Bypass scheduling - show all matching cards regardless of due date (like Anki Custom Study) */

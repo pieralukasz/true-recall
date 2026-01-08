@@ -48,30 +48,45 @@ export class StatsCalculatorService {
 	 */
 	async getCardMaturityBreakdown(): Promise<CardMaturityBreakdown> {
 		const allCards = await this.flashcardManager.getAllFSRSCards();
+		const now = new Date();
+
+		// Helper to check if card is active (not suspended and not currently buried)
+		const isActive = (c: FSRSFlashcardItem) => {
+			if (c.fsrs.suspended) return false;
+			if (c.fsrs.buriedUntil && new Date(c.fsrs.buriedUntil) > now) return false;
+			return true;
+		};
+
+		// Helper to check if card is currently buried
+		const isBuried = (c: FSRSFlashcardItem) => {
+			if (c.fsrs.suspended) return false; // Suspended takes precedence
+			return c.fsrs.buriedUntil && new Date(c.fsrs.buriedUntil) > now;
+		};
 
 		return {
 			new: allCards.filter(
-				(c) => !c.fsrs.suspended && c.fsrs.state === State.New
+				(c) => isActive(c) && c.fsrs.state === State.New
 			).length,
 			learning: allCards.filter(
 				(c) =>
-					!c.fsrs.suspended &&
+					isActive(c) &&
 					(c.fsrs.state === State.Learning ||
 						c.fsrs.state === State.Relearning)
 			).length,
 			young: allCards.filter(
 				(c) =>
-					!c.fsrs.suspended &&
+					isActive(c) &&
 					c.fsrs.state === State.Review &&
 					c.fsrs.scheduledDays < 21
 			).length,
 			mature: allCards.filter(
 				(c) =>
-					!c.fsrs.suspended &&
+					isActive(c) &&
 					c.fsrs.state === State.Review &&
 					c.fsrs.scheduledDays >= 21
 			).length,
 			suspended: allCards.filter((c) => c.fsrs.suspended).length,
+			buried: allCards.filter((c) => isBuried(c)).length,
 		};
 	}
 
@@ -520,35 +535,51 @@ export class StatsCalculatorService {
 		category: keyof CardMaturityBreakdown
 	): Promise<FSRSFlashcardItem[]> {
 		const allCards = await this.flashcardManager.getAllFSRSCards();
+		const now = new Date();
+
+		// Helper to check if card is active (not suspended and not currently buried)
+		const isActive = (c: FSRSFlashcardItem) => {
+			if (c.fsrs.suspended) return false;
+			if (c.fsrs.buriedUntil && new Date(c.fsrs.buriedUntil) > now) return false;
+			return true;
+		};
+
+		// Helper to check if card is currently buried
+		const isBuried = (c: FSRSFlashcardItem) => {
+			if (c.fsrs.suspended) return false; // Suspended takes precedence
+			return c.fsrs.buriedUntil && new Date(c.fsrs.buriedUntil) > now;
+		};
 
 		switch (category) {
 			case "new":
 				return allCards.filter(
-					(c) => !c.fsrs.suspended && c.fsrs.state === State.New
+					(c) => isActive(c) && c.fsrs.state === State.New
 				);
 			case "learning":
 				return allCards.filter(
 					(c) =>
-						!c.fsrs.suspended &&
+						isActive(c) &&
 						(c.fsrs.state === State.Learning ||
 							c.fsrs.state === State.Relearning)
 				);
 			case "young":
 				return allCards.filter(
 					(c) =>
-						!c.fsrs.suspended &&
+						isActive(c) &&
 						c.fsrs.state === State.Review &&
 						c.fsrs.scheduledDays < 21
 				);
 			case "mature":
 				return allCards.filter(
 					(c) =>
-						!c.fsrs.suspended &&
+						isActive(c) &&
 						c.fsrs.state === State.Review &&
 						c.fsrs.scheduledDays >= 21
 				);
 			case "suspended":
 				return allCards.filter((c) => c.fsrs.suspended);
+			case "buried":
+				return allCards.filter((c) => isBuried(c));
 			default:
 				return [];
 		}
