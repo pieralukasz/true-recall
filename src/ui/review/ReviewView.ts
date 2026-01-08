@@ -567,6 +567,9 @@ export class ReviewView extends ItemView {
         });
         editEl.textContent = content;
 
+        // Render toolbar under the editable field
+        this.renderEditToolbar(container, editEl);
+
         // Event listeners
         editEl.addEventListener("blur", () => void this.saveEdit());
         editEl.addEventListener("keydown", (e) => this.handleEditKeydown(e, field));
@@ -606,6 +609,70 @@ export class ReviewView extends ItemView {
             });
         }
         // Ctrl+Z, Ctrl+B, Ctrl+I, Ctrl+U are handled natively by contenteditable
+    }
+
+    /**
+     * Render formatting toolbar for edit mode
+     */
+    private renderEditToolbar(container: HTMLElement, editEl: HTMLElement): void {
+        const toolbar = container.createDiv({ cls: "episteme-edit-toolbar" });
+
+        const buttons = [
+            { label: "**[[]]**", title: "Bold Wiki Link", action: () => this.wrapSelection(editEl, "**[[", "]]**") },
+            { label: "⏎⏎", title: "Double Line Break", action: () => this.insertAtCursor(editEl, "<br><br>") },
+            { label: "B", title: "Bold", action: () => this.wrapSelection(editEl, "**", "**") },
+            { label: "I", title: "Italic", action: () => this.wrapSelection(editEl, "*", "*") },
+            { label: "[[]]", title: "Wiki Link", action: () => this.wrapSelection(editEl, "[[", "]]") },
+            { label: "$", title: "Math", action: () => this.wrapSelection(editEl, "$", "$") },
+        ];
+
+        for (const btn of buttons) {
+            const btnEl = toolbar.createEl("button", {
+                cls: "episteme-edit-toolbar-btn",
+                text: btn.label,
+                attr: { title: btn.title },
+            });
+            btnEl.addEventListener("mousedown", (e) => {
+                e.preventDefault(); // Prevent blur on editEl
+            });
+            btnEl.addEventListener("click", (e) => {
+                e.preventDefault();
+                btn.action();
+                editEl.focus();
+            });
+        }
+    }
+
+    /**
+     * Wrap selected text with before/after strings
+     */
+    private wrapSelection(editEl: HTMLElement, before: string, after: string): void {
+        const sel = window.getSelection();
+        if (!sel || sel.rangeCount === 0) return;
+
+        const range = sel.getRangeAt(0);
+        const selectedText = range.toString();
+
+        if (selectedText) {
+            range.deleteContents();
+            range.insertNode(document.createTextNode(before + selectedText + after));
+        } else {
+            // No selection - just insert wrapper
+            range.insertNode(document.createTextNode(before + after));
+        }
+    }
+
+    /**
+     * Insert text at cursor position
+     */
+    private insertAtCursor(editEl: HTMLElement, text: string): void {
+        const sel = window.getSelection();
+        if (!sel || sel.rangeCount === 0) return;
+
+        const range = sel.getRangeAt(0);
+        range.deleteContents();
+        range.insertNode(document.createTextNode(text));
+        range.collapse(false);
     }
 
     /**
@@ -737,6 +804,17 @@ export class ReviewView extends ItemView {
      */
     private showActionsMenu(event: MouseEvent): void {
         const menu = new Menu();
+
+        // Only show undo if there's something to undo
+        if (this.undoStack.length > 0) {
+            menu.addItem((item) =>
+                item
+                    .setTitle("Undo Last Answer (Z)")
+                    .setIcon("undo")
+                    .onClick(() => this.handleUndo())
+            );
+            menu.addSeparator();
+        }
 
         menu.addItem((item) =>
             item
