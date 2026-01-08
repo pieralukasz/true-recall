@@ -216,6 +216,55 @@ export class FlashcardManager {
 	}
 
 	/**
+	 * Add a single flashcard to an existing file with auto-generated FSRS ID
+	 * Returns the full FSRSFlashcardItem for adding to review queue
+	 */
+	async addSingleFlashcard(
+		filePath: string,
+		question: string,
+		answer: string
+	): Promise<FSRSFlashcardItem> {
+		const file = this.app.vault.getAbstractFileByPath(filePath);
+		if (!(file instanceof TFile)) {
+			throw new FileError("Flashcard file not found", filePath, "read");
+		}
+
+		// Generate ID and create FSRS data
+		const id = this.generateCardId();
+		const fsrsData = createDefaultFSRSData(id);
+		this.store!.set(id, fsrsData);
+
+		// Get existing content to calculate line number
+		const existingContent = await this.app.vault.read(file);
+		// Line number will be after trimmed content + 2 empty lines + 1 (1-based)
+		const trimmedLines = existingContent.trimEnd().split("\n");
+		const lineNumber = trimmedLines.length + 2; // +1 for empty line, +1 for 1-based
+
+		// Build flashcard content with block ID
+		const newCardContent = `${question} ${FLASHCARD_CONFIG.tag}\n${answer}\n^${id}`;
+
+		// Append to file
+		const updatedContent = existingContent.trimEnd() + "\n\n" + newCardContent + "\n";
+		await this.app.vault.modify(file, updatedContent);
+
+		// Get deck and sourceNoteName from frontmatter
+		const deck = this.frontmatterService.extractDeckFromFrontmatter(existingContent);
+		const sourceNoteName = this.frontmatterService.extractSourceLinkFromContent(existingContent);
+
+		// Return full card object
+		return {
+			id,
+			question,
+			answer,
+			lineNumber,
+			filePath,
+			fsrs: fsrsData,
+			deck: deck || "default",
+			sourceNoteName: sourceNoteName ?? undefined,
+		};
+	}
+
+	/**
 	 * Open flashcard file
 	 */
 	async openFlashcardFile(sourceFile: TFile): Promise<void> {
