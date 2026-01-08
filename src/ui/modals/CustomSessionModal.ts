@@ -160,27 +160,6 @@ export class CustomSessionModal extends BaseModal {
 			todayBtn.addClass("episteme-btn-disabled");
 		}
 
-		// Ready to Harvest button (mature temporary cards, interval >= 21 days)
-		const harvestStats = this.getReadyToHarvestStats(now);
-		const harvestBtn = quickActionsEl.createEl("button", {
-			cls: "episteme-quick-action-btn episteme-harvest-btn",
-		});
-		harvestBtn.createSpan({ text: "🌾 Harvest" });
-		if (harvestStats.total > 0) {
-			harvestBtn.createSpan({
-				cls: "episteme-quick-action-stats",
-				text: `${harvestStats.total} ready`,
-			});
-			harvestBtn.addEventListener("click", () => this.selectReadyToHarvest());
-		} else {
-			harvestBtn.createSpan({
-				cls: "episteme-quick-action-stats episteme-stat-muted",
-				text: "none ready",
-			});
-			harvestBtn.disabled = true;
-			harvestBtn.addClass("episteme-btn-disabled");
-		}
-
 		// Default button (Knowledge deck, no filters)
 		const defaultBtn = quickActionsEl.createEl("button", {
 			cls: "episteme-quick-action-btn episteme-default-btn",
@@ -485,20 +464,6 @@ export class CustomSessionModal extends BaseModal {
 		this.close();
 	}
 
-	private getReadyToHarvestStats(_now: Date): { total: number; newCount: number; dueCount: number } {
-		const HARVEST_THRESHOLD = 21; // days
-		// Don't check isCardAvailable - ready-to-harvest cards may not be "due" today
-		// They qualify based on maturity (interval >= 21 days), not scheduling
-		const cards = this.options.allCards.filter(
-			(c) => c.isTemporary && c.fsrs.scheduledDays >= HARVEST_THRESHOLD && !c.fsrs.suspended
-		);
-		return {
-			total: cards.length,
-			newCount: cards.filter((c) => c.fsrs.state === State.New).length,
-			dueCount: cards.filter((c) => c.fsrs.state !== State.New).length,
-		};
-	}
-
 	private getAllCardsStats(now: Date): { total: number; newCount: number; dueCount: number } {
 		const cards = this.options.allCards.filter((c) =>
 			this.isCardAvailable(c, now) && !c.fsrs.suspended
@@ -509,21 +474,6 @@ export class CustomSessionModal extends BaseModal {
 			newCount: cards.filter((c) => c.fsrs.state === State.New).length,
 			dueCount: cards.filter((c) => c.fsrs.state !== State.New).length,
 		};
-	}
-
-	private selectReadyToHarvest(): void {
-		this.hasSelected = true;
-		if (this.resolvePromise) {
-			this.resolvePromise({
-				cancelled: false,
-				sessionType: "state-filter",
-				readyToHarvestOnly: true,
-				ignoreDailyLimits: true,
-				bypassScheduling: true,
-			});
-			this.resolvePromise = null;
-		}
-		this.close();
 	}
 
 	private selectDefaultDeck(): void {

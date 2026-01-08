@@ -8,7 +8,7 @@ The goal is to create an **Operating System for the Mind** that supports the pro
 The system separates:
 - **Raw data** (Literature, Fleeting)
 - **Structure and navigation** (Index, Hub, Structure)
-- **Understanding and theory** (Concept, Zettel, Person)
+- **Understanding and theory** (Zettel, Person)
 - **Application and practice** (Protocol, Application)
 
 ---
@@ -19,7 +19,6 @@ The system separates:
 
 | Tag | Title | Purpose | Flashcards |
 |-----|-------|---------|------------|
-| `#mind/concept` | TERM (word) | Definition + facts (Understanding) | YES |
 | `#mind/zettel` | CLAIM (sentence) | Your thought/thesis (Theory) | YES |
 | `#mind/application` | CONCLUSION (sentence) | Real-life proof/Case Study (Practice) | YES |
 | `#mind/protocol` | "How to...?" | Ideal solution/procedure | YES |
@@ -63,36 +62,13 @@ The system separates:
 
 ---
 
-### 1. CONCEPT (`#mind/concept`)
-**Title:** TERM (word/name)
-**Flashcards:** YES - main source of flashcards!
-
-**Content:**
-- Bullet points with information ABOUT THIS TERM
-- Each bullet = one piece of information (in your own words!)
-- Links to sources `([[literature|source]])`
-
-**Example:** `nucleus accumbens.md`
-```markdown
----
-tags: ["#mind/concept"]
-aliases: [NAc]
----
-
-- Component of [[basal ganglia]] in [[ventral striatum]].
-- Receives [[dopamine]] from [[VTA]].
-- Used for BUILDING [[habit]], not maintaining it.
-```
-
----
-
-### 2. ZETTEL (`#mind/zettel`)
+### 1. ZETTEL (`#mind/zettel`)
 **Title:** CLAIM/THESIS (full declarative sentence)
 **Flashcards:** YES
 
 **Content:**
 - Continuous text developing the thesis from the title (synthesis, explaining "why")
-- Links to Concepts that support the claim
+- Links to other Zettels that support the claim
 - "See also" with related Zettels
 - Your own reflections, analogies, metaphors
 
@@ -112,7 +88,7 @@ See also:
 
 ---
 
-### 3. APPLICATION (`#mind/application`)
+### 2. APPLICATION (`#mind/application`)
 **Title:** CONCLUSION FROM ACTION (full sentence about your experience)
 **Flashcards:** YES
 
@@ -121,7 +97,7 @@ See also:
 **Content:**
 - Context of the situation
 - Result (what happened)
-- Link to Zettel/Concept (theory that explains it)
+- Link to Zettel (theory that explains it)
 
 **Example:** `cold shower in the morning eliminated need for coffee.md`
 ```markdown
@@ -139,7 +115,7 @@ This confirms:
 
 ---
 
-### 4. PROTOCOL (`#mind/protocol`)
+### 3. PROTOCOL (`#mind/protocol`)
 **Title:** "How to...?" (ideal solution)
 **Flashcards:** YES
 
@@ -152,7 +128,7 @@ This confirms:
 
 **Content:**
 - Numbered steps
-- Links to Concepts and Zettels that justify each step
+- Links to Zettels that justify each step
 
 **Example:** `how to change habit?.md`
 ```markdown
@@ -168,7 +144,7 @@ source: [["nawykologia (course)"]]
 
 ---
 
-### 5. QUESTION (`#mind/question`)
+### 4. QUESTION (`#mind/question`)
 **Title:** QUESTION (ends with "?")
 **Flashcards:** NO (no answer yet!)
 
@@ -192,7 +168,7 @@ created: "[[2025-12-20]]"
 
 ---
 
-### 6. HUB (`#mind/hub`)
+### 5. HUB (`#mind/hub`)
 **Title:** Topic for exploration
 **Flashcards:** NO
 
@@ -223,7 +199,7 @@ Techniques:
 
 ---
 
-### 7. STRUCTURE (`#mind/structure`)
+### 6. STRUCTURE (`#mind/structure`)
 **Title:** Topic for writing/organization
 **Flashcards:** NO
 
@@ -252,7 +228,7 @@ tags: ["#mind/structure"]
 
 ---
 
-### 8. INDEX (`#mind/index`)
+### 7. INDEX (`#mind/index`)
 **Title:** Broad category
 **Flashcards:** NO
 
@@ -271,7 +247,7 @@ aliases: [produktywność]
 
 ---
 
-### 9. PERSON (`#mind/person`)
+### 8. PERSON (`#mind/person`)
 **Title:** Full name
 **Flashcards:** NO
 
@@ -296,7 +272,7 @@ Known for:
 
 ---
 
-### 10. LITERATURE NOTE (`#input/*`)
+### 9. LITERATURE NOTE (`#input/*`)
 **Title:** Source title
 **Tags:** `#input/book`, `#input/article`, `#input/course`
 **Flashcards:** YES (temporary) - via Seeding → Incubation → Harvest workflow
@@ -376,7 +352,7 @@ Source / Thought → Literature Note / Fleeting Note
 
 ### Step 2: ELABORATE + CREATE (Learning Process)
 ```
-Fleeting/Literature → Concept / Zettel / Application / Protocol
+Fleeting/Literature → Zettel / Application / Protocol
 ```
 
 **This is ONE step - you learn BY creating notes!**
@@ -392,7 +368,7 @@ SEEDING              INCUBATION           HARVEST
   🌱                    ⏳                   🌾
 Create raw          Review cards        Move mature cards
 flashcards          via spaced          to permanent
-from Literature     repetition          Concepts/Zettels
+from Literature     repetition          Zettels
 Note                (build neural       (interval ≥ 21 days)
                     pathways)
 ```
@@ -417,7 +393,7 @@ Review these flashcards through spaced repetition:
 When a card's FSRS interval reaches 21+ days, it's ready to harvest:
 - The card has proven its value through successful reviews
 - You now truly UNDERSTAND what's important
-- Move the card to a permanent Concept or Zettel
+- Move the card to a permanent Zettel
 - The card transforms from temporary to permanent knowledge
 
 **Harvest Threshold: interval ≥ 21 days**
@@ -450,7 +426,6 @@ When a card's FSRS interval reaches 21+ days, it's ready to harvest:
 ```
 Is this information...
     │
-    ├─ Defining a term? → Concept
     ├─ A thesis/mechanism? → Zettel
     ├─ My experience? → Application
     └─ A procedure? → Protocol
@@ -471,7 +446,7 @@ Is this information...
 
 ### Step 3: REVIEW & GARDENING (Retention and Maintenance)
 
-- **Flashcards:** AI generates from Concept, Zettel, Application, Protocol
+- **Flashcards:** AI generates from Zettel, Application, Protocol
 - **Spaced Repetition:** Regular reviews
 - **Gardening:** When during review you notice an error or outdated knowledge → Apply the Deprecation Protocol
 
@@ -500,7 +475,7 @@ Is this information...
 │      ▼       │    │       ▼          │    │       ▼          │
 │  SEEDING 🌱  │    │  ELABORATE +     │    │  INCUBATOR       │
 │  Temporary   │    │  CREATE          │    │  #review/later   │
-│  flashcards  │    │  Concept/Zettel  │    │  Return later    │
+│  flashcards  │    │  Zettel          │    │  Return later    │
 │      │       │    │  App/Protocol    │    └──────────────────┘
 │      ▼       │    └──────────────────┘              │
 │  INCUBATION  │              │                       │
@@ -529,9 +504,6 @@ Is this information...
 ```
 I have information I want to process
     │
-    ├─ Does it define a TERM?
-    │   └─ YES → Concept (bullet-point)
-    │
     ├─ Is it a THESIS/MECHANISM (how something works)?
     │   └─ YES → Zettel
     │
@@ -556,13 +528,12 @@ I have information I want to process
 |------------------|----------------|---------|
 | Raw quote | Literature Note | "Bailey writes..." |
 | Quick thought | Fleeting Note | "Check if carbs make you fat" |
-| Info about term | Concept (bullet) | `- Receives dopamine from VTA` |
 | Thesis/Mechanism | Zettel | `serotonin inhibits dopamine...` |
 | Real-life proof | Application | `cold shower worked for me...` |
 | Procedure | Protocol | `how to change habit...` |
 
 **Rule:** Link, don't copy.
-In a Zettel you write: "This supports [[concept]]", not redefine the concept.
+In a Zettel you write: "This supports [[other zettel]]", not redefine the idea.
 
 ---
 
@@ -576,7 +547,7 @@ BLOOM'S TAXONOMY              YOUR WORKFLOW
 4. ANALYZE                    Zettel (relations), Hub (mapping)
 ─────────────────────────────────────────────────────
 3. APPLY                      Protocol (how to use?), Application (usage)
-2. UNDERSTAND                 Concept (definition), Zettel (explanation)
+2. UNDERSTAND                 Zettel (explanation)
 ─────────────────────────────────────────────────────
 1. REMEMBER                   Flashcards + Spaced Repetition
 ```
@@ -591,7 +562,6 @@ BLOOM'S TAXONOMY              YOUR WORKFLOW
 |-----|-------|---------|------------|
 | `#input/fleeting` | Timestamp/topic | Quick thought (inbox) | NO |
 | `#input/*` | Source title | Archive (book/article/course) | YES (temporary) |
-| `#mind/concept` | TERM (word) | Definition + facts | YES (permanent) |
 | `#mind/zettel` | CLAIM (sentence) | Your thought/thesis | YES (permanent) |
 | `#mind/application` | CONCLUSION (sentence) | Real-life proof/Case Study | YES (permanent) |
 | `#mind/protocol` | "How to...?" | Ideal solution/procedure | YES (permanent) |
@@ -604,7 +574,7 @@ BLOOM'S TAXONOMY              YOUR WORKFLOW
 ### Workflow (UNDERSTAND → REMEMBER → CREATE):
 
 1. **CAPTURE** - Fleeting Note / Literature Note (capture)
-2. **ELABORATE + CREATE** - Concept/Zettel/Application/Protocol (learning through writing!)
+2. **ELABORATE + CREATE** - Zettel/Application/Protocol (learning through writing!)
    - **2a. SEEDING → INCUBATION → HARVEST** - Primary path for Literature Notes:
      - Seed temporary flashcards from Literature Notes
      - Review through spaced repetition (incubation)
@@ -614,7 +584,6 @@ BLOOM'S TAXONOMY              YOUR WORKFLOW
 
 ### Where Information Goes:
 
-- **Defines a TERM** → Concept (bullet-point)
 - **Is a THESIS/MECHANISM** → Zettel
 - **Is MY EXPERIENCE** → Application
 - **Is a PROCEDURE** → Protocol

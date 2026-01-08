@@ -1,6 +1,6 @@
 /**
  * Missing Flashcards Modal
- * Displays notes with #mind/concept, #mind/zettel, #mind/application, or #mind/protocol
+ * Displays notes with #mind/zettel, #mind/application, or #mind/protocol
  * tags that don't have flashcards yet
  */
 import { App, TFile, normalizePath } from "obsidian";
@@ -15,13 +15,12 @@ export interface MissingFlashcardsResult {
 
 export interface NoteWithMissingFlashcards {
 	file: TFile;
-	tagType: "concept" | "zettel" | "application" | "protocol";
+	tagType: "zettel" | "application" | "protocol";
 	tagDisplay: string;
 }
 
 // Target tags that require flashcards
 const TARGET_TAGS = [
-	{ tag: "mind/concept", type: "concept" as const, display: "Concept" },
 	{ tag: "mind/zettel", type: "zettel" as const, display: "Zettel" },
 	{ tag: "mind/application", type: "application" as const, display: "Application" },
 	{ tag: "mind/protocol", type: "protocol" as const, display: "Protocol" },
@@ -160,7 +159,7 @@ export class MissingFlashcardsModal extends BaseModal {
 		}
 
 		// Sort by tag type, then by name
-		const tagOrder = { concept: 0, zettel: 1, application: 2, protocol: 3 };
+		const tagOrder = { zettel: 0, application: 1, protocol: 2 };
 		return missing.sort((a, b) => {
 			const orderDiff = tagOrder[a.tagType] - tagOrder[b.tagType];
 			if (orderDiff !== 0) return orderDiff;
@@ -173,7 +172,7 @@ export class MissingFlashcardsModal extends BaseModal {
 	 */
 	private getTargetTagType(
 		file: TFile
-	): { tag: string; type: "concept" | "zettel" | "application" | "protocol"; display: string } | null {
+	): { tag: string; type: "zettel" | "application" | "protocol"; display: string } | null {
 		const cache = this.app.metadataCache.getFileCache(file);
 		if (!cache) return null;
 
@@ -238,7 +237,6 @@ export class MissingFlashcardsModal extends BaseModal {
 
 		const filters = [
 			{ label: "All", tag: null },
-			{ label: "Concepts", tag: "concept" },
 			{ label: "Zettels", tag: "zettel" },
 			{ label: "Applications", tag: "application" },
 			{ label: "Protocols", tag: "protocol" },
@@ -264,7 +262,7 @@ export class MissingFlashcardsModal extends BaseModal {
 		if (!this.filterButtonsEl) return;
 
 		const buttons = this.filterButtonsEl.querySelectorAll(".episteme-filter-btn");
-		const filters = [null, "concept", "zettel", "application", "protocol"];
+		const filters = [null, "zettel", "application", "protocol"];
 
 		buttons.forEach((btn, index) => {
 			if (filters[index] === this.activeTagFilter) {

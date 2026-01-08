@@ -690,11 +690,6 @@
 	letter-spacing: 0.3px;
 }
 
-.episteme-tag-badge--concept {
-	background: rgba(74, 222, 128, 0.2);
-	color: var(--color-green, #4ade80);
-}
-
 .episteme-tag-badge--zettel {
 	background: rgba(59, 130, 246, 0.2);
 	color: var(--color-blue, #3b82f6);
