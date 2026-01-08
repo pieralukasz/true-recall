@@ -9,7 +9,7 @@ import { VIEW_TYPE_REVIEW } from "../../constants";
 import { FSRSService, ReviewService, FlashcardManager, SessionPersistenceService } from "../../services";
 import { ReviewStateManager } from "../../state";
 import { extractFSRSSettings, type FSRSFlashcardItem, type SchedulingPreview } from "../../types";
-import { MoveCardModal } from "../modals";
+import { MoveCardModal, AddFlashcardModal } from "../modals";
 import type EpistemePlugin from "../../main";
 
 interface ReviewViewState extends Record<string, unknown> {
@@ -823,6 +823,13 @@ export class ReviewView extends ItemView {
 
         menu.addItem((item) =>
             item
+                .setTitle("Add New Flashcard")
+                .setIcon("plus")
+                .onClick(() => void this.handleAddNewFlashcard())
+        );
+
+        menu.addItem((item) =>
+            item
                 .setTitle("Open Source Note")
                 .setIcon("external-link")
                 .onClick(() => this.handleOpenSourceNote())
@@ -1311,6 +1318,48 @@ Source: [[${sourceNote}]]
         } catch (error) {
             console.error("Error moving card:", error);
             new Notice(`Failed to move card: ${error instanceof Error ? error.message : String(error)}`);
+        }
+    }
+
+    /**
+     * Add a new flashcard to the same file as the current card
+     */
+    private async handleAddNewFlashcard(): Promise<void> {
+        const card = this.stateManager.getCurrentCard();
+        if (!card) return;
+
+        // Open modal to enter question/answer
+        const modal = new AddFlashcardModal(this.app, {
+            currentFilePath: card.filePath,
+            sourceNoteName: card.sourceNoteName,
+            deck: card.deck,
+        });
+
+        const result = await modal.openAndWait();
+        if (result.cancelled) return;
+
+        try {
+            // Get the flashcard file
+            const flashcardFile = this.app.vault.getAbstractFileByPath(card.filePath);
+            if (!flashcardFile || !("path" in flashcardFile)) {
+                new Notice("Could not find flashcard file");
+                return;
+            }
+
+            // Read existing content
+            const existingContent = await this.app.vault.read(flashcardFile as any);
+
+            // Build new flashcard content
+            const newCardContent = `${result.question} #flashcard\n${result.answer}`;
+            const updatedContent = existingContent.trimEnd() + "\n\n" + newCardContent + "\n";
+
+            // Write to file
+            await this.app.vault.modify(flashcardFile as any, updatedContent);
+
+            new Notice("Flashcard added!");
+        } catch (error) {
+            console.error("Error adding flashcard:", error);
+            new Notice(`Failed to add flashcard: ${error instanceof Error ? error.message : String(error)}`);
         }
     }
 
