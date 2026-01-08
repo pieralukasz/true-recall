@@ -124,7 +124,7 @@
 	color: var(--color-yellow, #fbbf24);
 }
 
-/* Permanent - green for concept/zettel */
+/* Permanent - green for zettel */
 .episteme-note-type-badge--permanent {
 	background: rgba(74, 222, 128, 0.2);
 	color: var(--color-green, #4ade80);

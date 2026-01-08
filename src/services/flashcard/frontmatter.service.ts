@@ -91,7 +91,7 @@ deck: "${deck}"${statusLine}
 		if (frontmatterMatch) {
 			const frontmatter = frontmatterMatch[1] ?? "";
 
-			// Array format: tags: [input/book, mind/concept]
+			// Array format: tags: [input/book, mind/zettel]
 			const tagsArrayMatch = frontmatter.match(
 				/^tags:\s*\[([^\]]+)\]/m
 			);
@@ -184,10 +184,10 @@ deck: "${deck}"${statusLine}
 			(t) => t.startsWith("mind/") || t.startsWith("#mind/")
 		);
 
-		// Permanent flashcards: concept, zettel
+		// Permanent flashcards: zettel
 		if (
 			mindTags.some(
-				(t) => t.includes("/concept") || t.includes("/zettel")
+				(t) => t.includes("/zettel")
 			)
 		) {
 			return "permanent";

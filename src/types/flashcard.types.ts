@@ -5,7 +5,7 @@
 /**
  * Note flashcard type based on tags
  * - temporary: #input/* notes (Literature Notes) - create temporary flashcards
- * - permanent: #mind/concept, #mind/zettel - create permanent flashcards
+ * - permanent: #mind/zettel - create permanent flashcards
  * - maybe: #mind/application, #mind/protocol - flashcards optional
  * - none: #mind/question, #mind/hub, #mind/structure, #mind/index, #mind/person - no flashcards
  * - unknown: no recognized tags

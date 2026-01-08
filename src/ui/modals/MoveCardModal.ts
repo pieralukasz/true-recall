@@ -112,7 +112,6 @@ export class MoveCardModal extends BaseModal {
 
 		const filters = [
 			{ label: "All", tag: null },
-			{ label: "Concepts", tag: "mind/concept" },
 			{ label: "Zettels", tag: "mind/zettel" },
 		];
 
@@ -145,7 +144,7 @@ export class MoveCardModal extends BaseModal {
 		const buttons = this.filterButtonsEl.querySelectorAll(".episteme-filter-btn") as NodeListOf<HTMLButtonElement>;
 
 		// Build filter list dynamically (must match renderTagFilters)
-		const filters = [null, "mind/concept", "mind/zettel"];
+		const filters = [null, "mind/zettel"];
 		if (this.options.sourceNoteName) {
 			filters.push("__source__");
 		}

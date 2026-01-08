@@ -22,7 +22,7 @@ Episteme is a sophisticated Obsidian plugin that combines AI-powered flashcard g
 ### 📚 Zettelkasten Integration
 - **Tag-Based Classification**: Automatic note type detection via tags
 - **Literature Notes** (`#input/*`): Temporary flashcards for source processing
-- **Permanent Notes** (`#mind/concept`, `#mind/zettel`): Long-term knowledge storage
+- **Permanent Notes** (`#mind/zettel`): Long-term knowledge storage
 - **Harvest Workflow**: Seeding → Incubation → Harvest (21-day maturation)
 
 ### 🎯 Flexible Review System
@@ -52,7 +52,6 @@ Episteme uses a hierarchical tagging system to determine flashcard behavior:
 
 | Tag | Flashcards | Purpose |
 |-----|------------|---------|
-| `#mind/concept` | ✅ Permanent | Definitions and core facts |
 | `#mind/zettel` | ✅ Permanent | Your thoughts and theses |
 | `#mind/application` | ⚠️ Optional | Real-world case studies |
 | `#mind/protocol` | ⚠️ Optional | Procedures and how-to |
