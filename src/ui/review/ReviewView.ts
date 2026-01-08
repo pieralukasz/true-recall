@@ -77,7 +77,6 @@ export class ReviewView extends ItemView {
     private headerEl!: HTMLElement;
     private cardContainerEl!: HTMLElement;
     private buttonsEl!: HTMLElement;
-    private progressEl!: HTMLElement;
 
     // State subscription
     private unsubscribe: (() => void) | null = null;
@@ -176,7 +175,6 @@ export class ReviewView extends ItemView {
         this.headerEl = container.createDiv({ cls: "episteme-review-header" });
         this.cardContainerEl = container.createDiv({ cls: "episteme-review-card-container" });
         this.buttonsEl = container.createDiv({ cls: "episteme-review-buttons" });
-        this.progressEl = container.createDiv({ cls: "episteme-review-progress" });
 
         // Subscribe to state changes
         this.unsubscribe = this.stateManager.subscribe(() => this.render());
@@ -322,7 +320,6 @@ export class ReviewView extends ItemView {
         }
         this.renderCard();
         this.renderButtons();
-        this.renderProgress();
     }
 
     /**
@@ -833,33 +830,12 @@ export class ReviewView extends ItemView {
     }
 
     /**
-     * Render progress bar
-     * Note: Use inline style display to properly hide element (more reliable than CSS :empty)
-     */
-    private renderProgress(): void {
-        if (!this.plugin.settings.showProgress) {
-            this.progressEl.style.display = "none";
-            return;
-        }
-
-        this.progressEl.style.display = "";
-        this.progressEl.empty();
-
-        const progress = this.stateManager.getProgress();
-
-        const progressBar = this.progressEl.createDiv({ cls: "episteme-progress-bar" });
-        const progressFill = progressBar.createDiv({ cls: "episteme-progress-fill" });
-        progressFill.style.width = `${progress.percentage}%`;
-    }
-
-    /**
      * Render empty state
      */
     private renderEmptyState(message: string): void {
         this.headerEl.empty();
         this.cardContainerEl.empty();
         this.buttonsEl.empty();
-        this.progressEl.empty();
 
         const emptyEl = this.cardContainerEl.createDiv({ cls: "episteme-review-empty" });
         emptyEl.createDiv({ cls: "episteme-review-empty-icon", text: "🎉" });
@@ -879,7 +855,6 @@ export class ReviewView extends ItemView {
         this.headerEl.empty();
         this.cardContainerEl.empty();
         this.buttonsEl.empty();
-        this.progressEl.empty();
 
         const stats = this.stateManager.getStats();
 
@@ -940,7 +915,6 @@ export class ReviewView extends ItemView {
         this.headerEl.empty();
         this.cardContainerEl.empty();
         this.buttonsEl.empty();
-        this.progressEl.empty();
 
         const timeUntilDue = this.stateManager.getTimeUntilNextDue();
         const pendingCards = this.stateManager.getPendingLearningCards();
