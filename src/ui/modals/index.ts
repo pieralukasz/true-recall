@@ -25,3 +25,8 @@ export {
     type MissingFlashcardsModalOptions,
 } from "./MissingFlashcardsModal";
 export { CommandDashboardModal } from "./CommandDashboardModal";
+export {
+    AddFlashcardModal,
+    type AddFlashcardResult,
+    type AddFlashcardModalOptions,
+} from "./AddFlashcardModal";

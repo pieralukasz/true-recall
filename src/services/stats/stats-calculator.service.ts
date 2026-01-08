@@ -103,7 +103,8 @@ export class StatsCalculatorService {
 			// For other ranges, include up to end date
 			if (range !== "backlog" && dueDate > endDate) continue;
 
-			const dateKey = dueDate.toISOString().split("T")[0]!;
+			// Use local date formatting to avoid timezone issues
+			const dateKey = this.formatLocalDate(dueDate);
 			dueMap.set(dateKey, (dueMap.get(dateKey) ?? 0) + 1);
 		}
 
@@ -360,6 +361,17 @@ export class StatsCalculatorService {
 
 	// ===== Private helpers =====
 
+	/**
+	 * Format date as local YYYY-MM-DD string
+	 * Uses local calendar date (not UTC) to avoid timezone issues
+	 */
+	private formatLocalDate(date: Date): string {
+		const year = date.getFullYear();
+		const month = String(date.getMonth() + 1).padStart(2, "0");
+		const day = String(date.getDate()).padStart(2, "0");
+		return `${year}-${month}-${day}`;
+	}
+
 	private calculateEndDate(today: Date, range: StatsTimeRange): Date {
 		const endDate = new Date(today);
 
@@ -494,7 +506,9 @@ export class StatsCalculatorService {
 			const dueDate = new Date(card.fsrs.due);
 			dueDate.setHours(0, 0, 0, 0);
 
-			return dueDate.getTime() === targetDate.getTime();
+			// Use toDateString() for robust local date comparison
+			// This avoids timezone issues with getTime() comparison
+			return dueDate.toDateString() === targetDate.toDateString();
 		});
 	}
 
