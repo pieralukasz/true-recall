@@ -3,7 +3,7 @@
  * Displays a list of flashcards with preview and navigation to source note
  */
 import { App, Component, Notice, TFile } from "obsidian";
-import type { FSRSFlashcardItem } from "../../types";
+import type { FSRSFlashcardItem, CardMaturityBreakdown } from "../../types";
 import { BaseModal } from "./BaseModal";
 import type { FlashcardManager } from "../../services";
 import { createCardReviewItem, type CardData } from "../components/CardReviewItem";
@@ -12,6 +12,7 @@ export interface CardPreviewModalOptions {
 	title: string;
 	cards: FSRSFlashcardItem[];
 	flashcardManager: FlashcardManager;
+	category?: keyof CardMaturityBreakdown;
 }
 
 /**
@@ -21,6 +22,7 @@ export class CardPreviewModal extends BaseModal {
 	private options: CardPreviewModalOptions;
 	private component: Component;
 	private flashcardManager: FlashcardManager;
+	private bodyContainer: HTMLElement | null = null;
 
 	constructor(app: App, options: CardPreviewModalOptions) {
 		super(app, { title: options.title, width: "700px" });
@@ -36,9 +38,24 @@ export class CardPreviewModal extends BaseModal {
 	}
 
 	protected renderBody(container: HTMLElement): void {
+		this.bodyContainer = container;
+		container.empty();
+
+		// Header with count and optional "Unbury All" button
+		const headerEl = container.createDiv({ cls: "episteme-card-preview-header" });
+
 		// Cards count
-		const countEl = container.createDiv({ cls: "episteme-card-preview-count" });
+		const countEl = headerEl.createDiv({ cls: "episteme-card-preview-count" });
 		countEl.setText(`${this.options.cards.length} cards`);
+
+		// "Unbury All" button for buried cards category
+		if (this.options.category === "buried" && this.options.cards.length > 0) {
+			const unburyAllBtn = headerEl.createEl("button", {
+				cls: "episteme-unbury-all-btn",
+				text: "Unbury All",
+			});
+			unburyAllBtn.addEventListener("click", () => void this.handleUnburyAll());
+		}
 
 		// Cards list
 		const listEl = container.createDiv({ cls: "episteme-card-preview-list" });
@@ -59,6 +76,7 @@ export class CardPreviewModal extends BaseModal {
 				component: this.component,
 				onDelete: (card) => void this.handleDeleteCard(card),
 				onOpen: (card) => void this.openSourceNote(card),
+				onUnbury: this.options.category === "buried" ? (card) => void this.handleUnburyCard(card) : undefined,
 			});
 		}
 	}
@@ -131,5 +149,76 @@ export class CardPreviewModal extends BaseModal {
 			});
 			this.close();
 		}
+	}
+
+	private async handleUnburyCard(card: CardData): Promise<void> {
+		// Find the full card data
+		const fullCard = this.options.cards.find(c => c.id === card.id);
+		if (!fullCard) {
+			new Notice("Could not find card");
+			return;
+		}
+
+		// Remove buriedUntil to unbury
+		const updatedFsrs = { ...fullCard.fsrs, buriedUntil: undefined };
+
+		try {
+			await this.flashcardManager.updateCardFSRS(
+				fullCard.filePath,
+				fullCard.id,
+				updatedFsrs,
+				fullCard.lineNumber
+			);
+
+			// Remove from list
+			this.options.cards = this.options.cards.filter(c => c.id !== card.id);
+
+			// Re-render
+			if (this.bodyContainer) {
+				this.renderBody(this.bodyContainer);
+			}
+
+			// Update title
+			this.updateTitle(`${this.options.cards.length} cards`);
+
+			new Notice("Card unburied");
+		} catch (error) {
+			console.error("Error unburying card:", error);
+			new Notice("Failed to unbury card");
+		}
+	}
+
+	private async handleUnburyAll(): Promise<void> {
+		const cards = [...this.options.cards];
+		let unburiedCount = 0;
+
+		for (const card of cards) {
+			const updatedFsrs = { ...card.fsrs, buriedUntil: undefined };
+
+			try {
+				await this.flashcardManager.updateCardFSRS(
+					card.filePath,
+					card.id,
+					updatedFsrs,
+					card.lineNumber
+				);
+				unburiedCount++;
+			} catch (error) {
+				console.error(`Error unburying card ${card.id}:`, error);
+			}
+		}
+
+		// Clear all cards from list
+		this.options.cards = [];
+
+		// Re-render
+		if (this.bodyContainer) {
+			this.renderBody(this.bodyContainer);
+		}
+
+		// Update title
+		this.updateTitle("0 cards");
+
+		new Notice(`${unburiedCount} card${unburiedCount > 1 ? "s" : ""} unburied`);
 	}
 }

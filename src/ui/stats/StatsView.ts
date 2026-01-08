@@ -444,7 +444,7 @@ export class StatsView extends ItemView {
 
 		const breakdown = await this.statsCalculator.getCardMaturityBreakdown();
 		const activeTotal = breakdown.new + breakdown.learning + breakdown.young + breakdown.mature;
-		const total = activeTotal + breakdown.suspended;
+		const total = activeTotal + breakdown.suspended + breakdown.buried;
 
 		if (total === 0) {
 			this.cardCountsEl.createDiv({
@@ -478,6 +478,13 @@ export class StatsView extends ItemView {
 			chartData.push(breakdown.suspended);
 			chartLabels.push("Suspended");
 			chartColors.push("rgba(107, 114, 128, 0.8)"); // Suspended - gray
+		}
+
+		// Add buried to chart if any
+		if (breakdown.buried > 0) {
+			chartData.push(breakdown.buried);
+			chartLabels.push("Buried");
+			chartColors.push("rgba(156, 163, 175, 0.8)"); // Buried - lighter gray
 		}
 
 		const chart = new Chart(canvas, {
@@ -515,6 +522,11 @@ export class StatsView extends ItemView {
 			items.push({ label: "Suspended", value: breakdown.suspended, color: "#6b7280", category: "suspended" });
 		}
 
+		// Add buried to legend if any
+		if (breakdown.buried > 0) {
+			items.push({ label: "Buried", value: breakdown.buried, color: "#9ca3af", category: "buried" });
+		}
+
 		for (const item of items) {
 			const row = legendEl.createDiv({ cls: "stats-legend-item stats-legend-clickable" });
 			row.createSpan({ cls: "stats-legend-color" }).style.backgroundColor = item.color;
@@ -542,6 +554,7 @@ export class StatsView extends ItemView {
 			title: `${label} Cards (${cards.length})`,
 			cards,
 			flashcardManager: this.plugin.flashcardManager,
+			category,
 		}).open();
 	}
 
