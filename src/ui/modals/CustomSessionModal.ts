@@ -223,9 +223,10 @@ export class CustomSessionModal extends BaseModal {
 
 		const allNoteStats = this.getAllNoteStats();
 
-		// Filter by search query
+		// Filter by search query and exclude notes with no available cards
 		const filteredStats = allNoteStats.filter((stat) =>
-			stat.noteName.toLowerCase().includes(this.searchQuery)
+			stat.noteName.toLowerCase().includes(this.searchQuery) &&
+			(stat.newCount > 0 || stat.dueCount > 0)
 		);
 
 		// Sort: notes with cards first, then completed, alphabetically within groups
