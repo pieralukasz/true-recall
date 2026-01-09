@@ -57,6 +57,15 @@ export class CardPreviewModal extends BaseModal {
 			unburyAllBtn.addEventListener("click", () => void this.handleUnburyAll());
 		}
 
+		// "Delete All" button for suspended cards category
+		if (this.options.category === "suspended" && this.options.cards.length > 0) {
+			const deleteAllBtn = headerEl.createEl("button", {
+				cls: "episteme-delete-all-btn",
+				text: "Delete All",
+			});
+			deleteAllBtn.addEventListener("click", () => void this.handleDeleteAll());
+		}
+
 		// Cards list
 		const listEl = container.createDiv({ cls: "episteme-card-preview-list" });
 
@@ -220,5 +229,37 @@ export class CardPreviewModal extends BaseModal {
 		this.updateTitle("0 cards");
 
 		new Notice(`${unburiedCount} card${unburiedCount > 1 ? "s" : ""} unburied`);
+	}
+
+	private async handleDeleteAll(): Promise<void> {
+		// Confirm with user
+		const confirmed = confirm(`Delete all ${this.options.cards.length} suspended cards? This action cannot be undone.`);
+		if (!confirmed) return;
+
+		let deletedCount = 0;
+		const cards = [...this.options.cards];
+
+		for (const card of cards) {
+			const file = this.app.vault.getAbstractFileByPath(card.filePath);
+			if (file instanceof TFile) {
+				const success = await this.flashcardManager.removeFlashcardDirect(file, card.lineNumber);
+				if (success) {
+					deletedCount++;
+				}
+			}
+		}
+
+		// Clear all cards from list
+		this.options.cards = [];
+
+		// Re-render
+		if (this.bodyContainer) {
+			this.renderBody(this.bodyContainer);
+		}
+
+		// Update title
+		this.updateTitle("0 cards");
+
+		new Notice(`${deletedCount} card${deletedCount !== 1 ? "s" : ""} deleted`);
 	}
 }
