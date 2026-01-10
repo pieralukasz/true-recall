@@ -18,8 +18,7 @@ export const FlashcardChangeTypeSchema = z.enum(["NEW", "MODIFIED", "DELETED"]);
 export const FlashcardItemSchema = z.object({
     question: z.string().min(1, "Question cannot be empty"),
     answer: z.string().min(1, "Answer cannot be empty"),
-    lineNumber: z.number().int().positive("Line number must be positive"),
-    id: z.string().optional(),
+    id: z.string().min(1, "Card ID is required"),
 });
 
 // ===== Flashcard Change Schemas =====
@@ -33,7 +32,7 @@ const FlashcardChangeBaseSchema = z.object({
     answer: z.string(),
     originalQuestion: z.string().optional(),
     originalAnswer: z.string().optional(),
-    originalLineNumber: z.number().int().positive().optional(),
+    originalCardId: z.string().optional(),
     reason: z.string().optional(),
 });
 
@@ -86,7 +85,7 @@ export const RawFlashcardChangeSchema = z.object({
     answer: z.string().default(""),
     originalQuestion: z.string().optional(),
     originalAnswer: z.string().optional(),
-    originalLineNumber: z.number().int().positive().optional(),
+    originalCardId: z.string().optional(),
     reason: z.string().optional(),
 });
 
@@ -128,7 +127,7 @@ export interface FlashcardChange {
     answer: string;
     originalQuestion?: string;
     originalAnswer?: string;
-    originalLineNumber?: number;
+    originalCardId?: string;
     reason?: string;
     accepted: boolean;
 }

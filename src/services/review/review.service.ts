@@ -419,8 +419,7 @@ export class ReviewService {
             await flashcardManager.updateCardFSRS(
                 card.filePath,
                 card.id,
-                updatedCard.fsrs,
-                card.lineNumber
+                updatedCard.fsrs
             );
         }
 

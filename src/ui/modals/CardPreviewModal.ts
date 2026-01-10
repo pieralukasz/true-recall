@@ -114,7 +114,7 @@ export class CardPreviewModal extends BaseModal {
 			return;
 		}
 
-		const success = await this.flashcardManager.removeFlashcardDirect(file, card.lineNumber);
+		const success = await this.flashcardManager.removeFlashcardById(file, card.id);
 
 		if (success) {
 			new Notice("Flashcard deleted");
@@ -153,9 +153,8 @@ export class CardPreviewModal extends BaseModal {
 
 		const file = this.app.vault.getAbstractFileByPath(filePath);
 		if (file && file instanceof TFile) {
-			await leaf.openFile(file, {
-				eState: { line: card.lineNumber },
-			});
+			// Open file and navigate to card using its ID
+			await this.flashcardManager.openFileAtCard(file, card.id);
 			this.close();
 		}
 	}
@@ -175,8 +174,7 @@ export class CardPreviewModal extends BaseModal {
 			await this.flashcardManager.updateCardFSRS(
 				fullCard.filePath,
 				fullCard.id,
-				updatedFsrs,
-				fullCard.lineNumber
+				updatedFsrs
 			);
 
 			// Remove from list
@@ -208,8 +206,7 @@ export class CardPreviewModal extends BaseModal {
 				await this.flashcardManager.updateCardFSRS(
 					card.filePath,
 					card.id,
-					updatedFsrs,
-					card.lineNumber
+					updatedFsrs
 				);
 				unburiedCount++;
 			} catch (error) {
@@ -242,7 +239,7 @@ export class CardPreviewModal extends BaseModal {
 		for (const card of cards) {
 			const file = this.app.vault.getAbstractFileByPath(card.filePath);
 			if (file instanceof TFile) {
-				const success = await this.flashcardManager.removeFlashcardDirect(file, card.lineNumber);
+				const success = await this.flashcardManager.removeFlashcardById(file, card.id);
 				if (success) {
 					deletedCount++;
 				}

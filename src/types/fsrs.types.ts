@@ -69,8 +69,6 @@ export interface FSRSFlashcardItem {
     question: string;
     /** Odpowiedź */
     answer: string;
-    /** Numer linii w pliku źródłowym */
-    lineNumber: number;
     /** Ścieżka do pliku z fiszką */
     filePath: string;
     /** Dane FSRS */
