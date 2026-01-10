@@ -58,8 +58,6 @@ export const DEFAULT_SETTINGS: EpistemeSettings = {
 	autoAdvance: false,
 	showReviewHeader: true,
 	showReviewHeaderStats: true,
-	hideFlashcardsFromBacklinks: true,
-	updateLinkedMentionsCount: true,
 	continuousCustomReviews: true,
 
 	// Display Order
@@ -129,7 +127,10 @@ export const UI_CONFIG = {
 
 /** Flashcard file naming and format constants */
 export const FLASHCARD_CONFIG = {
-	filePrefix: "flashcards_",
+	filePrefix: "flashcards_", // Legacy - kept for backward compatibility
+	uidLength: 8, // 8 hex chars for UID
+	sourceUidField: "flashcard_uid", // Field in source note frontmatter
+	flashcardUidField: "source_uid", // Field in flashcard file frontmatter
 	defaultFolder: "Flashcards",
 	tag: "#flashcard",
 	sourceContentStartMarker: "<!-- SOURCE_NOTE_CONTENT",

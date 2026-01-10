@@ -6,6 +6,20 @@ import { App, TFile, normalizePath } from "obsidian";
 import { FLASHCARD_CONFIG } from "../../constants";
 import { BaseModal } from "./BaseModal";
 
+/**
+ * Check if a file is a flashcard file based on naming pattern
+ * Supports both legacy (flashcards_*) and UID-based (8-hex-chars) naming
+ */
+function isFlashcardFileByName(fileName: string): boolean {
+	// Legacy: starts with "flashcards_"
+	if (fileName.startsWith(FLASHCARD_CONFIG.filePrefix)) {
+		return true;
+	}
+	// New: 8-char hex UID pattern (fileName includes .md extension)
+	const uidPattern = new RegExp(`^[a-f0-9]{${FLASHCARD_CONFIG.uidLength}}\\.md$`, "i");
+	return uidPattern.test(fileName);
+}
+
 export interface MoveCardResult {
 	cancelled: boolean;
 	targetNotePath: string | null;
@@ -336,7 +350,7 @@ export class MoveCardModal extends BaseModal {
 			if (file.path.startsWith(flashcardsFolderNormalized + "/")) {
 				return false;
 			}
-			if (file.name.startsWith(FLASHCARD_CONFIG.filePrefix)) {
+			if (isFlashcardFileByName(file.name)) {
 				return false;
 			}
 
