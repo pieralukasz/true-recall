@@ -77,6 +77,29 @@ export class FlashcardManager {
 	}
 
 	/**
+	 * Set FSRS data for a card (public method for external use)
+	 * Used by FlashcardPanelView to ensure data consistency
+	 * Prevents overwriting existing FSRS data to avoid duplicates
+	 *
+	 * @param cardId The card's UUID
+	 * @param fsrsData The FSRS data to store
+	 */
+	setStoreData(cardId: string, fsrsData: FSRSCardData): void {
+		if (!this.store) {
+			throw new Error("Store not initialized");
+		}
+
+		// Only set if not already exists (prevent overwriting existing data)
+		const existing = this.store.get(cardId);
+		if (existing) {
+			console.warn(`Card ${cardId} already exists in store. Skipping to prevent duplicates.`);
+			return;
+		}
+
+		this.store.set(cardId, fsrsData);
+	}
+
+	/**
 	 * Update settings reference
 	 */
 	updateSettings(settings: EpistemeSettings): void {
@@ -1116,8 +1139,7 @@ export class FlashcardManager {
 
 	/**
 	 * Ensure block ID exists in file for a card
-	 * Checks if ^cardId is present and skips if it is
-	 * Note: Block IDs are added by scanVault for new cards
+	 * If the ID is missing, finds the first card without an ID and adds it
 	 */
 	private async ensureBlockIdInFile(
 		filePath: string,
@@ -1134,8 +1156,43 @@ export class FlashcardManager {
 			return; // Already has block ID
 		}
 
-		// Block ID doesn't exist - it will be added by scanVault on next scan
-		// This is fine because the store already has the card data
+		// Find the card in the file and add the block ID
+		const lines = content.split("\n");
+		const flashcardPattern = new RegExp(
+			`^(.+?)\\s*${FLASHCARD_CONFIG.tag}\\s*$`
+		);
+		const existingBlockIdPattern = /^\^[a-zA-Z0-9-]+$/;
+
+		for (let i = 0; i < lines.length; i++) {
+			const line = lines[i] ?? "";
+			if (!flashcardPattern.test(line)) continue;
+
+			// Find end of this card's answer
+			let answerEndIndex = i + 1;
+			while (answerEndIndex < lines.length) {
+				const currentLine = lines[answerEndIndex] ?? "";
+				// Stop at empty line, next flashcard, or existing block ID
+				if (
+					currentLine.trim() === "" ||
+					flashcardPattern.test(currentLine) ||
+					existingBlockIdPattern.test(currentLine)
+				) {
+					break;
+				}
+				answerEndIndex++;
+			}
+
+			// Check if this card already has a block ID
+			const nextLine = lines[answerEndIndex] ?? "";
+			if (existingBlockIdPattern.test(nextLine)) {
+				continue; // This card has an ID, check next
+			}
+
+			// This card has no ID - add it
+			lines.splice(answerEndIndex, 0, `^${cardId}`);
+			await this.app.vault.modify(file, lines.join("\n"));
+			return;
+		}
 	}
 
 	/**
@@ -1381,13 +1438,12 @@ export class FlashcardManager {
 
 				// Find source note
 				const sourceFiles = this.app.vault.getMarkdownFiles().filter((f) => f.basename === sourceLink);
+				const sourceFile = sourceFiles[0];
 
-				if (sourceFiles.length === 0) {
+				if (!sourceFile) {
 					results.errors.push(`${file.path}: Source note not found`);
 					continue;
 				}
-
-				const sourceFile = sourceFiles[0];
 
 				// Generate UID if source note doesn't have one
 				let uid = await this.frontmatterService.getSourceNoteUid(sourceFile);

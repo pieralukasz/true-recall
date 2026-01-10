@@ -13,7 +13,6 @@ import {
 	SessionPersistenceService,
 	ShardedStoreService,
 	DayBoundaryService,
-	FlashcardMigrationService,
 } from "./services";
 import { extractFSRSSettings } from "./types";
 import {
@@ -202,69 +201,6 @@ export default class EpistemePlugin extends Plugin {
 			id: "show-missing-flashcards",
 			name: "Show notes missing flashcards",
 			callback: () => void this.showMissingFlashcards(),
-		});
-
-		// Migrate flashcards to UID system
-		this.addCommand({
-			id: "migrate-flashcards-to-uid",
-			name: "Migrate flashcards to UID system",
-			callback: async () => {
-				const migrationService = new FlashcardMigrationService(
-					this.app,
-					this.flashcardManager,
-					this.flashcardManager.getFrontmatterService(),
-					this.settings
-				);
-
-				const count = await migrationService.countLegacyFiles();
-				if (count === 0) {
-					new Notice("No legacy flashcard files found to migrate.");
-					return;
-				}
-
-				new Notice(`Starting migration of ${count} flashcard files...`);
-				const result = await migrationService.migrateAll();
-
-				let message = `Migration complete: ${result.migratedCount} migrated`;
-				if (result.skippedCount > 0) {
-					message += `, ${result.skippedCount} skipped`;
-				}
-				if (result.errorCount > 0) {
-					message += `, ${result.errorCount} errors`;
-					console.error("Migration errors:", result.errors);
-				}
-				new Notice(message);
-			},
-		});
-
-		// Remove flashcard file headers (one-time migration)
-		this.addCommand({
-			id: "remove-flashcard-headers",
-			name: "Remove flashcard file headers (one-time migration)",
-			callback: async () => {
-				const flashcardFolder = this.app.vault.getAbstractFileByPath(
-					this.settings.flashcardsFolder
-				);
-				if (!flashcardFolder || !(flashcardFolder instanceof TFolder)) {
-					new Notice("Flashcards folder not found");
-					return;
-				}
-
-				let count = 0;
-				const frontmatterService = this.flashcardManager.getFrontmatterService();
-
-				for (const file of flashcardFolder.children) {
-					if (file instanceof TFile && file.extension === "md") {
-						const content = await this.app.vault.read(file);
-						const updated = frontmatterService.removeFlashcardsHeader(content);
-						if (updated !== content) {
-							await this.app.vault.modify(file, updated);
-							count++;
-						}
-					}
-				}
-				new Notice(`Removed headers from ${count} flashcard files`);
-			},
 		});
 
 		// Register settings tab

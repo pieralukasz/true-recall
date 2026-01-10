@@ -18,6 +18,7 @@ import { PanelContent } from "./PanelContent";
 import { PanelFooter } from "./PanelFooter";
 import { MoveCardModal } from "../modals/MoveCardModal";
 import type { FlashcardItem, FlashcardChange } from "../../types";
+import { createDefaultFSRSData } from "../../types";
 import type EpistemePlugin from "../../main";
 
 /**
@@ -306,7 +307,31 @@ export class FlashcardPanelView extends ItemView {
                 return;
             }
 
-            await this.flashcardManager.createFlashcardFile(state.currentFile, flashcards);
+            // CRITICAL FIX: Parse flashcards and add block IDs before creating file
+            // This prevents race condition between parseAllFlashcards() and scanVault()
+            const { FlashcardParserService } = await import("../../services/flashcard/flashcard-parser.service");
+            const parser = new FlashcardParserService();
+            const parsedFlashcards = parser.extractFlashcards(flashcards);
+
+            // Generate block IDs and FSRS data for each card
+            const flashcardsWithIds = parsedFlashcards.map((f) => {
+                const cardId = f.id || crypto.randomUUID();
+                // Create FSRS data for the card (prevents duplicates via setStoreData check)
+                const fsrsData = createDefaultFSRSData(cardId);
+                this.flashcardManager.setStoreData(cardId, fsrsData);
+
+                return {
+                    ...f,
+                    id: cardId
+                };
+            });
+
+            // Convert back to markdown with block IDs
+            const flashcardsWithBlockIds = flashcardsWithIds
+                .map(f => `${f.question} #flashcard\n${f.answer}\n^${f.id}`)
+                .join("\n\n");
+
+            await this.flashcardManager.createFlashcardFile(state.currentFile, flashcardsWithBlockIds);
 
             if (this.plugin.settings.storeSourceContent) {
                 await this.flashcardManager.updateSourceContent(state.currentFile, content);
