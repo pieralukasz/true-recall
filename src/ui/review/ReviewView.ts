@@ -163,6 +163,13 @@ export class ReviewView extends ItemView {
         return "brain";
     }
 
+    /**
+     * Get the currently reviewed card (for external access, e.g., copy to add panel)
+     */
+    getCurrentReviewedCard(): FSRSFlashcardItem | null {
+        return this.stateManager.getCurrentCard();
+    }
+
     async onOpen(): Promise<void> {
         const container = this.containerEl.children[1] as HTMLElement;
         container.empty();

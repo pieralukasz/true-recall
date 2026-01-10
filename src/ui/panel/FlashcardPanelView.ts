@@ -426,7 +426,7 @@ export class FlashcardPanelView extends ItemView {
             );
 
             new Notice(`Saved ${result.flashcards.length} flashcard(s) from selection`);
-
+            this.stateManager.finishProcessing(false);
         } catch (error) {
             new Notice(`Error: ${error instanceof Error ? error.message : String(error)}`);
         }

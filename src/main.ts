@@ -3,6 +3,7 @@ import {
 	VIEW_TYPE_FLASHCARD_PANEL,
 	VIEW_TYPE_REVIEW,
 	VIEW_TYPE_STATS,
+	VIEW_TYPE_ADD_FLASHCARD_PANEL,
 	FLASHCARD_CONFIG,
 } from "./constants";
 import {
@@ -21,6 +22,7 @@ import {
 	EpistemeSettingTab,
 	CustomSessionModal,
 	MissingFlashcardsModal,
+	AddFlashcardPanelView,
 	type EpistemeSettings,
 	DEFAULT_SETTINGS,
 } from "./ui";
@@ -88,6 +90,12 @@ export default class EpistemePlugin extends Plugin {
 
 		// Register the statistics view
 		this.registerView(VIEW_TYPE_STATS, (leaf) => new StatsView(leaf, this));
+
+		// Register the add flashcard panel view
+		this.registerView(
+			VIEW_TYPE_ADD_FLASHCARD_PANEL,
+			(leaf) => new AddFlashcardPanelView(leaf, this)
+		);
 
 		// Add ribbon icon to start review
 		this.addRibbonIcon("brain", "Episteme - Study", () => {
@@ -201,6 +209,33 @@ export default class EpistemePlugin extends Plugin {
 			id: "show-missing-flashcards",
 			name: "Show notes missing flashcards",
 			callback: () => void this.showMissingFlashcards(),
+		});
+
+		// Open Add Flashcard Panel (Cmd+A)
+		this.addCommand({
+			id: "open-add-flashcard-panel",
+			name: "Open add flashcard panel",
+			hotkeys: [{ modifiers: ["Mod"], key: "a" }],
+			callback: () => void this.openAddFlashcardPanel(),
+		});
+
+		// Copy reviewed card to Add Panel (Option+Cmd+E)
+		this.addCommand({
+			id: "copy-card-to-add-panel",
+			name: "Copy current card to add panel",
+			hotkeys: [{ modifiers: ["Alt", "Mod"], key: "e" }],
+			checkCallback: (checking) => {
+				const reviewLeaf = this.app.workspace.getLeavesOfType(VIEW_TYPE_REVIEW)[0];
+				if (reviewLeaf) {
+					const view = reviewLeaf.view as ReviewView;
+					const card = view.getCurrentReviewedCard?.();
+					if (card) {
+						if (!checking) void this.copyCardToAddPanel(card);
+						return true;
+					}
+				}
+				return false;
+			},
 		});
 
 		// Register settings tab
@@ -351,6 +386,54 @@ export default class EpistemePlugin extends Plugin {
 				void view.handleFileChange(file);
 			}
 		});
+	}
+
+	// Open the Add Flashcard Panel
+	async openAddFlashcardPanel(): Promise<void> {
+		const { workspace } = this.app;
+
+		// Check if view already exists
+		let leaf = workspace.getLeavesOfType(VIEW_TYPE_ADD_FLASHCARD_PANEL)[0];
+
+		if (!leaf) {
+			if (Platform.isMobile) {
+				// On mobile, open in main area
+				leaf = workspace.getLeaf(true);
+				await leaf.setViewState({
+					type: VIEW_TYPE_ADD_FLASHCARD_PANEL,
+					active: true,
+				});
+			} else {
+				// Desktop: use right sidebar
+				const rightLeaf = workspace.getRightLeaf(false);
+				if (rightLeaf) {
+					await rightLeaf.setViewState({
+						type: VIEW_TYPE_ADD_FLASHCARD_PANEL,
+						active: true,
+					});
+					leaf = rightLeaf;
+				}
+			}
+		}
+
+		// Reveal and focus the leaf
+		if (leaf) {
+			void workspace.revealLeaf(leaf);
+		}
+	}
+
+	// Copy card to Add Panel (for Option+Cmd+E shortcut)
+	async copyCardToAddPanel(card: { question: string; answer: string }): Promise<void> {
+		await this.openAddFlashcardPanel();
+
+		// Wait for panel to be ready and prefill
+		setTimeout(() => {
+			const leaf = this.app.workspace.getLeavesOfType(VIEW_TYPE_ADD_FLASHCARD_PANEL)[0];
+			if (leaf) {
+				const view = leaf.view as AddFlashcardPanelView;
+				view.prefillFromCard(card.question, card.answer);
+			}
+		}, 100);
 	}
 
 	// Start a review session (opens modal with options)
