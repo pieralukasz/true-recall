@@ -53,9 +53,3 @@ export {
 	OpenRouterService,
 	type DiffResult,
 } from "./ai/openrouter.service";
-
-// Migration services
-export {
-	FlashcardMigrationService,
-	type MigrationResult,
-} from "./migration/flashcard-migration.service";
