@@ -66,6 +66,8 @@ export default class EpistemePlugin extends Plugin {
 		void this.shardedStore.load().then(() => {
 			// Connect store to flashcard manager after loading
 			this.flashcardManager.setStore(this.shardedStore);
+			// Check for cards without block IDs and migrate
+			void this.checkAndMigrateFlashcards();
 		});
 
 		// Initialize day boundary service (Anki-style day scheduling)
@@ -696,6 +698,49 @@ export default class EpistemePlugin extends Plugin {
 					state,
 				});
 				void workspace.revealLeaf(rightLeaf);
+			}
+		}
+	}
+
+	/**
+	 * Check if migration is needed (cards without block IDs exist)
+	 * Runs scanVault() once on startup if needed to add missing block IDs
+	 */
+	async checkAndMigrateFlashcards(): Promise<void> {
+		if (!this.shardedStore.isReady()) return;
+
+		const files = this.app.vault.getMarkdownFiles().filter((file) =>
+			this.flashcardManager.isFlashcardFile(file)
+		);
+
+		let needsMigration = false;
+
+		// Check if any file has cards without block IDs
+		for (const file of files) {
+			const content = await this.app.vault.read(file);
+			const flashcardPattern = /^.+?\s*#flashcard\s*$/gm;
+			const matches = content.match(flashcardPattern);
+			const blockIdPattern = /^\^[a-f0-9-]+$/gm;
+			const blockIds = content.match(blockIdPattern);
+
+			if (matches && (!blockIds || matches.length > blockIds.length)) {
+				needsMigration = true;
+				break;
+			}
+		}
+
+		if (needsMigration) {
+			new Notice("Adding flashcard IDs... This may take a moment.");
+			try {
+				const result = await this.flashcardManager.scanVault();
+				new Notice(
+					`Migration complete: ${result.newCardsProcessed} cards updated.`
+				);
+			} catch (error) {
+				console.error("Flashcard migration failed:", error);
+				new Notice(
+					`Flashcard ID migration failed: ${error instanceof Error ? error.message : "Unknown error"}`
+				);
 			}
 		}
 	}
