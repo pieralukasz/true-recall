@@ -47,7 +47,7 @@ describe("Zod Schemas", () => {
             const data = {
                 question: "What is TypeScript?",
                 answer: "A typed superset of JavaScript",
-                lineNumber: 10,
+                id: "550e8400-e29b-41d4-a716-446655440000",
             };
 
             const result = FlashcardItemSchema.safeParse(data);
@@ -62,7 +62,7 @@ describe("Zod Schemas", () => {
             const data = {
                 question: "",
                 answer: "Answer",
-                lineNumber: 1,
+                id: "550e8400-e29b-41d4-a716-446655440000",
             };
 
             const result = FlashcardItemSchema.safeParse(data);
@@ -70,11 +70,10 @@ describe("Zod Schemas", () => {
             expect(result.success).toBe(false);
         });
 
-        it("should reject zero line number", () => {
+        it("should reject missing id", () => {
             const data = {
                 question: "Question",
                 answer: "Answer",
-                lineNumber: 0,
             };
 
             const result = FlashcardItemSchema.safeParse(data);
@@ -82,11 +81,11 @@ describe("Zod Schemas", () => {
             expect(result.success).toBe(false);
         });
 
-        it("should reject non-integer line number", () => {
+        it("should reject empty id", () => {
             const data = {
                 question: "Question",
                 answer: "Answer",
-                lineNumber: 1.5,
+                id: "",
             };
 
             const result = FlashcardItemSchema.safeParse(data);

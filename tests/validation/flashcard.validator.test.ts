@@ -219,7 +219,7 @@ describe("Flashcard Validator", () => {
 			const item = {
 				question: "What is Zod?",
 				answer: "A TypeScript-first schema validation library",
-				lineNumber: 10,
+				id: "550e8400-e29b-41d4-a716-446655440000",
 			};
 
 			const result = validateFlashcardItem(item);
@@ -231,17 +231,16 @@ describe("Flashcard Validator", () => {
 			const item = {
 				question: "",
 				answer: "Answer",
-				lineNumber: 1,
+				id: "550e8400-e29b-41d4-a716-446655440000",
 			};
 
 			expect(() => validateFlashcardItem(item)).toThrow(ValidationError);
 		});
 
-		it("should throw for negative line number", () => {
+		it("should throw for missing id", () => {
 			const item = {
 				question: "Question",
 				answer: "Answer",
-				lineNumber: -1,
 			};
 
 			expect(() => validateFlashcardItem(item)).toThrow(ValidationError);
@@ -251,8 +250,8 @@ describe("Flashcard Validator", () => {
 	describe("validateFlashcardItems", () => {
 		it("should validate array of items", () => {
 			const items = [
-				{ question: "Q1", answer: "A1", lineNumber: 1 },
-				{ question: "Q2", answer: "A2", lineNumber: 5 },
+				{ question: "Q1", answer: "A1", id: "id-1" },
+				{ question: "Q2", answer: "A2", id: "id-2" },
 			];
 
 			const result = validateFlashcardItems(items);
@@ -265,12 +264,12 @@ describe("Flashcard Validator", () => {
 				{
 					question: "Valid",
 					answer: "Valid",
-					lineNumber: 1,
+					id: "id-1",
 				},
 				{
 					question: "",
 					answer: "Invalid",
-					lineNumber: 2,
+					id: "id-2",
 				},
 			];
 
@@ -286,12 +285,12 @@ describe("Flashcard Validator", () => {
 			{
 				question: "Original question",
 				answer: "Original answer",
-				lineNumber: 10,
+				id: "card-id-1",
 			},
 			{
 				question: "Another question",
 				answer: "Another answer",
-				lineNumber: 20,
+				id: "card-id-2",
 			},
 		];
 
@@ -308,7 +307,7 @@ describe("Flashcard Validator", () => {
 			const result = enrichFlashcardChanges(changes, existingFlashcards);
 
 			expect(result[0].originalAnswer).toBe("Original answer");
-			expect(result[0].originalLineNumber).toBe(10);
+			expect(result[0].originalCardId).toBe("card-id-1");
 		});
 
 		it("should enrich DELETED change with original data", () => {
@@ -326,7 +325,7 @@ describe("Flashcard Validator", () => {
 
 			expect(result[0].question).toBe("Original question");
 			expect(result[0].answer).toBe("Original answer");
-			expect(result[0].originalLineNumber).toBe(10);
+			expect(result[0].originalCardId).toBe("card-id-1");
 		});
 
 		it("should set accepted=true for NEW changes", () => {

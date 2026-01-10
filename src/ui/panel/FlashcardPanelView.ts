@@ -43,7 +43,7 @@ export class FlashcardPanelView extends ItemView {
     private unsubscribe: (() => void) | null = null;
 
     // Selection state for bulk move
-    private selectedCardLineNumbers: Set<number> = new Set();
+    private selectedCardIds: Set<string> = new Set();
 
     constructor(leaf: WorkspaceLeaf, plugin: EpistemePlugin) {
         super(leaf);
@@ -126,7 +126,7 @@ export class FlashcardPanelView extends ItemView {
         const file = state.currentFile;
 
         // Clear selection when loading new file info
-        this.selectedCardLineNumbers.clear();
+        this.selectedCardIds.clear();
 
         if (!file || file.extension !== "md") {
             this.stateManager.setFlashcardInfo(null);
@@ -150,10 +150,16 @@ export class FlashcardPanelView extends ItemView {
             // Check for race condition
             if (!this.stateManager.isCurrentRender(renderVersion)) return;
 
+            // Extract source note name for flashcard files
+            const sourceNoteName = state.isFlashcardFile
+                ? await this.getSourceNoteNameFromFile() ?? null
+                : null;
+
             this.stateManager.setState({
                 flashcardInfo: info,
                 status: info?.exists ? "exists" : "none",
                 noteFlashcardType: noteType,
+                sourceNoteName,
             });
         } catch (error) {
             console.error("Error loading flashcard info:", error);
@@ -169,6 +175,7 @@ export class FlashcardPanelView extends ItemView {
         this.headerComponent = new PanelHeader(this.headerContainer, {
             currentFile: state.currentFile,
             status: state.status,
+            displayTitle: state.sourceNoteName ?? undefined,
             onOpenFlashcardFile: () => void this.handleOpenFlashcardFile(),
             onReviewFlashcards: () => {
                 if (state.currentFile) {
@@ -217,7 +224,7 @@ export class FlashcardPanelView extends ItemView {
             // Note type for Seed vs Generate button
             noteFlashcardType: state.noteFlashcardType,
             // Selection info for bulk move button
-            selectedCount: this.selectedCardLineNumbers.size,
+            selectedCount: this.selectedCardIds.size,
             // Selection state for literature notes
             hasSelection: state.hasSelection,
             selectedText: state.selectedText,
@@ -246,7 +253,7 @@ export class FlashcardPanelView extends ItemView {
             diffResult: state.diffResult,
             isFlashcardFile: state.isFlashcardFile,
             noteFlashcardType: state.noteFlashcardType,
-            selectedCount: this.selectedCardLineNumbers.size,
+            selectedCount: this.selectedCardIds.size,
             hasSelection: state.hasSelection,
             selectedText: state.selectedText,
             onGenerate: () => void this.handleGenerate(),
@@ -520,9 +527,9 @@ export class FlashcardPanelView extends ItemView {
         if (!state.currentFile) return;
 
         if (state.isFlashcardFile) {
-            await this.flashcardManager.openFileAtLine(state.currentFile, card.lineNumber);
+            await this.flashcardManager.openFileAtCard(state.currentFile, card.id);
         } else {
-            await this.flashcardManager.openFlashcardFileAtLine(state.currentFile, card.lineNumber);
+            await this.flashcardManager.openFlashcardFileAtCard(state.currentFile, card.id);
         }
     }
 
@@ -536,20 +543,20 @@ export class FlashcardPanelView extends ItemView {
 
         const filePath = state.isFlashcardFile
             ? state.currentFile.path
-            : this.flashcardManager.getFlashcardPath(state.currentFile);
+            : await this.flashcardManager.getFlashcardPathAsync(state.currentFile);
 
         try {
             if (field === "question") {
                 await this.flashcardManager.updateCardContent(
                     filePath,
-                    card.lineNumber,
+                    card.id,
                     newContent,
                     card.answer
                 );
             } else {
                 await this.flashcardManager.updateCardContent(
                     filePath,
-                    card.lineNumber,
+                    card.id,
                     card.question,
                     newContent
                 );
@@ -584,8 +591,8 @@ export class FlashcardPanelView extends ItemView {
         const scrollPosition = this.contentContainer.scrollTop;
 
         const removed = state.isFlashcardFile
-            ? await this.flashcardManager.removeFlashcardDirect(state.currentFile, card.lineNumber)
-            : await this.flashcardManager.removeFlashcard(state.currentFile, card.lineNumber);
+            ? await this.flashcardManager.removeFlashcardById(state.currentFile, card.id)
+            : await this.flashcardManager.removeFlashcard(state.currentFile, card.id);
 
         if (removed) {
             new Notice("Flashcard removed");
@@ -645,29 +652,29 @@ export class FlashcardPanelView extends ItemView {
 
     // ===== Selection Handlers for Bulk Move =====
 
-    private handleToggleCardSelection(lineNumber: number): void {
+    private handleToggleCardSelection(cardId: string): void {
         // Toggle selection state
-        if (this.selectedCardLineNumbers.has(lineNumber)) {
-            this.selectedCardLineNumbers.delete(lineNumber);
+        if (this.selectedCardIds.has(cardId)) {
+            this.selectedCardIds.delete(cardId);
         } else {
-            this.selectedCardLineNumbers.add(lineNumber);
+            this.selectedCardIds.add(cardId);
         }
         // Only update footer (checkbox already toggled visually by browser)
         this.renderFooterOnly();
     }
 
     private handleClearSelection(): void {
-        this.selectedCardLineNumbers.clear();
+        this.selectedCardIds.clear();
         this.render();
     }
 
     private async handleMoveSelected(): Promise<void> {
         const state = this.stateManager.getState();
-        if (!state.flashcardInfo || this.selectedCardLineNumbers.size === 0) return;
+        if (!state.flashcardInfo || this.selectedCardIds.size === 0) return;
 
         // Get selected cards with valid IDs
         const selectedCards = state.flashcardInfo.flashcards.filter(
-            (card) => this.selectedCardLineNumbers.has(card.lineNumber) && card.id
+            (card) => this.selectedCardIds.has(card.id)
         );
 
         if (selectedCards.length === 0) {
@@ -692,12 +699,10 @@ export class FlashcardPanelView extends ItemView {
         const result = await modal.openAndWait();
         if (result.cancelled || !result.targetNotePath) return;
 
-        // Move all selected cards (in reverse order to preserve line numbers)
-        const sortedCards = [...selectedCards].sort((a, b) => b.lineNumber - a.lineNumber);
+        // Move all selected cards
         let successCount = 0;
 
-        for (const card of sortedCards) {
-            if (!card.id) continue;
+        for (const card of selectedCards) {
             try {
                 await this.flashcardManager.moveCard(
                     card.id,
@@ -711,19 +716,18 @@ export class FlashcardPanelView extends ItemView {
         }
 
         // Clear selection and refresh
-        this.selectedCardLineNumbers.clear();
+        this.selectedCardIds.clear();
         new Notice(`Moved ${successCount} of ${selectedCards.length} cards`);
         await this.loadFlashcardInfo();
     }
 
     private async handleDeleteSelected(): Promise<void> {
         const state = this.stateManager.getState();
-        if (!state.flashcardInfo || !state.currentFile || this.selectedCardLineNumbers.size === 0) return;
+        if (!state.flashcardInfo || !state.currentFile || this.selectedCardIds.size === 0) return;
 
-        // Get selected cards sorted by line number descending (to preserve line numbers during deletion)
+        // Get selected cards by ID
         const selectedCards = state.flashcardInfo.flashcards
-            .filter(card => this.selectedCardLineNumbers.has(card.lineNumber))
-            .sort((a, b) => b.lineNumber - a.lineNumber);
+            .filter(card => this.selectedCardIds.has(card.id));
 
         if (selectedCards.length === 0) return;
 
@@ -731,24 +735,24 @@ export class FlashcardPanelView extends ItemView {
         const confirmed = confirm(`Delete ${selectedCards.length} selected card(s)?`);
         if (!confirmed) return;
 
-        // Delete cards from bottom to top (to preserve line numbers)
+        // Delete cards by ID (order doesn't matter with ID-based deletion)
         let successCount = 0;
         for (const card of selectedCards) {
             try {
                 const removed = state.isFlashcardFile
-                    ? await this.flashcardManager.removeFlashcardDirect(state.currentFile, card.lineNumber)
-                    : await this.flashcardManager.removeFlashcard(state.currentFile, card.lineNumber);
+                    ? await this.flashcardManager.removeFlashcardById(state.currentFile, card.id)
+                    : await this.flashcardManager.removeFlashcard(state.currentFile, card.id);
 
                 if (removed) {
                     successCount++;
                 }
             } catch (error) {
-                console.error(`Failed to delete card at line ${card.lineNumber}:`, error);
+                console.error(`Failed to delete card ${card.id}:`, error);
             }
         }
 
         // Clear selection and refresh
-        this.selectedCardLineNumbers.clear();
+        this.selectedCardIds.clear();
         new Notice(`Deleted ${successCount} of ${selectedCards.length} card(s)`);
         await this.loadFlashcardInfo();
     }

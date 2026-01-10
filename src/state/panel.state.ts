@@ -46,6 +46,7 @@ function createInitialState(): PanelState {
         renderVersion: 0,
         selectedText: "",
         hasSelection: false,
+        sourceNoteName: null,
     };
 }
 
