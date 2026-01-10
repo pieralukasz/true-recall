@@ -140,8 +140,7 @@ export class DiffCard extends BaseComponent {
         return {
             question: change.question,
             answer: change.answer,
-            lineNumber: change.originalLineNumber ?? 0,
-            id: `diff-${this.props.index}-${change.type}`,
+            id: change.originalCardId ?? `diff-${this.props.index}-${change.type}`,
         };
     }
 

@@ -9,6 +9,7 @@ import type { ProcessingStatus } from "../../state";
 export interface PanelHeaderProps {
     currentFile: TFile | null;
     status: ProcessingStatus;
+    displayTitle?: string;
     onOpenFlashcardFile?: () => void;
     onReviewFlashcards?: () => void;
 }
@@ -62,7 +63,7 @@ export class PanelHeader extends BaseComponent {
         // Note title
         const titleEl = titleRow.createSpan({ cls: "episteme-title" });
         if (currentFile) {
-            titleEl.textContent = currentFile.basename;
+            titleEl.textContent = this.props.displayTitle ?? currentFile.basename;
         } else {
             titleEl.textContent = "No note selected";
         }

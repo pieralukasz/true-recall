@@ -49,7 +49,7 @@ export function validateFlashcardChange(data: unknown): FlashcardChange {
         answer: raw.answer,
         originalQuestion: raw.originalQuestion,
         originalAnswer: raw.originalAnswer,
-        originalLineNumber: raw.originalLineNumber,
+        originalCardId: raw.originalCardId,
         reason: raw.reason,
         accepted: raw.type === "NEW",
     };
@@ -166,7 +166,7 @@ export function validateFlashcardItems(data: unknown[]): FlashcardItem[] {
  *
  * @param changes - Array of raw flashcard changes
  * @param existingFlashcards - Array of existing flashcard items
- * @returns Enriched FlashcardChange array with originalAnswer and originalLineNumber filled in
+ * @returns Enriched FlashcardChange array with originalAnswer and originalCardId filled in
  */
 export function enrichFlashcardChanges(
     changes: RawFlashcardChange[],
@@ -180,7 +180,7 @@ export function enrichFlashcardChanges(
             answer: change.answer,
             originalQuestion: change.originalQuestion,
             originalAnswer: change.originalAnswer,
-            originalLineNumber: change.originalLineNumber,
+            originalCardId: change.originalCardId,
             reason: change.reason,
             accepted: change.type === "NEW",
         };
@@ -196,7 +196,7 @@ export function enrichFlashcardChanges(
 
             if (existing) {
                 enriched.originalAnswer = existing.answer;
-                enriched.originalLineNumber = existing.lineNumber;
+                enriched.originalCardId = existing.id;
             }
         }
 

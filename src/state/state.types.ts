@@ -44,6 +44,8 @@ export interface PanelState {
     selectedText: string;
     /** Whether text is currently selected in the editor */
     hasSelection: boolean;
+    /** Source note name (when viewing a flashcard file) */
+    sourceNoteName: string | null;
 }
 
 /**

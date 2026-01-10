@@ -22,6 +22,7 @@ export class FlashcardParserService {
 	/**
 	 * Extract flashcards from content
 	 * Parses markdown content and returns all flashcard items with their metadata
+	 * Cards without block ID get a temporary UUID (will be persisted by scanVault)
 	 */
 	extractFlashcards(content: string): FlashcardItem[] {
 		const flashcards: FlashcardItem[] = [];
@@ -33,7 +34,6 @@ export class FlashcardParserService {
 
 			if (match?.[1]) {
 				const question = match[1].trim();
-				const questionLineNumber = i + 1;
 				const answerLines: string[] = [];
 				let cardId: string | undefined;
 
@@ -72,8 +72,8 @@ export class FlashcardParserService {
 					flashcards.push({
 						question,
 						answer,
-						lineNumber: questionLineNumber,
-						id: cardId,
+						// Use existing block ID or generate temporary UUID
+						id: cardId ?? crypto.randomUUID(),
 					});
 				}
 			}

@@ -15,9 +15,8 @@ export type NoteFlashcardType = "permanent" | "maybe" | "none" | "unknown";
 export interface FlashcardItem {
     question: string;
     answer: string;
-    lineNumber: number; // Line number in the flashcard file (for editing)
-    /** Block ID (UUID) for the flashcard, if present */
-    id?: string;
+    /** Block ID (UUID) for the flashcard - required, every card has a unique identifier */
+    id: string;
 }
 
 // Type of flashcard change
@@ -30,7 +29,7 @@ export interface FlashcardChange {
     answer: string;
     originalQuestion?: string; // For MODIFIED/DELETED - exact match from existing
     originalAnswer?: string;   // For MODIFIED/DELETED - filled from existing flashcards
-    originalLineNumber?: number; // For MODIFIED/DELETED - line number of original
+    originalCardId?: string;   // For MODIFIED/DELETED - card UUID of original
     reason?: string;           // For DELETED - reason for deletion
     accepted: boolean;         // UI state for accept/reject
 }

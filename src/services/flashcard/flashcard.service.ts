@@ -113,8 +113,15 @@ export class FlashcardManager {
 			if (this.app.vault.getAbstractFileByPath(uidPath)) {
 				return uidPath;
 			}
+			// Check if legacy file exists (backward compat during migration)
+			const legacyPath = this.getFlashcardPath(sourceFile);
+			if (this.app.vault.getAbstractFileByPath(legacyPath)) {
+				return legacyPath;
+			}
+			// No file exists - prefer UID path for new files
+			return uidPath;
 		}
-		// Fall back to legacy system
+		// No UID - use legacy system
 		return this.getFlashcardPath(sourceFile);
 	}
 
@@ -146,7 +153,7 @@ export class FlashcardManager {
 	 * Get flashcard file info for a source note
 	 */
 	async getFlashcardInfo(sourceFile: TFile): Promise<FlashcardInfo> {
-		const flashcardPath = this.getFlashcardPath(sourceFile);
+		const flashcardPath = await this.getFlashcardPathAsync(sourceFile);
 		const flashcardFile =
 			this.app.vault.getAbstractFileByPath(flashcardPath);
 
@@ -168,7 +175,7 @@ export class FlashcardManager {
 	 * Extract source note content from flashcard file (stored in HTML comment)
 	 */
 	async extractSourceContent(sourceFile: TFile): Promise<string | null> {
-		const flashcardPath = this.getFlashcardPath(sourceFile);
+		const flashcardPath = await this.getFlashcardPathAsync(sourceFile);
 		const flashcardFile =
 			this.app.vault.getAbstractFileByPath(flashcardPath);
 
@@ -191,7 +198,7 @@ export class FlashcardManager {
 		sourceFile: TFile,
 		noteContent: string
 	): Promise<void> {
-		const flashcardPath = this.getFlashcardPath(sourceFile);
+		const flashcardPath = await this.getFlashcardPathAsync(sourceFile);
 		const flashcardFile =
 			this.app.vault.getAbstractFileByPath(flashcardPath);
 
@@ -225,7 +232,7 @@ export class FlashcardManager {
 	): Promise<TFile> {
 		await this.ensureFolderExists();
 
-		const flashcardPath = this.getFlashcardPath(sourceFile);
+		const flashcardPath = await this.getFlashcardPathAsync(sourceFile);
 		const frontmatter = this.generateFrontmatter(sourceFile, this.frontmatterService.getDefaultDeck());
 		const fullContent = frontmatter + flashcardContent;
 
@@ -245,7 +252,7 @@ export class FlashcardManager {
 		sourceFile: TFile,
 		newFlashcardContent: string
 	): Promise<TFile> {
-		const flashcardPath = this.getFlashcardPath(sourceFile);
+		const flashcardPath = await this.getFlashcardPathAsync(sourceFile);
 		const flashcardFile =
 			this.app.vault.getAbstractFileByPath(flashcardPath);
 
@@ -283,11 +290,8 @@ export class FlashcardManager {
 		const fsrsData = createDefaultFSRSData(id);
 		this.store!.set(id, fsrsData);
 
-		// Get existing content to calculate line number
+		// Get existing content
 		const existingContent = await this.app.vault.read(file);
-		// Line number will be after trimmed content + 2 empty lines + 1 (1-based)
-		const trimmedLines = existingContent.trimEnd().split("\n");
-		const lineNumber = trimmedLines.length + 2; // +1 for empty line, +1 for 1-based
 
 		// Build flashcard content with block ID
 		const newCardContent = `${question} ${FLASHCARD_CONFIG.tag}\n${answer}\n^${id}`;
@@ -305,7 +309,6 @@ export class FlashcardManager {
 			id,
 			question,
 			answer,
-			lineNumber,
 			filePath,
 			fsrs: fsrsData,
 			deck: deck || "default",
@@ -317,7 +320,7 @@ export class FlashcardManager {
 	 * Open flashcard file
 	 */
 	async openFlashcardFile(sourceFile: TFile): Promise<void> {
-		const flashcardPath = this.getFlashcardPath(sourceFile);
+		const flashcardPath = await this.getFlashcardPathAsync(sourceFile);
 		const flashcardFile =
 			this.app.vault.getAbstractFileByPath(flashcardPath);
 
@@ -329,23 +332,41 @@ export class FlashcardManager {
 	}
 
 	/**
-	 * Open flashcard file at a specific line for editing
+	 * Open flashcard file at a specific card by its ID
 	 */
-	async openFlashcardFileAtLine(
+	async openFlashcardFileAtCard(
 		sourceFile: TFile,
-		lineNumber: number
+		cardId: string
 	): Promise<void> {
-		const flashcardPath = this.getFlashcardPath(sourceFile);
+		const flashcardPath = await this.getFlashcardPathAsync(sourceFile);
 		const flashcardFile =
 			this.app.vault.getAbstractFileByPath(flashcardPath);
 
 		if (flashcardFile instanceof TFile) {
-			await this.openFileAtLine(flashcardFile, lineNumber);
+			await this.openFileAtCard(flashcardFile, cardId);
 		}
 	}
 
 	/**
-	 * Open any file at a specific line
+	 * Open any file at a specific card by its ID
+	 * Finds the card by UUID and navigates to it
+	 */
+	async openFileAtCard(file: TFile, cardId: string): Promise<void> {
+		const content = await this.app.vault.read(file);
+		const lineNumber = this.cardMoverService.findCardLineNumber(content, cardId);
+
+		if (lineNumber) {
+			await this.openFileAtLine(file, lineNumber);
+		} else {
+			// Card not found, just open the file
+			const leaf = this.getLeafForFile(file);
+			await leaf.openFile(file);
+			this.app.workspace.setActiveLeaf(leaf, { focus: true });
+		}
+	}
+
+	/**
+	 * Open any file at a specific line (internal helper for navigation)
 	 */
 	async openFileAtLine(file: TFile, lineNumber: number): Promise<void> {
 		const leaf = this.getLeafForFile(file);
@@ -366,13 +387,13 @@ export class FlashcardManager {
 	}
 
 	/**
-	 * Remove a flashcard from the file by its line number
+	 * Remove a flashcard from the file by its card ID
 	 */
 	async removeFlashcard(
 		sourceFile: TFile,
-		lineNumber: number
+		cardId: string
 	): Promise<boolean> {
-		const flashcardPath = this.getFlashcardPath(sourceFile);
+		const flashcardPath = await this.getFlashcardPathAsync(sourceFile);
 		const flashcardFile =
 			this.app.vault.getAbstractFileByPath(flashcardPath);
 
@@ -380,49 +401,40 @@ export class FlashcardManager {
 			return false;
 		}
 
-		return this.removeFlashcardDirect(flashcardFile, lineNumber);
+		return this.removeFlashcardById(flashcardFile, cardId);
 	}
 
 	/**
-	 * Remove a flashcard directly from a flashcard file
+	 * Remove a flashcard directly from a flashcard file by its UUID
 	 */
-	async removeFlashcardDirect(
+	async removeFlashcardById(
 		flashcardFile: TFile,
-		lineNumber: number
+		cardId: string
 	): Promise<boolean> {
 		if (!(flashcardFile instanceof TFile)) {
 			return false;
 		}
 
 		const content = await this.app.vault.read(flashcardFile);
-		const lines = content.split("\n");
+		const cardData = this.cardMoverService.extractCardById(content, cardId);
 
-		const startIndex = lineNumber - 1;
-		if (startIndex < 0 || startIndex >= lines.length) {
+		if (!cardData) {
 			return false;
 		}
 
-		// Find the end of this flashcard block
-		let endIndex = startIndex + 1;
-		while (endIndex < lines.length) {
-			const line = lines[endIndex] ?? "";
-			if (line.trim() === "" || this.isFlashcardLine(line)) {
-				break;
-			}
-			endIndex++;
-		}
+		// Remove the card from content using CardMoverService
+		const newContent = this.cardMoverService.removeCardFromContent(
+			content,
+			cardData.startLine,
+			cardData.endLine
+		);
 
-		// Remove trailing empty lines
-		while (
-			endIndex < lines.length &&
-			(lines[endIndex] ?? "").trim() === ""
-		) {
-			endIndex++;
-		}
-
-		lines.splice(startIndex, endIndex - startIndex);
-		const newContent = lines.join("\n");
 		await this.app.vault.modify(flashcardFile, newContent);
+
+		// Also remove from store if available
+		if (this.store) {
+			this.store.delete(cardId);
+		}
 
 		return true;
 	}
@@ -435,7 +447,7 @@ export class FlashcardManager {
 		changes: FlashcardChange[],
 		_existingFlashcards: FlashcardItem[]
 	): Promise<TFile> {
-		const flashcardPath = this.getFlashcardPath(sourceFile);
+		const flashcardPath = await this.getFlashcardPathAsync(sourceFile);
 		const flashcardFile =
 			this.app.vault.getAbstractFileByPath(flashcardPath);
 
@@ -447,16 +459,16 @@ export class FlashcardManager {
 			);
 		}
 
-		const content = await this.app.vault.read(flashcardFile);
-		let lines = content.split("\n");
+		let content = await this.app.vault.read(flashcardFile);
 
-		// Process DELETED changes first (sort by line number descending)
-		lines = this.processDeletedChanges(lines, changes);
+		// Process DELETED changes first (finds cards by UUID)
+		content = this.processDeletedChanges(content, changes);
 
-		// Process MODIFIED changes (sort by line number descending)
-		lines = this.processModifiedChanges(lines, changes);
+		// Process MODIFIED changes (finds cards by UUID)
+		content = this.processModifiedChanges(content, changes);
 
 		// Process NEW changes (append at end)
+		let lines = content.split("\n");
 		lines = this.processNewChanges(lines, changes);
 
 		const newContent = lines.join("\n").trimEnd() + "\n";
@@ -570,81 +582,66 @@ export class FlashcardManager {
 	}
 
 	private processDeletedChanges(
-		lines: string[],
+		content: string,
 		changes: FlashcardChange[]
-	): string[] {
-		const deletedChanges = changes
-			.filter(
-				(c) =>
-					c.type === "DELETED" && c.accepted && c.originalLineNumber
-			)
-			.sort(
-				(a, b) =>
-					(b.originalLineNumber ?? 0) - (a.originalLineNumber ?? 0)
-			);
+	): string {
+		const deletedChanges = changes.filter(
+			(c) => c.type === "DELETED" && c.accepted && c.originalCardId
+		);
 
+		let newContent = content;
 		for (const change of deletedChanges) {
-			const lineIndex = (change.originalLineNumber ?? 0) - 1;
-			if (lineIndex < 0 || lineIndex >= lines.length) continue;
-
-			let endIndex = lineIndex + 1;
-			while (endIndex < lines.length) {
-				const line = lines[endIndex] ?? "";
-				if (line.trim() === "" || this.isFlashcardLine(line)) {
-					break;
+			const cardData = this.cardMoverService.extractCardById(
+				newContent,
+				change.originalCardId!
+			);
+			if (cardData) {
+				newContent = this.cardMoverService.removeCardFromContent(
+					newContent,
+					cardData.startLine,
+					cardData.endLine
+				);
+				// Also remove from store
+				if (this.store) {
+					this.store.delete(change.originalCardId!);
 				}
-				endIndex++;
 			}
-
-			if (
-				endIndex < lines.length &&
-				(lines[endIndex] ?? "").trim() === ""
-			) {
-				endIndex++;
-			}
-
-			lines.splice(lineIndex, endIndex - lineIndex);
 		}
 
-		return lines;
+		return newContent;
 	}
 
 	private processModifiedChanges(
-		lines: string[],
+		content: string,
 		changes: FlashcardChange[]
-	): string[] {
-		const modifiedChanges = changes
-			.filter(
-				(c) =>
-					c.type === "MODIFIED" && c.accepted && c.originalLineNumber
-			)
-			.sort(
-				(a, b) =>
-					(b.originalLineNumber ?? 0) - (a.originalLineNumber ?? 0)
-			);
+	): string {
+		const modifiedChanges = changes.filter(
+			(c) => c.type === "MODIFIED" && c.accepted && c.originalCardId
+		);
 
+		let newContent = content;
 		for (const change of modifiedChanges) {
-			const lineIndex = (change.originalLineNumber ?? 0) - 1;
-			if (lineIndex < 0 || lineIndex >= lines.length) continue;
-
-			let endIndex = lineIndex + 1;
-			while (endIndex < lines.length) {
-				const line = lines[endIndex] ?? "";
-				if (line.trim() === "" || this.isFlashcardLine(line)) {
-					break;
-				}
-				endIndex++;
+			const cardData = this.cardMoverService.extractCardById(
+				newContent,
+				change.originalCardId!
+			);
+			if (cardData) {
+				// Build new card text preserving the original UUID
+				const newCardText = this.cardMoverService.buildFlashcardText(
+					change.question,
+					change.answer,
+					change.originalCardId!
+				);
+				newContent = this.cardMoverService.replaceCardContent(
+					newContent,
+					cardData.startLine,
+					cardData.endLine,
+					newCardText
+				);
 			}
-
-			const newFlashcardLines = [
-				`${change.question} ${FLASHCARD_CONFIG.tag}`,
-				change.answer,
-			];
-
-			lines.splice(lineIndex, endIndex - lineIndex, ...newFlashcardLines);
 		}
 
-		return lines;
+		return newContent;
 	}
 
 	private processNewChanges(
@@ -707,7 +704,7 @@ export class FlashcardManager {
 			throw new FileError("Target note not found", targetNotePath, "read");
 		}
 
-		const targetFlashcardPath = this.getFlashcardPath(targetNote);
+		const targetFlashcardPath = await this.getFlashcardPathAsync(targetNote);
 		let targetFile = this.app.vault.getAbstractFileByPath(targetFlashcardPath);
 
 		// 5. Prepare the flashcard text to add
@@ -794,7 +791,7 @@ export class FlashcardManager {
 	/**
 	 * Parse all flashcards from file content
 	 * - Cards with block ID: get FSRS from store
-	 * - Cards without block ID: create new FSRS, add to store
+	 * - Cards without block ID: create new FSRS, add to store (block ID will be added by scanVault)
 	 */
 	private parseAllFlashcards(
 		content: string,
@@ -813,7 +810,6 @@ export class FlashcardManager {
 
 		let currentQuestion = "";
 		let currentAnswerLines: string[] = [];
-		let currentLineNumber = 0;
 		let foundBlockId = false;
 
 		for (let i = 0; i < lines.length; i++) {
@@ -826,7 +822,6 @@ export class FlashcardManager {
 					const card = this.createNewCard(
 						currentQuestion,
 						currentAnswerLines.join("\n").trim(),
-						currentLineNumber,
 						filePath,
 						deck,
 						sourceNoteName ?? undefined
@@ -836,7 +831,6 @@ export class FlashcardManager {
 
 				// Start new card
 				currentQuestion = flashcardMatch[1].trim();
-				currentLineNumber = i + 1;
 				currentAnswerLines = [];
 				foundBlockId = false;
 				continue;
@@ -860,7 +854,6 @@ export class FlashcardManager {
 					id: blockId,
 					question: currentQuestion,
 					answer: currentAnswerLines.join("\n").trim(),
-					lineNumber: currentLineNumber,
 					filePath,
 					fsrs: fsrsData,
 					deck,
@@ -892,7 +885,6 @@ export class FlashcardManager {
 					const card = this.createNewCard(
 						currentQuestion,
 						currentAnswerLines.join("\n").trim(),
-						currentLineNumber,
 						filePath,
 						deck,
 						sourceNoteName ?? undefined
@@ -916,7 +908,6 @@ export class FlashcardManager {
 			const card = this.createNewCard(
 				currentQuestion,
 				currentAnswerLines.join("\n").trim(),
-				currentLineNumber,
 				filePath,
 				deck,
 				sourceNoteName ?? undefined
@@ -929,12 +920,11 @@ export class FlashcardManager {
 
 	/**
 	 * Create a new card and add it to store
-	 * Does NOT add block ID to file yet (will be added on first review)
+	 * Block ID will be added to file by scanVault on next scan
 	 */
 	private createNewCard(
 		question: string,
 		answer: string,
-		lineNumber: number,
 		filePath: string,
 		deck: string,
 		sourceNoteName?: string
@@ -948,7 +938,6 @@ export class FlashcardManager {
 			id,
 			question,
 			answer,
-			lineNumber,
 			filePath,
 			fsrs: fsrsData,
 			deck,
@@ -1007,7 +996,6 @@ export class FlashcardManager {
 		filePath: string,
 		cardId: string,
 		newFSRSData: FSRSCardData,
-		lineNumber: number,
 		reviewLogEntry?: CardReviewLogEntry
 	): Promise<void> {
 		// Fast path: use sharded store
@@ -1034,7 +1022,7 @@ export class FlashcardManager {
 			this.store.set(cardId, entry);
 
 			// Ensure block ID exists in file (for new cards created during this session)
-			await this.ensureBlockIdInFile(filePath, cardId, lineNumber);
+			await this.ensureBlockIdInFile(filePath, cardId);
 
 			return;
 		}
@@ -1049,40 +1037,26 @@ export class FlashcardManager {
 
 	/**
 	 * Ensure block ID exists in file for a card
-	 * Adds ^uuid after the answer if not present
+	 * Checks if ^cardId is present and skips if it is
+	 * Note: Block IDs are added by scanVault for new cards
 	 */
 	private async ensureBlockIdInFile(
 		filePath: string,
-		cardId: string,
-		lineNumber: number
+		cardId: string
 	): Promise<void> {
 		const file = this.app.vault.getAbstractFileByPath(filePath);
 		if (!(file instanceof TFile)) return;
 
 		const content = await this.app.vault.read(file);
-		const lines = content.split("\n");
 
-		// Find end of card (answer section)
-		let insertIndex = lineNumber; // Start after question (lineNumber is 1-based)
-		while (insertIndex < lines.length) {
-			const line = lines[insertIndex] ?? "";
-
-			// Check if block ID already exists
-			if (line.match(/^\^[a-f0-9-]+$/i)) {
-				return; // Already has block ID
-			}
-
-			// Stop at empty line or next flashcard
-			if (line.trim() === "" || this.isFlashcardLine(line)) {
-				break;
-			}
-
-			insertIndex++;
+		// Check if block ID already exists in file
+		const blockIdPattern = new RegExp(`^\\^${cardId}$`, "im");
+		if (blockIdPattern.test(content)) {
+			return; // Already has block ID
 		}
 
-		// Insert block ID before empty line or at end of answer
-		lines.splice(insertIndex, 0, `^${cardId}`);
-		await this.app.vault.modify(file, lines.join("\n"));
+		// Block ID doesn't exist - it will be added by scanVault on next scan
+		// This is fine because the store already has the card data
 	}
 
 	/**
@@ -1091,7 +1065,7 @@ export class FlashcardManager {
 	 */
 	async updateCardContent(
 		filePath: string,
-		lineNumber: number,
+		cardId: string,
 		newQuestion: string,
 		newAnswer: string
 	): Promise<void> {
@@ -1101,69 +1075,27 @@ export class FlashcardManager {
 		}
 
 		const content = await this.app.vault.read(file);
-		const lines = content.split("\n");
-		const questionLineIndex = lineNumber - 1;
+		const cardData = this.cardMoverService.extractCardById(content, cardId);
 
-		if (questionLineIndex < 0 || questionLineIndex >= lines.length) {
-			return;
+		if (!cardData) {
+			return; // Card not found
 		}
 
-		// Update question line (preserve #flashcard tag)
-		lines[questionLineIndex] = `${newQuestion} ${FLASHCARD_CONFIG.tag}`;
+		// Build new card text preserving the UUID
+		const newCardText = this.cardMoverService.buildFlashcardText(
+			newQuestion,
+			newAnswer,
+			cardId
+		);
 
-		// Find answer range (from question+1 to empty line, next card, or FSRS comment)
-		let answerStartIndex = questionLineIndex + 1;
-		let answerEndIndex = answerStartIndex;
+		// Replace card content
+		const newContent = this.cardMoverService.replaceCardContent(
+			content,
+			cardData.startLine,
+			cardData.endLine,
+			newCardText
+		);
 
-		for (let i = answerStartIndex; i < lines.length; i++) {
-			const line = lines[i] ?? "";
-
-			// Stop at empty line
-			if (line.trim() === "") {
-				answerEndIndex = i;
-				break;
-			}
-
-			// Stop at next flashcard
-			if (this.isFlashcardLine(line)) {
-				answerEndIndex = i;
-				break;
-			}
-
-			// Stop at FSRS data (but we need to preserve it)
-			if (line.includes(FLASHCARD_CONFIG.fsrsDataPrefix)) {
-				answerEndIndex = i;
-				break;
-			}
-
-			answerEndIndex = i + 1;
-		}
-
-		// Get FSRS data line if it exists
-		const fsrsLine = lines[answerEndIndex]?.includes(
-			FLASHCARD_CONFIG.fsrsDataPrefix
-		)
-			? lines[answerEndIndex]
-			: null;
-
-		// Remove old answer lines
-		const linesToRemove = answerEndIndex - answerStartIndex;
-		lines.splice(answerStartIndex, linesToRemove);
-
-		// Insert new answer lines
-		const newAnswerLines = newAnswer.split("\n");
-		lines.splice(answerStartIndex, 0, ...newAnswerLines);
-
-		// Re-add FSRS data if it existed (after new answer)
-		if (fsrsLine) {
-			const fsrsIndex = answerStartIndex + newAnswerLines.length;
-			// Check if FSRS is already there (in case answer didn't change length)
-			if (!lines[fsrsIndex]?.includes(FLASHCARD_CONFIG.fsrsDataPrefix)) {
-				lines.splice(fsrsIndex, 0, fsrsLine);
-			}
-		}
-
-		const newContent = lines.join("\n");
 		await this.app.vault.modify(file, newContent);
 	}
 

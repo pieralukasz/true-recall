@@ -138,4 +138,64 @@ export class CardMoverService {
 	getFlashcardTag(): string {
 		return FLASHCARD_CONFIG.tag;
 	}
+
+	/**
+	 * Find the line number of a card by its UUID (for navigation)
+	 * Searches for ^{cardId} in content and returns the question line number (1-based)
+	 * @returns Line number (1-based) or null if card not found
+	 */
+	findCardLineNumber(content: string, cardId: string): number | null {
+		const lines = content.split("\n");
+		const blockIdPattern = new RegExp(`^\\^${cardId}$`, "i");
+
+		// Find the line with ^cardId
+		let blockIdLineIndex = -1;
+		for (let i = 0; i < lines.length; i++) {
+			if (blockIdPattern.test(lines[i] ?? "")) {
+				blockIdLineIndex = i;
+				break;
+			}
+		}
+
+		if (blockIdLineIndex === -1) {
+			return null;
+		}
+
+		// Parse backwards to find question line
+		for (let i = blockIdLineIndex - 1; i >= 0; i--) {
+			const line = lines[i] ?? "";
+			if (this.flashcardPattern.test(line)) {
+				return i + 1; // Convert 0-based to 1-based line number
+			}
+		}
+
+		return null;
+	}
+
+	/**
+	 * Replace card content in file by line range
+	 * @returns New content with card replaced
+	 */
+	replaceCardContent(
+		content: string,
+		startLine: number,
+		endLine: number,
+		newCardText: string
+	): string {
+		const lines = content.split("\n");
+
+		// Extend endLine to include trailing empty lines
+		let actualEndLine = endLine;
+		while (
+			actualEndLine + 1 < lines.length &&
+			(lines[actualEndLine + 1] ?? "").trim() === ""
+		) {
+			actualEndLine++;
+		}
+
+		// Replace the lines
+		lines.splice(startLine, actualEndLine - startLine + 1, newCardText);
+
+		return lines.join("\n");
+	}
 }

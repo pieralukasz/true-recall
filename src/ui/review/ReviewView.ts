@@ -3,7 +3,7 @@
  * Main view for spaced repetition review sessions
  * Can be displayed in fullscreen (main area) or panel (sidebar)
  */
-import { ItemView, WorkspaceLeaf, MarkdownRenderer, Notice, Platform, normalizePath, Menu, setIcon, type ViewStateResult } from "obsidian";
+import { ItemView, WorkspaceLeaf, MarkdownRenderer, Notice, Platform, normalizePath, Menu, setIcon, TFile, type ViewStateResult } from "obsidian";
 import { Rating, State, type Grade } from "ts-fsrs";
 import { VIEW_TYPE_REVIEW } from "../../constants";
 import { FSRSService, ReviewService, FlashcardManager, SessionPersistenceService } from "../../services";
@@ -742,7 +742,7 @@ export class ReviewView extends ItemView {
                 // Save to file
                 await this.flashcardManager.updateCardContent(
                     card.filePath,
-                    card.lineNumber,
+                    card.id,
                     newQuestion,
                     newAnswer
                 );
@@ -1308,8 +1308,7 @@ Source: [[${sourceNote}]]
             await this.flashcardManager.updateCardFSRS(
                 card.filePath,
                 card.id,
-                originalFsrs,
-                card.lineNumber
+                originalFsrs
             );
         } catch (error) {
             console.error("Error restoring card FSRS:", error);
@@ -1340,8 +1339,7 @@ Source: [[${sourceNote}]]
                         await this.flashcardManager.updateCardFSRS(
                             additionalCard.card.filePath,
                             additionalCard.card.id,
-                            additionalCard.originalFsrs,
-                            additionalCard.card.lineNumber
+                            additionalCard.originalFsrs
                         );
                     } catch (error) {
                         console.error("Error restoring additional card FSRS:", error);
@@ -1475,8 +1473,7 @@ Source: [[${sourceNote}]]
             await this.flashcardManager.updateCardFSRS(
                 card.filePath,
                 card.id,
-                updatedFsrs,
-                card.lineNumber
+                updatedFsrs
             );
         } catch (error) {
             console.error("Error suspending card:", error);
@@ -1521,8 +1518,7 @@ Source: [[${sourceNote}]]
             await this.flashcardManager.updateCardFSRS(
                 card.filePath,
                 card.id,
-                updatedFsrs,
-                card.lineNumber
+                updatedFsrs
             );
         } catch (error) {
             console.error("Error burying card:", error);
@@ -1598,8 +1594,7 @@ Source: [[${sourceNote}]]
                 await this.flashcardManager.updateCardFSRS(
                     siblingCard.filePath,
                     siblingCard.id,
-                    updatedFsrs,
-                    siblingCard.lineNumber
+                    updatedFsrs
                 );
                 buriedCount++;
             } catch (error) {
@@ -1639,11 +1634,11 @@ Source: [[${sourceNote}]]
         const card = this.stateManager.getCurrentCard();
         if (!card) return;
 
-        // Open the flashcard file at the card's line
-        void this.flashcardManager.openFileAtLine(
-            this.app.vault.getAbstractFileByPath(card.filePath) as any,
-            card.lineNumber
-        );
+        // Open the flashcard file at the card's position
+        const file = this.app.vault.getAbstractFileByPath(card.filePath);
+        if (file instanceof TFile) {
+            void this.flashcardManager.openFileAtCard(file, card.id);
+        }
     }
 
     private handleClose(): void {

@@ -222,7 +222,7 @@ Format each as: [Question text] #flashcard\\n[Answer text]`;
                 answer: c.answer,
                 originalQuestion: c.originalQuestion,
                 originalAnswer: c.originalAnswer,
-                originalLineNumber: c.originalLineNumber,
+                originalCardId: c.originalCardId,
                 reason: c.reason,
             })),
             existingFlashcards
