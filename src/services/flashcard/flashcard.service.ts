@@ -225,6 +225,7 @@ export class FlashcardManager {
 
 	/**
 	 * Create a new flashcard file
+	 * Ensures source note has flashcard_uid and uses UID-based naming
 	 */
 	async createFlashcardFile(
 		sourceFile: TFile,
@@ -232,8 +233,20 @@ export class FlashcardManager {
 	): Promise<TFile> {
 		await this.ensureFolderExists();
 
-		const flashcardPath = await this.getFlashcardPathAsync(sourceFile);
-		const frontmatter = this.generateFrontmatter(sourceFile, this.frontmatterService.getDefaultDeck());
+		// Ensure source note has flashcard_uid
+		let uid = await this.frontmatterService.getSourceNoteUid(sourceFile);
+		if (!uid) {
+			uid = this.frontmatterService.generateUid();
+			await this.frontmatterService.setSourceNoteUid(sourceFile, uid);
+		}
+
+		// Use UID-based path
+		const flashcardPath = this.getFlashcardPathByUid(uid);
+		const frontmatter = this.frontmatterService.generateFrontmatterWithUid(
+			sourceFile,
+			uid,
+			this.frontmatterService.getDefaultDeck()
+		);
 		const fullContent = frontmatter + flashcardContent;
 
 		const existing = this.app.vault.getAbstractFileByPath(flashcardPath);
@@ -247,11 +260,19 @@ export class FlashcardManager {
 
 	/**
 	 * Append new flashcards to existing file
+	 * Ensures source note has flashcard_uid and creates FSRS data for new cards
 	 */
 	async appendFlashcards(
 		sourceFile: TFile,
 		newFlashcardContent: string
 	): Promise<TFile> {
+		// Ensure source note has flashcard_uid
+		let uid = await this.frontmatterService.getSourceNoteUid(sourceFile);
+		if (!uid) {
+			uid = this.frontmatterService.generateUid();
+			await this.frontmatterService.setSourceNoteUid(sourceFile, uid);
+		}
+
 		const flashcardPath = await this.getFlashcardPathAsync(sourceFile);
 		const flashcardFile =
 			this.app.vault.getAbstractFileByPath(flashcardPath);
@@ -262,6 +283,9 @@ export class FlashcardManager {
 				newFlashcardContent
 			);
 		}
+
+		// Create FSRS data for new cards with block IDs
+		this.createFsrsDataForNewCards(newFlashcardContent);
 
 		const existingContent = await this.app.vault.read(flashcardFile);
 		const updatedContent =
@@ -479,6 +503,51 @@ export class FlashcardManager {
 
 	// ===== Private Helper Methods =====
 
+	/**
+	 * Create FSRS data for new flashcards with block IDs
+	 * Parses the content and creates FSRS entries for any cards with block IDs
+	 * that don't already exist in the store
+	 */
+	private createFsrsDataForNewCards(content: string): void {
+		if (!this.store) return;
+
+		const lines = content.split("\n");
+		const flashcardPattern = new RegExp(
+			`^(.+?)\\s*${FLASHCARD_CONFIG.tag}\\s*$`
+		);
+		const blockIdPattern = /^\^([a-f0-9-]+)$/i;
+
+		for (let i = 0; i < lines.length; i++) {
+			const line = lines[i] ?? "";
+			const flashcardMatch = line.match(flashcardPattern);
+
+			if (flashcardMatch?.[1]) {
+				// Found a flashcard question, look for block ID
+				for (let j = i + 1; j < lines.length && j < i + 50; j++) {
+					const currentLine = lines[j] ?? "";
+					const blockIdMatch = currentLine.match(blockIdPattern);
+
+					if (blockIdMatch?.[1]) {
+						const cardId = blockIdMatch[1];
+
+						// Create FSRS data if not in store
+						if (!this.store.get(cardId)) {
+							const fsrsData = createDefaultFSRSData(cardId);
+							this.store.set(cardId, fsrsData);
+						}
+
+						break;
+					}
+
+					// Stop if we hit another flashcard or empty line (end of card)
+					if (flashcardPattern.test(currentLine) || currentLine.trim() === "") {
+						break;
+					}
+				}
+			}
+		}
+	}
+
 	private createEmptyFlashcardInfo(filePath: string): FlashcardInfo {
 		return {
 			exists: false,
@@ -659,8 +728,18 @@ export class FlashcardManager {
 			}
 
 			for (const change of newChanges) {
+				// Generate block ID immediately
+				const cardId = this.generateCardId();
+
+				// Create FSRS data for the new card
+				if (this.store) {
+					const fsrsData = createDefaultFSRSData(cardId);
+					this.store.set(cardId, fsrsData);
+				}
+
 				lines.push(`${change.question} ${FLASHCARD_CONFIG.tag}`);
 				lines.push(change.answer);
+				lines.push(`^${cardId}`);
 				lines.push("");
 			}
 		}
@@ -1270,5 +1349,106 @@ export class FlashcardManager {
 		}
 
 		return removed;
+	}
+
+	// ===== Legacy File Migration Methods =====
+
+	/**
+	 * Migrate legacy flashcards_ files to UID-based naming
+	 * - Renames files from flashcards_NAME.md to {uid}.md
+	 * - Adds flashcard_uid to source notes
+	 * - Updates source_uid in flashcard file frontmatter
+	 *
+	 * @returns Result with count of renamed files and any errors
+	 */
+	async migrateLegacyFiles(): Promise<{ renamed: number; errors: string[] }> {
+		const results = { renamed: 0, errors: [] as string[] };
+
+		// Find all legacy flashcard files
+		const files = this.app.vault.getMarkdownFiles().filter((file) =>
+			file.name.startsWith(FLASHCARD_CONFIG.filePrefix)
+		);
+
+		for (const file of files) {
+			try {
+				const content = await this.app.vault.read(file);
+				const sourceLink = this.frontmatterService.extractSourceLinkFromContent(content);
+
+				if (!sourceLink) {
+					results.errors.push(`${file.path}: No source_link found`);
+					continue;
+				}
+
+				// Find source note
+				const sourceFiles = this.app.vault.getMarkdownFiles().filter((f) => f.basename === sourceLink);
+
+				if (sourceFiles.length === 0) {
+					results.errors.push(`${file.path}: Source note not found`);
+					continue;
+				}
+
+				const sourceFile = sourceFiles[0];
+
+				// Generate UID if source note doesn't have one
+				let uid = await this.frontmatterService.getSourceNoteUid(sourceFile);
+				if (!uid) {
+					uid = this.frontmatterService.generateUid();
+					await this.frontmatterService.setSourceNoteUid(sourceFile, uid);
+				}
+
+				// Update flashcard file frontmatter with source_uid
+				const updatedContent = this.updateFlashcardFrontmatterWithUid(content, uid);
+
+				// Create new UID-based file
+				const newPath = this.getFlashcardPathByUid(uid);
+				await this.app.vault.create(newPath, updatedContent);
+
+				// Delete old file
+				await this.app.vault.delete(file);
+
+				results.renamed++;
+			} catch (error) {
+				results.errors.push(`${file.path}: ${error}`);
+			}
+		}
+
+		return results;
+	}
+
+	/**
+	 * Update flashcard file frontmatter with source_uid
+	 * Adds or updates the source_uid field in the frontmatter
+	 *
+	 * @param content The flashcard file content
+	 * @param uid The UID to set as source_uid
+	 * @returns Updated content with source_uid in frontmatter
+	 */
+	private updateFlashcardFrontmatterWithUid(content: string, uid: string): string {
+		const uidField = FLASHCARD_CONFIG.flashcardUidField;
+		const frontmatterRegex = /^---\n([\s\S]*?)\n---/;
+		const match = content.match(frontmatterRegex);
+
+		if (match) {
+			const frontmatter = match[1] ?? "";
+			if (new RegExp(`^${uidField}:`, "m").test(frontmatter)) {
+				// Already has source_uid, update it
+				return content.replace(
+					frontmatterRegex,
+					`---\n${frontmatter.replace(
+						new RegExp(`^${uidField}:.*$`, "m"),
+						`${uidField}: "${uid}"`
+					)}\n---`
+				);
+			} else {
+				// Add source_uid to existing frontmatter
+				return content.replace(
+					frontmatterRegex,
+					`---\n${uidField}: "${uid}"\n${frontmatter}\n---`
+				);
+			}
+		}
+
+		// No frontmatter, create new
+		return `---\n${uidField}: "${uid}"\n---\n\n${content}`;
 	}
 }
