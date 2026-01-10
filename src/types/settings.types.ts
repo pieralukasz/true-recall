@@ -71,10 +71,6 @@ export interface EpistemeSettings {
     showReviewHeader: boolean;
     /** Pokaż statystyki new/learning/due w nagłówku Review */
     showReviewHeaderStats: boolean;
-    /** Ukryj pliki flashcards z panelu Linked mentions */
-    hideFlashcardsFromBacklinks: boolean;
-    /** Aktualizuj licznik Linked mentions po ukryciu flashcards */
-    updateLinkedMentionsCount: boolean;
     /** Pokaż przycisk "Next Session" po zakończeniu sesji niestandardowej */
     continuousCustomReviews: boolean;
 

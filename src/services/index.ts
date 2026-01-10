@@ -54,5 +54,8 @@ export {
 	type DiffResult,
 } from "./ai/openrouter.service";
 
-// UI services
-export { BacklinksFilterService } from "./ui/backlinks-filter.service";
+// Migration services
+export {
+	FlashcardMigrationService,
+	type MigrationResult,
+} from "./migration/flashcard-migration.service";

@@ -84,13 +84,62 @@ export class FlashcardManager {
 	}
 
 	/**
-	 * Get the flashcard file path for a source note
+	 * Get the flashcard file path for a source note (legacy method)
+	 * Use getFlashcardPathAsync for new code
 	 */
 	getFlashcardPath(sourceFile: TFile): string {
 		const baseName = sourceFile.basename;
 		return normalizePath(
 			`${this.settings.flashcardsFolder}/${FLASHCARD_CONFIG.filePrefix}${baseName}.md`
 		);
+	}
+
+	/**
+	 * Get flashcard file path by UID
+	 */
+	getFlashcardPathByUid(uid: string): string {
+		return normalizePath(`${this.settings.flashcardsFolder}/${uid}.md`);
+	}
+
+	/**
+	 * Get flashcard file path for a source note (UID-first, with legacy fallback)
+	 */
+	async getFlashcardPathAsync(sourceFile: TFile): Promise<string> {
+		// Try new UID system first
+		const uid = await this.frontmatterService.getSourceNoteUid(sourceFile);
+		if (uid) {
+			const uidPath = this.getFlashcardPathByUid(uid);
+			// Check if UID-based file exists
+			if (this.app.vault.getAbstractFileByPath(uidPath)) {
+				return uidPath;
+			}
+		}
+		// Fall back to legacy system
+		return this.getFlashcardPath(sourceFile);
+	}
+
+	/**
+	 * Check if a file is a flashcard file (supports both UID and legacy naming)
+	 */
+	isFlashcardFile(file: TFile): boolean {
+		const folderPath = normalizePath(this.settings.flashcardsFolder);
+		if (!file.path.startsWith(folderPath + "/")) {
+			return false;
+		}
+		// Legacy: starts with "flashcards_"
+		if (file.name.startsWith(FLASHCARD_CONFIG.filePrefix)) {
+			return true;
+		}
+		// New: 8-char hex UID pattern
+		const uidPattern = new RegExp(`^[a-f0-9]{${FLASHCARD_CONFIG.uidLength}}\\.md$`, "i");
+		return uidPattern.test(file.name);
+	}
+
+	/**
+	 * Get the frontmatter service for external use
+	 */
+	getFrontmatterService(): FrontmatterService {
+		return this.frontmatterService;
 	}
 
 	/**
@@ -720,16 +769,11 @@ export class FlashcardManager {
 		}
 
 		const allCards: FSRSFlashcardItem[] = [];
-		const folderPath = normalizePath(this.settings.flashcardsFolder);
 
-		// Get all flashcard files
+		// Get all flashcard files (supports both UID and legacy naming)
 		const files = this.app.vault
 			.getMarkdownFiles()
-			.filter(
-				(file) =>
-					file.path.startsWith(folderPath + "/") &&
-					file.name.startsWith(FLASHCARD_CONFIG.filePrefix)
-			);
+			.filter((file) => this.isFlashcardFile(file));
 
 		for (const file of files) {
 			const content = await this.app.vault.read(file);
@@ -1161,14 +1205,10 @@ export class FlashcardManager {
 		// Collect all block IDs found in files
 		const foundBlockIds = new Set<string>();
 
-		const folderPath = normalizePath(this.settings.flashcardsFolder);
+		// Get all flashcard files (supports both UID and legacy naming)
 		const files = this.app.vault
 			.getMarkdownFiles()
-			.filter(
-				(file) =>
-					file.path.startsWith(folderPath + "/") &&
-					file.name.startsWith(FLASHCARD_CONFIG.filePrefix)
-			);
+			.filter((file) => this.isFlashcardFile(file));
 
 		for (const file of files) {
 			const result = await this.scanAndAddIdsToFile(file, foundBlockIds);

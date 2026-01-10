@@ -4,6 +4,7 @@
  */
 import { App, TFile } from "obsidian";
 import type { NoteFlashcardType } from "../../types";
+import { FLASHCARD_CONFIG } from "../../constants";
 
 /** Default deck name for cards without explicit deck assignment */
 const DEFAULT_DECK = "Knowledge";
@@ -26,8 +27,6 @@ source_link: "[[${sourceFile.basename}]]"
 tags: [flashcards/auto]
 deck: "${deck}"
 ---
-
-# Flashcards for [[${sourceFile.basename}]]
 
 `;
 	}
@@ -208,5 +207,109 @@ deck: "${deck}"
 	 */
 	getDefaultDeck(): string {
 		return DEFAULT_DECK;
+	}
+
+	// ===== UID-based linking methods =====
+
+	/**
+	 * Generate a short UID for flashcard linking (8 hex chars)
+	 */
+	generateUid(): string {
+		return crypto.randomUUID().replace(/-/g, "").slice(0, FLASHCARD_CONFIG.uidLength);
+	}
+
+	/**
+	 * Read flashcard_uid from source note frontmatter
+	 */
+	async getSourceNoteUid(sourceFile: TFile): Promise<string | null> {
+		const content = await this.app.vault.read(sourceFile);
+		const uidField = FLASHCARD_CONFIG.sourceUidField;
+		const match = content.match(new RegExp(`${uidField}:\\s*["']?([a-f0-9]+)["']?`, "i"));
+		return match?.[1] ?? null;
+	}
+
+	/**
+	 * Set flashcard_uid in source note frontmatter
+	 * Creates frontmatter if it doesn't exist
+	 */
+	async setSourceNoteUid(sourceFile: TFile, uid: string): Promise<void> {
+		const content = await this.app.vault.read(sourceFile);
+		const uidField = FLASHCARD_CONFIG.sourceUidField;
+		const frontmatterRegex = /^---\n([\s\S]*?)\n---/;
+		const match = content.match(frontmatterRegex);
+
+		let newContent: string;
+
+		if (match) {
+			const frontmatter = match[1] ?? "";
+			// Check if UID field already exists
+			if (new RegExp(`^${uidField}:`, "m").test(frontmatter)) {
+				// Update existing UID
+				newContent = content.replace(
+					frontmatterRegex,
+					`---\n${frontmatter.replace(
+						new RegExp(`^${uidField}:.*$`, "m"),
+						`${uidField}: "${uid}"`
+					)}\n---`
+				);
+			} else {
+				// Add UID field to existing frontmatter
+				newContent = content.replace(
+					frontmatterRegex,
+					`---\n${uidField}: "${uid}"\n${frontmatter}\n---`
+				);
+			}
+		} else {
+			// Create new frontmatter with UID
+			newContent = `---\n${uidField}: "${uid}"\n---\n\n${content}`;
+		}
+
+		await this.app.vault.modify(sourceFile, newContent);
+	}
+
+	/**
+	 * Generate frontmatter for a new flashcard file with UID
+	 */
+	generateFrontmatterWithUid(
+		sourceFile: TFile,
+		uid: string,
+		deck: string = DEFAULT_DECK
+	): string {
+		const uidField = FLASHCARD_CONFIG.flashcardUidField;
+		return `---
+${uidField}: "${uid}"
+source_link: "[[${sourceFile.basename}]]"
+tags: [flashcards/auto]
+deck: "${deck}"
+---
+
+`;
+	}
+
+	/**
+	 * Extract source_uid from flashcard file frontmatter
+	 */
+	extractSourceUidFromContent(content: string): string | null {
+		const uidField = FLASHCARD_CONFIG.flashcardUidField;
+		const match = content.match(new RegExp(`${uidField}:\\s*["']?([a-f0-9]+)["']?`, "i"));
+		return match?.[1] ?? null;
+	}
+
+	/**
+	 * Update source_link in flashcard file content
+	 */
+	updateSourceLinkInContent(content: string, newNoteName: string): string {
+		return content.replace(
+			/source_link:\s*"\[\[.+?\]\]"/,
+			`source_link: "[[${newNoteName}]]"`
+		);
+	}
+
+	/**
+	 * Remove "# Flashcards for [[...]]" header from content
+	 * Used for migration of existing files
+	 */
+	removeFlashcardsHeader(content: string): string {
+		return content.replace(/^# Flashcards for \[\[.+?\]\]\n\n?/m, "");
 	}
 }

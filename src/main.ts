@@ -1,4 +1,4 @@
-import { Plugin, TFile, Notice, Platform, normalizePath } from "obsidian";
+import { Plugin, TFile, TFolder, Notice, Platform, normalizePath } from "obsidian";
 import {
 	VIEW_TYPE_FLASHCARD_PANEL,
 	VIEW_TYPE_REVIEW,
@@ -11,9 +11,9 @@ import {
 	FSRSService,
 	StatsService,
 	SessionPersistenceService,
-	BacklinksFilterService,
 	ShardedStoreService,
 	DayBoundaryService,
+	FlashcardMigrationService,
 } from "./services";
 import { extractFSRSSettings } from "./types";
 import {
@@ -35,7 +35,6 @@ export default class EpistemePlugin extends Plugin {
 	fsrsService!: FSRSService;
 	statsService!: StatsService;
 	sessionPersistence!: SessionPersistenceService;
-	backlinksFilter!: BacklinksFilterService;
 	shardedStore!: ShardedStoreService;
 	dayBoundaryService!: DayBoundaryService;
 
@@ -73,13 +72,6 @@ export default class EpistemePlugin extends Plugin {
 		this.dayBoundaryService = new DayBoundaryService(
 			this.settings.dayStartHour
 		);
-
-		// Initialize backlinks filter service
-		this.backlinksFilter = new BacklinksFilterService();
-		this.backlinksFilter.setUpdateCount(this.settings.updateLinkedMentionsCount);
-		if (this.settings.hideFlashcardsFromBacklinks) {
-			this.backlinksFilter.enable();
-		}
 
 		// Register the sidebar view
 		this.registerView(
@@ -210,6 +202,69 @@ export default class EpistemePlugin extends Plugin {
 			callback: () => void this.showMissingFlashcards(),
 		});
 
+		// Migrate flashcards to UID system
+		this.addCommand({
+			id: "migrate-flashcards-to-uid",
+			name: "Migrate flashcards to UID system",
+			callback: async () => {
+				const migrationService = new FlashcardMigrationService(
+					this.app,
+					this.flashcardManager,
+					this.flashcardManager.getFrontmatterService(),
+					this.settings
+				);
+
+				const count = await migrationService.countLegacyFiles();
+				if (count === 0) {
+					new Notice("No legacy flashcard files found to migrate.");
+					return;
+				}
+
+				new Notice(`Starting migration of ${count} flashcard files...`);
+				const result = await migrationService.migrateAll();
+
+				let message = `Migration complete: ${result.migratedCount} migrated`;
+				if (result.skippedCount > 0) {
+					message += `, ${result.skippedCount} skipped`;
+				}
+				if (result.errorCount > 0) {
+					message += `, ${result.errorCount} errors`;
+					console.error("Migration errors:", result.errors);
+				}
+				new Notice(message);
+			},
+		});
+
+		// Remove flashcard file headers (one-time migration)
+		this.addCommand({
+			id: "remove-flashcard-headers",
+			name: "Remove flashcard file headers (one-time migration)",
+			callback: async () => {
+				const flashcardFolder = this.app.vault.getAbstractFileByPath(
+					this.settings.flashcardsFolder
+				);
+				if (!flashcardFolder || !(flashcardFolder instanceof TFolder)) {
+					new Notice("Flashcards folder not found");
+					return;
+				}
+
+				let count = 0;
+				const frontmatterService = this.flashcardManager.getFrontmatterService();
+
+				for (const file of flashcardFolder.children) {
+					if (file instanceof TFile && file.extension === "md") {
+						const content = await this.app.vault.read(file);
+						const updated = frontmatterService.removeFlashcardsHeader(content);
+						if (updated !== content) {
+							await this.app.vault.modify(file, updated);
+							count++;
+						}
+					}
+				}
+				new Notice(`Removed headers from ${count} flashcard files`);
+			},
+		});
+
 		// Register settings tab
 		this.addSettingTab(new EpistemeSettingTab(this.app, this));
 
@@ -217,8 +272,8 @@ export default class EpistemePlugin extends Plugin {
 		this.registerEvent(
 			this.app.workspace.on("file-menu", (menu, file) => {
 				if (file instanceof TFile && file.extension === "md") {
-					// Don't show on flashcard files themselves
-					if (file.name.startsWith(FLASHCARD_CONFIG.filePrefix)) return;
+					// Don't show on flashcard files themselves (both legacy and UID naming)
+					if (this.flashcardManager.isFlashcardFile(file)) return;
 
 					menu.addItem((item) => {
 						item.setTitle("Review flashcards from this note")
@@ -243,12 +298,38 @@ export default class EpistemePlugin extends Plugin {
 				this.updatePanelView(file);
 			})
 		);
+
+		// Listen for file renames to update source_link in flashcard files (UID system)
+		this.registerEvent(
+			this.app.vault.on("rename", async (file, oldPath) => {
+				if (!(file instanceof TFile)) return;
+				// Only handle markdown files
+				if (file.extension !== "md") return;
+
+				// Check if renamed file has a flashcard UID
+				const frontmatterService = this.flashcardManager.getFrontmatterService();
+				const uid = await frontmatterService.getSourceNoteUid(file);
+				if (!uid) return;
+
+				// Update source_link in the corresponding flashcard file
+				const flashcardPath = this.flashcardManager.getFlashcardPathByUid(uid);
+				const flashcardFile = this.app.vault.getAbstractFileByPath(flashcardPath);
+
+				if (flashcardFile instanceof TFile) {
+					const content = await this.app.vault.read(flashcardFile);
+					const updatedContent = frontmatterService.updateSourceLinkInContent(
+						content,
+						file.basename
+					);
+					if (updatedContent !== content) {
+						await this.app.vault.modify(flashcardFile, updatedContent);
+					}
+				}
+			})
+		);
 	}
 
 	onunload(): void {
-		// Disable backlinks filter
-		this.backlinksFilter?.disable();
-
 		// Save sharded store immediately on unload
 		if (this.shardedStore) {
 			void this.shardedStore.saveNow();
@@ -281,14 +362,6 @@ export default class EpistemePlugin extends Plugin {
 		if (this.fsrsService) {
 			const fsrsSettings = extractFSRSSettings(this.settings);
 			this.fsrsService.updateSettings(fsrsSettings);
-		}
-		if (this.backlinksFilter) {
-			this.backlinksFilter.setUpdateCount(this.settings.updateLinkedMentionsCount);
-			if (this.settings.hideFlashcardsFromBacklinks) {
-				this.backlinksFilter.enable();
-			} else {
-				this.backlinksFilter.disable();
-			}
 		}
 		if (this.dayBoundaryService) {
 			this.dayBoundaryService.updateDayStartHour(this.settings.dayStartHour);

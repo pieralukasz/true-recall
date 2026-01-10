@@ -254,28 +254,6 @@ export class EpistemeSettingTab extends PluginSettingTab {
                     await this.plugin.saveSettings();
                 }));
 
-        // Hide flashcards from backlinks
-        new Setting(containerEl)
-            .setName("Hide flashcards from backlinks")
-            .setDesc("Hide flashcard files from Linked mentions panel")
-            .addToggle(toggle => toggle
-                .setValue(this.plugin.settings.hideFlashcardsFromBacklinks)
-                .onChange(async (value) => {
-                    this.plugin.settings.hideFlashcardsFromBacklinks = value;
-                    await this.plugin.saveSettings();
-                }));
-
-        // Update Linked mentions count
-        new Setting(containerEl)
-            .setName("Update Linked mentions count")
-            .setDesc("Update the count displayed next to 'Linked mentions' after hiding flashcards")
-            .addToggle(toggle => toggle
-                .setValue(this.plugin.settings.updateLinkedMentionsCount)
-                .onChange(async (value) => {
-                    this.plugin.settings.updateLinkedMentionsCount = value;
-                    await this.plugin.saveSettings();
-                }));
-
         // Continuous Custom Reviews
         new Setting(containerEl)
             .setName("Continuous custom reviews")
