@@ -1541,6 +1541,21 @@
 	background: var(--interactive-accent-hover);
 }
 
+.episteme-delete-all-btn {
+	font-size: 12px;
+	padding: 6px 12px;
+	background: var(--color-red, #ef4444);
+	color: white;
+	border: none;
+	border-radius: 4px;
+	cursor: pointer;
+	transition: background-color 0.15s ease;
+}
+
+.episteme-delete-all-btn:hover {
+	background: var(--color-red, #dc2626);
+}
+
 .episteme-card-preview-list {
 	max-height: 60vh;
 	overflow-y: auto;
@@ -2288,6 +2303,34 @@
 }
 
 .episteme-review-delete-btn svg {
+	width: 16px;
+	height: 16px;
+}
+
+/* Unbury button (matching delete button style) */
+.episteme-review-unbury-btn {
+	width: 28px;
+	height: 28px;
+	padding: 6px;
+	background: transparent;
+	color: var(--text-muted);
+	border: none;
+	border-radius: 4px;
+	cursor: pointer;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	transition: all 0.15s ease;
+	flex-shrink: 0;
+	align-self: center;
+}
+
+.episteme-review-unbury-btn:hover {
+	background: var(--background-modifier-hover);
+	color: var(--interactive-accent);
+}
+
+.episteme-review-unbury-btn svg {
 	width: 16px;
 	height: 16px;
 }

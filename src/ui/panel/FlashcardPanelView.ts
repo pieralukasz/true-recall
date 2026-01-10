@@ -580,6 +580,9 @@ export class FlashcardPanelView extends ItemView {
         const state = this.stateManager.getState();
         if (!state.currentFile) return;
 
+        // Save scroll position before re-render
+        const scrollPosition = this.contentContainer.scrollTop;
+
         const removed = state.isFlashcardFile
             ? await this.flashcardManager.removeFlashcardDirect(state.currentFile, card.lineNumber)
             : await this.flashcardManager.removeFlashcard(state.currentFile, card.lineNumber);
@@ -587,6 +590,11 @@ export class FlashcardPanelView extends ItemView {
         if (removed) {
             new Notice("Flashcard removed");
             await this.loadFlashcardInfo();
+
+            // Restore scroll position after render completes
+            requestAnimationFrame(() => {
+                this.contentContainer.scrollTop = scrollPosition;
+            });
         } else {
             new Notice("Failed to remove flashcard from file");
         }

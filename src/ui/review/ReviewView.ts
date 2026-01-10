@@ -628,8 +628,11 @@ export class ReviewView extends ItemView {
             { label: "⏎⏎", title: "Double Line Break", action: () => this.insertAtCursor(editEl, "<br><br>") },
             { label: "B", title: "Bold", action: () => this.wrapSelection(editEl, "**", "**") },
             { label: "I", title: "Italic", action: () => this.wrapSelection(editEl, "*", "*") },
+            { label: "U", title: "Underline", action: () => this.wrapSelection(editEl, "<u>", "</u>") },
             { label: "[[]]", title: "Wiki Link", action: () => this.wrapSelection(editEl, "[[", "]]") },
             { label: "$", title: "Math", action: () => this.wrapSelection(editEl, "$", "$") },
+            { label: "x²", title: "Superscript", action: () => this.wrapSelection(editEl, "<sup>", "</sup>") },
+            { label: "x₂", title: "Subscript", action: () => this.wrapSelection(editEl, "<sub>", "</sub>") },
         ];
 
         for (const btn of buttons) {
