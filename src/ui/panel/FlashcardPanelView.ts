@@ -272,6 +272,12 @@ export class FlashcardPanelView extends ItemView {
         const state = this.stateManager.getState();
         if (!state.currentFile) return;
 
+        // Check if store is ready
+        if (!this.flashcardManager.hasStore()) {
+            new Notice("Flashcard store not ready. Please restart Obsidian.");
+            return;
+        }
+
         if (!this.plugin.settings.openRouterApiKey) {
             new Notice("Please configure your OpenRouter API key in settings.");
             return;
@@ -329,6 +335,12 @@ export class FlashcardPanelView extends ItemView {
         const state = this.stateManager.getState();
         if (!state.currentFile || !state.hasSelection) {
             new Notice("Please select text in the note first.");
+            return;
+        }
+
+        // Check if store is ready
+        if (!this.flashcardManager.hasStore()) {
+            new Notice("Flashcard store not ready. Please restart Obsidian.");
             return;
         }
 
@@ -401,10 +413,15 @@ export class FlashcardPanelView extends ItemView {
 
     /**
      * Helper: Convert FlashcardItem[] to markdown format
+     * Generates block IDs for cards that don't have them
      */
     private flashcardsToMarkdown(flashcards: FlashcardItem[]): string {
         return flashcards
-            .map(f => `${f.question} #flashcard\n${f.answer}`)
+            .map(f => {
+                // Generate block ID if not present
+                const cardId = f.id || crypto.randomUUID();
+                return `${f.question} #flashcard\n${f.answer}\n^${cardId}`;
+            })
             .join("\n\n");
     }
 
@@ -448,6 +465,12 @@ export class FlashcardPanelView extends ItemView {
     private async handleApplyDiff(): Promise<void> {
         const state = this.stateManager.getState();
         if (!state.currentFile || !state.diffResult) return;
+
+        // Check if store is ready (needed for new cards)
+        if (!this.flashcardManager.hasStore()) {
+            new Notice("Flashcard store not ready. Please restart Obsidian.");
+            return;
+        }
 
         const acceptedChanges = state.diffResult.changes.filter((c) => c.accepted);
         if (acceptedChanges.length === 0) {
