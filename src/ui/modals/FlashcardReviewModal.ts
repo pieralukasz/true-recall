@@ -303,11 +303,13 @@ export class FlashcardReviewModal extends BaseModal {
 
 	private deleteFlashcard(index: number): void {
 		this.deletedCardIds.add(index);
+		this.updateTitle(`Review Generated Flashcards (${this.getActiveFlashcards().length})`);
 		this.renderFlashcardsList();
 	}
 
 	private restoreFlashcard(index: number): void {
 		this.deletedCardIds.delete(index);
+		this.updateTitle(`Review Generated Flashcards (${this.getActiveFlashcards().length})`);
 		this.renderFlashcardsList();
 	}
 

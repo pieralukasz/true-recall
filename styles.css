@@ -1101,7 +1101,7 @@
 	display: flex;
 	justify-content: center;
 	gap: 12px;
-	padding: 20px 16px;
+	padding: 16px 16px;
 	border-top: 1px solid var(--background-modifier-border);
 	background: var(--background-secondary);
 	flex-wrap: nowrap;
@@ -1185,7 +1185,7 @@
 .episteme-btn-show {
 	background: var(--interactive-accent);
 	color: var(--text-on-accent);
-	padding: 24px 48px;
+	padding: 8px 16px;
 }
 
 /* Rating Buttons */
