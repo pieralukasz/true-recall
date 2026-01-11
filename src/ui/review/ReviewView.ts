@@ -5,7 +5,7 @@
  */
 import { ItemView, WorkspaceLeaf, MarkdownRenderer, Notice, Platform, normalizePath, Menu, setIcon, TFile, type ViewStateResult } from "obsidian";
 import { Rating, State, type Grade } from "ts-fsrs";
-import { VIEW_TYPE_REVIEW } from "../../constants";
+import { VIEW_TYPE_REVIEW, UI_CONFIG } from "../../constants";
 import { FSRSService, ReviewService, FlashcardManager, SessionPersistenceService } from "../../services";
 import { ReviewStateManager } from "../../state";
 import { extractFSRSSettings, type FSRSFlashcardItem, type SchedulingPreview } from "../../types";
@@ -171,7 +171,8 @@ export class ReviewView extends ItemView {
     }
 
     async onOpen(): Promise<void> {
-        const container = this.containerEl.children[1] as HTMLElement;
+        const container = this.containerEl.children[1];
+        if (!(container instanceof HTMLElement)) return;
         container.empty();
         container.addClass("episteme-review");
 
@@ -183,8 +184,8 @@ export class ReviewView extends ItemView {
         // Subscribe to state changes
         this.unsubscribe = this.stateManager.subscribe(() => this.render());
 
-        // Register keyboard shortcuts
-        document.addEventListener("keydown", this.handleKeyDown);
+        // Register keyboard shortcuts using registerDomEvent for automatic cleanup
+        this.registerDomEvent(document, "keydown", this.handleKeyDown);
 
         // Note: startSession() is called from setState() after filters are applied
     }
@@ -195,7 +196,6 @@ export class ReviewView extends ItemView {
             await this.plugin.shardedStore.flush();
         }
 
-        document.removeEventListener("keydown", this.handleKeyDown);
         this.unsubscribe?.();
         this.clearWaitingTimer();
         this.stateManager.reset();
@@ -500,7 +500,7 @@ export class ReviewView extends ItemView {
     private addLongPressListener(
         element: HTMLElement,
         callback: () => void,
-        duration = 500
+        duration = UI_CONFIG.longPressDuration
     ): void {
         let timer: number | null = null;
 
@@ -529,7 +529,10 @@ export class ReviewView extends ItemView {
         field: "question" | "answer",
         filePath: string
     ): void {
-        const linkEl = (e.target as HTMLElement).closest("a.internal-link");
+        const target = e.target;
+        if (!(target instanceof HTMLElement)) return;
+        const linkEl = target.closest("a.internal-link");
+        if (!linkEl) return;
 
         if (linkEl) {
             e.preventDefault();
@@ -740,8 +743,8 @@ export class ReviewView extends ItemView {
         const editState = this.stateManager.getEditState();
         if (!card || !editState.active) return;
 
-        const editEl = this.cardContainerEl.querySelector('[contenteditable="true"]') as HTMLElement;
-        if (!editEl) return;
+        const editEl = this.cardContainerEl.querySelector('[contenteditable="true"]');
+        if (!editEl || !(editEl instanceof HTMLElement)) return;
 
         const newContent = this.convertEditableToMarkdown(editEl);
         const newQuestion = editState.field === "question" ? newContent : card.question;
@@ -1092,7 +1095,7 @@ export class ReviewView extends ItemView {
                 } else {
                     countdownEl.textContent = this.formatCountdown(remaining);
                 }
-            }, 1000);
+            }, UI_CONFIG.timerInterval);
         }
     }
 
@@ -1237,10 +1240,10 @@ export class ReviewView extends ItemView {
         }
 
         // Find unique filename (Untitled, Untitled 1, Untitled 2, ...)
-        let filePath = normalizePath(`${folderPath}/Untitled.md`);
+        let filePath = normalizePath(`${folderPath}/${UI_CONFIG.defaultFileName}.md`);
         let counter = 1;
         while (this.app.vault.getAbstractFileByPath(filePath)) {
-            filePath = normalizePath(`${folderPath}/Untitled ${counter}.md`);
+            filePath = normalizePath(`${folderPath}/${UI_CONFIG.defaultFileName} ${counter}.md`);
             counter++;
         }
 

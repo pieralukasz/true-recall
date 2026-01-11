@@ -14,10 +14,8 @@ import {
     extractContent,
     parseDiffJson,
     enrichFlashcardChanges,
-    type FlashcardItem,
-    type FlashcardChange,
-    type ChatMessage,
 } from "../../validation";
+import { type FlashcardItem, type FlashcardChange, type ChatMessage } from "../../types";
 import {
     APIError,
     NetworkError,

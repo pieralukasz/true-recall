@@ -46,6 +46,9 @@ export class FlashcardPanelView extends ItemView {
     // Selection state for bulk move
     private selectedCardIds: Set<string> = new Set();
 
+    // Selection timer for debouncing
+    private selectionTimer: ReturnType<typeof setTimeout> | null = null;
+
     constructor(leaf: WorkspaceLeaf, plugin: EpistemePlugin) {
         super(leaf);
         this.plugin = plugin;
@@ -67,7 +70,8 @@ export class FlashcardPanelView extends ItemView {
     }
 
     async onOpen(): Promise<void> {
-        const container = this.containerEl.children[1] as HTMLElement;
+        const container = this.containerEl.children[1];
+        if (!(container instanceof HTMLElement)) return;
         container.empty();
         container.addClass("episteme-panel");
 
@@ -89,6 +93,12 @@ export class FlashcardPanelView extends ItemView {
     async onClose(): Promise<void> {
         // Cleanup subscriptions
         this.unsubscribe?.();
+
+        // Cleanup selection timer
+        if (this.selectionTimer) {
+            clearTimeout(this.selectionTimer);
+            this.selectionTimer = null;
+        }
 
         // Note: Events registered via registerEvent() and registerDomEvent() are
         // automatically cleaned up by the Component base class
@@ -812,8 +822,6 @@ export class FlashcardPanelView extends ItemView {
      * Selection-based flashcard generation is now available for all notes
      */
     private registerSelectionTracking(): void {
-        let selectionTimer: NodeJS.Timeout | null = null;
-
         // Function to update selection state
         const updateSelection = () => {
             const state = this.stateManager.getState();
@@ -828,11 +836,11 @@ export class FlashcardPanelView extends ItemView {
             }
 
             // Debounce selection updates to avoid excessive updates
-            if (selectionTimer) {
-                clearTimeout(selectionTimer);
+            if (this.selectionTimer) {
+                clearTimeout(this.selectionTimer);
             }
 
-            selectionTimer = setTimeout(() => {
+            this.selectionTimer = setTimeout(() => {
                 const selection = this.getCurrentSelection();
                 if (selection) {
                     this.stateManager.setSelectedText(selection);
