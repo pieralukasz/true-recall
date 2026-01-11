@@ -126,15 +126,17 @@ export class CardReviewItem extends BaseComponent {
 			e.preventDefault();
 			e.stopPropagation();
 			this.startEdit(field);
-			return;
-		}
+		return;
+	}
 
-		// Check if clicked on internal link
-		const linkEl = (e.target as HTMLElement).closest("a.internal-link");
-		if (!linkEl) {
-			// Normal click on field (not on link) - let the card's click handler deal with it
-			// We don't call onClick here to avoid double-triggering
-		}
+	// Check if clicked on internal link
+	const target = e.target;
+	if (!(target instanceof HTMLElement)) return;
+	const linkEl = target.closest("a.internal-link");
+	if (!linkEl) {
+		// Normal click on field (not on link) - let the card's click handler deal with it
+		// We don't call onClick here to avoid double-triggering
+	}
 	}
 
 	private startEdit(field: "question" | "answer"): void {
@@ -193,9 +195,8 @@ export class CardReviewItem extends BaseComponent {
 
 		const editEl = this.element.querySelector(
 			`.episteme-review-editable[data-field="${field}"]`
-		) as HTMLElement;
-
-		if (!editEl) return;
+		);
+		if (!editEl || !(editEl instanceof HTMLElement)) return;
 
 		// Convert HTML to markdown
 		const content = this.convertEditableToMarkdown(editEl);
@@ -335,7 +336,9 @@ export class CardReviewItem extends BaseComponent {
 			el?.addEventListener(
 				"click",
 				(e: MouseEvent) => {
-					const linkEl = (e.target as HTMLElement).closest("a.internal-link");
+					const target = e.target;
+					if (!(target instanceof HTMLElement)) return;
+					const linkEl = target.closest("a.internal-link");
 					if (!linkEl) return;
 
 					e.preventDefault();

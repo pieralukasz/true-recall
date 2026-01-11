@@ -80,7 +80,8 @@ export class StatsView extends ItemView {
 	}
 
 	async onOpen(): Promise<void> {
-		const container = this.containerEl.children[1] as HTMLElement;
+		const container = this.containerEl.children[1];
+		if (!(container instanceof HTMLElement)) return;
 		container.empty();
 		container.addClass("episteme-stats");
 

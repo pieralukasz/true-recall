@@ -327,7 +327,9 @@ export class DiffCard extends BaseComponent {
 
         // Use capture phase to intercept before Obsidian's default handlers
         container.addEventListener("click", (e: MouseEvent) => {
-            const linkEl = (e.target as HTMLElement).closest("a.internal-link");
+            const target = e.target;
+            if (!(target instanceof HTMLElement)) return;
+            const linkEl = target.closest("a.internal-link");
             if (!linkEl) return;
 
             e.preventDefault();

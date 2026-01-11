@@ -303,20 +303,20 @@ export class CustomSessionModal extends BaseModal {
 						this.selectedNotes.delete(stat.noteName);
 					}
 					this.updateStartButton();
-				});
-
-				// Make whole row clickable
-				row.addEventListener("click", (e) => {
-					if ((e.target as HTMLElement).tagName !== "INPUT") {
-						checkbox.checked = !checkbox.checked;
-						if (checkbox.checked) {
-							this.selectedNotes.add(stat.noteName);
-						} else {
-							this.selectedNotes.delete(stat.noteName);
-						}
-						this.updateStartButton();
-					}
-				});
+		});
+ 
+		// Make whole row clickable
+		row.addEventListener("click", (e) => {
+			const target = e.target;
+			if (target instanceof HTMLElement && target.tagName !== "INPUT") {
+				checkbox.checked = !checkbox.checked;
+				if (checkbox.checked) {
+					this.selectedNotes.add(stat.noteName);
+				} else {
+					this.selectedNotes.delete(stat.noteName);
+				}
+			}
+		});
 				row.addClass("episteme-note-row--clickable");
 			} else if (stat.isCompleted) {
 				// Show tick in checkbox column for completed notes

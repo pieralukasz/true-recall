@@ -118,9 +118,12 @@ export const API_CONFIG = {
 
 /** UI-related constants */
 export const UI_CONFIG = {
-	maxTitleLength: 30,
-	animationDuration: 150, // ms
-	debounceDelay: 300, // ms
+	/** Long press duration for showing card edit UI (milliseconds) */
+	longPressDuration: 500,
+	/** Timer interval for countdown display (milliseconds) */
+	timerInterval: 1000,
+	/** Default filename for new flashcard files */
+	defaultFileName: "Untitled",
 } as const;
 
 // ===== Flashcard Configuration =====

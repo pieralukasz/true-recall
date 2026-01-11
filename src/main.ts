@@ -62,11 +62,14 @@ export default class EpistemePlugin extends Plugin {
 		// Initialize sharded store for FSRS data
 		this.shardedStore = new ShardedStoreService(this.app);
 		// Load store data in background (non-blocking)
-		void this.shardedStore.load().then(() => {
+		this.shardedStore.load().then(() => {
 			// Connect store to flashcard manager after loading
 			this.flashcardManager.setStore(this.shardedStore);
 			// Check for cards without block IDs and migrate
 			void this.checkAndMigrateFlashcards();
+		}).catch((error) => {
+			console.error("Failed to load sharded store:", error);
+			new Notice("Failed to load flashcard data. Please restart Obsidian.");
 		});
 
 		// Initialize day boundary service (Anki-style day scheduling)

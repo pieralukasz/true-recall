@@ -150,8 +150,8 @@ export class StatsCalculatorService {
 		const endDate = new Date();
 		const startDate = this.calculateStartDate(endDate, range);
 
-		const startKey = startDate.toISOString().split("T")[0]!;
-		const endKey = endDate.toISOString().split("T")[0]!;
+		const startKey = startDate.toISOString().split("T")[0] ?? "";
+		const endKey = endDate.toISOString().split("T")[0] ?? "";
 
 		return this.sessionPersistence.getStatsInRange(startKey, endKey);
 	}
@@ -197,14 +197,15 @@ export class StatsCalculatorService {
 
 		const today = new Date();
 		today.setHours(0, 0, 0, 0);
-		const todayKey = today.toISOString().split("T")[0]!;
+		const todayKey = today.toISOString().split("T")[0] ?? "";
 
 		// Calculate current streak
 		let currentStreak = 0;
 		let checkDate = new Date(today);
 
 		// Check if studied today or yesterday
-		const lastStudyDate = reviewDates[0]!;
+		const lastStudyDate = reviewDates[0];
+		if (!lastStudyDate) return { current: 0, longest: 0 };
 		const lastStudy = new Date(lastStudyDate);
 		const daysSinceLastStudy = Math.floor(
 			(today.getTime() - lastStudy.getTime()) / (1000 * 60 * 60 * 24)
@@ -216,8 +217,11 @@ export class StatsCalculatorService {
 		} else {
 			// Start counting from last study date
 			checkDate = new Date(lastStudyDate);
-			while (true) {
-				const checkKey = checkDate.toISOString().split("T")[0]!;
+			// Safety limit: prevent infinite loops (max 3650 days = 10 years)
+			const maxIterations = 3650;
+			let iterations = 0;
+			while (iterations < maxIterations) {
+				const checkKey = checkDate.toISOString().split("T")[0] ?? "";
 				if (
 					allStats[checkKey] &&
 					allStats[checkKey].reviewsCompleted > 0
@@ -227,6 +231,7 @@ export class StatsCalculatorService {
 				} else {
 					break;
 				}
+				iterations++;
 			}
 		}
 
@@ -482,7 +487,8 @@ export class StatsCalculatorService {
 			const dateKey = formatLocalDate(dueDate);
 
 			if (dueMap.has(dateKey)) {
-				dueMap.set(dateKey, dueMap.get(dateKey)! + 1);
+				const currentCount = dueMap.get(dateKey) ?? 0;
+				dueMap.set(dateKey, currentCount + 1);
 			}
 		}
 
@@ -511,8 +517,12 @@ export class StatsCalculatorService {
 
 		// Parse date as local (not UTC) - date format is "YYYY-MM-DD"
 		// Using new Date("YYYY-MM-DD") parses as UTC which causes off-by-one errors
-		const [year, month, day] = date.split("-").map(Number);
-		const targetDate = new Date(year!, month! - 1, day!); // month is 0-indexed
+		const parts = date.split("-").map(Number);
+		const [year, month, day] = parts;
+		if (year === undefined || month === undefined || day === undefined) {
+			throw new Error(`Invalid date format: ${date}`);
+		}
+		const targetDate = new Date(year, month - 1, day); // month is 0-indexed
 		targetDate.setHours(0, 0, 0, 0);
 
 		return allCards.filter((card) => {

@@ -3,7 +3,7 @@
  * High-performance storage for FSRS card data using 256 sharded JSON files
  * Provides O(1) lookups and minimal sync conflicts
  */
-import { App, normalizePath } from "obsidian";
+import { App, Notice, normalizePath } from "obsidian";
 import type { FSRSCardData } from "../../types";
 
 const STORE_FOLDER = ".episteme/store";
@@ -90,9 +90,10 @@ export class ShardedStoreService {
 				for (const [id, entry] of Object.entries(data)) {
 					this.cache.set(id, entry);
 				}
-			} catch {
-				// Skip corrupted shard files
-				console.warn(`Failed to load shard: ${filePath}`);
+			} catch (error) {
+				// Skip corrupted shard files but notify user
+				console.warn(`Failed to load shard: ${filePath}`, error);
+				new Notice(`Warning: Some flashcard data could not be loaded. See console for details.`);
 			}
 		});
 

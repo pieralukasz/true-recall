@@ -325,19 +325,23 @@ export class FlashcardReviewModal extends BaseModal {
 			e.preventDefault();
 			e.stopPropagation();
 			this.startEdit(index, field);
-			return;
-		}
+		return;
+	}
 
-		// Handle internal links normally
-		const linkEl = (e.target as HTMLElement).closest("a.internal-link");
-		if (linkEl) {
-			const href = linkEl.getAttribute("data-href");
-			if (href) {
-				e.preventDefault();
-				e.stopPropagation();
-				void this.app.workspace.openLinkText(href, "", "tab");
-			}
+	// Handle internal links normally
+	const target = e.target;
+	if (!(target instanceof HTMLElement)) return;
+	const linkEl = target.closest("a.internal-link");
+	if (!linkEl) return;
+
+	if (linkEl) {
+		const href = linkEl.getAttribute("data-href");
+		if (href) {
+			e.preventDefault();
+			e.stopPropagation();
+			void this.app.workspace.openLinkText(href, "", "tab");
 		}
+	}
 	}
 
 	private startEdit(index: number, field: "question" | "answer"): void {
@@ -348,7 +352,8 @@ export class FlashcardReviewModal extends BaseModal {
 	private async saveEdit(index: number, field: "question" | "answer"): Promise<void> {
 		const editEl = this.containerEl?.querySelector(
 			`.episteme-review-editable[data-field="${field}"]`
-		) as HTMLElement;
+		);
+		if (!editEl || !(editEl instanceof HTMLElement)) return;
 
 		if (!editEl || !this.flashcards[index]) return;
 

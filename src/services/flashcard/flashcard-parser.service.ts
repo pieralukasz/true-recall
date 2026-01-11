@@ -3,7 +3,7 @@
  * Handles parsing and extracting flashcards from markdown content
  */
 import { FLASHCARD_CONFIG } from "../../constants";
-import { type FlashcardItem } from "../../validation";
+import { type FlashcardItem } from "../../types";
 
 /**
  * Service for parsing flashcard content from markdown files

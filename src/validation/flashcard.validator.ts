@@ -5,10 +5,9 @@ import {
     RawFlashcardChangeSchema,
     DiffResponseSchema,
     FlashcardItemSchema,
-    type FlashcardChange,
     type RawFlashcardChange,
-    type FlashcardItem,
 } from "./schemas/flashcard.schema";
+import type { FlashcardChange, FlashcardItem } from "../../types";
 import { ValidationError } from "../errors";
 
 /**
