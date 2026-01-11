@@ -363,6 +363,14 @@ export class ReviewView extends ItemView {
             this.renderHeaderStatBadge(statsContainer, "due", remaining.due);
         }
 
+        // Add flashcard button (right side, left of open note button)
+        const addBtn = this.headerEl.createEl("button", {
+            cls: "episteme-btn-add clickable-icon",
+            attr: { "aria-label": "Add new flashcard (N)" }
+        });
+        addBtn.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>`;
+        addBtn.addEventListener("click", () => void this.handleAddNewFlashcard());
+
         // Open note button (right side)
         const openNoteBtn = this.headerEl.createEl("button", {
             cls: "episteme-review-open-note clickable-icon",
@@ -806,14 +814,6 @@ export class ReviewView extends ItemView {
             this.renderRatingButton(mainButtonsEl, "Easy", Rating.Easy, "episteme-btn-easy", preview?.easy.interval);
         }
 
-        // Add flashcard button (always visible)
-        const addBtn = buttonsWrapper.createEl("button", {
-            cls: "episteme-btn-add",
-            attr: { "aria-label": "Add new flashcard (N)" }
-        });
-        setIcon(addBtn, "plus");
-        addBtn.addEventListener("click", () => void this.handleAddNewFlashcard());
-
         // Actions menu button (always visible)
         const menuBtn = buttonsWrapper.createEl("button", {
             cls: "episteme-btn-menu",
@@ -1179,8 +1179,8 @@ export class ReviewView extends ItemView {
             return;
         }
 
-        // Option+Cmd+E (Mac) or Alt+Ctrl+E (Windows) = Copy current card to new flashcard
-        if ((e.metaKey || e.ctrlKey) && e.altKey && (e.key === "e" || e.key === "E")) {
+        // B = Copy current card to new flashcard
+        if (e.key === "b" || e.key === "B") {
             e.preventDefault();
             void this.handleCopyCurrentCard();
             return;
