@@ -1,6 +1,7 @@
 /**
  * Add Flashcard Modal
  * Allows user to add a new flashcard during review session
+ * Features contenteditable markdown editor with formatting toolbar
  */
 import { App } from "obsidian";
 import { BaseModal } from "./BaseModal";
@@ -18,6 +19,10 @@ export interface AddFlashcardModalOptions {
 	sourceNoteName?: string;
 	/** Current deck name */
 	deck: string;
+	/** Pre-fill question content (for copy feature) */
+	prefillQuestion?: string;
+	/** Pre-fill answer content (for copy feature) */
+	prefillAnswer?: string;
 }
 
 /**
@@ -28,15 +33,15 @@ export class AddFlashcardModal extends BaseModal {
 	private resolvePromise: ((result: AddFlashcardResult) => void) | null = null;
 	private hasSubmitted = false;
 
-	// Input elements
-	private questionInput: HTMLTextAreaElement | null = null;
-	private answerInput: HTMLTextAreaElement | null = null;
+	// Contenteditable elements
+	private questionEditEl: HTMLElement | null = null;
+	private answerEditEl: HTMLElement | null = null;
 	private addButton: HTMLButtonElement | null = null;
 
 	constructor(app: App, options: AddFlashcardModalOptions) {
 		super(app, {
 			title: "Add New Flashcard",
-			width: "500px",
+			width: "600px",
 		});
 		this.options = options;
 	}
@@ -71,12 +76,11 @@ export class AddFlashcardModal extends BaseModal {
 			text: "Question",
 			cls: "episteme-form-label",
 		});
-		this.questionInput = questionGroup.createEl("textarea", {
-			cls: "episteme-form-textarea",
-			placeholder: "Enter your question...",
-		});
-		this.questionInput.rows = 3;
-		this.questionInput.addEventListener("input", () => this.validateForm());
+		this.renderEditableField(
+			questionGroup,
+			this.options.prefillQuestion || "",
+			"question"
+		);
 
 		// Answer field
 		const answerGroup = container.createDiv({ cls: "episteme-form-group" });
@@ -84,12 +88,11 @@ export class AddFlashcardModal extends BaseModal {
 			text: "Answer",
 			cls: "episteme-form-label",
 		});
-		this.answerInput = answerGroup.createEl("textarea", {
-			cls: "episteme-form-textarea",
-			placeholder: "Enter your answer...",
-		});
-		this.answerInput.rows = 4;
-		this.answerInput.addEventListener("input", () => this.validateForm());
+		this.renderEditableField(
+			answerGroup,
+			this.options.prefillAnswer || "",
+			"answer"
+		);
 
 		// Buttons
 		const buttonsEl = container.createDiv({ cls: "episteme-modal-buttons" });
@@ -104,14 +107,15 @@ export class AddFlashcardModal extends BaseModal {
 			text: "Add Flashcard",
 			cls: "episteme-btn episteme-btn-primary",
 		});
-		this.addButton.disabled = true;
+		this.addButton.disabled = !this.isFormValid();
 		this.addButton.addEventListener("click", () => this.handleSubmit());
 
 		// Focus question input
-		setTimeout(() => this.questionInput?.focus(), 50);
+		setTimeout(() => this.questionEditEl?.focus(), 50);
 
-		// Handle Enter key (Cmd/Ctrl+Enter to submit)
+		// Handle keyboard shortcuts
 		container.addEventListener("keydown", (e) => {
+			// Cmd/Ctrl+Enter to submit
 			if ((e.metaKey || e.ctrlKey) && e.key === "Enter") {
 				e.preventDefault();
 				if (!this.addButton?.disabled) {
@@ -119,6 +123,154 @@ export class AddFlashcardModal extends BaseModal {
 				}
 			}
 		});
+	}
+
+	/**
+	 * Render an editable field (contenteditable div) with formatting toolbar
+	 */
+	private renderEditableField(
+		container: HTMLElement,
+		content: string,
+		field: "question" | "answer"
+	): void {
+		const editEl = container.createDiv({
+			cls: "episteme-review-editable",
+			attr: {
+				contenteditable: "true",
+				"data-field": field,
+			},
+		});
+
+		// Convert markdown <br> to display format
+		editEl.innerHTML = this.markdownToEditableHtml(content);
+
+		// Store reference
+		if (field === "question") {
+			this.questionEditEl = editEl;
+		} else {
+			this.answerEditEl = editEl;
+		}
+
+		// Render toolbar under the editable field
+		this.renderEditToolbar(container, editEl);
+
+		// Event listeners
+		editEl.addEventListener("input", () => this.validateForm());
+		editEl.addEventListener("keydown", (e) => this.handleFieldKeydown(e, field));
+	}
+
+	/**
+	 * Convert markdown content to HTML for display in contenteditable
+	 */
+	private markdownToEditableHtml(content: string): string {
+		// Keep <br> tags intact - they display correctly in contenteditable innerHTML
+		return content;
+	}
+
+	/**
+	 * Render formatting toolbar for edit mode
+	 */
+	private renderEditToolbar(container: HTMLElement, editEl: HTMLElement): void {
+		const toolbar = container.createDiv({ cls: "episteme-edit-toolbar" });
+
+		const buttons = [
+			{ label: "**[[]]**", title: "Bold Wiki Link", action: () => this.wrapSelection(editEl, "**[[", "]]**") },
+			{ label: "⏎⏎", title: "Double Line Break", action: () => this.insertAtCursor(editEl, "<br><br>") },
+			{ label: "B", title: "Bold", action: () => this.wrapSelection(editEl, "**", "**") },
+			{ label: "I", title: "Italic", action: () => this.wrapSelection(editEl, "*", "*") },
+			{ label: "U", title: "Underline", action: () => this.wrapSelection(editEl, "<u>", "</u>") },
+			{ label: "[[]]", title: "Wiki Link", action: () => this.wrapSelection(editEl, "[[", "]]") },
+			{ label: "$", title: "Math", action: () => this.wrapSelection(editEl, "$", "$") },
+			{ label: "x²", title: "Superscript", action: () => this.wrapSelection(editEl, "<sup>", "</sup>") },
+			{ label: "x₂", title: "Subscript", action: () => this.wrapSelection(editEl, "<sub>", "</sub>") },
+		];
+
+		for (const btn of buttons) {
+			const btnEl = toolbar.createEl("button", {
+				cls: "episteme-edit-toolbar-btn",
+				text: btn.label,
+				attr: { title: btn.title },
+			});
+			btnEl.addEventListener("mousedown", (e) => {
+				e.preventDefault(); // Prevent blur on editEl
+			});
+			btnEl.addEventListener("click", (e) => {
+				e.preventDefault();
+				btn.action();
+				editEl.focus();
+				this.validateForm();
+			});
+		}
+	}
+
+	/**
+	 * Wrap selected text with before/after strings
+	 */
+	private wrapSelection(editEl: HTMLElement, before: string, after: string): void {
+		const sel = window.getSelection();
+		if (!sel || sel.rangeCount === 0) return;
+
+		const range = sel.getRangeAt(0);
+		const selectedText = range.toString();
+
+		if (selectedText) {
+			range.deleteContents();
+			range.insertNode(document.createTextNode(before + selectedText + after));
+		} else {
+			// No selection - just insert wrapper
+			range.insertNode(document.createTextNode(before + after));
+		}
+	}
+
+	/**
+	 * Insert text at cursor position
+	 */
+	private insertAtCursor(editEl: HTMLElement, text: string): void {
+		const sel = window.getSelection();
+		if (!sel || sel.rangeCount === 0) return;
+
+		const range = sel.getRangeAt(0);
+		range.deleteContents();
+		range.insertNode(document.createTextNode(text));
+		range.collapse(false);
+	}
+
+	/**
+	 * Convert contenteditable HTML to markdown text with <br> for line breaks
+	 */
+	private convertEditableToMarkdown(editEl: HTMLElement): string {
+		let html = editEl.innerHTML;
+
+		// Normalize different browser line break representations
+		html = html.replace(/<br\s*\/?>/gi, "\n");
+		html = html.replace(/<\/div>/gi, "\n");
+		html = html.replace(/<\/p>/gi, "\n");
+
+		// Remove remaining HTML tags
+		html = html.replace(/<[^>]*>/g, "");
+
+		// Decode HTML entities
+		const textarea = document.createElement("textarea");
+		textarea.innerHTML = html;
+		const text = textarea.value;
+
+		// Trim trailing newlines but preserve internal ones
+		const trimmed = text.replace(/\n+$/, "");
+
+		// Replace remaining newlines with <br>
+		return trimmed.replace(/\n/g, "<br>");
+	}
+
+	/**
+	 * Handle keydown events within editable fields
+	 */
+	private handleFieldKeydown(e: KeyboardEvent, currentField: "question" | "answer"): void {
+		if (e.key === "Tab") {
+			e.preventDefault();
+			// Switch between question and answer
+			const nextField = currentField === "question" ? this.answerEditEl : this.questionEditEl;
+			nextField?.focus();
+		}
 	}
 
 	onClose(): void {
@@ -135,19 +287,21 @@ export class AddFlashcardModal extends BaseModal {
 		}
 	}
 
-	private validateForm(): void {
-		const question = this.questionInput?.value.trim() ?? "";
-		const answer = this.answerInput?.value.trim() ?? "";
-		const isValid = question.length > 0 && answer.length > 0;
+	private isFormValid(): boolean {
+		const question = this.questionEditEl ? this.convertEditableToMarkdown(this.questionEditEl).trim() : "";
+		const answer = this.answerEditEl ? this.convertEditableToMarkdown(this.answerEditEl).trim() : "";
+		return question.length > 0 && answer.length > 0;
+	}
 
+	private validateForm(): void {
 		if (this.addButton) {
-			this.addButton.disabled = !isValid;
+			this.addButton.disabled = !this.isFormValid();
 		}
 	}
 
 	private handleSubmit(): void {
-		const question = this.questionInput?.value.trim() ?? "";
-		const answer = this.answerInput?.value.trim() ?? "";
+		const question = this.questionEditEl ? this.convertEditableToMarkdown(this.questionEditEl).trim() : "";
+		const answer = this.answerEditEl ? this.convertEditableToMarkdown(this.answerEditEl).trim() : "";
 
 		if (!question || !answer) return;
 

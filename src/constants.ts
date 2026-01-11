@@ -11,9 +11,6 @@ export const VIEW_TYPE_REVIEW = "episteme-review";
 /** View type identifier for the statistics panel */
 export const VIEW_TYPE_STATS = "episteme-stats";
 
-/** View type identifier for the add flashcard panel */
-export const VIEW_TYPE_ADD_FLASHCARD_PANEL = "episteme-add-flashcard-panel";
-
 // ===== AI Models =====
 
 /** AI Models available via OpenRouter */
