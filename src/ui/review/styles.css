@@ -275,6 +275,38 @@
 	height: 18px;
 }
 
+/* Add flashcard button - positioned to the left of menu button */
+.episteme-btn-add {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	width: 40px;
+	height: 40px;
+	padding: 0;
+	border: none;
+	border-radius: 8px;
+	background: var(--background-modifier-hover);
+	color: var(--text-muted);
+	cursor: pointer;
+	transition: background 0.15s ease, color 0.15s ease;
+	position: absolute;
+	right: 48px;
+}
+
+.episteme-btn-add:hover {
+	background: var(--background-modifier-border);
+	color: var(--text-normal);
+}
+
+.episteme-btn-add:active {
+	transform: scale(0.95);
+}
+
+.episteme-btn-add svg {
+	width: 18px;
+	height: 18px;
+}
+
 /* Show Answer Button */
 .episteme-btn-show {
 	background: var(--interactive-accent);

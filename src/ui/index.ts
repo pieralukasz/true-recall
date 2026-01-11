@@ -22,6 +22,3 @@ export * from "./modals";
 
 // Statistics
 export * from "./stats";
-
-// Add Panel
-export * from "./add-panel";

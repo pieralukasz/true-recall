@@ -806,6 +806,14 @@ export class ReviewView extends ItemView {
             this.renderRatingButton(mainButtonsEl, "Easy", Rating.Easy, "episteme-btn-easy", preview?.easy.interval);
         }
 
+        // Add flashcard button (always visible)
+        const addBtn = buttonsWrapper.createEl("button", {
+            cls: "episteme-btn-add",
+            attr: { "aria-label": "Add new flashcard (N)" }
+        });
+        setIcon(addBtn, "plus");
+        addBtn.addEventListener("click", () => void this.handleAddNewFlashcard());
+
         // Actions menu button (always visible)
         const menuBtn = buttonsWrapper.createEl("button", {
             cls: "episteme-btn-menu",
@@ -1164,6 +1172,20 @@ export class ReviewView extends ItemView {
             return;
         }
 
+        // N = Add new flashcard
+        if (e.key === "n" || e.key === "N") {
+            e.preventDefault();
+            void this.handleAddNewFlashcard();
+            return;
+        }
+
+        // Option+Cmd+E (Mac) or Alt+Ctrl+E (Windows) = Copy current card to new flashcard
+        if ((e.metaKey || e.ctrlKey) && e.altKey && (e.key === "e" || e.key === "E")) {
+            e.preventDefault();
+            void this.handleCopyCurrentCard();
+            return;
+        }
+
         const state = this.stateManager.getState();
         if (!state.isActive || this.stateManager.isComplete()) return;
 
@@ -1462,6 +1484,44 @@ Source: [[${sourceNote}]]
         } catch (error) {
             console.error("Error adding flashcard:", error);
             new Notice(`Failed to add flashcard: ${error instanceof Error ? error.message : String(error)}`);
+        }
+    }
+
+    /**
+     * Copy current card to new flashcard (Option+Cmd+E)
+     * Opens Add Flashcard modal with current card's Q&A pre-filled
+     */
+    private async handleCopyCurrentCard(): Promise<void> {
+        const card = this.stateManager.getCurrentCard();
+        if (!card) return;
+
+        // Open modal with pre-filled content
+        const modal = new AddFlashcardModal(this.app, {
+            currentFilePath: card.filePath,
+            sourceNoteName: card.sourceNoteName,
+            deck: card.deck,
+            prefillQuestion: card.question,
+            prefillAnswer: card.answer,
+        });
+
+        const result = await modal.openAndWait();
+        if (result.cancelled) return;
+
+        try {
+            // Add flashcard with auto-generated FSRS ID
+            const newCard = await this.flashcardManager.addSingleFlashcard(
+                card.filePath,
+                result.question,
+                result.answer
+            );
+
+            // Add new card to current session queue
+            this.stateManager.addCardToQueue(newCard);
+
+            new Notice("Flashcard copied and added to queue!");
+        } catch (error) {
+            console.error("Error copying flashcard:", error);
+            new Notice(`Failed to copy flashcard: ${error instanceof Error ? error.message : String(error)}`);
         }
     }
 
