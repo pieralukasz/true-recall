@@ -2,6 +2,7 @@
  * Zod schemas for flashcard data structures
  */
 import { z } from "zod";
+import type { FlashcardChange, FlashcardItem, FlashcardChangeType } from "../../types/flashcard.types";
 
 // ===== Flashcard Change Type =====
 
@@ -112,22 +113,10 @@ export const FlashcardInfoSchema = z.object({
     lastModified: z.number().nullable(),
 });
 
-// ===== Inferred Types from Schemas =====
+// Re-export types from flashcard.types for convenience
+export type { FlashcardChange, FlashcardItem, FlashcardChangeType } from "../../types/flashcard.types";
 
-export type FlashcardChangeType = z.infer<typeof FlashcardChangeTypeSchema>;
-export type FlashcardItem = z.infer<typeof FlashcardItemSchema>;
+// Types that are specific to validation
 export type RawFlashcardChange = z.infer<typeof RawFlashcardChangeSchema>;
 export type DiffResponse = z.infer<typeof DiffResponseSchema>;
 export type FlashcardInfo = z.infer<typeof FlashcardInfoSchema>;
-
-// Simple FlashcardChange interface (not discriminated union for easier use)
-export interface FlashcardChange {
-    type: FlashcardChangeType;
-    question: string;
-    answer: string;
-    originalQuestion?: string;
-    originalAnswer?: string;
-    originalCardId?: string;
-    reason?: string;
-    accepted: boolean;
-}

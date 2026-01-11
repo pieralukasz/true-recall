@@ -4,7 +4,6 @@
  */
 import { App, TFile, normalizePath, WorkspaceLeaf } from "obsidian";
 import { FLASHCARD_CONFIG } from "../../constants";
-import { type FlashcardItem, type FlashcardChange } from "../../validation";
 import { FileError } from "../../errors";
 import type {
 	EpistemeSettings,
@@ -13,6 +12,8 @@ import type {
 	DeckInfo,
 	CardReviewLogEntry,
 	NoteFlashcardType,
+	FlashcardItem,
+	FlashcardChange,
 } from "../../types";
 import { createDefaultFSRSData, State } from "../../types";
 import type { ShardedStoreService, ShardEntry } from "../persistence/sharded-store.service";
@@ -22,6 +23,16 @@ import { CardMoverService } from "./card-mover.service";
 
 /**
  * Result of scanning vault for new flashcards
+ */
+export interface ScanResult {
+	totalCards: number;
+	newCardsProcessed: number;
+	filesProcessed: number;
+	orphanedRemoved: number;
+}
+
+/**
+ * Service for managing flashcard files in vault
  */
 export interface ScanResult {
 	totalCards: number;
@@ -863,7 +874,7 @@ export class FlashcardManager {
 	async getAllFSRSCards(): Promise<FSRSFlashcardItem[]> {
 		if (!this.store) {
 			throw new Error(
-				"Sharded store not initialized. Please restart Obsidian."
+				"Failed to get all FSRS cards: Sharded store not initialized. Please restart Obsidian."
 			);
 		}
 
@@ -1255,14 +1266,14 @@ export class FlashcardManager {
 	async scanVault(): Promise<ScanResult> {
 		if (!this.store) {
 			throw new Error(
-				"Sharded store not initialized. Please restart Obsidian."
+				"Failed to scan vault: Sharded store not initialized. Please restart Obsidian."
 			);
 		}
 
 		// Ensure store is fully loaded before scanning
 		if (!this.store.isReady()) {
 			throw new Error(
-				"Store is still loading. Please wait a moment and try again."
+				"Failed to scan vault: Store is still loading. Please wait a moment and try again."
 			);
 		}
 

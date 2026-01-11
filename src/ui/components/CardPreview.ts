@@ -206,7 +206,9 @@ export class CardPreview extends BaseComponent {
 			el?.addEventListener(
 				"click",
 				(e: MouseEvent) => {
-					const linkEl = (e.target as HTMLElement).closest(
+					const target = e.target;
+					if (!(target instanceof HTMLElement)) return;
+					const linkEl = target.closest(
 						"a.internal-link"
 					);
 					if (!linkEl) return;
