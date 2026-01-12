@@ -65,6 +65,23 @@ export {
     formatIntervalDays,
 } from "./fsrs.types";
 
+// Card store interface
+export type { CardStore } from "./fsrs.types";
+
+// Event types
+export type {
+	FlashcardEventType,
+	FlashcardEvent,
+	CardAddedEvent,
+	CardUpdatedEvent,
+	CardRemovedEvent,
+	CardReviewedEvent,
+	BulkChangeEvent,
+	StoreSyncedEvent,
+	AnyFlashcardEvent,
+	FlashcardEventListener,
+} from "./events.types";
+
 // Re-export enums as types (for isolatedModules compatibility)
 export { State, Rating } from "ts-fsrs";
 export type { Grade } from "ts-fsrs";

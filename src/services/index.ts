@@ -4,7 +4,7 @@
  * Services are organized by domain:
  * - core: Core business logic (FSRS, day boundaries)
  * - flashcard: Flashcard management (parsing, moving, frontmatter)
- * - persistence: Data storage (sharded store, session persistence)
+ * - persistence: Data storage (SQLite, session persistence)
  * - stats: Statistics and calculations
  * - review: Review session management
  * - ai: AI integration (OpenRouter)
@@ -14,6 +14,11 @@
 // Core services
 export { FSRSService } from "./core/fsrs.service";
 export { DayBoundaryService } from "./core/day-boundary.service";
+export {
+	EventBusService,
+	getEventBus,
+	resetEventBus,
+} from "./core/event-bus.service";
 
 // Flashcard services
 export {
@@ -29,10 +34,7 @@ export {
 } from "./flashcard/card-mover.service";
 
 // Persistence services
-export {
-	ShardedStoreService,
-	type ShardEntry,
-} from "./persistence/sharded-store.service";
+export { SqliteStoreService } from "./persistence/sqlite-store.service";
 export { SessionPersistenceService } from "./persistence/session-persistence.service";
 
 // Stats services

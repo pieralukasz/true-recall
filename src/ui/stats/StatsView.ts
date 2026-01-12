@@ -19,10 +19,11 @@ import {
 	Legend,
 } from "chart.js";
 import { VIEW_TYPE_STATS } from "../../constants";
-import { StatsCalculatorService } from "../../services";
+import { StatsCalculatorService, getEventBus } from "../../services";
 import { CardPreviewModal } from "../modals";
 import type EpistemePlugin from "../../main";
 import type { StatsTimeRange, CardMaturityBreakdown, FutureDueEntry, RetentionEntry } from "../../types";
+import type { CardReviewedEvent, CardAddedEvent, CardRemovedEvent, CardUpdatedEvent, BulkChangeEvent, StoreSyncedEvent } from "../../types/events.types";
 
 // Register Chart.js components
 Chart.register(
@@ -48,6 +49,10 @@ export class StatsView extends ItemView {
 
 	// Data for click handlers
 	private futureDueData: FutureDueEntry[] = [];
+
+	// Event subscriptions for cross-component reactivity
+	private eventUnsubscribers: (() => void)[] = [];
+	private refreshTimer: ReturnType<typeof setTimeout> | null = null;
 
 	// Container elements
 	private todayEl!: HTMLElement;
@@ -88,16 +93,89 @@ export class StatsView extends ItemView {
 		// Create section containers
 		this.createSections(container);
 
+		// Subscribe to EventBus for cross-component reactivity
+		this.subscribeToEvents();
+
 		// Initial render
 		await this.refresh();
 	}
 
 	async onClose(): Promise<void> {
+		// Cleanup refresh timer
+		if (this.refreshTimer) {
+			clearTimeout(this.refreshTimer);
+			this.refreshTimer = null;
+		}
+
+		// Cleanup EventBus subscriptions
+		this.eventUnsubscribers.forEach((unsub) => unsub());
+		this.eventUnsubscribers = [];
+
 		// Destroy all charts to prevent memory leaks
 		for (const chart of this.charts.values()) {
 			chart.destroy();
 		}
 		this.charts.clear();
+	}
+
+	/**
+	 * Subscribe to EventBus events for cross-component reactivity
+	 * Uses debouncing to avoid excessive re-renders during rapid reviews
+	 */
+	private subscribeToEvents(): void {
+		const eventBus = getEventBus();
+
+		// Refresh stats when cards are reviewed (debounced)
+		const unsubReviewed = eventBus.on<CardReviewedEvent>("card:reviewed", () => {
+			this.scheduleRefresh();
+		});
+		this.eventUnsubscribers.push(unsubReviewed);
+
+		// Refresh when cards are added
+		const unsubAdded = eventBus.on<CardAddedEvent>("card:added", () => {
+			this.scheduleRefresh();
+		});
+		this.eventUnsubscribers.push(unsubAdded);
+
+		// Refresh when cards are removed
+		const unsubRemoved = eventBus.on<CardRemovedEvent>("card:removed", () => {
+			this.scheduleRefresh();
+		});
+		this.eventUnsubscribers.push(unsubRemoved);
+
+		// Refresh for bulk changes
+		const unsubBulk = eventBus.on<BulkChangeEvent>("cards:bulk-change", () => {
+			this.scheduleRefresh();
+		});
+		this.eventUnsubscribers.push(unsubBulk);
+
+		// Refresh when cards are updated (suspended, buried, etc.)
+		const unsubUpdated = eventBus.on<CardUpdatedEvent>("card:updated", (event) => {
+			// Only refresh for changes that affect stats (not just content edits)
+			if (event.changes.fsrs || event.changes.suspended || event.changes.buried) {
+				this.scheduleRefresh();
+			}
+		});
+		this.eventUnsubscribers.push(unsubUpdated);
+
+		// Refresh after store sync (iCloud)
+		const unsubSynced = eventBus.on<StoreSyncedEvent>("store:synced", () => {
+			void this.refresh();
+		});
+		this.eventUnsubscribers.push(unsubSynced);
+	}
+
+	/**
+	 * Schedule a debounced refresh to avoid excessive re-renders
+	 */
+	private scheduleRefresh(): void {
+		if (this.refreshTimer) {
+			clearTimeout(this.refreshTimer);
+		}
+		this.refreshTimer = setTimeout(() => {
+			void this.refresh();
+			this.refreshTimer = null;
+		}, 500);
 	}
 
 	private createSections(container: HTMLElement): void {

@@ -6,6 +6,7 @@ import { State } from "ts-fsrs";
 import type { FSRSService } from "../core/fsrs.service";
 import type { FlashcardManager } from "../flashcard/flashcard.service";
 import type { SessionPersistenceService } from "../persistence/session-persistence.service";
+import type { SqliteStoreService } from "../persistence/sqlite-store.service";
 import type {
 	CardMaturityBreakdown,
 	FutureDueEntry,
@@ -22,6 +23,7 @@ import type {
  */
 export class StatsCalculatorService {
 	private sessionPersistence: SessionPersistenceService;
+	private sqliteStore: SqliteStoreService | null = null;
 
 	constructor(
 		private fsrsService: FSRSService,
@@ -29,6 +31,14 @@ export class StatsCalculatorService {
 		sessionPersistence: SessionPersistenceService
 	) {
 		this.sessionPersistence = sessionPersistence;
+	}
+
+	/**
+	 * Set SQLite store for optimized queries
+	 * When set, uses SQL aggregations instead of iterating all cards
+	 */
+	setSqliteStore(store: SqliteStoreService): void {
+		this.sqliteStore = store;
 	}
 
 	/**
@@ -47,6 +57,12 @@ export class StatsCalculatorService {
 	 * Mature: Review cards with interval >= 21 days
 	 */
 	async getCardMaturityBreakdown(): Promise<CardMaturityBreakdown> {
+		// Use optimized SQLite query when available
+		if (this.sqliteStore) {
+			return this.sqliteStore.getCardMaturityBreakdown();
+		}
+
+		// Fallback to iterating all cards
 		const allCards = await this.flashcardManager.getAllFSRSCards();
 		const now = new Date();
 

@@ -171,7 +171,7 @@ src/
 │   ├── harvest/
 │   │   └── harvest.service.ts
 │   ├── persistence/
-│   │   ├── sharded-store.service.ts
+│   │   ├── sqlite-store.service.ts  # SQLite storage
 │   │   └── session-persistence.service.ts
 │   ├── stats/
 │   │   └── stats.service.ts

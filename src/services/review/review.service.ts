@@ -9,10 +9,12 @@ import type {
     ReviewSessionStats,
     DailyStats,
 } from "../../types/fsrs.types";
+import type { CardReviewedEvent } from "../../types/events.types";
 import type { NewCardOrder, ReviewOrder, NewReviewMix } from "../../types/settings.types";
 import type { FSRSService } from "../core/fsrs.service";
 import type { FlashcardManager } from "../flashcard/flashcard.service";
 import { LEARN_AHEAD_LIMIT_MINUTES } from "../../constants";
+import { getEventBus } from "../core/event-bus.service";
 
 /**
  * Options for building review queue
@@ -421,6 +423,15 @@ export class ReviewService {
                 card.id,
                 updatedCard.fsrs
             );
+
+            // Emit review event for stats updates
+            getEventBus().emit({
+                type: "card:reviewed",
+                cardId: card.id,
+                rating: rating as number,
+                newState: updatedCard.fsrs.state,
+                timestamp: Date.now(),
+            } as CardReviewedEvent);
         }
 
         return { updatedCard, result };

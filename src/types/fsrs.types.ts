@@ -452,3 +452,44 @@ export function formatInterval(minutes: number): string {
 export function formatIntervalDays(days: number): string {
     return formatInterval(days * 24 * 60);
 }
+
+/**
+ * Common interface for card storage services
+ */
+export interface CardStore {
+    /** Check if store is loaded and ready */
+    isReady(): boolean;
+
+    /** Get a card by ID */
+    get(cardId: string): FSRSCardData | undefined;
+
+    /** Set/update a card */
+    set(cardId: string, data: FSRSCardData): void;
+
+    /** Delete a card */
+    delete(cardId: string): void;
+
+    /** Check if a card exists */
+    has(cardId: string): boolean;
+
+    /** Get all card IDs */
+    keys(): string[];
+
+    /** Get all cards */
+    getAll(): FSRSCardData[];
+
+    /** Get total card count */
+    size(): number;
+
+    /** Load store from disk */
+    load(): Promise<void>;
+
+    /** Flush pending changes to disk */
+    flush(): Promise<void>;
+
+    /** Force immediate save */
+    saveNow(): Promise<void>;
+
+    /** Merge with data from disk (for sync conflict resolution) */
+    mergeFromDisk(): Promise<{ merged: number; conflicts: number }>;
+}

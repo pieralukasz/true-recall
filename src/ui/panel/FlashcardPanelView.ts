@@ -11,13 +11,14 @@ import {
     MarkdownRenderer,
 } from "obsidian";
 import { VIEW_TYPE_FLASHCARD_PANEL } from "../../constants";
-import { FlashcardManager, OpenRouterService } from "../../services";
+import { FlashcardManager, OpenRouterService, getEventBus } from "../../services";
 import { PanelStateManager } from "../../state";
 import { PanelHeader } from "./PanelHeader";
 import { PanelContent } from "./PanelContent";
 import { PanelFooter } from "./PanelFooter";
 import { MoveCardModal } from "../modals/MoveCardModal";
 import type { FlashcardItem, FlashcardChange } from "../../types";
+import type { CardAddedEvent, CardRemovedEvent, CardUpdatedEvent, BulkChangeEvent } from "../../types/events.types";
 import { createDefaultFSRSData } from "../../types";
 import type EpistemePlugin from "../../main";
 
@@ -42,6 +43,9 @@ export class FlashcardPanelView extends ItemView {
 
     // State subscription
     private unsubscribe: (() => void) | null = null;
+
+    // Event subscriptions for cross-component reactivity
+    private eventUnsubscribers: (() => void)[] = [];
 
     // Selection state for bulk move
     private selectedCardIds: Set<string> = new Set();
@@ -83,6 +87,9 @@ export class FlashcardPanelView extends ItemView {
         // Subscribe to state changes
         this.unsubscribe = this.stateManager.subscribe(() => this.render());
 
+        // Subscribe to EventBus for cross-component reactivity
+        this.subscribeToEvents();
+
         // Register selection tracking for literature notes
         this.registerSelectionTracking();
 
@@ -93,6 +100,10 @@ export class FlashcardPanelView extends ItemView {
     async onClose(): Promise<void> {
         // Cleanup subscriptions
         this.unsubscribe?.();
+
+        // Cleanup EventBus subscriptions
+        this.eventUnsubscribers.forEach((unsub) => unsub());
+        this.eventUnsubscribers = [];
 
         // Cleanup selection timer
         if (this.selectionTimer) {
@@ -107,6 +118,52 @@ export class FlashcardPanelView extends ItemView {
         this.headerComponent?.destroy();
         this.contentComponent?.destroy();
         this.footerComponent?.destroy();
+    }
+
+    /**
+     * Subscribe to EventBus events for cross-component reactivity
+     */
+    private subscribeToEvents(): void {
+        const eventBus = getEventBus();
+
+        // When a card is added anywhere, reload if it affects current file
+        const unsubAdded = eventBus.on<CardAddedEvent>("card:added", (event) => {
+            const state = this.stateManager.getState();
+            if (state.flashcardInfo?.filePath === event.filePath) {
+                void this.loadFlashcardInfo();
+            }
+        });
+        this.eventUnsubscribers.push(unsubAdded);
+
+        // When a card is removed anywhere, reload if it affects current file
+        const unsubRemoved = eventBus.on<CardRemovedEvent>("card:removed", (event) => {
+            const state = this.stateManager.getState();
+            if (state.flashcardInfo?.filePath === event.filePath) {
+                void this.loadFlashcardInfo();
+            }
+        });
+        this.eventUnsubscribers.push(unsubRemoved);
+
+        // When card content is updated, reload if it affects current file
+        const unsubUpdated = eventBus.on<CardUpdatedEvent>("card:updated", (event) => {
+            // Only reload for content changes (question/answer), not FSRS updates
+            if (!event.changes.question && !event.changes.answer) return;
+
+            const state = this.stateManager.getState();
+            if (state.flashcardInfo?.filePath === event.filePath) {
+                void this.loadFlashcardInfo();
+            }
+        });
+        this.eventUnsubscribers.push(unsubUpdated);
+
+        // Handle bulk changes (e.g., from diff apply)
+        const unsubBulk = eventBus.on<BulkChangeEvent>("cards:bulk-change", (event) => {
+            const state = this.stateManager.getState();
+            if (event.filePath && state.flashcardInfo?.filePath === event.filePath) {
+                void this.loadFlashcardInfo();
+            }
+        });
+        this.eventUnsubscribers.push(unsubBulk);
     }
 
     /**

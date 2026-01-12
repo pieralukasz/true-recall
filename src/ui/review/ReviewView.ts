@@ -6,9 +6,10 @@
 import { ItemView, WorkspaceLeaf, MarkdownRenderer, Notice, Platform, normalizePath, Menu, setIcon, TFile, type ViewStateResult } from "obsidian";
 import { Rating, State, type Grade } from "ts-fsrs";
 import { VIEW_TYPE_REVIEW, UI_CONFIG } from "../../constants";
-import { FSRSService, ReviewService, FlashcardManager, SessionPersistenceService } from "../../services";
+import { FSRSService, ReviewService, FlashcardManager, SessionPersistenceService, getEventBus } from "../../services";
 import { ReviewStateManager } from "../../state";
 import { extractFSRSSettings, type FSRSFlashcardItem, type SchedulingPreview } from "../../types";
+import type { CardRemovedEvent, CardUpdatedEvent, BulkChangeEvent } from "../../types/events.types";
 import { MoveCardModal, AddFlashcardModal } from "../modals";
 import type EpistemePlugin from "../../main";
 
@@ -83,6 +84,9 @@ export class ReviewView extends ItemView {
 
     // State subscription
     private unsubscribe: (() => void) | null = null;
+
+    // Event subscriptions for cross-component reactivity
+    private eventUnsubscribers: (() => void)[] = [];
 
     // Timer for waiting screen countdown
     private waitingTimer: ReturnType<typeof setInterval> | null = null;
@@ -184,6 +188,9 @@ export class ReviewView extends ItemView {
         // Subscribe to state changes
         this.unsubscribe = this.stateManager.subscribe(() => this.render());
 
+        // Subscribe to EventBus for cross-component reactivity
+        this.subscribeToEvents();
+
         // Register keyboard shortcuts using registerDomEvent for automatic cleanup
         this.registerDomEvent(document, "keydown", this.handleKeyDown);
 
@@ -192,13 +199,85 @@ export class ReviewView extends ItemView {
 
     async onClose(): Promise<void> {
         // Flush store to disk before closing
-        if (this.plugin.shardedStore) {
-            await this.plugin.shardedStore.flush();
+        if (this.plugin.cardStore) {
+            await this.plugin.cardStore.flush();
         }
 
         this.unsubscribe?.();
+
+        // Cleanup EventBus subscriptions
+        this.eventUnsubscribers.forEach((unsub) => unsub());
+        this.eventUnsubscribers = [];
+
         this.clearWaitingTimer();
         this.stateManager.reset();
+    }
+
+    /**
+     * Subscribe to EventBus events for cross-component reactivity
+     * Handles card removal during active review sessions
+     */
+    private subscribeToEvents(): void {
+        const eventBus = getEventBus();
+
+        // Handle card removal during active review
+        const unsubRemoved = eventBus.on<CardRemovedEvent>("card:removed", (event) => {
+            if (!this.stateManager.isActive()) return;
+
+            // Check if removed card is in our queue
+            const queue = this.stateManager.getState().queue;
+            const cardInQueue = queue.find((c) => c.id === event.cardId);
+
+            if (cardInQueue) {
+                // Remove card from queue gracefully
+                this.stateManager.removeCardById(event.cardId);
+
+                // If we were showing this card, re-render
+                const currentCard = this.stateManager.getCurrentCard();
+                if (!currentCard || currentCard.id === event.cardId) {
+                    this.render();
+                }
+            }
+        });
+        this.eventUnsubscribers.push(unsubRemoved);
+
+        // Handle card content updates during review
+        const unsubUpdated = eventBus.on<CardUpdatedEvent>("card:updated", (event) => {
+            if (!this.stateManager.isActive()) return;
+            if (!event.changes.question && !event.changes.answer) return;
+
+            // If current card was updated externally, re-render
+            const currentCard = this.stateManager.getCurrentCard();
+            if (currentCard && currentCard.id === event.cardId) {
+                this.render();
+            }
+        });
+        this.eventUnsubscribers.push(unsubUpdated);
+
+        // Handle bulk removals (e.g., from diff apply)
+        const unsubBulk = eventBus.on<BulkChangeEvent>("cards:bulk-change", (event) => {
+            if (!this.stateManager.isActive()) return;
+            if (event.action !== "removed") return;
+
+            // Remove any deleted cards from queue
+            let needsRerender = false;
+            const currentCard = this.stateManager.getCurrentCard();
+
+            for (const cardId of event.cardIds) {
+                const queue = this.stateManager.getState().queue;
+                if (queue.find((c) => c.id === cardId)) {
+                    this.stateManager.removeCardById(cardId);
+                    if (currentCard?.id === cardId) {
+                        needsRerender = true;
+                    }
+                }
+            }
+
+            if (needsRerender) {
+                this.render();
+            }
+        });
+        this.eventUnsubscribers.push(unsubBulk);
     }
 
     /**
@@ -217,8 +296,8 @@ export class ReviewView extends ItemView {
     async startSession(): Promise<void> {
         try {
             // Sync with disk to get changes from other devices (iCloud sync)
-            if (this.plugin.shardedStore) {
-                await this.plugin.shardedStore.mergeFromDisk();
+            if (this.plugin.cardStore) {
+                await this.plugin.cardStore.mergeFromDisk();
             }
 
             // Update FSRS service with latest settings
@@ -1560,6 +1639,7 @@ Source: [[${sourceNote}]]
         }
 
         new Notice("Card suspended");
+        this.render();
     }
 
     /**
@@ -1607,6 +1687,7 @@ Source: [[${sourceNote}]]
         }
 
         new Notice("Card buried until tomorrow");
+        this.render();
     }
 
     /**
@@ -1683,6 +1764,7 @@ Source: [[${sourceNote}]]
         }
 
         new Notice(`${buriedCount} card${buriedCount > 1 ? "s" : ""} buried until tomorrow`);
+        this.render();
     }
 
     /**
