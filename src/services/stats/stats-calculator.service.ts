@@ -45,10 +45,8 @@ export class StatsCalculatorService {
 	 * Get all daily stats for calendar heatmap
 	 * Exposes sessionPersistence.getAllDailyStats() without revealing internal dependency
 	 */
-	async getAllDailyStats(): Promise<Record<string, ExtendedDailyStats>> {
-		return this.sessionPersistence.getAllDailyStats() as Promise<
-			Record<string, ExtendedDailyStats>
-		>;
+	getAllDailyStats(): Record<string, ExtendedDailyStats> {
+		return this.sessionPersistence.getAllDailyStats();
 	}
 
 	/**

@@ -933,6 +933,56 @@ export class SqliteStoreService {
     }
 
     /**
+     * Remove a reviewed card entry (for undo functionality)
+     */
+    removeReviewedCard(date: string, cardId: string): void {
+        if (!this.db) return;
+
+        this.db.run(`
+            DELETE FROM daily_reviewed_cards WHERE date = ? AND card_id = ?
+        `, [date, cardId]);
+
+        this.markDirty();
+    }
+
+    /**
+     * Decrement daily stats (for undo functionality)
+     * Uses MAX(0, ...) to prevent negative values
+     */
+    decrementDailyStats(date: string, stats: Partial<ExtendedDailyStats>): void {
+        if (!this.db) return;
+
+        this.db.run(`
+            UPDATE daily_stats SET
+                reviews_completed = MAX(0, reviews_completed - ?),
+                new_cards_studied = MAX(0, new_cards_studied - ?),
+                total_time_ms = MAX(0, total_time_ms - ?),
+                again_count = MAX(0, again_count - ?),
+                hard_count = MAX(0, hard_count - ?),
+                good_count = MAX(0, good_count - ?),
+                easy_count = MAX(0, easy_count - ?),
+                new_cards = MAX(0, new_cards - ?),
+                learning_cards = MAX(0, learning_cards - ?),
+                review_cards = MAX(0, review_cards - ?)
+            WHERE date = ?
+        `, [
+            stats.reviewsCompleted || 0,
+            stats.newCardsStudied || 0,
+            stats.totalTimeMs || 0,
+            stats.again || 0,
+            stats.hard || 0,
+            stats.good || 0,
+            stats.easy || 0,
+            stats.newCards || 0,
+            stats.learningCards || 0,
+            stats.reviewCards || 0,
+            date,
+        ]);
+
+        this.markDirty();
+    }
+
+    /**
      * Get all daily stats
      */
     getAllDailyStats(): Record<string, ExtendedDailyStats> {

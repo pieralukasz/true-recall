@@ -60,11 +60,7 @@ export default class EpistemePlugin extends Plugin {
 			this.fsrsService
 		);
 
-		// Initialize session persistence service
-		this.sessionPersistence = new SessionPersistenceService(this.app);
-		// Note: We no longer clean up old stats - they're kept for the statistics panel
-
-		// Initialize SQLite store for FSRS data
+		// Initialize SQLite store for FSRS data (also initializes session persistence)
 		void this.initializeCardStore();
 
 		// Initialize day boundary service (Anki-style day scheduling)
@@ -640,7 +636,7 @@ export default class EpistemePlugin extends Plugin {
 	}
 
 	/**
-	 * Initialize the SQLite card store
+	 * Initialize the SQLite card store and session persistence
 	 */
 	private async initializeCardStore(): Promise<void> {
 		try {
@@ -651,6 +647,12 @@ export default class EpistemePlugin extends Plugin {
 			// Use SQLite store
 			this.cardStore = this.sqliteStore;
 			this.flashcardManager.setStore(this.cardStore);
+
+			// Initialize session persistence with SQL store
+			this.sessionPersistence = new SessionPersistenceService(this.app, this.sqliteStore);
+
+			// Migrate stats.json to SQL if exists (one-time migration)
+			await this.sessionPersistence.migrateStatsJsonToSql();
 		} catch (error) {
 			console.error("[Episteme] Failed to initialize SQLite store:", error);
 			new Notice("Failed to load flashcard data. Please restart Obsidian.");
