@@ -315,6 +315,7 @@ export class CustomSessionModal extends BaseModal {
 				} else {
 					this.selectedNotes.delete(stat.noteName);
 				}
+				this.updateStartButton();
 			}
 		});
 				row.addClass("episteme-note-row--clickable");
