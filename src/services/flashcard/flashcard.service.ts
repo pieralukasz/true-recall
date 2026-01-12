@@ -14,9 +14,14 @@ import type {
 	NoteFlashcardType,
 	FlashcardItem,
 	FlashcardChange,
+	CardStore,
+	CardAddedEvent,
+	CardRemovedEvent,
+	CardUpdatedEvent,
+	BulkChangeEvent,
 } from "../../types";
 import { createDefaultFSRSData, State } from "../../types";
-import type { ShardedStoreService, ShardEntry } from "../persistence/sharded-store.service";
+import { getEventBus } from "../core/event-bus.service";
 import { FrontmatterService } from "./frontmatter.service";
 import { FlashcardParserService } from "./flashcard-parser.service";
 import { CardMoverService } from "./card-mover.service";
@@ -59,7 +64,7 @@ export interface FlashcardInfo {
 export class FlashcardManager {
 	private app: App;
 	private settings: EpistemeSettings;
-	private store: ShardedStoreService | null = null;
+	private store: CardStore | null = null;
 	private frontmatterService: FrontmatterService;
 	private parserService: FlashcardParserService;
 	private cardMoverService: CardMoverService;
@@ -73,10 +78,9 @@ export class FlashcardManager {
 	}
 
 	/**
-	 * Set the sharded store for FSRS data
-	 * When set, FSRS data will be read/written from store instead of inline comments
+	 * Set the card store for FSRS data
 	 */
-	setStore(store: ShardedStoreService): void {
+	setStore(store: CardStore): void {
 		this.store = store;
 	}
 
@@ -362,6 +366,16 @@ export class FlashcardManager {
 		const deck = this.frontmatterService.extractDeckFromFrontmatter(existingContent);
 		const sourceNoteName = this.frontmatterService.extractSourceLinkFromContent(existingContent);
 
+		// Emit event for cross-component reactivity
+		getEventBus().emit({
+			type: "card:added",
+			cardId: id,
+			filePath,
+			deck: deck || "default",
+			sourceNoteName: sourceNoteName ?? undefined,
+			timestamp: Date.now(),
+		} as CardAddedEvent);
+
 		// Return full card object
 		return {
 			id,
@@ -494,6 +508,14 @@ export class FlashcardManager {
 			this.store.delete(cardId);
 		}
 
+		// Emit event for cross-component reactivity
+		getEventBus().emit({
+			type: "card:removed",
+			cardId,
+			filePath: flashcardFile.path,
+			timestamp: Date.now(),
+		} as CardRemovedEvent);
+
 		return true;
 	}
 
@@ -531,6 +553,49 @@ export class FlashcardManager {
 
 		const newContent = lines.join("\n").trimEnd() + "\n";
 		await this.app.vault.modify(flashcardFile, newContent);
+
+		// Emit bulk change event for all accepted changes
+		const acceptedChanges = changes.filter((c) => c.accepted);
+		if (acceptedChanges.length > 0) {
+			// Collect card IDs by type (NEW cards don't have IDs until created)
+			const deletedIds = acceptedChanges
+				.filter((c) => c.type === "DELETED" && c.originalCardId)
+				.map((c) => c.originalCardId!);
+			const modifiedIds = acceptedChanges
+				.filter((c) => c.type === "MODIFIED" && c.originalCardId)
+				.map((c) => c.originalCardId!);
+			const hasNewCards = acceptedChanges.some((c) => c.type === "NEW");
+
+			// Emit separate events for each type
+			if (deletedIds.length > 0) {
+				getEventBus().emit({
+					type: "cards:bulk-change",
+					action: "removed",
+					cardIds: deletedIds,
+					filePath: flashcardFile.path,
+					timestamp: Date.now(),
+				} as BulkChangeEvent);
+			}
+			if (hasNewCards) {
+				// New cards don't have IDs yet, but we signal that cards were added
+				getEventBus().emit({
+					type: "cards:bulk-change",
+					action: "added",
+					cardIds: [], // IDs not available for new cards
+					filePath: flashcardFile.path,
+					timestamp: Date.now(),
+				} as BulkChangeEvent);
+			}
+			if (modifiedIds.length > 0) {
+				getEventBus().emit({
+					type: "cards:bulk-change",
+					action: "updated",
+					cardIds: modifiedIds,
+					filePath: flashcardFile.path,
+					timestamp: Date.now(),
+				} as BulkChangeEvent);
+			}
+		}
 
 		return flashcardFile;
 	}
@@ -1117,10 +1182,10 @@ export class FlashcardManager {
 		newFSRSData: FSRSCardData,
 		reviewLogEntry?: CardReviewLogEntry
 	): Promise<void> {
-		// Fast path: use sharded store
+		// Fast path: use card store
 		if (this.hasStore() && this.store) {
 			const existing = this.store.get(cardId);
-			const entry: ShardEntry = { ...newFSRSData };
+			const entry: FSRSCardData = { ...newFSRSData };
 
 			// Append review to history if provided
 			if (reviewLogEntry) {
@@ -1142,6 +1207,15 @@ export class FlashcardManager {
 
 			// Ensure block ID exists in file (for new cards created during this session)
 			await this.ensureBlockIdInFile(filePath, cardId);
+
+			// Emit event for cross-component reactivity
+			getEventBus().emit({
+				type: "card:updated",
+				cardId,
+				filePath,
+				changes: { fsrs: true },
+				timestamp: Date.now(),
+			} as CardUpdatedEvent);
 
 			return;
 		}
@@ -1250,6 +1324,15 @@ export class FlashcardManager {
 		);
 
 		await this.app.vault.modify(file, newContent);
+
+		// Emit event for cross-component reactivity
+		getEventBus().emit({
+			type: "card:updated",
+			cardId,
+			filePath,
+			changes: { question: true, answer: true },
+			timestamp: Date.now(),
+		} as CardUpdatedEvent);
 	}
 
 	/**

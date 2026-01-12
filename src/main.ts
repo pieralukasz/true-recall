@@ -11,9 +11,11 @@ import {
 	FSRSService,
 	StatsService,
 	SessionPersistenceService,
-	ShardedStoreService,
+	SqliteStoreService,
 	DayBoundaryService,
+	resetEventBus,
 } from "./services";
+import type { CardStore } from "./types";
 import { extractFSRSSettings } from "./types";
 import {
 	FlashcardPanelView,
@@ -34,8 +36,11 @@ export default class EpistemePlugin extends Plugin {
 	fsrsService!: FSRSService;
 	statsService!: StatsService;
 	sessionPersistence!: SessionPersistenceService;
-	shardedStore!: ShardedStoreService;
+	cardStore!: CardStore;
 	dayBoundaryService!: DayBoundaryService;
+
+	// Keep reference to SQLite store for SQLite-specific operations (stats queries)
+	private sqliteStore: SqliteStoreService | null = null;
 
 	async onload(): Promise<void> {
 		await this.loadSettings();
@@ -59,18 +64,8 @@ export default class EpistemePlugin extends Plugin {
 		this.sessionPersistence = new SessionPersistenceService(this.app);
 		// Note: We no longer clean up old stats - they're kept for the statistics panel
 
-		// Initialize sharded store for FSRS data
-		this.shardedStore = new ShardedStoreService(this.app);
-		// Load store data in background (non-blocking)
-		this.shardedStore.load().then(() => {
-			// Connect store to flashcard manager after loading
-			this.flashcardManager.setStore(this.shardedStore);
-			// Check for cards without block IDs and migrate
-			void this.checkAndMigrateFlashcards();
-		}).catch((error) => {
-			console.error("Failed to load sharded store:", error);
-			new Notice("Failed to load flashcard data. Please restart Obsidian.");
-		});
+		// Initialize SQLite store for FSRS data (with automatic migration from sharded JSON)
+		void this.initializeCardStore();
 
 		// Initialize day boundary service (Anki-style day scheduling)
 		this.dayBoundaryService = new DayBoundaryService(
@@ -199,6 +194,13 @@ export default class EpistemePlugin extends Plugin {
 			},
 		});
 
+		// Cleanup old sharded JSON files (after SQLite migration)
+		this.addCommand({
+			id: "cleanup-legacy-storage",
+			name: "Cleanup legacy storage files",
+			callback: () => void this.cleanupLegacyStorage(),
+		});
+
 		// Show notes missing flashcards
 		this.addCommand({
 			id: "show-missing-flashcards",
@@ -271,10 +273,13 @@ export default class EpistemePlugin extends Plugin {
 	}
 
 	onunload(): void {
-		// Save sharded store immediately on unload
-		if (this.shardedStore) {
-			void this.shardedStore.saveNow();
+		// Save card store immediately on unload
+		if (this.cardStore) {
+			void this.cardStore.saveNow();
 		}
+
+		// Clear EventBus subscriptions
+		resetEventBus();
 
 		// Obsidian automatically handles leaf cleanup when plugin unloads
 	}
@@ -642,11 +647,87 @@ export default class EpistemePlugin extends Plugin {
 	}
 
 	/**
+	 * Cleanup legacy sharded JSON storage files
+	 * Only safe to run after SQLite migration is complete
+	 */
+	async cleanupLegacyStorage(): Promise<void> {
+		// Verify SQLite has data before cleanup
+		if (!this.sqliteStore || this.sqliteStore.size() === 0) {
+			new Notice("Cannot cleanup: No data in SQLite database. Run migration first.");
+			return;
+		}
+
+		const adapter = this.app.vault.adapter;
+		const storePath = normalizePath(".episteme/store");
+
+		try {
+			const exists = await adapter.exists(storePath);
+			if (!exists) {
+				new Notice("No legacy storage files found.");
+				return;
+			}
+
+			// List all JSON files in the store folder
+			const listing = await adapter.list(storePath);
+			const jsonFiles = listing.files.filter(f => f.endsWith(".json"));
+
+			if (jsonFiles.length === 0) {
+				new Notice("No legacy storage files found.");
+				return;
+			}
+
+			// Confirm with notice about what will be deleted
+			new Notice(`Removing ${jsonFiles.length} legacy storage files...`);
+
+			// Delete all JSON files
+			for (const filePath of jsonFiles) {
+				await adapter.remove(filePath);
+			}
+
+			// Try to remove the store folder if empty
+			try {
+				await adapter.rmdir(storePath, false);
+			} catch {
+				// Folder might not be empty or already removed
+			}
+
+			new Notice(`Cleanup complete! Removed ${jsonFiles.length} legacy files.`);
+			console.log(`[Episteme] Cleaned up ${jsonFiles.length} legacy sharded JSON files`);
+
+		} catch (error) {
+			console.error("[Episteme] Failed to cleanup legacy storage:", error);
+			new Notice(`Cleanup failed: ${error instanceof Error ? error.message : "Unknown error"}`);
+		}
+	}
+
+	/**
+	 * Initialize the SQLite card store
+	 */
+	private async initializeCardStore(): Promise<void> {
+		try {
+			// Create and load SQLite store
+			this.sqliteStore = new SqliteStoreService(this.app);
+			await this.sqliteStore.load();
+
+			// Use SQLite store
+			this.cardStore = this.sqliteStore;
+			this.flashcardManager.setStore(this.cardStore);
+
+			// Check for cards without block IDs and migrate
+			void this.checkAndMigrateFlashcards();
+
+		} catch (error) {
+			console.error("[Episteme] Failed to initialize SQLite store:", error);
+			new Notice("Failed to load flashcard data. Please restart Obsidian.");
+		}
+	}
+
+	/**
 	 * Check if migration is needed (cards without block IDs exist)
 	 * Runs scanVault() once on startup if needed to add missing block IDs
 	 */
 	async checkAndMigrateFlashcards(): Promise<void> {
-		if (!this.shardedStore.isReady()) return;
+		if (!this.cardStore.isReady()) return;
 
 		const files = this.app.vault.getMarkdownFiles().filter((file) =>
 			this.flashcardManager.isFlashcardFile(file)
