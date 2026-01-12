@@ -280,7 +280,7 @@ export class FlashcardReviewModal extends BaseModal {
 		});
 
 		this.saveButtonEl = buttonsContainer.createEl("button", {
-			text: "Save Flashcards",
+			text: "Save flashcards",
 			cls: "mod-cta episteme-review-save-btn",
 		});
 		this.saveButtonEl.addEventListener("click", () => this.handleSave());
@@ -378,9 +378,10 @@ export class FlashcardReviewModal extends BaseModal {
 		} else if (e.key === "Tab") {
 			e.preventDefault();
 			const nextField = field === "question" ? "answer" : "question";
-			void this.saveEdit(index, field).then(() => {
+			void (async () => {
+				await this.saveEdit(index, field);
 				this.startEdit(index, nextField);
-			});
+			})();
 		}
 	}
 

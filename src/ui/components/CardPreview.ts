@@ -152,40 +152,70 @@ export class CardPreview extends BaseComponent {
 
 		// Copy button
 		if (handlers.onCopy) {
-			const copyBtn = actionsEl.createSpan({
+			const copyBtn = actionsEl.createEl("button", {
 				cls: "episteme-card-btn clickable-icon",
-				attr: { "aria-label": "Copy flashcard" },
+				attr: {
+					"aria-label": "Copy flashcard",
+					"data-tooltip-position": "top",
+				},
 			});
 			copyBtn.textContent = "\u{1F4CB}"; // clipboard emoji
 			this.events.addEventListener(copyBtn, "click", (e) => {
 				e.stopPropagation();
 				handlers.onCopy?.(flashcard);
 			});
+			this.events.addEventListener(copyBtn, "keydown", (e: KeyboardEvent) => {
+				if (e.key === "Enter" || e.key === " ") {
+					e.preventDefault();
+					e.stopPropagation();
+					handlers.onCopy?.(flashcard);
+				}
+			});
 		}
 
 		// Move button
 		if (handlers.onMove) {
-			const moveBtn = actionsEl.createSpan({
+			const moveBtn = actionsEl.createEl("button", {
 				cls: "episteme-card-btn clickable-icon",
-				attr: { "aria-label": "Move flashcard to another note" },
+				attr: {
+					"aria-label": "Move flashcard to another note",
+					"data-tooltip-position": "top",
+				},
 			});
 			moveBtn.textContent = "\u{1F4E4}"; // outbox emoji (📤)
 			this.events.addEventListener(moveBtn, "click", (e) => {
 				e.stopPropagation();
 				handlers.onMove?.(flashcard);
 			});
+			this.events.addEventListener(moveBtn, "keydown", (e: KeyboardEvent) => {
+				if (e.key === "Enter" || e.key === " ") {
+					e.preventDefault();
+					e.stopPropagation();
+					handlers.onMove?.(flashcard);
+				}
+			});
 		}
 
 		// Delete button
 		if (handlers.onDelete) {
-			const removeBtn = actionsEl.createSpan({
+			const removeBtn = actionsEl.createEl("button", {
 				cls: "episteme-card-btn clickable-icon",
-				attr: { "aria-label": "Remove flashcard" },
+				attr: {
+					"aria-label": "Remove flashcard",
+					"data-tooltip-position": "top",
+				},
 			});
 			removeBtn.textContent = "\u{1F5D1}"; // trash emoji
 			this.events.addEventListener(removeBtn, "click", (e) => {
 				e.stopPropagation();
 				handlers.onDelete?.(flashcard);
+			});
+			this.events.addEventListener(removeBtn, "keydown", (e: KeyboardEvent) => {
+				if (e.key === "Enter" || e.key === " ") {
+					e.preventDefault();
+					e.stopPropagation();
+					handlers.onDelete?.(flashcard);
+				}
 			});
 		}
 	}
