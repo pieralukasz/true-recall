@@ -1,27 +1,26 @@
 /**
  * Session Persistence Service
- * Handles persistent storage of daily review statistics in .episteme/stats.json
+ * Handles persistent storage of daily review statistics in SQL (daily_stats table)
  */
-import { App, TFile, normalizePath } from "obsidian";
+import { App, normalizePath } from "obsidian";
 import { State, Rating } from "ts-fsrs";
-import type { PersistentStatsData, PersistentDailyStats, ExtendedDailyStats, Grade } from "../../types";
+import type { PersistentStatsData, ExtendedDailyStats, Grade } from "../../types";
+import type { SqliteStoreService } from "./sqlite-store.service";
 
 const STATS_FOLDER = ".episteme";
 const STATS_FILE = "stats.json";
-const CURRENT_VERSION = 2;
 
 /**
  * Service for persisting review session data across plugin restarts
- * Stores data in vault for sync compatibility with mobile
+ * Uses SQLite for storage (daily_stats and daily_reviewed_cards tables)
  */
 export class SessionPersistenceService {
 	private app: App;
-	private statsPath: string;
-	private cache: PersistentStatsData | null = null;
+	private store: SqliteStoreService;
 
-	constructor(app: App) {
+	constructor(app: App, store: SqliteStoreService) {
 		this.app = app;
-		this.statsPath = normalizePath(`${STATS_FOLDER}/${STATS_FILE}`);
+		this.store = store;
 	}
 
 	/**
@@ -32,259 +31,109 @@ export class SessionPersistenceService {
 	}
 
 	/**
-	 * Load stats from file (with caching and migration)
-	 */
-	async loadStats(): Promise<PersistentStatsData> {
-		if (this.cache) {
-			return this.cache;
-		}
-
-		try {
-			const file = this.app.vault.getAbstractFileByPath(this.statsPath);
-			let rawStats: PersistentStatsData | null = null;
-
-			if (file instanceof TFile) {
-				const content = await this.app.vault.read(file);
-				rawStats = JSON.parse(content) as PersistentStatsData;
-			} else {
-				// Try to read via adapter (file might exist but not indexed yet)
-				const exists = await this.app.vault.adapter.exists(
-					this.statsPath
-				);
-				if (exists) {
-					const content = await this.app.vault.adapter.read(
-						this.statsPath
-					);
-					rawStats = JSON.parse(content) as PersistentStatsData;
-				}
-			}
-
-			if (rawStats) {
-				// Migrate if needed
-				if (rawStats.version < CURRENT_VERSION) {
-					rawStats = this.migrateStats(rawStats);
-					await this.saveStats(rawStats);
-				}
-				this.cache = rawStats;
-				return this.cache;
-			}
-		} catch {
-			// Error loading stats, will create default
-		}
-
-		// Cache default stats so subsequent calls work correctly
-		this.cache = this.createDefaultStats();
-		return this.cache;
-	}
-
-	/**
-	 * Migrate stats from older versions
-	 */
-	private migrateStats(stats: PersistentStatsData): PersistentStatsData {
-		// V1 -> V2: Add extended daily stats fields
-		if (stats.version === 1) {
-			const migratedDaily: Record<string, PersistentDailyStats> = {};
-			for (const [date, dayStats] of Object.entries(stats.daily) as [string, PersistentDailyStats][]) {
-				migratedDaily[date] = {
-					...dayStats,
-					// Add new fields with defaults (we don't have historical data)
-					again: 0,
-					hard: 0,
-					good: 0,
-					easy: 0,
-					newCards: 0,
-					learningCards: 0,
-					reviewCards: 0,
-				} as ExtendedDailyStats;
-			}
-			stats.daily = migratedDaily;
-			stats.version = 2;
-		}
-		return stats;
-	}
-
-	/**
-	 * Save stats to file
-	 */
-	async saveStats(stats: PersistentStatsData): Promise<void> {
-		stats.lastUpdated = new Date().toISOString();
-		this.cache = stats;
-
-		try {
-			await this.ensureFolderExists();
-
-			const content = JSON.stringify(stats, null, 2);
-			const file = this.app.vault.getAbstractFileByPath(this.statsPath);
-
-			if (file instanceof TFile) {
-				await this.app.vault.modify(file, content);
-			} else {
-				try {
-					await this.app.vault.create(this.statsPath, content);
-				} catch (createError) {
-					// File exists on disk but not in Obsidian's index yet
-					if (
-						createError instanceof Error &&
-						createError.message.includes("already exists")
-					) {
-						await this.app.vault.adapter.write(
-							this.statsPath,
-							content
-						);
-					} else {
-						throw createError;
-					}
-				}
-			}
-		} catch (error) {
-			throw error;
-		}
-	}
-
-	/**
 	 * Get today's stats (creates empty if not exists)
 	 */
-	async getTodayStats(): Promise<PersistentDailyStats> {
-		const stats = await this.loadStats();
+	getTodayStats(): ExtendedDailyStats {
 		const today = this.getTodayKey();
+		const stats = this.store.getDailyStats(today);
 
-		if (!stats.daily[today]) {
-			stats.daily[today] = this.createEmptyDayStats(today);
+		if (stats) {
+			return stats;
 		}
 
-		return stats.daily[today]!;
+		return this.createEmptyDayStats(today);
 	}
 
 	/**
 	 * Record a card review with extended stats
 	 */
-	async recordReview(
+	recordReview(
 		cardId: string,
 		isNewCard: boolean,
 		durationMs: number,
 		rating?: Grade,
 		previousState?: State
-	): Promise<void> {
-		const stats = await this.loadStats();
+	): void {
 		const today = this.getTodayKey();
 
-		if (!stats.daily[today]) {
-			stats.daily[today] = this.createEmptyDayStats(today);
-		}
+		// Record the reviewed card (for daily limit tracking)
+		this.store.recordReviewedCard(today, cardId);
 
-		const dayStats = stats.daily[today] as ExtendedDailyStats;
+		// Build stats increment
+		const statsIncrement: Partial<ExtendedDailyStats> = {
+			reviewsCompleted: 1,
+			totalTimeMs: durationMs,
+			newCardsStudied: isNewCard ? 1 : 0,
+			// Rating breakdown
+			again: rating === Rating.Again ? 1 : 0,
+			hard: rating === Rating.Hard ? 1 : 0,
+			good: rating === Rating.Good ? 1 : 0,
+			easy: rating === Rating.Easy ? 1 : 0,
+			// Card type breakdown
+			newCards: previousState === State.New ? 1 : 0,
+			learningCards: (previousState === State.Learning || previousState === State.Relearning) ? 1 : 0,
+			reviewCards: previousState === State.Review ? 1 : 0,
+		};
 
-		// Add card ID if not already reviewed
-		if (!dayStats.reviewedCardIds.includes(cardId)) {
-			dayStats.reviewedCardIds.push(cardId);
-		}
-
-		dayStats.reviewsCompleted++;
-		dayStats.totalTimeMs += durationMs;
-
-		if (isNewCard) {
-			dayStats.newCardsStudied++;
-		}
-
-		// Track rating breakdown (for statistics panel)
-		if (rating !== undefined) {
-			if (rating === Rating.Again) dayStats.again++;
-			else if (rating === Rating.Hard) dayStats.hard++;
-			else if (rating === Rating.Good) dayStats.good++;
-			else if (rating === Rating.Easy) dayStats.easy++;
-		}
-
-		// Track card type breakdown (for statistics panel)
-		if (previousState !== undefined) {
-			if (previousState === State.New) {
-				dayStats.newCards++;
-			} else if (previousState === State.Learning || previousState === State.Relearning) {
-				dayStats.learningCards++;
-			} else if (previousState === State.Review) {
-				dayStats.reviewCards++;
-			}
-		}
-
-		await this.saveStats(stats);
+		this.store.updateDailyStats(today, statsIncrement);
 	}
 
 	/**
 	 * Get set of cards reviewed today (for queue exclusion)
 	 */
-	async getReviewedToday(): Promise<Set<string>> {
-		const dayStats = await this.getTodayStats();
-		return new Set(dayStats.reviewedCardIds);
+	getReviewedToday(): Set<string> {
+		const today = this.getTodayKey();
+		const cardIds = this.store.getReviewedCardIds(today);
+		return new Set(cardIds);
 	}
 
 	/**
 	 * Get count of new cards studied today
 	 */
-	async getNewCardsStudiedToday(): Promise<number> {
-		const dayStats = await this.getTodayStats();
-		return dayStats.newCardsStudied;
+	getNewCardsStudiedToday(): number {
+		const today = this.getTodayKey();
+		const stats = this.store.getDailyStats(today);
+		return stats?.newCardsStudied ?? 0;
 	}
 
 	/**
 	 * Remove the last review (for undo functionality)
 	 */
-	async removeLastReview(
+	removeLastReview(
 		cardId: string,
 		wasNewCard: boolean,
 		rating?: Grade,
 		previousState?: State
-	): Promise<void> {
-		const stats = await this.loadStats();
+	): void {
 		const today = this.getTodayKey();
 
-		if (!stats.daily[today]) {
-			return; // Nothing to undo
-		}
+		// Build stats decrement
+		const statsDecrement: Partial<ExtendedDailyStats> = {
+			reviewsCompleted: 1,
+			newCardsStudied: wasNewCard ? 1 : 0,
+			// Rating breakdown
+			again: rating === Rating.Again ? 1 : 0,
+			hard: rating === Rating.Hard ? 1 : 0,
+			good: rating === Rating.Good ? 1 : 0,
+			easy: rating === Rating.Easy ? 1 : 0,
+			// Card type breakdown
+			newCards: previousState === State.New ? 1 : 0,
+			learningCards: (previousState === State.Learning || previousState === State.Relearning) ? 1 : 0,
+			reviewCards: previousState === State.Review ? 1 : 0,
+		};
 
-		const dayStats = stats.daily[today] as ExtendedDailyStats;
+		this.store.decrementDailyStats(today, statsDecrement);
 
-		// Decrement counters
-		dayStats.reviewsCompleted = Math.max(0, dayStats.reviewsCompleted - 1);
-
-		if (wasNewCard) {
-			dayStats.newCardsStudied = Math.max(
-				0,
-				dayStats.newCardsStudied - 1
-			);
-		}
-
-		// Revert rating breakdown
-		if (rating !== undefined) {
-			if (rating === Rating.Again) dayStats.again = Math.max(0, dayStats.again - 1);
-			else if (rating === Rating.Hard) dayStats.hard = Math.max(0, dayStats.hard - 1);
-			else if (rating === Rating.Good) dayStats.good = Math.max(0, dayStats.good - 1);
-			else if (rating === Rating.Easy) dayStats.easy = Math.max(0, dayStats.easy - 1);
-		}
-
-		// Revert card type breakdown
-		if (previousState !== undefined) {
-			if (previousState === State.New) {
-				dayStats.newCards = Math.max(0, dayStats.newCards - 1);
-			} else if (previousState === State.Learning || previousState === State.Relearning) {
-				dayStats.learningCards = Math.max(0, dayStats.learningCards - 1);
-			} else if (previousState === State.Review) {
-				dayStats.reviewCards = Math.max(0, dayStats.reviewCards - 1);
-			}
-		}
-
-		// Note: We don't remove cardId from reviewedCardIds because:
+		// Note: We don't remove cardId from daily_reviewed_cards because:
 		// 1. The card might have been reviewed multiple times
 		// 2. The undo is just for the rating, not for "unlearning" the card
-
-		await this.saveStats(stats);
 	}
 
 	/**
 	 * Get all daily stats (for statistics panel - calendar, history charts)
-	 * Note: No longer doing cleanup - we keep all historical data for stats
 	 */
-	async getAllDailyStats(): Promise<Record<string, ExtendedDailyStats>> {
-		const stats = await this.loadStats();
-		return stats.daily as Record<string, ExtendedDailyStats>;
+	getAllDailyStats(): Record<string, ExtendedDailyStats> {
+		return this.store.getAllDailyStats();
 	}
 
 	/**
@@ -292,13 +141,13 @@ export class SessionPersistenceService {
 	 * @param startDate Start date in YYYY-MM-DD format
 	 * @param endDate End date in YYYY-MM-DD format
 	 */
-	async getStatsInRange(startDate: string, endDate: string): Promise<ExtendedDailyStats[]> {
-		const stats = await this.loadStats();
+	getStatsInRange(startDate: string, endDate: string): ExtendedDailyStats[] {
+		const allStats = this.store.getAllDailyStats();
 		const result: ExtendedDailyStats[] = [];
 
-		for (const [date, dayStats] of Object.entries(stats.daily)) {
+		for (const [date, dayStats] of Object.entries(allStats)) {
 			if (date >= startDate && date <= endDate) {
-				result.push(dayStats as ExtendedDailyStats);
+				result.push(dayStats);
 			}
 		}
 
@@ -307,7 +156,7 @@ export class SessionPersistenceService {
 	}
 
 	/**
-	 * Clean up old stats (keep last 30 days)
+	 * Clean up old stats (deprecated - we keep all historical data)
 	 * @deprecated No longer called automatically - stats are kept for statistics panel
 	 */
 	async cleanupOldStats(): Promise<void> {
@@ -316,21 +165,74 @@ export class SessionPersistenceService {
 	}
 
 	/**
-	 * Invalidate cache (call after external changes)
+	 * Invalidate cache (no-op for SQL, kept for API compatibility)
 	 */
 	invalidateCache(): void {
-		this.cache = null;
+		// No-op: SQLite doesn't use a separate cache layer
+	}
+
+	/**
+	 * Migrate stats from JSON file to SQL (one-time migration)
+	 * Call this during plugin initialization after SQL store is ready
+	 */
+	async migrateStatsJsonToSql(): Promise<void> {
+		const statsPath = normalizePath(`${STATS_FOLDER}/${STATS_FILE}`);
+
+		try {
+			const exists = await this.app.vault.adapter.exists(statsPath);
+			if (!exists) {
+				return; // No JSON file to migrate
+			}
+
+			console.log("[Episteme] Migrating stats.json to SQL...");
+
+			const content = await this.app.vault.adapter.read(statsPath);
+			const data = JSON.parse(content) as PersistentStatsData;
+
+			let migratedDays = 0;
+			let migratedCards = 0;
+
+			for (const [date, dayStats] of Object.entries(data.daily)) {
+				const extendedStats = dayStats as ExtendedDailyStats;
+
+				// Migrate stats (use updateDailyStats which does UPSERT)
+				this.store.updateDailyStats(date, {
+					reviewsCompleted: extendedStats.reviewsCompleted || 0,
+					newCardsStudied: extendedStats.newCardsStudied || 0,
+					totalTimeMs: extendedStats.totalTimeMs || 0,
+					again: extendedStats.again || 0,
+					hard: extendedStats.hard || 0,
+					good: extendedStats.good || 0,
+					easy: extendedStats.easy || 0,
+					newCards: extendedStats.newCards || 0,
+					learningCards: extendedStats.learningCards || 0,
+					reviewCards: extendedStats.reviewCards || 0,
+				});
+				migratedDays++;
+
+				// Migrate reviewed card IDs
+				for (const cardId of extendedStats.reviewedCardIds || []) {
+					this.store.recordReviewedCard(date, cardId);
+					migratedCards++;
+				}
+			}
+
+			// Flush to ensure data is persisted
+			await this.store.saveNow();
+
+			// Delete the old JSON file
+			await this.app.vault.adapter.remove(statsPath);
+
+			console.log(
+				`[Episteme] Migrated stats.json to SQL: ${migratedDays} days, ${migratedCards} card entries. JSON file removed.`
+			);
+		} catch (error) {
+			console.error("[Episteme] Failed to migrate stats.json:", error);
+			// Don't throw - migration failure shouldn't block plugin startup
+		}
 	}
 
 	// ===== Private helpers =====
-
-	private createDefaultStats(): PersistentStatsData {
-		return {
-			version: CURRENT_VERSION,
-			lastUpdated: new Date().toISOString(),
-			daily: {},
-		};
-	}
 
 	private createEmptyDayStats(date: string): ExtendedDailyStats {
 		return {
@@ -348,26 +250,5 @@ export class SessionPersistenceService {
 			learningCards: 0,
 			reviewCards: 0,
 		};
-	}
-
-	private async ensureFolderExists(): Promise<void> {
-		const folderPath = normalizePath(STATS_FOLDER);
-		const folder = this.app.vault.getAbstractFileByPath(folderPath);
-
-		if (!folder) {
-			try {
-				await this.app.vault.createFolder(folderPath);
-			} catch (error) {
-				// Ignore "folder already exists" error (race condition)
-				if (
-					!(
-						error instanceof Error &&
-						error.message.includes("already exists")
-					)
-				) {
-					throw error;
-				}
-			}
-		}
 	}
 }
