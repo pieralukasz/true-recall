@@ -26,3 +26,6 @@ data.json
 
 # Backup of original styles.css before CSS refactoring
 styles.css.backup
+
+# Test coverage
+coverage/
