@@ -70,7 +70,7 @@ export class MissingFlashcardsModal extends BaseModal {
 		options: MissingFlashcardsModalOptions
 	) {
 		super(app, {
-			title: "Missing Flashcards",
+			title: "Missing flashcards",
 			width: "550px",
 		});
 		this.flashcardManager = flashcardManager;

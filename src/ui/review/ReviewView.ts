@@ -706,9 +706,10 @@ export class ReviewView extends ItemView {
             if (nextField === "answer" && !this.stateManager.isAnswerRevealed()) {
                 return;
             }
-            void this.saveEdit().then(() => {
+            void (async () => {
+                await this.saveEdit();
                 this.startEdit(nextField);
-            });
+            })();
         }
         // Ctrl+Z, Ctrl+B, Ctrl+I, Ctrl+U are handled natively by contenteditable
     }
@@ -879,7 +880,7 @@ export class ReviewView extends ItemView {
             // Show answer button
             const showBtn = mainButtonsEl.createEl("button", {
                 cls: "episteme-btn episteme-btn-show",
-                text: "Show Answer",
+                text: "Show answer",
             });
             showBtn.addEventListener("click", () => this.handleShowAnswer());
         } else {
@@ -926,14 +927,14 @@ export class ReviewView extends ItemView {
 
         menu.addItem((item) =>
             item
-                .setTitle("Create Zettel")
+                .setTitle("Create zettel")
                 .setIcon("file-plus")
                 .onClick(() => this.handleCreateZettel())
         );
 
         menu.addItem((item) =>
             item
-                .setTitle("Suspend Card")
+                .setTitle("Suspend card")
                 .setIcon("pause")
                 .onClick(() => this.handleSuspend())
         );
@@ -1093,7 +1094,7 @@ export class ReviewView extends ItemView {
 
         const statsEl = summaryEl.createDiv({ cls: "episteme-review-stats" });
 
-        this.renderStatItem(statsEl, "Total Reviewed", stats.reviewed.toString());
+        this.renderStatItem(statsEl, "Total reviewed", stats.reviewed.toString());
         this.renderStatItem(statsEl, "Again", stats.again.toString(), "stat-again");
         this.renderStatItem(statsEl, "Hard", stats.hard.toString(), "stat-hard");
         this.renderStatItem(statsEl, "Good", stats.good.toString(), "stat-good");
@@ -1109,7 +1110,7 @@ export class ReviewView extends ItemView {
         if (this.isCustomSession && this.plugin.settings.continuousCustomReviews) {
             const nextSessionBtn = buttonsEl.createEl("button", {
                 cls: "episteme-btn episteme-btn-primary",
-                text: "Next Session",
+                text: "Next session",
             });
             nextSessionBtn.addEventListener("click", () => this.handleNextSession());
 
@@ -1180,7 +1181,7 @@ export class ReviewView extends ItemView {
 
         const endBtn = buttonsEl.createEl("button", {
             cls: "episteme-btn episteme-btn-secondary",
-            text: "End Session",
+            text: "End session",
         });
         endBtn.addEventListener("click", () => {
             this.clearWaitingTimer();

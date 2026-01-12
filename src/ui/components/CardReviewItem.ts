@@ -221,9 +221,10 @@ export class CardReviewItem extends BaseComponent {
 		} else if (e.key === "Tab") {
 			e.preventDefault();
 			const nextField = field === "question" ? "answer" : "question";
-			void this.saveEdit(field).then(() => {
+			void (async () => {
+				await this.saveEdit(field);
 				this.startEdit(nextField);
-			});
+			})();
 		}
 	}
 
