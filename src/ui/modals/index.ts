@@ -30,3 +30,8 @@ export {
     type AddFlashcardResult,
     type AddFlashcardModalOptions,
 } from "./AddFlashcardModal";
+export {
+    EditFlashcardModal,
+    type EditFlashcardResult,
+    type EditFlashcardModalOptions,
+} from "./EditFlashcardModal";

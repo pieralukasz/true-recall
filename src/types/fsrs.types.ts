@@ -25,8 +25,8 @@ export interface CardReviewLogEntry {
 }
 
 /**
- * Metadane FSRS przechowywane w sharded store
- * Format: JSON in .episteme/store/{shard}.json
+ * Metadane FSRS przechowywane w SQLite
+ * Tabela: cards w .episteme/episteme.db
  */
 export interface FSRSCardData {
     /** Unikalny ID fiszki (UUID) */
@@ -57,10 +57,43 @@ export interface FSRSCardData {
     history?: CardReviewLogEntry[];
     /** Timestamp utworzenia karty (Unix ms, opcjonalny dla kompatybilności wstecznej) */
     createdAt?: number;
+
+    // === Nowe pola dla SQL-based storage (schema v2) ===
+
+    /** Pytanie fiszki (Markdown) - przechowywane w SQL */
+    question?: string;
+    /** Odpowiedź fiszki (Markdown) - przechowywane w SQL */
+    answer?: string;
+    /** UID notatki źródłowej (8-char hex) - powiązanie z notatką MD */
+    sourceUid?: string;
+    /** Nazwa notatki źródłowej (z JOIN source_notes) */
+    sourceNoteName?: string;
+    /** Tagi fiszki (JSON array) */
+    tags?: string[];
+}
+
+/**
+ * Informacje o notatce źródłowej
+ * Przechowywane w tabeli source_notes
+ */
+export interface SourceNoteInfo {
+    /** Unikalny identyfikator (8-char hex, równy flashcard_uid w notatce) */
+    uid: string;
+    /** Nazwa notatki (basename bez rozszerzenia) */
+    noteName: string;
+    /** Ścieżka do pliku notatki (może się zmienić przy rename) */
+    notePath?: string;
+    /** Domyślny deck dla fiszek z tej notatki */
+    deck: string;
+    /** Timestamp utworzenia */
+    createdAt?: number;
+    /** Timestamp ostatniej aktualizacji */
+    updatedAt?: number;
 }
 
 /**
  * Rozszerzona fiszka z danymi FSRS
+ * Używana w UI (ReviewView, FlashcardPanel)
  */
 export interface FSRSFlashcardItem {
     /** Unikalny ID (z FSRSCardData) */
@@ -69,7 +102,7 @@ export interface FSRSFlashcardItem {
     question: string;
     /** Odpowiedź */
     answer: string;
-    /** Ścieżka do pliku z fiszką */
+    /** Ścieżka do pliku z fiszką. Pusty string "" gdy fiszka jest tylko w SQL (bez pliku MD) */
     filePath: string;
     /** Dane FSRS */
     fsrs: FSRSCardData;
@@ -77,6 +110,8 @@ export interface FSRSFlashcardItem {
     deck: string;
     /** Nazwa oryginalnej notatki źródłowej (z frontmatter source_link) */
     sourceNoteName?: string;
+    /** UID notatki źródłowej (dla powiązania z notatką MD) */
+    sourceUid?: string;
 }
 
 /**
@@ -492,4 +527,18 @@ export interface CardStore {
 
     /** Merge with data from disk (for sync conflict resolution) */
     mergeFromDisk(): Promise<{ merged: number; conflicts: number }>;
+
+    // === Schema v2 methods (optional - for SQL storage) ===
+
+    /** Check if any cards have content (question/answer) stored in SQL */
+    hasAnyCardContent?(): boolean;
+
+    /** Get all cards that have content stored in SQL */
+    getCardsWithContent?(): FSRSCardData[];
+
+    /** Update only card content without touching FSRS data */
+    updateCardContent?(cardId: string, question: string, answer: string): void;
+
+    /** Get cards by source note UID */
+    getCardsBySourceUid?(sourceUid: string): FSRSCardData[];
 }

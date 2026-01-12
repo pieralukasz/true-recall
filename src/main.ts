@@ -64,7 +64,7 @@ export default class EpistemePlugin extends Plugin {
 		this.sessionPersistence = new SessionPersistenceService(this.app);
 		// Note: We no longer clean up old stats - they're kept for the statistics panel
 
-		// Initialize SQLite store for FSRS data (with automatic migration from sharded JSON)
+		// Initialize SQLite store for FSRS data
 		void this.initializeCardStore();
 
 		// Initialize day boundary service (Anki-style day scheduling)
@@ -192,13 +192,6 @@ export default class EpistemePlugin extends Plugin {
 					new Notice(`Scan failed: ${error instanceof Error ? error.message : "Unknown error"}`);
 				}
 			},
-		});
-
-		// Cleanup old sharded JSON files (after SQLite migration)
-		this.addCommand({
-			id: "cleanup-legacy-storage",
-			name: "Cleanup legacy storage files",
-			callback: () => void this.cleanupLegacyStorage(),
 		});
 
 		// Show notes missing flashcards
@@ -647,60 +640,6 @@ export default class EpistemePlugin extends Plugin {
 	}
 
 	/**
-	 * Cleanup legacy sharded JSON storage files
-	 * Only safe to run after SQLite migration is complete
-	 */
-	async cleanupLegacyStorage(): Promise<void> {
-		// Verify SQLite has data before cleanup
-		if (!this.sqliteStore || this.sqliteStore.size() === 0) {
-			new Notice("Cannot cleanup: No data in SQLite database. Run migration first.");
-			return;
-		}
-
-		const adapter = this.app.vault.adapter;
-		const storePath = normalizePath(".episteme/store");
-
-		try {
-			const exists = await adapter.exists(storePath);
-			if (!exists) {
-				new Notice("No legacy storage files found.");
-				return;
-			}
-
-			// List all JSON files in the store folder
-			const listing = await adapter.list(storePath);
-			const jsonFiles = listing.files.filter(f => f.endsWith(".json"));
-
-			if (jsonFiles.length === 0) {
-				new Notice("No legacy storage files found.");
-				return;
-			}
-
-			// Confirm with notice about what will be deleted
-			new Notice(`Removing ${jsonFiles.length} legacy storage files...`);
-
-			// Delete all JSON files
-			for (const filePath of jsonFiles) {
-				await adapter.remove(filePath);
-			}
-
-			// Try to remove the store folder if empty
-			try {
-				await adapter.rmdir(storePath, false);
-			} catch {
-				// Folder might not be empty or already removed
-			}
-
-			new Notice(`Cleanup complete! Removed ${jsonFiles.length} legacy files.`);
-			console.log(`[Episteme] Cleaned up ${jsonFiles.length} legacy sharded JSON files`);
-
-		} catch (error) {
-			console.error("[Episteme] Failed to cleanup legacy storage:", error);
-			new Notice(`Cleanup failed: ${error instanceof Error ? error.message : "Unknown error"}`);
-		}
-	}
-
-	/**
 	 * Initialize the SQLite card store
 	 */
 	private async initializeCardStore(): Promise<void> {
@@ -712,56 +651,9 @@ export default class EpistemePlugin extends Plugin {
 			// Use SQLite store
 			this.cardStore = this.sqliteStore;
 			this.flashcardManager.setStore(this.cardStore);
-
-			// Check for cards without block IDs and migrate
-			void this.checkAndMigrateFlashcards();
-
 		} catch (error) {
 			console.error("[Episteme] Failed to initialize SQLite store:", error);
 			new Notice("Failed to load flashcard data. Please restart Obsidian.");
-		}
-	}
-
-	/**
-	 * Check if migration is needed (cards without block IDs exist)
-	 * Runs scanVault() once on startup if needed to add missing block IDs
-	 */
-	async checkAndMigrateFlashcards(): Promise<void> {
-		if (!this.cardStore.isReady()) return;
-
-		const files = this.app.vault.getMarkdownFiles().filter((file) =>
-			this.flashcardManager.isFlashcardFile(file)
-		);
-
-		let needsMigration = false;
-
-		// Check if any file has cards without block IDs
-		for (const file of files) {
-			const content = await this.app.vault.read(file);
-			const flashcardPattern = /^.+?\s*#flashcard\s*$/gm;
-			const matches = content.match(flashcardPattern);
-			const blockIdPattern = /^\^[a-f0-9-]+$/gm;
-			const blockIds = content.match(blockIdPattern);
-
-			if (matches && (!blockIds || matches.length > blockIds.length)) {
-				needsMigration = true;
-				break;
-			}
-		}
-
-		if (needsMigration) {
-			new Notice("Adding flashcard IDs... This may take a moment.");
-			try {
-				const result = await this.flashcardManager.scanVault();
-				new Notice(
-					`Migration complete: ${result.newCardsProcessed} cards updated.`
-				);
-			} catch (error) {
-				console.error("Flashcard migration failed:", error);
-				new Notice(
-					`Flashcard ID migration failed: ${error instanceof Error ? error.message : "Unknown error"}`
-				);
-			}
 		}
 	}
 }
