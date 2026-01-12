@@ -286,6 +286,77 @@ export class SqliteStoreService {
     }
 
     /**
+     * Migrate database schema from v2 to v3
+     * Removes unused columns: deck, source_note, file_path (now use source_notes via JOIN)
+     */
+    private migrateSchemaV2toV3(): void {
+        if (!this.db) return;
+
+        console.log("[Episteme] Migrating database schema from v2 to v3...");
+
+        try {
+            // SQLite doesn't support DROP COLUMN, so we need to:
+            // 1. Create new table without removed columns
+            // 2. Copy data
+            // 3. Drop old table
+            // 4. Rename new table
+            // 5. Recreate indexes
+
+            this.db.run(`
+                -- Create new cards table without deck, source_note, file_path
+                CREATE TABLE cards_new (
+                    id TEXT PRIMARY KEY,
+                    due TEXT NOT NULL,
+                    stability REAL DEFAULT 0,
+                    difficulty REAL DEFAULT 0,
+                    reps INTEGER DEFAULT 0,
+                    lapses INTEGER DEFAULT 0,
+                    state INTEGER DEFAULT 0,
+                    last_review TEXT,
+                    scheduled_days INTEGER DEFAULT 0,
+                    learning_step INTEGER DEFAULT 0,
+                    suspended INTEGER DEFAULT 0,
+                    buried_until TEXT,
+                    created_at INTEGER,
+                    updated_at INTEGER,
+                    question TEXT,
+                    answer TEXT,
+                    source_uid TEXT,
+                    tags TEXT
+                );
+
+                -- Copy data (exclude removed columns)
+                INSERT INTO cards_new
+                SELECT id, due, stability, difficulty, reps, lapses, state,
+                       last_review, scheduled_days, learning_step, suspended,
+                       buried_until, created_at, updated_at,
+                       question, answer, source_uid, tags
+                FROM cards;
+
+                -- Drop old table
+                DROP TABLE cards;
+
+                -- Rename new table
+                ALTER TABLE cards_new RENAME TO cards;
+
+                -- Recreate indexes
+                CREATE INDEX idx_cards_due ON cards(due);
+                CREATE INDEX idx_cards_state ON cards(state);
+                CREATE INDEX idx_cards_suspended ON cards(suspended);
+                CREATE INDEX idx_cards_source_uid ON cards(source_uid);
+            `);
+
+            // Update schema version
+            this.db.run("INSERT OR REPLACE INTO meta (key, value) VALUES ('schema_version', '3')");
+
+            console.log("[Episteme] Schema migration v2->v3 completed (removed deck, source_note, file_path columns)");
+            this.markDirty();
+        } catch (error) {
+            console.error("[Episteme] Schema migration v2->v3 failed:", error);
+        }
+    }
+
+    /**
      * Get current schema version
      */
     private getSchemaVersion(): number {
@@ -314,8 +385,9 @@ export class SqliteStoreService {
             this.migrateSchemaV1toV2();
         }
 
-        // Future migrations can be added here:
-        // if (currentVersion < 3) { this.migrateSchemaV2toV3(); }
+        if (currentVersion < 3) {
+            this.migrateSchemaV2toV3();
+        }
     }
 
     // ===== Card CRUD Operations =====
@@ -339,21 +411,20 @@ export class SqliteStoreService {
     }
 
     /**
-     * Set/update a card (schema v2 - includes content)
+     * Set/update a card (schema v3 - content stored in SQL, no legacy columns)
      */
     set(cardId: string, data: FSRSCardData): void {
         if (!this.db) return;
 
         const now = Date.now();
-        const extended = data as FSRSCardDataExtended;
 
         this.db.run(`
             INSERT OR REPLACE INTO cards (
                 id, due, stability, difficulty, reps, lapses, state,
                 last_review, scheduled_days, learning_step, suspended,
-                buried_until, deck, source_note, file_path, created_at, updated_at,
+                buried_until, created_at, updated_at,
                 question, answer, source_uid, tags
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         `, [
             cardId,
             data.due,
@@ -367,12 +438,9 @@ export class SqliteStoreService {
             data.learningStep,
             data.suspended ? 1 : 0,
             data.buriedUntil || null,
-            extended.deck || "default",
-            extended.sourceNoteName || null,
-            extended.filePath || null,
             data.createdAt || now,
             now,
-            // Schema v2 fields
+            // Content fields
             data.question || null,
             data.answer || null,
             data.sourceUid || null,
@@ -486,13 +554,13 @@ export class SqliteStoreService {
 
     /**
      * Get all cards that have content (question/answer stored in SQL)
-     * Joins with source_notes to include source note name
+     * Joins with source_notes to include source note name and deck
      */
     getCardsWithContent(): FSRSCardData[] {
         if (!this.db) return [];
 
         const result = this.db.exec(`
-            SELECT c.*, s.note_name as source_note_name
+            SELECT c.*, s.note_name as source_note_name, s.deck as source_deck
             FROM cards c
             LEFT JOIN source_notes s ON c.source_uid = s.uid
             WHERE c.question IS NOT NULL AND c.answer IS NOT NULL
@@ -1135,7 +1203,7 @@ export class SqliteStoreService {
     // ===== Helpers =====
 
     /**
-     * Convert database row to FSRSCardData (schema v2 - includes content)
+     * Convert database row to FSRSCardData (schema v3 - includes content, deck from JOIN)
      */
     private rowToFSRSCardData(
         columns: string[],
@@ -1171,11 +1239,13 @@ export class SqliteStoreService {
             suspended: getCol("suspended") === 1,
             buriedUntil: getCol("buried_until") as string | undefined,
             createdAt: getCol("created_at") as number | undefined,
-            // Schema v2 fields
+            // Content fields
             question: getCol("question") as string | undefined,
             answer: getCol("answer") as string | undefined,
             sourceUid: getCol("source_uid") as string | undefined,
+            // Fields from JOIN with source_notes
             sourceNoteName: getCol("source_note_name") as string | undefined,
+            deck: (getCol("source_deck") as string | undefined) || undefined,
             tags,
         };
     }
@@ -1209,14 +1279,5 @@ export class SqliteStoreService {
             isLoaded: this.isLoaded,
         };
     }
-}
-
-/**
- * Extended FSRSCardData with additional fields stored in database
- */
-interface FSRSCardDataExtended extends FSRSCardData {
-    deck?: string;
-    sourceNoteName?: string;
-    filePath?: string;
 }
 
