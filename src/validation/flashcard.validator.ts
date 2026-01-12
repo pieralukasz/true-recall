@@ -7,7 +7,7 @@ import {
     FlashcardItemSchema,
     type RawFlashcardChange,
 } from "./schemas/flashcard.schema";
-import type { FlashcardChange, FlashcardItem } from "../../types";
+import type { FlashcardChange, FlashcardItem } from "../types";
 import { ValidationError } from "../errors";
 
 /**

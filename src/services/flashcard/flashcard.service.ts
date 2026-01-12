@@ -898,6 +898,10 @@ export class FlashcardManager {
 			allCards.push(...cards);
 		}
 
+		// Force save any new entries created during parsing
+		// This ensures data isn't lost if Obsidian is closed before debounced save
+		await this.store.saveNow();
+
 		return allCards;
 	}
 
@@ -959,6 +963,8 @@ export class FlashcardManager {
 				let fsrsData = this.store!.get(blockId);
 				if (!fsrsData) {
 					// Block ID exists in file but not in store - create entry
+					// This can happen due to iCloud sync issues or if plugin was closed before save
+					console.warn(`[Episteme] Card ${blockId} has block ID but no store entry - creating new FSRS data. File: ${filePath}`);
 					fsrsData = createDefaultFSRSData(blockId);
 					this.store!.set(blockId, fsrsData);
 				}
@@ -1351,6 +1357,15 @@ export class FlashcardManager {
 						hasBlockId = true;
 						existingBlockId = blockIdMatch[1];
 						foundBlockIds.add(existingBlockId);
+
+						// Ensure store entry exists for cards with block IDs
+						// This handles recovery from lost store data (e.g., iCloud sync issues)
+						if (!this.store!.has(existingBlockId)) {
+							const fsrsData = createDefaultFSRSData(existingBlockId);
+							this.store!.set(existingBlockId, fsrsData);
+							newIds++;
+						}
+
 						break;
 					}
 
