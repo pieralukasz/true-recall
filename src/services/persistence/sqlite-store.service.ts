@@ -1,7 +1,6 @@
 /**
  * SQLite Store Service
  * High-performance storage for FSRS card data using sql.js (SQLite WASM)
- * Replaces the 256-file sharded JSON storage with a single SQLite database
  */
 import { App, normalizePath } from "obsidian";
 import initSqlJs, { type Database, type SqlJsStatic } from "sql.js";
@@ -10,6 +9,7 @@ import type {
     CardReviewLogEntry,
     ExtendedDailyStats,
     StoreSyncedEvent,
+    SourceNoteInfo,
 } from "../../types";
 import { State } from "ts-fsrs";
 import { getEventBus } from "../core/event-bus.service";
@@ -44,8 +44,8 @@ function getQueryResult(
 /**
  * SQLite-based storage service for FSRS card data
  *
- * Benefits over sharded JSON:
- * - Single file instead of 256
+ * Benefits:
+ * - Single database file
  * - SQL queries for fast aggregations
  * - Transactions for atomic writes
  * - Indexes for O(log n) lookups
@@ -86,6 +86,8 @@ export class SqliteStoreService {
 
         if (existingData) {
             this.db = new this.SQL.Database(existingData);
+            // Run migrations for existing databases
+            this.runMigrations();
         } else {
             this.db = new this.SQL.Database();
             this.createTables();
@@ -126,13 +128,15 @@ export class SqliteStoreService {
     }
 
     /**
-     * Create database tables
+     * Create database tables (schema v3)
+     * v3: Removed deck, source_note, file_path from cards (use source_notes table via JOIN)
      */
     private createTables(): void {
         if (!this.db) return;
 
         this.db.run(`
-            -- Cards table with FSRS scheduling data
+            -- Cards table with FSRS scheduling data + content (v3)
+            -- deck/source_note/file_path removed - use source_notes via source_uid JOIN
             CREATE TABLE IF NOT EXISTS cards (
                 id TEXT PRIMARY KEY,
                 due TEXT NOT NULL,
@@ -146,18 +150,31 @@ export class SqliteStoreService {
                 learning_step INTEGER DEFAULT 0,
                 suspended INTEGER DEFAULT 0,
                 buried_until TEXT,
-                deck TEXT DEFAULT 'default',
-                source_note TEXT,
-                file_path TEXT,
                 created_at INTEGER,
-                updated_at INTEGER
+                updated_at INTEGER,
+                question TEXT,
+                answer TEXT,
+                source_uid TEXT,
+                tags TEXT
             );
 
             -- Indexes for common queries
             CREATE INDEX IF NOT EXISTS idx_cards_due ON cards(due);
             CREATE INDEX IF NOT EXISTS idx_cards_state ON cards(state);
-            CREATE INDEX IF NOT EXISTS idx_cards_deck ON cards(deck);
             CREATE INDEX IF NOT EXISTS idx_cards_suspended ON cards(suspended);
+            CREATE INDEX IF NOT EXISTS idx_cards_source_uid ON cards(source_uid);
+
+            -- Source notes table - links to Markdown source notes
+            CREATE TABLE IF NOT EXISTS source_notes (
+                uid TEXT PRIMARY KEY,
+                note_name TEXT NOT NULL,
+                note_path TEXT,
+                deck TEXT DEFAULT 'Knowledge',
+                created_at INTEGER,
+                updated_at INTEGER
+            );
+
+            CREATE INDEX IF NOT EXISTS idx_source_notes_name ON source_notes(note_name);
 
             -- Review history log (like Anki's revlog)
             CREATE TABLE IF NOT EXISTS review_log (
@@ -205,10 +222,100 @@ export class SqliteStoreService {
                 value TEXT
             );
 
-            -- Set schema version
-            INSERT OR REPLACE INTO meta (key, value) VALUES ('schema_version', '1');
+            -- Set schema version (v3 - removed legacy columns)
+            INSERT OR REPLACE INTO meta (key, value) VALUES ('schema_version', '3');
             INSERT OR REPLACE INTO meta (key, value) VALUES ('created_at', datetime('now'));
         `);
+    }
+
+    /**
+     * Migrate database schema from v1 to v2
+     * Adds: question, answer, source_uid, tags columns + source_notes table
+     */
+    private migrateSchemaV1toV2(): void {
+        if (!this.db) return;
+
+        console.log("[Episteme] Migrating database schema from v1 to v2...");
+
+        try {
+            // Add new columns to cards table (SQLite doesn't support IF NOT EXISTS for columns)
+            // We'll catch errors if columns already exist
+            const columnsToAdd = [
+                "ALTER TABLE cards ADD COLUMN question TEXT",
+                "ALTER TABLE cards ADD COLUMN answer TEXT",
+                "ALTER TABLE cards ADD COLUMN source_uid TEXT",
+                "ALTER TABLE cards ADD COLUMN tags TEXT",
+            ];
+
+            for (const sql of columnsToAdd) {
+                try {
+                    this.db.run(sql);
+                } catch {
+                    // Column might already exist, ignore
+                }
+            }
+
+            // Create source_notes table
+            this.db.run(`
+                CREATE TABLE IF NOT EXISTS source_notes (
+                    uid TEXT PRIMARY KEY,
+                    note_name TEXT NOT NULL,
+                    note_path TEXT,
+                    deck TEXT DEFAULT 'Knowledge',
+                    created_at INTEGER,
+                    updated_at INTEGER
+                )
+            `);
+
+            // Create indexes
+            try {
+                this.db.run("CREATE INDEX IF NOT EXISTS idx_cards_source_uid ON cards(source_uid)");
+                this.db.run("CREATE INDEX IF NOT EXISTS idx_source_notes_name ON source_notes(note_name)");
+            } catch {
+                // Indexes might already exist
+            }
+
+            // Update schema version
+            this.db.run("INSERT OR REPLACE INTO meta (key, value) VALUES ('schema_version', '2')");
+
+            console.log("[Episteme] Schema migration v1->v2 completed");
+            this.markDirty();
+        } catch (error) {
+            console.error("[Episteme] Schema migration failed:", error);
+        }
+    }
+
+    /**
+     * Get current schema version
+     */
+    private getSchemaVersion(): number {
+        if (!this.db) return 0;
+
+        try {
+            const result = this.db.exec("SELECT value FROM meta WHERE key = 'schema_version'");
+            const data = getQueryResult(result);
+            if (data && data.values.length > 0) {
+                return parseInt(data.values[0]![0] as string, 10) || 1;
+            }
+        } catch {
+            // meta table might not exist in very old databases
+        }
+
+        return 1; // Default to v1 if not found
+    }
+
+    /**
+     * Check and run any needed schema migrations
+     */
+    private runMigrations(): void {
+        const currentVersion = this.getSchemaVersion();
+
+        if (currentVersion < 2) {
+            this.migrateSchemaV1toV2();
+        }
+
+        // Future migrations can be added here:
+        // if (currentVersion < 3) { this.migrateSchemaV2toV3(); }
     }
 
     // ===== Card CRUD Operations =====
@@ -232,19 +339,21 @@ export class SqliteStoreService {
     }
 
     /**
-     * Set/update a card
+     * Set/update a card (schema v2 - includes content)
      */
     set(cardId: string, data: FSRSCardData): void {
         if (!this.db) return;
 
         const now = Date.now();
+        const extended = data as FSRSCardDataExtended;
 
         this.db.run(`
             INSERT OR REPLACE INTO cards (
                 id, due, stability, difficulty, reps, lapses, state,
                 last_review, scheduled_days, learning_step, suspended,
-                buried_until, deck, source_note, file_path, created_at, updated_at
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                buried_until, deck, source_note, file_path, created_at, updated_at,
+                question, answer, source_uid, tags
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         `, [
             cardId,
             data.due,
@@ -258,11 +367,16 @@ export class SqliteStoreService {
             data.learningStep,
             data.suspended ? 1 : 0,
             data.buriedUntil || null,
-            (data as FSRSCardDataExtended).deck || "default",
-            (data as FSRSCardDataExtended).sourceNoteName || null,
-            (data as FSRSCardDataExtended).filePath || null,
+            extended.deck || "default",
+            extended.sourceNoteName || null,
+            extended.filePath || null,
             data.createdAt || now,
             now,
+            // Schema v2 fields
+            data.question || null,
+            data.answer || null,
+            data.sourceUid || null,
+            data.tags ? JSON.stringify(data.tags) : null,
         ]);
 
         this.markDirty();
@@ -331,6 +445,258 @@ export class SqliteStoreService {
         if (!data) return 0;
 
         return data.values[0]![0] as number;
+    }
+
+    // ===== Card Content Operations (Schema v2) =====
+
+    /**
+     * Update only card content (question/answer) without touching FSRS data
+     */
+    updateCardContent(cardId: string, question: string, answer: string): void {
+        if (!this.db) return;
+
+        this.db.run(`
+            UPDATE cards SET
+                question = ?,
+                answer = ?,
+                updated_at = ?
+            WHERE id = ?
+        `, [question, answer, Date.now(), cardId]);
+
+        this.markDirty();
+    }
+
+    /**
+     * Get cards by source note UID
+     */
+    getCardsBySourceUid(sourceUid: string): FSRSCardData[] {
+        if (!this.db) return [];
+
+        const result = this.db.exec(`
+            SELECT * FROM cards WHERE source_uid = ?
+        `, [sourceUid]);
+
+        const data = getQueryResult(result);
+        if (!data) return [];
+
+        return data.values.map((row) =>
+            this.rowToFSRSCardData(data.columns, row)
+        );
+    }
+
+    /**
+     * Get all cards that have content (question/answer stored in SQL)
+     * Joins with source_notes to include source note name
+     */
+    getCardsWithContent(): FSRSCardData[] {
+        if (!this.db) return [];
+
+        const result = this.db.exec(`
+            SELECT c.*, s.note_name as source_note_name
+            FROM cards c
+            LEFT JOIN source_notes s ON c.source_uid = s.uid
+            WHERE c.question IS NOT NULL AND c.answer IS NOT NULL
+        `);
+
+        const data = getQueryResult(result);
+        if (!data) return [];
+
+        return data.values.map((row) =>
+            this.rowToFSRSCardData(data.columns, row)
+        );
+    }
+
+    /**
+     * Check if card has content stored in SQL
+     */
+    hasCardContent(cardId: string): boolean {
+        if (!this.db) return false;
+
+        const result = this.db.exec(`
+            SELECT 1 FROM cards
+            WHERE id = ? AND question IS NOT NULL AND answer IS NOT NULL
+            LIMIT 1
+        `, [cardId]);
+
+        return getQueryResult(result) !== null;
+    }
+
+    /**
+     * Check if any cards have content stored in SQL (migration status)
+     */
+    hasAnyCardContent(): boolean {
+        if (!this.db) return false;
+
+        const result = this.db.exec(`
+            SELECT 1 FROM cards
+            WHERE question IS NOT NULL AND answer IS NOT NULL
+            LIMIT 1
+        `);
+
+        return getQueryResult(result) !== null;
+    }
+
+    /**
+     * Get count of cards with content in SQL
+     */
+    getCardsWithContentCount(): number {
+        if (!this.db) return 0;
+
+        const result = this.db.exec(`
+            SELECT COUNT(*) FROM cards
+            WHERE question IS NOT NULL AND answer IS NOT NULL
+        `);
+
+        const data = getQueryResult(result);
+        return data ? (data.values[0]![0] as number) : 0;
+    }
+
+    // ===== Source Notes Operations (Schema v2) =====
+
+    /**
+     * Insert or update a source note
+     */
+    upsertSourceNote(info: SourceNoteInfo): void {
+        if (!this.db) return;
+
+        const now = Date.now();
+
+        this.db.run(`
+            INSERT INTO source_notes (uid, note_name, note_path, deck, created_at, updated_at)
+            VALUES (?, ?, ?, ?, ?, ?)
+            ON CONFLICT(uid) DO UPDATE SET
+                note_name = excluded.note_name,
+                note_path = excluded.note_path,
+                deck = excluded.deck,
+                updated_at = excluded.updated_at
+        `, [
+            info.uid,
+            info.noteName,
+            info.notePath || null,
+            info.deck,
+            info.createdAt || now,
+            now,
+        ]);
+
+        this.markDirty();
+    }
+
+    /**
+     * Get a source note by UID
+     */
+    getSourceNote(uid: string): SourceNoteInfo | null {
+        if (!this.db) return null;
+
+        const result = this.db.exec(`
+            SELECT * FROM source_notes WHERE uid = ?
+        `, [uid]);
+
+        const data = getQueryResult(result);
+        if (!data) return null;
+
+        const row = data.values[0]!;
+        const cols = data.columns;
+
+        return {
+            uid: row[cols.indexOf("uid")] as string,
+            noteName: row[cols.indexOf("note_name")] as string,
+            notePath: row[cols.indexOf("note_path")] as string | undefined,
+            deck: row[cols.indexOf("deck")] as string,
+            createdAt: row[cols.indexOf("created_at")] as number | undefined,
+            updatedAt: row[cols.indexOf("updated_at")] as number | undefined,
+        };
+    }
+
+    /**
+     * Get source note by note path
+     */
+    getSourceNoteByPath(notePath: string): SourceNoteInfo | null {
+        if (!this.db) return null;
+
+        const result = this.db.exec(`
+            SELECT * FROM source_notes WHERE note_path = ?
+        `, [notePath]);
+
+        const data = getQueryResult(result);
+        if (!data) return null;
+
+        const row = data.values[0]!;
+        const cols = data.columns;
+
+        return {
+            uid: row[cols.indexOf("uid")] as string,
+            noteName: row[cols.indexOf("note_name")] as string,
+            notePath: row[cols.indexOf("note_path")] as string | undefined,
+            deck: row[cols.indexOf("deck")] as string,
+            createdAt: row[cols.indexOf("created_at")] as number | undefined,
+            updatedAt: row[cols.indexOf("updated_at")] as number | undefined,
+        };
+    }
+
+    /**
+     * Get all source notes
+     */
+    getAllSourceNotes(): SourceNoteInfo[] {
+        if (!this.db) return [];
+
+        const result = this.db.exec(`SELECT * FROM source_notes`);
+        const data = getQueryResult(result);
+        if (!data) return [];
+
+        return data.values.map((row) => {
+            const cols = data.columns;
+            return {
+                uid: row[cols.indexOf("uid")] as string,
+                noteName: row[cols.indexOf("note_name")] as string,
+                notePath: row[cols.indexOf("note_path")] as string | undefined,
+                deck: row[cols.indexOf("deck")] as string,
+                createdAt: row[cols.indexOf("created_at")] as number | undefined,
+                updatedAt: row[cols.indexOf("updated_at")] as number | undefined,
+            };
+        });
+    }
+
+    /**
+     * Update source note path (when file is renamed)
+     */
+    updateSourceNotePath(uid: string, newPath: string, newName?: string): void {
+        if (!this.db) return;
+
+        if (newName) {
+            this.db.run(`
+                UPDATE source_notes SET
+                    note_path = ?,
+                    note_name = ?,
+                    updated_at = ?
+                WHERE uid = ?
+            `, [newPath, newName, Date.now(), uid]);
+        } else {
+            this.db.run(`
+                UPDATE source_notes SET
+                    note_path = ?,
+                    updated_at = ?
+                WHERE uid = ?
+            `, [newPath, Date.now(), uid]);
+        }
+
+        this.markDirty();
+    }
+
+    /**
+     * Delete source note and optionally detach cards
+     */
+    deleteSourceNote(uid: string, detachCards = true): void {
+        if (!this.db) return;
+
+        if (detachCards) {
+            // Set source_uid to NULL for all cards from this source
+            this.db.run(`
+                UPDATE cards SET source_uid = NULL WHERE source_uid = ?
+            `, [uid]);
+        }
+
+        this.db.run(`DELETE FROM source_notes WHERE uid = ?`, [uid]);
+        this.markDirty();
     }
 
     // ===== Review Log Operations =====
@@ -686,7 +1052,7 @@ export class SqliteStoreService {
 
     /**
      * Merge with data from disk (for sync conflict resolution)
-     * Uses "last-review-wins" strategy similar to sharded store
+     * Uses "last-review-wins" strategy
      */
     async mergeFromDisk(): Promise<{ merged: number; conflicts: number }> {
         if (!this.db || !this.SQL) {
@@ -766,60 +1132,10 @@ export class SqliteStoreService {
         return { merged, conflicts };
     }
 
-    // ===== Migration =====
-
-    /**
-     * Import data from sharded store (migration)
-     */
-    async importFromShardedStore(
-        shardedData: Map<string, FSRSCardData>
-    ): Promise<{ imported: number; errors: number }> {
-        if (!this.db) return { imported: 0, errors: 0 };
-
-        let imported = 0;
-        let errors = 0;
-
-        this.db.run("BEGIN TRANSACTION");
-
-        try {
-            for (const [cardId, data] of shardedData) {
-                try {
-                    this.set(cardId, data);
-
-                    // Import review history if available
-                    if (data.history && data.history.length > 0) {
-                        for (const entry of data.history) {
-                            this.db.run(`
-                                INSERT INTO review_log (
-                                    card_id, reviewed_at, rating,
-                                    scheduled_days, elapsed_days, state, time_spent_ms
-                                ) VALUES (?, datetime(? / 1000, 'unixepoch'), ?, ?, ?, ?, 0)
-                            `, [cardId, entry.t, entry.r, entry.s, entry.e, 0]);
-                        }
-                    }
-
-                    imported++;
-                } catch (error) {
-                    console.warn(`[Episteme] Failed to import card ${cardId}:`, error);
-                    errors++;
-                }
-            }
-
-            this.db.run("COMMIT");
-            this.isDirty = true;
-            await this.saveNow();
-        } catch (error) {
-            this.db.run("ROLLBACK");
-            throw error;
-        }
-
-        return { imported, errors };
-    }
-
     // ===== Helpers =====
 
     /**
-     * Convert database row to FSRSCardData
+     * Convert database row to FSRSCardData (schema v2 - includes content)
      */
     private rowToFSRSCardData(
         columns: string[],
@@ -829,6 +1145,17 @@ export class SqliteStoreService {
             const idx = columns.indexOf(name);
             return idx >= 0 ? values[idx] : null;
         };
+
+        // Parse tags JSON if present
+        const tagsRaw = getCol("tags") as string | null;
+        let tags: string[] | undefined;
+        if (tagsRaw) {
+            try {
+                tags = JSON.parse(tagsRaw);
+            } catch {
+                tags = undefined;
+            }
+        }
 
         return {
             id: getCol("id") as string,
@@ -844,6 +1171,12 @@ export class SqliteStoreService {
             suspended: getCol("suspended") === 1,
             buriedUntil: getCol("buried_until") as string | undefined,
             createdAt: getCol("created_at") as number | undefined,
+            // Schema v2 fields
+            question: getCol("question") as string | undefined,
+            answer: getCol("answer") as string | undefined,
+            sourceUid: getCol("source_uid") as string | undefined,
+            sourceNoteName: getCol("source_note_name") as string | undefined,
+            tags,
         };
     }
 
@@ -886,3 +1219,4 @@ interface FSRSCardDataExtended extends FSRSCardData {
     sourceNoteName?: string;
     filePath?: string;
 }
+

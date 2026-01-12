@@ -374,31 +374,27 @@ export class FlashcardPanelView extends ItemView {
                 return;
             }
 
-            // CRITICAL FIX: Parse flashcards and add block IDs before creating file
-            // This prevents race condition between parseAllFlashcards() and scanVault()
+            // Parse flashcards and generate IDs
             const { FlashcardParserService } = await import("../../services/flashcard/flashcard-parser.service");
             const parser = new FlashcardParserService();
             const parsedFlashcards = parser.extractFlashcards(flashcards);
 
-            // Generate block IDs and FSRS data for each card
-            const flashcardsWithIds = parsedFlashcards.map((f) => {
-                const cardId = f.id || crypto.randomUUID();
-                // Create FSRS data for the card (prevents duplicates via setStoreData check)
-                const fsrsData = createDefaultFSRSData(cardId);
-                this.flashcardManager.setStoreData(cardId, fsrsData);
+            // Generate IDs for each card
+            const flashcardsWithIds = parsedFlashcards.map((f) => ({
+                id: f.id || crypto.randomUUID(),
+                question: f.question,
+                answer: f.answer,
+            }));
 
-                return {
-                    ...f,
-                    id: cardId
-                };
-            });
+            // Get default deck from settings
+            const defaultDeck = "Knowledge";
 
-            // Convert back to markdown with block IDs
-            const flashcardsWithBlockIds = flashcardsWithIds
-                .map(f => `${f.question} #flashcard\n${f.answer}\n^${f.id}`)
-                .join("\n\n");
-
-            await this.flashcardManager.createFlashcardFile(state.currentFile, flashcardsWithBlockIds);
+            // Save directly to SQL (no MD file created)
+            await this.flashcardManager.saveFlashcardsToSql(
+                state.currentFile,
+                flashcardsWithIds,
+                defaultDeck
+            );
 
             if (this.plugin.settings.storeSourceContent) {
                 await this.flashcardManager.updateSourceContent(state.currentFile, content);
@@ -483,13 +479,21 @@ export class FlashcardPanelView extends ItemView {
                 return;
             }
 
-            // Convert FlashcardItem[] back to markdown format
-            const finalMarkdown = this.flashcardsToMarkdown(result.flashcards);
+            // Prepare flashcards with IDs for SQL storage
+            const flashcardsWithIds = result.flashcards.map((f) => ({
+                id: f.id || crypto.randomUUID(),
+                question: f.question,
+                answer: f.answer,
+            }));
 
-            // Append to flashcard file
-            await this.flashcardManager.appendFlashcards(
+            // Get default deck from settings
+            const defaultDeck = "Knowledge";
+
+            // Save directly to SQL (no MD file created)
+            await this.flashcardManager.saveFlashcardsToSql(
                 state.currentFile,
-                finalMarkdown
+                flashcardsWithIds,
+                defaultDeck
             );
 
             new Notice(`Saved ${result.flashcards.length} flashcard(s) from selection`);
@@ -662,15 +666,13 @@ export class FlashcardPanelView extends ItemView {
 
         try {
             if (field === "question") {
-                await this.flashcardManager.updateCardContent(
-                    filePath,
+                this.flashcardManager.updateCardContent(
                     card.id,
                     newContent,
                     card.answer
                 );
             } else {
-                await this.flashcardManager.updateCardContent(
-                    filePath,
+                this.flashcardManager.updateCardContent(
                     card.id,
                     card.question,
                     newContent
@@ -705,9 +707,7 @@ export class FlashcardPanelView extends ItemView {
         // Save scroll position before re-render
         const scrollPosition = this.contentContainer.scrollTop;
 
-        const removed = state.isFlashcardFile
-            ? await this.flashcardManager.removeFlashcardById(state.currentFile, card.id)
-            : await this.flashcardManager.removeFlashcard(state.currentFile, card.id);
+        const removed = await this.flashcardManager.removeFlashcardById(card.id);
 
         if (removed) {
             new Notice("Flashcard removed");
@@ -854,9 +854,7 @@ export class FlashcardPanelView extends ItemView {
         let successCount = 0;
         for (const card of selectedCards) {
             try {
-                const removed = state.isFlashcardFile
-                    ? await this.flashcardManager.removeFlashcardById(state.currentFile, card.id)
-                    : await this.flashcardManager.removeFlashcard(state.currentFile, card.id);
+                const removed = await this.flashcardManager.removeFlashcardById(card.id);
 
                 if (removed) {
                     successCount++;

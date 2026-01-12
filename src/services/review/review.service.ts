@@ -417,9 +417,8 @@ export class ReviewService {
         const { updatedCard, result } = this.processAnswer(card, rating, fsrsService, responseTime);
 
         // 2. Save to store
-        if (card.id && card.filePath) {
-            await flashcardManager.updateCardFSRS(
-                card.filePath,
+        if (card.id) {
+            flashcardManager.updateCardFSRS(
                 card.id,
                 updatedCard.fsrs
             );

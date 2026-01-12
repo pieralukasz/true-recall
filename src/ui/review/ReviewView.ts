@@ -10,7 +10,7 @@ import { FSRSService, ReviewService, FlashcardManager, SessionPersistenceService
 import { ReviewStateManager } from "../../state";
 import { extractFSRSSettings, type FSRSFlashcardItem, type SchedulingPreview } from "../../types";
 import type { CardRemovedEvent, CardUpdatedEvent, BulkChangeEvent } from "../../types/events.types";
-import { MoveCardModal, AddFlashcardModal } from "../modals";
+import { MoveCardModal, AddFlashcardModal, EditFlashcardModal } from "../modals";
 import type EpistemePlugin from "../../main";
 
 interface ReviewViewState extends Record<string, unknown> {
@@ -836,13 +836,9 @@ export class ReviewView extends ItemView {
 
         if (hasChanges) {
             try {
-                // Save to file
-                await this.flashcardManager.updateCardContent(
-                    card.filePath,
-                    card.id,
-                    newQuestion,
-                    newAnswer
-                );
+                // Save to appropriate storage based on card type
+                // Update card in SQL store
+                this.flashcardManager.updateCardContent(card.id, newQuestion, newAnswer);
 
                 // Update card in state
                 this.stateManager.updateCurrentCardContent(newQuestion, newAnswer);
@@ -959,9 +955,9 @@ export class ReviewView extends ItemView {
 
         menu.addItem((item) =>
             item
-                .setTitle("Edit Card")
+                .setTitle("Edit Card (E)")
                 .setIcon("pencil")
-                .onClick(() => this.enterEditMode())
+                .onClick(() => void this.handleEditCardModal())
         );
 
         menu.addItem((item) =>
@@ -1003,7 +999,7 @@ export class ReviewView extends ItemView {
     }
 
     /**
-     * Enter edit mode for current card
+     * Enter edit mode for current card (inline editing)
      */
     private enterEditMode(): void {
         const card = this.stateManager.getCurrentCard();
@@ -1011,6 +1007,36 @@ export class ReviewView extends ItemView {
 
         this.stateManager.startEdit("question");
         this.renderCard();
+    }
+
+    /**
+     * Edit card using modal dialog
+     * Supports both MD-file cards and SQL-only cards
+     */
+    private async handleEditCardModal(): Promise<void> {
+        const card = this.stateManager.getCurrentCard();
+        if (!card) return;
+
+        const modal = new EditFlashcardModal(this.app, { card });
+        const result = await modal.openAndWait();
+
+        if (result.cancelled) return;
+
+        try {
+            // Update card in SQL store
+            this.flashcardManager.updateCardContent(card.id, result.question, result.answer);
+
+            // Update card in state
+            this.stateManager.updateCurrentCardContent(result.question, result.answer);
+
+            // Re-render to show updated content
+            this.renderCard();
+
+            new Notice("Card updated");
+        } catch (error) {
+            console.error("Error updating card:", error);
+            new Notice("Failed to update card");
+        }
     }
 
     /**
@@ -1268,6 +1294,13 @@ export class ReviewView extends ItemView {
             return;
         }
 
+        // E = Edit current card (modal)
+        if (e.key === "e" || e.key === "E") {
+            e.preventDefault();
+            void this.handleEditCardModal();
+            return;
+        }
+
         const state = this.stateManager.getState();
         if (!state.isActive || this.stateManager.isComplete()) return;
 
@@ -1414,13 +1447,9 @@ Source: [[${sourceNote}]]
 
         const { actionType, card, originalFsrs, previousIndex } = undoEntry;
 
-        // Restore original FSRS data to file
+        // Restore original FSRS data
         try {
-            await this.flashcardManager.updateCardFSRS(
-                card.filePath,
-                card.id,
-                originalFsrs
-            );
+            this.flashcardManager.updateCardFSRS(card.id, originalFsrs);
         } catch (error) {
             console.error("Error restoring card FSRS:", error);
         }
@@ -1447,8 +1476,7 @@ Source: [[${sourceNote}]]
             if (undoEntry.additionalCards) {
                 for (const additionalCard of undoEntry.additionalCards) {
                     try {
-                        await this.flashcardManager.updateCardFSRS(
-                            additionalCard.card.filePath,
+                        this.flashcardManager.updateCardFSRS(
                             additionalCard.card.id,
                             additionalCard.originalFsrs
                         );
@@ -1619,11 +1647,7 @@ Source: [[${sourceNote}]]
         const updatedFsrs = { ...card.fsrs, suspended: true };
 
         try {
-            await this.flashcardManager.updateCardFSRS(
-                card.filePath,
-                card.id,
-                updatedFsrs
-            );
+            this.flashcardManager.updateCardFSRS(card.id, updatedFsrs);
         } catch (error) {
             console.error("Error suspending card:", error);
             new Notice("Failed to suspend card");
@@ -1665,11 +1689,7 @@ Source: [[${sourceNote}]]
         const updatedFsrs = { ...card.fsrs, buriedUntil: tomorrow.toISOString() };
 
         try {
-            await this.flashcardManager.updateCardFSRS(
-                card.filePath,
-                card.id,
-                updatedFsrs
-            );
+            this.flashcardManager.updateCardFSRS(card.id, updatedFsrs);
         } catch (error) {
             console.error("Error burying card:", error);
             new Notice("Failed to bury card");
@@ -1742,11 +1762,7 @@ Source: [[${sourceNote}]]
             const updatedFsrs = { ...siblingCard.fsrs, buriedUntil };
 
             try {
-                await this.flashcardManager.updateCardFSRS(
-                    siblingCard.filePath,
-                    siblingCard.id,
-                    updatedFsrs
-                );
+                this.flashcardManager.updateCardFSRS(siblingCard.id, updatedFsrs);
                 buriedCount++;
             } catch (error) {
                 console.error(`Error burying card ${siblingCard.id}:`, error);
@@ -1785,6 +1801,16 @@ Source: [[${sourceNote}]]
     private handleOpenNote(): void {
         const card = this.stateManager.getCurrentCard();
         if (!card) return;
+
+        // SQL-only cards have no file - try to open source note instead
+        if (card.filePath === "") {
+            if (card.sourceNoteName) {
+                this.handleOpenSourceNote();
+            } else {
+                new Notice("This card is stored in SQL only (no associated file)");
+            }
+            return;
+        }
 
         // Open the flashcard file at the card's position
         const file = this.app.vault.getAbstractFileByPath(card.filePath);

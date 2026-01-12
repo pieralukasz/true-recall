@@ -100,21 +100,7 @@ export class CardPreviewModal extends BaseModal {
 		const confirmed = confirm("Delete this flashcard? This action cannot be undone.");
 		if (!confirmed) return;
 
-		// For FSRSFlashcardItem, we have the filePath directly
-		// For FlashcardItem, we need to get it from the context
-		const filePath = "filePath" in card ? card.filePath : this.options.cards.find(c => c.id === card.id)?.filePath;
-		if (!filePath) {
-			new Notice("Could not find flashcard file path");
-			return;
-		}
-
-		const file = this.app.vault.getAbstractFileByPath(filePath);
-		if (!(file instanceof TFile)) {
-			new Notice("Could not find flashcard file");
-			return;
-		}
-
-		const success = await this.flashcardManager.removeFlashcardById(file, card.id);
+		const success = await this.flashcardManager.removeFlashcardById(card.id);
 
 		if (success) {
 			new Notice("Flashcard deleted");
@@ -171,8 +157,7 @@ export class CardPreviewModal extends BaseModal {
 		const updatedFsrs = { ...fullCard.fsrs, buriedUntil: undefined };
 
 		try {
-			await this.flashcardManager.updateCardFSRS(
-				fullCard.filePath,
+			this.flashcardManager.updateCardFSRS(
 				fullCard.id,
 				updatedFsrs
 			);
@@ -203,8 +188,7 @@ export class CardPreviewModal extends BaseModal {
 			const updatedFsrs = { ...card.fsrs, buriedUntil: undefined };
 
 			try {
-				await this.flashcardManager.updateCardFSRS(
-					card.filePath,
+				this.flashcardManager.updateCardFSRS(
 					card.id,
 					updatedFsrs
 				);
@@ -237,12 +221,9 @@ export class CardPreviewModal extends BaseModal {
 		const cards = [...this.options.cards];
 
 		for (const card of cards) {
-			const file = this.app.vault.getAbstractFileByPath(card.filePath);
-			if (file instanceof TFile) {
-				const success = await this.flashcardManager.removeFlashcardById(file, card.id);
-				if (success) {
-					deletedCount++;
-				}
+			const success = await this.flashcardManager.removeFlashcardById(card.id);
+			if (success) {
+				deletedCount++;
 			}
 		}
 
