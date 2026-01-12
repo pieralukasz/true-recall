@@ -56,6 +56,7 @@ export type {
     StreakInfo,
     StatsTimeRange,
     RetentionEntry,
+    SourceNoteInfo,
 } from "./fsrs.types";
 
 export {
