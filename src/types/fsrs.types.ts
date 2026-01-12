@@ -68,6 +68,8 @@ export interface FSRSCardData {
     sourceUid?: string;
     /** Nazwa notatki źródłowej (z JOIN source_notes) */
     sourceNoteName?: string;
+    /** Deck z source_notes (przez JOIN) */
+    deck?: string;
     /** Tagi fiszki (JSON array) */
     tags?: string[];
 }
