@@ -611,7 +611,6 @@ export class ReviewView extends ItemView {
         const target = e.target;
         if (!(target instanceof HTMLElement)) return;
         const linkEl = target.closest("a.internal-link");
-        if (!linkEl) return;
 
         if (linkEl) {
             e.preventDefault();
