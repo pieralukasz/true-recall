@@ -121,7 +121,7 @@ export class CustomSessionModal extends BaseModal {
 		const activeNoteBtn = quickActionsEl.createEl("button", {
 			cls: "episteme-quick-action-btn",
 		});
-		activeNoteBtn.createSpan({ text: "Active Note" });
+		activeNoteBtn.createSpan({ text: "Active note" });
 		if (currentNoteStats && currentNoteStats.total > 0) {
 			activeNoteBtn.createSpan({
 				cls: "episteme-quick-action-stats",

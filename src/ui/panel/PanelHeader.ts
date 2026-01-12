@@ -72,25 +72,43 @@ export class PanelHeader extends BaseComponent {
         if (status === "exists" && currentFile) {
             // Review flashcards button
             if (onReviewFlashcards) {
-                const reviewBtn = titleRow.createSpan({
+                const reviewBtn = titleRow.createEl("button", {
                     cls: "episteme-review-btn clickable-icon",
+                    attr: {
+                        "aria-label": "Review flashcards from this note",
+                        "data-tooltip-position": "top",
+                    },
                 });
                 reviewBtn.textContent = "\u{1F9E0}"; // brain emoji
-                reviewBtn.setAttribute("aria-label", "Review flashcards from this note");
                 this.events.addEventListener(reviewBtn, "click", () => {
                     onReviewFlashcards();
+                });
+                this.events.addEventListener(reviewBtn, "keydown", (e: KeyboardEvent) => {
+                    if (e.key === "Enter" || e.key === " ") {
+                        e.preventDefault();
+                        onReviewFlashcards();
+                    }
                 });
             }
 
             // Open flashcard file button
             if (onOpenFlashcardFile) {
-                const openBtn = titleRow.createSpan({
+                const openBtn = titleRow.createEl("button", {
                     cls: "episteme-open-btn clickable-icon",
+                    attr: {
+                        "aria-label": "Open flashcard file",
+                        "data-tooltip-position": "top",
+                    },
                 });
                 openBtn.textContent = "\u{1F4C4}"; // document emoji
-                openBtn.setAttribute("aria-label", "Open flashcard file");
                 this.events.addEventListener(openBtn, "click", () => {
                     onOpenFlashcardFile();
+                });
+                this.events.addEventListener(openBtn, "keydown", (e: KeyboardEvent) => {
+                    if (e.key === "Enter" || e.key === " ") {
+                        e.preventDefault();
+                        onOpenFlashcardFile();
+                    }
                 });
             }
         }

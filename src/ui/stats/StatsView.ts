@@ -284,7 +284,7 @@ export class StatsView extends ItemView {
 
 	private async renderFutureDueChart(): Promise<void> {
 		this.futureDueEl.empty();
-		this.futureDueEl.createEl("h3", { text: "Future Due" });
+		this.futureDueEl.createEl("h3", { text: "Future due" });
 
 		// Create all elements synchronously BEFORE async calls to prevent race conditions
 		const canvasContainer = this.futureDueEl.createDiv({ cls: "stats-chart-container" });
@@ -297,7 +297,7 @@ export class StatsView extends ItemView {
 
 		if (data.length === 0) {
 			this.futureDueEl.empty();
-			this.futureDueEl.createEl("h3", { text: "Future Due" });
+			this.futureDueEl.createEl("h3", { text: "Future due" });
 			this.futureDueEl.createDiv({
 				cls: "stats-no-data",
 				text: "No data available",
@@ -417,7 +417,7 @@ export class StatsView extends ItemView {
 
 	private async renderRetentionChart(): Promise<void> {
 		this.retentionEl.empty();
-		this.retentionEl.createEl("h3", { text: "Retention Rate" });
+		this.retentionEl.createEl("h3", { text: "Retention rate" });
 
 		// Create elements synchronously before async calls
 		const canvasContainer = this.retentionEl.createDiv({ cls: "stats-chart-container" });
@@ -428,7 +428,7 @@ export class StatsView extends ItemView {
 
 		if (data.length === 0) {
 			this.retentionEl.empty();
-			this.retentionEl.createEl("h3", { text: "Retention Rate" });
+			this.retentionEl.createEl("h3", { text: "Retention rate" });
 			this.retentionEl.createDiv({
 				cls: "stats-no-data",
 				text: "No review history available",
@@ -519,7 +519,7 @@ export class StatsView extends ItemView {
 
 	private async renderCardCountsChart(): Promise<void> {
 		this.cardCountsEl.empty();
-		this.cardCountsEl.createEl("h3", { text: "Card Counts" });
+		this.cardCountsEl.createEl("h3", { text: "Card counts" });
 
 		const breakdown = await this.statsCalculator.getCardMaturityBreakdown();
 		const activeTotal = breakdown.new + breakdown.learning + breakdown.young + breakdown.mature;
@@ -639,7 +639,7 @@ export class StatsView extends ItemView {
 
 	private async renderCalendarHeatmap(): Promise<void> {
 		this.calendarEl.empty();
-		this.calendarEl.createEl("h3", { text: "Activity Calendar" });
+		this.calendarEl.createEl("h3", { text: "Activity calendar" });
 
 		const allStats = await this.statsCalculator.getAllDailyStats();
 

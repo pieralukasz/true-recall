@@ -284,7 +284,7 @@ export class PanelContent extends BaseComponent {
         // Select All / Deselect All button
         const allSelected = acceptedCount === totalCount;
         const selectAllBtn = headerEl.createEl("button", {
-            text: allSelected ? "Deselect All" : "Select All",
+            text: allSelected ? "Deselect all" : "Select all",
             cls: "episteme-btn-secondary",
         });
         selectAllBtn.style.marginLeft = "auto";

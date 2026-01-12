@@ -20,14 +20,14 @@ const CATEGORIES: CommandCategoryConfig[] = [
 	},
 	{
 		id: CommandCategory.GENERATION,
-		name: "Flashcard Generation",
+		name: "Flashcard generation",
 		description: "",
 		icon: "sparkles",
 		order: 2,
 	},
 	{
 		id: CommandCategory.REVIEW,
-		name: "Review Sessions",
+		name: "Review sessions",
 		description: "",
 		icon: "brain",
 		order: 3,
@@ -98,7 +98,7 @@ export class CommandDashboardModal extends BaseModal {
 			// GENERATION CATEGORY
 			{
 				id: "generate-flashcards",
-				name: "Generate Flashcards",
+				name: "Generate flashcards",
 				description: "Generate flashcards for the current note",
 				icon: "sparkles",
 				category: CommandCategory.GENERATION,
@@ -107,7 +107,7 @@ export class CommandDashboardModal extends BaseModal {
 			},
 			{
 				id: "scan-vault",
-				name: "Scan Vault",
+				name: "Scan vault",
 				description: "Scan vault for new flashcards and cleanup",
 				icon: "scan",
 				category: CommandCategory.GENERATION,
@@ -184,7 +184,7 @@ export class CommandDashboardModal extends BaseModal {
 			// ANALYSIS CATEGORY
 			{
 				id: "open-statistics-dashboard",
-				name: "View Statistics",
+				name: "View statistics",
 				description: "Open detailed statistics panel",
 				icon: "bar-chart-2",
 				category: CommandCategory.ANALYSIS,

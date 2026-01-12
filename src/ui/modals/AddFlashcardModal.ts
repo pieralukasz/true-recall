@@ -104,7 +104,7 @@ export class AddFlashcardModal extends BaseModal {
 		cancelBtn.addEventListener("click", () => this.close());
 
 		this.addButton = buttonsEl.createEl("button", {
-			text: "Add Flashcard",
+			text: "Add flashcard",
 			cls: "episteme-btn episteme-btn-primary",
 		});
 		this.addButton.disabled = !this.isFormValid();
@@ -161,10 +161,21 @@ export class AddFlashcardModal extends BaseModal {
 
 	/**
 	 * Convert markdown content to HTML for display in contenteditable
+	 * Escapes HTML to prevent XSS while preserving <br> tags for line breaks
 	 */
 	private markdownToEditableHtml(content: string): string {
-		// Keep <br> tags intact - they display correctly in contenteditable innerHTML
-		return content;
+		// Split by <br> tags (case insensitive, with optional attributes)
+		const parts = content.split(/<br\s*\/?>/gi);
+
+		// Escape each part to prevent XSS
+		const escapedParts = parts.map(part => {
+			const div = document.createElement("div");
+			div.textContent = part;
+			return div.innerHTML;
+		});
+
+		// Rejoin with safe <br> tags
+		return escapedParts.join("<br>");
 	}
 
 	/**
