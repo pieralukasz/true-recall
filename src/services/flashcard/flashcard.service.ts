@@ -457,7 +457,7 @@ export class FlashcardManager {
 				answer: card.answer,
 				filePath: "",
 				fsrs: card,
-				deck: "Knowledge",
+				deck: card.deck || "Knowledge",
 				sourceNoteName: card.sourceNoteName,
 				sourceUid: card.sourceUid,
 			}));
