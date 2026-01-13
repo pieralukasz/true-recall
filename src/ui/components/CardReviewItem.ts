@@ -6,7 +6,9 @@
 import type { App, Component } from "obsidian";
 import { MarkdownRenderer, Notice } from "obsidian";
 import type { FlashcardItem, FSRSFlashcardItem } from "../../types";
+import { isImageOcclusionCard, parseImageOcclusionData } from "../../types";
 import { BaseComponent } from "../component.base";
+import { ImageOcclusionRenderer } from "./ImageOcclusionRenderer";
 
 // Union type for card data
 export type CardData = FlashcardItem | FSRSFlashcardItem;
@@ -105,6 +107,35 @@ export class CardReviewItem extends BaseComponent {
 		const fieldEl = container.createDiv({
 			cls: "episteme-review-field episteme-review-field--view",
 		});
+
+		// Check if this is an Image Occlusion card
+		if (field === "question" && isImageOcclusionCard(content)) {
+			const ioData = parseImageOcclusionData(content);
+			if (ioData) {
+				fieldEl.createDiv({ cls: "episteme-review-field-label", text: "Image Occlusion:" });
+				const fieldContent = fieldEl.createDiv({ cls: "episteme-md-content" });
+				this.questionContentEl = fieldContent;
+
+				const renderer = new ImageOcclusionRenderer(fieldContent, {
+					data: ioData,
+					revealed: false,
+					app,
+					component,
+				});
+				renderer.render();
+
+				// Add click handler for field
+				this.events.addEventListener(fieldEl, "click", (e) => this.handleFieldClick(e, field));
+				return;
+			}
+		}
+
+		// For IO cards, simplify the answer display
+		if (field === "answer" && isImageOcclusionCard(this.props.card.question)) {
+			fieldEl.createDiv({ cls: "episteme-review-field-label", text: "Image Occlusion Card" });
+			return;
+		}
+
 		fieldEl.createDiv({ cls: "episteme-review-field-label", text: `${field === "question" ? "Question" : "Answer"}:` });
 		const fieldContent = fieldEl.createDiv({ cls: "episteme-md-content" });
 

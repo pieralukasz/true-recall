@@ -4,7 +4,9 @@
  */
 import type { App, Component, MarkdownRenderer } from "obsidian";
 import type { FlashcardItem } from "../../types";
+import { isImageOcclusionCard, parseImageOcclusionData } from "../../types";
 import { BaseComponent } from "../component.base";
+import { ImageOcclusionRenderer } from "./ImageOcclusionRenderer";
 
 export interface CardPreviewHandlers {
 	app: App;
@@ -96,6 +98,21 @@ export class CardPreview extends BaseComponent {
 		// Store reference for internal link handler
 		this.questionContentEl = questionContent;
 
+		// Check if this is an Image Occlusion card
+		if (isImageOcclusionCard(flashcard.question)) {
+			const ioData = parseImageOcclusionData(flashcard.question);
+			if (ioData) {
+				const renderer = new ImageOcclusionRenderer(questionContent, {
+					data: ioData,
+					revealed: false, // Panel preview shows hidden state
+					app: handlers.app,
+					component: handlers.component,
+				});
+				renderer.render();
+				return;
+			}
+		}
+
 		// Render markdown (strip <br> tags for cleaner display)
 		void markdownRenderer.render(
 			handlers.app,
@@ -110,6 +127,18 @@ export class CardPreview extends BaseComponent {
 		const { flashcard, filePath, handlers, markdownRenderer } = this.props;
 
 		if (!this.element) return;
+
+		// For IO cards, don't show the "Reveal: X" answer - it's redundant
+		if (isImageOcclusionCard(flashcard.question)) {
+			const answerEl = this.element.createDiv({
+				cls: "episteme-card-answer episteme-io-answer-hint",
+			});
+			answerEl.createSpan({
+				text: "Image Occlusion Card",
+				cls: "episteme-card-label",
+			});
+			return;
+		}
 
 		const answerEl = this.element.createDiv({
 			cls: "episteme-card-answer",
