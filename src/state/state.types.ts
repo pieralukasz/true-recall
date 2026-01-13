@@ -46,6 +46,10 @@ export interface PanelState {
     hasSelection: boolean;
     /** Source note name (when viewing a flashcard file) */
     sourceNoteName: string | null;
+    /** Whether the current file contains images */
+    hasImages: boolean;
+    /** Paths to images in the current file (for Image Occlusion) */
+    imagePaths: string[];
 }
 
 /**

@@ -47,6 +47,8 @@ function createInitialState(): PanelState {
         selectedText: "",
         hasSelection: false,
         sourceNoteName: null,
+        hasImages: false,
+        imagePaths: [],
     };
 }
 

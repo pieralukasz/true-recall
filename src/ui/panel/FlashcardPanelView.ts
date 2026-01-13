@@ -11,12 +11,13 @@ import {
     MarkdownRenderer,
 } from "obsidian";
 import { VIEW_TYPE_FLASHCARD_PANEL } from "../../constants";
-import { FlashcardManager, OpenRouterService, getEventBus } from "../../services";
+import { FlashcardManager, OpenRouterService, getEventBus, ImageOcclusionService } from "../../services";
 import { PanelStateManager } from "../../state";
 import { PanelHeader } from "./PanelHeader";
 import { PanelContent } from "./PanelContent";
 import { PanelFooter } from "./PanelFooter";
 import { MoveCardModal } from "../modals/MoveCardModal";
+import { ImageOcclusionEditorModal } from "../modals/ImageOcclusionEditorModal";
 import type { FlashcardItem, FlashcardChange } from "../../types";
 import type { CardAddedEvent, CardRemovedEvent, CardUpdatedEvent, BulkChangeEvent } from "../../types/events.types";
 import { createDefaultFSRSData } from "../../types";
@@ -29,6 +30,7 @@ export class FlashcardPanelView extends ItemView {
     private plugin: EpistemePlugin;
     private flashcardManager: FlashcardManager;
     private openRouterService: OpenRouterService;
+    private imageOcclusionService: ImageOcclusionService;
     private stateManager: PanelStateManager;
 
     // UI Components
@@ -58,6 +60,7 @@ export class FlashcardPanelView extends ItemView {
         this.plugin = plugin;
         this.flashcardManager = plugin.flashcardManager;
         this.openRouterService = plugin.openRouterService;
+        this.imageOcclusionService = new ImageOcclusionService(plugin.app, plugin.flashcardManager);
         this.stateManager = new PanelStateManager();
     }
 
@@ -223,11 +226,20 @@ export class FlashcardPanelView extends ItemView {
                 ? await this.getSourceNoteNameFromFile() ?? null
                 : null;
 
+            // Detect images in the current note (for Image Occlusion feature)
+            let imagePaths: string[] = [];
+            if (!state.isFlashcardFile) {
+                const content = await this.app.vault.read(file);
+                imagePaths = this.imageOcclusionService.findImagesInNote(content);
+            }
+
             this.stateManager.setState({
                 flashcardInfo: info,
                 status: info?.exists ? "exists" : "none",
                 noteFlashcardType: noteType,
                 sourceNoteName,
+                hasImages: imagePaths.length > 0,
+                imagePaths,
             });
         } catch (error) {
             console.error("Error loading flashcard info:", error);
@@ -302,6 +314,8 @@ export class FlashcardPanelView extends ItemView {
             onCancelDiff: () => void this.handleCancelDiff(),
             onMoveSelected: () => void this.handleMoveSelected(),
             onDeleteSelected: () => void this.handleDeleteSelected(),
+            hasImages: state.hasImages,
+            onCreateImageOcclusion: () => void this.handleCreateImageOcclusion(),
         });
         this.footerComponent.render();
     }
@@ -330,6 +344,8 @@ export class FlashcardPanelView extends ItemView {
             onCancelDiff: () => void this.handleCancelDiff(),
             onMoveSelected: () => void this.handleMoveSelected(),
             onDeleteSelected: () => void this.handleDeleteSelected(),
+            hasImages: state.hasImages,
+            onCreateImageOcclusion: () => void this.handleCreateImageOcclusion(),
         });
         this.footerComponent.render();
     }
@@ -953,6 +969,79 @@ export class FlashcardPanelView extends ItemView {
             return match?.[1];
         } catch {
             return undefined;
+        }
+    }
+
+    // ===== Image Occlusion Handler =====
+
+    /**
+     * Handle creating Image Occlusion cards
+     * Opens the IO editor modal for the user to draw occlusions
+     */
+    private async handleCreateImageOcclusion(): Promise<void> {
+        const state = this.stateManager.getState();
+        if (!state.currentFile || state.imagePaths.length === 0) {
+            new Notice("No images found in this note");
+            return;
+        }
+
+        // If multiple images, let user select one (for now, just use the first)
+        let selectedImagePath = state.imagePaths[0];
+
+        // Resolve the image path relative to the source file
+        if (selectedImagePath) {
+            selectedImagePath = this.imageOcclusionService.resolveImagePath(
+                selectedImagePath,
+                state.currentFile.path
+            );
+        }
+
+        if (!selectedImagePath) {
+            new Notice("Could not find image file");
+            return;
+        }
+
+        // Validate image
+        const validation = await this.imageOcclusionService.validateImage(selectedImagePath);
+        if (!validation.valid) {
+            new Notice(validation.error || "Invalid image");
+            return;
+        }
+
+        // Get resource path for display
+        const resourcePath = this.imageOcclusionService.getImageResourcePath(selectedImagePath);
+        if (!resourcePath) {
+            new Notice("Could not load image");
+            return;
+        }
+
+        // Open IO editor modal
+        const modal = new ImageOcclusionEditorModal(this.app, {
+            imagePath: selectedImagePath,
+            imageResourcePath: resourcePath,
+        });
+
+        const result = await modal.openAndWait();
+        if (result.cancelled || !result.data) {
+            return;
+        }
+
+        // Create IO cards
+        try {
+            const deck = "Knowledge"; // Default deck
+            const cards = await this.imageOcclusionService.createImageOcclusionCards(
+                result.data,
+                state.currentFile,
+                deck
+            );
+
+            new Notice(`Created ${cards.length} image occlusion card${cards.length > 1 ? "s" : ""}`);
+
+            // Refresh flashcard info
+            await this.loadFlashcardInfo();
+        } catch (error) {
+            console.error("Error creating IO cards:", error);
+            new Notice(`Failed to create IO cards: ${error instanceof Error ? error.message : String(error)}`);
         }
     }
 }
