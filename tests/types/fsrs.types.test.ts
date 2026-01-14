@@ -8,7 +8,7 @@ import {
 	createDefaultSessionState,
 	formatInterval,
 	formatIntervalDays,
-} from "../../src/types/fsrs.types";
+} from "../../src/types";
 
 describe("fsrs.types utilities", () => {
 	describe("createDefaultFSRSData", () => {

@@ -6,7 +6,7 @@ import { State } from "ts-fsrs";
 import type { FSRSService } from "../core/fsrs.service";
 import type { FlashcardManager } from "../flashcard/flashcard.service";
 import type { SessionPersistenceService } from "../persistence/session-persistence.service";
-import type { SqliteStoreService } from "../persistence/sqlite-store.service";
+import type { SqliteStoreService } from "../persistence/sqlite";
 import type {
 	CardMaturityBreakdown,
 	FutureDueEntry,

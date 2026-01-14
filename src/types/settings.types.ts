@@ -3,7 +3,7 @@
  */
 
 import type { AIModelKey } from "../constants";
-import type { ReviewViewMode } from "./fsrs.types";
+import type { ReviewViewMode } from "./fsrs";
 
 /**
  * Display order for new cards

@@ -16,8 +16,8 @@ import type {
 	FSRSCardData,
 	FSRSFlashcardItem,
 	SchedulingPreview,
-} from "../../types/fsrs.types";
-import { formatInterval } from "../../types/fsrs.types";
+} from "../../types";
+import { formatInterval } from "../../types";
 import { DEFAULT_FSRS_WEIGHTS } from "../../constants";
 
 /**

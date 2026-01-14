@@ -9,8 +9,8 @@ import type {
     ReviewSessionStats,
     ReviewSessionState,
     SchedulingPreview,
-} from "../types/fsrs.types";
-import { createDefaultSessionState } from "../types/fsrs.types";
+} from "../types";
+import { createDefaultSessionState } from "../types";
 import { LEARN_AHEAD_LIMIT_MINUTES } from "../constants";
 
 /**
