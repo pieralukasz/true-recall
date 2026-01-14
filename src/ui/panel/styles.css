@@ -65,6 +65,22 @@
 	background-color: var(--background-modifier-hover);
 }
 
+.episteme-delete-all-btn {
+	cursor: pointer;
+	opacity: 0.7;
+	font-size: 14px;
+	padding: 2px 4px;
+	border-radius: 4px;
+	flex-shrink: 0;
+	background: none;
+	border: none;
+}
+
+.episteme-delete-all-btn:hover {
+	opacity: 1;
+	background-color: var(--background-modifier-hover);
+}
+
 /* Content Section */
 .episteme-content {
 	display: flex;
@@ -235,7 +251,8 @@
 
 .episteme-buttons-row .episteme-btn-primary,
 .episteme-buttons-row .episteme-btn-secondary,
-.episteme-buttons-row .episteme-btn-danger {
+.episteme-buttons-row .episteme-btn-danger,
+.episteme-buttons-row .episteme-btn-seed {
 	flex: 1;
 }
 

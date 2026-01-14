@@ -17,6 +17,7 @@ import { PanelHeader } from "./PanelHeader";
 import { PanelContent } from "./PanelContent";
 import { PanelFooter } from "./PanelFooter";
 import { MoveCardModal } from "../modals/MoveCardModal";
+import { AddFlashcardModal } from "../modals/AddFlashcardModal";
 import type { FlashcardItem, FlashcardChange } from "../../types";
 import type { CardAddedEvent, CardRemovedEvent, CardUpdatedEvent, BulkChangeEvent } from "../../types/events.types";
 import { createDefaultFSRSData } from "../../types";
@@ -303,6 +304,7 @@ export class FlashcardPanelView extends ItemView {
             onCancelDiff: () => void this.handleCancelDiff(),
             onMoveSelected: () => void this.handleMoveSelected(),
             onDeleteSelected: () => void this.handleDeleteSelected(),
+            onAddFlashcard: () => void this.handleAddFlashcard(),
         });
         this.footerComponent.render();
     }
@@ -331,6 +333,7 @@ export class FlashcardPanelView extends ItemView {
             onCancelDiff: () => void this.handleCancelDiff(),
             onMoveSelected: () => void this.handleMoveSelected(),
             onDeleteSelected: () => void this.handleDeleteSelected(),
+            onAddFlashcard: () => void this.handleAddFlashcard(),
         });
         this.footerComponent.render();
     }
@@ -869,6 +872,48 @@ export class FlashcardPanelView extends ItemView {
         this.selectedCardIds.clear();
         new Notice(`Deleted ${successCount} of ${selectedCards.length} card(s)`);
         await this.loadFlashcardInfo();
+    }
+
+    /**
+     * Add a single flashcard manually via modal
+     */
+    private async handleAddFlashcard(): Promise<void> {
+        const state = this.stateManager.getState();
+        if (!state.currentFile) return;
+
+        // Get or create sourceUid for the current file
+        const frontmatterService = this.flashcardManager.getFrontmatterService();
+        let sourceUid = await frontmatterService.getSourceNoteUid(state.currentFile);
+        if (!sourceUid) {
+            sourceUid = frontmatterService.generateUid();
+            await frontmatterService.setSourceNoteUid(state.currentFile, sourceUid);
+        }
+
+        const deck = "Knowledge";
+
+        const modal = new AddFlashcardModal(this.app, {
+            currentFilePath: state.currentFile.path,
+            sourceNoteName: state.currentFile.basename,
+            deck,
+        });
+
+        const result = await modal.openAndWait();
+        if (result.cancelled) return;
+
+        try {
+            await this.flashcardManager.addSingleFlashcard(
+                state.currentFile.path,
+                result.question,
+                result.answer,
+                sourceUid,
+                deck
+            );
+            new Notice("Flashcard added!");
+            await this.loadFlashcardInfo();
+        } catch (error) {
+            console.error("Error adding flashcard:", error);
+            new Notice(`Failed to add flashcard: ${error instanceof Error ? error.message : String(error)}`);
+        }
     }
 
     private async handleDeleteAllFlashcards(): Promise<void> {

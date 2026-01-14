@@ -26,6 +26,7 @@ export interface PanelFooterProps {
 	onCancelDiff?: () => void;
 	onMoveSelected?: () => void;
 	onDeleteSelected?: () => void;
+	onAddFlashcard?: () => void;
 }
 
 /**
@@ -123,36 +124,38 @@ export class PanelFooter extends BaseComponent {
 			status,
 			isFlashcardFile,
 			selectedCount,
-			noteFlashcardType,
 			onGenerate,
 			onUpdate,
 			onMoveSelected,
 			onDeleteSelected,
+			onAddFlashcard,
 		} = this.props;
 
 		if (!this.element) return;
 
-		// Create footer buttons wrapper
+		// Create footer buttons wrapper (horizontal row layout)
 		const buttonsWrapper = this.element.createDiv({
-			cls: "episteme-footer-buttons",
+			cls: "episteme-footer-buttons episteme-buttons-row",
 		});
 
-		// Show "Move selected" button whenever cards are selected
-		if (selectedCount && selectedCount > 0 && onMoveSelected) {
-			const moveBtn = buttonsWrapper.createEl("button", {
-				cls: "episteme-btn-seed episteme-move-selected-btn",
-			});
-			moveBtn.textContent = `Move selected (${selectedCount})`;
-			this.events.addEventListener(moveBtn, "click", onMoveSelected);
-		}
+		// Show selection action buttons when cards are selected
+		if (selectedCount && selectedCount > 0) {
+			if (onMoveSelected) {
+				const moveBtn = buttonsWrapper.createEl("button", {
+					cls: "episteme-btn-seed",
+				});
+				moveBtn.textContent = `Move (${selectedCount})`;
+				this.events.addEventListener(moveBtn, "click", onMoveSelected);
+			}
 
-		// Show "Delete selected" button whenever cards are selected
-		if (selectedCount && selectedCount > 0 && onDeleteSelected) {
-			const deleteBtn = buttonsWrapper.createEl("button", {
-				cls: "episteme-btn-danger episteme-delete-selected-btn",
-			});
-			deleteBtn.textContent = `Delete selected (${selectedCount})`;
-			this.events.addEventListener(deleteBtn, "click", onDeleteSelected);
+			if (onDeleteSelected) {
+				const deleteBtn = buttonsWrapper.createEl("button", {
+					cls: "episteme-btn-danger",
+				});
+				deleteBtn.textContent = `Delete (${selectedCount})`;
+				this.events.addEventListener(deleteBtn, "click", onDeleteSelected);
+			}
+			return;
 		}
 
 		// Don't show other buttons for flashcard files
@@ -168,13 +171,7 @@ export class PanelFooter extends BaseComponent {
 		}
 
 		// ===== NO SELECTION UI =====
-		// Instructions input
-		this.renderInstructionsInput(
-			"Instructions for AI (optional)...",
-			status === "processing"
-		);
-
-		// Main action button
+		// Main action button (Generate/Update) - first in row
 		const mainBtn = buttonsWrapper.createEl("button", {
 			cls: "episteme-btn-primary",
 		});
@@ -183,15 +180,24 @@ export class PanelFooter extends BaseComponent {
 			mainBtn.textContent = "Processing...";
 			mainBtn.disabled = true;
 		} else if (status === "exists") {
-			mainBtn.textContent = "Update flashcards";
+			mainBtn.textContent = "Update";
 			if (onUpdate) {
 				this.events.addEventListener(mainBtn, "click", onUpdate);
 			}
 		} else {
-			mainBtn.textContent = "Generate flashcards";
+			mainBtn.textContent = "Generate";
 			if (onGenerate) {
 				this.events.addEventListener(mainBtn, "click", onGenerate);
 			}
+		}
+
+		// Add flashcard button - second in row
+		if (onAddFlashcard) {
+			const addBtn = buttonsWrapper.createEl("button", {
+				text: "+ Add",
+				cls: "episteme-btn-secondary",
+			});
+			this.events.addEventListener(addBtn, "click", onAddFlashcard);
 		}
 	}
 
@@ -201,8 +207,10 @@ export class PanelFooter extends BaseComponent {
 	private renderSelectionFooter(container: HTMLElement): void {
 		const { selectedText, onGenerate } = this.props;
 
-		// Show selection preview and generate button
-		const selectionPreview = container.createDiv({
+		if (!this.element) return;
+
+		// Show selection preview above buttons
+		const selectionPreview = this.element.createDiv({
 			cls: "episteme-selection-preview",
 		});
 
@@ -217,16 +225,10 @@ export class PanelFooter extends BaseComponent {
 		});
 		previewText.setAttribute("title", selectedText || ""); // Show full text on hover
 
-		// Instructions input (optional)
-		this.renderInstructionsInput(
-			"Additional instructions (optional)...",
-			false
-		);
-
-		// Generate button
+		// Generate button (full width in selection mode)
 		const generateBtn = container.createEl("button", {
-			text: "Generate flashcards from selection",
-			cls: "episteme-btn-primary episteme-btn-generate-selection",
+			text: "Generate from selection",
+			cls: "episteme-btn-primary",
 		});
 
 		if (onGenerate) {
