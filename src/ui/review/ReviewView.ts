@@ -8,10 +8,9 @@ import { Rating, State, type Grade } from "ts-fsrs";
 import { VIEW_TYPE_REVIEW, UI_CONFIG } from "../../constants";
 import { FSRSService, ReviewService, FlashcardManager, SessionPersistenceService, getEventBus } from "../../services";
 import { ReviewStateManager } from "../../state";
-import { extractFSRSSettings, type FSRSFlashcardItem, type SchedulingPreview, isImageOcclusionCard, parseImageOcclusionData } from "../../types";
+import { extractFSRSSettings, type FSRSFlashcardItem, type SchedulingPreview } from "../../types";
 import type { CardRemovedEvent, CardUpdatedEvent, BulkChangeEvent } from "../../types/events.types";
 import { MoveCardModal, AddFlashcardModal, EditFlashcardModal } from "../modals";
-import { ImageOcclusionRenderer } from "../components/ImageOcclusionRenderer";
 import type EpistemePlugin from "../../main";
 
 interface ReviewViewState extends Record<string, unknown> {
@@ -91,9 +90,6 @@ export class ReviewView extends ItemView {
 
     // Timer for waiting screen countdown
     private waitingTimer: ReturnType<typeof setInterval> | null = null;
-
-    // Image Occlusion renderer instance
-    private ioRenderer: ImageOcclusionRenderer | null = null;
 
     constructor(leaf: WorkspaceLeaf, plugin: EpistemePlugin) {
         super(leaf);
@@ -499,20 +495,8 @@ export class ReviewView extends ItemView {
     private renderCard(): void {
         this.cardContainerEl.empty();
 
-        // Clean up previous IO renderer
-        if (this.ioRenderer) {
-            this.ioRenderer.destroy();
-            this.ioRenderer = null;
-        }
-
         const card = this.stateManager.getCurrentCard();
         if (!card) return;
-
-        // Check if this is an Image Occlusion card
-        if (isImageOcclusionCard(card.question)) {
-            this.renderImageOcclusionCard(card);
-            return;
-        }
 
         const editState = this.stateManager.getEditState();
 
@@ -586,50 +570,6 @@ export class ReviewView extends ItemView {
                     this.handleOpenSourceNote();
                 });
             }
-        }
-    }
-
-    /**
-     * Render an Image Occlusion card
-     */
-    private renderImageOcclusionCard(card: FSRSFlashcardItem): void {
-        const ioData = parseImageOcclusionData(card.question);
-        if (!ioData) {
-            // Fallback to regular rendering if parsing fails
-            const cardEl = this.cardContainerEl.createDiv({ cls: "episteme-review-card" });
-            cardEl.createEl("p", { text: "Error: Invalid image occlusion data" });
-            return;
-        }
-
-        const cardEl = this.cardContainerEl.createDiv({ cls: "episteme-review-card episteme-io-card" });
-
-        // Create renderer
-        this.ioRenderer = new ImageOcclusionRenderer(cardEl, {
-            data: ioData,
-            revealed: this.stateManager.isAnswerRevealed(),
-            app: this.app,
-            component: this,
-        });
-
-        this.ioRenderer.render();
-
-        // Source note backlink (shown when answer is revealed)
-        if (this.stateManager.isAnswerRevealed() && card.sourceNoteName) {
-            const backlinkEl = cardEl.createDiv({
-                cls: "episteme-review-backlink"
-            });
-
-            const linkEl = backlinkEl.createEl("a", {
-                text: card.sourceNoteName,
-                href: "#",
-                cls: "episteme-review-backlink-link"
-            });
-
-            linkEl.addEventListener("click", (e: MouseEvent) => {
-                e.preventDefault();
-                e.stopPropagation();
-                this.handleOpenSourceNote();
-            });
         }
     }
 
@@ -1644,7 +1584,9 @@ Source: [[${sourceNote}]]
             const newCard = await this.flashcardManager.addSingleFlashcard(
                 card.filePath,
                 result.question,
-                result.answer
+                result.answer,
+                card.sourceUid,
+                card.deck
             );
 
             // Add new card to current session queue
@@ -1682,7 +1624,9 @@ Source: [[${sourceNote}]]
             const newCard = await this.flashcardManager.addSingleFlashcard(
                 card.filePath,
                 result.question,
-                result.answer
+                result.answer,
+                card.sourceUid,
+                card.deck
             );
 
             // Add new card to current session queue
