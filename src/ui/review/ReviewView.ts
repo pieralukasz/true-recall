@@ -12,42 +12,7 @@ import { extractFSRSSettings, type FSRSFlashcardItem, type SchedulingPreview } f
 import type { CardRemovedEvent, CardUpdatedEvent, BulkChangeEvent } from "../../types/events.types";
 import { MoveCardModal, AddFlashcardModal, EditFlashcardModal } from "../modals";
 import type EpistemePlugin from "../../main";
-
-interface ReviewViewState extends Record<string, unknown> {
-    deckFilter?: string | null;
-    // Custom session filters
-    sourceNoteFilter?: string;
-    sourceNoteFilters?: string[];
-    filePathFilter?: string;
-    createdTodayOnly?: boolean;
-    createdThisWeek?: boolean;
-    weakCardsOnly?: boolean;
-    stateFilter?: "due" | "learning" | "new" | "buried";
-    ignoreDailyLimits?: boolean;
-    bypassScheduling?: boolean;
-}
-
-/**
- * Review View for conducting flashcard review sessions
- */
-/**
- * Undo entry for reverting card actions (answer or bury)
- */
-interface UndoEntry {
-    actionType: "answer" | "bury";
-    card: FSRSFlashcardItem;
-    originalFsrs: FSRSFlashcardItem["fsrs"];
-    previousIndex: number;
-    // Fields only for "answer" action
-    wasNewCard?: boolean;
-    rating?: Grade;
-    previousState?: State;
-    // Fields only for "bury" action (bury note can have multiple cards)
-    additionalCards?: Array<{
-        card: FSRSFlashcardItem;
-        originalFsrs: FSRSFlashcardItem["fsrs"];
-    }>;
-}
+import type { ReviewViewState, UndoEntry } from "./review.types";
 
 export class ReviewView extends ItemView {
     private plugin: EpistemePlugin;

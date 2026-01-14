@@ -31,11 +31,12 @@ export type {
 } from "./settings.types";
 export { extractFSRSSettings } from "./settings.types";
 
-// FSRS types
+// FSRS types (from ./fsrs subdirectory)
 export type {
     CardReviewLogEntry,
     FSRSCardData,
     FSRSFlashcardItem,
+    SourceNoteInfo,
     ReviewResult,
     ReviewHistoryEntry,
     ReviewSessionStats,
@@ -56,18 +57,16 @@ export type {
     StreakInfo,
     StatsTimeRange,
     RetentionEntry,
-    SourceNoteInfo,
-} from "./fsrs.types";
+    CardStore,
+    FSRSCard,
+} from "./fsrs";
 
 export {
     createDefaultFSRSData,
     createDefaultSessionState,
     formatInterval,
     formatIntervalDays,
-} from "./fsrs.types";
-
-// Card store interface
-export type { CardStore } from "./fsrs.types";
+} from "./fsrs";
 
 // Event types
 export type {
@@ -83,7 +82,6 @@ export type {
 	FlashcardEventListener,
 } from "./events.types";
 
-// Re-export enums as types (for isolatedModules compatibility)
-export { State, Rating } from "ts-fsrs";
-export type { Grade } from "ts-fsrs";
-export type { FSRSCard } from "./fsrs.types";
+// Re-export ts-fsrs enums (for isolatedModules compatibility)
+export { State, Rating } from "./fsrs";
+export type { Grade } from "./fsrs";
