@@ -12,6 +12,7 @@ export interface PanelHeaderProps {
     displayTitle?: string;
     onOpenFlashcardFile?: () => void;
     onReviewFlashcards?: () => void;
+    onDeleteAllFlashcards?: () => void;
 }
 
 /**
@@ -46,7 +47,7 @@ export class PanelHeader extends BaseComponent {
             this.events.cleanup();
         }
 
-        const { currentFile, status, onOpenFlashcardFile, onReviewFlashcards } = this.props;
+        const { currentFile, status, onOpenFlashcardFile, onReviewFlashcards, onDeleteAllFlashcards } = this.props;
 
         this.element = this.container.createDiv({
             cls: "episteme-header",
@@ -108,6 +109,27 @@ export class PanelHeader extends BaseComponent {
                     if (e.key === "Enter" || e.key === " ") {
                         e.preventDefault();
                         onOpenFlashcardFile();
+                    }
+                });
+            }
+
+            // Delete all flashcards button
+            if (onDeleteAllFlashcards) {
+                const deleteAllBtn = titleRow.createEl("button", {
+                    cls: "episteme-delete-all-btn clickable-icon",
+                    attr: {
+                        "aria-label": "Delete all flashcards for this note",
+                        "data-tooltip-position": "top",
+                    },
+                });
+                deleteAllBtn.textContent = "\u{1F5D1}"; // wastebasket emoji
+                this.events.addEventListener(deleteAllBtn, "click", () => {
+                    onDeleteAllFlashcards();
+                });
+                this.events.addEventListener(deleteAllBtn, "keydown", (e: KeyboardEvent) => {
+                    if (e.key === "Enter" || e.key === " ") {
+                        e.preventDefault();
+                        onDeleteAllFlashcards();
                     }
                 });
             }

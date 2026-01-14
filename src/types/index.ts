@@ -87,26 +87,3 @@ export type {
 export { State, Rating } from "ts-fsrs";
 export type { Grade } from "ts-fsrs";
 export type { FSRSCard } from "./fsrs.types";
-
-// Image Occlusion types
-export type {
-    RectShape,
-    EllipseShape,
-    PolygonShape,
-    OcclusionShape,
-    OcclusionItem,
-    OcclusionMode,
-    ImageOcclusionData,
-    ImageOcclusionCardData,
-    ImageOcclusionEditorResult,
-} from "./image-occlusion.types";
-
-export {
-    isImageOcclusionCard,
-    parseImageOcclusionData,
-    serializeImageOcclusionData,
-    createRectShape,
-    generateOcclusionId,
-    DEFAULT_OCCLUSION_COLOR,
-    MIN_SHAPE_SIZE,
-} from "./image-occlusion.types";
