@@ -1,4 +1,4 @@
-import { Plugin, TFile, TFolder, Notice, Platform, normalizePath } from "obsidian";
+import { Plugin, TFile, Notice, Platform } from "obsidian";
 import {
 	VIEW_TYPE_FLASHCARD_PANEL,
 	VIEW_TYPE_REVIEW,
@@ -17,17 +17,21 @@ import {
 } from "./services";
 import type { CardStore } from "./types";
 import { extractFSRSSettings } from "./types";
+import { FlashcardPanelView } from "./ui/panel/FlashcardPanelView";
+import { ReviewView } from "./ui/review/ReviewView";
+import { StatsView } from "./ui/stats/StatsView";
 import {
-	FlashcardPanelView,
-	ReviewView,
 	EpistemeSettingTab,
-	CustomSessionModal,
-	MissingFlashcardsModal,
 	type EpistemeSettings,
 	DEFAULT_SETTINGS,
-} from "./ui";
-import { CommandDashboardModal } from "./ui/modals";
-import { StatsView } from "./ui/stats";
+} from "./ui/settings";
+import {
+	CustomSessionModal,
+	MissingFlashcardsModal,
+	CommandDashboardModal,
+} from "./ui/modals";
+import { registerCommands } from "./plugin/PluginCommands";
+import { registerEventHandlers } from "./plugin/PluginEventHandlers";
 
 export default class EpistemePlugin extends Plugin {
 	settings!: EpistemeSettings;
@@ -98,167 +102,14 @@ export default class EpistemePlugin extends Plugin {
 			this.openCommandDashboard();
 		});
 
-		// Register commands
-		this.addCommand({
-			id: "open-flashcard-panel",
-			name: "Open flashcard panel",
-			callback: () => void this.activateView(),
-		});
-
-		this.addCommand({
-			id: "generate-flashcards",
-			name: "Generate flashcards for current note",
-			checkCallback: (checking) => {
-				const file = this.app.workspace.getActiveFile();
-				if (file && file.extension === "md") {
-					if (!checking) {
-						void this.activateView();
-					}
-					return true;
-				}
-				return false;
-			},
-		});
-
-		// Review session command (defaults to Knowledge deck)
-		this.addCommand({
-			id: "start-review",
-			name: "Start review session",
-			callback: () => void this.startReviewSession(),
-		});
-
-		// Review flashcards from current note
-		this.addCommand({
-			id: "review-current-note",
-			name: "Review flashcards from current note",
-			checkCallback: (checking) => {
-				const file = this.app.workspace.getActiveFile();
-				if (file && file.extension === "md" && !file.name.startsWith(FLASHCARD_CONFIG.filePrefix)) {
-					if (!checking) {
-						void this.reviewCurrentNote();
-					}
-					return true;
-				}
-				return false;
-			},
-		});
-
-		// Review today's new cards
-		this.addCommand({
-			id: "review-todays-cards",
-			name: "Review today's new cards",
-			callback: () => void this.reviewTodaysCards(),
-		});
-
-		// Statistics panel command
-		this.addCommand({
-			id: "open-statistics",
-			name: "Open statistics panel",
-			callback: () => void this.openStatsView(),
-		});
-
-		// Command dashboard command
-		this.addCommand({
-			id: "open-command-dashboard",
-			name: "Open command dashboard",
-			callback: () => this.openCommandDashboard(),
-		});
-
-		// Scan vault command - add FSRS IDs to new flashcards and cleanup orphaned
-		this.addCommand({
-			id: "scan-vault",
-			name: "Scan vault for new flashcards",
-			callback: async () => {
-				try {
-					new Notice("Scanning vault for flashcards...");
-					const result = await this.flashcardManager.scanVault();
-
-					// Build message with cleanup info
-					let message = `Scan complete! Found ${result.totalCards} cards`;
-					if (result.newCardsProcessed > 0) {
-						message += `, added ${result.newCardsProcessed} new`;
-					}
-					if (result.orphanedRemoved > 0) {
-						message += `, removed ${result.orphanedRemoved} orphaned`;
-					}
-					message += ` in ${result.filesProcessed} files.`;
-
-					new Notice(message);
-				} catch (error) {
-					new Notice(`Scan failed: ${error instanceof Error ? error.message : "Unknown error"}`);
-				}
-			},
-		});
-
-		// Show notes missing flashcards
-		this.addCommand({
-			id: "show-missing-flashcards",
-			name: "Show notes missing flashcards",
-			callback: () => void this.showMissingFlashcards(),
-		});
+		// Register commands (extracted to PluginCommands.ts)
+		registerCommands(this);
 
 		// Register settings tab
 		this.addSettingTab(new EpistemeSettingTab(this.app, this));
 
-		// Register file context menu for custom review
-		this.registerEvent(
-			this.app.workspace.on("file-menu", (menu, file) => {
-				if (file instanceof TFile && file.extension === "md") {
-					// Don't show on flashcard files themselves (both legacy and UID naming)
-					if (this.flashcardManager.isFlashcardFile(file)) return;
-
-					menu.addItem((item) => {
-						item.setTitle("Review flashcards from this note")
-							.setIcon("brain")
-							.onClick(() => void this.reviewNoteFlashcards(file));
-					});
-				}
-			})
-		);
-
-		// Listen for active file changes
-		this.registerEvent(
-			this.app.workspace.on("file-open", (file) => {
-				this.updatePanelView(file);
-			})
-		);
-
-		// Also listen for active leaf changes (covers more scenarios)
-		this.registerEvent(
-			this.app.workspace.on("active-leaf-change", () => {
-				const file = this.app.workspace.getActiveFile();
-				this.updatePanelView(file);
-			})
-		);
-
-		// Listen for file renames to update source_link in flashcard files (UID system)
-		this.registerEvent(
-			this.app.vault.on("rename", async (file, oldPath) => {
-				if (!(file instanceof TFile)) return;
-				// Only handle markdown files
-				if (file.extension !== "md") return;
-
-				// Check if renamed file has a flashcard UID
-				const frontmatterService = this.flashcardManager.getFrontmatterService();
-				const uid = await frontmatterService.getSourceNoteUid(file);
-				if (!uid) return;
-
-				// Update source_link in the corresponding flashcard file
-				const flashcardPath = this.flashcardManager.getFlashcardPathByUid(uid);
-				const flashcardFile = this.app.vault.getAbstractFileByPath(flashcardPath);
-
-				if (flashcardFile instanceof TFile) {
-					const content = await this.app.vault.read(flashcardFile);
-					const updatedContent = frontmatterService.updateSourceLinkInContent(
-						content,
-						file.basename
-					);
-					if (updatedContent !== content) {
-						await this.app.vault.modify(flashcardFile, updatedContent);
-					}
-				}
-			})
-		);
+		// Register event handlers (extracted to PluginEventHandlers.ts)
+		registerEventHandlers(this);
 	}
 
 	onunload(): void {
@@ -335,19 +186,6 @@ export default class EpistemePlugin extends Plugin {
 		if (leaf) {
 			void workspace.revealLeaf(leaf);
 		}
-	}
-
-	// Update the panel view with current file
-	private updatePanelView(file: TFile | null): void {
-		const leaves = this.app.workspace.getLeavesOfType(
-			VIEW_TYPE_FLASHCARD_PANEL
-		);
-		leaves.forEach((leaf) => {
-			const view = leaf.view;
-			if (view instanceof FlashcardPanelView) {
-				void view.handleFileChange(file);
-			}
-		});
 	}
 
 	// Start a review session (opens modal with options)

@@ -5,7 +5,7 @@
 import { App, normalizePath } from "obsidian";
 import { State, Rating } from "ts-fsrs";
 import type { PersistentStatsData, ExtendedDailyStats, Grade } from "../../types";
-import type { SqliteStoreService } from "./sqlite-store.service";
+import type { SqliteStoreService } from "./sqlite";
 
 const STATS_FOLDER = ".episteme";
 const STATS_FILE = "stats.json";

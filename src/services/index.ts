@@ -34,7 +34,7 @@ export {
 } from "./flashcard/card-mover.service";
 
 // Persistence services
-export { SqliteStoreService } from "./persistence/sqlite-store.service";
+export { SqliteStoreService } from "./persistence/sqlite";
 export { SessionPersistenceService } from "./persistence/session-persistence.service";
 
 // Stats services

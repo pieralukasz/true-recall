@@ -8,7 +8,7 @@ import type {
     ReviewResult,
     ReviewSessionStats,
     DailyStats,
-} from "../../types/fsrs.types";
+} from "../../types";
 import type { CardReviewedEvent } from "../../types/events.types";
 import type { NewCardOrder, ReviewOrder, NewReviewMix } from "../../types/settings.types";
 import type { FSRSService } from "../core/fsrs.service";
