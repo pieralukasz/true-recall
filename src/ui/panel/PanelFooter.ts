@@ -20,15 +20,12 @@ export interface PanelFooterProps {
 	// Selection state for literature notes
 	hasSelection?: boolean;
 	selectedText?: string;
-	/** Whether the current note contains images */
-	hasImages?: boolean;
 	onGenerate?: () => void;
 	onUpdate?: () => void;
 	onApplyDiff?: () => void;
 	onCancelDiff?: () => void;
 	onMoveSelected?: () => void;
 	onDeleteSelected?: () => void;
-	onCreateImageOcclusion?: () => void;
 }
 
 /**
@@ -195,20 +192,6 @@ export class PanelFooter extends BaseComponent {
 			if (onGenerate) {
 				this.events.addEventListener(mainBtn, "click", onGenerate);
 			}
-		}
-
-		// Image Occlusion button (shown when note has images)
-		const { hasImages, onCreateImageOcclusion } = this.props;
-		if (hasImages && onCreateImageOcclusion && status !== "processing") {
-			const ioBtn = buttonsWrapper.createEl("button", {
-				cls: "episteme-btn-secondary episteme-btn-io",
-				text: "Create Image Occlusion",
-			});
-			this.events.addEventListener(
-				ioBtn,
-				"click",
-				onCreateImageOcclusion
-			);
 		}
 	}
 

@@ -55,6 +55,3 @@ export {
 	OpenRouterService,
 	type DiffResult,
 } from "./ai/openrouter.service";
-
-// Image Occlusion services
-export { ImageOcclusionService } from "./image-occlusion/image-occlusion.service";
