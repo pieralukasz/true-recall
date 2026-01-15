@@ -79,4 +79,11 @@ export function registerCommands(plugin: EpistemePlugin): void {
 		name: "Show notes missing flashcards",
 		callback: () => void plugin.showMissingFlashcards(),
 	});
+
+	// Show notes ready to harvest
+	plugin.addCommand({
+		id: "show-ready-to-harvest",
+		name: "Show notes ready to harvest",
+		callback: () => void plugin.showReadyToHarvest(),
+	});
 }
