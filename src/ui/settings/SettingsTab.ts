@@ -76,6 +76,21 @@ export class EpistemeSettingTab extends PluginSettingTab {
                     await this.plugin.saveSettings();
                 }));
 
+        // 3b. Excluded Folders
+        new Setting(containerEl)
+            .setName("Excluded folders")
+            .setDesc("Comma-separated list of folders to exclude from missing flashcards search (e.g., templates, archive)")
+            .addText(text => text
+                .setPlaceholder("templates, archive")
+                .setValue(this.plugin.settings.excludedFolders.join(", "))
+                .onChange(async (value) => {
+                    const folders = value.split(",")
+                        .map(s => s.trim())
+                        .filter(s => s.length > 0);
+                    this.plugin.settings.excludedFolders = folders;
+                    await this.plugin.saveSettings();
+                }));
+
         // 4. Store Source Content toggle
         new Setting(containerEl)
             .setName("Store source content")

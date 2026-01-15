@@ -70,6 +70,9 @@ export const DEFAULT_SETTINGS: EpistemeSettings = {
 
 	// Zettelkasten
 	zettelFolder: "Zettel",
+
+	// Folder Exclusions
+	excludedFolders: [],
 };
 
 // ===== FSRS Default Weights =====
