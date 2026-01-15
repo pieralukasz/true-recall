@@ -35,3 +35,9 @@ export {
     type EditFlashcardResult,
     type EditFlashcardModalOptions,
 } from "./EditFlashcardModal";
+export {
+    FlashcardEditorModal,
+    KeyboardShortcutsModal,
+    type FlashcardEditorResult,
+    type FlashcardEditorModalOptions,
+} from "./FlashcardEditorModal";

@@ -17,7 +17,7 @@ import { PanelHeader } from "./PanelHeader";
 import { PanelContent } from "./PanelContent";
 import { PanelFooter } from "./PanelFooter";
 import { MoveCardModal } from "../modals/MoveCardModal";
-import { AddFlashcardModal } from "../modals/AddFlashcardModal";
+import { FlashcardEditorModal } from "../modals/FlashcardEditorModal";
 import type { FlashcardItem, FlashcardChange } from "../../types";
 import type { CardAddedEvent, CardRemovedEvent, CardUpdatedEvent, BulkChangeEvent } from "../../types/events.types";
 import { createDefaultFSRSData } from "../../types";
@@ -891,7 +891,8 @@ export class FlashcardPanelView extends ItemView {
 
         const deck = "Knowledge";
 
-        const modal = new AddFlashcardModal(this.app, {
+        const modal = new FlashcardEditorModal(this.app, {
+            mode: "add",
             currentFilePath: state.currentFile.path,
             sourceNoteName: state.currentFile.basename,
             deck,

@@ -10,7 +10,7 @@ import { FSRSService, ReviewService, FlashcardManager, SessionPersistenceService
 import { ReviewStateManager } from "../../state";
 import { extractFSRSSettings, type FSRSFlashcardItem, type SchedulingPreview } from "../../types";
 import type { CardRemovedEvent, CardUpdatedEvent, BulkChangeEvent } from "../../types/events.types";
-import { MoveCardModal, AddFlashcardModal, EditFlashcardModal } from "../modals";
+import { MoveCardModal, AddFlashcardModal, FlashcardEditorModal } from "../modals";
 import type EpistemePlugin from "../../main";
 import type { ReviewViewState, UndoEntry } from "./review.types";
 
@@ -982,7 +982,12 @@ export class ReviewView extends ItemView {
         const card = this.stateManager.getCurrentCard();
         if (!card) return;
 
-        const modal = new EditFlashcardModal(this.app, { card });
+        const modal = new FlashcardEditorModal(this.app, {
+            mode: "edit",
+            card,
+            currentFilePath: card.filePath,
+            deck: card.deck,
+        });
         const result = await modal.openAndWait();
 
         if (result.cancelled) return;
