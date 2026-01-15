@@ -317,7 +317,10 @@ export default class EpistemePlugin extends Plugin {
 		const modal = new MissingFlashcardsModal(
 			this.app,
 			this.flashcardManager,
-			{ flashcardsFolder: this.settings.flashcardsFolder }
+			{
+				flashcardsFolder: this.settings.flashcardsFolder,
+				excludedFolders: this.settings.excludedFolders,
+			}
 		);
 
 		const result = await modal.openAndWait();

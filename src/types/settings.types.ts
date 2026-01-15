@@ -89,6 +89,10 @@ export interface EpistemeSettings {
     // ===== Zettelkasten Settings =====
     /** Folder na notatki zettelkasten tworzone z fiszek */
     zettelFolder: string;
+
+    // ===== Folder Exclusions =====
+    /** Foldery wykluczone z wyszukiwania notatek bez fiszek */
+    excludedFolders: string[];
 }
 
 /**
