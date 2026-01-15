@@ -43,6 +43,7 @@ const TARGET_TAGS = [
 
 export interface MissingFlashcardsModalOptions {
 	flashcardsFolder: string;
+	excludedFolders: string[];
 }
 
 /**
@@ -155,11 +156,23 @@ export class MissingFlashcardsModal extends BaseModal {
 			this.options.flashcardsFolder
 		);
 
-		// Filter out flashcard files
+		// Filter out flashcard files and excluded folders
 		const sourceFiles = allFiles.filter((file) => {
+			// Exclude flashcard folder
 			if (file.path.startsWith(flashcardFolderNormalized + "/")) {
 				return false;
 			}
+			// Exclude configured folders
+			for (const excludedFolder of this.options.excludedFolders) {
+				const normalizedExcluded = normalizePath(excludedFolder);
+				if (
+					file.path.startsWith(normalizedExcluded + "/") ||
+					file.path === normalizedExcluded
+				) {
+					return false;
+				}
+			}
+			// Exclude flashcard files by name
 			if (isFlashcardFileByName(file.name)) {
 				return false;
 			}
