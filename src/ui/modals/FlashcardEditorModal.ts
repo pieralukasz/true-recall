@@ -25,6 +25,10 @@ export interface FlashcardEditorModalOptions {
 	sourceNoteName?: string;
 	/** Current deck name */
 	deck: string;
+	/** Pre-fill question (for copying cards) */
+	prefillQuestion?: string;
+	/** Pre-fill answer (for copying cards) */
+	prefillAnswer?: string;
 }
 
 /**
@@ -98,10 +102,20 @@ export class FlashcardEditorModal extends BaseModal {
 		const editorPane = splitPane.createDiv({ cls: "episteme-editor-pane" });
 
 		// Question field
-		this.renderField(editorPane, "Question", card?.question || "", "question");
+		this.renderField(
+			editorPane,
+			"Question",
+			card?.question || this.options.prefillQuestion || "",
+			"question"
+		);
 
 		// Answer field
-		this.renderField(editorPane, "Answer", card?.answer || "", "answer");
+		this.renderField(
+			editorPane,
+			"Answer",
+			card?.answer || this.options.prefillAnswer || "",
+			"answer"
+		);
 
 		// Smart toolbar
 		this.renderSmartToolbar(editorPane);

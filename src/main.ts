@@ -28,6 +28,7 @@ import {
 import {
 	CustomSessionModal,
 	MissingFlashcardsModal,
+	ReadyToHarvestModal,
 	CommandDashboardModal,
 } from "./ui/modals";
 import { registerCommands } from "./plugin/PluginCommands";
@@ -334,6 +335,23 @@ export default class EpistemePlugin extends Plugin {
 			// Activate panel to allow flashcard generation
 			await this.activateView();
 		}
+	}
+
+	/**
+	 * Show modal with notes ready to harvest
+	 * (all flashcards reviewed, no State.New cards)
+	 */
+	async showReadyToHarvest(): Promise<void> {
+		const modal = new ReadyToHarvestModal(
+			this.app,
+			this.flashcardManager,
+			this.flashcardManager.getFrontmatterService(),
+			{
+				flashcardsFolder: this.settings.flashcardsFolder,
+				excludedFolders: this.settings.excludedFolders,
+			}
+		);
+		modal.open();
 	}
 
 	/**
