@@ -207,6 +207,7 @@ export class AddFlashcardModal extends BaseModal {
 			});
 			btnEl.addEventListener("click", (e) => {
 				e.preventDefault();
+				e.stopPropagation();
 				btn.action();
 				editEl.focus();
 				this.validateForm();
@@ -218,6 +219,8 @@ export class AddFlashcardModal extends BaseModal {
 	 * Wrap selected text with before/after strings
 	 */
 	private wrapSelection(editEl: HTMLElement, before: string, after: string): void {
+		editEl.focus(); // Ensure the editable element has focus
+
 		const sel = window.getSelection();
 		if (!sel || sel.rangeCount === 0) return;
 
@@ -225,11 +228,26 @@ export class AddFlashcardModal extends BaseModal {
 		const selectedText = range.toString();
 
 		if (selectedText) {
+			// Wrap selected text
+			const textNode = document.createTextNode(before + selectedText + after);
 			range.deleteContents();
-			range.insertNode(document.createTextNode(before + selectedText + after));
+			range.insertNode(textNode);
+
+			// Move cursor after the inserted text
+			range.setStartAfter(textNode);
+			range.collapse(true);
+			sel.removeAllRanges();
+			sel.addRange(range);
 		} else {
-			// No selection - just insert wrapper
-			range.insertNode(document.createTextNode(before + after));
+			// No selection - insert wrapper at cursor and position cursor inside
+			const textNode = document.createTextNode(before + after);
+			range.insertNode(textNode);
+
+			// Position cursor between the wrappers
+			range.setStart(textNode, before.length);
+			range.setEnd(textNode, before.length);
+			sel.removeAllRanges();
+			sel.addRange(range);
 		}
 	}
 
@@ -237,13 +255,21 @@ export class AddFlashcardModal extends BaseModal {
 	 * Insert text at cursor position
 	 */
 	private insertAtCursor(editEl: HTMLElement, text: string): void {
+		editEl.focus();
+
 		const sel = window.getSelection();
 		if (!sel || sel.rangeCount === 0) return;
 
 		const range = sel.getRangeAt(0);
 		range.deleteContents();
-		range.insertNode(document.createTextNode(text));
-		range.collapse(false);
+		const textNode = document.createTextNode(text);
+		range.insertNode(textNode);
+
+		// Move cursor after inserted text
+		range.setStartAfter(textNode);
+		range.collapse(true);
+		sel.removeAllRanges();
+		sel.addRange(range);
 	}
 
 	/**
