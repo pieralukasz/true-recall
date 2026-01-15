@@ -24,6 +24,11 @@ export {
     type NoteWithMissingFlashcards,
     type MissingFlashcardsModalOptions,
 } from "./MissingFlashcardsModal";
+export {
+    ReadyToHarvestModal,
+    type NoteReadyToHarvest,
+    type ReadyToHarvestModalOptions,
+} from "./ReadyToHarvestModal";
 export { CommandDashboardModal } from "./CommandDashboardModal";
 export {
     AddFlashcardModal,

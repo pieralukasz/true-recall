@@ -10,7 +10,7 @@ import { FSRSService, ReviewService, FlashcardManager, SessionPersistenceService
 import { ReviewStateManager } from "../../state";
 import { extractFSRSSettings, type FSRSFlashcardItem, type SchedulingPreview } from "../../types";
 import type { CardRemovedEvent, CardUpdatedEvent, BulkChangeEvent } from "../../types/events.types";
-import { MoveCardModal, AddFlashcardModal, FlashcardEditorModal } from "../modals";
+import { MoveCardModal, FlashcardEditorModal } from "../modals";
 import type EpistemePlugin from "../../main";
 import type { ReviewViewState, UndoEntry } from "./review.types";
 
@@ -1540,7 +1540,8 @@ Source: [[${sourceNote}]]
         if (!card) return;
 
         // Open modal to enter question/answer
-        const modal = new AddFlashcardModal(this.app, {
+        const modal = new FlashcardEditorModal(this.app, {
+            mode: "add",
             currentFilePath: card.filePath,
             sourceNoteName: card.sourceNoteName,
             deck: card.deck,
@@ -1578,7 +1579,8 @@ Source: [[${sourceNote}]]
         if (!card) return;
 
         // Open modal with pre-filled content
-        const modal = new AddFlashcardModal(this.app, {
+        const modal = new FlashcardEditorModal(this.app, {
+            mode: "add",
             currentFilePath: card.filePath,
             sourceNoteName: card.sourceNoteName,
             deck: card.deck,
