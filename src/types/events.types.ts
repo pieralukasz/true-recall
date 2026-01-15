@@ -15,7 +15,8 @@ export type FlashcardEventType =
 	| "card:removed"
 	| "card:reviewed"
 	| "cards:bulk-change"
-	| "store:synced";
+	| "store:synced"
+	| "custom-session:selected";
 
 /**
  * Base event interface
@@ -99,7 +100,8 @@ export type AnyFlashcardEvent =
 	| CardRemovedEvent
 	| CardReviewedEvent
 	| BulkChangeEvent
-	| StoreSyncedEvent;
+	| StoreSyncedEvent
+	| CustomSessionSelectedEvent;
 
 /**
  * Event listener callback type
@@ -107,3 +109,28 @@ export type AnyFlashcardEvent =
 export type FlashcardEventListener<
 	T extends FlashcardEvent = AnyFlashcardEvent,
 > = (event: T) => void;
+
+/**
+ * Result of custom session selection
+ * Re-used from CustomSessionModal
+ */
+export interface CustomSessionResult {
+	cancelled: boolean;
+	sessionType: "current-note" | "created-today" | "select-notes" | "state-filter" | "default" | null;
+	sourceNoteFilter?: string;
+	sourceNoteFilters?: string[];
+	filePathFilter?: string;
+	createdTodayOnly?: boolean;
+	ignoreDailyLimits: boolean;
+	useDefaultDeck?: boolean;
+	bypassScheduling?: boolean;
+	stateFilter?: "due" | "learning" | "new" | "buried";
+}
+
+/**
+ * Emitted when user makes a selection in custom session view
+ */
+export interface CustomSessionSelectedEvent extends FlashcardEvent {
+	type: "custom-session:selected";
+	result: CustomSessionResult;
+}

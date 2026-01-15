@@ -9,3 +9,5 @@ export {
     throttle,
     type CleanupFn,
 } from "./event.utils";
+
+export { CustomSessionResultFactory } from "./custom-session-result-factory";
