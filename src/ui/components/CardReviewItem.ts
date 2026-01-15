@@ -33,6 +33,7 @@ export interface CardReviewItemProps {
 	onMove?: (card: CardData) => void; // Move flashcard
 	onUnbury?: (card: CardData) => void; // Unbury card
 	onEditSave?: (card: CardData, field: "question" | "answer", newContent: string) => Promise<void>; // In-place edit save
+	onEditButton?: (card: CardData) => void; // Edit button opens modal
 }
 
 /**
@@ -255,7 +256,7 @@ export class CardReviewItem extends BaseComponent {
 	}
 
 	private renderButtons(): void {
-		const { card, onDelete, onOpen, onCopy, onMove, onUnbury } = this.props;
+		const { card, onDelete, onOpen, onCopy, onMove, onUnbury, onEditButton } = this.props;
 		if (!this.element) return;
 		const buttonsEl = this.element.createDiv({ cls: "episteme-review-card-buttons" });
 
@@ -270,6 +271,19 @@ export class CardReviewItem extends BaseComponent {
 			this.events.addEventListener(unburyBtn, "click", (e) => {
 				e.stopPropagation();
 				onUnbury(card);
+			});
+		}
+
+		// Edit button
+		if (onEditButton) {
+			const editBtn = buttonsEl.createEl("button", {
+				cls: "episteme-review-edit-btn",
+				attr: { "aria-label": "Edit flashcard", "title": "Edit" },
+			});
+			editBtn.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>`;
+			this.events.addEventListener(editBtn, "click", (e) => {
+				e.stopPropagation();
+				onEditButton(card);
 			});
 		}
 

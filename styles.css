@@ -1936,6 +1936,88 @@
 }
 
 /* ========================================
+   Custom Session View (Panel Mode)
+   ======================================== */
+
+/* Main view container - constrain width */
+.episteme-custom-session-view {
+	max-width: 700px;
+	margin: 0 auto;
+	padding: 16px;
+}
+
+/* Container flex styles */
+.episteme-custom-session-header-container,
+.episteme-custom-session-content-container,
+.episteme-custom-session-footer-container {
+	width: 100%;
+}
+
+/* Header section */
+.episteme-custom-session-header {
+	margin-bottom: 16px;
+}
+
+.episteme-custom-session-title-row {
+	display: flex;
+	align-items: center;
+	gap: 8px;
+}
+
+/* Title - same style as section h3 */
+.episteme-custom-session-title {
+	font-size: 14px;
+	font-weight: 500;
+	color: var(--text-muted);
+}
+
+/* Selection count badge */
+.episteme-custom-session-count {
+	font-size: 13px;
+	color: var(--interactive-accent);
+	font-weight: 500;
+}
+
+/* Content section */
+.episteme-custom-session-content {
+	display: flex;
+	flex-direction: column;
+	gap: 16px;
+}
+
+/* Section headers in panel view */
+.episteme-custom-session-content h3 {
+	margin: 8px 0 12px 0;
+	font-size: 14px;
+	font-weight: 500;
+	color: var(--text-muted);
+}
+
+/* Footer section */
+.episteme-custom-session-footer {
+	margin-top: 16px;
+	padding-top: 16px;
+	border-top: 1px solid var(--background-modifier-border);
+}
+
+.episteme-custom-session-buttons {
+	display: flex;
+	gap: 8px;
+}
+
+/* Mobile adjustments for custom session panel */
+@media screen and (max-width: 600px) {
+	.episteme-custom-session-view {
+		padding: 12px;
+		max-width: 100%;
+	}
+
+	.episteme-quick-actions {
+		grid-template-columns: 1fr;
+	}
+}
+
+/* ========================================
    Move Card Modal
    ======================================== */
 
@@ -2570,6 +2652,34 @@
 }
 
 .episteme-review-move-btn svg {
+	width: 16px;
+	height: 16px;
+}
+
+/* Edit button */
+.episteme-review-edit-btn {
+	width: 28px;
+	height: 28px;
+	padding: 6px;
+	background: transparent;
+	color: var(--text-muted);
+	border: none;
+	border-radius: 4px;
+	cursor: pointer;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	transition: all 0.15s ease;
+	flex-shrink: 0;
+	align-self: center;
+}
+
+.episteme-review-edit-btn:hover {
+	background: var(--background-modifier-hover);
+	color: var(--interactive-accent);
+}
+
+.episteme-review-edit-btn svg {
 	width: 16px;
 	height: 16px;
 }
@@ -3676,10 +3786,17 @@
 	}
 }
 
-/* On mobile, fixed buttons don't need extra safe area padding (Obsidian handles it) */
+/* On mobile, fixed buttons need space above Obsidian's navigation bar */
 @media screen and (max-width: 600px) {
 	.episteme-review-buttons:not([style*="display: none"]) {
-		padding-bottom: 8px !important; /* Override safe area, just minimal padding */
+		padding-bottom: 96px !important; /* Account for Obsidian 1.11 navigation bar */
+	}
+}
+
+/* When editing, keyboard covers navigation so less padding needed */
+@media screen and (max-width: 600px) {
+	.episteme-review-card-container--editing ~ .episteme-review-buttons {
+		padding-bottom: 8px !important;
 	}
 }
 
@@ -3726,6 +3843,26 @@
 
 	.stats-range-btn {
 		padding: 10px 16px;
+	}
+}
+
+/* ============================================
+   Mobile: Panel view footer navigation spacing
+   ============================================ */
+
+@media screen and (max-width: 600px) {
+	.episteme-footer-container {
+		padding-bottom: 96px; /* Space for Obsidian navigation bar */
+	}
+}
+
+/* ============================================
+   Mobile: Custom Session view navigation spacing
+   ============================================ */
+
+@media screen and (max-width: 600px) {
+	.episteme-custom-session-view {
+		padding-bottom: 96px; /* Space for Obsidian navigation bar */
 	}
 }
 

@@ -213,10 +213,17 @@
 	}
 }
 
-/* On mobile, fixed buttons don't need extra safe area padding (Obsidian handles it) */
+/* On mobile, fixed buttons need space above Obsidian's navigation bar */
 @media screen and (max-width: 600px) {
 	.episteme-review-buttons:not([style*="display: none"]) {
-		padding-bottom: 8px !important; /* Override safe area, just minimal padding */
+		padding-bottom: 96px !important; /* Account for Obsidian 1.11 navigation bar */
+	}
+}
+
+/* When editing, keyboard covers navigation so less padding needed */
+@media screen and (max-width: 600px) {
+	.episteme-review-card-container--editing ~ .episteme-review-buttons {
+		padding-bottom: 8px !important;
 	}
 }
 
@@ -263,5 +270,25 @@
 
 	.stats-range-btn {
 		padding: 10px 16px;
+	}
+}
+
+/* ============================================
+   Mobile: Panel view footer navigation spacing
+   ============================================ */
+
+@media screen and (max-width: 600px) {
+	.episteme-footer-container {
+		padding-bottom: 96px; /* Space for Obsidian navigation bar */
+	}
+}
+
+/* ============================================
+   Mobile: Custom Session view navigation spacing
+   ============================================ */
+
+@media screen and (max-width: 600px) {
+	.episteme-custom-session-view {
+		padding-bottom: 96px; /* Space for Obsidian navigation bar */
 	}
 }
