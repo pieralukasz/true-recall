@@ -16,6 +16,7 @@ export interface PanelContentHandlers {
     component: Component;
     markdownRenderer: typeof MarkdownRenderer;
     onEditCard?: (card: FlashcardItem) => void;
+    onEditButton?: (card: FlashcardItem) => void;
     onCopyCard?: (card: FlashcardItem) => void;
     onDeleteCard?: (card: FlashcardItem) => void;
     onMoveCard?: (card: FlashcardItem) => void;
@@ -249,6 +250,7 @@ export class PanelContent extends BaseComponent {
                     onCopy: handlers.onCopyCard,
                     onMove: handlers.onMoveCard,
                     onEditSave: handlers.onEditSave,
+                    onEditButton: handlers.onEditButton,
                 });
                 this.childComponents.push(cardReviewItem);
 
