@@ -189,6 +189,7 @@ MANDATORY RULES:
 9. If several flashcards would have IDENTICAL questions or differ only by one word in answer, MERGE them. List elements on separate lines with dots.
 10. BOLD the keyword in every question using **bold**.
 11. If the text contains NO new information for flashcards, return ONLY: NO_NEW_CARDS
+12. Use english language for questions and answers.
 
 FORMATTING:
 - Backlinks: Wrap key scientific terms and main subjects in **[[backlinks]]** (bold backlinks).

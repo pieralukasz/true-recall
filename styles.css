@@ -2720,6 +2720,333 @@
 	background: var(--background-modifier-hover);
 }
 
+/* ========================================
+   Flashcard Editor Modal (New)
+   ======================================== */
+
+/* Main container */
+.episteme-flashcard-editor-modal .episteme-modal-body {
+	padding: 16px;
+}
+
+/* Split pane layout */
+.episteme-editor-split-pane {
+	display: grid;
+	grid-template-columns: 1fr 1fr;
+	gap: 16px;
+	min-height: 400px;
+	margin-bottom: 16px;
+}
+
+/* Editor pane (left side) */
+.episteme-editor-pane {
+	display: flex;
+	flex-direction: column;
+	gap: 16px;
+}
+
+/* Field group */
+.episteme-field-group {
+	display: flex;
+	flex-direction: column;
+	gap: 6px;
+}
+
+/* Editor textarea */
+.episteme-editor-textarea {
+	width: 100%;
+	padding: 10px 12px;
+	border: 1px solid var(--background-modifier-border);
+	border-radius: 6px;
+	background: var(--background-primary);
+	color: var(--text-normal);
+	font-size: 14px;
+	font-family: var(--font-monospace);
+	line-height: 1.5;
+	resize: vertical;
+	min-height: 80px;
+	transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.episteme-editor-textarea:focus {
+	outline: none;
+	border-color: var(--interactive-accent);
+	box-shadow: 0 0 0 3px rgba(var(--interactive-accent-rgb), 0.15);
+}
+
+.episteme-editor-textarea::placeholder {
+	color: var(--text-muted);
+}
+
+/* Character count */
+.episteme-char-count {
+	font-size: 11px;
+	color: var(--text-faint);
+	text-align: right;
+	align-self: flex-end;
+}
+
+.episteme-char-count-warning {
+	color: var(--color-orange, #fb923c);
+	font-weight: 500;
+}
+
+/* Smart toolbar */
+.episteme-smart-toolbar {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 6px;
+	padding: 8px 0;
+	border-top: 1px solid var(--background-modifier-border);
+}
+
+.episteme-toolbar-btn {
+	display: flex;
+	align-items: center;
+	gap: 4px;
+	padding: 6px 10px;
+	border: 1px solid var(--background-modifier-border);
+	border-radius: 4px;
+	background: var(--background-primary);
+	color: var(--text-normal);
+	font-size: 13px;
+	font-weight: 500;
+	cursor: pointer;
+	transition: all 0.15s ease;
+}
+
+.episteme-toolbar-btn:hover:not(:disabled) {
+	background: var(--background-modifier-hover);
+	border-color: var(--interactive-accent);
+}
+
+.episteme-toolbar-btn:active:not(:disabled) {
+	transform: translateY(1px);
+}
+
+.episteme-help-btn {
+	margin-left: auto;
+	font-weight: 600;
+}
+
+/* Keyboard hint badge */
+.episteme-keyboard-hint {
+	font-size: 9px;
+	padding: 2px 4px;
+	background: var(--background-modifier-border);
+	border-radius: 3px;
+	color: var(--text-muted);
+	font-family: var(--font-monospace);
+}
+
+/* Editor hint */
+.episteme-editor-hint {
+	font-size: 12px;
+	color: var(--text-muted);
+	text-align: center;
+	padding: 8px;
+	background: var(--background-secondary);
+	border-radius: 6px;
+}
+
+/* Preview pane (right side) */
+.episteme-editor-preview {
+	display: flex;
+	flex-direction: column;
+	gap: 16px;
+	background: var(--background-secondary);
+	border-radius: 8px;
+	padding: 16px;
+	overflow-y: auto;
+	max-height: 500px;
+}
+
+/* Preview field (legacy - kept for backwards compat) */
+.episteme-preview-field {
+	display: flex;
+	flex-direction: column;
+	gap: 6px;
+}
+
+/* Preview label (legacy - kept for backwards compat) */
+.episteme-preview-label {
+	font-size: 11px;
+	font-weight: 600;
+	color: var(--text-muted);
+	text-transform: uppercase;
+	letter-spacing: 0.5px;
+}
+
+/* Preview content (legacy - kept for backwards compat) */
+.episteme-preview-content {
+	padding: 10px;
+	background: var(--background-primary);
+	border-radius: 6px;
+	border-left: 3px solid var(--interactive-accent);
+	font-size: 14px;
+	line-height: 1.5;
+}
+
+/* Preview question (legacy - kept for backwards compat) */
+.episteme-preview-question {
+	font-weight: 500;
+	color: var(--text-normal);
+}
+
+/* Preview answer (legacy - kept for backwards compat) */
+.episteme-preview-answer {
+	color: var(--text-normal);
+	filter: blur(4px);
+	transition: filter 0.2s ease;
+	cursor: pointer;
+}
+
+.episteme-preview-answer:hover {
+	filter: none;
+}
+
+/* Preview empty state */
+.episteme-preview-empty {
+	color: var(--text-faint);
+	font-style: italic;
+}
+
+/* ========================================
+   Flashcard Editor Preview - Using CardReviewItem classes
+   ======================================== */
+
+/* Answer blur effect for editor preview */
+.episteme-review-answer-blur {
+	filter: blur(4px);
+	transition: filter 0.2s ease;
+	cursor: pointer;
+}
+
+.episteme-review-answer-blur:hover {
+	filter: none;
+}
+
+/* Answer wrapper for additional styling if needed */
+.episteme-review-answer-wrapper {
+	margin-top: 12px;
+}
+
+/* Keyboard shortcuts modal */
+.episteme-shortcuts-list {
+	display: flex;
+	flex-direction: column;
+	gap: 8px;
+}
+
+.episteme-shortcut-item {
+	display: flex;
+	justify-content: space-between;
+	align-items: center;
+	padding: 8px 12px;
+	background: var(--background-secondary);
+	border-radius: 6px;
+}
+
+.episteme-shortcut-key {
+	padding: 4px 8px;
+	background: var(--background-modifier-border);
+	border-radius: 4px;
+	font-family: var(--font-monospace);
+	font-size: 12px;
+	font-weight: 500;
+	color: var(--text-normal);
+}
+
+.episteme-shortcut-action {
+	font-size: 13px;
+	color: var(--text-normal);
+}
+
+/* Mobile responsive */
+@media screen and (max-width: 768px) {
+	.episteme-flashcard-editor-modal {
+		min-width: auto;
+		width: 100%;
+	}
+
+	.episteme-editor-split-pane {
+		grid-template-columns: 1fr;
+		gap: 16px;
+	}
+
+	.episteme-editor-preview {
+		display: none;
+	}
+
+	.episteme-editor-preview.visible {
+		display: flex;
+	}
+
+	.episteme-smart-toolbar {
+		gap: 4px;
+	}
+
+	.episteme-toolbar-btn {
+		padding: 5px 8px;
+		font-size: 12px;
+	}
+
+	.episteme-keyboard-hint {
+		display: none;
+	}
+
+	.episteme-modal-buttons {
+		flex-direction: column-reverse;
+	}
+
+	.episteme-modal-buttons .episteme-btn {
+		width: 100%;
+	}
+}
+
+/* ========================================
+   Edit Toolbar (Legacy - keep for backwards compat)
+   ======================================== */
+
+.episteme-edit-toolbar {
+	display: flex;
+	gap: 4px;
+	flex-wrap: wrap;
+	margin-top: 8px;
+	padding: 8px;
+	background: var(--background-secondary);
+	border-radius: 6px;
+}
+
+.episteme-edit-toolbar-btn {
+	padding: 6px 10px;
+	border: 1px solid var(--background-modifier-border);
+	border-radius: 4px;
+	background: var(--background-primary);
+	color: var(--text-normal);
+	font-size: 12px;
+	cursor: pointer;
+	transition: all 0.15s ease;
+}
+
+.episteme-edit-toolbar-btn:hover {
+	background: var(--background-modifier-hover);
+	border-color: var(--interactive-accent);
+}
+
+.episteme-review-editable {
+	padding: 8px;
+	border: 1px solid var(--interactive-accent);
+	border-radius: 4px;
+	background: var(--background-primary);
+	min-height: 60px;
+	outline: none;
+}
+
+.episteme-review-editable:focus {
+	box-shadow: 0 0 0 2px rgba(var(--interactive-accent-rgb), 0.2);
+}
+
 
 /* =========================================
    Statistics View Styles
