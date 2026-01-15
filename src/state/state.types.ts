@@ -62,3 +62,33 @@ export type PartialPanelState = Partial<PanelState>;
  * State selector type for subscribing to specific state changes
  */
 export type StateSelector<T> = (state: PanelState) => T;
+
+// ===== Custom Session State Types =====
+
+/**
+ * Complete state of the custom session view
+ */
+export interface CustomSessionState {
+    /** Current note name */
+    currentNoteName: string | null;
+    /** All flashcards */
+    allCards: import("../types").FSRSFlashcardItem[];
+    /** Selected note names */
+    selectedNotes: Set<string>;
+    /** Search query for filtering notes */
+    searchQuery: string;
+    /** Current timestamp for stats calculation */
+    now: Date;
+}
+
+/**
+ * Listener callback type for custom session state changes
+ */
+export type CustomSessionStateListener = (state: CustomSessionState, prevState: CustomSessionState) => void;
+
+/**
+ * Partial state update type for custom session
+ */
+export type PartialCustomSessionState = Partial<Omit<CustomSessionState, "selectedNotes">> & {
+    selectedNotes?: Set<string> | string[];
+};

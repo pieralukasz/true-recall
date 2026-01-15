@@ -3,6 +3,7 @@ import {
 	VIEW_TYPE_FLASHCARD_PANEL,
 	VIEW_TYPE_REVIEW,
 	VIEW_TYPE_STATS,
+	VIEW_TYPE_CUSTOM_SESSION,
 	FLASHCARD_CONFIG,
 } from "./constants";
 import {
@@ -14,12 +15,14 @@ import {
 	SqliteStoreService,
 	DayBoundaryService,
 	resetEventBus,
+	getEventBus,
 } from "./services";
 import type { CardStore } from "./types";
 import { extractFSRSSettings } from "./types";
 import { FlashcardPanelView } from "./ui/panel/FlashcardPanelView";
 import { ReviewView } from "./ui/review/ReviewView";
 import { StatsView } from "./ui/stats/StatsView";
+import { CustomSessionView } from "./ui/custom-session";
 import {
 	EpistemeSettingTab,
 	type EpistemeSettings,
@@ -87,6 +90,12 @@ export default class EpistemePlugin extends Plugin {
 
 		// Register the statistics view
 		this.registerView(VIEW_TYPE_STATS, (leaf) => new StatsView(leaf, this));
+
+		// Register the custom session view
+		this.registerView(
+			VIEW_TYPE_CUSTOM_SESSION,
+			(leaf) => new CustomSessionView(leaf, this)
+		);
 
 		// Add ribbon icon to start review
 		this.addRibbonIcon("brain", "Episteme - Study", () => {
@@ -189,6 +198,51 @@ export default class EpistemePlugin extends Plugin {
 		}
 	}
 
+	/**
+	 * Activate the custom session view
+	 */
+	async activateCustomSessionView(
+		currentNoteName: string | null,
+		allCards: import("./types").FSRSFlashcardItem[]
+	): Promise<void> {
+		const { workspace } = this.app;
+
+		// Check if view already exists
+		let leaf = workspace.getLeavesOfType(VIEW_TYPE_CUSTOM_SESSION)[0];
+
+		if (!leaf) {
+			if (Platform.isMobile) {
+				// On mobile, open in main area
+				leaf = workspace.getLeaf(true);
+				await leaf.setViewState({
+					type: VIEW_TYPE_CUSTOM_SESSION,
+					active: true,
+				});
+			} else {
+				// Desktop: use right sidebar
+				const rightLeaf = workspace.getRightLeaf(false);
+				if (rightLeaf) {
+					await rightLeaf.setViewState({
+						type: VIEW_TYPE_CUSTOM_SESSION,
+						active: true,
+					});
+					leaf = rightLeaf;
+				}
+			}
+		}
+
+		// Initialize view with data
+		if (leaf) {
+			const view = leaf.view as CustomSessionView;
+			view.initialize({
+				currentNoteName,
+				allCards,
+				dayBoundaryService: this.dayBoundaryService,
+			});
+			void workspace.revealLeaf(leaf);
+		}
+	}
+
 	// Start a review session (opens modal with options)
 	async startReviewSession(): Promise<void> {
 		const { workspace } = this.app;
@@ -212,13 +266,40 @@ export default class EpistemePlugin extends Plugin {
 				? currentFile.basename
 				: null;
 
-		const modal = new CustomSessionModal(this.app, {
-			currentNoteName,
-			allCards,
-			dayBoundaryService: this.dayBoundaryService,
-		});
+		// Check which interface to use based on settings
+		if (this.settings.customSessionInterface === "panel") {
+			// Panel mode: Subscribe to event, open panel, wait for result
+			return new Promise<void>((resolve) => {
+				const eventBus = getEventBus();
+				const unsubscribe = eventBus.on("custom-session:selected", (event: any) => {
+					unsubscribe();
+					void this.handleCustomSessionResult(event.result);
+					resolve();
+				});
 
-		const result = await modal.openAndWait();
+				void this.activateCustomSessionView(currentNoteName, allCards);
+			});
+		} else {
+			// Modal mode: Use existing modal code
+			const modal = new CustomSessionModal(this.app, {
+				currentNoteName,
+				allCards,
+				dayBoundaryService: this.dayBoundaryService,
+			});
+
+			const result = await modal.openAndWait();
+			if (result.cancelled) return;
+
+			await this.handleCustomSessionResult(result);
+		}
+	}
+
+	/**
+	 * Handle custom session result (shared by modal and panel)
+	 */
+	private async handleCustomSessionResult(
+		result: import("./types/events.types").CustomSessionResult
+	): Promise<void> {
 		if (result.cancelled) return;
 
 		// Handle "Default" option - open with Knowledge deck, no filters

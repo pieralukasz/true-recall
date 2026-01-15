@@ -28,6 +28,7 @@ export type {
     NewCardOrder,
     ReviewOrder,
     NewReviewMix,
+    CustomSessionInterface,
 } from "./settings.types";
 export { extractFSRSSettings } from "./settings.types";
 

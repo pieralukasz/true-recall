@@ -6,7 +6,7 @@ import { App, Notice, PluginSettingTab, Setting } from "obsidian";
 import type EpistemePlugin from "../../main";
 import { DEFAULT_SETTINGS, AI_MODELS, FSRS_CONFIG } from "../../constants";
 import type { AIModelKey } from "../../constants";
-import type { EpistemeSettings, ReviewViewMode, NewCardOrder, ReviewOrder, NewReviewMix } from "../../types";
+import type { EpistemeSettings, ReviewViewMode, NewCardOrder, ReviewOrder, NewReviewMix, CustomSessionInterface } from "../../types";
 
 // Re-export for convenience
 export { DEFAULT_SETTINGS };
@@ -232,6 +232,20 @@ export class EpistemeSettingTab extends PluginSettingTab {
                 dropdown.setValue(this.plugin.settings.reviewMode);
                 dropdown.onChange(async (value) => {
                     this.plugin.settings.reviewMode = value as ReviewViewMode;
+                    await this.plugin.saveSettings();
+                });
+            });
+
+        // Custom Session Interface
+        new Setting(containerEl)
+            .setName("Custom session interface")
+            .setDesc("How to display the custom session selection interface")
+            .addDropdown(dropdown => {
+                dropdown.addOption("modal", "Modal (popup)");
+                dropdown.addOption("panel", "Side panel");
+                dropdown.setValue(this.plugin.settings.customSessionInterface);
+                dropdown.onChange(async (value) => {
+                    this.plugin.settings.customSessionInterface = value as CustomSessionInterface;
                     await this.plugin.saveSettings();
                 });
             });

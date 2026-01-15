@@ -21,6 +21,11 @@ export type ReviewOrder = "due-date" | "random" | "due-date-random";
 export type NewReviewMix = "show-after-reviews" | "mix-with-reviews" | "show-before-reviews";
 
 /**
+ * Interface mode for custom session selection
+ */
+export type CustomSessionInterface = "modal" | "panel";
+
+/**
  * Ustawienia pluginu Episteme
  */
 export interface EpistemeSettings {
@@ -63,6 +68,8 @@ export interface EpistemeSettings {
     // ===== UI Settings =====
     /** Tryb wyświetlania Review View */
     reviewMode: ReviewViewMode;
+    /** Interfejs wyboru sesji niestandardowej */
+    customSessionInterface: CustomSessionInterface;
     /** Pokaż przewidywany czas przy przyciskach odpowiedzi */
     showNextReviewTime: boolean;
     /** Automatycznie przejdź do następnej karty po odpowiedzi */
