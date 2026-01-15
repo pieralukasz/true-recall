@@ -1,7 +1,6 @@
 /**
  * Missing Flashcards Modal
- * Displays notes with #mind/zettel, #mind/application, or #mind/protocol
- * tags that don't have flashcards yet
+ * Displays notes with #mind/raw or #mind/zettel tags that don't have flashcards yet
  */
 import { App, TFile, normalizePath } from "obsidian";
 import { FLASHCARD_CONFIG } from "../../constants";
@@ -18,7 +17,10 @@ function isFlashcardFileByName(fileName: string): boolean {
 		return true;
 	}
 	// New: 8-char hex UID pattern (fileName includes .md extension)
-	const uidPattern = new RegExp(`^[a-f0-9]{${FLASHCARD_CONFIG.uidLength}}\\.md$`, "i");
+	const uidPattern = new RegExp(
+		`^[a-f0-9]{${FLASHCARD_CONFIG.uidLength}}\\.md$`,
+		"i"
+	);
 	return uidPattern.test(fileName);
 }
 
@@ -29,15 +31,14 @@ export interface MissingFlashcardsResult {
 
 export interface NoteWithMissingFlashcards {
 	file: TFile;
-	tagType: "zettel" | "application" | "protocol";
+	tagType: "raw" | "zettel";
 	tagDisplay: string;
 }
 
 // Target tags that require flashcards
 const TARGET_TAGS = [
+	{ tag: "mind/raw", type: "raw" as const, display: "Raw" },
 	{ tag: "mind/zettel", type: "zettel" as const, display: "Zettel" },
-	{ tag: "mind/application", type: "application" as const, display: "Application" },
-	{ tag: "mind/protocol", type: "protocol" as const, display: "Protocol" },
 ];
 
 export interface MissingFlashcardsModalOptions {
@@ -50,7 +51,8 @@ export interface MissingFlashcardsModalOptions {
 export class MissingFlashcardsModal extends BaseModal {
 	private flashcardManager: FlashcardManager;
 	private options: MissingFlashcardsModalOptions;
-	private resolvePromise: ((result: MissingFlashcardsResult) => void) | null = null;
+	private resolvePromise: ((result: MissingFlashcardsResult) => void) | null =
+		null;
 	private hasSelected = false;
 
 	// Search and filter state
@@ -97,7 +99,9 @@ export class MissingFlashcardsModal extends BaseModal {
 
 	protected renderBody(container: HTMLElement): void {
 		// Summary section (will be updated after scan)
-		this.summaryEl = container.createDiv({ cls: "episteme-missing-summary" });
+		this.summaryEl = container.createDiv({
+			cls: "episteme-missing-summary",
+		});
 		this.renderSummary();
 
 		// Tag filter buttons
@@ -107,7 +111,9 @@ export class MissingFlashcardsModal extends BaseModal {
 		this.renderSearchInput(container);
 
 		// Note list
-		this.noteListEl = container.createDiv({ cls: "episteme-note-list episteme-missing-note-list" });
+		this.noteListEl = container.createDiv({
+			cls: "episteme-note-list episteme-missing-note-list",
+		});
 		this.renderNoteList();
 	}
 
@@ -138,12 +144,16 @@ export class MissingFlashcardsModal extends BaseModal {
 	/**
 	 * Scan vault for notes with target tags that lack flashcards
 	 */
-	private async scanForMissingFlashcards(): Promise<NoteWithMissingFlashcards[]> {
+	private async scanForMissingFlashcards(): Promise<
+		NoteWithMissingFlashcards[]
+	> {
 		const missing: NoteWithMissingFlashcards[] = [];
 		const allFiles = this.app.vault.getMarkdownFiles();
 
 		// Normalize flashcard folder path for comparison
-		const flashcardFolderNormalized = normalizePath(this.options.flashcardsFolder);
+		const flashcardFolderNormalized = normalizePath(
+			this.options.flashcardsFolder
+		);
 
 		// Filter out flashcard files
 		const sourceFiles = allFiles.filter((file) => {
@@ -162,7 +172,9 @@ export class MissingFlashcardsModal extends BaseModal {
 			if (!tagInfo) continue;
 
 			// Check if flashcards exist
-			const flashcardInfo = await this.flashcardManager.getFlashcardInfo(file);
+			const flashcardInfo = await this.flashcardManager.getFlashcardInfo(
+				file
+			);
 			if (!flashcardInfo.exists || flashcardInfo.cardCount === 0) {
 				missing.push({
 					file,
@@ -173,7 +185,7 @@ export class MissingFlashcardsModal extends BaseModal {
 		}
 
 		// Sort by tag type, then by name
-		const tagOrder = { zettel: 0, application: 1, protocol: 2 };
+		const tagOrder = { raw: 0, zettel: 1 };
 		return missing.sort((a, b) => {
 			const orderDiff = tagOrder[a.tagType] - tagOrder[b.tagType];
 			if (orderDiff !== 0) return orderDiff;
@@ -186,12 +198,11 @@ export class MissingFlashcardsModal extends BaseModal {
 	 */
 	private getTargetTagType(
 		file: TFile
-	): { tag: string; type: "zettel" | "application" | "protocol"; display: string } | null {
+	): { tag: string; type: "raw" | "zettel"; display: string } | null {
 		const cache = this.app.metadataCache.getFileCache(file);
 		if (!cache) return null;
 
-		// Check frontmatter tags
-		const frontmatterTags = cache.frontmatter?.tags ?? [];
+		const frontmatterTags: unknown = cache.frontmatter?.tags ?? [];
 		const normalizedFm = Array.isArray(frontmatterTags)
 			? frontmatterTags
 			: [frontmatterTags];
@@ -238,7 +249,8 @@ export class MissingFlashcardsModal extends BaseModal {
 			cls: "episteme-missing-count",
 		});
 		this.summaryEl.createDiv({
-			text: count === 1 ? "note needs flashcards" : "notes need flashcards",
+			text:
+				count === 1 ? "note needs flashcards" : "notes need flashcards",
 			cls: "episteme-missing-label",
 		});
 	}
@@ -247,19 +259,22 @@ export class MissingFlashcardsModal extends BaseModal {
 	 * Render tag filter buttons
 	 */
 	private renderTagFilters(container: HTMLElement): void {
-		this.filterButtonsEl = container.createDiv({ cls: "episteme-move-filters" });
+		this.filterButtonsEl = container.createDiv({
+			cls: "episteme-move-filters",
+		});
 
 		const filters = [
 			{ label: "All", tag: null },
+			{ label: "Raw", tag: "raw" },
 			{ label: "Zettels", tag: "zettel" },
-			{ label: "Applications", tag: "application" },
-			{ label: "Protocols", tag: "protocol" },
 		];
 
 		for (const filter of filters) {
 			const btn = this.filterButtonsEl.createEl("button", {
 				text: filter.label,
-				cls: `episteme-filter-btn ${this.activeTagFilter === filter.tag ? "active" : ""}`,
+				cls: `episteme-filter-btn ${
+					this.activeTagFilter === filter.tag ? "active" : ""
+				}`,
 			});
 			btn.addEventListener("click", () => {
 				this.activeTagFilter = filter.tag;
@@ -275,8 +290,10 @@ export class MissingFlashcardsModal extends BaseModal {
 	private updateFilterButtons(): void {
 		if (!this.filterButtonsEl) return;
 
-		const buttons = this.filterButtonsEl.querySelectorAll(".episteme-filter-btn");
-		const filters = [null, "zettel", "application", "protocol"];
+		const buttons = this.filterButtonsEl.querySelectorAll(
+			".episteme-filter-btn"
+		);
+		const filters = [null, "raw", "zettel"];
 
 		buttons.forEach((btn, index) => {
 			if (filters[index] === this.activeTagFilter) {
@@ -291,7 +308,9 @@ export class MissingFlashcardsModal extends BaseModal {
 	 * Render search input
 	 */
 	private renderSearchInput(container: HTMLElement): void {
-		const searchContainer = container.createDiv({ cls: "episteme-search-container" });
+		const searchContainer = container.createDiv({
+			cls: "episteme-search-container",
+		});
 
 		const searchInput = searchContainer.createEl("input", {
 			type: "text",
@@ -300,7 +319,9 @@ export class MissingFlashcardsModal extends BaseModal {
 		});
 
 		searchInput.addEventListener("input", (e) => {
-			this.searchQuery = (e.target as HTMLInputElement).value.toLowerCase();
+			this.searchQuery = (
+				e.target as HTMLInputElement
+			).value.toLowerCase();
 			this.renderNoteList();
 		});
 
@@ -329,8 +350,8 @@ export class MissingFlashcardsModal extends BaseModal {
 			const emptyText = this.activeTagFilter
 				? `No notes missing flashcards with tag ${this.activeTagFilter}.`
 				: this.searchQuery
-					? "No notes found matching your search."
-					: "All notes have flashcards! Great job!";
+				? "No notes found matching your search."
+				: "All notes have flashcards! Great job!";
 			this.noteListEl.createEl("div", {
 				text: emptyText,
 				cls: "episteme-note-list-empty",
@@ -357,8 +378,13 @@ export class MissingFlashcardsModal extends BaseModal {
 	/**
 	 * Render a single note item
 	 */
-	private renderNoteItem(container: HTMLElement, note: NoteWithMissingFlashcards): void {
-		const noteEl = container.createDiv({ cls: "episteme-missing-note-item" });
+	private renderNoteItem(
+		container: HTMLElement,
+		note: NoteWithMissingFlashcards
+	): void {
+		const noteEl = container.createDiv({
+			cls: "episteme-missing-note-item",
+		});
 
 		// Tag badge
 		const badgeEl = noteEl.createSpan({
@@ -367,8 +393,13 @@ export class MissingFlashcardsModal extends BaseModal {
 		});
 
 		// Note info
-		const noteInfo = noteEl.createDiv({ cls: "episteme-missing-note-info" });
-		noteInfo.createDiv({ cls: "episteme-missing-note-name", text: note.file.basename });
+		const noteInfo = noteEl.createDiv({
+			cls: "episteme-missing-note-info",
+		});
+		noteInfo.createDiv({
+			cls: "episteme-missing-note-name",
+			text: note.file.basename,
+		});
 
 		// Folder path (if not in root)
 		const folderPath = note.file.parent?.path;
@@ -393,7 +424,9 @@ export class MissingFlashcardsModal extends BaseModal {
 
 		// Apply tag filter
 		if (this.activeTagFilter) {
-			notes = notes.filter((note) => note.tagType === this.activeTagFilter);
+			notes = notes.filter(
+				(note) => note.tagType === this.activeTagFilter
+			);
 		}
 
 		// Apply search filter
@@ -415,7 +448,10 @@ export class MissingFlashcardsModal extends BaseModal {
 	private selectNote(notePath: string): void {
 		this.hasSelected = true;
 		if (this.resolvePromise) {
-			this.resolvePromise({ cancelled: false, selectedNotePath: notePath });
+			this.resolvePromise({
+				cancelled: false,
+				selectedNotePath: notePath,
+			});
 			this.resolvePromise = null;
 		}
 		this.close();
