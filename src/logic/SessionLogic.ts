@@ -1,7 +1,7 @@
 /**
- * Custom Session Logic
- * Shared business logic for custom session selection
- * Used by both CustomSessionModal and CustomSessionView
+ * Session Logic
+ * Shared business logic for session selection
+ * Used by both SessionModal and SessionView
  */
 import { State } from "ts-fsrs";
 import type { FSRSFlashcardItem } from "../types";
@@ -22,10 +22,10 @@ export interface CardStats {
 }
 
 /**
- * Business logic for custom session selection
+ * Business logic for session selection
  * Handles stats calculation, filtering, and data processing
  */
-export class CustomSessionLogic {
+export class SessionLogic {
 	constructor(
 		private allCards: FSRSFlashcardItem[],
 		private dayBoundaryService: DayBoundaryService

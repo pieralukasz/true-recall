@@ -63,12 +63,12 @@ export type PartialPanelState = Partial<PanelState>;
  */
 export type StateSelector<T> = (state: PanelState) => T;
 
-// ===== Custom Session State Types =====
+// ===== Session State Types =====
 
 /**
- * Complete state of the custom session view
+ * Complete state of the session view
  */
-export interface CustomSessionState {
+export interface SessionState {
     /** Current note name */
     currentNoteName: string | null;
     /** All flashcards */
@@ -82,13 +82,13 @@ export interface CustomSessionState {
 }
 
 /**
- * Listener callback type for custom session state changes
+ * Listener callback type for session state changes
  */
-export type CustomSessionStateListener = (state: CustomSessionState, prevState: CustomSessionState) => void;
+export type SessionStateListener = (state: SessionState, prevState: SessionState) => void;
 
 /**
- * Partial state update type for custom session
+ * Partial state update type for session
  */
-export type PartialCustomSessionState = Partial<Omit<CustomSessionState, "selectedNotes">> & {
+export type PartialSessionState = Partial<Omit<SessionState, "selectedNotes">> & {
     selectedNotes?: Set<string> | string[];
 };

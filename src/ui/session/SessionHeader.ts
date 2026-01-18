@@ -1,20 +1,20 @@
 /**
- * Custom Session Header Component
- * Displays title and selection count for the custom session view
+ * Session Header Component
+ * Displays title and selection count for the session view
  */
 import { BaseComponent } from "../component.base";
 
-export interface CustomSessionHeaderProps {
+export interface SessionHeaderProps {
 	selectionCount: number;
 }
 
 /**
- * Custom session header component
+ * Session header component
  */
-export class CustomSessionHeader extends BaseComponent {
-	private props: CustomSessionHeaderProps;
+export class SessionHeader extends BaseComponent {
+	private props: SessionHeaderProps;
 
-	constructor(container: HTMLElement, props: CustomSessionHeaderProps) {
+	constructor(container: HTMLElement, props: SessionHeaderProps) {
 		super(container);
 		this.props = props;
 	}
@@ -27,23 +27,23 @@ export class CustomSessionHeader extends BaseComponent {
 		}
 
 		this.element = this.container.createDiv({
-			cls: "episteme-custom-session-header",
+			cls: "episteme-session-header",
 		});
 
 		const titleRow = this.element.createDiv({
-			cls: "episteme-custom-session-title-row",
+			cls: "episteme-session-title-row",
 		});
 
 		// Title
 		const titleEl = titleRow.createSpan({
-			cls: "episteme-custom-session-title",
+			cls: "episteme-session-title",
 		});
 		titleEl.textContent = "Review Session";
 
 		// Selection count (only show when > 0)
 		if (this.props.selectionCount > 0) {
 			const countEl = titleRow.createSpan({
-				cls: "episteme-custom-session-count",
+				cls: "episteme-session-count",
 			});
 			countEl.textContent = `(${this.props.selectionCount} note${this.props.selectionCount > 1 ? "s" : ""} selected)`;
 		}
@@ -52,7 +52,7 @@ export class CustomSessionHeader extends BaseComponent {
 	/**
 	 * Update the header with new props
 	 */
-	updateProps(props: Partial<CustomSessionHeaderProps>): void {
+	updateProps(props: Partial<SessionHeaderProps>): void {
 		this.props = { ...this.props, ...props };
 		this.render();
 	}

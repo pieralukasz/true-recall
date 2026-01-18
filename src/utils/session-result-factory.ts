@@ -1,18 +1,18 @@
 /**
- * Custom Session Result Factory
- * Provides single source of truth for creating CustomSessionResult objects
+ * Session Result Factory
+ * Provides single source of truth for creating SessionResult objects
  */
-import type { CustomSessionResult } from "../types/events.types";
+import type { SessionResult } from "../types/events.types";
 
 /**
- * Utility factory for creating CustomSessionResult objects
+ * Utility factory for creating SessionResult objects
  * Provides single source of truth for result creation logic
  */
-export class CustomSessionResultFactory {
+export class SessionResultFactory {
 	/**
 	 * Create result for current note session
 	 */
-	static createCurrentNoteResult(currentNoteName: string | null): CustomSessionResult {
+	static createCurrentNoteResult(currentNoteName: string | null): SessionResult {
 		return {
 			cancelled: false,
 			sessionType: "current-note",
@@ -24,7 +24,7 @@ export class CustomSessionResultFactory {
 	/**
 	 * Create result for today's cards session
 	 */
-	static createTodaysCardsResult(): CustomSessionResult {
+	static createTodaysCardsResult(): SessionResult {
 		return {
 			cancelled: false,
 			sessionType: "created-today",
@@ -36,7 +36,7 @@ export class CustomSessionResultFactory {
 	/**
 	 * Create result for default deck session
 	 */
-	static createDefaultDeckResult(): CustomSessionResult {
+	static createDefaultDeckResult(): SessionResult {
 		return {
 			cancelled: false,
 			sessionType: "default",
@@ -48,7 +48,7 @@ export class CustomSessionResultFactory {
 	/**
 	 * Create result for buried cards session
 	 */
-	static createBuriedCardsResult(): CustomSessionResult {
+	static createBuriedCardsResult(): SessionResult {
 		return {
 			cancelled: false,
 			sessionType: "state-filter",
@@ -61,7 +61,7 @@ export class CustomSessionResultFactory {
 	/**
 	 * Create result for selected notes session
 	 */
-	static createSelectedNotesResult(noteFilters: string[]): CustomSessionResult {
+	static createSelectedNotesResult(noteFilters: string[]): SessionResult {
 		return {
 			cancelled: false,
 			sessionType: "select-notes",
@@ -77,7 +77,7 @@ export class CustomSessionResultFactory {
 	static createActionResult(
 		action: "current-note" | "today" | "default" | "buried",
 		currentNoteName: string | null
-	): CustomSessionResult {
+	): SessionResult {
 		switch (action) {
 			case "current-note":
 				return this.createCurrentNoteResult(currentNoteName);
@@ -93,7 +93,7 @@ export class CustomSessionResultFactory {
 	/**
 	 * Create cancelled result
 	 */
-	static createCancelledResult(): CustomSessionResult {
+	static createCancelledResult(): SessionResult {
 		return {
 			cancelled: true,
 			sessionType: null,

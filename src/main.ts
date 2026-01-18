@@ -3,7 +3,7 @@ import {
 	VIEW_TYPE_FLASHCARD_PANEL,
 	VIEW_TYPE_REVIEW,
 	VIEW_TYPE_STATS,
-	VIEW_TYPE_CUSTOM_SESSION,
+	VIEW_TYPE_SESSION,
 	FLASHCARD_CONFIG,
 } from "./constants";
 import {
@@ -22,14 +22,14 @@ import { extractFSRSSettings } from "./types";
 import { FlashcardPanelView } from "./ui/panel/FlashcardPanelView";
 import { ReviewView } from "./ui/review/ReviewView";
 import { StatsView } from "./ui/stats/StatsView";
-import { CustomSessionView } from "./ui/custom-session";
+import { SessionView } from "./ui/session";
 import {
 	EpistemeSettingTab,
 	type EpistemeSettings,
 	DEFAULT_SETTINGS,
 } from "./ui/settings";
 import {
-	CustomSessionModal,
+	SessionModal,
 	MissingFlashcardsModal,
 	ReadyToHarvestModal,
 	CommandDashboardModal,
@@ -91,10 +91,10 @@ export default class EpistemePlugin extends Plugin {
 		// Register the statistics view
 		this.registerView(VIEW_TYPE_STATS, (leaf) => new StatsView(leaf, this));
 
-		// Register the custom session view
+		// Register the session view
 		this.registerView(
-			VIEW_TYPE_CUSTOM_SESSION,
-			(leaf) => new CustomSessionView(leaf, this)
+			VIEW_TYPE_SESSION,
+			(leaf) => new SessionView(leaf, this)
 		);
 
 		// Add ribbon icon to start review
@@ -199,23 +199,23 @@ export default class EpistemePlugin extends Plugin {
 	}
 
 	/**
-	 * Activate the custom session view
+	 * Activate the session view
 	 */
-	async activateCustomSessionView(
+	async activateSessionView(
 		currentNoteName: string | null,
 		allCards: import("./types").FSRSFlashcardItem[]
 	): Promise<void> {
 		const { workspace } = this.app;
 
 		// Check if view already exists
-		let leaf = workspace.getLeavesOfType(VIEW_TYPE_CUSTOM_SESSION)[0];
+		let leaf = workspace.getLeavesOfType(VIEW_TYPE_SESSION)[0];
 
 		if (!leaf) {
 			if (Platform.isMobile) {
 				// On mobile, open in main area
 				leaf = workspace.getLeaf(true);
 				await leaf.setViewState({
-					type: VIEW_TYPE_CUSTOM_SESSION,
+					type: VIEW_TYPE_SESSION,
 					active: true,
 				});
 			} else {
@@ -223,7 +223,7 @@ export default class EpistemePlugin extends Plugin {
 				const rightLeaf = workspace.getRightLeaf(false);
 				if (rightLeaf) {
 					await rightLeaf.setViewState({
-						type: VIEW_TYPE_CUSTOM_SESSION,
+						type: VIEW_TYPE_SESSION,
 						active: true,
 					});
 					leaf = rightLeaf;
@@ -233,7 +233,7 @@ export default class EpistemePlugin extends Plugin {
 
 		// Initialize view with data
 		if (leaf) {
-			const view = leaf.view as CustomSessionView;
+			const view = leaf.view as SessionView;
 			view.initialize({
 				currentNoteName,
 				allCards,
@@ -254,6 +254,35 @@ export default class EpistemePlugin extends Plugin {
 			return;
 		}
 
+		await this.openNewReviewSession();
+	}
+
+	/**
+	 * Start a new review session, closing any existing review views first.
+	 * Used by "Next Session" button to avoid race conditions.
+	 */
+	async startNewReviewSession(): Promise<void> {
+		const { workspace } = this.app;
+
+		// Force close all existing review views first
+		const existingLeaves = workspace.getLeavesOfType(VIEW_TYPE_REVIEW);
+		for (const leaf of existingLeaves) {
+			leaf.detach();
+		}
+
+		// Wait for next event loop tick to ensure leaves are fully detached
+		await new Promise((resolve) => setTimeout(resolve, 0));
+
+		// Now open new session (existing leaves already closed)
+		await this.openNewReviewSession();
+	}
+
+	/**
+	 * Internal method to open review session modal/panel
+	 * Called after checking/closing existing views
+	 */
+	private async openNewReviewSession(): Promise<void> {
+
 		const allCards = await this.flashcardManager.getAllFSRSCards();
 		if (allCards.length === 0) {
 			new Notice("No flashcards found. Generate some flashcards first!");
@@ -271,17 +300,17 @@ export default class EpistemePlugin extends Plugin {
 			// Panel mode: Subscribe to event, open panel, wait for result
 			return new Promise<void>((resolve) => {
 				const eventBus = getEventBus();
-				const unsubscribe = eventBus.on("custom-session:selected", (event: any) => {
+				const unsubscribe = eventBus.on("session:selected", (event: any) => {
 					unsubscribe();
-					void this.handleCustomSessionResult(event.result);
+					void this.handleSessionResult(event.result);
 					resolve();
 				});
 
-				void this.activateCustomSessionView(currentNoteName, allCards);
+				void this.activateSessionView(currentNoteName, allCards);
 			});
 		} else {
 			// Modal mode: Use existing modal code
-			const modal = new CustomSessionModal(this.app, {
+			const modal = new SessionModal(this.app, {
 				currentNoteName,
 				allCards,
 				dayBoundaryService: this.dayBoundaryService,
@@ -290,15 +319,15 @@ export default class EpistemePlugin extends Plugin {
 			const result = await modal.openAndWait();
 			if (result.cancelled) return;
 
-			await this.handleCustomSessionResult(result);
+			await this.handleSessionResult(result);
 		}
 	}
 
 	/**
-	 * Handle custom session result (shared by modal and panel)
+	 * Handle session result (shared by modal and panel)
 	 */
-	private async handleCustomSessionResult(
-		result: import("./types/events.types").CustomSessionResult
+	private async handleSessionResult(
+		result: import("./types/events.types").SessionResult
 	): Promise<void> {
 		if (result.cancelled) return;
 

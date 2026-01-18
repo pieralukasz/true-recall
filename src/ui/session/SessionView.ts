@@ -1,37 +1,37 @@
 /**
- * Custom Session View
- * Panel-based view for custom session selection
- * Alternative to CustomSessionModal
+ * Session View
+ * Panel-based view for session selection
+ * Alternative to SessionModal
  */
 import { ItemView, WorkspaceLeaf, Notice } from "obsidian";
-import { VIEW_TYPE_CUSTOM_SESSION } from "../../constants";
+import { VIEW_TYPE_SESSION } from "../../constants";
 import { getEventBus } from "../../services";
-import { CustomSessionLogic } from "../../logic/CustomSessionLogic";
-import { createCustomSessionStateManager } from "../../state/custom-session.state";
+import { SessionLogic } from "../../logic/SessionLogic";
+import { createSessionStateManager } from "../../state/session.state";
 import type { DayBoundaryService } from "../../services";
 import type { FSRSFlashcardItem } from "../../types";
-import type { CustomSessionModalOptions } from "../modals/CustomSessionModal";
-import type { CustomSessionSelectedEvent } from "../../types/events.types";
-import { CustomSessionHeader } from "./CustomSessionHeader";
-import { CustomSessionContent } from "./CustomSessionContent";
-import { CustomSessionFooter } from "./CustomSessionFooter";
+import type { SessionModalOptions } from "../modals/SessionModal";
+import type { SessionSelectedEvent } from "../../types/events.types";
+import { SessionHeader } from "./SessionHeader";
+import { SessionContent } from "./SessionContent";
+import { SessionFooter } from "./SessionFooter";
 import type EpistemePlugin from "../../main";
-import { CustomSessionResultFactory } from "../../utils/custom-session-result-factory";
+import { SessionResultFactory } from "../../utils/session-result-factory";
 
 /**
- * Custom Session View
- * Panel-based version of CustomSessionModal
+ * Session View
+ * Panel-based version of SessionModal
  */
-export class CustomSessionView extends ItemView {
+export class SessionView extends ItemView {
 	private plugin: EpistemePlugin;
-	private stateManager = createCustomSessionStateManager();
-	private logic: CustomSessionLogic | null = null;
+	private stateManager = createSessionStateManager();
+	private logic: SessionLogic | null = null;
 	private dayBoundaryService: DayBoundaryService | null = null;
 
 	// UI Components
-	private headerComponent: CustomSessionHeader | null = null;
-	private contentComponent: CustomSessionContent | null = null;
-	private footerComponent: CustomSessionFooter | null = null;
+	private headerComponent: SessionHeader | null = null;
+	private contentComponent: SessionContent | null = null;
+	private footerComponent: SessionFooter | null = null;
 
 	// Container elements
 	private headerContainer!: HTMLElement;
@@ -47,11 +47,11 @@ export class CustomSessionView extends ItemView {
 	}
 
 	getViewType(): string {
-		return VIEW_TYPE_CUSTOM_SESSION;
+		return VIEW_TYPE_SESSION;
 	}
 
 	getDisplayText(): string {
-		return "Custom Session";
+		return "Session";
 	}
 
 	getIcon(): string {
@@ -62,17 +62,17 @@ export class CustomSessionView extends ItemView {
 		const container = this.containerEl.children[1];
 		if (!(container instanceof HTMLElement)) return;
 		container.empty();
-		container.addClass("episteme-custom-session-view");
+		container.addClass("episteme-session-view");
 
 		// Create container elements
 		this.headerContainer = container.createDiv({
-			cls: "episteme-custom-session-header-container",
+			cls: "episteme-session-header-container",
 		});
 		this.contentContainer = container.createDiv({
-			cls: "episteme-custom-session-content-container",
+			cls: "episteme-session-content-container",
 		});
 		this.footerContainer = container.createDiv({
-			cls: "episteme-custom-session-footer-container",
+			cls: "episteme-session-footer-container",
 		});
 
 		// Subscribe to state changes
@@ -93,12 +93,12 @@ export class CustomSessionView extends ItemView {
 	 * Initialize the view with session data
 	 * Called by the plugin to set up the view
 	 */
-	initialize(options: CustomSessionModalOptions): void {
+	initialize(options: SessionModalOptions): void {
 		// Store services
 		this.dayBoundaryService = options.dayBoundaryService;
 
 		// Create logic instance
-		this.logic = new CustomSessionLogic(
+		this.logic = new SessionLogic(
 			options.allCards,
 			options.dayBoundaryService
 		);
@@ -117,7 +117,7 @@ export class CustomSessionView extends ItemView {
 	 * Handle quick action button click
 	 */
 	private handleQuickAction(action: "current-note" | "today" | "default" | "buried"): void {
-		const result = CustomSessionResultFactory.createActionResult(
+		const result = SessionResultFactory.createActionResult(
 			action,
 			this.stateManager.getState().currentNoteName
 		);
@@ -169,18 +169,18 @@ export class CustomSessionView extends ItemView {
 
 		if (selectedNotes.size === 0) return;
 
-		const result = CustomSessionResultFactory.createSelectedNotesResult(Array.from(selectedNotes));
+		const result = SessionResultFactory.createSelectedNotesResult(Array.from(selectedNotes));
 		this.emitResultAndClose(result);
 	}
 
 	/**
 	 * Emit result event and close the view
 	 */
-	private emitResultAndClose(result: CustomSessionSelectedEvent["result"]): void {
+	private emitResultAndClose(result: SessionSelectedEvent["result"]): void {
 		const eventBus = getEventBus();
 
-		const event: CustomSessionSelectedEvent = {
-			type: "custom-session:selected",
+		const event: SessionSelectedEvent = {
+			type: "session:selected",
 			result,
 			timestamp: Date.now(),
 		};
@@ -188,7 +188,7 @@ export class CustomSessionView extends ItemView {
 		eventBus.emit(event);
 
 		// Close the panel view
-		const leaves = this.app.workspace.getLeavesOfType(VIEW_TYPE_CUSTOM_SESSION);
+		const leaves = this.app.workspace.getLeavesOfType(VIEW_TYPE_SESSION);
 		for (const leaf of leaves) {
 			leaf.detach();
 		}
@@ -206,7 +206,7 @@ export class CustomSessionView extends ItemView {
 		// Render Header
 		this.headerComponent?.destroy();
 		this.headerContainer.empty();
-		this.headerComponent = new CustomSessionHeader(this.headerContainer, {
+		this.headerComponent = new SessionHeader(this.headerContainer, {
 			selectionCount,
 		});
 		this.headerComponent.render();
@@ -214,7 +214,7 @@ export class CustomSessionView extends ItemView {
 		// Render Content
 		this.contentComponent?.destroy();
 		this.contentContainer.empty();
-		this.contentComponent = new CustomSessionContent(this.contentContainer, {
+		this.contentComponent = new SessionContent(this.contentContainer, {
 			currentNoteName: state.currentNoteName,
 			allCards: state.allCards,
 			selectedNotes: state.selectedNotes,
@@ -231,7 +231,7 @@ export class CustomSessionView extends ItemView {
 		// Render Footer
 		this.footerComponent?.destroy();
 		this.footerContainer.empty();
-		this.footerComponent = new CustomSessionFooter(this.footerContainer, {
+		this.footerComponent = new SessionFooter(this.footerContainer, {
 			selectionCount,
 			onStartSession: () => this.handleStartSession(),
 			onClearSelection: () => this.handleClearSelection(),

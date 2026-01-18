@@ -1803,11 +1803,6 @@ Source: [[${sourceNote}]]
      * Handle "Next Session" button click - opens new session modal
      */
     private handleNextSession(): void {
-        this.leaf.detach();
-
-        // Wait for view to close, then open new session
-        setTimeout(() => {
-            void this.plugin.startReviewSession();
-        }, 100);
+        void this.plugin.startNewReviewSession();
     }
 }

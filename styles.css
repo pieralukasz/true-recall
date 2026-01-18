@@ -1711,10 +1711,10 @@
 }
 
 /* =========================================
-   Custom Session Modal
+   Session Modal
    ========================================= */
 
-.episteme-custom-session-modal h3 {
+.episteme-session-modal h3 {
 	margin: 8px 0 12px 0;
 	font-size: 14px;
 	font-weight: 500;
@@ -1909,7 +1909,7 @@
 
 /* Mobile adjustments for custom session modal */
 @media screen and (max-width: 600px) {
-	.episteme-custom-session-modal {
+	.episteme-session-modal {
 		min-width: auto;
 		width: 100%;
 	}
@@ -1936,57 +1936,73 @@
 }
 
 /* ========================================
-   Custom Session View (Panel Mode)
+   Session View (Panel Mode)
    ======================================== */
 
 /* Main view container - constrain width */
-.episteme-custom-session-view {
+.episteme-session-view {
+	display: flex;
+	flex-direction: column;
+	height: 100%;
 	max-width: 700px;
 	margin: 0 auto;
 	padding: 16px;
 }
 
 /* Container flex styles */
-.episteme-custom-session-header-container,
-.episteme-custom-session-content-container,
-.episteme-custom-session-footer-container {
+.episteme-session-header-container {
+	flex-shrink: 0;
+	width: 100%;
+}
+
+.episteme-session-content-container {
+	display: flex;
+	flex-direction: column;
+	flex: 1;
+	overflow-y: auto;
+	min-height: 0;
+	width: 100%;
+}
+
+.episteme-session-footer-container {
+	flex-shrink: 0;
 	width: 100%;
 }
 
 /* Header section */
-.episteme-custom-session-header {
+.episteme-session-header {
 	margin-bottom: 16px;
 }
 
-.episteme-custom-session-title-row {
+.episteme-session-title-row {
 	display: flex;
 	align-items: center;
 	gap: 8px;
 }
 
 /* Title - same style as section h3 */
-.episteme-custom-session-title {
+.episteme-session-title {
 	font-size: 14px;
 	font-weight: 500;
 	color: var(--text-muted);
 }
 
 /* Selection count badge */
-.episteme-custom-session-count {
+.episteme-session-count {
 	font-size: 13px;
 	color: var(--interactive-accent);
 	font-weight: 500;
 }
 
 /* Content section */
-.episteme-custom-session-content {
+.episteme-session-content {
 	display: flex;
 	flex-direction: column;
 	gap: 16px;
 }
 
 /* Section headers in panel view */
-.episteme-custom-session-content h3 {
+.episteme-session-content h3 {
 	margin: 8px 0 12px 0;
 	font-size: 14px;
 	font-weight: 500;
@@ -1994,21 +2010,22 @@
 }
 
 /* Footer section */
-.episteme-custom-session-footer {
+.episteme-session-footer {
 	margin-top: 16px;
 	padding-top: 16px;
 	border-top: 1px solid var(--background-modifier-border);
 }
 
-.episteme-custom-session-buttons {
+.episteme-session-buttons {
 	display: flex;
 	gap: 8px;
 }
 
 /* Mobile adjustments for custom session panel */
 @media screen and (max-width: 600px) {
-	.episteme-custom-session-view {
+	.episteme-session-view {
 		padding: 12px;
+		padding-bottom: 96px; /* Space for Obsidian navigation bar */
 		max-width: 100%;
 	}
 
@@ -3857,11 +3874,11 @@
 }
 
 /* ============================================
-   Mobile: Custom Session view navigation spacing
+   Mobile: Session view navigation spacing
    ============================================ */
 
 @media screen and (max-width: 600px) {
-	.episteme-custom-session-view {
+	.episteme-session-view {
 		padding-bottom: 96px; /* Space for Obsidian navigation bar */
 	}
 }
