@@ -3362,6 +3362,118 @@
 	box-shadow: 0 0 0 2px rgba(var(--interactive-accent-rgb), 0.2);
 }
 
+/* ========================================
+   Autocomplete Popup
+   ======================================== */
+
+/* Main popup container */
+.episteme-autocomplete-popup {
+	position: fixed;
+	z-index: 9999;
+	top: var(--popup-top, 0);
+	left: var(--popup-left, 0);
+	min-width: 200px;
+	max-width: 350px;
+	max-height: 280px;
+	background: var(--background-primary);
+	border: 1px solid var(--background-modifier-border);
+	border-radius: 8px;
+	box-shadow: 0 4px 16px rgba(0, 0, 0, 0.15);
+	overflow: hidden;
+}
+
+.episteme-autocomplete-popup.is-hidden {
+	display: none;
+}
+
+/* List container */
+.episteme-autocomplete-list {
+	max-height: 280px;
+	overflow-y: auto;
+	padding: 4px;
+}
+
+/* Individual suggestion item */
+.episteme-autocomplete-item {
+	display: flex;
+	align-items: center;
+	gap: 8px;
+	padding: 8px 12px;
+	border-radius: 4px;
+	cursor: pointer;
+	transition: background-color 0.1s ease;
+}
+
+.episteme-autocomplete-item:hover {
+	background: var(--background-modifier-hover);
+}
+
+.episteme-autocomplete-item.is-selected {
+	background: var(--interactive-accent);
+	color: var(--text-on-accent);
+}
+
+/* Note name */
+.episteme-autocomplete-name {
+	flex: 1;
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+	font-size: 14px;
+	font-weight: 500;
+}
+
+/* Alias badge (shown when matched via alias) */
+.episteme-autocomplete-alias-badge {
+	flex-shrink: 0;
+	font-size: 11px;
+	padding: 2px 6px;
+	background: var(--background-secondary);
+	border-radius: 4px;
+	color: var(--text-muted);
+	max-width: 120px;
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+}
+
+.episteme-autocomplete-item.is-selected .episteme-autocomplete-alias-badge {
+	background: rgba(255, 255, 255, 0.2);
+	color: var(--text-on-accent);
+}
+
+/* Scrollbar styling */
+.episteme-autocomplete-list::-webkit-scrollbar {
+	width: 6px;
+}
+
+.episteme-autocomplete-list::-webkit-scrollbar-track {
+	background: transparent;
+}
+
+.episteme-autocomplete-list::-webkit-scrollbar-thumb {
+	background: var(--background-modifier-border);
+	border-radius: 3px;
+}
+
+.episteme-autocomplete-list::-webkit-scrollbar-thumb:hover {
+	background: var(--interactive-accent);
+}
+
+/* Hidden measurement clone for cursor position calculation */
+.episteme-autocomplete-measure-clone {
+	position: absolute;
+	visibility: hidden;
+	white-space: pre-wrap;
+	word-wrap: break-word;
+	font-family: var(--clone-font-family, inherit);
+	font-size: var(--clone-font-size, inherit);
+	line-height: var(--clone-line-height, inherit);
+	padding: var(--clone-padding, 0);
+	width: var(--clone-width, auto);
+	border: var(--clone-border, none);
+}
+
 
 /* =========================================
    Statistics View Styles
