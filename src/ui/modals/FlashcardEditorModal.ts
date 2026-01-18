@@ -1,12 +1,11 @@
 /**
  * Flashcard Editor Modal
- * A modern, split-pane flashcard editor with live preview
+ * A live preview flashcard editor with focus/blur behavior
  * Supports both adding new flashcards and editing existing ones
  */
 import { App, MarkdownRenderer, Component } from "obsidian";
 import { BaseModal } from "./BaseModal";
-import type { FSRSFlashcardItem, FlashcardItem } from "../../types";
-import { createCardReviewItem } from "../components/CardReviewItem";
+import type { FSRSFlashcardItem } from "../../types";
 
 export interface FlashcardEditorResult {
 	cancelled: boolean;
@@ -32,7 +31,7 @@ export interface FlashcardEditorModalOptions {
 }
 
 /**
- * Modal for creating/editing flashcards with split-pane markdown editor
+ * Modal for creating/editing flashcards with live preview (focus/blur)
  */
 export class FlashcardEditorModal extends BaseModal {
 	private options: FlashcardEditorModalOptions;
@@ -42,20 +41,15 @@ export class FlashcardEditorModal extends BaseModal {
 	// Editor elements
 	private questionTextarea: HTMLTextAreaElement | null = null;
 	private answerTextarea: HTMLTextAreaElement | null = null;
-	private previewContainer: HTMLElement | null = null;
 	private saveButton: HTMLButtonElement | null = null;
 
 	// Markdown rendering component
 	private renderComponent: Component | null = null;
 
-	// Character count elements
-	private questionCountEl: HTMLElement | null = null;
-	private answerCountEl: HTMLElement | null = null;
-
 	constructor(app: App, options: FlashcardEditorModalOptions) {
 		super(app, {
 			title: options.mode === "add" ? "Add New Flashcard" : "Edit Flashcard",
-			width: "800px",
+			width: "600px",
 		});
 		this.options = options;
 	}
@@ -95,34 +89,24 @@ export class FlashcardEditorModal extends BaseModal {
 			});
 		}
 
-		// Split pane container
-		const splitPane = container.createDiv({ cls: "episteme-editor-split-pane" });
-
-		// Editor pane (left side)
-		const editorPane = splitPane.createDiv({ cls: "episteme-editor-pane" });
-
-		// Question field
-		this.renderField(
-			editorPane,
+		// Question field with live preview
+		this.renderLivePreviewField(
+			container,
 			"Question",
 			card?.question || this.options.prefillQuestion || "",
 			"question"
 		);
 
-		// Answer field
-		this.renderField(
-			editorPane,
+		// Answer field with live preview
+		this.renderLivePreviewField(
+			container,
 			"Answer",
 			card?.answer || this.options.prefillAnswer || "",
 			"answer"
 		);
 
 		// Smart toolbar
-		this.renderSmartToolbar(editorPane);
-
-		// Preview pane (right side)
-		this.previewContainer = splitPane.createDiv({ cls: "episteme-editor-preview" });
-		this.updatePreview();
+		this.renderSmartToolbar(container);
 
 		// Buttons
 		this.renderButtons(container);
@@ -130,64 +114,119 @@ export class FlashcardEditorModal extends BaseModal {
 		// Setup keyboard shortcuts
 		this.setupKeyboardShortcuts(container);
 
-		// Focus question textarea
-		setTimeout(() => this.questionTextarea?.focus(), 50);
+		// Focus question textarea only if visible (empty field)
+		// When editing with existing content, textarea is hidden and preview is shown
+		const questionValue = card?.question || this.options.prefillQuestion || "";
+		if (!questionValue.trim()) {
+			setTimeout(() => this.questionTextarea?.focus(), 50);
+		}
 	}
 
 	/**
-	 * Render a single field (question or answer) with textarea and character count
+	 * Render a single field with live preview (focus/blur behavior)
+	 * On blur: shows rendered markdown
+	 * On focus: shows raw markdown textarea
 	 */
-	private renderField(
+	private renderLivePreviewField(
 		container: HTMLElement,
 		label: string,
 		initialValue: string,
 		field: "question" | "answer"
 	): void {
-		const fieldGroup = container.createDiv({ cls: "episteme-field-group" });
+		const fieldGroup = container.createDiv({ cls: "episteme-live-field" });
 
 		// Label
-		const labelEl = fieldGroup.createEl("label", {
+		fieldGroup.createEl("label", {
 			text: label,
 			cls: "episteme-form-label",
 		});
 
-		// Textarea
-		const textarea = fieldGroup.createEl("textarea", {
-			cls: "episteme-editor-textarea",
+		// Container for textarea/preview toggle
+		const editorContainer = fieldGroup.createDiv({
+			cls: "episteme-live-editor-container",
+		});
+
+		// Textarea (hidden by default if has content)
+		const textarea = editorContainer.createEl("textarea", {
+			cls: "episteme-live-textarea",
 			attr: {
-				placeholder: field === "question"
-					? "Type your question here... (e.g., What is the capital of France?)"
-					: "Type your answer here... (e.g., **Paris**)",
 				"data-field": field,
+				placeholder: field === "question"
+					? "Type your question here..."
+					: "Type your answer here...",
 			},
 		});
 		textarea.value = initialValue;
 
-		// Character count
-		const countEl = fieldGroup.createSpan({
-			cls: "episteme-char-count",
-			text: `${initialValue.length} chars`,
+		// Preview div
+		const preview = editorContainer.createDiv({
+			cls: "episteme-live-preview",
 		});
 
-		// Store references
-		if (field === "question") {
-			this.questionTextarea = textarea;
-			this.questionCountEl = countEl;
+		// Initial render
+		if (initialValue.trim()) {
+			this.renderPreview(preview, initialValue);
+			textarea.addClass("hidden");
 		} else {
-			this.answerTextarea = textarea;
-			this.answerCountEl = countEl;
+			preview.addClass("hidden");
 		}
 
-		// Event listeners
-		textarea.addEventListener("input", () => {
-			this.updateCharacterCount(field, textarea.value);
-			this.updatePreview();
+		// Focus: show textarea, hide preview
+		textarea.addEventListener("focus", () => {
+			preview.addClass("hidden");
+			textarea.removeClass("hidden");
+		});
+
+		// Blur: show preview, hide textarea (if has content)
+		textarea.addEventListener("blur", () => {
+			const value = textarea.value.trim();
+			if (value) {
+				this.renderPreview(preview, value);
+				preview.removeClass("hidden");
+				textarea.addClass("hidden");
+			}
 			this.validateForm();
 		});
 
+		// Click on preview: focus textarea
+		preview.addEventListener("click", () => {
+			textarea.removeClass("hidden");
+			preview.addClass("hidden");
+			textarea.focus();
+		});
+
+		// Input event for validation
+		textarea.addEventListener("input", () => {
+			this.validateForm();
+		});
+
+		// Keydown for field navigation
 		textarea.addEventListener("keydown", (e) => {
 			this.handleFieldKeydown(e, field);
 		});
+
+		// Store reference
+		if (field === "question") {
+			this.questionTextarea = textarea;
+		} else {
+			this.answerTextarea = textarea;
+		}
+	}
+
+	/**
+	 * Render markdown preview into container
+	 */
+	private renderPreview(container: HTMLElement, markdown: string): void {
+		container.empty();
+		if (this.renderComponent) {
+			MarkdownRenderer.render(
+				this.app,
+				markdown,
+				container,
+				this.options.currentFilePath,
+				this.renderComponent
+			);
+		}
 	}
 
 	/**
@@ -260,6 +299,11 @@ export class FlashcardEditorModal extends BaseModal {
 				attr: { title: btn.title },
 			});
 
+			// Prevent blur on textarea when clicking toolbar button
+			btnEl.addEventListener("mousedown", (e) => {
+				e.preventDefault();
+			});
+
 			btnEl.addEventListener("click", () => {
 				this.insertFormatting(btn.insert);
 			});
@@ -270,6 +314,11 @@ export class FlashcardEditorModal extends BaseModal {
 			cls: "episteme-toolbar-btn episteme-help-btn",
 			text: "?",
 			attr: { title: "Show all keyboard shortcuts (Ctrl+/)" },
+		});
+
+		// Prevent blur on textarea when clicking help button
+		helpBtn.addEventListener("mousedown", (e) => {
+			e.preventDefault();
 		});
 		helpBtn.addEventListener("click", () => this.showKeyboardShortcuts());
 	}
@@ -431,56 +480,6 @@ export class FlashcardEditorModal extends BaseModal {
 	}
 
 	/**
-	 * Update character count for a field
-	 */
-	private updateCharacterCount(field: "question" | "answer", value: string): void {
-		const countEl = field === "question" ? this.questionCountEl : this.answerCountEl;
-		if (countEl) {
-			const length = value.length;
-			countEl.textContent = `${length} char${length === 1 ? "" : "s"}`;
-
-			// Add warning for long content
-			countEl.toggleClass("episteme-char-count-warning", length > 200);
-		}
-	}
-
-	/**
-	 * Update the preview pane with rendered markdown
-	 * Uses the CardReviewItem component for consistency with the rest of the app
-	 */
-	private updatePreview(): void {
-		if (!this.previewContainer || !this.renderComponent) return;
-
-		const question = this.questionTextarea?.value || "";
-		const answer = this.answerTextarea?.value || "";
-
-		this.previewContainer.empty();
-
-		// Create temporary card for preview
-		const tempCard: FlashcardItem = {
-			question,
-			answer,
-			id: "preview-temp",
-		};
-
-		// Use CardReviewItem component for consistent rendering
-		createCardReviewItem(this.previewContainer, {
-			card: tempCard,
-			filePath: this.options.currentFilePath,
-			app: this.app,
-			component: this.renderComponent,
-			// No handlers needed for preview - make it non-clickable
-			onClick: undefined,
-			onDelete: undefined,
-			onOpen: undefined,
-			onCopy: undefined,
-			onMove: undefined,
-			onUnbury: undefined,
-			onEditSave: undefined,
-		});
-	}
-
-	/**
 	 * Show keyboard shortcuts modal
 	 */
 	private showKeyboardShortcuts(): void {
@@ -577,7 +576,7 @@ export class KeyboardShortcutsModal extends BaseModal {
 		for (const shortcut of shortcuts) {
 			const item = list.createDiv({ cls: "episteme-shortcut-item" });
 
-			const keyEl = item.createSpan({ cls: "episteme-shortcut-key", text: shortcut.key });
+			item.createSpan({ cls: "episteme-shortcut-key", text: shortcut.key });
 			item.createSpan({ cls: "episteme-shortcut-action", text: shortcut.action });
 		}
 	}
