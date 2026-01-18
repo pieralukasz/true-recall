@@ -11,8 +11,8 @@ export const VIEW_TYPE_REVIEW = "episteme-review";
 /** View type identifier for the statistics panel */
 export const VIEW_TYPE_STATS = "episteme-stats";
 
-/** View type identifier for the custom session panel */
-export const VIEW_TYPE_CUSTOM_SESSION = "episteme-custom-session";
+/** View type identifier for the session panel */
+export const VIEW_TYPE_SESSION = "episteme-session";
 
 // ===== AI Models =====
 

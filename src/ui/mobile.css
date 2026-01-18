@@ -284,11 +284,11 @@
 }
 
 /* ============================================
-   Mobile: Custom Session view navigation spacing
+   Mobile: Session view navigation spacing
    ============================================ */
 
 @media screen and (max-width: 600px) {
-	.episteme-custom-session-view {
+	.episteme-session-view {
 		padding-bottom: 96px; /* Space for Obsidian navigation bar */
 	}
 }

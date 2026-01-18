@@ -1,23 +1,23 @@
 /**
- * Custom Session Footer Component
+ * Session Footer Component
  * Contains start session button and clear selection
  */
 import { BaseComponent } from "../component.base";
 
-export interface CustomSessionFooterProps {
+export interface SessionFooterProps {
 	selectionCount: number;
 	onStartSession: () => void;
 	onClearSelection: () => void;
 }
 
 /**
- * Custom session footer component
+ * Session footer component
  */
-export class CustomSessionFooter extends BaseComponent {
-	private props: CustomSessionFooterProps;
+export class SessionFooter extends BaseComponent {
+	private props: SessionFooterProps;
 	private startButtonEl: HTMLButtonElement | null = null;
 
-	constructor(container: HTMLElement, props: CustomSessionFooterProps) {
+	constructor(container: HTMLElement, props: SessionFooterProps) {
 		super(container);
 		this.props = props;
 	}
@@ -30,11 +30,11 @@ export class CustomSessionFooter extends BaseComponent {
 		}
 
 		this.element = this.container.createDiv({
-			cls: "episteme-custom-session-footer",
+			cls: "episteme-session-footer",
 		});
 
 		const buttonContainer = this.element.createDiv({
-			cls: "episteme-custom-session-buttons",
+			cls: "episteme-session-buttons",
 		});
 
 		// Clear selection button (only show when there are selections)
@@ -76,7 +76,7 @@ export class CustomSessionFooter extends BaseComponent {
 	/**
 	 * Update the footer with new props
 	 */
-	updateProps(props: Partial<CustomSessionFooterProps>): void {
+	updateProps(props: Partial<SessionFooterProps>): void {
 		this.props = { ...this.props, ...props };
 		this.render();
 	}

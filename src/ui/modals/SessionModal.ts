@@ -1,22 +1,22 @@
 /**
- * Custom Session Modal
- * Allows user to select custom review session type and filters
+ * Session Modal
+ * Allows user to select review session type and filters
  */
 import { App } from "obsidian";
 import type { FSRSFlashcardItem } from "../../types";
 import type { DayBoundaryService } from "../../services";
 import { BaseModal } from "./BaseModal";
-import { CustomSessionLogic } from "../../logic/CustomSessionLogic";
-import { CustomSessionHeader } from "../custom-session";
-import { CustomSessionContent } from "../custom-session";
-import { CustomSessionFooter } from "../custom-session";
-import { CustomSessionResultFactory } from "../../utils/custom-session-result-factory";
+import { SessionLogic } from "../../logic/SessionLogic";
+import { SessionHeader } from "../session";
+import { SessionContent } from "../session";
+import { SessionFooter } from "../session";
+import { SessionResultFactory } from "../../utils/session-result-factory";
 
-export type CustomSessionType = "current-note" | "created-today" | "select-notes" | "state-filter" | "default";
+export type SessionType = "current-note" | "created-today" | "select-notes" | "state-filter" | "default";
 
-export interface CustomSessionResult {
+export interface SessionResult {
 	cancelled: boolean;
-	sessionType: CustomSessionType | null;
+	sessionType: SessionType | null;
 	sourceNoteFilter?: string;
 	sourceNoteFilters?: string[];
 	filePathFilter?: string;
@@ -30,19 +30,19 @@ export interface CustomSessionResult {
 	stateFilter?: "due" | "learning" | "new" | "buried";
 }
 
-export interface CustomSessionModalOptions {
+export interface SessionModalOptions {
 	currentNoteName: string | null;
 	allCards: FSRSFlashcardItem[];
 	dayBoundaryService: DayBoundaryService;
 }
 
 /**
- * Modal for selecting custom review session type
+ * Modal for selecting review session type
  */
-export class CustomSessionModal extends BaseModal {
-	private options: CustomSessionModalOptions;
-	private logic: CustomSessionLogic;
-	private resolvePromise: ((result: CustomSessionResult) => void) | null = null;
+export class SessionModal extends BaseModal {
+	private options: SessionModalOptions;
+	private logic: SessionLogic;
+	private resolvePromise: ((result: SessionResult) => void) | null = null;
 	private hasSelected = false;
 
 	// State
@@ -50,25 +50,25 @@ export class CustomSessionModal extends BaseModal {
 	private searchQuery = "";
 
 	// Component references
-	private headerComponent: CustomSessionHeader | null = null;
-	private contentComponent: CustomSessionContent | null = null;
-	private footerComponent: CustomSessionFooter | null = null;
+	private headerComponent: SessionHeader | null = null;
+	private contentComponent: SessionContent | null = null;
+	private footerComponent: SessionFooter | null = null;
 
 	// Container elements
 	private headerContainer!: HTMLElement;
 	private contentContainer!: HTMLElement;
 	private footerContainer!: HTMLElement;
 
-	constructor(app: App, options: CustomSessionModalOptions) {
+	constructor(app: App, options: SessionModalOptions) {
 		super(app, { title: "Review Session", width: "500px" });
 		this.options = options;
-		this.logic = new CustomSessionLogic(options.allCards, options.dayBoundaryService);
+		this.logic = new SessionLogic(options.allCards, options.dayBoundaryService);
 	}
 
 	/**
 	 * Open modal and return promise with selection result
 	 */
-	async openAndWait(): Promise<CustomSessionResult> {
+	async openAndWait(): Promise<SessionResult> {
 		return new Promise((resolve) => {
 			this.resolvePromise = resolve;
 			this.open();
@@ -77,7 +77,7 @@ export class CustomSessionModal extends BaseModal {
 
 	onOpen(): void {
 		super.onOpen();
-		this.contentEl.addClass("episteme-custom-session-modal");
+		this.contentEl.addClass("episteme-session-modal");
 	}
 
 	protected renderBody(container: HTMLElement): void {
@@ -97,7 +97,7 @@ export class CustomSessionModal extends BaseModal {
 		contentEl.empty();
 
 		if (!this.hasSelected && this.resolvePromise) {
-			this.resolvePromise(CustomSessionResultFactory.createCancelledResult());
+			this.resolvePromise(SessionResultFactory.createCancelledResult());
 			this.resolvePromise = null;
 		}
 	}
@@ -106,13 +106,13 @@ export class CustomSessionModal extends BaseModal {
 		const now = new Date();
 
 		// Header
-		this.headerComponent = new CustomSessionHeader(this.headerContainer, {
+		this.headerComponent = new SessionHeader(this.headerContainer, {
 			selectionCount: this.selectedNotes.size,
 		});
 		this.headerComponent.render();
 
 		// Content
-		this.contentComponent = new CustomSessionContent(this.contentContainer, {
+		this.contentComponent = new SessionContent(this.contentContainer, {
 			currentNoteName: this.options.currentNoteName,
 			allCards: this.options.allCards,
 			selectedNotes: this.selectedNotes,
@@ -127,7 +127,7 @@ export class CustomSessionModal extends BaseModal {
 		this.contentComponent.render();
 
 		// Footer
-		this.footerComponent = new CustomSessionFooter(this.footerContainer, {
+		this.footerComponent = new SessionFooter(this.footerContainer, {
 			selectionCount: this.selectedNotes.size,
 			onStartSession: () => this.startSelectedSession(),
 			onClearSelection: () => this.clearSelection(),
@@ -195,7 +195,7 @@ export class CustomSessionModal extends BaseModal {
 
 		this.hasSelected = true;
 		if (this.resolvePromise) {
-			this.resolvePromise(CustomSessionResultFactory.createCurrentNoteResult(this.options.currentNoteName));
+			this.resolvePromise(SessionResultFactory.createCurrentNoteResult(this.options.currentNoteName));
 			this.resolvePromise = null;
 		}
 		this.close();
@@ -204,7 +204,7 @@ export class CustomSessionModal extends BaseModal {
 	private selectTodaysCards(): void {
 		this.hasSelected = true;
 		if (this.resolvePromise) {
-			this.resolvePromise(CustomSessionResultFactory.createTodaysCardsResult());
+			this.resolvePromise(SessionResultFactory.createTodaysCardsResult());
 			this.resolvePromise = null;
 		}
 		this.close();
@@ -213,7 +213,7 @@ export class CustomSessionModal extends BaseModal {
 	private selectDefaultDeck(): void {
 		this.hasSelected = true;
 		if (this.resolvePromise) {
-			this.resolvePromise(CustomSessionResultFactory.createDefaultDeckResult());
+			this.resolvePromise(SessionResultFactory.createDefaultDeckResult());
 			this.resolvePromise = null;
 		}
 		this.close();
@@ -222,7 +222,7 @@ export class CustomSessionModal extends BaseModal {
 	private selectBuriedCards(): void {
 		this.hasSelected = true;
 		if (this.resolvePromise) {
-			this.resolvePromise(CustomSessionResultFactory.createBuriedCardsResult());
+			this.resolvePromise(SessionResultFactory.createBuriedCardsResult());
 			this.resolvePromise = null;
 		}
 		this.close();
@@ -234,7 +234,7 @@ export class CustomSessionModal extends BaseModal {
 		this.hasSelected = true;
 		if (this.resolvePromise) {
 			const noteFilters = Array.from(this.selectedNotes);
-			this.resolvePromise(CustomSessionResultFactory.createSelectedNotesResult(noteFilters));
+			this.resolvePromise(SessionResultFactory.createSelectedNotesResult(noteFilters));
 			this.resolvePromise = null;
 		}
 		this.close();

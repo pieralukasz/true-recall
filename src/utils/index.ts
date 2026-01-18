@@ -10,4 +10,4 @@ export {
     type CleanupFn,
 } from "./event.utils";
 
-export { CustomSessionResultFactory } from "./custom-session-result-factory";
+export { SessionResultFactory } from "./session-result-factory";

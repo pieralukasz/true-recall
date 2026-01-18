@@ -1,18 +1,18 @@
 /**
- * Custom Session Content Component
+ * Session Content Component
  * Contains quick actions, search, and note selection table
  */
 import { BaseComponent } from "../component.base";
-import type { CustomSessionLogic, NoteStats } from "../../logic/CustomSessionLogic";
+import type { SessionLogic, NoteStats } from "../../logic/SessionLogic";
 import type { FSRSFlashcardItem } from "../../types";
 
-export interface CustomSessionContentProps {
+export interface SessionContentProps {
 	currentNoteName: string | null;
 	allCards: FSRSFlashcardItem[];
 	selectedNotes: Set<string>;
 	searchQuery: string;
 	now: Date;
-	logic: CustomSessionLogic;
+	logic: SessionLogic;
 	onQuickAction: (action: "current-note" | "today" | "default" | "buried") => void;
 	onNoteToggle: (noteName: string) => void;
 	onSearchChange: (query: string) => void;
@@ -20,14 +20,14 @@ export interface CustomSessionContentProps {
 }
 
 /**
- * Custom session content component
+ * Session content component
  */
-export class CustomSessionContent extends BaseComponent {
-	private props: CustomSessionContentProps;
+export class SessionContent extends BaseComponent {
+	private props: SessionContentProps;
 	private noteTableBody: HTMLElement | null = null;
 	private searchInput: HTMLInputElement | null = null;
 
-	constructor(container: HTMLElement, props: CustomSessionContentProps) {
+	constructor(container: HTMLElement, props: SessionContentProps) {
 		super(container);
 		this.props = props;
 	}
@@ -40,7 +40,7 @@ export class CustomSessionContent extends BaseComponent {
 		}
 
 		this.element = this.container.createDiv({
-			cls: "episteme-custom-session-content",
+			cls: "episteme-session-content",
 		});
 
 		// Quick actions section
@@ -276,7 +276,7 @@ export class CustomSessionContent extends BaseComponent {
 	/**
 	 * Update the content with new props
 	 */
-	updateProps(props: Partial<CustomSessionContentProps>): void {
+	updateProps(props: Partial<SessionContentProps>): void {
 		this.props = { ...this.props, ...props };
 		this.render();
 	}

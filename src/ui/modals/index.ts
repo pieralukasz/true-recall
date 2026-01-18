@@ -3,11 +3,11 @@
  */
 export { CardPreviewModal, type CardPreviewModalOptions } from "./CardPreviewModal";
 export {
-    CustomSessionModal,
-    type CustomSessionResult,
-    type CustomSessionType,
-    type CustomSessionModalOptions,
-} from "./CustomSessionModal";
+    SessionModal,
+    type SessionResult,
+    type SessionType,
+    type SessionModalOptions,
+} from "./SessionModal";
 export {
     FlashcardReviewModal,
     type FlashcardReviewResult,
