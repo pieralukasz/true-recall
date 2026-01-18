@@ -6,6 +6,7 @@
 import { App, MarkdownRenderer, Component } from "obsidian";
 import { BaseModal } from "./BaseModal";
 import type { FSRSFlashcardItem } from "../../types";
+import { VaultSearchService, TextareaSuggest } from "../autocomplete";
 
 export interface FlashcardEditorResult {
 	cancelled: boolean;
@@ -46,6 +47,11 @@ export class FlashcardEditorModal extends BaseModal {
 	// Markdown rendering component
 	private renderComponent: Component | null = null;
 
+	// Autocomplete components
+	private vaultSearchService: VaultSearchService | null = null;
+	private questionSuggest: TextareaSuggest | null = null;
+	private answerSuggest: TextareaSuggest | null = null;
+
 	constructor(app: App, options: FlashcardEditorModalOptions) {
 		super(app, {
 			title: options.mode === "add" ? "Add New Flashcard" : "Edit Flashcard",
@@ -71,6 +77,10 @@ export class FlashcardEditorModal extends BaseModal {
 		// Initialize markdown rendering component
 		this.renderComponent = new Component();
 		this.renderComponent.load();
+
+		// Initialize autocomplete search service and build index
+		this.vaultSearchService = new VaultSearchService(this.app);
+		this.vaultSearchService.buildIndex();
 	}
 
 	protected renderBody(container: HTMLElement): void {
@@ -210,6 +220,16 @@ export class FlashcardEditorModal extends BaseModal {
 			this.questionTextarea = textarea;
 		} else {
 			this.answerTextarea = textarea;
+		}
+
+		// Attach autocomplete suggest
+		if (this.vaultSearchService) {
+			const suggest = new TextareaSuggest(textarea, this.vaultSearchService);
+			if (field === "question") {
+				this.questionSuggest = suggest;
+			} else {
+				this.answerSuggest = suggest;
+			}
 		}
 	}
 
@@ -526,6 +546,20 @@ export class FlashcardEditorModal extends BaseModal {
 	}
 
 	onClose(): void {
+		// Clean up autocomplete components
+		if (this.questionSuggest) {
+			this.questionSuggest.destroy();
+			this.questionSuggest = null;
+		}
+		if (this.answerSuggest) {
+			this.answerSuggest.destroy();
+			this.answerSuggest = null;
+		}
+		if (this.vaultSearchService) {
+			this.vaultSearchService.clear();
+			this.vaultSearchService = null;
+		}
+
 		// Clean up markdown rendering component
 		if (this.renderComponent) {
 			this.renderComponent.unload();
