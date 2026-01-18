@@ -1,11 +1,11 @@
 /**
- * Command Dashboard Modal
- * Displays all Episteme commands as clickable buttons organized by category
+ * Dashboard Content Component
+ * Contains command buttons organized by category
  */
-import { App, Notice } from "obsidian";
-import { BaseModal } from "./BaseModal";
-import type EpistemePlugin from "../../main";
+import { Notice } from "obsidian";
+import { BaseComponent } from "../component.base";
 import { CommandCategory, type CommandDefinition, type CommandCategoryConfig } from "../../types/command.types";
+import type EpistemePlugin from "../../main";
 
 /**
  * Command category configurations
@@ -42,31 +42,52 @@ const CATEGORIES: CommandCategoryConfig[] = [
 ];
 
 /**
- * Modal for command dashboard with grid button layout
+ * Map Obsidian icon names to emoji
  */
-export class CommandDashboardModal extends BaseModal {
-	private plugin: EpistemePlugin;
+const ICON_MAP: Record<string, string> = {
+	layout: "📐",
+	layers: "📚",
+	sparkles: "✨",
+	scan: "🔍",
+	search: "🔎",
+	brain: "🧠",
+	filter: "🔧",
+	"file-text": "📄",
+	calendar: "📅",
+	"bar-chart-2": "📊",
+};
+
+export interface DashboardContentProps {
+	plugin: EpistemePlugin;
+	onCommandExecuted: () => void;
+}
+
+/**
+ * Content component for dashboard view
+ */
+export class DashboardContent extends BaseComponent {
+	private props: DashboardContentProps;
 	private commands: CommandDefinition[] = [];
 
-	constructor(app: App, plugin: EpistemePlugin) {
-		super(app, { title: "Command Dashboard", width: "600px" });
-		this.plugin = plugin;
+	constructor(container: HTMLElement, props: DashboardContentProps) {
+		super(container);
+		this.props = props;
 		this.initializeCommands();
 	}
 
-	async openAndWait(): Promise<void> {
-		this.open();
-	}
+	render(): void {
+		if (this.element) {
+			this.element.remove();
+			this.events.cleanup();
+		}
 
-	onOpen(): void {
-		super.onOpen();
-		this.contentEl.addClass("episteme-command-dashboard-modal");
-	}
+		this.element = this.container.createDiv({
+			cls: "episteme-dashboard-content",
+		});
 
-	protected renderBody(container: HTMLElement): void {
 		// Render command buttons in grid layout by category
 		for (const category of CATEGORIES) {
-			this.renderCategorySection(container, category);
+			this.renderCategorySection(category);
 		}
 	}
 
@@ -74,6 +95,8 @@ export class CommandDashboardModal extends BaseModal {
 	 * Initialize all command definitions
 	 */
 	private initializeCommands(): void {
+		const plugin = this.props.plugin;
+
 		this.commands = [
 			// PANEL CATEGORY
 			{
@@ -83,7 +106,7 @@ export class CommandDashboardModal extends BaseModal {
 				icon: "layers",
 				category: CommandCategory.PANEL,
 				requiresActiveFile: false,
-				callback: () => this.plugin.activateView(),
+				callback: () => plugin.activateView(),
 			},
 			{
 				id: "open-statistics",
@@ -92,7 +115,7 @@ export class CommandDashboardModal extends BaseModal {
 				icon: "bar-chart-2",
 				category: CommandCategory.PANEL,
 				requiresActiveFile: false,
-				callback: () => this.plugin.openStatsView(),
+				callback: () => plugin.openStatsView(),
 			},
 
 			// GENERATION CATEGORY
@@ -115,8 +138,7 @@ export class CommandDashboardModal extends BaseModal {
 				callback: async () => {
 					try {
 						new Notice("Scanning vault for flashcards...");
-						const result =
-							await this.plugin.flashcardManager.scanVault();
+						const result = await plugin.flashcardManager.scanVault();
 						let message = `Scan complete! Found ${result.totalCards} cards`;
 						if (result.newCardsProcessed > 0) {
 							message += `, added ${result.newCardsProcessed} new`;
@@ -140,7 +162,7 @@ export class CommandDashboardModal extends BaseModal {
 				icon: "search",
 				category: CommandCategory.GENERATION,
 				requiresActiveFile: false,
-				callback: () => this.plugin.showMissingFlashcards(),
+				callback: () => plugin.showMissingFlashcards(),
 			},
 
 			// REVIEW CATEGORY
@@ -151,7 +173,7 @@ export class CommandDashboardModal extends BaseModal {
 				icon: "brain",
 				category: CommandCategory.REVIEW,
 				requiresActiveFile: false,
-				callback: () => this.plugin.startReviewSession(),
+				callback: () => plugin.startReviewSession(),
 			},
 			{
 				id: "start-custom-review",
@@ -160,7 +182,7 @@ export class CommandDashboardModal extends BaseModal {
 				icon: "filter",
 				category: CommandCategory.REVIEW,
 				requiresActiveFile: false,
-				callback: () => this.plugin.startReviewSession(),
+				callback: () => plugin.startReviewSession(),
 			},
 			{
 				id: "review-current-note",
@@ -178,7 +200,7 @@ export class CommandDashboardModal extends BaseModal {
 				icon: "calendar",
 				category: CommandCategory.REVIEW,
 				requiresActiveFile: false,
-				callback: () => this.plugin.reviewTodaysCards(),
+				callback: () => plugin.reviewTodaysCards(),
 			},
 
 			// ANALYSIS CATEGORY
@@ -189,19 +211,15 @@ export class CommandDashboardModal extends BaseModal {
 				icon: "bar-chart-2",
 				category: CommandCategory.ANALYSIS,
 				requiresActiveFile: false,
-				callback: () => this.plugin.openStatsView(),
+				callback: () => plugin.openStatsView(),
 			},
-
 		];
 	}
 
 	/**
 	 * Render a category section with its command buttons
 	 */
-	private renderCategorySection(
-		container: HTMLElement,
-		category: CommandCategoryConfig
-	): void {
+	private renderCategorySection(category: CommandCategoryConfig): void {
 		const categoryCommands = this.commands.filter(
 			(cmd) => cmd.category === category.id
 		);
@@ -209,13 +227,13 @@ export class CommandDashboardModal extends BaseModal {
 		if (categoryCommands.length === 0) return;
 
 		// Category header
-		container.createEl("h3", {
+		this.element!.createEl("h3", {
 			text: category.name,
 			cls: "episteme-command-category-title",
 		});
 
 		// Buttons grid
-		const gridEl = container.createDiv({
+		const gridEl = this.element!.createDiv({
 			cls: "episteme-command-buttons-grid",
 		});
 
@@ -227,7 +245,7 @@ export class CommandDashboardModal extends BaseModal {
 			// Icon + label
 			btn.createSpan({
 				cls: "episteme-command-btn-icon",
-				text: this.getIconEmoji(command.icon),
+				text: ICON_MAP[command.icon] || "⚡",
 			});
 
 			btn.createSpan({
@@ -238,31 +256,10 @@ export class CommandDashboardModal extends BaseModal {
 			// Show description on hover
 			btn.title = command.description;
 
-			btn.addEventListener("click", () => {
+			this.events.addEventListener(btn, "click", () => {
 				void this.executeCommand(command);
-				this.close();
 			});
 		}
-	}
-
-	/**
-	 * Map Obsidian icon names to emoji
-	 */
-	private getIconEmoji(iconName: string): string {
-		const iconMap: Record<string, string> = {
-			layout: "📐",
-			layers: "📚",
-			sparkles: "✨",
-			scan: "🔍",
-			search: "🔎",
-			brain: "🧠",
-			filter: "🔧",
-			"file-text": "📄",
-			calendar: "📅",
-			"bar-chart-2": "📊",
-		};
-
-		return iconMap[iconName] || "⚡";
 	}
 
 	/**
@@ -271,7 +268,7 @@ export class CommandDashboardModal extends BaseModal {
 	private async executeCommand(command: CommandDefinition): Promise<void> {
 		// Check if command requires active file
 		if (command.requiresActiveFile) {
-			const activeFile = this.plugin.app.workspace.getActiveFile();
+			const activeFile = this.props.plugin.app.workspace.getActiveFile();
 			if (!activeFile || activeFile.extension !== "md") {
 				new Notice("This command requires an active markdown file");
 				return;
@@ -280,6 +277,7 @@ export class CommandDashboardModal extends BaseModal {
 
 		try {
 			await command.callback();
+			this.props.onCommandExecuted();
 		} catch (error) {
 			new Notice(
 				`Command failed: ${error instanceof Error ? error.message : String(error)}`
@@ -291,26 +289,26 @@ export class CommandDashboardModal extends BaseModal {
 	 * Handle generate flashcards command
 	 */
 	private handleGenerateFlashcards(): void {
-		const activeFile = this.plugin.app.workspace.getActiveFile();
+		const activeFile = this.props.plugin.app.workspace.getActiveFile();
 		if (!activeFile || activeFile.extension !== "md") {
 			new Notice("Please open a markdown file first");
 			return;
 		}
 
 		// Activate panel which will show generation options
-		void this.plugin.activateView();
+		void this.props.plugin.activateView();
 	}
 
 	/**
 	 * Handle review current note command
 	 */
 	private async handleReviewCurrentNote(): Promise<void> {
-		const activeFile = this.plugin.app.workspace.getActiveFile();
+		const activeFile = this.props.plugin.app.workspace.getActiveFile();
 		if (!activeFile) {
 			new Notice("No active note");
 			return;
 		}
 
-		await this.plugin.reviewCurrentNote();
+		await this.props.plugin.reviewCurrentNote();
 	}
 }
