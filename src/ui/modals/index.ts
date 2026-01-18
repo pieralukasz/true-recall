@@ -31,16 +31,6 @@ export {
 } from "./ReadyToHarvestModal";
 export { CommandDashboardModal } from "./CommandDashboardModal";
 export {
-    AddFlashcardModal,
-    type AddFlashcardResult,
-    type AddFlashcardModalOptions,
-} from "./AddFlashcardModal";
-export {
-    EditFlashcardModal,
-    type EditFlashcardResult,
-    type EditFlashcardModalOptions,
-} from "./EditFlashcardModal";
-export {
     FlashcardEditorModal,
     KeyboardShortcutsModal,
     type FlashcardEditorResult,
