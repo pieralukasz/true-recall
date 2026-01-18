@@ -18,7 +18,6 @@ import { PanelContent } from "./PanelContent";
 import { PanelFooter } from "./PanelFooter";
 import { MoveCardModal } from "../modals/MoveCardModal";
 import { FlashcardEditorModal } from "../modals/FlashcardEditorModal";
-import { EditFlashcardModal } from "../modals/EditFlashcardModal";
 import type { FlashcardItem, FlashcardChange } from "../../types";
 import type { CardAddedEvent, CardRemovedEvent, CardUpdatedEvent, BulkChangeEvent } from "../../types/events.types";
 import { createDefaultFSRSData } from "../../types";
@@ -662,29 +661,25 @@ export class FlashcardPanelView extends ItemView {
         const state = this.stateManager.getState();
         if (!state.currentFile) return;
 
-        // Get source UID from frontmatter
-        const frontmatterService = this.flashcardManager.getFrontmatterService();
-        const sourceUid = await frontmatterService.getSourceNoteUid(state.currentFile);
-        if (!sourceUid) {
-            new Notice("Cannot edit: source note not found");
-            return;
-        }
+        // Use card directly - it already has question/answer from the panel UI
+        // No need to look up from SQLite which may return cards with empty content
+        const modal = new FlashcardEditorModal(this.app, {
+            mode: "edit",
+            card: {
+                ...card,
+                filePath: state.currentFile.path,
+                fsrs: createDefaultFSRSData(card.id),
+                deck: "Knowledge",
+            },
+            currentFilePath: state.currentFile.path,
+            sourceNoteName: state.currentFile.basename,
+            deck: "Knowledge",
+        });
 
-        // Get full FSRSFlashcardItem from store
-        const fullCards = this.flashcardManager.getFlashcardsBySourceUid(sourceUid);
-        const fullCard = fullCards.find(c => c.id === card.id);
-        if (!fullCard) {
-            new Notice("Cannot edit: card not found");
-            return;
-        }
-
-        // Open edit modal
-        const modal = new EditFlashcardModal(this.app, { card: fullCard });
         const result = await modal.openAndWait();
-
         if (result.cancelled) return;
 
-        // Update card content
+        // Update card content using card.id
         try {
             this.flashcardManager.updateCardContent(
                 card.id,
