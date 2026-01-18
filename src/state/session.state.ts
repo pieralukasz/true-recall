@@ -1,18 +1,18 @@
 /**
- * Custom Session State Manager
- * Centralized state management for the custom session view
+ * Session State Manager
+ * Centralized state management for the session view
  */
 import type { FSRSFlashcardItem } from "../types";
 import type {
-	CustomSessionState,
-	CustomSessionStateListener,
-	PartialCustomSessionState,
+	SessionState,
+	SessionStateListener,
+	PartialSessionState,
 } from "./state.types";
 
 /**
- * Creates the initial custom session state
+ * Creates the initial session state
  */
-function createInitialState(): CustomSessionState {
+function createInitialState(): SessionState {
 	return {
 		currentNoteName: null,
 		allCards: [],
@@ -23,12 +23,12 @@ function createInitialState(): CustomSessionState {
 }
 
 /**
- * Centralized state manager for the custom session view
+ * Centralized state manager for the session view
  * Provides reactive state updates and subscription capabilities
  */
-export class CustomSessionStateManager {
-	private state: CustomSessionState;
-	private listeners: Set<CustomSessionStateListener> = new Set();
+export class SessionStateManager {
+	private state: SessionState;
+	private listeners: Set<SessionStateListener> = new Set();
 
 	constructor() {
 		this.state = createInitialState();
@@ -37,7 +37,7 @@ export class CustomSessionStateManager {
 	/**
 	 * Get current state (immutable copy)
 	 */
-	getState(): CustomSessionState {
+	getState(): SessionState {
 		return {
 			...this.state,
 			selectedNotes: new Set(this.state.selectedNotes),
@@ -48,7 +48,7 @@ export class CustomSessionStateManager {
 	 * Update state with partial updates
 	 * Notifies all listeners of the change
 	 */
-	setState(partial: PartialCustomSessionState): void {
+	setState(partial: PartialSessionState): void {
 		const prevState = this.state;
 		this.state = {
 			...this.state,
@@ -62,7 +62,7 @@ export class CustomSessionStateManager {
 	 * Subscribe to state changes
 	 * Returns unsubscribe function
 	 */
-	subscribe(listener: CustomSessionStateListener): () => void {
+	subscribe(listener: SessionStateListener): () => void {
 		this.listeners.add(listener);
 		return () => this.listeners.delete(listener);
 	}
@@ -168,21 +168,21 @@ export class CustomSessionStateManager {
 		return new Set(set);
 	}
 
-	private notifyListeners(prevState: CustomSessionState): void {
+	private notifyListeners(prevState: SessionState): void {
 		const currentState = this.state;
 		this.listeners.forEach((listener) => {
 			try {
 				listener(currentState, prevState);
 			} catch (error) {
-				console.error("Error in custom session state listener:", error);
+				console.error("Error in session state listener:", error);
 			}
 		});
 	}
 }
 
 /**
- * Create a new CustomSessionStateManager instance
+ * Create a new SessionStateManager instance
  */
-export function createCustomSessionStateManager(): CustomSessionStateManager {
-	return new CustomSessionStateManager();
+export function createSessionStateManager(): SessionStateManager {
+	return new SessionStateManager();
 }

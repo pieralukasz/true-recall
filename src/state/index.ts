@@ -21,11 +21,11 @@ export {
 } from "./review.state";
 
 export {
-	CustomSessionStateManager,
-	createCustomSessionStateManager,
-} from "./custom-session.state";
+	SessionStateManager,
+	createSessionStateManager,
+} from "./session.state";
 export type {
-	CustomSessionState,
-	CustomSessionStateListener,
-	PartialCustomSessionState,
+	SessionState,
+	SessionStateListener,
+	PartialSessionState,
 } from "./state.types";
