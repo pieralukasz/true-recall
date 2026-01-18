@@ -4,6 +4,9 @@ import {
 	VIEW_TYPE_REVIEW,
 	VIEW_TYPE_STATS,
 	VIEW_TYPE_SESSION,
+	VIEW_TYPE_MISSING_FLASHCARDS,
+	VIEW_TYPE_READY_TO_HARVEST,
+	VIEW_TYPE_DASHBOARD,
 	FLASHCARD_CONFIG,
 } from "./constants";
 import {
@@ -23,17 +26,15 @@ import { FlashcardPanelView } from "./ui/panel/FlashcardPanelView";
 import { ReviewView } from "./ui/review/ReviewView";
 import { StatsView } from "./ui/stats/StatsView";
 import { SessionView } from "./ui/session";
+import { MissingFlashcardsView } from "./ui/missing-flashcards";
+import { ReadyToHarvestView } from "./ui/ready-to-harvest";
+import { DashboardView } from "./ui/dashboard";
 import {
 	EpistemeSettingTab,
 	type EpistemeSettings,
 	DEFAULT_SETTINGS,
 } from "./ui/settings";
-import {
-	SessionModal,
-	MissingFlashcardsModal,
-	ReadyToHarvestModal,
-	CommandDashboardModal,
-} from "./ui/modals";
+import { SessionModal } from "./ui/modals";
 import { registerCommands } from "./plugin/PluginCommands";
 import { registerEventHandlers } from "./plugin/PluginEventHandlers";
 
@@ -95,6 +96,24 @@ export default class EpistemePlugin extends Plugin {
 		this.registerView(
 			VIEW_TYPE_SESSION,
 			(leaf) => new SessionView(leaf, this)
+		);
+
+		// Register the missing flashcards view
+		this.registerView(
+			VIEW_TYPE_MISSING_FLASHCARDS,
+			(leaf) => new MissingFlashcardsView(leaf, this)
+		);
+
+		// Register the ready to harvest view
+		this.registerView(
+			VIEW_TYPE_READY_TO_HARVEST,
+			(leaf) => new ReadyToHarvestView(leaf, this)
+		);
+
+		// Register the dashboard view
+		this.registerView(
+			VIEW_TYPE_DASHBOARD,
+			(leaf) => new DashboardView(leaf, this)
 		);
 
 		// Add ribbon icon to start review
@@ -239,6 +258,111 @@ export default class EpistemePlugin extends Plugin {
 				allCards,
 				dayBoundaryService: this.dayBoundaryService,
 			});
+			void workspace.revealLeaf(leaf);
+		}
+	}
+
+	/**
+	 * Activate the missing flashcards view
+	 */
+	async activateMissingFlashcardsView(): Promise<void> {
+		const { workspace } = this.app;
+
+		// Check if view already exists
+		let leaf = workspace.getLeavesOfType(VIEW_TYPE_MISSING_FLASHCARDS)[0];
+
+		if (!leaf) {
+			if (Platform.isMobile) {
+				// On mobile, open in main area
+				leaf = workspace.getLeaf(true);
+				await leaf.setViewState({
+					type: VIEW_TYPE_MISSING_FLASHCARDS,
+					active: true,
+				});
+			} else {
+				// Desktop: use right sidebar
+				const rightLeaf = workspace.getRightLeaf(false);
+				if (rightLeaf) {
+					await rightLeaf.setViewState({
+						type: VIEW_TYPE_MISSING_FLASHCARDS,
+						active: true,
+					});
+					leaf = rightLeaf;
+				}
+			}
+		}
+
+		if (leaf) {
+			void workspace.revealLeaf(leaf);
+		}
+	}
+
+	/**
+	 * Activate the ready to harvest view
+	 */
+	async activateReadyToHarvestView(): Promise<void> {
+		const { workspace } = this.app;
+
+		// Check if view already exists
+		let leaf = workspace.getLeavesOfType(VIEW_TYPE_READY_TO_HARVEST)[0];
+
+		if (!leaf) {
+			if (Platform.isMobile) {
+				// On mobile, open in main area
+				leaf = workspace.getLeaf(true);
+				await leaf.setViewState({
+					type: VIEW_TYPE_READY_TO_HARVEST,
+					active: true,
+				});
+			} else {
+				// Desktop: use right sidebar
+				const rightLeaf = workspace.getRightLeaf(false);
+				if (rightLeaf) {
+					await rightLeaf.setViewState({
+						type: VIEW_TYPE_READY_TO_HARVEST,
+						active: true,
+					});
+					leaf = rightLeaf;
+				}
+			}
+		}
+
+		if (leaf) {
+			void workspace.revealLeaf(leaf);
+		}
+	}
+
+	/**
+	 * Activate the dashboard view
+	 */
+	async activateDashboardView(): Promise<void> {
+		const { workspace } = this.app;
+
+		// Check if view already exists
+		let leaf = workspace.getLeavesOfType(VIEW_TYPE_DASHBOARD)[0];
+
+		if (!leaf) {
+			if (Platform.isMobile) {
+				// On mobile, open in main area
+				leaf = workspace.getLeaf(true);
+				await leaf.setViewState({
+					type: VIEW_TYPE_DASHBOARD,
+					active: true,
+				});
+			} else {
+				// Desktop: use right sidebar
+				const rightLeaf = workspace.getRightLeaf(false);
+				if (rightLeaf) {
+					await rightLeaf.setViewState({
+						type: VIEW_TYPE_DASHBOARD,
+						active: true,
+					});
+					leaf = rightLeaf;
+				}
+			}
+		}
+
+		if (leaf) {
 			void workspace.revealLeaf(leaf);
 		}
 	}
@@ -425,26 +549,25 @@ export default class EpistemePlugin extends Plugin {
 	 * Show modal with notes missing flashcards
 	 */
 	async showMissingFlashcards(): Promise<void> {
-		const modal = new MissingFlashcardsModal(
-			this.app,
-			this.flashcardManager,
-			{
-				flashcardsFolder: this.settings.flashcardsFolder,
-				excludedFolders: this.settings.excludedFolders,
-			}
-		);
+		return new Promise<void>((resolve) => {
+			const eventBus = getEventBus();
+			const unsubscribe = eventBus.on("missing-flashcards:selected", (event: any) => {
+				unsubscribe();
 
-		const result = await modal.openAndWait();
-		if (result.cancelled || !result.selectedNotePath) return;
+				if (!event.result.cancelled && event.result.selectedNotePath) {
+					// Open the selected note
+					const file = this.app.vault.getAbstractFileByPath(event.result.selectedNotePath);
+					if (file instanceof TFile) {
+						const leaf = this.app.workspace.getLeaf(false);
+						void leaf.openFile(file).then(() => this.activateView());
+					}
+				}
 
-		// Open the selected note
-		const file = this.app.vault.getAbstractFileByPath(result.selectedNotePath);
-		if (file instanceof TFile) {
-			const leaf = this.app.workspace.getLeaf(false);
-			await leaf.openFile(file);
-			// Activate panel to allow flashcard generation
-			await this.activateView();
-		}
+				resolve();
+			});
+
+			void this.activateMissingFlashcardsView();
+		});
 	}
 
 	/**
@@ -452,16 +575,7 @@ export default class EpistemePlugin extends Plugin {
 	 * (all flashcards reviewed, no State.New cards)
 	 */
 	async showReadyToHarvest(): Promise<void> {
-		const modal = new ReadyToHarvestModal(
-			this.app,
-			this.flashcardManager,
-			this.flashcardManager.getFrontmatterService(),
-			{
-				flashcardsFolder: this.settings.flashcardsFolder,
-				excludedFolders: this.settings.excludedFolders,
-			}
-		);
-		modal.open();
+		await this.activateReadyToHarvestView();
 	}
 
 	/**
@@ -549,8 +663,7 @@ export default class EpistemePlugin extends Plugin {
 	 * Open the command dashboard modal
 	 */
 	openCommandDashboard(): void {
-		const modal = new CommandDashboardModal(this.app, this);
-		modal.openAndWait();
+		void this.activateDashboardView();
 	}
 
 	/**

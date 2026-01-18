@@ -14,6 +14,15 @@ export const VIEW_TYPE_STATS = "episteme-stats";
 /** View type identifier for the session panel */
 export const VIEW_TYPE_SESSION = "episteme-session";
 
+/** View type identifier for the missing flashcards panel */
+export const VIEW_TYPE_MISSING_FLASHCARDS = "episteme-missing-flashcards";
+
+/** View type identifier for the ready to harvest panel */
+export const VIEW_TYPE_READY_TO_HARVEST = "episteme-ready-to-harvest";
+
+/** View type identifier for the dashboard panel */
+export const VIEW_TYPE_DASHBOARD = "episteme-dashboard";
+
 // ===== AI Models =====
 
 /** AI Models available via OpenRouter */
