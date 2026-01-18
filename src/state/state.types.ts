@@ -92,3 +92,70 @@ export type SessionStateListener = (state: SessionState, prevState: SessionState
 export type PartialSessionState = Partial<Omit<SessionState, "selectedNotes">> & {
     selectedNotes?: Set<string> | string[];
 };
+
+// ===== Missing Flashcards State Types =====
+
+/**
+ * Note with missing flashcards info
+ */
+export interface NoteWithMissingFlashcards {
+    file: TFile;
+    tagType: "raw" | "zettel";
+    tagDisplay: string;
+}
+
+/**
+ * Complete state of the missing flashcards view
+ */
+export interface MissingFlashcardsState {
+    /** Loading state */
+    isLoading: boolean;
+    /** All notes missing flashcards */
+    allMissingNotes: NoteWithMissingFlashcards[];
+    /** Search query for filtering */
+    searchQuery: string;
+    /** Active tag filter */
+    activeTagFilter: "raw" | "zettel" | null;
+}
+
+/**
+ * Listener callback type for missing flashcards state changes
+ */
+export type MissingFlashcardsStateListener = (state: MissingFlashcardsState, prevState: MissingFlashcardsState) => void;
+
+/**
+ * Partial state update type for missing flashcards
+ */
+export type PartialMissingFlashcardsState = Partial<MissingFlashcardsState>;
+
+// ===== Ready to Harvest State Types =====
+
+/**
+ * Note ready to harvest info
+ */
+export interface NoteReadyToHarvest {
+    file: TFile;
+    cardCount: number;
+}
+
+/**
+ * Complete state of the ready to harvest view
+ */
+export interface ReadyToHarvestState {
+    /** Loading state */
+    isLoading: boolean;
+    /** All notes ready to harvest */
+    allReadyNotes: NoteReadyToHarvest[];
+    /** Search query for filtering */
+    searchQuery: string;
+}
+
+/**
+ * Listener callback type for ready to harvest state changes
+ */
+export type ReadyToHarvestStateListener = (state: ReadyToHarvestState, prevState: ReadyToHarvestState) => void;
+
+/**
+ * Partial state update type for ready to harvest
+ */
+export type PartialReadyToHarvestState = Partial<ReadyToHarvestState>;
