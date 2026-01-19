@@ -86,3 +86,15 @@ export type {
 // Re-export ts-fsrs enums (for isolatedModules compatibility)
 export { State, Rating } from "./fsrs";
 export type { Grade } from "./fsrs";
+
+// Image types
+export type {
+    CardImageRef,
+    ImageInsertOptions,
+    ImageExtension,
+} from "./image.types";
+export {
+    IMAGE_EXTENSIONS,
+    isImageExtension,
+    MAX_IMAGE_SIZE_BYTES,
+} from "./image.types";

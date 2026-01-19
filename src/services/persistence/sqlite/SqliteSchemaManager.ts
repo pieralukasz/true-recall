@@ -18,11 +18,11 @@ export class SqliteSchemaManager {
     }
 
     /**
-     * Create database tables (schema v3)
+     * Create database tables (schema v4)
      */
     createTables(): void {
         this.db.run(`
-            -- Cards table with FSRS scheduling data + content (v3)
+            -- Cards table with FSRS scheduling data + content (v4)
             CREATE TABLE IF NOT EXISTS cards (
                 id TEXT PRIMARY KEY,
                 due TEXT NOT NULL,
@@ -102,6 +102,19 @@ export class SqliteSchemaManager {
 
             CREATE INDEX IF NOT EXISTS idx_daily_reviewed_date ON daily_reviewed_cards(date);
 
+            -- Card image references (for tracking images in flashcards)
+            CREATE TABLE IF NOT EXISTS card_image_refs (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                card_id TEXT NOT NULL,
+                image_path TEXT NOT NULL,
+                field TEXT NOT NULL,
+                created_at INTEGER,
+                FOREIGN KEY (card_id) REFERENCES cards(id) ON DELETE CASCADE
+            );
+
+            CREATE INDEX IF NOT EXISTS idx_image_refs_path ON card_image_refs(image_path);
+            CREATE INDEX IF NOT EXISTS idx_image_refs_card ON card_image_refs(card_id);
+
             -- Metadata
             CREATE TABLE IF NOT EXISTS meta (
                 key TEXT PRIMARY KEY,
@@ -109,7 +122,7 @@ export class SqliteSchemaManager {
             );
 
             -- Set schema version
-            INSERT OR REPLACE INTO meta (key, value) VALUES ('schema_version', '3');
+            INSERT OR REPLACE INTO meta (key, value) VALUES ('schema_version', '4');
             INSERT OR REPLACE INTO meta (key, value) VALUES ('created_at', datetime('now'));
         `);
     }
@@ -126,6 +139,10 @@ export class SqliteSchemaManager {
 
         if (currentVersion < 3) {
             this.migrateV2toV3();
+        }
+
+        if (currentVersion < 4) {
+            this.migrateV3toV4();
         }
     }
 
@@ -243,6 +260,35 @@ export class SqliteSchemaManager {
             this.onSchemaChange();
         } catch (error) {
             console.error("[Episteme] Schema migration v2->v3 failed:", error);
+        }
+    }
+
+    /**
+     * Migrate from v3 to v4 (add card_image_refs table)
+     */
+    private migrateV3toV4(): void {
+        console.log("[Episteme] Migrating schema v3 -> v4...");
+
+        try {
+            this.db.run(`
+                CREATE TABLE IF NOT EXISTS card_image_refs (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    card_id TEXT NOT NULL,
+                    image_path TEXT NOT NULL,
+                    field TEXT NOT NULL,
+                    created_at INTEGER,
+                    FOREIGN KEY (card_id) REFERENCES cards(id) ON DELETE CASCADE
+                );
+
+                CREATE INDEX IF NOT EXISTS idx_image_refs_path ON card_image_refs(image_path);
+                CREATE INDEX IF NOT EXISTS idx_image_refs_card ON card_image_refs(card_id);
+            `);
+
+            this.db.run("INSERT OR REPLACE INTO meta (key, value) VALUES ('schema_version', '4')");
+            console.log("[Episteme] Schema migration v3->v4 completed");
+            this.onSchemaChange();
+        } catch (error) {
+            console.error("[Episteme] Schema migration v3->v4 failed:", error);
         }
     }
 }
