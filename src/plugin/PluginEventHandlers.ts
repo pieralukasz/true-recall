@@ -5,7 +5,8 @@
 import { TFile } from "obsidian";
 import type EpistemePlugin from "../main";
 import { FlashcardPanelView } from "../ui/panel/FlashcardPanelView";
-import { VIEW_TYPE_FLASHCARD_PANEL, FLASHCARD_CONFIG } from "../constants";
+import { VIEW_TYPE_FLASHCARD_PANEL } from "../constants";
+import type { CardStore } from "../types";
 
 /**
  * Register workspace and vault event handlers
@@ -51,6 +52,14 @@ export function registerEventHandlers(plugin: EpistemePlugin): void {
             const frontmatterService = plugin.flashcardManager.getFrontmatterService();
             const uid = await frontmatterService.getSourceNoteUid(file);
             if (!uid) return;
+
+            // Update source_notes table in SQLite with new path and name
+            const store = plugin.cardStore as CardStore & {
+                updateSourceNotePath?: (uid: string, newPath: string, newName?: string) => void;
+            };
+            if (store.updateSourceNotePath) {
+                store.updateSourceNotePath(uid, file.path, file.basename);
+            }
 
             const flashcardPath = plugin.flashcardManager.getFlashcardPathByUid(uid);
             const flashcardFile = plugin.app.vault.getAbstractFileByPath(flashcardPath);

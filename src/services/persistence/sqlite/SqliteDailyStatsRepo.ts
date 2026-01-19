@@ -67,11 +67,17 @@ export class SqliteDailyStatsRepo {
     // ===== Daily Stats =====
 
     /**
-     * Get daily stats for a date
+     * Get daily stats for a date (optimized with single JOIN query)
      */
     getDailyStats(date: string): ExtendedDailyStats | null {
         const result = this.db.exec(`
-            SELECT * FROM daily_stats WHERE date = ?
+            SELECT
+                ds.*,
+                GROUP_CONCAT(drc.card_id) as reviewed_card_ids
+            FROM daily_stats ds
+            LEFT JOIN daily_reviewed_cards drc ON ds.date = drc.date
+            WHERE ds.date = ?
+            GROUP BY ds.date
         `, [date]);
 
         const data = getQueryResult(result);
@@ -80,8 +86,10 @@ export class SqliteDailyStatsRepo {
         const row = data.values[0]!;
         const cols = data.columns;
 
-        // Get reviewed card IDs
-        const reviewedCardIds = this.getReviewedCardIds(date);
+        const reviewedCardIdsStr = row[cols.indexOf("reviewed_card_ids")] as string | null;
+        const reviewedCardIds = reviewedCardIdsStr
+            ? reviewedCardIdsStr.split(",")
+            : [];
 
         return {
             date: row[cols.indexOf("date")] as string,
@@ -208,32 +216,57 @@ export class SqliteDailyStatsRepo {
     }
 
     /**
-     * Get all daily stats
+     * Get all daily stats (optimized with single JOIN query)
      */
     getAllDailyStats(): Record<string, ExtendedDailyStats> {
-        const result = this.db.exec(`SELECT * FROM daily_stats ORDER BY date`);
+        const result = this.db.exec(`
+            SELECT
+                ds.*,
+                GROUP_CONCAT(drc.card_id) as reviewed_card_ids
+            FROM daily_stats ds
+            LEFT JOIN daily_reviewed_cards drc ON ds.date = drc.date
+            GROUP BY ds.date
+            ORDER BY ds.date
+        `);
         const data = getQueryResult(result);
         if (!data) return {};
 
         const stats: Record<string, ExtendedDailyStats> = {};
+        const cols = data.columns;
+
+        // Cache column indices once
+        const dateIdx = cols.indexOf("date");
+        const reviewsCompletedIdx = cols.indexOf("reviews_completed");
+        const newCardsStudiedIdx = cols.indexOf("new_cards_studied");
+        const totalTimeMsIdx = cols.indexOf("total_time_ms");
+        const againCountIdx = cols.indexOf("again_count");
+        const hardCountIdx = cols.indexOf("hard_count");
+        const goodCountIdx = cols.indexOf("good_count");
+        const easyCountIdx = cols.indexOf("easy_count");
+        const newCardsIdx = cols.indexOf("new_cards");
+        const learningCardsIdx = cols.indexOf("learning_cards");
+        const reviewCardsIdx = cols.indexOf("review_cards");
+        const reviewedCardIdsIdx = cols.indexOf("reviewed_card_ids");
 
         for (const row of data.values) {
-            const cols = data.columns;
-            const date = row[cols.indexOf("date")] as string;
-            const reviewedCardIds = this.getReviewedCardIds(date);
+            const date = row[dateIdx] as string;
+            const reviewedCardIdsStr = row[reviewedCardIdsIdx] as string | null;
+            const reviewedCardIds = reviewedCardIdsStr
+                ? reviewedCardIdsStr.split(",")
+                : [];
 
             stats[date] = {
                 date,
-                reviewsCompleted: row[cols.indexOf("reviews_completed")] as number,
-                newCardsStudied: row[cols.indexOf("new_cards_studied")] as number,
-                totalTimeMs: row[cols.indexOf("total_time_ms")] as number,
-                again: row[cols.indexOf("again_count")] as number,
-                hard: row[cols.indexOf("hard_count")] as number,
-                good: row[cols.indexOf("good_count")] as number,
-                easy: row[cols.indexOf("easy_count")] as number,
-                newCards: row[cols.indexOf("new_cards")] as number,
-                learningCards: row[cols.indexOf("learning_cards")] as number,
-                reviewCards: row[cols.indexOf("review_cards")] as number,
+                reviewsCompleted: row[reviewsCompletedIdx] as number,
+                newCardsStudied: row[newCardsStudiedIdx] as number,
+                totalTimeMs: row[totalTimeMsIdx] as number,
+                again: row[againCountIdx] as number,
+                hard: row[hardCountIdx] as number,
+                good: row[goodCountIdx] as number,
+                easy: row[easyCountIdx] as number,
+                newCards: row[newCardsIdx] as number,
+                learningCards: row[learningCardsIdx] as number,
+                reviewCards: row[reviewCardsIdx] as number,
                 reviewedCardIds,
             };
         }

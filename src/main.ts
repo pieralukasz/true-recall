@@ -20,7 +20,7 @@ import {
 	resetEventBus,
 	getEventBus,
 } from "./services";
-import type { CardStore } from "./types";
+import type { CardStore, SourceNoteInfo } from "./types";
 import { extractFSRSSettings } from "./types";
 import { FlashcardPanelView } from "./ui/panel/FlashcardPanelView";
 import { ReviewView } from "./ui/review/ReviewView";
@@ -739,5 +739,43 @@ export default class EpistemePlugin extends Plugin {
 			console.error("[Episteme] Failed to initialize SQLite store:", error);
 			new Notice("Failed to load flashcard data. Please restart Obsidian.");
 		}
+	}
+
+	/**
+	 * Sync source notes in database with vault files
+	 * Useful after renaming notes when the handler didn't trigger
+	 */
+	async syncSourceNotes(): Promise<void> {
+		const sqlStore = this.cardStore as CardStore & {
+			getAllSourceNotes?: () => SourceNoteInfo[];
+			updateSourceNotePath?: (uid: string, newPath: string, newName?: string) => void;
+		};
+
+		if (!sqlStore.getAllSourceNotes || !sqlStore.updateSourceNotePath) {
+			new Notice("Source note sync not available");
+			return;
+		}
+
+		const sourceNotes = sqlStore.getAllSourceNotes();
+		const frontmatterService = this.flashcardManager.getFrontmatterService();
+		let synced = 0;
+
+		for (const sourceNote of sourceNotes) {
+			// Find file with matching flashcard_uid
+			const files = this.app.vault.getMarkdownFiles();
+			for (const file of files) {
+				const uid = await frontmatterService.getSourceNoteUid(file);
+				if (uid === sourceNote.uid) {
+					// Check if path/name needs updating
+					if (file.path !== sourceNote.notePath || file.basename !== sourceNote.noteName) {
+						sqlStore.updateSourceNotePath(sourceNote.uid, file.path, file.basename);
+						synced++;
+					}
+					break;
+				}
+			}
+		}
+
+		new Notice(`Synced ${synced} source note(s)`);
 	}
 }

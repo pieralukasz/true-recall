@@ -86,4 +86,11 @@ export function registerCommands(plugin: EpistemePlugin): void {
 		name: "Show notes ready to harvest",
 		callback: () => void plugin.showReadyToHarvest(),
 	});
+
+	// Sync source notes with vault
+	plugin.addCommand({
+		id: "sync-source-notes",
+		name: "Sync source notes with vault",
+		callback: () => void plugin.syncSourceNotes(),
+	});
 }
