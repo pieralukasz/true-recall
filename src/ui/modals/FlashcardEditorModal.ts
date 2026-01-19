@@ -3,10 +3,12 @@
  * A live preview flashcard editor with focus/blur behavior
  * Supports both adding new flashcards and editing existing ones
  */
-import { App, MarkdownRenderer, Component } from "obsidian";
+import { App, MarkdownRenderer, Component, Notice } from "obsidian";
 import { BaseModal } from "./BaseModal";
+import { ImagePickerModal } from "./ImagePickerModal";
 import type { FSRSFlashcardItem } from "../../types";
 import { VaultSearchService, TextareaSuggest } from "../autocomplete";
+import { ImageService } from "../../services/image";
 
 export interface FlashcardEditorResult {
 	cancelled: boolean;
@@ -52,6 +54,9 @@ export class FlashcardEditorModal extends BaseModal {
 	private questionSuggest: TextareaSuggest | null = null;
 	private answerSuggest: TextareaSuggest | null = null;
 
+	// Image service
+	private imageService: ImageService | null = null;
+
 	constructor(app: App, options: FlashcardEditorModalOptions) {
 		super(app, {
 			title: options.mode === "add" ? "Add New Flashcard" : "Edit Flashcard",
@@ -81,6 +86,9 @@ export class FlashcardEditorModal extends BaseModal {
 		// Initialize autocomplete search service and build index
 		this.vaultSearchService = new VaultSearchService(this.app);
 		this.vaultSearchService.buildIndex();
+
+		// Initialize image service
+		this.imageService = new ImageService(this.app);
 	}
 
 	protected renderBody(container: HTMLElement): void {
@@ -215,6 +223,11 @@ export class FlashcardEditorModal extends BaseModal {
 			this.handleFieldKeydown(e, field);
 		});
 
+		// Paste handler for images
+		textarea.addEventListener("paste", (e) => {
+			void this.handleImagePaste(e, textarea);
+		});
+
 		// Store reference
 		if (field === "question") {
 			this.questionTextarea = textarea;
@@ -310,6 +323,12 @@ export class FlashcardEditorModal extends BaseModal {
 				insert: "`",
 				shortcut: "Ctrl+`",
 			},
+			{
+				label: "IMG",
+				title: "Insert Image (Ctrl+Shift+I)",
+				insert: "image",
+				shortcut: "Ctrl+Shift+I",
+			},
 		];
 
 		for (const btn of buttons) {
@@ -325,7 +344,11 @@ export class FlashcardEditorModal extends BaseModal {
 			});
 
 			btnEl.addEventListener("click", () => {
-				this.insertFormatting(btn.insert);
+				if (btn.insert === "image") {
+					void this.openImagePicker();
+				} else {
+					this.insertFormatting(btn.insert);
+				}
 			});
 		}
 
@@ -426,6 +449,13 @@ export class FlashcardEditorModal extends BaseModal {
 				this.insertFormatting("- ");
 				return;
 			}
+
+			// Ctrl+Shift+I for image picker
+			if ((e.metaKey || e.ctrlKey) && e.shiftKey && e.key === "i") {
+				e.preventDefault();
+				void this.openImagePicker();
+				return;
+			}
 		});
 	}
 
@@ -504,6 +534,85 @@ export class FlashcardEditorModal extends BaseModal {
 	 */
 	private showKeyboardShortcuts(): void {
 		new KeyboardShortcutsModal(this.app).open();
+	}
+
+	/**
+	 * Handle image paste from clipboard
+	 */
+	private async handleImagePaste(e: ClipboardEvent, textarea: HTMLTextAreaElement): Promise<void> {
+		const items = e.clipboardData?.items;
+		if (!items || !this.imageService) return;
+
+		for (let i = 0; i < items.length; i++) {
+			const item = items[i];
+			if (item && item.type.startsWith("image/")) {
+				e.preventDefault();
+				const blob = item.getAsFile();
+				if (!blob) return;
+
+				if (this.imageService.isBlobTooLarge(blob)) {
+					const size = this.imageService.formatFileSize(blob.size);
+					new Notice(`Image is too large (${size}). Maximum size is 5MB.`);
+					return;
+				}
+
+				try {
+					new Notice("Saving image...");
+					const path = await this.imageService.saveImageFromClipboard(blob);
+					const markdown = this.imageService.buildImageMarkdown(path);
+					this.insertAtCursor(textarea, markdown);
+					new Notice("Image inserted");
+				} catch (error) {
+					console.error("[Episteme] Failed to save pasted image:", error);
+					new Notice("Failed to save image");
+				}
+				return;
+			}
+		}
+	}
+
+	/**
+	 * Open the image picker modal
+	 */
+	private async openImagePicker(): Promise<void> {
+		const modal = new ImagePickerModal(this.app, {
+			currentFilePath: this.options.currentFilePath,
+		});
+
+		const result = await modal.openAndWait();
+
+		if (!result.cancelled && result.markdown) {
+			// Find the currently focused textarea
+			const activeElement = document.activeElement;
+			const textarea = (activeElement === this.questionTextarea || activeElement === this.answerTextarea)
+				? activeElement as HTMLTextAreaElement
+				: this.questionTextarea;
+
+			if (textarea) {
+				this.insertAtCursor(textarea, result.markdown);
+			}
+		}
+	}
+
+	/**
+	 * Insert text at cursor position in textarea
+	 */
+	private insertAtCursor(textarea: HTMLTextAreaElement, text: string): void {
+		const start = textarea.selectionStart;
+		const end = textarea.selectionEnd;
+		const value = textarea.value;
+
+		textarea.value = value.substring(0, start) + text + value.substring(end);
+
+		// Move cursor after inserted text
+		const newPos = start + text.length;
+		textarea.setSelectionRange(newPos, newPos);
+
+		// Trigger input event to update validation
+		textarea.dispatchEvent(new Event("input"));
+
+		// Focus the textarea
+		textarea.focus();
 	}
 
 	/**
@@ -602,6 +711,8 @@ export class KeyboardShortcutsModal extends BaseModal {
 			{ key: "Ctrl+K", action: "Wiki link ([[link]])" },
 			{ key: "Ctrl+M", action: "Math ($$formula$$)" },
 			{ key: "Ctrl+L", action: "List item (- )" },
+			{ key: "Ctrl+Shift+I", action: "Insert image" },
+			{ key: "Ctrl+V", action: "Paste (images auto-saved)" },
 			{ key: "Ctrl+/", action: "Show this help" },
 		];
 

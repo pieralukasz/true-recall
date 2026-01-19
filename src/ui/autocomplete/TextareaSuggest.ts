@@ -55,8 +55,10 @@ export class TextareaSuggest {
 		this.textarea.addEventListener("keydown", this.boundKeydownHandler);
 		this.textarea.addEventListener("blur", this.boundBlurHandler);
 
-		// Attach popup to document body for proper positioning
-		this.popup.attach(document.body);
+		// Attach popup to modal container if inside modal, otherwise document body
+		// This ensures popup stacking context works correctly within modals
+		const modalContainer = this.textarea.closest(".modal") as HTMLElement | null;
+		this.popup.attach(modalContainer ?? document.body);
 	}
 
 	/**
@@ -145,13 +147,6 @@ export class TextareaSuggest {
 			return;
 		}
 
-		// Check if cursor is inside a link
-		if (this.isCursorInsideLink()) {
-			this.popup.hide();
-			this.currentContext = null;
-			return;
-		}
-
 		this.currentContext = context;
 
 		// Search for suggestions
@@ -230,9 +225,12 @@ export class TextareaSuggest {
 
 	/**
 	 * Calculate popup position relative to cursor
+	 * Returns position relative to modal if inside one, otherwise viewport
 	 */
 	private calculatePopupPosition(): { top: number; left: number } {
 		const textareaRect = this.textarea.getBoundingClientRect();
+		const modal = this.textarea.closest(".modal") as HTMLElement | null;
+		const modalRect = modal?.getBoundingClientRect();
 
 		// Create a hidden clone to measure cursor position
 		const clone = document.createElement("div");
@@ -268,21 +266,18 @@ export class TextareaSuggest {
 
 		document.body.appendChild(clone);
 
-		let left = textareaRect.left;
-		let top = textareaRect.bottom + 4;
-
 		const markerRect = marker.getBoundingClientRect();
 		const cloneRect = clone.getBoundingClientRect();
 
-		// Calculate relative position
-		left = textareaRect.left + (markerRect.left - cloneRect.left);
+		// Calculate cursor position in viewport
+		const cursorLeftInViewport =
+			textareaRect.left + (markerRect.left - cloneRect.left);
 
-		// If cursor is not on last line, position below cursor
 		const linesBeforeCursor = textBeforeCursor.split("\n").length;
 		const lineHeight = parseFloat(computedStyle.lineHeight);
 		const scrollTop = this.textarea.scrollTop;
 
-		top =
+		let cursorTopInViewport =
 			textareaRect.top +
 			linesBeforeCursor * lineHeight -
 			scrollTop +
@@ -292,9 +287,9 @@ export class TextareaSuggest {
 		// Ensure popup stays within viewport
 		const viewportHeight = window.innerHeight;
 		const popupHeight = 300; // estimated
-		if (top + popupHeight > viewportHeight) {
+		if (cursorTopInViewport + popupHeight > viewportHeight) {
 			// Position above cursor instead
-			top =
+			cursorTopInViewport =
 				textareaRect.top +
 				(linesBeforeCursor - 1) * lineHeight -
 				scrollTop -
@@ -307,8 +302,18 @@ export class TextareaSuggest {
 		// Ensure left position doesn't go off screen
 		const viewportWidth = window.innerWidth;
 		const popupWidth = 280; // estimated
+
+		let left = cursorLeftInViewport;
+		let top = cursorTopInViewport;
+
 		if (left + popupWidth > viewportWidth) {
 			left = viewportWidth - popupWidth - 10;
+		}
+
+		// If inside a modal, convert to modal-relative coordinates
+		if (modalRect) {
+			left = left - modalRect.left;
+			top = top - modalRect.top;
 		}
 
 		return { top, left };
@@ -323,17 +328,20 @@ export class TextareaSuggest {
 		const { startIndex, endIndex } = this.currentContext;
 		const value = this.textarea.value;
 
-		// Create the link
-		const link = `[[${suggestion.noteBasename}]]`;
+		// Check if cursor is inside a link - if so, insert only the note name
+		const isInsideLink = this.isCursorInsideLink();
+		const insertText = isInsideLink
+			? suggestion.noteBasename
+			: `[[${suggestion.noteBasename}]]`;
 
-		// Replace the word with the link
+		// Replace the word with the link or note name
 		const newValue =
-			value.substring(0, startIndex) + link + value.substring(endIndex);
+			value.substring(0, startIndex) + insertText + value.substring(endIndex);
 
 		this.textarea.value = newValue;
 
-		// Set cursor position after the link
-		const newCursorPos = startIndex + link.length;
+		// Set cursor position after the inserted text
+		const newCursorPos = startIndex + insertText.length;
 		this.textarea.setSelectionRange(newCursorPos, newCursorPos);
 
 		// Trigger input event so other handlers can react

@@ -24,6 +24,7 @@ import { createDefaultFSRSData, State } from "../../types";
 import { getEventBus } from "../core/event-bus.service";
 import { FrontmatterService } from "./frontmatter.service";
 import { FlashcardParserService } from "./flashcard-parser.service";
+import { ImageService } from "../image";
 
 /**
  * Result of scanning vault for flashcards (legacy, kept for compatibility)
@@ -276,6 +277,9 @@ export class FlashcardManager {
 
 			this.store.set(flashcard.id, extendedData);
 
+			// Sync image references for the new card
+			this.syncCardImageRefs(flashcard.id, flashcard.question, flashcard.answer);
+
 			const card: FSRSFlashcardItem = {
 				id: flashcard.id,
 				question: flashcard.question,
@@ -341,6 +345,9 @@ export class FlashcardManager {
 
 		this.store.set(cardId, extendedData);
 
+		// Sync image references for the new card
+		this.syncCardImageRefs(cardId, question, answer);
+
 		// Get source note info if we have sourceUid
 		let sourceNoteName: string | undefined;
 		let sourceNotePath: string | undefined;
@@ -397,6 +404,12 @@ export class FlashcardManager {
 		if (!card) {
 			return false;
 		}
+
+		// Delete image references first
+		const sqlStore = this.store as CardStore & {
+			deleteCardImageRefs?: (cardId: string) => void;
+		};
+		sqlStore.deleteCardImageRefs?.(cardId);
 
 		this.store.delete(cardId);
 
@@ -552,6 +565,9 @@ export class FlashcardManager {
 
 		this.store.set(cardId, updated);
 
+		// Sync image references
+		this.syncCardImageRefs(cardId, newQuestion, newAnswer);
+
 		getEventBus().emit({
 			type: "card:updated",
 			cardId,
@@ -559,6 +575,25 @@ export class FlashcardManager {
 			changes: { question: true, answer: true },
 			timestamp: Date.now(),
 		} as CardUpdatedEvent);
+	}
+
+	/**
+	 * Sync image references for a card based on its content
+	 */
+	private syncCardImageRefs(cardId: string, question: string, answer: string): void {
+		const sqlStore = this.store as CardStore & {
+			syncCardImageRefs?: (cardId: string, questionRefs: string[], answerRefs: string[]) => void;
+		};
+
+		if (!sqlStore.syncCardImageRefs) {
+			return;
+		}
+
+		const imageService = new ImageService(this.app);
+		const questionRefs = imageService.extractImageRefs(question);
+		const answerRefs = imageService.extractImageRefs(answer);
+
+		sqlStore.syncCardImageRefs(cardId, questionRefs, answerRefs);
 	}
 
 	/**

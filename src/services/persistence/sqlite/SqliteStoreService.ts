@@ -18,6 +18,7 @@ import type {
     StoreSyncedEvent,
     SourceNoteInfo,
     CardMaturityBreakdown,
+    CardImageRef,
 } from "../../../types";
 import { getEventBus } from "../../core/event-bus.service";
 import { DB_FOLDER, DB_FILE, SAVE_DEBOUNCE_MS, getQueryResult } from "./sqlite.types";
@@ -26,6 +27,7 @@ import { SqliteCardRepository } from "./SqliteCardRepository";
 import { SqliteSourceNotesRepo } from "./SqliteSourceNotesRepo";
 import { SqliteDailyStatsRepo } from "./SqliteDailyStatsRepo";
 import { SqliteAggregations } from "./SqliteAggregations";
+import { SqliteImageRefsRepo } from "./SqliteImageRefsRepo";
 
 /**
  * SQLite-based storage service for FSRS card data
@@ -43,6 +45,7 @@ export class SqliteStoreService {
     private sourceNotesRepo: SqliteSourceNotesRepo | null = null;
     private dailyStatsRepo: SqliteDailyStatsRepo | null = null;
     private aggregations: SqliteAggregations | null = null;
+    private imageRefsRepo: SqliteImageRefsRepo | null = null;
 
     constructor(app: App) {
         this.app = app;
@@ -78,6 +81,7 @@ export class SqliteStoreService {
         this.sourceNotesRepo = new SqliteSourceNotesRepo(this.db, onDataChange);
         this.dailyStatsRepo = new SqliteDailyStatsRepo(this.db, onDataChange);
         this.aggregations = new SqliteAggregations(this.db);
+        this.imageRefsRepo = new SqliteImageRefsRepo(this.db, onDataChange);
 
         this.isLoaded = true;
     }
@@ -221,6 +225,28 @@ export class SqliteStoreService {
 
     getDueCardsByDate(startDate: string, endDate: string): { date: string; count: number }[] {
         return this.aggregations?.getDueCardsByDate(startDate, endDate) ?? [];
+    }
+
+    // ===== Image Refs (delegate to SqliteImageRefsRepo) =====
+
+    getImageRefsByCardId(cardId: string): CardImageRef[] {
+        return this.imageRefsRepo?.getByCardId(cardId) ?? [];
+    }
+
+    getCardsByImagePath(imagePath: string): CardImageRef[] {
+        return this.imageRefsRepo?.getByImagePath(imagePath) ?? [];
+    }
+
+    updateImagePath(oldPath: string, newPath: string): void {
+        this.imageRefsRepo?.updateImagePath(oldPath, newPath);
+    }
+
+    syncCardImageRefs(cardId: string, questionRefs: string[], answerRefs: string[]): void {
+        this.imageRefsRepo?.syncCardRefs(cardId, questionRefs, answerRefs);
+    }
+
+    deleteCardImageRefs(cardId: string): void {
+        this.imageRefsRepo?.deleteByCardId(cardId);
     }
 
     // ===== Persistence =====
