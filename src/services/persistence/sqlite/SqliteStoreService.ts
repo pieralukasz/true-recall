@@ -426,4 +426,19 @@ export class SqliteStoreService {
             isLoaded: this.isLoaded,
         };
     }
+
+    /**
+     * Get the raw database instance for advanced queries
+     * Used by NLQueryService for AI-powered natural language queries
+     */
+    getDatabase(): Database | null {
+        return this.db;
+    }
+
+    /**
+     * Get aggregations service for extended statistics
+     */
+    getAggregations(): SqliteAggregations | null {
+        return this.aggregations;
+    }
 }

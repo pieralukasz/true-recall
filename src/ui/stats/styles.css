@@ -298,3 +298,225 @@
 		height: 8px;
 	}
 }
+
+/* =========================================
+   Natural Language Query Panel Styles
+   ========================================= */
+
+.stats-nl-query {
+	border-top: 1px solid var(--background-modifier-border);
+	margin-top: 32px;
+	padding-top: 16px;
+}
+
+.nl-query-description {
+	font-size: 13px;
+	color: var(--text-muted);
+	margin-bottom: 12px;
+}
+
+.nl-query-input-container {
+	display: flex;
+	flex-direction: column;
+	gap: 8px;
+	margin-bottom: 12px;
+}
+
+.nl-query-input {
+	width: 100%;
+	padding: 10px 12px;
+	border: 1px solid var(--background-modifier-border);
+	border-radius: 6px;
+	background: var(--background-primary);
+	color: var(--text-normal);
+	font-size: 14px;
+	resize: vertical;
+	min-height: 60px;
+}
+
+.nl-query-input:focus {
+	border-color: var(--interactive-accent);
+	outline: none;
+}
+
+.nl-query-input::placeholder {
+	color: var(--text-faint);
+}
+
+.nl-query-button-container {
+	display: flex;
+	justify-content: flex-end;
+}
+
+.nl-query-submit {
+	padding: 8px 16px;
+	font-size: 14px;
+	border-radius: 6px;
+	cursor: pointer;
+	transition: opacity 0.15s ease;
+}
+
+.nl-query-submit:disabled {
+	opacity: 0.5;
+	cursor: not-allowed;
+}
+
+/* Example Queries */
+.nl-query-examples {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: center;
+	gap: 8px;
+	margin-bottom: 16px;
+}
+
+.nl-query-examples-label {
+	font-size: 12px;
+	color: var(--text-muted);
+}
+
+.nl-query-example-chip {
+	padding: 4px 10px;
+	font-size: 12px;
+	border: 1px solid var(--background-modifier-border);
+	border-radius: 12px;
+	background: var(--background-primary);
+	color: var(--text-muted);
+	cursor: pointer;
+	transition: all 0.15s ease;
+}
+
+.nl-query-example-chip:hover {
+	border-color: var(--interactive-accent);
+	color: var(--text-normal);
+}
+
+/* Results */
+.nl-query-results {
+	min-height: 40px;
+}
+
+.nl-query-loading {
+	display: flex;
+	align-items: center;
+	gap: 8px;
+	color: var(--text-muted);
+	font-style: italic;
+}
+
+.nl-query-result {
+	background: var(--background-primary);
+	border-radius: 6px;
+	padding: 12px;
+}
+
+.nl-query-result-question {
+	font-size: 13px;
+	color: var(--text-muted);
+	margin-bottom: 8px;
+}
+
+.nl-query-result-answer {
+	font-size: 14px;
+	color: var(--text-normal);
+}
+
+.nl-query-answer-content {
+	margin-top: 4px;
+}
+
+.nl-query-answer-content p {
+	margin: 0 0 8px 0;
+}
+
+.nl-query-answer-content p:last-child {
+	margin-bottom: 0;
+}
+
+/* Tables in results */
+.nl-query-table {
+	width: 100%;
+	border-collapse: collapse;
+	margin: 8px 0;
+	font-size: 13px;
+}
+
+.nl-query-table th,
+.nl-query-table td {
+	padding: 8px 12px;
+	text-align: left;
+	border-bottom: 1px solid var(--background-modifier-border);
+}
+
+.nl-query-table th {
+	font-weight: 600;
+	background: var(--background-secondary);
+}
+
+.nl-query-table tr:last-child td {
+	border-bottom: none;
+}
+
+/* SQL Query Details (collapsible) */
+.nl-query-details {
+	margin-top: 12px;
+	font-size: 12px;
+}
+
+.nl-query-details summary {
+	color: var(--text-muted);
+	cursor: pointer;
+	padding: 4px 0;
+}
+
+.nl-query-details summary:hover {
+	color: var(--text-normal);
+}
+
+.nl-query-steps {
+	margin-top: 8px;
+}
+
+.nl-query-step {
+	margin-bottom: 8px;
+}
+
+.nl-query-sql {
+	display: block;
+	padding: 8px 12px;
+	background: var(--background-secondary);
+	border-radius: 4px;
+	font-family: var(--font-monospace);
+	font-size: 12px;
+	white-space: pre-wrap;
+	word-break: break-all;
+	color: var(--text-muted);
+}
+
+/* Error States */
+.nl-query-error {
+	padding: 12px;
+	background: rgba(239, 68, 68, 0.1);
+	border: 1px solid rgba(239, 68, 68, 0.3);
+	border-radius: 6px;
+	color: var(--text-error);
+}
+
+.nl-query-error-indicator {
+	margin-top: 8px;
+	font-size: 12px;
+	color: var(--text-warning);
+}
+
+/* Mobile adjustments for NL Query */
+@media screen and (max-width: 600px) {
+	.nl-query-examples {
+		flex-direction: column;
+		align-items: flex-start;
+	}
+
+	.nl-query-example-chip {
+		width: 100%;
+		text-align: center;
+	}
+}
