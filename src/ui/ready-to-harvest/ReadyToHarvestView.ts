@@ -220,6 +220,7 @@ export class ReadyToHarvestView extends ItemView {
 		this.headerComponent = new ReadyToHarvestHeader(this.headerContainer, {
 			count: state.allReadyNotes.length,
 			isLoading: state.isLoading,
+			onRefresh: () => this.loadReadyNotes(),
 		});
 		this.headerComponent.render();
 

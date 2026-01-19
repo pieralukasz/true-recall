@@ -2,11 +2,13 @@
  * Ready to Harvest Header Component
  * Displays title and count of notes ready to harvest
  */
+import { setIcon } from "obsidian";
 import { BaseComponent } from "../component.base";
 
 export interface ReadyToHarvestHeaderProps {
 	count: number;
 	isLoading: boolean;
+	onRefresh: () => void;
 }
 
 /**
@@ -38,6 +40,16 @@ export class ReadyToHarvestHeader extends BaseComponent {
 		titleRow.createSpan({
 			cls: "episteme-ready-harvest-title",
 			text: "Ready to Harvest",
+		});
+
+		// Refresh button
+		const refreshBtn = titleRow.createEl("button", {
+			cls: "clickable-icon",
+			attr: { "aria-label": "Refresh" },
+		});
+		setIcon(refreshBtn, "refresh-cw");
+		this.events.addEventListener(refreshBtn, "click", () => {
+			this.props.onRefresh();
 		});
 
 		// Summary section
