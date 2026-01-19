@@ -1,4 +1,4 @@
-import { Plugin, TFile, Notice, Platform } from "obsidian";
+import { Plugin, TFile, Notice } from "obsidian";
 import {
 	VIEW_TYPE_FLASHCARD_PANEL,
 	VIEW_TYPE_REVIEW,
@@ -41,6 +41,13 @@ import {
 import { SessionModal } from "./ui/modals";
 import { registerCommands } from "./plugin/PluginCommands";
 import { registerEventHandlers } from "./plugin/PluginEventHandlers";
+import {
+	activateView,
+	activateReviewView,
+	viewExists,
+	getView,
+	closeAllViews,
+} from "./plugin/ViewActivator";
 
 export default class EpistemePlugin extends Plugin {
 	settings!: EpistemeSettings;
@@ -198,36 +205,7 @@ export default class EpistemePlugin extends Plugin {
 
 	// Activate the sidebar view
 	async activateView(): Promise<void> {
-		const { workspace } = this.app;
-
-		// Check if view already exists
-		let leaf = workspace.getLeavesOfType(VIEW_TYPE_FLASHCARD_PANEL)[0];
-
-		if (!leaf) {
-			if (Platform.isMobile) {
-				// On mobile, open in main area (no sidebar support)
-				leaf = workspace.getLeaf(true);
-				await leaf.setViewState({
-					type: VIEW_TYPE_FLASHCARD_PANEL,
-					active: true,
-				});
-			} else {
-				// Desktop: use right sidebar
-				const rightLeaf = workspace.getRightLeaf(false);
-				if (rightLeaf) {
-					await rightLeaf.setViewState({
-						type: VIEW_TYPE_FLASHCARD_PANEL,
-						active: true,
-					});
-					leaf = rightLeaf;
-				}
-			}
-		}
-
-		// Reveal and focus the leaf
-		if (leaf) {
-			void workspace.revealLeaf(leaf);
-		}
+		await activateView(this.app, VIEW_TYPE_FLASHCARD_PANEL);
 	}
 
 	/**
@@ -237,31 +215,7 @@ export default class EpistemePlugin extends Plugin {
 		currentNoteName: string | null,
 		allCards: import("./types").FSRSFlashcardItem[]
 	): Promise<void> {
-		const { workspace } = this.app;
-
-		// Check if view already exists
-		let leaf = workspace.getLeavesOfType(VIEW_TYPE_SESSION)[0];
-
-		if (!leaf) {
-			if (Platform.isMobile) {
-				// On mobile, open in main area
-				leaf = workspace.getLeaf(true);
-				await leaf.setViewState({
-					type: VIEW_TYPE_SESSION,
-					active: true,
-				});
-			} else {
-				// Desktop: use right sidebar
-				const rightLeaf = workspace.getRightLeaf(false);
-				if (rightLeaf) {
-					await rightLeaf.setViewState({
-						type: VIEW_TYPE_SESSION,
-						active: true,
-					});
-					leaf = rightLeaf;
-				}
-			}
-		}
+		const leaf = await activateView(this.app, VIEW_TYPE_SESSION);
 
 		// Initialize view with data
 		if (leaf) {
@@ -271,7 +225,6 @@ export default class EpistemePlugin extends Plugin {
 				allCards,
 				dayBoundaryService: this.dayBoundaryService,
 			});
-			void workspace.revealLeaf(leaf);
 		}
 	}
 
@@ -279,140 +232,28 @@ export default class EpistemePlugin extends Plugin {
 	 * Activate the missing flashcards view
 	 */
 	async activateMissingFlashcardsView(): Promise<void> {
-		const { workspace } = this.app;
-
-		// Check if view already exists
-		let leaf = workspace.getLeavesOfType(VIEW_TYPE_MISSING_FLASHCARDS)[0];
-
-		if (!leaf) {
-			if (Platform.isMobile) {
-				// On mobile, open in main area
-				leaf = workspace.getLeaf(true);
-				await leaf.setViewState({
-					type: VIEW_TYPE_MISSING_FLASHCARDS,
-					active: true,
-				});
-			} else {
-				// Desktop: use right sidebar
-				const rightLeaf = workspace.getRightLeaf(false);
-				if (rightLeaf) {
-					await rightLeaf.setViewState({
-						type: VIEW_TYPE_MISSING_FLASHCARDS,
-						active: true,
-					});
-					leaf = rightLeaf;
-				}
-			}
-		}
-
-		if (leaf) {
-			void workspace.revealLeaf(leaf);
-		}
+		await activateView(this.app, VIEW_TYPE_MISSING_FLASHCARDS);
 	}
 
 	/**
 	 * Activate the ready to harvest view
 	 */
 	async activateReadyToHarvestView(): Promise<void> {
-		const { workspace } = this.app;
-
-		// Check if view already exists
-		let leaf = workspace.getLeavesOfType(VIEW_TYPE_READY_TO_HARVEST)[0];
-
-		if (!leaf) {
-			if (Platform.isMobile) {
-				// On mobile, open in main area
-				leaf = workspace.getLeaf(true);
-				await leaf.setViewState({
-					type: VIEW_TYPE_READY_TO_HARVEST,
-					active: true,
-				});
-			} else {
-				// Desktop: use right sidebar
-				const rightLeaf = workspace.getRightLeaf(false);
-				if (rightLeaf) {
-					await rightLeaf.setViewState({
-						type: VIEW_TYPE_READY_TO_HARVEST,
-						active: true,
-					});
-					leaf = rightLeaf;
-				}
-			}
-		}
-
-		if (leaf) {
-			void workspace.revealLeaf(leaf);
-		}
+		await activateView(this.app, VIEW_TYPE_READY_TO_HARVEST);
 	}
 
 	/**
 	 * Activate the dashboard view
 	 */
 	async activateDashboardView(): Promise<void> {
-		const { workspace } = this.app;
-
-		// Check if view already exists
-		let leaf = workspace.getLeavesOfType(VIEW_TYPE_DASHBOARD)[0];
-
-		if (!leaf) {
-			if (Platform.isMobile) {
-				// On mobile, open in main area
-				leaf = workspace.getLeaf(true);
-				await leaf.setViewState({
-					type: VIEW_TYPE_DASHBOARD,
-					active: true,
-				});
-			} else {
-				// Desktop: use right sidebar
-				const rightLeaf = workspace.getRightLeaf(false);
-				if (rightLeaf) {
-					await rightLeaf.setViewState({
-						type: VIEW_TYPE_DASHBOARD,
-						active: true,
-					});
-					leaf = rightLeaf;
-				}
-			}
-		}
-
-		if (leaf) {
-			void workspace.revealLeaf(leaf);
-		}
+		await activateView(this.app, VIEW_TYPE_DASHBOARD);
 	}
 
 	/**
 	 * Activate the orphaned cards view
 	 */
 	async activateOrphanedCardsView(): Promise<void> {
-		const { workspace } = this.app;
-
-		// Check if view already exists
-		let leaf = workspace.getLeavesOfType(VIEW_TYPE_ORPHANED_CARDS)[0];
-
-		if (!leaf) {
-			if (Platform.isMobile) {
-				// On mobile, open in main area
-				leaf = workspace.getLeaf(true);
-				await leaf.setViewState({
-					type: VIEW_TYPE_ORPHANED_CARDS,
-					active: true,
-				});
-			} else {
-				// Desktop: use right sidebar
-				const rightLeaf = workspace.getRightLeaf(false);
-				if (rightLeaf) {
-					await rightLeaf.setViewState({
-						type: VIEW_TYPE_ORPHANED_CARDS,
-						active: true,
-					});
-					leaf = rightLeaf;
-				}
-			}
-		}
-
-		if (leaf) {
-			void workspace.revealLeaf(leaf);
-		}
+		await activateView(this.app, VIEW_TYPE_ORPHANED_CARDS);
 	}
 
 	/**
@@ -424,12 +265,10 @@ export default class EpistemePlugin extends Plugin {
 
 	// Start a review session (opens modal with options)
 	async startReviewSession(): Promise<void> {
-		const { workspace } = this.app;
-
 		// Check for existing review view
-		const existingLeaves = workspace.getLeavesOfType(VIEW_TYPE_REVIEW);
-		if (existingLeaves.length > 0) {
-			void workspace.revealLeaf(existingLeaves[0]!);
+		const existingLeaf = getView(this.app, VIEW_TYPE_REVIEW);
+		if (existingLeaf) {
+			this.app.workspace.revealLeaf(existingLeaf);
 			return;
 		}
 
@@ -441,13 +280,8 @@ export default class EpistemePlugin extends Plugin {
 	 * Used by "Next Session" button to avoid race conditions.
 	 */
 	async startNewReviewSession(): Promise<void> {
-		const { workspace } = this.app;
-
 		// Force close all existing review views first
-		const existingLeaves = workspace.getLeavesOfType(VIEW_TYPE_REVIEW);
-		for (const leaf of existingLeaves) {
-			leaf.detach();
-		}
+		closeAllViews(this.app, VIEW_TYPE_REVIEW);
 
 		// Wait for next event loop tick to ensure leaves are fully detached
 		await new Promise((resolve) => setTimeout(resolve, 0));
@@ -543,61 +377,32 @@ export default class EpistemePlugin extends Plugin {
 	 * Open the review view with optional deck filter
 	 */
 	private async openReviewView(deckFilter: string | null): Promise<void> {
-		const { workspace } = this.app;
-
-		// Force fullscreen on mobile (no sidebar support)
-		if (Platform.isMobile || this.settings.reviewMode === "fullscreen") {
-			// Open in main area
-			const leaf = workspace.getLeaf(true);
-			await leaf.setViewState({
-				type: VIEW_TYPE_REVIEW,
-				active: true,
-				state: { deckFilter },
-			});
-			workspace.revealLeaf(leaf);
-		} else {
-			// Desktop: Open in right panel
-			const rightLeaf = workspace.getRightLeaf(false);
-			if (rightLeaf) {
-				await rightLeaf.setViewState({
-					type: VIEW_TYPE_REVIEW,
-					active: true,
-					state: { deckFilter },
-				});
-				workspace.revealLeaf(rightLeaf);
-			}
-		}
+		await activateReviewView(
+			this.app,
+			VIEW_TYPE_REVIEW,
+			this.settings.reviewMode,
+			{ deckFilter }
+		);
 	}
 
 	/**
 	 * Open the statistics view
 	 */
 	async openStatsView(): Promise<void> {
-		const { workspace } = this.app;
-
 		// Check if stats view already exists
-		const existingLeaves = workspace.getLeavesOfType(VIEW_TYPE_STATS);
-		if (existingLeaves.length > 0) {
-			// Focus existing stats view
-			const leaf = existingLeaves[0];
-			if (leaf) {
-				workspace.revealLeaf(leaf);
-				// Refresh the view
-				const view = leaf.view;
-				if (view instanceof StatsView) {
-					void view.refresh();
-				}
+		const existingLeaf = getView(this.app, VIEW_TYPE_STATS);
+		if (existingLeaf) {
+			this.app.workspace.revealLeaf(existingLeaf);
+			// Refresh the view
+			const view = existingLeaf.view;
+			if (view instanceof StatsView) {
+				void view.refresh();
 			}
 			return;
 		}
 
-		// Open in main area
-		const leaf = workspace.getLeaf(true);
-		await leaf.setViewState({
-			type: VIEW_TYPE_STATS,
-			active: true,
-		});
-		workspace.revealLeaf(leaf);
+		// Open stats in main area (not sidebar)
+		await activateView(this.app, VIEW_TYPE_STATS, { useMainArea: true });
 	}
 
 	/**
@@ -736,8 +541,6 @@ export default class EpistemePlugin extends Plugin {
 		ignoreDailyLimits?: boolean;
 		bypassScheduling?: boolean;
 	}): Promise<void> {
-		const { workspace } = this.app;
-
 		const state = {
 			deckFilter: filters.deckFilter ?? null,
 			sourceNoteFilter: filters.sourceNoteFilter,
@@ -751,25 +554,12 @@ export default class EpistemePlugin extends Plugin {
 			bypassScheduling: filters.bypassScheduling,
 		};
 
-		if (Platform.isMobile || this.settings.reviewMode === "fullscreen") {
-			const leaf = workspace.getLeaf(true);
-			await leaf.setViewState({
-				type: VIEW_TYPE_REVIEW,
-				active: true,
-				state,
-			});
-			void workspace.revealLeaf(leaf);
-		} else {
-			const rightLeaf = workspace.getRightLeaf(false);
-			if (rightLeaf) {
-				await rightLeaf.setViewState({
-					type: VIEW_TYPE_REVIEW,
-					active: true,
-					state,
-				});
-				void workspace.revealLeaf(rightLeaf);
-			}
-		}
+		await activateReviewView(
+			this.app,
+			VIEW_TYPE_REVIEW,
+			this.settings.reviewMode,
+			state
+		);
 	}
 
 	/**
