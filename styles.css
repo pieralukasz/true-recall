@@ -2640,6 +2640,20 @@
 	margin-bottom: 16px;
 }
 
+/* Title row with refresh button */
+.episteme-ready-harvest-title-row {
+	display: flex;
+	align-items: center;
+	gap: 8px;
+	margin-bottom: 12px;
+}
+
+.episteme-ready-harvest-title {
+	font-weight: 600;
+	font-size: 16px;
+	color: var(--text-normal);
+}
+
 /* Summary section at top */
 .episteme-ready-summary {
 	text-align: center;
@@ -2647,7 +2661,6 @@
 	background: var(--background-secondary);
 	border-radius: 8px;
 	margin-bottom: 16px;
-	border-left: 4px solid var(--color-green, #22c55e);
 }
 
 .episteme-ready-count {
