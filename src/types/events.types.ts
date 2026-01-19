@@ -34,7 +34,7 @@ export interface CardAddedEvent extends FlashcardEvent {
 	type: "card:added";
 	cardId: string;
 	filePath: string;
-	deck?: string;
+	projects?: string[];
 	sourceNoteName?: string;
 }
 

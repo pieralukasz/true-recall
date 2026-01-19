@@ -254,7 +254,7 @@ describe("fsrs.types utilities", () => {
 				answer: "Test answer",
 				filePath: "",
 				fsrs: createDefaultFSRSData("card-1"),
-				deck: "Test",
+				projects: ["Test"],
 				sourceNotePath: "notes/source.md",
 			};
 
@@ -281,7 +281,7 @@ describe("fsrs.types utilities", () => {
 			expect(card).toHaveProperty("answer");
 			expect(card).toHaveProperty("filePath");
 			expect(card).toHaveProperty("fsrs");
-			expect(card).toHaveProperty("deck");
+			expect(card).toHaveProperty("projects");
 		});
 
 		it("should support sourceUid for source note linking", () => {
@@ -301,13 +301,13 @@ describe("fsrs.types utilities", () => {
 				uid: "test-uid",
 				noteName: "Test Note",
 				notePath: "folder/test-note.md",
-				deck: "History",
+				projects: ["History"],
 			});
 
 			expect(sourceNote.uid).toBe("test-uid");
 			expect(sourceNote.noteName).toBe("Test Note");
 			expect(sourceNote.notePath).toBe("folder/test-note.md");
-			expect(sourceNote.deck).toBe("History");
+			expect(sourceNote.projects).toEqual(["History"]);
 			expect(sourceNote.createdAt).toBeDefined();
 			expect(sourceNote.updatedAt).toBeDefined();
 		});
@@ -316,7 +316,6 @@ describe("fsrs.types utilities", () => {
 			const sourceNote: SourceNoteInfo = {
 				uid: "no-path",
 				noteName: "Note Without Path",
-				deck: "Default",
 			};
 
 			expect(sourceNote.notePath).toBeUndefined();
@@ -328,15 +327,15 @@ describe("fsrs.types utilities", () => {
 			expect(sourceNote.uid).toBeDefined();
 			expect(sourceNote.noteName).toBe("Test Note");
 			expect(sourceNote.notePath).toBe("notes/test-note.md");
-			expect(sourceNote.deck).toBe("Knowledge");
+			expect(sourceNote.projects).toBeUndefined(); // Projects are optional now
 		});
 
 		it("should allow overriding individual fields", () => {
 			const sourceNote = createMockSourceNote({
-				deck: "Science",
+				projects: ["Science"],
 			});
 
-			expect(sourceNote.deck).toBe("Science");
+			expect(sourceNote.projects).toEqual(["Science"]);
 			expect(sourceNote.noteName).toBe("Test Note"); // Default preserved
 		});
 	});

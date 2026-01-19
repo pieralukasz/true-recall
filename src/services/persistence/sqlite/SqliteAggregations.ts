@@ -204,23 +204,25 @@ export class SqliteAggregations {
     }
 
     /**
-     * Get time-to-mastery statistics grouped by deck
+     * Get time-to-mastery statistics grouped by project
      * Mastery is defined as scheduled_days >= 21
      */
     getTimeToMastery(): TimeToMasteryStats[] {
         // Get cards that have reached mastery and calculate time from creation
         const result = this.db.exec(`
             SELECT
-                COALESCE(sn.deck, 'Unknown') as deck,
+                COALESCE(p.name, 'No Project') as project_name,
                 AVG(julianday(c.last_review) - julianday(datetime(c.created_at / 1000, 'unixepoch'))) as avg_days,
                 COUNT(*) as card_count
             FROM cards c
             LEFT JOIN source_notes sn ON c.source_uid = sn.uid
+            LEFT JOIN note_projects np ON sn.uid = np.source_uid
+            LEFT JOIN projects p ON np.project_id = p.id
             WHERE c.state = 2
               AND c.scheduled_days >= 21
               AND c.last_review IS NOT NULL
               AND c.created_at IS NOT NULL
-            GROUP BY deck
+            GROUP BY project_name
             HAVING card_count >= 3
             ORDER BY avg_days ASC
         `);

@@ -126,7 +126,7 @@ export function createMockFlashcard(
 		answer: overrides.answer ?? "Paris",
 		filePath: overrides.filePath ?? "",
 		fsrs: cardData,
-		deck: overrides.deck ?? "Geography",
+		projects: overrides.projects ?? ["Geography"],
 		sourceNoteName: overrides.sourceNoteName,
 		sourceUid: overrides.sourceUid,
 	};
@@ -254,7 +254,7 @@ export function createMockSourceNote(
 		uid: overrides.uid ?? `src-${Math.random().toString(36).slice(2, 10)}`,
 		noteName: overrides.noteName ?? "Test Note",
 		notePath: overrides.notePath ?? "notes/test-note.md",
-		deck: overrides.deck ?? "Knowledge",
+		projects: overrides.projects,
 		createdAt: overrides.createdAt ?? now,
 		updatedAt: overrides.updatedAt ?? now,
 	};
@@ -273,7 +273,7 @@ export function createMockFlashcardWithSourcePath(
 		answer: overrides.answer ?? "A type of AI that learns from data",
 		filePath: overrides.filePath ?? "", // Empty for SQL-only cards
 		fsrs: cardData,
-		deck: overrides.deck ?? "AI/ML",
+		projects: overrides.projects ?? ["AI/ML"],
 		sourceNoteName: overrides.sourceNoteName ?? "Machine Learning Basics",
 		sourceUid: overrides.sourceUid ?? "abc12345",
 		sourceNotePath: overrides.sourceNotePath ?? "input/machine-learning.md",

@@ -8,6 +8,7 @@ import {
 	VIEW_TYPE_READY_TO_HARVEST,
 	VIEW_TYPE_DASHBOARD,
 	VIEW_TYPE_ORPHANED_CARDS,
+	VIEW_TYPE_PROJECTS,
 	FLASHCARD_CONFIG,
 } from "./constants";
 import {
@@ -33,6 +34,7 @@ import { MissingFlashcardsView } from "./ui/missing-flashcards";
 import { ReadyToHarvestView } from "./ui/ready-to-harvest";
 import { DashboardView } from "./ui/dashboard";
 import { OrphanedCardsView } from "./ui/orphaned-cards";
+import { ProjectsView } from "./ui/projects";
 import {
 	EpistemeSettingTab,
 	type EpistemeSettings,
@@ -132,6 +134,12 @@ export default class EpistemePlugin extends Plugin {
 		this.registerView(
 			VIEW_TYPE_ORPHANED_CARDS,
 			(leaf) => new OrphanedCardsView(leaf, this)
+		);
+
+		// Register the projects view
+		this.registerView(
+			VIEW_TYPE_PROJECTS,
+			(leaf) => new ProjectsView(leaf, this)
 		);
 
 		// Add ribbon icon to start review
@@ -261,6 +269,20 @@ export default class EpistemePlugin extends Plugin {
 	 */
 	async showOrphanedCards(): Promise<void> {
 		await this.activateOrphanedCardsView();
+	}
+
+	/**
+	 * Activate the projects view
+	 */
+	async activateProjectsView(): Promise<void> {
+		await activateView(this.app, VIEW_TYPE_PROJECTS);
+	}
+
+	/**
+	 * Show projects panel
+	 */
+	async showProjects(): Promise<void> {
+		await this.activateProjectsView();
 	}
 
 	// Start a review session (opens modal with options)

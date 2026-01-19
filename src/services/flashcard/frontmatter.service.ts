@@ -6,9 +6,6 @@ import { App, TFile } from "obsidian";
 import type { NoteFlashcardType } from "../../types";
 import { FLASHCARD_CONFIG } from "../../constants";
 
-/** Default deck name for cards without explicit deck assignment */
-const DEFAULT_DECK = "Knowledge";
-
 /**
  * Service for managing frontmatter in flashcard and source note files
  */
@@ -17,33 +14,61 @@ export class FrontmatterService {
 
 	/**
 	 * Generate frontmatter for a new flashcard file
+	 * @deprecated Flashcard MD files are no longer used - use SQL storage instead
 	 */
 	generateFrontmatter(
 		sourceFile: TFile,
-		deck: string = DEFAULT_DECK
+		projects: string[] = []
 	): string {
+		const projectsArray = projects.length > 0
+			? `projects: [${projects.map(p => `"${p}"`).join(", ")}]`
+			: "";
 		return `---
 source_link: "[[${sourceFile.basename}]]"
 tags: [flashcards/auto]
-deck: "${deck}"
+${projectsArray}
 ---
 
 `;
 	}
 
 	/**
-	 * Extract deck name from frontmatter
+	 * Extract projects from frontmatter
+	 * Supports both array and list formats:
+	 * - projects: ["Project 1", "Project 2"]
+	 * - projects:
+	 *   - Project 1
+	 *   - Project 2
 	 */
-	extractDeckFromFrontmatter(content: string): string {
+	extractProjectsFromFrontmatter(content: string): string[] {
 		const frontmatterMatch = content.match(/^---\n([\s\S]*?)\n---/);
 		if (!frontmatterMatch) {
-			return DEFAULT_DECK;
+			return [];
 		}
 
 		const frontmatter = frontmatterMatch[1] ?? "";
-		const deckMatch = frontmatter.match(/^deck:\s*["']?([^"'\n]+)["']?/m);
 
-		return deckMatch?.[1]?.trim() ?? DEFAULT_DECK;
+		// Try array format: projects: ["Project 1", "Project 2"]
+		const arrayMatch = frontmatter.match(/^projects:\s*\[([^\]]*)\]/m);
+		if (arrayMatch) {
+			const content = arrayMatch[1] ?? "";
+			return content
+				.split(",")
+				.map(p => p.trim().replace(/^["']|["']$/g, ""))
+				.filter(p => p.length > 0);
+		}
+
+		// Try list format: projects:\n  - Project 1
+		const listPattern = /^projects:\s*\n(\s+-\s+.+\s*)+/m;
+		const listMatch = frontmatter.match(listPattern);
+		if (listMatch) {
+			const lines = listMatch[0].match(/-\s+(.+)/g) ?? [];
+			return lines
+				.map(l => l.replace(/^-\s+/, "").trim().replace(/^["']|["']$/g, ""))
+				.filter(p => p.length > 0);
+		}
+
+		return [];
 	}
 
 	/**
@@ -203,10 +228,53 @@ deck: "${deck}"
 	}
 
 	/**
-	 * Get default deck name
+	 * Set projects in source note frontmatter
+	 * Creates or updates the projects field
 	 */
-	getDefaultDeck(): string {
-		return DEFAULT_DECK;
+	async setProjectsInFrontmatter(file: TFile, projects: string[]): Promise<void> {
+		const content = await this.app.vault.read(file);
+		const frontmatterRegex = /^---\n([\s\S]*?)\n---/;
+		const match = content.match(frontmatterRegex);
+
+		let newContent: string;
+		const projectsLine = projects.length > 0
+			? `projects: [${projects.map(p => `"${p}"`).join(", ")}]`
+			: "";
+
+		if (match) {
+			const frontmatter = match[1] ?? "";
+			// Check if projects field already exists
+			if (/^projects:/m.test(frontmatter)) {
+				// Update existing projects field
+				const updatedFrontmatter = frontmatter.replace(
+					/^projects:.*$/m,
+					projectsLine
+				).replace(/^projects:\s*\n(\s+-\s+.+\s*)+/m, projectsLine);
+				newContent = content.replace(
+					frontmatterRegex,
+					`---\n${updatedFrontmatter}\n---`
+				);
+			} else if (projectsLine) {
+				// Add projects field to existing frontmatter
+				newContent = content.replace(
+					frontmatterRegex,
+					`---\n${projectsLine}\n${frontmatter}\n---`
+				);
+			} else {
+				// No projects to add
+				newContent = content;
+			}
+		} else if (projectsLine) {
+			// Create new frontmatter with projects
+			newContent = `---\n${projectsLine}\n---\n\n${content}`;
+		} else {
+			// No projects and no frontmatter - nothing to do
+			newContent = content;
+		}
+
+		if (newContent !== content) {
+			await this.app.vault.modify(file, newContent);
+		}
 	}
 
 	// ===== UID-based linking methods =====
@@ -269,18 +337,22 @@ deck: "${deck}"
 
 	/**
 	 * Generate frontmatter for a new flashcard file with UID
+	 * @deprecated Flashcard MD files are no longer used - use SQL storage instead
 	 */
 	generateFrontmatterWithUid(
 		sourceFile: TFile,
 		uid: string,
-		deck: string = DEFAULT_DECK
+		projects: string[] = []
 	): string {
 		const uidField = FLASHCARD_CONFIG.flashcardUidField;
+		const projectsLine = projects.length > 0
+			? `projects: [${projects.map(p => `"${p}"`).join(", ")}]`
+			: "";
 		return `---
 ${uidField}: "${uid}"
 source_link: "[[${sourceFile.basename}]]"
 tags: [flashcards/auto]
-deck: "${deck}"
+${projectsLine}
 ---
 
 `;
