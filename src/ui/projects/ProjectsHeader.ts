@@ -10,7 +10,7 @@ export interface ProjectsHeaderProps {
 	totalCards: number;
 	totalDue: number;
 	isLoading: boolean;
-	onNewProject: () => void;
+	onCreateFromNote: () => void;
 	onRefresh: () => void;
 }
 
@@ -85,17 +85,17 @@ export class ProjectsHeader extends BaseComponent {
 			}
 		}
 
-		// New project button
+		// New project button (creates from note)
 		const actionsRow = this.element.createDiv({
 			cls: "episteme-panel-actions",
 		});
 
-		const newBtn = actionsRow.createEl("button", {
+		const createFromNoteBtn = actionsRow.createEl("button", {
 			text: "+ New Project",
 			cls: "episteme-panel-action-btn episteme-btn-primary",
 		});
-		this.events.addEventListener(newBtn, "click", () => {
-			this.props.onNewProject();
+		this.events.addEventListener(createFromNoteBtn, "click", () => {
+			this.props.onCreateFromNote();
 		});
 	}
 

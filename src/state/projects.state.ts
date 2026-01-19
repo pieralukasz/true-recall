@@ -16,8 +16,6 @@ export interface ProjectsState {
 	searchQuery: string;
 	/** Project ID being edited (null if none) */
 	editingProjectId: number | null;
-	/** Whether new project input is shown */
-	showNewProjectInput: boolean;
 }
 
 /**
@@ -39,7 +37,6 @@ function createInitialState(): ProjectsState {
 		projects: [],
 		searchQuery: "",
 		editingProjectId: null,
-		showNewProjectInput: false,
 	};
 }
 
@@ -127,13 +124,6 @@ export class ProjectsStateManager {
 	}
 
 	/**
-	 * Show/hide new project input
-	 */
-	setShowNewProjectInput(show: boolean): void {
-		this.setState({ showNewProjectInput: show });
-	}
-
-	/**
 	 * Update a project in the list
 	 */
 	updateProject(projectId: number, updates: Partial<ProjectInfo>): void {
@@ -157,7 +147,6 @@ export class ProjectsStateManager {
 	addProject(project: ProjectInfo): void {
 		this.setState({
 			projects: [...this.state.projects, project],
-			showNewProjectInput: false,
 		});
 	}
 

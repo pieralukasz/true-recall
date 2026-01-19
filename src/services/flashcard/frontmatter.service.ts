@@ -33,12 +33,21 @@ ${projectsArray}
 	}
 
 	/**
+	 * Strip wiki link syntax from project name
+	 * "[[Note Name]]" -> "Note Name"
+	 */
+	private stripWikiLinkSyntax(name: string): string {
+		return name.replace(/^\[\[|\]\]$/g, "").trim();
+	}
+
+	/**
 	 * Extract projects from frontmatter
 	 * Supports both array and list formats:
 	 * - projects: ["Project 1", "Project 2"]
 	 * - projects:
 	 *   - Project 1
 	 *   - Project 2
+	 * Also strips wiki link syntax: "[[Note]]" -> "Note"
 	 */
 	extractProjectsFromFrontmatter(content: string): string[] {
 		const frontmatterMatch = content.match(/^---\n([\s\S]*?)\n---/);
@@ -49,12 +58,14 @@ ${projectsArray}
 		const frontmatter = frontmatterMatch[1] ?? "";
 
 		// Try array format: projects: ["Project 1", "Project 2"]
-		const arrayMatch = frontmatter.match(/^projects:\s*\[([^\]]*)\]/m);
+		// Use greedy match but stop at ] followed by end of line or newline
+		const arrayMatch = frontmatter.match(/^projects:\s*\[(.*)\]\s*$/m);
 		if (arrayMatch) {
-			const content = arrayMatch[1] ?? "";
-			return content
+			const arrayContent = arrayMatch[1] ?? "";
+			return arrayContent
 				.split(",")
 				.map(p => p.trim().replace(/^["']|["']$/g, ""))
+				.map(p => this.stripWikiLinkSyntax(p))
 				.filter(p => p.length > 0);
 		}
 
@@ -65,6 +76,7 @@ ${projectsArray}
 			const lines = listMatch[0].match(/-\s+(.+)/g) ?? [];
 			return lines
 				.map(l => l.replace(/^-\s+/, "").trim().replace(/^["']|["']$/g, ""))
+				.map(p => this.stripWikiLinkSyntax(p))
 				.filter(p => p.length > 0);
 		}
 
@@ -238,7 +250,7 @@ ${projectsArray}
 
 		let newContent: string;
 		const projectsLine = projects.length > 0
-			? `projects: [${projects.map(p => `"${p}"`).join(", ")}]`
+			? `projects: [${projects.map(p => `"[[${p}]]"`).join(", ")}]`
 			: "";
 
 		if (match) {

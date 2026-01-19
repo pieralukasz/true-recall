@@ -317,6 +317,10 @@ export class SqliteStoreService {
         return this.projectsRepo?.getProjectStats() ?? [];
     }
 
+    getOrphanedSourceNotes(): { uid: string; noteName: string; notePath: string }[] {
+        return this.projectsRepo?.getOrphanedSourceNotes() ?? [];
+    }
+
     // ===== Persistence =====
 
     private getDbPath(): string {
