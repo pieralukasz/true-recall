@@ -21,6 +21,8 @@ import {
 	resetEventBus,
 	getEventBus,
 } from "./services";
+import { NLQueryService } from "./services/ai/nl-query.service";
+import { SqlJsAdapter } from "./services/ai/langchain-sqlite.adapter";
 import type { CardStore, FSRSCardData, SourceNoteInfo } from "./types";
 import { extractFSRSSettings } from "./types";
 import { FlashcardPanelView } from "./ui/panel/FlashcardPanelView";
@@ -49,6 +51,7 @@ export default class EpistemePlugin extends Plugin {
 	sessionPersistence!: SessionPersistenceService;
 	cardStore!: CardStore;
 	dayBoundaryService!: DayBoundaryService;
+	nlQueryService: NLQueryService | null = null;
 
 	// Keep reference to SQLite store for SQLite-specific operations (stats queries)
 	private sqliteStore: SqliteStoreService | null = null;
@@ -189,6 +192,8 @@ export default class EpistemePlugin extends Plugin {
 		if (this.dayBoundaryService) {
 			this.dayBoundaryService.updateDayStartHour(this.settings.dayStartHour);
 		}
+		// Reinitialize NL Query Service with new settings (API key or model may have changed)
+		void this.initializeNLQueryService();
 	}
 
 	// Activate the sidebar view
@@ -785,9 +790,44 @@ export default class EpistemePlugin extends Plugin {
 
 			// Migrate stats.json to SQL if exists (one-time migration)
 			await this.sessionPersistence.migrateStatsJsonToSql();
+
+			// Initialize NL Query Service (AI-powered stats queries)
+			await this.initializeNLQueryService();
 		} catch (error) {
 			console.error("[Episteme] Failed to initialize SQLite store:", error);
 			new Notice("Failed to load flashcard data. Please restart Obsidian.");
+		}
+	}
+
+	/**
+	 * Initialize the NL Query Service for AI-powered statistics queries
+	 */
+	private async initializeNLQueryService(): Promise<void> {
+		if (!this.sqliteStore || !this.settings.openRouterApiKey) {
+			// Service requires API key and database
+			return;
+		}
+
+		try {
+			const db = this.sqliteStore.getDatabase();
+			if (!db) {
+				console.warn("[Episteme] Database not ready for NL Query Service");
+				return;
+			}
+
+			const sqlAdapter = new SqlJsAdapter(db);
+			this.nlQueryService = new NLQueryService(
+				{
+					apiKey: this.settings.openRouterApiKey,
+					model: this.settings.aiModel,
+				},
+				sqlAdapter
+			);
+
+			await this.nlQueryService.initialize();
+		} catch (error) {
+			console.warn("[Episteme] Failed to initialize NL Query Service:", error);
+			// Non-critical: plugin continues without NL Query feature
 		}
 	}
 

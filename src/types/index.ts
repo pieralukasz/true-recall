@@ -105,3 +105,14 @@ export {
     MEDIA_EXTENSIONS,
     isMediaExtension,
 } from "./image.types";
+
+// NL Query types
+export type {
+    NLQueryResult,
+    NLQueryStep,
+    NLQueryConfig,
+    ExampleQuery,
+    ProblemCard,
+    StudyPattern,
+    TimeToMasteryStats,
+} from "./nl-query.types";

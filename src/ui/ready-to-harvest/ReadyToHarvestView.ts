@@ -201,16 +201,10 @@ export class ReadyToHarvestView extends ItemView {
 	}
 
 	/**
-	 * Handle note selection - open note and close view
+	 * Handle note selection - open note in workspace
 	 */
 	private handleNoteSelect(file: TFile): void {
 		void this.app.workspace.openLinkText(file.basename, file.path);
-
-		// Close the panel view
-		const leaves = this.app.workspace.getLeavesOfType(VIEW_TYPE_READY_TO_HARVEST);
-		for (const leaf of leaves) {
-			leaf.detach();
-		}
 	}
 
 	/**

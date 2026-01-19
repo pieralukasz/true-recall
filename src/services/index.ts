@@ -55,3 +55,5 @@ export {
 	OpenRouterService,
 	type DiffResult,
 } from "./ai/openrouter.service";
+export { NLQueryService } from "./ai/nl-query.service";
+export { SqlJsAdapter } from "./ai/langchain-sqlite.adapter";

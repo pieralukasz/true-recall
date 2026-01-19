@@ -200,6 +200,10 @@ export class SessionView extends ItemView {
 	private render(): void {
 		if (!this.logic) return;
 
+		// Preserve scroll position before re-render
+		const noteList = this.contentContainer.querySelector('.episteme-note-list');
+		const scrollTop = noteList?.scrollTop ?? 0;
+
 		const state = this.stateManager.getState();
 		const selectionCount = state.selectedNotes.size;
 
@@ -237,5 +241,11 @@ export class SessionView extends ItemView {
 			onClearSelection: () => this.handleClearSelection(),
 		});
 		this.footerComponent.render();
+
+		// Restore scroll position after re-render
+		const newNoteList = this.contentContainer.querySelector('.episteme-note-list');
+		if (newNoteList) {
+			newNoteList.scrollTop = scrollTop;
+		}
 	}
 }
