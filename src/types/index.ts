@@ -92,9 +92,16 @@ export type {
     CardImageRef,
     ImageInsertOptions,
     ImageExtension,
+    VideoExtension,
+    MediaExtension,
 } from "./image.types";
 export {
     IMAGE_EXTENSIONS,
     isImageExtension,
     MAX_IMAGE_SIZE_BYTES,
+    VIDEO_EXTENSIONS,
+    isVideoExtension,
+    MAX_VIDEO_SIZE_BYTES,
+    MEDIA_EXTENSIONS,
+    isMediaExtension,
 } from "./image.types";

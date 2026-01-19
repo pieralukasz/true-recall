@@ -14,9 +14,11 @@ export class VaultSearchService {
 	private app: App;
 	private index: IndexEntry[] = [];
 	private isIndexBuilt = false;
+	private folderFilter: string;
 
-	constructor(app: App) {
+	constructor(app: App, folderFilter = "") {
 		this.app = app;
+		this.folderFilter = folderFilter;
 	}
 
 	/**
@@ -29,6 +31,11 @@ export class VaultSearchService {
 		const files = this.app.vault.getMarkdownFiles();
 
 		for (const file of files) {
+			// Filter by folder if specified
+			if (this.folderFilter && !file.path.startsWith(this.folderFilter + "/") && file.path !== this.folderFilter) {
+				continue;
+			}
+
 			// Add title entry
 			this.addToIndex(file, file.basename, "title");
 
