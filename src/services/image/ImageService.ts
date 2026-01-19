@@ -4,7 +4,12 @@
  * vault operations, and markdown generation
  */
 import { App, TFile, normalizePath } from "obsidian";
-import { IMAGE_EXTENSIONS, MAX_IMAGE_SIZE_BYTES, isImageExtension } from "../../types";
+import {
+    MAX_IMAGE_SIZE_BYTES,
+    MAX_VIDEO_SIZE_BYTES,
+    isImageExtension,
+    isVideoExtension,
+} from "../../types";
 
 /**
  * Service for handling images in flashcards
@@ -130,6 +135,46 @@ export class ImageService {
                 file.path.startsWith(folderPath)
             )
             .sort((a, b) => a.basename.localeCompare(b.basename));
+    }
+
+    /**
+     * Get recent videos from the vault
+     */
+    getRecentVideos(limit = 20): TFile[] {
+        const videoFiles = this.app.vault.getFiles()
+            .filter(file => isVideoExtension(file.extension))
+            .sort((a, b) => b.stat.mtime - a.stat.mtime)
+            .slice(0, limit);
+
+        return videoFiles;
+    }
+
+    /**
+     * Get recent media files (images + videos) from vault
+     * Sorted by modification time
+     */
+    getRecentMedia(limit = 20): TFile[] {
+        return this.app.vault.getFiles()
+            .filter(file => isImageExtension(file.extension) || isVideoExtension(file.extension))
+            .sort((a, b) => b.stat.mtime - a.stat.mtime)
+            .slice(0, limit);
+    }
+
+    /**
+     * Build HTML video tag with optional width
+     * Uses Obsidian's getResourcePath for proper URL
+     */
+    buildVideoHtml(file: TFile, width?: number): string {
+        const resourcePath = this.app.vault.getResourcePath(file);
+        const widthAttr = width ? ` width="${width}"` : '';
+        return `<video src="${resourcePath}"${widthAttr} controls></video>`;
+    }
+
+    /**
+     * Check if a video file is too large (>50MB)
+     */
+    isVideoTooLarge(file: TFile): boolean {
+        return file.stat.size > MAX_VIDEO_SIZE_BYTES;
     }
 
     /**

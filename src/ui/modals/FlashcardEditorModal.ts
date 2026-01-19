@@ -5,7 +5,7 @@
  */
 import { App, MarkdownRenderer, Component, Notice } from "obsidian";
 import { BaseModal } from "./BaseModal";
-import { ImagePickerModal } from "./ImagePickerModal";
+import { MediaPickerModal } from "./MediaPickerModal";
 import type { FSRSFlashcardItem } from "../../types";
 import { VaultSearchService, TextareaSuggest } from "../autocomplete";
 import { ImageService } from "../../services/image";
@@ -31,6 +31,8 @@ export interface FlashcardEditorModalOptions {
 	prefillQuestion?: string;
 	/** Pre-fill answer (for copying cards) */
 	prefillAnswer?: string;
+	/** Folder to search for autocomplete note linking (empty = all folders) */
+	autocompleteFolder?: string;
 }
 
 /**
@@ -76,19 +78,19 @@ export class FlashcardEditorModal extends BaseModal {
 	}
 
 	onOpen(): void {
-		super.onOpen();
-		this.contentEl.addClass("episteme-flashcard-editor-modal");
-
-		// Initialize markdown rendering component
+		// Initialize services BEFORE super.onOpen() which calls renderBody()
 		this.renderComponent = new Component();
 		this.renderComponent.load();
 
-		// Initialize autocomplete search service and build index
-		this.vaultSearchService = new VaultSearchService(this.app);
+		const folderFilter = this.options.autocompleteFolder ?? "";
+		this.vaultSearchService = new VaultSearchService(this.app, folderFilter);
 		this.vaultSearchService.buildIndex();
 
-		// Initialize image service
 		this.imageService = new ImageService(this.app);
+
+		// Now call super which will call renderBody()
+		super.onOpen();
+		this.contentEl.addClass("episteme-flashcard-editor-modal");
 	}
 
 	protected renderBody(container: HTMLElement): void {
@@ -324,9 +326,9 @@ export class FlashcardEditorModal extends BaseModal {
 				shortcut: "Ctrl+`",
 			},
 			{
-				label: "IMG",
-				title: "Insert Image (Ctrl+Shift+I)",
-				insert: "image",
+				label: "Media",
+				title: "Insert Image or Video (Ctrl+Shift+I)",
+				insert: "media",
 				shortcut: "Ctrl+Shift+I",
 			},
 		];
@@ -344,8 +346,8 @@ export class FlashcardEditorModal extends BaseModal {
 			});
 
 			btnEl.addEventListener("click", () => {
-				if (btn.insert === "image") {
-					void this.openImagePicker();
+				if (btn.insert === "media") {
+					void this.openMediaPicker();
 				} else {
 					this.insertFormatting(btn.insert);
 				}
@@ -450,10 +452,10 @@ export class FlashcardEditorModal extends BaseModal {
 				return;
 			}
 
-			// Ctrl+Shift+I for image picker
+			// Ctrl+Shift+I for media picker
 			if ((e.metaKey || e.ctrlKey) && e.shiftKey && e.key === "i") {
 				e.preventDefault();
-				void this.openImagePicker();
+				void this.openMediaPicker();
 				return;
 			}
 		});
@@ -572,10 +574,10 @@ export class FlashcardEditorModal extends BaseModal {
 	}
 
 	/**
-	 * Open the image picker modal
+	 * Open the media picker modal (images and videos)
 	 */
-	private async openImagePicker(): Promise<void> {
-		const modal = new ImagePickerModal(this.app, {
+	private async openMediaPicker(): Promise<void> {
+		const modal = new MediaPickerModal(this.app, {
 			currentFilePath: this.options.currentFilePath,
 		});
 
@@ -711,7 +713,7 @@ export class KeyboardShortcutsModal extends BaseModal {
 			{ key: "Ctrl+K", action: "Wiki link ([[link]])" },
 			{ key: "Ctrl+M", action: "Math ($$formula$$)" },
 			{ key: "Ctrl+L", action: "List item (- )" },
-			{ key: "Ctrl+Shift+I", action: "Insert image" },
+			{ key: "Ctrl+Shift+I", action: "Insert media (image/video)" },
 			{ key: "Ctrl+V", action: "Paste (images auto-saved)" },
 			{ key: "Ctrl+/", action: "Show this help" },
 		];

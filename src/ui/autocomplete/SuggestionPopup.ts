@@ -27,11 +27,6 @@ export class SuggestionPopup {
 	 * Attach popup to DOM
 	 */
 	attach(parent: HTMLElement): void {
-		// Use absolute positioning when inside a modal, fixed otherwise
-		const isInModal = parent.classList.contains("modal");
-		if (isInModal) {
-			this.containerEl.classList.add("is-in-modal");
-		}
 		parent.appendChild(this.containerEl);
 	}
 

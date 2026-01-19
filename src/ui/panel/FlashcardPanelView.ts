@@ -674,6 +674,7 @@ export class FlashcardPanelView extends ItemView {
             currentFilePath: state.currentFile.path,
             sourceNoteName: state.currentFile.basename,
             deck: "Knowledge",
+            autocompleteFolder: this.plugin.settings.autocompleteSearchFolder,
         });
 
         const result = await modal.openAndWait();
@@ -929,6 +930,7 @@ export class FlashcardPanelView extends ItemView {
             currentFilePath: state.currentFile.path,
             sourceNoteName: state.currentFile.basename,
             deck,
+            autocompleteFolder: this.plugin.settings.autocompleteSearchFolder,
         });
 
         const result = await modal.openAndWait();
