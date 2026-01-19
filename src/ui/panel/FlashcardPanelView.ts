@@ -701,10 +701,6 @@ export class FlashcardPanelView extends ItemView {
         const state = this.stateManager.getState();
         if (!state.currentFile || !state.flashcardInfo) return;
 
-        const filePath = state.isFlashcardFile
-            ? state.currentFile.path
-            : await this.flashcardManager.getFlashcardPathAsync(state.currentFile);
-
         try {
             if (field === "question") {
                 this.flashcardManager.updateCardContent(

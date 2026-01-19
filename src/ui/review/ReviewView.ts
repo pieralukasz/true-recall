@@ -467,6 +467,9 @@ export class ReviewView extends ItemView {
 
         const cardEl = this.cardContainerEl.createDiv({ cls: "episteme-review-card" });
 
+        // Use sourceNotePath as fallback for link resolution when filePath is empty
+        const sourcePath = card.filePath || card.sourceNotePath || "";
+
         // Question
         const questionEl = cardEl.createDiv({ cls: "episteme-review-question" });
         if (editState.active && editState.field === "question") {
@@ -478,11 +481,11 @@ export class ReviewView extends ItemView {
                 this.app,
                 card.question,
                 questionEl,
-                card.filePath,
+                sourcePath,
                 this
             );
             questionEl.addEventListener("click", (e: MouseEvent) => {
-                this.handleFieldClick(e, "question", card.filePath);
+                this.handleFieldClick(e, "question", sourcePath);
             });
             // Long press on mobile to edit
             if (Platform.isMobile) {
@@ -504,11 +507,11 @@ export class ReviewView extends ItemView {
                     this.app,
                     card.answer,
                     answerEl,
-                    card.filePath,
+                    sourcePath,
                     this
                 );
                 answerEl.addEventListener("click", (e: MouseEvent) => {
-                    this.handleFieldClick(e, "answer", card.filePath);
+                    this.handleFieldClick(e, "answer", sourcePath);
                 });
                 // Long press on mobile to edit
                 if (Platform.isMobile) {

@@ -2,11 +2,11 @@
  * Plugin Event Handlers
  * Event registrations for file and workspace events
  */
-import { TFile } from "obsidian";
+import { Notice, TFile } from "obsidian";
 import type EpistemePlugin from "../main";
 import { FlashcardPanelView } from "../ui/panel/FlashcardPanelView";
 import { VIEW_TYPE_FLASHCARD_PANEL } from "../constants";
-import type { CardStore } from "../types";
+import type { CardStore, FSRSCardData, SourceNoteInfo } from "../types";
 
 /**
  * Register workspace and vault event handlers
@@ -60,18 +60,30 @@ export function registerEventHandlers(plugin: EpistemePlugin): void {
             if (store.updateSourceNotePath) {
                 store.updateSourceNotePath(uid, file.path, file.basename);
             }
+        })
+    );
 
-            const flashcardPath = plugin.flashcardManager.getFlashcardPathByUid(uid);
-            const flashcardFile = plugin.app.vault.getAbstractFileByPath(flashcardPath);
+    // Listen for file deletions to clean up orphaned source notes
+    plugin.registerEvent(
+        plugin.app.vault.on("delete", (file) => {
+            if (!(file instanceof TFile) || file.extension !== "md") return;
 
-            if (flashcardFile instanceof TFile) {
-                const content = await plugin.app.vault.read(flashcardFile);
-                const updatedContent = frontmatterService.updateSourceLinkInContent(
-                    content,
-                    file.basename
-                );
-                if (updatedContent !== content) {
-                    await plugin.app.vault.modify(flashcardFile, updatedContent);
+            // We can't read frontmatter from deleted file, so look up by path
+            const store = plugin.cardStore as CardStore & {
+                getSourceNoteByPath?: (path: string) => SourceNoteInfo | null;
+                deleteSourceNote?: (uid: string, detachCards?: boolean) => void;
+                getCardsBySourceUid?: (uid: string) => FSRSCardData[];
+            };
+
+            if (store.getSourceNoteByPath && store.deleteSourceNote) {
+                const sourceNote = store.getSourceNoteByPath(file.path);
+                if (sourceNote) {
+                    const cards = store.getCardsBySourceUid?.(sourceNote.uid) ?? [];
+                    // Delete source note but keep flashcards (detachCards = false sets source_uid = NULL)
+                    store.deleteSourceNote(sourceNote.uid, false);
+                    if (cards.length > 0) {
+                        new Notice(`Source note deleted. ${cards.length} flashcard(s) are now orphaned.`);
+                    }
                 }
             }
         })

@@ -125,33 +125,10 @@ export class FlashcardManager {
 	/**
 	 * Check if a file is a flashcard file
 	 * Always returns false since we no longer have flashcard MD files
+	 * Kept for file-menu handler to filter out flashcard files (legacy)
 	 */
 	isFlashcardFile(_file: TFile): boolean {
 		return false;
-	}
-
-	/**
-	 * Get flashcard file path (legacy - returns empty string)
-	 * @deprecated No longer used - flashcards stored in SQL
-	 */
-	getFlashcardPath(_sourceFile: TFile): string {
-		return "";
-	}
-
-	/**
-	 * Get flashcard file path by UID (legacy - returns empty string)
-	 * @deprecated No longer used - flashcards stored in SQL
-	 */
-	getFlashcardPathByUid(_uid: string): string {
-		return "";
-	}
-
-	/**
-	 * Get flashcard file path async (legacy - returns empty string)
-	 * @deprecated No longer used - flashcards stored in SQL
-	 */
-	async getFlashcardPathAsync(_sourceFile: TFile): Promise<string> {
-		return "";
 	}
 
 	/**
@@ -364,14 +341,16 @@ export class FlashcardManager {
 
 		this.store.set(cardId, extendedData);
 
-		// Get source note name if we have sourceUid
+		// Get source note info if we have sourceUid
 		let sourceNoteName: string | undefined;
+		let sourceNotePath: string | undefined;
 		if (sourceUid) {
 			const sqlStore = this.store as CardStore & {
 				getSourceNote?: (uid: string) => SourceNoteInfo | null;
 			};
 			const sourceNote = sqlStore.getSourceNote?.(sourceUid);
 			sourceNoteName = sourceNote?.noteName;
+			sourceNotePath = sourceNote?.notePath;
 		}
 
 		const card: FSRSFlashcardItem = {
@@ -383,6 +362,7 @@ export class FlashcardManager {
 			deck,
 			sourceNoteName,
 			sourceUid,
+			sourceNotePath,
 		};
 
 		getEventBus().emit({
@@ -460,6 +440,7 @@ export class FlashcardManager {
 				deck: card.deck || "Knowledge",
 				sourceNoteName: card.sourceNoteName,
 				sourceUid: card.sourceUid,
+				sourceNotePath: card.sourceNotePath,
 			}));
 	}
 

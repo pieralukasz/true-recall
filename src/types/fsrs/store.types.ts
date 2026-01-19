@@ -64,4 +64,10 @@ export interface CardStore {
 
     /** Update source note path and name when file is renamed */
     updateSourceNotePath?(uid: string, newPath: string, newName?: string): void;
+
+    /** Get source note by file path */
+    getSourceNoteByPath?(notePath: string): SourceNoteInfo | null;
+
+    /** Delete source note and optionally detach cards (set source_uid = NULL) */
+    deleteSourceNote?(uid: string, detachCards?: boolean): void;
 }

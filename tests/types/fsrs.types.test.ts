@@ -9,6 +9,12 @@ import {
 	formatInterval,
 	formatIntervalDays,
 } from "../../src/types";
+import type { FSRSFlashcardItem, SourceNoteInfo } from "../../src/types";
+import {
+	createMockFlashcard,
+	createMockFlashcardWithSourcePath,
+	createMockSourceNote,
+} from "../services/mocks/fsrs.mocks";
 
 describe("fsrs.types utilities", () => {
 	describe("createDefaultFSRSData", () => {
@@ -228,6 +234,110 @@ describe("fsrs.types utilities", () => {
 		it("should handle small fractional days", () => {
 			// 1/24 day = 1 hour = 60 minutes
 			expect(formatIntervalDays(1 / 24)).toBe("1h");
+		});
+	});
+
+	describe("FSRSFlashcardItem type", () => {
+		it("should have sourceNotePath property for SQL-only cards", () => {
+			const card = createMockFlashcardWithSourcePath({
+				sourceNotePath: "input/my-source.md",
+			});
+
+			expect(card.sourceNotePath).toBe("input/my-source.md");
+			expect(card.filePath).toBe(""); // Empty for SQL-only cards
+		});
+
+		it("should allow empty filePath with valid sourceNotePath", () => {
+			const card: FSRSFlashcardItem = {
+				id: "card-1",
+				question: "Test question?",
+				answer: "Test answer",
+				filePath: "",
+				fsrs: createDefaultFSRSData("card-1"),
+				deck: "Test",
+				sourceNotePath: "notes/source.md",
+			};
+
+			expect(card.filePath).toBe("");
+			expect(card.sourceNotePath).toBe("notes/source.md");
+		});
+
+		it("should use filePath when available over sourceNotePath", () => {
+			const card = createMockFlashcardWithSourcePath({
+				filePath: "flashcards/card.md",
+				sourceNotePath: "input/source.md",
+			});
+
+			// When filePath is present, it takes precedence for link resolution
+			expect(card.filePath).toBe("flashcards/card.md");
+			expect(card.sourceNotePath).toBe("input/source.md");
+		});
+
+		it("should work with createMockFlashcard defaults", () => {
+			const card = createMockFlashcard();
+
+			expect(card).toHaveProperty("id");
+			expect(card).toHaveProperty("question");
+			expect(card).toHaveProperty("answer");
+			expect(card).toHaveProperty("filePath");
+			expect(card).toHaveProperty("fsrs");
+			expect(card).toHaveProperty("deck");
+		});
+
+		it("should support sourceUid for source note linking", () => {
+			const card = createMockFlashcardWithSourcePath({
+				sourceUid: "abc12345",
+				sourceNoteName: "Machine Learning",
+			});
+
+			expect(card.sourceUid).toBe("abc12345");
+			expect(card.sourceNoteName).toBe("Machine Learning");
+		});
+	});
+
+	describe("SourceNoteInfo type", () => {
+		it("should create source note with all fields", () => {
+			const sourceNote = createMockSourceNote({
+				uid: "test-uid",
+				noteName: "Test Note",
+				notePath: "folder/test-note.md",
+				deck: "History",
+			});
+
+			expect(sourceNote.uid).toBe("test-uid");
+			expect(sourceNote.noteName).toBe("Test Note");
+			expect(sourceNote.notePath).toBe("folder/test-note.md");
+			expect(sourceNote.deck).toBe("History");
+			expect(sourceNote.createdAt).toBeDefined();
+			expect(sourceNote.updatedAt).toBeDefined();
+		});
+
+		it("should allow optional notePath", () => {
+			const sourceNote: SourceNoteInfo = {
+				uid: "no-path",
+				noteName: "Note Without Path",
+				deck: "Default",
+			};
+
+			expect(sourceNote.notePath).toBeUndefined();
+		});
+
+		it("should have default values from factory", () => {
+			const sourceNote = createMockSourceNote();
+
+			expect(sourceNote.uid).toBeDefined();
+			expect(sourceNote.noteName).toBe("Test Note");
+			expect(sourceNote.notePath).toBe("notes/test-note.md");
+			expect(sourceNote.deck).toBe("Knowledge");
+		});
+
+		it("should allow overriding individual fields", () => {
+			const sourceNote = createMockSourceNote({
+				deck: "Science",
+			});
+
+			expect(sourceNote.deck).toBe("Science");
+			expect(sourceNote.noteName).toBe("Test Note"); // Default preserved
 		});
 	});
 });

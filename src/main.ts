@@ -20,7 +20,7 @@ import {
 	resetEventBus,
 	getEventBus,
 } from "./services";
-import type { CardStore, SourceNoteInfo } from "./types";
+import type { CardStore, FSRSCardData, SourceNoteInfo } from "./types";
 import { extractFSRSSettings } from "./types";
 import { FlashcardPanelView } from "./ui/panel/FlashcardPanelView";
 import { ReviewView } from "./ui/review/ReviewView";
@@ -744,11 +744,14 @@ export default class EpistemePlugin extends Plugin {
 	/**
 	 * Sync source notes in database with vault files
 	 * Useful after renaming notes when the handler didn't trigger
+	 * Also detects orphaned source notes (deleted files)
 	 */
 	async syncSourceNotes(): Promise<void> {
 		const sqlStore = this.cardStore as CardStore & {
 			getAllSourceNotes?: () => SourceNoteInfo[];
 			updateSourceNotePath?: (uid: string, newPath: string, newName?: string) => void;
+			deleteSourceNote?: (uid: string, detachCards?: boolean) => void;
+			getCardsBySourceUid?: (uid: string) => FSRSCardData[];
 		};
 
 		if (!sqlStore.getAllSourceNotes || !sqlStore.updateSourceNotePath) {
@@ -758,24 +761,52 @@ export default class EpistemePlugin extends Plugin {
 
 		const sourceNotes = sqlStore.getAllSourceNotes();
 		const frontmatterService = this.flashcardManager.getFrontmatterService();
-		let synced = 0;
+		const files = this.app.vault.getMarkdownFiles();
 
-		for (const sourceNote of sourceNotes) {
-			// Find file with matching flashcard_uid
-			const files = this.app.vault.getMarkdownFiles();
-			for (const file of files) {
-				const uid = await frontmatterService.getSourceNoteUid(file);
-				if (uid === sourceNote.uid) {
-					// Check if path/name needs updating
-					if (file.path !== sourceNote.notePath || file.basename !== sourceNote.noteName) {
-						sqlStore.updateSourceNotePath(sourceNote.uid, file.path, file.basename);
-						synced++;
-					}
-					break;
-				}
+		// Build a map of UID -> file for efficient lookup
+		const uidToFile = new Map<string, TFile>();
+		for (const file of files) {
+			const uid = await frontmatterService.getSourceNoteUid(file);
+			if (uid) {
+				uidToFile.set(uid, file);
 			}
 		}
 
-		new Notice(`Synced ${synced} source note(s)`);
+		let synced = 0;
+		let orphaned = 0;
+		const orphanedUids: string[] = [];
+
+		for (const sourceNote of sourceNotes) {
+			const file = uidToFile.get(sourceNote.uid);
+			if (file) {
+				// Check if path/name needs updating
+				if (file.path !== sourceNote.notePath || file.basename !== sourceNote.noteName) {
+					sqlStore.updateSourceNotePath(sourceNote.uid, file.path, file.basename);
+					synced++;
+				}
+			} else {
+				// Source note exists in DB but no matching file in vault
+				orphaned++;
+				orphanedUids.push(sourceNote.uid);
+			}
+		}
+
+		// Clean up orphaned source notes
+		if (orphaned > 0 && sqlStore.deleteSourceNote) {
+			let orphanedCards = 0;
+			for (const uid of orphanedUids) {
+				const cards = sqlStore.getCardsBySourceUid?.(uid) ?? [];
+				orphanedCards += cards.length;
+				// Delete source note but keep flashcards (detachCards = false)
+				sqlStore.deleteSourceNote(uid, false);
+			}
+			new Notice(
+				`Synced ${synced} source note(s). Removed ${orphaned} orphaned entries` +
+				(orphanedCards > 0 ? ` (${orphanedCards} cards detached)` : "") +
+				"."
+			);
+		} else {
+			new Notice(`Synced ${synced} source note(s)`);
+		}
 	}
 }

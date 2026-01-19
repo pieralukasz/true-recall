@@ -69,6 +69,8 @@ export interface FSRSCardData {
     sourceUid?: string;
     /** Source note name (from JOIN source_notes) */
     sourceNoteName?: string;
+    /** Source note path (from JOIN source_notes, for link resolution) */
+    sourceNotePath?: string;
     /** Deck from source_notes (via JOIN) */
     deck?: string;
     /** Card tags (JSON array) */
@@ -115,4 +117,6 @@ export interface FSRSFlashcardItem {
     sourceNoteName?: string;
     /** Source note UID (for MD note association) */
     sourceUid?: string;
+    /** Path to source note (for markdown link resolution when filePath is empty) */
+    sourceNotePath?: string;
 }
