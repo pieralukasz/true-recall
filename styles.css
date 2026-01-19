@@ -4093,6 +4093,128 @@
 	}
 }
 
+/* ========================================
+   Add to Project Modal
+   ======================================== */
+
+.episteme-add-project-modal .episteme-modal-info {
+	color: var(--text-muted);
+	font-size: 13px;
+	margin-bottom: 16px;
+}
+
+/* New project input group - more prominent */
+.episteme-new-project-group {
+	padding: 12px;
+	background: var(--background-secondary);
+	border-radius: 8px;
+	margin-bottom: 8px;
+}
+
+.episteme-new-project-group .episteme-form-label {
+	font-size: 12px;
+	font-weight: 600;
+	text-transform: uppercase;
+	color: var(--text-muted);
+	margin-bottom: 8px;
+	letter-spacing: 0.5px;
+}
+
+.episteme-new-project-row {
+	display: flex;
+	gap: 8px;
+	align-items: center;
+}
+
+.episteme-new-project-row .episteme-search-input {
+	flex: 1;
+}
+
+.episteme-add-project-btn {
+	flex-shrink: 0;
+	padding: 10px 16px !important;
+}
+
+/* Project list - card style */
+.episteme-project-list {
+	border: 1px solid var(--background-modifier-border);
+	border-radius: 8px;
+	overflow: hidden;
+	max-height: 280px;
+	overflow-y: auto;
+	margin-bottom: 16px;
+}
+
+.episteme-project-list-empty {
+	padding: 24px 16px;
+	text-align: center;
+	color: var(--text-muted);
+	font-style: italic;
+}
+
+/* Project item in modal - cleaner look */
+.episteme-add-project-modal .episteme-project-item {
+	display: flex;
+	align-items: center;
+	gap: 12px;
+	padding: 12px 14px;
+	border-bottom: 1px solid var(--background-modifier-border);
+	transition: background-color 0.1s ease;
+	cursor: pointer;
+	background: var(--background-primary);
+	border-radius: 0;
+	border: none;
+	border-bottom: 1px solid var(--background-modifier-border);
+	box-shadow: none;
+}
+
+.episteme-add-project-modal .episteme-project-item:last-child {
+	border-bottom: none;
+}
+
+.episteme-add-project-modal .episteme-project-item:hover {
+	background: var(--background-secondary);
+	border-color: var(--background-modifier-border);
+	box-shadow: none;
+}
+
+/* Checkbox styling */
+.episteme-project-checkbox {
+	width: 18px;
+	height: 18px;
+	flex-shrink: 0;
+	cursor: pointer;
+	accent-color: var(--interactive-accent);
+}
+
+/* Selected state */
+.episteme-add-project-modal .episteme-project-item:has(.episteme-project-checkbox:checked) {
+	background: rgba(var(--interactive-accent-rgb), 0.08);
+	border-left: 3px solid var(--interactive-accent);
+	padding-left: 11px;
+}
+
+/* Project name in modal */
+.episteme-add-project-modal .episteme-project-name {
+	flex: 1;
+	font-size: 14px;
+	font-weight: 500;
+	cursor: pointer;
+	color: var(--text-normal);
+}
+
+/* Mobile responsive */
+@media screen and (max-width: 600px) {
+	.episteme-add-project-modal {
+		min-width: auto;
+		width: 100%;
+	}
+
+	.episteme-project-list {
+		max-height: 200px;
+	}
+}
+
 
 /* =========================================
    Statistics View Styles
@@ -4781,12 +4903,13 @@
 	padding: 12px;
 	background: var(--background-secondary);
 	border-radius: 8px;
-	border: 1px solid transparent;
-	transition: border-color 0.15s ease, background-color 0.15s ease;
+	border: 1px solid var(--background-modifier-border);
+	transition: all 0.15s ease;
 }
 
 .episteme-project-item:hover {
-	border-color: var(--background-modifier-border);
+	border-color: var(--interactive-accent);
+	box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
 }
 
 .episteme-project-item.episteme-project-empty {
@@ -4815,6 +4938,26 @@
 	font-weight: 500;
 	color: var(--text-normal);
 	cursor: default;
+	flex: 1;
+	min-width: 0;
+	overflow: hidden;
+}
+
+/* Fix markdown paragraphs in project name */
+.episteme-project-name p {
+	margin: 0;
+	display: inline;
+}
+
+/* Internal links in project name */
+.episteme-project-name a.internal-link {
+	color: var(--link-color);
+	cursor: pointer;
+	text-decoration: none;
+}
+
+.episteme-project-name a.internal-link:hover {
+	text-decoration: underline;
 }
 
 .episteme-project-name-input {
@@ -4832,25 +4975,31 @@
 	outline: none;
 }
 
-/* Project Stats Row */
+/* Project Stats Row - badge style */
 .episteme-project-stats {
 	display: flex;
 	align-items: center;
-	gap: 4px;
+	gap: 6px;
 	margin-bottom: 10px;
+	flex-wrap: wrap;
 }
 
 .episteme-project-stat {
-	font-size: 12px;
+	font-size: 11px;
+	padding: 2px 8px;
+	border-radius: 10px;
+	background: var(--background-modifier-hover);
 	color: var(--text-muted);
 }
 
 .episteme-project-stat.episteme-project-due {
+	background: rgba(251, 146, 60, 0.15);
 	color: var(--color-orange, #fb923c);
 	font-weight: 500;
 }
 
 .episteme-project-stat.episteme-project-new {
+	background: rgba(59, 130, 246, 0.15);
 	color: var(--color-blue, #3b82f6);
 	font-weight: 500;
 }

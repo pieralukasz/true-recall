@@ -107,4 +107,20 @@ export function registerCommands(plugin: EpistemePlugin): void {
 		name: "Open projects panel",
 		callback: () => void plugin.showProjects(),
 	});
+
+	// Add current note to project
+	plugin.addCommand({
+		id: "add-to-project",
+		name: "Add current note to project",
+		checkCallback: (checking) => {
+			const file = plugin.app.workspace.getActiveFile();
+			if (file && file.extension === "md") {
+				if (!checking) {
+					void plugin.addCurrentNoteToProject();
+				}
+				return true;
+			}
+			return false;
+		},
+	});
 }

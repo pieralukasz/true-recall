@@ -146,6 +146,8 @@ export interface ProjectInfo {
     id: number;
     /** Project name (unique) */
     name: string;
+    /** Number of source notes in this project */
+    noteCount: number;
     /** Number of cards in this project */
     cardCount: number;
     /** Due cards count */

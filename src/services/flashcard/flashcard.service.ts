@@ -500,9 +500,13 @@ export class FlashcardManager {
 						return dueDate <= now && c.fsrs.state !== State.New;
 					}).length;
 
+			// Count unique source notes
+			const uniqueSourceUids = new Set(cards.map(c => c.sourceUid));
+
 			projectInfos.push({
 				id: id++,
 				name,
+				noteCount: uniqueSourceUids.size,
 				cardCount: cards.length,
 				dueCount,
 				newCount: cards.filter((c) => c.fsrs.state === State.New).length,
