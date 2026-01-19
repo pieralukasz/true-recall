@@ -27,37 +27,37 @@ export class MissingFlashcardsHeader extends BaseComponent {
 		}
 
 		this.element = this.container.createDiv({
-			cls: "episteme-missing-flashcards-header",
+			cls: "episteme-panel-header",
 		});
 
 		// Title row
 		const titleRow = this.element.createDiv({
-			cls: "episteme-missing-flashcards-title-row",
+			cls: "episteme-panel-title-row",
 		});
 
 		titleRow.createSpan({
-			cls: "episteme-missing-flashcards-title",
+			cls: "episteme-panel-title",
 			text: "Missing Flashcards",
 		});
 
 		// Summary section
 		const summaryEl = this.element.createDiv({
-			cls: "episteme-missing-summary",
+			cls: "episteme-panel-summary",
 		});
 
 		if (this.props.isLoading) {
 			summaryEl.createDiv({
 				text: "Scanning vault...",
-				cls: "episteme-missing-label",
+				cls: "episteme-panel-label",
 			});
 		} else {
 			summaryEl.createDiv({
 				text: this.props.count.toString(),
-				cls: "episteme-missing-count",
+				cls: "episteme-panel-count",
 			});
 			summaryEl.createDiv({
 				text: this.props.count === 1 ? "note needs flashcards" : "notes need flashcards",
-				cls: "episteme-missing-label",
+				cls: "episteme-panel-label",
 			});
 		}
 	}

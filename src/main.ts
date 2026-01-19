@@ -7,6 +7,7 @@ import {
 	VIEW_TYPE_MISSING_FLASHCARDS,
 	VIEW_TYPE_READY_TO_HARVEST,
 	VIEW_TYPE_DASHBOARD,
+	VIEW_TYPE_ORPHANED_CARDS,
 	FLASHCARD_CONFIG,
 } from "./constants";
 import {
@@ -29,6 +30,7 @@ import { SessionView } from "./ui/session";
 import { MissingFlashcardsView } from "./ui/missing-flashcards";
 import { ReadyToHarvestView } from "./ui/ready-to-harvest";
 import { DashboardView } from "./ui/dashboard";
+import { OrphanedCardsView } from "./ui/orphaned-cards";
 import {
 	EpistemeSettingTab,
 	type EpistemeSettings,
@@ -114,6 +116,12 @@ export default class EpistemePlugin extends Plugin {
 		this.registerView(
 			VIEW_TYPE_DASHBOARD,
 			(leaf) => new DashboardView(leaf, this)
+		);
+
+		// Register the orphaned cards view
+		this.registerView(
+			VIEW_TYPE_ORPHANED_CARDS,
+			(leaf) => new OrphanedCardsView(leaf, this)
 		);
 
 		// Add ribbon icon to start review
@@ -365,6 +373,48 @@ export default class EpistemePlugin extends Plugin {
 		if (leaf) {
 			void workspace.revealLeaf(leaf);
 		}
+	}
+
+	/**
+	 * Activate the orphaned cards view
+	 */
+	async activateOrphanedCardsView(): Promise<void> {
+		const { workspace } = this.app;
+
+		// Check if view already exists
+		let leaf = workspace.getLeavesOfType(VIEW_TYPE_ORPHANED_CARDS)[0];
+
+		if (!leaf) {
+			if (Platform.isMobile) {
+				// On mobile, open in main area
+				leaf = workspace.getLeaf(true);
+				await leaf.setViewState({
+					type: VIEW_TYPE_ORPHANED_CARDS,
+					active: true,
+				});
+			} else {
+				// Desktop: use right sidebar
+				const rightLeaf = workspace.getRightLeaf(false);
+				if (rightLeaf) {
+					await rightLeaf.setViewState({
+						type: VIEW_TYPE_ORPHANED_CARDS,
+						active: true,
+					});
+					leaf = rightLeaf;
+				}
+			}
+		}
+
+		if (leaf) {
+			void workspace.revealLeaf(leaf);
+		}
+	}
+
+	/**
+	 * Show orphaned cards panel
+	 */
+	async showOrphanedCards(): Promise<void> {
+		await this.activateOrphanedCardsView();
 	}
 
 	// Start a review session (opens modal with options)

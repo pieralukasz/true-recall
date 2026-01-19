@@ -213,6 +213,40 @@ export class SqliteCardRepository {
         return data ? (data.values[0]![0] as number) : 0;
     }
 
+    // ===== Orphaned Cards Operations =====
+
+    /**
+     * Get all orphaned cards (cards without source_uid)
+     */
+    getOrphanedCards(): FSRSCardData[] {
+        const result = this.db.exec(`
+            SELECT * FROM cards
+            WHERE source_uid IS NULL
+            AND question IS NOT NULL AND answer IS NOT NULL
+        `);
+
+        const data = getQueryResult(result);
+        if (!data) return [];
+
+        return data.values.map((row) =>
+            this.rowToFSRSCardData(data.columns, row)
+        );
+    }
+
+    /**
+     * Update source_uid for a card
+     */
+    updateCardSourceUid(cardId: string, sourceUid: string): void {
+        this.db.run(`
+            UPDATE cards SET
+                source_uid = ?,
+                updated_at = ?
+            WHERE id = ?
+        `, [sourceUid, Date.now(), cardId]);
+
+        this.onDataChange();
+    }
+
     // ===== Helper =====
 
     /**

@@ -144,6 +144,16 @@ export class SqliteStoreService {
         return this.cardRepo?.getCardsWithContentCount() ?? 0;
     }
 
+    // ===== Orphaned Cards Operations =====
+
+    getOrphanedCards(): FSRSCardData[] {
+        return this.cardRepo?.getOrphanedCards() ?? [];
+    }
+
+    updateCardSourceUid(cardId: string, sourceUid: string): void {
+        this.cardRepo?.updateCardSourceUid(cardId, sourceUid);
+    }
+
     // ===== Source Notes Operations (delegate to SqliteSourceNotesRepo) =====
 
     upsertSourceNote(info: SourceNoteInfo): void {

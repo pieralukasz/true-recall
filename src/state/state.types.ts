@@ -159,3 +159,40 @@ export type ReadyToHarvestStateListener = (state: ReadyToHarvestState, prevState
  * Partial state update type for ready to harvest
  */
 export type PartialReadyToHarvestState = Partial<ReadyToHarvestState>;
+
+// ===== Orphaned Cards State Types =====
+
+/**
+ * Orphaned card info (card without source_uid)
+ */
+export interface OrphanedCard {
+    id: string;
+    question: string;
+    answer: string;
+}
+
+/**
+ * Complete state of the orphaned cards view
+ */
+export interface OrphanedCardsState {
+    /** Loading state */
+    isLoading: boolean;
+    /** All orphaned cards */
+    allOrphanedCards: OrphanedCard[];
+    /** Search query for filtering */
+    searchQuery: string;
+    /** Selected card IDs */
+    selectedCardIds: Set<string>;
+}
+
+/**
+ * Listener callback type for orphaned cards state changes
+ */
+export type OrphanedCardsStateListener = (state: OrphanedCardsState, prevState: OrphanedCardsState) => void;
+
+/**
+ * Partial state update type for orphaned cards
+ */
+export type PartialOrphanedCardsState = Partial<Omit<OrphanedCardsState, "selectedCardIds">> & {
+    selectedCardIds?: Set<string> | string[];
+};
