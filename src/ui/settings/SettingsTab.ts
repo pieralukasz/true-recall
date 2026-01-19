@@ -294,6 +294,18 @@ export class EpistemeSettingTab extends PluginSettingTab {
                     await this.plugin.saveSettings();
                 }));
 
+        // Autocomplete Search Folder
+        new Setting(containerEl)
+            .setName("Autocomplete search folder")
+            .setDesc("Folder to search for note linking autocomplete. Leave empty to search all folders.")
+            .addText(text => text
+                .setPlaceholder("e.g., Notes or Zettelkasten")
+                .setValue(this.plugin.settings.autocompleteSearchFolder)
+                .onChange(async (value) => {
+                    this.plugin.settings.autocompleteSearchFolder = value.trim();
+                    await this.plugin.saveSettings();
+                }));
+
         // ===== Display Order Section =====
         containerEl.createEl("h2", { text: "Display Order" });
 

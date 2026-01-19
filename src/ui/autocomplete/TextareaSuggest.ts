@@ -55,10 +55,9 @@ export class TextareaSuggest {
 		this.textarea.addEventListener("keydown", this.boundKeydownHandler);
 		this.textarea.addEventListener("blur", this.boundBlurHandler);
 
-		// Attach popup to modal container if inside modal, otherwise document body
-		// This ensures popup stacking context works correctly within modals
-		const modalContainer = this.textarea.closest(".modal") as HTMLElement | null;
-		this.popup.attach(modalContainer ?? document.body);
+		// Always attach popup to document.body with position:fixed
+		// This avoids overflow:hidden clipping issues in modals
+		this.popup.attach(document.body);
 	}
 
 	/**
@@ -224,13 +223,10 @@ export class TextareaSuggest {
 	}
 
 	/**
-	 * Calculate popup position relative to cursor
-	 * Returns position relative to modal if inside one, otherwise viewport
+	 * Calculate popup position relative to word start in viewport coordinates
 	 */
 	private calculatePopupPosition(): { top: number; left: number } {
 		const textareaRect = this.textarea.getBoundingClientRect();
-		const modal = this.textarea.closest(".modal") as HTMLElement | null;
-		const modalRect = modal?.getBoundingClientRect();
 
 		// Create a hidden clone to measure cursor position
 		const clone = document.createElement("div");
@@ -245,8 +241,9 @@ export class TextareaSuggest {
 		clone.style.setProperty("--clone-width", `${this.textarea.clientWidth}px`);
 		clone.style.setProperty("--clone-border", computedStyle.border);
 
-		const cursorPos = this.textarea.selectionStart;
-		const textBeforeCursor = this.textarea.value.substring(0, cursorPos);
+		// Use word START position instead of cursor position for proper alignment
+		const startIndex = this.currentContext?.startIndex ?? this.textarea.selectionStart;
+		const textBeforeCursor = this.textarea.value.substring(0, startIndex);
 
 		// Build DOM instead of using innerHTML
 		const lines = textBeforeCursor.split("\n");
@@ -310,12 +307,6 @@ export class TextareaSuggest {
 			left = viewportWidth - popupWidth - 10;
 		}
 
-		// If inside a modal, convert to modal-relative coordinates
-		if (modalRect) {
-			left = left - modalRect.left;
-			top = top - modalRect.top;
-		}
-
 		return { top, left };
 	}
 
@@ -328,11 +319,24 @@ export class TextareaSuggest {
 		const { startIndex, endIndex } = this.currentContext;
 		const value = this.textarea.value;
 
-		// Check if cursor is inside a link - if so, insert only the note name
 		const isInsideLink = this.isCursorInsideLink();
-		const insertText = isInsideLink
-			? suggestion.noteBasename
-			: `[[${suggestion.noteBasename}]]`;
+
+		let insertText: string;
+		if (isInsideLink) {
+			// Inside link - insert just the reference
+			if (suggestion.matchType === "alias") {
+				insertText = `${suggestion.noteBasename}|${suggestion.matchedText}`;
+			} else {
+				insertText = suggestion.noteBasename;
+			}
+		} else {
+			// Outside link - wrap in [[]]
+			if (suggestion.matchType === "alias") {
+				insertText = `[[${suggestion.noteBasename}|${suggestion.matchedText}]]`;
+			} else {
+				insertText = `[[${suggestion.noteBasename}]]`;
+			}
+		}
 
 		// Replace the word with the link or note name
 		const newValue =

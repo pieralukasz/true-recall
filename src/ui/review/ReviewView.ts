@@ -990,6 +990,7 @@ export class ReviewView extends ItemView {
             card,
             currentFilePath: card.filePath,
             deck: card.deck,
+            autocompleteFolder: this.plugin.settings.autocompleteSearchFolder,
         });
         const result = await modal.openAndWait();
 
@@ -1548,6 +1549,7 @@ Source: [[${sourceNote}]]
             currentFilePath: card.filePath,
             sourceNoteName: card.sourceNoteName,
             deck: card.deck,
+            autocompleteFolder: this.plugin.settings.autocompleteSearchFolder,
         });
 
         const result = await modal.openAndWait();
@@ -1589,6 +1591,7 @@ Source: [[${sourceNote}]]
             deck: card.deck,
             prefillQuestion: card.question,
             prefillAnswer: card.answer,
+            autocompleteFolder: this.plugin.settings.autocompleteSearchFolder,
         });
 
         const result = await modal.openAndWait();

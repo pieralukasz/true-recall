@@ -2249,3 +2249,62 @@
 		padding: 16px;
 	}
 }
+
+/* ========================================
+   Media Picker Modal
+   ======================================== */
+
+.episteme-media-picker-modal .episteme-modal-body {
+	display: flex;
+	flex-direction: column;
+	gap: 16px;
+}
+
+/* Recent media section */
+.episteme-recent-media-section {
+	display: flex;
+	flex-direction: column;
+	gap: 8px;
+}
+
+/* Video thumbnail */
+.episteme-video-thumbnail {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	width: 100%;
+	height: 60%;
+	background: var(--background-modifier-border);
+	color: var(--text-muted);
+}
+
+.episteme-video-name {
+	font-size: 11px;
+	color: var(--text-normal);
+	text-align: center;
+	padding: 4px;
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+}
+
+/* Video item styles */
+.episteme-image-item:has(.episteme-video-thumbnail) {
+	display: flex;
+	flex-direction: column;
+}
+
+/* Video preview in modal */
+.episteme-preview-render video {
+	max-width: 100%;
+	height: auto;
+	border-radius: 4px;
+}
+
+/* Mobile responsive for media picker */
+@media screen and (max-width: 600px) {
+	.episteme-media-picker-modal {
+		min-width: auto;
+		width: 100%;
+	}
+}
