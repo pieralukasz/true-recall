@@ -147,3 +147,335 @@
 	color: var(--text-muted);
 	font-size: 13px;
 }
+
+/* ========================================
+   Panel Views - Common Styles
+   Shared between MissingFlashcards, OrphanedCards, ReadyToHarvest panels
+   ======================================== */
+
+/* Panel container */
+.episteme-panel-view {
+	height: 100%;
+	display: flex;
+	flex-direction: column;
+	overflow: hidden;
+}
+
+.episteme-panel-header-container {
+	flex-shrink: 0;
+	padding: 16px;
+	border-bottom: 1px solid var(--background-modifier-border);
+}
+
+.episteme-panel-content-container {
+	flex: 1;
+	overflow-y: auto;
+	padding: 16px;
+}
+
+/* Panel header */
+.episteme-panel-header {
+	display: flex;
+	flex-direction: column;
+	gap: 12px;
+}
+
+.episteme-panel-title-row {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+}
+
+.episteme-panel-title {
+	font-size: 16px;
+	font-weight: 600;
+	color: var(--text-normal);
+}
+
+/* Summary section */
+.episteme-panel-summary {
+	text-align: center;
+	padding: 16px;
+	background: var(--background-secondary);
+	border-radius: 8px;
+}
+
+.episteme-panel-count {
+	font-size: 32px;
+	font-weight: 700;
+	color: var(--text-normal);
+}
+
+.episteme-panel-label {
+	font-size: 13px;
+	color: var(--text-muted);
+	margin-top: 4px;
+}
+
+/* Panel content */
+.episteme-panel-content {
+	display: flex;
+	flex-direction: column;
+	gap: 12px;
+}
+
+/* List styles */
+.episteme-panel-list {
+	border: 1px solid var(--background-modifier-border);
+	border-radius: 6px;
+}
+
+.episteme-panel-list-empty {
+	padding: 24px;
+	text-align: center;
+	color: var(--text-muted);
+	font-size: 13px;
+}
+
+.episteme-panel-list-more {
+	padding: 12px;
+	text-align: center;
+	color: var(--text-muted);
+	font-size: 12px;
+	font-style: italic;
+	border-top: 1px solid var(--background-modifier-border);
+}
+
+/* Panel item */
+.episteme-panel-item {
+	display: flex;
+	align-items: center;
+	gap: 12px;
+	padding: 12px;
+	border-bottom: 1px solid var(--background-modifier-border);
+	cursor: pointer;
+	transition: background-color 0.1s ease;
+}
+
+.episteme-panel-item:last-child {
+	border-bottom: none;
+}
+
+.episteme-panel-item:hover {
+	background: var(--background-modifier-hover);
+}
+
+.episteme-panel-item.selected {
+	background: var(--background-modifier-active-hover);
+}
+
+.episteme-panel-item-info {
+	flex: 1;
+	min-width: 0;
+}
+
+.episteme-panel-item-name {
+	font-weight: 500;
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+	color: var(--text-normal);
+}
+
+.episteme-panel-item-path {
+	font-size: 11px;
+	color: var(--text-muted);
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+	margin-top: 2px;
+}
+
+/* Selection controls */
+.episteme-panel-selection-controls {
+	display: flex;
+	gap: 8px;
+	margin-bottom: 12px;
+}
+
+.episteme-panel-selection-btn {
+	padding: 4px 10px;
+	font-size: 12px;
+	background: var(--background-modifier-border);
+	border: none;
+	border-radius: 4px;
+	color: var(--text-muted);
+	cursor: pointer;
+	transition: background-color 0.1s ease;
+}
+
+.episteme-panel-selection-btn:hover {
+	background: var(--background-modifier-hover);
+	color: var(--text-normal);
+}
+
+/* Bulk actions in header */
+.episteme-panel-actions {
+	display: flex;
+	align-items: center;
+	gap: 8px;
+	margin-top: 8px;
+	padding-top: 12px;
+	border-top: 1px solid var(--background-modifier-border);
+}
+
+.episteme-panel-selected-count {
+	font-size: 12px;
+	color: var(--text-muted);
+	margin-right: auto;
+}
+
+.episteme-panel-action-btn {
+	padding: 6px 12px;
+	font-size: 12px;
+	border: none;
+	border-radius: 4px;
+	cursor: pointer;
+	transition: background-color 0.1s ease;
+}
+
+.episteme-panel-action-btn.episteme-btn-primary {
+	background: var(--interactive-accent);
+	color: var(--text-on-accent);
+}
+
+.episteme-panel-action-btn.episteme-btn-primary:hover {
+	background: var(--interactive-accent-hover);
+}
+
+.episteme-panel-action-btn.episteme-btn-danger {
+	background: rgba(239, 68, 68, 0.2);
+	color: var(--color-red, #ef4444);
+}
+
+.episteme-panel-action-btn.episteme-btn-danger:hover {
+	background: rgba(239, 68, 68, 0.3);
+}
+
+/* Card-specific styles (for orphaned cards) */
+.episteme-panel-card-item {
+	flex-direction: column;
+	align-items: stretch;
+	gap: 8px;
+}
+
+.episteme-panel-card-row {
+	display: flex;
+	align-items: flex-start;
+	gap: 12px;
+}
+
+.episteme-panel-checkbox-container {
+	flex-shrink: 0;
+	padding-top: 2px;
+}
+
+.episteme-panel-checkbox {
+	width: 16px;
+	height: 16px;
+	cursor: pointer;
+}
+
+.episteme-panel-card-content {
+	flex: 1;
+	min-width: 0;
+}
+
+.episteme-panel-card-question,
+.episteme-panel-card-answer {
+	display: flex;
+	gap: 4px;
+	font-size: 13px;
+	line-height: 1.4;
+	margin-bottom: 4px;
+}
+
+.episteme-panel-card-question:last-child,
+.episteme-panel-card-answer:last-child {
+	margin-bottom: 0;
+}
+
+.episteme-panel-card-label {
+	font-weight: 600;
+	color: var(--text-muted);
+	flex-shrink: 0;
+}
+
+.episteme-panel-card-text {
+	color: var(--text-normal);
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+}
+
+.episteme-panel-card-actions {
+	display: flex;
+	gap: 6px;
+	margin-top: 4px;
+	margin-left: 28px;
+}
+
+/* Orphaned Cards - CardReviewItem integration */
+.episteme-orphaned-card-wrapper {
+	display: flex;
+	align-items: flex-start;
+	gap: 12px;
+	padding: 12px;
+	border-bottom: 1px solid var(--background-modifier-border);
+	transition: background-color 0.1s ease;
+}
+
+.episteme-orphaned-card-wrapper:last-child {
+	border-bottom: none;
+}
+
+.episteme-orphaned-card-wrapper:hover {
+	background: var(--background-modifier-hover);
+}
+
+.episteme-orphaned-card-wrapper.selected {
+	background: var(--background-modifier-active-hover);
+}
+
+.episteme-orphaned-card-wrapper .episteme-panel-checkbox-container {
+	flex-shrink: 0;
+	padding-top: 8px;
+}
+
+.episteme-orphaned-card-content {
+	flex: 1;
+	min-width: 0;
+}
+
+/* Override CardReviewItem styles within orphaned cards */
+.episteme-orphaned-card-content .episteme-review-card-item {
+	border: none;
+	border-radius: 0;
+	padding: 0;
+	background: transparent;
+	box-shadow: none;
+}
+
+.episteme-orphaned-card-content .episteme-review-card-item:hover {
+	background: transparent;
+}
+
+/* Mobile adjustments for panels */
+@media screen and (max-width: 600px) {
+	.episteme-panel-header-container,
+	.episteme-panel-content-container {
+		padding: 12px;
+	}
+
+	.episteme-panel-summary {
+		padding: 12px;
+	}
+
+	.episteme-panel-count {
+		font-size: 28px;
+	}
+
+	.episteme-panel-card-actions {
+		margin-left: 0;
+	}
+}

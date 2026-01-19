@@ -625,6 +625,123 @@ export class FlashcardManager {
 			}));
 	}
 
+	// ===== Orphaned Cards Methods =====
+
+	/**
+	 * Get all orphaned cards (cards without source_uid)
+	 */
+	getOrphanedCards(): FSRSFlashcardItem[] {
+		if (!this.store) {
+			return [];
+		}
+
+		const sqlStore = this.store as CardStore & {
+			getOrphanedCards?: () => FSRSCardData[];
+		};
+
+		const cards = sqlStore.getOrphanedCards?.() ?? [];
+
+		return cards
+			.filter((card): card is FSRSCardData & { question: string; answer: string } =>
+				Boolean(card.question && card.answer)
+			)
+			.map((card) => ({
+				id: card.id,
+				question: card.question,
+				answer: card.answer,
+				filePath: "",
+				fsrs: card,
+				deck: card.deck || "Knowledge",
+				sourceUid: undefined,
+			}));
+	}
+
+	/**
+	 * Assign a card to a source note
+	 * @param cardId - The card ID to assign
+	 * @param targetNotePath - Path to the target note
+	 * @returns true if successful
+	 */
+	async assignCardToSourceNote(cardId: string, targetNotePath: string): Promise<boolean> {
+		if (!this.store) {
+			throw new Error("Store not initialized");
+		}
+
+		const existing = this.store.get(cardId);
+		if (!existing) {
+			return false;
+		}
+
+		// Get target note
+		const targetNote = this.app.vault.getAbstractFileByPath(targetNotePath);
+		if (!(targetNote instanceof TFile)) {
+			return false;
+		}
+
+		// Get or create source UID for target note
+		let targetSourceUid = await this.frontmatterService.getSourceNoteUid(targetNote);
+		if (!targetSourceUid) {
+			targetSourceUid = this.frontmatterService.generateUid();
+			await this.frontmatterService.setSourceNoteUid(targetNote, targetSourceUid);
+		}
+
+		// Ensure source note entry exists in SQL
+		const sqlStore = this.store as CardStore & {
+			upsertSourceNote?: (info: SourceNoteInfo) => void;
+			updateCardSourceUid?: (cardId: string, sourceUid: string) => void;
+		};
+
+		if (sqlStore.upsertSourceNote) {
+			sqlStore.upsertSourceNote({
+				uid: targetSourceUid,
+				noteName: targetNote.basename,
+				notePath: targetNote.path,
+				deck: "Knowledge",
+				createdAt: Date.now(),
+				updatedAt: Date.now(),
+			});
+		}
+
+		// Update card's source UID
+		if (sqlStore.updateCardSourceUid) {
+			sqlStore.updateCardSourceUid(cardId, targetSourceUid);
+		} else {
+			// Fallback: update via store.set
+			const updated: FSRSCardData = {
+				...existing,
+				sourceUid: targetSourceUid,
+			};
+			this.store.set(cardId, updated);
+		}
+
+		getEventBus().emit({
+			type: "card:updated",
+			cardId,
+			filePath: "",
+			changes: { sourceUid: true },
+			timestamp: Date.now(),
+		} as CardUpdatedEvent);
+
+		return true;
+	}
+
+	/**
+	 * Assign multiple cards to a source note
+	 * @param cardIds - Array of card IDs to assign
+	 * @param targetNotePath - Path to the target note
+	 * @returns Number of successfully assigned cards
+	 */
+	async assignCardsToSourceNote(cardIds: string[], targetNotePath: string): Promise<number> {
+		let successCount = 0;
+		for (const cardId of cardIds) {
+			const success = await this.assignCardToSourceNote(cardId, targetNotePath);
+			if (success) {
+				successCount++;
+			}
+		}
+		return successCount;
+	}
+
 	// ===== Diff Methods (SQL-based) =====
 
 	/**
