@@ -21,6 +21,7 @@ import {
 import { VIEW_TYPE_STATS } from "../../constants";
 import { StatsCalculatorService, getEventBus } from "../../services";
 import { CardPreviewModal } from "../modals";
+import { NLQueryPanel } from "./NLQueryPanel";
 import type EpistemePlugin from "../../main";
 import type { StatsTimeRange, CardMaturityBreakdown, FutureDueEntry, RetentionEntry } from "../../types";
 import type { CardReviewedEvent, CardAddedEvent, CardRemovedEvent, CardUpdatedEvent, BulkChangeEvent, StoreSyncedEvent } from "../../types/events.types";
@@ -61,6 +62,10 @@ export class StatsView extends ItemView {
 	private retentionEl!: HTMLElement;
 	private cardCountsEl!: HTMLElement;
 	private calendarEl!: HTMLElement;
+	private nlQueryEl!: HTMLElement;
+
+	// NL Query Panel
+	private nlQueryPanel: NLQueryPanel | null = null;
 
 	constructor(leaf: WorkspaceLeaf, plugin: EpistemePlugin) {
 		super(leaf);
@@ -197,6 +202,16 @@ export class StatsView extends ItemView {
 
 		// 6. Calendar Heatmap Section
 		this.calendarEl = container.createDiv({ cls: "episteme-stats-section stats-calendar" });
+
+		// 7. NL Query Section (AI-powered)
+		this.nlQueryEl = container.createDiv({ cls: "episteme-stats-section stats-nl-query" });
+		this.nlQueryPanel = new NLQueryPanel(this.nlQueryEl, this.app, this);
+		this.nlQueryPanel.render();
+
+		// Set NL Query Service if available
+		if (this.plugin.nlQueryService) {
+			this.nlQueryPanel.setService(this.plugin.nlQueryService);
+		}
 	}
 
 	private createRangeButtons(): void {
