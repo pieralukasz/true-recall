@@ -238,11 +238,11 @@ export class OrphanedCardsView extends ItemView {
 					lastReview: null,
 					learningStep: 0,
 				},
-				deck: "Orphaned",
+				projects: [],
 			},
 			currentFilePath: "",
 			sourceNoteName: "Orphaned Card",
-			deck: "Orphaned",
+			projects: [],
 		});
 
 		const result = await modal.openAndWait();

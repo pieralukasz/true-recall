@@ -26,6 +26,9 @@ export const VIEW_TYPE_DASHBOARD = "episteme-dashboard";
 /** View type identifier for the orphaned cards panel */
 export const VIEW_TYPE_ORPHANED_CARDS = "episteme-orphaned-cards";
 
+/** View type identifier for the projects panel */
+export const VIEW_TYPE_PROJECTS = "episteme-projects";
+
 // ===== AI Models =====
 
 /** AI Models available via OpenRouter */

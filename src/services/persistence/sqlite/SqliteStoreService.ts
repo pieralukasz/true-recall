@@ -19,6 +19,7 @@ import type {
     SourceNoteInfo,
     CardMaturityBreakdown,
     CardImageRef,
+    ProjectInfo,
 } from "../../../types";
 import { getEventBus } from "../../core/event-bus.service";
 import { DB_FOLDER, DB_FILE, SAVE_DEBOUNCE_MS, getQueryResult } from "./sqlite.types";
@@ -28,6 +29,7 @@ import { SqliteSourceNotesRepo } from "./SqliteSourceNotesRepo";
 import { SqliteDailyStatsRepo } from "./SqliteDailyStatsRepo";
 import { SqliteAggregations } from "./SqliteAggregations";
 import { SqliteImageRefsRepo } from "./SqliteImageRefsRepo";
+import { SqliteProjectsRepo } from "./SqliteProjectsRepo";
 
 /**
  * SQLite-based storage service for FSRS card data
@@ -46,6 +48,7 @@ export class SqliteStoreService {
     private dailyStatsRepo: SqliteDailyStatsRepo | null = null;
     private aggregations: SqliteAggregations | null = null;
     private imageRefsRepo: SqliteImageRefsRepo | null = null;
+    private projectsRepo: SqliteProjectsRepo | null = null;
 
     constructor(app: App) {
         this.app = app;
@@ -82,6 +85,7 @@ export class SqliteStoreService {
         this.dailyStatsRepo = new SqliteDailyStatsRepo(this.db, onDataChange);
         this.aggregations = new SqliteAggregations(this.db);
         this.imageRefsRepo = new SqliteImageRefsRepo(this.db, onDataChange);
+        this.projectsRepo = new SqliteProjectsRepo(this.db, onDataChange);
 
         this.isLoaded = true;
     }
@@ -257,6 +261,60 @@ export class SqliteStoreService {
 
     deleteCardImageRefs(cardId: string): void {
         this.imageRefsRepo?.deleteByCardId(cardId);
+    }
+
+    // ===== Projects (delegate to SqliteProjectsRepo) =====
+
+    createProject(name: string): number {
+        return this.projectsRepo?.createProject(name) ?? -1;
+    }
+
+    getProjectByName(name: string): ProjectInfo | null {
+        return this.projectsRepo?.getProjectByName(name) ?? null;
+    }
+
+    getProjectById(id: number): ProjectInfo | null {
+        return this.projectsRepo?.getProjectById(id) ?? null;
+    }
+
+    getAllProjects(): ProjectInfo[] {
+        return this.projectsRepo?.getAllProjects() ?? [];
+    }
+
+    renameProject(id: number, newName: string): void {
+        this.projectsRepo?.renameProject(id, newName);
+    }
+
+    deleteProject(id: number): void {
+        this.projectsRepo?.deleteProject(id);
+    }
+
+    syncNoteProjects(sourceUid: string, projectNames: string[]): void {
+        this.projectsRepo?.syncNoteProjects(sourceUid, projectNames);
+    }
+
+    getProjectsForNote(sourceUid: string): ProjectInfo[] {
+        return this.projectsRepo?.getProjectsForNote(sourceUid) ?? [];
+    }
+
+    getProjectNamesForNote(sourceUid: string): string[] {
+        return this.projectsRepo?.getProjectNamesForNote(sourceUid) ?? [];
+    }
+
+    getNotesInProject(projectId: number): string[] {
+        return this.projectsRepo?.getNotesInProject(projectId) ?? [];
+    }
+
+    addProjectToNote(sourceUid: string, projectName: string): void {
+        this.projectsRepo?.addProjectToNote(sourceUid, projectName);
+    }
+
+    removeProjectFromNote(sourceUid: string, projectId: number): void {
+        this.projectsRepo?.removeProjectFromNote(sourceUid, projectId);
+    }
+
+    getProjectStats(): ProjectInfo[] {
+        return this.projectsRepo?.getProjectStats() ?? [];
     }
 
     // ===== Persistence =====

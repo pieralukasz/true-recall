@@ -44,6 +44,7 @@ export type {
     TodaySummary,
     StreakInfo,
     DeckInfo,
+    ProjectInfo,
 } from "./stats.types";
 
 // Store types

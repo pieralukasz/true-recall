@@ -51,6 +51,7 @@ export type {
     PersistentDailyStats,
     PersistentStatsData,
     DeckInfo,
+    ProjectInfo,
     ExtendedDailyStats,
     CardMaturityBreakdown,
     FutureDueEntry,

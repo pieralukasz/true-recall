@@ -8,7 +8,7 @@ import type {
 	EpistemeSettings,
 	FSRSCardData,
 	FSRSFlashcardItem,
-	DeckInfo,
+	ProjectInfo,
 	CardReviewLogEntry,
 	NoteFlashcardType,
 	FlashcardItem,
@@ -235,7 +235,7 @@ export class FlashcardManager {
 	async saveFlashcardsToSql(
 		sourceFile: TFile,
 		flashcards: Array<{ id: string; question: string; answer: string }>,
-		deck: string
+		projects: string[] = []
 	): Promise<FSRSFlashcardItem[]> {
 		if (!this.store) {
 			throw new Error("Card store not initialized");
@@ -251,16 +251,21 @@ export class FlashcardManager {
 		// Create source note entry in SQL
 		const sqlStore = this.store as CardStore & {
 			upsertSourceNote?: (info: SourceNoteInfo) => void;
+			syncNoteProjects?: (sourceUid: string, projectNames: string[]) => void;
 		};
 		if (sqlStore.upsertSourceNote) {
 			sqlStore.upsertSourceNote({
 				uid: sourceUid,
 				noteName: sourceFile.basename,
 				notePath: sourceFile.path,
-				deck: deck,
 				createdAt: Date.now(),
 				updatedAt: Date.now(),
 			});
+		}
+
+		// Sync projects for the source note
+		if (sqlStore.syncNoteProjects && projects.length > 0) {
+			sqlStore.syncNoteProjects(sourceUid, projects);
 		}
 
 		const createdCards: FSRSFlashcardItem[] = [];
@@ -286,7 +291,7 @@ export class FlashcardManager {
 				answer: flashcard.answer,
 				filePath: "",
 				fsrs: extendedData,
-				deck: deck,
+				projects: projects,
 				sourceNoteName: sourceFile.basename,
 				sourceUid: sourceUid,
 			};
@@ -297,7 +302,7 @@ export class FlashcardManager {
 				type: "card:added",
 				cardId: flashcard.id,
 				filePath: "",
-				deck: deck,
+				projects: projects,
 				sourceNoteName: sourceFile.basename,
 				timestamp: Date.now(),
 			} as CardAddedEvent);
@@ -315,9 +320,9 @@ export class FlashcardManager {
 		question: string,
 		answer: string,
 		sourceUid?: string,
-		deck?: string
+		projects?: string[]
 	): Promise<FSRSFlashcardItem> {
-		return this.addSingleFlashcardToSql(question, answer, sourceUid, deck);
+		return this.addSingleFlashcardToSql(question, answer, sourceUid, projects);
 	}
 
 	/**
@@ -327,7 +332,7 @@ export class FlashcardManager {
 		question: string,
 		answer: string,
 		sourceUid?: string,
-		deck: string = "Knowledge"
+		projects: string[] = []
 	): Promise<FSRSFlashcardItem> {
 		if (!this.store) {
 			throw new Error("Card store not initialized");
@@ -351,13 +356,19 @@ export class FlashcardManager {
 		// Get source note info if we have sourceUid
 		let sourceNoteName: string | undefined;
 		let sourceNotePath: string | undefined;
+		let cardProjects = projects;
 		if (sourceUid) {
 			const sqlStore = this.store as CardStore & {
 				getSourceNote?: (uid: string) => SourceNoteInfo | null;
+				getProjectNamesForNote?: (uid: string) => string[];
 			};
 			const sourceNote = sqlStore.getSourceNote?.(sourceUid);
 			sourceNoteName = sourceNote?.noteName;
 			sourceNotePath = sourceNote?.notePath;
+			// Get projects from source note if not provided
+			if (cardProjects.length === 0 && sqlStore.getProjectNamesForNote) {
+				cardProjects = sqlStore.getProjectNamesForNote(sourceUid);
+			}
 		}
 
 		const card: FSRSFlashcardItem = {
@@ -366,7 +377,7 @@ export class FlashcardManager {
 			answer,
 			filePath: "",
 			fsrs: extendedData,
-			deck,
+			projects: cardProjects,
 			sourceNoteName,
 			sourceUid,
 			sourceNotePath,
@@ -376,7 +387,7 @@ export class FlashcardManager {
 			type: "card:added",
 			cardId,
 			filePath: "",
-			deck,
+			projects: cardProjects,
 			sourceNoteName,
 			timestamp: Date.now(),
 		} as CardAddedEvent);
@@ -450,7 +461,7 @@ export class FlashcardManager {
 				answer: card.answer,
 				filePath: "",
 				fsrs: card,
-				deck: card.deck || "Knowledge",
+				projects: card.projects || [],
 				sourceNoteName: card.sourceNoteName,
 				sourceUid: card.sourceUid,
 				sourceNotePath: card.sourceNotePath,
@@ -458,26 +469,30 @@ export class FlashcardManager {
 	}
 
 	/**
-	 * Get all unique deck names with statistics
+	 * Get all unique project names with statistics
 	 */
-	async getAllDecks(
+	async getAllProjects(
 		dayBoundaryService?: import("../core/day-boundary.service").DayBoundaryService
-	): Promise<DeckInfo[]> {
+	): Promise<ProjectInfo[]> {
 		const allCards = await this.getAllFSRSCards();
-		const deckMap = new Map<string, FSRSFlashcardItem[]>();
+		const projectMap = new Map<string, FSRSFlashcardItem[]>();
 
+		// Group cards by project (cards can belong to multiple projects)
 		for (const card of allCards) {
-			const deck = card.deck;
-			if (!deckMap.has(deck)) {
-				deckMap.set(deck, []);
+			const projects = card.projects.length > 0 ? card.projects : ["No Project"];
+			for (const project of projects) {
+				if (!projectMap.has(project)) {
+					projectMap.set(project, []);
+				}
+				projectMap.get(project)!.push(card);
 			}
-			deckMap.get(deck)!.push(card);
 		}
 
 		const now = new Date();
-		const decks: DeckInfo[] = [];
+		const projectInfos: ProjectInfo[] = [];
+		let id = 0;
 
-		for (const [name, cards] of deckMap) {
+		for (const [name, cards] of projectMap) {
 			const dueCount = dayBoundaryService
 				? dayBoundaryService.countDueCards(cards, now)
 				: cards.filter((c) => {
@@ -485,7 +500,8 @@ export class FlashcardManager {
 						return dueDate <= now && c.fsrs.state !== State.New;
 					}).length;
 
-			decks.push({
+			projectInfos.push({
+				id: id++,
 				name,
 				cardCount: cards.length,
 				dueCount,
@@ -493,7 +509,7 @@ export class FlashcardManager {
 			});
 		}
 
-		return decks.sort((a, b) => a.name.localeCompare(b.name));
+		return projectInfos.sort((a, b) => a.name.localeCompare(b.name));
 	}
 
 	/**
@@ -606,9 +622,11 @@ export class FlashcardManager {
 
 		const sqlStore = this.store as CardStore & {
 			getCardsBySourceUid?: (uid: string) => FSRSCardData[];
+			getProjectNamesForNote?: (uid: string) => string[];
 		};
 
 		const cards = sqlStore.getCardsBySourceUid?.(sourceUid) ?? [];
+		const projects = sqlStore.getProjectNamesForNote?.(sourceUid) ?? [];
 
 		return cards
 			.filter((card): card is FSRSCardData & { question: string; answer: string } =>
@@ -620,7 +638,7 @@ export class FlashcardManager {
 				answer: card.answer,
 				filePath: "",
 				fsrs: card,
-				deck: "Knowledge",
+				projects: card.projects || projects,
 				sourceUid: card.sourceUid,
 			}));
 	}
@@ -651,7 +669,7 @@ export class FlashcardManager {
 				answer: card.answer,
 				filePath: "",
 				fsrs: card,
-				deck: card.deck || "Knowledge",
+				projects: card.projects || [],
 				sourceUid: undefined,
 			}));
 	}
@@ -696,7 +714,6 @@ export class FlashcardManager {
 				uid: targetSourceUid,
 				noteName: targetNote.basename,
 				notePath: targetNote.path,
-				deck: "Knowledge",
 				createdAt: Date.now(),
 				updatedAt: Date.now(),
 			});
@@ -781,7 +798,7 @@ export class FlashcardManager {
 		// Process NEW changes
 		const newChanges = changes.filter((c) => c.type === "NEW" && c.accepted);
 		for (const change of newChanges) {
-			await this.addSingleFlashcardToSql(change.question, change.answer, sourceUid, "Knowledge");
+			await this.addSingleFlashcardToSql(change.question, change.answer, sourceUid, []);
 		}
 
 		// Emit bulk change events
