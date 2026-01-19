@@ -1,8 +1,8 @@
 /**
  * Projects Content Component
- * Contains search and project list
+ * Contains toolbar (search + new button) and project list
  */
-import type { App, Component } from "obsidian";
+import { setIcon, type App, type Component } from "obsidian";
 import { BaseComponent } from "../component.base";
 import { ProjectItem, createProjectItem } from "./ProjectItem";
 import type { ProjectInfo } from "../../types";
@@ -18,6 +18,7 @@ export interface ProjectsContentProps {
 	onStartReview: (projectName: string) => void;
 	onDelete: (projectId: number) => void;
 	onAddNotes: (projectId: number, projectName: string) => void;
+	onCreateFromNote: () => void;
 }
 
 /**
@@ -49,17 +50,27 @@ export class ProjectsContent extends BaseComponent {
 			cls: "episteme-panel-content",
 		});
 
-		// Search input
-		this.renderSearchInput();
+		// Toolbar with search + new button
+		this.renderToolbar();
 
 		// Project list
 		this.renderProjectList();
 	}
 
-	private renderSearchInput(): void {
-		const searchContainer = this.element!.createDiv({
+	private renderToolbar(): void {
+		const toolbar = this.element!.createDiv({
+			cls: "episteme-panel-toolbar",
+		});
+
+		// Search container with icon
+		const searchContainer = toolbar.createDiv({
 			cls: "episteme-search-container",
 		});
+
+		const searchIcon = searchContainer.createSpan({
+			cls: "episteme-search-icon",
+		});
+		setIcon(searchIcon, "search");
 
 		this.searchInput = searchContainer.createEl("input", {
 			type: "text",
@@ -71,6 +82,15 @@ export class ProjectsContent extends BaseComponent {
 		this.events.addEventListener(this.searchInput, "input", (e) => {
 			const query = (e.target as HTMLInputElement).value.toLowerCase();
 			this.props.onSearchChange(query);
+		});
+
+		// New button
+		const newBtn = toolbar.createEl("button", {
+			cls: "episteme-toolbar-new-btn",
+		});
+		newBtn.createSpan({ text: "+ New" });
+		this.events.addEventListener(newBtn, "click", () => {
+			this.props.onCreateFromNote();
 		});
 	}
 

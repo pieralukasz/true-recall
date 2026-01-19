@@ -321,6 +321,10 @@ export class SqliteStoreService {
         return this.projectsRepo?.getOrphanedSourceNotes() ?? [];
     }
 
+    deleteEmptyProjects(): number {
+        return this.projectsRepo?.deleteEmptyProjects() ?? 0;
+    }
+
     // ===== Persistence =====
 
     private getDbPath(): string {

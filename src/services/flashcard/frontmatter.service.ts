@@ -70,14 +70,29 @@ ${projectsArray}
 		}
 
 		// Try list format: projects:\n  - Project 1
-		const listPattern = /^projects:\s*\n(\s+-\s+.+\s*)+/m;
-		const listMatch = frontmatter.match(listPattern);
-		if (listMatch) {
-			const lines = listMatch[0].match(/-\s+(.+)/g) ?? [];
-			return lines
-				.map(l => l.replace(/^-\s+/, "").trim().replace(/^["']|["']$/g, ""))
-				.map(p => this.stripWikiLinkSyntax(p))
-				.filter(p => p.length > 0);
+		// Match "projects:" followed by indented list items until we hit a non-indented line or end
+		const listStartMatch = frontmatter.match(/^projects:\s*$/m);
+		if (listStartMatch) {
+			const startIndex = listStartMatch.index! + listStartMatch[0].length;
+			const remainingContent = frontmatter.slice(startIndex);
+			// Match all lines that start with whitespace and dash (list items)
+			const listItems: string[] = [];
+			const lines = remainingContent.split("\n");
+			for (const line of lines) {
+				// Check if line is a list item (starts with whitespace + dash)
+				const itemMatch = line.match(/^\s+-\s+(.+)/);
+				if (itemMatch) {
+					listItems.push(itemMatch[1]!.trim().replace(/^["']|["']$/g, ""));
+				} else if (line.trim() && !line.match(/^\s/)) {
+					// Non-empty, non-indented line means end of list
+					break;
+				}
+			}
+			if (listItems.length > 0) {
+				return listItems
+					.map(p => this.stripWikiLinkSyntax(p))
+					.filter(p => p.length > 0);
+			}
 		}
 
 		return [];
