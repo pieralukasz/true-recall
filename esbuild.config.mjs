@@ -34,6 +34,7 @@ const cssFiles = [
 	"src/ui/review/styles.css",
 	"src/ui/modals/styles.css",
 	"src/ui/stats/styles.css",
+	"src/ui/projects/styles.css",
 	"src/ui/mobile.css",
 ];
 

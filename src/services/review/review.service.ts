@@ -28,8 +28,8 @@ export interface QueueBuildOptions {
     reviewedToday?: Set<string>;
     /** New cards already studied today */
     newCardsStudiedToday?: number;
-    /** Filter by deck name (null = all decks) */
-    deckFilter?: string | null;
+    /** Filter by project names (many-to-many, card matches if it has ANY of these projects) */
+    projectFilters?: string[];
     /** Order for new cards */
     newCardOrder?: NewCardOrder;
     /** Order for review cards */
@@ -221,9 +221,12 @@ export class ReviewService {
             });
         }
 
-        // Filter by deck if specified
-        if (options.deckFilter) {
-            filteredCards = filteredCards.filter(card => card.deck === options.deckFilter);
+        // Filter by projects if specified (card matches if it has ANY of the specified projects)
+        if (options.projectFilters && options.projectFilters.length > 0) {
+            const projectSet = new Set(options.projectFilters);
+            filteredCards = filteredCards.filter(card =>
+                card.projects.some(p => projectSet.has(p))
+            );
         }
 
         // Filter out already reviewed cards, BUT keep learning/relearning cards

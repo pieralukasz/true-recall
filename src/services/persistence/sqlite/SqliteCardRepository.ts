@@ -156,14 +156,20 @@ export class SqliteCardRepository {
     }
 
     /**
-     * Get all cards that have content (with source note JOIN)
+     * Get all cards that have content (with source note JOIN and projects)
      */
     getCardsWithContent(): FSRSCardData[] {
         const result = this.db.exec(`
-            SELECT c.*, s.note_name as source_note_name, s.note_path as source_note_path, s.deck as source_deck
+            SELECT c.*,
+                   s.note_name as source_note_name,
+                   s.note_path as source_note_path,
+                   GROUP_CONCAT(p.name) as projects
             FROM cards c
             LEFT JOIN source_notes s ON c.source_uid = s.uid
+            LEFT JOIN note_projects np ON s.uid = np.source_uid
+            LEFT JOIN projects p ON np.project_id = p.id
             WHERE c.question IS NOT NULL AND c.answer IS NOT NULL
+            GROUP BY c.id
         `);
 
         const data = getQueryResult(result);
@@ -268,6 +274,13 @@ export class SqliteCardRepository {
             }
         }
 
+        // Parse projects from GROUP_CONCAT result (comma-separated string)
+        const projectsRaw = getCol("projects") as string | null;
+        let projects: string[] | undefined;
+        if (projectsRaw) {
+            projects = projectsRaw.split(",").filter(p => p.trim());
+        }
+
         return {
             id: getCol("id") as string,
             due: getCol("due") as string,
@@ -287,7 +300,7 @@ export class SqliteCardRepository {
             sourceUid: getCol("source_uid") as string | undefined,
             sourceNoteName: getCol("source_note_name") as string | undefined,
             sourceNotePath: getCol("source_note_path") as string | undefined,
-            deck: (getCol("source_deck") as string | undefined) || undefined,
+            projects,
             tags,
         };
     }

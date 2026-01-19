@@ -100,4 +100,11 @@ export function registerCommands(plugin: EpistemePlugin): void {
 		name: "Show orphaned cards",
 		callback: () => void plugin.showOrphanedCards(),
 	});
+
+	// Show projects panel
+	plugin.addCommand({
+		id: "show-projects",
+		name: "Open projects panel",
+		callback: () => void plugin.showProjects(),
+	});
 }

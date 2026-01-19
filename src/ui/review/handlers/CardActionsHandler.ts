@@ -300,7 +300,7 @@ export class CardActionsHandler {
 			mode: "add",
 			currentFilePath: card.filePath,
 			sourceNoteName: card.sourceNoteName,
-			deck: card.deck,
+			projects: card.projects,
 			autocompleteFolder: this.deps.settings.autocompleteSearchFolder,
 		});
 
@@ -314,7 +314,7 @@ export class CardActionsHandler {
 				result.question,
 				result.answer,
 				card.sourceUid,
-				card.deck
+				card.projects
 			);
 
 			// Add new card to current session queue
@@ -340,7 +340,7 @@ export class CardActionsHandler {
 			mode: "add",
 			currentFilePath: card.filePath,
 			sourceNoteName: card.sourceNoteName,
-			deck: card.deck,
+			projects: card.projects,
 			prefillQuestion: card.question,
 			prefillAnswer: card.answer,
 			autocompleteFolder: this.deps.settings.autocompleteSearchFolder,
@@ -356,7 +356,7 @@ export class CardActionsHandler {
 				result.question,
 				result.answer,
 				card.sourceUid,
-				card.deck
+				card.projects
 			);
 
 			// Add new card to current session queue
@@ -380,7 +380,7 @@ export class CardActionsHandler {
 			mode: "edit",
 			card: card,
 			currentFilePath: card.filePath,
-			deck: card.deck ?? "",
+			projects: card.projects,
 			prefillQuestion: card.question,
 			prefillAnswer: card.answer,
 			autocompleteFolder: this.deps.settings.autocompleteSearchFolder,

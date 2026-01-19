@@ -139,7 +139,27 @@ export interface StreakInfo {
 }
 
 /**
- * Deck information
+ * Project information
+ */
+export interface ProjectInfo {
+    /** Project ID (unique identifier in database) */
+    id: number;
+    /** Project name (unique) */
+    name: string;
+    /** Number of cards in this project */
+    cardCount: number;
+    /** Due cards count */
+    dueCount: number;
+    /** New cards count */
+    newCount: number;
+    /** Creation timestamp */
+    createdAt?: number;
+    /** Last update timestamp */
+    updatedAt?: number;
+}
+
+/**
+ * @deprecated Use ProjectInfo instead
  */
 export interface DeckInfo {
     /** Deck name (unique identifier) */

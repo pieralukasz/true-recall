@@ -71,8 +71,8 @@ export interface FSRSCardData {
     sourceNoteName?: string;
     /** Source note path (from JOIN source_notes, for link resolution) */
     sourceNotePath?: string;
-    /** Deck from source_notes (via JOIN) */
-    deck?: string;
+    /** Projects associated with this card (via JOIN note_projects/projects) */
+    projects?: string[];
     /** Card tags (JSON array) */
     tags?: string[];
 }
@@ -88,8 +88,8 @@ export interface SourceNoteInfo {
     noteName: string;
     /** Path to note file (may change on rename) */
     notePath?: string;
-    /** Default deck for cards from this note */
-    deck: string;
+    /** Projects associated with this note (populated via JOIN, optional) */
+    projects?: string[];
     /** Creation timestamp */
     createdAt?: number;
     /** Last update timestamp */
@@ -111,8 +111,8 @@ export interface FSRSFlashcardItem {
     filePath: string;
     /** FSRS data */
     fsrs: FSRSCardData;
-    /** Deck name (from frontmatter or default) */
-    deck: string;
+    /** Projects associated with this card (many-to-many via source note) */
+    projects: string[];
     /** Original source note name (from frontmatter source_link) */
     sourceNoteName?: string;
     /** Source note UID (for MD note association) */

@@ -18,11 +18,11 @@ export class SqliteSchemaManager {
     }
 
     /**
-     * Create database tables (schema v4)
+     * Create database tables (schema v5)
      */
     createTables(): void {
         this.db.run(`
-            -- Cards table with FSRS scheduling data + content (v4)
+            -- Cards table with FSRS scheduling data + content (v5)
             CREATE TABLE IF NOT EXISTS cards (
                 id TEXT PRIMARY KEY,
                 due TEXT NOT NULL,
@@ -50,17 +50,39 @@ export class SqliteSchemaManager {
             CREATE INDEX IF NOT EXISTS idx_cards_suspended ON cards(suspended);
             CREATE INDEX IF NOT EXISTS idx_cards_source_uid ON cards(source_uid);
 
-            -- Source notes table
+            -- Source notes table (v5: removed deck column)
             CREATE TABLE IF NOT EXISTS source_notes (
                 uid TEXT PRIMARY KEY,
                 note_name TEXT NOT NULL,
                 note_path TEXT,
-                deck TEXT DEFAULT 'Knowledge',
                 created_at INTEGER,
                 updated_at INTEGER
             );
 
             CREATE INDEX IF NOT EXISTS idx_source_notes_name ON source_notes(note_name);
+
+            -- Projects table (v5: new)
+            CREATE TABLE IF NOT EXISTS projects (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                name TEXT UNIQUE NOT NULL,
+                created_at INTEGER,
+                updated_at INTEGER
+            );
+
+            CREATE INDEX IF NOT EXISTS idx_projects_name ON projects(name);
+
+            -- Note-Project junction table (v5: new, many-to-many)
+            CREATE TABLE IF NOT EXISTS note_projects (
+                source_uid TEXT NOT NULL,
+                project_id INTEGER NOT NULL,
+                created_at INTEGER,
+                PRIMARY KEY (source_uid, project_id),
+                FOREIGN KEY (source_uid) REFERENCES source_notes(uid) ON DELETE CASCADE,
+                FOREIGN KEY (project_id) REFERENCES projects(id) ON DELETE CASCADE
+            );
+
+            CREATE INDEX IF NOT EXISTS idx_note_projects_source ON note_projects(source_uid);
+            CREATE INDEX IF NOT EXISTS idx_note_projects_project ON note_projects(project_id);
 
             -- Review history log
             CREATE TABLE IF NOT EXISTS review_log (
@@ -122,7 +144,7 @@ export class SqliteSchemaManager {
             );
 
             -- Set schema version
-            INSERT OR REPLACE INTO meta (key, value) VALUES ('schema_version', '4');
+            INSERT OR REPLACE INTO meta (key, value) VALUES ('schema_version', '5');
             INSERT OR REPLACE INTO meta (key, value) VALUES ('created_at', datetime('now'));
         `);
     }
@@ -143,6 +165,10 @@ export class SqliteSchemaManager {
 
         if (currentVersion < 4) {
             this.migrateV3toV4();
+        }
+
+        if (currentVersion < 5) {
+            this.migrateV4toV5();
         }
     }
 
@@ -289,6 +315,79 @@ export class SqliteSchemaManager {
             this.onSchemaChange();
         } catch (error) {
             console.error("[Episteme] Schema migration v3->v4 failed:", error);
+        }
+    }
+
+    /**
+     * Migrate from v4 to v5 (project-based learning system)
+     * - Create projects table
+     * - Create note_projects junction table (many-to-many)
+     * - Remove deck column from source_notes (clean slate migration)
+     */
+    private migrateV4toV5(): void {
+        console.log("[Episteme] Migrating schema v4 -> v5...");
+
+        try {
+            // 1. Create projects table
+            this.db.run(`
+                CREATE TABLE IF NOT EXISTS projects (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    name TEXT UNIQUE NOT NULL,
+                    created_at INTEGER,
+                    updated_at INTEGER
+                )
+            `);
+
+            try {
+                this.db.run("CREATE INDEX IF NOT EXISTS idx_projects_name ON projects(name)");
+            } catch {
+                // Index might already exist
+            }
+
+            // 2. Create note_projects junction table (many-to-many)
+            this.db.run(`
+                CREATE TABLE IF NOT EXISTS note_projects (
+                    source_uid TEXT NOT NULL,
+                    project_id INTEGER NOT NULL,
+                    created_at INTEGER,
+                    PRIMARY KEY (source_uid, project_id),
+                    FOREIGN KEY (source_uid) REFERENCES source_notes(uid) ON DELETE CASCADE,
+                    FOREIGN KEY (project_id) REFERENCES projects(id) ON DELETE CASCADE
+                )
+            `);
+
+            try {
+                this.db.run("CREATE INDEX IF NOT EXISTS idx_note_projects_source ON note_projects(source_uid)");
+                this.db.run("CREATE INDEX IF NOT EXISTS idx_note_projects_project ON note_projects(project_id)");
+            } catch {
+                // Indexes might already exist
+            }
+
+            // 3. Recreate source_notes without deck column (clean slate - deck data is discarded)
+            this.db.run(`
+                CREATE TABLE source_notes_new (
+                    uid TEXT PRIMARY KEY,
+                    note_name TEXT NOT NULL,
+                    note_path TEXT,
+                    created_at INTEGER,
+                    updated_at INTEGER
+                );
+
+                INSERT INTO source_notes_new (uid, note_name, note_path, created_at, updated_at)
+                SELECT uid, note_name, note_path, created_at, updated_at
+                FROM source_notes;
+
+                DROP TABLE source_notes;
+                ALTER TABLE source_notes_new RENAME TO source_notes;
+
+                CREATE INDEX idx_source_notes_name ON source_notes(note_name);
+            `);
+
+            this.db.run("INSERT OR REPLACE INTO meta (key, value) VALUES ('schema_version', '5')");
+            console.log("[Episteme] Schema migration v4->v5 completed");
+            this.onSchemaChange();
+        } catch (error) {
+            console.error("[Episteme] Schema migration v4->v5 failed:", error);
         }
     }
 }

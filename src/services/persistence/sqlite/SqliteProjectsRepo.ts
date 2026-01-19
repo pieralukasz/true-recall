@@ -1,0 +1,296 @@
+/**
+ * SQLite Projects Repository
+ * CRUD operations for projects and note-project relationships (many-to-many)
+ */
+import type { Database } from "sql.js";
+import type { ProjectInfo } from "../../../types";
+import { getQueryResult } from "./sqlite.types";
+
+/**
+ * Repository for project operations and note-project relationships
+ */
+export class SqliteProjectsRepo {
+    private db: Database;
+    private onDataChange: () => void;
+
+    constructor(db: Database, onDataChange: () => void) {
+        this.db = db;
+        this.onDataChange = onDataChange;
+    }
+
+    // ===== Project CRUD =====
+
+    /**
+     * Create a new project
+     * @returns The new project ID, or existing ID if project already exists
+     */
+    createProject(name: string): number {
+        const now = Date.now();
+
+        // Try to get existing project first
+        const existing = this.getProjectByName(name);
+        if (existing) {
+            return existing.id;
+        }
+
+        this.db.run(`
+            INSERT INTO projects (name, created_at, updated_at)
+            VALUES (?, ?, ?)
+        `, [name, now, now]);
+
+        // Get the last inserted ID
+        const result = this.db.exec("SELECT last_insert_rowid()");
+        const data = getQueryResult(result);
+        const projectId = data?.values[0]?.[0] as number;
+
+        this.onDataChange();
+        return projectId;
+    }
+
+    /**
+     * Get a project by name
+     */
+    getProjectByName(name: string): ProjectInfo | null {
+        const result = this.db.exec(`
+            SELECT p.*,
+                   COUNT(DISTINCT np.source_uid) as card_count,
+                   0 as due_count,
+                   0 as new_count
+            FROM projects p
+            LEFT JOIN note_projects np ON p.id = np.project_id
+            WHERE p.name = ?
+            GROUP BY p.id
+        `, [name]);
+
+        const data = getQueryResult(result);
+        if (!data) return null;
+
+        return this.rowToProjectInfo(data.columns, data.values[0]!);
+    }
+
+    /**
+     * Get a project by ID
+     */
+    getProjectById(id: number): ProjectInfo | null {
+        const result = this.db.exec(`
+            SELECT p.*,
+                   COUNT(DISTINCT np.source_uid) as card_count,
+                   0 as due_count,
+                   0 as new_count
+            FROM projects p
+            LEFT JOIN note_projects np ON p.id = np.project_id
+            WHERE p.id = ?
+            GROUP BY p.id
+        `, [id]);
+
+        const data = getQueryResult(result);
+        if (!data) return null;
+
+        return this.rowToProjectInfo(data.columns, data.values[0]!);
+    }
+
+    /**
+     * Get all projects
+     */
+    getAllProjects(): ProjectInfo[] {
+        const result = this.db.exec(`
+            SELECT p.*,
+                   COUNT(DISTINCT np.source_uid) as card_count,
+                   0 as due_count,
+                   0 as new_count
+            FROM projects p
+            LEFT JOIN note_projects np ON p.id = np.project_id
+            GROUP BY p.id
+            ORDER BY p.name
+        `);
+
+        const data = getQueryResult(result);
+        if (!data) return [];
+
+        return data.values.map(row => this.rowToProjectInfo(data.columns, row));
+    }
+
+    /**
+     * Rename a project
+     */
+    renameProject(id: number, newName: string): void {
+        this.db.run(`
+            UPDATE projects SET
+                name = ?,
+                updated_at = ?
+            WHERE id = ?
+        `, [newName, Date.now(), id]);
+
+        this.onDataChange();
+    }
+
+    /**
+     * Delete a project (also removes all note-project associations)
+     */
+    deleteProject(id: number): void {
+        // Foreign key cascade will handle note_projects cleanup
+        this.db.run(`DELETE FROM projects WHERE id = ?`, [id]);
+        this.onDataChange();
+    }
+
+    // ===== Note-Project Relationships =====
+
+    /**
+     * Sync projects for a source note
+     * Replaces all existing project associations with the new list
+     */
+    syncNoteProjects(sourceUid: string, projectNames: string[]): void {
+        const now = Date.now();
+
+        // Remove existing associations
+        this.db.run(`DELETE FROM note_projects WHERE source_uid = ?`, [sourceUid]);
+
+        // Add new associations
+        for (const projectName of projectNames) {
+            if (!projectName.trim()) continue;
+
+            // Get or create project
+            const projectId = this.createProject(projectName.trim());
+
+            // Create association
+            this.db.run(`
+                INSERT OR IGNORE INTO note_projects (source_uid, project_id, created_at)
+                VALUES (?, ?, ?)
+            `, [sourceUid, projectId, now]);
+        }
+
+        this.onDataChange();
+    }
+
+    /**
+     * Get all projects for a source note
+     */
+    getProjectsForNote(sourceUid: string): ProjectInfo[] {
+        const result = this.db.exec(`
+            SELECT p.*,
+                   COUNT(DISTINCT np2.source_uid) as card_count,
+                   0 as due_count,
+                   0 as new_count
+            FROM projects p
+            INNER JOIN note_projects np ON p.id = np.project_id
+            LEFT JOIN note_projects np2 ON p.id = np2.project_id
+            WHERE np.source_uid = ?
+            GROUP BY p.id
+            ORDER BY p.name
+        `, [sourceUid]);
+
+        const data = getQueryResult(result);
+        if (!data) return [];
+
+        return data.values.map(row => this.rowToProjectInfo(data.columns, row));
+    }
+
+    /**
+     * Get project names for a source note (convenience method)
+     */
+    getProjectNamesForNote(sourceUid: string): string[] {
+        const result = this.db.exec(`
+            SELECT p.name
+            FROM projects p
+            INNER JOIN note_projects np ON p.id = np.project_id
+            WHERE np.source_uid = ?
+            ORDER BY p.name
+        `, [sourceUid]);
+
+        const data = getQueryResult(result);
+        if (!data) return [];
+
+        return data.values.map(row => row[0] as string);
+    }
+
+    /**
+     * Get all source note UIDs in a project
+     */
+    getNotesInProject(projectId: number): string[] {
+        const result = this.db.exec(`
+            SELECT source_uid FROM note_projects WHERE project_id = ?
+        `, [projectId]);
+
+        const data = getQueryResult(result);
+        if (!data) return [];
+
+        return data.values.map(row => row[0] as string);
+    }
+
+    /**
+     * Add a project to a note
+     */
+    addProjectToNote(sourceUid: string, projectName: string): void {
+        const projectId = this.createProject(projectName);
+
+        this.db.run(`
+            INSERT OR IGNORE INTO note_projects (source_uid, project_id, created_at)
+            VALUES (?, ?, ?)
+        `, [sourceUid, projectId, Date.now()]);
+
+        this.onDataChange();
+    }
+
+    /**
+     * Remove a project from a note
+     */
+    removeProjectFromNote(sourceUid: string, projectId: number): void {
+        this.db.run(`
+            DELETE FROM note_projects WHERE source_uid = ? AND project_id = ?
+        `, [sourceUid, projectId]);
+
+        this.onDataChange();
+    }
+
+    // ===== Statistics =====
+
+    /**
+     * Get project statistics with card counts
+     * Uses JOIN with cards table through source_notes
+     */
+    getProjectStats(): ProjectInfo[] {
+        const result = this.db.exec(`
+            SELECT
+                p.id,
+                p.name,
+                p.created_at,
+                p.updated_at,
+                COUNT(DISTINCT c.id) as card_count,
+                SUM(CASE WHEN c.state != 0 AND c.suspended = 0
+                         AND (c.buried_until IS NULL OR c.buried_until <= datetime('now'))
+                         AND c.due <= datetime('now') THEN 1 ELSE 0 END) as due_count,
+                SUM(CASE WHEN c.state = 0 AND c.suspended = 0
+                         AND (c.buried_until IS NULL OR c.buried_until <= datetime('now'))
+                    THEN 1 ELSE 0 END) as new_count
+            FROM projects p
+            LEFT JOIN note_projects np ON p.id = np.project_id
+            LEFT JOIN cards c ON np.source_uid = c.source_uid
+            GROUP BY p.id
+            ORDER BY p.name
+        `);
+
+        const data = getQueryResult(result);
+        if (!data) return [];
+
+        return data.values.map(row => this.rowToProjectInfo(data.columns, row));
+    }
+
+    // ===== Helpers =====
+
+    private rowToProjectInfo(columns: string[], row: (string | number | null | Uint8Array)[]): ProjectInfo {
+        const getCol = (name: string) => {
+            const idx = columns.indexOf(name);
+            return idx >= 0 ? row[idx] : null;
+        };
+
+        return {
+            id: getCol("id") as number,
+            name: getCol("name") as string,
+            cardCount: (getCol("card_count") as number) || 0,
+            dueCount: (getCol("due_count") as number) || 0,
+            newCount: (getCol("new_count") as number) || 0,
+            createdAt: getCol("created_at") as number | undefined,
+            updatedAt: getCol("updated_at") as number | undefined,
+        };
+    }
+}

@@ -9,7 +9,8 @@ import type { FSRSFlashcardItem } from "../../types";
  * Review view state for persistence
  */
 export interface ReviewViewState extends Record<string, unknown> {
-    deckFilter?: string | null;
+    /** Filter by project names (many-to-many) */
+    projectFilters?: string[];
     // Custom session filters
     sourceNoteFilter?: string;
     sourceNoteFilters?: string[];

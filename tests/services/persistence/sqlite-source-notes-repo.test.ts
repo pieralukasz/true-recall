@@ -24,7 +24,6 @@ describe("SqliteSourceNotesRepo", () => {
 				uid TEXT PRIMARY KEY,
 				note_name TEXT NOT NULL,
 				note_path TEXT,
-				deck TEXT DEFAULT 'Knowledge',
 				created_at INTEGER,
 				updated_at INTEGER
 			);
@@ -62,7 +61,6 @@ describe("SqliteSourceNotesRepo", () => {
 				uid: "test-uid-1",
 				noteName: "My Note",
 				notePath: "notes/my-note.md",
-				deck: "Science",
 			});
 
 			repo.upsert(sourceNote);
@@ -72,7 +70,6 @@ describe("SqliteSourceNotesRepo", () => {
 			expect(result!.uid).toBe("test-uid-1");
 			expect(result!.noteName).toBe("My Note");
 			expect(result!.notePath).toBe("notes/my-note.md");
-			expect(result!.deck).toBe("Science");
 			expect(onDataChange).toHaveBeenCalledTimes(1);
 		});
 
@@ -88,14 +85,12 @@ describe("SqliteSourceNotesRepo", () => {
 				uid: "test-uid-1",
 				noteName: "Updated Name",
 				notePath: "notes/updated.md",
-				deck: "History",
 			});
 			repo.upsert(updated);
 
 			const result = repo.get("test-uid-1");
 			expect(result!.noteName).toBe("Updated Name");
 			expect(result!.notePath).toBe("notes/updated.md");
-			expect(result!.deck).toBe("History");
 			expect(onDataChange).toHaveBeenCalledTimes(2);
 		});
 
@@ -105,7 +100,6 @@ describe("SqliteSourceNotesRepo", () => {
 				uid: "no-path",
 				noteName: "Note Without Path",
 				notePath: undefined as string | undefined,
-				deck: "Knowledge",
 				createdAt: Date.now(),
 				updatedAt: Date.now(),
 			};
@@ -347,7 +341,6 @@ describe("SqliteSourceNotesRepo", () => {
 				uid: "full-mapping",
 				noteName: "Full Test",
 				notePath: "path/to/note.md",
-				deck: "Custom Deck",
 				createdAt: now - 1000,
 				updatedAt: now,
 			});
@@ -358,7 +351,6 @@ describe("SqliteSourceNotesRepo", () => {
 				uid: "full-mapping",
 				noteName: "Full Test",
 				notePath: "path/to/note.md",
-				deck: "Custom Deck",
 				createdAt: now - 1000,
 				updatedAt: expect.any(Number), // Updated by upsert
 			});

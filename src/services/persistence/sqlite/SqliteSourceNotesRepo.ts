@@ -25,18 +25,16 @@ export class SqliteSourceNotesRepo {
         const now = Date.now();
 
         this.db.run(`
-            INSERT INTO source_notes (uid, note_name, note_path, deck, created_at, updated_at)
-            VALUES (?, ?, ?, ?, ?, ?)
+            INSERT INTO source_notes (uid, note_name, note_path, created_at, updated_at)
+            VALUES (?, ?, ?, ?, ?)
             ON CONFLICT(uid) DO UPDATE SET
                 note_name = excluded.note_name,
                 note_path = excluded.note_path,
-                deck = excluded.deck,
                 updated_at = excluded.updated_at
         `, [
             info.uid,
             info.noteName,
             info.notePath || null,
-            info.deck,
             info.createdAt || now,
             now,
         ]);
@@ -135,7 +133,6 @@ export class SqliteSourceNotesRepo {
             uid: getCol("uid") as string,
             noteName: getCol("note_name") as string,
             notePath: getCol("note_path") as string | undefined,
-            deck: getCol("deck") as string,
             createdAt: getCol("created_at") as number | undefined,
             updatedAt: getCol("updated_at") as number | undefined,
         };

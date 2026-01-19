@@ -462,20 +462,20 @@ describe("ReviewService", () => {
 			expect(queue).toEqual([]);
 		});
 
-		it("should filter by deck when specified", () => {
+		it("should filter by projects when specified", () => {
 			const cards = [
-				createMockFlashcard({ id: "math-1", deck: "Math" }),
-				createMockFlashcard({ id: "science-1", deck: "Science" }),
-				createMockFlashcard({ id: "math-2", deck: "Math" }),
+				createMockFlashcard({ id: "math-1", projects: ["Math"] }),
+				createMockFlashcard({ id: "science-1", projects: ["Science"] }),
+				createMockFlashcard({ id: "math-2", projects: ["Math", "Advanced"] }),
 			];
 
 			const queue = reviewService.buildQueue(cards, fsrsService, {
 				...defaultOptions,
-				deckFilter: "Math",
+				projectFilters: ["Math"],
 			});
 
 			expect(queue.length).toBe(2);
-			queue.forEach((card) => expect(card.deck).toBe("Math"));
+			queue.forEach((card) => expect(card.projects).toContain("Math"));
 		});
 
 		it("should respect newCardsStudiedToday", () => {

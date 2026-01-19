@@ -65,13 +65,11 @@ export class SourceNoteService {
 	 * @param store - The card store
 	 * @param uid - The source note UID
 	 * @param file - The source note file
-	 * @param deck - Default deck for cards from this note
 	 */
 	registerSourceNote(
 		store: CardStore,
 		uid: string,
-		file: TFile,
-		deck: string = ""
+		file: TFile
 	): void {
 		const sqlStore = store as CardStore & {
 			upsertSourceNote?: (info: SourceNoteInfo) => void;
@@ -82,7 +80,6 @@ export class SourceNoteService {
 				uid,
 				noteName: file.basename,
 				notePath: file.path,
-				deck,
 				createdAt: Date.now(),
 				updatedAt: Date.now(),
 			});

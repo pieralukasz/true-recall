@@ -22,8 +22,8 @@ export class ReviewView extends ItemView {
     private stateManager: ReviewStateManager;
     private sessionPersistence: SessionPersistenceService;
 
-    // Deck filter (null = all decks)
-    private deckFilter: string | null = null;
+    // Project filter (empty = all projects)
+    private projectFilters: string[] = [];
 
     // Track if this is a custom review session (with filters)
     private isCustomSession: boolean = false;
@@ -70,11 +70,11 @@ export class ReviewView extends ItemView {
     }
 
     /**
-     * Set view state (including deck filter and custom session filters)
+     * Set view state (including project filters and custom session filters)
      */
     async setState(state: unknown, result: ViewStateResult): Promise<void> {
         const viewState = state as ReviewViewState | null;
-        this.deckFilter = viewState?.deckFilter ?? null;
+        this.projectFilters = viewState?.projectFilters ?? [];
         this.sourceNoteFilter = viewState?.sourceNoteFilter;
         this.sourceNoteFilters = viewState?.sourceNoteFilters;
         this.filePathFilter = viewState?.filePathFilter;
@@ -107,7 +107,7 @@ export class ReviewView extends ItemView {
      */
     getState(): ReviewViewState {
         return {
-            deckFilter: this.deckFilter,
+            projectFilters: this.projectFilters,
             sourceNoteFilter: this.sourceNoteFilter,
             sourceNoteFilters: this.sourceNoteFilters,
             filePathFilter: this.filePathFilter,
@@ -311,13 +311,13 @@ export class ReviewView extends ItemView {
             const reviewedToday = await this.sessionPersistence.getReviewedToday();
             const newCardsStudiedToday = await this.sessionPersistence.getNewCardsStudiedToday();
 
-            // Build review queue with persistent stats, deck filter, custom session filters, and display order settings
+            // Build review queue with persistent stats, project filters, custom session filters, and display order settings
             const queue = this.reviewService.buildQueue(activeCards, this.fsrsService, {
                 newCardsLimit: this.plugin.settings.newCardsPerDay,
                 reviewsLimit: this.plugin.settings.reviewsPerDay,
                 reviewedToday,
                 newCardsStudiedToday,
-                deckFilter: this.deckFilter,
+                projectFilters: this.projectFilters,
                 newCardOrder: this.plugin.settings.newCardOrder,
                 reviewOrder: this.plugin.settings.reviewOrder,
                 newReviewMix: this.plugin.settings.newReviewMix,
@@ -989,7 +989,7 @@ export class ReviewView extends ItemView {
             mode: "edit",
             card,
             currentFilePath: card.filePath,
-            deck: card.deck,
+            projects: card.projects,
             autocompleteFolder: this.plugin.settings.autocompleteSearchFolder,
         });
         const result = await modal.openAndWait();
@@ -1548,7 +1548,7 @@ Source: [[${sourceNote}]]
             mode: "add",
             currentFilePath: card.filePath,
             sourceNoteName: card.sourceNoteName,
-            deck: card.deck,
+            projects: card.projects,
             autocompleteFolder: this.plugin.settings.autocompleteSearchFolder,
         });
 
@@ -1562,7 +1562,7 @@ Source: [[${sourceNote}]]
                 result.question,
                 result.answer,
                 card.sourceUid,
-                card.deck
+                card.projects
             );
 
             // Add new card to current session queue
@@ -1588,7 +1588,7 @@ Source: [[${sourceNote}]]
             mode: "add",
             currentFilePath: card.filePath,
             sourceNoteName: card.sourceNoteName,
-            deck: card.deck,
+            projects: card.projects,
             prefillQuestion: card.question,
             prefillAnswer: card.answer,
             autocompleteFolder: this.plugin.settings.autocompleteSearchFolder,
@@ -1604,7 +1604,7 @@ Source: [[${sourceNote}]]
                 result.question,
                 result.answer,
                 card.sourceUid,
-                card.deck
+                card.projects
             );
 
             // Add new card to current session queue

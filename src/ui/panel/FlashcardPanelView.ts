@@ -391,14 +391,15 @@ export class FlashcardPanelView extends ItemView {
                 answer: f.answer,
             }));
 
-            // Get default deck from settings
-            const defaultDeck = "Knowledge";
+            // Get projects from frontmatter (if any)
+            const frontmatterService = this.flashcardManager.getFrontmatterService();
+            const projects = frontmatterService.extractProjectsFromFrontmatter(content);
 
             // Save directly to SQL (no MD file created)
             await this.flashcardManager.saveFlashcardsToSql(
                 state.currentFile,
                 flashcardsWithIds,
-                defaultDeck
+                projects
             );
 
             if (this.plugin.settings.storeSourceContent) {
@@ -491,14 +492,16 @@ export class FlashcardPanelView extends ItemView {
                 answer: f.answer,
             }));
 
-            // Get default deck from settings
-            const defaultDeck = "Knowledge";
+            // Get projects from frontmatter (if any)
+            const content = await this.app.vault.read(state.currentFile);
+            const frontmatterSvc = this.flashcardManager.getFrontmatterService();
+            const projects = frontmatterSvc.extractProjectsFromFrontmatter(content);
 
             // Save directly to SQL (no MD file created)
             await this.flashcardManager.saveFlashcardsToSql(
                 state.currentFile,
                 flashcardsWithIds,
-                defaultDeck
+                projects
             );
 
             new Notice(`Saved ${result.flashcards.length} flashcard(s) from selection`);
@@ -669,11 +672,11 @@ export class FlashcardPanelView extends ItemView {
                 ...card,
                 filePath: state.currentFile.path,
                 fsrs: createDefaultFSRSData(card.id),
-                deck: "Knowledge",
+                projects: [],
             },
             currentFilePath: state.currentFile.path,
             sourceNoteName: state.currentFile.basename,
-            deck: "Knowledge",
+            projects: [],
             autocompleteFolder: this.plugin.settings.autocompleteSearchFolder,
         });
 
@@ -923,13 +926,15 @@ export class FlashcardPanelView extends ItemView {
             await frontmatterService.setSourceNoteUid(state.currentFile, sourceUid);
         }
 
-        const deck = "Knowledge";
+        // Get projects from frontmatter (if any)
+        const content = await this.app.vault.read(state.currentFile);
+        const projects = frontmatterService.extractProjectsFromFrontmatter(content);
 
         const modal = new FlashcardEditorModal(this.app, {
             mode: "add",
             currentFilePath: state.currentFile.path,
             sourceNoteName: state.currentFile.basename,
-            deck,
+            projects,
             autocompleteFolder: this.plugin.settings.autocompleteSearchFolder,
         });
 
@@ -942,7 +947,7 @@ export class FlashcardPanelView extends ItemView {
                 result.question,
                 result.answer,
                 sourceUid,
-                deck
+                projects
             );
             new Notice("Flashcard added!");
             await this.loadFlashcardInfo();
