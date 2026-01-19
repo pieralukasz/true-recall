@@ -255,6 +255,7 @@ export class SqliteProjectsRepo {
                 p.name,
                 p.created_at,
                 p.updated_at,
+                COUNT(DISTINCT np.source_uid) as note_count,
                 COUNT(DISTINCT c.id) as card_count,
                 SUM(CASE WHEN c.state != 0 AND c.suspended = 0
                          AND (c.buried_until IS NULL OR c.buried_until <= datetime('now'))
@@ -275,6 +276,30 @@ export class SqliteProjectsRepo {
         return data.values.map(row => this.rowToProjectInfo(data.columns, row));
     }
 
+    // ===== Orphaned Notes =====
+
+    /**
+     * Get source notes that have no projects assigned
+     */
+    getOrphanedSourceNotes(): { uid: string; noteName: string; notePath: string }[] {
+        const result = this.db.exec(`
+            SELECT sn.uid, sn.note_name, sn.note_path
+            FROM source_notes sn
+            LEFT JOIN note_projects np ON sn.uid = np.source_uid
+            WHERE np.source_uid IS NULL
+            ORDER BY sn.note_name
+        `);
+
+        const data = getQueryResult(result);
+        if (!data) return [];
+
+        return data.values.map(row => ({
+            uid: row[data.columns.indexOf("uid")] as string,
+            noteName: row[data.columns.indexOf("note_name")] as string,
+            notePath: row[data.columns.indexOf("note_path")] as string,
+        }));
+    }
+
     // ===== Helpers =====
 
     private rowToProjectInfo(columns: string[], row: (string | number | null | Uint8Array)[]): ProjectInfo {
@@ -286,6 +311,7 @@ export class SqliteProjectsRepo {
         return {
             id: getCol("id") as number,
             name: getCol("name") as string,
+            noteCount: (getCol("note_count") as number) || 0,
             cardCount: (getCol("card_count") as number) || 0,
             dueCount: (getCol("due_count") as number) || 0,
             newCount: (getCol("new_count") as number) || 0,

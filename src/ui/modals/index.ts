@@ -38,3 +38,19 @@ export {
     ImagePickerModal,
     type ImagePickerResult,
 } from "./ImagePickerModal";
+export {
+    AddToProjectModal,
+    type AddToProjectResult,
+    type AddToProjectModalOptions,
+} from "./AddToProjectModal";
+export {
+    SelectNoteModal,
+    type SelectNoteResult,
+    type SelectNoteModalOptions,
+} from "./SelectNoteModal";
+export {
+    AddNotesToProjectModal,
+    type AddNotesToProjectResult,
+    type AddNotesToProjectModalOptions,
+    type OrphanedNoteInfo,
+} from "./AddNotesToProjectModal";

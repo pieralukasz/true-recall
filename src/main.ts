@@ -40,7 +40,7 @@ import {
 	type EpistemeSettings,
 	DEFAULT_SETTINGS,
 } from "./ui/settings";
-import { SessionModal } from "./ui/modals";
+import { SessionModal, AddToProjectModal } from "./ui/modals";
 import { registerCommands } from "./plugin/PluginCommands";
 import { registerEventHandlers } from "./plugin/PluginEventHandlers";
 import {
@@ -654,6 +654,7 @@ export default class EpistemePlugin extends Plugin {
 			updateSourceNotePath?: (uid: string, newPath: string, newName?: string) => void;
 			deleteSourceNote?: (uid: string, detachCards?: boolean) => void;
 			getCardsBySourceUid?: (uid: string) => FSRSCardData[];
+			syncNoteProjects?: (sourceUid: string, projectNames: string[]) => void;
 		};
 
 		if (!sqlStore.getAllSourceNotes || !sqlStore.updateSourceNotePath) {
@@ -675,6 +676,7 @@ export default class EpistemePlugin extends Plugin {
 		}
 
 		let synced = 0;
+		let projectsSynced = 0;
 		let orphaned = 0;
 		const orphanedUids: string[] = [];
 
@@ -685,6 +687,16 @@ export default class EpistemePlugin extends Plugin {
 				if (file.path !== sourceNote.notePath || file.basename !== sourceNote.noteName) {
 					sqlStore.updateSourceNotePath(sourceNote.uid, file.path, file.basename);
 					synced++;
+				}
+
+				// Sync projects from frontmatter
+				if (sqlStore.syncNoteProjects) {
+					const content = await this.app.vault.read(file);
+					const projects = frontmatterService.extractProjectsFromFrontmatter(content);
+					sqlStore.syncNoteProjects(sourceNote.uid, projects);
+					if (projects.length > 0) {
+						projectsSynced++;
+					}
 				}
 			} else {
 				// Source note exists in DB but no matching file in vault
@@ -703,12 +715,109 @@ export default class EpistemePlugin extends Plugin {
 				sqlStore.deleteSourceNote(uid, false);
 			}
 			new Notice(
-				`Synced ${synced} source note(s). Removed ${orphaned} orphaned entries` +
+				`Synced ${synced} path(s), ${projectsSynced} project(s). Removed ${orphaned} orphaned entries` +
 				(orphanedCards > 0 ? ` (${orphanedCards} cards detached)` : "") +
 				"."
 			);
 		} else {
-			new Notice(`Synced ${synced} source note(s)`);
+			new Notice(`Synced ${synced} path(s), ${projectsSynced} project(s)`);
 		}
+	}
+
+	/**
+	 * Add current note to a project via modal
+	 */
+	async addCurrentNoteToProject(): Promise<void> {
+		const file = this.app.workspace.getActiveFile();
+		if (!file || file.extension !== "md") {
+			new Notice("No active markdown file");
+			return;
+		}
+
+		const frontmatterService = this.flashcardManager.getFrontmatterService();
+
+		// Get current projects from frontmatter
+		const content = await this.app.vault.read(file);
+		const currentProjects = frontmatterService.extractProjectsFromFrontmatter(content);
+
+		// Get all available projects from the store
+		const sqlStore = this.cardStore as CardStore & {
+			getProjectStats?: () => { name: string }[];
+			syncNoteProjects?: (sourceUid: string, projectNames: string[]) => void;
+		};
+
+		const allProjects = sqlStore.getProjectStats?.()?.map(p => p.name) ?? [];
+
+		// Open modal
+		const modal = new AddToProjectModal(this.app, {
+			availableProjects: allProjects,
+			currentProjects: currentProjects,
+		});
+
+		const result = await modal.openAndWait();
+		if (result.cancelled) return;
+
+		// Update frontmatter
+		await frontmatterService.setProjectsInFrontmatter(file, result.projects);
+
+		// Sync to database if note has UID
+		const uid = await frontmatterService.getSourceNoteUid(file);
+		if (uid && sqlStore.syncNoteProjects) {
+			sqlStore.syncNoteProjects(uid, result.projects);
+		}
+
+		if (result.projects.length > 0) {
+			new Notice(`Projects updated: ${result.projects.join(", ")}`);
+		} else {
+			new Notice("Removed all projects from note");
+		}
+	}
+
+	/**
+	 * Create a project from a file (used by file-menu context action)
+	 */
+	async createProjectFromNote(file: TFile): Promise<void> {
+		const projectName = file.basename;
+
+		// Check if project exists
+		const projects = this.cardStore.getProjectStats?.() ?? [];
+		if (projects.some(p => p.name.toLowerCase() === projectName.toLowerCase())) {
+			new Notice(`Project "${projectName}" already exists`);
+			return;
+		}
+
+		// Create project
+		const projectId = this.cardStore.createProject?.(projectName);
+		if (!projectId || projectId < 0) {
+			new Notice("Failed to create project");
+			return;
+		}
+
+		// Get or create source note UID
+		const frontmatterService = this.flashcardManager.getFrontmatterService();
+		let sourceUid = await frontmatterService.getSourceNoteUid(file);
+		if (!sourceUid) {
+			sourceUid = frontmatterService.generateUid();
+			await frontmatterService.setSourceNoteUid(file, sourceUid);
+		}
+
+		// Add note to project (update frontmatter + DB)
+		await frontmatterService.setProjectsInFrontmatter(file, [projectName]);
+
+		const sqlStore = this.cardStore as CardStore & {
+			syncNoteProjects?: (sourceUid: string, projectNames: string[]) => void;
+			upsertSourceNote?: (info: SourceNoteInfo) => void;
+		};
+
+		// Ensure source note exists in DB
+		sqlStore.upsertSourceNote?.({
+			uid: sourceUid,
+			noteName: file.basename,
+			notePath: file.path,
+		});
+
+		sqlStore.syncNoteProjects?.(sourceUid, [projectName]);
+
+		new Notice(`Project "${projectName}" created`);
 	}
 }

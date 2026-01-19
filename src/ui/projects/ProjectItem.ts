@@ -2,18 +2,17 @@
  * Project Item Component
  * Displays a single project with stats and actions
  */
-import { setIcon } from "obsidian";
+import { setIcon, MarkdownRenderer, type App, type Component } from "obsidian";
 import { BaseComponent } from "../component.base";
 import type { ProjectInfo } from "../../types";
 
 export interface ProjectItemProps {
 	project: ProjectInfo;
-	isEditing: boolean;
+	app: App;
+	component: Component;
 	onStartReview: (projectName: string) => void;
-	onEdit: (projectId: number) => void;
 	onDelete: (projectId: number) => void;
-	onSaveName: (projectId: number, newName: string) => void;
-	onCancelEdit: () => void;
+	onAddNotes: (projectId: number, projectName: string) => void;
 }
 
 /**
@@ -21,7 +20,6 @@ export interface ProjectItemProps {
  */
 export class ProjectItem extends BaseComponent {
 	private props: ProjectItemProps;
-	private editInput: HTMLInputElement | null = null;
 
 	constructor(container: HTMLElement, props: ProjectItemProps) {
 		super(container);
@@ -34,10 +32,10 @@ export class ProjectItem extends BaseComponent {
 			this.events.cleanup();
 		}
 
-		const { project, isEditing } = this.props;
+		const { project } = this.props;
 
 		this.element = this.container.createDiv({
-			cls: `episteme-project-item ${project.cardCount === 0 ? "episteme-project-empty" : ""}`,
+			cls: `episteme-project-item ${project.noteCount === 0 ? "episteme-project-empty" : ""}`,
 		});
 
 		// Project icon and name row
@@ -50,15 +48,39 @@ export class ProjectItem extends BaseComponent {
 		});
 		setIcon(iconEl, "folder");
 
-		if (isEditing) {
-			this.renderEditMode(nameRow);
-		} else {
-			this.renderViewMode(nameRow);
-		}
+		// Project name as clickable wiki link
+		const nameEl = nameRow.createSpan({ cls: "episteme-project-name" });
+		void MarkdownRenderer.render(
+			this.props.app,
+			`[[${project.name}]]`,
+			nameEl,
+			"",
+			this.props.component
+		);
+
+		// Handle internal link clicks
+		this.events.addEventListener(nameEl, "click", (e) => {
+			const target = e.target as HTMLElement;
+			const linkEl = target.closest("a.internal-link");
+			if (!linkEl) return;
+
+			e.preventDefault();
+			e.stopPropagation();
+			const href = linkEl.getAttribute("data-href");
+			if (href) {
+				void this.props.app.workspace.openLinkText(href, "", false);
+			}
+		});
 
 		// Stats row
 		const statsRow = this.element.createDiv({
 			cls: "episteme-project-stats",
+		});
+
+		const noteCountText = project.noteCount === 1 ? "1 note" : `${project.noteCount} notes`;
+		statsRow.createSpan({
+			text: noteCountText,
+			cls: "episteme-project-stat",
 		});
 
 		const cardCountText = project.cardCount === 1 ? "1 card" : `${project.cardCount} cards`;
@@ -69,14 +91,14 @@ export class ProjectItem extends BaseComponent {
 
 		if (project.dueCount > 0) {
 			statsRow.createSpan({
-				text: ` \u2022 ${project.dueCount} due`,
+				text: `${project.dueCount} due`,
 				cls: "episteme-project-stat episteme-project-due",
 			});
 		}
 
 		if (project.newCount > 0) {
 			statsRow.createSpan({
-				text: ` \u2022 ${project.newCount} new`,
+				text: `${project.newCount} new`,
 				cls: "episteme-project-stat episteme-project-new",
 			});
 		}
@@ -86,15 +108,15 @@ export class ProjectItem extends BaseComponent {
 			cls: "episteme-project-actions",
 		});
 
-		// Edit button
-		const editBtn = actionsRow.createEl("button", {
+		// Add notes button
+		const addNotesBtn = actionsRow.createEl("button", {
 			cls: "episteme-project-action-btn clickable-icon",
-			attr: { "aria-label": "Edit" },
+			attr: { "aria-label": "Add notes to project" },
 		});
-		setIcon(editBtn, "pencil");
-		this.events.addEventListener(editBtn, "click", (e) => {
+		setIcon(addNotesBtn, "plus");
+		this.events.addEventListener(addNotesBtn, "click", (e) => {
 			e.stopPropagation();
-			this.props.onEdit(project.id);
+			this.props.onAddNotes(project.id, project.name);
 		});
 
 		// Delete button
@@ -119,61 +141,6 @@ export class ProjectItem extends BaseComponent {
 				this.props.onStartReview(project.name);
 			});
 		}
-	}
-
-	private renderViewMode(container: HTMLElement): void {
-		const nameEl = container.createSpan({
-			text: this.props.project.name,
-			cls: "episteme-project-name",
-		});
-
-		// Ctrl+Click to edit
-		this.events.addEventListener(nameEl, "click", (e) => {
-			if (e.metaKey || e.ctrlKey) {
-				e.stopPropagation();
-				this.props.onEdit(this.props.project.id);
-			}
-		});
-	}
-
-	private renderEditMode(container: HTMLElement): void {
-		this.editInput = container.createEl("input", {
-			type: "text",
-			cls: "episteme-project-name-input",
-			value: this.props.project.name,
-		});
-
-		// Focus and select text
-		setTimeout(() => {
-			this.editInput?.focus();
-			this.editInput?.select();
-		}, 10);
-
-		// Save on Enter, cancel on Escape
-		this.events.addEventListener(this.editInput, "keydown", (e) => {
-			if (e.key === "Enter") {
-				e.preventDefault();
-				const newName = this.editInput?.value.trim();
-				if (newName && newName !== this.props.project.name) {
-					this.props.onSaveName(this.props.project.id, newName);
-				} else {
-					this.props.onCancelEdit();
-				}
-			} else if (e.key === "Escape") {
-				e.preventDefault();
-				this.props.onCancelEdit();
-			}
-		});
-
-		// Save on blur
-		this.events.addEventListener(this.editInput, "blur", () => {
-			const newName = this.editInput?.value.trim();
-			if (newName && newName !== this.props.project.name) {
-				this.props.onSaveName(this.props.project.id, newName);
-			} else {
-				this.props.onCancelEdit();
-			}
-		});
 	}
 
 	updateProps(props: Partial<ProjectItemProps>): void {

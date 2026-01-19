@@ -2,6 +2,7 @@
  * Projects Content Component
  * Contains search and project list
  */
+import type { App, Component } from "obsidian";
 import { BaseComponent } from "../component.base";
 import { ProjectItem, createProjectItem } from "./ProjectItem";
 import type { ProjectInfo } from "../../types";
@@ -11,16 +12,12 @@ export interface ProjectsContentProps {
 	projectsWithCards: ProjectInfo[];
 	emptyProjects: ProjectInfo[];
 	searchQuery: string;
-	editingProjectId: number | null;
-	showNewProjectInput: boolean;
+	app: App;
+	component: Component;
 	onSearchChange: (query: string) => void;
 	onStartReview: (projectName: string) => void;
-	onEdit: (projectId: number) => void;
 	onDelete: (projectId: number) => void;
-	onSaveName: (projectId: number, newName: string) => void;
-	onCancelEdit: () => void;
-	onCreateProject: (name: string) => void;
-	onCancelCreate: () => void;
+	onAddNotes: (projectId: number, projectName: string) => void;
 }
 
 /**
@@ -29,7 +26,6 @@ export interface ProjectsContentProps {
 export class ProjectsContent extends BaseComponent {
 	private props: ProjectsContentProps;
 	private searchInput: HTMLInputElement | null = null;
-	private newProjectInput: HTMLInputElement | null = null;
 	private projectItems: ProjectItem[] = [];
 
 	constructor(container: HTMLElement, props: ProjectsContentProps) {
@@ -56,11 +52,6 @@ export class ProjectsContent extends BaseComponent {
 		// Search input
 		this.renderSearchInput();
 
-		// New project input (if visible)
-		if (this.props.showNewProjectInput) {
-			this.renderNewProjectInput();
-		}
-
 		// Project list
 		this.renderProjectList();
 	}
@@ -80,47 +71,6 @@ export class ProjectsContent extends BaseComponent {
 		this.events.addEventListener(this.searchInput, "input", (e) => {
 			const query = (e.target as HTMLInputElement).value.toLowerCase();
 			this.props.onSearchChange(query);
-		});
-	}
-
-	private renderNewProjectInput(): void {
-		const inputContainer = this.element!.createDiv({
-			cls: "episteme-new-project-container",
-		});
-
-		this.newProjectInput = inputContainer.createEl("input", {
-			type: "text",
-			placeholder: "Enter project name...",
-			cls: "episteme-new-project-input",
-		});
-
-		// Focus immediately
-		setTimeout(() => {
-			this.newProjectInput?.focus();
-		}, 10);
-
-		// Save on Enter, cancel on Escape
-		this.events.addEventListener(this.newProjectInput, "keydown", (e) => {
-			if (e.key === "Enter") {
-				e.preventDefault();
-				const name = this.newProjectInput?.value.trim();
-				if (name) {
-					this.props.onCreateProject(name);
-				}
-			} else if (e.key === "Escape") {
-				e.preventDefault();
-				this.props.onCancelCreate();
-			}
-		});
-
-		// Cancel on blur (if empty)
-		this.events.addEventListener(this.newProjectInput, "blur", () => {
-			const name = this.newProjectInput?.value.trim();
-			if (name) {
-				this.props.onCreateProject(name);
-			} else {
-				this.props.onCancelCreate();
-			}
 		});
 	}
 
@@ -183,12 +133,11 @@ export class ProjectsContent extends BaseComponent {
 		const itemContainer = container.createDiv();
 		const item = createProjectItem(itemContainer, {
 			project,
-			isEditing: this.props.editingProjectId === project.id,
+			app: this.props.app,
+			component: this.props.component,
 			onStartReview: this.props.onStartReview,
-			onEdit: this.props.onEdit,
 			onDelete: this.props.onDelete,
-			onSaveName: this.props.onSaveName,
-			onCancelEdit: this.props.onCancelEdit,
+			onAddNotes: this.props.onAddNotes,
 		});
 		this.projectItems.push(item);
 	}

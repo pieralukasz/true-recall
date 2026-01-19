@@ -161,12 +161,13 @@
 	padding: 12px;
 	background: var(--background-secondary);
 	border-radius: 8px;
-	border: 1px solid transparent;
-	transition: border-color 0.15s ease, background-color 0.15s ease;
+	border: 1px solid var(--background-modifier-border);
+	transition: all 0.15s ease;
 }
 
 .episteme-project-item:hover {
-	border-color: var(--background-modifier-border);
+	border-color: var(--interactive-accent);
+	box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
 }
 
 .episteme-project-item.episteme-project-empty {
@@ -195,6 +196,26 @@
 	font-weight: 500;
 	color: var(--text-normal);
 	cursor: default;
+	flex: 1;
+	min-width: 0;
+	overflow: hidden;
+}
+
+/* Fix markdown paragraphs in project name */
+.episteme-project-name p {
+	margin: 0;
+	display: inline;
+}
+
+/* Internal links in project name */
+.episteme-project-name a.internal-link {
+	color: var(--link-color);
+	cursor: pointer;
+	text-decoration: none;
+}
+
+.episteme-project-name a.internal-link:hover {
+	text-decoration: underline;
 }
 
 .episteme-project-name-input {
@@ -212,25 +233,31 @@
 	outline: none;
 }
 
-/* Project Stats Row */
+/* Project Stats Row - badge style */
 .episteme-project-stats {
 	display: flex;
 	align-items: center;
-	gap: 4px;
+	gap: 6px;
 	margin-bottom: 10px;
+	flex-wrap: wrap;
 }
 
 .episteme-project-stat {
-	font-size: 12px;
+	font-size: 11px;
+	padding: 2px 8px;
+	border-radius: 10px;
+	background: var(--background-modifier-hover);
 	color: var(--text-muted);
 }
 
 .episteme-project-stat.episteme-project-due {
+	background: rgba(251, 146, 60, 0.15);
 	color: var(--color-orange, #fb923c);
 	font-weight: 500;
 }
 
 .episteme-project-stat.episteme-project-new {
+	background: rgba(59, 130, 246, 0.15);
 	color: var(--color-blue, #3b82f6);
 	font-weight: 500;
 }

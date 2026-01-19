@@ -26,6 +26,12 @@ export function registerEventHandlers(plugin: EpistemePlugin): void {
                         .setIcon("brain")
                         .onClick(() => void plugin.reviewNoteFlashcards(file));
                 });
+
+                menu.addItem((item) => {
+                    item.setTitle("Create project from this note")
+                        .setIcon("folder-plus")
+                        .onClick(() => void plugin.createProjectFromNote(file));
+                });
             }
         })
     );
