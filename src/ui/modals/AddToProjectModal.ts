@@ -23,7 +23,6 @@ export interface AddToProjectModalOptions {
 export class AddToProjectModal extends BasePromiseModal<AddToProjectResult> {
 	private options: AddToProjectModalOptions;
 	private selectedProjects: Set<string>;
-	private newProjectInput: HTMLInputElement | null = null;
 	private projectListEl: HTMLElement | null = null;
 
 	constructor(app: App, options: AddToProjectModalOptions) {
@@ -42,82 +41,12 @@ export class AddToProjectModal extends BasePromiseModal<AddToProjectResult> {
 	protected renderBody(container: HTMLElement): void {
 		container.addClass("episteme-add-project-modal");
 
-		// Info text
-		container.createEl("p", {
-			text: "Select projects for this note. Flashcards will inherit these project assignments.",
-			cls: "episteme-modal-info",
-		});
-
-		// New project input
-		this.renderNewProjectInput(container);
-
-		// Divider
-		container.createEl("hr", { cls: "episteme-modal-divider" });
-
 		// Project list with checkboxes
 		this.projectListEl = container.createDiv({ cls: "episteme-project-list" });
 		this.renderProjectList();
 
 		// Action buttons
 		this.renderButtons(container);
-	}
-
-	private renderNewProjectInput(container: HTMLElement): void {
-		const inputGroup = container.createDiv({ cls: "episteme-new-project-group" });
-
-		const label = inputGroup.createEl("label", {
-			text: "Create new project:",
-			cls: "episteme-form-label",
-		});
-
-		const inputRow = inputGroup.createDiv({ cls: "episteme-new-project-row" });
-
-		this.newProjectInput = inputRow.createEl("input", {
-			type: "text",
-			placeholder: "Enter project name...",
-			cls: "episteme-search-input",
-		});
-
-		const addBtn = inputRow.createEl("button", {
-			text: "Add",
-			cls: "episteme-btn-secondary episteme-add-project-btn",
-		});
-
-		addBtn.addEventListener("click", () => this.addNewProject());
-
-		this.newProjectInput.addEventListener("keydown", (e) => {
-			if (e.key === "Enter") {
-				e.preventDefault();
-				this.addNewProject();
-			}
-		});
-
-		// Focus input on modal open
-		setTimeout(() => this.newProjectInput?.focus(), 50);
-	}
-
-	private addNewProject(): void {
-		let name = this.newProjectInput?.value.trim();
-		if (!name) return;
-
-		// Strip wiki link syntax: [[Note Name]] -> Note Name
-		name = name.replace(/^\[\[|\]\]$/g, "").trim();
-		if (!name) return;
-
-		// Add to selected projects
-		this.selectedProjects.add(name);
-
-		// Add to available projects if not already there
-		if (!this.options.availableProjects.includes(name)) {
-			this.options.availableProjects.push(name);
-			this.options.availableProjects.sort((a, b) => a.localeCompare(b));
-		}
-
-		// Clear input and re-render list
-		if (this.newProjectInput) {
-			this.newProjectInput.value = "";
-		}
-		this.renderProjectList();
 	}
 
 	private renderProjectList(): void {
@@ -132,7 +61,7 @@ export class AddToProjectModal extends BasePromiseModal<AddToProjectResult> {
 
 		if (allProjects.length === 0) {
 			this.projectListEl.createEl("div", {
-				text: "No projects yet. Create one above.",
+				text: "No projects available.",
 				cls: "episteme-project-list-empty",
 			});
 			return;
