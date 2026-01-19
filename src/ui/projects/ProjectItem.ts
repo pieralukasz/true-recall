@@ -72,45 +72,48 @@ export class ProjectItem extends BaseComponent {
 			}
 		});
 
-		// Stats row
+		// Stats row - inline text with · separators
 		const statsRow = this.element.createDiv({
 			cls: "episteme-project-stats",
 		});
 
 		const noteCountText = project.noteCount === 1 ? "1 note" : `${project.noteCount} notes`;
-		statsRow.createSpan({
-			text: noteCountText,
-			cls: "episteme-project-stat",
-		});
+		statsRow.createSpan({ text: noteCountText });
+
+		statsRow.createSpan({ text: "·", cls: "episteme-project-stat-separator" });
 
 		const cardCountText = project.cardCount === 1 ? "1 card" : `${project.cardCount} cards`;
-		statsRow.createSpan({
-			text: cardCountText,
-			cls: "episteme-project-stat",
-		});
+		statsRow.createSpan({ text: cardCountText });
 
 		if (project.dueCount > 0) {
+			statsRow.createSpan({ text: "·", cls: "episteme-project-stat-separator" });
 			statsRow.createSpan({
 				text: `${project.dueCount} due`,
-				cls: "episteme-project-stat episteme-project-due",
+				cls: "episteme-project-stat-due",
 			});
 		}
 
 		if (project.newCount > 0) {
+			statsRow.createSpan({ text: "·", cls: "episteme-project-stat-separator" });
 			statsRow.createSpan({
 				text: `${project.newCount} new`,
-				cls: "episteme-project-stat episteme-project-new",
+				cls: "episteme-project-stat-new",
 			});
 		}
 
-		// Actions row
+		// Actions row - icon buttons left, Review right
 		const actionsRow = this.element.createDiv({
 			cls: "episteme-project-actions",
 		});
 
+		// Left side: icon buttons
+		const actionsLeft = actionsRow.createDiv({
+			cls: "episteme-project-actions-left",
+		});
+
 		// Add notes button
-		const addNotesBtn = actionsRow.createEl("button", {
-			cls: "episteme-project-action-btn clickable-icon",
+		const addNotesBtn = actionsLeft.createEl("button", {
+			cls: "episteme-project-icon-btn clickable-icon",
 			attr: { "aria-label": "Add notes to project" },
 		});
 		setIcon(addNotesBtn, "plus");
@@ -120,8 +123,8 @@ export class ProjectItem extends BaseComponent {
 		});
 
 		// Delete button
-		const deleteBtn = actionsRow.createEl("button", {
-			cls: "episteme-project-action-btn clickable-icon episteme-btn-danger-icon",
+		const deleteBtn = actionsLeft.createEl("button", {
+			cls: "episteme-project-icon-btn clickable-icon episteme-btn-danger",
 			attr: { "aria-label": "Delete" },
 		});
 		setIcon(deleteBtn, "trash-2");
@@ -130,12 +133,16 @@ export class ProjectItem extends BaseComponent {
 			this.props.onDelete(project.id);
 		});
 
+		// Spacer
+		actionsRow.createDiv({ cls: "episteme-project-actions-spacer" });
+
 		// Start Review button (only if has cards)
 		if (project.cardCount > 0) {
 			const reviewBtn = actionsRow.createEl("button", {
-				text: "Review",
-				cls: "episteme-project-action-btn episteme-btn-review",
+				cls: "episteme-project-review-btn",
 			});
+			setIcon(reviewBtn, "play");
+			reviewBtn.createSpan({ text: "Review" });
 			this.events.addEventListener(reviewBtn, "click", (e) => {
 				e.stopPropagation();
 				this.props.onStartReview(project.name);

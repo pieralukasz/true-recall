@@ -4762,7 +4762,7 @@
 	min-height: 0;
 }
 
-/* Header Section */
+/* Header Section - Compact */
 .episteme-panel-header {
 	padding: 12px;
 	border-bottom: 1px solid var(--background-modifier-border);
@@ -4773,7 +4773,6 @@
 	align-items: center;
 	justify-content: space-between;
 	gap: 8px;
-	margin-bottom: 8px;
 }
 
 .episteme-panel-title {
@@ -4797,53 +4796,36 @@
 	background-color: var(--background-modifier-hover);
 }
 
-/* Summary Section */
-.episteme-panel-summary {
-	display: flex;
-	align-items: baseline;
-	gap: 6px;
-	margin-bottom: 12px;
-}
-
-.episteme-panel-count {
-	font-size: 24px;
-	font-weight: 700;
-	color: var(--text-normal);
-}
-
-.episteme-panel-label {
-	font-size: 13px;
-	color: var(--text-muted);
-}
-
-.episteme-panel-due-count {
-	color: var(--color-orange, #fb923c);
-	font-weight: 500;
-}
-
-/* Actions Row */
-.episteme-panel-actions {
-	display: flex;
-	gap: 8px;
-}
-
-.episteme-panel-action-btn {
-	flex: 1;
-}
-
 /* Content Section */
 .episteme-panel-content {
 	padding: 12px;
 }
 
-/* Search Container */
-.episteme-search-container {
+/* Toolbar - Search + New Button */
+.episteme-panel-toolbar {
+	display: flex;
+	align-items: center;
+	gap: 8px;
 	margin-bottom: 12px;
+}
+
+.episteme-search-container {
+	flex: 1;
+	position: relative;
+}
+
+.episteme-search-icon {
+	position: absolute;
+	left: 10px;
+	top: 50%;
+	transform: translateY(-50%);
+	color: var(--text-muted);
+	pointer-events: none;
 }
 
 .episteme-search-input {
 	width: 100%;
-	padding: 8px 12px;
+	padding: 6px 10px 6px 32px;
 	border: 1px solid var(--background-modifier-border);
 	border-radius: 6px;
 	background: var(--background-secondary);
@@ -4859,6 +4841,26 @@
 
 .episteme-search-input::placeholder {
 	color: var(--text-muted);
+}
+
+.episteme-toolbar-new-btn {
+	display: inline-flex;
+	align-items: center;
+	gap: 4px;
+	padding: 6px 12px;
+	border: none;
+	border-radius: 6px;
+	background: var(--interactive-accent);
+	color: var(--text-on-accent);
+	font-size: 13px;
+	font-weight: 500;
+	cursor: pointer;
+	white-space: nowrap;
+	transition: background-color 0.15s ease;
+}
+
+.episteme-toolbar-new-btn:hover {
+	background: var(--interactive-accent-hover);
 }
 
 /* New Project Input */
@@ -4975,79 +4977,90 @@
 	outline: none;
 }
 
-/* Project Stats Row - badge style */
+/* Project Stats Row - inline text style */
 .episteme-project-stats {
-	display: flex;
-	align-items: center;
-	gap: 6px;
-	margin-bottom: 10px;
-	flex-wrap: wrap;
-}
-
-.episteme-project-stat {
-	font-size: 11px;
-	padding: 2px 8px;
-	border-radius: 10px;
-	background: var(--background-modifier-hover);
+	font-size: 12px;
 	color: var(--text-muted);
+	margin-bottom: 10px;
 }
 
-.episteme-project-stat.episteme-project-due {
-	background: rgba(251, 146, 60, 0.15);
+.episteme-project-stat-separator {
+	margin: 0 6px;
+	color: var(--text-faint);
+}
+
+.episteme-project-stat-due {
 	color: var(--color-orange, #fb923c);
 	font-weight: 500;
 }
 
-.episteme-project-stat.episteme-project-new {
-	background: rgba(59, 130, 246, 0.15);
+.episteme-project-stat-new {
 	color: var(--color-blue, #3b82f6);
 	font-weight: 500;
 }
 
-/* Project Actions Row - CRITICAL: Must be horizontal flex */
+/* Project Actions Row */
 .episteme-project-actions {
 	display: flex;
 	flex-direction: row;
 	align-items: center;
-	gap: 8px;
-	flex-wrap: wrap;
+	gap: 6px;
 }
 
-/* Action Buttons */
-.episteme-project-action-btn {
+.episteme-project-actions-left {
+	display: flex;
+	align-items: center;
+	gap: 4px;
+}
+
+.episteme-project-actions-spacer {
+	flex: 1;
+}
+
+/* Icon Buttons - uniform 28x28 */
+.episteme-project-icon-btn {
 	display: inline-flex;
 	align-items: center;
 	justify-content: center;
-	padding: 4px 8px;
+	width: 28px;
+	height: 28px;
 	border: none;
 	border-radius: 4px;
 	background: var(--background-modifier-hover);
 	color: var(--text-muted);
 	cursor: pointer;
-	font-size: 12px;
 	transition: background-color 0.15s ease, color 0.15s ease;
 }
 
-.episteme-project-action-btn:hover {
+.episteme-project-icon-btn:hover {
 	background: var(--background-modifier-border);
 	color: var(--text-normal);
 }
 
 /* Danger icon button (delete) */
-.episteme-project-action-btn.episteme-btn-danger-icon:hover {
+.episteme-project-icon-btn.episteme-btn-danger:hover {
 	background: rgba(239, 68, 68, 0.15);
 	color: var(--color-red, #ef4444);
 }
 
 /* Review button */
-.episteme-project-action-btn.episteme-btn-review {
+.episteme-project-review-btn {
+	display: inline-flex;
+	align-items: center;
+	gap: 4px;
+	height: 28px;
+	padding: 0 12px;
+	border: none;
+	border-radius: 4px;
 	background: var(--interactive-accent);
 	color: var(--text-on-accent);
+	font-size: 12px;
 	font-weight: 500;
-	padding: 4px 12px;
+	cursor: pointer;
+	transition: background-color 0.15s ease;
 }
 
-.episteme-project-action-btn.episteme-btn-review:hover {
+.episteme-project-review-btn:hover {
 	background: var(--interactive-accent-hover);
 }
 
