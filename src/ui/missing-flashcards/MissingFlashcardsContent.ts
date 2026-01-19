@@ -35,7 +35,7 @@ export class MissingFlashcardsContent extends BaseComponent {
 		}
 
 		this.element = this.container.createDiv({
-			cls: "episteme-missing-flashcards-content",
+			cls: "episteme-panel-content",
 		});
 
 		// Tag filter buttons
@@ -92,13 +92,13 @@ export class MissingFlashcardsContent extends BaseComponent {
 
 	private renderNoteList(): void {
 		const noteListEl = this.element!.createDiv({
-			cls: "episteme-note-list episteme-missing-note-list",
+			cls: "episteme-panel-list",
 		});
 
 		if (this.props.isLoading) {
 			noteListEl.createEl("div", {
 				text: "Scanning vault for notes missing flashcards...",
-				cls: "episteme-note-list-empty",
+				cls: "episteme-panel-list-empty",
 			});
 			return;
 		}
@@ -113,7 +113,7 @@ export class MissingFlashcardsContent extends BaseComponent {
 					: "All notes have flashcards! Great job!";
 			noteListEl.createEl("div", {
 				text: emptyText,
-				cls: "episteme-note-list-empty",
+				cls: "episteme-panel-list-empty",
 			});
 			return;
 		}
@@ -129,7 +129,7 @@ export class MissingFlashcardsContent extends BaseComponent {
 		if (filteredNotes.length > 50) {
 			noteListEl.createEl("div", {
 				text: `Showing 50 of ${filteredNotes.length} notes. Type to search for more.`,
-				cls: "episteme-note-list-more",
+				cls: "episteme-panel-list-more",
 			});
 		}
 	}
@@ -139,7 +139,7 @@ export class MissingFlashcardsContent extends BaseComponent {
 		note: NoteWithMissingFlashcards
 	): void {
 		const noteEl = container.createDiv({
-			cls: "episteme-missing-note-item",
+			cls: "episteme-panel-item",
 		});
 
 		// Tag badge
@@ -150,10 +150,10 @@ export class MissingFlashcardsContent extends BaseComponent {
 
 		// Note info
 		const noteInfo = noteEl.createDiv({
-			cls: "episteme-missing-note-info",
+			cls: "episteme-panel-item-info",
 		});
 		noteInfo.createDiv({
-			cls: "episteme-missing-note-name",
+			cls: "episteme-panel-item-name",
 			text: note.file.basename,
 		});
 
@@ -161,7 +161,7 @@ export class MissingFlashcardsContent extends BaseComponent {
 		const folderPath = note.file.parent?.path;
 		if (folderPath && folderPath !== "/") {
 			noteInfo.createDiv({
-				cls: "episteme-missing-note-path",
+				cls: "episteme-panel-item-path",
 				text: folderPath,
 			});
 		}

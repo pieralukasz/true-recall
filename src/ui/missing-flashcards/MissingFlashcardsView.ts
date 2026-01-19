@@ -75,14 +75,14 @@ export class MissingFlashcardsView extends ItemView {
 		const container = this.containerEl.children[1];
 		if (!(container instanceof HTMLElement)) return;
 		container.empty();
-		container.addClass("episteme-missing-flashcards-view");
+		container.addClass("episteme-panel-view");
 
 		// Create container elements
 		this.headerContainer = container.createDiv({
-			cls: "episteme-missing-flashcards-header-container",
+			cls: "episteme-panel-header-container",
 		});
 		this.contentContainer = container.createDiv({
-			cls: "episteme-missing-flashcards-content-container",
+			cls: "episteme-panel-content-container",
 		});
 
 		// Subscribe to state changes

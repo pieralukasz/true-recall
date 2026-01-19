@@ -23,6 +23,9 @@ export const VIEW_TYPE_READY_TO_HARVEST = "episteme-ready-to-harvest";
 /** View type identifier for the dashboard panel */
 export const VIEW_TYPE_DASHBOARD = "episteme-dashboard";
 
+/** View type identifier for the orphaned cards panel */
+export const VIEW_TYPE_ORPHANED_CARDS = "episteme-orphaned-cards";
+
 // ===== AI Models =====
 
 /** AI Models available via OpenRouter */

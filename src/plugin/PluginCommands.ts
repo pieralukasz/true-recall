@@ -93,4 +93,11 @@ export function registerCommands(plugin: EpistemePlugin): void {
 		name: "Sync source notes with vault",
 		callback: () => void plugin.syncSourceNotes(),
 	});
+
+	// Show orphaned cards
+	plugin.addCommand({
+		id: "show-orphaned-cards",
+		name: "Show orphaned cards",
+		callback: () => void plugin.showOrphanedCards(),
+	});
 }
