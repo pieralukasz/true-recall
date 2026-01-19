@@ -10,6 +10,10 @@ import type { CardStore, FSRSCardData, SourceNoteInfo, CardImageRef } from "../t
 import { isImageExtension } from "../types";
 import { ImageService } from "../services/image";
 
+// Debounce timers for file modify events
+const modifyDebounceMap = new Map<string, ReturnType<typeof setTimeout>>();
+const MODIFY_DEBOUNCE_MS = 500;
+
 /**
  * Register workspace and vault event handlers
  */
@@ -76,6 +80,30 @@ export function registerEventHandlers(plugin: EpistemePlugin): void {
             if (isImageExtension(file.extension)) {
                 await handleImageRename(plugin, file, oldPath);
             }
+        })
+    );
+
+    // Listen for file modifications to sync projects from frontmatter
+    plugin.registerEvent(
+        plugin.app.vault.on("modify", (file) => {
+            if (!(file instanceof TFile) || file.extension !== "md") return;
+
+            // Skip flashcard files
+            if (plugin.flashcardManager.isFlashcardFile(file)) return;
+
+            // Debounce: clear existing timer for this file
+            const existing = modifyDebounceMap.get(file.path);
+            if (existing) {
+                clearTimeout(existing);
+            }
+
+            // Set new timer
+            const timer = setTimeout(() => {
+                modifyDebounceMap.delete(file.path);
+                void syncProjectsFromFrontmatter(plugin, file);
+            }, MODIFY_DEBOUNCE_MS);
+
+            modifyDebounceMap.set(file.path, timer);
         })
     );
 
@@ -167,5 +195,48 @@ async function handleImageRename(plugin: EpistemePlugin, file: TFile, oldPath: s
 
     if (updatedCardIds.size > 0) {
         console.debug(`[Episteme] Updated ${updatedCardIds.size} card(s) after image rename: ${oldPath} -> ${file.path}`);
+    }
+}
+
+/**
+ * Sync projects from frontmatter to database
+ * Called on file modify (debounced)
+ */
+async function syncProjectsFromFrontmatter(plugin: EpistemePlugin, file: TFile): Promise<void> {
+    const frontmatterService = plugin.flashcardManager.getFrontmatterService();
+
+    // Get source note UID - only sync if note has a UID
+    const sourceUid = await frontmatterService.getSourceNoteUid(file);
+    if (!sourceUid) return;
+
+    const store = plugin.cardStore as CardStore & {
+        getProjectNamesForNote?: (sourceUid: string) => string[];
+        syncNoteProjects?: (sourceUid: string, projectNames: string[]) => void;
+        deleteEmptyProjects?: () => number;
+    };
+
+    if (!store.getProjectNamesForNote || !store.syncNoteProjects) return;
+
+    // Read current projects from frontmatter
+    const content = await plugin.app.vault.read(file);
+    const frontmatterProjects = frontmatterService.extractProjectsFromFrontmatter(content);
+
+    // Get current projects from database
+    const dbProjects = store.getProjectNamesForNote(sourceUid);
+
+    // Compare arrays (sorted for comparison)
+    const fmSorted = [...frontmatterProjects].sort();
+    const dbSorted = [...dbProjects].sort();
+    const arraysEqual = fmSorted.length === dbSorted.length &&
+        fmSorted.every((val, idx) => val === dbSorted[idx]);
+
+    if (!arraysEqual) {
+        // Sync projects to database
+        store.syncNoteProjects(sourceUid, frontmatterProjects);
+
+        // Clean up empty projects
+        if (store.deleteEmptyProjects) {
+            store.deleteEmptyProjects();
+        }
     }
 }

@@ -342,24 +342,18 @@ export class ProjectsView extends ItemView {
 	 */
 	private render(): void {
 		const state = this.stateManager.getState();
-		const stats = this.stateManager.getTotalStats();
 		const projectsWithCards = this.stateManager.getProjectsWithCards();
 		const emptyProjects = this.stateManager.getEmptyProjects();
 
-		// Render Header
+		// Render Header (compact - just title + refresh)
 		this.headerComponent?.destroy();
 		this.headerContainer.empty();
 		this.headerComponent = new ProjectsHeader(this.headerContainer, {
-			projectCount: stats.projectCount,
-			totalCards: stats.totalCards,
-			totalDue: stats.totalDue,
-			isLoading: state.isLoading,
-			onCreateFromNote: () => void this.handleCreateFromNote(),
 			onRefresh: () => void this.loadProjects(),
 		});
 		this.headerComponent.render();
 
-		// Render Content
+		// Render Content (includes toolbar with search + new button)
 		this.contentComponent?.destroy();
 		this.contentContainer.empty();
 		this.contentComponent = new ProjectsContent(this.contentContainer, {
@@ -373,6 +367,7 @@ export class ProjectsView extends ItemView {
 			onStartReview: (name) => void this.handleStartReview(name),
 			onDelete: (id) => void this.handleDeleteProject(id),
 			onAddNotes: (id, name) => void this.handleAddNotesToProject(id, name),
+			onCreateFromNote: () => void this.handleCreateFromNote(),
 		});
 		this.contentComponent.render();
 	}

@@ -276,6 +276,43 @@ export class SqliteProjectsRepo {
         return data.values.map(row => this.rowToProjectInfo(data.columns, row));
     }
 
+    // ===== Cleanup =====
+
+    /**
+     * Delete all projects that have no notes associated
+     * @returns Number of deleted projects
+     */
+    deleteEmptyProjects(): number {
+        const result = this.db.exec(`
+            SELECT id FROM projects
+            WHERE id NOT IN (
+                SELECT DISTINCT project_id FROM note_projects
+            )
+        `);
+
+        const data = getQueryResult(result);
+        if (!data || data.values.length === 0) {
+            return 0;
+        }
+
+        // Get IDs to delete
+        const idsToDelete = data.values.map(row => row[0] as number);
+
+        // Delete them
+        this.db.run(`
+            DELETE FROM projects
+            WHERE id NOT IN (
+                SELECT DISTINCT project_id FROM note_projects
+            )
+        `);
+
+        if (idsToDelete.length > 0) {
+            this.onDataChange();
+        }
+
+        return idsToDelete.length;
+    }
+
     // ===== Orphaned Notes =====
 
     /**
