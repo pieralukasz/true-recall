@@ -2,6 +2,14 @@
  * Central export for state management
  */
 
+// Base state manager
+export {
+	BaseStateManager,
+	createSimpleStateManager,
+	type StateListener as BaseStateListener,
+	type StateSelector as BaseStateSelector,
+} from "./base.state";
+
 export { PanelStateManager, createPanelStateManager } from "./panel.state";
 export type {
     PanelState,

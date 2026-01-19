@@ -1,6 +1,12 @@
 /**
  * Modals exports
  */
+export { BaseModal, type BaseModalOptions } from "./BaseModal";
+export {
+    BasePromiseModal,
+    type CancellableResult,
+    createCancelledResult,
+} from "./BasePromiseModal";
 export { CardPreviewModal, type CardPreviewModalOptions } from "./CardPreviewModal";
 export {
     SessionModal,
@@ -24,3 +30,11 @@ export {
     type FlashcardEditorResult,
     type FlashcardEditorModalOptions,
 } from "./FlashcardEditorModal";
+export {
+    MediaPickerModal,
+    type MediaPickerResult,
+} from "./MediaPickerModal";
+export {
+    ImagePickerModal,
+    type ImagePickerResult,
+} from "./ImagePickerModal";

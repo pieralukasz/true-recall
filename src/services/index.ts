@@ -32,6 +32,12 @@ export {
 	CardMoverService,
 	type ExtractedCardData,
 } from "./flashcard/card-mover.service";
+export { SourceNoteService } from "./flashcard/source-note.service";
+export { OrphanedCardsService } from "./flashcard/orphaned-cards.service";
+export {
+	CardNavigationService,
+	type OpenFileOptions,
+} from "./flashcard/card-navigation.service";
 
 // Persistence services
 export { SqliteStoreService } from "./persistence/sqlite";
@@ -57,3 +63,11 @@ export {
 } from "./ai/openrouter.service";
 export { NLQueryService } from "./ai/nl-query.service";
 export { SqlJsAdapter } from "./ai/langchain-sqlite.adapter";
+
+// UI services
+export {
+	NotificationService,
+	notify,
+	getNotificationService,
+	NOTIFICATION_DURATION,
+} from "./ui/notification.service";
