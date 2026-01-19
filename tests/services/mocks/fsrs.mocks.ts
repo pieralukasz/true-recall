@@ -7,6 +7,7 @@ import type {
 	FSRSFlashcardItem,
 	ReviewResult,
 	ReviewSessionState,
+	SourceNoteInfo,
 } from "../../../src/types/fsrs.types";
 import type { FSRSSettings } from "../../../src/types/settings.types";
 
@@ -240,4 +241,41 @@ export function createMixedCardQueue(): FSRSFlashcardItem[] {
 			},
 		}),
 	];
+}
+
+/**
+ * Create a mock SourceNoteInfo with sensible defaults
+ */
+export function createMockSourceNote(
+	overrides: Partial<SourceNoteInfo> = {}
+): SourceNoteInfo {
+	const now = Date.now();
+	return {
+		uid: overrides.uid ?? `src-${Math.random().toString(36).slice(2, 10)}`,
+		noteName: overrides.noteName ?? "Test Note",
+		notePath: overrides.notePath ?? "notes/test-note.md",
+		deck: overrides.deck ?? "Knowledge",
+		createdAt: overrides.createdAt ?? now,
+		updatedAt: overrides.updatedAt ?? now,
+	};
+}
+
+/**
+ * Create a mock flashcard with source note path (SQL-only card)
+ */
+export function createMockFlashcardWithSourcePath(
+	overrides: Partial<FSRSFlashcardItem> = {}
+): FSRSFlashcardItem {
+	const cardData = createMockCard(overrides.fsrs);
+	return {
+		id: overrides.id ?? cardData.id,
+		question: overrides.question ?? "What is machine learning?",
+		answer: overrides.answer ?? "A type of AI that learns from data",
+		filePath: overrides.filePath ?? "", // Empty for SQL-only cards
+		fsrs: cardData,
+		deck: overrides.deck ?? "AI/ML",
+		sourceNoteName: overrides.sourceNoteName ?? "Machine Learning Basics",
+		sourceUid: overrides.sourceUid ?? "abc12345",
+		sourceNotePath: overrides.sourceNotePath ?? "input/machine-learning.md",
+	};
 }
