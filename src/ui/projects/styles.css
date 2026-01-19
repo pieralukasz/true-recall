@@ -22,7 +22,7 @@
 
 /* Header Section - Compact, no border */
 .episteme-panel-header {
-	padding: 12px 12px 8px 12px;
+	padding: 16px;
 }
 
 .episteme-panel-title-row {
@@ -55,7 +55,7 @@
 
 /* Content Section */
 .episteme-panel-content {
-	padding: 0 12px 12px 12px;
+	padding: 16px;
 }
 
 /* Toolbar - Search + New Button */
@@ -138,7 +138,7 @@
 .episteme-panel-list {
 	display: flex;
 	flex-direction: column;
-	gap: 6px;
+	gap: 16px;
 }
 
 .episteme-panel-list-empty {
@@ -150,7 +150,10 @@
 
 /* Project Item */
 .episteme-project-item {
-	padding: 10px 12px;
+	display: flex;
+	flex-direction: column;
+	gap: 16px;
+	padding: 20px;
 	background: var(--background-secondary);
 	border-radius: 6px;
 	border: 1px solid var(--background-modifier-border);
@@ -174,7 +177,6 @@
 	display: flex;
 	align-items: center;
 	gap: 8px;
-	margin-bottom: 4px;
 }
 
 .episteme-project-icon {
@@ -235,7 +237,6 @@
 .episteme-project-stats {
 	font-size: 12px;
 	color: var(--text-muted);
-	margin-bottom: 8px;
 }
 
 .episteme-project-stat-separator {
