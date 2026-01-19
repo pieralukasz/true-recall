@@ -20,10 +20,9 @@
 	min-height: 0;
 }
 
-/* Header Section - Compact */
+/* Header Section - Compact, no border */
 .episteme-panel-header {
-	padding: 12px;
-	border-bottom: 1px solid var(--background-modifier-border);
+	padding: 12px 12px 8px 12px;
 }
 
 .episteme-panel-title-row {
@@ -56,34 +55,20 @@
 
 /* Content Section */
 .episteme-panel-content {
-	padding: 12px;
+	padding: 0 12px 12px 12px;
 }
 
 /* Toolbar - Search + New Button */
 .episteme-panel-toolbar {
 	display: flex;
 	align-items: center;
-	gap: 8px;
-	margin-bottom: 12px;
-}
-
-.episteme-search-container {
-	flex: 1;
-	position: relative;
-}
-
-.episteme-search-icon {
-	position: absolute;
-	left: 10px;
-	top: 50%;
-	transform: translateY(-50%);
-	color: var(--text-muted);
-	pointer-events: none;
+	gap: 6px;
+	margin-bottom: 6px;
 }
 
 .episteme-search-input {
-	width: 100%;
-	padding: 6px 10px 6px 32px;
+	flex: 1;
+	padding: 6px 10px;
 	border: 1px solid var(--background-modifier-border);
 	border-radius: 6px;
 	background: var(--background-secondary);
@@ -105,11 +90,11 @@
 	display: inline-flex;
 	align-items: center;
 	gap: 4px;
-	padding: 6px 12px;
+	padding: 6px 10px;
 	border: none;
 	border-radius: 6px;
-	background: var(--interactive-accent);
-	color: var(--text-on-accent);
+	background: var(--background-modifier-hover);
+	color: var(--text-normal);
 	font-size: 13px;
 	font-weight: 500;
 	cursor: pointer;
@@ -117,8 +102,13 @@
 	transition: background-color 0.15s ease;
 }
 
+.episteme-toolbar-new-btn svg {
+	width: 14px;
+	height: 14px;
+}
+
 .episteme-toolbar-new-btn:hover {
-	background: var(--interactive-accent-hover);
+	background: var(--background-modifier-border);
 }
 
 /* New Project Input */
@@ -148,7 +138,7 @@
 .episteme-panel-list {
 	display: flex;
 	flex-direction: column;
-	gap: 8px;
+	gap: 6px;
 }
 
 .episteme-panel-list-empty {
@@ -160,16 +150,15 @@
 
 /* Project Item */
 .episteme-project-item {
-	padding: 12px;
+	padding: 10px 12px;
 	background: var(--background-secondary);
-	border-radius: 8px;
+	border-radius: 6px;
 	border: 1px solid var(--background-modifier-border);
 	transition: all 0.15s ease;
 }
 
 .episteme-project-item:hover {
 	border-color: var(--interactive-accent);
-	box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
 }
 
 .episteme-project-item.episteme-project-empty {
@@ -185,12 +174,19 @@
 	display: flex;
 	align-items: center;
 	gap: 8px;
-	margin-bottom: 6px;
+	margin-bottom: 4px;
 }
 
 .episteme-project-icon {
 	color: var(--text-muted);
 	flex-shrink: 0;
+	display: flex;
+	align-items: center;
+}
+
+.episteme-project-icon svg {
+	width: 16px;
+	height: 16px;
 }
 
 .episteme-project-name {
@@ -239,7 +235,7 @@
 .episteme-project-stats {
 	font-size: 12px;
 	color: var(--text-muted);
-	margin-bottom: 10px;
+	margin-bottom: 8px;
 }
 
 .episteme-project-stat-separator {
@@ -290,6 +286,11 @@
 	transition: background-color 0.15s ease, color 0.15s ease;
 }
 
+.episteme-project-icon-btn svg {
+	width: 16px;
+	height: 16px;
+}
+
 .episteme-project-icon-btn:hover {
 	background: var(--background-modifier-border);
 	color: var(--text-normal);
@@ -307,19 +308,24 @@
 	align-items: center;
 	gap: 4px;
 	height: 28px;
-	padding: 0 12px;
+	padding: 0 10px;
 	border: none;
 	border-radius: 4px;
-	background: var(--interactive-accent);
-	color: var(--text-on-accent);
+	background: var(--background-modifier-hover);
+	color: var(--text-normal);
 	font-size: 12px;
 	font-weight: 500;
 	cursor: pointer;
 	transition: background-color 0.15s ease;
 }
 
+.episteme-project-review-btn svg {
+	width: 14px;
+	height: 14px;
+}
+
 .episteme-project-review-btn:hover {
-	background: var(--interactive-accent-hover);
+	background: var(--background-modifier-border);
 }
 
 /* Project Separator */
