@@ -62,19 +62,10 @@ export class ProjectsContent extends BaseComponent {
 			cls: "episteme-panel-toolbar",
 		});
 
-		// Search container with icon
-		const searchContainer = toolbar.createDiv({
-			cls: "episteme-search-container",
-		});
-
-		const searchIcon = searchContainer.createSpan({
-			cls: "episteme-search-icon",
-		});
-		setIcon(searchIcon, "search");
-
-		this.searchInput = searchContainer.createEl("input", {
+		// Search input (simple, no icon)
+		this.searchInput = toolbar.createEl("input", {
 			type: "text",
-			placeholder: "Search projects...",
+			placeholder: "Search...",
 			cls: "episteme-search-input",
 		});
 		this.searchInput.value = this.props.searchQuery;
@@ -88,7 +79,8 @@ export class ProjectsContent extends BaseComponent {
 		const newBtn = toolbar.createEl("button", {
 			cls: "episteme-toolbar-new-btn",
 		});
-		newBtn.createSpan({ text: "+ New" });
+		setIcon(newBtn, "plus");
+		newBtn.createSpan({ text: "New" });
 		this.events.addEventListener(newBtn, "click", () => {
 			this.props.onCreateFromNote();
 		});
