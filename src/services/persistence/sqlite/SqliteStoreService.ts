@@ -30,6 +30,7 @@ import { SqliteDailyStatsRepo } from "./SqliteDailyStatsRepo";
 import { SqliteAggregations } from "./SqliteAggregations";
 import { SqliteImageRefsRepo } from "./SqliteImageRefsRepo";
 import { SqliteProjectsRepo } from "./SqliteProjectsRepo";
+import { SqliteBrowserQueries } from "./SqliteBrowserQueries";
 
 /**
  * SQLite-based storage service for FSRS card data
@@ -49,6 +50,7 @@ export class SqliteStoreService {
     private aggregations: SqliteAggregations | null = null;
     private imageRefsRepo: SqliteImageRefsRepo | null = null;
     private projectsRepo: SqliteProjectsRepo | null = null;
+    private browserQueries: SqliteBrowserQueries | null = null;
 
     constructor(app: App) {
         this.app = app;
@@ -86,6 +88,7 @@ export class SqliteStoreService {
         this.aggregations = new SqliteAggregations(this.db);
         this.imageRefsRepo = new SqliteImageRefsRepo(this.db, onDataChange);
         this.projectsRepo = new SqliteProjectsRepo(this.db, onDataChange);
+        this.browserQueries = new SqliteBrowserQueries(this.db, onDataChange);
 
         this.isLoaded = true;
     }
@@ -506,5 +509,12 @@ export class SqliteStoreService {
      */
     getAggregations(): SqliteAggregations | null {
         return this.aggregations;
+    }
+
+    /**
+     * Get browser queries service for browser view
+     */
+    getBrowserQueries(): SqliteBrowserQueries | null {
+        return this.browserQueries;
     }
 }
