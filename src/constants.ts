@@ -29,6 +29,9 @@ export const VIEW_TYPE_ORPHANED_CARDS = "episteme-orphaned-cards";
 /** View type identifier for the projects panel */
 export const VIEW_TYPE_PROJECTS = "episteme-projects";
 
+/** View type identifier for the browser panel */
+export const VIEW_TYPE_BROWSER = "episteme-browser";
+
 // ===== AI Models =====
 
 /** AI Models available via OpenRouter */

@@ -74,11 +74,11 @@ export interface CardReviewedEvent extends FlashcardEvent {
 }
 
 /**
- * Emitted for bulk operations (e.g., applying diff changes)
+ * Emitted for bulk operations (e.g., applying diff changes, browser operations)
  */
 export interface BulkChangeEvent extends FlashcardEvent {
 	type: "cards:bulk-change";
-	action: "added" | "removed" | "updated";
+	action: "added" | "removed" | "updated" | "suspend" | "unsuspend" | "bury" | "unbury" | "delete" | "reset" | "reschedule";
 	cardIds: string[];
 	filePath?: string;
 }
