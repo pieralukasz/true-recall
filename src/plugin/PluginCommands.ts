@@ -123,4 +123,11 @@ export function registerCommands(plugin: EpistemePlugin): void {
 			return false;
 		},
 	});
+
+	// Open card browser
+	plugin.addCommand({
+		id: "open-browser",
+		name: "Open card browser",
+		callback: () => void plugin.showBrowser(),
+	});
 }
