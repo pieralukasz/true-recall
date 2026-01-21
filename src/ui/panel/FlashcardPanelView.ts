@@ -1066,8 +1066,11 @@ export class FlashcardPanelView extends ItemView {
                 projects
             );
 
-            // Update markdown file (remove #flashcard tags)
-            await this.app.vault.modify(state.currentFile, result.newContent);
+            // Update markdown file based on setting
+            const contentToSave = this.plugin.settings.removeFlashcardContentAfterCollect
+                ? result.newContentWithoutFlashcards
+                : result.newContent;
+            await this.app.vault.modify(state.currentFile, contentToSave);
 
             new Notice(`Collected ${result.collectedCount} flashcard(s)`);
             await this.loadFlashcardInfo();
