@@ -1,9 +1,9 @@
 /**
  * Flashcard Editor Modal
- * Uses EditableTextField component for consistent editing experience
+ * Preview/edit toggle like ReviewView
  * Supports both adding new flashcards and editing existing ones
  */
-import { App, Notice } from "obsidian";
+import { App, Notice, MarkdownRenderer, Component } from "obsidian";
 import { BaseModal } from "./BaseModal";
 import { MediaPickerModal } from "./MediaPickerModal";
 import type { FSRSFlashcardItem } from "../../types";
@@ -43,17 +43,30 @@ export interface FlashcardEditorModalOptions {
 }
 
 /**
- * Modal for creating/editing flashcards using EditableTextField component
+ * Modal for creating/editing flashcards with preview/edit toggle
  */
 export class FlashcardEditorModal extends BaseModal {
 	private options: FlashcardEditorModalOptions;
 	private resolvePromise: ((result: FlashcardEditorResult) => void) | null = null;
 	private hasSubmitted = false;
 
-	// EditableTextField instances
+	// EditableTextField instances (only active when editing)
 	private questionField: EditableTextField | null = null;
 	private answerField: EditableTextField | null = null;
 	private saveButton: HTMLButtonElement | null = null;
+
+	// Content area for re-rendering
+	private fieldsContainer: HTMLElement | null = null;
+
+	// Edit state
+	private editingField: "question" | "answer" | null = null;
+
+	// Stored values (for preview/edit toggle)
+	private questionValue: string = "";
+	private answerValue: string = "";
+
+	// Markdown rendering component
+	private renderComponent: Component | null = null;
 
 	// Autocomplete components
 	private vaultSearchService: VaultSearchService | null = null;
@@ -89,6 +102,10 @@ export class FlashcardEditorModal extends BaseModal {
 
 		this.imageService = new ImageService(this.app);
 
+		// Initialize markdown rendering component
+		this.renderComponent = new Component();
+		this.renderComponent.load();
+
 		// Now call super which will call renderBody()
 		super.onOpen();
 		this.contentEl.addClass("episteme-flashcard-editor-modal");
@@ -97,39 +114,18 @@ export class FlashcardEditorModal extends BaseModal {
 	protected renderBody(container: HTMLElement): void {
 		const { mode, card, sourceNoteName } = this.options;
 
-		const questionValue = card?.question || this.options.prefillQuestion || "";
-		const answerValue = card?.answer || this.options.prefillAnswer || "";
+		// Initialize stored values
+		this.questionValue = card?.question || this.options.prefillQuestion || "";
+		this.answerValue = card?.answer || this.options.prefillAnswer || "";
 
-		// Question field with EditableTextField (no label)
-		const questionGroup = container.createDiv({ cls: "episteme-editor-field-group" });
-		this.questionField = createEditableTextField(questionGroup, {
-			initialValue: questionValue,
-			placeholder: "Type your question here...",
-			showToolbar: true,
-			toolbarButtons: this.getToolbarButtons(),
-			toolbarPositioned: false,
-			field: "question",
-			autoFocus: !questionValue.trim(),
-			onTab: () => this.answerField?.focus(),
-			onChange: () => this.validateForm(),
-		});
+		// If both fields are empty, start in edit mode for question
+		if (!this.questionValue.trim() && !this.answerValue.trim()) {
+			this.editingField = "question";
+		}
 
-		// Divider between question and answer
-		container.createEl("hr", { cls: "episteme-editor-divider" });
-
-		// Answer field with EditableTextField (no label)
-		const answerGroup = container.createDiv({ cls: "episteme-editor-field-group" });
-		this.answerField = createEditableTextField(answerGroup, {
-			initialValue: answerValue,
-			placeholder: "Type your answer here...",
-			showToolbar: true,
-			toolbarButtons: this.getToolbarButtons(),
-			toolbarPositioned: false,
-			field: "answer",
-			autoFocus: false,
-			onTab: () => this.questionField?.focus(),
-			onChange: () => this.validateForm(),
-		});
+		// Fields container (for re-rendering)
+		this.fieldsContainer = container.createDiv({ cls: "episteme-editor-fields" });
+		this.renderFields();
 
 		// Source info (at bottom)
 		if (mode === "edit" && card?.sourceNoteName) {
@@ -144,17 +140,181 @@ export class FlashcardEditorModal extends BaseModal {
 			});
 		}
 
-		// Attach autocomplete to both textareas
-		this.attachAutocomplete();
-
-		// Attach image paste handlers
-		this.attachImagePasteHandlers();
-
 		// Buttons
 		this.renderButtons(container);
 
 		// Setup keyboard shortcuts
 		this.setupKeyboardShortcuts(container);
+	}
+
+	/**
+	 * Render both fields (question and answer)
+	 */
+	private renderFields(): void {
+		if (!this.fieldsContainer) return;
+
+		// Clean up existing fields
+		this.cleanupFields();
+		this.fieldsContainer.empty();
+
+		// Question field
+		this.renderField(this.fieldsContainer, this.questionValue, "question");
+
+		// Divider between question and answer
+		this.fieldsContainer.createEl("hr", { cls: "episteme-editor-divider" });
+
+		// Answer field
+		this.renderField(this.fieldsContainer, this.answerValue, "answer");
+	}
+
+	/**
+	 * Clean up existing field components
+	 */
+	private cleanupFields(): void {
+		// Clean up autocomplete
+		if (this.questionSuggest) {
+			this.questionSuggest.destroy();
+			this.questionSuggest = null;
+		}
+		if (this.answerSuggest) {
+			this.answerSuggest.destroy();
+			this.answerSuggest = null;
+		}
+
+		// Clean up EditableTextField instances
+		if (this.questionField) {
+			this.questionField.destroy();
+			this.questionField = null;
+		}
+		if (this.answerField) {
+			this.answerField.destroy();
+			this.answerField = null;
+		}
+	}
+
+	/**
+	 * Render a single field (question or answer)
+	 */
+	private renderField(
+		container: HTMLElement,
+		content: string,
+		field: "question" | "answer"
+	): void {
+		const fieldGroup = container.createDiv({ cls: "episteme-editor-field-group" });
+		const isEditing = this.editingField === field;
+		const isEmpty = !content.trim();
+
+		if (isEditing || isEmpty) {
+			// Edit mode (or empty = start in edit)
+			this.renderEditMode(fieldGroup, content, field);
+		} else {
+			// Preview mode
+			this.renderPreviewMode(fieldGroup, content, field);
+		}
+	}
+
+	/**
+	 * Render field in preview mode (rendered markdown)
+	 */
+	private renderPreviewMode(
+		container: HTMLElement,
+		content: string,
+		field: "question" | "answer"
+	): void {
+		const preview = container.createDiv({
+			cls: `episteme-editor-preview episteme-editor-preview--${field}`,
+		});
+
+		// Render markdown
+		if (this.renderComponent) {
+			void MarkdownRenderer.render(
+				this.app,
+				content,
+				preview,
+				this.options.currentFilePath,
+				this.renderComponent
+			);
+		}
+
+		// Click to edit
+		preview.addEventListener("click", () => {
+			this.editingField = field;
+			this.renderFields();
+		});
+	}
+
+	/**
+	 * Render field in edit mode (textarea with toolbar)
+	 */
+	private renderEditMode(
+		container: HTMLElement,
+		content: string,
+		field: "question" | "answer"
+	): void {
+		const editField = createEditableTextField(container, {
+			initialValue: content,
+			placeholder: field === "question" ? "Type your question here..." : "Type your answer here...",
+			showToolbar: true,
+			toolbarButtons: this.getToolbarButtons(),
+			toolbarPositioned: false,
+			field,
+			autoFocus: true,
+			onSave: (value) => {
+				// Save value and exit edit mode
+				if (field === "question") {
+					this.questionValue = value;
+				} else {
+					this.answerValue = value;
+				}
+				this.editingField = null;
+				this.renderFields();
+				this.validateForm();
+			},
+			onTab: () => {
+				// Save current and switch to other field
+				const currentValue = editField.getRawValue();
+				if (field === "question") {
+					this.questionValue = currentValue;
+					this.editingField = "answer";
+				} else {
+					this.answerValue = currentValue;
+					this.editingField = "question";
+				}
+				this.renderFields();
+			},
+			onChange: () => {
+				// Update stored value on change
+				if (field === "question") {
+					this.questionValue = editField.getRawValue();
+				} else {
+					this.answerValue = editField.getRawValue();
+				}
+				this.validateForm();
+			},
+		});
+
+		// Store reference
+		if (field === "question") {
+			this.questionField = editField;
+		} else {
+			this.answerField = editField;
+		}
+
+		// Attach autocomplete
+		const textarea = editField.getTextarea();
+		if (textarea && this.vaultSearchService) {
+			const suggest = new TextareaSuggest(textarea, this.vaultSearchService);
+			if (field === "question") {
+				this.questionSuggest = suggest;
+			} else {
+				this.answerSuggest = suggest;
+			}
+
+			// Attach image paste handler
+			textarea.addEventListener("paste", (e) => {
+				void this.handleImagePaste(e, textarea);
+			});
+		}
 	}
 
 	/**
@@ -178,42 +338,6 @@ export class FlashcardEditorModal extends BaseModal {
 				action: { type: "custom", handler: () => this.showKeyboardShortcuts() },
 			},
 		];
-	}
-
-	/**
-	 * Attach autocomplete to both textareas
-	 */
-	private attachAutocomplete(): void {
-		if (!this.vaultSearchService) return;
-
-		const questionTextarea = this.questionField?.getTextarea();
-		const answerTextarea = this.answerField?.getTextarea();
-
-		if (questionTextarea) {
-			this.questionSuggest = new TextareaSuggest(questionTextarea, this.vaultSearchService);
-		}
-		if (answerTextarea) {
-			this.answerSuggest = new TextareaSuggest(answerTextarea, this.vaultSearchService);
-		}
-	}
-
-	/**
-	 * Attach image paste handlers to both textareas
-	 */
-	private attachImagePasteHandlers(): void {
-		const questionTextarea = this.questionField?.getTextarea();
-		const answerTextarea = this.answerField?.getTextarea();
-
-		if (questionTextarea) {
-			questionTextarea.addEventListener("paste", (e) => {
-				void this.handleImagePaste(e, questionTextarea);
-			});
-		}
-		if (answerTextarea) {
-			answerTextarea.addEventListener("paste", (e) => {
-				void this.handleImagePaste(e, answerTextarea);
-			});
-		}
 	}
 
 	/**
@@ -404,8 +528,9 @@ export class FlashcardEditorModal extends BaseModal {
 	 * Check if the form is valid
 	 */
 	private isFormValid(): boolean {
-		const question = this.questionField?.getRawValue().trim() || "";
-		const answer = this.answerField?.getRawValue().trim() || "";
+		// Use stored values (they're updated on every change)
+		const question = this.questionValue.trim();
+		const answer = this.answerValue.trim();
 		return question.length > 0 && answer.length > 0;
 	}
 
@@ -422,8 +547,9 @@ export class FlashcardEditorModal extends BaseModal {
 	 * Handle form submission
 	 */
 	private handleSubmit(): void {
-		const question = this.questionField?.getRawValue().trim() || "";
-		const answer = this.answerField?.getRawValue().trim() || "";
+		// Use stored values
+		const question = this.questionValue.trim();
+		const answer = this.answerValue.trim();
 
 		if (!question || !answer) return;
 
@@ -440,28 +566,19 @@ export class FlashcardEditorModal extends BaseModal {
 	}
 
 	onClose(): void {
-		// Clean up autocomplete components
-		if (this.questionSuggest) {
-			this.questionSuggest.destroy();
-			this.questionSuggest = null;
-		}
-		if (this.answerSuggest) {
-			this.answerSuggest.destroy();
-			this.answerSuggest = null;
-		}
+		// Clean up field components
+		this.cleanupFields();
+
+		// Clean up services
 		if (this.vaultSearchService) {
 			this.vaultSearchService.clear();
 			this.vaultSearchService = null;
 		}
 
-		// Clean up EditableTextField instances
-		if (this.questionField) {
-			this.questionField.destroy();
-			this.questionField = null;
-		}
-		if (this.answerField) {
-			this.answerField.destroy();
-			this.answerField = null;
+		// Clean up markdown rendering component
+		if (this.renderComponent) {
+			this.renderComponent.unload();
+			this.renderComponent = null;
 		}
 
 		const { contentEl } = this;

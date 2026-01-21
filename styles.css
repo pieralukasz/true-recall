@@ -3381,6 +3381,33 @@
 	text-align: center;
 }
 
+/* Editor preview (rendered markdown - click to edit) */
+.episteme-editor-preview {
+	padding: 12px;
+	min-height: 60px;
+	cursor: text;
+	border-radius: 6px;
+	text-align: center;
+	line-height: 1.6;
+	color: var(--text-normal);
+	transition: background 0.15s ease;
+}
+
+.episteme-editor-preview:hover {
+	background: var(--background-modifier-hover);
+}
+
+/* Question preview - larger font */
+.episteme-editor-preview--question {
+	font-size: 1.4em;
+}
+
+/* Answer preview - slightly smaller */
+.episteme-editor-preview--answer {
+	font-size: 1.2em;
+	color: var(--text-muted);
+}
+
 /* Editor divider between question and answer */
 .episteme-editor-divider {
 	border: none;
