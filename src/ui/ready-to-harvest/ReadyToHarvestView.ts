@@ -115,16 +115,11 @@ export class ReadyToHarvestView extends ItemView {
 		const ready: NoteReadyToHarvest[] = [];
 		const allFiles = this.app.vault.getMarkdownFiles();
 
-		const flashcardFolderNormalized = normalizePath(
-			this.plugin.settings.flashcardsFolder
-		);
 		const excludedFolders = this.plugin.settings.excludedFolders;
 
 		// Filter out flashcard files and excluded folders
 		const sourceFiles = allFiles.filter((file) => {
-			if (file.path.startsWith(flashcardFolderNormalized + "/")) {
-				return false;
-			}
+			// Exclude files in excluded folders
 			for (const excludedFolder of excludedFolders) {
 				const normalizedExcluded = normalizePath(excludedFolder);
 				if (
@@ -134,6 +129,7 @@ export class ReadyToHarvestView extends ItemView {
 					return false;
 				}
 			}
+			// Exclude flashcard files by name pattern
 			if (isFlashcardFileByName(file.name)) {
 				return false;
 			}

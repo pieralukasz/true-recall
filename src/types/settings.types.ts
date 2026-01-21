@@ -34,10 +34,6 @@ export interface EpistemeSettings {
     openRouterApiKey: string;
     /** Model AI do generowania fiszek */
     aiModel: AIModelKey;
-    /** Folder na pliki fiszek */
-    flashcardsFolder: string;
-    /** Zapisuj treść źródłową notatki w pliku fiszek */
-    storeSourceContent: boolean;
 
     // ===== FSRS Algorithm Settings =====
     /** Docelowa retencja (0.7-0.99, domyślnie 0.9 = 90%) */

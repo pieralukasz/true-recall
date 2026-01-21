@@ -12,11 +12,14 @@ import type { EpistemeSettings, ReviewViewMode, NewCardOrder, ReviewOrder, NewRe
 export { DEFAULT_SETTINGS };
 export type { EpistemeSettings };
 
+type SettingsTabId = "scheduling" | "interface" | "integration";
+
 /**
  * Settings tab for Episteme plugin
  */
 export class EpistemeSettingTab extends PluginSettingTab {
     plugin: EpistemePlugin;
+    private activeTab: SettingsTabId = "scheduling";
 
     constructor(app: App, plugin: EpistemePlugin) {
         super(app, plugin);
@@ -26,87 +29,56 @@ export class EpistemeSettingTab extends PluginSettingTab {
     display(): void {
         const { containerEl } = this;
         containerEl.empty();
+        containerEl.addClass("episteme-settings");
 
-        // ===== AI Generation Section =====
-        containerEl.createEl("h2", { text: "AI Generation" });
+        // Tab navigation
+        const tabsNav = containerEl.createDiv({ cls: "episteme-settings-tabs" });
+        const tabs: { id: SettingsTabId; label: string }[] = [
+            { id: "scheduling", label: "Scheduling" },
+            { id: "interface", label: "Interface" },
+            { id: "integration", label: "Integration" },
+        ];
 
-        // Info about OpenRouter
-        new Setting(containerEl)
-            .setDesc("Get your API key at openrouter.ai/keys");
-
-        // 1. OpenRouter API Key (password field)
-        new Setting(containerEl)
-            .setName("API key")
-            .setDesc("Your openrouter.ai API key for flashcard generation")
-            .addText(text => {
-                text.inputEl.type = "password";
-                text.inputEl.addClass("episteme-api-input");
-                text.setPlaceholder("Enter API key")
-                    .setValue(this.plugin.settings.openRouterApiKey)
-                    .onChange(async (value) => {
-                        this.plugin.settings.openRouterApiKey = value;
-                        await this.plugin.saveSettings();
-                    });
+        const tabButtons: Map<SettingsTabId, HTMLElement> = new Map();
+        tabs.forEach(tab => {
+            const btn = tabsNav.createEl("button", {
+                text: tab.label,
+                cls: `episteme-settings-tab-btn ${this.activeTab === tab.id ? "is-active" : ""}`,
             });
+            btn.addEventListener("click", () => this.switchTab(tab.id, tabButtons, tabContents));
+            tabButtons.set(tab.id, btn);
+        });
 
-        // 2. AI Model dropdown
-        new Setting(containerEl)
-            .setName("AI model")
-            .setDesc("Select the AI model for flashcard generation")
-            .addDropdown(dropdown => {
-                Object.entries(AI_MODELS).forEach(([value, label]) => {
-                    dropdown.addOption(value, label);
-                });
-                dropdown.setValue(this.plugin.settings.aiModel);
-                dropdown.onChange(async (value) => {
-                    this.plugin.settings.aiModel = value as AIModelKey;
-                    await this.plugin.saveSettings();
-                });
+        // Tab content containers
+        const tabContents: Map<SettingsTabId, HTMLElement> = new Map();
+        tabs.forEach(tab => {
+            const content = containerEl.createDiv({
+                cls: `episteme-settings-tab-content ${this.activeTab === tab.id ? "is-active" : ""}`,
             });
+            tabContents.set(tab.id, content);
+        });
 
-        // 3. Flashcards Folder Path
-        new Setting(containerEl)
-            .setName("Flashcards folder")
-            .setDesc("Folder where flashcard files will be stored")
-            .addText(text => text
-                .setPlaceholder("Flashcards")
-                .setValue(this.plugin.settings.flashcardsFolder)
-                .onChange(async (value) => {
-                    this.plugin.settings.flashcardsFolder = value || "Flashcards";
-                    await this.plugin.saveSettings();
-                }));
+        // Render content for each tab
+        this.renderSchedulingTab(tabContents.get("scheduling")!);
+        this.renderInterfaceTab(tabContents.get("interface")!);
+        this.renderIntegrationTab(tabContents.get("integration")!);
+    }
 
-        // 3b. Excluded Folders
-        new Setting(containerEl)
-            .setName("Excluded folders")
-            .setDesc("Comma-separated list of folders to exclude from missing flashcards search (e.g., templates, archive)")
-            .addText(text => text
-                .setPlaceholder("templates, archive")
-                .setValue(this.plugin.settings.excludedFolders.join(", "))
-                .onChange(async (value) => {
-                    const folders = value.split(",")
-                        .map(s => s.trim())
-                        .filter(s => s.length > 0);
-                    this.plugin.settings.excludedFolders = folders;
-                    await this.plugin.saveSettings();
-                }));
+    private switchTab(
+        tabId: SettingsTabId,
+        buttons: Map<SettingsTabId, HTMLElement>,
+        contents: Map<SettingsTabId, HTMLElement>
+    ): void {
+        this.activeTab = tabId;
+        buttons.forEach((btn, id) => btn.toggleClass("is-active", id === tabId));
+        contents.forEach((content, id) => content.toggleClass("is-active", id === tabId));
+    }
 
-        // 4. Store Source Content toggle
-        new Setting(containerEl)
-            .setName("Store source content")
-            .setDesc("Save note content in flashcard file for better diff comparison")
-            .addToggle(toggle => toggle
-                .setValue(this.plugin.settings.storeSourceContent)
-                .onChange(async (value) => {
-                    this.plugin.settings.storeSourceContent = value;
-                    await this.plugin.saveSettings();
-                }));
-
+    private renderSchedulingTab(container: HTMLElement): void {
         // ===== FSRS Algorithm Section =====
-        containerEl.createEl("h2", { text: "FSRS Algorithm" });
+        container.createEl("h2", { text: "FSRS Algorithm" });
 
-        // Request Retention
-        new Setting(containerEl)
+        new Setting(container)
             .setName("Desired retention")
             .setDesc(`Target probability of recall (${FSRS_CONFIG.minRetention}-${FSRS_CONFIG.maxRetention}). Default: 0.9 (90%)`)
             .addSlider(slider => slider
@@ -118,8 +90,7 @@ export class EpistemeSettingTab extends PluginSettingTab {
                     await this.plugin.saveSettings();
                 }));
 
-        // Maximum Interval
-        new Setting(containerEl)
+        new Setting(container)
             .setName("Maximum interval (days)")
             .setDesc("Maximum days between reviews. Default: 36500 (100 years)")
             .addText(text => text
@@ -132,10 +103,9 @@ export class EpistemeSettingTab extends PluginSettingTab {
                 }));
 
         // ===== Daily Limits Section =====
-        containerEl.createEl("h2", { text: "Daily Limits" });
+        container.createEl("h2", { text: "Daily Limits" });
 
-        // New Cards Per Day
-        new Setting(containerEl)
+        new Setting(container)
             .setName("New cards per day")
             .setDesc("Maximum number of new cards to study each day")
             .addText(text => text
@@ -147,8 +117,7 @@ export class EpistemeSettingTab extends PluginSettingTab {
                     await this.plugin.saveSettings();
                 }));
 
-        // Reviews Per Day
-        new Setting(containerEl)
+        new Setting(container)
             .setName("Maximum reviews per day")
             .setDesc("Maximum number of reviews per day")
             .addText(text => text
@@ -161,10 +130,9 @@ export class EpistemeSettingTab extends PluginSettingTab {
                 }));
 
         // ===== Learning Steps Section =====
-        containerEl.createEl("h2", { text: "Learning Steps" });
+        container.createEl("h2", { text: "Learning Steps" });
 
-        // Learning Steps
-        new Setting(containerEl)
+        new Setting(container)
             .setName("Learning steps (minutes)")
             .setDesc("Comma-separated steps for new cards. Default: 1, 10")
             .addText(text => text
@@ -178,8 +146,7 @@ export class EpistemeSettingTab extends PluginSettingTab {
                     await this.plugin.saveSettings();
                 }));
 
-        // Relearning Steps
-        new Setting(containerEl)
+        new Setting(container)
             .setName("Relearning steps (minutes)")
             .setDesc("Comma-separated steps for lapsed cards. Default: 10")
             .addText(text => text
@@ -193,8 +160,7 @@ export class EpistemeSettingTab extends PluginSettingTab {
                     await this.plugin.saveSettings();
                 }));
 
-        // Graduating Interval
-        new Setting(containerEl)
+        new Setting(container)
             .setName("Graduating interval (days)")
             .setDesc("Interval after completing learning steps. Default: 1")
             .addText(text => text
@@ -206,8 +172,7 @@ export class EpistemeSettingTab extends PluginSettingTab {
                     await this.plugin.saveSettings();
                 }));
 
-        // Easy Interval
-        new Setting(containerEl)
+        new Setting(container)
             .setName("Easy interval (days)")
             .setDesc("Interval when pressing Easy on new card. Default: 4")
             .addText(text => text
@@ -219,112 +184,10 @@ export class EpistemeSettingTab extends PluginSettingTab {
                     await this.plugin.saveSettings();
                 }));
 
-        // ===== Review UI Section =====
-        containerEl.createEl("h2", { text: "Review Interface" });
-
-        // Review Mode
-        new Setting(containerEl)
-            .setName("Review mode")
-            .setDesc("Where to open the review session")
-            .addDropdown(dropdown => {
-                dropdown.addOption("fullscreen", "Fullscreen (main area)");
-                dropdown.addOption("panel", "Side panel");
-                dropdown.setValue(this.plugin.settings.reviewMode);
-                dropdown.onChange(async (value) => {
-                    this.plugin.settings.reviewMode = value as ReviewViewMode;
-                    await this.plugin.saveSettings();
-                });
-            });
-
-        // Custom Session Interface
-        new Setting(containerEl)
-            .setName("Custom session interface")
-            .setDesc("How to display the custom session selection interface")
-            .addDropdown(dropdown => {
-                dropdown.addOption("modal", "Modal (popup)");
-                dropdown.addOption("panel", "Side panel");
-                dropdown.setValue(this.plugin.settings.customSessionInterface);
-                dropdown.onChange(async (value) => {
-                    this.plugin.settings.customSessionInterface = value as CustomSessionInterface;
-                    await this.plugin.saveSettings();
-                });
-            });
-
-        // Show Review Header
-        new Setting(containerEl)
-            .setName("Show review header")
-            .setDesc("Display header with close button, stats and progress in review session")
-            .addToggle(toggle => toggle
-                .setValue(this.plugin.settings.showReviewHeader)
-                .onChange(async (value) => {
-                    this.plugin.settings.showReviewHeader = value;
-                    await this.plugin.saveSettings();
-                }));
-
-        // Show Review Header Stats
-        new Setting(containerEl)
-            .setName("Show header stats")
-            .setDesc("Display new/learning/due counters in review session header")
-            .addToggle(toggle => toggle
-                .setValue(this.plugin.settings.showReviewHeaderStats)
-                .onChange(async (value) => {
-                    this.plugin.settings.showReviewHeaderStats = value;
-                    await this.plugin.saveSettings();
-                }));
-
-        // Show Next Review Time
-        new Setting(containerEl)
-            .setName("Show next review time")
-            .setDesc("Display predicted interval on answer buttons")
-            .addToggle(toggle => toggle
-                .setValue(this.plugin.settings.showNextReviewTime)
-                .onChange(async (value) => {
-                    this.plugin.settings.showNextReviewTime = value;
-                    await this.plugin.saveSettings();
-                }));
-
-        // Continuous Custom Reviews
-        new Setting(containerEl)
-            .setName("Continuous custom reviews")
-            .setDesc("Show 'Next Session' button after completing a custom review session, allowing you to quickly start another review with different filters")
-            .addToggle(toggle => toggle
-                .setValue(this.plugin.settings.continuousCustomReviews)
-                .onChange(async (value) => {
-                    this.plugin.settings.continuousCustomReviews = value;
-                    await this.plugin.saveSettings();
-                }));
-
-        // ===== Flashcard Collection Section =====
-        containerEl.createEl("h3", { text: "Flashcard Collection" });
-
-        // Remove content after collecting
-        new Setting(containerEl)
-            .setName("Remove content after collecting")
-            .setDesc("When enabled, removes the entire flashcard (question + answer) from markdown after collecting. When disabled, only removes the #flashcard tag and keeps the content.")
-            .addToggle(toggle => toggle
-                .setValue(this.plugin.settings.removeFlashcardContentAfterCollect)
-                .onChange(async (value) => {
-                    this.plugin.settings.removeFlashcardContentAfterCollect = value;
-                    await this.plugin.saveSettings();
-                }));
-
-        // Autocomplete Search Folder
-        new Setting(containerEl)
-            .setName("Autocomplete search folder")
-            .setDesc("Folder to search for note linking autocomplete. Leave empty to search all folders.")
-            .addText(text => text
-                .setPlaceholder("e.g., Notes or Zettelkasten")
-                .setValue(this.plugin.settings.autocompleteSearchFolder)
-                .onChange(async (value) => {
-                    this.plugin.settings.autocompleteSearchFolder = value.trim();
-                    await this.plugin.saveSettings();
-                }));
-
         // ===== Display Order Section =====
-        containerEl.createEl("h2", { text: "Display Order" });
+        container.createEl("h2", { text: "Display Order" });
 
-        // New Card Order
-        new Setting(containerEl)
+        new Setting(container)
             .setName("New card order")
             .setDesc("How to order new cards in the review queue")
             .addDropdown(dropdown => {
@@ -338,8 +201,7 @@ export class EpistemeSettingTab extends PluginSettingTab {
                 });
             });
 
-        // Review Card Order
-        new Setting(containerEl)
+        new Setting(container)
             .setName("Review order")
             .setDesc("How to order cards due for review")
             .addDropdown(dropdown => {
@@ -353,8 +215,7 @@ export class EpistemeSettingTab extends PluginSettingTab {
                 });
             });
 
-        // New/Review Mix
-        new Setting(containerEl)
+        new Setting(container)
             .setName("New/review mix")
             .setDesc("When to show new cards relative to reviews")
             .addDropdown(dropdown => {
@@ -369,10 +230,9 @@ export class EpistemeSettingTab extends PluginSettingTab {
             });
 
         // ===== Scheduling Section =====
-        containerEl.createEl("h2", { text: "Scheduling" });
+        container.createEl("h2", { text: "Scheduling" });
 
-        // Day Start Hour
-        new Setting(containerEl)
+        new Setting(container)
             .setName("Next day starts at")
             .setDesc("Hour when a new day begins (0-23). All review cards due 'today' become available after this time. Default: 4 (4:00 AM)")
             .addSlider(slider => slider
@@ -384,43 +244,25 @@ export class EpistemeSettingTab extends PluginSettingTab {
                     await this.plugin.saveSettings();
                 }));
 
-        // ===== Zettelkasten Section =====
-        containerEl.createEl("h2", { text: "Zettelkasten" });
-
-        // Zettel Folder
-        new Setting(containerEl)
-            .setName("Zettel folder")
-            .setDesc("Folder where zettel notes created from flashcards will be stored")
-            .addText(text => text
-                .setPlaceholder("Zettel")
-                .setValue(this.plugin.settings.zettelFolder)
-                .onChange(async (value) => {
-                    this.plugin.settings.zettelFolder = value || "Zettel";
-                    await this.plugin.saveSettings();
-                }));
-
         // ===== FSRS Parameters Section =====
-        containerEl.createEl("h2", { text: "FSRS Parameters" });
+        container.createEl("h2", { text: "FSRS Parameters" });
 
-        // Info text
-        const infoEl = containerEl.createDiv({ cls: "setting-item-description" });
+        const infoEl = container.createDiv({ cls: "setting-item-description" });
         infoEl.innerHTML = `
             <p>FSRS parameters affect how cards are scheduled. The plugin starts with default parameters optimized for most users.</p>
             <p>You can optimize parameters based on your review history to get the best results for your memory and content.</p>
             <p><strong>Minimum ${FSRS_CONFIG.minReviewsForOptimization} reviews required.</strong> Recommended: ${FSRS_CONFIG.recommendedReviewsForOptimization}+ reviews.</p>
         `;
 
-        // Last Optimization
         const lastOpt = this.plugin.settings.lastOptimization;
-        new Setting(containerEl)
+        new Setting(container)
             .setName("Last optimization")
             .setDesc(lastOpt ? new Date(lastOpt).toLocaleDateString() : "Never")
             .addButton(button => button
                 .setButtonText("Optimize Parameters")
-                .setDisabled(true) // Will be enabled when we have enough reviews
+                .setDisabled(true)
                 .onClick(async () => {
                     // TODO: Implement optimization
-                    // new Notice("Optimization not yet implemented");
                 }))
             .addButton(button => button
                 .setButtonText("Reset to Defaults")
@@ -428,14 +270,13 @@ export class EpistemeSettingTab extends PluginSettingTab {
                     this.plugin.settings.fsrsWeights = null;
                     this.plugin.settings.lastOptimization = null;
                     await this.plugin.saveSettings();
-                    this.display(); // Refresh
+                    this.display();
                 }));
 
-        // Custom Weights Input
         const currentWeights = this.plugin.settings.fsrsWeights;
         const weightsString = currentWeights ? currentWeights.join(", ") : "";
 
-        new Setting(containerEl)
+        new Setting(container)
             .setName("Custom FSRS weights")
             .setDesc("Enter 17, 19, or 21 comma-separated values (from FSRS optimizer). Leave empty to use defaults.")
             .addTextArea(text => {
@@ -455,10 +296,7 @@ export class EpistemeSettingTab extends PluginSettingTab {
                             return;
                         }
 
-                        // Parse weights
                         const parts = trimmed.split(",").map(s => parseFloat(s.trim()));
-
-                        // Validate - accept FSRS v4.5 (17), v5 (19), or v6 (21)
                         const validLengths = [17, 19, 21];
                         if (!validLengths.includes(parts.length)) {
                             new Notice(`Invalid weights count: ${parts.length}. Expected 17, 19, or 21 values.`);
@@ -476,5 +314,164 @@ export class EpistemeSettingTab extends PluginSettingTab {
                         new Notice("FSRS weights saved!");
                     });
             });
+    }
+
+    private renderInterfaceTab(container: HTMLElement): void {
+        // ===== Review Interface Section =====
+        container.createEl("h2", { text: "Review Interface" });
+
+        new Setting(container)
+            .setName("Review mode")
+            .setDesc("Where to open the review session")
+            .addDropdown(dropdown => {
+                dropdown.addOption("fullscreen", "Fullscreen (main area)");
+                dropdown.addOption("panel", "Side panel");
+                dropdown.setValue(this.plugin.settings.reviewMode);
+                dropdown.onChange(async (value) => {
+                    this.plugin.settings.reviewMode = value as ReviewViewMode;
+                    await this.plugin.saveSettings();
+                });
+            });
+
+        new Setting(container)
+            .setName("Custom session interface")
+            .setDesc("How to display the custom session selection interface")
+            .addDropdown(dropdown => {
+                dropdown.addOption("modal", "Modal (popup)");
+                dropdown.addOption("panel", "Side panel");
+                dropdown.setValue(this.plugin.settings.customSessionInterface);
+                dropdown.onChange(async (value) => {
+                    this.plugin.settings.customSessionInterface = value as CustomSessionInterface;
+                    await this.plugin.saveSettings();
+                });
+            });
+
+        new Setting(container)
+            .setName("Show review header")
+            .setDesc("Display header with close button, stats and progress in review session")
+            .addToggle(toggle => toggle
+                .setValue(this.plugin.settings.showReviewHeader)
+                .onChange(async (value) => {
+                    this.plugin.settings.showReviewHeader = value;
+                    await this.plugin.saveSettings();
+                }));
+
+        new Setting(container)
+            .setName("Show header stats")
+            .setDesc("Display new/learning/due counters in review session header")
+            .addToggle(toggle => toggle
+                .setValue(this.plugin.settings.showReviewHeaderStats)
+                .onChange(async (value) => {
+                    this.plugin.settings.showReviewHeaderStats = value;
+                    await this.plugin.saveSettings();
+                }));
+
+        new Setting(container)
+            .setName("Show next review time")
+            .setDesc("Display predicted interval on answer buttons")
+            .addToggle(toggle => toggle
+                .setValue(this.plugin.settings.showNextReviewTime)
+                .onChange(async (value) => {
+                    this.plugin.settings.showNextReviewTime = value;
+                    await this.plugin.saveSettings();
+                }));
+
+        new Setting(container)
+            .setName("Continuous custom reviews")
+            .setDesc("Show 'Next Session' button after completing a custom review session, allowing you to quickly start another review with different filters")
+            .addToggle(toggle => toggle
+                .setValue(this.plugin.settings.continuousCustomReviews)
+                .onChange(async (value) => {
+                    this.plugin.settings.continuousCustomReviews = value;
+                    await this.plugin.saveSettings();
+                }));
+
+        // ===== Flashcard Collection Section =====
+        container.createEl("h2", { text: "Flashcard Collection" });
+
+        new Setting(container)
+            .setName("Remove content after collecting")
+            .setDesc("When enabled, removes the entire flashcard (question + answer) from markdown after collecting. When disabled, only removes the #flashcard tag and keeps the content.")
+            .addToggle(toggle => toggle
+                .setValue(this.plugin.settings.removeFlashcardContentAfterCollect)
+                .onChange(async (value) => {
+                    this.plugin.settings.removeFlashcardContentAfterCollect = value;
+                    await this.plugin.saveSettings();
+                }));
+
+        new Setting(container)
+            .setName("Autocomplete search folder")
+            .setDesc("Folder to search for note linking autocomplete. Leave empty to search all folders.")
+            .addText(text => text
+                .setPlaceholder("e.g., Notes or Zettelkasten")
+                .setValue(this.plugin.settings.autocompleteSearchFolder)
+                .onChange(async (value) => {
+                    this.plugin.settings.autocompleteSearchFolder = value.trim();
+                    await this.plugin.saveSettings();
+                }));
+    }
+
+    private renderIntegrationTab(container: HTMLElement): void {
+        // ===== Zettelkasten Section =====
+        container.createEl("h2", { text: "Zettelkasten" });
+
+        new Setting(container)
+            .setName("Zettel folder")
+            .setDesc("Folder where zettel notes created from flashcards will be stored")
+            .addText(text => text
+                .setPlaceholder("Zettel")
+                .setValue(this.plugin.settings.zettelFolder)
+                .onChange(async (value) => {
+                    this.plugin.settings.zettelFolder = value || "Zettel";
+                    await this.plugin.saveSettings();
+                }));
+
+        // ===== AI Generation Section =====
+        container.createEl("h2", { text: "AI Generation" });
+
+        new Setting(container)
+            .setDesc("Get your API key at openrouter.ai/keys");
+
+        new Setting(container)
+            .setName("API key")
+            .setDesc("Your openrouter.ai API key for flashcard generation")
+            .addText(text => {
+                text.inputEl.type = "password";
+                text.inputEl.addClass("episteme-api-input");
+                text.setPlaceholder("Enter API key")
+                    .setValue(this.plugin.settings.openRouterApiKey)
+                    .onChange(async (value) => {
+                        this.plugin.settings.openRouterApiKey = value;
+                        await this.plugin.saveSettings();
+                    });
+            });
+
+        new Setting(container)
+            .setName("AI model")
+            .setDesc("Select the AI model for flashcard generation")
+            .addDropdown(dropdown => {
+                Object.entries(AI_MODELS).forEach(([value, label]) => {
+                    dropdown.addOption(value, label);
+                });
+                dropdown.setValue(this.plugin.settings.aiModel);
+                dropdown.onChange(async (value) => {
+                    this.plugin.settings.aiModel = value as AIModelKey;
+                    await this.plugin.saveSettings();
+                });
+            });
+
+        new Setting(container)
+            .setName("Excluded folders")
+            .setDesc("Comma-separated list of folders to exclude from missing flashcards search (e.g., templates, archive)")
+            .addText(text => text
+                .setPlaceholder("templates, archive")
+                .setValue(this.plugin.settings.excludedFolders.join(", "))
+                .onChange(async (value) => {
+                    const folders = value.split(",")
+                        .map(s => s.trim())
+                        .filter(s => s.length > 0);
+                    this.plugin.settings.excludedFolders = folders;
+                    await this.plugin.saveSettings();
+                }));
     }
 }
