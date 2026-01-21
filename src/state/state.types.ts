@@ -46,6 +46,10 @@ export interface PanelState {
     hasSelection: boolean;
     /** Source note name (when viewing a flashcard file) */
     sourceNoteName: string | null;
+    /** Number of uncollected flashcards (with #flashcard tag) in current file */
+    uncollectedCount: number;
+    /** Whether there are flashcards to collect */
+    hasUncollectedFlashcards: boolean;
 }
 
 /**
