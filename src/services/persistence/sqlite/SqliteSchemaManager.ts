@@ -18,11 +18,11 @@ export class SqliteSchemaManager {
     }
 
     /**
-     * Create database tables (schema v5)
+     * Create database tables (schema v7)
      */
     createTables(): void {
         this.db.run(`
-            -- Cards table with FSRS scheduling data + content (v5)
+            -- Cards table with FSRS scheduling data + content (v7)
             CREATE TABLE IF NOT EXISTS cards (
                 id TEXT PRIMARY KEY,
                 due TEXT NOT NULL,
@@ -144,7 +144,7 @@ export class SqliteSchemaManager {
             );
 
             -- Set schema version
-            INSERT OR REPLACE INTO meta (key, value) VALUES ('schema_version', '5');
+            INSERT OR REPLACE INTO meta (key, value) VALUES ('schema_version', '7');
             INSERT OR REPLACE INTO meta (key, value) VALUES ('created_at', datetime('now'));
         `);
     }
@@ -169,6 +169,14 @@ export class SqliteSchemaManager {
 
         if (currentVersion < 5) {
             this.migrateV4toV5();
+        }
+
+        if (currentVersion < 6) {
+            this.migrateV5toV6();
+        }
+
+        if (currentVersion < 7) {
+            this.migrateV6toV7();
         }
     }
 
@@ -388,6 +396,128 @@ export class SqliteSchemaManager {
             this.onSchemaChange();
         } catch (error) {
             console.error("[Episteme] Schema migration v4->v5 failed:", error);
+        }
+    }
+
+    /**
+     * Migrate from v5 to v6 (fix data corruption)
+     * 1. Restores created_at from earliest review in review_log
+     * 2. Fixes state for cards that have reviews but are marked as New (state=0)
+     */
+    private migrateV5toV6(): void {
+        console.log("[Episteme] Migrating schema v5 -> v6 (fixing data corruption)...");
+
+        try {
+            // Part 1: Fix created_at for cards that have reviews before their supposed creation date
+            // This is impossible (can't review a card before it exists), so the created_at is wrong
+            const createdAtResult = this.db.exec(`
+                SELECT c.id, c.created_at,
+                       MIN(strftime('%s', r.reviewed_at) * 1000) as earliest_review
+                FROM cards c
+                JOIN review_log r ON r.card_id = c.id
+                WHERE c.created_at IS NOT NULL
+                GROUP BY c.id
+                HAVING earliest_review < c.created_at
+            `);
+
+            const createdAtData = getQueryResult(createdAtResult);
+            if (createdAtData && createdAtData.values.length > 0) {
+                console.log(`[Episteme] Found ${createdAtData.values.length} cards with corrupted created_at`);
+
+                for (const row of createdAtData.values) {
+                    const cardId = row[0] as string;
+                    const earliestReview = row[2] as number;
+
+                    this.db.run(
+                        `UPDATE cards SET created_at = ? WHERE id = ?`,
+                        [earliestReview, cardId]
+                    );
+                }
+
+                console.log(`[Episteme] Fixed created_at for ${createdAtData.values.length} cards`);
+            } else {
+                console.log("[Episteme] No cards with corrupted created_at found");
+            }
+
+            // Part 2: Fix state for cards that have reviews but are marked as New (state=0)
+            // This is impossible - if a card has been reviewed, it cannot be in New state
+            const stateResult = this.db.exec(`
+                SELECT c.id,
+                       (SELECT rating FROM review_log WHERE card_id = c.id ORDER BY reviewed_at DESC LIMIT 1) as last_rating
+                FROM cards c
+                WHERE c.state = 0
+                  AND EXISTS (SELECT 1 FROM review_log WHERE card_id = c.id)
+            `);
+
+            const stateData = getQueryResult(stateResult);
+            if (stateData && stateData.values.length > 0) {
+                console.log(`[Episteme] Found ${stateData.values.length} cards with corrupted state (New with reviews)`);
+
+                for (const row of stateData.values) {
+                    const cardId = row[0] as string;
+                    const lastRating = row[1] as number;
+                    // If last rating was Again(1) or Hard(2), set to Relearning(3), else Review(2)
+                    const newState = (lastRating <= 2) ? 3 : 2;
+
+                    this.db.run(
+                        `UPDATE cards SET state = ? WHERE id = ?`,
+                        [newState, cardId]
+                    );
+                }
+
+                console.log(`[Episteme] Fixed state for ${stateData.values.length} cards`);
+            } else {
+                console.log("[Episteme] No cards with corrupted state found");
+            }
+
+            this.db.run("INSERT OR REPLACE INTO meta (key, value) VALUES ('schema_version', '6')");
+            console.log("[Episteme] Schema migration v5->v6 completed");
+            this.onSchemaChange();
+        } catch (error) {
+            console.error("[Episteme] Schema migration v5->v6 failed:", error);
+        }
+    }
+
+    /**
+     * Migrate from v6 to v7 (sync card created_at with source notes)
+     * Sets cards.created_at to match source_notes.created_at
+     */
+    private migrateV6toV7(): void {
+        console.log("[Episteme] Migrating schema v6 -> v7 (syncing card created_at with source notes)...");
+
+        try {
+            const result = this.db.exec(`
+                SELECT c.id, s.created_at as source_created_at
+                FROM cards c
+                INNER JOIN source_notes s ON c.source_uid = s.uid
+                WHERE c.created_at != s.created_at
+            `);
+
+            const data = getQueryResult(result);
+
+            if (data && data.values.length > 0) {
+                console.log(`[Episteme] Found ${data.values.length} cards to sync with source notes`);
+
+                for (const row of data.values) {
+                    const cardId = row[0] as string;
+                    const sourceCreatedAt = row[1] as number;
+
+                    this.db.run(
+                        `UPDATE cards SET created_at = ? WHERE id = ?`,
+                        [sourceCreatedAt, cardId]
+                    );
+                }
+
+                console.log(`[Episteme] Synced created_at for ${data.values.length} cards`);
+            } else {
+                console.log("[Episteme] No cards needed created_at sync");
+            }
+
+            this.db.run("INSERT OR REPLACE INTO meta (key, value) VALUES ('schema_version', '7')");
+            console.log("[Episteme] Schema migration v6->v7 completed");
+            this.onSchemaChange();
+        } catch (error) {
+            console.error("[Episteme] Schema migration v6->v7 failed:", error);
         }
     }
 }

@@ -10,6 +10,8 @@ import type { SqliteStoreService } from "../persistence/sqlite";
 import type {
 	CardMaturityBreakdown,
 	FutureDueEntry,
+	CardsCreatedEntry,
+	CardsCreatedVsReviewedEntry,
 	ExtendedDailyStats,
 	TodaySummary,
 	StreakInfo,
@@ -46,6 +48,9 @@ export class StatsCalculatorService {
 	 * Exposes sessionPersistence.getAllDailyStats() without revealing internal dependency
 	 */
 	getAllDailyStats(): Record<string, ExtendedDailyStats> {
+		if (!this.sessionPersistence) {
+			return {};
+		}
 		return this.sessionPersistence.getAllDailyStats();
 	}
 
@@ -198,6 +203,9 @@ export class StatsCalculatorService {
 	 * Get streak information
 	 */
 	async getStreakInfo(): Promise<StreakInfo> {
+		if (!this.sessionPersistence) {
+			return { current: 0, longest: 0 };
+		}
 		const allStats = await this.sessionPersistence.getAllDailyStats();
 
 		// Get dates with reviews, sorted descending
@@ -351,6 +359,9 @@ export class StatsCalculatorService {
 	 * Retention = (Good + Easy) / Total reviews
 	 */
 	async getRetentionHistory(range: StatsTimeRange): Promise<RetentionEntry[]> {
+		if (!this.sessionPersistence) {
+			return [];
+		}
 		const allStats = await this.sessionPersistence.getAllDailyStats();
 		const today = new Date();
 		today.setHours(0, 0, 0, 0);
@@ -607,5 +618,146 @@ export class StatsCalculatorService {
 			default:
 				return [];
 		}
+	}
+
+	/**
+	 * Get cards created history with filled-in missing days
+	 * Returns one entry per day for the entire range
+	 * Note: "backlog" range is skipped as it's for future predictions, not creation history
+	 */
+	async getCardsCreatedHistoryFilled(
+		range: StatsTimeRange
+	): Promise<CardsCreatedEntry[]> {
+		// "backlog" doesn't make sense for creation history (it's for future due)
+		if (range === "backlog") {
+			return [];
+		}
+
+		const today = new Date();
+		today.setHours(0, 0, 0, 0);
+		const startDate = this.calculateStartDate(today, range);
+
+		const formatLocalDate = (d: Date): string => {
+			const year = d.getFullYear();
+			const month = String(d.getMonth() + 1).padStart(2, "0");
+			const day = String(d.getDate()).padStart(2, "0");
+			return `${year}-${month}-${day}`;
+		};
+
+		const startDateStr = formatLocalDate(startDate);
+		const endDateStr = formatLocalDate(today);
+
+		// Generate all days in range, initialized to 0
+		const createdMap = new Map<string, number>();
+		const currentDate = new Date(startDate);
+
+		while (currentDate <= today) {
+			const dateKey = formatLocalDate(currentDate);
+			createdMap.set(dateKey, 0);
+			currentDate.setDate(currentDate.getDate() + 1);
+		}
+
+		// Get actual data from SQLite
+		if (this.sqliteStore) {
+			const rawData = this.sqliteStore.getCardsCreatedByDate(startDateStr, endDateStr);
+			for (const entry of rawData) {
+				if (createdMap.has(entry.date)) {
+					createdMap.set(entry.date, entry.count);
+				}
+			}
+		} else {
+			// Fallback: iterate all cards (less efficient)
+			const allCards = await this.flashcardManager.getAllFSRSCards();
+			for (const card of allCards) {
+				if (!card.fsrs.createdAt) continue;
+				const createdDate = new Date(card.fsrs.createdAt);
+				createdDate.setHours(0, 0, 0, 0);
+				const dateKey = formatLocalDate(createdDate);
+				if (createdMap.has(dateKey)) {
+					createdMap.set(dateKey, (createdMap.get(dateKey) ?? 0) + 1);
+				}
+			}
+		}
+
+		// Convert to sorted array with cumulative
+		const entries = Array.from(createdMap.entries())
+			.map(([date, count]) => ({ date, count }))
+			.sort((a, b) => a.date.localeCompare(b.date));
+
+		let cumulative = 0;
+		return entries.map((entry) => {
+			cumulative += entry.count;
+			return {
+				date: entry.date,
+				count: entry.count,
+				cumulative,
+			};
+		});
+	}
+
+	/**
+	 * Get cards created on a specific date
+	 * @param date ISO date string (YYYY-MM-DD)
+	 */
+	async getCardsCreatedOnDate(date: string): Promise<FSRSFlashcardItem[]> {
+		// Use SQLite when available
+		if (this.sqliteStore) {
+			const cardIds = this.sqliteStore.getCardsCreatedOnDate(date);
+			const allCards = await this.flashcardManager.getAllFSRSCards();
+			const cardMap = new Map(allCards.map((c) => [c.id, c]));
+			return cardIds
+				.map((id) => cardMap.get(id))
+				.filter((c): c is FSRSFlashcardItem => c !== undefined);
+		}
+
+		// Fallback: filter all cards
+		const allCards = await this.flashcardManager.getAllFSRSCards();
+
+		// Parse date as local
+		const parts = date.split("-").map(Number);
+		const [year, month, day] = parts;
+		if (year === undefined || month === undefined || day === undefined) {
+			throw new Error(`Invalid date format: ${date}`);
+		}
+		const targetDate = new Date(year, month - 1, day);
+		targetDate.setHours(0, 0, 0, 0);
+
+		return allCards.filter((card) => {
+			if (!card.fsrs.createdAt) return false;
+
+			const createdDate = new Date(card.fsrs.createdAt);
+			createdDate.setHours(0, 0, 0, 0);
+
+			return createdDate.toDateString() === targetDate.toDateString();
+		});
+	}
+
+	/**
+	 * Get cards created vs reviewed history for comparison chart
+	 * Shows for each day: created count, reviewed count, and same-day reviewed count
+	 * @param range Time range for the chart
+	 */
+	async getCardsCreatedVsReviewedHistory(
+		range: StatsTimeRange
+	): Promise<CardsCreatedVsReviewedEntry[]> {
+		// "backlog" doesn't make sense for this chart
+		if (range === "backlog") {
+			return [];
+		}
+
+		const today = new Date();
+		today.setHours(0, 0, 0, 0);
+		const startDate = this.calculateStartDate(today, range);
+
+		const startDateStr = this.formatLocalDate(startDate);
+		const endDateStr = this.formatLocalDate(today);
+
+		// Use SQLite when available
+		if (this.sqliteStore) {
+			return this.sqliteStore.getCardsCreatedVsReviewed(startDateStr, endDateStr);
+		}
+
+		// Fallback: return empty (would need complex iteration without SQLite)
+		return [];
 	}
 }
