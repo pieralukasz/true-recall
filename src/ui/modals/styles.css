@@ -1535,12 +1535,53 @@
 }
 
 /* Editor source info (at bottom) */
-.episteme-editor-source {
+.episteme-editor-source-container {
 	text-align: center;
+	margin-top: 16px;
+}
+
+.episteme-editor-source {
+	display: inline-block;
 	color: var(--text-muted);
 	font-size: 0.9em;
-	margin-top: 16px;
 	opacity: 0.7;
+}
+
+.episteme-editor-source--clickable {
+	cursor: pointer;
+	transition: all 0.15s ease;
+}
+
+.episteme-editor-source--clickable:hover {
+	color: var(--text-normal);
+	opacity: 1;
+	text-decoration: underline;
+}
+
+/* Source input for changing source note */
+.episteme-editor-source-input-container {
+	display: flex;
+	justify-content: center;
+}
+
+.episteme-editor-source-input {
+	width: 300px;
+	padding: 8px 12px;
+	border: 1px solid var(--interactive-accent);
+	border-radius: 6px;
+	background: var(--background-primary);
+	color: var(--text-normal);
+	font-size: 14px;
+	text-align: center;
+}
+
+.episteme-editor-source-input:focus {
+	outline: none;
+	box-shadow: 0 0 0 2px rgba(var(--interactive-accent-rgb), 0.2);
+}
+
+.episteme-editor-source-input::placeholder {
+	color: var(--text-muted);
 }
 
 /* Modal buttons */
