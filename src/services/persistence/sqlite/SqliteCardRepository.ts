@@ -60,8 +60,8 @@ export class SqliteCardRepository {
                 id, due, stability, difficulty, reps, lapses, state,
                 last_review, scheduled_days, learning_step, suspended,
                 buried_until, created_at, updated_at,
-                question, answer, source_uid, tags
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                question, answer, source_uid
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         `, [
             cardId,
             data.due,
@@ -80,7 +80,6 @@ export class SqliteCardRepository {
             data.question || null,
             data.answer || null,
             data.sourceUid || null,
-            data.tags ? JSON.stringify(data.tags) : null,
         ]);
 
         this.onDataChange();
@@ -298,16 +297,6 @@ export class SqliteCardRepository {
             return idx >= 0 ? values[idx] : null;
         };
 
-        const tagsRaw = getCol("tags") as string | null;
-        let tags: string[] | undefined;
-        if (tagsRaw) {
-            try {
-                tags = JSON.parse(tagsRaw);
-            } catch {
-                tags = undefined;
-            }
-        }
-
         // Parse projects from GROUP_CONCAT result (comma-separated string)
         const projectsRaw = getCol("projects") as string | null;
         let projects: string[] | undefined;
@@ -335,7 +324,6 @@ export class SqliteCardRepository {
             sourceNoteName: getCol("source_note_name") as string | undefined,
             sourceNotePath: getCol("source_note_path") as string | undefined,
             projects,
-            tags,
         };
     }
 }

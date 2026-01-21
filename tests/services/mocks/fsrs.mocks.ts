@@ -35,7 +35,6 @@ export function createMockCard(
 		question: overrides.question,
 		answer: overrides.answer,
 		sourceUid: overrides.sourceUid,
-		tags: overrides.tags,
 	};
 }
 

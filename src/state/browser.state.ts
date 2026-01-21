@@ -29,7 +29,6 @@ function createInitialState(): BrowserState {
         sidebarFilters: {
             stateFilter: null,
             projectFilter: null,
-            tagFilter: null,
         },
         isLoading: true,
         previewCardId: null,
@@ -147,7 +146,6 @@ export class BrowserStateManager {
         this.state.sidebarFilters = {
             stateFilter: null,
             projectFilter: null,
-            tagFilter: null,
         };
         this.applyFiltersAndSort();
     }
@@ -317,21 +315,6 @@ export class BrowserStateManager {
     }
 
     /**
-     * Get unique tags from all cards
-     */
-    getUniqueTags(): string[] {
-        const tags = new Set<string>();
-        for (const card of this.state.allCards) {
-            if (card.tags) {
-                for (const tag of card.tags) {
-                    tags.add(tag);
-                }
-            }
-        }
-        return [...tags].sort();
-    }
-
-    /**
      * Get card counts by state
      */
     getStateCounts(): { new: number; learning: number; review: number; relearning: number; suspended: number; buried: number } {
@@ -400,7 +383,7 @@ export class BrowserStateManager {
      * Apply sidebar filters
      */
     private applySidebarFilters(cards: BrowserCardItem[]): BrowserCardItem[] {
-        const { stateFilter, projectFilter, tagFilter } = this.state.sidebarFilters;
+        const { stateFilter, projectFilter } = this.state.sidebarFilters;
         const now = new Date();
 
         return cards.filter(card => {
@@ -419,11 +402,6 @@ export class BrowserStateManager {
             // Project filter
             if (projectFilter !== null) {
                 if (!card.projects.includes(projectFilter)) return false;
-            }
-
-            // Tag filter
-            if (tagFilter !== null) {
-                if (!card.tags?.includes(tagFilter)) return false;
             }
 
             return true;
@@ -489,11 +467,6 @@ export class BrowserStateManager {
                         return false;
                 }
             }
-
-            case "tag":
-                return card.tags?.some(t =>
-                    t.toLowerCase().includes(token.value.toLowerCase())
-                ) ?? false;
 
             case "source":
                 return card.sourceNoteName?.toLowerCase().includes(token.value.toLowerCase()) ?? false;

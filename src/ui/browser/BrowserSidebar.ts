@@ -1,6 +1,6 @@
 /**
  * Browser Sidebar
- * Filter panel with state, project, and tag filters
+ * Filter panel with state and project filters
  */
 import { setIcon } from "obsidian";
 import { State } from "ts-fsrs";
@@ -9,7 +9,6 @@ import type { SidebarFilters } from "../../types/browser.types";
 export interface BrowserSidebarProps {
     stateCounts: Record<string, number>;
     projects: string[];
-    tags: string[];
     currentFilters: SidebarFilters;
     onFilterChange: (filters: Partial<SidebarFilters>) => void;
     onClearFilters: () => void;
@@ -67,11 +66,6 @@ export class BrowserSidebar {
         // Project filters
         if (this.props.projects.length > 0) {
             this.renderSection("Projects", () => this.renderProjectFilters());
-        }
-
-        // Tag filters
-        if (this.props.tags.length > 0) {
-            this.renderSection("Tags", () => this.renderTagFilters());
         }
     }
 
@@ -150,44 +144,9 @@ export class BrowserSidebar {
         }
     }
 
-    private renderTagFilters(): void {
-        const { tagFilter } = this.props.currentFilters;
-
-        // "All Tags" option
-        const allItem = this.container.createDiv({
-            cls: `filter-item${tagFilter === null ? " is-selected" : ""}`,
-        });
-        const allIcon = allItem.createSpan({ cls: "filter-icon" });
-        setIcon(allIcon, "tag");
-        allItem.createSpan({ text: "All Tags", cls: "filter-label" });
-        allItem.addEventListener("click", () => {
-            this.props.onFilterChange({ tagFilter: null });
-        });
-
-        // Individual tags
-        for (const tag of this.props.tags) {
-            const isSelected = tagFilter === tag;
-            const item = this.container.createDiv({
-                cls: `filter-item${isSelected ? " is-selected" : ""}`,
-            });
-
-            const iconEl = item.createSpan({ cls: "filter-icon" });
-            setIcon(iconEl, "hash");
-
-            item.createSpan({
-                text: tag.replace(/^#/, ""),
-                cls: "filter-label",
-            });
-
-            item.addEventListener("click", () => {
-                this.props.onFilterChange({ tagFilter: tag });
-            });
-        }
-    }
-
     private hasActiveFilters(): boolean {
-        const { stateFilter, projectFilter, tagFilter } = this.props.currentFilters;
-        return stateFilter !== null || projectFilter !== null || tagFilter !== null;
+        const { stateFilter, projectFilter } = this.props.currentFilters;
+        return stateFilter !== null || projectFilter !== null;
     }
 
     destroy(): void {

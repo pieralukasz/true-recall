@@ -385,7 +385,6 @@ export class BrowserView extends ItemView {
         this.sidebarComponent = new BrowserSidebar(this.sidebarContainer, {
             stateCounts: this.stateManager.getStateCounts(),
             projects: this.stateManager.getUniqueProjects(),
-            tags: this.stateManager.getUniqueTags(),
             currentFilters: state.sidebarFilters,
             onFilterChange: (filters) => this.stateManager.setSidebarFilters(filters),
             onClearFilters: () => this.stateManager.clearFilters(),

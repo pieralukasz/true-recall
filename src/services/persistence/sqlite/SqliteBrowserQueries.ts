@@ -45,32 +45,6 @@ export class SqliteBrowserQueries {
     }
 
     /**
-     * Get unique tags from all cards
-     */
-    getUniqueTags(): string[] {
-        const result = this.db.exec(`
-            SELECT DISTINCT tags FROM cards
-            WHERE tags IS NOT NULL AND tags != '[]'
-        `);
-
-        const data = getQueryResult(result);
-        if (!data) return [];
-
-        const allTags = new Set<string>();
-        for (const row of data.values) {
-            const tagsJson = row[0] as string;
-            try {
-                const tags = JSON.parse(tagsJson) as string[];
-                tags.forEach(t => allTags.add(t));
-            } catch {
-                // Skip invalid JSON
-            }
-        }
-
-        return [...allTags].sort();
-    }
-
-    /**
      * Get unique projects from all cards
      */
     getUniqueProjects(): string[] {
@@ -313,17 +287,6 @@ export class SqliteBrowserQueries {
             return idx >= 0 ? values[idx] : null;
         };
 
-        // Parse tags
-        const tagsRaw = getCol("tags") as string | null;
-        let tags: string[] = [];
-        if (tagsRaw) {
-            try {
-                tags = JSON.parse(tagsRaw);
-            } catch {
-                tags = [];
-            }
-        }
-
         // Parse projects
         const projectsRaw = getCol("projects") as string | null;
         const projects = projectsRaw
@@ -350,7 +313,6 @@ export class SqliteBrowserQueries {
             sourceNoteName: getCol("source_note_name") as string || "",
             sourceNotePath: getCol("source_note_path") as string || "",
             projects,
-            tags,
         };
     }
 }

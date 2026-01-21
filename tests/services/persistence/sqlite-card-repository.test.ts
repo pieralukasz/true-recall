@@ -37,8 +37,7 @@ describe("SqliteCardRepository", () => {
 				updated_at INTEGER,
 				question TEXT,
 				answer TEXT,
-				source_uid TEXT,
-				tags TEXT
+				source_uid TEXT
 			)
 		`);
 

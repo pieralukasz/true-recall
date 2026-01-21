@@ -73,8 +73,6 @@ export interface FSRSCardData {
     sourceNotePath?: string;
     /** Projects associated with this card (via JOIN note_projects/projects) */
     projects?: string[];
-    /** Card tags (JSON array) */
-    tags?: string[];
 }
 
 /**
