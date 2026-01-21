@@ -207,14 +207,7 @@ export class BrowserView extends ItemView {
         if (result.cancelled) return;
 
         try {
-            const sqlStore = this.plugin.cardStore as {
-                getBrowserQueries?: () => {
-                    updateCardContent: (cardId: string, q: string, a: string) => void;
-                } | null;
-            };
-
-            const browserQueries = sqlStore.getBrowserQueries?.();
-            browserQueries?.updateCardContent(card.id, result.question, result.answer);
+            this.plugin.flashcardManager.updateCardContent(card.id, result.question, result.answer);
 
             // Update state
             this.stateManager.updateCard(card.id, {
