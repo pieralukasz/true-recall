@@ -988,6 +988,8 @@ export class FlashcardPanelView extends ItemView {
             currentFilePath: state.currentFile.path,
             sourceNoteName: state.currentFile.basename,
             projects,
+            prefillQuestion: "question",
+            prefillAnswer: "answer",
             autocompleteFolder: this.plugin.settings.autocompleteSearchFolder,
         });
 

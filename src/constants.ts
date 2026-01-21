@@ -146,9 +146,14 @@ export const DEFAULT_SETTINGS: EpistemeSettings = {
 
 	// Zettelkasten
 	zettelFolder: "Zettel",
+	zettelTemplatePath: "",
 
 	// Folder Exclusions
 	excludedFolders: [],
+
+	// Backup Settings
+	autoBackupOnLoad: false,
+	maxBackups: 10,
 };
 
 // ===== FSRS Default Weights =====

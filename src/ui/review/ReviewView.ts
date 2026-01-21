@@ -6,7 +6,7 @@
 import { ItemView, WorkspaceLeaf, MarkdownRenderer, Notice, Platform, normalizePath, Menu, setIcon, TFile, type ViewStateResult } from "obsidian";
 import { Rating, State, type Grade } from "ts-fsrs";
 import { VIEW_TYPE_REVIEW, UI_CONFIG } from "../../constants";
-import { FSRSService, ReviewService, FlashcardManager, SessionPersistenceService, getEventBus } from "../../services";
+import { FSRSService, ReviewService, FlashcardManager, SessionPersistenceService, getEventBus, ZettelTemplateService } from "../../services";
 import { ReviewStateManager } from "../../state";
 import { extractFSRSSettings, type FSRSFlashcardItem, type SchedulingPreview } from "../../types";
 import type { CardRemovedEvent, CardUpdatedEvent, BulkChangeEvent } from "../../types/events.types";
@@ -14,6 +14,15 @@ import { MoveCardModal, FlashcardEditorModal } from "../modals";
 import { toggleTextareaWrap, insertAtTextareaCursor, setupAutoResize } from "../components";
 import type EpistemePlugin from "../../main";
 import type { ReviewViewState, UndoEntry } from "./review.types";
+
+/**
+ * Templater plugin interface for processing templates
+ */
+interface TemplaterPlugin {
+    templater?: {
+        parse_commands: (file: TFile, force: boolean) => Promise<void>;
+    };
+}
 
 export class ReviewView extends ItemView {
     private plugin: EpistemePlugin;
@@ -1159,6 +1168,17 @@ export class ReviewView extends ItemView {
      * Handle keyboard shortcuts for review actions
      */
     private handleKeyDown = (e: KeyboardEvent): void => {
+        // Only handle keyboard events when this view is the active leaf
+        const activeLeaf = this.app.workspace.activeLeaf;
+        if (activeLeaf?.view !== this) {
+            return;
+        }
+
+        // Skip all shortcuts if any modal is open
+        if (document.querySelector('.modal-container')) {
+            return;
+        }
+
         // Ignore if typing in input/textarea or contenteditable
         if (
             e.target instanceof HTMLInputElement ||
@@ -1282,18 +1302,36 @@ export class ReviewView extends ItemView {
             counter++;
         }
 
-        // Build content
-        const sourceNote = card.sourceNoteName || "Unknown";
-        const content = `${card.question}
+        // Generate content using template service
+        const templateService = new ZettelTemplateService(this.app);
+        const templatePath = this.plugin.settings.zettelTemplatePath;
 
-${card.answer}
+        // Check if template exists (if a path is specified)
+        if (templatePath) {
+            const templateFile = this.app.vault.getAbstractFileByPath(templatePath);
+            if (!templateFile) {
+                new Notice(`Template not found: ${templatePath}. Using default template.`);
+            }
+        }
 
----
-Source: [[${sourceNote}]]
-`;
+        const content = await templateService.generateContent(templatePath, card);
 
-        // Create file and open it
-        await this.app.vault.create(filePath, content);
+        // Create file
+        const file = await this.app.vault.create(filePath, content);
+
+        // Process Templater syntax if Templater plugin is installed
+        const templaterPlugin = (this.app as unknown as { plugins: { plugins: Record<string, TemplaterPlugin> } })
+            .plugins.plugins['templater-obsidian'];
+        if (templaterPlugin?.templater?.parse_commands) {
+            try {
+                await templaterPlugin.templater.parse_commands(file, true);
+            } catch (error) {
+                console.error("Templater processing failed:", error);
+                // Continue anyway - file was created with basic content
+            }
+        }
+
+        // Open the file
         await this.app.workspace.openLinkText(filePath, "", true);
     }
 
@@ -1428,6 +1466,10 @@ Source: [[${sourceNote}]]
             }
 
             new Notice("Bury undone");
+        } else if (actionType === "suspend") {
+            // Insert the card back at its previous position (with suspended: false restored)
+            this.stateManager.insertCardAtPosition({ ...card, fsrs: originalFsrs }, previousIndex);
+            new Notice("Suspend undone");
         }
 
         // Update UI
@@ -1493,12 +1535,14 @@ Source: [[${sourceNote}]]
         const card = this.stateManager.getCurrentCard();
         if (!card) return;
 
-        // Open modal to enter question/answer
+        // Open modal to enter question/answer (pre-fill with current card's Q&A)
         const modal = new FlashcardEditorModal(this.app, {
             mode: "add",
             currentFilePath: card.filePath,
             sourceNoteName: card.sourceNoteName,
             projects: card.projects,
+            prefillQuestion: card.question,
+            prefillAnswer: card.answer,
             autocompleteFolder: this.plugin.settings.autocompleteSearchFolder,
         });
 
@@ -1575,6 +1619,16 @@ Source: [[${sourceNote}]]
         const card = this.stateManager.getCurrentCard();
         if (!card) return;
 
+        const currentIndex = this.stateManager.getState().currentIndex;
+
+        // Store undo entry BEFORE making changes
+        this.undoStack.push({
+            actionType: "suspend",
+            card: { ...card },
+            originalFsrs: { ...card.fsrs },
+            previousIndex: currentIndex,
+        });
+
         // Mark card as suspended
         const updatedFsrs = { ...card.fsrs, suspended: true };
 
@@ -1583,6 +1637,8 @@ Source: [[${sourceNote}]]
         } catch (error) {
             console.error("Error suspending card:", error);
             new Notice("Failed to suspend card");
+            // Remove the undo entry since the operation failed
+            this.undoStack.pop();
             return;
         }
 

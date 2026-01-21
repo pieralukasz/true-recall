@@ -42,6 +42,7 @@ export {
 // Persistence services
 export { SqliteStoreService } from "./persistence/sqlite";
 export { SessionPersistenceService } from "./persistence/session-persistence.service";
+export { BackupService, type BackupInfo } from "./persistence/backup.service";
 
 // Stats services
 export {
@@ -71,3 +72,6 @@ export {
 	getNotificationService,
 	NOTIFICATION_DURATION,
 } from "./ui/notification.service";
+
+// Zettel services
+export { ZettelTemplateService } from "./zettel/zettel-template.service";
