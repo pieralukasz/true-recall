@@ -165,9 +165,7 @@ describe("Zod Schemas", () => {
             const data = {
                 openRouterApiKey: "sk-test-key",
                 aiModel: "google/gemini-3-flash-preview",
-                flashcardsFolder: "Flashcards",
                 autoSyncToAnki: true,
-                storeSourceContent: false,
             };
 
             const result = SettingsSchema.safeParse(data);
@@ -179,9 +177,7 @@ describe("Zod Schemas", () => {
             const data = {
                 openRouterApiKey: "",
                 aiModel: "google/gemini-3-flash-preview",
-                flashcardsFolder: "Flashcards",
                 autoSyncToAnki: false,
-                storeSourceContent: false,
             };
 
             const result = SettingsSchema.safeParse(data);
@@ -193,9 +189,7 @@ describe("Zod Schemas", () => {
             const data = {
                 openRouterApiKey: "key",
                 aiModel: "invalid-model",
-                flashcardsFolder: "Flashcards",
                 autoSyncToAnki: false,
-                storeSourceContent: false,
             };
 
             const result = SettingsSchema.safeParse(data);
@@ -213,9 +207,7 @@ describe("Zod Schemas", () => {
 
             expect(result.success).toBe(true);
             if (result.success) {
-                expect(result.data.flashcardsFolder).toBe("Flashcards");
                 expect(result.data.autoSyncToAnki).toBe(false);
-                expect(result.data.storeSourceContent).toBe(false);
             }
         });
     });

@@ -5,3 +5,54 @@
 .episteme-api-input {
 	width: 300px;
 }
+
+/* ===== Settings Tabs ===== */
+.episteme-settings-tabs {
+	display: flex;
+	gap: 4px;
+	margin-bottom: 20px;
+	border-bottom: 1px solid var(--background-modifier-border);
+	padding-bottom: 8px;
+}
+
+.episteme-settings-tab-btn {
+	padding: 8px 16px;
+	border: none;
+	background: transparent;
+	color: var(--text-muted);
+	cursor: pointer;
+	border-radius: 4px 4px 0 0;
+	font-size: var(--font-ui-small);
+	font-weight: 500;
+	transition: background-color 0.15s ease, color 0.15s ease;
+}
+
+.episteme-settings-tab-btn:hover {
+	background: var(--background-modifier-hover);
+	color: var(--text-normal);
+}
+
+.episteme-settings-tab-btn.is-active {
+	background: var(--interactive-accent);
+	color: var(--text-on-accent);
+}
+
+.episteme-settings-tab-content {
+	display: none;
+	animation: episteme-fade-in 0.2s ease;
+}
+
+.episteme-settings-tab-content.is-active {
+	display: block;
+}
+
+@keyframes episteme-fade-in {
+	from {
+		opacity: 0;
+		transform: translateY(-4px);
+	}
+	to {
+		opacity: 1;
+		transform: translateY(0);
+	}
+}

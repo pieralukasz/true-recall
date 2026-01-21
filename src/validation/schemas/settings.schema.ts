@@ -22,9 +22,7 @@ export const AIModelSchema = z.enum(modelKeys);
 export const SettingsSchema = z.object({
     openRouterApiKey: z.string(),
     aiModel: AIModelSchema,
-    flashcardsFolder: z.string().min(1, "Flashcards folder cannot be empty").default("Flashcards"),
     autoSyncToAnki: z.boolean().default(false),
-    storeSourceContent: z.boolean().default(false),
 });
 
 /**

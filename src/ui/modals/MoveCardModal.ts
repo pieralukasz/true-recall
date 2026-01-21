@@ -2,7 +2,7 @@
  * Move Card Modal
  * Allows user to select a target note for moving flashcard(s)
  */
-import { App, TFile, normalizePath } from "obsidian";
+import { App, TFile } from "obsidian";
 import { FLASHCARD_CONFIG } from "../../constants";
 import { BaseModal } from "./BaseModal";
 
@@ -30,8 +30,6 @@ export interface MoveCardModalOptions {
 	cardCount: number;
 	/** Current source note name (to exclude from list) */
 	sourceNoteName?: string;
-	/** Flashcards folder path to exclude */
-	flashcardsFolder: string;
 	/** Card question text (for backlink extraction) */
 	cardQuestion?: string;
 	/** Card answer text (for backlink extraction) */
@@ -343,13 +341,8 @@ export class MoveCardModal extends BaseModal {
 	}
 
 	private getValidNotes(): TFile[] {
-		const flashcardsFolderNormalized = normalizePath(this.options.flashcardsFolder);
-
 		return this.app.vault.getMarkdownFiles().filter((file) => {
-			// Exclude flashcard files
-			if (file.path.startsWith(flashcardsFolderNormalized + "/")) {
-				return false;
-			}
+			// Exclude flashcard files by name pattern
 			if (isFlashcardFileByName(file.name)) {
 				return false;
 			}

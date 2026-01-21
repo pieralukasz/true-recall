@@ -20,7 +20,6 @@ export interface CardActionsHandlerDeps {
 	fsrsService: FSRSService;
 	reviewService: ReviewService;
 	settings: {
-		flashcardsFolder: string;
 		autocompleteSearchFolder: string;
 		dayStartHour: number;
 	};
@@ -247,7 +246,6 @@ export class CardActionsHandler {
 		const modal = new MoveCardModal(this.deps.app, {
 			cardCount: 1,
 			sourceNoteName: card.sourceNoteName,
-			flashcardsFolder: this.deps.settings.flashcardsFolder,
 			cardQuestion: card.question,
 			cardAnswer: card.answer,
 		});

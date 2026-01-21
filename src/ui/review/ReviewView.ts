@@ -1444,7 +1444,6 @@ Source: [[${sourceNote}]]
         const modal = new MoveCardModal(this.app, {
             cardCount: 1,
             sourceNoteName: card.sourceNoteName,
-            flashcardsFolder: this.plugin.settings.flashcardsFolder,
             cardQuestion: card.question,
             cardAnswer: card.answer,
         });
