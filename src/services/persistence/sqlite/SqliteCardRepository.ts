@@ -269,19 +269,6 @@ export class SqliteCardRepository {
         this.onDataChange();
     }
 
-    /**
-     * Update created_at for all cards with a given source_uid
-     * Used to repair incorrect created_at dates from migration
-     */
-    updateCardsCreatedAt(sourceUid: string, createdAt: number): number {
-        this.db.run(`
-            UPDATE cards SET created_at = ?, updated_at = ?
-            WHERE source_uid = ?
-        `, [createdAt, Date.now(), sourceUid]);
-        this.onDataChange();
-        return this.db.getRowsModified();
-    }
-
     // ===== Helper =====
 
     /**
