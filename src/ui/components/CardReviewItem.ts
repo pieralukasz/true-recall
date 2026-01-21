@@ -91,6 +91,9 @@ export class CardReviewItem extends BaseComponent {
 			// Question field
 			this.renderField(contentEl, "question", card.question, filePath, app, component);
 
+			// Divider between question and answer
+			contentEl.createEl("hr", { cls: "episteme-editor-divider" });
+
 			// Answer field
 			this.renderField(contentEl, "answer", card.answer, filePath, app, component);
 
@@ -114,7 +117,6 @@ export class CardReviewItem extends BaseComponent {
 			cls: "episteme-review-field episteme-review-field--view",
 		});
 
-		fieldEl.createDiv({ cls: "episteme-review-field-label", text: `${field === "question" ? "Question" : "Answer"}:` });
 		const fieldContent = fieldEl.createDiv({ cls: "episteme-md-content" });
 
 		if (field === "question") {
@@ -160,13 +162,6 @@ export class CardReviewItem extends BaseComponent {
 
 		const { field } = this.editMode;
 		const content = field === "question" ? card.question : card.answer;
-		const label = field === "question" ? "Question:" : "Answer:";
-
-		// Label for the field being edited
-		this.element.createDiv({
-			cls: "episteme-review-field-label",
-			text: label,
-		});
 
 		// Use EditableTextField component with toolbar
 		this.editableField = createEditableTextField(this.element, {

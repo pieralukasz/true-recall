@@ -699,6 +699,9 @@ export class FlashcardPanelView extends ItemView {
         const state = this.stateManager.getState();
         if (!state.currentFile) return;
 
+        // TODO: In the future, avoid full re-render - aim for targeted DOM update instead
+        const scrollPosition = this.contentContainer.scrollTop;
+
         // Use card directly - it already has question/answer from the panel UI
         // No need to look up from SQLite which may return cards with empty content
         const modal = new FlashcardEditorModal(this.app, {
@@ -739,6 +742,10 @@ export class FlashcardPanelView extends ItemView {
             }
 
             await this.loadFlashcardInfo();
+
+            requestAnimationFrame(() => {
+                this.contentContainer.scrollTop = scrollPosition;
+            });
         } catch (error) {
             new Notice(`Failed to update flashcard: ${error instanceof Error ? error.message : String(error)}`);
         }
@@ -751,6 +758,9 @@ export class FlashcardPanelView extends ItemView {
     ): Promise<void> {
         const state = this.stateManager.getState();
         if (!state.currentFile || !state.flashcardInfo) return;
+
+        // TODO: In the future, avoid full re-render - aim for targeted DOM update instead
+        const scrollPosition = this.contentContainer.scrollTop;
 
         try {
             if (field === "question") {
@@ -771,6 +781,10 @@ export class FlashcardPanelView extends ItemView {
 
             // Reload flashcard info to reflect changes
             await this.loadFlashcardInfo();
+
+            requestAnimationFrame(() => {
+                this.contentContainer.scrollTop = scrollPosition;
+            });
         } catch (error) {
             new Notice(`Failed to update flashcard: ${error instanceof Error ? error.message : String(error)}`);
         }
