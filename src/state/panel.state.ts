@@ -47,6 +47,8 @@ function createInitialState(): PanelState {
         selectedText: "",
         hasSelection: false,
         sourceNoteName: null,
+        uncollectedCount: 0,
+        hasUncollectedFlashcards: false,
     };
 }
 
@@ -275,6 +277,16 @@ export class PanelStateManager {
         this.setState({
             selectedText: "",
             hasSelection: false,
+        });
+    }
+
+    /**
+     * Set uncollected flashcards info
+     */
+    setUncollectedInfo(count: number): void {
+        this.setState({
+            uncollectedCount: count,
+            hasUncollectedFlashcards: count > 0,
         });
     }
 

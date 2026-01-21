@@ -20,6 +20,9 @@ export interface PanelFooterProps {
 	// Selection state for literature notes
 	hasSelection?: boolean;
 	selectedText?: string;
+	// Collect flashcards from markdown
+	hasUncollectedFlashcards?: boolean;
+	uncollectedCount?: number;
 	onGenerate?: () => void;
 	onUpdate?: () => void;
 	onApplyDiff?: () => void;
@@ -27,6 +30,7 @@ export interface PanelFooterProps {
 	onMoveSelected?: () => void;
 	onDeleteSelected?: () => void;
 	onAddFlashcard?: () => void;
+	onCollect?: () => void;
 }
 
 /**
@@ -124,11 +128,14 @@ export class PanelFooter extends BaseComponent {
 			status,
 			isFlashcardFile,
 			selectedCount,
+			hasUncollectedFlashcards,
+			uncollectedCount,
 			onGenerate,
 			onUpdate,
 			onMoveSelected,
 			onDeleteSelected,
 			onAddFlashcard,
+			onCollect,
 		} = this.props;
 
 		if (!this.element) return;
@@ -161,6 +168,15 @@ export class PanelFooter extends BaseComponent {
 		// Don't show other buttons for flashcard files
 		if (isFlashcardFile) {
 			return;
+		}
+
+		// ===== COLLECT BUTTON (when uncollected flashcards exist) =====
+		if (hasUncollectedFlashcards && onCollect) {
+			const collectBtn = buttonsWrapper.createEl("button", {
+				cls: "episteme-btn-collect",
+			});
+			collectBtn.textContent = `Collect (${uncollectedCount})`;
+			this.events.addEventListener(collectBtn, "click", onCollect);
 		}
 
 		// ===== SELECTION-BASED UI (ANY NOTE TYPE WITH SELECTION) =====
