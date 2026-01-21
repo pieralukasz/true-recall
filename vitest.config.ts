@@ -19,6 +19,8 @@ export default defineConfig({
         // Ensure TypeScript paths work
         alias: {
             "@": "/src",
+            // Mock obsidian module for testing
+            "obsidian": new URL("./tests/__mocks__/obsidian.ts", import.meta.url).pathname,
         },
     },
 });
