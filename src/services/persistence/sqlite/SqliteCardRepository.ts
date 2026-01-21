@@ -269,6 +269,24 @@ export class SqliteCardRepository {
         this.onDataChange();
     }
 
+    /**
+     * Get card ID by exact question match
+     * Returns the card ID if found, undefined otherwise
+     */
+    getCardIdByQuestion(question: string): string | undefined {
+        const result = this.db.exec(
+            `SELECT id FROM cards WHERE question = ? LIMIT 1`,
+            [question]
+        );
+        const firstResult = result[0];
+        if (!firstResult) return undefined;
+        const firstRow = firstResult.values[0];
+        if (firstRow && firstRow[0] != null) {
+            return firstRow[0] as string;
+        }
+        return undefined;
+    }
+
     // ===== Helper =====
 
     /**

@@ -2,9 +2,10 @@
  * Settings Tab UI
  * Plugin settings configuration interface
  */
-import { App, Notice, PluginSettingTab, Setting } from "obsidian";
+import { App, Notice, PluginSettingTab, Setting, TFile } from "obsidian";
 import type EpistemePlugin from "../../main";
 import { DEFAULT_SETTINGS, AI_MODELS_EXTENDED, FSRS_CONFIG, SYSTEM_PROMPT, UPDATE_SYSTEM_PROMPT } from "../../constants";
+import { TemplatePickerModal } from "../modals";
 import type { AIModelKey, AIModelInfo } from "../../constants";
 import type { EpistemeSettings, ReviewViewMode, NewCardOrder, ReviewOrder, NewReviewMix, CustomSessionInterface } from "../../types";
 
@@ -546,6 +547,66 @@ export class EpistemeSettingTab extends PluginSettingTab {
                     await this.plugin.saveSettings();
                 }));
 
+        // Template file setting
+        const templateSetting = new Setting(container)
+            .setName("Zettel template")
+            .setDesc("Template file for creating zettels. Variables: {{question}}, {{answer}}, {{source}}, {{date}}, {{time}}, {{datetime}}, {{card_id}}");
+
+        const templateInputEl = templateSetting.controlEl.createEl("input", {
+            type: "text",
+            cls: "episteme-template-input",
+            placeholder: "Default template",
+            value: this.plugin.settings.zettelTemplatePath,
+        });
+        templateInputEl.readOnly = true;
+        templateInputEl.style.cursor = "pointer";
+
+        // Display basename if path is set, otherwise show placeholder
+        const updateTemplateDisplay = (): void => {
+            const path = this.plugin.settings.zettelTemplatePath;
+            if (path) {
+                const file = this.app.vault.getAbstractFileByPath(path);
+                if (file instanceof TFile) {
+                    templateInputEl.value = file.basename;
+                } else {
+                    templateInputEl.value = path;
+                }
+            } else {
+                templateInputEl.value = "";
+            }
+        };
+        updateTemplateDisplay();
+
+        templateInputEl.addEventListener("click", async () => {
+            const modal = new TemplatePickerModal(this.app);
+            const result = await modal.openAndWait();
+            if (!result.cancelled) {
+                this.plugin.settings.zettelTemplatePath = result.templatePath ?? "";
+                await this.plugin.saveSettings();
+                updateTemplateDisplay();
+            }
+        });
+
+        templateSetting.addButton(button => button
+            .setButtonText("Browse")
+            .onClick(async () => {
+                const modal = new TemplatePickerModal(this.app);
+                const result = await modal.openAndWait();
+                if (!result.cancelled) {
+                    this.plugin.settings.zettelTemplatePath = result.templatePath ?? "";
+                    await this.plugin.saveSettings();
+                    updateTemplateDisplay();
+                }
+            }));
+
+        templateSetting.addButton(button => button
+            .setButtonText("Clear")
+            .onClick(async () => {
+                this.plugin.settings.zettelTemplatePath = "";
+                await this.plugin.saveSettings();
+                updateTemplateDisplay();
+            }));
+
         // ===== Exclusions Section =====
         container.createEl("h2", { text: "Exclusions" });
 
@@ -561,6 +622,56 @@ export class EpistemeSettingTab extends PluginSettingTab {
                         .filter(s => s.length > 0);
                     this.plugin.settings.excludedFolders = folders;
                     await this.plugin.saveSettings();
+                }));
+
+        // ===== Backup Section =====
+        container.createEl("h2", { text: "Database Backup" });
+
+        const backupInfo = container.createDiv({ cls: "setting-item-description" });
+        backupInfo.innerHTML = `
+            <p>Create backups of your flashcard database to prevent data loss.</p>
+            <p>Backups are stored in <code>.episteme/backups/</code></p>
+        `;
+
+        new Setting(container)
+            .setName("Automatic backup on load")
+            .setDesc("Create a backup automatically when the plugin loads")
+            .addToggle(toggle => toggle
+                .setValue(this.plugin.settings.autoBackupOnLoad)
+                .onChange(async (value) => {
+                    this.plugin.settings.autoBackupOnLoad = value;
+                    await this.plugin.saveSettings();
+                }));
+
+        new Setting(container)
+            .setName("Maximum backups to keep")
+            .setDesc("Number of backups to keep (0 = unlimited). Oldest backups are deleted automatically.")
+            .addText(text => text
+                .setPlaceholder("10")
+                .setValue(String(this.plugin.settings.maxBackups))
+                .onChange(async (value) => {
+                    const num = parseInt(value) || 0;
+                    this.plugin.settings.maxBackups = Math.max(0, num);
+                    await this.plugin.saveSettings();
+                }));
+
+        new Setting(container)
+            .setName("Create backup now")
+            .setDesc("Manually create a backup of the current database")
+            .addButton(button => button
+                .setButtonText("Create Backup")
+                .onClick(async () => {
+                    await this.plugin.createManualBackup();
+                }));
+
+        new Setting(container)
+            .setName("Restore from backup")
+            .setDesc("Restore the database from a previous backup (requires Obsidian reload)")
+            .addButton(button => button
+                .setButtonText("Restore...")
+                .setWarning()
+                .onClick(async () => {
+                    await this.plugin.openRestoreBackupModal();
                 }));
     }
 
