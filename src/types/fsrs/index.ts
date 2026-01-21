@@ -39,6 +39,8 @@ export type {
     ExtendedDailyStats,
     CardMaturityBreakdown,
     FutureDueEntry,
+    CardsCreatedEntry,
+    CardsCreatedVsReviewedEntry,
     StatsTimeRange,
     RetentionEntry,
     TodaySummary,

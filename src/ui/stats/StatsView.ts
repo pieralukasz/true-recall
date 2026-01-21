@@ -23,7 +23,7 @@ import { StatsCalculatorService, getEventBus } from "../../services";
 import { CardPreviewModal } from "../modals";
 import { NLQueryPanel } from "./NLQueryPanel";
 import type EpistemePlugin from "../../main";
-import type { StatsTimeRange, CardMaturityBreakdown, FutureDueEntry, RetentionEntry } from "../../types";
+import type { StatsTimeRange, CardMaturityBreakdown, FutureDueEntry, CardsCreatedEntry, CardsCreatedVsReviewedEntry, RetentionEntry } from "../../types";
 import type { CardReviewedEvent, CardAddedEvent, CardRemovedEvent, CardUpdatedEvent, BulkChangeEvent, StoreSyncedEvent } from "../../types/events.types";
 
 // Register Chart.js components
@@ -50,6 +50,8 @@ export class StatsView extends ItemView {
 
 	// Data for click handlers
 	private futureDueData: FutureDueEntry[] = [];
+	private cardsCreatedData: CardsCreatedEntry[] = [];
+	private createdVsReviewedData: CardsCreatedVsReviewedEntry[] = [];
 
 	// Event subscriptions for cross-component reactivity
 	private eventUnsubscribers: (() => void)[] = [];
@@ -59,6 +61,8 @@ export class StatsView extends ItemView {
 	private todayEl!: HTMLElement;
 	private rangeSelectorEl!: HTMLElement;
 	private futureDueEl!: HTMLElement;
+	private cardsCreatedEl!: HTMLElement;
+	private createdVsReviewedEl!: HTMLElement;
 	private retentionEl!: HTMLElement;
 	private cardCountsEl!: HTMLElement;
 	private calendarEl!: HTMLElement;
@@ -100,6 +104,12 @@ export class StatsView extends ItemView {
 
 		// Subscribe to EventBus for cross-component reactivity
 		this.subscribeToEvents();
+
+		// Set SQLite store for optimized queries (like Created vs Reviewed chart)
+		const sqliteStore = this.plugin.getSqliteStore();
+		if (sqliteStore) {
+			this.statsCalculator.setSqliteStore(sqliteStore);
+		}
 
 		// Initial render
 		await this.refresh();
@@ -194,16 +204,22 @@ export class StatsView extends ItemView {
 		// 3. Future Due Section (bar chart)
 		this.futureDueEl = container.createDiv({ cls: "episteme-stats-section stats-future" });
 
-		// 4. Retention Rate Section (line chart)
+		// 4. Cards Created Section (bar chart - historical)
+		this.cardsCreatedEl = container.createDiv({ cls: "episteme-stats-section stats-created" });
+
+		// 5. Created vs Reviewed Section (grouped bar chart)
+		this.createdVsReviewedEl = container.createDiv({ cls: "episteme-stats-section stats-created-vs-reviewed" });
+
+		// 6. Retention Rate Section (line chart)
 		this.retentionEl = container.createDiv({ cls: "episteme-stats-section stats-retention" });
 
-		// 5. Card Counts Section (pie chart)
+		// 7. Card Counts Section (pie chart)
 		this.cardCountsEl = container.createDiv({ cls: "episteme-stats-section stats-counts" });
 
-		// 6. Calendar Heatmap Section
+		// 8. Calendar Heatmap Section
 		this.calendarEl = container.createDiv({ cls: "episteme-stats-section stats-calendar" });
 
-		// 7. NL Query Section (AI-powered)
+		// 9. NL Query Section (AI-powered)
 		this.nlQueryEl = container.createDiv({ cls: "episteme-stats-section stats-nl-query" });
 		this.nlQueryPanel = new NLQueryPanel(this.nlQueryEl, this.app, this);
 		this.nlQueryPanel.render();
@@ -245,6 +261,8 @@ export class StatsView extends ItemView {
 		// Re-render charts
 		await Promise.all([
 			this.renderFutureDueChart(),
+			this.renderCardsCreatedChart(),
+			this.renderCreatedVsReviewedChart(),
 			this.renderRetentionChart(),
 		]);
 	}
@@ -253,6 +271,8 @@ export class StatsView extends ItemView {
 		await Promise.all([
 			this.renderTodaySummary(),
 			this.renderFutureDueChart(),
+			this.renderCardsCreatedChart(),
+			this.renderCreatedVsReviewedChart(),
 			this.renderRetentionChart(),
 			this.renderCardCountsChart(),
 			this.renderCalendarHeatmap(),
@@ -428,6 +448,240 @@ export class StatsView extends ItemView {
 			cards,
 			flashcardManager: this.plugin.flashcardManager,
 		}).open();
+	}
+
+	private async renderCardsCreatedChart(): Promise<void> {
+		this.cardsCreatedEl.empty();
+		this.cardsCreatedEl.createEl("h3", { text: "Cards created" });
+
+		// Skip for "backlog" range (it's for future predictions)
+		if (this.currentRange === "backlog") {
+			this.cardsCreatedEl.createDiv({
+				cls: "stats-no-data",
+				text: "Select a time range to see creation history",
+			});
+			return;
+		}
+
+		// Create elements synchronously before async calls
+		const canvasContainer = this.cardsCreatedEl.createDiv({ cls: "stats-chart-container" });
+		const canvas = canvasContainer.createEl("canvas", { cls: "stats-chart-canvas" });
+		const summaryEl = this.cardsCreatedEl.createDiv({ cls: "stats-chart-summary" });
+
+		const data = await this.statsCalculator.getCardsCreatedHistoryFilled(this.currentRange);
+		this.cardsCreatedData = data; // Store for click handler
+
+		if (data.length === 0) {
+			this.cardsCreatedEl.empty();
+			this.cardsCreatedEl.createEl("h3", { text: "Cards created" });
+			this.cardsCreatedEl.createDiv({
+				cls: "stats-no-data",
+				text: "No data available",
+			});
+			return;
+		}
+
+		// Destroy existing chart if present
+		if (this.charts.has("cardsCreated")) {
+			this.charts.get("cardsCreated")!.destroy();
+		}
+
+		// Format labels
+		const labels = data.map((d) => {
+			const date = new Date(d.date);
+			return `${date.getDate()}/${date.getMonth() + 1}`;
+		});
+
+		const maxTicks = this.getMaxTicksForRange();
+
+		const chart = new Chart(canvas, {
+			type: "bar",
+			data: {
+				labels,
+				datasets: [
+					{
+						label: "Cards Created",
+						data: data.map((d) => d.count),
+						backgroundColor: "rgba(34, 197, 94, 0.7)", // Green for creation
+						borderColor: "rgb(34, 197, 94)",
+						borderWidth: 1,
+					},
+				],
+			},
+			options: {
+				responsive: true,
+				maintainAspectRatio: false,
+				plugins: {
+					legend: { display: false },
+					tooltip: {
+						callbacks: {
+							title: (items) => {
+								if (items.length > 0) {
+									const index = items[0]!.dataIndex;
+									return this.formatDateForDisplay(data[index]!.date);
+								}
+								return "";
+							},
+						},
+					},
+				},
+				scales: {
+					y: {
+						beginAtZero: true,
+						ticks: { precision: 0 },
+					},
+					x: {
+						ticks: {
+							maxRotation: 45,
+							minRotation: 45,
+							maxTicksLimit: maxTicks,
+						},
+					},
+				},
+				onClick: (_event, elements) => {
+					if (elements.length > 0) {
+						const index = elements[0]!.index;
+						const entry = data[index];
+						if (entry && entry.count > 0) {
+							void this.openCardPreviewForCreatedDate(entry.date);
+						}
+					}
+				},
+			},
+		});
+		this.charts.set("cardsCreated", chart);
+
+		// Summary
+		const total = data.reduce((sum, d) => sum + d.count, 0);
+		const daysWithCards = data.filter((d) => d.count > 0).length;
+		const avg = daysWithCards > 0 ? Math.round(total / daysWithCards) : 0;
+		summaryEl.createDiv({ text: `Total: ${total} cards` });
+		summaryEl.createDiv({ text: `Average: ${avg} cards/day (on active days)` });
+	}
+
+	private async openCardPreviewForCreatedDate(date: string): Promise<void> {
+		const cards = await this.statsCalculator.getCardsCreatedOnDate(date);
+		new CardPreviewModal(this.plugin.app, {
+			title: `Cards created: ${this.formatDateForDisplay(date)}`,
+			cards,
+			flashcardManager: this.plugin.flashcardManager,
+		}).open();
+	}
+
+	private async renderCreatedVsReviewedChart(): Promise<void> {
+		this.createdVsReviewedEl.empty();
+		this.createdVsReviewedEl.createEl("h3", { text: "Created vs Reviewed" });
+
+		// Skip for "backlog" range
+		if (this.currentRange === "backlog") {
+			this.createdVsReviewedEl.createDiv({
+				cls: "stats-no-data",
+				text: "Select a time range to see comparison",
+			});
+			return;
+		}
+
+		// Create elements synchronously before async calls
+		const canvasContainer = this.createdVsReviewedEl.createDiv({ cls: "stats-chart-container" });
+		const canvas = canvasContainer.createEl("canvas", { cls: "stats-chart-canvas" });
+		const summaryEl = this.createdVsReviewedEl.createDiv({ cls: "stats-chart-summary" });
+
+		const data = await this.statsCalculator.getCardsCreatedVsReviewedHistory(this.currentRange);
+		this.createdVsReviewedData = data;
+
+		if (data.length === 0) {
+			this.createdVsReviewedEl.empty();
+			this.createdVsReviewedEl.createEl("h3", { text: "Created vs Reviewed" });
+			this.createdVsReviewedEl.createDiv({
+				cls: "stats-no-data",
+				text: "No data available",
+			});
+			return;
+		}
+
+		// Destroy existing chart if present
+		if (this.charts.has("createdVsReviewed")) {
+			this.charts.get("createdVsReviewed")!.destroy();
+		}
+
+		// Format labels
+		const labels = data.map((d) => {
+			const date = new Date(d.date);
+			return `${date.getDate()}/${date.getMonth() + 1}`;
+		});
+
+		const maxTicks = this.getMaxTicksForRange();
+
+		const chart = new Chart(canvas, {
+			type: "bar",
+			data: {
+				labels,
+				datasets: [
+					{
+						label: "Created",
+						data: data.map((d) => d.created),
+						backgroundColor: "rgba(34, 197, 94, 0.7)", // Green
+						borderColor: "rgb(34, 197, 94)",
+						borderWidth: 1,
+					},
+					{
+						label: "Reviewed",
+						data: data.map((d) => d.reviewed),
+						backgroundColor: "rgba(59, 130, 246, 0.7)", // Blue
+						borderColor: "rgb(59, 130, 246)",
+						borderWidth: 1,
+					},
+					{
+						label: "Created & Reviewed Same Day",
+						data: data.map((d) => d.createdAndReviewedSameDay),
+						backgroundColor: "rgba(251, 146, 60, 0.8)", // Orange
+						borderColor: "rgb(251, 146, 60)",
+						borderWidth: 1,
+					},
+				],
+			},
+			options: {
+				responsive: true,
+				maintainAspectRatio: false,
+				plugins: {
+					legend: { display: true, position: "top" },
+					tooltip: {
+						callbacks: {
+							title: (items) => {
+								if (items.length > 0) {
+									const index = items[0]!.dataIndex;
+									return this.formatDateForDisplay(data[index]!.date);
+								}
+								return "";
+							},
+						},
+					},
+				},
+				scales: {
+					y: {
+						beginAtZero: true,
+						ticks: { precision: 0 },
+					},
+					x: {
+						ticks: {
+							maxRotation: 45,
+							minRotation: 45,
+							maxTicksLimit: maxTicks,
+						},
+					},
+				},
+			},
+		});
+		this.charts.set("createdVsReviewed", chart);
+
+		// Summary
+		const totalCreated = data.reduce((sum, d) => sum + d.created, 0);
+		const totalReviewed = data.reduce((sum, d) => sum + d.reviewed, 0);
+		const totalSameDay = data.reduce((sum, d) => sum + d.createdAndReviewedSameDay, 0);
+		const sameDayRate = totalCreated > 0 ? Math.round((totalSameDay / totalCreated) * 100) : 0;
+
+		summaryEl.createDiv({ text: `Created: ${totalCreated} | Reviewed: ${totalReviewed}` });
+		summaryEl.createDiv({ text: `Same-day review rate: ${sameDayRate}%` });
 	}
 
 	private async renderRetentionChart(): Promise<void> {
