@@ -52,14 +52,19 @@ export class OpenRouterService {
 
     /**
      * Generate flashcards from note content (for initial generation)
+     * @param noteContent - The note content to generate flashcards from
+     * @param userInstructions - Optional user instructions to append to the prompt
+     * @param customSystemPrompt - Optional custom system prompt (empty = use default SYSTEM_PROMPT)
      */
     async generateFlashcards(
         noteContent: string,
-        userInstructions?: string
+        userInstructions?: string,
+        customSystemPrompt?: string
     ): Promise<string> {
         this.validateApiKey();
 
-        const systemPrompt = this.buildSystemPrompt(SYSTEM_PROMPT, userInstructions);
+        const basePrompt = customSystemPrompt?.trim() || SYSTEM_PROMPT;
+        const systemPrompt = this.buildSystemPrompt(basePrompt, userInstructions);
         const messages: ChatMessage[] = [
             { role: "system", content: systemPrompt },
             { role: "user", content: noteContent },
@@ -71,19 +76,26 @@ export class OpenRouterService {
 
     /**
      * Generate flashcard diff for update mode
+     * @param noteContent - The current note content
+     * @param existingFlashcards - Existing flashcards to compare against
+     * @param userInstructions - Optional user instructions to append to the prompt
+     * @param oldNoteContent - Optional previous note content for comparison
+     * @param customSystemPrompt - Optional custom system prompt (empty = use default UPDATE_SYSTEM_PROMPT)
      */
     async generateFlashcardsDiff(
         noteContent: string,
         existingFlashcards: FlashcardItem[],
         userInstructions?: string,
-        oldNoteContent?: string
+        oldNoteContent?: string,
+        customSystemPrompt?: string
     ): Promise<DiffResult> {
         this.validateApiKey();
 
         // Build the existing flashcards list for the prompt
         const existingList = this.formatExistingFlashcards(existingFlashcards);
+        const basePrompt = customSystemPrompt?.trim() || UPDATE_SYSTEM_PROMPT;
         const systemPrompt = this.buildSystemPrompt(
-            UPDATE_SYSTEM_PROMPT + existingList,
+            basePrompt + existingList,
             userInstructions
         );
 

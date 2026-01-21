@@ -35,6 +35,12 @@ export interface EpistemeSettings {
     /** Model AI do generowania fiszek */
     aiModel: AIModelKey;
 
+    // ===== Custom Prompts =====
+    /** Custom system prompt for flashcard generation (empty = use default SYSTEM_PROMPT) */
+    customGeneratePrompt: string;
+    /** Custom system prompt for flashcard updates (empty = use default UPDATE_SYSTEM_PROMPT) */
+    customUpdatePrompt: string;
+
     // ===== FSRS Algorithm Settings =====
     /** Docelowa retencja (0.7-0.99, domyślnie 0.9 = 90%) */
     fsrsRequestRetention: number;
