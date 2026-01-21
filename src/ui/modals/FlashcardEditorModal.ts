@@ -1,14 +1,21 @@
 /**
  * Flashcard Editor Modal
- * A live preview flashcard editor with focus/blur behavior
+ * Uses EditableTextField component for consistent editing experience
  * Supports both adding new flashcards and editing existing ones
  */
-import { App, MarkdownRenderer, Component, Notice } from "obsidian";
+import { App, Notice } from "obsidian";
 import { BaseModal } from "./BaseModal";
 import { MediaPickerModal } from "./MediaPickerModal";
 import type { FSRSFlashcardItem } from "../../types";
 import { VaultSearchService, TextareaSuggest } from "../autocomplete";
 import { ImageService } from "../../services/image";
+import {
+	createEditableTextField,
+	EditableTextField,
+	TOOLBAR_BUTTONS,
+	ToolbarButton,
+	insertAtTextareaCursor,
+} from "../components";
 
 export interface FlashcardEditorResult {
 	cancelled: boolean;
@@ -36,20 +43,17 @@ export interface FlashcardEditorModalOptions {
 }
 
 /**
- * Modal for creating/editing flashcards with live preview (focus/blur)
+ * Modal for creating/editing flashcards using EditableTextField component
  */
 export class FlashcardEditorModal extends BaseModal {
 	private options: FlashcardEditorModalOptions;
 	private resolvePromise: ((result: FlashcardEditorResult) => void) | null = null;
 	private hasSubmitted = false;
 
-	// Editor elements
-	private questionTextarea: HTMLTextAreaElement | null = null;
-	private answerTextarea: HTMLTextAreaElement | null = null;
+	// EditableTextField instances
+	private questionField: EditableTextField | null = null;
+	private answerField: EditableTextField | null = null;
 	private saveButton: HTMLButtonElement | null = null;
-
-	// Markdown rendering component
-	private renderComponent: Component | null = null;
 
 	// Autocomplete components
 	private vaultSearchService: VaultSearchService | null = null;
@@ -79,9 +83,6 @@ export class FlashcardEditorModal extends BaseModal {
 
 	onOpen(): void {
 		// Initialize services BEFORE super.onOpen() which calls renderBody()
-		this.renderComponent = new Component();
-		this.renderComponent.load();
-
 		const folderFilter = this.options.autocompleteFolder ?? "";
 		this.vaultSearchService = new VaultSearchService(this.app, folderFilter);
 		this.vaultSearchService.buildIndex();
@@ -96,276 +97,123 @@ export class FlashcardEditorModal extends BaseModal {
 	protected renderBody(container: HTMLElement): void {
 		const { mode, card, sourceNoteName } = this.options;
 
-		// Info section
+		const questionValue = card?.question || this.options.prefillQuestion || "";
+		const answerValue = card?.answer || this.options.prefillAnswer || "";
+
+		// Question field with EditableTextField (no label)
+		const questionGroup = container.createDiv({ cls: "episteme-editor-field-group" });
+		this.questionField = createEditableTextField(questionGroup, {
+			initialValue: questionValue,
+			placeholder: "Type your question here...",
+			showToolbar: true,
+			toolbarButtons: this.getToolbarButtons(),
+			toolbarPositioned: false,
+			field: "question",
+			autoFocus: !questionValue.trim(),
+			onTab: () => this.answerField?.focus(),
+			onChange: () => this.validateForm(),
+		});
+
+		// Divider between question and answer
+		container.createEl("hr", { cls: "episteme-editor-divider" });
+
+		// Answer field with EditableTextField (no label)
+		const answerGroup = container.createDiv({ cls: "episteme-editor-field-group" });
+		this.answerField = createEditableTextField(answerGroup, {
+			initialValue: answerValue,
+			placeholder: "Type your answer here...",
+			showToolbar: true,
+			toolbarButtons: this.getToolbarButtons(),
+			toolbarPositioned: false,
+			field: "answer",
+			autoFocus: false,
+			onTab: () => this.questionField?.focus(),
+			onChange: () => this.validateForm(),
+		});
+
+		// Source info (at bottom)
 		if (mode === "edit" && card?.sourceNoteName) {
-			container.createEl("p", {
-				text: `Source: ${card.sourceNoteName}`,
-				cls: "episteme-modal-info",
+			container.createDiv({
+				cls: "episteme-editor-source",
+				text: card.sourceNoteName,
 			});
 		} else if (mode === "add" && sourceNoteName) {
-			container.createEl("p", {
-				text: `Adding to: ${sourceNoteName}`,
-				cls: "episteme-modal-info",
+			container.createDiv({
+				cls: "episteme-editor-source",
+				text: sourceNoteName,
 			});
 		}
 
-		// Question field with live preview
-		this.renderLivePreviewField(
-			container,
-			"Question",
-			card?.question || this.options.prefillQuestion || "",
-			"question"
-		);
+		// Attach autocomplete to both textareas
+		this.attachAutocomplete();
 
-		// Answer field with live preview
-		this.renderLivePreviewField(
-			container,
-			"Answer",
-			card?.answer || this.options.prefillAnswer || "",
-			"answer"
-		);
-
-		// Smart toolbar
-		this.renderSmartToolbar(container);
+		// Attach image paste handlers
+		this.attachImagePasteHandlers();
 
 		// Buttons
 		this.renderButtons(container);
 
 		// Setup keyboard shortcuts
 		this.setupKeyboardShortcuts(container);
-
-		// Focus question textarea only if visible (empty field)
-		// When editing with existing content, textarea is hidden and preview is shown
-		const questionValue = card?.question || this.options.prefillQuestion || "";
-		if (!questionValue.trim()) {
-			setTimeout(() => this.questionTextarea?.focus(), 50);
-		}
 	}
 
 	/**
-	 * Render a single field with live preview (focus/blur behavior)
-	 * On blur: shows rendered markdown
-	 * On focus: shows raw markdown textarea
+	 * Get toolbar buttons with Media picker added
 	 */
-	private renderLivePreviewField(
-		container: HTMLElement,
-		label: string,
-		initialValue: string,
-		field: "question" | "answer"
-	): void {
-		const fieldGroup = container.createDiv({ cls: "episteme-live-field" });
-
-		// Label
-		fieldGroup.createEl("label", {
-			text: label,
-			cls: "episteme-form-label",
-		});
-
-		// Container for textarea/preview toggle
-		const editorContainer = fieldGroup.createDiv({
-			cls: "episteme-live-editor-container",
-		});
-
-		// Textarea (hidden by default if has content)
-		const textarea = editorContainer.createEl("textarea", {
-			cls: "episteme-live-textarea",
-			attr: {
-				"data-field": field,
-				placeholder: field === "question"
-					? "Type your question here..."
-					: "Type your answer here...",
-			},
-		});
-		textarea.value = initialValue;
-
-		// Preview div
-		const preview = editorContainer.createDiv({
-			cls: "episteme-live-preview",
-		});
-
-		// Initial render
-		if (initialValue.trim()) {
-			this.renderPreview(preview, initialValue);
-			textarea.addClass("hidden");
-		} else {
-			preview.addClass("hidden");
-		}
-
-		// Focus: show textarea, hide preview
-		textarea.addEventListener("focus", () => {
-			preview.addClass("hidden");
-			textarea.removeClass("hidden");
-		});
-
-		// Blur: show preview, hide textarea (if has content)
-		textarea.addEventListener("blur", () => {
-			const value = textarea.value.trim();
-			if (value) {
-				this.renderPreview(preview, value);
-				preview.removeClass("hidden");
-				textarea.addClass("hidden");
-			}
-			this.validateForm();
-		});
-
-		// Click on preview: focus textarea
-		preview.addEventListener("click", () => {
-			textarea.removeClass("hidden");
-			preview.addClass("hidden");
-			textarea.focus();
-		});
-
-		// Input event for validation
-		textarea.addEventListener("input", () => {
-			this.validateForm();
-		});
-
-		// Keydown for field navigation
-		textarea.addEventListener("keydown", (e) => {
-			this.handleFieldKeydown(e, field);
-		});
-
-		// Paste handler for images
-		textarea.addEventListener("paste", (e) => {
-			void this.handleImagePaste(e, textarea);
-		});
-
-		// Store reference
-		if (field === "question") {
-			this.questionTextarea = textarea;
-		} else {
-			this.answerTextarea = textarea;
-		}
-
-		// Attach autocomplete suggest
-		if (this.vaultSearchService) {
-			const suggest = new TextareaSuggest(textarea, this.vaultSearchService);
-			if (field === "question") {
-				this.questionSuggest = suggest;
-			} else {
-				this.answerSuggest = suggest;
-			}
-		}
-	}
-
-	/**
-	 * Render markdown preview into container
-	 */
-	private renderPreview(container: HTMLElement, markdown: string): void {
-		container.empty();
-		if (this.renderComponent) {
-			MarkdownRenderer.render(
-				this.app,
-				markdown,
-				container,
-				this.options.currentFilePath,
-				this.renderComponent
-			);
-		}
-	}
-
-	/**
-	 * Render smart formatting toolbar with keyboard shortcuts
-	 */
-	private renderSmartToolbar(container: HTMLElement): void {
-		const toolbar = container.createDiv({ cls: "episteme-smart-toolbar" });
-
-		const buttons = [
+	private getToolbarButtons(): ToolbarButton[] {
+		return [
+			...TOOLBAR_BUTTONS.EDITOR,
 			{
-				label: "B",
-				title: "Bold (Ctrl+B)",
-				insert: "**",
-				shortcut: "Ctrl+B",
-			},
-			{
-				label: "I",
-				title: "Italic (Ctrl+I)",
-				insert: "*",
-				shortcut: "Ctrl+I",
-			},
-			{
-				label: "[[]]",
-				title: "Wiki Link (Ctrl+K)",
-				insert: "[[]]",
-				shortcut: "Ctrl+K",
-			},
-			{
-				label: "$$",
-				title: "Math (Ctrl+M)",
-				insert: "$$",
-				shortcut: "Ctrl+M",
-			},
-			{
-				label: "H1",
-				title: "Heading 1 (Ctrl+Alt+1)",
-				insert: "# ",
-				shortcut: "Ctrl+Alt+1",
-			},
-			{
-				label: "H2",
-				title: "Heading 2 (Ctrl+Alt+2)",
-				insert: "## ",
-				shortcut: "Ctrl+Alt+2",
-			},
-			{
-				label: "-",
-				title: "List (Ctrl+L)",
-				insert: "- ",
-				shortcut: "Ctrl+L",
-			},
-			{
-				label: ">",
-				title: "Quote (Ctrl+Shift+.)",
-				insert: "> ",
-				shortcut: "Ctrl+Shift+.",
-			},
-			{
-				label: "`",
-				title: "Code (Ctrl+`)",
-				insert: "`",
-				shortcut: "Ctrl+`",
-			},
-			{
+				id: "media",
 				label: "Media",
-				title: "Insert Image or Video (Ctrl+Shift+I)",
-				insert: "media",
+				title: "Insert Image or Video",
 				shortcut: "Ctrl+Shift+I",
+				action: { type: "custom", handler: () => void this.openMediaPicker() },
+			},
+			{
+				id: "help",
+				label: "?",
+				title: "Show keyboard shortcuts",
+				shortcut: "Ctrl+/",
+				action: { type: "custom", handler: () => this.showKeyboardShortcuts() },
 			},
 		];
+	}
 
-		for (const btn of buttons) {
-			const btnEl = toolbar.createEl("button", {
-				cls: "episteme-toolbar-btn",
-				text: btn.label,
-				attr: { title: btn.title },
-			});
+	/**
+	 * Attach autocomplete to both textareas
+	 */
+	private attachAutocomplete(): void {
+		if (!this.vaultSearchService) return;
 
-			// Prevent blur on textarea when clicking toolbar button
-			btnEl.addEventListener("mousedown", (e) => {
-				e.preventDefault();
-			});
+		const questionTextarea = this.questionField?.getTextarea();
+		const answerTextarea = this.answerField?.getTextarea();
 
-			btnEl.addEventListener("click", () => {
-				if (btn.insert === "media") {
-					void this.openMediaPicker();
-				} else {
-					this.insertFormatting(btn.insert);
-				}
+		if (questionTextarea) {
+			this.questionSuggest = new TextareaSuggest(questionTextarea, this.vaultSearchService);
+		}
+		if (answerTextarea) {
+			this.answerSuggest = new TextareaSuggest(answerTextarea, this.vaultSearchService);
+		}
+	}
+
+	/**
+	 * Attach image paste handlers to both textareas
+	 */
+	private attachImagePasteHandlers(): void {
+		const questionTextarea = this.questionField?.getTextarea();
+		const answerTextarea = this.answerField?.getTextarea();
+
+		if (questionTextarea) {
+			questionTextarea.addEventListener("paste", (e) => {
+				void this.handleImagePaste(e, questionTextarea);
 			});
 		}
-
-		// Help button
-		const helpBtn = toolbar.createEl("button", {
-			cls: "episteme-toolbar-btn episteme-help-btn",
-			text: "?",
-			attr: { title: "Show all keyboard shortcuts (Ctrl+/)" },
-		});
-
-		// Prevent blur on textarea when clicking help button
-		helpBtn.addEventListener("mousedown", (e) => {
-			e.preventDefault();
-		});
-		helpBtn.addEventListener("click", () => this.showKeyboardShortcuts());
+		if (answerTextarea) {
+			answerTextarea.addEventListener("paste", (e) => {
+				void this.handleImagePaste(e, answerTextarea);
+			});
+		}
 	}
 
 	/**
@@ -403,8 +251,8 @@ export class FlashcardEditorModal extends BaseModal {
 				return;
 			}
 
-			// Escape to cancel
-			if (e.key === "Escape") {
+			// Escape to cancel (only if not inside textarea for normal editing)
+			if (e.key === "Escape" && !(e.target instanceof HTMLTextAreaElement)) {
 				e.preventDefault();
 				this.close();
 				return;
@@ -417,38 +265,42 @@ export class FlashcardEditorModal extends BaseModal {
 				return;
 			}
 
+			// Formatting shortcuts - delegate to focused field
+			const focusedField = this.getFocusedField();
+			if (!focusedField) return;
+
 			// Ctrl+B for bold
 			if ((e.metaKey || e.ctrlKey) && e.key === "b") {
 				e.preventDefault();
-				this.insertFormatting("**");
+				focusedField.executeButtonAction("bold");
 				return;
 			}
 
 			// Ctrl+I for italic
 			if ((e.metaKey || e.ctrlKey) && e.key === "i") {
 				e.preventDefault();
-				this.insertFormatting("*");
+				focusedField.executeButtonAction("italic");
 				return;
 			}
 
 			// Ctrl+K for wiki link
 			if ((e.metaKey || e.ctrlKey) && e.key === "k") {
 				e.preventDefault();
-				this.insertFormatting("[[]]");
+				focusedField.executeButtonAction("wiki");
 				return;
 			}
 
 			// Ctrl+M for math
 			if ((e.metaKey || e.ctrlKey) && e.key === "m") {
 				e.preventDefault();
-				this.insertFormatting("$$");
+				focusedField.executeButtonAction("math");
 				return;
 			}
 
 			// Ctrl+L for list
 			if ((e.metaKey || e.ctrlKey) && e.key === "l") {
 				e.preventDefault();
-				this.insertFormatting("- ");
+				focusedField.executeButtonAction("list");
 				return;
 			}
 
@@ -462,73 +314,19 @@ export class FlashcardEditorModal extends BaseModal {
 	}
 
 	/**
-	 * Handle keydown events within textareas
+	 * Get the currently focused EditableTextField
 	 */
-	private handleFieldKeydown(e: KeyboardEvent, currentField: "question" | "answer"): void {
-		// Tab to switch between fields
-		if (e.key === "Tab") {
-			e.preventDefault();
-			const nextField = currentField === "question" ? this.answerTextarea : this.questionTextarea;
-			nextField?.focus();
-			return;
-		}
-
-		// Enter in question field moves to answer (unless Shift+Enter for new line)
-		if (e.key === "Enter" && !e.shiftKey && currentField === "question") {
-			// Only move if the cursor is at the end
-			const textarea = e.target as HTMLTextAreaElement;
-			if (textarea.selectionStart === textarea.value.length) {
-				e.preventDefault();
-				this.answerTextarea?.focus();
-			}
-		}
-	}
-
-	/**
-	 * Insert formatting at cursor position or wrap selected text
-	 */
-	private insertFormatting(formatting: string): void {
+	private getFocusedField(): EditableTextField | null {
 		const activeElement = document.activeElement;
-		if (
-			!activeElement ||
-			(activeElement !== this.questionTextarea && activeElement !== this.answerTextarea)
-		) {
-			return;
+		const questionTextarea = this.questionField?.getTextarea();
+		const answerTextarea = this.answerField?.getTextarea();
+
+		if (activeElement === questionTextarea) {
+			return this.questionField;
+		} else if (activeElement === answerTextarea) {
+			return this.answerField;
 		}
-
-		const textarea = activeElement as HTMLTextAreaElement;
-		const start = textarea.selectionStart;
-		const end = textarea.selectionEnd;
-		const text = textarea.value;
-		const selectedText = text.substring(start, end);
-
-		let newText: string;
-		let newCursorPos: number;
-
-		if (selectedText) {
-			// Wrap selected text
-			if (formatting === "[[]]") {
-				newText = text.substring(0, start) + "[[" + selectedText + "]]" + text.substring(end);
-				newCursorPos = start + selectedText.length + 4;
-			} else if (formatting === "$$") {
-				newText = text.substring(0, start) + "$$" + selectedText + "$$" + text.substring(end);
-				newCursorPos = start + selectedText.length + 4;
-			} else {
-				newText = text.substring(0, start) + formatting + selectedText + formatting + text.substring(end);
-				newCursorPos = end + formatting.length * 2;
-			}
-		} else {
-			// Insert at cursor
-			newText = text.substring(0, start) + formatting + formatting + text.substring(end);
-			newCursorPos = start + formatting.length;
-		}
-
-		textarea.value = newText;
-		textarea.focus();
-		textarea.setSelectionRange(newCursorPos, newCursorPos);
-
-		// Trigger input event to update preview
-		textarea.dispatchEvent(new Event("input"));
+		return null;
 	}
 
 	/**
@@ -585,10 +383,8 @@ export class FlashcardEditorModal extends BaseModal {
 
 		if (!result.cancelled && result.markdown) {
 			// Find the currently focused textarea
-			const activeElement = document.activeElement;
-			const textarea = (activeElement === this.questionTextarea || activeElement === this.answerTextarea)
-				? activeElement as HTMLTextAreaElement
-				: this.questionTextarea;
+			const focusedField = this.getFocusedField();
+			const textarea = focusedField?.getTextarea() || this.questionField?.getTextarea();
 
 			if (textarea) {
 				this.insertAtCursor(textarea, result.markdown);
@@ -600,20 +396,7 @@ export class FlashcardEditorModal extends BaseModal {
 	 * Insert text at cursor position in textarea
 	 */
 	private insertAtCursor(textarea: HTMLTextAreaElement, text: string): void {
-		const start = textarea.selectionStart;
-		const end = textarea.selectionEnd;
-		const value = textarea.value;
-
-		textarea.value = value.substring(0, start) + text + value.substring(end);
-
-		// Move cursor after inserted text
-		const newPos = start + text.length;
-		textarea.setSelectionRange(newPos, newPos);
-
-		// Trigger input event to update validation
-		textarea.dispatchEvent(new Event("input"));
-
-		// Focus the textarea
+		insertAtTextareaCursor(textarea, text);
 		textarea.focus();
 	}
 
@@ -621,8 +404,8 @@ export class FlashcardEditorModal extends BaseModal {
 	 * Check if the form is valid
 	 */
 	private isFormValid(): boolean {
-		const question = this.questionTextarea?.value.trim() || "";
-		const answer = this.answerTextarea?.value.trim() || "";
+		const question = this.questionField?.getRawValue().trim() || "";
+		const answer = this.answerField?.getRawValue().trim() || "";
 		return question.length > 0 && answer.length > 0;
 	}
 
@@ -639,8 +422,8 @@ export class FlashcardEditorModal extends BaseModal {
 	 * Handle form submission
 	 */
 	private handleSubmit(): void {
-		const question = this.questionTextarea?.value.trim() || "";
-		const answer = this.answerTextarea?.value.trim() || "";
+		const question = this.questionField?.getRawValue().trim() || "";
+		const answer = this.answerField?.getRawValue().trim() || "";
 
 		if (!question || !answer) return;
 
@@ -671,10 +454,14 @@ export class FlashcardEditorModal extends BaseModal {
 			this.vaultSearchService = null;
 		}
 
-		// Clean up markdown rendering component
-		if (this.renderComponent) {
-			this.renderComponent.unload();
-			this.renderComponent = null;
+		// Clean up EditableTextField instances
+		if (this.questionField) {
+			this.questionField.destroy();
+			this.questionField = null;
+		}
+		if (this.answerField) {
+			this.answerField.destroy();
+			this.answerField = null;
 		}
 
 		const { contentEl } = this;

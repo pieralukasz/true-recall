@@ -35,3 +35,19 @@ export {
 	type DiffCardHandlers,
 	type DiffCardProps,
 } from "./DiffCard";
+
+export {
+	EditableTextField,
+	createEditableTextField,
+	TOOLBAR_BUTTONS,
+	type EditableTextFieldProps,
+	type ToolbarButton,
+	type ToolbarButtonAction,
+} from "./EditableTextField";
+
+export {
+	toggleTextareaWrap,
+	insertAtTextareaCursor,
+	autoResizeTextarea,
+	setupAutoResize,
+} from "./edit-toolbar.utils";

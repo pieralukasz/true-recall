@@ -11,6 +11,7 @@ import { ReviewStateManager } from "../../state";
 import { extractFSRSSettings, type FSRSFlashcardItem, type SchedulingPreview } from "../../types";
 import type { CardRemovedEvent, CardUpdatedEvent, BulkChangeEvent } from "../../types/events.types";
 import { MoveCardModal, FlashcardEditorModal } from "../modals";
+import { toggleTextareaWrap, insertAtTextareaCursor, setupAutoResize } from "../components";
 import type EpistemePlugin from "../../main";
 import type { ReviewViewState, UndoEntry } from "./review.types";
 
@@ -638,12 +639,7 @@ export class ReviewView extends ItemView {
         textarea.value = content.replace(/<br\s*\/?>/gi, "\n");
 
         // Auto-resize textarea to fit content
-        const autoResize = () => {
-            textarea.style.height = 'auto';
-            textarea.style.height = textarea.scrollHeight + 'px';
-        };
-        textarea.addEventListener('input', autoResize);
-        autoResize(); // Initial resize
+        setupAutoResize(textarea);
 
         // Preview for rendered markdown (hidden initially)
         const preview = wrapper.createDiv({ cls: "episteme-review-edit-preview hidden" });
@@ -704,18 +700,18 @@ export class ReviewView extends ItemView {
      * Render formatting toolbar for edit mode
      */
     private renderEditToolbar(container: HTMLElement, textarea: HTMLTextAreaElement): void {
-        const toolbar = container.createDiv({ cls: "episteme-edit-toolbar" });
+        const toolbar = container.createDiv({ cls: "episteme-edit-toolbar episteme-edit-toolbar--positioned" });
 
         const buttons = [
-            { label: "**[[]]**", title: "Bold Wiki Link", action: () => this.wrapTextareaSelection(textarea, "**[[", "]]**") },
-            { label: "⏎⏎", title: "Double Line Break", action: () => this.insertAtTextareaCursor(textarea, "\n\n") },
-            { label: "B", title: "Bold", action: () => this.wrapTextareaSelection(textarea, "**", "**") },
-            { label: "I", title: "Italic", action: () => this.wrapTextareaSelection(textarea, "*", "*") },
-            { label: "U", title: "Underline", action: () => this.wrapTextareaSelection(textarea, "<u>", "</u>") },
-            { label: "[[]]", title: "Wiki Link", action: () => this.wrapTextareaSelection(textarea, "[[", "]]") },
-            { label: "$", title: "Math", action: () => this.wrapTextareaSelection(textarea, "$", "$") },
-            { label: "x²", title: "Superscript", action: () => this.wrapTextareaSelection(textarea, "<sup>", "</sup>") },
-            { label: "x₂", title: "Subscript", action: () => this.wrapTextareaSelection(textarea, "<sub>", "</sub>") },
+            { label: "**[[]]**", title: "Bold Wiki Link", action: () => toggleTextareaWrap(textarea, "**[[", "]]**") },
+            { label: "⏎⏎", title: "Double Line Break", action: () => insertAtTextareaCursor(textarea, "\n\n") },
+            { label: "B", title: "Bold", action: () => toggleTextareaWrap(textarea, "**", "**") },
+            { label: "I", title: "Italic", action: () => toggleTextareaWrap(textarea, "*", "*") },
+            { label: "U", title: "Underline", action: () => toggleTextareaWrap(textarea, "<u>", "</u>") },
+            { label: "[[]]", title: "Wiki Link", action: () => toggleTextareaWrap(textarea, "[[", "]]") },
+            { label: "$", title: "Math", action: () => toggleTextareaWrap(textarea, "$", "$") },
+            { label: "x²", title: "Superscript", action: () => toggleTextareaWrap(textarea, "<sup>", "</sup>") },
+            { label: "x₂", title: "Subscript", action: () => toggleTextareaWrap(textarea, "<sub>", "</sub>") },
         ];
 
         for (const btn of buttons) {
@@ -733,28 +729,6 @@ export class ReviewView extends ItemView {
                 textarea.focus();
             });
         }
-    }
-
-    /**
-     * Wrap selected text with before/after strings (textarea version)
-     */
-    private wrapTextareaSelection(textarea: HTMLTextAreaElement, before: string, after: string): void {
-        const start = textarea.selectionStart;
-        const end = textarea.selectionEnd;
-        const selectedText = textarea.value.substring(start, end);
-        const newText = before + selectedText + after;
-
-        textarea.setRangeText(newText, start, end, "end");
-    }
-
-    /**
-     * Insert text at cursor position (textarea version)
-     */
-    private insertAtTextareaCursor(textarea: HTMLTextAreaElement, text: string): void {
-        const start = textarea.selectionStart;
-        const end = textarea.selectionEnd;
-
-        textarea.setRangeText(text, start, end, "end");
     }
 
     /**
