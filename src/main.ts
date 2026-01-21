@@ -172,25 +172,6 @@ export default class EpistemePlugin extends Plugin {
 		// Register commands (extracted to PluginCommands.ts)
 		registerCommands(this);
 
-		// Register repair command for fixing created_at dates
-		this.addCommand({
-			id: "repair-cards-created-dates",
-			name: "Repair flashcard creation dates",
-			callback: async () => {
-				new Notice("Repairing flashcard creation dates...");
-				try {
-					const result = await this.flashcardManager.repairCardsCreatedDates();
-					new Notice(`Updated: ${result.updated} cards, Skipped: ${result.skipped} notes`);
-					if (result.errors.length > 0) {
-						console.warn("[Episteme] Repair errors:", result.errors);
-					}
-				} catch (error) {
-					console.error("[Episteme] Failed to repair dates:", error);
-					new Notice("Failed to repair dates. Check console for details.");
-				}
-			},
-		});
-
 		// Register settings tab
 		this.addSettingTab(new EpistemeSettingTab(this.app, this));
 
