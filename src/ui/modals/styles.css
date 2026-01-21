@@ -2376,3 +2376,116 @@
 		max-height: 200px;
 	}
 }
+
+/* ========================================
+   AI Generator Modal
+   ======================================== */
+
+.episteme-ai-generator-modal .episteme-modal-body {
+	display: flex;
+	flex-direction: column;
+	gap: 16px;
+}
+
+.episteme-ai-generator-section {
+	display: flex;
+	flex-direction: column;
+	gap: 8px;
+}
+
+.episteme-ai-generator-label {
+	font-weight: 600;
+	font-size: 14px;
+	color: var(--text-normal);
+}
+
+.episteme-ai-generator-textarea {
+	width: 100%;
+	min-height: 140px;
+	padding: 12px;
+	border: 1px solid var(--background-modifier-border);
+	border-radius: 6px;
+	background: var(--background-primary);
+	color: var(--text-normal);
+	font-family: var(--font-interface);
+	font-size: 14px;
+	resize: vertical;
+	line-height: 1.5;
+}
+
+.episteme-ai-generator-textarea:focus {
+	outline: none;
+	border-color: var(--interactive-accent);
+	box-shadow: 0 0 0 2px rgba(var(--interactive-accent-rgb), 0.15);
+}
+
+.episteme-ai-generator-textarea:disabled {
+	opacity: 0.6;
+	cursor: not-allowed;
+	background: var(--background-secondary);
+}
+
+.episteme-ai-generator-textarea::placeholder {
+	color: var(--text-muted);
+	font-size: 13px;
+}
+
+.episteme-ai-generator-hint {
+	font-size: 12px;
+	color: var(--text-muted);
+	text-align: right;
+}
+
+.episteme-ai-generator-buttons {
+	display: flex;
+	justify-content: flex-end;
+	gap: 8px;
+	padding-top: 8px;
+	border-top: 1px solid var(--background-modifier-border);
+}
+
+/* Header AI generate button (in review mode) */
+.episteme-btn-ai-gen {
+	position: absolute;
+	right: 84px; /* 50px (add btn) + 34px spacing */
+	color: var(--text-muted);
+	background: transparent;
+	border: none;
+	cursor: pointer;
+	padding: 4px;
+	border-radius: 4px;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	transition: all 0.15s ease;
+}
+
+.episteme-btn-ai-gen:hover {
+	color: var(--text-normal);
+	background: var(--background-modifier-hover);
+}
+
+.episteme-btn-ai-gen svg {
+	width: 18px;
+	height: 18px;
+}
+
+/* Mobile responsive for AI generator modal */
+@media screen and (max-width: 600px) {
+	.episteme-ai-generator-modal {
+		min-width: auto;
+		width: 100%;
+	}
+
+	.episteme-ai-generator-textarea {
+		min-height: 120px;
+	}
+
+	.episteme-ai-generator-buttons {
+		flex-direction: column-reverse;
+	}
+
+	.episteme-ai-generator-buttons .episteme-btn {
+		width: 100%;
+	}
+}
