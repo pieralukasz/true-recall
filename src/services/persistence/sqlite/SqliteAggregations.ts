@@ -3,7 +3,7 @@
  * Aggregate queries for statistics panel
  */
 import type { Database } from "sql.js";
-import type { CardMaturityBreakdown, ProblemCard, StudyPattern, TimeToMasteryStats } from "../../../types";
+import type { CardMaturityBreakdown, CardsCreatedVsReviewedEntry, ProblemCard, StudyPattern, TimeToMasteryStats } from "../../../types";
 import { getQueryResult } from "./sqlite.types";
 
 /**
@@ -201,6 +201,133 @@ export class SqliteAggregations {
             .sort((a, b) => b.successRate - a.successRate);
 
         return pattern;
+    }
+
+    /**
+     * Get cards created by date for historical chart
+     * @param startDate ISO date string (YYYY-MM-DD)
+     * @param endDate ISO date string (YYYY-MM-DD)
+     */
+    getCardsCreatedByDate(startDate: string, endDate: string): { date: string; count: number }[] {
+        const result = this.db.exec(`
+            SELECT date(datetime(created_at / 1000, 'unixepoch', 'localtime')) as created_date,
+                   COUNT(*) as count
+            FROM cards
+            WHERE created_at IS NOT NULL
+              AND date(datetime(created_at / 1000, 'unixepoch', 'localtime')) BETWEEN ? AND ?
+            GROUP BY created_date
+            ORDER BY created_date
+        `, [startDate, endDate]);
+
+        const data = getQueryResult(result);
+        if (!data) return [];
+
+        return data.values.map((row) => ({
+            date: row[0] as string,
+            count: row[1] as number,
+        }));
+    }
+
+    /**
+     * Get cards created on a specific date
+     * @param date ISO date string (YYYY-MM-DD)
+     */
+    getCardsCreatedOnDate(date: string): string[] {
+        const result = this.db.exec(`
+            SELECT id
+            FROM cards
+            WHERE created_at IS NOT NULL
+              AND date(datetime(created_at / 1000, 'unixepoch', 'localtime')) = ?
+        `, [date]);
+
+        const data = getQueryResult(result);
+        if (!data) return [];
+
+        return data.values.map((row) => row[0] as string);
+    }
+
+    /**
+     * Get cards created vs reviewed comparison data
+     * Shows for each day: created count, reviewed count, and same-day reviewed count
+     * @param startDate ISO date string (YYYY-MM-DD)
+     * @param endDate ISO date string (YYYY-MM-DD)
+     */
+    getCardsCreatedVsReviewed(startDate: string, endDate: string): CardsCreatedVsReviewedEntry[] {
+        // Query 1: Cards created per day
+        const createdResult = this.db.exec(`
+            SELECT date(datetime(created_at / 1000, 'unixepoch', 'localtime')) as created_date,
+                   COUNT(*) as count
+            FROM cards
+            WHERE created_at IS NOT NULL
+              AND date(datetime(created_at / 1000, 'unixepoch', 'localtime')) BETWEEN ? AND ?
+            GROUP BY created_date
+        `, [startDate, endDate]);
+
+        // Query 2: Cards reviewed per day (from daily_stats)
+        const reviewedResult = this.db.exec(`
+            SELECT date, reviews_completed as count
+            FROM daily_stats
+            WHERE date BETWEEN ? AND ?
+        `, [startDate, endDate]);
+
+        // Query 3: Cards created AND reviewed same day
+        const sameDayResult = this.db.exec(`
+            SELECT date(datetime(c.created_at / 1000, 'unixepoch', 'localtime')) as created_date,
+                   COUNT(*) as count
+            FROM cards c
+            INNER JOIN daily_reviewed_cards drc ON c.id = drc.card_id
+            WHERE date(datetime(c.created_at / 1000, 'unixepoch', 'localtime')) = drc.date
+              AND drc.date BETWEEN ? AND ?
+            GROUP BY created_date
+        `, [startDate, endDate]);
+
+        // Parse results into maps
+        const createdMap = new Map<string, number>();
+        const createdData = getQueryResult(createdResult);
+        if (createdData) {
+            for (const row of createdData.values) {
+                createdMap.set(row[0] as string, row[1] as number);
+            }
+        }
+
+        const reviewedMap = new Map<string, number>();
+        const reviewedData = getQueryResult(reviewedResult);
+        if (reviewedData) {
+            for (const row of reviewedData.values) {
+                reviewedMap.set(row[0] as string, row[1] as number);
+            }
+        }
+
+        const sameDayMap = new Map<string, number>();
+        const sameDayData = getQueryResult(sameDayResult);
+        if (sameDayData) {
+            for (const row of sameDayData.values) {
+                sameDayMap.set(row[0] as string, row[1] as number);
+            }
+        }
+
+        // Get all unique dates
+        const allDates = new Set<string>([
+            ...createdMap.keys(),
+            ...reviewedMap.keys(),
+            ...sameDayMap.keys(),
+        ]);
+
+        // Merge into result array
+        const entries: CardsCreatedVsReviewedEntry[] = [];
+        for (const date of allDates) {
+            entries.push({
+                date,
+                created: createdMap.get(date) || 0,
+                reviewed: reviewedMap.get(date) || 0,
+                createdAndReviewedSameDay: sameDayMap.get(date) || 0,
+            });
+        }
+
+        // Sort by date
+        entries.sort((a, b) => a.date.localeCompare(b.date));
+
+        return entries;
     }
 
     /**

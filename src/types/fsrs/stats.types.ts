@@ -94,6 +94,32 @@ export interface FutureDueEntry {
 }
 
 /**
+ * Cards created entry for historical bar chart
+ */
+export interface CardsCreatedEntry {
+    /** Date in YYYY-MM-DD format */
+    date: string;
+    /** Cards created on this date */
+    count: number;
+    /** Cumulative total up to this date */
+    cumulative: number;
+}
+
+/**
+ * Cards created vs reviewed entry for comparison chart
+ */
+export interface CardsCreatedVsReviewedEntry {
+    /** Date in YYYY-MM-DD format */
+    date: string;
+    /** Cards created on this date */
+    created: number;
+    /** Cards reviewed on this date */
+    reviewed: number;
+    /** Cards created AND reviewed on the same day */
+    createdAndReviewedSameDay: number;
+}
+
+/**
  * Time range for statistics charts
  */
 export type StatsTimeRange = "backlog" | "1m" | "3m" | "1y" | "all";

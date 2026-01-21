@@ -18,6 +18,7 @@ import type {
     StoreSyncedEvent,
     SourceNoteInfo,
     CardMaturityBreakdown,
+    CardsCreatedVsReviewedEntry,
     CardImageRef,
     ProjectInfo,
 } from "../../../types";
@@ -161,6 +162,10 @@ export class SqliteStoreService {
         this.cardRepo?.updateCardSourceUid(cardId, sourceUid);
     }
 
+    updateCardsCreatedAtBySourceUid(sourceUid: string, createdAt: number): number {
+        return this.cardRepo?.updateCardsCreatedAt(sourceUid, createdAt) ?? 0;
+    }
+
     // ===== Source Notes Operations (delegate to SqliteSourceNotesRepo) =====
 
     upsertSourceNote(info: SourceNoteInfo): void {
@@ -242,6 +247,18 @@ export class SqliteStoreService {
 
     getDueCardsByDate(startDate: string, endDate: string): { date: string; count: number }[] {
         return this.aggregations?.getDueCardsByDate(startDate, endDate) ?? [];
+    }
+
+    getCardsCreatedByDate(startDate: string, endDate: string): { date: string; count: number }[] {
+        return this.aggregations?.getCardsCreatedByDate(startDate, endDate) ?? [];
+    }
+
+    getCardsCreatedOnDate(date: string): string[] {
+        return this.aggregations?.getCardsCreatedOnDate(date) ?? [];
+    }
+
+    getCardsCreatedVsReviewed(startDate: string, endDate: string): CardsCreatedVsReviewedEntry[] {
+        return this.aggregations?.getCardsCreatedVsReviewed(startDate, endDate) ?? [];
     }
 
     // ===== Image Refs (delegate to SqliteImageRefsRepo) =====

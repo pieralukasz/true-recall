@@ -40,6 +40,21 @@ export class SqliteCardRepository {
     set(cardId: string, data: FSRSCardData): void {
         const now = Date.now();
 
+        // Preserve original created_at for existing cards
+        let createdAt = data.createdAt;
+        if (!createdAt) {
+            const existing = this.db.exec(
+                `SELECT created_at FROM cards WHERE id = ?`,
+                [cardId]
+            );
+            const firstResult = existing[0];
+            const firstRow = firstResult?.values[0];
+            if (firstRow && firstRow[0] != null) {
+                createdAt = firstRow[0] as number;
+            }
+        }
+        createdAt = createdAt || now;
+
         this.db.run(`
             INSERT OR REPLACE INTO cards (
                 id, due, stability, difficulty, reps, lapses, state,
@@ -60,7 +75,7 @@ export class SqliteCardRepository {
             data.learningStep,
             data.suspended ? 1 : 0,
             data.buriedUntil || null,
-            data.createdAt || now,
+            createdAt,
             now,
             data.question || null,
             data.answer || null,
@@ -252,6 +267,19 @@ export class SqliteCardRepository {
         `, [sourceUid, Date.now(), cardId]);
 
         this.onDataChange();
+    }
+
+    /**
+     * Update created_at for all cards with a given source_uid
+     * Used to repair incorrect created_at dates from migration
+     */
+    updateCardsCreatedAt(sourceUid: string, createdAt: number): number {
+        this.db.run(`
+            UPDATE cards SET created_at = ?, updated_at = ?
+            WHERE source_uid = ?
+        `, [createdAt, Date.now(), sourceUid]);
+        this.onDataChange();
+        return this.db.getRowsModified();
     }
 
     // ===== Helper =====
