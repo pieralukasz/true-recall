@@ -28,10 +28,6 @@ export {
 } from "./flashcard/flashcard.service";
 export { FrontmatterService } from "./flashcard/frontmatter.service";
 export { FlashcardParserService } from "./flashcard/flashcard-parser.service";
-export {
-	CardMoverService,
-	type ExtractedCardData,
-} from "./flashcard/card-mover.service";
 export { SourceNoteService } from "./flashcard/source-note.service";
 export { OrphanedCardsService } from "./flashcard/orphaned-cards.service";
 export {
