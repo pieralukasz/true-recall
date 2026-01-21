@@ -7,7 +7,7 @@ import { App, Notice, MarkdownRenderer, Component } from "obsidian";
 import { BaseModal } from "./BaseModal";
 import { MediaPickerModal } from "./MediaPickerModal";
 import type { FSRSFlashcardItem } from "../../types";
-import { VaultSearchService, TextareaSuggest } from "../autocomplete";
+import { VaultSearchService, TextareaSuggest, SuggestionPopup } from "../autocomplete";
 import { ImageService } from "../../services/image";
 import {
 	createEditableTextField,
@@ -21,6 +21,8 @@ export interface FlashcardEditorResult {
 	cancelled: boolean;
 	question: string;
 	answer: string;
+	/** New source note path if user changed it (for move operation) */
+	newSourceNotePath?: string;
 }
 
 export interface FlashcardEditorModalOptions {
@@ -76,6 +78,13 @@ export class FlashcardEditorModal extends BaseModal {
 	// Image service
 	private imageService: ImageService | null = null;
 
+	// Source change state
+	private sourceEditing = false;
+	private newSourceNotePath: string | null = null;
+	private newSourceNoteName: string | null = null;
+	private sourceContainer: HTMLElement | null = null;
+	private sourceSuggestPopup: SuggestionPopup | null = null;
+
 	constructor(app: App, options: FlashcardEditorModalOptions) {
 		super(app, {
 			title: options.mode === "add" ? "Add New Flashcard" : "Edit Flashcard",
@@ -127,18 +136,8 @@ export class FlashcardEditorModal extends BaseModal {
 		this.fieldsContainer = container.createDiv({ cls: "episteme-editor-fields" });
 		this.renderFields();
 
-		// Source info (at bottom)
-		if (mode === "edit" && card?.sourceNoteName) {
-			container.createDiv({
-				cls: "episteme-editor-source",
-				text: card.sourceNoteName,
-			});
-		} else if (mode === "add" && sourceNoteName) {
-			container.createDiv({
-				cls: "episteme-editor-source",
-				text: sourceNoteName,
-			});
-		}
+		// Source info (at bottom) - clickable to change source note
+		this.renderSourceSection(container);
 
 		// Buttons
 		this.renderButtons(container);
@@ -189,6 +188,175 @@ export class FlashcardEditorModal extends BaseModal {
 		if (this.answerField) {
 			this.answerField.destroy();
 			this.answerField = null;
+		}
+	}
+
+	/**
+	 * Render source section (clickable to change source note)
+	 */
+	private renderSourceSection(container: HTMLElement): void {
+		const { card, sourceNoteName } = this.options;
+
+		// Show source from: newSourceNoteName (if changed) > card.sourceNoteName > options.sourceNoteName
+		const displaySourceName = this.newSourceNoteName
+			?? card?.sourceNoteName
+			?? sourceNoteName;
+
+		if (!displaySourceName) return;
+
+		this.sourceContainer = container.createDiv({ cls: "episteme-editor-source-container" });
+		this.renderSourceDisplay();
+	}
+
+	/**
+	 * Render source in display mode (clickable text)
+	 */
+	private renderSourceDisplay(): void {
+		if (!this.sourceContainer) return;
+		this.sourceContainer.empty();
+
+		const { mode, card, sourceNoteName } = this.options;
+		const displaySourceName = this.newSourceNoteName
+			?? card?.sourceNoteName
+			?? sourceNoteName;
+
+		if (!displaySourceName) return;
+
+		const sourceEl = this.sourceContainer.createDiv({
+			cls: "episteme-editor-source",
+		});
+		sourceEl.createSpan({ text: displaySourceName });
+
+		// Only allow changing source in edit mode
+		if (mode === "edit") {
+			sourceEl.addClass("episteme-editor-source--clickable");
+			sourceEl.addEventListener("click", () => this.startSourceEdit());
+		}
+	}
+
+	/**
+	 * Start editing source (show search input with autocomplete)
+	 */
+	private startSourceEdit(): void {
+		if (!this.sourceContainer || !this.vaultSearchService) return;
+		this.sourceEditing = true;
+		this.sourceContainer.empty();
+
+		// Create input container
+		const inputContainer = this.sourceContainer.createDiv({
+			cls: "episteme-editor-source-input-container",
+		});
+
+		// Create search input
+		const input = inputContainer.createEl("input", {
+			cls: "episteme-editor-source-input",
+			attr: {
+				type: "text",
+				placeholder: "Search for note...",
+			},
+		});
+
+		// Create popup for suggestions
+		this.sourceSuggestPopup = new SuggestionPopup();
+		this.sourceSuggestPopup.attach(document.body);
+
+		// Debounce timer
+		let debounceTimer: ReturnType<typeof setTimeout> | null = null;
+
+		// Input handler with debounce
+		input.addEventListener("input", () => {
+			if (debounceTimer) clearTimeout(debounceTimer);
+			debounceTimer = setTimeout(() => {
+				const query = input.value.trim();
+				if (query.length < 2) {
+					this.sourceSuggestPopup?.hide();
+					return;
+				}
+
+				const suggestions = this.vaultSearchService!.search(query, 8);
+				if (suggestions.length === 0) {
+					this.sourceSuggestPopup?.hide();
+					return;
+				}
+
+				// Calculate position below input
+				const inputRect = input.getBoundingClientRect();
+				const position = {
+					top: inputRect.bottom + 4,
+					left: inputRect.left,
+				};
+
+				this.sourceSuggestPopup?.show(suggestions, position, (suggestion) => {
+					// User selected a note
+					this.newSourceNotePath = suggestion.filePath;
+					this.newSourceNoteName = suggestion.noteBasename;
+					this.sourceEditing = false;
+					this.cleanupSourceSuggest();
+					this.renderSourceDisplay();
+				});
+			}, 150);
+		});
+
+		// Keyboard navigation
+		input.addEventListener("keydown", (e) => {
+			if (!this.sourceSuggestPopup?.isVisible()) {
+				if (e.key === "Escape") {
+					e.preventDefault();
+					this.cancelSourceEdit();
+				}
+				return;
+			}
+
+			switch (e.key) {
+				case "ArrowDown":
+					e.preventDefault();
+					this.sourceSuggestPopup.moveDown();
+					break;
+				case "ArrowUp":
+					e.preventDefault();
+					this.sourceSuggestPopup.moveUp();
+					break;
+				case "Enter":
+				case "Tab":
+					e.preventDefault();
+					this.sourceSuggestPopup.confirmSelection();
+					break;
+				case "Escape":
+					e.preventDefault();
+					this.cancelSourceEdit();
+					break;
+			}
+		});
+
+		// Blur handler - cancel edit after delay
+		input.addEventListener("blur", () => {
+			setTimeout(() => {
+				if (this.sourceEditing) {
+					this.cancelSourceEdit();
+				}
+			}, 200);
+		});
+
+		// Focus input
+		input.focus();
+	}
+
+	/**
+	 * Cancel source editing and restore display
+	 */
+	private cancelSourceEdit(): void {
+		this.sourceEditing = false;
+		this.cleanupSourceSuggest();
+		this.renderSourceDisplay();
+	}
+
+	/**
+	 * Clean up source suggestion popup
+	 */
+	private cleanupSourceSuggest(): void {
+		if (this.sourceSuggestPopup) {
+			this.sourceSuggestPopup.detach();
+			this.sourceSuggestPopup = null;
 		}
 	}
 
@@ -559,6 +727,7 @@ export class FlashcardEditorModal extends BaseModal {
 				cancelled: false,
 				question,
 				answer,
+				newSourceNotePath: this.newSourceNotePath ?? undefined,
 			});
 			this.resolvePromise = null;
 		}
@@ -568,6 +737,9 @@ export class FlashcardEditorModal extends BaseModal {
 	onClose(): void {
 		// Clean up field components
 		this.cleanupFields();
+
+		// Clean up source suggest popup
+		this.cleanupSourceSuggest();
 
 		// Clean up services
 		if (this.vaultSearchService) {

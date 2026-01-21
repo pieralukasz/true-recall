@@ -403,7 +403,18 @@ export class CardActionsHandler {
 				result.answer
 			);
 
-			new Notice("Card updated");
+			// If source was changed, move the card
+			if (result.newSourceNotePath) {
+				await this.deps.flashcardManager.moveCard(
+					card.id,
+					card.filePath,
+					result.newSourceNotePath
+				);
+				new Notice("Card updated and moved");
+			} else {
+				new Notice("Card updated");
+			}
+
 			this.callbacks.onRender();
 		} catch (error) {
 			console.error("[CardActionsHandler] Error updating card:", error);

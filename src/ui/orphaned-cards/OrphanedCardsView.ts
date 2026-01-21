@@ -251,14 +251,27 @@ export class OrphanedCardsView extends ItemView {
 		try {
 			this.plugin.flashcardManager.updateCardContent(card.id, result.question, result.answer);
 
-			// Update card in state
-			const state = this.stateManager.getState();
-			const updatedCards = state.allOrphanedCards.map((c) =>
-				c.id === card.id ? { ...c, question: result.question, answer: result.answer } : c
-			);
-			this.stateManager.setOrphanedCards(updatedCards);
-
-			new Notice("Flashcard updated");
+			// If source was changed, assign the card to a note (moves it out of orphaned)
+			if (result.newSourceNotePath) {
+				await this.plugin.flashcardManager.moveCard(
+					card.id,
+					"",
+					result.newSourceNotePath
+				);
+				// Remove from orphaned cards list since it's now assigned
+				const state = this.stateManager.getState();
+				const updatedCards = state.allOrphanedCards.filter((c) => c.id !== card.id);
+				this.stateManager.setOrphanedCards(updatedCards);
+				new Notice("Flashcard updated and assigned to note");
+			} else {
+				// Update card in state
+				const state = this.stateManager.getState();
+				const updatedCards = state.allOrphanedCards.map((c) =>
+					c.id === card.id ? { ...c, question: result.question, answer: result.answer } : c
+				);
+				this.stateManager.setOrphanedCards(updatedCards);
+				new Notice("Flashcard updated");
+			}
 		} catch (error) {
 			new Notice(`Failed to update: ${error instanceof Error ? error.message : String(error)}`);
 		}
