@@ -162,10 +162,6 @@ export class SqliteStoreService {
         this.cardRepo?.updateCardSourceUid(cardId, sourceUid);
     }
 
-    updateCardsCreatedAtBySourceUid(sourceUid: string, createdAt: number): number {
-        return this.cardRepo?.updateCardsCreatedAt(sourceUid, createdAt) ?? 0;
-    }
-
     // ===== Source Notes Operations (delegate to SqliteSourceNotesRepo) =====
 
     upsertSourceNote(info: SourceNoteInfo): void {
