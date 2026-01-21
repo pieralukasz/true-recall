@@ -1335,10 +1335,7 @@
 	overflow-y: auto;
 }
 
-/* Reduced padding when editing flashcard (to accommodate keyboard on mobile) */
-.episteme-review-card-container--editing {
-	padding: 2px;
-}
+/* Keep normal padding in edit mode - textarea handles its own layout */
 
 .episteme-review-card {
 	max-width: 700px;
@@ -1394,33 +1391,65 @@
 	opacity: 1;
 }
 
-/* Editable fields (inline edit during review) */
-.episteme-review-editable {
-	border: 2px solid var(--interactive-accent);
-	border-radius: 6px;
-	padding: 12px;
-	background: var(--background-primary);
-	min-height: 40px;
-	outline: none;
-	white-space: pre-wrap;
-	font-family: var(--font-monospace);
-	font-size: 1em;
-	line-height: 1.6;
+/* Edit wrapper */
+.episteme-review-edit-wrapper {
+	width: 100%;
+	position: relative;
+}
+
+/* Edit textarea - inherits font from parent (.episteme-review-question or .episteme-review-answer) */
+.episteme-review-edit-textarea {
+	width: 100%;
+	min-height: 80px;
+	padding: 0;
+	border: none;
+	border-radius: 0;
+	font-family: inherit;
+	font-size: inherit;
+	line-height: inherit;
+	text-align: inherit;
+	background: transparent;
 	color: var(--text-normal);
+	resize: none;
+	box-sizing: border-box;
 }
 
-.episteme-review-editable:focus {
-	box-shadow: 0 0 0 2px var(--interactive-accent);
+.episteme-review-edit-textarea:focus {
+	outline: none;
+	box-shadow: none;
 }
 
-/* Edit Toolbar */
+/* Edit preview (shown after blur) */
+.episteme-review-edit-preview {
+	padding: 12px;
+	cursor: text;
+	border-radius: 6px;
+	transition: background 0.15s;
+}
+
+.episteme-review-edit-preview:hover {
+	background: var(--background-modifier-hover);
+}
+
+.episteme-review-edit-preview.hidden,
+.episteme-review-edit-textarea.hidden {
+	display: none;
+}
+
+/* Edit Toolbar - positioned absolutely to not affect layout */
 .episteme-edit-toolbar {
+	position: absolute;
+	left: 0;
+	right: 0;
+	top: 100%;
+	margin-top: 8px;
 	display: flex;
 	flex-wrap: wrap;
 	gap: 4px;
 	padding: 8px 0;
-	margin-top: 8px;
 	border-top: 1px solid var(--background-modifier-border);
+	background: var(--background-primary);
+	z-index: 10;
 }
 
 .episteme-edit-toolbar-btn {
@@ -1452,16 +1481,16 @@
 }
 
 /* Visual indicator that field is editable (Cmd+click) - not in edit mode */
-.episteme-review-card-container:not(.episteme-review-card-container--editing) .episteme-review-question:not(:has(.episteme-review-editable)),
-.episteme-review-card-container:not(.episteme-review-card-container--editing) .episteme-review-answer:not(:has(.episteme-review-editable)) {
+.episteme-review-card-container:not(.episteme-review-card-container--editing) .episteme-review-question:not(:has(.episteme-review-edit-wrapper)),
+.episteme-review-card-container:not(.episteme-review-card-container--editing) .episteme-review-answer:not(:has(.episteme-review-edit-wrapper)) {
 	border-radius: 6px;
 	padding: 8px;
 	margin: -8px;
 	transition: background 0.15s ease;
 }
 
-.episteme-review-card-container:not(.episteme-review-card-container--editing) .episteme-review-question:not(:has(.episteme-review-editable)):hover,
-.episteme-review-card-container:not(.episteme-review-card-container--editing) .episteme-review-answer:not(:has(.episteme-review-editable)):hover {
+.episteme-review-card-container:not(.episteme-review-card-container--editing) .episteme-review-question:not(:has(.episteme-review-edit-wrapper)):hover,
+.episteme-review-card-container:not(.episteme-review-card-container--editing) .episteme-review-answer:not(:has(.episteme-review-edit-wrapper)):hover {
 	background: var(--background-modifier-hover);
 }
 
