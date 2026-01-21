@@ -18,11 +18,11 @@ export class SqliteSchemaManager {
     }
 
     /**
-     * Create database tables (schema v7)
+     * Create database tables (schema v8)
      */
     createTables(): void {
         this.db.run(`
-            -- Cards table with FSRS scheduling data + content (v7)
+            -- Cards table with FSRS scheduling data + content (v8)
             CREATE TABLE IF NOT EXISTS cards (
                 id TEXT PRIMARY KEY,
                 due TEXT NOT NULL,
@@ -40,8 +40,7 @@ export class SqliteSchemaManager {
                 updated_at INTEGER,
                 question TEXT,
                 answer TEXT,
-                source_uid TEXT,
-                tags TEXT
+                source_uid TEXT
             );
 
             -- Indexes for common queries
@@ -144,7 +143,7 @@ export class SqliteSchemaManager {
             );
 
             -- Set schema version
-            INSERT OR REPLACE INTO meta (key, value) VALUES ('schema_version', '7');
+            INSERT OR REPLACE INTO meta (key, value) VALUES ('schema_version', '8');
             INSERT OR REPLACE INTO meta (key, value) VALUES ('created_at', datetime('now'));
         `);
     }
@@ -177,6 +176,10 @@ export class SqliteSchemaManager {
 
         if (currentVersion < 7) {
             this.migrateV6toV7();
+        }
+
+        if (currentVersion < 8) {
+            this.migrateV7toV8();
         }
     }
 
@@ -518,6 +521,60 @@ export class SqliteSchemaManager {
             this.onSchemaChange();
         } catch (error) {
             console.error("[Episteme] Schema migration v6->v7 failed:", error);
+        }
+    }
+
+    /**
+     * Migrate from v7 to v8 (remove tags column from cards)
+     * Tags are no longer stored in the database
+     */
+    private migrateV7toV8(): void {
+        console.log("[Episteme] Migrating schema v7 -> v8 (removing tags column)...");
+
+        try {
+            // SQLite doesn't support DROP COLUMN, so we need to recreate the table
+            this.db.run(`
+                CREATE TABLE cards_new (
+                    id TEXT PRIMARY KEY,
+                    due TEXT NOT NULL,
+                    stability REAL DEFAULT 0,
+                    difficulty REAL DEFAULT 0,
+                    reps INTEGER DEFAULT 0,
+                    lapses INTEGER DEFAULT 0,
+                    state INTEGER DEFAULT 0,
+                    last_review TEXT,
+                    scheduled_days INTEGER DEFAULT 0,
+                    learning_step INTEGER DEFAULT 0,
+                    suspended INTEGER DEFAULT 0,
+                    buried_until TEXT,
+                    created_at INTEGER,
+                    updated_at INTEGER,
+                    question TEXT,
+                    answer TEXT,
+                    source_uid TEXT
+                );
+
+                INSERT INTO cards_new
+                SELECT id, due, stability, difficulty, reps, lapses, state,
+                       last_review, scheduled_days, learning_step, suspended,
+                       buried_until, created_at, updated_at,
+                       question, answer, source_uid
+                FROM cards;
+
+                DROP TABLE cards;
+                ALTER TABLE cards_new RENAME TO cards;
+
+                CREATE INDEX idx_cards_due ON cards(due);
+                CREATE INDEX idx_cards_state ON cards(state);
+                CREATE INDEX idx_cards_suspended ON cards(suspended);
+                CREATE INDEX idx_cards_source_uid ON cards(source_uid);
+            `);
+
+            this.db.run("INSERT OR REPLACE INTO meta (key, value) VALUES ('schema_version', '8')");
+            console.log("[Episteme] Schema migration v7->v8 completed");
+            this.onSchemaChange();
+        } catch (error) {
+            console.error("[Episteme] Schema migration v7->v8 failed:", error);
         }
     }
 }

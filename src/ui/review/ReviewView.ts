@@ -12,6 +12,7 @@ import { extractFSRSSettings, type FSRSFlashcardItem, type SchedulingPreview } f
 import type { CardRemovedEvent, CardUpdatedEvent, BulkChangeEvent } from "../../types/events.types";
 import { MoveCardModal, FlashcardEditorModal } from "../modals";
 import { toggleTextareaWrap, insertAtTextareaCursor, setupAutoResize } from "../components";
+import { VaultSearchService, TextareaSuggest } from "../autocomplete";
 import type EpistemePlugin from "../../main";
 import type { ReviewViewState, UndoEntry } from "./review.types";
 
@@ -20,7 +21,7 @@ import type { ReviewViewState, UndoEntry } from "./review.types";
  */
 interface TemplaterPlugin {
     templater?: {
-        parse_commands: (file: TFile, force: boolean) => Promise<void>;
+        overwrite_file_commands: (file: TFile) => Promise<void>;
     };
 }
 
@@ -65,6 +66,10 @@ export class ReviewView extends ItemView {
 
     // Timer for waiting screen countdown
     private waitingTimer: ReturnType<typeof setInterval> | null = null;
+
+    // Autocomplete for inline edit mode
+    private vaultSearchService: VaultSearchService | null = null;
+    private currentSuggest: TextareaSuggest | null = null;
 
     constructor(leaf: WorkspaceLeaf, plugin: EpistemePlugin) {
         super(leaf);
@@ -169,6 +174,11 @@ export class ReviewView extends ItemView {
         // Register keyboard shortcuts using registerDomEvent for automatic cleanup
         this.registerDomEvent(document, "keydown", this.handleKeyDown);
 
+        // Initialize autocomplete service for inline edit mode
+        const folderFilter = this.plugin.settings.autocompleteSearchFolder;
+        this.vaultSearchService = new VaultSearchService(this.app, folderFilter);
+        this.vaultSearchService.buildIndex();
+
         // Note: startSession() is called from setState() after filters are applied
     }
 
@@ -186,6 +196,16 @@ export class ReviewView extends ItemView {
 
         this.clearWaitingTimer();
         this.stateManager.reset();
+
+        // Clean up autocomplete
+        if (this.currentSuggest) {
+            this.currentSuggest.destroy();
+            this.currentSuggest = null;
+        }
+        if (this.vaultSearchService) {
+            this.vaultSearchService.clear();
+            this.vaultSearchService = null;
+        }
     }
 
     /**
@@ -650,6 +670,11 @@ export class ReviewView extends ItemView {
         // Auto-resize textarea to fit content
         setupAutoResize(textarea);
 
+        // Attach autocomplete for link suggestions
+        if (this.vaultSearchService) {
+            this.currentSuggest = new TextareaSuggest(textarea, this.vaultSearchService);
+        }
+
         // Preview for rendered markdown (hidden initially)
         const preview = wrapper.createDiv({ cls: "episteme-review-edit-preview hidden" });
 
@@ -658,8 +683,10 @@ export class ReviewView extends ItemView {
 
         // Events
         textarea.addEventListener("blur", (e) => {
-            // Don't blur if clicking toolbar
-            if ((e.relatedTarget as HTMLElement)?.closest(".episteme-edit-toolbar")) return;
+            // Don't blur if clicking toolbar or autocomplete popup
+            const relatedTarget = e.relatedTarget as HTMLElement;
+            if (relatedTarget?.closest(".episteme-edit-toolbar") ||
+                relatedTarget?.closest(".episteme-autocomplete-popup")) return;
             void this.saveEditFromTextarea(textarea, field);
         });
         textarea.addEventListener("keydown", (e) => this.handleEditKeydown(e, field));
@@ -774,6 +801,12 @@ export class ReviewView extends ItemView {
                 console.error("Error saving card content:", error);
                 new Notice("Failed to save card");
             }
+        }
+
+        // Clean up autocomplete
+        if (this.currentSuggest) {
+            this.currentSuggest.destroy();
+            this.currentSuggest = null;
         }
 
         // Exit edit mode
@@ -1317,22 +1350,29 @@ export class ReviewView extends ItemView {
         const content = await templateService.generateContent(templatePath, card);
 
         // Create file
-        const file = await this.app.vault.create(filePath, content);
+        await this.app.vault.create(filePath, content);
+
+        // Open file FIRST (makes it the active file for Templater)
+        await this.app.workspace.openLinkText(filePath, "", true);
+
+        // Small delay to ensure file-open event is processed
+        await new Promise(resolve => setTimeout(resolve, 50));
 
         // Process Templater syntax if Templater plugin is installed
+        // Must be called AFTER file is open so tp.config.active_file is set
         const templaterPlugin = (this.app as unknown as { plugins: { plugins: Record<string, TemplaterPlugin> } })
             .plugins.plugins['templater-obsidian'];
-        if (templaterPlugin?.templater?.parse_commands) {
+        if (templaterPlugin?.templater?.overwrite_file_commands) {
             try {
-                await templaterPlugin.templater.parse_commands(file, true);
+                const activeFile = this.app.workspace.getActiveFile();
+                if (activeFile) {
+                    await templaterPlugin.templater.overwrite_file_commands(activeFile);
+                }
             } catch (error) {
                 console.error("Templater processing failed:", error);
                 // Continue anyway - file was created with basic content
             }
         }
-
-        // Open the file
-        await this.app.workspace.openLinkText(filePath, "", true);
     }
 
     private async handleAnswer(rating: Grade): Promise<void> {
