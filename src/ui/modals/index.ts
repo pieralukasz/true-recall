@@ -54,3 +54,12 @@ export {
     type AddNotesToProjectModalOptions,
     type OrphanedNoteInfo,
 } from "./AddNotesToProjectModal";
+export {
+    TemplatePickerModal,
+    type TemplatePickerResult,
+} from "./TemplatePickerModal";
+export {
+    RestoreBackupModal,
+    type RestoreBackupResult,
+    type RestoreBackupModalOptions,
+} from "./RestoreBackupModal";

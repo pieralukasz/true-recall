@@ -130,4 +130,18 @@ export function registerCommands(plugin: EpistemePlugin): void {
 		name: "Open card browser",
 		callback: () => void plugin.showBrowser(),
 	});
+
+	// Create database backup
+	plugin.addCommand({
+		id: "create-backup",
+		name: "Create database backup",
+		callback: () => void plugin.createManualBackup(),
+	});
+
+	// Restore from backup
+	plugin.addCommand({
+		id: "restore-backup",
+		name: "Restore from backup",
+		callback: () => void plugin.openRestoreBackupModal(),
+	});
 }

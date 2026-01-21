@@ -98,6 +98,16 @@ export class CardActionsHandler {
 		const card = this.deps.stateManager.getCurrentCard();
 		if (!card) return;
 
+		const currentIndex = this.deps.stateManager.getState().currentIndex;
+
+		// Store undo entry BEFORE making changes
+		this.undoStack.push({
+			actionType: "suspend",
+			card: { ...card },
+			originalFsrs: { ...card.fsrs },
+			previousIndex: currentIndex,
+		});
+
 		const updatedFsrs = { ...card.fsrs, suspended: true };
 
 		try {
@@ -105,6 +115,8 @@ export class CardActionsHandler {
 		} catch (error) {
 			console.error("[CardActionsHandler] Error suspending card:", error);
 			new Notice("Failed to suspend card");
+			// Remove the undo entry since the operation failed
+			this.undoStack.pop();
 			return;
 		}
 
@@ -421,7 +433,7 @@ export class CardActionsHandler {
 	}
 
 	/**
-	 * Undo the last action (answer or bury)
+	 * Undo the last action (answer, bury, or suspend)
 	 */
 	async handleUndo(): Promise<boolean> {
 		const undoEntry = this.undoStack.pop();
@@ -432,6 +444,8 @@ export class CardActionsHandler {
 
 		if (undoEntry.actionType === "bury") {
 			return this.undoBury(undoEntry);
+		} else if (undoEntry.actionType === "suspend") {
+			return this.undoSuspend(undoEntry);
 		} else {
 			return this.undoAnswer(undoEntry);
 		}
@@ -469,6 +483,31 @@ export class CardActionsHandler {
 		} catch (error) {
 			console.error("[CardActionsHandler] Error undoing bury:", error);
 			new Notice("Failed to undo bury");
+			return false;
+		}
+	}
+
+	/**
+	 * Undo a suspend action
+	 */
+	private async undoSuspend(entry: UndoEntry): Promise<boolean> {
+		try {
+			// Restore original FSRS data (with suspended: false)
+			this.deps.flashcardManager.updateCardFSRS(entry.card.id, entry.originalFsrs);
+
+			// Re-insert card at original position
+			this.deps.stateManager.insertCardAtPosition(
+				{ ...entry.card, fsrs: entry.originalFsrs },
+				entry.previousIndex
+			);
+
+			this.callbacks.onUpdateSchedulingPreview();
+			this.callbacks.onRender();
+			new Notice("Suspend undone");
+			return true;
+		} catch (error) {
+			console.error("[CardActionsHandler] Error undoing suspend:", error);
+			new Notice("Failed to undo suspend");
 			return false;
 		}
 	}

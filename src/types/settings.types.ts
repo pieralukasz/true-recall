@@ -104,10 +104,18 @@ export interface EpistemeSettings {
     // ===== Zettelkasten Settings =====
     /** Folder na notatki zettelkasten tworzone z fiszek */
     zettelFolder: string;
+    /** Template file path for creating zettels from flashcards (empty = use default) */
+    zettelTemplatePath: string;
 
     // ===== Folder Exclusions =====
     /** Foldery wykluczone z wyszukiwania notatek bez fiszek */
     excludedFolders: string[];
+
+    // ===== Backup Settings =====
+    /** Automatic backup on plugin load */
+    autoBackupOnLoad: boolean;
+    /** Maximum number of backups to keep (0 = unlimited) */
+    maxBackups: number;
 }
 
 /**

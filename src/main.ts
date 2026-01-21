@@ -22,6 +22,7 @@ import {
 	DayBoundaryService,
 	resetEventBus,
 	getEventBus,
+	BackupService,
 } from "./services";
 import { NLQueryService } from "./services/ai/nl-query.service";
 import { SqlJsAdapter } from "./services/ai/langchain-sqlite.adapter";
@@ -42,7 +43,7 @@ import {
 	type EpistemeSettings,
 	DEFAULT_SETTINGS,
 } from "./ui/settings";
-import { SessionModal, AddToProjectModal } from "./ui/modals";
+import { SessionModal, AddToProjectModal, RestoreBackupModal } from "./ui/modals";
 import { registerCommands } from "./plugin/PluginCommands";
 import { registerEventHandlers } from "./plugin/PluginEventHandlers";
 import {
@@ -63,6 +64,7 @@ export default class EpistemePlugin extends Plugin {
 	cardStore!: CardStore;
 	dayBoundaryService!: DayBoundaryService;
 	nlQueryService: NLQueryService | null = null;
+	backupService: BackupService | null = null;
 
 	// Keep reference to SQLite store for SQLite-specific operations (stats queries)
 	private sqliteStore: SqliteStoreService | null = null;
@@ -629,6 +631,14 @@ export default class EpistemePlugin extends Plugin {
 			// Migrate stats.json to SQL if exists (one-time migration)
 			await this.sessionPersistence.migrateStatsJsonToSql();
 
+			// Initialize Backup Service
+			this.backupService = new BackupService(this.app, this.sqliteStore);
+
+			// Auto-backup on load if enabled
+			if (this.settings.autoBackupOnLoad) {
+				await this.runAutoBackup();
+			}
+
 			// Initialize NL Query Service (AI-powered stats queries)
 			await this.initializeNLQueryService();
 		} catch (error) {
@@ -845,5 +855,73 @@ export default class EpistemePlugin extends Plugin {
 		sqlStore.syncNoteProjects?.(sourceUid, [projectName]);
 
 		new Notice(`Project "${projectName}" created`);
+	}
+
+	/**
+	 * Run automatic backup on plugin load
+	 */
+	private async runAutoBackup(): Promise<void> {
+		if (!this.backupService) return;
+
+		try {
+			await this.backupService.createBackup();
+
+			// Prune old backups if limit is set
+			if (this.settings.maxBackups > 0) {
+				await this.backupService.pruneBackups(this.settings.maxBackups);
+			}
+		} catch (error) {
+			console.warn("[Episteme] Auto-backup failed:", error);
+		}
+	}
+
+	/**
+	 * Create a manual backup (called from command or settings)
+	 */
+	async createManualBackup(): Promise<void> {
+		if (!this.backupService) {
+			new Notice("Backup service not available");
+			return;
+		}
+
+		try {
+			const backupPath = await this.backupService.createBackup();
+			const filename = backupPath.split("/").pop();
+			new Notice(`Backup created: ${filename}`);
+
+			// Prune old backups if limit is set
+			if (this.settings.maxBackups > 0) {
+				const deleted = await this.backupService.pruneBackups(this.settings.maxBackups);
+				if (deleted > 0) {
+					console.log(`[Episteme] Pruned ${deleted} old backup(s)`);
+				}
+			}
+		} catch (error) {
+			console.error("[Episteme] Manual backup failed:", error);
+			new Notice("Failed to create backup. Check console for details.");
+		}
+	}
+
+	/**
+	 * Open the restore backup modal
+	 */
+	async openRestoreBackupModal(): Promise<void> {
+		if (!this.backupService) {
+			new Notice("Backup service not available");
+			return;
+		}
+
+		const backups = await this.backupService.listBackups();
+		if (backups.length === 0) {
+			new Notice("No backups available");
+			return;
+		}
+
+		const modal = new RestoreBackupModal(this.app, {
+			backups,
+			backupService: this.backupService,
+		});
+
+		await modal.openAndWait();
 	}
 }

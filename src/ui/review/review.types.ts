@@ -27,7 +27,7 @@ export interface ReviewViewState extends Record<string, unknown> {
  * Undo entry for reverting card actions
  */
 export interface UndoEntry {
-    actionType: "answer" | "bury";
+    actionType: "answer" | "bury" | "suspend";
     card: FSRSFlashcardItem;
     originalFsrs: FSRSFlashcardItem["fsrs"];
     previousIndex: number;

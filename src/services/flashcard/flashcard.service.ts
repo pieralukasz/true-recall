@@ -340,6 +340,15 @@ export class FlashcardManager {
 			throw new Error("Card store not initialized");
 		}
 
+		// Check for duplicate question
+		const sqlStore = this.store as CardStore & {
+			getCardIdByQuestion?: (question: string) => string | undefined;
+		};
+		const existingCardId = sqlStore.getCardIdByQuestion?.(question);
+		if (existingCardId) {
+			throw new Error("A card with this question already exists");
+		}
+
 		const cardId = this.generateCardId();
 		const fsrsData = createDefaultFSRSData(cardId);
 

@@ -162,6 +162,13 @@ export class SqliteStoreService {
         this.cardRepo?.updateCardSourceUid(cardId, sourceUid);
     }
 
+    /**
+     * Check if a card with the given question already exists
+     */
+    getCardIdByQuestion(question: string): string | undefined {
+        return this.cardRepo?.getCardIdByQuestion(question);
+    }
+
     // ===== Source Notes Operations (delegate to SqliteSourceNotesRepo) =====
 
     upsertSourceNote(info: SourceNoteInfo): void {
