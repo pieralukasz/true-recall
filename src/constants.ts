@@ -34,7 +34,55 @@ export const VIEW_TYPE_BROWSER = "episteme-browser";
 
 // ===== AI Models =====
 
-/** AI Models available via OpenRouter */
+/** AI Model metadata */
+export interface AIModelInfo {
+	name: string;
+	provider: "Google" | "OpenAI" | "Anthropic" | "Meta";
+	description: string;
+	recommended?: boolean;
+}
+
+/** AI Models available via OpenRouter with metadata */
+export const AI_MODELS_EXTENDED: Record<string, AIModelInfo> = {
+	"google/gemini-3-flash-preview": {
+		name: "Gemini 3 Flash",
+		provider: "Google",
+		description: "Fast, cost-effective",
+		recommended: true,
+	},
+	"google/gemini-2.5-pro-preview": {
+		name: "Gemini 2.5 Pro",
+		provider: "Google",
+		description: "High quality reasoning",
+	},
+	"openai/gpt-5.1": {
+		name: "GPT-5.1",
+		provider: "OpenAI",
+		description: "Latest OpenAI model",
+	},
+	"openai/gpt-4o": {
+		name: "GPT-4o",
+		provider: "OpenAI",
+		description: "Balanced performance",
+	},
+	"anthropic/claude-opus-4.5": {
+		name: "Claude Opus 4.5",
+		provider: "Anthropic",
+		description: "Most capable",
+	},
+	"anthropic/claude-sonnet-4": {
+		name: "Claude Sonnet 4",
+		provider: "Anthropic",
+		description: "Fast & smart",
+	},
+	"meta-llama/llama-4-maverick": {
+		name: "Llama 4 Maverick",
+		provider: "Meta",
+		description: "Open source",
+	},
+} as const;
+
+/** AI Models available via OpenRouter (legacy format for backward compatibility) */
 export const AI_MODELS = {
 	"google/gemini-3-flash-preview": "Gemini 3 Flash (Google)",
 	"google/gemini-2.5-pro-preview": "Gemini 2.5 Pro (Google)",
@@ -54,6 +102,10 @@ export const DEFAULT_SETTINGS: EpistemeSettings = {
 	// AI Generation
 	openRouterApiKey: "",
 	aiModel: "google/gemini-3-flash-preview" as AIModelKey,
+
+	// Custom Prompts (empty = use default)
+	customGeneratePrompt: "",
+	customUpdatePrompt: "",
 
 	// FSRS Algorithm
 	fsrsRequestRetention: 0.9, // 90% retention

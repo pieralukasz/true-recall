@@ -405,7 +405,8 @@ export class FlashcardPanelView extends ItemView {
             const content = await this.app.vault.read(state.currentFile);
             const flashcards = await this.openRouterService.generateFlashcards(
                 content,
-                userInstructions || undefined
+                userInstructions || undefined,
+                this.plugin.settings.customGeneratePrompt || undefined
             );
 
             if (flashcards.trim() === "NO_NEW_CARDS") {
@@ -479,7 +480,8 @@ export class FlashcardPanelView extends ItemView {
             // Generate flashcards from selection only
             const flashcardsMarkdown = await this.openRouterService.generateFlashcards(
                 selectedContent,
-                userInstructions || undefined
+                userInstructions || undefined,
+                this.plugin.settings.customGeneratePrompt || undefined
             );
 
             if (flashcardsMarkdown.trim() === "NO_NEW_CARDS") {
@@ -581,7 +583,8 @@ export class FlashcardPanelView extends ItemView {
                 content,
                 info.flashcards,
                 userInstructions || undefined,
-                oldNoteContent ?? undefined
+                oldNoteContent ?? undefined,
+                this.plugin.settings.customUpdatePrompt || undefined
             );
 
             if (diffResult.changes.length === 0) {

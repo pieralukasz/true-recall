@@ -23,6 +23,9 @@ export const SettingsSchema = z.object({
     openRouterApiKey: z.string(),
     aiModel: AIModelSchema,
     autoSyncToAnki: z.boolean().default(false),
+    // Custom prompts (empty string = use default)
+    customGeneratePrompt: z.string().default(""),
+    customUpdatePrompt: z.string().default(""),
 });
 
 /**
