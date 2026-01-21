@@ -294,6 +294,20 @@ export class EpistemeSettingTab extends PluginSettingTab {
                     await this.plugin.saveSettings();
                 }));
 
+        // ===== Flashcard Collection Section =====
+        containerEl.createEl("h3", { text: "Flashcard Collection" });
+
+        // Remove content after collecting
+        new Setting(containerEl)
+            .setName("Remove content after collecting")
+            .setDesc("When enabled, removes the entire flashcard (question + answer) from markdown after collecting. When disabled, only removes the #flashcard tag and keeps the content.")
+            .addToggle(toggle => toggle
+                .setValue(this.plugin.settings.removeFlashcardContentAfterCollect)
+                .onChange(async (value) => {
+                    this.plugin.settings.removeFlashcardContentAfterCollect = value;
+                    await this.plugin.saveSettings();
+                }));
+
         // Autocomplete Search Folder
         new Setting(containerEl)
             .setName("Autocomplete search folder")
