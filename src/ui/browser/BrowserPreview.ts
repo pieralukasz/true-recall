@@ -178,16 +178,6 @@ export class BrowserPreview {
             }
         }
 
-        // Tags
-        if (card.tags && card.tags.length > 0) {
-            const tagsRow = info.createDiv({ cls: "info-row" });
-            tagsRow.createSpan({ text: "Tags:", cls: "info-label" });
-            const tagsContainer = tagsRow.createDiv({ cls: "info-tags" });
-            for (const tag of card.tags) {
-                tagsContainer.createSpan({ text: tag, cls: "info-tag" });
-            }
-        }
-
         // Created date
         if (card.createdAt) {
             const createdRow = info.createDiv({ cls: "info-row" });

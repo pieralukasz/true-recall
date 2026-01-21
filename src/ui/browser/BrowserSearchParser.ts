@@ -5,7 +5,6 @@
  * Supported syntax:
  * - word: Full-text search in question/answer
  * - is:new, is:learning, is:review, is:due, is:suspended, is:buried
- * - tag:xxx: Filter by tag
  * - source:xxx: Filter by source note name
  * - project:xxx: Filter by project
  * - prop:stability>10, prop:lapses>3, etc.
@@ -111,13 +110,6 @@ function parseToken(raw: string): SearchToken | null {
                     negated,
                 };
 
-            case "tag":
-                return {
-                    type: "tag",
-                    value: rest,
-                    negated,
-                };
-
             case "source":
                 return {
                     type: "source",
@@ -216,9 +208,6 @@ export function formatSearchQuery(tokens: SearchToken[]): string {
             case "is":
                 return `${prefix}is:${token.value}`;
 
-            case "tag":
-                return `${prefix}tag:${token.value}`;
-
             case "source":
                 return `${prefix}source:${token.value}`;
 
@@ -243,7 +232,6 @@ export function formatSearchQuery(tokens: SearchToken[]): string {
 export function getSearchSuggestions(
     query: string,
     cursorPosition: number,
-    availableTags: string[],
     availableProjects: string[],
     availableSources: string[]
 ): string[] {
@@ -256,7 +244,7 @@ export function getSearchSuggestions(
 
     if (!currentToken) {
         // Show all prefix suggestions
-        return ["is:", "tag:", "source:", "project:", "prop:", "created:"];
+        return ["is:", "source:", "project:", "prop:", "created:"];
     }
 
     // If typing a prefix
@@ -266,14 +254,6 @@ export function getSearchSuggestions(
         return options
             .filter(o => o.startsWith(partial))
             .map(o => `is:${o}`);
-    }
-
-    if (currentToken.startsWith("tag:")) {
-        const partial = currentToken.slice(4).toLowerCase();
-        return availableTags
-            .filter(t => t.toLowerCase().startsWith(partial))
-            .map(t => `tag:${t}`)
-            .slice(0, 10);
     }
 
     if (currentToken.startsWith("project:")) {
@@ -301,7 +281,7 @@ export function getSearchSuggestions(
     }
 
     // Suggest prefixes if typing something that looks like it could be a prefix
-    const prefixes = ["is:", "tag:", "source:", "project:", "prop:", "created:"];
+    const prefixes = ["is:", "source:", "project:", "prop:", "created:"];
     const matchingPrefixes = prefixes.filter(p => p.startsWith(currentToken.toLowerCase()));
     if (matchingPrefixes.length > 0) {
         suggestions.push(...matchingPrefixes);

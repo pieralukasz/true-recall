@@ -47,8 +47,6 @@ export interface SidebarFilters {
     stateFilter: State | "suspended" | "buried" | null;
     /** Filter by project (null = all projects) */
     projectFilter: string | null;
-    /** Filter by tag (null = all tags) */
-    tagFilter: string | null;
 }
 
 /**
@@ -97,7 +95,6 @@ export interface SearchToken {
     type:
         | "text"        // Plain text search
         | "is"          // is:new, is:due, is:suspended, etc.
-        | "tag"         // tag:xxx
         | "source"      // source:xxx
         | "project"     // project:xxx
         | "prop"        // prop:stability>10
@@ -136,7 +133,7 @@ export interface SidebarItem {
     /** Number of matching cards */
     count: number;
     /** Item type for styling */
-    type: "state" | "project" | "tag";
+    type: "state" | "project";
     /** Is this item currently selected? */
     isSelected: boolean;
 }
