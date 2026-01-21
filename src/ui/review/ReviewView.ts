@@ -621,41 +621,57 @@ export class ReviewView extends ItemView {
     }
 
     /**
-     * Render an editable field (contenteditable div)
+     * Render an editable field (textarea + preview)
      */
     private renderEditableField(
         container: HTMLElement,
         content: string,
         field: "question" | "answer"
     ): void {
-        const editEl = container.createDiv({
-            cls: "episteme-review-editable",
-            attr: {
-                contenteditable: "true",
-                "data-field": field,
-            },
+        const wrapper = container.createDiv({ cls: "episteme-review-edit-wrapper" });
+
+        // Textarea for editing (visible initially)
+        const textarea = wrapper.createEl("textarea", {
+            cls: "episteme-review-edit-textarea",
+            attr: { "data-field": field },
         });
-        editEl.textContent = content;
+        textarea.value = content.replace(/<br\s*\/?>/gi, "\n");
 
-        // Render toolbar under the editable field
-        this.renderEditToolbar(container, editEl);
+        // Auto-resize textarea to fit content
+        const autoResize = () => {
+            textarea.style.height = 'auto';
+            textarea.style.height = textarea.scrollHeight + 'px';
+        };
+        textarea.addEventListener('input', autoResize);
+        autoResize(); // Initial resize
 
-        // Event listeners
-        editEl.addEventListener("blur", () => void this.saveEdit());
-        editEl.addEventListener("keydown", (e) => this.handleEditKeydown(e, field));
+        // Preview for rendered markdown (hidden initially)
+        const preview = wrapper.createDiv({ cls: "episteme-review-edit-preview hidden" });
 
-        // Auto-focus after a small delay to ensure DOM is ready
+        // Toolbar under textarea
+        this.renderEditToolbar(wrapper, textarea);
+
+        // Events
+        textarea.addEventListener("blur", (e) => {
+            // Don't blur if clicking toolbar
+            if ((e.relatedTarget as HTMLElement)?.closest(".episteme-edit-toolbar")) return;
+            void this.saveEditFromTextarea(textarea, field);
+        });
+        textarea.addEventListener("keydown", (e) => this.handleEditKeydown(e, field));
+
+        // Click preview to edit again
+        preview.addEventListener("click", () => {
+            preview.addClass("hidden");
+            textarea.removeClass("hidden");
+            textarea.focus();
+        });
+
+        // Auto-focus
         setTimeout(() => {
-            editEl.focus();
-            // Move cursor to end
-            const range = document.createRange();
-            const sel = window.getSelection();
-            range.selectNodeContents(editEl);
-            range.collapse(false);
-            sel?.removeAllRanges();
-            sel?.addRange(range);
+            textarea.focus();
+            textarea.setSelectionRange(textarea.value.length, textarea.value.length);
             // Scroll editable field into view (important for mobile with keyboard)
-            editEl.scrollIntoView({ behavior: "smooth", block: "center" });
+            textarea.scrollIntoView({ behavior: "smooth", block: "center" });
         }, 10);
     }
 
@@ -663,9 +679,11 @@ export class ReviewView extends ItemView {
      * Handle keydown events in edit mode
      */
     private handleEditKeydown(e: KeyboardEvent, currentField: "question" | "answer"): void {
+        const textarea = e.target as HTMLTextAreaElement;
+
         if (e.key === "Escape") {
             e.preventDefault();
-            void this.saveEdit();
+            void this.saveEditFromTextarea(textarea, currentField);
         } else if (e.key === "Tab") {
             e.preventDefault();
             // Switch between question and answer
@@ -675,136 +693,93 @@ export class ReviewView extends ItemView {
                 return;
             }
             void (async () => {
-                await this.saveEdit();
+                await this.saveEditFromTextarea(textarea, currentField);
                 this.startEdit(nextField);
             })();
         }
-        // Ctrl+Z, Ctrl+B, Ctrl+I, Ctrl+U are handled natively by contenteditable
+        // Ctrl+Z, Ctrl+B, Ctrl+I are handled natively by textarea
     }
 
     /**
      * Render formatting toolbar for edit mode
      */
-    private renderEditToolbar(container: HTMLElement, editEl: HTMLElement): void {
+    private renderEditToolbar(container: HTMLElement, textarea: HTMLTextAreaElement): void {
         const toolbar = container.createDiv({ cls: "episteme-edit-toolbar" });
 
         const buttons = [
-            { label: "**[[]]**", title: "Bold Wiki Link", action: () => this.wrapSelection(editEl, "**[[", "]]**") },
-            { label: "⏎⏎", title: "Double Line Break", action: () => this.insertAtCursor(editEl, "<br><br>") },
-            { label: "B", title: "Bold", action: () => this.wrapSelection(editEl, "**", "**") },
-            { label: "I", title: "Italic", action: () => this.wrapSelection(editEl, "*", "*") },
-            { label: "U", title: "Underline", action: () => this.wrapSelection(editEl, "<u>", "</u>") },
-            { label: "[[]]", title: "Wiki Link", action: () => this.wrapSelection(editEl, "[[", "]]") },
-            { label: "$", title: "Math", action: () => this.wrapSelection(editEl, "$", "$") },
-            { label: "x²", title: "Superscript", action: () => this.wrapSelection(editEl, "<sup>", "</sup>") },
-            { label: "x₂", title: "Subscript", action: () => this.wrapSelection(editEl, "<sub>", "</sub>") },
+            { label: "**[[]]**", title: "Bold Wiki Link", action: () => this.wrapTextareaSelection(textarea, "**[[", "]]**") },
+            { label: "⏎⏎", title: "Double Line Break", action: () => this.insertAtTextareaCursor(textarea, "\n\n") },
+            { label: "B", title: "Bold", action: () => this.wrapTextareaSelection(textarea, "**", "**") },
+            { label: "I", title: "Italic", action: () => this.wrapTextareaSelection(textarea, "*", "*") },
+            { label: "U", title: "Underline", action: () => this.wrapTextareaSelection(textarea, "<u>", "</u>") },
+            { label: "[[]]", title: "Wiki Link", action: () => this.wrapTextareaSelection(textarea, "[[", "]]") },
+            { label: "$", title: "Math", action: () => this.wrapTextareaSelection(textarea, "$", "$") },
+            { label: "x²", title: "Superscript", action: () => this.wrapTextareaSelection(textarea, "<sup>", "</sup>") },
+            { label: "x₂", title: "Subscript", action: () => this.wrapTextareaSelection(textarea, "<sub>", "</sub>") },
         ];
 
         for (const btn of buttons) {
             const btnEl = toolbar.createEl("button", {
                 cls: "episteme-edit-toolbar-btn",
                 text: btn.label,
-                attr: { title: btn.title },
+                attr: { title: btn.title, tabindex: "-1" },
             });
             btnEl.addEventListener("mousedown", (e) => {
-                e.preventDefault(); // Prevent blur on editEl
+                e.preventDefault(); // Prevent blur on textarea
             });
             btnEl.addEventListener("click", (e) => {
                 e.preventDefault();
                 btn.action();
-                editEl.focus();
+                textarea.focus();
             });
         }
     }
 
     /**
-     * Wrap selected text with before/after strings
+     * Wrap selected text with before/after strings (textarea version)
      */
-    private wrapSelection(editEl: HTMLElement, before: string, after: string): void {
-        const sel = window.getSelection();
-        if (!sel || sel.rangeCount === 0) return;
+    private wrapTextareaSelection(textarea: HTMLTextAreaElement, before: string, after: string): void {
+        const start = textarea.selectionStart;
+        const end = textarea.selectionEnd;
+        const selectedText = textarea.value.substring(start, end);
+        const newText = before + selectedText + after;
 
-        const range = sel.getRangeAt(0);
-        const selectedText = range.toString();
-
-        if (selectedText) {
-            range.deleteContents();
-            range.insertNode(document.createTextNode(before + selectedText + after));
-        } else {
-            // No selection - just insert wrapper
-            range.insertNode(document.createTextNode(before + after));
-        }
+        textarea.setRangeText(newText, start, end, "end");
     }
 
     /**
-     * Insert text at cursor position
+     * Insert text at cursor position (textarea version)
      */
-    private insertAtCursor(editEl: HTMLElement, text: string): void {
-        const sel = window.getSelection();
-        if (!sel || sel.rangeCount === 0) return;
+    private insertAtTextareaCursor(textarea: HTMLTextAreaElement, text: string): void {
+        const start = textarea.selectionStart;
+        const end = textarea.selectionEnd;
 
-        const range = sel.getRangeAt(0);
-        range.deleteContents();
-        range.insertNode(document.createTextNode(text));
-        range.collapse(false);
+        textarea.setRangeText(text, start, end, "end");
     }
 
     /**
-     * Convert contenteditable HTML to markdown text with <br> for line breaks
+     * Save the current edit from textarea
      */
-    private convertEditableToMarkdown(editEl: HTMLElement): string {
-        let html = editEl.innerHTML;
-
-        // Normalize different browser line break representations:
-        // - Chrome/Safari: <div>text</div> or <br>
-        // - Firefox: <br>
-        // - Edge: <p>text</p>
-
-        // Replace <br> tags with newline
-        html = html.replace(/<br\s*\/?>/gi, "\n");
-
-        // Replace closing </div> and </p> with newline (opening tags create blocks)
-        html = html.replace(/<\/div>/gi, "\n");
-        html = html.replace(/<\/p>/gi, "\n");
-
-        // Remove remaining HTML tags
-        html = html.replace(/<[^>]*>/g, "");
-
-        // Decode HTML entities
-        const textarea = document.createElement("textarea");
-        textarea.innerHTML = html;
-        const text = textarea.value;
-
-        // Trim trailing newlines but preserve internal ones
-        const trimmed = text.replace(/\n+$/, "");
-
-        // Replace remaining newlines with <br>
-        return trimmed.replace(/\n/g, "<br>");
-    }
-
-    /**
-     * Save the current edit to file
-     */
-    private async saveEdit(): Promise<void> {
+    private async saveEditFromTextarea(
+        textarea: HTMLTextAreaElement,
+        field: "question" | "answer"
+    ): Promise<void> {
         const card = this.stateManager.getCurrentCard();
         const editState = this.stateManager.getEditState();
         if (!card || !editState.active) return;
 
-        const editEl = this.cardContainerEl.querySelector('[contenteditable="true"]');
-        if (!editEl || !(editEl instanceof HTMLElement)) return;
-
-        const newContent = this.convertEditableToMarkdown(editEl);
-        const newQuestion = editState.field === "question" ? newContent : card.question;
-        const newAnswer = editState.field === "answer" ? newContent : card.answer;
+        // Convert newlines to <br> for storage
+        const newContent = textarea.value.replace(/\n/g, "<br>");
+        const newQuestion = field === "question" ? newContent : card.question;
+        const newAnswer = field === "answer" ? newContent : card.answer;
 
         // Only save if content actually changed
         const hasChanges =
-            (editState.field === "question" && newContent !== editState.originalQuestion) ||
-            (editState.field === "answer" && newContent !== editState.originalAnswer);
+            (field === "question" && newContent !== editState.originalQuestion) ||
+            (field === "answer" && newContent !== editState.originalAnswer);
 
         if (hasChanges) {
             try {
-                // Save to appropriate storage based on card type
                 // Update card in SQL store
                 this.flashcardManager.updateCardContent(card.id, newQuestion, newAnswer);
 
