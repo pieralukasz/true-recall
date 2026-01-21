@@ -12,6 +12,8 @@ import {
 } from "obsidian";
 import { VIEW_TYPE_FLASHCARD_PANEL } from "../../constants";
 import { FlashcardManager, OpenRouterService, getEventBus } from "../../services";
+import { CollectService } from "../../services/flashcard/collect.service";
+import { FlashcardParserService } from "../../services/flashcard/flashcard-parser.service";
 import { PanelStateManager } from "../../state";
 import { PanelHeader } from "./PanelHeader";
 import { PanelContent } from "./PanelContent";
@@ -31,6 +33,8 @@ export class FlashcardPanelView extends ItemView {
     private flashcardManager: FlashcardManager;
     private openRouterService: OpenRouterService;
     private stateManager: PanelStateManager;
+    private parserService: FlashcardParserService;
+    private collectService: CollectService;
 
     // UI Components
     private headerComponent: PanelHeader | null = null;
@@ -54,12 +58,17 @@ export class FlashcardPanelView extends ItemView {
     // Selection timer for debouncing
     private selectionTimer: ReturnType<typeof setTimeout> | null = null;
 
+    // Editor change timer for real-time #flashcard tag detection
+    private editorChangeTimer: ReturnType<typeof setTimeout> | null = null;
+
     constructor(leaf: WorkspaceLeaf, plugin: EpistemePlugin) {
         super(leaf);
         this.plugin = plugin;
         this.flashcardManager = plugin.flashcardManager;
         this.openRouterService = plugin.openRouterService;
         this.stateManager = new PanelStateManager();
+        this.parserService = new FlashcardParserService();
+        this.collectService = new CollectService(this.parserService);
     }
 
     getViewType(): string {
@@ -94,6 +103,9 @@ export class FlashcardPanelView extends ItemView {
         // Register selection tracking for literature notes
         this.registerSelectionTracking();
 
+        // Register editor change tracking for real-time #flashcard tag detection
+        this.registerEditorChangeTracking();
+
         // Initial render
         await this.loadCurrentFile();
     }
@@ -110,6 +122,12 @@ export class FlashcardPanelView extends ItemView {
         if (this.selectionTimer) {
             clearTimeout(this.selectionTimer);
             this.selectionTimer = null;
+        }
+
+        // Cleanup editor change timer
+        if (this.editorChangeTimer) {
+            clearTimeout(this.editorChangeTimer);
+            this.editorChangeTimer = null;
         }
 
         // Note: Events registered via registerEvent() and registerDomEvent() are
@@ -199,14 +217,15 @@ export class FlashcardPanelView extends ItemView {
 
         if (!file || file.extension !== "md") {
             this.stateManager.setFlashcardInfo(null);
+            this.stateManager.setUncollectedInfo(0);
             return;
         }
 
         const renderVersion = this.stateManager.incrementRenderVersion();
 
         try {
-            // Load flashcard info and note type in parallel
-            const [info, noteType] = await Promise.all([
+            // Load flashcard info, note type, and file content in parallel
+            const [info, noteType, content] = await Promise.all([
                 state.isFlashcardFile
                     ? this.flashcardManager.getFlashcardInfoDirect(file)
                     : this.flashcardManager.getFlashcardInfo(file),
@@ -214,6 +233,8 @@ export class FlashcardPanelView extends ItemView {
                 state.isFlashcardFile
                     ? Promise.resolve("unknown" as const)
                     : this.flashcardManager.getNoteFlashcardType(file),
+                // Read file content for uncollected flashcard detection
+                this.app.vault.read(file),
             ]);
 
             // Check for race condition
@@ -224,11 +245,18 @@ export class FlashcardPanelView extends ItemView {
                 ? await this.getSourceNoteNameFromFile() ?? null
                 : null;
 
+            // Detect uncollected flashcards (only for source notes, not flashcard files)
+            const uncollectedCount = state.isFlashcardFile
+                ? 0
+                : this.collectService.countFlashcardTags(content);
+
             this.stateManager.setState({
                 flashcardInfo: info,
                 status: info?.exists ? "exists" : "none",
                 noteFlashcardType: noteType,
                 sourceNoteName,
+                uncollectedCount,
+                hasUncollectedFlashcards: uncollectedCount > 0,
             });
         } catch (error) {
             console.error("Error loading flashcard info:", error);
@@ -299,6 +327,9 @@ export class FlashcardPanelView extends ItemView {
             // Selection state for literature notes
             hasSelection: state.hasSelection,
             selectedText: state.selectedText,
+            // Collect flashcards from markdown
+            hasUncollectedFlashcards: state.hasUncollectedFlashcards,
+            uncollectedCount: state.uncollectedCount,
             onGenerate: () => void this.handleGenerate(),
             onUpdate: () => void this.handleUpdate(),
             onApplyDiff: () => void this.handleApplyDiff(),
@@ -306,6 +337,7 @@ export class FlashcardPanelView extends ItemView {
             onMoveSelected: () => void this.handleMoveSelected(),
             onDeleteSelected: () => void this.handleDeleteSelected(),
             onAddFlashcard: () => void this.handleAddFlashcard(),
+            onCollect: () => void this.handleCollect(),
         });
         this.footerComponent.render();
     }
@@ -328,6 +360,8 @@ export class FlashcardPanelView extends ItemView {
             selectedCount: this.selectedCardIds.size,
             hasSelection: state.hasSelection,
             selectedText: state.selectedText,
+            hasUncollectedFlashcards: state.hasUncollectedFlashcards,
+            uncollectedCount: state.uncollectedCount,
             onGenerate: () => void this.handleGenerate(),
             onUpdate: () => void this.handleUpdate(),
             onApplyDiff: () => void this.handleApplyDiff(),
@@ -335,6 +369,7 @@ export class FlashcardPanelView extends ItemView {
             onMoveSelected: () => void this.handleMoveSelected(),
             onDeleteSelected: () => void this.handleDeleteSelected(),
             onAddFlashcard: () => void this.handleAddFlashcard(),
+            onCollect: () => void this.handleCollect(),
         });
         this.footerComponent.render();
     }
@@ -993,6 +1028,54 @@ export class FlashcardPanelView extends ItemView {
         await this.loadFlashcardInfo();
     }
 
+    /**
+     * Collect flashcards from markdown (marked with #flashcard tag)
+     * Saves them to SQL and removes the #flashcard tags from the file
+     */
+    private async handleCollect(): Promise<void> {
+        const state = this.stateManager.getState();
+        if (!state.currentFile) return;
+
+        // Check if store is ready
+        if (!this.flashcardManager.hasStore()) {
+            new Notice("Flashcard store not ready. Please restart Obsidian.");
+            return;
+        }
+
+        try {
+            const content = await this.app.vault.read(state.currentFile);
+            const result = this.collectService.collect(content);
+
+            if (result.collectedCount === 0) {
+                new Notice("No flashcards to collect");
+                return;
+            }
+
+            // Get projects from frontmatter (if any)
+            const frontmatterService = this.flashcardManager.getFrontmatterService();
+            const projects = frontmatterService.extractProjectsFromFrontmatter(content);
+
+            // Save flashcards to SQL
+            await this.flashcardManager.saveFlashcardsToSql(
+                state.currentFile,
+                result.flashcards.map((f) => ({
+                    id: f.id || crypto.randomUUID(),
+                    question: f.question,
+                    answer: f.answer,
+                })),
+                projects
+            );
+
+            // Update markdown file (remove #flashcard tags)
+            await this.app.vault.modify(state.currentFile, result.newContent);
+
+            new Notice(`Collected ${result.collectedCount} flashcard(s)`);
+            await this.loadFlashcardInfo();
+        } catch (error) {
+            new Notice(`Error: ${error instanceof Error ? error.message : String(error)}`);
+        }
+    }
+
     // ===== Selection Tracking for All Notes =====
 
     /**
@@ -1057,6 +1140,52 @@ export class FlashcardPanelView extends ItemView {
 
         const selectedText = selection.toString().trim();
         return selectedText.length > 0 ? selectedText : null;
+    }
+
+    // ===== Editor Change Tracking for Real-time #flashcard Detection =====
+
+    /**
+     * Register editor change tracking for real-time #flashcard tag detection
+     * Uses debouncing to avoid performance issues
+     */
+    private registerEditorChangeTracking(): void {
+        this.registerEvent(
+            this.app.workspace.on("editor-change", () => {
+                // Debounce - wait 500ms after last change
+                if (this.editorChangeTimer) {
+                    clearTimeout(this.editorChangeTimer);
+                }
+
+                this.editorChangeTimer = setTimeout(() => {
+                    void this.checkUncollectedFlashcards();
+                }, 500);
+            })
+        );
+    }
+
+    /**
+     * Lightweight check for uncollected flashcards (only updates tag count)
+     * Called on editor changes with debouncing
+     */
+    private async checkUncollectedFlashcards(): Promise<void> {
+        const state = this.stateManager.getState();
+        const file = state.currentFile;
+
+        if (!file || file.extension !== "md" || state.isFlashcardFile) {
+            return;
+        }
+
+        try {
+            const content = await this.app.vault.read(file);
+            const uncollectedCount = this.collectService.countFlashcardTags(content);
+
+            // Only update if changed (avoids unnecessary renders)
+            if (state.uncollectedCount !== uncollectedCount) {
+                this.stateManager.setUncollectedInfo(uncollectedCount);
+            }
+        } catch {
+            // Ignore errors (file might be deleted/moved)
+        }
     }
 
     /**

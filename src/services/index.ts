@@ -38,6 +38,10 @@ export {
 	CardNavigationService,
 	type OpenFileOptions,
 } from "./flashcard/card-navigation.service";
+export {
+	CollectService,
+	type CollectResult,
+} from "./flashcard/collect.service";
 
 // Persistence services
 export { SqliteStoreService } from "./persistence/sqlite";

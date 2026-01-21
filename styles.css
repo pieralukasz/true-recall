@@ -829,7 +829,8 @@
 .episteme-footer-buttons .episteme-btn-primary,
 .episteme-footer-buttons .episteme-btn-secondary,
 .episteme-footer-buttons .episteme-btn-danger,
-.episteme-footer-buttons .episteme-btn-seed {
+.episteme-footer-buttons .episteme-btn-seed,
+.episteme-footer-buttons .episteme-btn-collect {
 	width: 100%;
 }
 
@@ -870,7 +871,8 @@
 .episteme-buttons-row .episteme-btn-primary,
 .episteme-buttons-row .episteme-btn-secondary,
 .episteme-buttons-row .episteme-btn-danger,
-.episteme-buttons-row .episteme-btn-seed {
+.episteme-buttons-row .episteme-btn-seed,
+.episteme-buttons-row .episteme-btn-collect {
 	flex: 1;
 }
 
@@ -879,7 +881,8 @@
 .episteme-btn-secondary,
 .episteme-btn-danger,
 .episteme-btn-seed,
-.episteme-btn-sync {
+.episteme-btn-sync,
+.episteme-btn-collect {
 	border: none;
 	padding: 10px 16px;
 	border-radius: 6px;
@@ -942,6 +945,22 @@
 }
 
 .episteme-btn-seed:disabled {
+	opacity: 0.6;
+	cursor: not-allowed;
+}
+
+/* Collect Button (for markdown flashcard collection) */
+.episteme-btn-collect {
+	background: linear-gradient(135deg, #fbbf24, #f59e0b);
+	color: #1f2937;
+	font-weight: 600;
+}
+
+.episteme-btn-collect:hover:not(:disabled) {
+	background: linear-gradient(135deg, #fcd34d, #fbbf24);
+}
+
+.episteme-btn-collect:disabled {
 	opacity: 0.6;
 	cursor: not-allowed;
 }
