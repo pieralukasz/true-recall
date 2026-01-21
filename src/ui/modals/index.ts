@@ -63,3 +63,8 @@ export {
     type RestoreBackupResult,
     type RestoreBackupModalOptions,
 } from "./RestoreBackupModal";
+export {
+    AIGeneratorModal,
+    type AIGeneratorResult,
+    type AIGeneratorModalOptions,
+} from "./AIGeneratorModal";

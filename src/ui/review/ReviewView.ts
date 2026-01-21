@@ -10,7 +10,7 @@ import { FSRSService, ReviewService, FlashcardManager, SessionPersistenceService
 import { ReviewStateManager } from "../../state";
 import { extractFSRSSettings, type FSRSFlashcardItem, type SchedulingPreview } from "../../types";
 import type { CardRemovedEvent, CardUpdatedEvent, BulkChangeEvent } from "../../types/events.types";
-import { MoveCardModal, FlashcardEditorModal } from "../modals";
+import { MoveCardModal, FlashcardEditorModal, AIGeneratorModal } from "../modals";
 import { toggleTextareaWrap, insertAtTextareaCursor, setupAutoResize } from "../components";
 import { VaultSearchService, TextareaSuggest } from "../autocomplete";
 import type EpistemePlugin from "../../main";
@@ -444,6 +444,14 @@ export class ReviewView extends ItemView {
         });
         addBtn.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>`;
         addBtn.addEventListener("click", () => void this.handleAddNewFlashcard());
+
+        // AI Generate flashcard button (sparkles icon)
+        const aiGenBtn = this.headerEl.createEl("button", {
+            cls: "episteme-btn-ai-gen clickable-icon",
+            attr: { "aria-label": "Generate flashcard with AI (G)" }
+        });
+        aiGenBtn.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9.937 15.5A2 2 0 0 0 8.5 14.063l-6.135-1.582a.5.5 0 0 1 0-.962L8.5 9.936A2 2 0 0 0 9.937 8.5l1.582-6.135a.5.5 0 0 1 .963 0L14.063 8.5A2 2 0 0 0 15.5 9.937l6.135 1.582a.5.5 0 0 1 0 .962L15.5 14.063a2 2 0 0 0-1.437 1.437l-1.582 6.135a.5.5 0 0 1-.963 0z"/><path d="M20 3v4"/><path d="M22 5h-4"/></svg>`;
+        aiGenBtn.addEventListener("click", () => void this.handleAIGenerateFlashcard());
 
         // Open note button (right side)
         const openNoteBtn = this.headerEl.createEl("button", {
@@ -928,6 +936,13 @@ export class ReviewView extends ItemView {
 
         menu.addItem((item) =>
             item
+                .setTitle("Generate with AI (G)")
+                .setIcon("sparkles")
+                .onClick(() => void this.handleAIGenerateFlashcard())
+        );
+
+        menu.addItem((item) =>
+            item
                 .setTitle("Open Source Note")
                 .setIcon("external-link")
                 .onClick(() => this.handleOpenSourceNote())
@@ -1260,6 +1275,13 @@ export class ReviewView extends ItemView {
         if (e.key === "n" || e.key === "N") {
             e.preventDefault();
             void this.handleAddNewFlashcard();
+            return;
+        }
+
+        // G = Generate flashcard with AI
+        if (e.key === "g" || e.key === "G") {
+            e.preventDefault();
+            void this.handleAIGenerateFlashcard();
             return;
         }
 
@@ -1606,6 +1628,57 @@ export class ReviewView extends ItemView {
         } catch (error) {
             console.error("Error adding flashcard:", error);
             new Notice(`Failed to add flashcard: ${error instanceof Error ? error.message : String(error)}`);
+        }
+    }
+
+    /**
+     * Generate flashcards using AI based on user instructions
+     * Associates generated cards with current card's source note and projects
+     */
+    private async handleAIGenerateFlashcard(): Promise<void> {
+        const currentCard = this.stateManager.getCurrentCard();
+        if (!currentCard) return;
+
+        // Check if API key is configured
+        if (!this.plugin.settings.openRouterApiKey) {
+            new Notice("AI service not configured. Please add your API key in settings.");
+            return;
+        }
+
+        // Open AI Generator modal
+        const modal = new AIGeneratorModal(this.app, {
+            openRouterService: this.plugin.openRouterService,
+            customSystemPrompt: this.plugin.settings.customGeneratePrompt,
+        });
+
+        const result = await modal.openAndWait();
+
+        if (result.cancelled || !result.flashcards || result.flashcards.length === 0) {
+            return;
+        }
+
+        // Save generated flashcards and add to queue
+        try {
+            for (const flashcard of result.flashcards) {
+                // Create card associated with current card's source note
+                const newCard = await this.flashcardManager.addSingleFlashcard(
+                    currentCard.filePath,
+                    flashcard.question,
+                    flashcard.answer,
+                    currentCard.sourceUid,
+                    currentCard.projects
+                );
+
+                // Add to current review queue
+                this.stateManager.addCardToQueue(newCard);
+            }
+
+            const count = result.flashcards.length;
+            new Notice(`${count} flashcard${count > 1 ? "s" : ""} generated and added to queue!`);
+
+        } catch (error) {
+            console.error("Error saving generated flashcards:", error);
+            new Notice(`Failed to save flashcards: ${error instanceof Error ? error.message : String(error)}`);
         }
     }
 

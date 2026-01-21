@@ -16,6 +16,7 @@ export class SuggestionPopup {
 		this.containerEl = document.createElement("div");
 		this.containerEl.classList.add("episteme-autocomplete-popup");
 		this.containerEl.classList.add("is-hidden");
+		this.containerEl.setAttribute("tabindex", "-1");
 
 		// Create list element
 		this.listEl = document.createElement("div");
@@ -77,6 +78,11 @@ export class SuggestionPopup {
 				badge.textContent = suggestion.matchedText;
 				item.appendChild(badge);
 			}
+
+			// Prevent blur on textarea when clicking item
+			item.addEventListener("mousedown", (e) => {
+				e.preventDefault();
+			});
 
 			// Click handler
 			item.addEventListener("click", (e) => {
