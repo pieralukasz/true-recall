@@ -145,6 +145,7 @@ export class SqliteCardRepository {
     getCardsBySourceUid(sourceUid: string): FSRSCardData[] {
         const result = this.db.exec(`
             SELECT * FROM cards WHERE source_uid = ?
+            ORDER BY created_at ASC, id ASC
         `, [sourceUid]);
 
         const data = getQueryResult(result);

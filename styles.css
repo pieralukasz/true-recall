@@ -2940,7 +2940,7 @@
 /* Individual flashcard item */
 .episteme-review-card-item {
 	display: flex;
-	flex-direction: row;
+	flex-direction: column;
 	gap: 12px;
 	margin-bottom: 12px;
 	padding: 12px;
@@ -3063,13 +3063,13 @@
 	height: 16px;
 }
 
-/* Buttons container on right side */
+/* Buttons container below content */
 .episteme-review-card-buttons {
 	display: flex;
-	flex-direction: column;
+	flex-direction: row;
 	gap: 8px;
 	flex-shrink: 0;
-	align-self: center;
+	align-self: flex-end;
 }
 
 /* Open button (matching delete button style) */
@@ -3438,7 +3438,7 @@
 .episteme-editor-divider {
 	border: none;
 	border-top: 1px solid var(--background-modifier-border);
-	margin: 16px 0;
+	margin: 12px 0;
 }
 
 /* Editor source info (at bottom) */
