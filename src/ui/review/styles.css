@@ -181,44 +181,6 @@
 	display: none;
 }
 
-/* Edit Toolbar - positioned absolutely to not affect layout */
-.episteme-edit-toolbar {
-	position: absolute;
-	left: 0;
-	right: 0;
-	top: 100%;
-	margin-top: 8px;
-	display: flex;
-	flex-wrap: wrap;
-	gap: 4px;
-	padding: 8px 0;
-	border-top: 1px solid var(--background-modifier-border);
-	background: var(--background-primary);
-	z-index: 10;
-}
-
-.episteme-edit-toolbar-btn {
-	padding: 6px 10px;
-	font-size: 12px;
-	font-weight: 600;
-	background: var(--background-modifier-hover);
-	border: 1px solid var(--background-modifier-border);
-	border-radius: 4px;
-	cursor: pointer;
-	color: var(--text-normal);
-	font-family: var(--font-monospace);
-	transition: background 0.15s ease, color 0.15s ease;
-}
-
-.episteme-edit-toolbar-btn:hover {
-	background: var(--interactive-accent);
-	color: var(--text-on-accent);
-}
-
-.episteme-edit-toolbar-btn:active {
-	transform: scale(0.95);
-}
-
 /* Clear hover states when in edit mode */
 .episteme-review-card-container--editing .episteme-review-question,
 .episteme-review-card-container--editing .episteme-review-answer {
