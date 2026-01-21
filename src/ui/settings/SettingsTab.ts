@@ -4,8 +4,8 @@
  */
 import { App, Notice, PluginSettingTab, Setting } from "obsidian";
 import type EpistemePlugin from "../../main";
-import { DEFAULT_SETTINGS, AI_MODELS, FSRS_CONFIG } from "../../constants";
-import type { AIModelKey } from "../../constants";
+import { DEFAULT_SETTINGS, AI_MODELS_EXTENDED, FSRS_CONFIG, SYSTEM_PROMPT, UPDATE_SYSTEM_PROMPT } from "../../constants";
+import type { AIModelKey, AIModelInfo } from "../../constants";
 import type { EpistemeSettings, ReviewViewMode, NewCardOrder, ReviewOrder, NewReviewMix, CustomSessionInterface } from "../../types";
 
 // Re-export for convenience
@@ -412,6 +412,126 @@ export class EpistemeSettingTab extends PluginSettingTab {
     }
 
     private renderIntegrationTab(container: HTMLElement): void {
+        // ===== AI Generation Section =====
+        container.createEl("h2", { text: "AI Generation (OpenRouter)" });
+
+        // API Key info
+        const apiKeyInfo = container.createDiv({ cls: "setting-item-description" });
+        apiKeyInfo.innerHTML = `
+            <p>OpenRouter provides access to multiple AI models through a single API.</p>
+            <p><a href="https://openrouter.ai/keys" target="_blank">Get your API key at openrouter.ai/keys</a></p>
+        `;
+
+        new Setting(container)
+            .setName("API key")
+            .setDesc("Your OpenRouter API key for flashcard generation")
+            .addText(text => {
+                text.inputEl.type = "password";
+                text.inputEl.addClass("episteme-api-input");
+                text.setPlaceholder("Enter API key")
+                    .setValue(this.plugin.settings.openRouterApiKey)
+                    .onChange(async (value) => {
+                        this.plugin.settings.openRouterApiKey = value;
+                        await this.plugin.saveSettings();
+                    });
+            });
+
+        // Model selection with grouped dropdown
+        const modelSetting = new Setting(container)
+            .setName("AI model")
+            .setDesc("Select the AI model for flashcard generation");
+
+        modelSetting.addDropdown(dropdown => {
+            // Group models by provider
+            const modelsByProvider = this.groupModelsByProvider();
+
+            for (const [provider, models] of Object.entries(modelsByProvider)) {
+                // Add provider group header as disabled option
+                dropdown.addOption(`__group_${provider}`, `── ${provider} ──`);
+
+                for (const [key, info] of models) {
+                    const label = info.recommended
+                        ? `${info.name} ⭐ (${info.description})`
+                        : `${info.name} (${info.description})`;
+                    dropdown.addOption(key, label);
+                }
+            }
+
+            dropdown.setValue(this.plugin.settings.aiModel);
+            dropdown.onChange(async (value) => {
+                // Ignore group headers
+                if (value.startsWith("__group_")) {
+                    dropdown.setValue(this.plugin.settings.aiModel);
+                    return;
+                }
+                this.plugin.settings.aiModel = value as AIModelKey;
+                await this.plugin.saveSettings();
+            });
+
+            // Style group headers
+            const selectEl = dropdown.selectEl;
+            Array.from(selectEl.options).forEach(option => {
+                if (option.value.startsWith("__group_")) {
+                    option.disabled = true;
+                    option.style.fontWeight = "bold";
+                    option.style.color = "var(--text-muted)";
+                }
+            });
+        });
+
+        // ===== Custom Prompts Section =====
+        container.createEl("h2", { text: "Custom Prompts" });
+
+        const promptsInfo = container.createDiv({ cls: "setting-item-description" });
+        promptsInfo.innerHTML = `
+            <p>Customize the AI prompts used for flashcard generation. Leave empty to use the default prompts.</p>
+        `;
+
+        new Setting(container)
+            .setName("Flashcard generation prompt")
+            .setDesc("Custom system prompt for generating new flashcards. Leave empty to use default.")
+            .addTextArea(text => {
+                text.inputEl.rows = 8;
+                text.inputEl.style.width = "100%";
+                text.inputEl.style.fontFamily = "monospace";
+                text.inputEl.style.fontSize = "12px";
+                text.setPlaceholder(this.truncatePrompt(SYSTEM_PROMPT, 500))
+                    .setValue(this.plugin.settings.customGeneratePrompt)
+                    .onChange(async (value) => {
+                        this.plugin.settings.customGeneratePrompt = value;
+                        await this.plugin.saveSettings();
+                    });
+            });
+
+        new Setting(container)
+            .setName("Flashcard update prompt")
+            .setDesc("Custom system prompt for updating existing flashcards. Leave empty to use default.")
+            .addTextArea(text => {
+                text.inputEl.rows = 8;
+                text.inputEl.style.width = "100%";
+                text.inputEl.style.fontFamily = "monospace";
+                text.inputEl.style.fontSize = "12px";
+                text.setPlaceholder(this.truncatePrompt(UPDATE_SYSTEM_PROMPT, 500))
+                    .setValue(this.plugin.settings.customUpdatePrompt)
+                    .onChange(async (value) => {
+                        this.plugin.settings.customUpdatePrompt = value;
+                        await this.plugin.saveSettings();
+                    });
+            });
+
+        new Setting(container)
+            .setName("Reset prompts to defaults")
+            .setDesc("Clear custom prompts and use the built-in defaults")
+            .addButton(button => button
+                .setButtonText("Reset to Defaults")
+                .onClick(async () => {
+                    this.plugin.settings.customGeneratePrompt = "";
+                    this.plugin.settings.customUpdatePrompt = "";
+                    await this.plugin.saveSettings();
+                    new Notice("Prompts reset to defaults");
+                    this.display();
+                }));
+
         // ===== Zettelkasten Section =====
         container.createEl("h2", { text: "Zettelkasten" });
 
@@ -426,39 +546,8 @@ export class EpistemeSettingTab extends PluginSettingTab {
                     await this.plugin.saveSettings();
                 }));
 
-        // ===== AI Generation Section =====
-        container.createEl("h2", { text: "AI Generation" });
-
-        new Setting(container)
-            .setDesc("Get your API key at openrouter.ai/keys");
-
-        new Setting(container)
-            .setName("API key")
-            .setDesc("Your openrouter.ai API key for flashcard generation")
-            .addText(text => {
-                text.inputEl.type = "password";
-                text.inputEl.addClass("episteme-api-input");
-                text.setPlaceholder("Enter API key")
-                    .setValue(this.plugin.settings.openRouterApiKey)
-                    .onChange(async (value) => {
-                        this.plugin.settings.openRouterApiKey = value;
-                        await this.plugin.saveSettings();
-                    });
-            });
-
-        new Setting(container)
-            .setName("AI model")
-            .setDesc("Select the AI model for flashcard generation")
-            .addDropdown(dropdown => {
-                Object.entries(AI_MODELS).forEach(([value, label]) => {
-                    dropdown.addOption(value, label);
-                });
-                dropdown.setValue(this.plugin.settings.aiModel);
-                dropdown.onChange(async (value) => {
-                    this.plugin.settings.aiModel = value as AIModelKey;
-                    await this.plugin.saveSettings();
-                });
-            });
+        // ===== Exclusions Section =====
+        container.createEl("h2", { text: "Exclusions" });
 
         new Setting(container)
             .setName("Excluded folders")
@@ -473,5 +562,46 @@ export class EpistemeSettingTab extends PluginSettingTab {
                     this.plugin.settings.excludedFolders = folders;
                     await this.plugin.saveSettings();
                 }));
+    }
+
+    /**
+     * Group AI models by provider for the dropdown
+     */
+    private groupModelsByProvider(): Record<string, [string, AIModelInfo][]> {
+        const groups: Record<string, [string, AIModelInfo][]> = {
+            "Google": [],
+            "OpenAI": [],
+            "Anthropic": [],
+            "Meta": [],
+        };
+
+        for (const [key, info] of Object.entries(AI_MODELS_EXTENDED)) {
+            const providerGroup = groups[info.provider];
+            if (providerGroup) {
+                providerGroup.push([key, info]);
+            }
+        }
+
+        // Sort: recommended models first within each group
+        for (const provider of Object.keys(groups)) {
+            const providerGroup = groups[provider];
+            if (providerGroup) {
+                providerGroup.sort((a, b) => {
+                    if (a[1].recommended && !b[1].recommended) return -1;
+                    if (!a[1].recommended && b[1].recommended) return 1;
+                    return 0;
+                });
+            }
+        }
+
+        return groups;
+    }
+
+    /**
+     * Truncate prompt for placeholder display
+     */
+    private truncatePrompt(prompt: string, maxLength: number): string {
+        if (prompt.length <= maxLength) return prompt;
+        return prompt.substring(0, maxLength) + "...";
     }
 }
