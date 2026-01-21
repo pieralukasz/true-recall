@@ -106,7 +106,6 @@ export class OrphanedCardsView extends ItemView {
 
 		const modal = new MoveCardModal(this.app, {
 			cardCount: 1,
-			flashcardsFolder: this.plugin.settings.flashcardsFolder,
 			cardQuestion: card.question,
 			cardAnswer: card.answer,
 		});
@@ -136,7 +135,6 @@ export class OrphanedCardsView extends ItemView {
 
 		const modal = new MoveCardModal(this.app, {
 			cardCount: selectedIds.length,
-			flashcardsFolder: this.plugin.settings.flashcardsFolder,
 		});
 
 		const result = await modal.openAndWait();

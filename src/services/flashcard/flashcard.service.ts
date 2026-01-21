@@ -218,14 +218,6 @@ export class FlashcardManager {
 		}
 	}
 
-	/**
-	 * Update source content - no-op since we don't store source content in flashcard files
-	 * @deprecated No longer needed for SQL storage
-	 */
-	async updateSourceContent(_sourceFile: TFile, _noteContent: string): Promise<void> {
-		// No-op: source content is in the source note itself
-	}
-
 	// ===== SQL-Only Card Operations =====
 
 	/**

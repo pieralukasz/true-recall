@@ -54,8 +54,6 @@ export const DEFAULT_SETTINGS: EpistemeSettings = {
 	// AI Generation
 	openRouterApiKey: "",
 	aiModel: "google/gemini-3-flash-preview" as AIModelKey,
-	flashcardsFolder: "Flashcards",
-	storeSourceContent: true, // Włączone dla lepszego diff
 
 	// FSRS Algorithm
 	fsrsRequestRetention: 0.9, // 90% retention

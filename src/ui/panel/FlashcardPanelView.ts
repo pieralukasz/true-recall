@@ -437,10 +437,6 @@ export class FlashcardPanelView extends ItemView {
                 projects
             );
 
-            if (this.plugin.settings.storeSourceContent) {
-                await this.flashcardManager.updateSourceContent(state.currentFile, content);
-            }
-
             new Notice(`Generated flashcards for ${state.currentFile.basename}`);
             this.stateManager.finishProcessing(false);
         } catch (error) {
@@ -623,11 +619,6 @@ export class FlashcardPanelView extends ItemView {
                 state.diffResult.changes,
                 state.diffResult.existingFlashcards
             );
-
-            if (this.plugin.settings.storeSourceContent) {
-                const currentContent = await this.app.vault.read(state.currentFile);
-                await this.flashcardManager.updateSourceContent(state.currentFile, currentContent);
-            }
 
             const counts = {
                 new: acceptedChanges.filter((c) => c.type === "NEW").length,
@@ -846,7 +837,6 @@ export class FlashcardPanelView extends ItemView {
         const modal = new MoveCardModal(this.app, {
             cardCount: 1,
             sourceNoteName: sourceNoteName,
-            flashcardsFolder: this.plugin.settings.flashcardsFolder,
             cardQuestion: card.question,
             cardAnswer: card.answer,
         });
@@ -908,7 +898,6 @@ export class FlashcardPanelView extends ItemView {
         const modal = new MoveCardModal(this.app, {
             cardCount: selectedCards.length,
             sourceNoteName: sourceNoteName,
-            flashcardsFolder: this.plugin.settings.flashcardsFolder,
             cardQuestion: firstCard.question,
             cardAnswer: firstCard.answer,
         });
