@@ -14,8 +14,10 @@ export interface CollectResult {
 	collectedCount: number;
 	/** Flashcards to save to SQL */
 	flashcards: FlashcardItem[];
-	/** Markdown content with #flashcard tags removed */
+	/** Markdown content with #flashcard tags removed (content preserved) */
 	newContent: string;
+	/** Markdown content with entire flashcards removed (question + answer) */
+	newContentWithoutFlashcards: string;
 }
 
 /**
@@ -24,6 +26,7 @@ export interface CollectResult {
  */
 export class CollectService {
 	private flashcardTagPattern: RegExp;
+	private entireFlashcardPattern: RegExp;
 
 	constructor(private parserService: FlashcardParserService) {
 		// Pattern to match " #flashcard" at end of line (with optional whitespace)
@@ -31,20 +34,31 @@ export class CollectService {
 			`\\s*${FLASHCARD_CONFIG.tag}\\s*$`,
 			"gm"
 		);
+
+		// Pattern to match entire flashcard block:
+		// - Line ending with #flashcard (question)
+		// - Following non-empty lines (answer)
+		// - Optional trailing empty line
+		this.entireFlashcardPattern = new RegExp(
+			`^[^\\n]*${FLASHCARD_CONFIG.tag}\\s*\\n(?:[^\\n]+\\n)*(?:\\n)?`,
+			"gm"
+		);
 	}
 
 	/**
 	 * Collect flashcards from markdown content
-	 * Returns the flashcards and the content with tags removed
+	 * Returns the flashcards and content with tags/flashcards removed
 	 */
 	collect(content: string): CollectResult {
 		const flashcards = this.parserService.extractFlashcards(content);
 		const newContent = this.stripFlashcardTags(content);
+		const newContentWithoutFlashcards = this.stripEntireFlashcards(content);
 
 		return {
 			collectedCount: flashcards.length,
 			flashcards,
 			newContent,
+			newContentWithoutFlashcards,
 		};
 	}
 
@@ -56,9 +70,18 @@ export class CollectService {
 	}
 
 	/**
+	 * Remove entire flashcard blocks (question + answer) from content
+	 */
+	private stripEntireFlashcards(content: string): string {
+		return content.replace(this.entireFlashcardPattern, "");
+	}
+
+	/**
 	 * Check if content has any flashcard tags
 	 */
 	hasFlashcardTags(content: string): boolean {
+		// Reset lastIndex for global regex
+		this.flashcardTagPattern.lastIndex = 0;
 		return this.flashcardTagPattern.test(content);
 	}
 
@@ -66,6 +89,8 @@ export class CollectService {
 	 * Count flashcard tags in content
 	 */
 	countFlashcardTags(content: string): number {
+		// Reset lastIndex for global regex
+		this.flashcardTagPattern.lastIndex = 0;
 		const matches = content.match(this.flashcardTagPattern);
 		return matches?.length ?? 0;
 	}

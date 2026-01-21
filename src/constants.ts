@@ -83,6 +83,9 @@ export const DEFAULT_SETTINGS: EpistemeSettings = {
 	showReviewHeaderStats: true,
 	continuousCustomReviews: true,
 
+	// Flashcard Collection
+	removeFlashcardContentAfterCollect: false, // Default: keep content, only remove #flashcard tag
+
 	// Display Order
 	newCardOrder: "random",
 	reviewOrder: "due-date",

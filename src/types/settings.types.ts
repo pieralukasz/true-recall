@@ -83,6 +83,10 @@ export interface EpistemeSettings {
     /** Pokaż przycisk "Next Session" po zakończeniu sesji niestandardowej */
     continuousCustomReviews: boolean;
 
+    // ===== Flashcard Collection Settings =====
+    /** Remove flashcard content from markdown after collecting (default: false = keep content, only remove tag) */
+    removeFlashcardContentAfterCollect: boolean;
+
     // ===== Display Order Settings =====
     /** Kolejność nowych kart */
     newCardOrder: NewCardOrder;
