@@ -690,7 +690,19 @@ export class FlashcardPanelView extends ItemView {
                 result.question,
                 result.answer
             );
-            new Notice("Flashcard updated");
+
+            // If source was changed, move the card
+            if (result.newSourceNotePath) {
+                await this.flashcardManager.moveCard(
+                    card.id,
+                    state.currentFile.path,
+                    result.newSourceNotePath
+                );
+                new Notice("Flashcard updated and moved");
+            } else {
+                new Notice("Flashcard updated");
+            }
+
             await this.loadFlashcardInfo();
         } catch (error) {
             new Notice(`Failed to update flashcard: ${error instanceof Error ? error.message : String(error)}`);

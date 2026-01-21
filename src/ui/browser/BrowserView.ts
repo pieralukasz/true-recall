@@ -222,7 +222,17 @@ export class BrowserView extends ItemView {
                 answer: result.answer,
             });
 
-            new Notice("Card updated");
+            // If source was changed, move the card
+            if (result.newSourceNotePath) {
+                await this.plugin.flashcardManager.moveCard(
+                    card.id,
+                    card.sourceNotePath || "",
+                    result.newSourceNotePath
+                );
+                new Notice("Card updated and moved");
+            } else {
+                new Notice("Card updated");
+            }
         } catch (error) {
             new Notice(`Failed to update card: ${error instanceof Error ? error.message : String(error)}`);
         }
