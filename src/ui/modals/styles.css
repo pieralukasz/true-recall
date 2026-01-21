@@ -1484,6 +1484,31 @@
 	color: var(--text-muted);
 }
 
+/* Editor field group (for FlashcardEditorModal with EditableTextField) */
+.episteme-editor-field-group {
+	margin-bottom: 0;
+}
+
+.episteme-editor-field-group .episteme-editable-textarea {
+	text-align: center;
+}
+
+/* Editor divider between question and answer */
+.episteme-editor-divider {
+	border: none;
+	border-top: 1px solid var(--background-modifier-border);
+	margin: 16px 0;
+}
+
+/* Editor source info (at bottom) */
+.episteme-editor-source {
+	text-align: center;
+	color: var(--text-muted);
+	font-size: 0.9em;
+	margin-top: 16px;
+	opacity: 0.7;
+}
+
 /* Modal buttons */
 .episteme-modal-buttons {
 	display: flex;
@@ -1603,43 +1628,6 @@
 	font-weight: 500;
 }
 
-/* Smart toolbar */
-.episteme-smart-toolbar {
-	display: flex;
-	flex-wrap: wrap;
-	gap: 6px;
-	padding: 8px 0;
-	border-top: 1px solid var(--background-modifier-border);
-}
-
-.episteme-toolbar-btn {
-	display: flex;
-	align-items: center;
-	gap: 4px;
-	padding: 6px 10px;
-	border: 1px solid var(--background-modifier-border);
-	border-radius: 4px;
-	background: var(--background-primary);
-	color: var(--text-normal);
-	font-size: 13px;
-	font-weight: 500;
-	cursor: pointer;
-	transition: all 0.15s ease;
-}
-
-.episteme-toolbar-btn:hover:not(:disabled) {
-	background: var(--background-modifier-hover);
-	border-color: var(--interactive-accent);
-}
-
-.episteme-toolbar-btn:active:not(:disabled) {
-	transform: translateY(1px);
-}
-
-.episteme-help-btn {
-	margin-left: auto;
-	font-weight: 600;
-}
 
 /* Keyboard hint badge */
 .episteme-keyboard-hint {
@@ -1774,82 +1762,6 @@
 	color: var(--text-normal);
 }
 
-/* ========================================
-   Live Preview Editor (Focus/Blur)
-   ======================================== */
-
-/* Live preview field container */
-.episteme-live-field {
-	margin-bottom: 16px;
-}
-
-/* Container for textarea/preview toggle */
-.episteme-live-editor-container {
-	position: relative;
-	min-height: 100px;
-	border: 1px solid var(--background-modifier-border);
-	border-radius: 6px;
-	overflow: hidden;
-}
-
-/* Live preview textarea */
-.episteme-live-textarea {
-	width: 100%;
-	min-height: 100px;
-	padding: 12px;
-	border: none;
-	resize: vertical;
-	font-family: var(--font-monospace);
-	font-size: 14px;
-	line-height: 1.5;
-	background: var(--background-primary);
-	color: var(--text-normal);
-}
-
-.episteme-live-textarea:focus {
-	outline: none;
-	box-shadow: inset 0 0 0 2px var(--interactive-accent);
-}
-
-.episteme-live-textarea::placeholder {
-	color: var(--text-muted);
-}
-
-/* Live preview container */
-.episteme-live-preview {
-	padding: 12px;
-	min-height: 100px;
-	cursor: text;
-	background: var(--background-primary);
-	transition: background-color 0.15s ease;
-}
-
-.episteme-live-preview:hover {
-	background: var(--background-secondary);
-}
-
-/* Hidden state */
-.episteme-live-textarea.hidden,
-.episteme-live-preview.hidden {
-	display: none;
-}
-
-/* Visual indicator for clickable preview */
-.episteme-live-editor-container:has(.episteme-live-preview:not(.hidden))::after {
-	content: "Click to edit";
-	position: absolute;
-	top: 8px;
-	right: 12px;
-	font-size: 10px;
-	color: var(--text-muted);
-	opacity: 0;
-	transition: opacity 0.2s;
-	pointer-events: none;
-}
-
-.episteme-live-editor-container:has(.episteme-live-preview:not(.hidden)):hover::after {
-	opacity: 1;
-}
 
 /* Mobile responsive */
 @media screen and (max-width: 768px) {
@@ -1869,15 +1781,6 @@
 
 	.episteme-editor-preview.visible {
 		display: flex;
-	}
-
-	.episteme-smart-toolbar {
-		gap: 4px;
-	}
-
-	.episteme-toolbar-btn {
-		padding: 5px 8px;
-		font-size: 12px;
 	}
 
 	.episteme-keyboard-hint {

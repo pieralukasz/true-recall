@@ -479,3 +479,129 @@
 		margin-left: 0;
 	}
 }
+
+/* ========================================
+   Editable Text Field Component
+   Shared textarea editing with toolbar
+   ======================================== */
+
+/* Wrapper for editable field */
+.episteme-editable-field {
+	width: 100%;
+	position: relative;
+}
+
+/* Textarea with auto-resize */
+.episteme-editable-textarea {
+	width: 100%;
+	min-height: 60px;
+	padding: 8px;
+	border: 1px solid var(--background-modifier-border);
+	border-radius: 6px;
+	font-family: inherit;
+	font-size: inherit;
+	line-height: 1.6;
+	background: var(--background-primary);
+	color: var(--text-normal);
+	resize: none;
+	box-sizing: border-box;
+}
+
+.episteme-editable-textarea:focus {
+	outline: none;
+	border-color: var(--interactive-accent);
+	box-shadow: 0 0 0 2px rgba(var(--interactive-accent-rgb), 0.2);
+}
+
+.episteme-editable-textarea::placeholder {
+	color: var(--text-faint);
+}
+
+/* Edit Toolbar - base styles */
+.episteme-edit-toolbar {
+	display: flex;
+	flex-wrap: wrap;
+	justify-content: center;
+	gap: 4px;
+	padding: 8px 0;
+	border-top: 1px solid var(--background-modifier-border);
+	background: var(--background-primary);
+}
+
+/* Positioned variant (absolute positioning below textarea) */
+.episteme-edit-toolbar--positioned {
+	position: absolute;
+	left: 0;
+	right: 0;
+	top: 100%;
+	margin-top: 8px;
+	z-index: 10;
+}
+
+/* Toolbar button */
+.episteme-edit-toolbar-btn {
+	padding: 6px 10px;
+	font-size: 12px;
+	font-weight: 600;
+	background: var(--background-modifier-hover);
+	border: 1px solid var(--background-modifier-border);
+	border-radius: 4px;
+	cursor: pointer;
+	color: var(--text-normal);
+	font-family: var(--font-monospace);
+	transition: background 0.15s ease, color 0.15s ease;
+}
+
+.episteme-edit-toolbar-btn:hover {
+	background: var(--interactive-accent);
+	color: var(--text-on-accent);
+}
+
+.episteme-edit-toolbar-btn:active {
+	transform: scale(0.95);
+}
+
+/* Review-specific textarea (transparent, inherits parent styling) */
+.episteme-review-edit-textarea {
+	width: 100%;
+	min-height: 80px;
+	padding: 0;
+	border: none;
+	border-radius: 0;
+	font-family: inherit;
+	font-size: inherit;
+	line-height: inherit;
+	text-align: inherit;
+	background: transparent;
+	color: var(--text-normal);
+	resize: none;
+	box-sizing: border-box;
+}
+
+.episteme-review-edit-textarea:focus {
+	outline: none;
+	box-shadow: none;
+}
+
+/* Edit wrapper for ReviewView */
+.episteme-review-edit-wrapper {
+	width: 100%;
+	position: relative;
+}
+
+/* Edit preview (shown after blur in some contexts) */
+.episteme-edit-preview {
+	padding: 12px;
+	cursor: text;
+	border-radius: 6px;
+	transition: background 0.15s;
+}
+
+.episteme-edit-preview:hover {
+	background: var(--background-modifier-hover);
+}
+
+.episteme-edit-preview.hidden,
+.episteme-editable-textarea.hidden {
+	display: none;
+}

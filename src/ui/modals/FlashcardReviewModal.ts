@@ -6,6 +6,11 @@ import { App, Notice, MarkdownRenderer, Component } from "obsidian";
 import { BaseModal } from "./BaseModal";
 import type { FlashcardItem } from "../../types";
 import type { OpenRouterService } from "../../services";
+import {
+	createEditableTextField,
+	EditableTextField,
+	TOOLBAR_BUTTONS,
+} from "../components";
 
 export interface FlashcardReviewResult {
 	cancelled: boolean;
@@ -52,6 +57,8 @@ export class FlashcardReviewModal extends BaseModal {
 	private instructionsInputEl: HTMLTextAreaElement | null = null;
 	private refineButtonEl: HTMLButtonElement | null = null;
 	private saveButtonEl: HTMLButtonElement | null = null;
+	// Editable text field instance
+	private editableField: EditableTextField | null = null;
 
 	constructor(app: App, options: FlashcardReviewModalOptions) {
 		super(app, {
@@ -211,32 +218,30 @@ export class FlashcardReviewModal extends BaseModal {
 		const label = field === "question" ? "Question:" : "Answer:";
 
 		// Label for the field being edited
-		const labelEl = itemEl.createDiv({
+		itemEl.createDiv({
 			cls: "episteme-review-field-label",
 			text: label,
 		});
 
-		// Editable contenteditable div - show raw markdown
-		const editEl = itemEl.createDiv({
-			cls: "episteme-review-editable",
-			attr: {
-				contenteditable: "true",
-				"data-field": field,
+		// Use EditableTextField component with toolbar
+		this.editableField = createEditableTextField(itemEl, {
+			initialValue: content,
+			showToolbar: true,
+			toolbarButtons: TOOLBAR_BUTTONS.MINIMAL,
+			toolbarPositioned: false,
+			field,
+			autoFocus: true,
+			onSave: (value) => void this.saveEdit(index, field, value),
+			onTab: () => {
+				const nextField = field === "question" ? "answer" : "question";
+				void (async () => {
+					if (this.editableField) {
+						await this.saveEdit(index, field, this.editableField.getValue());
+					}
+					this.startEdit(index, nextField);
+				})();
 			},
 		});
-
-		// Set raw markdown as text content (not rendered)
-		editEl.textContent = content;
-
-		// Event listeners
-		editEl.addEventListener("blur", () => void this.saveEdit(index, field));
-		editEl.addEventListener("keydown", (e) => this.handleEditKeydown(e, index, field));
-
-		// Focus after delay
-		setTimeout(() => {
-			editEl.focus();
-			editEl.scrollIntoView({ behavior: "smooth", block: "center" });
-		}, 10);
 	}
 
 	private renderRefineSection(container: HTMLElement): void {
@@ -349,16 +354,8 @@ export class FlashcardReviewModal extends BaseModal {
 		this.renderFlashcardsList();
 	}
 
-	private async saveEdit(index: number, field: "question" | "answer"): Promise<void> {
-		const editEl = this.containerEl?.querySelector(
-			`.episteme-review-editable[data-field="${field}"]`
-		);
-		if (!editEl || !(editEl instanceof HTMLElement)) return;
-
-		if (!editEl || !this.flashcards[index]) return;
-
-		// Convert HTML to markdown (handle <br>, etc.)
-		const content = this.convertEditableToMarkdown(editEl);
+	private async saveEdit(index: number, field: "question" | "answer", content: string): Promise<void> {
+		if (!this.flashcards[index]) return;
 
 		// Update flashcard
 		if (field === "question") {
@@ -367,52 +364,12 @@ export class FlashcardReviewModal extends BaseModal {
 			this.flashcards[index].answer = content;
 		}
 
+		// Cleanup editable field
+		this.editableField?.destroy();
+		this.editableField = null;
+
 		this.editingCard = null;
 		this.renderFlashcardsList();
-	}
-
-	private handleEditKeydown(e: KeyboardEvent, index: number, field: "question" | "answer"): void {
-		if (e.key === "Escape") {
-			e.preventDefault();
-			void this.saveEdit(index, field);
-		} else if (e.key === "Tab") {
-			e.preventDefault();
-			const nextField = field === "question" ? "answer" : "question";
-			void (async () => {
-				await this.saveEdit(index, field);
-				this.startEdit(index, nextField);
-			})();
-		}
-	}
-
-	private convertEditableToMarkdown(editEl: HTMLElement): string {
-		let html = editEl.innerHTML;
-
-		// Normalize different browser line break representations:
-		// - Chrome/Safari: <div>text</div> or <br>
-		// - Firefox: <br>
-		// - Edge: <p>text</p>
-
-		// Replace <br> tags with newline
-		html = html.replace(/<br\s*\/?>/gi, "\n");
-
-		// Replace closing </div> and </p> with newline (opening tags create blocks)
-		html = html.replace(/<\/div>/gi, "\n");
-		html = html.replace(/<\/p>/gi, "\n");
-
-		// Remove remaining HTML tags
-		html = html.replace(/<[^>]*>/g, "");
-
-		// Decode HTML entities
-		const textarea = document.createElement("textarea");
-		textarea.innerHTML = html;
-		const text = textarea.value;
-
-		// Trim trailing newlines but preserve internal ones
-		const trimmed = text.replace(/\n+$/, "");
-
-		// Convert newlines back to <br> for flashcard format
-		return trimmed.replace(/\n/g, "<br>");
 	}
 
 	private getFinalFlashcards(): FlashcardItem[] {
