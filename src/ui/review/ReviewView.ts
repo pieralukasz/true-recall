@@ -1319,7 +1319,7 @@ Source: [[${sourceNote}]]
         });
 
         // Process answer and save to store (single method)
-        const { updatedCard } = await this.reviewService.gradeCard(
+        const { updatedCard, result } = await this.reviewService.gradeCard(
             card,
             rating,
             this.fsrsService,
@@ -1334,7 +1334,9 @@ Source: [[${sourceNote}]]
                 isNewCard,
                 responseTime,
                 rating,
-                card.fsrs.state // previousState before the answer
+                card.fsrs.state, // previousState before the answer
+                result.scheduledDays,
+                result.elapsedDays
             );
         } catch (error) {
             console.error("Error recording review to persistent storage:", error);

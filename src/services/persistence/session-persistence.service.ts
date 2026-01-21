@@ -52,7 +52,9 @@ export class SessionPersistenceService {
 		isNewCard: boolean,
 		durationMs: number,
 		rating?: Grade,
-		previousState?: State
+		previousState?: State,
+		scheduledDays?: number,
+		elapsedDays?: number
 	): void {
 		const today = this.getTodayKey();
 
@@ -76,6 +78,18 @@ export class SessionPersistenceService {
 		};
 
 		this.store.updateDailyStats(today, statsIncrement);
+
+		// Record to review_log for detailed history
+		if (rating !== undefined) {
+			this.store.addReviewLog(
+				cardId,
+				rating,
+				scheduledDays ?? 0,
+				elapsedDays ?? 0,
+				previousState ?? 0,
+				durationMs
+			);
+		}
 	}
 
 	/**

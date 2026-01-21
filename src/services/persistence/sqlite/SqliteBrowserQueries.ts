@@ -279,18 +279,6 @@ export class SqliteBrowserQueries {
     }
 
     /**
-     * Update card content (question/answer)
-     */
-    updateCardContent(cardId: string, question: string, answer: string): void {
-        this.db.exec(`
-            UPDATE cards SET question = ?, answer = ?, updated_at = ?
-            WHERE id = ?
-        `, [question, answer, Date.now(), cardId]);
-
-        this.onDataChange();
-    }
-
-    /**
      * Get card by ID (for preview)
      */
     getCard(cardId: string): BrowserCardItem | null {

@@ -113,8 +113,8 @@ export class SqliteSourceNotesRepo {
     delete(uid: string, detachCards = true): void {
         if (detachCards) {
             this.db.run(`
-                UPDATE cards SET source_uid = NULL WHERE source_uid = ?
-            `, [uid]);
+                UPDATE cards SET source_uid = NULL, updated_at = ? WHERE source_uid = ?
+            `, [Date.now(), uid]);
         }
 
         this.db.run(`DELETE FROM source_notes WHERE uid = ?`, [uid]);
