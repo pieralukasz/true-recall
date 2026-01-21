@@ -174,7 +174,6 @@ export class FlashcardReviewModal extends BaseModal {
 		});
 		questionEl.addEventListener("click", (e) => this.handleFieldClick(e, index, "question"));
 
-		const questionLabel = questionEl.createDiv({ cls: "episteme-review-field-label", text: "Question:" });
 		const questionContent = questionEl.createDiv({ cls: "episteme-md-content" });
 		void MarkdownRenderer.renderMarkdown(
 			card.question,
@@ -183,6 +182,9 @@ export class FlashcardReviewModal extends BaseModal {
 			this.component
 		);
 
+		// Divider between question and answer
+		contentEl.createEl("hr", { cls: "episteme-editor-divider" });
+
 		// Answer field
 		const answerEl = contentEl.createDiv({
 			cls: "episteme-review-field episteme-review-field--view",
@@ -190,7 +192,6 @@ export class FlashcardReviewModal extends BaseModal {
 		});
 		answerEl.addEventListener("click", (e) => this.handleFieldClick(e, index, "answer"));
 
-		const answerLabel = answerEl.createDiv({ cls: "episteme-review-field-label", text: "Answer:" });
 		const answerContent = answerEl.createDiv({ cls: "episteme-md-content" });
 		void MarkdownRenderer.renderMarkdown(
 			card.answer,
@@ -215,13 +216,6 @@ export class FlashcardReviewModal extends BaseModal {
 		field: "question" | "answer"
 	): void {
 		const content = field === "question" ? card.question : card.answer;
-		const label = field === "question" ? "Question:" : "Answer:";
-
-		// Label for the field being edited
-		itemEl.createDiv({
-			cls: "episteme-review-field-label",
-			text: label,
-		});
 
 		// Use EditableTextField component with toolbar
 		this.editableField = createEditableTextField(itemEl, {
