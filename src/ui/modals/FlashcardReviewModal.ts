@@ -4,17 +4,22 @@
  */
 import { App, Notice, MarkdownRenderer, Component } from "obsidian";
 import { BaseModal } from "./BaseModal";
-import type { FlashcardItem } from "../../types";
+import type { FlashcardItem, GeneratedNoteType } from "../../types";
 import type { OpenRouterService } from "../../services";
 import {
 	createEditableTextField,
 	EditableTextField,
 	TOOLBAR_BUTTONS,
 } from "../components";
+import { GENERATED_NOTE_TYPES } from "../../constants";
 
 export interface FlashcardReviewResult {
 	cancelled: boolean;
 	flashcards?: FlashcardItem[];  // Final flashcards to save
+	// Options for creating a new note as destination
+	createNewNote?: boolean;
+	noteType?: GeneratedNoteType;
+	noteName?: string;
 }
 
 export interface FlashcardReviewModalOptions {
@@ -52,11 +57,18 @@ export class FlashcardReviewModal extends BaseModal {
 	private isRefining: boolean = false;
 	private editingCard: CardEditMode | null = null;
 
+	// Destination state (for creating new note)
+	private createNewNote: boolean = false;
+	private selectedNoteType: GeneratedNoteType = "question";
+	private customNoteName: string = "";
+
 	// UI refs
 	private flashcardsListEl: HTMLElement | null = null;
 	private instructionsInputEl: HTMLTextAreaElement | null = null;
 	private refineButtonEl: HTMLButtonElement | null = null;
 	private saveButtonEl: HTMLButtonElement | null = null;
+	private destinationOptionsEl: HTMLElement | null = null;
+	private noteNameInputEl: HTMLInputElement | null = null;
 	// Editable text field instance
 	private editableField: EditableTextField | null = null;
 
@@ -87,6 +99,9 @@ export class FlashcardReviewModal extends BaseModal {
 	protected renderBody(container: HTMLElement): void {
 		// AI Refine section (moved to top)
 		this.renderRefineSection(container);
+
+		// Destination section (create new note option)
+		this.renderDestinationSection(container);
 
 		// Flashcards list (scrollable)
 		this.flashcardsListEl = container.createDiv({ cls: "episteme-review-flashcards-list" });
@@ -267,6 +282,138 @@ export class FlashcardReviewModal extends BaseModal {
 			cls: "episteme-review-refine-btn",
 		});
 		this.refineButtonEl.addEventListener("click", () => void this.handleRefine());
+	}
+
+	private renderDestinationSection(container: HTMLElement): void {
+		const sectionEl = container.createDiv({
+			cls: "episteme-destination-section",
+		});
+
+		// Checkbox row
+		const checkboxRow = sectionEl.createDiv({
+			cls: "episteme-destination-checkbox-row",
+		});
+
+		const checkbox = checkboxRow.createEl("input", {
+			type: "checkbox",
+			cls: "episteme-destination-checkbox",
+		});
+		checkbox.id = "episteme-create-new-note";
+		checkbox.checked = this.createNewNote;
+
+		const label = checkboxRow.createEl("label", {
+			text: "Create new note for these flashcards",
+			cls: "episteme-destination-label",
+		});
+		label.htmlFor = "episteme-create-new-note";
+
+		// Options container (hidden by default)
+		this.destinationOptionsEl = sectionEl.createDiv({
+			cls: "episteme-destination-options",
+		});
+		this.destinationOptionsEl.style.display = this.createNewNote ? "block" : "none";
+
+		// Note type radio buttons
+		const typeLabel = this.destinationOptionsEl.createDiv({
+			cls: "episteme-destination-type-label",
+			text: "Note type:",
+		});
+
+		const radioGroup = this.destinationOptionsEl.createDiv({
+			cls: "episteme-destination-radio-group",
+		});
+
+		for (const [key, config] of Object.entries(GENERATED_NOTE_TYPES)) {
+			const typeKey = key as GeneratedNoteType;
+			const radioItem = radioGroup.createDiv({
+				cls: `episteme-destination-radio-item${this.selectedNoteType === typeKey ? " is-selected" : ""}`,
+			});
+
+			const radio = radioItem.createEl("input", {
+				type: "radio",
+				cls: "episteme-destination-radio",
+			});
+			radio.name = "note-type";
+			radio.value = typeKey;
+			radio.id = `episteme-note-type-${typeKey}`;
+			radio.checked = this.selectedNoteType === typeKey;
+
+			const radioLabel = radioItem.createEl("label", {
+				cls: "episteme-destination-radio-label",
+			});
+			radioLabel.htmlFor = `episteme-note-type-${typeKey}`;
+
+			radioLabel.createEl("span", {
+				text: config.label,
+				cls: "episteme-destination-type-name",
+			});
+			radioLabel.createEl("span", {
+				text: config.description,
+				cls: "episteme-destination-type-desc",
+			});
+
+			radio.addEventListener("change", () => {
+				if (radio.checked) {
+					this.selectedNoteType = typeKey;
+					this.updateSuggestedNoteName();
+					// Update visual selection
+					radioGroup.querySelectorAll(".episteme-destination-radio-item").forEach(el => {
+						el.classList.remove("is-selected");
+					});
+					radioItem.classList.add("is-selected");
+				}
+			});
+		}
+
+		// Note name input
+		const nameContainer = this.destinationOptionsEl.createDiv({
+			cls: "episteme-destination-name-container",
+		});
+
+		nameContainer.createEl("label", {
+			text: "Note name (optional):",
+			cls: "episteme-destination-name-label",
+		});
+
+		this.noteNameInputEl = nameContainer.createEl("input", {
+			type: "text",
+			cls: "episteme-destination-name-input",
+			placeholder: "Leave empty for auto-generated name",
+		});
+		this.noteNameInputEl.value = this.customNoteName;
+
+		this.noteNameInputEl.addEventListener("input", () => {
+			this.customNoteName = this.noteNameInputEl?.value || "";
+		});
+
+		// Toggle visibility on checkbox change
+		checkbox.addEventListener("change", () => {
+			this.createNewNote = checkbox.checked;
+			if (this.destinationOptionsEl) {
+				this.destinationOptionsEl.style.display = this.createNewNote ? "block" : "none";
+			}
+			if (this.createNewNote) {
+				this.updateSuggestedNoteName();
+			}
+		});
+	}
+
+	private updateSuggestedNoteName(): void {
+		if (!this.noteNameInputEl || this.customNoteName) return;
+
+		// Auto-suggest name based on first flashcard question
+		const activeFlashcards = this.getActiveFlashcards();
+		const firstCard = activeFlashcards[0];
+		if (firstCard) {
+			const config = GENERATED_NOTE_TYPES[this.selectedNoteType];
+			const firstQuestion = firstCard.question
+				.replace(/\*\*/g, "")  // Remove bold markers
+				.replace(/\[\[([^\]|]+)(\|[^\]]+)?\]\]/g, "$1")  // Remove backlink syntax
+				.replace(/#flashcard/g, "")  // Remove flashcard tag
+				.trim()
+				.substring(0, 50);  // Limit length
+			this.noteNameInputEl.placeholder = `${config.defaultNamePrefix}${firstQuestion}...`;
+		}
 	}
 
 	private renderActions(container: HTMLElement): void {
@@ -468,10 +615,22 @@ export class FlashcardReviewModal extends BaseModal {
 
 		this.hasSelected = true;
 		if (this.resolvePromise) {
-			this.resolvePromise({
+			const result: FlashcardReviewResult = {
 				cancelled: false,
 				flashcards: finalFlashcards,
-			});
+			};
+
+			// Include destination options if creating new note
+			if (this.createNewNote) {
+				result.createNewNote = true;
+				result.noteType = this.selectedNoteType;
+				// Use custom name if provided, otherwise leave undefined for auto-generation
+				if (this.customNoteName.trim()) {
+					result.noteName = this.customNoteName.trim();
+				}
+			}
+
+			this.resolvePromise(result);
 			this.resolvePromise = null;
 		}
 		this.close();

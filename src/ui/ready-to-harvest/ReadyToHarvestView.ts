@@ -11,7 +11,7 @@ import {
 } from "../../constants";
 import { createReadyToHarvestStateManager } from "../../state/ready-to-harvest.state";
 import type { NoteReadyToHarvest } from "../../state/state.types";
-import { ReadyToHarvestHeader } from "./ReadyToHarvestHeader";
+import { Panel } from "../components/Panel";
 import { ReadyToHarvestContent } from "./ReadyToHarvestContent";
 import type EpistemePlugin from "../../main";
 
@@ -38,12 +38,8 @@ export class ReadyToHarvestView extends ItemView {
 	private stateManager = createReadyToHarvestStateManager();
 
 	// UI Components
-	private headerComponent: ReadyToHarvestHeader | null = null;
+	private panelComponent: Panel | null = null;
 	private contentComponent: ReadyToHarvestContent | null = null;
-
-	// Container elements
-	private headerContainer!: HTMLElement;
-	private contentContainer!: HTMLElement;
 
 	// State subscription
 	private unsubscribe: (() => void) | null = null;
@@ -69,21 +65,19 @@ export class ReadyToHarvestView extends ItemView {
 		const container = this.containerEl.children[1];
 		if (!(container instanceof HTMLElement)) return;
 		container.empty();
-		container.addClass("episteme-ready-harvest-view");
 
-		// Create container elements
-		this.headerContainer = container.createDiv({
-			cls: "episteme-ready-harvest-header-container",
+		// Create Panel component (shared with Projects)
+		this.panelComponent = new Panel(container, {
+			title: "Ready to Harvest",
+			onRefresh: () => this.loadReadyNotes(),
 		});
-		this.contentContainer = container.createDiv({
-			cls: "episteme-ready-harvest-content-container",
-		});
+		this.panelComponent.render();
 
 		// Subscribe to state changes
-		this.unsubscribe = this.stateManager.subscribe(() => this.render());
+		this.unsubscribe = this.stateManager.subscribe(() => this.renderContent());
 
 		// Initial render
-		this.render();
+		this.renderContent();
 
 		// Start scanning
 		void this.loadReadyNotes();
@@ -91,7 +85,7 @@ export class ReadyToHarvestView extends ItemView {
 
 	async onClose(): Promise<void> {
 		this.unsubscribe?.();
-		this.headerComponent?.destroy();
+		this.panelComponent?.destroy();
 		this.contentComponent?.destroy();
 	}
 
@@ -204,26 +198,47 @@ export class ReadyToHarvestView extends ItemView {
 	}
 
 	/**
-	 * Render all components
+	 * Render content (Panel is created once in onOpen)
 	 */
-	private render(): void {
+	private renderContent(): void {
+		if (!this.panelComponent) return;
+
 		const state = this.stateManager.getState();
 		const filteredNotes = this.stateManager.getFilteredNotes();
 
-		// Render Header
-		this.headerComponent?.destroy();
-		this.headerContainer.empty();
-		this.headerComponent = new ReadyToHarvestHeader(this.headerContainer, {
-			count: state.allReadyNotes.length,
-			isLoading: state.isLoading,
-			onRefresh: () => this.loadReadyNotes(),
+		const headerContainer = this.panelComponent.getHeaderContainer();
+		const contentContainer = this.panelComponent.getContentContainer();
+
+		// Clear and re-add summary section (header title row is preserved by Panel)
+		const existingSummary = headerContainer.querySelector(".episteme-ready-summary");
+		if (existingSummary) {
+			existingSummary.remove();
+		}
+
+		// Add summary section after header
+		const summaryEl = headerContainer.createDiv({
+			cls: "episteme-ready-summary",
 		});
-		this.headerComponent.render();
+		if (state.isLoading) {
+			summaryEl.createDiv({
+				text: "Scanning vault...",
+				cls: "episteme-ready-label",
+			});
+		} else {
+			summaryEl.createDiv({
+				text: state.allReadyNotes.length.toString(),
+				cls: "episteme-ready-count",
+			});
+			summaryEl.createDiv({
+				text: state.allReadyNotes.length === 1 ? "note ready to harvest" : "notes ready to harvest",
+				cls: "episteme-ready-label",
+			});
+		}
 
 		// Render Content
 		this.contentComponent?.destroy();
-		this.contentContainer.empty();
-		this.contentComponent = new ReadyToHarvestContent(this.contentContainer, {
+		contentContainer.empty();
+		this.contentComponent = new ReadyToHarvestContent(contentContainer, {
 			isLoading: state.isLoading,
 			filteredNotes,
 			totalCount: state.allReadyNotes.length,

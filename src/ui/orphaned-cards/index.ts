@@ -4,5 +4,4 @@
  */
 
 export { OrphanedCardsView } from "./OrphanedCardsView";
-export { OrphanedCardsHeader } from "./OrphanedCardsHeader";
 export { OrphanedCardsContent } from "./OrphanedCardsContent";

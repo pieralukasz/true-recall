@@ -4,5 +4,4 @@
  */
 
 export { ReadyToHarvestView } from "./ReadyToHarvestView";
-export { ReadyToHarvestHeader } from "./ReadyToHarvestHeader";
 export { ReadyToHarvestContent } from "./ReadyToHarvestContent";
