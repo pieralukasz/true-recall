@@ -85,10 +85,11 @@ export class SqliteStoreService {
         this.useCrSqlite = loadResult.isCrSqlite;
         this._siteId = loadResult.siteId;
 
+        // Log database engine (sync works with both via Server-Side Merge)
         if (this.useCrSqlite) {
             console.log(`[Episteme] Using CR-SQLite (site_id: ${this._siteId?.substring(0, 8)}...)`);
         } else {
-            console.log("[Episteme] Using sql.js fallback (sync disabled)");
+            console.log("[Episteme] Using sql.js (sync via Server-Side Merge)");
         }
 
         // Schema setup

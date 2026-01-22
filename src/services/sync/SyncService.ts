@@ -141,6 +141,12 @@ export class SyncService {
             const pushResult = await this.pushChanges();
             pushed = pushResult.pushed;
 
+            // 1.5. Update version after push (BEFORE pull)
+            // This ensures pull request uses the correct sinceVersion
+            if (pushResult.serverVersion !== undefined) {
+                this.stateManager.updateSyncState(pushResult.serverVersion);
+            }
+
             // 2. Pull remote changes
             this.emitProgress("pulling");
             const pullResult = await this.pullChanges();
@@ -152,7 +158,7 @@ export class SyncService {
                 this.applyServerRows(pullResult);
             }
 
-            // 4. Update state
+            // 4. Update state again (final serverVersion from pull)
             this.emitProgress("finalizing");
             this.stateManager.updateSyncState(pullResult.serverVersion);
 
@@ -357,7 +363,14 @@ export class SyncService {
         // Apply deletes for each table
         for (const [table, ids] of Object.entries(pullResponse.deletedIds)) {
             for (const id of ids) {
-                this.deleteRow(table, id);
+                // Check if row exists before deleting (deduplication)
+                if (this.rowExists(table, id)) {
+                    // Row exists, safe to delete
+                    this.deleteRow(table, id);
+                } else {
+                    // Row doesn't exist - skip (already deleted or duplicate)
+                    console.log(`[Sync] Skipping deletion for ${table}.${id} - row doesn't exist`);
+                }
             }
         }
     }
@@ -418,6 +431,48 @@ export class SyncService {
         `;
 
         this.db.run(sql, values);
+    }
+
+    /**
+     * Check if a row exists in the database
+     */
+    private rowExists(table: string, rowId: string): boolean {
+        try {
+            if (table === "note_projects" || table === "daily_reviewed_cards") {
+                // Composite PK - rowId is "source_uid:project_id" or "date:card_id"
+                const parts = rowId.split(":");
+                const first = parts[0] ?? "";
+                const second = parts[1] ?? "";
+
+                let sql: string;
+                let params: string[];
+                if (table === "note_projects") {
+                    sql = `SELECT 1 FROM "${table}" WHERE source_uid = ? AND project_id = ? LIMIT 1`;
+                    params = [first, second];
+                } else {
+                    sql = `SELECT 1 FROM "${table}" WHERE date = ? AND card_id = ? LIMIT 1`;
+                    params = [first, second];
+                }
+
+                const result = this.db.exec(sql, params);
+                return !!(result && result[0] && result[0].values.length > 0);
+            } else {
+                // Simple PK
+                let pkColumn = "id";
+                if (table === "source_notes") {
+                    pkColumn = "uid";
+                } else if (table === "daily_stats") {
+                    pkColumn = "date";
+                }
+
+                const sql = `SELECT 1 FROM "${table}" WHERE "${pkColumn}" = ? LIMIT 1`;
+                const result = this.db.exec(sql, [rowId]);
+                return !!(result && result[0] && result[0].values.length > 0);
+            }
+        } catch (e) {
+            console.error(`[Sync] Error checking row existence for ${table}.${rowId}:`, e);
+            return false; // Assume doesn't exist if check fails
+        }
     }
 
     /**

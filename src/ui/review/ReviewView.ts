@@ -9,7 +9,7 @@ import { VIEW_TYPE_REVIEW, UI_CONFIG } from "../../constants";
 import { FSRSService, ReviewService, FlashcardManager, SessionPersistenceService, getEventBus, ZettelTemplateService } from "../../services";
 import { ReviewStateManager } from "../../state";
 import { extractFSRSSettings, type FSRSFlashcardItem } from "../../types";
-import type { CardRemovedEvent, CardUpdatedEvent, BulkChangeEvent } from "../../types/events.types";
+import type { CardRemovedEvent, CardUpdatedEvent, BulkChangeEvent, SyncCompletedEvent } from "../../types/events.types";
 import { toggleTextareaWrap, insertAtTextareaCursor, setupAutoResize } from "../components";
 import type EpistemePlugin from "../../main";
 import type { ReviewViewState, UndoEntry } from "./review.types";
@@ -298,6 +298,30 @@ export class ReviewView extends ItemView {
             }
         });
         this.eventUnsubscribers.push(unsubBulk);
+
+        // Handle sync completion - don't interrupt active review sessions
+        const unsubSyncCompleted = eventBus.on<SyncCompletedEvent>("sync:completed", (event) => {
+            if (event.pulled > 0) {
+                void this.handleSyncCompleted();
+            }
+        });
+        this.eventUnsubscribers.push(unsubSyncCompleted);
+    }
+
+    /**
+     * Handle sync completion - don't interrupt active review sessions
+     */
+    private async handleSyncCompleted(): Promise<void> {
+        const state = this.stateManager.getState();
+
+        // Don't interrupt active review sessions
+        // Changes will be included in the next session
+        if (state.isActive && state.currentIndex < state.queue.length) {
+            console.log("[ReviewView] Sync completed - changes will appear in next session");
+            return;
+        }
+
+        // If no active session, no action needed (user will start fresh session)
     }
 
     /**

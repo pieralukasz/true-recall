@@ -33,7 +33,6 @@
 		"@langchain/community": "^1.1.4",
 		"@langchain/core": "^1.1.15",
 		"@langchain/openai": "^1.2.2",
-		"@vlcn.io/crsqlite-wasm": "^0.16.0",
 		"chart.js": "^4.5.1",
 		"langchain": "^1.2.10",
 		"obsidian": "latest",

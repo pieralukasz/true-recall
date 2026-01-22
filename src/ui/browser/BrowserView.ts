@@ -12,6 +12,7 @@ import { BrowserTable } from "./BrowserTable";
 import { BrowserPreview } from "./BrowserPreview";
 import { FlashcardEditorModal } from "../modals/FlashcardEditorModal";
 import { getEventBus } from "../../services/core/event-bus.service";
+import type { SyncCompletedEvent } from "../../types/events.types";
 import type EpistemePlugin from "../../main";
 
 /**
@@ -116,7 +117,13 @@ export class BrowserView extends ItemView {
             eventBus.on("card:added", () => void this.loadCards()),
             eventBus.on("card:updated", () => void this.loadCards()),
             eventBus.on("card:removed", () => void this.loadCards()),
-            eventBus.on("cards:bulk-change", () => void this.loadCards())
+            eventBus.on("cards:bulk-change", () => void this.loadCards()),
+            // Refresh after remote sync
+            eventBus.on<SyncCompletedEvent>("sync:completed", (event) => {
+                if (event.pulled > 0) {
+                    void this.loadCards();
+                }
+            })
         );
     }
 

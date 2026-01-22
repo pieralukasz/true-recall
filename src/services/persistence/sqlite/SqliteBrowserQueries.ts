@@ -192,17 +192,50 @@ export class SqliteBrowserQueries {
 
         const placeholders = cardIds.map(() => "?").join(",");
 
-        // First delete review logs
+        // Get affected rows BEFORE deleting (for sync logging)
+        const reviewLogs = this.db.exec(
+            `SELECT id FROM review_log WHERE card_id IN (${placeholders})`,
+            cardIds
+        );
+        const imageRefs = this.db.exec(
+            `SELECT id FROM card_image_refs WHERE card_id IN (${placeholders})`,
+            cardIds
+        );
+
+        // Delete review logs
         this.db.exec(`DELETE FROM review_log WHERE card_id IN (${placeholders})`, cardIds);
 
-        // Then delete image refs
+        // Log each review_log deletion
+        if (reviewLogs && reviewLogs[0]) {
+            const data = reviewLogs[0];
+            for (let i = 0; i < data.values.length; i++) {
+                const reviewId = data.values[i]![0] as string;
+                this.logChange("DELETE", "review_log", reviewId);
+            }
+        }
+
+        // Delete image refs
         this.db.exec(`DELETE FROM card_image_refs WHERE card_id IN (${placeholders})`, cardIds);
 
-        // Finally delete cards
+        // Log each image_ref deletion
+        if (imageRefs && imageRefs[0]) {
+            const data = imageRefs[0];
+            for (let i = 0; i < data.values.length; i++) {
+                const refId = data.values[i]![0] as string;
+                this.logChange("DELETE", "card_image_refs", refId);
+            }
+        }
+
+        // Delete cards
         this.db.exec(`DELETE FROM cards WHERE id IN (${placeholders})`, cardIds);
 
+        // Log each card deletion
+        for (const cardId of cardIds) {
+            this.logChange("DELETE", "cards", cardId);
+        }
+
         this.onDataChange();
-        return this.db.getRowsModified();
+        return cardIds.length;
     }
 
     /**
@@ -276,6 +309,29 @@ export class SqliteBrowserQueries {
     }
 
     // ===== Helper Methods =====
+
+    /**
+     * Log a change to sync_log for Server-Side Merge sync
+     */
+    private logChange(
+        op: "INSERT" | "UPDATE" | "DELETE",
+        table: string,
+        rowId: string,
+        data?: unknown
+    ): void {
+        this.db.run(
+            `INSERT INTO sync_log (id, operation, table_name, row_id, data, timestamp, synced)
+             VALUES (?, ?, ?, ?, ?, ?, 0)`,
+            [
+                crypto.randomUUID(),
+                op,
+                table,
+                rowId,
+                data ? JSON.stringify(data) : null,
+                Date.now(),
+            ]
+        );
+    }
 
     /**
      * Convert database row to BrowserCardItem
