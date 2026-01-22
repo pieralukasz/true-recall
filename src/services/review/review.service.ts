@@ -13,6 +13,7 @@ import type { CardReviewedEvent } from "../../types/events.types";
 import type { NewCardOrder, ReviewOrder, NewReviewMix } from "../../types/settings.types";
 import type { FSRSService } from "../core/fsrs.service";
 import type { FlashcardManager } from "../flashcard/flashcard.service";
+import type { DayBoundaryService } from "../core/day-boundary.service";
 import { LEARN_AHEAD_LIMIT_MINUTES } from "../../constants";
 import { getEventBus } from "../core/event-bus.service";
 
@@ -155,79 +156,82 @@ export class ReviewService {
         const reviewOrder = options.reviewOrder ?? "due-date";
         const newReviewMix = options.newReviewMix ?? "mix-with-reviews";
 
-        // Apply custom session filters first
-        let filteredCards = allCards;
+        // Pre-compute filter values and boundaries using dayStartHour
+        const dayStartHour = options.dayStartHour ?? 4;
 
-        // Filter by source note name(s)
-        if (options.sourceNoteFilters && options.sourceNoteFilters.length > 0) {
-            const noteSet = new Set(options.sourceNoteFilters);
-            filteredCards = filteredCards.filter(
-                card => card.sourceNoteName && noteSet.has(card.sourceNoteName)
-            );
-        } else if (options.sourceNoteFilter) {
-            filteredCards = filteredCards.filter(
-                card => card.sourceNoteName === options.sourceNoteFilter
-            );
+        // Compute "today" boundary respecting dayStartHour (like Anki)
+        // At 3 AM with dayStartHour=4, "today" actually started yesterday at 4 AM
+        const todayBoundary = new Date(now);
+        if (now.getHours() < dayStartHour) {
+            todayBoundary.setDate(todayBoundary.getDate() - 1);
         }
+        todayBoundary.setHours(dayStartHour, 0, 0, 0);
 
-        // Filter by flashcard file path
-        if (options.filePathFilter) {
-            filteredCards = filteredCards.filter(
-                card => card.filePath === options.filePathFilter
-            );
-        }
+        // Compute "week ago" boundary
+        const weekAgoBoundary = new Date(todayBoundary);
+        weekAgoBoundary.setDate(weekAgoBoundary.getDate() - 7);
 
-        // Filter to only cards created today
-        if (options.createdTodayOnly) {
-            const todayStart = new Date();
-            todayStart.setHours(0, 0, 0, 0);
-            filteredCards = filteredCards.filter(card => {
+        // Pre-compute sets for O(1) lookups
+        const noteSet = options.sourceNoteFilters?.length
+            ? new Set(options.sourceNoteFilters)
+            : null;
+        const projectSet = options.projectFilters?.length
+            ? new Set(options.projectFilters)
+            : null;
+
+        // Single-pass filtering for performance (combines 8 filter calls into 1)
+        const filteredCards = allCards.filter(card => {
+            // Source note filter
+            if (noteSet) {
+                if (!card.sourceNoteName || !noteSet.has(card.sourceNoteName)) return false;
+            } else if (options.sourceNoteFilter) {
+                if (card.sourceNoteName !== options.sourceNoteFilter) return false;
+            }
+
+            // File path filter
+            if (options.filePathFilter && card.filePath !== options.filePathFilter) {
+                return false;
+            }
+
+            // Created today filter (uses dayStartHour boundary)
+            if (options.createdTodayOnly) {
                 const createdAt = card.fsrs.createdAt;
-                return createdAt && createdAt >= todayStart.getTime();
-            });
-        }
+                if (!createdAt || createdAt < todayBoundary.getTime()) return false;
+            }
 
-        // Filter to only cards created this week (last 7 days)
-        if (options.createdThisWeek) {
-            const weekAgo = new Date();
-            weekAgo.setDate(weekAgo.getDate() - 7);
-            weekAgo.setHours(0, 0, 0, 0);
-            filteredCards = filteredCards.filter(card => {
+            // Created this week filter (uses dayStartHour boundary)
+            if (options.createdThisWeek) {
                 const createdAt = card.fsrs.createdAt;
-                return createdAt && createdAt >= weekAgo.getTime();
-            });
-        }
+                if (!createdAt || createdAt < weekAgoBoundary.getTime()) return false;
+            }
 
-        // Filter weak cards (stability < 7 days)
-        if (options.weakCardsOnly) {
-            filteredCards = filteredCards.filter(
-                card => card.fsrs.stability < 7
-            );
-        }
+            // Weak cards filter
+            if (options.weakCardsOnly && card.fsrs.stability >= 7) {
+                return false;
+            }
 
-        // Filter by state
-        if (options.stateFilter) {
-            filteredCards = filteredCards.filter(card => {
+            // State filter
+            if (options.stateFilter) {
                 switch (options.stateFilter) {
                     case "new":
-                        return card.fsrs.state === State.New;
+                        if (card.fsrs.state !== State.New) return false;
+                        break;
                     case "learning":
-                        return card.fsrs.state === State.Learning || card.fsrs.state === State.Relearning;
+                        if (card.fsrs.state !== State.Learning && card.fsrs.state !== State.Relearning) return false;
+                        break;
                     case "due":
-                        return card.fsrs.state === State.Review;
-                    default:
-                        return true;
+                        if (card.fsrs.state !== State.Review) return false;
+                        break;
                 }
-            });
-        }
+            }
 
-        // Filter by projects if specified (card matches if it has ANY of the specified projects)
-        if (options.projectFilters && options.projectFilters.length > 0) {
-            const projectSet = new Set(options.projectFilters);
-            filteredCards = filteredCards.filter(card =>
-                card.projects.some(p => projectSet.has(p))
-            );
-        }
+            // Project filter
+            if (projectSet && !card.projects.some(p => projectSet.has(p))) {
+                return false;
+            }
+
+            return true;
+        });
 
         // Filter out already reviewed cards, BUT keep learning/relearning cards
         // (they need multiple reviews per day)
@@ -532,14 +536,32 @@ export class ReviewService {
 
     /**
      * Get the next position to insert a re-queued card
+     * @param queue Current queue of cards
+     * @param card Card to requeue
+     * @param reviewOrder Optional sort order - affects positioning strategy
      */
     getRequeuePosition(
         queue: FSRSFlashcardItem[],
-        card: FSRSFlashcardItem
+        card: FSRSFlashcardItem,
+        reviewOrder?: "due-date" | "random" | "due-date-random"
     ): number {
         const dueDate = new Date(card.fsrs.due);
+        const now = new Date();
 
-        // Find the position where this card should be inserted based on due time
+        // For random sort: insert learning cards near front with some randomness
+        // Using due-date ordering in a shuffled queue would place cards incorrectly
+        if (reviewOrder === "random") {
+            const learnAheadTime = new Date(now.getTime() + LEARN_AHEAD_LIMIT_MINUTES * 60 * 1000);
+            if (dueDate <= learnAheadTime) {
+                // Card is due soon - insert randomly in first 5 positions
+                const maxPos = Math.min(5, queue.length);
+                return Math.floor(Math.random() * (maxPos + 1));
+            }
+            // Card not due yet - append to end
+            return queue.length;
+        }
+
+        // For due-date or due-date-random: find position based on due time
         for (let i = 0; i < queue.length; i++) {
             const queueCard = queue[i];
             if (!queueCard) continue;
@@ -566,8 +588,13 @@ export class ReviewService {
 
     /**
      * Get streak information (consecutive days of review)
+     * @param reviewHistory Array of review results with timestamps
+     * @param dayBoundaryService Optional service for dayStartHour-aware date formatting
      */
-    getStreakInfo(reviewHistory: ReviewResult[]): {
+    getStreakInfo(
+        reviewHistory: ReviewResult[],
+        dayBoundaryService?: DayBoundaryService
+    ): {
         currentStreak: number;
         longestStreak: number;
     } {
@@ -575,12 +602,24 @@ export class ReviewService {
             return { currentStreak: 0, longestStreak: 0 };
         }
 
-        // Get unique review days
+        // Format date as local YYYY-MM-DD, respecting dayStartHour if service provided
+        const formatDate = (timestamp: number): string => {
+            if (dayBoundaryService) {
+                // Use dayStartHour-aware formatting: a 3 AM review counts as "yesterday"
+                const boundary = dayBoundaryService.getTodayBoundary(new Date(timestamp));
+                return dayBoundaryService.formatLocalDate(boundary);
+            }
+            // Fallback: local date without dayStartHour (avoids UTC issues)
+            const d = new Date(timestamp);
+            const year = d.getFullYear();
+            const month = String(d.getMonth() + 1).padStart(2, "0");
+            const day = String(d.getDate()).padStart(2, "0");
+            return `${year}-${month}-${day}`;
+        };
+
+        // Get unique review days using local dates
         const reviewDays = new Set(
-            reviewHistory.map((r) => {
-                const date = new Date(r.timestamp);
-                return date.toISOString().split("T")[0];
-            })
+            reviewHistory.map((r) => formatDate(r.timestamp))
         );
 
         const sortedDays = Array.from(reviewDays).sort();
@@ -589,10 +628,9 @@ export class ReviewService {
         let longestStreak = 0;
         let streak = 0;
 
-        const today = new Date().toISOString().split("T")[0];
-        const yesterday = new Date(Date.now() - 86400000)
-            .toISOString()
-            .split("T")[0];
+        const now = Date.now();
+        const today = formatDate(now);
+        const yesterday = formatDate(now - 86400000);
 
         for (let i = 0; i < sortedDays.length; i++) {
             const currentDay = sortedDays[i];

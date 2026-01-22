@@ -1449,7 +1449,8 @@ export class ReviewView extends ItemView {
         if (this.reviewService.shouldRequeue(updatedCard)) {
             const position = this.reviewService.getRequeuePosition(
                 this.stateManager.getState().queue.slice(this.stateManager.getState().currentIndex + 1),
-                updatedCard
+                updatedCard,
+                this.plugin.settings.reviewOrder
             );
             this.stateManager.requeueCard(updatedCard, this.stateManager.getState().currentIndex + 1 + position);
         }
