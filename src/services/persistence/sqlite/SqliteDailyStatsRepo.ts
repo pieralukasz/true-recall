@@ -2,18 +2,17 @@
  * SQLite Daily Stats Repository
  * Review log and daily statistics operations
  */
-import type { Database } from "sql.js";
 import type { CardReviewLogEntry, ExtendedDailyStats } from "../../../types";
-import { getQueryResult } from "./sqlite.types";
+import { getQueryResult, type DatabaseLike } from "./sqlite.types";
 
 /**
  * Repository for daily stats and review log operations
  */
 export class SqliteDailyStatsRepo {
-    private db: Database;
+    private db: DatabaseLike;
     private onDataChange: () => void;
 
-    constructor(db: Database, onDataChange: () => void) {
+    constructor(db: DatabaseLike, onDataChange: () => void) {
         this.db = db;
         this.onDataChange = onDataChange;
     }
@@ -21,7 +20,7 @@ export class SqliteDailyStatsRepo {
     // ===== Review Log =====
 
     /**
-     * Add a review log entry
+     * Add a review log entry with UUID primary key
      */
     addReviewLog(
         cardId: string,
@@ -31,14 +30,30 @@ export class SqliteDailyStatsRepo {
         state: number,
         timeSpentMs: number
     ): void {
+        const id = this.generateUUID();
         this.db.run(`
             INSERT INTO review_log (
-                card_id, reviewed_at, rating, scheduled_days,
+                id, card_id, reviewed_at, rating, scheduled_days,
                 elapsed_days, state, time_spent_ms
-            ) VALUES (?, datetime('now'), ?, ?, ?, ?, ?)
-        `, [cardId, rating, scheduledDays, elapsedDays, state, timeSpentMs]);
+            ) VALUES (?, datetime('now'), ?, ?, ?, ?, ?, ?)
+        `, [id, cardId, rating, scheduledDays, elapsedDays, state, timeSpentMs]);
 
         this.onDataChange();
+    }
+
+    /**
+     * Generate a UUID v4 string
+     */
+    private generateUUID(): string {
+        if (typeof crypto !== "undefined" && crypto.randomUUID) {
+            return crypto.randomUUID();
+        }
+        // Fallback for environments without crypto.randomUUID
+        return "xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx".replace(/[xy]/g, (c) => {
+            const r = (Math.random() * 16) | 0;
+            const v = c === "x" ? r : (r & 0x3) | 0x8;
+            return v.toString(16);
+        });
     }
 
     /**

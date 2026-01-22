@@ -2,19 +2,18 @@
  * SQLite Card Repository
  * CRUD operations for flashcard data
  */
-import type { Database } from "sql.js";
 import type { State } from "ts-fsrs";
 import type { FSRSCardData } from "../../../types";
-import { getQueryResult, type SqlRow } from "./sqlite.types";
+import { getQueryResult, type SqlRow, type DatabaseLike } from "./sqlite.types";
 
 /**
  * Repository for card CRUD operations
  */
 export class SqliteCardRepository {
-    private db: Database;
+    private db: DatabaseLike;
     private onDataChange: () => void;
 
-    constructor(db: Database, onDataChange: () => void) {
+    constructor(db: DatabaseLike, onDataChange: () => void) {
         this.db = db;
         this.onDataChange = onDataChange;
     }

@@ -16,8 +16,8 @@ export interface ProjectsContentProps {
 	component: Component;
 	onSearchChange: (query: string) => void;
 	onStartReview: (projectName: string) => void;
-	onDelete: (projectId: number) => void;
-	onAddNotes: (projectId: number, projectName: string) => void;
+	onDelete: (projectId: string) => void;
+	onAddNotes: (projectId: string, projectName: string) => void;
 	onCreateFromNote: () => void;
 }
 

@@ -2,18 +2,17 @@
  * SQLite Projects Repository
  * CRUD operations for projects and note-project relationships (many-to-many)
  */
-import type { Database } from "sql.js";
 import type { ProjectInfo } from "../../../types";
-import { getQueryResult } from "./sqlite.types";
+import { getQueryResult, type DatabaseLike } from "./sqlite.types";
 
 /**
  * Repository for project operations and note-project relationships
  */
 export class SqliteProjectsRepo {
-    private db: Database;
+    private db: DatabaseLike;
     private onDataChange: () => void;
 
-    constructor(db: Database, onDataChange: () => void) {
+    constructor(db: DatabaseLike, onDataChange: () => void) {
         this.db = db;
         this.onDataChange = onDataChange;
     }
@@ -22,9 +21,9 @@ export class SqliteProjectsRepo {
 
     /**
      * Create a new project
-     * @returns The new project ID, or existing ID if project already exists
+     * @returns The new project ID (UUID string), or existing ID if project already exists
      */
-    createProject(name: string): number {
+    createProject(name: string): string {
         const now = Date.now();
 
         // Try to get existing project first
@@ -33,18 +32,31 @@ export class SqliteProjectsRepo {
             return existing.id;
         }
 
-        this.db.run(`
-            INSERT INTO projects (name, created_at, updated_at)
-            VALUES (?, ?, ?)
-        `, [name, now, now]);
+        // Generate UUID for new project
+        const projectId = this.generateUUID();
 
-        // Get the last inserted ID
-        const result = this.db.exec("SELECT last_insert_rowid()");
-        const data = getQueryResult(result);
-        const projectId = data?.values[0]?.[0] as number;
+        this.db.run(`
+            INSERT INTO projects (id, name, created_at, updated_at)
+            VALUES (?, ?, ?, ?)
+        `, [projectId, name, now, now]);
 
         this.onDataChange();
         return projectId;
+    }
+
+    /**
+     * Generate a UUID v4 string
+     */
+    private generateUUID(): string {
+        if (typeof crypto !== "undefined" && crypto.randomUUID) {
+            return crypto.randomUUID();
+        }
+        // Fallback for environments without crypto.randomUUID
+        return "xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx".replace(/[xy]/g, (c) => {
+            const r = (Math.random() * 16) | 0;
+            const v = c === "x" ? r : (r & 0x3) | 0x8;
+            return v.toString(16);
+        });
     }
 
     /**
@@ -69,9 +81,9 @@ export class SqliteProjectsRepo {
     }
 
     /**
-     * Get a project by ID
+     * Get a project by ID (UUID string)
      */
-    getProjectById(id: number): ProjectInfo | null {
+    getProjectById(id: string): ProjectInfo | null {
         const result = this.db.exec(`
             SELECT p.*,
                    COUNT(DISTINCT np.source_uid) as card_count,
@@ -113,7 +125,7 @@ export class SqliteProjectsRepo {
     /**
      * Rename a project
      */
-    renameProject(id: number, newName: string): void {
+    renameProject(id: string, newName: string): void {
         this.db.run(`
             UPDATE projects SET
                 name = ?,
@@ -127,7 +139,7 @@ export class SqliteProjectsRepo {
     /**
      * Delete a project (also removes all note-project associations)
      */
-    deleteProject(id: number): void {
+    deleteProject(id: string): void {
         // Foreign key cascade will handle note_projects cleanup
         this.db.run(`DELETE FROM projects WHERE id = ?`, [id]);
         this.onDataChange();
@@ -206,7 +218,7 @@ export class SqliteProjectsRepo {
     /**
      * Get all source note UIDs in a project
      */
-    getNotesInProject(projectId: number): string[] {
+    getNotesInProject(projectId: string): string[] {
         const result = this.db.exec(`
             SELECT source_uid FROM note_projects WHERE project_id = ?
         `, [projectId]);
@@ -234,7 +246,7 @@ export class SqliteProjectsRepo {
     /**
      * Remove a project from a note
      */
-    removeProjectFromNote(sourceUid: string, projectId: number): void {
+    removeProjectFromNote(sourceUid: string, projectId: string): void {
         this.db.run(`
             DELETE FROM note_projects WHERE source_uid = ? AND project_id = ?
         `, [sourceUid, projectId]);
@@ -346,7 +358,7 @@ export class SqliteProjectsRepo {
         };
 
         return {
-            id: getCol("id") as number,
+            id: getCol("id") as string,
             name: getCol("name") as string,
             noteCount: (getCol("note_count") as number) || 0,
             cardCount: (getCol("card_count") as number) || 0,

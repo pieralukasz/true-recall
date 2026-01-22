@@ -24,6 +24,7 @@ import {
 	getEventBus,
 	BackupService,
 } from "./services";
+import { SyncService, type SyncSettings } from "./services/sync";
 import { NLQueryService } from "./services/ai/nl-query.service";
 import { SqlJsAdapter } from "./services/ai/langchain-sqlite.adapter";
 import type { CardStore, FSRSCardData, SourceNoteInfo } from "./types";
@@ -67,6 +68,7 @@ export default class EpistemePlugin extends Plugin {
 	nlQueryService: NLQueryService | null = null;
 	backupService: BackupService | null = null;
 	agentService: AgentService | null = null;
+	syncService: SyncService | null = null;
 
 	// Keep reference to SQLite store for SQLite-specific operations (stats queries)
 	private sqliteStore: SqliteStoreService | null = null;
@@ -188,6 +190,11 @@ export default class EpistemePlugin extends Plugin {
 	}
 
 	onunload(): void {
+		// Stop sync service
+		if (this.syncService) {
+			this.syncService.destroy();
+		}
+
 		// Save SQLite store immediately on unload (critical with 60s debounce)
 		if (this.sqliteStore) {
 			void this.sqliteStore.saveNow();
@@ -235,8 +242,24 @@ export default class EpistemePlugin extends Plugin {
 		if (this.dayBoundaryService) {
 			this.dayBoundaryService.updateDayStartHour(this.settings.dayStartHour);
 		}
+		if (this.syncService) {
+			this.syncService.updateSettings(this.extractSyncSettings());
+		}
 		// Reinitialize NL Query Service with new settings (API key or model may have changed)
 		void this.initializeNLQueryService();
+	}
+
+	/**
+	 * Extract sync settings from main settings
+	 */
+	private extractSyncSettings(): SyncSettings {
+		return {
+			syncEnabled: this.settings.syncEnabled,
+			syncServerUrl: this.settings.syncServerUrl,
+			syncApiKey: this.settings.syncApiKey,
+			syncIntervalMinutes: this.settings.syncIntervalMinutes,
+			autoSyncEnabled: this.settings.autoSyncEnabled,
+		};
 	}
 
 	// Activate the sidebar view
@@ -655,9 +678,85 @@ export default class EpistemePlugin extends Plugin {
 
 			// Initialize NL Query Service (AI-powered stats queries)
 			await this.initializeNLQueryService();
+
+			// Initialize Sync Service (if CR-SQLite is available)
+			this.initializeSyncService();
 		} catch (error) {
 			console.error("[Episteme] Failed to initialize SQLite store:", error);
 			new Notice("Failed to load flashcard data. Please restart Obsidian.");
+		}
+	}
+
+	/**
+	 * Initialize the Sync Service for cross-device synchronization
+	 */
+	private initializeSyncService(): void {
+		if (!this.sqliteStore) return;
+
+		// Check if sync is available (CR-SQLite loaded)
+		if (!this.sqliteStore.isSyncEnabled()) {
+			console.log("[Episteme] Sync disabled: CR-SQLite not available");
+			return;
+		}
+
+		const siteId = this.sqliteStore.getSiteId();
+		if (!siteId) {
+			console.warn("[Episteme] Sync disabled: Could not get site ID");
+			return;
+		}
+
+		const db = this.sqliteStore.getDatabase();
+		if (!db) {
+			console.warn("[Episteme] Sync disabled: Database not ready");
+			return;
+		}
+
+		try {
+			this.syncService = new SyncService(
+				db,
+				siteId,
+				this.extractSyncSettings()
+			);
+
+			// Start auto-sync if enabled
+			if (this.settings.syncEnabled && this.settings.autoSyncEnabled) {
+				this.syncService.startAutoSync();
+			}
+
+			console.log("[Episteme] Sync service initialized");
+		} catch (error) {
+			console.error("[Episteme] Failed to initialize sync service:", error);
+		}
+	}
+
+	/**
+	 * Trigger a manual sync operation
+	 */
+	async triggerSync(): Promise<void> {
+		if (!this.syncService) {
+			new Notice("Sync not available");
+			return;
+		}
+
+		if (!this.syncService.canSync()) {
+			const status = this.syncService.getStatus();
+			if (status === "no-crsqlite") {
+				new Notice("Sync unavailable: CR-SQLite not loaded");
+			} else if (status === "disabled") {
+				new Notice("Sync is disabled in settings");
+			} else {
+				new Notice("Sync not configured. Check settings.");
+			}
+			return;
+		}
+
+		new Notice("Syncing...");
+		const result = await this.syncService.sync(true);
+
+		if (result.success) {
+			new Notice(`Synced: ${result.pulled} pulled, ${result.pushed} pushed`);
+		} else {
+			new Notice(`Sync failed: ${result.error}`);
 		}
 	}
 
@@ -838,7 +937,7 @@ export default class EpistemePlugin extends Plugin {
 
 		// Create project
 		const projectId = this.cardStore.createProject?.(projectName);
-		if (!projectId || projectId < 0) {
+		if (!projectId) {
 			new Notice("Failed to create project");
 			return;
 		}

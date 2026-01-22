@@ -673,6 +673,102 @@ export class EpistemeSettingTab extends PluginSettingTab {
                 .onClick(async () => {
                     await this.plugin.openRestoreBackupModal();
                 }));
+
+        // ===== Sync Section =====
+        container.createEl("h2", { text: "Cross-Device Sync" });
+
+        const syncInfo = container.createDiv({ cls: "setting-item-description" });
+        const syncService = this.plugin.syncService;
+        const syncAvailable = syncService !== null;
+
+        if (!syncAvailable) {
+            syncInfo.innerHTML = `
+                <p style="color: var(--text-warning);">Sync is not available. CR-SQLite failed to load.</p>
+                <p>The plugin will continue to work normally, but cross-device sync features are disabled.</p>
+            `;
+        } else {
+            syncInfo.innerHTML = `
+                <p>Enable cross-device sync to keep your flashcards synchronized across multiple devices.</p>
+                <p>Requires a sync server (self-hosted or managed).</p>
+            `;
+        }
+
+        new Setting(container)
+            .setName("Enable sync")
+            .setDesc("Enable cross-device synchronization")
+            .addToggle(toggle => toggle
+                .setValue(this.plugin.settings.syncEnabled)
+                .setDisabled(!syncAvailable)
+                .onChange(async (value) => {
+                    this.plugin.settings.syncEnabled = value;
+                    await this.plugin.saveSettings();
+                    this.display(); // Refresh to update UI
+                }));
+
+        new Setting(container)
+            .setName("Sync server URL")
+            .setDesc("URL of the sync server (e.g., https://sync.example.com)")
+            .addText(text => text
+                .setPlaceholder("https://sync.example.com")
+                .setValue(this.plugin.settings.syncServerUrl)
+                .setDisabled(!syncAvailable)
+                .onChange(async (value) => {
+                    this.plugin.settings.syncServerUrl = value;
+                    await this.plugin.saveSettings();
+                }));
+
+        new Setting(container)
+            .setName("API key")
+            .setDesc("Your sync server API key for authentication")
+            .addText(text => {
+                text.inputEl.type = "password";
+                text.setPlaceholder("Enter API key")
+                    .setValue(this.plugin.settings.syncApiKey)
+                    .setDisabled(!syncAvailable)
+                    .onChange(async (value) => {
+                        this.plugin.settings.syncApiKey = value;
+                        await this.plugin.saveSettings();
+                    });
+            });
+
+        new Setting(container)
+            .setName("Auto-sync")
+            .setDesc("Automatically sync in the background")
+            .addToggle(toggle => toggle
+                .setValue(this.plugin.settings.autoSyncEnabled)
+                .setDisabled(!syncAvailable || !this.plugin.settings.syncEnabled)
+                .onChange(async (value) => {
+                    this.plugin.settings.autoSyncEnabled = value;
+                    await this.plugin.saveSettings();
+                }));
+
+        new Setting(container)
+            .setName("Sync interval (minutes)")
+            .setDesc("How often to sync automatically (0 = manual only)")
+            .addSlider(slider => slider
+                .setLimits(0, 60, 1)
+                .setValue(this.plugin.settings.syncIntervalMinutes)
+                .setDynamicTooltip()
+                .setDisabled(!syncAvailable || !this.plugin.settings.syncEnabled || !this.plugin.settings.autoSyncEnabled)
+                .onChange(async (value) => {
+                    this.plugin.settings.syncIntervalMinutes = value;
+                    await this.plugin.saveSettings();
+                }));
+
+        // Sync status and manual sync button
+        const statusDesc = syncService
+            ? `Status: ${syncService.getStatus()}`
+            : "Sync not available";
+
+        new Setting(container)
+            .setName("Manual sync")
+            .setDesc(statusDesc)
+            .addButton(button => button
+                .setButtonText("Sync Now")
+                .setDisabled(!syncAvailable || !this.plugin.settings.syncEnabled)
+                .onClick(async () => {
+                    await this.plugin.triggerSync();
+                }));
     }
 
     /**

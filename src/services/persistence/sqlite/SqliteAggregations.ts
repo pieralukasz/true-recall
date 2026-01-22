@@ -2,17 +2,16 @@
  * SQLite Aggregations
  * Aggregate queries for statistics panel
  */
-import type { Database } from "sql.js";
 import type { CardMaturityBreakdown, CardsCreatedVsReviewedEntry, ProblemCard, StudyPattern, TimeToMasteryStats } from "../../../types";
-import { getQueryResult } from "./sqlite.types";
+import { getQueryResult, type DatabaseLike } from "./sqlite.types";
 
 /**
  * Provides aggregate queries for statistics
  */
 export class SqliteAggregations {
-    private db: Database;
+    private db: DatabaseLike;
 
-    constructor(db: Database) {
+    constructor(db: DatabaseLike) {
         this.db = db;
     }
 

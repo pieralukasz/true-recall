@@ -2,29 +2,28 @@
  * SQLite Schema Manager
  * Database schema creation and migrations
  */
-import type { Database } from "sql.js";
-import { getQueryResult } from "./sqlite.types";
+import { getQueryResult, type DatabaseLike } from "./sqlite.types";
 
 /**
  * Manages SQLite database schema and migrations
  */
 export class SqliteSchemaManager {
-    private db: Database;
+    private db: DatabaseLike;
     private onSchemaChange: () => void;
 
-    constructor(db: Database, onSchemaChange: () => void) {
+    constructor(db: DatabaseLike, onSchemaChange: () => void) {
         this.db = db;
         this.onSchemaChange = onSchemaChange;
     }
 
     /**
-     * Create database tables (schema v8)
+     * Create database tables (schema v10 - CR-SQLite compatible with UUID PKs)
      */
     createTables(): void {
         this.db.run(`
-            -- Cards table with FSRS scheduling data + content (v8)
+            -- Cards table with FSRS scheduling data + content
             CREATE TABLE IF NOT EXISTS cards (
-                id TEXT PRIMARY KEY,
+                id TEXT PRIMARY KEY NOT NULL,
                 due TEXT NOT NULL,
                 stability REAL DEFAULT 0,
                 difficulty REAL DEFAULT 0,
@@ -49,9 +48,9 @@ export class SqliteSchemaManager {
             CREATE INDEX IF NOT EXISTS idx_cards_suspended ON cards(suspended);
             CREATE INDEX IF NOT EXISTS idx_cards_source_uid ON cards(source_uid);
 
-            -- Source notes table (v5: removed deck column)
+            -- Source notes table
             CREATE TABLE IF NOT EXISTS source_notes (
-                uid TEXT PRIMARY KEY,
+                uid TEXT PRIMARY KEY NOT NULL,
                 note_name TEXT NOT NULL,
                 note_path TEXT,
                 created_at INTEGER,
@@ -60,9 +59,9 @@ export class SqliteSchemaManager {
 
             CREATE INDEX IF NOT EXISTS idx_source_notes_name ON source_notes(note_name);
 
-            -- Projects table (v5: new)
+            -- Projects table (v10: TEXT UUID PK for CR-SQLite sync)
             CREATE TABLE IF NOT EXISTS projects (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                id TEXT PRIMARY KEY NOT NULL,
                 name TEXT UNIQUE NOT NULL,
                 created_at INTEGER,
                 updated_at INTEGER
@@ -70,10 +69,10 @@ export class SqliteSchemaManager {
 
             CREATE INDEX IF NOT EXISTS idx_projects_name ON projects(name);
 
-            -- Note-Project junction table (v5: new, many-to-many)
+            -- Note-Project junction table (many-to-many, v10: TEXT project_id)
             CREATE TABLE IF NOT EXISTS note_projects (
                 source_uid TEXT NOT NULL,
-                project_id INTEGER NOT NULL,
+                project_id TEXT NOT NULL,
                 created_at INTEGER,
                 PRIMARY KEY (source_uid, project_id),
                 FOREIGN KEY (source_uid) REFERENCES source_notes(uid) ON DELETE CASCADE,
@@ -83,9 +82,9 @@ export class SqliteSchemaManager {
             CREATE INDEX IF NOT EXISTS idx_note_projects_source ON note_projects(source_uid);
             CREATE INDEX IF NOT EXISTS idx_note_projects_project ON note_projects(project_id);
 
-            -- Review history log
+            -- Review history log (v10: TEXT UUID PK for CR-SQLite sync)
             CREATE TABLE IF NOT EXISTS review_log (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                id TEXT PRIMARY KEY NOT NULL,
                 card_id TEXT NOT NULL,
                 reviewed_at TEXT NOT NULL,
                 rating INTEGER NOT NULL,
@@ -101,7 +100,7 @@ export class SqliteSchemaManager {
 
             -- Daily statistics
             CREATE TABLE IF NOT EXISTS daily_stats (
-                date TEXT PRIMARY KEY,
+                date TEXT PRIMARY KEY NOT NULL,
                 reviews_completed INTEGER DEFAULT 0,
                 new_cards_studied INTEGER DEFAULT 0,
                 total_time_ms INTEGER DEFAULT 0,
@@ -122,9 +121,9 @@ export class SqliteSchemaManager {
                 PRIMARY KEY (date, card_id)
             );
 
-            -- Card image references (for tracking images in flashcards)
+            -- Card image references (v10: TEXT UUID PK for CR-SQLite sync)
             CREATE TABLE IF NOT EXISTS card_image_refs (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                id TEXT PRIMARY KEY NOT NULL,
                 card_id TEXT NOT NULL,
                 image_path TEXT NOT NULL,
                 field TEXT NOT NULL,
@@ -137,12 +136,12 @@ export class SqliteSchemaManager {
 
             -- Metadata
             CREATE TABLE IF NOT EXISTS meta (
-                key TEXT PRIMARY KEY,
+                key TEXT PRIMARY KEY NOT NULL,
                 value TEXT
             );
 
             -- Set schema version
-            INSERT OR REPLACE INTO meta (key, value) VALUES ('schema_version', '9');
+            INSERT OR REPLACE INTO meta (key, value) VALUES ('schema_version', '10');
             INSERT OR REPLACE INTO meta (key, value) VALUES ('created_at', datetime('now'));
         `);
     }
@@ -183,6 +182,10 @@ export class SqliteSchemaManager {
 
         if (currentVersion < 9) {
             this.migrateV8toV9();
+        }
+
+        if (currentVersion < 10) {
+            this.migrateV9toV10();
         }
     }
 
@@ -599,5 +602,204 @@ export class SqliteSchemaManager {
         } catch (error) {
             console.error("[Episteme] Schema migration v8->v9 failed:", error);
         }
+    }
+
+    /**
+     * Migrate from v9 to v10 (CR-SQLite preparation)
+     * Changes AUTOINCREMENT PKs to TEXT UUIDs for CRDT compatibility:
+     * - projects.id: INTEGER -> TEXT UUID
+     * - review_log.id: INTEGER -> TEXT UUID
+     * - card_image_refs.id: INTEGER -> TEXT UUID
+     * - note_projects.project_id: INTEGER -> TEXT (FK to projects)
+     */
+    private migrateV9toV10(): void {
+        console.log("[Episteme] Migrating schema v9 -> v10 (CR-SQLite UUID PKs)...");
+
+        try {
+            // 1. Create mapping table for old project IDs to new UUIDs
+            this.db.run(`
+                CREATE TEMPORARY TABLE project_id_mapping (
+                    old_id INTEGER PRIMARY KEY,
+                    new_id TEXT NOT NULL
+                )
+            `);
+
+            // 2. Generate UUIDs for existing projects
+            const projectsResult = this.db.exec("SELECT id FROM projects");
+            const projectsData = getQueryResult(projectsResult);
+            if (projectsData) {
+                for (const row of projectsData.values) {
+                    const oldId = row[0] as number;
+                    const newId = this.generateUUID();
+                    this.db.run(
+                        "INSERT INTO project_id_mapping (old_id, new_id) VALUES (?, ?)",
+                        [oldId, newId]
+                    );
+                }
+            }
+
+            // 3. Create new projects table with TEXT UUID PK
+            this.db.run(`
+                CREATE TABLE projects_new (
+                    id TEXT PRIMARY KEY NOT NULL,
+                    name TEXT UNIQUE NOT NULL,
+                    created_at INTEGER,
+                    updated_at INTEGER
+                )
+            `);
+
+            // 4. Copy projects with new UUIDs
+            this.db.run(`
+                INSERT INTO projects_new (id, name, created_at, updated_at)
+                SELECT m.new_id, p.name, p.created_at, p.updated_at
+                FROM projects p
+                JOIN project_id_mapping m ON p.id = m.old_id
+            `);
+
+            // 5. Create new note_projects table with TEXT project_id
+            this.db.run(`
+                CREATE TABLE note_projects_new (
+                    source_uid TEXT NOT NULL,
+                    project_id TEXT NOT NULL,
+                    created_at INTEGER,
+                    PRIMARY KEY (source_uid, project_id),
+                    FOREIGN KEY (source_uid) REFERENCES source_notes(uid) ON DELETE CASCADE,
+                    FOREIGN KEY (project_id) REFERENCES projects_new(id) ON DELETE CASCADE
+                )
+            `);
+
+            // 6. Copy note_projects with new project IDs
+            this.db.run(`
+                INSERT INTO note_projects_new (source_uid, project_id, created_at)
+                SELECT np.source_uid, m.new_id, np.created_at
+                FROM note_projects np
+                JOIN project_id_mapping m ON np.project_id = m.old_id
+            `);
+
+            // 7. Drop old tables and rename new ones
+            this.db.run("DROP TABLE note_projects");
+            this.db.run("DROP TABLE projects");
+            this.db.run("ALTER TABLE projects_new RENAME TO projects");
+            this.db.run("ALTER TABLE note_projects_new RENAME TO note_projects");
+
+            // 8. Recreate indexes for projects
+            this.db.run("CREATE INDEX IF NOT EXISTS idx_projects_name ON projects(name)");
+            this.db.run("CREATE INDEX IF NOT EXISTS idx_note_projects_source ON note_projects(source_uid)");
+            this.db.run("CREATE INDEX IF NOT EXISTS idx_note_projects_project ON note_projects(project_id)");
+
+            // 9. Migrate review_log to TEXT UUID PK
+            this.db.run(`
+                CREATE TABLE review_log_new (
+                    id TEXT PRIMARY KEY NOT NULL,
+                    card_id TEXT NOT NULL,
+                    reviewed_at TEXT NOT NULL,
+                    rating INTEGER NOT NULL,
+                    scheduled_days INTEGER,
+                    elapsed_days INTEGER,
+                    state INTEGER,
+                    time_spent_ms INTEGER,
+                    FOREIGN KEY (card_id) REFERENCES cards(id) ON DELETE CASCADE
+                )
+            `);
+
+            // 10. Copy review_log with generated UUIDs
+            const reviewLogResult = this.db.exec("SELECT * FROM review_log");
+            const reviewLogData = getQueryResult(reviewLogResult);
+            if (reviewLogData) {
+                const cols = reviewLogData.columns;
+                const cardIdIdx = cols.indexOf("card_id");
+                const reviewedAtIdx = cols.indexOf("reviewed_at");
+                const ratingIdx = cols.indexOf("rating");
+                const scheduledDaysIdx = cols.indexOf("scheduled_days");
+                const elapsedDaysIdx = cols.indexOf("elapsed_days");
+                const stateIdx = cols.indexOf("state");
+                const timeSpentMsIdx = cols.indexOf("time_spent_ms");
+
+                for (const row of reviewLogData.values) {
+                    const newId = this.generateUUID();
+                    this.db.run(`
+                        INSERT INTO review_log_new (id, card_id, reviewed_at, rating, scheduled_days, elapsed_days, state, time_spent_ms)
+                        VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+                    `, [
+                        newId,
+                        row[cardIdIdx] ?? null,
+                        row[reviewedAtIdx] ?? null,
+                        row[ratingIdx] ?? null,
+                        row[scheduledDaysIdx] ?? null,
+                        row[elapsedDaysIdx] ?? null,
+                        row[stateIdx] ?? null,
+                        row[timeSpentMsIdx] ?? null,
+                    ]);
+                }
+            }
+
+            this.db.run("DROP TABLE review_log");
+            this.db.run("ALTER TABLE review_log_new RENAME TO review_log");
+            this.db.run("CREATE INDEX IF NOT EXISTS idx_revlog_card ON review_log(card_id)");
+            this.db.run("CREATE INDEX IF NOT EXISTS idx_revlog_date ON review_log(reviewed_at)");
+
+            // 11. Migrate card_image_refs to TEXT UUID PK
+            this.db.run(`
+                CREATE TABLE card_image_refs_new (
+                    id TEXT PRIMARY KEY NOT NULL,
+                    card_id TEXT NOT NULL,
+                    image_path TEXT NOT NULL,
+                    field TEXT NOT NULL,
+                    created_at INTEGER,
+                    FOREIGN KEY (card_id) REFERENCES cards(id) ON DELETE CASCADE
+                )
+            `);
+
+            // 12. Copy card_image_refs with generated UUIDs
+            const imageRefsResult = this.db.exec("SELECT * FROM card_image_refs");
+            const imageRefsData = getQueryResult(imageRefsResult);
+            if (imageRefsData) {
+                const cols = imageRefsData.columns;
+                const cardIdIdx = cols.indexOf("card_id");
+                const imagePathIdx = cols.indexOf("image_path");
+                const fieldIdx = cols.indexOf("field");
+                const createdAtIdx = cols.indexOf("created_at");
+
+                for (const row of imageRefsData.values) {
+                    const newId = this.generateUUID();
+                    this.db.run(`
+                        INSERT INTO card_image_refs_new (id, card_id, image_path, field, created_at)
+                        VALUES (?, ?, ?, ?, ?)
+                    `, [newId, row[cardIdIdx] ?? null, row[imagePathIdx] ?? null, row[fieldIdx] ?? null, row[createdAtIdx] ?? null]);
+                }
+            }
+
+            this.db.run("DROP TABLE card_image_refs");
+            this.db.run("ALTER TABLE card_image_refs_new RENAME TO card_image_refs");
+            this.db.run("CREATE INDEX IF NOT EXISTS idx_image_refs_path ON card_image_refs(image_path)");
+            this.db.run("CREATE INDEX IF NOT EXISTS idx_image_refs_card ON card_image_refs(card_id)");
+
+            // 13. Drop temporary mapping table
+            this.db.run("DROP TABLE project_id_mapping");
+
+            // 14. Update schema version
+            this.db.run("INSERT OR REPLACE INTO meta (key, value) VALUES ('schema_version', '10')");
+            console.log("[Episteme] Schema migration v9->v10 completed");
+            this.onSchemaChange();
+        } catch (error) {
+            console.error("[Episteme] Schema migration v9->v10 failed:", error);
+            throw error; // Re-throw to prevent corrupted state
+        }
+    }
+
+    /**
+     * Generate a UUID v4 string
+     * Uses crypto.randomUUID() if available, otherwise falls back to manual generation
+     */
+    private generateUUID(): string {
+        if (typeof crypto !== "undefined" && crypto.randomUUID) {
+            return crypto.randomUUID();
+        }
+        // Fallback for environments without crypto.randomUUID
+        return "xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx".replace(/[xy]/g, (c) => {
+            const r = (Math.random() * 16) | 0;
+            const v = c === "x" ? r : (r & 0x3) | 0x8;
+            return v.toString(16);
+        });
     }
 }
