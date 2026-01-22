@@ -13,6 +13,7 @@ const META_KEYS = {
     lastSyncedVersion: "sync_last_version",
     lastSyncTime: "sync_last_time",
     lastSyncError: "sync_last_error",
+    clientId: "sync_client_id",
 } as const;
 
 /**
@@ -95,6 +96,36 @@ export class SyncStateManager {
             console.warn("[Episteme] Failed to get lastSyncError:", e);
         }
         return null;
+    }
+
+    /**
+     * Get or create the client ID for this device
+     */
+    getOrCreateClientId(): string {
+        try {
+            const result = this.db.exec(
+                `SELECT value FROM meta WHERE key = '${META_KEYS.clientId}'`
+            );
+            const data = getQueryResult(result);
+            if (data && data.values.length > 0) {
+                const row = data.values[0];
+                if (row && row[0]) {
+                    return row[0] as string;
+                }
+            }
+
+            // Generate new client ID
+            const clientId = crypto.randomUUID();
+            this.db.run(
+                `INSERT OR REPLACE INTO meta (key, value) VALUES ('${META_KEYS.clientId}', ?)`,
+                [clientId]
+            );
+            return clientId;
+        } catch (e) {
+            console.warn("[Episteme] Failed to get clientId:", e);
+            // Return a temporary ID if storage fails
+            return crypto.randomUUID();
+        }
     }
 
     /**
@@ -183,6 +214,7 @@ export class SyncStateManager {
             lastSyncedVersion: this.getLastSyncedVersion(),
             lastSyncTime: this.getLastSyncTime(),
             lastSyncError: this.getLastSyncError(),
+            clientId: this.getOrCreateClientId(),
         };
     }
 
