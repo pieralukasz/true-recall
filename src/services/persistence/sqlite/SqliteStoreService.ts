@@ -1,6 +1,6 @@
 /**
  * SQLite Store Service
- * High-performance storage for FSRS card data using sql.js
+ * High-performance storage for FSRS card data using sql.js or CR-SQLite
  *
  * This is a facade that delegates to specialized repositories:
  * - SqliteCardRepository: Card CRUD operations
@@ -8,9 +8,11 @@
  * - SqliteDailyStatsRepo: Daily stats and review log
  * - SqliteAggregations: Aggregate queries
  * - SqliteSchemaManager: Schema and migrations
+ *
+ * Supports CR-SQLite for CRDT-based cross-device synchronization.
+ * Falls back to sql.js if CR-SQLite fails to load.
  */
 import { App, normalizePath } from "obsidian";
-import initSqlJs, { type Database, type SqlJsStatic } from "sql.js";
 import type {
     FSRSCardData,
     CardReviewLogEntry,
@@ -23,6 +25,12 @@ import type {
     ProjectInfo,
 } from "../../../types";
 import { getEventBus } from "../../core/event-bus.service";
+import {
+    loadDatabase,
+    isCrSqliteAvailable,
+    initializeCrrs,
+    type DatabaseLike,
+} from "../crsqlite";
 import { DB_FOLDER, DB_FILE, SAVE_DEBOUNCE_MS, getQueryResult } from "./sqlite.types";
 import { SqliteSchemaManager } from "./SqliteSchemaManager";
 import { SqliteCardRepository } from "./SqliteCardRepository";
@@ -35,14 +43,18 @@ import { SqliteBrowserQueries } from "./SqliteBrowserQueries";
 
 /**
  * SQLite-based storage service for FSRS card data
+ * Supports both sql.js and CR-SQLite backends
  */
 export class SqliteStoreService {
     private app: App;
-    private db: Database | null = null;
-    private SQL: SqlJsStatic | null = null;
+    private db: DatabaseLike | null = null;
     private isLoaded = false;
     private isDirty = false;
     private saveTimer: ReturnType<typeof setTimeout> | null = null;
+
+    // CR-SQLite sync metadata
+    private useCrSqlite = false;
+    private _siteId: string | null = null;
 
     // Repositories
     private cardRepo: SqliteCardRepository | null = null;
@@ -59,26 +71,42 @@ export class SqliteStoreService {
 
     /**
      * Initialize the SQLite database
+     * Attempts to use CR-SQLite for sync capabilities, falls back to sql.js
      */
     async load(): Promise<void> {
         if (this.isLoaded) return;
 
-        this.SQL = await initSqlJs({
-            locateFile: (file: string) => `https://sql.js.org/dist/${file}`,
-        });
-
         const dbPath = this.getDbPath();
         const existingData = await this.loadFromFile(dbPath);
 
+        // Load database with CR-SQLite or sql.js fallback
+        const loadResult = await loadDatabase(this.app, existingData);
+        this.db = loadResult.db;
+        this.useCrSqlite = loadResult.isCrSqlite;
+        this._siteId = loadResult.siteId;
+
+        if (this.useCrSqlite) {
+            console.log(`[Episteme] Using CR-SQLite (site_id: ${this._siteId?.substring(0, 8)}...)`);
+        } else {
+            console.log("[Episteme] Using sql.js fallback (sync disabled)");
+        }
+
+        // Schema setup
+        const schemaManager = new SqliteSchemaManager(this.db, () => this.markDirty());
         if (existingData) {
-            this.db = new this.SQL.Database(existingData);
-            const schemaManager = new SqliteSchemaManager(this.db, () => this.markDirty());
             schemaManager.runMigrations();
         } else {
-            this.db = new this.SQL.Database();
-            const schemaManager = new SqliteSchemaManager(this.db, () => this.markDirty());
             schemaManager.createTables();
             this.isDirty = true;
+        }
+
+        // Initialize CRRs if using CR-SQLite
+        if (this.useCrSqlite) {
+            try {
+                initializeCrrs(this.db);
+            } catch (e) {
+                console.warn("[Episteme] Failed to initialize CRRs:", e);
+            }
         }
 
         // Initialize repositories
@@ -92,6 +120,21 @@ export class SqliteStoreService {
         this.browserQueries = new SqliteBrowserQueries(this.db, onDataChange);
 
         this.isLoaded = true;
+    }
+
+    /**
+     * Check if sync is enabled (CR-SQLite loaded successfully)
+     */
+    isSyncEnabled(): boolean {
+        return this.useCrSqlite && isCrSqliteAvailable();
+    }
+
+    /**
+     * Get the site ID for this database instance (for sync)
+     * Returns null if CR-SQLite is not enabled
+     */
+    getSiteId(): string | null {
+        return this._siteId;
     }
 
     isReady(): boolean {
@@ -292,15 +335,15 @@ export class SqliteStoreService {
 
     // ===== Projects (delegate to SqliteProjectsRepo) =====
 
-    createProject(name: string): number {
-        return this.projectsRepo?.createProject(name) ?? -1;
+    createProject(name: string): string {
+        return this.projectsRepo?.createProject(name) ?? "";
     }
 
     getProjectByName(name: string): ProjectInfo | null {
         return this.projectsRepo?.getProjectByName(name) ?? null;
     }
 
-    getProjectById(id: number): ProjectInfo | null {
+    getProjectById(id: string): ProjectInfo | null {
         return this.projectsRepo?.getProjectById(id) ?? null;
     }
 
@@ -308,11 +351,11 @@ export class SqliteStoreService {
         return this.projectsRepo?.getAllProjects() ?? [];
     }
 
-    renameProject(id: number, newName: string): void {
+    renameProject(id: string, newName: string): void {
         this.projectsRepo?.renameProject(id, newName);
     }
 
-    deleteProject(id: number): void {
+    deleteProject(id: string): void {
         this.projectsRepo?.deleteProject(id);
     }
 
@@ -328,7 +371,7 @@ export class SqliteStoreService {
         return this.projectsRepo?.getProjectNamesForNote(sourceUid) ?? [];
     }
 
-    getNotesInProject(projectId: number): string[] {
+    getNotesInProject(projectId: string): string[] {
         return this.projectsRepo?.getNotesInProject(projectId) ?? [];
     }
 
@@ -336,7 +379,7 @@ export class SqliteStoreService {
         this.projectsRepo?.addProjectToNote(sourceUid, projectName);
     }
 
-    removeProjectFromNote(sourceUid: string, projectId: number): void {
+    removeProjectFromNote(sourceUid: string, projectId: string): void {
         this.projectsRepo?.removeProjectFromNote(sourceUid, projectId);
     }
 
@@ -425,9 +468,17 @@ export class SqliteStoreService {
 
     /**
      * Merge with data from disk (for sync conflict resolution)
+     * Note: This is a legacy file-based sync method. When CR-SQLite is enabled,
+     * use the CRDT-based sync instead (handled by CrSqliteSyncService).
      */
     async mergeFromDisk(): Promise<{ merged: number; conflicts: number }> {
-        if (!this.db || !this.SQL || !this.cardRepo) {
+        if (!this.db || !this.cardRepo) {
+            return { merged: 0, conflicts: 0 };
+        }
+
+        // When CR-SQLite is enabled, skip file-based merge (CRDT handles sync)
+        if (this.useCrSqlite) {
+            console.log("[Episteme] CR-SQLite enabled - use CRDT sync instead of mergeFromDisk");
             return { merged: 0, conflicts: 0 };
         }
 
@@ -442,9 +493,11 @@ export class SqliteStoreService {
                 return { merged, conflicts };
             }
 
-            const diskDb = new this.SQL.Database(diskData);
-            const diskResult = diskDb.exec(`SELECT * FROM cards`);
-            const diskCards = getQueryResult(diskResult);
+            // Load disk database using the loader (will use sql.js since we're in fallback mode)
+            const diskResult = await loadDatabase(this.app, diskData);
+            const diskDb = diskResult.db;
+            const diskQueryResult = diskDb.exec("SELECT * FROM cards");
+            const diskCards = getQueryResult(diskQueryResult);
 
             if (!diskCards) {
                 diskDb.close();
@@ -524,7 +577,7 @@ export class SqliteStoreService {
      * Get the raw database instance for advanced queries
      * Used by NLQueryService for AI-powered natural language queries
      */
-    getDatabase(): Database | null {
+    getDatabase(): DatabaseLike | null {
         return this.db;
     }
 

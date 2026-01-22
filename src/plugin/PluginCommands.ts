@@ -2,6 +2,7 @@
  * Plugin Commands
  * All command registrations for the Episteme plugin
  */
+import { Notice } from "obsidian";
 import type EpistemePlugin from "../main";
 import { FLASHCARD_CONFIG } from "../constants";
 
@@ -151,9 +152,7 @@ export function registerCommands(plugin: EpistemePlugin): void {
 		name: "Test Agent Tools (dev)",
 		callback: async () => {
 			if (!plugin.agentService) {
-				new (await import("obsidian")).Notice(
-					"AgentService not initialized"
-				);
+				new Notice("AgentService not initialized");
 				return;
 			}
 
@@ -168,7 +167,7 @@ export function registerCommands(plugin: EpistemePlugin): void {
 			});
 
 			console.log("Search result:", result);
-			new (await import("obsidian")).Notice(
+			new Notice(
 				`Tools: ${tools.join(", ")}\nSearch found: ${
 					result.success
 						? (result.data as { totalFound: number }).totalFound
