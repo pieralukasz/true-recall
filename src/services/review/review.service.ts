@@ -138,40 +138,35 @@ export class ReviewService {
     }
 
     /**
-     * Build a review queue from all available cards
-     * Order (Anki-like): Due Learning → Review → New → Pending Learning
-     * Pending learning cards go at the END so waiting screen only shows when all other cards are done
+     * Calculate date boundaries for filtering (respects dayStartHour like Anki)
      */
-    buildQueue(
-        allCards: FSRSFlashcardItem[],
-        fsrsService: FSRSService,
-        options: QueueBuildOptions
-    ): FSRSFlashcardItem[] {
+    private calculateBoundaries(dayStartHour: number = 4): {
+        now: Date;
+        todayBoundary: Date;
+        weekAgoBoundary: Date;
+    } {
         const now = new Date();
-        const reviewedToday = options.reviewedToday ?? new Set<string>();
-        const newCardsStudiedToday = options.newCardsStudiedToday ?? 0;
-
-        // Get display order settings (with defaults)
-        const newCardOrder = options.newCardOrder ?? "random";
-        const reviewOrder = options.reviewOrder ?? "due-date";
-        const newReviewMix = options.newReviewMix ?? "mix-with-reviews";
-
-        // Pre-compute filter values and boundaries using dayStartHour
-        const dayStartHour = options.dayStartHour ?? 4;
-
-        // Compute "today" boundary respecting dayStartHour (like Anki)
-        // At 3 AM with dayStartHour=4, "today" actually started yesterday at 4 AM
         const todayBoundary = new Date(now);
         if (now.getHours() < dayStartHour) {
             todayBoundary.setDate(todayBoundary.getDate() - 1);
         }
         todayBoundary.setHours(dayStartHour, 0, 0, 0);
 
-        // Compute "week ago" boundary
         const weekAgoBoundary = new Date(todayBoundary);
         weekAgoBoundary.setDate(weekAgoBoundary.getDate() - 7);
 
-        // Pre-compute sets for O(1) lookups
+        return { now, todayBoundary, weekAgoBoundary };
+    }
+
+    /**
+     * Filter cards based on queue build options
+     */
+    private filterCards(
+        cards: FSRSFlashcardItem[],
+        options: QueueBuildOptions,
+        todayBoundary: Date,
+        weekAgoBoundary: Date
+    ): FSRSFlashcardItem[] {
         const noteSet = options.sourceNoteFilters?.length
             ? new Set(options.sourceNoteFilters)
             : null;
@@ -179,8 +174,7 @@ export class ReviewService {
             ? new Set(options.projectFilters)
             : null;
 
-        // Single-pass filtering for performance (combines 8 filter calls into 1)
-        const filteredCards = allCards.filter(card => {
+        return cards.filter(card => {
             // Source note filter
             if (noteSet) {
                 if (!card.sourceNoteName || !noteSet.has(card.sourceNoteName)) return false;
@@ -193,13 +187,13 @@ export class ReviewService {
                 return false;
             }
 
-            // Created today filter (uses dayStartHour boundary)
+            // Created today filter
             if (options.createdTodayOnly) {
                 const createdAt = card.fsrs.createdAt;
                 if (!createdAt || createdAt < todayBoundary.getTime()) return false;
             }
 
-            // Created this week filter (uses dayStartHour boundary)
+            // Created this week filter
             if (options.createdThisWeek) {
                 const createdAt = card.fsrs.createdAt;
                 if (!createdAt || createdAt < weekAgoBoundary.getTime()) return false;
@@ -232,133 +226,186 @@ export class ReviewService {
 
             return true;
         });
+    }
 
-        // Filter out already reviewed cards, BUT keep learning/relearning cards
-        // (they need multiple reviews per day)
-        const availableCards = filteredCards.filter((card) => {
-            const isLearning = card.fsrs.state === State.Learning || card.fsrs.state === State.Relearning;
-            return isLearning || !reviewedToday.has(card.id);
-        });
-
-        // 1. Get learning and relearning cards, split by due status
-        // Learn ahead limit (like Anki)
-        const learnAheadTime = new Date(now.getTime() + LEARN_AHEAD_LIMIT_MINUTES * 60 * 1000);
-        const allLearningCards = fsrsService.getLearningCards(availableCards);
-
-        let dueLearningCards: FSRSFlashcardItem[];
-        let pendingLearningCards: FSRSFlashcardItem[];
-        let limitedReviewCards: FSRSFlashcardItem[];
-
-        if (options.bypassScheduling) {
-            // Bypass scheduling: include all cards regardless of due date
-            // All learning cards are treated as "due" (no pending)
-            dueLearningCards = allLearningCards;
-            pendingLearningCards = [];
-
-            // All review state cards are included, not just due ones
-            const reviewCards = availableCards.filter(
-                card => card.fsrs.state === State.Review
-            );
-            const effectiveReviewsLimit = options.ignoreDailyLimits ? reviewCards.length : options.reviewsLimit;
-            limitedReviewCards = reviewCards.slice(0, effectiveReviewsLimit);
-        } else {
-            // Normal scheduling: respect due dates
-            // Due learning cards: due now or within learn-ahead window (highest priority)
-            dueLearningCards = allLearningCards.filter((card) => {
-                const dueDate = new Date(card.fsrs.due);
-                return dueDate <= learnAheadTime;
-            });
-
-            // Pending learning cards: beyond learn-ahead window (shown at END, after new cards)
-            pendingLearningCards = allLearningCards.filter((card) => {
-                const dueDate = new Date(card.fsrs.due);
-                return dueDate > learnAheadTime;
-            });
-
-            // 2. Get due review cards (using day-based scheduling like Anki)
-            const dayStartHour = options.dayStartHour ?? 4;
-            const reviewCards = fsrsService.getReviewCards(availableCards, now, dayStartHour);
-            // If ignoreDailyLimits, don't limit review cards
-            const effectiveReviewsLimit = options.ignoreDailyLimits ? reviewCards.length : options.reviewsLimit;
-            limitedReviewCards = reviewCards.slice(0, effectiveReviewsLimit);
-        }
-
-        // 3. Get new cards (respect daily limit unless ignoreDailyLimits)
-        let remainingNewSlots: number;
-        if (options.ignoreDailyLimits) {
-            // No limit for custom sessions
-            remainingNewSlots = Infinity;
-        } else {
-            remainingNewSlots = Math.max(0, options.newCardsLimit - newCardsStudiedToday);
-        }
-        let newCards = fsrsService.getNewCards(availableCards, remainingNewSlots);
-
-        // Apply sorting to new cards
-        switch (newCardOrder) {
+    /**
+     * Sort new cards based on order setting
+     */
+    private sortNewCards(cards: FSRSFlashcardItem[], order: NewCardOrder): FSRSFlashcardItem[] {
+        switch (order) {
             case "random":
-                newCards = this.shuffle(newCards);
-                break;
+                return this.shuffle(cards);
             case "oldest-first":
-                newCards = this.sortByCreatedAt(newCards);
-                break;
+                return this.sortByCreatedAt(cards);
             case "newest-first":
-                newCards = this.sortByCreatedAtDesc(newCards);
-                break;
+                return this.sortByCreatedAtDesc(cards);
+            default:
+                return this.shuffle(cards);
         }
+    }
 
-        // Apply sorting to review cards
-        switch (reviewOrder) {
+    /**
+     * Sort review cards based on order setting
+     */
+    private sortReviewCards(
+        cards: FSRSFlashcardItem[],
+        order: ReviewOrder,
+        fsrsService: FSRSService
+    ): FSRSFlashcardItem[] {
+        switch (order) {
             case "due-date":
-                limitedReviewCards = fsrsService.sortByDue(limitedReviewCards);
-                break;
+                return fsrsService.sortByDue(cards);
             case "random":
-                limitedReviewCards = this.shuffle(limitedReviewCards);
-                break;
-            case "due-date-random":
-                // Sort by due date, then shuffle cards with same due date
-                limitedReviewCards = fsrsService.sortByDue(limitedReviewCards);
-                // Group by due date (day level) and shuffle within groups
+                return this.shuffle(cards);
+            case "due-date-random": {
+                // Sort by due date, then shuffle within same-day groups
+                const sorted = fsrsService.sortByDue(cards);
                 const groupedByDue = new Map<string, FSRSFlashcardItem[]>();
-                for (const card of limitedReviewCards) {
+                for (const card of sorted) {
                     const dueDay = new Date(card.fsrs.due).toISOString().split("T")[0] ?? "";
                     if (!groupedByDue.has(dueDay)) {
                         groupedByDue.set(dueDay, []);
                     }
                     groupedByDue.get(dueDay)!.push(card);
                 }
-                // Shuffle within each group
-                limitedReviewCards = [];
+                const result: FSRSFlashcardItem[] = [];
                 for (const [, group] of groupedByDue) {
-                    limitedReviewCards.push(...this.shuffle(group));
+                    result.push(...this.shuffle(group));
                 }
-                break;
+                return result;
+            }
+            default:
+                return fsrsService.sortByDue(cards);
         }
+    }
 
-        // Combine based on mix setting
-        // Learning cards always go at specific positions (due ones first, pending ones last)
-        let mainQueue: FSRSFlashcardItem[];
-
-        switch (newReviewMix) {
+    /**
+     * Mix review and new cards based on mix setting
+     */
+    private mixQueues(
+        reviews: FSRSFlashcardItem[],
+        newCards: FSRSFlashcardItem[],
+        mix: NewReviewMix
+    ): FSRSFlashcardItem[] {
+        switch (mix) {
             case "show-after-reviews":
-                mainQueue = [...limitedReviewCards, ...newCards];
-                break;
+                return [...reviews, ...newCards];
             case "show-before-reviews":
-                mainQueue = [...newCards, ...limitedReviewCards];
-                break;
+                return [...newCards, ...reviews];
             case "mix-with-reviews":
             default:
-                mainQueue = this.interleave(limitedReviewCards, newCards);
-                break;
+                return this.interleave(reviews, newCards);
         }
+    }
 
-        // Final queue: Due learning (highest priority) → Main queue → Pending learning (lowest)
-        const queue: FSRSFlashcardItem[] = [
+    /**
+     * Build queue with bypass scheduling (Custom Study mode)
+     */
+    private buildCustomStudyQueue(
+        availableCards: FSRSFlashcardItem[],
+        fsrsService: FSRSService,
+        options: QueueBuildOptions
+    ): FSRSFlashcardItem[] {
+        const allLearningCards = fsrsService.getLearningCards(availableCards);
+
+        // All learning cards treated as due (no pending)
+        const dueLearningCards = allLearningCards;
+
+        // All review state cards included
+        const reviewCards = availableCards.filter(card => card.fsrs.state === State.Review);
+        const effectiveReviewsLimit = options.ignoreDailyLimits ? reviewCards.length : options.reviewsLimit;
+        const limitedReviewCards = this.sortReviewCards(
+            reviewCards.slice(0, effectiveReviewsLimit),
+            options.reviewOrder ?? "due-date",
+            fsrsService
+        );
+
+        // New cards
+        const newLimit = options.ignoreDailyLimits ? Infinity : options.newCardsLimit - (options.newCardsStudiedToday ?? 0);
+        const newCards = this.sortNewCards(
+            fsrsService.getNewCards(availableCards, Math.max(0, newLimit)),
+            options.newCardOrder ?? "random"
+        );
+
+        const mainQueue = this.mixQueues(limitedReviewCards, newCards, options.newReviewMix ?? "mix-with-reviews");
+
+        return [
+            ...fsrsService.sortByDue(dueLearningCards),
+            ...mainQueue,
+        ];
+    }
+
+    /**
+     * Build queue with standard scheduling (respects due dates)
+     */
+    private buildStandardQueue(
+        availableCards: FSRSFlashcardItem[],
+        fsrsService: FSRSService,
+        options: QueueBuildOptions,
+        now: Date
+    ): FSRSFlashcardItem[] {
+        const learnAheadTime = new Date(now.getTime() + LEARN_AHEAD_LIMIT_MINUTES * 60 * 1000);
+        const allLearningCards = fsrsService.getLearningCards(availableCards);
+
+        // Split learning cards by due status
+        const dueLearningCards = allLearningCards.filter(card => new Date(card.fsrs.due) <= learnAheadTime);
+        const pendingLearningCards = allLearningCards.filter(card => new Date(card.fsrs.due) > learnAheadTime);
+
+        // Get due review cards
+        const dayStartHour = options.dayStartHour ?? 4;
+        const reviewCards = fsrsService.getReviewCards(availableCards, now, dayStartHour);
+        const effectiveReviewsLimit = options.ignoreDailyLimits ? reviewCards.length : options.reviewsLimit;
+        const limitedReviewCards = this.sortReviewCards(
+            reviewCards.slice(0, effectiveReviewsLimit),
+            options.reviewOrder ?? "due-date",
+            fsrsService
+        );
+
+        // New cards
+        const newLimit = options.ignoreDailyLimits
+            ? Infinity
+            : Math.max(0, options.newCardsLimit - (options.newCardsStudiedToday ?? 0));
+        const newCards = this.sortNewCards(
+            fsrsService.getNewCards(availableCards, newLimit),
+            options.newCardOrder ?? "random"
+        );
+
+        const mainQueue = this.mixQueues(limitedReviewCards, newCards, options.newReviewMix ?? "mix-with-reviews");
+
+        return [
             ...fsrsService.sortByDue(dueLearningCards),
             ...mainQueue,
             ...fsrsService.sortByDue(pendingLearningCards),
         ];
+    }
 
-        return queue;
+    /**
+     * Build a review queue from all available cards
+     * Order (Anki-like): Due Learning → Review → New → Pending Learning
+     */
+    buildQueue(
+        allCards: FSRSFlashcardItem[],
+        fsrsService: FSRSService,
+        options: QueueBuildOptions
+    ): FSRSFlashcardItem[] {
+        const { now, todayBoundary, weekAgoBoundary } = this.calculateBoundaries(options.dayStartHour);
+        const reviewedToday = options.reviewedToday ?? new Set<string>();
+
+        // Filter cards based on options
+        const filteredCards = this.filterCards(allCards, options, todayBoundary, weekAgoBoundary);
+
+        // Exclude already reviewed cards (but keep learning cards - they need multiple reviews)
+        const availableCards = filteredCards.filter(card => {
+            const isLearning = card.fsrs.state === State.Learning || card.fsrs.state === State.Relearning;
+            return isLearning || !reviewedToday.has(card.id);
+        });
+
+        // Build queue based on scheduling mode
+        if (options.bypassScheduling) {
+            return this.buildCustomStudyQueue(availableCards, fsrsService, options);
+        }
+
+        return this.buildStandardQueue(availableCards, fsrsService, options, now);
     }
 
     /**
