@@ -25,7 +25,6 @@
 
 /* Header Section */
 .episteme-header {
-	border-bottom: 1px solid var(--background-modifier-border);
 	padding-bottom: 8px;
 	margin-bottom: 8px;
 }

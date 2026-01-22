@@ -2,29 +2,8 @@
    Projects Panel Styles
    ======================================== */
 
-/* Shared Panel Component - NO padding on containers */
-.episteme-panel {
-	display: flex;
-	flex-direction: column;
-	height: 100%;
-	overflow: hidden;
-}
-
-.episteme-panel-header-container {
-	flex-shrink: 0;
-	/* NO padding - header elements use margin-bottom */
-}
-
-.episteme-panel-content-container {
-	flex: 1;
-	overflow-y: auto;
-	min-height: 0;
-	/* NO padding - content elements handle their own padding */
-}
-
 /* Projects Content Section */
 .episteme-panel-content {
-	padding: 0 12px 12px;
 }
 
 /* Toolbar - Search + New Button */
