@@ -1,6 +1,7 @@
 /**
  * Sync Service
- * Orchestrates cross-device synchronization using CR-SQLite CRDTs
+ * Orchestrates cross-device synchronization using Server-Side Merge protocol
+ * Client sends operations from sync_log, server returns full rows
  */
 import { SYNC_CONFIG } from "../../constants";
 import type {
@@ -11,24 +12,25 @@ import type {
     SyncPhase,
 } from "../../types/events.types";
 import { getEventBus } from "../core/event-bus.service";
-import {
-    getChangesSince,
-    applyChanges,
-    getDbVersion,
-    isCrSqliteAvailable,
-    type DatabaseLike,
-    type CrsqlChange,
-} from "../persistence/crsqlite";
+import type { DatabaseLike } from "../persistence/crsqlite";
 import { SyncStateManager } from "./SyncStateManager";
 import { SyncTransport } from "./SyncTransport";
-import type { SyncError, SyncResult, SyncSettings, SyncState, SyncStatus } from "./sync.types";
+import type {
+    SyncError,
+    SyncResult,
+    SyncSettings,
+    SyncState,
+    SyncStatus,
+    SyncOperation,
+    SyncPullResponse,
+} from "./sync.types";
 
 /**
  * Main sync orchestrator
  */
 export class SyncService {
     private db: DatabaseLike;
-    private siteId: string;
+    private clientId: string;
     private stateManager: SyncStateManager;
     private transport: SyncTransport;
     private settings: SyncSettings;
@@ -36,21 +38,18 @@ export class SyncService {
     private isSyncing = false;
     private retryTimeoutId: ReturnType<typeof setTimeout> | null = null;
 
-    constructor(db: DatabaseLike, siteId: string, settings: SyncSettings) {
+    constructor(db: DatabaseLike, clientId: string, settings: SyncSettings) {
         this.db = db;
-        this.siteId = siteId;
+        this.clientId = clientId;
         this.settings = settings;
         this.stateManager = new SyncStateManager(db);
         this.transport = new SyncTransport(settings);
     }
 
     /**
-     * Check if sync is available (CR-SQLite loaded and configured)
+     * Check if sync is available (server configured)
      */
     canSync(): boolean {
-        if (!isCrSqliteAvailable()) {
-            return false;
-        }
         if (!this.settings.syncEnabled) {
             return false;
         }
@@ -64,9 +63,6 @@ export class SyncService {
      * Get current sync status
      */
     getStatus(): SyncStatus {
-        if (!isCrSqliteAvailable()) {
-            return "no-crsqlite";
-        }
         if (!this.settings.syncEnabled) {
             return "disabled";
         }
@@ -108,11 +104,9 @@ export class SyncService {
 
         // Check preconditions
         if (!this.canSync()) {
-            const reason = !isCrSqliteAvailable()
-                ? "CR-SQLite not available"
-                : !this.settings.syncEnabled
-                  ? "Sync disabled"
-                  : "Server not configured";
+            const reason = !this.settings.syncEnabled
+                ? "Sync disabled"
+                : "Server not configured";
 
             return {
                 success: false,
@@ -142,26 +136,25 @@ export class SyncService {
         let pushed = 0;
 
         try {
-            // 1. Pull remote changes
+            // 1. Push local changes first
+            this.emitProgress("pushing");
+            const pushResult = await this.pushChanges();
+            pushed = pushResult.pushed;
+
+            // 2. Pull remote changes
             this.emitProgress("pulling");
             const pullResult = await this.pullChanges();
             pulled = pullResult.applied;
 
-            // 2. Apply remote changes
-            if (pullResult.changes.length > 0) {
-                this.emitProgress("applying", `${pullResult.changes.length} changes`);
-                applyChanges(this.db, pullResult.changes);
+            // 3. Apply remote rows
+            if (pullResult.rows || pullResult.deletedIds) {
+                this.emitProgress("applying", `${pulled} changes`);
+                this.applyServerRows(pullResult);
             }
-
-            // 3. Push local changes
-            this.emitProgress("pushing");
-            const pushResult = await this.pushChanges(pullResult.serverVersion);
-            pushed = pushResult.pushed;
 
             // 4. Update state
             this.emitProgress("finalizing");
-            const finalVersion = Math.max(pullResult.serverVersion, getDbVersion(this.db));
-            this.stateManager.updateSyncState(finalVersion);
+            this.stateManager.updateSyncState(pullResult.serverVersion);
 
             const durationMs = Date.now() - startTime;
             this.isSyncing = false;
@@ -257,50 +250,199 @@ export class SyncService {
     // ===== Private Methods =====
 
     /**
-     * Pull changes from server
+     * Get pending operations from sync_log
      */
-    private async pullChanges(): Promise<{
-        changes: CrsqlChange[];
-        applied: number;
-        serverVersion: number;
-    }> {
-        const sinceVersion = this.stateManager.getLastSyncedVersion();
-        const response = await this.transport.pullChanges(this.siteId, sinceVersion);
+    private getPendingOperations(): SyncOperation[] {
+        const result = this.db.exec(`
+            SELECT id, operation, table_name, row_id, data, timestamp
+            FROM sync_log
+            WHERE synced = 0
+            ORDER BY timestamp ASC
+        `);
 
-        // Deserialize wire format to CrsqlChange
-        const changes = response.changes.map((wire) => this.transport.deserializeChange(wire));
+        if (!result[0]) return [];
 
-        return {
-            changes,
-            applied: changes.length,
-            serverVersion: response.serverVersion,
-        };
+        const columns = result[0].columns;
+        const idIdx = columns.indexOf("id");
+        const opIdx = columns.indexOf("operation");
+        const tableIdx = columns.indexOf("table_name");
+        const rowIdIdx = columns.indexOf("row_id");
+        const dataIdx = columns.indexOf("data");
+        const timestampIdx = columns.indexOf("timestamp");
+
+        return result[0].values.map((row) => ({
+            id: row[idIdx] as string,
+            operation: row[opIdx] as "INSERT" | "UPDATE" | "DELETE",
+            table: row[tableIdx] as string,
+            rowId: row[rowIdIdx] as string,
+            data: row[dataIdx] ? JSON.parse(row[dataIdx] as string) : null,
+            timestamp: row[timestampIdx] as number,
+        }));
+    }
+
+    /**
+     * Mark operations as synced
+     */
+    private markOperationsSynced(operationIds: string[]): void {
+        if (operationIds.length === 0) return;
+
+        const placeholders = operationIds.map(() => "?").join(",");
+        this.db.run(
+            `UPDATE sync_log SET synced = 1 WHERE id IN (${placeholders})`,
+            operationIds
+        );
     }
 
     /**
      * Push local changes to server
      */
-    private async pushChanges(sinceVersion: number): Promise<{
+    private async pushChanges(): Promise<{
         pushed: number;
         serverVersion: number;
     }> {
-        // Get local changes since last synced version
-        const localChanges = getChangesSince(this.db, sinceVersion);
+        const operations = this.getPendingOperations();
 
-        if (localChanges.length === 0) {
-            return { pushed: 0, serverVersion: sinceVersion };
+        if (operations.length === 0) {
+            return { pushed: 0, serverVersion: this.stateManager.getLastSyncedVersion() };
         }
 
-        const response = await this.transport.pushChanges(
-            this.siteId,
-            localChanges,
-            getDbVersion(this.db)
-        );
+        const response = await this.transport.pushChanges(this.clientId, operations);
+
+        // Mark successfully pushed operations as synced
+        const operationIds = operations.map((op) => op.id);
+        this.markOperationsSynced(operationIds);
 
         return {
-            pushed: response.accepted,
+            pushed: response.applied,
             serverVersion: response.serverVersion,
         };
+    }
+
+    /**
+     * Pull changes from server
+     */
+    private async pullChanges(): Promise<SyncPullResponse & { applied: number }> {
+        const sinceVersion = this.stateManager.getLastSyncedVersion();
+        const response = await this.transport.pullChanges(this.clientId, sinceVersion);
+
+        // Count total rows pulled
+        let applied = 0;
+        for (const table of Object.keys(response.rows)) {
+            const tableRows = response.rows[table];
+            if (tableRows) {
+                applied += tableRows.length;
+            }
+        }
+        for (const table of Object.keys(response.deletedIds)) {
+            const deletedIds = response.deletedIds[table];
+            if (deletedIds) {
+                applied += deletedIds.length;
+            }
+        }
+
+        return { ...response, applied };
+    }
+
+    /**
+     * Apply server rows to local database
+     */
+    private applyServerRows(pullResponse: SyncPullResponse): void {
+        // Apply upserts for each table
+        for (const [table, rows] of Object.entries(pullResponse.rows)) {
+            for (const row of rows) {
+                this.upsertRow(table, row);
+            }
+        }
+
+        // Apply deletes for each table
+        for (const [table, ids] of Object.entries(pullResponse.deletedIds)) {
+            for (const id of ids) {
+                this.deleteRow(table, id);
+            }
+        }
+    }
+
+    /**
+     * Upsert a row from server
+     */
+    private upsertRow(table: string, data: Record<string, unknown>): void {
+        const columns = Object.keys(data);
+        if (columns.length === 0) return;
+
+        const placeholders = columns.map(() => "?").join(", ");
+        const values = columns.map((col) => {
+            const val = data[col];
+            if (val === undefined) return null;
+            return val as string | number | null | Uint8Array;
+        });
+
+        // Build ON CONFLICT clause for tables with different PKs
+        let pkColumn = "id";
+        if (table === "source_notes") {
+            pkColumn = "uid";
+        } else if (table === "daily_stats") {
+            pkColumn = "date";
+        } else if (table === "note_projects") {
+            // Composite PK
+            const setClause = columns
+                .filter((c) => c !== "source_uid" && c !== "project_id")
+                .map((c) => `"${c}" = excluded."${c}"`)
+                .join(", ");
+
+            const sql = `
+                INSERT INTO "${table}" (${columns.map((c) => `"${c}"`).join(", ")})
+                VALUES (${placeholders})
+                ON CONFLICT(source_uid, project_id) DO UPDATE SET ${setClause || "source_uid = excluded.source_uid"}
+            `;
+            this.db.run(sql, values);
+            return;
+        } else if (table === "daily_reviewed_cards") {
+            // Composite PK
+            const sql = `
+                INSERT OR IGNORE INTO "${table}" (${columns.map((c) => `"${c}"`).join(", ")})
+                VALUES (${placeholders})
+            `;
+            this.db.run(sql, values);
+            return;
+        }
+
+        const setClause = columns
+            .filter((c) => c !== pkColumn)
+            .map((c) => `"${c}" = excluded."${c}"`)
+            .join(", ");
+
+        const sql = `
+            INSERT INTO "${table}" (${columns.map((c) => `"${c}"`).join(", ")})
+            VALUES (${placeholders})
+            ON CONFLICT("${pkColumn}") DO UPDATE SET ${setClause}
+        `;
+
+        this.db.run(sql, values);
+    }
+
+    /**
+     * Delete a row from server
+     */
+    private deleteRow(table: string, rowId: string): void {
+        let pkColumn = "id";
+        if (table === "source_notes") {
+            pkColumn = "uid";
+        } else if (table === "daily_stats") {
+            pkColumn = "date";
+        } else if (table === "note_projects" || table === "daily_reviewed_cards") {
+            // Composite PK - rowId is "source_uid:project_id" or "date:card_id"
+            const parts = rowId.split(":");
+            const first = parts[0] ?? "";
+            const second = parts[1] ?? "";
+            if (table === "note_projects") {
+                this.db.run(`DELETE FROM "${table}" WHERE source_uid = ? AND project_id = ?`, [first, second]);
+            } else {
+                this.db.run(`DELETE FROM "${table}" WHERE date = ? AND card_id = ?`, [first, second]);
+            }
+            return;
+        }
+
+        this.db.run(`DELETE FROM "${table}" WHERE "${pkColumn}" = ?`, [rowId]);
     }
 
     /**

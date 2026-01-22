@@ -35,7 +35,6 @@ export interface CardActionsHandlerDeps {
 	/** Function to create ZettelTemplateService */
 	createZettelTemplateService: () => ZettelTemplateService;
 	settings: {
-		autocompleteSearchFolder: string;
 		dayStartHour: number;
 		zettelFolder: string;
 		zettelTemplatePath: string;
@@ -332,7 +331,6 @@ export class CardActionsHandler {
 			currentFilePath: card.filePath,
 			sourceNoteName: card.sourceNoteName,
 			projects: card.projects,
-			autocompleteFolder: this.deps.settings.autocompleteSearchFolder,
 		});
 
 		const result = await modal.openAndWait();
@@ -374,7 +372,6 @@ export class CardActionsHandler {
 			projects: card.projects,
 			prefillQuestion: card.question,
 			prefillAnswer: card.answer,
-			autocompleteFolder: this.deps.settings.autocompleteSearchFolder,
 		});
 
 		const result = await modal.openAndWait();
@@ -414,7 +411,6 @@ export class CardActionsHandler {
 			projects: card.projects,
 			prefillQuestion: card.question,
 			prefillAnswer: card.answer,
-			autocompleteFolder: this.deps.settings.autocompleteSearchFolder,
 		});
 
 		const result = await modal.openAndWait();

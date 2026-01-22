@@ -123,10 +123,11 @@ export class SqliteStoreService {
     }
 
     /**
-     * Check if sync is enabled (CR-SQLite loaded successfully)
+     * Check if sync is enabled
+     * With Server-Side Merge, sync is always available (no CR-SQLite needed on client)
      */
     isSyncEnabled(): boolean {
-        return this.useCrSqlite && isCrSqliteAvailable();
+        return true;
     }
 
     /**

@@ -11,24 +11,24 @@ import type { NLQueryResult, ExampleQuery } from "../../types";
  */
 const EXAMPLE_QUERIES: ExampleQuery[] = [
     {
-        text: "How many cards did I review this week?",
+        text: "Today's progress",
+        query: "Summarize my learning progress for today",
+    },
+    {
+        text: "Weekly review",
         query: "How many cards did I review this week?",
     },
     {
-        text: "Which cards have the most lapses?",
+        text: "Struggling cards",
         query: "Show me the top 10 cards with the most lapses",
     },
     {
-        text: "What's my average success rate?",
-        query: "What is my average success rate (percentage of Good or Easy ratings)?",
+        text: "Success rate",
+        query: "What is my average success rate?",
     },
     {
-        text: "Cards created today",
-        query: "How many cards were created today?",
-    },
-    {
-        text: "Most difficult cards",
-        query: "Show me the 10 most difficult cards by difficulty score",
+        text: "New cards/day",
+        query: "How many new cards have I learned per day this month?",
     },
 ];
 
@@ -67,12 +67,12 @@ export class NLQueryPanel {
      */
     render(): void {
         this.containerEl.empty();
-        this.containerEl.createEl("h3", { text: "Ask AI" });
+        this.containerEl.createEl("h3", { text: "Learning Insights" });
 
         // Description
         this.containerEl.createDiv({
             cls: "nl-query-description",
-            text: "Ask questions about your flashcard statistics in natural language.",
+            text: "Explore your learning data with natural language questions.",
         });
 
         // Input area
@@ -80,7 +80,7 @@ export class NLQueryPanel {
 
         this.inputEl = inputContainer.createEl("textarea", {
             cls: "nl-query-input",
-            placeholder: "e.g., How many cards did I review this week?",
+            placeholder: "What would you like to know about your learning?",
         });
         this.inputEl.rows = 2;
 
@@ -96,7 +96,7 @@ export class NLQueryPanel {
         const buttonContainer = inputContainer.createDiv({ cls: "nl-query-button-container" });
         this.submitBtn = buttonContainer.createEl("button", {
             cls: "nl-query-submit mod-cta",
-            text: "Ask",
+            text: "Explore",
         });
         this.submitBtn.addEventListener("click", () => void this.submitQuery());
 
@@ -104,7 +104,7 @@ export class NLQueryPanel {
         this.examplesEl = this.containerEl.createDiv({ cls: "nl-query-examples" });
         this.examplesEl.createEl("span", {
             cls: "nl-query-examples-label",
-            text: "Try:",
+            text: "Quick insights:",
         });
 
         for (const example of EXAMPLE_QUERIES) {
@@ -138,10 +138,10 @@ export class NLQueryPanel {
             this.submitBtn.textContent = "Not configured";
             this.inputEl.placeholder = "Configure OpenRouter API key in settings to enable AI queries";
         } else if (this.isLoading) {
-            this.submitBtn.textContent = "Thinking...";
+            this.submitBtn.textContent = "Analyzing...";
         } else {
-            this.submitBtn.textContent = "Ask";
-            this.inputEl.placeholder = "e.g., How many cards did I review this week?";
+            this.submitBtn.textContent = "Explore";
+            this.inputEl.placeholder = "What would you like to know about your learning?";
         }
     }
 

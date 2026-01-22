@@ -304,9 +304,24 @@
    ========================================= */
 
 .stats-nl-query {
-	border-top: 1px solid var(--background-modifier-border);
-	margin-top: 32px;
-	padding-top: 16px;
+	border-bottom: 1px solid var(--background-modifier-border);
+	padding-bottom: 16px;
+	margin-bottom: 16px;
+}
+
+.stats-nl-query h3 {
+	display: flex;
+	align-items: center;
+}
+
+.stats-nl-query h3::before {
+	content: "";
+	display: inline-block;
+	width: 4px;
+	height: 16px;
+	background: var(--interactive-accent);
+	border-radius: 2px;
+	margin-right: 8px;
 }
 
 .nl-query-description {

@@ -197,29 +197,7 @@ export class StatsView extends ItemView {
 		// 1. Today Summary Section
 		this.todayEl = container.createDiv({ cls: "episteme-stats-section stats-today" });
 
-		// 2. Time Range Selector
-		this.rangeSelectorEl = container.createDiv({ cls: "episteme-stats-range-selector" });
-		this.createRangeButtons();
-
-		// 3. Future Due Section (bar chart)
-		this.futureDueEl = container.createDiv({ cls: "episteme-stats-section stats-future" });
-
-		// 4. Cards Created Section (bar chart - historical)
-		this.cardsCreatedEl = container.createDiv({ cls: "episteme-stats-section stats-created" });
-
-		// 5. Created vs Reviewed Section (grouped bar chart)
-		this.createdVsReviewedEl = container.createDiv({ cls: "episteme-stats-section stats-created-vs-reviewed" });
-
-		// 6. Retention Rate Section (line chart)
-		this.retentionEl = container.createDiv({ cls: "episteme-stats-section stats-retention" });
-
-		// 7. Card Counts Section (pie chart)
-		this.cardCountsEl = container.createDiv({ cls: "episteme-stats-section stats-counts" });
-
-		// 8. Calendar Heatmap Section
-		this.calendarEl = container.createDiv({ cls: "episteme-stats-section stats-calendar" });
-
-		// 9. NL Query Section (AI-powered)
+		// 2. NL Query Section (AI-powered) - Learning Insights
 		this.nlQueryEl = container.createDiv({ cls: "episteme-stats-section stats-nl-query" });
 		this.nlQueryPanel = new NLQueryPanel(this.nlQueryEl, this.app, this);
 		this.nlQueryPanel.render();
@@ -228,6 +206,28 @@ export class StatsView extends ItemView {
 		if (this.plugin.nlQueryService) {
 			this.nlQueryPanel.setService(this.plugin.nlQueryService);
 		}
+
+		// 3. Time Range Selector
+		this.rangeSelectorEl = container.createDiv({ cls: "episteme-stats-range-selector" });
+		this.createRangeButtons();
+
+		// 4. Future Due Section (bar chart)
+		this.futureDueEl = container.createDiv({ cls: "episteme-stats-section stats-future" });
+
+		// 5. Cards Created Section (bar chart - historical)
+		this.cardsCreatedEl = container.createDiv({ cls: "episteme-stats-section stats-created" });
+
+		// 6. Created vs Reviewed Section (grouped bar chart)
+		this.createdVsReviewedEl = container.createDiv({ cls: "episteme-stats-section stats-created-vs-reviewed" });
+
+		// 7. Retention Rate Section (line chart)
+		this.retentionEl = container.createDiv({ cls: "episteme-stats-section stats-retention" });
+
+		// 8. Card Counts Section (pie chart)
+		this.cardCountsEl = container.createDiv({ cls: "episteme-stats-section stats-counts" });
+
+		// 9. Calendar Heatmap Section
+		this.calendarEl = container.createDiv({ cls: "episteme-stats-section stats-calendar" });
 	}
 
 	private createRangeButtons(): void {

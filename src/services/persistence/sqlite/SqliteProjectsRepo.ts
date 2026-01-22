@@ -17,6 +17,29 @@ export class SqliteProjectsRepo {
         this.onDataChange = onDataChange;
     }
 
+    /**
+     * Log a change to sync_log for Server-Side Merge sync
+     */
+    private logChange(
+        op: "INSERT" | "UPDATE" | "DELETE",
+        tableName: string,
+        rowId: string,
+        data?: unknown
+    ): void {
+        this.db.run(
+            `INSERT INTO sync_log (id, operation, table_name, row_id, data, timestamp, synced)
+             VALUES (?, ?, ?, ?, ?, ?, 0)`,
+            [
+                crypto.randomUUID(),
+                op,
+                tableName,
+                rowId,
+                data ? JSON.stringify(data) : null,
+                Date.now(),
+            ]
+        );
+    }
+
     // ===== Project CRUD =====
 
     /**
@@ -39,6 +62,15 @@ export class SqliteProjectsRepo {
             INSERT INTO projects (id, name, created_at, updated_at)
             VALUES (?, ?, ?, ?)
         `, [projectId, name, now, now]);
+
+        // Log change for sync
+        const syncData = {
+            id: projectId,
+            name,
+            created_at: now,
+            updated_at: now,
+        };
+        this.logChange("INSERT", "projects", projectId, syncData);
 
         this.onDataChange();
         return projectId;
@@ -126,12 +158,25 @@ export class SqliteProjectsRepo {
      * Rename a project
      */
     renameProject(id: string, newName: string): void {
+        const now = Date.now();
         this.db.run(`
             UPDATE projects SET
                 name = ?,
                 updated_at = ?
             WHERE id = ?
-        `, [newName, Date.now(), id]);
+        `, [newName, now, id]);
+
+        // Log full row for sync
+        const project = this.getProjectById(id);
+        if (project) {
+            const syncData = {
+                id,
+                name: newName,
+                created_at: project.createdAt,
+                updated_at: now,
+            };
+            this.logChange("UPDATE", "projects", id, syncData);
+        }
 
         this.onDataChange();
     }
@@ -140,8 +185,21 @@ export class SqliteProjectsRepo {
      * Delete a project (also removes all note-project associations)
      */
     deleteProject(id: string): void {
+        // Get note_projects associations before delete (for sync logging)
+        const noteUids = this.getNotesInProject(id);
+
         // Foreign key cascade will handle note_projects cleanup
         this.db.run(`DELETE FROM projects WHERE id = ?`, [id]);
+
+        // Log DELETE for the project
+        this.logChange("DELETE", "projects", id);
+
+        // Log DELETE for each note_project association
+        for (const sourceUid of noteUids) {
+            const rowId = `${sourceUid}:${id}`;
+            this.logChange("DELETE", "note_projects", rowId);
+        }
+
         this.onDataChange();
     }
 
@@ -154,8 +212,17 @@ export class SqliteProjectsRepo {
     syncNoteProjects(sourceUid: string, projectNames: string[]): void {
         const now = Date.now();
 
+        // Get existing associations before delete (for sync logging)
+        const existingProjects = this.getProjectsForNote(sourceUid);
+
         // Remove existing associations
         this.db.run(`DELETE FROM note_projects WHERE source_uid = ?`, [sourceUid]);
+
+        // Log DELETE for each removed association
+        for (const project of existingProjects) {
+            const rowId = `${sourceUid}:${project.id}`;
+            this.logChange("DELETE", "note_projects", rowId);
+        }
 
         // Add new associations
         for (const projectName of projectNames) {
@@ -169,6 +236,11 @@ export class SqliteProjectsRepo {
                 INSERT OR IGNORE INTO note_projects (source_uid, project_id, created_at)
                 VALUES (?, ?, ?)
             `, [sourceUid, projectId, now]);
+
+            // Log INSERT for new association
+            const rowId = `${sourceUid}:${projectId}`;
+            const syncData = { source_uid: sourceUid, project_id: projectId, created_at: now };
+            this.logChange("INSERT", "note_projects", rowId, syncData);
         }
 
         this.onDataChange();
@@ -233,12 +305,26 @@ export class SqliteProjectsRepo {
      * Add a project to a note
      */
     addProjectToNote(sourceUid: string, projectName: string): void {
+        const now = Date.now();
         const projectId = this.createProject(projectName);
+
+        // Check if already exists
+        const existing = this.db.exec(`
+            SELECT 1 FROM note_projects WHERE source_uid = ? AND project_id = ?
+        `, [sourceUid, projectId]);
+        const alreadyExists = getQueryResult(existing) !== null;
 
         this.db.run(`
             INSERT OR IGNORE INTO note_projects (source_uid, project_id, created_at)
             VALUES (?, ?, ?)
-        `, [sourceUid, projectId, Date.now()]);
+        `, [sourceUid, projectId, now]);
+
+        // Only log if this is a new insert
+        if (!alreadyExists) {
+            const rowId = `${sourceUid}:${projectId}`;
+            const syncData = { source_uid: sourceUid, project_id: projectId, created_at: now };
+            this.logChange("INSERT", "note_projects", rowId, syncData);
+        }
 
         this.onDataChange();
     }
@@ -250,6 +336,9 @@ export class SqliteProjectsRepo {
         this.db.run(`
             DELETE FROM note_projects WHERE source_uid = ? AND project_id = ?
         `, [sourceUid, projectId]);
+
+        const rowId = `${sourceUid}:${projectId}`;
+        this.logChange("DELETE", "note_projects", rowId);
 
         this.onDataChange();
     }
@@ -308,7 +397,7 @@ export class SqliteProjectsRepo {
         }
 
         // Get IDs to delete
-        const idsToDelete = data.values.map(row => row[0] as number);
+        const idsToDelete = data.values.map(row => row[0] as string);
 
         // Delete them
         this.db.run(`
@@ -317,6 +406,11 @@ export class SqliteProjectsRepo {
                 SELECT DISTINCT project_id FROM note_projects
             )
         `);
+
+        // Log DELETE for each removed project
+        for (const id of idsToDelete) {
+            this.logChange("DELETE", "projects", id);
+        }
 
         if (idsToDelete.length > 0) {
             this.onDataChange();

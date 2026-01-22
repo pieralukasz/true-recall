@@ -70,8 +70,6 @@ export interface EpistemeSettings {
     // ===== UI Settings =====
     /** Tryb wyświetlania Review View */
     reviewMode: ReviewViewMode;
-    /** Folder to search for autocomplete note linking (empty = all folders) */
-    autocompleteSearchFolder: string;
     /** Interfejs wyboru sesji niestandardowej */
     customSessionInterface: CustomSessionInterface;
     /** Pokaż przewidywany czas przy przyciskach odpowiedzi */

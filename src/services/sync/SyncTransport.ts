@@ -1,14 +1,14 @@
 /**
  * Sync Transport
  * Handles HTTP communication with sync server using Obsidian's requestUrl
+ * Uses Server-Side Merge protocol: operations in, rows out
  */
 import { requestUrl, type RequestUrlParam } from "obsidian";
 import { SYNC_CONFIG } from "../../constants";
-import type { CrsqlChange } from "../persistence/crsqlite";
 import type {
-    CrsqlChangeWire,
     SyncError,
     SyncErrorType,
+    SyncOperation,
     SyncPullResponse,
     SyncPushResponse,
     SyncSettings,
@@ -52,10 +52,10 @@ export class SyncTransport {
 
     /**
      * Pull changes from server
-     * Uses GET /changes?since=X&siteId=Y to fetch changes from other devices
+     * Returns full rows modified since `sinceVersion`
      */
-    async pullChanges(siteId: string, sinceVersion: number): Promise<SyncPullResponse> {
-        const url = `${this.serverUrl}/changes?since=${sinceVersion}&siteId=${siteId}`;
+    async pullChanges(clientId: string, sinceVersion: number): Promise<SyncPullResponse> {
+        const url = `${this.serverUrl}/sync?since=${sinceVersion}&clientId=${encodeURIComponent(clientId)}`;
 
         const options: RequestUrlParam = {
             url,
@@ -69,36 +69,27 @@ export class SyncTransport {
         const response = await requestUrl(options);
         this.checkResponseError(response.status, response.text);
 
-        // Map server response format to client format
-        const serverResponse = response.json as {
-            changes: CrsqlChangeWire[];
-            serverDbVersion: number;
-            serverSiteId: string;
-        };
+        const serverResponse = response.json as SyncPullResponse;
 
         return {
-            changes: serverResponse.changes,
-            serverVersion: serverResponse.serverDbVersion,
-            hasMore: false, // Server doesn't support pagination yet
+            rows: serverResponse.rows || {},
+            deletedIds: serverResponse.deletedIds || {},
+            serverVersion: serverResponse.serverVersion,
         };
     }
 
     /**
      * Push changes to server
-     * Uses POST /changes with { changes, clientSiteId } format
+     * Sends operations (INSERT/UPDATE/DELETE) to be applied
      */
-    async pushChanges(
-        siteId: string,
-        changes: CrsqlChange[],
-        _clientVersion: number
-    ): Promise<SyncPushResponse> {
+    async pushChanges(clientId: string, operations: SyncOperation[]): Promise<SyncPushResponse> {
         const requestBody = {
-            changes: changes.map((c) => this.serializeChange(c)),
-            clientSiteId: siteId,
+            clientId,
+            operations,
         };
 
         const options: RequestUrlParam = {
-            url: `${this.serverUrl}/changes`,
+            url: `${this.serverUrl}/sync`,
             method: "POST",
             headers: {
                 "Content-Type": "application/json",
@@ -111,17 +102,12 @@ export class SyncTransport {
         const response = await requestUrl(options);
         this.checkResponseError(response.status, response.text);
 
-        // Map server response format to client format
-        const serverResponse = response.json as {
-            applied: number;
-            serverDbVersion: number;
-            serverSiteId: string;
-        };
+        const serverResponse = response.json as SyncPushResponse;
 
         return {
-            serverVersion: serverResponse.serverDbVersion,
-            accepted: serverResponse.applied,
-            rejected: 0,
+            applied: serverResponse.applied,
+            errors: serverResponse.errors,
+            serverVersion: serverResponse.serverVersion,
         };
     }
 
@@ -197,60 +183,6 @@ export class SyncTransport {
             statusCode: status,
             retryable,
         };
-    }
-
-    /**
-     * Serialize CrsqlChange to wire format (Hex for binary fields)
-     */
-    serializeChange(change: CrsqlChange): CrsqlChangeWire {
-        return {
-            table: change.table,
-            pk: this.uint8ArrayToHex(change.pk),
-            cid: change.cid,
-            val: change.val,
-            colVersion: change.colVersion,
-            dbVersion: change.dbVersion,
-            siteId: this.uint8ArrayToHex(change.siteId),
-            cl: change.cl,
-            seq: change.seq,
-        };
-    }
-
-    /**
-     * Deserialize wire format to CrsqlChange
-     */
-    deserializeChange(wire: CrsqlChangeWire): CrsqlChange {
-        return {
-            table: wire.table,
-            pk: this.hexToUint8Array(wire.pk),
-            cid: wire.cid,
-            val: wire.val,
-            colVersion: wire.colVersion,
-            dbVersion: wire.dbVersion,
-            siteId: this.hexToUint8Array(wire.siteId),
-            cl: wire.cl,
-            seq: wire.seq,
-        };
-    }
-
-    /**
-     * Convert Uint8Array to hex string
-     */
-    private uint8ArrayToHex(bytes: Uint8Array): string {
-        return Array.from(bytes)
-            .map((b) => b.toString(16).padStart(2, "0"))
-            .join("");
-    }
-
-    /**
-     * Convert hex string to Uint8Array
-     */
-    private hexToUint8Array(hex: string): Uint8Array {
-        const bytes = new Uint8Array(hex.length / 2);
-        for (let i = 0; i < hex.length; i += 2) {
-            bytes[i / 2] = parseInt(hex.substring(i, i + 2), 16);
-        }
-        return bytes;
     }
 
     /**

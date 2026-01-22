@@ -24,7 +24,7 @@ import {
 	getEventBus,
 	BackupService,
 } from "./services";
-import { SyncService, type SyncSettings } from "./services/sync";
+import { SyncService, SyncStateManager, type SyncSettings } from "./services/sync";
 import { NLQueryService } from "./services/ai/nl-query.service";
 import { SqlJsAdapter } from "./services/ai/langchain-sqlite.adapter";
 import type { CardStore, FSRSCardData, SourceNoteInfo } from "./types";
@@ -689,21 +689,10 @@ export default class EpistemePlugin extends Plugin {
 
 	/**
 	 * Initialize the Sync Service for cross-device synchronization
+	 * Uses Server-Side Merge protocol (no CR-SQLite needed on client)
 	 */
 	private initializeSyncService(): void {
 		if (!this.sqliteStore) return;
-
-		// Check if sync is available (CR-SQLite loaded)
-		if (!this.sqliteStore.isSyncEnabled()) {
-			console.log("[Episteme] Sync disabled: CR-SQLite not available");
-			return;
-		}
-
-		const siteId = this.sqliteStore.getSiteId();
-		if (!siteId) {
-			console.warn("[Episteme] Sync disabled: Could not get site ID");
-			return;
-		}
 
 		const db = this.sqliteStore.getDatabase();
 		if (!db) {
@@ -712,9 +701,13 @@ export default class EpistemePlugin extends Plugin {
 		}
 
 		try {
+			// Get or create client ID using SyncStateManager
+			const stateManager = new SyncStateManager(db);
+			const clientId = stateManager.getOrCreateClientId();
+
 			this.syncService = new SyncService(
 				db,
-				siteId,
+				clientId,
 				this.extractSyncSettings()
 			);
 
@@ -740,9 +733,7 @@ export default class EpistemePlugin extends Plugin {
 
 		if (!this.syncService.canSync()) {
 			const status = this.syncService.getStatus();
-			if (status === "no-crsqlite") {
-				new Notice("Sync unavailable: CR-SQLite not loaded");
-			} else if (status === "disabled") {
+			if (status === "disabled") {
 				new Notice("Sync is disabled in settings");
 			} else {
 				new Notice("Sync not configured. Check settings.");
