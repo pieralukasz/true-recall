@@ -86,9 +86,6 @@ export class OrphanedCardsView extends ItemView {
 		}));
 
 		this.stateManager.setOrphanedCards(orphanedCards);
-
-		// Focus search after loading
-		this.contentComponent?.focusSearch();
 	}
 
 	/**
@@ -121,33 +118,6 @@ export class OrphanedCardsView extends ItemView {
 	}
 
 	/**
-	 * Handle assigning multiple cards to a note
-	 */
-	private async handleBulkAssign(): Promise<void> {
-		const selectedIds = [...this.stateManager.getState().selectedCardIds];
-		if (selectedIds.length === 0) return;
-
-		const modal = new MoveCardModal(this.app, {
-			cardCount: selectedIds.length,
-		});
-
-		const result = await modal.openAndWait();
-		if (result.cancelled || !result.targetNotePath) return;
-
-		const successCount = await this.plugin.flashcardManager.assignCardsToSourceNote(
-			selectedIds,
-			result.targetNotePath
-		);
-
-		if (successCount > 0) {
-			this.stateManager.removeCards(selectedIds);
-			new Notice(`${successCount} card(s) assigned to note`);
-		} else {
-			new Notice("Failed to assign cards");
-		}
-	}
-
-	/**
 	 * Handle deleting a single card
 	 */
 	private async handleDeleteCard(cardId: string): Promise<void> {
@@ -157,25 +127,6 @@ export class OrphanedCardsView extends ItemView {
 			new Notice("Card deleted");
 		} else {
 			new Notice("Failed to delete card");
-		}
-	}
-
-	/**
-	 * Handle deleting multiple cards
-	 */
-	private async handleBulkDelete(): Promise<void> {
-		const selectedIds = [...this.stateManager.getState().selectedCardIds];
-		if (selectedIds.length === 0) return;
-
-		let deleteCount = 0;
-		for (const cardId of selectedIds) {
-			const success = await this.plugin.flashcardManager.removeFlashcardById(cardId);
-			if (success) deleteCount++;
-		}
-
-		if (deleteCount > 0) {
-			this.stateManager.removeCards(selectedIds);
-			new Notice(`${deleteCount} card(s) deleted`);
 		}
 	}
 
@@ -285,20 +236,19 @@ export class OrphanedCardsView extends ItemView {
 		if (!this.panelComponent) return;
 
 		const state = this.stateManager.getState();
-		const filteredCards = this.stateManager.getFilteredCards();
 
 		const headerContainer = this.panelComponent.getHeaderContainer();
 		const contentContainer = this.panelComponent.getContentContainer();
 
 		// Clear and re-add summary section (header title row is preserved by Panel)
-		const existingSummary = headerContainer.querySelector(".episteme-orphaned-summary");
+		const existingSummary = headerContainer.querySelector(".episteme-ready-summary");
 		if (existingSummary) {
 			existingSummary.remove();
 		}
 
 		// Add summary section after header
 		const summaryEl = headerContainer.createDiv({
-			cls: "episteme-orphaned-summary",
+			cls: "episteme-ready-summary",
 		});
 
 		if (state.isLoading) {
@@ -317,51 +267,14 @@ export class OrphanedCardsView extends ItemView {
 			});
 		}
 
-		// Remove existing bulk actions
-		const existingActions = headerContainer.querySelector(".episteme-orphaned-actions");
-		if (existingActions) {
-			existingActions.remove();
-		}
-
-		// Bulk action buttons (visible when cards are selected)
-		if (state.selectedCardIds.size > 0) {
-			const actionsRow = headerContainer.createDiv({
-				cls: "episteme-orphaned-actions",
-			});
-
-			actionsRow.createSpan({
-				text: `${state.selectedCardIds.size} selected`,
-				cls: "episteme-orphaned-selected-count",
-			});
-
-			const assignBtn = actionsRow.createEl("button", {
-				text: "Assign to note",
-				cls: "episteme-panel-action-btn episteme-btn-primary",
-			});
-			assignBtn.addEventListener("click", () => void this.handleBulkAssign());
-
-			const deleteBtn = actionsRow.createEl("button", {
-				text: "Delete",
-				cls: "episteme-panel-action-btn episteme-btn-danger",
-			});
-			deleteBtn.addEventListener("click", () => void this.handleBulkDelete());
-		}
-
 		// Render Content
 		this.contentComponent?.destroy();
 		contentContainer.empty();
 		this.contentComponent = new OrphanedCardsContent(contentContainer, {
 			isLoading: state.isLoading,
-			filteredCards,
-			totalCount: state.allOrphanedCards.length,
-			searchQuery: state.searchQuery,
-			selectedCardIds: state.selectedCardIds,
+			cards: state.allOrphanedCards,
 			app: this.app,
 			component: this,
-			onSearchChange: (query) => this.stateManager.setSearchQuery(query),
-			onCardSelect: (cardId) => this.stateManager.toggleCardSelection(cardId),
-			onSelectAll: () => this.stateManager.selectAllFiltered(),
-			onClearSelection: () => this.stateManager.clearSelection(),
 			onAssignCard: (cardId) => void this.handleAssignCard(cardId),
 			onDeleteCard: (cardId) => void this.handleDeleteCard(cardId),
 			onEditSave: (card, field, newContent) => this.handleEditSave(card, field, newContent),

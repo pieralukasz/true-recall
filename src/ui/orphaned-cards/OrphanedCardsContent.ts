@@ -9,16 +9,9 @@ import type { OrphanedCard } from "../../state/state.types";
 
 export interface OrphanedCardsContentProps {
 	isLoading: boolean;
-	filteredCards: OrphanedCard[];
-	totalCount: number;
-	searchQuery: string;
-	selectedCardIds: Set<string>;
+	cards: OrphanedCard[];
 	app: App;
 	component: Component;
-	onSearchChange: (query: string) => void;
-	onCardSelect: (cardId: string) => void;
-	onSelectAll: () => void;
-	onClearSelection: () => void;
 	onAssignCard: (cardId: string) => void;
 	onDeleteCard: (cardId: string) => void;
 	onEditSave?: (card: OrphanedCard, field: "question" | "answer", newContent: string) => Promise<void>;
@@ -31,7 +24,6 @@ export interface OrphanedCardsContentProps {
  */
 export class OrphanedCardsContent extends BaseComponent {
 	private props: OrphanedCardsContentProps;
-	private searchInput: HTMLInputElement | null = null;
 	private cardItems: CardReviewItem[] = [];
 
 	constructor(container: HTMLElement, props: OrphanedCardsContentProps) {
@@ -55,129 +47,55 @@ export class OrphanedCardsContent extends BaseComponent {
 			cls: "episteme-panel-content",
 		});
 
-		// Search input
-		this.renderSearchInput();
-
-		// Selection controls
-		this.renderSelectionControls();
-
 		// Card list
 		this.renderCardList();
 	}
 
-	private renderSearchInput(): void {
-		const searchContainer = this.element!.createDiv({
-			cls: "episteme-search-container",
-		});
-
-		this.searchInput = searchContainer.createEl("input", {
-			type: "text",
-			placeholder: "Search cards...",
-			cls: "episteme-search-input",
-		});
-		this.searchInput.value = this.props.searchQuery;
-
-		this.events.addEventListener(this.searchInput, "input", (e) => {
-			const query = (e.target as HTMLInputElement).value.toLowerCase();
-			this.props.onSearchChange(query);
-		});
-	}
-
-	private renderSelectionControls(): void {
-		const controlsEl = this.element!.createDiv({
-			cls: "episteme-panel-selection-controls",
-		});
-
-		const selectAllBtn = controlsEl.createEl("button", {
-			text: "Select all",
-			cls: "episteme-panel-selection-btn",
-		});
-		this.events.addEventListener(selectAllBtn, "click", () => {
-			this.props.onSelectAll();
-		});
-
-		const clearBtn = controlsEl.createEl("button", {
-			text: "Clear selection",
-			cls: "episteme-panel-selection-btn",
-		});
-		this.events.addEventListener(clearBtn, "click", () => {
-			this.props.onClearSelection();
-		});
-	}
-
 	private renderCardList(): void {
-		const cardListEl = this.element!.createDiv({
-			cls: "episteme-panel-list",
+		const cardsContainer = this.element!.createDiv({
+			cls: "episteme-cards-container",
 		});
 
 		if (this.props.isLoading) {
-			cardListEl.createEl("div", {
+			cardsContainer.createEl("div", {
 				text: "Loading orphaned cards...",
 				cls: "episteme-panel-list-empty",
 			});
 			return;
 		}
 
-		const filteredCards = this.props.filteredCards;
+		const cards = this.props.cards;
 
-		if (filteredCards.length === 0) {
-			const emptyText = this.props.searchQuery
-				? "No cards found matching your search."
-				: this.props.totalCount === 0
-					? "No orphaned cards found. All cards have assigned source notes."
-					: "No cards match the current filter.";
-			cardListEl.createEl("div", {
-				text: emptyText,
+		if (cards.length === 0) {
+			cardsContainer.createEl("div", {
+				text: "No orphaned cards found. All cards have assigned source notes.",
 				cls: "episteme-panel-list-empty",
 			});
 			return;
 		}
 
-		// Show max 50 cards
-		const displayCards = filteredCards.slice(0, 50);
+		for (let index = 0; index < cards.length; index++) {
+			const card = cards[index];
+			if (!card) continue;
 
-		for (const card of displayCards) {
-			this.renderCardItem(cardListEl, card);
-		}
+			this.renderCardItem(cardsContainer, card);
 
-		// Show "more results" message if truncated
-		if (filteredCards.length > 50) {
-			cardListEl.createEl("div", {
-				text: `Showing 50 of ${filteredCards.length} cards. Type to search for more.`,
-				cls: "episteme-panel-list-more",
-			});
+			// Separator (except for last card)
+			if (index < cards.length - 1) {
+				cardsContainer.createDiv({
+					cls: "episteme-card-separator",
+				});
+			}
 		}
 	}
 
 	private renderCardItem(container: HTMLElement, card: OrphanedCard): void {
-		const isSelected = this.props.selectedCardIds.has(card.id);
 		const { app, component, onEditSave, onEditButton, onCopyCard } = this.props;
 
-		// Wrapper for checkbox + card
-		const cardWrapper = container.createDiv({
-			cls: `episteme-panel-item episteme-orphaned-card-wrapper ${isSelected ? "selected" : ""}`,
-		});
-
-		// Checkbox container (left side)
-		const checkboxContainer = cardWrapper.createDiv({
-			cls: "episteme-panel-checkbox-container",
-		});
-		const checkbox = checkboxContainer.createEl("input", {
-			type: "checkbox",
-			cls: "episteme-panel-checkbox",
-		});
-		checkbox.checked = isSelected;
-		this.events.addEventListener(checkbox, "change", () => {
-			this.props.onCardSelect(card.id);
-		});
-
-		// Card content container (right side)
-		const cardContainer = cardWrapper.createDiv({
-			cls: "episteme-orphaned-card-content",
-		});
+		const cardWrapper = container.createDiv();
 
 		// Create CardReviewItem with adapted card data
-		const cardItem = createCardReviewItem(cardContainer, {
+		const cardItem = createCardReviewItem(cardWrapper, {
 			card: {
 				id: card.id,
 				question: card.question,
@@ -197,25 +115,10 @@ export class OrphanedCardsContent extends BaseComponent {
 				: undefined,
 		});
 		this.cardItems.push(cardItem);
-
-		// Click on wrapper (outside card item) toggles selection
-		this.events.addEventListener(cardWrapper, "click", (e) => {
-			const target = e.target as HTMLElement;
-			// Only toggle if clicking directly on wrapper or checkbox container
-			if (target === cardWrapper || target === checkboxContainer || target === checkbox) {
-				if (target !== checkbox) {
-					this.props.onCardSelect(card.id);
-				}
-			}
-		});
 	}
 
 	updateProps(props: Partial<OrphanedCardsContentProps>): void {
 		this.props = { ...this.props, ...props };
 		this.render();
-	}
-
-	focusSearch(): void {
-		setTimeout(() => this.searchInput?.focus(), 50);
 	}
 }
