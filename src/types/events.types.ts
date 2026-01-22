@@ -17,7 +17,11 @@ export type FlashcardEventType =
 	| "cards:bulk-change"
 	| "store:synced"
 	| "session:selected"
-	| "missing-flashcards:selected";
+	| "missing-flashcards:selected"
+	| "sync:started"
+	| "sync:completed"
+	| "sync:failed"
+	| "sync:progress";
 
 /**
  * Base event interface
@@ -109,6 +113,48 @@ export interface MissingFlashcardsSelectedEvent extends FlashcardEvent {
 }
 
 /**
+ * Sync operation phases
+ */
+export type SyncPhase = "connecting" | "pulling" | "applying" | "pushing" | "finalizing";
+
+/**
+ * Emitted when sync operation starts
+ */
+export interface SyncStartedEvent extends FlashcardEvent {
+	type: "sync:started";
+	manual: boolean;
+}
+
+/**
+ * Emitted when sync completes successfully
+ */
+export interface SyncCompletedEvent extends FlashcardEvent {
+	type: "sync:completed";
+	pulled: number;
+	pushed: number;
+	durationMs: number;
+}
+
+/**
+ * Emitted when sync fails
+ */
+export interface SyncFailedEvent extends FlashcardEvent {
+	type: "sync:failed";
+	error: string;
+	retryIn: number | null; // ms until next retry, null if no retry
+	attempt: number;
+}
+
+/**
+ * Emitted during sync for progress updates
+ */
+export interface SyncProgressEvent extends FlashcardEvent {
+	type: "sync:progress";
+	phase: SyncPhase;
+	detail?: string;
+}
+
+/**
  * Union type for all events
  */
 export type AnyFlashcardEvent =
@@ -119,7 +165,11 @@ export type AnyFlashcardEvent =
 	| BulkChangeEvent
 	| StoreSyncedEvent
 	| SessionSelectedEvent
-	| MissingFlashcardsSelectedEvent;
+	| MissingFlashcardsSelectedEvent
+	| SyncStartedEvent
+	| SyncCompletedEvent
+	| SyncFailedEvent
+	| SyncProgressEvent;
 
 /**
  * Event listener callback type

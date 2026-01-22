@@ -126,7 +126,7 @@ export class ProjectsStateManager {
 	/**
 	 * Update a project in the list
 	 */
-	updateProject(projectId: number, updates: Partial<ProjectInfo>): void {
+	updateProject(projectId: string, updates: Partial<ProjectInfo>): void {
 		const projects = this.state.projects.map(p =>
 			p.id === projectId ? { ...p, ...updates } : p
 		);
@@ -136,7 +136,7 @@ export class ProjectsStateManager {
 	/**
 	 * Remove a project from the list
 	 */
-	removeProject(projectId: number): void {
+	removeProject(projectId: string): void {
 		const projects = this.state.projects.filter(p => p.id !== projectId);
 		this.setState({ projects });
 	}

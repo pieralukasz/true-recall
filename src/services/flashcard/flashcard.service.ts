@@ -501,7 +501,6 @@ export class FlashcardManager {
 
 		const now = new Date();
 		const projectInfos: ProjectInfo[] = [];
-		let id = 0;
 
 		for (const [name, cards] of projectMap) {
 			const dueCount = dayBoundaryService
@@ -515,7 +514,7 @@ export class FlashcardManager {
 			const uniqueSourceUids = new Set(cards.map(c => c.sourceUid));
 
 			projectInfos.push({
-				id: id++,
+				id: crypto.randomUUID(), // Generate UUID for compatibility with CR-SQLite
 				name,
 				noteCount: uniqueSourceUids.size,
 				cardCount: cards.length,

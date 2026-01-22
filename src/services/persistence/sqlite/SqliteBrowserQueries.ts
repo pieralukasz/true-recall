@@ -2,19 +2,18 @@
  * SQLite Browser Queries
  * Specialized queries for the Browser view
  */
-import type { Database } from "sql.js";
 import type { State } from "ts-fsrs";
 import type { BrowserCardItem } from "../../../types/browser.types";
-import { getQueryResult, type SqlRow } from "./sqlite.types";
+import { getQueryResult, type SqlRow, type DatabaseLike } from "./sqlite.types";
 
 /**
  * Repository for browser-specific queries
  */
 export class SqliteBrowserQueries {
-    private db: Database;
+    private db: DatabaseLike;
     private onDataChange: () => void;
 
-    constructor(db: Database, onDataChange: () => void) {
+    constructor(db: DatabaseLike, onDataChange: () => void) {
         this.db = db;
         this.onDataChange = onDataChange;
     }

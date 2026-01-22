@@ -92,7 +92,7 @@ export class ProjectsView extends ItemView {
 	 * Handle deleting a project
 	 * Updates frontmatter in all associated notes before removing the project
 	 */
-	private async handleDeleteProject(projectId: number): Promise<void> {
+	private async handleDeleteProject(projectId: string): Promise<void> {
 		const state = this.stateManager.getState();
 		const project = state.projects.find(p => p.id === projectId);
 		if (!project) return;
@@ -109,10 +109,10 @@ export class ProjectsView extends ItemView {
 		try {
 			// Get all source_uids in this project BEFORE deleting
 			const sqlStore = this.plugin.cardStore as CardStore & {
-				getNotesInProject?: (projectId: number) => string[];
+				getNotesInProject?: (projectId: string) => string[];
 				getAllSourceNotes?: () => SourceNoteInfo[];
 				getProjectNamesForNote?: (sourceUid: string) => string[];
-				deleteProject?: (id: number) => void;
+				deleteProject?: (id: string) => void;
 			};
 
 			const sourceUids = sqlStore.getNotesInProject?.(projectId) ?? [];
@@ -215,7 +215,7 @@ export class ProjectsView extends ItemView {
 		try {
 			// Create the project
 			const projectId = this.plugin.cardStore.createProject?.(projectName);
-			if (!projectId || projectId < 0) {
+			if (!projectId) {
 				new Notice("Failed to create project");
 				return;
 			}
@@ -260,7 +260,7 @@ export class ProjectsView extends ItemView {
 	/**
 	 * Handle adding orphaned notes to a project
 	 */
-	private async handleAddNotesToProject(projectId: number, projectName: string): Promise<void> {
+	private async handleAddNotesToProject(projectId: string, projectName: string): Promise<void> {
 		const sqlStore = this.plugin.cardStore as CardStore & {
 			getOrphanedSourceNotes?: () => { uid: string; noteName: string; notePath: string }[];
 			syncNoteProjects?: (sourceUid: string, projectNames: string[]) => void;
@@ -292,7 +292,7 @@ export class ProjectsView extends ItemView {
 	 */
 	private async addNotesToProject(
 		notes: { uid: string; noteName: string; notePath: string }[],
-		projectId: number,
+		projectId: string,
 		projectName: string
 	): Promise<void> {
 		const frontmatterService = this.plugin.flashcardManager.getFrontmatterService();
