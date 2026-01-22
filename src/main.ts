@@ -182,6 +182,11 @@ export default class EpistemePlugin extends Plugin {
 	}
 
 	onunload(): void {
+		// Save SQLite store immediately on unload (critical with 60s debounce)
+		if (this.sqliteStore) {
+			void this.sqliteStore.saveNow();
+		}
+
 		// Save card store immediately on unload
 		if (this.cardStore) {
 			void this.cardStore.saveNow();
