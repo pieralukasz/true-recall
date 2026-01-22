@@ -7,7 +7,8 @@
  * Represents a reference from a card to an image file
  */
 export interface CardImageRef {
-    id?: number;
+    /** UUID string for CR-SQLite sync compatibility */
+    id?: string;
     cardId: string;
     imagePath: string;
     field: "question" | "answer";

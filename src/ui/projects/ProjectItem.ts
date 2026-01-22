@@ -11,8 +11,8 @@ export interface ProjectItemProps {
 	app: App;
 	component: Component;
 	onStartReview: (projectName: string) => void;
-	onDelete: (projectId: number) => void;
-	onAddNotes: (projectId: number, projectName: string) => void;
+	onDelete: (projectId: string) => void;
+	onAddNotes: (projectId: string, projectName: string) => void;
 }
 
 /**

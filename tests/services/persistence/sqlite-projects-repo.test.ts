@@ -17,10 +17,10 @@ describe("SqliteProjectsRepo", () => {
 		db = new SQL.Database();
 		onDataChange = vi.fn();
 
-		// Create required tables
+		// Create required tables (v10 schema with UUID PKs)
 		db.run(`
 			CREATE TABLE source_notes (
-				uid TEXT PRIMARY KEY,
+				uid TEXT PRIMARY KEY NOT NULL,
 				note_name TEXT NOT NULL,
 				note_path TEXT,
 				created_at INTEGER,
@@ -28,7 +28,7 @@ describe("SqliteProjectsRepo", () => {
 			);
 
 			CREATE TABLE projects (
-				id INTEGER PRIMARY KEY AUTOINCREMENT,
+				id TEXT PRIMARY KEY NOT NULL,
 				name TEXT UNIQUE NOT NULL,
 				created_at INTEGER,
 				updated_at INTEGER
@@ -36,7 +36,7 @@ describe("SqliteProjectsRepo", () => {
 
 			CREATE TABLE note_projects (
 				source_uid TEXT NOT NULL,
-				project_id INTEGER NOT NULL,
+				project_id TEXT NOT NULL,
 				created_at INTEGER,
 				PRIMARY KEY (source_uid, project_id),
 				FOREIGN KEY (source_uid) REFERENCES source_notes(uid) ON DELETE CASCADE,
@@ -44,7 +44,7 @@ describe("SqliteProjectsRepo", () => {
 			);
 
 			CREATE TABLE cards (
-				id TEXT PRIMARY KEY,
+				id TEXT PRIMARY KEY NOT NULL,
 				due TEXT NOT NULL,
 				stability REAL DEFAULT 0,
 				difficulty REAL DEFAULT 0,
@@ -60,8 +60,7 @@ describe("SqliteProjectsRepo", () => {
 				updated_at INTEGER,
 				question TEXT,
 				answer TEXT,
-				source_uid TEXT,
-				tags TEXT
+				source_uid TEXT
 			);
 
 			CREATE INDEX idx_note_projects_source ON note_projects(source_uid);
@@ -81,15 +80,17 @@ describe("SqliteProjectsRepo", () => {
 	}
 
 	describe("createProject", () => {
-		it("creates new project and returns its ID", () => {
+		it("creates new project and returns its ID (UUID)", () => {
 			const id = repo.createProject("My Project");
 
-			expect(id).toBe(1);
+			expect(typeof id).toBe("string");
+			expect(id.length).toBeGreaterThan(0);
 			expect(onDataChange).toHaveBeenCalled();
 
 			const project = repo.getProjectByName("My Project");
 			expect(project).not.toBeNull();
 			expect(project!.name).toBe("My Project");
+			expect(project!.id).toBe(id);
 		});
 
 		it("returns existing ID if project already exists", () => {
@@ -99,14 +100,18 @@ describe("SqliteProjectsRepo", () => {
 			expect(id1).toBe(id2);
 		});
 
-		it("creates multiple projects with different IDs", () => {
+		it("creates multiple projects with different UUIDs", () => {
 			const id1 = repo.createProject("Project A");
 			const id2 = repo.createProject("Project B");
 			const id3 = repo.createProject("Project C");
 
-			expect(id1).toBe(1);
-			expect(id2).toBe(2);
-			expect(id3).toBe(3);
+			// All IDs should be unique UUIDs
+			expect(typeof id1).toBe("string");
+			expect(typeof id2).toBe("string");
+			expect(typeof id3).toBe("string");
+			expect(id1).not.toBe(id2);
+			expect(id2).not.toBe(id3);
+			expect(id1).not.toBe(id3);
 		});
 	});
 

@@ -2,18 +2,17 @@
  * SQLite Source Notes Repository
  * Operations for source notes (links to Markdown notes)
  */
-import type { Database } from "sql.js";
 import type { SourceNoteInfo } from "../../../types";
-import { getQueryResult } from "./sqlite.types";
+import { getQueryResult, type DatabaseLike } from "./sqlite.types";
 
 /**
  * Repository for source note operations
  */
 export class SqliteSourceNotesRepo {
-    private db: Database;
+    private db: DatabaseLike;
     private onDataChange: () => void;
 
-    constructor(db: Database, onDataChange: () => void) {
+    constructor(db: DatabaseLike, onDataChange: () => void) {
         this.db = db;
         this.onDataChange = onDataChange;
     }

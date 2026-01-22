@@ -1,19 +1,19 @@
 /**
  * LangChain SQLite Adapter
- * Bridges sql.js (in-memory SQLite) with LangChain's SQL tools
+ * Bridges SQLite (sql.js or CR-SQLite) with LangChain's SQL tools
  *
- * LangChain expects a DataSource-style interface, but sql.js uses
+ * LangChain expects a DataSource-style interface, but our database uses
  * a different API. This adapter provides the necessary methods.
  */
-import type { Database, QueryExecResult } from "sql.js";
+import type { DatabaseLike, QueryExecResult } from "../persistence/crsqlite";
 
 /**
- * Adapter to make sql.js compatible with LangChain SQL tools
+ * Adapter to make SQLite database compatible with LangChain SQL tools
  */
 export class SqlJsAdapter {
-    private db: Database;
+    private db: DatabaseLike;
 
-    constructor(db: Database) {
+    constructor(db: DatabaseLike) {
         this.db = db;
     }
 

@@ -2,7 +2,10 @@
  * SQLite Types and Helpers
  * Shared types and utilities for SQLite operations
  */
-import type { Database } from "sql.js";
+import type { QueryExecResult } from "../crsqlite";
+
+// Re-export database types from crsqlite module
+export type { DatabaseLike, QueryExecResult, BindParams } from "../crsqlite";
 
 export const DB_FOLDER = ".episteme";
 export const DB_FILE = "episteme.db";
@@ -19,10 +22,10 @@ export interface SafeQueryResult {
 }
 
 /**
- * Safely extract query result from sql.js exec
+ * Safely extract query result from database exec
  */
 export function getQueryResult(
-    result: ReturnType<Database["exec"]>
+    result: QueryExecResult[]
 ): SafeQueryResult | null {
     const firstResult = result[0];
     if (!firstResult || !firstResult.values || firstResult.values.length === 0) {

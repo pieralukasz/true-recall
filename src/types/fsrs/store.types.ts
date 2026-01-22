@@ -77,12 +77,12 @@ export interface CardStore {
     /** Get all projects with their statistics */
     getProjectStats?(): ProjectInfo[];
 
-    /** Create a new project */
-    createProject?(name: string): number;
+    /** Create a new project (returns UUID string) */
+    createProject?(name: string): string;
 
     /** Rename a project */
-    renameProject?(id: number, newName: string): void;
+    renameProject?(id: string, newName: string): void;
 
     /** Delete a project */
-    deleteProject?(id: number): void;
+    deleteProject?(id: string): void;
 }

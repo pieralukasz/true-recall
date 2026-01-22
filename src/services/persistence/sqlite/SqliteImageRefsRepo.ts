@@ -2,34 +2,49 @@
  * SQLite Image Refs Repository
  * Operations for tracking image references in flashcards
  */
-import type { Database } from "sql.js";
 import type { CardImageRef } from "../../../types";
-import { getQueryResult } from "./sqlite.types";
+import { getQueryResult, type DatabaseLike } from "./sqlite.types";
 
 /**
  * Repository for card image reference operations
  */
 export class SqliteImageRefsRepo {
-    private db: Database;
+    private db: DatabaseLike;
     private onDataChange: () => void;
 
-    constructor(db: Database, onDataChange: () => void) {
+    constructor(db: DatabaseLike, onDataChange: () => void) {
         this.db = db;
         this.onDataChange = onDataChange;
     }
 
     /**
-     * Add a new image reference
+     * Add a new image reference with UUID primary key
      */
     add(ref: Omit<CardImageRef, "id">): void {
         const now = Date.now();
+        const id = this.generateUUID();
 
         this.db.run(`
-            INSERT INTO card_image_refs (card_id, image_path, field, created_at)
-            VALUES (?, ?, ?, ?)
-        `, [ref.cardId, ref.imagePath, ref.field, ref.createdAt ?? now]);
+            INSERT INTO card_image_refs (id, card_id, image_path, field, created_at)
+            VALUES (?, ?, ?, ?, ?)
+        `, [id, ref.cardId, ref.imagePath, ref.field, ref.createdAt ?? now]);
 
         this.onDataChange();
+    }
+
+    /**
+     * Generate a UUID v4 string
+     */
+    private generateUUID(): string {
+        if (typeof crypto !== "undefined" && crypto.randomUUID) {
+            return crypto.randomUUID();
+        }
+        // Fallback for environments without crypto.randomUUID
+        return "xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx".replace(/[xy]/g, (c) => {
+            const r = (Math.random() * 16) | 0;
+            const v = c === "x" ? r : (r & 0x3) | 0x8;
+            return v.toString(16);
+        });
     }
 
     /**
@@ -90,18 +105,20 @@ export class SqliteImageRefsRepo {
 
         // Add question refs
         for (const imagePath of questionRefs) {
+            const id = this.generateUUID();
             this.db.run(`
-                INSERT INTO card_image_refs (card_id, image_path, field, created_at)
-                VALUES (?, ?, 'question', ?)
-            `, [cardId, imagePath, now]);
+                INSERT INTO card_image_refs (id, card_id, image_path, field, created_at)
+                VALUES (?, ?, ?, 'question', ?)
+            `, [id, cardId, imagePath, now]);
         }
 
         // Add answer refs
         for (const imagePath of answerRefs) {
+            const id = this.generateUUID();
             this.db.run(`
-                INSERT INTO card_image_refs (card_id, image_path, field, created_at)
-                VALUES (?, ?, 'answer', ?)
-            `, [cardId, imagePath, now]);
+                INSERT INTO card_image_refs (id, card_id, image_path, field, created_at)
+                VALUES (?, ?, ?, 'answer', ?)
+            `, [id, cardId, imagePath, now]);
         }
 
         this.onDataChange();
@@ -144,7 +161,7 @@ export class SqliteImageRefsRepo {
         };
 
         return {
-            id: getCol("id") as number,
+            id: getCol("id") as string,
             cardId: getCol("card_id") as string,
             imagePath: getCol("image_path") as string,
             field: getCol("field") as "question" | "answer",
