@@ -68,6 +68,20 @@ function copyToVault() {
 			copyFileSync("styles.css", join(vaultPluginDir, "styles.css"));
 		}
 
+		// Copy CR-SQLite WASM file
+		const crsqliteWasm = "node_modules/@vlcn.io/crsqlite-wasm/dist/crsqlite.wasm";
+		if (existsSync(crsqliteWasm)) {
+			copyFileSync(crsqliteWasm, join(vaultPluginDir, "crsqlite.wasm"));
+			console.log("✓ Copied crsqlite.wasm");
+		}
+
+		// Copy sql.js WASM as fallback
+		const sqljsWasm = "node_modules/sql.js/dist/sql-wasm.wasm";
+		if (existsSync(sqljsWasm)) {
+			copyFileSync(sqljsWasm, join(vaultPluginDir, "sql-wasm.wasm"));
+			console.log("✓ Copied sql-wasm.wasm");
+		}
+
 		// Create .hotreload file for hot-reload plugin
 		if (!prod) {
 			writeFileSync(join(vaultPluginDir, ".hotreload"), "");
