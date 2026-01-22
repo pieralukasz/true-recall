@@ -3,27 +3,18 @@
  * Main view for spaced repetition review sessions
  * Can be displayed in fullscreen (main area) or panel (sidebar)
  */
-import { ItemView, WorkspaceLeaf, MarkdownRenderer, Notice, Platform, normalizePath, Menu, setIcon, TFile, type ViewStateResult } from "obsidian";
+import { ItemView, WorkspaceLeaf, MarkdownRenderer, Notice, Platform, Menu, setIcon, TFile, type ViewStateResult } from "obsidian";
 import { Rating, State, type Grade } from "ts-fsrs";
-import { VIEW_TYPE_REVIEW, UI_CONFIG, GENERATED_NOTE_TYPES } from "../../constants";
+import { VIEW_TYPE_REVIEW, UI_CONFIG } from "../../constants";
 import { FSRSService, ReviewService, FlashcardManager, SessionPersistenceService, getEventBus, ZettelTemplateService } from "../../services";
 import { ReviewStateManager } from "../../state";
-import { extractFSRSSettings, type FSRSFlashcardItem, type SchedulingPreview } from "../../types";
+import { extractFSRSSettings, type FSRSFlashcardItem } from "../../types";
 import type { CardRemovedEvent, CardUpdatedEvent, BulkChangeEvent } from "../../types/events.types";
-import { MoveCardModal, FlashcardEditorModal, AIGeneratorModal } from "../modals";
 import { toggleTextareaWrap, insertAtTextareaCursor, setupAutoResize } from "../components";
 import { VaultSearchService, TextareaSuggest } from "../autocomplete";
 import type EpistemePlugin from "../../main";
 import type { ReviewViewState, UndoEntry } from "./review.types";
-
-/**
- * Templater plugin interface for processing templates
- */
-interface TemplaterPlugin {
-    templater?: {
-        overwrite_file_commands: (file: TFile) => Promise<void>;
-    };
-}
+import { CardActionsHandler, KeyboardHandler } from "./handlers";
 
 export class ReviewView extends ItemView {
     private plugin: EpistemePlugin;
@@ -50,8 +41,9 @@ export class ReviewView extends ItemView {
     private ignoreDailyLimits?: boolean;
     private bypassScheduling?: boolean;
 
-    // Undo stack for reverting answers
-    private undoStack: UndoEntry[] = [];
+    // Handlers (initialized in constructor)
+    private cardActionsHandler!: CardActionsHandler;
+    private keyboardHandler!: KeyboardHandler;
 
     // UI Elements
     private headerEl!: HTMLElement;
@@ -82,6 +74,51 @@ export class ReviewView extends ItemView {
         // Initialize FSRS service with current settings
         const fsrsSettings = extractFSRSSettings(plugin.settings);
         this.fsrsService = new FSRSService(fsrsSettings);
+
+        // Initialize CardActionsHandler
+        this.cardActionsHandler = new CardActionsHandler(
+            {
+                app: this.app,
+                stateManager: this.stateManager,
+                flashcardManager: this.flashcardManager,
+                fsrsService: this.fsrsService,
+                reviewService: this.reviewService,
+                openRouterService: this.plugin.openRouterService,
+                getSqliteStore: () => this.plugin.getSqliteStore(),
+                createZettelTemplateService: () => new ZettelTemplateService(this.app),
+                settings: {
+                    autocompleteSearchFolder: this.plugin.settings.autocompleteSearchFolder,
+                    dayStartHour: this.plugin.settings.dayStartHour,
+                    zettelFolder: this.plugin.settings.zettelFolder,
+                    zettelTemplatePath: this.plugin.settings.zettelTemplatePath,
+                    customGeneratePrompt: this.plugin.settings.customGeneratePrompt,
+                    openRouterApiKey: this.plugin.settings.openRouterApiKey,
+                },
+            },
+            {
+                onUpdateSchedulingPreview: () => this.updateSchedulingPreview(),
+                onRender: () => this.render(),
+                onUndoAnswer: (entry) => this.handleUndoAnswer(entry),
+            }
+        );
+
+        // Initialize KeyboardHandler
+        this.keyboardHandler = new KeyboardHandler(
+            this.stateManager,
+            {
+                onShowAnswer: () => this.handleShowAnswer(),
+                onAnswer: (rating) => this.handleAnswer(rating as Grade),
+                onUndo: async () => { await this.cardActionsHandler.handleUndo(); },
+                onSuspend: () => this.cardActionsHandler.handleSuspend(),
+                onBuryCard: () => this.cardActionsHandler.handleBuryCard(),
+                onBuryNote: () => this.cardActionsHandler.handleBuryNote(),
+                onMoveCard: () => this.cardActionsHandler.handleMoveCard(),
+                onAddCard: () => this.cardActionsHandler.handleAddNewFlashcard(),
+                onAIGenerate: () => this.cardActionsHandler.handleAIGenerateFlashcard(),
+                onCopyCard: () => this.cardActionsHandler.handleCopyCurrentCard(),
+                onEditCard: () => this.cardActionsHandler.handleEditCardModal(),
+            }
+        );
     }
 
     /**
@@ -171,8 +208,17 @@ export class ReviewView extends ItemView {
         // Subscribe to EventBus for cross-component reactivity
         this.subscribeToEvents();
 
-        // Register keyboard shortcuts using registerDomEvent for automatic cleanup
-        this.registerDomEvent(document, "keydown", this.handleKeyDown);
+        // Register keyboard shortcuts using the KeyboardHandler
+        this.registerDomEvent(document, "keydown", (e: KeyboardEvent) => {
+            // Only handle when this view is active
+            const activeLeaf = this.app.workspace.activeLeaf;
+            if (activeLeaf?.view !== this) return;
+
+            // Skip if modal is open
+            if (document.querySelector('.modal-container')) return;
+
+            this.keyboardHandler.handleKeyDown(e);
+        });
 
         // Initialize autocomplete service for inline edit mode
         const folderFilter = this.plugin.settings.autocompleteSearchFolder;
@@ -443,7 +489,7 @@ export class ReviewView extends ItemView {
             attr: { "aria-label": "Add new flashcard (N)" }
         });
         addBtn.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>`;
-        addBtn.addEventListener("click", () => void this.handleAddNewFlashcard());
+        addBtn.addEventListener("click", () => void this.cardActionsHandler.handleAddNewFlashcard());
 
         // AI Generate flashcard button (sparkles icon)
         const aiGenBtn = this.headerEl.createEl("button", {
@@ -451,7 +497,7 @@ export class ReviewView extends ItemView {
             attr: { "aria-label": "Generate flashcard with AI (G)" }
         });
         aiGenBtn.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9.937 15.5A2 2 0 0 0 8.5 14.063l-6.135-1.582a.5.5 0 0 1 0-.962L8.5 9.936A2 2 0 0 0 9.937 8.5l1.582-6.135a.5.5 0 0 1 .963 0L14.063 8.5A2 2 0 0 0 15.5 9.937l6.135 1.582a.5.5 0 0 1 0 .962L15.5 14.063a2 2 0 0 0-1.437 1.437l-1.582 6.135a.5.5 0 0 1-.963 0z"/><path d="M20 3v4"/><path d="M22 5h-4"/></svg>`;
-        aiGenBtn.addEventListener("click", () => void this.handleAIGenerateFlashcard());
+        aiGenBtn.addEventListener("click", () => void this.cardActionsHandler.handleAIGenerateFlashcard());
 
         // Open note button (right side)
         const openNoteBtn = this.headerEl.createEl("button", {
@@ -875,12 +921,12 @@ export class ReviewView extends ItemView {
         const menu = new Menu();
 
         // Only show undo if there's something to undo
-        if (this.undoStack.length > 0) {
+        if (this.cardActionsHandler.canUndo()) {
             menu.addItem((item) =>
                 item
                     .setTitle("Undo Last Answer (Z)")
                     .setIcon("undo")
-                    .onClick(() => this.handleUndo())
+                    .onClick(() => this.cardActionsHandler.handleUndo())
             );
             menu.addSeparator();
         }
@@ -889,56 +935,56 @@ export class ReviewView extends ItemView {
             item
                 .setTitle("Move Card (M)")
                 .setIcon("folder-input")
-                .onClick(() => this.handleMoveCard())
+                .onClick(() => this.cardActionsHandler.handleMoveCard())
         );
 
         menu.addItem((item) =>
             item
                 .setTitle("Create zettel")
                 .setIcon("file-plus")
-                .onClick(() => this.handleCreateZettel())
+                .onClick(() => this.cardActionsHandler.handleCreateZettel())
         );
 
         menu.addItem((item) =>
             item
                 .setTitle("Suspend card")
                 .setIcon("pause")
-                .onClick(() => this.handleSuspend())
+                .onClick(() => this.cardActionsHandler.handleSuspend())
         );
 
         menu.addItem((item) =>
             item
                 .setTitle("Bury Card (-)")
                 .setIcon("eye-off")
-                .onClick(() => this.handleBuryCard())
+                .onClick(() => this.cardActionsHandler.handleBuryCard())
         );
 
         menu.addItem((item) =>
             item
                 .setTitle("Bury Note (=)")
                 .setIcon("eye-off")
-                .onClick(() => this.handleBuryNote())
+                .onClick(() => this.cardActionsHandler.handleBuryNote())
         );
 
         menu.addItem((item) =>
             item
                 .setTitle("Edit Card (E)")
                 .setIcon("pencil")
-                .onClick(() => void this.handleEditCardModal())
+                .onClick(() => void this.cardActionsHandler.handleEditCardModal())
         );
 
         menu.addItem((item) =>
             item
                 .setTitle("Add New Flashcard")
                 .setIcon("plus")
-                .onClick(() => void this.handleAddNewFlashcard())
+                .onClick(() => void this.cardActionsHandler.handleAddNewFlashcard())
         );
 
         menu.addItem((item) =>
             item
                 .setTitle("Generate with AI (G)")
                 .setIcon("sparkles")
-                .onClick(() => void this.handleAIGenerateFlashcard())
+                .onClick(() => void this.cardActionsHandler.handleAIGenerateFlashcard())
         );
 
         menu.addItem((item) =>
@@ -969,53 +1015,6 @@ export class ReviewView extends ItemView {
             void this.app.workspace.openLinkText(sourceFile.path, "", false);
         } else {
             new Notice(`Source note "${card.sourceNoteName}" not found`);
-        }
-    }
-
-    /**
-     * Enter edit mode for current card (inline editing)
-     */
-    private enterEditMode(): void {
-        const card = this.stateManager.getCurrentCard();
-        if (!card) return;
-
-        this.stateManager.startEdit("question");
-        this.renderCard();
-    }
-
-    /**
-     * Edit card using modal dialog
-     * Supports both MD-file cards and SQL-only cards
-     */
-    private async handleEditCardModal(): Promise<void> {
-        const card = this.stateManager.getCurrentCard();
-        if (!card) return;
-
-        const modal = new FlashcardEditorModal(this.app, {
-            mode: "edit",
-            card,
-            currentFilePath: card.filePath,
-            projects: card.projects,
-            autocompleteFolder: this.plugin.settings.autocompleteSearchFolder,
-        });
-        const result = await modal.openAndWait();
-
-        if (result.cancelled) return;
-
-        try {
-            // Update card in SQL store
-            this.flashcardManager.updateCardContent(card.id, result.question, result.answer);
-
-            // Update card in state
-            this.stateManager.updateCurrentCardContent(result.question, result.answer);
-
-            // Re-render to show updated content
-            this.renderCard();
-
-            new Notice("Card updated");
-        } catch (error) {
-            console.error("Error updating card:", error);
-            new Notice("Failed to update card");
         }
     }
 
@@ -1212,189 +1211,9 @@ export class ReviewView extends ItemView {
 
     // ===== Event Handlers =====
 
-    /**
-     * Handle keyboard shortcuts for review actions
-     */
-    private handleKeyDown = (e: KeyboardEvent): void => {
-        // Only handle keyboard events when this view is the active leaf
-        const activeLeaf = this.app.workspace.activeLeaf;
-        if (activeLeaf?.view !== this) {
-            return;
-        }
-
-        // Skip all shortcuts if any modal is open
-        if (document.querySelector('.modal-container')) {
-            return;
-        }
-
-        // Ignore if typing in input/textarea or contenteditable
-        if (
-            e.target instanceof HTMLInputElement ||
-            e.target instanceof HTMLTextAreaElement ||
-            (e.target instanceof HTMLElement && e.target.isContentEditable)
-        ) {
-            return;
-        }
-
-        // Cmd+Z (Mac) or Ctrl+Z (Windows/Linux) for undo
-        if ((e.metaKey || e.ctrlKey) && e.key === "z") {
-            e.preventDefault();
-            void this.handleUndo();
-            return;
-        }
-
-        // Shift+1 = Suspend card
-        if (e.shiftKey && e.key === "!") {
-            e.preventDefault();
-            void this.handleSuspend();
-            return;
-        }
-
-        // - (minus) = Bury card until tomorrow
-        if (e.key === "-") {
-            e.preventDefault();
-            void this.handleBuryCard();
-            return;
-        }
-
-        // = (equals) = Bury note (all cards from same source) until tomorrow
-        if (e.key === "=") {
-            e.preventDefault();
-            void this.handleBuryNote();
-            return;
-        }
-
-        // M = Move card to another note
-        if (e.key === "m" || e.key === "M") {
-            e.preventDefault();
-            void this.handleMoveCard();
-            return;
-        }
-
-        // N = Add new flashcard
-        if (e.key === "n" || e.key === "N") {
-            e.preventDefault();
-            void this.handleAddNewFlashcard();
-            return;
-        }
-
-        // G = Generate flashcard with AI
-        if (e.key === "g" || e.key === "G") {
-            e.preventDefault();
-            void this.handleAIGenerateFlashcard();
-            return;
-        }
-
-        // B = Copy current card to new flashcard
-        if (e.key === "b" || e.key === "B") {
-            e.preventDefault();
-            void this.handleCopyCurrentCard();
-            return;
-        }
-
-        // E = Edit current card (modal)
-        if (e.key === "e" || e.key === "E") {
-            e.preventDefault();
-            void this.handleEditCardModal();
-            return;
-        }
-
-        const state = this.stateManager.getState();
-        if (!state.isActive || this.stateManager.isComplete()) return;
-
-        if (!this.stateManager.isAnswerRevealed()) {
-            // Show answer on Space
-            if (e.code === "Space") {
-                e.preventDefault();
-                this.handleShowAnswer();
-            }
-        } else {
-            // Rating buttons: 1=Again, 2=Hard, 3=Good, 4=Easy
-            switch (e.key) {
-                case "1":
-                    e.preventDefault();
-                    void this.handleAnswer(Rating.Again);
-                    break;
-                case "2":
-                    e.preventDefault();
-                    void this.handleAnswer(Rating.Hard);
-                    break;
-                case "3":
-                case " ": // Space bar also triggers Good
-                    e.preventDefault();
-                    void this.handleAnswer(Rating.Good);
-                    break;
-                case "4":
-                    e.preventDefault();
-                    void this.handleAnswer(Rating.Easy);
-                    break;
-            }
-        }
-    };
-
     private handleShowAnswer(): void {
         this.stateManager.revealAnswer();
         this.updateSchedulingPreview();
-    }
-
-    private async handleCreateZettel(): Promise<void> {
-        const card = this.stateManager.getCurrentCard();
-        if (!card) return;
-
-        const zettelFolder = this.plugin.settings.zettelFolder;
-        const folderPath = normalizePath(zettelFolder);
-
-        // Ensure folder exists
-        if (!this.app.vault.getAbstractFileByPath(folderPath)) {
-            await this.app.vault.createFolder(folderPath);
-        }
-
-        // Find unique filename (Untitled, Untitled 1, Untitled 2, ...)
-        let filePath = normalizePath(`${folderPath}/${UI_CONFIG.defaultFileName}.md`);
-        let counter = 1;
-        while (this.app.vault.getAbstractFileByPath(filePath)) {
-            filePath = normalizePath(`${folderPath}/${UI_CONFIG.defaultFileName} ${counter}.md`);
-            counter++;
-        }
-
-        // Generate content using template service
-        const templateService = new ZettelTemplateService(this.app);
-        const templatePath = this.plugin.settings.zettelTemplatePath;
-
-        // Check if template exists (if a path is specified)
-        if (templatePath) {
-            const templateFile = this.app.vault.getAbstractFileByPath(templatePath);
-            if (!templateFile) {
-                new Notice(`Template not found: ${templatePath}. Using default template.`);
-            }
-        }
-
-        const content = await templateService.generateContent(templatePath, card);
-
-        // Create file
-        await this.app.vault.create(filePath, content);
-
-        // Open file FIRST (makes it the active file for Templater)
-        await this.app.workspace.openLinkText(filePath, "", true);
-
-        // Small delay to ensure file-open event is processed
-        await new Promise(resolve => setTimeout(resolve, 50));
-
-        // Process Templater syntax if Templater plugin is installed
-        // Must be called AFTER file is open so tp.config.active_file is set
-        const templaterPlugin = (this.app as unknown as { plugins: { plugins: Record<string, TemplaterPlugin> } })
-            .plugins.plugins['templater-obsidian'];
-        if (templaterPlugin?.templater?.overwrite_file_commands) {
-            try {
-                const activeFile = this.app.workspace.getActiveFile();
-                if (activeFile) {
-                    await templaterPlugin.templater.overwrite_file_commands(activeFile);
-                }
-            } catch (error) {
-                console.error("Templater processing failed:", error);
-                // Continue anyway - file was created with basic content
-            }
-        }
     }
 
     private async handleAnswer(rating: Grade): Promise<void> {
@@ -1407,8 +1226,8 @@ export class ReviewView extends ItemView {
         // Check if this was a new card (before state update)
         const isNewCard = card.fsrs.state === State.New;
 
-        // Store undo entry BEFORE making changes
-        this.undoStack.push({
+        // Store undo entry in handler's stack BEFORE making changes
+        this.cardActionsHandler.pushUndoEntry({
             actionType: "answer",
             card: { ...card },
             originalFsrs: { ...card.fsrs },
@@ -1429,7 +1248,7 @@ export class ReviewView extends ItemView {
 
         // Record to persistent storage (with extended stats for statistics panel)
         try {
-            await this.sessionPersistence.recordReview(
+            this.sessionPersistence.recordReview(
                 card.id,
                 isNewCard,
                 responseTime,
@@ -1463,559 +1282,21 @@ export class ReviewView extends ItemView {
     }
 
     /**
-     * Undo the last action (Cmd+Z) - supports both answer and bury
+     * Handle undo answer callback from CardActionsHandler
+     * Removes review from persistent storage and restores state
      */
-    private async handleUndo(): Promise<void> {
-        const undoEntry = this.undoStack.pop();
-        if (!undoEntry) {
-            return; // Nothing to undo
-        }
-
-        const { actionType, card, originalFsrs, previousIndex } = undoEntry;
-
-        // Restore original FSRS data
+    private async handleUndoAnswer(entry: UndoEntry): Promise<void> {
         try {
-            this.flashcardManager.updateCardFSRS(card.id, originalFsrs);
-        } catch (error) {
-            console.error("Error restoring card FSRS:", error);
-        }
-
-        // Handle action-specific undo logic
-        if (actionType === "answer") {
-            const { wasNewCard, rating, previousState } = undoEntry;
-            // Remove from persistent storage (with full stats revert)
-            try {
-                await this.sessionPersistence.removeLastReview(
-                    card.id,
-                    wasNewCard ?? false,
-                    rating,
-                    previousState
-                );
-            } catch (error) {
-                console.error("Error removing review from persistent storage:", error);
-            }
-
-            // Restore state - go back to previous card (for answer undo)
-            this.stateManager.undoLastAnswer(previousIndex, { ...card, fsrs: originalFsrs });
-        } else if (actionType === "bury") {
-            // Restore additional cards if this was a "bury note" action
-            if (undoEntry.additionalCards) {
-                for (const additionalCard of undoEntry.additionalCards) {
-                    try {
-                        this.flashcardManager.updateCardFSRS(
-                            additionalCard.card.id,
-                            additionalCard.originalFsrs
-                        );
-                    } catch (error) {
-                        console.error("Error restoring additional card FSRS:", error);
-                    }
-                }
-            }
-
-            // Insert the main card back at its previous position
-            this.stateManager.insertCardAtPosition({ ...card, fsrs: originalFsrs }, previousIndex);
-
-            // Insert additional cards back (for bury note)
-            if (undoEntry.additionalCards) {
-                for (let i = 0; i < undoEntry.additionalCards.length; i++) {
-                    const additionalEntry = undoEntry.additionalCards[i];
-                    if (additionalEntry) {
-                        this.stateManager.insertCardAtPosition(
-                            { ...additionalEntry.card, fsrs: additionalEntry.originalFsrs },
-                            previousIndex + i + 1
-                        );
-                    }
-                }
-            }
-
-            new Notice("Bury undone");
-        } else if (actionType === "suspend") {
-            // Insert the card back at its previous position (with suspended: false restored)
-            this.stateManager.insertCardAtPosition({ ...card, fsrs: originalFsrs }, previousIndex);
-            new Notice("Suspend undone");
-        }
-
-        // Update UI
-        this.updateSchedulingPreview();
-    }
-
-    /**
-     * Move the current card to another note (M key)
-     * Also grades the card as "Good" before moving
-     */
-    private async handleMoveCard(): Promise<void> {
-        const card = this.stateManager.getCurrentCard();
-        if (!card) return;
-
-        // Open move modal with card content for backlink suggestions
-        const modal = new MoveCardModal(this.app, {
-            cardCount: 1,
-            sourceNoteName: card.sourceNoteName,
-            cardQuestion: card.question,
-            cardAnswer: card.answer,
-        });
-
-        const result = await modal.openAndWait();
-        if (result.cancelled || !result.targetNotePath) return;
-
-        try {
-            // Grade card as "Good" before moving (updates FSRS scheduling)
-            await this.reviewService.gradeCard(
-                card,
-                Rating.Good,
-                this.fsrsService,
-                this.flashcardManager
+            await this.sessionPersistence.removeLastReview(
+                entry.card.id,
+                entry.wasNewCard ?? false,
+                entry.rating,
+                entry.previousState
             );
-
-            // Move the card
-            const success = await this.flashcardManager.moveCard(
-                card.id,
-                card.filePath,
-                result.targetNotePath
-            );
-
-            if (success) {
-                // Remove from current queue (card no longer exists in original file)
-                this.stateManager.removeCurrentCard();
-
-                // Update scheduling preview for next card
-                if (!this.stateManager.isComplete()) {
-                    this.updateSchedulingPreview();
-                }
-
-                new Notice("Card graded as Good and moved");
-            }
+            this.stateManager.undoLastAnswer(entry.previousIndex, { ...entry.card, fsrs: entry.originalFsrs });
         } catch (error) {
-            console.error("Error moving card:", error);
-            new Notice(`Failed to move card: ${error instanceof Error ? error.message : String(error)}`);
+            console.error("Error undoing answer:", error);
         }
-    }
-
-    /**
-     * Add a new flashcard to the same file as the current card
-     */
-    private async handleAddNewFlashcard(): Promise<void> {
-        const card = this.stateManager.getCurrentCard();
-        if (!card) return;
-
-        // Open modal to enter question/answer (pre-fill with current card's Q&A)
-        const modal = new FlashcardEditorModal(this.app, {
-            mode: "add",
-            currentFilePath: card.filePath,
-            sourceNoteName: card.sourceNoteName,
-            projects: card.projects,
-            prefillQuestion: card.question,
-            prefillAnswer: card.answer,
-            autocompleteFolder: this.plugin.settings.autocompleteSearchFolder,
-        });
-
-        const result = await modal.openAndWait();
-        if (result.cancelled) return;
-
-        try {
-            // Add flashcard with auto-generated FSRS ID
-            const newCard = await this.flashcardManager.addSingleFlashcard(
-                card.filePath,
-                result.question,
-                result.answer,
-                card.sourceUid,
-                card.projects
-            );
-
-            // Add new card to current session queue
-            this.stateManager.addCardToQueue(newCard);
-
-            new Notice("Flashcard added to queue!");
-        } catch (error) {
-            console.error("Error adding flashcard:", error);
-            new Notice(`Failed to add flashcard: ${error instanceof Error ? error.message : String(error)}`);
-        }
-    }
-
-    /**
-     * Generate flashcards using AI based on user instructions
-     * Associates generated cards with current card's source note and projects,
-     * or creates a new note if user requested
-     */
-    private async handleAIGenerateFlashcard(): Promise<void> {
-        const currentCard = this.stateManager.getCurrentCard();
-        if (!currentCard) return;
-
-        // Check if API key is configured
-        if (!this.plugin.settings.openRouterApiKey) {
-            new Notice("AI service not configured. Please add your API key in settings.");
-            return;
-        }
-
-        // Open AI Generator modal
-        const modal = new AIGeneratorModal(this.app, {
-            openRouterService: this.plugin.openRouterService,
-            customSystemPrompt: this.plugin.settings.customGeneratePrompt,
-        });
-
-        const result = await modal.openAndWait();
-
-        if (result.cancelled || !result.flashcards || result.flashcards.length === 0) {
-            return;
-        }
-
-        // Determine target source UID and projects
-        let targetSourceUid: string | undefined;
-        let targetProjects: string[];
-        let targetFilePath: string;
-
-        try {
-            if (result.createNewNote && result.noteType) {
-                // Create a new note for the flashcards
-                const noteConfig = GENERATED_NOTE_TYPES[result.noteType];
-
-                // Generate note name
-                const noteName = result.noteName || this.generateNoteName(result.noteType, result.flashcards[0]?.question);
-
-                // Create the note
-                const { uid, filePath } = await this.createSourceNoteForGeneratedCards(
-                    noteName,
-                    noteConfig.tag
-                );
-
-                targetSourceUid = uid;
-                targetFilePath = filePath;
-                targetProjects = currentCard.projects; // Inherit projects from current card
-
-                new Notice(`Created new note: ${noteName}`);
-            } else {
-                // Use current card's source note (existing behavior)
-                targetSourceUid = currentCard.sourceUid;
-                targetFilePath = currentCard.filePath;
-                targetProjects = currentCard.projects;
-            }
-
-            // Save generated flashcards and add to queue
-            for (const flashcard of result.flashcards) {
-                const newCard = await this.flashcardManager.addSingleFlashcard(
-                    targetFilePath,
-                    flashcard.question,
-                    flashcard.answer,
-                    targetSourceUid,
-                    targetProjects
-                );
-
-                // Add to current review queue
-                this.stateManager.addCardToQueue(newCard);
-            }
-
-            const count = result.flashcards.length;
-            new Notice(`${count} flashcard${count > 1 ? "s" : ""} generated and added to queue!`);
-
-        } catch (error) {
-            console.error("Error saving generated flashcards:", error);
-            new Notice(`Failed to save flashcards: ${error instanceof Error ? error.message : String(error)}`);
-        }
-    }
-
-    /**
-     * Generate a note name based on note type and first flashcard question
-     */
-    private generateNoteName(noteType: string, firstQuestion?: string): string {
-        const config = GENERATED_NOTE_TYPES[noteType as keyof typeof GENERATED_NOTE_TYPES];
-        if (!config) return `Note - ${Date.now()}`;
-
-        if (firstQuestion) {
-            // Clean up the question to use as part of the name
-            const cleanQuestion = firstQuestion
-                .replace(/\*\*/g, "")  // Remove bold markers
-                .replace(/\[\[([^\]|]+)(\|[^\]]+)?\]\]/g, "$1")  // Remove backlink syntax
-                .replace(/#flashcard/g, "")  // Remove flashcard tag
-                .replace(/<br>/g, " ")  // Replace line breaks with spaces
-                .trim()
-                .substring(0, 40);  // Limit length
-
-            return `${config.defaultNamePrefix}${cleanQuestion}`;
-        }
-
-        return `${config.defaultNamePrefix}${Date.now()}`;
-    }
-
-    /**
-     * Create a new source note for generated flashcards
-     * Returns the UID and file path of the created note
-     */
-    private async createSourceNoteForGeneratedCards(
-        noteName: string,
-        tag: string
-    ): Promise<{ uid: string; filePath: string }> {
-        // Get zettel folder from settings
-        const folderPath = normalizePath(this.plugin.settings.zettelFolder || "Zettel");
-
-        // Ensure folder exists
-        if (!this.app.vault.getAbstractFileByPath(folderPath)) {
-            await this.app.vault.createFolder(folderPath);
-        }
-
-        // Find unique file path
-        let filePath = normalizePath(`${folderPath}/${noteName}.md`);
-        let counter = 1;
-        while (this.app.vault.getAbstractFileByPath(filePath)) {
-            filePath = normalizePath(`${folderPath}/${noteName} ${counter}.md`);
-            counter++;
-        }
-
-        // Generate UID using the frontmatter service pattern
-        const uid = this.generateUid();
-
-        // Create note content with frontmatter
-        const content = `---
-flashcard_uid: ${uid}
-tags: [${tag}]
----
-
-# ${noteName}
-
-`;
-
-        // Create the file
-        const file = await this.app.vault.create(filePath, content);
-
-        // Register source note in SQLite
-        const sqliteStore = this.plugin.getSqliteStore();
-        if (sqliteStore) {
-            sqliteStore.upsertSourceNote({
-                uid,
-                noteName: file.basename,
-                notePath: file.path,
-            });
-        }
-
-        return { uid, filePath: file.path };
-    }
-
-    /**
-     * Generate a random 8-character hex UID
-     */
-    private generateUid(): string {
-        const chars = "0123456789abcdef";
-        let uid = "";
-        for (let i = 0; i < 8; i++) {
-            uid += chars[Math.floor(Math.random() * chars.length)];
-        }
-        return uid;
-    }
-
-    /**
-     * Copy current card to new flashcard (Option+Cmd+E)
-     * Opens Add Flashcard modal with current card's Q&A pre-filled
-     */
-    private async handleCopyCurrentCard(): Promise<void> {
-        const card = this.stateManager.getCurrentCard();
-        if (!card) return;
-
-        // Open modal with pre-filled content
-        const modal = new FlashcardEditorModal(this.app, {
-            mode: "add",
-            currentFilePath: card.filePath,
-            sourceNoteName: card.sourceNoteName,
-            projects: card.projects,
-            prefillQuestion: card.question,
-            prefillAnswer: card.answer,
-            autocompleteFolder: this.plugin.settings.autocompleteSearchFolder,
-        });
-
-        const result = await modal.openAndWait();
-        if (result.cancelled) return;
-
-        try {
-            // Add flashcard with auto-generated FSRS ID
-            const newCard = await this.flashcardManager.addSingleFlashcard(
-                card.filePath,
-                result.question,
-                result.answer,
-                card.sourceUid,
-                card.projects
-            );
-
-            // Add new card to current session queue
-            this.stateManager.addCardToQueue(newCard);
-
-            new Notice("Flashcard copied and added to queue!");
-        } catch (error) {
-            console.error("Error copying flashcard:", error);
-            new Notice(`Failed to copy flashcard: ${error instanceof Error ? error.message : String(error)}`);
-        }
-    }
-
-    /**
-     * Suspend the current card (Shift+1)
-     * Card will be excluded from future reviews until unsuspended
-     */
-    private async handleSuspend(): Promise<void> {
-        const card = this.stateManager.getCurrentCard();
-        if (!card) return;
-
-        const currentIndex = this.stateManager.getState().currentIndex;
-
-        // Store undo entry BEFORE making changes
-        this.undoStack.push({
-            actionType: "suspend",
-            card: { ...card },
-            originalFsrs: { ...card.fsrs },
-            previousIndex: currentIndex,
-        });
-
-        // Mark card as suspended
-        const updatedFsrs = { ...card.fsrs, suspended: true };
-
-        try {
-            this.flashcardManager.updateCardFSRS(card.id, updatedFsrs);
-        } catch (error) {
-            console.error("Error suspending card:", error);
-            new Notice("Failed to suspend card");
-            // Remove the undo entry since the operation failed
-            this.undoStack.pop();
-            return;
-        }
-
-        // Remove from current queue
-        this.stateManager.removeCurrentCard();
-
-        // Update scheduling preview for next card
-        if (!this.stateManager.isComplete()) {
-            this.updateSchedulingPreview();
-        }
-
-        new Notice("Card suspended");
-        this.render();
-    }
-
-    /**
-     * Bury the current card until tomorrow (-)
-     * Card will reappear in the next day's review
-     */
-    private async handleBuryCard(): Promise<void> {
-        const card = this.stateManager.getCurrentCard();
-        if (!card) return;
-
-        const currentIndex = this.stateManager.getState().currentIndex;
-
-        // Store undo entry BEFORE making changes
-        this.undoStack.push({
-            actionType: "bury",
-            card: { ...card },
-            originalFsrs: { ...card.fsrs },
-            previousIndex: currentIndex,
-        });
-
-        // Calculate tomorrow's date based on dayStartHour
-        const tomorrow = this.getTomorrowDate();
-        const updatedFsrs = { ...card.fsrs, buriedUntil: tomorrow.toISOString() };
-
-        try {
-            this.flashcardManager.updateCardFSRS(card.id, updatedFsrs);
-        } catch (error) {
-            console.error("Error burying card:", error);
-            new Notice("Failed to bury card");
-            // Remove the undo entry since the operation failed
-            this.undoStack.pop();
-            return;
-        }
-
-        // Remove from current queue
-        this.stateManager.removeCurrentCard();
-
-        // Update scheduling preview for next card
-        if (!this.stateManager.isComplete()) {
-            this.updateSchedulingPreview();
-        }
-
-        new Notice("Card buried until tomorrow");
-        this.render();
-    }
-
-    /**
-     * Bury all cards from the same source note (=)
-     * All sibling cards will reappear in the next day's review
-     */
-    private async handleBuryNote(): Promise<void> {
-        const card = this.stateManager.getCurrentCard();
-        if (!card) return;
-
-        const sourceNoteName = card.sourceNoteName;
-        if (!sourceNoteName) {
-            // If no source note, just bury the current card
-            await this.handleBuryCard();
-            return;
-        }
-
-        // Find all cards from the same source note in the queue
-        const queue = this.stateManager.getState().queue;
-        const siblingCards = queue.filter(c => c.sourceNoteName === sourceNoteName);
-
-        const firstSibling = siblingCards[0];
-        if (siblingCards.length === 0 || !firstSibling) {
-            await this.handleBuryCard();
-            return;
-        }
-
-        const currentIndex = this.stateManager.getState().currentIndex;
-
-        // Store undo entry for all sibling cards BEFORE making changes
-        const additionalCards = siblingCards.slice(1).map(c => ({
-            card: { ...c },
-            originalFsrs: { ...c.fsrs },
-        }));
-
-        this.undoStack.push({
-            actionType: "bury",
-            card: { ...firstSibling },
-            originalFsrs: { ...firstSibling.fsrs },
-            previousIndex: currentIndex,
-            additionalCards: additionalCards.length > 0 ? additionalCards : undefined,
-        });
-
-        // Calculate tomorrow's date based on dayStartHour
-        const tomorrow = this.getTomorrowDate();
-        const buriedUntil = tomorrow.toISOString();
-
-        let buriedCount = 0;
-
-        // Bury all sibling cards
-        for (const siblingCard of siblingCards) {
-            const updatedFsrs = { ...siblingCard.fsrs, buriedUntil };
-
-            try {
-                this.flashcardManager.updateCardFSRS(siblingCard.id, updatedFsrs);
-                buriedCount++;
-            } catch (error) {
-                console.error(`Error burying card ${siblingCard.id}:`, error);
-            }
-        }
-
-        // Remove all buried cards from the queue
-        for (const siblingCard of siblingCards) {
-            this.stateManager.removeCardById(siblingCard.id);
-        }
-
-        // Update scheduling preview for next card
-        if (!this.stateManager.isComplete()) {
-            this.updateSchedulingPreview();
-        }
-
-        new Notice(`${buriedCount} card${buriedCount > 1 ? "s" : ""} buried until tomorrow`);
-        this.render();
-    }
-
-    /**
-     * Calculate tomorrow's date considering dayStartHour setting
-     */
-    private getTomorrowDate(): Date {
-        const now = new Date();
-        const dayStartHour = this.plugin.settings.dayStartHour ?? 4;
-
-        // Create tomorrow's date at dayStartHour
-        const tomorrow = new Date(now);
-        tomorrow.setDate(tomorrow.getDate() + 1);
-        tomorrow.setHours(dayStartHour, 0, 0, 0);
-
-        return tomorrow;
     }
 
     private handleOpenNote(): void {
