@@ -11,7 +11,7 @@ import { getEventBus } from "../../services";
 import { createMissingFlashcardsStateManager } from "../../state/missing-flashcards.state";
 import type { NoteWithMissingFlashcards } from "../../state/state.types";
 import type { MissingFlashcardsSelectedEvent } from "../../types/events.types";
-import { MissingFlashcardsHeader } from "./MissingFlashcardsHeader";
+import { Panel } from "../components/Panel";
 import { MissingFlashcardsContent } from "./MissingFlashcardsContent";
 import type EpistemePlugin from "../../main";
 
@@ -44,12 +44,8 @@ export class MissingFlashcardsView extends ItemView {
 	private stateManager = createMissingFlashcardsStateManager();
 
 	// UI Components
-	private headerComponent: MissingFlashcardsHeader | null = null;
+	private panelComponent: Panel | null = null;
 	private contentComponent: MissingFlashcardsContent | null = null;
-
-	// Container elements
-	private headerContainer!: HTMLElement;
-	private contentContainer!: HTMLElement;
 
 	// State subscription
 	private unsubscribe: (() => void) | null = null;
@@ -75,21 +71,19 @@ export class MissingFlashcardsView extends ItemView {
 		const container = this.containerEl.children[1];
 		if (!(container instanceof HTMLElement)) return;
 		container.empty();
-		container.addClass("episteme-panel-view");
 
-		// Create container elements
-		this.headerContainer = container.createDiv({
-			cls: "episteme-panel-header-container",
+		// Create Panel component
+		this.panelComponent = new Panel(container, {
+			title: "Missing Flashcards",
+			onRefresh: () => void this.loadMissingNotes(),
 		});
-		this.contentContainer = container.createDiv({
-			cls: "episteme-panel-content-container",
-		});
+		this.panelComponent.render();
 
 		// Subscribe to state changes
-		this.unsubscribe = this.stateManager.subscribe(() => this.render());
+		this.unsubscribe = this.stateManager.subscribe(() => this.renderContent());
 
 		// Initial render
-		this.render();
+		this.renderContent();
 
 		// Start scanning
 		void this.loadMissingNotes();
@@ -97,7 +91,7 @@ export class MissingFlashcardsView extends ItemView {
 
 	async onClose(): Promise<void> {
 		this.unsubscribe?.();
-		this.headerComponent?.destroy();
+		this.panelComponent?.destroy();
 		this.contentComponent?.destroy();
 	}
 
@@ -236,25 +230,48 @@ export class MissingFlashcardsView extends ItemView {
 	}
 
 	/**
-	 * Render all components
+	 * Render content (Panel is created once in onOpen)
 	 */
-	private render(): void {
+	private renderContent(): void {
+		if (!this.panelComponent) return;
+
 		const state = this.stateManager.getState();
 		const filteredNotes = this.stateManager.getFilteredNotes();
 
-		// Render Header
-		this.headerComponent?.destroy();
-		this.headerContainer.empty();
-		this.headerComponent = new MissingFlashcardsHeader(this.headerContainer, {
-			count: state.allMissingNotes.length,
-			isLoading: state.isLoading,
+		const headerContainer = this.panelComponent.getHeaderContainer();
+		const contentContainer = this.panelComponent.getContentContainer();
+
+		// Clear and re-add summary section (header title row is preserved by Panel)
+		const existingSummary = headerContainer.querySelector(".episteme-missing-summary");
+		if (existingSummary) {
+			existingSummary.remove();
+		}
+
+		// Add summary section after header
+		const summaryEl = headerContainer.createDiv({
+			cls: "episteme-missing-summary",
 		});
-		this.headerComponent.render();
+
+		if (state.isLoading) {
+			summaryEl.createDiv({
+				text: "Scanning vault...",
+				cls: "episteme-ready-label",
+			});
+		} else {
+			summaryEl.createDiv({
+				text: state.allMissingNotes.length.toString(),
+				cls: "episteme-ready-count",
+			});
+			summaryEl.createDiv({
+				text: state.allMissingNotes.length === 1 ? "note needs flashcards" : "notes need flashcards",
+				cls: "episteme-ready-label",
+			});
+		}
 
 		// Render Content
 		this.contentComponent?.destroy();
-		this.contentContainer.empty();
-		this.contentComponent = new MissingFlashcardsContent(this.contentContainer, {
+		contentContainer.empty();
+		this.contentComponent = new MissingFlashcardsContent(contentContainer, {
 			isLoading: state.isLoading,
 			filteredNotes,
 			totalCount: state.allMissingNotes.length,

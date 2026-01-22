@@ -11,6 +11,14 @@
  */
 export type NoteFlashcardType = "permanent" | "maybe" | "none" | "unknown";
 
+/**
+ * Note type for AI-generated flashcard destination
+ * - verify: Binary validation (True/False, Spot the Error) - fast fact-checking
+ * - application: Scenario-based, procedural "how-to" cards - skill transfer
+ * - question: Open-ended recall, "define X", "why Y" - conceptual understanding
+ */
+export type GeneratedNoteType = "verify" | "application" | "question";
+
 // Single flashcard with question and answer
 export interface FlashcardItem {
     question: string;

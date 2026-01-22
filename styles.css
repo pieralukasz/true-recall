@@ -3241,6 +3241,149 @@
 	border-radius: 6px;
 }
 
+/* ========================================
+   Destination Section (Create New Note)
+   ======================================== */
+
+.episteme-destination-section {
+	margin-bottom: 12px;
+	padding: 12px;
+	background: var(--background-secondary);
+	border-radius: 6px;
+}
+
+.episteme-destination-checkbox-row {
+	display: flex;
+	align-items: center;
+	gap: 8px;
+}
+
+.episteme-destination-checkbox {
+	width: 16px;
+	height: 16px;
+	accent-color: var(--interactive-accent);
+	cursor: pointer;
+}
+
+.episteme-destination-label {
+	font-size: 14px;
+	font-weight: 500;
+	color: var(--text-normal);
+	cursor: pointer;
+}
+
+.episteme-destination-options {
+	margin-top: 12px;
+	padding-top: 12px;
+	border-top: 1px solid var(--background-modifier-border);
+}
+
+.episteme-destination-type-label {
+	font-size: 13px;
+	font-weight: 500;
+	color: var(--text-muted);
+	margin-bottom: 8px;
+}
+
+.episteme-destination-radio-group {
+	display: flex;
+	flex-direction: column;
+	gap: 6px;
+	margin-bottom: 12px;
+}
+
+.episteme-destination-radio-item {
+	display: flex;
+	align-items: flex-start;
+	gap: 8px;
+	padding: 8px 10px;
+	background: var(--background-primary);
+	border: 1px solid var(--background-modifier-border);
+	border-radius: 6px;
+	cursor: pointer;
+	transition: all 0.15s ease;
+}
+
+.episteme-destination-radio-item:hover {
+	border-color: var(--interactive-accent);
+}
+
+.episteme-destination-radio-item.is-selected {
+	border-color: var(--interactive-accent);
+	background: rgba(var(--interactive-accent-rgb), 0.08);
+}
+
+.episteme-destination-radio {
+	width: 16px;
+	height: 16px;
+	margin-top: 2px;
+	accent-color: var(--interactive-accent);
+	cursor: pointer;
+}
+
+.episteme-destination-radio-label {
+	display: flex;
+	flex-direction: column;
+	gap: 2px;
+	cursor: pointer;
+	flex: 1;
+}
+
+.episteme-destination-type-name {
+	font-size: 14px;
+	font-weight: 600;
+	color: var(--text-normal);
+}
+
+.episteme-destination-type-desc {
+	font-size: 12px;
+	color: var(--text-muted);
+}
+
+.episteme-destination-name-container {
+	display: flex;
+	flex-direction: column;
+	gap: 6px;
+}
+
+.episteme-destination-name-label {
+	font-size: 13px;
+	font-weight: 500;
+	color: var(--text-muted);
+}
+
+.episteme-destination-name-input {
+	width: 100%;
+	padding: 8px 12px;
+	border: 1px solid var(--background-modifier-border);
+	border-radius: 6px;
+	background: var(--background-primary);
+	color: var(--text-normal);
+	font-size: 14px;
+}
+
+.episteme-destination-name-input:focus {
+	outline: none;
+	border-color: var(--interactive-accent);
+	box-shadow: 0 0 0 2px rgba(var(--interactive-accent-rgb), 0.15);
+}
+
+.episteme-destination-name-input::placeholder {
+	color: var(--text-muted);
+	font-size: 13px;
+}
+
+/* Mobile responsive for destination section */
+@media screen and (max-width: 600px) {
+	.episteme-destination-radio-group {
+		gap: 8px;
+	}
+
+	.episteme-destination-radio-item {
+		padding: 10px 12px;
+	}
+}
+
 .episteme-review-section-title {
 	font-size: 13px;
 	font-weight: 600;
@@ -4977,8 +5120,8 @@
    Projects Panel Styles
    ======================================== */
 
-/* Panel View Container */
-.episteme-panel-view {
+/* Shared Panel Component - NO padding on containers */
+.episteme-panel {
 	display: flex;
 	flex-direction: column;
 	height: 100%;
@@ -4987,48 +5130,17 @@
 
 .episteme-panel-header-container {
 	flex-shrink: 0;
+	/* NO padding - header elements use margin-bottom */
 }
 
 .episteme-panel-content-container {
 	flex: 1;
 	overflow-y: auto;
 	min-height: 0;
+	/* NO padding - content elements handle their own padding */
 }
 
-/* Header Section - Compact, no border */
-.episteme-panel-header {
-	padding: 12px;
-}
-
-.episteme-panel-title-row {
-	display: flex;
-	align-items: center;
-	justify-content: space-between;
-	gap: 8px;
-}
-
-.episteme-panel-title {
-	font-size: 16px;
-	font-weight: 600;
-	color: var(--text-normal);
-}
-
-.episteme-panel-refresh-btn {
-	background: none;
-	border: none;
-	cursor: pointer;
-	opacity: 0.7;
-	padding: 4px;
-	border-radius: 4px;
-	transition: opacity 0.15s ease, background-color 0.15s ease;
-}
-
-.episteme-panel-refresh-btn:hover {
-	opacity: 1;
-	background-color: var(--background-modifier-hover);
-}
-
-/* Content Section */
+/* Projects Content Section */
 .episteme-panel-content {
 	padding: 0 12px 12px;
 }
@@ -5127,7 +5239,7 @@
 .episteme-project-item {
 	display: flex;
 	flex-direction: column;
-	gap: 12px;
+	gap: 8px;
 	padding: 12px;
 	background: var(--background-secondary);
 	border-radius: 6px;
@@ -5217,16 +5329,6 @@
 .episteme-project-stat-separator {
 	margin: 0 6px;
 	color: var(--text-faint);
-}
-
-.episteme-project-stat-due {
-	color: var(--color-orange, #fb923c);
-	font-weight: 500;
-}
-
-.episteme-project-stat-new {
-	color: var(--color-blue, #3b82f6);
-	font-weight: 500;
 }
 
 /* Project Actions Row */

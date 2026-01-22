@@ -2,8 +2,8 @@
    Projects Panel Styles
    ======================================== */
 
-/* Panel View Container */
-.episteme-panel-view {
+/* Shared Panel Component - NO padding on containers */
+.episteme-panel {
 	display: flex;
 	flex-direction: column;
 	height: 100%;
@@ -12,48 +12,17 @@
 
 .episteme-panel-header-container {
 	flex-shrink: 0;
+	/* NO padding - header elements use margin-bottom */
 }
 
 .episteme-panel-content-container {
 	flex: 1;
 	overflow-y: auto;
 	min-height: 0;
+	/* NO padding - content elements handle their own padding */
 }
 
-/* Header Section - Compact, no border */
-.episteme-panel-header {
-	padding: 12px;
-}
-
-.episteme-panel-title-row {
-	display: flex;
-	align-items: center;
-	justify-content: space-between;
-	gap: 8px;
-}
-
-.episteme-panel-title {
-	font-size: 16px;
-	font-weight: 600;
-	color: var(--text-normal);
-}
-
-.episteme-panel-refresh-btn {
-	background: none;
-	border: none;
-	cursor: pointer;
-	opacity: 0.7;
-	padding: 4px;
-	border-radius: 4px;
-	transition: opacity 0.15s ease, background-color 0.15s ease;
-}
-
-.episteme-panel-refresh-btn:hover {
-	opacity: 1;
-	background-color: var(--background-modifier-hover);
-}
-
-/* Content Section */
+/* Projects Content Section */
 .episteme-panel-content {
 	padding: 0 12px 12px;
 }
@@ -152,7 +121,7 @@
 .episteme-project-item {
 	display: flex;
 	flex-direction: column;
-	gap: 12px;
+	gap: 8px;
 	padding: 12px;
 	background: var(--background-secondary);
 	border-radius: 6px;
@@ -242,16 +211,6 @@
 .episteme-project-stat-separator {
 	margin: 0 6px;
 	color: var(--text-faint);
-}
-
-.episteme-project-stat-due {
-	color: var(--color-orange, #fb923c);
-	font-weight: 500;
-}
-
-.episteme-project-stat-new {
-	color: var(--color-blue, #3b82f6);
-	font-weight: 500;
 }
 
 /* Project Actions Row */

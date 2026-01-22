@@ -6,7 +6,7 @@
 import { App, Notice } from "obsidian";
 import { BaseModal } from "./BaseModal";
 import { FlashcardReviewModal } from "./FlashcardReviewModal";
-import type { FlashcardItem } from "../../types";
+import type { FlashcardItem, GeneratedNoteType } from "../../types";
 import {
 	OpenRouterService,
 	FlashcardParserService,
@@ -16,6 +16,10 @@ import { INSTRUCTION_BASED_GENERATION_PROMPT } from "../../constants";
 export interface AIGeneratorResult {
 	cancelled: boolean;
 	flashcards?: FlashcardItem[];
+	// Options for creating a new note as destination (passed through from review modal)
+	createNewNote?: boolean;
+	noteType?: GeneratedNoteType;
+	noteName?: string;
 }
 
 export interface AIGeneratorModalOptions {
@@ -164,10 +168,13 @@ export class AIGeneratorModal extends BaseModal {
 				return;
 			}
 
-			// Return the reviewed flashcards
+			// Return the reviewed flashcards with destination options
 			this.resolve({
 				cancelled: false,
 				flashcards: reviewResult.flashcards,
+				createNewNote: reviewResult.createNewNote,
+				noteType: reviewResult.noteType,
+				noteName: reviewResult.noteName,
 			});
 
 		} catch (error) {
