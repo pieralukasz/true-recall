@@ -6,6 +6,7 @@ import { describe, it, expect, beforeEach, vi } from "vitest";
 import { State, Rating } from "ts-fsrs";
 import { SessionPersistenceService } from "../../../src/services/persistence/session-persistence.service";
 import type { SqliteStoreService } from "../../../src/services/persistence/sqlite";
+import type { DayBoundaryService } from "../../../src/services/core/day-boundary.service";
 import type { App } from "obsidian";
 
 describe("SessionPersistenceService", () => {
@@ -18,6 +19,9 @@ describe("SessionPersistenceService", () => {
 		getReviewedCardIds: ReturnType<typeof vi.fn>;
 	};
 	let mockApp: Partial<App>;
+	let mockDayBoundaryService: {
+		getTodayKey: ReturnType<typeof vi.fn>;
+	};
 
 	beforeEach(() => {
 		mockStore = {
@@ -30,9 +34,14 @@ describe("SessionPersistenceService", () => {
 
 		mockApp = {};
 
+		mockDayBoundaryService = {
+			getTodayKey: vi.fn().mockReturnValue("2024-01-15"),
+		};
+
 		service = new SessionPersistenceService(
 			mockApp as App,
-			mockStore as unknown as SqliteStoreService
+			mockStore as unknown as SqliteStoreService,
+			mockDayBoundaryService as unknown as DayBoundaryService
 		);
 	});
 

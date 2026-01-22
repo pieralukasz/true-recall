@@ -625,8 +625,8 @@ export default class EpistemePlugin extends Plugin {
 			this.cardStore = this.sqliteStore;
 			this.flashcardManager.setStore(this.cardStore);
 
-			// Initialize session persistence with SQL store
-			this.sessionPersistence = new SessionPersistenceService(this.app, this.sqliteStore);
+			// Initialize session persistence with SQL store (uses dayBoundaryService for Anki-style day boundaries)
+			this.sessionPersistence = new SessionPersistenceService(this.app, this.sqliteStore, this.dayBoundaryService);
 
 			// Migrate stats.json to SQL if exists (one-time migration)
 			await this.sessionPersistence.migrateStatsJsonToSql();
