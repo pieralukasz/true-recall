@@ -134,6 +134,19 @@ export class SqliteSchemaManager {
             CREATE INDEX IF NOT EXISTS idx_image_refs_path ON card_image_refs(image_path);
             CREATE INDEX IF NOT EXISTS idx_image_refs_card ON card_image_refs(card_id);
 
+            -- Sync log for tracking local changes (Server-Side Merge)
+            CREATE TABLE IF NOT EXISTS sync_log (
+                id TEXT PRIMARY KEY NOT NULL,
+                operation TEXT NOT NULL,
+                table_name TEXT NOT NULL,
+                row_id TEXT NOT NULL,
+                data TEXT,
+                timestamp INTEGER NOT NULL,
+                synced INTEGER DEFAULT 0
+            );
+
+            CREATE INDEX IF NOT EXISTS idx_sync_log_pending ON sync_log(synced, timestamp);
+
             -- Metadata
             CREATE TABLE IF NOT EXISTS meta (
                 key TEXT PRIMARY KEY NOT NULL,
@@ -141,7 +154,7 @@ export class SqliteSchemaManager {
             );
 
             -- Set schema version
-            INSERT OR REPLACE INTO meta (key, value) VALUES ('schema_version', '10');
+            INSERT OR REPLACE INTO meta (key, value) VALUES ('schema_version', '11');
             INSERT OR REPLACE INTO meta (key, value) VALUES ('created_at', datetime('now'));
         `);
     }
@@ -186,6 +199,10 @@ export class SqliteSchemaManager {
 
         if (currentVersion < 10) {
             this.migrateV9toV10();
+        }
+
+        if (currentVersion < 11) {
+            this.migrateV10toV11();
         }
     }
 
@@ -784,6 +801,40 @@ export class SqliteSchemaManager {
         } catch (error) {
             console.error("[Episteme] Schema migration v9->v10 failed:", error);
             throw error; // Re-throw to prevent corrupted state
+        }
+    }
+
+    /**
+     * Migrate from v10 to v11 (sync_log table for Server-Side Merge)
+     * Adds sync_log table to track local changes for sync
+     */
+    private migrateV10toV11(): void {
+        console.log("[Episteme] Migrating schema v10 -> v11 (adding sync_log table)...");
+
+        try {
+            // Create sync_log table to track changes for sync
+            this.db.run(`
+                CREATE TABLE IF NOT EXISTS sync_log (
+                    id TEXT PRIMARY KEY NOT NULL,
+                    operation TEXT NOT NULL,
+                    table_name TEXT NOT NULL,
+                    row_id TEXT NOT NULL,
+                    data TEXT,
+                    timestamp INTEGER NOT NULL,
+                    synced INTEGER DEFAULT 0
+                )
+            `);
+
+            // Index for finding pending (unsynced) changes
+            this.db.run(`
+                CREATE INDEX IF NOT EXISTS idx_sync_log_pending ON sync_log(synced, timestamp)
+            `);
+
+            this.db.run("INSERT OR REPLACE INTO meta (key, value) VALUES ('schema_version', '11')");
+            console.log("[Episteme] Schema migration v10->v11 completed");
+            this.onSchemaChange();
+        } catch (error) {
+            console.error("[Episteme] Schema migration v10->v11 failed:", error);
         }
     }
 

@@ -126,7 +126,6 @@ export const DEFAULT_SETTINGS: EpistemeSettings = {
 
 	// UI
 	reviewMode: "fullscreen",
-	autocompleteSearchFolder: "", // Empty = search all folders
 	customSessionInterface: "modal",
 	showNextReviewTime: true,
 	autoAdvance: false,

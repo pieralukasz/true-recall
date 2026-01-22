@@ -78,8 +78,36 @@ export class SqlJsAdapter {
                 const type = row[2] as string;
                 const notNull = row[3] as number;
                 const pk = row[5] as number;
-                return `  ${name} ${type}${notNull ? " NOT NULL" : ""}${pk ? " PRIMARY KEY" : ""}`;
+
+                // Add FSRS annotations for cards table
+                let annotation = "";
+                if (table === "cards") {
+                    annotation = this.getFsrsFieldAnnotation(name);
+                }
+
+                return `  ${name} ${type}${notNull ? " NOT NULL" : ""}${pk ? " PRIMARY KEY" : ""}${annotation}`;
             });
+
+            // Add FSRS notes section for cards table
+            let fsrsNotesSection = "";
+            if (table === "cards") {
+                fsrsNotesSection = `\n\nFSRS Notes:
+  - "Due today" queries MUST exclude state=0 (new cards are never "due")
+  - Mature cards: state=2 AND scheduled_days >= 21
+  - Young cards: state=2 AND scheduled_days < 21
+  - Problem cards: lapses > 3 OR stability < 2.0 OR state = 3
+  - Active cards filter: suspended=0 AND (buried_until IS NULL OR buried_until <= datetime('now'))
+  - Day boundary: 4 AM (Review cards due before tomorrow's 4 AM)`;
+            }
+
+            // Add rating annotations for review_log table
+            if (table === "review_log") {
+                fsrsNotesSection = `\n\nRating values:
+  - 1 = Again (failed recall)
+  - 2 = Hard (difficult recall)
+  - 3 = Good (normal recall)
+  - 4 = Easy (perfect recall)`;
+            }
 
             // Get sample data (first 3 rows)
             const sampleResult = this.db.exec(
@@ -110,11 +138,32 @@ export class SqlJsAdapter {
             const rowCount = countResult[0]?.values[0]?.[0] ?? 0;
 
             schemaInfo.push(
-                `Table: ${table} (${rowCount} rows)\nColumns:\n${columns.join("\n")}${sampleSection}`
+                `Table: ${table} (${rowCount} rows)\nColumns:\n${columns.join("\n")}${fsrsNotesSection}${sampleSection}`
             );
         }
 
         return schemaInfo.join("\n\n---\n\n");
+    }
+
+    /**
+     * Get FSRS field annotation for cards table columns
+     */
+    private getFsrsFieldAnnotation(fieldName: string): string {
+        const annotations: Record<string, string> = {
+            state: "  -- 0=New (never due), 1=Learning, 2=Review, 3=Relearning",
+            due: "  -- ISO datetime; day-based for Review (state=2), timestamp for Learning (state=1,3)",
+            scheduled_days: "  -- Interval in days; >= 21 = Mature card",
+            stability: "  -- FSRS retention prediction in days; low (<2.0) = problem card",
+            difficulty: "  -- FSRS difficulty (0-10 scale); higher = harder to remember",
+            lapses: "  -- Times failed (rating=1); high (>3) = problem card",
+            reps: "  -- Total review count (all ratings)",
+            suspended: "  -- 0=active, 1=suspended (excluded from study)",
+            buried_until: "  -- NULL or future datetime (temporarily hidden)",
+            last_review: "  -- ISO datetime of most recent review",
+            learning_step: "  -- Current position in learning steps (for state=1,3)",
+        };
+
+        return annotations[fieldName] || "";
     }
 
     /**

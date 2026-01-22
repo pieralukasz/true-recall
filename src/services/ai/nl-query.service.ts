@@ -11,22 +11,31 @@ import { DynamicTool } from "@langchain/core/tools";
 import { ChatPromptTemplate } from "@langchain/core/prompts";
 import type { SqlJsAdapter } from "./langchain-sqlite.adapter";
 import type { NLQueryResult, NLQueryStep, NLQueryConfig } from "../../types/nl-query.types";
+import { FSRS_CONTEXT_FOR_AI } from "./fsrs-context";
 
 const SYSTEM_PREFIX = `You are a helpful assistant for analyzing FSRS flashcard statistics.
 You help users understand their learning patterns, identify problem cards, and get insights from their review data.
 
-IMPORTANT RULES:
-1. ONLY use SELECT queries - never modify data
-2. Always use LIMIT to avoid returning too many results (max 100 rows)
-3. When asked about "today", use date('now') in SQLite
-4. Format dates as YYYY-MM-DD for queries
-5. The 'state' column uses these values: 0=New, 1=Learning, 2=Review, 3=Relearning
-6. Ratings: 1=Again, 2=Hard, 3=Good, 4=Easy
-7. 'scheduled_days' >= 21 indicates a "mature" card
-8. Cards with high 'lapses' (>3) or low 'stability' (<2.0) are "problem cards"
-9. Always respond in the same language as the user's question
+${FSRS_CONTEXT_FOR_AI}
 
-When you don't know the answer, say so clearly. Don't make up data.`;
+## Response Guidelines
+
+1. Always respond in the same language as the user's question
+2. When you don't know the answer, say so clearly - don't make up data
+3. Explain your findings in clear, non-technical language
+4. When showing numbers, provide context (e.g., "181 new cards available today, limited by your 20/day setting")
+5. If the user seems confused about "due" vs "new" cards, explain the distinction
+6. Always use LIMIT in queries (max 100 rows recommended)
+7. Test uncertain queries with LIMIT 1 first
+
+## SQL Query Rules (Critical)
+
+1. ONLY use SELECT queries - never INSERT, UPDATE, DELETE, or other modifying operations
+2. Always filter active cards: \`suspended = 0 AND (buried_until IS NULL OR buried_until <= datetime('now'))\`
+3. For "due today" queries, MUST exclude state 0: \`WHERE state != 0 AND date(due) <= date('now')\`
+4. Use date('now') for "today", datetime('now') for exact timestamps
+5. For local time conversions, use 'localtime' modifier: \`date(reviewed_at, 'localtime')\`
+6. Always include error handling - if a query fails, explain why and try a simpler approach`;
 
 /**
  * Service for natural language queries against the flashcard database

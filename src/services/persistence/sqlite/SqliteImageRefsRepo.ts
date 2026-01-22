@@ -18,16 +18,49 @@ export class SqliteImageRefsRepo {
     }
 
     /**
+     * Log a change to sync_log for Server-Side Merge sync
+     */
+    private logChange(
+        op: "INSERT" | "UPDATE" | "DELETE",
+        rowId: string,
+        data?: unknown
+    ): void {
+        this.db.run(
+            `INSERT INTO sync_log (id, operation, table_name, row_id, data, timestamp, synced)
+             VALUES (?, ?, ?, ?, ?, ?, 0)`,
+            [
+                crypto.randomUUID(),
+                op,
+                "card_image_refs",
+                rowId,
+                data ? JSON.stringify(data) : null,
+                Date.now(),
+            ]
+        );
+    }
+
+    /**
      * Add a new image reference with UUID primary key
      */
     add(ref: Omit<CardImageRef, "id">): void {
         const now = Date.now();
         const id = this.generateUUID();
+        const createdAt = ref.createdAt ?? now;
 
         this.db.run(`
             INSERT INTO card_image_refs (id, card_id, image_path, field, created_at)
             VALUES (?, ?, ?, ?, ?)
-        `, [id, ref.cardId, ref.imagePath, ref.field, ref.createdAt ?? now]);
+        `, [id, ref.cardId, ref.imagePath, ref.field, createdAt]);
+
+        // Log change for sync
+        const syncData = {
+            id,
+            card_id: ref.cardId,
+            image_path: ref.imagePath,
+            field: ref.field,
+            created_at: createdAt,
+        };
+        this.logChange("INSERT", id, syncData);
 
         this.onDataChange();
     }
@@ -79,7 +112,18 @@ export class SqliteImageRefsRepo {
      * Delete all image references for a card
      */
     deleteByCardId(cardId: string): void {
+        // Get refs before delete (for sync logging)
+        const existingRefs = this.getByCardId(cardId);
+
         this.db.run(`DELETE FROM card_image_refs WHERE card_id = ?`, [cardId]);
+
+        // Log DELETE for each removed ref
+        for (const ref of existingRefs) {
+            if (ref.id) {
+                this.logChange("DELETE", ref.id);
+            }
+        }
+
         this.onDataChange();
     }
 
@@ -87,9 +131,27 @@ export class SqliteImageRefsRepo {
      * Update image path when image is renamed
      */
     updateImagePath(oldPath: string, newPath: string): void {
+        // Get refs before update (for sync logging)
+        const affectedRefs = this.getByImagePath(oldPath);
+
         this.db.run(`
             UPDATE card_image_refs SET image_path = ? WHERE image_path = ?
         `, [newPath, oldPath]);
+
+        // Log UPDATE for each affected ref
+        for (const ref of affectedRefs) {
+            if (ref.id) {
+                const syncData = {
+                    id: ref.id,
+                    card_id: ref.cardId,
+                    image_path: newPath, // new path
+                    field: ref.field,
+                    created_at: ref.createdAt,
+                };
+                this.logChange("UPDATE", ref.id, syncData);
+            }
+        }
+
         this.onDataChange();
     }
 
@@ -98,8 +160,18 @@ export class SqliteImageRefsRepo {
      * Removes old refs and adds new ones
      */
     syncCardRefs(cardId: string, questionRefs: string[], answerRefs: string[]): void {
+        // Get existing refs before delete (for sync logging)
+        const existingRefs = this.getByCardId(cardId);
+
         // Delete existing refs for this card
         this.db.run(`DELETE FROM card_image_refs WHERE card_id = ?`, [cardId]);
+
+        // Log DELETE for each removed ref
+        for (const ref of existingRefs) {
+            if (ref.id) {
+                this.logChange("DELETE", ref.id);
+            }
+        }
 
         const now = Date.now();
 
@@ -110,6 +182,16 @@ export class SqliteImageRefsRepo {
                 INSERT INTO card_image_refs (id, card_id, image_path, field, created_at)
                 VALUES (?, ?, ?, 'question', ?)
             `, [id, cardId, imagePath, now]);
+
+            // Log INSERT
+            const syncData = {
+                id,
+                card_id: cardId,
+                image_path: imagePath,
+                field: "question",
+                created_at: now,
+            };
+            this.logChange("INSERT", id, syncData);
         }
 
         // Add answer refs
@@ -119,6 +201,16 @@ export class SqliteImageRefsRepo {
                 INSERT INTO card_image_refs (id, card_id, image_path, field, created_at)
                 VALUES (?, ?, ?, 'answer', ?)
             `, [id, cardId, imagePath, now]);
+
+            // Log INSERT
+            const syncData = {
+                id,
+                card_id: cardId,
+                image_path: imagePath,
+                field: "answer",
+                created_at: now,
+            };
+            this.logChange("INSERT", id, syncData);
         }
 
         this.onDataChange();

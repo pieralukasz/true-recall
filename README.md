@@ -104,7 +104,6 @@ Primary interface for managing flashcards:
 - AI generation with diff mode for updates
 - Edit/delete/move actions per card
 - Card preview with markdown rendering
-- Live autocomplete when linking notes
 
 ### 2. Review View
 
@@ -518,7 +517,8 @@ Contributions welcome! Please submit a Pull Request.
 ## Support
 
 - Report issues on GitHub
-- FSRS details: [FSRS4Anki Wiki](https://github.com/open-spaced-repetition/fsrs4anki/wiki)
+- **[FSRS Documentation](docs/FSRS.md)** - Comprehensive guide to the FSRS algorithm, card states, and scheduling
+- FSRS4Anki Wiki: [https://github.com/open-spaced-repetition/fsrs4anki/wiki](https://github.com/open-spaced-repetition/fsrs4anki/wiki)
 
 ---
 

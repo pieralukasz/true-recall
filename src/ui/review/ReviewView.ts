@@ -11,7 +11,6 @@ import { ReviewStateManager } from "../../state";
 import { extractFSRSSettings, type FSRSFlashcardItem } from "../../types";
 import type { CardRemovedEvent, CardUpdatedEvent, BulkChangeEvent } from "../../types/events.types";
 import { toggleTextareaWrap, insertAtTextareaCursor, setupAutoResize } from "../components";
-import { VaultSearchService, TextareaSuggest } from "../autocomplete";
 import type EpistemePlugin from "../../main";
 import type { ReviewViewState, UndoEntry } from "./review.types";
 import { CardActionsHandler, KeyboardHandler } from "./handlers";
@@ -59,10 +58,6 @@ export class ReviewView extends ItemView {
     // Timer for waiting screen countdown
     private waitingTimer: ReturnType<typeof setInterval> | null = null;
 
-    // Autocomplete for inline edit mode
-    private vaultSearchService: VaultSearchService | null = null;
-    private currentSuggest: TextareaSuggest | null = null;
-
     constructor(leaf: WorkspaceLeaf, plugin: EpistemePlugin) {
         super(leaf);
         this.plugin = plugin;
@@ -87,7 +82,6 @@ export class ReviewView extends ItemView {
                 getSqliteStore: () => this.plugin.getSqliteStore(),
                 createZettelTemplateService: () => new ZettelTemplateService(this.app),
                 settings: {
-                    autocompleteSearchFolder: this.plugin.settings.autocompleteSearchFolder,
                     dayStartHour: this.plugin.settings.dayStartHour,
                     zettelFolder: this.plugin.settings.zettelFolder,
                     zettelTemplatePath: this.plugin.settings.zettelTemplatePath,
@@ -220,11 +214,6 @@ export class ReviewView extends ItemView {
             this.keyboardHandler.handleKeyDown(e);
         });
 
-        // Initialize autocomplete service for inline edit mode
-        const folderFilter = this.plugin.settings.autocompleteSearchFolder;
-        this.vaultSearchService = new VaultSearchService(this.app, folderFilter);
-        this.vaultSearchService.buildIndex();
-
         // Note: startSession() is called from setState() after filters are applied
     }
 
@@ -242,16 +231,6 @@ export class ReviewView extends ItemView {
 
         this.clearWaitingTimer();
         this.stateManager.reset();
-
-        // Clean up autocomplete
-        if (this.currentSuggest) {
-            this.currentSuggest.destroy();
-            this.currentSuggest = null;
-        }
-        if (this.vaultSearchService) {
-            this.vaultSearchService.clear();
-            this.vaultSearchService = null;
-        }
     }
 
     /**
@@ -724,11 +703,6 @@ export class ReviewView extends ItemView {
         // Auto-resize textarea to fit content
         setupAutoResize(textarea);
 
-        // Attach autocomplete for link suggestions
-        if (this.vaultSearchService) {
-            this.currentSuggest = new TextareaSuggest(textarea, this.vaultSearchService);
-        }
-
         // Preview for rendered markdown (hidden initially)
         const preview = wrapper.createDiv({ cls: "episteme-review-edit-preview hidden" });
 
@@ -737,10 +711,9 @@ export class ReviewView extends ItemView {
 
         // Events
         textarea.addEventListener("blur", (e) => {
-            // Don't blur if clicking toolbar or autocomplete popup
+            // Don't blur if clicking toolbar
             const relatedTarget = e.relatedTarget as HTMLElement;
-            if (relatedTarget?.closest(".episteme-edit-toolbar") ||
-                relatedTarget?.closest(".episteme-autocomplete-popup")) return;
+            if (relatedTarget?.closest(".episteme-edit-toolbar")) return;
             void this.saveEditFromTextarea(textarea, field);
         });
         textarea.addEventListener("keydown", (e) => this.handleEditKeydown(e, field));
@@ -855,12 +828,6 @@ export class ReviewView extends ItemView {
                 console.error("Error saving card content:", error);
                 new Notice("Failed to save card");
             }
-        }
-
-        // Clean up autocomplete
-        if (this.currentSuggest) {
-            this.currentSuggest.destroy();
-            this.currentSuggest = null;
         }
 
         // Exit edit mode

@@ -399,17 +399,6 @@ export class EpistemeSettingTab extends PluginSettingTab {
                     this.plugin.settings.removeFlashcardContentAfterCollect = value;
                     await this.plugin.saveSettings();
                 }));
-
-        new Setting(container)
-            .setName("Autocomplete search folder")
-            .setDesc("Folder to search for note linking autocomplete. Leave empty to search all folders.")
-            .addText(text => text
-                .setPlaceholder("e.g., Notes or Zettelkasten")
-                .setValue(this.plugin.settings.autocompleteSearchFolder)
-                .onChange(async (value) => {
-                    this.plugin.settings.autocompleteSearchFolder = value.trim();
-                    await this.plugin.saveSettings();
-                }));
     }
 
     private renderIntegrationTab(container: HTMLElement): void {
@@ -683,7 +672,7 @@ export class EpistemeSettingTab extends PluginSettingTab {
 
         if (!syncAvailable) {
             syncInfo.innerHTML = `
-                <p style="color: var(--text-warning);">Sync is not available. CR-SQLite failed to load.</p>
+                <p style="color: var(--text-warning);">Sync initialization failed. Please restart Obsidian.</p>
                 <p>The plugin will continue to work normally, but cross-device sync features are disabled.</p>
             `;
         } else {

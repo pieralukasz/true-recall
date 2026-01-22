@@ -1,58 +1,57 @@
 /**
  * Sync Types
- * TypeScript interfaces for cross-device synchronization via CR-SQLite
+ * TypeScript interfaces for cross-device synchronization (Server-Side Merge)
  */
 
+// =============================================================================
+// Sync Operations (Client -> Server)
+// =============================================================================
+
 /**
- * Wire format for CR-SQLite changes (sent over HTTP)
- * Binary fields (pk, siteId) are hex-encoded for JSON transport
+ * A single sync operation representing a change to be pushed to the server
  */
-export interface CrsqlChangeWire {
+export interface SyncOperation {
+    id: string;
+    operation: "INSERT" | "UPDATE" | "DELETE";
     table: string;
-    pk: string; // Hex-encoded primary key
-    cid: string; // Column ID
-    val: unknown; // Column value
-    colVersion: number;
-    dbVersion: number;
-    siteId: string; // Hex-encoded site ID
-    cl: number; // Causal length
-    seq: number; // Sequence number
-}
-
-/**
- * Request to pull changes from server
- */
-export interface SyncPullRequest {
-    siteId: string;
-    sinceVersion: number;
-}
-
-/**
- * Response from server with remote changes
- */
-export interface SyncPullResponse {
-    changes: CrsqlChangeWire[];
-    serverVersion: number;
-    hasMore: boolean;
+    rowId: string;
+    data: Record<string, unknown> | null;
+    timestamp: number;
 }
 
 /**
  * Request to push local changes to server
  */
 export interface SyncPushRequest {
-    siteId: string;
-    changes: CrsqlChangeWire[];
-    clientVersion: number;
+    clientId: string;
+    operations: SyncOperation[];
 }
 
 /**
  * Response from server after pushing changes
  */
 export interface SyncPushResponse {
+    applied: number;
+    errors?: number;
     serverVersion: number;
-    accepted: number;
-    rejected: number;
 }
+
+// =============================================================================
+// Sync Pull (Server -> Client)
+// =============================================================================
+
+/**
+ * Response from server with rows modified since last sync
+ */
+export interface SyncPullResponse {
+    rows: Record<string, Record<string, unknown>[]>;
+    deletedIds: Record<string, string[]>;
+    serverVersion: number;
+}
+
+// =============================================================================
+// Sync State & Status
+// =============================================================================
 
 /**
  * Result of a sync operation
@@ -73,8 +72,7 @@ export type SyncStatus =
     | "syncing"
     | "error"
     | "disabled"
-    | "offline"
-    | "no-crsqlite";
+    | "offline";
 
 /**
  * Full sync state including metadata
@@ -128,4 +126,25 @@ export interface SyncMetaKeys {
     lastSyncedVersion: number;
     lastSyncTime: number | null;
     lastSyncError: string | null;
+    clientId: string | null;
 }
+
+// =============================================================================
+// Tables that are synced
+// =============================================================================
+
+/**
+ * List of tables that participate in sync
+ */
+export const SYNC_TABLES = [
+    "cards",
+    "source_notes",
+    "projects",
+    "note_projects",
+    "review_log",
+    "daily_stats",
+    "daily_reviewed_cards",
+    "card_image_refs",
+] as const;
+
+export type SyncTableName = (typeof SYNC_TABLES)[number];

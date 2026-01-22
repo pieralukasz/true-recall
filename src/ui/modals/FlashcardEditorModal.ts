@@ -7,7 +7,6 @@ import { App, Notice, MarkdownRenderer, Component } from "obsidian";
 import { BaseModal } from "./BaseModal";
 import { MediaPickerModal } from "./MediaPickerModal";
 import type { FSRSFlashcardItem } from "../../types";
-import { VaultSearchService, TextareaSuggest, SuggestionPopup } from "../autocomplete";
 import { ImageService } from "../../services/image";
 import {
 	createEditableTextField,
@@ -40,8 +39,6 @@ export interface FlashcardEditorModalOptions {
 	prefillQuestion?: string;
 	/** Pre-fill answer (for copying cards) */
 	prefillAnswer?: string;
-	/** Folder to search for autocomplete note linking (empty = all folders) */
-	autocompleteFolder?: string;
 }
 
 /**
@@ -70,11 +67,6 @@ export class FlashcardEditorModal extends BaseModal {
 	// Markdown rendering component
 	private renderComponent: Component | null = null;
 
-	// Autocomplete components
-	private vaultSearchService: VaultSearchService | null = null;
-	private questionSuggest: TextareaSuggest | null = null;
-	private answerSuggest: TextareaSuggest | null = null;
-
 	// Image service
 	private imageService: ImageService | null = null;
 
@@ -83,7 +75,6 @@ export class FlashcardEditorModal extends BaseModal {
 	private newSourceNotePath: string | null = null;
 	private newSourceNoteName: string | null = null;
 	private sourceContainer: HTMLElement | null = null;
-	private sourceSuggestPopup: SuggestionPopup | null = null;
 
 	constructor(app: App, options: FlashcardEditorModalOptions) {
 		super(app, {
@@ -105,10 +96,6 @@ export class FlashcardEditorModal extends BaseModal {
 
 	onOpen(): void {
 		// Initialize services BEFORE super.onOpen() which calls renderBody()
-		const folderFilter = this.options.autocompleteFolder ?? "";
-		this.vaultSearchService = new VaultSearchService(this.app, folderFilter);
-		this.vaultSearchService.buildIndex();
-
 		this.imageService = new ImageService(this.app);
 
 		// Initialize markdown rendering component
@@ -170,16 +157,6 @@ export class FlashcardEditorModal extends BaseModal {
 	 * Clean up existing field components
 	 */
 	private cleanupFields(): void {
-		// Clean up autocomplete
-		if (this.questionSuggest) {
-			this.questionSuggest.destroy();
-			this.questionSuggest = null;
-		}
-		if (this.answerSuggest) {
-			this.answerSuggest.destroy();
-			this.answerSuggest = null;
-		}
-
 		// Clean up EditableTextField instances
 		if (this.questionField) {
 			this.questionField.destroy();
@@ -235,110 +212,12 @@ export class FlashcardEditorModal extends BaseModal {
 	}
 
 	/**
-	 * Start editing source (show search input with autocomplete)
+	 * Start editing source (show search input)
 	 */
 	private startSourceEdit(): void {
-		if (!this.sourceContainer || !this.vaultSearchService) return;
-		this.sourceEditing = true;
-		this.sourceContainer.empty();
-
-		// Create input container
-		const inputContainer = this.sourceContainer.createDiv({
-			cls: "episteme-editor-source-input-container",
-		});
-
-		// Create search input
-		const input = inputContainer.createEl("input", {
-			cls: "episteme-editor-source-input",
-			attr: {
-				type: "text",
-				placeholder: "Search for note...",
-			},
-		});
-
-		// Create popup for suggestions
-		this.sourceSuggestPopup = new SuggestionPopup();
-		this.sourceSuggestPopup.attach(document.body);
-
-		// Debounce timer
-		let debounceTimer: ReturnType<typeof setTimeout> | null = null;
-
-		// Input handler with debounce
-		input.addEventListener("input", () => {
-			if (debounceTimer) clearTimeout(debounceTimer);
-			debounceTimer = setTimeout(() => {
-				const query = input.value.trim();
-				if (query.length < 2) {
-					this.sourceSuggestPopup?.hide();
-					return;
-				}
-
-				const suggestions = this.vaultSearchService!.search(query, 8);
-				if (suggestions.length === 0) {
-					this.sourceSuggestPopup?.hide();
-					return;
-				}
-
-				// Calculate position below input
-				const inputRect = input.getBoundingClientRect();
-				const position = {
-					top: inputRect.bottom + 4,
-					left: inputRect.left,
-				};
-
-				this.sourceSuggestPopup?.show(suggestions, position, (suggestion) => {
-					// User selected a note
-					this.newSourceNotePath = suggestion.filePath;
-					this.newSourceNoteName = suggestion.noteBasename;
-					this.sourceEditing = false;
-					this.cleanupSourceSuggest();
-					this.renderSourceDisplay();
-				});
-			}, 150);
-		});
-
-		// Keyboard navigation
-		input.addEventListener("keydown", (e) => {
-			if (!this.sourceSuggestPopup?.isVisible()) {
-				if (e.key === "Escape") {
-					e.preventDefault();
-					this.cancelSourceEdit();
-				}
-				return;
-			}
-
-			switch (e.key) {
-				case "ArrowDown":
-					e.preventDefault();
-					this.sourceSuggestPopup.moveDown();
-					break;
-				case "ArrowUp":
-					e.preventDefault();
-					this.sourceSuggestPopup.moveUp();
-					break;
-				case "Enter":
-				case "Tab":
-					e.preventDefault();
-					this.sourceSuggestPopup.confirmSelection();
-					break;
-				case "Escape":
-					e.preventDefault();
-					this.cancelSourceEdit();
-					break;
-			}
-		});
-
-		// Blur handler - cancel edit after delay
-		input.addEventListener("blur", () => {
-			setTimeout(() => {
-				if (this.sourceEditing) {
-					this.cancelSourceEdit();
-				}
-			}, 200);
-		});
-
-		// Focus input
-		input.focus();
+		if (!this.sourceContainer) return;
+		// Source editing disabled (autocomplete removed)
+		new Notice("Source editing is not available");
 	}
 
 	/**
@@ -346,18 +225,7 @@ export class FlashcardEditorModal extends BaseModal {
 	 */
 	private cancelSourceEdit(): void {
 		this.sourceEditing = false;
-		this.cleanupSourceSuggest();
 		this.renderSourceDisplay();
-	}
-
-	/**
-	 * Clean up source suggestion popup
-	 */
-	private cleanupSourceSuggest(): void {
-		if (this.sourceSuggestPopup) {
-			this.sourceSuggestPopup.detach();
-			this.sourceSuggestPopup = null;
-		}
 	}
 
 	/**
@@ -468,17 +336,9 @@ export class FlashcardEditorModal extends BaseModal {
 			this.answerField = editField;
 		}
 
-		// Attach autocomplete
+		// Attach image paste handler
 		const textarea = editField.getTextarea();
-		if (textarea && this.vaultSearchService) {
-			const suggest = new TextareaSuggest(textarea, this.vaultSearchService);
-			if (field === "question") {
-				this.questionSuggest = suggest;
-			} else {
-				this.answerSuggest = suggest;
-			}
-
-			// Attach image paste handler
+		if (textarea) {
 			textarea.addEventListener("paste", (e) => {
 				void this.handleImagePaste(e, textarea);
 			});
@@ -737,15 +597,6 @@ export class FlashcardEditorModal extends BaseModal {
 	onClose(): void {
 		// Clean up field components
 		this.cleanupFields();
-
-		// Clean up source suggest popup
-		this.cleanupSourceSuggest();
-
-		// Clean up services
-		if (this.vaultSearchService) {
-			this.vaultSearchService.clear();
-			this.vaultSearchService = null;
-		}
 
 		// Clean up markdown rendering component
 		if (this.renderComponent) {

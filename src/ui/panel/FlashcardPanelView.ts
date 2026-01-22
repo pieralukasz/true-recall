@@ -724,7 +724,6 @@ export class FlashcardPanelView extends ItemView {
             currentFilePath: state.currentFile.path,
             sourceNoteName: state.currentFile.basename,
             projects: [],
-            autocompleteFolder: this.plugin.settings.autocompleteSearchFolder,
         });
 
         const result = await modal.openAndWait();
@@ -1005,7 +1004,6 @@ export class FlashcardPanelView extends ItemView {
             projects,
             prefillQuestion: "question",
             prefillAnswer: "answer",
-            autocompleteFolder: this.plugin.settings.autocompleteSearchFolder,
         });
 
         const result = await modal.openAndWait();

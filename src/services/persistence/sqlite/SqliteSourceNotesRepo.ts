@@ -18,10 +18,36 @@ export class SqliteSourceNotesRepo {
     }
 
     /**
+     * Log a change to sync_log for Server-Side Merge sync
+     */
+    private logChange(
+        op: "INSERT" | "UPDATE" | "DELETE",
+        rowId: string,
+        data?: unknown
+    ): void {
+        this.db.run(
+            `INSERT INTO sync_log (id, operation, table_name, row_id, data, timestamp, synced)
+             VALUES (?, ?, ?, ?, ?, ?, 0)`,
+            [
+                crypto.randomUUID(),
+                op,
+                "source_notes",
+                rowId,
+                data ? JSON.stringify(data) : null,
+                Date.now(),
+            ]
+        );
+    }
+
+    /**
      * Insert or update a source note
      */
     upsert(info: SourceNoteInfo): void {
         const now = Date.now();
+
+        // Check if exists to determine INSERT vs UPDATE
+        const existing = this.get(info.uid);
+        const isUpdate = existing !== null;
 
         this.db.run(`
             INSERT INTO source_notes (uid, note_name, note_path, created_at, updated_at)
@@ -37,6 +63,16 @@ export class SqliteSourceNotesRepo {
             info.createdAt || now,
             now,
         ]);
+
+        // Log change for sync
+        const syncData = {
+            uid: info.uid,
+            note_name: info.noteName,
+            note_path: info.notePath || null,
+            created_at: info.createdAt || now,
+            updated_at: now,
+        };
+        this.logChange(isUpdate ? "UPDATE" : "INSERT", info.uid, syncData);
 
         this.onDataChange();
     }
@@ -86,6 +122,8 @@ export class SqliteSourceNotesRepo {
      * Update source note path (when file is renamed)
      */
     updatePath(uid: string, newPath: string, newName?: string): void {
+        const now = Date.now();
+
         if (newName) {
             this.db.run(`
                 UPDATE source_notes SET
@@ -93,14 +131,27 @@ export class SqliteSourceNotesRepo {
                     note_name = ?,
                     updated_at = ?
                 WHERE uid = ?
-            `, [newPath, newName, Date.now(), uid]);
+            `, [newPath, newName, now, uid]);
         } else {
             this.db.run(`
                 UPDATE source_notes SET
                     note_path = ?,
                     updated_at = ?
                 WHERE uid = ?
-            `, [newPath, Date.now(), uid]);
+            `, [newPath, now, uid]);
+        }
+
+        // Log full row for sync
+        const note = this.get(uid);
+        if (note) {
+            const syncData = {
+                uid: note.uid,
+                note_name: note.noteName,
+                note_path: note.notePath || null,
+                created_at: note.createdAt,
+                updated_at: now,
+            };
+            this.logChange("UPDATE", uid, syncData);
         }
 
         this.onDataChange();
@@ -117,6 +168,7 @@ export class SqliteSourceNotesRepo {
         }
 
         this.db.run(`DELETE FROM source_notes WHERE uid = ?`, [uid]);
+        this.logChange("DELETE", uid);
         this.onDataChange();
     }
 
