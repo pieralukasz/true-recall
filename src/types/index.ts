@@ -10,6 +10,7 @@ export type {
     DiffResult,
     FlashcardInfo,
     NoteFlashcardType,
+    GeneratedNoteType,
 } from "./flashcard.types";
 
 // API types

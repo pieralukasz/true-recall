@@ -85,22 +85,6 @@ export class ProjectItem extends BaseComponent {
 		const cardCountText = project.cardCount === 1 ? "1 card" : `${project.cardCount} cards`;
 		statsRow.createSpan({ text: cardCountText });
 
-		if (project.dueCount > 0) {
-			statsRow.createSpan({ text: "·", cls: "episteme-project-stat-separator" });
-			statsRow.createSpan({
-				text: `${project.dueCount} due`,
-				cls: "episteme-project-stat-due",
-			});
-		}
-
-		if (project.newCount > 0) {
-			statsRow.createSpan({ text: "·", cls: "episteme-project-stat-separator" });
-			statsRow.createSpan({
-				text: `${project.newCount} new`,
-				cls: "episteme-project-stat-new",
-			});
-		}
-
 		// Actions row - icon buttons left, Review right
 		const actionsRow = this.element.createDiv({
 			cls: "episteme-project-actions",

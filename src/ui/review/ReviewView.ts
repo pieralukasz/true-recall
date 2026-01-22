@@ -5,7 +5,7 @@
  */
 import { ItemView, WorkspaceLeaf, MarkdownRenderer, Notice, Platform, normalizePath, Menu, setIcon, TFile, type ViewStateResult } from "obsidian";
 import { Rating, State, type Grade } from "ts-fsrs";
-import { VIEW_TYPE_REVIEW, UI_CONFIG } from "../../constants";
+import { VIEW_TYPE_REVIEW, UI_CONFIG, GENERATED_NOTE_TYPES } from "../../constants";
 import { FSRSService, ReviewService, FlashcardManager, SessionPersistenceService, getEventBus, ZettelTemplateService } from "../../services";
 import { ReviewStateManager } from "../../state";
 import { extractFSRSSettings, type FSRSFlashcardItem, type SchedulingPreview } from "../../types";
@@ -1633,7 +1633,8 @@ export class ReviewView extends ItemView {
 
     /**
      * Generate flashcards using AI based on user instructions
-     * Associates generated cards with current card's source note and projects
+     * Associates generated cards with current card's source note and projects,
+     * or creates a new note if user requested
      */
     private async handleAIGenerateFlashcard(): Promise<void> {
         const currentCard = this.stateManager.getCurrentCard();
@@ -1657,16 +1658,45 @@ export class ReviewView extends ItemView {
             return;
         }
 
-        // Save generated flashcards and add to queue
+        // Determine target source UID and projects
+        let targetSourceUid: string | undefined;
+        let targetProjects: string[];
+        let targetFilePath: string;
+
         try {
+            if (result.createNewNote && result.noteType) {
+                // Create a new note for the flashcards
+                const noteConfig = GENERATED_NOTE_TYPES[result.noteType];
+
+                // Generate note name
+                const noteName = result.noteName || this.generateNoteName(result.noteType, result.flashcards[0]?.question);
+
+                // Create the note
+                const { uid, filePath } = await this.createSourceNoteForGeneratedCards(
+                    noteName,
+                    noteConfig.tag
+                );
+
+                targetSourceUid = uid;
+                targetFilePath = filePath;
+                targetProjects = currentCard.projects; // Inherit projects from current card
+
+                new Notice(`Created new note: ${noteName}`);
+            } else {
+                // Use current card's source note (existing behavior)
+                targetSourceUid = currentCard.sourceUid;
+                targetFilePath = currentCard.filePath;
+                targetProjects = currentCard.projects;
+            }
+
+            // Save generated flashcards and add to queue
             for (const flashcard of result.flashcards) {
-                // Create card associated with current card's source note
                 const newCard = await this.flashcardManager.addSingleFlashcard(
-                    currentCard.filePath,
+                    targetFilePath,
                     flashcard.question,
                     flashcard.answer,
-                    currentCard.sourceUid,
-                    currentCard.projects
+                    targetSourceUid,
+                    targetProjects
                 );
 
                 // Add to current review queue
@@ -1680,6 +1710,94 @@ export class ReviewView extends ItemView {
             console.error("Error saving generated flashcards:", error);
             new Notice(`Failed to save flashcards: ${error instanceof Error ? error.message : String(error)}`);
         }
+    }
+
+    /**
+     * Generate a note name based on note type and first flashcard question
+     */
+    private generateNoteName(noteType: string, firstQuestion?: string): string {
+        const config = GENERATED_NOTE_TYPES[noteType as keyof typeof GENERATED_NOTE_TYPES];
+        if (!config) return `Note - ${Date.now()}`;
+
+        if (firstQuestion) {
+            // Clean up the question to use as part of the name
+            const cleanQuestion = firstQuestion
+                .replace(/\*\*/g, "")  // Remove bold markers
+                .replace(/\[\[([^\]|]+)(\|[^\]]+)?\]\]/g, "$1")  // Remove backlink syntax
+                .replace(/#flashcard/g, "")  // Remove flashcard tag
+                .replace(/<br>/g, " ")  // Replace line breaks with spaces
+                .trim()
+                .substring(0, 40);  // Limit length
+
+            return `${config.defaultNamePrefix}${cleanQuestion}`;
+        }
+
+        return `${config.defaultNamePrefix}${Date.now()}`;
+    }
+
+    /**
+     * Create a new source note for generated flashcards
+     * Returns the UID and file path of the created note
+     */
+    private async createSourceNoteForGeneratedCards(
+        noteName: string,
+        tag: string
+    ): Promise<{ uid: string; filePath: string }> {
+        // Get zettel folder from settings
+        const folderPath = normalizePath(this.plugin.settings.zettelFolder || "Zettel");
+
+        // Ensure folder exists
+        if (!this.app.vault.getAbstractFileByPath(folderPath)) {
+            await this.app.vault.createFolder(folderPath);
+        }
+
+        // Find unique file path
+        let filePath = normalizePath(`${folderPath}/${noteName}.md`);
+        let counter = 1;
+        while (this.app.vault.getAbstractFileByPath(filePath)) {
+            filePath = normalizePath(`${folderPath}/${noteName} ${counter}.md`);
+            counter++;
+        }
+
+        // Generate UID using the frontmatter service pattern
+        const uid = this.generateUid();
+
+        // Create note content with frontmatter
+        const content = `---
+flashcard_uid: ${uid}
+tags: [${tag}]
+---
+
+# ${noteName}
+
+`;
+
+        // Create the file
+        const file = await this.app.vault.create(filePath, content);
+
+        // Register source note in SQLite
+        const sqliteStore = this.plugin.getSqliteStore();
+        if (sqliteStore) {
+            sqliteStore.upsertSourceNote({
+                uid,
+                noteName: file.basename,
+                notePath: file.path,
+            });
+        }
+
+        return { uid, filePath: file.path };
+    }
+
+    /**
+     * Generate a random 8-character hex UID
+     */
+    private generateUid(): string {
+        const chars = "0123456789abcdef";
+        let uid = "";
+        for (let i = 0; i < 8; i++) {
+            uid += chars[Math.floor(Math.random() * chars.length)];
+        }
+        return uid;
     }
 
     /**

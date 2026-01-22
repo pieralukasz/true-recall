@@ -4,5 +4,4 @@
  */
 
 export { MissingFlashcardsView } from "./MissingFlashcardsView";
-export { MissingFlashcardsHeader } from "./MissingFlashcardsHeader";
 export { MissingFlashcardsContent } from "./MissingFlashcardsContent";

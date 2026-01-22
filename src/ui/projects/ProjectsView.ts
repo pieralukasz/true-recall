@@ -5,7 +5,7 @@
 import { ItemView, WorkspaceLeaf, Notice, TFile } from "obsidian";
 import { VIEW_TYPE_PROJECTS, VIEW_TYPE_REVIEW } from "../../constants";
 import { createProjectsStateManager } from "../../state/projects.state";
-import { ProjectsHeader } from "./ProjectsHeader";
+import { Panel } from "../components/Panel";
 import { ProjectsContent } from "./ProjectsContent";
 import { SelectNoteModal, AddNotesToProjectModal } from "../modals";
 import type EpistemePlugin from "../../main";
@@ -21,12 +21,8 @@ export class ProjectsView extends ItemView {
 	private stateManager = createProjectsStateManager();
 
 	// UI Components
-	private headerComponent: ProjectsHeader | null = null;
+	private panelComponent: Panel | null = null;
 	private contentComponent: ProjectsContent | null = null;
-
-	// Container elements
-	private headerContainer!: HTMLElement;
-	private contentContainer!: HTMLElement;
 
 	// State subscription
 	private unsubscribe: (() => void) | null = null;
@@ -52,21 +48,19 @@ export class ProjectsView extends ItemView {
 		const container = this.containerEl.children[1];
 		if (!(container instanceof HTMLElement)) return;
 		container.empty();
-		container.addClass("episteme-panel-view");
 
-		// Create container elements
-		this.headerContainer = container.createDiv({
-			cls: "episteme-panel-header-container",
+		// Create Panel component (shared with Ready to Harvest)
+		this.panelComponent = new Panel(container, {
+			title: "Projects",
+			onRefresh: () => void this.loadProjects(),
 		});
-		this.contentContainer = container.createDiv({
-			cls: "episteme-panel-content-container",
-		});
+		this.panelComponent.render();
 
 		// Subscribe to state changes
-		this.unsubscribe = this.stateManager.subscribe(() => this.render());
+		this.unsubscribe = this.stateManager.subscribe(() => this.renderContent());
 
 		// Initial render
-		this.render();
+		this.renderContent();
 
 		// Load projects
 		void this.loadProjects();
@@ -74,7 +68,7 @@ export class ProjectsView extends ItemView {
 
 	async onClose(): Promise<void> {
 		this.unsubscribe?.();
-		this.headerComponent?.destroy();
+		this.panelComponent?.destroy();
 		this.contentComponent?.destroy();
 	}
 
@@ -338,25 +332,21 @@ export class ProjectsView extends ItemView {
 	}
 
 	/**
-	 * Render all components
+	 * Render content (Panel is created once in onOpen)
 	 */
-	private render(): void {
+	private renderContent(): void {
+		if (!this.panelComponent) return;
+
 		const state = this.stateManager.getState();
 		const projectsWithCards = this.stateManager.getProjectsWithCards();
 		const emptyProjects = this.stateManager.getEmptyProjects();
 
-		// Render Header (compact - just title + refresh)
-		this.headerComponent?.destroy();
-		this.headerContainer.empty();
-		this.headerComponent = new ProjectsHeader(this.headerContainer, {
-			onRefresh: () => void this.loadProjects(),
-		});
-		this.headerComponent.render();
+		const contentContainer = this.panelComponent.getContentContainer();
 
 		// Render Content (includes toolbar with search + new button)
 		this.contentComponent?.destroy();
-		this.contentContainer.empty();
-		this.contentComponent = new ProjectsContent(this.contentContainer, {
+		contentContainer.empty();
+		this.contentComponent = new ProjectsContent(contentContainer, {
 			isLoading: state.isLoading,
 			projectsWithCards,
 			emptyProjects,

@@ -1,4 +1,5 @@
 import type { EpistemeSettings } from "./types/settings.types";
+import type { GeneratedNoteType } from "./types/flashcard.types";
 
 // ===== View Types =====
 
@@ -225,6 +226,42 @@ export const FLASHCARD_CONFIG = {
 	fsrsDataPrefix: "<!--fsrs:",
 	fsrsDataSuffix: "-->",
 	reviewHistoryFile: ".review-history.json",
+} as const;
+
+// ===== Generated Note Types =====
+
+/** Configuration for each generated note type */
+export interface GeneratedNoteTypeConfig {
+	type: GeneratedNoteType;
+	label: string;
+	description: string;
+	tag: string;
+	defaultNamePrefix: string;
+}
+
+/** Note type configurations for AI-generated flashcard destinations */
+export const GENERATED_NOTE_TYPES: Record<GeneratedNoteType, GeneratedNoteTypeConfig> = {
+	verify: {
+		type: "verify",
+		label: "Verify",
+		description: "Binary validation (True/False, Spot the Error)",
+		tag: "mind/verify",
+		defaultNamePrefix: "Verify - ",
+	},
+	application: {
+		type: "application",
+		label: "Application",
+		description: "Scenario-based, procedural 'how-to' cards",
+		tag: "mind/application",
+		defaultNamePrefix: "Application - ",
+	},
+	question: {
+		type: "question",
+		label: "Question",
+		description: "Open-ended recall, 'define X', 'why Y'",
+		tag: "mind/question",
+		defaultNamePrefix: "Question - ",
+	},
 } as const;
 
 // ===== FSRS Configuration =====

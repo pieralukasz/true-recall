@@ -15,6 +15,7 @@ import { FlashcardManager, OpenRouterService, getEventBus } from "../../services
 import { CollectService } from "../../services/flashcard/collect.service";
 import { FlashcardParserService } from "../../services/flashcard/flashcard-parser.service";
 import { PanelStateManager } from "../../state";
+import { Panel } from "../components/Panel";
 import { PanelHeader } from "./PanelHeader";
 import { PanelContent } from "./PanelContent";
 import { PanelFooter } from "./PanelFooter";
@@ -37,11 +38,12 @@ export class FlashcardPanelView extends ItemView {
     private collectService: CollectService;
 
     // UI Components
+    private panelComponent: Panel | null = null;
     private headerComponent: PanelHeader | null = null;
     private contentComponent: PanelContent | null = null;
     private footerComponent: PanelFooter | null = null;
 
-    // Container elements
+    // Container elements (obtained from Panel)
     private headerContainer!: HTMLElement;
     private contentContainer!: HTMLElement;
     private footerContainer!: HTMLElement;
@@ -87,12 +89,24 @@ export class FlashcardPanelView extends ItemView {
         const container = this.containerEl.children[1];
         if (!(container instanceof HTMLElement)) return;
         container.empty();
-        container.addClass("episteme-panel");
 
-        // Create container elements
-        this.headerContainer = container.createDiv({ cls: "episteme-header-container" });
-        this.contentContainer = container.createDiv({ cls: "episteme-content-container" });
-        this.footerContainer = container.createDiv({ cls: "episteme-footer-container" });
+        // Create Panel component with custom header and footer
+        this.panelComponent = new Panel(container, {
+            title: "Episteme",
+            customHeader: true,
+            showFooter: true,
+        });
+        this.panelComponent.render();
+
+        // Get container elements from Panel
+        this.headerContainer = this.panelComponent.getHeaderContainer();
+        this.contentContainer = this.panelComponent.getContentContainer();
+        const footerContainer = this.panelComponent.getFooterContainer();
+        if (!footerContainer) {
+            console.error("[FlashcardPanelView] Footer container not available");
+            return;
+        }
+        this.footerContainer = footerContainer;
 
         // Subscribe to state changes
         this.unsubscribe = this.stateManager.subscribe(() => this.render());
@@ -134,6 +148,7 @@ export class FlashcardPanelView extends ItemView {
         // automatically cleaned up by the Component base class
 
         // Cleanup components
+        this.panelComponent?.destroy();
         this.headerComponent?.destroy();
         this.contentComponent?.destroy();
         this.footerComponent?.destroy();

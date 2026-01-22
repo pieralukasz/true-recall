@@ -6,7 +6,7 @@ import { ItemView, WorkspaceLeaf, Notice } from "obsidian";
 import { VIEW_TYPE_ORPHANED_CARDS } from "../../constants";
 import { createOrphanedCardsStateManager } from "../../state/orphaned-cards.state";
 import type { OrphanedCard } from "../../state/state.types";
-import { OrphanedCardsHeader } from "./OrphanedCardsHeader";
+import { Panel } from "../components/Panel";
 import { OrphanedCardsContent } from "./OrphanedCardsContent";
 import { MoveCardModal } from "../modals/MoveCardModal";
 import { FlashcardEditorModal } from "../modals/FlashcardEditorModal";
@@ -21,12 +21,8 @@ export class OrphanedCardsView extends ItemView {
 	private stateManager = createOrphanedCardsStateManager();
 
 	// UI Components
-	private headerComponent: OrphanedCardsHeader | null = null;
+	private panelComponent: Panel | null = null;
 	private contentComponent: OrphanedCardsContent | null = null;
-
-	// Container elements
-	private headerContainer!: HTMLElement;
-	private contentContainer!: HTMLElement;
 
 	// State subscription
 	private unsubscribe: (() => void) | null = null;
@@ -52,21 +48,19 @@ export class OrphanedCardsView extends ItemView {
 		const container = this.containerEl.children[1];
 		if (!(container instanceof HTMLElement)) return;
 		container.empty();
-		container.addClass("episteme-panel-view");
 
-		// Create container elements
-		this.headerContainer = container.createDiv({
-			cls: "episteme-panel-header-container",
+		// Create Panel component
+		this.panelComponent = new Panel(container, {
+			title: "Orphaned Cards",
+			onRefresh: () => void this.loadOrphanedCards(),
 		});
-		this.contentContainer = container.createDiv({
-			cls: "episteme-panel-content-container",
-		});
+		this.panelComponent.render();
 
 		// Subscribe to state changes
-		this.unsubscribe = this.stateManager.subscribe(() => this.render());
+		this.unsubscribe = this.stateManager.subscribe(() => this.renderContent());
 
 		// Initial render
-		this.render();
+		this.renderContent();
 
 		// Load orphaned cards
 		void this.loadOrphanedCards();
@@ -74,7 +68,7 @@ export class OrphanedCardsView extends ItemView {
 
 	async onClose(): Promise<void> {
 		this.unsubscribe?.();
-		this.headerComponent?.destroy();
+		this.panelComponent?.destroy();
 		this.contentComponent?.destroy();
 	}
 
@@ -285,28 +279,78 @@ export class OrphanedCardsView extends ItemView {
 	}
 
 	/**
-	 * Render all components
+	 * Render content (Panel is created once in onOpen)
 	 */
-	private render(): void {
+	private renderContent(): void {
+		if (!this.panelComponent) return;
+
 		const state = this.stateManager.getState();
 		const filteredCards = this.stateManager.getFilteredCards();
 
-		// Render Header
-		this.headerComponent?.destroy();
-		this.headerContainer.empty();
-		this.headerComponent = new OrphanedCardsHeader(this.headerContainer, {
-			count: state.allOrphanedCards.length,
-			selectedCount: state.selectedCardIds.size,
-			isLoading: state.isLoading,
-			onBulkAssign: () => void this.handleBulkAssign(),
-			onBulkDelete: () => void this.handleBulkDelete(),
+		const headerContainer = this.panelComponent.getHeaderContainer();
+		const contentContainer = this.panelComponent.getContentContainer();
+
+		// Clear and re-add summary section (header title row is preserved by Panel)
+		const existingSummary = headerContainer.querySelector(".episteme-orphaned-summary");
+		if (existingSummary) {
+			existingSummary.remove();
+		}
+
+		// Add summary section after header
+		const summaryEl = headerContainer.createDiv({
+			cls: "episteme-orphaned-summary",
 		});
-		this.headerComponent.render();
+
+		if (state.isLoading) {
+			summaryEl.createDiv({
+				text: "Loading...",
+				cls: "episteme-ready-label",
+			});
+		} else {
+			summaryEl.createDiv({
+				text: state.allOrphanedCards.length.toString(),
+				cls: "episteme-ready-count",
+			});
+			summaryEl.createDiv({
+				text: state.allOrphanedCards.length === 1 ? "card without source" : "cards without source",
+				cls: "episteme-ready-label",
+			});
+		}
+
+		// Remove existing bulk actions
+		const existingActions = headerContainer.querySelector(".episteme-orphaned-actions");
+		if (existingActions) {
+			existingActions.remove();
+		}
+
+		// Bulk action buttons (visible when cards are selected)
+		if (state.selectedCardIds.size > 0) {
+			const actionsRow = headerContainer.createDiv({
+				cls: "episteme-orphaned-actions",
+			});
+
+			actionsRow.createSpan({
+				text: `${state.selectedCardIds.size} selected`,
+				cls: "episteme-orphaned-selected-count",
+			});
+
+			const assignBtn = actionsRow.createEl("button", {
+				text: "Assign to note",
+				cls: "episteme-panel-action-btn episteme-btn-primary",
+			});
+			assignBtn.addEventListener("click", () => void this.handleBulkAssign());
+
+			const deleteBtn = actionsRow.createEl("button", {
+				text: "Delete",
+				cls: "episteme-panel-action-btn episteme-btn-danger",
+			});
+			deleteBtn.addEventListener("click", () => void this.handleBulkDelete());
+		}
 
 		// Render Content
 		this.contentComponent?.destroy();
-		this.contentContainer.empty();
-		this.contentComponent = new OrphanedCardsContent(this.contentContainer, {
+		contentContainer.empty();
+		this.contentComponent = new OrphanedCardsContent(contentContainer, {
 			isLoading: state.isLoading,
 			filteredCards,
 			totalCount: state.allOrphanedCards.length,
