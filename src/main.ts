@@ -46,6 +46,7 @@ import {
 import { SessionModal, AddToProjectModal, RestoreBackupModal } from "./ui/modals";
 import { registerCommands } from "./plugin/PluginCommands";
 import { registerEventHandlers } from "./plugin/PluginEventHandlers";
+import { AgentService, registerAllTools, resetToolRegistry } from "./agent";
 import {
 	activateView,
 	activateReviewView,
@@ -65,6 +66,7 @@ export default class EpistemePlugin extends Plugin {
 	dayBoundaryService!: DayBoundaryService;
 	nlQueryService: NLQueryService | null = null;
 	backupService: BackupService | null = null;
+	agentService: AgentService | null = null;
 
 	// Keep reference to SQLite store for SQLite-specific operations (stats queries)
 	private sqliteStore: SqliteStoreService | null = null;
@@ -179,6 +181,10 @@ export default class EpistemePlugin extends Plugin {
 
 		// Register event handlers (extracted to PluginEventHandlers.ts)
 		registerEventHandlers(this);
+
+		// Register agent tools and initialize AgentService
+		registerAllTools();
+		this.agentService = new AgentService(this);
 	}
 
 	onunload(): void {
@@ -194,6 +200,9 @@ export default class EpistemePlugin extends Plugin {
 
 		// Clear EventBus subscriptions
 		resetEventBus();
+
+		// Clear ToolRegistry
+		resetToolRegistry();
 
 		// Obsidian automatically handles leaf cleanup when plugin unloads
 	}
