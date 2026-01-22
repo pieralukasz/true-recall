@@ -12,6 +12,7 @@ import type { DayBoundaryService } from "../../services";
 import type { FSRSFlashcardItem } from "../../types";
 import type { SessionModalOptions } from "../modals/SessionModal";
 import type { SessionSelectedEvent } from "../../types/events.types";
+import { Panel } from "../components/Panel";
 import { SessionHeader } from "./SessionHeader";
 import { SessionContent } from "./SessionContent";
 import { SessionFooter } from "./SessionFooter";
@@ -29,14 +30,10 @@ export class SessionView extends ItemView {
 	private dayBoundaryService: DayBoundaryService | null = null;
 
 	// UI Components
+	private panelComponent: Panel | null = null;
 	private headerComponent: SessionHeader | null = null;
 	private contentComponent: SessionContent | null = null;
 	private footerComponent: SessionFooter | null = null;
-
-	// Container elements
-	private headerContainer!: HTMLElement;
-	private contentContainer!: HTMLElement;
-	private footerContainer!: HTMLElement;
 
 	// State subscription
 	private unsubscribe: (() => void) | null = null;
@@ -62,18 +59,14 @@ export class SessionView extends ItemView {
 		const container = this.containerEl.children[1];
 		if (!(container instanceof HTMLElement)) return;
 		container.empty();
-		container.addClass("episteme-session-view");
 
-		// Create container elements
-		this.headerContainer = container.createDiv({
-			cls: "episteme-session-header-container",
+		// Create Panel component with custom header and footer
+		this.panelComponent = new Panel(container, {
+			title: "Review Session",
+			customHeader: true,
+			showFooter: true,
 		});
-		this.contentContainer = container.createDiv({
-			cls: "episteme-session-content-container",
-		});
-		this.footerContainer = container.createDiv({
-			cls: "episteme-session-footer-container",
-		});
+		this.panelComponent.render();
 
 		// Subscribe to state changes
 		this.unsubscribe = this.stateManager.subscribe(() => this.render());
@@ -84,6 +77,7 @@ export class SessionView extends ItemView {
 		this.unsubscribe?.();
 
 		// Cleanup components
+		this.panelComponent?.destroy();
 		this.headerComponent?.destroy();
 		this.contentComponent?.destroy();
 		this.footerComponent?.destroy();
@@ -198,10 +192,15 @@ export class SessionView extends ItemView {
 	 * Render all components
 	 */
 	private render(): void {
-		if (!this.logic) return;
+		if (!this.logic || !this.panelComponent) return;
+
+		const headerContainer = this.panelComponent.getHeaderContainer();
+		const contentContainer = this.panelComponent.getContentContainer();
+		const footerContainer = this.panelComponent.getFooterContainer();
+		if (!footerContainer) return;
 
 		// Preserve scroll position before re-render
-		const noteList = this.contentContainer.querySelector('.episteme-note-list');
+		const noteList = contentContainer.querySelector('.episteme-note-list');
 		const scrollTop = noteList?.scrollTop ?? 0;
 
 		const state = this.stateManager.getState();
@@ -209,16 +208,16 @@ export class SessionView extends ItemView {
 
 		// Render Header
 		this.headerComponent?.destroy();
-		this.headerContainer.empty();
-		this.headerComponent = new SessionHeader(this.headerContainer, {
+		headerContainer.empty();
+		this.headerComponent = new SessionHeader(headerContainer, {
 			selectionCount,
 		});
 		this.headerComponent.render();
 
 		// Render Content
 		this.contentComponent?.destroy();
-		this.contentContainer.empty();
-		this.contentComponent = new SessionContent(this.contentContainer, {
+		contentContainer.empty();
+		this.contentComponent = new SessionContent(contentContainer, {
 			currentNoteName: state.currentNoteName,
 			allCards: state.allCards,
 			selectedNotes: state.selectedNotes,
@@ -234,8 +233,8 @@ export class SessionView extends ItemView {
 
 		// Render Footer
 		this.footerComponent?.destroy();
-		this.footerContainer.empty();
-		this.footerComponent = new SessionFooter(this.footerContainer, {
+		footerContainer.empty();
+		this.footerComponent = new SessionFooter(footerContainer, {
 			selectionCount,
 			onStartSession: () => this.handleStartSession(),
 			onClearSelection: () => this.handleClearSelection(),
@@ -243,7 +242,7 @@ export class SessionView extends ItemView {
 		this.footerComponent.render();
 
 		// Restore scroll position after re-render
-		const newNoteList = this.contentContainer.querySelector('.episteme-note-list');
+		const newNoteList = contentContainer.querySelector('.episteme-note-list');
 		if (newNoteList) {
 			newNoteList.scrollTop = scrollTop;
 		}
