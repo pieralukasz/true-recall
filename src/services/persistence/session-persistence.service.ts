@@ -6,6 +6,7 @@ import { App, normalizePath } from "obsidian";
 import { State, Rating } from "ts-fsrs";
 import type { PersistentStatsData, ExtendedDailyStats, Grade } from "../../types";
 import type { SqliteStoreService } from "./sqlite";
+import type { DayBoundaryService } from "../core/day-boundary.service";
 
 const STATS_FOLDER = ".episteme";
 const STATS_FILE = "stats.json";
@@ -17,17 +18,20 @@ const STATS_FILE = "stats.json";
 export class SessionPersistenceService {
 	private app: App;
 	private store: SqliteStoreService;
+	private dayBoundaryService: DayBoundaryService;
 
-	constructor(app: App, store: SqliteStoreService) {
+	constructor(app: App, store: SqliteStoreService, dayBoundaryService: DayBoundaryService) {
 		this.app = app;
 		this.store = store;
+		this.dayBoundaryService = dayBoundaryService;
 	}
 
 	/**
-	 * Get today's date in YYYY-MM-DD format
+	 * Get today's date in YYYY-MM-DD format (respects dayStartHour)
+	 * At 3 AM with dayStartHour=4, returns yesterday's date
 	 */
 	getTodayKey(): string {
-		return new Date().toISOString().split("T")[0] ?? "";
+		return this.dayBoundaryService.getTodayKey();
 	}
 
 	/**

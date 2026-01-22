@@ -105,4 +105,41 @@ export class DayBoundaryService {
 	): FSRSFlashcardItem[] {
 		return cards.filter((c) => this.isCardAvailable(c, now));
 	}
+
+	/**
+	 * Format a date as local YYYY-MM-DD (NOT UTC)
+	 * Uses local calendar date to avoid timezone issues with toISOString()
+	 */
+	formatLocalDate(date: Date): string {
+		const year = date.getFullYear();
+		const month = String(date.getMonth() + 1).padStart(2, "0");
+		const day = String(date.getDate()).padStart(2, "0");
+		return `${year}-${month}-${day}`;
+	}
+
+	/**
+	 * Get today's date key (YYYY-MM-DD) respecting dayStartHour
+	 * At 3 AM with dayStartHour=4, this returns yesterday's date
+	 */
+	getTodayKey(now?: Date): string {
+		const boundary = this.getTodayBoundary(now);
+		return this.formatLocalDate(boundary);
+	}
+
+	/**
+	 * Check if a timestamp falls within "today" (respecting dayStartHour)
+	 */
+	isTimestampToday(timestamp: number, now?: Date): boolean {
+		const date = new Date(timestamp);
+		const todayBoundary = this.getTodayBoundary(now);
+		const tomorrowBoundary = this.getTomorrowBoundary(now);
+		return date >= todayBoundary && date < tomorrowBoundary;
+	}
+
+	/**
+	 * Get the current dayStartHour setting
+	 */
+	getDayStartHour(): number {
+		return this.dayStartHour;
+	}
 }
