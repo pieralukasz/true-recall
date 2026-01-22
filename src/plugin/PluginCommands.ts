@@ -144,4 +144,37 @@ export function registerCommands(plugin: EpistemePlugin): void {
 		name: "Restore from backup",
 		callback: () => void plugin.openRestoreBackupModal(),
 	});
+
+	// Test Agent Tools (dev command)
+	plugin.addCommand({
+		id: "test-agent-tools",
+		name: "Test Agent Tools (dev)",
+		callback: async () => {
+			if (!plugin.agentService) {
+				new (await import("obsidian")).Notice(
+					"AgentService not initialized"
+				);
+				return;
+			}
+
+			const tools = plugin.agentService.getToolNames();
+			console.log("Available tools:", tools);
+
+			// Test search-vault
+			const result = await plugin.agentService.execute("search-vault", {
+				query: "test",
+				type: "filename",
+				limit: 5,
+			});
+
+			console.log("Search result:", result);
+			new (await import("obsidian")).Notice(
+				`Tools: ${tools.join(", ")}\nSearch found: ${
+					result.success
+						? (result.data as { totalFound: number }).totalFound
+						: 0
+				} results`
+			);
+		},
+	});
 }
