@@ -148,10 +148,18 @@ export class SessionPersistenceService {
 	}
 
 	/**
-	 * Get all daily stats (for statistics panel - calendar, history charts)
+	 * Get all daily stats (includes card IDs - use for migrations/specific card lookups)
 	 */
 	getAllDailyStats(): Record<string, ExtendedDailyStats> {
 		return this.store.getAllDailyStats();
+	}
+
+	/**
+	 * Get all daily stats summary (lightweight - no card IDs)
+	 * Use this for charts and heatmaps where individual card IDs aren't needed.
+	 */
+	getAllDailyStatsSummary(): Record<string, ExtendedDailyStats> {
+		return this.store.getAllDailyStatsSummary();
 	}
 
 	/**
@@ -160,7 +168,7 @@ export class SessionPersistenceService {
 	 * @param endDate End date in YYYY-MM-DD format
 	 */
 	getStatsInRange(startDate: string, endDate: string): ExtendedDailyStats[] {
-		const allStats = this.store.getAllDailyStats();
+		const allStats = this.store.getAllDailyStatsSummary();
 		const result: ExtendedDailyStats[] = [];
 
 		for (const [date, dayStats] of Object.entries(allStats)) {

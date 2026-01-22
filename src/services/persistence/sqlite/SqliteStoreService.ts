@@ -240,6 +240,10 @@ export class SqliteStoreService {
         return this.dailyStatsRepo?.getAllDailyStats() ?? {};
     }
 
+    getAllDailyStatsSummary(): Record<string, ExtendedDailyStats> {
+        return this.dailyStatsRepo?.getAllDailyStatsSummary() ?? {};
+    }
+
     // ===== Aggregations (delegate to SqliteAggregations) =====
 
     getCardMaturityBreakdown(): CardMaturityBreakdown {

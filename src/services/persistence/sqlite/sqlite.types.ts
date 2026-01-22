@@ -6,7 +6,7 @@ import type { Database } from "sql.js";
 
 export const DB_FOLDER = ".episteme";
 export const DB_FILE = "episteme.db";
-export const SAVE_DEBOUNCE_MS = 1000;
+export const SAVE_DEBOUNCE_MS = 60000; // 60 seconds - reduces UI jank on large databases
 
 // Type for SQL row values from sql.js
 export type SqlValue = string | number | null | Uint8Array;

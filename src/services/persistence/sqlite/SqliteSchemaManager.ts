@@ -115,13 +115,12 @@ export class SqliteSchemaManager {
             );
 
             -- Reviewed card IDs per day
+            -- Note: PRIMARY KEY (date, card_id) already provides index coverage for date lookups
             CREATE TABLE IF NOT EXISTS daily_reviewed_cards (
                 date TEXT NOT NULL,
                 card_id TEXT NOT NULL,
                 PRIMARY KEY (date, card_id)
             );
-
-            CREATE INDEX IF NOT EXISTS idx_daily_reviewed_date ON daily_reviewed_cards(date);
 
             -- Card image references (for tracking images in flashcards)
             CREATE TABLE IF NOT EXISTS card_image_refs (
@@ -143,7 +142,7 @@ export class SqliteSchemaManager {
             );
 
             -- Set schema version
-            INSERT OR REPLACE INTO meta (key, value) VALUES ('schema_version', '8');
+            INSERT OR REPLACE INTO meta (key, value) VALUES ('schema_version', '9');
             INSERT OR REPLACE INTO meta (key, value) VALUES ('created_at', datetime('now'));
         `);
     }
@@ -180,6 +179,10 @@ export class SqliteSchemaManager {
 
         if (currentVersion < 8) {
             this.migrateV7toV8();
+        }
+
+        if (currentVersion < 9) {
+            this.migrateV8toV9();
         }
     }
 
@@ -575,6 +578,26 @@ export class SqliteSchemaManager {
             this.onSchemaChange();
         } catch (error) {
             console.error("[Episteme] Schema migration v7->v8 failed:", error);
+        }
+    }
+
+    /**
+     * Migrate from v8 to v9 (remove redundant index)
+     * The idx_daily_reviewed_date index is redundant because PRIMARY KEY (date, card_id)
+     * already provides B-tree index coverage for date lookups (date is the first column)
+     */
+    private migrateV8toV9(): void {
+        console.log("[Episteme] Migrating schema v8 -> v9 (removing redundant index)...");
+
+        try {
+            // DROP INDEX IF EXISTS handles the case where index doesn't exist
+            this.db.run("DROP INDEX IF EXISTS idx_daily_reviewed_date");
+
+            this.db.run("INSERT OR REPLACE INTO meta (key, value) VALUES ('schema_version', '9')");
+            console.log("[Episteme] Schema migration v8->v9 completed");
+            this.onSchemaChange();
+        } catch (error) {
+            console.error("[Episteme] Schema migration v8->v9 failed:", error);
         }
     }
 }
