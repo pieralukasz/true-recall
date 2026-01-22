@@ -44,14 +44,14 @@ export class StatsCalculatorService {
 	}
 
 	/**
-	 * Get all daily stats for calendar heatmap
-	 * Exposes sessionPersistence.getAllDailyStats() without revealing internal dependency
+	 * Get all daily stats for calendar heatmap (lightweight - no card IDs)
+	 * Exposes sessionPersistence.getAllDailyStatsSummary() without revealing internal dependency
 	 */
 	getAllDailyStats(): Record<string, ExtendedDailyStats> {
 		if (!this.sessionPersistence) {
 			return {};
 		}
-		return this.sessionPersistence.getAllDailyStats();
+		return this.sessionPersistence.getAllDailyStatsSummary();
 	}
 
 	/**
@@ -206,7 +206,7 @@ export class StatsCalculatorService {
 		if (!this.sessionPersistence) {
 			return { current: 0, longest: 0 };
 		}
-		const allStats = await this.sessionPersistence.getAllDailyStats();
+		const allStats = await this.sessionPersistence.getAllDailyStatsSummary();
 
 		// Get dates with reviews, sorted descending
 		const reviewDates = Object.keys(allStats)
@@ -362,7 +362,7 @@ export class StatsCalculatorService {
 		if (!this.sessionPersistence) {
 			return [];
 		}
-		const allStats = await this.sessionPersistence.getAllDailyStats();
+		const allStats = await this.sessionPersistence.getAllDailyStatsSummary();
 		const today = new Date();
 		today.setHours(0, 0, 0, 0);
 

@@ -122,10 +122,12 @@ export class SqliteAggregations {
      */
     getStudyPatterns(): StudyPattern {
         // Get reviews from last 30 days grouped by day of week and hour
+        // Note: reviewed_at is stored as UTC (datetime('now')), so we use 'localtime'
+        // modifier to convert to user's local timezone for accurate heatmap display
         const result = this.db.exec(`
             SELECT
-                CAST(strftime('%w', reviewed_at) AS INTEGER) as day_of_week,
-                CAST(strftime('%H', reviewed_at) AS INTEGER) as hour_of_day,
+                CAST(strftime('%w', reviewed_at, 'localtime') AS INTEGER) as day_of_week,
+                CAST(strftime('%H', reviewed_at, 'localtime') AS INTEGER) as hour_of_day,
                 COUNT(*) as total_reviews,
                 SUM(CASE WHEN rating >= 3 THEN 1 ELSE 0 END) as successful_reviews
             FROM review_log

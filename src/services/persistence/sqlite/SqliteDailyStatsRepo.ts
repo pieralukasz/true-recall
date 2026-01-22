@@ -275,6 +275,56 @@ export class SqliteDailyStatsRepo {
     }
 
     /**
+     * Get all daily stats summary (lightweight - no card IDs)
+     * Use this for charts and heatmaps where individual card IDs aren't needed.
+     * Much faster than getAllDailyStats() as it avoids GROUP_CONCAT and JOIN.
+     */
+    getAllDailyStatsSummary(): Record<string, ExtendedDailyStats> {
+        const result = this.db.exec(`
+            SELECT * FROM daily_stats ORDER BY date
+        `);
+        const data = getQueryResult(result);
+        if (!data) return {};
+
+        const stats: Record<string, ExtendedDailyStats> = {};
+        const cols = data.columns;
+
+        // Cache column indices once
+        const dateIdx = cols.indexOf("date");
+        const reviewsCompletedIdx = cols.indexOf("reviews_completed");
+        const newCardsStudiedIdx = cols.indexOf("new_cards_studied");
+        const totalTimeMsIdx = cols.indexOf("total_time_ms");
+        const againCountIdx = cols.indexOf("again_count");
+        const hardCountIdx = cols.indexOf("hard_count");
+        const goodCountIdx = cols.indexOf("good_count");
+        const easyCountIdx = cols.indexOf("easy_count");
+        const newCardsIdx = cols.indexOf("new_cards");
+        const learningCardsIdx = cols.indexOf("learning_cards");
+        const reviewCardsIdx = cols.indexOf("review_cards");
+
+        for (const row of data.values) {
+            const date = row[dateIdx] as string;
+
+            stats[date] = {
+                date,
+                reviewsCompleted: row[reviewsCompletedIdx] as number,
+                newCardsStudied: row[newCardsStudiedIdx] as number,
+                totalTimeMs: row[totalTimeMsIdx] as number,
+                again: row[againCountIdx] as number,
+                hard: row[hardCountIdx] as number,
+                good: row[goodCountIdx] as number,
+                easy: row[easyCountIdx] as number,
+                newCards: row[newCardsIdx] as number,
+                learningCards: row[learningCardsIdx] as number,
+                reviewCards: row[reviewCardsIdx] as number,
+                reviewedCardIds: [], // Empty array - use getAllDailyStats() if you need card IDs
+            };
+        }
+
+        return stats;
+    }
+
+    /**
      * Get total review count
      */
     getTotalReviewCount(): number {
