@@ -126,7 +126,6 @@ export const DEFAULT_SETTINGS: EpistemeSettings = {
 
 	// UI
 	reviewMode: "fullscreen",
-	customSessionInterface: "modal",
 	showNextReviewTime: true,
 	autoAdvance: false,
 	showReviewHeader: true,
@@ -154,6 +153,11 @@ export const DEFAULT_SETTINGS: EpistemeSettings = {
 	// Backup Settings
 	autoBackupOnLoad: false,
 	maxBackups: 10,
+
+	// Cloud Sync (PowerSync + Supabase)
+	supabaseUrl: "",
+	supabaseAnonKey: "",
+	syncEnabled: false,
 };
 
 // ===== FSRS Default Weights =====
@@ -239,7 +243,10 @@ export interface GeneratedNoteTypeConfig {
 }
 
 /** Note type configurations for AI-generated flashcard destinations */
-export const GENERATED_NOTE_TYPES: Record<GeneratedNoteType, GeneratedNoteTypeConfig> = {
+export const GENERATED_NOTE_TYPES: Record<
+	GeneratedNoteType,
+	GeneratedNoteTypeConfig
+> = {
 	verify: {
 		type: "verify",
 		label: "Verify",

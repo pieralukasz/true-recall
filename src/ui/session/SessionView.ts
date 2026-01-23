@@ -1,7 +1,6 @@
 /**
  * Session View
  * Panel-based view for session selection
- * Alternative to SessionModal
  */
 import { ItemView, WorkspaceLeaf } from "obsidian";
 import { VIEW_TYPE_SESSION } from "../../constants";
@@ -9,16 +8,25 @@ import { getEventBus } from "../../services";
 import { SessionLogic } from "../../logic/SessionLogic";
 import { createSessionStateManager } from "../../state/session.state";
 import type { DayBoundaryService } from "../../services";
-import type { SessionModalOptions } from "../modals/SessionModal";
 import type { SessionSelectedEvent } from "../../types/events.types";
+import type { FSRSFlashcardItem } from "../../types";
 import { Panel } from "../components/Panel";
 import { SessionContent } from "./SessionContent";
 import type EpistemePlugin from "../../main";
 import { SessionResultFactory } from "../../utils/session-result-factory";
 
 /**
+ * Options for initializing SessionView
+ */
+export interface SessionViewOptions {
+	currentNoteName: string | null;
+	allCards: FSRSFlashcardItem[];
+	dayBoundaryService: DayBoundaryService;
+}
+
+/**
  * Session View
- * Panel-based version of SessionModal
+ * Panel-based view for session selection
  */
 export class SessionView extends ItemView {
 	private plugin: EpistemePlugin;
@@ -155,7 +163,7 @@ export class SessionView extends ItemView {
 	 * Initialize the view with session data
 	 * Called by the plugin to set up the view
 	 */
-	initialize(options: SessionModalOptions): void {
+	initialize(options: SessionViewOptions): void {
 		// Store services
 		this.dayBoundaryService = options.dayBoundaryService;
 
