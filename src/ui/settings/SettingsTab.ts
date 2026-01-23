@@ -617,31 +617,13 @@ export class EpistemeSettingTab extends PluginSettingTab {
                     this.display();
                 }));
 
-        const devMode = this.plugin.settings.syncDevMode;
-
-        new Setting(container)
-            .setName("Development mode")
-            .setDesc("Use local dev server (http://192.168.3.4:8080/)")
-            .addToggle(toggle => toggle
-                .setValue(devMode)
-                .setDisabled(!syncAvailable)
-                .onChange(async (value) => {
-                    this.plugin.settings.syncDevMode = value;
-                    if (value) {
-                        this.plugin.settings.syncServerUrl = "http://192.168.3.4:8080/";
-                        this.plugin.settings.syncApiKey = "your_token";
-                    }
-                    await this.plugin.saveSettings();
-                    this.display();
-                }));
-
         new Setting(container)
             .setName("Sync server URL")
             .setDesc("URL of the sync server (e.g., https://sync.example.com)")
             .addText(text => text
                 .setPlaceholder("https://sync.example.com")
                 .setValue(this.plugin.settings.syncServerUrl)
-                .setDisabled(!syncAvailable || devMode)
+                .setDisabled(!syncAvailable)
                 .onChange(async (value) => {
                     this.plugin.settings.syncServerUrl = value;
                     await this.plugin.saveSettings();
@@ -649,17 +631,41 @@ export class EpistemeSettingTab extends PluginSettingTab {
 
         new Setting(container)
             .setName("API key")
-            .setDesc("Your sync server API key for authentication")
+            .setDesc("Full credentials in format: api_key:auth_key")
             .addText(text => {
                 text.inputEl.type = "password";
                 text.setPlaceholder("Enter API key")
                     .setValue(this.plugin.settings.syncApiKey)
-                    .setDisabled(!syncAvailable || devMode)
+                    .setDisabled(!syncAvailable)
                     .onChange(async (value) => {
                         this.plugin.settings.syncApiKey = value;
                         await this.plugin.saveSettings();
                     });
             });
+
+        new Setting(container)
+            .setName("Test connection")
+            .setDesc("Verify server URL and API key are correct")
+            .addButton(button => button
+                .setButtonText("Test Connection")
+                .setDisabled(!syncAvailable || !this.plugin.settings.syncServerUrl || !this.plugin.settings.syncApiKey)
+                .onClick(async () => {
+                    button.setButtonText("Testing...");
+                    button.setDisabled(true);
+
+                    const result = await this.plugin.testSyncConnection();
+
+                    if (result.reachable && result.authenticated) {
+                        new Notice("Connection successful!");
+                    } else if (!result.reachable) {
+                        new Notice("Server not reachable. Check URL.");
+                    } else {
+                        new Notice(`Authentication failed: ${result.error || "Invalid credentials"}`);
+                    }
+
+                    button.setButtonText("Test Connection");
+                    button.setDisabled(false);
+                }));
 
         new Setting(container)
             .setName("Auto-sync")

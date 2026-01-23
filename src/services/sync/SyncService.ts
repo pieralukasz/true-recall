@@ -60,6 +60,28 @@ export class SyncService {
     }
 
     /**
+     * Test connection to sync server
+     * Returns: { reachable: boolean, authenticated: boolean, error?: string }
+     */
+    async testConnection(): Promise<{ reachable: boolean; authenticated: boolean; error?: string }> {
+        const reachable = await this.transport.healthCheck();
+        if (!reachable) {
+            return { reachable: false, authenticated: false, error: "Server not reachable" };
+        }
+
+        try {
+            await this.transport.pullChanges(this.clientId, 0);
+            return { reachable: true, authenticated: true };
+        } catch (error) {
+            const syncError = error as SyncError;
+            if (syncError.type === "auth") {
+                return { reachable: true, authenticated: false, error: syncError.message };
+            }
+            return { reachable: true, authenticated: false, error: String(error) };
+        }
+    }
+
+    /**
      * Get current sync status
      */
     getStatus(): SyncStatus {

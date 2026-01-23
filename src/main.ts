@@ -778,6 +778,16 @@ export default class EpistemePlugin extends Plugin {
 	}
 
 	/**
+	 * Test sync server connection
+	 */
+	async testSyncConnection(): Promise<{ reachable: boolean; authenticated: boolean; error?: string }> {
+		if (!this.syncService) {
+			return { reachable: false, authenticated: false, error: "Sync service not initialized" };
+		}
+		return this.syncService.testConnection();
+	}
+
+	/**
 	 * Show notification when remote changes are detected
 	 */
 	private showRemoteChangesNotification(pulledCount: number): void {
