@@ -43,7 +43,7 @@ import {
 	type EpistemeSettings,
 	DEFAULT_SETTINGS,
 } from "./ui/settings";
-import { SessionModal, AddToProjectModal, RestoreBackupModal } from "./ui/modals";
+import { AddToProjectModal, RestoreBackupModal } from "./ui/modals";
 import { registerCommands } from "./plugin/PluginCommands";
 import { registerEventHandlers } from "./plugin/PluginEventHandlers";
 import { AgentService, registerAllTools, resetToolRegistry } from "./agent";
@@ -372,32 +372,17 @@ export default class EpistemePlugin extends Plugin {
 				? currentFile.basename
 				: null;
 
-		// Check which interface to use based on settings
-		if (this.settings.customSessionInterface === "panel") {
-			// Panel mode: Subscribe to event, open panel, wait for result
-			return new Promise<void>((resolve) => {
-				const eventBus = getEventBus();
-				const unsubscribe = eventBus.on("session:selected", (event: any) => {
-					unsubscribe();
-					void this.handleSessionResult(event.result);
-					resolve();
-				});
-
-				void this.activateSessionView(currentNoteName, allCards);
-			});
-		} else {
-			// Modal mode: Use existing modal code
-			const modal = new SessionModal(this.app, {
-				currentNoteName,
-				allCards,
-				dayBoundaryService: this.dayBoundaryService,
+		// Open session panel and wait for result
+		return new Promise<void>((resolve) => {
+			const eventBus = getEventBus();
+			const unsubscribe = eventBus.on("session:selected", (event: any) => {
+				unsubscribe();
+				void this.handleSessionResult(event.result);
+				resolve();
 			});
 
-			const result = await modal.openAndWait();
-			if (result.cancelled) return;
-
-			await this.handleSessionResult(result);
-		}
+			void this.activateSessionView(currentNoteName, allCards);
+		});
 	}
 
 	/**
