@@ -12,7 +12,7 @@
  * Supports CR-SQLite for CRDT-based cross-device synchronization.
  * Falls back to sql.js if CR-SQLite fails to load.
  */
-import { App, normalizePath } from "obsidian";
+import { App, normalizePath, Notice } from "obsidian";
 import type {
     FSRSCardData,
     CardReviewLogEntry,
@@ -77,7 +77,20 @@ export class SqliteStoreService {
         if (this.isLoaded) return;
 
         const dbPath = this.getDbPath();
-        const existingData = await this.loadFromFile(dbPath);
+
+        // Load existing data - errors are now thrown instead of returning null
+        let existingData: Uint8Array | null = null;
+        try {
+            existingData = await this.loadFromFile(dbPath);
+        } catch (error) {
+            // File exists but cannot be read - CRITICAL ERROR
+            console.error("[Episteme] Database load failed:", error);
+            new Notice(
+                "Episteme: Cannot load database. Please restore from backup (Settings → Sync & Data → Restore).",
+                0  // Don't auto-hide
+            );
+            throw error;  // Don't continue with empty database!
+        }
 
         // Load database with CR-SQLite or sql.js fallback
         const loadResult = await loadDatabase(this.app, existingData);
@@ -95,6 +108,15 @@ export class SqliteStoreService {
         // Schema setup
         const schemaManager = new SqliteSchemaManager(this.db, () => this.markDirty());
         if (existingData) {
+            // Create pre-migration backup for safety
+            const backupPath = normalizePath(`${DB_FOLDER}/episteme.db.pre-migration`);
+            try {
+                await this.app.vault.adapter.writeBinary(backupPath, existingData);
+                console.log("[Episteme] Pre-migration backup created");
+            } catch (e) {
+                console.warn("[Episteme] Could not create pre-migration backup:", e);
+            }
+
             schemaManager.runMigrations();
         } else {
             schemaManager.createTables();
@@ -404,15 +426,31 @@ export class SqliteStoreService {
     }
 
     private async loadFromFile(path: string): Promise<Uint8Array | null> {
-        try {
-            const exists = await this.app.vault.adapter.exists(path);
-            if (!exists) return null;
+        const exists = await this.app.vault.adapter.exists(path);
+        if (!exists) {
+            console.log("[Episteme] Database file not found - will create new");
+            return null;
+        }
 
+        // File exists - read errors are CRITICAL (don't treat as "new database")
+        try {
             const data = await this.app.vault.adapter.readBinary(path);
+
+            // Validate SQLite header: "SQLite format 3\0"
+            if (data.byteLength < 100) {
+                throw new Error(`Database file too small (${data.byteLength} bytes) - likely corrupted`);
+            }
+
+            const header = new TextDecoder().decode(new Uint8Array(data).slice(0, 16));
+            if (!header.startsWith("SQLite format 3")) {
+                throw new Error("Invalid SQLite header - file corrupted");
+            }
+
             return new Uint8Array(data);
         } catch (error) {
-            console.warn("[Episteme] Failed to load database:", error);
-            return null;
+            // DO NOT return null - this would create an empty database!
+            console.error("[Episteme] CRITICAL: Failed to load existing database:", error);
+            throw new Error(`Cannot load database: ${error instanceof Error ? error.message : error}`);
         }
     }
 

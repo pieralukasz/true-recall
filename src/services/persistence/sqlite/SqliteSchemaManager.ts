@@ -39,7 +39,8 @@ export class SqliteSchemaManager {
                 updated_at INTEGER,
                 question TEXT,
                 answer TEXT,
-                source_uid TEXT
+                source_uid TEXT,
+                test_sync_column TEXT
             );
 
             -- Indexes for common queries
@@ -154,7 +155,7 @@ export class SqliteSchemaManager {
             );
 
             -- Set schema version
-            INSERT OR REPLACE INTO meta (key, value) VALUES ('schema_version', '11');
+            INSERT OR REPLACE INTO meta (key, value) VALUES ('schema_version', '12');
             INSERT OR REPLACE INTO meta (key, value) VALUES ('created_at', datetime('now'));
         `);
     }
@@ -203,6 +204,42 @@ export class SqliteSchemaManager {
 
         if (currentVersion < 11) {
             this.migrateV10toV11();
+        }
+
+        if (currentVersion < 12) {
+            this.migrateV11toV12();
+        }
+
+        // Validate database integrity after migrations
+        if (!this.validateDatabaseIntegrity()) {
+            throw new Error("Database integrity check failed after migration");
+        }
+    }
+
+    /**
+     * Validate that required tables exist after migrations
+     */
+    private validateDatabaseIntegrity(): boolean {
+        try {
+            const tables = this.db.exec(
+                "SELECT name FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite_%'"
+            );
+
+            const requiredTables = ["cards", "source_notes", "meta"];
+            const existingTables = tables[0]?.values.map((r) => r[0] as string) || [];
+
+            for (const table of requiredTables) {
+                if (!existingTables.includes(table)) {
+                    console.error(`[Episteme] Missing required table: ${table}`);
+                    return false;
+                }
+            }
+
+            console.log("[Episteme] Database integrity check passed");
+            return true;
+        } catch (error) {
+            console.error("[Episteme] Integrity check failed:", error);
+            return false;
         }
     }
 
@@ -835,6 +872,25 @@ export class SqliteSchemaManager {
             this.onSchemaChange();
         } catch (error) {
             console.error("[Episteme] Schema migration v10->v11 failed:", error);
+        }
+    }
+
+    /**
+     * Migrate from v11 to v12 (test migration with safety features)
+     * Adds test_sync_column to cards table for testing pre-migration backup
+     */
+    private migrateV11toV12(): void {
+        console.log("[Episteme] Migrating schema v11 -> v12...");
+
+        try {
+            this.db.run("ALTER TABLE cards ADD COLUMN test_sync_column TEXT");
+
+            this.db.run("INSERT OR REPLACE INTO meta (key, value) VALUES ('schema_version', '12')");
+            console.log("[Episteme] Schema migration v11->v12 completed");
+            this.onSchemaChange();
+        } catch (error) {
+            console.error("[Episteme] Schema migration v11->v12 failed:", error);
+            throw error; // Re-throw to trigger integrity check failure
         }
     }
 
