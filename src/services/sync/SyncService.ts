@@ -174,6 +174,14 @@ export class SyncService {
         try {
             // 1. Push local changes first
             this.emitProgress("pushing");
+            const pendingOps = this.getPendingOperations();
+            if (pendingOps.length > 0) {
+                const byType = pendingOps.reduce((acc, op) => {
+                    acc[op.operation] = (acc[op.operation] || 0) + 1;
+                    return acc;
+                }, {} as Record<string, number>);
+                console.log(`[Episteme] Push: ${pendingOps.length} operations`, byType);
+            }
             const pushResult = await this.pushChanges();
             pushed = pushResult.pushed;
 
@@ -353,6 +361,7 @@ export class SyncService {
         }
 
         const response = await this.transport.pushChanges(this.clientId, operations);
+        console.log(`[Episteme] Push response: applied=${response.applied}, errors=${response.errors || 0}`);
 
         // Mark successfully pushed operations as synced
         const operationIds = operations.map((op) => op.id);
@@ -386,6 +395,7 @@ export class SyncService {
             }
         }
 
+        console.log(`[Episteme] Pull response: ${applied} rows, version=${response.serverVersion}`);
         return { ...response, applied };
     }
 
