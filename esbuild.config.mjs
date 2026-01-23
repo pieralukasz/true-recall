@@ -33,6 +33,7 @@ const cssFiles = [
 	"src/ui/panel/styles.css",
 	"src/ui/review/styles.css",
 	"src/ui/modals/styles.css",
+	"src/ui/session/styles.css",
 	"src/ui/stats/styles.css",
 	"src/ui/projects/styles.css",
 	"src/ui/browser/styles.css",

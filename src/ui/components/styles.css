@@ -173,6 +173,10 @@
 	margin-top: 8px;
 }
 
+.episteme-panel-footer-container {
+	flex-shrink: 0;
+}
+
 /* Panel header */
 .episteme-panel-header {
 	display: flex;
