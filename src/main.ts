@@ -768,7 +768,6 @@ export default class EpistemePlugin extends Plugin {
 			return;
 		}
 
-		new Notice("Syncing...");
 		const result = await this.syncService.sync(true);
 
 		if (result.success) {
