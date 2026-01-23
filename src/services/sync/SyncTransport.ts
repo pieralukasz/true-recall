@@ -99,6 +99,7 @@ export class SyncTransport {
             throw: false,
         };
 
+        console.log(`[Episteme] POST /sync: ${operations.length} operations`);
         const response = await requestUrl(options);
         this.checkResponseError(response.status, response.text);
 
@@ -119,6 +120,7 @@ export class SyncTransport {
             return; // Success
         }
 
+        console.error(`[Episteme] Sync error: HTTP ${status}`, body);
         const error = this.parseError(status, body);
         throw error;
     }
