@@ -18,8 +18,6 @@ export interface SessionContentProps {
 	onSearchChange: (query: string) => void;
 	onSelectAll: (select: boolean) => void;
 	onNavigateToNote: (notePath: string) => void;
-	onSearchFocus?: () => void;
-	onSearchBlur?: () => void;
 }
 
 /**
@@ -28,7 +26,6 @@ export interface SessionContentProps {
 export class SessionContent extends BaseComponent {
 	private props: SessionContentProps;
 	private noteTableBody: HTMLElement | null = null;
-	private searchInput: HTMLInputElement | null = null;
 
 	constructor(container: HTMLElement, props: SessionContentProps) {
 		super(container);
@@ -168,25 +165,16 @@ export class SessionContent extends BaseComponent {
 		const searchContainer = this.element!.createDiv({
 			cls: "episteme-search-container",
 		});
-		this.searchInput = searchContainer.createEl("input", {
+		const searchInput = searchContainer.createEl("input", {
 			cls: "episteme-search-input",
 			type: "text",
 			placeholder: "Search notes...",
 		});
-		this.searchInput.value = searchQuery;
+		searchInput.value = searchQuery;
 
-		this.events.addEventListener(this.searchInput, "input", (e) => {
+		this.events.addEventListener(searchInput, "input", (e) => {
 			const query = (e.target as HTMLInputElement).value.toLowerCase();
 			onSearchChange(query);
-		});
-
-		// Focus/blur handlers for mobile keyboard
-		this.events.addEventListener(this.searchInput, "focus", () => {
-			this.props.onSearchFocus?.();
-		});
-
-		this.events.addEventListener(this.searchInput, "blur", () => {
-			this.props.onSearchBlur?.();
 		});
 	}
 
@@ -278,12 +266,5 @@ export class SessionContent extends BaseComponent {
 	updateProps(props: Partial<SessionContentProps>): void {
 		this.props = { ...this.props, ...props };
 		this.render();
-	}
-
-	/**
-	 * Focus the search input
-	 */
-	focusSearch(): void {
-		this.searchInput?.focus();
 	}
 }
