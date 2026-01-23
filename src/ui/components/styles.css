@@ -421,11 +421,6 @@
 
 /* Mobile adjustments for panels */
 @media screen and (max-width: 600px) {
-	.episteme-panel-header-container,
-	.episteme-panel-content-container {
-		padding: 12px;
-	}
-
 	.episteme-panel-summary {
 		padding: 12px;
 	}

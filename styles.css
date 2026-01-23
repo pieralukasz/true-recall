@@ -541,11 +541,6 @@
 
 /* Mobile adjustments for panels */
 @media screen and (max-width: 600px) {
-	.episteme-panel-header-container,
-	.episteme-panel-content-container {
-		padding: 12px;
-	}
-
 	.episteme-panel-summary {
 		padding: 12px;
 	}
@@ -2247,17 +2242,6 @@
 	background: var(--background-modifier-hover);
 }
 
-/* =========================================
-   Session Modal
-   ========================================= */
-
-.episteme-session-modal h3 {
-	margin: 8px 0 12px 0;
-	font-size: 14px;
-	font-weight: 500;
-	color: var(--text-muted);
-}
-
 /* Quick Actions */
 .episteme-quick-actions {
 	display: grid;
@@ -2456,13 +2440,8 @@
 	font-style: italic;
 }
 
-/* Mobile adjustments for custom session modal */
+/* Mobile adjustments for session UI */
 @media screen and (max-width: 600px) {
-	.episteme-session-modal {
-		min-width: auto;
-		width: 100%;
-	}
-
 	.episteme-quick-actions {
 		grid-template-columns: 1fr;
 	}
@@ -4415,13 +4394,14 @@
 
 /* Panel with session content - reduced padding */
 .episteme-panel:has(.episteme-session-content) {
-	padding: 8px 0px;
+	padding: 8px 0;
 }
 
-/* Remove header border for session panel */
+/* Hide empty header container for session panel (using native header) */
 .episteme-panel:has(.episteme-session-content)
 	.episteme-panel-header-container {
 	border-bottom: none;
+	display: none;
 }
 
 /* Content container - no top margin, don't scroll entire area */
@@ -4540,33 +4520,16 @@
 	color: var(--text-faint);
 }
 
-/* Header section */
-.episteme-session-header {
-	margin-bottom: 8px;
-	text-align: center;
-}
-
-/* Selection count badge */
-.episteme-session-count {
-	font-size: 13px;
-	color: var(--interactive-accent);
-	font-weight: 500;
-}
-
-/* Footer section - reduced spacing */
-.episteme-session-footer {
-	margin-top: 8px;
-	padding: 8px 12px 0 12px;
-	/* border-top: 1px solid var(--background-modifier-border); */
-}
-
-.episteme-session-buttons {
-	display: flex;
-	gap: 8px;
-}
+/* Note: Header styles removed - now using native Obsidian header */
+/* Note: Footer styles removed - actions moved to native header */
 
 /* Mobile adjustments - keep 2x2 grid */
 @media screen and (max-width: 600px) {
+	/* Panel with session content - reduced padding */
+	.episteme-panel:has(.episteme-session-content) {
+		padding-bottom: 80px;
+	}
+
 	.episteme-quick-actions {
 		grid-template-columns: repeat(2, 1fr);
 		gap: 6px;
@@ -4575,14 +4538,6 @@
 	.episteme-quick-action-btn {
 		padding: 10px 12px;
 		font-size: 13px;
-	}
-
-	.episteme-session-footer {
-		padding: 8px 8px 0 8px;
-	}
-
-	.episteme-session-buttons {
-		padding-bottom: 72px;
 	}
 
 	/* Hide quick actions and section headers when search input is focused (pure CSS) */
@@ -4594,6 +4549,50 @@
 	/* Backup: also hide when there's text in search (for when focus is lost during re-render) */
 	.episteme-panel.episteme-has-search-query .episteme-quick-actions,
 	.episteme-panel.episteme-has-search-query .episteme-section-header {
+		display: none;
+	}
+}
+
+/* ========================================
+   Selection Bar (Desktop Only)
+   ======================================== */
+
+.episteme-session-selection-bar {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	padding: 12px;
+	margin-top: 8px;
+	background: var(--background-secondary);
+	border-radius: 6px;
+	gap: 12px;
+	flex-shrink: 0;
+}
+
+.episteme-selection-count {
+	font-size: 13px;
+	color: var(--text-muted);
+	font-weight: 500;
+}
+
+.episteme-selection-buttons {
+	display: flex;
+	gap: 8px;
+}
+
+.episteme-selection-clear-btn {
+	padding: 6px 12px;
+	font-size: 13px;
+}
+
+.episteme-selection-start-btn {
+	padding: 6px 16px;
+	font-size: 13px;
+}
+
+/* Mobile: Hide selection bar (native header actions are enough) */
+@media screen and (max-width: 600px) {
+	.episteme-session-selection-bar {
 		display: none;
 	}
 }
@@ -6705,6 +6704,154 @@
 .browser-table-wrapper::-webkit-scrollbar-thumb:hover,
 .browser-preview-content::-webkit-scrollbar-thumb:hover {
 	background-color: var(--background-modifier-border-hover);
+}
+
+
+/* ===== Auth UI Styles ===== */
+
+/* Login Modal */
+.episteme-login-modal {
+	max-width: 400px;
+}
+
+.episteme-login-title {
+	margin-bottom: 0.5em;
+	text-align: center;
+}
+
+.episteme-login-description {
+	color: var(--text-muted);
+	text-align: center;
+	margin-bottom: 1.5em;
+	font-size: 0.9em;
+}
+
+.episteme-login-input {
+	width: 100%;
+}
+
+.episteme-login-buttons {
+	display: flex;
+	gap: 0.5em;
+	margin-top: 1.5em;
+	justify-content: flex-end;
+}
+
+.episteme-login-submit {
+	flex-shrink: 0;
+}
+
+.episteme-login-toggle {
+	background: transparent;
+	border: none;
+	color: var(--text-muted);
+	cursor: pointer;
+	text-decoration: underline;
+}
+
+.episteme-login-toggle:hover {
+	color: var(--text-normal);
+}
+
+/* Account Status */
+.episteme-account-status {
+	padding: 0.5em 0;
+}
+
+.episteme-account-user {
+	margin-bottom: 0.5em;
+}
+
+.episteme-account-email {
+	font-weight: 600;
+	color: var(--text-normal);
+}
+
+.episteme-account-sync-status {
+	display: flex;
+	align-items: center;
+	gap: 0.5em;
+	margin-bottom: 0.5em;
+}
+
+.episteme-status-icon {
+	width: 10px;
+	height: 10px;
+	border-radius: 50%;
+	display: inline-block;
+}
+
+.episteme-status-connected {
+	background-color: var(--color-green);
+}
+
+.episteme-status-connecting {
+	background-color: var(--color-yellow);
+	animation: pulse 1.5s infinite;
+}
+
+.episteme-status-error {
+	background-color: var(--color-red);
+}
+
+.episteme-status-disconnected {
+	background-color: var(--text-muted);
+}
+
+.episteme-status-text {
+	font-size: 0.9em;
+	color: var(--text-muted);
+}
+
+.episteme-account-last-sync {
+	font-size: 0.8em;
+	color: var(--text-faint);
+	margin-bottom: 0.5em;
+}
+
+.episteme-account-notice p {
+	color: var(--text-muted);
+	font-style: italic;
+}
+
+@keyframes pulse {
+	0% {
+		opacity: 1;
+	}
+	50% {
+		opacity: 0.5;
+	}
+	100% {
+		opacity: 1;
+	}
+}
+
+/* Sync Settings Tab */
+.episteme-sync-settings .setting-item {
+	border-top: none;
+	padding-top: 0.75em;
+}
+
+.episteme-sync-settings .setting-item:first-child {
+	padding-top: 0;
+}
+
+.episteme-sync-url-input {
+	width: 100%;
+	font-family: var(--font-monospace);
+	font-size: 0.85em;
+}
+
+.episteme-sync-section-header {
+	font-weight: 600;
+	margin-top: 1.5em;
+	margin-bottom: 0.5em;
+	padding-bottom: 0.25em;
+	border-bottom: 1px solid var(--background-modifier-border);
+}
+
+.episteme-sync-section-header:first-child {
+	margin-top: 0;
 }
 
 
