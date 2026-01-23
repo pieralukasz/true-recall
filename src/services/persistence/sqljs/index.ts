@@ -10,4 +10,4 @@ export {
     type DatabaseLike,
     type DatabaseLoadResult,
     type QueryExecResult,
-} from "./CrSqliteLoader";
+} from "./SqlJsLoader";

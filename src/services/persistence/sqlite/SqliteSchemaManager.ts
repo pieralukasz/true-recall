@@ -17,7 +17,7 @@ export class SqliteSchemaManager {
     }
 
     /**
-     * Create database tables (schema v10 - CR-SQLite compatible with UUID PKs)
+     * Create database tables (schema v10 - UUID primary keys)
      */
     createTables(): void {
         this.db.run(`
@@ -60,7 +60,7 @@ export class SqliteSchemaManager {
 
             CREATE INDEX IF NOT EXISTS idx_source_notes_name ON source_notes(note_name);
 
-            -- Projects table (v10: TEXT UUID PK for CR-SQLite sync)
+            -- Projects table (v10: TEXT UUID PK)
             CREATE TABLE IF NOT EXISTS projects (
                 id TEXT PRIMARY KEY NOT NULL,
                 name TEXT UNIQUE NOT NULL,
@@ -83,7 +83,7 @@ export class SqliteSchemaManager {
             CREATE INDEX IF NOT EXISTS idx_note_projects_source ON note_projects(source_uid);
             CREATE INDEX IF NOT EXISTS idx_note_projects_project ON note_projects(project_id);
 
-            -- Review history log (v10: TEXT UUID PK for CR-SQLite sync)
+            -- Review history log (v10: TEXT UUID PK)
             CREATE TABLE IF NOT EXISTS review_log (
                 id TEXT PRIMARY KEY NOT NULL,
                 card_id TEXT NOT NULL,
@@ -122,7 +122,7 @@ export class SqliteSchemaManager {
                 PRIMARY KEY (date, card_id)
             );
 
-            -- Card image references (v10: TEXT UUID PK for CR-SQLite sync)
+            -- Card image references (v10: TEXT UUID PK)
             CREATE TABLE IF NOT EXISTS card_image_refs (
                 id TEXT PRIMARY KEY NOT NULL,
                 card_id TEXT NOT NULL,
@@ -650,15 +650,15 @@ export class SqliteSchemaManager {
     }
 
     /**
-     * Migrate from v9 to v10 (CR-SQLite preparation)
-     * Changes AUTOINCREMENT PKs to TEXT UUIDs for CRDT compatibility:
+     * Migrate from v9 to v10 (UUID primary keys)
+     * Changes AUTOINCREMENT PKs to TEXT UUIDs:
      * - projects.id: INTEGER -> TEXT UUID
      * - review_log.id: INTEGER -> TEXT UUID
      * - card_image_refs.id: INTEGER -> TEXT UUID
      * - note_projects.project_id: INTEGER -> TEXT (FK to projects)
      */
     private migrateV9toV10(): void {
-        console.log("[Episteme] Migrating schema v9 -> v10 (CR-SQLite UUID PKs)...");
+        console.log("[Episteme] Migrating schema v9 -> v10 (UUID PKs)...");
 
         try {
             // 1. Create mapping table for old project IDs to new UUIDs

@@ -173,4 +173,15 @@
 	.episteme-session-buttons {
 		padding-bottom: 72px;
 	}
+
+	/* Hide footer when search is focused (keyboard is open) */
+	.episteme-panel.episteme-search-focused .episteme-panel-footer-container {
+		display: none;
+	}
+
+	/* Hide quick actions and headers when searching on mobile */
+	.episteme-panel.episteme-search-focused .episteme-quick-actions,
+	.episteme-panel.episteme-search-focused .episteme-section-header {
+		display: none;
+	}
 }
