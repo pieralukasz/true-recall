@@ -4,10 +4,22 @@
  */
 import { App, Notice, PluginSettingTab, Setting, TFile } from "obsidian";
 import type EpistemePlugin from "../../main";
-import { DEFAULT_SETTINGS, AI_MODELS_EXTENDED, FSRS_CONFIG, SYSTEM_PROMPT, UPDATE_SYSTEM_PROMPT } from "../../constants";
+import {
+	DEFAULT_SETTINGS,
+	AI_MODELS_EXTENDED,
+	FSRS_CONFIG,
+	SYSTEM_PROMPT,
+	UPDATE_SYSTEM_PROMPT,
+} from "../../constants";
 import { TemplatePickerModal } from "../modals";
 import type { AIModelKey, AIModelInfo } from "../../constants";
-import type { EpistemeSettings, ReviewViewMode, NewCardOrder, ReviewOrder, NewReviewMix } from "../../types";
+import type {
+	EpistemeSettings,
+	ReviewViewMode,
+	NewCardOrder,
+	ReviewOrder,
+	NewReviewMix,
+} from "../../types";
 
 // Re-export for convenience
 export { DEFAULT_SETTINGS };
@@ -19,812 +31,800 @@ type SettingsTabId = "general" | "ai" | "scheduling" | "data" | "sync";
  * Settings tab for Episteme plugin
  */
 export class EpistemeSettingTab extends PluginSettingTab {
-    plugin: EpistemePlugin;
-    private activeTab: SettingsTabId = "general";
+	plugin: EpistemePlugin;
+	private activeTab: SettingsTabId = "general";
 
-    constructor(app: App, plugin: EpistemePlugin) {
-        super(app, plugin);
-        this.plugin = plugin;
-    }
+	constructor(app: App, plugin: EpistemePlugin) {
+		super(app, plugin);
+		this.plugin = plugin;
+	}
 
-    display(): void {
-        const { containerEl } = this;
-        containerEl.empty();
-        containerEl.addClass("episteme-settings");
+	display(): void {
+		const { containerEl } = this;
+		containerEl.empty();
+		containerEl.addClass("episteme-settings");
 
-        // Tab navigation
-        const tabsNav = containerEl.createDiv({ cls: "episteme-settings-tabs" });
-        const tabs: { id: SettingsTabId; label: string }[] = [
-            { id: "general", label: "General" },
-            { id: "ai", label: "AI" },
-            { id: "scheduling", label: "Scheduling" },
-            { id: "data", label: "Data & Backup" },
-            { id: "sync", label: "Cloud Sync" },
-        ];
+		// Tab navigation
+		const tabsNav = containerEl.createDiv({
+			cls: "episteme-settings-tabs",
+		});
+		const tabs: { id: SettingsTabId; label: string }[] = [
+			{ id: "general", label: "General" },
+			{ id: "ai", label: "AI" },
+			{ id: "scheduling", label: "Scheduling" },
+			{ id: "data", label: "Data & Backup" },
+			{ id: "sync", label: "Cloud Sync" },
+		];
 
-        const tabButtons: Map<SettingsTabId, HTMLElement> = new Map();
-        tabs.forEach(tab => {
-            const btn = tabsNav.createEl("button", {
-                text: tab.label,
-                cls: `episteme-settings-tab-btn ${this.activeTab === tab.id ? "is-active" : ""}`,
-            });
-            btn.addEventListener("click", () => this.switchTab(tab.id, tabButtons, tabContents));
-            tabButtons.set(tab.id, btn);
-        });
+		const tabButtons: Map<SettingsTabId, HTMLElement> = new Map();
+		tabs.forEach((tab) => {
+			const btn = tabsNav.createEl("button", {
+				text: tab.label,
+				cls: `episteme-settings-tab-btn ${
+					this.activeTab === tab.id ? "is-active" : ""
+				}`,
+			});
+			btn.addEventListener("click", () =>
+				this.switchTab(tab.id, tabButtons, tabContents)
+			);
+			tabButtons.set(tab.id, btn);
+		});
 
-        // Tab content containers
-        const tabContents: Map<SettingsTabId, HTMLElement> = new Map();
-        tabs.forEach(tab => {
-            const content = containerEl.createDiv({
-                cls: `episteme-settings-tab-content ${this.activeTab === tab.id ? "is-active" : ""}`,
-            });
-            tabContents.set(tab.id, content);
-        });
+		// Tab content containers
+		const tabContents: Map<SettingsTabId, HTMLElement> = new Map();
+		tabs.forEach((tab) => {
+			const content = containerEl.createDiv({
+				cls: `episteme-settings-tab-content ${
+					this.activeTab === tab.id ? "is-active" : ""
+				}`,
+			});
+			tabContents.set(tab.id, content);
+		});
 
-        // Render content for each tab
-        this.renderGeneralTab(tabContents.get("general")!);
-        this.renderAITab(tabContents.get("ai")!);
-        this.renderSchedulingTab(tabContents.get("scheduling")!);
-        this.renderDataTab(tabContents.get("data")!);
-        this.renderSyncTab(tabContents.get("sync")!);
-    }
+		// Render content for each tab
+		this.renderGeneralTab(tabContents.get("general")!);
+		this.renderAITab(tabContents.get("ai")!);
+		this.renderSchedulingTab(tabContents.get("scheduling")!);
+		this.renderDataTab(tabContents.get("data")!);
+	}
 
-    private switchTab(
-        tabId: SettingsTabId,
-        buttons: Map<SettingsTabId, HTMLElement>,
-        contents: Map<SettingsTabId, HTMLElement>
-    ): void {
-        this.activeTab = tabId;
-        buttons.forEach((btn, id) => btn.toggleClass("is-active", id === tabId));
-        contents.forEach((content, id) => content.toggleClass("is-active", id === tabId));
-    }
+	private switchTab(
+		tabId: SettingsTabId,
+		buttons: Map<SettingsTabId, HTMLElement>,
+		contents: Map<SettingsTabId, HTMLElement>
+	): void {
+		this.activeTab = tabId;
+		buttons.forEach((btn, id) =>
+			btn.toggleClass("is-active", id === tabId)
+		);
+		contents.forEach((content, id) =>
+			content.toggleClass("is-active", id === tabId)
+		);
+	}
 
-    private renderGeneralTab(container: HTMLElement): void {
-        // ===== Review Interface Section =====
-        container.createEl("h2", { text: "Review Interface" });
+	private renderGeneralTab(container: HTMLElement): void {
+		// ===== Review Interface Section =====
+		container.createEl("h2", { text: "Review Interface" });
 
-        new Setting(container)
-            .setName("Review mode")
-            .setDesc("Where to open the review session")
-            .addDropdown(dropdown => {
-                dropdown.addOption("fullscreen", "Fullscreen (main area)");
-                dropdown.addOption("panel", "Side panel");
-                dropdown.setValue(this.plugin.settings.reviewMode);
-                dropdown.onChange(async (value) => {
-                    this.plugin.settings.reviewMode = value as ReviewViewMode;
-                    await this.plugin.saveSettings();
-                });
-            });
+		new Setting(container)
+			.setName("Review mode")
+			.setDesc("Where to open the review session")
+			.addDropdown((dropdown) => {
+				dropdown.addOption("fullscreen", "Fullscreen (main area)");
+				dropdown.addOption("panel", "Side panel");
+				dropdown.setValue(this.plugin.settings.reviewMode);
+				dropdown.onChange(async (value) => {
+					this.plugin.settings.reviewMode = value as ReviewViewMode;
+					await this.plugin.saveSettings();
+				});
+			});
 
-        new Setting(container)
-            .setName("Show review header")
-            .setDesc("Display header with close button, stats and progress in review session")
-            .addToggle(toggle => toggle
-                .setValue(this.plugin.settings.showReviewHeader)
-                .onChange(async (value) => {
-                    this.plugin.settings.showReviewHeader = value;
-                    await this.plugin.saveSettings();
-                }));
+		new Setting(container)
+			.setName("Show review header")
+			.setDesc(
+				"Display header with close button, stats and progress in review session"
+			)
+			.addToggle((toggle) =>
+				toggle
+					.setValue(this.plugin.settings.showReviewHeader)
+					.onChange(async (value) => {
+						this.plugin.settings.showReviewHeader = value;
+						await this.plugin.saveSettings();
+					})
+			);
 
-        new Setting(container)
-            .setName("Show header stats")
-            .setDesc("Display new/learning/due counters in review session header")
-            .addToggle(toggle => toggle
-                .setValue(this.plugin.settings.showReviewHeaderStats)
-                .onChange(async (value) => {
-                    this.plugin.settings.showReviewHeaderStats = value;
-                    await this.plugin.saveSettings();
-                }));
+		new Setting(container)
+			.setName("Show header stats")
+			.setDesc(
+				"Display new/learning/due counters in review session header"
+			)
+			.addToggle((toggle) =>
+				toggle
+					.setValue(this.plugin.settings.showReviewHeaderStats)
+					.onChange(async (value) => {
+						this.plugin.settings.showReviewHeaderStats = value;
+						await this.plugin.saveSettings();
+					})
+			);
 
-        new Setting(container)
-            .setName("Show next review time")
-            .setDesc("Display predicted interval on answer buttons")
-            .addToggle(toggle => toggle
-                .setValue(this.plugin.settings.showNextReviewTime)
-                .onChange(async (value) => {
-                    this.plugin.settings.showNextReviewTime = value;
-                    await this.plugin.saveSettings();
-                }));
+		new Setting(container)
+			.setName("Show next review time")
+			.setDesc("Display predicted interval on answer buttons")
+			.addToggle((toggle) =>
+				toggle
+					.setValue(this.plugin.settings.showNextReviewTime)
+					.onChange(async (value) => {
+						this.plugin.settings.showNextReviewTime = value;
+						await this.plugin.saveSettings();
+					})
+			);
 
-        new Setting(container)
-            .setName("Continuous custom reviews")
-            .setDesc("Show 'Next Session' button after completing a custom review session")
-            .addToggle(toggle => toggle
-                .setValue(this.plugin.settings.continuousCustomReviews)
-                .onChange(async (value) => {
-                    this.plugin.settings.continuousCustomReviews = value;
-                    await this.plugin.saveSettings();
-                }));
+		new Setting(container)
+			.setName("Continuous custom reviews")
+			.setDesc(
+				"Show 'Next Session' button after completing a custom review session"
+			)
+			.addToggle((toggle) =>
+				toggle
+					.setValue(this.plugin.settings.continuousCustomReviews)
+					.onChange(async (value) => {
+						this.plugin.settings.continuousCustomReviews = value;
+						await this.plugin.saveSettings();
+					})
+			);
 
-        // ===== Daily Limits Section =====
-        container.createEl("h2", { text: "Daily Limits" });
+		// ===== Daily Limits Section =====
+		container.createEl("h2", { text: "Daily Limits" });
 
-        new Setting(container)
-            .setName("New cards per day")
-            .setDesc("Maximum number of new cards to study each day")
-            .addText(text => text
-                .setPlaceholder("20")
-                .setValue(String(this.plugin.settings.newCardsPerDay))
-                .onChange(async (value) => {
-                    const num = parseInt(value) || 20;
-                    this.plugin.settings.newCardsPerDay = Math.max(0, num);
-                    await this.plugin.saveSettings();
-                }));
+		new Setting(container)
+			.setName("New cards per day")
+			.setDesc("Maximum number of new cards to study each day")
+			.addText((text) =>
+				text
+					.setPlaceholder("20")
+					.setValue(String(this.plugin.settings.newCardsPerDay))
+					.onChange(async (value) => {
+						const num = parseInt(value) || 20;
+						this.plugin.settings.newCardsPerDay = Math.max(0, num);
+						await this.plugin.saveSettings();
+					})
+			);
 
-        new Setting(container)
-            .setName("Maximum reviews per day")
-            .setDesc("Maximum number of reviews per day")
-            .addText(text => text
-                .setPlaceholder("200")
-                .setValue(String(this.plugin.settings.reviewsPerDay))
-                .onChange(async (value) => {
-                    const num = parseInt(value) || 200;
-                    this.plugin.settings.reviewsPerDay = Math.max(0, num);
-                    await this.plugin.saveSettings();
-                }));
+		new Setting(container)
+			.setName("Maximum reviews per day")
+			.setDesc("Maximum number of reviews per day")
+			.addText((text) =>
+				text
+					.setPlaceholder("200")
+					.setValue(String(this.plugin.settings.reviewsPerDay))
+					.onChange(async (value) => {
+						const num = parseInt(value) || 200;
+						this.plugin.settings.reviewsPerDay = Math.max(0, num);
+						await this.plugin.saveSettings();
+					})
+			);
 
-        // ===== Day Boundary Section =====
-        container.createEl("h2", { text: "Day Boundary" });
+		// ===== Day Boundary Section =====
+		container.createEl("h2", { text: "Day Boundary" });
 
-        new Setting(container)
-            .setName("Next day starts at")
-            .setDesc("Hour when a new day begins (0-23). Default: 4 (4:00 AM)")
-            .addSlider(slider => slider
-                .setLimits(0, 23, 1)
-                .setValue(this.plugin.settings.dayStartHour)
-                .setDynamicTooltip()
-                .onChange(async (value) => {
-                    this.plugin.settings.dayStartHour = value;
-                    await this.plugin.saveSettings();
-                }));
+		new Setting(container)
+			.setName("Next day starts at")
+			.setDesc("Hour when a new day begins (0-23). Default: 4 (4:00 AM)")
+			.addSlider((slider) =>
+				slider
+					.setLimits(0, 23, 1)
+					.setValue(this.plugin.settings.dayStartHour)
+					.setDynamicTooltip()
+					.onChange(async (value) => {
+						this.plugin.settings.dayStartHour = value;
+						await this.plugin.saveSettings();
+					})
+			);
 
-        // ===== Flashcard Collection Section =====
-        container.createEl("h2", { text: "Flashcard Collection" });
+		// ===== Flashcard Collection Section =====
+		container.createEl("h2", { text: "Flashcard Collection" });
 
-        new Setting(container)
-            .setName("Remove content after collecting")
-            .setDesc("When enabled, removes the entire flashcard (Q+A) from markdown after collecting. When disabled, only removes the #flashcard tag.")
-            .addToggle(toggle => toggle
-                .setValue(this.plugin.settings.removeFlashcardContentAfterCollect)
-                .onChange(async (value) => {
-                    this.plugin.settings.removeFlashcardContentAfterCollect = value;
-                    await this.plugin.saveSettings();
-                }));
-    }
+		new Setting(container)
+			.setName("Remove content after collecting")
+			.setDesc(
+				"When enabled, removes the entire flashcard (Q+A) from markdown after collecting. When disabled, only removes the #flashcard tag."
+			)
+			.addToggle((toggle) =>
+				toggle
+					.setValue(
+						this.plugin.settings.removeFlashcardContentAfterCollect
+					)
+					.onChange(async (value) => {
+						this.plugin.settings.removeFlashcardContentAfterCollect =
+							value;
+						await this.plugin.saveSettings();
+					})
+			);
+	}
 
-    private renderAITab(container: HTMLElement): void {
-        // ===== AI Generation Section =====
-        container.createEl("h2", { text: "AI Generation (OpenRouter)" });
+	private renderAITab(container: HTMLElement): void {
+		// ===== AI Generation Section =====
+		container.createEl("h2", { text: "AI Generation (OpenRouter)" });
 
-        const apiKeyInfo = container.createDiv({ cls: "setting-item-description" });
-        apiKeyInfo.innerHTML = `
+		const apiKeyInfo = container.createDiv({
+			cls: "setting-item-description",
+		});
+		apiKeyInfo.innerHTML = `
             <p>OpenRouter provides access to multiple AI models through a single API.</p>
             <p><a href="https://openrouter.ai/keys" target="_blank">Get your API key at openrouter.ai/keys</a></p>
         `;
 
-        new Setting(container)
-            .setName("API key")
-            .setDesc("Your OpenRouter API key for flashcard generation")
-            .addText(text => {
-                text.inputEl.type = "password";
-                text.inputEl.addClass("episteme-api-input");
-                text.setPlaceholder("Enter API key")
-                    .setValue(this.plugin.settings.openRouterApiKey)
-                    .onChange(async (value) => {
-                        this.plugin.settings.openRouterApiKey = value;
-                        await this.plugin.saveSettings();
-                    });
-            });
+		new Setting(container)
+			.setName("API key")
+			.setDesc("Your OpenRouter API key for flashcard generation")
+			.addText((text) => {
+				text.inputEl.type = "password";
+				text.inputEl.addClass("episteme-api-input");
+				text.setPlaceholder("Enter API key")
+					.setValue(this.plugin.settings.openRouterApiKey)
+					.onChange(async (value) => {
+						this.plugin.settings.openRouterApiKey = value;
+						await this.plugin.saveSettings();
+					});
+			});
 
-        const modelSetting = new Setting(container)
-            .setName("AI model")
-            .setDesc("Select the AI model for flashcard generation");
+		const modelSetting = new Setting(container)
+			.setName("AI model")
+			.setDesc("Select the AI model for flashcard generation");
 
-        modelSetting.addDropdown(dropdown => {
-            const modelsByProvider = this.groupModelsByProvider();
+		modelSetting.addDropdown((dropdown) => {
+			const modelsByProvider = this.groupModelsByProvider();
 
-            for (const [provider, models] of Object.entries(modelsByProvider)) {
-                dropdown.addOption(`__group_${provider}`, `── ${provider} ──`);
+			for (const [provider, models] of Object.entries(modelsByProvider)) {
+				dropdown.addOption(`__group_${provider}`, `── ${provider} ──`);
 
-                for (const [key, info] of models) {
-                    const label = info.recommended
-                        ? `${info.name} ⭐ (${info.description})`
-                        : `${info.name} (${info.description})`;
-                    dropdown.addOption(key, label);
-                }
-            }
+				for (const [key, info] of models) {
+					const label = info.recommended
+						? `${info.name} ⭐ (${info.description})`
+						: `${info.name} (${info.description})`;
+					dropdown.addOption(key, label);
+				}
+			}
 
-            dropdown.setValue(this.plugin.settings.aiModel);
-            dropdown.onChange(async (value) => {
-                if (value.startsWith("__group_")) {
-                    dropdown.setValue(this.plugin.settings.aiModel);
-                    return;
-                }
-                this.plugin.settings.aiModel = value as AIModelKey;
-                await this.plugin.saveSettings();
-            });
+			dropdown.setValue(this.plugin.settings.aiModel);
+			dropdown.onChange(async (value) => {
+				if (value.startsWith("__group_")) {
+					dropdown.setValue(this.plugin.settings.aiModel);
+					return;
+				}
+				this.plugin.settings.aiModel = value as AIModelKey;
+				await this.plugin.saveSettings();
+			});
 
-            const selectEl = dropdown.selectEl;
-            Array.from(selectEl.options).forEach(option => {
-                if (option.value.startsWith("__group_")) {
-                    option.disabled = true;
-                    option.style.fontWeight = "bold";
-                    option.style.color = "var(--text-muted)";
-                }
-            });
-        });
+			const selectEl = dropdown.selectEl;
+			Array.from(selectEl.options).forEach((option) => {
+				if (option.value.startsWith("__group_")) {
+					option.disabled = true;
+					option.style.fontWeight = "bold";
+					option.style.color = "var(--text-muted)";
+				}
+			});
+		});
 
-        // ===== Custom Prompts Section =====
-        container.createEl("h2", { text: "Custom Prompts" });
+		// ===== Custom Prompts Section =====
+		container.createEl("h2", { text: "Custom Prompts" });
 
-        const promptsInfo = container.createDiv({ cls: "setting-item-description" });
-        promptsInfo.innerHTML = `
+		const promptsInfo = container.createDiv({
+			cls: "setting-item-description",
+		});
+		promptsInfo.innerHTML = `
             <p>Customize the AI prompts used for flashcard generation. Leave empty to use the default prompts.</p>
         `;
 
-        new Setting(container)
-            .setName("Flashcard generation prompt")
-            .setDesc("Custom system prompt for generating new flashcards. Leave empty to use default.")
-            .addTextArea(text => {
-                text.inputEl.rows = 8;
-                text.inputEl.style.width = "100%";
-                text.inputEl.style.fontFamily = "monospace";
-                text.inputEl.style.fontSize = "12px";
-                text.setPlaceholder(this.truncatePrompt(SYSTEM_PROMPT, 500))
-                    .setValue(this.plugin.settings.customGeneratePrompt)
-                    .onChange(async (value) => {
-                        this.plugin.settings.customGeneratePrompt = value;
-                        await this.plugin.saveSettings();
-                    });
-            });
+		new Setting(container)
+			.setName("Flashcard generation prompt")
+			.setDesc(
+				"Custom system prompt for generating new flashcards. Leave empty to use default."
+			)
+			.addTextArea((text) => {
+				text.inputEl.rows = 8;
+				text.inputEl.style.width = "100%";
+				text.inputEl.style.fontFamily = "monospace";
+				text.inputEl.style.fontSize = "12px";
+				text.setPlaceholder(this.truncatePrompt(SYSTEM_PROMPT, 500))
+					.setValue(this.plugin.settings.customGeneratePrompt)
+					.onChange(async (value) => {
+						this.plugin.settings.customGeneratePrompt = value;
+						await this.plugin.saveSettings();
+					});
+			});
 
-        new Setting(container)
-            .setName("Flashcard update prompt")
-            .setDesc("Custom system prompt for updating existing flashcards. Leave empty to use default.")
-            .addTextArea(text => {
-                text.inputEl.rows = 8;
-                text.inputEl.style.width = "100%";
-                text.inputEl.style.fontFamily = "monospace";
-                text.inputEl.style.fontSize = "12px";
-                text.setPlaceholder(this.truncatePrompt(UPDATE_SYSTEM_PROMPT, 500))
-                    .setValue(this.plugin.settings.customUpdatePrompt)
-                    .onChange(async (value) => {
-                        this.plugin.settings.customUpdatePrompt = value;
-                        await this.plugin.saveSettings();
-                    });
-            });
+		new Setting(container)
+			.setName("Flashcard update prompt")
+			.setDesc(
+				"Custom system prompt for updating existing flashcards. Leave empty to use default."
+			)
+			.addTextArea((text) => {
+				text.inputEl.rows = 8;
+				text.inputEl.style.width = "100%";
+				text.inputEl.style.fontFamily = "monospace";
+				text.inputEl.style.fontSize = "12px";
+				text.setPlaceholder(
+					this.truncatePrompt(UPDATE_SYSTEM_PROMPT, 500)
+				)
+					.setValue(this.plugin.settings.customUpdatePrompt)
+					.onChange(async (value) => {
+						this.plugin.settings.customUpdatePrompt = value;
+						await this.plugin.saveSettings();
+					});
+			});
 
-        new Setting(container)
-            .setName("Reset prompts to defaults")
-            .setDesc("Clear custom prompts and use the built-in defaults")
-            .addButton(button => button
-                .setButtonText("Reset to Defaults")
-                .onClick(async () => {
-                    this.plugin.settings.customGeneratePrompt = "";
-                    this.plugin.settings.customUpdatePrompt = "";
-                    await this.plugin.saveSettings();
-                    new Notice("Prompts reset to defaults");
-                    this.display();
-                }));
-    }
+		new Setting(container)
+			.setName("Reset prompts to defaults")
+			.setDesc("Clear custom prompts and use the built-in defaults")
+			.addButton((button) =>
+				button.setButtonText("Reset to Defaults").onClick(async () => {
+					this.plugin.settings.customGeneratePrompt = "";
+					this.plugin.settings.customUpdatePrompt = "";
+					await this.plugin.saveSettings();
+					new Notice("Prompts reset to defaults");
+					this.display();
+				})
+			);
+	}
 
-    private renderSchedulingTab(container: HTMLElement): void {
-        // ===== FSRS Algorithm Section =====
-        container.createEl("h2", { text: "FSRS Algorithm" });
+	private renderSchedulingTab(container: HTMLElement): void {
+		// ===== FSRS Algorithm Section =====
+		container.createEl("h2", { text: "FSRS Algorithm" });
 
-        new Setting(container)
-            .setName("Desired retention")
-            .setDesc(`Target probability of recall (${FSRS_CONFIG.minRetention}-${FSRS_CONFIG.maxRetention}). Default: 0.9 (90%)`)
-            .addSlider(slider => slider
-                .setLimits(FSRS_CONFIG.minRetention, FSRS_CONFIG.maxRetention, 0.01)
-                .setValue(this.plugin.settings.fsrsRequestRetention)
-                .setDynamicTooltip()
-                .onChange(async (value) => {
-                    this.plugin.settings.fsrsRequestRetention = value;
-                    await this.plugin.saveSettings();
-                }));
+		new Setting(container)
+			.setName("Desired retention")
+			.setDesc(
+				`Target probability of recall (${FSRS_CONFIG.minRetention}-${FSRS_CONFIG.maxRetention}). Default: 0.9 (90%)`
+			)
+			.addSlider((slider) =>
+				slider
+					.setLimits(
+						FSRS_CONFIG.minRetention,
+						FSRS_CONFIG.maxRetention,
+						0.01
+					)
+					.setValue(this.plugin.settings.fsrsRequestRetention)
+					.setDynamicTooltip()
+					.onChange(async (value) => {
+						this.plugin.settings.fsrsRequestRetention = value;
+						await this.plugin.saveSettings();
+					})
+			);
 
-        new Setting(container)
-            .setName("Maximum interval (days)")
-            .setDesc("Maximum days between reviews. Default: 36500 (100 years)")
-            .addText(text => text
-                .setPlaceholder("36500")
-                .setValue(String(this.plugin.settings.fsrsMaximumInterval))
-                .onChange(async (value) => {
-                    const num = parseInt(value) || 36500;
-                    this.plugin.settings.fsrsMaximumInterval = Math.max(1, num);
-                    await this.plugin.saveSettings();
-                }));
+		new Setting(container)
+			.setName("Maximum interval (days)")
+			.setDesc("Maximum days between reviews. Default: 36500 (100 years)")
+			.addText((text) =>
+				text
+					.setPlaceholder("36500")
+					.setValue(String(this.plugin.settings.fsrsMaximumInterval))
+					.onChange(async (value) => {
+						const num = parseInt(value) || 36500;
+						this.plugin.settings.fsrsMaximumInterval = Math.max(
+							1,
+							num
+						);
+						await this.plugin.saveSettings();
+					})
+			);
 
-        // ===== Learning Steps Section =====
-        container.createEl("h2", { text: "Learning Steps" });
+		// ===== Learning Steps Section =====
+		container.createEl("h2", { text: "Learning Steps" });
 
-        new Setting(container)
-            .setName("Learning steps (minutes)")
-            .setDesc("Comma-separated steps for new cards. Default: 1, 10")
-            .addText(text => text
-                .setPlaceholder("1, 10")
-                .setValue(this.plugin.settings.learningSteps.join(", "))
-                .onChange(async (value) => {
-                    const steps = value.split(",")
-                        .map(s => parseInt(s.trim()))
-                        .filter(n => !isNaN(n) && n > 0);
-                    this.plugin.settings.learningSteps = steps.length > 0 ? steps : [1, 10];
-                    await this.plugin.saveSettings();
-                }));
+		new Setting(container)
+			.setName("Learning steps (minutes)")
+			.setDesc("Comma-separated steps for new cards. Default: 1, 10")
+			.addText((text) =>
+				text
+					.setPlaceholder("1, 10")
+					.setValue(this.plugin.settings.learningSteps.join(", "))
+					.onChange(async (value) => {
+						const steps = value
+							.split(",")
+							.map((s) => parseInt(s.trim()))
+							.filter((n) => !isNaN(n) && n > 0);
+						this.plugin.settings.learningSteps =
+							steps.length > 0 ? steps : [1, 10];
+						await this.plugin.saveSettings();
+					})
+			);
 
-        new Setting(container)
-            .setName("Relearning steps (minutes)")
-            .setDesc("Comma-separated steps for lapsed cards. Default: 10")
-            .addText(text => text
-                .setPlaceholder("10")
-                .setValue(this.plugin.settings.relearningSteps.join(", "))
-                .onChange(async (value) => {
-                    const steps = value.split(",")
-                        .map(s => parseInt(s.trim()))
-                        .filter(n => !isNaN(n) && n > 0);
-                    this.plugin.settings.relearningSteps = steps.length > 0 ? steps : [10];
-                    await this.plugin.saveSettings();
-                }));
+		new Setting(container)
+			.setName("Relearning steps (minutes)")
+			.setDesc("Comma-separated steps for lapsed cards. Default: 10")
+			.addText((text) =>
+				text
+					.setPlaceholder("10")
+					.setValue(this.plugin.settings.relearningSteps.join(", "))
+					.onChange(async (value) => {
+						const steps = value
+							.split(",")
+							.map((s) => parseInt(s.trim()))
+							.filter((n) => !isNaN(n) && n > 0);
+						this.plugin.settings.relearningSteps =
+							steps.length > 0 ? steps : [10];
+						await this.plugin.saveSettings();
+					})
+			);
 
-        new Setting(container)
-            .setName("Graduating interval (days)")
-            .setDesc("Interval after completing learning steps. Default: 1")
-            .addText(text => text
-                .setPlaceholder("1")
-                .setValue(String(this.plugin.settings.graduatingInterval))
-                .onChange(async (value) => {
-                    const num = parseInt(value) || 1;
-                    this.plugin.settings.graduatingInterval = Math.max(1, num);
-                    await this.plugin.saveSettings();
-                }));
+		new Setting(container)
+			.setName("Graduating interval (days)")
+			.setDesc("Interval after completing learning steps. Default: 1")
+			.addText((text) =>
+				text
+					.setPlaceholder("1")
+					.setValue(String(this.plugin.settings.graduatingInterval))
+					.onChange(async (value) => {
+						const num = parseInt(value) || 1;
+						this.plugin.settings.graduatingInterval = Math.max(
+							1,
+							num
+						);
+						await this.plugin.saveSettings();
+					})
+			);
 
-        new Setting(container)
-            .setName("Easy interval (days)")
-            .setDesc("Interval when pressing Easy on new card. Default: 4")
-            .addText(text => text
-                .setPlaceholder("4")
-                .setValue(String(this.plugin.settings.easyInterval))
-                .onChange(async (value) => {
-                    const num = parseInt(value) || 4;
-                    this.plugin.settings.easyInterval = Math.max(1, num);
-                    await this.plugin.saveSettings();
-                }));
+		new Setting(container)
+			.setName("Easy interval (days)")
+			.setDesc("Interval when pressing Easy on new card. Default: 4")
+			.addText((text) =>
+				text
+					.setPlaceholder("4")
+					.setValue(String(this.plugin.settings.easyInterval))
+					.onChange(async (value) => {
+						const num = parseInt(value) || 4;
+						this.plugin.settings.easyInterval = Math.max(1, num);
+						await this.plugin.saveSettings();
+					})
+			);
 
-        // ===== Display Order Section =====
-        container.createEl("h2", { text: "Display Order" });
+		// ===== Display Order Section =====
+		container.createEl("h2", { text: "Display Order" });
 
-        new Setting(container)
-            .setName("New card order")
-            .setDesc("How to order new cards in the review queue")
-            .addDropdown(dropdown => {
-                dropdown.addOption("random", "Random");
-                dropdown.addOption("oldest-first", "Oldest first (by position in file)");
-                dropdown.addOption("newest-first", "Newest first (by position in file)");
-                dropdown.setValue(this.plugin.settings.newCardOrder);
-                dropdown.onChange(async (value) => {
-                    this.plugin.settings.newCardOrder = value as NewCardOrder;
-                    await this.plugin.saveSettings();
-                });
-            });
+		new Setting(container)
+			.setName("New card order")
+			.setDesc("How to order new cards in the review queue")
+			.addDropdown((dropdown) => {
+				dropdown.addOption("random", "Random");
+				dropdown.addOption(
+					"oldest-first",
+					"Oldest first (by position in file)"
+				);
+				dropdown.addOption(
+					"newest-first",
+					"Newest first (by position in file)"
+				);
+				dropdown.setValue(this.plugin.settings.newCardOrder);
+				dropdown.onChange(async (value) => {
+					this.plugin.settings.newCardOrder = value as NewCardOrder;
+					await this.plugin.saveSettings();
+				});
+			});
 
-        new Setting(container)
-            .setName("Review order")
-            .setDesc("How to order cards due for review")
-            .addDropdown(dropdown => {
-                dropdown.addOption("due-date", "By due date");
-                dropdown.addOption("random", "Random");
-                dropdown.addOption("due-date-random", "Due date, then random");
-                dropdown.setValue(this.plugin.settings.reviewOrder);
-                dropdown.onChange(async (value) => {
-                    this.plugin.settings.reviewOrder = value as ReviewOrder;
-                    await this.plugin.saveSettings();
-                });
-            });
+		new Setting(container)
+			.setName("Review order")
+			.setDesc("How to order cards due for review")
+			.addDropdown((dropdown) => {
+				dropdown.addOption("due-date", "By due date");
+				dropdown.addOption("random", "Random");
+				dropdown.addOption("due-date-random", "Due date, then random");
+				dropdown.setValue(this.plugin.settings.reviewOrder);
+				dropdown.onChange(async (value) => {
+					this.plugin.settings.reviewOrder = value as ReviewOrder;
+					await this.plugin.saveSettings();
+				});
+			});
 
-        new Setting(container)
-            .setName("New/review mix")
-            .setDesc("When to show new cards relative to reviews")
-            .addDropdown(dropdown => {
-                dropdown.addOption("mix-with-reviews", "Mix with reviews");
-                dropdown.addOption("show-after-reviews", "Show after reviews");
-                dropdown.addOption("show-before-reviews", "Show before reviews");
-                dropdown.setValue(this.plugin.settings.newReviewMix);
-                dropdown.onChange(async (value) => {
-                    this.plugin.settings.newReviewMix = value as NewReviewMix;
-                    await this.plugin.saveSettings();
-                });
-            });
+		new Setting(container)
+			.setName("New/review mix")
+			.setDesc("When to show new cards relative to reviews")
+			.addDropdown((dropdown) => {
+				dropdown.addOption("mix-with-reviews", "Mix with reviews");
+				dropdown.addOption("show-after-reviews", "Show after reviews");
+				dropdown.addOption(
+					"show-before-reviews",
+					"Show before reviews"
+				);
+				dropdown.setValue(this.plugin.settings.newReviewMix);
+				dropdown.onChange(async (value) => {
+					this.plugin.settings.newReviewMix = value as NewReviewMix;
+					await this.plugin.saveSettings();
+				});
+			});
 
-        // ===== FSRS Parameters Section =====
-        container.createEl("h2", { text: "FSRS Parameters" });
+		// ===== FSRS Parameters Section =====
+		container.createEl("h2", { text: "FSRS Parameters" });
 
-        const infoEl = container.createDiv({ cls: "setting-item-description" });
-        infoEl.innerHTML = `
+		const infoEl = container.createDiv({ cls: "setting-item-description" });
+		infoEl.innerHTML = `
             <p>FSRS parameters affect how cards are scheduled. The plugin starts with default parameters optimized for most users.</p>
             <p>You can optimize parameters based on your review history to get the best results for your memory and content.</p>
             <p><strong>Minimum ${FSRS_CONFIG.minReviewsForOptimization} reviews required.</strong> Recommended: ${FSRS_CONFIG.recommendedReviewsForOptimization}+ reviews.</p>
         `;
 
-        const lastOpt = this.plugin.settings.lastOptimization;
-        new Setting(container)
-            .setName("Last optimization")
-            .setDesc(lastOpt ? new Date(lastOpt).toLocaleDateString() : "Never")
-            .addButton(button => button
-                .setButtonText("Optimize Parameters")
-                .setDisabled(true)
-                .onClick(async () => {
-                    // TODO: Implement optimization
-                }))
-            .addButton(button => button
-                .setButtonText("Reset to Defaults")
-                .onClick(async () => {
-                    this.plugin.settings.fsrsWeights = null;
-                    this.plugin.settings.lastOptimization = null;
-                    await this.plugin.saveSettings();
-                    this.display();
-                }));
+		const lastOpt = this.plugin.settings.lastOptimization;
+		new Setting(container)
+			.setName("Last optimization")
+			.setDesc(lastOpt ? new Date(lastOpt).toLocaleDateString() : "Never")
+			.addButton((button) =>
+				button
+					.setButtonText("Optimize Parameters")
+					.setDisabled(true)
+					.onClick(async () => {
+						// TODO: Implement optimization
+					})
+			)
+			.addButton((button) =>
+				button.setButtonText("Reset to Defaults").onClick(async () => {
+					this.plugin.settings.fsrsWeights = null;
+					this.plugin.settings.lastOptimization = null;
+					await this.plugin.saveSettings();
+					this.display();
+				})
+			);
 
-        const currentWeights = this.plugin.settings.fsrsWeights;
-        const weightsString = currentWeights ? currentWeights.join(", ") : "";
+		const currentWeights = this.plugin.settings.fsrsWeights;
+		const weightsString = currentWeights ? currentWeights.join(", ") : "";
 
-        new Setting(container)
-            .setName("Custom FSRS weights")
-            .setDesc("Enter 17, 19, or 21 comma-separated values (from FSRS optimizer). Leave empty to use defaults.")
-            .addTextArea(text => {
-                text.inputEl.rows = 3;
-                text.inputEl.cols = 50;
-                text.inputEl.style.width = "100%";
-                text.inputEl.style.fontFamily = "monospace";
-                text.inputEl.style.fontSize = "12px";
-                text
-                    .setPlaceholder("0.40255, 1.18385, 3.173, 15.69105, ...")
-                    .setValue(weightsString)
-                    .onChange(async (value) => {
-                        const trimmed = value.trim();
-                        if (trimmed === "") {
-                            this.plugin.settings.fsrsWeights = null;
-                            await this.plugin.saveSettings();
-                            return;
-                        }
+		new Setting(container)
+			.setName("Custom FSRS weights")
+			.setDesc(
+				"Enter 17, 19, or 21 comma-separated values (from FSRS optimizer). Leave empty to use defaults."
+			)
+			.addTextArea((text) => {
+				text.inputEl.rows = 3;
+				text.inputEl.cols = 50;
+				text.inputEl.style.width = "100%";
+				text.inputEl.style.fontFamily = "monospace";
+				text.inputEl.style.fontSize = "12px";
+				text.setPlaceholder("0.40255, 1.18385, 3.173, 15.69105, ...")
+					.setValue(weightsString)
+					.onChange(async (value) => {
+						const trimmed = value.trim();
+						if (trimmed === "") {
+							this.plugin.settings.fsrsWeights = null;
+							await this.plugin.saveSettings();
+							return;
+						}
 
-                        const parts = trimmed.split(",").map(s => parseFloat(s.trim()));
-                        const validLengths = [17, 19, 21];
-                        if (!validLengths.includes(parts.length)) {
-                            new Notice(`Invalid weights count: ${parts.length}. Expected 17, 19, or 21 values.`);
-                            return;
-                        }
+						const parts = trimmed
+							.split(",")
+							.map((s) => parseFloat(s.trim()));
+						const validLengths = [17, 19, 21];
+						if (!validLengths.includes(parts.length)) {
+							new Notice(
+								`Invalid weights count: ${parts.length}. Expected 17, 19, or 21 values.`
+							);
+							return;
+						}
 
-                        if (parts.some(n => isNaN(n))) {
-                            new Notice("Invalid weights: some values are not numbers.");
-                            return;
-                        }
+						if (parts.some((n) => isNaN(n))) {
+							new Notice(
+								"Invalid weights: some values are not numbers."
+							);
+							return;
+						}
 
-                        this.plugin.settings.fsrsWeights = parts;
-                        this.plugin.settings.lastOptimization = new Date().toISOString();
-                        await this.plugin.saveSettings();
-                        new Notice("FSRS weights saved!");
-                    });
-            });
-    }
+						this.plugin.settings.fsrsWeights = parts;
+						this.plugin.settings.lastOptimization =
+							new Date().toISOString();
+						await this.plugin.saveSettings();
+						new Notice("FSRS weights saved!");
+					});
+			});
+	}
 
-    private renderDataTab(container: HTMLElement): void {
-        // ===== Database Backup Section =====
-        container.createEl("h2", { text: "Database Backup" });
+	private renderDataTab(container: HTMLElement): void {
+		// ===== Database Backup Section =====
+		container.createEl("h2", { text: "Database Backup" });
 
-        const backupInfo = container.createDiv({ cls: "setting-item-description" });
-        backupInfo.innerHTML = `
+		const backupInfo = container.createDiv({
+			cls: "setting-item-description",
+		});
+		backupInfo.innerHTML = `
             <p>Create backups of your flashcard database to prevent data loss.</p>
             <p>Backups are stored in <code>.episteme/backups/</code></p>
         `;
 
-        new Setting(container)
-            .setName("Automatic backup on load")
-            .setDesc("Create a backup automatically when the plugin loads")
-            .addToggle(toggle => toggle
-                .setValue(this.plugin.settings.autoBackupOnLoad)
-                .onChange(async (value) => {
-                    this.plugin.settings.autoBackupOnLoad = value;
-                    await this.plugin.saveSettings();
-                }));
+		new Setting(container)
+			.setName("Automatic backup on load")
+			.setDesc("Create a backup automatically when the plugin loads")
+			.addToggle((toggle) =>
+				toggle
+					.setValue(this.plugin.settings.autoBackupOnLoad)
+					.onChange(async (value) => {
+						this.plugin.settings.autoBackupOnLoad = value;
+						await this.plugin.saveSettings();
+					})
+			);
 
-        new Setting(container)
-            .setName("Maximum backups to keep")
-            .setDesc("Number of backups to keep (0 = unlimited). Oldest backups are deleted automatically.")
-            .addText(text => text
-                .setPlaceholder("10")
-                .setValue(String(this.plugin.settings.maxBackups))
-                .onChange(async (value) => {
-                    const num = parseInt(value) || 0;
-                    this.plugin.settings.maxBackups = Math.max(0, num);
-                    await this.plugin.saveSettings();
-                }));
+		new Setting(container)
+			.setName("Maximum backups to keep")
+			.setDesc(
+				"Number of backups to keep (0 = unlimited). Oldest backups are deleted automatically."
+			)
+			.addText((text) =>
+				text
+					.setPlaceholder("10")
+					.setValue(String(this.plugin.settings.maxBackups))
+					.onChange(async (value) => {
+						const num = parseInt(value) || 0;
+						this.plugin.settings.maxBackups = Math.max(0, num);
+						await this.plugin.saveSettings();
+					})
+			);
 
-        new Setting(container)
-            .setName("Create backup now")
-            .setDesc("Manually create a backup of the current database")
-            .addButton(button => button
-                .setButtonText("Create Backup")
-                .onClick(async () => {
-                    await this.plugin.createManualBackup();
-                }));
+		new Setting(container)
+			.setName("Create backup now")
+			.setDesc("Manually create a backup of the current database")
+			.addButton((button) =>
+				button.setButtonText("Create Backup").onClick(async () => {
+					await this.plugin.createManualBackup();
+				})
+			);
 
-        new Setting(container)
-            .setName("Restore from backup")
-            .setDesc("Restore the database from a previous backup (requires Obsidian reload)")
-            .addButton(button => button
-                .setButtonText("Restore...")
-                .setWarning()
-                .onClick(async () => {
-                    await this.plugin.openRestoreBackupModal();
-                }));
+		new Setting(container)
+			.setName("Restore from backup")
+			.setDesc(
+				"Restore the database from a previous backup (requires Obsidian reload)"
+			)
+			.addButton((button) =>
+				button
+					.setButtonText("Restore...")
+					.setWarning()
+					.onClick(async () => {
+						await this.plugin.openRestoreBackupModal();
+					})
+			);
 
-        // ===== Content Settings Section =====
-        container.createEl("h2", { text: "Content Settings" });
+		// ===== Content Settings Section =====
+		container.createEl("h2", { text: "Content Settings" });
 
-        // Zettelkasten
+		// Zettelkasten
 
-        new Setting(container)
-            .setName("Zettel folder")
-            .setDesc("Folder where zettel notes created from flashcards will be stored")
-            .addText(text => text
-                .setPlaceholder("Zettel")
-                .setValue(this.plugin.settings.zettelFolder)
-                .onChange(async (value) => {
-                    this.plugin.settings.zettelFolder = value || "Zettel";
-                    await this.plugin.saveSettings();
-                }));
+		new Setting(container)
+			.setName("Zettel folder")
+			.setDesc(
+				"Folder where zettel notes created from flashcards will be stored"
+			)
+			.addText((text) =>
+				text
+					.setPlaceholder("Zettel")
+					.setValue(this.plugin.settings.zettelFolder)
+					.onChange(async (value) => {
+						this.plugin.settings.zettelFolder = value || "Zettel";
+						await this.plugin.saveSettings();
+					})
+			);
 
-        // Template file setting
-        const templateSetting = new Setting(container)
-            .setName("Zettel template")
-            .setDesc("Template file for creating zettels. Variables: {{question}}, {{answer}}, {{source}}, {{date}}, {{time}}, {{datetime}}, {{card_id}}");
+		// Template file setting
+		const templateSetting = new Setting(container)
+			.setName("Zettel template")
+			.setDesc(
+				"Template file for creating zettels. Variables: {{question}}, {{answer}}, {{source}}, {{date}}, {{time}}, {{datetime}}, {{card_id}}"
+			);
 
-        const templateInputEl = templateSetting.controlEl.createEl("input", {
-            type: "text",
-            cls: "episteme-template-input",
-            placeholder: "Default template",
-            value: this.plugin.settings.zettelTemplatePath,
-        });
-        templateInputEl.readOnly = true;
-        templateInputEl.style.cursor = "pointer";
+		const templateInputEl = templateSetting.controlEl.createEl("input", {
+			type: "text",
+			cls: "episteme-template-input",
+			placeholder: "Default template",
+			value: this.plugin.settings.zettelTemplatePath,
+		});
+		templateInputEl.readOnly = true;
+		templateInputEl.style.cursor = "pointer";
 
-        // Display basename if path is set, otherwise show placeholder
-        const updateTemplateDisplay = (): void => {
-            const path = this.plugin.settings.zettelTemplatePath;
-            if (path) {
-                const file = this.app.vault.getAbstractFileByPath(path);
-                if (file instanceof TFile) {
-                    templateInputEl.value = file.basename;
-                } else {
-                    templateInputEl.value = path;
-                }
-            } else {
-                templateInputEl.value = "";
-            }
-        };
-        updateTemplateDisplay();
+		// Display basename if path is set, otherwise show placeholder
+		const updateTemplateDisplay = (): void => {
+			const path = this.plugin.settings.zettelTemplatePath;
+			if (path) {
+				const file = this.app.vault.getAbstractFileByPath(path);
+				if (file instanceof TFile) {
+					templateInputEl.value = file.basename;
+				} else {
+					templateInputEl.value = path;
+				}
+			} else {
+				templateInputEl.value = "";
+			}
+		};
+		updateTemplateDisplay();
 
-        templateInputEl.addEventListener("click", async () => {
-            const modal = new TemplatePickerModal(this.app);
-            const result = await modal.openAndWait();
-            if (!result.cancelled) {
-                this.plugin.settings.zettelTemplatePath = result.templatePath ?? "";
-                await this.plugin.saveSettings();
-                updateTemplateDisplay();
-            }
-        });
+		templateInputEl.addEventListener("click", async () => {
+			const modal = new TemplatePickerModal(this.app);
+			const result = await modal.openAndWait();
+			if (!result.cancelled) {
+				this.plugin.settings.zettelTemplatePath =
+					result.templatePath ?? "";
+				await this.plugin.saveSettings();
+				updateTemplateDisplay();
+			}
+		});
 
-        templateSetting.addButton(button => button
-            .setButtonText("Browse")
-            .onClick(async () => {
-                const modal = new TemplatePickerModal(this.app);
-                const result = await modal.openAndWait();
-                if (!result.cancelled) {
-                    this.plugin.settings.zettelTemplatePath = result.templatePath ?? "";
-                    await this.plugin.saveSettings();
-                    updateTemplateDisplay();
-                }
-            }));
+		templateSetting.addButton((button) =>
+			button.setButtonText("Browse").onClick(async () => {
+				const modal = new TemplatePickerModal(this.app);
+				const result = await modal.openAndWait();
+				if (!result.cancelled) {
+					this.plugin.settings.zettelTemplatePath =
+						result.templatePath ?? "";
+					await this.plugin.saveSettings();
+					updateTemplateDisplay();
+				}
+			})
+		);
 
-        templateSetting.addButton(button => button
-            .setButtonText("Clear")
-            .onClick(async () => {
-                this.plugin.settings.zettelTemplatePath = "";
-                await this.plugin.saveSettings();
-                updateTemplateDisplay();
-            }));
+		templateSetting.addButton((button) =>
+			button.setButtonText("Clear").onClick(async () => {
+				this.plugin.settings.zettelTemplatePath = "";
+				await this.plugin.saveSettings();
+				updateTemplateDisplay();
+			})
+		);
 
-        // Excluded folders
-        new Setting(container)
-            .setName("Excluded folders")
-            .setDesc("Comma-separated list of folders to exclude from flashcard search")
-            .addText(text => text
-                .setPlaceholder("templates, archive")
-                .setValue(this.plugin.settings.excludedFolders.join(", "))
-                .onChange(async (value) => {
-                    const folders = value.split(",")
-                        .map(s => s.trim())
-                        .filter(s => s.length > 0);
-                    this.plugin.settings.excludedFolders = folders;
-                    await this.plugin.saveSettings();
-                }));
-    }
+		// Excluded folders
+		new Setting(container)
+			.setName("Excluded folders")
+			.setDesc(
+				"Comma-separated list of folders to exclude from flashcard search"
+			)
+			.addText((text) =>
+				text
+					.setPlaceholder("templates, archive")
+					.setValue(this.plugin.settings.excludedFolders.join(", "))
+					.onChange(async (value) => {
+						const folders = value
+							.split(",")
+							.map((s) => s.trim())
+							.filter((s) => s.length > 0);
+						this.plugin.settings.excludedFolders = folders;
+						await this.plugin.saveSettings();
+					})
+			);
+	}
 
-    private renderSyncTab(container: HTMLElement): void {
-        // ===== Cloud Sync =====
-        container.createEl("h2", { text: "Cloud Sync" });
+	hide(): void {
+		// No cleanup needed currently
+	}
 
-        const infoEl = container.createDiv({ cls: "setting-item-description" });
-        infoEl.innerHTML = `<p>Sync your flashcards across devices using Supabase.</p>`;
+	/**
+	 * Group AI models by provider for the dropdown
+	 */
+	private groupModelsByProvider(): Record<string, [string, AIModelInfo][]> {
+		const groups: Record<string, [string, AIModelInfo][]> = {
+			Google: [],
+			OpenAI: [],
+			Anthropic: [],
+			Meta: [],
+		};
 
-        // Status container that will be updated
-        const statusContainer = container.createDiv({ cls: "episteme-sync-status" });
-        this.renderSyncStatus(statusContainer);
-    }
+		for (const [key, info] of Object.entries(AI_MODELS_EXTENDED)) {
+			const providerGroup = groups[info.provider];
+			if (providerGroup) {
+				providerGroup.push([key, info]);
+			}
+		}
 
-    private async renderSyncStatus(container: HTMLElement): Promise<void> {
-        container.empty();
+		// Sort: recommended models first within each group
+		for (const provider of Object.keys(groups)) {
+			const providerGroup = groups[provider];
+			if (providerGroup) {
+				providerGroup.sort((a, b) => {
+					if (a[1].recommended && !b[1].recommended) return -1;
+					if (!a[1].recommended && b[1].recommended) return 1;
+					return 0;
+				});
+			}
+		}
 
-        const isConfigured = this.plugin.isSyncConfigured();
+		return groups;
+	}
 
-        if (!isConfigured) {
-            const notConfigured = container.createDiv({ cls: "setting-item-description" });
-            notConfigured.innerHTML = `<p>⚠️ Sync not configured. Set SUPABASE_URL and SUPABASE_ANON_KEY in .env file.</p>`;
-            return;
-        }
-
-        // Try to check login status, but handle errors gracefully
-        let isLoggedIn = false;
-        try {
-            isLoggedIn = await this.plugin.isSyncLoggedIn();
-        } catch {
-            // Auth not initialized yet, that's fine
-            isLoggedIn = false;
-        }
-
-        if (isLoggedIn) {
-            // Show logged in status
-            const user = await this.plugin.storeManager?.getCurrentUser();
-            const email = user?.email ?? "Unknown";
-
-            new Setting(container)
-                .setName("Logged in as")
-                .setDesc(email)
-                .addButton(button => button
-                    .setButtonText("Logout")
-                    .setWarning()
-                    .onClick(async () => {
-                        await this.plugin.logoutSync();
-                        this.renderSyncStatus(container);
-                        new Notice("Logged out successfully");
-                    }));
-
-            // Sync status
-            const syncStatus = this.plugin.storeManager?.getSyncStatus();
-            if (syncStatus) {
-                let statusText = "🔴 Disconnected";
-                if (syncStatus.status === "connected") {
-                    statusText = "🟢 Connected";
-                } else if (syncStatus.status === "syncing") {
-                    statusText = "🔄 Syncing...";
-                }
-
-                let description = statusText;
-                if (syncStatus.lastSyncTime) {
-                    description += ` (Last sync: ${syncStatus.lastSyncTime.toLocaleString()})`;
-                }
-
-                new Setting(container)
-                    .setName("Sync status")
-                    .setDesc(description);
-            }
-
-            // Sync Now button
-            new Setting(container)
-                .setName("Manual sync")
-                .setDesc("Push local changes and pull remote updates")
-                .addButton(button => button
-                    .setButtonText("Sync Now")
-                    .setCta()
-                    .onClick(async () => {
-                        button.setDisabled(true);
-                        button.setButtonText("Syncing...");
-                        try {
-                            await this.plugin.performSync();
-                            this.renderSyncStatus(container);
-                        } finally {
-                            button.setDisabled(false);
-                            button.setButtonText("Sync Now");
-                        }
-                    }));
-
-            // Test connection button
-            new Setting(container)
-                .setName("Test connection")
-                .setDesc("Verify connection to Supabase")
-                .addButton(button => button
-                    .setButtonText("Test Connection")
-                    .onClick(async () => {
-                        try {
-                            const authService = this.plugin.storeManager?.getAuthService();
-                            if (authService) {
-                                const isAuth = await authService.isAuthenticated();
-                                new Notice(isAuth ? "✓ Connection successful!" : "✗ Not authenticated");
-                            }
-                        } catch (error) {
-                            new Notice(`Connection failed: ${error instanceof Error ? error.message : "Unknown error"}`);
-                        }
-                    }));
-        } else {
-            // Show login button
-            new Setting(container)
-                .setName("Not logged in")
-                .setDesc("Login to enable cloud sync")
-                .addButton(button => button
-                    .setButtonText("Login")
-                    .setCta()
-                    .onClick(async () => {
-                        const success = await this.plugin.showSyncLoginModal();
-                        if (success) {
-                            new Notice("Logged in successfully!");
-                            this.renderSyncStatus(container);
-                        }
-                    }))
-                .addButton(button => button
-                    .setButtonText("Create Account")
-                    .onClick(async () => {
-                        const success = await this.plugin.showSyncLoginModal();
-                        if (success) {
-                            new Notice("Account created successfully!");
-                            this.renderSyncStatus(container);
-                        }
-                    }));
-        }
-    }
-
-    hide(): void {
-        // No cleanup needed currently
-    }
-
-    /**
-     * Group AI models by provider for the dropdown
-     */
-    private groupModelsByProvider(): Record<string, [string, AIModelInfo][]> {
-        const groups: Record<string, [string, AIModelInfo][]> = {
-            "Google": [],
-            "OpenAI": [],
-            "Anthropic": [],
-            "Meta": [],
-        };
-
-        for (const [key, info] of Object.entries(AI_MODELS_EXTENDED)) {
-            const providerGroup = groups[info.provider];
-            if (providerGroup) {
-                providerGroup.push([key, info]);
-            }
-        }
-
-        // Sort: recommended models first within each group
-        for (const provider of Object.keys(groups)) {
-            const providerGroup = groups[provider];
-            if (providerGroup) {
-                providerGroup.sort((a, b) => {
-                    if (a[1].recommended && !b[1].recommended) return -1;
-                    if (!a[1].recommended && b[1].recommended) return 1;
-                    return 0;
-                });
-            }
-        }
-
-        return groups;
-    }
-
-    /**
-     * Truncate prompt for placeholder display
-     */
-    private truncatePrompt(prompt: string, maxLength: number): string {
-        if (prompt.length <= maxLength) return prompt;
-        return prompt.substring(0, maxLength) + "...";
-    }
+	/**
+	 * Truncate prompt for placeholder display
+	 */
+	private truncatePrompt(prompt: string, maxLength: number): string {
+		if (prompt.length <= maxLength) return prompt;
+		return prompt.substring(0, maxLength) + "...";
+	}
 }
