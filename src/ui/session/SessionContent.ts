@@ -18,6 +18,8 @@ export interface SessionContentProps {
 	onSearchChange: (query: string) => void;
 	onSelectAll: (select: boolean) => void;
 	onNavigateToNote: (notePath: string) => void;
+	onSearchFocus?: () => void;
+	onSearchBlur?: () => void;
 }
 
 /**
@@ -176,6 +178,15 @@ export class SessionContent extends BaseComponent {
 		this.events.addEventListener(this.searchInput, "input", (e) => {
 			const query = (e.target as HTMLInputElement).value.toLowerCase();
 			onSearchChange(query);
+		});
+
+		// Focus/blur handlers for mobile keyboard
+		this.events.addEventListener(this.searchInput, "focus", () => {
+			this.props.onSearchFocus?.();
+		});
+
+		this.events.addEventListener(this.searchInput, "blur", () => {
+			this.props.onSearchBlur?.();
 		});
 	}
 

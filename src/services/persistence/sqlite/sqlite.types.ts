@@ -2,10 +2,10 @@
  * SQLite Types and Helpers
  * Shared types and utilities for SQLite operations
  */
-import type { QueryExecResult } from "../crsqlite";
+import type { QueryExecResult } from "../sqljs";
 
-// Re-export database types from crsqlite module
-export type { DatabaseLike, QueryExecResult, BindParams } from "../crsqlite";
+// Re-export database types from sqljs module
+export type { DatabaseLike, QueryExecResult, BindParams } from "../sqljs";
 
 export const DB_FOLDER = ".episteme";
 export const DB_FILE = "episteme.db";

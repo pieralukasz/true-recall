@@ -38,6 +38,9 @@ export class SessionView extends ItemView {
 	// State subscription
 	private unsubscribe: (() => void) | null = null;
 
+	// Mobile keyboard state
+	private isSearchFocused = false;
+
 	constructor(leaf: WorkspaceLeaf, plugin: EpistemePlugin) {
 		super(leaf);
 		this.plugin = plugin;
@@ -163,6 +166,24 @@ export class SessionView extends ItemView {
 	}
 
 	/**
+	 * Handle search input focus
+	 */
+	private handleSearchFocus(): void {
+		this.isSearchFocused = true;
+		// Add class to panel for CSS-based footer hiding on mobile
+		this.panelComponent?.getElement()?.addClass('episteme-search-focused');
+	}
+
+	/**
+	 * Handle search input blur
+	 */
+	private handleSearchBlur(): void {
+		this.isSearchFocused = false;
+		// Remove class to show footer again
+		this.panelComponent?.getElement()?.removeClass('episteme-search-focused');
+	}
+
+	/**
 	 * Handle start session button click
 	 */
 	private handleStartSession(): void {
@@ -207,6 +228,9 @@ export class SessionView extends ItemView {
 		const footerContainer = this.panelComponent.getFooterContainer();
 		if (!footerContainer) return;
 
+		// Capture search focus state BEFORE destroy triggers blur event
+		const wasSearchFocused = this.isSearchFocused;
+
 		// Preserve scroll position before re-render
 		const noteList = contentContainer.querySelector('.episteme-note-list');
 		const scrollTop = noteList?.scrollTop ?? 0;
@@ -237,6 +261,8 @@ export class SessionView extends ItemView {
 			onSearchChange: (query) => this.handleSearchChange(query),
 			onSelectAll: (select) => this.handleSelectAll(select),
 			onNavigateToNote: (notePath) => this.handleNavigateToNote(notePath),
+			onSearchFocus: () => this.handleSearchFocus(),
+			onSearchBlur: () => this.handleSearchBlur(),
 		});
 		this.contentComponent.render();
 
@@ -254,6 +280,13 @@ export class SessionView extends ItemView {
 		const newNoteList = contentContainer.querySelector('.episteme-note-list');
 		if (newNoteList) {
 			newNoteList.scrollTop = scrollTop;
+		}
+
+		// Restore focus and focused class if search was focused before re-render
+		if (wasSearchFocused) {
+			this.isSearchFocused = true;
+			this.panelComponent.getElement()?.addClass('episteme-search-focused');
+			this.contentComponent?.focusSearch();
 		}
 	}
 }

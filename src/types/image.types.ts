@@ -7,7 +7,7 @@
  * Represents a reference from a card to an image file
  */
 export interface CardImageRef {
-    /** UUID string for CR-SQLite sync compatibility */
+    /** UUID string for database consistency */
     id?: string;
     cardId: string;
     imagePath: string;

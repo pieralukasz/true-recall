@@ -514,7 +514,7 @@ export class FlashcardManager {
 			const uniqueSourceUids = new Set(cards.map(c => c.sourceUid));
 
 			projectInfos.push({
-				id: crypto.randomUUID(), // Generate UUID for compatibility with CR-SQLite
+				id: crypto.randomUUID(), // Generate UUID for database consistency
 				name,
 				noteCount: uniqueSourceUids.size,
 				cardCount: cards.length,
