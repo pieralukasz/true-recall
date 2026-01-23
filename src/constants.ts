@@ -154,14 +154,6 @@ export const DEFAULT_SETTINGS: EpistemeSettings = {
 	// Backup Settings
 	autoBackupOnLoad: false,
 	maxBackups: 10,
-
-	// Sync Settings
-	syncEnabled: false,
-	syncServerUrl: "",
-	syncApiKey: "",
-	syncIntervalMinutes: 5,
-	autoSyncEnabled: true,
-	syncDevMode: false,
 };
 
 // ===== FSRS Default Weights =====
@@ -269,24 +261,6 @@ export const GENERATED_NOTE_TYPES: Record<GeneratedNoteType, GeneratedNoteTypeCo
 		tag: "mind/question",
 		defaultNamePrefix: "Question - ",
 	},
-} as const;
-
-// ===== Sync Configuration =====
-
-/** Sync retry and timing configuration */
-export const SYNC_CONFIG = {
-	/** Maximum retry attempts for sync operations */
-	maxRetries: 5,
-	/** Base delay between retries in milliseconds */
-	baseDelayMs: 1000,
-	/** Maximum delay between retries in milliseconds */
-	maxDelayMs: 300000, // 5 minutes
-	/** Backoff multiplier for exponential backoff */
-	backoffMultiplier: 2,
-	/** Jitter factor (0-1) to randomize retry delays */
-	jitterFactor: 0.2,
-	/** Request timeout in milliseconds */
-	requestTimeoutMs: 30000,
 } as const;
 
 // ===== FSRS Configuration =====
