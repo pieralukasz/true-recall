@@ -11,7 +11,7 @@ import { createSessionStateManager } from "../../state/session.state";
 import type { DayBoundaryService } from "../../services";
 import type { FSRSFlashcardItem } from "../../types";
 import type { SessionModalOptions } from "../modals/SessionModal";
-import type { SessionSelectedEvent, SyncCompletedEvent } from "../../types/events.types";
+import type { SessionSelectedEvent } from "../../types/events.types";
 import { Panel } from "../components/Panel";
 import { SessionHeader } from "./SessionHeader";
 import { SessionContent } from "./SessionContent";
@@ -37,9 +37,6 @@ export class SessionView extends ItemView {
 
 	// State subscription
 	private unsubscribe: (() => void) | null = null;
-
-	// Event subscriptions
-	private eventUnsubscribers: (() => void)[] = [];
 
 	constructor(leaf: WorkspaceLeaf, plugin: EpistemePlugin) {
 		super(leaf);
@@ -73,15 +70,11 @@ export class SessionView extends ItemView {
 
 		// Subscribe to state changes
 		this.unsubscribe = this.stateManager.subscribe(() => this.render());
-
-		// Subscribe to events
-		this.subscribeToEvents();
 	}
 
 	async onClose(): Promise<void> {
 		// Cleanup subscriptions
 		this.unsubscribe?.();
-		this.eventUnsubscribers.forEach((unsub) => unsub());
 
 		// Cleanup components
 		this.panelComponent?.destroy();
@@ -90,35 +83,6 @@ export class SessionView extends ItemView {
 		this.footerComponent?.destroy();
 	}
 
-	/**
-	 * Subscribe to EventBus events
-	 */
-	private subscribeToEvents(): void {
-		const eventBus = getEventBus();
-
-		const unsubSyncCompleted = eventBus.on<SyncCompletedEvent>("sync:completed", (event) => {
-			if (event.pulled > 0) {
-				void this.refreshAfterSync();
-			}
-		});
-		this.eventUnsubscribers.push(unsubSyncCompleted);
-	}
-
-	/**
-	 * Refresh view after sync completed
-	 */
-	private async refreshAfterSync(): Promise<void> {
-		if (!this.dayBoundaryService) return;
-
-		const allCards = await this.plugin.flashcardManager?.getAllFSRSCards() ?? [];
-
-		this.logic = new SessionLogic(allCards, this.dayBoundaryService);
-
-		this.stateManager.initialize(
-			this.stateManager.getState().currentNoteName,
-			allCards
-		);
-	}
 
 	/**
 	 * Initialize the view with session data

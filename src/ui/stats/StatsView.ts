@@ -24,7 +24,7 @@ import { CardPreviewModal } from "../modals";
 import { NLQueryPanel } from "./NLQueryPanel";
 import type EpistemePlugin from "../../main";
 import type { StatsTimeRange, CardMaturityBreakdown, FutureDueEntry, CardsCreatedEntry, CardsCreatedVsReviewedEntry, RetentionEntry } from "../../types";
-import type { CardReviewedEvent, CardAddedEvent, CardRemovedEvent, CardUpdatedEvent, BulkChangeEvent, StoreSyncedEvent, SyncCompletedEvent } from "../../types/events.types";
+import type { CardReviewedEvent, CardAddedEvent, CardRemovedEvent, CardUpdatedEvent, BulkChangeEvent, StoreSyncedEvent } from "../../types/events.types";
 
 // Register Chart.js components
 Chart.register(
@@ -173,19 +173,11 @@ export class StatsView extends ItemView {
 		});
 		this.eventUnsubscribers.push(unsubUpdated);
 
-		// Refresh after store sync (iCloud)
+		// Refresh after store sync
 		const unsubSynced = eventBus.on<StoreSyncedEvent>("store:synced", () => {
 			void this.refresh();
 		});
 		this.eventUnsubscribers.push(unsubSynced);
-
-		// Refresh after CR-SQLite sync
-		const unsubSyncCompleted = eventBus.on<SyncCompletedEvent>("sync:completed", (event) => {
-			if (event.pulled > 0) {
-				this.scheduleRefresh();
-			}
-		});
-		this.eventUnsubscribers.push(unsubSyncCompleted);
 	}
 
 	/**

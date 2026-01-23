@@ -17,29 +17,6 @@ export class SqliteDailyStatsRepo {
         this.onDataChange = onDataChange;
     }
 
-    /**
-     * Log a change to sync_log for Server-Side Merge sync
-     */
-    private logChange(
-        op: "INSERT" | "UPDATE" | "DELETE",
-        tableName: string,
-        rowId: string,
-        data?: unknown
-    ): void {
-        this.db.run(
-            `INSERT INTO sync_log (id, operation, table_name, row_id, data, timestamp, synced)
-             VALUES (?, ?, ?, ?, ?, ?, 0)`,
-            [
-                crypto.randomUUID(),
-                op,
-                tableName,
-                rowId,
-                data ? JSON.stringify(data) : null,
-                Date.now(),
-            ]
-        );
-    }
-
     // ===== Review Log =====
 
     /**
@@ -62,19 +39,6 @@ export class SqliteDailyStatsRepo {
                 elapsed_days, state, time_spent_ms
             ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
         `, [id, cardId, reviewedAt, rating, scheduledDays, elapsedDays, state, timeSpentMs]);
-
-        // Log change for sync
-        const syncData = {
-            id,
-            card_id: cardId,
-            reviewed_at: reviewedAt,
-            rating,
-            scheduled_days: scheduledDays,
-            elapsed_days: elapsedDays,
-            state,
-            time_spent_ms: timeSpentMs,
-        };
-        this.logChange("INSERT", "review_log", id, syncData);
 
         this.onDataChange();
     }
@@ -164,10 +128,6 @@ export class SqliteDailyStatsRepo {
      * Update daily stats (increment counters)
      */
     updateDailyStats(date: string, stats: Partial<ExtendedDailyStats>): void {
-        // Check if exists to determine INSERT vs UPDATE
-        const existing = this.getDailyStats(date);
-        const isUpdate = existing !== null;
-
         this.db.run(`
             INSERT INTO daily_stats (
                 date, reviews_completed, new_cards_studied, total_time_ms,
@@ -198,25 +158,6 @@ export class SqliteDailyStatsRepo {
             stats.learningCards || 0,
             stats.reviewCards || 0,
         ]);
-
-        // Log change for sync (fetch updated row)
-        const updated = this.getDailyStats(date);
-        if (updated) {
-            const syncData = {
-                date,
-                reviews_completed: updated.reviewsCompleted,
-                new_cards_studied: updated.newCardsStudied,
-                total_time_ms: updated.totalTimeMs,
-                again_count: updated.again,
-                hard_count: updated.hard,
-                good_count: updated.good,
-                easy_count: updated.easy,
-                new_cards: updated.newCards,
-                learning_cards: updated.learningCards,
-                review_cards: updated.reviewCards,
-            };
-            this.logChange(isUpdate ? "UPDATE" : "INSERT", "daily_stats", date, syncData);
-        }
 
         this.onDataChange();
     }
@@ -252,25 +193,6 @@ export class SqliteDailyStatsRepo {
             date,
         ]);
 
-        // Log change for sync (fetch updated row)
-        const updated = this.getDailyStats(date);
-        if (updated) {
-            const syncData = {
-                date,
-                reviews_completed: updated.reviewsCompleted,
-                new_cards_studied: updated.newCardsStudied,
-                total_time_ms: updated.totalTimeMs,
-                again_count: updated.again,
-                hard_count: updated.hard,
-                good_count: updated.good,
-                easy_count: updated.easy,
-                new_cards: updated.newCards,
-                learning_cards: updated.learningCards,
-                review_cards: updated.reviewCards,
-            };
-            this.logChange("UPDATE", "daily_stats", date, syncData);
-        }
-
         this.onDataChange();
     }
 
@@ -278,23 +200,10 @@ export class SqliteDailyStatsRepo {
      * Record a reviewed card for daily limits
      */
     recordReviewedCard(date: string, cardId: string): void {
-        // Check if already exists (INSERT OR IGNORE)
-        const existing = this.db.exec(`
-            SELECT 1 FROM daily_reviewed_cards WHERE date = ? AND card_id = ?
-        `, [date, cardId]);
-        const alreadyExists = getQueryResult(existing) !== null;
-
         this.db.run(`
             INSERT OR IGNORE INTO daily_reviewed_cards (date, card_id)
             VALUES (?, ?)
         `, [date, cardId]);
-
-        // Only log if this is a new insert
-        if (!alreadyExists) {
-            const rowId = `${date}:${cardId}`; // Composite key
-            const syncData = { date, card_id: cardId };
-            this.logChange("INSERT", "daily_reviewed_cards", rowId, syncData);
-        }
 
         this.onDataChange();
     }
@@ -319,9 +228,6 @@ export class SqliteDailyStatsRepo {
         this.db.run(`
             DELETE FROM daily_reviewed_cards WHERE date = ? AND card_id = ?
         `, [date, cardId]);
-
-        const rowId = `${date}:${cardId}`; // Composite key
-        this.logChange("DELETE", "daily_reviewed_cards", rowId);
 
         this.onDataChange();
     }

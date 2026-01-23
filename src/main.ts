@@ -24,7 +24,6 @@ import {
 	getEventBus,
 	BackupService,
 } from "./services";
-import { SyncService, SyncStateManager, type SyncSettings } from "./services/sync";
 import { NLQueryService } from "./services/ai/nl-query.service";
 import { SqlJsAdapter } from "./services/ai/langchain-sqlite.adapter";
 import type { CardStore, FSRSCardData, SourceNoteInfo } from "./types";
@@ -68,8 +67,6 @@ export default class EpistemePlugin extends Plugin {
 	nlQueryService: NLQueryService | null = null;
 	backupService: BackupService | null = null;
 	agentService: AgentService | null = null;
-	syncService: SyncService | null = null;
-	private syncEventUnsubscribe: (() => void) | null = null;
 
 	// Keep reference to SQLite store for SQLite-specific operations (stats queries)
 	private sqliteStore: SqliteStoreService | null = null;
@@ -191,17 +188,6 @@ export default class EpistemePlugin extends Plugin {
 	}
 
 	onunload(): void {
-		// Stop sync service
-		if (this.syncService) {
-			this.syncService.destroy();
-		}
-
-		// Unsubscribe from sync events
-		if (this.syncEventUnsubscribe) {
-			this.syncEventUnsubscribe();
-			this.syncEventUnsubscribe = null;
-		}
-
 		// Save SQLite store immediately on unload (critical with 60s debounce)
 		if (this.sqliteStore) {
 			void this.sqliteStore.saveNow();
@@ -249,24 +235,8 @@ export default class EpistemePlugin extends Plugin {
 		if (this.dayBoundaryService) {
 			this.dayBoundaryService.updateDayStartHour(this.settings.dayStartHour);
 		}
-		if (this.syncService) {
-			this.syncService.updateSettings(this.extractSyncSettings());
-		}
 		// Reinitialize NL Query Service with new settings (API key or model may have changed)
 		void this.initializeNLQueryService();
-	}
-
-	/**
-	 * Extract sync settings from main settings
-	 */
-	private extractSyncSettings(): SyncSettings {
-		return {
-			syncEnabled: this.settings.syncEnabled,
-			syncServerUrl: this.settings.syncServerUrl,
-			syncApiKey: this.settings.syncApiKey,
-			syncIntervalMinutes: this.settings.syncIntervalMinutes,
-			autoSyncEnabled: this.settings.autoSyncEnabled,
-		};
 	}
 
 	// Activate the sidebar view
@@ -685,154 +655,10 @@ export default class EpistemePlugin extends Plugin {
 
 			// Initialize NL Query Service (AI-powered stats queries)
 			await this.initializeNLQueryService();
-
-			// Initialize Sync Service (if CR-SQLite is available)
-			this.initializeSyncService();
-
-			// Check for pending changes at startup
-			if (this.syncService && this.syncService.canSync()) {
-				const pendingCount = this.syncService.getPendingChangesCount();
-				if (pendingCount > 0) {
-					// Small delay to ensure UI is ready
-					setTimeout(() => {
-						this.showStartupPendingChangesNotification(pendingCount);
-					}, 1000); // 1 second delay
-				}
-			}
 		} catch (error) {
 			console.error("[Episteme] Failed to initialize SQLite store:", error);
 			new Notice("Failed to load flashcard data. Please restart Obsidian.");
 		}
-	}
-
-	/**
-	 * Initialize the Sync Service for cross-device synchronization
-	 * Uses Server-Side Merge protocol (no CR-SQLite needed on client)
-	 */
-	private initializeSyncService(): void {
-		if (!this.sqliteStore) return;
-
-		const db = this.sqliteStore.getDatabase();
-		if (!db) {
-			console.warn("[Episteme] Sync disabled: Database not ready");
-			return;
-		}
-
-		try {
-			// Get or create client ID using SyncStateManager
-			const stateManager = new SyncStateManager(db);
-			const clientId = stateManager.getOrCreateClientId();
-
-			this.syncService = new SyncService(
-				db,
-				clientId,
-				this.extractSyncSettings()
-			);
-
-			// Start auto-sync if enabled
-			if (this.settings.syncEnabled && this.settings.autoSyncEnabled) {
-				this.syncService.startAutoSync();
-			}
-
-			// Subscribe to sync completed events
-			const eventBus = getEventBus();
-			this.syncEventUnsubscribe = eventBus.onAll((event) => {
-				// Only show notification for auto-sync (not manual) with remote changes
-				if (event.type === 'sync:completed' && !event.manual && event.pulled > 0) {
-					this.showRemoteChangesNotification(event.pulled);
-				}
-			});
-
-			console.log("[Episteme] Sync service initialized");
-		} catch (error) {
-			console.error("[Episteme] Failed to initialize sync service:", error);
-		}
-	}
-
-	/**
-	 * Trigger a manual sync operation
-	 */
-	async triggerSync(): Promise<void> {
-		if (!this.syncService) {
-			new Notice("Sync not available");
-			return;
-		}
-
-		if (!this.syncService.canSync()) {
-			const status = this.syncService.getStatus();
-			if (status === "disabled") {
-				new Notice("Sync is disabled in settings");
-			} else {
-				new Notice("Sync not configured. Check settings.");
-			}
-			return;
-		}
-
-		const result = await this.syncService.sync(true);
-
-		if (result.success) {
-			new Notice(`Synced: ${result.pulled} pulled, ${result.pushed} pushed`);
-		} else {
-			new Notice(`Sync failed: ${result.error}`);
-		}
-	}
-
-	/**
-	 * Test sync server connection
-	 */
-	async testSyncConnection(): Promise<{ reachable: boolean; authenticated: boolean; error?: string }> {
-		if (!this.syncService) {
-			return { reachable: false, authenticated: false, error: "Sync service not initialized" };
-		}
-		return this.syncService.testConnection();
-	}
-
-	/**
-	 * Show notification when remote changes are detected
-	 */
-	private showRemoteChangesNotification(pulledCount: number): void {
-		const notice = new Notice("", 10000); // 10 seconds
-		notice.noticeEl.empty();
-
-		// Message
-		const message = notice.noticeEl.createDiv({ cls: "episteme-sync-notice-message" });
-		message.setText(`📥 ${pulledCount} remote change(s) synced from other device`);
-
-		// Button
-		const btnContainer = notice.noticeEl.createDiv({ cls: "episteme-notice-buttons" });
-		const syncBtn = btnContainer.createEl("button", {
-			text: "Sync Again",
-			cls: "mod-cta"
-		});
-
-		syncBtn.addEventListener("click", () => {
-			notice.hide();
-			void this.triggerSync();
-		});
-	}
-
-	/**
-	 * Show notification when pending changes exist at startup
-	 */
-	private showStartupPendingChangesNotification(pendingCount: number): void {
-		const notice = new Notice("", 15000); // 15 seconds - longer for startup
-		notice.noticeEl.empty();
-
-		// Message
-		const message = notice.noticeEl.createDiv({ cls: "episteme-sync-notice-message" });
-		message.setText(`⚠️ ${pendingCount} local change(s) pending sync`);
-
-		// Button
-		const btnContainer = notice.noticeEl.createDiv({ cls: "episteme-notice-buttons" });
-		const syncBtn = btnContainer.createEl("button", {
-			text: "Sync Now",
-			cls: "mod-cta"
-		});
-
-		syncBtn.addEventListener("click", () => {
-			notice.hide();
-			void this.triggerSync();
-		});
 	}
 
 	/**

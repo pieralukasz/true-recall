@@ -22,7 +22,7 @@ import { PanelFooter } from "./PanelFooter";
 import { MoveCardModal } from "../modals/MoveCardModal";
 import { FlashcardEditorModal } from "../modals/FlashcardEditorModal";
 import type { FlashcardItem, FlashcardChange } from "../../types";
-import type { CardAddedEvent, CardRemovedEvent, CardUpdatedEvent, BulkChangeEvent, SyncCompletedEvent } from "../../types/events.types";
+import type { CardAddedEvent, CardRemovedEvent, CardUpdatedEvent, BulkChangeEvent } from "../../types/events.types";
 import { createDefaultFSRSData } from "../../types";
 import type EpistemePlugin from "../../main";
 
@@ -198,14 +198,6 @@ export class FlashcardPanelView extends ItemView {
             }
         });
         this.eventUnsubscribers.push(unsubBulk);
-
-        // Refresh after remote sync
-        const unsubSyncCompleted = eventBus.on<SyncCompletedEvent>("sync:completed", (event) => {
-            if (event.pulled > 0) {
-                void this.loadFlashcardInfo();
-            }
-        });
-        this.eventUnsubscribers.push(unsubSyncCompleted);
     }
 
     /**

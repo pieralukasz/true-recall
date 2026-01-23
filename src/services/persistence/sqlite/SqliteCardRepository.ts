@@ -19,28 +19,6 @@ export class SqliteCardRepository {
     }
 
     /**
-     * Log a change to sync_log for Server-Side Merge sync
-     */
-    private logChange(
-        op: "INSERT" | "UPDATE" | "DELETE",
-        rowId: string,
-        data?: unknown
-    ): void {
-        this.db.run(
-            `INSERT INTO sync_log (id, operation, table_name, row_id, data, timestamp, synced)
-             VALUES (?, ?, ?, ?, ?, ?, 0)`,
-            [
-                crypto.randomUUID(),
-                op,
-                "cards",
-                rowId,
-                data ? JSON.stringify(data) : null,
-                Date.now(),
-            ]
-        );
-    }
-
-    /**
      * Get a card by ID
      */
     get(cardId: string): FSRSCardData | undefined {
@@ -104,28 +82,6 @@ export class SqliteCardRepository {
             data.sourceUid || null,
         ]);
 
-        // Log change for sync
-        const syncData = {
-            id: cardId,
-            due: data.due,
-            stability: data.stability,
-            difficulty: data.difficulty,
-            reps: data.reps,
-            lapses: data.lapses,
-            state: data.state,
-            last_review: data.lastReview,
-            scheduled_days: data.scheduledDays,
-            learning_step: data.learningStep,
-            suspended: data.suspended ? 1 : 0,
-            buried_until: data.buriedUntil || null,
-            created_at: createdAt,
-            updated_at: now,
-            question: data.question || null,
-            answer: data.answer || null,
-            source_uid: data.sourceUid || null,
-        };
-        this.logChange(isUpdate ? "UPDATE" : "INSERT", cardId, syncData);
-
         this.onDataChange();
     }
 
@@ -134,7 +90,6 @@ export class SqliteCardRepository {
      */
     delete(cardId: string): void {
         this.db.run(`DELETE FROM cards WHERE id = ?`, [cardId]);
-        this.logChange("DELETE", cardId);
         this.onDataChange();
     }
 
@@ -195,31 +150,6 @@ export class SqliteCardRepository {
                 updated_at = ?
             WHERE id = ?
         `, [question, answer, now, cardId]);
-
-        // Log full row for sync (need to fetch current data)
-        const card = this.get(cardId);
-        if (card) {
-            const syncData = {
-                id: cardId,
-                due: card.due,
-                stability: card.stability,
-                difficulty: card.difficulty,
-                reps: card.reps,
-                lapses: card.lapses,
-                state: card.state,
-                last_review: card.lastReview,
-                scheduled_days: card.scheduledDays,
-                learning_step: card.learningStep,
-                suspended: card.suspended ? 1 : 0,
-                buried_until: card.buriedUntil || null,
-                created_at: card.createdAt,
-                updated_at: now,
-                question,
-                answer,
-                source_uid: card.sourceUid || null,
-            };
-            this.logChange("UPDATE", cardId, syncData);
-        }
 
         this.onDataChange();
     }
@@ -336,31 +266,6 @@ export class SqliteCardRepository {
                 updated_at = ?
             WHERE id = ?
         `, [sourceUid, now, cardId]);
-
-        // Log full row for sync (need to fetch current data)
-        const card = this.get(cardId);
-        if (card) {
-            const syncData = {
-                id: cardId,
-                due: card.due,
-                stability: card.stability,
-                difficulty: card.difficulty,
-                reps: card.reps,
-                lapses: card.lapses,
-                state: card.state,
-                last_review: card.lastReview,
-                scheduled_days: card.scheduledDays,
-                learning_step: card.learningStep,
-                suspended: card.suspended ? 1 : 0,
-                buried_until: card.buriedUntil || null,
-                created_at: card.createdAt,
-                updated_at: now,
-                question: card.question || null,
-                answer: card.answer || null,
-                source_uid: sourceUid,
-            };
-            this.logChange("UPDATE", cardId, syncData);
-        }
 
         this.onDataChange();
     }
