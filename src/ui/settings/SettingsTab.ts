@@ -8,19 +8,23 @@ import { DEFAULT_SETTINGS, AI_MODELS_EXTENDED, FSRS_CONFIG, SYSTEM_PROMPT, UPDAT
 import { TemplatePickerModal } from "../modals";
 import type { AIModelKey, AIModelInfo } from "../../constants";
 import type { EpistemeSettings, ReviewViewMode, NewCardOrder, ReviewOrder, NewReviewMix, CustomSessionInterface } from "../../types";
+import { getEventBus } from "../../services/core/event-bus.service";
 
 // Re-export for convenience
 export { DEFAULT_SETTINGS };
 export type { EpistemeSettings };
 
-type SettingsTabId = "scheduling" | "interface" | "integration";
+type SettingsTabId = "general" | "ai" | "scheduling" | "sync";
 
 /**
  * Settings tab for Episteme plugin
  */
 export class EpistemeSettingTab extends PluginSettingTab {
     plugin: EpistemePlugin;
-    private activeTab: SettingsTabId = "scheduling";
+    private activeTab: SettingsTabId = "general";
+    private syncEventUnsubscribe: (() => void) | null = null;
+    private syncStatusEl: HTMLElement | null = null;
+    private syncTabBtn: HTMLElement | null = null;
 
     constructor(app: App, plugin: EpistemePlugin) {
         super(app, plugin);
@@ -35,9 +39,10 @@ export class EpistemeSettingTab extends PluginSettingTab {
         // Tab navigation
         const tabsNav = containerEl.createDiv({ cls: "episteme-settings-tabs" });
         const tabs: { id: SettingsTabId; label: string }[] = [
+            { id: "general", label: "General" },
+            { id: "ai", label: "AI" },
             { id: "scheduling", label: "Scheduling" },
-            { id: "interface", label: "Interface" },
-            { id: "integration", label: "Integration" },
+            { id: "sync", label: "Sync & Data" },
         ];
 
         const tabButtons: Map<SettingsTabId, HTMLElement> = new Map();
@@ -50,6 +55,10 @@ export class EpistemeSettingTab extends PluginSettingTab {
             tabButtons.set(tab.id, btn);
         });
 
+        // Store sync tab button for warning indicator
+        this.syncTabBtn = tabButtons.get("sync") ?? null;
+        this.updateSyncTabWarning();
+
         // Tab content containers
         const tabContents: Map<SettingsTabId, HTMLElement> = new Map();
         tabs.forEach(tab => {
@@ -60,9 +69,67 @@ export class EpistemeSettingTab extends PluginSettingTab {
         });
 
         // Render content for each tab
+        this.renderGeneralTab(tabContents.get("general")!);
+        this.renderAITab(tabContents.get("ai")!);
         this.renderSchedulingTab(tabContents.get("scheduling")!);
-        this.renderInterfaceTab(tabContents.get("interface")!);
-        this.renderIntegrationTab(tabContents.get("integration")!);
+        this.renderSyncTab(tabContents.get("sync")!);
+
+        // Subscribe to sync events to update UI
+        if (this.plugin.syncService && this.syncEventUnsubscribe === null) {
+            const eventBus = getEventBus();
+            const handleSyncEvent = () => {
+                // Update sync status display and tab warning
+                if (this.plugin.syncService) {
+                    this.updateSyncStatusDisplay();
+                    this.updateSyncTabWarning();
+                }
+            };
+
+            this.syncEventUnsubscribe = eventBus.onAll((event) => {
+                if (event.type === 'sync:started' ||
+                    event.type === 'sync:completed' ||
+                    event.type === 'sync:failed') {
+                    handleSyncEvent();
+                }
+            });
+        }
+    }
+
+    private updateSyncStatusDisplay(): void {
+        if (!this.syncStatusEl || !this.plugin.syncService) return;
+
+        const state = this.plugin.syncService.getState();
+        const status = this.plugin.syncService.getStatus();
+
+        this.syncStatusEl.empty();
+
+        if (state.pendingChanges > 0) {
+            this.syncStatusEl.setText(`⚠️ ${state.pendingChanges} changes pending sync`);
+            this.syncStatusEl.addClass("episteme-sync-status-warning");
+        } else {
+            this.syncStatusEl.setText(`Status: ${status}`);
+            this.syncStatusEl.removeClass("episteme-sync-status-warning");
+        }
+
+        // Also update the tab warning
+        this.updateSyncTabWarning();
+    }
+
+    private updateSyncTabWarning(): void {
+        if (!this.syncTabBtn) return;
+
+        const syncService = this.plugin.syncService;
+        const hasPending = syncService &&
+            this.plugin.settings.syncEnabled &&
+            syncService.getState().pendingChanges > 0;
+
+        if (hasPending) {
+            this.syncTabBtn.setText("⚠️ Sync & Data");
+            this.syncTabBtn.addClass("has-warning");
+        } else {
+            this.syncTabBtn.setText("Sync & Data");
+            this.syncTabBtn.removeClass("has-warning");
+        }
     }
 
     private switchTab(
@@ -75,31 +142,73 @@ export class EpistemeSettingTab extends PluginSettingTab {
         contents.forEach((content, id) => content.toggleClass("is-active", id === tabId));
     }
 
-    private renderSchedulingTab(container: HTMLElement): void {
-        // ===== FSRS Algorithm Section =====
-        container.createEl("h2", { text: "FSRS Algorithm" });
+    private renderGeneralTab(container: HTMLElement): void {
+        // ===== Review Interface Section =====
+        container.createEl("h2", { text: "Review Interface" });
 
         new Setting(container)
-            .setName("Desired retention")
-            .setDesc(`Target probability of recall (${FSRS_CONFIG.minRetention}-${FSRS_CONFIG.maxRetention}). Default: 0.9 (90%)`)
-            .addSlider(slider => slider
-                .setLimits(FSRS_CONFIG.minRetention, FSRS_CONFIG.maxRetention, 0.01)
-                .setValue(this.plugin.settings.fsrsRequestRetention)
-                .setDynamicTooltip()
+            .setName("Review mode")
+            .setDesc("Where to open the review session")
+            .addDropdown(dropdown => {
+                dropdown.addOption("fullscreen", "Fullscreen (main area)");
+                dropdown.addOption("panel", "Side panel");
+                dropdown.setValue(this.plugin.settings.reviewMode);
+                dropdown.onChange(async (value) => {
+                    this.plugin.settings.reviewMode = value as ReviewViewMode;
+                    await this.plugin.saveSettings();
+                });
+            });
+
+        new Setting(container)
+            .setName("Custom session interface")
+            .setDesc("How to display the custom session selection interface")
+            .addDropdown(dropdown => {
+                dropdown.addOption("modal", "Modal (popup)");
+                dropdown.addOption("panel", "Side panel");
+                dropdown.setValue(this.plugin.settings.customSessionInterface);
+                dropdown.onChange(async (value) => {
+                    this.plugin.settings.customSessionInterface = value as CustomSessionInterface;
+                    await this.plugin.saveSettings();
+                });
+            });
+
+        new Setting(container)
+            .setName("Show review header")
+            .setDesc("Display header with close button, stats and progress in review session")
+            .addToggle(toggle => toggle
+                .setValue(this.plugin.settings.showReviewHeader)
                 .onChange(async (value) => {
-                    this.plugin.settings.fsrsRequestRetention = value;
+                    this.plugin.settings.showReviewHeader = value;
                     await this.plugin.saveSettings();
                 }));
 
         new Setting(container)
-            .setName("Maximum interval (days)")
-            .setDesc("Maximum days between reviews. Default: 36500 (100 years)")
-            .addText(text => text
-                .setPlaceholder("36500")
-                .setValue(String(this.plugin.settings.fsrsMaximumInterval))
+            .setName("Show header stats")
+            .setDesc("Display new/learning/due counters in review session header")
+            .addToggle(toggle => toggle
+                .setValue(this.plugin.settings.showReviewHeaderStats)
                 .onChange(async (value) => {
-                    const num = parseInt(value) || 36500;
-                    this.plugin.settings.fsrsMaximumInterval = Math.max(1, num);
+                    this.plugin.settings.showReviewHeaderStats = value;
+                    await this.plugin.saveSettings();
+                }));
+
+        new Setting(container)
+            .setName("Show next review time")
+            .setDesc("Display predicted interval on answer buttons")
+            .addToggle(toggle => toggle
+                .setValue(this.plugin.settings.showNextReviewTime)
+                .onChange(async (value) => {
+                    this.plugin.settings.showNextReviewTime = value;
+                    await this.plugin.saveSettings();
+                }));
+
+        new Setting(container)
+            .setName("Continuous custom reviews")
+            .setDesc("Show 'Next Session' button after completing a custom review session")
+            .addToggle(toggle => toggle
+                .setValue(this.plugin.settings.continuousCustomReviews)
+                .onChange(async (value) => {
+                    this.plugin.settings.continuousCustomReviews = value;
                     await this.plugin.saveSettings();
                 }));
 
@@ -127,6 +236,179 @@ export class EpistemeSettingTab extends PluginSettingTab {
                 .onChange(async (value) => {
                     const num = parseInt(value) || 200;
                     this.plugin.settings.reviewsPerDay = Math.max(0, num);
+                    await this.plugin.saveSettings();
+                }));
+
+        // ===== Day Boundary Section =====
+        container.createEl("h2", { text: "Day Boundary" });
+
+        new Setting(container)
+            .setName("Next day starts at")
+            .setDesc("Hour when a new day begins (0-23). Default: 4 (4:00 AM)")
+            .addSlider(slider => slider
+                .setLimits(0, 23, 1)
+                .setValue(this.plugin.settings.dayStartHour)
+                .setDynamicTooltip()
+                .onChange(async (value) => {
+                    this.plugin.settings.dayStartHour = value;
+                    await this.plugin.saveSettings();
+                }));
+
+        // ===== Flashcard Collection Section =====
+        container.createEl("h2", { text: "Flashcard Collection" });
+
+        new Setting(container)
+            .setName("Remove content after collecting")
+            .setDesc("When enabled, removes the entire flashcard (Q+A) from markdown after collecting. When disabled, only removes the #flashcard tag.")
+            .addToggle(toggle => toggle
+                .setValue(this.plugin.settings.removeFlashcardContentAfterCollect)
+                .onChange(async (value) => {
+                    this.plugin.settings.removeFlashcardContentAfterCollect = value;
+                    await this.plugin.saveSettings();
+                }));
+    }
+
+    private renderAITab(container: HTMLElement): void {
+        // ===== AI Generation Section =====
+        container.createEl("h2", { text: "AI Generation (OpenRouter)" });
+
+        const apiKeyInfo = container.createDiv({ cls: "setting-item-description" });
+        apiKeyInfo.innerHTML = `
+            <p>OpenRouter provides access to multiple AI models through a single API.</p>
+            <p><a href="https://openrouter.ai/keys" target="_blank">Get your API key at openrouter.ai/keys</a></p>
+        `;
+
+        new Setting(container)
+            .setName("API key")
+            .setDesc("Your OpenRouter API key for flashcard generation")
+            .addText(text => {
+                text.inputEl.type = "password";
+                text.inputEl.addClass("episteme-api-input");
+                text.setPlaceholder("Enter API key")
+                    .setValue(this.plugin.settings.openRouterApiKey)
+                    .onChange(async (value) => {
+                        this.plugin.settings.openRouterApiKey = value;
+                        await this.plugin.saveSettings();
+                    });
+            });
+
+        const modelSetting = new Setting(container)
+            .setName("AI model")
+            .setDesc("Select the AI model for flashcard generation");
+
+        modelSetting.addDropdown(dropdown => {
+            const modelsByProvider = this.groupModelsByProvider();
+
+            for (const [provider, models] of Object.entries(modelsByProvider)) {
+                dropdown.addOption(`__group_${provider}`, `── ${provider} ──`);
+
+                for (const [key, info] of models) {
+                    const label = info.recommended
+                        ? `${info.name} ⭐ (${info.description})`
+                        : `${info.name} (${info.description})`;
+                    dropdown.addOption(key, label);
+                }
+            }
+
+            dropdown.setValue(this.plugin.settings.aiModel);
+            dropdown.onChange(async (value) => {
+                if (value.startsWith("__group_")) {
+                    dropdown.setValue(this.plugin.settings.aiModel);
+                    return;
+                }
+                this.plugin.settings.aiModel = value as AIModelKey;
+                await this.plugin.saveSettings();
+            });
+
+            const selectEl = dropdown.selectEl;
+            Array.from(selectEl.options).forEach(option => {
+                if (option.value.startsWith("__group_")) {
+                    option.disabled = true;
+                    option.style.fontWeight = "bold";
+                    option.style.color = "var(--text-muted)";
+                }
+            });
+        });
+
+        // ===== Custom Prompts Section =====
+        container.createEl("h2", { text: "Custom Prompts" });
+
+        const promptsInfo = container.createDiv({ cls: "setting-item-description" });
+        promptsInfo.innerHTML = `
+            <p>Customize the AI prompts used for flashcard generation. Leave empty to use the default prompts.</p>
+        `;
+
+        new Setting(container)
+            .setName("Flashcard generation prompt")
+            .setDesc("Custom system prompt for generating new flashcards. Leave empty to use default.")
+            .addTextArea(text => {
+                text.inputEl.rows = 8;
+                text.inputEl.style.width = "100%";
+                text.inputEl.style.fontFamily = "monospace";
+                text.inputEl.style.fontSize = "12px";
+                text.setPlaceholder(this.truncatePrompt(SYSTEM_PROMPT, 500))
+                    .setValue(this.plugin.settings.customGeneratePrompt)
+                    .onChange(async (value) => {
+                        this.plugin.settings.customGeneratePrompt = value;
+                        await this.plugin.saveSettings();
+                    });
+            });
+
+        new Setting(container)
+            .setName("Flashcard update prompt")
+            .setDesc("Custom system prompt for updating existing flashcards. Leave empty to use default.")
+            .addTextArea(text => {
+                text.inputEl.rows = 8;
+                text.inputEl.style.width = "100%";
+                text.inputEl.style.fontFamily = "monospace";
+                text.inputEl.style.fontSize = "12px";
+                text.setPlaceholder(this.truncatePrompt(UPDATE_SYSTEM_PROMPT, 500))
+                    .setValue(this.plugin.settings.customUpdatePrompt)
+                    .onChange(async (value) => {
+                        this.plugin.settings.customUpdatePrompt = value;
+                        await this.plugin.saveSettings();
+                    });
+            });
+
+        new Setting(container)
+            .setName("Reset prompts to defaults")
+            .setDesc("Clear custom prompts and use the built-in defaults")
+            .addButton(button => button
+                .setButtonText("Reset to Defaults")
+                .onClick(async () => {
+                    this.plugin.settings.customGeneratePrompt = "";
+                    this.plugin.settings.customUpdatePrompt = "";
+                    await this.plugin.saveSettings();
+                    new Notice("Prompts reset to defaults");
+                    this.display();
+                }));
+    }
+
+    private renderSchedulingTab(container: HTMLElement): void {
+        // ===== FSRS Algorithm Section =====
+        container.createEl("h2", { text: "FSRS Algorithm" });
+
+        new Setting(container)
+            .setName("Desired retention")
+            .setDesc(`Target probability of recall (${FSRS_CONFIG.minRetention}-${FSRS_CONFIG.maxRetention}). Default: 0.9 (90%)`)
+            .addSlider(slider => slider
+                .setLimits(FSRS_CONFIG.minRetention, FSRS_CONFIG.maxRetention, 0.01)
+                .setValue(this.plugin.settings.fsrsRequestRetention)
+                .setDynamicTooltip()
+                .onChange(async (value) => {
+                    this.plugin.settings.fsrsRequestRetention = value;
+                    await this.plugin.saveSettings();
+                }));
+
+        new Setting(container)
+            .setName("Maximum interval (days)")
+            .setDesc("Maximum days between reviews. Default: 36500 (100 years)")
+            .addText(text => text
+                .setPlaceholder("36500")
+                .setValue(String(this.plugin.settings.fsrsMaximumInterval))
+                .onChange(async (value) => {
+                    const num = parseInt(value) || 36500;
+                    this.plugin.settings.fsrsMaximumInterval = Math.max(1, num);
                     await this.plugin.saveSettings();
                 }));
 
@@ -230,21 +512,6 @@ export class EpistemeSettingTab extends PluginSettingTab {
                 });
             });
 
-        // ===== Scheduling Section =====
-        container.createEl("h2", { text: "Scheduling" });
-
-        new Setting(container)
-            .setName("Next day starts at")
-            .setDesc("Hour when a new day begins (0-23). All review cards due 'today' become available after this time. Default: 4 (4:00 AM)")
-            .addSlider(slider => slider
-                .setLimits(0, 23, 1)
-                .setValue(this.plugin.settings.dayStartHour)
-                .setDynamicTooltip()
-                .onChange(async (value) => {
-                    this.plugin.settings.dayStartHour = value;
-                    await this.plugin.saveSettings();
-                }));
-
         // ===== FSRS Parameters Section =====
         container.createEl("h2", { text: "FSRS Parameters" });
 
@@ -317,213 +584,179 @@ export class EpistemeSettingTab extends PluginSettingTab {
             });
     }
 
-    private renderInterfaceTab(container: HTMLElement): void {
-        // ===== Review Interface Section =====
-        container.createEl("h2", { text: "Review Interface" });
+    private renderSyncTab(container: HTMLElement): void {
+        // ===== Cross-Device Sync Section (FIRST) =====
+        container.createEl("h2", { text: "Cross-Device Sync" });
+
+        const syncInfo = container.createDiv({ cls: "setting-item-description" });
+        const syncService = this.plugin.syncService;
+        const syncAvailable = syncService !== null;
+
+        if (!syncAvailable) {
+            syncInfo.innerHTML = `
+                <p style="color: var(--text-warning);">Sync initialization failed. Please restart Obsidian.</p>
+                <p>The plugin will continue to work normally, but cross-device sync features are disabled.</p>
+            `;
+        } else {
+            syncInfo.innerHTML = `
+                <p>Enable cross-device sync to keep your flashcards synchronized across multiple devices.</p>
+                <p>Requires a sync server (self-hosted or managed).</p>
+            `;
+        }
 
         new Setting(container)
-            .setName("Review mode")
-            .setDesc("Where to open the review session")
-            .addDropdown(dropdown => {
-                dropdown.addOption("fullscreen", "Fullscreen (main area)");
-                dropdown.addOption("panel", "Side panel");
-                dropdown.setValue(this.plugin.settings.reviewMode);
-                dropdown.onChange(async (value) => {
-                    this.plugin.settings.reviewMode = value as ReviewViewMode;
-                    await this.plugin.saveSettings();
-                });
-            });
-
-        new Setting(container)
-            .setName("Custom session interface")
-            .setDesc("How to display the custom session selection interface")
-            .addDropdown(dropdown => {
-                dropdown.addOption("modal", "Modal (popup)");
-                dropdown.addOption("panel", "Side panel");
-                dropdown.setValue(this.plugin.settings.customSessionInterface);
-                dropdown.onChange(async (value) => {
-                    this.plugin.settings.customSessionInterface = value as CustomSessionInterface;
-                    await this.plugin.saveSettings();
-                });
-            });
-
-        new Setting(container)
-            .setName("Show review header")
-            .setDesc("Display header with close button, stats and progress in review session")
+            .setName("Enable sync")
+            .setDesc("Enable cross-device synchronization")
             .addToggle(toggle => toggle
-                .setValue(this.plugin.settings.showReviewHeader)
+                .setValue(this.plugin.settings.syncEnabled)
+                .setDisabled(!syncAvailable)
                 .onChange(async (value) => {
-                    this.plugin.settings.showReviewHeader = value;
+                    this.plugin.settings.syncEnabled = value;
                     await this.plugin.saveSettings();
-                }));
-
-        new Setting(container)
-            .setName("Show header stats")
-            .setDesc("Display new/learning/due counters in review session header")
-            .addToggle(toggle => toggle
-                .setValue(this.plugin.settings.showReviewHeaderStats)
-                .onChange(async (value) => {
-                    this.plugin.settings.showReviewHeaderStats = value;
-                    await this.plugin.saveSettings();
-                }));
-
-        new Setting(container)
-            .setName("Show next review time")
-            .setDesc("Display predicted interval on answer buttons")
-            .addToggle(toggle => toggle
-                .setValue(this.plugin.settings.showNextReviewTime)
-                .onChange(async (value) => {
-                    this.plugin.settings.showNextReviewTime = value;
-                    await this.plugin.saveSettings();
-                }));
-
-        new Setting(container)
-            .setName("Continuous custom reviews")
-            .setDesc("Show 'Next Session' button after completing a custom review session, allowing you to quickly start another review with different filters")
-            .addToggle(toggle => toggle
-                .setValue(this.plugin.settings.continuousCustomReviews)
-                .onChange(async (value) => {
-                    this.plugin.settings.continuousCustomReviews = value;
-                    await this.plugin.saveSettings();
-                }));
-
-        // ===== Flashcard Collection Section =====
-        container.createEl("h2", { text: "Flashcard Collection" });
-
-        new Setting(container)
-            .setName("Remove content after collecting")
-            .setDesc("When enabled, removes the entire flashcard (question + answer) from markdown after collecting. When disabled, only removes the #flashcard tag and keeps the content.")
-            .addToggle(toggle => toggle
-                .setValue(this.plugin.settings.removeFlashcardContentAfterCollect)
-                .onChange(async (value) => {
-                    this.plugin.settings.removeFlashcardContentAfterCollect = value;
-                    await this.plugin.saveSettings();
-                }));
-    }
-
-    private renderIntegrationTab(container: HTMLElement): void {
-        // ===== AI Generation Section =====
-        container.createEl("h2", { text: "AI Generation (OpenRouter)" });
-
-        // API Key info
-        const apiKeyInfo = container.createDiv({ cls: "setting-item-description" });
-        apiKeyInfo.innerHTML = `
-            <p>OpenRouter provides access to multiple AI models through a single API.</p>
-            <p><a href="https://openrouter.ai/keys" target="_blank">Get your API key at openrouter.ai/keys</a></p>
-        `;
-
-        new Setting(container)
-            .setName("API key")
-            .setDesc("Your OpenRouter API key for flashcard generation")
-            .addText(text => {
-                text.inputEl.type = "password";
-                text.inputEl.addClass("episteme-api-input");
-                text.setPlaceholder("Enter API key")
-                    .setValue(this.plugin.settings.openRouterApiKey)
-                    .onChange(async (value) => {
-                        this.plugin.settings.openRouterApiKey = value;
-                        await this.plugin.saveSettings();
-                    });
-            });
-
-        // Model selection with grouped dropdown
-        const modelSetting = new Setting(container)
-            .setName("AI model")
-            .setDesc("Select the AI model for flashcard generation");
-
-        modelSetting.addDropdown(dropdown => {
-            // Group models by provider
-            const modelsByProvider = this.groupModelsByProvider();
-
-            for (const [provider, models] of Object.entries(modelsByProvider)) {
-                // Add provider group header as disabled option
-                dropdown.addOption(`__group_${provider}`, `── ${provider} ──`);
-
-                for (const [key, info] of models) {
-                    const label = info.recommended
-                        ? `${info.name} ⭐ (${info.description})`
-                        : `${info.name} (${info.description})`;
-                    dropdown.addOption(key, label);
-                }
-            }
-
-            dropdown.setValue(this.plugin.settings.aiModel);
-            dropdown.onChange(async (value) => {
-                // Ignore group headers
-                if (value.startsWith("__group_")) {
-                    dropdown.setValue(this.plugin.settings.aiModel);
-                    return;
-                }
-                this.plugin.settings.aiModel = value as AIModelKey;
-                await this.plugin.saveSettings();
-            });
-
-            // Style group headers
-            const selectEl = dropdown.selectEl;
-            Array.from(selectEl.options).forEach(option => {
-                if (option.value.startsWith("__group_")) {
-                    option.disabled = true;
-                    option.style.fontWeight = "bold";
-                    option.style.color = "var(--text-muted)";
-                }
-            });
-        });
-
-        // ===== Custom Prompts Section =====
-        container.createEl("h2", { text: "Custom Prompts" });
-
-        const promptsInfo = container.createDiv({ cls: "setting-item-description" });
-        promptsInfo.innerHTML = `
-            <p>Customize the AI prompts used for flashcard generation. Leave empty to use the default prompts.</p>
-        `;
-
-        new Setting(container)
-            .setName("Flashcard generation prompt")
-            .setDesc("Custom system prompt for generating new flashcards. Leave empty to use default.")
-            .addTextArea(text => {
-                text.inputEl.rows = 8;
-                text.inputEl.style.width = "100%";
-                text.inputEl.style.fontFamily = "monospace";
-                text.inputEl.style.fontSize = "12px";
-                text.setPlaceholder(this.truncatePrompt(SYSTEM_PROMPT, 500))
-                    .setValue(this.plugin.settings.customGeneratePrompt)
-                    .onChange(async (value) => {
-                        this.plugin.settings.customGeneratePrompt = value;
-                        await this.plugin.saveSettings();
-                    });
-            });
-
-        new Setting(container)
-            .setName("Flashcard update prompt")
-            .setDesc("Custom system prompt for updating existing flashcards. Leave empty to use default.")
-            .addTextArea(text => {
-                text.inputEl.rows = 8;
-                text.inputEl.style.width = "100%";
-                text.inputEl.style.fontFamily = "monospace";
-                text.inputEl.style.fontSize = "12px";
-                text.setPlaceholder(this.truncatePrompt(UPDATE_SYSTEM_PROMPT, 500))
-                    .setValue(this.plugin.settings.customUpdatePrompt)
-                    .onChange(async (value) => {
-                        this.plugin.settings.customUpdatePrompt = value;
-                        await this.plugin.saveSettings();
-                    });
-            });
-
-        new Setting(container)
-            .setName("Reset prompts to defaults")
-            .setDesc("Clear custom prompts and use the built-in defaults")
-            .addButton(button => button
-                .setButtonText("Reset to Defaults")
-                .onClick(async () => {
-                    this.plugin.settings.customGeneratePrompt = "";
-                    this.plugin.settings.customUpdatePrompt = "";
-                    await this.plugin.saveSettings();
-                    new Notice("Prompts reset to defaults");
+                    this.updateSyncTabWarning();
                     this.display();
                 }));
 
-        // ===== Zettelkasten Section =====
-        container.createEl("h2", { text: "Zettelkasten" });
+        const devMode = this.plugin.settings.syncDevMode;
+
+        new Setting(container)
+            .setName("Development mode")
+            .setDesc("Use local dev server (http://192.168.3.4:8080/)")
+            .addToggle(toggle => toggle
+                .setValue(devMode)
+                .setDisabled(!syncAvailable)
+                .onChange(async (value) => {
+                    this.plugin.settings.syncDevMode = value;
+                    if (value) {
+                        this.plugin.settings.syncServerUrl = "http://192.168.3.4:8080/";
+                        this.plugin.settings.syncApiKey = "your_token";
+                    }
+                    await this.plugin.saveSettings();
+                    this.display();
+                }));
+
+        new Setting(container)
+            .setName("Sync server URL")
+            .setDesc("URL of the sync server (e.g., https://sync.example.com)")
+            .addText(text => text
+                .setPlaceholder("https://sync.example.com")
+                .setValue(this.plugin.settings.syncServerUrl)
+                .setDisabled(!syncAvailable || devMode)
+                .onChange(async (value) => {
+                    this.plugin.settings.syncServerUrl = value;
+                    await this.plugin.saveSettings();
+                }));
+
+        new Setting(container)
+            .setName("API key")
+            .setDesc("Your sync server API key for authentication")
+            .addText(text => {
+                text.inputEl.type = "password";
+                text.setPlaceholder("Enter API key")
+                    .setValue(this.plugin.settings.syncApiKey)
+                    .setDisabled(!syncAvailable || devMode)
+                    .onChange(async (value) => {
+                        this.plugin.settings.syncApiKey = value;
+                        await this.plugin.saveSettings();
+                    });
+            });
+
+        new Setting(container)
+            .setName("Auto-sync")
+            .setDesc("Automatically sync in the background")
+            .addToggle(toggle => toggle
+                .setValue(this.plugin.settings.autoSyncEnabled)
+                .setDisabled(!syncAvailable || !this.plugin.settings.syncEnabled)
+                .onChange(async (value) => {
+                    this.plugin.settings.autoSyncEnabled = value;
+                    await this.plugin.saveSettings();
+                }));
+
+        new Setting(container)
+            .setName("Sync interval (minutes)")
+            .setDesc("How often to sync automatically (0 = manual only)")
+            .addSlider(slider => slider
+                .setLimits(0, 60, 1)
+                .setValue(this.plugin.settings.syncIntervalMinutes)
+                .setDynamicTooltip()
+                .setDisabled(!syncAvailable || !this.plugin.settings.syncEnabled || !this.plugin.settings.autoSyncEnabled)
+                .onChange(async (value) => {
+                    this.plugin.settings.syncIntervalMinutes = value;
+                    await this.plugin.saveSettings();
+                }));
+
+        const statusSetting = new Setting(container)
+            .setName("Manual sync")
+            .addButton(button => button
+                .setButtonText("Sync Now")
+                .setDisabled(!syncAvailable || !this.plugin.settings.syncEnabled)
+                .onClick(async () => {
+                    await this.plugin.triggerSync();
+                }));
+
+        const statusEl = statusSetting.descEl.createDiv({ cls: "episteme-sync-status" });
+        this.syncStatusEl = statusEl;
+
+        if (syncService) {
+            this.updateSyncStatusDisplay();
+        } else {
+            statusEl.setText("Sync not available");
+        }
+
+        // ===== Database Backup Section =====
+        container.createEl("h2", { text: "Database Backup" });
+
+        const backupInfo = container.createDiv({ cls: "setting-item-description" });
+        backupInfo.innerHTML = `
+            <p>Create backups of your flashcard database to prevent data loss.</p>
+            <p>Backups are stored in <code>.episteme/backups/</code></p>
+        `;
+
+        new Setting(container)
+            .setName("Automatic backup on load")
+            .setDesc("Create a backup automatically when the plugin loads")
+            .addToggle(toggle => toggle
+                .setValue(this.plugin.settings.autoBackupOnLoad)
+                .onChange(async (value) => {
+                    this.plugin.settings.autoBackupOnLoad = value;
+                    await this.plugin.saveSettings();
+                }));
+
+        new Setting(container)
+            .setName("Maximum backups to keep")
+            .setDesc("Number of backups to keep (0 = unlimited). Oldest backups are deleted automatically.")
+            .addText(text => text
+                .setPlaceholder("10")
+                .setValue(String(this.plugin.settings.maxBackups))
+                .onChange(async (value) => {
+                    const num = parseInt(value) || 0;
+                    this.plugin.settings.maxBackups = Math.max(0, num);
+                    await this.plugin.saveSettings();
+                }));
+
+        new Setting(container)
+            .setName("Create backup now")
+            .setDesc("Manually create a backup of the current database")
+            .addButton(button => button
+                .setButtonText("Create Backup")
+                .onClick(async () => {
+                    await this.plugin.createManualBackup();
+                }));
+
+        new Setting(container)
+            .setName("Restore from backup")
+            .setDesc("Restore the database from a previous backup (requires Obsidian reload)")
+            .addButton(button => button
+                .setButtonText("Restore...")
+                .setWarning()
+                .onClick(async () => {
+                    await this.plugin.openRestoreBackupModal();
+                }));
+
+        // ===== Content Settings Section =====
+        container.createEl("h2", { text: "Content Settings" });
+
+        // Zettelkasten
 
         new Setting(container)
             .setName("Zettel folder")
@@ -596,12 +829,10 @@ export class EpistemeSettingTab extends PluginSettingTab {
                 updateTemplateDisplay();
             }));
 
-        // ===== Exclusions Section =====
-        container.createEl("h2", { text: "Exclusions" });
-
+        // Excluded folders
         new Setting(container)
             .setName("Excluded folders")
-            .setDesc("Comma-separated list of folders to exclude from missing flashcards search (e.g., templates, archive)")
+            .setDesc("Comma-separated list of folders to exclude from flashcard search")
             .addText(text => text
                 .setPlaceholder("templates, archive")
                 .setValue(this.plugin.settings.excludedFolders.join(", "))
@@ -612,152 +843,16 @@ export class EpistemeSettingTab extends PluginSettingTab {
                     this.plugin.settings.excludedFolders = folders;
                     await this.plugin.saveSettings();
                 }));
+    }
 
-        // ===== Backup Section =====
-        container.createEl("h2", { text: "Database Backup" });
-
-        const backupInfo = container.createDiv({ cls: "setting-item-description" });
-        backupInfo.innerHTML = `
-            <p>Create backups of your flashcard database to prevent data loss.</p>
-            <p>Backups are stored in <code>.episteme/backups/</code></p>
-        `;
-
-        new Setting(container)
-            .setName("Automatic backup on load")
-            .setDesc("Create a backup automatically when the plugin loads")
-            .addToggle(toggle => toggle
-                .setValue(this.plugin.settings.autoBackupOnLoad)
-                .onChange(async (value) => {
-                    this.plugin.settings.autoBackupOnLoad = value;
-                    await this.plugin.saveSettings();
-                }));
-
-        new Setting(container)
-            .setName("Maximum backups to keep")
-            .setDesc("Number of backups to keep (0 = unlimited). Oldest backups are deleted automatically.")
-            .addText(text => text
-                .setPlaceholder("10")
-                .setValue(String(this.plugin.settings.maxBackups))
-                .onChange(async (value) => {
-                    const num = parseInt(value) || 0;
-                    this.plugin.settings.maxBackups = Math.max(0, num);
-                    await this.plugin.saveSettings();
-                }));
-
-        new Setting(container)
-            .setName("Create backup now")
-            .setDesc("Manually create a backup of the current database")
-            .addButton(button => button
-                .setButtonText("Create Backup")
-                .onClick(async () => {
-                    await this.plugin.createManualBackup();
-                }));
-
-        new Setting(container)
-            .setName("Restore from backup")
-            .setDesc("Restore the database from a previous backup (requires Obsidian reload)")
-            .addButton(button => button
-                .setButtonText("Restore...")
-                .setWarning()
-                .onClick(async () => {
-                    await this.plugin.openRestoreBackupModal();
-                }));
-
-        // ===== Sync Section =====
-        container.createEl("h2", { text: "Cross-Device Sync" });
-
-        const syncInfo = container.createDiv({ cls: "setting-item-description" });
-        const syncService = this.plugin.syncService;
-        const syncAvailable = syncService !== null;
-
-        if (!syncAvailable) {
-            syncInfo.innerHTML = `
-                <p style="color: var(--text-warning);">Sync initialization failed. Please restart Obsidian.</p>
-                <p>The plugin will continue to work normally, but cross-device sync features are disabled.</p>
-            `;
-        } else {
-            syncInfo.innerHTML = `
-                <p>Enable cross-device sync to keep your flashcards synchronized across multiple devices.</p>
-                <p>Requires a sync server (self-hosted or managed).</p>
-            `;
+    hide(): void {
+        // Unsubscribe from sync events
+        if (this.syncEventUnsubscribe) {
+            this.syncEventUnsubscribe();
+            this.syncEventUnsubscribe = null;
         }
-
-        new Setting(container)
-            .setName("Enable sync")
-            .setDesc("Enable cross-device synchronization")
-            .addToggle(toggle => toggle
-                .setValue(this.plugin.settings.syncEnabled)
-                .setDisabled(!syncAvailable)
-                .onChange(async (value) => {
-                    this.plugin.settings.syncEnabled = value;
-                    await this.plugin.saveSettings();
-                    this.display(); // Refresh to update UI
-                }));
-
-        new Setting(container)
-            .setName("Sync server URL")
-            .setDesc("URL of the sync server (e.g., https://sync.example.com)")
-            .addText(text => text
-                .setPlaceholder("https://sync.example.com")
-                .setValue(this.plugin.settings.syncServerUrl)
-                .setDisabled(!syncAvailable)
-                .onChange(async (value) => {
-                    this.plugin.settings.syncServerUrl = value;
-                    await this.plugin.saveSettings();
-                }));
-
-        new Setting(container)
-            .setName("API key")
-            .setDesc("Your sync server API key for authentication")
-            .addText(text => {
-                text.inputEl.type = "password";
-                text.setPlaceholder("Enter API key")
-                    .setValue(this.plugin.settings.syncApiKey)
-                    .setDisabled(!syncAvailable)
-                    .onChange(async (value) => {
-                        this.plugin.settings.syncApiKey = value;
-                        await this.plugin.saveSettings();
-                    });
-            });
-
-        new Setting(container)
-            .setName("Auto-sync")
-            .setDesc("Automatically sync in the background")
-            .addToggle(toggle => toggle
-                .setValue(this.plugin.settings.autoSyncEnabled)
-                .setDisabled(!syncAvailable || !this.plugin.settings.syncEnabled)
-                .onChange(async (value) => {
-                    this.plugin.settings.autoSyncEnabled = value;
-                    await this.plugin.saveSettings();
-                }));
-
-        new Setting(container)
-            .setName("Sync interval (minutes)")
-            .setDesc("How often to sync automatically (0 = manual only)")
-            .addSlider(slider => slider
-                .setLimits(0, 60, 1)
-                .setValue(this.plugin.settings.syncIntervalMinutes)
-                .setDynamicTooltip()
-                .setDisabled(!syncAvailable || !this.plugin.settings.syncEnabled || !this.plugin.settings.autoSyncEnabled)
-                .onChange(async (value) => {
-                    this.plugin.settings.syncIntervalMinutes = value;
-                    await this.plugin.saveSettings();
-                }));
-
-        // Sync status and manual sync button
-        const statusDesc = syncService
-            ? `Status: ${syncService.getStatus()}`
-            : "Sync not available";
-
-        new Setting(container)
-            .setName("Manual sync")
-            .setDesc(statusDesc)
-            .addButton(button => button
-                .setButtonText("Sync Now")
-                .setDisabled(!syncAvailable || !this.plugin.settings.syncEnabled)
-                .onClick(async () => {
-                    await this.plugin.triggerSync();
-                }));
+        this.syncStatusEl = null;
+        this.syncTabBtn = null;
     }
 
     /**

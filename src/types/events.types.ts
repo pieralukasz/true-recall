@@ -133,6 +133,7 @@ export interface SyncCompletedEvent extends FlashcardEvent {
 	pulled: number;
 	pushed: number;
 	durationMs: number;
+	manual: boolean;
 }
 
 /**

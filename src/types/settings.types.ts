@@ -126,6 +126,8 @@ export interface EpistemeSettings {
     syncIntervalMinutes: number;
     /** Enable automatic background sync */
     autoSyncEnabled: boolean;
+    /** Use development sync server (auto-fills URL and API key) */
+    syncDevMode: boolean;
 }
 
 /**

@@ -69,6 +69,7 @@ export default class EpistemePlugin extends Plugin {
 	backupService: BackupService | null = null;
 	agentService: AgentService | null = null;
 	syncService: SyncService | null = null;
+	private syncEventUnsubscribe: (() => void) | null = null;
 
 	// Keep reference to SQLite store for SQLite-specific operations (stats queries)
 	private sqliteStore: SqliteStoreService | null = null;
@@ -193,6 +194,12 @@ export default class EpistemePlugin extends Plugin {
 		// Stop sync service
 		if (this.syncService) {
 			this.syncService.destroy();
+		}
+
+		// Unsubscribe from sync events
+		if (this.syncEventUnsubscribe) {
+			this.syncEventUnsubscribe();
+			this.syncEventUnsubscribe = null;
 		}
 
 		// Save SQLite store immediately on unload (critical with 60s debounce)
@@ -681,6 +688,17 @@ export default class EpistemePlugin extends Plugin {
 
 			// Initialize Sync Service (if CR-SQLite is available)
 			this.initializeSyncService();
+
+			// Check for pending changes at startup
+			if (this.syncService && this.syncService.canSync()) {
+				const pendingCount = this.syncService.getPendingChangesCount();
+				if (pendingCount > 0) {
+					// Small delay to ensure UI is ready
+					setTimeout(() => {
+						this.showStartupPendingChangesNotification(pendingCount);
+					}, 1000); // 1 second delay
+				}
+			}
 		} catch (error) {
 			console.error("[Episteme] Failed to initialize SQLite store:", error);
 			new Notice("Failed to load flashcard data. Please restart Obsidian.");
@@ -716,6 +734,15 @@ export default class EpistemePlugin extends Plugin {
 				this.syncService.startAutoSync();
 			}
 
+			// Subscribe to sync completed events
+			const eventBus = getEventBus();
+			this.syncEventUnsubscribe = eventBus.onAll((event) => {
+				// Only show notification for auto-sync (not manual) with remote changes
+				if (event.type === 'sync:completed' && !event.manual && event.pulled > 0) {
+					this.showRemoteChangesNotification(event.pulled);
+				}
+			});
+
 			console.log("[Episteme] Sync service initialized");
 		} catch (error) {
 			console.error("[Episteme] Failed to initialize sync service:", error);
@@ -749,6 +776,54 @@ export default class EpistemePlugin extends Plugin {
 		} else {
 			new Notice(`Sync failed: ${result.error}`);
 		}
+	}
+
+	/**
+	 * Show notification when remote changes are detected
+	 */
+	private showRemoteChangesNotification(pulledCount: number): void {
+		const notice = new Notice("", 10000); // 10 seconds
+		notice.noticeEl.empty();
+
+		// Message
+		const message = notice.noticeEl.createDiv({ cls: "episteme-sync-notice-message" });
+		message.setText(`📥 ${pulledCount} remote change(s) synced from other device`);
+
+		// Button
+		const btnContainer = notice.noticeEl.createDiv({ cls: "episteme-notice-buttons" });
+		const syncBtn = btnContainer.createEl("button", {
+			text: "Sync Again",
+			cls: "mod-cta"
+		});
+
+		syncBtn.addEventListener("click", () => {
+			notice.hide();
+			void this.triggerSync();
+		});
+	}
+
+	/**
+	 * Show notification when pending changes exist at startup
+	 */
+	private showStartupPendingChangesNotification(pendingCount: number): void {
+		const notice = new Notice("", 15000); // 15 seconds - longer for startup
+		notice.noticeEl.empty();
+
+		// Message
+		const message = notice.noticeEl.createDiv({ cls: "episteme-sync-notice-message" });
+		message.setText(`⚠️ ${pendingCount} local change(s) pending sync`);
+
+		// Button
+		const btnContainer = notice.noticeEl.createDiv({ cls: "episteme-notice-buttons" });
+		const syncBtn = btnContainer.createEl("button", {
+			text: "Sync Now",
+			cls: "mod-cta"
+		});
+
+		syncBtn.addEventListener("click", () => {
+			notice.hide();
+			void this.triggerSync();
+		});
 	}
 
 	/**
