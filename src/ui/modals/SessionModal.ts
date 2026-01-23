@@ -123,6 +123,7 @@ export class SessionModal extends BaseModal {
 			onNoteToggle: (note) => this.handleNoteToggle(note),
 			onSearchChange: (query) => this.handleSearchChange(query),
 			onSelectAll: (select) => this.handleSelectAll(select),
+			onNavigateToNote: (notePath) => this.handleNavigateToNote(notePath),
 		});
 		this.contentComponent.render();
 
@@ -171,6 +172,10 @@ export class SessionModal extends BaseModal {
 	private clearSelection(): void {
 		this.selectedNotes.clear();
 		this.updateUI();
+	}
+
+	private handleNavigateToNote(notePath: string): void {
+		void this.app.workspace.openLinkText(notePath, "", false);
 	}
 
 	private handleQuickAction(action: "current-note" | "today" | "default" | "buried"): void {

@@ -9,6 +9,7 @@ import type { DayBoundaryService } from "../services";
 
 export interface NoteStats {
 	noteName: string;
+	notePath?: string;
 	total: number;
 	newCount: number;
 	dueCount: number;
@@ -135,8 +136,12 @@ export class SessionLogic {
 			const allNewCards = cards.filter((c) => c.fsrs.state === State.New);
 			const isCompleted = allNewCards.length === 0 && cards.length > 0;
 
+			// Get notePath from first card that has it
+			const notePath = cards.find(c => c.sourceNotePath)?.sourceNotePath;
+
 			stats.push({
 				noteName,
+				notePath,
 				total: availableCards.length,
 				newCount,
 				dueCount,

@@ -26,27 +26,20 @@ export class SessionHeader extends BaseComponent {
 			this.events.cleanup();
 		}
 
+		// Only render if there are selections
+		if (this.props.selectionCount === 0) {
+			this.element = null;
+			return;
+		}
+
 		this.element = this.container.createDiv({
 			cls: "episteme-session-header",
 		});
 
-		const titleRow = this.element.createDiv({
-			cls: "episteme-session-title-row",
+		const countEl = this.element.createSpan({
+			cls: "episteme-session-count",
 		});
-
-		// Title
-		const titleEl = titleRow.createSpan({
-			cls: "episteme-session-title",
-		});
-		titleEl.textContent = "Review Session";
-
-		// Selection count (only show when > 0)
-		if (this.props.selectionCount > 0) {
-			const countEl = titleRow.createSpan({
-				cls: "episteme-session-count",
-			});
-			countEl.textContent = `(${this.props.selectionCount} note${this.props.selectionCount > 1 ? "s" : ""} selected)`;
-		}
+		countEl.textContent = `${this.props.selectionCount} note${this.props.selectionCount > 1 ? "s" : ""} selected`;
 	}
 
 	/**
