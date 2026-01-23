@@ -3,19 +3,16 @@
  * Panel-based view for session selection
  * Alternative to SessionModal
  */
-import { ItemView, WorkspaceLeaf, Notice } from "obsidian";
+import { ItemView, WorkspaceLeaf } from "obsidian";
 import { VIEW_TYPE_SESSION } from "../../constants";
 import { getEventBus } from "../../services";
 import { SessionLogic } from "../../logic/SessionLogic";
 import { createSessionStateManager } from "../../state/session.state";
 import type { DayBoundaryService } from "../../services";
-import type { FSRSFlashcardItem } from "../../types";
 import type { SessionModalOptions } from "../modals/SessionModal";
 import type { SessionSelectedEvent } from "../../types/events.types";
 import { Panel } from "../components/Panel";
-import { SessionHeader } from "./SessionHeader";
 import { SessionContent } from "./SessionContent";
-import { SessionFooter } from "./SessionFooter";
 import type EpistemePlugin from "../../main";
 import { SessionResultFactory } from "../../utils/session-result-factory";
 
@@ -31,9 +28,12 @@ export class SessionView extends ItemView {
 
 	// UI Components
 	private panelComponent: Panel | null = null;
-	private headerComponent: SessionHeader | null = null;
 	private contentComponent: SessionContent | null = null;
-	private footerComponent: SessionFooter | null = null;
+	private selectionBarEl: HTMLElement | null = null;
+
+	// Native header action elements
+	private startSessionAction: HTMLElement | null = null;
+	private clearSelectionAction: HTMLElement | null = null;
 
 	// State subscription
 	private unsubscribe: (() => void) | null = null;
@@ -60,29 +60,96 @@ export class SessionView extends ItemView {
 		if (!(container instanceof HTMLElement)) return;
 		container.empty();
 
-		// Create Panel component with custom header and footer
+		// Create Panel component without footer (header is native)
 		this.panelComponent = new Panel(container, {
 			title: "Review Session",
 			customHeader: true,
-			showFooter: true,
+			showFooter: false,
 		});
 		this.panelComponent.render();
 
-		// Subscribe to state changes
-		this.unsubscribe = this.stateManager.subscribe(() => this.render());
+		// Subscribe to state changes - update render, header actions, and title
+		this.unsubscribe = this.stateManager.subscribe(() => {
+			this.render();
+			this.updateHeaderActions();
+			this.updateTitle();
+		});
+	}
+
+	/**
+	 * Update native header actions based on selection state
+	 */
+	private updateHeaderActions(): void {
+		const state = this.stateManager.getState();
+		const selectionCount = state.selectedNotes.size;
+
+		// Remove existing actions
+		if (this.clearSelectionAction) {
+			this.clearSelectionAction.remove();
+			this.clearSelectionAction = null;
+		}
+		if (this.startSessionAction) {
+			this.startSessionAction.remove();
+			this.startSessionAction = null;
+		}
+
+		// Add actions when notes are selected
+		if (selectionCount > 0) {
+			// Start session button (play icon)
+			this.startSessionAction = this.addAction(
+				"play",
+				"Start session",
+				() => this.handleStartSession()
+			);
+
+			// Clear selection button
+			this.clearSelectionAction = this.addAction(
+				"x-circle",
+				"Clear selection",
+				() => this.handleClearSelection()
+			);
+		}
+	}
+
+	/**
+	 * Update native header title to show selection count
+	 */
+	private updateTitle(): void {
+		const state = this.stateManager.getState();
+		const selectionCount = state.selectedNotes.size;
+
+		// Access title element in view header
+		const titleEl = this.containerEl.querySelector(".view-header-title");
+		if (titleEl) {
+			titleEl.textContent =
+				selectionCount > 0 ? `Session (${selectionCount})` : "Session";
+		}
 	}
 
 	async onClose(): Promise<void> {
 		// Cleanup subscriptions
 		this.unsubscribe?.();
 
+		// Remove native header actions
+		if (this.clearSelectionAction) {
+			this.clearSelectionAction.remove();
+			this.clearSelectionAction = null;
+		}
+		if (this.startSessionAction) {
+			this.startSessionAction.remove();
+			this.startSessionAction = null;
+		}
+
+		// Cleanup selection bar
+		if (this.selectionBarEl) {
+			this.selectionBarEl.remove();
+			this.selectionBarEl = null;
+		}
+
 		// Cleanup components
 		this.panelComponent?.destroy();
-		this.headerComponent?.destroy();
 		this.contentComponent?.destroy();
-		this.footerComponent?.destroy();
 	}
-
 
 	/**
 	 * Initialize the view with session data
@@ -99,10 +166,7 @@ export class SessionView extends ItemView {
 		);
 
 		// Initialize state
-		this.stateManager.initialize(
-			options.currentNoteName,
-			options.allCards
-		);
+		this.stateManager.initialize(options.currentNoteName, options.allCards);
 
 		// Update timestamp
 		this.stateManager.updateTimestamp();
@@ -111,7 +175,9 @@ export class SessionView extends ItemView {
 	/**
 	 * Handle quick action button click
 	 */
-	private handleQuickAction(action: "current-note" | "today" | "default" | "buried"): void {
+	private handleQuickAction(
+		action: "current-note" | "today" | "default" | "buried"
+	): void {
 		const result = SessionResultFactory.createActionResult(
 			action,
 			this.stateManager.getState().currentNoteName
@@ -140,7 +206,10 @@ export class SessionView extends ItemView {
 		if (!this.logic) return;
 
 		const state = this.stateManager.getState();
-		const filteredStats = this.logic.getFilteredNoteStats(state.searchQuery, state.now);
+		const filteredStats = this.logic.getFilteredNoteStats(
+			state.searchQuery,
+			state.now
+		);
 		const availableNotes = filteredStats
 			.filter((s) => s.newCount > 0 || s.dueCount > 0)
 			.map((s) => s.noteName);
@@ -171,7 +240,9 @@ export class SessionView extends ItemView {
 
 		if (selectedNotes.size === 0) return;
 
-		const result = SessionResultFactory.createSelectedNotesResult(Array.from(selectedNotes));
+		const result = SessionResultFactory.createSelectedNotesResult(
+			Array.from(selectedNotes)
+		);
 		this.emitResultAndClose(result);
 	}
 
@@ -202,25 +273,13 @@ export class SessionView extends ItemView {
 	private render(): void {
 		if (!this.logic || !this.panelComponent) return;
 
-		const headerContainer = this.panelComponent.getHeaderContainer();
 		const contentContainer = this.panelComponent.getContentContainer();
-		const footerContainer = this.panelComponent.getFooterContainer();
-		if (!footerContainer) return;
 
 		// Preserve scroll position before re-render
-		const noteList = contentContainer.querySelector('.episteme-note-list');
+		const noteList = contentContainer.querySelector(".episteme-note-list");
 		const scrollTop = noteList?.scrollTop ?? 0;
 
 		const state = this.stateManager.getState();
-		const selectionCount = state.selectedNotes.size;
-
-		// Render Header
-		this.headerComponent?.destroy();
-		headerContainer.empty();
-		this.headerComponent = new SessionHeader(headerContainer, {
-			selectionCount,
-		});
-		this.headerComponent.render();
 
 		// Render Content
 		this.contentComponent?.destroy();
@@ -240,18 +299,10 @@ export class SessionView extends ItemView {
 		});
 		this.contentComponent.render();
 
-		// Render Footer
-		this.footerComponent?.destroy();
-		footerContainer.empty();
-		this.footerComponent = new SessionFooter(footerContainer, {
-			selectionCount,
-			onStartSession: () => this.handleStartSession(),
-			onClearSelection: () => this.handleClearSelection(),
-		});
-		this.footerComponent.render();
-
 		// Restore scroll position after re-render
-		const newNoteList = contentContainer.querySelector('.episteme-note-list');
+		const newNoteList = contentContainer.querySelector(
+			".episteme-note-list"
+		);
 		if (newNoteList) {
 			newNoteList.scrollTop = scrollTop;
 		}
@@ -259,9 +310,64 @@ export class SessionView extends ItemView {
 		// Add/remove class based on search query content (for mobile CSS)
 		const panelEl = this.panelComponent.getElement();
 		if (state.searchQuery.length > 0) {
-			panelEl?.addClass('episteme-has-search-query');
+			panelEl?.addClass("episteme-has-search-query");
 		} else {
-			panelEl?.removeClass('episteme-has-search-query');
+			panelEl?.removeClass("episteme-has-search-query");
 		}
+
+		// Render selection bar (desktop only, hidden via CSS on mobile)
+		this.renderSelectionBar();
+	}
+
+	/**
+	 * Render selection bar at bottom of content (desktop only)
+	 */
+	private renderSelectionBar(): void {
+		const state = this.stateManager.getState();
+		const selectionCount = state.selectedNotes.size;
+
+		// Remove existing bar
+		if (this.selectionBarEl) {
+			this.selectionBarEl.remove();
+			this.selectionBarEl = null;
+		}
+
+		// Only show when notes are selected
+		if (selectionCount === 0) return;
+
+		const contentContainer = this.panelComponent?.getContentContainer();
+		if (!contentContainer) return;
+
+		// Create selection bar at bottom of content
+		this.selectionBarEl = contentContainer.createDiv({
+			cls: "episteme-session-selection-bar",
+		});
+
+		// Selection count text
+		this.selectionBarEl.createSpan({
+			cls: "episteme-selection-count",
+			text: `${selectionCount} note${
+				selectionCount > 1 ? "s" : ""
+			} selected`,
+		});
+
+		// Button container
+		const buttons = this.selectionBarEl.createDiv({
+			cls: "episteme-selection-buttons",
+		});
+
+		// Clear button
+		const clearBtn = buttons.createEl("button", {
+			cls: "episteme-selection-clear-btn",
+			text: "Clear",
+		});
+		clearBtn.addEventListener("click", () => this.handleClearSelection());
+
+		// Start button
+		const startBtn = buttons.createEl("button", {
+			cls: "mod-cta episteme-selection-start-btn",
+			text: "Start Session",
+		});
+		startBtn.addEventListener("click", () => this.handleStartSession());
 	}
 }

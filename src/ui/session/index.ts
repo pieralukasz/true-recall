@@ -4,6 +4,4 @@
  */
 
 export { SessionView } from "./SessionView";
-export { SessionHeader } from "./SessionHeader";
 export { SessionContent } from "./SessionContent";
-export { SessionFooter } from "./SessionFooter";
