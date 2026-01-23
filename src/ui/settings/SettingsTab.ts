@@ -7,13 +7,13 @@ import type EpistemePlugin from "../../main";
 import { DEFAULT_SETTINGS, AI_MODELS_EXTENDED, FSRS_CONFIG, SYSTEM_PROMPT, UPDATE_SYSTEM_PROMPT } from "../../constants";
 import { TemplatePickerModal } from "../modals";
 import type { AIModelKey, AIModelInfo } from "../../constants";
-import type { EpistemeSettings, ReviewViewMode, NewCardOrder, ReviewOrder, NewReviewMix, CustomSessionInterface } from "../../types";
+import type { EpistemeSettings, ReviewViewMode, NewCardOrder, ReviewOrder, NewReviewMix } from "../../types";
 
 // Re-export for convenience
 export { DEFAULT_SETTINGS };
 export type { EpistemeSettings };
 
-type SettingsTabId = "general" | "ai" | "scheduling" | "data";
+type SettingsTabId = "general" | "ai" | "scheduling" | "data" | "sync";
 
 /**
  * Settings tab for Episteme plugin
@@ -39,6 +39,7 @@ export class EpistemeSettingTab extends PluginSettingTab {
             { id: "ai", label: "AI" },
             { id: "scheduling", label: "Scheduling" },
             { id: "data", label: "Data & Backup" },
+            { id: "sync", label: "Cloud Sync" },
         ];
 
         const tabButtons: Map<SettingsTabId, HTMLElement> = new Map();
@@ -65,6 +66,7 @@ export class EpistemeSettingTab extends PluginSettingTab {
         this.renderAITab(tabContents.get("ai")!);
         this.renderSchedulingTab(tabContents.get("scheduling")!);
         this.renderDataTab(tabContents.get("data")!);
+        this.renderSyncTab(tabContents.get("sync")!);
     }
 
     private switchTab(
@@ -90,19 +92,6 @@ export class EpistemeSettingTab extends PluginSettingTab {
                 dropdown.setValue(this.plugin.settings.reviewMode);
                 dropdown.onChange(async (value) => {
                     this.plugin.settings.reviewMode = value as ReviewViewMode;
-                    await this.plugin.saveSettings();
-                });
-            });
-
-        new Setting(container)
-            .setName("Custom session interface")
-            .setDesc("How to display the custom session selection interface")
-            .addDropdown(dropdown => {
-                dropdown.addOption("modal", "Modal (popup)");
-                dropdown.addOption("panel", "Side panel");
-                dropdown.setValue(this.plugin.settings.customSessionInterface);
-                dropdown.onChange(async (value) => {
-                    this.plugin.settings.customSessionInterface = value as CustomSessionInterface;
                     await this.plugin.saveSettings();
                 });
             });
@@ -660,6 +649,138 @@ export class EpistemeSettingTab extends PluginSettingTab {
                     this.plugin.settings.excludedFolders = folders;
                     await this.plugin.saveSettings();
                 }));
+    }
+
+    private renderSyncTab(container: HTMLElement): void {
+        // ===== Cloud Sync =====
+        container.createEl("h2", { text: "Cloud Sync" });
+
+        const infoEl = container.createDiv({ cls: "setting-item-description" });
+        infoEl.innerHTML = `<p>Sync your flashcards across devices using Supabase.</p>`;
+
+        // Status container that will be updated
+        const statusContainer = container.createDiv({ cls: "episteme-sync-status" });
+        this.renderSyncStatus(statusContainer);
+    }
+
+    private async renderSyncStatus(container: HTMLElement): Promise<void> {
+        container.empty();
+
+        const isConfigured = this.plugin.isSyncConfigured();
+
+        if (!isConfigured) {
+            const notConfigured = container.createDiv({ cls: "setting-item-description" });
+            notConfigured.innerHTML = `<p>⚠️ Sync not configured. Set SUPABASE_URL and SUPABASE_ANON_KEY in .env file.</p>`;
+            return;
+        }
+
+        // Try to check login status, but handle errors gracefully
+        let isLoggedIn = false;
+        try {
+            isLoggedIn = await this.plugin.isSyncLoggedIn();
+        } catch {
+            // Auth not initialized yet, that's fine
+            isLoggedIn = false;
+        }
+
+        if (isLoggedIn) {
+            // Show logged in status
+            const user = await this.plugin.storeManager?.getCurrentUser();
+            const email = user?.email ?? "Unknown";
+
+            new Setting(container)
+                .setName("Logged in as")
+                .setDesc(email)
+                .addButton(button => button
+                    .setButtonText("Logout")
+                    .setWarning()
+                    .onClick(async () => {
+                        await this.plugin.logoutSync();
+                        this.renderSyncStatus(container);
+                        new Notice("Logged out successfully");
+                    }));
+
+            // Sync status
+            const syncStatus = this.plugin.storeManager?.getSyncStatus();
+            if (syncStatus) {
+                let statusText = "🔴 Disconnected";
+                if (syncStatus.status === "connected") {
+                    statusText = "🟢 Connected";
+                } else if (syncStatus.status === "syncing") {
+                    statusText = "🔄 Syncing...";
+                }
+
+                let description = statusText;
+                if (syncStatus.lastSyncTime) {
+                    description += ` (Last sync: ${syncStatus.lastSyncTime.toLocaleString()})`;
+                }
+
+                new Setting(container)
+                    .setName("Sync status")
+                    .setDesc(description);
+            }
+
+            // Sync Now button
+            new Setting(container)
+                .setName("Manual sync")
+                .setDesc("Push local changes and pull remote updates")
+                .addButton(button => button
+                    .setButtonText("Sync Now")
+                    .setCta()
+                    .onClick(async () => {
+                        button.setDisabled(true);
+                        button.setButtonText("Syncing...");
+                        try {
+                            await this.plugin.performSync();
+                            this.renderSyncStatus(container);
+                        } finally {
+                            button.setDisabled(false);
+                            button.setButtonText("Sync Now");
+                        }
+                    }));
+
+            // Test connection button
+            new Setting(container)
+                .setName("Test connection")
+                .setDesc("Verify connection to Supabase")
+                .addButton(button => button
+                    .setButtonText("Test Connection")
+                    .onClick(async () => {
+                        try {
+                            const authService = this.plugin.storeManager?.getAuthService();
+                            if (authService) {
+                                const isAuth = await authService.isAuthenticated();
+                                new Notice(isAuth ? "✓ Connection successful!" : "✗ Not authenticated");
+                            }
+                        } catch (error) {
+                            new Notice(`Connection failed: ${error instanceof Error ? error.message : "Unknown error"}`);
+                        }
+                    }));
+        } else {
+            // Show login button
+            new Setting(container)
+                .setName("Not logged in")
+                .setDesc("Login to enable cloud sync")
+                .addButton(button => button
+                    .setButtonText("Login")
+                    .setCta()
+                    .onClick(async () => {
+                        const success = await this.plugin.showSyncLoginModal();
+                        if (success) {
+                            new Notice("Logged in successfully!");
+                            this.renderSyncStatus(container);
+                        }
+                    }))
+                .addButton(button => button
+                    .setButtonText("Create Account")
+                    .onClick(async () => {
+                        const success = await this.plugin.showSyncLoginModal();
+                        if (success) {
+                            new Notice("Account created successfully!");
+                            this.renderSyncStatus(container);
+                        }
+                    }));
+        }
     }
 
     hide(): void {

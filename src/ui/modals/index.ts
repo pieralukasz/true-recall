@@ -9,12 +9,6 @@ export {
 } from "./BasePromiseModal";
 export { CardPreviewModal, type CardPreviewModalOptions } from "./CardPreviewModal";
 export {
-    SessionModal,
-    type SessionResult,
-    type SessionType,
-    type SessionModalOptions,
-} from "./SessionModal";
-export {
     FlashcardReviewModal,
     type FlashcardReviewResult,
     type FlashcardReviewModalOptions,

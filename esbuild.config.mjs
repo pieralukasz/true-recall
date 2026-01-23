@@ -1,3 +1,4 @@
+import 'dotenv/config';
 import esbuild from "esbuild";
 import process from "process";
 import { builtinModules } from 'node:module';
@@ -37,6 +38,7 @@ const cssFiles = [
 	"src/ui/stats/styles.css",
 	"src/ui/projects/styles.css",
 	"src/ui/browser/styles.css",
+	"src/ui/auth/styles.css",
 	"src/ui/mobile.css",
 ];
 
@@ -76,6 +78,8 @@ function copyToVault() {
 			console.log("✓ Copied sql-wasm.wasm");
 		}
 
+		// Note: wa-sqlite WASM is now bundled directly via esbuild's binary loader
+
 		// Create .hotreload file for hot-reload plugin
 		if (!prod) {
 			writeFileSync(join(vaultPluginDir, ".hotreload"), "");
@@ -93,6 +97,15 @@ const context = await esbuild.context({
 	},
 	entryPoints: ["src/main.ts"],
 	bundle: true,
+	define: {
+		'process.env.SUPABASE_URL': JSON.stringify(process.env.SUPABASE_URL || ''),
+		'process.env.SUPABASE_ANON_KEY': JSON.stringify(process.env.SUPABASE_ANON_KEY || ''),
+		'process.env.POWERSYNC_URL': JSON.stringify(process.env.POWERSYNC_URL || ''),
+	},
+	loader: {
+		// Bundle WASM as binary data to avoid fetch issues in Electron
+		'.wasm': 'binary',
+	},
 	external: [
 		"obsidian",
 		"electron",

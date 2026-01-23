@@ -271,29 +271,6 @@
 	background: var(--background-modifier-hover);
 }
 
-/* =========================================
-   Session Modal
-   ========================================= */
-
-/* Inline header for selection count (modal only) */
-.episteme-session-modal-header {
-	margin-bottom: 8px;
-	text-align: center;
-}
-
-.episteme-session-modal-count {
-	font-size: 13px;
-	color: var(--interactive-accent);
-	font-weight: 500;
-}
-
-.episteme-session-modal h3 {
-	margin: 8px 0 12px 0;
-	font-size: 14px;
-	font-weight: 500;
-	color: var(--text-muted);
-}
-
 /* Quick Actions */
 .episteme-quick-actions {
 	display: grid;
@@ -492,13 +469,8 @@
 	font-style: italic;
 }
 
-/* Mobile adjustments for custom session modal */
+/* Mobile adjustments for session UI */
 @media screen and (max-width: 600px) {
-	.episteme-session-modal {
-		min-width: auto;
-		width: 100%;
-	}
-
 	.episteme-quick-actions {
 		grid-template-columns: 1fr;
 	}
