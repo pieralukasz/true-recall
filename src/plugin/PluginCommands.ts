@@ -146,13 +146,6 @@ export function registerCommands(plugin: EpistemePlugin): void {
 		callback: () => void plugin.openRestoreBackupModal(),
 	});
 
-	// Trigger manual sync with server
-	plugin.addCommand({
-		id: "trigger-manual-sync",
-		name: "Sync with server",
-		callback: () => void plugin.triggerSync(),
-	});
-
 	// Test Agent Tools (dev command)
 	plugin.addCommand({
 		id: "test-agent-tools",

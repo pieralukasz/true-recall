@@ -135,19 +135,6 @@ export class SqliteSchemaManager {
             CREATE INDEX IF NOT EXISTS idx_image_refs_path ON card_image_refs(image_path);
             CREATE INDEX IF NOT EXISTS idx_image_refs_card ON card_image_refs(card_id);
 
-            -- Sync log for tracking local changes (Server-Side Merge)
-            CREATE TABLE IF NOT EXISTS sync_log (
-                id TEXT PRIMARY KEY NOT NULL,
-                operation TEXT NOT NULL,
-                table_name TEXT NOT NULL,
-                row_id TEXT NOT NULL,
-                data TEXT,
-                timestamp INTEGER NOT NULL,
-                synced INTEGER DEFAULT 0
-            );
-
-            CREATE INDEX IF NOT EXISTS idx_sync_log_pending ON sync_log(synced, timestamp);
-
             -- Metadata
             CREATE TABLE IF NOT EXISTS meta (
                 key TEXT PRIMARY KEY NOT NULL,
@@ -155,7 +142,7 @@ export class SqliteSchemaManager {
             );
 
             -- Set schema version
-            INSERT OR REPLACE INTO meta (key, value) VALUES ('schema_version', '12');
+            INSERT OR REPLACE INTO meta (key, value) VALUES ('schema_version', '13');
             INSERT OR REPLACE INTO meta (key, value) VALUES ('created_at', datetime('now'));
         `);
     }
@@ -208,6 +195,10 @@ export class SqliteSchemaManager {
 
         if (currentVersion < 12) {
             this.migrateV11toV12();
+        }
+
+        if (currentVersion < 13) {
+            this.migrateV12toV13();
         }
 
         // Validate database integrity after migrations
@@ -891,6 +882,26 @@ export class SqliteSchemaManager {
         } catch (error) {
             console.error("[Episteme] Schema migration v11->v12 failed:", error);
             throw error; // Re-throw to trigger integrity check failure
+        }
+    }
+
+    /**
+     * Migrate from v12 to v13 (remove sync_log table)
+     * Sync functionality has been removed, so sync_log is no longer needed
+     */
+    private migrateV12toV13(): void {
+        console.log("[Episteme] Migrating schema v12 -> v13 (removing sync_log table)...");
+
+        try {
+            // Drop sync_log table and its index
+            this.db.run("DROP INDEX IF EXISTS idx_sync_log_pending");
+            this.db.run("DROP TABLE IF EXISTS sync_log");
+
+            this.db.run("INSERT OR REPLACE INTO meta (key, value) VALUES ('schema_version', '13')");
+            console.log("[Episteme] Schema migration v12->v13 completed");
+            this.onSchemaChange();
+        } catch (error) {
+            console.error("[Episteme] Schema migration v12->v13 failed:", error);
         }
     }
 

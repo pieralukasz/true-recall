@@ -8,13 +8,12 @@ import { DEFAULT_SETTINGS, AI_MODELS_EXTENDED, FSRS_CONFIG, SYSTEM_PROMPT, UPDAT
 import { TemplatePickerModal } from "../modals";
 import type { AIModelKey, AIModelInfo } from "../../constants";
 import type { EpistemeSettings, ReviewViewMode, NewCardOrder, ReviewOrder, NewReviewMix, CustomSessionInterface } from "../../types";
-import { getEventBus } from "../../services/core/event-bus.service";
 
 // Re-export for convenience
 export { DEFAULT_SETTINGS };
 export type { EpistemeSettings };
 
-type SettingsTabId = "general" | "ai" | "scheduling" | "sync";
+type SettingsTabId = "general" | "ai" | "scheduling" | "data";
 
 /**
  * Settings tab for Episteme plugin
@@ -22,9 +21,6 @@ type SettingsTabId = "general" | "ai" | "scheduling" | "sync";
 export class EpistemeSettingTab extends PluginSettingTab {
     plugin: EpistemePlugin;
     private activeTab: SettingsTabId = "general";
-    private syncEventUnsubscribe: (() => void) | null = null;
-    private syncStatusEl: HTMLElement | null = null;
-    private syncTabBtn: HTMLElement | null = null;
 
     constructor(app: App, plugin: EpistemePlugin) {
         super(app, plugin);
@@ -42,7 +38,7 @@ export class EpistemeSettingTab extends PluginSettingTab {
             { id: "general", label: "General" },
             { id: "ai", label: "AI" },
             { id: "scheduling", label: "Scheduling" },
-            { id: "sync", label: "Sync & Data" },
+            { id: "data", label: "Data & Backup" },
         ];
 
         const tabButtons: Map<SettingsTabId, HTMLElement> = new Map();
@@ -54,10 +50,6 @@ export class EpistemeSettingTab extends PluginSettingTab {
             btn.addEventListener("click", () => this.switchTab(tab.id, tabButtons, tabContents));
             tabButtons.set(tab.id, btn);
         });
-
-        // Store sync tab button for warning indicator
-        this.syncTabBtn = tabButtons.get("sync") ?? null;
-        this.updateSyncTabWarning();
 
         // Tab content containers
         const tabContents: Map<SettingsTabId, HTMLElement> = new Map();
@@ -72,64 +64,7 @@ export class EpistemeSettingTab extends PluginSettingTab {
         this.renderGeneralTab(tabContents.get("general")!);
         this.renderAITab(tabContents.get("ai")!);
         this.renderSchedulingTab(tabContents.get("scheduling")!);
-        this.renderSyncTab(tabContents.get("sync")!);
-
-        // Subscribe to sync events to update UI
-        if (this.plugin.syncService && this.syncEventUnsubscribe === null) {
-            const eventBus = getEventBus();
-            const handleSyncEvent = () => {
-                // Update sync status display and tab warning
-                if (this.plugin.syncService) {
-                    this.updateSyncStatusDisplay();
-                    this.updateSyncTabWarning();
-                }
-            };
-
-            this.syncEventUnsubscribe = eventBus.onAll((event) => {
-                if (event.type === 'sync:started' ||
-                    event.type === 'sync:completed' ||
-                    event.type === 'sync:failed') {
-                    handleSyncEvent();
-                }
-            });
-        }
-    }
-
-    private updateSyncStatusDisplay(): void {
-        if (!this.syncStatusEl || !this.plugin.syncService) return;
-
-        const state = this.plugin.syncService.getState();
-        const status = this.plugin.syncService.getStatus();
-
-        this.syncStatusEl.empty();
-
-        if (state.pendingChanges > 0) {
-            this.syncStatusEl.setText(`⚠️ ${state.pendingChanges} changes pending sync`);
-            this.syncStatusEl.addClass("episteme-sync-status-warning");
-        } else {
-            this.syncStatusEl.setText(`Status: ${status}`);
-            this.syncStatusEl.removeClass("episteme-sync-status-warning");
-        }
-
-        // Also update the tab warning
-        this.updateSyncTabWarning();
-    }
-
-    private updateSyncTabWarning(): void {
-        if (!this.syncTabBtn) return;
-
-        const syncService = this.plugin.syncService;
-        const hasPending = syncService &&
-            this.plugin.settings.syncEnabled &&
-            syncService.getState().pendingChanges > 0;
-
-        if (hasPending) {
-            this.syncTabBtn.setText("⚠️ Sync & Data");
-            this.syncTabBtn.addClass("has-warning");
-        } else {
-            this.syncTabBtn.setText("Sync & Data");
-            this.syncTabBtn.removeClass("has-warning");
-        }
+        this.renderDataTab(tabContents.get("data")!);
     }
 
     private switchTab(
@@ -584,131 +519,7 @@ export class EpistemeSettingTab extends PluginSettingTab {
             });
     }
 
-    private renderSyncTab(container: HTMLElement): void {
-        // ===== Cross-Device Sync Section (FIRST) =====
-        container.createEl("h2", { text: "Cross-Device Sync" });
-
-        const syncInfo = container.createDiv({ cls: "setting-item-description" });
-        const syncService = this.plugin.syncService;
-        const syncAvailable = syncService !== null;
-
-        if (!syncAvailable) {
-            syncInfo.innerHTML = `
-                <p style="color: var(--text-warning);">Sync initialization failed. Please restart Obsidian.</p>
-                <p>The plugin will continue to work normally, but cross-device sync features are disabled.</p>
-            `;
-        } else {
-            syncInfo.innerHTML = `
-                <p>Enable cross-device sync to keep your flashcards synchronized across multiple devices.</p>
-                <p>Requires a sync server (self-hosted or managed).</p>
-            `;
-        }
-
-        new Setting(container)
-            .setName("Enable sync")
-            .setDesc("Enable cross-device synchronization")
-            .addToggle(toggle => toggle
-                .setValue(this.plugin.settings.syncEnabled)
-                .setDisabled(!syncAvailable)
-                .onChange(async (value) => {
-                    this.plugin.settings.syncEnabled = value;
-                    await this.plugin.saveSettings();
-                    this.updateSyncTabWarning();
-                    this.display();
-                }));
-
-        new Setting(container)
-            .setName("Sync server URL")
-            .setDesc("URL of the sync server (e.g., https://sync.example.com)")
-            .addText(text => text
-                .setPlaceholder("https://sync.example.com")
-                .setValue(this.plugin.settings.syncServerUrl)
-                .setDisabled(!syncAvailable)
-                .onChange(async (value) => {
-                    this.plugin.settings.syncServerUrl = value;
-                    await this.plugin.saveSettings();
-                }));
-
-        new Setting(container)
-            .setName("API key")
-            .setDesc("Full credentials in format: api_key:auth_key")
-            .addText(text => {
-                text.inputEl.type = "password";
-                text.setPlaceholder("Enter API key")
-                    .setValue(this.plugin.settings.syncApiKey)
-                    .setDisabled(!syncAvailable)
-                    .onChange(async (value) => {
-                        this.plugin.settings.syncApiKey = value;
-                        await this.plugin.saveSettings();
-                    });
-            });
-
-        new Setting(container)
-            .setName("Test connection")
-            .setDesc("Verify server URL and API key are correct")
-            .addButton(button => button
-                .setButtonText("Test Connection")
-                .setDisabled(!syncAvailable || !this.plugin.settings.syncServerUrl || !this.plugin.settings.syncApiKey)
-                .onClick(async () => {
-                    button.setButtonText("Testing...");
-                    button.setDisabled(true);
-
-                    const result = await this.plugin.testSyncConnection();
-
-                    if (result.reachable && result.authenticated) {
-                        new Notice("Connection successful!");
-                    } else if (!result.reachable) {
-                        new Notice("Server not reachable. Check URL.");
-                    } else {
-                        new Notice(`Authentication failed: ${result.error || "Invalid credentials"}`);
-                    }
-
-                    button.setButtonText("Test Connection");
-                    button.setDisabled(false);
-                }));
-
-        new Setting(container)
-            .setName("Auto-sync")
-            .setDesc("Automatically sync in the background")
-            .addToggle(toggle => toggle
-                .setValue(this.plugin.settings.autoSyncEnabled)
-                .setDisabled(!syncAvailable || !this.plugin.settings.syncEnabled)
-                .onChange(async (value) => {
-                    this.plugin.settings.autoSyncEnabled = value;
-                    await this.plugin.saveSettings();
-                }));
-
-        new Setting(container)
-            .setName("Sync interval (minutes)")
-            .setDesc("How often to sync automatically (0 = manual only)")
-            .addSlider(slider => slider
-                .setLimits(0, 60, 1)
-                .setValue(this.plugin.settings.syncIntervalMinutes)
-                .setDynamicTooltip()
-                .setDisabled(!syncAvailable || !this.plugin.settings.syncEnabled || !this.plugin.settings.autoSyncEnabled)
-                .onChange(async (value) => {
-                    this.plugin.settings.syncIntervalMinutes = value;
-                    await this.plugin.saveSettings();
-                }));
-
-        const statusSetting = new Setting(container)
-            .setName("Manual sync")
-            .addButton(button => button
-                .setButtonText("Sync Now")
-                .setDisabled(!syncAvailable || !this.plugin.settings.syncEnabled)
-                .onClick(async () => {
-                    await this.plugin.triggerSync();
-                }));
-
-        const statusEl = statusSetting.descEl.createDiv({ cls: "episteme-sync-status" });
-        this.syncStatusEl = statusEl;
-
-        if (syncService) {
-            this.updateSyncStatusDisplay();
-        } else {
-            statusEl.setText("Sync not available");
-        }
-
+    private renderDataTab(container: HTMLElement): void {
         // ===== Database Backup Section =====
         container.createEl("h2", { text: "Database Backup" });
 
@@ -852,13 +663,7 @@ export class EpistemeSettingTab extends PluginSettingTab {
     }
 
     hide(): void {
-        // Unsubscribe from sync events
-        if (this.syncEventUnsubscribe) {
-            this.syncEventUnsubscribe();
-            this.syncEventUnsubscribe = null;
-        }
-        this.syncStatusEl = null;
-        this.syncTabBtn = null;
+        // No cleanup needed currently
     }
 
     /**

@@ -1,10 +1,6 @@
 /**
- * CR-SQLite WASM Loader
- * Loads sql.js from local WASM files.
- *
- * NOTE: CR-SQLite integration is disabled for now because the @vlcn.io/crsqlite-wasm
- * package uses an async API that's incompatible with the current sync DatabaseLike interface.
- * TODO: Implement async DatabaseLike interface to enable CR-SQLite sync support.
+ * SQLite WASM Loader
+ * Loads sql.js from local WASM files for local-only storage.
  */
 import type { App } from "obsidian";
 import initSqlJs, { type Database as SqlJsDatabase, type SqlJsStatic } from "sql.js";
@@ -41,8 +37,6 @@ export interface DatabaseLike {
  */
 export interface DatabaseLoadResult {
     db: DatabaseLike;
-    isCrSqlite: boolean;
-    siteId: string | null;
 }
 
 /**
@@ -142,12 +136,9 @@ let loadAttempted = false;
 /**
  * Load the database with sql.js
  *
- * NOTE: CR-SQLite is disabled because it requires an async API.
- * The current architecture uses sync DatabaseLike interface.
- *
  * @param app - Obsidian App instance for file access
  * @param existingData - Existing database data to load (from file)
- * @returns Database wrapper and metadata
+ * @returns Database wrapper
  */
 export async function loadDatabase(
     app: App,
@@ -165,24 +156,7 @@ export async function loadDatabase(
 
     return {
         db: new SqlJsWrapper(sqlDb),
-        isCrSqlite: false,
-        siteId: null,
     };
-}
-
-/**
- * Check if CR-SQLite is available
- * Currently always returns false - CR-SQLite disabled pending async API migration
- */
-export function isCrSqliteAvailable(): boolean {
-    return false;
-}
-
-/**
- * Force fallback to sql.js (no-op since CR-SQLite is disabled)
- */
-export function disableCrSqlite(): void {
-    console.log("[Episteme] CR-SQLite already disabled (async API not yet supported)");
 }
 
 /**

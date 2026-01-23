@@ -43,9 +43,6 @@ export interface CardStore {
     /** Force immediate save */
     saveNow(): Promise<void>;
 
-    /** Merge with data from disk (for sync conflict resolution) */
-    mergeFromDisk(): Promise<{ merged: number; conflicts: number }>;
-
     // === Schema v2 methods (optional - for SQL storage) ===
 
     /** Check if any cards have content (question/answer) stored in SQL */

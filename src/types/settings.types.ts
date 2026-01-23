@@ -114,20 +114,6 @@ export interface EpistemeSettings {
     autoBackupOnLoad: boolean;
     /** Maximum number of backups to keep (0 = unlimited) */
     maxBackups: number;
-
-    // ===== Sync Settings =====
-    /** Enable cross-device sync via CR-SQLite */
-    syncEnabled: boolean;
-    /** Sync server URL */
-    syncServerUrl: string;
-    /** API key for sync authentication */
-    syncApiKey: string;
-    /** Auto-sync interval in minutes (0 = manual only) */
-    syncIntervalMinutes: number;
-    /** Enable automatic background sync */
-    autoSyncEnabled: boolean;
-    /** Use development sync server (auto-fills URL and API key) */
-    syncDevMode: boolean;
 }
 
 /**

@@ -1,6 +1,6 @@
 /**
  * SQLite Store Service
- * High-performance storage for FSRS card data using sql.js or CR-SQLite
+ * High-performance storage for FSRS card data using sql.js
  *
  * This is a facade that delegates to specialized repositories:
  * - SqliteCardRepository: Card CRUD operations
@@ -8,27 +8,20 @@
  * - SqliteDailyStatsRepo: Daily stats and review log
  * - SqliteAggregations: Aggregate queries
  * - SqliteSchemaManager: Schema and migrations
- *
- * Supports CR-SQLite for CRDT-based cross-device synchronization.
- * Falls back to sql.js if CR-SQLite fails to load.
  */
 import { App, normalizePath, Notice } from "obsidian";
 import type {
     FSRSCardData,
     CardReviewLogEntry,
     ExtendedDailyStats,
-    StoreSyncedEvent,
     SourceNoteInfo,
     CardMaturityBreakdown,
     CardsCreatedVsReviewedEntry,
     CardImageRef,
     ProjectInfo,
 } from "../../../types";
-import { getEventBus } from "../../core/event-bus.service";
 import {
     loadDatabase,
-    isCrSqliteAvailable,
-    initializeCrrs,
     type DatabaseLike,
 } from "../crsqlite";
 import { DB_FOLDER, DB_FILE, SAVE_DEBOUNCE_MS, getQueryResult } from "./sqlite.types";
@@ -43,7 +36,6 @@ import { SqliteBrowserQueries } from "./SqliteBrowserQueries";
 
 /**
  * SQLite-based storage service for FSRS card data
- * Supports both sql.js and CR-SQLite backends
  */
 export class SqliteStoreService {
     private app: App;
@@ -51,10 +43,6 @@ export class SqliteStoreService {
     private isLoaded = false;
     private isDirty = false;
     private saveTimer: ReturnType<typeof setTimeout> | null = null;
-
-    // CR-SQLite sync metadata
-    private useCrSqlite = false;
-    private _siteId: string | null = null;
 
     // Repositories
     private cardRepo: SqliteCardRepository | null = null;
@@ -71,7 +59,6 @@ export class SqliteStoreService {
 
     /**
      * Initialize the SQLite database
-     * Attempts to use CR-SQLite for sync capabilities, falls back to sql.js
      */
     async load(): Promise<void> {
         if (this.isLoaded) return;
@@ -86,24 +73,17 @@ export class SqliteStoreService {
             // File exists but cannot be read - CRITICAL ERROR
             console.error("[Episteme] Database load failed:", error);
             new Notice(
-                "Episteme: Cannot load database. Please restore from backup (Settings → Sync & Data → Restore).",
+                "Episteme: Cannot load database. Please restore from backup (Settings → Data & Backup → Restore).",
                 0  // Don't auto-hide
             );
             throw error;  // Don't continue with empty database!
         }
 
-        // Load database with CR-SQLite or sql.js fallback
+        // Load database with sql.js
         const loadResult = await loadDatabase(this.app, existingData);
         this.db = loadResult.db;
-        this.useCrSqlite = loadResult.isCrSqlite;
-        this._siteId = loadResult.siteId;
 
-        // Log database engine (sync works with both via Server-Side Merge)
-        if (this.useCrSqlite) {
-            console.log(`[Episteme] Using CR-SQLite (site_id: ${this._siteId?.substring(0, 8)}...)`);
-        } else {
-            console.log("[Episteme] Using sql.js (sync via Server-Side Merge)");
-        }
+        console.log("[Episteme] Using sql.js for local storage");
 
         // Schema setup
         const schemaManager = new SqliteSchemaManager(this.db, () => this.markDirty());
@@ -123,15 +103,6 @@ export class SqliteStoreService {
             this.isDirty = true;
         }
 
-        // Initialize CRRs if using CR-SQLite
-        if (this.useCrSqlite) {
-            try {
-                initializeCrrs(this.db);
-            } catch (e) {
-                console.warn("[Episteme] Failed to initialize CRRs:", e);
-            }
-        }
-
         // Initialize repositories
         const onDataChange = () => this.markDirty();
         this.cardRepo = new SqliteCardRepository(this.db, onDataChange);
@@ -143,22 +114,6 @@ export class SqliteStoreService {
         this.browserQueries = new SqliteBrowserQueries(this.db, onDataChange);
 
         this.isLoaded = true;
-    }
-
-    /**
-     * Check if sync is enabled
-     * With Server-Side Merge, sync is always available (no CR-SQLite needed on client)
-     */
-    isSyncEnabled(): boolean {
-        return true;
-    }
-
-    /**
-     * Get the site ID for this database instance (for sync)
-     * Returns null if CR-SQLite is not enabled
-     */
-    getSiteId(): string | null {
-        return this._siteId;
     }
 
     isReady(): boolean {
@@ -504,87 +459,6 @@ export class SqliteStoreService {
             this.db = null;
         }
         this.isLoaded = false;
-    }
-
-    /**
-     * Merge with data from disk (for sync conflict resolution)
-     * Note: This is a legacy file-based sync method. When CR-SQLite is enabled,
-     * use the CRDT-based sync instead (handled by CrSqliteSyncService).
-     */
-    async mergeFromDisk(): Promise<{ merged: number; conflicts: number }> {
-        if (!this.db || !this.cardRepo) {
-            return { merged: 0, conflicts: 0 };
-        }
-
-        // When CR-SQLite is enabled, skip file-based merge (CRDT handles sync)
-        if (this.useCrSqlite) {
-            console.log("[Episteme] CR-SQLite enabled - use CRDT sync instead of mergeFromDisk");
-            return { merged: 0, conflicts: 0 };
-        }
-
-        let merged = 0;
-        let conflicts = 0;
-
-        try {
-            const dbPath = this.getDbPath();
-            const diskData = await this.loadFromFile(dbPath);
-
-            if (!diskData) {
-                return { merged, conflicts };
-            }
-
-            // Load disk database using the loader (will use sql.js since we're in fallback mode)
-            const diskResult = await loadDatabase(this.app, diskData);
-            const diskDb = diskResult.db;
-            const diskQueryResult = diskDb.exec("SELECT * FROM cards");
-            const diskCards = getQueryResult(diskQueryResult);
-
-            if (!diskCards) {
-                diskDb.close();
-                return { merged, conflicts };
-            }
-
-            for (const diskRow of diskCards.values) {
-                const id = diskRow[diskCards.columns.indexOf("id")] as string;
-                const diskLastReview = diskRow[diskCards.columns.indexOf("last_review")] as string | null;
-
-                const memCard = this.get(id);
-
-                if (!memCard) {
-                    const diskCard = this.cardRepo.rowToFSRSCardData(diskCards.columns, diskRow);
-                    this.set(id, diskCard);
-                    merged++;
-                } else if (diskLastReview && memCard.lastReview) {
-                    const diskTime = new Date(diskLastReview).getTime();
-                    const memTime = new Date(memCard.lastReview).getTime();
-
-                    if (diskTime > memTime) {
-                        const diskCard = this.cardRepo.rowToFSRSCardData(diskCards.columns, diskRow);
-                        this.set(id, diskCard);
-                        conflicts++;
-                    }
-                } else if (diskLastReview && !memCard.lastReview) {
-                    const diskCard = this.cardRepo.rowToFSRSCardData(diskCards.columns, diskRow);
-                    this.set(id, diskCard);
-                    conflicts++;
-                }
-            }
-
-            diskDb.close();
-
-            if (merged > 0 || conflicts > 0) {
-                getEventBus().emit({
-                    type: "store:synced",
-                    merged,
-                    conflicts,
-                    timestamp: Date.now(),
-                } as StoreSyncedEvent);
-            }
-        } catch (error) {
-            console.warn("[Episteme] Failed to merge from disk:", error);
-        }
-
-        return { merged, conflicts };
     }
 
     /**
