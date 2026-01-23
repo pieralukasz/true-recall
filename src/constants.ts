@@ -161,6 +161,7 @@ export const DEFAULT_SETTINGS: EpistemeSettings = {
 	syncApiKey: "",
 	syncIntervalMinutes: 5,
 	autoSyncEnabled: true,
+	syncDevMode: false,
 };
 
 // ===== FSRS Default Weights =====

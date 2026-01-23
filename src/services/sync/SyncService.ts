@@ -81,6 +81,20 @@ export class SyncService {
     }
 
     /**
+     * Count pending changes in sync_log
+     */
+    getPendingChangesCount(): number {
+        const result = this.db.exec(`
+            SELECT COUNT(*) as count
+            FROM sync_log
+            WHERE synced = 0
+        `);
+
+        if (!result[0] || !result[0].values[0]) return 0;
+        return result[0].values[0][0] as number;
+    }
+
+    /**
      * Update settings (when user changes them)
      */
     updateSettings(settings: SyncSettings): void {
@@ -162,11 +176,15 @@ export class SyncService {
             this.emitProgress("finalizing");
             this.stateManager.updateSyncState(pullResult.serverVersion);
 
+            // 5. Update pending changes count
+            const pendingCount = this.getPendingChangesCount();
+            this.stateManager.setPendingChanges(pendingCount);
+
             const durationMs = Date.now() - startTime;
             this.isSyncing = false;
             this.stateManager.setStatus("idle");
 
-            this.emitCompleted(pulled, pushed, durationMs);
+            this.emitCompleted(pulled, pushed, durationMs, manual);
 
             return {
                 success: true,
@@ -552,12 +570,13 @@ export class SyncService {
         getEventBus().emit(event);
     }
 
-    private emitCompleted(pulled: number, pushed: number, durationMs: number): void {
+    private emitCompleted(pulled: number, pushed: number, durationMs: number, manual: boolean): void {
         const event: SyncCompletedEvent = {
             type: "sync:completed",
             pulled,
             pushed,
             durationMs,
+            manual,
             timestamp: Date.now(),
         };
         getEventBus().emit(event);
