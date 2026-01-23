@@ -20,10 +20,6 @@ export type ReviewOrder = "due-date" | "random" | "due-date-random";
  */
 export type NewReviewMix = "show-after-reviews" | "mix-with-reviews" | "show-before-reviews";
 
-/**
- * Interface mode for custom session selection
- */
-export type CustomSessionInterface = "modal" | "panel";
 
 /**
  * Ustawienia pluginu Episteme
@@ -70,8 +66,6 @@ export interface EpistemeSettings {
     // ===== UI Settings =====
     /** Tryb wyświetlania Review View */
     reviewMode: ReviewViewMode;
-    /** Interfejs wyboru sesji niestandardowej */
-    customSessionInterface: CustomSessionInterface;
     /** Pokaż przewidywany czas przy przyciskach odpowiedzi */
     showNextReviewTime: boolean;
     /** Automatycznie przejdź do następnej karty po odpowiedzi */
@@ -114,6 +108,14 @@ export interface EpistemeSettings {
     autoBackupOnLoad: boolean;
     /** Maximum number of backups to keep (0 = unlimited) */
     maxBackups: number;
+
+    // ===== Cloud Sync (PowerSync + Supabase) =====
+    /** Supabase project URL */
+    supabaseUrl: string;
+    /** Supabase anonymous key */
+    supabaseAnonKey: string;
+    /** Enable cloud sync */
+    syncEnabled: boolean;
 }
 
 /**

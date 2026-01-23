@@ -31,12 +31,11 @@
 		"vitest": "^1.6.1"
 	},
 	"dependencies": {
-		"@langchain/community": "^1.1.4",
+		"@langchain/classic": "^1.0.10",
 		"@langchain/core": "^1.1.15",
 		"@langchain/openai": "^1.2.2",
 		"@supabase/supabase-js": "^2.91.1",
 		"chart.js": "^4.5.1",
-		"langchain": "^1.2.10",
 		"obsidian": "latest",
 		"sql.js": "^1.13.0",
 		"ts-fsrs": "^5.2.3",
