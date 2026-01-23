@@ -321,7 +321,7 @@ export class SyncService {
             operation: row[opIdx] as "INSERT" | "UPDATE" | "DELETE",
             table: row[tableIdx] as string,
             rowId: row[rowIdIdx] as string,
-            data: row[dataIdx] ? JSON.parse(row[dataIdx] as string) : null,
+            data: row[dataIdx] ? JSON.parse(row[dataIdx] as string) : undefined,
             timestamp: row[timestampIdx] as number,
         }));
     }
