@@ -17,6 +17,7 @@ export interface SessionContentProps {
 	onNoteToggle: (noteName: string) => void;
 	onSearchChange: (query: string) => void;
 	onSelectAll: (select: boolean) => void;
+	onNavigateToNote: (notePath: string) => void;
 }
 
 /**
@@ -43,20 +44,26 @@ export class SessionContent extends BaseComponent {
 			cls: "episteme-session-content",
 		});
 
+		// Search input at the top
+		this.renderSearchInput();
+
+		// Quick actions section header
+		this.element.createDiv({
+			cls: "episteme-section-header",
+			text: "Quick access",
+		});
+
 		// Quick actions section
 		this.renderQuickActions();
 
-		// Divider
-		this.element.createEl("hr", { cls: "episteme-modal-divider" });
-
 		// Notes section header
-		this.element.createEl("h3", { text: "Or select notes to review:" });
+		this.element.createDiv({
+			cls: "episteme-section-header",
+			text: "Select notes",
+		});
 
-		// Search input
-		this.renderSearchInput();
-
-		// Note table
-		this.renderNoteTable();
+		// Note list (card-based)
+		this.renderNoteList();
 	}
 
 	private renderQuickActions(): void {
@@ -172,7 +179,7 @@ export class SessionContent extends BaseComponent {
 		});
 	}
 
-	private renderNoteTable(): void {
+	private renderNoteList(): void {
 		const { searchQuery, now, logic, selectedNotes } = this.props;
 
 		const filteredStats = logic.getFilteredNoteStats(searchQuery, now);
@@ -190,85 +197,66 @@ export class SessionContent extends BaseComponent {
 			return;
 		}
 
-		// Create table
-		const table = noteListEl.createEl("table", { cls: "episteme-note-table" });
-
-		// Header
-		const thead = table.createEl("thead");
-		const headerRow = thead.createEl("tr");
-
-		// Select all checkbox
-		const selectAllTh = headerRow.createEl("th", { cls: "episteme-note-checkbox-col" });
-		const selectAllCheckbox = selectAllTh.createEl("input", { type: "checkbox" });
-
-		// Check if all available notes are selected
-		const availableNotes = filteredStats.filter((s) => s.newCount > 0 || s.dueCount > 0);
-		const allSelected = availableNotes.length > 0 && availableNotes.every((s) => selectedNotes.has(s.noteName));
-		selectAllCheckbox.checked = allSelected;
-		selectAllCheckbox.indeterminate = !allSelected && availableNotes.some((s) => selectedNotes.has(s.noteName));
-
-		this.events.addEventListener(selectAllCheckbox, "change", () => {
-			this.props.onSelectAll(selectAllCheckbox.checked);
-		});
-
-		headerRow.createEl("th", { text: "Note", cls: "episteme-note-name-col" });
-		headerRow.createEl("th", { text: "Cards", cls: "episteme-note-stats-col" });
-
-		// Body
-		const tbody = table.createEl("tbody");
-
 		for (const stat of filteredStats) {
-			const row = tbody.createEl("tr", {
-				cls: stat.isCompleted ? "episteme-note-row episteme-note-row--completed" : "episteme-note-row",
+			const hasCards = stat.newCount > 0 || stat.dueCount > 0;
+			const isSelected = selectedNotes.has(stat.noteName);
+
+			// Note item container
+			const item = noteListEl.createDiv({
+				cls: `episteme-note-item${isSelected ? " episteme-note-item--selected" : ""}`,
 			});
 
-			// Checkbox cell
-			const checkboxTd = row.createEl("td", { cls: "episteme-note-checkbox-col" });
-			const hasCards = stat.newCount > 0 || stat.dueCount > 0;
-
+			// Checkbox or completed tick
 			if (hasCards) {
-				const checkbox = checkboxTd.createEl("input", { type: "checkbox" });
-				checkbox.checked = selectedNotes.has(stat.noteName);
+				const checkbox = item.createEl("input", { type: "checkbox" });
+				checkbox.checked = isSelected;
 
 				this.events.addEventListener(checkbox, "change", () => {
 					this.props.onNoteToggle(stat.noteName);
 				});
 
-				// Make whole row clickable
-				this.events.addEventListener(row, "click", (e) => {
+				// Make whole item clickable
+				this.events.addEventListener(item, "click", (e) => {
 					const target = e.target;
-					if (target instanceof HTMLElement && target.tagName !== "INPUT") {
+					if (target instanceof HTMLElement && target.tagName !== "INPUT" && target.tagName !== "A") {
 						checkbox.checked = !checkbox.checked;
 						this.props.onNoteToggle(stat.noteName);
 					}
 				});
-				row.addClass("episteme-note-row--clickable");
 			} else if (stat.isCompleted) {
-				// Show tick for completed notes
-				checkboxTd.createSpan({
+				item.createSpan({
 					cls: "episteme-completed-tick",
 					text: "\u2713",
 				});
 			}
 
-			// Note name cell
-			row.createEl("td", {
-				text: stat.noteName,
-				cls: "episteme-note-name-col",
-			});
+			// Content container
+			const content = item.createDiv({ cls: "episteme-note-item-content" });
 
-			// Stats cell
-			const statsTd = row.createEl("td", { cls: "episteme-note-stats-col" });
-			if (stat.newCount > 0 || stat.dueCount > 0) {
-				statsTd.createSpan({
-					cls: "episteme-note-stats-text",
-					text: logic.formatStats(stat.newCount, stat.dueCount),
+			// Note name (allow 2 lines)
+			const nameEl = content.createDiv({ cls: "episteme-note-item-name" });
+			if (stat.notePath) {
+				const nameLink = nameEl.createEl("a", {
+					text: stat.noteName,
+					href: "#",
+				});
+				this.events.addEventListener(nameLink, "click", (e) => {
+					e.preventDefault();
+					e.stopPropagation();
+					this.props.onNavigateToNote(stat.notePath!);
 				});
 			} else {
-				statsTd.createSpan({
-					cls: "episteme-stat-muted",
-					text: "done",
-				});
+				nameEl.textContent = stat.noteName;
+			}
+
+			// Stats badge
+			const statsEl = content.createDiv({
+				cls: `episteme-note-item-stats${!hasCards ? " episteme-stat-muted" : ""}`,
+			});
+			if (hasCards) {
+				statsEl.textContent = logic.formatStats(stat.newCount, stat.dueCount);
+			} else {
+				statsEl.textContent = "done";
 			}
 		}
 	}

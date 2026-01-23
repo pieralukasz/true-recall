@@ -192,6 +192,13 @@ export class SessionView extends ItemView {
 	}
 
 	/**
+	 * Handle navigation to a note
+	 */
+	private handleNavigateToNote(notePath: string): void {
+		void this.app.workspace.openLinkText(notePath, "", false);
+	}
+
+	/**
 	 * Handle start session button click
 	 */
 	private handleStartSession(): void {
@@ -265,6 +272,7 @@ export class SessionView extends ItemView {
 			onNoteToggle: (note) => this.handleNoteToggle(note),
 			onSearchChange: (query) => this.handleSearchChange(query),
 			onSelectAll: (select) => this.handleSelectAll(select),
+			onNavigateToNote: (notePath) => this.handleNavigateToNote(notePath),
 		});
 		this.contentComponent.render();
 
