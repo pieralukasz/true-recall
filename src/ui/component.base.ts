@@ -76,6 +76,13 @@ export abstract class BaseComponent {
     isVisible(): boolean {
         return this.element?.style.display !== "none";
     }
+
+    /**
+     * Get the component's root element
+     */
+    getElement(): HTMLElement | null {
+        return this.element;
+    }
 }
 
 /**

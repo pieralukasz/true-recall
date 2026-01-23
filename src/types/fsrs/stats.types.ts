@@ -168,7 +168,7 @@ export interface StreakInfo {
  * Project information
  */
 export interface ProjectInfo {
-    /** Project ID (UUID string for CR-SQLite sync compatibility) */
+    /** Project ID (UUID string for database consistency) */
     id: string;
     /** Project name (unique) */
     name: string;

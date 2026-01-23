@@ -23,7 +23,7 @@ import type {
 import {
     loadDatabase,
     type DatabaseLike,
-} from "../crsqlite";
+} from "../sqljs";
 import { DB_FOLDER, DB_FILE, SAVE_DEBOUNCE_MS, getQueryResult } from "./sqlite.types";
 import { SqliteSchemaManager } from "./SqliteSchemaManager";
 import { SqliteCardRepository } from "./SqliteCardRepository";
