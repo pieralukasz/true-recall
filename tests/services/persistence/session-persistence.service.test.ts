@@ -11,12 +11,15 @@ import type { App } from "obsidian";
 
 describe("SessionPersistenceService", () => {
 	let service: SessionPersistenceService;
-	let mockStore: {
+	let mockStats: {
 		recordReviewedCard: ReturnType<typeof vi.fn>;
 		updateDailyStats: ReturnType<typeof vi.fn>;
 		addReviewLog: ReturnType<typeof vi.fn>;
 		getDailyStats: ReturnType<typeof vi.fn>;
 		getReviewedCardIds: ReturnType<typeof vi.fn>;
+	};
+	let mockStore: {
+		stats: typeof mockStats;
 	};
 	let mockApp: Partial<App>;
 	let mockDayBoundaryService: {
@@ -24,12 +27,16 @@ describe("SessionPersistenceService", () => {
 	};
 
 	beforeEach(() => {
-		mockStore = {
+		mockStats = {
 			recordReviewedCard: vi.fn(),
 			updateDailyStats: vi.fn(),
 			addReviewLog: vi.fn(),
 			getDailyStats: vi.fn().mockReturnValue(null),
 			getReviewedCardIds: vi.fn().mockReturnValue([]),
+		};
+
+		mockStore = {
+			stats: mockStats,
 		};
 
 		mockApp = {};
@@ -57,7 +64,7 @@ describe("SessionPersistenceService", () => {
 				7 // elapsedDays
 			);
 
-			expect(mockStore.addReviewLog).toHaveBeenCalledWith(
+			expect(mockStats.addReviewLog).toHaveBeenCalledWith(
 				"card-1",
 				Rating.Good,
 				14,
@@ -77,7 +84,7 @@ describe("SessionPersistenceService", () => {
 				// scheduledDays and elapsedDays not provided
 			);
 
-			expect(mockStore.addReviewLog).toHaveBeenCalledWith(
+			expect(mockStats.addReviewLog).toHaveBeenCalledWith(
 				"card-1",
 				Rating.Good,
 				0, // defaults to 0
@@ -95,7 +102,7 @@ describe("SessionPersistenceService", () => {
 				// No rating provided
 			);
 
-			expect(mockStore.addReviewLog).not.toHaveBeenCalled();
+			expect(mockStats.addReviewLog).not.toHaveBeenCalled();
 		});
 
 		it("should still update daily stats when addReviewLog is called", () => {
@@ -110,8 +117,8 @@ describe("SessionPersistenceService", () => {
 			);
 
 			// Both should be called
-			expect(mockStore.updateDailyStats).toHaveBeenCalled();
-			expect(mockStore.addReviewLog).toHaveBeenCalled();
+			expect(mockStats.updateDailyStats).toHaveBeenCalled();
+			expect(mockStats.addReviewLog).toHaveBeenCalled();
 		});
 
 		it("should call addReviewLog with correct rating values", () => {
@@ -123,7 +130,7 @@ describe("SessionPersistenceService", () => {
 			];
 
 			testCases.forEach(({ rating, expected }) => {
-				mockStore.addReviewLog.mockClear();
+				mockStats.addReviewLog.mockClear();
 
 				service.recordReview(
 					"card-1",
@@ -135,7 +142,7 @@ describe("SessionPersistenceService", () => {
 					5
 				);
 
-				expect(mockStore.addReviewLog).toHaveBeenCalledWith(
+				expect(mockStats.addReviewLog).toHaveBeenCalledWith(
 					"card-1",
 					expected,
 					10,
@@ -155,7 +162,7 @@ describe("SessionPersistenceService", () => {
 				// previousState undefined
 			);
 
-			expect(mockStore.addReviewLog).toHaveBeenCalledWith(
+			expect(mockStats.addReviewLog).toHaveBeenCalledWith(
 				"card-1",
 				Rating.Good,
 				0,
