@@ -2415,3 +2415,55 @@
 		width: 100%;
 	}
 }
+
+/* =========================================
+   First Sync Conflict Modal
+   ========================================= */
+
+.first-sync-warning {
+	margin-bottom: 16px;
+}
+
+.first-sync-warning p {
+	margin: 0 0 8px 0;
+	line-height: 1.5;
+}
+
+.first-sync-warning p.mod-warning {
+	color: var(--text-warning);
+	font-weight: 500;
+}
+
+.first-sync-options {
+	display: flex;
+	flex-direction: column;
+	gap: 16px;
+	margin-bottom: 16px;
+}
+
+.first-sync-option {
+	padding: 12px;
+	background: var(--background-secondary);
+	border: 1px solid var(--background-modifier-border);
+	border-radius: 8px;
+}
+
+.first-sync-option h4 {
+	margin: 0 0 8px 0;
+	font-size: 14px;
+	font-weight: 600;
+}
+
+.first-sync-option p {
+	margin: 0 0 12px 0;
+	font-size: 13px;
+	color: var(--text-muted);
+	line-height: 1.4;
+}
+
+.first-sync-cancel {
+	display: flex;
+	justify-content: center;
+	padding-top: 8px;
+	border-top: 1px solid var(--background-modifier-border);
+}

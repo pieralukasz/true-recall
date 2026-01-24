@@ -3,7 +3,7 @@
  * Contains quick actions, search, and note selection table
  */
 import { BaseComponent } from "../component.base";
-import type { SessionLogic, NoteStats } from "../../logic/SessionLogic";
+import type { SessionLogic } from "../../logic/SessionLogic";
 import type { FSRSFlashcardItem } from "../../types";
 
 export interface SessionContentProps {
@@ -13,7 +13,9 @@ export interface SessionContentProps {
 	searchQuery: string;
 	now: Date;
 	logic: SessionLogic;
-	onQuickAction: (action: "current-note" | "today" | "default" | "buried") => void;
+	onQuickAction: (
+		action: "current-note" | "today" | "default" | "buried"
+	) => void;
 	onNoteToggle: (noteName: string) => void;
 	onSearchChange: (query: string) => void;
 	onSelectAll: (select: boolean) => void;
@@ -76,7 +78,10 @@ export class SessionContent extends BaseComponent {
 		todayStart.setHours(0, 0, 0, 0);
 
 		// Active Note button
-		const currentNoteStats = logic.getCurrentNoteStats(currentNoteName, now);
+		const currentNoteStats = logic.getCurrentNoteStats(
+			currentNoteName,
+			now
+		);
 		const activeNoteBtn = quickActionsEl.createEl("button", {
 			cls: "episteme-quick-action-btn",
 		});
@@ -84,9 +89,14 @@ export class SessionContent extends BaseComponent {
 		if (currentNoteStats && currentNoteStats.total > 0) {
 			activeNoteBtn.createSpan({
 				cls: "episteme-quick-action-stats",
-				text: logic.formatStats(currentNoteStats.newCount, currentNoteStats.dueCount),
+				text: logic.formatStats(
+					currentNoteStats.newCount,
+					currentNoteStats.dueCount
+				),
 			});
-			this.events.addEventListener(activeNoteBtn, "click", () => onQuickAction("current-note"));
+			this.events.addEventListener(activeNoteBtn, "click", () =>
+				onQuickAction("current-note")
+			);
 		} else {
 			activeNoteBtn.createSpan({
 				cls: "episteme-quick-action-stats episteme-stat-muted",
@@ -105,9 +115,14 @@ export class SessionContent extends BaseComponent {
 		if (todayStats.total > 0) {
 			todayBtn.createSpan({
 				cls: "episteme-quick-action-stats",
-				text: logic.formatStats(todayStats.newCount, todayStats.dueCount),
+				text: logic.formatStats(
+					todayStats.newCount,
+					todayStats.dueCount
+				),
 			});
-			this.events.addEventListener(todayBtn, "click", () => onQuickAction("today"));
+			this.events.addEventListener(todayBtn, "click", () =>
+				onQuickAction("today")
+			);
 		} else {
 			todayBtn.createSpan({
 				cls: "episteme-quick-action-stats episteme-stat-muted",
@@ -126,9 +141,14 @@ export class SessionContent extends BaseComponent {
 		if (allCardsStats.total > 0) {
 			defaultBtn.createSpan({
 				cls: "episteme-quick-action-stats",
-				text: logic.formatStats(allCardsStats.newCount, allCardsStats.dueCount),
+				text: logic.formatStats(
+					allCardsStats.newCount,
+					allCardsStats.dueCount
+				),
 			});
-			this.events.addEventListener(defaultBtn, "click", () => onQuickAction("default"));
+			this.events.addEventListener(defaultBtn, "click", () =>
+				onQuickAction("default")
+			);
 		} else {
 			defaultBtn.createSpan({
 				cls: "episteme-quick-action-stats episteme-stat-muted",
@@ -147,9 +167,14 @@ export class SessionContent extends BaseComponent {
 		if (buriedStats.total > 0) {
 			buriedBtn.createSpan({
 				cls: "episteme-quick-action-stats",
-				text: logic.formatStats(buriedStats.newCount, buriedStats.dueCount),
+				text: logic.formatStats(
+					buriedStats.newCount,
+					buriedStats.dueCount
+				),
 			});
-			this.events.addEventListener(buriedBtn, "click", () => onQuickAction("buried"));
+			this.events.addEventListener(buriedBtn, "click", () =>
+				onQuickAction("buried")
+			);
 		} else {
 			buriedBtn.createSpan({
 				cls: "episteme-quick-action-stats episteme-stat-muted",
@@ -191,7 +216,9 @@ export class SessionContent extends BaseComponent {
 		if (filteredStats.length === 0) {
 			noteListEl.createDiv({
 				cls: "episteme-note-list-empty",
-				text: searchQuery ? "No notes match your search" : "No notes with flashcards found",
+				text: searchQuery
+					? "No notes match your search"
+					: "No notes with flashcards found",
 			});
 			return;
 		}
@@ -202,7 +229,9 @@ export class SessionContent extends BaseComponent {
 
 			// Note item container
 			const item = noteListEl.createDiv({
-				cls: `episteme-note-item${isSelected ? " episteme-note-item--selected" : ""}`,
+				cls: `episteme-note-item${
+					isSelected ? " episteme-note-item--selected" : ""
+				}`,
 			});
 
 			// Checkbox or completed tick
@@ -217,7 +246,11 @@ export class SessionContent extends BaseComponent {
 				// Make whole item clickable
 				this.events.addEventListener(item, "click", (e) => {
 					const target = e.target;
-					if (target instanceof HTMLElement && target.tagName !== "INPUT" && target.tagName !== "A") {
+					if (
+						target instanceof HTMLElement &&
+						target.tagName !== "INPUT" &&
+						target.tagName !== "A"
+					) {
 						checkbox.checked = !checkbox.checked;
 						this.props.onNoteToggle(stat.noteName);
 					}
@@ -230,10 +263,14 @@ export class SessionContent extends BaseComponent {
 			}
 
 			// Content container
-			const content = item.createDiv({ cls: "episteme-note-item-content" });
+			const content = item.createDiv({
+				cls: "episteme-note-item-content",
+			});
 
 			// Note name (allow 2 lines)
-			const nameEl = content.createDiv({ cls: "episteme-note-item-name" });
+			const nameEl = content.createDiv({
+				cls: "episteme-note-item-name",
+			});
 			if (stat.notePath) {
 				const nameLink = nameEl.createEl("a", {
 					text: stat.noteName,
@@ -250,11 +287,17 @@ export class SessionContent extends BaseComponent {
 
 			// Stats badge
 			const statsEl = content.createDiv({
-				cls: `episteme-note-item-stats${!hasCards ? " episteme-stat-muted" : ""}`,
+				cls: `episteme-note-item-stats${
+					!hasCards ? " episteme-stat-muted" : ""
+				}`,
 			});
 			if (hasCards) {
-				statsEl.textContent = logic.formatStats(stat.newCount, stat.dueCount);
+				statsEl.textContent = logic.formatStats(
+					stat.newCount,
+					stat.dueCount
+				);
 			} else {
+				// eslint-disable-next-line obsidianmd/ui/sentence-case
 				statsEl.textContent = "done";
 			}
 		}

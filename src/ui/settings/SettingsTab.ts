@@ -11,7 +11,7 @@ import {
 	SYSTEM_PROMPT,
 	UPDATE_SYSTEM_PROMPT,
 } from "../../constants";
-import { TemplatePickerModal, DeviceSelectionModal } from "../modals";
+import { TemplatePickerModal, DeviceSelectionModal, FirstSyncConflictModal } from "../modals";
 import type { AIModelKey, AIModelInfo } from "../../constants";
 import type {
 	EpistemeSettings,
@@ -86,6 +86,7 @@ export class EpistemeSettingTab extends PluginSettingTab {
 		this.renderAITab(tabContents.get("ai")!);
 		this.renderSchedulingTab(tabContents.get("scheduling")!);
 		this.renderDataTab(tabContents.get("data")!);
+		this.renderSyncTab(tabContents.get("sync")!);
 	}
 
 	private switchTab(
@@ -813,6 +814,442 @@ export class EpistemeSettingTab extends PluginSettingTab {
 							.filter((s) => s.length > 0);
 						this.plugin.settings.excludedFolders = folders;
 						await this.plugin.saveSettings();
+					})
+			);
+	}
+
+	private renderSyncTab(container: HTMLElement): void {
+		// ===== Supabase Configuration Section =====
+		container.createEl("h2", { text: "Supabase Configuration" });
+
+		const supabaseInfo = container.createDiv({
+			cls: "setting-item-description",
+		});
+		supabaseInfo.innerHTML = `
+			<p>Connect to Supabase for cloud synchronization across devices.</p>
+			<p><a href="https://supabase.com" target="_blank">Create a free Supabase project</a></p>
+		`;
+
+		new Setting(container)
+			.setName("Supabase URL")
+			.setDesc("Your Supabase project URL")
+			.addText((text) => {
+				text.inputEl.addClass("episteme-api-input");
+				text.setPlaceholder("https://your-project.supabase.co")
+					.setValue(this.plugin.settings.supabaseUrl)
+					.onChange(async (value) => {
+						this.plugin.settings.supabaseUrl = value;
+						await this.plugin.saveSettings();
+						this.updateAuthSection(container);
+					});
+			});
+
+		new Setting(container)
+			.setName("Supabase Anon Key")
+			.setDesc("Your Supabase anonymous/public key")
+			.addText((text) => {
+				text.inputEl.type = "password";
+				text.inputEl.addClass("episteme-api-input");
+				text.setPlaceholder("Enter anon key")
+					.setValue(this.plugin.settings.supabaseAnonKey)
+					.onChange(async (value) => {
+						this.plugin.settings.supabaseAnonKey = value;
+						await this.plugin.saveSettings();
+						this.updateAuthSection(container);
+					});
+			});
+
+		// ===== Authentication Section =====
+		container.createEl("h2", { text: "Authentication" });
+
+		const authContainer = container.createDiv({
+			cls: "episteme-auth-section",
+		});
+		authContainer.id = "episteme-auth-container";
+
+		this.renderAuthSection(authContainer);
+	}
+
+	private updateAuthSection(container: HTMLElement): void {
+		const authContainer = container.querySelector("#episteme-auth-container");
+		if (authContainer) {
+			authContainer.empty();
+			this.renderAuthSection(authContainer as HTMLElement);
+		}
+	}
+
+	private renderAuthSection(container: HTMLElement): void {
+		const isConfigured =
+			this.plugin.settings.supabaseUrl &&
+			this.plugin.settings.supabaseAnonKey;
+
+		if (!isConfigured) {
+			const notice = container.createDiv({
+				cls: "setting-item-description",
+			});
+			notice.setText(
+				"Configure Supabase URL and Anon Key above to enable authentication."
+			);
+			return;
+		}
+
+		// Check current auth state
+		void this.renderAuthState(container);
+	}
+
+	private async renderAuthState(container: HTMLElement): Promise<void> {
+		const authService = this.plugin.authService;
+
+		if (!authService || !authService.isConfigured()) {
+			const notice = container.createDiv({
+				cls: "setting-item-description",
+			});
+			notice.setText("Authentication service not initialized.");
+			return;
+		}
+
+		const authState = await authService.getAuthState();
+
+		if (authState.isAuthenticated && authState.user) {
+			// Logged in state
+			const userInfo = container.createDiv({
+				cls: "setting-item-description",
+			});
+			userInfo.innerHTML = `<p>Logged in as: <strong>${authState.user.email}</strong></p>`;
+
+			new Setting(container)
+				.setName("Sign out")
+				.setDesc("Sign out of your account")
+				.addButton((button) =>
+					button
+						.setButtonText("Logout")
+						.setWarning()
+						.onClick(async () => {
+							const result = await authService.signOut();
+							if (result.success) {
+								new Notice("Logged out successfully");
+								container.empty();
+								this.renderAuthSection(container);
+							} else {
+								new Notice(`Logout failed: ${result.error}`);
+							}
+						})
+				);
+
+			// ===== Sync Controls (shown when authenticated) =====
+			this.renderSyncControls(container);
+		} else {
+			// Not logged in - show login form
+			this.renderLoginForm(container);
+		}
+	}
+
+	private renderLoginForm(container: HTMLElement): void {
+		const formContainer = container.createDiv({
+			cls: "episteme-auth-form",
+		});
+
+		let emailValue = "";
+		let passwordValue = "";
+		const statusEl = formContainer.createDiv({
+			cls: "episteme-auth-status",
+		});
+
+		new Setting(formContainer)
+			.setName("Email")
+			.addText((text) => {
+				text.inputEl.type = "email";
+				text.setPlaceholder("your@email.com").onChange((value) => {
+					emailValue = value;
+				});
+			});
+
+		new Setting(formContainer)
+			.setName("Password")
+			.addText((text) => {
+				text.inputEl.type = "password";
+				text.setPlaceholder("Password").onChange((value) => {
+					passwordValue = value;
+				});
+			});
+
+		const buttonContainer = formContainer.createDiv({
+			cls: "episteme-auth-buttons",
+		});
+
+		const loginBtn = buttonContainer.createEl("button", {
+			text: "Login",
+			cls: "mod-cta",
+		});
+
+		const signupBtn = buttonContainer.createEl("button", {
+			text: "Sign Up",
+		});
+
+		const setStatus = (message: string, isError: boolean): void => {
+			statusEl.empty();
+			statusEl.setText(message);
+			statusEl.toggleClass("episteme-auth-error", isError);
+			statusEl.toggleClass("episteme-auth-success", !isError);
+		};
+
+		loginBtn.addEventListener("click", async () => {
+			if (!emailValue || !passwordValue) {
+				setStatus("Please enter email and password", true);
+				return;
+			}
+
+			const authService = this.plugin.authService;
+			if (!authService) {
+				setStatus("Auth service not available", true);
+				return;
+			}
+
+			loginBtn.disabled = true;
+			signupBtn.disabled = true;
+			setStatus("Logging in...", false);
+
+			const result = await authService.signIn(emailValue, passwordValue);
+
+			if (result.success) {
+				new Notice("Logged in successfully");
+				container.empty();
+				this.renderAuthSection(container);
+			} else {
+				setStatus(result.error ?? "Login failed", true);
+				loginBtn.disabled = false;
+				signupBtn.disabled = false;
+			}
+		});
+
+		signupBtn.addEventListener("click", async () => {
+			if (!emailValue || !passwordValue) {
+				setStatus("Please enter email and password", true);
+				return;
+			}
+
+			const authService = this.plugin.authService;
+			if (!authService) {
+				setStatus("Auth service not available", true);
+				return;
+			}
+
+			loginBtn.disabled = true;
+			signupBtn.disabled = true;
+			setStatus("Creating account...", false);
+
+			const result = await authService.signUp(emailValue, passwordValue);
+
+			if (result.success) {
+				// Auto-login after signup
+				const loginResult = await authService.signIn(
+					emailValue,
+					passwordValue
+				);
+				if (loginResult.success) {
+					new Notice("Account created and logged in");
+					container.empty();
+					this.renderAuthSection(container);
+				} else {
+					setStatus(
+						"Account created. Please log in.",
+						false
+					);
+					loginBtn.disabled = false;
+					signupBtn.disabled = false;
+				}
+			} else {
+				setStatus(result.error ?? "Sign up failed", true);
+				loginBtn.disabled = false;
+				signupBtn.disabled = false;
+			}
+		});
+	}
+
+	/**
+	 * Render sync controls (shown when authenticated)
+	 */
+	private renderSyncControls(container: HTMLElement): void {
+		const syncService = this.plugin.syncService;
+		if (!syncService) {
+			return;
+		}
+
+		container.createEl("h3", { text: "Synchronization" });
+
+		// Last sync info
+		const lastSyncTimestamp = syncService.getLastSyncTimestamp();
+		const lastSyncText = lastSyncTimestamp > 0
+			? new Date(lastSyncTimestamp).toLocaleString()
+			: "Never";
+
+		const syncStatusEl = container.createDiv({
+			cls: "setting-item-description",
+		});
+		syncStatusEl.id = "episteme-sync-status";
+		syncStatusEl.setText(`Last sync: ${lastSyncText}`);
+
+		// Sync button
+		new Setting(container)
+			.setName("Sync now")
+			.setDesc("Synchronize flashcards with cloud")
+			.addButton((button) =>
+				button
+					.setButtonText("Sync")
+					.setCta()
+					.onClick(async () => {
+						button.setDisabled(true);
+						button.setButtonText("Checking...");
+						syncStatusEl.setText("Checking sync status...");
+
+						// Check for first sync conflict (Anki-style)
+						const status = await syncService.checkFirstSyncStatus();
+
+						let result;
+
+						if (status.hasConflict) {
+							// Show conflict dialog
+							const modal = new FirstSyncConflictModal(this.app);
+							const choice = await modal.openAndWait();
+
+							if (choice.cancelled) {
+								button.setDisabled(false);
+								button.setButtonText("Sync");
+								syncStatusEl.setText(`Last sync: ${lastSyncText}`);
+								return;
+							}
+
+							syncStatusEl.setText(
+								choice.choice === "upload" ? "Uploading..." : "Downloading..."
+							);
+							button.setButtonText(
+								choice.choice === "upload" ? "Uploading..." : "Downloading..."
+							);
+
+							if (choice.choice === "upload") {
+								result = await syncService.forceReplace();
+							} else {
+								result = await syncService.forcePull();
+							}
+						} else if (status.isFirstSync) {
+							// First sync - auto-detect direction
+							if (status.hasLocalData && !status.hasRemoteData) {
+								syncStatusEl.setText("First sync: Uploading...");
+								button.setButtonText("Uploading...");
+								result = await syncService.forceReplace();
+							} else if (!status.hasLocalData && status.hasRemoteData) {
+								syncStatusEl.setText("First sync: Downloading...");
+								button.setButtonText("Downloading...");
+								result = await syncService.forcePull();
+							} else {
+								// Both empty - normal sync
+								syncStatusEl.setText("Syncing...");
+								button.setButtonText("Syncing...");
+								result = await syncService.sync();
+							}
+						} else {
+							// Normal sync
+							syncStatusEl.setText("Syncing...");
+							button.setButtonText("Syncing...");
+							result = await syncService.sync();
+						}
+
+						if (result.success) {
+							const newTimestamp = syncService.getLastSyncTimestamp();
+							const newTimeText = new Date(newTimestamp).toLocaleString();
+							syncStatusEl.setText(
+								`Last sync: ${newTimeText} (↓${result.pulled} ↑${result.pushed})`
+							);
+							new Notice(`Sync complete: ${result.pulled} pulled, ${result.pushed} pushed`);
+						} else {
+							syncStatusEl.setText(`Sync failed: ${result.error}`);
+							new Notice(`Sync failed: ${result.error}`);
+						}
+
+						button.setDisabled(false);
+						button.setButtonText("Sync");
+					})
+			);
+
+		// Force replace option (destructive - overwrites server)
+		new Setting(container)
+			.setName("Force replace")
+			.setDesc("⚠️ Deletes ALL server data and uploads local database")
+			.addButton((button) =>
+				button
+					.setButtonText("Force Replace")
+					.setWarning()
+					.onClick(async () => {
+						// Confirmation dialog
+						const confirmed = confirm(
+							"WARNING: This will DELETE all your data on the server and replace it with your local database.\n\n" +
+							"Other devices will lose their changes.\n\n" +
+							"Are you sure you want to continue?"
+						);
+
+						if (!confirmed) return;
+
+						button.setDisabled(true);
+						button.setButtonText("Replacing...");
+						syncStatusEl.setText("Force replacing all data...");
+
+						const result = await syncService.forceReplace();
+
+						if (result.success) {
+							const newTimestamp = syncService.getLastSyncTimestamp();
+							const newTimeText = new Date(newTimestamp).toLocaleString();
+							syncStatusEl.setText(
+								`Last sync: ${newTimeText} (replaced ↑${result.pushed})`
+							);
+							new Notice(`Force replace complete: ${result.pushed} records uploaded`);
+						} else {
+							syncStatusEl.setText(`Replace failed: ${result.error}`);
+							new Notice(`Replace failed: ${result.error}`);
+						}
+
+						button.setDisabled(false);
+						button.setButtonText("Force Replace");
+					})
+			);
+
+		// Force pull option (destructive - overwrites local)
+		new Setting(container)
+			.setName("Force pull")
+			.setDesc("⚠️ Deletes ALL local data and downloads from server")
+			.addButton((button) =>
+				button
+					.setButtonText("Force Pull")
+					.setWarning()
+					.onClick(async () => {
+						// Confirmation dialog
+						const confirmed = confirm(
+							"WARNING: This will DELETE all your LOCAL data and replace it with server data.\n\n" +
+							"Any local changes not synced will be lost.\n\n" +
+							"Are you sure you want to continue?"
+						);
+
+						if (!confirmed) return;
+
+						button.setDisabled(true);
+						button.setButtonText("Pulling...");
+						syncStatusEl.setText("Force pulling all data...");
+
+						const result = await syncService.forcePull();
+
+						if (result.success) {
+							const newTimestamp = syncService.getLastSyncTimestamp();
+							const newTimeText = new Date(newTimestamp).toLocaleString();
+							syncStatusEl.setText(
+								`Last sync: ${newTimeText} (pulled ↓${result.pulled})`
+							);
+							new Notice(`Force pull complete: ${result.pulled} records downloaded`);
+						} else {
+							syncStatusEl.setText(`Pull failed: ${result.error}`);
+							new Notice(`Pull failed: ${result.error}`);
+						}
+
+						button.setDisabled(false);
+						button.setButtonText("Force Pull");
 					})
 			);
 	}

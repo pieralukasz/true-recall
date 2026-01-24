@@ -82,3 +82,9 @@ export {
 	DeviceDiscoveryService,
 	type DeviceDatabaseInfo,
 } from "./device";
+
+// Auth services
+export { AuthService, type AuthState, type AuthResult } from "./auth";
+
+// Sync services
+export { SyncService, type SyncResult, type SyncOptions } from "./sync";
