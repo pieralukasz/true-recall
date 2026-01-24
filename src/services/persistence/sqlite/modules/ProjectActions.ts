@@ -9,6 +9,53 @@ import type { SourceNoteInfo, ProjectInfo, CardImageRef } from "types";
 import { SqliteDatabase } from "../SqliteDatabase";
 import { generateUUID } from "../sqlite.types";
 
+/**
+ * Source note with sync timestamps
+ */
+export interface SourceNoteForSync {
+    uid: string;
+    noteName: string;
+    notePath: string | null;
+    createdAt: number;
+    updatedAt: number;
+    deletedAt: number | null;
+}
+
+/**
+ * Project with sync timestamps
+ */
+export interface ProjectForSync {
+    id: string;
+    name: string;
+    createdAt: number;
+    updatedAt: number;
+    deletedAt: number | null;
+}
+
+/**
+ * Note-Project junction with sync timestamps
+ */
+export interface NoteProjectForSync {
+    sourceUid: string;
+    projectId: string;
+    createdAt: number;
+    updatedAt: number;
+    deletedAt: number | null;
+}
+
+/**
+ * Card image ref with sync timestamps
+ */
+export interface CardImageRefForSync {
+    id: string;
+    cardId: string;
+    imagePath: string;
+    field: string;
+    createdAt: number;
+    updatedAt: number;
+    deletedAt: number | null;
+}
+
 interface OrphanedNoteRow {
     uid: string;
     note_name: string;
@@ -518,4 +565,213 @@ export class ProjectActions {
         return result?.count ?? 0;
     }
 
+    // ===== Sync Operations =====
+
+    /**
+     * Get source notes modified since timestamp (for sync push)
+     */
+    getModifiedSourceNotesSince(timestamp: number): SourceNoteForSync[] {
+        return this.db.query<SourceNoteForSync>(`
+            SELECT
+                uid,
+                note_name as noteName,
+                note_path as notePath,
+                created_at as createdAt,
+                updated_at as updatedAt,
+                deleted_at as deletedAt
+            FROM source_notes
+            WHERE updated_at > ?
+        `, [timestamp]);
+    }
+
+    /**
+     * Upsert source note from remote sync
+     */
+    upsertSourceNoteFromRemote(data: SourceNoteForSync): void {
+        this.db.run(`
+            INSERT OR REPLACE INTO source_notes (uid, note_name, note_path, created_at, updated_at, deleted_at)
+            VALUES (?, ?, ?, ?, ?, ?)
+        `, [
+            data.uid,
+            data.noteName,
+            data.notePath,
+            data.createdAt,
+            data.updatedAt,
+            data.deletedAt,
+        ]);
+    }
+
+    /**
+     * Get source note with sync fields (for LWW comparison)
+     */
+    getSourceNoteForSync(uid: string): SourceNoteForSync | null {
+        return this.db.get<SourceNoteForSync>(`
+            SELECT
+                uid,
+                note_name as noteName,
+                note_path as notePath,
+                created_at as createdAt,
+                updated_at as updatedAt,
+                deleted_at as deletedAt
+            FROM source_notes WHERE uid = ?
+        `, [uid]);
+    }
+
+    /**
+     * Get projects modified since timestamp (for sync push)
+     */
+    getModifiedProjectsSince(timestamp: number): ProjectForSync[] {
+        return this.db.query<ProjectForSync>(`
+            SELECT
+                id,
+                name,
+                created_at as createdAt,
+                updated_at as updatedAt,
+                deleted_at as deletedAt
+            FROM projects
+            WHERE updated_at > ?
+        `, [timestamp]);
+    }
+
+    /**
+     * Upsert project from remote sync
+     */
+    upsertProjectFromRemote(data: ProjectForSync): void {
+        this.db.run(`
+            INSERT OR REPLACE INTO projects (id, name, created_at, updated_at, deleted_at)
+            VALUES (?, ?, ?, ?, ?)
+        `, [
+            data.id,
+            data.name,
+            data.createdAt,
+            data.updatedAt,
+            data.deletedAt,
+        ]);
+    }
+
+    /**
+     * Get project with sync fields (for LWW comparison)
+     */
+    getProjectForSync(id: string): ProjectForSync | null {
+        return this.db.get<ProjectForSync>(`
+            SELECT
+                id,
+                name,
+                created_at as createdAt,
+                updated_at as updatedAt,
+                deleted_at as deletedAt
+            FROM projects WHERE id = ?
+        `, [id]);
+    }
+
+    /**
+     * Get note-projects modified since timestamp (for sync push)
+     */
+    getModifiedNoteProjectsSince(timestamp: number): NoteProjectForSync[] {
+        return this.db.query<NoteProjectForSync>(`
+            SELECT
+                source_uid as sourceUid,
+                project_id as projectId,
+                created_at as createdAt,
+                updated_at as updatedAt,
+                deleted_at as deletedAt
+            FROM note_projects
+            WHERE updated_at > ?
+        `, [timestamp]);
+    }
+
+    /**
+     * Upsert note-project from remote sync
+     */
+    upsertNoteProjectFromRemote(data: NoteProjectForSync): void {
+        this.db.run(`
+            INSERT OR REPLACE INTO note_projects (source_uid, project_id, created_at, updated_at, deleted_at)
+            VALUES (?, ?, ?, ?, ?)
+        `, [
+            data.sourceUid,
+            data.projectId,
+            data.createdAt,
+            data.updatedAt,
+            data.deletedAt,
+        ]);
+    }
+
+    /**
+     * Get note-project with sync fields (for LWW comparison)
+     */
+    getNoteProjectForSync(sourceUid: string, projectId: string): NoteProjectForSync | null {
+        return this.db.get<NoteProjectForSync>(`
+            SELECT
+                source_uid as sourceUid,
+                project_id as projectId,
+                created_at as createdAt,
+                updated_at as updatedAt,
+                deleted_at as deletedAt
+            FROM note_projects WHERE source_uid = ? AND project_id = ?
+        `, [sourceUid, projectId]);
+    }
+
+    /**
+     * Get card image refs modified since timestamp (for sync push)
+     */
+    getModifiedCardImageRefsSince(timestamp: number): CardImageRefForSync[] {
+        return this.db.query<CardImageRefForSync>(`
+            SELECT
+                id,
+                card_id as cardId,
+                image_path as imagePath,
+                field,
+                created_at as createdAt,
+                updated_at as updatedAt,
+                deleted_at as deletedAt
+            FROM card_image_refs
+            WHERE updated_at > ?
+        `, [timestamp]);
+    }
+
+    /**
+     * Upsert card image ref from remote sync
+     */
+    upsertCardImageRefFromRemote(data: CardImageRefForSync): void {
+        this.db.run(`
+            INSERT OR REPLACE INTO card_image_refs (id, card_id, image_path, field, created_at, updated_at, deleted_at)
+            VALUES (?, ?, ?, ?, ?, ?, ?)
+        `, [
+            data.id,
+            data.cardId,
+            data.imagePath,
+            data.field,
+            data.createdAt,
+            data.updatedAt,
+            data.deletedAt,
+        ]);
+    }
+
+    /**
+     * Get card image ref with sync fields (for LWW comparison)
+     */
+    getCardImageRefForSync(id: string): CardImageRefForSync | null {
+        return this.db.get<CardImageRefForSync>(`
+            SELECT
+                id,
+                card_id as cardId,
+                image_path as imagePath,
+                field,
+                created_at as createdAt,
+                updated_at as updatedAt,
+                deleted_at as deletedAt
+            FROM card_image_refs WHERE id = ?
+        `, [id]);
+    }
+
+    /**
+     * Delete all project-related data (for force pull sync)
+     * Order: dependent tables first
+     */
+    deleteAllForSync(): void {
+        this.db.run(`DELETE FROM card_image_refs`);
+        this.db.run(`DELETE FROM note_projects`);
+        this.db.run(`DELETE FROM projects`);
+        this.db.run(`DELETE FROM source_notes`);
+    }
 }

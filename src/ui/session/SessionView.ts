@@ -374,6 +374,7 @@ export class SessionView extends ItemView {
 		// Start button
 		const startBtn = buttons.createEl("button", {
 			cls: "mod-cta episteme-selection-start-btn",
+			// eslint-disable-next-line obsidianmd/ui/sentence-case
 			text: "Start Session",
 		});
 		startBtn.addEventListener("click", () => this.handleStartSession());

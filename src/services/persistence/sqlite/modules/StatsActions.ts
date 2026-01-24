@@ -10,6 +10,22 @@ import { SqliteDatabase } from "../SqliteDatabase";
 import { generateUUID } from "../sqlite.types";
 
 /**
+ * Review log entry with sync timestamps
+ */
+export interface ReviewLogForSync {
+    id: string;
+    cardId: string;
+    reviewedAt: string;
+    rating: number;
+    scheduledDays: number;
+    elapsedDays: number;
+    state: number;
+    timeSpentMs: number;
+    updatedAt: number;
+    deletedAt: number | null;
+}
+
+/**
  * Stats and aggregations operations
  */
 export class StatsActions {
@@ -227,6 +243,44 @@ export class StatsActions {
         this.db.run(`
             DELETE FROM daily_reviewed_cards WHERE date = ? AND card_id = ?
         `, [date, cardId]);
+    }
+
+    /**
+     * Rebuild daily_stats and daily_reviewed_cards from review_log
+     * Called after sync to ensure stats are consistent across devices
+     */
+    rebuildDailyStatsFromReviewLog(): void {
+        // Clear existing stats
+        this.db.run(`DELETE FROM daily_stats`);
+        this.db.run(`DELETE FROM daily_reviewed_cards`);
+
+        // Rebuild daily_stats from review_log
+        this.db.run(`
+            INSERT INTO daily_stats (
+                date, reviews_completed, new_cards_studied, total_time_ms,
+                again_count, hard_count, good_count, easy_count
+            )
+            SELECT
+                date(reviewed_at) as date,
+                COUNT(*) as reviews_completed,
+                SUM(CASE WHEN state = 0 THEN 1 ELSE 0 END) as new_cards_studied,
+                COALESCE(SUM(time_spent_ms), 0) as total_time_ms,
+                SUM(CASE WHEN rating = 1 THEN 1 ELSE 0 END) as again_count,
+                SUM(CASE WHEN rating = 2 THEN 1 ELSE 0 END) as hard_count,
+                SUM(CASE WHEN rating = 3 THEN 1 ELSE 0 END) as good_count,
+                SUM(CASE WHEN rating = 4 THEN 1 ELSE 0 END) as easy_count
+            FROM review_log
+            WHERE deleted_at IS NULL
+            GROUP BY date(reviewed_at)
+        `);
+
+        // Rebuild daily_reviewed_cards from review_log
+        this.db.run(`
+            INSERT INTO daily_reviewed_cards (date, card_id)
+            SELECT DISTINCT date(reviewed_at), card_id
+            FROM review_log
+            WHERE deleted_at IS NULL
+        `);
     }
 
     /**
@@ -645,5 +699,78 @@ export class StatsActions {
             avgDays: Math.round(r.avg_days || 0),
             cardCount: r.card_count || 0,
         }));
+    }
+
+    // ===== Sync Operations =====
+
+    /**
+     * Get review log entries modified since timestamp (for sync push)
+     */
+    getModifiedReviewLogSince(timestamp: number): ReviewLogForSync[] {
+        return this.db.query<ReviewLogForSync>(`
+            SELECT
+                id,
+                card_id as cardId,
+                reviewed_at as reviewedAt,
+                rating,
+                scheduled_days as scheduledDays,
+                elapsed_days as elapsedDays,
+                state,
+                time_spent_ms as timeSpentMs,
+                updated_at as updatedAt,
+                deleted_at as deletedAt
+            FROM review_log
+            WHERE updated_at > ?
+        `, [timestamp]);
+    }
+
+    /**
+     * Upsert review log entry from remote sync
+     */
+    upsertReviewLogFromRemote(data: ReviewLogForSync): void {
+        this.db.run(`
+            INSERT OR REPLACE INTO review_log (
+                id, card_id, reviewed_at, rating, scheduled_days,
+                elapsed_days, state, time_spent_ms, updated_at, deleted_at
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        `, [
+            data.id,
+            data.cardId,
+            data.reviewedAt,
+            data.rating,
+            data.scheduledDays,
+            data.elapsedDays,
+            data.state,
+            data.timeSpentMs,
+            data.updatedAt,
+            data.deletedAt,
+        ]);
+    }
+
+    /**
+     * Get review log entry with sync fields (for LWW comparison)
+     */
+    getReviewLogForSync(id: string): ReviewLogForSync | null {
+        return this.db.get<ReviewLogForSync>(`
+            SELECT
+                id,
+                card_id as cardId,
+                reviewed_at as reviewedAt,
+                rating,
+                scheduled_days as scheduledDays,
+                elapsed_days as elapsedDays,
+                state,
+                time_spent_ms as timeSpentMs,
+                updated_at as updatedAt,
+                deleted_at as deletedAt
+            FROM review_log WHERE id = ?
+        `, [id]);
+    }
+
+    /**
+     * Delete all review log entries (for force pull sync)
+     */
+    deleteAllReviewLogForSync(): void {
+        this.db.run(`DELETE FROM review_log`);
     }
 }

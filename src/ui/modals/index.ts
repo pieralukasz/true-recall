@@ -67,3 +67,8 @@ export {
     type DeviceSelectionResult,
     type DeviceSelectionModalOptions,
 } from "./DeviceSelectionModal";
+export {
+    FirstSyncConflictModal,
+    type FirstSyncConflictResult,
+    type FirstSyncChoice,
+} from "./FirstSyncConflictModal";
