@@ -277,6 +277,10 @@ export class CardActions {
     /**
      * Get all cards that have content (with source note JOIN and projects)
      */
+    /**
+     * Get all cards with content (v15: no note_projects, source_notes has only uid)
+     * Source note name/path and projects are resolved at runtime from vault
+     */
     getCardsWithContent(): FSRSCardData[] {
         const rows = this.db.query<{
             id: string;
@@ -295,9 +299,6 @@ export class CardActions {
             question: string;
             answer: string;
             sourceUid: string | null;
-            sourceNoteName: string;
-            sourceNotePath: string;
-            projects: string;
         }>(`
             SELECT
                 c.id, c.due, c.stability, c.difficulty, c.reps, c.lapses, c.state,
@@ -308,19 +309,12 @@ export class CardActions {
                 c.buried_until as buriedUntil,
                 c.created_at as createdAt,
                 c.question, c.answer,
-                c.source_uid as sourceUid,
-                COALESCE(s.note_name, '') as sourceNoteName,
-                COALESCE(s.note_path, '') as sourceNotePath,
-                GROUP_CONCAT(p.name) as projects
+                c.source_uid as sourceUid
             FROM cards c
-            LEFT JOIN source_notes s ON c.source_uid = s.uid
-            LEFT JOIN note_projects np ON s.uid = np.source_uid
-            LEFT JOIN projects p ON np.project_id = p.id
             WHERE c.deleted_at IS NULL AND c.question IS NOT NULL AND c.answer IS NOT NULL
-            GROUP BY c.id
         `);
 
-        // Parse projects from GROUP_CONCAT result
+        // v15: sourceNoteName, sourceNotePath, projects are resolved at runtime from vault
         return rows.map((row) => ({
             id: row.id,
             due: row.due,
@@ -338,10 +332,10 @@ export class CardActions {
             question: row.question,
             answer: row.answer,
             sourceUid: row.sourceUid ?? undefined,
-            // Extra fields for sync (not part of FSRSCardData but needed by caller)
-            sourceNoteName: row.sourceNoteName,
-            sourceNotePath: row.sourceNotePath,
-            projects: row.projects ? row.projects.split(",").filter((p) => p.trim()) : [],
+            // v15: These are resolved at runtime from vault, not from DB
+            sourceNoteName: "",
+            sourceNotePath: "",
+            projects: [],
         }));
     }
 

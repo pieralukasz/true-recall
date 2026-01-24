@@ -835,9 +835,8 @@ export default class EpistemePlugin extends Plugin {
 	}
 
 	/**
-	 * Sync source notes in database with vault files
-	 * Useful after renaming notes when the handler didn't trigger
-	 * Also detects orphaned source notes (deleted files)
+	 * Clean up orphaned source notes (UIDs in DB without matching file in vault)
+	 * v15: Simplified - no longer syncing paths/projects (now resolved from vault at runtime)
 	 */
 	async syncSourceNotes(): Promise<void> {
 		if (!this.cardStore) {
@@ -858,28 +857,12 @@ export default class EpistemePlugin extends Plugin {
 			}
 		}
 
-		let synced = 0;
-		let projectsSynced = 0;
 		let orphaned = 0;
 		const orphanedUids: string[] = [];
 
 		for (const sourceNote of sourceNotes) {
 			const file = uidToFile.get(sourceNote.uid);
-			if (file) {
-				// Check if path/name needs updating
-				if (file.path !== sourceNote.notePath || file.basename !== sourceNote.noteName) {
-					this.cardStore.projects.updateSourceNotePath(sourceNote.uid, file.path, file.basename);
-					synced++;
-				}
-
-				// Sync projects from frontmatter
-				const content = await this.app.vault.read(file);
-				const projects = frontmatterService.extractProjectsFromFrontmatter(content);
-				this.cardStore.projects.syncNoteProjects(sourceNote.uid, projects);
-				if (projects.length > 0) {
-					projectsSynced++;
-				}
-			} else {
+			if (!file) {
 				// Source note exists in DB but no matching file in vault
 				orphaned++;
 				orphanedUids.push(sourceNote.uid);
@@ -896,12 +879,12 @@ export default class EpistemePlugin extends Plugin {
 				this.cardStore.projects.deleteSourceNote(uid, false);
 			}
 			new Notice(
-				`Synced ${synced} path(s), ${projectsSynced} project(s). Removed ${orphaned} orphaned entries` +
+				`Removed ${orphaned} orphaned source note(s)` +
 				(orphanedCards > 0 ? ` (${orphanedCards} cards detached)` : "") +
 				"."
 			);
 		} else {
-			new Notice(`Synced ${synced} path(s), ${projectsSynced} project(s)`);
+			new Notice("No orphaned source notes found.");
 		}
 	}
 
@@ -922,7 +905,7 @@ export default class EpistemePlugin extends Plugin {
 		const currentProjects = frontmatterService.extractProjectsFromFrontmatter(content);
 
 		// Get all available projects from the store
-		const allProjects = this.cardStore.projects.getProjectStats().map(p => p.name);
+		const allProjects = this.cardStore.projects.getAllProjects().map(p => p.name);
 
 		// Open modal
 		const modal = new AddToProjectModal(this.app, {
@@ -933,14 +916,8 @@ export default class EpistemePlugin extends Plugin {
 		const result = await modal.openAndWait();
 		if (result.cancelled) return;
 
-		// Update frontmatter
+		// Update frontmatter (v15: frontmatter is source of truth)
 		await frontmatterService.setProjectsInFrontmatter(file, result.projects);
-
-		// Sync to database if note has UID
-		const uid = await frontmatterService.getSourceNoteUid(file);
-		if (uid) {
-			this.cardStore.projects.syncNoteProjects(uid, result.projects);
-		}
 
 		if (result.projects.length > 0) {
 			new Notice(`Projects updated: ${result.projects.join(", ")}`);
@@ -956,7 +933,7 @@ export default class EpistemePlugin extends Plugin {
 		const projectName = file.basename;
 
 		// Check if project exists
-		const projects = this.cardStore.projects.getProjectStats();
+		const projects = this.cardStore.projects.getAllProjects();
 		if (projects.some(p => p.name.toLowerCase() === projectName.toLowerCase())) {
 			new Notice(`Project "${projectName}" already exists`);
 			return;
@@ -977,17 +954,11 @@ export default class EpistemePlugin extends Plugin {
 			await frontmatterService.setSourceNoteUid(file, sourceUid);
 		}
 
-		// Add note to project (update frontmatter + DB)
+		// Add note to project (update frontmatter - v15: frontmatter is source of truth)
 		await frontmatterService.setProjectsInFrontmatter(file, [projectName]);
 
-		// Ensure source note exists in DB
-		this.cardStore.projects.upsertSourceNote({
-			uid: sourceUid,
-			noteName: file.basename,
-			notePath: file.path,
-		});
-
-		this.cardStore.projects.syncNoteProjects(sourceUid, [projectName]);
+		// Ensure source note exists in DB (v15: only stores UID)
+		this.cardStore.projects.upsertSourceNote(sourceUid);
 
 		new Notice(`Project "${projectName}" created`);
 	}
