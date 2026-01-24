@@ -2,23 +2,15 @@
  * SQLite Store Service
  * High-performance storage for FSRS card data using sql.js
  *
- * Refactored to use domain modules (CardActions, StatsActions, ProjectActions, BrowserActions)
- * instead of individual repository classes. This reduces boilerplate and improves maintainability.
- *
- * The facade pattern is preserved but simplified - domain modules are exposed directly
- * for new code, while backward compatibility methods delegate to the appropriate module.
+ * Refactored to use domain modules (CardActions, StatsActions, ProjectActions, BrowserActions).
+ * All operations are now performed directly on the appropriate module:
+ * - store.cards.* for card operations
+ * - store.stats.* for review log and statistics
+ * - store.projects.* for source notes, projects, and image references
+ * - store.browser.* for browser view queries
  */
 import { App, normalizePath, Notice } from "obsidian";
-import type {
-    FSRSCardData,
-    CardReviewLogEntry,
-    ExtendedDailyStats,
-    SourceNoteInfo,
-    CardMaturityBreakdown,
-    CardsCreatedVsReviewedEntry,
-    CardImageRef,
-    ProjectInfo,
-} from "../../../types";
+import type { FSRSCardData } from "../../../types";
 import { SqliteDatabase } from "./SqliteDatabase";
 import { SqliteSchemaManager } from "./SqliteSchemaManager";
 import { CardActions, StatsActions, ProjectActions, BrowserActions } from "./modules";
@@ -26,6 +18,12 @@ import { DB_FOLDER, DB_FILE, SAVE_DEBOUNCE_MS } from "./sqlite.types";
 
 /**
  * SQLite-based storage service for FSRS card data
+ *
+ * Domain modules are exposed directly for all operations:
+ * - store.cards.get(id) - Get a card
+ * - store.stats.getDailyStats(date) - Get daily stats
+ * - store.projects.upsertSourceNote(info) - Upsert a source note
+ * - store.browser.getAllCardsForBrowser() - Get all cards for browser view
  */
 export class SqliteStoreService {
     private app: App;
@@ -103,256 +101,50 @@ export class SqliteStoreService {
         return this.isLoaded && this.db.isReady();
     }
 
-    // ===== Card Operations (delegate to CardActions) =====
+    // ===== Core CardStore methods (delegates to cards module) =====
 
+    /** Check if store is loaded and ready */
     get(cardId: string): FSRSCardData | undefined {
         return this.cards.get(cardId);
     }
 
+    /** Set/update a card */
     set(cardId: string, data: FSRSCardData): void {
         this.cards.set(cardId, data);
     }
 
+    /** Delete a card */
     delete(cardId: string): void {
         this.cards.delete(cardId);
     }
 
+    /** Check if a card exists */
     has(cardId: string): boolean {
         return this.cards.has(cardId);
     }
 
+    /** Get all card IDs */
     keys(): string[] {
         return this.cards.keys();
     }
 
+    /** Get all cards */
     getAll(): FSRSCardData[] {
         return this.cards.getAll();
     }
 
+    /** Get total card count */
     size(): number {
         return this.cards.size();
     }
 
-    updateCardContent(cardId: string, question: string, answer: string): void {
-        this.cards.updateCardContent(cardId, question, answer);
-    }
-
-    getCardsBySourceUid(sourceUid: string): FSRSCardData[] {
-        return this.cards.getCardsBySourceUid(sourceUid);
-    }
-
-    getCardsWithContent(): FSRSCardData[] {
-        return this.cards.getCardsWithContent();
-    }
-
-    hasCardContent(cardId: string): boolean {
-        return this.cards.hasCardContent(cardId);
-    }
-
-    hasAnyCardContent(): boolean {
-        return this.cards.hasAnyCardContent();
-    }
-
-    getCardsWithContentCount(): number {
-        return this.cards.getCardsWithContentCount();
-    }
-
-    // ===== Orphaned Cards Operations =====
-
-    getOrphanedCards(): FSRSCardData[] {
-        return this.cards.getOrphanedCards();
-    }
-
-    updateCardSourceUid(cardId: string, sourceUid: string): void {
-        this.cards.updateCardSourceUid(cardId, sourceUid);
-    }
-
-    /**
-     * Check if a card with the given question already exists
-     */
-    getCardIdByQuestion(question: string): string | undefined {
-        return this.cards.getCardIdByQuestion(question);
-    }
-
-    // ===== Source Notes Operations (delegate to ProjectActions) =====
-
-    upsertSourceNote(info: SourceNoteInfo): void {
-        this.projects.upsertSourceNote(info);
-    }
-
-    getSourceNote(uid: string): SourceNoteInfo | null {
-        return this.projects.getSourceNote(uid);
-    }
-
-    getSourceNoteByPath(notePath: string): SourceNoteInfo | null {
-        return this.projects.getSourceNoteByPath(notePath);
-    }
-
-    getAllSourceNotes(): SourceNoteInfo[] {
-        return this.projects.getAllSourceNotes();
-    }
-
-    updateSourceNotePath(uid: string, newPath: string, newName?: string): void {
-        this.projects.updateSourceNotePath(uid, newPath, newName);
-    }
-
-    deleteSourceNote(uid: string, detachCards = true): void {
-        this.projects.deleteSourceNote(uid, detachCards);
-    }
-
-    // ===== Review Log & Daily Stats (delegate to StatsActions) =====
-
-    addReviewLog(
-        cardId: string,
-        rating: number,
-        scheduledDays: number,
-        elapsedDays: number,
-        state: number,
-        timeSpentMs: number
-    ): void {
-        this.stats.addReviewLog(cardId, rating, scheduledDays, elapsedDays, state, timeSpentMs);
-    }
-
-    getCardReviewHistory(cardId: string, limit = 20): CardReviewLogEntry[] {
-        return this.stats.getCardReviewHistory(cardId, limit);
-    }
-
-    getDailyStats(date: string): ExtendedDailyStats | null {
-        return this.stats.getDailyStats(date);
-    }
-
-    updateDailyStats(date: string, stats: Partial<ExtendedDailyStats>): void {
-        this.stats.updateDailyStats(date, stats);
-    }
-
-    decrementDailyStats(date: string, stats: Partial<ExtendedDailyStats>): void {
-        this.stats.decrementDailyStats(date, stats);
-    }
-
-    recordReviewedCard(date: string, cardId: string): void {
-        this.stats.recordReviewedCard(date, cardId);
-    }
-
-    getReviewedCardIds(date: string): string[] {
-        return this.stats.getReviewedCardIds(date);
-    }
-
-    removeReviewedCard(date: string, cardId: string): void {
-        this.stats.removeReviewedCard(date, cardId);
-    }
-
-    getAllDailyStats(): Record<string, ExtendedDailyStats> {
-        return this.stats.getAllDailyStats();
-    }
-
-    getAllDailyStatsSummary(): Record<string, ExtendedDailyStats> {
-        return this.stats.getAllDailyStatsSummary();
-    }
-
-    // ===== Aggregations (delegate to StatsActions) =====
-
-    getCardMaturityBreakdown(): CardMaturityBreakdown {
-        return this.stats.getCardMaturityBreakdown();
-    }
-
-    getDueCardsByDate(startDate: string, endDate: string): { date: string; count: number }[] {
-        return this.stats.getDueCardsByDate(startDate, endDate);
-    }
-
-    getCardsCreatedByDate(startDate: string, endDate: string): { date: string; count: number }[] {
-        return this.stats.getCardsCreatedByDate(startDate, endDate);
-    }
-
-    getCardsCreatedOnDate(date: string): string[] {
-        return this.stats.getCardsCreatedOnDate(date);
-    }
-
-    getCardsCreatedVsReviewed(startDate: string, endDate: string): CardsCreatedVsReviewedEntry[] {
-        return this.stats.getCardsCreatedVsReviewed(startDate, endDate);
-    }
-
-    // ===== Image Refs (delegate to ProjectActions) =====
-
-    getImageRefsByCardId(cardId: string): CardImageRef[] {
-        return this.projects.getImageRefsByCardId(cardId);
-    }
-
-    getCardsByImagePath(imagePath: string): CardImageRef[] {
-        return this.projects.getCardsByImagePath(imagePath);
-    }
-
-    updateImagePath(oldPath: string, newPath: string): void {
-        this.projects.updateImagePath(oldPath, newPath);
-    }
-
-    syncCardImageRefs(cardId: string, questionRefs: string[], answerRefs: string[]): void {
-        this.projects.syncCardImageRefs(cardId, questionRefs, answerRefs);
-    }
-
-    deleteCardImageRefs(cardId: string): void {
-        this.projects.deleteCardImageRefs(cardId);
-    }
-
-    // ===== Projects (delegate to ProjectActions) =====
-
-    createProject(name: string): string {
-        return this.projects.createProject(name);
-    }
-
-    getProjectByName(name: string): ProjectInfo | null {
-        return this.projects.getProjectByName(name);
-    }
-
-    getProjectById(id: string): ProjectInfo | null {
-        return this.projects.getProjectById(id);
-    }
-
-    getAllProjects(): ProjectInfo[] {
-        return this.projects.getAllProjects();
-    }
-
-    renameProject(id: string, newName: string): void {
-        this.projects.renameProject(id, newName);
-    }
-
-    deleteProject(id: string): void {
-        this.projects.deleteProject(id);
-    }
-
-    syncNoteProjects(sourceUid: string, projectNames: string[]): void {
-        this.projects.syncNoteProjects(sourceUid, projectNames);
-    }
-
-    getProjectsForNote(sourceUid: string): ProjectInfo[] {
-        return this.projects.getProjectsForNote(sourceUid);
-    }
-
-    getProjectNamesForNote(sourceUid: string): string[] {
-        return this.projects.getProjectNamesForNote(sourceUid);
-    }
-
-    getNotesInProject(projectId: string): string[] {
-        return this.projects.getNotesInProject(projectId);
-    }
-
-    addProjectToNote(sourceUid: string, projectName: string): void {
-        this.projects.addProjectToNote(sourceUid, projectName);
-    }
-
-    removeProjectFromNote(sourceUid: string, projectId: string): void {
-        this.projects.removeProjectFromNote(sourceUid, projectId);
-    }
-
-    getProjectStats(): ProjectInfo[] {
-        return this.projects.getProjectStats();
-    }
-
-    getOrphanedSourceNotes(): { uid: string; noteName: string; notePath: string }[] {
-        return this.projects.getOrphanedSourceNotes();
-    }
-
-    deleteEmptyProjects(): number {
-        return this.projects.deleteEmptyProjects();
+    /** Flush pending changes to disk */
+    async flush(): Promise<void> {
+        if (this.saveTimer) {
+            clearTimeout(this.saveTimer);
+            this.saveTimer = null;
+        }
+        await this.doFlush();
     }
 
     // ===== Persistence =====
@@ -401,11 +193,11 @@ export class SqliteStoreService {
         }
 
         this.saveTimer = setTimeout(async () => {
-            await this.flush();
+            await this.doFlush();
         }, SAVE_DEBOUNCE_MS);
     }
 
-    async flush(): Promise<void> {
+    private async doFlush(): Promise<void> {
         if (!this.db.isReady() || !this.isDirty) return;
 
         try {
@@ -430,7 +222,7 @@ export class SqliteStoreService {
             clearTimeout(this.saveTimer);
             this.saveTimer = null;
         }
-        await this.flush();
+        await this.doFlush();
     }
 
     async close(): Promise<void> {

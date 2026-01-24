@@ -2,36 +2,12 @@
  * Card Actions Module
  * CRUD operations for flashcard data
  *
- * Consolidates functionality from SqliteCardRepository
+ * Uses SQL column aliases to map directly to FSRSCardData interface
+ * No manual row mapping needed - `query<FSRSCardData>()` returns correctly typed objects
  */
 import type { State } from "ts-fsrs";
 import type { FSRSCardData } from "types";
 import { SqliteDatabase } from "../SqliteDatabase";
-
-// Database row type matching the cards table structure
-interface CardRow {
-    id: string;
-    due: string;
-    stability: number;
-    difficulty: number;
-    reps: number;
-    lapses: number;
-    state: State;
-    last_review: string | null;
-    scheduled_days: number;
-    learning_step: number;
-    suspended: number;
-    buried_until: string | null;
-    created_at: number | null;
-    updated_at: number | null;
-    question: string | null;
-    answer: string | null;
-    source_uid: string | null;
-    // Optional JOIN columns
-    source_note_name?: string;
-    source_note_path?: string;
-    projects?: string;
-}
 
 /**
  * Card CRUD operations
@@ -43,11 +19,51 @@ export class CardActions {
      * Get a card by ID
      */
     get(cardId: string): FSRSCardData | undefined {
-        const row = this.db.get<CardRow>(
-            `SELECT * FROM cards WHERE id = ?`,
-            [cardId]
-        );
-        return row ? this.mapRowToCard(row) : undefined;
+        const row = this.db.get<{
+            id: string;
+            due: string;
+            stability: number;
+            difficulty: number;
+            reps: number;
+            lapses: number;
+            state: number;
+            lastReview: string | null;
+            scheduledDays: number;
+            learningStep: number;
+            suspended: number;
+            buriedUntil: string | null;
+            createdAt: number | null;
+            question: string | null;
+            answer: string | null;
+            sourceUid: string | null;
+        }>(`
+            SELECT
+                id, due, stability, difficulty, reps, lapses, state,
+                last_review as lastReview,
+                scheduled_days as scheduledDays,
+                learning_step as learningStep,
+                suspended = 1 as suspended,
+                buried_until as buriedUntil,
+                created_at as createdAt,
+                question,
+                answer,
+                source_uid as sourceUid
+            FROM cards WHERE id = ?
+        `, [cardId]);
+
+        if (!row) return undefined;
+        if (!row.question || !row.answer) return undefined;
+
+        const { question: q, answer: a, suspended, buriedUntil, createdAt, sourceUid, ...rest } = row;
+        return {
+            ...rest,
+            question: q,
+            answer: a,
+            suspended: suspended === 1,
+            buriedUntil: buriedUntil ?? undefined,
+            createdAt: createdAt ?? undefined,
+            sourceUid: sourceUid ?? undefined,
+        };
     }
 
     /**
@@ -103,11 +119,10 @@ export class CardActions {
      * Check if a card exists
      */
     has(cardId: string): boolean {
-        const result = this.db.get<{ exists: number }>(
+        return this.db.get<{ exists: number }>(
             `SELECT 1 as exists FROM cards WHERE id = ? LIMIT 1`,
             [cardId]
-        );
-        return result !== null;
+        ) !== null;
     }
 
     /**
@@ -122,18 +137,59 @@ export class CardActions {
      * Get all cards
      */
     getAll(): FSRSCardData[] {
-        const rows = this.db.query<CardRow>(`SELECT * FROM cards`);
-        return rows.map((r) => this.mapRowToCard(r));
+        const rows = this.db.query<{
+            id: string;
+            due: string;
+            stability: number;
+            difficulty: number;
+            reps: number;
+            lapses: number;
+            state: number;
+            lastReview: string | null;
+            scheduledDays: number;
+            learningStep: number;
+            suspended: number;
+            buriedUntil: string | null;
+            createdAt: number | null;
+            question: string | null;
+            answer: string | null;
+            sourceUid: string | null;
+        }>(`
+            SELECT
+                id, due, stability, difficulty, reps, lapses, state,
+                last_review as lastReview,
+                scheduled_days as scheduledDays,
+                learning_step as learningStep,
+                suspended = 1 as suspended,
+                buried_until as buriedUntil,
+                created_at as createdAt,
+                question,
+                answer,
+                source_uid as sourceUid
+            FROM cards
+        `);
+
+        return rows.map((row) => {
+            const { question: q, answer: a, suspended, buriedUntil, createdAt, sourceUid, ...rest } = row;
+            return {
+                ...rest,
+                question: q ?? undefined,
+                answer: a ?? undefined,
+                suspended: suspended === 1,
+                buriedUntil: buriedUntil ?? undefined,
+                createdAt: createdAt ?? undefined,
+                sourceUid: sourceUid ?? undefined,
+            };
+        });
     }
 
     /**
      * Get total card count
      */
     size(): number {
-        const result = this.db.get<{ count: number }>(
+        return this.db.get<{ count: number }>(
             `SELECT COUNT(*) as count FROM cards`
-        );
-        return result?.count ?? 0;
+        )?.count ?? 0;
     }
 
     // ===== Content Operations =====
@@ -155,22 +211,92 @@ export class CardActions {
      * Get cards by source note UID
      */
     getCardsBySourceUid(sourceUid: string): FSRSCardData[] {
-        const rows = this.db.query<CardRow>(
-            `SELECT * FROM cards WHERE source_uid = ? ORDER BY created_at ASC, id ASC`,
-            [sourceUid]
-        );
-        return rows.map((r) => this.mapRowToCard(r));
+        const rows = this.db.query<{
+            id: string;
+            due: string;
+            stability: number;
+            difficulty: number;
+            reps: number;
+            lapses: number;
+            state: number;
+            lastReview: string | null;
+            scheduledDays: number;
+            learningStep: number;
+            suspended: number;
+            buriedUntil: string | null;
+            createdAt: number | null;
+            question: string | null;
+            answer: string | null;
+            sourceUid: string | null;
+        }>(`
+            SELECT
+                id, due, stability, difficulty, reps, lapses, state,
+                last_review as lastReview,
+                scheduled_days as scheduledDays,
+                learning_step as learningStep,
+                suspended = 1 as suspended,
+                buried_until as buriedUntil,
+                created_at as createdAt,
+                question,
+                answer,
+                source_uid as sourceUid
+            FROM cards
+            WHERE source_uid = ?
+            ORDER BY created_at ASC, id ASC
+        `, [sourceUid]);
+
+        return rows.map((row) => {
+            const { question: q, answer: a, suspended, buriedUntil, createdAt, sourceUid, ...rest } = row;
+            return {
+                ...rest,
+                question: q ?? undefined,
+                answer: a ?? undefined,
+                suspended: suspended === 1,
+                buriedUntil: buriedUntil ?? undefined,
+                createdAt: createdAt ?? undefined,
+                sourceUid: sourceUid ?? undefined,
+            };
+        });
     }
 
     /**
      * Get all cards that have content (with source note JOIN and projects)
      */
     getCardsWithContent(): FSRSCardData[] {
-        const rows = this.db.query<CardRow>(`
-            SELECT c.*,
-                   s.note_name as source_note_name,
-                   s.note_path as source_note_path,
-                   GROUP_CONCAT(p.name) as projects
+        const rows = this.db.query<{
+            id: string;
+            due: string;
+            stability: number;
+            difficulty: number;
+            reps: number;
+            lapses: number;
+            state: State;
+            lastReview: string | null;
+            scheduledDays: number;
+            learningStep: number;
+            suspended: boolean;
+            buriedUntil: string | null;
+            createdAt: number | null;
+            question: string;
+            answer: string;
+            sourceUid: string | null;
+            sourceNoteName: string;
+            sourceNotePath: string;
+            projects: string;
+        }>(`
+            SELECT
+                c.id, c.due, c.stability, c.difficulty, c.reps, c.lapses, c.state,
+                c.last_review as lastReview,
+                c.scheduled_days as scheduledDays,
+                c.learning_step as learningStep,
+                c.suspended = 1 as suspended,
+                c.buried_until as buriedUntil,
+                c.created_at as createdAt,
+                c.question, c.answer,
+                c.source_uid as sourceUid,
+                COALESCE(s.note_name, '') as sourceNoteName,
+                COALESCE(s.note_path, '') as sourceNotePath,
+                GROUP_CONCAT(p.name) as projects
             FROM cards c
             LEFT JOIN source_notes s ON c.source_uid = s.uid
             LEFT JOIN note_projects np ON s.uid = np.source_uid
@@ -178,43 +304,63 @@ export class CardActions {
             WHERE c.question IS NOT NULL AND c.answer IS NOT NULL
             GROUP BY c.id
         `);
-        return rows.map((r) => this.mapRowToCard(r));
+
+        // Parse projects from GROUP_CONCAT result
+        return rows.map((row) => ({
+            id: row.id,
+            due: row.due,
+            stability: row.stability,
+            difficulty: row.difficulty,
+            reps: row.reps,
+            lapses: row.lapses,
+            state: row.state,
+            lastReview: row.lastReview,
+            scheduledDays: row.scheduledDays,
+            learningStep: row.learningStep,
+            suspended: row.suspended,
+            buriedUntil: row.buriedUntil ?? undefined,
+            createdAt: row.createdAt ?? undefined,
+            question: row.question,
+            answer: row.answer,
+            sourceUid: row.sourceUid ?? undefined,
+            // Extra fields for sync (not part of FSRSCardData but needed by caller)
+            sourceNoteName: row.sourceNoteName,
+            sourceNotePath: row.sourceNotePath,
+            projects: row.projects ? row.projects.split(",").filter((p) => p.trim()) : [],
+        }));
     }
 
     /**
      * Check if card has content
      */
     hasCardContent(cardId: string): boolean {
-        const result = this.db.get<{ exists: number }>(
+        return this.db.get<{ exists: number }>(
             `SELECT 1 as exists FROM cards
              WHERE id = ? AND question IS NOT NULL AND answer IS NOT NULL
              LIMIT 1`,
             [cardId]
-        );
-        return result !== null;
+        ) !== null;
     }
 
     /**
      * Check if any cards have content
      */
     hasAnyCardContent(): boolean {
-        const result = this.db.get<{ exists: number }>(
+        return this.db.get<{ exists: number }>(
             `SELECT 1 as exists FROM cards
              WHERE question IS NOT NULL AND answer IS NOT NULL
              LIMIT 1`
-        );
-        return result !== null;
+        ) !== null;
     }
 
     /**
      * Get count of cards with content
      */
     getCardsWithContentCount(): number {
-        const result = this.db.get<{ count: number }>(
+        return this.db.get<{ count: number }>(
             `SELECT COUNT(*) as count FROM cards
              WHERE question IS NOT NULL AND answer IS NOT NULL`
-        );
-        return result?.count ?? 0;
+        )?.count ?? 0;
     }
 
     // ===== Orphaned Cards Operations =====
@@ -223,12 +369,52 @@ export class CardActions {
      * Get all orphaned cards (cards without source_uid)
      */
     getOrphanedCards(): FSRSCardData[] {
-        const rows = this.db.query<CardRow>(`
-            SELECT * FROM cards
+        const rows = this.db.query<{
+            id: string;
+            due: string;
+            stability: number;
+            difficulty: number;
+            reps: number;
+            lapses: number;
+            state: number;
+            lastReview: string | null;
+            scheduledDays: number;
+            learningStep: number;
+            suspended: number;
+            buriedUntil: string | null;
+            createdAt: number | null;
+            question: string | null;
+            answer: string | null;
+            sourceUid: string | null;
+        }>(`
+            SELECT
+                id, due, stability, difficulty, reps, lapses, state,
+                last_review as lastReview,
+                scheduled_days as scheduledDays,
+                learning_step as learningStep,
+                suspended = 1 as suspended,
+                buried_until as buriedUntil,
+                created_at as createdAt,
+                question,
+                answer,
+                source_uid as sourceUid
+            FROM cards
             WHERE source_uid IS NULL
             AND question IS NOT NULL AND answer IS NOT NULL
         `);
-        return rows.map((r) => this.mapRowToCard(r));
+
+        return rows.map((row) => {
+            const { question: q, answer: a, suspended, buriedUntil, createdAt, sourceUid, ...rest } = row;
+            return {
+                ...rest,
+                question: q ?? undefined,
+                answer: a ?? undefined,
+                suspended: suspended === 1,
+                buriedUntil: buriedUntil ?? undefined,
+                createdAt: createdAt ?? undefined,
+                sourceUid: sourceUid ?? undefined,
+            };
+        });
     }
 
     /**
@@ -247,46 +433,9 @@ export class CardActions {
      * Get card ID by exact question match
      */
     getCardIdByQuestion(question: string): string | undefined {
-        const result = this.db.get<{ id: string }>(
+        return this.db.get<{ id: string }>(
             `SELECT id FROM cards WHERE question = ? LIMIT 1`,
             [question]
-        );
-        return result?.id;
-    }
-
-    // ===== Helper =====
-
-    /**
-     * Convert database row to FSRSCardData
-     */
-    private mapRowToCard(row: CardRow): FSRSCardData {
-        // Parse projects from GROUP_CONCAT result (comma-separated string)
-        const projectsRaw = row.projects;
-        let projects: string[] | undefined;
-        if (projectsRaw) {
-            projects = projectsRaw.split(",").filter((p) => p.trim());
-        }
-
-        return {
-            id: row.id,
-            due: row.due,
-            stability: row.stability,
-            difficulty: row.difficulty,
-            reps: row.reps,
-            lapses: row.lapses,
-            state: row.state,
-            lastReview: row.last_review ?? null,
-            scheduledDays: row.scheduled_days,
-            learningStep: row.learning_step,
-            suspended: row.suspended === 1,
-            buriedUntil: row.buried_until ?? undefined,
-            createdAt: row.created_at ?? undefined,
-            question: row.question ?? undefined,
-            answer: row.answer ?? undefined,
-            sourceUid: row.source_uid ?? undefined,
-            sourceNoteName: row.source_note_name ?? undefined,
-            sourceNotePath: row.source_note_path ?? undefined,
-            projects,
-        };
+        )?.id;
     }
 }

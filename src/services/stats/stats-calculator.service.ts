@@ -62,7 +62,7 @@ export class StatsCalculatorService {
 	async getCardMaturityBreakdown(): Promise<CardMaturityBreakdown> {
 		// Use optimized SQLite query when available
 		if (this.sqliteStore) {
-			return this.sqliteStore.getCardMaturityBreakdown();
+			return this.sqliteStore.stats.getCardMaturityBreakdown();
 		}
 
 		// Fallback to iterating all cards
@@ -659,7 +659,7 @@ export class StatsCalculatorService {
 
 		// Get actual data from SQLite
 		if (this.sqliteStore) {
-			const rawData = this.sqliteStore.getCardsCreatedByDate(startDateStr, endDateStr);
+			const rawData = this.sqliteStore.stats.getCardsCreatedByDate(startDateStr, endDateStr);
 			for (const entry of rawData) {
 				if (createdMap.has(entry.date)) {
 					createdMap.set(entry.date, entry.count);
@@ -702,7 +702,7 @@ export class StatsCalculatorService {
 	async getCardsCreatedOnDate(date: string): Promise<FSRSFlashcardItem[]> {
 		// Use SQLite when available
 		if (this.sqliteStore) {
-			const cardIds = this.sqliteStore.getCardsCreatedOnDate(date);
+			const cardIds = this.sqliteStore.stats.getCardsCreatedOnDate(date);
 			const allCards = await this.flashcardManager.getAllFSRSCards();
 			const cardMap = new Map(allCards.map((c) => [c.id, c]));
 			return cardIds
@@ -754,7 +754,7 @@ export class StatsCalculatorService {
 
 		// Use SQLite when available
 		if (this.sqliteStore) {
-			return this.sqliteStore.getCardsCreatedVsReviewed(startDateStr, endDateStr);
+			return this.sqliteStore.stats.getCardsCreatedVsReviewed(startDateStr, endDateStr);
 		}
 
 		// Fallback: return empty (would need complex iteration without SQLite)
