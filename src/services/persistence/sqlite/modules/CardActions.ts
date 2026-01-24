@@ -48,7 +48,7 @@ export class CardActions {
                 question,
                 answer,
                 source_uid as sourceUid
-            FROM cards WHERE id = ?
+            FROM cards WHERE id = ? AND deleted_at IS NULL
         `, [cardId]);
 
         if (!row) return undefined;
@@ -109,7 +109,19 @@ export class CardActions {
     }
 
     /**
-     * Delete a card
+     * Soft delete a card
+     */
+    softDelete(cardId: string): void {
+        const now = Date.now();
+        this.db.run(
+            `UPDATE cards SET deleted_at = ?, updated_at = ? WHERE id = ?`,
+            [now, now, cardId]
+        );
+    }
+
+    /**
+     * Hard delete a card (for cleanup operations)
+     * @deprecated Use softDelete() instead for sync compatibility
      */
     delete(cardId: string): void {
         this.db.run(`DELETE FROM cards WHERE id = ?`, [cardId]);
@@ -120,7 +132,7 @@ export class CardActions {
      */
     has(cardId: string): boolean {
         return this.db.get<{ exists: number }>(
-            `SELECT 1 as exists FROM cards WHERE id = ? LIMIT 1`,
+            `SELECT 1 as exists FROM cards WHERE id = ? AND deleted_at IS NULL LIMIT 1`,
             [cardId]
         ) !== null;
     }
@@ -129,7 +141,7 @@ export class CardActions {
      * Get all card IDs
      */
     keys(): string[] {
-        const rows = this.db.query<{ id: string }>(`SELECT id FROM cards`);
+        const rows = this.db.query<{ id: string }>(`SELECT id FROM cards WHERE deleted_at IS NULL`);
         return rows.map((r) => r.id);
     }
 
@@ -166,7 +178,7 @@ export class CardActions {
                 question,
                 answer,
                 source_uid as sourceUid
-            FROM cards
+            FROM cards WHERE deleted_at IS NULL
         `);
 
         return rows.map((row) => {
@@ -188,7 +200,7 @@ export class CardActions {
      */
     size(): number {
         return this.db.get<{ count: number }>(
-            `SELECT COUNT(*) as count FROM cards`
+            `SELECT COUNT(*) as count FROM cards WHERE deleted_at IS NULL`
         )?.count ?? 0;
     }
 
@@ -241,7 +253,7 @@ export class CardActions {
                 answer,
                 source_uid as sourceUid
             FROM cards
-            WHERE source_uid = ?
+            WHERE source_uid = ? AND deleted_at IS NULL
             ORDER BY created_at ASC, id ASC
         `, [sourceUid]);
 
@@ -301,7 +313,7 @@ export class CardActions {
             LEFT JOIN source_notes s ON c.source_uid = s.uid
             LEFT JOIN note_projects np ON s.uid = np.source_uid
             LEFT JOIN projects p ON np.project_id = p.id
-            WHERE c.question IS NOT NULL AND c.answer IS NOT NULL
+            WHERE c.deleted_at IS NULL AND c.question IS NOT NULL AND c.answer IS NOT NULL
             GROUP BY c.id
         `);
 
@@ -336,7 +348,7 @@ export class CardActions {
     hasCardContent(cardId: string): boolean {
         return this.db.get<{ exists: number }>(
             `SELECT 1 as exists FROM cards
-             WHERE id = ? AND question IS NOT NULL AND answer IS NOT NULL
+             WHERE id = ? AND deleted_at IS NULL AND question IS NOT NULL AND answer IS NOT NULL
              LIMIT 1`,
             [cardId]
         ) !== null;
@@ -348,7 +360,7 @@ export class CardActions {
     hasAnyCardContent(): boolean {
         return this.db.get<{ exists: number }>(
             `SELECT 1 as exists FROM cards
-             WHERE question IS NOT NULL AND answer IS NOT NULL
+             WHERE deleted_at IS NULL AND question IS NOT NULL AND answer IS NOT NULL
              LIMIT 1`
         ) !== null;
     }
@@ -359,7 +371,7 @@ export class CardActions {
     getCardsWithContentCount(): number {
         return this.db.get<{ count: number }>(
             `SELECT COUNT(*) as count FROM cards
-             WHERE question IS NOT NULL AND answer IS NOT NULL`
+             WHERE deleted_at IS NULL AND question IS NOT NULL AND answer IS NOT NULL`
         )?.count ?? 0;
     }
 
@@ -399,7 +411,7 @@ export class CardActions {
                 answer,
                 source_uid as sourceUid
             FROM cards
-            WHERE source_uid IS NULL
+            WHERE deleted_at IS NULL AND source_uid IS NULL
             AND question IS NOT NULL AND answer IS NOT NULL
         `);
 
@@ -434,8 +446,81 @@ export class CardActions {
      */
     getCardIdByQuestion(question: string): string | undefined {
         return this.db.get<{ id: string }>(
-            `SELECT id FROM cards WHERE question = ? LIMIT 1`,
+            `SELECT id FROM cards WHERE deleted_at IS NULL AND question = ? LIMIT 1`,
             [question]
         )?.id;
+    }
+
+    // ===== Soft Delete Operations =====
+
+    /**
+     * Soft delete a card with cascade to related records
+     */
+    softDeleteWithCascade(cardId: string): void {
+        const now = Date.now();
+        this.db.transaction(() => {
+            this.db.run(
+                `UPDATE cards SET deleted_at = ?, updated_at = ? WHERE id = ?`,
+                [now, now, cardId]
+            );
+            this.db.run(
+                `UPDATE review_log SET deleted_at = ?, updated_at = ? WHERE card_id = ?`,
+                [now, now, cardId]
+            );
+            this.db.run(
+                `UPDATE card_image_refs SET deleted_at = ?, updated_at = ? WHERE card_id = ?`,
+                [now, now, cardId]
+            );
+        });
+    }
+
+    /**
+     * Get all cards including soft-deleted (for sync)
+     */
+    getAllIncludingDeleted(): FSRSCardData[] {
+        const rows = this.db.query<{
+            id: string;
+            due: string;
+            stability: number;
+            difficulty: number;
+            reps: number;
+            lapses: number;
+            state: number;
+            lastReview: string | null;
+            scheduledDays: number;
+            learningStep: number;
+            suspended: number;
+            buriedUntil: string | null;
+            createdAt: number | null;
+            question: string | null;
+            answer: string | null;
+            sourceUid: string | null;
+        }>(`
+            SELECT
+                id, due, stability, difficulty, reps, lapses, state,
+                last_review as lastReview,
+                scheduled_days as scheduledDays,
+                learning_step as learningStep,
+                suspended = 1 as suspended,
+                buried_until as buriedUntil,
+                created_at as createdAt,
+                question,
+                answer,
+                source_uid as sourceUid
+            FROM cards
+        `);
+
+        return rows.map((row) => {
+            const { question: q, answer: a, suspended, buriedUntil, createdAt, sourceUid, ...rest } = row;
+            return {
+                ...rest,
+                question: q ?? undefined,
+                answer: a ?? undefined,
+                suspended: suspended === 1,
+                buriedUntil: buriedUntil ?? undefined,
+                createdAt: createdAt ?? undefined,
+                sourceUid: sourceUid ?? undefined,
+            };
+        });
     }
 }

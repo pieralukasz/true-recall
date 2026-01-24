@@ -56,7 +56,7 @@ export class ProjectActions {
                 note_path as notePath,
                 created_at as createdAt,
                 updated_at as updatedAt
-            FROM source_notes WHERE uid = ?
+            FROM source_notes WHERE uid = ? AND deleted_at IS NULL
         `, [uid]);
     }
 
@@ -71,7 +71,7 @@ export class ProjectActions {
                 note_path as notePath,
                 created_at as createdAt,
                 updated_at as updatedAt
-            FROM source_notes WHERE note_path = ?
+            FROM source_notes WHERE note_path = ? AND deleted_at IS NULL
         `, [notePath]);
     }
 
@@ -86,7 +86,7 @@ export class ProjectActions {
                 note_path as notePath,
                 created_at as createdAt,
                 updated_at as updatedAt
-            FROM source_notes
+            FROM source_notes WHERE deleted_at IS NULL
         `);
     }
 
@@ -124,7 +124,9 @@ export class ProjectActions {
             `, [Date.now(), uid]);
         }
 
-        this.db.run(`DELETE FROM source_notes WHERE uid = ?`, [uid]);
+        this.db.run(`
+            UPDATE source_notes SET deleted_at = ?, updated_at = ? WHERE uid = ?
+        `, [Date.now(), Date.now(), uid]);
     }
 
     // ===== Projects =====
@@ -163,8 +165,8 @@ export class ProjectActions {
                 0 as dueCount,
                 0 as newCount
             FROM projects p
-            LEFT JOIN note_projects np ON p.id = np.project_id
-            WHERE p.name = ?
+            LEFT JOIN note_projects np ON p.id = np.project_id AND np.deleted_at IS NULL
+            WHERE p.name = ? AND p.deleted_at IS NULL
             GROUP BY p.id
         `, [name]);
     }
@@ -183,8 +185,8 @@ export class ProjectActions {
                 0 as dueCount,
                 0 as newCount
             FROM projects p
-            LEFT JOIN note_projects np ON p.id = np.project_id
-            WHERE p.id = ?
+            LEFT JOIN note_projects np ON p.id = np.project_id AND np.deleted_at IS NULL
+            WHERE p.id = ? AND p.deleted_at IS NULL
             GROUP BY p.id
         `, [id]);
     }
@@ -203,7 +205,8 @@ export class ProjectActions {
                 0 as dueCount,
                 0 as newCount
             FROM projects p
-            LEFT JOIN note_projects np ON p.id = np.project_id
+            LEFT JOIN note_projects np ON p.id = np.project_id AND np.deleted_at IS NULL
+            WHERE p.deleted_at IS NULL
             GROUP BY p.id
             ORDER BY p.name
         `);
@@ -225,7 +228,9 @@ export class ProjectActions {
      * Delete a project
      */
     deleteProject(id: string): void {
-        this.db.run(`DELETE FROM projects WHERE id = ?`, [id]);
+        this.db.run(`
+            UPDATE projects SET deleted_at = ?, updated_at = ? WHERE id = ?
+        `, [Date.now(), Date.now(), id]);
     }
 
     /**
@@ -234,8 +239,10 @@ export class ProjectActions {
     syncNoteProjects(sourceUid: string, projectNames: string[]): void {
         const now = Date.now();
 
-        // Remove existing associations
-        this.db.run(`DELETE FROM note_projects WHERE source_uid = ?`, [sourceUid]);
+        // Soft delete existing associations
+        this.db.run(`
+            UPDATE note_projects SET deleted_at = ?, updated_at = ? WHERE source_uid = ?
+        `, [now, now, sourceUid]);
 
         // Add new associations
         for (const projectName of projectNames) {
@@ -245,9 +252,9 @@ export class ProjectActions {
             const projectId = this.createProject(trimmed);
 
             this.db.run(`
-                INSERT OR IGNORE INTO note_projects (source_uid, project_id, created_at)
-                VALUES (?, ?, ?)
-            `, [sourceUid, projectId, now]);
+                INSERT OR IGNORE INTO note_projects (source_uid, project_id, created_at, updated_at)
+                VALUES (?, ?, ?, ?)
+            `, [sourceUid, projectId, now, now]);
         }
     }
 
@@ -265,9 +272,9 @@ export class ProjectActions {
                 0 as dueCount,
                 0 as newCount
             FROM projects p
-            INNER JOIN note_projects np ON p.id = np.project_id
-            LEFT JOIN note_projects np2 ON p.id = np2.project_id
-            WHERE np.source_uid = ?
+            INNER JOIN note_projects np ON p.id = np.project_id AND np.deleted_at IS NULL
+            LEFT JOIN note_projects np2 ON p.id = np2.project_id AND np2.deleted_at IS NULL
+            WHERE np.source_uid = ? AND p.deleted_at IS NULL
             GROUP BY p.id
             ORDER BY p.name
         `, [sourceUid]);
@@ -281,7 +288,7 @@ export class ProjectActions {
             SELECT p.name
             FROM projects p
             INNER JOIN note_projects np ON p.id = np.project_id
-            WHERE np.source_uid = ?
+            WHERE np.source_uid = ? AND p.deleted_at IS NULL AND np.deleted_at IS NULL
             ORDER BY p.name
         `, [sourceUid]);
 
@@ -293,7 +300,7 @@ export class ProjectActions {
      */
     getNotesInProject(projectId: string): string[] {
         const rows = this.db.query<{ source_uid: string }>(
-            `SELECT source_uid FROM note_projects WHERE project_id = ?`,
+            `SELECT source_uid FROM note_projects WHERE project_id = ? AND deleted_at IS NULL`,
             [projectId]
         );
         return rows.map((r) => r.source_uid);
@@ -316,8 +323,8 @@ export class ProjectActions {
      */
     removeProjectFromNote(sourceUid: string, projectId: string): void {
         this.db.run(`
-            DELETE FROM note_projects WHERE source_uid = ? AND project_id = ?
-        `, [sourceUid, projectId]);
+            UPDATE note_projects SET deleted_at = ?, updated_at = ? WHERE source_uid = ? AND project_id = ?
+        `, [Date.now(), Date.now(), sourceUid, projectId]);
     }
 
     /**
@@ -339,8 +346,9 @@ export class ProjectActions {
                          AND (c.buried_until IS NULL OR c.buried_until <= datetime('now'))
                     THEN 1 ELSE 0 END) as newCount
             FROM projects p
-            LEFT JOIN note_projects np ON p.id = np.project_id
-            LEFT JOIN cards c ON np.source_uid = c.source_uid
+            LEFT JOIN note_projects np ON p.id = np.project_id AND np.deleted_at IS NULL
+            LEFT JOIN cards c ON np.source_uid = c.source_uid AND c.deleted_at IS NULL
+            WHERE p.deleted_at IS NULL
             GROUP BY p.id
             ORDER BY p.name
         `);
@@ -351,20 +359,20 @@ export class ProjectActions {
      */
     deleteEmptyProjects(): number {
         const rows = this.db.query<{ id: string }>(`
-            SELECT id FROM projects
-            WHERE id NOT IN (
-                SELECT DISTINCT project_id FROM note_projects
+            SELECT id FROM projects WHERE deleted_at IS NULL
+            AND id NOT IN (
+                SELECT DISTINCT project_id FROM note_projects WHERE deleted_at IS NULL
             )
         `);
 
         if (rows.length === 0) return 0;
 
         this.db.run(`
-            DELETE FROM projects
+            UPDATE projects SET deleted_at = ?, updated_at = ?
             WHERE id NOT IN (
-                SELECT DISTINCT project_id FROM note_projects
+                SELECT DISTINCT project_id FROM note_projects WHERE deleted_at IS NULL
             )
-        `);
+        `, [Date.now(), Date.now()]);
 
         return rows.length;
     }
@@ -376,8 +384,8 @@ export class ProjectActions {
         const rows = this.db.query<OrphanedNoteRow>(`
             SELECT sn.uid, sn.note_name, sn.note_path
             FROM source_notes sn
-            LEFT JOIN note_projects np ON sn.uid = np.source_uid
-            WHERE np.source_uid IS NULL
+            LEFT JOIN note_projects np ON sn.uid = np.source_uid AND np.deleted_at IS NULL
+            WHERE sn.deleted_at IS NULL AND np.source_uid IS NULL
             ORDER BY sn.note_name
         `);
 
@@ -415,7 +423,7 @@ export class ProjectActions {
                 image_path as imagePath,
                 field,
                 created_at as createdAt
-            FROM card_image_refs WHERE card_id = ?
+            FROM card_image_refs WHERE card_id = ? AND deleted_at IS NULL
         `, [cardId]);
     }
 
@@ -430,7 +438,7 @@ export class ProjectActions {
                 image_path as imagePath,
                 field,
                 created_at as createdAt
-            FROM card_image_refs WHERE image_path = ?
+            FROM card_image_refs WHERE image_path = ? AND deleted_at IS NULL
         `, [imagePath]);
     }
 
@@ -438,7 +446,9 @@ export class ProjectActions {
      * Delete all image references for a card
      */
     deleteCardImageRefs(cardId: string): void {
-        this.db.run(`DELETE FROM card_image_refs WHERE card_id = ?`, [cardId]);
+        this.db.run(`
+            UPDATE card_image_refs SET deleted_at = ?, updated_at = ? WHERE card_id = ?
+        `, [Date.now(), Date.now(), cardId]);
     }
 
     /**
@@ -454,8 +464,10 @@ export class ProjectActions {
      * Sync image references for a card based on its current content
      */
     syncCardImageRefs(cardId: string, questionRefs: string[], answerRefs: string[]): void {
-        // Delete existing refs for this card
-        this.db.run(`DELETE FROM card_image_refs WHERE card_id = ?`, [cardId]);
+        // Soft delete existing refs for this card
+        this.db.run(`
+            UPDATE card_image_refs SET deleted_at = ?, updated_at = ? WHERE card_id = ?
+        `, [Date.now(), Date.now(), cardId]);
 
         const now = Date.now();
 
@@ -466,8 +478,8 @@ export class ProjectActions {
         for (const imagePath of questionRefs) {
             const id = generateUUID();
             statements.push([
-                `INSERT INTO card_image_refs (id, card_id, image_path, field, created_at) VALUES (?, ?, ?, 'question', ?)`,
-                [id, cardId, imagePath, String(now)]
+                `INSERT INTO card_image_refs (id, card_id, image_path, field, created_at, updated_at) VALUES (?, ?, ?, 'question', ?, ?)`,
+                [id, cardId, imagePath, String(now), String(now)]
             ]);
         }
 
@@ -475,8 +487,8 @@ export class ProjectActions {
         for (const imagePath of answerRefs) {
             const id = generateUUID();
             statements.push([
-                `INSERT INTO card_image_refs (id, card_id, image_path, field, created_at) VALUES (?, ?, ?, 'answer', ?)`,
-                [id, cardId, imagePath, String(now)]
+                `INSERT INTO card_image_refs (id, card_id, image_path, field, created_at, updated_at) VALUES (?, ?, ?, 'answer', ?, ?)`,
+                [id, cardId, imagePath, String(now), String(now)]
             ]);
         }
 
@@ -490,7 +502,7 @@ export class ProjectActions {
      */
     getAllImagePaths(): string[] {
         const rows = this.db.query<{ image_path: string }>(
-            `SELECT DISTINCT image_path FROM card_image_refs ORDER BY image_path`
+            `SELECT DISTINCT image_path FROM card_image_refs WHERE deleted_at IS NULL ORDER BY image_path`
         );
         return rows.map((r) => r.image_path);
     }
@@ -500,7 +512,7 @@ export class ProjectActions {
      */
     countCardsForImage(imagePath: string): number {
         const result = this.db.get<{ count: number }>(
-            `SELECT COUNT(DISTINCT card_id) as count FROM card_image_refs WHERE image_path = ?`,
+            `SELECT COUNT(DISTINCT card_id) as count FROM card_image_refs WHERE image_path = ? AND deleted_at IS NULL`,
             [imagePath]
         );
         return result?.count ?? 0;
