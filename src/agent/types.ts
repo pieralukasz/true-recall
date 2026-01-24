@@ -8,7 +8,8 @@ import type { FlashcardManager } from "../services/flashcard/flashcard.service";
 import type { FSRSService } from "../services/core/fsrs.service";
 import type { OpenRouterService } from "../services/ai/openrouter.service";
 import type { DayBoundaryService } from "../services/core/day-boundary.service";
-import type { CardStore, EpistemeSettings } from "../types";
+import type { EpistemeSettings } from "../types";
+import type { SqliteStoreService } from "../services/persistence/sqlite/SqliteStoreService";
 import type { EventBusService } from "../services/core/event-bus.service";
 
 /**
@@ -72,7 +73,7 @@ export interface ToolContext {
 	dayBoundaryService: DayBoundaryService;
 
 	// Persistence
-	cardStore: CardStore;
+	cardStore: SqliteStoreService;
 
 	// Obsidian API
 	app: App;

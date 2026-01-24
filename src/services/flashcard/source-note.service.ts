@@ -6,7 +6,8 @@
  * Source notes are the original markdown files that flashcards are generated from.
  */
 import { App, TFile } from "obsidian";
-import type { CardStore, SourceNoteInfo } from "../../types";
+import type { SourceNoteInfo } from "../../types";
+import type { SqliteStoreService } from "../persistence/sqlite/SqliteStoreService";
 import { FrontmatterService } from "./frontmatter.service";
 
 /**
@@ -67,23 +68,17 @@ export class SourceNoteService {
 	 * @param file - The source note file
 	 */
 	registerSourceNote(
-		store: CardStore,
+		store: SqliteStoreService,
 		uid: string,
 		file: TFile
 	): void {
-		const sqlStore = store as CardStore & {
-			upsertSourceNote?: (info: SourceNoteInfo) => void;
-		};
-
-		if (sqlStore.upsertSourceNote) {
-			sqlStore.upsertSourceNote({
-				uid,
-				noteName: file.basename,
-				notePath: file.path,
-				createdAt: Date.now(),
-				updatedAt: Date.now(),
-			});
-		}
+		store.projects.upsertSourceNote({
+			uid,
+			noteName: file.basename,
+			notePath: file.path,
+			createdAt: Date.now(),
+			updatedAt: Date.now(),
+		});
 	}
 
 	/**
@@ -93,12 +88,8 @@ export class SourceNoteService {
 	 * @param uid - The source note UID
 	 * @returns Source note info if found
 	 */
-	getSourceNoteInfo(store: CardStore, uid: string): SourceNoteInfo | null {
-		const sqlStore = store as CardStore & {
-			getSourceNote?: (uid: string) => SourceNoteInfo | null;
-		};
-
-		return sqlStore.getSourceNote?.(uid) ?? null;
+	getSourceNoteInfo(store: SqliteStoreService, uid: string): SourceNoteInfo | null {
+		return store.projects.getSourceNote(uid);
 	}
 
 	/**
@@ -109,7 +100,7 @@ export class SourceNoteService {
 	 * @returns Object with noteName and notePath if found
 	 */
 	resolveSourceNote(
-		store: CardStore,
+		store: SqliteStoreService,
 		sourceUid: string | undefined
 	): { noteName?: string; notePath?: string } {
 		if (!sourceUid) {
@@ -141,7 +132,7 @@ export class SourceNoteService {
 	 * @param uid - The source note UID
 	 * @returns The source note file if found
 	 */
-	findSourceNoteByUid(store: CardStore, uid: string): TFile | null {
+	findSourceNoteByUid(store: SqliteStoreService, uid: string): TFile | null {
 		const info = this.getSourceNoteInfo(store, uid);
 		if (!info?.notePath) return null;
 

@@ -127,20 +127,7 @@ export class BrowserView extends ItemView {
         this.stateManager.setLoading(true);
 
         try {
-            const sqlStore = this.plugin.cardStore as {
-                getBrowserQueries?: () => {
-                    getAllCardsForBrowser: () => BrowserCardItem[];
-                } | null;
-            };
-
-            const browserQueries = sqlStore.getBrowserQueries?.();
-            if (!browserQueries) {
-                console.warn("[BrowserView] Browser queries not available");
-                this.stateManager.setCards([]);
-                return;
-            }
-
-            const cards = browserQueries.getAllCardsForBrowser();
+            const cards = this.plugin.cardStore.browser.getAllCardsForBrowser();
             this.stateManager.setCards(cards);
         } catch (error) {
             console.error("[BrowserView] Failed to load cards:", error);
@@ -261,23 +248,7 @@ export class BrowserView extends ItemView {
             return;
         }
 
-        const sqlStore = this.plugin.cardStore as {
-            getBrowserQueries?: () => {
-                bulkSuspend: (ids: string[]) => number;
-                bulkUnsuspend: (ids: string[]) => number;
-                bulkBury: (ids: string[], until: string) => number;
-                bulkUnbury: (ids: string[]) => number;
-                bulkDelete: (ids: string[]) => number;
-                bulkReset: (ids: string[]) => number;
-                bulkReschedule: (ids: string[], date: string) => number;
-            } | null;
-        };
-
-        const browserQueries = sqlStore.getBrowserQueries?.();
-        if (!browserQueries) {
-            new Notice("Browser queries not available");
-            return;
-        }
+        const browser = this.plugin.cardStore.browser;
 
         try {
             let count = 0;
@@ -285,12 +256,12 @@ export class BrowserView extends ItemView {
 
             switch (operation) {
                 case "suspend":
-                    count = browserQueries.bulkSuspend(selectedIds);
+                    count = browser.bulkSuspend(selectedIds);
                     new Notice(`${count} card(s) suspended`);
                     break;
 
                 case "unsuspend":
-                    count = browserQueries.bulkUnsuspend(selectedIds);
+                    count = browser.bulkUnsuspend(selectedIds);
                     new Notice(`${count} card(s) unsuspended`);
                     break;
 
@@ -299,13 +270,13 @@ export class BrowserView extends ItemView {
                     const tomorrow = new Date();
                     tomorrow.setDate(tomorrow.getDate() + 1);
                     tomorrow.setHours(4, 0, 0, 0); // 4 AM tomorrow
-                    count = browserQueries.bulkBury(selectedIds, tomorrow.toISOString());
+                    count = browser.bulkBury(selectedIds, tomorrow.toISOString());
                     new Notice(`${count} card(s) buried until tomorrow`);
                     break;
                 }
 
                 case "unbury":
-                    count = browserQueries.bulkUnbury(selectedIds);
+                    count = browser.bulkUnbury(selectedIds);
                     new Notice(`${count} card(s) unburied`);
                     break;
 
@@ -313,7 +284,7 @@ export class BrowserView extends ItemView {
                     if (!confirm(`Delete ${selectedIds.length} card(s)? This cannot be undone.`)) {
                         return;
                     }
-                    count = browserQueries.bulkDelete(selectedIds);
+                    count = browser.bulkDelete(selectedIds);
                     this.stateManager.removeCards(selectedIds);
                     new Notice(`${count} card(s) deleted`);
                     break;
@@ -322,7 +293,7 @@ export class BrowserView extends ItemView {
                     if (!confirm(`Reset ${selectedIds.length} card(s) to New state?`)) {
                         return;
                     }
-                    count = browserQueries.bulkReset(selectedIds);
+                    count = browser.bulkReset(selectedIds);
                     new Notice(`${count} card(s) reset to New`);
                     break;
 
@@ -334,7 +305,7 @@ export class BrowserView extends ItemView {
                         new Notice("Invalid date format");
                         return;
                     }
-                    count = browserQueries.bulkReschedule(selectedIds, date.toISOString());
+                    count = browser.bulkReschedule(selectedIds, date.toISOString());
                     new Notice(`${count} card(s) rescheduled`);
                     break;
                 }

@@ -26,7 +26,7 @@ import {
 } from "./services";
 import { NLQueryService } from "./services/ai/nl-query.service";
 import { SqlJsAdapter } from "./services/ai/langchain-sqlite.adapter";
-import type { CardStore, FSRSCardData, SourceNoteInfo } from "./types";
+import type { FSRSCardData, SourceNoteInfo } from "./types";
 import { extractFSRSSettings } from "./types";
 import { FlashcardPanelView } from "./ui/panel/FlashcardPanelView";
 import { ReviewView } from "./ui/review/ReviewView";
@@ -62,18 +62,11 @@ export default class EpistemePlugin extends Plugin {
 	fsrsService!: FSRSService;
 	statsService!: StatsService;
 	sessionPersistence!: SessionPersistenceService;
-	cardStore!: CardStore;
+	cardStore!: SqliteStoreService;
 	dayBoundaryService!: DayBoundaryService;
 	nlQueryService: NLQueryService | null = null;
 	backupService: BackupService | null = null;
 	agentService: AgentService | null = null;
-
-	// Keep reference to SQLite store for SQLite-specific operations (stats queries)
-	private sqliteStore: SqliteStoreService | null = null;
-
-	getSqliteStore(): SqliteStoreService | null {
-		return this.sqliteStore;
-	}
 
 	async onload(): Promise<void> {
 		await this.loadSettings();
@@ -188,12 +181,7 @@ export default class EpistemePlugin extends Plugin {
 	}
 
 	onunload(): void {
-		// Save SQLite store immediately on unload (critical with 60s debounce)
-		if (this.sqliteStore) {
-			void this.sqliteStore.saveNow();
-		}
-
-		// Save card store immediately on unload
+		// Save card store immediately on unload (critical with 60s debounce)
 		if (this.cardStore) {
 			void this.cardStore.saveNow();
 		}
@@ -617,21 +605,20 @@ export default class EpistemePlugin extends Plugin {
 	private async initializeCardStore(): Promise<void> {
 		try {
 			// Create and load SQLite store
-			this.sqliteStore = new SqliteStoreService(this.app);
-			await this.sqliteStore.load();
+			this.cardStore = new SqliteStoreService(this.app);
+			await this.cardStore.load();
 
-			// Use SQLite store
-			this.cardStore = this.sqliteStore;
+			// Set store in flashcard manager
 			this.flashcardManager.setStore(this.cardStore);
 
 			// Initialize session persistence with SQL store (uses dayBoundaryService for Anki-style day boundaries)
-			this.sessionPersistence = new SessionPersistenceService(this.app, this.sqliteStore, this.dayBoundaryService);
+			this.sessionPersistence = new SessionPersistenceService(this.app, this.cardStore, this.dayBoundaryService);
 
 			// Migrate stats.json to SQL if exists (one-time migration)
 			await this.sessionPersistence.migrateStatsJsonToSql();
 
 			// Initialize Backup Service
-			this.backupService = new BackupService(this.app, this.sqliteStore);
+			this.backupService = new BackupService(this.app, this.cardStore);
 
 			// Auto-backup on load if enabled
 			if (this.settings.autoBackupOnLoad) {
@@ -650,13 +637,13 @@ export default class EpistemePlugin extends Plugin {
 	 * Initialize the NL Query Service for AI-powered statistics queries
 	 */
 	private async initializeNLQueryService(): Promise<void> {
-		if (!this.sqliteStore || !this.settings.openRouterApiKey) {
+		if (!this.cardStore || !this.settings.openRouterApiKey) {
 			// Service requires API key and database
 			return;
 		}
 
 		try {
-			const db = this.sqliteStore.getDatabase();
+			const db = this.cardStore.getDatabase();
 			if (!db) {
 				console.warn("[Episteme] Database not ready for NL Query Service");
 				return;
@@ -684,20 +671,12 @@ export default class EpistemePlugin extends Plugin {
 	 * Also detects orphaned source notes (deleted files)
 	 */
 	async syncSourceNotes(): Promise<void> {
-		const sqlStore = this.cardStore as CardStore & {
-			getAllSourceNotes?: () => SourceNoteInfo[];
-			updateSourceNotePath?: (uid: string, newPath: string, newName?: string) => void;
-			deleteSourceNote?: (uid: string, detachCards?: boolean) => void;
-			getCardsBySourceUid?: (uid: string) => FSRSCardData[];
-			syncNoteProjects?: (sourceUid: string, projectNames: string[]) => void;
-		};
-
-		if (!sqlStore.getAllSourceNotes || !sqlStore.updateSourceNotePath) {
+		if (!this.cardStore) {
 			new Notice("Source note sync not available");
 			return;
 		}
 
-		const sourceNotes = sqlStore.getAllSourceNotes();
+		const sourceNotes = this.cardStore.projects.getAllSourceNotes();
 		const frontmatterService = this.flashcardManager.getFrontmatterService();
 		const files = this.app.vault.getMarkdownFiles();
 
@@ -720,18 +699,16 @@ export default class EpistemePlugin extends Plugin {
 			if (file) {
 				// Check if path/name needs updating
 				if (file.path !== sourceNote.notePath || file.basename !== sourceNote.noteName) {
-					sqlStore.updateSourceNotePath(sourceNote.uid, file.path, file.basename);
+					this.cardStore.projects.updateSourceNotePath(sourceNote.uid, file.path, file.basename);
 					synced++;
 				}
 
 				// Sync projects from frontmatter
-				if (sqlStore.syncNoteProjects) {
-					const content = await this.app.vault.read(file);
-					const projects = frontmatterService.extractProjectsFromFrontmatter(content);
-					sqlStore.syncNoteProjects(sourceNote.uid, projects);
-					if (projects.length > 0) {
-						projectsSynced++;
-					}
+				const content = await this.app.vault.read(file);
+				const projects = frontmatterService.extractProjectsFromFrontmatter(content);
+				this.cardStore.projects.syncNoteProjects(sourceNote.uid, projects);
+				if (projects.length > 0) {
+					projectsSynced++;
 				}
 			} else {
 				// Source note exists in DB but no matching file in vault
@@ -741,13 +718,13 @@ export default class EpistemePlugin extends Plugin {
 		}
 
 		// Clean up orphaned source notes
-		if (orphaned > 0 && sqlStore.deleteSourceNote) {
+		if (orphaned > 0) {
 			let orphanedCards = 0;
 			for (const uid of orphanedUids) {
-				const cards = sqlStore.getCardsBySourceUid?.(uid) ?? [];
+				const cards = this.cardStore.getCardsBySourceUid(uid);
 				orphanedCards += cards.length;
 				// Delete source note but keep flashcards (detachCards = false)
-				sqlStore.deleteSourceNote(uid, false);
+				this.cardStore.projects.deleteSourceNote(uid, false);
 			}
 			new Notice(
 				`Synced ${synced} path(s), ${projectsSynced} project(s). Removed ${orphaned} orphaned entries` +
@@ -776,12 +753,7 @@ export default class EpistemePlugin extends Plugin {
 		const currentProjects = frontmatterService.extractProjectsFromFrontmatter(content);
 
 		// Get all available projects from the store
-		const sqlStore = this.cardStore as CardStore & {
-			getProjectStats?: () => { name: string }[];
-			syncNoteProjects?: (sourceUid: string, projectNames: string[]) => void;
-		};
-
-		const allProjects = sqlStore.getProjectStats?.()?.map(p => p.name) ?? [];
+		const allProjects = this.cardStore.projects.getProjectStats().map(p => p.name);
 
 		// Open modal
 		const modal = new AddToProjectModal(this.app, {
@@ -797,8 +769,8 @@ export default class EpistemePlugin extends Plugin {
 
 		// Sync to database if note has UID
 		const uid = await frontmatterService.getSourceNoteUid(file);
-		if (uid && sqlStore.syncNoteProjects) {
-			sqlStore.syncNoteProjects(uid, result.projects);
+		if (uid) {
+			this.cardStore.projects.syncNoteProjects(uid, result.projects);
 		}
 
 		if (result.projects.length > 0) {
@@ -815,14 +787,14 @@ export default class EpistemePlugin extends Plugin {
 		const projectName = file.basename;
 
 		// Check if project exists
-		const projects = this.cardStore.getProjectStats?.() ?? [];
+		const projects = this.cardStore.projects.getProjectStats();
 		if (projects.some(p => p.name.toLowerCase() === projectName.toLowerCase())) {
 			new Notice(`Project "${projectName}" already exists`);
 			return;
 		}
 
 		// Create project
-		const projectId = this.cardStore.createProject?.(projectName);
+		const projectId = this.cardStore.projects.createProject(projectName);
 		if (!projectId) {
 			new Notice("Failed to create project");
 			return;
@@ -839,19 +811,14 @@ export default class EpistemePlugin extends Plugin {
 		// Add note to project (update frontmatter + DB)
 		await frontmatterService.setProjectsInFrontmatter(file, [projectName]);
 
-		const sqlStore = this.cardStore as CardStore & {
-			syncNoteProjects?: (sourceUid: string, projectNames: string[]) => void;
-			upsertSourceNote?: (info: SourceNoteInfo) => void;
-		};
-
 		// Ensure source note exists in DB
-		sqlStore.upsertSourceNote?.({
+		this.cardStore.projects.upsertSourceNote({
 			uid: sourceUid,
 			noteName: file.basename,
 			notePath: file.path,
 		});
 
-		sqlStore.syncNoteProjects?.(sourceUid, [projectName]);
+		this.cardStore.projects.syncNoteProjects(sourceUid, [projectName]);
 
 		new Notice(`Project "${projectName}" created`);
 	}

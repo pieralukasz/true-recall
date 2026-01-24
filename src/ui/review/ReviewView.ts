@@ -79,7 +79,7 @@ export class ReviewView extends ItemView {
                 fsrsService: this.fsrsService,
                 reviewService: this.reviewService,
                 openRouterService: this.plugin.openRouterService,
-                getSqliteStore: () => this.plugin.getSqliteStore(),
+                cardStore: this.plugin.cardStore,
                 createZettelTemplateService: () => new ZettelTemplateService(this.app),
                 settings: {
                     dayStartHour: this.plugin.settings.dayStartHour,

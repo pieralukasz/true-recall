@@ -5,7 +5,7 @@
 import { App, Notice, TFile, normalizePath } from "obsidian";
 import { Rating } from "ts-fsrs";
 import type { ReviewStateManager } from "../../../state";
-import type { FlashcardManager, FSRSService, ReviewService, ZettelTemplateService, OpenRouterService } from "../../../services";
+import type { FlashcardManager, FSRSService, ReviewService, ZettelTemplateService, OpenRouterService, SqliteStoreService } from "../../../services";
 import type { FSRSFlashcardItem } from "../../../types";
 import type { UndoEntry } from "../review.types";
 import { MoveCardModal, FlashcardEditorModal, AIGeneratorModal } from "../../modals";
@@ -30,8 +30,8 @@ export interface CardActionsHandlerDeps {
 	fsrsService: FSRSService;
 	reviewService: ReviewService;
 	openRouterService: OpenRouterService;
-	/** Function to get SQLite store (for registering source notes) */
-	getSqliteStore: () => { projects: { upsertSourceNote: (note: { uid: string; noteName: string; notePath: string }) => void } } | null;
+	/** SQLite store for registering source notes */
+	cardStore: SqliteStoreService;
 	/** Function to create ZettelTemplateService */
 	createZettelTemplateService: () => ZettelTemplateService;
 	settings: {
@@ -710,14 +710,11 @@ tags: [${tag}]
 		const file = await this.deps.app.vault.create(filePath, content);
 
 		// Register source note in SQLite
-		const sqliteStore = this.deps.getSqliteStore();
-		if (sqliteStore) {
-			sqliteStore.projects.upsertSourceNote({
-				uid,
-				noteName: file.basename,
-				notePath: file.path,
-			});
-		}
+		this.deps.cardStore.projects.upsertSourceNote({
+			uid,
+			noteName: file.basename,
+			notePath: file.path,
+		});
 
 		return { uid, filePath: file.path };
 	}

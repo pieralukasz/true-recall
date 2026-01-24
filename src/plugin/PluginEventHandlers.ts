@@ -6,7 +6,6 @@ import { Notice, TFile } from "obsidian";
 import type EpistemePlugin from "../main";
 import { FlashcardPanelView } from "../ui/panel/FlashcardPanelView";
 import { VIEW_TYPE_FLASHCARD_PANEL } from "../constants";
-import type { CardStore, FSRSCardData, SourceNoteInfo, CardImageRef } from "../types";
 import { isImageExtension } from "../types";
 import { ImageService } from "../services/image";
 
@@ -67,12 +66,7 @@ export function registerEventHandlers(plugin: EpistemePlugin): void {
                 if (!uid) return;
 
                 // Update source_notes table in SQLite with new path and name
-                const store = plugin.cardStore as CardStore & {
-                    updateSourceNotePath?: (uid: string, newPath: string, newName?: string) => void;
-                };
-                if (store.updateSourceNotePath) {
-                    store.updateSourceNotePath(uid, file.path, file.basename);
-                }
+                plugin.cardStore.projects.updateSourceNotePath(uid, file.path, file.basename);
                 return;
             }
 
@@ -113,21 +107,13 @@ export function registerEventHandlers(plugin: EpistemePlugin): void {
             if (!(file instanceof TFile) || file.extension !== "md") return;
 
             // We can't read frontmatter from deleted file, so look up by path
-            const store = plugin.cardStore as CardStore & {
-                getSourceNoteByPath?: (path: string) => SourceNoteInfo | null;
-                deleteSourceNote?: (uid: string, detachCards?: boolean) => void;
-                getCardsBySourceUid?: (uid: string) => FSRSCardData[];
-            };
-
-            if (store.getSourceNoteByPath && store.deleteSourceNote) {
-                const sourceNote = store.getSourceNoteByPath(file.path);
-                if (sourceNote) {
-                    const cards = store.getCardsBySourceUid?.(sourceNote.uid) ?? [];
-                    // Delete source note but keep flashcards (detachCards = false sets source_uid = NULL)
-                    store.deleteSourceNote(sourceNote.uid, false);
-                    if (cards.length > 0) {
-                        new Notice(`Source note deleted. ${cards.length} flashcard(s) are now orphaned.`);
-                    }
+            const sourceNote = plugin.cardStore.projects.getSourceNoteByPath(file.path);
+            if (sourceNote) {
+                const cards = plugin.cardStore.getCardsBySourceUid(sourceNote.uid);
+                // Delete source note but keep flashcards (detachCards = false sets source_uid = NULL)
+                plugin.cardStore.projects.deleteSourceNote(sourceNote.uid, false);
+                if (cards.length > 0) {
+                    new Notice(`Source note deleted. ${cards.length} flashcard(s) are now orphaned.`);
                 }
             }
         })
@@ -151,22 +137,11 @@ function updatePanelView(plugin: EpistemePlugin, file: TFile | null): void {
  * Handle image file renames - update flashcard content and image refs
  */
 async function handleImageRename(plugin: EpistemePlugin, file: TFile, oldPath: string): Promise<void> {
-    const store = plugin.cardStore as CardStore & {
-        getCardsByImagePath?: (imagePath: string) => CardImageRef[];
-        updateCardContent?: (cardId: string, question: string, answer: string) => void;
-        updateImagePath?: (oldPath: string, newPath: string) => void;
-        get?: (cardId: string) => FSRSCardData | undefined;
-    };
-
-    // Check if store has the required methods
-    if (!store.getCardsByImagePath || !store.updateCardContent || !store.updateImagePath || !store.get) {
-        return;
-    }
-
+    const store = plugin.cardStore;
     const imageService = new ImageService(plugin.app);
 
     // Find all cards that reference the old image path
-    const cardRefs = store.getCardsByImagePath(oldPath);
+    const cardRefs = store.projects.getCardsByImagePath(oldPath);
     if (cardRefs.length === 0) {
         return;
     }
@@ -185,13 +160,13 @@ async function handleImageRename(plugin: EpistemePlugin, file: TFile, oldPath: s
 
         // Update card if content changed
         if (newQuestion !== card.question || newAnswer !== card.answer) {
-            store.updateCardContent(ref.cardId, newQuestion, newAnswer);
+            store.cards.updateCardContent(ref.cardId, newQuestion, newAnswer);
             updatedCardIds.add(ref.cardId);
         }
     }
 
     // Update the image_refs table
-    store.updateImagePath(oldPath, file.path);
+    store.projects.updateImagePath(oldPath, file.path);
 
     if (updatedCardIds.size > 0) {
         console.debug(`[Episteme] Updated ${updatedCardIds.size} card(s) after image rename: ${oldPath} -> ${file.path}`);
@@ -209,20 +184,14 @@ async function syncProjectsFromFrontmatter(plugin: EpistemePlugin, file: TFile):
     const sourceUid = await frontmatterService.getSourceNoteUid(file);
     if (!sourceUid) return;
 
-    const store = plugin.cardStore as CardStore & {
-        getProjectNamesForNote?: (sourceUid: string) => string[];
-        syncNoteProjects?: (sourceUid: string, projectNames: string[]) => void;
-        deleteEmptyProjects?: () => number;
-    };
-
-    if (!store.getProjectNamesForNote || !store.syncNoteProjects) return;
+    const store = plugin.cardStore;
 
     // Read current projects from frontmatter
     const content = await plugin.app.vault.read(file);
     const frontmatterProjects = frontmatterService.extractProjectsFromFrontmatter(content);
 
     // Get current projects from database
-    const dbProjects = store.getProjectNamesForNote(sourceUid);
+    const dbProjects = store.projects.getProjectNamesForNote(sourceUid);
 
     // Compare arrays (sorted for comparison)
     const fmSorted = [...frontmatterProjects].sort();
@@ -232,11 +201,9 @@ async function syncProjectsFromFrontmatter(plugin: EpistemePlugin, file: TFile):
 
     if (!arraysEqual) {
         // Sync projects to database
-        store.syncNoteProjects(sourceUid, frontmatterProjects);
+        store.projects.syncNoteProjects(sourceUid, frontmatterProjects);
 
         // Clean up empty projects
-        if (store.deleteEmptyProjects) {
-            store.deleteEmptyProjects();
-        }
+        store.projects.deleteEmptyProjects();
     }
 }
