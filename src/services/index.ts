@@ -75,3 +75,10 @@ export {
 
 // Zettel services
 export { ZettelTemplateService } from "./zettel/zettel-template.service";
+
+// Device services
+export {
+	DeviceIdService,
+	DeviceDiscoveryService,
+	type DeviceDatabaseInfo,
+} from "./device";

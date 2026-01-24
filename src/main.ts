@@ -12,6 +12,7 @@ import {
 	VIEW_TYPE_BROWSER,
 	FLASHCARD_CONFIG,
 } from "./constants";
+import { normalizePath } from "obsidian";
 import {
 	FlashcardManager,
 	OpenRouterService,
@@ -23,7 +24,13 @@ import {
 	resetEventBus,
 	getEventBus,
 	BackupService,
+	DeviceIdService,
+	DeviceDiscoveryService,
 } from "./services";
+import {
+	DB_FOLDER,
+	getDeviceDbFilename,
+} from "./services/persistence/sqlite/sqlite.types";
 import { NLQueryService } from "./services/ai/nl-query.service";
 import { SqlJsAdapter } from "./services/ai/langchain-sqlite.adapter";
 import type { FSRSCardData, SourceNoteInfo } from "./types";
@@ -43,7 +50,7 @@ import {
 	type EpistemeSettings,
 	DEFAULT_SETTINGS,
 } from "./ui/settings";
-import { AddToProjectModal, RestoreBackupModal } from "./ui/modals";
+import { AddToProjectModal, RestoreBackupModal, DeviceSelectionModal, type DeviceSelectionResult } from "./ui/modals";
 import { registerCommands } from "./plugin/PluginCommands";
 import { registerEventHandlers } from "./plugin/PluginEventHandlers";
 import { AgentService, registerAllTools, resetToolRegistry } from "./agent";
@@ -67,6 +74,8 @@ export default class EpistemePlugin extends Plugin {
 	nlQueryService: NLQueryService | null = null;
 	backupService: BackupService | null = null;
 	agentService: AgentService | null = null;
+	deviceIdService: DeviceIdService | null = null;
+	deviceDiscovery: DeviceDiscoveryService | null = null;
 
 	async onload(): Promise<void> {
 		await this.loadSettings();
@@ -86,8 +95,8 @@ export default class EpistemePlugin extends Plugin {
 			this.fsrsService
 		);
 
-		// Initialize SQLite store for FSRS data (also initializes session persistence)
-		void this.initializeCardStore();
+		// Initialize device context and SQLite store
+		void this.initializeDeviceAndStore();
 
 		// Initialize day boundary service (Anki-style day scheduling)
 		this.dayBoundaryService = new DayBoundaryService(
@@ -600,12 +609,149 @@ export default class EpistemePlugin extends Plugin {
 	}
 
 	/**
+	 * Initialize device context and then the card store.
+	 * Handles first-run detection, legacy migration, and device selection.
+	 */
+	private async initializeDeviceAndStore(): Promise<void> {
+		try {
+			const deviceId = await this.initializeDeviceContext();
+			await this.initializeCardStore(deviceId);
+		} catch (error) {
+			console.error("[Episteme] Failed to initialize device context:", error);
+			new Notice("Failed to initialize device context. Using default configuration.");
+			// Fallback: create ephemeral device ID and continue
+			this.deviceIdService = new DeviceIdService();
+			await this.initializeCardStore(this.deviceIdService.getDeviceId());
+		}
+	}
+
+	/**
+	 * Initialize device context: ID, discovery, and first-run handling.
+	 * @returns The device ID to use for this session
+	 */
+	private async initializeDeviceContext(): Promise<string> {
+		// 1. Get or create device ID
+		this.deviceIdService = new DeviceIdService();
+		const deviceId = this.deviceIdService.getDeviceId();
+		console.log(`[Episteme] Device ID: ${deviceId}`);
+
+		// 2. Initialize discovery service
+		this.deviceDiscovery = new DeviceDiscoveryService(this.app, deviceId);
+
+		// 3. Check if device-specific database exists
+		const deviceDbPath = normalizePath(
+			`${DB_FOLDER}/${getDeviceDbFilename(deviceId)}`
+		);
+		const deviceDbExists = await this.app.vault.adapter.exists(deviceDbPath);
+
+		if (deviceDbExists) {
+			// Database for this device already exists - nothing to do
+			console.log(`[Episteme] Using existing device database: ${deviceDbPath}`);
+			return deviceId;
+		}
+
+		// 4. First-run detection - check for other databases
+		const databases = await this.deviceDiscovery.discoverDeviceDatabases();
+		const hasLegacy = await this.deviceDiscovery.hasLegacyDatabase();
+
+		console.log(
+			`[Episteme] First run on device. Legacy DB: ${hasLegacy}, Other devices: ${databases.length}`
+		);
+
+		// 5. Handle different scenarios
+		if (hasLegacy && databases.length === 0) {
+			// Migrate legacy database to device-specific
+			await this.migrateLegacyDatabase(deviceId);
+		} else if (databases.length > 0) {
+			// Show selection modal
+			const result = await this.showDeviceSelectionModal(databases, hasLegacy);
+			if (!result.cancelled) {
+				await this.handleDeviceSelection(result, deviceId);
+			}
+			// If cancelled, SqliteStoreService will create a new empty database
+		}
+		// If no databases exist, SqliteStoreService will create a new empty database
+
+		return deviceId;
+	}
+
+	/**
+	 * Migrate legacy episteme.db to device-specific format.
+	 */
+	private async migrateLegacyDatabase(deviceId: string): Promise<void> {
+		const legacyPath = normalizePath(`${DB_FOLDER}/episteme.db`);
+		const newPath = normalizePath(`${DB_FOLDER}/${getDeviceDbFilename(deviceId)}`);
+		const backupPath = normalizePath(`${DB_FOLDER}/episteme.db.migrated`);
+
+		try {
+			// Create backup of legacy database
+			const data = await this.app.vault.adapter.readBinary(legacyPath);
+			await this.app.vault.adapter.writeBinary(backupPath, data);
+
+			// Rename legacy to device-specific
+			await this.app.vault.adapter.rename(legacyPath, newPath);
+
+			console.log(`[Episteme] Migrated legacy database to ${newPath}`);
+			new Notice("Database migrated to per-device format.");
+		} catch (error) {
+			console.error("[Episteme] Legacy migration failed:", error);
+			new Notice("Failed to migrate legacy database.");
+			throw error;
+		}
+	}
+
+	/**
+	 * Show device selection modal and return result.
+	 */
+	private async showDeviceSelectionModal(
+		databases: import("./services").DeviceDatabaseInfo[],
+		hasLegacy: boolean
+	): Promise<DeviceSelectionResult> {
+		const modal = new DeviceSelectionModal(this.app, {
+			databases,
+			hasLegacy,
+		});
+		return await modal.openAndWait();
+	}
+
+	/**
+	 * Handle result of device selection modal.
+	 */
+	private async handleDeviceSelection(
+		result: DeviceSelectionResult,
+		deviceId: string
+	): Promise<void> {
+		if (result.action === "import" && result.sourcePath) {
+			const targetPath = normalizePath(
+				`${DB_FOLDER}/${getDeviceDbFilename(deviceId)}`
+			);
+
+			try {
+				const sourceData = await this.app.vault.adapter.readBinary(
+					result.sourcePath
+				);
+				await this.app.vault.adapter.writeBinary(targetPath, sourceData);
+
+				console.log(
+					`[Episteme] Imported database from ${result.sourceDeviceId} to ${deviceId}`
+				);
+				new Notice(`Imported data from device ${result.sourceDeviceId}`);
+			} catch (error) {
+				console.error("[Episteme] Database import failed:", error);
+				new Notice("Failed to import database.");
+				throw error;
+			}
+		}
+		// "fresh" action - do nothing, SqliteStoreService will create new database
+	}
+
+	/**
 	 * Initialize the SQLite card store and session persistence
 	 */
-	private async initializeCardStore(): Promise<void> {
+	private async initializeCardStore(deviceId: string): Promise<void> {
 		try {
-			// Create and load SQLite store
-			this.cardStore = new SqliteStoreService(this.app);
+			// Create and load SQLite store with device ID
+			this.cardStore = new SqliteStoreService(this.app, deviceId);
 			await this.cardStore.load();
 
 			// Set store in flashcard manager
