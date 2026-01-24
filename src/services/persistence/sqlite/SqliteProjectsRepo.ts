@@ -3,7 +3,7 @@
  * CRUD operations for projects and note-project relationships (many-to-many)
  */
 import type { ProjectInfo } from "../../../types";
-import { getQueryResult, type DatabaseLike } from "./sqlite.types";
+import { getQueryResult, generateUUID, type DatabaseLike } from "./sqlite.types";
 
 /**
  * Repository for project operations and note-project relationships
@@ -33,7 +33,7 @@ export class SqliteProjectsRepo {
         }
 
         // Generate UUID for new project
-        const projectId = this.generateUUID();
+        const projectId = generateUUID();
 
         this.db.run(`
             INSERT INTO projects (id, name, created_at, updated_at)
@@ -42,21 +42,6 @@ export class SqliteProjectsRepo {
 
         this.onDataChange();
         return projectId;
-    }
-
-    /**
-     * Generate a UUID v4 string
-     */
-    private generateUUID(): string {
-        if (typeof crypto !== "undefined" && crypto.randomUUID) {
-            return crypto.randomUUID();
-        }
-        // Fallback for environments without crypto.randomUUID
-        return "xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx".replace(/[xy]/g, (c) => {
-            const r = (Math.random() * 16) | 0;
-            const v = c === "x" ? r : (r & 0x3) | 0x8;
-            return v.toString(16);
-        });
     }
 
     /**

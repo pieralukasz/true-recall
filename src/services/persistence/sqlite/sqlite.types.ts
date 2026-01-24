@@ -38,9 +38,17 @@ export function getQueryResult(
 }
 
 /**
- * Get column value from row by name
+ * Generate a UUID v4 string
+ * Uses crypto.randomUUID() if available, otherwise falls back to manual generation
  */
-export function getColValue(columns: string[], values: SqlRow, name: string): SqlValue {
-    const idx = columns.indexOf(name);
-    return idx >= 0 ? (values[idx] ?? null) : null;
+export function generateUUID(): string {
+    if (typeof crypto !== "undefined" && crypto.randomUUID) {
+        return crypto.randomUUID();
+    }
+    // Fallback for environments without crypto.randomUUID
+    return "xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx".replace(/[xy]/g, (c) => {
+        const r = (Math.random() * 16) | 0;
+        const v = c === "x" ? r : (r & 0x3) | 0x8;
+        return v.toString(16);
+    });
 }

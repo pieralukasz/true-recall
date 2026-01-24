@@ -3,7 +3,7 @@
  * Operations for tracking image references in flashcards
  */
 import type { CardImageRef } from "../../../types";
-import { getQueryResult, type DatabaseLike } from "./sqlite.types";
+import { getQueryResult, generateUUID, type DatabaseLike } from "./sqlite.types";
 
 /**
  * Repository for card image reference operations
@@ -22,7 +22,7 @@ export class SqliteImageRefsRepo {
      */
     add(ref: Omit<CardImageRef, "id">): void {
         const now = Date.now();
-        const id = this.generateUUID();
+        const id = generateUUID();
         const createdAt = ref.createdAt ?? now;
 
         this.db.run(`
@@ -31,21 +31,6 @@ export class SqliteImageRefsRepo {
         `, [id, ref.cardId, ref.imagePath, ref.field, createdAt]);
 
         this.onDataChange();
-    }
-
-    /**
-     * Generate a UUID v4 string
-     */
-    private generateUUID(): string {
-        if (typeof crypto !== "undefined" && crypto.randomUUID) {
-            return crypto.randomUUID();
-        }
-        // Fallback for environments without crypto.randomUUID
-        return "xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx".replace(/[xy]/g, (c) => {
-            const r = (Math.random() * 16) | 0;
-            const v = c === "x" ? r : (r & 0x3) | 0x8;
-            return v.toString(16);
-        });
     }
 
     /**
@@ -107,7 +92,7 @@ export class SqliteImageRefsRepo {
 
         // Add question refs
         for (const imagePath of questionRefs) {
-            const id = this.generateUUID();
+            const id = generateUUID();
             this.db.run(`
                 INSERT INTO card_image_refs (id, card_id, image_path, field, created_at)
                 VALUES (?, ?, ?, 'question', ?)
@@ -116,7 +101,7 @@ export class SqliteImageRefsRepo {
 
         // Add answer refs
         for (const imagePath of answerRefs) {
-            const id = this.generateUUID();
+            const id = generateUUID();
             this.db.run(`
                 INSERT INTO card_image_refs (id, card_id, image_path, field, created_at)
                 VALUES (?, ?, ?, 'answer', ?)

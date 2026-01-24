@@ -2,7 +2,7 @@
  * SQLite Schema Manager
  * Database schema creation and migrations
  */
-import { getQueryResult, type DatabaseLike } from "./sqlite.types";
+import { getQueryResult, generateUUID, type DatabaseLike } from "./sqlite.types";
 
 /**
  * Manages SQLite database schema and migrations
@@ -39,8 +39,7 @@ export class SqliteSchemaManager {
                 updated_at INTEGER,
                 question TEXT,
                 answer TEXT,
-                source_uid TEXT,
-                test_sync_column TEXT
+                source_uid TEXT
             );
 
             -- Indexes for common queries
@@ -675,7 +674,7 @@ export class SqliteSchemaManager {
             if (projectsData) {
                 for (const row of projectsData.values) {
                     const oldId = row[0] as number;
-                    const newId = this.generateUUID();
+                    const newId = generateUUID();
                     this.db.run(
                         "INSERT INTO project_id_mapping (old_id, new_id) VALUES (?, ?)",
                         [oldId, newId]
@@ -761,7 +760,7 @@ export class SqliteSchemaManager {
                 const timeSpentMsIdx = cols.indexOf("time_spent_ms");
 
                 for (const row of reviewLogData.values) {
-                    const newId = this.generateUUID();
+                    const newId = generateUUID();
                     this.db.run(`
                         INSERT INTO review_log_new (id, card_id, reviewed_at, rating, scheduled_days, elapsed_days, state, time_spent_ms)
                         VALUES (?, ?, ?, ?, ?, ?, ?, ?)
@@ -806,7 +805,7 @@ export class SqliteSchemaManager {
                 const createdAtIdx = cols.indexOf("created_at");
 
                 for (const row of imageRefsData.values) {
-                    const newId = this.generateUUID();
+                    const newId = generateUUID();
                     this.db.run(`
                         INSERT INTO card_image_refs_new (id, card_id, image_path, field, created_at)
                         VALUES (?, ?, ?, ?, ?)
@@ -867,21 +866,19 @@ export class SqliteSchemaManager {
     }
 
     /**
-     * Migrate from v11 to v12 (test migration with safety features)
-     * Adds test_sync_column to cards table for testing pre-migration backup
+     * Migrate from v11 to v12 (no-op migration)
+     * Originally added test_sync_column - now removed but migration kept for version continuity
      */
     private migrateV11toV12(): void {
-        console.log("[Episteme] Migrating schema v11 -> v12...");
+        console.log("[Episteme] Migrating schema v11 -> v12 (no-op)...");
 
         try {
-            this.db.run("ALTER TABLE cards ADD COLUMN test_sync_column TEXT");
-
             this.db.run("INSERT OR REPLACE INTO meta (key, value) VALUES ('schema_version', '12')");
             console.log("[Episteme] Schema migration v11->v12 completed");
             this.onSchemaChange();
         } catch (error) {
             console.error("[Episteme] Schema migration v11->v12 failed:", error);
-            throw error; // Re-throw to trigger integrity check failure
+            throw error;
         }
     }
 
@@ -903,21 +900,5 @@ export class SqliteSchemaManager {
         } catch (error) {
             console.error("[Episteme] Schema migration v12->v13 failed:", error);
         }
-    }
-
-    /**
-     * Generate a UUID v4 string
-     * Uses crypto.randomUUID() if available, otherwise falls back to manual generation
-     */
-    private generateUUID(): string {
-        if (typeof crypto !== "undefined" && crypto.randomUUID) {
-            return crypto.randomUUID();
-        }
-        // Fallback for environments without crypto.randomUUID
-        return "xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx".replace(/[xy]/g, (c) => {
-            const r = (Math.random() * 16) | 0;
-            const v = c === "x" ? r : (r & 0x3) | 0x8;
-            return v.toString(16);
-        });
     }
 }

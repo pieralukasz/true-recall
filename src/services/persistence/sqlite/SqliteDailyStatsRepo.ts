@@ -3,7 +3,7 @@
  * Review log and daily statistics operations
  */
 import type { CardReviewLogEntry, ExtendedDailyStats } from "../../../types";
-import { getQueryResult, type DatabaseLike } from "./sqlite.types";
+import { getQueryResult, generateUUID, type DatabaseLike } from "./sqlite.types";
 
 /**
  * Repository for daily stats and review log operations
@@ -30,7 +30,7 @@ export class SqliteDailyStatsRepo {
         state: number,
         timeSpentMs: number
     ): void {
-        const id = this.generateUUID();
+        const id = generateUUID();
         const reviewedAt = new Date().toISOString();
 
         this.db.run(`
@@ -41,21 +41,6 @@ export class SqliteDailyStatsRepo {
         `, [id, cardId, reviewedAt, rating, scheduledDays, elapsedDays, state, timeSpentMs]);
 
         this.onDataChange();
-    }
-
-    /**
-     * Generate a UUID v4 string
-     */
-    private generateUUID(): string {
-        if (typeof crypto !== "undefined" && crypto.randomUUID) {
-            return crypto.randomUUID();
-        }
-        // Fallback for environments without crypto.randomUUID
-        return "xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx".replace(/[xy]/g, (c) => {
-            const r = (Math.random() * 16) | 0;
-            const v = c === "x" ? r : (r & 0x3) | 0x8;
-            return v.toString(16);
-        });
     }
 
     /**

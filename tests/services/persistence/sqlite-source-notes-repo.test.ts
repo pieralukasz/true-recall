@@ -50,16 +50,6 @@ describe("SqliteSourceNotesRepo", () => {
 			);
 
 			CREATE INDEX idx_cards_source_uid ON cards(source_uid);
-
-			CREATE TABLE sync_log (
-				id TEXT PRIMARY KEY NOT NULL,
-				operation TEXT NOT NULL,
-				table_name TEXT NOT NULL,
-				row_id TEXT NOT NULL,
-				data TEXT,
-				timestamp INTEGER NOT NULL,
-				synced INTEGER DEFAULT 0
-			);
 		`);
 
 		repo = new SqliteSourceNotesRepo(db, onDataChange);
