@@ -1,8 +1,12 @@
 /**
- * Authentication service using Supabase
+ * Authentication service using Supabase (Episteme Cloud)
  * Handles user login, signup, and session management
+ *
+ * Note: Credentials are hardcoded (SaaS model). The anon key is public
+ * by design - security relies on RLS (Row Level Security) policies.
  */
 import { createClient, SupabaseClient, User, Session } from "@supabase/supabase-js";
+import { EPISTEME_CLOUD } from "../../constants";
 
 export interface AuthState {
 	user: User | null;
@@ -17,61 +21,58 @@ export interface AuthResult {
 }
 
 /**
- * Supabase authentication service
+ * Supabase authentication service for Episteme Cloud
  */
 export class AuthService {
-	private client: SupabaseClient | null = null;
+	private client: SupabaseClient;
 	private supabaseUrl: string;
 	private supabaseAnonKey: string;
 
-	constructor(supabaseUrl: string, supabaseAnonKey: string) {
-		this.supabaseUrl = supabaseUrl;
-		this.supabaseAnonKey = supabaseAnonKey;
-		this.initializeClient();
+	constructor() {
+		// Use hardcoded Episteme Cloud credentials (SaaS model)
+		this.supabaseUrl = EPISTEME_CLOUD.supabaseUrl;
+		this.supabaseAnonKey = EPISTEME_CLOUD.supabaseAnonKey;
+		this.client = this.createClient();
 	}
 
 	/**
-	 * Initialize or reinitialize the Supabase client
+	 * Create Supabase client with current credentials
 	 */
-	private initializeClient(): void {
-		if (this.supabaseUrl && this.supabaseAnonKey) {
-			this.client = createClient(this.supabaseUrl, this.supabaseAnonKey, {
-				auth: {
-					autoRefreshToken: true,
-					persistSession: true,
-					detectSessionInUrl: false,
-				},
-			});
-		} else {
-			this.client = null;
-		}
+	private createClient(): SupabaseClient {
+		return createClient(this.supabaseUrl, this.supabaseAnonKey, {
+			auth: {
+				autoRefreshToken: true,
+				persistSession: true,
+				detectSessionInUrl: false,
+			},
+		});
 	}
 
 	/**
 	 * Update Supabase credentials and reinitialize client
+	 * Kept for potential future use (e.g., self-hosted option)
 	 */
 	updateCredentials(supabaseUrl: string, supabaseAnonKey: string): void {
 		this.supabaseUrl = supabaseUrl;
 		this.supabaseAnonKey = supabaseAnonKey;
-		this.initializeClient();
+		this.client = this.createClient();
 	}
 
 	/**
 	 * Check if the service is properly configured
+	 * Always true in SaaS model since credentials are hardcoded
 	 */
 	isConfigured(): boolean {
-		return this.client !== null;
+		return true;
 	}
 
 	/**
 	 * Get current authentication state
 	 */
 	async getAuthState(): Promise<AuthState> {
-		if (!this.client) {
-			return { user: null, session: null, isAuthenticated: false };
-		}
-
-		const { data: { session } } = await this.client.auth.getSession();
+		const {
+			data: { session },
+		} = await this.client.auth.getSession();
 		return {
 			user: session?.user ?? null,
 			session: session,
@@ -83,8 +84,9 @@ export class AuthService {
 	 * Get current user
 	 */
 	async getCurrentUser(): Promise<User | null> {
-		if (!this.client) return null;
-		const { data: { user } } = await this.client.auth.getUser();
+		const {
+			data: { user },
+		} = await this.client.auth.getUser();
 		return user;
 	}
 
@@ -92,10 +94,6 @@ export class AuthService {
 	 * Sign up a new user with email and password
 	 */
 	async signUp(email: string, password: string): Promise<AuthResult> {
-		if (!this.client) {
-			return { success: false, error: "Supabase not configured" };
-		}
-
 		const { data, error } = await this.client.auth.signUp({
 			email,
 			password,
@@ -112,10 +110,6 @@ export class AuthService {
 	 * Sign in with email and password
 	 */
 	async signIn(email: string, password: string): Promise<AuthResult> {
-		if (!this.client) {
-			return { success: false, error: "Supabase not configured" };
-		}
-
 		const { data, error } = await this.client.auth.signInWithPassword({
 			email,
 			password,
@@ -132,10 +126,6 @@ export class AuthService {
 	 * Sign out the current user
 	 */
 	async signOut(): Promise<AuthResult> {
-		if (!this.client) {
-			return { success: false, error: "Supabase not configured" };
-		}
-
 		const { error } = await this.client.auth.signOut();
 
 		if (error) {
@@ -149,7 +139,7 @@ export class AuthService {
 	 * Get the Supabase client instance
 	 * Useful for other services that need direct access
 	 */
-	getClient(): SupabaseClient | null {
+	getClient(): SupabaseClient {
 		return this.client;
 	}
 }
