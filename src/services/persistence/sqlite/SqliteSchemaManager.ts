@@ -35,6 +35,7 @@ export class SqliteSchemaManager {
         12: migrations.migration011ToV12,
         13: migrations.migration012ToV13,
         14: migrations.migration013ToV14,
+        15: migrations.migration014ToV15,
     };
 
     constructor(db: DatabaseLike, onSchemaChange: () => void) {
@@ -43,7 +44,7 @@ export class SqliteSchemaManager {
     }
 
     /**
-     * Create database tables (schema v14 - soft delete support)
+     * Create database tables (schema v15 - removed note_projects, simplified source_notes)
      */
     createTables(): void {
         this.db.run(`
@@ -76,17 +77,14 @@ export class SqliteSchemaManager {
             CREATE INDEX IF NOT EXISTS idx_cards_source_uid ON cards(source_uid);
             CREATE INDEX IF NOT EXISTS idx_cards_deleted ON cards(deleted_at);
 
-            -- Source notes table
+            -- Source notes table (v15: simplified, only UID + timestamps)
             CREATE TABLE IF NOT EXISTS source_notes (
                 uid TEXT PRIMARY KEY NOT NULL,
-                note_name TEXT NOT NULL,
-                note_path TEXT,
                 created_at INTEGER,
                 updated_at INTEGER,
                 deleted_at INTEGER DEFAULT NULL
             );
 
-            CREATE INDEX IF NOT EXISTS idx_source_notes_name ON source_notes(note_name);
             CREATE INDEX IF NOT EXISTS idx_source_notes_deleted ON source_notes(deleted_at);
 
             -- Projects table (v10: TEXT UUID PK)
@@ -100,22 +98,6 @@ export class SqliteSchemaManager {
 
             CREATE INDEX IF NOT EXISTS idx_projects_name ON projects(name);
             CREATE INDEX IF NOT EXISTS idx_projects_deleted ON projects(deleted_at);
-
-            -- Note-Project junction table (many-to-many, v10: TEXT project_id)
-            CREATE TABLE IF NOT EXISTS note_projects (
-                source_uid TEXT NOT NULL,
-                project_id TEXT NOT NULL,
-                created_at INTEGER,
-                updated_at INTEGER,
-                deleted_at INTEGER DEFAULT NULL,
-                PRIMARY KEY (source_uid, project_id),
-                FOREIGN KEY (source_uid) REFERENCES source_notes(uid) ON DELETE CASCADE,
-                FOREIGN KEY (project_id) REFERENCES projects(id) ON DELETE CASCADE
-            );
-
-            CREATE INDEX IF NOT EXISTS idx_note_projects_source ON note_projects(source_uid);
-            CREATE INDEX IF NOT EXISTS idx_note_projects_project ON note_projects(project_id);
-            CREATE INDEX IF NOT EXISTS idx_note_projects_deleted ON note_projects(deleted_at);
 
             -- Review history log (v10: TEXT UUID PK)
             CREATE TABLE IF NOT EXISTS review_log (
@@ -181,7 +163,7 @@ export class SqliteSchemaManager {
             );
 
             -- Set schema version
-            INSERT OR REPLACE INTO meta (key, value) VALUES ('schema_version', '14');
+            INSERT OR REPLACE INTO meta (key, value) VALUES ('schema_version', '15');
             INSERT OR REPLACE INTO meta (key, value) VALUES ('created_at', datetime('now'));
         `);
     }
@@ -191,7 +173,7 @@ export class SqliteSchemaManager {
      */
     runMigrations(): void {
         const currentVersion = this.getSchemaVersion();
-        const latestVersion = 14;
+        const latestVersion = 15;
 
         if (currentVersion >= latestVersion) {
             return; // Already at latest version

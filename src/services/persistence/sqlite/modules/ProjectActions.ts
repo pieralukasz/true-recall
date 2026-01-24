@@ -2,20 +2,18 @@
  * Project Actions Module
  * Projects, source notes, and image references operations
  *
- * Uses SQL column aliases to map directly to TypeScript interfaces
- * No manual row mapping needed
+ * v15: Removed note_projects table, simplified source_notes (no name/path)
+ * Projects are now read from frontmatter (source of truth)
  */
-import type { SourceNoteInfo, ProjectInfo, CardImageRef } from "types";
+import type { ProjectInfo, CardImageRef } from "types";
 import { SqliteDatabase } from "../SqliteDatabase";
 import { generateUUID } from "../sqlite.types";
 
 /**
- * Source note with sync timestamps
+ * Source note with sync timestamps (v15: simplified, no name/path)
  */
 export interface SourceNoteForSync {
     uid: string;
-    noteName: string;
-    notePath: string | null;
     createdAt: number;
     updatedAt: number;
     deletedAt: number | null;
@@ -27,17 +25,6 @@ export interface SourceNoteForSync {
 export interface ProjectForSync {
     id: string;
     name: string;
-    createdAt: number;
-    updatedAt: number;
-    deletedAt: number | null;
-}
-
-/**
- * Note-Project junction with sync timestamps
- */
-export interface NoteProjectForSync {
-    sourceUid: string;
-    projectId: string;
     createdAt: number;
     updatedAt: number;
     deletedAt: number | null;
@@ -56,10 +43,13 @@ export interface CardImageRefForSync {
     deletedAt: number | null;
 }
 
-interface OrphanedNoteRow {
+/**
+ * Simplified source note info (v15: only UID + timestamps)
+ */
+export interface SourceNoteInfo {
     uid: string;
-    note_name: string;
-    note_path: string;
+    createdAt?: number;
+    updatedAt?: number;
 }
 
 /**
@@ -71,25 +61,17 @@ export class ProjectActions {
     // ===== Source Notes =====
 
     /**
-     * Insert or update a source note
+     * Insert or update a source note (v15: only uid + timestamps)
      */
-    upsertSourceNote(info: SourceNoteInfo): void {
+    upsertSourceNote(uid: string): void {
         const now = Date.now();
 
         this.db.run(`
-            INSERT INTO source_notes (uid, note_name, note_path, created_at, updated_at)
-            VALUES (?, ?, ?, ?, ?)
+            INSERT INTO source_notes (uid, created_at, updated_at)
+            VALUES (?, ?, ?)
             ON CONFLICT(uid) DO UPDATE SET
-                note_name = excluded.note_name,
-                note_path = excluded.note_path,
                 updated_at = excluded.updated_at
-        `, [
-            info.uid,
-            info.noteName,
-            info.notePath ?? null,
-            info.createdAt ?? now,
-            now,
-        ]);
+        `, [uid, now, now]);
     }
 
     /**
@@ -99,27 +81,10 @@ export class ProjectActions {
         return this.db.get<SourceNoteInfo>(`
             SELECT
                 uid,
-                note_name as noteName,
-                note_path as notePath,
                 created_at as createdAt,
                 updated_at as updatedAt
             FROM source_notes WHERE uid = ? AND deleted_at IS NULL
         `, [uid]);
-    }
-
-    /**
-     * Get source note by note path
-     */
-    getSourceNoteByPath(notePath: string): SourceNoteInfo | null {
-        return this.db.get<SourceNoteInfo>(`
-            SELECT
-                uid,
-                note_name as noteName,
-                note_path as notePath,
-                created_at as createdAt,
-                updated_at as updatedAt
-            FROM source_notes WHERE note_path = ? AND deleted_at IS NULL
-        `, [notePath]);
     }
 
     /**
@@ -129,36 +94,10 @@ export class ProjectActions {
         return this.db.query<SourceNoteInfo>(`
             SELECT
                 uid,
-                note_name as noteName,
-                note_path as notePath,
                 created_at as createdAt,
                 updated_at as updatedAt
             FROM source_notes WHERE deleted_at IS NULL
         `);
-    }
-
-    /**
-     * Update source note path (when file is renamed)
-     */
-    updateSourceNotePath(uid: string, newPath: string, newName?: string): void {
-        const now = Date.now();
-
-        if (newName) {
-            this.db.run(`
-                UPDATE source_notes SET
-                    note_path = ?,
-                    note_name = ?,
-                    updated_at = ?
-                WHERE uid = ?
-            `, [newPath, newName, now, uid]);
-        } else {
-            this.db.run(`
-                UPDATE source_notes SET
-                    note_path = ?,
-                    updated_at = ?
-                WHERE uid = ?
-            `, [newPath, now, uid]);
-        }
     }
 
     /**
@@ -199,63 +138,57 @@ export class ProjectActions {
     }
 
     /**
-     * Get a project by name
+     * Get a project by name (v15: no note_projects JOIN)
      */
     getProjectByName(name: string): ProjectInfo | null {
         return this.db.get<ProjectInfo>(`
             SELECT
-                p.id,
-                p.name,
-                p.created_at as createdAt,
-                p.updated_at as updatedAt,
-                COUNT(DISTINCT np.source_uid) as cardCount,
+                id,
+                name,
+                created_at as createdAt,
+                updated_at as updatedAt,
+                0 as cardCount,
                 0 as dueCount,
                 0 as newCount
-            FROM projects p
-            LEFT JOIN note_projects np ON p.id = np.project_id AND np.deleted_at IS NULL
-            WHERE p.name = ? AND p.deleted_at IS NULL
-            GROUP BY p.id
+            FROM projects
+            WHERE name = ? AND deleted_at IS NULL
         `, [name]);
     }
 
     /**
-     * Get a project by ID
+     * Get a project by ID (v15: no note_projects JOIN)
      */
     getProjectById(id: string): ProjectInfo | null {
         return this.db.get<ProjectInfo>(`
             SELECT
-                p.id,
-                p.name,
-                p.created_at as createdAt,
-                p.updated_at as updatedAt,
-                COUNT(DISTINCT np.source_uid) as cardCount,
+                id,
+                name,
+                created_at as createdAt,
+                updated_at as updatedAt,
+                0 as cardCount,
                 0 as dueCount,
                 0 as newCount
-            FROM projects p
-            LEFT JOIN note_projects np ON p.id = np.project_id AND np.deleted_at IS NULL
-            WHERE p.id = ? AND p.deleted_at IS NULL
-            GROUP BY p.id
+            FROM projects
+            WHERE id = ? AND deleted_at IS NULL
         `, [id]);
     }
 
     /**
-     * Get all projects
+     * Get all projects (v15: no note_projects JOIN, counts populated elsewhere)
      */
     getAllProjects(): ProjectInfo[] {
         return this.db.query<ProjectInfo>(`
             SELECT
-                p.id,
-                p.name,
-                p.created_at as createdAt,
-                p.updated_at as updatedAt,
-                COUNT(DISTINCT np.source_uid) as cardCount,
+                id,
+                name,
+                created_at as createdAt,
+                updated_at as updatedAt,
+                0 as cardCount,
                 0 as dueCount,
                 0 as newCount
-            FROM projects p
-            LEFT JOIN note_projects np ON p.id = np.project_id AND np.deleted_at IS NULL
-            WHERE p.deleted_at IS NULL
-            GROUP BY p.id
-            ORDER BY p.name
+            FROM projects
+            WHERE deleted_at IS NULL
+            ORDER BY name
         `);
     }
 
@@ -278,169 +211,6 @@ export class ProjectActions {
         this.db.run(`
             UPDATE projects SET deleted_at = ?, updated_at = ? WHERE id = ?
         `, [Date.now(), Date.now(), id]);
-    }
-
-    /**
-     * Sync projects for a source note
-     */
-    syncNoteProjects(sourceUid: string, projectNames: string[]): void {
-        const now = Date.now();
-
-        // Soft delete existing associations
-        this.db.run(`
-            UPDATE note_projects SET deleted_at = ?, updated_at = ? WHERE source_uid = ?
-        `, [now, now, sourceUid]);
-
-        // Add new associations
-        for (const projectName of projectNames) {
-            const trimmed = projectName.trim();
-            if (!trimmed) continue;
-
-            const projectId = this.createProject(trimmed);
-
-            this.db.run(`
-                INSERT OR IGNORE INTO note_projects (source_uid, project_id, created_at, updated_at)
-                VALUES (?, ?, ?, ?)
-            `, [sourceUid, projectId, now, now]);
-        }
-    }
-
-    /**
-     * Get all projects for a source note
-     */
-    getProjectsForNote(sourceUid: string): ProjectInfo[] {
-        return this.db.query<ProjectInfo>(`
-            SELECT
-                p.id,
-                p.name,
-                p.created_at as createdAt,
-                p.updated_at as updatedAt,
-                COUNT(DISTINCT np2.source_uid) as cardCount,
-                0 as dueCount,
-                0 as newCount
-            FROM projects p
-            INNER JOIN note_projects np ON p.id = np.project_id AND np.deleted_at IS NULL
-            LEFT JOIN note_projects np2 ON p.id = np2.project_id AND np2.deleted_at IS NULL
-            WHERE np.source_uid = ? AND p.deleted_at IS NULL
-            GROUP BY p.id
-            ORDER BY p.name
-        `, [sourceUid]);
-    }
-
-    /**
-     * Get project names for a source note
-     */
-    getProjectNamesForNote(sourceUid: string): string[] {
-        const rows = this.db.query<{ name: string }>(`
-            SELECT p.name
-            FROM projects p
-            INNER JOIN note_projects np ON p.id = np.project_id
-            WHERE np.source_uid = ? AND p.deleted_at IS NULL AND np.deleted_at IS NULL
-            ORDER BY p.name
-        `, [sourceUid]);
-
-        return rows.map((r) => r.name);
-    }
-
-    /**
-     * Get all source note UIDs in a project
-     */
-    getNotesInProject(projectId: string): string[] {
-        const rows = this.db.query<{ source_uid: string }>(
-            `SELECT source_uid FROM note_projects WHERE project_id = ? AND deleted_at IS NULL`,
-            [projectId]
-        );
-        return rows.map((r) => r.source_uid);
-    }
-
-    /**
-     * Add a project to a note
-     */
-    addProjectToNote(sourceUid: string, projectName: string): void {
-        const projectId = this.createProject(projectName);
-
-        this.db.run(`
-            INSERT OR IGNORE INTO note_projects (source_uid, project_id, created_at)
-            VALUES (?, ?, ?)
-        `, [sourceUid, projectId, Date.now()]);
-    }
-
-    /**
-     * Remove a project from a note
-     */
-    removeProjectFromNote(sourceUid: string, projectId: string): void {
-        this.db.run(`
-            UPDATE note_projects SET deleted_at = ?, updated_at = ? WHERE source_uid = ? AND project_id = ?
-        `, [Date.now(), Date.now(), sourceUid, projectId]);
-    }
-
-    /**
-     * Get project statistics with card counts
-     */
-    getProjectStats(): ProjectInfo[] {
-        return this.db.query<ProjectInfo>(`
-            SELECT
-                p.id,
-                p.name,
-                p.created_at as createdAt,
-                p.updated_at as updatedAt,
-                COUNT(DISTINCT np.source_uid) as noteCount,
-                COUNT(DISTINCT c.id) as cardCount,
-                SUM(CASE WHEN c.state != 0 AND c.suspended = 0
-                         AND (c.buried_until IS NULL OR c.buried_until <= datetime('now'))
-                         AND c.due <= datetime('now') THEN 1 ELSE 0 END) as dueCount,
-                SUM(CASE WHEN c.state = 0 AND c.suspended = 0
-                         AND (c.buried_until IS NULL OR c.buried_until <= datetime('now'))
-                    THEN 1 ELSE 0 END) as newCount
-            FROM projects p
-            LEFT JOIN note_projects np ON p.id = np.project_id AND np.deleted_at IS NULL
-            LEFT JOIN cards c ON np.source_uid = c.source_uid AND c.deleted_at IS NULL
-            WHERE p.deleted_at IS NULL
-            GROUP BY p.id
-            ORDER BY p.name
-        `);
-    }
-
-    /**
-     * Delete all projects that have no notes associated
-     */
-    deleteEmptyProjects(): number {
-        const rows = this.db.query<{ id: string }>(`
-            SELECT id FROM projects WHERE deleted_at IS NULL
-            AND id NOT IN (
-                SELECT DISTINCT project_id FROM note_projects WHERE deleted_at IS NULL
-            )
-        `);
-
-        if (rows.length === 0) return 0;
-
-        this.db.run(`
-            UPDATE projects SET deleted_at = ?, updated_at = ?
-            WHERE id NOT IN (
-                SELECT DISTINCT project_id FROM note_projects WHERE deleted_at IS NULL
-            )
-        `, [Date.now(), Date.now()]);
-
-        return rows.length;
-    }
-
-    /**
-     * Get source notes that have no projects assigned
-     */
-    getOrphanedSourceNotes(): { uid: string; noteName: string; notePath: string }[] {
-        const rows = this.db.query<OrphanedNoteRow>(`
-            SELECT sn.uid, sn.note_name, sn.note_path
-            FROM source_notes sn
-            LEFT JOIN note_projects np ON sn.uid = np.source_uid AND np.deleted_at IS NULL
-            WHERE sn.deleted_at IS NULL AND np.source_uid IS NULL
-            ORDER BY sn.note_name
-        `);
-
-        return rows.map((r) => ({
-            uid: r.uid,
-            noteName: r.note_name,
-            notePath: r.note_path,
-        }));
     }
 
     // ===== Image References =====
@@ -569,13 +339,12 @@ export class ProjectActions {
 
     /**
      * Get source notes modified since timestamp (for sync push)
+     * v15: No name/path fields
      */
     getModifiedSourceNotesSince(timestamp: number): SourceNoteForSync[] {
         return this.db.query<SourceNoteForSync>(`
             SELECT
                 uid,
-                note_name as noteName,
-                note_path as notePath,
                 created_at as createdAt,
                 updated_at as updatedAt,
                 deleted_at as deletedAt
@@ -585,16 +354,14 @@ export class ProjectActions {
     }
 
     /**
-     * Upsert source note from remote sync
+     * Upsert source note from remote sync (v15: no name/path)
      */
     upsertSourceNoteFromRemote(data: SourceNoteForSync): void {
         this.db.run(`
-            INSERT OR REPLACE INTO source_notes (uid, note_name, note_path, created_at, updated_at, deleted_at)
-            VALUES (?, ?, ?, ?, ?, ?)
+            INSERT OR REPLACE INTO source_notes (uid, created_at, updated_at, deleted_at)
+            VALUES (?, ?, ?, ?)
         `, [
             data.uid,
-            data.noteName,
-            data.notePath,
             data.createdAt,
             data.updatedAt,
             data.deletedAt,
@@ -608,8 +375,6 @@ export class ProjectActions {
         return this.db.get<SourceNoteForSync>(`
             SELECT
                 uid,
-                note_name as noteName,
-                note_path as notePath,
                 created_at as createdAt,
                 updated_at as updatedAt,
                 deleted_at as deletedAt
@@ -662,53 +427,6 @@ export class ProjectActions {
                 deleted_at as deletedAt
             FROM projects WHERE id = ?
         `, [id]);
-    }
-
-    /**
-     * Get note-projects modified since timestamp (for sync push)
-     */
-    getModifiedNoteProjectsSince(timestamp: number): NoteProjectForSync[] {
-        return this.db.query<NoteProjectForSync>(`
-            SELECT
-                source_uid as sourceUid,
-                project_id as projectId,
-                created_at as createdAt,
-                updated_at as updatedAt,
-                deleted_at as deletedAt
-            FROM note_projects
-            WHERE updated_at > ?
-        `, [timestamp]);
-    }
-
-    /**
-     * Upsert note-project from remote sync
-     */
-    upsertNoteProjectFromRemote(data: NoteProjectForSync): void {
-        this.db.run(`
-            INSERT OR REPLACE INTO note_projects (source_uid, project_id, created_at, updated_at, deleted_at)
-            VALUES (?, ?, ?, ?, ?)
-        `, [
-            data.sourceUid,
-            data.projectId,
-            data.createdAt,
-            data.updatedAt,
-            data.deletedAt,
-        ]);
-    }
-
-    /**
-     * Get note-project with sync fields (for LWW comparison)
-     */
-    getNoteProjectForSync(sourceUid: string, projectId: string): NoteProjectForSync | null {
-        return this.db.get<NoteProjectForSync>(`
-            SELECT
-                source_uid as sourceUid,
-                project_id as projectId,
-                created_at as createdAt,
-                updated_at as updatedAt,
-                deleted_at as deletedAt
-            FROM note_projects WHERE source_uid = ? AND project_id = ?
-        `, [sourceUid, projectId]);
     }
 
     /**
@@ -766,11 +484,10 @@ export class ProjectActions {
 
     /**
      * Delete all project-related data (for force pull sync)
-     * Order: dependent tables first
+     * v15: No note_projects table
      */
     deleteAllForSync(): void {
         this.db.run(`DELETE FROM card_image_refs`);
-        this.db.run(`DELETE FROM note_projects`);
         this.db.run(`DELETE FROM projects`);
         this.db.run(`DELETE FROM source_notes`);
     }

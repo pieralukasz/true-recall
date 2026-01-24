@@ -2,8 +2,8 @@
  * Source Note Service
  * Handles source note management operations
  *
- * Extracted from FlashcardManager to reduce god class complexity.
- * Source notes are the original markdown files that flashcards are generated from.
+ * v15: Source note name and path are resolved from vault at runtime
+ * (no longer stored in database)
  */
 import { App, TFile } from "obsidian";
 import type { SourceNoteInfo } from "../../types";
@@ -12,6 +12,7 @@ import { FrontmatterService } from "./frontmatter.service";
 
 /**
  * Service for managing source note relationships
+ * v15: Resolves source note info from vault instead of database
  */
 export class SourceNoteService {
 	private app: App;
@@ -62,23 +63,18 @@ export class SourceNoteService {
 
 	/**
 	 * Register a source note in the store
+	 * v15: Only stores UID + timestamps (no name/path)
 	 *
 	 * @param store - The card store
 	 * @param uid - The source note UID
-	 * @param file - The source note file
+	 * @param _file - The source note file (unused in v15)
 	 */
 	registerSourceNote(
 		store: SqliteStoreService,
 		uid: string,
-		file: TFile
+		_file: TFile
 	): void {
-		store.projects.upsertSourceNote({
-			uid,
-			noteName: file.basename,
-			notePath: file.path,
-			createdAt: Date.now(),
-			updatedAt: Date.now(),
-		});
+		store.projects.upsertSourceNote(uid);
 	}
 
 	/**
@@ -94,28 +90,34 @@ export class SourceNoteService {
 
 	/**
 	 * Resolve source note name and path from UID
+	 * v15: Searches vault for file with matching flashcard_uid in frontmatter
 	 *
-	 * @param store - The card store
+	 * @param _store - The card store (unused in v15)
 	 * @param sourceUid - The source note UID
 	 * @returns Object with noteName and notePath if found
 	 */
 	resolveSourceNote(
-		store: SqliteStoreService,
+		_store: SqliteStoreService,
 		sourceUid: string | undefined
 	): { noteName?: string; notePath?: string } {
 		if (!sourceUid) {
 			return {};
 		}
 
-		const sourceNote = this.getSourceNoteInfo(store, sourceUid);
+		// Find file by UID in vault
+		const file = this.findFileByUidSync(sourceUid);
+		if (!file) {
+			return {};
+		}
+
 		return {
-			noteName: sourceNote?.noteName,
-			notePath: sourceNote?.notePath,
+			noteName: file.basename,
+			notePath: file.path,
 		};
 	}
 
 	/**
-	 * Get file from source note info
+	 * Get file from path
 	 *
 	 * @param notePath - Path to the source note
 	 * @returns The file if found, null otherwise
@@ -127,16 +129,33 @@ export class SourceNoteService {
 
 	/**
 	 * Find a source note by UID
+	 * v15: Searches vault for file with matching flashcard_uid in frontmatter
 	 *
-	 * @param store - The card store
+	 * @param _store - The card store (unused in v15)
 	 * @param uid - The source note UID
 	 * @returns The source note file if found
 	 */
-	findSourceNoteByUid(store: SqliteStoreService, uid: string): TFile | null {
-		const info = this.getSourceNoteInfo(store, uid);
-		if (!info?.notePath) return null;
+	findSourceNoteByUid(_store: SqliteStoreService, uid: string): TFile | null {
+		return this.findFileByUidSync(uid);
+	}
 
-		return this.getSourceNoteFile(info.notePath);
+	/**
+	 * Find a file in the vault by its flashcard_uid
+	 * Synchronous version that reads from cache
+	 */
+	private findFileByUidSync(uid: string): TFile | null {
+		const files = this.app.vault.getMarkdownFiles();
+
+		for (const file of files) {
+			const cache = this.app.metadataCache.getFileCache(file);
+			const frontmatter = cache?.frontmatter;
+
+			if (frontmatter?.flashcard_uid === uid) {
+				return file;
+			}
+		}
+
+		return null;
 	}
 
 	/**

@@ -3,6 +3,7 @@
  * Synchronizes local SQLite data with Supabase cloud backend
  * using Last Write Wins (LWW) conflict resolution
  *
+ * v15: Removed note_projects sync, simplified source_notes (no name/path)
  * Uses atomic `sync_all_data` RPC for all-or-nothing transactions
  */
 import type { SupabaseClient } from "@supabase/supabase-js";
@@ -12,7 +13,6 @@ import type { FSRSCardData } from "../../types";
 import type {
 	SourceNoteForSync,
 	ProjectForSync,
-	NoteProjectForSync,
 	CardImageRefForSync,
 } from "../persistence/sqlite/modules/ProjectActions";
 import type { ReviewLogForSync } from "../persistence/sqlite/modules/StatsActions";
@@ -75,11 +75,10 @@ interface RemoteCardRow {
 
 /**
  * Remote source note row from Supabase (snake_case)
+ * v15: Simplified - no name/path fields
  */
 interface RemoteSourceNoteRow {
 	uid: string;
-	note_name: string;
-	note_path: string | null;
 	created_at: number;
 	updated_at: number;
 	deleted_at: number | null;
@@ -91,17 +90,6 @@ interface RemoteSourceNoteRow {
 interface RemoteProjectRow {
 	id: string;
 	name: string;
-	created_at: number;
-	updated_at: number;
-	deleted_at: number | null;
-}
-
-/**
- * Remote note-project row from Supabase (snake_case)
- */
-interface RemoteNoteProjectRow {
-	source_uid: string;
-	project_id: string;
 	created_at: number;
 	updated_at: number;
 	deleted_at: number | null;
@@ -146,6 +134,7 @@ interface LocalCardForSync extends FSRSCardData {
 
 /**
  * Supabase sync service for cloud synchronization
+ * v15: No note_projects sync (projects read from frontmatter)
  */
 export class SyncService {
 	private authService: AuthService;
@@ -256,22 +245,21 @@ export class SyncService {
 
 	/**
 	 * Pull all tables from Supabase in parallel
+	 * v15: No note_projects table
 	 */
 	private async pullAllTables(client: SupabaseClient, lastSync: number): Promise<{
 		cards: RemoteCardRow[];
 		sourceNotes: RemoteSourceNoteRow[];
 		projects: RemoteProjectRow[];
-		noteProjects: RemoteNoteProjectRow[];
 		reviewLog: RemoteReviewLogRow[];
 		cardImageRefs: RemoteCardImageRefRow[];
 	}> {
 		// Note: Supabase default limit is 1000 rows - we need explicit high limit
-		const [cardsRes, sourceNotesRes, projectsRes, noteProjectsRes, reviewLogRes, cardImageRefsRes] =
+		const [cardsRes, sourceNotesRes, projectsRes, reviewLogRes, cardImageRefsRes] =
 			await Promise.all([
 				client.from("cards").select("*").gt("updated_at", lastSync).limit(100000),
 				client.from("source_notes").select("*").gt("updated_at", lastSync).limit(100000),
 				client.from("projects").select("*").gt("updated_at", lastSync).limit(100000),
-				client.from("note_projects").select("*").gt("updated_at", lastSync).limit(100000),
 				client.from("review_log").select("*").gt("updated_at", lastSync).limit(100000),
 				client.from("card_image_refs").select("*").gt("updated_at", lastSync).limit(100000),
 			]);
@@ -280,7 +268,6 @@ export class SyncService {
 		if (cardsRes.error) throw new Error(`Pull cards failed: ${cardsRes.error.message}`);
 		if (sourceNotesRes.error) throw new Error(`Pull source_notes failed: ${sourceNotesRes.error.message}`);
 		if (projectsRes.error) throw new Error(`Pull projects failed: ${projectsRes.error.message}`);
-		if (noteProjectsRes.error) throw new Error(`Pull note_projects failed: ${noteProjectsRes.error.message}`);
 		if (reviewLogRes.error) throw new Error(`Pull review_log failed: ${reviewLogRes.error.message}`);
 		if (cardImageRefsRes.error) throw new Error(`Pull card_image_refs failed: ${cardImageRefsRes.error.message}`);
 
@@ -288,7 +275,6 @@ export class SyncService {
 			cards: (cardsRes.data ?? []) as RemoteCardRow[],
 			sourceNotes: (sourceNotesRes.data ?? []) as RemoteSourceNoteRow[],
 			projects: (projectsRes.data ?? []) as RemoteProjectRow[],
-			noteProjects: (noteProjectsRes.data ?? []) as RemoteNoteProjectRow[],
 			reviewLog: (reviewLogRes.data ?? []) as RemoteReviewLogRow[],
 			cardImageRefs: (cardImageRefsRes.data ?? []) as RemoteCardImageRefRow[],
 		};
@@ -297,12 +283,12 @@ export class SyncService {
 	/**
 	 * Apply pulled data locally using LWW conflict resolution
 	 * Order: source_notes, projects first (independent), then dependent tables
+	 * v15: No note_projects
 	 */
 	private applyPulledData(data: {
 		cards: RemoteCardRow[];
 		sourceNotes: RemoteSourceNoteRow[];
 		projects: RemoteProjectRow[];
-		noteProjects: RemoteNoteProjectRow[];
 		reviewLog: RemoteReviewLogRow[];
 		cardImageRefs: RemoteCardImageRefRow[];
 	}): number {
@@ -336,16 +322,7 @@ export class SyncService {
 			}
 		}
 
-		// 4. Note-projects (depends on source_notes + projects)
-		for (const remote of data.noteProjects) {
-			const local = this.cardStore.projects.getNoteProjectForSync(remote.source_uid, remote.project_id);
-			if (!local || remote.updated_at > local.updatedAt) {
-				this.cardStore.projects.upsertNoteProjectFromRemote(this.mapRemoteNoteProjectToLocal(remote));
-				pulled++;
-			}
-		}
-
-		// 5. Review log (depends on cards)
+		// 4. Review log (depends on cards)
 		for (const remote of data.reviewLog) {
 			const local = this.cardStore.stats.getReviewLogForSync(remote.id);
 			if (!local || remote.updated_at > local.updatedAt) {
@@ -354,7 +331,7 @@ export class SyncService {
 			}
 		}
 
-		// 6. Card image refs (depends on cards)
+		// 5. Card image refs (depends on cards)
 		for (const remote of data.cardImageRefs) {
 			const local = this.cardStore.projects.getCardImageRefForSync(remote.id);
 			if (!local || remote.updated_at > local.updatedAt) {
@@ -368,12 +345,12 @@ export class SyncService {
 
 	/**
 	 * Gathered local changes for push
+	 * v15: No note_projects
 	 */
 	private gatherLocalChanges(lastSync: number): {
 		sourceNotes: SourceNoteForSync[];
 		projects: ProjectForSync[];
 		cards: LocalCardForSync[];
-		noteProjects: NoteProjectForSync[];
 		reviewLog: ReviewLogForSync[];
 		cardImageRefs: CardImageRefForSync[];
 	} {
@@ -381,7 +358,6 @@ export class SyncService {
 			sourceNotes: this.cardStore.projects.getModifiedSourceNotesSince(lastSync),
 			projects: this.cardStore.projects.getModifiedProjectsSince(lastSync),
 			cards: this.cardStore.cards.getModifiedSince(lastSync),
-			noteProjects: this.cardStore.projects.getModifiedNoteProjectsSince(lastSync),
 			reviewLog: this.cardStore.stats.getModifiedReviewLogSince(lastSync),
 			cardImageRefs: this.cardStore.projects.getModifiedCardImageRefsSince(lastSync),
 		};
@@ -389,6 +365,7 @@ export class SyncService {
 
 	/**
 	 * Push pre-gathered local changes to Supabase via atomic RPC
+	 * v15: No note_projects
 	 */
 	private async pushLocalChanges(
 		client: SupabaseClient,
@@ -396,18 +373,16 @@ export class SyncService {
 			sourceNotes: SourceNoteForSync[];
 			projects: ProjectForSync[];
 			cards: LocalCardForSync[];
-			noteProjects: NoteProjectForSync[];
 			reviewLog: ReviewLogForSync[];
 			cardImageRefs: CardImageRefForSync[];
 		}
 	): Promise<number> {
-		const { sourceNotes, projects, cards, noteProjects, reviewLog, cardImageRefs } = localChanges;
+		const { sourceNotes, projects, cards, reviewLog, cardImageRefs } = localChanges;
 
 		const totalChanges =
 			sourceNotes.length +
 			projects.length +
 			cards.length +
-			noteProjects.length +
 			reviewLog.length +
 			cardImageRefs.length;
 
@@ -416,11 +391,12 @@ export class SyncService {
 		}
 
 		// Map to remote format (snake_case)
+		// v15: note_projects is empty array for backwards compatibility with RPC
 		const payload = {
 			p_source_notes: sourceNotes.map((sn) => this.mapLocalSourceNoteToRemote(sn)),
 			p_projects: projects.map((p) => this.mapLocalProjectToRemote(p)),
 			p_cards: cards.map((c) => this.mapLocalCardToRemote(c)),
-			p_note_projects: noteProjects.map((np) => this.mapLocalNoteProjectToRemote(np)),
+			p_note_projects: [], // v15: Empty - no longer syncing note-project relationships
 			p_review_log: reviewLog.map((rl) => this.mapLocalReviewLogToRemote(rl)),
 			p_card_image_refs: cardImageRefs.map((cir) => this.mapLocalCardImageRefToRemote(cir)),
 		};
@@ -470,11 +446,12 @@ export class SyncService {
 			const allLocalData = this.gatherLocalChanges(0);
 
 			// Map to remote format
+			// v15: note_projects is empty array
 			const payload = {
 				p_source_notes: allLocalData.sourceNotes.map((sn) => this.mapLocalSourceNoteToRemote(sn)),
 				p_projects: allLocalData.projects.map((p) => this.mapLocalProjectToRemote(p)),
 				p_cards: allLocalData.cards.map((c) => this.mapLocalCardToRemote(c)),
-				p_note_projects: allLocalData.noteProjects.map((np) => this.mapLocalNoteProjectToRemote(np)),
+				p_note_projects: [], // v15: Empty
 				p_review_log: allLocalData.reviewLog.map((rl) => this.mapLocalReviewLogToRemote(rl)),
 				p_card_image_refs: allLocalData.cardImageRefs.map((cir) => this.mapLocalCardImageRefToRemote(cir)),
 			};
@@ -498,7 +475,6 @@ export class SyncService {
 				allLocalData.sourceNotes.length +
 				allLocalData.projects.length +
 				allLocalData.cards.length +
-				allLocalData.noteProjects.length +
 				allLocalData.reviewLog.length +
 				allLocalData.cardImageRefs.length;
 
@@ -550,12 +526,6 @@ export class SyncService {
 			// Cards (depends on source_notes)
 			for (const remote of pullResults.cards) {
 				this.cardStore.cards.upsertFromRemote(this.mapRemoteCardToLocal(remote));
-				pulled++;
-			}
-
-			// Note-projects (depends on source_notes + projects)
-			for (const remote of pullResults.noteProjects) {
-				this.cardStore.projects.upsertNoteProjectFromRemote(this.mapRemoteNoteProjectToLocal(remote));
 				pulled++;
 			}
 
@@ -620,11 +590,13 @@ export class SyncService {
 		};
 	}
 
+	/**
+	 * Map remote source note to local format
+	 * v15: No name/path fields
+	 */
 	private mapRemoteSourceNoteToLocal(remote: RemoteSourceNoteRow): SourceNoteForSync {
 		return {
 			uid: remote.uid,
-			noteName: remote.note_name,
-			notePath: remote.note_path,
 			createdAt: remote.created_at,
 			updatedAt: remote.updated_at,
 			deletedAt: remote.deleted_at,
@@ -635,16 +607,6 @@ export class SyncService {
 		return {
 			id: remote.id,
 			name: remote.name,
-			createdAt: remote.created_at,
-			updatedAt: remote.updated_at,
-			deletedAt: remote.deleted_at,
-		};
-	}
-
-	private mapRemoteNoteProjectToLocal(remote: RemoteNoteProjectRow): NoteProjectForSync {
-		return {
-			sourceUid: remote.source_uid,
-			projectId: remote.project_id,
 			createdAt: remote.created_at,
 			updatedAt: remote.updated_at,
 			deletedAt: remote.deleted_at,
@@ -703,11 +665,13 @@ export class SyncService {
 		};
 	}
 
+	/**
+	 * Map local source note to remote format
+	 * v15: No name/path fields
+	 */
 	private mapLocalSourceNoteToRemote(local: SourceNoteForSync): Record<string, unknown> {
 		return {
 			uid: local.uid,
-			note_name: local.noteName,
-			note_path: local.notePath,
 			created_at: local.createdAt || Date.now(),
 			updated_at: local.updatedAt || Date.now(),
 			deleted_at: local.deletedAt,
@@ -718,16 +682,6 @@ export class SyncService {
 		return {
 			id: local.id,
 			name: local.name,
-			created_at: local.createdAt || Date.now(),
-			updated_at: local.updatedAt || Date.now(),
-			deleted_at: local.deletedAt,
-		};
-	}
-
-	private mapLocalNoteProjectToRemote(local: NoteProjectForSync): Record<string, unknown> {
-		return {
-			source_uid: local.sourceUid,
-			project_id: local.projectId,
 			created_at: local.createdAt || Date.now(),
 			updated_at: local.updatedAt || Date.now(),
 			deleted_at: local.deletedAt,
