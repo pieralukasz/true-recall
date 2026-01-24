@@ -5,7 +5,7 @@
  * LangChain expects a DataSource-style interface, but our database uses
  * a different API. This adapter provides the necessary methods.
  */
-import type { DatabaseLike, QueryExecResult } from "../persistence/sqljs";
+import type { DatabaseLike, QueryExecResult } from "../persistence/sqlite/loader";
 
 /**
  * Adapter to make SQLite database compatible with LangChain SQL tools

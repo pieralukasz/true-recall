@@ -2,12 +2,11 @@
  * SQLite Store Service
  * High-performance storage for FSRS card data using sql.js
  *
- * This is a facade that delegates to specialized repositories:
- * - SqliteCardRepository: Card CRUD operations
- * - SqliteSourceNotesRepo: Source note operations
- * - SqliteDailyStatsRepo: Daily stats and review log
- * - SqliteAggregations: Aggregate queries
- * - SqliteSchemaManager: Schema and migrations
+ * Refactored to use domain modules (CardActions, StatsActions, ProjectActions, BrowserActions)
+ * instead of individual repository classes. This reduces boilerplate and improves maintainability.
+ *
+ * The facade pattern is preserved but simplified - domain modules are exposed directly
+ * for new code, while backward compatibility methods delegate to the appropriate module.
  */
 import { App, normalizePath, Notice } from "obsidian";
 import type {
@@ -20,41 +19,36 @@ import type {
     CardImageRef,
     ProjectInfo,
 } from "../../../types";
-import {
-    loadDatabase,
-    type DatabaseLike,
-} from "../sqljs";
-import { DB_FOLDER, DB_FILE, SAVE_DEBOUNCE_MS, getQueryResult } from "./sqlite.types";
+import { SqliteDatabase } from "./SqliteDatabase";
 import { SqliteSchemaManager } from "./SqliteSchemaManager";
-import { SqliteCardRepository } from "./SqliteCardRepository";
-import { SqliteSourceNotesRepo } from "./SqliteSourceNotesRepo";
-import { SqliteDailyStatsRepo } from "./SqliteDailyStatsRepo";
-import { SqliteAggregations } from "./SqliteAggregations";
-import { SqliteImageRefsRepo } from "./SqliteImageRefsRepo";
-import { SqliteProjectsRepo } from "./SqliteProjectsRepo";
-import { SqliteBrowserQueries } from "./SqliteBrowserQueries";
+import { CardActions, StatsActions, ProjectActions, BrowserActions } from "./modules";
+import { DB_FOLDER, DB_FILE, SAVE_DEBOUNCE_MS } from "./sqlite.types";
 
 /**
  * SQLite-based storage service for FSRS card data
  */
 export class SqliteStoreService {
     private app: App;
-    private db: DatabaseLike | null = null;
+    private db: SqliteDatabase;
     private isLoaded = false;
     private isDirty = false;
     private saveTimer: ReturnType<typeof setTimeout> | null = null;
 
-    // Repositories
-    private cardRepo: SqliteCardRepository | null = null;
-    private sourceNotesRepo: SqliteSourceNotesRepo | null = null;
-    private dailyStatsRepo: SqliteDailyStatsRepo | null = null;
-    private aggregations: SqliteAggregations | null = null;
-    private imageRefsRepo: SqliteImageRefsRepo | null = null;
-    private projectsRepo: SqliteProjectsRepo | null = null;
-    private browserQueries: SqliteBrowserQueries | null = null;
+    // Domain modules - public for direct access
+    public readonly cards: CardActions;
+    public readonly stats: StatsActions;
+    public readonly projects: ProjectActions;
+    public readonly browser: BrowserActions;
 
     constructor(app: App) {
         this.app = app;
+        this.db = new SqliteDatabase(app, () => this.markDirty());
+
+        // Initialize domain modules
+        this.cards = new CardActions(this.db);
+        this.stats = new StatsActions(this.db);
+        this.projects = new ProjectActions(this.db);
+        this.browser = new BrowserActions(this.db);
     }
 
     /**
@@ -79,14 +73,13 @@ export class SqliteStoreService {
             throw error;  // Don't continue with empty database!
         }
 
-        // Load database with sql.js
-        const loadResult = await loadDatabase(this.app, existingData);
-        this.db = loadResult.db;
+        // Initialize database with sql.js
+        await this.db.init(existingData);
 
         console.log("[Episteme] Using sql.js for local storage");
 
         // Schema setup
-        const schemaManager = new SqliteSchemaManager(this.db, () => this.markDirty());
+        const schemaManager = new SqliteSchemaManager(this.db.raw, () => this.markDirty());
         if (existingData) {
             // Create pre-migration backup for safety
             const backupPath = normalizePath(`${DB_FOLDER}/episteme.db.pre-migration`);
@@ -103,121 +96,111 @@ export class SqliteStoreService {
             this.isDirty = true;
         }
 
-        // Initialize repositories
-        const onDataChange = () => this.markDirty();
-        this.cardRepo = new SqliteCardRepository(this.db, onDataChange);
-        this.sourceNotesRepo = new SqliteSourceNotesRepo(this.db, onDataChange);
-        this.dailyStatsRepo = new SqliteDailyStatsRepo(this.db, onDataChange);
-        this.aggregations = new SqliteAggregations(this.db);
-        this.imageRefsRepo = new SqliteImageRefsRepo(this.db, onDataChange);
-        this.projectsRepo = new SqliteProjectsRepo(this.db, onDataChange);
-        this.browserQueries = new SqliteBrowserQueries(this.db, onDataChange);
-
         this.isLoaded = true;
     }
 
     isReady(): boolean {
-        return this.isLoaded && this.db !== null;
+        return this.isLoaded && this.db.isReady();
     }
 
-    // ===== Card Operations (delegate to SqliteCardRepository) =====
+    // ===== Card Operations (delegate to CardActions) =====
 
     get(cardId: string): FSRSCardData | undefined {
-        return this.cardRepo?.get(cardId);
+        return this.cards.get(cardId);
     }
 
     set(cardId: string, data: FSRSCardData): void {
-        this.cardRepo?.set(cardId, data);
+        this.cards.set(cardId, data);
     }
 
     delete(cardId: string): void {
-        this.cardRepo?.delete(cardId);
+        this.cards.delete(cardId);
     }
 
     has(cardId: string): boolean {
-        return this.cardRepo?.has(cardId) ?? false;
+        return this.cards.has(cardId);
     }
 
     keys(): string[] {
-        return this.cardRepo?.keys() ?? [];
+        return this.cards.keys();
     }
 
     getAll(): FSRSCardData[] {
-        return this.cardRepo?.getAll() ?? [];
+        return this.cards.getAll();
     }
 
     size(): number {
-        return this.cardRepo?.size() ?? 0;
+        return this.cards.size();
     }
 
     updateCardContent(cardId: string, question: string, answer: string): void {
-        this.cardRepo?.updateCardContent(cardId, question, answer);
+        this.cards.updateCardContent(cardId, question, answer);
     }
 
     getCardsBySourceUid(sourceUid: string): FSRSCardData[] {
-        return this.cardRepo?.getCardsBySourceUid(sourceUid) ?? [];
+        return this.cards.getCardsBySourceUid(sourceUid);
     }
 
     getCardsWithContent(): FSRSCardData[] {
-        return this.cardRepo?.getCardsWithContent() ?? [];
+        return this.cards.getCardsWithContent();
     }
 
     hasCardContent(cardId: string): boolean {
-        return this.cardRepo?.hasCardContent(cardId) ?? false;
+        return this.cards.hasCardContent(cardId);
     }
 
     hasAnyCardContent(): boolean {
-        return this.cardRepo?.hasAnyCardContent() ?? false;
+        return this.cards.hasAnyCardContent();
     }
 
     getCardsWithContentCount(): number {
-        return this.cardRepo?.getCardsWithContentCount() ?? 0;
+        return this.cards.getCardsWithContentCount();
     }
 
     // ===== Orphaned Cards Operations =====
 
     getOrphanedCards(): FSRSCardData[] {
-        return this.cardRepo?.getOrphanedCards() ?? [];
+        return this.cards.getOrphanedCards();
     }
 
     updateCardSourceUid(cardId: string, sourceUid: string): void {
-        this.cardRepo?.updateCardSourceUid(cardId, sourceUid);
+        this.cards.updateCardSourceUid(cardId, sourceUid);
     }
 
     /**
      * Check if a card with the given question already exists
      */
     getCardIdByQuestion(question: string): string | undefined {
-        return this.cardRepo?.getCardIdByQuestion(question);
+        return this.cards.getCardIdByQuestion(question);
     }
 
-    // ===== Source Notes Operations (delegate to SqliteSourceNotesRepo) =====
+    // ===== Source Notes Operations (delegate to ProjectActions) =====
 
     upsertSourceNote(info: SourceNoteInfo): void {
-        this.sourceNotesRepo?.upsert(info);
+        this.projects.upsertSourceNote(info);
     }
 
     getSourceNote(uid: string): SourceNoteInfo | null {
-        return this.sourceNotesRepo?.get(uid) ?? null;
+        return this.projects.getSourceNote(uid);
     }
 
     getSourceNoteByPath(notePath: string): SourceNoteInfo | null {
-        return this.sourceNotesRepo?.getByPath(notePath) ?? null;
+        return this.projects.getSourceNoteByPath(notePath);
     }
 
     getAllSourceNotes(): SourceNoteInfo[] {
-        return this.sourceNotesRepo?.getAll() ?? [];
+        return this.projects.getAllSourceNotes();
     }
 
     updateSourceNotePath(uid: string, newPath: string, newName?: string): void {
-        this.sourceNotesRepo?.updatePath(uid, newPath, newName);
+        this.projects.updateSourceNotePath(uid, newPath, newName);
     }
 
     deleteSourceNote(uid: string, detachCards = true): void {
-        this.sourceNotesRepo?.delete(uid, detachCards);
+        this.projects.deleteSourceNote(uid, detachCards);
     }
 
-    // ===== Review Log & Daily Stats (delegate to SqliteDailyStatsRepo) =====
+    // ===== Review Log & Daily Stats (delegate to StatsActions) =====
 
     addReviewLog(
         cardId: string,
@@ -227,151 +210,149 @@ export class SqliteStoreService {
         state: number,
         timeSpentMs: number
     ): void {
-        this.dailyStatsRepo?.addReviewLog(cardId, rating, scheduledDays, elapsedDays, state, timeSpentMs);
+        this.stats.addReviewLog(cardId, rating, scheduledDays, elapsedDays, state, timeSpentMs);
     }
 
     getCardReviewHistory(cardId: string, limit = 20): CardReviewLogEntry[] {
-        return this.dailyStatsRepo?.getCardReviewHistory(cardId, limit) ?? [];
+        return this.stats.getCardReviewHistory(cardId, limit);
     }
 
     getDailyStats(date: string): ExtendedDailyStats | null {
-        return this.dailyStatsRepo?.getDailyStats(date) ?? null;
+        return this.stats.getDailyStats(date);
     }
 
     updateDailyStats(date: string, stats: Partial<ExtendedDailyStats>): void {
-        this.dailyStatsRepo?.updateDailyStats(date, stats);
+        this.stats.updateDailyStats(date, stats);
     }
 
     decrementDailyStats(date: string, stats: Partial<ExtendedDailyStats>): void {
-        this.dailyStatsRepo?.decrementDailyStats(date, stats);
+        this.stats.decrementDailyStats(date, stats);
     }
 
     recordReviewedCard(date: string, cardId: string): void {
-        this.dailyStatsRepo?.recordReviewedCard(date, cardId);
+        this.stats.recordReviewedCard(date, cardId);
     }
 
     getReviewedCardIds(date: string): string[] {
-        return this.dailyStatsRepo?.getReviewedCardIds(date) ?? [];
+        return this.stats.getReviewedCardIds(date);
     }
 
     removeReviewedCard(date: string, cardId: string): void {
-        this.dailyStatsRepo?.removeReviewedCard(date, cardId);
+        this.stats.removeReviewedCard(date, cardId);
     }
 
     getAllDailyStats(): Record<string, ExtendedDailyStats> {
-        return this.dailyStatsRepo?.getAllDailyStats() ?? {};
+        return this.stats.getAllDailyStats();
     }
 
     getAllDailyStatsSummary(): Record<string, ExtendedDailyStats> {
-        return this.dailyStatsRepo?.getAllDailyStatsSummary() ?? {};
+        return this.stats.getAllDailyStatsSummary();
     }
 
-    // ===== Aggregations (delegate to SqliteAggregations) =====
+    // ===== Aggregations (delegate to StatsActions) =====
 
     getCardMaturityBreakdown(): CardMaturityBreakdown {
-        return this.aggregations?.getCardMaturityBreakdown() ?? {
-            new: 0, learning: 0, young: 0, mature: 0, suspended: 0, buried: 0
-        };
+        return this.stats.getCardMaturityBreakdown();
     }
 
     getDueCardsByDate(startDate: string, endDate: string): { date: string; count: number }[] {
-        return this.aggregations?.getDueCardsByDate(startDate, endDate) ?? [];
+        return this.stats.getDueCardsByDate(startDate, endDate);
     }
 
     getCardsCreatedByDate(startDate: string, endDate: string): { date: string; count: number }[] {
-        return this.aggregations?.getCardsCreatedByDate(startDate, endDate) ?? [];
+        return this.stats.getCardsCreatedByDate(startDate, endDate);
     }
 
     getCardsCreatedOnDate(date: string): string[] {
-        return this.aggregations?.getCardsCreatedOnDate(date) ?? [];
+        return this.stats.getCardsCreatedOnDate(date);
     }
 
     getCardsCreatedVsReviewed(startDate: string, endDate: string): CardsCreatedVsReviewedEntry[] {
-        return this.aggregations?.getCardsCreatedVsReviewed(startDate, endDate) ?? [];
+        return this.stats.getCardsCreatedVsReviewed(startDate, endDate);
     }
 
-    // ===== Image Refs (delegate to SqliteImageRefsRepo) =====
+    // ===== Image Refs (delegate to ProjectActions) =====
 
     getImageRefsByCardId(cardId: string): CardImageRef[] {
-        return this.imageRefsRepo?.getByCardId(cardId) ?? [];
+        return this.projects.getImageRefsByCardId(cardId);
     }
 
     getCardsByImagePath(imagePath: string): CardImageRef[] {
-        return this.imageRefsRepo?.getByImagePath(imagePath) ?? [];
+        return this.projects.getCardsByImagePath(imagePath);
     }
 
     updateImagePath(oldPath: string, newPath: string): void {
-        this.imageRefsRepo?.updateImagePath(oldPath, newPath);
+        this.projects.updateImagePath(oldPath, newPath);
     }
 
     syncCardImageRefs(cardId: string, questionRefs: string[], answerRefs: string[]): void {
-        this.imageRefsRepo?.syncCardRefs(cardId, questionRefs, answerRefs);
+        this.projects.syncCardImageRefs(cardId, questionRefs, answerRefs);
     }
 
     deleteCardImageRefs(cardId: string): void {
-        this.imageRefsRepo?.deleteByCardId(cardId);
+        this.projects.deleteCardImageRefs(cardId);
     }
 
-    // ===== Projects (delegate to SqliteProjectsRepo) =====
+    // ===== Projects (delegate to ProjectActions) =====
 
     createProject(name: string): string {
-        return this.projectsRepo?.createProject(name) ?? "";
+        return this.projects.createProject(name);
     }
 
     getProjectByName(name: string): ProjectInfo | null {
-        return this.projectsRepo?.getProjectByName(name) ?? null;
+        return this.projects.getProjectByName(name);
     }
 
     getProjectById(id: string): ProjectInfo | null {
-        return this.projectsRepo?.getProjectById(id) ?? null;
+        return this.projects.getProjectById(id);
     }
 
     getAllProjects(): ProjectInfo[] {
-        return this.projectsRepo?.getAllProjects() ?? [];
+        return this.projects.getAllProjects();
     }
 
     renameProject(id: string, newName: string): void {
-        this.projectsRepo?.renameProject(id, newName);
+        this.projects.renameProject(id, newName);
     }
 
     deleteProject(id: string): void {
-        this.projectsRepo?.deleteProject(id);
+        this.projects.deleteProject(id);
     }
 
     syncNoteProjects(sourceUid: string, projectNames: string[]): void {
-        this.projectsRepo?.syncNoteProjects(sourceUid, projectNames);
+        this.projects.syncNoteProjects(sourceUid, projectNames);
     }
 
     getProjectsForNote(sourceUid: string): ProjectInfo[] {
-        return this.projectsRepo?.getProjectsForNote(sourceUid) ?? [];
+        return this.projects.getProjectsForNote(sourceUid);
     }
 
     getProjectNamesForNote(sourceUid: string): string[] {
-        return this.projectsRepo?.getProjectNamesForNote(sourceUid) ?? [];
+        return this.projects.getProjectNamesForNote(sourceUid);
     }
 
     getNotesInProject(projectId: string): string[] {
-        return this.projectsRepo?.getNotesInProject(projectId) ?? [];
+        return this.projects.getNotesInProject(projectId);
     }
 
     addProjectToNote(sourceUid: string, projectName: string): void {
-        this.projectsRepo?.addProjectToNote(sourceUid, projectName);
+        this.projects.addProjectToNote(sourceUid, projectName);
     }
 
     removeProjectFromNote(sourceUid: string, projectId: string): void {
-        this.projectsRepo?.removeProjectFromNote(sourceUid, projectId);
+        this.projects.removeProjectFromNote(sourceUid, projectId);
     }
 
     getProjectStats(): ProjectInfo[] {
-        return this.projectsRepo?.getProjectStats() ?? [];
+        return this.projects.getProjectStats();
     }
 
     getOrphanedSourceNotes(): { uid: string; noteName: string; notePath: string }[] {
-        return this.projectsRepo?.getOrphanedSourceNotes() ?? [];
+        return this.projects.getOrphanedSourceNotes();
     }
 
     deleteEmptyProjects(): number {
-        return this.projectsRepo?.deleteEmptyProjects() ?? 0;
+        return this.projects.deleteEmptyProjects();
     }
 
     // ===== Persistence =====
@@ -425,7 +406,7 @@ export class SqliteStoreService {
     }
 
     async flush(): Promise<void> {
-        if (!this.db || !this.isDirty) return;
+        if (!this.db.isReady() || !this.isDirty) return;
 
         try {
             const data = this.db.export();
@@ -454,10 +435,7 @@ export class SqliteStoreService {
 
     async close(): Promise<void> {
         await this.saveNow();
-        if (this.db) {
-            this.db.close();
-            this.db = null;
-        }
+        this.db.close();
         this.isLoaded = false;
     }
 
@@ -470,12 +448,12 @@ export class SqliteStoreService {
         dbSizeKB: number;
         isLoaded: boolean;
     } {
-        if (!this.db) {
+        if (!this.db.isReady()) {
             return { totalCards: 0, totalReviews: 0, dbSizeKB: 0, isLoaded: false };
         }
 
         const totalCards = this.size();
-        const totalReviews = this.dailyStatsRepo?.getTotalReviewCount() ?? 0;
+        const totalReviews = this.stats.getTotalReviewCount();
         const dbData = this.db.export();
         const dbSizeKB = Math.round(dbData.length / 1024);
 
@@ -491,21 +469,23 @@ export class SqliteStoreService {
      * Get the raw database instance for advanced queries
      * Used by NLQueryService for AI-powered natural language queries
      */
-    getDatabase(): DatabaseLike | null {
-        return this.db;
+    getDatabase() {
+        return this.db.raw;
     }
 
     /**
      * Get aggregations service for extended statistics
+     * @deprecated Use store.stats directly instead
      */
-    getAggregations(): SqliteAggregations | null {
-        return this.aggregations;
+    getAggregations() {
+        return this.stats;
     }
 
     /**
      * Get browser queries service for browser view
+     * @deprecated Use store.browser directly instead
      */
-    getBrowserQueries(): SqliteBrowserQueries | null {
-        return this.browserQueries;
+    getBrowserQueries() {
+        return this.browser;
     }
 }
