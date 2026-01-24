@@ -108,14 +108,6 @@ export interface EpistemeSettings {
     autoBackupOnLoad: boolean;
     /** Maximum number of backups to keep (0 = unlimited) */
     maxBackups: number;
-
-    // ===== Cloud Sync (PowerSync + Supabase) =====
-    /** Supabase project URL */
-    supabaseUrl: string;
-    /** Supabase anonymous key */
-    supabaseAnonKey: string;
-    /** Enable cloud sync */
-    syncEnabled: boolean;
 }
 
 /**

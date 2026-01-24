@@ -153,11 +153,6 @@ export const DEFAULT_SETTINGS: EpistemeSettings = {
 	// Backup Settings
 	autoBackupOnLoad: false,
 	maxBackups: 10,
-
-	// Cloud Sync (PowerSync + Supabase)
-	supabaseUrl: "",
-	supabaseAnonKey: "",
-	syncEnabled: false,
 };
 
 // ===== FSRS Default Weights =====
@@ -444,3 +439,15 @@ What is **[[machine learning]]**? #flashcard
 /** OpenRouter API endpoint */
 export const OPENROUTER_API_URL =
 	"https://openrouter.ai/api/v1/chat/completions";
+
+// ===== Episteme Cloud Configuration =====
+
+/**
+ * Episteme Cloud Supabase credentials (public anon key)
+ * Safe to expose - RLS policies protect data per-user
+ */
+export const EPISTEME_CLOUD = {
+	supabaseUrl: "https://webogcxwvgbwdcjibbno.supabase.co",
+	supabaseAnonKey:
+		"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6IndlYm9nY3h3dmdid2RjamliYm5vIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjkyNTE4NzYsImV4cCI6MjA4NDgyNzg3Nn0.IGrKykHY1gC-knNSy0jX1MF9vWp_b6YCURWyBXRmt0U",
+} as const;

@@ -88,15 +88,6 @@ export class SqliteStoreService {
         // Schema setup
         const schemaManager = new SqliteSchemaManager(this.db.raw, () => this.markDirty());
         if (existingData) {
-            // Create pre-migration backup for safety
-            const backupPath = normalizePath(`${DB_FOLDER}/episteme.db.pre-migration`);
-            try {
-                await this.app.vault.adapter.writeBinary(backupPath, existingData);
-                console.log("[Episteme] Pre-migration backup created");
-            } catch (e) {
-                console.warn("[Episteme] Could not create pre-migration backup:", e);
-            }
-
             schemaManager.runMigrations();
         } else {
             schemaManager.createTables();
