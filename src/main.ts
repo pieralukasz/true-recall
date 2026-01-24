@@ -26,6 +26,8 @@ import {
 	BackupService,
 	DeviceIdService,
 	DeviceDiscoveryService,
+	AuthService,
+	SyncService,
 } from "./services";
 import {
 	DB_FOLDER,
@@ -76,6 +78,8 @@ export default class EpistemePlugin extends Plugin {
 	agentService: AgentService | null = null;
 	deviceIdService: DeviceIdService | null = null;
 	deviceDiscovery: DeviceDiscoveryService | null = null;
+	authService: AuthService | null = null;
+	syncService: SyncService | null = null;
 
 	async onload(): Promise<void> {
 		await this.loadSettings();
@@ -187,6 +191,27 @@ export default class EpistemePlugin extends Plugin {
 		// Register agent tools and initialize AgentService
 		registerAllTools();
 		this.agentService = new AgentService(this);
+
+		// Initialize AuthService if Supabase credentials are configured
+		if (this.settings.supabaseUrl && this.settings.supabaseAnonKey) {
+			this.authService = new AuthService(
+				this.settings.supabaseUrl,
+				this.settings.supabaseAnonKey
+			);
+		}
+
+		// Initialize SyncService (requires authService and cardStore)
+		// Note: cardStore may not be ready yet, sync will check availability
+		this.initializeSyncService();
+	}
+
+	/**
+	 * Initialize or reinitialize SyncService when auth/store are ready
+	 */
+	private initializeSyncService(): void {
+		if (this.authService && this.cardStore) {
+			this.syncService = new SyncService(this.authService, this.cardStore);
+		}
 	}
 
 	onunload(): void {
@@ -234,6 +259,23 @@ export default class EpistemePlugin extends Plugin {
 		}
 		// Reinitialize NL Query Service with new settings (API key or model may have changed)
 		void this.initializeNLQueryService();
+
+		// Update AuthService with new Supabase credentials
+		if (this.settings.supabaseUrl && this.settings.supabaseAnonKey) {
+			if (this.authService) {
+				this.authService.updateCredentials(
+					this.settings.supabaseUrl,
+					this.settings.supabaseAnonKey
+				);
+			} else {
+				this.authService = new AuthService(
+					this.settings.supabaseUrl,
+					this.settings.supabaseAnonKey
+				);
+			}
+			// Reinitialize SyncService with updated auth
+			this.initializeSyncService();
+		}
 	}
 
 	// Activate the sidebar view
@@ -773,6 +815,9 @@ export default class EpistemePlugin extends Plugin {
 
 			// Initialize NL Query Service (AI-powered stats queries)
 			await this.initializeNLQueryService();
+
+			// Initialize SyncService now that cardStore is ready
+			this.initializeSyncService();
 		} catch (error) {
 			console.error("[Episteme] Failed to initialize SQLite store:", error);
 			new Notice("Failed to load flashcard data. Please restart Obsidian.");
@@ -1035,5 +1080,53 @@ export default class EpistemePlugin extends Plugin {
 		});
 
 		await modal.openAndWait();
+	}
+
+	/**
+	 * Synchronize with cloud (pull + push with conflict resolution)
+	 */
+	async syncCloud(): Promise<void> {
+		if (!this.syncService?.isAvailable()) {
+			new Notice("Cloud sync not available. Check Supabase configuration.");
+			return;
+		}
+
+		new Notice("Syncing...");
+		const result = await this.syncService.sync();
+
+		if (result.success) {
+			new Notice(`Sync complete: ${result.pulled} pulled, ${result.pushed} pushed`);
+		} else {
+			new Notice(`Sync failed: ${result.error}`);
+		}
+	}
+
+	/**
+	 * Force replace - overwrites all server data with local database
+	 * WARNING: Destructive operation
+	 */
+	async forceReplaceCloud(): Promise<void> {
+		if (!this.syncService?.isAvailable()) {
+			new Notice("Cloud sync not available. Check Supabase configuration.");
+			return;
+		}
+
+		// Confirmation dialog
+		const confirmed = confirm(
+			"WARNING: This will DELETE all your data on the server and replace it with your local database.\n\n" +
+			"Other devices will lose their changes.\n\n" +
+			"Are you sure you want to continue?"
+		);
+
+		if (!confirmed) return;
+
+		new Notice("Replacing all server data...");
+		const result = await this.syncService.forceReplace();
+
+		if (result.success) {
+			new Notice(`Force replace complete: ${result.pushed} records uploaded`);
+		} else {
+			new Notice(`Replace failed: ${result.error}`);
+		}
 	}
 }

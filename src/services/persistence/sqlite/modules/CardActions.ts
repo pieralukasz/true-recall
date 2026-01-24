@@ -523,4 +523,124 @@ export class CardActions {
             };
         });
     }
+
+    // ===== Sync Operations =====
+
+    /**
+     * Get cards modified since a timestamp (including deleted, for sync push)
+     */
+    getModifiedSince(timestamp: number): (FSRSCardData & { updatedAt?: number; deletedAt?: number | null })[] {
+        const rows = this.db.query<{
+            id: string;
+            due: string;
+            stability: number;
+            difficulty: number;
+            reps: number;
+            lapses: number;
+            state: number;
+            lastReview: string | null;
+            scheduledDays: number;
+            learningStep: number;
+            suspended: number;
+            buriedUntil: string | null;
+            createdAt: number | null;
+            updatedAt: number | null;
+            deletedAt: number | null;
+            question: string | null;
+            answer: string | null;
+            sourceUid: string | null;
+        }>(`
+            SELECT
+                id, due, stability, difficulty, reps, lapses, state,
+                last_review as lastReview,
+                scheduled_days as scheduledDays,
+                learning_step as learningStep,
+                suspended = 1 as suspended,
+                buried_until as buriedUntil,
+                created_at as createdAt,
+                updated_at as updatedAt,
+                deleted_at as deletedAt,
+                question,
+                answer,
+                source_uid as sourceUid
+            FROM cards
+            WHERE updated_at > ?
+        `, [timestamp]);
+
+        return rows.map((row) => {
+            const { question: q, answer: a, suspended, buriedUntil, createdAt, updatedAt, deletedAt, sourceUid, ...rest } = row;
+            return {
+                ...rest,
+                question: q ?? undefined,
+                answer: a ?? undefined,
+                suspended: suspended === 1,
+                buriedUntil: buriedUntil ?? undefined,
+                createdAt: createdAt ?? undefined,
+                updatedAt: updatedAt ?? undefined,
+                deletedAt: deletedAt,
+                sourceUid: sourceUid ?? undefined,
+            };
+        });
+    }
+
+    /**
+     * Upsert a card from remote sync (preserves remote timestamps)
+     */
+    upsertFromRemote(data: FSRSCardData & { updatedAt?: number; deletedAt?: number | null }): void {
+        this.db.run(`
+            INSERT OR REPLACE INTO cards (
+                id, due, stability, difficulty, reps, lapses, state,
+                last_review, scheduled_days, learning_step, suspended,
+                buried_until, created_at, updated_at, deleted_at,
+                question, answer, source_uid
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        `, [
+            data.id,
+            data.due,
+            data.stability,
+            data.difficulty,
+            data.reps,
+            data.lapses,
+            data.state,
+            data.lastReview ?? null,
+            data.scheduledDays,
+            data.learningStep,
+            data.suspended ? 1 : 0,
+            data.buriedUntil ?? null,
+            data.createdAt ?? Date.now(),
+            data.updatedAt ?? Date.now(),
+            data.deletedAt ?? null,
+            data.question ?? null,
+            data.answer ?? null,
+            data.sourceUid ?? null,
+        ]);
+    }
+
+    /**
+     * Get sync metadata from META table
+     */
+    getSyncMetadata(key: string): string | null {
+        const row = this.db.get<{ value: string }>(
+            `SELECT value FROM meta WHERE key = ?`,
+            [key]
+        );
+        return row?.value ?? null;
+    }
+
+    /**
+     * Set sync metadata in META table
+     */
+    setSyncMetadata(key: string, value: string): void {
+        this.db.run(
+            `INSERT OR REPLACE INTO meta (key, value) VALUES (?, ?)`,
+            [key, value]
+        );
+    }
+
+    /**
+     * Delete all cards (for force pull sync)
+     */
+    deleteAllForSync(): void {
+        this.db.run(`DELETE FROM cards`);
+    }
 }

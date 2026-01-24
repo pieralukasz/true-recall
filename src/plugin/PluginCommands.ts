@@ -176,4 +176,18 @@ export function registerCommands(plugin: EpistemePlugin): void {
 			);
 		},
 	});
+
+	// Sync cloud data
+	plugin.addCommand({
+		id: "sync-cloud",
+		name: "Sync cloud data",
+		callback: () => void plugin.syncCloud(),
+	});
+
+	// Force replace cloud data (destructive)
+	plugin.addCommand({
+		id: "force-replace-cloud",
+		name: "Force replace cloud data",
+		callback: () => void plugin.forceReplaceCloud(),
+	});
 }
