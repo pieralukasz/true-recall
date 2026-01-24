@@ -34,6 +34,7 @@ export class SqliteSchemaManager {
         11: migrations.migration010ToV11,
         12: migrations.migration011ToV12,
         13: migrations.migration012ToV13,
+        14: migrations.migration013ToV14,
     };
 
     constructor(db: DatabaseLike, onSchemaChange: () => void) {
@@ -42,7 +43,7 @@ export class SqliteSchemaManager {
     }
 
     /**
-     * Create database tables (schema v13 - UUID primary keys)
+     * Create database tables (schema v14 - soft delete support)
      */
     createTables(): void {
         this.db.run(`
@@ -62,6 +63,7 @@ export class SqliteSchemaManager {
                 buried_until TEXT,
                 created_at INTEGER,
                 updated_at INTEGER,
+                deleted_at INTEGER DEFAULT NULL,
                 question TEXT,
                 answer TEXT,
                 source_uid TEXT
@@ -72,6 +74,7 @@ export class SqliteSchemaManager {
             CREATE INDEX IF NOT EXISTS idx_cards_state ON cards(state);
             CREATE INDEX IF NOT EXISTS idx_cards_suspended ON cards(suspended);
             CREATE INDEX IF NOT EXISTS idx_cards_source_uid ON cards(source_uid);
+            CREATE INDEX IF NOT EXISTS idx_cards_deleted ON cards(deleted_at);
 
             -- Source notes table
             CREATE TABLE IF NOT EXISTS source_notes (
@@ -79,26 +82,32 @@ export class SqliteSchemaManager {
                 note_name TEXT NOT NULL,
                 note_path TEXT,
                 created_at INTEGER,
-                updated_at INTEGER
+                updated_at INTEGER,
+                deleted_at INTEGER DEFAULT NULL
             );
 
             CREATE INDEX IF NOT EXISTS idx_source_notes_name ON source_notes(note_name);
+            CREATE INDEX IF NOT EXISTS idx_source_notes_deleted ON source_notes(deleted_at);
 
             -- Projects table (v10: TEXT UUID PK)
             CREATE TABLE IF NOT EXISTS projects (
                 id TEXT PRIMARY KEY NOT NULL,
                 name TEXT UNIQUE NOT NULL,
                 created_at INTEGER,
-                updated_at INTEGER
+                updated_at INTEGER,
+                deleted_at INTEGER DEFAULT NULL
             );
 
             CREATE INDEX IF NOT EXISTS idx_projects_name ON projects(name);
+            CREATE INDEX IF NOT EXISTS idx_projects_deleted ON projects(deleted_at);
 
             -- Note-Project junction table (many-to-many, v10: TEXT project_id)
             CREATE TABLE IF NOT EXISTS note_projects (
                 source_uid TEXT NOT NULL,
                 project_id TEXT NOT NULL,
                 created_at INTEGER,
+                updated_at INTEGER,
+                deleted_at INTEGER DEFAULT NULL,
                 PRIMARY KEY (source_uid, project_id),
                 FOREIGN KEY (source_uid) REFERENCES source_notes(uid) ON DELETE CASCADE,
                 FOREIGN KEY (project_id) REFERENCES projects(id) ON DELETE CASCADE
@@ -106,6 +115,7 @@ export class SqliteSchemaManager {
 
             CREATE INDEX IF NOT EXISTS idx_note_projects_source ON note_projects(source_uid);
             CREATE INDEX IF NOT EXISTS idx_note_projects_project ON note_projects(project_id);
+            CREATE INDEX IF NOT EXISTS idx_note_projects_deleted ON note_projects(deleted_at);
 
             -- Review history log (v10: TEXT UUID PK)
             CREATE TABLE IF NOT EXISTS review_log (
@@ -117,11 +127,14 @@ export class SqliteSchemaManager {
                 elapsed_days INTEGER,
                 state INTEGER,
                 time_spent_ms INTEGER,
+                updated_at INTEGER,
+                deleted_at INTEGER DEFAULT NULL,
                 FOREIGN KEY (card_id) REFERENCES cards(id) ON DELETE CASCADE
             );
 
             CREATE INDEX IF NOT EXISTS idx_revlog_card ON review_log(card_id);
             CREATE INDEX IF NOT EXISTS idx_revlog_date ON review_log(reviewed_at);
+            CREATE INDEX IF NOT EXISTS idx_revlog_deleted ON review_log(deleted_at);
 
             -- Daily statistics
             CREATE TABLE IF NOT EXISTS daily_stats (
@@ -152,11 +165,14 @@ export class SqliteSchemaManager {
                 image_path TEXT NOT NULL,
                 field TEXT NOT NULL,
                 created_at INTEGER,
+                updated_at INTEGER,
+                deleted_at INTEGER DEFAULT NULL,
                 FOREIGN KEY (card_id) REFERENCES cards(id) ON DELETE CASCADE
             );
 
             CREATE INDEX IF NOT EXISTS idx_image_refs_path ON card_image_refs(image_path);
             CREATE INDEX IF NOT EXISTS idx_image_refs_card ON card_image_refs(card_id);
+            CREATE INDEX IF NOT EXISTS idx_image_refs_deleted ON card_image_refs(deleted_at);
 
             -- Metadata
             CREATE TABLE IF NOT EXISTS meta (
@@ -165,7 +181,7 @@ export class SqliteSchemaManager {
             );
 
             -- Set schema version
-            INSERT OR REPLACE INTO meta (key, value) VALUES ('schema_version', '13');
+            INSERT OR REPLACE INTO meta (key, value) VALUES ('schema_version', '14');
             INSERT OR REPLACE INTO meta (key, value) VALUES ('created_at', datetime('now'));
         `);
     }
@@ -175,7 +191,7 @@ export class SqliteSchemaManager {
      */
     runMigrations(): void {
         const currentVersion = this.getSchemaVersion();
-        const latestVersion = 13;
+        const latestVersion = 14;
 
         if (currentVersion >= latestVersion) {
             return; // Already at latest version

@@ -30,13 +30,14 @@ export class StatsActions {
     ): void {
         const id = generateUUID();
         const reviewedAt = new Date().toISOString();
+        const updatedAt = Date.now();
 
         this.db.run(`
             INSERT INTO review_log (
                 id, card_id, reviewed_at, rating, scheduled_days,
-                elapsed_days, state, time_spent_ms
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-        `, [id, cardId, reviewedAt, rating, scheduledDays, elapsedDays, state, timeSpentMs]);
+                elapsed_days, state, time_spent_ms, updated_at
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+        `, [id, cardId, reviewedAt, rating, scheduledDays, elapsedDays, state, timeSpentMs, updatedAt]);
     }
 
     /**
@@ -51,7 +52,7 @@ export class StatsActions {
         }>(`
             SELECT reviewed_at as t, rating as r, scheduled_days as s, elapsed_days as e
             FROM review_log
-            WHERE card_id = ?
+            WHERE card_id = ? AND deleted_at IS NULL
             ORDER BY reviewed_at DESC
             LIMIT ?
         `, [cardId, limit]);
@@ -69,7 +70,7 @@ export class StatsActions {
      */
     getTotalReviewCount(): number {
         return this.db.get<{ count: number }>(
-            `SELECT COUNT(*) as count FROM review_log`
+            `SELECT COUNT(*) as count FROM review_log WHERE deleted_at IS NULL`
         )?.count ?? 0;
     }
 
@@ -361,7 +362,7 @@ export class StatsActions {
                 SUM(CASE WHEN suspended = 0 AND (buried_until IS NULL OR buried_until <= datetime('now')) AND state IN (1, 3) THEN 1 ELSE 0 END) as learning,
                 SUM(CASE WHEN suspended = 0 AND (buried_until IS NULL OR buried_until <= datetime('now')) AND state = 2 AND scheduled_days < 21 THEN 1 ELSE 0 END) as young,
                 SUM(CASE WHEN suspended = 0 AND (buried_until IS NULL OR buried_until <= datetime('now')) AND state = 2 AND scheduled_days >= 21 THEN 1 ELSE 0 END) as mature
-            FROM cards
+            FROM cards WHERE deleted_at IS NULL
         `);
 
         return {
@@ -381,7 +382,7 @@ export class StatsActions {
         const rows = this.db.query<{ due_date: string; count: number }>(`
             SELECT date(due) as due_date, COUNT(*) as count
             FROM cards
-            WHERE state != 0
+            WHERE deleted_at IS NULL AND state != 0
               AND suspended = 0
               AND (buried_until IS NULL OR buried_until <= datetime('now'))
               AND date(due) BETWEEN ? AND ?
@@ -418,7 +419,7 @@ export class StatsActions {
                     ELSE 'unknown'
                 END as problem_type
             FROM cards
-            WHERE suspended = 0
+            WHERE deleted_at IS NULL AND suspended = 0
               AND (
                 lapses > 3
                 OR stability < 2.0
@@ -456,7 +457,7 @@ export class StatsActions {
                 COUNT(*) as total_reviews,
                 SUM(CASE WHEN rating >= 3 THEN 1 ELSE 0 END) as successful_reviews
             FROM review_log
-            WHERE reviewed_at >= datetime('now', '-30 days')
+            WHERE deleted_at IS NULL AND reviewed_at >= datetime('now', '-30 days')
             GROUP BY day_of_week, hour_of_day
             ORDER BY day_of_week, hour_of_day
         `);
@@ -529,7 +530,7 @@ export class StatsActions {
             SELECT date(datetime(created_at / 1000, 'unixepoch', 'localtime')) as created_date,
                    COUNT(*) as count
             FROM cards
-            WHERE created_at IS NOT NULL
+            WHERE deleted_at IS NULL AND created_at IS NOT NULL
               AND date(datetime(created_at / 1000, 'unixepoch', 'localtime')) BETWEEN ? AND ?
             GROUP BY created_date
             ORDER BY created_date
@@ -545,7 +546,7 @@ export class StatsActions {
         const rows = this.db.query<{ id: string }>(`
             SELECT id
             FROM cards
-            WHERE created_at IS NOT NULL
+            WHERE deleted_at IS NULL AND created_at IS NOT NULL
               AND date(datetime(created_at / 1000, 'unixepoch', 'localtime')) = ?
         `, [date]);
 
@@ -561,7 +562,7 @@ export class StatsActions {
             SELECT date(datetime(created_at / 1000, 'unixepoch', 'localtime')) as created_date,
                    COUNT(*) as count
             FROM cards
-            WHERE created_at IS NOT NULL
+            WHERE deleted_at IS NULL AND created_at IS NOT NULL
               AND date(datetime(created_at / 1000, 'unixepoch', 'localtime')) BETWEEN ? AND ?
             GROUP BY created_date
         `, [startDate, endDate]);
@@ -579,7 +580,7 @@ export class StatsActions {
                    COUNT(*) as count
             FROM cards c
             INNER JOIN daily_reviewed_cards drc ON c.id = drc.card_id
-            WHERE date(datetime(c.created_at / 1000, 'unixepoch', 'localtime')) = drc.date
+            WHERE c.deleted_at IS NULL AND date(datetime(c.created_at / 1000, 'unixepoch', 'localtime')) = drc.date
               AND drc.date BETWEEN ? AND ?
             GROUP BY created_date
         `, [startDate, endDate]);
@@ -627,10 +628,10 @@ export class StatsActions {
                 AVG(julianday(c.last_review) - julianday(datetime(c.created_at / 1000, 'unixepoch'))) as avg_days,
                 COUNT(*) as card_count
             FROM cards c
-            LEFT JOIN source_notes sn ON c.source_uid = sn.uid
-            LEFT JOIN note_projects np ON sn.uid = np.source_uid
-            LEFT JOIN projects p ON np.project_id = p.id
-            WHERE c.state = 2
+            LEFT JOIN source_notes sn ON c.source_uid = sn.uid AND sn.deleted_at IS NULL
+            LEFT JOIN note_projects np ON sn.uid = np.source_uid AND np.deleted_at IS NULL
+            LEFT JOIN projects p ON np.project_id = p.id AND p.deleted_at IS NULL
+            WHERE c.deleted_at IS NULL AND c.state = 2
               AND c.scheduled_days >= 21
               AND c.last_review IS NOT NULL
               AND c.created_at IS NOT NULL
