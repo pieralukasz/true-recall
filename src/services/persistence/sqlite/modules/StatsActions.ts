@@ -3,36 +3,11 @@
  * Review log, daily statistics, and aggregate queries
  *
  * Consolidates functionality from SqliteDailyStatsRepo and SqliteAggregations
+ * Uses SQL column aliases to map directly to interface properties where possible
  */
 import type { CardReviewLogEntry, ExtendedDailyStats, CardMaturityBreakdown, CardsCreatedVsReviewedEntry, ProblemCard, StudyPattern, TimeToMasteryStats } from "types";
 import { SqliteDatabase } from "../SqliteDatabase";
 import { generateUUID } from "../sqlite.types";
-
-// Database row types
-interface DailyStatsRow {
-    date: string;
-    reviews_completed: number;
-    new_cards_studied: number;
-    total_time_ms: number;
-    again_count: number;
-    hard_count: number;
-    good_count: number;
-    easy_count: number;
-    new_cards: number;
-    learning_cards: number;
-    review_cards: number;
-}
-
-interface DailyStatsWithCardsRow extends DailyStatsRow {
-    reviewed_card_ids: string | null;
-}
-
-interface ReviewLogRow {
-    t: number;
-    r: number;
-    s: number;
-    e: number;
-}
 
 /**
  * Stats and aggregations operations
@@ -93,10 +68,9 @@ export class StatsActions {
      * Get total review count
      */
     getTotalReviewCount(): number {
-        const result = this.db.get<{ count: number }>(
+        return this.db.get<{ count: number }>(
             `SELECT COUNT(*) as count FROM review_log`
-        );
-        return result?.count ?? 0;
+        )?.count ?? 0;
     }
 
     // ===== Daily Stats =====
@@ -105,9 +79,32 @@ export class StatsActions {
      * Get daily stats for a date (optimized with single JOIN query)
      */
     getDailyStats(date: string): ExtendedDailyStats | null {
-        const row = this.db.get<DailyStatsWithCardsRow>(`
+        const row = this.db.get<{
+            date: string;
+            reviewsCompleted: number;
+            newCardsStudied: number;
+            totalTimeMs: number;
+            again: number;
+            hard: number;
+            good: number;
+            easy: number;
+            newCards: number;
+            learningCards: number;
+            reviewCards: number;
+            reviewed_card_ids: string | null;
+        }>(`
             SELECT
-                ds.*,
+                ds.date,
+                ds.reviews_completed as reviewsCompleted,
+                ds.new_cards_studied as newCardsStudied,
+                ds.total_time_ms as totalTimeMs,
+                ds.again_count as again,
+                ds.hard_count as hard,
+                ds.good_count as good,
+                ds.easy_count as easy,
+                ds.new_cards as newCards,
+                ds.learning_cards as learningCards,
+                ds.review_cards as reviewCards,
                 GROUP_CONCAT(drc.card_id) as reviewed_card_ids
             FROM daily_stats ds
             LEFT JOIN daily_reviewed_cards drc ON ds.date = drc.date
@@ -117,23 +114,19 @@ export class StatsActions {
 
         if (!row) return null;
 
-        const reviewedCardIds = row.reviewed_card_ids
-            ? row.reviewed_card_ids.split(",")
-            : [];
-
         return {
             date: row.date,
-            reviewsCompleted: row.reviews_completed,
-            newCardsStudied: row.new_cards_studied,
-            totalTimeMs: row.total_time_ms,
-            again: row.again_count,
-            hard: row.hard_count,
-            good: row.good_count,
-            easy: row.easy_count,
-            newCards: row.new_cards,
-            learningCards: row.learning_cards,
-            reviewCards: row.review_cards,
-            reviewedCardIds,
+            reviewsCompleted: row.reviewsCompleted,
+            newCardsStudied: row.newCardsStudied,
+            totalTimeMs: row.totalTimeMs,
+            again: row.again,
+            hard: row.hard,
+            good: row.good,
+            easy: row.easy,
+            newCards: row.newCards,
+            learningCards: row.learningCards,
+            reviewCards: row.reviewCards,
+            reviewedCardIds: row.reviewed_card_ids ? row.reviewed_card_ids.split(",") : [],
         };
     }
 
@@ -239,9 +232,32 @@ export class StatsActions {
      * Get all daily stats (optimized with single JOIN query)
      */
     getAllDailyStats(): Record<string, ExtendedDailyStats> {
-        const rows = this.db.query<DailyStatsWithCardsRow>(`
+        const rows = this.db.query<{
+            date: string;
+            reviewsCompleted: number;
+            newCardsStudied: number;
+            totalTimeMs: number;
+            again: number;
+            hard: number;
+            good: number;
+            easy: number;
+            newCards: number;
+            learningCards: number;
+            reviewCards: number;
+            reviewed_card_ids: string | null;
+        }>(`
             SELECT
-                ds.*,
+                ds.date,
+                ds.reviews_completed as reviewsCompleted,
+                ds.new_cards_studied as newCardsStudied,
+                ds.total_time_ms as totalTimeMs,
+                ds.again_count as again,
+                ds.hard_count as hard,
+                ds.good_count as good,
+                ds.easy_count as easy,
+                ds.new_cards as newCards,
+                ds.learning_cards as learningCards,
+                ds.review_cards as reviewCards,
                 GROUP_CONCAT(drc.card_id) as reviewed_card_ids
             FROM daily_stats ds
             LEFT JOIN daily_reviewed_cards drc ON ds.date = drc.date
@@ -251,23 +267,19 @@ export class StatsActions {
 
         const stats: Record<string, ExtendedDailyStats> = {};
         for (const row of rows) {
-            const reviewedCardIds = row.reviewed_card_ids
-                ? row.reviewed_card_ids.split(",")
-                : [];
-
             stats[row.date] = {
                 date: row.date,
-                reviewsCompleted: row.reviews_completed,
-                newCardsStudied: row.new_cards_studied,
-                totalTimeMs: row.total_time_ms,
-                again: row.again_count,
-                hard: row.hard_count,
-                good: row.good_count,
-                easy: row.easy_count,
-                newCards: row.new_cards,
-                learningCards: row.learning_cards,
-                reviewCards: row.review_cards,
-                reviewedCardIds,
+                reviewsCompleted: row.reviewsCompleted,
+                newCardsStudied: row.newCardsStudied,
+                totalTimeMs: row.totalTimeMs,
+                again: row.again,
+                hard: row.hard,
+                good: row.good,
+                easy: row.easy,
+                newCards: row.newCards,
+                learningCards: row.learningCards,
+                reviewCards: row.reviewCards,
+                reviewedCardIds: row.reviewed_card_ids ? row.reviewed_card_ids.split(",") : [],
             };
         }
 
@@ -278,24 +290,49 @@ export class StatsActions {
      * Get all daily stats summary (lightweight - no card IDs)
      */
     getAllDailyStatsSummary(): Record<string, ExtendedDailyStats> {
-        const rows = this.db.query<DailyStatsRow>(
-            `SELECT * FROM daily_stats ORDER BY date`
-        );
+        const rows = this.db.query<{
+            date: string;
+            reviewsCompleted: number;
+            newCardsStudied: number;
+            totalTimeMs: number;
+            again: number;
+            hard: number;
+            good: number;
+            easy: number;
+            newCards: number;
+            learningCards: number;
+            reviewCards: number;
+        }>(`
+            SELECT
+                date,
+                reviews_completed as reviewsCompleted,
+                new_cards_studied as newCardsStudied,
+                total_time_ms as totalTimeMs,
+                again_count as again,
+                hard_count as hard,
+                good_count as good,
+                easy_count as easy,
+                new_cards as newCards,
+                learning_cards as learningCards,
+                review_cards as reviewCards
+            FROM daily_stats
+            ORDER BY date
+        `);
 
         const stats: Record<string, ExtendedDailyStats> = {};
         for (const row of rows) {
             stats[row.date] = {
                 date: row.date,
-                reviewsCompleted: row.reviews_completed,
-                newCardsStudied: row.new_cards_studied,
-                totalTimeMs: row.total_time_ms,
-                again: row.again_count,
-                hard: row.hard_count,
-                good: row.good_count,
-                easy: row.easy_count,
-                newCards: row.new_cards,
-                learningCards: row.learning_cards,
-                reviewCards: row.review_cards,
+                reviewsCompleted: row.reviewsCompleted,
+                newCardsStudied: row.newCardsStudied,
+                totalTimeMs: row.totalTimeMs,
+                again: row.again,
+                hard: row.hard,
+                good: row.good,
+                easy: row.easy,
+                newCards: row.newCards,
+                learningCards: row.learningCards,
+                reviewCards: row.reviewCards,
                 reviewedCardIds: [], // Empty - use getAllDailyStats() if you need card IDs
             };
         }

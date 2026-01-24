@@ -2,33 +2,15 @@
  * Browser Actions Module
  * Specialized queries for the Browser view
  *
- * This module keeps SqliteBrowserQueries functionality
- * but uses the new SqliteDatabase helper class
+ * Uses SQL column aliases to map directly to TypeScript interfaces
+ * No manual row mapping needed (except for projects array parsing)
  */
 import type { State } from "ts-fsrs";
 import type { BrowserCardItem } from "types/browser.types";
 import { SqliteDatabase } from "../SqliteDatabase";
 
-// Database row type matching browser card queries
-interface BrowserCardRow {
-    id: string;
-    due: string;
-    stability: number;
-    difficulty: number;
-    reps: number;
-    lapses: number;
-    state: State;
-    last_review: string | null;
-    scheduled_days: number;
-    learning_step: number;
-    suspended: number;
-    buried_until: string | null;
-    created_at: number | null;
-    question: string;
-    answer: string;
-    source_uid: string | null;
-    source_note_name: string;
-    source_note_path: string;
+// Intermediate type for browser queries - projects is still a string from GROUP_CONCAT
+interface BrowserCardRowWithProjects extends Omit<BrowserCardItem, "projects"> {
     projects: string | null;
 }
 
@@ -39,14 +21,31 @@ export class BrowserActions {
     constructor(private db: SqliteDatabase) {}
 
     /**
+     * Parse projects from GROUP_CONCAT result
+     */
+    private parseProjects(projectsRaw: string | null): string[] {
+        return projectsRaw
+            ? projectsRaw.split(",").filter((p) => p.trim())
+            : [];
+    }
+
+    /**
      * Get all cards with source note info and projects for browser view
      */
     getAllCardsForBrowser(): BrowserCardItem[] {
-        const rows = this.db.query<BrowserCardRow>(`
+        const rows = this.db.query<BrowserCardRowWithProjects>(`
             SELECT
-                c.*,
-                COALESCE(s.note_name, '') as source_note_name,
-                COALESCE(s.note_path, '') as source_note_path,
+                c.id, c.due, c.stability, c.difficulty, c.reps, c.lapses, c.state,
+                c.last_review as lastReview,
+                c.scheduled_days as scheduledDays,
+                c.learning_step as learningStep,
+                c.suspended = 1 as suspended,
+                c.buried_until as buriedUntil,
+                c.created_at as createdAt,
+                c.question, c.answer,
+                c.source_uid as sourceUid,
+                COALESCE(s.note_name, '') as sourceNoteName,
+                COALESCE(s.note_path, '') as sourceNotePath,
                 GROUP_CONCAT(DISTINCT p.name) as projects
             FROM cards c
             LEFT JOIN source_notes s ON c.source_uid = s.uid
@@ -57,7 +56,10 @@ export class BrowserActions {
             ORDER BY c.due ASC
         `);
 
-        return rows.map((r) => this.mapRowToBrowserCard(r));
+        return rows.map((r) => ({
+            ...r,
+            projects: this.parseProjects(r.projects),
+        }));
     }
 
     /**
@@ -260,11 +262,19 @@ export class BrowserActions {
      * Get card by ID (for preview)
      */
     getCard(cardId: string): BrowserCardItem | null {
-        const row = this.db.get<BrowserCardRow>(`
+        const row = this.db.get<BrowserCardRowWithProjects>(`
             SELECT
-                c.*,
-                COALESCE(s.note_name, '') as source_note_name,
-                COALESCE(s.note_path, '') as source_note_path,
+                c.id, c.due, c.stability, c.difficulty, c.reps, c.lapses, c.state,
+                c.last_review as lastReview,
+                c.scheduled_days as scheduledDays,
+                c.learning_step as learningStep,
+                c.suspended = 1 as suspended,
+                c.buried_until as buriedUntil,
+                c.created_at as createdAt,
+                c.question, c.answer,
+                c.source_uid as sourceUid,
+                COALESCE(s.note_name, '') as sourceNoteName,
+                COALESCE(s.note_path, '') as sourceNotePath,
                 GROUP_CONCAT(DISTINCT p.name) as projects
             FROM cards c
             LEFT JOIN source_notes s ON c.source_uid = s.uid
@@ -274,38 +284,8 @@ export class BrowserActions {
             GROUP BY c.id
         `, [cardId]);
 
-        return row ? this.mapRowToBrowserCard(row) : null;
-    }
-
-    // ===== Helper =====
-
-    private mapRowToBrowserCard(row: BrowserCardRow): BrowserCardItem {
-        // Parse projects from GROUP_CONCAT result
-        const projectsRaw = row.projects;
-        const projects = projectsRaw
-            ? projectsRaw.split(",").filter((p) => p.trim())
-            : [];
-
-        return {
-            id: row.id,
-            due: row.due,
-            stability: row.stability,
-            difficulty: row.difficulty,
-            reps: row.reps,
-            lapses: row.lapses,
-            state: row.state,
-            lastReview: row.last_review ?? null,
-            scheduledDays: row.scheduled_days,
-            learningStep: row.learning_step,
-            suspended: row.suspended === 1,
-            buriedUntil: row.buried_until ?? undefined,
-            createdAt: row.created_at ?? undefined,
-            question: row.question,
-            answer: row.answer,
-            sourceUid: row.source_uid ?? undefined,
-            sourceNoteName: row.source_note_name ?? "",
-            sourceNotePath: row.source_note_path ?? "",
-            projects,
-        };
+        return row
+            ? { ...row, projects: this.parseProjects(row.projects) }
+            : null;
     }
 }

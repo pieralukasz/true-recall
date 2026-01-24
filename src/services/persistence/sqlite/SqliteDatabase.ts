@@ -81,6 +81,7 @@ export class SqliteDatabase {
      * Execute multiple SQL statements in a transaction-like manner
      * Marks dirty after all statements complete
      *
+     * @deprecated Use transaction() for proper atomicity
      * @example
      * db.runMany([
      *     ["DELETE FROM cards WHERE id = ?", [cardId]],
@@ -88,12 +89,36 @@ export class SqliteDatabase {
      * ]);
      */
     runMany(statements: Array<[sql: string, params: BindParams]>): void {
+        this.transaction(() => {
+            for (const [sql, params] of statements) {
+                this.db!.run(sql, params);
+            }
+        });
+    }
+
+    /**
+     * Execute a function within a database transaction
+     * Provides atomicity - either all operations succeed or none do
+     *
+     * @example
+     * db.transaction(() => {
+     *     db.run("DELETE FROM cards WHERE id = ?", [cardId]);
+     *     db.run("DELETE FROM review_log WHERE card_id = ?", [cardId]);
+     * });
+     */
+    transaction<T>(fn: () => T): T {
         if (!this.db) throw new Error("Database not initialized");
 
-        for (const [sql, params] of statements) {
-            this.db.run(sql, params);
+        try {
+            this.db.run("BEGIN TRANSACTION");
+            const result = fn();
+            this.db.run("COMMIT");
+            this.onDirty();
+            return result;
+        } catch (e) {
+            this.db.run("ROLLBACK");
+            throw e;
         }
-        this.onDirty();
     }
 
     /**
