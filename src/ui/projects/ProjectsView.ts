@@ -9,8 +9,6 @@ import { Panel } from "../components/Panel";
 import { ProjectsContent } from "./ProjectsContent";
 import { SelectNoteModal, AddNotesToProjectModal } from "../modals";
 import type EpistemePlugin from "../../main";
-import type { ProjectInfo, SourceNoteInfo } from "../../types";
-import type { CardStore } from "../../types/fsrs/store.types";
 
 /**
  * Projects View
@@ -79,7 +77,7 @@ export class ProjectsView extends ItemView {
 		this.stateManager.setLoading(true);
 
 		try {
-			const projects = this.plugin.cardStore.getProjectStats?.() ?? [];
+			const projects = this.plugin.cardStore.projects.getProjectStats();
 			this.stateManager.setProjects(projects);
 		} catch (error) {
 			console.error("[ProjectsView] Error loading projects:", error);
@@ -107,20 +105,15 @@ export class ProjectsView extends ItemView {
 		}
 
 		try {
-			// Get all source_uids in this project BEFORE deleting
-			const sqlStore = this.plugin.cardStore as CardStore & {
-				getNotesInProject?: (projectId: string) => string[];
-				getAllSourceNotes?: () => SourceNoteInfo[];
-				getProjectNamesForNote?: (sourceUid: string) => string[];
-				deleteProject?: (id: string) => void;
-			};
+			const store = this.plugin.cardStore;
 
-			const sourceUids = sqlStore.getNotesInProject?.(projectId) ?? [];
+			// Get all source_uids in this project BEFORE deleting
+			const sourceUids = store.projects.getNotesInProject(projectId);
 
 			// Update frontmatter for each affected note
 			if (sourceUids.length > 0) {
 				const frontmatterService = this.plugin.flashcardManager.getFrontmatterService();
-				const sourceNotes = sqlStore.getAllSourceNotes?.() ?? [];
+				const sourceNotes = store.projects.getAllSourceNotes();
 
 				// Build UID -> path map
 				const uidToPath = new Map<string, string>();
@@ -138,7 +131,7 @@ export class ProjectsView extends ItemView {
 					if (!(file instanceof TFile)) continue;
 
 					// Get current projects for this note
-					const currentProjects = sqlStore.getProjectNamesForNote?.(uid) ?? [];
+					const currentProjects = store.projects.getProjectNamesForNote(uid);
 
 					// Remove the deleted project
 					const updatedProjects = currentProjects.filter(p => p !== project.name);
@@ -149,7 +142,7 @@ export class ProjectsView extends ItemView {
 			}
 
 			// Now delete from database
-			sqlStore.deleteProject?.(projectId);
+			store.projects.deleteProject(projectId);
 			this.stateManager.removeProject(projectId);
 			new Notice(`Project "${project.name}" deleted`);
 		} catch (error) {
@@ -213,8 +206,10 @@ export class ProjectsView extends ItemView {
 	 */
 	private async createProjectFromNote(note: TFile, projectName: string): Promise<void> {
 		try {
+			const store = this.plugin.cardStore;
+
 			// Create the project
-			const projectId = this.plugin.cardStore.createProject?.(projectName);
+			const projectId = store.projects.createProject(projectName);
 			if (!projectId) {
 				new Notice("Failed to create project");
 				return;
@@ -231,21 +226,15 @@ export class ProjectsView extends ItemView {
 			// Add note to project (update frontmatter)
 			await frontmatterService.setProjectsInFrontmatter(note, [projectName]);
 
-			// Sync to database
-			const sqlStore = this.plugin.cardStore as CardStore & {
-				syncNoteProjects?: (sourceUid: string, projectNames: string[]) => void;
-				upsertSourceNote?: (info: SourceNoteInfo) => void;
-			};
-
 			// Ensure source note exists in DB
-			sqlStore.upsertSourceNote?.({
+			store.projects.upsertSourceNote({
 				uid: sourceUid,
 				noteName: note.basename,
 				notePath: note.path,
 			});
 
 			// Sync projects
-			sqlStore.syncNoteProjects?.(sourceUid, [projectName]);
+			store.projects.syncNoteProjects(sourceUid, [projectName]);
 
 			// Refresh projects list
 			await this.loadProjects();
@@ -261,14 +250,8 @@ export class ProjectsView extends ItemView {
 	 * Handle adding orphaned notes to a project
 	 */
 	private async handleAddNotesToProject(projectId: string, projectName: string): Promise<void> {
-		const sqlStore = this.plugin.cardStore as CardStore & {
-			getOrphanedSourceNotes?: () => { uid: string; noteName: string; notePath: string }[];
-			syncNoteProjects?: (sourceUid: string, projectNames: string[]) => void;
-			getProjectNamesForNote?: (sourceUid: string) => string[];
-		};
-
 		// Get orphaned notes
-		const orphanedNotes = sqlStore.getOrphanedSourceNotes?.() ?? [];
+		const orphanedNotes = this.plugin.cardStore.projects.getOrphanedSourceNotes();
 
 		if (orphanedNotes.length === 0) {
 			new Notice("No notes without projects found");
@@ -296,10 +279,7 @@ export class ProjectsView extends ItemView {
 		projectName: string
 	): Promise<void> {
 		const frontmatterService = this.plugin.flashcardManager.getFrontmatterService();
-		const sqlStore = this.plugin.cardStore as CardStore & {
-			syncNoteProjects?: (sourceUid: string, projectNames: string[]) => void;
-			getProjectNamesForNote?: (sourceUid: string) => string[];
-		};
+		const store = this.plugin.cardStore;
 
 		let added = 0;
 
@@ -309,14 +289,14 @@ export class ProjectsView extends ItemView {
 
 			try {
 				// Get current projects for this note
-				const currentProjects = sqlStore.getProjectNamesForNote?.(noteInfo.uid) ?? [];
+				const currentProjects = store.projects.getProjectNamesForNote(noteInfo.uid);
 				const newProjects = [...currentProjects, projectName];
 
 				// Update frontmatter
 				await frontmatterService.setProjectsInFrontmatter(file, newProjects);
 
 				// Sync to database
-				sqlStore.syncNoteProjects?.(noteInfo.uid, newProjects);
+				store.projects.syncNoteProjects(noteInfo.uid, newProjects);
 				added++;
 			} catch (error) {
 				console.error(`[ProjectsView] Error adding note ${noteInfo.noteName} to project:`, error);
