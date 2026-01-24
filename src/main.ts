@@ -890,6 +890,7 @@ export default class EpistemePlugin extends Plugin {
 
 	/**
 	 * Add current note to a project via modal
+	 * v16: Projects scanned from frontmatter (no database)
 	 */
 	async addCurrentNoteToProject(): Promise<void> {
 		const file = this.app.workspace.getActiveFile();
@@ -904,8 +905,15 @@ export default class EpistemePlugin extends Plugin {
 		const content = await this.app.vault.read(file);
 		const currentProjects = frontmatterService.extractProjectsFromFrontmatter(content);
 
-		// Get all available projects from the store
-		const allProjects = this.cardStore.projects.getAllProjects().map(p => p.name);
+		// v16: Scan all files for available projects (from frontmatter)
+		const allProjectsSet = new Set<string>();
+		const files = this.app.vault.getMarkdownFiles();
+		for (const f of files) {
+			const c = await this.app.vault.cachedRead(f);
+			const projects = frontmatterService.extractProjectsFromFrontmatter(c);
+			projects.forEach(p => allProjectsSet.add(p));
+		}
+		const allProjects = Array.from(allProjectsSet).sort();
 
 		// Open modal
 		const modal = new AddToProjectModal(this.app, {
@@ -916,7 +924,7 @@ export default class EpistemePlugin extends Plugin {
 		const result = await modal.openAndWait();
 		if (result.cancelled) return;
 
-		// Update frontmatter (v15: frontmatter is source of truth)
+		// Update frontmatter (v16: frontmatter is source of truth)
 		await frontmatterService.setProjectsInFrontmatter(file, result.projects);
 
 		if (result.projects.length > 0) {
@@ -928,36 +936,34 @@ export default class EpistemePlugin extends Plugin {
 
 	/**
 	 * Create a project from a file (used by file-menu context action)
+	 * v16: Projects only in frontmatter (no database)
 	 */
 	async createProjectFromNote(file: TFile): Promise<void> {
 		const projectName = file.basename;
+		const frontmatterService = this.flashcardManager.getFrontmatterService();
 
-		// Check if project exists
-		const projects = this.cardStore.projects.getAllProjects();
-		if (projects.some(p => p.name.toLowerCase() === projectName.toLowerCase())) {
-			new Notice(`Project "${projectName}" already exists`);
-			return;
-		}
-
-		// Create project
-		const projectId = this.cardStore.projects.createProject(projectName);
-		if (!projectId) {
-			new Notice("Failed to create project");
-			return;
+		// v16: Check if project exists by scanning frontmatter
+		const files = this.app.vault.getMarkdownFiles();
+		for (const f of files) {
+			const content = await this.app.vault.cachedRead(f);
+			const projects = frontmatterService.extractProjectsFromFrontmatter(content);
+			if (projects.some(p => p.toLowerCase() === projectName.toLowerCase())) {
+				new Notice(`Project "${projectName}" already exists`);
+				return;
+			}
 		}
 
 		// Get or create source note UID
-		const frontmatterService = this.flashcardManager.getFrontmatterService();
 		let sourceUid = await frontmatterService.getSourceNoteUid(file);
 		if (!sourceUid) {
 			sourceUid = frontmatterService.generateUid();
 			await frontmatterService.setSourceNoteUid(file, sourceUid);
 		}
 
-		// Add note to project (update frontmatter - v15: frontmatter is source of truth)
+		// Add note to project (update frontmatter - v16: frontmatter is source of truth)
 		await frontmatterService.setProjectsInFrontmatter(file, [projectName]);
 
-		// Ensure source note exists in DB (v15: only stores UID)
+		// Ensure source note exists in DB (for card linking)
 		this.cardStore.projects.upsertSourceNote(sourceUid);
 
 		new Notice(`Project "${projectName}" created`);

@@ -139,55 +139,10 @@ export function registerCommands(plugin: EpistemePlugin): void {
 		callback: () => void plugin.createManualBackup(),
 	});
 
-	// Restore from backup
-	plugin.addCommand({
-		id: "restore-backup",
-		name: "Restore from backup",
-		callback: () => void plugin.openRestoreBackupModal(),
-	});
-
-	// Test Agent Tools (dev command)
-	plugin.addCommand({
-		id: "test-agent-tools",
-		name: "Test Agent Tools (dev)",
-		callback: async () => {
-			if (!plugin.agentService) {
-				new Notice("AgentService not initialized");
-				return;
-			}
-
-			const tools = plugin.agentService.getToolNames();
-			console.log("Available tools:", tools);
-
-			// Test search-vault
-			const result = await plugin.agentService.execute("search-vault", {
-				query: "test",
-				type: "filename",
-				limit: 5,
-			});
-
-			console.log("Search result:", result);
-			new Notice(
-				`Tools: ${tools.join(", ")}\nSearch found: ${
-					result.success
-						? (result.data as { totalFound: number }).totalFound
-						: 0
-				} results`
-			);
-		},
-	});
-
 	// Sync cloud data
 	plugin.addCommand({
 		id: "sync-cloud",
 		name: "Sync cloud data",
 		callback: () => void plugin.syncCloud(),
-	});
-
-	// Force replace cloud data (destructive)
-	plugin.addCommand({
-		id: "force-replace-cloud",
-		name: "Force replace cloud data",
-		callback: () => void plugin.forceReplaceCloud(),
 	});
 }

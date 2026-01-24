@@ -118,28 +118,15 @@ export class ProjectsView extends ItemView {
 				}
 			}
 
-			// Get projects from DB (for IDs) and merge with vault counts
-			const dbProjects = this.plugin.cardStore.projects.getAllProjects();
-
-			// Create merged project list
-			const allProjectNames = new Set([
-				...projectNoteCounts.keys(),
-				...dbProjects.map(p => p.name),
-			]);
-
-			const projects = Array.from(allProjectNames).map(name => {
-				const dbProject = dbProjects.find(p => p.name === name);
-				return {
-					id: dbProject?.id ?? name, // Use name as ID if not in DB
-					name,
-					noteCount: projectNoteCounts.get(name) ?? 0,
-					cardCount: projectCardCounts.get(name) ?? 0,
-					dueCount: 0,
-					newCount: 0,
-					createdAt: dbProject?.createdAt,
-					updatedAt: dbProject?.updatedAt,
-				};
-			}).sort((a, b) => a.name.localeCompare(b.name));
+			// v16: Projects come from frontmatter only (no database)
+			const projects = Array.from(projectNoteCounts.keys()).map(name => ({
+				id: name, // Use name as ID (no DB)
+				name,
+				noteCount: projectNoteCounts.get(name) ?? 0,
+				cardCount: projectCardCounts.get(name) ?? 0,
+				dueCount: 0,
+				newCount: 0,
+			})).sort((a, b) => a.name.localeCompare(b.name));
 
 			this.stateManager.setProjects(projects);
 		} catch (error) {
@@ -183,11 +170,7 @@ export class ProjectsView extends ItemView {
 				}
 			}
 
-			// Delete from database if it exists there
-			const dbProject = this.plugin.cardStore.projects.getProjectByName(project.name);
-			if (dbProject) {
-				this.plugin.cardStore.projects.deleteProject(dbProject.id);
-			}
+			// v16: No database deletion - projects are in frontmatter only
 
 			this.stateManager.removeProject(projectId);
 			new Notice(`Project "${project.name}" deleted`);
@@ -249,31 +232,24 @@ export class ProjectsView extends ItemView {
 
 	/**
 	 * Create a project from a note and add that note to the project
+	 * v16: Projects only in frontmatter (no database)
 	 */
 	private async createProjectFromNote(note: TFile, projectName: string): Promise<void> {
 		try {
-			const store = this.plugin.cardStore;
-
-			// Create the project in DB
-			const projectId = store.projects.createProject(projectName);
-			if (!projectId) {
-				new Notice("Failed to create project");
-				return;
-			}
+			const frontmatterService = this.plugin.flashcardManager.getFrontmatterService();
 
 			// Get or create source note UID
-			const frontmatterService = this.plugin.flashcardManager.getFrontmatterService();
 			let sourceUid = await frontmatterService.getSourceNoteUid(note);
 			if (!sourceUid) {
 				sourceUid = frontmatterService.generateUid();
 				await frontmatterService.setSourceNoteUid(note, sourceUid);
 			}
 
-			// Add project to note frontmatter (v15: frontmatter is source of truth)
+			// Add project to note frontmatter (v16: frontmatter is source of truth)
 			await frontmatterService.setProjectsInFrontmatter(note, [projectName]);
 
-			// Ensure source note exists in DB (v15: only stores UID)
-			store.projects.upsertSourceNote(sourceUid);
+			// Ensure source note exists in DB (for card linking)
+			this.plugin.cardStore.projects.upsertSourceNote(sourceUid);
 
 			// Refresh projects list
 			await this.loadProjects();

@@ -5,7 +5,7 @@
  * v15: Removed note_projects table, simplified source_notes (no name/path)
  * Projects are now read from frontmatter (source of truth)
  */
-import type { ProjectInfo, CardImageRef } from "types";
+import type { CardImageRef } from "types";
 import { SqliteDatabase } from "../SqliteDatabase";
 import { generateUUID } from "../sqlite.types";
 
@@ -19,16 +19,7 @@ export interface SourceNoteForSync {
     deletedAt: number | null;
 }
 
-/**
- * Project with sync timestamps
- */
-export interface ProjectForSync {
-    id: string;
-    name: string;
-    createdAt: number;
-    updatedAt: number;
-    deletedAt: number | null;
-}
+// v16: ProjectForSync removed - projects are in frontmatter only
 
 /**
  * Card image ref with sync timestamps
@@ -116,102 +107,7 @@ export class ProjectActions {
     }
 
     // ===== Projects =====
-
-    /**
-     * Create a new project
-     */
-    createProject(name: string): string {
-        const existing = this.getProjectByName(name);
-        if (existing) {
-            return existing.id;
-        }
-
-        const projectId = generateUUID();
-        const now = Date.now();
-
-        this.db.run(`
-            INSERT INTO projects (id, name, created_at, updated_at)
-            VALUES (?, ?, ?, ?)
-        `, [projectId, name, now, now]);
-
-        return projectId;
-    }
-
-    /**
-     * Get a project by name (v15: no note_projects JOIN)
-     */
-    getProjectByName(name: string): ProjectInfo | null {
-        return this.db.get<ProjectInfo>(`
-            SELECT
-                id,
-                name,
-                created_at as createdAt,
-                updated_at as updatedAt,
-                0 as cardCount,
-                0 as dueCount,
-                0 as newCount
-            FROM projects
-            WHERE name = ? AND deleted_at IS NULL
-        `, [name]);
-    }
-
-    /**
-     * Get a project by ID (v15: no note_projects JOIN)
-     */
-    getProjectById(id: string): ProjectInfo | null {
-        return this.db.get<ProjectInfo>(`
-            SELECT
-                id,
-                name,
-                created_at as createdAt,
-                updated_at as updatedAt,
-                0 as cardCount,
-                0 as dueCount,
-                0 as newCount
-            FROM projects
-            WHERE id = ? AND deleted_at IS NULL
-        `, [id]);
-    }
-
-    /**
-     * Get all projects (v15: no note_projects JOIN, counts populated elsewhere)
-     */
-    getAllProjects(): ProjectInfo[] {
-        return this.db.query<ProjectInfo>(`
-            SELECT
-                id,
-                name,
-                created_at as createdAt,
-                updated_at as updatedAt,
-                0 as cardCount,
-                0 as dueCount,
-                0 as newCount
-            FROM projects
-            WHERE deleted_at IS NULL
-            ORDER BY name
-        `);
-    }
-
-    /**
-     * Rename a project
-     */
-    renameProject(id: string, newName: string): void {
-        this.db.run(`
-            UPDATE projects SET
-                name = ?,
-                updated_at = ?
-            WHERE id = ?
-        `, [newName, Date.now(), id]);
-    }
-
-    /**
-     * Delete a project
-     */
-    deleteProject(id: string): void {
-        this.db.run(`
-            UPDATE projects SET deleted_at = ?, updated_at = ? WHERE id = ?
-        `, [Date.now(), Date.now(), id]);
-    }
+    // v16: Projects removed from database - they come from frontmatter YAML only
 
     // ===== Image References =====
 
@@ -382,52 +278,8 @@ export class ProjectActions {
         `, [uid]);
     }
 
-    /**
-     * Get projects modified since timestamp (for sync push)
-     */
-    getModifiedProjectsSince(timestamp: number): ProjectForSync[] {
-        return this.db.query<ProjectForSync>(`
-            SELECT
-                id,
-                name,
-                created_at as createdAt,
-                updated_at as updatedAt,
-                deleted_at as deletedAt
-            FROM projects
-            WHERE updated_at > ?
-        `, [timestamp]);
-    }
-
-    /**
-     * Upsert project from remote sync
-     */
-    upsertProjectFromRemote(data: ProjectForSync): void {
-        this.db.run(`
-            INSERT OR REPLACE INTO projects (id, name, created_at, updated_at, deleted_at)
-            VALUES (?, ?, ?, ?, ?)
-        `, [
-            data.id,
-            data.name,
-            data.createdAt,
-            data.updatedAt,
-            data.deletedAt,
-        ]);
-    }
-
-    /**
-     * Get project with sync fields (for LWW comparison)
-     */
-    getProjectForSync(id: string): ProjectForSync | null {
-        return this.db.get<ProjectForSync>(`
-            SELECT
-                id,
-                name,
-                created_at as createdAt,
-                updated_at as updatedAt,
-                deleted_at as deletedAt
-            FROM projects WHERE id = ?
-        `, [id]);
-    }
+    // v16: getModifiedProjectsSince, upsertProjectFromRemote, getProjectForSync removed
+    // Projects are now in frontmatter only
 
     /**
      * Get card image refs modified since timestamp (for sync push)
@@ -483,12 +335,11 @@ export class ProjectActions {
     }
 
     /**
-     * Delete all project-related data (for force pull sync)
-     * v15: No note_projects table
+     * Delete all data (for force pull sync)
+     * v16: No projects table (frontmatter only)
      */
     deleteAllForSync(): void {
         this.db.run(`DELETE FROM card_image_refs`);
-        this.db.run(`DELETE FROM projects`);
         this.db.run(`DELETE FROM source_notes`);
     }
 }

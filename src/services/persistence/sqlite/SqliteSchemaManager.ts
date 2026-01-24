@@ -36,6 +36,7 @@ export class SqliteSchemaManager {
         13: migrations.migration012ToV13,
         14: migrations.migration013ToV14,
         15: migrations.migration014ToV15,
+        16: migrations.migration015ToV16,
     };
 
     constructor(db: DatabaseLike, onSchemaChange: () => void) {
@@ -44,7 +45,7 @@ export class SqliteSchemaManager {
     }
 
     /**
-     * Create database tables (schema v15 - removed note_projects, simplified source_notes)
+     * Create database tables (schema v16 - removed projects table, projects only in frontmatter)
      */
     createTables(): void {
         this.db.run(`
@@ -87,17 +88,7 @@ export class SqliteSchemaManager {
 
             CREATE INDEX IF NOT EXISTS idx_source_notes_deleted ON source_notes(deleted_at);
 
-            -- Projects table (v10: TEXT UUID PK)
-            CREATE TABLE IF NOT EXISTS projects (
-                id TEXT PRIMARY KEY NOT NULL,
-                name TEXT UNIQUE NOT NULL,
-                created_at INTEGER,
-                updated_at INTEGER,
-                deleted_at INTEGER DEFAULT NULL
-            );
-
-            CREATE INDEX IF NOT EXISTS idx_projects_name ON projects(name);
-            CREATE INDEX IF NOT EXISTS idx_projects_deleted ON projects(deleted_at);
+            -- v16: Projects table removed - projects are now in frontmatter only
 
             -- Review history log (v10: TEXT UUID PK)
             CREATE TABLE IF NOT EXISTS review_log (
@@ -163,7 +154,7 @@ export class SqliteSchemaManager {
             );
 
             -- Set schema version
-            INSERT OR REPLACE INTO meta (key, value) VALUES ('schema_version', '15');
+            INSERT OR REPLACE INTO meta (key, value) VALUES ('schema_version', '16');
             INSERT OR REPLACE INTO meta (key, value) VALUES ('created_at', datetime('now'));
         `);
     }
@@ -173,7 +164,7 @@ export class SqliteSchemaManager {
      */
     runMigrations(): void {
         const currentVersion = this.getSchemaVersion();
-        const latestVersion = 15;
+        const latestVersion = 16;
 
         if (currentVersion >= latestVersion) {
             return; // Already at latest version
