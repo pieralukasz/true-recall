@@ -1,13 +1,16 @@
 /**
  * Projects View
  * Panel-based view for managing projects
+ *
+ * v15: Projects are read from frontmatter (source of truth)
+ * Project stats are calculated by scanning vault
  */
 import { ItemView, WorkspaceLeaf, Notice, TFile } from "obsidian";
 import { VIEW_TYPE_PROJECTS, VIEW_TYPE_REVIEW } from "../../constants";
 import { createProjectsStateManager } from "../../state/projects.state";
 import { Panel } from "../components/Panel";
 import { ProjectsContent } from "./ProjectsContent";
-import { SelectNoteModal, AddNotesToProjectModal } from "../modals";
+import { SelectNoteModal } from "../modals";
 import type EpistemePlugin from "../../main";
 
 /**
@@ -71,13 +74,73 @@ export class ProjectsView extends ItemView {
 	}
 
 	/**
-	 * Load projects from store
+	 * Load projects by scanning vault frontmatter
+	 * v15: Projects are read from frontmatter (source of truth)
 	 */
 	private async loadProjects(): Promise<void> {
 		this.stateManager.setLoading(true);
 
 		try {
-			const projects = this.plugin.cardStore.projects.getProjectStats();
+			const frontmatterService = this.plugin.flashcardManager.getFrontmatterService();
+			const files = this.app.vault.getMarkdownFiles();
+
+			// Scan all files for projects in frontmatter
+			const projectNoteCounts = new Map<string, number>();
+			const sourceUidToProjects = new Map<string, string[]>();
+
+			for (const file of files) {
+				const content = await this.app.vault.cachedRead(file);
+				const projects = frontmatterService.extractProjectsFromFrontmatter(content);
+
+				for (const projectName of projects) {
+					projectNoteCounts.set(projectName, (projectNoteCounts.get(projectName) || 0) + 1);
+				}
+
+				// Build source_uid -> projects map for card counting
+				if (projects.length > 0) {
+					const cache = this.app.metadataCache.getFileCache(file);
+					const uid = cache?.frontmatter?.flashcard_uid as string | undefined;
+					if (uid) {
+						sourceUidToProjects.set(uid, projects);
+					}
+				}
+			}
+
+			// Count cards per project
+			const projectCardCounts = new Map<string, number>();
+			const allCards = this.plugin.cardStore.cards.getAll();
+
+			for (const card of allCards) {
+				if (!card.sourceUid) continue;
+				const projects = sourceUidToProjects.get(card.sourceUid) || [];
+				for (const projectName of projects) {
+					projectCardCounts.set(projectName, (projectCardCounts.get(projectName) || 0) + 1);
+				}
+			}
+
+			// Get projects from DB (for IDs) and merge with vault counts
+			const dbProjects = this.plugin.cardStore.projects.getAllProjects();
+
+			// Create merged project list
+			const allProjectNames = new Set([
+				...projectNoteCounts.keys(),
+				...dbProjects.map(p => p.name),
+			]);
+
+			const projects = Array.from(allProjectNames).map(name => {
+				const dbProject = dbProjects.find(p => p.name === name);
+				return {
+					id: dbProject?.id ?? name, // Use name as ID if not in DB
+					name,
+					noteCount: projectNoteCounts.get(name) ?? 0,
+					cardCount: projectCardCounts.get(name) ?? 0,
+					dueCount: 0,
+					newCount: 0,
+					createdAt: dbProject?.createdAt,
+					updatedAt: dbProject?.updatedAt,
+				};
+			}).sort((a, b) => a.name.localeCompare(b.name));
+
 			this.stateManager.setProjects(projects);
 		} catch (error) {
 			console.error("[ProjectsView] Error loading projects:", error);
@@ -105,44 +168,27 @@ export class ProjectsView extends ItemView {
 		}
 
 		try {
-			const store = this.plugin.cardStore;
+			const frontmatterService = this.plugin.flashcardManager.getFrontmatterService();
+			const files = this.app.vault.getMarkdownFiles();
 
-			// Get all source_uids in this project BEFORE deleting
-			const sourceUids = store.projects.getNotesInProject(projectId);
+			// Find all notes with this project in frontmatter and remove it
+			for (const file of files) {
+				const content = await this.app.vault.cachedRead(file);
+				const projects = frontmatterService.extractProjectsFromFrontmatter(content);
 
-			// Update frontmatter for each affected note
-			if (sourceUids.length > 0) {
-				const frontmatterService = this.plugin.flashcardManager.getFrontmatterService();
-				const sourceNotes = store.projects.getAllSourceNotes();
-
-				// Build UID -> path map
-				const uidToPath = new Map<string, string>();
-				for (const note of sourceNotes) {
-					if (note.notePath) {
-						uidToPath.set(note.uid, note.notePath);
-					}
-				}
-
-				for (const uid of sourceUids) {
-					const filePath = uidToPath.get(uid);
-					if (!filePath) continue;
-
-					const file = this.app.vault.getAbstractFileByPath(filePath);
-					if (!(file instanceof TFile)) continue;
-
-					// Get current projects for this note
-					const currentProjects = store.projects.getProjectNamesForNote(uid);
-
-					// Remove the deleted project
-					const updatedProjects = currentProjects.filter(p => p !== project.name);
-
-					// Update frontmatter
+				if (projects.includes(project.name)) {
+					// Remove project from frontmatter
+					const updatedProjects = projects.filter(p => p !== project.name);
 					await frontmatterService.setProjectsInFrontmatter(file, updatedProjects);
 				}
 			}
 
-			// Now delete from database
-			store.projects.deleteProject(projectId);
+			// Delete from database if it exists there
+			const dbProject = this.plugin.cardStore.projects.getProjectByName(project.name);
+			if (dbProject) {
+				this.plugin.cardStore.projects.deleteProject(dbProject.id);
+			}
+
 			this.stateManager.removeProject(projectId);
 			new Notice(`Project "${project.name}" deleted`);
 		} catch (error) {
@@ -208,7 +254,7 @@ export class ProjectsView extends ItemView {
 		try {
 			const store = this.plugin.cardStore;
 
-			// Create the project
+			// Create the project in DB
 			const projectId = store.projects.createProject(projectName);
 			if (!projectId) {
 				new Notice("Failed to create project");
@@ -223,18 +269,11 @@ export class ProjectsView extends ItemView {
 				await frontmatterService.setSourceNoteUid(note, sourceUid);
 			}
 
-			// Add note to project (update frontmatter)
+			// Add project to note frontmatter (v15: frontmatter is source of truth)
 			await frontmatterService.setProjectsInFrontmatter(note, [projectName]);
 
-			// Ensure source note exists in DB
-			store.projects.upsertSourceNote({
-				uid: sourceUid,
-				noteName: note.basename,
-				notePath: note.path,
-			});
-
-			// Sync projects
-			store.projects.syncNoteProjects(sourceUid, [projectName]);
+			// Ensure source note exists in DB (v15: only stores UID)
+			store.projects.upsertSourceNote(sourceUid);
 
 			// Refresh projects list
 			await this.loadProjects();
@@ -247,67 +286,54 @@ export class ProjectsView extends ItemView {
 	}
 
 	/**
-	 * Handle adding orphaned notes to a project
+	 * Handle adding notes to a project
+	 * v15: Simplified - opens note selector instead of orphaned notes
 	 */
 	private async handleAddNotesToProject(projectId: string, projectName: string): Promise<void> {
-		// Get orphaned notes
-		const orphanedNotes = this.plugin.cardStore.projects.getOrphanedSourceNotes();
-
-		if (orphanedNotes.length === 0) {
-			new Notice("No notes without projects found");
-			return;
-		}
-
-		const modal = new AddNotesToProjectModal(this.app, {
-			projectName,
-			orphanedNotes,
+		const modal = new SelectNoteModal(this.app, {
+			title: `Add Note to "${projectName}"`,
+			excludeFlashcardFiles: true,
 		});
 
 		const result = await modal.openAndWait();
-		if (result.cancelled || result.selectedNotes.length === 0) return;
+		if (result.cancelled || !result.selectedNote) return;
 
-		// Add selected notes to project
-		await this.addNotesToProject(result.selectedNotes, projectId, projectName);
+		await this.addNoteToProject(result.selectedNote, projectName);
 	}
 
 	/**
-	 * Add notes to a project (update frontmatter and DB)
+	 * Add a single note to a project (update frontmatter)
 	 */
-	private async addNotesToProject(
-		notes: { uid: string; noteName: string; notePath: string }[],
-		projectId: string,
-		projectName: string
-	): Promise<void> {
+	private async addNoteToProject(note: TFile, projectName: string): Promise<void> {
 		const frontmatterService = this.plugin.flashcardManager.getFrontmatterService();
-		const store = this.plugin.cardStore;
 
-		let added = 0;
+		try {
+			// Get current projects for this note
+			const content = await this.app.vault.cachedRead(note);
+			const currentProjects = frontmatterService.extractProjectsFromFrontmatter(content);
 
-		for (const noteInfo of notes) {
-			const file = this.app.vault.getAbstractFileByPath(noteInfo.notePath);
-			if (!(file instanceof TFile)) continue;
-
-			try {
-				// Get current projects for this note
-				const currentProjects = store.projects.getProjectNamesForNote(noteInfo.uid);
-				const newProjects = [...currentProjects, projectName];
-
-				// Update frontmatter
-				await frontmatterService.setProjectsInFrontmatter(file, newProjects);
-
-				// Sync to database
-				store.projects.syncNoteProjects(noteInfo.uid, newProjects);
-				added++;
-			} catch (error) {
-				console.error(`[ProjectsView] Error adding note ${noteInfo.noteName} to project:`, error);
+			if (currentProjects.includes(projectName)) {
+				new Notice(`Note already in project "${projectName}"`);
+				return;
 			}
-		}
 
-		if (added > 0) {
-			new Notice(`Added ${added} note(s) to "${projectName}"`);
+			// Add project to frontmatter
+			const newProjects = [...currentProjects, projectName];
+			await frontmatterService.setProjectsInFrontmatter(note, newProjects);
+
+			// Ensure source note has UID
+			let sourceUid = await frontmatterService.getSourceNoteUid(note);
+			if (!sourceUid) {
+				sourceUid = frontmatterService.generateUid();
+				await frontmatterService.setSourceNoteUid(note, sourceUid);
+			}
+			this.plugin.cardStore.projects.upsertSourceNote(sourceUid);
+
+			new Notice(`Added "${note.basename}" to "${projectName}"`);
 			await this.loadProjects();
-		} else {
-			new Notice("No notes were added");
+		} catch (error) {
+			console.error(`[ProjectsView] Error adding note to project:`, error);
+			new Notice("Failed to add note to project");
 		}
 	}
 

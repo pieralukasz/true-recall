@@ -2,38 +2,26 @@
  * Browser Actions Module
  * Specialized queries for the Browser view
  *
- * Uses SQL column aliases to map directly to TypeScript interfaces
- * No manual row mapping needed (except for projects array parsing)
+ * v15: Removed note_projects table, simplified source_notes (no name/path)
+ * Source note names and projects are resolved from vault at runtime
  */
-import type { State } from "ts-fsrs";
 import type { BrowserCardItem } from "types/browser.types";
 import { SqliteDatabase } from "../SqliteDatabase";
 
-// Intermediate type for browser queries - projects is still a string from GROUP_CONCAT
-interface BrowserCardRowWithProjects extends Omit<BrowserCardItem, "projects"> {
-    projects: string | null;
-}
-
 /**
  * Browser-specific queries for the Browser view
+ * v15: No note_projects, source_notes has only uid
  */
 export class BrowserActions {
     constructor(private db: SqliteDatabase) {}
 
     /**
-     * Parse projects from GROUP_CONCAT result
-     */
-    private parseProjects(projectsRaw: string | null): string[] {
-        return projectsRaw
-            ? projectsRaw.split(",").filter((p) => p.trim())
-            : [];
-    }
-
-    /**
-     * Get all cards with source note info and projects for browser view
+     * Get all cards for browser view
+     * v15: sourceNoteName, sourceNotePath, and projects are not populated from DB
+     * They should be resolved from vault at runtime by the caller
      */
     getAllCardsForBrowser(): BrowserCardItem[] {
-        const rows = this.db.query<BrowserCardRowWithProjects>(`
+        return this.db.query<BrowserCardItem>(`
             SELECT
                 c.id, c.due, c.stability, c.difficulty, c.reps, c.lapses, c.state,
                 c.last_review as lastReview,
@@ -44,50 +32,45 @@ export class BrowserActions {
                 c.created_at as createdAt,
                 c.question, c.answer,
                 c.source_uid as sourceUid,
-                COALESCE(s.note_name, '') as sourceNoteName,
-                COALESCE(s.note_path, '') as sourceNotePath,
-                GROUP_CONCAT(DISTINCT p.name) as projects
+                '' as sourceNoteName,
+                '' as sourceNotePath
             FROM cards c
-            LEFT JOIN source_notes s ON c.source_uid = s.uid AND s.deleted_at IS NULL
-            LEFT JOIN note_projects np ON s.uid = np.source_uid AND np.deleted_at IS NULL
-            LEFT JOIN projects p ON np.project_id = p.id AND p.deleted_at IS NULL
             WHERE c.deleted_at IS NULL AND c.question IS NOT NULL AND c.answer IS NOT NULL
-            GROUP BY c.id
             ORDER BY c.due ASC
-        `);
-
-        return rows.map((r) => ({
-            ...r,
-            projects: this.parseProjects(r.projects),
+        `).map(card => ({
+            ...card,
+            projects: [] // v15: Resolve from vault at runtime
         }));
     }
 
     /**
-     * Get unique projects from all cards
+     * Get unique projects from database
+     * v15: Returns all project names (relationship with notes is now in frontmatter)
      */
     getUniqueProjects(): string[] {
         const rows = this.db.query<{ name: string }>(`
-            SELECT DISTINCT p.name
-            FROM projects p
-            INNER JOIN note_projects np ON p.id = np.project_id
-            WHERE p.deleted_at IS NULL AND np.deleted_at IS NULL
-            ORDER BY p.name
+            SELECT DISTINCT name
+            FROM projects
+            WHERE deleted_at IS NULL
+            ORDER BY name
         `);
         return rows.map((r) => r.name);
     }
 
     /**
-     * Get unique source note names
+     * Get unique source note UIDs that have cards
+     * v15: Returns UIDs only (names resolved from vault)
      */
-    getUniqueSourceNotes(): string[] {
-        const rows = this.db.query<{ note_name: string }>(`
-            SELECT DISTINCT s.note_name
-            FROM source_notes s
-            INNER JOIN cards c ON c.source_uid = s.uid
-            WHERE s.deleted_at IS NULL AND c.deleted_at IS NULL AND c.question IS NOT NULL
-            ORDER BY s.note_name
+    getUniqueSourceNoteUids(): string[] {
+        const rows = this.db.query<{ source_uid: string }>(`
+            SELECT DISTINCT c.source_uid
+            FROM cards c
+            WHERE c.deleted_at IS NULL
+              AND c.question IS NOT NULL
+              AND c.source_uid IS NOT NULL
+            ORDER BY c.source_uid
         `);
-        return rows.map((r) => r.note_name);
+        return rows.map((r) => r.source_uid);
     }
 
     /**
@@ -280,9 +263,10 @@ export class BrowserActions {
 
     /**
      * Get card by ID (for preview)
+     * v15: sourceNoteName, sourceNotePath, projects not populated from DB
      */
     getCard(cardId: string): BrowserCardItem | null {
-        const row = this.db.get<BrowserCardRowWithProjects>(`
+        const row = this.db.get<Omit<BrowserCardItem, 'projects'>>(`
             SELECT
                 c.id, c.due, c.stability, c.difficulty, c.reps, c.lapses, c.state,
                 c.last_review as lastReview,
@@ -293,19 +277,12 @@ export class BrowserActions {
                 c.created_at as createdAt,
                 c.question, c.answer,
                 c.source_uid as sourceUid,
-                COALESCE(s.note_name, '') as sourceNoteName,
-                COALESCE(s.note_path, '') as sourceNotePath,
-                GROUP_CONCAT(DISTINCT p.name) as projects
+                '' as sourceNoteName,
+                '' as sourceNotePath
             FROM cards c
-            LEFT JOIN source_notes s ON c.source_uid = s.uid AND s.deleted_at IS NULL
-            LEFT JOIN note_projects np ON s.uid = np.source_uid AND np.deleted_at IS NULL
-            LEFT JOIN projects p ON np.project_id = p.id AND p.deleted_at IS NULL
             WHERE c.deleted_at IS NULL AND c.id = ?
-            GROUP BY c.id
         `, [cardId]);
 
-        return row
-            ? { ...row, projects: this.parseProjects(row.projects) }
-            : null;
+        return row ? { ...row, projects: [] } : null;
     }
 }

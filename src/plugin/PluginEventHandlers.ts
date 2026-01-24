@@ -1,17 +1,16 @@
 /**
  * Plugin Event Handlers
  * Event registrations for file and workspace events
+ *
+ * v15: Simplified - no note_projects sync, no source_notes path tracking
+ * Projects are read from frontmatter (source of truth)
  */
-import { Notice, TFile } from "obsidian";
+import { TFile } from "obsidian";
 import type EpistemePlugin from "../main";
 import { FlashcardPanelView } from "../ui/panel/FlashcardPanelView";
 import { VIEW_TYPE_FLASHCARD_PANEL } from "../constants";
 import { isImageExtension } from "../types";
 import { ImageService } from "../services/image";
-
-// Debounce timers for file modify events
-const modifyDebounceMap = new Map<string, ReturnType<typeof setTimeout>>();
-const MODIFY_DEBOUNCE_MS = 500;
 
 /**
  * Register workspace and vault event handlers
@@ -54,70 +53,26 @@ export function registerEventHandlers(plugin: EpistemePlugin): void {
         })
     );
 
-    // Listen for file renames to update source_link and image paths
+    // Listen for file renames to update image paths in cards
     plugin.registerEvent(
         plugin.app.vault.on("rename", async (file, oldPath) => {
             if (!(file instanceof TFile)) return;
-
-            // Handle markdown file renames (source notes)
-            if (file.extension === "md") {
-                const frontmatterService = plugin.flashcardManager.getFrontmatterService();
-                const uid = await frontmatterService.getSourceNoteUid(file);
-                if (!uid) return;
-
-                // Update source_notes table in SQLite with new path and name
-                plugin.cardStore.projects.updateSourceNotePath(uid, file.path, file.basename);
-                return;
-            }
 
             // Handle image file renames
             if (isImageExtension(file.extension)) {
                 await handleImageRename(plugin, file, oldPath);
             }
+            // v15: No longer tracking source note paths in DB
+            // Source note lookup is done via flashcard_uid in frontmatter
         })
     );
 
-    // Listen for file modifications to sync projects from frontmatter
-    plugin.registerEvent(
-        plugin.app.vault.on("modify", (file) => {
-            if (!(file instanceof TFile) || file.extension !== "md") return;
+    // v15: No longer syncing projects from frontmatter to DB on file modify
+    // Projects are read from frontmatter at runtime (source of truth)
 
-            // Skip flashcard files
-            if (plugin.flashcardManager.isFlashcardFile(file)) return;
-
-            // Debounce: clear existing timer for this file
-            const existing = modifyDebounceMap.get(file.path);
-            if (existing) {
-                clearTimeout(existing);
-            }
-
-            // Set new timer
-            const timer = setTimeout(() => {
-                modifyDebounceMap.delete(file.path);
-                void syncProjectsFromFrontmatter(plugin, file);
-            }, MODIFY_DEBOUNCE_MS);
-
-            modifyDebounceMap.set(file.path, timer);
-        })
-    );
-
-    // Listen for file deletions to clean up orphaned source notes
-    plugin.registerEvent(
-        plugin.app.vault.on("delete", (file) => {
-            if (!(file instanceof TFile) || file.extension !== "md") return;
-
-            // We can't read frontmatter from deleted file, so look up by path
-            const sourceNote = plugin.cardStore.projects.getSourceNoteByPath(file.path);
-            if (sourceNote) {
-                const cards = plugin.cardStore.getCardsBySourceUid(sourceNote.uid);
-                // Delete source note but keep flashcards (detachCards = false sets source_uid = NULL)
-                plugin.cardStore.projects.deleteSourceNote(sourceNote.uid, false);
-                if (cards.length > 0) {
-                    new Notice(`Source note deleted. ${cards.length} flashcard(s) are now orphaned.`);
-                }
-            }
-        })
-    );
+    // v15: No longer tracking file deletions for source_notes cleanup
+    // Source note UIDs remain in DB, cards become orphaned naturally
+    // when the source file is gone (lookup by flashcard_uid returns null)
 }
 
 /**
@@ -170,40 +125,5 @@ async function handleImageRename(plugin: EpistemePlugin, file: TFile, oldPath: s
 
     if (updatedCardIds.size > 0) {
         console.debug(`[Episteme] Updated ${updatedCardIds.size} card(s) after image rename: ${oldPath} -> ${file.path}`);
-    }
-}
-
-/**
- * Sync projects from frontmatter to database
- * Called on file modify (debounced)
- */
-async function syncProjectsFromFrontmatter(plugin: EpistemePlugin, file: TFile): Promise<void> {
-    const frontmatterService = plugin.flashcardManager.getFrontmatterService();
-
-    // Get source note UID - only sync if note has a UID
-    const sourceUid = await frontmatterService.getSourceNoteUid(file);
-    if (!sourceUid) return;
-
-    const store = plugin.cardStore;
-
-    // Read current projects from frontmatter
-    const content = await plugin.app.vault.read(file);
-    const frontmatterProjects = frontmatterService.extractProjectsFromFrontmatter(content);
-
-    // Get current projects from database
-    const dbProjects = store.projects.getProjectNamesForNote(sourceUid);
-
-    // Compare arrays (sorted for comparison)
-    const fmSorted = [...frontmatterProjects].sort();
-    const dbSorted = [...dbProjects].sort();
-    const arraysEqual = fmSorted.length === dbSorted.length &&
-        fmSorted.every((val, idx) => val === dbSorted[idx]);
-
-    if (!arraysEqual) {
-        // Sync projects to database
-        store.projects.syncNoteProjects(sourceUid, frontmatterProjects);
-
-        // Clean up empty projects
-        store.projects.deleteEmptyProjects();
     }
 }

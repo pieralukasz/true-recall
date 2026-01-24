@@ -69,27 +69,22 @@ export interface FSRSCardData {
     answer?: string;
     /** Source note UID (8-char hex) - link to MD note */
     sourceUid?: string;
-    /** Source note name (from JOIN source_notes) */
+    /** Source note name (resolved from vault at runtime via sourceUid) */
     sourceNoteName?: string;
-    /** Source note path (from JOIN source_notes, for link resolution) */
+    /** Source note path (resolved from vault at runtime via sourceUid) */
     sourceNotePath?: string;
-    /** Projects associated with this card (via JOIN note_projects/projects) */
+    /** Projects associated with this card (resolved from frontmatter at runtime) */
     projects?: string[];
 }
 
 /**
  * Source note information
- * Stored in source_notes table
+ * Stored in source_notes table (v15: simplified - only UID + timestamps)
+ * Note name, path, and projects are resolved from vault at runtime
  */
 export interface SourceNoteInfo {
     /** Unique identifier (8-char hex, equals flashcard_uid in note) */
     uid: string;
-    /** Note name (basename without extension) */
-    noteName: string;
-    /** Path to note file (may change on rename) */
-    notePath?: string;
-    /** Projects associated with this note (populated via JOIN, optional) */
-    projects?: string[];
     /** Creation timestamp */
     createdAt?: number;
     /** Last update timestamp */
@@ -111,12 +106,12 @@ export interface FSRSFlashcardItem {
     filePath: string;
     /** FSRS data */
     fsrs: FSRSCardData;
-    /** Projects associated with this card (many-to-many via source note) */
+    /** Projects associated with this card (resolved from frontmatter at runtime) */
     projects: string[];
-    /** Original source note name (from frontmatter source_link) */
+    /** Source note name (resolved from vault at runtime via sourceUid) */
     sourceNoteName?: string;
     /** Source note UID (for MD note association) */
     sourceUid?: string;
-    /** Path to source note (for markdown link resolution when filePath is empty) */
+    /** Path to source note (resolved from vault at runtime via sourceUid) */
     sourceNotePath?: string;
 }
