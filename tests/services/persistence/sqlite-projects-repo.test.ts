@@ -65,16 +65,6 @@ describe("SqliteProjectsRepo", () => {
 
 			CREATE INDEX idx_note_projects_source ON note_projects(source_uid);
 			CREATE INDEX idx_note_projects_project ON note_projects(project_id);
-
-			CREATE TABLE sync_log (
-				id TEXT PRIMARY KEY NOT NULL,
-				operation TEXT NOT NULL,
-				table_name TEXT NOT NULL,
-				row_id TEXT NOT NULL,
-				data TEXT,
-				timestamp INTEGER NOT NULL,
-				synced INTEGER DEFAULT 0
-			);
 		`);
 
 		repo = new SqliteProjectsRepo(db, onDataChange);
