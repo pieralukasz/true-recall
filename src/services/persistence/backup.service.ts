@@ -4,8 +4,8 @@
  */
 import { App, normalizePath, Notice } from "obsidian";
 import type { SqliteStoreService } from "./sqlite";
+import { DB_FOLDER, getDeviceDbFilename } from "./sqlite";
 
-const BACKUP_FOLDER = ".episteme/backups";
 const BACKUP_PREFIX = "episteme-backup-";
 
 /**
@@ -39,6 +39,14 @@ export class BackupService {
     }
 
     /**
+     * Get the device-specific backup folder path
+     */
+    private getBackupFolder(): string {
+        const deviceId = this.sqliteStore.getDeviceId();
+        return `${DB_FOLDER}/backups/${deviceId}`;
+    }
+
+    /**
      * Create a backup of the current database
      * @returns Path to the created backup file
      */
@@ -60,7 +68,7 @@ export class BackupService {
         // Generate backup filename with timestamp
         const timestamp = this.formatTimestamp(new Date());
         const filename = `${BACKUP_PREFIX}${timestamp}.db`;
-        const backupPath = normalizePath(`${BACKUP_FOLDER}/${filename}`);
+        const backupPath = normalizePath(`${this.getBackupFolder()}/${filename}`);
 
         // Write backup file
         await this.app.vault.adapter.writeBinary(backupPath, data.buffer);
@@ -76,12 +84,12 @@ export class BackupService {
         const backups: BackupInfo[] = [];
 
         try {
-            const folderExists = await this.app.vault.adapter.exists(BACKUP_FOLDER);
+            const folderExists = await this.app.vault.adapter.exists(this.getBackupFolder());
             if (!folderExists) {
                 return [];
             }
 
-            const files = await this.app.vault.adapter.list(BACKUP_FOLDER);
+            const files = await this.app.vault.adapter.list(this.getBackupFolder());
 
             for (const filePath of files.files) {
                 const filename = filePath.split("/").pop() || "";
@@ -134,7 +142,8 @@ export class BackupService {
             const backupData = await this.app.vault.adapter.readBinary(backupPath);
 
             // Write to main database file
-            const dbPath = normalizePath(".episteme/episteme.db");
+            const deviceId = this.sqliteStore.getDeviceId();
+            const dbPath = normalizePath(`${DB_FOLDER}/${getDeviceDbFilename(deviceId)}`);
             await this.app.vault.adapter.writeBinary(dbPath, backupData);
 
             new Notice("Backup restored. Please reload Obsidian to apply changes.");
@@ -191,7 +200,7 @@ export class BackupService {
      * Ensure the backup folder exists
      */
     private async ensureBackupFolder(): Promise<void> {
-        const folderPath = normalizePath(BACKUP_FOLDER);
+        const folderPath = normalizePath(this.getBackupFolder());
         const exists = await this.app.vault.adapter.exists(folderPath);
         if (!exists) {
             await this.app.vault.adapter.mkdir(folderPath);

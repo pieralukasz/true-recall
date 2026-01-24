@@ -62,3 +62,8 @@ export {
     type AIGeneratorResult,
     type AIGeneratorModalOptions,
 } from "./AIGeneratorModal";
+export {
+    DeviceSelectionModal,
+    type DeviceSelectionResult,
+    type DeviceSelectionModalOptions,
+} from "./DeviceSelectionModal";
