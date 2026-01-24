@@ -14,7 +14,7 @@ import type { FSRSCardData } from "../../../types";
 import { SqliteDatabase } from "./SqliteDatabase";
 import { SqliteSchemaManager } from "./SqliteSchemaManager";
 import { CardActions, StatsActions, ProjectActions, BrowserActions } from "./modules";
-import { DB_FOLDER, DB_FILE, SAVE_DEBOUNCE_MS } from "./sqlite.types";
+import { DB_FOLDER, SAVE_DEBOUNCE_MS, getDeviceDbFilename } from "./sqlite.types";
 
 /**
  * SQLite-based storage service for FSRS card data
@@ -27,6 +27,7 @@ import { DB_FOLDER, DB_FILE, SAVE_DEBOUNCE_MS } from "./sqlite.types";
  */
 export class SqliteStoreService {
     private app: App;
+    private deviceId: string;
     private db: SqliteDatabase;
     private isLoaded = false;
     private isDirty = false;
@@ -38,8 +39,9 @@ export class SqliteStoreService {
     public readonly projects: ProjectActions;
     public readonly browser: BrowserActions;
 
-    constructor(app: App) {
+    constructor(app: App, deviceId: string) {
         this.app = app;
+        this.deviceId = deviceId;
         this.db = new SqliteDatabase(app, () => this.markDirty());
 
         // Initialize domain modules
@@ -47,6 +49,13 @@ export class SqliteStoreService {
         this.stats = new StatsActions(this.db);
         this.projects = new ProjectActions(this.db);
         this.browser = new BrowserActions(this.db);
+    }
+
+    /**
+     * Get the device ID for this store instance.
+     */
+    getDeviceId(): string {
+        return this.deviceId;
     }
 
     /**
@@ -182,7 +191,8 @@ export class SqliteStoreService {
     // ===== Persistence =====
 
     private getDbPath(): string {
-        return normalizePath(`${DB_FOLDER}/${DB_FILE}`);
+        const filename = getDeviceDbFilename(this.deviceId);
+        return normalizePath(`${DB_FOLDER}/${filename}`);
     }
 
     private async loadFromFile(path: string): Promise<Uint8Array | null> {

@@ -11,7 +11,7 @@ import {
 	SYSTEM_PROMPT,
 	UPDATE_SYSTEM_PROMPT,
 } from "../../constants";
-import { TemplatePickerModal } from "../modals";
+import { TemplatePickerModal, DeviceSelectionModal } from "../modals";
 import type { AIModelKey, AIModelInfo } from "../../constants";
 import type {
 	EpistemeSettings,
@@ -616,6 +616,40 @@ export class EpistemeSettingTab extends PluginSettingTab {
 	}
 
 	private renderDataTab(container: HTMLElement): void {
+		// ===== Device Database Section =====
+		container.createEl("h2", { text: "Device Database" });
+
+		const deviceId = this.plugin.deviceIdService?.getDeviceId() || "unknown";
+		const deviceLabel = this.plugin.deviceIdService?.getDeviceLabel();
+
+		const deviceInfo = container.createDiv({
+			cls: "setting-item-description",
+		});
+		deviceInfo.innerHTML = `
+			<p>Device ID: <code>${deviceId}</code></p>
+			<p>Database: <code>.episteme/episteme-${deviceId}.db</code></p>
+		`;
+
+		new Setting(container)
+			.setName("Device name")
+			.setDesc("Optional name (stored locally)")
+			.addText((text) => {
+				text.setPlaceholder("e.g. MacBook Pro, iPhone")
+					.setValue(deviceLabel || "")
+					.onChange((value) => {
+						this.plugin.deviceIdService?.setDeviceLabel(value);
+					});
+			});
+
+		new Setting(container)
+			.setName("Switch database")
+			.setDesc("Import data from another device")
+			.addButton((button) =>
+				button.setButtonText("Switch...").onClick(async () => {
+					await this.showDeviceSwitchModal();
+				})
+			);
+
 		// ===== Database Backup Section =====
 		container.createEl("h2", { text: "Database Backup" });
 
@@ -826,5 +860,75 @@ export class EpistemeSettingTab extends PluginSettingTab {
 	private truncatePrompt(prompt: string, maxLength: number): string {
 		if (prompt.length <= maxLength) return prompt;
 		return prompt.substring(0, maxLength) + "...";
+	}
+
+	/**
+	 * Show modal to switch device database
+	 */
+	private async showDeviceSwitchModal(): Promise<void> {
+		if (!this.plugin.deviceDiscovery || !this.plugin.deviceIdService) {
+			new Notice("Device services not initialized");
+			return;
+		}
+
+		const databases = await this.plugin.deviceDiscovery.discoverDeviceDatabases();
+		const otherDevices = databases.filter((db) => !db.isCurrentDevice);
+
+		if (otherDevices.length === 0) {
+			new Notice("No other device databases available to import");
+			return;
+		}
+
+		const modal = new DeviceSelectionModal(this.app, {
+			databases: otherDevices,
+			hasLegacy: false,
+		});
+
+		const result = await modal.openAndWait();
+		if (result.cancelled || result.action !== "import" || !result.sourcePath) {
+			return;
+		}
+
+		// Confirm the switch
+		const confirmed = confirm(
+			`Are you sure you want to replace the current database with data from device ${result.sourceDeviceId}?\n\n` +
+			"The current database will be overwritten. This requires restarting Obsidian."
+		);
+
+		if (!confirmed) {
+			return;
+		}
+
+		try {
+			const deviceId = this.plugin.deviceIdService.getDeviceId();
+			const { normalizePath } = await import("obsidian");
+			const { DB_FOLDER, getDeviceDbFilename } = await import(
+				"../../services/persistence/sqlite/sqlite.types"
+			);
+
+			const targetPath = normalizePath(
+				`${DB_FOLDER}/${getDeviceDbFilename(deviceId)}`
+			);
+
+			// Create backup of current database
+			const backupPath = normalizePath(
+				`${DB_FOLDER}/${getDeviceDbFilename(deviceId)}.backup`
+			);
+			const currentData = await this.app.vault.adapter.readBinary(targetPath);
+			await this.app.vault.adapter.writeBinary(backupPath, currentData);
+
+			// Copy source database to current
+			const sourceData = await this.app.vault.adapter.readBinary(
+				result.sourcePath
+			);
+			await this.app.vault.adapter.writeBinary(targetPath, sourceData);
+
+			new Notice(
+				`Imported data from device ${result.sourceDeviceId}. Please restart Obsidian.`
+			);
+		} catch (error) {
+			console.error("[Episteme] Database switch failed:", error);
+			new Notice("Failed to switch database.");
+		}
 	}
 }
