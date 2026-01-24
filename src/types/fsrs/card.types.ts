@@ -58,6 +58,8 @@ export interface FSRSCardData {
     history?: CardReviewLogEntry[];
     /** Card creation timestamp (Unix ms, optional for backwards compatibility) */
     createdAt?: number;
+    /** Last update timestamp (Unix ms, for sync LWW comparison) */
+    updatedAt?: number;
 
     // === SQL-based storage fields (schema v2) ===
 

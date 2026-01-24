@@ -2,6 +2,10 @@
    Settings Styles
    ======================================== */
 
+.episteme-settings {
+	overflow-x: hidden;
+}
+
 .episteme-api-input {
 	width: 300px;
 }
@@ -13,6 +17,8 @@
 	margin-bottom: 20px;
 	border-bottom: 1px solid var(--background-modifier-border);
 	padding-bottom: 8px;
+	overflow-x: auto;
+	scrollbar-width: thin;
 }
 
 .episteme-settings-tab-btn {
@@ -25,6 +31,8 @@
 	font-size: var(--font-ui-small);
 	font-weight: 500;
 	transition: background-color 0.15s ease, color 0.15s ease;
+	flex-shrink: 0;
+	white-space: nowrap;
 }
 
 .episteme-settings-tab-btn:hover {
@@ -115,4 +123,61 @@
 
 .episteme-notice-buttons button.mod-cta:hover {
 	background: var(--interactive-accent-hover);
+}
+
+/* ===== Cloud Connection Status ===== */
+.episteme-connection-status {
+	display: flex;
+	align-items: center;
+	gap: 8px;
+	padding: 12px;
+	background: var(--background-secondary);
+	border-radius: 6px;
+	margin-bottom: 16px;
+}
+
+.episteme-status-dot {
+	width: 8px;
+	height: 8px;
+	border-radius: 50%;
+}
+
+.episteme-status-connected {
+	background: var(--color-green);
+	box-shadow: 0 0 6px var(--color-green);
+}
+
+.episteme-status-disconnected {
+	background: var(--text-muted);
+}
+
+/* ===== Auth Form Improvements ===== */
+.episteme-auth-form {
+	background: var(--background-secondary);
+	padding: 16px;
+	border-radius: 8px;
+	margin-top: 8px;
+}
+
+.episteme-auth-buttons {
+	display: flex;
+	gap: 8px;
+	margin-top: 16px;
+}
+
+.episteme-auth-status {
+	margin-top: 12px;
+	padding: 8px;
+	border-radius: 4px;
+	font-size: var(--font-ui-small);
+}
+
+.episteme-auth-error {
+	background: rgba(var(--color-red-rgb), 0.1);
+	color: var(--text-error);
+}
+
+.episteme-auth-success {
+	background: rgba(var(--color-green-rgb), 0.1);
+	color: var(--text-success);
 }
