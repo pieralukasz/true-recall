@@ -182,15 +182,6 @@ export class SessionPersistenceService {
 	}
 
 	/**
-	 * Clean up old stats (deprecated - we keep all historical data)
-	 * @deprecated No longer called automatically - stats are kept for statistics panel
-	 */
-	async cleanupOldStats(): Promise<void> {
-		// Deprecated: We no longer clean up stats to preserve historical data
-		// for the statistics panel. This method is kept for backwards compatibility.
-	}
-
-	/**
 	 * Invalidate cache (no-op for SQL, kept for API compatibility)
 	 */
 	invalidateCache(): void {
