@@ -31,7 +31,7 @@ export interface CardActionsHandlerDeps {
 	reviewService: ReviewService;
 	openRouterService: OpenRouterService;
 	/** Function to get SQLite store (for registering source notes) */
-	getSqliteStore: () => { upsertSourceNote: (note: { uid: string; noteName: string; notePath: string }) => void } | null;
+	getSqliteStore: () => { projects: { upsertSourceNote: (note: { uid: string; noteName: string; notePath: string }) => void } } | null;
 	/** Function to create ZettelTemplateService */
 	createZettelTemplateService: () => ZettelTemplateService;
 	settings: {
@@ -712,7 +712,7 @@ tags: [${tag}]
 		// Register source note in SQLite
 		const sqliteStore = this.deps.getSqliteStore();
 		if (sqliteStore) {
-			sqliteStore.upsertSourceNote({
+			sqliteStore.projects.upsertSourceNote({
 				uid,
 				noteName: file.basename,
 				notePath: file.path,

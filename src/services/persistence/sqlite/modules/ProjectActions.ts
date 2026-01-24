@@ -2,39 +2,12 @@
  * Project Actions Module
  * Projects, source notes, and image references operations
  *
- * Consolidates functionality from SqliteSourceNotesRepo, SqliteProjectsRepo, and SqliteImageRefsRepo
+ * Uses SQL column aliases to map directly to TypeScript interfaces
+ * No manual row mapping needed
  */
 import type { SourceNoteInfo, ProjectInfo, CardImageRef } from "types";
 import { SqliteDatabase } from "../SqliteDatabase";
 import { generateUUID } from "../sqlite.types";
-
-// Database row types
-interface SourceNoteRow {
-    uid: string;
-    note_name: string;
-    note_path: string | null;
-    created_at: number | null;
-    updated_at: number | null;
-}
-
-interface ProjectRow {
-    id: string;
-    name: string;
-    created_at: number | null;
-    updated_at: number | null;
-    note_count?: number;
-    card_count?: number;
-    due_count?: number;
-    new_count?: number;
-}
-
-interface ImageRefRow {
-    id: string;
-    card_id: string;
-    image_path: string;
-    field: "question" | "answer";
-    created_at: number | null;
-}
 
 interface OrphanedNoteRow {
     uid: string;
@@ -76,30 +49,45 @@ export class ProjectActions {
      * Get a source note by UID
      */
     getSourceNote(uid: string): SourceNoteInfo | null {
-        const row = this.db.get<SourceNoteRow>(
-            `SELECT * FROM source_notes WHERE uid = ?`,
-            [uid]
-        );
-        return row ? this.mapRowToSourceNote(row) : null;
+        return this.db.get<SourceNoteInfo>(`
+            SELECT
+                uid,
+                note_name as noteName,
+                note_path as notePath,
+                created_at as createdAt,
+                updated_at as updatedAt
+            FROM source_notes WHERE uid = ?
+        `, [uid]);
     }
 
     /**
      * Get source note by note path
      */
     getSourceNoteByPath(notePath: string): SourceNoteInfo | null {
-        const row = this.db.get<SourceNoteRow>(
-            `SELECT * FROM source_notes WHERE note_path = ?`,
-            [notePath]
-        );
-        return row ? this.mapRowToSourceNote(row) : null;
+        return this.db.get<SourceNoteInfo>(`
+            SELECT
+                uid,
+                note_name as noteName,
+                note_path as notePath,
+                created_at as createdAt,
+                updated_at as updatedAt
+            FROM source_notes WHERE note_path = ?
+        `, [notePath]);
     }
 
     /**
      * Get all source notes
      */
     getAllSourceNotes(): SourceNoteInfo[] {
-        const rows = this.db.query<SourceNoteRow>(`SELECT * FROM source_notes`);
-        return rows.map((r) => this.mapRowToSourceNote(r));
+        return this.db.query<SourceNoteInfo>(`
+            SELECT
+                uid,
+                note_name as noteName,
+                note_path as notePath,
+                created_at as createdAt,
+                updated_at as updatedAt
+            FROM source_notes
+        `);
     }
 
     /**
@@ -165,54 +153,60 @@ export class ProjectActions {
      * Get a project by name
      */
     getProjectByName(name: string): ProjectInfo | null {
-        const row = this.db.get<ProjectRow>(`
-            SELECT p.*,
-                   COUNT(DISTINCT np.source_uid) as card_count,
-                   0 as due_count,
-                   0 as new_count
+        return this.db.get<ProjectInfo>(`
+            SELECT
+                p.id,
+                p.name,
+                p.created_at as createdAt,
+                p.updated_at as updatedAt,
+                COUNT(DISTINCT np.source_uid) as cardCount,
+                0 as dueCount,
+                0 as newCount
             FROM projects p
             LEFT JOIN note_projects np ON p.id = np.project_id
             WHERE p.name = ?
             GROUP BY p.id
         `, [name]);
-
-        return row ? this.mapRowToProject(row) : null;
     }
 
     /**
      * Get a project by ID
      */
     getProjectById(id: string): ProjectInfo | null {
-        const row = this.db.get<ProjectRow>(`
-            SELECT p.*,
-                   COUNT(DISTINCT np.source_uid) as card_count,
-                   0 as due_count,
-                   0 as new_count
+        return this.db.get<ProjectInfo>(`
+            SELECT
+                p.id,
+                p.name,
+                p.created_at as createdAt,
+                p.updated_at as updatedAt,
+                COUNT(DISTINCT np.source_uid) as cardCount,
+                0 as dueCount,
+                0 as newCount
             FROM projects p
             LEFT JOIN note_projects np ON p.id = np.project_id
             WHERE p.id = ?
             GROUP BY p.id
         `, [id]);
-
-        return row ? this.mapRowToProject(row) : null;
     }
 
     /**
      * Get all projects
      */
     getAllProjects(): ProjectInfo[] {
-        const rows = this.db.query<ProjectRow>(`
-            SELECT p.*,
-                   COUNT(DISTINCT np.source_uid) as card_count,
-                   0 as due_count,
-                   0 as new_count
+        return this.db.query<ProjectInfo>(`
+            SELECT
+                p.id,
+                p.name,
+                p.created_at as createdAt,
+                p.updated_at as updatedAt,
+                COUNT(DISTINCT np.source_uid) as cardCount,
+                0 as dueCount,
+                0 as newCount
             FROM projects p
             LEFT JOIN note_projects np ON p.id = np.project_id
             GROUP BY p.id
             ORDER BY p.name
         `);
-
-        return rows.map((r) => this.mapRowToProject(r));
     }
 
     /**
@@ -261,11 +255,15 @@ export class ProjectActions {
      * Get all projects for a source note
      */
     getProjectsForNote(sourceUid: string): ProjectInfo[] {
-        const rows = this.db.query<ProjectRow>(`
-            SELECT p.*,
-                   COUNT(DISTINCT np2.source_uid) as card_count,
-                   0 as due_count,
-                   0 as new_count
+        return this.db.query<ProjectInfo>(`
+            SELECT
+                p.id,
+                p.name,
+                p.created_at as createdAt,
+                p.updated_at as updatedAt,
+                COUNT(DISTINCT np2.source_uid) as cardCount,
+                0 as dueCount,
+                0 as newCount
             FROM projects p
             INNER JOIN note_projects np ON p.id = np.project_id
             LEFT JOIN note_projects np2 ON p.id = np2.project_id
@@ -273,8 +271,6 @@ export class ProjectActions {
             GROUP BY p.id
             ORDER BY p.name
         `, [sourceUid]);
-
-        return rows.map((r) => this.mapRowToProject(r));
     }
 
     /**
@@ -328,28 +324,26 @@ export class ProjectActions {
      * Get project statistics with card counts
      */
     getProjectStats(): ProjectInfo[] {
-        const rows = this.db.query<ProjectRow>(`
+        return this.db.query<ProjectInfo>(`
             SELECT
                 p.id,
                 p.name,
-                p.created_at,
-                p.updated_at,
-                COUNT(DISTINCT np.source_uid) as note_count,
-                COUNT(DISTINCT c.id) as card_count,
+                p.created_at as createdAt,
+                p.updated_at as updatedAt,
+                COUNT(DISTINCT np.source_uid) as noteCount,
+                COUNT(DISTINCT c.id) as cardCount,
                 SUM(CASE WHEN c.state != 0 AND c.suspended = 0
                          AND (c.buried_until IS NULL OR c.buried_until <= datetime('now'))
-                         AND c.due <= datetime('now') THEN 1 ELSE 0 END) as due_count,
+                         AND c.due <= datetime('now') THEN 1 ELSE 0 END) as dueCount,
                 SUM(CASE WHEN c.state = 0 AND c.suspended = 0
                          AND (c.buried_until IS NULL OR c.buried_until <= datetime('now'))
-                    THEN 1 ELSE 0 END) as new_count
+                    THEN 1 ELSE 0 END) as newCount
             FROM projects p
             LEFT JOIN note_projects np ON p.id = np.project_id
             LEFT JOIN cards c ON np.source_uid = c.source_uid
             GROUP BY p.id
             ORDER BY p.name
         `);
-
-        return rows.map((r) => this.mapRowToProject(r));
     }
 
     /**
@@ -414,22 +408,30 @@ export class ProjectActions {
      * Get all image references for a card
      */
     getImageRefsByCardId(cardId: string): CardImageRef[] {
-        const rows = this.db.query<ImageRefRow>(
-            `SELECT * FROM card_image_refs WHERE card_id = ?`,
-            [cardId]
-        );
-        return rows.map((r) => this.mapRowToImageRef(r));
+        return this.db.query<CardImageRef>(`
+            SELECT
+                id,
+                card_id as cardId,
+                image_path as imagePath,
+                field,
+                created_at as createdAt
+            FROM card_image_refs WHERE card_id = ?
+        `, [cardId]);
     }
 
     /**
      * Get all cards that reference a specific image path
      */
     getCardsByImagePath(imagePath: string): CardImageRef[] {
-        const rows = this.db.query<ImageRefRow>(
-            `SELECT * FROM card_image_refs WHERE image_path = ?`,
-            [imagePath]
-        );
-        return rows.map((r) => this.mapRowToImageRef(r));
+        return this.db.query<CardImageRef>(`
+            SELECT
+                id,
+                card_id as cardId,
+                image_path as imagePath,
+                field,
+                created_at as createdAt
+            FROM card_image_refs WHERE image_path = ?
+        `, [imagePath]);
     }
 
     /**
@@ -504,38 +506,4 @@ export class ProjectActions {
         return result?.count ?? 0;
     }
 
-    // ===== Helpers =====
-
-    private mapRowToSourceNote(row: SourceNoteRow): SourceNoteInfo {
-        return {
-            uid: row.uid,
-            noteName: row.note_name,
-            notePath: row.note_path ?? undefined,
-            createdAt: row.created_at ?? undefined,
-            updatedAt: row.updated_at ?? undefined,
-        };
-    }
-
-    private mapRowToProject(row: ProjectRow): ProjectInfo {
-        return {
-            id: row.id,
-            name: row.name,
-            noteCount: row.note_count ?? 0,
-            cardCount: row.card_count ?? 0,
-            dueCount: row.due_count ?? 0,
-            newCount: row.new_count ?? 0,
-            createdAt: row.created_at ?? undefined,
-            updatedAt: row.updated_at ?? undefined,
-        };
-    }
-
-    private mapRowToImageRef(row: ImageRefRow): CardImageRef {
-        return {
-            id: row.id,
-            cardId: row.card_id,
-            imagePath: row.image_path,
-            field: row.field,
-            createdAt: row.created_at ?? undefined,
-        };
-    }
 }

@@ -39,7 +39,7 @@ export class SessionPersistenceService {
 	 */
 	getTodayStats(): ExtendedDailyStats {
 		const today = this.getTodayKey();
-		const stats = this.store.getDailyStats(today);
+		const stats = this.store.stats.getDailyStats(today);
 
 		if (stats) {
 			return stats;
@@ -63,7 +63,7 @@ export class SessionPersistenceService {
 		const today = this.getTodayKey();
 
 		// Record the reviewed card (for daily limit tracking)
-		this.store.recordReviewedCard(today, cardId);
+		this.store.stats.recordReviewedCard(today, cardId);
 
 		// Build stats increment
 		const statsIncrement: Partial<ExtendedDailyStats> = {
@@ -81,11 +81,11 @@ export class SessionPersistenceService {
 			reviewCards: previousState === State.Review ? 1 : 0,
 		};
 
-		this.store.updateDailyStats(today, statsIncrement);
+		this.store.stats.updateDailyStats(today, statsIncrement);
 
 		// Record to review_log for detailed history
 		if (rating !== undefined) {
-			this.store.addReviewLog(
+			this.store.stats.addReviewLog(
 				cardId,
 				rating,
 				scheduledDays ?? 0,
@@ -101,7 +101,7 @@ export class SessionPersistenceService {
 	 */
 	getReviewedToday(): Set<string> {
 		const today = this.getTodayKey();
-		const cardIds = this.store.getReviewedCardIds(today);
+		const cardIds = this.store.stats.getReviewedCardIds(today);
 		return new Set(cardIds);
 	}
 
@@ -110,7 +110,7 @@ export class SessionPersistenceService {
 	 */
 	getNewCardsStudiedToday(): number {
 		const today = this.getTodayKey();
-		const stats = this.store.getDailyStats(today);
+		const stats = this.store.stats.getDailyStats(today);
 		return stats?.newCardsStudied ?? 0;
 	}
 
@@ -140,7 +140,7 @@ export class SessionPersistenceService {
 			reviewCards: previousState === State.Review ? 1 : 0,
 		};
 
-		this.store.decrementDailyStats(today, statsDecrement);
+		this.store.stats.decrementDailyStats(today, statsDecrement);
 
 		// Note: We don't remove cardId from daily_reviewed_cards because:
 		// 1. The card might have been reviewed multiple times
@@ -151,7 +151,7 @@ export class SessionPersistenceService {
 	 * Get all daily stats (includes card IDs - use for migrations/specific card lookups)
 	 */
 	getAllDailyStats(): Record<string, ExtendedDailyStats> {
-		return this.store.getAllDailyStats();
+		return this.store.stats.getAllDailyStats();
 	}
 
 	/**
@@ -159,7 +159,7 @@ export class SessionPersistenceService {
 	 * Use this for charts and heatmaps where individual card IDs aren't needed.
 	 */
 	getAllDailyStatsSummary(): Record<string, ExtendedDailyStats> {
-		return this.store.getAllDailyStatsSummary();
+		return this.store.stats.getAllDailyStatsSummary();
 	}
 
 	/**
@@ -168,7 +168,7 @@ export class SessionPersistenceService {
 	 * @param endDate End date in YYYY-MM-DD format
 	 */
 	getStatsInRange(startDate: string, endDate: string): ExtendedDailyStats[] {
-		const allStats = this.store.getAllDailyStatsSummary();
+		const allStats = this.store.stats.getAllDailyStatsSummary();
 		const result: ExtendedDailyStats[] = [];
 
 		for (const [date, dayStats] of Object.entries(allStats)) {
@@ -213,7 +213,7 @@ export class SessionPersistenceService {
 				const extendedStats = dayStats as ExtendedDailyStats;
 
 				// Migrate stats (use updateDailyStats which does UPSERT)
-				this.store.updateDailyStats(date, {
+				this.store.stats.updateDailyStats(date, {
 					reviewsCompleted: extendedStats.reviewsCompleted || 0,
 					newCardsStudied: extendedStats.newCardsStudied || 0,
 					totalTimeMs: extendedStats.totalTimeMs || 0,
@@ -229,7 +229,7 @@ export class SessionPersistenceService {
 
 				// Migrate reviewed card IDs
 				for (const cardId of extendedStats.reviewedCardIds || []) {
-					this.store.recordReviewedCard(date, cardId);
+					this.store.stats.recordReviewedCard(date, cardId);
 					migratedCards++;
 				}
 			}
