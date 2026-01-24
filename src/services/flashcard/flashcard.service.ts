@@ -249,19 +249,8 @@ export class FlashcardManager {
 			await this.frontmatterService.setSourceNoteUid(sourceFile, sourceUid);
 		}
 
-		// Create source note entry in SQL
-		this.store.projects.upsertSourceNote({
-			uid: sourceUid,
-			noteName: sourceFile.basename,
-			notePath: sourceFile.path,
-			createdAt: Date.now(),
-			updatedAt: Date.now(),
-		});
-
-		// Sync projects for the source note
-		if (projects.length > 0) {
-			this.store.projects.syncNoteProjects(sourceUid, projects);
-		}
+		// Create source note entry in SQL (v15: only UID + timestamps)
+		this.store.projects.upsertSourceNote(sourceUid);
 
 		const createdCards: FSRSFlashcardItem[] = [];
 
@@ -354,19 +343,9 @@ export class FlashcardManager {
 		// Sync image references for the new card
 		this.syncCardImageRefs(cardId, question, answer);
 
-		// Get source note info if we have sourceUid
-		let sourceNoteName: string | undefined;
-		let sourceNotePath: string | undefined;
-		let cardProjects = projects;
-		if (sourceUid) {
-			const sourceNote = this.store.projects.getSourceNote(sourceUid);
-			sourceNoteName = sourceNote?.noteName;
-			sourceNotePath = sourceNote?.notePath;
-			// Get projects from source note if not provided
-			if (cardProjects.length === 0) {
-				cardProjects = this.store.projects.getProjectNamesForNote(sourceUid);
-			}
-		}
+		// v15: Source note name/path and projects are resolved from vault at runtime
+		// Here we just pass through the provided projects array
+		const cardProjects = projects;
 
 		const card: FSRSFlashcardItem = {
 			id: cardId,
@@ -375,9 +354,7 @@ export class FlashcardManager {
 			filePath: "",
 			fsrs: extendedData,
 			projects: cardProjects,
-			sourceNoteName,
 			sourceUid,
-			sourceNotePath,
 		};
 
 		getEventBus().emit({
@@ -385,7 +362,6 @@ export class FlashcardManager {
 			cardId,
 			filePath: "",
 			projects: cardProjects,
-			sourceNoteName,
 			timestamp: Date.now(),
 		} as CardAddedEvent);
 
@@ -603,6 +579,7 @@ export class FlashcardManager {
 
 	/**
 	 * Get flashcards by source note UID
+	 * v15: Projects are resolved from frontmatter at runtime (not stored in DB)
 	 */
 	getFlashcardsBySourceUid(sourceUid: string): FSRSFlashcardItem[] {
 		if (!this.store) {
@@ -610,7 +587,6 @@ export class FlashcardManager {
 		}
 
 		const cards = this.store.getCardsBySourceUid(sourceUid);
-		const projects = this.store.projects.getProjectNamesForNote(sourceUid);
 
 		return cards
 			.filter((card): card is FSRSCardData & { question: string; answer: string } =>
@@ -622,7 +598,7 @@ export class FlashcardManager {
 				answer: card.answer,
 				filePath: "",
 				fsrs: card,
-				projects: card.projects || projects,
+				projects: card.projects || [],
 				sourceUid: card.sourceUid,
 			}));
 	}
@@ -683,14 +659,8 @@ export class FlashcardManager {
 			await this.frontmatterService.setSourceNoteUid(targetNote, targetSourceUid);
 		}
 
-		// Ensure source note entry exists in SQL
-		this.store.projects.upsertSourceNote({
-			uid: targetSourceUid,
-			noteName: targetNote.basename,
-			notePath: targetNote.path,
-			createdAt: Date.now(),
-			updatedAt: Date.now(),
-		});
+		// Ensure source note entry exists in SQL (v15: only UID + timestamps)
+		this.store.projects.upsertSourceNote(targetSourceUid);
 
 		// Update card's source UID
 		this.store.cards.updateCardSourceUid(cardId, targetSourceUid);

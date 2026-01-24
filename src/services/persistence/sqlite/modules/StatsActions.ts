@@ -669,36 +669,34 @@ export class StatsActions {
     }
 
     /**
-     * Get time-to-mastery statistics grouped by project
+     * Get time-to-mastery statistics
+     * v15: No longer grouped by project (projects in frontmatter, not DB)
+     * Returns single "All Cards" group
      */
     getTimeToMastery(): TimeToMasteryStats[] {
-        const rows = this.db.query<{
-            project_name: string;
+        const row = this.db.get<{
             avg_days: number;
             card_count: number;
         }>(`
             SELECT
-                COALESCE(p.name, 'No Project') as project_name,
                 AVG(julianday(c.last_review) - julianday(datetime(c.created_at / 1000, 'unixepoch'))) as avg_days,
                 COUNT(*) as card_count
             FROM cards c
-            LEFT JOIN source_notes sn ON c.source_uid = sn.uid AND sn.deleted_at IS NULL
-            LEFT JOIN note_projects np ON sn.uid = np.source_uid AND np.deleted_at IS NULL
-            LEFT JOIN projects p ON np.project_id = p.id AND p.deleted_at IS NULL
             WHERE c.deleted_at IS NULL AND c.state = 2
               AND c.scheduled_days >= 21
               AND c.last_review IS NOT NULL
               AND c.created_at IS NOT NULL
-            GROUP BY project_name
-            HAVING card_count >= 3
-            ORDER BY avg_days ASC
         `);
 
-        return rows.map((r) => ({
-            group: r.project_name,
-            avgDays: Math.round(r.avg_days || 0),
-            cardCount: r.card_count || 0,
-        }));
+        if (!row || row.card_count < 3) {
+            return [];
+        }
+
+        return [{
+            group: "All Cards",
+            avgDays: Math.round(row.avg_days || 0),
+            cardCount: row.card_count || 0,
+        }];
     }
 
     // ===== Sync Operations =====
