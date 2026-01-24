@@ -413,10 +413,8 @@ export class FlashcardManager {
 			return false;
 		}
 
-		// Delete image references first
-		this.store.projects.deleteCardImageRefs(cardId);
-
-		this.store.delete(cardId);
+		// Soft delete card with cascade (also soft-deletes review_log and card_image_refs)
+		this.store.cards.softDeleteWithCascade(cardId);
 
 		getEventBus().emit({
 			type: "card:removed",
