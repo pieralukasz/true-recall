@@ -48,10 +48,10 @@ export class BrowserActions {
                 COALESCE(s.note_path, '') as sourceNotePath,
                 GROUP_CONCAT(DISTINCT p.name) as projects
             FROM cards c
-            LEFT JOIN source_notes s ON c.source_uid = s.uid
-            LEFT JOIN note_projects np ON s.uid = np.source_uid
-            LEFT JOIN projects p ON np.project_id = p.id
-            WHERE c.question IS NOT NULL AND c.answer IS NOT NULL
+            LEFT JOIN source_notes s ON c.source_uid = s.uid AND s.deleted_at IS NULL
+            LEFT JOIN note_projects np ON s.uid = np.source_uid AND np.deleted_at IS NULL
+            LEFT JOIN projects p ON np.project_id = p.id AND p.deleted_at IS NULL
+            WHERE c.deleted_at IS NULL AND c.question IS NOT NULL AND c.answer IS NOT NULL
             GROUP BY c.id
             ORDER BY c.due ASC
         `);
@@ -70,6 +70,7 @@ export class BrowserActions {
             SELECT DISTINCT p.name
             FROM projects p
             INNER JOIN note_projects np ON p.id = np.project_id
+            WHERE p.deleted_at IS NULL AND np.deleted_at IS NULL
             ORDER BY p.name
         `);
         return rows.map((r) => r.name);
@@ -83,7 +84,7 @@ export class BrowserActions {
             SELECT DISTINCT s.note_name
             FROM source_notes s
             INNER JOIN cards c ON c.source_uid = s.uid
-            WHERE c.question IS NOT NULL
+            WHERE s.deleted_at IS NULL AND c.deleted_at IS NULL AND c.question IS NOT NULL
             ORDER BY s.note_name
         `);
         return rows.map((r) => r.note_name);
@@ -110,7 +111,7 @@ export class BrowserActions {
                 SUM(CASE WHEN suspended = 0 AND (buried_until IS NULL OR buried_until <= ?) AND state = 2 THEN 1 ELSE 0 END) as review,
                 SUM(CASE WHEN suspended = 0 AND (buried_until IS NULL OR buried_until <= ?) AND state = 3 THEN 1 ELSE 0 END) as relearning
             FROM cards
-            WHERE question IS NOT NULL AND answer IS NOT NULL
+            WHERE deleted_at IS NULL AND question IS NOT NULL AND answer IS NOT NULL
         `, [now, now, now, now, now]);
 
         return {
@@ -194,7 +195,26 @@ export class BrowserActions {
     }
 
     /**
-     * Bulk delete cards
+     * Bulk soft delete cards
+     */
+    bulkSoftDelete(cardIds: string[]): number {
+        if (cardIds.length === 0) return 0;
+
+        const now = Date.now();
+        const placeholders = cardIds.map(() => "?").join(",");
+
+        this.db.runMany([
+            [`UPDATE review_log SET deleted_at = ?, updated_at = ? WHERE card_id IN (${placeholders})`, [now, now, ...cardIds]],
+            [`UPDATE card_image_refs SET deleted_at = ?, updated_at = ? WHERE card_id IN (${placeholders})`, [now, now, ...cardIds]],
+            [`UPDATE cards SET deleted_at = ?, updated_at = ? WHERE id IN (${placeholders})`, [now, now, ...cardIds]],
+        ]);
+
+        return cardIds.length;
+    }
+
+    /**
+     * Bulk hard delete cards (for cleanup operations)
+     * @deprecated Use bulkSoftDelete() instead for sync compatibility
      */
     bulkDelete(cardIds: string[]): number {
         if (cardIds.length === 0) return 0;
@@ -277,10 +297,10 @@ export class BrowserActions {
                 COALESCE(s.note_path, '') as sourceNotePath,
                 GROUP_CONCAT(DISTINCT p.name) as projects
             FROM cards c
-            LEFT JOIN source_notes s ON c.source_uid = s.uid
-            LEFT JOIN note_projects np ON s.uid = np.source_uid
-            LEFT JOIN projects p ON np.project_id = p.id
-            WHERE c.id = ?
+            LEFT JOIN source_notes s ON c.source_uid = s.uid AND s.deleted_at IS NULL
+            LEFT JOIN note_projects np ON s.uid = np.source_uid AND np.deleted_at IS NULL
+            LEFT JOIN projects p ON np.project_id = p.id AND p.deleted_at IS NULL
+            WHERE c.deleted_at IS NULL AND c.id = ?
             GROUP BY c.id
         `, [cardId]);
 

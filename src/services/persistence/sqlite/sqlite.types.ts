@@ -74,3 +74,20 @@ export function generateUUID(): string {
         return v.toString(16);
     });
 }
+
+/**
+ * SQL fragment constants for soft delete filtering
+ */
+export const NOT_DELETED = {
+    cards: 'deleted_at IS NULL',
+    cardsAlias: 'c.deleted_at IS NULL',
+    reviewLog: 'deleted_at IS NULL',
+    reviewLogAlias: 'rl.deleted_at IS NULL',
+    projects: 'deleted_at IS NULL',
+    projectsAlias: 'p.deleted_at IS NULL',
+    noteProjects: 'deleted_at IS NULL',
+    noteProjectsAlias: 'np.deleted_at IS NULL',
+    sourceNotes: 'deleted_at IS NULL',
+    sourceNotesAlias: 's.deleted_at IS NULL',
+    cardImageRefs: 'deleted_at IS NULL',
+} as const;
