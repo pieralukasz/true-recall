@@ -13,13 +13,12 @@ import type {
 	NoteFlashcardType,
 	FlashcardItem,
 	FlashcardChange,
-	CardStore,
 	CardAddedEvent,
 	CardRemovedEvent,
 	CardUpdatedEvent,
 	BulkChangeEvent,
-	SourceNoteInfo,
 } from "../../types";
+import type { SqliteStoreService } from "../persistence/sqlite/SqliteStoreService";
 import { createDefaultFSRSData, State } from "../../types";
 import { getEventBus } from "../core/event-bus.service";
 import { FrontmatterService } from "./frontmatter.service";
@@ -55,7 +54,7 @@ export interface FlashcardInfo {
 export class FlashcardManager {
 	private app: App;
 	private settings: EpistemeSettings;
-	private store: CardStore | null = null;
+	private store: SqliteStoreService | null = null;
 	private frontmatterService: FrontmatterService;
 	private parserService: FlashcardParserService;
 
@@ -69,7 +68,7 @@ export class FlashcardManager {
 	/**
 	 * Set the card store for FSRS data
 	 */
-	setStore(store: CardStore): void {
+	setStore(store: SqliteStoreService): void {
 		this.store = store;
 	}
 
@@ -251,23 +250,17 @@ export class FlashcardManager {
 		}
 
 		// Create source note entry in SQL
-		const sqlStore = this.store as CardStore & {
-			upsertSourceNote?: (info: SourceNoteInfo) => void;
-			syncNoteProjects?: (sourceUid: string, projectNames: string[]) => void;
-		};
-		if (sqlStore.upsertSourceNote) {
-			sqlStore.upsertSourceNote({
-				uid: sourceUid,
-				noteName: sourceFile.basename,
-				notePath: sourceFile.path,
-				createdAt: Date.now(),
-				updatedAt: Date.now(),
-			});
-		}
+		this.store.projects.upsertSourceNote({
+			uid: sourceUid,
+			noteName: sourceFile.basename,
+			notePath: sourceFile.path,
+			createdAt: Date.now(),
+			updatedAt: Date.now(),
+		});
 
 		// Sync projects for the source note
-		if (sqlStore.syncNoteProjects && projects.length > 0) {
-			sqlStore.syncNoteProjects(sourceUid, projects);
+		if (projects.length > 0) {
+			this.store.projects.syncNoteProjects(sourceUid, projects);
 		}
 
 		const createdCards: FSRSFlashcardItem[] = [];
@@ -341,10 +334,7 @@ export class FlashcardManager {
 		}
 
 		// Check for duplicate question
-		const sqlStore = this.store as CardStore & {
-			getCardIdByQuestion?: (question: string) => string | undefined;
-		};
-		const existingCardId = sqlStore.getCardIdByQuestion?.(question);
+		const existingCardId = this.store.cards.getCardIdByQuestion(question);
 		if (existingCardId) {
 			throw new Error("A card with this question already exists");
 		}
@@ -369,16 +359,12 @@ export class FlashcardManager {
 		let sourceNotePath: string | undefined;
 		let cardProjects = projects;
 		if (sourceUid) {
-			const sqlStore = this.store as CardStore & {
-				getSourceNote?: (uid: string) => SourceNoteInfo | null;
-				getProjectNamesForNote?: (uid: string) => string[];
-			};
-			const sourceNote = sqlStore.getSourceNote?.(sourceUid);
+			const sourceNote = this.store.projects.getSourceNote(sourceUid);
 			sourceNoteName = sourceNote?.noteName;
 			sourceNotePath = sourceNote?.notePath;
 			// Get projects from source note if not provided
-			if (cardProjects.length === 0 && sqlStore.getProjectNamesForNote) {
-				cardProjects = sqlStore.getProjectNamesForNote(sourceUid);
+			if (cardProjects.length === 0) {
+				cardProjects = this.store.projects.getProjectNamesForNote(sourceUid);
 			}
 		}
 
@@ -428,10 +414,7 @@ export class FlashcardManager {
 		}
 
 		// Delete image references first
-		const sqlStore = this.store as CardStore & {
-			deleteCardImageRefs?: (cardId: string) => void;
-		};
-		sqlStore.deleteCardImageRefs?.(cardId);
+		this.store.projects.deleteCardImageRefs(cardId);
 
 		this.store.delete(cardId);
 
@@ -460,7 +443,7 @@ export class FlashcardManager {
 			throw new Error("Store not initialized. Please restart Obsidian.");
 		}
 
-		const cardsWithContent = this.store.getCardsWithContent?.() ?? [];
+		const cardsWithContent = this.store.getCardsWithContent();
 
 		return cardsWithContent
 			.filter((card): card is FSRSCardData & { question: string; answer: string } =>
@@ -611,19 +594,13 @@ export class FlashcardManager {
 	 * Sync image references for a card based on its content
 	 */
 	private syncCardImageRefs(cardId: string, question: string, answer: string): void {
-		const sqlStore = this.store as CardStore & {
-			syncCardImageRefs?: (cardId: string, questionRefs: string[], answerRefs: string[]) => void;
-		};
-
-		if (!sqlStore.syncCardImageRefs) {
-			return;
-		}
+		if (!this.store) return;
 
 		const imageService = new ImageService(this.app);
 		const questionRefs = imageService.extractImageRefs(question);
 		const answerRefs = imageService.extractImageRefs(answer);
 
-		sqlStore.syncCardImageRefs(cardId, questionRefs, answerRefs);
+		this.store.projects.syncCardImageRefs(cardId, questionRefs, answerRefs);
 	}
 
 	/**
@@ -634,13 +611,8 @@ export class FlashcardManager {
 			return [];
 		}
 
-		const sqlStore = this.store as CardStore & {
-			getCardsBySourceUid?: (uid: string) => FSRSCardData[];
-			getProjectNamesForNote?: (uid: string) => string[];
-		};
-
-		const cards = sqlStore.getCardsBySourceUid?.(sourceUid) ?? [];
-		const projects = sqlStore.getProjectNamesForNote?.(sourceUid) ?? [];
+		const cards = this.store.getCardsBySourceUid(sourceUid);
+		const projects = this.store.projects.getProjectNamesForNote(sourceUid);
 
 		return cards
 			.filter((card): card is FSRSCardData & { question: string; answer: string } =>
@@ -667,11 +639,7 @@ export class FlashcardManager {
 			return [];
 		}
 
-		const sqlStore = this.store as CardStore & {
-			getOrphanedCards?: () => FSRSCardData[];
-		};
-
-		const cards = sqlStore.getOrphanedCards?.() ?? [];
+		const cards = this.store.getOrphanedCards();
 
 		return cards
 			.filter((card): card is FSRSCardData & { question: string; answer: string } =>
@@ -718,32 +686,16 @@ export class FlashcardManager {
 		}
 
 		// Ensure source note entry exists in SQL
-		const sqlStore = this.store as CardStore & {
-			upsertSourceNote?: (info: SourceNoteInfo) => void;
-			updateCardSourceUid?: (cardId: string, sourceUid: string) => void;
-		};
-
-		if (sqlStore.upsertSourceNote) {
-			sqlStore.upsertSourceNote({
-				uid: targetSourceUid,
-				noteName: targetNote.basename,
-				notePath: targetNote.path,
-				createdAt: Date.now(),
-				updatedAt: Date.now(),
-			});
-		}
+		this.store.projects.upsertSourceNote({
+			uid: targetSourceUid,
+			noteName: targetNote.basename,
+			notePath: targetNote.path,
+			createdAt: Date.now(),
+			updatedAt: Date.now(),
+		});
 
 		// Update card's source UID
-		if (sqlStore.updateCardSourceUid) {
-			sqlStore.updateCardSourceUid(cardId, targetSourceUid);
-		} else {
-			// Fallback: update via store.set
-			const updated: FSRSCardData = {
-				...existing,
-				sourceUid: targetSourceUid,
-			};
-			this.store.set(cardId, updated);
-		}
+		this.store.cards.updateCardSourceUid(cardId, targetSourceUid);
 
 		getEventBus().emit({
 			type: "card:updated",

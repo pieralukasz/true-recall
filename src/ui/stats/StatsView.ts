@@ -106,10 +106,7 @@ export class StatsView extends ItemView {
 		this.subscribeToEvents();
 
 		// Set SQLite store for optimized queries (like Created vs Reviewed chart)
-		const sqliteStore = this.plugin.getSqliteStore();
-		if (sqliteStore) {
-			this.statsCalculator.setSqliteStore(sqliteStore);
-		}
+		this.statsCalculator.setSqliteStore(this.plugin.cardStore);
 
 		// Initial render
 		await this.refresh();

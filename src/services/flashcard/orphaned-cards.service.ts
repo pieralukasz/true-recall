@@ -5,7 +5,8 @@
  * Orphaned cards are flashcards that don't have a source_uid,
  * meaning they're not associated with any source note.
  */
-import type { CardStore, FSRSCardData, FSRSFlashcardItem } from "../../types";
+import type { FSRSCardData, FSRSFlashcardItem } from "../../types";
+import type { SqliteStoreService } from "../persistence/sqlite/SqliteStoreService";
 
 /**
  * Service for managing orphaned cards
@@ -17,12 +18,8 @@ export class OrphanedCardsService {
 	 * @param store - The card store
 	 * @returns Array of orphaned cards
 	 */
-	getOrphanedCards(store: CardStore): FSRSFlashcardItem[] {
-		const sqlStore = store as CardStore & {
-			getOrphanedCards?: () => FSRSCardData[];
-		};
-
-		const cards = sqlStore.getOrphanedCards?.() ?? [];
+	getOrphanedCards(store: SqliteStoreService): FSRSFlashcardItem[] {
+		const cards = store.getOrphanedCards();
 
 		// Convert FSRSCardData to FSRSFlashcardItem
 		return cards.map((card) => ({
@@ -57,7 +54,7 @@ export class OrphanedCardsService {
 	 * @param store - The card store
 	 * @returns Number of orphaned cards
 	 */
-	countOrphanedCards(store: CardStore): number {
+	countOrphanedCards(store: SqliteStoreService): number {
 		return this.getOrphanedCards(store).length;
 	}
 
@@ -67,7 +64,7 @@ export class OrphanedCardsService {
 	 * @param store - The card store
 	 * @returns Array of orphaned card IDs
 	 */
-	getOrphanedCardIds(store: CardStore): string[] {
+	getOrphanedCardIds(store: SqliteStoreService): string[] {
 		return this.getOrphanedCards(store).map((card) => card.id);
 	}
 }

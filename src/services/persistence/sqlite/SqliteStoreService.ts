@@ -138,6 +138,38 @@ export class SqliteStoreService {
         return this.cards.size();
     }
 
+    // ===== Content & Source Operations (delegates to cards module) =====
+
+    /** Get all cards that have content */
+    getCardsWithContent(): FSRSCardData[] {
+        return this.cards.getCardsWithContent();
+    }
+
+    /** Get cards by source note UID */
+    getCardsBySourceUid(sourceUid: string): FSRSCardData[] {
+        return this.cards.getCardsBySourceUid(sourceUid);
+    }
+
+    /** Check if card has content */
+    hasCardContent(cardId: string): boolean {
+        return this.cards.hasCardContent(cardId);
+    }
+
+    /** Check if any cards have content */
+    hasAnyCardContent(): boolean {
+        return this.cards.hasAnyCardContent();
+    }
+
+    /** Get count of cards with content */
+    getCardsWithContentCount(): number {
+        return this.cards.getCardsWithContentCount();
+    }
+
+    /** Get all orphaned cards */
+    getOrphanedCards(): FSRSCardData[] {
+        return this.cards.getOrphanedCards();
+    }
+
     /** Flush pending changes to disk */
     async flush(): Promise<void> {
         if (this.saveTimer) {
