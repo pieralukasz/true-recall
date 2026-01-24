@@ -819,48 +819,19 @@ export class EpistemeSettingTab extends PluginSettingTab {
 	}
 
 	private renderSyncTab(container: HTMLElement): void {
-		// ===== Supabase Configuration Section =====
-		container.createEl("h2", { text: "Supabase Configuration" });
+		// ===== Episteme Cloud Header =====
+		container.createEl("h2", { text: "Episteme Cloud" });
 
-		const supabaseInfo = container.createDiv({
+		const cloudInfo = container.createDiv({
 			cls: "setting-item-description",
 		});
-		supabaseInfo.innerHTML = `
-			<p>Connect to Supabase for cloud synchronization across devices.</p>
-			<p><a href="https://supabase.com" target="_blank">Create a free Supabase project</a></p>
+		cloudInfo.innerHTML = `
+			<p>Synchronize your flashcards across devices with Episteme Cloud.</p>
+			<p>Your data is encrypted and secure.</p>
 		`;
 
-		new Setting(container)
-			.setName("Supabase URL")
-			.setDesc("Your Supabase project URL")
-			.addText((text) => {
-				text.inputEl.addClass("episteme-api-input");
-				text.setPlaceholder("https://your-project.supabase.co")
-					.setValue(this.plugin.settings.supabaseUrl)
-					.onChange(async (value) => {
-						this.plugin.settings.supabaseUrl = value;
-						await this.plugin.saveSettings();
-						this.updateAuthSection(container);
-					});
-			});
-
-		new Setting(container)
-			.setName("Supabase Anon Key")
-			.setDesc("Your Supabase anonymous/public key")
-			.addText((text) => {
-				text.inputEl.type = "password";
-				text.inputEl.addClass("episteme-api-input");
-				text.setPlaceholder("Enter anon key")
-					.setValue(this.plugin.settings.supabaseAnonKey)
-					.onChange(async (value) => {
-						this.plugin.settings.supabaseAnonKey = value;
-						await this.plugin.saveSettings();
-						this.updateAuthSection(container);
-					});
-			});
-
-		// ===== Authentication Section =====
-		container.createEl("h2", { text: "Authentication" });
+		// ===== Account Section =====
+		container.createEl("h2", { text: "Account" });
 
 		const authContainer = container.createDiv({
 			cls: "episteme-auth-section",
@@ -870,68 +841,54 @@ export class EpistemeSettingTab extends PluginSettingTab {
 		this.renderAuthSection(authContainer);
 	}
 
-	private updateAuthSection(container: HTMLElement): void {
-		const authContainer = container.querySelector("#episteme-auth-container");
-		if (authContainer) {
-			authContainer.empty();
-			this.renderAuthSection(authContainer as HTMLElement);
-		}
-	}
-
 	private renderAuthSection(container: HTMLElement): void {
-		const isConfigured =
-			this.plugin.settings.supabaseUrl &&
-			this.plugin.settings.supabaseAnonKey;
-
-		if (!isConfigured) {
-			const notice = container.createDiv({
-				cls: "setting-item-description",
-			});
-			notice.setText(
-				"Configure Supabase URL and Anon Key above to enable authentication."
-			);
-			return;
-		}
-
-		// Check current auth state
+		// SaaS model - auth is always available
 		void this.renderAuthState(container);
 	}
 
 	private async renderAuthState(container: HTMLElement): Promise<void> {
 		const authService = this.plugin.authService;
 
-		if (!authService || !authService.isConfigured()) {
+		if (!authService) {
 			const notice = container.createDiv({
 				cls: "setting-item-description",
 			});
-			notice.setText("Authentication service not initialized.");
+			notice.setText("Cloud service initializing...");
 			return;
 		}
 
 		const authState = await authService.getAuthState();
 
 		if (authState.isAuthenticated && authState.user) {
-			// Logged in state
+			// Logged in state - show connection status
+			const statusDiv = container.createDiv({
+				cls: "episteme-connection-status",
+			});
+			statusDiv.innerHTML = `
+				<span class="episteme-status-dot episteme-status-connected"></span>
+				<span>Connected to Episteme Cloud</span>
+			`;
+
 			const userInfo = container.createDiv({
 				cls: "setting-item-description",
 			});
-			userInfo.innerHTML = `<p>Logged in as: <strong>${authState.user.email}</strong></p>`;
+			userInfo.innerHTML = `<p>Signed in as: <strong>${authState.user.email}</strong></p>`;
 
 			new Setting(container)
 				.setName("Sign out")
-				.setDesc("Sign out of your account")
+				.setDesc("Sign out of your Episteme Cloud account")
 				.addButton((button) =>
 					button
-						.setButtonText("Logout")
+						.setButtonText("Sign Out")
 						.setWarning()
 						.onClick(async () => {
 							const result = await authService.signOut();
 							if (result.success) {
-								new Notice("Logged out successfully");
+								new Notice("Signed out successfully");
 								container.empty();
 								this.renderAuthSection(container);
 							} else {
-								new Notice(`Logout failed: ${result.error}`);
+								new Notice(`Sign out failed: ${result.error}`);
 							}
 						})
 				);

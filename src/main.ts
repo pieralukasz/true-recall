@@ -192,13 +192,8 @@ export default class EpistemePlugin extends Plugin {
 		registerAllTools();
 		this.agentService = new AgentService(this);
 
-		// Initialize AuthService if Supabase credentials are configured
-		if (this.settings.supabaseUrl && this.settings.supabaseAnonKey) {
-			this.authService = new AuthService(
-				this.settings.supabaseUrl,
-				this.settings.supabaseAnonKey
-			);
-		}
+		// Initialize AuthService (SaaS model - always available)
+		this.authService = new AuthService();
 
 		// Initialize SyncService (requires authService and cardStore)
 		// Note: cardStore may not be ready yet, sync will check availability
@@ -259,23 +254,6 @@ export default class EpistemePlugin extends Plugin {
 		}
 		// Reinitialize NL Query Service with new settings (API key or model may have changed)
 		void this.initializeNLQueryService();
-
-		// Update AuthService with new Supabase credentials
-		if (this.settings.supabaseUrl && this.settings.supabaseAnonKey) {
-			if (this.authService) {
-				this.authService.updateCredentials(
-					this.settings.supabaseUrl,
-					this.settings.supabaseAnonKey
-				);
-			} else {
-				this.authService = new AuthService(
-					this.settings.supabaseUrl,
-					this.settings.supabaseAnonKey
-				);
-			}
-			// Reinitialize SyncService with updated auth
-			this.initializeSyncService();
-		}
 	}
 
 	// Activate the sidebar view

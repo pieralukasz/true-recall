@@ -33,6 +33,7 @@ export class CardActions {
             suspended: number;
             buriedUntil: string | null;
             createdAt: number | null;
+            updatedAt: number | null;
             question: string | null;
             answer: string | null;
             sourceUid: string | null;
@@ -45,6 +46,7 @@ export class CardActions {
                 suspended = 1 as suspended,
                 buried_until as buriedUntil,
                 created_at as createdAt,
+                updated_at as updatedAt,
                 question,
                 answer,
                 source_uid as sourceUid
@@ -54,7 +56,7 @@ export class CardActions {
         if (!row) return undefined;
         if (!row.question || !row.answer) return undefined;
 
-        const { question: q, answer: a, suspended, buriedUntil, createdAt, sourceUid, ...rest } = row;
+        const { question: q, answer: a, suspended, buriedUntil, createdAt, updatedAt, sourceUid, ...rest } = row;
         return {
             ...rest,
             question: q,
@@ -62,6 +64,7 @@ export class CardActions {
             suspended: suspended === 1,
             buriedUntil: buriedUntil ?? undefined,
             createdAt: createdAt ?? undefined,
+            updatedAt: updatedAt ?? undefined,
             sourceUid: sourceUid ?? undefined,
         };
     }
