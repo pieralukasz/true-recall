@@ -63,25 +63,37 @@ export class BrowserView extends ItemView {
         const container = this.containerEl.children[1];
         if (!(container instanceof HTMLElement)) return;
         container.empty();
-        container.addClass("episteme-browser-view");
+        container.addClass("ep:flex", "ep:flex-col", "ep:h-full", "ep:overflow-hidden", "ep:bg-obs-primary");
 
         // Create main container
-        this.mainContainer = container.createDiv({ cls: "browser-main" });
+        this.mainContainer = container.createDiv({
+            cls: "ep:flex ep:flex-col ep:flex-1 ep:overflow-hidden ep:min-h-0",
+        });
 
         // Create toolbar at top
-        this.toolbarContainer = this.mainContainer.createDiv({ cls: "browser-toolbar-container" });
+        this.toolbarContainer = this.mainContainer.createDiv({
+            cls: "ep:flex ep:items-center ep:gap-3 ep:py-3 ep:px-4 ep:border-b ep:border-obs-border ep:bg-obs-secondary ep:shrink-0",
+        });
 
         // Create content area (3-panel layout)
-        this.contentContainer = this.mainContainer.createDiv({ cls: "browser-content" });
+        this.contentContainer = this.mainContainer.createDiv({
+            cls: "ep:flex ep:flex-1 ep:overflow-hidden ep:min-h-0",
+        });
 
         // Create sidebar
-        this.sidebarContainer = this.contentContainer.createDiv({ cls: "browser-sidebar" });
+        this.sidebarContainer = this.contentContainer.createDiv({
+            cls: "ep:w-[220px] ep:min-w-[180px] ep:max-w-[300px] ep:flex ep:flex-col ep:border-r ep:border-obs-border ep:bg-obs-secondary ep:overflow-y-auto ep:shrink-0",
+        });
 
         // Create table (center)
-        this.tableContainer = this.contentContainer.createDiv({ cls: "browser-table-container" });
+        this.tableContainer = this.contentContainer.createDiv({
+            cls: "ep:flex-1 ep:min-w-0 ep:flex ep:flex-col ep:overflow-auto",
+        });
 
         // Create preview panel
-        this.previewContainer = this.contentContainer.createDiv({ cls: "browser-preview" });
+        this.previewContainer = this.contentContainer.createDiv({
+            cls: "ep:w-80 ep:min-w-[280px] ep:max-w-[450px] ep:h-full ep:flex ep:flex-col ep:border-l ep:border-obs-border ep:bg-obs-primary ep:overflow-y-auto ep:shrink-0",
+        });
 
         // Subscribe to state changes
         this.unsubscribe = this.stateManager.subscribe(() => this.render());

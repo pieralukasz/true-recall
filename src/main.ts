@@ -1066,6 +1066,35 @@ export default class EpistemePlugin extends Plugin {
 	}
 
 	/**
+	 * Add flashcard UID to current note's frontmatter
+	 * Creates a unique identifier for linking flashcards to the source note
+	 */
+	async addFlashcardUidToCurrentNote(): Promise<void> {
+		const file = this.app.workspace.getActiveFile();
+		if (!file || file.extension !== "md") {
+			new Notice("No active markdown file");
+			return;
+		}
+
+		const frontmatterService =
+			this.flashcardManager.getFrontmatterService();
+
+		// Check if UID already exists
+		const existingUid = await frontmatterService.getSourceNoteUid(file);
+		if (existingUid) {
+			new Notice(`Note already has flashcard UID: ${existingUid}`);
+			return;
+		}
+
+		// Generate and set new UID
+		const newUid = frontmatterService.generateUid();
+		await frontmatterService.setSourceNoteUid(file, newUid);
+		// Note: UidIndexService updates automatically via metadataCache 'changed' event
+
+		new Notice(`Added flashcard UID: ${newUid}`);
+	}
+
+	/**
 	 * Force replace - overwrites all server data with local database
 	 * WARNING: Destructive operation
 	 */
