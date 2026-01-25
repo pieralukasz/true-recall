@@ -176,9 +176,11 @@ export interface ProjectInfo {
     noteCount: number;
     /** Number of cards in this project */
     cardCount: number;
-    /** Due cards count */
+    /** Review cards due count (green in Anki) */
     dueCount: number;
-    /** New cards count */
+    /** New cards count (blue in Anki) */
     newCount: number;
+    /** Learning/Relearning cards due count (orange in Anki) */
+    learningCount: number;
 }
 

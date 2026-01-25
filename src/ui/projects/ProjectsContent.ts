@@ -209,13 +209,46 @@ export class ProjectsContent extends BaseComponent {
 			}
 		});
 
-		// Stats line
+		// Stats line with Anki-style colored counts
 		const statsEl = content.createDiv({
-			cls: `ep:text-xs ep:mt-0.5 ${hasCards ? "ep:text-obs-muted" : "ep:text-obs-faint"}`,
+			cls: "ep:text-xs ep:mt-0.5 ep:flex ep:items-center ep:gap-2",
 		});
+
+		// Note count (muted)
 		const noteText = project.noteCount === 1 ? "1 note" : `${project.noteCount} notes`;
-		const cardText = project.cardCount === 1 ? "1 card" : `${project.cardCount} cards`;
-		statsEl.textContent = `${noteText} · ${cardText}`;
+		statsEl.createSpan({
+			text: noteText,
+			cls: hasCards ? "ep:text-obs-muted" : "ep:text-obs-faint",
+		});
+
+		// Anki-style card counts (New · Learning · Due)
+		if (hasCards) {
+			const countsEl = statsEl.createSpan({
+				cls: "ep:flex ep:items-center ep:gap-1 ep:font-medium",
+			});
+
+			// New count (blue)
+			countsEl.createSpan({
+				text: String(project.newCount),
+				cls: "ep:text-blue-500",
+			});
+
+			countsEl.createSpan({ text: "·", cls: "ep:text-obs-faint" });
+
+			// Learning count (orange)
+			countsEl.createSpan({
+				text: String(project.learningCount),
+				cls: "ep:text-orange-500",
+			});
+
+			countsEl.createSpan({ text: "·", cls: "ep:text-obs-faint" });
+
+			// Due/Review count (green)
+			countsEl.createSpan({
+				text: String(project.dueCount),
+				cls: "ep:text-green-500",
+			});
+		}
 
 		// Actions container (right side)
 		const actions = item.createDiv({
