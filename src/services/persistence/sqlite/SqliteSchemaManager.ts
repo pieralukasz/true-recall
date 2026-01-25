@@ -24,6 +24,7 @@ export class SqliteSchemaManager {
     // Note: Old migrations (v1-v14) removed - project not released yet
     private readonly MIGRATIONS: Record<number, MigrationFn> = {
         16: migrations.migration015ToV16,
+        17: migrations.migration016ToV17,
     };
 
     constructor(db: DatabaseLike, onSchemaChange: () => void) {
@@ -32,7 +33,7 @@ export class SqliteSchemaManager {
     }
 
     /**
-     * Create database tables (schema v16 - removed projects table, projects only in frontmatter)
+     * Create database tables (schema v17 - removed source_notes table)
      */
     createTables(): void {
         this.db.run(`
@@ -65,16 +66,7 @@ export class SqliteSchemaManager {
             CREATE INDEX IF NOT EXISTS idx_cards_source_uid ON cards(source_uid);
             CREATE INDEX IF NOT EXISTS idx_cards_deleted ON cards(deleted_at);
 
-            -- Source notes table (v15: simplified, only UID + timestamps)
-            CREATE TABLE IF NOT EXISTS source_notes (
-                uid TEXT PRIMARY KEY NOT NULL,
-                created_at INTEGER,
-                updated_at INTEGER,
-                deleted_at INTEGER DEFAULT NULL
-            );
-
-            CREATE INDEX IF NOT EXISTS idx_source_notes_deleted ON source_notes(deleted_at);
-
+            -- v17: Source notes table removed - metadata resolved from vault via flashcard_uid
             -- v16: Projects table removed - projects are now in frontmatter only
 
             -- Review history log (v10: TEXT UUID PK)
@@ -141,7 +133,7 @@ export class SqliteSchemaManager {
             );
 
             -- Set schema version
-            INSERT OR REPLACE INTO meta (key, value) VALUES ('schema_version', '16');
+            INSERT OR REPLACE INTO meta (key, value) VALUES ('schema_version', '17');
             INSERT OR REPLACE INTO meta (key, value) VALUES ('created_at', datetime('now'));
         `);
     }
@@ -151,7 +143,7 @@ export class SqliteSchemaManager {
      */
     runMigrations(): void {
         const currentVersion = this.getSchemaVersion();
-        const latestVersion = 16;
+        const latestVersion = 17;
 
         if (currentVersion >= latestVersion) {
             return; // Already at latest version
@@ -195,7 +187,7 @@ export class SqliteSchemaManager {
                 "SELECT name FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite_%'"
             );
 
-            const requiredTables = ["cards", "source_notes", "meta"];
+            const requiredTables = ["cards", "meta"];
             const existingTables = tables[0]?.values.map((r) => r[0] as string) || [];
 
             for (const table of requiredTables) {

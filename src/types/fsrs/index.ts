@@ -7,7 +7,6 @@
 export type {
     CardReviewLogEntry,
     FSRSCardData,
-    SourceNoteInfo,
     FSRSFlashcardItem,
 } from "./card.types";
 export { State, Rating } from "./card.types";

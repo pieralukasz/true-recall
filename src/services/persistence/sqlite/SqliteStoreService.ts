@@ -6,7 +6,7 @@
  * All operations are now performed directly on the appropriate module:
  * - store.cards.* for card operations
  * - store.stats.* for review log and statistics
- * - store.sourceNotes.* for source notes and image references
+ * - store.sourceNotes.* for image references (v17: source notes removed, vault only)
  * - store.browser.* for browser view queries
  */
 import { App, normalizePath, Notice } from "obsidian";
@@ -22,7 +22,7 @@ import { DB_FOLDER, SAVE_DEBOUNCE_MS, getDeviceDbFilename } from "./sqlite.types
  * Domain modules are exposed directly for all operations:
  * - store.cards.get(id) - Get a card
  * - store.stats.getDailyStats(date) - Get daily stats
- * - store.sourceNotes.upsertSourceNote(uid) - Upsert a source note
+ * - store.sourceNotes.getImageRefsByCardId(id) - Get image references for a card
  * - store.browser.getAllCardsForBrowser() - Get all cards for browser view
  */
 export class SqliteStoreService {

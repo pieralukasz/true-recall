@@ -7,27 +7,12 @@ import { ItemView, WorkspaceLeaf, TFile, normalizePath } from "obsidian";
 import { State } from "ts-fsrs";
 import {
 	VIEW_TYPE_READY_TO_HARVEST,
-	FLASHCARD_CONFIG,
 } from "../../constants";
 import { createReadyToHarvestStateManager } from "../../state/ready-to-harvest.state";
 import type { NoteReadyToHarvest } from "../../state/state.types";
 import { Panel } from "../components/Panel";
 import { ReadyToHarvestContent } from "./ReadyToHarvestContent";
 import type EpistemePlugin from "../../main";
-
-/**
- * Check if a file is a flashcard file based on naming pattern
- */
-function isFlashcardFileByName(fileName: string): boolean {
-	if (fileName.startsWith(FLASHCARD_CONFIG.filePrefix)) {
-		return true;
-	}
-	const uidPattern = new RegExp(
-		`^[a-f0-9]{${FLASHCARD_CONFIG.uidLength}}\\.md$`,
-		"i"
-	);
-	return uidPattern.test(fileName);
-}
 
 /**
  * Ready to Harvest View
@@ -122,10 +107,6 @@ export class ReadyToHarvestView extends ItemView {
 				) {
 					return false;
 				}
-			}
-			// Exclude flashcard files by name pattern
-			if (isFlashcardFileByName(file.name)) {
-				return false;
 			}
 			return true;
 		});

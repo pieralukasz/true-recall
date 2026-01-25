@@ -15,7 +15,6 @@ import type {
 	FirstSyncStatus,
 } from "../../types";
 import type {
-	SourceNoteForSync,
 	CardImageRefForSync,
 } from "../persistence/sqlite/modules/SourceNoteActions";
 import type { ReviewLogForSync } from "../persistence/sqlite/modules/StatsActions";
@@ -42,16 +41,6 @@ interface RemoteCardRow {
 	question: string | null;
 	answer: string | null;
 	source_uid: string | null;
-}
-
-/**
- * Remote source note row from Supabase (snake_case)
- */
-interface RemoteSourceNoteRow {
-	uid: string;
-	created_at: number;
-	updated_at: number;
-	deleted_at: number | null;
 }
 
 /**
@@ -228,21 +217,16 @@ export class SyncService {
 		lastSync: number
 	): Promise<{
 		cards: RemoteCardRow[];
-		sourceNotes: RemoteSourceNoteRow[];
 		reviewLog: RemoteReviewLogRow[];
 		cardImageRefs: RemoteCardImageRefRow[];
 	}> {
 		// Note: Supabase default limit is 1000 rows - we need explicit high limit
+		// v17: source_notes removed (metadata resolved from vault)
 		// v16: projects removed (frontmatter only)
-		const [cardsRes, sourceNotesRes, reviewLogRes, cardImageRefsRes] =
+		const [cardsRes, reviewLogRes, cardImageRefsRes] =
 			await Promise.all([
 				client
 					.from("cards")
-					.select("*")
-					.gt("updated_at", lastSync)
-					.limit(100000),
-				client
-					.from("source_notes")
 					.select("*")
 					.gt("updated_at", lastSync)
 					.limit(100000),
@@ -261,10 +245,6 @@ export class SyncService {
 		// Check for errors
 		if (cardsRes.error)
 			throw new Error(`Pull cards failed: ${cardsRes.error.message}`);
-		if (sourceNotesRes.error)
-			throw new Error(
-				`Pull source_notes failed: ${sourceNotesRes.error.message}`
-			);
 		if (reviewLogRes.error)
 			throw new Error(
 				`Pull review_log failed: ${reviewLogRes.error.message}`
@@ -276,7 +256,6 @@ export class SyncService {
 
 		return {
 			cards: (cardsRes.data ?? []) as RemoteCardRow[],
-			sourceNotes: (sourceNotesRes.data ?? []) as RemoteSourceNoteRow[],
 			reviewLog: (reviewLogRes.data ?? []) as RemoteReviewLogRow[],
 			cardImageRefs: (cardImageRefsRes.data ??
 				[]) as RemoteCardImageRefRow[],
@@ -285,30 +264,17 @@ export class SyncService {
 
 	/**
 	 * Apply pulled data locally using LWW conflict resolution
+	 * v17: No source_notes (metadata resolved from vault)
 	 * v16: No projects (frontmatter only), no note_projects
 	 */
 	private applyPulledData(data: {
 		cards: RemoteCardRow[];
-		sourceNotes: RemoteSourceNoteRow[];
 		reviewLog: RemoteReviewLogRow[];
 		cardImageRefs: RemoteCardImageRefRow[];
 	}): number {
 		let pulled = 0;
 
-		// 1. Source notes (independent)
-		for (const remote of data.sourceNotes) {
-			const local = this.cardStore.sourceNotes.getSourceNoteForSync(
-				remote.uid
-			);
-			if (!local || remote.updated_at > local.updatedAt) {
-				this.cardStore.sourceNotes.upsertSourceNoteFromRemote(
-					this.mapRemoteSourceNoteToLocal(remote)
-				);
-				pulled++;
-			}
-		}
-
-		// 2. Cards (depends on source_notes)
+		// 1. Cards
 		for (const remote of data.cards) {
 			const local = this.cardStore.cards.get(remote.id) as
 				| LocalCardForSync
@@ -322,7 +288,7 @@ export class SyncService {
 			}
 		}
 
-		// 3. Review log (depends on cards)
+		// 2. Review log (depends on cards)
 		for (const remote of data.reviewLog) {
 			const local = this.cardStore.stats.getReviewLogForSync(remote.id);
 			if (!local || remote.updated_at > local.updatedAt) {
@@ -333,7 +299,7 @@ export class SyncService {
 			}
 		}
 
-		// 4. Card image refs (depends on cards)
+		// 3. Card image refs (depends on cards)
 		for (const remote of data.cardImageRefs) {
 			const local = this.cardStore.sourceNotes.getCardImageRefForSync(
 				remote.id
@@ -353,16 +319,11 @@ export class SyncService {
 	 * Gathered local changes for push
 	 */
 	private gatherLocalChanges(lastSync: number): {
-		sourceNotes: SourceNoteForSync[];
 		cards: LocalCardForSync[];
 		reviewLog: ReviewLogForSync[];
 		cardImageRefs: CardImageRefForSync[];
 	} {
 		return {
-			sourceNotes:
-				this.cardStore.sourceNotes.getModifiedSourceNotesSince(
-					lastSync
-				),
 			cards: this.cardStore.cards.getModifiedSince(lastSync),
 			reviewLog: this.cardStore.stats.getModifiedReviewLogSince(lastSync),
 			cardImageRefs:
@@ -374,21 +335,20 @@ export class SyncService {
 
 	/**
 	 * Push pre-gathered local changes to Supabase via atomic RPC
+	 * v17: No source_notes (metadata resolved from vault)
 	 * v16: No projects (frontmatter only), no note_projects
 	 */
 	private async pushLocalChanges(
 		client: SupabaseClient,
 		localChanges: {
-			sourceNotes: SourceNoteForSync[];
 			cards: LocalCardForSync[];
 			reviewLog: ReviewLogForSync[];
 			cardImageRefs: CardImageRefForSync[];
 		}
 	): Promise<number> {
-		const { sourceNotes, cards, reviewLog, cardImageRefs } = localChanges;
+		const { cards, reviewLog, cardImageRefs } = localChanges;
 
 		const totalChanges =
-			sourceNotes.length +
 			cards.length +
 			reviewLog.length +
 			cardImageRefs.length;
@@ -399,9 +359,6 @@ export class SyncService {
 
 		// Map to remote format (snake_case)
 		const payload = {
-			p_source_notes: sourceNotes.map((sn) =>
-				this.mapLocalSourceNoteToRemote(sn)
-			),
 			p_cards: cards.map((c) => this.mapLocalCardToRemote(c)),
 			p_review_log: reviewLog.map((rl) =>
 				this.mapLocalReviewLogToRemote(rl)
@@ -472,9 +429,6 @@ export class SyncService {
 
 			// Map to remote format
 			const payload = {
-				p_source_notes: allLocalData.sourceNotes.map((sn) =>
-					this.mapLocalSourceNoteToRemote(sn)
-				),
 				p_cards: allLocalData.cards.map((c) =>
 					this.mapLocalCardToRemote(c)
 				),
@@ -503,7 +457,6 @@ export class SyncService {
 			this.setLastSyncTimestamp(Date.now());
 
 			const totalPushed =
-				allLocalData.sourceNotes.length +
 				allLocalData.cards.length +
 				allLocalData.reviewLog.length +
 				allLocalData.cardImageRefs.length;
@@ -552,17 +505,10 @@ export class SyncService {
 			// 3. Apply pulled data locally (no LWW needed - local is empty)
 			let pulled = 0;
 
-			// Source notes (independent - must come first)
-			for (const remote of pullResults.sourceNotes) {
-				this.cardStore.sourceNotes.upsertSourceNoteFromRemote(
-					this.mapRemoteSourceNoteToLocal(remote)
-				);
-				pulled++;
-			}
-
+			// v17: Source notes removed - metadata resolved from vault
 			// v16: Projects removed - they come from frontmatter only
 
-			// Cards (depends on source_notes)
+			// Cards
 			for (const remote of pullResults.cards) {
 				this.cardStore.cards.upsertFromRemote(
 					this.mapRemoteCardToLocal(remote)
@@ -636,21 +582,7 @@ export class SyncService {
 		};
 	}
 
-	/**
-	 * Map remote source note to local format
-	 * v15: No name/path fields
-	 */
-	private mapRemoteSourceNoteToLocal(
-		remote: RemoteSourceNoteRow
-	): SourceNoteForSync {
-		return {
-			uid: remote.uid,
-			createdAt: remote.created_at,
-			updatedAt: remote.updated_at,
-			deletedAt: remote.deleted_at,
-		};
-	}
-
+	// v17: mapRemoteSourceNoteToLocal removed - source_notes table removed
 	// v16: mapRemoteProjectToLocal removed - projects are in frontmatter only
 
 	private mapRemoteReviewLogToLocal(
@@ -711,21 +643,7 @@ export class SyncService {
 		};
 	}
 
-	/**
-	 * Map local source note to remote format
-	 * v15: No name/path fields
-	 */
-	private mapLocalSourceNoteToRemote(
-		local: SourceNoteForSync
-	): Record<string, unknown> {
-		return {
-			uid: local.uid,
-			created_at: local.createdAt || Date.now(),
-			updated_at: local.updatedAt || Date.now(),
-			deleted_at: local.deletedAt,
-		};
-	}
-
+	// v17: mapLocalSourceNoteToRemote removed - source_notes table removed
 	// v16: mapLocalProjectToRemote removed - projects are in frontmatter only
 
 	private mapLocalReviewLogToRemote(

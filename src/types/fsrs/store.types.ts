@@ -3,7 +3,7 @@
  * CardStore interface for storage implementations
  */
 
-import type { FSRSCardData, SourceNoteInfo } from "./card.types";
+import type { FSRSCardData } from "./card.types";
 
 /**
  * Common interface for card storage services
@@ -55,16 +55,4 @@ export interface CardStore {
 
     /** Get cards by source note UID */
     getCardsBySourceUid?(sourceUid: string): FSRSCardData[];
-
-    /** Get all source notes from database */
-    getAllSourceNotes?(): SourceNoteInfo[];
-
-    /** Update source note path and name when file is renamed */
-    updateSourceNotePath?(uid: string, newPath: string, newName?: string): void;
-
-    /** Get source note by file path */
-    getSourceNoteByPath?(notePath: string): SourceNoteInfo | null;
-
-    /** Delete source note and optionally detach cards (set source_uid = NULL) */
-    deleteSourceNote?(uid: string, detachCards?: boolean): void;
 }

@@ -10,7 +10,6 @@ import {
 	VIEW_TYPE_ORPHANED_CARDS,
 	VIEW_TYPE_PROJECTS,
 	VIEW_TYPE_BROWSER,
-	FLASHCARD_CONFIG,
 } from "./constants";
 import { normalizePath } from "obsidian";
 import {
@@ -35,7 +34,7 @@ import {
 } from "./services/persistence/sqlite/sqlite.types";
 import { NLQueryService } from "./services/ai/nl-query.service";
 import { SqlJsAdapter } from "./services/ai/langchain-sqlite.adapter";
-import type { FSRSCardData, SourceNoteInfo } from "./types";
+import type { FSRSCardData } from "./types";
 import { extractFSRSSettings } from "./types";
 import { FlashcardPanelView } from "./ui/panel/FlashcardPanelView";
 import { ReviewView } from "./ui/review/ReviewView";
@@ -52,7 +51,12 @@ import {
 	type EpistemeSettings,
 	DEFAULT_SETTINGS,
 } from "./ui/settings";
-import { AddToProjectModal, RestoreBackupModal, DeviceSelectionModal, type DeviceSelectionResult } from "./ui/modals";
+import {
+	AddToProjectModal,
+	RestoreBackupModal,
+	DeviceSelectionModal,
+	type DeviceSelectionResult,
+} from "./ui/modals";
 import { registerCommands } from "./plugin/PluginCommands";
 import { registerEventHandlers } from "./plugin/PluginEventHandlers";
 import { AgentService, registerAllTools, resetToolRegistry } from "./agent";
@@ -205,7 +209,10 @@ export default class EpistemePlugin extends Plugin {
 	 */
 	private initializeSyncService(): void {
 		if (this.authService && this.cardStore) {
-			this.syncService = new SyncService(this.authService, this.cardStore);
+			this.syncService = new SyncService(
+				this.authService,
+				this.cardStore
+			);
 		}
 	}
 
@@ -250,7 +257,9 @@ export default class EpistemePlugin extends Plugin {
 			this.fsrsService.updateSettings(fsrsSettings);
 		}
 		if (this.dayBoundaryService) {
-			this.dayBoundaryService.updateDayStartHour(this.settings.dayStartHour);
+			this.dayBoundaryService.updateDayStartHour(
+				this.settings.dayStartHour
+			);
 		}
 		// Reinitialize NL Query Service with new settings (API key or model may have changed)
 		void this.initializeNLQueryService();
@@ -376,7 +385,6 @@ export default class EpistemePlugin extends Plugin {
 	 * Called after checking/closing existing views
 	 */
 	private async openNewReviewSession(): Promise<void> {
-
 		const allCards = await this.flashcardManager.getAllFSRSCards();
 		if (allCards.length === 0) {
 			new Notice("No flashcards found. Generate some flashcards first!");
@@ -384,10 +392,7 @@ export default class EpistemePlugin extends Plugin {
 		}
 
 		const currentFile = this.app.workspace.getActiveFile();
-		const currentNoteName =
-			currentFile && !currentFile.name.startsWith(FLASHCARD_CONFIG.filePrefix)
-				? currentFile.basename
-				: null;
+		const currentNoteName = currentFile ? currentFile.basename : null;
 
 		// Open session panel and wait for result
 		return new Promise<void>((resolve) => {
@@ -480,12 +485,19 @@ export default class EpistemePlugin extends Plugin {
 			const unsubscribe = eventBus.on("missing-flashcards:selected", (event: any) => {
 				unsubscribe();
 
-				if (!event.result.cancelled && event.result.selectedNotePath) {
+				if (
+					!event.result.cancelled &&
+					event.result.selectedNotePath
+				) {
 					// Open the selected note
-					const file = this.app.vault.getAbstractFileByPath(event.result.selectedNotePath);
+					const file = this.app.vault.getAbstractFileByPath(
+						event.result.selectedNotePath
+					);
 					if (file instanceof TFile) {
 						const leaf = this.app.workspace.getLeaf(false);
-						void leaf.openFile(file).then(() => this.activateView());
+						void leaf
+							.openFile(file)
+							.then(() => this.activateView());
 					}
 				}
 
@@ -520,14 +532,6 @@ export default class EpistemePlugin extends Plugin {
 	 * Review flashcards linked to a specific note
 	 */
 	async reviewNoteFlashcards(file: TFile): Promise<void> {
-		// Skip if it's a flashcard file
-		if (file.name.startsWith(FLASHCARD_CONFIG.filePrefix)) {
-			new Notice(
-				"This is a flashcard file. Select the original source note instead."
-			);
-			return;
-		}
-
 		const allCards = await this.flashcardManager.getAllFSRSCards();
 		const noteCards = allCards.filter(
 			(c) => c.sourceNoteName === file.basename
@@ -637,8 +641,13 @@ export default class EpistemePlugin extends Plugin {
 			const deviceId = await this.initializeDeviceContext();
 			await this.initializeCardStore(deviceId);
 		} catch (error) {
-			console.error("[Episteme] Failed to initialize device context:", error);
-			new Notice("Failed to initialize device context. Using default configuration.");
+			console.error(
+				"[Episteme] Failed to initialize device context:",
+				error
+			);
+			new Notice(
+				"Failed to initialize device context. Using default configuration."
+			);
 			// Fallback: create ephemeral device ID and continue
 			this.deviceIdService = new DeviceIdService();
 			await this.initializeCardStore(this.deviceIdService.getDeviceId());
@@ -662,11 +671,15 @@ export default class EpistemePlugin extends Plugin {
 		const deviceDbPath = normalizePath(
 			`${DB_FOLDER}/${getDeviceDbFilename(deviceId)}`
 		);
-		const deviceDbExists = await this.app.vault.adapter.exists(deviceDbPath);
+		const deviceDbExists = await this.app.vault.adapter.exists(
+			deviceDbPath
+		);
 
 		if (deviceDbExists) {
 			// Database for this device already exists - nothing to do
-			console.log(`[Episteme] Using existing device database: ${deviceDbPath}`);
+			console.log(
+				`[Episteme] Using existing device database: ${deviceDbPath}`
+			);
 			return deviceId;
 		}
 
@@ -684,7 +697,10 @@ export default class EpistemePlugin extends Plugin {
 			await this.migrateLegacyDatabase(deviceId);
 		} else if (databases.length > 0) {
 			// Show selection modal
-			const result = await this.showDeviceSelectionModal(databases, hasLegacy);
+			const result = await this.showDeviceSelectionModal(
+				databases,
+				hasLegacy
+			);
 			if (!result.cancelled) {
 				await this.handleDeviceSelection(result, deviceId);
 			}
@@ -700,7 +716,9 @@ export default class EpistemePlugin extends Plugin {
 	 */
 	private async migrateLegacyDatabase(deviceId: string): Promise<void> {
 		const legacyPath = normalizePath(`${DB_FOLDER}/episteme.db`);
-		const newPath = normalizePath(`${DB_FOLDER}/${getDeviceDbFilename(deviceId)}`);
+		const newPath = normalizePath(
+			`${DB_FOLDER}/${getDeviceDbFilename(deviceId)}`
+		);
 		const backupPath = normalizePath(`${DB_FOLDER}/episteme.db.migrated`);
 
 		try {
@@ -750,12 +768,17 @@ export default class EpistemePlugin extends Plugin {
 				const sourceData = await this.app.vault.adapter.readBinary(
 					result.sourcePath
 				);
-				await this.app.vault.adapter.writeBinary(targetPath, sourceData);
+				await this.app.vault.adapter.writeBinary(
+					targetPath,
+					sourceData
+				);
 
 				console.log(
 					`[Episteme] Imported database from ${result.sourceDeviceId} to ${deviceId}`
 				);
-				new Notice(`Imported data from device ${result.sourceDeviceId}`);
+				new Notice(
+					`Imported data from device ${result.sourceDeviceId}`
+				);
 			} catch (error) {
 				console.error("[Episteme] Database import failed:", error);
 				new Notice("Failed to import database.");
@@ -778,7 +801,11 @@ export default class EpistemePlugin extends Plugin {
 			this.flashcardManager.setStore(this.cardStore);
 
 			// Initialize session persistence with SQL store (uses dayBoundaryService for Anki-style day boundaries)
-			this.sessionPersistence = new SessionPersistenceService(this.app, this.cardStore, this.dayBoundaryService);
+			this.sessionPersistence = new SessionPersistenceService(
+				this.app,
+				this.cardStore,
+				this.dayBoundaryService
+			);
 
 			// Migrate stats.json to SQL if exists (one-time migration)
 			await this.sessionPersistence.migrateStatsJsonToSql();
@@ -797,8 +824,13 @@ export default class EpistemePlugin extends Plugin {
 			// Initialize SyncService now that cardStore is ready
 			this.initializeSyncService();
 		} catch (error) {
-			console.error("[Episteme] Failed to initialize SQLite store:", error);
-			new Notice("Failed to load flashcard data. Please restart Obsidian.");
+			console.error(
+				"[Episteme] Failed to initialize SQLite store:",
+				error
+			);
+			new Notice(
+				"Failed to load flashcard data. Please restart Obsidian."
+			);
 		}
 	}
 
@@ -814,7 +846,9 @@ export default class EpistemePlugin extends Plugin {
 		try {
 			const db = this.cardStore.getDatabase();
 			if (!db) {
-				console.warn("[Episteme] Database not ready for NL Query Service");
+				console.warn(
+					"[Episteme] Database not ready for NL Query Service"
+				);
 				return;
 			}
 
@@ -829,62 +863,11 @@ export default class EpistemePlugin extends Plugin {
 
 			await this.nlQueryService.initialize();
 		} catch (error) {
-			console.warn("[Episteme] Failed to initialize NL Query Service:", error);
-			// Non-critical: plugin continues without NL Query feature
-		}
-	}
-
-	/**
-	 * Clean up orphaned source notes (UIDs in DB without matching file in vault)
-	 * v15: Simplified - no longer syncing paths/projects (now resolved from vault at runtime)
-	 */
-	async syncSourceNotes(): Promise<void> {
-		if (!this.cardStore) {
-			new Notice("Source note sync not available");
-			return;
-		}
-
-		const sourceNotes = this.cardStore.sourceNotes.getAllSourceNotes();
-		const frontmatterService = this.flashcardManager.getFrontmatterService();
-		const files = this.app.vault.getMarkdownFiles();
-
-		// Build a map of UID -> file for efficient lookup
-		const uidToFile = new Map<string, TFile>();
-		for (const file of files) {
-			const uid = await frontmatterService.getSourceNoteUid(file);
-			if (uid) {
-				uidToFile.set(uid, file);
-			}
-		}
-
-		let orphaned = 0;
-		const orphanedUids: string[] = [];
-
-		for (const sourceNote of sourceNotes) {
-			const file = uidToFile.get(sourceNote.uid);
-			if (!file) {
-				// Source note exists in DB but no matching file in vault
-				orphaned++;
-				orphanedUids.push(sourceNote.uid);
-			}
-		}
-
-		// Clean up orphaned source notes
-		if (orphaned > 0) {
-			let orphanedCards = 0;
-			for (const uid of orphanedUids) {
-				const cards = this.cardStore.getCardsBySourceUid(uid);
-				orphanedCards += cards.length;
-				// Delete source note but keep flashcards (detachCards = false)
-				this.cardStore.sourceNotes.deleteSourceNote(uid, false);
-			}
-			new Notice(
-				`Removed ${orphaned} orphaned source note(s)` +
-				(orphanedCards > 0 ? ` (${orphanedCards} cards detached)` : "") +
-				"."
+			console.warn(
+				"[Episteme] Failed to initialize NL Query Service:",
+				error
 			);
-		} else {
-			new Notice("No orphaned source notes found.");
+			// Non-critical: plugin continues without NL Query feature
 		}
 	}
 
@@ -899,19 +882,22 @@ export default class EpistemePlugin extends Plugin {
 			return;
 		}
 
-		const frontmatterService = this.flashcardManager.getFrontmatterService();
+		const frontmatterService =
+			this.flashcardManager.getFrontmatterService();
 
 		// Get current projects from frontmatter
 		const content = await this.app.vault.read(file);
-		const currentProjects = frontmatterService.extractProjectsFromFrontmatter(content);
+		const currentProjects =
+			frontmatterService.extractProjectsFromFrontmatter(content);
 
 		// v16: Scan all files for available projects (from frontmatter)
 		const allProjectsSet = new Set<string>();
 		const files = this.app.vault.getMarkdownFiles();
 		for (const f of files) {
 			const c = await this.app.vault.cachedRead(f);
-			const projects = frontmatterService.extractProjectsFromFrontmatter(c);
-			projects.forEach(p => allProjectsSet.add(p));
+			const projects =
+				frontmatterService.extractProjectsFromFrontmatter(c);
+			projects.forEach((p) => allProjectsSet.add(p));
 		}
 		const allProjects = Array.from(allProjectsSet).sort();
 
@@ -925,7 +911,10 @@ export default class EpistemePlugin extends Plugin {
 		if (result.cancelled) return;
 
 		// Update frontmatter (v16: frontmatter is source of truth)
-		await frontmatterService.setProjectsInFrontmatter(file, result.projects);
+		await frontmatterService.setProjectsInFrontmatter(
+			file,
+			result.projects
+		);
 
 		if (result.projects.length > 0) {
 			new Notice(`Projects updated: ${result.projects.join(", ")}`);
@@ -940,14 +929,20 @@ export default class EpistemePlugin extends Plugin {
 	 */
 	async createProjectFromNote(file: TFile): Promise<void> {
 		const projectName = file.basename;
-		const frontmatterService = this.flashcardManager.getFrontmatterService();
+		const frontmatterService =
+			this.flashcardManager.getFrontmatterService();
 
 		// v16: Check if project exists by scanning frontmatter
 		const files = this.app.vault.getMarkdownFiles();
 		for (const f of files) {
 			const content = await this.app.vault.cachedRead(f);
-			const projects = frontmatterService.extractProjectsFromFrontmatter(content);
-			if (projects.some(p => p.toLowerCase() === projectName.toLowerCase())) {
+			const projects =
+				frontmatterService.extractProjectsFromFrontmatter(content);
+			if (
+				projects.some(
+					(p) => p.toLowerCase() === projectName.toLowerCase()
+				)
+			) {
 				new Notice(`Project "${projectName}" already exists`);
 				return;
 			}
@@ -962,9 +957,6 @@ export default class EpistemePlugin extends Plugin {
 
 		// Add note to project (update frontmatter - v16: frontmatter is source of truth)
 		await frontmatterService.setProjectsInFrontmatter(file, [projectName]);
-
-		// Ensure source note exists in DB (for card linking)
-		this.cardStore.sourceNotes.upsertSourceNote(sourceUid);
 
 		new Notice(`Project "${projectName}" created`);
 	}
@@ -1003,7 +995,9 @@ export default class EpistemePlugin extends Plugin {
 
 			// Prune old backups if limit is set
 			if (this.settings.maxBackups > 0) {
-				const deleted = await this.backupService.pruneBackups(this.settings.maxBackups);
+				const deleted = await this.backupService.pruneBackups(
+					this.settings.maxBackups
+				);
 				if (deleted > 0) {
 					console.log(`[Episteme] Pruned ${deleted} old backup(s)`);
 				}
@@ -1042,7 +1036,9 @@ export default class EpistemePlugin extends Plugin {
 	 */
 	async syncCloud(): Promise<void> {
 		if (!this.syncService?.isAvailable()) {
-			new Notice("Cloud sync not available. Check Supabase configuration.");
+			new Notice(
+				"Cloud sync not available. Check Supabase configuration."
+			);
 			return;
 		}
 
@@ -1050,7 +1046,9 @@ export default class EpistemePlugin extends Plugin {
 		const result = await this.syncService.sync();
 
 		if (result.success) {
-			new Notice(`Sync complete: ${result.pulled} pulled, ${result.pushed} pushed`);
+			new Notice(
+				`Sync complete: ${result.pulled} pulled, ${result.pushed} pushed`
+			);
 		} else {
 			new Notice(`Sync failed: ${result.error}`);
 		}
@@ -1062,15 +1060,17 @@ export default class EpistemePlugin extends Plugin {
 	 */
 	async forceReplaceCloud(): Promise<void> {
 		if (!this.syncService?.isAvailable()) {
-			new Notice("Cloud sync not available. Check Supabase configuration.");
+			new Notice(
+				"Cloud sync not available. Check Supabase configuration."
+			);
 			return;
 		}
 
 		// Confirmation dialog
 		const confirmed = confirm(
 			"WARNING: This will DELETE all your data on the server and replace it with your local database.\n\n" +
-			"Other devices will lose their changes.\n\n" +
-			"Are you sure you want to continue?"
+				"Other devices will lose their changes.\n\n" +
+				"Are you sure you want to continue?"
 		);
 
 		if (!confirmed) return;
@@ -1079,7 +1079,9 @@ export default class EpistemePlugin extends Plugin {
 		const result = await this.syncService.forceReplace();
 
 		if (result.success) {
-			new Notice(`Force replace complete: ${result.pushed} records uploaded`);
+			new Notice(
+				`Force replace complete: ${result.pushed} records uploaded`
+			);
 		} else {
 			new Notice(`Replace failed: ${result.error}`);
 		}

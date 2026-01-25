@@ -13,21 +13,6 @@ import type {
     PartialPanelState,
     StateSelector,
 } from "./state.types";
-import { FLASHCARD_CONFIG } from "../constants";
-
-/**
- * Check if a file is a flashcard file based on naming pattern
- * Supports both legacy (flashcards_*) and UID-based (8-hex-chars) naming
- */
-function isFlashcardFileByName(basename: string): boolean {
-    // Legacy: starts with "flashcards_"
-    if (basename.startsWith(FLASHCARD_CONFIG.filePrefix)) {
-        return true;
-    }
-    // New: 8-char hex UID pattern
-    const uidPattern = new RegExp(`^[a-f0-9]{${FLASHCARD_CONFIG.uidLength}}$`, "i");
-    return uidPattern.test(basename);
-}
 
 /**
  * Creates the initial panel state
@@ -149,7 +134,7 @@ export class PanelStateManager {
             viewMode: "list",
             diffResult: null,
             flashcardInfo: null,
-            isFlashcardFile: file ? isFlashcardFileByName(file.basename) : false,
+            isFlashcardFile: false,
             noteFlashcardType: "unknown",
             error: null,
         });

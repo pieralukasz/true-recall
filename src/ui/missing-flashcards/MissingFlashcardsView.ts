@@ -5,7 +5,6 @@
 import { ItemView, WorkspaceLeaf, TFile, normalizePath } from "obsidian";
 import {
 	VIEW_TYPE_MISSING_FLASHCARDS,
-	FLASHCARD_CONFIG,
 } from "../../constants";
 import { getEventBus } from "../../services";
 import { createMissingFlashcardsStateManager } from "../../state/missing-flashcards.state";
@@ -20,20 +19,6 @@ const TARGET_TAGS = [
 	{ tag: "mind/raw", type: "raw" as const, display: "Raw" },
 	{ tag: "mind/zettel", type: "zettel" as const, display: "Zettel" },
 ];
-
-/**
- * Check if a file is a flashcard file based on naming pattern
- */
-function isFlashcardFileByName(fileName: string): boolean {
-	if (fileName.startsWith(FLASHCARD_CONFIG.filePrefix)) {
-		return true;
-	}
-	const uidPattern = new RegExp(
-		`^[a-f0-9]{${FLASHCARD_CONFIG.uidLength}}\\.md$`,
-		"i"
-	);
-	return uidPattern.test(fileName);
-}
 
 /**
  * Missing Flashcards View
@@ -130,10 +115,6 @@ export class MissingFlashcardsView extends ItemView {
 				) {
 					return false;
 				}
-			}
-			// Exclude flashcard files by name pattern
-			if (isFlashcardFileByName(file.name)) {
-				return false;
 			}
 			return true;
 		});
