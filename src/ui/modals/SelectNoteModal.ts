@@ -3,19 +3,7 @@
  * Allows user to select a note from the vault
  */
 import { App, TFile, normalizePath } from "obsidian";
-import { FLASHCARD_CONFIG } from "../../constants";
 import { BasePromiseModal } from "./BasePromiseModal";
-
-/**
- * Check if a file is a flashcard file based on naming pattern
- */
-function isFlashcardFileByName(fileName: string): boolean {
-	if (fileName.startsWith(FLASHCARD_CONFIG.filePrefix)) {
-		return true;
-	}
-	const uidPattern = new RegExp(`^[a-f0-9]{${FLASHCARD_CONFIG.uidLength}}\\.md$`, "i");
-	return uidPattern.test(fileName);
-}
 
 export interface SelectNoteResult {
 	cancelled: boolean;
@@ -173,11 +161,6 @@ export class SelectNoteModal extends BasePromiseModal<SelectNoteResult> {
 		return this.app.vault.getMarkdownFiles().filter((file) => {
 			// Exclude specified folder
 			if (excludeFolder && file.path.startsWith(excludeFolder + "/")) {
-				return false;
-			}
-
-			// Exclude flashcard files if requested
-			if (this.options.excludeFlashcardFiles !== false && isFlashcardFileByName(file.name)) {
 				return false;
 			}
 

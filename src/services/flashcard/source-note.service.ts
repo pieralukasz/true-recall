@@ -2,17 +2,17 @@
  * Source Note Service
  * Handles source note management operations
  *
+ * v17: Source notes removed - all metadata resolved from vault
  * v15: Source note name and path are resolved from vault at runtime
  * (no longer stored in database)
  */
 import { App, TFile } from "obsidian";
-import type { SourceNoteInfo } from "../../types";
 import type { SqliteStoreService } from "../persistence/sqlite/SqliteStoreService";
 import { FrontmatterService } from "./frontmatter.service";
 
 /**
  * Service for managing source note relationships
- * v15: Resolves source note info from vault instead of database
+ * v17: Resolves source note info from vault (no database storage)
  */
 export class SourceNoteService {
 	private app: App;
@@ -62,44 +62,13 @@ export class SourceNoteService {
 	}
 
 	/**
-	 * Register a source note in the store
-	 * v15: Only stores UID + timestamps (no name/path)
-	 *
-	 * @param store - The card store
-	 * @param uid - The source note UID
-	 * @param _file - The source note file (unused in v15)
-	 */
-	registerSourceNote(
-		store: SqliteStoreService,
-		uid: string,
-		_file: TFile
-	): void {
-		store.sourceNotes.upsertSourceNote(uid);
-	}
-
-	/**
-	 * Get source note info from the store
-	 *
-	 * @param store - The card store
-	 * @param uid - The source note UID
-	 * @returns Source note info if found
-	 */
-	getSourceNoteInfo(store: SqliteStoreService, uid: string): SourceNoteInfo | null {
-		return store.sourceNotes.getSourceNote(uid);
-	}
-
-	/**
 	 * Resolve source note name and path from UID
-	 * v15: Searches vault for file with matching flashcard_uid in frontmatter
+	 * v17: Searches vault for file with matching flashcard_uid in frontmatter
 	 *
-	 * @param _store - The card store (unused in v15)
 	 * @param sourceUid - The source note UID
 	 * @returns Object with noteName and notePath if found
 	 */
-	resolveSourceNote(
-		_store: SqliteStoreService,
-		sourceUid: string | undefined
-	): { noteName?: string; notePath?: string } {
+	resolveSourceNote(sourceUid: string | undefined): { noteName?: string; notePath?: string } {
 		if (!sourceUid) {
 			return {};
 		}
@@ -129,13 +98,12 @@ export class SourceNoteService {
 
 	/**
 	 * Find a source note by UID
-	 * v15: Searches vault for file with matching flashcard_uid in frontmatter
+	 * v17: Searches vault for file with matching flashcard_uid in frontmatter
 	 *
-	 * @param _store - The card store (unused in v15)
 	 * @param uid - The source note UID
 	 * @returns The source note file if found
 	 */
-	findSourceNoteByUid(_store: SqliteStoreService, uid: string): TFile | null {
+	findSourceNoteByUid(uid: string): TFile | null {
 		return this.findFileByUidSync(uid);
 	}
 

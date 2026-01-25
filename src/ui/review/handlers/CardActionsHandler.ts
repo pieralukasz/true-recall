@@ -695,9 +695,6 @@ tags: [${tag}]
 		// Create the file
 		const file = await this.deps.app.vault.create(filePath, content);
 
-		// Register source note in SQLite (v15: only stores UID)
-		this.deps.cardStore.sourceNotes.upsertSourceNote(uid);
-
 		return { uid, filePath: file.path };
 	}
 
