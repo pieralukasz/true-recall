@@ -73,6 +73,7 @@ export class SessionView extends ItemView {
 			title: "Review Session",
 			customHeader: true,
 			showFooter: false,
+			disableScroll: true,
 		});
 		this.panelComponent.render();
 
@@ -346,8 +347,12 @@ export class SessionView extends ItemView {
 		const contentContainer = this.panelComponent?.getContentContainer();
 		if (!contentContainer) return;
 
-		// Create selection bar at bottom of content
-		this.selectionBarEl = contentContainer.createDiv({
+		// Find SessionContent element and add selection bar at the end
+		const sessionContentEl = contentContainer.querySelector(".episteme-session-content");
+		if (!sessionContentEl) return;
+
+		// Create selection bar at bottom of SessionContent
+		this.selectionBarEl = sessionContentEl.createDiv({
 			cls: "episteme-session-selection-bar ep:flex ep:items-center ep:justify-between ep:p-3 ep:mt-2 ep:bg-obs-secondary ep:rounded-md ep:gap-3 ep:shrink-0",
 		});
 

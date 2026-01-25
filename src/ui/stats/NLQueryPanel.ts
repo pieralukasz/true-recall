@@ -220,7 +220,7 @@ export class NLQueryPanel {
             const summaryEl = detailsEl.createEl("summary", {
                 text: `Show SQL queries (${result.intermediateSteps.length})`,
             });
-            summaryEl.addClass("ep:text-obs-muted ep:cursor-pointer ep:py-1 ep:hover:text-obs-normal");
+            summaryEl.addClasses(["ep:text-obs-muted", "ep:cursor-pointer", "ep:py-1", "ep:hover:text-obs-normal"]);
 
             const stepsEl = detailsEl.createDiv({ cls: "ep:mt-2" });
             for (const step of result.intermediateSteps) {

@@ -11,6 +11,7 @@ export interface PanelProps {
 	onRefresh?: () => void;
 	showFooter?: boolean;
 	customHeader?: boolean;
+	disableScroll?: boolean;
 }
 
 /**
@@ -34,14 +35,16 @@ export class Panel extends BaseComponent {
 			this.events.cleanup();
 		}
 
-		// Main container element
+		// Main container element - use absolute positioning to fill parent
 		this.element = this.container.createDiv({
-			cls: "ep:flex ep:flex-col ep:h-full ep:p-2",
+			cls: "ep:absolute ep:inset-0 ep:flex ep:flex-col ep:p-2",
 		});
 
 		// Header container
 		this.headerContainer = this.element.createDiv({
-			cls: "ep:shrink-0 ep:border-b ep:border-obs-border",
+			cls: this.props.customHeader
+				? "ep:shrink-0"
+				: "ep:shrink-0 ep:border-b ep:border-obs-border",
 		});
 
 		// Skip default title row if customHeader is true
@@ -75,7 +78,9 @@ export class Panel extends BaseComponent {
 
 		// Content container
 		this.contentContainer = this.element.createDiv({
-			cls: "ep:flex-1 ep:overflow-y-auto ep:min-h-0 ep:mt-2",
+			cls: this.props.disableScroll
+				? "ep:flex-1 ep:min-h-0 ep:mt-2"
+				: "ep:flex-1 ep:overflow-y-auto ep:min-h-0 ep:mt-2",
 		});
 
 		// Footer container - optional

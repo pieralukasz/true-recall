@@ -49,7 +49,7 @@ export abstract class BaseModal extends Modal {
 			cls: "ep:flex ep:items-center ep:justify-between ep:py-2.5 ep:px-3 ep:pr-10 ep:border-b ep:border-obs-border",
 		});
 		this.headerTitleEl = header.createEl("h2", { text: this.modalTitle });
-		this.headerTitleEl.addClass("ep:m-0 ep:text-lg ep:font-semibold");
+		this.headerTitleEl.addClasses(["ep:m-0", "ep:text-lg", "ep:font-semibold"]);
 		// Close button is rendered by Obsidian, we position it via CSS
 	}
 

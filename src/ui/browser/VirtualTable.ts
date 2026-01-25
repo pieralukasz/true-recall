@@ -100,32 +100,37 @@ export class VirtualTable {
         }
 
         // Create scroll container
-        this.scrollContainer = this.container.createDiv({ cls: "virtual-scroll-container" });
-        this.scrollContainer.style.height = "100%";
-        this.scrollContainer.style.overflow = "auto";
-        this.scrollContainer.style.position = "relative";
+        this.scrollContainer = this.container.createDiv({
+            cls: ["ep:relative", "ep:h-full", "ep:overflow-auto"].join(" "),
+        });
 
         // Create table wrapper (holds spacers + table)
-        this.tableWrapper = this.scrollContainer.createDiv({ cls: "virtual-table-wrapper" });
+        this.tableWrapper = this.scrollContainer.createDiv({
+            cls: ["ep:relative", "ep:w-full"].join(" "),
+        });
 
         // Calculate total height for scroll
         const totalHeight = this.props.cards.length * ROW_HEIGHT;
         this.tableWrapper.style.height = `${totalHeight}px`;
-        this.tableWrapper.style.position = "relative";
 
         // Create the actual table
-        const table = this.tableWrapper.createEl("table", { cls: "cards-table" });
-        table.style.position = "absolute";
-        table.style.top = "0";
-        table.style.left = "0";
-        table.style.width = "100%";
+        const table = this.tableWrapper.createEl("table", {
+            cls: [
+                "ep:absolute", "ep:inset-0", "ep:w-full",
+                "[border-collapse:collapse]", "[table-layout:fixed]"
+            ].join(" "),
+        });
 
         // Create header (sticky)
-        this.thead = table.createEl("thead");
+        this.thead = table.createEl("thead", {
+            cls: ["ep:sticky", "ep:top-0", "ep:z-10", "ep:bg-obs-secondary"].join(" "),
+        });
         this.renderHeader();
 
         // Create body container
-        this.tbody = table.createEl("tbody");
+        this.tbody = table.createEl("tbody", {
+            cls: ["ep:relative", "ep:block"].join(" "),
+        });
 
         // Add scroll listener
         this.scrollContainer.addEventListener("scroll", this.boundScrollHandler, { passive: true });
@@ -159,6 +164,11 @@ export class VirtualTable {
      */
     updateSelection(selectedCardIds: Set<string>): void {
         this.props.selectedCardIds = selectedCardIds;
+
+        // Ensure visible rows exist (in case pool was cleared)
+        if (this.rowPool.size === 0 && this.props.cards.length > 0) {
+            this.updateVisibleRows();
+        }
 
         // Update selection classes on visible rows
         for (const [index, rowEl] of this.rowPool) {
@@ -250,81 +260,118 @@ export class VirtualTable {
      */
     private createRow(card: BrowserCardItem, index: number): HTMLElement {
         const isSelected = this.props.selectedCardIds.has(card.id);
+        const rowStateClass = this.getRowStateClass(card);
         const tr = document.createElement("tr");
-        tr.className = `card-row${isSelected ? " is-selected" : ""}${this.getRowStateClass(card)}`;
+
+        // Build base classes
+        const baseClasses = [
+            "ep:absolute", "ep:flex", "ep:items-center", "ep:w-full",
+            "ep:border-b", "ep:border-obs-border",
+            "ep:transition-colors", "ep:duration-100", "ep:cursor-pointer",
+            "ep:hover:bg-obs-modifier-hover",
+        ];
+
+        if (isSelected) {
+            baseClasses.push(
+                "ep:bg-[rgba(var(--obs-interactive-rgb),0.1)]",
+                "ep:hover:!bg-[rgba(var(--obs-interactive-rgb),0.15)]"
+            );
+        }
+
+        if (rowStateClass.includes("row-suspended")) {
+            baseClasses.push("ep:opacity-60");
+        }
+        if (rowStateClass.includes("row-buried")) {
+            baseClasses.push("ep:opacity-60", "ep:italic");
+        }
+
+        tr.className = baseClasses.join(" ");
         tr.dataset.cardId = card.id;
         tr.dataset.index = String(index);
-        tr.style.display = "flex";
-        tr.style.alignItems = "center";
+        tr.style.top = `${index * ROW_HEIGHT}px`;
+        tr.style.left = "0";
+        tr.style.right = "0";
+        tr.style.height = `${ROW_HEIGHT}px`;
+
+        const tdClasses = ["ep:py-2.5", "ep:px-3", "ep:text-obs-normal", "ep:overflow-hidden", "ep:text-ellipsis", "ep:whitespace-nowrap"];
+        const cellContentClasses = ["ep:block", "ep:overflow-hidden", "ep:text-ellipsis", "ep:whitespace-nowrap"];
 
         // Question
-        const questionTd = tr.createEl("td", { cls: "col-question" });
+        const questionTd = tr.createEl("td", { cls: tdClasses.join(" ") });
         questionTd.style.width = "30%";
         questionTd.style.flexShrink = "0";
         questionTd.createSpan({
             text: this.truncateText(this.stripHtml(card.question ?? ""), 60),
-            cls: "cell-content",
+            cls: cellContentClasses.join(" "),
         });
 
         // Answer
-        const answerTd = tr.createEl("td", { cls: "col-answer" });
+        const answerTd = tr.createEl("td", { cls: tdClasses.join(" ") });
         answerTd.style.width = "25%";
         answerTd.style.flexShrink = "0";
         answerTd.createSpan({
             text: this.truncateText(this.stripHtml(card.answer ?? ""), 50),
-            cls: "cell-content",
+            cls: cellContentClasses.join(" "),
         });
 
         // Due
-        const dueTd = tr.createEl("td", { cls: "col-due" });
+        const dueTd = tr.createEl("td", { cls: tdClasses.join(" ") });
         dueTd.style.width = "10%";
         dueTd.style.flexShrink = "0";
+
+        const dueClasses = [...cellContentClasses];
+        const dueClass = this.getDueClass(card.due);
+        if (dueClass === "due-overdue") dueClasses.push("ep:text-obs-error");
+        if (dueClass === "due-today") dueClasses.push("ep:text-obs-interactive", "ep:font-medium");
+
         dueTd.createSpan({
             text: this.formatDue(card.due),
-            cls: `cell-content ${this.getDueClass(card.due)}`,
+            cls: dueClasses.join(" "),
         });
 
         // State
-        const stateTd = tr.createEl("td", { cls: "col-state" });
+        const stateTd = tr.createEl("td", { cls: tdClasses.join(" ") });
         stateTd.style.width = "8%";
         stateTd.style.flexShrink = "0";
         this.renderStateBadge(stateTd, card);
 
         // Stability
-        const stabilityTd = tr.createEl("td", { cls: "col-stability" });
+        const stabilityTd = tr.createEl("td", { cls: tdClasses.join(" ") });
         stabilityTd.style.width = "8%";
         stabilityTd.style.flexShrink = "0";
         stabilityTd.createSpan({
             text: card.stability > 0 ? `${Math.round(card.stability)}d` : "-",
-            cls: "cell-content",
+            cls: cellContentClasses.join(" "),
         });
 
         // Reps
-        const repsTd = tr.createEl("td", { cls: "col-reps" });
+        const repsTd = tr.createEl("td", { cls: tdClasses.join(" ") });
         repsTd.style.width = "6%";
         repsTd.style.flexShrink = "0";
         repsTd.createSpan({
             text: String(card.reps),
-            cls: "cell-content",
+            cls: cellContentClasses.join(" "),
         });
 
         // Lapses
-        const lapsesTd = tr.createEl("td", { cls: "col-lapses" });
+        const lapsesTd = tr.createEl("td", { cls: tdClasses.join(" ") });
         lapsesTd.style.width = "6%";
         lapsesTd.style.flexShrink = "0";
+        const lapsesClasses = [...cellContentClasses];
+        if (card.lapses > 3) lapsesClasses.push("ep:text-obs-error");
         lapsesTd.createSpan({
             text: String(card.lapses),
-            cls: `cell-content${card.lapses > 3 ? " is-warning" : ""}`,
+            cls: lapsesClasses.join(" "),
         });
 
         // Source
-        const sourceTd = tr.createEl("td", { cls: "col-source" });
+        const sourceTd = tr.createEl("td", { cls: tdClasses.join(" ") });
         sourceTd.style.width = "7%";
         sourceTd.style.flexShrink = "0";
         if (card.sourceNoteName) {
             const sourceLink = sourceTd.createEl("a", {
                 text: this.truncateText(card.sourceNoteName, 20),
-                cls: "source-link",
+                cls: ["ep:text-obs-accent", "ep:no-underline", "ep:cursor-pointer", "ep:hover:underline"].join(" "),
                 attr: { title: card.sourceNoteName },
             });
             sourceLink.addEventListener("click", (e) => {
@@ -332,7 +379,7 @@ export class VirtualTable {
                 this.props.onOpenSourceNote(card);
             });
         } else {
-            sourceTd.createSpan({ text: "-", cls: "cell-content muted" });
+            sourceTd.createSpan({ text: "-", cls: [...cellContentClasses, "ep:text-obs-muted"].join(" ") });
         }
 
         // Row click handlers
@@ -354,19 +401,30 @@ export class VirtualTable {
         if (!this.thead) return;
         this.thead.empty();
 
-        const tr = this.thead.createEl("tr");
-        tr.style.display = "flex";
+        const tr = this.thead.createEl("tr", {
+            cls: ["ep:flex"].join(" "),
+        });
 
         for (const col of COLUMNS) {
             const th = tr.createEl("th", {
-                cls: `col-${col.key}`,
+                cls: [
+                    "ep:py-2.5", "ep:px-3", "ep:text-left", "ep:font-semibold",
+                    "ep:text-obs-muted", "ep:text-xs", "ep:uppercase",
+                    "ep:tracking-wider", "ep:border-b", "ep:border-obs-border",
+                    "ep:whitespace-nowrap", "ep:select-none",
+                    "ep:hover:bg-obs-modifier-hover"
+                ].join(" "),
             });
             th.style.width = col.width;
             th.style.flexShrink = "0";
 
             if (col.sortable) {
                 const sortBtn = th.createEl("button", {
-                    cls: "sort-header",
+                    cls: [
+                        "ep:flex", "ep:items-center", "ep:gap-1",
+                        "ep:bg-transparent", "ep:border-0", "ep:p-0",
+                        "ep:cursor-pointer", "ep:text-inherit", "ep:font-inherit"
+                    ].join(" "),
                 });
 
                 sortBtn.createSpan({ text: col.label });
@@ -387,59 +445,80 @@ export class VirtualTable {
     }
 
     private renderLoading(): void {
-        const loading = this.container.createDiv({ cls: "table-loading" });
+        const loading = this.container.createDiv({
+            cls: [
+                "ep:flex", "ep:flex-col", "ep:items-center", "ep:justify-center",
+                "ep:py-15", "ep:px-5", "ep:text-obs-muted", "ep:text-center", "ep:h-full"
+            ].join(" "),
+        });
         loading.createSpan({ text: "Loading cards..." });
     }
 
     private renderEmpty(): void {
-        const empty = this.container.createDiv({ cls: "table-empty" });
-        const iconEl = empty.createDiv({ cls: "empty-icon" });
+        const empty = this.container.createDiv({
+            cls: [
+                "ep:flex", "ep:flex-col", "ep:items-center", "ep:justify-center",
+                "ep:py-15", "ep:px-5", "ep:text-obs-muted", "ep:text-center", "ep:h-full"
+            ].join(" "),
+        });
+        const iconEl = empty.createDiv({
+            cls: ["ep:text-5xl", "ep:mb-4", "ep:opacity-50"].join(" "),
+        });
         setIcon(iconEl, "inbox");
-        empty.createDiv({ text: "No cards found", cls: "empty-text" });
+        empty.createDiv({
+            text: "No cards found",
+            cls: ["ep:text-sm", "ep:mb-2"].join(" "),
+        });
         empty.createDiv({
             text: "Try adjusting your search or filters",
-            cls: "empty-hint",
+            cls: ["ep:text-xs", "ep:opacity-70"].join(" "),
         });
     }
 
     private renderStateBadge(container: HTMLElement, card: BrowserCardItem): void {
         const now = new Date();
         let label: string;
-        let cls: string;
+        let badgeClasses: string[];
+
+        const baseClasses = [
+            "ep:inline-flex", "ep:items-center", "ep:py-0.75", "ep:px-2",
+            "ep:rounded-full", "ep:text-xs", "ep:font-semibold",
+            "ep:uppercase", "ep:tracking-wider"
+        ];
 
         if (card.suspended) {
             label = "Suspended";
-            cls = "state-suspended";
+            badgeClasses = [...baseClasses, "ep:bg-obs-modifier-hover", "ep:text-obs-muted"];
         } else if (card.buriedUntil && new Date(card.buriedUntil) > now) {
             label = "Buried";
-            cls = "state-buried";
+            badgeClasses = [...baseClasses, "ep:bg-obs-modifier-hover", "ep:text-obs-muted"];
         } else {
             switch (card.state) {
                 case State.New:
                     label = "New";
-                    cls = "state-new";
+                    badgeClasses = [...baseClasses, "ep:bg-[rgba(var(--obs-blue-rgb),0.15)]", "ep:text-obs-blue"];
                     break;
                 case State.Learning:
                     label = "Learning";
-                    cls = "state-learning";
+                    badgeClasses = [...baseClasses, "ep:bg-[rgba(var(--obs-orange-rgb),0.15)]", "ep:text-obs-orange"];
                     break;
                 case State.Review:
                     label = "Review";
-                    cls = "state-review";
+                    badgeClasses = [...baseClasses, "ep:bg-[rgba(var(--obs-green-rgb),0.15)]", "ep:text-obs-green"];
                     break;
                 case State.Relearning:
                     label = "Relearn";
-                    cls = "state-relearning";
+                    badgeClasses = [...baseClasses, "ep:bg-[rgba(var(--obs-yellow-rgb),0.15)]", "ep:text-obs-yellow"];
                     break;
                 default:
                     label = "Unknown";
-                    cls = "state-unknown";
+                    badgeClasses = baseClasses;
             }
         }
 
         container.createSpan({
             text: label,
-            cls: `state-badge ${cls}`,
+            cls: badgeClasses.join(" "),
         });
     }
 
