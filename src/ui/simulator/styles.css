@@ -1,0 +1,65 @@
+/**
+ * FSRS Simulator Styles
+ */
+
+/* Range slider styling */
+.ep\:simulator-slider {
+	-webkit-appearance: none;
+	appearance: none;
+	background: transparent;
+}
+
+.ep\:simulator-slider::-webkit-slider-runnable-track {
+	width: 100%;
+	height: 4px;
+	background: var(--background-modifier-border);
+	border-radius: 2px;
+}
+
+.ep\:simulator-slider::-webkit-slider-thumb {
+	-webkit-appearance: none;
+	appearance: none;
+	width: 14px;
+	height: 14px;
+	background: var(--interactive-accent);
+	border-radius: 50%;
+	margin-top: -5px;
+	cursor: pointer;
+}
+
+.ep\:simulator-slider::-webkit-slider-thumb:hover {
+	background: var(--interactive-accent-hover);
+}
+
+.ep\:simulator-slider::-moz-range-track {
+	width: 100%;
+	height: 4px;
+	background: var(--background-modifier-border);
+	border-radius: 2px;
+}
+
+.ep\:simulator-slider::-moz-range-thumb {
+	width: 14px;
+	height: 14px;
+	background: var(--interactive-accent);
+	border-radius: 50%;
+	border: none;
+	cursor: pointer;
+}
+
+.ep\:simulator-slider::-moz-range-thumb:hover {
+	background: var(--interactive-accent-hover);
+}
+
+/* Focus states */
+.ep\:simulator-slider:focus {
+	outline: none;
+}
+
+.ep\:simulator-slider:focus::-webkit-slider-thumb {
+	box-shadow: 0 0 0 2px var(--interactive-accent-hover);
+}
+
+.ep\:simulator-slider:focus::-moz-range-thumb {
+	box-shadow: 0 0 0 2px var(--interactive-accent-hover);
+}
