@@ -97,7 +97,7 @@ export class StatsView extends ItemView {
 		const container = this.containerEl.children[1];
 		if (!(container instanceof HTMLElement)) return;
 		container.empty();
-		container.addClass("episteme-stats");
+		container.addClass("ep:p-4 ep:overflow-y-auto ep:h-full ep:max-w-[900px] ep:mx-auto");
 
 		// Create section containers
 		this.createSections(container);
@@ -191,11 +191,16 @@ export class StatsView extends ItemView {
 	}
 
 	private createSections(container: HTMLElement): void {
+		// Shared section styling
+		const sectionCls = "ep:mb-6 ep:p-4 ep:bg-obs-secondary ep:rounded-lg";
+
 		// 1. Today Summary Section
-		this.todayEl = container.createDiv({ cls: "episteme-stats-section stats-today" });
+		this.todayEl = container.createDiv({ cls: sectionCls });
 
 		// 2. NL Query Section (AI-powered) - Learning Insights
-		this.nlQueryEl = container.createDiv({ cls: "episteme-stats-section stats-nl-query" });
+		this.nlQueryEl = container.createDiv({
+			cls: `${sectionCls} ep:border-b ep:border-obs-border ep:pb-4`,
+		});
 		this.nlQueryPanel = new NLQueryPanel(this.nlQueryEl, this.app, this);
 		this.nlQueryPanel.render();
 
@@ -205,26 +210,28 @@ export class StatsView extends ItemView {
 		}
 
 		// 3. Time Range Selector
-		this.rangeSelectorEl = container.createDiv({ cls: "episteme-stats-range-selector" });
+		this.rangeSelectorEl = container.createDiv({
+			cls: "ep:flex ep:gap-2 ep:mb-4 ep:flex-wrap",
+		});
 		this.createRangeButtons();
 
 		// 4. Future Due Section (bar chart)
-		this.futureDueEl = container.createDiv({ cls: "episteme-stats-section stats-future" });
+		this.futureDueEl = container.createDiv({ cls: sectionCls });
 
 		// 5. Cards Created Section (bar chart - historical)
-		this.cardsCreatedEl = container.createDiv({ cls: "episteme-stats-section stats-created" });
+		this.cardsCreatedEl = container.createDiv({ cls: sectionCls });
 
 		// 6. Created vs Reviewed Section (grouped bar chart)
-		this.createdVsReviewedEl = container.createDiv({ cls: "episteme-stats-section stats-created-vs-reviewed" });
+		this.createdVsReviewedEl = container.createDiv({ cls: sectionCls });
 
 		// 7. Retention Rate Section (line chart)
-		this.retentionEl = container.createDiv({ cls: "episteme-stats-section stats-retention" });
+		this.retentionEl = container.createDiv({ cls: sectionCls });
 
 		// 8. Card Counts Section (pie chart)
-		this.cardCountsEl = container.createDiv({ cls: "episteme-stats-section stats-counts" });
+		this.cardCountsEl = container.createDiv({ cls: sectionCls });
 
 		// 9. Calendar Heatmap Section
-		this.calendarEl = container.createDiv({ cls: "episteme-stats-section stats-calendar" });
+		this.calendarEl = container.createDiv({ cls: sectionCls });
 	}
 
 	private createRangeButtons(): void {
@@ -236,10 +243,15 @@ export class StatsView extends ItemView {
 			{ label: "All", value: "all" },
 		];
 
+		const baseBtnCls = "ep:py-1.5 ep:px-3 ep:border ep:border-obs-border ep:rounded-md ep:bg-obs-secondary ep:text-obs-muted ep:cursor-pointer ep:text-sm ep:transition-all ep:hover:bg-obs-modifier-hover";
+		const activeBtnCls = "ep:bg-obs-interactive ep:text-white ep:border-obs-interactive";
+
 		for (const range of ranges) {
+			const isActive = this.currentRange === range.value;
 			const btn = this.rangeSelectorEl.createEl("button", {
 				text: range.label,
-				cls: `episteme-stats-range-btn ${this.currentRange === range.value ? "active" : ""}`,
+				cls: `stats-range-btn ${baseBtnCls} ${isActive ? activeBtnCls : ""}`,
+				attr: { "data-range": range.value },
 			});
 			btn.addEventListener("click", () => void this.setRange(range.value));
 		}
@@ -248,11 +260,13 @@ export class StatsView extends ItemView {
 	private async setRange(range: StatsTimeRange): Promise<void> {
 		this.currentRange = range;
 
-		// Update button states
-		const buttons = this.rangeSelectorEl.querySelectorAll(".episteme-stats-range-btn");
-		const rangeOrder: StatsTimeRange[] = ["backlog", "1m", "3m", "1y", "all"];
-		buttons.forEach((btn, i) => {
-			btn.classList.toggle("active", rangeOrder[i] === range);
+		// Update button states using data attributes
+		const buttons = this.rangeSelectorEl.querySelectorAll(".stats-range-btn");
+		const activeCls = ["ep:bg-obs-interactive", "ep:text-white", "ep:border-obs-interactive"];
+		buttons.forEach((btn) => {
+			const btnRange = btn.getAttribute("data-range");
+			const isActive = btnRange === range;
+			activeCls.forEach((cls) => btn.classList.toggle(cls, isActive));
 		});
 
 		// Re-render charts
@@ -280,7 +294,8 @@ export class StatsView extends ItemView {
 
 	private async renderTodaySummary(): Promise<void> {
 		this.todayEl.empty();
-		this.todayEl.createEl("h3", { text: "Today" });
+		const h3 = this.todayEl.createEl("h3", { text: "Today" });
+		h3.addClass("ep:m-0 ep:mb-4 ep:text-base ep:font-semibold ep:text-obs-normal");
 
 		const summary = await this.statsCalculator.getTodaySummary();
 		const streak = await this.statsCalculator.getStreakInfo();
@@ -288,12 +303,14 @@ export class StatsView extends ItemView {
 
 		if (summary.studied === 0) {
 			this.todayEl.createDiv({
-				cls: "stats-today-empty",
+				cls: "ep:text-obs-muted ep:italic ep:mb-4",
 				text: "No cards have been studied today.",
 			});
 		}
 
-		const grid = this.todayEl.createDiv({ cls: "stats-today-grid" });
+		const grid = this.todayEl.createDiv({
+			cls: "ep:grid ep:grid-cols-2 ep:gap-3 ep:mb-4",
+		});
 
 		this.createStatCard(grid, "Studied", summary.studied.toString());
 		this.createStatCard(grid, "Minutes", summary.minutes.toString());
@@ -303,25 +320,46 @@ export class StatsView extends ItemView {
 		this.createStatCard(grid, "Streak", `${streak.current}d`);
 
 		// Additional summary
-		const summaryEl = this.todayEl.createDiv({ cls: "stats-today-summary" });
-		summaryEl.createDiv({ text: `Due tomorrow: ${rangeSummary.dueTomorrow} reviews` });
-		summaryEl.createDiv({ text: `Daily load: ~${rangeSummary.dailyLoad} reviews/day` });
+		const summaryEl = this.todayEl.createDiv({ cls: "ep:text-sm ep:text-obs-muted" });
+		summaryEl.createDiv({
+			text: `Due tomorrow: ${rangeSummary.dueTomorrow} reviews`,
+			cls: "ep:mb-1",
+		});
+		summaryEl.createDiv({
+			text: `Daily load: ~${rangeSummary.dailyLoad} reviews/day`,
+			cls: "ep:mb-1",
+		});
 	}
 
 	private createStatCard(container: HTMLElement, label: string, value: string): void {
-		const card = container.createDiv({ cls: "stats-card" });
-		card.createDiv({ cls: "stats-card-value", text: value });
-		card.createDiv({ cls: "stats-card-label", text: label });
+		const card = container.createDiv({
+			cls: "ep:text-center ep:p-3 ep:bg-obs-primary ep:rounded-md",
+		});
+		card.createDiv({
+			cls: "ep:text-2xl ep:font-bold ep:text-obs-normal",
+			text: value,
+		});
+		card.createDiv({
+			cls: "ep:text-xs ep:text-obs-muted ep:mt-1",
+			text: label,
+		});
 	}
 
 	private async renderFutureDueChart(): Promise<void> {
 		this.futureDueEl.empty();
-		this.futureDueEl.createEl("h3", { text: "Future due" });
+		const h3 = this.futureDueEl.createEl("h3", { text: "Future due" });
+		h3.addClass("ep:m-0 ep:mb-4 ep:text-base ep:font-semibold ep:text-obs-normal");
 
 		// Create all elements synchronously BEFORE async calls to prevent race conditions
-		const canvasContainer = this.futureDueEl.createDiv({ cls: "stats-chart-container" });
-		const canvas = canvasContainer.createEl("canvas", { cls: "stats-chart-canvas" });
-		const summaryEl = this.futureDueEl.createDiv({ cls: "stats-chart-summary" });
+		const canvasContainer = this.futureDueEl.createDiv({
+			cls: "ep:w-full ep:h-50 ep:relative",
+		});
+		const canvas = canvasContainer.createEl("canvas", {
+			cls: "ep:w-full! ep:h-full!",
+		});
+		const summaryEl = this.futureDueEl.createDiv({
+			cls: "ep:mt-3 ep:text-sm ep:text-obs-muted",
+		});
 
 		// Use filled version for proper day-by-day display
 		const data = await this.statsCalculator.getFutureDueStatsFilled(this.currentRange);
@@ -329,9 +367,10 @@ export class StatsView extends ItemView {
 
 		if (data.length === 0) {
 			this.futureDueEl.empty();
-			this.futureDueEl.createEl("h3", { text: "Future due" });
+			const h3Empty = this.futureDueEl.createEl("h3", { text: "Future due" });
+			h3Empty.addClass("ep:m-0 ep:mb-4 ep:text-base ep:font-semibold ep:text-obs-normal");
 			this.futureDueEl.createDiv({
-				cls: "stats-no-data",
+				cls: "ep:text-obs-muted ep:text-center ep:py-10 ep:px-5 ep:italic",
 				text: "No data available",
 			});
 			return;
@@ -411,8 +450,8 @@ export class StatsView extends ItemView {
 		// Fill the summary element (already created synchronously above)
 		const total = data.reduce((sum, d) => sum + d.count, 0);
 		const avg = data.length > 0 ? Math.round(total / data.length) : 0;
-		summaryEl.createDiv({ text: `Total: ${total} reviews` });
-		summaryEl.createDiv({ text: `Average: ${avg} reviews/day` });
+		summaryEl.createDiv({ text: `Total: ${total} reviews`, cls: "ep:mb-1" });
+		summaryEl.createDiv({ text: `Average: ${avg} reviews/day`, cls: "ep:mb-1" });
 	}
 
 	private getMaxTicksForRange(): number {
@@ -449,30 +488,38 @@ export class StatsView extends ItemView {
 
 	private async renderCardsCreatedChart(): Promise<void> {
 		this.cardsCreatedEl.empty();
-		this.cardsCreatedEl.createEl("h3", { text: "Cards created" });
+		const h3 = this.cardsCreatedEl.createEl("h3", { text: "Cards created" });
+		h3.addClass("ep:m-0 ep:mb-4 ep:text-base ep:font-semibold ep:text-obs-normal");
 
 		// Skip for "backlog" range (it's for future predictions)
 		if (this.currentRange === "backlog") {
 			this.cardsCreatedEl.createDiv({
-				cls: "stats-no-data",
+				cls: "ep:text-obs-muted ep:text-center ep:py-10 ep:px-5 ep:italic",
 				text: "Select a time range to see creation history",
 			});
 			return;
 		}
 
 		// Create elements synchronously before async calls
-		const canvasContainer = this.cardsCreatedEl.createDiv({ cls: "stats-chart-container" });
-		const canvas = canvasContainer.createEl("canvas", { cls: "stats-chart-canvas" });
-		const summaryEl = this.cardsCreatedEl.createDiv({ cls: "stats-chart-summary" });
+		const canvasContainer = this.cardsCreatedEl.createDiv({
+			cls: "ep:w-full ep:h-50 ep:relative",
+		});
+		const canvas = canvasContainer.createEl("canvas", {
+			cls: "ep:w-full! ep:h-full!",
+		});
+		const summaryEl = this.cardsCreatedEl.createDiv({
+			cls: "ep:mt-3 ep:text-sm ep:text-obs-muted",
+		});
 
 		const data = await this.statsCalculator.getCardsCreatedHistoryFilled(this.currentRange);
 		this.cardsCreatedData = data; // Store for click handler
 
 		if (data.length === 0) {
 			this.cardsCreatedEl.empty();
-			this.cardsCreatedEl.createEl("h3", { text: "Cards created" });
+			const h3Empty = this.cardsCreatedEl.createEl("h3", { text: "Cards created" });
+			h3Empty.addClass("ep:m-0 ep:mb-4 ep:text-base ep:font-semibold ep:text-obs-normal");
 			this.cardsCreatedEl.createDiv({
-				cls: "stats-no-data",
+				cls: "ep:text-obs-muted ep:text-center ep:py-10 ep:px-5 ep:italic",
 				text: "No data available",
 			});
 			return;
@@ -552,8 +599,8 @@ export class StatsView extends ItemView {
 		const total = data.reduce((sum, d) => sum + d.count, 0);
 		const daysWithCards = data.filter((d) => d.count > 0).length;
 		const avg = daysWithCards > 0 ? Math.round(total / daysWithCards) : 0;
-		summaryEl.createDiv({ text: `Total: ${total} cards` });
-		summaryEl.createDiv({ text: `Average: ${avg} cards/day (on active days)` });
+		summaryEl.createDiv({ text: `Total: ${total} cards`, cls: "ep:mb-1" });
+		summaryEl.createDiv({ text: `Average: ${avg} cards/day (on active days)`, cls: "ep:mb-1" });
 	}
 
 	private async openCardPreviewForCreatedDate(date: string): Promise<void> {
@@ -567,30 +614,38 @@ export class StatsView extends ItemView {
 
 	private async renderCreatedVsReviewedChart(): Promise<void> {
 		this.createdVsReviewedEl.empty();
-		this.createdVsReviewedEl.createEl("h3", { text: "Created vs Reviewed" });
+		const h3 = this.createdVsReviewedEl.createEl("h3", { text: "Created vs Reviewed" });
+		h3.addClass("ep:m-0 ep:mb-4 ep:text-base ep:font-semibold ep:text-obs-normal");
 
 		// Skip for "backlog" range
 		if (this.currentRange === "backlog") {
 			this.createdVsReviewedEl.createDiv({
-				cls: "stats-no-data",
+				cls: "ep:text-obs-muted ep:text-center ep:py-10 ep:px-5 ep:italic",
 				text: "Select a time range to see comparison",
 			});
 			return;
 		}
 
 		// Create elements synchronously before async calls
-		const canvasContainer = this.createdVsReviewedEl.createDiv({ cls: "stats-chart-container" });
-		const canvas = canvasContainer.createEl("canvas", { cls: "stats-chart-canvas" });
-		const summaryEl = this.createdVsReviewedEl.createDiv({ cls: "stats-chart-summary" });
+		const canvasContainer = this.createdVsReviewedEl.createDiv({
+			cls: "ep:w-full ep:h-50 ep:relative",
+		});
+		const canvas = canvasContainer.createEl("canvas", {
+			cls: "ep:w-full! ep:h-full!",
+		});
+		const summaryEl = this.createdVsReviewedEl.createDiv({
+			cls: "ep:mt-3 ep:text-sm ep:text-obs-muted",
+		});
 
 		const data = await this.statsCalculator.getCardsCreatedVsReviewedHistory(this.currentRange);
 		this.createdVsReviewedData = data;
 
 		if (data.length === 0) {
 			this.createdVsReviewedEl.empty();
-			this.createdVsReviewedEl.createEl("h3", { text: "Created vs Reviewed" });
+			const h3Empty = this.createdVsReviewedEl.createEl("h3", { text: "Created vs Reviewed" });
+			h3Empty.addClass("ep:m-0 ep:mb-4 ep:text-base ep:font-semibold ep:text-obs-normal");
 			this.createdVsReviewedEl.createDiv({
-				cls: "stats-no-data",
+				cls: "ep:text-obs-muted ep:text-center ep:py-10 ep:px-5 ep:italic",
 				text: "No data available",
 			});
 			return;
@@ -677,26 +732,34 @@ export class StatsView extends ItemView {
 		const totalSameDay = data.reduce((sum, d) => sum + d.createdAndReviewedSameDay, 0);
 		const sameDayRate = totalCreated > 0 ? Math.round((totalSameDay / totalCreated) * 100) : 0;
 
-		summaryEl.createDiv({ text: `Created: ${totalCreated} | Reviewed: ${totalReviewed}` });
-		summaryEl.createDiv({ text: `Same-day review rate: ${sameDayRate}%` });
+		summaryEl.createDiv({ text: `Created: ${totalCreated} | Reviewed: ${totalReviewed}`, cls: "ep:mb-1" });
+		summaryEl.createDiv({ text: `Same-day review rate: ${sameDayRate}%`, cls: "ep:mb-1" });
 	}
 
 	private async renderRetentionChart(): Promise<void> {
 		this.retentionEl.empty();
-		this.retentionEl.createEl("h3", { text: "Retention rate" });
+		const h3 = this.retentionEl.createEl("h3", { text: "Retention rate" });
+		h3.addClass("ep:m-0 ep:mb-4 ep:text-base ep:font-semibold ep:text-obs-normal");
 
 		// Create elements synchronously before async calls
-		const canvasContainer = this.retentionEl.createDiv({ cls: "stats-chart-container" });
-		const canvas = canvasContainer.createEl("canvas", { cls: "stats-chart-canvas" });
-		const summaryEl = this.retentionEl.createDiv({ cls: "stats-chart-summary" });
+		const canvasContainer = this.retentionEl.createDiv({
+			cls: "ep:w-full ep:h-50 ep:relative",
+		});
+		const canvas = canvasContainer.createEl("canvas", {
+			cls: "ep:w-full! ep:h-full!",
+		});
+		const summaryEl = this.retentionEl.createDiv({
+			cls: "ep:mt-3 ep:text-sm ep:text-obs-muted",
+		});
 
 		const data = await this.statsCalculator.getRetentionHistory(this.currentRange);
 
 		if (data.length === 0) {
 			this.retentionEl.empty();
-			this.retentionEl.createEl("h3", { text: "Retention rate" });
+			const h3Empty = this.retentionEl.createEl("h3", { text: "Retention rate" });
+			h3Empty.addClass("ep:m-0 ep:mb-4 ep:text-base ep:font-semibold ep:text-obs-normal");
 			this.retentionEl.createDiv({
-				cls: "stats-no-data",
+				cls: "ep:text-obs-muted ep:text-center ep:py-10 ep:px-5 ep:italic",
 				text: "No review history available",
 			});
 			return;
@@ -779,13 +842,14 @@ export class StatsView extends ItemView {
 			? Math.round(data.reduce((sum, d) => sum + d.retention, 0) / data.length)
 			: 0;
 		const totalReviews = data.reduce((sum, d) => sum + d.total, 0);
-		summaryEl.createDiv({ text: `Average: ${avgRetention}%` });
-		summaryEl.createDiv({ text: `Total reviews: ${totalReviews}` });
+		summaryEl.createDiv({ text: `Average: ${avgRetention}%`, cls: "ep:mb-1" });
+		summaryEl.createDiv({ text: `Total reviews: ${totalReviews}`, cls: "ep:mb-1" });
 	}
 
 	private async renderCardCountsChart(): Promise<void> {
 		this.cardCountsEl.empty();
-		this.cardCountsEl.createEl("h3", { text: "Card counts" });
+		const h3 = this.cardCountsEl.createEl("h3", { text: "Card counts" });
+		h3.addClass("ep:m-0 ep:mb-4 ep:text-base ep:font-semibold ep:text-obs-normal");
 
 		const breakdown = await this.statsCalculator.getCardMaturityBreakdown();
 		const activeTotal = breakdown.new + breakdown.learning + breakdown.young + breakdown.mature;
@@ -793,17 +857,23 @@ export class StatsView extends ItemView {
 
 		if (total === 0) {
 			this.cardCountsEl.createDiv({
-				cls: "stats-no-data",
+				cls: "ep:text-obs-muted ep:text-center ep:py-10 ep:px-5 ep:italic",
 				text: "No cards found",
 			});
 			return;
 		}
 
-		const chartRow = this.cardCountsEl.createDiv({ cls: "stats-counts-row" });
+		const chartRow = this.cardCountsEl.createDiv({
+			cls: "ep:flex ep:gap-8 ep:items-center ep:justify-center",
+		});
 
 		// Chart (only active cards, suspended shown separately)
-		const canvasContainer = chartRow.createDiv({ cls: "stats-chart-container-small" });
-		const canvas = canvasContainer.createEl("canvas", { cls: "stats-chart-canvas-small" });
+		const canvasContainer = chartRow.createDiv({
+			cls: "ep:w-45 ep:h-45 ep:relative ep:shrink-0",
+		});
+		const canvas = canvasContainer.createEl("canvas", {
+			cls: "ep:w-full! ep:h-full!",
+		});
 
 		if (this.charts.has("cardCounts")) {
 			this.charts.get("cardCounts")!.destroy();
@@ -854,7 +924,9 @@ export class StatsView extends ItemView {
 		this.charts.set("cardCounts", chart);
 
 		// Legend with percentages - clickable
-		const legendEl = chartRow.createDiv({ cls: "stats-counts-legend" });
+		const legendEl = chartRow.createDiv({
+			cls: "ep:flex ep:flex-col ep:gap-2",
+		});
 		const items: { label: string; value: number; color: string; category: keyof CardMaturityBreakdown }[] = [
 			{ label: "New", value: breakdown.new, color: "#4ade80", category: "new" },
 			{ label: "Learning", value: breakdown.learning, color: "#fb923c", category: "learning" },
@@ -873,11 +945,16 @@ export class StatsView extends ItemView {
 		}
 
 		for (const item of items) {
-			const row = legendEl.createDiv({ cls: "stats-legend-item stats-legend-clickable" });
-			row.createSpan({ cls: "stats-legend-color" }).style.backgroundColor = item.color;
+			const row = legendEl.createDiv({
+				cls: "ep:flex ep:items-center ep:gap-2 ep:text-sm ep:cursor-pointer ep:py-1.5 ep:px-2 ep:-my-1.5 ep:-mx-2 ep:rounded-md ep:transition-colors ep:hover:bg-obs-modifier-hover",
+			});
+			const colorSpan = row.createSpan({
+				cls: "ep:w-3 ep:h-3 ep:rounded-sm ep:shrink-0",
+			});
+			colorSpan.style.backgroundColor = item.color;
 			row.createSpan({ text: `${item.label}` });
 			row.createSpan({
-				cls: "stats-legend-value",
+				cls: "ep:ml-auto ep:text-obs-muted",
 				text: `${item.value} (${Math.round((item.value / total) * 100)}%)`,
 			});
 
@@ -905,20 +982,25 @@ export class StatsView extends ItemView {
 
 	private async renderCalendarHeatmap(): Promise<void> {
 		this.calendarEl.empty();
-		this.calendarEl.createEl("h3", { text: "Activity calendar" });
+		const h3 = this.calendarEl.createEl("h3", { text: "Activity calendar" });
+		h3.addClass("ep:m-0 ep:mb-4 ep:text-base ep:font-semibold ep:text-obs-normal");
 
 		const allStats = await this.statsCalculator.getAllDailyStats();
 
 		// Header with year navigation
 		const today = new Date();
-		const yearLabel = this.calendarEl.createDiv({ cls: "stats-calendar-year" });
+		const yearLabel = this.calendarEl.createDiv({
+			cls: "ep:text-center ep:text-sm ep:font-semibold ep:mb-3 ep:text-obs-normal",
+		});
 		yearLabel.createEl("span", { text: today.getFullYear().toString() });
 
 		// Create calendar grid (last 365 days, 53 weeks x 7 days)
-		const calendarGrid = this.calendarEl.createDiv({ cls: "stats-calendar-grid" });
+		const calendarGrid = this.calendarEl.createDiv({
+			cls: "ep:flex ep:gap-0.5 ep:flex-nowrap ep:overflow-x-auto ep:pb-2",
+		});
 
-		// Day labels (Mon, Wed, Fri)
-		const dayLabels = this.calendarEl.createDiv({ cls: "stats-calendar-day-labels" });
+		// Day labels (Mon, Wed, Fri) - hidden by default
+		const dayLabels = this.calendarEl.createDiv({ cls: "ep:hidden" });
 		for (const day of ["", "Mon", "", "Wed", "", "Fri", ""]) {
 			dayLabels.createSpan({ text: day });
 		}
@@ -932,7 +1014,9 @@ export class StatsView extends ItemView {
 
 		// Create grid by weeks (columns) then days (rows)
 		for (let week = 0; week < 53; week++) {
-			const weekColumn = calendarGrid.createDiv({ cls: "stats-calendar-week" });
+			const weekColumn = calendarGrid.createDiv({
+				cls: "ep:flex ep:flex-col ep:gap-0.5",
+			});
 
 			for (let day = 0; day < 7; day++) {
 				const cellDate = new Date(startDate);
@@ -943,12 +1027,12 @@ export class StatsView extends ItemView {
 				const count = stats?.reviewsCompleted ?? 0;
 
 				const cell = weekColumn.createDiv({
-					cls: `stats-calendar-cell ${this.getHeatmapLevel(count)}`,
+					cls: `stats-calendar-cell ep:w-2.5 ep:h-2.5 ep:rounded-sm ep:cursor-pointer ${this.getHeatmapLevel(count)}`,
 				});
 
 				// Only show cells for dates up to today
 				if (cellDate > today) {
-					cell.addClass("future");
+					cell.addClass("ep:opacity-30");
 				}
 
 				// Tooltip
@@ -958,10 +1042,14 @@ export class StatsView extends ItemView {
 		}
 
 		// Legend
-		const legend = this.calendarEl.createDiv({ cls: "stats-calendar-legend" });
+		const legend = this.calendarEl.createDiv({
+			cls: "ep:flex ep:items-center ep:justify-end ep:gap-1 ep:mt-2 ep:text-xs ep:text-obs-muted",
+		});
 		legend.createSpan({ text: "Less" });
 		for (let i = 0; i <= 4; i++) {
-			legend.createDiv({ cls: `stats-calendar-cell level-${i}` });
+			legend.createDiv({
+				cls: `stats-calendar-cell ep:w-2.5 ep:h-2.5 ep:rounded-sm ep:cursor-default level-${i}`,
+			});
 		}
 		legend.createSpan({ text: "More" });
 	}
