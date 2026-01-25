@@ -192,9 +192,9 @@ export class ReviewView extends ItemView {
         container.addClass("episteme-review");
 
         // Create UI structure
-        this.headerEl = container.createDiv({ cls: "episteme-review-header" });
-        this.cardContainerEl = container.createDiv({ cls: "episteme-review-card-container" });
-        this.buttonsEl = container.createDiv({ cls: "episteme-review-buttons" });
+        this.headerEl = container.createDiv({ cls: "ep:flex ep:justify-center ep:items-center ep:py-3 ep:px-4 ep:border-b ep:border-obs-border ep:bg-obs-secondary ep:relative ep:shrink-0" });
+        this.cardContainerEl = container.createDiv({ cls: "episteme-review-card-container ep:flex-1 ep:min-h-0 ep:flex ep:items-start ep:justify-center ep:p-5 ep:overflow-y-auto" });
+        this.buttonsEl = container.createDiv({ cls: "episteme-review-buttons ep:flex ep:justify-center ep:gap-3 ep:py-4 ep:px-4 ep:border-t ep:border-obs-border ep:bg-obs-secondary ep:flex-nowrap ep:shrink-0" });
 
         // Subscribe to state changes
         this.unsubscribe = this.stateManager.subscribe(() => this.render());
@@ -450,34 +450,40 @@ export class ReviewView extends ItemView {
         if (this.plugin.settings.showReviewHeaderStats) {
             const remaining = this.calculateRemainingByType();
             const statsContainer = this.headerEl.createDiv({
-                cls: "episteme-review-header-stats",
+                cls: "ep:flex ep:items-center ep:gap-1.5",
             });
             this.renderHeaderStatBadge(statsContainer, "new", remaining.new);
             this.renderHeaderStatBadge(statsContainer, "learning", remaining.learning);
             this.renderHeaderStatBadge(statsContainer, "due", remaining.due);
         }
 
+        // Shared header button style
+        const headerBtnCls = "ep:absolute ep:bg-transparent ep:border-none ep:cursor-pointer ep:text-obs-muted ep:p-1 ep:rounded ep:flex ep:items-center ep:justify-center ep:hover:bg-obs-modifier-hover ep:hover:text-obs-normal clickable-icon";
+
         // Add flashcard button (right side, left of open note button)
         const addBtn = this.headerEl.createEl("button", {
-            cls: "episteme-btn-add clickable-icon",
+            cls: headerBtnCls,
             attr: { "aria-label": "Add new flashcard (N)" }
         });
+        addBtn.style.right = "50px";
         addBtn.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>`;
         addBtn.addEventListener("click", () => void this.cardActionsHandler.handleAddNewFlashcard());
 
         // AI Generate flashcard button (sparkles icon)
         const aiGenBtn = this.headerEl.createEl("button", {
-            cls: "episteme-btn-ai-gen clickable-icon",
+            cls: headerBtnCls,
             attr: { "aria-label": "Generate flashcard with AI (G)" }
         });
+        aiGenBtn.style.right = "84px";
         aiGenBtn.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9.937 15.5A2 2 0 0 0 8.5 14.063l-6.135-1.582a.5.5 0 0 1 0-.962L8.5 9.936A2 2 0 0 0 9.937 8.5l1.582-6.135a.5.5 0 0 1 .963 0L14.063 8.5A2 2 0 0 0 15.5 9.937l6.135 1.582a.5.5 0 0 1 0 .962L15.5 14.063a2 2 0 0 0-1.437 1.437l-1.582 6.135a.5.5 0 0 1-.963 0z"/><path d="M20 3v4"/><path d="M22 5h-4"/></svg>`;
         aiGenBtn.addEventListener("click", () => void this.cardActionsHandler.handleAIGenerateFlashcard());
 
         // Open note button (right side)
         const openNoteBtn = this.headerEl.createEl("button", {
-            cls: "episteme-review-open-note clickable-icon",
+            cls: headerBtnCls,
             attr: { "aria-label": "Open note" },
         });
+        openNoteBtn.style.right = "16px";
         openNoteBtn.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path><polyline points="15 3 21 3 21 9"></polyline><line x1="10" y1="14" x2="21" y2="3"></line></svg>`;
         openNoteBtn.addEventListener("click", () => this.handleOpenNote());
     }
@@ -506,8 +512,13 @@ export class ReviewView extends ItemView {
         type: "new" | "learning" | "due",
         count: number
     ): void {
+        const typeColors = {
+            new: "ep:bg-green-500/20 ep:text-green-500",
+            learning: "ep:bg-orange-500/20 ep:text-orange-500",
+            due: "ep:bg-blue-500/20 ep:text-blue-500",
+        };
         const badge = container.createDiv({
-            cls: `episteme-review-stat-badge episteme-review-stat-badge--${type}`,
+            cls: `ep:flex ep:items-center ep:justify-center ep:min-w-5 ep:h-5 ep:px-1.5 ep:rounded-full ep:text-xs ep:font-semibold ${typeColors[type]}`,
         });
         badge.createSpan({ text: String(count) });
     }
@@ -523,13 +534,13 @@ export class ReviewView extends ItemView {
 
         const editState = this.stateManager.getEditState();
 
-        const cardEl = this.cardContainerEl.createDiv({ cls: "episteme-review-card" });
+        const cardEl = this.cardContainerEl.createDiv({ cls: "ep:max-w-[700px] ep:w-full ep:text-center" });
 
         // Use sourceNotePath for link resolution
         const sourcePath = card.sourceNotePath || "";
 
         // Question
-        const questionEl = cardEl.createDiv({ cls: "episteme-review-question" });
+        const questionEl = cardEl.createDiv({ cls: "episteme-review-question ep:text-xl ep:leading-relaxed ep:text-obs-normal ep:mb-6" });
         if (editState.active && editState.field === "question") {
             // Edit mode - contenteditable
             this.renderEditableField(questionEl, card.question, "question");
@@ -553,9 +564,9 @@ export class ReviewView extends ItemView {
 
         // Answer (if revealed)
         if (this.stateManager.isAnswerRevealed()) {
-            cardEl.createDiv({ cls: "episteme-review-divider" });
+            cardEl.createDiv({ cls: "ep:border-none ep:border-t ep:border-obs-border ep:my-6" });
 
-            const answerEl = cardEl.createDiv({ cls: "episteme-review-answer" });
+            const answerEl = cardEl.createDiv({ cls: "episteme-review-answer ep:text-lg ep:leading-relaxed ep:text-obs-muted" });
             if (editState.active && editState.field === "answer") {
                 // Edit mode - contenteditable
                 this.renderEditableField(answerEl, card.answer, "answer");
@@ -580,14 +591,14 @@ export class ReviewView extends ItemView {
             // Source note backlink
             if (card.sourceNoteName && !editState.active) {
                 const backlinkEl = cardEl.createDiv({
-                    cls: "episteme-review-backlink"
+                    cls: "ep:mt-6 ep:text-center"
                 });
 
                 // Create clickable link to source note
                 const linkEl = backlinkEl.createEl("a", {
                     text: card.sourceNoteName,
                     href: "#",
-                    cls: "episteme-review-backlink-link"
+                    cls: "ep:text-obs-muted ep:text-sm ep:no-underline ep:opacity-70 ep:hover:text-obs-normal ep:hover:opacity-100"
                 });
 
                 linkEl.addEventListener("click", (e: MouseEvent) => {
@@ -686,11 +697,11 @@ export class ReviewView extends ItemView {
         content: string,
         field: "question" | "answer"
     ): void {
-        const wrapper = container.createDiv({ cls: "episteme-review-edit-wrapper" });
+        const wrapper = container.createDiv({ cls: "ep:w-full ep:relative" });
 
         // Textarea for editing (visible initially)
         const textarea = wrapper.createEl("textarea", {
-            cls: "episteme-review-edit-textarea",
+            cls: "ep:w-full ep:min-h-20 ep:p-0 ep:border-none ep:rounded-none ep:font-sans ep:text-inherit ep:leading-inherit ep:text-center ep:bg-transparent ep:text-obs-normal ep:resize-none ep:box-border ep:focus:outline-none ep:focus:shadow-none",
             attr: { "data-field": field },
         });
         textarea.value = content.replace(/<br\s*\/?>/gi, "\n");
@@ -699,7 +710,7 @@ export class ReviewView extends ItemView {
         setupAutoResize(textarea);
 
         // Preview for rendered markdown (hidden initially)
-        const preview = wrapper.createDiv({ cls: "episteme-review-edit-preview hidden" });
+        const preview = wrapper.createDiv({ cls: "ep:p-3 ep:cursor-text ep:rounded-md ep:transition-colors ep:hover:bg-obs-modifier-hover ep:hidden" });
 
         // Toolbar under textarea
         this.renderEditToolbar(wrapper, textarea);
@@ -758,7 +769,7 @@ export class ReviewView extends ItemView {
      * Render formatting toolbar for edit mode
      */
     private renderEditToolbar(container: HTMLElement, textarea: HTMLTextAreaElement): void {
-        const toolbar = container.createDiv({ cls: "episteme-edit-toolbar episteme-edit-toolbar--positioned" });
+        const toolbar = container.createDiv({ cls: "episteme-edit-toolbar ep:flex ep:flex-wrap ep:justify-center ep:gap-1 ep:py-2 ep:border-t ep:border-obs-border ep:absolute ep:left-0 ep:right-0 ep:top-full ep:mt-1 ep:z-10" });
 
         const buttons = [
             { label: "**[[]]**", title: "Bold Wiki Link", action: () => toggleTextareaWrap(textarea, "**[[", "]]**") },
@@ -774,7 +785,7 @@ export class ReviewView extends ItemView {
 
         for (const btn of buttons) {
             const btnEl = toolbar.createEl("button", {
-                cls: "episteme-edit-toolbar-btn",
+                cls: "ep:px-2 ep:py-1 ep:text-xs ep:bg-obs-secondary ep:text-obs-normal ep:border ep:border-obs-border ep:rounded ep:cursor-pointer ep:hover:bg-obs-modifier-hover ep:hover:border-obs-interactive ep:transition-colors",
                 text: btn.label,
                 attr: { title: btn.title, tabindex: "-1" },
             });
@@ -846,30 +857,33 @@ export class ReviewView extends ItemView {
         this.buttonsEl.style.display = "";
 
         // Create wrapper for buttons layout
-        const buttonsWrapper = this.buttonsEl.createDiv({ cls: "episteme-buttons-wrapper" });
+        const buttonsWrapper = this.buttonsEl.createDiv({ cls: "ep:flex ep:items-center ep:justify-center ep:w-full ep:relative" });
 
         // Main buttons container (left/center)
-        const mainButtonsEl = buttonsWrapper.createDiv({ cls: "episteme-buttons-main" });
+        const mainButtonsEl = buttonsWrapper.createDiv({ cls: "ep:flex ep:justify-center ep:gap-3 ep:flex-nowrap" });
+
+        // Base button class for all review buttons
+        const baseBtnCls = "ep:flex ep:flex-col ep:items-center ep:gap-1 ep:py-5 ep:px-7 ep:border-none ep:rounded-lg ep:cursor-pointer ep:font-medium ep:text-sm ep:min-w-20 ep:transition-transform ep:hover:brightness-110 ep:active:scale-98";
 
         if (!this.stateManager.isAnswerRevealed()) {
             // Show answer button
             const showBtn = mainButtonsEl.createEl("button", {
-                cls: "episteme-btn episteme-btn-show",
+                cls: `${baseBtnCls} mod-cta ep:py-2 ep:px-4`,
                 text: "Show answer",
             });
             showBtn.addEventListener("click", () => this.handleShowAnswer());
         } else {
             // Rating buttons
             const preview = this.stateManager.getSchedulingPreview();
-            this.renderRatingButton(mainButtonsEl, "Again", Rating.Again, "episteme-btn-again", preview?.again.interval);
-            this.renderRatingButton(mainButtonsEl, "Hard", Rating.Hard, "episteme-btn-hard", preview?.hard.interval);
-            this.renderRatingButton(mainButtonsEl, "Good", Rating.Good, "episteme-btn-good", preview?.good.interval);
-            this.renderRatingButton(mainButtonsEl, "Easy", Rating.Easy, "episteme-btn-easy", preview?.easy.interval);
+            this.renderRatingButton(mainButtonsEl, "Again", Rating.Again, `${baseBtnCls} ep:bg-red-500 ep:text-white`, preview?.again.interval);
+            this.renderRatingButton(mainButtonsEl, "Hard", Rating.Hard, `${baseBtnCls} ep:bg-orange-500 ep:text-white`, preview?.hard.interval);
+            this.renderRatingButton(mainButtonsEl, "Good", Rating.Good, `${baseBtnCls} ep:bg-green-500 ep:text-white`, preview?.good.interval);
+            this.renderRatingButton(mainButtonsEl, "Easy", Rating.Easy, `${baseBtnCls} ep:bg-cyan-500 ep:text-white`, preview?.easy.interval);
         }
 
         // Actions menu button (always visible)
         const menuBtn = buttonsWrapper.createEl("button", {
-            cls: "episteme-btn-menu",
+            cls: "ep:flex ep:items-center ep:justify-center ep:w-10 ep:h-10 ep:p-0 ep:border-none ep:rounded-lg ep:bg-obs-modifier-hover ep:text-obs-muted ep:cursor-pointer ep:transition-colors ep:absolute ep:right-0 ep:hover:bg-obs-border ep:hover:text-obs-normal ep:active:scale-95",
             attr: { "aria-label": "Card actions" }
         });
         setIcon(menuBtn, "more-vertical");
@@ -990,12 +1004,12 @@ export class ReviewView extends ItemView {
         cls: string,
         interval?: string
     ): void {
-        const btn = container.createEl("button", { cls: `episteme-btn ${cls}` });
+        const btn = container.createEl("button", { cls });
 
-        btn.createDiv({ cls: "episteme-btn-label", text: label });
+        btn.createDiv({ cls: "ep:font-semibold", text: label });
 
         if (interval && this.plugin.settings.showNextReviewTime) {
-            btn.createDiv({ cls: "episteme-btn-time", text: interval });
+            btn.createDiv({ cls: "ep:text-xs ep:opacity-90", text: interval });
         }
 
         btn.addEventListener("click", () => this.handleAnswer(rating));
@@ -1009,12 +1023,12 @@ export class ReviewView extends ItemView {
         this.cardContainerEl.empty();
         this.buttonsEl.empty();
 
-        const emptyEl = this.cardContainerEl.createDiv({ cls: "episteme-review-empty" });
-        emptyEl.createDiv({ cls: "episteme-review-empty-icon", text: "🎉" });
-        emptyEl.createDiv({ cls: "episteme-review-empty-text", text: message });
+        const emptyEl = this.cardContainerEl.createDiv({ cls: "ep:text-center ep:py-12 ep:px-6" });
+        emptyEl.createDiv({ cls: "ep:text-5xl ep:mb-4", text: "🎉" });
+        emptyEl.createDiv({ cls: "ep:text-base ep:text-obs-muted ep:mb-6", text: message });
 
         const closeBtn = emptyEl.createEl("button", {
-            cls: "episteme-btn episteme-btn-primary",
+            cls: "ep:flex ep:flex-col ep:items-center ep:gap-1 ep:py-3 ep:px-8 ep:border-none ep:rounded-lg ep:cursor-pointer ep:font-medium ep:text-sm mod-cta",
             text: "Close",
         });
         closeBtn.addEventListener("click", () => this.handleClose());
@@ -1030,40 +1044,43 @@ export class ReviewView extends ItemView {
 
         const stats = this.stateManager.getStats();
 
-        const summaryEl = this.cardContainerEl.createDiv({ cls: "episteme-review-summary" });
-        summaryEl.createEl("h2", { text: "Session Complete!" });
+        const summaryEl = this.cardContainerEl.createDiv({ cls: "ep:text-center ep:py-8 ep:px-6 ep:max-w-md ep:mx-auto" });
+        summaryEl.createEl("h2", { text: "Session Complete!", cls: "ep:text-2xl ep:m-0 ep:mb-6 ep:text-obs-normal" });
 
-        const statsEl = summaryEl.createDiv({ cls: "episteme-review-stats" });
+        const statsEl = summaryEl.createDiv({ cls: "ep:grid ep:grid-cols-2 ep:gap-3 ep:mb-6" });
 
         this.renderStatItem(statsEl, "Total reviewed", stats.reviewed.toString());
-        this.renderStatItem(statsEl, "Again", stats.again.toString(), "stat-again");
-        this.renderStatItem(statsEl, "Hard", stats.hard.toString(), "stat-hard");
-        this.renderStatItem(statsEl, "Good", stats.good.toString(), "stat-good");
-        this.renderStatItem(statsEl, "Easy", stats.easy.toString(), "stat-easy");
+        this.renderStatItem(statsEl, "Again", stats.again.toString(), "ep:text-red-500");
+        this.renderStatItem(statsEl, "Hard", stats.hard.toString(), "ep:text-orange-500");
+        this.renderStatItem(statsEl, "Good", stats.good.toString(), "ep:text-green-500");
+        this.renderStatItem(statsEl, "Easy", stats.easy.toString(), "ep:text-cyan-500");
 
         const durationMin = Math.floor(stats.duration / 60000);
         const durationSec = Math.floor((stats.duration % 60000) / 1000);
         this.renderStatItem(statsEl, "Duration", `${durationMin}m ${durationSec}s`);
 
-        const buttonsEl = summaryEl.createDiv({ cls: "episteme-review-summary-buttons" });
+        const buttonsEl = summaryEl.createDiv({ cls: "ep:flex ep:gap-3 ep:justify-center" });
+
+        // Shared button classes for summary
+        const summaryBtnCls = "ep:py-3 ep:px-8 ep:border-none ep:rounded-lg ep:cursor-pointer ep:font-medium ep:text-sm ep:transition-transform ep:hover:brightness-110 ep:active:scale-98";
 
         // Show "Next Session" button for custom sessions when setting is enabled
         if (this.isCustomSession && this.plugin.settings.continuousCustomReviews) {
             const nextSessionBtn = buttonsEl.createEl("button", {
-                cls: "episteme-btn episteme-btn-primary",
+                cls: `${summaryBtnCls} mod-cta`,
                 text: "Next session",
             });
             nextSessionBtn.addEventListener("click", () => this.handleNextSession());
 
             const finishBtn = buttonsEl.createEl("button", {
-                cls: "episteme-btn episteme-btn-secondary",
+                cls: `${summaryBtnCls} ep:bg-obs-border ep:text-obs-normal ep:hover:bg-obs-modifier-hover`,
                 text: "Finish",
             });
             finishBtn.addEventListener("click", () => this.handleClose());
         } else {
             // Standard close button for normal sessions or when continuous mode is disabled
             const closeBtn = buttonsEl.createEl("button", {
-                cls: "episteme-btn episteme-btn-primary",
+                cls: `${summaryBtnCls} mod-cta`,
                 text: "Close",
             });
             closeBtn.addEventListener("click", () => this.handleClose());
@@ -1073,10 +1090,10 @@ export class ReviewView extends ItemView {
     /**
      * Render a stat item
      */
-    private renderStatItem(container: HTMLElement, label: string, value: string, cls?: string): void {
-        const itemEl = container.createDiv({ cls: `episteme-stat-item ${cls ?? ""}` });
-        itemEl.createDiv({ cls: "episteme-stat-label", text: label });
-        itemEl.createDiv({ cls: "episteme-stat-value", text: value });
+    private renderStatItem(container: HTMLElement, label: string, value: string, valueColorCls?: string): void {
+        const itemEl = container.createDiv({ cls: "ep:p-3 ep:bg-obs-secondary ep:rounded-lg" });
+        itemEl.createDiv({ cls: "ep:text-xs ep:text-obs-muted ep:mb-1", text: label });
+        itemEl.createDiv({ cls: `ep:text-xl ep:font-semibold ep:text-obs-normal ${valueColorCls ?? ""}`, text: value });
     }
 
     /**
@@ -1091,37 +1108,38 @@ export class ReviewView extends ItemView {
         const timeUntilDue = this.stateManager.getTimeUntilNextDue();
         const pendingCards = this.stateManager.getPendingLearningCards();
 
-        const waitingEl = this.cardContainerEl.createDiv({ cls: "episteme-review-waiting" });
-        waitingEl.createEl("h2", { text: "Congratulations!" });
+        const waitingEl = this.cardContainerEl.createDiv({ cls: "ep:text-center ep:py-8 ep:px-6 ep:max-w-md ep:mx-auto" });
+        waitingEl.createEl("h2", { text: "Congratulations!", cls: "ep:text-2xl ep:m-0 ep:mb-4 ep:text-obs-normal" });
         waitingEl.createEl("p", {
             text: "You've reviewed all available cards.",
-            cls: "episteme-waiting-message"
+            cls: "ep:text-obs-muted ep:m-0 ep:mb-6"
         });
 
         // Countdown display
-        const countdownContainer = waitingEl.createDiv({ cls: "episteme-waiting-countdown" });
+        const countdownContainer = waitingEl.createDiv({ cls: "ep:mb-6" });
         countdownContainer.createEl("p", {
             text: `${pendingCards.length} learning card${pendingCards.length === 1 ? '' : 's'} due in:`,
-            cls: "episteme-waiting-label"
+            cls: "ep:text-obs-muted ep:text-sm ep:m-0 ep:mb-2"
         });
         const countdownEl = countdownContainer.createDiv({
-            cls: "episteme-countdown-timer",
+            cls: "ep:text-5xl ep:font-bold ep:text-obs-interactive ep:tabular-nums",
             text: this.formatCountdown(timeUntilDue)
         });
 
         // Buttons
-        const buttonsEl = waitingEl.createDiv({ cls: "episteme-review-waiting-buttons" });
+        const waitingBtnCls = "ep:py-3 ep:px-8 ep:border-none ep:rounded-lg ep:cursor-pointer ep:font-medium ep:text-sm ep:transition-transform ep:hover:brightness-110 ep:active:scale-98";
+        const buttonsContainerEl = waitingEl.createDiv({ cls: "ep:flex ep:gap-3 ep:justify-center" });
 
-        const waitBtn = buttonsEl.createEl("button", {
-            cls: "episteme-btn episteme-btn-primary",
+        const waitBtn = buttonsContainerEl.createEl("button", {
+            cls: `${waitingBtnCls} mod-cta`,
             text: "Wait",
         });
         waitBtn.addEventListener("click", () => {
             // Just keep waiting, timer will auto-refresh
         });
 
-        const endBtn = buttonsEl.createEl("button", {
-            cls: "episteme-btn episteme-btn-secondary",
+        const endBtn = buttonsContainerEl.createEl("button", {
+            cls: `${waitingBtnCls} ep:bg-obs-border ep:text-obs-normal ep:hover:bg-obs-modifier-hover`,
             text: "End session",
         });
         endBtn.addEventListener("click", () => {
