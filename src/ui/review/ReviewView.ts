@@ -424,9 +424,44 @@ export class ReviewView extends ItemView {
                 return;
             }
 
-            // Get persistent stats for today
+            // Get persistent stats for today (ensure sessionPersistence is available)
+            if (!this.sessionPersistence) {
+                this.sessionPersistence = this.plugin.sessionPersistence;
+            }
+            if (!this.sessionPersistence) {
+                console.error("[ReviewView] sessionPersistence not initialized");
+                this.renderEmptyState("Session persistence not ready. Please try again.");
+                return;
+            }
             const reviewedToday = await this.sessionPersistence.getReviewedToday();
             const newCardsStudiedToday = await this.sessionPersistence.getNewCardsStudiedToday();
+
+            // Build sourceUidToProjects map for project filtering fallback
+            let sourceUidToProjects: Map<string, string[]> | undefined;
+            if (this.projectFilters && this.projectFilters.length > 0) {
+                sourceUidToProjects = new Map();
+                const files = this.app.vault.getMarkdownFiles();
+
+                // Helper to normalize project names (strip [[...]] wiki-link brackets)
+                const normalizeProjectName = (name: string): string =>
+                    name.replace(/^\[\[|\]\]$/g, "");
+
+                for (const file of files) {
+                    const cache = this.app.metadataCache.getFileCache(file);
+                    const frontmatter = cache?.frontmatter;
+                    if (!frontmatter) continue;
+
+                    const uid = frontmatter.flashcard_uid as string | undefined;
+                    const rawProjects = frontmatter.projects;
+                    const projects = Array.isArray(rawProjects)
+                        ? rawProjects.map(normalizeProjectName)
+                        : [];
+
+                    if (uid && projects.length > 0) {
+                        sourceUidToProjects.set(uid, projects);
+                    }
+                }
+            }
 
             // Build review queue with persistent stats, project filters, custom session filters, and display order settings
             const queue = this.reviewService.buildQueue(activeCards, this.fsrsService, {
@@ -435,6 +470,7 @@ export class ReviewView extends ItemView {
                 reviewedToday,
                 newCardsStudiedToday,
                 projectFilters: this.projectFilters,
+                sourceUidToProjects,
                 newCardOrder: this.plugin.settings.newCardOrder,
                 reviewOrder: this.plugin.settings.reviewOrder,
                 newReviewMix: this.plugin.settings.newReviewMix,

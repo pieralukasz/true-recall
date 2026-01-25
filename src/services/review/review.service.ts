@@ -35,6 +35,8 @@ export interface QueueBuildOptions {
 	newCardsStudiedToday?: number;
 	/** Filter by project names (many-to-many, card matches if it has ANY of these projects) */
 	projectFilters?: string[];
+	/** Map sourceUid -> projects for fallback resolution when card.projects is empty */
+	sourceUidToProjects?: Map<string, string[]>;
 	/** Order for new cards */
 	newCardOrder?: NewCardOrder;
 	/** Order for review cards */
@@ -242,9 +244,30 @@ export class ReviewService {
 				}
 			}
 
-			// Project filter
-			if (projectSet && !card.projects.some((p) => projectSet.has(p))) {
-				return false;
+			// Project filter - use sourceUidToProjects map as fallback
+			if (projectSet) {
+				let cardProjects = card.projects;
+
+				// Fallback: if card.projects empty but has sourceUid, resolve from map
+				if (
+					cardProjects.length === 0 &&
+					card.sourceUid &&
+					options.sourceUidToProjects
+				) {
+					cardProjects =
+						options.sourceUidToProjects.get(card.sourceUid) || [];
+				}
+
+				// Normalize project names (strip [[...]] wiki-link brackets if present)
+				const normalizeProjectName = (name: string): string =>
+					name.replace(/^\[\[|\]\]$/g, "");
+
+				const matches = cardProjects.some((p) =>
+					projectSet.has(normalizeProjectName(p))
+				);
+				if (!matches) {
+					return false;
+				}
 			}
 
 			return true;
