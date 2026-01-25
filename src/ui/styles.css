@@ -1,0 +1,117 @@
+/* Tailwind CSS v4 entry point with Obsidian theme integration */
+@import "tailwindcss" prefix(ep);
+
+/*
+ * Obsidian Theme Variables Mapping
+ *
+ * These custom theme variables map Obsidian's CSS variables to Tailwind utilities.
+ * Usage: ep:text-obs-normal, ep:bg-obs-primary, ep:border-obs-border, etc.
+ */
+@theme {
+  /* Text colors - map to Obsidian text variables */
+  --color-obs-normal: var(--text-normal);
+  --color-obs-muted: var(--text-muted);
+  --color-obs-faint: var(--text-faint);
+  --color-obs-accent: var(--text-accent);
+  --color-obs-accent-hover: var(--text-accent-hover);
+  --color-obs-on-accent: var(--text-on-accent);
+  --color-obs-error: var(--text-error);
+  --color-obs-selection: var(--text-selection);
+
+  /* Interactive accent colors */
+  --color-obs-interactive: var(--interactive-accent);
+  --color-obs-interactive-hover: var(--interactive-accent-hover);
+
+  /* Background colors */
+  --color-obs-primary: var(--background-primary);
+  --color-obs-primary-alt: var(--background-primary-alt);
+  --color-obs-secondary: var(--background-secondary);
+  --color-obs-secondary-alt: var(--background-secondary-alt);
+  --color-obs-modifier-hover: var(--background-modifier-hover);
+  --color-obs-modifier-active: var(--background-modifier-active-hover);
+  --color-obs-modifier-success: var(--background-modifier-success);
+  --color-obs-modifier-error: var(--background-modifier-error);
+  --color-obs-modifier-border: var(--background-modifier-border);
+  --color-obs-modifier-border-hover: var(--background-modifier-border-hover);
+  --color-obs-modifier-border-focus: var(--background-modifier-border-focus);
+
+  /* Obsidian semantic colors */
+  --color-obs-red: var(--color-red);
+  --color-obs-orange: var(--color-orange);
+  --color-obs-yellow: var(--color-yellow);
+  --color-obs-green: var(--color-green);
+  --color-obs-cyan: var(--color-cyan);
+  --color-obs-blue: var(--color-blue);
+  --color-obs-purple: var(--color-purple);
+  --color-obs-pink: var(--color-pink);
+
+  /* Button colors */
+  --color-btn-primary: var(--interactive-accent);
+  --color-btn-primary-hover: var(--interactive-accent-hover);
+
+  /* Border color shorthand */
+  --color-obs-border: var(--background-modifier-border);
+
+  /* Fonts */
+  --font-obs-interface: var(--font-interface);
+  --font-obs-text: var(--font-text);
+  --font-obs-monospace: var(--font-monospace);
+
+  /* Font sizes */
+  --font-size-obs-smaller: var(--font-ui-smaller);
+  --font-size-obs-small: var(--font-ui-small);
+  --font-size-obs-medium: var(--font-ui-medium);
+  --font-size-obs-large: var(--font-ui-large);
+
+  /* Border radius */
+  --radius-obs-sm: var(--radius-s);
+  --radius-obs-md: var(--radius-m);
+  --radius-obs-lg: var(--radius-l);
+  --radius-obs-xl: var(--radius-xl);
+}
+
+/*
+ * Obsidian-specific overrides that can't be expressed as utilities
+ * These are CSS rules that need :has(), complex selectors, or animations
+ */
+@layer components {
+  /* Modal width override when containing episteme modals */
+  .modal:has(.episteme-modal) {
+    width: fit-content;
+    max-width: 90vw;
+  }
+
+  /* Answer blur effect for review mode */
+  .episteme-answer-blur {
+    filter: blur(4px);
+    transition: filter 0.2s ease;
+    cursor: pointer;
+  }
+
+  .episteme-answer-blur:hover {
+    filter: none;
+  }
+
+  /* Spinner animation */
+  @keyframes episteme-spin {
+    to {
+      transform: rotate(360deg);
+    }
+  }
+
+  .episteme-spinner {
+    animation: episteme-spin 1s linear infinite;
+  }
+
+  /* iOS safe area support */
+  .episteme-safe-area-bottom {
+    padding-bottom: env(safe-area-inset-bottom, 0);
+  }
+}
+
+/*
+ * Legacy CSS imports - these will be progressively removed during migration.
+ * Each file is commented out as its components are migrated to Tailwind utilities.
+ */
+
+/* TODO: Remove these imports as components are migrated */
