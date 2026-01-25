@@ -118,3 +118,10 @@ export type {
     StudyPattern,
     TimeToMasteryStats,
 } from "./nl-query.types";
+
+// Sync types
+export type {
+    SyncResult,
+    SyncOptions,
+    FirstSyncStatus,
+} from "./sync.types";

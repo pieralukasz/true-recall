@@ -525,8 +525,8 @@ export class ReviewView extends ItemView {
 
         const cardEl = this.cardContainerEl.createDiv({ cls: "episteme-review-card" });
 
-        // Use sourceNotePath as fallback for link resolution when filePath is empty
-        const sourcePath = card.filePath || card.sourceNotePath || "";
+        // Use sourceNotePath for link resolution
+        const sourcePath = card.sourceNotePath || "";
 
         // Question
         const questionEl = cardEl.createDiv({ cls: "episteme-review-question" });
@@ -1265,20 +1265,11 @@ export class ReviewView extends ItemView {
         const card = this.stateManager.getCurrentCard();
         if (!card) return;
 
-        // SQL-only cards have no file - try to open source note instead
-        if (card.filePath === "") {
-            if (card.sourceNoteName) {
-                this.handleOpenSourceNote();
-            } else {
-                new Notice("This card is stored in SQL only (no associated file)");
-            }
-            return;
-        }
-
-        // Open the flashcard file at the card's position
-        const file = this.app.vault.getAbstractFileByPath(card.filePath);
-        if (file instanceof TFile) {
-            void this.flashcardManager.openFileAtCard(file, card.id);
+        // All cards are SQL-only - try to open source note
+        if (card.sourceNoteName) {
+            this.handleOpenSourceNote();
+        } else {
+            new Notice("This card has no associated source note");
         }
     }
 

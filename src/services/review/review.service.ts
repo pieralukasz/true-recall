@@ -196,10 +196,10 @@ export class ReviewService {
 					return false;
 			}
 
-			// File path filter
+			// File path filter (uses sourceNotePath)
 			if (
 				options.filePathFilter &&
-				card.filePath !== options.filePathFilter
+				card.sourceNotePath !== options.filePathFilter
 			) {
 				return false;
 			}

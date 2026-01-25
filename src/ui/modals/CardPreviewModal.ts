@@ -80,7 +80,7 @@ export class CardPreviewModal extends BaseModal {
 		for (const card of this.options.cards) {
 			createCardReviewItem(listEl, {
 				card,
-				filePath: card.filePath,
+				filePath: card.sourceNotePath || "",
 				app: this.app,
 				component: this.component,
 				onDelete: (card) => void this.handleDeleteCard(card),
@@ -130,19 +130,8 @@ export class CardPreviewModal extends BaseModal {
 			}
 		}
 
-		// Fallback to flashcard file
-		const filePath = "filePath" in card ? card.filePath : this.options.cards.find(c => c.id === card.id)?.filePath;
-		if (!filePath) {
-			new Notice("Could not find flashcard file path");
-			return;
-		}
-
-		const file = this.app.vault.getAbstractFileByPath(filePath);
-		if (file && file instanceof TFile) {
-			// Open file and navigate to card using its ID
-			await this.flashcardManager.openFileAtCard(file, card.id);
-			this.close();
-		}
+		// No source note found
+		new Notice("Could not find source note for this card");
 	}
 
 	private async handleUnburyCard(card: CardData): Promise<void> {
