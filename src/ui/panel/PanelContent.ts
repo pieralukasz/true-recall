@@ -63,7 +63,7 @@ export class PanelContent extends BaseComponent {
         }
 
         this.element = this.container.createDiv({
-            cls: "episteme-content",
+            cls: "ep:flex ep:flex-col ep:flex-1 ep:overflow-y-auto",
         });
 
         const { status, viewMode, diffResult, currentFile } = this.props;
@@ -121,8 +121,8 @@ export class PanelContent extends BaseComponent {
     private renderNoFlashcardsState(): void {
         if (!this.element) return;
 
-        const stateEl = this.element.createDiv({ cls: "episteme-no-cards" });
-        stateEl.createEl("p", { text: "No flashcards", cls: "episteme-no-cards-message" });
+        const stateEl = this.element.createDiv({ cls: "ep:py-4 ep:text-center" });
+        stateEl.createEl("p", { text: "No flashcards", cls: "ep:text-sm ep:text-obs-muted ep:m-0" });
     }
 
     private renderPreviewState(): void {
@@ -131,27 +131,27 @@ export class PanelContent extends BaseComponent {
         if (!this.element || !flashcardInfo) return;
 
         const previewEl = this.element.createDiv({
-            cls: "episteme-preview",
+            cls: "ep:py-2",
         });
 
         // Card count and last modified
-        const metaEl = previewEl.createDiv({ cls: "episteme-meta-row" });
+        const metaEl = previewEl.createDiv({ cls: "ep:mb-2" });
         metaEl.createSpan({
             text: `${flashcardInfo.cardCount} flashcard${flashcardInfo.cardCount !== 1 ? "s" : ""}`,
-            cls: "episteme-card-count",
+            cls: "ep:text-sm ep:font-medium ep:text-obs-normal",
         });
         if (flashcardInfo.lastModified) {
             const date = new Date(flashcardInfo.lastModified);
             metaEl.createSpan({
                 text: ` \u2022 ${this.formatDate(date)}`,
-                cls: "episteme-meta",
+                cls: "ep:text-sm ep:text-obs-muted",
             });
         }
 
         // Flashcard list
         if (flashcardInfo.flashcards.length > 0) {
             const cardsContainer = previewEl.createDiv({
-                cls: "episteme-cards-container",
+                cls: "ep:mb-2",
             });
 
             for (let index = 0; index < flashcardInfo.flashcards.length; index++) {
@@ -177,7 +177,7 @@ export class PanelContent extends BaseComponent {
                 // Separator (except for last card)
                 if (index < flashcardInfo.flashcards.length - 1) {
                     cardWrapper.createDiv({
-                        cls: "episteme-card-separator",
+                        cls: "ep:h-px ep:bg-obs-border ep:my-2",
                     });
                 }
             }
@@ -190,28 +190,25 @@ export class PanelContent extends BaseComponent {
         if (!this.element || !diffResult || !currentFile) return;
 
         const diffEl = this.element.createDiv({
-            cls: "episteme-diff",
+            cls: "ep:py-2",
         });
 
         // Header with count
         const acceptedCount = diffResult.changes.filter((c) => c.accepted).length;
         const totalCount = diffResult.changes.length;
 
-        const headerEl = diffEl.createDiv({ cls: "episteme-diff-header" });
+        const headerEl = diffEl.createDiv({ cls: "ep:flex ep:items-center ep:mb-3" });
         headerEl.createSpan({
             text: `Proposed Changes (${acceptedCount}/${totalCount} selected)`,
-            cls: "episteme-diff-title",
+            cls: "ep:text-sm ep:font-semibold ep:text-obs-normal",
         });
 
         // Select All / Deselect All button
         const allSelected = acceptedCount === totalCount;
         const selectAllBtn = headerEl.createEl("button", {
             text: allSelected ? "Deselect all" : "Select all",
-            cls: "episteme-btn-secondary",
+            cls: "ep:ml-auto ep:px-2 ep:py-1 ep:text-xs ep:bg-obs-border ep:text-obs-normal ep:border-none ep:rounded ep:cursor-pointer ep:hover:bg-obs-modifier-hover ep:transition-colors",
         });
-        selectAllBtn.style.marginLeft = "auto";
-        selectAllBtn.style.padding = "4px 8px";
-        selectAllBtn.style.fontSize = "12px";
 
         if (handlers.onSelectAll) {
             this.events.addEventListener(selectAllBtn, "click", () => {
@@ -223,14 +220,14 @@ export class PanelContent extends BaseComponent {
         if (diffResult.changes.length === 0) {
             diffEl.createDiv({
                 text: "No changes needed. Flashcards are up to date.",
-                cls: "episteme-diff-empty",
+                cls: "ep:text-obs-muted ep:text-center ep:py-6 ep:px-3",
             });
             return;
         }
 
         // Render each change
         const changesContainer = diffEl.createDiv({
-            cls: "episteme-diff-changes",
+            cls: "ep:flex ep:flex-col ep:gap-3",
         });
 
         for (let i = 0; i < diffResult.changes.length; i++) {

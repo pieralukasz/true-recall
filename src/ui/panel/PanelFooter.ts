@@ -61,7 +61,7 @@ export class PanelFooter extends BaseComponent {
 		}
 
 		this.element = this.container.createDiv({
-			cls: "episteme-footer",
+			cls: "ep:border-t ep:border-obs-border ep:pt-2 ep:mt-auto ep:flex ep:flex-col ep:gap-2",
 		});
 
 		const { hasSelection } = this.props;
@@ -91,13 +91,18 @@ export class PanelFooter extends BaseComponent {
 
 		// Buttons row wrapper
 		const buttonsRow = this.element.createDiv({
-			cls: "episteme-footer-buttons episteme-buttons-row",
+			cls: "ep:flex ep:gap-2",
 		});
+
+		// Shared button base classes
+		const btnBase = "ep:flex-1 ep:border-none ep:py-2.5 ep:px-4 ep:rounded-md ep:cursor-pointer ep:font-medium ep:text-sm ep:transition-colors";
+		const btnSecondary = `${btnBase} ep:bg-obs-border ep:text-obs-normal ep:hover:bg-obs-modifier-hover`;
+		const btnPrimary = `${btnBase} mod-cta`;
 
 		// Regenerate button
 		const regenerateBtn = buttonsRow.createEl("button", {
 			text: "Regenerate",
-			cls: "episteme-btn-secondary",
+			cls: btnSecondary,
 		});
 		if (onUpdate) {
 			this.events.addEventListener(regenerateBtn, "click", onUpdate);
@@ -105,10 +110,13 @@ export class PanelFooter extends BaseComponent {
 
 		// Apply button
 		const applyBtn = buttonsRow.createEl("button", {
-			cls: "episteme-btn-primary",
+			cls: btnPrimary,
 		});
 		applyBtn.textContent = `Apply (${acceptedCount})`;
 		applyBtn.disabled = acceptedCount === 0;
+		if (acceptedCount === 0) {
+			applyBtn.classList.add("ep:opacity-60", "ep:cursor-not-allowed");
+		}
 		if (onApplyDiff) {
 			this.events.addEventListener(applyBtn, "click", onApplyDiff);
 		}
@@ -116,7 +124,7 @@ export class PanelFooter extends BaseComponent {
 		// Cancel button
 		const cancelBtn = buttonsRow.createEl("button", {
 			text: "Cancel",
-			cls: "episteme-btn-secondary",
+			cls: btnSecondary,
 		});
 		if (onCancelDiff) {
 			this.events.addEventListener(cancelBtn, "click", onCancelDiff);
@@ -140,16 +148,23 @@ export class PanelFooter extends BaseComponent {
 
 		if (!this.element) return;
 
+		// Shared button base classes
+		const btnBase = "ep:flex-1 ep:border-none ep:py-2.5 ep:px-4 ep:rounded-md ep:cursor-pointer ep:font-medium ep:text-sm ep:transition-colors";
+		const btnPrimary = `${btnBase} mod-cta`;
+		const btnSecondary = `${btnBase} ep:bg-obs-border ep:text-obs-normal ep:hover:bg-obs-modifier-hover`;
+		const btnDanger = `${btnBase} ep:bg-red-500 ep:text-white ep:hover:bg-red-600`;
+		const btnSeed = `${btnBase} ep:bg-obs-border ep:text-obs-normal ep:font-semibold ep:hover:bg-amber-400 ep:hover:text-white`;
+
 		// Create footer buttons wrapper (horizontal row layout)
 		const buttonsWrapper = this.element.createDiv({
-			cls: "episteme-footer-buttons episteme-buttons-row",
+			cls: "ep:flex ep:gap-2",
 		});
 
 		// Show selection action buttons when cards are selected
 		if (selectedCount && selectedCount > 0) {
 			if (onMoveSelected) {
 				const moveBtn = buttonsWrapper.createEl("button", {
-					cls: "episteme-btn-seed",
+					cls: btnSeed,
 				});
 				moveBtn.textContent = `Move (${selectedCount})`;
 				this.events.addEventListener(moveBtn, "click", onMoveSelected);
@@ -157,7 +172,7 @@ export class PanelFooter extends BaseComponent {
 
 			if (onDeleteSelected) {
 				const deleteBtn = buttonsWrapper.createEl("button", {
-					cls: "episteme-btn-danger",
+					cls: btnDanger,
 				});
 				deleteBtn.textContent = `Delete (${selectedCount})`;
 				this.events.addEventListener(deleteBtn, "click", onDeleteSelected);
@@ -173,8 +188,9 @@ export class PanelFooter extends BaseComponent {
 		// ===== COLLECT BUTTON (when uncollected flashcards exist) =====
 		if (hasUncollectedFlashcards && onCollect) {
 			const collectBtn = buttonsWrapper.createEl("button", {
-				cls: "episteme-btn-collect",
+				cls: `${btnBase} ep:text-gray-800 ep:font-semibold`,
 			});
+			collectBtn.style.background = "linear-gradient(135deg, #fbbf24, #f59e0b)";
 			collectBtn.textContent = `Collect (${uncollectedCount})`;
 			this.events.addEventListener(collectBtn, "click", onCollect);
 		}
@@ -189,12 +205,13 @@ export class PanelFooter extends BaseComponent {
 		// ===== NO SELECTION UI =====
 		// Main action button (Generate/Update) - first in row
 		const mainBtn = buttonsWrapper.createEl("button", {
-			cls: "episteme-btn-primary",
+			cls: btnPrimary,
 		});
 
 		if (status === "processing") {
 			mainBtn.textContent = "Processing...";
 			mainBtn.disabled = true;
+			mainBtn.classList.add("ep:opacity-60", "ep:cursor-not-allowed");
 		} else if (status === "exists") {
 			mainBtn.textContent = "Update";
 			if (onUpdate) {
@@ -211,7 +228,7 @@ export class PanelFooter extends BaseComponent {
 		if (onAddFlashcard) {
 			const addBtn = buttonsWrapper.createEl("button", {
 				text: "+ Add",
-				cls: "episteme-btn-secondary",
+				cls: btnSecondary,
 			});
 			this.events.addEventListener(addBtn, "click", onAddFlashcard);
 		}
@@ -225,18 +242,23 @@ export class PanelFooter extends BaseComponent {
 
 		if (!this.element) return;
 
+		// Shared button base classes
+		const btnBase = "ep:flex-1 ep:border-none ep:py-2.5 ep:px-4 ep:rounded-md ep:cursor-pointer ep:font-medium ep:text-sm ep:transition-colors";
+		const btnPrimary = `${btnBase} mod-cta`;
+
 		// Show selection preview above buttons
 		const selectionPreview = this.element.createDiv({
-			cls: "episteme-selection-preview",
+			cls: "ep:flex ep:items-start ep:gap-2 ep:py-2.5 ep:px-3 ep:rounded-md ep:mb-2 ep:border ep:border-green-500/30",
 		});
+		selectionPreview.style.background = "linear-gradient(135deg, rgba(34, 197, 94, 0.1), rgba(22, 163, 74, 0.05))";
 
 		selectionPreview.createSpan({
-			cls: "episteme-selection-preview-label",
+			cls: "ep:text-xs ep:font-semibold ep:text-green-500 ep:uppercase ep:whitespace-nowrap ep:shrink-0",
 			text: "Selected:",
 		});
 
 		const previewText = selectionPreview.createSpan({
-			cls: "episteme-selection-preview-text",
+			cls: "ep:text-xs ep:text-obs-normal ep:leading-snug ep:italic",
 			text: this.truncateText(selectedText || "", 100),
 		});
 		previewText.setAttribute("title", selectedText || ""); // Show full text on hover
@@ -244,7 +266,7 @@ export class PanelFooter extends BaseComponent {
 		// Generate button (full width in selection mode)
 		const generateBtn = container.createEl("button", {
 			text: "Generate from selection",
-			cls: "episteme-btn-primary",
+			cls: btnPrimary,
 		});
 
 		if (onGenerate) {
@@ -267,14 +289,17 @@ export class PanelFooter extends BaseComponent {
 		if (!this.element) return;
 
 		const instructionsContainer = this.element.createDiv({
-			cls: "episteme-instructions-container",
+			cls: "ep:mb-2",
 		});
 
 		this.instructionsInput = instructionsContainer.createEl("textarea", {
-			cls: "episteme-instructions-input",
+			cls: "ep:w-full ep:min-h-12 ep:max-h-24 ep:p-2 ep:border ep:border-obs-border ep:rounded-md ep:bg-obs-secondary ep:text-obs-normal ep:text-xs ep:font-sans ep:resize-y ep:focus:outline-none ep:focus:border-obs-interactive ep:placeholder:text-obs-muted",
 			placeholder,
 		});
 		this.instructionsInput.disabled = disabled;
+		if (disabled) {
+			this.instructionsInput.classList.add("ep:opacity-50", "ep:cursor-not-allowed");
+		}
 	}
 
 	/**
