@@ -33,6 +33,9 @@ export const VIEW_TYPE_PROJECTS = "episteme-projects";
 /** View type identifier for the browser panel */
 export const VIEW_TYPE_BROWSER = "episteme-browser";
 
+/** View type identifier for the FSRS simulator */
+export const VIEW_TYPE_SIMULATOR = "episteme-simulator";
+
 // ===== AI Models =====
 
 /** AI Model metadata */
@@ -276,9 +279,8 @@ export const FSRS_CONFIG = {
 // ===== System Prompts =====
 
 /** System prompt for flashcard generation */
-export const SYSTEM_PROMPT = `You are an expert flashcard generator. Your task is to analyze the provided text and generate flashcards.
+export const SYSTEM_PROMPT = `I would like you to help me create flashcards based on text. Here are the guidelines for creating them.
 
-ROLE: Expert Flashcard Architect (SuperMemo Mastery).
 Transform text into atomic, high-retention flashcards.
 
 OUTPUT FORMAT:
@@ -288,21 +290,21 @@ OUTPUT FORMAT:
 (Note: The #flashcard tag belongs to the question line. The answer must NOT contain the #flashcard tag.)
 
 MANDATORY RULES:
-1. Do NOT number questions and answers.
-2. Questions and answers must be as SHORT as possible.
+1. Do NOT number questions and answers. Also, do not write "FISZKA 1" or "FISZKA 1" or any similar variations. Only write question and answer.
+2. Questions and answers must be concise.
 3. One flashcard = ONE piece of information. If answer has multiple facts, create SEPARATE flashcards for each.
 4. If multiple items must be in one answer, write them on separate lines, each preceded by a dot.
 5. Create a flashcard for EVERY piece of information from the text.
 6. Formulate questions and answers UNAMBIGUOUSLY. Each question leads to one specific answer.
 7. Each flashcard has ONE keyword or concept in the question. Exception: answer may have multiple words only if stored as a fixed unit in memory.
-8. For complex definitions, break into MULTIPLE flashcards (even 10-15) so each covers ONE piece of knowledge.
-9. If several flashcards would have IDENTICAL questions or differ only by one word in answer, MERGE them. List elements on separate lines with dots.
+8. We ask questions for each piece of information in each line of text.
+9. If several flashcards would have IDENTICAL questions or differ only by one word in answer, MERGE them. List elements on separate lines with dots. Ideally, there should only be one piece of information in the response. If there are more than one, create separate flashcards with separate questions.
 10. BOLD the keyword in every question using **bold**.
 11. If the text contains NO new information for flashcards, return ONLY: NO_NEW_CARDS
 12. Use english language for questions and answers.
 
 FORMATTING:
-- Backlinks: Wrap key scientific terms and main subjects in **[[backlinks]]** (bold backlinks).
+- Backlinks: Wrap key scientific terms and main subjects in **[[backlinks]]** (bold backlinks), lowercase only.
 - Use **[[term|alias]]** for context/readability when needed.
 - Line Breaks: Use <br><br> to split questions/answers longer than 6 words into logical parts. It's important.
 - No Separators: Do NOT place --- between flashcards.
@@ -319,7 +321,7 @@ What is **[[rosacea]]**? #flashcard
 Reddening of the skin
 
 How does advanced **[[rosacea]]** manifest? #flashcard
-**[[Papulopustular changes]]**`;
+**[[papulopustular changes]]**`;
 
 /** System prompt for update mode (diff-based) */
 export const UPDATE_SYSTEM_PROMPT = `You are an expert flashcard generator working in DIFF MODE.
