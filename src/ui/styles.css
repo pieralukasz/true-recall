@@ -8,34 +8,57 @@
  * Usage: ep:text-obs-normal, ep:bg-obs-primary, ep:border-obs-border, etc.
  */
 @theme {
-  /* Text colors - map to Obsidian text variables */
+  /* === Base colors (mono scale) === */
+  --color-obs-base-00: var(--color-base-00);
+  --color-obs-base-05: var(--color-base-05);
+  --color-obs-base-10: var(--color-base-10);
+  --color-obs-base-20: var(--color-base-20);
+  --color-obs-base-25: var(--color-base-25);
+  --color-obs-base-30: var(--color-base-30);
+  --color-obs-base-35: var(--color-base-35);
+  --color-obs-base-40: var(--color-base-40);
+  --color-obs-base-50: var(--color-base-50);
+  --color-obs-base-60: var(--color-base-60);
+  --color-obs-base-70: var(--color-base-70);
+  --color-obs-base-100: var(--color-base-100);
+
+  /* === Text colors === */
   --color-obs-normal: var(--text-normal);
   --color-obs-muted: var(--text-muted);
   --color-obs-faint: var(--text-faint);
   --color-obs-accent: var(--text-accent);
   --color-obs-accent-hover: var(--text-accent-hover);
   --color-obs-on-accent: var(--text-on-accent);
+  --color-obs-on-accent-inverted: var(--text-on-accent-inverted);
   --color-obs-error: var(--text-error);
+  --color-obs-warning: var(--text-warning);
+  --color-obs-success: var(--text-success);
   --color-obs-selection: var(--text-selection);
 
-  /* Interactive accent colors */
+  /* === Interactive colors === */
   --color-obs-interactive: var(--interactive-accent);
   --color-obs-interactive-hover: var(--interactive-accent-hover);
+  --color-obs-interactive-normal: var(--interactive-normal);
+  --color-obs-interactive-hover-bg: var(--interactive-hover);
+  --color-obs-interactive-accent-hsl: var(--interactive-accent-hsl);
 
-  /* Background colors */
+  /* === Background colors === */
   --color-obs-primary: var(--background-primary);
   --color-obs-primary-alt: var(--background-primary-alt);
   --color-obs-secondary: var(--background-secondary);
   --color-obs-secondary-alt: var(--background-secondary-alt);
   --color-obs-modifier-hover: var(--background-modifier-hover);
   --color-obs-modifier-active: var(--background-modifier-active-hover);
-  --color-obs-modifier-success: var(--background-modifier-success);
-  --color-obs-modifier-error: var(--background-modifier-error);
   --color-obs-modifier-border: var(--background-modifier-border);
   --color-obs-modifier-border-hover: var(--background-modifier-border-hover);
   --color-obs-modifier-border-focus: var(--background-modifier-border-focus);
+  --color-obs-modifier-error: var(--background-modifier-error);
+  --color-obs-modifier-error-hover: var(--background-modifier-error-hover);
+  --color-obs-modifier-success: var(--background-modifier-success);
+  --color-obs-modifier-message: var(--background-modifier-message);
+  --color-obs-modifier-form-field: var(--background-modifier-form-field);
 
-  /* Obsidian semantic colors */
+  /* === Extended colors === */
   --color-obs-red: var(--color-red);
   --color-obs-orange: var(--color-orange);
   --color-obs-yellow: var(--color-yellow);
@@ -45,25 +68,53 @@
   --color-obs-purple: var(--color-purple);
   --color-obs-pink: var(--color-pink);
 
-  /* Button colors */
+  /* === Extended colors (RGB for opacity) === */
+  --color-obs-red-rgb: var(--color-red-rgb);
+  --color-obs-orange-rgb: var(--color-orange-rgb);
+  --color-obs-yellow-rgb: var(--color-yellow-rgb);
+  --color-obs-green-rgb: var(--color-green-rgb);
+  --color-obs-cyan-rgb: var(--color-cyan-rgb);
+  --color-obs-blue-rgb: var(--color-blue-rgb);
+  --color-obs-purple-rgb: var(--color-purple-rgb);
+  --color-obs-pink-rgb: var(--color-pink-rgb);
+
+  /* === Mono RGB (for white/black with opacity) === */
+  --color-obs-mono-rgb-0: var(--mono-rgb-0);
+  --color-obs-mono-rgb-100: var(--mono-rgb-100);
+
+  /* === Caret color === */
+  --color-obs-caret: var(--caret-color);
+
+  /* === Button colors === */
   --color-btn-primary: var(--interactive-accent);
   --color-btn-primary-hover: var(--interactive-accent-hover);
 
-  /* Border color shorthand */
+  /* === Border color shorthand === */
   --color-obs-border: var(--background-modifier-border);
 
-  /* Fonts */
+  /* === Border opacity variants - use rgba() with RGB variant for proper browser support === */
+  --color-obs-border/10: rgba(var(--background-modifier-border-rgb), 0.1);
+  --color-obs-border/20: rgba(var(--background-modifier-border-rgb), 0.2);
+  --color-obs-border/30: rgba(var(--background-modifier-border-rgb), 0.3);
+  --color-obs-border/40: rgba(var(--background-modifier-border-rgb), 0.4);
+  --color-obs-border/50: rgba(var(--background-modifier-border-rgb), 0.5);
+  --color-obs-border/60: rgba(var(--background-modifier-border-rgb), 0.6);
+  --color-obs-border/70: rgba(var(--background-modifier-border-rgb), 0.7);
+  --color-obs-border/80: rgba(var(--background-modifier-border-rgb), 0.8);
+  --color-obs-border/90: rgba(var(--background-modifier-border-rgb), 0.9);
+
+  /* === Fonts === */
   --font-obs-interface: var(--font-interface);
   --font-obs-text: var(--font-text);
   --font-obs-monospace: var(--font-monospace);
 
-  /* Font sizes */
+  /* === Font sizes === */
   --font-size-obs-smaller: var(--font-ui-smaller);
   --font-size-obs-small: var(--font-ui-small);
   --font-size-obs-medium: var(--font-ui-medium);
   --font-size-obs-large: var(--font-ui-large);
 
-  /* Border radius */
+  /* === Border radius === */
   --radius-obs-sm: var(--radius-s);
   --radius-obs-md: var(--radius-m);
   --radius-obs-lg: var(--radius-l);
@@ -106,6 +157,55 @@
   /* iOS safe area support */
   .episteme-safe-area-bottom {
     padding-bottom: env(safe-area-inset-bottom, 0);
+  }
+
+  /* Chart fade-in animation */
+  @keyframes episteme-fade-in {
+    from {
+      opacity: 0;
+      transform: translateY(4px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  .episteme-chart-fade-in {
+    animation: episteme-fade-in 0.3s ease-out;
+  }
+
+  /* Metric card pulse for updated values */
+  @keyframes episteme-pulse {
+    0%, 100% {
+      transform: scale(1);
+    }
+    50% {
+      transform: scale(1.05);
+    }
+  }
+
+  .episteme-metric-updated {
+    animation: episteme-pulse 0.3s ease-in-out;
+  }
+
+  /* Thin scrollbar for calendar heatmap */
+  .episteme-scrollbar-thin::-webkit-scrollbar {
+    height: 4px;
+  }
+
+  .episteme-scrollbar-thin::-webkit-scrollbar-track {
+    background: var(--background-modifier-border);
+    border-radius: 2px;
+  }
+
+  .episteme-scrollbar-thin::-webkit-scrollbar-thumb {
+    background: var(--background-modifier-border-hover);
+    border-radius: 2px;
+  }
+
+  .episteme-scrollbar-thin::-webkit-scrollbar-thumb:hover {
+    background: var(--interactive-accent);
   }
 }
 

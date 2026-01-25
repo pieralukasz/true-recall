@@ -34,7 +34,8 @@ export class ProjectItem extends BaseComponent {
 
 		const { project } = this.props;
 		const isEmpty = project.noteCount === 0;
-		const baseCls = "ep:flex ep:flex-col ep:gap-2 ep:p-3 ep:bg-obs-secondary ep:rounded-md ep:border ep:border-obs-border ep:transition-all ep:hover:border-obs-interactive";
+		const baseCls =
+			"ep:flex ep:flex-col ep:gap-2 ep:p-3 ep:bg-obs-secondary ep:rounded-md ep:border ep:border-obs-border ep:transition-all ep:hover:border-obs-interactive";
 		const emptyCls = isEmpty ? "ep:opacity-70 ep:hover:opacity-100" : "";
 
 		this.element = this.container.createDiv({
@@ -52,7 +53,9 @@ export class ProjectItem extends BaseComponent {
 		setIcon(iconEl, "folder");
 
 		// Project name as clickable wiki link
-		const nameEl = nameRow.createSpan({ cls: "ep:text-sm ep:font-medium ep:text-obs-normal ep:flex-1 ep:min-w-0 ep:overflow-hidden [&_p]:ep:m-0 [&_p]:ep:inline [&_a.internal-link]:ep:text-link [&_a.internal-link]:ep:cursor-pointer [&_a.internal-link]:ep:no-underline [&_a.internal-link:hover]:ep:underline" });
+		const nameEl = nameRow.createSpan({
+			cls: "ep:text-sm ep:font-medium ep:text-obs-normal ep:flex-1 ep:min-w-0 ep:overflow-hidden [&_p]:ep:m-0 [&_p]:ep:inline [&_a.internal-link]:ep:text-link [&_a.internal-link]:ep:cursor-pointer [&_a.internal-link]:ep:no-underline [&_a.internal-link:hover]:ep:underline",
+		});
 		void MarkdownRenderer.render(
 			this.props.app,
 			`[[${project.name}]]`,
@@ -80,12 +83,14 @@ export class ProjectItem extends BaseComponent {
 			cls: "ep:text-xs ep:text-obs-muted",
 		});
 
-		const noteCountText = project.noteCount === 1 ? "1 note" : `${project.noteCount} notes`;
+		const noteCountText =
+			project.noteCount === 1 ? "1 note" : `${project.noteCount} notes`;
 		statsRow.createSpan({ text: noteCountText });
 
 		statsRow.createSpan({ text: "·", cls: "ep:mx-1.5 ep:text-obs-faint" });
 
-		const cardCountText = project.cardCount === 1 ? "1 card" : `${project.cardCount} cards`;
+		const cardCountText =
+			project.cardCount === 1 ? "1 card" : `${project.cardCount} cards`;
 		statsRow.createSpan({ text: cardCountText });
 
 		// Actions row - icon buttons left, Review right
@@ -98,7 +103,8 @@ export class ProjectItem extends BaseComponent {
 			cls: "ep:flex ep:items-center ep:gap-1",
 		});
 
-		const iconBtnCls = "ep:inline-flex ep:items-center ep:justify-center ep:w-7 ep:h-7 ep:border-none ep:rounded ep:bg-obs-modifier-hover ep:text-obs-muted ep:cursor-pointer ep:transition-colors ep:hover:bg-obs-modifier-border ep:hover:text-obs-normal [&_svg]:ep:w-4 [&_svg]:ep:h-4";
+		const iconBtnCls =
+			"ep:inline-flex ep:items-center ep:justify-center ep:w-7 ep:h-7 ep:border-none ep:rounded ep:bg-obs-modifier-hover ep:text-obs-muted ep:cursor-pointer ep:transition-colors ep:hover:bg-obs-modifier-border ep:hover:text-obs-normal [&_svg]:ep:w-4 [&_svg]:ep:h-4";
 
 		// Add notes button
 		const addNotesBtn = actionsLeft.createEl("button", {

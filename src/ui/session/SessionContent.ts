@@ -42,7 +42,7 @@ export class SessionContent extends BaseComponent {
 		}
 
 		this.element = this.container.createDiv({
-			cls: "episteme-session-content ep:flex ep:flex-col ep:flex-1 ep:min-h-0 ep:gap-2 ep:px-1.5",
+			cls: "episteme-session-content ep:flex ep:flex-col ep:h-full ep:gap-2 ep:px-1.5 ep:pb-6",
 		});
 
 		// Search input at the top
@@ -57,14 +57,19 @@ export class SessionContent extends BaseComponent {
 		// Quick actions section
 		this.renderQuickActions();
 
+		// Scroll wrapper for "Select notes" header + note list
+		const scrollWrapper = this.element.createDiv({
+			cls: "ep:flex-1 ep:overflow-y-auto",
+		});
+
 		// Notes section header
-		this.element.createDiv({
+		scrollWrapper.createDiv({
 			cls: "episteme-section-header ep:text-xs ep:font-semibold ep:text-obs-muted ep:uppercase ep:tracking-wide ep:my-2",
 			text: "Select notes",
 		});
 
 		// Note list (card-based)
-		this.renderNoteList();
+		this.renderNoteList(scrollWrapper);
 	}
 
 	private renderQuickActions(): void {
@@ -78,8 +83,14 @@ export class SessionContent extends BaseComponent {
 		todayStart.setHours(0, 0, 0, 0);
 
 		// Shared button classes
-		const baseBtnCls = "ep:flex ep:flex-col ep:items-start ep:gap-1 ep:p-3 ep:bg-obs-secondary ep:border ep:border-obs-border ep:rounded-md ep:cursor-pointer ep:text-left ep:transition-colors ep:hover:bg-obs-modifier-hover ep:hover:border-obs-interactive";
-		const disabledBtnCls = "ep:opacity-50 ep:cursor-not-allowed ep:hover:bg-obs-secondary ep:hover:border-obs-border";
+		const baseBtnCls =
+			"ep:flex ep:flex-col ep:items-start ep:gap-1.5 ep:px-3 ep:py-3 ep:min-h-[3rem] ep:bg-obs-secondary ep:border ep:border-obs-border ep:rounded-md ep:cursor-pointer ep:text-left ep:transition-colors ep:hover:bg-obs-modifier-hover ep:hover:border-obs-interactive";
+		const disabledBtnCls = [
+			"ep:opacity-50",
+			"ep:cursor-not-allowed",
+			"ep:hover:bg-obs-secondary",
+			"ep:hover:border-obs-border",
+		];
 		const statsCls = "ep:text-xs ep:text-obs-muted";
 		const statsMutedCls = "ep:text-xs ep:text-obs-faint";
 
@@ -91,7 +102,10 @@ export class SessionContent extends BaseComponent {
 		const activeNoteBtn = quickActionsEl.createEl("button", {
 			cls: baseBtnCls,
 		});
-		activeNoteBtn.createSpan({ text: "Active note", cls: "ep:text-sm ep:font-medium ep:text-obs-normal" });
+		activeNoteBtn.createSpan({
+			text: "Active note",
+			cls: "ep:text-sm ep:font-medium ep:text-obs-normal",
+		});
 		if (currentNoteStats && currentNoteStats.total > 0) {
 			activeNoteBtn.createSpan({
 				cls: statsCls,
@@ -109,7 +123,7 @@ export class SessionContent extends BaseComponent {
 				text: currentNoteStats ? "done" : "no cards",
 			});
 			activeNoteBtn.disabled = true;
-			activeNoteBtn.addClass(disabledBtnCls);
+			activeNoteBtn.addClasses(disabledBtnCls);
 		}
 
 		// Today button
@@ -117,7 +131,10 @@ export class SessionContent extends BaseComponent {
 		const todayBtn = quickActionsEl.createEl("button", {
 			cls: baseBtnCls,
 		});
-		todayBtn.createSpan({ text: "Today", cls: "ep:text-sm ep:font-medium ep:text-obs-normal" });
+		todayBtn.createSpan({
+			text: "Today",
+			cls: "ep:text-sm ep:font-medium ep:text-obs-normal",
+		});
 		if (todayStats.total > 0) {
 			todayBtn.createSpan({
 				cls: statsCls,
@@ -135,14 +152,17 @@ export class SessionContent extends BaseComponent {
 				text: "no cards",
 			});
 			todayBtn.disabled = true;
-			todayBtn.addClass(disabledBtnCls);
+			todayBtn.addClasses(disabledBtnCls);
 		}
 
 		// Default button
 		const defaultBtn = quickActionsEl.createEl("button", {
 			cls: baseBtnCls,
 		});
-		defaultBtn.createSpan({ text: "Default", cls: "ep:text-sm ep:font-medium ep:text-obs-normal" });
+		defaultBtn.createSpan({
+			text: "Default",
+			cls: "ep:text-sm ep:font-medium ep:text-obs-normal",
+		});
 		const allCardsStats = logic.getAllCardsStats(now);
 		if (allCardsStats.total > 0) {
 			defaultBtn.createSpan({
@@ -161,14 +181,17 @@ export class SessionContent extends BaseComponent {
 				text: "no cards",
 			});
 			defaultBtn.disabled = true;
-			defaultBtn.addClass(disabledBtnCls);
+			defaultBtn.addClasses(disabledBtnCls);
 		}
 
 		// Buried cards button
 		const buriedBtn = quickActionsEl.createEl("button", {
 			cls: baseBtnCls,
 		});
-		buriedBtn.createSpan({ text: "Buried", cls: "ep:text-sm ep:font-medium ep:text-obs-normal" });
+		buriedBtn.createSpan({
+			text: "Buried",
+			cls: "ep:text-sm ep:font-medium ep:text-obs-normal",
+		});
 		const buriedStats = logic.getBuriedCardsStats(now);
 		if (buriedStats.total > 0) {
 			buriedBtn.createSpan({
@@ -187,7 +210,7 @@ export class SessionContent extends BaseComponent {
 				text: "none",
 			});
 			buriedBtn.disabled = true;
-			buriedBtn.addClass(disabledBtnCls);
+			buriedBtn.addClasses(disabledBtnCls);
 		}
 	}
 
@@ -209,13 +232,13 @@ export class SessionContent extends BaseComponent {
 		});
 	}
 
-	private renderNoteList(): void {
+	private renderNoteList(container: HTMLElement): void {
 		const { searchQuery, now, logic, selectedNotes } = this.props;
 
 		const filteredStats = logic.getFilteredNoteStats(searchQuery, now);
 
-		const noteListEl = this.element!.createDiv({
-			cls: "episteme-note-list ep:flex-1 ep:overflow-y-auto",
+		const noteListEl = container.createDiv({
+			cls: "episteme-note-list",
 		});
 		this.noteTableBody = noteListEl;
 
@@ -242,7 +265,10 @@ export class SessionContent extends BaseComponent {
 
 			// Checkbox or completed tick
 			if (hasCards) {
-				const checkbox = item.createEl("input", { type: "checkbox", cls: "ep:mt-0.5 ep:shrink-0 ep:w-4 ep:h-4" });
+				const checkbox = item.createEl("input", {
+					type: "checkbox",
+					cls: "ep:mt-0.5 ep:shrink-0 ep:w-4 ep:h-4",
+				});
 				checkbox.checked = isSelected;
 
 				this.events.addEventListener(checkbox, "change", () => {
@@ -294,7 +320,9 @@ export class SessionContent extends BaseComponent {
 
 			// Stats badge
 			const statsEl = content.createDiv({
-				cls: `ep:text-xs ep:mt-0.5 ${hasCards ? "ep:text-obs-muted" : "ep:text-obs-faint"}`,
+				cls: `ep:text-xs ep:mt-0.5 ${
+					hasCards ? "ep:text-obs-muted" : "ep:text-obs-faint"
+				}`,
 			});
 			if (hasCards) {
 				statsEl.textContent = logic.formatStats(
