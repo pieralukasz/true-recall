@@ -71,15 +71,17 @@ export class NLQueryPanel {
 
         // Description
         this.containerEl.createDiv({
-            cls: "nl-query-description",
+            cls: "ep:text-sm ep:text-obs-muted ep:mb-3",
             text: "Explore your learning data with natural language questions.",
         });
 
         // Input area
-        const inputContainer = this.containerEl.createDiv({ cls: "nl-query-input-container" });
+        const inputContainer = this.containerEl.createDiv({
+            cls: "ep:flex ep:flex-col ep:gap-2 ep:mb-3",
+        });
 
         this.inputEl = inputContainer.createEl("textarea", {
-            cls: "nl-query-input",
+            cls: "ep:w-full ep:py-2.5 ep:px-3 ep:border ep:border-obs-border ep:rounded-md ep:bg-obs-primary ep:text-obs-normal ep:text-sm ep:resize-y ep:min-h-15 ep:focus:border-obs-interactive ep:focus:outline-none ep:placeholder:text-obs-faint",
             placeholder: "What would you like to know about your learning?",
         });
         this.inputEl.rows = 2;
@@ -93,23 +95,27 @@ export class NLQueryPanel {
         });
 
         // Submit button
-        const buttonContainer = inputContainer.createDiv({ cls: "nl-query-button-container" });
+        const buttonContainer = inputContainer.createDiv({
+            cls: "ep:flex ep:justify-end",
+        });
         this.submitBtn = buttonContainer.createEl("button", {
-            cls: "nl-query-submit mod-cta",
+            cls: "mod-cta ep:py-2 ep:px-4 ep:text-sm ep:rounded-md ep:cursor-pointer ep:transition-opacity ep:disabled:opacity-50 ep:disabled:cursor-not-allowed",
             text: "Explore",
         });
         this.submitBtn.addEventListener("click", () => void this.submitQuery());
 
         // Example queries
-        this.examplesEl = this.containerEl.createDiv({ cls: "nl-query-examples" });
+        this.examplesEl = this.containerEl.createDiv({
+            cls: "ep:flex ep:flex-wrap ep:items-center ep:gap-2 ep:mb-4",
+        });
         this.examplesEl.createEl("span", {
-            cls: "nl-query-examples-label",
+            cls: "ep:text-xs ep:text-obs-muted",
             text: "Quick insights:",
         });
 
         for (const example of EXAMPLE_QUERIES) {
             const chip = this.examplesEl.createEl("button", {
-                cls: "nl-query-example-chip",
+                cls: "ep:py-1 ep:px-2.5 ep:text-xs ep:border ep:border-obs-border ep:rounded-xl ep:bg-obs-primary ep:text-obs-muted ep:cursor-pointer ep:transition-all ep:hover:border-obs-interactive ep:hover:text-obs-normal",
                 text: example.text,
             });
             chip.addEventListener("click", () => {
@@ -119,7 +125,7 @@ export class NLQueryPanel {
         }
 
         // Results area
-        this.resultsEl = this.containerEl.createDiv({ cls: "nl-query-results" });
+        this.resultsEl = this.containerEl.createDiv({ cls: "ep:min-h-10" });
 
         this.updateUIState();
     }
@@ -157,7 +163,9 @@ export class NLQueryPanel {
 
         // Show loading state in results
         this.resultsEl.empty();
-        const loadingEl = this.resultsEl.createDiv({ cls: "nl-query-loading" });
+        const loadingEl = this.resultsEl.createDiv({
+            cls: "ep:flex ep:items-center ep:gap-2 ep:text-obs-muted ep:italic",
+        });
         loadingEl.createEl("span", { text: "Analyzing your question..." });
 
         try {
@@ -177,19 +185,25 @@ export class NLQueryPanel {
     private renderResult(result: NLQueryResult): void {
         this.resultsEl.empty();
 
-        const resultContainer = this.resultsEl.createDiv({ cls: "nl-query-result" });
+        const resultContainer = this.resultsEl.createDiv({
+            cls: "ep:bg-obs-primary ep:rounded-md ep:p-3",
+        });
 
         // Question
-        const questionEl = resultContainer.createDiv({ cls: "nl-query-result-question" });
+        const questionEl = resultContainer.createDiv({
+            cls: "ep:text-sm ep:text-obs-muted ep:mb-2",
+        });
         questionEl.createEl("strong", { text: "Q: " });
         questionEl.createEl("span", { text: result.question });
 
         // Answer
-        const answerEl = resultContainer.createDiv({ cls: "nl-query-result-answer" });
+        const answerEl = resultContainer.createDiv({
+            cls: "ep:text-sm ep:text-obs-normal",
+        });
         answerEl.createEl("strong", { text: "A: " });
 
         // Render answer as Markdown using Obsidian's MarkdownRenderer
-        const answerContent = answerEl.createDiv({ cls: "nl-query-answer-content" });
+        const answerContent = answerEl.createDiv({ cls: "ep:mt-1" });
         void MarkdownRenderer.render(
             this.app,
             result.answer,
@@ -200,15 +214,20 @@ export class NLQueryPanel {
 
         // SQL queries (collapsible)
         if (result.intermediateSteps.length > 0) {
-            const detailsEl = resultContainer.createEl("details", { cls: "nl-query-details" });
-            detailsEl.createEl("summary", { text: `Show SQL queries (${result.intermediateSteps.length})` });
+            const detailsEl = resultContainer.createEl("details", {
+                cls: "ep:mt-3 ep:text-xs",
+            });
+            const summaryEl = detailsEl.createEl("summary", {
+                text: `Show SQL queries (${result.intermediateSteps.length})`,
+            });
+            summaryEl.addClass("ep:text-obs-muted ep:cursor-pointer ep:py-1 ep:hover:text-obs-normal");
 
-            const stepsEl = detailsEl.createDiv({ cls: "nl-query-steps" });
+            const stepsEl = detailsEl.createDiv({ cls: "ep:mt-2" });
             for (const step of result.intermediateSteps) {
                 if (step.action === "sql_db_query") {
-                    const stepEl = stepsEl.createDiv({ cls: "nl-query-step" });
+                    const stepEl = stepsEl.createDiv({ cls: "ep:mb-2" });
                     stepEl.createEl("code", {
-                        cls: "nl-query-sql",
+                        cls: "ep:block ep:py-2 ep:px-3 ep:bg-obs-secondary ep:rounded ep:font-mono ep:text-xs ep:whitespace-pre-wrap ep:break-all ep:text-obs-muted",
                         text: step.input,
                     });
                 }
@@ -217,7 +236,9 @@ export class NLQueryPanel {
 
         // Error indicator
         if (result.error) {
-            const errorEl = resultContainer.createDiv({ cls: "nl-query-error-indicator" });
+            const errorEl = resultContainer.createDiv({
+                cls: "ep:mt-2 ep:text-xs ep:text-orange-500",
+            });
             errorEl.createEl("span", { text: `Note: ${result.error}` });
         }
     }
@@ -228,7 +249,9 @@ export class NLQueryPanel {
     private renderError(message: string): void {
         this.resultsEl.empty();
 
-        const errorEl = this.resultsEl.createDiv({ cls: "nl-query-error" });
+        const errorEl = this.resultsEl.createDiv({
+            cls: "ep:p-3 ep:bg-red-500/10 ep:border ep:border-red-500/30 ep:rounded-md ep:text-red-500",
+        });
         errorEl.createEl("strong", { text: "Error: " });
         errorEl.createEl("span", { text: message });
     }
