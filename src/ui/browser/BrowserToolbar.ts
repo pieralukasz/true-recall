@@ -4,6 +4,10 @@
  */
 import { setIcon } from "obsidian";
 import type { BulkOperation } from "../../types/browser.types";
+import { debounce } from "../../utils/event.utils";
+
+/** Search debounce delay in milliseconds */
+const SEARCH_DEBOUNCE_MS = 300;
 
 export interface BrowserToolbarProps {
     searchQuery: string;
@@ -24,9 +28,17 @@ export class BrowserToolbar {
     private props: BrowserToolbarProps;
     private searchInput: HTMLInputElement | null = null;
 
+    /** Debounced search handler to prevent excessive updates while typing */
+    private debouncedSearch: (query: string) => void;
+
     constructor(container: HTMLElement, props: BrowserToolbarProps) {
         this.container = container;
         this.props = props;
+
+        // Create debounced search function
+        this.debouncedSearch = debounce((query: string) => {
+            this.props.onSearchChange(query);
+        }, SEARCH_DEBOUNCE_MS);
     }
 
     render(): void {
@@ -70,8 +82,9 @@ export class BrowserToolbar {
             value: this.props.searchQuery,
         });
 
+        // Use debounced search to avoid excessive updates while typing
         this.searchInput.addEventListener("input", () => {
-            this.props.onSearchChange(this.searchInput?.value ?? "");
+            this.debouncedSearch(this.searchInput?.value ?? "");
         });
 
         // Clear button
