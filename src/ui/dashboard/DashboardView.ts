@@ -44,14 +44,14 @@ export class DashboardView extends ItemView {
 		const container = this.containerEl.children[1];
 		if (!(container instanceof HTMLElement)) return;
 		container.empty();
-		container.addClass("episteme-dashboard-view");
+		container.addClass("ep:p-4");
 
 		// Create container elements
 		this.headerContainer = container.createDiv({
-			cls: "episteme-dashboard-header-container",
+			cls: "ep:mb-4",
 		});
 		this.contentContainer = container.createDiv({
-			cls: "episteme-dashboard-content-container",
+			cls: "ep:flex-1",
 		});
 
 		// Render

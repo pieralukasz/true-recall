@@ -19,11 +19,11 @@ export class DashboardHeader extends BaseComponent {
 		}
 
 		this.element = this.container.createDiv({
-			cls: "episteme-dashboard-header",
+			cls: "ep:pb-4 ep:border-b ep:border-obs-border ep:mb-4",
 		});
 
 		this.element.createSpan({
-			cls: "episteme-dashboard-title",
+			cls: "ep:text-lg ep:font-semibold ep:text-obs-normal",
 			text: "Command Dashboard",
 		});
 	}
