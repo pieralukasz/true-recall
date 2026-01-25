@@ -211,19 +211,10 @@ export const UI_CONFIG = {
 
 // ===== Flashcard Configuration =====
 
-/** Flashcard file naming and format constants */
+/** Flashcard constants */
 export const FLASHCARD_CONFIG = {
-	filePrefix: "flashcards_", // Legacy - kept for backward compatibility
-	uidLength: 8, // 8 hex chars for UID
 	sourceUidField: "flashcard_uid", // Field in source note frontmatter
-	flashcardUidField: "source_uid", // Field in flashcard file frontmatter
-	defaultFolder: "Flashcards",
 	tag: "#flashcard",
-	sourceContentStartMarker: "<!-- SOURCE_NOTE_CONTENT",
-	sourceContentEndMarker: "END_SOURCE_NOTE_CONTENT -->",
-	fsrsDataPrefix: "<!--fsrs:",
-	fsrsDataSuffix: "-->",
-	reviewHistoryFile: ".review-history.json",
 } as const;
 
 // ===== Generated Note Types =====

@@ -2,9 +2,7 @@
  * Plugin Commands
  * All command registrations for the Episteme plugin
  */
-import { Notice } from "obsidian";
 import type EpistemePlugin from "../main";
-import { FLASHCARD_CONFIG } from "../constants";
 
 /**
  * Register all plugin commands
@@ -46,11 +44,7 @@ export function registerCommands(plugin: EpistemePlugin): void {
 		name: "Review flashcards from current note",
 		checkCallback: (checking) => {
 			const file = plugin.app.workspace.getActiveFile();
-			if (
-				file &&
-				file.extension === "md" &&
-				!file.name.startsWith(FLASHCARD_CONFIG.filePrefix)
-			) {
+			if (file && file.extension === "md") {
 				if (!checking) {
 					void plugin.reviewCurrentNote();
 				}
@@ -86,13 +80,6 @@ export function registerCommands(plugin: EpistemePlugin): void {
 		id: "show-ready-to-harvest",
 		name: "Show notes ready to harvest",
 		callback: () => void plugin.showReadyToHarvest(),
-	});
-
-	// Sync source notes with vault
-	plugin.addCommand({
-		id: "sync-source-notes",
-		name: "Sync source notes with vault",
-		callback: () => void plugin.syncSourceNotes(),
 	});
 
 	// Show orphaned cards

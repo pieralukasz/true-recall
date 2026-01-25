@@ -78,20 +78,6 @@ export interface FSRSCardData {
 }
 
 /**
- * Source note information
- * Stored in source_notes table (v15: simplified - only UID + timestamps)
- * Note name, path, and projects are resolved from vault at runtime
- */
-export interface SourceNoteInfo {
-    /** Unique identifier (8-char hex, equals flashcard_uid in note) */
-    uid: string;
-    /** Creation timestamp */
-    createdAt?: number;
-    /** Last update timestamp */
-    updatedAt?: number;
-}
-
-/**
  * Extended flashcard with FSRS data
  * Used in UI (ReviewView, FlashcardPanel)
  */

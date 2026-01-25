@@ -37,7 +37,6 @@ export type {
     CardReviewLogEntry,
     FSRSCardData,
     FSRSFlashcardItem,
-    SourceNoteInfo,
     ReviewResult,
     ReviewHistoryEntry,
     ReviewSessionStats,

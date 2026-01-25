@@ -27,6 +27,7 @@ export function createDefaultFSRSData(id: string): FSRSCardData {
         scheduledDays: 0,
         learningStep: 0,
         createdAt: Date.now(),
+        updatedAt: Date.now(),
     };
 }
 
