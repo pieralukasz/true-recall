@@ -1,1 +1,1 @@
-export { cn, tw } from "./tailwind";
+export { cn } from "./tailwind";
