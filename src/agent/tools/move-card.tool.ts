@@ -54,11 +54,9 @@ export const moveCardTool: ToolDefinition<MoveCardInput, MoveCardOutput> = {
 		}
 
 		try {
-			// moveCard expects (cardId, sourceFilePath, targetNotePath)
-			// sourceFilePath is not used internally, so we pass empty string
+			// moveCard expects (cardId, targetNotePath)
 			const moved = await ctx.flashcardManager.moveCard(
 				input.cardId,
-				"",
 				input.targetNotePath
 			);
 

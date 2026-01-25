@@ -51,9 +51,9 @@ export interface DiffResult {
 // Flashcard file data structure
 export interface FlashcardInfo {
     exists: boolean;
-    filePath: string;
     cardCount: number;
     questions: string[]; // Keep for backwards compatibility (blocklist)
     flashcards: FlashcardItem[]; // Full Q&A pairs
     lastModified: number | null;
+    sourceUid?: string;
 }

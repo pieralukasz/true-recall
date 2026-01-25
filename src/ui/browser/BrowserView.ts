@@ -170,7 +170,6 @@ export class BrowserView extends ItemView {
                 id: card.id,
                 question: card.question ?? "",
                 answer: card.answer ?? "",
-                filePath: "",
                 fsrs: {
                     id: card.id,
                     due: card.due,
@@ -205,7 +204,6 @@ export class BrowserView extends ItemView {
             if (result.newSourceNotePath) {
                 await this.plugin.flashcardManager.moveCard(
                     card.id,
-                    card.sourceNotePath || "",
                     result.newSourceNotePath
                 );
                 new Notice("Card updated and moved");
