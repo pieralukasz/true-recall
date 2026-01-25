@@ -1,8 +1,11 @@
 /**
- * Utility for combining Tailwind class names
+ * Utility for combining Tailwind class names conditionally
+ *
+ * IMPORTANT: Tailwind scans source files at build time, so class names must be
+ * written as complete strings (e.g., "ep:flex" not dynamically generated).
  *
  * Usage:
- *   cn("ep:flex", "ep:gap-2", isActive && "ep:bg-obs-interactive")
+ *   cn("ep:flex ep:gap-2", isActive && "ep:bg-obs-interactive")
  *   cn("ep:text-obs-normal", { "ep:font-bold": isBold })
  */
 export function cn(
@@ -26,22 +29,4 @@ export function cn(
 	}
 
 	return result.join(" ");
-}
-
-/**
- * Prefixed class name helper for Tailwind v4 with ep: prefix
- *
- * Converts space-separated utility names to prefixed format:
- *   tw("flex gap-2 text-obs-normal") => "ep:flex ep:gap-2 ep:text-obs-normal"
- *
- * Use this when you have many utilities to apply:
- *   className={tw("flex flex-col gap-4 p-4 bg-obs-primary rounded-obs-md")}
- */
-export function tw(classes: string): string {
-	return classes
-		.trim()
-		.split(/\s+/)
-		.filter(Boolean)
-		.map((cls) => `ep:${cls}`)
-		.join(" ");
 }
