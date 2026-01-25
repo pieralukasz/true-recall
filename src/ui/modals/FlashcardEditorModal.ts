@@ -118,7 +118,7 @@ export class FlashcardEditorModal extends BaseModal {
 		}
 
 		// Fields container (for re-rendering)
-		this.fieldsContainer = container.createDiv({ cls: "episteme-editor-fields" });
+		this.fieldsContainer = container.createDiv({ cls: "ep:flex ep:flex-col" });
 		this.renderFields();
 
 		// Source info (at bottom) - clickable to change source note
@@ -145,7 +145,7 @@ export class FlashcardEditorModal extends BaseModal {
 		this.renderField(this.fieldsContainer, this.questionValue, "question");
 
 		// Divider between question and answer
-		this.fieldsContainer.createEl("hr", { cls: "episteme-editor-divider" });
+		this.fieldsContainer.createEl("hr", { cls: "ep:border-none ep:border-t ep:border-obs-border ep:my-3" });
 
 		// Answer field
 		this.renderField(this.fieldsContainer, this.answerValue, "answer");
@@ -179,7 +179,7 @@ export class FlashcardEditorModal extends BaseModal {
 
 		if (!displaySourceName) return;
 
-		this.sourceContainer = container.createDiv({ cls: "episteme-editor-source-container" });
+		this.sourceContainer = container.createDiv({ cls: "ep:text-center ep:mt-4" });
 		this.renderSourceDisplay();
 	}
 
@@ -198,13 +198,13 @@ export class FlashcardEditorModal extends BaseModal {
 		if (!displaySourceName) return;
 
 		const sourceEl = this.sourceContainer.createDiv({
-			cls: "episteme-editor-source",
+			cls: "ep:inline-block ep:text-obs-muted ep:text-sm ep:opacity-70",
 		});
 		sourceEl.createSpan({ text: displaySourceName });
 
 		// Only allow changing source in edit mode
 		if (mode === "edit") {
-			sourceEl.addClass("episteme-editor-source--clickable");
+			sourceEl.addClass("ep:cursor-pointer", "ep:transition-all", "ep:hover:text-obs-normal", "ep:hover:opacity-100", "ep:hover:underline");
 			sourceEl.addEventListener("click", () => this.startSourceEdit());
 		}
 	}
@@ -234,7 +234,7 @@ export class FlashcardEditorModal extends BaseModal {
 		content: string,
 		field: "question" | "answer"
 	): void {
-		const fieldGroup = container.createDiv({ cls: "episteme-editor-field-group" });
+		const fieldGroup = container.createDiv({ cls: "ep:mb-0" });
 		const isEditing = this.editingField === field;
 		const isEmpty = !content.trim();
 
@@ -255,8 +255,10 @@ export class FlashcardEditorModal extends BaseModal {
 		content: string,
 		field: "question" | "answer"
 	): void {
+		const baseCls = "ep:p-3 ep:min-h-15 ep:cursor-text ep:rounded-md ep:text-center ep:bg-obs-secondary ep:text-sm";
+		const answerCls = field === "answer" ? "ep:text-obs-muted" : "";
 		const preview = container.createDiv({
-			cls: `episteme-editor-preview episteme-editor-preview--${field}`,
+			cls: `${baseCls} ${answerCls}`.trim(),
 		});
 
 		// Render markdown
@@ -370,18 +372,18 @@ export class FlashcardEditorModal extends BaseModal {
 	 * Render action buttons
 	 */
 	private renderButtons(container: HTMLElement): void {
-		const buttonsEl = container.createDiv({ cls: "episteme-modal-buttons" });
+		const buttonsEl = container.createDiv({ cls: "ep:flex ep:justify-end ep:gap-3 ep:mt-5 ep:pt-4 ep:border-t ep:border-obs-border" });
 
 		const cancelBtn = buttonsEl.createEl("button", {
 			text: "Cancel",
-			cls: "episteme-btn episteme-btn-secondary",
+			cls: "ep:py-2.5 ep:px-5 ep:bg-obs-secondary ep:text-obs-normal ep:border ep:border-obs-border ep:rounded-md ep:cursor-pointer ep:font-medium ep:transition-colors ep:hover:bg-obs-modifier-hover",
 		});
 		cancelBtn.addEventListener("click", () => this.close());
 
 		const buttonText = this.options.mode === "add" ? "Add flashcard" : "Save changes";
 		this.saveButton = buttonsEl.createEl("button", {
 			text: buttonText,
-			cls: "episteme-btn episteme-btn-primary",
+			cls: "ep:py-2.5 ep:px-5 ep:bg-obs-interactive ep:text-white ep:border-none ep:rounded-md ep:cursor-pointer ep:font-medium ep:transition-colors ep:hover:bg-obs-interactive-hover ep:disabled:opacity-50 ep:disabled:cursor-not-allowed",
 		});
 		this.saveButton.disabled = !this.isFormValid();
 		this.saveButton.addEventListener("click", () => this.handleSubmit());
@@ -643,13 +645,13 @@ export class KeyboardShortcutsModal extends BaseModal {
 			{ key: "Ctrl+/", action: "Show this help" },
 		];
 
-		const list = container.createDiv({ cls: "episteme-shortcuts-list" });
+		const list = container.createDiv({ cls: "ep:flex ep:flex-col ep:gap-2" });
 
 		for (const shortcut of shortcuts) {
-			const item = list.createDiv({ cls: "episteme-shortcut-item" });
+			const item = list.createDiv({ cls: "ep:flex ep:justify-between ep:items-center ep:py-2 ep:px-3 ep:bg-obs-secondary ep:rounded-md" });
 
-			item.createSpan({ cls: "episteme-shortcut-key", text: shortcut.key });
-			item.createSpan({ cls: "episteme-shortcut-action", text: shortcut.action });
+			item.createSpan({ cls: "ep:py-1 ep:px-2 ep:bg-obs-border ep:rounded ep:font-mono ep:text-xs ep:font-medium ep:text-obs-normal", text: shortcut.key });
+			item.createSpan({ cls: "ep:text-sm ep:text-obs-normal", text: shortcut.action });
 		}
 	}
 }
