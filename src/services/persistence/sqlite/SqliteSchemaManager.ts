@@ -21,21 +21,8 @@ export class SqliteSchemaManager {
     private onSchemaChange: () => void;
 
     // Map of schema version -> migration function
+    // Note: Old migrations (v1-v14) removed - project not released yet
     private readonly MIGRATIONS: Record<number, MigrationFn> = {
-        2: migrations.migration001ToV2,
-        3: migrations.migration002ToV3,
-        4: migrations.migration003ToV4,
-        5: migrations.migration004ToV5,
-        6: migrations.migration005ToV6,
-        7: migrations.migration006ToV7,
-        8: migrations.migration007ToV8,
-        9: migrations.migration008ToV9,
-        10: migrations.migration009ToV10,
-        11: migrations.migration010ToV11,
-        12: migrations.migration011ToV12,
-        13: migrations.migration012ToV13,
-        14: migrations.migration013ToV14,
-        15: migrations.migration014ToV15,
         16: migrations.migration015ToV16,
     };
 
