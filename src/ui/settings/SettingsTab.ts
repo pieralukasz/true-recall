@@ -42,11 +42,11 @@ export class EpistemeSettingTab extends PluginSettingTab {
 	display(): void {
 		const { containerEl } = this;
 		containerEl.empty();
-		containerEl.addClass("episteme-settings");
+		containerEl.addClass("ep:overflow-x-hidden");
 
 		// Tab navigation
 		const tabsNav = containerEl.createDiv({
-			cls: "episteme-settings-tabs",
+			cls: "ep:flex ep:gap-1 ep:mb-5 ep:border-b ep:border-obs-border ep:pb-2 ep:overflow-x-auto",
 		});
 		const tabs: { id: SettingsTabId; label: string }[] = [
 			{ id: "general", label: "General" },
@@ -57,13 +57,16 @@ export class EpistemeSettingTab extends PluginSettingTab {
 		];
 
 		const tabButtons: Map<SettingsTabId, HTMLElement> = new Map();
+		const tabBtnBase = "ep:py-2 ep:px-4 ep:border-none ep:bg-transparent ep:text-obs-muted ep:cursor-pointer ep:rounded-t ep:text-sm ep:font-medium ep:transition-colors ep:shrink-0 ep:whitespace-nowrap ep:hover:bg-obs-modifier-hover ep:hover:text-obs-normal";
+		const tabBtnActive = "ep:bg-obs-interactive ep:text-on-accent ep:hover:bg-obs-interactive ep:hover:text-on-accent";
+
 		tabs.forEach((tab) => {
+			const isActive = this.activeTab === tab.id;
 			const btn = tabsNav.createEl("button", {
 				text: tab.label,
-				cls: `episteme-settings-tab-btn ${
-					this.activeTab === tab.id ? "is-active" : ""
-				}`,
+				cls: `${tabBtnBase} ${isActive ? tabBtnActive : ""}`,
 			});
+			btn.dataset.tabId = tab.id;
 			btn.addEventListener("click", () =>
 				this.switchTab(tab.id, tabButtons, tabContents)
 			);
@@ -73,11 +76,11 @@ export class EpistemeSettingTab extends PluginSettingTab {
 		// Tab content containers
 		const tabContents: Map<SettingsTabId, HTMLElement> = new Map();
 		tabs.forEach((tab) => {
+			const isActive = this.activeTab === tab.id;
 			const content = containerEl.createDiv({
-				cls: `episteme-settings-tab-content ${
-					this.activeTab === tab.id ? "is-active" : ""
-				}`,
+				cls: isActive ? "ep:block ep:animate-in ep:fade-in" : "ep:hidden",
 			});
+			content.dataset.tabId = tab.id;
 			tabContents.set(tab.id, content);
 		});
 
@@ -95,12 +98,26 @@ export class EpistemeSettingTab extends PluginSettingTab {
 		contents: Map<SettingsTabId, HTMLElement>
 	): void {
 		this.activeTab = tabId;
-		buttons.forEach((btn, id) =>
-			btn.toggleClass("is-active", id === tabId)
-		);
-		contents.forEach((content, id) =>
-			content.toggleClass("is-active", id === tabId)
-		);
+
+		const activeBtnClasses = ["ep:bg-obs-interactive", "ep:text-on-accent", "ep:hover:bg-obs-interactive", "ep:hover:text-on-accent"];
+
+		buttons.forEach((btn, id) => {
+			if (id === tabId) {
+				activeBtnClasses.forEach(cls => btn.classList.add(cls));
+			} else {
+				activeBtnClasses.forEach(cls => btn.classList.remove(cls));
+			}
+		});
+
+		contents.forEach((content, id) => {
+			if (id === tabId) {
+				content.classList.remove("ep:hidden");
+				content.classList.add("ep:block");
+			} else {
+				content.classList.add("ep:hidden");
+				content.classList.remove("ep:block");
+			}
+		});
 	}
 
 	private renderGeneralTab(container: HTMLElement): void {
@@ -260,7 +277,7 @@ export class EpistemeSettingTab extends PluginSettingTab {
 			.setDesc("Your OpenRouter API key for flashcard generation")
 			.addText((text) => {
 				text.inputEl.type = "password";
-				text.inputEl.addClass("episteme-api-input");
+				text.inputEl.addClass("ep:w-[300px]");
 				text.setPlaceholder("Enter API key")
 					.setValue(this.plugin.settings.openRouterApiKey)
 					.onChange(async (value) => {
@@ -742,7 +759,7 @@ export class EpistemeSettingTab extends PluginSettingTab {
 
 		const templateInputEl = templateSetting.controlEl.createEl("input", {
 			type: "text",
-			cls: "episteme-template-input",
+			cls: "ep:w-full ep:py-1.5 ep:px-2 ep:border ep:border-obs-border ep:rounded ep:bg-obs-primary ep:text-obs-normal",
 			placeholder: "Default template",
 			value: this.plugin.settings.zettelTemplatePath,
 		});
@@ -834,7 +851,7 @@ export class EpistemeSettingTab extends PluginSettingTab {
 		container.createEl("h2", { text: "Account" });
 
 		const authContainer = container.createDiv({
-			cls: "episteme-auth-section",
+			cls: "ep:mt-4",
 		});
 		authContainer.id = "episteme-auth-container";
 
@@ -862,10 +879,10 @@ export class EpistemeSettingTab extends PluginSettingTab {
 		if (authState.isAuthenticated && authState.user) {
 			// Logged in state - show connection status
 			const statusDiv = container.createDiv({
-				cls: "episteme-connection-status",
+				cls: "ep:flex ep:items-center ep:gap-2 ep:p-3 ep:bg-obs-secondary ep:rounded-md ep:mb-4",
 			});
 			statusDiv.innerHTML = `
-				<span class="episteme-status-dot episteme-status-connected"></span>
+				<span class="ep:w-2 ep:h-2 ep:rounded-full ep:bg-green-500 ep:shadow-[0_0_6px_theme(colors.green.500)]"></span>
 				<span>Connected to Episteme Cloud</span>
 			`;
 
@@ -903,13 +920,13 @@ export class EpistemeSettingTab extends PluginSettingTab {
 
 	private renderLoginForm(container: HTMLElement): void {
 		const formContainer = container.createDiv({
-			cls: "episteme-auth-form",
+			cls: "ep:bg-obs-secondary ep:p-4 ep:rounded-lg ep:mt-2",
 		});
 
 		let emailValue = "";
 		let passwordValue = "";
 		const statusEl = formContainer.createDiv({
-			cls: "episteme-auth-status",
+			cls: "ep:mt-3 ep:p-2 ep:rounded ep:text-sm ep:hidden",
 		});
 
 		new Setting(formContainer)
@@ -931,7 +948,7 @@ export class EpistemeSettingTab extends PluginSettingTab {
 			});
 
 		const buttonContainer = formContainer.createDiv({
-			cls: "episteme-auth-buttons",
+			cls: "ep:flex ep:gap-2 ep:mt-4",
 		});
 
 		const loginBtn = buttonContainer.createEl("button", {
@@ -946,8 +963,15 @@ export class EpistemeSettingTab extends PluginSettingTab {
 		const setStatus = (message: string, isError: boolean): void => {
 			statusEl.empty();
 			statusEl.setText(message);
-			statusEl.toggleClass("episteme-auth-error", isError);
-			statusEl.toggleClass("episteme-auth-success", !isError);
+			statusEl.classList.remove("ep:hidden");
+			// Error: red background/text, Success: green background/text
+			if (isError) {
+				statusEl.classList.add("ep:bg-red-500/10", "ep:text-red-500");
+				statusEl.classList.remove("ep:bg-green-500/10", "ep:text-green-500");
+			} else {
+				statusEl.classList.add("ep:bg-green-500/10", "ep:text-green-500");
+				statusEl.classList.remove("ep:bg-red-500/10", "ep:text-red-500");
+			}
 		};
 
 		loginBtn.addEventListener("click", async () => {
