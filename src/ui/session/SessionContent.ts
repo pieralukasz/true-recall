@@ -3,7 +3,7 @@
  * Contains quick actions, search, and note selection table
  */
 import { BaseComponent } from "../component.base";
-import type { SessionLogic } from "../../logic/SessionLogic";
+import type { SessionLogic } from "./SessionLogic";
 import type { FSRSFlashcardItem } from "../../types";
 
 export interface SessionContentProps {
@@ -42,7 +42,7 @@ export class SessionContent extends BaseComponent {
 		}
 
 		this.element = this.container.createDiv({
-			cls: "episteme-session-content",
+			cls: "episteme-session-content ep:flex ep:flex-col ep:flex-1 ep:min-h-0 ep:gap-2 ep:px-1.5",
 		});
 
 		// Search input at the top
@@ -50,7 +50,7 @@ export class SessionContent extends BaseComponent {
 
 		// Quick actions section header
 		this.element.createDiv({
-			cls: "episteme-section-header",
+			cls: "episteme-section-header ep:text-xs ep:font-semibold ep:text-obs-muted ep:uppercase ep:tracking-wide ep:my-2",
 			text: "Quick access",
 		});
 
@@ -59,7 +59,7 @@ export class SessionContent extends BaseComponent {
 
 		// Notes section header
 		this.element.createDiv({
-			cls: "episteme-section-header",
+			cls: "episteme-section-header ep:text-xs ep:font-semibold ep:text-obs-muted ep:uppercase ep:tracking-wide ep:my-2",
 			text: "Select notes",
 		});
 
@@ -70,12 +70,18 @@ export class SessionContent extends BaseComponent {
 	private renderQuickActions(): void {
 		const { currentNoteName, logic, onQuickAction } = this.props;
 		const quickActionsEl = this.element!.createDiv({
-			cls: "episteme-quick-actions",
+			cls: "episteme-quick-actions ep:grid ep:grid-cols-2 ep:gap-2",
 		});
 
 		const now = new Date();
 		const todayStart = new Date();
 		todayStart.setHours(0, 0, 0, 0);
+
+		// Shared button classes
+		const baseBtnCls = "ep:flex ep:flex-col ep:items-start ep:gap-1 ep:p-3 ep:bg-obs-secondary ep:border ep:border-obs-border ep:rounded-md ep:cursor-pointer ep:text-left ep:transition-colors ep:hover:bg-obs-modifier-hover ep:hover:border-obs-interactive";
+		const disabledBtnCls = "ep:opacity-50 ep:cursor-not-allowed ep:hover:bg-obs-secondary ep:hover:border-obs-border";
+		const statsCls = "ep:text-xs ep:text-obs-muted";
+		const statsMutedCls = "ep:text-xs ep:text-obs-faint";
 
 		// Active Note button
 		const currentNoteStats = logic.getCurrentNoteStats(
@@ -83,12 +89,12 @@ export class SessionContent extends BaseComponent {
 			now
 		);
 		const activeNoteBtn = quickActionsEl.createEl("button", {
-			cls: "episteme-quick-action-btn",
+			cls: baseBtnCls,
 		});
-		activeNoteBtn.createSpan({ text: "Active note" });
+		activeNoteBtn.createSpan({ text: "Active note", cls: "ep:text-sm ep:font-medium ep:text-obs-normal" });
 		if (currentNoteStats && currentNoteStats.total > 0) {
 			activeNoteBtn.createSpan({
-				cls: "episteme-quick-action-stats",
+				cls: statsCls,
 				text: logic.formatStats(
 					currentNoteStats.newCount,
 					currentNoteStats.dueCount
@@ -99,22 +105,22 @@ export class SessionContent extends BaseComponent {
 			);
 		} else {
 			activeNoteBtn.createSpan({
-				cls: "episteme-quick-action-stats episteme-stat-muted",
+				cls: statsMutedCls,
 				text: currentNoteStats ? "done" : "no cards",
 			});
 			activeNoteBtn.disabled = true;
-			activeNoteBtn.addClass("episteme-btn-disabled");
+			activeNoteBtn.addClass(disabledBtnCls);
 		}
 
 		// Today button
 		const todayStats = logic.getTodayStats(now, todayStart);
 		const todayBtn = quickActionsEl.createEl("button", {
-			cls: "episteme-quick-action-btn",
+			cls: baseBtnCls,
 		});
-		todayBtn.createSpan({ text: "Today" });
+		todayBtn.createSpan({ text: "Today", cls: "ep:text-sm ep:font-medium ep:text-obs-normal" });
 		if (todayStats.total > 0) {
 			todayBtn.createSpan({
-				cls: "episteme-quick-action-stats",
+				cls: statsCls,
 				text: logic.formatStats(
 					todayStats.newCount,
 					todayStats.dueCount
@@ -125,22 +131,22 @@ export class SessionContent extends BaseComponent {
 			);
 		} else {
 			todayBtn.createSpan({
-				cls: "episteme-quick-action-stats episteme-stat-muted",
+				cls: statsMutedCls,
 				text: "no cards",
 			});
 			todayBtn.disabled = true;
-			todayBtn.addClass("episteme-btn-disabled");
+			todayBtn.addClass(disabledBtnCls);
 		}
 
 		// Default button
 		const defaultBtn = quickActionsEl.createEl("button", {
-			cls: "episteme-quick-action-btn episteme-default-btn",
+			cls: baseBtnCls,
 		});
-		defaultBtn.createSpan({ text: "Default" });
+		defaultBtn.createSpan({ text: "Default", cls: "ep:text-sm ep:font-medium ep:text-obs-normal" });
 		const allCardsStats = logic.getAllCardsStats(now);
 		if (allCardsStats.total > 0) {
 			defaultBtn.createSpan({
-				cls: "episteme-quick-action-stats",
+				cls: statsCls,
 				text: logic.formatStats(
 					allCardsStats.newCount,
 					allCardsStats.dueCount
@@ -151,22 +157,22 @@ export class SessionContent extends BaseComponent {
 			);
 		} else {
 			defaultBtn.createSpan({
-				cls: "episteme-quick-action-stats episteme-stat-muted",
+				cls: statsMutedCls,
 				text: "no cards",
 			});
 			defaultBtn.disabled = true;
-			defaultBtn.addClass("episteme-btn-disabled");
+			defaultBtn.addClass(disabledBtnCls);
 		}
 
 		// Buried cards button
 		const buriedBtn = quickActionsEl.createEl("button", {
-			cls: "episteme-quick-action-btn",
+			cls: baseBtnCls,
 		});
-		buriedBtn.createSpan({ text: "Buried" });
+		buriedBtn.createSpan({ text: "Buried", cls: "ep:text-sm ep:font-medium ep:text-obs-normal" });
 		const buriedStats = logic.getBuriedCardsStats(now);
 		if (buriedStats.total > 0) {
 			buriedBtn.createSpan({
-				cls: "episteme-quick-action-stats",
+				cls: statsCls,
 				text: logic.formatStats(
 					buriedStats.newCount,
 					buriedStats.dueCount
@@ -177,21 +183,21 @@ export class SessionContent extends BaseComponent {
 			);
 		} else {
 			buriedBtn.createSpan({
-				cls: "episteme-quick-action-stats episteme-stat-muted",
+				cls: statsMutedCls,
 				text: "none",
 			});
 			buriedBtn.disabled = true;
-			buriedBtn.addClass("episteme-btn-disabled");
+			buriedBtn.addClass(disabledBtnCls);
 		}
 	}
 
 	private renderSearchInput(): void {
 		const { searchQuery, onSearchChange } = this.props;
 		const searchContainer = this.element!.createDiv({
-			cls: "episteme-search-container",
+			cls: "episteme-search-container ep:mb-2",
 		});
 		const searchInput = searchContainer.createEl("input", {
-			cls: "episteme-search-input",
+			cls: "ep:w-full ep:py-2 ep:px-3 ep:border ep:border-obs-border ep:rounded-md ep:bg-obs-primary ep:text-obs-normal ep:text-sm ep:focus:outline-none ep:focus:border-obs-interactive ep:placeholder:text-obs-muted",
 			type: "text",
 			placeholder: "Search notes...",
 		});
@@ -209,13 +215,13 @@ export class SessionContent extends BaseComponent {
 		const filteredStats = logic.getFilteredNoteStats(searchQuery, now);
 
 		const noteListEl = this.element!.createDiv({
-			cls: "episteme-note-list",
+			cls: "episteme-note-list ep:flex-1 ep:overflow-y-auto",
 		});
 		this.noteTableBody = noteListEl;
 
 		if (filteredStats.length === 0) {
 			noteListEl.createDiv({
-				cls: "episteme-note-list-empty",
+				cls: "ep:text-center ep:py-8 ep:text-obs-muted ep:text-sm",
 				text: searchQuery
 					? "No notes match your search"
 					: "No notes with flashcards found",
@@ -229,14 +235,14 @@ export class SessionContent extends BaseComponent {
 
 			// Note item container
 			const item = noteListEl.createDiv({
-				cls: `episteme-note-item${
-					isSelected ? " episteme-note-item--selected" : ""
+				cls: `ep:flex ep:items-start ep:gap-3 ep:py-2.5 ep:px-3 ep:border-b ep:border-obs-border ep:cursor-pointer ep:transition-colors ep:hover:bg-obs-modifier-hover ep:last:border-b-0${
+					isSelected ? " ep:bg-obs-interactive/10" : ""
 				}`,
 			});
 
 			// Checkbox or completed tick
 			if (hasCards) {
-				const checkbox = item.createEl("input", { type: "checkbox" });
+				const checkbox = item.createEl("input", { type: "checkbox", cls: "ep:mt-0.5 ep:shrink-0 ep:w-4 ep:h-4" });
 				checkbox.checked = isSelected;
 
 				this.events.addEventListener(checkbox, "change", () => {
@@ -257,24 +263,25 @@ export class SessionContent extends BaseComponent {
 				});
 			} else if (stat.isCompleted) {
 				item.createSpan({
-					cls: "episteme-completed-tick",
+					cls: "ep:text-green-500 ep:text-base ep:font-semibold ep:w-4 ep:text-center",
 					text: "\u2713",
 				});
 			}
 
 			// Content container
 			const content = item.createDiv({
-				cls: "episteme-note-item-content",
+				cls: "ep:flex-1 ep:min-w-0",
 			});
 
 			// Note name (allow 2 lines)
 			const nameEl = content.createDiv({
-				cls: "episteme-note-item-name",
+				cls: "ep:text-sm ep:font-medium ep:text-obs-normal ep:leading-snug ep:line-clamp-2",
 			});
 			if (stat.notePath) {
 				const nameLink = nameEl.createEl("a", {
 					text: stat.noteName,
 					href: "#",
+					cls: "ep:text-obs-normal ep:no-underline ep:hover:text-obs-link ep:hover:underline",
 				});
 				this.events.addEventListener(nameLink, "click", (e) => {
 					e.preventDefault();
@@ -287,9 +294,7 @@ export class SessionContent extends BaseComponent {
 
 			// Stats badge
 			const statsEl = content.createDiv({
-				cls: `episteme-note-item-stats${
-					!hasCards ? " episteme-stat-muted" : ""
-				}`,
+				cls: `ep:text-xs ep:mt-0.5 ${hasCards ? "ep:text-obs-muted" : "ep:text-obs-faint"}`,
 			});
 			if (hasCards) {
 				statsEl.textContent = logic.formatStats(
