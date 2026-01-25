@@ -187,7 +187,6 @@ export class BrowserView extends ItemView {
             },
             currentFilePath: card.sourceNotePath || "",
             sourceNoteName: card.sourceNoteName || "Unknown",
-            projects: card.projects,
         });
 
         const result = await modal.openAndWait();

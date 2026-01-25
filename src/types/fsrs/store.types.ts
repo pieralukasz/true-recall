@@ -4,7 +4,6 @@
  */
 
 import type { FSRSCardData, SourceNoteInfo } from "./card.types";
-import type { ProjectInfo } from "./stats.types";
 
 /**
  * Common interface for card storage services
@@ -68,18 +67,4 @@ export interface CardStore {
 
     /** Delete source note and optionally detach cards (set source_uid = NULL) */
     deleteSourceNote?(uid: string, detachCards?: boolean): void;
-
-    // === Project management methods (optional - for SQL storage) ===
-
-    /** Get all projects with their statistics */
-    getProjectStats?(): ProjectInfo[];
-
-    /** Create a new project (returns UUID string) */
-    createProject?(name: string): string;
-
-    /** Rename a project */
-    renameProject?(id: string, newName: string): void;
-
-    /** Delete a project */
-    deleteProject?(id: string): void;
 }
