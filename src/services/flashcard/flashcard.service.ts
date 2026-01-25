@@ -39,7 +39,6 @@ export interface ScanResult {
  */
 export interface FlashcardInfo {
 	exists: boolean;
-	filePath: string;
 	cardCount: number;
 	questions: string[];
 	flashcards: FlashcardItem[];
@@ -171,7 +170,6 @@ export class FlashcardManager {
 
 		return {
 			exists: cards.length > 0,
-			filePath: "",
 			cardCount: cards.length,
 			questions: cards.map((c) => c.question),
 			flashcards: cards.map((c) => ({
@@ -201,10 +199,9 @@ export class FlashcardManager {
 		return this.getFlashcardInfo(sourceFile);
 	}
 
-	private createEmptyFlashcardInfo(sourceFile: TFile): FlashcardInfo {
+	private createEmptyFlashcardInfo(_sourceFile: TFile): FlashcardInfo {
 		return {
 			exists: false,
-			filePath: "",
 			cardCount: 0,
 			questions: [],
 			flashcards: [],
@@ -271,7 +268,6 @@ export class FlashcardManager {
 				id: flashcard.id,
 				question: flashcard.question,
 				answer: flashcard.answer,
-				filePath: "",
 				fsrs: extendedData,
 				projects: [],
 				sourceNoteName: sourceFile.basename,
@@ -283,7 +279,6 @@ export class FlashcardManager {
 			getEventBus().emit({
 				type: "card:added",
 				cardId: flashcard.id,
-				filePath: "",
 				sourceNoteName: sourceFile.basename,
 				timestamp: Date.now(),
 			} as CardAddedEvent);
@@ -294,10 +289,9 @@ export class FlashcardManager {
 
 	/**
 	 * Add a single flashcard to SQL
-	 * Alias for addSingleFlashcardToSql for backward compatibility
+	 * Alias for addSingleFlashcardToSql
 	 */
 	async addSingleFlashcard(
-		_filePath: string,
 		question: string,
 		answer: string,
 		sourceUid?: string
@@ -342,7 +336,6 @@ export class FlashcardManager {
 			id: cardId,
 			question,
 			answer,
-			filePath: "",
 			fsrs: extendedData,
 			projects: [],
 			sourceUid,
@@ -351,7 +344,6 @@ export class FlashcardManager {
 		getEventBus().emit({
 			type: "card:added",
 			cardId,
-			filePath: "",
 			timestamp: Date.now(),
 		} as CardAddedEvent);
 
@@ -359,10 +351,10 @@ export class FlashcardManager {
 	}
 
 	/**
-	 * Remove a flashcard from SQL by card ID
-	 * Kept for backward compatibility
+	 * Remove a flashcard by ID
+	 * Alias for removeFlashcardById
 	 */
-	async removeFlashcard(_sourceFile: TFile, cardId: string): Promise<boolean> {
+	async removeFlashcard(cardId: string): Promise<boolean> {
 		return this.removeFlashcardById(cardId);
 	}
 
@@ -385,7 +377,6 @@ export class FlashcardManager {
 		getEventBus().emit({
 			type: "card:removed",
 			cardId,
-			filePath: "",
 			timestamp: Date.now(),
 		} as CardRemovedEvent);
 
@@ -417,7 +408,6 @@ export class FlashcardManager {
 				id: card.id,
 				question: card.question,
 				answer: card.answer,
-				filePath: "",
 				fsrs: card,
 				projects: card.projects || [],
 				sourceNoteName: card.sourceNoteName,
@@ -468,7 +458,6 @@ export class FlashcardManager {
 		getEventBus().emit({
 			type: "card:updated",
 			cardId,
-			filePath: "",
 			changes: { fsrs: true },
 			timestamp: Date.now(),
 		} as CardUpdatedEvent);
@@ -501,7 +490,6 @@ export class FlashcardManager {
 		getEventBus().emit({
 			type: "card:updated",
 			cardId,
-			filePath: "",
 			changes: { question: true, answer: true },
 			timestamp: Date.now(),
 		} as CardUpdatedEvent);
@@ -539,7 +527,6 @@ export class FlashcardManager {
 				id: card.id,
 				question: card.question,
 				answer: card.answer,
-				filePath: "",
 				fsrs: card,
 				projects: card.projects || [],
 				sourceUid: card.sourceUid,
@@ -566,7 +553,6 @@ export class FlashcardManager {
 				id: card.id,
 				question: card.question,
 				answer: card.answer,
-				filePath: "",
 				fsrs: card,
 				projects: card.projects || [],
 				sourceUid: undefined,
@@ -611,7 +597,6 @@ export class FlashcardManager {
 		getEventBus().emit({
 			type: "card:updated",
 			cardId,
-			filePath: "",
 			changes: { sourceUid: true },
 			timestamp: Date.now(),
 		} as CardUpdatedEvent);
@@ -684,7 +669,6 @@ export class FlashcardManager {
 				type: "cards:bulk-change",
 				action: "removed",
 				cardIds: deletedChanges.map((c) => c.originalCardId!),
-				filePath: "",
 				timestamp: Date.now(),
 			} as BulkChangeEvent);
 		}
@@ -693,7 +677,6 @@ export class FlashcardManager {
 				type: "cards:bulk-change",
 				action: "added",
 				cardIds: [],
-				filePath: "",
 				timestamp: Date.now(),
 			} as BulkChangeEvent);
 		}
@@ -702,7 +685,6 @@ export class FlashcardManager {
 				type: "cards:bulk-change",
 				action: "updated",
 				cardIds: modifiedChanges.map((c) => c.originalCardId!),
-				filePath: "",
 				timestamp: Date.now(),
 			} as BulkChangeEvent);
 		}
@@ -711,17 +693,14 @@ export class FlashcardManager {
 	// ===== Move Card Methods (SQL-based) =====
 
 	/**
-	 * Move a flashcard to a different deck
-	 * In SQL mode, this just updates the deck field
+	 * Move a flashcard to a different source note
 	 *
 	 * @param cardId - UUID of the flashcard to move
-	 * @param _sourceFilePath - Ignored (legacy param)
-	 * @param targetNotePath - Path to the target note (used to determine new deck)
+	 * @param targetNotePath - Path to the target note
 	 * @returns true if successful, false otherwise
 	 */
 	async moveCard(
 		cardId: string,
-		_sourceFilePath: string,
 		targetNotePath: string
 	): Promise<boolean> {
 		if (!this.store) {
@@ -757,7 +736,6 @@ export class FlashcardManager {
 		getEventBus().emit({
 			type: "card:updated",
 			cardId,
-			filePath: "",
 			changes: { sourceUid: true },
 			timestamp: Date.now(),
 		} as CardUpdatedEvent);

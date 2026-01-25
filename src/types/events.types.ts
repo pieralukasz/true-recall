@@ -33,7 +33,6 @@ export interface FlashcardEvent {
 export interface CardAddedEvent extends FlashcardEvent {
 	type: "card:added";
 	cardId: string;
-	filePath: string;
 	sourceNoteName?: string;
 }
 
@@ -43,13 +42,13 @@ export interface CardAddedEvent extends FlashcardEvent {
 export interface CardUpdatedEvent extends FlashcardEvent {
 	type: "card:updated";
 	cardId: string;
-	filePath: string;
 	changes: {
 		question?: boolean;
 		answer?: boolean;
 		fsrs?: boolean;
 		suspended?: boolean;
 		buried?: boolean;
+		sourceUid?: boolean;
 	};
 }
 
@@ -59,7 +58,6 @@ export interface CardUpdatedEvent extends FlashcardEvent {
 export interface CardRemovedEvent extends FlashcardEvent {
 	type: "card:removed";
 	cardId: string;
-	filePath: string;
 }
 
 /**
@@ -79,7 +77,6 @@ export interface BulkChangeEvent extends FlashcardEvent {
 	type: "cards:bulk-change";
 	action: "added" | "removed" | "updated" | "suspend" | "unsuspend" | "bury" | "unbury" | "delete" | "reset" | "reschedule";
 	cardIds: string[];
-	filePath?: string;
 }
 
 /**

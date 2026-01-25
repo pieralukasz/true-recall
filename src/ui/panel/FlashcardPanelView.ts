@@ -157,42 +157,29 @@ export class FlashcardPanelView extends ItemView {
     private subscribeToEvents(): void {
         const eventBus = getEventBus();
 
-        // When a card is added anywhere, reload if it affects current file
-        const unsubAdded = eventBus.on<CardAddedEvent>("card:added", (event) => {
-            const state = this.stateManager.getState();
-            if (state.flashcardInfo?.filePath === event.filePath) {
-                void this.loadFlashcardInfo();
-            }
+        // When a card is added, reload flashcard info
+        const unsubAdded = eventBus.on<CardAddedEvent>("card:added", () => {
+            void this.loadFlashcardInfo();
         });
         this.eventUnsubscribers.push(unsubAdded);
 
-        // When a card is removed anywhere, reload if it affects current file
-        const unsubRemoved = eventBus.on<CardRemovedEvent>("card:removed", (event) => {
-            const state = this.stateManager.getState();
-            if (state.flashcardInfo?.filePath === event.filePath) {
-                void this.loadFlashcardInfo();
-            }
+        // When a card is removed, reload flashcard info
+        const unsubRemoved = eventBus.on<CardRemovedEvent>("card:removed", () => {
+            void this.loadFlashcardInfo();
         });
         this.eventUnsubscribers.push(unsubRemoved);
 
-        // When card content is updated, reload if it affects current file
+        // When card content is updated, reload flashcard info
         const unsubUpdated = eventBus.on<CardUpdatedEvent>("card:updated", (event) => {
             // Only reload for content changes (question/answer), not FSRS updates
             if (!event.changes.question && !event.changes.answer) return;
-
-            const state = this.stateManager.getState();
-            if (state.flashcardInfo?.filePath === event.filePath) {
-                void this.loadFlashcardInfo();
-            }
+            void this.loadFlashcardInfo();
         });
         this.eventUnsubscribers.push(unsubUpdated);
 
         // Handle bulk changes (e.g., from diff apply)
-        const unsubBulk = eventBus.on<BulkChangeEvent>("cards:bulk-change", (event) => {
-            const state = this.stateManager.getState();
-            if (event.filePath && state.flashcardInfo?.filePath === event.filePath) {
-                void this.loadFlashcardInfo();
-            }
+        const unsubBulk = eventBus.on<BulkChangeEvent>("cards:bulk-change", () => {
+            void this.loadFlashcardInfo();
         });
         this.eventUnsubscribers.push(unsubBulk);
     }
@@ -703,7 +690,6 @@ export class FlashcardPanelView extends ItemView {
             mode: "edit",
             card: {
                 ...card,
-                filePath: state.currentFile.path,
                 fsrs: createDefaultFSRSData(card.id),
                 projects: [],
             },
@@ -726,7 +712,6 @@ export class FlashcardPanelView extends ItemView {
             if (result.newSourceNotePath) {
                 await this.flashcardManager.moveCard(
                     card.id,
-                    state.currentFile.path,
                     result.newSourceNotePath
                 );
                 new Notice("Flashcard updated and moved");
@@ -849,7 +834,6 @@ export class FlashcardPanelView extends ItemView {
         try {
             await this.flashcardManager.moveCard(
                 card.id,
-                state.flashcardInfo.filePath,
                 result.targetNotePath
             );
             new Notice("Card moved successfully");
@@ -914,7 +898,6 @@ export class FlashcardPanelView extends ItemView {
             try {
                 await this.flashcardManager.moveCard(
                     card.id,
-                    state.flashcardInfo.filePath,
                     result.targetNotePath
                 );
                 successCount++;
@@ -991,7 +974,6 @@ export class FlashcardPanelView extends ItemView {
 
         try {
             await this.flashcardManager.addSingleFlashcard(
-                state.currentFile.path,
                 result.question,
                 result.answer,
                 sourceUid
@@ -1187,16 +1169,15 @@ export class FlashcardPanelView extends ItemView {
     }
 
     /**
-     * Extract source_note name from the flashcard file
+     * Extract source_note name from the flashcard file (legacy)
+     * With SQL-only storage, this method reads source_link from the current file if it exists
      */
     private async getSourceNoteNameFromFile(): Promise<string | undefined> {
         const state = this.stateManager.getState();
         if (!state.currentFile || !state.flashcardInfo) return undefined;
 
-        const filePath = state.flashcardInfo.filePath;
-        const file = this.app.vault.getAbstractFileByPath(filePath);
-        if (!(file instanceof TFile)) return undefined;
-
+        // Try to read source_link from the current file (legacy flashcard files)
+        const file = state.currentFile;
         try {
             const content = await this.app.vault.read(file);
             const match = content.match(/source_link:\s*"\[\[(.+?)\]\]"/);

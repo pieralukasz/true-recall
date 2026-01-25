@@ -297,7 +297,6 @@ export class CardActionsHandler {
 			// Move the card
 			const success = await this.deps.flashcardManager.moveCard(
 				card.id,
-				card.filePath,
 				result.targetNotePath
 			);
 
@@ -328,7 +327,7 @@ export class CardActionsHandler {
 		// Open modal to enter question/answer
 		const modal = new FlashcardEditorModal(this.deps.app, {
 			mode: "add",
-			currentFilePath: card.filePath,
+			currentFilePath: card.sourceNotePath || "",
 			sourceNoteName: card.sourceNoteName,
 		});
 
@@ -338,7 +337,6 @@ export class CardActionsHandler {
 		try {
 			// Add flashcard with auto-generated FSRS ID
 			const newCard = await this.deps.flashcardManager.addSingleFlashcard(
-				card.filePath,
 				result.question,
 				result.answer,
 				card.sourceUid
@@ -365,7 +363,7 @@ export class CardActionsHandler {
 		// Open modal with pre-filled content
 		const modal = new FlashcardEditorModal(this.deps.app, {
 			mode: "add",
-			currentFilePath: card.filePath,
+			currentFilePath: card.sourceNotePath || "",
 			sourceNoteName: card.sourceNoteName,
 			prefillQuestion: card.question,
 			prefillAnswer: card.answer,
@@ -377,7 +375,6 @@ export class CardActionsHandler {
 		try {
 			// Add flashcard with auto-generated FSRS ID
 			const newCard = await this.deps.flashcardManager.addSingleFlashcard(
-				card.filePath,
 				result.question,
 				result.answer,
 				card.sourceUid
@@ -403,7 +400,7 @@ export class CardActionsHandler {
 		const modal = new FlashcardEditorModal(this.deps.app, {
 			mode: "edit",
 			card: card,
-			currentFilePath: card.filePath,
+			currentFilePath: card.sourceNotePath || "",
 			prefillQuestion: card.question,
 			prefillAnswer: card.answer,
 		});
@@ -429,7 +426,6 @@ export class CardActionsHandler {
 			if (result.newSourceNotePath) {
 				await this.deps.flashcardManager.moveCard(
 					card.id,
-					card.filePath,
 					result.newSourceNotePath
 				);
 				new Notice("Card updated and moved");
@@ -614,13 +610,12 @@ export class CardActionsHandler {
 			} else {
 				// Use current card's source note
 				targetSourceUid = currentCard.sourceUid;
-				targetFilePath = currentCard.filePath;
+				targetFilePath = currentCard.sourceNotePath || "";
 			}
 
 			// Save generated flashcards and add to queue
 			for (const flashcard of result.flashcards) {
 				const newCard = await this.deps.flashcardManager.addSingleFlashcard(
-					targetFilePath,
 					flashcard.question,
 					flashcard.answer,
 					targetSourceUid

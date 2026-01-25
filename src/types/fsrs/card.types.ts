@@ -102,8 +102,6 @@ export interface FSRSFlashcardItem {
     question: string;
     /** Answer */
     answer: string;
-    /** Path to flashcard file. Empty string "" when card is SQL-only (no MD file) */
-    filePath: string;
     /** FSRS data */
     fsrs: FSRSCardData;
     /** Projects associated with this card (resolved from frontmatter at runtime) */

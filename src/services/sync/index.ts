@@ -1,9 +1,5 @@
 /**
  * Sync service exports
  */
-export {
-	SyncService,
-	type SyncResult,
-	type SyncOptions,
-	type FirstSyncStatus,
-} from "./sync.service";
+export { SyncService } from "./sync.service";
+export type { SyncResult, SyncOptions, FirstSyncStatus } from "../../types";
