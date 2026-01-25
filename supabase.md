@@ -1,272 +1,273 @@
-⏺ Oto wszystkie zapytania SQL do wykonania w Supabase:
+# Supabase RPC Functions for Episteme Sync
 
--- =====================================================  
- -- 1. Update sync_all_data RPC function  
- -- Usuwa p_source_notes parameter i logikę source_notes  
- -- =====================================================
+All SQL queries to execute in Supabase SQL Editor.
 
-CREATE OR REPLACE FUNCTION sync_all_data(  
- p_cards JSONB DEFAULT '[]'::jsonb,  
- p_review_log JSONB DEFAULT '[]'::jsonb,  
- p_card_image_refs JSONB DEFAULT '[]'::jsonb  
- ) RETURNS JSONB LANGUAGE plpgsql SECURITY DEFINER AS $$  
- DECLARE  
- v_user_id TEXT;  
- v_now BIGINT;  
- v_cards_inserted INTEGER := 0;  
- v_cards_updated INTEGER := 0;  
- v_review_log_inserted INTEGER := 0;  
- v_review_log_updated INTEGER := 0;  
- v_card_image_refs_inserted INTEGER := 0;  
- v_card_image_refs_updated INTEGER := 0;  
- BEGIN  
- -- Get authenticated user ID  
- v_user_id := auth.uid();  
- IF v_user_id IS NULL THEN  
- RETURN jsonb_build_object('status', 'error', 'message', 'Not authenticated');  
- END IF;
+## Tables Synchronized
 
-      v_now := EXTRACT(EPOCH FROM NOW()) * 1000;
+1. **cards** - FSRS flashcards with scheduling data
+2. **review_log** - Review history per card
+3. **card_image_refs** - Image references in cards
 
-      -- ===========================================
-      -- CARDS
-      -- ===========================================
-      FOR i IN 0..jsonb_array_length(p_cards) - 1 LOOP
-          INSERT INTO public.cards (
-              user_id, id, due, stability, difficulty, reps, lapses, state,
-              last_review, scheduled_days, learning_step, suspended, buried_until,
-              created_at, updated_at, deleted_at, question, answer, source_uid
-          ) VALUES (
-              v_user_id,
-              p_cards->i->>'id',
-              p_cards->i->>'due',
-              COALESCE((p_cards->i->>'stability')::REAL, 0),
-              COALESCE((p_cards->i->>'difficulty')::REAL, 0),
-              COALESCE((p_cards->i->>'reps')::INTEGER, 0),
-              COALESCE((p_cards->i->>'lapses')::INTEGER, 0),
-              COALESCE((p_cards->i->>'state')::INTEGER, 0),
-              p_cards->i->>'last_review',
-              COALESCE((p_cards->i->>'scheduled_days')::INTEGER, 0),
-              COALESCE((p_cards->i->>'learning_step')::INTEGER, 0),
-              COALESCE((p_cards->i->>'suspended')::BOOLEAN, FALSE),
-              p_cards->i->>'buried_until',
-              COALESCE((p_cards->i->>'created_at')::BIGINT, v_now),
-              COALESCE((p_cards->i->>'updated_at')::BIGINT, v_now),
-              p_cards->i->>'deleted_at',
-              p_cards->i->>'question',
-              p_cards->i->>'answer',
-              p_cards->i->>'source_uid'
-          )
-          ON CONFLICT (id, user_id) DO UPDATE SET
-              due = EXCLUDED.due,
-              stability = EXCLUDED.stability,
-              difficulty = EXCLUDED.difficulty,
-              reps = EXCLUDED.reps,
-              lapses = EXCLUDED.lapses,
-              state = EXCLUDED.state,
-              last_review = EXCLUDED.last_review,
-              scheduled_days = EXCLUDED.scheduled_days,
-              learning_step = EXCLUDED.learning_step,
-              suspended = EXCLUDED.suspended,
-              buried_until = EXCLUDED.buried_until,
-              updated_at = EXCLUDED.updated_at,
-              deleted_at = EXCLUDED.deleted_at,
-              question = EXCLUDED.question,
-              answer = EXCLUDED.answer,
-              source_uid = EXCLUDED.source_uid
-          WHERE public.cards.updated_at < EXCLUDED.updated_at;
-      END LOOP;
+> **Note:** `source_notes` table was removed in v17 - metadata is now resolved from vault via `flashcard_uid`.
 
-      -- ===========================================
-      -- REVIEW LOG
-      -- ===========================================
-      FOR i IN 0..jsonb_array_length(p_review_log) - 1 LOOP
-          INSERT INTO public.review_log (
-              user_id, id, card_id, reviewed_at, rating, scheduled_days,
-              elapsed_days, state, time_spent_ms, updated_at, deleted_at
-          ) VALUES (
-              v_user_id,
-              p_review_log->i->>'id',
-              p_review_log->i->>'card_id',
-              p_review_log->i->>'reviewed_at',
-              COALESCE((p_review_log->i->>'rating')::INTEGER, 0),
-              COALESCE((p_review_log->i->>'scheduled_days')::INTEGER, 0),
-              COALESCE((p_review_log->i->>'elapsed_days')::INTEGER, 0),
-              COALESCE((p_review_log->i->>'state')::INTEGER, 0),
-              COALESCE((p_review_log->i->>'time_spent_ms')::INTEGER, 0),
-              COALESCE((p_review_log->i->>'updated_at')::BIGINT, v_now),
-              p_review_log->i->>'deleted_at'
-          )
-          ON CONFLICT (id, user_id) DO UPDATE SET
-              card_id = EXCLUDED.card_id,
-              reviewed_at = EXCLUDED.reviewed_at,
-              rating = EXCLUDED.rating,
-              scheduled_days = EXCLUDED.scheduled_days,
-              elapsed_days = EXCLUDED.elapsed_days,
-              state = EXCLUDED.state,
-              time_spent_ms = EXCLUDED.time_spent_ms,
-              updated_at = EXCLUDED.updated_at,
-              deleted_at = EXCLUDED.deleted_at
-          WHERE public.review_log.updated_at < EXCLUDED.updated_at;
-      END LOOP;
+---
 
-      -- ===========================================
-      -- CARD IMAGE REFS
-      -- ===========================================
-      FOR i IN 0..jsonb_array_length(p_card_image_refs) - 1 LOOP
-          INSERT INTO public.card_image_refs (
-              user_id, id, card_id, image_path, field, created_at, updated_at, deleted_at
-          ) VALUES (
-              v_user_id,
-              p_card_image_refs->i->>'id',
-              p_card_image_refs->i->>'card_id',
-              p_card_image_refs->i->>'image_path',
-              p_card_image_refs->i->>'field',
-              COALESCE((p_card_image_refs->i->>'created_at')::BIGINT, v_now),
-              COALESCE((p_card_image_refs->i->>'updated_at')::BIGINT, v_now),
-              p_card_image_refs->i->>'deleted_at'
-          )
-          ON CONFLICT (id, user_id) DO UPDATE SET
-              card_id = EXCLUDED.card_id,
-              image_path = EXCLUDED.image_path,
-              field = EXCLUDED.field,
-              updated_at = EXCLUDED.updated_at,
-              deleted_at = EXCLUDED.deleted_at
-          WHERE public.card_image_refs.updated_at < EXCLUDED.updated_at;
-      END LOOP;
+## 1. sync_all_data RPC Function
 
-      RETURN jsonb_build_object(
-          'status', 'ok',
-          'message', 'Sync completed'
-      );
+Uses UPSERT with LWW (Last Write Wins) conflict resolution.
 
+```sql
+CREATE OR REPLACE FUNCTION public.sync_all_data(
+    p_cards JSONB DEFAULT '[]'::JSONB,
+    p_review_log JSONB DEFAULT '[]'::JSONB,
+    p_card_image_refs JSONB DEFAULT '[]'::JSONB
+) RETURNS JSONB
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public
+AS $$
+DECLARE
+    v_user_id UUID;
+    item JSONB;
+BEGIN
+    v_user_id := auth.uid()::UUID;
+    IF v_user_id IS NULL THEN
+        RAISE EXCEPTION 'Not authenticated';
+    END IF;
+
+    -- CARDS
+    FOR item IN SELECT * FROM jsonb_array_elements(p_cards) LOOP
+        INSERT INTO public.cards (
+            id, user_id, due, stability, difficulty, reps, lapses, state, last_review,
+            scheduled_days, learning_step, suspended, buried_until, created_at, updated_at,
+            deleted_at, question, answer, source_uid
+        ) VALUES (
+            (item->>'id')::uuid,
+            v_user_id,
+            item->>'due',                    -- TEXT, no cast!
+            (item->>'stability')::float,
+            (item->>'difficulty')::float,
+            (item->>'reps')::int,
+            (item->>'lapses')::int,
+            (item->>'state')::int,
+            item->>'last_review',            -- TEXT, no cast!
+            (item->>'scheduled_days')::int,
+            (item->>'learning_step')::int,
+            (item->>'suspended')::boolean,
+            item->>'buried_until',           -- TEXT, no cast!
+            (item->>'created_at')::bigint,
+            (item->>'updated_at')::bigint,
+            (item->>'deleted_at')::bigint,
+            item->>'question',
+            item->>'answer',
+            item->>'source_uid'
+        )
+        ON CONFLICT (id, user_id) DO UPDATE SET
+            due = EXCLUDED.due,
+            stability = EXCLUDED.stability,
+            difficulty = EXCLUDED.difficulty,
+            reps = EXCLUDED.reps,
+            lapses = EXCLUDED.lapses,
+            state = EXCLUDED.state,
+            last_review = EXCLUDED.last_review,
+            scheduled_days = EXCLUDED.scheduled_days,
+            learning_step = EXCLUDED.learning_step,
+            suspended = EXCLUDED.suspended,
+            buried_until = EXCLUDED.buried_until,
+            updated_at = EXCLUDED.updated_at,
+            deleted_at = EXCLUDED.deleted_at,
+            question = EXCLUDED.question,
+            answer = EXCLUDED.answer,
+            source_uid = EXCLUDED.source_uid
+        WHERE EXCLUDED.updated_at > public.cards.updated_at;
+    END LOOP;
+
+    -- REVIEW LOG
+    FOR item IN SELECT * FROM jsonb_array_elements(p_review_log) LOOP
+        INSERT INTO public.review_log (
+            id, user_id, card_id, reviewed_at, rating, scheduled_days, elapsed_days,
+            state, time_spent_ms, updated_at, deleted_at
+        ) VALUES (
+            (item->>'id')::uuid,
+            v_user_id,
+            (item->>'card_id')::uuid,
+            (item->>'reviewed_at')::bigint,
+            (item->>'rating')::int,
+            (item->>'scheduled_days')::int,
+            (item->>'elapsed_days')::int,
+            (item->>'state')::int,
+            (item->>'time_spent_ms')::int,
+            (item->>'updated_at')::bigint,
+            (item->>'deleted_at')::bigint
+        )
+        ON CONFLICT (id, user_id) DO UPDATE SET
+            card_id = EXCLUDED.card_id,
+            reviewed_at = EXCLUDED.reviewed_at,
+            rating = EXCLUDED.rating,
+            state = EXCLUDED.state,
+            updated_at = EXCLUDED.updated_at,
+            deleted_at = EXCLUDED.deleted_at
+        WHERE EXCLUDED.updated_at > public.review_log.updated_at;
+    END LOOP;
+
+    -- CARD IMAGE REFS
+    FOR item IN SELECT * FROM jsonb_array_elements(p_card_image_refs) LOOP
+        INSERT INTO public.card_image_refs (
+            id, user_id, card_id, image_path, field, created_at, updated_at, deleted_at
+        ) VALUES (
+            (item->>'id')::uuid,
+            v_user_id,
+            (item->>'card_id')::uuid,
+            item->>'image_path',
+            item->>'field',
+            (item->>'created_at')::bigint,
+            (item->>'updated_at')::bigint,
+            (item->>'deleted_at')::bigint
+        )
+        ON CONFLICT (id, user_id) DO UPDATE SET
+            image_path = EXCLUDED.image_path,
+            field = EXCLUDED.field,
+            updated_at = EXCLUDED.updated_at,
+            deleted_at = EXCLUDED.deleted_at
+        WHERE EXCLUDED.updated_at > public.card_image_refs.updated_at;
+    END LOOP;
+
+    RETURN jsonb_build_object('status', 'success', 'time', now());
+
+EXCEPTION WHEN OTHERS THEN
+    RETURN jsonb_build_object('status', 'error', 'message', SQLERRM);
 END;
+$$;
+```
 
-$$
-;
+---
 
+## 2. replace_all_data RPC Function
 
--- =====================================================
--- 2. Update replace_all_data RPC function
--- Usuwa p_source_notes parameter i logikę source_notes
--- =====================================================
+Deletes all user data and inserts fresh (force upload).
 
-CREATE OR REPLACE FUNCTION replace_all_data(
-    p_cards JSONB DEFAULT '[]'::jsonb,
-    p_review_log JSONB DEFAULT '[]'::jsonb,
-    p_card_image_refs JSONB DEFAULT '[]'::jsonb
-) RETURNS JSONB LANGUAGE plpgsql SECURITY DEFINER AS
-$$
+```sql
+CREATE OR REPLACE FUNCTION public.replace_all_data(
+    p_cards JSONB DEFAULT '[]'::JSONB,
+    p_review_log JSONB DEFAULT '[]'::JSONB,
+    p_card_image_refs JSONB DEFAULT '[]'::JSONB
+) RETURNS JSONB
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public
+AS $$
+DECLARE
+    v_user_id UUID;
+    item JSONB;
+BEGIN
+    v_user_id := auth.uid()::UUID;
+    IF v_user_id IS NULL THEN
+        RAISE EXCEPTION 'Not authenticated';
+    END IF;
 
-DECLARE  
- v_user_id TEXT;  
- v_now BIGINT;  
- BEGIN  
- -- Get authenticated user ID  
- v_user_id := auth.uid();  
- IF v_user_id IS NULL THEN  
- RETURN jsonb_build_object('status', 'error', 'message', 'Not authenticated');  
- END IF;
+    DELETE FROM public.card_image_refs WHERE user_id = v_user_id;
+    DELETE FROM public.review_log WHERE user_id = v_user_id;
+    DELETE FROM public.cards WHERE user_id = v_user_id;
 
-      v_now := EXTRACT(EPOCH FROM NOW()) * 1000;
+    -- CARDS
+    FOR item IN SELECT * FROM jsonb_array_elements(p_cards) LOOP
+        INSERT INTO public.cards (
+            id, user_id, due, stability, difficulty, reps, lapses, state, last_review,
+            scheduled_days, learning_step, suspended, buried_until, created_at, updated_at,
+            deleted_at, question, answer, source_uid
+        ) VALUES (
+            (item->>'id')::uuid,
+            v_user_id,
+            item->>'due',                    -- TEXT!
+            (item->>'stability')::float,
+            (item->>'difficulty')::float,
+            (item->>'reps')::int,
+            (item->>'lapses')::int,
+            (item->>'state')::int,
+            item->>'last_review',            -- TEXT!
+            (item->>'scheduled_days')::int,
+            (item->>'learning_step')::int,
+            (item->>'suspended')::boolean,
+            item->>'buried_until',           -- TEXT!
+            (item->>'created_at')::bigint,
+            (item->>'updated_at')::bigint,
+            (item->>'deleted_at')::bigint,
+            item->>'question',
+            item->>'answer',
+            item->>'source_uid'
+        );
+    END LOOP;
 
-      -- Delete all existing data for this user
-      DELETE FROM public.card_image_refs WHERE user_id = v_user_id;
-      DELETE FROM public.review_log WHERE user_id = v_user_id;
-      DELETE FROM public.cards WHERE user_id = v_user_id;
+    -- REVIEW LOG
+    FOR item IN SELECT * FROM jsonb_array_elements(p_review_log) LOOP
+        INSERT INTO public.review_log (
+            id, user_id, card_id, reviewed_at, rating, scheduled_days, elapsed_days,
+            state, time_spent_ms, updated_at, deleted_at
+        ) VALUES (
+            (item->>'id')::uuid,
+            v_user_id,
+            (item->>'card_id')::uuid,
+            (item->>'reviewed_at')::bigint,
+            (item->>'rating')::int,
+            (item->>'scheduled_days')::int,
+            (item->>'elapsed_days')::int,
+            (item->>'state')::int,
+            (item->>'time_spent_ms')::int,
+            (item->>'updated_at')::bigint,
+            (item->>'deleted_at')::bigint
+        );
+    END LOOP;
 
-      -- Insert new data
-      -- CARDS
-      FOR i IN 0..jsonb_array_length(p_cards) - 1 LOOP
-          INSERT INTO public.cards (
-              user_id, id, due, stability, difficulty, reps, lapses, state,
-              last_review, scheduled_days, learning_step, suspended, buried_until,
-              created_at, updated_at, deleted_at, question, answer, source_uid
-          ) VALUES (
-              v_user_id,
-              p_cards->i->>'id',
-              p_cards->i->>'due',
-              COALESCE((p_cards->i->>'stability')::REAL, 0),
-              COALESCE((p_cards->i->>'difficulty')::REAL, 0),
-              COALESCE((p_cards->i->>'reps')::INTEGER, 0),
-              COALESCE((p_cards->i->>'lapses')::INTEGER, 0),
-              COALESCE((p_cards->i->>'state')::INTEGER, 0),
-              p_cards->i->>'last_review',
-              COALESCE((p_cards->i->>'scheduled_days')::INTEGER, 0),
-              COALESCE((p_cards->i->>'learning_step')::INTEGER, 0),
-              COALESCE((p_cards->i->>'suspended')::BOOLEAN, FALSE),
-              p_cards->i->>'buried_until',
-              COALESCE((p_cards->i->>'created_at')::BIGINT, v_now),
-              COALESCE((p_cards->i->>'updated_at')::BIGINT, v_now),
-              p_cards->i->>'deleted_at',
-              p_cards->i->>'question',
-              p_cards->i->>'answer',
-              p_cards->i->>'source_uid'
-          );
-      END LOOP;
+    -- CARD IMAGE REFS
+    FOR item IN SELECT * FROM jsonb_array_elements(p_card_image_refs) LOOP
+        INSERT INTO public.card_image_refs (
+            id, user_id, card_id, image_path, field, created_at, updated_at, deleted_at
+        ) VALUES (
+            (item->>'id')::uuid,
+            v_user_id,
+            (item->>'card_id')::uuid,
+            item->>'image_path',
+            item->>'field',
+            (item->>'created_at')::bigint,
+            (item->>'updated_at')::bigint,
+            (item->>'deleted_at')::bigint
+        );
+    END LOOP;
 
-      -- REVIEW LOG
-      FOR i IN 0..jsonb_array_length(p_review_log) - 1 LOOP
-          INSERT INTO public.review_log (
-              user_id, id, card_id, reviewed_at, rating, scheduled_days,
-              elapsed_days, state, time_spent_ms, updated_at, deleted_at
-          ) VALUES (
-              v_user_id,
-              p_review_log->i->>'id',
-              p_review_log->i->>'card_id',
-              p_review_log->i->>'reviewed_at',
-              COALESCE((p_review_log->i->>'rating')::INTEGER, 0),
-              COALESCE((p_review_log->i->>'scheduled_days')::INTEGER, 0),
-              COALESCE((p_review_log->i->>'elapsed_days')::INTEGER, 0),
-              COALESCE((p_review_log->i->>'state')::INTEGER, 0),
-              COALESCE((p_review_log->i->>'time_spent_ms')::INTEGER, 0),
-              COALESCE((p_review_log->i->>'updated_at')::BIGINT, v_now),
-              p_review_log->i->>'deleted_at'
-          );
-      END LOOP;
+    RETURN jsonb_build_object('status', 'success', 'time', now());
 
-      -- CARD IMAGE REFS
-      FOR i IN 0..jsonb_array_length(p_card_image_refs) - 1 LOOP
-          INSERT INTO public.card_image_refs (
-              user_id, id, card_id, image_path, field, created_at, updated_at, deleted_at
-          ) VALUES (
-              v_user_id,
-              p_card_image_refs->i->>'id',
-              p_card_image_refs->i->>'card_id',
-              p_card_image_refs->i->>'image_path',
-              p_card_image_refs->i->>'field',
-              COALESCE((p_card_image_refs->i->>'created_at')::BIGINT, v_now),
-              COALESCE((p_card_image_refs->i->>'updated_at')::BIGINT, v_now),
-              p_card_image_refs->i->>'deleted_at'
-          );
-      END LOOP;
-
-      RETURN jsonb_build_object(
-          'status', 'ok',
-          'message', 'All data replaced'
-      );
-
+EXCEPTION WHEN OTHERS THEN
+    RETURN jsonb_build_object('status', 'error', 'message', SQLERRM);
 END;
+$$;
+```
 
-$$
-;
+---
 
+## Type Casting Rules
 
--- =====================================================
--- 3. Drop source_notes table
--- =====================================================
+| Field Type | Example Fields | Cast |
+|------------|---------------|------|
+| UUID | id, card_id | `(item->>'id')::uuid` |
+| TEXT (dates) | due, last_review, buried_until | `item->>'due'` (NO CAST!) |
+| TEXT (content) | question, answer, source_uid | `item->>'question'` (NO CAST!) |
+| FLOAT | stability, difficulty | `(item->>'stability')::float` |
+| INT | reps, lapses, state, rating | `(item->>'reps')::int` |
+| BIGINT | created_at, updated_at, deleted_at, reviewed_at | `(item->>'created_at')::bigint` |
+| BOOLEAN | suspended | `(item->>'suspended')::boolean` |
 
-DROP TABLE IF EXISTS public.source_notes;
+**Important:** `due`, `last_review`, and `buried_until` are TEXT columns storing ISO date strings. Do NOT cast them to `::bigint`!
 
-Kolejność wykonywania:
+---
 
-1. Najpierw uruchom sync_all_data - aby zaktualizować funkcję RPC
-2. Potem uruchom replace_all_data - aby zaktualizować drugą funkcję RPC
-3. Na końcu uruchom DROP TABLE - aby usunąć tabelę source_notes
+## Execution Order
 
-Jak to wykonać w Supabase:
+1. Run `sync_all_data` function first
+2. Run `replace_all_data` function second
+3. (Optional) Drop `source_notes` table if it exists: `DROP TABLE IF EXISTS public.source_notes;`
 
-1. Otwórz Supabase Dashboard
-2. Przejdź do SQL Editor
-3. Skopiuj i uruchom każde zapytanie osobno (w powyższej kolejności)
-$$
+## How to Execute
+
+1. Open Supabase Dashboard
+2. Go to SQL Editor
+3. Copy and run each query separately (in order above)

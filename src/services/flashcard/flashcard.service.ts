@@ -114,6 +114,13 @@ export class FlashcardManager {
 	}
 
 	/**
+	 * Get source note service for enriching cards with vault data
+	 */
+	getSourceNoteService(): SourceNoteService {
+		return this.sourceNoteService;
+	}
+
+	/**
 	 * Parse flashcards from markdown content
 	 * Used for migration and AI response parsing
 	 */
@@ -392,32 +399,29 @@ export class FlashcardManager {
 
 	/**
 	 * Get all flashcards from SQL
+	 * Enriches cards with sourceNoteName, sourceNotePath, and projects from vault
 	 */
-	async getAllFSRSCards(): Promise<FSRSFlashcardItem[]> {
+	getAllFSRSCards(): FSRSFlashcardItem[] {
 		if (!this.store) {
 			throw new Error("Store not initialized. Please restart Obsidian.");
 		}
 
 		const cardsWithContent = this.store.getCardsWithContent();
 
-		return cardsWithContent
+		const filteredCards = cardsWithContent
 			.filter((card): card is FSRSCardData & { question: string; answer: string } =>
 				Boolean(card.question && card.answer)
 			)
-			.map((card) => {
-				// Resolve source note info from vault
-				const sourceNoteInfo = this.sourceNoteService.resolveSourceNote(card.sourceUid);
-				return {
-					id: card.id,
-					question: card.question,
-					answer: card.answer,
-					fsrs: card,
-					projects: card.projects || [],
-					sourceNoteName: sourceNoteInfo.noteName || card.sourceNoteName,
-					sourceUid: card.sourceUid,
-					sourceNotePath: sourceNoteInfo.notePath || card.sourceNotePath,
-				};
-			});
+			.map((card) => ({
+				id: card.id,
+				question: card.question,
+				answer: card.answer,
+				fsrs: card,
+				sourceUid: card.sourceUid,
+			}));
+
+		// Enrich with source note info from vault (sourceNoteName, sourceNotePath, projects)
+		return this.sourceNoteService.enrichCards(filteredCards);
 	}
 
 	/**

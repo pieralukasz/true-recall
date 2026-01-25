@@ -136,4 +136,84 @@ export class SourceNoteService {
 		const uid = await this.getSourceUid(file);
 		return uid !== null;
 	}
+
+	/**
+	 * Enrich a card with source note info resolved from vault
+	 * Adds sourceNoteName, sourceNotePath, and projects from frontmatter
+	 *
+	 * @param card - Card with sourceUid
+	 * @returns Card enriched with resolved source note info
+	 */
+	enrichCard<T extends { sourceUid?: string }>(card: T): T & {
+		sourceNoteName: string;
+		sourceNotePath: string;
+		projects: string[];
+	} {
+		if (!card.sourceUid) {
+			return { ...card, sourceNoteName: "", sourceNotePath: "", projects: [] };
+		}
+
+		const file = this.findFileByUidSync(card.sourceUid);
+		if (!file) {
+			return { ...card, sourceNoteName: "", sourceNotePath: "", projects: [] };
+		}
+
+		const frontmatter = this.app.metadataCache.getFileCache(file)?.frontmatter;
+		const rawProjects = frontmatter?.projects;
+		const projects = Array.isArray(rawProjects) ? rawProjects : [];
+
+		return {
+			...card,
+			sourceNoteName: file.basename,
+			sourceNotePath: file.path,
+			projects,
+		};
+	}
+
+	/**
+	 * Enrich multiple cards with source note info
+	 * Optimized version that caches file lookups
+	 *
+	 * @param cards - Cards with sourceUid
+	 * @returns Cards enriched with resolved source note info
+	 */
+	enrichCards<T extends { sourceUid?: string }>(cards: T[]): Array<T & {
+		sourceNoteName: string;
+		sourceNotePath: string;
+		projects: string[];
+	}> {
+		// Build UID -> file cache for performance
+		const uidToFile = new Map<string, TFile>();
+		const files = this.app.vault.getMarkdownFiles();
+
+		for (const file of files) {
+			const cache = this.app.metadataCache.getFileCache(file);
+			const uid = cache?.frontmatter?.flashcard_uid;
+			if (uid) {
+				uidToFile.set(uid, file);
+			}
+		}
+
+		return cards.map(card => {
+			if (!card.sourceUid) {
+				return { ...card, sourceNoteName: "", sourceNotePath: "", projects: [] };
+			}
+
+			const file = uidToFile.get(card.sourceUid);
+			if (!file) {
+				return { ...card, sourceNoteName: "", sourceNotePath: "", projects: [] };
+			}
+
+			const frontmatter = this.app.metadataCache.getFileCache(file)?.frontmatter;
+			const rawProjects = frontmatter?.projects;
+			const projects = Array.isArray(rawProjects) ? rawProjects : [];
+
+			return {
+				...card,
+				sourceNoteName: file.basename,
+				sourceNotePath: file.path,
+				projects,
+			};
+		});
+	}
 }
