@@ -52,6 +52,8 @@ export interface EditableTextFieldProps {
 	autoFocus?: boolean;
 	/** Field identifier (for data attribute) */
 	field?: string;
+	/** Make textarea invisible (no border, background, padding) - uses inline styles to override Obsidian defaults */
+	invisibleTextarea?: boolean;
 }
 
 // Predefined toolbar button sets
@@ -230,8 +232,10 @@ export class EditableTextField extends BaseComponent {
 		this.element = this.container.createDiv({ cls: wrapperClass });
 
 		// Create textarea
-		const textareaClass =
-			this.props.textareaClass || "ep:w-full ep:min-h-16 ep:p-2 ep:border ep:border-obs-border ep:rounded-md ep:bg-obs-primary ep:text-obs-normal ep:resize-y ep:focus:outline-none ep:focus:border-obs-interactive";
+		const defaultTextareaClass = this.props.invisibleTextarea
+			? "ep:w-full ep:text-center ep:text-obs-normal ep:resize-none"
+			: "ep:w-full ep:min-h-16 ep:p-2 ep:border ep:border-obs-border ep:rounded-md ep:bg-obs-primary ep:text-obs-normal ep:resize-y ep:focus:outline-none ep:focus:border-obs-interactive";
+		const textareaClass = this.props.textareaClass || defaultTextareaClass;
 		this.textarea = this.element.createEl("textarea", {
 			cls: textareaClass,
 			attr: {
@@ -239,6 +243,18 @@ export class EditableTextField extends BaseComponent {
 				...(this.props.field && { "data-field": this.props.field }),
 			},
 		});
+
+		// Apply inline styles for invisible mode (overrides Obsidian defaults)
+		if (this.props.invisibleTextarea) {
+			this.textarea.style.fontSize = "inherit";
+			this.textarea.style.lineHeight = "inherit";
+			this.textarea.style.padding = "0";
+			this.textarea.style.margin = "0";
+			this.textarea.style.border = "none";
+			this.textarea.style.background = "transparent";
+			this.textarea.style.outline = "none";
+			this.textarea.style.boxShadow = "none";
+		}
 
 		// Set initial value (convert <br> to newlines for editing)
 		this.textarea.value = this.props.initialValue.replace(/<br\s*\/?>/gi, "\n");
