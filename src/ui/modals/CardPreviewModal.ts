@@ -42,16 +42,20 @@ export class CardPreviewModal extends BaseModal {
 		container.empty();
 
 		// Header with count and optional "Unbury All" button
-		const headerEl = container.createDiv({ cls: "episteme-card-preview-header" });
+		const headerEl = container.createDiv({
+			cls: "ep:flex ep:justify-between ep:items-center ep:mb-4",
+		});
 
 		// Cards count
-		const countEl = headerEl.createDiv({ cls: "episteme-card-preview-count" });
+		const countEl = headerEl.createDiv({
+			cls: "ep:text-sm ep:text-obs-muted",
+		});
 		countEl.setText(`${this.options.cards.length} cards`);
 
 		// "Unbury All" button for buried cards category
 		if (this.options.category === "buried" && this.options.cards.length > 0) {
 			const unburyAllBtn = headerEl.createEl("button", {
-				cls: "episteme-unbury-all-btn",
+				cls: "ep:text-xs ep:py-1.5 ep:px-3 ep:bg-obs-interactive ep:text-white ep:border-none ep:rounded ep:cursor-pointer ep:transition-colors ep:hover:opacity-90",
 				text: "Unbury All",
 			});
 			unburyAllBtn.addEventListener("click", () => void this.handleUnburyAll());
@@ -60,18 +64,20 @@ export class CardPreviewModal extends BaseModal {
 		// "Delete All" button for suspended cards category
 		if (this.options.category === "suspended" && this.options.cards.length > 0) {
 			const deleteAllBtn = headerEl.createEl("button", {
-				cls: "episteme-delete-all-btn",
+				cls: "ep:text-xs ep:py-1.5 ep:px-3 ep:bg-red-500 ep:text-white ep:border-none ep:rounded ep:cursor-pointer ep:transition-colors ep:hover:bg-red-600",
 				text: "Delete All",
 			});
 			deleteAllBtn.addEventListener("click", () => void this.handleDeleteAll());
 		}
 
 		// Cards list
-		const listEl = container.createDiv({ cls: "episteme-card-preview-list" });
+		const listEl = container.createDiv({
+			cls: "ep:max-h-[60vh] ep:overflow-y-auto ep:flex ep:flex-col ep:gap-3",
+		});
 
 		if (this.options.cards.length === 0) {
 			listEl.createDiv({
-				cls: "episteme-card-preview-empty",
+				cls: "ep:text-center ep:text-obs-muted ep:py-8 ep:italic",
 				text: "No cards in this category",
 			});
 			return;

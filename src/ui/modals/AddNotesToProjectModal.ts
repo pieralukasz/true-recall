@@ -45,19 +45,17 @@ export class AddNotesToProjectModal extends BasePromiseModal<AddNotesToProjectRe
 	}
 
 	protected renderBody(container: HTMLElement): void {
-		container.addClass("episteme-add-notes-project-modal");
-
 		// Info text
 		container.createEl("p", {
 			text: "Select notes to add to this project. Only notes without any project assignment are shown.",
-			cls: "episteme-modal-info",
+			cls: "ep:text-obs-muted ep:text-sm ep:mb-4",
 		});
 
 		// Search input
 		this.renderSearchInput(container);
 
 		// Note list with checkboxes
-		this.noteListEl = container.createDiv({ cls: "episteme-note-list episteme-add-notes-list" });
+		this.noteListEl = container.createDiv({ cls: "ep:border ep:border-obs-border ep:rounded-md ep:max-h-[350px] ep:overflow-y-auto" });
 		this.renderNoteList();
 
 		// Action buttons
@@ -65,12 +63,12 @@ export class AddNotesToProjectModal extends BasePromiseModal<AddNotesToProjectRe
 	}
 
 	private renderSearchInput(container: HTMLElement): void {
-		const searchContainer = container.createDiv({ cls: "episteme-search-container" });
+		const searchContainer = container.createDiv({ cls: "ep:mb-3" });
 
 		const searchInput = searchContainer.createEl("input", {
 			type: "text",
 			placeholder: "Search notes...",
-			cls: "episteme-search-input",
+			cls: "ep:w-full ep:py-2.5 ep:px-3 ep:border ep:border-obs-border ep:rounded-md ep:bg-obs-primary ep:text-obs-normal ep:text-sm ep:focus:outline-none ep:focus:border-obs-interactive ep:placeholder:text-obs-muted",
 		});
 
 		searchInput.addEventListener("input", (e) => {
@@ -94,7 +92,7 @@ export class AddNotesToProjectModal extends BasePromiseModal<AddNotesToProjectRe
 				: "No orphaned notes available.";
 			this.noteListEl.createEl("div", {
 				text: emptyText,
-				cls: "episteme-note-list-empty",
+				cls: "ep:py-6 ep:px-4 ep:text-center ep:text-obs-muted ep:italic",
 			});
 			return;
 		}
@@ -108,24 +106,24 @@ export class AddNotesToProjectModal extends BasePromiseModal<AddNotesToProjectRe
 	private renderNoteItem(note: OrphanedNoteInfo): void {
 		if (!this.noteListEl) return;
 
-		const itemEl = this.noteListEl.createDiv({ cls: "episteme-note-item episteme-note-checkbox-item" });
+		const itemEl = this.noteListEl.createDiv({ cls: "ep:flex ep:items-center ep:gap-2.5 ep:p-3 ep:border-b ep:border-obs-border ep:cursor-pointer ep:transition-colors ep:hover:bg-obs-modifier-hover ep:last:border-b-0" });
 
 		// Checkbox
 		const checkbox = itemEl.createEl("input", {
 			type: "checkbox",
-			cls: "episteme-note-checkbox",
+			cls: "ep:w-4 ep:h-4 ep:shrink-0 ep:cursor-pointer ep:accent-obs-interactive",
 		});
 		checkbox.checked = this.selectedNotes.has(note.uid);
 
 		// Note info
-		const noteInfo = itemEl.createDiv({ cls: "episteme-note-info" });
-		noteInfo.createSpan({ cls: "episteme-note-name", text: note.noteName });
+		const noteInfo = itemEl.createDiv({ cls: "ep:flex ep:items-center ep:gap-2 ep:overflow-hidden ep:flex-1" });
+		noteInfo.createSpan({ cls: "ep:font-medium ep:overflow-hidden ep:text-ellipsis ep:whitespace-nowrap", text: note.noteName });
 
 		// Folder path
 		const folderPath = note.notePath.replace(/\/[^/]+$/, "");
 		if (folderPath && folderPath !== note.noteName) {
 			noteInfo.createSpan({
-				cls: "episteme-note-path",
+				cls: "ep:text-xs ep:text-obs-muted ep:ml-2",
 				text: folderPath,
 			});
 		}
@@ -177,12 +175,12 @@ export class AddNotesToProjectModal extends BasePromiseModal<AddNotesToProjectRe
 	}
 
 	private renderButtons(container: HTMLElement): void {
-		const buttonContainer = container.createDiv({ cls: "episteme-modal-buttons" });
+		const buttonContainer = container.createDiv({ cls: "ep:flex ep:justify-end ep:gap-3 ep:mt-4 ep:pt-4 ep:border-t ep:border-obs-border" });
 
 		// Cancel button
 		const cancelBtn = buttonContainer.createEl("button", {
 			text: "Cancel",
-			cls: "episteme-btn-secondary",
+			cls: "ep:py-2.5 ep:px-5 ep:bg-obs-secondary ep:text-obs-normal ep:border ep:border-obs-border ep:rounded-md ep:cursor-pointer ep:font-medium ep:transition-colors ep:hover:bg-obs-modifier-hover",
 		});
 		cancelBtn.addEventListener("click", () => {
 			this.resolve({ cancelled: true, selectedNotes: [] });
@@ -191,7 +189,7 @@ export class AddNotesToProjectModal extends BasePromiseModal<AddNotesToProjectRe
 		// Save button
 		const saveBtn = buttonContainer.createEl("button", {
 			text: "Add to Project",
-			cls: "episteme-btn-primary",
+			cls: "ep:py-2.5 ep:px-5 ep:bg-obs-interactive ep:text-white ep:border-none ep:rounded-md ep:cursor-pointer ep:font-medium ep:transition-colors ep:hover:bg-obs-interactive-hover",
 		});
 		saveBtn.addEventListener("click", () => {
 			const selectedNotes = this.options.orphanedNotes.filter(

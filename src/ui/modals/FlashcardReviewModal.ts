@@ -104,7 +104,7 @@ export class FlashcardReviewModal extends BaseModal {
 		this.renderDestinationSection(container);
 
 		// Flashcards list (scrollable)
-		this.flashcardsListEl = container.createDiv({ cls: "episteme-review-flashcards-list" });
+		this.flashcardsListEl = container.createDiv({ cls: "ep:max-h-[400px] ep:overflow-y-auto ep:mb-4 ep:pr-2" });
 		this.renderFlashcardsList();
 
 		// Action buttons
@@ -114,7 +114,7 @@ export class FlashcardReviewModal extends BaseModal {
 	// ===== Rendering methods =====
 
 	private renderInfoSection(container: HTMLElement): void {
-		const infoEl = container.createDiv({ cls: "episteme-review-info" });
+		const infoEl = container.createDiv({ cls: "ep:text-obs-muted ep:text-sm ep:mb-4 ep:p-3 ep:bg-obs-secondary ep:rounded-md" });
 		const sourceText = this.options.sourceNoteName
 			? ` from "${this.options.sourceNoteName}"`
 			: "";
@@ -123,8 +123,8 @@ export class FlashcardReviewModal extends BaseModal {
 		});
 
 		// Keyboard hint
-		const hintEl = infoEl.createDiv({ cls: "episteme-review-hint" });
-		hintEl.innerHTML = `<span class="episteme-key-hint">⌘ + click</span> to edit`;
+		const hintEl = infoEl.createDiv({ cls: "ep:text-xs ep:text-obs-muted ep:text-center ep:mt-1" });
+		hintEl.innerHTML = `<span class="ep:inline-block ep:py-0.5 ep:px-1.5 ep:bg-obs-border ep:rounded ep:font-mono ep:text-[10px]">⌘ + click</span> to edit`;
 	}
 
 	private renderFlashcardsList(): void {
@@ -138,7 +138,7 @@ export class FlashcardReviewModal extends BaseModal {
 
 		if (activeFlashcards.length === 0) {
 			this.flashcardsListEl.createDiv({
-				cls: "episteme-review-empty",
+				cls: "ep:text-center ep:text-obs-muted ep:py-6 ep:px-4 ep:italic",
 				text: "No flashcards remaining. All cards have been deleted.",
 			});
 			this.updateButtons();
@@ -161,7 +161,7 @@ export class FlashcardReviewModal extends BaseModal {
 		index: number
 	): void {
 		const itemEl = container.createDiv({
-			cls: "episteme-review-card-item",
+			cls: "ep:flex ep:flex-col ep:gap-3 ep:mb-3 ep:p-3 ep:bg-obs-secondary ep:border ep:border-obs-border ep:rounded-md ep:transition-colors ep:hover:border-obs-interactive",
 		});
 
 		// Check if this card/field is being edited
@@ -180,16 +180,16 @@ export class FlashcardReviewModal extends BaseModal {
 		index: number
 	): void {
 		// Content wrapper (takes remaining space)
-		const contentEl = itemEl.createDiv({ cls: "episteme-review-card-content" });
+		const contentEl = itemEl.createDiv({ cls: "ep:flex-1 ep:min-w-0" });
 
 		// Question field
 		const questionEl = contentEl.createDiv({
-			cls: "episteme-review-field episteme-review-field--view",
+			cls: "ep:relative ep:cursor-pointer ep:p-2 ep:rounded ep:transition-colors ep:hover:bg-obs-modifier-hover",
 			attr: { "data-field": "question" },
 		});
 		questionEl.addEventListener("click", (e) => this.handleFieldClick(e, index, "question"));
 
-		const questionContent = questionEl.createDiv({ cls: "episteme-md-content" });
+		const questionContent = questionEl.createDiv({ cls: "ep:text-sm ep:leading-normal" });
 		void MarkdownRenderer.renderMarkdown(
 			card.question,
 			questionContent,
@@ -198,16 +198,16 @@ export class FlashcardReviewModal extends BaseModal {
 		);
 
 		// Divider between question and answer
-		contentEl.createEl("hr", { cls: "episteme-editor-divider" });
+		contentEl.createEl("hr", { cls: "ep:border-none ep:border-t ep:border-obs-border ep:my-3" });
 
 		// Answer field
 		const answerEl = contentEl.createDiv({
-			cls: "episteme-review-field episteme-review-field--view",
+			cls: "ep:relative ep:cursor-pointer ep:p-2 ep:rounded ep:transition-colors ep:hover:bg-obs-modifier-hover",
 			attr: { "data-field": "answer" },
 		});
 		answerEl.addEventListener("click", (e) => this.handleFieldClick(e, index, "answer"));
 
-		const answerContent = answerEl.createDiv({ cls: "episteme-md-content" });
+		const answerContent = answerEl.createDiv({ cls: "ep:text-sm ep:leading-normal" });
 		void MarkdownRenderer.renderMarkdown(
 			card.answer,
 			answerContent,
@@ -217,7 +217,7 @@ export class FlashcardReviewModal extends BaseModal {
 
 		// Delete button (on right side)
 		const deleteBtn = itemEl.createEl("button", {
-			cls: "episteme-review-delete-btn",
+			cls: "ep:w-7 ep:h-7 ep:p-1.5 ep:bg-transparent ep:text-obs-muted ep:border-none ep:rounded ep:cursor-pointer ep:transition-colors ep:hover:bg-obs-modifier-hover ep:hover:text-red-500 ep:self-end",
 			attr: { "aria-label": "Delete flashcard", "title": "Delete" },
 		});
 		deleteBtn.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/></svg>`;
@@ -255,83 +255,88 @@ export class FlashcardReviewModal extends BaseModal {
 
 	private renderRefineSection(container: HTMLElement): void {
 		const sectionEl = container.createDiv({
-			cls: "episteme-review-refine-section",
+			cls: "ep:mb-3 ep:p-3 ep:bg-obs-secondary ep:rounded-md",
 		});
 
 		sectionEl.createEl("h3", {
 			text: "AI Refine (Optional)",
-			cls: "episteme-review-section-title",
+			cls: "ep:text-sm ep:font-semibold ep:m-0 ep:mb-2 ep:text-obs-normal",
 		});
 
 		const instructionsContainer = sectionEl.createDiv({
-			cls: "episteme-review-instructions-container",
+			cls: "ep:mb-2",
 		});
 
 		this.instructionsInputEl = instructionsContainer.createEl("textarea", {
 			placeholder: "e.g., 'Make questions more specific', 'Add examples', 'Simplify complex cards'...",
-			cls: "episteme-review-instructions-input",
+			cls: "ep:w-full ep:p-2 ep:border ep:border-obs-border ep:rounded ep:bg-obs-primary ep:text-obs-normal ep:text-sm ep:resize-none ep:focus:outline-none ep:focus:border-obs-interactive",
 		});
 		this.instructionsInputEl.rows = 2;
 
 		const buttonContainer = sectionEl.createDiv({
-			cls: "episteme-review-refine-buttons",
+			cls: "ep:flex ep:justify-end",
 		});
 
 		this.refineButtonEl = buttonContainer.createEl("button", {
 			text: "Refine with AI",
-			cls: "episteme-review-refine-btn",
+			cls: "ep:py-1.5 ep:px-4 ep:text-sm ep:bg-obs-interactive ep:text-white ep:border-none ep:rounded ep:cursor-pointer ep:transition-colors ep:hover:bg-obs-interactive-hover ep:disabled:opacity-50 ep:disabled:cursor-not-allowed",
 		});
 		this.refineButtonEl.addEventListener("click", () => void this.handleRefine());
 	}
 
 	private renderDestinationSection(container: HTMLElement): void {
 		const sectionEl = container.createDiv({
-			cls: "episteme-destination-section",
+			cls: "ep:mb-3 ep:p-3 ep:bg-obs-secondary ep:rounded-md",
 		});
 
 		// Checkbox row
 		const checkboxRow = sectionEl.createDiv({
-			cls: "episteme-destination-checkbox-row",
+			cls: "ep:flex ep:items-center ep:gap-2",
 		});
 
 		const checkbox = checkboxRow.createEl("input", {
 			type: "checkbox",
-			cls: "episteme-destination-checkbox",
+			cls: "ep:w-4 ep:h-4 ep:accent-obs-interactive ep:cursor-pointer",
 		});
 		checkbox.id = "episteme-create-new-note";
 		checkbox.checked = this.createNewNote;
 
 		const label = checkboxRow.createEl("label", {
 			text: "Create new note for these flashcards",
-			cls: "episteme-destination-label",
+			cls: "ep:text-sm ep:font-medium ep:text-obs-normal ep:cursor-pointer",
 		});
 		label.htmlFor = "episteme-create-new-note";
 
 		// Options container (hidden by default)
 		this.destinationOptionsEl = sectionEl.createDiv({
-			cls: "episteme-destination-options",
+			cls: "ep:mt-3 ep:pt-3 ep:border-t ep:border-obs-border",
 		});
 		this.destinationOptionsEl.style.display = this.createNewNote ? "block" : "none";
 
 		// Note type radio buttons
 		const typeLabel = this.destinationOptionsEl.createDiv({
-			cls: "episteme-destination-type-label",
+			cls: "ep:text-sm ep:font-medium ep:text-obs-muted ep:mb-2",
 			text: "Note type:",
 		});
 
 		const radioGroup = this.destinationOptionsEl.createDiv({
-			cls: "episteme-destination-radio-group",
+			cls: "ep:flex ep:flex-col ep:gap-1.5 ep:mb-3",
 		});
+
+		const baseItemCls = "ep:flex ep:items-start ep:gap-2 ep:py-2 ep:px-2.5 ep:bg-obs-primary ep:border ep:border-obs-border ep:rounded ep:cursor-pointer ep:transition-colors ep:hover:border-obs-interactive";
+		const selectedItemCls = "ep:border-obs-interactive ep:bg-obs-interactive/10";
 
 		for (const [key, config] of Object.entries(GENERATED_NOTE_TYPES)) {
 			const typeKey = key as GeneratedNoteType;
+			const isSelected = this.selectedNoteType === typeKey;
 			const radioItem = radioGroup.createDiv({
-				cls: `episteme-destination-radio-item${this.selectedNoteType === typeKey ? " is-selected" : ""}`,
+				cls: `${baseItemCls}${isSelected ? ` ${selectedItemCls}` : ""}`,
+				attr: { "data-type": typeKey },
 			});
 
 			const radio = radioItem.createEl("input", {
 				type: "radio",
-				cls: "episteme-destination-radio",
+				cls: "ep:w-4 ep:h-4 ep:mt-0.5 ep:accent-obs-interactive ep:cursor-pointer",
 			});
 			radio.name = "note-type";
 			radio.value = typeKey;
@@ -339,17 +344,17 @@ export class FlashcardReviewModal extends BaseModal {
 			radio.checked = this.selectedNoteType === typeKey;
 
 			const radioLabel = radioItem.createEl("label", {
-				cls: "episteme-destination-radio-label",
+				cls: "ep:flex ep:flex-col ep:gap-0.5 ep:cursor-pointer ep:flex-1",
 			});
 			radioLabel.htmlFor = `episteme-note-type-${typeKey}`;
 
 			radioLabel.createEl("span", {
 				text: config.label,
-				cls: "episteme-destination-type-name",
+				cls: "ep:text-sm ep:font-semibold ep:text-obs-normal",
 			});
 			radioLabel.createEl("span", {
 				text: config.description,
-				cls: "episteme-destination-type-desc",
+				cls: "ep:text-xs ep:text-obs-muted",
 			});
 
 			radio.addEventListener("change", () => {
@@ -357,27 +362,27 @@ export class FlashcardReviewModal extends BaseModal {
 					this.selectedNoteType = typeKey;
 					this.updateSuggestedNoteName();
 					// Update visual selection
-					radioGroup.querySelectorAll(".episteme-destination-radio-item").forEach(el => {
-						el.classList.remove("is-selected");
+					radioGroup.querySelectorAll("[data-type]").forEach(el => {
+						el.classList.remove(...selectedItemCls.split(" "));
 					});
-					radioItem.classList.add("is-selected");
+					radioItem.classList.add(...selectedItemCls.split(" "));
 				}
 			});
 		}
 
 		// Note name input
 		const nameContainer = this.destinationOptionsEl.createDiv({
-			cls: "episteme-destination-name-container",
+			cls: "ep:flex ep:flex-col ep:gap-1.5",
 		});
 
 		nameContainer.createEl("label", {
 			text: "Note name (optional):",
-			cls: "episteme-destination-name-label",
+			cls: "ep:text-sm ep:font-medium ep:text-obs-muted",
 		});
 
 		this.noteNameInputEl = nameContainer.createEl("input", {
 			type: "text",
-			cls: "episteme-destination-name-input",
+			cls: "ep:w-full ep:py-2 ep:px-3 ep:border ep:border-obs-border ep:rounded-md ep:bg-obs-primary ep:text-obs-normal ep:text-sm ep:focus:outline-none ep:focus:border-obs-interactive ep:placeholder:text-obs-muted ep:placeholder:text-sm",
 			placeholder: "Leave empty for auto-generated name",
 		});
 		this.noteNameInputEl.value = this.customNoteName;
@@ -418,22 +423,22 @@ export class FlashcardReviewModal extends BaseModal {
 
 	private renderActions(container: HTMLElement): void {
 		const actionsEl = container.createDiv({
-			cls: "episteme-review-actions",
+			cls: "ep:pt-4 ep:border-t ep:border-obs-border",
 		});
 
 		const buttonsContainer = actionsEl.createDiv({
-			cls: "episteme-review-action-buttons",
+			cls: "ep:flex ep:justify-end ep:gap-3",
 		});
 
 		this.saveButtonEl = buttonsContainer.createEl("button", {
 			text: "Save flashcards",
-			cls: "mod-cta episteme-review-save-btn",
+			cls: "mod-cta ep:py-2.5 ep:px-5 ep:text-sm ep:font-medium",
 		});
 		this.saveButtonEl.addEventListener("click", () => this.handleSave());
 
 		const cancelButton = buttonsContainer.createEl("button", {
 			text: "Cancel",
-			cls: "episteme-review-cancel-btn",
+			cls: "ep:py-2.5 ep:px-5 ep:text-sm ep:font-medium ep:bg-obs-secondary ep:text-obs-normal ep:border ep:border-obs-border ep:rounded-md ep:cursor-pointer ep:transition-colors ep:hover:bg-obs-modifier-hover",
 		});
 		cancelButton.addEventListener("click", () => this.handleCancel());
 	}
