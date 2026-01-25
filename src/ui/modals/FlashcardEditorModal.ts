@@ -295,6 +295,7 @@ export class FlashcardEditorModal extends BaseModal {
 			toolbarPositioned: false,
 			field,
 			autoFocus: true,
+			invisibleTextarea: true,
 			onSave: (value) => {
 				// Save value and exit edit mode
 				if (field === "question") {
