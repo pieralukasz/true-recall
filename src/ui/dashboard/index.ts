@@ -4,5 +4,4 @@
  */
 
 export { DashboardView } from "./DashboardView";
-export { DashboardHeader } from "./DashboardHeader";
 export { DashboardContent } from "./DashboardContent";

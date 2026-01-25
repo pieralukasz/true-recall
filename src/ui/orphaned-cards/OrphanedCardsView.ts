@@ -24,6 +24,9 @@ export class OrphanedCardsView extends ItemView {
 	private panelComponent: Panel | null = null;
 	private contentComponent: OrphanedCardsContent | null = null;
 
+	// Native header action elements
+	private refreshAction: HTMLElement | null = null;
+
 	// State subscription
 	private unsubscribe: (() => void) | null = null;
 
@@ -49,12 +52,14 @@ export class OrphanedCardsView extends ItemView {
 		if (!(container instanceof HTMLElement)) return;
 		container.empty();
 
-		// Create Panel component
-		this.panelComponent = new Panel(container, {
-			title: "Orphaned Cards",
-			onRefresh: () => void this.loadOrphanedCards(),
-		});
+		// Create Panel component (header is native Obsidian header)
+		this.panelComponent = new Panel(container);
 		this.panelComponent.render();
+
+		// Add native refresh action
+		this.refreshAction = this.addAction("refresh-cw", "Refresh", () => {
+			void this.loadOrphanedCards();
+		});
 
 		// Subscribe to state changes
 		this.unsubscribe = this.stateManager.subscribe(() => this.renderContent());
@@ -68,6 +73,13 @@ export class OrphanedCardsView extends ItemView {
 
 	async onClose(): Promise<void> {
 		this.unsubscribe?.();
+
+		// Remove native header action
+		if (this.refreshAction) {
+			this.refreshAction.remove();
+			this.refreshAction = null;
+		}
+
 		this.panelComponent?.destroy();
 		this.contentComponent?.destroy();
 	}
@@ -233,18 +245,14 @@ export class OrphanedCardsView extends ItemView {
 		if (!this.panelComponent) return;
 
 		const state = this.stateManager.getState();
-
-		const headerContainer = this.panelComponent.getHeaderContainer();
 		const contentContainer = this.panelComponent.getContentContainer();
 
-		// Clear and re-add summary section (header title row is preserved by Panel)
-		const existingSummary = headerContainer.querySelector(".summary-section");
-		if (existingSummary) {
-			existingSummary.remove();
-		}
+		// Render Content (includes summary)
+		this.contentComponent?.destroy();
+		contentContainer.empty();
 
-		// Add summary section after header
-		const summaryEl = headerContainer.createDiv({
+		// Add summary section at top of content
+		const summaryEl = contentContainer.createDiv({
 			cls: "summary-section ep:text-center ep:p-4 ep:bg-obs-secondary ep:rounded-lg ep:mb-4",
 		});
 
@@ -264,10 +272,9 @@ export class OrphanedCardsView extends ItemView {
 			});
 		}
 
-		// Render Content
-		this.contentComponent?.destroy();
-		contentContainer.empty();
-		this.contentComponent = new OrphanedCardsContent(contentContainer, {
+		// Render cards list
+		const cardsContainer = contentContainer.createDiv();
+		this.contentComponent = new OrphanedCardsContent(cardsContainer, {
 			isLoading: state.isLoading,
 			cards: state.allOrphanedCards,
 			app: this.app,

@@ -2,123 +2,143 @@
 @import "tailwindcss" prefix(ep);
 
 /*
+ * Obsidian Theme Variables - Runtime Inheritance
+ *
+ * IMPORTANT: Obsidian sets CSS variables on .theme-dark/.theme-light, NOT :root.
+ * We must define our variables to inherit from these classes, not from :root.
+ * This block runs AFTER @theme and allows proper inheritance.
+ */
+.theme-dark,
+.theme-light {
+	--ep-color-obs-modifier-hover: var(--background-modifier-hover);
+	--ep-color-obs-modifier-border: var(--background-modifier-border);
+	--ep-color-obs-modifier-border-hover: var(
+		--background-modifier-border-hover
+	);
+	--ep-color-obs-modifier-border-focus: var(
+		--background-modifier-border-focus
+	);
+	--ep-color-obs-border: var(--background-modifier-border);
+	--ep-color-obs-primary: var(--background-primary);
+	--ep-color-obs-primary-alt: var(--background-primary-alt);
+	--ep-color-obs-secondary: var(--background-secondary);
+	--ep-color-obs-secondary-alt: var(--background-secondary-alt);
+	--ep-color-obs-normal: var(--text-normal);
+	--ep-color-obs-muted: var(--text-muted);
+	--ep-color-obs-faint: var(--text-faint);
+	--ep-color-obs-accent: var(--text-accent);
+	--ep-color-obs-interactive: var(--interactive-accent);
+	--ep-color-obs-interactive-hover: var(--interactive-accent-hover);
+}
+
+/*
  * Obsidian Theme Variables Mapping
  *
  * These custom theme variables map Obsidian's CSS variables to Tailwind utilities.
  * Usage: ep:text-obs-normal, ep:bg-obs-primary, ep:border-obs-border, etc.
+ *
+ * NOTE: The @theme block defines fallbacks for :root, but the actual values
+ * are overridden by the .theme-dark/.theme-light block above at runtime.
  */
 @theme {
-  /* === Base colors (mono scale) === */
-  --color-obs-base-00: var(--color-base-00);
-  --color-obs-base-05: var(--color-base-05);
-  --color-obs-base-10: var(--color-base-10);
-  --color-obs-base-20: var(--color-base-20);
-  --color-obs-base-25: var(--color-base-25);
-  --color-obs-base-30: var(--color-base-30);
-  --color-obs-base-35: var(--color-base-35);
-  --color-obs-base-40: var(--color-base-40);
-  --color-obs-base-50: var(--color-base-50);
-  --color-obs-base-60: var(--color-base-60);
-  --color-obs-base-70: var(--color-base-70);
-  --color-obs-base-100: var(--color-base-100);
+	/* === Base colors (mono scale) === */
+	--color-obs-base-00: var(--color-base-00);
+	--color-obs-base-05: var(--color-base-05);
+	--color-obs-base-10: var(--color-base-10);
+	--color-obs-base-20: var(--color-base-20);
+	--color-obs-base-25: var(--color-base-25);
+	--color-obs-base-30: var(--color-base-30);
+	--color-obs-base-35: var(--color-base-35);
+	--color-obs-base-40: var(--color-base-40);
+	--color-obs-base-50: var(--color-base-50);
+	--color-obs-base-60: var(--color-base-60);
+	--color-obs-base-70: var(--color-base-70);
+	--color-obs-base-100: var(--color-base-100);
 
-  /* === Text colors === */
-  --color-obs-normal: var(--text-normal);
-  --color-obs-muted: var(--text-muted);
-  --color-obs-faint: var(--text-faint);
-  --color-obs-accent: var(--text-accent);
-  --color-obs-accent-hover: var(--text-accent-hover);
-  --color-obs-on-accent: var(--text-on-accent);
-  --color-obs-on-accent-inverted: var(--text-on-accent-inverted);
-  --color-obs-error: var(--text-error);
-  --color-obs-warning: var(--text-warning);
-  --color-obs-success: var(--text-success);
-  --color-obs-selection: var(--text-selection);
+	/* === Text colors === */
+	--color-obs-normal: var(--text-normal);
+	--color-obs-muted: var(--text-muted);
+	--color-obs-faint: var(--text-faint);
+	--color-obs-accent: var(--text-accent);
+	--color-obs-accent-hover: var(--text-accent-hover);
+	--color-obs-on-accent: var(--text-on-accent);
+	--color-obs-on-accent-inverted: var(--text-on-accent-inverted);
+	--color-obs-error: var(--text-error);
+	--color-obs-warning: var(--text-warning);
+	--color-obs-success: var(--text-success);
+	--color-obs-selection: var(--text-selection);
 
-  /* === Interactive colors === */
-  --color-obs-interactive: var(--interactive-accent);
-  --color-obs-interactive-hover: var(--interactive-accent-hover);
-  --color-obs-interactive-normal: var(--interactive-normal);
-  --color-obs-interactive-hover-bg: var(--interactive-hover);
-  --color-obs-interactive-accent-hsl: var(--interactive-accent-hsl);
+	/* === Interactive colors === */
+	--color-obs-interactive: var(--interactive-accent);
+	--color-obs-interactive-hover: var(--interactive-accent-hover);
+	--color-obs-interactive-normal: var(--interactive-normal);
+	--color-obs-interactive-hover-bg: var(--interactive-hover);
+	--color-obs-interactive-accent-hsl: var(--interactive-accent-hsl);
 
-  /* === Background colors === */
-  --color-obs-primary: var(--background-primary);
-  --color-obs-primary-alt: var(--background-primary-alt);
-  --color-obs-secondary: var(--background-secondary);
-  --color-obs-secondary-alt: var(--background-secondary-alt);
-  --color-obs-modifier-hover: var(--background-modifier-hover);
-  --color-obs-modifier-active: var(--background-modifier-active-hover);
-  --color-obs-modifier-border: var(--background-modifier-border);
-  --color-obs-modifier-border-hover: var(--background-modifier-border-hover);
-  --color-obs-modifier-border-focus: var(--background-modifier-border-focus);
-  --color-obs-modifier-error: var(--background-modifier-error);
-  --color-obs-modifier-error-hover: var(--background-modifier-error-hover);
-  --color-obs-modifier-success: var(--background-modifier-success);
-  --color-obs-modifier-message: var(--background-modifier-message);
-  --color-obs-modifier-form-field: var(--background-modifier-form-field);
+	/* === Background colors === */
+	--color-obs-primary: var(--background-primary);
+	--color-obs-primary-alt: var(--background-primary-alt);
+	--color-obs-secondary: var(--background-secondary);
+	--color-obs-secondary-alt: var(--background-secondary-alt);
+	--color-obs-modifier-hover: var(--background-modifier-hover);
+	--color-obs-modifier-active: var(--background-modifier-active-hover);
+	--color-obs-border: var(--background-modifier-border);
+	--color-obs-modifier-border: var(--background-modifier-border);
+	--color-obs-modifier-border-hover: var(--background-modifier-border-hover);
+	--color-obs-modifier-border-focus: var(--background-modifier-border-focus);
+	--color-obs-modifier-error: var(--background-modifier-error);
+	--color-obs-modifier-error-hover: var(--background-modifier-error-hover);
+	--color-obs-modifier-success: var(--background-modifier-success);
+	--color-obs-modifier-message: var(--background-modifier-message);
+	--color-obs-modifier-form-field: var(--background-modifier-form-field);
 
-  /* === Extended colors === */
-  --color-obs-red: var(--color-red);
-  --color-obs-orange: var(--color-orange);
-  --color-obs-yellow: var(--color-yellow);
-  --color-obs-green: var(--color-green);
-  --color-obs-cyan: var(--color-cyan);
-  --color-obs-blue: var(--color-blue);
-  --color-obs-purple: var(--color-purple);
-  --color-obs-pink: var(--color-pink);
+	/* === Extended colors === */
+	--color-obs-red: var(--color-red);
+	--color-obs-orange: var(--color-orange);
+	--color-obs-yellow: var(--color-yellow);
+	--color-obs-green: var(--color-green);
+	--color-obs-cyan: var(--color-cyan);
+	--color-obs-blue: var(--color-blue);
+	--color-obs-purple: var(--color-purple);
+	--color-obs-pink: var(--color-pink);
 
-  /* === Extended colors (RGB for opacity) === */
-  --color-obs-red-rgb: var(--color-red-rgb);
-  --color-obs-orange-rgb: var(--color-orange-rgb);
-  --color-obs-yellow-rgb: var(--color-yellow-rgb);
-  --color-obs-green-rgb: var(--color-green-rgb);
-  --color-obs-cyan-rgb: var(--color-cyan-rgb);
-  --color-obs-blue-rgb: var(--color-blue-rgb);
-  --color-obs-purple-rgb: var(--color-purple-rgb);
-  --color-obs-pink-rgb: var(--color-pink-rgb);
+	/* === Extended colors (RGB for opacity) === */
+	--color-obs-red-rgb: var(--color-red-rgb);
+	--color-obs-orange-rgb: var(--color-orange-rgb);
+	--color-obs-yellow-rgb: var(--color-yellow-rgb);
+	--color-obs-green-rgb: var(--color-green-rgb);
+	--color-obs-cyan-rgb: var(--color-cyan-rgb);
+	--color-obs-blue-rgb: var(--color-blue-rgb);
+	--color-obs-purple-rgb: var(--color-purple-rgb);
+	--color-obs-pink-rgb: var(--color-pink-rgb);
 
-  /* === Mono RGB (for white/black with opacity) === */
-  --color-obs-mono-rgb-0: var(--mono-rgb-0);
-  --color-obs-mono-rgb-100: var(--mono-rgb-100);
+	/* === Mono RGB (for white/black with opacity) === */
+	--color-obs-mono-rgb-0: var(--mono-rgb-0);
+	--color-obs-mono-rgb-100: var(--mono-rgb-100);
 
-  /* === Caret color === */
-  --color-obs-caret: var(--caret-color);
+	/* === Caret color === */
+	--color-obs-caret: var(--caret-color);
 
-  /* === Button colors === */
-  --color-btn-primary: var(--interactive-accent);
-  --color-btn-primary-hover: var(--interactive-accent-hover);
+	/* === Button colors === */
+	--color-btn-primary: var(--interactive-accent);
+	--color-btn-primary-hover: var(--interactive-accent-hover);
 
-  /* === Border color shorthand === */
-  --color-obs-border: var(--background-modifier-border);
+	/* === Fonts === */
+	--font-obs-interface: var(--font-interface);
+	--font-obs-text: var(--font-text);
+	--font-obs-monospace: var(--font-monospace);
 
-  /* === Border opacity variants - use rgba() with RGB variant for proper browser support === */
-  --color-obs-border/10: rgba(var(--background-modifier-border-rgb), 0.1);
-  --color-obs-border/20: rgba(var(--background-modifier-border-rgb), 0.2);
-  --color-obs-border/30: rgba(var(--background-modifier-border-rgb), 0.3);
-  --color-obs-border/40: rgba(var(--background-modifier-border-rgb), 0.4);
-  --color-obs-border/50: rgba(var(--background-modifier-border-rgb), 0.5);
-  --color-obs-border/60: rgba(var(--background-modifier-border-rgb), 0.6);
-  --color-obs-border/70: rgba(var(--background-modifier-border-rgb), 0.7);
-  --color-obs-border/80: rgba(var(--background-modifier-border-rgb), 0.8);
-  --color-obs-border/90: rgba(var(--background-modifier-border-rgb), 0.9);
+	/* === Font sizes === */
+	--font-size-obs-smaller: var(--font-ui-smaller);
+	--font-size-obs-small: var(--font-ui-small);
+	--font-size-obs-medium: var(--font-ui-medium);
+	--font-size-obs-large: var(--font-ui-large);
 
-  /* === Fonts === */
-  --font-obs-interface: var(--font-interface);
-  --font-obs-text: var(--font-text);
-  --font-obs-monospace: var(--font-monospace);
-
-  /* === Font sizes === */
-  --font-size-obs-smaller: var(--font-ui-smaller);
-  --font-size-obs-small: var(--font-ui-small);
-  --font-size-obs-medium: var(--font-ui-medium);
-  --font-size-obs-large: var(--font-ui-large);
-
-  /* === Border radius === */
-  --radius-obs-sm: var(--radius-s);
-  --radius-obs-md: var(--radius-m);
-  --radius-obs-lg: var(--radius-l);
-  --radius-obs-xl: var(--radius-xl);
+	/* === Border radius === */
+	--radius-obs-sm: var(--radius-s);
+	--radius-obs-md: var(--radius-m);
+	--radius-obs-lg: var(--radius-l);
+	--radius-obs-xl: var(--radius-xl);
 }
 
 /*
@@ -126,88 +146,372 @@
  * These are CSS rules that need :has(), complex selectors, or animations
  */
 @layer components {
-  /* Modal width override when containing episteme modals */
-  .modal:has(.episteme-modal) {
-    width: fit-content;
-    max-width: 90vw;
-  }
+	/* Modal width override when containing episteme modals */
+	.modal:has(.episteme-modal) {
+		width: fit-content;
+		max-width: 90vw;
+	}
 
-  /* Answer blur effect for review mode */
-  .episteme-answer-blur {
-    filter: blur(4px);
-    transition: filter 0.2s ease;
-    cursor: pointer;
-  }
+	/* Answer blur effect for review mode */
+	.episteme-answer-blur {
+		filter: blur(4px);
+		transition: filter 0.2s ease;
+		cursor: pointer;
+	}
 
-  .episteme-answer-blur:hover {
-    filter: none;
-  }
+	.episteme-answer-blur:hover {
+		filter: none;
+	}
 
-  /* Spinner animation */
-  @keyframes episteme-spin {
-    to {
-      transform: rotate(360deg);
-    }
-  }
+	/* Spinner animation */
+	@keyframes episteme-spin {
+		to {
+			transform: rotate(360deg);
+		}
+	}
 
-  .episteme-spinner {
-    animation: episteme-spin 1s linear infinite;
-  }
+	.episteme-spinner {
+		animation: episteme-spin 1s linear infinite;
+	}
 
-  /* iOS safe area support */
-  .episteme-safe-area-bottom {
-    padding-bottom: env(safe-area-inset-bottom, 0);
-  }
+	/* iOS safe area support */
+	.episteme-safe-area-bottom {
+		padding-bottom: env(safe-area-inset-bottom, 0);
+	}
 
-  /* Chart fade-in animation */
-  @keyframes episteme-fade-in {
-    from {
-      opacity: 0;
-      transform: translateY(4px);
-    }
-    to {
-      opacity: 1;
-      transform: translateY(0);
-    }
-  }
+	/*
+	 * Native Obsidian headers are now used for all Episteme views
+	 * Actions are added via addAction() API
+	 */
 
-  .episteme-chart-fade-in {
-    animation: episteme-fade-in 0.3s ease-out;
-  }
+	/*
+	 * Mobile viewport adjustments
+	 * Obsidian mobile has a bottom toolbar (~60px) that overlays content
+	 * Target all Episteme views using the data-type attribute prefix
+	 */
+	.is-mobile [data-type^="episteme-"] .view-content {
+		padding-bottom: 60px;
+	}
 
-  /* Metric card pulse for updated values */
-  @keyframes episteme-pulse {
-    0%, 100% {
-      transform: scale(1);
-    }
-    50% {
-      transform: scale(1.05);
-    }
-  }
+	/* Chart fade-in animation */
+	@keyframes episteme-fade-in {
+		from {
+			opacity: 0;
+			transform: translateY(4px);
+		}
+		to {
+			opacity: 1;
+			transform: translateY(0);
+		}
+	}
 
-  .episteme-metric-updated {
-    animation: episteme-pulse 0.3s ease-in-out;
-  }
+	.episteme-chart-fade-in {
+		animation: episteme-fade-in 0.3s ease-out;
+	}
 
-  /* Thin scrollbar for calendar heatmap */
-  .episteme-scrollbar-thin::-webkit-scrollbar {
-    height: 4px;
-  }
+	/* Metric card pulse for updated values */
+	@keyframes episteme-pulse {
+		0%,
+		100% {
+			transform: scale(1);
+		}
+		50% {
+			transform: scale(1.05);
+		}
+	}
 
-  .episteme-scrollbar-thin::-webkit-scrollbar-track {
-    background: var(--background-modifier-border);
-    border-radius: 2px;
-  }
+	.episteme-metric-updated {
+		animation: episteme-pulse 0.3s ease-in-out;
+	}
 
-  .episteme-scrollbar-thin::-webkit-scrollbar-thumb {
-    background: var(--background-modifier-border-hover);
-    border-radius: 2px;
-  }
+	/* Thin scrollbar for calendar heatmap */
+	.episteme-scrollbar-thin::-webkit-scrollbar {
+		height: 4px;
+	}
 
-  .episteme-scrollbar-thin::-webkit-scrollbar-thumb:hover {
-    background: var(--interactive-accent);
-  }
+	.episteme-scrollbar-thin::-webkit-scrollbar-track {
+		background: var(--background-modifier-border);
+		border-radius: 2px;
+	}
+
+	.episteme-scrollbar-thin::-webkit-scrollbar-thumb {
+		background: var(--background-modifier-border-hover);
+		border-radius: 2px;
+	}
+
+	.episteme-scrollbar-thin::-webkit-scrollbar-thumb:hover {
+		background: var(--interactive-accent);
+	}
 }
+
+/*
+ * ============================================================================
+ * THEME COLOR SHOWCASE
+ * ============================================================================
+ *
+ * This section creates a visual showcase of all Obsidian theme colors.
+ * To view: Add class "episteme-theme-showcase" to any container element.
+ *
+ * Usage in Obsidian console:
+ * document.body.appendChild(createEl('div', {cls: 'episteme-theme-showcase'}))
+ *
+ * Or add to any component for debugging colors.
+ * ============================================================================
+ */
+@layer components {
+	.episteme-theme-showcase {
+		position: fixed;
+		top: 50%;
+		left: 50%;
+		transform: translate(-50%, -50%);
+		width: 90vw;
+		max-width: 1200px;
+		max-height: 90vh;
+		overflow-y: auto;
+		background: var(--background-primary);
+		border: 1px solid var(--background-modifier-border);
+		border-radius: 12px;
+		padding: 24px;
+		z-index: 99999;
+		box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+		font-family: var(--font-interface);
+		font-size: 13px;
+	}
+
+	.episteme-theme-showcase h2 {
+		color: var(--text-normal);
+		font-size: 24px;
+		font-weight: 600;
+		margin-bottom: 8px;
+	}
+
+	.episteme-theme-showcase p {
+		color: var(--text-muted);
+		margin-bottom: 24px;
+	}
+
+	.episteme-theme-showcase-section {
+		margin-bottom: 32px;
+	}
+
+	.episteme-theme-showcase-section h3 {
+		color: var(--text-accent);
+		font-size: 14px;
+		font-weight: 600;
+		text-transform: uppercase;
+		letter-spacing: 0.5px;
+		margin-bottom: 12px;
+		padding-bottom: 8px;
+		border-bottom: 1px solid var(--background-modifier-border);
+	}
+
+	.episteme-theme-showcase-grid {
+		display: grid;
+		grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+		gap: 12px;
+	}
+
+	.episteme-theme-showcase-item {
+		display: flex;
+		align-items: center;
+		gap: 12px;
+		padding: 10px 12px;
+		background: var(--background-secondary);
+		border-radius: 8px;
+		border: 1px solid var(--background-modifier-border);
+	}
+
+	.episteme-theme-showcase-swatch {
+		width: 48px;
+		height: 48px;
+		border-radius: 8px;
+		border: 1px solid var(--background-modifier-border);
+		flex-shrink: 0;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		font-size: 10px;
+		font-weight: 600;
+		text-transform: uppercase;
+	}
+
+	.episteme-theme-showcase-info {
+		flex: 1;
+		min-width: 0;
+	}
+
+	.episteme-theme-showcase-name {
+		font-weight: 600;
+		color: var(--text-normal);
+		margin-bottom: 2px;
+		white-space: nowrap;
+		overflow: hidden;
+		text-overflow: ellipsis;
+	}
+
+	.episteme-theme-showcase-value {
+		font-family: var(--font-monospace);
+		font-size: 11px;
+		color: var(--text-muted);
+		white-space: nowrap;
+		overflow: hidden;
+		text-overflow: ellipsis;
+	}
+
+	.episteme-theme-showcase-desc {
+		font-size: 11px;
+		color: var(--text-faint);
+		margin-top: 2px;
+	}
+
+	/* Close button */
+	.episteme-theme-showcase::before {
+		content: "×";
+		position: absolute;
+		top: 16px;
+		right: 16px;
+		width: 32px;
+		height: 32px;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		font-size: 24px;
+		color: var(--text-muted);
+		cursor: pointer;
+		border-radius: 6px;
+		transition: all 0.2s;
+	}
+
+	.episteme-theme-showcase:hover::before {
+		background: var(--background-modifier-hover);
+		color: var(--text-normal);
+	}
+
+	/* Click to dismiss */
+	.episteme-theme-showcase {
+		cursor: pointer;
+	}
+}
+
+/* ============================================================================
+ * Helper: Generate showcase content via JavaScript
+ * ============================================================================
+ * Paste this in Obsidian console (Ctrl+Shift+I) to generate the showcase:
+ *
+ * const showcase = document.createEl('div', {cls: 'episteme-theme-showcase'});
+ * showcase.innerHTML = `
+ *   <h2>🎨 Obsidian Theme Colors</h2>
+ *   <p>Visual reference of all Obsidian theme variables mapped in Episteme</p>
+ *
+ *   <!-- Text Colors -->
+ *   <div class="episteme-theme-showcase-section">
+ *     <h3>Text Colors</h3>
+ *     <div class="episteme-theme-showcase-grid">
+ *       ${[
+ *         {name: 'Normal', var: '--text-normal', desc: 'Primary text color'},
+ *         {name: 'Muted', var: '--text-muted', desc: 'Secondary text, less prominent'},
+ *         {name: 'Faint', var: '--text-faint', desc: 'Tertiary text, very subtle'},
+ *         {name: 'Accent', var: '--text-accent', desc: 'Links and interactive text'},
+ *         {name: 'Error', var: '--text-error', desc: 'Error messages'},
+ *         {name: 'Warning', var: '--text-warning', desc: 'Warning messages'},
+ *         {name: 'Success', var: '--text-success', desc: 'Success messages'},
+ *       ].map(c => `
+ *         <div class="episteme-theme-showcase-item">
+ *           <div class="episteme-theme-showcase-swatch" style="background: var(${c.var}); color: var(${c.var})">Aa</div>
+ *           <div class="episteme-theme-showcase-info">
+ *             <div class="episteme-theme-showcase-name">${c.name}</div>
+ *             <div class="episteme-theme-showcase-value">${c.var}</div>
+ *             <div class="episteme-theme-showcase-desc">${c.desc}</div>
+ *           </div>
+ *         </div>
+ *       `).join('')}
+ *     </div>
+ *   </div>
+ *
+ *   <!-- Background Colors -->
+ *   <div class="episteme-theme-showcase-section">
+ *     <h3>Background Colors</h3>
+ *     <div class="episteme-theme-showcase-grid">
+ *       ${[
+ *         {name: 'Primary', var: '--background-primary', desc: 'Main app background'},
+ *         {name: 'Secondary', var: '--background-secondary', desc: 'Panels, cards, sidebar'},
+ *         {name: 'Modifier Hover', var: '--background-modifier-hover', desc: 'Hover state on items'},
+ *         {name: 'Modifier Border', var: '--background-modifier-border', desc: 'Subtle borders, dividers'},
+ *       ].map(c => `
+ *         <div class="episteme-theme-showcase-item">
+ *           <div class="episteme-theme-showcase-swatch" style="background: var(${c.var}); border: 1px solid var(--background-modifier-border);"></div>
+ *           <div class="episteme-theme-showcase-info">
+ *             <div class="episteme-theme-showcase-name">${c.name}</div>
+ *             <div class="episteme-theme-showcase-value">${c.var}</div>
+ *             <div class="episteme-theme-showcase-desc">${c.desc}</div>
+ *           </div>
+ *         </div>
+ *       `).join('')}
+ *     </div>
+ *   </div>
+ *
+ *   <!-- Interactive Colors -->
+ *   <div class="episteme-theme-showcase-section">
+ *     <h3>Interactive Accent</h3>
+ *     <div class="episteme-theme-showcase-grid">
+ *       ${[
+ *         {name: 'Accent', var: '--interactive-accent', desc: 'Primary action color, buttons'},
+ *         {name: 'Accent Hover', var: '--interactive-accent-hover', desc: 'Hover state on accents'},
+ *       ].map(c => `
+ *         <div class="episteme-theme-showcase-item">
+ *           <div class="episteme-theme-showcase-swatch" style="background: var(${c.var}); color: var(--text-on-accent);">●</div>
+ *           <div class="episteme-theme-showcase-info">
+ *             <div class="episteme-theme-showcase-name">${c.name}</div>
+ *             <div class="episteme-theme-showcase-value">${c.var}</div>
+ *             <div class="episteme-theme-showcase-desc">${c.desc}</div>
+ *           </div>
+ *         </div>
+ *       `).join('')}
+ *     </div>
+ *   </div>
+ *
+ *   <!-- Extended Colors -->
+ *   <div class="episteme-theme-showcase-section">
+ *     <h3>Extended Colors</h3>
+ *     <div class="episteme-theme-showcase-grid">
+ *       ${['red', 'orange', 'yellow', 'green', 'cyan', 'blue', 'purple', 'pink'].map(color => `
+ *         <div class="episteme-theme-showcase-item">
+ *           <div class="episteme-theme-showcase-swatch" style="background: var(--color-${color});"></div>
+ *           <div class="episteme-theme-showcase-info">
+ *             <div class="episteme-theme-showcase-name" style="text-transform: capitalize;">${color}</div>
+ *             <div class="episteme-theme-showcase-value">--color-${color}</div>
+ *             <div class="episteme-theme-showcase-desc">Extended palette color</div>
+ *           </div>
+ *         </div>
+ *       `).join('')}
+ *     </div>
+ *   </div>
+ *
+ *   <!-- Border Opacity Variants -->
+ *   <div class="episteme-theme-showcase-section">
+ *     <h3>Border Opacity Variants (using --background-modifier-border-rgb)</h3>
+ *     <div class="episteme-theme-showcase-grid">
+ *       ${[10, 20, 30, 40, 50, 60, 70, 80, 90].map(opacity => `
+ *         <div class="episteme-theme-showcase-item">
+ *           <div class="episteme-theme-showcase-swatch" style="background: rgba(var(--background-modifier-border-rgb), ${opacity/100});"></div>
+ *           <div class="episteme-theme-showcase-info">
+ *             <div class="episteme-theme-showcase-name">${opacity}%</div>
+ *             <div class="episteme-theme-showcase-value">rgba(var(--background-modifier-border-rgb), ${opacity/100})</div>
+ *             <div class="episteme-theme-showcase-desc">Border opacity variant</div>
+ *           </div>
+ *         </div>
+ *       `).join('')}
+ *     </div>
+ *   </div>
+ *
+ *   <p style="margin-top: 24px; padding-top: 16px; border-top: 1px solid var(--background-modifier-border); font-size: 11px; color: var(--text-faint);">
+ *     💡 Tip: Click anywhere to close this showcase
+ *   </p>
+ * `;
+ * document.body.appendChild(showcase);
+ * showcase.addEventListener('click', () => showcase.remove());
+ * ============================================================================
+ */
 
 /*
  * Legacy CSS imports - these will be progressively removed during migration.

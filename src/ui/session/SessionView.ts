@@ -68,11 +68,11 @@ export class SessionView extends ItemView {
 		if (!(container instanceof HTMLElement)) return;
 		container.empty();
 
-		// Create Panel component without footer (header is native)
+		// Ensure container fills available space (mobile padding handled by global CSS)
+		container.addClass("ep:h-full", "ep:flex", "ep:flex-col");
+
+		// Create Panel component (header is native Obsidian header)
 		this.panelComponent = new Panel(container, {
-			title: "Review Session",
-			customHeader: true,
-			showFooter: false,
 			disableScroll: true,
 		});
 		this.panelComponent.render();
@@ -324,7 +324,7 @@ export class SessionView extends ItemView {
 			panelEl?.removeClass("episteme-has-search-query");
 		}
 
-		// Render selection bar (desktop only, hidden via CSS on mobile)
+		// Render selection bar (desktop only - hidden on mobile via responsive classes)
 		this.renderSelectionBar();
 	}
 
@@ -351,9 +351,9 @@ export class SessionView extends ItemView {
 		const sessionContentEl = contentContainer.querySelector(".episteme-session-content");
 		if (!sessionContentEl) return;
 
-		// Create selection bar at bottom of SessionContent
+		// Create selection bar at bottom of SessionContent (hidden on mobile - use header actions instead)
 		this.selectionBarEl = sessionContentEl.createDiv({
-			cls: "episteme-session-selection-bar ep:flex ep:items-center ep:justify-between ep:p-3 ep:mt-2 ep:bg-obs-secondary ep:rounded-md ep:gap-3 ep:shrink-0",
+			cls: "episteme-session-selection-bar ep:hidden ep:md:flex ep:items-center ep:justify-between ep:p-3 ep:mt-2 ep:bg-obs-secondary ep:rounded-md ep:gap-3 ep:shrink-0",
 		});
 
 		// Selection count text

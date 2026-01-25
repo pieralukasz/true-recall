@@ -32,6 +32,9 @@ export class MissingFlashcardsView extends ItemView {
 	private panelComponent: Panel | null = null;
 	private contentComponent: MissingFlashcardsContent | null = null;
 
+	// Native header action elements
+	private refreshAction: HTMLElement | null = null;
+
 	// State subscription
 	private unsubscribe: (() => void) | null = null;
 
@@ -57,12 +60,14 @@ export class MissingFlashcardsView extends ItemView {
 		if (!(container instanceof HTMLElement)) return;
 		container.empty();
 
-		// Create Panel component
-		this.panelComponent = new Panel(container, {
-			title: "Missing Flashcards",
-			onRefresh: () => void this.loadMissingNotes(),
-		});
+		// Create Panel component (header is native Obsidian header)
+		this.panelComponent = new Panel(container);
 		this.panelComponent.render();
+
+		// Add native refresh action
+		this.refreshAction = this.addAction("refresh-cw", "Refresh", () => {
+			void this.loadMissingNotes();
+		});
 
 		// Subscribe to state changes
 		this.unsubscribe = this.stateManager.subscribe(() => this.renderContent());
@@ -76,6 +81,13 @@ export class MissingFlashcardsView extends ItemView {
 
 	async onClose(): Promise<void> {
 		this.unsubscribe?.();
+
+		// Remove native header action
+		if (this.refreshAction) {
+			this.refreshAction.remove();
+			this.refreshAction = null;
+		}
+
 		this.panelComponent?.destroy();
 		this.contentComponent?.destroy();
 	}
@@ -218,18 +230,14 @@ export class MissingFlashcardsView extends ItemView {
 
 		const state = this.stateManager.getState();
 		const filteredNotes = this.stateManager.getFilteredNotes();
-
-		const headerContainer = this.panelComponent.getHeaderContainer();
 		const contentContainer = this.panelComponent.getContentContainer();
 
-		// Clear and re-add summary section (header title row is preserved by Panel)
-		const existingSummary = headerContainer.querySelector(".summary-section");
-		if (existingSummary) {
-			existingSummary.remove();
-		}
+		// Render Content (includes summary)
+		this.contentComponent?.destroy();
+		contentContainer.empty();
 
-		// Add summary section after header
-		const summaryEl = headerContainer.createDiv({
+		// Add summary section at top of content
+		const summaryEl = contentContainer.createDiv({
 			cls: "summary-section ep:text-center ep:p-4 ep:bg-obs-secondary ep:rounded-lg ep:mb-4",
 		});
 
@@ -249,10 +257,9 @@ export class MissingFlashcardsView extends ItemView {
 			});
 		}
 
-		// Render Content
-		this.contentComponent?.destroy();
-		contentContainer.empty();
-		this.contentComponent = new MissingFlashcardsContent(contentContainer, {
+		// Render notes list
+		const notesContainer = contentContainer.createDiv();
+		this.contentComponent = new MissingFlashcardsContent(notesContainer, {
 			isLoading: state.isLoading,
 			filteredNotes,
 			totalCount: state.allMissingNotes.length,

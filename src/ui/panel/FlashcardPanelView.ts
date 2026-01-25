@@ -15,7 +15,6 @@ import { FlashcardManager, OpenRouterService, getEventBus } from "../../services
 import { CollectService } from "../../services/flashcard/collect.service";
 import { PanelStateManager } from "../../state";
 import { Panel } from "../components/Panel";
-import { PanelHeader } from "./PanelHeader";
 import { PanelContent } from "./PanelContent";
 import { PanelFooter } from "./PanelFooter";
 import { MoveCardModal } from "../modals/MoveCardModal";
@@ -37,14 +36,17 @@ export class FlashcardPanelView extends ItemView {
 
     // UI Components
     private panelComponent: Panel | null = null;
-    private headerComponent: PanelHeader | null = null;
     private contentComponent: PanelContent | null = null;
     private footerComponent: PanelFooter | null = null;
 
     // Container elements (obtained from Panel)
-    private headerContainer!: HTMLElement;
     private contentContainer!: HTMLElement;
     private footerContainer!: HTMLElement;
+
+    // Native header action elements
+    private reviewAction: HTMLElement | null = null;
+    private openFileAction: HTMLElement | null = null;
+    private deleteAllAction: HTMLElement | null = null;
 
     // State subscription
     private unsubscribe: (() => void) | null = null;
@@ -87,16 +89,13 @@ export class FlashcardPanelView extends ItemView {
         if (!(container instanceof HTMLElement)) return;
         container.empty();
 
-        // Create Panel component with custom header and footer
+        // Create Panel component (header is native Obsidian header)
         this.panelComponent = new Panel(container, {
-            title: "Episteme",
-            customHeader: true,
             showFooter: true,
         });
         this.panelComponent.render();
 
         // Get container elements from Panel
-        this.headerContainer = this.panelComponent.getHeaderContainer();
         this.contentContainer = this.panelComponent.getContentContainer();
         const footerContainer = this.panelComponent.getFooterContainer();
         if (!footerContainer) {
@@ -105,8 +104,11 @@ export class FlashcardPanelView extends ItemView {
         }
         this.footerContainer = footerContainer;
 
-        // Subscribe to state changes
-        this.unsubscribe = this.stateManager.subscribe(() => this.render());
+        // Subscribe to state changes - update render and header actions
+        this.unsubscribe = this.stateManager.subscribe(() => {
+            this.render();
+            this.updateHeaderActions();
+        });
 
         // Subscribe to EventBus for cross-component reactivity
         this.subscribeToEvents();
@@ -119,6 +121,51 @@ export class FlashcardPanelView extends ItemView {
 
         // Initial render
         await this.loadCurrentFile();
+    }
+
+    /**
+     * Update native header actions based on current state
+     */
+    private updateHeaderActions(): void {
+        const state = this.stateManager.getState();
+
+        // Remove existing actions
+        if (this.reviewAction) {
+            this.reviewAction.remove();
+            this.reviewAction = null;
+        }
+        if (this.openFileAction) {
+            this.openFileAction.remove();
+            this.openFileAction = null;
+        }
+        if (this.deleteAllAction) {
+            this.deleteAllAction.remove();
+            this.deleteAllAction = null;
+        }
+
+        // Only show actions when flashcards exist
+        if (state.status === "exists" && state.currentFile) {
+            // Delete all flashcards
+            this.deleteAllAction = this.addAction(
+                "trash-2",
+                "Delete all flashcards",
+                () => void this.handleDeleteAllFlashcards()
+            );
+
+            // Open flashcard file
+            this.openFileAction = this.addAction(
+                "file-text",
+                "Open flashcard file",
+                () => void this.handleOpenFlashcardFile()
+            );
+
+            // Review flashcards
+            this.reviewAction = this.addAction(
+                "brain",
+                "Review flashcards",
+                () => void this.plugin.reviewNoteFlashcards(state.currentFile!)
+            );
+        }
     }
 
     async onClose(): Promise<void> {
@@ -141,12 +188,25 @@ export class FlashcardPanelView extends ItemView {
             this.editorChangeTimer = null;
         }
 
+        // Remove native header actions
+        if (this.reviewAction) {
+            this.reviewAction.remove();
+            this.reviewAction = null;
+        }
+        if (this.openFileAction) {
+            this.openFileAction.remove();
+            this.openFileAction = null;
+        }
+        if (this.deleteAllAction) {
+            this.deleteAllAction.remove();
+            this.deleteAllAction = null;
+        }
+
         // Note: Events registered via registerEvent() and registerDomEvent() are
         // automatically cleaned up by the Component base class
 
         // Cleanup components
         this.panelComponent?.destroy();
-        this.headerComponent?.destroy();
         this.contentComponent?.destroy();
         this.footerComponent?.destroy();
     }
@@ -264,23 +324,6 @@ export class FlashcardPanelView extends ItemView {
 
     private render(): void {
         const state = this.stateManager.getState();
-
-        // Render Header
-        this.headerComponent?.destroy();
-        this.headerContainer.empty();
-        this.headerComponent = new PanelHeader(this.headerContainer, {
-            currentFile: state.currentFile,
-            status: state.status,
-            displayTitle: state.sourceNoteName ?? undefined,
-            onOpenFlashcardFile: () => void this.handleOpenFlashcardFile(),
-            onReviewFlashcards: () => {
-                if (state.currentFile) {
-                    void this.plugin.reviewNoteFlashcards(state.currentFile);
-                }
-            },
-            onDeleteAllFlashcards: () => void this.handleDeleteAllFlashcards(),
-        });
-        this.headerComponent.render();
 
         // Render Content
         this.contentComponent?.destroy();

@@ -1,30 +1,25 @@
 /**
  * Panel Component
- * Shared panel structure for sidebar views (Projects, Ready to Harvest, etc.)
- * Uses consistent styling with NO container padding - elements handle their own spacing
+ * Shared panel structure for sidebar views
+ * Uses native Obsidian header - this component only provides content/footer containers
  */
-import { setIcon } from "obsidian";
 import { BaseComponent } from "../component.base";
 
 export interface PanelProps {
-	title: string;
-	onRefresh?: () => void;
 	showFooter?: boolean;
-	customHeader?: boolean;
 	disableScroll?: boolean;
 }
 
 /**
  * Shared panel component that creates the view structure
- * Both header and content containers are exposed for views to add content
+ * Header is handled by native Obsidian view header with addAction()
  */
 export class Panel extends BaseComponent {
 	private props: PanelProps;
-	private headerContainer!: HTMLElement;
 	private contentContainer!: HTMLElement;
 	private footerContainer: HTMLElement | null = null;
 
-	constructor(container: HTMLElement, props: PanelProps) {
+	constructor(container: HTMLElement, props: PanelProps = {}) {
 		super(container);
 		this.props = props;
 	}
@@ -35,52 +30,16 @@ export class Panel extends BaseComponent {
 			this.events.cleanup();
 		}
 
-		// Main container element - use absolute positioning to fill parent
+		// Main container element - fill available space with flex
 		this.element = this.container.createDiv({
-			cls: "ep:absolute ep:inset-0 ep:flex ep:flex-col ep:p-2",
+			cls: "ep:h-full ep:flex ep:flex-col ep:p-2 ep:overflow-hidden",
 		});
-
-		// Header container
-		this.headerContainer = this.element.createDiv({
-			cls: this.props.customHeader
-				? "ep:shrink-0"
-				: "ep:shrink-0 ep:border-b ep:border-obs-border",
-		});
-
-		// Skip default title row if customHeader is true
-		if (!this.props.customHeader) {
-			// Render title row
-			const header = this.headerContainer.createDiv({
-				cls: "ep:py-2",
-			});
-
-			const titleRow = header.createDiv({
-				cls: "ep:flex ep:items-center ep:justify-between ep:gap-2",
-			});
-
-			titleRow.createSpan({
-				cls: "ep:font-semibold ep:text-obs-normal",
-				text: this.props.title,
-			});
-
-			// Refresh button - just native Obsidian clickable-icon class
-			if (this.props.onRefresh) {
-				const refreshBtn = titleRow.createEl("button", {
-					cls: "clickable-icon",
-					attr: { "aria-label": "Refresh" },
-				});
-				setIcon(refreshBtn, "refresh-cw");
-				this.events.addEventListener(refreshBtn, "click", () => {
-					this.props.onRefresh?.();
-				});
-			}
-		}
 
 		// Content container
 		this.contentContainer = this.element.createDiv({
 			cls: this.props.disableScroll
-				? "ep:flex-1 ep:min-h-0 ep:mt-2"
-				: "ep:flex-1 ep:overflow-y-auto ep:min-h-0 ep:mt-2",
+				? "ep:flex-1 ep:min-h-0"
+				: "ep:flex-1 ep:overflow-y-auto ep:min-h-0",
 		});
 
 		// Footer container - optional
@@ -89,13 +48,6 @@ export class Panel extends BaseComponent {
 				cls: "ep:shrink-0",
 			});
 		}
-	}
-
-	/**
-	 * Get header container to add additional content (e.g., summary section)
-	 */
-	getHeaderContainer(): HTMLElement {
-		return this.headerContainer;
 	}
 
 	/**

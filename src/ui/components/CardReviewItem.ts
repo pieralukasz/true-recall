@@ -92,7 +92,7 @@ export class CardReviewItem extends BaseComponent {
 			this.renderField(contentEl, "question", card.question, filePath, app, component);
 
 			// Divider between question and answer
-			contentEl.createEl("hr", { cls: "ep:border-none ep:border-t ep:border-obs-border ep:my-3" });
+			contentEl.createEl("hr", { cls: "ep:border-none ep:border-t ep:border-obs-border ep:my-0" });
 
 			// Answer field
 			this.renderField(contentEl, "answer", card.answer, filePath, app, component);
@@ -114,7 +114,7 @@ export class CardReviewItem extends BaseComponent {
 		component: Component
 	): void {
 		const fieldEl = container.createDiv({
-			cls: "ep:relative ep:cursor-pointer ep:p-2 ep:rounded ep:transition-colors ep:hover:bg-obs-modifier-hover",
+			cls: "ep:relative ep:cursor-pointer ep:px-2 ep:py-1 ep:rounded ep:transition-colors ep:hover:bg-obs-modifier-hover",
 		});
 
 		const fieldContent = fieldEl.createDiv({ cls: "ep:inline" });

@@ -3,7 +3,7 @@
  * Main view for spaced repetition review sessions
  * Can be displayed in fullscreen (main area) or panel (sidebar)
  */
-import { ItemView, WorkspaceLeaf, MarkdownRenderer, Notice, Platform, Menu, setIcon, TFile, type ViewStateResult } from "obsidian";
+import { ItemView, WorkspaceLeaf, MarkdownRenderer, Notice, Platform, Menu, setIcon, type ViewStateResult } from "obsidian";
 import { Rating, State, type Grade } from "ts-fsrs";
 import { VIEW_TYPE_REVIEW, UI_CONFIG } from "../../constants";
 import { FSRSService, ReviewService, FlashcardManager, SessionPersistenceService, getEventBus, ZettelTemplateService } from "../../services";
@@ -48,6 +48,11 @@ export class ReviewView extends ItemView {
     private headerEl!: HTMLElement;
     private cardContainerEl!: HTMLElement;
     private buttonsEl!: HTMLElement;
+
+    // Native header action elements
+    private addCardAction: HTMLElement | null = null;
+    private aiGenerateAction: HTMLElement | null = null;
+    private openNoteAction: HTMLElement | null = null;
 
     // State subscription
     private unsubscribe: (() => void) | null = null;
@@ -196,8 +201,11 @@ export class ReviewView extends ItemView {
         this.cardContainerEl = container.createDiv({ cls: "episteme-review-card-container ep:flex-1 ep:min-h-0 ep:flex ep:items-start ep:justify-center ep:p-5 ep:overflow-y-auto" });
         this.buttonsEl = container.createDiv({ cls: "episteme-review-buttons ep:flex ep:justify-center ep:gap-3 ep:py-4 ep:px-4 ep:border-t ep:border-obs-border ep:bg-obs-secondary ep:flex-nowrap ep:shrink-0" });
 
-        // Subscribe to state changes
-        this.unsubscribe = this.stateManager.subscribe(() => this.render());
+        // Subscribe to state changes - update render and header actions
+        this.unsubscribe = this.stateManager.subscribe(() => {
+            this.render();
+            this.updateHeaderActions();
+        });
 
         // Subscribe to EventBus for cross-component reactivity
         this.subscribeToEvents();
@@ -217,6 +225,51 @@ export class ReviewView extends ItemView {
         // Note: startSession() is called from setState() after filters are applied
     }
 
+    /**
+     * Update native header actions based on current session state
+     */
+    private updateHeaderActions(): void {
+        // Remove existing actions
+        if (this.addCardAction) {
+            this.addCardAction.remove();
+            this.addCardAction = null;
+        }
+        if (this.aiGenerateAction) {
+            this.aiGenerateAction.remove();
+            this.aiGenerateAction = null;
+        }
+        if (this.openNoteAction) {
+            this.openNoteAction.remove();
+            this.openNoteAction = null;
+        }
+
+        // Only show actions when session is active and header is shown
+        if (!this.stateManager.isActive() || !this.plugin.settings.showReviewHeader) {
+            return;
+        }
+
+        // Open note action
+        this.openNoteAction = this.addAction(
+            "external-link",
+            "Open note",
+            () => this.handleOpenNote()
+        );
+
+        // AI Generate flashcard action
+        this.aiGenerateAction = this.addAction(
+            "sparkles",
+            "Generate flashcard with AI (G)",
+            () => void this.cardActionsHandler.handleAIGenerateFlashcard()
+        );
+
+        // Add new flashcard action
+        this.addCardAction = this.addAction(
+            "plus",
+            "Add new flashcard (N)",
+            () => void this.cardActionsHandler.handleAddNewFlashcard()
+        );
+    }
+
     async onClose(): Promise<void> {
         // Flush store to disk before closing
         if (this.plugin.cardStore) {
@@ -228,6 +281,20 @@ export class ReviewView extends ItemView {
         // Cleanup EventBus subscriptions
         this.eventUnsubscribers.forEach((unsub) => unsub());
         this.eventUnsubscribers = [];
+
+        // Remove native header actions
+        if (this.addCardAction) {
+            this.addCardAction.remove();
+            this.addCardAction = null;
+        }
+        if (this.aiGenerateAction) {
+            this.aiGenerateAction.remove();
+            this.aiGenerateAction = null;
+        }
+        if (this.openNoteAction) {
+            this.openNoteAction.remove();
+            this.openNoteAction = null;
+        }
 
         this.clearWaitingTimer();
         this.stateManager.reset();
@@ -441,7 +508,8 @@ export class ReviewView extends ItemView {
     }
 
     /**
-     * Render header with stats and open note button
+     * Render header with stats badges
+     * Action buttons are now in the native Obsidian header via addAction()
      */
     private renderHeader(): void {
         this.headerEl.empty();
@@ -456,36 +524,6 @@ export class ReviewView extends ItemView {
             this.renderHeaderStatBadge(statsContainer, "learning", remaining.learning);
             this.renderHeaderStatBadge(statsContainer, "due", remaining.due);
         }
-
-        // Shared header button style
-        const headerBtnCls = "ep:absolute ep:bg-transparent ep:border-none ep:cursor-pointer ep:text-obs-muted ep:p-1 ep:rounded ep:flex ep:items-center ep:justify-center ep:hover:bg-obs-modifier-hover ep:hover:text-obs-normal clickable-icon";
-
-        // Add flashcard button (right side, left of open note button)
-        const addBtn = this.headerEl.createEl("button", {
-            cls: headerBtnCls,
-            attr: { "aria-label": "Add new flashcard (N)" }
-        });
-        addBtn.style.right = "50px";
-        addBtn.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>`;
-        addBtn.addEventListener("click", () => void this.cardActionsHandler.handleAddNewFlashcard());
-
-        // AI Generate flashcard button (sparkles icon)
-        const aiGenBtn = this.headerEl.createEl("button", {
-            cls: headerBtnCls,
-            attr: { "aria-label": "Generate flashcard with AI (G)" }
-        });
-        aiGenBtn.style.right = "84px";
-        aiGenBtn.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9.937 15.5A2 2 0 0 0 8.5 14.063l-6.135-1.582a.5.5 0 0 1 0-.962L8.5 9.936A2 2 0 0 0 9.937 8.5l1.582-6.135a.5.5 0 0 1 .963 0L14.063 8.5A2 2 0 0 0 15.5 9.937l6.135 1.582a.5.5 0 0 1 0 .962L15.5 14.063a2 2 0 0 0-1.437 1.437l-1.582 6.135a.5.5 0 0 1-.963 0z"/><path d="M20 3v4"/><path d="M22 5h-4"/></svg>`;
-        aiGenBtn.addEventListener("click", () => void this.cardActionsHandler.handleAIGenerateFlashcard());
-
-        // Open note button (right side)
-        const openNoteBtn = this.headerEl.createEl("button", {
-            cls: headerBtnCls,
-            attr: { "aria-label": "Open note" },
-        });
-        openNoteBtn.style.right = "16px";
-        openNoteBtn.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path><polyline points="15 3 21 3 21 9"></polyline><line x1="10" y1="14" x2="21" y2="3"></line></svg>`;
-        openNoteBtn.addEventListener("click", () => this.handleOpenNote());
     }
 
     /**
