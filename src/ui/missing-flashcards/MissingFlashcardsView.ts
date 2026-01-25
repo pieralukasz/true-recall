@@ -223,29 +223,29 @@ export class MissingFlashcardsView extends ItemView {
 		const contentContainer = this.panelComponent.getContentContainer();
 
 		// Clear and re-add summary section (header title row is preserved by Panel)
-		const existingSummary = headerContainer.querySelector(".episteme-missing-summary");
+		const existingSummary = headerContainer.querySelector(".summary-section");
 		if (existingSummary) {
 			existingSummary.remove();
 		}
 
 		// Add summary section after header
 		const summaryEl = headerContainer.createDiv({
-			cls: "episteme-missing-summary",
+			cls: "summary-section ep:text-center ep:p-4 ep:bg-obs-secondary ep:rounded-lg ep:mb-4",
 		});
 
 		if (state.isLoading) {
 			summaryEl.createDiv({
 				text: "Scanning vault...",
-				cls: "episteme-ready-label",
+				cls: "ep:text-[13px] ep:text-obs-muted ep:mt-1",
 			});
 		} else {
 			summaryEl.createDiv({
 				text: state.allMissingNotes.length.toString(),
-				cls: "episteme-ready-count",
+				cls: "ep:text-3xl ep:font-bold ep:text-obs-normal",
 			});
 			summaryEl.createDiv({
 				text: state.allMissingNotes.length === 1 ? "note needs flashcards" : "notes need flashcards",
-				cls: "episteme-ready-label",
+				cls: "ep:text-[13px] ep:text-obs-muted ep:mt-1",
 			});
 		}
 

@@ -44,7 +44,7 @@ export class OrphanedCardsContent extends BaseComponent {
 		this.cardItems = [];
 
 		this.element = this.container.createDiv({
-			cls: "episteme-panel-content",
+			cls: "ep:flex ep:flex-col",
 		});
 
 		// Card list
@@ -53,13 +53,15 @@ export class OrphanedCardsContent extends BaseComponent {
 
 	private renderCardList(): void {
 		const cardsContainer = this.element!.createDiv({
-			cls: "episteme-cards-container",
+			cls: "ep:mb-2",
 		});
+
+		const emptyStateCls = "ep:text-center ep:py-6 ep:px-4 ep:text-obs-muted ep:text-[13px] ep:italic";
 
 		if (this.props.isLoading) {
 			cardsContainer.createEl("div", {
 				text: "Loading orphaned cards...",
-				cls: "episteme-panel-list-empty",
+				cls: emptyStateCls,
 			});
 			return;
 		}
@@ -69,7 +71,7 @@ export class OrphanedCardsContent extends BaseComponent {
 		if (cards.length === 0) {
 			cardsContainer.createEl("div", {
 				text: "No orphaned cards found. All cards have assigned source notes.",
-				cls: "episteme-panel-list-empty",
+				cls: emptyStateCls,
 			});
 			return;
 		}
@@ -83,7 +85,7 @@ export class OrphanedCardsContent extends BaseComponent {
 			// Separator (except for last card)
 			if (index < cards.length - 1) {
 				cardsContainer.createDiv({
-					cls: "episteme-card-separator",
+					cls: "ep:h-px ep:bg-obs-border ep:my-2",
 				});
 			}
 		}
