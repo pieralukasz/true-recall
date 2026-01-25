@@ -8,3 +8,4 @@
 
 export { migrate as migration015ToV16 } from "./migration-015-to-v16.sql";
 export { migrate as migration016ToV17 } from "./migration-016-to-v17.sql";
+export { migration017ToV18 } from "./migration-017-to-v18";

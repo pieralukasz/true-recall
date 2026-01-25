@@ -25,6 +25,7 @@ export class SqliteSchemaManager {
     private readonly MIGRATIONS: Record<number, MigrationFn> = {
         16: migrations.migration015ToV16,
         17: migrations.migration016ToV17,
+        18: migrations.migration017ToV18,
     };
 
     constructor(db: DatabaseLike, onSchemaChange: () => void) {
@@ -33,7 +34,7 @@ export class SqliteSchemaManager {
     }
 
     /**
-     * Create database tables (schema v17 - removed source_notes table)
+     * Create database tables (schema v18 - removed card_image_refs table)
      */
     createTables(): void {
         this.db.run(`
@@ -110,21 +111,7 @@ export class SqliteSchemaManager {
                 PRIMARY KEY (date, card_id)
             );
 
-            -- Card image references (v10: TEXT UUID PK)
-            CREATE TABLE IF NOT EXISTS card_image_refs (
-                id TEXT PRIMARY KEY NOT NULL,
-                card_id TEXT NOT NULL,
-                image_path TEXT NOT NULL,
-                field TEXT NOT NULL,
-                created_at INTEGER,
-                updated_at INTEGER,
-                deleted_at INTEGER DEFAULT NULL,
-                FOREIGN KEY (card_id) REFERENCES cards(id) ON DELETE CASCADE
-            );
-
-            CREATE INDEX IF NOT EXISTS idx_image_refs_path ON card_image_refs(image_path);
-            CREATE INDEX IF NOT EXISTS idx_image_refs_card ON card_image_refs(card_id);
-            CREATE INDEX IF NOT EXISTS idx_image_refs_deleted ON card_image_refs(deleted_at);
+            -- v18: Card image references table removed - Obsidian natively manages attachments
 
             -- Metadata
             CREATE TABLE IF NOT EXISTS meta (
@@ -133,7 +120,7 @@ export class SqliteSchemaManager {
             );
 
             -- Set schema version
-            INSERT OR REPLACE INTO meta (key, value) VALUES ('schema_version', '17');
+            INSERT OR REPLACE INTO meta (key, value) VALUES ('schema_version', '18');
             INSERT OR REPLACE INTO meta (key, value) VALUES ('created_at', datetime('now'));
         `);
     }
@@ -143,7 +130,7 @@ export class SqliteSchemaManager {
      */
     runMigrations(): void {
         const currentVersion = this.getSchemaVersion();
-        const latestVersion = 17;
+        const latestVersion = 18;
 
         if (currentVersion >= latestVersion) {
             return; // Already at latest version
