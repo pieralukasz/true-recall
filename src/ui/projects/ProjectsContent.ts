@@ -47,7 +47,7 @@ export class ProjectsContent extends BaseComponent {
 		this.projectItems = [];
 
 		this.element = this.container.createDiv({
-			cls: "episteme-panel-content",
+			cls: "ep:flex ep:flex-col",
 		});
 
 		// Toolbar with search + new button
@@ -59,14 +59,14 @@ export class ProjectsContent extends BaseComponent {
 
 	private renderToolbar(): void {
 		const toolbar = this.element!.createDiv({
-			cls: "episteme-panel-toolbar",
+			cls: "ep:flex ep:items-center ep:gap-1.5 ep:mb-1.5",
 		});
 
 		// Search input (simple, no icon)
 		this.searchInput = toolbar.createEl("input", {
 			type: "text",
 			placeholder: "Search...",
-			cls: "episteme-search-input",
+			cls: "ep:flex-1 ep:py-1.5 ep:px-2.5 ep:border ep:border-obs-border ep:rounded-md ep:bg-obs-secondary ep:text-obs-normal ep:text-[13px] ep:transition-colors ep:focus:outline-none ep:focus:border-obs-interactive ep:placeholder:text-obs-muted",
 		});
 		this.searchInput.value = this.props.searchQuery;
 
@@ -77,7 +77,7 @@ export class ProjectsContent extends BaseComponent {
 
 		// New button
 		const newBtn = toolbar.createEl("button", {
-			cls: "episteme-toolbar-new-btn",
+			cls: "ep:inline-flex ep:items-center ep:gap-1 ep:py-1.5 ep:px-2.5 ep:border-none ep:rounded-md ep:bg-obs-modifier-hover ep:text-obs-normal ep:text-[13px] ep:font-medium ep:cursor-pointer ep:whitespace-nowrap ep:transition-colors ep:hover:bg-obs-modifier-border [&_svg]:ep:w-3.5 [&_svg]:ep:h-3.5",
 		});
 		setIcon(newBtn, "plus");
 		newBtn.createSpan({ text: "New" });
@@ -88,13 +88,15 @@ export class ProjectsContent extends BaseComponent {
 
 	private renderProjectList(): void {
 		const listEl = this.element!.createDiv({
-			cls: "episteme-panel-list",
+			cls: "ep:flex ep:flex-col ep:gap-2",
 		});
+
+		const emptyStateCls = "ep:text-center ep:py-6 ep:px-3 ep:text-obs-muted ep:text-[13px]";
 
 		if (this.props.isLoading) {
 			listEl.createEl("div", {
 				text: "Loading projects...",
-				cls: "episteme-panel-list-empty",
+				cls: emptyStateCls,
 			});
 			return;
 		}
@@ -105,7 +107,7 @@ export class ProjectsContent extends BaseComponent {
 		if (!hasProjects && !this.props.searchQuery) {
 			listEl.createEl("div", {
 				text: "No projects yet. Create one to get started!",
-				cls: "episteme-panel-list-empty",
+				cls: emptyStateCls,
 			});
 			return;
 		}
@@ -113,7 +115,7 @@ export class ProjectsContent extends BaseComponent {
 		if (!hasProjects && this.props.searchQuery) {
 			listEl.createEl("div", {
 				text: "No projects found matching your search.",
-				cls: "episteme-panel-list-empty",
+				cls: emptyStateCls,
 			});
 			return;
 		}
@@ -128,7 +130,7 @@ export class ProjectsContent extends BaseComponent {
 		// Separator for empty projects
 		if (emptyProjects.length > 0 && projectsWithCards.length > 0) {
 			listEl.createEl("div", {
-				cls: "episteme-project-separator",
+				cls: "ep:py-2 ep:my-1 ep:text-[11px] ep:font-semibold ep:uppercase ep:text-obs-muted ep:border-t ep:border-obs-border",
 				text: "Empty projects",
 			});
 		}
