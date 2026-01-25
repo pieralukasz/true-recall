@@ -252,11 +252,13 @@ describe("PanelStateManager", () => {
                 expect(state.isFlashcardFile).toBe(false);
             });
 
-            it("should detect flashcard files", () => {
+            it("should not detect flashcard files (legacy - SQL-only storage)", () => {
+                // Note: isFlashcardFile is always false since migration to SQL-only storage
+                // Flashcard MD files no longer exist - all content is in SQLite
                 const flashcardFile = createMockFile("flashcards_test");
                 stateManager.setCurrentFile(flashcardFile);
 
-                expect(stateManager.getState().isFlashcardFile).toBe(true);
+                expect(stateManager.getState().isFlashcardFile).toBe(false);
             });
 
             it("should handle null file", () => {

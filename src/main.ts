@@ -27,6 +27,7 @@ import {
 	DeviceDiscoveryService,
 	AuthService,
 	SyncService,
+	UidIndexService,
 } from "./services";
 import {
 	DB_FOLDER,
@@ -77,6 +78,7 @@ export default class EpistemePlugin extends Plugin {
 	sessionPersistence!: SessionPersistenceService;
 	cardStore!: SqliteStoreService;
 	dayBoundaryService!: DayBoundaryService;
+	uidIndex!: UidIndexService;
 	nlQueryService: NLQueryService | null = null;
 	backupService: BackupService | null = null;
 	agentService: AgentService | null = null;
@@ -88,8 +90,17 @@ export default class EpistemePlugin extends Plugin {
 	async onload(): Promise<void> {
 		await this.loadSettings();
 
+		// Initialize UID index for O(1) file lookups by flashcard_uid
+		this.uidIndex = new UidIndexService(this.app);
+		this.uidIndex.registerEvents(this);
+
+		// Build index after metadataCache is fully loaded
+		this.app.workspace.onLayoutReady(() => {
+			this.uidIndex.rebuildIndex();
+		});
+
 		// Initialize services
-		this.flashcardManager = new FlashcardManager(this.app, this.settings);
+		this.flashcardManager = new FlashcardManager(this.app, this.settings, this.uidIndex);
 		this.openRouterService = new OpenRouterService(
 			this.settings.openRouterApiKey,
 			this.settings.aiModel
