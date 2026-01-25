@@ -5,7 +5,7 @@
 import { ItemView, WorkspaceLeaf } from "obsidian";
 import { VIEW_TYPE_SESSION } from "../../constants";
 import { getEventBus } from "../../services";
-import { SessionLogic } from "../../logic/SessionLogic";
+import { SessionLogic } from "./SessionLogic";
 import { createSessionStateManager } from "../../state/session.state";
 import type { DayBoundaryService } from "../../services";
 import type { SessionSelectedEvent } from "../../types/events.types";
@@ -348,12 +348,12 @@ export class SessionView extends ItemView {
 
 		// Create selection bar at bottom of content
 		this.selectionBarEl = contentContainer.createDiv({
-			cls: "episteme-session-selection-bar",
+			cls: "episteme-session-selection-bar ep:flex ep:items-center ep:justify-between ep:p-3 ep:mt-2 ep:bg-obs-secondary ep:rounded-md ep:gap-3 ep:shrink-0",
 		});
 
 		// Selection count text
 		this.selectionBarEl.createSpan({
-			cls: "episteme-selection-count",
+			cls: "ep:text-sm ep:text-obs-muted ep:font-medium",
 			text: `${selectionCount} note${
 				selectionCount > 1 ? "s" : ""
 			} selected`,
@@ -361,19 +361,19 @@ export class SessionView extends ItemView {
 
 		// Button container
 		const buttons = this.selectionBarEl.createDiv({
-			cls: "episteme-selection-buttons",
+			cls: "ep:flex ep:gap-2",
 		});
 
 		// Clear button
 		const clearBtn = buttons.createEl("button", {
-			cls: "episteme-selection-clear-btn",
+			cls: "ep:py-1.5 ep:px-3 ep:text-sm ep:bg-obs-border ep:text-obs-normal ep:border-none ep:rounded ep:cursor-pointer ep:hover:bg-obs-modifier-hover",
 			text: "Clear",
 		});
 		clearBtn.addEventListener("click", () => this.handleClearSelection());
 
 		// Start button
 		const startBtn = buttons.createEl("button", {
-			cls: "mod-cta episteme-selection-start-btn",
+			cls: "mod-cta ep:py-1.5 ep:px-4 ep:text-sm",
 			// eslint-disable-next-line obsidianmd/ui/sentence-case
 			text: "Start Session",
 		});
