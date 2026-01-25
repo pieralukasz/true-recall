@@ -17,11 +17,6 @@ const InputSchema = z.object({
 		.optional()
 		.default(false)
 		.describe("Use the currently active note as source"),
-	projects: z
-		.array(z.string())
-		.optional()
-		.default([])
-		.describe("Project names to assign to the card"),
 });
 
 const OutputSchema = z.object({
@@ -78,8 +73,7 @@ export const createFlashcardTool: ToolDefinition<
 			const card = await ctx.flashcardManager.addSingleFlashcardToSql(
 				input.question,
 				input.answer,
-				sourceUid,
-				input.projects
+				sourceUid
 			);
 
 			return {

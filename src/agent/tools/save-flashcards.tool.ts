@@ -14,7 +14,6 @@ const FlashcardSchema = z.object({
 const InputSchema = z.object({
 	sourceNotePath: z.string().min(1, "Source note path is required"),
 	flashcards: z.array(FlashcardSchema).min(1, "At least one flashcard is required"),
-	projects: z.array(z.string()).optional().default([]),
 });
 
 const OutputSchema = z.object({
@@ -54,8 +53,7 @@ export const saveFlashcardsTool: ToolDefinition<
 		try {
 			const createdCards = await ctx.flashcardManager.saveFlashcardsToSql(
 				sourceFile,
-				input.flashcards,
-				input.projects
+				input.flashcards
 			);
 
 			return {

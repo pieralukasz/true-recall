@@ -249,7 +249,7 @@ export class ProjectsView extends ItemView {
 			await frontmatterService.setProjectsInFrontmatter(note, [projectName]);
 
 			// Ensure source note exists in DB (for card linking)
-			this.plugin.cardStore.projects.upsertSourceNote(sourceUid);
+			this.plugin.cardStore.sourceNotes.upsertSourceNote(sourceUid);
 
 			// Refresh projects list
 			await this.loadProjects();
@@ -303,7 +303,7 @@ export class ProjectsView extends ItemView {
 				sourceUid = frontmatterService.generateUid();
 				await frontmatterService.setSourceNoteUid(note, sourceUid);
 			}
-			this.plugin.cardStore.projects.upsertSourceNote(sourceUid);
+			this.plugin.cardStore.sourceNotes.upsertSourceNote(sourceUid);
 
 			new Notice(`Added "${note.basename}" to "${projectName}"`);
 			await this.loadProjects();
