@@ -2,18 +2,18 @@
  * SQLite Store Service
  * High-performance storage for FSRS card data using sql.js
  *
- * Refactored to use domain modules (CardActions, StatsActions, ProjectActions, BrowserActions).
+ * Refactored to use domain modules (CardActions, StatsActions, SourceNoteActions, BrowserActions).
  * All operations are now performed directly on the appropriate module:
  * - store.cards.* for card operations
  * - store.stats.* for review log and statistics
- * - store.projects.* for source notes, projects, and image references
+ * - store.sourceNotes.* for source notes and image references
  * - store.browser.* for browser view queries
  */
 import { App, normalizePath, Notice } from "obsidian";
 import type { FSRSCardData } from "../../../types";
 import { SqliteDatabase } from "./SqliteDatabase";
 import { SqliteSchemaManager } from "./SqliteSchemaManager";
-import { CardActions, StatsActions, ProjectActions, BrowserActions } from "./modules";
+import { CardActions, StatsActions, SourceNoteActions, BrowserActions } from "./modules";
 import { DB_FOLDER, SAVE_DEBOUNCE_MS, getDeviceDbFilename } from "./sqlite.types";
 
 /**
@@ -22,7 +22,7 @@ import { DB_FOLDER, SAVE_DEBOUNCE_MS, getDeviceDbFilename } from "./sqlite.types
  * Domain modules are exposed directly for all operations:
  * - store.cards.get(id) - Get a card
  * - store.stats.getDailyStats(date) - Get daily stats
- * - store.projects.upsertSourceNote(info) - Upsert a source note
+ * - store.sourceNotes.upsertSourceNote(uid) - Upsert a source note
  * - store.browser.getAllCardsForBrowser() - Get all cards for browser view
  */
 export class SqliteStoreService {
@@ -36,7 +36,7 @@ export class SqliteStoreService {
     // Domain modules - public for direct access
     public readonly cards: CardActions;
     public readonly stats: StatsActions;
-    public readonly projects: ProjectActions;
+    public readonly sourceNotes: SourceNoteActions;
     public readonly browser: BrowserActions;
 
     constructor(app: App, deviceId: string) {
@@ -47,7 +47,7 @@ export class SqliteStoreService {
         // Initialize domain modules
         this.cards = new CardActions(this.db);
         this.stats = new StatsActions(this.db);
-        this.projects = new ProjectActions(this.db);
+        this.sourceNotes = new SourceNoteActions(this.db);
         this.browser = new BrowserActions(this.db);
     }
 

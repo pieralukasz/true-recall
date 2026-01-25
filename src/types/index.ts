@@ -50,8 +50,6 @@ export type {
     ReviewViewMode,
     PersistentDailyStats,
     PersistentStatsData,
-    DeckInfo,
-    ProjectInfo,
     ExtendedDailyStats,
     CardMaturityBreakdown,
     FutureDueEntry,
@@ -63,6 +61,7 @@ export type {
     RetentionEntry,
     CardStore,
     FSRSCard,
+    ProjectInfo,
 } from "./fsrs";
 
 export {

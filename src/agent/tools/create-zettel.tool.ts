@@ -20,11 +20,6 @@ const InputSchema = z.object({
 		.optional()
 		.default([])
 		.describe("Optional flashcards to create and link to this note"),
-	projects: z
-		.array(z.string())
-		.optional()
-		.default([])
-		.describe("Project names to assign to created flashcards"),
 	tags: z
 		.array(z.string())
 		.optional()
@@ -114,8 +109,7 @@ export const createZettelTool: ToolDefinition<CreateZettelInput, CreateZettelOut
 					const card = await ctx.flashcardManager.addSingleFlashcardToSql(
 						fc.question,
 						fc.answer,
-						sourceUid,
-						input.projects
+						sourceUid
 					);
 					flashcardIds.push(card.id);
 				}

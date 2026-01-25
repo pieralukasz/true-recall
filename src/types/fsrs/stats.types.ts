@@ -165,10 +165,10 @@ export interface StreakInfo {
 }
 
 /**
- * Project information
+ * Project information (aggregated from frontmatter at runtime)
  */
 export interface ProjectInfo {
-    /** Project ID (UUID string for database consistency) */
+    /** Project ID (UUID string for UI consistency) */
     id: string;
     /** Project name (unique) */
     name: string;
@@ -180,22 +180,5 @@ export interface ProjectInfo {
     dueCount: number;
     /** New cards count */
     newCount: number;
-    /** Creation timestamp */
-    createdAt?: number;
-    /** Last update timestamp */
-    updatedAt?: number;
 }
 
-/**
- * @deprecated Use ProjectInfo instead
- */
-export interface DeckInfo {
-    /** Deck name (unique identifier) */
-    name: string;
-    /** Number of cards in this deck */
-    cardCount: number;
-    /** Due cards count */
-    dueCount: number;
-    /** New cards count */
-    newCount: number;
-}

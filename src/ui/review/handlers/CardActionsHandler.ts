@@ -330,7 +330,6 @@ export class CardActionsHandler {
 			mode: "add",
 			currentFilePath: card.filePath,
 			sourceNoteName: card.sourceNoteName,
-			projects: card.projects,
 		});
 
 		const result = await modal.openAndWait();
@@ -342,8 +341,7 @@ export class CardActionsHandler {
 				card.filePath,
 				result.question,
 				result.answer,
-				card.sourceUid,
-				card.projects
+				card.sourceUid
 			);
 
 			// Add new card to current session queue
@@ -369,7 +367,6 @@ export class CardActionsHandler {
 			mode: "add",
 			currentFilePath: card.filePath,
 			sourceNoteName: card.sourceNoteName,
-			projects: card.projects,
 			prefillQuestion: card.question,
 			prefillAnswer: card.answer,
 		});
@@ -383,8 +380,7 @@ export class CardActionsHandler {
 				card.filePath,
 				result.question,
 				result.answer,
-				card.sourceUid,
-				card.projects
+				card.sourceUid
 			);
 
 			// Add new card to current session queue
@@ -408,7 +404,6 @@ export class CardActionsHandler {
 			mode: "edit",
 			card: card,
 			currentFilePath: card.filePath,
-			projects: card.projects,
 			prefillQuestion: card.question,
 			prefillAnswer: card.answer,
 		});
@@ -594,9 +589,8 @@ export class CardActionsHandler {
 			return;
 		}
 
-		// Determine target source UID and projects
+		// Determine target source UID
 		let targetSourceUid: string | undefined;
-		let targetProjects: string[];
 		let targetFilePath: string;
 
 		try {
@@ -615,14 +609,12 @@ export class CardActionsHandler {
 
 				targetSourceUid = uid;
 				targetFilePath = filePath;
-				targetProjects = currentCard.projects;
 
 				new Notice(`Created new note: ${noteName}`);
 			} else {
 				// Use current card's source note
 				targetSourceUid = currentCard.sourceUid;
 				targetFilePath = currentCard.filePath;
-				targetProjects = currentCard.projects;
 			}
 
 			// Save generated flashcards and add to queue
@@ -631,8 +623,7 @@ export class CardActionsHandler {
 					targetFilePath,
 					flashcard.question,
 					flashcard.answer,
-					targetSourceUid,
-					targetProjects
+					targetSourceUid
 				);
 
 				// Add to current review queue
@@ -710,7 +701,7 @@ tags: [${tag}]
 		const file = await this.deps.app.vault.create(filePath, content);
 
 		// Register source note in SQLite (v15: only stores UID)
-		this.deps.cardStore.projects.upsertSourceNote(uid);
+		this.deps.cardStore.sourceNotes.upsertSourceNote(uid);
 
 		return { uid, filePath: file.path };
 	}

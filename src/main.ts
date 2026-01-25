@@ -844,7 +844,7 @@ export default class EpistemePlugin extends Plugin {
 			return;
 		}
 
-		const sourceNotes = this.cardStore.projects.getAllSourceNotes();
+		const sourceNotes = this.cardStore.sourceNotes.getAllSourceNotes();
 		const frontmatterService = this.flashcardManager.getFrontmatterService();
 		const files = this.app.vault.getMarkdownFiles();
 
@@ -876,7 +876,7 @@ export default class EpistemePlugin extends Plugin {
 				const cards = this.cardStore.getCardsBySourceUid(uid);
 				orphanedCards += cards.length;
 				// Delete source note but keep flashcards (detachCards = false)
-				this.cardStore.projects.deleteSourceNote(uid, false);
+				this.cardStore.sourceNotes.deleteSourceNote(uid, false);
 			}
 			new Notice(
 				`Removed ${orphaned} orphaned source note(s)` +
@@ -964,7 +964,7 @@ export default class EpistemePlugin extends Plugin {
 		await frontmatterService.setProjectsInFrontmatter(file, [projectName]);
 
 		// Ensure source note exists in DB (for card linking)
-		this.cardStore.projects.upsertSourceNote(sourceUid);
+		this.cardStore.sourceNotes.upsertSourceNote(sourceUid);
 
 		new Notice(`Project "${projectName}" created`);
 	}

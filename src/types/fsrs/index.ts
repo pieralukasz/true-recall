@@ -45,7 +45,6 @@ export type {
     RetentionEntry,
     TodaySummary,
     StreakInfo,
-    DeckInfo,
     ProjectInfo,
 } from "./stats.types";
 

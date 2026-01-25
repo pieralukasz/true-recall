@@ -13,7 +13,7 @@ import type { FSRSCardData } from "../../types";
 import type {
 	SourceNoteForSync,
 	CardImageRefForSync,
-} from "../persistence/sqlite/modules/ProjectActions";
+} from "../persistence/sqlite/modules/SourceNoteActions";
 import type { ReviewLogForSync } from "../persistence/sqlite/modules/StatsActions";
 
 /**
@@ -281,9 +281,9 @@ export class SyncService {
 
 		// 1. Source notes (independent)
 		for (const remote of data.sourceNotes) {
-			const local = this.cardStore.projects.getSourceNoteForSync(remote.uid);
+			const local = this.cardStore.sourceNotes.getSourceNoteForSync(remote.uid);
 			if (!local || remote.updated_at > local.updatedAt) {
-				this.cardStore.projects.upsertSourceNoteFromRemote(this.mapRemoteSourceNoteToLocal(remote));
+				this.cardStore.sourceNotes.upsertSourceNoteFromRemote(this.mapRemoteSourceNoteToLocal(remote));
 				pulled++;
 			}
 		}
@@ -309,9 +309,9 @@ export class SyncService {
 
 		// 4. Card image refs (depends on cards)
 		for (const remote of data.cardImageRefs) {
-			const local = this.cardStore.projects.getCardImageRefForSync(remote.id);
+			const local = this.cardStore.sourceNotes.getCardImageRefForSync(remote.id);
 			if (!local || remote.updated_at > local.updatedAt) {
-				this.cardStore.projects.upsertCardImageRefFromRemote(this.mapRemoteCardImageRefToLocal(remote));
+				this.cardStore.sourceNotes.upsertCardImageRefFromRemote(this.mapRemoteCardImageRefToLocal(remote));
 				pulled++;
 			}
 		}
@@ -330,10 +330,10 @@ export class SyncService {
 		cardImageRefs: CardImageRefForSync[];
 	} {
 		return {
-			sourceNotes: this.cardStore.projects.getModifiedSourceNotesSince(lastSync),
+			sourceNotes: this.cardStore.sourceNotes.getModifiedSourceNotesSince(lastSync),
 			cards: this.cardStore.cards.getModifiedSince(lastSync),
 			reviewLog: this.cardStore.stats.getModifiedReviewLogSince(lastSync),
-			cardImageRefs: this.cardStore.projects.getModifiedCardImageRefsSince(lastSync),
+			cardImageRefs: this.cardStore.sourceNotes.getModifiedCardImageRefsSince(lastSync),
 		};
 	}
 
@@ -484,7 +484,7 @@ export class SyncService {
 
 			// Source notes (independent - must come first)
 			for (const remote of pullResults.sourceNotes) {
-				this.cardStore.projects.upsertSourceNoteFromRemote(this.mapRemoteSourceNoteToLocal(remote));
+				this.cardStore.sourceNotes.upsertSourceNoteFromRemote(this.mapRemoteSourceNoteToLocal(remote));
 				pulled++;
 			}
 
@@ -504,7 +504,7 @@ export class SyncService {
 
 			// Card image refs (depends on cards)
 			for (const remote of pullResults.cardImageRefs) {
-				this.cardStore.projects.upsertCardImageRefFromRemote(this.mapRemoteCardImageRefToLocal(remote));
+				this.cardStore.sourceNotes.upsertCardImageRefFromRemote(this.mapRemoteCardImageRefToLocal(remote));
 				pulled++;
 			}
 
@@ -528,7 +528,7 @@ export class SyncService {
 	private deleteAllLocalData(): void {
 		// Order matters - delete dependent tables first
 		this.cardStore.stats.deleteAllReviewLogForSync();
-		this.cardStore.projects.deleteAllForSync();
+		this.cardStore.sourceNotes.deleteAllForSync();
 		this.cardStore.cards.deleteAllForSync();
 	}
 

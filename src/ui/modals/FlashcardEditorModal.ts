@@ -33,8 +33,6 @@ export interface FlashcardEditorModalOptions {
 	currentFilePath: string;
 	/** Source note name (for display) */
 	sourceNoteName?: string;
-	/** Projects associated with the card */
-	projects: string[];
 	/** Pre-fill question (for copying cards) */
 	prefillQuestion?: string;
 	/** Pre-fill answer (for copying cards) */

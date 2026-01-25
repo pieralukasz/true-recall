@@ -8,7 +8,6 @@ import type {
 	EpistemeSettings,
 	FSRSCardData,
 	FSRSFlashcardItem,
-	ProjectInfo,
 	CardReviewLogEntry,
 	NoteFlashcardType,
 	FlashcardItem,
@@ -235,8 +234,7 @@ export class FlashcardManager {
 	 */
 	async saveFlashcardsToSql(
 		sourceFile: TFile,
-		flashcards: Array<{ id: string; question: string; answer: string }>,
-		projects: string[] = []
+		flashcards: Array<{ id: string; question: string; answer: string }>
 	): Promise<FSRSFlashcardItem[]> {
 		if (!this.store) {
 			throw new Error("Card store not initialized");
@@ -250,7 +248,7 @@ export class FlashcardManager {
 		}
 
 		// Create source note entry in SQL (v15: only UID + timestamps)
-		this.store.projects.upsertSourceNote(sourceUid);
+		this.store.sourceNotes.upsertSourceNote(sourceUid);
 
 		const createdCards: FSRSFlashcardItem[] = [];
 
@@ -275,7 +273,7 @@ export class FlashcardManager {
 				answer: flashcard.answer,
 				filePath: "",
 				fsrs: extendedData,
-				projects: projects,
+				projects: [],
 				sourceNoteName: sourceFile.basename,
 				sourceUid: sourceUid,
 			};
@@ -286,7 +284,6 @@ export class FlashcardManager {
 				type: "card:added",
 				cardId: flashcard.id,
 				filePath: "",
-				projects: projects,
 				sourceNoteName: sourceFile.basename,
 				timestamp: Date.now(),
 			} as CardAddedEvent);
@@ -303,10 +300,9 @@ export class FlashcardManager {
 		_filePath: string,
 		question: string,
 		answer: string,
-		sourceUid?: string,
-		projects?: string[]
+		sourceUid?: string
 	): Promise<FSRSFlashcardItem> {
-		return this.addSingleFlashcardToSql(question, answer, sourceUid, projects);
+		return this.addSingleFlashcardToSql(question, answer, sourceUid);
 	}
 
 	/**
@@ -315,8 +311,7 @@ export class FlashcardManager {
 	async addSingleFlashcardToSql(
 		question: string,
 		answer: string,
-		sourceUid?: string,
-		projects: string[] = []
+		sourceUid?: string
 	): Promise<FSRSFlashcardItem> {
 		if (!this.store) {
 			throw new Error("Card store not initialized");
@@ -343,17 +338,13 @@ export class FlashcardManager {
 		// Sync image references for the new card
 		this.syncCardImageRefs(cardId, question, answer);
 
-		// v15: Source note name/path and projects are resolved from vault at runtime
-		// Here we just pass through the provided projects array
-		const cardProjects = projects;
-
 		const card: FSRSFlashcardItem = {
 			id: cardId,
 			question,
 			answer,
 			filePath: "",
 			fsrs: extendedData,
-			projects: cardProjects,
+			projects: [],
 			sourceUid,
 		};
 
@@ -361,7 +352,6 @@ export class FlashcardManager {
 			type: "card:added",
 			cardId,
 			filePath: "",
-			projects: cardProjects,
 			timestamp: Date.now(),
 		} as CardAddedEvent);
 
@@ -434,53 +424,6 @@ export class FlashcardManager {
 				sourceUid: card.sourceUid,
 				sourceNotePath: card.sourceNotePath,
 			}));
-	}
-
-	/**
-	 * Get all unique project names with statistics
-	 */
-	async getAllProjects(
-		dayBoundaryService?: import("../core/day-boundary.service").DayBoundaryService
-	): Promise<ProjectInfo[]> {
-		const allCards = await this.getAllFSRSCards();
-		const projectMap = new Map<string, FSRSFlashcardItem[]>();
-
-		// Group cards by project (cards can belong to multiple projects)
-		for (const card of allCards) {
-			const projects = card.projects.length > 0 ? card.projects : ["No Project"];
-			for (const project of projects) {
-				if (!projectMap.has(project)) {
-					projectMap.set(project, []);
-				}
-				projectMap.get(project)!.push(card);
-			}
-		}
-
-		const now = new Date();
-		const projectInfos: ProjectInfo[] = [];
-
-		for (const [name, cards] of projectMap) {
-			const dueCount = dayBoundaryService
-				? dayBoundaryService.countDueCards(cards, now)
-				: cards.filter((c) => {
-						const dueDate = new Date(c.fsrs.due);
-						return dueDate <= now && c.fsrs.state !== State.New;
-					}).length;
-
-			// Count unique source notes
-			const uniqueSourceUids = new Set(cards.map(c => c.sourceUid));
-
-			projectInfos.push({
-				id: crypto.randomUUID(), // Generate UUID for database consistency
-				name,
-				noteCount: uniqueSourceUids.size,
-				cardCount: cards.length,
-				dueCount,
-				newCount: cards.filter((c) => c.fsrs.state === State.New).length,
-			});
-		}
-
-		return projectInfos.sort((a, b) => a.name.localeCompare(b.name));
 	}
 
 	/**
@@ -574,7 +517,7 @@ export class FlashcardManager {
 		const questionRefs = imageService.extractImageRefs(question);
 		const answerRefs = imageService.extractImageRefs(answer);
 
-		this.store.projects.syncCardImageRefs(cardId, questionRefs, answerRefs);
+		this.store.sourceNotes.syncCardImageRefs(cardId, questionRefs, answerRefs);
 	}
 
 	/**
@@ -660,7 +603,7 @@ export class FlashcardManager {
 		}
 
 		// Ensure source note entry exists in SQL (v15: only UID + timestamps)
-		this.store.projects.upsertSourceNote(targetSourceUid);
+		this.store.sourceNotes.upsertSourceNote(targetSourceUid);
 
 		// Update card's source UID
 		this.store.cards.updateCardSourceUid(cardId, targetSourceUid);
@@ -732,7 +675,7 @@ export class FlashcardManager {
 		// Process NEW changes
 		const newChanges = changes.filter((c) => c.type === "NEW" && c.accepted);
 		for (const change of newChanges) {
-			await this.addSingleFlashcardToSql(change.question, change.answer, sourceUid, []);
+			await this.addSingleFlashcardToSql(change.question, change.answer, sourceUid);
 		}
 
 		// Emit bulk change events

@@ -13,7 +13,6 @@ import {
 import { VIEW_TYPE_FLASHCARD_PANEL } from "../../constants";
 import { FlashcardManager, OpenRouterService, getEventBus } from "../../services";
 import { CollectService } from "../../services/flashcard/collect.service";
-import { FlashcardParserService } from "../../services/flashcard/flashcard-parser.service";
 import { PanelStateManager } from "../../state";
 import { Panel } from "../components/Panel";
 import { PanelHeader } from "./PanelHeader";
@@ -34,7 +33,6 @@ export class FlashcardPanelView extends ItemView {
     private flashcardManager: FlashcardManager;
     private openRouterService: OpenRouterService;
     private stateManager: PanelStateManager;
-    private parserService: FlashcardParserService;
     private collectService: CollectService;
 
     // UI Components
@@ -69,8 +67,7 @@ export class FlashcardPanelView extends ItemView {
         this.flashcardManager = plugin.flashcardManager;
         this.openRouterService = plugin.openRouterService;
         this.stateManager = new PanelStateManager();
-        this.parserService = new FlashcardParserService();
-        this.collectService = new CollectService(this.parserService);
+        this.collectService = new CollectService();
     }
 
     getViewType(): string {
@@ -442,15 +439,10 @@ export class FlashcardPanelView extends ItemView {
                 answer: f.answer,
             }));
 
-            // Get projects from frontmatter (if any)
-            const frontmatterService = this.flashcardManager.getFrontmatterService();
-            const projects = frontmatterService.extractProjectsFromFrontmatter(content);
-
             // Save directly to SQL (no MD file created)
             await this.flashcardManager.saveFlashcardsToSql(
                 state.currentFile,
-                flashcardsWithIds,
-                projects
+                flashcardsWithIds
             );
 
             new Notice(`Generated flashcards for ${state.currentFile.basename}`);
@@ -540,16 +532,10 @@ export class FlashcardPanelView extends ItemView {
                 answer: f.answer,
             }));
 
-            // Get projects from frontmatter (if any)
-            const content = await this.app.vault.read(state.currentFile);
-            const frontmatterSvc = this.flashcardManager.getFrontmatterService();
-            const projects = frontmatterSvc.extractProjectsFromFrontmatter(content);
-
             // Save directly to SQL (no MD file created)
             await this.flashcardManager.saveFlashcardsToSql(
                 state.currentFile,
-                flashcardsWithIds,
-                projects
+                flashcardsWithIds
             );
 
             new Notice(`Saved ${result.flashcards.length} flashcard(s) from selection`);
@@ -723,7 +709,6 @@ export class FlashcardPanelView extends ItemView {
             },
             currentFilePath: state.currentFile.path,
             sourceNoteName: state.currentFile.basename,
-            projects: [],
         });
 
         const result = await modal.openAndWait();
@@ -993,15 +978,10 @@ export class FlashcardPanelView extends ItemView {
             await frontmatterService.setSourceNoteUid(state.currentFile, sourceUid);
         }
 
-        // Get projects from frontmatter (if any)
-        const content = await this.app.vault.read(state.currentFile);
-        const projects = frontmatterService.extractProjectsFromFrontmatter(content);
-
         const modal = new FlashcardEditorModal(this.app, {
             mode: "add",
             currentFilePath: state.currentFile.path,
             sourceNoteName: state.currentFile.basename,
-            projects,
             prefillQuestion: "question",
             prefillAnswer: "answer",
         });
@@ -1014,8 +994,7 @@ export class FlashcardPanelView extends ItemView {
                 state.currentFile.path,
                 result.question,
                 result.answer,
-                sourceUid,
-                projects
+                sourceUid
             );
             new Notice("Flashcard added!");
             await this.loadFlashcardInfo();
@@ -1072,10 +1051,6 @@ export class FlashcardPanelView extends ItemView {
                 return;
             }
 
-            // Get projects from frontmatter (if any)
-            const frontmatterService = this.flashcardManager.getFrontmatterService();
-            const projects = frontmatterService.extractProjectsFromFrontmatter(content);
-
             // Save flashcards to SQL
             await this.flashcardManager.saveFlashcardsToSql(
                 state.currentFile,
@@ -1083,8 +1058,7 @@ export class FlashcardPanelView extends ItemView {
                     id: f.id || crypto.randomUUID(),
                     question: f.question,
                     answer: f.answer,
-                })),
-                projects
+                }))
             );
 
             // Update markdown file based on setting

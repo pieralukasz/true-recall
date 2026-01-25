@@ -96,7 +96,7 @@ async function handleImageRename(plugin: EpistemePlugin, file: TFile, oldPath: s
     const imageService = new ImageService(plugin.app);
 
     // Find all cards that reference the old image path
-    const cardRefs = store.projects.getCardsByImagePath(oldPath);
+    const cardRefs = store.sourceNotes.getCardsByImagePath(oldPath);
     if (cardRefs.length === 0) {
         return;
     }
@@ -121,7 +121,7 @@ async function handleImageRename(plugin: EpistemePlugin, file: TFile, oldPath: s
     }
 
     // Update the image_refs table
-    store.projects.updateImagePath(oldPath, file.path);
+    store.sourceNotes.updateImagePath(oldPath, file.path);
 
     if (updatedCardIds.size > 0) {
         console.debug(`[Episteme] Updated ${updatedCardIds.size} card(s) after image rename: ${oldPath} -> ${file.path}`);

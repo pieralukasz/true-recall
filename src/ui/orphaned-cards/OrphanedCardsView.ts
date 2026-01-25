@@ -185,7 +185,6 @@ export class OrphanedCardsView extends ItemView {
 			},
 			currentFilePath: "",
 			sourceNoteName: "Orphaned Card",
-			projects: [],
 		});
 
 		const result = await modal.openAndWait();

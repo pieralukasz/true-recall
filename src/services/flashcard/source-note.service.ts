@@ -74,7 +74,7 @@ export class SourceNoteService {
 		uid: string,
 		_file: TFile
 	): void {
-		store.projects.upsertSourceNote(uid);
+		store.sourceNotes.upsertSourceNote(uid);
 	}
 
 	/**
@@ -85,7 +85,7 @@ export class SourceNoteService {
 	 * @returns Source note info if found
 	 */
 	getSourceNoteInfo(store: SqliteStoreService, uid: string): SourceNoteInfo | null {
-		return store.projects.getSourceNote(uid);
+		return store.sourceNotes.getSourceNote(uid);
 	}
 
 	/**
