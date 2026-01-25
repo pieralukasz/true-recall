@@ -16,6 +16,7 @@ export interface EmptyStateProps {
  */
 export class EmptyState extends BaseComponent {
     private props: EmptyStateProps;
+    private messageEl: HTMLElement | null = null;
 
     constructor(container: HTMLElement, props: EmptyStateProps) {
         super(container);
@@ -30,28 +31,27 @@ export class EmptyState extends BaseComponent {
         }
 
         this.element = this.container.createDiv({
-            cls: "episteme-empty",
+            cls: "ep:flex ep:flex-col ep:items-center ep:justify-center ep:flex-1 ep:text-obs-muted ep:text-center ep:py-4 ep:px-2",
         });
 
         // Optional icon
         if (this.props.icon) {
             const iconEl = this.element.createDiv({
-                cls: "episteme-empty-icon",
+                cls: "ep:text-3xl ep:mb-2",
             });
             iconEl.textContent = this.props.icon;
         }
 
         // Message
-        this.element.createDiv({
+        this.messageEl = this.element.createDiv({
             text: this.props.message,
-            cls: "episteme-empty-message",
         });
 
         // Optional action button
         if (this.props.actionLabel && this.props.onAction) {
             const actionBtn = this.element.createEl("button", {
                 text: this.props.actionLabel,
-                cls: "episteme-empty-action mod-cta",
+                cls: "ep:mt-3 mod-cta",
             });
             this.events.addEventListener(actionBtn, "click", () => {
                 this.props.onAction?.();
@@ -64,9 +64,8 @@ export class EmptyState extends BaseComponent {
      */
     setMessage(message: string): void {
         this.props.message = message;
-        const messageEl = this.element?.querySelector(".episteme-empty-message");
-        if (messageEl) {
-            messageEl.textContent = message;
+        if (this.messageEl) {
+            this.messageEl.textContent = message;
         }
     }
 }

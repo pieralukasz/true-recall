@@ -33,26 +33,26 @@ export class LoadingSpinner extends BaseComponent {
 		}
 
 		this.element = this.container.createDiv({
-			cls: "episteme-processing",
+			cls: "ep:flex ep:flex-col ep:items-center ep:justify-center ep:py-6 ep:px-2 ep:gap-3",
 		});
 
 		// Spinner SVG
 		const spinnerEl = this.element.createDiv({
-			cls: "episteme-spinner",
+			cls: "ep:text-obs-interactive",
 		});
 		this.createSpinnerSVG(spinnerEl);
 
 		// Message text
 		this.messageEl = this.element.createDiv({
 			text: this.props.message,
-			cls: "episteme-processing-text",
+			cls: "ep:text-sm ep:font-medium ep:text-obs-normal",
 		});
 
 		// Sub-message text
 		if (this.props.subMessage) {
 			this.subMessageEl = this.element.createDiv({
 				text: this.props.subMessage,
-				cls: "episteme-processing-subtext",
+				cls: "ep:text-xs ep:text-obs-muted",
 			});
 		}
 	}
@@ -77,7 +77,7 @@ export class LoadingSpinner extends BaseComponent {
 		} else if (subMessage && this.element) {
 			this.subMessageEl = this.element.createDiv({
 				text: subMessage,
-				cls: "episteme-processing-subtext",
+				cls: "ep:text-xs ep:text-obs-muted",
 			});
 		}
 	}
