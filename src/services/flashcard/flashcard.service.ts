@@ -22,6 +22,7 @@ import { createDefaultFSRSData, State } from "../../types";
 import { getEventBus } from "../core/event-bus.service";
 import { FrontmatterService } from "./frontmatter.service";
 import { FlashcardParserService } from "./flashcard-parser.service";
+import { SourceNoteService } from "./source-note.service";
 import { ImageService } from "../image";
 
 /**
@@ -55,12 +56,14 @@ export class FlashcardManager {
 	private store: SqliteStoreService | null = null;
 	private frontmatterService: FrontmatterService;
 	private parserService: FlashcardParserService;
+	private sourceNoteService: SourceNoteService;
 
 	constructor(app: App, settings: EpistemeSettings) {
 		this.app = app;
 		this.settings = settings;
 		this.frontmatterService = new FrontmatterService(app);
 		this.parserService = new FlashcardParserService();
+		this.sourceNoteService = new SourceNoteService(app);
 	}
 
 	/**
@@ -244,9 +247,6 @@ export class FlashcardManager {
 			await this.frontmatterService.setSourceNoteUid(sourceFile, sourceUid);
 		}
 
-		// Create source note entry in SQL (v15: only UID + timestamps)
-		this.store.sourceNotes.upsertSourceNote(sourceUid);
-
 		const createdCards: FSRSFlashcardItem[] = [];
 
 		for (const flashcard of flashcards) {
@@ -404,16 +404,20 @@ export class FlashcardManager {
 			.filter((card): card is FSRSCardData & { question: string; answer: string } =>
 				Boolean(card.question && card.answer)
 			)
-			.map((card) => ({
-				id: card.id,
-				question: card.question,
-				answer: card.answer,
-				fsrs: card,
-				projects: card.projects || [],
-				sourceNoteName: card.sourceNoteName,
-				sourceUid: card.sourceUid,
-				sourceNotePath: card.sourceNotePath,
-			}));
+			.map((card) => {
+				// Resolve source note info from vault
+				const sourceNoteInfo = this.sourceNoteService.resolveSourceNote(card.sourceUid);
+				return {
+					id: card.id,
+					question: card.question,
+					answer: card.answer,
+					fsrs: card,
+					projects: card.projects || [],
+					sourceNoteName: sourceNoteInfo.noteName || card.sourceNoteName,
+					sourceUid: card.sourceUid,
+					sourceNotePath: sourceNoteInfo.notePath || card.sourceNotePath,
+				};
+			});
 	}
 
 	/**
@@ -587,9 +591,6 @@ export class FlashcardManager {
 			targetSourceUid = this.frontmatterService.generateUid();
 			await this.frontmatterService.setSourceNoteUid(targetNote, targetSourceUid);
 		}
-
-		// Ensure source note entry exists in SQL (v15: only UID + timestamps)
-		this.store.sourceNotes.upsertSourceNote(targetSourceUid);
 
 		// Update card's source UID
 		this.store.cards.updateCardSourceUid(cardId, targetSourceUid);

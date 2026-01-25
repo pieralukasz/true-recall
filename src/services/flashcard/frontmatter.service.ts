@@ -4,7 +4,6 @@
  */
 import { App, TFile } from "obsidian";
 import type { NoteFlashcardType } from "../../types";
-import { FLASHCARD_CONFIG } from "../../constants";
 
 /**
  * Service for managing frontmatter in flashcard and source note files
@@ -306,11 +305,16 @@ ${projectsArray}
 
 	// ===== UID-based linking methods =====
 
+	/** UID field name in source note frontmatter */
+	private readonly SOURCE_UID_FIELD = "flashcard_uid";
+	/** UID length for generating short IDs */
+	private readonly UID_LENGTH = 8;
+
 	/**
 	 * Generate a short UID for flashcard linking (8 hex chars)
 	 */
 	generateUid(): string {
-		return crypto.randomUUID().replace(/-/g, "").slice(0, FLASHCARD_CONFIG.uidLength);
+		return crypto.randomUUID().replace(/-/g, "").slice(0, this.UID_LENGTH);
 	}
 
 	/**
@@ -318,7 +322,7 @@ ${projectsArray}
 	 */
 	async getSourceNoteUid(sourceFile: TFile): Promise<string | null> {
 		const content = await this.app.vault.read(sourceFile);
-		const uidField = FLASHCARD_CONFIG.sourceUidField;
+		const uidField = this.SOURCE_UID_FIELD;
 		const match = content.match(new RegExp(`${uidField}:\\s*["']?([a-f0-9]+)["']?`, "i"));
 		return match?.[1] ?? null;
 	}
@@ -329,7 +333,7 @@ ${projectsArray}
 	 */
 	async setSourceNoteUid(sourceFile: TFile, uid: string): Promise<void> {
 		const content = await this.app.vault.read(sourceFile);
-		const uidField = FLASHCARD_CONFIG.sourceUidField;
+		const uidField = this.SOURCE_UID_FIELD;
 		const frontmatterRegex = /^---\n([\s\S]*?)\n---/;
 		const match = content.match(frontmatterRegex);
 
@@ -360,48 +364,6 @@ ${projectsArray}
 		}
 
 		await this.app.vault.modify(sourceFile, newContent);
-	}
-
-	/**
-	 * Generate frontmatter for a new flashcard file with UID
-	 * @deprecated Flashcard MD files are no longer used - use SQL storage instead
-	 */
-	generateFrontmatterWithUid(
-		sourceFile: TFile,
-		uid: string,
-		projects: string[] = []
-	): string {
-		const uidField = FLASHCARD_CONFIG.flashcardUidField;
-		const projectsLine = projects.length > 0
-			? `projects: [${projects.map(p => `"${p}"`).join(", ")}]`
-			: "";
-		return `---
-${uidField}: "${uid}"
-source_link: "[[${sourceFile.basename}]]"
-tags: [flashcards/auto]
-${projectsLine}
----
-
-`;
-	}
-
-	/**
-	 * Extract source_uid from flashcard file frontmatter
-	 */
-	extractSourceUidFromContent(content: string): string | null {
-		const uidField = FLASHCARD_CONFIG.flashcardUidField;
-		const match = content.match(new RegExp(`${uidField}:\\s*["']?([a-f0-9]+)["']?`, "i"));
-		return match?.[1] ?? null;
-	}
-
-	/**
-	 * Update source_link in flashcard file content
-	 */
-	updateSourceLinkInContent(content: string, newNoteName: string): string {
-		return content.replace(
-			/source_link:\s*"\[\[.+?\]\]"/,
-			`source_link: "[[${newNoteName}]]"`
-		);
 	}
 
 	/**
