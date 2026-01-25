@@ -131,6 +131,7 @@ export class ProjectsView extends ItemView {
 			// Count cards per project
 			const projectCardCounts = new Map<string, number>();
 			const projectNewCounts = new Map<string, number>();
+			const projectLearningCounts = new Map<string, number>();
 			const projectDueCounts = new Map<string, number>();
 			const allCards = this.plugin.cardStore.cards.getAll();
 			const now = new Date();
@@ -147,7 +148,7 @@ export class ProjectsView extends ItemView {
 						(projectCardCounts.get(projectName) || 0) + 1
 					);
 
-					// New count: State.New cards
+					// New count: State.New cards (blue in Anki)
 					if (card.state === State.New) {
 						projectNewCounts.set(
 							projectName,
@@ -155,16 +156,25 @@ export class ProjectsView extends ItemView {
 						);
 					}
 
-					// Due count: cards due today (inline logic from isCardDueToday)
 					const dueDate = new Date(card.due);
-					const isDue =
+
+					// Learning count: Learning/Relearning cards due (orange in Anki)
+					if (
 						(card.state === State.Learning ||
 							card.state === State.Relearning) &&
 						dueDate <= now
-							? true
-							: card.state === State.Review &&
-								  dueDate < tomorrowBoundary;
-					if (isDue) {
+					) {
+						projectLearningCounts.set(
+							projectName,
+							(projectLearningCounts.get(projectName) || 0) + 1
+						);
+					}
+
+					// Due count: Review cards due today (green in Anki)
+					if (
+						card.state === State.Review &&
+						dueDate < tomorrowBoundary
+					) {
 						projectDueCounts.set(
 							projectName,
 							(projectDueCounts.get(projectName) || 0) + 1
@@ -182,6 +192,7 @@ export class ProjectsView extends ItemView {
 					cardCount: projectCardCounts.get(name) ?? 0,
 					dueCount: projectDueCounts.get(name) ?? 0,
 					newCount: projectNewCounts.get(name) ?? 0,
+					learningCount: projectLearningCounts.get(name) ?? 0,
 				}))
 				.sort((a, b) => a.name.localeCompare(b.name));
 
