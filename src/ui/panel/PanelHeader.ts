@@ -50,31 +50,36 @@ export class PanelHeader extends BaseComponent {
         const { currentFile, status, onOpenFlashcardFile, onReviewFlashcards, onDeleteAllFlashcards } = this.props;
 
         this.element = this.container.createDiv({
-            cls: "episteme-header",
+            cls: "ep:pb-2 ep:mb-2",
         });
 
         const titleRow = this.element.createDiv({
-            cls: "episteme-title-row",
+            cls: "ep:flex ep:items-center ep:gap-2",
         });
 
         // Status indicator
-        const statusEl = titleRow.createSpan({ cls: "episteme-status" });
+        const statusEl = titleRow.createSpan({ cls: "ep:text-xs ep:shrink-0" });
         statusEl.textContent = getStatusIcon(status);
 
         // Note title
-        const titleEl = titleRow.createSpan({ cls: "episteme-title" });
+        const titleEl = titleRow.createSpan({
+            cls: "ep:font-semibold ep:text-sm ep:overflow-hidden ep:text-ellipsis ep:whitespace-nowrap ep:text-obs-normal",
+        });
         if (currentFile) {
             titleEl.textContent = this.props.displayTitle ?? currentFile.basename;
         } else {
             titleEl.textContent = "No note selected";
         }
 
+        // Shared button styles
+        const btnClasses = "ep:cursor-pointer ep:opacity-70 ep:text-sm ep:px-1 ep:py-0.5 ep:rounded ep:shrink-0 ep:hover:opacity-100 ep:hover:bg-obs-modifier-hover clickable-icon";
+
         // Action buttons (only when flashcards exist)
         if (status === "exists" && currentFile) {
             // Review flashcards button
             if (onReviewFlashcards) {
                 const reviewBtn = titleRow.createEl("button", {
-                    cls: "episteme-review-btn clickable-icon",
+                    cls: btnClasses,
                     attr: {
                         "aria-label": "Review flashcards from this note",
                         "data-tooltip-position": "top",
@@ -95,7 +100,7 @@ export class PanelHeader extends BaseComponent {
             // Open flashcard file button
             if (onOpenFlashcardFile) {
                 const openBtn = titleRow.createEl("button", {
-                    cls: "episteme-open-btn clickable-icon",
+                    cls: btnClasses,
                     attr: {
                         "aria-label": "Open flashcard file",
                         "data-tooltip-position": "top",
@@ -116,7 +121,7 @@ export class PanelHeader extends BaseComponent {
             // Delete all flashcards button
             if (onDeleteAllFlashcards) {
                 const deleteAllBtn = titleRow.createEl("button", {
-                    cls: "episteme-delete-all-btn clickable-icon",
+                    cls: btnClasses,
                     attr: {
                         "aria-label": "Delete all flashcards for this note",
                         "data-tooltip-position": "top",
