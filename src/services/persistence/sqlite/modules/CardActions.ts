@@ -463,10 +463,6 @@ export class CardActions {
                 `UPDATE review_log SET deleted_at = ?, updated_at = ? WHERE card_id = ?`,
                 [now, now, cardId]
             );
-            this.db.run(
-                `UPDATE card_image_refs SET deleted_at = ?, updated_at = ? WHERE card_id = ?`,
-                [now, now, cardId]
-            );
         });
     }
 

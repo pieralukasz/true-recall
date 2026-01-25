@@ -23,7 +23,6 @@ import { getEventBus } from "../core/event-bus.service";
 import { FrontmatterService } from "./frontmatter.service";
 import { FlashcardParserService } from "./flashcard-parser.service";
 import { SourceNoteService } from "./source-note.service";
-import { ImageService } from "../image";
 import type { UidIndexService } from "../core/uid-index.service";
 
 /**
@@ -269,9 +268,6 @@ export class FlashcardManager {
 
 			this.store.set(flashcard.id, extendedData);
 
-			// Sync image references for the new card
-			this.syncCardImageRefs(flashcard.id, flashcard.question, flashcard.answer);
-
 			const card: FSRSFlashcardItem = {
 				id: flashcard.id,
 				question: flashcard.question,
@@ -337,9 +333,6 @@ export class FlashcardManager {
 
 		this.store.set(cardId, extendedData);
 
-		// Sync image references for the new card
-		this.syncCardImageRefs(cardId, question, answer);
-
 		const card: FSRSFlashcardItem = {
 			id: cardId,
 			question,
@@ -379,7 +372,7 @@ export class FlashcardManager {
 			return false;
 		}
 
-		// Soft delete card with cascade (also soft-deletes review_log and card_image_refs)
+		// Soft delete card with cascade (also soft-deletes review_log)
 		this.store.cards.softDeleteWithCascade(cardId);
 
 		getEventBus().emit({
@@ -493,28 +486,12 @@ export class FlashcardManager {
 
 		this.store.set(cardId, updated);
 
-		// Sync image references
-		this.syncCardImageRefs(cardId, newQuestion, newAnswer);
-
 		getEventBus().emit({
 			type: "card:updated",
 			cardId,
 			changes: { question: true, answer: true },
 			timestamp: Date.now(),
 		} as CardUpdatedEvent);
-	}
-
-	/**
-	 * Sync image references for a card based on its content
-	 */
-	private syncCardImageRefs(cardId: string, question: string, answer: string): void {
-		if (!this.store) return;
-
-		const imageService = new ImageService(this.app);
-		const questionRefs = imageService.extractImageRefs(question);
-		const answerRefs = imageService.extractImageRefs(answer);
-
-		this.store.sourceNotes.syncCardImageRefs(cardId, questionRefs, answerRefs);
 	}
 
 	/**
