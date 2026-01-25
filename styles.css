@@ -362,9 +362,6 @@
   .ep\:ml-auto {
     margin-left: auto;
   }
-  .ep\:box-border {
-    box-sizing: border-box;
-  }
   .ep\:line-clamp-2 {
     overflow: hidden;
     display: -webkit-box;
@@ -484,9 +481,6 @@
   }
   .ep\:min-h-16 {
     min-height: calc(var(--ep-spacing) * 16);
-  }
-  .ep\:min-h-20 {
-    min-height: calc(var(--ep-spacing) * 20);
   }
   .ep\:min-h-35 {
     min-height: calc(var(--ep-spacing) * 35);
@@ -723,9 +717,6 @@
   }
   .ep\:rounded-md {
     border-radius: var(--ep-radius-md);
-  }
-  .ep\:rounded-none {
-    border-radius: 0;
   }
   .ep\:rounded-sm {
     border-radius: var(--ep-radius-sm);
@@ -1553,6 +1544,13 @@
       }
     }
   }
+  .ep\:hover\:text-obs-muted {
+    &:hover {
+      @media (hover: hover) {
+        color: var(--ep-color-obs-muted);
+      }
+    }
+  }
   .ep\:hover\:text-obs-normal {
     &:hover {
       @media (hover: hover) {
@@ -1621,12 +1619,6 @@
   .ep\:focus\:border-obs-interactive {
     &:focus {
       border-color: var(--ep-color-obs-interactive);
-    }
-  }
-  .ep\:focus\:shadow-none {
-    &:focus {
-      --tw-shadow: 0 0 #0000;
-      box-shadow: var(--tw-inset-shadow), var(--tw-inset-ring-shadow), var(--tw-ring-offset-shadow), var(--tw-ring-shadow), var(--tw-shadow);
     }
   }
   .ep\:focus\:outline-none {
