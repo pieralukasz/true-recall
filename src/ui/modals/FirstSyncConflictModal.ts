@@ -30,24 +30,28 @@ export class FirstSyncConflictModal extends BasePromiseModal<FirstSyncConflictRe
 
 	protected renderBody(container: HTMLElement): void {
 		// Warning message
-		const warningEl = container.createDiv({ cls: "first-sync-warning" });
-		warningEl.createEl("p", {
+		const warningEl = container.createDiv({ cls: "ep:mb-4" });
+		const p1 = warningEl.createEl("p", {
 			text: "This device has never been synced before, but there is data both locally and on the server.",
 		});
-		warningEl.createEl("p", {
+		p1.addClass("ep:m-0", "ep:mb-2", "ep:leading-normal");
+		const p2 = warningEl.createEl("p", {
 			text: "You must choose which data to keep. The other will be permanently lost.",
 			cls: "mod-warning",
 		});
+		p2.addClass("ep:m-0", "ep:leading-normal", "ep:text-obs-warning", "ep:font-medium");
 
 		// Options
-		const optionsEl = container.createDiv({ cls: "first-sync-options" });
+		const optionsEl = container.createDiv({ cls: "ep:flex ep:flex-col ep:gap-4 ep:mb-4" });
 
 		// Upload option
-		const uploadOption = optionsEl.createDiv({ cls: "first-sync-option" });
-		uploadOption.createEl("h4", { text: "Upload to Server" });
-		uploadOption.createEl("p", {
+		const uploadOption = optionsEl.createDiv({ cls: "ep:p-3 ep:bg-obs-secondary ep:border ep:border-obs-border ep:rounded-lg" });
+		const h4Upload = uploadOption.createEl("h4", { text: "Upload to Server" });
+		h4Upload.addClass("ep:m-0", "ep:mb-2", "ep:text-sm", "ep:font-semibold");
+		const pUpload = uploadOption.createEl("p", {
 			text: "Replace server data with your local flashcards. Use this if your local data is more complete.",
 		});
+		pUpload.addClass("ep:m-0", "ep:mb-3", "ep:text-sm", "ep:text-obs-muted", "ep:leading-snug");
 		new ButtonComponent(uploadOption)
 			.setButtonText("Upload Local → Server")
 			.setWarning()
@@ -56,11 +60,13 @@ export class FirstSyncConflictModal extends BasePromiseModal<FirstSyncConflictRe
 			});
 
 		// Download option
-		const downloadOption = optionsEl.createDiv({ cls: "first-sync-option" });
-		downloadOption.createEl("h4", { text: "Download from Server" });
-		downloadOption.createEl("p", {
+		const downloadOption = optionsEl.createDiv({ cls: "ep:p-3 ep:bg-obs-secondary ep:border ep:border-obs-border ep:rounded-lg" });
+		const h4Download = downloadOption.createEl("h4", { text: "Download from Server" });
+		h4Download.addClass("ep:m-0", "ep:mb-2", "ep:text-sm", "ep:font-semibold");
+		const pDownload = downloadOption.createEl("p", {
 			text: "Replace local data with server flashcards. Use this if another device has your main data.",
 		});
+		pDownload.addClass("ep:m-0", "ep:mb-3", "ep:text-sm", "ep:text-obs-muted", "ep:leading-snug");
 		new ButtonComponent(downloadOption)
 			.setButtonText("Download Server → Local")
 			.setWarning()
@@ -69,7 +75,7 @@ export class FirstSyncConflictModal extends BasePromiseModal<FirstSyncConflictRe
 			});
 
 		// Cancel
-		const cancelEl = container.createDiv({ cls: "first-sync-cancel" });
+		const cancelEl = container.createDiv({ cls: "ep:flex ep:justify-center ep:pt-2 ep:border-t ep:border-obs-border" });
 		new ButtonComponent(cancelEl).setButtonText("Cancel").onClick(() => {
 			this.resolve({ cancelled: true, choice: "cancel" });
 		});

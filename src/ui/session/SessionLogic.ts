@@ -1,11 +1,11 @@
 /**
  * Session Logic
  * Shared business logic for session selection
- * Used by both SessionModal and SessionView
+ * Used by SessionView
  */
 import { State } from "ts-fsrs";
-import type { FSRSFlashcardItem } from "../types";
-import type { DayBoundaryService } from "../services";
+import type { FSRSFlashcardItem } from "../../types";
+import type { DayBoundaryService } from "../../services";
 
 export interface NoteStats {
 	noteName: string;

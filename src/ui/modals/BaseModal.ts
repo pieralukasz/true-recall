@@ -28,7 +28,7 @@ export abstract class BaseModal extends Modal {
 		const { contentEl, modalEl } = this;
 		contentEl.empty();
 
-		// Add base class
+		// Add base class (keep for CSS selectors that need :has() targeting)
 		contentEl.addClass("episteme-modal");
 
 		// Set width on .modal container
@@ -38,13 +38,18 @@ export abstract class BaseModal extends Modal {
 		this.renderHeader(contentEl);
 
 		// Render body content (implemented by subclasses)
-		const bodyEl = contentEl.createDiv({ cls: "episteme-modal-body" });
+		const bodyEl = contentEl.createDiv({
+			cls: "ep:py-2.5 ep:px-3",
+		});
 		this.renderBody(bodyEl);
 	}
 
 	private renderHeader(container: HTMLElement): void {
-		const header = container.createDiv({ cls: "episteme-modal-header" });
+		const header = container.createDiv({
+			cls: "ep:flex ep:items-center ep:justify-between ep:py-2.5 ep:px-3 ep:pr-10 ep:border-b ep:border-obs-border",
+		});
 		this.headerTitleEl = header.createEl("h2", { text: this.modalTitle });
+		this.headerTitleEl.addClass("ep:m-0 ep:text-lg ep:font-semibold");
 		// Close button is rendered by Obsidian, we position it via CSS
 	}
 

@@ -51,21 +51,21 @@ export class TemplatePickerModal extends BaseModal {
         // Info text
         container.createEl("p", {
             text: "Select a markdown file to use as a template for creating zettels from flashcards.",
-            cls: "episteme-modal-info",
+            cls: "ep:text-obs-muted ep:text-sm ep:mb-4",
         });
 
         // Variables reference
-        const variablesEl = container.createDiv({ cls: "episteme-template-variables" });
+        const variablesEl = container.createDiv({ cls: "ep:mb-3 ep:p-2 ep:bg-obs-secondary ep:rounded ep:text-sm" });
         variablesEl.createEl("strong", { text: "Available variables: " });
         variablesEl.createSpan({
             text: "{{question}}, {{answer}}, {{source}}, {{date}}, {{time}}, {{datetime}}, {{card_id}}",
-            cls: "episteme-template-variables-list",
+            cls: "ep:text-obs-muted ep:font-mono ep:text-xs",
         });
 
         // Clear selection button
         const clearBtn = container.createEl("button", {
             text: "Use Default Template",
-            cls: "episteme-btn episteme-btn-secondary",
+            cls: "ep:mb-3 ep:py-2 ep:px-4 ep:bg-obs-secondary ep:text-obs-normal ep:border ep:border-obs-border ep:rounded-md ep:cursor-pointer ep:text-sm ep:transition-colors ep:hover:bg-obs-modifier-hover",
         });
         clearBtn.addEventListener("click", () => {
             this.selectTemplate(null);
@@ -75,7 +75,7 @@ export class TemplatePickerModal extends BaseModal {
         this.renderSearchInput(container);
 
         // Template list
-        this.templateListEl = container.createDiv({ cls: "episteme-note-list episteme-template-list" });
+        this.templateListEl = container.createDiv({ cls: "ep:border ep:border-obs-border ep:rounded-md ep:max-h-[350px] ep:overflow-y-auto" });
         this.renderTemplateList();
     }
 
@@ -90,12 +90,12 @@ export class TemplatePickerModal extends BaseModal {
     }
 
     private renderSearchInput(container: HTMLElement): void {
-        const searchContainer = container.createDiv({ cls: "episteme-search-container" });
+        const searchContainer = container.createDiv({ cls: "ep:mb-3" });
 
         const searchInput = searchContainer.createEl("input", {
             type: "text",
             placeholder: "Search templates...",
-            cls: "episteme-search-input",
+            cls: "ep:w-full ep:py-2.5 ep:px-3 ep:border ep:border-obs-border ep:rounded-md ep:bg-obs-primary ep:text-obs-normal ep:text-sm ep:focus:outline-none ep:focus:border-obs-interactive ep:placeholder:text-obs-muted",
         });
 
         searchInput.addEventListener("input", (e) => {
@@ -118,7 +118,7 @@ export class TemplatePickerModal extends BaseModal {
                 text: this.searchQuery
                     ? "No templates found matching your search."
                     : "No markdown files found.",
-                cls: "episteme-note-list-empty",
+                cls: "ep:py-6 ep:px-4 ep:text-center ep:text-obs-muted ep:italic",
             });
             return;
         }
@@ -134,24 +134,24 @@ export class TemplatePickerModal extends BaseModal {
         if (filteredTemplates.length > 50) {
             this.templateListEl.createEl("div", {
                 text: `Showing 50 of ${filteredTemplates.length} files. Type to search for more.`,
-                cls: "episteme-note-list-more",
+                cls: "ep:p-3 ep:text-center ep:text-obs-muted ep:text-sm",
             });
         }
     }
 
     private renderTemplateItem(container: HTMLElement, file: TFile): void {
-        const itemEl = container.createDiv({ cls: "episteme-note-item" });
+        const itemEl = container.createDiv({ cls: "ep:flex ep:items-center ep:justify-between ep:p-3 ep:border-b ep:border-obs-border ep:cursor-pointer ep:transition-colors ep:hover:bg-obs-modifier-hover ep:last:border-b-0 ep:group" });
 
         // File icon and name
-        const infoEl = itemEl.createDiv({ cls: "episteme-note-info" });
-        infoEl.createSpan({ cls: "episteme-note-icon", text: "📄" });
-        infoEl.createSpan({ cls: "episteme-note-name", text: file.basename });
+        const infoEl = itemEl.createDiv({ cls: "ep:flex ep:items-center ep:gap-2 ep:overflow-hidden ep:flex-1" });
+        infoEl.createSpan({ cls: "ep:shrink-0", text: "📄" });
+        infoEl.createSpan({ cls: "ep:font-medium ep:overflow-hidden ep:text-ellipsis ep:whitespace-nowrap", text: file.basename });
 
         // Folder path (if not in root)
         const folderPath = file.parent?.path;
         if (folderPath && folderPath !== "/") {
             infoEl.createSpan({
-                cls: "episteme-note-path",
+                cls: "ep:text-xs ep:text-obs-muted ep:ml-2",
                 text: folderPath,
             });
         }
@@ -159,7 +159,7 @@ export class TemplatePickerModal extends BaseModal {
         // Select button
         const selectBtn = itemEl.createEl("button", {
             text: "Select",
-            cls: "episteme-note-select-btn",
+            cls: "ep:shrink-0 ep:py-1 ep:px-3 ep:rounded ep:bg-obs-interactive ep:text-white ep:border-none ep:text-xs ep:cursor-pointer ep:opacity-0 ep:group-hover:opacity-100 ep:hover:opacity-100",
         });
 
         selectBtn.addEventListener("click", () => {

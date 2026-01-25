@@ -39,10 +39,8 @@ export class AddToProjectModal extends BasePromiseModal<AddToProjectResult> {
 	}
 
 	protected renderBody(container: HTMLElement): void {
-		container.addClass("episteme-add-project-modal");
-
 		// Project list with checkboxes
-		this.projectListEl = container.createDiv({ cls: "episteme-project-list" });
+		this.projectListEl = container.createDiv({ cls: "ep:border ep:border-obs-border ep:rounded-md ep:overflow-hidden ep:max-h-[280px] ep:overflow-y-auto" });
 		this.renderProjectList();
 
 		// Action buttons
@@ -62,7 +60,7 @@ export class AddToProjectModal extends BasePromiseModal<AddToProjectResult> {
 		if (allProjects.length === 0) {
 			this.projectListEl.createEl("div", {
 				text: "No projects available.",
-				cls: "episteme-project-list-empty",
+				cls: "ep:py-5 ep:px-4 ep:text-center ep:text-obs-muted ep:italic",
 			});
 			return;
 		}
@@ -75,46 +73,47 @@ export class AddToProjectModal extends BasePromiseModal<AddToProjectResult> {
 	private renderProjectItem(projectName: string): void {
 		if (!this.projectListEl) return;
 
-		const itemEl = this.projectListEl.createDiv({ cls: "episteme-project-item" });
+		const isChecked = this.selectedProjects.has(projectName);
+		const baseCls = "ep:flex ep:items-center ep:gap-2.5 ep:py-2 ep:px-2.5 ep:border-b ep:border-obs-border ep:transition-colors ep:last:border-b-0 ep:hover:bg-obs-secondary";
+		const checkedCls = isChecked ? "ep:bg-obs-interactive/10 ep:border-l-[3px] ep:border-l-obs-interactive ep:pl-[7px]" : "";
+		const itemEl = this.projectListEl.createDiv({ cls: `project-item ${baseCls} ${checkedCls}` });
 
 		const checkbox = itemEl.createEl("input", {
 			type: "checkbox",
-			cls: "episteme-project-checkbox",
+			cls: "ep:w-4 ep:h-4 ep:shrink-0 ep:cursor-pointer ep:accent-obs-interactive",
 		});
-		checkbox.checked = this.selectedProjects.has(projectName);
+		checkbox.checked = isChecked;
 
 		const label = itemEl.createEl("span", {
 			text: projectName,
-			cls: "episteme-project-name",
+			cls: "ep:flex-1 ep:text-sm ep:font-medium ep:cursor-pointer ep:text-obs-normal",
 		});
 
 		// Toggle on checkbox change
 		checkbox.addEventListener("change", () => {
 			if (checkbox.checked) {
 				this.selectedProjects.add(projectName);
+				itemEl.classList.add("ep:bg-obs-interactive/10", "ep:border-l-[3px]", "ep:border-l-obs-interactive", "ep:pl-[7px]");
 			} else {
 				this.selectedProjects.delete(projectName);
+				itemEl.classList.remove("ep:bg-obs-interactive/10", "ep:border-l-[3px]", "ep:border-l-obs-interactive", "ep:pl-[7px]");
 			}
 		});
 
 		// Also toggle when clicking the label
 		label.addEventListener("click", () => {
 			checkbox.checked = !checkbox.checked;
-			if (checkbox.checked) {
-				this.selectedProjects.add(projectName);
-			} else {
-				this.selectedProjects.delete(projectName);
-			}
+			checkbox.dispatchEvent(new Event("change"));
 		});
 	}
 
 	private renderButtons(container: HTMLElement): void {
-		const buttonContainer = container.createDiv({ cls: "episteme-modal-buttons" });
+		const buttonContainer = container.createDiv({ cls: "ep:flex ep:justify-end ep:gap-3 ep:mt-4 ep:pt-4 ep:border-t ep:border-obs-border" });
 
 		// Cancel button
 		const cancelBtn = buttonContainer.createEl("button", {
 			text: "Cancel",
-			cls: "episteme-btn-secondary",
+			cls: "ep:py-2.5 ep:px-5 ep:bg-obs-secondary ep:text-obs-normal ep:border ep:border-obs-border ep:rounded-md ep:cursor-pointer ep:font-medium ep:transition-colors ep:hover:bg-obs-modifier-hover",
 		});
 		cancelBtn.addEventListener("click", () => {
 			this.resolve({ cancelled: true, projects: [] });
@@ -123,7 +122,7 @@ export class AddToProjectModal extends BasePromiseModal<AddToProjectResult> {
 		// Save button
 		const saveBtn = buttonContainer.createEl("button", {
 			text: "Save",
-			cls: "episteme-btn-primary",
+			cls: "ep:py-2.5 ep:px-5 ep:bg-obs-interactive ep:text-white ep:border-none ep:rounded-md ep:cursor-pointer ep:font-medium ep:transition-colors ep:hover:bg-obs-interactive-hover",
 		});
 		saveBtn.addEventListener("click", () => {
 			this.resolve({
