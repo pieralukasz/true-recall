@@ -168,7 +168,6 @@ export class OrphanedCardsView extends ItemView {
 				id: card.id,
 				question: card.question,
 				answer: card.answer,
-				filePath: "",
 				fsrs: {
 					id: card.id,
 					due: new Date().toISOString(),
@@ -197,7 +196,6 @@ export class OrphanedCardsView extends ItemView {
 			if (result.newSourceNotePath) {
 				await this.plugin.flashcardManager.moveCard(
 					card.id,
-					"",
 					result.newSourceNotePath
 				);
 				// Remove from orphaned cards list since it's now assigned

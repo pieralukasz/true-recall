@@ -162,7 +162,7 @@ export class PanelContent extends BaseComponent {
 
                 const cardReviewItem = createCardReviewItem(cardWrapper, {
                     card,
-                    filePath: flashcardInfo.filePath,
+                    filePath: this.props.currentFile?.path || "",
                     app: handlers.app,
                     component: handlers.component,
                     onClick: handlers.onEditCard,
