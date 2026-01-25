@@ -10,6 +10,7 @@ import {
 	VIEW_TYPE_ORPHANED_CARDS,
 	VIEW_TYPE_PROJECTS,
 	VIEW_TYPE_BROWSER,
+	VIEW_TYPE_SIMULATOR,
 } from "./constants";
 import { normalizePath } from "obsidian";
 import {
@@ -47,6 +48,7 @@ import { DashboardView } from "./ui/dashboard";
 import { OrphanedCardsView } from "./ui/orphaned-cards";
 import { ProjectsView } from "./ui/projects";
 import { BrowserView } from "./ui/browser";
+import { SimulatorView } from "./ui/simulator";
 import {
 	EpistemeSettingTab,
 	type EpistemeSettings,
@@ -177,6 +179,12 @@ export default class EpistemePlugin extends Plugin {
 		this.registerView(
 			VIEW_TYPE_BROWSER,
 			(leaf) => new BrowserView(leaf, this)
+		);
+
+		// Register the FSRS simulator view
+		this.registerView(
+			VIEW_TYPE_SIMULATOR,
+			(leaf) => new SimulatorView(leaf, this)
 		);
 
 		// Add ribbon icon to start review
@@ -362,6 +370,13 @@ export default class EpistemePlugin extends Plugin {
 	 */
 	async showBrowser(): Promise<void> {
 		await this.activateBrowserView();
+	}
+
+	/**
+	 * Open FSRS simulator
+	 */
+	async openSimulator(): Promise<void> {
+		await activateView(this.app, VIEW_TYPE_SIMULATOR, { useMainArea: true });
 	}
 
 	// Start a review session (opens modal with options)

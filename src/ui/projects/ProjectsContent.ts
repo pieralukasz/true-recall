@@ -18,6 +18,7 @@ export interface ProjectsContentProps {
 	onDelete: (projectId: string) => void;
 	onAddNotes: (projectId: string, projectName: string) => void;
 	onCreateFromNote: () => void;
+	onRefresh: () => void;
 }
 
 /**
@@ -45,7 +46,7 @@ export class ProjectsContent extends BaseComponent {
 		// Search input
 		this.renderSearchInput();
 
-		// Section header with new button
+		// Section header with buttons
 		const headerRow = this.element.createDiv({
 			cls: "ep:flex ep:items-center ep:justify-between ep:my-2",
 		});
@@ -54,9 +55,27 @@ export class ProjectsContent extends BaseComponent {
 			text: "Projects",
 		});
 
+		// Buttons container
+		const buttonsContainer = headerRow.createDiv({
+			cls: "ep:flex ep:items-center ep:gap-1",
+		});
+
+		const btnCls =
+			"ep:inline-flex ep:items-center ep:gap-1 ep:py-1 ep:px-2 ep:border-none ep:rounded ep:bg-obs-modifier-hover ep:text-obs-muted ep:text-xs ep:cursor-pointer ep:transition-colors ep:hover:bg-obs-modifier-border ep:hover:text-obs-normal [&_svg]:ep:w-3 [&_svg]:ep:h-3";
+
+		// Refresh button
+		const refreshBtn = buttonsContainer.createEl("button", {
+			cls: btnCls,
+			attr: { "aria-label": "Refresh" },
+		});
+		setIcon(refreshBtn, "refresh-cw");
+		this.events.addEventListener(refreshBtn, "click", () => {
+			this.props.onRefresh();
+		});
+
 		// New button
-		const newBtn = headerRow.createEl("button", {
-			cls: "ep:inline-flex ep:items-center ep:gap-1 ep:py-1 ep:px-2 ep:border-none ep:rounded ep:bg-obs-modifier-hover ep:text-obs-muted ep:text-xs ep:cursor-pointer ep:transition-colors ep:hover:bg-obs-modifier-border ep:hover:text-obs-normal [&_svg]:ep:w-3 [&_svg]:ep:h-3",
+		const newBtn = buttonsContainer.createEl("button", {
+			cls: btnCls,
 		});
 		setIcon(newBtn, "plus");
 		newBtn.createSpan({ text: "New" });

@@ -518,4 +518,5 @@
  * Each file is commented out as its components are migrated to Tailwind utilities.
  */
 
-/* TODO: Remove these imports as components are migrated */
+/* Simulator CSS (native styles not expressible via Tailwind) */
+@import "./simulator/styles.css";

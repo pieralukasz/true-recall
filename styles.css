@@ -434,6 +434,12 @@
   .ep\:h-\[60\%\] {
     height: 60%;
   }
+  .ep\:h-\[150px\] {
+    height: 150px;
+  }
+  .ep\:h-\[350px\] {
+    height: 350px;
+  }
   .ep\:h-full {
     height: 100%;
   }
@@ -521,6 +527,15 @@
   .ep\:w-80 {
     width: calc(var(--ep-spacing) * 80);
   }
+  .ep\:w-\[40px\] {
+    width: 40px;
+  }
+  .ep\:w-\[70px\] {
+    width: 70px;
+  }
+  .ep\:w-\[200px\] {
+    width: 200px;
+  }
   .ep\:w-\[220px\] {
     width: 220px;
   }
@@ -547,6 +562,9 @@
   }
   .ep\:max-w-\[900px\] {
     max-width: 900px;
+  }
+  .ep\:max-w-\[1400px\] {
+    max-width: 1400px;
   }
   .ep\:max-w-md {
     max-width: var(--ep-container-md);
@@ -581,6 +599,9 @@
   .ep\:flex-1 {
     flex: 1;
   }
+  .ep\:flex-shrink-0 {
+    flex-shrink: 0;
+  }
   .ep\:shrink-0 {
     flex-shrink: 0;
   }
@@ -604,6 +625,9 @@
   }
   .ep\:resize-y {
     resize: vertical;
+  }
+  .ep\:grid-cols-1 {
+    grid-template-columns: repeat(1, minmax(0, 1fr));
   }
   .ep\:grid-cols-2 {
     grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -667,6 +691,11 @@
   }
   .ep\:self-end {
     align-self: flex-end;
+  }
+  .ep\:truncate {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
   }
   .ep\:overflow-auto {
     overflow: auto;
@@ -1681,9 +1710,6 @@
     width: fit-content;
     max-width: 90vw;
   }
-  .episteme-card-field p {
-    margin: 0;
-  }
   .episteme-answer-blur {
     filter: blur(4px);
     transition: filter 0.2s ease;
@@ -1863,6 +1889,56 @@
   .episteme-theme-showcase {
     cursor: pointer;
   }
+}
+.ep\:simulator-slider {
+  -webkit-appearance: none;
+  appearance: none;
+  background: transparent;
+}
+.ep\:simulator-slider::-webkit-slider-runnable-track {
+  width: 100%;
+  height: 4px;
+  background: var(--background-modifier-border);
+  border-radius: 2px;
+}
+.ep\:simulator-slider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 14px;
+  height: 14px;
+  background: var(--interactive-accent);
+  border-radius: 50%;
+  margin-top: -5px;
+  cursor: pointer;
+}
+.ep\:simulator-slider::-webkit-slider-thumb:hover {
+  background: var(--interactive-accent-hover);
+}
+.ep\:simulator-slider::-moz-range-track {
+  width: 100%;
+  height: 4px;
+  background: var(--background-modifier-border);
+  border-radius: 2px;
+}
+.ep\:simulator-slider::-moz-range-thumb {
+  width: 14px;
+  height: 14px;
+  background: var(--interactive-accent);
+  border-radius: 50%;
+  border: none;
+  cursor: pointer;
+}
+.ep\:simulator-slider::-moz-range-thumb:hover {
+  background: var(--interactive-accent-hover);
+}
+.ep\:simulator-slider:focus {
+  outline: none;
+}
+.ep\:simulator-slider:focus::-webkit-slider-thumb {
+  box-shadow: 0 0 0 2px var(--interactive-accent-hover);
+}
+.ep\:simulator-slider:focus::-moz-range-thumb {
+  box-shadow: 0 0 0 2px var(--interactive-accent-hover);
 }
 @property --tw-border-style {
   syntax: "*";

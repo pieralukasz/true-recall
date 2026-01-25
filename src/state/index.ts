@@ -37,3 +37,5 @@ export type {
 	SessionStateListener,
 	PartialSessionState,
 } from "./state.types";
+
+export { SimulatorStateManager } from "./simulator.state";
