@@ -1,9 +1,9 @@
 /**
- * Project Actions Module
- * Projects, source notes, and image references operations
+ * Source Note Actions Module
+ * Source notes and image references operations
  *
  * v15: Removed note_projects table, simplified source_notes (no name/path)
- * Projects are now read from frontmatter (source of truth)
+ * v16: Removed projects table - projects are in frontmatter only
  */
 import type { CardImageRef } from "types";
 import { SqliteDatabase } from "../SqliteDatabase";
@@ -44,9 +44,9 @@ export interface SourceNoteInfo {
 }
 
 /**
- * Projects, source notes, and image references operations
+ * Source notes and image references operations
  */
-export class ProjectActions {
+export class SourceNoteActions {
     constructor(private db: SqliteDatabase) {}
 
     // ===== Source Notes =====
@@ -105,9 +105,6 @@ export class ProjectActions {
             UPDATE source_notes SET deleted_at = ?, updated_at = ? WHERE uid = ?
         `, [Date.now(), Date.now(), uid]);
     }
-
-    // ===== Projects =====
-    // v16: Projects removed from database - they come from frontmatter YAML only
 
     // ===== Image References =====
 

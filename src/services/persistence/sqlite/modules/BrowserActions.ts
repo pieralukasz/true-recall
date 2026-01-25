@@ -44,20 +44,6 @@ export class BrowserActions {
     }
 
     /**
-     * Get unique projects from database
-     * v15: Returns all project names (relationship with notes is now in frontmatter)
-     */
-    getUniqueProjects(): string[] {
-        const rows = this.db.query<{ name: string }>(`
-            SELECT DISTINCT name
-            FROM projects
-            WHERE deleted_at IS NULL
-            ORDER BY name
-        `);
-        return rows.map((r) => r.name);
-    }
-
-    /**
      * Get unique source note UIDs that have cards
      * v15: Returns UIDs only (names resolved from vault)
      */
