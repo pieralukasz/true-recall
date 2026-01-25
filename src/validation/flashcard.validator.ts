@@ -3,7 +3,6 @@
  */
 import {
     RawFlashcardChangeSchema,
-    DiffResponseSchema,
     FlashcardItemSchema,
     type RawFlashcardChange,
 } from "./schemas/flashcard.schema";
