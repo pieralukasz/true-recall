@@ -314,7 +314,7 @@ export class CardActions {
             WHERE c.deleted_at IS NULL AND c.question IS NOT NULL AND c.answer IS NOT NULL
         `);
 
-        // v15: sourceNoteName, sourceNotePath, projects are resolved at runtime from vault
+        // Note: sourceNoteName, sourceNotePath, projects empty - caller must enrich via SourceNoteService
         return rows.map((row) => ({
             id: row.id,
             due: row.due,
@@ -332,7 +332,6 @@ export class CardActions {
             question: row.question,
             answer: row.answer,
             sourceUid: row.sourceUid ?? undefined,
-            // v15: These are resolved at runtime from vault, not from DB
             sourceNoteName: "",
             sourceNotePath: "",
             projects: [],

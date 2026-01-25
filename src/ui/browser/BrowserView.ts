@@ -122,12 +122,16 @@ export class BrowserView extends ItemView {
 
     /**
      * Load cards from database
+     * Enriches cards with sourceNoteName, sourceNotePath, and projects from vault
      */
     private async loadCards(): Promise<void> {
         this.stateManager.setLoading(true);
 
         try {
-            const cards = this.plugin.cardStore.browser.getAllCardsForBrowser();
+            const rawCards = this.plugin.cardStore.browser.getAllCardsForBrowser();
+            // Enrich cards with source note info from vault (sourceNoteName, sourceNotePath, projects)
+            const sourceNoteService = this.plugin.flashcardManager.getSourceNoteService();
+            const cards = sourceNoteService.enrichCards(rawCards);
             this.stateManager.setCards(cards);
         } catch (error) {
             console.error("[BrowserView] Failed to load cards:", error);

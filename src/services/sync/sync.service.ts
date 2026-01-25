@@ -73,11 +73,13 @@ interface RemoteCardImageRefRow {
 }
 
 /**
- * Response from replace_all_data RPC
+ * Response from sync_all_data/replace_all_data RPC
+ * The functions return 'success' on success, 'error' on failure
  */
-interface ReplaceAllDataResponse {
-	status: "ok" | "error";
+interface SyncRpcResponse {
+	status: "success" | "error";
 	message?: string;
+	time?: string;
 }
 
 /**
@@ -369,10 +371,18 @@ export class SyncService {
 		};
 
 		// Single atomic RPC call
-		const { error } = await client.rpc("sync_all_data", payload);
+		const { data, error } = await client.rpc("sync_all_data", payload);
 
 		if (error) {
 			throw new Error(`Push failed: ${error.message}`);
+		}
+
+		// Check response from RPC function (catches SQL-level errors)
+		const response = data as SyncRpcResponse | null;
+		if (response?.status === "error") {
+			throw new Error(
+				`Push RPC error: ${response.message ?? "Unknown error"}`
+			);
 		}
 
 		return totalChanges;
@@ -441,16 +451,18 @@ export class SyncService {
 			};
 
 			// Call replace RPC (deletes all user data, then inserts fresh)
-			const response = await client.rpc("replace_all_data", payload);
+			const { data, error } = await client.rpc("replace_all_data", payload);
 
-			if (response.error) {
-				throw new Error(`Force replace failed: ${response.error.message}`);
+			if (error) {
+				throw new Error(`Force replace failed: ${error.message}`);
 			}
 
-			// Check for SQL-level errors (caught by EXCEPTION in the function)
-			const rpcData = response.data as ReplaceAllDataResponse | null;
-			if (rpcData?.status === "error") {
-				throw new Error(`Force replace SQL error: ${rpcData.message}`);
+			// Check response from RPC function (catches SQL-level errors)
+			const response = data as SyncRpcResponse | null;
+			if (response?.status === "error") {
+				throw new Error(
+					`Force replace RPC error: ${response.message ?? "Unknown error"}`
+				);
 			}
 
 			// Update sync timestamp

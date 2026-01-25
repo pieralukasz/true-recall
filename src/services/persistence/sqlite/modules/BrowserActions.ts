@@ -17,8 +17,7 @@ export class BrowserActions {
 
     /**
      * Get all cards for browser view
-     * v15: sourceNoteName, sourceNotePath, and projects are not populated from DB
-     * They should be resolved from vault at runtime by the caller
+     * Note: sourceNoteName, sourceNotePath, projects are empty - caller must enrich via SourceNoteService.enrichCards()
      */
     getAllCardsForBrowser(): BrowserCardItem[] {
         return this.db.query<BrowserCardItem>(`
@@ -39,7 +38,7 @@ export class BrowserActions {
             ORDER BY c.due ASC
         `).map(card => ({
             ...card,
-            projects: [] // v15: Resolve from vault at runtime
+            projects: [] // Empty - enriched by caller via SourceNoteService
         }));
     }
 
