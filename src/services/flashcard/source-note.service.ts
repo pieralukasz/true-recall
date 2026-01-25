@@ -5,22 +5,26 @@
  * v17: Source notes removed - all metadata resolved from vault
  * v15: Source note name and path are resolved from vault at runtime
  * (no longer stored in database)
+ * v18: Uses UidIndexService for O(1) file lookups by flashcard_uid
  */
 import { App, TFile } from "obsidian";
-import type { SqliteStoreService } from "../persistence/sqlite/SqliteStoreService";
 import { FrontmatterService } from "./frontmatter.service";
+import type { UidIndexService } from "../core/uid-index.service";
 
 /**
  * Service for managing source note relationships
  * v17: Resolves source note info from vault (no database storage)
+ * v18: Uses UidIndexService for O(1) lookups
  */
 export class SourceNoteService {
 	private app: App;
 	private frontmatterService: FrontmatterService;
+	private uidIndex: UidIndexService | null;
 
-	constructor(app: App) {
+	constructor(app: App, uidIndex?: UidIndexService) {
 		this.app = app;
 		this.frontmatterService = new FrontmatterService(app);
+		this.uidIndex = uidIndex ?? null;
 	}
 
 	/**
@@ -109,9 +113,15 @@ export class SourceNoteService {
 
 	/**
 	 * Find a file in the vault by its flashcard_uid
-	 * Synchronous version that reads from cache
+	 * Uses UidIndexService for O(1) lookup if available
 	 */
 	private findFileByUidSync(uid: string): TFile | null {
+		// O(1) lookup via index
+		if (this.uidIndex) {
+			return this.uidIndex.getFileByUid(uid);
+		}
+
+		// Fallback: O(n) scan (for backward compatibility when index not available)
 		const files = this.app.vault.getMarkdownFiles();
 
 		for (const file of files) {
@@ -172,7 +182,7 @@ export class SourceNoteService {
 
 	/**
 	 * Enrich multiple cards with source note info
-	 * Optimized version that caches file lookups
+	 * Uses UidIndexService for O(1) lookups per card
 	 *
 	 * @param cards - Cards with sourceUid
 	 * @returns Cards enriched with resolved source note info
@@ -182,38 +192,6 @@ export class SourceNoteService {
 		sourceNotePath: string;
 		projects: string[];
 	}> {
-		// Build UID -> file cache for performance
-		const uidToFile = new Map<string, TFile>();
-		const files = this.app.vault.getMarkdownFiles();
-
-		for (const file of files) {
-			const cache = this.app.metadataCache.getFileCache(file);
-			const uid = cache?.frontmatter?.flashcard_uid;
-			if (uid) {
-				uidToFile.set(uid, file);
-			}
-		}
-
-		return cards.map(card => {
-			if (!card.sourceUid) {
-				return { ...card, sourceNoteName: "", sourceNotePath: "", projects: [] };
-			}
-
-			const file = uidToFile.get(card.sourceUid);
-			if (!file) {
-				return { ...card, sourceNoteName: "", sourceNotePath: "", projects: [] };
-			}
-
-			const frontmatter = this.app.metadataCache.getFileCache(file)?.frontmatter;
-			const rawProjects = frontmatter?.projects;
-			const projects = Array.isArray(rawProjects) ? rawProjects : [];
-
-			return {
-				...card,
-				sourceNoteName: file.basename,
-				sourceNotePath: file.path,
-				projects,
-			};
-		});
+		return cards.map(card => this.enrichCard(card));
 	}
 }
