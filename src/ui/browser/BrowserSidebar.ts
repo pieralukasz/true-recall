@@ -45,15 +45,19 @@ export class BrowserSidebar {
 
     render(): void {
         this.container.empty();
-        this.container.addClass("browser-sidebar");
 
         // Header with clear button
-        const header = this.container.createDiv({ cls: "sidebar-header" });
-        header.createSpan({ text: "Filters", cls: "sidebar-title" });
+        const header = this.container.createDiv({
+            cls: "ep:flex ep:items-center ep:justify-between ep:p-3 ep:border-b ep:border-obs-border",
+        });
+        header.createSpan({
+            text: "Filters",
+            cls: "ep:text-obs-muted ep:text-[11px] ep:font-semibold ep:uppercase ep:tracking-[0.5px]",
+        });
 
         if (this.hasActiveFilters()) {
             const clearBtn = header.createEl("button", {
-                cls: "sidebar-clear-btn",
+                cls: "ep:flex ep:items-center ep:justify-center ep:w-5 ep:h-5 ep:p-0 ep:border-none ep:rounded ep:bg-transparent ep:text-obs-muted ep:cursor-pointer ep:hover:bg-obs-modifier-hover ep:hover:text-obs-normal",
                 attr: { "aria-label": "Clear filters" },
             });
             setIcon(clearBtn, "x");
@@ -70,9 +74,16 @@ export class BrowserSidebar {
     }
 
     private renderSection(title: string, renderContent: () => void): void {
-        const section = this.container.createDiv({ cls: "sidebar-section" });
-        section.createDiv({ text: title, cls: "section-title" });
-        const content = section.createDiv({ cls: "section-content" });
+        const section = this.container.createDiv({
+            cls: "ep:p-3 ep:border-b ep:border-obs-border last:ep:border-b-0",
+        });
+        section.createDiv({
+            text: title,
+            cls: "ep:mb-2 ep:text-obs-muted ep:text-[11px] ep:font-semibold ep:uppercase ep:tracking-[0.5px]",
+        });
+        const content = section.createDiv({
+            cls: "ep:flex ep:flex-col ep:gap-0.5",
+        });
 
         // Temporarily change container for renderContent
         const originalContainer = this.container;
@@ -88,22 +99,38 @@ export class BrowserSidebar {
         // Calculate total for "All"
         const total = Object.values(counts).reduce((sum, c) => sum + c, 0);
 
+        const itemBaseCls = "ep:flex ep:items-center ep:py-1.5 ep:px-2.5 ep:border-none ep:rounded-md ep:text-[13px] ep:text-left ep:cursor-pointer ep:transition-all";
+        const itemDefaultCls = "ep:bg-transparent ep:text-obs-normal ep:hover:bg-obs-modifier-hover";
+        const itemSelectedCls = "ep:bg-obs-interactive ep:text-on-accent";
+
         for (const filter of STATE_FILTERS) {
             const count = filter.countKey === "all" ? total : counts[filter.countKey] ?? 0;
             const isSelected = stateFilter === filter.key;
 
-            const item = this.container.createDiv({
-                cls: `filter-item${isSelected ? " is-selected" : ""}`,
-            });
+            const itemCls = isSelected
+                ? `${itemBaseCls} ${itemSelectedCls}`
+                : `${itemBaseCls} ${itemDefaultCls}`;
 
-            const iconEl = item.createSpan({ cls: "filter-icon" });
+            const item = this.container.createDiv({ cls: itemCls });
+
+            const iconCls = isSelected
+                ? "ep:shrink-0 ep:mr-2 ep:opacity-100"
+                : "ep:shrink-0 ep:mr-2 ep:opacity-70";
+            const iconEl = item.createSpan({ cls: iconCls });
             setIcon(iconEl, filter.icon);
 
-            item.createSpan({ text: filter.label, cls: "filter-label" });
+            item.createSpan({
+                text: filter.label,
+                cls: "ep:flex-1 ep:overflow-hidden ep:text-ellipsis ep:whitespace-nowrap",
+            });
+
+            const countCls = isSelected
+                ? "ep:shrink-0 ep:ml-2 ep:text-[11px] ep:font-medium ep:py-0.5 ep:px-1.5 ep:bg-white/20 ep:rounded-full ep:text-on-accent"
+                : "ep:shrink-0 ep:ml-2 ep:text-[11px] ep:font-medium ep:py-0.5 ep:px-1.5 ep:bg-obs-modifier-hover ep:rounded-full ep:text-obs-muted";
 
             item.createSpan({
                 text: String(count),
-                cls: "filter-count",
+                cls: countCls,
             });
 
             item.addEventListener("click", () => {
@@ -115,13 +142,26 @@ export class BrowserSidebar {
     private renderProjectFilters(): void {
         const { projectFilter } = this.props.currentFilters;
 
+        const itemBaseCls = "ep:flex ep:items-center ep:py-1.5 ep:px-2.5 ep:border-none ep:rounded-md ep:text-[13px] ep:text-left ep:cursor-pointer ep:transition-all";
+        const itemDefaultCls = "ep:bg-transparent ep:text-obs-normal ep:hover:bg-obs-modifier-hover";
+        const itemSelectedCls = "ep:bg-obs-interactive ep:text-on-accent";
+
         // "All Projects" option
-        const allItem = this.container.createDiv({
-            cls: `filter-item${projectFilter === null ? " is-selected" : ""}`,
-        });
-        const allIcon = allItem.createSpan({ cls: "filter-icon" });
+        const isAllSelected = projectFilter === null;
+        const allItemCls = isAllSelected
+            ? `${itemBaseCls} ${itemSelectedCls}`
+            : `${itemBaseCls} ${itemDefaultCls}`;
+
+        const allItem = this.container.createDiv({ cls: allItemCls });
+        const allIconCls = isAllSelected
+            ? "ep:shrink-0 ep:mr-2 ep:opacity-100"
+            : "ep:shrink-0 ep:mr-2 ep:opacity-70";
+        const allIcon = allItem.createSpan({ cls: allIconCls });
         setIcon(allIcon, "folder");
-        allItem.createSpan({ text: "All Projects", cls: "filter-label" });
+        allItem.createSpan({
+            text: "All Projects",
+            cls: "ep:flex-1 ep:overflow-hidden ep:text-ellipsis ep:whitespace-nowrap",
+        });
         allItem.addEventListener("click", () => {
             this.props.onFilterChange({ projectFilter: null });
         });
@@ -129,14 +169,22 @@ export class BrowserSidebar {
         // Individual projects
         for (const project of this.props.projects) {
             const isSelected = projectFilter === project;
-            const item = this.container.createDiv({
-                cls: `filter-item${isSelected ? " is-selected" : ""}`,
-            });
+            const itemCls = isSelected
+                ? `${itemBaseCls} ${itemSelectedCls}`
+                : `${itemBaseCls} ${itemDefaultCls}`;
 
-            const iconEl = item.createSpan({ cls: "filter-icon" });
+            const item = this.container.createDiv({ cls: itemCls });
+
+            const iconCls = isSelected
+                ? "ep:shrink-0 ep:mr-2 ep:opacity-100"
+                : "ep:shrink-0 ep:mr-2 ep:opacity-70";
+            const iconEl = item.createSpan({ cls: iconCls });
             setIcon(iconEl, "folder-open");
 
-            item.createSpan({ text: project, cls: "filter-label" });
+            item.createSpan({
+                text: project,
+                cls: "ep:flex-1 ep:overflow-hidden ep:text-ellipsis ep:whitespace-nowrap",
+            });
 
             item.addEventListener("click", () => {
                 this.props.onFilterChange({ projectFilter: project });
