@@ -25,18 +25,18 @@ export interface DiffCardProps {
 }
 
 /**
- * Get CSS class for change type
+ * Get Tailwind border color class for change type
  */
-function getChangeTypeClass(type: FlashcardChange["type"]): string {
+function getChangeTypeBorderClass(type: FlashcardChange["type"]): string {
     switch (type) {
         case "NEW":
-            return "episteme-diff-card--new";
+            return "ep:border-l-green-500";
         case "MODIFIED":
-            return "episteme-diff-card--modified";
+            return "ep:border-l-orange-500";
         case "DELETED":
-            return "episteme-diff-card--deleted";
+            return "ep:border-l-red-500";
         default:
-            return "";
+            return "ep:border-l-obs-muted";
     }
 }
 
@@ -80,7 +80,7 @@ export class DiffCard extends BaseComponent {
 
         // Create card wrapper
         this.element = this.container.createDiv({
-            cls: `episteme-diff-card ${getChangeTypeClass(change.type)}`,
+            cls: `ep:p-3 ep:bg-obs-secondary ep:rounded-md ep:border-l-4 ep:transition-opacity ${getChangeTypeBorderClass(change.type)}`,
         });
 
         // Update visual state based on accepted status
@@ -96,7 +96,7 @@ export class DiffCard extends BaseComponent {
         if (change.type === "DELETED" && change.reason) {
             this.element.createDiv({
                 text: `Reason: ${change.reason}`,
-                cls: "episteme-diff-reason",
+                cls: "ep:text-xs ep:text-obs-muted ep:mt-2 ep:italic",
             });
         }
     }
@@ -107,18 +107,23 @@ export class DiffCard extends BaseComponent {
         if (!this.element) return;
 
         const header = this.element.createDiv({
-            cls: "episteme-diff-card-header",
+            cls: "ep:flex ep:justify-between ep:items-center ep:mb-2.5",
         });
 
-        // Type badge
+        // Type badge - color varies by type
+        const badgeColors = {
+            NEW: "ep:bg-green-500 ep:text-black",
+            MODIFIED: "ep:bg-orange-500 ep:text-black",
+            DELETED: "ep:bg-red-500 ep:text-white",
+        };
         const badge = header.createSpan({
-            cls: `episteme-diff-badge episteme-diff-badge--${change.type.toLowerCase()}`,
+            cls: `ep:text-xs ep:font-semibold ep:uppercase ep:px-1.5 ep:py-0.5 ep:rounded ${badgeColors[change.type] || ""}`,
         });
         badge.textContent = getChangeTypeLabel(change.type);
 
         // Checkbox toggle
         const checkbox = header.createEl("input", {
-            cls: "episteme-diff-toggle",
+            cls: "ep:cursor-pointer ep:w-4 ep:h-4",
             attr: { type: "checkbox" },
         });
         checkbox.checked = this.acceptedState;
@@ -150,7 +155,7 @@ export class DiffCard extends BaseComponent {
         if (!this.element) return;
 
         const content = this.element.createDiv({
-            cls: "episteme-diff-content",
+            cls: "ep:mt-2",
         });
 
         // For DELETED cards - use existing strikethrough rendering
@@ -198,14 +203,14 @@ export class DiffCard extends BaseComponent {
         // Original question (strikethrough)
         if (change.originalQuestion) {
             const originalQ = content.createDiv({
-                cls: "episteme-diff-original",
+                cls: "ep:mb-2 ep:opacity-60",
             });
             originalQ.createSpan({
                 text: "Q (old): ",
-                cls: "episteme-card-label episteme-diff-label-old",
+                cls: "ep:font-semibold ep:text-obs-muted",
             });
             const origQContent = originalQ.createDiv({
-                cls: "episteme-md-content episteme-strikethrough",
+                cls: "ep:inline ep:line-through",
             });
             void markdownRenderer.render(
                 handlers.app,
@@ -219,14 +224,14 @@ export class DiffCard extends BaseComponent {
         // Original answer (strikethrough)
         if (change.originalAnswer) {
             const originalA = content.createDiv({
-                cls: "episteme-diff-original",
+                cls: "ep:mb-2 ep:opacity-60",
             });
             originalA.createSpan({
                 text: "A (old): ",
-                cls: "episteme-card-label episteme-diff-label-old",
+                cls: "ep:font-semibold ep:text-obs-muted",
             });
             const origAContent = originalA.createDiv({
-                cls: "episteme-md-content episteme-strikethrough",
+                cls: "ep:inline ep:line-through",
             });
             void markdownRenderer.render(
                 handlers.app,
@@ -250,14 +255,14 @@ export class DiffCard extends BaseComponent {
     ): void {
         // Question being deleted
         const questionEl = content.createDiv({
-            cls: "episteme-diff-question episteme-diff-deleted-content",
+            cls: "ep:mb-2 ep:opacity-60",
         });
         questionEl.createSpan({
             text: "Q: ",
-            cls: "episteme-card-label",
+            cls: "ep:font-semibold ep:text-obs-muted",
         });
         const qContent = questionEl.createDiv({
-            cls: "episteme-md-content episteme-strikethrough",
+            cls: "ep:inline ep:line-through",
         });
         void markdownRenderer.render(
             handlers.app,
@@ -269,14 +274,14 @@ export class DiffCard extends BaseComponent {
 
         // Answer being deleted
         const answerEl = content.createDiv({
-            cls: "episteme-diff-answer episteme-diff-deleted-content",
+            cls: "ep:opacity-60",
         });
         answerEl.createSpan({
             text: "A: ",
-            cls: "episteme-card-label",
+            cls: "ep:font-semibold ep:text-obs-muted",
         });
         const aContent = answerEl.createDiv({
-            cls: "episteme-md-content episteme-strikethrough",
+            cls: "ep:inline ep:line-through",
         });
         void markdownRenderer.render(
             handlers.app,
@@ -306,13 +311,13 @@ export class DiffCard extends BaseComponent {
         if (!this.element) return;
 
         if (this.acceptedState) {
-            this.element.removeClass("episteme-diff-card--rejected");
+            this.element.style.opacity = "";
         } else {
-            this.element.addClass("episteme-diff-card--rejected");
+            this.element.style.opacity = "0.5";
         }
 
         // Update checkbox state
-        const checkbox = this.element.querySelector(".episteme-diff-toggle") as HTMLInputElement;
+        const checkbox = this.element.querySelector("input[type=checkbox]") as HTMLInputElement;
         if (checkbox) {
             checkbox.checked = this.acceptedState;
         }

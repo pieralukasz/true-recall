@@ -226,12 +226,12 @@ export class EditableTextField extends BaseComponent {
 			this.cleanupAutoResize?.();
 		}
 
-		const wrapperClass = this.props.wrapperClass || "episteme-editable-field";
+		const wrapperClass = this.props.wrapperClass || "ep:w-full ep:relative";
 		this.element = this.container.createDiv({ cls: wrapperClass });
 
 		// Create textarea
 		const textareaClass =
-			this.props.textareaClass || "episteme-editable-textarea";
+			this.props.textareaClass || "ep:w-full ep:min-h-16 ep:p-2 ep:border ep:border-obs-border ep:rounded-md ep:bg-obs-primary ep:text-obs-normal ep:resize-y ep:focus:outline-none ep:focus:border-obs-interactive";
 		this.textarea = this.element.createEl("textarea", {
 			cls: textareaClass,
 			attr: {
@@ -274,15 +274,16 @@ export class EditableTextField extends BaseComponent {
 		const buttons = this.props.toolbarButtons || TOOLBAR_BUTTONS.REVIEW;
 		const positioned = this.props.toolbarPositioned !== false;
 
+		const positionedCls = positioned ? "ep:absolute ep:left-0 ep:right-0 ep:top-full ep:mt-1 ep:z-10" : "";
 		this.toolbar = this.element.createDiv({
-			cls: `episteme-edit-toolbar${positioned ? " episteme-edit-toolbar--positioned" : ""}`,
+			cls: `ep:flex ep:flex-wrap ep:justify-center ep:gap-1 ep:py-2 ep:border-t ep:border-obs-border ${positionedCls}`,
 		});
 
 		for (const btn of buttons) {
 			const title = btn.shortcut ? `${btn.title} (${btn.shortcut})` : btn.title;
 
 			const btnEl = this.toolbar.createEl("button", {
-				cls: "episteme-edit-toolbar-btn",
+				cls: "ep:px-2 ep:py-1 ep:text-xs ep:bg-obs-secondary ep:text-obs-normal ep:border ep:border-obs-border ep:rounded ep:cursor-pointer ep:hover:bg-obs-modifier-hover ep:hover:border-obs-interactive ep:transition-colors",
 				text: btn.label,
 				attr: { title, tabindex: "-1", "data-button-id": btn.id },
 			});

@@ -36,27 +36,27 @@ export class Panel extends BaseComponent {
 
 		// Main container element
 		this.element = this.container.createDiv({
-			cls: "episteme-panel",
+			cls: "ep:flex ep:flex-col ep:h-full ep:p-2",
 		});
 
-		// Header container - NO padding CSS defined
+		// Header container
 		this.headerContainer = this.element.createDiv({
-			cls: "episteme-panel-header-container",
+			cls: "ep:shrink-0 ep:border-b ep:border-obs-border",
 		});
 
 		// Skip default title row if customHeader is true
 		if (!this.props.customHeader) {
-			// Render title row using Ready to Harvest styling classes
+			// Render title row
 			const header = this.headerContainer.createDiv({
-				cls: "episteme-ready-harvest-header",
+				cls: "ep:py-2",
 			});
 
 			const titleRow = header.createDiv({
-				cls: "episteme-ready-harvest-title-row",
+				cls: "ep:flex ep:items-center ep:justify-between ep:gap-2",
 			});
 
 			titleRow.createSpan({
-				cls: "episteme-ready-harvest-title",
+				cls: "ep:font-semibold ep:text-obs-normal",
 				text: this.props.title,
 			});
 
@@ -73,15 +73,15 @@ export class Panel extends BaseComponent {
 			}
 		}
 
-		// Content container - NO padding CSS defined
+		// Content container
 		this.contentContainer = this.element.createDiv({
-			cls: "episteme-panel-content-container",
+			cls: "ep:flex-1 ep:overflow-y-auto ep:min-h-0 ep:mt-2",
 		});
 
 		// Footer container - optional
 		if (this.props.showFooter) {
 			this.footerContainer = this.element.createDiv({
-				cls: "episteme-panel-footer-container",
+				cls: "ep:shrink-0",
 			});
 		}
 	}

@@ -47,10 +47,8 @@ export class CardPreview extends BaseComponent {
 		const { flashcard, handlers, showActions = true } = this.props;
 
 		this.element = this.container.createDiv({
-			cls: "episteme-card clickable",
+			cls: "ep:py-2 ep:bg-obs-secondary ep:rounded-md ep:mb-1.5 ep:cursor-pointer clickable",
 		});
-
-		this.element.setCssProps({ cursor: "pointer" });
 
 		// Click on card to edit
 		if (handlers.onEdit) {
@@ -61,7 +59,7 @@ export class CardPreview extends BaseComponent {
 
 		// Card header with actions
 		const cardHeader = this.element.createDiv({
-			cls: "episteme-card-header",
+			cls: "ep:flex ep:justify-between ep:items-start ep:gap-2",
 		});
 
 		// Question section
@@ -83,14 +81,14 @@ export class CardPreview extends BaseComponent {
 		const { flashcard, filePath, handlers, markdownRenderer } = this.props;
 
 		const questionEl = header.createDiv({
-			cls: "episteme-card-question",
+			cls: "ep:text-sm ep:leading-normal ep:text-obs-normal ep:flex-1 ep:mb-1.5",
 		});
 		questionEl.createSpan({
 			text: "Q: ",
-			cls: "episteme-card-label",
+			cls: "ep:font-semibold ep:text-obs-muted",
 		});
 		const questionContent = questionEl.createDiv({
-			cls: "episteme-md-content",
+			cls: "ep:inline",
 		});
 
 		// Store reference for internal link handler
@@ -112,14 +110,14 @@ export class CardPreview extends BaseComponent {
 		if (!this.element) return;
 
 		const answerEl = this.element.createDiv({
-			cls: "episteme-card-answer",
+			cls: "ep:text-sm ep:leading-normal ep:text-obs-normal ep:flex-1",
 		});
 		answerEl.createSpan({
 			text: "A: ",
-			cls: "episteme-card-label",
+			cls: "ep:font-semibold ep:text-obs-muted",
 		});
 		const answerContent = answerEl.createDiv({
-			cls: "episteme-md-content",
+			cls: "ep:inline",
 		});
 
 		// Store reference for internal link handler
@@ -147,13 +145,16 @@ export class CardPreview extends BaseComponent {
 		const { flashcard, handlers } = this.props;
 
 		const actionsEl = header.createDiv({
-			cls: "episteme-card-actions",
+			cls: "ep:flex ep:gap-2 ep:shrink-0",
 		});
+
+		// Button classes
+		const btnCls = "ep:cursor-pointer ep:opacity-60 ep:text-xs ep:px-1 ep:py-0.5 ep:rounded ep:hover:opacity-100 ep:hover:bg-obs-modifier-hover clickable-icon";
 
 		// Copy button
 		if (handlers.onCopy) {
 			const copyBtn = actionsEl.createEl("button", {
-				cls: "episteme-card-btn clickable-icon",
+				cls: btnCls,
 				attr: {
 					"aria-label": "Copy flashcard",
 					"data-tooltip-position": "top",
@@ -176,7 +177,7 @@ export class CardPreview extends BaseComponent {
 		// Move button
 		if (handlers.onMove) {
 			const moveBtn = actionsEl.createEl("button", {
-				cls: "episteme-card-btn clickable-icon",
+				cls: btnCls,
 				attr: {
 					"aria-label": "Move flashcard to another note",
 					"data-tooltip-position": "top",
@@ -199,7 +200,7 @@ export class CardPreview extends BaseComponent {
 		// Delete button
 		if (handlers.onDelete) {
 			const removeBtn = actionsEl.createEl("button", {
-				cls: "episteme-card-btn clickable-icon",
+				cls: btnCls,
 				attr: {
 					"aria-label": "Remove flashcard",
 					"data-tooltip-position": "top",
