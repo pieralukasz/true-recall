@@ -194,7 +194,7 @@ export class ReviewView extends ItemView {
         const container = this.containerEl.children[1];
         if (!(container instanceof HTMLElement)) return;
         container.empty();
-        container.addClass("episteme-review");
+        container.addClass("episteme-review", "ep:flex", "ep:flex-col", "ep:h-full");
 
         // Create UI structure
         this.headerEl = container.createDiv({ cls: "ep:flex ep:justify-center ep:items-center ep:py-3 ep:px-4 ep:border-b ep:border-obs-border ep:bg-obs-secondary ep:relative ep:shrink-0" });
@@ -613,35 +613,42 @@ export class ReviewView extends ItemView {
         // Use sourceNotePath for link resolution
         const sourcePath = card.sourceNotePath || "";
 
-        // Question
-        const questionEl = cardEl.createDiv({ cls: "episteme-review-question ep:text-xl ep:leading-relaxed ep:text-obs-normal ep:mb-6" });
-        if (editState.active && editState.field === "question") {
-            // Edit mode - contenteditable
-            this.renderEditableField(questionEl, card.question, "question");
-        } else {
-            // View mode - markdown
-            void MarkdownRenderer.render(
-                this.app,
-                card.question,
-                questionEl,
-                sourcePath,
-                this
-            );
-            questionEl.addEventListener("click", (e: MouseEvent) => {
-                this.handleFieldClick(e, "question", sourcePath);
-            });
-            // Long press on mobile to edit
-            if (Platform.isMobile) {
-                this.addLongPressListener(questionEl, () => this.startEdit("question"));
-            }
-        }
+        // When editing question, hide answer. When editing answer, keep question visible.
+        const isEditingQuestion = editState.active && editState.field === "question";
+        const isEditingAnswer = editState.active && editState.field === "answer";
 
-        // Answer (if revealed)
-        if (this.stateManager.isAnswerRevealed()) {
-            cardEl.createDiv({ cls: "ep:border-none ep:border-t ep:border-obs-border ep:my-6" });
+        // Question (always visible)
+            const questionEl = cardEl.createDiv({ cls: "episteme-review-question ep:text-xl ep:leading-relaxed ep:text-obs-normal ep:mb-6" });
+            if (isEditingQuestion) {
+                // Edit mode - contenteditable
+                this.renderEditableField(questionEl, card.question, "question");
+            } else {
+                // View mode - markdown
+                void MarkdownRenderer.render(
+                    this.app,
+                    card.question,
+                    questionEl,
+                    sourcePath,
+                    this
+                );
+                questionEl.addEventListener("click", (e: MouseEvent) => {
+                    this.handleFieldClick(e, "question", sourcePath);
+                });
+                // Long press on mobile to edit
+                if (Platform.isMobile) {
+                    this.addLongPressListener(questionEl, () => this.startEdit("question"));
+                }
+            }
+
+        // Answer (if revealed and not editing question)
+        if (this.stateManager.isAnswerRevealed() && !isEditingQuestion) {
+            // Separator only when not editing
+            if (!isEditingAnswer) {
+                cardEl.createDiv({ cls: "ep:border-t ep:border-obs-border ep:my-6" });
+            }
 
             const answerEl = cardEl.createDiv({ cls: "episteme-review-answer ep:text-lg ep:leading-relaxed ep:text-obs-muted" });
-            if (editState.active && editState.field === "answer") {
+            if (isEditingAnswer) {
                 // Edit mode - contenteditable
                 this.renderEditableField(answerEl, card.answer, "answer");
             } else {
@@ -662,22 +669,19 @@ export class ReviewView extends ItemView {
                 }
             }
 
-            // Source note backlink
+            // Source note backlink (only in view mode)
             if (card.sourceNoteName && !editState.active) {
                 const backlinkEl = cardEl.createDiv({
                     cls: "ep:mt-6 ep:text-center"
                 });
 
-                // Create clickable link to source note
-                const linkEl = backlinkEl.createEl("a", {
+                // Create clickable link to source note (using span to avoid Obsidian's default link color)
+                const linkEl = backlinkEl.createEl("span", {
                     text: card.sourceNoteName,
-                    href: "#",
-                    cls: "ep:text-obs-muted ep:text-sm ep:no-underline ep:opacity-70 ep:hover:text-obs-normal ep:hover:opacity-100"
+                    cls: "ep:text-obs-faint ep:text-sm ep:cursor-pointer ep:hover:text-obs-muted ep:hover:underline ep:transition-colors"
                 });
 
-                linkEl.addEventListener("click", (e: MouseEvent) => {
-                    e.preventDefault();
-                    e.stopPropagation();
+                linkEl.addEventListener("click", () => {
                     this.handleOpenSourceNote();
                 });
             }
@@ -771,23 +775,30 @@ export class ReviewView extends ItemView {
         content: string,
         field: "question" | "answer"
     ): void {
-        const wrapper = container.createDiv({ cls: "ep:w-full ep:relative" });
+        // Use container directly as relative context (no wrapper to avoid layout shift)
+        container.addClass("ep:relative");
 
-        // Textarea for editing (visible initially)
-        const textarea = wrapper.createEl("textarea", {
-            cls: "ep:w-full ep:min-h-20 ep:p-0 ep:border-none ep:rounded-none ep:font-sans ep:text-inherit ep:leading-inherit ep:text-center ep:bg-transparent ep:text-obs-normal ep:resize-none ep:box-border ep:focus:outline-none ep:focus:shadow-none",
+        // Textarea for editing - matches parent's font styling exactly
+        const textarea = container.createEl("textarea", {
+            cls: "ep:w-full ep:text-center ep:text-obs-normal ep:resize-none",
             attr: { "data-field": field },
         });
+        // Force styles to override Obsidian defaults (classes get overridden)
+        textarea.style.fontSize = "inherit";
+        textarea.style.lineHeight = "inherit";
+        textarea.style.padding = "0";
+        textarea.style.margin = "0";
+        textarea.style.border = "none";
+        textarea.style.background = "transparent";
+        textarea.style.outline = "none";
+        textarea.style.boxShadow = "none";
         textarea.value = content.replace(/<br\s*\/?>/gi, "\n");
 
         // Auto-resize textarea to fit content
         setupAutoResize(textarea);
 
-        // Preview for rendered markdown (hidden initially)
-        const preview = wrapper.createDiv({ cls: "ep:p-3 ep:cursor-text ep:rounded-md ep:transition-colors ep:hover:bg-obs-modifier-hover ep:hidden" });
-
         // Toolbar under textarea
-        this.renderEditToolbar(wrapper, textarea);
+        this.renderEditToolbar(container, textarea);
 
         // Events
         textarea.addEventListener("blur", (e) => {
@@ -797,13 +808,6 @@ export class ReviewView extends ItemView {
             void this.saveEditFromTextarea(textarea, field);
         });
         textarea.addEventListener("keydown", (e) => this.handleEditKeydown(e, field));
-
-        // Click preview to edit again
-        preview.addEventListener("click", () => {
-            preview.addClass("hidden");
-            textarea.removeClass("hidden");
-            textarea.focus();
-        });
 
         // Auto-focus
         setTimeout(() => {
