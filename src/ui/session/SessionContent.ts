@@ -57,15 +57,15 @@ export class SessionContent extends BaseComponent {
 		// Quick actions section
 		this.renderQuickActions();
 
-		// Scroll wrapper for "Select notes" header + note list
-		const scrollWrapper = this.element.createDiv({
-			cls: "ep:flex-1 ep:overflow-y-auto",
+		// Notes section header (fixed, not scrolling)
+		this.element.createDiv({
+			cls: "episteme-section-header ep:text-xs ep:font-semibold ep:text-obs-muted ep:uppercase ep:tracking-wide ep:my-2 ep:shrink-0",
+			text: "Select notes",
 		});
 
-		// Notes section header
-		scrollWrapper.createDiv({
-			cls: "episteme-section-header ep:text-xs ep:font-semibold ep:text-obs-muted ep:uppercase ep:tracking-wide ep:my-2",
-			text: "Select notes",
+		// Scroll wrapper for note list only
+		const scrollWrapper = this.element.createDiv({
+			cls: "episteme-session-scroll ep:flex-1 ep:overflow-y-auto ep:min-h-0",
 		});
 
 		// Note list (card-based)
@@ -258,7 +258,7 @@ export class SessionContent extends BaseComponent {
 
 			// Note item container
 			const item = noteListEl.createDiv({
-				cls: `ep:flex ep:items-start ep:gap-3 ep:py-2.5 ep:px-3 ep:border-b ep:border-obs-border ep:cursor-pointer ep:transition-colors ep:hover:bg-obs-modifier-hover ep:last:border-b-0${
+				cls: `ep:flex ep:items-start ep:gap-3 ep:py-2.5 ep:px-3 ep:border-b ep:border-obs-modifier-border ep:cursor-pointer ep:transition-colors ep:hover:bg-obs-modifier-hover ep:last:border-b-0${
 					isSelected ? " ep:bg-obs-interactive/10" : ""
 				}`,
 			});

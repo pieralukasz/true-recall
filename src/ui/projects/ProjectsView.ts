@@ -25,6 +25,9 @@ export class ProjectsView extends ItemView {
 	private panelComponent: Panel | null = null;
 	private contentComponent: ProjectsContent | null = null;
 
+	// Native header action elements
+	private refreshAction: HTMLElement | null = null;
+
 	// State subscription
 	private unsubscribe: (() => void) | null = null;
 
@@ -50,12 +53,14 @@ export class ProjectsView extends ItemView {
 		if (!(container instanceof HTMLElement)) return;
 		container.empty();
 
-		// Create Panel component (shared with Ready to Harvest)
-		this.panelComponent = new Panel(container, {
-			title: "Projects",
-			onRefresh: () => void this.loadProjects(),
-		});
+		// Create Panel component (header is native Obsidian header)
+		this.panelComponent = new Panel(container);
 		this.panelComponent.render();
+
+		// Add native refresh action
+		this.refreshAction = this.addAction("refresh-cw", "Refresh", () => {
+			void this.loadProjects();
+		});
 
 		// Subscribe to state changes
 		this.unsubscribe = this.stateManager.subscribe(() => this.renderContent());
@@ -69,6 +74,13 @@ export class ProjectsView extends ItemView {
 
 	async onClose(): Promise<void> {
 		this.unsubscribe?.();
+
+		// Remove native header action
+		if (this.refreshAction) {
+			this.refreshAction.remove();
+			this.refreshAction = null;
+		}
+
 		this.panelComponent?.destroy();
 		this.contentComponent?.destroy();
 	}
