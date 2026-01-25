@@ -4,4 +4,3 @@
  */
 export { ProjectsView } from "./ProjectsView";
 export { ProjectsContent } from "./ProjectsContent";
-export { ProjectItem, createProjectItem } from "./ProjectItem";

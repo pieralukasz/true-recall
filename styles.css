@@ -269,9 +269,6 @@
   .ep\:m-0 {
     margin: calc(var(--ep-spacing) * 0);
   }
-  .ep\:mx-1\.5 {
-    margin-inline: calc(var(--ep-spacing) * 1.5);
-  }
   .ep\:mx-4 {
     margin-inline: calc(var(--ep-spacing) * 4);
   }
@@ -416,6 +413,9 @@
   .ep\:h-5 {
     height: calc(var(--ep-spacing) * 5);
   }
+  .ep\:h-6 {
+    height: calc(var(--ep-spacing) * 6);
+  }
   .ep\:h-7 {
     height: calc(var(--ep-spacing) * 7);
   }
@@ -505,6 +505,9 @@
   }
   .ep\:w-5 {
     width: calc(var(--ep-spacing) * 5);
+  }
+  .ep\:w-6 {
+    width: calc(var(--ep-spacing) * 6);
   }
   .ep\:w-7 {
     width: calc(var(--ep-spacing) * 7);
@@ -1507,16 +1510,6 @@
       }
     }
   }
-  .ep\:hover\:bg-red-500\/15 {
-    &:hover {
-      @media (hover: hover) {
-        background-color: var(--ep-color-red-500);
-        @supports (color: color-mix(in lab, red, red)) {
-          background-color: color-mix(in oklab, var(--ep-color-red-500) 15%, transparent);
-        }
-      }
-    }
-  }
   .ep\:hover\:bg-red-600 {
     &:hover {
       @media (hover: hover) {
@@ -1687,6 +1680,9 @@
   .modal:has(.episteme-modal) {
     width: fit-content;
     max-width: 90vw;
+  }
+  .episteme-card-field p {
+    margin: 0;
   }
   .episteme-answer-blur {
     filter: blur(4px);
