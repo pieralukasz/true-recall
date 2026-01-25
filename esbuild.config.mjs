@@ -4,6 +4,7 @@ import process from "process";
 import { builtinModules } from 'node:module';
 import { copyFileSync, writeFileSync, existsSync, mkdirSync, readFileSync } from "fs";
 import { join } from "path";
+import { execSync } from "child_process";
 
 const banner =
 `/*
@@ -27,8 +28,8 @@ if (vaultPluginDir && !existsSync(vaultPluginDir)) {
 	mkdirSync(vaultPluginDir, { recursive: true });
 }
 
-// CSS files to concatenate (in correct order)
-const cssFiles = [
+// Legacy CSS files (kept during migration, will be removed progressively)
+const legacyCssFiles = [
 	"src/ui/settings/styles.css",
 	"src/ui/components/styles.css",
 	"src/ui/panel/styles.css",
@@ -38,21 +39,46 @@ const cssFiles = [
 	"src/ui/stats/styles.css",
 	"src/ui/projects/styles.css",
 	"src/ui/browser/styles.css",
-	"src/ui/auth/styles.css",
 	"src/ui/mobile.css",
 ];
 
-// Combine CSS files into single styles.css
-function combineCSS() {
-	let combinedCSS = "";
-	cssFiles.forEach(file => {
-		if (existsSync(file)) {
-			const content = readFileSync(file, "utf-8");
-			combinedCSS += content + "\n\n";
-		}
-	});
-	writeFileSync("styles.css", combinedCSS, "utf-8");
-	console.log("✓ CSS combined into styles.css");
+// Process CSS with PostCSS (Tailwind v4)
+function buildCSS() {
+	try {
+		// Step 1: Process Tailwind CSS with PostCSS
+		execSync('npx postcss src/ui/styles.css -o styles.tailwind.css', { stdio: 'pipe' });
+
+		// Step 2: Concatenate legacy CSS files (during migration period)
+		let legacyCSS = "";
+		legacyCssFiles.forEach(file => {
+			if (existsSync(file)) {
+				const content = readFileSync(file, "utf-8");
+				legacyCSS += content + "\n\n";
+			}
+		});
+
+		// Step 3: Combine Tailwind output with legacy CSS
+		const tailwindCSS = existsSync("styles.tailwind.css")
+			? readFileSync("styles.tailwind.css", "utf-8")
+			: "";
+
+		// Tailwind first (base/utilities), then legacy overrides
+		writeFileSync("styles.css", tailwindCSS + "\n\n/* Legacy CSS (will be removed after migration) */\n\n" + legacyCSS, "utf-8");
+
+		console.log("✓ CSS processed with PostCSS (Tailwind + legacy)");
+	} catch (err) {
+		console.error("PostCSS build failed:", err.message);
+		// Fallback to legacy concatenation if PostCSS fails
+		let combinedCSS = "";
+		legacyCssFiles.forEach(file => {
+			if (existsSync(file)) {
+				const content = readFileSync(file, "utf-8");
+				combinedCSS += content + "\n\n";
+			}
+		});
+		writeFileSync("styles.css", combinedCSS, "utf-8");
+		console.log("⚠ Fallback: CSS concatenated without Tailwind");
+	}
 }
 
 // Copy static files to vault
@@ -132,7 +158,7 @@ const context = await esbuild.context({
 		name: "copy-to-vault",
 		setup(build) {
 			build.onStart(() => {
-				combineCSS(); // Combine CSS files before building
+				buildCSS(); // Process CSS with PostCSS (Tailwind + legacy)
 			});
 			build.onEnd(() => {
 				copyToVault();
