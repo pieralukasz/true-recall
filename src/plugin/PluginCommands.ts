@@ -119,6 +119,13 @@ export function registerCommands(plugin: EpistemePlugin): void {
 		callback: () => void plugin.showBrowser(),
 	});
 
+	// Open FSRS simulator
+	plugin.addCommand({
+		id: "open-fsrs-simulator",
+		name: "Open FSRS simulator",
+		callback: () => void plugin.openSimulator(),
+	});
+
 	// Create database backup
 	plugin.addCommand({
 		id: "create-backup",

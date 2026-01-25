@@ -6,6 +6,7 @@
  * Project stats are calculated by scanning vault
  */
 import { ItemView, WorkspaceLeaf, Notice, TFile } from "obsidian";
+import { State } from "ts-fsrs";
 import { VIEW_TYPE_PROJECTS, VIEW_TYPE_REVIEW } from "../../constants";
 import { createProjectsStateManager } from "../../state/projects.state";
 import { Panel } from "../components/Panel";
@@ -129,16 +130,46 @@ export class ProjectsView extends ItemView {
 
 			// Count cards per project
 			const projectCardCounts = new Map<string, number>();
+			const projectNewCounts = new Map<string, number>();
+			const projectDueCounts = new Map<string, number>();
 			const allCards = this.plugin.cardStore.cards.getAll();
+			const now = new Date();
+			const tomorrowBoundary =
+				this.plugin.dayBoundaryService.getTomorrowBoundary(now);
 
 			for (const card of allCards) {
 				if (!card.sourceUid) continue;
 				const projects = sourceUidToProjects.get(card.sourceUid) || [];
 				for (const projectName of projects) {
+					// Total card count
 					projectCardCounts.set(
 						projectName,
 						(projectCardCounts.get(projectName) || 0) + 1
 					);
+
+					// New count: State.New cards
+					if (card.state === State.New) {
+						projectNewCounts.set(
+							projectName,
+							(projectNewCounts.get(projectName) || 0) + 1
+						);
+					}
+
+					// Due count: cards due today (inline logic from isCardDueToday)
+					const dueDate = new Date(card.due);
+					const isDue =
+						(card.state === State.Learning ||
+							card.state === State.Relearning) &&
+						dueDate <= now
+							? true
+							: card.state === State.Review &&
+								  dueDate < tomorrowBoundary;
+					if (isDue) {
+						projectDueCounts.set(
+							projectName,
+							(projectDueCounts.get(projectName) || 0) + 1
+						);
+					}
 				}
 			}
 
@@ -149,8 +180,8 @@ export class ProjectsView extends ItemView {
 					name,
 					noteCount: projectNoteCounts.get(name) ?? 0,
 					cardCount: projectCardCounts.get(name) ?? 0,
-					dueCount: 0,
-					newCount: 0,
+					dueCount: projectDueCounts.get(name) ?? 0,
+					newCount: projectNewCounts.get(name) ?? 0,
 				}))
 				.sort((a, b) => a.name.localeCompare(b.name));
 
@@ -398,6 +429,7 @@ export class ProjectsView extends ItemView {
 			onAddNotes: (id, name) =>
 				void this.handleAddNotesToProject(id, name),
 			onCreateFromNote: () => void this.handleCreateFromNote(),
+			onRefresh: () => void this.loadProjects(),
 		});
 		this.contentComponent.render();
 	}
