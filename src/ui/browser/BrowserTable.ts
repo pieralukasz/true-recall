@@ -50,7 +50,6 @@ export class BrowserTable {
 
     render(): void {
         this.container.empty();
-        this.container.addClass("browser-table");
 
         if (this.props.isLoading) {
             this.renderLoading();
@@ -62,11 +61,20 @@ export class BrowserTable {
             return;
         }
 
+        // Create table wrapper for scrolling
+        const wrapper = this.container.createDiv({
+            cls: "ep:flex-1 ep:overflow-auto",
+        });
+
         // Create table
-        const table = this.container.createEl("table", { cls: "cards-table" });
+        const table = wrapper.createEl("table", {
+            cls: "ep:w-full ep:border-collapse ep:text-[13px]",
+        });
 
         // Header
-        const thead = table.createEl("thead");
+        const thead = table.createEl("thead", {
+            cls: "ep:sticky ep:top-0 ep:z-10 ep:bg-obs-secondary",
+        });
         this.renderHeader(thead);
 
         // Body
@@ -75,40 +83,53 @@ export class BrowserTable {
     }
 
     private renderLoading(): void {
-        const loading = this.container.createDiv({ cls: "table-loading" });
+        const loading = this.container.createDiv({
+            cls: "ep:flex ep:items-center ep:justify-center ep:p-10 ep:text-obs-muted",
+        });
         loading.createSpan({ text: "Loading cards..." });
     }
 
     private renderEmpty(): void {
-        const empty = this.container.createDiv({ cls: "table-empty" });
-        const iconEl = empty.createDiv({ cls: "empty-icon" });
+        const empty = this.container.createDiv({
+            cls: "ep:flex ep:flex-col ep:items-center ep:justify-center ep:py-[60px] ep:px-5 ep:text-obs-muted ep:text-center",
+        });
+        const iconEl = empty.createDiv({
+            cls: "ep:text-5xl ep:mb-4 ep:opacity-50",
+        });
         setIcon(iconEl, "inbox");
-        empty.createDiv({ text: "No cards found", cls: "empty-text" });
+        empty.createDiv({
+            text: "No cards found",
+            cls: "ep:text-sm ep:mb-2",
+        });
         empty.createDiv({
             text: "Try adjusting your search or filters",
-            cls: "empty-hint",
+            cls: "ep:text-xs ep:opacity-70",
         });
     }
 
     private renderHeader(thead: HTMLElement): void {
         const tr = thead.createEl("tr");
 
+        const thCls = "ep:py-2.5 ep:px-3 ep:text-left ep:font-semibold ep:text-obs-muted ep:text-xs ep:uppercase ep:tracking-[0.3px] ep:border-b ep:border-obs-border ep:whitespace-nowrap ep:cursor-pointer ep:select-none ep:transition-colors ep:hover:bg-obs-modifier-hover";
+
         for (const col of COLUMNS) {
             const th = tr.createEl("th", {
-                cls: `col-${col.key}`,
+                cls: thCls,
                 attr: { style: `width: ${col.width}` },
             });
 
             if (col.sortable) {
                 const sortBtn = th.createEl("button", {
-                    cls: "sort-header",
+                    cls: "ep:inline-flex ep:items-center ep:gap-1 ep:p-0 ep:border-none ep:bg-transparent ep:text-inherit ep:font-inherit ep:cursor-pointer",
                 });
 
                 sortBtn.createSpan({ text: col.label });
 
                 // Sort indicator
                 if (this.props.sortColumn === col.key) {
-                    const sortIcon = sortBtn.createSpan({ cls: "sort-icon" });
+                    const sortIcon = sortBtn.createSpan({
+                        cls: "ep:inline-flex ep:ml-1 ep:opacity-100 ep:text-obs-interactive",
+                    });
                     setIcon(sortIcon, this.props.sortDirection === "asc" ? "chevron-up" : "chevron-down");
                 }
 
@@ -122,64 +143,68 @@ export class BrowserTable {
     }
 
     private renderRows(tbody: HTMLElement): void {
+        const trBaseCls = "ep:border-b ep:border-obs-border ep:transition-colors ep:hover:bg-obs-modifier-hover";
+        const trSelectedCls = "ep:bg-obs-interactive/10 ep:hover:bg-obs-interactive/15";
+        const tdCls = "ep:py-2.5 ep:px-3 ep:text-obs-normal ep:align-middle";
+        const tdTruncateCls = "ep:max-w-[300px] ep:overflow-hidden ep:text-ellipsis ep:whitespace-nowrap";
+
         for (const card of this.props.cards) {
             const isSelected = this.props.selectedCardIds.has(card.id);
-            const tr = tbody.createEl("tr", {
-                cls: `card-row${isSelected ? " is-selected" : ""}${this.getRowStateClass(card)}`,
-            });
+            const trCls = isSelected
+                ? `${trBaseCls} ${trSelectedCls}`
+                : trBaseCls;
+
+            const tr = tbody.createEl("tr", { cls: trCls });
 
             // Question
-            const questionTd = tr.createEl("td", { cls: "col-question" });
+            const questionTd = tr.createEl("td", { cls: `${tdCls} ${tdTruncateCls}` });
             questionTd.createSpan({
                 text: this.truncateText(this.stripHtml(card.question ?? ""), 60),
-                cls: "cell-content",
             });
 
             // Answer
-            const answerTd = tr.createEl("td", { cls: "col-answer" });
+            const answerTd = tr.createEl("td", { cls: `${tdCls} ${tdTruncateCls}` });
             answerTd.createSpan({
                 text: this.truncateText(this.stripHtml(card.answer ?? ""), 50),
-                cls: "cell-content",
             });
 
             // Due
-            const dueTd = tr.createEl("td", { cls: "col-due" });
+            const dueTd = tr.createEl("td", { cls: tdCls });
             dueTd.createSpan({
                 text: this.formatDue(card.due),
-                cls: `cell-content ${this.getDueClass(card.due)}`,
+                cls: this.getDueTailwindClass(card.due),
             });
 
             // State
-            const stateTd = tr.createEl("td", { cls: "col-state" });
+            const stateTd = tr.createEl("td", { cls: tdCls });
             this.renderStateBadge(stateTd, card);
 
             // Stability
-            const stabilityTd = tr.createEl("td", { cls: "col-stability" });
+            const stabilityTd = tr.createEl("td", { cls: tdCls });
             stabilityTd.createSpan({
                 text: card.stability > 0 ? `${Math.round(card.stability)}d` : "-",
-                cls: "cell-content",
             });
 
             // Reps
-            const repsTd = tr.createEl("td", { cls: "col-reps" });
+            const repsTd = tr.createEl("td", { cls: tdCls });
             repsTd.createSpan({
                 text: String(card.reps),
-                cls: "cell-content",
             });
 
             // Lapses
-            const lapsesTd = tr.createEl("td", { cls: "col-lapses" });
+            const lapsesTd = tr.createEl("td", { cls: tdCls });
+            const lapseCls = card.lapses > 3 ? "ep:text-obs-error" : "";
             lapsesTd.createSpan({
                 text: String(card.lapses),
-                cls: `cell-content${card.lapses > 3 ? " is-warning" : ""}`,
+                cls: lapseCls,
             });
 
             // Source
-            const sourceTd = tr.createEl("td", { cls: "col-source" });
+            const sourceTd = tr.createEl("td", { cls: tdCls });
             if (card.sourceNoteName) {
                 const sourceLink = sourceTd.createEl("a", {
                     text: this.truncateText(card.sourceNoteName, 20),
-                    cls: "source-link",
+                    cls: "ep:text-obs-interactive ep:no-underline ep:cursor-pointer ep:hover:underline",
                     attr: { title: card.sourceNoteName },
                 });
                 sourceLink.addEventListener("click", (e) => {
@@ -187,7 +212,7 @@ export class BrowserTable {
                     this.props.onOpenSourceNote(card);
                 });
             } else {
-                sourceTd.createSpan({ text: "-", cls: "cell-content muted" });
+                sourceTd.createSpan({ text: "-", cls: "ep:text-obs-muted" });
             }
 
             // Row click handlers
@@ -204,49 +229,44 @@ export class BrowserTable {
     private renderStateBadge(container: HTMLElement, card: BrowserCardItem): void {
         const now = new Date();
         let label: string;
-        let cls: string;
+        let colorCls: string;
+
+        const baseCls = "ep:inline-flex ep:items-center ep:gap-1 ep:py-0.5 ep:px-2 ep:rounded-xl ep:text-[11px] ep:font-semibold ep:uppercase ep:tracking-[0.3px]";
 
         if (card.suspended) {
             label = "Suspended";
-            cls = "state-suspended";
+            colorCls = "ep:bg-red-500/15 ep:text-obs-error";
         } else if (card.buriedUntil && new Date(card.buriedUntil) > now) {
             label = "Buried";
-            cls = "state-buried";
+            colorCls = "ep:bg-obs-modifier-hover ep:text-obs-muted";
         } else {
             switch (card.state) {
                 case State.New:
                     label = "New";
-                    cls = "state-new";
+                    colorCls = "ep:bg-blue-500/15 ep:text-blue-500";
                     break;
                 case State.Learning:
                     label = "Learning";
-                    cls = "state-learning";
+                    colorCls = "ep:bg-orange-500/15 ep:text-orange-500";
                     break;
                 case State.Review:
                     label = "Review";
-                    cls = "state-review";
+                    colorCls = "ep:bg-green-500/15 ep:text-green-500";
                     break;
                 case State.Relearning:
                     label = "Relearn";
-                    cls = "state-relearning";
+                    colorCls = "ep:bg-yellow-500/15 ep:text-yellow-500";
                     break;
                 default:
                     label = "Unknown";
-                    cls = "state-unknown";
+                    colorCls = "ep:bg-obs-modifier-hover ep:text-obs-muted";
             }
         }
 
         container.createSpan({
             text: label,
-            cls: `state-badge ${cls}`,
+            cls: `${baseCls} ${colorCls}`,
         });
-    }
-
-    private getRowStateClass(card: BrowserCardItem): string {
-        const now = new Date();
-        if (card.suspended) return " row-suspended";
-        if (card.buriedUntil && new Date(card.buriedUntil) > now) return " row-buried";
-        return "";
     }
 
     private formatDue(due: string): string {
@@ -279,15 +299,15 @@ export class BrowserTable {
         }
     }
 
-    private getDueClass(due: string): string {
+    private getDueTailwindClass(due: string): string {
         const dueDate = new Date(due);
         const now = new Date();
         const diffMs = dueDate.getTime() - now.getTime();
         const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
 
-        if (diffDays < 0) return "due-overdue";
-        if (diffDays === 0) return "due-today";
-        return "due-future";
+        if (diffDays < 0) return "ep:text-obs-error";
+        if (diffDays === 0) return "ep:text-obs-interactive ep:font-medium";
+        return "";
     }
 
     private truncateText(text: string, maxLength: number): string {
