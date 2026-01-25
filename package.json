@@ -29,6 +29,7 @@
 		"globals": "14.0.0",
 		"jiti": "2.6.1",
 		"postcss": "^8.5.6",
+		"postcss-cli": "^11.0.1",
 		"tailwindcss": "^4.1.18",
 		"tslib": "2.4.0",
 		"typescript": "^5.8.3",
