@@ -2,18 +2,17 @@
  * SQLite Store Service
  * High-performance storage for FSRS card data using sql.js
  *
- * Refactored to use domain modules (CardActions, StatsActions, SourceNoteActions, BrowserActions).
+ * Refactored to use domain modules (CardActions, StatsActions, BrowserActions).
  * All operations are now performed directly on the appropriate module:
  * - store.cards.* for card operations
  * - store.stats.* for review log and statistics
- * - store.sourceNotes.* for image references (v17: source notes removed, vault only)
  * - store.browser.* for browser view queries
  */
 import { App, normalizePath, Notice } from "obsidian";
 import type { FSRSCardData } from "../../../types";
 import { SqliteDatabase } from "./SqliteDatabase";
 import { SqliteSchemaManager } from "./SqliteSchemaManager";
-import { CardActions, StatsActions, SourceNoteActions, BrowserActions } from "./modules";
+import { CardActions, StatsActions, BrowserActions } from "./modules";
 import { DB_FOLDER, SAVE_DEBOUNCE_MS, getDeviceDbFilename } from "./sqlite.types";
 
 /**
@@ -22,7 +21,6 @@ import { DB_FOLDER, SAVE_DEBOUNCE_MS, getDeviceDbFilename } from "./sqlite.types
  * Domain modules are exposed directly for all operations:
  * - store.cards.get(id) - Get a card
  * - store.stats.getDailyStats(date) - Get daily stats
- * - store.sourceNotes.getImageRefsByCardId(id) - Get image references for a card
  * - store.browser.getAllCardsForBrowser() - Get all cards for browser view
  */
 export class SqliteStoreService {
@@ -36,7 +34,6 @@ export class SqliteStoreService {
     // Domain modules - public for direct access
     public readonly cards: CardActions;
     public readonly stats: StatsActions;
-    public readonly sourceNotes: SourceNoteActions;
     public readonly browser: BrowserActions;
 
     constructor(app: App, deviceId: string) {
@@ -47,7 +44,6 @@ export class SqliteStoreService {
         // Initialize domain modules
         this.cards = new CardActions(this.db);
         this.stats = new StatsActions(this.db);
-        this.sourceNotes = new SourceNoteActions(this.db);
         this.browser = new BrowserActions(this.db);
     }
 

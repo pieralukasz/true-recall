@@ -4,40 +4,35 @@
  */
 
 /**
- * Represents a reference from a card to an image file
- */
-export interface CardImageRef {
-    /** UUID string for database consistency */
-    id?: string;
-    cardId: string;
-    imagePath: string;
-    field: "question" | "answer";
-    createdAt?: number;
-}
-
-/**
  * Options for inserting an image into a flashcard
  */
 export interface ImageInsertOptions {
-    /** Path to the image in the vault */
-    path: string;
-    /** Width in pixels (optional) */
-    width?: number;
-    /** Alt text (optional) */
-    alt?: string;
+	/** Path to the image in the vault */
+	path: string;
+	/** Width in pixels (optional) */
+	width?: number;
+	/** Alt text (optional) */
+	alt?: string;
 }
 
 /**
  * Supported image extensions
  */
-export const IMAGE_EXTENSIONS = ["png", "jpg", "jpeg", "gif", "webp", "svg"] as const;
+export const IMAGE_EXTENSIONS = [
+	"png",
+	"jpg",
+	"jpeg",
+	"gif",
+	"webp",
+	"svg",
+] as const;
 export type ImageExtension = (typeof IMAGE_EXTENSIONS)[number];
 
 /**
  * Check if a file extension is a supported image type
  */
 export function isImageExtension(ext: string): ext is ImageExtension {
-    return IMAGE_EXTENSIONS.includes(ext.toLowerCase() as ImageExtension);
+	return IMAGE_EXTENSIONS.includes(ext.toLowerCase() as ImageExtension);
 }
 
 /**
@@ -60,18 +55,21 @@ export type VideoExtension = (typeof VIDEO_EXTENSIONS)[number];
  * Check if a file extension is a supported video type
  */
 export function isVideoExtension(ext: string): ext is VideoExtension {
-    return VIDEO_EXTENSIONS.includes(ext.toLowerCase() as VideoExtension);
+	return VIDEO_EXTENSIONS.includes(ext.toLowerCase() as VideoExtension);
 }
 
 /**
  * All supported media extensions (images + videos)
  */
-export const MEDIA_EXTENSIONS = [...IMAGE_EXTENSIONS, ...VIDEO_EXTENSIONS] as const;
+export const MEDIA_EXTENSIONS = [
+	...IMAGE_EXTENSIONS,
+	...VIDEO_EXTENSIONS,
+] as const;
 export type MediaExtension = (typeof MEDIA_EXTENSIONS)[number];
 
 /**
  * Check if a file extension is a supported media type (image or video)
  */
 export function isMediaExtension(ext: string): ext is MediaExtension {
-    return isImageExtension(ext) || isVideoExtension(ext);
+	return isImageExtension(ext) || isVideoExtension(ext);
 }

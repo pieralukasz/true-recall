@@ -356,11 +356,9 @@ All data stored in `.episteme/episteme.db` using sql.js:
 | Table                    | Purpose                                                                               |
 | ------------------------ | ------------------------------------------------------------------------------------- |
 | **cards**                | Flashcard content (Q&A) + FSRS data (due, stability, difficulty, state, reps, lapses) |
-| **source_notes**         | Maps note UIDs to file paths                                                          |
 | **review_log**           | Every review: card_id, rating, response_time_ms, scheduled/elapsed days               |
 | **daily_stats**          | Daily aggregates: reviews, new cards, time, rating breakdown                          |
 | **daily_reviewed_cards** | Which cards reviewed each day                                                         |
-| **card_image_refs**      | Image-to-card references                                                              |
 | **meta**                 | Schema version for migrations                                                         |
 
 ### Benefits
@@ -406,7 +404,6 @@ Ask questions about your data in plain English:
 -   Clipboard Paste: Paste directly into editor
 -   Wiki-Link Syntax: `![[image.png|width]]`
 -   Auto-Path Updates: References update when images move/rename
--   Database Tracking: `card_image_refs` table tracks usage
 
 ### Auto-Sync Behaviors
 
@@ -449,47 +446,6 @@ Free Spaced Repetition Scheduler version 6 - superior to Anki's SM-2:
 3. Graduates to Review (default: 1 day interval)
 4. Review intervals grow based on ratings
 5. Lapsed cards enter Relearning
-
----
-
-## Architecture
-
-```
-src/
-├── main.ts                           # Plugin entry point
-├── constants.ts                      # AI prompts, models, defaults
-├── plugin/
-│   ├── PluginCommands.ts            # All 12 commands
-│   ├── PluginEventHandlers.ts       # File watchers, context menus
-│   └── ViewActivator.ts             # View management
-├── services/
-│   ├── core/
-│   │   ├── fsrs.service.ts          # FSRS algorithm
-│   │   ├── day-boundary.service.ts  # Anki-style day handling
-│   │   └── event-bus.service.ts     # Cross-component events
-│   ├── flashcard/
-│   │   ├── FlashcardManager.ts      # Card operations
-│   │   ├── FrontmatterService.ts    # YAML parsing
-│   │   └── CardMoverService.ts      # Move cards between notes
-│   ├── persistence/sqlite/
-│   │   ├── SqliteStoreService.ts    # Database facade
-│   │   └── repositories/            # Specialized data access
-│   ├── ai/
-│   │   ├── OpenRouterService.ts     # AI API integration
-│   │   └── NLQueryService.ts        # Natural language queries
-│   ├── review/
-│   │   └── ReviewService.ts         # Review session logic
-│   └── stats/
-│       └── StatsService.ts          # Analytics calculations
-├── ui/
-│   ├── panel/                       # Main sidebar
-│   ├── review/                      # Review interface
-│   ├── stats/                       # Statistics dashboard
-│   ├── session/                     # Custom session builder
-│   ├── projects/                    # Project management
-│   └── modals/                      # Various dialogs
-└── types/                           # TypeScript definitions
-```
 
 ---
 

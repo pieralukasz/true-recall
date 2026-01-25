@@ -17,27 +17,27 @@ type MigrationFn = (db: DatabaseLike) => void;
  * Manages SQLite database schema and migrations
  */
 export class SqliteSchemaManager {
-    private db: DatabaseLike;
-    private onSchemaChange: () => void;
+	private db: DatabaseLike;
+	private onSchemaChange: () => void;
 
-    // Map of schema version -> migration function
-    // Note: Old migrations (v1-v14) removed - project not released yet
-    private readonly MIGRATIONS: Record<number, MigrationFn> = {
-        16: migrations.migration015ToV16,
-        17: migrations.migration016ToV17,
-        18: migrations.migration017ToV18,
-    };
+	// Map of schema version -> migration function
+	// Note: Old migrations (v1-v14) removed - project not released yet
+	private readonly MIGRATIONS: Record<number, MigrationFn> = {
+		16: migrations.migration015ToV16,
+		17: migrations.migration016ToV17,
+		18: migrations.migration017ToV18,
+	};
 
-    constructor(db: DatabaseLike, onSchemaChange: () => void) {
-        this.db = db;
-        this.onSchemaChange = onSchemaChange;
-    }
+	constructor(db: DatabaseLike, onSchemaChange: () => void) {
+		this.db = db;
+		this.onSchemaChange = onSchemaChange;
+	}
 
-    /**
-     * Create database tables (schema v18 - removed card_image_refs table)
-     */
-    createTables(): void {
-        this.db.run(`
+	/**
+	 * Create database tables (schema v18 - removed card_image_refs table)
+	 */
+	createTables(): void {
+		this.db.run(`
             -- Cards table with FSRS scheduling data + content
             CREATE TABLE IF NOT EXISTS cards (
                 id TEXT PRIMARY KEY NOT NULL,
@@ -67,10 +67,7 @@ export class SqliteSchemaManager {
             CREATE INDEX IF NOT EXISTS idx_cards_source_uid ON cards(source_uid);
             CREATE INDEX IF NOT EXISTS idx_cards_deleted ON cards(deleted_at);
 
-            -- v17: Source notes table removed - metadata resolved from vault via flashcard_uid
-            -- v16: Projects table removed - projects are now in frontmatter only
-
-            -- Review history log (v10: TEXT UUID PK)
+            -- Review history log 
             CREATE TABLE IF NOT EXISTS review_log (
                 id TEXT PRIMARY KEY NOT NULL,
                 card_id TEXT NOT NULL,
@@ -111,8 +108,6 @@ export class SqliteSchemaManager {
                 PRIMARY KEY (date, card_id)
             );
 
-            -- v18: Card image references table removed - Obsidian natively manages attachments
-
             -- Metadata
             CREATE TABLE IF NOT EXISTS meta (
                 key TEXT PRIMARY KEY NOT NULL,
@@ -123,88 +118,99 @@ export class SqliteSchemaManager {
             INSERT OR REPLACE INTO meta (key, value) VALUES ('schema_version', '18');
             INSERT OR REPLACE INTO meta (key, value) VALUES ('created_at', datetime('now'));
         `);
-    }
+	}
 
-    /**
-     * Run all necessary migrations using data-driven approach
-     */
-    runMigrations(): void {
-        const currentVersion = this.getSchemaVersion();
-        const latestVersion = 18;
+	/**
+	 * Run all necessary migrations using data-driven approach
+	 */
+	runMigrations(): void {
+		const currentVersion = this.getSchemaVersion();
+		const latestVersion = 18;
 
-        if (currentVersion >= latestVersion) {
-            return; // Already at latest version
-        }
+		if (currentVersion >= latestVersion) {
+			return; // Already at latest version
+		}
 
-        console.log(`[Episteme] Running migrations from v${currentVersion} to v${latestVersion}...`);
+		console.log(
+			`[Episteme] Running migrations from v${currentVersion} to v${latestVersion}...`
+		);
 
-        for (let v = currentVersion + 1; v <= latestVersion; v++) {
-            console.log(`[Episteme] Migrating to schema v${v}...`);
+		for (let v = currentVersion + 1; v <= latestVersion; v++) {
+			console.log(`[Episteme] Migrating to schema v${v}...`);
 
-            const migration = this.MIGRATIONS[v];
-            if (migration) {
-                try {
-                    migration(this.db);
-                } catch (e) {
-                    console.error(`[Episteme] Migration failed for v${v}:`, e);
-                    throw e;
-                }
-            } else {
-                console.error(`[Episteme] No migration found for version v${v}`);
-                throw new Error(`Missing migration for schema version ${v}`);
-            }
+			const migration = this.MIGRATIONS[v];
+			if (migration) {
+				try {
+					migration(this.db);
+				} catch (e) {
+					console.error(`[Episteme] Migration failed for v${v}:`, e);
+					throw e;
+				}
+			} else {
+				console.error(
+					`[Episteme] No migration found for version v${v}`
+				);
+				throw new Error(`Missing migration for schema version ${v}`);
+			}
 
-            this.onSchemaChange();
-        }
+			this.onSchemaChange();
+		}
 
-        // Validate database integrity after migrations
-        if (!this.validateDatabaseIntegrity()) {
-            throw new Error("Database integrity check failed after migration");
-        }
+		// Validate database integrity after migrations
+		if (!this.validateDatabaseIntegrity()) {
+			throw new Error("Database integrity check failed after migration");
+		}
 
-        console.log(`[Episteme] All migrations completed. Current schema version: v${latestVersion}`);
-    }
+		console.log(
+			`[Episteme] All migrations completed. Current schema version: v${latestVersion}`
+		);
+	}
 
-    /**
-     * Validate that required tables exist after migrations
-     */
-    private validateDatabaseIntegrity(): boolean {
-        try {
-            const tables = this.db.exec(
-                "SELECT name FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite_%'"
-            );
+	/**
+	 * Validate that required tables exist after migrations
+	 */
+	private validateDatabaseIntegrity(): boolean {
+		try {
+			const tables = this.db.exec(
+				"SELECT name FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite_%'"
+			);
 
-            const requiredTables = ["cards", "meta"];
-            const existingTables = tables[0]?.values.map((r) => r[0] as string) || [];
+			const requiredTables = ["cards", "meta"];
+			const existingTables =
+				tables[0]?.values.map((r) => r[0] as string) || [];
 
-            for (const table of requiredTables) {
-                if (!existingTables.includes(table)) {
-                    console.error(`[Episteme] Missing required table: ${table}`);
-                    return false;
-                }
-            }
+			for (const table of requiredTables) {
+				if (!existingTables.includes(table)) {
+					console.error(
+						`[Episteme] Missing required table: ${table}`
+					);
+					return false;
+				}
+			}
 
-            console.log("[Episteme] Database integrity check passed");
-            return true;
-        } catch (error) {
-            console.error("[Episteme] Integrity check failed:", error);
-            return false;
-        }
-    }
+			console.log("[Episteme] Database integrity check passed");
+			return true;
+		} catch (error) {
+			console.error("[Episteme] Integrity check failed:", error);
+			return false;
+		}
+	}
 
-    /**
-     * Get current schema version
-     */
-    private getSchemaVersion(): number {
-        try {
-            const result = this.db.exec("SELECT value FROM meta WHERE key = 'schema_version'");
-            const data = getQueryResult(result);
-            if (data && data.values.length > 0) {
-                return parseInt(data.values[0]![0] as string, 10) || 1;
-            }
-        } catch {
-            // meta table might not exist
-        }
-        return 1;
-    }
+	/**
+	 * Get current schema version
+	 */
+	private getSchemaVersion(): number {
+		try {
+			const result = this.db.exec(
+				"SELECT value FROM meta WHERE key = 'schema_version'"
+			);
+			const data = getQueryResult(result);
+			if (data && data.values.length > 0) {
+				return parseInt(data.values[0]![0] as string, 10) || 1;
+			}
+		} catch {
+			// meta table might not exist
+		}
+		return 1;
+	}
 }

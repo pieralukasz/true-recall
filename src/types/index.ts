@@ -90,7 +90,6 @@ export type { Grade } from "./fsrs";
 
 // Image types
 export type {
-    CardImageRef,
     ImageInsertOptions,
     ImageExtension,
     VideoExtension,
