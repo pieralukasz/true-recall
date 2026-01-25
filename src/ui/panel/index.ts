@@ -5,12 +5,6 @@
 export { FlashcardPanelView } from "./FlashcardPanelView";
 
 export {
-    PanelHeader,
-    createPanelHeader,
-    type PanelHeaderProps,
-} from "./PanelHeader";
-
-export {
     PanelFooter,
     createPanelFooter,
     type PanelFooterProps,

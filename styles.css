@@ -64,12 +64,12 @@
     --ep-color-obs-primary: var(--background-primary);
     --ep-color-obs-secondary: var(--background-secondary);
     --ep-color-obs-modifier-hover: var(--background-modifier-hover);
+    --ep-color-obs-border: var(--background-modifier-border);
     --ep-color-obs-modifier-border: var(--background-modifier-border);
     --ep-color-obs-orange: var(--color-orange);
     --ep-color-obs-yellow: var(--color-yellow);
     --ep-color-obs-green: var(--color-green);
     --ep-color-obs-blue: var(--color-blue);
-    --ep-color-obs-border: var(--background-modifier-border);
   }
 }
 @layer base {
@@ -277,6 +277,9 @@
   }
   .ep\:mx-auto {
     margin-inline: auto;
+  }
+  .ep\:my-0 {
+    margin-block: calc(var(--ep-spacing) * 0);
   }
   .ep\:my-1 {
     margin-block: calc(var(--ep-spacing) * 1);
@@ -759,14 +762,11 @@
   .ep\:border-obs-border {
     border-color: var(--ep-color-obs-border);
   }
-  .ep\:border-obs-border\/50 {
-    border-color: var(--ep-color-obs-border);
-    @supports (color: color-mix(in lab, red, red)) {
-      border-color: color-mix(in oklab, var(--ep-color-obs-border) 50%, transparent);
-    }
-  }
   .ep\:border-obs-interactive {
     border-color: var(--ep-color-obs-interactive);
+  }
+  .ep\:border-obs-modifier-border {
+    border-color: var(--ep-color-obs-modifier-border);
   }
   .ep\:border-red-500\/30 {
     border-color: var(--ep-color-red-500);
@@ -1055,9 +1055,6 @@
   }
   .ep\:pb-3 {
     padding-bottom: calc(var(--ep-spacing) * 3);
-  }
-  .ep\:pb-4 {
-    padding-bottom: calc(var(--ep-spacing) * 4);
   }
   .ep\:pb-6 {
     padding-bottom: calc(var(--ep-spacing) * 6);
@@ -1658,6 +1655,33 @@
       opacity: 60%;
     }
   }
+  .ep\:md\:flex {
+    @media (width >= 48rem) {
+      display: flex;
+    }
+  }
+}
+.theme-dark,
+.theme-light {
+  --ep-color-obs-modifier-hover: var(--background-modifier-hover);
+  --ep-color-obs-modifier-border: var(--background-modifier-border);
+  --ep-color-obs-modifier-border-hover: var(
+		--background-modifier-border-hover
+	);
+  --ep-color-obs-modifier-border-focus: var(
+		--background-modifier-border-focus
+	);
+  --ep-color-obs-border: var(--background-modifier-border);
+  --ep-color-obs-primary: var(--background-primary);
+  --ep-color-obs-primary-alt: var(--background-primary-alt);
+  --ep-color-obs-secondary: var(--background-secondary);
+  --ep-color-obs-secondary-alt: var(--background-secondary-alt);
+  --ep-color-obs-normal: var(--text-normal);
+  --ep-color-obs-muted: var(--text-muted);
+  --ep-color-obs-faint: var(--text-faint);
+  --ep-color-obs-accent: var(--text-accent);
+  --ep-color-obs-interactive: var(--interactive-accent);
+  --ep-color-obs-interactive-hover: var(--interactive-accent-hover);
 }
 @layer components {
   .modal:has(.episteme-modal) {
@@ -1683,6 +1707,9 @@
   .episteme-safe-area-bottom {
     padding-bottom: env(safe-area-inset-bottom, 0);
   }
+  .is-mobile [data-type^="episteme-"] .view-content {
+    padding-bottom: 60px;
+  }
   @keyframes episteme-fade-in {
     from {
       opacity: 0;
@@ -1697,7 +1724,8 @@
     animation: episteme-fade-in 0.3s ease-out;
   }
   @keyframes episteme-pulse {
-    0%, 100% {
+    0%,
+		100% {
       transform: scale(1);
     }
     50% {
@@ -1720,6 +1748,124 @@
   }
   .episteme-scrollbar-thin::-webkit-scrollbar-thumb:hover {
     background: var(--interactive-accent);
+  }
+}
+@layer components {
+  .episteme-theme-showcase {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 90vw;
+    max-width: 1200px;
+    max-height: 90vh;
+    overflow-y: auto;
+    background: var(--background-primary);
+    border: 1px solid var(--background-modifier-border);
+    border-radius: 12px;
+    padding: 24px;
+    z-index: 99999;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+    font-family: var(--font-interface);
+    font-size: 13px;
+  }
+  .episteme-theme-showcase h2 {
+    color: var(--text-normal);
+    font-size: 24px;
+    font-weight: 600;
+    margin-bottom: 8px;
+  }
+  .episteme-theme-showcase p {
+    color: var(--text-muted);
+    margin-bottom: 24px;
+  }
+  .episteme-theme-showcase-section {
+    margin-bottom: 32px;
+  }
+  .episteme-theme-showcase-section h3 {
+    color: var(--text-accent);
+    font-size: 14px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-bottom: 12px;
+    padding-bottom: 8px;
+    border-bottom: 1px solid var(--background-modifier-border);
+  }
+  .episteme-theme-showcase-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 12px;
+  }
+  .episteme-theme-showcase-item {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 10px 12px;
+    background: var(--background-secondary);
+    border-radius: 8px;
+    border: 1px solid var(--background-modifier-border);
+  }
+  .episteme-theme-showcase-swatch {
+    width: 48px;
+    height: 48px;
+    border-radius: 8px;
+    border: 1px solid var(--background-modifier-border);
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 10px;
+    font-weight: 600;
+    text-transform: uppercase;
+  }
+  .episteme-theme-showcase-info {
+    flex: 1;
+    min-width: 0;
+  }
+  .episteme-theme-showcase-name {
+    font-weight: 600;
+    color: var(--text-normal);
+    margin-bottom: 2px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .episteme-theme-showcase-value {
+    font-family: var(--font-monospace);
+    font-size: 11px;
+    color: var(--text-muted);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .episteme-theme-showcase-desc {
+    font-size: 11px;
+    color: var(--text-faint);
+    margin-top: 2px;
+  }
+  .episteme-theme-showcase::before {
+    content: "×";
+    position: absolute;
+    top: 16px;
+    right: 16px;
+    width: 32px;
+    height: 32px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 24px;
+    color: var(--text-muted);
+    cursor: pointer;
+    border-radius: 6px;
+    transition: all 0.2s;
+  }
+  .episteme-theme-showcase:hover::before {
+    background: var(--background-modifier-hover);
+    color: var(--text-normal);
+  }
+  .episteme-theme-showcase {
+    cursor: pointer;
   }
 }
 @property --tw-border-style {

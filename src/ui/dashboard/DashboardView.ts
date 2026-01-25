@@ -4,23 +4,21 @@
  */
 import { ItemView, WorkspaceLeaf } from "obsidian";
 import { VIEW_TYPE_DASHBOARD } from "../../constants";
-import { DashboardHeader } from "./DashboardHeader";
 import { DashboardContent } from "./DashboardContent";
 import type EpistemePlugin from "../../main";
 
 /**
  * Dashboard View
  * Panel-based version of CommandDashboardModal
+ * Uses native Obsidian header (no custom header needed)
  */
 export class DashboardView extends ItemView {
 	private plugin: EpistemePlugin;
 
 	// UI Components
-	private headerComponent: DashboardHeader | null = null;
 	private contentComponent: DashboardContent | null = null;
 
-	// Container elements
-	private headerContainer!: HTMLElement;
+	// Container element
 	private contentContainer!: HTMLElement;
 
 	constructor(leaf: WorkspaceLeaf, plugin: EpistemePlugin) {
@@ -46,10 +44,7 @@ export class DashboardView extends ItemView {
 		container.empty();
 		container.addClass("ep:p-4");
 
-		// Create container elements
-		this.headerContainer = container.createDiv({
-			cls: "ep:mb-4",
-		});
+		// Create content container
 		this.contentContainer = container.createDiv({
 			cls: "ep:flex-1",
 		});
@@ -59,7 +54,6 @@ export class DashboardView extends ItemView {
 	}
 
 	async onClose(): Promise<void> {
-		this.headerComponent?.destroy();
 		this.contentComponent?.destroy();
 	}
 
@@ -74,15 +68,9 @@ export class DashboardView extends ItemView {
 	}
 
 	/**
-	 * Render all components
+	 * Render content (native header shows title automatically)
 	 */
 	private render(): void {
-		// Render Header
-		this.headerComponent?.destroy();
-		this.headerContainer.empty();
-		this.headerComponent = new DashboardHeader(this.headerContainer);
-		this.headerComponent.render();
-
 		// Render Content
 		this.contentComponent?.destroy();
 		this.contentContainer.empty();
