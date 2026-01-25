@@ -132,4 +132,20 @@ export function registerCommands(plugin: EpistemePlugin): void {
 		name: "Sync cloud data",
 		callback: () => void plugin.syncCloud(),
 	});
+
+	// Add flashcard UID to current note
+	plugin.addCommand({
+		id: "add-flashcard-uid",
+		name: "Add flashcard UID to current note",
+		checkCallback: (checking) => {
+			const file = plugin.app.workspace.getActiveFile();
+			if (file && file.extension === "md") {
+				if (!checking) {
+					void plugin.addFlashcardUidToCurrentNote();
+				}
+				return true;
+			}
+			return false;
+		},
+	});
 }

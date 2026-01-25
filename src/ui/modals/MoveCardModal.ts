@@ -76,7 +76,7 @@ export class MoveCardModal extends BaseModal {
 		// Info text
 		container.createEl("p", {
 			text: "Select a note to move the flashcard(s) to. A flashcard file will be created if it doesn't exist.",
-			cls: "episteme-modal-info",
+			cls: "ep:text-obs-muted ep:text-sm ep:mb-4",
 		});
 
 		// Tag filter buttons
@@ -86,11 +86,15 @@ export class MoveCardModal extends BaseModal {
 		this.renderSearchInput(container);
 
 		// Suggested notes section (from backlinks)
-		this.suggestedSectionEl = container.createDiv({ cls: "episteme-suggested-section" });
+		this.suggestedSectionEl = container.createDiv({
+			cls: "ep:mb-4 ep:pb-3 ep:border-b ep:border-obs-border",
+		});
 		this.renderSuggestedNotes();
 
 		// Note list
-		this.noteListEl = container.createDiv({ cls: "episteme-note-list episteme-move-note-list" });
+		this.noteListEl = container.createDiv({
+			cls: "ep:border ep:border-obs-border ep:rounded-md ep:max-h-[350px] ep:overflow-y-auto",
+		});
 		this.renderNoteList();
 	}
 
@@ -105,7 +109,9 @@ export class MoveCardModal extends BaseModal {
 	}
 
 	private renderTagFilters(container: HTMLElement): void {
-		this.filterButtonsEl = container.createDiv({ cls: "episteme-move-filters" });
+		this.filterButtonsEl = container.createDiv({
+			cls: "ep:flex ep:gap-2 ep:mb-3",
+		});
 
 		const filters = [
 			{ label: "All", tag: null },
@@ -117,10 +123,15 @@ export class MoveCardModal extends BaseModal {
 			filters.push({ label: "Source", tag: "__source__" });
 		}
 
+		const baseBtnCls = "ep:py-1.5 ep:px-3 ep:border ep:border-obs-border ep:rounded ep:bg-obs-primary ep:cursor-pointer ep:text-sm ep:transition-all ep:hover:bg-obs-modifier-hover";
+		const activeBtnCls = "ep:bg-obs-interactive ep:text-white ep:border-obs-interactive";
+
 		for (const filter of filters) {
+			const isActive = this.activeTagFilter === filter.tag;
 			const btn = this.filterButtonsEl.createEl("button", {
 				text: filter.label,
-				cls: `episteme-filter-btn ${this.activeTagFilter === filter.tag ? "active" : ""}`,
+				cls: `filter-btn ${baseBtnCls} ${isActive ? activeBtnCls : ""}`,
+				attr: { "data-tag": filter.tag ?? "all" },
 			});
 			btn.addEventListener("click", () => {
 				// Lazy load source notes only when Source filter is clicked
@@ -138,30 +149,25 @@ export class MoveCardModal extends BaseModal {
 	private updateFilterButtons(): void {
 		if (!this.filterButtonsEl) return;
 
-		const buttons = this.filterButtonsEl.querySelectorAll(".episteme-filter-btn") as NodeListOf<HTMLButtonElement>;
+		const buttons = this.filterButtonsEl.querySelectorAll(".filter-btn") as NodeListOf<HTMLButtonElement>;
+		const activeCls = ["ep:bg-obs-interactive", "ep:text-white", "ep:border-obs-interactive"];
 
-		// Build filter list dynamically (must match renderTagFilters)
-		const filters = [null, "mind/zettel"];
-		if (this.options.sourceNoteName) {
-			filters.push("__source__");
-		}
+		buttons.forEach((btn) => {
+			const tag = btn.getAttribute("data-tag");
+			const isActive = (tag === "all" && this.activeTagFilter === null) ||
+				tag === this.activeTagFilter;
 
-		buttons.forEach((btn, index) => {
-			if (index < filters.length && filters[index] === this.activeTagFilter) {
-				btn.addClass("active");
-			} else {
-				btn.removeClass("active");
-			}
+			activeCls.forEach((cls) => btn.classList.toggle(cls, isActive));
 		});
 	}
 
 	private renderSearchInput(container: HTMLElement): void {
-		const searchContainer = container.createDiv({ cls: "episteme-search-container" });
+		const searchContainer = container.createDiv({ cls: "ep:mb-3" });
 
 		const searchInput = searchContainer.createEl("input", {
 			type: "text",
 			placeholder: "Search notes...",
-			cls: "episteme-search-input",
+			cls: "ep:w-full ep:py-2.5 ep:px-3 ep:border ep:border-obs-border ep:rounded-md ep:bg-obs-primary ep:text-obs-normal ep:text-sm ep:focus:outline-none ep:focus:border-obs-interactive ep:placeholder:text-obs-muted",
 		});
 
 		searchInput.addEventListener("input", (e) => {
@@ -215,7 +221,7 @@ export class MoveCardModal extends BaseModal {
 		this.suggestedSectionEl.show();
 		this.suggestedSectionEl.createEl("h4", {
 			text: "Suggested (from backlinks)",
-			cls: "episteme-suggested-title",
+			cls: "ep:text-xs ep:text-obs-muted ep:m-0 ep:mb-2",
 		});
 
 		for (const note of suggestedNotes) {
@@ -227,20 +233,22 @@ export class MoveCardModal extends BaseModal {
 	 * Render a single note item
 	 */
 	private renderNoteItem(container: HTMLElement, note: TFile, isSuggested = false): void {
+		const baseCls = "ep:flex ep:items-center ep:justify-between ep:p-3 ep:border-b ep:border-obs-border ep:cursor-pointer ep:transition-colors ep:hover:bg-obs-modifier-hover ep:last:border-b-0 ep:group";
+		const suggestedCls = "ep:bg-obs-interactive/10 ep:border-l-2 ep:border-l-obs-interactive ep:rounded ep:mb-1";
 		const noteEl = container.createDiv({
-			cls: isSuggested ? "episteme-note-item episteme-note-suggested" : "episteme-note-item",
+			cls: isSuggested ? `${baseCls} ${suggestedCls}` : baseCls,
 		});
 
 		// Note icon and name
-		const noteInfo = noteEl.createDiv({ cls: "episteme-note-info" });
-		noteInfo.createSpan({ cls: "episteme-note-icon", text: isSuggested ? "💡" : "📄" });
-		noteInfo.createSpan({ cls: "episteme-note-name", text: note.basename });
+		const noteInfo = noteEl.createDiv({ cls: "ep:flex ep:items-center ep:gap-2 ep:overflow-hidden ep:flex-1" });
+		noteInfo.createSpan({ cls: "ep:shrink-0", text: isSuggested ? "💡" : "📄" });
+		noteInfo.createSpan({ cls: "ep:font-medium ep:overflow-hidden ep:text-ellipsis ep:whitespace-nowrap", text: note.basename });
 
 		// Folder path (if not in root)
 		const folderPath = note.parent?.path;
 		if (folderPath && folderPath !== "/") {
 			noteInfo.createSpan({
-				cls: "episteme-note-path",
+				cls: "ep:text-xs ep:text-obs-muted ep:ml-2",
 				text: folderPath,
 			});
 		}
@@ -248,7 +256,7 @@ export class MoveCardModal extends BaseModal {
 		// Select button
 		const selectBtn = noteEl.createEl("button", {
 			text: "Select",
-			cls: "episteme-note-select-btn",
+			cls: "ep:shrink-0 ep:py-1 ep:px-3 ep:rounded ep:bg-obs-interactive ep:text-white ep:border-none ep:text-xs ep:cursor-pointer ep:opacity-0 ep:group-hover:opacity-100 ep:hover:opacity-100",
 		});
 
 		selectBtn.addEventListener("click", () => {
@@ -304,7 +312,7 @@ export class MoveCardModal extends BaseModal {
 			}
 			this.noteListEl.createEl("div", {
 				text: emptyText,
-				cls: "episteme-note-list-empty",
+				cls: "ep:py-6 ep:px-4 ep:text-center ep:text-obs-muted ep:italic",
 			});
 			return;
 		}
@@ -320,7 +328,7 @@ export class MoveCardModal extends BaseModal {
 		if (filteredNotes.length > 50) {
 			this.noteListEl.createEl("div", {
 				text: `Showing 50 of ${filteredNotes.length} notes. Type to search for more.`,
-				cls: "episteme-note-list-more",
+				cls: "ep:p-3 ep:text-center ep:text-obs-muted ep:text-sm",
 			});
 		}
 	}

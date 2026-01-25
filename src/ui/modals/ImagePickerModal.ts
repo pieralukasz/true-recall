@@ -85,18 +85,18 @@ export class ImagePickerModal extends BaseModal {
     }
 
     private renderPasteZone(container: HTMLElement): void {
-        const zone = container.createDiv({ cls: "episteme-paste-zone" });
+        const zone = container.createDiv({ cls: "ep:flex ep:flex-col ep:items-center ep:justify-center ep:p-6 ep:mb-4 ep:border-2 ep:border-dashed ep:border-obs-border ep:rounded-lg ep:cursor-pointer ep:transition-all ep:hover:border-obs-interactive" });
 
-        const icon = zone.createDiv({ cls: "episteme-paste-icon" });
+        const icon = zone.createDiv({ cls: "ep:text-obs-muted" });
         icon.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>`;
 
         zone.createDiv({
             text: "Paste image from clipboard",
-            cls: "episteme-paste-text",
+            cls: "ep:text-sm ep:font-medium ep:text-obs-normal",
         });
         zone.createDiv({
             text: "Ctrl+V or drag & drop",
-            cls: "episteme-paste-hint",
+            cls: "ep:text-xs ep:text-obs-muted",
         });
 
         // Drag and drop handlers
@@ -126,31 +126,31 @@ export class ImagePickerModal extends BaseModal {
     }
 
     private renderRecentImages(container: HTMLElement): void {
-        const section = container.createDiv({ cls: "episteme-recent-images-section" });
+        const section = container.createDiv({ cls: "ep:flex ep:flex-col ep:gap-2" });
 
         section.createEl("h4", {
             text: "Recent Images",
-            cls: "episteme-section-title",
+            cls: "ep:text-sm ep:font-semibold ep:text-obs-muted ep:m-0",
         });
 
-        const grid = section.createDiv({ cls: "episteme-image-grid" });
+        const grid = section.createDiv({ cls: "ep:grid ep:grid-cols-4 ep:gap-2 ep:max-h-[180px] ep:overflow-y-auto" });
 
         const recentImages = this.imageService.getRecentImages(12);
 
         if (recentImages.length === 0) {
             grid.createDiv({
                 text: "No images in vault",
-                cls: "episteme-no-images",
+                cls: "ep:text-center ep:text-obs-muted ep:py-6 ep:italic",
             });
             return;
         }
 
         for (const file of recentImages) {
-            const item = grid.createDiv({ cls: "episteme-image-item" });
+            const item = grid.createDiv({ cls: "ep:relative ep:aspect-square ep:rounded-md ep:overflow-hidden ep:cursor-pointer ep:border-2 ep:border-transparent ep:transition-all ep:hover:border-obs-interactive ep:hover:scale-[1.02]" });
 
             // Create thumbnail using Obsidian's resource path
             const img = item.createEl("img", {
-                cls: "episteme-image-thumbnail",
+                cls: "ep:w-full ep:h-full ep:object-cover",
                 attr: {
                     src: this.app.vault.getResourcePath(file),
                     alt: file.basename,
@@ -162,7 +162,7 @@ export class ImagePickerModal extends BaseModal {
 
             // Size warning badge
             if (this.imageService.isFileTooLarge(file)) {
-                const badge = item.createDiv({ cls: "episteme-size-warning" });
+                const badge = item.createDiv({ cls: "ep:absolute ep:top-1 ep:right-1 ep:py-0.5 ep:px-1.5 ep:bg-red-500 ep:text-white ep:text-[10px] ep:rounded" });
                 badge.setText("Large");
             }
 
@@ -170,24 +170,24 @@ export class ImagePickerModal extends BaseModal {
             item.addEventListener("click", () => {
                 this.selectImage(file);
                 // Visual selection
-                grid.querySelectorAll(".episteme-image-item").forEach(el =>
-                    el.removeClass("selected")
+                grid.querySelectorAll("[class*='ep:aspect-square']").forEach(el =>
+                    el.classList.remove("ep:border-obs-interactive", "ep:shadow-[0_0_0_2px_rgba(var(--interactive-accent-rgb),0.3)]")
                 );
-                item.addClass("selected");
+                item.classList.add("ep:border-obs-interactive", "ep:shadow-[0_0_0_2px_rgba(var(--interactive-accent-rgb),0.3)]");
             });
         }
     }
 
     private renderSizeControl(container: HTMLElement): void {
-        const control = container.createDiv({ cls: "episteme-size-control" });
+        const control = container.createDiv({ cls: "ep:flex ep:items-center ep:gap-3 ep:p-3 ep:bg-obs-secondary ep:rounded-md" });
 
         control.createEl("label", {
             text: "Width:",
-            cls: "episteme-size-label",
+            cls: "ep:text-sm ep:font-medium ep:text-obs-normal",
         });
 
         this.widthSlider = control.createEl("input", {
-            cls: "episteme-width-slider",
+            cls: "ep:flex-1 ep:h-1 ep:accent-obs-interactive",
             attr: {
                 type: "range",
                 min: "0",
@@ -199,7 +199,7 @@ export class ImagePickerModal extends BaseModal {
 
         this.widthValue = control.createSpan({
             text: "Auto",
-            cls: "episteme-width-value",
+            cls: "ep:text-sm ep:font-medium ep:text-obs-interactive ep:min-w-[50px] ep:text-right",
         });
 
         this.widthSlider.addEventListener("input", () => {
@@ -211,32 +211,32 @@ export class ImagePickerModal extends BaseModal {
     }
 
     private renderPreviewSection(container: HTMLElement): void {
-        const section = container.createDiv({ cls: "episteme-preview-section" });
+        const section = container.createDiv({ cls: "ep:flex ep:flex-col ep:gap-2" });
 
         section.createEl("h4", {
             text: "Preview",
-            cls: "episteme-section-title",
+            cls: "ep:text-sm ep:font-semibold ep:text-obs-muted ep:m-0",
         });
 
-        this.previewContainer = section.createDiv({ cls: "episteme-image-preview" });
+        this.previewContainer = section.createDiv({ cls: "ep:p-3 ep:bg-obs-secondary ep:rounded-md ep:min-h-[100px] ep:overflow-hidden" });
         this.previewContainer.createDiv({
             text: "Select or paste an image",
-            cls: "episteme-preview-placeholder",
+            cls: "ep:text-obs-muted ep:italic ep:text-center ep:py-6",
         });
     }
 
     private renderButtons(container: HTMLElement): void {
-        const buttons = container.createDiv({ cls: "episteme-modal-buttons" });
+        const buttons = container.createDiv({ cls: "ep:flex ep:justify-end ep:gap-3 ep:mt-4 ep:pt-4 ep:border-t ep:border-obs-border" });
 
         const cancelBtn = buttons.createEl("button", {
             text: "Cancel",
-            cls: "episteme-btn episteme-btn-secondary",
+            cls: "ep:py-2.5 ep:px-5 ep:bg-obs-secondary ep:text-obs-normal ep:border ep:border-obs-border ep:rounded-md ep:cursor-pointer ep:font-medium ep:transition-colors ep:hover:bg-obs-modifier-hover",
         });
         cancelBtn.addEventListener("click", () => this.close());
 
         this.insertButton = buttons.createEl("button", {
             text: "Insert",
-            cls: "episteme-btn episteme-btn-primary",
+            cls: "ep:py-2.5 ep:px-5 ep:bg-obs-interactive ep:text-white ep:border-none ep:rounded-md ep:cursor-pointer ep:font-medium ep:transition-colors ep:hover:bg-obs-interactive-hover ep:disabled:opacity-50 ep:disabled:cursor-not-allowed",
         });
         this.insertButton.disabled = true;
         this.insertButton.addEventListener("click", () => this.handleInsert());
@@ -331,11 +331,11 @@ export class ImagePickerModal extends BaseModal {
         // Show the markdown that will be inserted
         const codeEl = this.previewContainer.createEl("code", {
             text: markdown,
-            cls: "episteme-preview-markdown",
+            cls: "ep:block ep:py-2 ep:px-3 ep:bg-obs-primary ep:rounded ep:text-xs ep:mb-2",
         });
 
         // Show visual preview
-        const previewEl = this.previewContainer.createDiv({ cls: "episteme-preview-render" });
+        const previewEl = this.previewContainer.createDiv({ cls: "ep:max-h-[200px] ep:overflow-auto" });
 
         MarkdownRenderer.render(
             this.app,

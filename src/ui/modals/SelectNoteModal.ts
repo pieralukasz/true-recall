@@ -54,24 +54,24 @@ export class SelectNoteModal extends BasePromiseModal<SelectNoteResult> {
 		// Info text
 		container.createEl("p", {
 			text: "Select a note to create a project from.",
-			cls: "episteme-modal-info",
+			cls: "ep:text-obs-muted ep:text-sm ep:mb-4",
 		});
 
 		// Search input
 		this.renderSearchInput(container);
 
 		// Note list
-		this.noteListEl = container.createDiv({ cls: "episteme-note-list episteme-select-note-list" });
+		this.noteListEl = container.createDiv({ cls: "ep:border ep:border-obs-border ep:rounded-md ep:max-h-[350px] ep:overflow-y-auto" });
 		this.renderNoteList();
 	}
 
 	private renderSearchInput(container: HTMLElement): void {
-		const searchContainer = container.createDiv({ cls: "episteme-search-container" });
+		const searchContainer = container.createDiv({ cls: "ep:mb-3" });
 
 		const searchInput = searchContainer.createEl("input", {
 			type: "text",
 			placeholder: "Search notes...",
-			cls: "episteme-search-input",
+			cls: "ep:w-full ep:py-2.5 ep:px-3 ep:border ep:border-obs-border ep:rounded-md ep:bg-obs-primary ep:text-obs-normal ep:text-sm ep:focus:outline-none ep:focus:border-obs-interactive ep:placeholder:text-obs-muted",
 		});
 
 		searchInput.addEventListener("input", (e) => {
@@ -95,7 +95,7 @@ export class SelectNoteModal extends BasePromiseModal<SelectNoteResult> {
 				: "No notes available.";
 			this.noteListEl.createEl("div", {
 				text: emptyText,
-				cls: "episteme-note-list-empty",
+				cls: "ep:py-6 ep:px-4 ep:text-center ep:text-obs-muted ep:italic",
 			});
 			return;
 		}
@@ -111,7 +111,7 @@ export class SelectNoteModal extends BasePromiseModal<SelectNoteResult> {
 		if (filteredNotes.length > 50) {
 			this.noteListEl.createEl("div", {
 				text: `Showing 50 of ${filteredNotes.length} notes. Type to search for more.`,
-				cls: "episteme-note-list-more",
+				cls: "ep:p-3 ep:text-center ep:text-obs-muted ep:text-sm",
 			});
 		}
 	}
@@ -119,18 +119,18 @@ export class SelectNoteModal extends BasePromiseModal<SelectNoteResult> {
 	private renderNoteItem(note: TFile): void {
 		if (!this.noteListEl) return;
 
-		const noteEl = this.noteListEl.createDiv({ cls: "episteme-note-item" });
+		const noteEl = this.noteListEl.createDiv({ cls: "ep:flex ep:items-center ep:justify-between ep:p-3 ep:border-b ep:border-obs-border ep:cursor-pointer ep:transition-colors ep:hover:bg-obs-modifier-hover ep:last:border-b-0 ep:group" });
 
 		// Note icon and name
-		const noteInfo = noteEl.createDiv({ cls: "episteme-note-info" });
-		noteInfo.createSpan({ cls: "episteme-note-icon", text: "📄" });
-		noteInfo.createSpan({ cls: "episteme-note-name", text: note.basename });
+		const noteInfo = noteEl.createDiv({ cls: "ep:flex ep:items-center ep:gap-2 ep:overflow-hidden ep:flex-1" });
+		noteInfo.createSpan({ cls: "ep:shrink-0", text: "📄" });
+		noteInfo.createSpan({ cls: "ep:font-medium ep:overflow-hidden ep:text-ellipsis ep:whitespace-nowrap", text: note.basename });
 
 		// Folder path (if not in root)
 		const folderPath = note.parent?.path;
 		if (folderPath && folderPath !== "/") {
 			noteInfo.createSpan({
-				cls: "episteme-note-path",
+				cls: "ep:text-xs ep:text-obs-muted ep:ml-2",
 				text: folderPath,
 			});
 		}
@@ -138,7 +138,7 @@ export class SelectNoteModal extends BasePromiseModal<SelectNoteResult> {
 		// Select button
 		const selectBtn = noteEl.createEl("button", {
 			text: "Select",
-			cls: "episteme-note-select-btn",
+			cls: "ep:shrink-0 ep:py-1 ep:px-3 ep:rounded ep:bg-obs-interactive ep:text-white ep:border-none ep:text-xs ep:cursor-pointer ep:opacity-0 ep:group-hover:opacity-100 ep:hover:opacity-100",
 		});
 
 		selectBtn.addEventListener("click", () => {
