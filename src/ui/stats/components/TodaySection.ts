@@ -1,6 +1,6 @@
 /**
  * TodaySection Component
- * Displays today's metrics in an elegant 3x2 grid with icons
+ * Displays today's metrics in an elegant 3x2 grid
  * Metrics: Studied, Minutes, New, Again, Correct, Streak
  */
 import { BaseComponent } from "../../component.base";
@@ -17,7 +17,6 @@ export interface TodaySectionProps {
  * Metric data structure
  */
 interface Metric {
-	icon: string;
 	label: string;
 	value: string;
 	color?: string;
@@ -72,7 +71,7 @@ export class TodaySection extends BaseComponent {
 
 		header.createSpan({
 			cls: [
-				"ep:text-lg",
+				"ep:text-ui-large",
 				"ep:font-semibold",
 				"ep:text-obs-normal",
 				"ep:tracking-tight",
@@ -112,12 +111,12 @@ export class TodaySection extends BaseComponent {
 
 			// Build metrics array
 			this.metrics = [
-				{ icon: "📚", label: "Studied", value: summary.studied.toString() },
-				{ icon: "⏱️", label: "Minutes", value: summary.minutes.toString() },
-				{ icon: "✨", label: "New", value: summary.newCards.toString() },
-				{ icon: "🔄", label: "Again", value: summary.again.toString() },
-				{ icon: "✅", label: "Correct", value: `${Math.round(summary.correctRate * 100)}%` },
-				{ icon: "🔥", label: "Streak", value: `${streak.current}d` },
+				{ label: "Studied", value: summary.studied.toString() },
+				{ label: "Minutes", value: summary.minutes.toString() },
+				{ label: "New", value: summary.newCards.toString() },
+				{ label: "Again", value: summary.again.toString() },
+				{ label: "Correct", value: `${Math.round(summary.correctRate * 100)}%` },
+				{ label: "Streak", value: `${streak.current}d` },
 			];
 
 			// Clear and re-render grid
@@ -169,16 +168,6 @@ export class TodaySection extends BaseComponent {
 			].join(" "),
 		});
 
-		// Icon
-		card.createSpan({
-			cls: [
-				"ep:text-2xl",
-				"ep:mb-2",
-				"ep:opacity-80",
-			].join(" "),
-			text: metric.icon,
-		});
-
 		// Value
 		card.createSpan({
 			cls: [
@@ -193,7 +182,7 @@ export class TodaySection extends BaseComponent {
 		// Label
 		card.createSpan({
 			cls: [
-				"ep:text-xs",
+				"ep:text-ui-smaller",
 				"ep:font-medium",
 				"ep:text-obs-muted",
 				"ep:uppercase",
@@ -212,7 +201,7 @@ export class TodaySection extends BaseComponent {
 		if (summary.studied === 0) {
 			this.summaryEl.createDiv({
 				cls: [
-					"ep:text-sm",
+					"ep:text-ui-small",
 					"ep:text-obs-muted",
 					"ep:italic",
 					"ep:text-center",
@@ -233,7 +222,7 @@ export class TodaySection extends BaseComponent {
 		// Due tomorrow
 		const dueTomorrowRow = summaryContent.createDiv({
 			cls: [
-				"ep:text-sm",
+				"ep:text-ui-small",
 				"ep:text-obs-muted",
 				"ep:flex",
 				"ep:items-center",
@@ -258,7 +247,7 @@ export class TodaySection extends BaseComponent {
 		// Daily load
 		const dailyLoadRow = summaryContent.createDiv({
 			cls: [
-				"ep:text-sm",
+				"ep:text-ui-small",
 				"ep:text-obs-muted",
 				"ep:flex",
 				"ep:items-center",
@@ -296,7 +285,7 @@ export class TodaySection extends BaseComponent {
 				"ep:justify-center",
 				"ep:h-32",
 				"ep:text-obs-error",
-				"ep:text-sm",
+				"ep:text-ui-small",
 			].join(" "),
 			text: "Failed to load today's statistics.",
 		});
