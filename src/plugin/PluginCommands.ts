@@ -3,6 +3,8 @@
  * All command registrations for the Episteme plugin
  */
 import type EpistemePlugin from "../main";
+import { VIEW_TYPE_NOTES_WITHOUT_PROJECTS } from "../constants";
+import { activateView } from "./ViewActivator";
 
 /**
  * Register all plugin commands
@@ -110,6 +112,15 @@ export function registerCommands(plugin: EpistemePlugin): void {
 		id: "open-browser",
 		name: "Open card browser",
 		callback: () => void plugin.showBrowser(),
+	});
+
+	// Open notes without projects
+	plugin.addCommand({
+		id: "open-notes-without-projects",
+		name: "Open notes without projects",
+		callback: () => {
+			void activateView(plugin.app, VIEW_TYPE_NOTES_WITHOUT_PROJECTS);
+		},
 	});
 
 	// Open FSRS simulator
