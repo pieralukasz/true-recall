@@ -7,7 +7,7 @@
  * - Array fields (non-unique: many files per value, like projects)
  * - Nested paths (e.g., "metadata.category")
  */
-import type { App, TFile, CachedMetadata, Plugin } from "obsidian";
+import type { App } from "obsidian";
 
 export interface FieldConfig {
 	/** Field path in frontmatter (e.g., "flashcard_uid", "projects", "metadata.category") */
