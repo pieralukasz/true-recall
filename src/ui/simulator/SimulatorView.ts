@@ -89,7 +89,7 @@ export class SimulatorView extends ItemView {
 
 		// Main wrapper
 		const wrapper = container.createDiv({
-			cls: "ep:p-4 ep:max-w-[1400px] ep:mx-auto",
+			cls: "ep:p-2 ep:max-w-[1400px] ep:mx-auto",
 		});
 
 		// Header
