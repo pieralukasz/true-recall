@@ -89,7 +89,7 @@ export class FlashcardPanelFooter extends BaseComponent {
 		});
 
 		// Shared button base classes
-		const btnBase = "ep:flex-1 ep:border-none ep:py-2.5 ep:px-4 ep:rounded-md ep:cursor-pointer ep:font-medium ep:text-sm ep:transition-colors";
+		const btnBase = "ep:flex-1 ep:border-none ep:py-2.5 ep:px-4 ep:rounded-md ep:cursor-pointer ep:font-medium ep:text-ui-small ep:transition-colors";
 		const btnSecondary = `${btnBase} ep:bg-obs-border ep:text-obs-normal ep:hover:bg-obs-modifier-hover`;
 		const btnPrimary = `${btnBase} mod-cta`;
 
@@ -143,7 +143,7 @@ export class FlashcardPanelFooter extends BaseComponent {
 		if (!this.element) return;
 
 		// Shared button base classes
-		const btnBase = "ep:flex-1 ep:border-none ep:py-2.5 ep:px-4 ep:rounded-md ep:cursor-pointer ep:font-medium ep:text-sm ep:transition-colors";
+		const btnBase = "ep:flex-1 ep:border-none ep:py-2.5 ep:px-4 ep:rounded-md ep:cursor-pointer ep:font-medium ep:text-ui-small ep:transition-colors";
 		const btnPrimary = `${btnBase} mod-cta`;
 		const btnSecondary = `${btnBase} ep:bg-obs-border ep:text-obs-normal ep:hover:bg-obs-modifier-hover`;
 		const btnDanger = `${btnBase} ep:bg-red-500 ep:text-white ep:hover:bg-red-600`;
@@ -232,7 +232,7 @@ export class FlashcardPanelFooter extends BaseComponent {
 		});
 
 		this.instructionsInput = instructionsContainer.createEl("textarea", {
-			cls: "ep:w-full ep:min-h-12 ep:max-h-24 ep:p-2 ep:border ep:border-obs-border ep:rounded-md ep:bg-obs-secondary ep:text-obs-normal ep:text-xs ep:font-sans ep:resize-y ep:focus:outline-none ep:focus:border-obs-interactive ep:placeholder:text-obs-muted",
+			cls: "ep:w-full ep:min-h-12 ep:max-h-24 ep:p-2 ep:border ep:border-obs-border ep:rounded-md ep:bg-obs-secondary ep:text-obs-normal ep:text-ui-smaller ep:font-sans ep:resize-y ep:focus:outline-none ep:focus:border-obs-interactive ep:placeholder:text-obs-muted",
 			placeholder,
 		});
 		this.instructionsInput.disabled = disabled;

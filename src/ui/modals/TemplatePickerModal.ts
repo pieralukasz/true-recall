@@ -51,21 +51,21 @@ export class TemplatePickerModal extends BaseModal {
         // Info text
         container.createEl("p", {
             text: "Select a markdown file to use as a template for creating zettels from flashcards.",
-            cls: "ep:text-obs-muted ep:text-sm ep:mb-4",
+            cls: "ep:text-obs-muted ep:text-ui-small ep:mb-4",
         });
 
         // Variables reference
-        const variablesEl = container.createDiv({ cls: "ep:mb-3 ep:p-2 ep:bg-obs-secondary ep:rounded ep:text-sm" });
+        const variablesEl = container.createDiv({ cls: "ep:mb-3 ep:p-2 ep:bg-obs-secondary ep:rounded ep:text-ui-small" });
         variablesEl.createEl("strong", { text: "Available variables: " });
         variablesEl.createSpan({
             text: "{{question}}, {{answer}}, {{source}}, {{date}}, {{time}}, {{datetime}}, {{card_id}}",
-            cls: "ep:text-obs-muted ep:font-mono ep:text-xs",
+            cls: "ep:text-obs-muted ep:font-mono ep:text-ui-smaller",
         });
 
         // Clear selection button
         const clearBtn = container.createEl("button", {
             text: "Use Default Template",
-            cls: "ep:mb-3 ep:py-2 ep:px-4 ep:bg-obs-secondary ep:text-obs-normal ep:border ep:border-obs-border ep:rounded-md ep:cursor-pointer ep:text-sm ep:transition-colors ep:hover:bg-obs-modifier-hover",
+            cls: "ep:mb-3 ep:py-2 ep:px-4 ep:bg-obs-secondary ep:text-obs-normal ep:border ep:border-obs-border ep:rounded-md ep:cursor-pointer ep:text-ui-small ep:transition-colors ep:hover:bg-obs-modifier-hover",
         });
         clearBtn.addEventListener("click", () => {
             this.selectTemplate(null);
@@ -95,7 +95,7 @@ export class TemplatePickerModal extends BaseModal {
         const searchInput = searchContainer.createEl("input", {
             type: "text",
             placeholder: "Search templates...",
-            cls: "ep:w-full ep:py-2.5 ep:px-3 ep:border ep:border-obs-border ep:rounded-md ep:bg-obs-primary ep:text-obs-normal ep:text-sm ep:focus:outline-none ep:focus:border-obs-interactive ep:placeholder:text-obs-muted",
+            cls: "ep:w-full ep:py-2.5 ep:px-3 ep:border ep:border-obs-border ep:rounded-md ep:bg-obs-primary ep:text-obs-normal ep:text-ui-small ep:focus:outline-none ep:focus:border-obs-interactive ep:placeholder:text-obs-muted",
         });
 
         searchInput.addEventListener("input", (e) => {
@@ -134,7 +134,7 @@ export class TemplatePickerModal extends BaseModal {
         if (filteredTemplates.length > 50) {
             this.templateListEl.createEl("div", {
                 text: `Showing 50 of ${filteredTemplates.length} files. Type to search for more.`,
-                cls: "ep:p-3 ep:text-center ep:text-obs-muted ep:text-sm",
+                cls: "ep:p-3 ep:text-center ep:text-obs-muted ep:text-ui-small",
             });
         }
     }
@@ -151,7 +151,7 @@ export class TemplatePickerModal extends BaseModal {
         const folderPath = file.parent?.path;
         if (folderPath && folderPath !== "/") {
             infoEl.createSpan({
-                cls: "ep:text-xs ep:text-obs-muted ep:ml-2",
+                cls: "ep:text-ui-smaller ep:text-obs-muted ep:ml-2",
                 text: folderPath,
             });
         }
@@ -159,7 +159,7 @@ export class TemplatePickerModal extends BaseModal {
         // Select button
         const selectBtn = itemEl.createEl("button", {
             text: "Select",
-            cls: "ep:shrink-0 ep:py-1 ep:px-3 ep:rounded ep:bg-obs-interactive ep:text-white ep:border-none ep:text-xs ep:cursor-pointer ep:opacity-0 ep:group-hover:opacity-100 ep:hover:opacity-100",
+            cls: "ep:shrink-0 ep:py-1 ep:px-3 ep:rounded ep:bg-obs-interactive ep:text-white ep:border-none ep:text-ui-smaller ep:cursor-pointer ep:opacity-0 ep:group-hover:opacity-100 ep:hover:opacity-100",
         });
 
         selectBtn.addEventListener("click", () => {

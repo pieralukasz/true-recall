@@ -17,6 +17,7 @@ export interface FlashcardPanelHeaderProps {
     uncollectedCount: number;
     selectionMode: SelectionMode;
     selectedCount: number;
+    searchQuery: string;
     onAdd?: () => void;
     onGenerate?: () => void;
     onUpdate?: () => void;
@@ -24,6 +25,7 @@ export interface FlashcardPanelHeaderProps {
     onRefresh?: () => void;
     onReview?: () => void;
     onExitSelectionMode?: () => void;
+    onSearchChange?: (query: string) => void;
 }
 
 interface StatusCounts {
@@ -37,6 +39,8 @@ interface StatusCounts {
  */
 export class FlashcardPanelHeader extends BaseComponent {
     private props: FlashcardPanelHeaderProps;
+    private searchInput: HTMLInputElement | null = null;
+    private headerRowContainer: HTMLElement | null = null;
 
     constructor(container: HTMLElement, props: FlashcardPanelHeaderProps) {
         super(container);
@@ -50,27 +54,45 @@ export class FlashcardPanelHeader extends BaseComponent {
         }
 
         this.element = this.container.createDiv({
+            cls: "ep:flex ep:flex-col ep:gap-2",
+        });
+
+        // Header row container (will be re-rendered on updates)
+        this.headerRowContainer = this.element.createDiv();
+        this.renderHeaderRow();
+
+        // Search input (only in normal mode, created once)
+        if (this.props.selectionMode !== "selecting") {
+            this.renderSearchInput();
+        }
+    }
+
+    private renderHeaderRow(): void {
+        if (!this.headerRowContainer) return;
+
+        // Clear and re-render header row only
+        this.headerRowContainer.empty();
+
+        const headerRow = this.headerRowContainer.createDiv({
             cls: "ep:flex ep:items-center ep:justify-between",
         });
 
         if (this.props.selectionMode === "selecting") {
-            this.renderSelectionHeader();
+            this.renderSelectionHeader(headerRow);
         } else {
-            this.renderNormalHeader();
+            this.renderNormalHeader(headerRow);
         }
     }
 
-    private renderNormalHeader(): void {
-        if (!this.element) return;
-
+    private renderNormalHeader(headerRow: HTMLElement): void {
         // Left side: section label + counts
-        const leftSide = this.element.createDiv({
+        const leftSide = headerRow.createDiv({
             cls: "ep:flex ep:items-center ep:gap-3",
         });
 
-        // Section label "Cards"
+        // Section label "Cards" - native Obsidian style (like "Links" panel)
         leftSide.createDiv({
-            cls: "ep:text-xs ep:font-semibold ep:text-obs-muted ep:uppercase ep:tracking-wide",
+            cls: "ep:text-ui-small ep:font-semibold ep:text-obs-normal",
             text: "Cards",
         });
 
@@ -78,7 +100,7 @@ export class FlashcardPanelHeader extends BaseComponent {
         if (this.props.cardsWithFsrs && this.props.cardsWithFsrs.length > 0) {
             const counts = this.countByState(this.props.cardsWithFsrs);
             const countsEl = leftSide.createSpan({
-                cls: "ep:flex ep:items-center ep:gap-1 ep:text-xs ep:font-medium",
+                cls: "ep:flex ep:items-center ep:gap-1 ep:text-ui-smaller",
             });
 
             // New count (blue)
@@ -103,29 +125,30 @@ export class FlashcardPanelHeader extends BaseComponent {
         }
 
         // Right side: action buttons
-        const actionsEl = this.element.createDiv({
+        const actionsEl = headerRow.createDiv({
             cls: "ep:flex ep:items-center ep:gap-1",
         });
 
-        const btnCls = "ep:inline-flex ep:items-center ep:gap-1 ep:py-1 ep:px-2 ep:border-none ep:rounded ep:bg-obs-modifier-hover ep:text-obs-muted ep:text-xs ep:cursor-pointer ep:transition-colors ep:hover:bg-obs-modifier-border ep:hover:text-obs-normal [&_svg]:ep:w-3 [&_svg]:ep:h-3";
+        const iconBtnCls = "clickable-icon";
+        const textBtnCls = "clickable-icon ep:flex ep:items-center ep:gap-1";
 
         // Collect button (pulsing when available)
         if (this.props.hasUncollectedFlashcards && this.props.onCollect) {
             const collectBtn = actionsEl.createEl("button", {
-                cls: `${btnCls} episteme-pulse-collect`,
+                cls: `${textBtnCls} episteme-pulse-collect`,
                 attr: {
                     "aria-label": `Collect ${this.props.uncollectedCount} flashcards`,
                 },
             });
             setIcon(collectBtn, "download");
-            collectBtn.createSpan({ text: String(this.props.uncollectedCount) });
+            collectBtn.createSpan({ text: String(this.props.uncollectedCount), cls: "ep:text-ui-smaller" });
             this.events.addEventListener(collectBtn, "click", () => this.props.onCollect?.());
         }
 
         // Add button
         if (this.props.onAdd) {
             const addBtn = actionsEl.createEl("button", {
-                cls: btnCls,
+                cls: iconBtnCls,
                 attr: { "aria-label": "Add flashcard" },
             });
             setIcon(addBtn, "plus");
@@ -134,40 +157,55 @@ export class FlashcardPanelHeader extends BaseComponent {
 
         // More menu button
         const menuBtn = actionsEl.createEl("button", {
-            cls: btnCls,
+            cls: iconBtnCls,
             attr: { "aria-label": "More actions" },
         });
         setIcon(menuBtn, "more-vertical");
         this.events.addEventListener(menuBtn, "click", (e) => this.showMoreMenu(e));
     }
 
-    private renderSelectionHeader(): void {
-        if (!this.element) return;
-
+    private renderSelectionHeader(headerRow: HTMLElement): void {
         // Left side: selection info
-        const leftSide = this.element.createDiv({
+        const leftSide = headerRow.createDiv({
             cls: "ep:flex ep:items-center ep:gap-3",
         });
 
         leftSide.createDiv({
-            cls: "ep:text-xs ep:font-semibold ep:text-obs-muted ep:uppercase ep:tracking-wide",
+            cls: "ep:text-ui-small ep:font-semibold ep:text-obs-normal",
             text: `${this.props.selectedCount} selected`,
         });
 
         // Right side: cancel button
-        const actionsEl = this.element.createDiv({
+        const actionsEl = headerRow.createDiv({
             cls: "ep:flex ep:items-center ep:gap-1",
         });
 
-        const btnCls = "ep:inline-flex ep:items-center ep:gap-1 ep:py-1 ep:px-2 ep:border-none ep:rounded ep:bg-obs-modifier-hover ep:text-obs-muted ep:text-xs ep:cursor-pointer ep:transition-colors ep:hover:bg-obs-modifier-border ep:hover:text-obs-normal [&_svg]:ep:w-3 [&_svg]:ep:h-3";
+        const textBtnCls = "clickable-icon ep:flex ep:items-center ep:gap-1";
 
         const closeBtn = actionsEl.createEl("button", {
-            cls: btnCls,
+            cls: textBtnCls,
             attr: { "aria-label": "Exit selection mode" },
         });
         setIcon(closeBtn, "x");
-        closeBtn.createSpan({ text: "Cancel" });
+        closeBtn.createSpan({ text: "Cancel", cls: "ep:text-ui-smaller ep:text-obs-faint" });
         this.events.addEventListener(closeBtn, "click", () => this.props.onExitSelectionMode?.());
+    }
+
+    private renderSearchInput(): void {
+        if (!this.element || this.searchInput) return;
+
+        const searchContainer = this.element.createDiv();
+        this.searchInput = searchContainer.createEl("input", {
+            cls: "ep:w-full ep:py-2 ep:px-3 ep:border ep:border-obs-border ep:rounded-md ep:bg-obs-primary ep:text-obs-normal ep:text-ui-small ep:focus:outline-none ep:focus:border-obs-interactive ep:placeholder:text-obs-muted",
+            type: "text",
+            placeholder: "Search flashcards...",
+        });
+        this.searchInput.value = this.props.searchQuery;
+
+        this.events.addEventListener(this.searchInput, "input", (e) => {
+            const query = (e.target as HTMLInputElement).value.toLowerCase();
+            this.props.onSearchChange?.(query);
+        });
     }
 
     private showMoreMenu(e: MouseEvent): void {
@@ -229,7 +267,8 @@ export class FlashcardPanelHeader extends BaseComponent {
 
     updateProps(props: Partial<FlashcardPanelHeaderProps>): void {
         this.props = { ...this.props, ...props };
-        this.render();
+        // Only re-render the header row, preserve search input
+        this.renderHeaderRow();
     }
 }
 

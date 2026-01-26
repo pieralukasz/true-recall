@@ -99,18 +99,18 @@ export class BrowserTable {
         setIcon(iconEl, "inbox");
         empty.createDiv({
             text: "No cards found",
-            cls: "ep:text-sm ep:mb-2",
+            cls: "ep:text-ui-small ep:mb-2",
         });
         empty.createDiv({
             text: "Try adjusting your search or filters",
-            cls: "ep:text-xs ep:opacity-70",
+            cls: "ep:text-ui-smaller ep:opacity-70",
         });
     }
 
     private renderHeader(thead: HTMLElement): void {
         const tr = thead.createEl("tr");
 
-        const thCls = "ep:py-2.5 ep:px-3 ep:text-left ep:font-semibold ep:text-obs-muted ep:text-xs ep:uppercase ep:tracking-[0.3px] ep:border-b ep:border-obs-border ep:whitespace-nowrap ep:cursor-pointer ep:select-none ep:transition-colors ep:hover:bg-obs-modifier-hover";
+        const thCls = "ep:py-2.5 ep:px-3 ep:text-left ep:font-semibold ep:text-obs-muted ep:text-ui-smaller ep:uppercase ep:tracking-[0.3px] ep:border-b ep:border-obs-border ep:whitespace-nowrap ep:cursor-pointer ep:select-none ep:transition-colors ep:hover:bg-obs-modifier-hover";
 
         for (const col of COLUMNS) {
             const th = tr.createEl("th", {

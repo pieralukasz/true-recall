@@ -66,7 +66,7 @@ export class CalendarHeatmap extends BaseComponent {
 		const yearHeader = contentContainer.createDiv({
 			cls: [
 				"ep:text-center",
-				"ep:text-sm",
+				"ep:text-ui-small",
 				"ep:font-semibold",
 				"ep:mb-3",
 				"ep:text-obs-normal",
@@ -160,7 +160,7 @@ export class CalendarHeatmap extends BaseComponent {
 				"ep:justify-end",
 				"ep:gap-1",
 				"ep:mt-3",
-				"ep:text-xs",
+				"ep:text-ui-smaller",
 				"ep:text-obs-muted",
 			].join(" "),
 		});
@@ -219,7 +219,7 @@ export class CalendarHeatmap extends BaseComponent {
 				"ep:justify-center",
 				"ep:h-52",
 				"ep:text-obs-error",
-				"ep:text-sm",
+				"ep:text-ui-small",
 			].join(" "),
 			text: "Failed to load activity calendar.",
 		});

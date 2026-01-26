@@ -299,7 +299,7 @@ export class EditableTextField extends BaseComponent {
 			const title = btn.shortcut ? `${btn.title} (${btn.shortcut})` : btn.title;
 
 			const btnEl = this.toolbar.createEl("button", {
-				cls: "ep:px-2 ep:py-1 ep:text-xs ep:bg-obs-secondary ep:text-obs-normal ep:border ep:border-obs-border ep:rounded ep:cursor-pointer ep:hover:bg-obs-modifier-hover ep:hover:border-obs-interactive ep:transition-colors",
+				cls: "ep:px-2 ep:py-1 ep:text-ui-smaller ep:bg-obs-secondary ep:text-obs-normal ep:border ep:border-obs-border ep:rounded ep:cursor-pointer ep:hover:bg-obs-modifier-hover ep:hover:border-obs-interactive ep:transition-colors",
 				text: btn.label,
 				attr: { title, tabindex: "-1", "data-button-id": btn.id },
 			});

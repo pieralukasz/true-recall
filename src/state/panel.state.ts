@@ -37,6 +37,7 @@ function createInitialState(): PanelState {
         selectionMode: "normal",
         selectedCardIds: new Set(),
         expandedCardIds: new Set(),
+        searchQuery: "",
     };
 }
 
@@ -333,6 +334,13 @@ export class PanelStateManager {
      */
     isInSelectionMode(): boolean {
         return this.state.selectionMode === "selecting";
+    }
+
+    /**
+     * Set search query for filtering flashcards
+     */
+    setSearchQuery(query: string): void {
+        this.setState({ searchQuery: query });
     }
 
     // ===== Private Methods =====

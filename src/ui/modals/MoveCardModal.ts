@@ -76,7 +76,7 @@ export class MoveCardModal extends BaseModal {
 		// Info text
 		container.createEl("p", {
 			text: "Select a note to move the flashcard(s) to. A flashcard file will be created if it doesn't exist.",
-			cls: "ep:text-obs-muted ep:text-sm ep:mb-4",
+			cls: "ep:text-obs-muted ep:text-ui-small ep:mb-4",
 		});
 
 		// Tag filter buttons
@@ -123,7 +123,7 @@ export class MoveCardModal extends BaseModal {
 			filters.push({ label: "Source", tag: "__source__" });
 		}
 
-		const baseBtnCls = "ep:py-1.5 ep:px-3 ep:border ep:border-obs-border ep:rounded ep:bg-obs-primary ep:cursor-pointer ep:text-sm ep:transition-all ep:hover:bg-obs-modifier-hover";
+		const baseBtnCls = "ep:py-1.5 ep:px-3 ep:border ep:border-obs-border ep:rounded ep:bg-obs-primary ep:cursor-pointer ep:text-ui-small ep:transition-all ep:hover:bg-obs-modifier-hover";
 		const activeBtnCls = "ep:bg-obs-interactive ep:text-white ep:border-obs-interactive";
 
 		for (const filter of filters) {
@@ -167,7 +167,7 @@ export class MoveCardModal extends BaseModal {
 		const searchInput = searchContainer.createEl("input", {
 			type: "text",
 			placeholder: "Search notes...",
-			cls: "ep:w-full ep:py-2.5 ep:px-3 ep:border ep:border-obs-border ep:rounded-md ep:bg-obs-primary ep:text-obs-normal ep:text-sm ep:focus:outline-none ep:focus:border-obs-interactive ep:placeholder:text-obs-muted",
+			cls: "ep:w-full ep:py-2.5 ep:px-3 ep:border ep:border-obs-border ep:rounded-md ep:bg-obs-primary ep:text-obs-normal ep:text-ui-small ep:focus:outline-none ep:focus:border-obs-interactive ep:placeholder:text-obs-muted",
 		});
 
 		searchInput.addEventListener("input", (e) => {
@@ -221,7 +221,7 @@ export class MoveCardModal extends BaseModal {
 		this.suggestedSectionEl.show();
 		this.suggestedSectionEl.createEl("h4", {
 			text: "Suggested (from backlinks)",
-			cls: "ep:text-xs ep:text-obs-muted ep:m-0 ep:mb-2",
+			cls: "ep:text-ui-smaller ep:text-obs-muted ep:m-0 ep:mb-2",
 		});
 
 		for (const note of suggestedNotes) {
@@ -248,7 +248,7 @@ export class MoveCardModal extends BaseModal {
 		const folderPath = note.parent?.path;
 		if (folderPath && folderPath !== "/") {
 			noteInfo.createSpan({
-				cls: "ep:text-xs ep:text-obs-muted ep:ml-2",
+				cls: "ep:text-ui-smaller ep:text-obs-muted ep:ml-2",
 				text: folderPath,
 			});
 		}
@@ -256,7 +256,7 @@ export class MoveCardModal extends BaseModal {
 		// Select button
 		const selectBtn = noteEl.createEl("button", {
 			text: "Select",
-			cls: "ep:shrink-0 ep:py-1 ep:px-3 ep:rounded ep:bg-obs-interactive ep:text-white ep:border-none ep:text-xs ep:cursor-pointer ep:opacity-0 ep:group-hover:opacity-100 ep:hover:opacity-100",
+			cls: "ep:shrink-0 ep:py-1 ep:px-3 ep:rounded ep:bg-obs-interactive ep:text-white ep:border-none ep:text-ui-smaller ep:cursor-pointer ep:opacity-0 ep:group-hover:opacity-100 ep:hover:opacity-100",
 		});
 
 		selectBtn.addEventListener("click", () => {
@@ -328,7 +328,7 @@ export class MoveCardModal extends BaseModal {
 		if (filteredNotes.length > 50) {
 			this.noteListEl.createEl("div", {
 				text: `Showing 50 of ${filteredNotes.length} notes. Type to search for more.`,
-				cls: "ep:p-3 ep:text-center ep:text-obs-muted ep:text-sm",
+				cls: "ep:p-3 ep:text-center ep:text-obs-muted ep:text-ui-small",
 			});
 		}
 	}

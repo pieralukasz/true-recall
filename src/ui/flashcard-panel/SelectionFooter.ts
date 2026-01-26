@@ -36,7 +36,7 @@ export class SelectionFooter extends BaseComponent {
         // Left side: selected count
         this.element.createSpan({
             text: `Selected: ${selectedCount}`,
-            cls: "ep:text-sm ep:text-obs-normal ep:font-medium",
+            cls: "ep:text-ui-small ep:text-obs-normal ep:font-medium",
         });
 
         // Right side: action buttons
@@ -44,7 +44,7 @@ export class SelectionFooter extends BaseComponent {
             cls: "ep:flex ep:items-center ep:gap-2",
         });
 
-        const btnBase = "ep:flex ep:items-center ep:gap-1 ep:px-3 ep:py-1.5 ep:rounded ep:text-sm ep:font-medium ep:border-none ep:cursor-pointer ep:transition-colors";
+        const btnBase = "ep:flex ep:items-center ep:gap-1 ep:px-3 ep:py-1.5 ep:rounded ep:text-ui-small ep:font-medium ep:border-none ep:cursor-pointer ep:transition-colors";
 
         // Move button
         if (onMove) {

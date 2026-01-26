@@ -25,10 +25,6 @@
     --ep-text-xs--line-height: calc(1 / 0.75);
     --ep-text-sm: 0.875rem;
     --ep-text-sm--line-height: calc(1.25 / 0.875);
-    --ep-text-base: 1rem;
-    --ep-text-base--line-height: calc(1.5 / 1);
-    --ep-text-lg: 1.125rem;
-    --ep-text-lg--line-height: calc(1.75 / 1.125);
     --ep-text-xl: 1.25rem;
     --ep-text-xl--line-height: calc(1.75 / 1.25);
     --ep-text-2xl: 1.5rem;
@@ -72,6 +68,10 @@
     --ep-color-obs-yellow: var(--color-yellow);
     --ep-color-obs-green: var(--color-green);
     --ep-color-obs-blue: var(--color-blue);
+    --ep-text-ui-smaller: var(--font-ui-smaller);
+    --ep-text-ui-small: var(--font-ui-small);
+    --ep-text-ui-medium: var(--font-ui-medium);
+    --ep-text-ui-large: var(--font-ui-large);
   }
 }
 @layer base {
@@ -295,6 +295,9 @@
   .ep\:my-6 {
     margin-block: calc(var(--ep-spacing) * 6);
   }
+  .ep\:mt-0 {
+    margin-top: calc(var(--ep-spacing) * 0);
+  }
   .ep\:mt-0\.5 {
     margin-top: calc(var(--ep-spacing) * 0.5);
   }
@@ -366,6 +369,12 @@
   }
   .ep\:ml-auto {
     margin-left: auto;
+  }
+  .ep\:line-clamp-1 {
+    overflow: hidden;
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 1;
   }
   .ep\:line-clamp-2 {
     overflow: hidden;
@@ -606,6 +615,9 @@
   }
   .ep\:border-collapse {
     border-collapse: collapse;
+  }
+  .ep\:rotate-90 {
+    rotate: 90deg;
   }
   .ep\:cursor-default {
     cursor: default;
@@ -1093,6 +1105,9 @@
   .ep\:pl-9 {
     padding-left: calc(var(--ep-spacing) * 9);
   }
+  .ep\:pl-11 {
+    padding-left: calc(var(--ep-spacing) * 11);
+  }
   .ep\:pl-\[7px\] {
     padding-left: 7px;
   }
@@ -1126,14 +1141,6 @@
     font-size: var(--ep-text-5xl);
     line-height: var(--tw-leading, var(--ep-text-5xl--line-height));
   }
-  .ep\:text-base {
-    font-size: var(--ep-text-base);
-    line-height: var(--tw-leading, var(--ep-text-base--line-height));
-  }
-  .ep\:text-lg {
-    font-size: var(--ep-text-lg);
-    line-height: var(--tw-leading, var(--ep-text-lg--line-height));
-  }
   .ep\:text-sm {
     font-size: var(--ep-text-sm);
     line-height: var(--tw-leading, var(--ep-text-sm--line-height));
@@ -1160,6 +1167,18 @@
   }
   .ep\:text-\[32px\] {
     font-size: 32px;
+  }
+  .ep\:text-ui-large {
+    font-size: var(--ep-text-ui-large);
+  }
+  .ep\:text-ui-medium {
+    font-size: var(--ep-text-ui-medium);
+  }
+  .ep\:text-ui-small {
+    font-size: var(--ep-text-ui-small);
+  }
+  .ep\:text-ui-smaller {
+    font-size: var(--ep-text-ui-smaller);
   }
   .ep\:leading-normal {
     --tw-leading: var(--ep-leading-normal);
@@ -1313,9 +1332,6 @@
   }
   .ep\:opacity-70 {
     opacity: 70%;
-  }
-  .ep\:opacity-80 {
-    opacity: 80%;
   }
   .ep\:opacity-90 {
     opacity: 90%;
@@ -1745,6 +1761,9 @@
   }
   .is-mobile [data-type^="episteme-"] .view-content {
     padding-bottom: 60px;
+  }
+  [data-type="episteme-review"] .view-content {
+    padding: 0;
   }
   @keyframes episteme-fade-in {
     from {
