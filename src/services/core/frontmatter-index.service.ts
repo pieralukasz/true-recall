@@ -69,6 +69,14 @@ export class FrontmatterIndexService {
 	}
 
 	/**
+	 * Strip wiki link syntax from value
+	 * "[[Note Name]]" -> "Note Name"
+	 */
+	private stripWikiLinkSyntax(value: string): string {
+		return value.replace(/^\[\[|\]\]$/g, "").trim();
+	}
+
+	/**
 	 * Extract and normalize values from frontmatter for a field
 	 */
 	private extractValues(frontmatter: Record<string, unknown> | undefined, config: FieldConfig): string[] {
@@ -79,7 +87,9 @@ export class FrontmatterIndexService {
 
 		if (config.type === "array") {
 			if (Array.isArray(raw)) {
-				return raw.filter((v): v is string => typeof v === "string" && v.length > 0);
+				return raw
+					.filter((v): v is string => typeof v === "string" && v.length > 0)
+					.map((v) => this.stripWikiLinkSyntax(v));
 			}
 			return [];
 		}
