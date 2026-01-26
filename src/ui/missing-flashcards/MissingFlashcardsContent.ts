@@ -82,7 +82,7 @@ export class MissingFlashcardsContent extends BaseComponent {
 		this.searchInput = searchContainer.createEl("input", {
 			type: "text",
 			placeholder: "Search notes...",
-			cls: "ep:w-full ep:py-2.5 ep:px-3 ep:border ep:border-obs-border ep:rounded-md ep:bg-obs-primary ep:text-obs-normal ep:text-sm ep:focus:outline-none ep:focus:border-obs-interactive ep:placeholder:text-obs-muted",
+			cls: "ep:w-full ep:py-2.5 ep:px-3 ep:border ep:border-obs-border ep:rounded-md ep:bg-obs-primary ep:text-obs-normal ep:text-ui-small ep:focus:outline-none ep:focus:border-obs-interactive ep:placeholder:text-obs-muted",
 		});
 		this.searchInput.value = this.props.searchQuery;
 
@@ -133,7 +133,7 @@ export class MissingFlashcardsContent extends BaseComponent {
 		if (filteredNotes.length > 50) {
 			noteListEl.createEl("div", {
 				text: `Showing 50 of ${filteredNotes.length} notes. Type to search for more.`,
-				cls: "ep:p-3 ep:text-center ep:text-obs-muted ep:text-xs ep:italic",
+				cls: "ep:p-3 ep:text-center ep:text-obs-muted ep:text-ui-smaller ep:italic",
 			});
 		}
 	}

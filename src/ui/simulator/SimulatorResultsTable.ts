@@ -25,7 +25,7 @@ export class SimulatorResultsTable extends BaseComponent {
 		});
 
 		const table = this.element.createEl("table", {
-			cls: "ep:w-full ep:text-sm",
+			cls: "ep:w-full ep:text-ui-small",
 		});
 
 		this.tableHead = table.createEl("thead");
@@ -118,7 +118,7 @@ export class SimulatorResultsTable extends BaseComponent {
 		return [
 			"ep:py-2 ep:px-3",
 			"ep:text-left ep:font-semibold",
-			"ep:text-obs-muted ep:text-xs ep:uppercase",
+			"ep:text-obs-muted ep:text-ui-smaller ep:uppercase",
 			"ep:border-b ep:border-obs-border",
 		].join(" ");
 	}

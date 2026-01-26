@@ -81,7 +81,7 @@ export class CardPreview extends BaseComponent {
 		const { flashcard, filePath, handlers, markdownRenderer } = this.props;
 
 		const questionEl = header.createDiv({
-			cls: "ep:text-sm ep:leading-normal ep:text-obs-normal ep:flex-1 ep:mb-1.5",
+			cls: "ep:text-ui-small ep:leading-normal ep:text-obs-normal ep:flex-1 ep:mb-1.5",
 		});
 		questionEl.createSpan({
 			text: "Q: ",
@@ -110,7 +110,7 @@ export class CardPreview extends BaseComponent {
 		if (!this.element) return;
 
 		const answerEl = this.element.createDiv({
-			cls: "ep:text-sm ep:leading-normal ep:text-obs-normal ep:flex-1",
+			cls: "ep:text-ui-small ep:leading-normal ep:text-obs-normal ep:flex-1",
 		});
 		answerEl.createSpan({
 			text: "A: ",
@@ -149,7 +149,7 @@ export class CardPreview extends BaseComponent {
 		});
 
 		// Button classes
-		const btnCls = "ep:cursor-pointer ep:opacity-60 ep:text-xs ep:px-1 ep:py-0.5 ep:rounded ep:hover:opacity-100 ep:hover:bg-obs-modifier-hover clickable-icon";
+		const btnCls = "ep:cursor-pointer ep:opacity-60 ep:text-ui-smaller ep:px-1 ep:py-0.5 ep:rounded ep:hover:opacity-100 ep:hover:bg-obs-modifier-hover clickable-icon";
 
 		// Copy button
 		if (handlers.onCopy) {

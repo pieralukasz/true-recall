@@ -102,7 +102,7 @@ export class CompactCardItem extends BaseComponent {
 
         // Question (rendered markdown, full content with line breaks)
         const questionEl = mainRow.createDiv({
-            cls: "ep:flex-1 ep:text-sm ep:text-obs-normal episteme-card-markdown",
+            cls: "ep:flex-1 ep:text-ui-small ep:text-obs-normal episteme-card-markdown",
         });
         void MarkdownRenderer.render(app, card.question, questionEl, filePath, component);
 
@@ -134,7 +134,7 @@ export class CompactCardItem extends BaseComponent {
 
         // Answer content with markdown rendering
         const answerContent = answerContainer.createDiv({
-            cls: "ep:text-sm ep:text-obs-normal episteme-panel-card-field",
+            cls: "ep:text-ui-small ep:text-obs-normal episteme-panel-card-field",
         });
 
         void MarkdownRenderer.render(app, card.answer, answerContent, filePath, component);

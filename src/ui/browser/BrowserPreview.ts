@@ -139,7 +139,7 @@ export class BrowserPreview {
         });
 
         const sectionLabelCls = "ep:block ep:mb-2 ep:text-obs-muted ep:text-[11px] ep:font-semibold ep:uppercase ep:tracking-[0.5px]";
-        const sectionContentCls = "ep:p-3 ep:bg-obs-secondary ep:rounded-lg ep:text-obs-normal ep:text-sm ep:leading-relaxed markdown-rendered";
+        const sectionContentCls = "ep:p-3 ep:bg-obs-secondary ep:rounded-lg ep:text-obs-normal ep:text-ui-small ep:leading-relaxed markdown-rendered";
 
         // Question section
         const questionSection = content.createDiv({ cls: "ep:mb-4" });
@@ -175,7 +175,7 @@ export class BrowserPreview {
         });
 
         const infoRowCls = "ep:flex ep:items-start ep:py-1.5 ep:border-b ep:border-obs-border last:ep:border-b-0";
-        const infoLabelCls = "ep:shrink-0 ep:min-w-[80px] ep:mr-3 ep:text-obs-muted ep:text-xs";
+        const infoLabelCls = "ep:shrink-0 ep:min-w-[80px] ep:mr-3 ep:text-obs-muted ep:text-ui-smaller";
         const infoValueCls = "ep:text-obs-normal ep:text-[13px]";
 
         // State badge
@@ -211,7 +211,7 @@ export class BrowserPreview {
             for (const project of card.projects) {
                 projectsContainer.createSpan({
                     text: project,
-                    cls: "ep:py-0.5 ep:px-2 ep:bg-obs-modifier-hover ep:rounded ep:text-xs ep:text-obs-muted",
+                    cls: "ep:py-0.5 ep:px-2 ep:bg-obs-modifier-hover ep:rounded ep:text-ui-smaller ep:text-obs-muted",
                 });
             }
         }
@@ -290,7 +290,7 @@ export class BrowserPreview {
         });
         stat.createSpan({
             text: value,
-            cls: "ep:text-sm ep:font-semibold ep:text-obs-normal",
+            cls: "ep:text-ui-small ep:font-semibold ep:text-obs-normal",
         });
     }
 

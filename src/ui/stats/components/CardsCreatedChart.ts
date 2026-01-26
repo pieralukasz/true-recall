@@ -186,7 +186,7 @@ export class CardsCreatedChart extends ChartSection<CardsCreatedEntry> {
 					"ep:justify-center",
 					"ep:h-52",
 					"ep:text-obs-muted",
-					"ep:text-sm",
+					"ep:text-ui-small",
 					"ep:italic",
 				].join(" "),
 				text: "Select a time range to see creation history",

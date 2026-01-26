@@ -68,11 +68,11 @@ export class AIGeneratorModal extends BaseModal {
 
 		instructionsSection.createEl("label", {
 			text: "What flashcards would you like to create?",
-			cls: "ep:font-semibold ep:text-sm ep:text-obs-normal",
+			cls: "ep:font-semibold ep:text-ui-small ep:text-obs-normal",
 		});
 
 		this.instructionsTextarea = instructionsSection.createEl("textarea", {
-			cls: "ep:w-full ep:min-h-35 ep:p-3 ep:border ep:border-obs-border ep:rounded-md ep:bg-obs-primary ep:text-obs-normal ep:font-sans ep:text-sm ep:resize-y ep:leading-normal ep:focus:outline-none ep:focus:border-obs-interactive ep:disabled:opacity-60 ep:disabled:cursor-not-allowed ep:disabled:bg-obs-secondary ep:placeholder:text-obs-muted ep:placeholder:text-sm",
+			cls: "ep:w-full ep:min-h-35 ep:p-3 ep:border ep:border-obs-border ep:rounded-md ep:bg-obs-primary ep:text-obs-normal ep:font-sans ep:text-ui-small ep:resize-y ep:leading-normal ep:focus:outline-none ep:focus:border-obs-interactive ep:disabled:opacity-60 ep:disabled:cursor-not-allowed ep:disabled:bg-obs-secondary ep:placeholder:text-obs-muted ep:placeholder:text-sm",
 			attr: {
 				placeholder: `Examples:
 • Create a flashcard about what is an e-book reader
@@ -98,7 +98,7 @@ export class AIGeneratorModal extends BaseModal {
 
 		// Hint text
 		const hintEl = instructionsSection.createDiv({
-			cls: "ep:text-xs ep:text-obs-muted ep:text-right",
+			cls: "ep:text-ui-smaller ep:text-obs-muted ep:text-right",
 		});
 		hintEl.innerHTML = `<span class="ep:inline-block ep:py-0.5 ep:px-1.5 ep:bg-obs-border ep:rounded ep:text-obs-muted ep:font-mono ep:text-[9px]">⌘ + Enter</span> to generate`;
 
@@ -109,13 +109,13 @@ export class AIGeneratorModal extends BaseModal {
 
 		const cancelBtn = buttonsSection.createEl("button", {
 			text: "Cancel",
-			cls: "ep:py-2.5 ep:px-5 ep:bg-obs-secondary ep:text-obs-normal ep:border ep:border-obs-border ep:rounded-md ep:text-sm ep:font-medium ep:cursor-pointer ep:transition-all ep:hover:bg-obs-modifier-hover",
+			cls: "ep:py-2.5 ep:px-5 ep:bg-obs-secondary ep:text-obs-normal ep:border ep:border-obs-border ep:rounded-md ep:text-ui-small ep:font-medium ep:cursor-pointer ep:transition-all ep:hover:bg-obs-modifier-hover",
 		});
 		cancelBtn.addEventListener("click", () => this.handleCancel());
 
 		this.generateButton = buttonsSection.createEl("button", {
 			text: "Generate",
-			cls: "mod-cta ep:py-2.5 ep:px-5 ep:rounded-md ep:text-sm ep:font-medium ep:cursor-pointer ep:disabled:opacity-50 ep:disabled:cursor-not-allowed",
+			cls: "mod-cta ep:py-2.5 ep:px-5 ep:rounded-md ep:text-ui-small ep:font-medium ep:cursor-pointer ep:disabled:opacity-50 ep:disabled:cursor-not-allowed",
 		});
 		this.generateButton.addEventListener("click", () => void this.handleGenerate());
 	}

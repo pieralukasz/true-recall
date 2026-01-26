@@ -409,7 +409,7 @@ export class VirtualTable {
             const th = tr.createEl("th", {
                 cls: [
                     "ep:py-2.5", "ep:px-3", "ep:text-left", "ep:font-semibold",
-                    "ep:text-obs-muted", "ep:text-xs", "ep:uppercase",
+                    "ep:text-obs-muted", "ep:text-ui-smaller", "ep:uppercase",
                     "ep:tracking-wider", "ep:border-b", "ep:border-obs-border",
                     "ep:whitespace-nowrap", "ep:select-none",
                     "ep:hover:bg-obs-modifier-hover"
@@ -467,11 +467,11 @@ export class VirtualTable {
         setIcon(iconEl, "inbox");
         empty.createDiv({
             text: "No cards found",
-            cls: ["ep:text-sm", "ep:mb-2"].join(" "),
+            cls: ["ep:text-ui-small", "ep:mb-2"].join(" "),
         });
         empty.createDiv({
             text: "Try adjusting your search or filters",
-            cls: ["ep:text-xs", "ep:opacity-70"].join(" "),
+            cls: ["ep:text-ui-smaller", "ep:opacity-70"].join(" "),
         });
     }
 
@@ -482,7 +482,7 @@ export class VirtualTable {
 
         const baseClasses = [
             "ep:inline-flex", "ep:items-center", "ep:py-0.75", "ep:px-2",
-            "ep:rounded-full", "ep:text-xs", "ep:font-semibold",
+            "ep:rounded-full", "ep:text-ui-smaller", "ep:font-semibold",
             "ep:uppercase", "ep:tracking-wider"
         ];
 

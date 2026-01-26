@@ -57,7 +57,7 @@ export class EpistemeSettingTab extends PluginSettingTab {
 		];
 
 		const tabButtons: Map<SettingsTabId, HTMLElement> = new Map();
-		const tabBtnBase = "ep:py-2 ep:px-4 ep:border-none ep:bg-transparent ep:text-obs-muted ep:cursor-pointer ep:rounded-t ep:text-sm ep:font-medium ep:transition-colors ep:shrink-0 ep:whitespace-nowrap ep:hover:bg-obs-modifier-hover ep:hover:text-obs-normal";
+		const tabBtnBase = "ep:py-2 ep:px-4 ep:border-none ep:bg-transparent ep:text-obs-muted ep:cursor-pointer ep:rounded-t ep:text-ui-small ep:font-medium ep:transition-colors ep:shrink-0 ep:whitespace-nowrap ep:hover:bg-obs-modifier-hover ep:hover:text-obs-normal";
 		const tabBtnActive = "ep:bg-obs-interactive ep:text-on-accent ep:hover:bg-obs-interactive ep:hover:text-on-accent";
 
 		tabs.forEach((tab) => {
@@ -971,7 +971,7 @@ export class EpistemeSettingTab extends PluginSettingTab {
 		let emailValue = "";
 		let passwordValue = "";
 		const statusEl = formContainer.createDiv({
-			cls: "ep:mt-3 ep:p-2 ep:rounded ep:text-sm ep:hidden",
+			cls: "ep:mt-3 ep:p-2 ep:rounded ep:text-ui-small ep:hidden",
 		});
 
 		new Setting(formContainer)

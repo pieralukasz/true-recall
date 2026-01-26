@@ -117,7 +117,7 @@ export class StatsCard extends BaseComponent {
 		// Title
 		titleRow.createSpan({
 			cls: [
-				"ep:text-lg", // Large text
+				"ep:text-ui-large", // Large text
 				"ep:font-semibold", // Semibold
 				"ep:text-obs-normal", // Normal color
 				"ep:tracking-tight", // Tight letter spacing
@@ -132,7 +132,7 @@ export class StatsCard extends BaseComponent {
 					"ep:px-3",
 					"ep:py-1.5",
 					"ep:rounded-md",
-					"ep:text-sm",
+					"ep:text-ui-small",
 					"ep:font-medium",
 					"ep:bg-obs-interactive",
 					"ep:text-white",
