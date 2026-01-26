@@ -209,6 +209,17 @@
 	}
 
 	/*
+	 * Mobile header FSRS status
+	 * Shows FSRS counts in the native header (title hidden via JS on mobile)
+	 */
+	.episteme-mobile-status {
+		display: flex;
+		gap: 4px;
+		align-items: center;
+		font-size: var(--font-ui-smaller);
+	}
+
+	/*
 	 * Reset padding for fullscreen review view
 	 * Obsidian's .view-content has default padding that pushes content away from edges
 	 */

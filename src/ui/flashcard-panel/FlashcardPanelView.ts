@@ -10,6 +10,8 @@ import {
     Notice,
     MarkdownRenderer,
     setIcon,
+    Platform,
+    Menu,
 } from "obsidian";
 import { VIEW_TYPE_FLASHCARD_PANEL } from "../../constants";
 import { FlashcardManager, OpenRouterService, getEventBus } from "../../services";
@@ -26,6 +28,7 @@ import { FlashcardEditorModal } from "../modals/FlashcardEditorModal";
 import type { FlashcardItem, FlashcardChange } from "../../types";
 import type { CardAddedEvent, CardRemovedEvent, CardUpdatedEvent, BulkChangeEvent } from "../../types/events.types";
 import { createDefaultFSRSData } from "../../types";
+import { State } from "ts-fsrs";
 import type EpistemePlugin from "../../main";
 
 /**
@@ -70,6 +73,9 @@ export class FlashcardPanelView extends ItemView {
     // Editor change timer for real-time #flashcard tag detection
     private editorChangeTimer: ReturnType<typeof setTimeout> | null = null;
 
+    // Mobile header FSRS status element
+    private mobileStatusEl: HTMLElement | null = null;
+
     constructor(leaf: WorkspaceLeaf, plugin: EpistemePlugin) {
         super(leaf);
         this.plugin = plugin;
@@ -89,6 +95,59 @@ export class FlashcardPanelView extends ItemView {
 
     getIcon(): string {
         return "layers";
+    }
+
+    /**
+     * Add items to the native "..." menu (mobile)
+     */
+    onPaneMenu(menu: Menu, source: string): void {
+        super.onPaneMenu(menu, source);
+
+        if (!Platform.isMobile) return;
+
+        const state = this.stateManager.getState();
+        if (!state.currentFile) return;
+
+        // Refresh
+        menu.addItem((item) => {
+            item.setTitle("Refresh")
+                .setIcon("refresh-cw")
+                .onClick(() => void this.loadFlashcardInfo());
+        });
+
+        const hasFlashcards = state.status === "exists";
+
+        // Generate or Update flashcards
+        if (hasFlashcards) {
+            menu.addItem((item) => {
+                item.setTitle("Update flashcards")
+                    .setIcon("sparkles")
+                    .onClick(() => void this.handleUpdate());
+            });
+        } else {
+            menu.addItem((item) => {
+                item.setTitle("Generate flashcards")
+                    .setIcon("sparkles")
+                    .onClick(() => void this.handleGenerate());
+            });
+        }
+
+        // Actions only when flashcards exist
+        if (hasFlashcards) {
+            menu.addSeparator();
+
+            menu.addItem((item) => {
+                item.setTitle("Open flashcard file")
+                    .setIcon("file-text")
+                    .onClick(() => void this.handleOpenFlashcardFile());
+            });
+
+            menu.addItem((item) => {
+                item.setTitle("Delete all flashcards")
+                    .setIcon("trash-2")
+                    .onClick(() => void this.handleDeleteAllFlashcards());
+            });
+        }
     }
 
     async onOpen(): Promise<void> {
@@ -126,6 +185,11 @@ export class FlashcardPanelView extends ItemView {
         // Register editor change tracking for real-time #flashcard tag detection
         this.registerEditorChangeTracking();
 
+        // Setup mobile header FSRS status
+        if (Platform.isMobile) {
+            this.setupMobileHeaderStatus();
+        }
+
         // Initial render
         await this.loadCurrentFile();
     }
@@ -152,21 +216,22 @@ export class FlashcardPanelView extends ItemView {
 
         // Only show actions when flashcards exist
         if (state.status === "exists" && state.currentFile) {
-            // Delete all flashcards
-            this.deleteAllAction = this.addAction(
-                "trash-2",
-                "Delete all flashcards",
-                () => void this.handleDeleteAllFlashcards()
-            );
+            // Desktop only: Delete and Open file actions (on mobile these are in "..." menu)
+            if (!Platform.isMobile) {
+                this.deleteAllAction = this.addAction(
+                    "trash-2",
+                    "Delete all flashcards",
+                    () => void this.handleDeleteAllFlashcards()
+                );
 
-            // Open flashcard file
-            this.openFileAction = this.addAction(
-                "file-text",
-                "Open flashcard file",
-                () => void this.handleOpenFlashcardFile()
-            );
+                this.openFileAction = this.addAction(
+                    "file-text",
+                    "Open flashcard file",
+                    () => void this.handleOpenFlashcardFile()
+                );
+            }
 
-            // Review flashcards
+            // Review flashcards (both desktop and mobile)
             this.reviewAction = this.addAction(
                 "brain",
                 "Review flashcards",
@@ -207,6 +272,12 @@ export class FlashcardPanelView extends ItemView {
         if (this.deleteAllAction) {
             this.deleteAllAction.remove();
             this.deleteAllAction = null;
+        }
+
+        // Remove mobile status element
+        if (this.mobileStatusEl) {
+            this.mobileStatusEl.remove();
+            this.mobileStatusEl = null;
         }
 
         // Note: Events registered via registerEvent() and registerDomEvent() are
@@ -344,41 +415,46 @@ export class FlashcardPanelView extends ItemView {
         // Make content container a flex column so header stays at top (only once)
         this.contentContainer.addClass("ep:flex", "ep:flex-col", "ep:gap-2");
 
-        // Create header container once, then reuse
-        if (!this.headerDiv) {
-            this.headerDiv = this.contentContainer.createDiv({ cls: "ep:shrink-0" });
-        }
+        // Create or update header component (desktop only)
+        if (!Platform.isMobile) {
+            // Create header container once, then reuse
+            if (!this.headerDiv) {
+                this.headerDiv = this.contentContainer.createDiv({ cls: "ep:shrink-0" });
+            }
 
-        // Create or update header component
-        if (!this.headerComponent) {
-            this.headerComponent = new FlashcardPanelHeader(this.headerDiv, {
-                flashcardInfo: state.flashcardInfo,
-                cardsWithFsrs: this.getCardsWithFsrs(),
-                hasUncollectedFlashcards: state.hasUncollectedFlashcards,
-                uncollectedCount: state.uncollectedCount,
-                selectionMode: state.selectionMode,
-                selectedCount: state.selectedCardIds.size,
-                searchQuery: state.searchQuery,
-                onAdd: () => void this.handleAddFlashcard(),
-                onGenerate: () => void this.handleGenerate(),
-                onUpdate: () => void this.handleUpdate(),
-                onCollect: () => void this.handleCollect(),
-                onRefresh: () => void this.loadFlashcardInfo(),
-                onReview: () => void this.handleReviewFromPanel(),
-                onExitSelectionMode: () => this.stateManager.exitSelectionMode(),
-                onSearchChange: (query) => this.stateManager.setSearchQuery(query),
-            });
-            this.headerComponent.render();
+            if (!this.headerComponent) {
+                this.headerComponent = new FlashcardPanelHeader(this.headerDiv, {
+                    flashcardInfo: state.flashcardInfo,
+                    cardsWithFsrs: this.getCardsWithFsrs(),
+                    hasUncollectedFlashcards: state.hasUncollectedFlashcards,
+                    uncollectedCount: state.uncollectedCount,
+                    selectionMode: state.selectionMode,
+                    selectedCount: state.selectedCardIds.size,
+                    searchQuery: state.searchQuery,
+                    onAdd: () => void this.handleAddFlashcard(),
+                    onGenerate: () => void this.handleGenerate(),
+                    onUpdate: () => void this.handleUpdate(),
+                    onCollect: () => void this.handleCollect(),
+                    onRefresh: () => void this.loadFlashcardInfo(),
+                    onReview: () => void this.handleReviewFromPanel(),
+                    onExitSelectionMode: () => this.stateManager.exitSelectionMode(),
+                    onSearchChange: (query) => this.stateManager.setSearchQuery(query),
+                });
+                this.headerComponent.render();
+            } else {
+                this.headerComponent.updateProps({
+                    flashcardInfo: state.flashcardInfo,
+                    cardsWithFsrs: this.getCardsWithFsrs(),
+                    hasUncollectedFlashcards: state.hasUncollectedFlashcards,
+                    uncollectedCount: state.uncollectedCount,
+                    selectionMode: state.selectionMode,
+                    selectedCount: state.selectedCardIds.size,
+                    searchQuery: state.searchQuery,
+                });
+            }
         } else {
-            this.headerComponent.updateProps({
-                flashcardInfo: state.flashcardInfo,
-                cardsWithFsrs: this.getCardsWithFsrs(),
-                hasUncollectedFlashcards: state.hasUncollectedFlashcards,
-                uncollectedCount: state.uncollectedCount,
-                selectionMode: state.selectionMode,
-                selectedCount: state.selectedCardIds.size,
-                searchQuery: state.searchQuery,
-            });
+            // Update mobile header FSRS status
+            this.updateMobileHeaderStatus();
         }
 
         // Create content container once, then reuse
@@ -1194,6 +1270,79 @@ export class FlashcardPanelView extends ItemView {
         } catch {
             return undefined;
         }
+    }
+
+    // ===== Mobile Header FSRS Status =====
+
+    /**
+     * Setup mobile header FSRS status element
+     * Injects a colored status element into the native Obsidian header
+     */
+    private setupMobileHeaderStatus(): void {
+        const titleContainer = this.containerEl.querySelector(".view-header-title-container");
+        if (!titleContainer) return;
+
+        // Hide the "Episteme" title
+        const titleEl = titleContainer.querySelector(".view-header-title") as HTMLElement;
+        if (titleEl) {
+            titleEl.style.display = "none";
+        }
+
+        // Create status element
+        this.mobileStatusEl = createDiv({ cls: "episteme-mobile-status" });
+        titleContainer.appendChild(this.mobileStatusEl);
+    }
+
+    /**
+     * Update mobile header FSRS status counts
+     */
+    private updateMobileHeaderStatus(): void {
+        if (!this.mobileStatusEl) return;
+
+        const cards = this.getCardsWithFsrs();
+        const counts = this.countByState(cards);
+
+        this.mobileStatusEl.empty();
+
+        // New count (blue)
+        const newEl = this.mobileStatusEl.createSpan({ cls: "ep:text-blue-500" });
+        newEl.textContent = String(counts.new);
+
+        // Separator
+        this.mobileStatusEl.createSpan({ cls: "ep:text-obs-faint", text: "·" });
+
+        // Learning count (orange)
+        const learningEl = this.mobileStatusEl.createSpan({ cls: "ep:text-orange-500" });
+        learningEl.textContent = String(counts.learning);
+
+        // Separator
+        this.mobileStatusEl.createSpan({ cls: "ep:text-obs-faint", text: "·" });
+
+        // Review count (green)
+        const reviewEl = this.mobileStatusEl.createSpan({ cls: "ep:text-green-500" });
+        reviewEl.textContent = String(counts.review);
+    }
+
+    /**
+     * Count cards by FSRS state
+     */
+    private countByState(cards: FSRSFlashcardItem[]): { new: number; learning: number; review: number } {
+        const counts = { new: 0, learning: 0, review: 0 };
+        for (const card of cards) {
+            switch (card.fsrs.state) {
+                case State.New:
+                    counts.new++;
+                    break;
+                case State.Learning:
+                case State.Relearning:
+                    counts.learning++;
+                    break;
+                case State.Review:
+                    counts.review++;
+                    break;
+            }
+        }
+        return counts;
     }
 
 }

@@ -23,7 +23,6 @@ export class CreatedVsReviewedChart extends ChartSection<CardsCreatedVsReviewedE
 	constructor(container: HTMLElement, props: CreatedVsReviewedChartProps) {
 		super(container, {
 			title: "Created vs Reviewed",
-			icon: "📊",
 		});
 		this.props = props;
 	}
