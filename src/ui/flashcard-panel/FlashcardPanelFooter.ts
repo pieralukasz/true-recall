@@ -1,5 +1,5 @@
 /**
- * Panel Footer Component
+ * Flashcard Panel Footer Component
  * Displays action buttons and instructions input
  */
 import type { TFile } from "obsidian";
@@ -7,7 +7,7 @@ import { BaseComponent } from "../component.base";
 import type { ProcessingStatus, ViewMode } from "../../state";
 import type { DiffResult, NoteFlashcardType } from "../../types";
 
-export interface PanelFooterProps {
+export interface FlashcardPanelFooterProps {
 	currentFile: TFile | null;
 	status: ProcessingStatus;
 	viewMode: ViewMode;
@@ -31,13 +31,13 @@ export interface PanelFooterProps {
 }
 
 /**
- * Panel footer component
+ * Flashcard panel footer component
  */
-export class PanelFooter extends BaseComponent {
-	private props: PanelFooterProps;
+export class FlashcardPanelFooter extends BaseComponent {
+	private props: FlashcardPanelFooterProps;
 	private instructionsInput: HTMLTextAreaElement | null = null;
 
-	constructor(container: HTMLElement, props: PanelFooterProps) {
+	constructor(container: HTMLElement, props: FlashcardPanelFooterProps) {
 		super(container);
 		this.props = props;
 	}
@@ -244,7 +244,7 @@ export class PanelFooter extends BaseComponent {
 	/**
 	 * Update the footer with new props
 	 */
-	updateProps(props: Partial<PanelFooterProps>): void {
+	updateProps(props: Partial<FlashcardPanelFooterProps>): void {
 		this.props = { ...this.props, ...props };
 		this.render();
 	}
@@ -258,13 +258,13 @@ export class PanelFooter extends BaseComponent {
 }
 
 /**
- * Create a panel footer component
+ * Create a flashcard panel footer component
  */
-export function createPanelFooter(
+export function createFlashcardPanelFooter(
 	container: HTMLElement,
-	props: PanelFooterProps
-): PanelFooter {
-	const footer = new PanelFooter(container, props);
+	props: FlashcardPanelFooterProps
+): FlashcardPanelFooter {
+	const footer = new FlashcardPanelFooter(container, props);
 	footer.render();
 	return footer;
 }
