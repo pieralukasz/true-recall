@@ -49,6 +49,7 @@ import { OrphanedCardsView } from "./ui/orphaned-cards";
 import { ProjectsView } from "./ui/projects";
 import { BrowserView } from "./ui/browser";
 import { SimulatorView } from "./ui/simulator";
+import { FloatingGenerateButton } from "./ui/components/FloatingGenerateButton";
 import {
 	EpistemeSettingTab,
 	type EpistemeSettings,
@@ -88,6 +89,7 @@ export default class EpistemePlugin extends Plugin {
 	deviceDiscovery: DeviceDiscoveryService | null = null;
 	authService: AuthService | null = null;
 	syncService: SyncService | null = null;
+	floatingButton: FloatingGenerateButton | null = null;
 
 	async onload(): Promise<void> {
 		await this.loadSettings();
@@ -204,6 +206,10 @@ export default class EpistemePlugin extends Plugin {
 			this.openCommandDashboard();
 		});
 
+		// Initialize floating generate button
+		this.floatingButton = new FloatingGenerateButton(this);
+		this.floatingButton.initialize();
+
 		// Register commands (extracted to PluginCommands.ts)
 		registerCommands(this);
 
@@ -238,6 +244,9 @@ export default class EpistemePlugin extends Plugin {
 	}
 
 	onunload(): void {
+		// Cleanup floating button
+		this.floatingButton?.destroy();
+
 		// Save card store immediately on unload (critical with 60s debounce)
 		if (this.cardStore) {
 			void this.cardStore.saveNow();
