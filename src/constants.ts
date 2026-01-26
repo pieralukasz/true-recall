@@ -153,6 +153,11 @@ export const DEFAULT_SETTINGS: EpistemeSettings = {
 	// Folder Exclusions
 	excludedFolders: [],
 
+	// Floating Generate Button
+	floatingButtonEnabled: true,
+	floatingButtonMinChars: 50,
+	floatingButtonDirectGenerate: false,
+
 	// Backup Settings
 	autoBackupOnLoad: false,
 	maxBackups: 10,
