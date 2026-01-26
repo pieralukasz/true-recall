@@ -154,6 +154,9 @@ export class FloatingGenerateButton {
 			return;
 		}
 
+		// Store selection before hiding (hide() clears it)
+		const textToGenerate = this.currentSelection;
+
 		// Hide button immediately
 		this.hide();
 
@@ -161,7 +164,7 @@ export class FloatingGenerateButton {
 		window.getSelection()?.removeAllRanges();
 
 		// Trigger generation
-		await this.generateFromSelection(activeFile, this.currentSelection);
+		await this.generateFromSelection(activeFile, textToGenerate);
 	}
 
 	private async generateFromSelection(file: TFile, text: string): Promise<void> {
@@ -170,7 +173,7 @@ export class FloatingGenerateButton {
 		try {
 			new Notice("Generating flashcards...");
 
-			// Generate flashcards
+			// Generate flashcards - send raw text like panel does
 			const flashcardsMarkdown = await this.plugin.openRouterService.generateFlashcards(
 				text,
 				undefined,
