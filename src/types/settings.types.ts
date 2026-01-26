@@ -103,6 +103,14 @@ export interface EpistemeSettings {
     /** Foldery wykluczone z wyszukiwania notatek bez fiszek */
     excludedFolders: string[];
 
+    // ===== Floating Generate Button =====
+    /** Enable floating button for generate from selection */
+    floatingButtonEnabled: boolean;
+    /** Minimum selection length to show floating button (chars) */
+    floatingButtonMinChars: number;
+    /** Skip preview modal and generate directly */
+    floatingButtonDirectGenerate: boolean;
+
     // ===== Backup Settings =====
     /** Automatic backup on plugin load */
     autoBackupOnLoad: boolean;

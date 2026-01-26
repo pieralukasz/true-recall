@@ -258,6 +258,51 @@ export class EpistemeSettingTab extends PluginSettingTab {
 						await this.plugin.saveSettings();
 					})
 			);
+
+		// ===== Floating Generate Button Section =====
+		container.createEl("h2", { text: "Floating Generate Button" });
+
+		new Setting(container)
+			.setName("Enable floating button")
+			.setDesc(
+				"Show a floating button when text is selected to quickly generate flashcards"
+			)
+			.addToggle((toggle) =>
+				toggle
+					.setValue(this.plugin.settings.floatingButtonEnabled)
+					.onChange(async (value) => {
+						this.plugin.settings.floatingButtonEnabled = value;
+						await this.plugin.saveSettings();
+					})
+			);
+
+		new Setting(container)
+			.setName("Minimum selection length")
+			.setDesc("Minimum number of characters to show the floating button")
+			.addText((text) =>
+				text
+					.setPlaceholder("50")
+					.setValue(String(this.plugin.settings.floatingButtonMinChars))
+					.onChange(async (value) => {
+						const num = parseInt(value) || 50;
+						this.plugin.settings.floatingButtonMinChars = Math.max(10, num);
+						await this.plugin.saveSettings();
+					})
+			);
+
+		new Setting(container)
+			.setName("Direct generation")
+			.setDesc(
+				"Skip the preview modal and generate flashcards directly (faster but no review)"
+			)
+			.addToggle((toggle) =>
+				toggle
+					.setValue(this.plugin.settings.floatingButtonDirectGenerate)
+					.onChange(async (value) => {
+						this.plugin.settings.floatingButtonDirectGenerate = value;
+						await this.plugin.saveSettings();
+					})
+			);
 	}
 
 	private renderAITab(container: HTMLElement): void {
