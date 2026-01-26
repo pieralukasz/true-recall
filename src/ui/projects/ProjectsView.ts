@@ -133,7 +133,6 @@ export class ProjectsView extends ItemView {
 			for (const projectName of allProjectNames) {
 				// Get files for this project from index (O(1) per project)
 				const files = frontmatterIndex.getFilesByValue("projects", projectName);
-				projectNoteCounts.set(projectName, files.length);
 
 				// Build notes array for this project
 				const notes: ProjectNoteInfo[] = [];
@@ -147,6 +146,11 @@ export class ProjectsView extends ItemView {
 						}
 					}
 
+					// Skip the main project note (note with same name as project)
+					if (file.basename === projectName) {
+						continue;
+					}
+
 					// Add note to project's notes array
 					notes.push({
 						path: file.path,
@@ -155,6 +159,8 @@ export class ProjectsView extends ItemView {
 					});
 				}
 				projectNotes.set(projectName, notes);
+				// Set count after filtering out main project note
+				projectNoteCounts.set(projectName, notes.length);
 			}
 
 			// Count cards per project and per note
