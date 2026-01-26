@@ -11,6 +11,7 @@ export interface ProjectsContentProps {
 	projectsWithCards: ProjectInfo[];
 	emptyProjects: ProjectInfo[];
 	searchQuery: string;
+	expandedProjectIds: Set<string>;
 	app: App;
 	component: Component;
 	onSearchChange: (query: string) => void;
@@ -19,6 +20,7 @@ export interface ProjectsContentProps {
 	onAddNotes: (projectId: string, projectName: string) => void;
 	onCreateFromNote: () => void;
 	onRefresh: () => void;
+	onToggleExpand: (projectId: string) => void;
 }
 
 /**
