@@ -25,3 +25,70 @@ interface FieldIndex {
 	/** path → value (for string) or path → Set<value> (for array) */
 	pathToValue: Map<string, string | Set<string>>;
 }
+
+export class FrontmatterIndexService {
+	private app: App;
+	private fields: Map<string, FieldIndex> = new Map();
+
+	constructor(app: App) {
+		this.app = app;
+	}
+
+	/**
+	 * Register a field to be indexed
+	 */
+	register(config: FieldConfig): void {
+		if (this.fields.has(config.field)) {
+			console.warn(`[FrontmatterIndex] Field "${config.field}" already registered`);
+			return;
+		}
+
+		this.fields.set(config.field, {
+			config,
+			valueToPath: new Map(),
+			pathToValue: new Map(),
+		});
+	}
+
+	/**
+	 * Get value from frontmatter using dot notation path
+	 * e.g., "metadata.category" extracts frontmatter.metadata.category
+	 */
+	private getNestedValue(frontmatter: Record<string, unknown>, path: string): unknown {
+		const parts = path.split(".");
+		let current: unknown = frontmatter;
+
+		for (const part of parts) {
+			if (current === null || current === undefined || typeof current !== "object") {
+				return undefined;
+			}
+			current = (current as Record<string, unknown>)[part];
+		}
+
+		return current;
+	}
+
+	/**
+	 * Extract and normalize values from frontmatter for a field
+	 */
+	private extractValues(frontmatter: Record<string, unknown> | undefined, config: FieldConfig): string[] {
+		if (!frontmatter) return [];
+
+		const raw = this.getNestedValue(frontmatter, config.field);
+		if (raw === undefined || raw === null) return [];
+
+		if (config.type === "array") {
+			if (Array.isArray(raw)) {
+				return raw.filter((v): v is string => typeof v === "string" && v.length > 0);
+			}
+			return [];
+		}
+
+		// String type
+		if (typeof raw === "string" && raw.length > 0) {
+			return [raw];
+		}
+
+		return [];
+	}
+}
