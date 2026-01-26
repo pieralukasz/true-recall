@@ -165,6 +165,18 @@ export interface StreakInfo {
 }
 
 /**
+ * Information about a note belonging to a project
+ */
+export interface ProjectNoteInfo {
+    /** Source note file path */
+    path: string;
+    /** Note basename for display */
+    name: string;
+    /** Number of flashcards from this note in the project */
+    cardCount: number;
+}
+
+/**
  * Project information (aggregated from frontmatter at runtime)
  */
 export interface ProjectInfo {
@@ -182,5 +194,7 @@ export interface ProjectInfo {
     newCount: number;
     /** Learning/Relearning cards due count (orange in Anki) */
     learningCount: number;
+    /** Notes belonging to this project (populated during loadProjects) */
+    notes: ProjectNoteInfo[];
 }
 
