@@ -13,6 +13,7 @@ import { Panel } from "../components/Panel";
 import { ProjectsContent } from "./ProjectsContent";
 import { SelectNoteModal } from "../modals";
 import type EpistemePlugin from "../../main";
+import type { ProjectNoteInfo } from "../../types";
 
 /**
  * Projects View
@@ -101,8 +102,9 @@ export class ProjectsView extends ItemView {
 			// Get all project names from index (O(1))
 			const allProjectNames = frontmatterIndex.getAllValues("projects");
 
-			// Build project stats using index
+			// Build project stats and notes using index
 			const projectNoteCounts = new Map<string, number>();
+			const projectNotes = new Map<string, ProjectNoteInfo[]>();
 			const sourceUidToProjects = new Map<string, string[]>();
 
 			for (const projectName of allProjectNames) {
@@ -110,7 +112,8 @@ export class ProjectsView extends ItemView {
 				const files = frontmatterIndex.getFilesByValue("projects", projectName);
 				projectNoteCounts.set(projectName, files.length);
 
-				// Build source_uid -> projects mapping for card counting
+				// Build notes array for this project
+				const notes: ProjectNoteInfo[] = [];
 				for (const file of files) {
 					const uid = frontmatterIndex.getValues("flashcard_uid", file.path)[0];
 					if (uid) {
@@ -120,14 +123,23 @@ export class ProjectsView extends ItemView {
 							sourceUidToProjects.set(uid, existing);
 						}
 					}
+
+					// Add note to project's notes array
+					notes.push({
+						path: file.path,
+						name: file.basename,
+						cardCount: 0, // Will be updated after card counting
+					});
 				}
+				projectNotes.set(projectName, notes);
 			}
 
-			// Count cards per project
+			// Count cards per project and per note
 			const projectCardCounts = new Map<string, number>();
 			const projectNewCounts = new Map<string, number>();
 			const projectLearningCounts = new Map<string, number>();
 			const projectDueCounts = new Map<string, number>();
+			const noteCardCounts = new Map<string, Map<string, number>>(); // projectName -> notePath -> count
 			const allCards = this.plugin.cardStore.cards.getAll();
 			const now = new Date();
 			const tomorrowBoundary =
@@ -136,12 +148,24 @@ export class ProjectsView extends ItemView {
 			for (const card of allCards) {
 				if (!card.sourceUid) continue;
 				const projects = sourceUidToProjects.get(card.sourceUid) || [];
+
+				// Find the source file path for this card
+				const sourceFile = frontmatterIndex.getFilesByValue("flashcard_uid", card.sourceUid)[0];
+				if (!sourceFile) continue;
+
 				for (const projectName of projects) {
 					// Total card count
 					projectCardCounts.set(
 						projectName,
 						(projectCardCounts.get(projectName) || 0) + 1
 					);
+
+					// Update note-level card count
+					if (!noteCardCounts.has(projectName)) {
+						noteCardCounts.set(projectName, new Map());
+					}
+					const noteCounts = noteCardCounts.get(projectName)!;
+					noteCounts.set(sourceFile.path, (noteCounts.get(sourceFile.path) || 0) + 1);
 
 					// New count: State.New cards (blue in Anki)
 					if (card.state === State.New) {
@@ -178,17 +202,29 @@ export class ProjectsView extends ItemView {
 				}
 			}
 
-			// Build final projects array
+			// Build final projects array with notes
 			const projects = Array.from(projectNoteCounts.keys())
-				.map((name) => ({
-					id: name,
-					name,
-					noteCount: projectNoteCounts.get(name) ?? 0,
-					cardCount: projectCardCounts.get(name) ?? 0,
-					dueCount: projectDueCounts.get(name) ?? 0,
-					newCount: projectNewCounts.get(name) ?? 0,
-					learningCount: projectLearningCounts.get(name) ?? 0,
-				}))
+				.map((name) => {
+					const rawNotes = projectNotes.get(name) ?? [];
+					const noteCountsForProject = noteCardCounts.get(name);
+
+					// Apply card counts to notes
+					const notesWithCounts = rawNotes.map(note => ({
+						...note,
+						cardCount: noteCountsForProject?.get(note.path) ?? 0,
+					}));
+
+					return {
+						id: name,
+						name,
+						noteCount: projectNoteCounts.get(name) ?? 0,
+						cardCount: projectCardCounts.get(name) ?? 0,
+						dueCount: projectDueCounts.get(name) ?? 0,
+						newCount: projectNewCounts.get(name) ?? 0,
+						learningCount: projectLearningCounts.get(name) ?? 0,
+						notes: notesWithCounts,
+					};
+				})
 				.sort((a, b) => a.name.localeCompare(b.name));
 
 			this.stateManager.setProjects(projects);
