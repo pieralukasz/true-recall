@@ -5,26 +5,26 @@
  * v17: Source notes removed - all metadata resolved from vault
  * v15: Source note name and path are resolved from vault at runtime
  * (no longer stored in database)
- * v18: Uses UidIndexService for O(1) file lookups by flashcard_uid
+ * v18: Uses FrontmatterIndexService for O(1) file lookups by flashcard_uid
  */
 import { App, TFile } from "obsidian";
 import { FrontmatterService } from "./frontmatter.service";
-import type { UidIndexService } from "../core/uid-index.service";
+import type { FrontmatterIndexService } from "../core/frontmatter-index.service";
 
 /**
  * Service for managing source note relationships
  * v17: Resolves source note info from vault (no database storage)
- * v18: Uses UidIndexService for O(1) lookups
+ * v18: Uses FrontmatterIndexService for O(1) lookups
  */
 export class SourceNoteService {
 	private app: App;
 	private frontmatterService: FrontmatterService;
-	private uidIndex: UidIndexService | null;
+	private frontmatterIndex: FrontmatterIndexService | null;
 
-	constructor(app: App, uidIndex?: UidIndexService) {
+	constructor(app: App, frontmatterIndex?: FrontmatterIndexService) {
 		this.app = app;
 		this.frontmatterService = new FrontmatterService(app);
-		this.uidIndex = uidIndex ?? null;
+		this.frontmatterIndex = frontmatterIndex ?? null;
 	}
 
 	/**
@@ -113,12 +113,12 @@ export class SourceNoteService {
 
 	/**
 	 * Find a file in the vault by its flashcard_uid
-	 * Uses UidIndexService for O(1) lookup if available
+	 * Uses FrontmatterIndexService for O(1) lookup if available
 	 */
 	private findFileByUidSync(uid: string): TFile | null {
 		// O(1) lookup via index
-		if (this.uidIndex) {
-			return this.uidIndex.getFileByUid(uid);
+		if (this.frontmatterIndex) {
+			return this.frontmatterIndex.getFileByValue("flashcard_uid", uid);
 		}
 
 		// Fallback: O(n) scan (for backward compatibility when index not available)

@@ -23,7 +23,7 @@ import { getEventBus } from "../core/event-bus.service";
 import { FrontmatterService } from "./frontmatter.service";
 import { FlashcardParserService } from "./flashcard-parser.service";
 import { SourceNoteService } from "./source-note.service";
-import type { UidIndexService } from "../core/uid-index.service";
+import type { FrontmatterIndexService } from "../core/frontmatter-index.service";
 
 /**
  * Result of scanning vault for flashcards (legacy, kept for compatibility)
@@ -58,12 +58,12 @@ export class FlashcardManager {
 	private parserService: FlashcardParserService;
 	private sourceNoteService: SourceNoteService;
 
-	constructor(app: App, settings: EpistemeSettings, uidIndex?: UidIndexService) {
+	constructor(app: App, settings: EpistemeSettings, frontmatterIndex?: FrontmatterIndexService) {
 		this.app = app;
 		this.settings = settings;
 		this.frontmatterService = new FrontmatterService(app);
 		this.parserService = new FlashcardParserService();
-		this.sourceNoteService = new SourceNoteService(app, uidIndex);
+		this.sourceNoteService = new SourceNoteService(app, frontmatterIndex);
 	}
 
 	/**
