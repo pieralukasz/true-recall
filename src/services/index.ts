@@ -21,6 +21,10 @@ export {
 	resetEventBus,
 } from "./core/event-bus.service";
 export { UidIndexService } from "./core/uid-index.service";
+export {
+	FrontmatterIndexService,
+	type FieldConfig,
+} from "./core/frontmatter-index.service";
 
 // Flashcard services
 export {
