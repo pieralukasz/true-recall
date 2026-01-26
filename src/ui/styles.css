@@ -245,6 +245,51 @@
 		animation: none;
 	}
 
+	/* Inline markdown for compact card questions - strip block formatting */
+	.episteme-inline-markdown {
+		display: flex;
+		align-items: center;
+		overflow: hidden;
+	}
+
+	.episteme-inline-markdown p {
+		margin: 0;
+		display: inline;
+		overflow: hidden;
+		text-overflow: ellipsis;
+		white-space: nowrap;
+	}
+
+	.episteme-inline-markdown > p:first-child {
+		flex: 1;
+		min-width: 0;
+	}
+
+	/* Hide all but first paragraph in inline mode */
+	.episteme-inline-markdown p:not(:first-child),
+	.episteme-inline-markdown br,
+	.episteme-inline-markdown ul,
+	.episteme-inline-markdown ol,
+	.episteme-inline-markdown blockquote,
+	.episteme-inline-markdown pre,
+	.episteme-inline-markdown hr {
+		display: none;
+	}
+
+	/* Keep inline elements styled */
+	.episteme-inline-markdown strong,
+	.episteme-inline-markdown em,
+	.episteme-inline-markdown code,
+	.episteme-inline-markdown a {
+		display: inline;
+	}
+
+	/* Internal links */
+	.episteme-inline-markdown .internal-link {
+		color: var(--text-accent);
+		text-decoration: none;
+	}
+
 	/* Thin scrollbar for calendar heatmap */
 	.episteme-scrollbar-thin::-webkit-scrollbar {
 		height: 4px;

@@ -50,7 +50,7 @@ export class CompactCardItem extends BaseComponent {
             this.events.cleanup();
         }
 
-        const { card, isExpanded, isSelected, isSelectionMode } = this.props;
+        const { card, isExpanded, isSelected, isSelectionMode, app, filePath, component } = this.props;
 
         this.element = this.container.createDiv({
             cls: `ep:flex ep:flex-col ep:border-b ep:border-obs-border ${isSelected ? "ep:bg-obs-modifier-hover" : ""}`,
@@ -101,11 +101,11 @@ export class CompactCardItem extends BaseComponent {
             attr: { title: this.getStatusTitle() },
         });
 
-        // Question (truncated)
-        const questionEl = mainRow.createSpan({
-            cls: "ep:flex-1 ep:text-sm ep:text-obs-normal ep:truncate",
+        // Question (rendered markdown, truncated via CSS)
+        const questionEl = mainRow.createDiv({
+            cls: "ep:flex-1 ep:text-sm ep:text-obs-normal ep:truncate episteme-inline-markdown",
         });
-        questionEl.textContent = this.truncateText(card.question, 50);
+        void MarkdownRenderer.render(app, card.question, questionEl, filePath, component);
 
         // Menu button
         const btnCls = "ep:p-1 ep:rounded ep:bg-transparent ep:border-none ep:cursor-pointer ep:text-obs-muted ep:hover:text-obs-normal ep:hover:bg-obs-modifier-hover ep:transition-colors";
