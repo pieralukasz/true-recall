@@ -46,7 +46,7 @@ interface RemoteCardRow {
 interface RemoteReviewLogRow {
 	id: string;
 	card_id: string;
-	reviewed_at: string;
+	reviewed_at: string | number; // Can be ISO string or bigint timestamp from Supabase
 	rating: number;
 	scheduled_days: number;
 	elapsed_days: number;
@@ -528,10 +528,16 @@ export class SyncService {
 	private mapRemoteReviewLogToLocal(
 		remote: RemoteReviewLogRow
 	): ReviewLogForSync {
+		// Convert bigint timestamp back to ISO string if needed
+		const reviewedAt =
+			typeof remote.reviewed_at === "number"
+				? new Date(remote.reviewed_at).toISOString()
+				: remote.reviewed_at;
+
 		return {
 			id: remote.id,
 			cardId: remote.card_id,
-			reviewedAt: remote.reviewed_at,
+			reviewedAt,
 			rating: remote.rating,
 			scheduledDays: remote.scheduled_days,
 			elapsedDays: remote.elapsed_days,
@@ -575,7 +581,7 @@ export class SyncService {
 		return {
 			id: local.id,
 			card_id: local.cardId,
-			reviewed_at: local.reviewedAt,
+			reviewed_at: new Date(local.reviewedAt).getTime(),
 			rating: local.rating,
 			scheduled_days: local.scheduledDays,
 			elapsed_days: local.elapsedDays,

@@ -271,6 +271,8 @@ export class StatsActions {
                 SUM(CASE WHEN rating = 4 THEN 1 ELSE 0 END) as easy_count
             FROM review_log
             WHERE deleted_at IS NULL
+              AND reviewed_at IS NOT NULL
+              AND date(reviewed_at) IS NOT NULL
             GROUP BY date(reviewed_at)
         `);
 
@@ -280,6 +282,8 @@ export class StatsActions {
             SELECT DISTINCT date(reviewed_at), card_id
             FROM review_log
             WHERE deleted_at IS NULL
+              AND reviewed_at IS NOT NULL
+              AND date(reviewed_at) IS NOT NULL
         `);
     }
 
