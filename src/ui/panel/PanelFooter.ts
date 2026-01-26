@@ -17,9 +17,6 @@ export interface PanelFooterProps {
 	noteFlashcardType?: NoteFlashcardType;
 	// Selection info for bulk move button
 	selectedCount?: number;
-	// Selection state for literature notes
-	hasSelection?: boolean;
-	selectedText?: string;
 	// Collect flashcards from markdown
 	hasUncollectedFlashcards?: boolean;
 	uncollectedCount?: number;
@@ -64,11 +61,8 @@ export class PanelFooter extends BaseComponent {
 			cls: "ep:border-t ep:border-obs-border ep:pt-2 ep:mt-auto ep:flex ep:flex-col ep:gap-2",
 		});
 
-		const { hasSelection } = this.props;
-
-		// If text is selected, always use normal footer (shows selection UI)
-		// Diff mode only available when no selection and in diff state
-		if (viewMode === "diff" && diffResult && !hasSelection) {
+		// Note: Selection-based generation moved to floating button
+		if (viewMode === "diff" && diffResult) {
 			this.renderDiffFooter();
 		} else {
 			this.renderNormalFooter();
@@ -195,14 +189,7 @@ export class PanelFooter extends BaseComponent {
 			this.events.addEventListener(collectBtn, "click", onCollect);
 		}
 
-		// ===== SELECTION-BASED UI (ANY NOTE TYPE WITH SELECTION) =====
-		const { hasSelection, selectedText } = this.props;
-		if (hasSelection && selectedText) {
-			this.renderSelectionFooter(buttonsWrapper);
-			return;
-		}
-
-		// ===== NO SELECTION UI =====
+		// Note: Selection-based generation moved to floating button
 		// Main action button (Generate/Update) - first in row
 		const mainBtn = buttonsWrapper.createEl("button", {
 			cls: btnPrimary,
@@ -232,54 +219,6 @@ export class PanelFooter extends BaseComponent {
 			});
 			this.events.addEventListener(addBtn, "click", onAddFlashcard);
 		}
-	}
-
-	/**
-	 * Render footer for selection-based generation (any note type with text selected)
-	 */
-	private renderSelectionFooter(container: HTMLElement): void {
-		const { selectedText, onGenerate } = this.props;
-
-		if (!this.element) return;
-
-		// Shared button base classes
-		const btnBase = "ep:flex-1 ep:border-none ep:py-2.5 ep:px-4 ep:rounded-md ep:cursor-pointer ep:font-medium ep:text-sm ep:transition-colors";
-		const btnPrimary = `${btnBase} mod-cta`;
-
-		// Show selection preview above buttons
-		const selectionPreview = this.element.createDiv({
-			cls: "ep:flex ep:items-start ep:gap-2 ep:py-2.5 ep:px-3 ep:rounded-md ep:mb-2 ep:border ep:border-green-500/30",
-		});
-		selectionPreview.style.background = "linear-gradient(135deg, rgba(34, 197, 94, 0.1), rgba(22, 163, 74, 0.05))";
-
-		selectionPreview.createSpan({
-			cls: "ep:text-xs ep:font-semibold ep:text-green-500 ep:uppercase ep:whitespace-nowrap ep:shrink-0",
-			text: "Selected:",
-		});
-
-		const previewText = selectionPreview.createSpan({
-			cls: "ep:text-xs ep:text-obs-normal ep:leading-snug ep:italic",
-			text: this.truncateText(selectedText || "", 100),
-		});
-		previewText.setAttribute("title", selectedText || ""); // Show full text on hover
-
-		// Generate button (full width in selection mode)
-		const generateBtn = container.createEl("button", {
-			text: "Generate from selection",
-			cls: btnPrimary,
-		});
-
-		if (onGenerate) {
-			this.events.addEventListener(generateBtn, "click", onGenerate);
-		}
-	}
-
-	/**
-	 * Truncate text for preview
-	 */
-	private truncateText(text: string, maxLength: number): string {
-		if (text.length <= maxLength) return text;
-		return text.substring(0, maxLength) + "...";
 	}
 
 	private renderInstructionsInput(
