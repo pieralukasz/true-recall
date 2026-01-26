@@ -75,13 +75,6 @@ export function registerCommands(plugin: EpistemePlugin): void {
 		callback: () => void plugin.showMissingFlashcards(),
 	});
 
-	// Show notes ready to harvest
-	plugin.addCommand({
-		id: "show-ready-to-harvest",
-		name: "Show notes ready to harvest",
-		callback: () => void plugin.showReadyToHarvest(),
-	});
-
 	// Show orphaned cards
 	plugin.addCommand({
 		id: "show-orphaned-cards",

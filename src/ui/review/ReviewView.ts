@@ -776,6 +776,25 @@ export class ReviewView extends ItemView {
 					this.handleOpenSourceNote();
 				});
 			}
+
+			// Projects display (only in view mode, after source)
+			if (card.projects && card.projects.length > 0 && !editState.active) {
+				const projectsEl = cardEl.createDiv({
+					cls: "ep:mt-2 ep:flex ep:flex-wrap ep:justify-center ep:gap-1.5",
+				});
+
+				// Render each project as a clickable badge
+				for (const project of card.projects) {
+					const badgeEl = projectsEl.createEl("span", {
+						text: project,
+						cls: "ep:py-0.5 ep:px-2 ep:text-ui-smaller ep:border ep:border-obs-border ep:rounded-xl ep:bg-obs-primary ep:text-obs-muted ep:cursor-pointer ep:transition-all ep:hover:border-obs-interactive ep:hover:text-obs-normal",
+					});
+
+					badgeEl.addEventListener("click", () => {
+						this.handleProjectClick(project);
+					});
+				}
+			}
 		}
 	}
 
@@ -1264,6 +1283,13 @@ export class ReviewView extends ItemView {
 		} else {
 			new Notice(`Source note "${card.sourceNoteName}" not found`);
 		}
+	}
+
+	/**
+	 * Handle project badge click - opens projects view
+	 */
+	private handleProjectClick(_projectName: string): void {
+		void this.plugin.activateProjectsView();
 	}
 
 	/**
