@@ -16,6 +16,8 @@ export interface ProjectsState {
 	searchQuery: string;
 	/** Project ID being edited (null if none) */
 	editingProjectId: number | null;
+	/** Set of expanded project IDs */
+	expandedProjectIds: Set<string>;
 }
 
 /**
@@ -37,6 +39,7 @@ function createInitialState(): ProjectsState {
 		projects: [],
 		searchQuery: "",
 		editingProjectId: null,
+		expandedProjectIds: new Set<string>(),
 	};
 }
 
@@ -58,6 +61,7 @@ export class ProjectsStateManager {
 		return {
 			...this.state,
 			projects: [...this.state.projects],
+			expandedProjectIds: new Set(this.state.expandedProjectIds),
 		};
 	}
 
@@ -121,6 +125,26 @@ export class ProjectsStateManager {
 	 */
 	setEditingProject(id: number | null): void {
 		this.setState({ editingProjectId: id });
+	}
+
+	/**
+	 * Toggle project expansion state
+	 */
+	toggleProjectExpanded(projectId: string): void {
+		const newSet = new Set(this.state.expandedProjectIds);
+		if (newSet.has(projectId)) {
+			newSet.delete(projectId);
+		} else {
+			newSet.add(projectId);
+		}
+		this.setState({ expandedProjectIds: newSet });
+	}
+
+	/**
+	 * Check if project is expanded
+	 */
+	isProjectExpanded(projectId: string): boolean {
+		return this.state.expandedProjectIds.has(projectId);
 	}
 
 	/**
