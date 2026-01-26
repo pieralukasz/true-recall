@@ -231,13 +231,13 @@ export class ReviewView extends ItemView {
 
 		// Create UI structure
 		this.headerEl = container.createDiv({
-			cls: "ep:flex ep:justify-center ep:items-center ep:border-b ep:border-obs-border ep:relative ep:shrink-0 ep:p-2",
+			cls: "ep:flex ep:justify-center ep:items-center ep:border-b ep:border-obs-border ep:relative ep:shrink-0 ep:p-2 ep:pb-4",
 		});
 		this.cardContainerEl = container.createDiv({
-			cls: "episteme-review-card-container ep:flex-1 ep:min-h-0 ep:flex ep:items-start ep:justify-center ep:p-2 ep:mt-2 ep:overflow-y-auto",
+			cls: "episteme-review-card-container ep:flex-1 ep:min-h-0 ep:flex ep:items-start ep:justify-center ep:p-2 ep:mt-8 ep:overflow-y-auto",
 		});
 		this.buttonsEl = container.createDiv({
-			cls: "episteme-review-buttons ep:flex ep:justify-center ep:gap-3 ep:border-t ep:border-obs-border ep:flex-nowrap ep:shrink-0 ep:p-2",
+			cls: "episteme-review-buttons ep:flex ep:justify-center ep:gap-3 ep:border-t ep:border-obs-border ep:flex-nowrap ep:shrink-0 ep:p-4",
 		});
 
 		// Subscribe to state changes - update render and header actions
@@ -729,15 +729,13 @@ export class ReviewView extends ItemView {
 
 		// Answer (if revealed and not editing question)
 		if (this.stateManager.isAnswerRevealed() && !isEditingQuestion) {
-			// Separator only when not editing
-			if (!isEditingAnswer) {
-				cardEl.createDiv({
-					cls: "ep:border-t ep:border-obs-border ep:my-6",
-				});
-			}
+			// Separator between question and answer
+			cardEl.createDiv({
+				cls: "ep:border-t ep:border-obs-border ep:my-6",
+			});
 
 			const answerEl = cardEl.createDiv({
-				cls: "episteme-review-answer ep:text-ui-large ep:leading-relaxed ep:text-obs-muted",
+				cls: "episteme-review-answer ep:text-lg ep:leading-relaxed ep:text-obs-muted",
 			});
 			if (isEditingAnswer) {
 				// Edit mode - contenteditable
@@ -958,7 +956,7 @@ export class ReviewView extends ItemView {
 		textarea: HTMLTextAreaElement
 	): void {
 		const toolbar = container.createDiv({
-			cls: "episteme-edit-toolbar ep:flex ep:flex-wrap ep:justify-center ep:gap-1 ep:py-2 ep:border-t ep:border-obs-border ep:absolute ep:left-0 ep:right-0 ep:top-full ep:mt-1 ep:z-10",
+			cls: "episteme-edit-toolbar ep:flex ep:flex-wrap ep:justify-center ep:gap-1 ep:py-2 ep:border-t ep:border-obs-border ep:absolute ep:left-0 ep:right-0 ep:top-full ep:mt-4 ep:z-10",
 		});
 
 		const buttons = [
@@ -1099,12 +1097,12 @@ export class ReviewView extends ItemView {
 
 		// Main buttons container (left/center)
 		const mainButtonsEl = buttonsWrapper.createDiv({
-			cls: "ep:flex ep:justify-center ep:gap-3 ep:flex-nowrap",
+			cls: "ep:flex ep:justify-center ep:gap-3 ep:flex-nowrap ep:py-4",
 		});
 
 		// Base button class for all review buttons
 		const baseBtnCls =
-			"ep:flex ep:flex-col ep:items-center ep:gap-1 ep:py-5 ep:px-7 ep:border-none ep:rounded-lg ep:cursor-pointer ep:font-medium ep:text-ui-small ep:min-w-20 ep:transition-transform ep:hover:brightness-110 ep:active:scale-98";
+			"ep:flex ep:flex-col ep:items-center ep:gap-1 !ep:py-4 ep:px-6 ep:h-auto ep:border-none ep:rounded-lg ep:cursor-pointer ep:font-medium ep:text-ui-small ep:min-w-20 ep:whitespace-nowrap ep:transition-transform ep:hover:brightness-110 ep:active:scale-98";
 
 		if (!this.stateManager.isAnswerRevealed()) {
 			// Show answer button
@@ -1377,7 +1375,7 @@ export class ReviewView extends ItemView {
 		);
 
 		const buttonsEl = summaryEl.createDiv({
-			cls: "ep:flex ep:gap-3 ep:justify-center",
+			cls: "ep:flex ep:gap-3 ep:py-4ep:justify-center",
 		});
 
 		// Shared button classes for summary

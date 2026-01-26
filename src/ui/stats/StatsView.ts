@@ -123,16 +123,16 @@ export class StatsView extends ItemView {
 			cls: "ep:p-2 ep:max-w-[900px] ep:mx-auto",
 		});
 
-		// Create layout and initialize components
-		this.createLayout();
+		// Set SQLite store BEFORE createLayout - charts call refresh() during render
+		this.statsCalculator.setSqliteStore(this.plugin.cardStore);
 
 		// Subscribe to EventBus for cross-component reactivity
 		this.subscribeToEvents();
 
-		// Set SQLite store for optimized queries
-		this.statsCalculator.setSqliteStore(this.plugin.cardStore);
+		// Create layout and initialize components (charts will have SQLite store)
+		this.createLayout();
 
-		// Initial render
+		// Initial render (redundant since charts refresh in render(), but keeps consistent)
 		await this.refresh();
 	}
 
@@ -163,16 +163,8 @@ export class StatsView extends ItemView {
 	 * Create the layout and initialize all components
 	 */
 	private createLayout(): void {
-		// 1. NL Query Section (Learning Insights) - wrapped in a card
-		this.nlQueryEl = this.contentWrapper.createDiv({
-			cls: [
-				"ep:mb-5",
-				"ep:p-5",
-				"ep:rounded-lg",
-				"ep:bg-obs-secondary",
-				// NO border, NO shadow - use only background for separation
-			].join(" "),
-		});
+		// 1. NL Query Section (Learning Insights) - uses StatsCard internally
+		this.nlQueryEl = this.contentWrapper.createDiv();
 		this.nlQueryPanel = new NLQueryPanel(this.nlQueryEl, this.app, this);
 		this.nlQueryPanel.render();
 

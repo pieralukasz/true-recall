@@ -1,19 +1,20 @@
 /**
  * Migration v18 -> v19
- * Delete review_log entries with invalid reviewed_at values
+ * Convert review_log.reviewed_at from bigint string to ISO format
  *
- * Root cause: mapRemoteReviewLogToLocal() didn't validate timestamps from Supabase,
- * allowing invalid dates (0, null, epoch) to be stored as "1970-01-01T..." or "Invalid Date".
+ * Root cause: Data synced from Supabase was stored as numeric strings (e.g., "1769021590000")
+ * instead of being converted to ISO format (e.g., "2026-01-21T12:13:10.000Z").
  */
 import type { DatabaseLike } from "../sqlite.types";
 
 export function migration018ToV19(db: DatabaseLike): void {
-	// Delete records with invalid reviewed_at (NULL, empty, or non-ISO format)
+	// Convert bigint timestamps (stored as numeric strings) to ISO format
+	// SQLite datetime() returns "YYYY-MM-DD HH:MM:SS", we append 'Z' for ISO
 	db.run(`
-		DELETE FROM review_log
-		WHERE reviewed_at IS NULL
-		   OR reviewed_at = ''
-		   OR reviewed_at NOT LIKE '____-__-__T%'
+		UPDATE review_log
+		SET reviewed_at = strftime('%Y-%m-%dT%H:%M:%SZ', CAST(reviewed_at AS INTEGER) / 1000, 'unixepoch')
+		WHERE reviewed_at GLOB '[0-9]*'
+		  AND length(reviewed_at) >= 13
 	`);
 
 	db.run(`UPDATE meta SET value = '19' WHERE key = 'schema_version'`);

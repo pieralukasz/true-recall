@@ -116,7 +116,7 @@ export class SqliteSchemaManager {
             );
 
             -- Set schema version
-            INSERT OR REPLACE INTO meta (key, value) VALUES ('schema_version', '18');
+            INSERT OR REPLACE INTO meta (key, value) VALUES ('schema_version', '19');
             INSERT OR REPLACE INTO meta (key, value) VALUES ('created_at', datetime('now'));
         `);
 	}
@@ -126,7 +126,7 @@ export class SqliteSchemaManager {
 	 */
 	runMigrations(): void {
 		const currentVersion = this.getSchemaVersion();
-		const latestVersion = 18;
+		const latestVersion = 19;
 
 		if (currentVersion >= latestVersion) {
 			return; // Already at latest version

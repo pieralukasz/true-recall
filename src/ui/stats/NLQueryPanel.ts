@@ -84,13 +84,13 @@ export class NLQueryPanel {
             text: "Explore your learning data with natural language questions.",
         });
 
-        // Input area
+        // Input area with inline button
         const inputContainer = contentContainer.createDiv({
-            cls: "ep:flex ep:flex-col ep:gap-2 ep:mb-3",
+            cls: "ep:flex ep:gap-2 ep:mb-3 ep:items-end",
         });
 
         this.inputEl = inputContainer.createEl("textarea", {
-            cls: "ep:w-full ep:py-2.5 ep:px-3 ep:border ep:border-obs-border ep:rounded-md ep:bg-obs-primary ep:text-obs-normal ep:text-ui-small ep:resize-y ep:min-h-15 ep:focus:border-obs-interactive ep:focus:outline-none ep:placeholder:text-obs-faint",
+            cls: "ep:flex-1 ep:py-2 ep:px-3 ep:border ep:border-obs-border ep:rounded-md ep:bg-obs-primary ep:text-obs-normal ep:text-ui-small ep:resize-none ep:focus:border-obs-interactive ep:focus:outline-none ep:placeholder:text-obs-faint",
             placeholder: "What would you like to know about your learning?",
         });
         this.inputEl.rows = 2;
@@ -103,19 +103,16 @@ export class NLQueryPanel {
             }
         });
 
-        // Submit button
-        const buttonContainer = inputContainer.createDiv({
-            cls: "ep:flex ep:justify-end",
-        });
-        this.submitBtn = buttonContainer.createEl("button", {
-            cls: "mod-cta ep:py-2 ep:px-4 ep:text-ui-small ep:rounded-md ep:cursor-pointer ep:transition-opacity ep:disabled:opacity-50 ep:disabled:cursor-not-allowed",
+        // Submit button (inline with textarea)
+        this.submitBtn = inputContainer.createEl("button", {
+            cls: "mod-cta ep:py-2 ep:px-4 ep:text-ui-small ep:rounded-md ep:cursor-pointer ep:transition-opacity ep:disabled:opacity-50 ep:disabled:cursor-not-allowed ep:self-stretch",
             text: "Explore",
         });
         this.submitBtn.addEventListener("click", () => void this.submitQuery());
 
         // Example queries
         this.examplesEl = contentContainer.createDiv({
-            cls: "ep:flex ep:flex-wrap ep:items-center ep:gap-2 ep:mb-4",
+            cls: "ep:flex ep:flex-wrap ep:items-center ep:gap-2",
         });
         this.examplesEl.createEl("span", {
             cls: "ep:text-ui-smaller ep:text-obs-muted",
@@ -133,8 +130,8 @@ export class NLQueryPanel {
             });
         }
 
-        // Results area
-        this.resultsEl = contentContainer.createDiv({ cls: "ep:min-h-10" });
+        // Results area (only takes space when there's content)
+        this.resultsEl = contentContainer.createDiv({ cls: "ep:mt-3 ep:empty:hidden" });
 
         this.updateUIState();
     }
