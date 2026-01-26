@@ -411,8 +411,6 @@ export class FlashcardPanelView extends ItemView {
                 isFlashcardFile: state.isFlashcardFile,
                 noteFlashcardType: state.noteFlashcardType,
                 selectedCount: 0,
-                hasSelection: state.hasSelection,
-                selectedText: state.selectedText,
                 hasUncollectedFlashcards: state.hasUncollectedFlashcards,
                 uncollectedCount: state.uncollectedCount,
                 onGenerate: () => void this.handleGenerate(),
@@ -460,13 +458,7 @@ export class FlashcardPanelView extends ItemView {
             return;
         }
 
-        // ===== SELECTION-BASED GENERATION (ANY NOTE TYPE WITH SELECTION) =====
-        if (state.hasSelection && state.selectedText) {
-            await this.handleGenerateFromSelection();
-            return;
-        }
-
-        // ===== FULL-FILE GENERATION (NO SELECTION) =====
+        // Note: Selection-based generation moved to floating button
         const userInstructions = this.footerComponent?.getInstructions() || "";
         this.stateManager.startProcessing();
 
@@ -515,95 +507,6 @@ export class FlashcardPanelView extends ItemView {
         } catch (error) {
             console.error("Failed to load flashcard info after generation:", error);
         }
-    }
-
-    /**
-     * Generate flashcards from selected text (any note type with selection)
-     * Opens review modal before saving
-     */
-    private async handleGenerateFromSelection(): Promise<void> {
-        const state = this.stateManager.getState();
-        if (!state.currentFile || !state.hasSelection) {
-            new Notice("Please select text in the note first.");
-            return;
-        }
-
-        // Check if store is ready
-        if (!this.flashcardManager.hasStore()) {
-            new Notice("Flashcard store not ready. Please restart Obsidian.");
-            return;
-        }
-
-        const userInstructions = this.footerComponent?.getInstructions() || "";
-        this.stateManager.startProcessing();
-
-        try {
-            // Use selected text instead of full file content
-            const selectedContent = state.selectedText;
-
-            // Generate flashcards from selection only
-            const flashcardsMarkdown = await this.openRouterService.generateFlashcards(
-                selectedContent,
-                userInstructions || undefined,
-                this.plugin.settings.customGeneratePrompt || undefined
-            );
-
-            if (flashcardsMarkdown.trim() === "NO_NEW_CARDS") {
-                new Notice("No flashcard-worthy content found in selection.");
-                this.stateManager.finishProcessing(false);
-                return;
-            }
-
-            // Parse markdown into FlashcardItem array
-            const { FlashcardParserService } = await import("../../services/flashcard/flashcard-parser.service");
-            const parser = new FlashcardParserService();
-            const generatedFlashcards = parser.extractFlashcards(flashcardsMarkdown);
-
-            if (generatedFlashcards.length === 0) {
-                new Notice("No flashcards were generated. Please try again.");
-                this.stateManager.finishProcessing(false);
-                return;
-            }
-
-            // Open review modal
-            const { FlashcardReviewModal } = await import("../modals/FlashcardReviewModal");
-            const modal = new FlashcardReviewModal(this.app, {
-                initialFlashcards: generatedFlashcards,
-                sourceNoteName: state.currentFile.basename,
-                openRouterService: this.openRouterService,
-            });
-
-            const result = await modal.openAndWait();
-
-            // Handle modal result
-            if (result.cancelled || !result.flashcards || result.flashcards.length === 0) {
-                new Notice("Flashcard generation cancelled");
-                this.stateManager.finishProcessing(false);
-                return;
-            }
-
-            // Prepare flashcards with IDs for SQL storage
-            const flashcardsWithIds = result.flashcards.map((f) => ({
-                id: f.id || crypto.randomUUID(),
-                question: f.question,
-                answer: f.answer,
-            }));
-
-            // Save directly to SQL (no MD file created)
-            await this.flashcardManager.saveFlashcardsToSql(
-                state.currentFile,
-                flashcardsWithIds
-            );
-
-            new Notice(`Saved ${result.flashcards.length} flashcard(s) from selection`);
-            this.stateManager.finishProcessing(false);
-        } catch (error) {
-            new Notice(`Error: ${error instanceof Error ? error.message : String(error)}`);
-        }
-
-        // Clear selection after generation
-        this.stateManager.clearSelection();
-        await this.loadFlashcardInfo();
     }
 
     /**
