@@ -50,7 +50,7 @@ export class SessionContent extends BaseComponent {
 
 		// Quick actions section header
 		this.element.createDiv({
-			cls: "episteme-section-header ep:text-xs ep:font-semibold ep:text-obs-muted ep:uppercase ep:tracking-wide ep:my-2",
+			cls: "episteme-section-header ep:text-ui-smaller ep:font-semibold ep:text-obs-muted ep:uppercase ep:tracking-wide ep:my-2",
 			text: "Quick access",
 		});
 
@@ -59,7 +59,7 @@ export class SessionContent extends BaseComponent {
 
 		// Notes section header (fixed, not scrolling)
 		this.element.createDiv({
-			cls: "episteme-section-header ep:text-xs ep:font-semibold ep:text-obs-muted ep:uppercase ep:tracking-wide ep:my-2 ep:shrink-0",
+			cls: "episteme-section-header ep:text-ui-smaller ep:font-semibold ep:text-obs-muted ep:uppercase ep:tracking-wide ep:my-2 ep:shrink-0",
 			text: "Select notes",
 		});
 
@@ -91,8 +91,8 @@ export class SessionContent extends BaseComponent {
 			"ep:hover:bg-obs-secondary",
 			"ep:hover:border-obs-border",
 		];
-		const statsCls = "ep:text-xs ep:text-obs-muted";
-		const statsMutedCls = "ep:text-xs ep:text-obs-faint";
+		const statsCls = "ep:text-ui-smaller ep:text-obs-muted";
+		const statsMutedCls = "ep:text-ui-smaller ep:text-obs-faint";
 
 		// Active Note button
 		const currentNoteStats = logic.getCurrentNoteStats(
@@ -104,7 +104,7 @@ export class SessionContent extends BaseComponent {
 		});
 		activeNoteBtn.createSpan({
 			text: "Active note",
-			cls: "ep:text-sm ep:font-medium ep:text-obs-normal",
+			cls: "ep:text-ui-small ep:font-medium ep:text-obs-normal",
 		});
 		if (currentNoteStats && currentNoteStats.total > 0) {
 			activeNoteBtn.createSpan({
@@ -133,7 +133,7 @@ export class SessionContent extends BaseComponent {
 		});
 		todayBtn.createSpan({
 			text: "Today",
-			cls: "ep:text-sm ep:font-medium ep:text-obs-normal",
+			cls: "ep:text-ui-small ep:font-medium ep:text-obs-normal",
 		});
 		if (todayStats.total > 0) {
 			todayBtn.createSpan({
@@ -161,7 +161,7 @@ export class SessionContent extends BaseComponent {
 		});
 		defaultBtn.createSpan({
 			text: "Default",
-			cls: "ep:text-sm ep:font-medium ep:text-obs-normal",
+			cls: "ep:text-ui-small ep:font-medium ep:text-obs-normal",
 		});
 		const allCardsStats = logic.getAllCardsStats(now);
 		if (allCardsStats.total > 0) {
@@ -190,7 +190,7 @@ export class SessionContent extends BaseComponent {
 		});
 		buriedBtn.createSpan({
 			text: "Buried",
-			cls: "ep:text-sm ep:font-medium ep:text-obs-normal",
+			cls: "ep:text-ui-small ep:font-medium ep:text-obs-normal",
 		});
 		const buriedStats = logic.getBuriedCardsStats(now);
 		if (buriedStats.total > 0) {
@@ -220,7 +220,7 @@ export class SessionContent extends BaseComponent {
 			cls: "episteme-search-container ep:mb-2",
 		});
 		const searchInput = searchContainer.createEl("input", {
-			cls: "ep:w-full ep:py-2 ep:px-3 ep:border ep:border-obs-border ep:rounded-md ep:bg-obs-primary ep:text-obs-normal ep:text-sm ep:focus:outline-none ep:focus:border-obs-interactive ep:placeholder:text-obs-muted",
+			cls: "ep:w-full ep:py-2 ep:px-3 ep:border ep:border-obs-border ep:rounded-md ep:bg-obs-primary ep:text-obs-normal ep:text-ui-small ep:focus:outline-none ep:focus:border-obs-interactive ep:placeholder:text-obs-muted",
 			type: "text",
 			placeholder: "Search notes...",
 		});
@@ -244,7 +244,7 @@ export class SessionContent extends BaseComponent {
 
 		if (filteredStats.length === 0) {
 			noteListEl.createDiv({
-				cls: "ep:text-center ep:py-8 ep:text-obs-muted ep:text-sm",
+				cls: "ep:text-center ep:py-8 ep:text-obs-muted ep:text-ui-small",
 				text: searchQuery
 					? "No notes match your search"
 					: "No notes with flashcards found",
@@ -289,7 +289,7 @@ export class SessionContent extends BaseComponent {
 				});
 			} else if (stat.isCompleted) {
 				item.createSpan({
-					cls: "ep:text-green-500 ep:text-base ep:font-semibold ep:w-4 ep:text-center",
+					cls: "ep:text-green-500 ep:text-ui-medium ep:font-semibold ep:w-4 ep:text-center",
 					text: "\u2713",
 				});
 			}
@@ -301,7 +301,7 @@ export class SessionContent extends BaseComponent {
 
 			// Note name (allow 2 lines)
 			const nameEl = content.createDiv({
-				cls: "ep:text-sm ep:font-medium ep:text-obs-normal ep:leading-snug ep:line-clamp-2",
+				cls: "ep:text-ui-small ep:font-medium ep:text-obs-normal ep:leading-snug ep:line-clamp-2",
 			});
 			if (stat.notePath) {
 				const nameLink = nameEl.createEl("a", {
@@ -320,7 +320,7 @@ export class SessionContent extends BaseComponent {
 
 			// Stats badge
 			const statsEl = content.createDiv({
-				cls: `ep:text-xs ep:mt-0.5 ${
+				cls: `ep:text-ui-smaller ep:mt-0.5 ${
 					hasCards ? "ep:text-obs-muted" : "ep:text-obs-faint"
 				}`,
 			});

@@ -358,7 +358,7 @@ export class SessionView extends ItemView {
 
 		// Selection count text
 		this.selectionBarEl.createSpan({
-			cls: "ep:text-sm ep:text-obs-muted ep:font-medium",
+			cls: "ep:text-ui-small ep:text-obs-muted ep:font-medium",
 			text: `${selectionCount} note${
 				selectionCount > 1 ? "s" : ""
 			} selected`,
@@ -371,14 +371,14 @@ export class SessionView extends ItemView {
 
 		// Clear button
 		const clearBtn = buttons.createEl("button", {
-			cls: "ep:py-1.5 ep:px-3 ep:text-sm ep:bg-obs-border ep:text-obs-normal ep:border-none ep:rounded ep:cursor-pointer ep:hover:bg-obs-modifier-hover",
+			cls: "ep:py-1.5 ep:px-3 ep:text-ui-small ep:bg-obs-border ep:text-obs-normal ep:border-none ep:rounded ep:cursor-pointer ep:hover:bg-obs-modifier-hover",
 			text: "Clear",
 		});
 		clearBtn.addEventListener("click", () => this.handleClearSelection());
 
 		// Start button
 		const startBtn = buttons.createEl("button", {
-			cls: "mod-cta ep:py-1.5 ep:px-4 ep:text-sm",
+			cls: "mod-cta ep:py-1.5 ep:px-4 ep:text-ui-small",
 			// eslint-disable-next-line obsidianmd/ui/sentence-case
 			text: "Start Session",
 		});

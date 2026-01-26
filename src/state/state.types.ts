@@ -61,6 +61,8 @@ export interface PanelState {
     selectedCardIds: Set<string>;
     /** Expanded card IDs (cards showing answer) */
     expandedCardIds: Set<string>;
+    /** Search query for filtering flashcards */
+    searchQuery: string;
 }
 
 /**

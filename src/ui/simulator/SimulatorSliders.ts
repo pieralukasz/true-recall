@@ -57,7 +57,7 @@ export class SimulatorSliders extends BaseComponent {
 		// Label
 		row.createDiv({
 			text: config.name,
-			cls: "ep:w-[200px] ep:text-xs ep:text-obs-muted ep:truncate",
+			cls: "ep:w-[200px] ep:text-ui-smaller ep:text-obs-muted ep:truncate",
 			attr: { title: config.description },
 		});
 
@@ -68,7 +68,7 @@ export class SimulatorSliders extends BaseComponent {
 				"ep:w-[70px] ep:px-2 ep:py-1",
 				"ep:bg-obs-primary ep:text-obs-normal",
 				"ep:border ep:border-obs-border ep:rounded",
-				"ep:text-xs ep:text-center",
+				"ep:text-ui-smaller ep:text-center",
 			].join(" "),
 		});
 		numberInput.value = this.formatValue(this.getValue(config.index), config);
@@ -76,7 +76,7 @@ export class SimulatorSliders extends BaseComponent {
 		// Min label
 		row.createDiv({
 			text: String(config.min),
-			cls: "ep:text-xs ep:text-obs-muted ep:w-[40px] ep:text-right",
+			cls: "ep:text-ui-smaller ep:text-obs-muted ep:w-[40px] ep:text-right",
 		});
 
 		// Range slider
@@ -92,7 +92,7 @@ export class SimulatorSliders extends BaseComponent {
 		// Max label
 		row.createDiv({
 			text: String(config.max),
-			cls: "ep:text-xs ep:text-obs-muted ep:w-[40px]",
+			cls: "ep:text-ui-smaller ep:text-obs-muted ep:w-[40px]",
 		});
 
 		// Store references

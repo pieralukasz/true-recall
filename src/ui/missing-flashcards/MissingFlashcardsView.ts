@@ -2,7 +2,7 @@
  * Missing Flashcards View
  * Panel-based view for displaying notes that need flashcards
  */
-import { ItemView, WorkspaceLeaf, TFile, normalizePath } from "obsidian";
+import { ItemView, WorkspaceLeaf, TFile, normalizePath, Platform, setIcon } from "obsidian";
 import {
 	VIEW_TYPE_MISSING_FLASHCARDS,
 } from "../../constants";
@@ -31,6 +31,9 @@ export class MissingFlashcardsView extends ItemView {
 	// UI Components
 	private panelComponent: Panel | null = null;
 	private contentComponent: MissingFlashcardsContent | null = null;
+
+	// Header elements (desktop only)
+	private headerContainer: HTMLElement | null = null;
 
 	// Native header action elements
 	private refreshAction: HTMLElement | null = null;
@@ -223,6 +226,47 @@ export class MissingFlashcardsView extends ItemView {
 	}
 
 	/**
+	 * Render header (desktop only)
+	 */
+	private renderHeader(container: HTMLElement, count: number, isLoading: boolean): void {
+		// Only show on desktop
+		if (Platform.isMobile) return;
+
+		// Create header container once
+		if (!this.headerContainer) {
+			this.headerContainer = container.createDiv({
+				cls: "ep:flex ep:items-center ep:justify-between ep:mb-3",
+			});
+		} else {
+			this.headerContainer.empty();
+		}
+
+		// Left side: label with count
+		const leftSide = this.headerContainer.createDiv({
+			cls: "ep:flex ep:items-center ep:gap-2",
+		});
+
+		leftSide.createDiv({
+			cls: "ep:text-ui-small ep:font-semibold ep:text-obs-normal",
+			text: isLoading ? "Scanning..." : `${count} ${count === 1 ? "note needs" : "notes need"} flashcards`,
+		});
+
+		// Right side: refresh button
+		const actionsEl = this.headerContainer.createDiv({
+			cls: "ep:flex ep:items-center ep:gap-1",
+		});
+
+		const refreshBtn = actionsEl.createEl("button", {
+			cls: "clickable-icon",
+			attr: { "aria-label": "Refresh" },
+		});
+		setIcon(refreshBtn, "refresh-cw");
+		refreshBtn.addEventListener("click", () => {
+			void this.loadMissingNotes();
+		});
+	}
+
+	/**
 	 * Render content (Panel is created once in onOpen)
 	 */
 	private renderContent(): void {
@@ -232,30 +276,13 @@ export class MissingFlashcardsView extends ItemView {
 		const filteredNotes = this.stateManager.getFilteredNotes();
 		const contentContainer = this.panelComponent.getContentContainer();
 
-		// Render Content (includes summary)
+		// Render Content
 		this.contentComponent?.destroy();
 		contentContainer.empty();
+		this.headerContainer = null; // Reset header container
 
-		// Add summary section at top of content
-		const summaryEl = contentContainer.createDiv({
-			cls: "summary-section ep:text-center ep:p-4 ep:bg-obs-secondary ep:rounded-lg ep:mb-4",
-		});
-
-		if (state.isLoading) {
-			summaryEl.createDiv({
-				text: "Scanning vault...",
-				cls: "ep:text-[13px] ep:text-obs-muted ep:mt-1",
-			});
-		} else {
-			summaryEl.createDiv({
-				text: state.allMissingNotes.length.toString(),
-				cls: "ep:text-3xl ep:font-bold ep:text-obs-normal",
-			});
-			summaryEl.createDiv({
-				text: state.allMissingNotes.length === 1 ? "note needs flashcards" : "notes need flashcards",
-				cls: "ep:text-[13px] ep:text-obs-muted ep:mt-1",
-			});
-		}
+		// Render header (desktop only)
+		this.renderHeader(contentContainer, state.allMissingNotes.length, state.isLoading);
 
 		// Render notes list
 		const notesContainer = contentContainer.createDiv();

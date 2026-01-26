@@ -49,6 +49,10 @@ export class FlashcardPanelView extends ItemView {
     private contentContainer!: HTMLElement;
     private footerContainer!: HTMLElement;
 
+    // Container elements for header and content (created once, reused)
+    private headerDiv: HTMLElement | null = null;
+    private contentDiv: HTMLElement | null = null;
+
     // Native header action elements
     private reviewAction: HTMLElement | null = null;
     private openFileAction: HTMLElement | null = null;
@@ -337,36 +341,56 @@ export class FlashcardPanelView extends ItemView {
     private render(): void {
         const state = this.stateManager.getState();
 
-        // Clear content container and destroy old components
-        this.headerComponent?.destroy();
-        this.contentComponent?.destroy();
-        this.contentContainer.empty();
-
-        // Make content container a flex column so header stays at top
+        // Make content container a flex column so header stays at top (only once)
         this.contentContainer.addClass("ep:flex", "ep:flex-col", "ep:gap-2");
 
-        // Create header container inside content (at the top)
-        const headerDiv = this.contentContainer.createDiv({ cls: "ep:shrink-0" });
-        this.headerComponent = new FlashcardPanelHeader(headerDiv, {
-            flashcardInfo: state.flashcardInfo,
-            cardsWithFsrs: this.getCardsWithFsrs(),
-            hasUncollectedFlashcards: state.hasUncollectedFlashcards,
-            uncollectedCount: state.uncollectedCount,
-            selectionMode: state.selectionMode,
-            selectedCount: state.selectedCardIds.size,
-            onAdd: () => void this.handleAddFlashcard(),
-            onGenerate: () => void this.handleGenerate(),
-            onUpdate: () => void this.handleUpdate(),
-            onCollect: () => void this.handleCollect(),
-            onRefresh: () => void this.loadFlashcardInfo(),
-            onReview: () => void this.handleReviewFromPanel(),
-            onExitSelectionMode: () => this.stateManager.exitSelectionMode(),
-        });
-        this.headerComponent.render();
+        // Create header container once, then reuse
+        if (!this.headerDiv) {
+            this.headerDiv = this.contentContainer.createDiv({ cls: "ep:shrink-0" });
+        }
 
-        // Create scrollable content area for cards
-        const contentDiv = this.contentContainer.createDiv({ cls: "ep:flex-1 ep:overflow-y-auto ep:min-h-0" });
-        this.contentComponent = new FlashcardPanelContent(contentDiv, {
+        // Create or update header component
+        if (!this.headerComponent) {
+            this.headerComponent = new FlashcardPanelHeader(this.headerDiv, {
+                flashcardInfo: state.flashcardInfo,
+                cardsWithFsrs: this.getCardsWithFsrs(),
+                hasUncollectedFlashcards: state.hasUncollectedFlashcards,
+                uncollectedCount: state.uncollectedCount,
+                selectionMode: state.selectionMode,
+                selectedCount: state.selectedCardIds.size,
+                searchQuery: state.searchQuery,
+                onAdd: () => void this.handleAddFlashcard(),
+                onGenerate: () => void this.handleGenerate(),
+                onUpdate: () => void this.handleUpdate(),
+                onCollect: () => void this.handleCollect(),
+                onRefresh: () => void this.loadFlashcardInfo(),
+                onReview: () => void this.handleReviewFromPanel(),
+                onExitSelectionMode: () => this.stateManager.exitSelectionMode(),
+                onSearchChange: (query) => this.stateManager.setSearchQuery(query),
+            });
+            this.headerComponent.render();
+        } else {
+            this.headerComponent.updateProps({
+                flashcardInfo: state.flashcardInfo,
+                cardsWithFsrs: this.getCardsWithFsrs(),
+                hasUncollectedFlashcards: state.hasUncollectedFlashcards,
+                uncollectedCount: state.uncollectedCount,
+                selectionMode: state.selectionMode,
+                selectedCount: state.selectedCardIds.size,
+                searchQuery: state.searchQuery,
+            });
+        }
+
+        // Create content container once, then reuse
+        if (!this.contentDiv) {
+            this.contentDiv = this.contentContainer.createDiv({ cls: "ep:flex-1 ep:overflow-y-auto ep:min-h-0" });
+        }
+
+        // Destroy and recreate content component (flashcard list needs full re-render)
+        this.contentComponent?.destroy();
+        this.contentDiv.empty();
+
+        this.contentComponent = new FlashcardPanelContent(this.contentDiv, {
             currentFile: state.currentFile,
             status: state.status,
             viewMode: state.viewMode,
@@ -378,6 +402,7 @@ export class FlashcardPanelView extends ItemView {
             selectedCardIds: state.selectedCardIds,
             expandedCardIds: state.expandedCardIds,
             cardsWithFsrs: this.getCardsWithFsrs(),
+            searchQuery: state.searchQuery,
             handlers: {
                 app: this.app,
                 component: this,

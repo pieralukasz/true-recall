@@ -86,7 +86,7 @@ export class AddToProjectModal extends BasePromiseModal<AddToProjectResult> {
 
 		const label = itemEl.createEl("span", {
 			text: projectName,
-			cls: "ep:flex-1 ep:text-sm ep:font-medium ep:cursor-pointer ep:text-obs-normal",
+			cls: "ep:flex-1 ep:text-ui-small ep:font-medium ep:cursor-pointer ep:text-obs-normal",
 		});
 
 		// Toggle on checkbox change

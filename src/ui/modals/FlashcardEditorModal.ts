@@ -198,7 +198,7 @@ export class FlashcardEditorModal extends BaseModal {
 		if (!displaySourceName) return;
 
 		const sourceEl = this.sourceContainer.createDiv({
-			cls: "ep:inline-block ep:text-obs-muted ep:text-sm ep:opacity-70",
+			cls: "ep:inline-block ep:text-obs-muted ep:text-ui-small ep:opacity-70",
 		});
 		sourceEl.createSpan({ text: displaySourceName });
 
@@ -255,7 +255,7 @@ export class FlashcardEditorModal extends BaseModal {
 		content: string,
 		field: "question" | "answer"
 	): void {
-		const baseCls = "ep:p-3 ep:min-h-15 ep:cursor-text ep:rounded-md ep:text-center ep:bg-obs-secondary ep:text-sm";
+		const baseCls = "ep:p-3 ep:min-h-15 ep:cursor-text ep:rounded-md ep:text-center ep:bg-obs-secondary ep:text-ui-small";
 		const answerCls = field === "answer" ? "ep:text-obs-muted" : "";
 		const preview = container.createDiv({
 			cls: `${baseCls} ${answerCls}`.trim(),
@@ -651,8 +651,8 @@ export class KeyboardShortcutsModal extends BaseModal {
 		for (const shortcut of shortcuts) {
 			const item = list.createDiv({ cls: "ep:flex ep:justify-between ep:items-center ep:py-2 ep:px-3 ep:bg-obs-secondary ep:rounded-md" });
 
-			item.createSpan({ cls: "ep:py-1 ep:px-2 ep:bg-obs-border ep:rounded ep:font-mono ep:text-xs ep:font-medium ep:text-obs-normal", text: shortcut.key });
-			item.createSpan({ cls: "ep:text-sm ep:text-obs-normal", text: shortcut.action });
+			item.createSpan({ cls: "ep:py-1 ep:px-2 ep:bg-obs-border ep:rounded ep:font-mono ep:text-ui-smaller ep:font-medium ep:text-obs-normal", text: shortcut.key });
+			item.createSpan({ cls: "ep:text-ui-small ep:text-obs-normal", text: shortcut.action });
 		}
 	}
 }

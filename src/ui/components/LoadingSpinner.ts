@@ -45,14 +45,14 @@ export class LoadingSpinner extends BaseComponent {
 		// Message text
 		this.messageEl = this.element.createDiv({
 			text: this.props.message,
-			cls: "ep:text-sm ep:font-medium ep:text-obs-normal",
+			cls: "ep:text-ui-small ep:font-medium ep:text-obs-normal",
 		});
 
 		// Sub-message text
 		if (this.props.subMessage) {
 			this.subMessageEl = this.element.createDiv({
 				text: this.props.subMessage,
-				cls: "ep:text-xs ep:text-obs-muted",
+				cls: "ep:text-ui-smaller ep:text-obs-muted",
 			});
 		}
 	}
@@ -77,7 +77,7 @@ export class LoadingSpinner extends BaseComponent {
 		} else if (subMessage && this.element) {
 			this.subMessageEl = this.element.createDiv({
 				text: subMessage,
-				cls: "ep:text-xs ep:text-obs-muted",
+				cls: "ep:text-ui-smaller ep:text-obs-muted",
 			});
 		}
 	}
