@@ -41,12 +41,12 @@ export class ProjectsContent extends BaseComponent {
 		}
 
 		this.element = this.container.createDiv({
-			cls: "episteme-projects-content ep:flex ep:flex-col ep:h-full ep:gap-2 ep:px-1.5 ep:pb-6",
+			cls: "episteme-projects-content ep:flex ep:flex-col ep:h-full ep:gap-2",
 		});
 
 		// Section header with buttons
 		const headerRow = this.element.createDiv({
-			cls: "ep:flex ep:items-center ep:justify-between ep:my-2",
+			cls: "ep:flex ep:items-center ep:justify-between",
 		});
 		headerRow.createDiv({
 			cls: "ep:text-xs ep:font-semibold ep:text-obs-muted ep:uppercase ep:tracking-wide",
@@ -95,9 +95,7 @@ export class ProjectsContent extends BaseComponent {
 
 	private renderSearchInput(): void {
 		const { searchQuery, onSearchChange } = this.props;
-		const searchContainer = this.element!.createDiv({
-			cls: "ep:mb-2",
-		});
+		const searchContainer = this.element!.createDiv();
 		this.searchInput = searchContainer.createEl("input", {
 			cls: "ep:w-full ep:py-2 ep:px-3 ep:border ep:border-obs-border ep:rounded-md ep:bg-obs-primary ep:text-obs-normal ep:text-sm ep:focus:outline-none ep:focus:border-obs-interactive ep:placeholder:text-obs-muted",
 			type: "text",

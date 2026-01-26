@@ -42,7 +42,7 @@ export class DashboardView extends ItemView {
 		const container = this.containerEl.children[1];
 		if (!(container instanceof HTMLElement)) return;
 		container.empty();
-		container.addClass("ep:p-4");
+		container.addClass("ep:p-2");
 
 		// Create content container
 		this.contentContainer = container.createDiv({

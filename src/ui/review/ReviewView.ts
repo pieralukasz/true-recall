@@ -197,9 +197,9 @@ export class ReviewView extends ItemView {
         container.addClass("episteme-review", "ep:flex", "ep:flex-col", "ep:h-full");
 
         // Create UI structure
-        this.headerEl = container.createDiv({ cls: "ep:flex ep:justify-center ep:items-center ep:py-3 ep:px-4 ep:border-b ep:border-obs-border ep:bg-obs-secondary ep:relative ep:shrink-0" });
-        this.cardContainerEl = container.createDiv({ cls: "episteme-review-card-container ep:flex-1 ep:min-h-0 ep:flex ep:items-start ep:justify-center ep:p-5 ep:overflow-y-auto" });
-        this.buttonsEl = container.createDiv({ cls: "episteme-review-buttons ep:flex ep:justify-center ep:gap-3 ep:py-4 ep:px-4 ep:border-t ep:border-obs-border ep:bg-obs-secondary ep:flex-nowrap ep:shrink-0" });
+        this.headerEl = container.createDiv({ cls: "ep:flex ep:justify-center ep:items-center ep:border-b ep:border-obs-border ep:bg-obs-secondary ep:relative ep:shrink-0" });
+        this.cardContainerEl = container.createDiv({ cls: "episteme-review-card-container ep:flex-1 ep:min-h-0 ep:flex ep:items-start ep:justify-center ep:p-2 ep:overflow-y-auto" });
+        this.buttonsEl = container.createDiv({ cls: "episteme-review-buttons ep:flex ep:justify-center ep:gap-3 ep:border-t ep:border-obs-border ep:bg-obs-secondary ep:flex-nowrap ep:shrink-0" });
 
         // Subscribe to state changes - update render and header actions
         this.unsubscribe = this.stateManager.subscribe(() => {
