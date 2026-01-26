@@ -290,6 +290,33 @@
 		text-decoration: none;
 	}
 
+	/* Card markdown - show full content with line breaks */
+	.episteme-card-markdown {
+		/* Reset paragraph margins */
+	}
+
+	.episteme-card-markdown p {
+		margin: 0;
+	}
+
+	.episteme-card-markdown p + p {
+		margin-top: 0.25rem;
+	}
+
+	/* Keep inline elements styled */
+	.episteme-card-markdown strong,
+	.episteme-card-markdown em,
+	.episteme-card-markdown code,
+	.episteme-card-markdown a {
+		display: inline;
+	}
+
+	/* Internal links */
+	.episteme-card-markdown .internal-link {
+		color: var(--text-accent);
+		text-decoration: none;
+	}
+
 	/* Thin scrollbar for calendar heatmap */
 	.episteme-scrollbar-thin::-webkit-scrollbar {
 		height: 4px;
