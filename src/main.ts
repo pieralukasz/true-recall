@@ -10,6 +10,7 @@ import {
 	VIEW_TYPE_PROJECTS,
 	VIEW_TYPE_BROWSER,
 	VIEW_TYPE_SIMULATOR,
+	VIEW_TYPE_NOTES_WITHOUT_PROJECTS,
 } from "./constants";
 import { normalizePath } from "obsidian";
 import {
@@ -47,6 +48,7 @@ import { OrphanedCardsView } from "./ui/orphaned-cards";
 import { ProjectsView } from "./ui/projects";
 import { BrowserView } from "./ui/browser";
 import { SimulatorView } from "./ui/simulator";
+import { NotesWithoutProjectsView } from "./ui/notes-without-projects";
 import { FloatingGenerateButton } from "./ui/components/FloatingGenerateButton";
 import {
 	EpistemeSettingTab,
@@ -175,6 +177,12 @@ export default class EpistemePlugin extends Plugin {
 		this.registerView(
 			VIEW_TYPE_BROWSER,
 			(leaf) => new BrowserView(leaf, this)
+		);
+
+		// Register the notes without projects view
+		this.registerView(
+			VIEW_TYPE_NOTES_WITHOUT_PROJECTS,
+			(leaf) => new NotesWithoutProjectsView(leaf, this)
 		);
 
 		// Register the FSRS simulator view
