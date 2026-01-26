@@ -45,7 +45,6 @@ export class FlashcardPanelView extends ItemView {
     private selectionFooterComponent: SelectionFooter | null = null;
 
     // Container elements (obtained from Panel)
-    private headerContainer!: HTMLElement;
     private contentContainer!: HTMLElement;
     private footerContainer!: HTMLElement;
 
@@ -97,9 +96,6 @@ export class FlashcardPanelView extends ItemView {
             showFooter: true,
         });
         this.panelComponent.render();
-
-        // Create header container (before content)
-        this.headerContainer = container.createDiv();
 
         // Get container elements from Panel
         this.contentContainer = this.panelComponent.getContentContainer();
@@ -333,10 +329,17 @@ export class FlashcardPanelView extends ItemView {
     private render(): void {
         const state = this.stateManager.getState();
 
-        // Render Header
+        // Clear content container and destroy old components
         this.headerComponent?.destroy();
-        this.headerContainer.empty();
-        this.headerComponent = new PanelHeader(this.headerContainer, {
+        this.contentComponent?.destroy();
+        this.contentContainer.empty();
+
+        // Make content container a flex column so header stays at top
+        this.contentContainer.addClass("ep:flex", "ep:flex-col");
+
+        // Create header container inside content (at the top)
+        const headerDiv = this.contentContainer.createDiv({ cls: "ep:shrink-0" });
+        this.headerComponent = new PanelHeader(headerDiv, {
             flashcardInfo: state.flashcardInfo,
             cardsWithFsrs: this.getCardsWithFsrs(),
             hasUncollectedFlashcards: state.hasUncollectedFlashcards,
@@ -351,10 +354,9 @@ export class FlashcardPanelView extends ItemView {
         });
         this.headerComponent.render();
 
-        // Render Content
-        this.contentComponent?.destroy();
-        this.contentContainer.empty();
-        this.contentComponent = new PanelContent(this.contentContainer, {
+        // Create scrollable content area for cards
+        const contentDiv = this.contentContainer.createDiv({ cls: "ep:flex-1 ep:overflow-y-auto ep:min-h-0" });
+        this.contentComponent = new PanelContent(contentDiv, {
             currentFile: state.currentFile,
             status: state.status,
             viewMode: state.viewMode,
