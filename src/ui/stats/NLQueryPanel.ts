@@ -5,6 +5,7 @@
 import { MarkdownRenderer, type App, type Component } from "obsidian";
 import type { NLQueryService } from "../../services/ai/nl-query.service";
 import type { NLQueryResult, ExampleQuery } from "../../types";
+import { StatsCard } from "./components/StatsCard";
 
 /**
  * Example queries for the UI
@@ -41,6 +42,7 @@ export class NLQueryPanel {
     private component: Component;
     private nlQueryService: NLQueryService | null = null;
     private isLoading = false;
+    private statsCard: StatsCard;
 
     // UI Elements
     private inputEl!: HTMLTextAreaElement;
@@ -52,6 +54,10 @@ export class NLQueryPanel {
         this.containerEl = containerEl;
         this.app = app;
         this.component = component;
+        this.statsCard = new StatsCard(containerEl, {
+            title: "Learning Insights",
+            hoverLift: true,
+        });
     }
 
     /**
@@ -67,16 +73,19 @@ export class NLQueryPanel {
      */
     render(): void {
         this.containerEl.empty();
-        this.containerEl.createEl("h3", { text: "Learning Insights" });
+
+        // Render the card wrapper
+        this.statsCard.render();
+        const contentContainer = this.statsCard.getContentContainer();
 
         // Description
-        this.containerEl.createDiv({
+        contentContainer.createDiv({
             cls: "ep:text-ui-small ep:text-obs-muted ep:mb-3",
             text: "Explore your learning data with natural language questions.",
         });
 
         // Input area
-        const inputContainer = this.containerEl.createDiv({
+        const inputContainer = contentContainer.createDiv({
             cls: "ep:flex ep:flex-col ep:gap-2 ep:mb-3",
         });
 
@@ -105,7 +114,7 @@ export class NLQueryPanel {
         this.submitBtn.addEventListener("click", () => void this.submitQuery());
 
         // Example queries
-        this.examplesEl = this.containerEl.createDiv({
+        this.examplesEl = contentContainer.createDiv({
             cls: "ep:flex ep:flex-wrap ep:items-center ep:gap-2 ep:mb-4",
         });
         this.examplesEl.createEl("span", {
@@ -125,7 +134,7 @@ export class NLQueryPanel {
         }
 
         // Results area
-        this.resultsEl = this.containerEl.createDiv({ cls: "ep:min-h-10" });
+        this.resultsEl = contentContainer.createDiv({ cls: "ep:min-h-10" });
 
         this.updateUIState();
     }

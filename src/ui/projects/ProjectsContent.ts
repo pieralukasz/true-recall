@@ -2,7 +2,7 @@
  * Projects Content Component
  * Contains search input and project list (flat list style like SessionContent)
  */
-import { setIcon, MarkdownRenderer, type App, type Component } from "obsidian";
+import { setIcon, MarkdownRenderer, Platform, type App, type Component } from "obsidian";
 import { BaseComponent } from "../component.base";
 import type { ProjectInfo, ProjectNoteInfo } from "../../types";
 
@@ -46,44 +46,46 @@ export class ProjectsContent extends BaseComponent {
 			cls: "episteme-projects-content ep:flex ep:flex-col ep:h-full ep:gap-2",
 		});
 
-		// Section header with buttons (same style as FlashcardPanelHeader)
-		const headerRow = this.element.createDiv({
-			cls: "ep:flex ep:items-center ep:justify-between",
-		});
-		headerRow.createDiv({
-			cls: "ep:text-ui-small ep:font-semibold ep:text-obs-normal",
-			text: "Projects",
-		});
+		// Section header with buttons (desktop only - on mobile actions are in "..." menu)
+		if (!Platform.isMobile) {
+			const headerRow = this.element.createDiv({
+				cls: "ep:flex ep:items-center ep:justify-between",
+			});
+			headerRow.createDiv({
+				cls: "ep:text-ui-small ep:font-semibold ep:text-obs-normal",
+				text: "Projects",
+			});
 
-		// Buttons container
-		const buttonsContainer = headerRow.createDiv({
-			cls: "ep:flex ep:items-center ep:gap-1",
-		});
+			// Buttons container
+			const buttonsContainer = headerRow.createDiv({
+				cls: "ep:flex ep:items-center ep:gap-1",
+			});
 
-		const iconBtnCls = "clickable-icon";
+			const iconBtnCls = "clickable-icon";
 
-		// Refresh button
-		const refreshBtn = buttonsContainer.createEl("button", {
-			cls: iconBtnCls,
-			attr: { "aria-label": "Refresh" },
-		});
-		setIcon(refreshBtn, "refresh-cw");
-		this.events.addEventListener(refreshBtn, "click", () => {
-			this.props.onRefresh();
-		});
+			// Refresh button
+			const refreshBtn = buttonsContainer.createEl("button", {
+				cls: iconBtnCls,
+				attr: { "aria-label": "Refresh" },
+			});
+			setIcon(refreshBtn, "refresh-cw");
+			this.events.addEventListener(refreshBtn, "click", () => {
+				this.props.onRefresh();
+			});
 
-		// New button
-		const newBtn = buttonsContainer.createEl("button", {
-			cls: iconBtnCls,
-			attr: { "aria-label": "New project" },
-		});
-		setIcon(newBtn, "plus");
-		this.events.addEventListener(newBtn, "click", () => {
-			this.props.onCreateFromNote();
-		});
+			// New button
+			const newBtn = buttonsContainer.createEl("button", {
+				cls: iconBtnCls,
+				attr: { "aria-label": "New project" },
+			});
+			setIcon(newBtn, "plus");
+			this.events.addEventListener(newBtn, "click", () => {
+				this.props.onCreateFromNote();
+			});
 
-		// Search input
-		this.renderSearchInput();
+			// Search input (desktop only)
+			this.renderSearchInput();
+		}
 
 		// Scroll wrapper for project list
 		this.projectListContainer = this.element.createDiv({

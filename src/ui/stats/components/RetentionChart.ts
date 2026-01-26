@@ -21,7 +21,6 @@ export class RetentionChart extends ChartSection<RetentionEntry> {
 	constructor(container: HTMLElement, props: RetentionChartProps) {
 		super(container, {
 			title: "Retention rate",
-			icon: "📈",
 		});
 		this.props = props;
 	}

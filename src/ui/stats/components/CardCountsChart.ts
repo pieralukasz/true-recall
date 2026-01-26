@@ -47,7 +47,6 @@ export class CardCountsChart extends BaseComponent {
 		this.props = props;
 		this.statsCard = new StatsCard(container, {
 			title: "Card counts",
-			icon: "🗂️",
 			hoverLift: true,
 		});
 	}

@@ -31,7 +31,6 @@ export class CalendarHeatmap extends BaseComponent {
 		this.props = props;
 		this.statsCard = new StatsCard(container, {
 			title: "Activity calendar",
-			icon: "📆",
 			hoverLift: true,
 		});
 	}

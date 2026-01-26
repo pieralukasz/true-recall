@@ -528,11 +528,28 @@ export class SyncService {
 	private mapRemoteReviewLogToLocal(
 		remote: RemoteReviewLogRow
 	): ReviewLogForSync {
-		// Convert bigint timestamp back to ISO string if needed
-		const reviewedAt =
-			typeof remote.reviewed_at === "number"
-				? new Date(remote.reviewed_at).toISOString()
-				: remote.reviewed_at;
+		// Convert bigint timestamp back to ISO string with validation
+		let reviewedAt: string;
+		if (typeof remote.reviewed_at === "number") {
+			// Validate: timestamp must be after year 2000 (946684800000 ms)
+			if (remote.reviewed_at < 946684800000) {
+				throw new Error(
+					`Invalid reviewed_at timestamp: ${remote.reviewed_at}`
+				);
+			}
+			reviewedAt = new Date(remote.reviewed_at).toISOString();
+		} else if (typeof remote.reviewed_at === "string") {
+			reviewedAt = remote.reviewed_at;
+		} else {
+			throw new Error(
+				`Invalid reviewed_at type: ${typeof remote.reviewed_at}`
+			);
+		}
+
+		// Validate ISO format (YYYY-MM-DDTHH:MM:SS...)
+		if (!/^\d{4}-\d{2}-\d{2}T/.test(reviewedAt)) {
+			throw new Error(`Invalid ISO date format: ${reviewedAt}`);
+		}
 
 		return {
 			id: remote.id,

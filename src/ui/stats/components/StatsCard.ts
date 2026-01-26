@@ -8,8 +8,6 @@ import { BaseComponent } from "../../component.base";
 export interface StatsCardProps {
 	/** Optional card title */
 	title?: string;
-	/** Optional icon for the header */
-	icon?: string;
 	/** Optional action button in header */
 	action?: {
 		label: string;
@@ -105,14 +103,6 @@ export class StatsCard extends BaseComponent {
 		const titleRow = this.headerContainer.createDiv({
 			cls: "ep:flex ep:items-center ep:gap-2",
 		});
-
-		// Icon if provided
-		if (this.props.icon) {
-			titleRow.createSpan({
-				cls: "ep:text-xl",
-				text: this.props.icon,
-			});
-		}
 
 		// Title
 		titleRow.createSpan({

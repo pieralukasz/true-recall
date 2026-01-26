@@ -1762,6 +1762,12 @@
   .is-mobile [data-type^="episteme-"] .view-content {
     padding-bottom: 60px;
   }
+  .episteme-mobile-status {
+    display: flex;
+    gap: 4px;
+    align-items: center;
+    font-size: var(--font-ui-smaller);
+  }
   [data-type="episteme-review"] .view-content {
     padding: 0;
   }
