@@ -140,6 +140,10 @@
 	--text-ui-medium: var(--font-ui-medium);    /* 15px */
 	--text-ui-large: var(--font-ui-large);      /* 20px */
 
+	/* === Fixed font sizes (for ep:text-*) === */
+	--text-lg: 1.125rem;                        /* 18px - between sm (14px) and xl (20px) */
+	--text-lg--line-height: calc(1.75 / 1.125); /* Proportional line height */
+
 	/* === Font families (for ep:font-*) === */
 	--font-family-interface: var(--font-interface-theme);
 	--font-family-text: var(--font-text-theme);
@@ -225,6 +229,17 @@
 	 */
 	[data-type="episteme-review"] .view-content {
 		padding: 0;
+	}
+
+	/* Review rating buttons - override Obsidian defaults */
+	.episteme-review-buttons button {
+		height: auto !important;
+		padding: 0.5rem 1rem !important;
+	}
+
+	/* Review buttons container - spacing between buttons */
+	.episteme-review-buttons {
+		gap: 1rem !important;
 	}
 
 	/* Chart fade-in animation */

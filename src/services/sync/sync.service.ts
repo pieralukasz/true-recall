@@ -530,16 +530,26 @@ export class SyncService {
 	): ReviewLogForSync {
 		// Convert bigint timestamp back to ISO string with validation
 		let reviewedAt: string;
+		const MIN_VALID_TIMESTAMP = 946684800000; // Year 2000
+
 		if (typeof remote.reviewed_at === "number") {
-			// Validate: timestamp must be after year 2000 (946684800000 ms)
-			if (remote.reviewed_at < 946684800000) {
+			if (remote.reviewed_at < MIN_VALID_TIMESTAMP) {
 				throw new Error(
 					`Invalid reviewed_at timestamp: ${remote.reviewed_at}`
 				);
 			}
 			reviewedAt = new Date(remote.reviewed_at).toISOString();
 		} else if (typeof remote.reviewed_at === "string") {
-			reviewedAt = remote.reviewed_at;
+			// Handle numeric string (e.g., "1769021590000" from Supabase)
+			if (/^\d{13,}$/.test(remote.reviewed_at)) {
+				const ts = parseInt(remote.reviewed_at, 10);
+				if (ts < MIN_VALID_TIMESTAMP) {
+					throw new Error(`Invalid reviewed_at timestamp: ${ts}`);
+				}
+				reviewedAt = new Date(ts).toISOString();
+			} else {
+				reviewedAt = remote.reviewed_at;
+			}
 		} else {
 			throw new Error(
 				`Invalid reviewed_at type: ${typeof remote.reviewed_at}`
