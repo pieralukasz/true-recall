@@ -1082,6 +1082,9 @@
   .ep\:pb-6 {
     padding-bottom: calc(var(--ep-spacing) * 6);
   }
+  .ep\:pl-6 {
+    padding-left: calc(var(--ep-spacing) * 6);
+  }
   .ep\:pl-9 {
     padding-left: calc(var(--ep-spacing) * 9);
   }
@@ -1520,6 +1523,13 @@
       }
     }
   }
+  .ep\:hover\:bg-red-500 {
+    &:hover {
+      @media (hover: hover) {
+        background-color: var(--ep-color-red-500);
+      }
+    }
+  }
   .ep\:hover\:bg-red-500\/10 {
     &:hover {
       @media (hover: hover) {
@@ -1748,6 +1758,23 @@
   }
   .episteme-metric-updated {
     animation: episteme-pulse 0.3s ease-in-out;
+  }
+  @keyframes episteme-pulse-collect {
+    0%, 100% {
+      opacity: 1;
+      transform: scale(1);
+    }
+    50% {
+      opacity: 0.7;
+      transform: scale(1.1);
+    }
+  }
+  .episteme-pulse-collect {
+    animation: episteme-pulse-collect 2s ease-in-out infinite;
+    color: var(--color-yellow) !important;
+  }
+  .episteme-pulse-collect:hover {
+    animation: none;
   }
   .episteme-scrollbar-thin::-webkit-scrollbar {
     height: 4px;

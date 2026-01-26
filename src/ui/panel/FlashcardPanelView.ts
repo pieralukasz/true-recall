@@ -17,7 +17,10 @@ import { PanelStateManager } from "../../state";
 import { Panel } from "../components/Panel";
 import { PanelContent } from "./PanelContent";
 import { PanelFooter } from "./PanelFooter";
+import { PanelHeader } from "./PanelHeader";
+import { SelectionFooter } from "./SelectionFooter";
 import { MoveCardModal } from "../modals/MoveCardModal";
+import type { FSRSFlashcardItem } from "../../types/fsrs/card.types";
 import { FlashcardEditorModal } from "../modals/FlashcardEditorModal";
 import type { FlashcardItem, FlashcardChange } from "../../types";
 import type { CardAddedEvent, CardRemovedEvent, CardUpdatedEvent, BulkChangeEvent } from "../../types/events.types";
@@ -36,10 +39,13 @@ export class FlashcardPanelView extends ItemView {
 
     // UI Components
     private panelComponent: Panel | null = null;
+    private headerComponent: PanelHeader | null = null;
     private contentComponent: PanelContent | null = null;
     private footerComponent: PanelFooter | null = null;
+    private selectionFooterComponent: SelectionFooter | null = null;
 
     // Container elements (obtained from Panel)
+    private headerContainer!: HTMLElement;
     private contentContainer!: HTMLElement;
     private footerContainer!: HTMLElement;
 
@@ -53,9 +59,6 @@ export class FlashcardPanelView extends ItemView {
 
     // Event subscriptions for cross-component reactivity
     private eventUnsubscribers: (() => void)[] = [];
-
-    // Selection state for bulk move
-    private selectedCardIds: Set<string> = new Set();
 
     // Selection timer for debouncing
     private selectionTimer: ReturnType<typeof setTimeout> | null = null;
@@ -94,6 +97,9 @@ export class FlashcardPanelView extends ItemView {
             showFooter: true,
         });
         this.panelComponent.render();
+
+        // Create header container (before content)
+        this.headerContainer = container.createDiv();
 
         // Get container elements from Panel
         this.contentContainer = this.panelComponent.getContentContainer();
@@ -207,8 +213,10 @@ export class FlashcardPanelView extends ItemView {
 
         // Cleanup components
         this.panelComponent?.destroy();
+        this.headerComponent?.destroy();
         this.contentComponent?.destroy();
         this.footerComponent?.destroy();
+        this.selectionFooterComponent?.destroy();
     }
 
     /**
@@ -272,7 +280,7 @@ export class FlashcardPanelView extends ItemView {
         const file = state.currentFile;
 
         // Clear selection when loading new file info
-        this.selectedCardIds.clear();
+        this.stateManager.exitSelectionMode();
 
         if (!file || file.extension !== "md") {
             this.stateManager.setFlashcardInfo(null);
@@ -325,6 +333,24 @@ export class FlashcardPanelView extends ItemView {
     private render(): void {
         const state = this.stateManager.getState();
 
+        // Render Header
+        this.headerComponent?.destroy();
+        this.headerContainer.empty();
+        this.headerComponent = new PanelHeader(this.headerContainer, {
+            flashcardInfo: state.flashcardInfo,
+            cardsWithFsrs: this.getCardsWithFsrs(),
+            hasUncollectedFlashcards: state.hasUncollectedFlashcards,
+            uncollectedCount: state.uncollectedCount,
+            selectionMode: state.selectionMode,
+            selectedCount: state.selectedCardIds.size,
+            onAdd: () => void this.handleAddFlashcard(),
+            onGenerate: () => void this.handleGenerate(),
+            onUpdate: () => void this.handleUpdate(),
+            onCollect: () => void this.handleCollect(),
+            onExitSelectionMode: () => this.stateManager.exitSelectionMode(),
+        });
+        this.headerComponent.render();
+
         // Render Content
         this.contentComponent?.destroy();
         this.contentContainer.empty();
@@ -336,6 +362,10 @@ export class FlashcardPanelView extends ItemView {
             diffResult: state.diffResult,
             isFlashcardFile: state.isFlashcardFile,
             noteFlashcardType: state.noteFlashcardType,
+            selectionMode: state.selectionMode,
+            selectedCardIds: state.selectedCardIds,
+            expandedCardIds: state.expandedCardIds,
+            cardsWithFsrs: this.getCardsWithFsrs(),
             handlers: {
                 app: this.app,
                 component: this,
@@ -349,71 +379,66 @@ export class FlashcardPanelView extends ItemView {
                 onSelectAll: (selected) => this.handleSelectAll(selected),
                 onEditSave: async (card, field, newContent) => void this.handleEditSave(card, field, newContent),
                 onEditChange: (change, field, newContent) => this.handleDiffEditChange(change, field, newContent),
+                onToggleExpand: (cardId) => this.stateManager.toggleCardExpanded(cardId),
+                onToggleSelect: (cardId) => this.stateManager.toggleCardSelection(cardId),
+                onEnterSelectionMode: (cardId) => this.stateManager.enterSelectionMode(cardId),
             },
         });
         this.contentComponent.render();
 
-        // Render Footer
+        // Render Footer (different based on mode)
         this.footerComponent?.destroy();
+        this.selectionFooterComponent?.destroy();
         this.footerContainer.empty();
-        this.footerComponent = new PanelFooter(this.footerContainer, {
-            currentFile: state.currentFile,
-            status: state.status,
-            viewMode: state.viewMode,
-            diffResult: state.diffResult,
-            isFlashcardFile: state.isFlashcardFile,
-            // Note type for Seed vs Generate button
-            noteFlashcardType: state.noteFlashcardType,
-            // Selection info for bulk move button
-            selectedCount: this.selectedCardIds.size,
-            // Selection state for literature notes
-            hasSelection: state.hasSelection,
-            selectedText: state.selectedText,
-            // Collect flashcards from markdown
-            hasUncollectedFlashcards: state.hasUncollectedFlashcards,
-            uncollectedCount: state.uncollectedCount,
-            onGenerate: () => void this.handleGenerate(),
-            onUpdate: () => void this.handleUpdate(),
-            onApplyDiff: () => void this.handleApplyDiff(),
-            onCancelDiff: () => void this.handleCancelDiff(),
-            onMoveSelected: () => void this.handleMoveSelected(),
-            onDeleteSelected: () => void this.handleDeleteSelected(),
-            onAddFlashcard: () => void this.handleAddFlashcard(),
-            onCollect: () => void this.handleCollect(),
-        });
-        this.footerComponent.render();
+
+        if (state.selectionMode === "selecting") {
+            // Selection mode footer
+            this.selectionFooterComponent = new SelectionFooter(this.footerContainer, {
+                selectedCount: state.selectedCardIds.size,
+                onMove: () => void this.handleMoveSelected(),
+                onDelete: () => void this.handleDeleteSelected(),
+            });
+            this.selectionFooterComponent.render();
+        } else if (state.viewMode === "diff" && state.diffResult) {
+            // Diff mode footer (keep existing)
+            this.footerComponent = new PanelFooter(this.footerContainer, {
+                currentFile: state.currentFile,
+                status: state.status,
+                viewMode: state.viewMode,
+                diffResult: state.diffResult,
+                isFlashcardFile: state.isFlashcardFile,
+                noteFlashcardType: state.noteFlashcardType,
+                selectedCount: 0,
+                hasSelection: state.hasSelection,
+                selectedText: state.selectedText,
+                hasUncollectedFlashcards: state.hasUncollectedFlashcards,
+                uncollectedCount: state.uncollectedCount,
+                onGenerate: () => void this.handleGenerate(),
+                onUpdate: () => void this.handleUpdate(),
+                onApplyDiff: () => void this.handleApplyDiff(),
+                onCancelDiff: () => void this.handleCancelDiff(),
+                onMoveSelected: () => void this.handleMoveSelected(),
+                onDeleteSelected: () => void this.handleDeleteSelected(),
+                onAddFlashcard: () => void this.handleAddFlashcard(),
+                onCollect: () => void this.handleCollect(),
+            });
+            this.footerComponent.render();
+        }
+        // Normal mode: no footer (actions in header)
     }
 
     /**
-     * Re-render only the footer (for selection count updates)
-     * Use this instead of full render() when only footer data changes
+     * Get cards with FSRS data from flashcard manager
      */
-    private renderFooterOnly(): void {
+    private getCardsWithFsrs(): FSRSFlashcardItem[] {
         const state = this.stateManager.getState();
-        this.footerComponent?.destroy();
-        this.footerContainer.empty();
-        this.footerComponent = new PanelFooter(this.footerContainer, {
-            currentFile: state.currentFile,
-            status: state.status,
-            viewMode: state.viewMode,
-            diffResult: state.diffResult,
-            isFlashcardFile: state.isFlashcardFile,
-            noteFlashcardType: state.noteFlashcardType,
-            selectedCount: this.selectedCardIds.size,
-            hasSelection: state.hasSelection,
-            selectedText: state.selectedText,
-            hasUncollectedFlashcards: state.hasUncollectedFlashcards,
-            uncollectedCount: state.uncollectedCount,
-            onGenerate: () => void this.handleGenerate(),
-            onUpdate: () => void this.handleUpdate(),
-            onApplyDiff: () => void this.handleApplyDiff(),
-            onCancelDiff: () => void this.handleCancelDiff(),
-            onMoveSelected: () => void this.handleMoveSelected(),
-            onDeleteSelected: () => void this.handleDeleteSelected(),
-            onAddFlashcard: () => void this.handleAddFlashcard(),
-            onCollect: () => void this.handleCollect(),
-        });
-        this.footerComponent.render();
+        if (!state.flashcardInfo?.flashcards) return [];
+
+        // Get all FSRS cards and filter to current file's cards
+        const allFsrsCards = this.flashcardManager.getAllFSRSCards();
+        const cardIds = new Set(state.flashcardInfo.flashcards.map(c => c.id));
+
+        return allFsrsCards.filter(c => cardIds.has(c.id));
     }
 
     // ===== Action Handlers =====
@@ -886,31 +911,15 @@ export class FlashcardPanelView extends ItemView {
         }
     }
 
-    // ===== Selection Handlers for Bulk Move =====
-
-    private handleToggleCardSelection(cardId: string): void {
-        // Toggle selection state
-        if (this.selectedCardIds.has(cardId)) {
-            this.selectedCardIds.delete(cardId);
-        } else {
-            this.selectedCardIds.add(cardId);
-        }
-        // Only update footer (checkbox already toggled visually by browser)
-        this.renderFooterOnly();
-    }
-
-    private handleClearSelection(): void {
-        this.selectedCardIds.clear();
-        this.render();
-    }
+    // ===== Selection Handlers for Bulk Operations =====
 
     private async handleMoveSelected(): Promise<void> {
         const state = this.stateManager.getState();
-        if (!state.flashcardInfo || this.selectedCardIds.size === 0) return;
+        if (!state.flashcardInfo || state.selectedCardIds.size === 0) return;
 
         // Get selected cards with valid IDs
         const selectedCards = state.flashcardInfo.flashcards.filter(
-            (card) => this.selectedCardIds.has(card.id)
+            (card) => state.selectedCardIds.has(card.id)
         );
 
         if (selectedCards.length === 0) {
@@ -950,18 +959,18 @@ export class FlashcardPanelView extends ItemView {
         }
 
         // Clear selection and refresh
-        this.selectedCardIds.clear();
+        this.stateManager.exitSelectionMode();
         new Notice(`Moved ${successCount} of ${selectedCards.length} cards`);
         await this.loadFlashcardInfo();
     }
 
     private async handleDeleteSelected(): Promise<void> {
         const state = this.stateManager.getState();
-        if (!state.flashcardInfo || !state.currentFile || this.selectedCardIds.size === 0) return;
+        if (!state.flashcardInfo || !state.currentFile || state.selectedCardIds.size === 0) return;
 
         // Get selected cards by ID
         const selectedCards = state.flashcardInfo.flashcards
-            .filter(card => this.selectedCardIds.has(card.id));
+            .filter(card => state.selectedCardIds.has(card.id));
 
         if (selectedCards.length === 0) return;
 
@@ -984,7 +993,7 @@ export class FlashcardPanelView extends ItemView {
         }
 
         // Clear selection and refresh
-        this.selectedCardIds.clear();
+        this.stateManager.exitSelectionMode();
         new Notice(`Deleted ${successCount} of ${selectedCards.length} card(s)`);
         await this.loadFlashcardInfo();
     }
