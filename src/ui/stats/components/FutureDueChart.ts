@@ -23,7 +23,6 @@ export class FutureDueChart extends ChartSection<FutureDueEntry> {
 	constructor(container: HTMLElement, props: FutureDueChartProps) {
 		super(container, {
 			title: "Future due",
-			icon: "📅",
 		});
 		this.props = props;
 	}

@@ -30,6 +30,12 @@ export function registerEventHandlers(plugin: EpistemePlugin): void {
 						.setIcon("folder-plus")
 						.onClick(() => void plugin.createProjectFromNote(file));
 				});
+
+				menu.addItem((item) => {
+					item.setTitle("Open flashcard panel")
+						.setIcon("book-text")
+						.onClick(() => void plugin.activateView());
+				});
 			}
 		})
 	);

@@ -26,6 +26,7 @@ export class SqliteSchemaManager {
 		16: migrations.migration015ToV16,
 		17: migrations.migration016ToV17,
 		18: migrations.migration017ToV18,
+		19: migrations.migration018ToV19,
 	};
 
 	constructor(db: DatabaseLike, onSchemaChange: () => void) {
@@ -34,7 +35,7 @@ export class SqliteSchemaManager {
 	}
 
 	/**
-	 * Create database tables (schema v18 - removed card_image_refs table)
+	 * Create database tables (schema v19 - cleaned invalid review_log entries)
 	 */
 	createTables(): void {
 		this.db.run(`

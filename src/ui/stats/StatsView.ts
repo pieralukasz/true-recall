@@ -163,14 +163,7 @@ export class StatsView extends ItemView {
 	 * Create the layout and initialize all components
 	 */
 	private createLayout(): void {
-		// 1. Today Section
-		this.todaySection = new TodaySection(this.contentWrapper, {
-			statsCalculator: this.statsCalculator,
-			currentRange: this.currentRange,
-		});
-		this.todaySection.render();
-
-		// 2. NL Query Section (AI-powered) - wrapped in a card
+		// 1. NL Query Section (Learning Insights) - wrapped in a card
 		this.nlQueryEl = this.contentWrapper.createDiv({
 			cls: [
 				"ep:mb-5",
@@ -187,6 +180,13 @@ export class StatsView extends ItemView {
 		if (this.plugin.nlQueryService) {
 			this.nlQueryPanel.setService(this.plugin.nlQueryService);
 		}
+
+		// 2. Today Section
+		this.todaySection = new TodaySection(this.contentWrapper, {
+			statsCalculator: this.statsCalculator,
+			currentRange: this.currentRange,
+		});
+		this.todaySection.render();
 
 		// 3. Time Range Selector
 		this.timeRangeSelector = new TimeRangeSelector(this.contentWrapper, {
