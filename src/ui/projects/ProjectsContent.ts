@@ -4,7 +4,7 @@
  */
 import { setIcon, MarkdownRenderer, type App, type Component } from "obsidian";
 import { BaseComponent } from "../component.base";
-import type { ProjectInfo } from "../../types";
+import type { ProjectInfo, ProjectNoteInfo } from "../../types";
 
 export interface ProjectsContentProps {
 	isLoading: boolean;
@@ -165,16 +165,35 @@ export class ProjectsContent extends BaseComponent {
 
 	private renderProjectItem(container: HTMLElement, project: ProjectInfo, isEmpty: boolean): void {
 		const hasCards = project.cardCount > 0;
+		const isExpanded = this.props.expandedProjectIds.has(project.id);
 
 		// Project item container (flat list style)
 		const item = container.createDiv({
-			cls: `ep:flex ep:items-start ep:gap-3 ep:py-2.5 ep:px-3 ep:border-b ep:border-obs-modifier-border ep:transition-colors ep:hover:bg-obs-modifier-hover ep:last:border-b-0${
+			cls: `ep:flex ep:flex-col ep:border-b ep:border-obs-modifier-border${
 				isEmpty ? " ep:opacity-60" : ""
 			}`,
 		});
 
+		// Main row (always visible) - clickable for expansion
+		const mainRow = item.createDiv({
+			cls: "ep:flex ep:items-start ep:gap-3 ep:py-2.5 ep:px-3 ep:cursor-pointer ep:transition-colors ep:hover:bg-obs-modifier-hover",
+		});
+
+		// Click handler for expand/collapse
+		this.events.addEventListener(mainRow, "click", (e) => {
+			// Don't trigger if clicked on action buttons
+			if ((e.target as HTMLElement).closest("button")) return;
+			this.props.onToggleExpand(project.id);
+		});
+
+		// Chevron icon (rotates when expanded)
+		const chevronEl = mainRow.createSpan({
+			cls: `ep:transition-transform ep:duration-200 ep:shrink-0 ${isExpanded ? "ep:rotate-90" : ""}`,
+		});
+		setIcon(chevronEl, "chevron-right");
+
 		// Content container
-		const content = item.createDiv({
+		const content = mainRow.createDiv({
 			cls: "ep:flex-1 ep:min-w-0",
 		});
 
@@ -246,7 +265,7 @@ export class ProjectsContent extends BaseComponent {
 		}
 
 		// Actions container (right side)
-		const actions = item.createDiv({
+		const actions = mainRow.createDiv({
 			cls: "ep:flex ep:items-center ep:gap-1 ep:shrink-0",
 		});
 
@@ -285,6 +304,62 @@ export class ProjectsContent extends BaseComponent {
 			this.events.addEventListener(reviewBtn, "click", (e) => {
 				e.stopPropagation();
 				this.props.onStartReview(project.name);
+			});
+		}
+
+		// Expanded content (notes list)
+		if (isExpanded && project.notes.length > 0) {
+			this.renderNotesList(item, project.notes);
+		}
+	}
+
+	private renderNotesList(container: HTMLElement, notes: ProjectNoteInfo[]): void {
+		const notesContainer = container.createDiv({
+			cls: "ep:border-t ep:border-obs-modifier-border",
+		});
+
+		for (const note of notes) {
+			const noteItem = notesContainer.createDiv({
+				cls: "ep:flex ep:items-center ep:gap-2 ep:py-2 ep:px-3 ep:pl-11 ep:hover:bg-obs-modifier-hover ep:transition-colors ep:cursor-pointer",
+			});
+
+			// Note icon
+			const iconEl = noteItem.createSpan({
+				cls: "ep:text-obs-muted",
+			});
+			setIcon(iconEl, "file-text");
+
+			// Note name as clickable wiki link
+			const nameEl = noteItem.createDiv({
+				cls: "ep:flex-1 ep:text-sm ep:text-obs-normal ep:line-clamp-1 [&_p]:ep:m-0 [&_p]:ep:inline [&_a.internal-link]:ep:text-obs-normal [&_a.internal-link]:ep:no-underline [&_a.internal-link:hover]:ep:text-obs-link [&_a.internal-link:hover]:ep:underline",
+			});
+			void MarkdownRenderer.render(
+				this.props.app,
+				`[[${note.name}]]`,
+				nameEl,
+				"",
+				this.props.component
+			);
+
+			// Handle internal link clicks
+			this.events.addEventListener(nameEl, "click", (e) => {
+				const target = e.target as HTMLElement;
+				const linkEl = target.closest("a.internal-link");
+				if (!linkEl) return;
+
+				e.preventDefault();
+				e.stopPropagation();
+				const href = linkEl.getAttribute("data-href");
+				if (href) {
+					void this.props.app.workspace.openLinkText(href, "", false);
+				}
+			});
+
+			// Card count
+			const cardCountText = note.cardCount === 1 ? "1 card" : `${note.cardCount} cards`;
+			noteItem.createSpan({
+				text: cardCountText,
+				cls: "ep:text-xs ep:text-obs-muted ep:whitespace-nowrap",
 			});
 		}
 	}
