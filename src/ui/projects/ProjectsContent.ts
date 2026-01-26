@@ -27,6 +27,7 @@ export interface ProjectsContentProps {
 export class ProjectsContent extends BaseComponent {
 	private props: ProjectsContentProps;
 	private searchInput: HTMLInputElement | null = null;
+	private projectListContainer: HTMLElement | null = null;
 
 	constructor(container: HTMLElement, props: ProjectsContentProps) {
 		super(container);
@@ -42,9 +43,6 @@ export class ProjectsContent extends BaseComponent {
 		this.element = this.container.createDiv({
 			cls: "episteme-projects-content ep:flex ep:flex-col ep:h-full ep:gap-2 ep:px-1.5 ep:pb-6",
 		});
-
-		// Search input
-		this.renderSearchInput();
 
 		// Section header with buttons
 		const headerRow = this.element.createDiv({
@@ -83,13 +81,16 @@ export class ProjectsContent extends BaseComponent {
 			this.props.onCreateFromNote();
 		});
 
+		// Search input
+		this.renderSearchInput();
+
 		// Scroll wrapper for project list
-		const scrollWrapper = this.element.createDiv({
+		this.projectListContainer = this.element.createDiv({
 			cls: "ep:flex-1 ep:overflow-y-auto ep:min-h-0",
 		});
 
 		// Project list
-		this.renderProjectList(scrollWrapper);
+		this.renderProjectList(this.projectListContainer);
 	}
 
 	private renderSearchInput(): void {
@@ -171,12 +172,6 @@ export class ProjectsContent extends BaseComponent {
 				isEmpty ? " ep:opacity-60" : ""
 			}`,
 		});
-
-		// Folder icon
-		const iconEl = item.createSpan({
-			cls: "ep:text-obs-muted ep:shrink-0 ep:flex ep:items-center ep:mt-0.5 [&_svg]:ep:w-4 [&_svg]:ep:h-4",
-		});
-		setIcon(iconEl, "folder");
 
 		// Content container
 		const content = item.createDiv({
@@ -296,7 +291,12 @@ export class ProjectsContent extends BaseComponent {
 
 	updateProps(props: Partial<ProjectsContentProps>): void {
 		this.props = { ...this.props, ...props };
-		this.render();
+
+		// Only re-render the project list - never destroy the input
+		if (this.projectListContainer) {
+			this.projectListContainer.empty();
+			this.renderProjectList(this.projectListContainer);
+		}
 	}
 
 	focusSearch(): void {

@@ -419,24 +419,33 @@ export class ProjectsView extends ItemView {
 
 		const contentContainer = this.panelComponent.getContentContainer();
 
-		// Render Content (includes toolbar with search + new button)
-		this.contentComponent?.destroy();
-		contentContainer.empty();
-		this.contentComponent = new ProjectsContent(contentContainer, {
-			isLoading: state.isLoading,
-			projectsWithCards,
-			emptyProjects,
-			searchQuery: state.searchQuery,
-			app: this.app,
-			component: this,
-			onSearchChange: (query) => this.stateManager.setSearchQuery(query),
-			onStartReview: (name) => void this.handleStartReview(name),
-			onDelete: (id) => void this.handleDeleteProject(id),
-			onAddNotes: (id, name) =>
-				void this.handleAddNotesToProject(id, name),
-			onCreateFromNote: () => void this.handleCreateFromNote(),
-			onRefresh: () => void this.loadProjects(),
-		});
-		this.contentComponent.render();
+		// Create component once, then just update props
+		if (!this.contentComponent) {
+			contentContainer.empty();
+			this.contentComponent = new ProjectsContent(contentContainer, {
+				isLoading: state.isLoading,
+				projectsWithCards,
+				emptyProjects,
+				searchQuery: state.searchQuery,
+				app: this.app,
+				component: this,
+				onSearchChange: (query) => this.stateManager.setSearchQuery(query),
+				onStartReview: (name) => void this.handleStartReview(name),
+				onDelete: (id) => void this.handleDeleteProject(id),
+				onAddNotes: (id, name) =>
+					void this.handleAddNotesToProject(id, name),
+				onCreateFromNote: () => void this.handleCreateFromNote(),
+				onRefresh: () => void this.loadProjects(),
+			});
+			this.contentComponent.render();
+		} else {
+			// Just update props - don't destroy/recreate
+			this.contentComponent.updateProps({
+				isLoading: state.isLoading,
+				projectsWithCards,
+				emptyProjects,
+				searchQuery: state.searchQuery,
+			});
+		}
 	}
 }
