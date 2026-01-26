@@ -23,7 +23,6 @@ export class CardsCreatedChart extends ChartSection<CardsCreatedEntry> {
 	constructor(container: HTMLElement, props: CardsCreatedChartProps) {
 		super(container, {
 			title: "Cards created",
-			icon: "📝",
 		});
 		this.props = props;
 	}

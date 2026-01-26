@@ -5,7 +5,7 @@
  * v15: Projects are read from frontmatter (source of truth)
  * v19: Uses FrontmatterIndexService for O(1) project lookups
  */
-import { ItemView, WorkspaceLeaf, Notice, TFile } from "obsidian";
+import { ItemView, WorkspaceLeaf, Notice, TFile, Platform, Menu } from "obsidian";
 import { State } from "ts-fsrs";
 import { VIEW_TYPE_PROJECTS, VIEW_TYPE_REVIEW } from "../../constants";
 import { createProjectsStateManager } from "../../state/projects.state";
@@ -50,6 +50,27 @@ export class ProjectsView extends ItemView {
 		return "folder";
 	}
 
+	/**
+	 * Add items to the native "..." menu (mobile)
+	 */
+	onPaneMenu(menu: Menu, source: string): void {
+		super.onPaneMenu(menu, source);
+
+		if (!Platform.isMobile) return;
+
+		menu.addItem((item) => {
+			item.setTitle("Refresh")
+				.setIcon("refresh-cw")
+				.onClick(() => void this.loadProjects());
+		});
+
+		menu.addItem((item) => {
+			item.setTitle("New project")
+				.setIcon("plus")
+				.onClick(() => void this.handleCreateFromNote());
+		});
+	}
+
 	async onOpen(): Promise<void> {
 		const container = this.containerEl.children[1];
 		if (!(container instanceof HTMLElement)) return;
@@ -59,10 +80,12 @@ export class ProjectsView extends ItemView {
 		this.panelComponent = new Panel(container);
 		this.panelComponent.render();
 
-		// Add native refresh action
-		this.refreshAction = this.addAction("refresh-cw", "Refresh", () => {
-			void this.loadProjects();
-		});
+		// Add native refresh action (desktop only - on mobile it's in "..." menu)
+		if (!Platform.isMobile) {
+			this.refreshAction = this.addAction("refresh-cw", "Refresh", () => {
+				void this.loadProjects();
+			});
+		}
 
 		// Subscribe to state changes
 		this.unsubscribe = this.stateManager.subscribe(() =>

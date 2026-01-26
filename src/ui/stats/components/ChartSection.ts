@@ -10,8 +10,6 @@ import { StatsCard } from "./StatsCard";
 export interface ChartSectionProps {
 	/** Chart title displayed in card header */
 	title?: string;
-	/** Optional icon for the header */
-	icon?: string;
 	/** Canvas height in pixels (default: 208 for h-52) */
 	height?: number;
 	/** Optional action button in header */
@@ -37,7 +35,6 @@ export abstract class ChartSection<TData = unknown> extends BaseComponent {
 		super(container);
 		this.statsCard = new StatsCard(container, {
 			title: cardProps.title,
-			icon: cardProps.icon,
 			action: cardProps.action,
 			hoverLift: true,
 		});
