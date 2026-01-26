@@ -5,7 +5,7 @@
  */
 import { TFile } from "obsidian";
 import type EpistemePlugin from "../main";
-import { FlashcardPanelView } from "../ui/panel/FlashcardPanelView";
+import { FlashcardPanelView } from "../ui/flashcard-panel/FlashcardPanelView";
 import { VIEW_TYPE_FLASHCARD_PANEL } from "../constants";
 
 /**

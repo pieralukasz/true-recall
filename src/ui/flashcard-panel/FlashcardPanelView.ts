@@ -9,15 +9,16 @@ import {
     TFile,
     Notice,
     MarkdownRenderer,
+    setIcon,
 } from "obsidian";
 import { VIEW_TYPE_FLASHCARD_PANEL } from "../../constants";
 import { FlashcardManager, OpenRouterService, getEventBus } from "../../services";
 import { CollectService } from "../../services/flashcard/collect.service";
 import { PanelStateManager } from "../../state";
 import { Panel } from "../components/Panel";
-import { PanelContent } from "./PanelContent";
-import { PanelFooter } from "./PanelFooter";
-import { PanelHeader } from "./PanelHeader";
+import { FlashcardPanelContent } from "./FlashcardPanelContent";
+import { FlashcardPanelFooter } from "./FlashcardPanelFooter";
+import { FlashcardPanelHeader } from "./FlashcardPanelHeader";
 import { SelectionFooter } from "./SelectionFooter";
 import { MoveCardModal } from "../modals/MoveCardModal";
 import type { FSRSFlashcardItem } from "../../types/fsrs/card.types";
@@ -39,9 +40,9 @@ export class FlashcardPanelView extends ItemView {
 
     // UI Components
     private panelComponent: Panel | null = null;
-    private headerComponent: PanelHeader | null = null;
-    private contentComponent: PanelContent | null = null;
-    private footerComponent: PanelFooter | null = null;
+    private headerComponent: FlashcardPanelHeader | null = null;
+    private contentComponent: FlashcardPanelContent | null = null;
+    private footerComponent: FlashcardPanelFooter | null = null;
     private selectionFooterComponent: SelectionFooter | null = null;
 
     // Container elements (obtained from Panel)
@@ -278,6 +279,13 @@ export class FlashcardPanelView extends ItemView {
         // Clear selection when loading new file info
         this.stateManager.exitSelectionMode();
 
+        // Check if store is ready before accessing it
+        if (!this.flashcardManager.hasStore()) {
+            // Store not initialized yet, silently return
+            // The view will reload once the store is ready via event subscriptions
+            return;
+        }
+
         if (!file || file.extension !== "md") {
             this.stateManager.setFlashcardInfo(null);
             this.stateManager.setUncollectedInfo(0);
@@ -335,11 +343,11 @@ export class FlashcardPanelView extends ItemView {
         this.contentContainer.empty();
 
         // Make content container a flex column so header stays at top
-        this.contentContainer.addClass("ep:flex", "ep:flex-col");
+        this.contentContainer.addClass("ep:flex", "ep:flex-col", "ep:gap-2");
 
         // Create header container inside content (at the top)
         const headerDiv = this.contentContainer.createDiv({ cls: "ep:shrink-0" });
-        this.headerComponent = new PanelHeader(headerDiv, {
+        this.headerComponent = new FlashcardPanelHeader(headerDiv, {
             flashcardInfo: state.flashcardInfo,
             cardsWithFsrs: this.getCardsWithFsrs(),
             hasUncollectedFlashcards: state.hasUncollectedFlashcards,
@@ -350,13 +358,14 @@ export class FlashcardPanelView extends ItemView {
             onGenerate: () => void this.handleGenerate(),
             onUpdate: () => void this.handleUpdate(),
             onCollect: () => void this.handleCollect(),
+            onRefresh: () => void this.loadFlashcardInfo(),
             onExitSelectionMode: () => this.stateManager.exitSelectionMode(),
         });
         this.headerComponent.render();
 
         // Create scrollable content area for cards
         const contentDiv = this.contentContainer.createDiv({ cls: "ep:flex-1 ep:overflow-y-auto ep:min-h-0" });
-        this.contentComponent = new PanelContent(contentDiv, {
+        this.contentComponent = new FlashcardPanelContent(contentDiv, {
             currentFile: state.currentFile,
             status: state.status,
             viewMode: state.viewMode,
@@ -384,6 +393,7 @@ export class FlashcardPanelView extends ItemView {
                 onToggleExpand: (cardId) => this.stateManager.toggleCardExpanded(cardId),
                 onToggleSelect: (cardId) => this.stateManager.toggleCardSelection(cardId),
                 onEnterSelectionMode: (cardId) => this.stateManager.enterSelectionMode(cardId),
+                onAdd: () => void this.handleAddFlashcard(),
             },
         });
         this.contentComponent.render();
@@ -403,7 +413,7 @@ export class FlashcardPanelView extends ItemView {
             this.selectionFooterComponent.render();
         } else if (state.viewMode === "diff" && state.diffResult) {
             // Diff mode footer (keep existing)
-            this.footerComponent = new PanelFooter(this.footerContainer, {
+            this.footerComponent = new FlashcardPanelFooter(this.footerContainer, {
                 currentFile: state.currentFile,
                 status: state.status,
                 viewMode: state.viewMode,
@@ -433,6 +443,11 @@ export class FlashcardPanelView extends ItemView {
     private getCardsWithFsrs(): FSRSFlashcardItem[] {
         const state = this.stateManager.getState();
         if (!state.flashcardInfo?.flashcards) return [];
+
+        // Check if store is ready before accessing it
+        if (!this.flashcardManager.hasStore()) {
+            return [];
+        }
 
         // Get all FSRS cards and filter to current file's cards
         const allFsrsCards = this.flashcardManager.getAllFSRSCards();

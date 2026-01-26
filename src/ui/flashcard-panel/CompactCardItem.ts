@@ -53,12 +53,12 @@ export class CompactCardItem extends BaseComponent {
         const { card, isExpanded, isSelected, isSelectionMode, app, filePath, component } = this.props;
 
         this.element = this.container.createDiv({
-            cls: `ep:flex ep:flex-col ep:border-b ep:border-obs-border ${isSelected ? "ep:bg-obs-modifier-hover" : ""}`,
+            cls: `ep:flex ep:flex-col ep:mb-2 ep:rounded ep:bg-obs-secondary ep:border ep:border-obs-border ${isSelected ? "ep:border-obs-interactive ep:border-2" : ""}`,
         });
 
         // Main row (always visible)
         const mainRow = this.element.createDiv({
-            cls: "ep:flex ep:items-center ep:gap-2 ep:py-2 ep:px-1 ep:cursor-pointer ep:hover:bg-obs-modifier-hover ep:transition-colors",
+            cls: "ep:flex ep:items-start ep:gap-2 ep:p-2 ep:cursor-pointer ep:hover:bg-obs-modifier-hover ep:rounded ep:transition-colors",
         });
 
         // Setup long press for main row
@@ -94,16 +94,15 @@ export class CompactCardItem extends BaseComponent {
         }
 
         // Status dot
-        const statusDot = this.getStatusDot();
-        mainRow.createSpan({
-            text: statusDot,
-            cls: "ep:text-sm",
+        const statusDotEl = mainRow.createSpan({
+            cls: "ep:w-2 ep:h-2 ep:rounded-full ep:flex-shrink-0 ep:mt-1.5",
             attr: { title: this.getStatusTitle() },
         });
+        statusDotEl.addClass(this.getStatusDotColor());
 
-        // Question (rendered markdown, truncated via CSS)
+        // Question (rendered markdown, full content with line breaks)
         const questionEl = mainRow.createDiv({
-            cls: "ep:flex-1 ep:text-sm ep:text-obs-normal ep:truncate episteme-inline-markdown",
+            cls: "ep:flex-1 ep:text-sm ep:text-obs-normal episteme-card-markdown",
         });
         void MarkdownRenderer.render(app, card.question, questionEl, filePath, component);
 
@@ -130,12 +129,7 @@ export class CompactCardItem extends BaseComponent {
         const { card, filePath, app, component } = this.props;
 
         const answerContainer = this.element.createDiv({
-            cls: "ep:pl-6 ep:pr-2 ep:pb-3 ep:border-t ep:border-obs-border ep:mt-1",
-        });
-
-        // Divider line
-        answerContainer.createDiv({
-            cls: "ep:h-px ep:bg-obs-border ep:my-2",
+            cls: "ep:pl-6 ep:pr-2 ep:pb-3 ep:pt-2 ep:border-t ep:border-obs-border",
         });
 
         // Answer content with markdown rendering
@@ -218,19 +212,19 @@ export class CompactCardItem extends BaseComponent {
         menu.showAtMouseEvent(e);
     }
 
-    private getStatusDot(): string {
-        if (!this.props.fsrsCard) return "⚪";
+    private getStatusDotColor(): string {
+        if (!this.props.fsrsCard) return "ep:bg-gray-400";
 
         switch (this.props.fsrsCard.fsrs.state) {
             case State.New:
-                return "🔵";
+                return "ep:bg-blue-500";
             case State.Learning:
             case State.Relearning:
-                return "🟠";
+                return "ep:bg-orange-500";
             case State.Review:
-                return "🟢";
+                return "ep:bg-green-500";
             default:
-                return "⚪";
+                return "ep:bg-gray-400";
         }
     }
 
