@@ -20,7 +20,6 @@ export {
 	getEventBus,
 	resetEventBus,
 } from "./core/event-bus.service";
-export { UidIndexService } from "./core/uid-index.service";
 export {
 	FrontmatterIndexService,
 	type FieldConfig,
