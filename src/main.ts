@@ -5,7 +5,6 @@ import {
 	VIEW_TYPE_STATS,
 	VIEW_TYPE_SESSION,
 	VIEW_TYPE_MISSING_FLASHCARDS,
-	VIEW_TYPE_READY_TO_HARVEST,
 	VIEW_TYPE_DASHBOARD,
 	VIEW_TYPE_ORPHANED_CARDS,
 	VIEW_TYPE_PROJECTS,
@@ -43,7 +42,6 @@ import { ReviewView } from "./ui/review/ReviewView";
 import { StatsView } from "./ui/stats/StatsView";
 import { SessionView } from "./ui/session";
 import { MissingFlashcardsView } from "./ui/missing-flashcards";
-import { ReadyToHarvestView } from "./ui/ready-to-harvest";
 import { DashboardView } from "./ui/dashboard";
 import { OrphanedCardsView } from "./ui/orphaned-cards";
 import { ProjectsView } from "./ui/projects";
@@ -153,12 +151,6 @@ export default class EpistemePlugin extends Plugin {
 		this.registerView(
 			VIEW_TYPE_MISSING_FLASHCARDS,
 			(leaf) => new MissingFlashcardsView(leaf, this)
-		);
-
-		// Register the ready to harvest view
-		this.registerView(
-			VIEW_TYPE_READY_TO_HARVEST,
-			(leaf) => new ReadyToHarvestView(leaf, this)
 		);
 
 		// Register the dashboard view
@@ -325,13 +317,6 @@ export default class EpistemePlugin extends Plugin {
 	 */
 	async activateMissingFlashcardsView(): Promise<void> {
 		await activateView(this.app, VIEW_TYPE_MISSING_FLASHCARDS);
-	}
-
-	/**
-	 * Activate the ready to harvest view
-	 */
-	async activateReadyToHarvestView(): Promise<void> {
-		await activateView(this.app, VIEW_TYPE_READY_TO_HARVEST);
 	}
 
 	/**
@@ -543,14 +528,6 @@ export default class EpistemePlugin extends Plugin {
 
 			void this.activateMissingFlashcardsView();
 		});
-	}
-
-	/**
-	 * Show modal with notes ready to harvest
-	 * (all flashcards reviewed, no State.New cards)
-	 */
-	async showReadyToHarvest(): Promise<void> {
-		await this.activateReadyToHarvestView();
 	}
 
 	/**

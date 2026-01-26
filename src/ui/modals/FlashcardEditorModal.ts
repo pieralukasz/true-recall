@@ -141,14 +141,21 @@ export class FlashcardEditorModal extends BaseModal {
 		this.cleanupFields();
 		this.fieldsContainer.empty();
 
-		// Question field
-		this.renderField(this.fieldsContainer, this.questionValue, "question");
+		// Question section with label
+		const questionSection = this.fieldsContainer.createDiv({ cls: "ep:mb-4" });
+		questionSection.createDiv({
+			cls: "ep:text-ui-smaller ep:font-medium ep:text-obs-muted ep:uppercase ep:tracking-wide ep:mb-2",
+			text: "Question",
+		});
+		this.renderField(questionSection, this.questionValue, "question");
 
-		// Divider between question and answer
-		this.fieldsContainer.createEl("hr", { cls: "ep:border-none ep:border-t ep:border-obs-border ep:my-3" });
-
-		// Answer field
-		this.renderField(this.fieldsContainer, this.answerValue, "answer");
+		// Answer section with label
+		const answerSection = this.fieldsContainer.createDiv();
+		answerSection.createDiv({
+			cls: "ep:text-ui-smaller ep:font-medium ep:text-obs-muted ep:uppercase ep:tracking-wide ep:mb-2",
+			text: "Answer",
+		});
+		this.renderField(answerSection, this.answerValue, "answer");
 	}
 
 	/**
@@ -238,11 +245,15 @@ export class FlashcardEditorModal extends BaseModal {
 		const isEditing = this.editingField === field;
 		const isEmpty = !content.trim();
 
-		if (isEditing || isEmpty) {
-			// Edit mode (or empty = start in edit)
+		// Only the actively edited field uses edit mode
+		// This prevents multiple autofocus fields causing infinite re-render loops
+		if (isEditing) {
 			this.renderEditMode(fieldGroup, content, field);
+		} else if (isEmpty) {
+			// Show clickable placeholder for empty fields
+			this.renderEmptyPlaceholder(fieldGroup, field);
 		} else {
-			// Preview mode
+			// Preview mode for non-empty content
 			this.renderPreviewMode(fieldGroup, content, field);
 		}
 	}
@@ -274,6 +285,27 @@ export class FlashcardEditorModal extends BaseModal {
 
 		// Click to edit
 		preview.addEventListener("click", () => {
+			this.editingField = field;
+			this.renderFields();
+		});
+	}
+
+	/**
+	 * Render empty placeholder (clickable to start editing)
+	 */
+	private renderEmptyPlaceholder(
+		container: HTMLElement,
+		field: "question" | "answer"
+	): void {
+		const placeholder = container.createDiv({
+			cls: "ep:p-3 ep:min-h-15 ep:cursor-text ep:rounded-md ep:text-center ep:bg-obs-secondary ep:text-obs-muted ep:text-ui-small ep:italic",
+		});
+		placeholder.textContent = field === "question"
+			? "Click to add question..."
+			: "Click to add answer...";
+
+		// Click to edit
+		placeholder.addEventListener("click", () => {
 			this.editingField = field;
 			this.renderFields();
 		});

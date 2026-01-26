@@ -17,7 +17,6 @@ function createInitialState(): MissingFlashcardsState {
 		isLoading: true,
 		allMissingNotes: [],
 		searchQuery: "",
-		activeTagFilter: null,
 	};
 }
 
@@ -98,36 +97,37 @@ export class MissingFlashcardsStateManager {
 	}
 
 	/**
-	 * Set tag filter
-	 */
-	setTagFilter(filter: "raw" | "zettel" | null): void {
-		this.setState({ activeTagFilter: filter });
-	}
-
-	/**
 	 * Get filtered notes based on current state
+	 * Supports both note name search and tag search (prefix with #)
 	 */
 	getFilteredNotes(): NoteWithMissingFlashcards[] {
-		let notes = [...this.state.allMissingNotes];
+		const notes = [...this.state.allMissingNotes];
 
-		// Apply tag filter
-		if (this.state.activeTagFilter) {
-			notes = notes.filter(
-				(note) => note.tagType === this.state.activeTagFilter
-			);
+		if (!this.state.searchQuery) {
+			return notes;
 		}
 
-		// Apply search filter
-		if (this.state.searchQuery) {
-			const query = this.state.searchQuery.toLowerCase();
-			notes = notes.filter(
-				(note) =>
-					note.file.basename.toLowerCase().includes(query) ||
-					note.file.path.toLowerCase().includes(query)
-			);
+		const query = this.state.searchQuery.toLowerCase();
+
+		// Tag search mode: query starts with #
+		if (query.startsWith("#")) {
+			const tagPrefix = query.slice(1); // Remove #
+			return notes.filter((note) => {
+				// Match against full tag path (mind/raw, mind/zettel) or just type (raw, zettel)
+				const fullTag = `mind/${note.tagType}`;
+				return (
+					fullTag.startsWith(tagPrefix) ||
+					note.tagType.startsWith(tagPrefix)
+				);
+			});
 		}
 
-		return notes;
+		// Normal search: filter by name/path
+		return notes.filter(
+			(note) =>
+				note.file.basename.toLowerCase().includes(query) ||
+				note.file.path.toLowerCase().includes(query)
+		);
 	}
 
 	// ===== Private Methods =====

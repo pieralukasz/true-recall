@@ -242,6 +242,13 @@
 		gap: 1rem !important;
 	}
 
+	/* Enable text selection in review cards */
+	.episteme-review-question,
+	.episteme-review-answer {
+		user-select: text;
+		-webkit-user-select: text;
+	}
+
 	/* Chart fade-in animation */
 	@keyframes episteme-fade-in {
 		from {

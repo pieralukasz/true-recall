@@ -2,7 +2,13 @@
  * Projects Content Component
  * Contains search input and project list (flat list style like SessionContent)
  */
-import { setIcon, MarkdownRenderer, Platform, type App, type Component } from "obsidian";
+import {
+	setIcon,
+	MarkdownRenderer,
+	Platform,
+	type App,
+	type Component,
+} from "obsidian";
 import { BaseComponent } from "../component.base";
 import type { ProjectInfo, ProjectNoteInfo } from "../../types";
 
@@ -117,7 +123,8 @@ export class ProjectsContent extends BaseComponent {
 			cls: "episteme-project-list",
 		});
 
-		const emptyStateCls = "ep:text-center ep:py-8 ep:text-obs-muted ep:text-ui-small";
+		const emptyStateCls =
+			"ep:text-center ep:py-8 ep:text-obs-muted ep:text-ui-small";
 
 		if (this.props.isLoading) {
 			listEl.createDiv({
@@ -128,7 +135,8 @@ export class ProjectsContent extends BaseComponent {
 		}
 
 		const { projectsWithCards, emptyProjects } = this.props;
-		const hasProjects = projectsWithCards.length > 0 || emptyProjects.length > 0;
+		const hasProjects =
+			projectsWithCards.length > 0 || emptyProjects.length > 0;
 
 		if (!hasProjects && !this.props.searchQuery) {
 			listEl.createDiv({
@@ -154,7 +162,7 @@ export class ProjectsContent extends BaseComponent {
 		// Render empty projects (with separator if both exist)
 		if (emptyProjects.length > 0 && projectsWithCards.length > 0) {
 			listEl.createDiv({
-				cls: "ep:text-ui-smaller ep:font-semibold ep:text-obs-muted ep:uppercase ep:tracking-wide ep:py-3 ep:px-3",
+				cls: "ep:text-ui-small ep:font-semibold ep:text-obs-normal ep:py-3",
 				text: "Empty projects",
 			});
 		}
@@ -164,7 +172,11 @@ export class ProjectsContent extends BaseComponent {
 		}
 	}
 
-	private renderProjectItem(container: HTMLElement, project: ProjectInfo, isEmpty: boolean): void {
+	private renderProjectItem(
+		container: HTMLElement,
+		project: ProjectInfo,
+		isEmpty: boolean
+	): void {
 		const hasCards = project.cardCount > 0;
 		const isExpanded = this.props.expandedProjectIds.has(project.id);
 
@@ -189,7 +201,9 @@ export class ProjectsContent extends BaseComponent {
 
 		// Chevron icon (rotates when expanded)
 		const chevronEl = mainRow.createSpan({
-			cls: `ep:transition-transform ep:duration-200 ep:shrink-0 ${isExpanded ? "ep:rotate-90" : ""}`,
+			cls: `ep:transition-transform ep:duration-200 ep:shrink-0 ${
+				isExpanded ? "ep:rotate-90" : ""
+			}`,
 		});
 		setIcon(chevronEl, "chevron-right");
 
@@ -230,7 +244,8 @@ export class ProjectsContent extends BaseComponent {
 		});
 
 		// Note count (muted)
-		const noteText = project.noteCount === 1 ? "1 note" : `${project.noteCount} notes`;
+		const noteText =
+			project.noteCount === 1 ? "1 note" : `${project.noteCount} notes`;
 		statsEl.createSpan({
 			text: noteText,
 			cls: hasCards ? "ep:text-obs-muted" : "ep:text-obs-faint",
@@ -314,7 +329,10 @@ export class ProjectsContent extends BaseComponent {
 		}
 	}
 
-	private renderNotesList(container: HTMLElement, notes: ProjectNoteInfo[]): void {
+	private renderNotesList(
+		container: HTMLElement,
+		notes: ProjectNoteInfo[]
+	): void {
 		const notesContainer = container.createDiv({
 			cls: "ep:border-t ep:border-obs-modifier-border",
 		});
@@ -357,7 +375,8 @@ export class ProjectsContent extends BaseComponent {
 			});
 
 			// Card count
-			const cardCountText = note.cardCount === 1 ? "1 card" : `${note.cardCount} cards`;
+			const cardCountText =
+				note.cardCount === 1 ? "1 card" : `${note.cardCount} cards`;
 			noteItem.createSpan({
 				text: cardCountText,
 				cls: "ep:text-ui-smaller ep:text-obs-muted ep:whitespace-nowrap",

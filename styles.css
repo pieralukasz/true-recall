@@ -561,6 +561,9 @@
   .ep\:w-full\! {
     width: 100% !important;
   }
+  .ep\:max-w-\[150px\] {
+    max-width: 150px;
+  }
   .ep\:max-w-\[300px\] {
     max-width: 300px;
   }
@@ -809,6 +812,12 @@
   }
   .ep\:border-obs-interactive {
     border-color: var(--ep-color-obs-interactive);
+  }
+  .ep\:border-obs-interactive\/30 {
+    border-color: var(--ep-color-obs-interactive);
+    @supports (color: color-mix(in lab, red, red)) {
+      border-color: color-mix(in oklab, var(--ep-color-obs-interactive) 30%, transparent);
+    }
   }
   .ep\:border-obs-modifier-border {
     border-color: var(--ep-color-obs-modifier-border);
@@ -1106,9 +1115,6 @@
   }
   .ep\:pb-4 {
     padding-bottom: calc(var(--ep-spacing) * 4);
-  }
-  .ep\:pb-6 {
-    padding-bottom: calc(var(--ep-spacing) * 6);
   }
   .ep\:pl-6 {
     padding-left: calc(var(--ep-spacing) * 6);
@@ -1797,6 +1803,11 @@
   }
   .episteme-review-buttons {
     gap: 1rem !important;
+  }
+  .episteme-review-question,
+	.episteme-review-answer {
+    user-select: text;
+    -webkit-user-select: text;
   }
   @keyframes episteme-fade-in {
     from {

@@ -2,6 +2,7 @@
  * Session Content Component
  * Contains quick actions, search, and note selection table
  */
+import { Platform } from "obsidian";
 import { BaseComponent } from "../component.base";
 import type { SessionLogic } from "./SessionLogic";
 import type { FSRSFlashcardItem } from "../../types";
@@ -42,8 +43,19 @@ export class SessionContent extends BaseComponent {
 		}
 
 		this.element = this.container.createDiv({
-			cls: "episteme-session-content ep:flex ep:flex-col ep:h-full ep:gap-2 ep:px-1.5 ep:pb-6",
+			cls: "episteme-session-content ep:flex ep:flex-col ep:h-full ep:gap-2",
 		});
+
+		// Section header with title (desktop only - matching Projects style)
+		if (!Platform.isMobile) {
+			const headerRow = this.element.createDiv({
+				cls: "ep:flex ep:items-center ep:justify-between",
+			});
+			headerRow.createDiv({
+				cls: "ep:text-ui-small ep:font-semibold ep:text-obs-normal",
+				text: "Session",
+			});
+		}
 
 		// Search input at the top
 		this.renderSearchInput();
@@ -318,20 +330,30 @@ export class SessionContent extends BaseComponent {
 				nameEl.textContent = stat.noteName;
 			}
 
-			// Stats badge
+			// Stats with Anki-style colored counts (matching Projects)
 			const statsEl = content.createDiv({
-				cls: `ep:text-ui-smaller ep:mt-0.5 ${
-					hasCards ? "ep:text-obs-muted" : "ep:text-obs-faint"
-				}`,
+				cls: "ep:text-ui-smaller ep:mt-0.5 ep:flex ep:items-center ep:gap-1",
 			});
 			if (hasCards) {
-				statsEl.textContent = logic.formatStats(
-					stat.newCount,
-					stat.dueCount
-				);
+				// New count (blue)
+				statsEl.createSpan({
+					text: String(stat.newCount),
+					cls: "ep:text-blue-500 ep:font-medium",
+				});
+
+				statsEl.createSpan({ text: "·", cls: "ep:text-obs-faint" });
+
+				// Due count (green)
+				statsEl.createSpan({
+					text: String(stat.dueCount),
+					cls: "ep:text-green-500 ep:font-medium",
+				});
 			} else {
 				// eslint-disable-next-line obsidianmd/ui/sentence-case
-				statsEl.textContent = "done";
+				statsEl.createSpan({
+					text: "done",
+					cls: "ep:text-obs-faint",
+				});
 			}
 		}
 	}

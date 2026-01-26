@@ -291,9 +291,7 @@ export class MissingFlashcardsView extends ItemView {
 			filteredNotes,
 			totalCount: state.allMissingNotes.length,
 			searchQuery: state.searchQuery,
-			activeTagFilter: state.activeTagFilter,
 			onSearchChange: (query) => this.stateManager.setSearchQuery(query),
-			onTagFilterChange: (filter) => this.stateManager.setTagFilter(filter),
 			onNoteSelect: (notePath) => this.handleNoteSelect(notePath),
 		});
 		this.contentComponent.render();

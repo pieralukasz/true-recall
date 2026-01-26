@@ -129,10 +129,8 @@ export interface MissingFlashcardsState {
     isLoading: boolean;
     /** All notes missing flashcards */
     allMissingNotes: NoteWithMissingFlashcards[];
-    /** Search query for filtering */
+    /** Search query for filtering (supports note names and #tags) */
     searchQuery: string;
-    /** Active tag filter */
-    activeTagFilter: "raw" | "zettel" | null;
 }
 
 /**
@@ -144,38 +142,6 @@ export type MissingFlashcardsStateListener = (state: MissingFlashcardsState, pre
  * Partial state update type for missing flashcards
  */
 export type PartialMissingFlashcardsState = Partial<MissingFlashcardsState>;
-
-// ===== Ready to Harvest State Types =====
-
-/**
- * Note ready to harvest info
- */
-export interface NoteReadyToHarvest {
-    file: TFile;
-    cardCount: number;
-}
-
-/**
- * Complete state of the ready to harvest view
- */
-export interface ReadyToHarvestState {
-    /** Loading state */
-    isLoading: boolean;
-    /** All notes ready to harvest */
-    allReadyNotes: NoteReadyToHarvest[];
-    /** Search query for filtering */
-    searchQuery: string;
-}
-
-/**
- * Listener callback type for ready to harvest state changes
- */
-export type ReadyToHarvestStateListener = (state: ReadyToHarvestState, prevState: ReadyToHarvestState) => void;
-
-/**
- * Partial state update type for ready to harvest
- */
-export type PartialReadyToHarvestState = Partial<ReadyToHarvestState>;
 
 // ===== Orphaned Cards State Types =====
 

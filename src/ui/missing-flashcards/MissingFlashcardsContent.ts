@@ -10,9 +10,7 @@ export interface MissingFlashcardsContentProps {
 	filteredNotes: NoteWithMissingFlashcards[];
 	totalCount: number;
 	searchQuery: string;
-	activeTagFilter: "raw" | "zettel" | null;
 	onSearchChange: (query: string) => void;
-	onTagFilterChange: (filter: "raw" | "zettel" | null) => void;
 	onNoteSelect: (notePath: string) => void;
 }
 
@@ -38,40 +36,11 @@ export class MissingFlashcardsContent extends BaseComponent {
 			cls: "ep:flex ep:flex-col",
 		});
 
-		// Tag filter buttons
-		this.renderTagFilters();
-
-		// Search input
+		// Search input (supports note names and #tags)
 		this.renderSearchInput();
 
 		// Note list
 		this.renderNoteList();
-	}
-
-	private renderTagFilters(): void {
-		const filterButtonsEl = this.element!.createDiv({
-			cls: "ep:flex ep:gap-2 ep:mb-3",
-		});
-
-		const filters: { label: string; tag: "raw" | "zettel" | null }[] = [
-			{ label: "All", tag: null },
-			{ label: "Raw", tag: "raw" },
-			{ label: "Zettels", tag: "zettel" },
-		];
-
-		const baseBtnCls = "ep:py-1.5 ep:px-3 ep:border ep:border-obs-border ep:rounded ep:bg-obs-primary ep:cursor-pointer ep:text-[13px] ep:transition-all ep:hover:bg-obs-modifier-hover";
-		const activeBtnCls = "ep:bg-obs-interactive ep:text-on-accent ep:border-obs-interactive";
-
-		for (const filter of filters) {
-			const isActive = this.props.activeTagFilter === filter.tag;
-			const btn = filterButtonsEl.createEl("button", {
-				text: filter.label,
-				cls: `${baseBtnCls} ${isActive ? activeBtnCls : ""}`,
-			});
-			this.events.addEventListener(btn, "click", () => {
-				this.props.onTagFilterChange(filter.tag);
-			});
-		}
 	}
 
 	private renderSearchInput(): void {
@@ -81,7 +50,7 @@ export class MissingFlashcardsContent extends BaseComponent {
 
 		this.searchInput = searchContainer.createEl("input", {
 			type: "text",
-			placeholder: "Search notes...",
+			placeholder: "Search notes or #tags...",
 			cls: "ep:w-full ep:py-2.5 ep:px-3 ep:border ep:border-obs-border ep:rounded-md ep:bg-obs-primary ep:text-obs-normal ep:text-ui-small ep:focus:outline-none ep:focus:border-obs-interactive ep:placeholder:text-obs-muted",
 		});
 		this.searchInput.value = this.props.searchQuery;
@@ -110,11 +79,11 @@ export class MissingFlashcardsContent extends BaseComponent {
 		const filteredNotes = this.props.filteredNotes;
 
 		if (filteredNotes.length === 0) {
-			const emptyText = this.props.activeTagFilter
-				? `No notes missing flashcards with tag ${this.props.activeTagFilter}.`
-				: this.props.searchQuery
-					? "No notes found matching your search."
-					: "All notes have flashcards! Great job!";
+			const emptyText = this.props.searchQuery
+				? this.props.searchQuery.startsWith("#")
+					? `No notes found with tag ${this.props.searchQuery}.`
+					: "No notes found matching your search."
+				: "All notes have flashcards! Great job!";
 			noteListEl.createEl("div", {
 				text: emptyText,
 				cls: emptyStateCls,
