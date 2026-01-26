@@ -17,6 +17,11 @@ export type ProcessingStatus = "none" | "exists" | "processing";
 export type ViewMode = "list" | "diff";
 
 /**
+ * Selection mode state
+ */
+export type SelectionMode = "normal" | "selecting";
+
+/**
  * Complete state of the flashcard panel
  */
 export interface PanelState {
@@ -50,6 +55,12 @@ export interface PanelState {
     uncollectedCount: number;
     /** Whether there are flashcards to collect */
     hasUncollectedFlashcards: boolean;
+    /** Selection mode */
+    selectionMode: SelectionMode;
+    /** Selected card IDs in selection mode */
+    selectedCardIds: Set<string>;
+    /** Expanded card IDs (cards showing answer) */
+    expandedCardIds: Set<string>;
 }
 
 /**

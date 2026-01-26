@@ -34,6 +34,9 @@ function createInitialState(): PanelState {
         sourceNoteName: null,
         uncollectedCount: 0,
         hasUncollectedFlashcards: false,
+        selectionMode: "normal",
+        selectedCardIds: new Set(),
+        expandedCardIds: new Set(),
     };
 }
 
@@ -273,6 +276,63 @@ export class PanelStateManager {
             uncollectedCount: count,
             hasUncollectedFlashcards: count > 0,
         });
+    }
+
+    /**
+     * Enter selection mode and optionally select a card
+     */
+    enterSelectionMode(initialCardId?: string): void {
+        const selectedCardIds = new Set<string>();
+        if (initialCardId) {
+            selectedCardIds.add(initialCardId);
+        }
+        this.setState({
+            selectionMode: "selecting",
+            selectedCardIds,
+        });
+    }
+
+    /**
+     * Exit selection mode and clear selections
+     */
+    exitSelectionMode(): void {
+        this.setState({
+            selectionMode: "normal",
+            selectedCardIds: new Set(),
+        });
+    }
+
+    /**
+     * Toggle card selection
+     */
+    toggleCardSelection(cardId: string): void {
+        const newSet = new Set(this.state.selectedCardIds);
+        if (newSet.has(cardId)) {
+            newSet.delete(cardId);
+        } else {
+            newSet.add(cardId);
+        }
+        this.setState({ selectedCardIds: newSet });
+    }
+
+    /**
+     * Toggle card expanded state
+     */
+    toggleCardExpanded(cardId: string): void {
+        const newSet = new Set(this.state.expandedCardIds);
+        if (newSet.has(cardId)) {
+            newSet.delete(cardId);
+        } else {
+            newSet.add(cardId);
+        }
+        this.setState({ expandedCardIds: newSet });
+    }
+
+    /**
+     * Check if in selection mode
+     */
+    isInSelectionMode(): boolean {
+        return this.state.selectionMode === "selecting";
     }
 
     // ===== Private Methods =====
