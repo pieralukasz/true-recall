@@ -107,10 +107,9 @@ export class CompactCardItem extends BaseComponent {
         });
         void MarkdownRenderer.render(app, card.question, questionEl, filePath, component);
 
-        // Menu button
-        const btnCls = "ep:p-1 ep:rounded ep:bg-transparent ep:border-none ep:cursor-pointer ep:text-obs-muted ep:hover:text-obs-normal ep:hover:bg-obs-modifier-hover ep:transition-colors";
+        // Menu icon
         const menuBtn = mainRow.createEl("button", {
-            cls: btnCls,
+            cls: "clickable-icon",
             attr: { "aria-label": "Card actions" },
         });
         menuBtn.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="1"/><circle cx="12" cy="5" r="1"/><circle cx="12" cy="19" r="1"/></svg>`;
