@@ -61,6 +61,7 @@ export type {
     CardStore,
     FSRSCard,
     ProjectInfo,
+    ProjectNoteInfo,
 } from "./fsrs";
 
 export {
