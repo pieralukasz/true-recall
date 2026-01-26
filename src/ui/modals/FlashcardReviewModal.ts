@@ -114,7 +114,7 @@ export class FlashcardReviewModal extends BaseModal {
 	// ===== Rendering methods =====
 
 	private renderInfoSection(container: HTMLElement): void {
-		const infoEl = container.createDiv({ cls: "ep:text-obs-muted ep:text-sm ep:mb-4 ep:p-3 ep:bg-obs-secondary ep:rounded-md" });
+		const infoEl = container.createDiv({ cls: "ep:text-obs-muted ep:text-ui-small ep:mb-4 ep:p-3 ep:bg-obs-secondary ep:rounded-md" });
 		const sourceText = this.options.sourceNoteName
 			? ` from "${this.options.sourceNoteName}"`
 			: "";
@@ -123,7 +123,7 @@ export class FlashcardReviewModal extends BaseModal {
 		});
 
 		// Keyboard hint
-		const hintEl = infoEl.createDiv({ cls: "ep:text-xs ep:text-obs-muted ep:text-center ep:mt-1" });
+		const hintEl = infoEl.createDiv({ cls: "ep:text-ui-smaller ep:text-obs-muted ep:text-center ep:mt-1" });
 		hintEl.innerHTML = `<span class="ep:inline-block ep:py-0.5 ep:px-1.5 ep:bg-obs-border ep:rounded ep:font-mono ep:text-[10px]">⌘ + click</span> to edit`;
 	}
 
@@ -189,7 +189,7 @@ export class FlashcardReviewModal extends BaseModal {
 		});
 		questionEl.addEventListener("click", (e) => this.handleFieldClick(e, index, "question"));
 
-		const questionContent = questionEl.createDiv({ cls: "ep:text-sm ep:leading-normal" });
+		const questionContent = questionEl.createDiv({ cls: "ep:text-ui-small ep:leading-normal" });
 		void MarkdownRenderer.renderMarkdown(
 			card.question,
 			questionContent,
@@ -207,7 +207,7 @@ export class FlashcardReviewModal extends BaseModal {
 		});
 		answerEl.addEventListener("click", (e) => this.handleFieldClick(e, index, "answer"));
 
-		const answerContent = answerEl.createDiv({ cls: "ep:text-sm ep:leading-normal" });
+		const answerContent = answerEl.createDiv({ cls: "ep:text-ui-small ep:leading-normal" });
 		void MarkdownRenderer.renderMarkdown(
 			card.answer,
 			answerContent,
@@ -260,7 +260,7 @@ export class FlashcardReviewModal extends BaseModal {
 
 		sectionEl.createEl("h3", {
 			text: "AI Refine (Optional)",
-			cls: "ep:text-sm ep:font-semibold ep:m-0 ep:mb-2 ep:text-obs-normal",
+			cls: "ep:text-ui-small ep:font-semibold ep:m-0 ep:mb-2 ep:text-obs-normal",
 		});
 
 		const instructionsContainer = sectionEl.createDiv({
@@ -269,7 +269,7 @@ export class FlashcardReviewModal extends BaseModal {
 
 		this.instructionsInputEl = instructionsContainer.createEl("textarea", {
 			placeholder: "e.g., 'Make questions more specific', 'Add examples', 'Simplify complex cards'...",
-			cls: "ep:w-full ep:p-2 ep:border ep:border-obs-border ep:rounded ep:bg-obs-primary ep:text-obs-normal ep:text-sm ep:resize-none ep:focus:outline-none ep:focus:border-obs-interactive",
+			cls: "ep:w-full ep:p-2 ep:border ep:border-obs-border ep:rounded ep:bg-obs-primary ep:text-obs-normal ep:text-ui-small ep:resize-none ep:focus:outline-none ep:focus:border-obs-interactive",
 		});
 		this.instructionsInputEl.rows = 2;
 
@@ -279,7 +279,7 @@ export class FlashcardReviewModal extends BaseModal {
 
 		this.refineButtonEl = buttonContainer.createEl("button", {
 			text: "Refine with AI",
-			cls: "ep:py-1.5 ep:px-4 ep:text-sm ep:bg-obs-interactive ep:text-white ep:border-none ep:rounded ep:cursor-pointer ep:transition-colors ep:hover:bg-obs-interactive-hover ep:disabled:opacity-50 ep:disabled:cursor-not-allowed",
+			cls: "ep:py-1.5 ep:px-4 ep:text-ui-small ep:bg-obs-interactive ep:text-white ep:border-none ep:rounded ep:cursor-pointer ep:transition-colors ep:hover:bg-obs-interactive-hover ep:disabled:opacity-50 ep:disabled:cursor-not-allowed",
 		});
 		this.refineButtonEl.addEventListener("click", () => void this.handleRefine());
 	}
@@ -303,7 +303,7 @@ export class FlashcardReviewModal extends BaseModal {
 
 		const label = checkboxRow.createEl("label", {
 			text: "Create new note for these flashcards",
-			cls: "ep:text-sm ep:font-medium ep:text-obs-normal ep:cursor-pointer",
+			cls: "ep:text-ui-small ep:font-medium ep:text-obs-normal ep:cursor-pointer",
 		});
 		label.htmlFor = "episteme-create-new-note";
 
@@ -315,7 +315,7 @@ export class FlashcardReviewModal extends BaseModal {
 
 		// Note type radio buttons
 		const typeLabel = this.destinationOptionsEl.createDiv({
-			cls: "ep:text-sm ep:font-medium ep:text-obs-muted ep:mb-2",
+			cls: "ep:text-ui-small ep:font-medium ep:text-obs-muted ep:mb-2",
 			text: "Note type:",
 		});
 
@@ -350,11 +350,11 @@ export class FlashcardReviewModal extends BaseModal {
 
 			radioLabel.createEl("span", {
 				text: config.label,
-				cls: "ep:text-sm ep:font-semibold ep:text-obs-normal",
+				cls: "ep:text-ui-small ep:font-semibold ep:text-obs-normal",
 			});
 			radioLabel.createEl("span", {
 				text: config.description,
-				cls: "ep:text-xs ep:text-obs-muted",
+				cls: "ep:text-ui-smaller ep:text-obs-muted",
 			});
 
 			radio.addEventListener("change", () => {
@@ -377,12 +377,12 @@ export class FlashcardReviewModal extends BaseModal {
 
 		nameContainer.createEl("label", {
 			text: "Note name (optional):",
-			cls: "ep:text-sm ep:font-medium ep:text-obs-muted",
+			cls: "ep:text-ui-small ep:font-medium ep:text-obs-muted",
 		});
 
 		this.noteNameInputEl = nameContainer.createEl("input", {
 			type: "text",
-			cls: "ep:w-full ep:py-2 ep:px-3 ep:border ep:border-obs-border ep:rounded-md ep:bg-obs-primary ep:text-obs-normal ep:text-sm ep:focus:outline-none ep:focus:border-obs-interactive ep:placeholder:text-obs-muted ep:placeholder:text-sm",
+			cls: "ep:w-full ep:py-2 ep:px-3 ep:border ep:border-obs-border ep:rounded-md ep:bg-obs-primary ep:text-obs-normal ep:text-ui-small ep:focus:outline-none ep:focus:border-obs-interactive ep:placeholder:text-obs-muted ep:placeholder:text-sm",
 			placeholder: "Leave empty for auto-generated name",
 		});
 		this.noteNameInputEl.value = this.customNoteName;
@@ -432,13 +432,13 @@ export class FlashcardReviewModal extends BaseModal {
 
 		this.saveButtonEl = buttonsContainer.createEl("button", {
 			text: "Save flashcards",
-			cls: "mod-cta ep:py-2.5 ep:px-5 ep:text-sm ep:font-medium",
+			cls: "mod-cta ep:py-2.5 ep:px-5 ep:text-ui-small ep:font-medium",
 		});
 		this.saveButtonEl.addEventListener("click", () => this.handleSave());
 
 		const cancelButton = buttonsContainer.createEl("button", {
 			text: "Cancel",
-			cls: "ep:py-2.5 ep:px-5 ep:text-sm ep:font-medium ep:bg-obs-secondary ep:text-obs-normal ep:border ep:border-obs-border ep:rounded-md ep:cursor-pointer ep:transition-colors ep:hover:bg-obs-modifier-hover",
+			cls: "ep:py-2.5 ep:px-5 ep:text-ui-small ep:font-medium ep:bg-obs-secondary ep:text-obs-normal ep:border ep:border-obs-border ep:rounded-md ep:cursor-pointer ep:transition-colors ep:hover:bg-obs-modifier-hover",
 		});
 		cancelButton.addEventListener("click", () => this.handleCancel());
 	}

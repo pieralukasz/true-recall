@@ -46,12 +46,12 @@ export class ProjectsContent extends BaseComponent {
 			cls: "episteme-projects-content ep:flex ep:flex-col ep:h-full ep:gap-2",
 		});
 
-		// Section header with buttons
+		// Section header with buttons (same style as FlashcardPanelHeader)
 		const headerRow = this.element.createDiv({
 			cls: "ep:flex ep:items-center ep:justify-between",
 		});
 		headerRow.createDiv({
-			cls: "ep:text-xs ep:font-semibold ep:text-obs-muted ep:uppercase ep:tracking-wide",
+			cls: "ep:text-ui-small ep:font-semibold ep:text-obs-normal",
 			text: "Projects",
 		});
 
@@ -60,12 +60,11 @@ export class ProjectsContent extends BaseComponent {
 			cls: "ep:flex ep:items-center ep:gap-1",
 		});
 
-		const btnCls =
-			"ep:inline-flex ep:items-center ep:gap-1 ep:py-1 ep:px-2 ep:border-none ep:rounded ep:bg-obs-modifier-hover ep:text-obs-muted ep:text-xs ep:cursor-pointer ep:transition-colors ep:hover:bg-obs-modifier-border ep:hover:text-obs-normal [&_svg]:ep:w-3 [&_svg]:ep:h-3";
+		const iconBtnCls = "clickable-icon";
 
 		// Refresh button
 		const refreshBtn = buttonsContainer.createEl("button", {
-			cls: btnCls,
+			cls: iconBtnCls,
 			attr: { "aria-label": "Refresh" },
 		});
 		setIcon(refreshBtn, "refresh-cw");
@@ -75,10 +74,10 @@ export class ProjectsContent extends BaseComponent {
 
 		// New button
 		const newBtn = buttonsContainer.createEl("button", {
-			cls: btnCls,
+			cls: iconBtnCls,
+			attr: { "aria-label": "New project" },
 		});
 		setIcon(newBtn, "plus");
-		newBtn.createSpan({ text: "New" });
 		this.events.addEventListener(newBtn, "click", () => {
 			this.props.onCreateFromNote();
 		});
@@ -99,7 +98,7 @@ export class ProjectsContent extends BaseComponent {
 		const { searchQuery, onSearchChange } = this.props;
 		const searchContainer = this.element!.createDiv();
 		this.searchInput = searchContainer.createEl("input", {
-			cls: "ep:w-full ep:py-2 ep:px-3 ep:border ep:border-obs-border ep:rounded-md ep:bg-obs-primary ep:text-obs-normal ep:text-sm ep:focus:outline-none ep:focus:border-obs-interactive ep:placeholder:text-obs-muted",
+			cls: "ep:w-full ep:py-2 ep:px-3 ep:border ep:border-obs-border ep:rounded-md ep:bg-obs-primary ep:text-obs-normal ep:text-ui-small ep:focus:outline-none ep:focus:border-obs-interactive ep:placeholder:text-obs-muted",
 			type: "text",
 			placeholder: "Search projects...",
 		});
@@ -116,7 +115,7 @@ export class ProjectsContent extends BaseComponent {
 			cls: "episteme-project-list",
 		});
 
-		const emptyStateCls = "ep:text-center ep:py-8 ep:text-obs-muted ep:text-sm";
+		const emptyStateCls = "ep:text-center ep:py-8 ep:text-obs-muted ep:text-ui-small";
 
 		if (this.props.isLoading) {
 			listEl.createDiv({
@@ -153,7 +152,7 @@ export class ProjectsContent extends BaseComponent {
 		// Render empty projects (with separator if both exist)
 		if (emptyProjects.length > 0 && projectsWithCards.length > 0) {
 			listEl.createDiv({
-				cls: "ep:text-xs ep:font-semibold ep:text-obs-muted ep:uppercase ep:tracking-wide ep:py-3 ep:px-3",
+				cls: "ep:text-ui-smaller ep:font-semibold ep:text-obs-muted ep:uppercase ep:tracking-wide ep:py-3 ep:px-3",
 				text: "Empty projects",
 			});
 		}
@@ -199,7 +198,7 @@ export class ProjectsContent extends BaseComponent {
 
 		// Project name as clickable wiki link
 		const nameEl = content.createDiv({
-			cls: "ep:text-sm ep:font-medium ep:text-obs-normal ep:leading-snug ep:line-clamp-2 [&_p]:ep:m-0 [&_p]:ep:inline [&_a.internal-link]:ep:text-obs-normal [&_a.internal-link]:ep:no-underline [&_a.internal-link:hover]:ep:text-obs-link [&_a.internal-link:hover]:ep:underline",
+			cls: "ep:text-ui-small ep:font-medium ep:text-obs-normal ep:leading-snug ep:line-clamp-2 [&_p]:ep:m-0 [&_p]:ep:inline [&_a.internal-link]:ep:text-obs-normal [&_a.internal-link]:ep:no-underline [&_a.internal-link:hover]:ep:text-obs-link [&_a.internal-link:hover]:ep:underline",
 		});
 		void MarkdownRenderer.render(
 			this.props.app,
@@ -225,7 +224,7 @@ export class ProjectsContent extends BaseComponent {
 
 		// Stats line with Anki-style colored counts
 		const statsEl = content.createDiv({
-			cls: "ep:text-xs ep:mt-0.5 ep:flex ep:items-center ep:gap-2",
+			cls: "ep:text-ui-smaller ep:mt-0.5 ep:flex ep:items-center ep:gap-2",
 		});
 
 		// Note count (muted)
@@ -331,7 +330,7 @@ export class ProjectsContent extends BaseComponent {
 
 			// Note name as clickable wiki link
 			const nameEl = noteItem.createDiv({
-				cls: "ep:flex-1 ep:text-sm ep:text-obs-normal ep:line-clamp-1 [&_p]:ep:m-0 [&_p]:ep:inline [&_a.internal-link]:ep:text-obs-normal [&_a.internal-link]:ep:no-underline [&_a.internal-link:hover]:ep:text-obs-link [&_a.internal-link:hover]:ep:underline",
+				cls: "ep:flex-1 ep:text-ui-small ep:text-obs-normal ep:line-clamp-1 [&_p]:ep:m-0 [&_p]:ep:inline [&_a.internal-link]:ep:text-obs-normal [&_a.internal-link]:ep:no-underline [&_a.internal-link:hover]:ep:text-obs-link [&_a.internal-link:hover]:ep:underline",
 			});
 			void MarkdownRenderer.render(
 				this.props.app,
@@ -359,7 +358,7 @@ export class ProjectsContent extends BaseComponent {
 			const cardCountText = note.cardCount === 1 ? "1 card" : `${note.cardCount} cards`;
 			noteItem.createSpan({
 				text: cardCountText,
-				cls: "ep:text-xs ep:text-obs-muted ep:whitespace-nowrap",
+				cls: "ep:text-ui-smaller ep:text-obs-muted ep:whitespace-nowrap",
 			});
 		}
 	}

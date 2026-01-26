@@ -152,7 +152,7 @@ export class SimulatorChart extends BaseComponent {
 			// Label
 			item.createSpan({
 				text: sim.sequence,
-				cls: "ep:text-sm ep:text-obs-muted",
+				cls: "ep:text-ui-small ep:text-obs-muted",
 			});
 		}
 	}

@@ -96,7 +96,7 @@ export class DiffCard extends BaseComponent {
         if (change.type === "DELETED" && change.reason) {
             this.element.createDiv({
                 text: `Reason: ${change.reason}`,
-                cls: "ep:text-xs ep:text-obs-muted ep:mt-2 ep:italic",
+                cls: "ep:text-ui-smaller ep:text-obs-muted ep:mt-2 ep:italic",
             });
         }
     }
@@ -117,7 +117,7 @@ export class DiffCard extends BaseComponent {
             DELETED: "ep:bg-red-500 ep:text-white",
         };
         const badge = header.createSpan({
-            cls: `ep:text-xs ep:font-semibold ep:uppercase ep:px-1.5 ep:py-0.5 ep:rounded ${badgeColors[change.type] || ""}`,
+            cls: `ep:text-ui-smaller ep:font-semibold ep:uppercase ep:px-1.5 ep:py-0.5 ep:rounded ${badgeColors[change.type] || ""}`,
         });
         badge.textContent = getChangeTypeLabel(change.type);
 

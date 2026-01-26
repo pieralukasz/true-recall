@@ -242,7 +242,7 @@ export class SimulatorView extends ItemView {
 		// Parameters string display (full width, no scroll)
 		this.paramsDisplay = bar.createDiv({
 			cls: [
-				"ep:text-xs ep:text-obs-muted",
+				"ep:text-ui-smaller ep:text-obs-muted",
 				"ep:bg-obs-secondary ep:p-2 ep:rounded",
 				"ep:font-mono ep:mb-2",
 			].join(" "),
@@ -289,7 +289,7 @@ export class SimulatorView extends ItemView {
 		// Page indicator
 		buttonsContainer.createDiv({
 			text: "1 / 1",
-			cls: "ep:text-xs ep:text-obs-muted ep:ml-2",
+			cls: "ep:text-ui-smaller ep:text-obs-muted ep:ml-2",
 		});
 	}
 
@@ -301,7 +301,7 @@ export class SimulatorView extends ItemView {
 			"ep:px-3 ep:py-1.5",
 			"ep:bg-obs-secondary ep:text-obs-normal",
 			"ep:border ep:border-obs-border ep:rounded",
-			"ep:cursor-pointer ep:text-xs",
+			"ep:cursor-pointer ep:text-ui-smaller",
 			"hover:ep:bg-obs-modifier-hover",
 		].join(" ");
 	}

@@ -229,7 +229,7 @@ export class DashboardContent extends BaseComponent {
 		// Category header
 		this.element!.createEl("h3", {
 			text: category.name,
-			cls: "ep:text-sm ep:font-semibold ep:text-obs-muted ep:uppercase ep:tracking-wide ep:m-0 ep:mb-2",
+			cls: "ep:text-ui-small ep:font-semibold ep:text-obs-muted ep:uppercase ep:tracking-wide ep:m-0 ep:mb-2",
 		});
 
 		// Buttons grid
@@ -239,7 +239,7 @@ export class DashboardContent extends BaseComponent {
 
 		for (const command of categoryCommands) {
 			const btn = gridEl.createEl("button", {
-				cls: "ep:flex ep:items-center ep:gap-2.5 ep:py-3.5 ep:px-4 ep:bg-obs-secondary ep:border ep:border-obs-border ep:rounded-lg ep:cursor-pointer ep:text-sm ep:font-medium ep:text-obs-normal ep:transition-all ep:text-left ep:hover:bg-obs-modifier-hover ep:hover:border-obs-interactive ep:hover:-translate-y-px ep:active:translate-y-0",
+				cls: "ep:flex ep:items-center ep:gap-2.5 ep:py-3.5 ep:px-4 ep:bg-obs-secondary ep:border ep:border-obs-border ep:rounded-lg ep:cursor-pointer ep:text-ui-small ep:font-medium ep:text-obs-normal ep:transition-all ep:text-left ep:hover:bg-obs-modifier-hover ep:hover:border-obs-interactive ep:hover:-translate-y-px ep:active:translate-y-0",
 			});
 
 			// Icon + label

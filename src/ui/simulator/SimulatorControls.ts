@@ -34,7 +34,7 @@ export class SimulatorControls extends BaseComponent {
 				"ep:w-full ep:mb-3 ep:px-3 ep:py-2",
 				"ep:bg-obs-primary ep:text-obs-normal",
 				"ep:border ep:border-obs-border ep:rounded",
-				"ep:cursor-pointer ep:text-sm",
+				"ep:cursor-pointer ep:text-ui-small",
 				"hover:ep:bg-obs-modifier-hover",
 			].join(" "),
 		});
@@ -47,7 +47,7 @@ export class SimulatorControls extends BaseComponent {
 		// Info text
 		this.element.createDiv({
 			text: "1=Again, 2=Hard, 3=Good, 4=Easy",
-			cls: "ep:text-xs ep:text-obs-muted ep:mb-2",
+			cls: "ep:text-ui-smaller ep:text-obs-muted ep:mb-2",
 		});
 
 		// Textarea for sequences
@@ -56,7 +56,7 @@ export class SimulatorControls extends BaseComponent {
 				"ep:w-full ep:h-[150px] ep:mb-4",
 				"ep:bg-obs-primary ep:text-obs-normal",
 				"ep:border ep:border-obs-border ep:rounded",
-				"ep:p-2 ep:text-sm ep:font-mono",
+				"ep:p-2 ep:text-ui-small ep:font-mono",
 				"ep:resize-none",
 			].join(" "),
 		});
@@ -119,7 +119,7 @@ export class SimulatorControls extends BaseComponent {
 
 		for (const metric of metrics) {
 			const label = metricGroup.createEl("label", {
-				cls: "ep:flex ep:items-center ep:gap-2 ep:mb-1 ep:cursor-pointer ep:text-sm",
+				cls: "ep:flex ep:items-center ep:gap-2 ep:mb-1 ep:cursor-pointer ep:text-ui-small",
 			});
 
 			const radio = label.createEl("input", {
@@ -152,7 +152,7 @@ export class SimulatorControls extends BaseComponent {
 
 		// Animation checkbox
 		const animLabel = optionsGroup.createEl("label", {
-			cls: "ep:flex ep:items-center ep:gap-2 ep:mb-1 ep:cursor-pointer ep:text-sm",
+			cls: "ep:flex ep:items-center ep:gap-2 ep:mb-1 ep:cursor-pointer ep:text-ui-small",
 		});
 		const animCheckbox = animLabel.createEl("input", {
 			type: "checkbox",
@@ -170,7 +170,7 @@ export class SimulatorControls extends BaseComponent {
 
 		// Logarithmic checkbox
 		const logLabel = optionsGroup.createEl("label", {
-			cls: "ep:flex ep:items-center ep:gap-2 ep:cursor-pointer ep:text-sm",
+			cls: "ep:flex ep:items-center ep:gap-2 ep:cursor-pointer ep:text-ui-small",
 		});
 		const logCheckbox = logLabel.createEl("input", {
 			type: "checkbox",

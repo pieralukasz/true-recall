@@ -54,7 +54,7 @@ export class SelectNoteModal extends BasePromiseModal<SelectNoteResult> {
 		// Info text
 		container.createEl("p", {
 			text: "Select a note to create a project from.",
-			cls: "ep:text-obs-muted ep:text-sm ep:mb-4",
+			cls: "ep:text-obs-muted ep:text-ui-small ep:mb-4",
 		});
 
 		// Search input
@@ -71,7 +71,7 @@ export class SelectNoteModal extends BasePromiseModal<SelectNoteResult> {
 		const searchInput = searchContainer.createEl("input", {
 			type: "text",
 			placeholder: "Search notes...",
-			cls: "ep:w-full ep:py-2.5 ep:px-3 ep:border ep:border-obs-border ep:rounded-md ep:bg-obs-primary ep:text-obs-normal ep:text-sm ep:focus:outline-none ep:focus:border-obs-interactive ep:placeholder:text-obs-muted",
+			cls: "ep:w-full ep:py-2.5 ep:px-3 ep:border ep:border-obs-border ep:rounded-md ep:bg-obs-primary ep:text-obs-normal ep:text-ui-small ep:focus:outline-none ep:focus:border-obs-interactive ep:placeholder:text-obs-muted",
 		});
 
 		searchInput.addEventListener("input", (e) => {
@@ -111,7 +111,7 @@ export class SelectNoteModal extends BasePromiseModal<SelectNoteResult> {
 		if (filteredNotes.length > 50) {
 			this.noteListEl.createEl("div", {
 				text: `Showing 50 of ${filteredNotes.length} notes. Type to search for more.`,
-				cls: "ep:p-3 ep:text-center ep:text-obs-muted ep:text-sm",
+				cls: "ep:p-3 ep:text-center ep:text-obs-muted ep:text-ui-small",
 			});
 		}
 	}
@@ -130,7 +130,7 @@ export class SelectNoteModal extends BasePromiseModal<SelectNoteResult> {
 		const folderPath = note.parent?.path;
 		if (folderPath && folderPath !== "/") {
 			noteInfo.createSpan({
-				cls: "ep:text-xs ep:text-obs-muted ep:ml-2",
+				cls: "ep:text-ui-smaller ep:text-obs-muted ep:ml-2",
 				text: folderPath,
 			});
 		}
@@ -138,7 +138,7 @@ export class SelectNoteModal extends BasePromiseModal<SelectNoteResult> {
 		// Select button
 		const selectBtn = noteEl.createEl("button", {
 			text: "Select",
-			cls: "ep:shrink-0 ep:py-1 ep:px-3 ep:rounded ep:bg-obs-interactive ep:text-white ep:border-none ep:text-xs ep:cursor-pointer ep:opacity-0 ep:group-hover:opacity-100 ep:hover:opacity-100",
+			cls: "ep:shrink-0 ep:py-1 ep:px-3 ep:rounded ep:bg-obs-interactive ep:text-white ep:border-none ep:text-ui-smaller ep:cursor-pointer ep:opacity-0 ep:group-hover:opacity-100 ep:hover:opacity-100",
 		});
 
 		selectBtn.addEventListener("click", () => {

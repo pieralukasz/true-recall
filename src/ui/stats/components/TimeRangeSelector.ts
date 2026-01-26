@@ -98,7 +98,7 @@ export class TimeRangeSelector extends BaseComponent {
 			"ep:rounded-lg",
 
 			// Typography
-			"ep:text-sm",
+			"ep:text-ui-small",
 			"ep:font-medium",
 
 			// Transitions

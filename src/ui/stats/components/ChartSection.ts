@@ -142,7 +142,7 @@ export abstract class ChartSection<TData = unknown> extends BaseComponent {
 				"ep:justify-center",
 				"ep:h-52",
 				"ep:text-obs-muted",
-				"ep:text-sm",
+				"ep:text-ui-small",
 			].join(" "),
 			text: message,
 		});
@@ -168,7 +168,7 @@ export abstract class ChartSection<TData = unknown> extends BaseComponent {
 				"ep:justify-center",
 				"ep:h-52",
 				"ep:text-obs-error",
-				"ep:text-sm",
+				"ep:text-ui-small",
 			].join(" "),
 			text: `Error: ${message}`,
 		});
@@ -202,7 +202,7 @@ export abstract class ChartSection<TData = unknown> extends BaseComponent {
 		for (const item of summary) {
 			const summaryItem = this.summaryContainer.createDiv({
 				cls: [
-					"ep:text-sm",
+					"ep:text-ui-small",
 					"ep:text-obs-muted",
 					"ep:flex",
 					"ep:items-center",

@@ -203,7 +203,7 @@ export class CreatedVsReviewedChart extends ChartSection<CardsCreatedVsReviewedE
 					"ep:justify-center",
 					"ep:h-52",
 					"ep:text-obs-muted",
-					"ep:text-sm",
+					"ep:text-ui-small",
 					"ep:italic",
 				].join(" "),
 				text: "Select a time range to see comparison",

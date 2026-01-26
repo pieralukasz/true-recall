@@ -71,7 +71,7 @@ export class NLQueryPanel {
 
         // Description
         this.containerEl.createDiv({
-            cls: "ep:text-sm ep:text-obs-muted ep:mb-3",
+            cls: "ep:text-ui-small ep:text-obs-muted ep:mb-3",
             text: "Explore your learning data with natural language questions.",
         });
 
@@ -81,7 +81,7 @@ export class NLQueryPanel {
         });
 
         this.inputEl = inputContainer.createEl("textarea", {
-            cls: "ep:w-full ep:py-2.5 ep:px-3 ep:border ep:border-obs-border ep:rounded-md ep:bg-obs-primary ep:text-obs-normal ep:text-sm ep:resize-y ep:min-h-15 ep:focus:border-obs-interactive ep:focus:outline-none ep:placeholder:text-obs-faint",
+            cls: "ep:w-full ep:py-2.5 ep:px-3 ep:border ep:border-obs-border ep:rounded-md ep:bg-obs-primary ep:text-obs-normal ep:text-ui-small ep:resize-y ep:min-h-15 ep:focus:border-obs-interactive ep:focus:outline-none ep:placeholder:text-obs-faint",
             placeholder: "What would you like to know about your learning?",
         });
         this.inputEl.rows = 2;
@@ -99,7 +99,7 @@ export class NLQueryPanel {
             cls: "ep:flex ep:justify-end",
         });
         this.submitBtn = buttonContainer.createEl("button", {
-            cls: "mod-cta ep:py-2 ep:px-4 ep:text-sm ep:rounded-md ep:cursor-pointer ep:transition-opacity ep:disabled:opacity-50 ep:disabled:cursor-not-allowed",
+            cls: "mod-cta ep:py-2 ep:px-4 ep:text-ui-small ep:rounded-md ep:cursor-pointer ep:transition-opacity ep:disabled:opacity-50 ep:disabled:cursor-not-allowed",
             text: "Explore",
         });
         this.submitBtn.addEventListener("click", () => void this.submitQuery());
@@ -109,13 +109,13 @@ export class NLQueryPanel {
             cls: "ep:flex ep:flex-wrap ep:items-center ep:gap-2 ep:mb-4",
         });
         this.examplesEl.createEl("span", {
-            cls: "ep:text-xs ep:text-obs-muted",
+            cls: "ep:text-ui-smaller ep:text-obs-muted",
             text: "Quick insights:",
         });
 
         for (const example of EXAMPLE_QUERIES) {
             const chip = this.examplesEl.createEl("button", {
-                cls: "ep:py-1 ep:px-2.5 ep:text-xs ep:border ep:border-obs-border ep:rounded-xl ep:bg-obs-primary ep:text-obs-muted ep:cursor-pointer ep:transition-all ep:hover:border-obs-interactive ep:hover:text-obs-normal",
+                cls: "ep:py-1 ep:px-2.5 ep:text-ui-smaller ep:border ep:border-obs-border ep:rounded-xl ep:bg-obs-primary ep:text-obs-muted ep:cursor-pointer ep:transition-all ep:hover:border-obs-interactive ep:hover:text-obs-normal",
                 text: example.text,
             });
             chip.addEventListener("click", () => {
@@ -191,14 +191,14 @@ export class NLQueryPanel {
 
         // Question
         const questionEl = resultContainer.createDiv({
-            cls: "ep:text-sm ep:text-obs-muted ep:mb-2",
+            cls: "ep:text-ui-small ep:text-obs-muted ep:mb-2",
         });
         questionEl.createEl("strong", { text: "Q: " });
         questionEl.createEl("span", { text: result.question });
 
         // Answer
         const answerEl = resultContainer.createDiv({
-            cls: "ep:text-sm ep:text-obs-normal",
+            cls: "ep:text-ui-small ep:text-obs-normal",
         });
         answerEl.createEl("strong", { text: "A: " });
 
@@ -215,7 +215,7 @@ export class NLQueryPanel {
         // SQL queries (collapsible)
         if (result.intermediateSteps.length > 0) {
             const detailsEl = resultContainer.createEl("details", {
-                cls: "ep:mt-3 ep:text-xs",
+                cls: "ep:mt-3 ep:text-ui-smaller",
             });
             const summaryEl = detailsEl.createEl("summary", {
                 text: `Show SQL queries (${result.intermediateSteps.length})`,
@@ -227,7 +227,7 @@ export class NLQueryPanel {
                 if (step.action === "sql_db_query") {
                     const stepEl = stepsEl.createDiv({ cls: "ep:mb-2" });
                     stepEl.createEl("code", {
-                        cls: "ep:block ep:py-2 ep:px-3 ep:bg-obs-secondary ep:rounded ep:font-mono ep:text-xs ep:whitespace-pre-wrap ep:break-all ep:text-obs-muted",
+                        cls: "ep:block ep:py-2 ep:px-3 ep:bg-obs-secondary ep:rounded ep:font-mono ep:text-ui-smaller ep:whitespace-pre-wrap ep:break-all ep:text-obs-muted",
                         text: step.input,
                     });
                 }
@@ -237,7 +237,7 @@ export class NLQueryPanel {
         // Error indicator
         if (result.error) {
             const errorEl = resultContainer.createDiv({
-                cls: "ep:mt-2 ep:text-xs ep:text-orange-500",
+                cls: "ep:mt-2 ep:text-ui-smaller ep:text-orange-500",
             });
             errorEl.createEl("span", { text: `Note: ${result.error}` });
         }

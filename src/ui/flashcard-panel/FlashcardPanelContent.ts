@@ -74,6 +74,8 @@ export interface FlashcardPanelContentProps {
 	selectedCardIds: Set<string>;
 	expandedCardIds: Set<string>;
 	cardsWithFsrs?: FSRSFlashcardItem[];
+	// Search query for filtering flashcards
+	searchQuery: string;
 }
 
 /**
@@ -162,7 +164,7 @@ export class FlashcardPanelContent extends BaseComponent {
 		});
 		stateEl.createEl("p", {
 			text: "No flashcards",
-			cls: "ep:text-sm ep:text-obs-muted ep:m-0",
+			cls: "ep:text-ui-small ep:text-obs-muted ep:m-0",
 		});
 	}
 
@@ -174,6 +176,7 @@ export class FlashcardPanelContent extends BaseComponent {
 			selectedCardIds,
 			expandedCardIds,
 			cardsWithFsrs,
+			searchQuery,
 		} = this.props;
 
 		if (!this.element || !flashcardInfo) return;
@@ -182,9 +185,18 @@ export class FlashcardPanelContent extends BaseComponent {
 			cls: "ep:flex ep:flex-col",
 		});
 
+		// Filter flashcards based on search query
+		const filteredFlashcards = searchQuery
+			? flashcardInfo.flashcards.filter(
+					(card) =>
+						card.question.toLowerCase().includes(searchQuery) ||
+						card.answer.toLowerCase().includes(searchQuery)
+			  )
+			: flashcardInfo.flashcards;
+
 		// Flashcard list (compact)
-		if (flashcardInfo.flashcards.length > 0) {
-			for (const card of flashcardInfo.flashcards) {
+		if (filteredFlashcards.length > 0) {
+			for (const card of filteredFlashcards) {
 				const cardWrapper = previewEl.createDiv();
 
 				// Find FSRS data for this card
@@ -218,7 +230,7 @@ export class FlashcardPanelContent extends BaseComponent {
 				cls: "ep:flex ep:justify-center",
 			});
 			const addBtn = addBtnContainer.createEl("button", {
-				cls: "ep:inline-flex ep:items-center ep:gap-1.5 ep:py-1.5 ep:px-3 ep:border ep:border-dashed ep:border-obs-border ep:rounded ep:bg-transparent ep:text-obs-muted ep:text-xs ep:cursor-pointer ep:transition-colors ep:hover:bg-obs-modifier-hover ep:hover:text-obs-normal ep:hover:border-obs-modifier-border-hover [&_svg]:ep:w-3.5 [&_svg]:ep:h-3.5",
+				cls: "ep:inline-flex ep:items-center ep:gap-1.5 ep:py-1.5 ep:px-3 ep:border ep:border-dashed ep:border-obs-border ep:rounded ep:bg-transparent ep:text-obs-muted ep:text-ui-smaller ep:cursor-pointer ep:transition-colors ep:hover:bg-obs-modifier-hover ep:hover:text-obs-normal ep:hover:border-obs-modifier-border-hover [&_svg]:ep:w-3.5 [&_svg]:ep:h-3.5",
 				attr: { "aria-label": "Add flashcard" },
 			});
 			setIcon(addBtn, "plus");
@@ -249,14 +261,14 @@ export class FlashcardPanelContent extends BaseComponent {
 		});
 		headerEl.createSpan({
 			text: `Proposed Changes (${acceptedCount}/${totalCount} selected)`,
-			cls: "ep:text-sm ep:font-semibold ep:text-obs-normal",
+			cls: "ep:text-ui-small ep:font-semibold ep:text-obs-normal",
 		});
 
 		// Select All / Deselect All button
 		const allSelected = acceptedCount === totalCount;
 		const selectAllBtn = headerEl.createEl("button", {
 			text: allSelected ? "Deselect all" : "Select all",
-			cls: "ep:ml-auto ep:px-2 ep:py-1 ep:text-xs ep:bg-obs-border ep:text-obs-normal ep:border-none ep:rounded ep:cursor-pointer ep:hover:bg-obs-modifier-hover ep:transition-colors",
+			cls: "ep:ml-auto ep:px-2 ep:py-1 ep:text-ui-smaller ep:bg-obs-border ep:text-obs-normal ep:border-none ep:rounded ep:cursor-pointer ep:hover:bg-obs-modifier-hover ep:transition-colors",
 		});
 
 		if (handlers.onSelectAll) {

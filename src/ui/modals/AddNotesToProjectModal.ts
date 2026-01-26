@@ -48,7 +48,7 @@ export class AddNotesToProjectModal extends BasePromiseModal<AddNotesToProjectRe
 		// Info text
 		container.createEl("p", {
 			text: "Select notes to add to this project. Only notes without any project assignment are shown.",
-			cls: "ep:text-obs-muted ep:text-sm ep:mb-4",
+			cls: "ep:text-obs-muted ep:text-ui-small ep:mb-4",
 		});
 
 		// Search input
@@ -68,7 +68,7 @@ export class AddNotesToProjectModal extends BasePromiseModal<AddNotesToProjectRe
 		const searchInput = searchContainer.createEl("input", {
 			type: "text",
 			placeholder: "Search notes...",
-			cls: "ep:w-full ep:py-2.5 ep:px-3 ep:border ep:border-obs-border ep:rounded-md ep:bg-obs-primary ep:text-obs-normal ep:text-sm ep:focus:outline-none ep:focus:border-obs-interactive ep:placeholder:text-obs-muted",
+			cls: "ep:w-full ep:py-2.5 ep:px-3 ep:border ep:border-obs-border ep:rounded-md ep:bg-obs-primary ep:text-obs-normal ep:text-ui-small ep:focus:outline-none ep:focus:border-obs-interactive ep:placeholder:text-obs-muted",
 		});
 
 		searchInput.addEventListener("input", (e) => {
@@ -123,7 +123,7 @@ export class AddNotesToProjectModal extends BasePromiseModal<AddNotesToProjectRe
 		const folderPath = note.notePath.replace(/\/[^/]+$/, "");
 		if (folderPath && folderPath !== note.noteName) {
 			noteInfo.createSpan({
-				cls: "ep:text-xs ep:text-obs-muted ep:ml-2",
+				cls: "ep:text-ui-smaller ep:text-obs-muted ep:ml-2",
 				text: folderPath,
 			});
 		}

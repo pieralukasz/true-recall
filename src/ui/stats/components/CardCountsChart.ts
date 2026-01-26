@@ -238,7 +238,7 @@ export class CardCountsChart extends BaseComponent {
 			// Label
 			row.createSpan({
 				cls: [
-					"ep:text-sm",
+					"ep:text-ui-small",
 					"ep:font-medium",
 					"ep:text-obs-normal",
 				].join(" "),
@@ -250,7 +250,7 @@ export class CardCountsChart extends BaseComponent {
 			row.createSpan({
 				cls: [
 					"ep:ml-auto",
-					"ep:text-sm",
+					"ep:text-ui-small",
 					"ep:font-semibold",
 					"ep:text-obs-muted",
 				].join(" "),
@@ -292,7 +292,7 @@ export class CardCountsChart extends BaseComponent {
 				"ep:justify-center",
 				"ep:h-52",
 				"ep:text-obs-muted",
-				"ep:text-sm",
+				"ep:text-ui-small",
 				"ep:italic",
 			].join(" "),
 			text: "No cards found",
@@ -314,7 +314,7 @@ export class CardCountsChart extends BaseComponent {
 				"ep:justify-center",
 				"ep:h-52",
 				"ep:text-obs-error",
-				"ep:text-sm",
+				"ep:text-ui-small",
 			].join(" "),
 			text: "Failed to load card counts.",
 		});

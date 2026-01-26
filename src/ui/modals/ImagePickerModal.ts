@@ -92,11 +92,11 @@ export class ImagePickerModal extends BaseModal {
 
         zone.createDiv({
             text: "Paste image from clipboard",
-            cls: "ep:text-sm ep:font-medium ep:text-obs-normal",
+            cls: "ep:text-ui-small ep:font-medium ep:text-obs-normal",
         });
         zone.createDiv({
             text: "Ctrl+V or drag & drop",
-            cls: "ep:text-xs ep:text-obs-muted",
+            cls: "ep:text-ui-smaller ep:text-obs-muted",
         });
 
         // Drag and drop handlers
@@ -130,7 +130,7 @@ export class ImagePickerModal extends BaseModal {
 
         section.createEl("h4", {
             text: "Recent Images",
-            cls: "ep:text-sm ep:font-semibold ep:text-obs-muted ep:m-0",
+            cls: "ep:text-ui-small ep:font-semibold ep:text-obs-muted ep:m-0",
         });
 
         const grid = section.createDiv({ cls: "ep:grid ep:grid-cols-4 ep:gap-2 ep:max-h-[180px] ep:overflow-y-auto" });
@@ -183,7 +183,7 @@ export class ImagePickerModal extends BaseModal {
 
         control.createEl("label", {
             text: "Width:",
-            cls: "ep:text-sm ep:font-medium ep:text-obs-normal",
+            cls: "ep:text-ui-small ep:font-medium ep:text-obs-normal",
         });
 
         this.widthSlider = control.createEl("input", {
@@ -199,7 +199,7 @@ export class ImagePickerModal extends BaseModal {
 
         this.widthValue = control.createSpan({
             text: "Auto",
-            cls: "ep:text-sm ep:font-medium ep:text-obs-interactive ep:min-w-[50px] ep:text-right",
+            cls: "ep:text-ui-small ep:font-medium ep:text-obs-interactive ep:min-w-[50px] ep:text-right",
         });
 
         this.widthSlider.addEventListener("input", () => {
@@ -215,7 +215,7 @@ export class ImagePickerModal extends BaseModal {
 
         section.createEl("h4", {
             text: "Preview",
-            cls: "ep:text-sm ep:font-semibold ep:text-obs-muted ep:m-0",
+            cls: "ep:text-ui-small ep:font-semibold ep:text-obs-muted ep:m-0",
         });
 
         this.previewContainer = section.createDiv({ cls: "ep:p-3 ep:bg-obs-secondary ep:rounded-md ep:min-h-[100px] ep:overflow-hidden" });
@@ -331,7 +331,7 @@ export class ImagePickerModal extends BaseModal {
         // Show the markdown that will be inserted
         const codeEl = this.previewContainer.createEl("code", {
             text: markdown,
-            cls: "ep:block ep:py-2 ep:px-3 ep:bg-obs-primary ep:rounded ep:text-xs ep:mb-2",
+            cls: "ep:block ep:py-2 ep:px-3 ep:bg-obs-primary ep:rounded ep:text-ui-smaller ep:mb-2",
         });
 
         // Show visual preview

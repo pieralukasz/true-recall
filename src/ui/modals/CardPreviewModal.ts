@@ -48,14 +48,14 @@ export class CardPreviewModal extends BaseModal {
 
 		// Cards count
 		const countEl = headerEl.createDiv({
-			cls: "ep:text-sm ep:text-obs-muted",
+			cls: "ep:text-ui-small ep:text-obs-muted",
 		});
 		countEl.setText(`${this.options.cards.length} cards`);
 
 		// "Unbury All" button for buried cards category
 		if (this.options.category === "buried" && this.options.cards.length > 0) {
 			const unburyAllBtn = headerEl.createEl("button", {
-				cls: "ep:text-xs ep:py-1.5 ep:px-3 ep:bg-obs-interactive ep:text-white ep:border-none ep:rounded ep:cursor-pointer ep:transition-colors ep:hover:opacity-90",
+				cls: "ep:text-ui-smaller ep:py-1.5 ep:px-3 ep:bg-obs-interactive ep:text-white ep:border-none ep:rounded ep:cursor-pointer ep:transition-colors ep:hover:opacity-90",
 				text: "Unbury All",
 			});
 			unburyAllBtn.addEventListener("click", () => void this.handleUnburyAll());
@@ -64,7 +64,7 @@ export class CardPreviewModal extends BaseModal {
 		// "Delete All" button for suspended cards category
 		if (this.options.category === "suspended" && this.options.cards.length > 0) {
 			const deleteAllBtn = headerEl.createEl("button", {
-				cls: "ep:text-xs ep:py-1.5 ep:px-3 ep:bg-red-500 ep:text-white ep:border-none ep:rounded ep:cursor-pointer ep:transition-colors ep:hover:bg-red-600",
+				cls: "ep:text-ui-smaller ep:py-1.5 ep:px-3 ep:bg-red-500 ep:text-white ep:border-none ep:rounded ep:cursor-pointer ep:transition-colors ep:hover:bg-red-600",
 				text: "Delete All",
 			});
 			deleteAllBtn.addEventListener("click", () => void this.handleDeleteAll());

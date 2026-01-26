@@ -32,7 +32,7 @@ export class Panel extends BaseComponent {
 
 		// Main container element - fill available space with flex
 		this.element = this.container.createDiv({
-			cls: "ep:h-full ep:flex ep:flex-col ep:p-2 ep:overflow-hidden",
+			cls: "ep:h-full ep:flex ep:flex-col ep:px-1 ep:overflow-hidden",
 		});
 
 		// Content container
