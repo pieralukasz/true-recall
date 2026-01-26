@@ -22,6 +22,7 @@ export interface FlashcardPanelHeaderProps {
     onUpdate?: () => void;
     onCollect?: () => void;
     onRefresh?: () => void;
+    onReview?: () => void;
     onExitSelectionMode?: () => void;
 }
 
@@ -179,6 +180,14 @@ export class FlashcardPanelHeader extends BaseComponent {
                 item.setTitle("Refresh")
                     .setIcon("refresh-cw")
                     .onClick(() => this.props.onRefresh?.());
+            });
+        }
+
+        if (hasFlashcards && this.props.onReview) {
+            menu.addItem((item) => {
+                item.setTitle("Start review")
+                    .setIcon("brain")
+                    .onClick(() => this.props.onReview?.());
             });
         }
 

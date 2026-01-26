@@ -120,7 +120,7 @@ export class StatsView extends ItemView {
 
 		// Inner wrapper for centered content with padding
 		this.contentWrapper = container.createDiv({
-			cls: "ep:p-4 ep:max-w-[900px] ep:mx-auto",
+			cls: "ep:p-2 ep:max-w-[900px] ep:mx-auto",
 		});
 
 		// Create layout and initialize components

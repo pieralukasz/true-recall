@@ -359,6 +359,7 @@ export class FlashcardPanelView extends ItemView {
             onUpdate: () => void this.handleUpdate(),
             onCollect: () => void this.handleCollect(),
             onRefresh: () => void this.loadFlashcardInfo(),
+            onReview: () => void this.handleReviewFromPanel(),
             onExitSelectionMode: () => this.stateManager.exitSelectionMode(),
         });
         this.headerComponent.render();
@@ -980,6 +981,17 @@ export class FlashcardPanelView extends ItemView {
 
         new Notice(`Deleted ${successCount} flashcard(s)`);
         await this.loadFlashcardInfo();
+    }
+
+    /**
+     * Start review from the flashcard panel
+     * Opens review session for current note's flashcards
+     */
+    private async handleReviewFromPanel(): Promise<void> {
+        const state = this.stateManager.getState();
+        if (!state.currentFile) return;
+
+        await this.plugin.reviewNoteFlashcards(state.currentFile);
     }
 
     /**
