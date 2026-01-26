@@ -28,7 +28,7 @@ import {
 	DeviceDiscoveryService,
 	AuthService,
 	SyncService,
-	UidIndexService,
+	FrontmatterIndexService,
 } from "./services";
 import {
 	DB_FOLDER,
@@ -80,7 +80,7 @@ export default class EpistemePlugin extends Plugin {
 	sessionPersistence!: SessionPersistenceService;
 	cardStore!: SqliteStoreService;
 	dayBoundaryService!: DayBoundaryService;
-	uidIndex!: UidIndexService;
+	frontmatterIndex!: FrontmatterIndexService;
 	nlQueryService: NLQueryService | null = null;
 	backupService: BackupService | null = null;
 	agentService: AgentService | null = null;
@@ -92,17 +92,19 @@ export default class EpistemePlugin extends Plugin {
 	async onload(): Promise<void> {
 		await this.loadSettings();
 
-		// Initialize UID index for O(1) file lookups by flashcard_uid
-		this.uidIndex = new UidIndexService(this.app);
-		this.uidIndex.registerEvents(this);
+		// Initialize frontmatter index for O(1) lookups by flashcard_uid, projects, etc.
+		this.frontmatterIndex = new FrontmatterIndexService(this.app);
+		this.frontmatterIndex.register({ field: "flashcard_uid", type: "string", unique: true });
+		this.frontmatterIndex.register({ field: "projects", type: "array", unique: false });
+		this.frontmatterIndex.registerEvents(this);
 
 		// Build index after metadataCache is fully loaded
 		this.app.workspace.onLayoutReady(() => {
-			this.uidIndex.rebuildIndex();
+			this.frontmatterIndex.rebuildIndex();
 		});
 
 		// Initialize services
-		this.flashcardManager = new FlashcardManager(this.app, this.settings, this.uidIndex);
+		this.flashcardManager = new FlashcardManager(this.app, this.settings, this.frontmatterIndex);
 		this.openRouterService = new OpenRouterService(
 			this.settings.openRouterApiKey,
 			this.settings.aiModel
@@ -1104,7 +1106,7 @@ export default class EpistemePlugin extends Plugin {
 		// Generate and set new UID
 		const newUid = frontmatterService.generateUid();
 		await frontmatterService.setSourceNoteUid(file, newUid);
-		// Note: UidIndexService updates automatically via metadataCache 'changed' event
+		// Note: FrontmatterIndexService updates automatically via metadataCache 'changed' event
 
 		new Notice(`Added flashcard UID: ${newUid}`);
 	}
