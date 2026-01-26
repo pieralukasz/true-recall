@@ -7,7 +7,7 @@
  * - Array fields (non-unique: many files per value, like projects)
  * - Nested paths (e.g., "metadata.category")
  */
-import type { App, TFile } from "obsidian";
+import type { App, TFile, CachedMetadata, Plugin } from "obsidian";
 
 export interface FieldConfig {
 	/** Field path in frontmatter (e.g., "flashcard_uid", "projects", "metadata.category") */
@@ -241,5 +241,74 @@ export class FrontmatterIndexService {
 	getValueCount(field: string): number {
 		const index = this.fields.get(field);
 		return index?.valueToPath.size ?? 0;
+	}
+
+	/**
+	 * Register event handlers with plugin for proper cleanup
+	 */
+	registerEvents(plugin: Plugin): void {
+		plugin.registerEvent(
+			this.app.metadataCache.on("changed", this.handleMetadataChanged.bind(this))
+		);
+		plugin.registerEvent(
+			this.app.vault.on("delete", this.handleFileDeleted.bind(this))
+		);
+		plugin.registerEvent(
+			this.app.vault.on("rename", this.handleFileRenamed.bind(this))
+		);
+	}
+
+	/**
+	 * Register events directly (for testing)
+	 */
+	registerEventsDirect(): void {
+		this.app.metadataCache.on("changed", this.handleMetadataChanged.bind(this));
+		this.app.vault.on("delete", this.handleFileDeleted.bind(this));
+		this.app.vault.on("rename", this.handleFileRenamed.bind(this));
+	}
+
+	private handleMetadataChanged(file: TFile, _data: string, cache: CachedMetadata): void {
+		this.indexFile(file.path, cache?.frontmatter);
+	}
+
+	private handleFileDeleted(file: TFile): void {
+		// Remove from all field indexes
+		for (const index of this.fields.values()) {
+			this.updateFieldIndex(index, file.path, []);
+		}
+	}
+
+	private handleFileRenamed(file: TFile, oldPath: string): void {
+		// For each field, transfer the values from oldPath to newPath
+		for (const index of this.fields.values()) {
+			const { config, valueToPath, pathToValue } = index;
+
+			const entry = pathToValue.get(oldPath);
+			if (!entry) continue;
+
+			const values = entry instanceof Set ? Array.from(entry) : [entry];
+
+			// Remove old path mappings
+			pathToValue.delete(oldPath);
+			for (const val of values) {
+				if (config.unique) {
+					// Update directly
+					valueToPath.set(val, file.path);
+				} else {
+					const paths = valueToPath.get(val);
+					if (paths instanceof Set) {
+						paths.delete(oldPath);
+						paths.add(file.path);
+					}
+				}
+			}
+
+			// Add new path entry
+			if (config.type === "array") {
+				pathToValue.set(file.path, new Set(values));
+			} else {
+				pathToValue.set(file.path, values[0]!);
+			}
+		}
 	}
 }
