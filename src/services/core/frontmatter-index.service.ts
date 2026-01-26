@@ -7,7 +7,7 @@
  * - Array fields (non-unique: many files per value, like projects)
  * - Nested paths (e.g., "metadata.category")
  */
-import type { App } from "obsidian";
+import type { App, TFile } from "obsidian";
 
 export interface FieldConfig {
 	/** Field path in frontmatter (e.g., "flashcard_uid", "projects", "metadata.category") */
@@ -178,5 +178,68 @@ export class FrontmatterIndexService {
 				paths.add(path);
 			}
 		}
+	}
+
+	/**
+	 * Get file by unique field value (for unique string fields like flashcard_uid)
+	 * Returns null if field is not unique or value not found
+	 */
+	getFileByValue(field: string, value: string): TFile | null {
+		const index = this.fields.get(field);
+		if (!index || !index.config.unique) return null;
+
+		const path = index.valueToPath.get(value);
+		if (typeof path !== "string") return null;
+
+		const file = this.app.vault.getAbstractFileByPath(path);
+		return file && "extension" in file ? (file as TFile) : null;
+	}
+
+	/**
+	 * Get all files that have a specific value (for non-unique fields like projects)
+	 * Returns empty array if field is unique or value not found
+	 */
+	getFilesByValue(field: string, value: string): TFile[] {
+		const index = this.fields.get(field);
+		if (!index) return [];
+
+		const entry = index.valueToPath.get(value);
+		if (!entry) return [];
+
+		const paths = entry instanceof Set ? Array.from(entry) : [entry];
+		return paths
+			.map((p) => this.app.vault.getAbstractFileByPath(p))
+			.filter((f): f is TFile => f !== null && "extension" in f);
+	}
+
+	/**
+	 * Get values for a file path
+	 */
+	getValues(field: string, path: string): string[] {
+		const index = this.fields.get(field);
+		if (!index) return [];
+
+		const entry = index.pathToValue.get(path);
+		if (!entry) return [];
+
+		return entry instanceof Set ? Array.from(entry) : [entry];
+	}
+
+	/**
+	 * Get all unique values for a field
+	 */
+	getAllValues(field: string): Set<string> {
+		const index = this.fields.get(field);
+		if (!index) return new Set();
+
+		return new Set(index.valueToPath.keys());
+	}
+
+	/**
+	 * Get count of indexed values for a field
+	 */
+	getValueCount(field: string): number {
+		const index = this.fields.get(field);
+		return index?.valueToPath.size ?? 0;
 	}
 }
