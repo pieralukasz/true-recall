@@ -463,6 +463,7 @@ export class ProjectsView extends ItemView {
 				projectsWithCards,
 				emptyProjects,
 				searchQuery: state.searchQuery,
+				expandedProjectIds: state.expandedProjectIds,
 				app: this.app,
 				component: this,
 				onSearchChange: (query) => this.stateManager.setSearchQuery(query),
@@ -472,6 +473,7 @@ export class ProjectsView extends ItemView {
 					void this.handleAddNotesToProject(id, name),
 				onCreateFromNote: () => void this.handleCreateFromNote(),
 				onRefresh: () => void this.loadProjects(),
+				onToggleExpand: (id) => this.stateManager.toggleProjectExpanded(id),
 			});
 			this.contentComponent.render();
 		} else {
@@ -481,6 +483,7 @@ export class ProjectsView extends ItemView {
 				projectsWithCards,
 				emptyProjects,
 				searchQuery: state.searchQuery,
+				expandedProjectIds: state.expandedProjectIds,
 			});
 		}
 	}
