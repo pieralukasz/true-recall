@@ -104,15 +104,15 @@ export class PanelHeader extends BaseComponent {
 
         // Right side: action icons
         const actionsEl = this.element.createDiv({
-            cls: "ep:flex ep:items-center ep:gap-1",
+            cls: "ep:flex ep:items-center ep:gap-0.5",
         });
 
-        const btnCls = "ep:p-1.5 ep:rounded ep:bg-transparent ep:border-none ep:cursor-pointer ep:text-obs-muted ep:hover:text-obs-normal ep:hover:bg-obs-modifier-hover ep:transition-colors";
+        const iconCls = "clickable-icon";
 
         // Collect button (pulsing when available)
         if (this.props.hasUncollectedFlashcards && this.props.onCollect) {
             const collectBtn = actionsEl.createEl("button", {
-                cls: `${btnCls} episteme-pulse-collect`,
+                cls: `${iconCls} episteme-pulse-collect`,
                 attr: {
                     "aria-label": `Collect ${this.props.uncollectedCount} flashcards`,
                     title: `Collect (${this.props.uncollectedCount})`,
@@ -125,7 +125,7 @@ export class PanelHeader extends BaseComponent {
         // Add button
         if (this.props.onAdd) {
             const addBtn = actionsEl.createEl("button", {
-                cls: btnCls,
+                cls: iconCls,
                 attr: { "aria-label": "Add flashcard", title: "Add" },
             });
             addBtn.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>`;
@@ -134,7 +134,7 @@ export class PanelHeader extends BaseComponent {
 
         // More menu button
         const menuBtn = actionsEl.createEl("button", {
-            cls: btnCls,
+            cls: iconCls,
             attr: { "aria-label": "More actions", title: "More" },
         });
         menuBtn.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="1"/><circle cx="12" cy="5" r="1"/><circle cx="12" cy="19" r="1"/></svg>`;
@@ -157,13 +157,11 @@ export class PanelHeader extends BaseComponent {
 
         // Right side: close button
         const actionsEl = this.element.createDiv({
-            cls: "ep:flex ep:items-center ep:gap-1",
+            cls: "ep:flex ep:items-center ep:gap-0.5",
         });
 
-        const btnCls = "ep:p-1.5 ep:rounded ep:bg-transparent ep:border-none ep:cursor-pointer ep:text-obs-muted ep:hover:text-obs-normal ep:hover:bg-obs-modifier-hover ep:transition-colors";
-
         const closeBtn = actionsEl.createEl("button", {
-            cls: btnCls,
+            cls: "clickable-icon",
             attr: { "aria-label": "Exit selection mode", title: "Cancel" },
         });
         closeBtn.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>`;
