@@ -15,6 +15,7 @@ export type {
     PanelState,
     ProcessingStatus,
     ViewMode,
+    SelectionMode,
     StateListener,
     PartialPanelState,
     StateSelector,

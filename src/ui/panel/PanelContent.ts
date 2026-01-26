@@ -4,11 +4,12 @@
  */
 import type { App, Component, TFile, MarkdownRenderer } from "obsidian";
 import { BaseComponent } from "../component.base";
-import type { ProcessingStatus, ViewMode } from "../../state";
+import type { ProcessingStatus, ViewMode, SelectionMode } from "../../state";
 import type { FlashcardInfo, FlashcardItem, FlashcardChange, DiffResult, NoteFlashcardType } from "../../types";
+import type { FSRSFlashcardItem } from "../../types/fsrs/card.types";
 import { createLoadingSpinner } from "../components/LoadingSpinner";
 import { createEmptyState, EmptyStateMessages } from "../components/EmptyState";
-import { createCardReviewItem } from "../components/CardReviewItem";
+import { createCompactCardItem } from "./CompactCardItem";
 import { createDiffCard } from "../components/DiffCard";
 
 export interface PanelContentHandlers {
@@ -26,6 +27,10 @@ export interface PanelContentHandlers {
     onEditSave?: (card: FlashcardItem, field: "question" | "answer", newContent: string) => Promise<void>;
     // Diff edit change handler
     onEditChange?: (change: FlashcardChange, field: "question" | "answer", newContent: string) => void;
+    // Handlers for compact design
+    onToggleExpand?: (cardId: string) => void;
+    onToggleSelect?: (cardId: string) => void;
+    onEnterSelectionMode?: (cardId: string) => void;
 }
 
 export interface PanelContentProps {
@@ -38,6 +43,11 @@ export interface PanelContentProps {
     // Note flashcard type based on tags
     noteFlashcardType?: NoteFlashcardType;
     handlers: PanelContentHandlers;
+    // Props for compact design
+    selectionMode: SelectionMode;
+    selectedCardIds: Set<string>;
+    expandedCardIds: Set<string>;
+    cardsWithFsrs?: FSRSFlashcardItem[];
 }
 
 /**
@@ -126,60 +136,41 @@ export class PanelContent extends BaseComponent {
     }
 
     private renderPreviewState(): void {
-        const { flashcardInfo, handlers } = this.props;
+        const { flashcardInfo, handlers, selectionMode, selectedCardIds, expandedCardIds, cardsWithFsrs } = this.props;
 
         if (!this.element || !flashcardInfo) return;
 
         const previewEl = this.element.createDiv({
-            cls: "ep:py-2",
+            cls: "ep:flex ep:flex-col",
         });
 
-        // Card count and last modified
-        const metaEl = previewEl.createDiv({ cls: "ep:mb-2" });
-        metaEl.createSpan({
-            text: `${flashcardInfo.cardCount} flashcard${flashcardInfo.cardCount !== 1 ? "s" : ""}`,
-            cls: "ep:text-sm ep:font-medium ep:text-obs-normal",
-        });
-        if (flashcardInfo.lastModified) {
-            const date = new Date(flashcardInfo.lastModified);
-            metaEl.createSpan({
-                text: ` \u2022 ${this.formatDate(date)}`,
-                cls: "ep:text-sm ep:text-obs-muted",
-            });
-        }
-
-        // Flashcard list
+        // Flashcard list (compact)
         if (flashcardInfo.flashcards.length > 0) {
-            const cardsContainer = previewEl.createDiv({
-                cls: "ep:mb-2",
-            });
+            for (const card of flashcardInfo.flashcards) {
+                const cardWrapper = previewEl.createDiv();
 
-            for (let index = 0; index < flashcardInfo.flashcards.length; index++) {
-                const card = flashcardInfo.flashcards[index];
-                if (!card) continue;
+                // Find FSRS data for this card
+                const fsrsCard = cardsWithFsrs?.find(c => c.id === card.id);
 
-                const cardWrapper = cardsContainer.createDiv();
-
-                const cardReviewItem = createCardReviewItem(cardWrapper, {
+                const compactCard = createCompactCardItem(cardWrapper, {
                     card,
+                    fsrsCard,
                     filePath: this.props.currentFile?.path || "",
                     app: handlers.app,
                     component: handlers.component,
-                    onClick: handlers.onEditCard,
-                    onDelete: handlers.onDeleteCard,
-                    onCopy: handlers.onCopyCard,
-                    onMove: handlers.onMoveCard,
-                    onEditSave: handlers.onEditSave,
-                    onEditButton: handlers.onEditButton,
+                    isExpanded: expandedCardIds.has(card.id),
+                    isSelected: selectedCardIds.has(card.id),
+                    isSelectionMode: selectionMode === "selecting",
+                    onToggleExpand: () => handlers.onToggleExpand?.(card.id),
+                    onToggleSelect: () => handlers.onToggleSelect?.(card.id),
+                    onEdit: () => handlers.onEditButton?.(card),
+                    onDelete: () => handlers.onDeleteCard?.(card),
+                    onCopy: () => handlers.onCopyCard?.(card),
+                    onMove: () => handlers.onMoveCard?.(card),
+                    onSelect: () => handlers.onEnterSelectionMode?.(card.id),
+                    onLongPress: () => handlers.onEnterSelectionMode?.(card.id),
                 });
-                this.childComponents.push(cardReviewItem);
-
-                // Separator (except for last card)
-                if (index < flashcardInfo.flashcards.length - 1) {
-                    cardWrapper.createDiv({
-                        cls: "ep:h-px ep:bg-obs-border ep:my-2",
-                    });
-                }
+                this.childComponents.push(compactCard);
             }
         }
     }
@@ -249,24 +240,6 @@ export class PanelContent extends BaseComponent {
             });
             this.childComponents.push(diffCard);
         }
-    }
-
-    private formatDate(date: Date): string {
-        const now = new Date();
-        const isToday = date.toDateString() === now.toDateString();
-
-        if (isToday) {
-            return `Today ${date.toLocaleTimeString([], {
-                hour: "2-digit",
-                minute: "2-digit",
-            })}`;
-        }
-
-        return date.toLocaleDateString([], {
-            month: "short",
-            day: "numeric",
-            year: date.getFullYear() !== now.getFullYear() ? "numeric" : undefined,
-        });
     }
 
     private cleanupChildren(): void {
