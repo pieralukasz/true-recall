@@ -91,4 +91,92 @@ export class FrontmatterIndexService {
 
 		return [];
 	}
+
+	/**
+	 * Rebuild all field indexes from vault files
+	 * Call after metadataCache is fully loaded (e.g., in onLayoutReady)
+	 */
+	rebuildIndex(): void {
+		// Clear all indexes
+		for (const index of this.fields.values()) {
+			index.valueToPath.clear();
+			index.pathToValue.clear();
+		}
+
+		const files = this.app.vault.getMarkdownFiles();
+
+		for (const file of files) {
+			const cache = this.app.metadataCache.getFileCache(file);
+			this.indexFile(file.path, cache?.frontmatter);
+		}
+
+		// Log stats
+		for (const [field, index] of this.fields) {
+			console.log(`[FrontmatterIndex] ${field}: ${index.valueToPath.size} values indexed`);
+		}
+	}
+
+	/**
+	 * Index a single file for all registered fields
+	 */
+	private indexFile(path: string, frontmatter: Record<string, unknown> | undefined): void {
+		for (const index of this.fields.values()) {
+			const values = this.extractValues(frontmatter, index.config);
+			this.updateFieldIndex(index, path, values);
+		}
+	}
+
+	/**
+	 * Update a single field's index for a file
+	 */
+	private updateFieldIndex(index: FieldIndex, path: string, newValues: string[]): void {
+		const { config, valueToPath, pathToValue } = index;
+
+		// Get old values for this path
+		const oldEntry = pathToValue.get(path);
+		const oldValues: string[] = oldEntry
+			? (oldEntry instanceof Set ? Array.from(oldEntry) : [oldEntry])
+			: [];
+
+		// Remove old mappings
+		for (const oldVal of oldValues) {
+			if (config.unique) {
+				valueToPath.delete(oldVal);
+			} else {
+				const paths = valueToPath.get(oldVal);
+				if (paths instanceof Set) {
+					paths.delete(path);
+					if (paths.size === 0) {
+						valueToPath.delete(oldVal);
+					}
+				}
+			}
+		}
+
+		// Clear path entry if no new values
+		if (newValues.length === 0) {
+			pathToValue.delete(path);
+			return;
+		}
+
+		// Add new mappings
+		if (config.type === "array") {
+			pathToValue.set(path, new Set(newValues));
+		} else {
+			pathToValue.set(path, newValues[0]!);
+		}
+
+		for (const val of newValues) {
+			if (config.unique) {
+				valueToPath.set(val, path);
+			} else {
+				let paths = valueToPath.get(val);
+				if (!(paths instanceof Set)) {
+					paths = new Set();
+					valueToPath.set(val, paths);
+				}
+				paths.add(path);
+			}
+		}
+	}
 }
