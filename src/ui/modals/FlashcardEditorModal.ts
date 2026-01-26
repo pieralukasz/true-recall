@@ -186,7 +186,7 @@ export class FlashcardEditorModal extends BaseModal {
 
 		if (!displaySourceName) return;
 
-		this.sourceContainer = container.createDiv({ cls: "ep:text-center ep:mt-4" });
+		this.sourceContainer = container.createDiv({ cls: "ep:flex ep:items-center ep:justify-end ep:mt-3" });
 		this.renderSourceDisplay();
 	}
 
@@ -205,14 +205,18 @@ export class FlashcardEditorModal extends BaseModal {
 		if (!displaySourceName) return;
 
 		const sourceEl = this.sourceContainer.createDiv({
-			cls: "ep:inline-block ep:text-obs-muted ep:text-ui-small ep:opacity-70",
+			cls: "ep:flex ep:items-center ep:gap-1.5 ep:text-obs-faint ep:text-ui-smaller",
 		});
-		sourceEl.createSpan({ text: displaySourceName });
+		sourceEl.createSpan({ text: "Source:" });
+		const nameSpan = sourceEl.createSpan({
+			text: displaySourceName,
+			cls: "ep:text-obs-muted",
+		});
 
 		// Only allow changing source in edit mode
 		if (mode === "edit") {
-			sourceEl.addClass("ep:cursor-pointer", "ep:transition-all", "ep:hover:text-obs-normal", "ep:hover:opacity-100", "ep:hover:underline");
-			sourceEl.addEventListener("click", () => this.startSourceEdit());
+			nameSpan.addClass("ep:cursor-pointer", "ep:transition-all", "ep:hover:text-obs-normal", "ep:hover:underline");
+			nameSpan.addEventListener("click", () => this.startSourceEdit());
 		}
 	}
 
@@ -266,10 +270,10 @@ export class FlashcardEditorModal extends BaseModal {
 		content: string,
 		field: "question" | "answer"
 	): void {
-		const baseCls = "ep:p-3 ep:min-h-15 ep:cursor-text ep:rounded-md ep:text-center ep:bg-obs-secondary ep:text-ui-small";
+		const baseCls = "ep:p-4 ep:min-h-20 ep:cursor-text ep:rounded-lg ep:border ep:border-obs-border ep:bg-obs-primary ep:text-ui-small ep:text-center ep:hover:border-obs-interactive ep:transition-colors";
 		const answerCls = field === "answer" ? "ep:text-obs-muted" : "";
 		const preview = container.createDiv({
-			cls: `${baseCls} ${answerCls}`.trim(),
+			cls: `${baseCls} ${answerCls} episteme-card-markdown`.trim(),
 		});
 
 		// Render markdown
@@ -298,7 +302,7 @@ export class FlashcardEditorModal extends BaseModal {
 		field: "question" | "answer"
 	): void {
 		const placeholder = container.createDiv({
-			cls: "ep:p-3 ep:min-h-15 ep:cursor-text ep:rounded-md ep:text-center ep:bg-obs-secondary ep:text-obs-muted ep:text-ui-small ep:italic",
+			cls: "ep:p-4 ep:min-h-20 ep:cursor-text ep:rounded-lg ep:border ep:border-dashed ep:border-obs-border ep:text-obs-muted ep:text-ui-small ep:text-center ep:hover:border-obs-interactive ep:transition-colors ep:flex ep:items-center ep:justify-center",
 		});
 		placeholder.textContent = field === "question"
 			? "Click to add question..."
@@ -319,7 +323,12 @@ export class FlashcardEditorModal extends BaseModal {
 		content: string,
 		field: "question" | "answer"
 	): void {
-		const editField = createEditableTextField(container, {
+		// Wrap edit field in a styled container
+		const editContainer = container.createDiv({
+			cls: "ep:rounded-lg ep:border ep:border-obs-interactive ep:bg-obs-primary ep:p-3",
+		});
+
+		const editField = createEditableTextField(editContainer, {
 			initialValue: content,
 			placeholder: field === "question" ? "Type your question here..." : "Type your answer here...",
 			showToolbar: true,

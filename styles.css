@@ -495,11 +495,11 @@
   .ep\:min-h-12 {
     min-height: calc(var(--ep-spacing) * 12);
   }
-  .ep\:min-h-15 {
-    min-height: calc(var(--ep-spacing) * 15);
-  }
   .ep\:min-h-16 {
     min-height: calc(var(--ep-spacing) * 16);
+  }
+  .ep\:min-h-20 {
+    min-height: calc(var(--ep-spacing) * 20);
   }
   .ep\:min-h-35 {
     min-height: calc(var(--ep-spacing) * 35);
