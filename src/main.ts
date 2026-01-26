@@ -38,7 +38,7 @@ import { NLQueryService } from "./services/ai/nl-query.service";
 import { SqlJsAdapter } from "./services/ai/langchain-sqlite.adapter";
 import type { FSRSCardData } from "./types";
 import { extractFSRSSettings } from "./types";
-import { FlashcardPanelView } from "./ui/panel/FlashcardPanelView";
+import { FlashcardPanelView } from "./ui/flashcard-panel/FlashcardPanelView";
 import { ReviewView } from "./ui/review/ReviewView";
 import { StatsView } from "./ui/stats/StatsView";
 import { SessionView } from "./ui/session";
