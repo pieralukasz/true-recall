@@ -18,9 +18,6 @@ export const VIEW_TYPE_SESSION = "episteme-session";
 /** View type identifier for the missing flashcards panel */
 export const VIEW_TYPE_MISSING_FLASHCARDS = "episteme-missing-flashcards";
 
-/** View type identifier for the ready to harvest panel */
-export const VIEW_TYPE_READY_TO_HARVEST = "episteme-ready-to-harvest";
-
 /** View type identifier for the dashboard panel */
 export const VIEW_TYPE_DASHBOARD = "episteme-dashboard";
 
@@ -32,6 +29,9 @@ export const VIEW_TYPE_PROJECTS = "episteme-projects";
 
 /** View type identifier for the browser panel */
 export const VIEW_TYPE_BROWSER = "episteme-browser";
+
+/** View type identifier for the notes without projects panel */
+export const VIEW_TYPE_NOTES_WITHOUT_PROJECTS = "episteme-notes-without-projects";
 
 /** View type identifier for the FSRS simulator */
 export const VIEW_TYPE_SIMULATOR = "episteme-simulator";
