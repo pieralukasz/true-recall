@@ -3,7 +3,7 @@
  * Panel-based view for managing projects
  *
  * v15: Projects are read from frontmatter (source of truth)
- * Project stats are calculated by scanning vault
+ * v19: Uses FrontmatterIndexService for O(1) project lookups
  */
 import { ItemView, WorkspaceLeaf, Notice, TFile } from "obsidian";
 import { State } from "ts-fsrs";
@@ -89,41 +89,36 @@ export class ProjectsView extends ItemView {
 	}
 
 	/**
-	 * Load projects by scanning vault frontmatter
-	 * v15: Projects are read from frontmatter (source of truth)
+	 * Load projects using FrontmatterIndexService for O(1) lookups
+	 * v19: Uses FrontmatterIndexService instead of scanning all files
 	 */
 	private async loadProjects(): Promise<void> {
 		this.stateManager.setLoading(true);
 
 		try {
-			const frontmatterService =
-				this.plugin.flashcardManager.getFrontmatterService();
-			const files = this.app.vault.getMarkdownFiles();
+			const frontmatterIndex = this.plugin.frontmatterIndex;
 
-			// Scan all files for projects in frontmatter
+			// Get all project names from index (O(1))
+			const allProjectNames = frontmatterIndex.getAllValues("projects");
+
+			// Build project stats using index
 			const projectNoteCounts = new Map<string, number>();
 			const sourceUidToProjects = new Map<string, string[]>();
 
-			for (const file of files) {
-				const content = await this.app.vault.cachedRead(file);
-				const projects =
-					frontmatterService.extractProjectsFromFrontmatter(content);
+			for (const projectName of allProjectNames) {
+				// Get files for this project from index (O(1) per project)
+				const files = frontmatterIndex.getFilesByValue("projects", projectName);
+				projectNoteCounts.set(projectName, files.length);
 
-				for (const projectName of projects) {
-					projectNoteCounts.set(
-						projectName,
-						(projectNoteCounts.get(projectName) || 0) + 1
-					);
-				}
-
-				// Build source_uid -> projects map for card counting
-				if (projects.length > 0) {
-					const cache = this.app.metadataCache.getFileCache(file);
-					const uid = cache?.frontmatter?.flashcard_uid as
-						| string
-						| undefined;
+				// Build source_uid -> projects mapping for card counting
+				for (const file of files) {
+					const uid = frontmatterIndex.getValues("flashcard_uid", file.path)[0];
 					if (uid) {
-						sourceUidToProjects.set(uid, projects);
+						const existing = sourceUidToProjects.get(uid) ?? [];
+						if (!existing.includes(projectName)) {
+							existing.push(projectName);
+							sourceUidToProjects.set(uid, existing);
+						}
 					}
 				}
 			}
@@ -183,10 +178,10 @@ export class ProjectsView extends ItemView {
 				}
 			}
 
-			// v16: Projects come from frontmatter only (no database)
+			// Build final projects array
 			const projects = Array.from(projectNoteCounts.keys())
 				.map((name) => ({
-					id: name, // Use name as ID (no DB)
+					id: name,
 					name,
 					noteCount: projectNoteCounts.get(name) ?? 0,
 					cardCount: projectCardCounts.get(name) ?? 0,
