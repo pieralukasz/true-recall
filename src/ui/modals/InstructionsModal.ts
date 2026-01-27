@@ -15,8 +15,6 @@ export interface InstructionsModalResult {
 	instructions?: string;
 }
 
-const MAX_PREVIEW_LENGTH = 200;
-
 /**
  * Modal for entering instructions before AI flashcard generation
  */
@@ -66,24 +64,11 @@ export class InstructionsModal extends BasePromiseModal<InstructionsModalResult>
 		});
 
 		const previewEl = previewSection.createDiv({
-			cls: "ep:p-3 ep:bg-obs-secondary ep:rounded-md ep:text-ui-small ep:text-obs-normal ep:max-h-24 ep:overflow-y-auto ep:whitespace-pre-wrap ep:break-words",
+			cls: "ep:p-3 ep:bg-obs-secondary ep:rounded-md ep:text-ui-small ep:text-obs-normal ep:max-h-40 ep:overflow-y-auto ep:whitespace-pre-wrap ep:break-words",
 		});
 
-		// Truncate text if too long
-		const text = this.options.sourceText;
-		if (text.length > MAX_PREVIEW_LENGTH) {
-			previewEl.textContent = text.substring(0, MAX_PREVIEW_LENGTH) + "...";
-		} else {
-			previewEl.textContent = text;
-		}
-
-		// Show source note name if available
-		if (this.options.sourceNoteName) {
-			const sourceLabel = previewSection.createDiv({
-				cls: "ep:text-ui-smaller ep:text-obs-faint ep:mt-1",
-			});
-			sourceLabel.textContent = `From: ${this.options.sourceNoteName}`;
-		}
+		// Show full text (scrollable if too long)
+		previewEl.textContent = this.options.sourceText;
 	}
 
 	private renderInstructionsSection(container: HTMLElement): void {
@@ -97,7 +82,7 @@ export class InstructionsModal extends BasePromiseModal<InstructionsModalResult>
 		});
 
 		this.instructionsTextarea = instructionsSection.createEl("textarea", {
-			cls: "ep:w-full ep:min-h-24 ep:p-3 ep:border ep:border-obs-border ep:rounded-md ep:bg-obs-primary ep:text-obs-normal ep:font-sans ep:text-ui-small ep:resize-y ep:leading-normal ep:focus:outline-none ep:focus:border-obs-interactive ep:placeholder:text-obs-muted ep:placeholder:text-sm",
+			cls: "ep:w-full ep:min-h-44 ep:p-3 ep:border ep:border-obs-border ep:rounded-md ep:bg-obs-primary ep:text-obs-normal ep:font-sans ep:text-ui-small ep:resize-y ep:leading-normal ep:focus:outline-none ep:focus:border-obs-interactive ep:placeholder:text-obs-muted ep:placeholder:text-sm",
 			attr: {
 				placeholder: `How should AI generate flashcards?
 
@@ -106,7 +91,7 @@ Examples:
 - create 3 simple question-answer pairs
 - make cards about the main concepts only
 - use simple language, avoid jargon`,
-				rows: "4",
+				rows: "8",
 			},
 		});
 
@@ -121,20 +106,17 @@ Examples:
 			}
 		});
 
-		// Hint text
-		const hintEl = instructionsSection.createDiv({
-			cls: "ep:text-ui-smaller ep:text-obs-muted ep:text-right",
-		});
-		hintEl.createEl("kbd", {
-			text: "\u2318 + Enter",
-			cls: "ep:inline-block ep:py-0.5 ep:px-1.5 ep:bg-obs-border ep:rounded ep:text-obs-muted ep:font-mono ep:text-[9px]",
-		});
-		hintEl.appendText(" to generate");
+		// Show source note name if available
+		if (this.options.sourceNoteName) {
+			const sourceLabel = instructionsSection.createDiv({
+				cls: "ep:text-ui-smaller ep:text-obs-faint ep:mt-2",
+			});
+			sourceLabel.textContent = `Source: ${this.options.sourceNoteName}`;
+		}
 	}
 
 	private renderButtonsSection(container: HTMLElement): void {
 		const buttonsEl = this.createButtonsSection(container, [
-			{ text: "Skip", type: "secondary", onClick: () => this.handleSkip() },
 			{
 				text: "Generate",
 				type: "primary",
@@ -144,7 +126,7 @@ Examples:
 
 		// Store reference to generate button for potential disabling
 		this.generateButton = buttonsEl.querySelector(
-			"button:last-child"
+			"button"
 		) as HTMLButtonElement;
 	}
 
@@ -155,13 +137,4 @@ Examples:
 			instructions,
 		});
 	}
-
-	private handleSkip(): void {
-		// Generate without instructions
-		this.resolve({
-			cancelled: false,
-			instructions: undefined,
-		});
-	}
-
 }

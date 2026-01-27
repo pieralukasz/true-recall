@@ -135,13 +135,13 @@
 	--font-size-obs-large: var(--font-ui-large);
 
 	/* === UI Font sizes (for ep:text-ui-*) === */
-	--text-ui-smaller: var(--font-ui-smaller);  /* 12px */
-	--text-ui-small: var(--font-ui-small);      /* 13px */
-	--text-ui-medium: var(--font-ui-medium);    /* 15px */
-	--text-ui-large: var(--font-ui-large);      /* 20px */
+	--text-ui-smaller: var(--font-ui-smaller); /* 12px */
+	--text-ui-small: var(--font-ui-small); /* 13px */
+	--text-ui-medium: var(--font-ui-medium); /* 15px */
+	--text-ui-large: var(--font-ui-large); /* 20px */
 
 	/* === Fixed font sizes (for ep:text-*) === */
-	--text-lg: 1.125rem;                        /* 18px - between sm (14px) and xl (20px) */
+	--text-lg: 1.125rem; /* 18px - between sm (14px) and xl (20px) */
 	--text-lg--line-height: calc(1.75 / 1.125); /* Proportional line height */
 
 	/* === Font families (for ep:font-*) === */
@@ -166,10 +166,24 @@
  */
 @layer components {
 	/* Modal width override when containing episteme modals */
+	/* Desktop: Large modals */
 	.modal:has(.episteme-modal) {
-		width: fit-content;
-		max-width: 95vw;
-		max-height: 90vh;
+		width: 50vw !important;
+		min-height: 50vh;
+		max-height: 85vh;
+	}
+
+	.modal:has(.episteme-modal) .modal-content {
+		height: 100%;
+		display: flex;
+		flex-direction: column;
+	}
+
+	.modal:has(.episteme-modal) .episteme-modal {
+		flex: 1;
+		overflow-y: auto;
+		display: flex;
+		flex-direction: column;
 	}
 
 	/* Mobile: Full-screen modals */
@@ -181,6 +195,7 @@
 		bottom: 0;
 		width: 100% !important;
 		max-width: 100%;
+		min-height: 100%;
 		height: 100%;
 		max-height: 100%;
 		margin: 0;
@@ -311,7 +326,8 @@
 
 	/* Pulsing animation for Collect button */
 	@keyframes episteme-pulse-collect {
-		0%, 100% {
+		0%,
+		100% {
 			opacity: 1;
 			transform: scale(1);
 		}
@@ -717,7 +733,8 @@
 	box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
 	opacity: 0;
 	transform: scale(0.8);
-	transition: opacity 150ms ease-out, transform 150ms ease-out, background-color 150ms ease;
+	transition: opacity 150ms ease-out, transform 150ms ease-out,
+		background-color 150ms ease;
 }
 
 .ep-floating-generate-btn:hover {
