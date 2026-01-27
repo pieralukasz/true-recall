@@ -3,8 +3,6 @@
  * All command registrations for the Episteme plugin
  */
 import type EpistemePlugin from "../main";
-import { VIEW_TYPE_NOTES_WITHOUT_PROJECTS } from "../constants";
-import { activateView } from "./ViewActivator";
 
 /**
  * Register all plugin commands
@@ -70,20 +68,6 @@ export function registerCommands(plugin: EpistemePlugin): void {
 		callback: () => void plugin.openStatsView(),
 	});
 
-	// Show notes missing flashcards
-	plugin.addCommand({
-		id: "show-missing-flashcards",
-		name: "Show notes missing flashcards",
-		callback: () => void plugin.showMissingFlashcards(),
-	});
-
-	// Show orphaned cards
-	plugin.addCommand({
-		id: "show-orphaned-cards",
-		name: "Show orphaned cards",
-		callback: () => void plugin.showOrphanedCards(),
-	});
-
 	// Show projects panel
 	plugin.addCommand({
 		id: "show-projects",
@@ -112,15 +96,6 @@ export function registerCommands(plugin: EpistemePlugin): void {
 		id: "open-browser",
 		name: "Open card browser",
 		callback: () => void plugin.showBrowser(),
-	});
-
-	// Open notes without projects
-	plugin.addCommand({
-		id: "open-notes-without-projects",
-		name: "Open notes without projects",
-		callback: () => {
-			void activateView(plugin.app, VIEW_TYPE_NOTES_WITHOUT_PROJECTS);
-		},
 	});
 
 	// Open FSRS simulator

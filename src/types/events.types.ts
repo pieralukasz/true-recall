@@ -16,8 +16,7 @@ export type FlashcardEventType =
 	| "card:reviewed"
 	| "cards:bulk-change"
 	| "store:synced"
-	| "session:selected"
-	| "missing-flashcards:selected";
+	| "session:selected";
 
 /**
  * Base event interface
@@ -89,22 +88,6 @@ export interface StoreSyncedEvent extends FlashcardEvent {
 }
 
 /**
- * Result of missing flashcards selection
- */
-export interface MissingFlashcardsResult {
-	cancelled: boolean;
-	selectedNotePath: string | null;
-}
-
-/**
- * Emitted when user makes a selection in missing flashcards view
- */
-export interface MissingFlashcardsSelectedEvent extends FlashcardEvent {
-	type: "missing-flashcards:selected";
-	result: MissingFlashcardsResult;
-}
-
-/**
  * Union type for all events
  */
 export type AnyFlashcardEvent =
@@ -114,8 +97,7 @@ export type AnyFlashcardEvent =
 	| CardReviewedEvent
 	| BulkChangeEvent
 	| StoreSyncedEvent
-	| SessionSelectedEvent
-	| MissingFlashcardsSelectedEvent;
+	| SessionSelectedEvent;
 
 /**
  * Event listener callback type

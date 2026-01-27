@@ -4,13 +4,10 @@ import {
 	VIEW_TYPE_REVIEW,
 	VIEW_TYPE_STATS,
 	VIEW_TYPE_SESSION,
-	VIEW_TYPE_MISSING_FLASHCARDS,
 	VIEW_TYPE_DASHBOARD,
-	VIEW_TYPE_ORPHANED_CARDS,
 	VIEW_TYPE_PROJECTS,
 	VIEW_TYPE_BROWSER,
 	VIEW_TYPE_SIMULATOR,
-	VIEW_TYPE_NOTES_WITHOUT_PROJECTS,
 } from "./constants";
 import { normalizePath } from "obsidian";
 import {
@@ -42,13 +39,10 @@ import { FlashcardPanelView } from "./ui/flashcard-panel/FlashcardPanelView";
 import { ReviewView } from "./ui/review/ReviewView";
 import { StatsView } from "./ui/stats/StatsView";
 import { SessionView } from "./ui/session";
-import { MissingFlashcardsView } from "./ui/missing-flashcards";
 import { DashboardView } from "./ui/dashboard";
-import { OrphanedCardsView } from "./ui/orphaned-cards";
 import { ProjectsView } from "./ui/projects";
 import { BrowserView } from "./ui/browser";
 import { SimulatorView } from "./ui/simulator";
-import { NotesWithoutProjectsView } from "./ui/notes-without-projects";
 import { FloatingGenerateButton } from "./ui/components/FloatingGenerateButton";
 import {
 	EpistemeSettingTab,
@@ -149,22 +143,10 @@ export default class EpistemePlugin extends Plugin {
 			(leaf) => new SessionView(leaf, this)
 		);
 
-		// Register the missing flashcards view
-		this.registerView(
-			VIEW_TYPE_MISSING_FLASHCARDS,
-			(leaf) => new MissingFlashcardsView(leaf, this)
-		);
-
 		// Register the dashboard view
 		this.registerView(
 			VIEW_TYPE_DASHBOARD,
 			(leaf) => new DashboardView(leaf, this)
-		);
-
-		// Register the orphaned cards view
-		this.registerView(
-			VIEW_TYPE_ORPHANED_CARDS,
-			(leaf) => new OrphanedCardsView(leaf, this)
 		);
 
 		// Register the projects view
@@ -177,12 +159,6 @@ export default class EpistemePlugin extends Plugin {
 		this.registerView(
 			VIEW_TYPE_BROWSER,
 			(leaf) => new BrowserView(leaf, this)
-		);
-
-		// Register the notes without projects view
-		this.registerView(
-			VIEW_TYPE_NOTES_WITHOUT_PROJECTS,
-			(leaf) => new NotesWithoutProjectsView(leaf, this)
 		);
 
 		// Register the FSRS simulator view
@@ -321,31 +297,10 @@ export default class EpistemePlugin extends Plugin {
 	}
 
 	/**
-	 * Activate the missing flashcards view
-	 */
-	async activateMissingFlashcardsView(): Promise<void> {
-		await activateView(this.app, VIEW_TYPE_MISSING_FLASHCARDS);
-	}
-
-	/**
 	 * Activate the dashboard view
 	 */
 	async activateDashboardView(): Promise<void> {
 		await activateView(this.app, VIEW_TYPE_DASHBOARD);
-	}
-
-	/**
-	 * Activate the orphaned cards view
-	 */
-	async activateOrphanedCardsView(): Promise<void> {
-		await activateView(this.app, VIEW_TYPE_ORPHANED_CARDS);
-	}
-
-	/**
-	 * Show orphaned cards panel
-	 */
-	async showOrphanedCards(): Promise<void> {
-		await this.activateOrphanedCardsView();
 	}
 
 	/**
@@ -504,38 +459,6 @@ export default class EpistemePlugin extends Plugin {
 
 		// Open stats in main area (not sidebar)
 		await activateView(this.app, VIEW_TYPE_STATS, { useMainArea: true });
-	}
-
-	/**
-	 * Show modal with notes missing flashcards
-	 */
-	async showMissingFlashcards(): Promise<void> {
-		return new Promise<void>((resolve) => {
-			const eventBus = getEventBus();
-			const unsubscribe = eventBus.on("missing-flashcards:selected", (event: any) => {
-				unsubscribe();
-
-				if (
-					!event.result.cancelled &&
-					event.result.selectedNotePath
-				) {
-					// Open the selected note
-					const file = this.app.vault.getAbstractFileByPath(
-						event.result.selectedNotePath
-					);
-					if (file instanceof TFile) {
-						const leaf = this.app.workspace.getLeaf(false);
-						void leaf
-							.openFile(file)
-							.then(() => this.activateView());
-					}
-				}
-
-				resolve();
-			});
-
-			void this.activateMissingFlashcardsView();
-		});
 	}
 
 	/**

@@ -155,16 +155,6 @@ export class DashboardContent extends BaseComponent {
 					}
 				},
 			},
-			{
-				id: "show-missing-flashcards",
-				name: "Show Notes Missing Flashcards",
-				description: "Find notes that don't have flashcards yet",
-				icon: "search",
-				category: CommandCategory.GENERATION,
-				requiresActiveFile: false,
-				callback: () => plugin.showMissingFlashcards(),
-			},
-
 			// REVIEW CATEGORY
 			{
 				id: "start-review",
