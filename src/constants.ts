@@ -15,23 +15,14 @@ export const VIEW_TYPE_STATS = "episteme-stats";
 /** View type identifier for the session panel */
 export const VIEW_TYPE_SESSION = "episteme-session";
 
-/** View type identifier for the missing flashcards panel */
-export const VIEW_TYPE_MISSING_FLASHCARDS = "episteme-missing-flashcards";
-
 /** View type identifier for the dashboard panel */
 export const VIEW_TYPE_DASHBOARD = "episteme-dashboard";
-
-/** View type identifier for the orphaned cards panel */
-export const VIEW_TYPE_ORPHANED_CARDS = "episteme-orphaned-cards";
 
 /** View type identifier for the projects panel */
 export const VIEW_TYPE_PROJECTS = "episteme-projects";
 
 /** View type identifier for the browser panel */
 export const VIEW_TYPE_BROWSER = "episteme-browser";
-
-/** View type identifier for the notes without projects panel */
-export const VIEW_TYPE_NOTES_WITHOUT_PROJECTS = "episteme-notes-without-projects";
 
 /** View type identifier for the FSRS simulator */
 export const VIEW_TYPE_SIMULATOR = "episteme-simulator";
