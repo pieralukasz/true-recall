@@ -72,3 +72,8 @@ export {
     type FirstSyncConflictResult,
     type FirstSyncChoice,
 } from "./FirstSyncConflictModal";
+export {
+    InstructionsModal,
+    type InstructionsModalResult,
+    type InstructionsModalOptions,
+} from "./InstructionsModal";

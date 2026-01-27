@@ -171,12 +171,29 @@ export class FloatingGenerateButton {
 		const directGenerate = this.plugin.settings.floatingButtonDirectGenerate;
 
 		try {
+			// Step 1: Open InstructionsModal (unless direct generate is enabled)
+			let userInstructions: string | undefined;
+
+			if (!directGenerate) {
+				const { InstructionsModal } = await import("../modals/InstructionsModal");
+				const instructionsModal = new InstructionsModal(this.plugin.app, {
+					sourceText: text,
+					sourceNoteName: file.basename,
+				});
+
+				const instructionsResult = await instructionsModal.openAndWait();
+				if (instructionsResult.cancelled) {
+					return;
+				}
+				userInstructions = instructionsResult.instructions;
+			}
+
 			new Notice("Generating flashcards...");
 
-			// Generate flashcards - send raw text like panel does
+			// Step 2: Generate flashcards with optional user instructions
 			const flashcardsMarkdown = await this.plugin.openRouterService.generateFlashcards(
 				text,
-				undefined,
+				userInstructions,
 				this.plugin.settings.customGeneratePrompt || undefined
 			);
 
@@ -206,7 +223,7 @@ export class FloatingGenerateButton {
 				await this.plugin.flashcardManager.saveFlashcardsToSql(file, flashcardsWithIds);
 				new Notice(`Created ${flashcardsWithIds.length} flashcard(s) from selection`);
 			} else {
-				// Preview mode: open review modal
+				// Step 3: Preview mode - open review modal
 				const { FlashcardReviewModal } = await import("../modals/FlashcardReviewModal");
 				const modal = new FlashcardReviewModal(this.plugin.app, {
 					initialFlashcards: generatedFlashcards,
