@@ -39,12 +39,27 @@ export class AddToProjectModal extends BasePromiseModal<AddToProjectResult> {
 	}
 
 	protected renderBody(container: HTMLElement): void {
-		// Project list with checkboxes
-		this.projectListEl = container.createDiv({ cls: "ep:border ep:border-obs-border ep:rounded-md ep:overflow-hidden ep:max-h-[280px] ep:overflow-y-auto" });
+		// Project list with checkboxes (using base helper)
+		this.projectListEl = this.createListContainer(container, "280px");
 		this.renderProjectList();
 
-		// Action buttons
-		this.renderButtons(container);
+		// Action buttons (using base helper)
+		this.createButtonsSection(container, [
+			{
+				text: "Cancel",
+				type: "secondary",
+				onClick: () => this.resolve({ cancelled: true, projects: [] }),
+			},
+			{
+				text: "Save",
+				type: "primary",
+				onClick: () =>
+					this.resolve({
+						cancelled: false,
+						projects: [...this.selectedProjects],
+					}),
+			},
+		]);
 	}
 
 	private renderProjectList(): void {
@@ -52,16 +67,15 @@ export class AddToProjectModal extends BasePromiseModal<AddToProjectResult> {
 		this.projectListEl.empty();
 
 		// Combine available projects with any selected projects not yet in DB
-		const allProjects = [...new Set([
-			...this.options.availableProjects,
-			...this.selectedProjects,
-		])].sort((a, b) => a.localeCompare(b));
+		const allProjects = [
+			...new Set([
+				...this.options.availableProjects,
+				...this.selectedProjects,
+			]),
+		].sort((a, b) => a.localeCompare(b));
 
 		if (allProjects.length === 0) {
-			this.projectListEl.createEl("div", {
-				text: "No projects available.",
-				cls: "ep:py-5 ep:px-4 ep:text-center ep:text-obs-muted ep:italic",
-			});
+			this.createEmptyState(this.projectListEl, "No projects available.");
 			return;
 		}
 
@@ -107,28 +121,4 @@ export class AddToProjectModal extends BasePromiseModal<AddToProjectResult> {
 		});
 	}
 
-	private renderButtons(container: HTMLElement): void {
-		const buttonContainer = container.createDiv({ cls: "ep:flex ep:justify-end ep:gap-3 ep:mt-4 ep:pt-4 ep:border-t ep:border-obs-border" });
-
-		// Cancel button
-		const cancelBtn = buttonContainer.createEl("button", {
-			text: "Cancel",
-			cls: "ep:py-2.5 ep:px-5 ep:bg-obs-secondary ep:text-obs-normal ep:border ep:border-obs-border ep:rounded-md ep:cursor-pointer ep:font-medium ep:transition-colors ep:hover:bg-obs-modifier-hover",
-		});
-		cancelBtn.addEventListener("click", () => {
-			this.resolve({ cancelled: true, projects: [] });
-		});
-
-		// Save button
-		const saveBtn = buttonContainer.createEl("button", {
-			text: "Save",
-			cls: "ep:py-2.5 ep:px-5 ep:bg-obs-interactive ep:text-white ep:border-none ep:rounded-md ep:cursor-pointer ep:font-medium ep:transition-colors ep:hover:bg-obs-interactive-hover",
-		});
-		saveBtn.addEventListener("click", () => {
-			this.resolve({
-				cancelled: false,
-				projects: [...this.selectedProjects],
-			});
-		});
-	}
 }

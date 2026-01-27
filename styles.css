@@ -288,9 +288,6 @@
   .ep\:my-2 {
     margin-block: calc(var(--ep-spacing) * 2);
   }
-  .ep\:my-3 {
-    margin-block: calc(var(--ep-spacing) * 3);
-  }
   .ep\:my-4 {
     margin-block: calc(var(--ep-spacing) * 4);
   }
@@ -480,14 +477,8 @@
   .ep\:max-h-\[200px\] {
     max-height: 200px;
   }
-  .ep\:max-h-\[280px\] {
-    max-height: 280px;
-  }
   .ep\:max-h-\[350px\] {
     max-height: 350px;
-  }
-  .ep\:max-h-\[400px\] {
-    max-height: 400px;
   }
   .ep\:min-h-0 {
     min-height: calc(var(--ep-spacing) * 0);
@@ -500,6 +491,9 @@
   }
   .ep\:min-h-20 {
     min-height: calc(var(--ep-spacing) * 20);
+  }
+  .ep\:min-h-24 {
+    min-height: calc(var(--ep-spacing) * 24);
   }
   .ep\:min-h-35 {
     min-height: calc(var(--ep-spacing) * 35);
@@ -593,6 +587,9 @@
   }
   .ep\:min-w-20 {
     min-width: calc(var(--ep-spacing) * 20);
+  }
+  .ep\:min-w-32 {
+    min-width: calc(var(--ep-spacing) * 32);
   }
   .ep\:min-w-\[50px\] {
     min-width: 50px;
@@ -711,6 +708,9 @@
   .ep\:gap-8 {
     gap: calc(var(--ep-spacing) * 8);
   }
+  .ep\:self-center {
+    align-self: center;
+  }
   .ep\:self-end {
     align-self: flex-end;
   }
@@ -758,6 +758,10 @@
   .ep\:rounded-t {
     border-top-left-radius: 0.25rem;
     border-top-right-radius: 0.25rem;
+  }
+  .ep\:rounded-b {
+    border-bottom-right-radius: 0.25rem;
+    border-bottom-left-radius: 0.25rem;
   }
   .ep\:border {
     border-style: var(--tw-border-style);
@@ -999,6 +1003,9 @@
   .ep\:p-2 {
     padding: calc(var(--ep-spacing) * 2);
   }
+  .ep\:p-2\.5 {
+    padding: calc(var(--ep-spacing) * 2.5);
+  }
   .ep\:p-3 {
     padding: calc(var(--ep-spacing) * 3);
   }
@@ -1068,9 +1075,6 @@
   .ep\:py-4 {
     padding-block: calc(var(--ep-spacing) * 4);
   }
-  .ep\:py-5 {
-    padding-block: calc(var(--ep-spacing) * 5);
-  }
   .ep\:py-6 {
     padding-block: calc(var(--ep-spacing) * 6);
   }
@@ -1098,14 +1102,14 @@
   .ep\:pt-4 {
     padding-top: calc(var(--ep-spacing) * 4);
   }
+  .ep\:pr-1 {
+    padding-right: calc(var(--ep-spacing) * 1);
+  }
   .ep\:pr-2 {
     padding-right: calc(var(--ep-spacing) * 2);
   }
   .ep\:pr-8 {
     padding-right: calc(var(--ep-spacing) * 8);
-  }
-  .ep\:pr-10 {
-    padding-right: calc(var(--ep-spacing) * 10);
   }
   .ep\:pb-2 {
     padding-bottom: calc(var(--ep-spacing) * 2);
@@ -1244,6 +1248,9 @@
   .ep\:tracking-wider {
     --tw-tracking: var(--ep-tracking-wider);
     letter-spacing: var(--ep-tracking-wider);
+  }
+  .ep\:break-words {
+    overflow-wrap: break-word;
   }
   .ep\:break-all {
     word-break: break-all;
@@ -1594,6 +1601,16 @@
       }
     }
   }
+  .ep\:hover\:bg-red-500\/20 {
+    &:hover {
+      @media (hover: hover) {
+        background-color: var(--ep-color-red-500);
+        @supports (color: color-mix(in lab, red, red)) {
+          background-color: color-mix(in oklab, var(--ep-color-red-500) 20%, transparent);
+        }
+      }
+    }
+  }
   .ep\:hover\:bg-red-600 {
     &:hover {
       @media (hover: hover) {
@@ -1764,7 +1781,31 @@
 @layer components {
   .modal:has(.episteme-modal) {
     width: fit-content;
-    max-width: 90vw;
+    max-width: 95vw;
+    max-height: 90vh;
+  }
+  .is-mobile .modal:has(.episteme-modal) {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    width: 100% !important;
+    max-width: 100%;
+    height: 100%;
+    max-height: 100%;
+    margin: 0;
+    border-radius: 0;
+  }
+  .is-mobile .modal:has(.episteme-modal) .modal-content {
+    height: 100%;
+    max-height: 100%;
+    overflow-y: auto;
+    padding-bottom: env(safe-area-inset-bottom, 20px);
+  }
+  .modal:has(.episteme-modal) .modal-title {
+    font-size: var(--font-ui-small);
+    font-weight: 500;
   }
   .episteme-answer-blur {
     filter: blur(4px);

@@ -3,7 +3,6 @@
  * Displays the main content area of the flashcard panel
  */
 import {
-	setIcon,
 	type App,
 	type Component,
 	type TFile,
@@ -23,6 +22,7 @@ import { createLoadingSpinner } from "../components/LoadingSpinner";
 import { createEmptyState, EmptyStateMessages } from "../components/EmptyState";
 import { createCompactCardItem } from "./CompactCardItem";
 import { createDiffCard } from "../components/DiffCard";
+import { createExpandableAddCard } from "../modals/components/ExpandableAddCard";
 
 export interface FlashcardPanelContentHandlers {
 	app: App;
@@ -55,8 +55,12 @@ export interface FlashcardPanelContentHandlers {
 	onToggleExpand?: (cardId: string) => void;
 	onToggleSelect?: (cardId: string) => void;
 	onEnterSelectionMode?: (cardId: string) => void;
-	// Add flashcard handler
+	// Add flashcard handler (opens modal)
 	onAdd?: () => void;
+	// Inline add flashcard handlers
+	onToggleAddExpand?: () => void;
+	onAddSave?: (question: string, answer: string) => void;
+	onAddCancel?: () => void;
 }
 
 export interface FlashcardPanelContentProps {
@@ -76,6 +80,8 @@ export interface FlashcardPanelContentProps {
 	cardsWithFsrs?: FSRSFlashcardItem[];
 	// Search query for filtering flashcards
 	searchQuery: string;
+	// Whether the add card component is expanded
+	isAddCardExpanded: boolean;
 }
 
 /**
@@ -224,20 +230,16 @@ export class FlashcardPanelContent extends BaseComponent {
 			}
 		}
 
-		// Add flashcard button at the bottom
-		if (handlers.onAdd && selectionMode !== "selecting") {
-			const addBtnContainer = previewEl.createDiv({
-				cls: "ep:flex ep:justify-center",
+		// Add flashcard component at the bottom (expandable inline form)
+		if (handlers.onAddSave && selectionMode !== "selecting") {
+			const addCardWrapper = previewEl.createDiv();
+			const addCard = createExpandableAddCard(addCardWrapper, {
+				isExpanded: this.props.isAddCardExpanded,
+				onToggleExpand: () => handlers.onToggleAddExpand?.(),
+				onSave: (question, answer) => handlers.onAddSave?.(question, answer),
+				onCancel: () => handlers.onAddCancel?.(),
 			});
-			const addBtn = addBtnContainer.createEl("button", {
-				cls: "ep:inline-flex ep:items-center ep:gap-1.5 ep:py-1.5 ep:px-3 ep:border ep:border-dashed ep:border-obs-border ep:rounded ep:bg-transparent ep:text-obs-muted ep:text-ui-smaller ep:cursor-pointer ep:transition-colors ep:hover:bg-obs-modifier-hover ep:hover:text-obs-normal ep:hover:border-obs-modifier-border-hover [&_svg]:ep:w-3.5 [&_svg]:ep:h-3.5",
-				attr: { "aria-label": "Add flashcard" },
-			});
-			setIcon(addBtn, "plus");
-			addBtn.createSpan({ text: "Add flashcard" });
-			this.events.addEventListener(addBtn, "click", () =>
-				handlers.onAdd?.()
-			);
+			this.childComponents.push(addCard);
 		}
 	}
 

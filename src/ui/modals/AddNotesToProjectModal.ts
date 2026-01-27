@@ -51,33 +51,34 @@ export class AddNotesToProjectModal extends BasePromiseModal<AddNotesToProjectRe
 			cls: "ep:text-obs-muted ep:text-ui-small ep:mb-4",
 		});
 
-		// Search input
-		this.renderSearchInput(container);
-
-		// Note list with checkboxes
-		this.noteListEl = container.createDiv({ cls: "ep:border ep:border-obs-border ep:rounded-md ep:max-h-[350px] ep:overflow-y-auto" });
-		this.renderNoteList();
-
-		// Action buttons
-		this.renderButtons(container);
-	}
-
-	private renderSearchInput(container: HTMLElement): void {
-		const searchContainer = container.createDiv({ cls: "ep:mb-3" });
-
-		const searchInput = searchContainer.createEl("input", {
-			type: "text",
-			placeholder: "Search notes...",
-			cls: "ep:w-full ep:py-2.5 ep:px-3 ep:border ep:border-obs-border ep:rounded-md ep:bg-obs-primary ep:text-obs-normal ep:text-ui-small ep:focus:outline-none ep:focus:border-obs-interactive ep:placeholder:text-obs-muted",
-		});
-
-		searchInput.addEventListener("input", (e) => {
-			this.searchQuery = (e.target as HTMLInputElement).value.toLowerCase();
+		// Search input (using base helper)
+		this.createSearchInput(container, "Search notes...", (query) => {
+			this.searchQuery = query;
 			this.renderNoteList();
 		});
 
-		// Focus search input
-		setTimeout(() => searchInput.focus(), 50);
+		// Note list with checkboxes (using base helper)
+		this.noteListEl = this.createListContainer(container);
+		this.renderNoteList();
+
+		// Action buttons (using base helper)
+		this.createButtonsSection(container, [
+			{
+				text: "Cancel",
+				type: "secondary",
+				onClick: () => this.resolve({ cancelled: true, selectedNotes: [] }),
+			},
+			{
+				text: "Add to Project",
+				type: "primary",
+				onClick: () => {
+					const selectedNotes = this.options.orphanedNotes.filter((note) =>
+						this.selectedNotes.has(note.uid)
+					);
+					this.resolve({ cancelled: false, selectedNotes });
+				},
+			},
+		]);
 	}
 
 	private renderNoteList(): void {
@@ -90,10 +91,7 @@ export class AddNotesToProjectModal extends BasePromiseModal<AddNotesToProjectRe
 			const emptyText = this.searchQuery
 				? "No notes found matching your search."
 				: "No orphaned notes available.";
-			this.noteListEl.createEl("div", {
-				text: emptyText,
-				cls: "ep:py-6 ep:px-4 ep:text-center ep:text-obs-muted ep:italic",
-			});
+			this.createEmptyState(this.noteListEl, emptyText);
 			return;
 		}
 
@@ -174,28 +172,4 @@ export class AddNotesToProjectModal extends BasePromiseModal<AddNotesToProjectRe
 			});
 	}
 
-	private renderButtons(container: HTMLElement): void {
-		const buttonContainer = container.createDiv({ cls: "ep:flex ep:justify-end ep:gap-3 ep:mt-4 ep:pt-4 ep:border-t ep:border-obs-border" });
-
-		// Cancel button
-		const cancelBtn = buttonContainer.createEl("button", {
-			text: "Cancel",
-			cls: "ep:py-2.5 ep:px-5 ep:bg-obs-secondary ep:text-obs-normal ep:border ep:border-obs-border ep:rounded-md ep:cursor-pointer ep:font-medium ep:transition-colors ep:hover:bg-obs-modifier-hover",
-		});
-		cancelBtn.addEventListener("click", () => {
-			this.resolve({ cancelled: true, selectedNotes: [] });
-		});
-
-		// Save button
-		const saveBtn = buttonContainer.createEl("button", {
-			text: "Add to Project",
-			cls: "ep:py-2.5 ep:px-5 ep:bg-obs-interactive ep:text-white ep:border-none ep:rounded-md ep:cursor-pointer ep:font-medium ep:transition-colors ep:hover:bg-obs-interactive-hover",
-		});
-		saveBtn.addEventListener("click", () => {
-			const selectedNotes = this.options.orphanedNotes.filter(
-				(note) => this.selectedNotes.has(note.uid)
-			);
-			this.resolve({ cancelled: false, selectedNotes });
-		});
-	}
 }

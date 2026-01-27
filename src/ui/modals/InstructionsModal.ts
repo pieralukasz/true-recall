@@ -3,7 +3,7 @@
  * Shows before AI generation to let user provide instructions
  */
 import { App } from "obsidian";
-import { BaseModal } from "./BaseModal";
+import { BasePromiseModal } from "./BasePromiseModal";
 
 export interface InstructionsModalOptions {
 	sourceText: string;
@@ -20,10 +20,8 @@ const MAX_PREVIEW_LENGTH = 200;
 /**
  * Modal for entering instructions before AI flashcard generation
  */
-export class InstructionsModal extends BaseModal {
+export class InstructionsModal extends BasePromiseModal<InstructionsModalResult> {
 	private options: InstructionsModalOptions;
-	private resolvePromise: ((result: InstructionsModalResult) => void) | null = null;
-	private hasSelected = false;
 
 	// UI refs
 	private instructionsTextarea: HTMLTextAreaElement | null = null;
@@ -37,11 +35,8 @@ export class InstructionsModal extends BaseModal {
 		this.options = options;
 	}
 
-	async openAndWait(): Promise<InstructionsModalResult> {
-		return new Promise((resolve) => {
-			this.resolvePromise = resolve;
-			this.open();
-		});
+	protected getDefaultResult(): InstructionsModalResult {
+		return { cancelled: true };
 	}
 
 	onOpen(): void {
@@ -57,7 +52,7 @@ export class InstructionsModal extends BaseModal {
 		this.renderInstructionsSection(container);
 
 		// Buttons section
-		this.renderButtons(container);
+		this.renderButtonsSection(container);
 	}
 
 	private renderSourcePreview(container: HTMLElement): void {
@@ -137,22 +132,20 @@ Examples:
 		hintEl.appendText(" to generate");
 	}
 
-	private renderButtons(container: HTMLElement): void {
-		const buttonsSection = container.createDiv({
-			cls: "ep:flex ep:justify-end ep:gap-2 ep:pt-2 ep:border-t ep:border-obs-border",
-		});
+	private renderButtonsSection(container: HTMLElement): void {
+		const buttonsEl = this.createButtonsSection(container, [
+			{ text: "Skip", type: "secondary", onClick: () => this.handleSkip() },
+			{
+				text: "Generate",
+				type: "primary",
+				onClick: () => this.handleGenerate(),
+			},
+		]);
 
-		const skipBtn = buttonsSection.createEl("button", {
-			text: "Skip",
-			cls: "ep:py-2.5 ep:px-5 ep:bg-obs-secondary ep:text-obs-normal ep:border ep:border-obs-border ep:rounded-md ep:text-ui-small ep:font-medium ep:cursor-pointer ep:transition-all ep:hover:bg-obs-modifier-hover",
-		});
-		skipBtn.addEventListener("click", () => this.handleSkip());
-
-		this.generateButton = buttonsSection.createEl("button", {
-			text: "Generate",
-			cls: "mod-cta ep:py-2.5 ep:px-5 ep:rounded-md ep:text-ui-small ep:font-medium ep:cursor-pointer",
-		});
-		this.generateButton.addEventListener("click", () => this.handleGenerate());
+		// Store reference to generate button for potential disabling
+		this.generateButton = buttonsEl.querySelector(
+			"button:last-child"
+		) as HTMLButtonElement;
 	}
 
 	private handleGenerate(): void {
@@ -171,26 +164,4 @@ Examples:
 		});
 	}
 
-	private handleCancel(): void {
-		this.resolve({ cancelled: true });
-	}
-
-	private resolve(result: InstructionsModalResult): void {
-		this.hasSelected = true;
-		if (this.resolvePromise) {
-			this.resolvePromise(result);
-			this.resolvePromise = null;
-		}
-		this.close();
-	}
-
-	onClose(): void {
-		if (!this.hasSelected && this.resolvePromise) {
-			this.resolvePromise({ cancelled: true });
-			this.resolvePromise = null;
-		}
-
-		const { contentEl } = this;
-		contentEl.empty();
-	}
 }
