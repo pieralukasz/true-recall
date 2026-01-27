@@ -3,7 +3,7 @@
  * Allows user to select a target note for moving flashcard(s)
  */
 import { App, TFile } from "obsidian";
-import { BaseModal } from "./BaseModal";
+import { BasePromiseModal } from "./BasePromiseModal";
 
 export interface MoveCardResult {
 	cancelled: boolean;
@@ -24,10 +24,8 @@ export interface MoveCardModalOptions {
 /**
  * Modal for selecting target note to move flashcard(s) to
  */
-export class MoveCardModal extends BaseModal {
+export class MoveCardModal extends BasePromiseModal<MoveCardResult> {
 	private options: MoveCardModalOptions;
-	private resolvePromise: ((result: MoveCardResult) => void) | null = null;
-	private hasSelected = false;
 
 	// Search state
 	private searchQuery = "";
@@ -39,20 +37,17 @@ export class MoveCardModal extends BaseModal {
 
 	constructor(app: App, options: MoveCardModalOptions) {
 		super(app, {
-			title: options.cardCount === 1 ? "Move flashcard to..." : `Move ${options.cardCount} flashcards to...`,
+			title:
+				options.cardCount === 1
+					? "Move flashcard to..."
+					: `Move ${options.cardCount} flashcards to...`,
 			width: "500px",
 		});
 		this.options = options;
 	}
 
-	/**
-	 * Open modal and return promise with selection result
-	 */
-	async openAndWait(): Promise<MoveCardResult> {
-		return new Promise((resolve) => {
-			this.resolvePromise = resolve;
-			this.open();
-		});
+	protected getDefaultResult(): MoveCardResult {
+		return { cancelled: true, targetNotePath: null };
 	}
 
 	onOpen(): void {
@@ -70,8 +65,11 @@ export class MoveCardModal extends BaseModal {
 			cls: "ep:text-obs-muted ep:text-ui-small ep:mb-4",
 		});
 
-		// Search input (supports note names and #tags)
-		this.renderSearchInput(container);
+		// Search input (using base helper)
+		this.createSearchInput(container, "Search notes or #tags...", (query) => {
+			this.searchQuery = query;
+			this.renderNoteList();
+		});
 
 		// Suggested notes section (from backlinks)
 		this.suggestedSectionEl = container.createDiv({
@@ -79,39 +77,9 @@ export class MoveCardModal extends BaseModal {
 		});
 		this.renderSuggestedNotes();
 
-		// Note list
-		this.noteListEl = container.createDiv({
-			cls: "ep:border ep:border-obs-border ep:rounded-md ep:max-h-[350px] ep:overflow-y-auto",
-		});
+		// Note list (using base helper)
+		this.noteListEl = this.createListContainer(container);
 		this.renderNoteList();
-	}
-
-	onClose(): void {
-		const { contentEl } = this;
-		contentEl.empty();
-
-		if (!this.hasSelected && this.resolvePromise) {
-			this.resolvePromise({ cancelled: true, targetNotePath: null });
-			this.resolvePromise = null;
-		}
-	}
-
-	private renderSearchInput(container: HTMLElement): void {
-		const searchContainer = container.createDiv({ cls: "ep:mb-3" });
-
-		const searchInput = searchContainer.createEl("input", {
-			type: "text",
-			placeholder: "Search notes or #tags...",
-			cls: "ep:w-full ep:py-2.5 ep:px-3 ep:border ep:border-obs-border ep:rounded-md ep:bg-obs-primary ep:text-obs-normal ep:text-ui-small ep:focus:outline-none ep:focus:border-obs-interactive ep:placeholder:text-obs-muted",
-		});
-
-		searchInput.addEventListener("input", (e) => {
-			this.searchQuery = (e.target as HTMLInputElement).value.toLowerCase();
-			this.renderNoteList();
-		});
-
-		// Focus search input
-		setTimeout(() => searchInput.focus(), 50);
 	}
 
 	/**
@@ -249,10 +217,7 @@ export class MoveCardModal extends BaseModal {
 					? `No notes found with tag ${this.searchQuery}.`
 					: "No notes found matching your search."
 				: "No notes available.";
-			this.noteListEl.createEl("div", {
-				text: emptyText,
-				cls: "ep:py-6 ep:px-4 ep:text-center ep:text-obs-muted ep:italic",
-			});
+			this.createEmptyState(this.noteListEl, emptyText);
 			return;
 		}
 
@@ -320,11 +285,6 @@ export class MoveCardModal extends BaseModal {
 	}
 
 	private selectNote(notePath: string): void {
-		this.hasSelected = true;
-		if (this.resolvePromise) {
-			this.resolvePromise({ cancelled: false, targetNotePath: notePath });
-			this.resolvePromise = null;
-		}
-		this.close();
+		this.resolve({ cancelled: false, targetNotePath: notePath });
 	}
 }

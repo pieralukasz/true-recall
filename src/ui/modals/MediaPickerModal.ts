@@ -3,70 +3,63 @@
  * Modal for selecting images or videos from vault with size control
  */
 import { App, TFile, Notice, Component, MarkdownRenderer } from "obsidian";
-import { BaseModal } from "./BaseModal";
+import { BasePromiseModal } from "./BasePromiseModal";
 import { ImageService } from "../../services/image";
 import { isVideoExtension } from "../../types";
 
 export interface MediaPickerResult {
-    cancelled: boolean;
-    markdown: string;
+	cancelled: boolean;
+	markdown: string;
 }
 
 interface MediaPickerModalOptions {
-    /** Current file path for relative link resolution */
-    currentFilePath: string;
+	/** Current file path for relative link resolution */
+	currentFilePath: string;
 }
 
 /**
  * Modal for selecting/pasting media (images/videos) with size control
  */
-export class MediaPickerModal extends BaseModal {
-    private options: MediaPickerModalOptions;
-    private imageService: ImageService;
-    private resolvePromise: ((result: MediaPickerResult) => void) | null = null;
+export class MediaPickerModal extends BasePromiseModal<MediaPickerResult> {
+	private options: MediaPickerModalOptions;
+	private imageService: ImageService;
 
-    // UI elements
-    private mediaGridContainer: HTMLElement | null = null;
-    private previewContainer: HTMLElement | null = null;
-    private widthSlider: HTMLInputElement | null = null;
-    private widthValue: HTMLSpanElement | null = null;
-    private insertButton: HTMLButtonElement | null = null;
-    private renderComponent: Component | null = null;
+	// UI elements
+	private mediaGridContainer: HTMLElement | null = null;
+	private previewContainer: HTMLElement | null = null;
+	private widthSlider: HTMLInputElement | null = null;
+	private widthValue: HTMLSpanElement | null = null;
+	private insertButton: HTMLButtonElement | null = null;
+	private renderComponent: Component | null = null;
 
-    // State
-    private selectedFile: TFile | null = null;
-    private selectedWidth: number = 500; // default 500px
+	// State
+	private selectedFile: TFile | null = null;
+	private selectedWidth: number = 500; // default 500px
 
-    constructor(app: App, options: MediaPickerModalOptions) {
-        super(app, {
-            title: "Insert Media",
-            width: "550px",
-        });
-        this.options = options;
-        this.imageService = new ImageService(app);
-    }
+	constructor(app: App, options: MediaPickerModalOptions) {
+		super(app, {
+			title: "Insert Media",
+			width: "550px",
+		});
+		this.options = options;
+		this.imageService = new ImageService(app);
+	}
 
-    /**
-     * Open modal and wait for result
-     */
-    async openAndWait(): Promise<MediaPickerResult> {
-        return new Promise((resolve) => {
-            this.resolvePromise = resolve;
-            this.open();
-        });
-    }
+	protected getDefaultResult(): MediaPickerResult {
+		return { cancelled: true, markdown: "" };
+	}
 
-    onOpen(): void {
-        super.onOpen();
-        this.contentEl.addClass("episteme-media-picker-modal");
+	onOpen(): void {
+		super.onOpen();
+		this.contentEl.addClass("episteme-media-picker-modal");
 
-        // Initialize render component for preview
-        this.renderComponent = new Component();
-        this.renderComponent.load();
+		// Initialize render component for preview
+		this.renderComponent = new Component();
+		this.renderComponent.load();
 
-        // Setup paste handler on document
-        this.setupPasteHandler();
-    }
+		// Setup paste handler on document
+		this.setupPasteHandler();
+	}
 
     protected renderBody(container: HTMLElement): void {
         // Paste zone
@@ -82,8 +75,8 @@ export class MediaPickerModal extends BaseModal {
         // Preview
         this.renderPreviewSection(container);
 
-        // Buttons
-        this.renderButtons(container);
+		// Buttons
+		this.renderButtonsSection(container);
     }
 
     private renderPasteZone(container: HTMLElement): void {
@@ -245,22 +238,22 @@ export class MediaPickerModal extends BaseModal {
         });
     }
 
-    private renderButtons(container: HTMLElement): void {
-        const buttons = container.createDiv({ cls: "ep:flex ep:justify-end ep:gap-3 ep:mt-4 ep:pt-4 ep:border-t ep:border-obs-border" });
+	private renderButtonsSection(container: HTMLElement): void {
+		const buttonsEl = this.createButtonsSection(container, [
+			{ text: "Cancel", type: "secondary", onClick: () => this.close() },
+			{
+				text: "Insert",
+				type: "primary",
+				onClick: () => this.handleInsert(),
+				disabled: true,
+			},
+		]);
 
-        const cancelBtn = buttons.createEl("button", {
-            text: "Cancel",
-            cls: "ep:py-2.5 ep:px-5 ep:bg-obs-secondary ep:text-obs-normal ep:border ep:border-obs-border ep:rounded-md ep:cursor-pointer ep:font-medium ep:transition-colors ep:hover:bg-obs-modifier-hover",
-        });
-        cancelBtn.addEventListener("click", () => this.close());
-
-        this.insertButton = buttons.createEl("button", {
-            text: "Insert",
-            cls: "ep:py-2.5 ep:px-5 ep:bg-obs-interactive ep:text-white ep:border-none ep:rounded-md ep:cursor-pointer ep:font-medium ep:transition-colors ep:hover:bg-obs-interactive-hover ep:disabled:opacity-50 ep:disabled:cursor-not-allowed",
-        });
-        this.insertButton.disabled = true;
-        this.insertButton.addEventListener("click", () => this.handleInsert());
-    }
+		// Store reference to insert button for enabling later
+		this.insertButton = buttonsEl.querySelector(
+			"button:last-child"
+		) as HTMLButtonElement;
+	}
 
     // Store paste handler reference for cleanup
     private pasteHandler: ((e: ClipboardEvent) => void) | null = null;
@@ -388,50 +381,38 @@ export class MediaPickerModal extends BaseModal {
         }
     }
 
-    private handleInsert(): void {
-        if (!this.selectedFile) return;
+	private handleInsert(): void {
+		if (!this.selectedFile) return;
 
-        const isVideo = isVideoExtension(this.selectedFile.extension);
-        const width = this.selectedWidth > 0 ? this.selectedWidth : undefined;
+		const isVideo = isVideoExtension(this.selectedFile.extension);
+		const width = this.selectedWidth > 0 ? this.selectedWidth : undefined;
 
-        let markdown: string;
-        if (isVideo) {
-            markdown = this.imageService.buildVideoHtml(this.selectedFile, width);
-        } else {
-            markdown = this.imageService.buildImageMarkdown(this.selectedFile.path, width);
-        }
+		let markdown: string;
+		if (isVideo) {
+			markdown = this.imageService.buildVideoHtml(this.selectedFile, width);
+		} else {
+			markdown = this.imageService.buildImageMarkdown(
+				this.selectedFile.path,
+				width
+			);
+		}
 
-        if (this.resolvePromise) {
-            this.resolvePromise({
-                cancelled: false,
-                markdown,
-            });
-            this.resolvePromise = null;
-        }
+		this.resolve({ cancelled: false, markdown });
+	}
 
-        this.close();
-    }
+	onClose(): void {
+		// Clean up paste handler
+		if (this.pasteHandler) {
+			document.removeEventListener("paste", this.pasteHandler);
+			this.pasteHandler = null;
+		}
 
-    onClose(): void {
-        // Clean up paste handler
-        if (this.pasteHandler) {
-            document.removeEventListener("paste", this.pasteHandler);
-            this.pasteHandler = null;
-        }
+		if (this.renderComponent) {
+			this.renderComponent.unload();
+			this.renderComponent = null;
+		}
 
-        if (this.renderComponent) {
-            this.renderComponent.unload();
-            this.renderComponent = null;
-        }
-
-        if (this.resolvePromise) {
-            this.resolvePromise({
-                cancelled: true,
-                markdown: "",
-            });
-            this.resolvePromise = null;
-        }
-
-        this.contentEl.empty();
-    }
+		// Let BasePromiseModal handle the promise resolution
+		super.onClose();
+	}
 }

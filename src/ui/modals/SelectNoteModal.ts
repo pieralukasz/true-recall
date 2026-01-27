@@ -57,30 +57,15 @@ export class SelectNoteModal extends BasePromiseModal<SelectNoteResult> {
 			cls: "ep:text-obs-muted ep:text-ui-small ep:mb-4",
 		});
 
-		// Search input
-		this.renderSearchInput(container);
-
-		// Note list
-		this.noteListEl = container.createDiv({ cls: "ep:border ep:border-obs-border ep:rounded-md ep:max-h-[350px] ep:overflow-y-auto" });
-		this.renderNoteList();
-	}
-
-	private renderSearchInput(container: HTMLElement): void {
-		const searchContainer = container.createDiv({ cls: "ep:mb-3" });
-
-		const searchInput = searchContainer.createEl("input", {
-			type: "text",
-			placeholder: "Search notes...",
-			cls: "ep:w-full ep:py-2.5 ep:px-3 ep:border ep:border-obs-border ep:rounded-md ep:bg-obs-primary ep:text-obs-normal ep:text-ui-small ep:focus:outline-none ep:focus:border-obs-interactive ep:placeholder:text-obs-muted",
-		});
-
-		searchInput.addEventListener("input", (e) => {
-			this.searchQuery = (e.target as HTMLInputElement).value.toLowerCase();
+		// Search input (using base helper)
+		this.createSearchInput(container, "Search notes...", (query) => {
+			this.searchQuery = query;
 			this.renderNoteList();
 		});
 
-		// Focus search input
-		setTimeout(() => searchInput.focus(), 50);
+		// Note list (using base helper)
+		this.noteListEl = this.createListContainer(container);
+		this.renderNoteList();
 	}
 
 	private renderNoteList(): void {
@@ -93,10 +78,7 @@ export class SelectNoteModal extends BasePromiseModal<SelectNoteResult> {
 			const emptyText = this.searchQuery
 				? "No notes found matching your search."
 				: "No notes available.";
-			this.noteListEl.createEl("div", {
-				text: emptyText,
-				cls: "ep:py-6 ep:px-4 ep:text-center ep:text-obs-muted ep:italic",
-			});
+			this.createEmptyState(this.noteListEl, emptyText);
 			return;
 		}
 
@@ -104,7 +86,16 @@ export class SelectNoteModal extends BasePromiseModal<SelectNoteResult> {
 		const displayNotes = filteredNotes.slice(0, 50);
 
 		for (const note of displayNotes) {
-			this.renderNoteItem(note);
+			const folderPath = note.parent?.path;
+			this.createListItem(
+				this.noteListEl,
+				{
+					name: note.basename,
+					description:
+						folderPath && folderPath !== "/" ? folderPath : undefined,
+				},
+				() => this.selectNote(note)
+			);
 		}
 
 		// Show "more results" message if truncated
@@ -114,43 +105,6 @@ export class SelectNoteModal extends BasePromiseModal<SelectNoteResult> {
 				cls: "ep:p-3 ep:text-center ep:text-obs-muted ep:text-ui-small",
 			});
 		}
-	}
-
-	private renderNoteItem(note: TFile): void {
-		if (!this.noteListEl) return;
-
-		const noteEl = this.noteListEl.createDiv({ cls: "ep:flex ep:items-center ep:justify-between ep:p-3 ep:border-b ep:border-obs-border ep:cursor-pointer ep:transition-colors ep:hover:bg-obs-modifier-hover ep:last:border-b-0 ep:group" });
-
-		// Note icon and name
-		const noteInfo = noteEl.createDiv({ cls: "ep:flex ep:items-center ep:gap-2 ep:overflow-hidden ep:flex-1" });
-		noteInfo.createSpan({ cls: "ep:shrink-0", text: "📄" });
-		noteInfo.createSpan({ cls: "ep:font-medium ep:overflow-hidden ep:text-ellipsis ep:whitespace-nowrap", text: note.basename });
-
-		// Folder path (if not in root)
-		const folderPath = note.parent?.path;
-		if (folderPath && folderPath !== "/") {
-			noteInfo.createSpan({
-				cls: "ep:text-ui-smaller ep:text-obs-muted ep:ml-2",
-				text: folderPath,
-			});
-		}
-
-		// Select button
-		const selectBtn = noteEl.createEl("button", {
-			text: "Select",
-			cls: "ep:shrink-0 ep:py-1 ep:px-3 ep:rounded ep:bg-obs-interactive ep:text-white ep:border-none ep:text-ui-smaller ep:cursor-pointer ep:opacity-0 ep:group-hover:opacity-100 ep:hover:opacity-100",
-		});
-
-		selectBtn.addEventListener("click", () => {
-			this.selectNote(note);
-		});
-
-		// Also allow clicking the whole row
-		noteEl.addEventListener("click", (e) => {
-			if (e.target !== selectBtn) {
-				this.selectNote(note);
-			}
-		});
 	}
 
 	private getValidNotes(): TFile[] {
