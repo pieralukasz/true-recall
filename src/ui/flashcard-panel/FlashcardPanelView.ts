@@ -479,6 +479,7 @@ export class FlashcardPanelView extends ItemView {
             expandedCardIds: state.expandedCardIds,
             cardsWithFsrs: this.getCardsWithFsrs(),
             searchQuery: state.searchQuery,
+            isAddCardExpanded: state.isAddCardExpanded,
             handlers: {
                 app: this.app,
                 component: this,
@@ -496,6 +497,9 @@ export class FlashcardPanelView extends ItemView {
                 onToggleSelect: (cardId) => this.stateManager.toggleCardSelection(cardId),
                 onEnterSelectionMode: (cardId) => this.stateManager.enterSelectionMode(cardId),
                 onAdd: () => void this.handleAddFlashcard(),
+                onToggleAddExpand: () => this.handleToggleAddCard(),
+                onAddSave: (question, answer) => void this.handleAddCardSave(question, answer),
+                onAddCancel: () => this.handleAddCardCancel(),
             },
         });
         this.contentComponent.render();
@@ -1018,6 +1022,49 @@ export class FlashcardPanelView extends ItemView {
         this.stateManager.exitSelectionMode();
         new Notice(`Deleted ${successCount} of ${selectedCards.length} card(s)`);
         await this.loadFlashcardInfo();
+    }
+
+    /**
+     * Toggle the inline add card expansion
+     */
+    private handleToggleAddCard(): void {
+        this.stateManager.toggleAddCardExpanded();
+        this.render();
+    }
+
+    /**
+     * Cancel inline add card and collapse
+     */
+    private handleAddCardCancel(): void {
+        this.stateManager.setAddCardExpanded(false);
+        this.render();
+    }
+
+    /**
+     * Save flashcard from inline add card form
+     */
+    private async handleAddCardSave(question: string, answer: string): Promise<void> {
+        const state = this.stateManager.getState();
+        if (!state.currentFile) return;
+
+        // Get or create sourceUid for the current file
+        const frontmatterService = this.flashcardManager.getFrontmatterService();
+        let sourceUid = await frontmatterService.getSourceNoteUid(state.currentFile);
+        if (!sourceUid) {
+            sourceUid = frontmatterService.generateUid();
+            await frontmatterService.setSourceNoteUid(state.currentFile, sourceUid);
+        }
+
+        try {
+            await this.flashcardManager.addSingleFlashcard(question, answer, sourceUid);
+            new Notice("Flashcard added!");
+            // Collapse the add card form and reload
+            this.stateManager.setAddCardExpanded(false);
+            await this.loadFlashcardInfo();
+        } catch (error) {
+            console.error("Error adding flashcard:", error);
+            new Notice(`Failed to add flashcard: ${error instanceof Error ? error.message : String(error)}`);
+        }
     }
 
     /**

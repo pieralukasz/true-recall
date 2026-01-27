@@ -174,7 +174,17 @@ export class ProjectsView extends ItemView {
 			const tomorrowBoundary =
 				this.plugin.dayBoundaryService.getTomorrowBoundary(now);
 
-			for (const card of allCards) {
+			// Filter out suspended and buried cards (consistent with ReviewView)
+			const activeCards = allCards.filter((card) => {
+				if (card.suspended) return false;
+				if (card.buriedUntil) {
+					const buriedUntil = new Date(card.buriedUntil);
+					if (buriedUntil > now) return false;
+				}
+				return true;
+			});
+
+			for (const card of activeCards) {
 				if (!card.sourceUid) continue;
 				const projects = sourceUidToProjects.get(card.sourceUid) || [];
 
@@ -206,11 +216,10 @@ export class ProjectsView extends ItemView {
 
 					const dueDate = new Date(card.due);
 
-					// Learning count: Learning/Relearning cards due (orange in Anki)
+					// Learning count: All Learning/Relearning cards (orange in Anki)
 					if (
-						(card.state === State.Learning ||
-							card.state === State.Relearning) &&
-						dueDate <= now
+						card.state === State.Learning ||
+						card.state === State.Relearning
 					) {
 						projectLearningCounts.set(
 							projectName,

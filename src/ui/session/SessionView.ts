@@ -2,7 +2,7 @@
  * Session View
  * Panel-based view for session selection
  */
-import { ItemView, WorkspaceLeaf } from "obsidian";
+import { ItemView, Notice, WorkspaceLeaf } from "obsidian";
 import { VIEW_TYPE_SESSION } from "../../constants";
 import { getEventBus } from "../../services";
 import { SessionLogic } from "./SessionLogic";
@@ -14,6 +14,8 @@ import { Panel } from "../components/Panel";
 import { SessionContent } from "./SessionContent";
 import type EpistemePlugin from "../../main";
 import { SessionResultFactory } from "../../utils/session-result-factory";
+import { MoveCardModal } from "../modals/MoveCardModal";
+import { AddToProjectModal } from "../modals/AddToProjectModal";
 
 /**
  * Options for initializing SessionView
@@ -42,6 +44,8 @@ export class SessionView extends ItemView {
 	// Native header action elements
 	private startSessionAction: HTMLElement | null = null;
 	private clearSelectionAction: HTMLElement | null = null;
+	private moveAction: HTMLElement | null = null;
+	private addToProjectAction: HTMLElement | null = null;
 
 	// State subscription
 	private unsubscribe: (() => void) | null = null;
@@ -101,6 +105,14 @@ export class SessionView extends ItemView {
 			this.startSessionAction.remove();
 			this.startSessionAction = null;
 		}
+		if (this.moveAction) {
+			this.moveAction.remove();
+			this.moveAction = null;
+		}
+		if (this.addToProjectAction) {
+			this.addToProjectAction.remove();
+			this.addToProjectAction = null;
+		}
 
 		// Add actions when notes are selected
 		if (selectionCount > 0) {
@@ -109,6 +121,20 @@ export class SessionView extends ItemView {
 				"play",
 				"Start session",
 				() => this.handleStartSession()
+			);
+
+			// Move flashcards action
+			this.moveAction = this.addAction(
+				"folder-input",
+				"Move flashcards",
+				() => void this.handleMoveSelectedNotes()
+			);
+
+			// Add to project action
+			this.addToProjectAction = this.addAction(
+				"folder-plus",
+				"Add to project",
+				() => void this.handleAddToProject()
 			);
 
 			// Clear selection button
@@ -147,6 +173,14 @@ export class SessionView extends ItemView {
 		if (this.startSessionAction) {
 			this.startSessionAction.remove();
 			this.startSessionAction = null;
+		}
+		if (this.moveAction) {
+			this.moveAction.remove();
+			this.moveAction = null;
+		}
+		if (this.addToProjectAction) {
+			this.addToProjectAction.remove();
+			this.addToProjectAction = null;
 		}
 
 		// Cleanup selection bar
@@ -256,6 +290,105 @@ export class SessionView extends ItemView {
 	}
 
 	/**
+	 * Handle move selected notes - moves all flashcards from selected notes to a target note
+	 */
+	private async handleMoveSelectedNotes(): Promise<void> {
+		const state = this.stateManager.getState();
+		const selectedNotes = state.selectedNotes;
+		if (selectedNotes.size === 0) return;
+
+		// Get all cards from selected notes
+		const allCards = state.allCards;
+		const cardsToMove = allCards.filter(
+			(card) =>
+				card.sourceNoteName && selectedNotes.has(card.sourceNoteName)
+		);
+
+		if (cardsToMove.length === 0) {
+			new Notice("No flashcards found in selected notes");
+			return;
+		}
+
+		// Open MoveCardModal
+		const modal = new MoveCardModal(this.app, {
+			cardCount: cardsToMove.length,
+		});
+
+		const result = await modal.openAndWait();
+		if (result.cancelled || !result.targetNotePath) return;
+
+		// Move all cards to target note
+		let movedCount = 0;
+		for (const card of cardsToMove) {
+			const success = await this.plugin.flashcardManager.moveCard(
+				card.id,
+				result.targetNotePath
+			);
+			if (success) movedCount++;
+		}
+
+		new Notice(`Moved ${movedCount} flashcard(s)`);
+
+		// Clear selection
+		this.stateManager.clearSelection();
+	}
+
+	/**
+	 * Handle add to project - adds selected notes to project(s)
+	 */
+	private async handleAddToProject(): Promise<void> {
+		const state = this.stateManager.getState();
+		const selectedNotes = state.selectedNotes;
+		if (selectedNotes.size === 0) return;
+
+		// Get available projects from frontmatter index
+		const availableProjects = Array.from(
+			this.plugin.frontmatterIndex.getAllValues("projects")
+		);
+
+		// Open AddToProjectModal
+		const modal = new AddToProjectModal(this.app, {
+			availableProjects,
+			currentProjects: [], // Empty - we're adding to multiple notes
+		});
+
+		const result = await modal.openAndWait();
+		if (result.cancelled || result.projects.length === 0) return;
+
+		// Apply projects to all selected notes
+		const frontmatterService =
+			this.plugin.flashcardManager.getFrontmatterService();
+		let updatedCount = 0;
+
+		for (const noteName of selectedNotes) {
+			// Find note file by name
+			const noteFile = this.app.vault
+				.getMarkdownFiles()
+				.find((f) => f.basename === noteName);
+			if (!noteFile) continue;
+
+			// Get current projects and merge with new ones
+			const content = await this.app.vault.cachedRead(noteFile);
+			const currentProjects =
+				frontmatterService.extractProjectsFromFrontmatter(content);
+			const newProjects = [
+				...new Set([...currentProjects, ...result.projects]),
+			];
+
+			await frontmatterService.setProjectsInFrontmatter(
+				noteFile,
+				newProjects
+			);
+			updatedCount++;
+		}
+
+		new Notice(`Added ${updatedCount} note(s) to project(s)`);
+
+		// Clear selection
+		this.stateManager.clearSelection();
+	}
+
+	/**
 	 * Emit result event and close the view
 	 */
 	private emitResultAndClose(result: SessionSelectedEvent["result"]): void {
@@ -285,8 +418,8 @@ export class SessionView extends ItemView {
 		const contentContainer = this.panelComponent.getContentContainer();
 
 		// Preserve scroll position before re-render
-		const noteList = contentContainer.querySelector(".episteme-note-list");
-		const scrollTop = noteList?.scrollTop ?? 0;
+		const scrollWrapper = contentContainer.querySelector(".episteme-session-scroll");
+		const scrollTop = scrollWrapper?.scrollTop ?? 0;
 
 		const state = this.stateManager.getState();
 
@@ -309,11 +442,11 @@ export class SessionView extends ItemView {
 		this.contentComponent.render();
 
 		// Restore scroll position after re-render
-		const newNoteList = contentContainer.querySelector(
-			".episteme-note-list"
+		const newScrollWrapper = contentContainer.querySelector(
+			".episteme-session-scroll"
 		);
-		if (newNoteList) {
-			newNoteList.scrollTop = scrollTop;
+		if (newScrollWrapper) {
+			newScrollWrapper.scrollTop = scrollTop;
 		}
 
 		// Add/remove class based on search query content (for mobile CSS)
@@ -368,6 +501,24 @@ export class SessionView extends ItemView {
 		const buttons = this.selectionBarEl.createDiv({
 			cls: "ep:flex ep:gap-2",
 		});
+
+		// Move button
+		const moveBtn = buttons.createEl("button", {
+			cls: "ep:py-1.5 ep:px-3 ep:text-ui-small ep:bg-obs-border ep:text-obs-normal ep:border-none ep:rounded ep:cursor-pointer ep:hover:bg-obs-modifier-hover",
+			text: "Move",
+		});
+		moveBtn.addEventListener("click", () =>
+			void this.handleMoveSelectedNotes()
+		);
+
+		// Add to project button
+		const addProjectBtn = buttons.createEl("button", {
+			cls: "ep:py-1.5 ep:px-3 ep:text-ui-small ep:bg-obs-border ep:text-obs-normal ep:border-none ep:rounded ep:cursor-pointer ep:hover:bg-obs-modifier-hover",
+			text: "Add to project",
+		});
+		addProjectBtn.addEventListener("click", () =>
+			void this.handleAddToProject()
+		);
 
 		// Clear button
 		const clearBtn = buttons.createEl("button", {

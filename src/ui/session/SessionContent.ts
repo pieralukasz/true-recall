@@ -62,7 +62,7 @@ export class SessionContent extends BaseComponent {
 
 		// Quick actions section header
 		this.element.createDiv({
-			cls: "episteme-section-header ep:text-ui-smaller ep:font-semibold ep:text-obs-muted ep:uppercase ep:tracking-wide ep:my-2",
+			cls: "episteme-section-header ep:text-ui-small ep:font-semibold ep:text-obs-normal ep:my-2",
 			text: "Quick access",
 		});
 
@@ -71,7 +71,7 @@ export class SessionContent extends BaseComponent {
 
 		// Notes section header (fixed, not scrolling)
 		this.element.createDiv({
-			cls: "episteme-section-header ep:text-ui-smaller ep:font-semibold ep:text-obs-muted ep:uppercase ep:tracking-wide ep:my-2 ep:shrink-0",
+			cls: "episteme-section-header ep:text-ui-small ep:font-semibold ep:text-obs-normal ep:my-2 ep:shrink-0",
 			text: "Select notes",
 		});
 
@@ -270,7 +270,7 @@ export class SessionContent extends BaseComponent {
 
 			// Note item container
 			const item = noteListEl.createDiv({
-				cls: `ep:flex ep:items-start ep:gap-3 ep:py-2.5 ep:px-3 ep:border-b ep:border-obs-modifier-border ep:cursor-pointer ep:transition-colors ep:hover:bg-obs-modifier-hover ep:last:border-b-0${
+				cls: `ep:flex ep:items-center ep:gap-3 ep:py-2.5 ep:px-3 ep:border-b ep:border-obs-modifier-border ep:cursor-pointer ep:transition-colors ep:hover:bg-obs-modifier-hover ep:last:border-b-0${
 					isSelected ? " ep:bg-obs-interactive/10" : ""
 				}`,
 			});
@@ -279,7 +279,7 @@ export class SessionContent extends BaseComponent {
 			if (hasCards) {
 				const checkbox = item.createEl("input", {
 					type: "checkbox",
-					cls: "ep:mt-0.5 ep:shrink-0 ep:w-4 ep:h-4",
+					cls: "ep:shrink-0 ep:w-4 ep:h-4",
 				});
 				checkbox.checked = isSelected;
 

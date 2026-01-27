@@ -38,6 +38,7 @@ function createInitialState(): PanelState {
         selectedCardIds: new Set(),
         expandedCardIds: new Set(),
         searchQuery: "",
+        isAddCardExpanded: false,
     };
 }
 
@@ -341,6 +342,20 @@ export class PanelStateManager {
      */
     setSearchQuery(query: string): void {
         this.setState({ searchQuery: query });
+    }
+
+    /**
+     * Toggle add card expanded state
+     */
+    toggleAddCardExpanded(): void {
+        this.setState({ isAddCardExpanded: !this.state.isAddCardExpanded });
+    }
+
+    /**
+     * Set add card expanded state
+     */
+    setAddCardExpanded(expanded: boolean): void {
+        this.setState({ isAddCardExpanded: expanded });
     }
 
     // ===== Private Methods =====
