@@ -201,7 +201,7 @@ export class ProjectsContent extends BaseComponent {
 
 		// Chevron icon (rotates when expanded)
 		const chevronEl = mainRow.createSpan({
-			cls: `ep:transition-transform ep:duration-200 ep:shrink-0 ${
+			cls: `ep:transition-transform ep:duration-200 ep:shrink-0 ep:self-center ${
 				isExpanded ? "ep:rotate-90" : ""
 			}`,
 		});
