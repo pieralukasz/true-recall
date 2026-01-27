@@ -239,6 +239,14 @@ export class ReviewView extends ItemView {
 		this.cardContainerEl = container.createDiv({
 			cls: "episteme-review-card-container ep:flex-1 ep:min-h-0 ep:flex ep:items-start ep:justify-center ep:p-2 ep:mt-8 ep:overflow-y-auto",
 		});
+
+		// Clear text selection when clicking outside content
+		this.cardContainerEl.addEventListener("click", (e: MouseEvent) => {
+			if (e.target === this.cardContainerEl) {
+				window.getSelection()?.removeAllRanges();
+			}
+		});
+
 		this.buttonsEl = container.createDiv({
 			cls: "episteme-review-buttons ep:flex ep:justify-center ep:gap-3 ep:border-t ep:border-obs-border ep:flex-nowrap ep:shrink-0 ep:p-4",
 		});
@@ -691,7 +699,7 @@ export class ReviewView extends ItemView {
 		const editState = this.stateManager.getEditState();
 
 		const cardEl = this.cardContainerEl.createDiv({
-			cls: "ep:max-w-[700px] ep:w-full ep:text-center",
+			cls: "ep:w-full ep:text-center",
 		});
 
 		// Use sourceNotePath for link resolution
