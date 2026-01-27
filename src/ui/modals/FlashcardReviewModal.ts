@@ -1,22 +1,19 @@
 /**
- * Flashcard Review/Edit Modal
+ * Flashcard Review Modal
  * Allows reviewing and editing generated flashcards before saving
+ * Redesigned with CompactCardItem-style interface
  */
-import { App, Notice, MarkdownRenderer, Component } from "obsidian";
+import { App, Notice, Component } from "obsidian";
 import { BaseModal } from "./BaseModal";
 import type { FlashcardItem, GeneratedNoteType } from "../../types";
 import type { OpenRouterService } from "../../services";
-import {
-	createEditableTextField,
-	EditableTextField,
-	TOOLBAR_BUTTONS,
-} from "../components";
 import { GENERATED_NOTE_TYPES } from "../../constants";
+import { createModalCardItem, ModalCardItem } from "./components/ModalCardItem";
+import { createExpandableAddCard, ExpandableAddCard } from "./components/ExpandableAddCard";
 
 export interface FlashcardReviewResult {
 	cancelled: boolean;
-	flashcards?: FlashcardItem[];  // Final flashcards to save
-	// Options for creating a new note as destination
+	flashcards?: FlashcardItem[];
 	createNewNote?: boolean;
 	noteType?: GeneratedNoteType;
 	noteName?: string;
@@ -28,13 +25,30 @@ export interface FlashcardReviewModalOptions {
 	openRouterService: OpenRouterService;
 }
 
+// Quick refine action presets
+const REFINE_QUICK_ACTIONS = [
+	{ label: "More specific", instruction: "Make questions more specific and focused" },
+	{ label: "Add examples", instruction: "Add concrete examples to answers" },
+	{ label: "Simplify", instruction: "Use simpler language, avoid jargon" },
+	{ label: "Split complex", instruction: "Split complex cards into multiple simpler ones" },
+];
+
 /**
- * Edit mode state for a card field
+ * Modal state
  */
-interface CardEditMode {
-	index: number;
-	field: "question" | "answer" | null;
-	isEditing: boolean;
+interface FlashcardReviewState {
+	flashcards: FlashcardItem[];
+	expandedCardIndex: number | null;
+	editingCardIndex: number | null;
+	editingField: "question" | "answer" | null;
+	isAddCardExpanded: boolean;
+	refineInstructions: string;
+	isRefining: boolean;
+	createNewNote: boolean;
+	selectedNoteType: GeneratedNoteType;
+	customNoteName: string;
+	isSelectionMode: boolean;
+	selectedCardIds: Set<string>;
 }
 
 /**
@@ -52,35 +66,45 @@ export class FlashcardReviewModal extends BaseModal {
 	private openRouterService: OpenRouterService;
 
 	// State
-	private flashcards: FlashcardItem[];
-	private deletedCardIds: Set<number> = new Set();
-	private isRefining: boolean = false;
-	private editingCard: CardEditMode | null = null;
-
-	// Destination state (for creating new note)
-	private createNewNote: boolean = false;
-	private selectedNoteType: GeneratedNoteType = "question";
-	private customNoteName: string = "";
+	private state: FlashcardReviewState;
 
 	// UI refs
 	private flashcardsListEl: HTMLElement | null = null;
-	private instructionsInputEl: HTMLTextAreaElement | null = null;
+	private selectionToolbarEl: HTMLElement | null = null;
+	private refineInputEl: HTMLTextAreaElement | null = null;
 	private refineButtonEl: HTMLButtonElement | null = null;
 	private saveButtonEl: HTMLButtonElement | null = null;
 	private destinationOptionsEl: HTMLElement | null = null;
 	private noteNameInputEl: HTMLInputElement | null = null;
-	// Editable text field instance
-	private editableField: EditableTextField | null = null;
+
+	// Child components
+	private cardComponents: ModalCardItem[] = [];
+	private addCardComponent: ExpandableAddCard | null = null;
 
 	constructor(app: App, options: FlashcardReviewModalOptions) {
 		super(app, {
-			title: `Review Generated Flashcards (${options.initialFlashcards.length})`,
+			title: `Review Flashcards (${options.initialFlashcards.length})`,
 			width: "700px",
 		});
 		this.options = options;
-		this.flashcards = [...options.initialFlashcards];  // Working copy
 		this.component = new Component();
 		this.openRouterService = options.openRouterService;
+
+		// Initialize state
+		this.state = {
+			flashcards: [...options.initialFlashcards],
+			expandedCardIndex: null,
+			editingCardIndex: null,
+			editingField: null,
+			isAddCardExpanded: false,
+			refineInstructions: "",
+			isRefining: false,
+			createNewNote: false,
+			selectedNoteType: "question",
+			customNoteName: "",
+			isSelectionMode: false,
+			selectedCardIds: new Set(),
+		};
 	}
 
 	async openAndWait(): Promise<FlashcardReviewResult> {
@@ -97,15 +121,23 @@ export class FlashcardReviewModal extends BaseModal {
 	}
 
 	protected renderBody(container: HTMLElement): void {
-		// AI Refine section (moved to top)
+		// AI Refine section
 		this.renderRefineSection(container);
 
-		// Destination section (create new note option)
-		this.renderDestinationSection(container);
+		// Selection toolbar (hidden by default)
+		this.selectionToolbarEl = container.createDiv({
+			cls: "ep:mb-2",
+		});
+		this.renderSelectionToolbar();
 
 		// Flashcards list (scrollable)
-		this.flashcardsListEl = container.createDiv({ cls: "ep:max-h-[400px] ep:overflow-y-auto ep:mb-4 ep:pr-2" });
+		this.flashcardsListEl = container.createDiv({
+			cls: "ep:max-h-[350px] ep:overflow-y-auto ep:mb-4 ep:pr-1",
+		});
 		this.renderFlashcardsList();
+
+		// Destination section
+		this.renderDestinationSection(container);
 
 		// Action buttons
 		this.renderActions(container);
@@ -113,175 +145,163 @@ export class FlashcardReviewModal extends BaseModal {
 
 	// ===== Rendering methods =====
 
-	private renderInfoSection(container: HTMLElement): void {
-		const infoEl = container.createDiv({ cls: "ep:text-obs-muted ep:text-ui-small ep:mb-4 ep:p-3 ep:bg-obs-secondary ep:rounded-md" });
-		const sourceText = this.options.sourceNoteName
-			? ` from "${this.options.sourceNoteName}"`
-			: "";
-		infoEl.createEl("p", {
-			text: `Review the flashcards generated${sourceText}. You can edit questions and answers, delete cards, or use AI to refine them.`,
+	private renderRefineSection(container: HTMLElement): void {
+		const sectionEl = container.createDiv({
+			cls: "ep:mb-3 ep:p-2 ep:bg-obs-secondary ep:rounded-md",
 		});
 
-		// Keyboard hint
-		const hintEl = infoEl.createDiv({ cls: "ep:text-ui-smaller ep:text-obs-muted ep:text-center ep:mt-1" });
-		hintEl.innerHTML = `<span class="ep:inline-block ep:py-0.5 ep:px-1.5 ep:bg-obs-border ep:rounded ep:font-mono ep:text-[10px]">⌘ + click</span> to edit`;
+		// Row 1: Quick action buttons
+		const quickActionsRow = sectionEl.createDiv({
+			cls: "ep:flex ep:items-center ep:gap-2 ep:flex-wrap ep:mb-2",
+		});
+
+		for (const action of REFINE_QUICK_ACTIONS) {
+			const btn = quickActionsRow.createEl("button", {
+				text: action.label,
+				cls: "ep:py-1 ep:px-2 ep:text-ui-smaller ep:bg-obs-primary ep:text-obs-muted ep:border ep:border-obs-border ep:rounded ep:cursor-pointer ep:transition-colors ep:hover:bg-obs-modifier-hover ep:hover:text-obs-normal ep:hover:border-obs-interactive",
+			});
+			btn.addEventListener("click", () => {
+				if (this.refineInputEl) {
+					this.refineInputEl.value = action.instruction;
+					this.state.refineInstructions = action.instruction;
+					void this.handleRefine();
+				}
+			});
+		}
+
+		// Row 2: Input + Refine button
+		const inputRow = sectionEl.createDiv({
+			cls: "ep:flex ep:items-start ep:gap-2",
+		});
+
+		// Textarea (2 lines)
+		this.refineInputEl = inputRow.createEl("textarea", {
+			placeholder: "Custom instructions...",
+			cls: "ep:flex-1 ep:min-w-32 ep:py-1.5 ep:px-2 ep:border ep:border-obs-border ep:rounded ep:bg-obs-primary ep:text-obs-normal ep:text-ui-smaller ep:focus:outline-none ep:focus:border-obs-interactive ep:resize-none",
+		}) as HTMLTextAreaElement;
+		this.refineInputEl.rows = 2;
+		this.refineInputEl.addEventListener("input", () => {
+			this.state.refineInstructions = this.refineInputEl?.value || "";
+		});
+
+		// Refine button
+		this.refineButtonEl = inputRow.createEl("button", {
+			text: "Refine",
+			cls: "ep:py-1.5 ep:px-3 ep:text-ui-smaller ep:bg-obs-interactive ep:text-white ep:border-none ep:rounded ep:cursor-pointer ep:transition-colors ep:hover:bg-obs-interactive-hover ep:disabled:opacity-50 ep:disabled:cursor-not-allowed",
+		});
+		this.refineButtonEl.addEventListener("click", () => void this.handleRefine());
+	}
+
+	private renderSelectionToolbar(): void {
+		if (!this.selectionToolbarEl) return;
+		this.selectionToolbarEl.empty();
+
+		const { isSelectionMode, selectedCardIds, flashcards } = this.state;
+
+		// Only show toolbar when in selection mode (long-press to enter)
+		if (!isSelectionMode) {
+			return;
+		}
+
+		{
+			// Show selection mode toolbar
+			const toolbarRow = this.selectionToolbarEl.createDiv({
+				cls: "ep:flex ep:items-center ep:justify-between ep:gap-2 ep:p-2 ep:bg-obs-secondary ep:rounded-md",
+			});
+
+			// Left side: count and select all
+			const leftSide = toolbarRow.createDiv({
+				cls: "ep:flex ep:items-center ep:gap-2",
+			});
+
+			const allSelected = selectedCardIds.size === flashcards.length && flashcards.length > 0;
+			const selectAllBtn = leftSide.createEl("button", {
+				text: allSelected ? "Deselect all" : "Select all",
+				cls: "ep:py-1 ep:px-2 ep:text-ui-smaller ep:bg-obs-primary ep:text-obs-muted ep:border ep:border-obs-border ep:rounded ep:cursor-pointer ep:transition-colors ep:hover:bg-obs-modifier-hover ep:hover:text-obs-normal",
+			});
+			selectAllBtn.addEventListener("click", () => this.handleToggleSelectAll());
+
+			const countEl = leftSide.createSpan({
+				text: `${selectedCardIds.size} selected`,
+				cls: "ep:text-ui-smaller ep:text-obs-muted",
+			});
+
+			// Right side: actions
+			const rightSide = toolbarRow.createDiv({
+				cls: "ep:flex ep:items-center ep:gap-2",
+			});
+
+			const deleteBtn = rightSide.createEl("button", {
+				text: "Delete selected",
+				cls: "ep:py-1 ep:px-2 ep:text-ui-smaller ep:bg-red-500/10 ep:text-red-500 ep:border ep:border-red-500/30 ep:rounded ep:cursor-pointer ep:transition-colors ep:hover:bg-red-500/20 ep:disabled:opacity-50 ep:disabled:cursor-not-allowed",
+			});
+			deleteBtn.disabled = selectedCardIds.size === 0;
+			deleteBtn.addEventListener("click", () => this.handleDeleteSelected());
+
+			const cancelBtn = rightSide.createEl("button", {
+				text: "Cancel",
+				cls: "ep:py-1 ep:px-2 ep:text-ui-smaller ep:bg-obs-primary ep:text-obs-muted ep:border ep:border-obs-border ep:rounded ep:cursor-pointer ep:transition-colors ep:hover:bg-obs-modifier-hover",
+			});
+			cancelBtn.addEventListener("click", () => this.handleExitSelectionMode());
+		}
 	}
 
 	private renderFlashcardsList(): void {
 		if (!this.flashcardsListEl) return;
 
+		// Cleanup existing components
+		this.cardComponents.forEach((c) => c.destroy());
+		this.cardComponents = [];
+		this.addCardComponent?.destroy();
+		this.addCardComponent = null;
+
 		this.flashcardsListEl.empty();
 
-		const activeFlashcards = this.flashcards
-			.map((_, i) => i)
-			.filter(i => !this.deletedCardIds.has(i));
+		const { flashcards, expandedCardIndex, editingCardIndex, editingField } = this.state;
 
-		if (activeFlashcards.length === 0) {
+		if (flashcards.length === 0) {
 			this.flashcardsListEl.createDiv({
 				cls: "ep:text-center ep:text-obs-muted ep:py-6 ep:px-4 ep:italic",
-				text: "No flashcards remaining. All cards have been deleted.",
+				text: "No flashcards. Add one below or use AI to generate.",
 			});
-			this.updateButtons();
-			return;
+		} else {
+			for (let i = 0; i < flashcards.length; i++) {
+				const card = flashcards[i];
+				if (!card) continue;
+
+				const cardWrapper = this.flashcardsListEl.createDiv();
+				const cardComponent = createModalCardItem(cardWrapper, {
+					card,
+					index: i,
+					app: this.app,
+					component: this.component,
+					isExpanded: expandedCardIndex === i,
+					isEditing: editingCardIndex === i,
+					editingField: editingCardIndex === i ? editingField : null,
+					isSelectionMode: this.state.isSelectionMode,
+					isSelected: card.id ? this.state.selectedCardIds.has(card.id) : false,
+					onToggleExpand: () => this.handleToggleExpand(i),
+					onStartEdit: (field) => this.handleStartEdit(i, field),
+					onSaveEdit: (question, answer) => this.handleSaveEdit(i, question, answer),
+					onCancelEdit: () => this.handleCancelEdit(),
+					onDelete: () => this.handleDeleteCard(i),
+					onToggleSelect: () => this.handleToggleSelect(i),
+					onEnterSelectionMode: () => this.handleEnterSelectionMode(i),
+				});
+				this.cardComponents.push(cardComponent);
+			}
 		}
 
-		for (const index of activeFlashcards) {
-			const card = this.flashcards[index];
-			if (!card) continue;
-
-			this.renderFlashcardItem(this.flashcardsListEl, card, index);
-		}
+		// Add card component
+		const addCardWrapper = this.flashcardsListEl.createDiv();
+		this.addCardComponent = createExpandableAddCard(addCardWrapper, {
+			isExpanded: this.state.isAddCardExpanded,
+			onToggleExpand: () => this.handleToggleAddCard(),
+			onSave: (question, answer) => this.handleAddCard(question, answer),
+			onCancel: () => this.handleCancelAddCard(),
+		});
 
 		this.updateButtons();
-	}
-
-	private renderFlashcardItem(
-		container: HTMLElement,
-		card: FlashcardItem,
-		index: number
-	): void {
-		const itemEl = container.createDiv({
-			cls: "ep:flex ep:flex-col ep:gap-3 ep:mb-3 ep:p-3 ep:bg-obs-secondary ep:border ep:border-obs-border ep:rounded-md ep:transition-colors ep:hover:border-obs-interactive",
-		});
-
-		// Check if this card/field is being edited
-		const isEditing = this.editingCard?.index === index && this.editingCard?.isEditing && this.editingCard.field;
-
-		if (isEditing && this.editingCard?.field) {
-			this.renderEditMode(itemEl, card, index, this.editingCard.field);
-		} else {
-			this.renderViewMode(itemEl, card, index);
-		}
-	}
-
-	private renderViewMode(
-		itemEl: HTMLElement,
-		card: FlashcardItem,
-		index: number
-	): void {
-		// Content wrapper (takes remaining space)
-		const contentEl = itemEl.createDiv({ cls: "ep:flex-1 ep:min-w-0" });
-
-		// Question field
-		const questionEl = contentEl.createDiv({
-			cls: "ep:relative ep:cursor-pointer ep:p-2 ep:rounded ep:transition-colors ep:hover:bg-obs-modifier-hover",
-			attr: { "data-field": "question" },
-		});
-		questionEl.addEventListener("click", (e) => this.handleFieldClick(e, index, "question"));
-
-		const questionContent = questionEl.createDiv({ cls: "ep:text-ui-small ep:leading-normal" });
-		void MarkdownRenderer.renderMarkdown(
-			card.question,
-			questionContent,
-			"",
-			this.component
-		);
-
-		// Divider between question and answer
-		contentEl.createEl("hr", { cls: "ep:border-none ep:border-t ep:border-obs-border ep:my-3" });
-
-		// Answer field
-		const answerEl = contentEl.createDiv({
-			cls: "ep:relative ep:cursor-pointer ep:p-2 ep:rounded ep:transition-colors ep:hover:bg-obs-modifier-hover",
-			attr: { "data-field": "answer" },
-		});
-		answerEl.addEventListener("click", (e) => this.handleFieldClick(e, index, "answer"));
-
-		const answerContent = answerEl.createDiv({ cls: "ep:text-ui-small ep:leading-normal" });
-		void MarkdownRenderer.renderMarkdown(
-			card.answer,
-			answerContent,
-			"",
-			this.component
-		);
-
-		// Delete button (on right side)
-		const deleteBtn = itemEl.createEl("button", {
-			cls: "ep:w-7 ep:h-7 ep:p-1.5 ep:bg-transparent ep:text-obs-muted ep:border-none ep:rounded ep:cursor-pointer ep:transition-colors ep:hover:bg-obs-modifier-hover ep:hover:text-red-500 ep:self-end",
-			attr: { "aria-label": "Delete flashcard", "title": "Delete" },
-		});
-		deleteBtn.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/></svg>`;
-		deleteBtn.addEventListener("click", () => this.deleteFlashcard(index));
-	}
-
-	private renderEditMode(
-		itemEl: HTMLElement,
-		card: FlashcardItem,
-		index: number,
-		field: "question" | "answer"
-	): void {
-		const content = field === "question" ? card.question : card.answer;
-
-		// Use EditableTextField component with toolbar
-		this.editableField = createEditableTextField(itemEl, {
-			initialValue: content,
-			showToolbar: true,
-			toolbarButtons: TOOLBAR_BUTTONS.MINIMAL,
-			toolbarPositioned: false,
-			field,
-			autoFocus: true,
-			onSave: (value) => void this.saveEdit(index, field, value),
-			onTab: () => {
-				const nextField = field === "question" ? "answer" : "question";
-				void (async () => {
-					if (this.editableField) {
-						await this.saveEdit(index, field, this.editableField.getValue());
-					}
-					this.startEdit(index, nextField);
-				})();
-			},
-		});
-	}
-
-	private renderRefineSection(container: HTMLElement): void {
-		const sectionEl = container.createDiv({
-			cls: "ep:mb-3 ep:p-3 ep:bg-obs-secondary ep:rounded-md",
-		});
-
-		sectionEl.createEl("h3", {
-			text: "AI Refine (Optional)",
-			cls: "ep:text-ui-small ep:font-semibold ep:m-0 ep:mb-2 ep:text-obs-normal",
-		});
-
-		const instructionsContainer = sectionEl.createDiv({
-			cls: "ep:mb-2",
-		});
-
-		this.instructionsInputEl = instructionsContainer.createEl("textarea", {
-			placeholder: "e.g., 'Make questions more specific', 'Add examples', 'Simplify complex cards'...",
-			cls: "ep:w-full ep:p-2 ep:border ep:border-obs-border ep:rounded ep:bg-obs-primary ep:text-obs-normal ep:text-ui-small ep:resize-none ep:focus:outline-none ep:focus:border-obs-interactive",
-		});
-		this.instructionsInputEl.rows = 2;
-
-		const buttonContainer = sectionEl.createDiv({
-			cls: "ep:flex ep:justify-end",
-		});
-
-		this.refineButtonEl = buttonContainer.createEl("button", {
-			text: "Refine with AI",
-			cls: "ep:py-1.5 ep:px-4 ep:text-ui-small ep:bg-obs-interactive ep:text-white ep:border-none ep:rounded ep:cursor-pointer ep:transition-colors ep:hover:bg-obs-interactive-hover ep:disabled:opacity-50 ep:disabled:cursor-not-allowed",
-		});
-		this.refineButtonEl.addEventListener("click", () => void this.handleRefine());
 	}
 
 	private renderDestinationSection(container: HTMLElement): void {
@@ -299,7 +319,7 @@ export class FlashcardReviewModal extends BaseModal {
 			cls: "ep:w-4 ep:h-4 ep:accent-obs-interactive ep:cursor-pointer",
 		});
 		checkbox.id = "episteme-create-new-note";
-		checkbox.checked = this.createNewNote;
+		checkbox.checked = this.state.createNewNote;
 
 		const label = checkboxRow.createEl("label", {
 			text: "Create new note for these flashcards",
@@ -311,10 +331,10 @@ export class FlashcardReviewModal extends BaseModal {
 		this.destinationOptionsEl = sectionEl.createDiv({
 			cls: "ep:mt-3 ep:pt-3 ep:border-t ep:border-obs-border",
 		});
-		this.destinationOptionsEl.style.display = this.createNewNote ? "block" : "none";
+		this.destinationOptionsEl.style.display = this.state.createNewNote ? "block" : "none";
 
 		// Note type radio buttons
-		const typeLabel = this.destinationOptionsEl.createDiv({
+		this.destinationOptionsEl.createDiv({
 			cls: "ep:text-ui-small ep:font-medium ep:text-obs-muted ep:mb-2",
 			text: "Note type:",
 		});
@@ -328,7 +348,7 @@ export class FlashcardReviewModal extends BaseModal {
 
 		for (const [key, config] of Object.entries(GENERATED_NOTE_TYPES)) {
 			const typeKey = key as GeneratedNoteType;
-			const isSelected = this.selectedNoteType === typeKey;
+			const isSelected = this.state.selectedNoteType === typeKey;
 			const radioItem = radioGroup.createDiv({
 				cls: `${baseItemCls}${isSelected ? ` ${selectedItemCls}` : ""}`,
 				attr: { "data-type": typeKey },
@@ -341,7 +361,7 @@ export class FlashcardReviewModal extends BaseModal {
 			radio.name = "note-type";
 			radio.value = typeKey;
 			radio.id = `episteme-note-type-${typeKey}`;
-			radio.checked = this.selectedNoteType === typeKey;
+			radio.checked = isSelected;
 
 			const radioLabel = radioItem.createEl("label", {
 				cls: "ep:flex ep:flex-col ep:gap-0.5 ep:cursor-pointer ep:flex-1",
@@ -359,10 +379,9 @@ export class FlashcardReviewModal extends BaseModal {
 
 			radio.addEventListener("change", () => {
 				if (radio.checked) {
-					this.selectedNoteType = typeKey;
+					this.state.selectedNoteType = typeKey;
 					this.updateSuggestedNoteName();
-					// Update visual selection
-					radioGroup.querySelectorAll("[data-type]").forEach(el => {
+					radioGroup.querySelectorAll("[data-type]").forEach((el) => {
 						el.classList.remove(...selectedItemCls.split(" "));
 					});
 					radioItem.classList.add(...selectedItemCls.split(" "));
@@ -385,38 +404,36 @@ export class FlashcardReviewModal extends BaseModal {
 			cls: "ep:w-full ep:py-2 ep:px-3 ep:border ep:border-obs-border ep:rounded-md ep:bg-obs-primary ep:text-obs-normal ep:text-ui-small ep:focus:outline-none ep:focus:border-obs-interactive ep:placeholder:text-obs-muted ep:placeholder:text-sm",
 			placeholder: "Leave empty for auto-generated name",
 		});
-		this.noteNameInputEl.value = this.customNoteName;
-
+		this.noteNameInputEl.value = this.state.customNoteName;
 		this.noteNameInputEl.addEventListener("input", () => {
-			this.customNoteName = this.noteNameInputEl?.value || "";
+			this.state.customNoteName = this.noteNameInputEl?.value || "";
 		});
 
 		// Toggle visibility on checkbox change
 		checkbox.addEventListener("change", () => {
-			this.createNewNote = checkbox.checked;
+			this.state.createNewNote = checkbox.checked;
 			if (this.destinationOptionsEl) {
-				this.destinationOptionsEl.style.display = this.createNewNote ? "block" : "none";
+				this.destinationOptionsEl.style.display = this.state.createNewNote ? "block" : "none";
 			}
-			if (this.createNewNote) {
+			if (this.state.createNewNote) {
 				this.updateSuggestedNoteName();
 			}
 		});
 	}
 
 	private updateSuggestedNoteName(): void {
-		if (!this.noteNameInputEl || this.customNoteName) return;
+		if (!this.noteNameInputEl || this.state.customNoteName) return;
 
-		// Auto-suggest name based on first flashcard question
-		const activeFlashcards = this.getActiveFlashcards();
-		const firstCard = activeFlashcards[0];
+		const firstCard = this.state.flashcards[0];
 		if (firstCard) {
-			const config = GENERATED_NOTE_TYPES[this.selectedNoteType];
+			const config = GENERATED_NOTE_TYPES[this.state.selectedNoteType];
 			const firstQuestion = firstCard.question
-				.replace(/\*\*/g, "")  // Remove bold markers
-				.replace(/\[\[([^\]|]+)(\|[^\]]+)?\]\]/g, "$1")  // Remove backlink syntax
-				.replace(/#flashcard/g, "")  // Remove flashcard tag
+				.replace(/\*\*/g, "")
+				.replace(/\[\[([^\]|]+)(\|[^\]]+)?\]\]/g, "$1")
+				.replace(/#flashcard/g, "")
+				.replace(/<br\s*\/?>/gi, " ")
 				.trim()
-				.substring(0, 50);  // Limit length
+				.substring(0, 50);
 			this.noteNameInputEl.placeholder = `${config.defaultNamePrefix}${firstQuestion}...`;
 		}
 	}
@@ -430,169 +447,221 @@ export class FlashcardReviewModal extends BaseModal {
 			cls: "ep:flex ep:justify-end ep:gap-3",
 		});
 
-		this.saveButtonEl = buttonsContainer.createEl("button", {
-			text: "Save flashcards",
-			cls: "mod-cta ep:py-2.5 ep:px-5 ep:text-ui-small ep:font-medium",
-		});
-		this.saveButtonEl.addEventListener("click", () => this.handleSave());
-
 		const cancelButton = buttonsContainer.createEl("button", {
 			text: "Cancel",
 			cls: "ep:py-2.5 ep:px-5 ep:text-ui-small ep:font-medium ep:bg-obs-secondary ep:text-obs-normal ep:border ep:border-obs-border ep:rounded-md ep:cursor-pointer ep:transition-colors ep:hover:bg-obs-modifier-hover",
 		});
 		cancelButton.addEventListener("click", () => this.handleCancel());
+
+		this.saveButtonEl = buttonsContainer.createEl("button", {
+			text: "Save flashcards",
+			cls: "mod-cta ep:py-2.5 ep:px-5 ep:text-ui-small ep:font-medium",
+		});
+		this.saveButtonEl.addEventListener("click", () => this.handleSave());
 	}
 
-	// ===== State management =====
+	// ===== State handlers =====
 
-	private getActiveFlashcards(): FlashcardItem[] {
-		return this.flashcards
-			.map((card, index) => ({ card, index }))
-			.filter(({ index }) => !this.deletedCardIds.has(index))
-			.map(({ card }) => card);
-	}
-
-	private deleteFlashcard(index: number): void {
-		this.deletedCardIds.add(index);
-		this.updateTitle(`Review Generated Flashcards (${this.getActiveFlashcards().length})`);
-		this.renderFlashcardsList();
-	}
-
-	private restoreFlashcard(index: number): void {
-		this.deletedCardIds.delete(index);
-		this.updateTitle(`Review Generated Flashcards (${this.getActiveFlashcards().length})`);
-		this.renderFlashcardsList();
-	}
-
-	// ===== Click/Key handlers =====
-
-	private handleFieldClick(
-		e: MouseEvent,
-		index: number,
-		field: "question" | "answer"
-	): void {
-		// Cmd/Ctrl+click = edit mode
-		if (e.metaKey || e.ctrlKey) {
-			e.preventDefault();
-			e.stopPropagation();
-			this.startEdit(index, field);
-		return;
-	}
-
-	// Handle internal links normally
-	const target = e.target;
-	if (!(target instanceof HTMLElement)) return;
-	const linkEl = target.closest("a.internal-link");
-	if (!linkEl) return;
-
-	if (linkEl) {
-		const href = linkEl.getAttribute("data-href");
-		if (href) {
-			e.preventDefault();
-			e.stopPropagation();
-			void this.app.workspace.openLinkText(href, "", "tab");
-		}
-	}
-	}
-
-	private startEdit(index: number, field: "question" | "answer"): void {
-		this.editingCard = { index, field, isEditing: true };
-		this.renderFlashcardsList();
-	}
-
-	private async saveEdit(index: number, field: "question" | "answer", content: string): Promise<void> {
-		if (!this.flashcards[index]) return;
-
-		// Update flashcard
-		if (field === "question") {
-			this.flashcards[index].question = content;
+	private handleToggleExpand(index: number): void {
+		if (this.state.expandedCardIndex === index) {
+			this.state.expandedCardIndex = null;
 		} else {
-			this.flashcards[index].answer = content;
+			this.state.expandedCardIndex = index;
 		}
-
-		// Cleanup editable field
-		this.editableField?.destroy();
-		this.editableField = null;
-
-		this.editingCard = null;
+		// Close editing if we're collapsing
+		if (this.state.editingCardIndex === index && this.state.expandedCardIndex === null) {
+			this.state.editingCardIndex = null;
+			this.state.editingField = null;
+		}
 		this.renderFlashcardsList();
 	}
 
-	private getFinalFlashcards(): FlashcardItem[] {
-		return this.flashcards
-			.map((card, index) => ({ card, index }))
-			.filter(({ index }) => !this.deletedCardIds.has(index))
-			.map(({ card }) => card);
+	private handleStartEdit(index: number, field: "question" | "answer"): void {
+		this.state.expandedCardIndex = index;
+		this.state.editingCardIndex = index;
+		this.state.editingField = field;
+		this.renderFlashcardsList();
+	}
+
+	private handleSaveEdit(index: number, question: string, answer: string): void {
+		const card = this.state.flashcards[index];
+		if (card) {
+			card.question = question;
+			card.answer = answer;
+		}
+		this.state.editingCardIndex = null;
+		this.state.editingField = null;
+		this.renderFlashcardsList();
+	}
+
+	private handleCancelEdit(): void {
+		this.state.editingCardIndex = null;
+		this.state.editingField = null;
+		this.renderFlashcardsList();
+	}
+
+	private handleDeleteCard(index: number): void {
+		this.state.flashcards.splice(index, 1);
+		// Adjust expanded/editing indices
+		if (this.state.expandedCardIndex === index) {
+			this.state.expandedCardIndex = null;
+		} else if (this.state.expandedCardIndex !== null && this.state.expandedCardIndex > index) {
+			this.state.expandedCardIndex--;
+		}
+		if (this.state.editingCardIndex === index) {
+			this.state.editingCardIndex = null;
+			this.state.editingField = null;
+		} else if (this.state.editingCardIndex !== null && this.state.editingCardIndex > index) {
+			this.state.editingCardIndex--;
+		}
+		this.updateTitle(`Review Flashcards (${this.state.flashcards.length})`);
+		this.renderFlashcardsList();
+	}
+
+	private handleToggleAddCard(): void {
+		this.state.isAddCardExpanded = !this.state.isAddCardExpanded;
+		this.renderFlashcardsList();
+	}
+
+	private handleAddCard(question: string, answer: string): void {
+		const newCard: FlashcardItem = {
+			id: crypto.randomUUID(),
+			question,
+			answer,
+		};
+		this.state.flashcards.push(newCard);
+		this.state.isAddCardExpanded = false;
+		this.updateTitle(`Review Flashcards (${this.state.flashcards.length})`);
+		this.renderFlashcardsList();
+		new Notice("Flashcard added");
+	}
+
+	private handleCancelAddCard(): void {
+		this.state.isAddCardExpanded = false;
+		this.renderFlashcardsList();
+	}
+
+	// ===== Selection mode handlers =====
+
+	private handleEnterSelectionMode(index?: number): void {
+		this.state.isSelectionMode = true;
+		this.state.selectedCardIds = new Set();
+		// If index provided, select that card
+		if (index !== undefined) {
+			const card = this.state.flashcards[index];
+			if (card?.id) {
+				this.state.selectedCardIds.add(card.id);
+			}
+		}
+		// Collapse any expanded cards
+		this.state.expandedCardIndex = null;
+		this.state.editingCardIndex = null;
+		this.state.editingField = null;
+		this.renderSelectionToolbar();
+		this.renderFlashcardsList();
+	}
+
+	private handleExitSelectionMode(): void {
+		this.state.isSelectionMode = false;
+		this.state.selectedCardIds = new Set();
+		this.renderSelectionToolbar();
+		this.renderFlashcardsList();
+	}
+
+	private handleToggleSelect(index: number): void {
+		const card = this.state.flashcards[index];
+		if (!card?.id) return;
+
+		if (this.state.selectedCardIds.has(card.id)) {
+			this.state.selectedCardIds.delete(card.id);
+		} else {
+			this.state.selectedCardIds.add(card.id);
+		}
+		this.renderSelectionToolbar();
+		this.renderFlashcardsList();
+	}
+
+	private handleToggleSelectAll(): void {
+		const allSelected = this.state.selectedCardIds.size === this.state.flashcards.length;
+		if (allSelected) {
+			this.state.selectedCardIds = new Set();
+		} else {
+			this.state.selectedCardIds = new Set(
+				this.state.flashcards.map((c) => c.id).filter((id): id is string => !!id)
+			);
+		}
+		this.renderSelectionToolbar();
+		this.renderFlashcardsList();
+	}
+
+	private handleDeleteSelected(): void {
+		const selectedCount = this.state.selectedCardIds.size;
+		if (selectedCount === 0) return;
+
+		// Remove selected cards
+		this.state.flashcards = this.state.flashcards.filter(
+			(card) => !card.id || !this.state.selectedCardIds.has(card.id)
+		);
+
+		// Exit selection mode
+		this.state.isSelectionMode = false;
+		this.state.selectedCardIds = new Set();
+
+		// Update title and re-render
+		this.updateTitle(`Review Flashcards (${this.state.flashcards.length})`);
+		this.renderSelectionToolbar();
+		this.renderFlashcardsList();
+
+		new Notice(`Deleted ${selectedCount} flashcard${selectedCount !== 1 ? "s" : ""}`);
 	}
 
 	private updateButtons(): void {
-		const activeCount = this.getActiveFlashcards().length;
+		const count = this.state.flashcards.length;
 		if (this.saveButtonEl) {
-			this.saveButtonEl.disabled = activeCount === 0;
-			this.saveButtonEl.textContent = activeCount === 0
+			this.saveButtonEl.disabled = count === 0;
+			this.saveButtonEl.textContent = count === 0
 				? "No cards to save"
-				: `Save ${activeCount} Flashcard${activeCount !== 1 ? "s" : ""}`;
+				: `Save ${count} flashcard${count !== 1 ? "s" : ""}`;
 		}
 	}
 
 	// ===== AI Refine =====
 
 	private async handleRefine(): Promise<void> {
-		const instructions = this.instructionsInputEl?.value.trim();
+		const instructions = this.state.refineInstructions.trim();
 		if (!instructions) {
-			new Notice("Please enter refinement instructions");
+			new Notice("Please enter refinement instructions or select a quick action");
 			return;
 		}
 
-		const activeFlashcards = this.getActiveFlashcards();
-		if (activeFlashcards.length === 0) {
+		if (this.state.flashcards.length === 0) {
 			new Notice("No flashcards to refine");
 			return;
 		}
 
-		this.isRefining = true;
+		this.state.isRefining = true;
 		this.updateRefineButton();
 
 		try {
-			// Call refine method
 			const refined = await this.openRouterService.refineFlashcards(
-				activeFlashcards,
+				this.state.flashcards,
 				instructions
 			);
 
-			// Replace all active (non-deleted) flashcards with the refined set
-			// This allows adding/removing/splitting flashcards
-			const activeIndices = this.flashcards
-				.map((_, i) => i)
-				.filter(i => !this.deletedCardIds.has(i));
+			// Replace flashcards with refined version
+			this.state.flashcards = refined;
+			this.state.expandedCardIndex = null;
+			this.state.editingCardIndex = null;
+			this.state.editingField = null;
 
-			// Remove active flashcards (from end to beginning to preserve indices)
-			for (const index of activeIndices.reverse()) {
-				this.flashcards.splice(index, 1);
-			}
-
-			// Clear deleted set and add refined flashcards
-			this.deletedCardIds.clear();
-			this.flashcards.push(...refined);
-
-			// Update title with new count
-			this.updateTitle(`Review Generated Flashcards (${this.flashcards.length})`);
-
-			// Re-render to show updated content
+			this.updateTitle(`Review Flashcards (${this.state.flashcards.length})`);
 			this.renderFlashcardsList();
-			this.updateButtons();
 
-			const countChange = refined.length - activeFlashcards.length;
-			const countMsg = countChange === 0
-				? "Flashcards refined successfully"
-				: countChange > 0
-					? `Refined successfully: added ${countChange} flashcard${countChange !== 1 ? "s" : ""}`
-					: `Refined successfully: removed ${Math.abs(countChange)} flashcard${Math.abs(countChange) !== 1 ? "s" : ""}`;
-			new Notice(countMsg);
+			new Notice(`Flashcards refined (${refined.length} cards)`);
 		} catch (error) {
 			new Notice(`Refinement failed: ${error instanceof Error ? error.message : String(error)}`);
 		} finally {
-			this.isRefining = false;
+			this.state.isRefining = false;
 			this.updateRefineButton();
 		}
 	}
@@ -600,7 +669,7 @@ export class FlashcardReviewModal extends BaseModal {
 	private updateRefineButton(): void {
 		if (!this.refineButtonEl) return;
 
-		if (this.isRefining) {
+		if (this.state.isRefining) {
 			this.refineButtonEl.disabled = true;
 			this.refineButtonEl.textContent = "Refining...";
 		} else {
@@ -612,8 +681,7 @@ export class FlashcardReviewModal extends BaseModal {
 	// ===== Actions =====
 
 	private handleSave(): void {
-		const finalFlashcards = this.getFinalFlashcards();
-		if (finalFlashcards.length === 0) {
+		if (this.state.flashcards.length === 0) {
 			new Notice("No flashcards to save");
 			return;
 		}
@@ -622,16 +690,14 @@ export class FlashcardReviewModal extends BaseModal {
 		if (this.resolvePromise) {
 			const result: FlashcardReviewResult = {
 				cancelled: false,
-				flashcards: finalFlashcards,
+				flashcards: this.state.flashcards,
 			};
 
-			// Include destination options if creating new note
-			if (this.createNewNote) {
+			if (this.state.createNewNote) {
 				result.createNewNote = true;
-				result.noteType = this.selectedNoteType;
-				// Use custom name if provided, otherwise leave undefined for auto-generation
-				if (this.customNoteName.trim()) {
-					result.noteName = this.customNoteName.trim();
+				result.noteType = this.state.selectedNoteType;
+				if (this.state.customNoteName.trim()) {
+					result.noteName = this.state.customNoteName.trim();
 				}
 			}
 
@@ -656,9 +722,13 @@ export class FlashcardReviewModal extends BaseModal {
 			this.resolvePromise = null;
 		}
 
-		this.component.unload();
+		// Cleanup components
+		this.cardComponents.forEach((c) => c.destroy());
+		this.cardComponents = [];
+		this.addCardComponent?.destroy();
+		this.addCardComponent = null;
 
-		const { contentEl } = this;
-		contentEl.empty();
+		this.component.unload();
+		this.contentEl.empty();
 	}
 }

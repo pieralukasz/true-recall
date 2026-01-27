@@ -46,10 +46,9 @@ export abstract class BaseModal extends Modal {
 
 	private renderHeader(container: HTMLElement): void {
 		const header = container.createDiv({
-			cls: "ep:flex ep:items-center ep:justify-between ep:py-2.5 ep:px-3 ep:pr-10 ep:border-b ep:border-obs-border",
+			cls: "episteme-modal-header",
 		});
-		this.headerTitleEl = header.createEl("h2", { text: this.modalTitle });
-		this.headerTitleEl.addClasses(["ep:m-0", "ep:text-ui-large", "ep:font-semibold"]);
+		this.headerTitleEl = header.createEl("h3", { text: this.modalTitle });
 		// Close button is rendered by Obsidian, we position it via CSS
 	}
 
