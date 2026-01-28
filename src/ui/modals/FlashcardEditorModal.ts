@@ -3,7 +3,7 @@
  * Preview/edit toggle like ReviewView
  * Supports both adding new flashcards and editing existing ones
  */
-import { App, Notice, MarkdownRenderer, Component } from "obsidian";
+import { App, Notice, MarkdownRenderer, Component, setIcon } from "obsidian";
 import { BaseModal } from "./BaseModal";
 import { MediaPickerModal } from "./MediaPickerModal";
 import type { FSRSFlashcardItem } from "../../types";
@@ -22,6 +22,8 @@ export interface FlashcardEditorResult {
 	answer: string;
 	/** New source note path if user changed it (for move operation) */
 	newSourceNotePath?: string;
+	/** AI instruction for generating additional flashcards */
+	aiInstruction?: string;
 }
 
 export interface FlashcardEditorModalOptions {
@@ -73,6 +75,12 @@ export class FlashcardEditorModal extends BaseModal {
 	private newSourceNotePath: string | null = null;
 	private newSourceNoteName: string | null = null;
 	private sourceContainer: HTMLElement | null = null;
+
+	// AI Assist state
+	private aiInstructionValue: string = "";
+	private isAiAssistExpanded: boolean = false;
+	private aiAssistContainer: HTMLElement | null = null;
+	private buttonsContainer: HTMLElement | null = null;
 
 	constructor(app: App, options: FlashcardEditorModalOptions) {
 		super(app, {
@@ -141,6 +149,9 @@ export class FlashcardEditorModal extends BaseModal {
 		this.cleanupFields();
 		this.fieldsContainer.empty();
 
+		// AI Assist section (at the top)
+		this.renderAiAssistSection(this.fieldsContainer);
+
 		// Question section with label
 		const questionSection = this.fieldsContainer.createDiv({ cls: "ep:mb-4" });
 		questionSection.createDiv({
@@ -156,6 +167,79 @@ export class FlashcardEditorModal extends BaseModal {
 			text: "Answer",
 		});
 		this.renderField(answerSection, this.answerValue, "answer");
+	}
+
+	/**
+	 * Render collapsible AI Assist section
+	 */
+	private renderAiAssistSection(container: HTMLElement): void {
+		this.aiAssistContainer = container.createDiv({
+			cls: "ep:mb-4 ep:pb-4 ep:border-b ep:border-obs-border",
+		});
+
+		// Toggle row
+		const toggleRow = this.aiAssistContainer.createDiv({
+			cls: "ep:flex ep:items-center ep:gap-2 ep:cursor-pointer ep:text-obs-muted ep:hover:text-obs-normal ep:transition-colors",
+		});
+
+		const toggleIcon = toggleRow.createSpan({ cls: "ep:w-4 ep:h-4 ep:transition-transform" });
+		setIcon(toggleIcon, this.isAiAssistExpanded ? "chevron-down" : "chevron-right");
+
+		toggleRow.createSpan({
+			text: "AI Assist",
+			cls: "ep:text-ui-smaller ep:font-medium",
+		});
+
+		toggleRow.addEventListener("click", () => {
+			this.isAiAssistExpanded = !this.isAiAssistExpanded;
+			this.renderAiAssistContent();
+			this.updateButtonText();
+		});
+
+		// Content area (shown when expanded)
+		this.renderAiAssistContent();
+	}
+
+	/**
+	 * Render AI Assist content (expanded/collapsed)
+	 */
+	private renderAiAssistContent(): void {
+		if (!this.aiAssistContainer) return;
+
+		// Remove existing content (keep toggle row)
+		const existingContent = this.aiAssistContainer.querySelector(".ai-assist-content");
+		if (existingContent) {
+			existingContent.remove();
+		}
+
+		if (this.isAiAssistExpanded) {
+			const contentEl = this.aiAssistContainer.createDiv({ cls: "ai-assist-content ep:mt-2" });
+			const textarea = contentEl.createEl("textarea", {
+				cls: "ep:w-full ep:min-h-20 ep:p-3 ep:border ep:border-obs-border ep:rounded-lg ep:bg-obs-primary ep:text-obs-normal ep:text-ui-small ep:resize-y ep:focus:outline-none ep:focus:border-obs-interactive ep:placeholder:text-obs-muted",
+				placeholder: "np. stwórz podobne fiszki, rozwiń temat, dodaj więcej przykładów...",
+			});
+			textarea.value = this.aiInstructionValue;
+			textarea.addEventListener("input", () => {
+				this.aiInstructionValue = textarea.value;
+				this.updateButtonText();
+			});
+		}
+	}
+
+	/**
+	 * Update save button text based on AI instruction
+	 */
+	private updateButtonText(): void {
+		if (!this.saveButton) return;
+
+		const hasAiInstruction = this.aiInstructionValue.trim().length > 0;
+		let buttonText: string;
+		if (this.options.mode === "add") {
+			buttonText = hasAiInstruction ? "Add & Generate" : "Add flashcard";
+		} else {
+			buttonText = hasAiInstruction ? "Save & Generate" : "Save changes";
+		}
+		this.saveButton.textContent = buttonText;
 	}
 
 	/**
@@ -414,16 +498,17 @@ export class FlashcardEditorModal extends BaseModal {
 	 * Render action buttons
 	 */
 	private renderButtons(container: HTMLElement): void {
-		const buttonsEl = container.createDiv({ cls: "ep:flex ep:justify-end ep:gap-3 ep:mt-5 ep:pt-4 ep:border-t ep:border-obs-border" });
+		this.buttonsContainer = container.createDiv({ cls: "ep:flex ep:justify-end ep:gap-3 ep:mt-5 ep:pt-4 ep:border-t ep:border-obs-border" });
 
-		const cancelBtn = buttonsEl.createEl("button", {
+		const cancelBtn = this.buttonsContainer.createEl("button", {
 			text: "Cancel",
 			cls: "ep:py-2.5 ep:px-5 ep:bg-obs-secondary ep:text-obs-normal ep:border ep:border-obs-border ep:rounded-md ep:cursor-pointer ep:font-medium ep:transition-colors ep:hover:bg-obs-modifier-hover",
 		});
 		cancelBtn.addEventListener("click", () => this.close());
 
+		// Initial button text (will be updated by updateButtonText if AI instruction changes)
 		const buttonText = this.options.mode === "add" ? "Add flashcard" : "Save changes";
-		this.saveButton = buttonsEl.createEl("button", {
+		this.saveButton = this.buttonsContainer.createEl("button", {
 			text: buttonText,
 			cls: "ep:py-2.5 ep:px-5 ep:bg-obs-interactive ep:text-white ep:border-none ep:rounded-md ep:cursor-pointer ep:font-medium ep:transition-colors ep:hover:bg-obs-interactive-hover ep:disabled:opacity-50 ep:disabled:cursor-not-allowed",
 		});
@@ -630,6 +715,7 @@ export class FlashcardEditorModal extends BaseModal {
 				question,
 				answer,
 				newSourceNotePath: this.newSourceNotePath ?? undefined,
+				aiInstruction: this.aiInstructionValue.trim() || undefined,
 			});
 			this.resolvePromise = null;
 		}
