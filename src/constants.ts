@@ -1,31 +1,31 @@
-import type { EpistemeSettings } from "./types/settings.types";
+import type { TrueRecallSettings } from "./types/settings.types";
 import type { GeneratedNoteType } from "./types/flashcard.types";
 
 // ===== View Types =====
 
 /** View type identifier for the sidebar panel */
-export const VIEW_TYPE_FLASHCARD_PANEL = "episteme-flashcard-panel";
+export const VIEW_TYPE_FLASHCARD_PANEL = "true-recall-flashcard-panel";
 
 /** View type identifier for the review session */
-export const VIEW_TYPE_REVIEW = "episteme-review";
+export const VIEW_TYPE_REVIEW = "true-recall-review";
 
 /** View type identifier for the statistics panel */
-export const VIEW_TYPE_STATS = "episteme-stats";
+export const VIEW_TYPE_STATS = "true-recall-stats";
 
 /** View type identifier for the session panel */
-export const VIEW_TYPE_SESSION = "episteme-session";
+export const VIEW_TYPE_SESSION = "true-recall-session";
 
 /** View type identifier for the dashboard panel */
-export const VIEW_TYPE_DASHBOARD = "episteme-dashboard";
+export const VIEW_TYPE_DASHBOARD = "true-recall-dashboard";
 
 /** View type identifier for the projects panel */
-export const VIEW_TYPE_PROJECTS = "episteme-projects";
+export const VIEW_TYPE_PROJECTS = "true-recall-projects";
 
 /** View type identifier for the browser panel */
-export const VIEW_TYPE_BROWSER = "episteme-browser";
+export const VIEW_TYPE_BROWSER = "true-recall-browser";
 
 /** View type identifier for the FSRS simulator */
-export const VIEW_TYPE_SIMULATOR = "episteme-simulator";
+export const VIEW_TYPE_SIMULATOR = "true-recall-simulator";
 
 // ===== AI Models =====
 
@@ -93,7 +93,7 @@ export type AIModelKey = keyof typeof AI_MODELS;
 // ===== Default Settings =====
 
 /** Default plugin settings */
-export const DEFAULT_SETTINGS: EpistemeSettings = {
+export const DEFAULT_SETTINGS: TrueRecallSettings = {
 	// AI Generation
 	openRouterApiKey: "",
 	aiModel: "google/gemini-3-flash-preview" as AIModelKey,
@@ -435,7 +435,7 @@ export const OPENROUTER_API_URL =
  * Episteme Cloud Supabase credentials (public anon key)
  * Safe to expose - RLS policies protect data per-user
  */
-export const EPISTEME_CLOUD = {
+export const TRUE_RECALL_CLOUD = {
 	supabaseUrl: "https://webogcxwvgbwdcjibbno.supabase.co",
 	supabaseAnonKey:
 		"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6IndlYm9nY3h3dmdid2RjamliYm5vIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjkyNTE4NzYsImV4cCI6MjA4NDgyNzg3Nn0.IGrKykHY1gC-knNSy0jX1MF9vWp_b6YCURWyBXRmt0U",

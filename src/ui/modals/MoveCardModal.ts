@@ -52,7 +52,7 @@ export class MoveCardModal extends BasePromiseModal<MoveCardResult> {
 
 	onOpen(): void {
 		super.onOpen();
-		this.contentEl.addClass("episteme-move-card-modal");
+		this.contentEl.addClass("true-recall-move-card-modal");
 
 		// Get all valid notes (excluding flashcard files)
 		this.allNotes = this.getValidNotes();

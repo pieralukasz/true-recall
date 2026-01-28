@@ -2,7 +2,7 @@
  * Central export for settings UI
  */
 export {
-    EpistemeSettingTab,
-    type EpistemeSettings,
+    TrueRecallSettingTab,
+    type TrueRecallSettings,
     DEFAULT_SETTINGS,
 } from "./SettingsTab";

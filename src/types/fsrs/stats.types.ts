@@ -20,7 +20,7 @@ export interface DailyStats {
 }
 
 /**
- * Persistent daily statistics stored in .episteme/stats.json
+ * Persistent daily statistics stored in .true-recall/stats.json
  */
 export interface PersistentDailyStats {
     /** Date in YYYY-MM-DD format */

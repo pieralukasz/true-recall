@@ -8,7 +8,7 @@ import type { PersistentStatsData, ExtendedDailyStats, Grade } from "../../types
 import type { SqliteStoreService } from "./sqlite";
 import type { DayBoundaryService } from "../core/day-boundary.service";
 
-const STATS_FOLDER = ".episteme";
+const STATS_FOLDER = ".true-recall";
 const STATS_FILE = "stats.json";
 
 /**

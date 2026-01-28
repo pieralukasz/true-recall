@@ -116,7 +116,7 @@ export class FlashcardReviewModal extends BaseModal {
 
 	onOpen(): void {
 		super.onOpen();
-		this.contentEl.addClass("episteme-review-flashcards-modal");
+		this.contentEl.addClass("true-recall-review-flashcards-modal");
 		this.component.load();
 	}
 
@@ -318,14 +318,14 @@ export class FlashcardReviewModal extends BaseModal {
 			type: "checkbox",
 			cls: "ep:w-4 ep:h-4 ep:accent-obs-interactive ep:cursor-pointer",
 		});
-		checkbox.id = "episteme-create-new-note";
+		checkbox.id = "true-recall-create-new-note";
 		checkbox.checked = this.state.createNewNote;
 
 		const label = checkboxRow.createEl("label", {
 			text: "Create new note for these flashcards",
 			cls: "ep:text-ui-small ep:font-medium ep:text-obs-normal ep:cursor-pointer",
 		});
-		label.htmlFor = "episteme-create-new-note";
+		label.htmlFor = "true-recall-create-new-note";
 
 		// Options container (hidden by default)
 		this.destinationOptionsEl = sectionEl.createDiv({
@@ -360,13 +360,13 @@ export class FlashcardReviewModal extends BaseModal {
 			});
 			radio.name = "note-type";
 			radio.value = typeKey;
-			radio.id = `episteme-note-type-${typeKey}`;
+			radio.id = `true-recall-note-type-${typeKey}`;
 			radio.checked = isSelected;
 
 			const radioLabel = radioItem.createEl("label", {
 				cls: "ep:flex ep:flex-col ep:gap-0.5 ep:cursor-pointer ep:flex-1",
 			});
-			radioLabel.htmlFor = `episteme-note-type-${typeKey}`;
+			radioLabel.htmlFor = `true-recall-note-type-${typeKey}`;
 
 			radioLabel.createEl("span", {
 				text: config.label,

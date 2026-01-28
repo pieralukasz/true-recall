@@ -259,7 +259,7 @@ Format each as: [Question text] #flashcard\\n[Answer text]`;
                 Authorization: `Bearer ${this.apiKey}`,
                 "Content-Type": "application/json",
                 "HTTP-Referer": "obsidian://episteme",
-                "X-Title": "Episteme",
+                "X-Title": "True Recall",
             },
             body: JSON.stringify(requestBody),
         };

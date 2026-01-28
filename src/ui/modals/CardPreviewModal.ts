@@ -34,7 +34,7 @@ export class CardPreviewModal extends BaseModal {
 	onOpen(): void {
 		this.component.load();
 		super.onOpen();
-		this.contentEl.addClass("episteme-card-preview-modal");
+		this.contentEl.addClass("true-recall-card-preview-modal");
 	}
 
 	protected renderBody(container: HTMLElement): void {

@@ -6,7 +6,7 @@
  * by design - security relies on RLS (Row Level Security) policies.
  */
 import { createClient, SupabaseClient, User, Session } from "@supabase/supabase-js";
-import { EPISTEME_CLOUD } from "../../constants";
+import { TRUE_RECALL_CLOUD } from "../../constants";
 
 export interface AuthState {
 	user: User | null;
@@ -30,8 +30,8 @@ export class AuthService {
 
 	constructor() {
 		// Use hardcoded Episteme Cloud credentials (SaaS model)
-		this.supabaseUrl = EPISTEME_CLOUD.supabaseUrl;
-		this.supabaseAnonKey = EPISTEME_CLOUD.supabaseAnonKey;
+		this.supabaseUrl = TRUE_RECALL_CLOUD.supabaseUrl;
+		this.supabaseAnonKey = TRUE_RECALL_CLOUD.supabaseAnonKey;
 		this.client = this.createClient();
 	}
 

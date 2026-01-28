@@ -44,7 +44,7 @@ export class SelectNoteModal extends BasePromiseModal<SelectNoteResult> {
 
 	onOpen(): void {
 		super.onOpen();
-		this.contentEl.addClass("episteme-select-note-modal");
+		this.contentEl.addClass("true-recall-select-note-modal");
 
 		// Get all valid notes
 		this.allNotes = this.getValidNotes();

@@ -38,7 +38,7 @@ export class RestoreBackupModal extends BasePromiseModal<RestoreBackupResult> {
 
     protected renderBody(container: HTMLElement): void {
         // Warning message
-        const warningEl = container.createDiv({ cls: "episteme-backup-warning" });
+        const warningEl = container.createDiv({ cls: "true-recall-backup-warning" });
         warningEl.createEl("p", {
             text: "Restoring a backup will replace your current database. A safety backup will be created automatically before restoration.",
         });
@@ -49,7 +49,7 @@ export class RestoreBackupModal extends BasePromiseModal<RestoreBackupResult> {
         warningEl.style.color = "var(--text-on-accent)";
 
         // Backup list
-        const listContainer = container.createDiv({ cls: "episteme-backup-list" });
+        const listContainer = container.createDiv({ cls: "true-recall-backup-list" });
         listContainer.style.maxHeight = "300px";
         listContainer.style.overflowY = "auto";
         listContainer.style.marginBottom = "16px";
@@ -57,7 +57,7 @@ export class RestoreBackupModal extends BasePromiseModal<RestoreBackupResult> {
         if (this.backups.length === 0) {
             listContainer.createEl("p", {
                 text: "No backups available.",
-                cls: "episteme-no-backups",
+                cls: "true-recall-no-backups",
             });
         } else {
             for (const backup of this.backups) {
@@ -66,7 +66,7 @@ export class RestoreBackupModal extends BasePromiseModal<RestoreBackupResult> {
         }
 
         // Actions
-        const actionsEl = container.createDiv({ cls: "episteme-modal-actions" });
+        const actionsEl = container.createDiv({ cls: "true-recall-modal-actions" });
         actionsEl.style.display = "flex";
         actionsEl.style.justifyContent = "flex-end";
         actionsEl.style.gap = "8px";
@@ -88,7 +88,7 @@ export class RestoreBackupModal extends BasePromiseModal<RestoreBackupResult> {
     private restoreButton: HTMLButtonElement | null = null;
 
     private renderBackupItem(container: HTMLElement, backup: BackupInfo): void {
-        const itemEl = container.createDiv({ cls: "episteme-backup-item" });
+        const itemEl = container.createDiv({ cls: "true-recall-backup-item" });
         itemEl.style.display = "flex";
         itemEl.style.justifyContent = "space-between";
         itemEl.style.alignItems = "center";
@@ -103,13 +103,13 @@ export class RestoreBackupModal extends BasePromiseModal<RestoreBackupResult> {
         const infoEl = itemEl.createDiv();
         infoEl.createDiv({
             text: backup.formattedDate,
-            cls: "episteme-backup-date",
+            cls: "true-recall-backup-date",
         }).style.fontWeight = "500";
         infoEl.createDiv({
             text: backup.filename,
-            cls: "episteme-backup-filename",
+            cls: "true-recall-backup-filename",
         }).style.fontSize = "0.85em";
-        infoEl.querySelector(".episteme-backup-filename")?.setAttribute("style",
+        infoEl.querySelector(".true-recall-backup-filename")?.setAttribute("style",
             "font-size: 0.85em; color: var(--text-muted);");
 
         // Right side: size and delete button
@@ -120,7 +120,7 @@ export class RestoreBackupModal extends BasePromiseModal<RestoreBackupResult> {
 
         rightEl.createSpan({
             text: backup.formattedSize,
-            cls: "episteme-backup-size",
+            cls: "true-recall-backup-size",
         }).style.color = "var(--text-muted)";
 
         const deleteBtn = rightEl.createEl("button", { text: "Delete" });
@@ -133,7 +133,7 @@ export class RestoreBackupModal extends BasePromiseModal<RestoreBackupResult> {
         // Selection handling
         itemEl.addEventListener("click", () => {
             // Remove selection from all items
-            container.querySelectorAll(".episteme-backup-item").forEach(el => {
+            container.querySelectorAll(".true-recall-backup-item").forEach(el => {
                 (el as HTMLElement).style.backgroundColor = "var(--background-secondary)";
                 (el as HTMLElement).style.border = "none";
             });

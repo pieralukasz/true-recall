@@ -81,7 +81,7 @@ export class CalendarHeatmap extends BaseComponent {
 				"ep:flex-nowrap",
 				"ep:overflow-x-auto",
 				"ep:pb-2",
-				"episteme-scrollbar-thin",
+				"true-recall-scrollbar-thin",
 			].join(" "),
 		});
 

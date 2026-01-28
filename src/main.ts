@@ -45,8 +45,8 @@ import { BrowserView } from "./ui/browser";
 import { SimulatorView } from "./ui/simulator";
 import { FloatingGenerateButton } from "./ui/components/FloatingGenerateButton";
 import {
-	EpistemeSettingTab,
-	type EpistemeSettings,
+	TrueRecallSettingTab,
+	type TrueRecallSettings,
 	DEFAULT_SETTINGS,
 } from "./ui/settings";
 import {
@@ -66,8 +66,8 @@ import {
 	closeAllViews,
 } from "./plugin/ViewActivator";
 
-export default class EpistemePlugin extends Plugin {
-	settings!: EpistemeSettings;
+export default class TrueRecallPlugin extends Plugin {
+	settings!: TrueRecallSettings;
 	flashcardManager!: FlashcardManager;
 	openRouterService!: OpenRouterService;
 	fsrsService!: FSRSService;
@@ -168,17 +168,17 @@ export default class EpistemePlugin extends Plugin {
 		);
 
 		// Add ribbon icon to start review
-		this.addRibbonIcon("brain", "Episteme - Study", () => {
+		this.addRibbonIcon("brain", "True Recall - Study", () => {
 			void this.startReviewSession();
 		});
 
 		// Add ribbon icon to open statistics
-		this.addRibbonIcon("bar-chart-2", "Episteme - Statistics", () => {
+		this.addRibbonIcon("bar-chart-2", "True Recall - Statistics", () => {
 			void this.openStatsView();
 		});
 
 		// Add ribbon icon for command dashboard
-		this.addRibbonIcon("blocks", "Episteme - Command Dashboard", () => {
+		this.addRibbonIcon("blocks", "True Recall - Command Dashboard", () => {
 			this.openCommandDashboard();
 		});
 
@@ -190,7 +190,7 @@ export default class EpistemePlugin extends Plugin {
 		registerCommands(this);
 
 		// Register settings tab
-		this.addSettingTab(new EpistemeSettingTab(this.app, this));
+		this.addSettingTab(new TrueRecallSettingTab(this.app, this));
 
 		// Register event handlers (extracted to PluginEventHandlers.ts)
 		registerEventHandlers(this);
@@ -241,7 +241,7 @@ export default class EpistemePlugin extends Plugin {
 		this.settings = Object.assign(
 			{},
 			DEFAULT_SETTINGS,
-			(await this.loadData()) as Partial<EpistemeSettings>
+			(await this.loadData()) as Partial<TrueRecallSettings>
 		);
 	}
 

@@ -32,7 +32,7 @@ export class TemplatePickerModal extends BasePromiseModal<TemplatePickerResult> 
 
 	onOpen(): void {
 		super.onOpen();
-		this.contentEl.addClass("episteme-template-picker-modal");
+		this.contentEl.addClass("true-recall-template-picker-modal");
 
 		// Get all markdown files, prioritizing template folders
 		this.allTemplates = this.getTemplateFiles();

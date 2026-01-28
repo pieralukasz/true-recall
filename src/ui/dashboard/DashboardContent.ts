@@ -5,7 +5,7 @@
 import { Notice } from "obsidian";
 import { BaseComponent } from "../component.base";
 import { CommandCategory, type CommandDefinition, type CommandCategoryConfig } from "../../types/command.types";
-import type EpistemePlugin from "../../main";
+import type TrueRecallPlugin from "../../main";
 
 /**
  * Command category configurations
@@ -58,7 +58,7 @@ const ICON_MAP: Record<string, string> = {
 };
 
 export interface DashboardContentProps {
-	plugin: EpistemePlugin;
+	plugin: TrueRecallPlugin;
 	onCommandExecuted: () => void;
 }
 

@@ -35,12 +35,12 @@ import {
 	insertAtTextareaCursor,
 	setupAutoResize,
 } from "../components";
-import type EpistemePlugin from "../../main";
+import type TrueRecallPlugin from "../../main";
 import type { ReviewViewState, UndoEntry } from "./review.types";
 import { CardActionsHandler, KeyboardHandler } from "./handlers";
 
 export class ReviewView extends ItemView {
-	private plugin: EpistemePlugin;
+	private plugin: TrueRecallPlugin;
 	private fsrsService: FSRSService;
 	private reviewService: ReviewService;
 	private flashcardManager: FlashcardManager;
@@ -90,7 +90,7 @@ export class ReviewView extends ItemView {
 	// Timer for waiting screen countdown
 	private waitingTimer: ReturnType<typeof setInterval> | null = null;
 
-	constructor(leaf: WorkspaceLeaf, plugin: EpistemePlugin) {
+	constructor(leaf: WorkspaceLeaf, plugin: TrueRecallPlugin) {
 		super(leaf);
 		this.plugin = plugin;
 		this.flashcardManager = plugin.flashcardManager;
@@ -225,7 +225,7 @@ export class ReviewView extends ItemView {
 		if (!(container instanceof HTMLElement)) return;
 		container.empty();
 		container.addClass(
-			"episteme-review",
+			"true-recall-review",
 			"ep:flex",
 			"ep:flex-col",
 			"ep:h-full",
@@ -237,7 +237,7 @@ export class ReviewView extends ItemView {
 			cls: "ep:flex ep:justify-center ep:items-center ep:border-b ep:border-obs-border ep:relative ep:shrink-0 ep:p-2 ep:pb-4",
 		});
 		this.cardContainerEl = container.createDiv({
-			cls: "episteme-review-card-container ep:flex-1 ep:min-h-0 ep:flex ep:items-start ep:justify-center ep:p-2 ep:mt-8 ep:overflow-y-auto",
+			cls: "true-recall-review-card-container ep:flex-1 ep:min-h-0 ep:flex ep:items-start ep:justify-center ep:p-2 ep:mt-8 ep:overflow-y-auto",
 		});
 
 		// Clear text selection when clicking outside content
@@ -248,7 +248,7 @@ export class ReviewView extends ItemView {
 		});
 
 		this.buttonsEl = container.createDiv({
-			cls: "episteme-review-buttons ep:flex ep:justify-center ep:gap-3 ep:border-t ep:border-obs-border ep:flex-nowrap ep:shrink-0 ep:p-4",
+			cls: "true-recall-review-buttons ep:flex ep:justify-center ep:gap-3 ep:border-t ep:border-obs-border ep:flex-nowrap ep:shrink-0 ep:p-4",
 		});
 
 		// Subscribe to state changes - update render and header actions
@@ -713,7 +713,7 @@ export class ReviewView extends ItemView {
 
 		// Question (always visible)
 		const questionEl = cardEl.createDiv({
-			cls: "episteme-review-question ep:text-xl ep:leading-relaxed ep:text-obs-normal ep:mb-6",
+			cls: "true-recall-review-question ep:text-xl ep:leading-relaxed ep:text-obs-normal ep:mb-6",
 		});
 		if (isEditingQuestion) {
 			// Edit mode - contenteditable
@@ -746,7 +746,7 @@ export class ReviewView extends ItemView {
 			});
 
 			const answerEl = cardEl.createDiv({
-				cls: "episteme-review-answer ep:text-lg ep:leading-relaxed ep:text-obs-muted",
+				cls: "true-recall-review-answer ep:text-lg ep:leading-relaxed ep:text-obs-muted",
 			});
 			if (isEditingAnswer) {
 				// Edit mode - contenteditable
@@ -902,7 +902,7 @@ export class ReviewView extends ItemView {
 		}
 		this.stateManager.startEdit(field);
 		this.cardContainerEl.addClass(
-			"episteme-review-card-container--editing"
+			"true-recall-review-card-container--editing"
 		);
 		this.renderCard();
 		this.renderButtons(); // Hide buttons when entering edit mode (prevents keyboard overlap on mobile)
@@ -945,7 +945,7 @@ export class ReviewView extends ItemView {
 		textarea.addEventListener("blur", (e) => {
 			// Don't blur if clicking toolbar
 			const relatedTarget = e.relatedTarget as HTMLElement;
-			if (relatedTarget?.closest(".episteme-edit-toolbar")) return;
+			if (relatedTarget?.closest(".true-recall-edit-toolbar")) return;
 			void this.saveEditFromTextarea(textarea, field);
 		});
 		textarea.addEventListener("keydown", (e) =>
@@ -1004,7 +1004,7 @@ export class ReviewView extends ItemView {
 		textarea: HTMLTextAreaElement
 	): void {
 		const toolbar = container.createDiv({
-			cls: "episteme-edit-toolbar ep:flex ep:flex-wrap ep:justify-center ep:gap-1 ep:py-2 ep:border-t ep:border-obs-border ep:absolute ep:left-0 ep:right-0 ep:top-full ep:mt-4 ep:z-10",
+			cls: "true-recall-edit-toolbar ep:flex ep:flex-wrap ep:justify-center ep:gap-1 ep:py-2 ep:border-t ep:border-obs-border ep:absolute ep:left-0 ep:right-0 ep:top-full ep:mt-4 ep:z-10",
 		});
 
 		const buttons = [
@@ -1119,7 +1119,7 @@ export class ReviewView extends ItemView {
 		// Exit edit mode
 		this.stateManager.cancelEdit();
 		this.cardContainerEl.removeClass(
-			"episteme-review-card-container--editing"
+			"true-recall-review-card-container--editing"
 		);
 		this.renderCard();
 		this.renderButtons(); // Restore buttons after exiting edit mode

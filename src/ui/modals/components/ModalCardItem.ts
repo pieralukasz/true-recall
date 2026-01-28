@@ -110,7 +110,7 @@ export class ModalCardItem extends BaseComponent {
 
 		// Question content (markdown rendered)
 		const questionEl = mainRow.createDiv({
-			cls: "ep:flex-1 ep:text-ui-small ep:text-obs-normal ep:line-clamp-2 episteme-card-markdown",
+			cls: "ep:flex-1 ep:text-ui-small ep:text-obs-normal ep:line-clamp-2 true-recall-card-markdown",
 		});
 		void MarkdownRenderer.render(app, card.question, questionEl, "", component);
 
@@ -197,7 +197,7 @@ export class ModalCardItem extends BaseComponent {
 
 		// Question content
 		const questionContent = questionRow.createDiv({
-			cls: "ep:flex-1 ep:text-ui-small ep:text-obs-normal episteme-card-markdown",
+			cls: "ep:flex-1 ep:text-ui-small ep:text-obs-normal true-recall-card-markdown",
 		});
 		void MarkdownRenderer.render(app, card.question, questionContent, "", component);
 
@@ -229,7 +229,7 @@ export class ModalCardItem extends BaseComponent {
 		});
 
 		const answerContent = answerSection.createDiv({
-			cls: "ep:text-ui-small ep:text-obs-muted episteme-card-markdown",
+			cls: "ep:text-ui-small ep:text-obs-muted true-recall-card-markdown",
 		});
 		void MarkdownRenderer.render(app, card.answer, answerContent, "", component);
 

@@ -4,14 +4,14 @@
  */
 import { TFile } from "obsidian";
 import type { ToolContext } from "../types";
-import type EpistemePlugin from "../../main";
+import type TrueRecallPlugin from "../../main";
 import { getEventBus } from "../../services/core/event-bus.service";
 
 /**
  * Create a ToolContext from the plugin instance
  * Provides all services and utilities needed for tool execution
  */
-export function createToolContext(plugin: EpistemePlugin): ToolContext {
+export function createToolContext(plugin: TrueRecallPlugin): ToolContext {
 	return {
 		// Core services
 		flashcardManager: plugin.flashcardManager,

@@ -135,7 +135,7 @@ export class FlashcardPanelHeader extends BaseComponent {
         // Collect button (pulsing when available)
         if (this.props.hasUncollectedFlashcards && this.props.onCollect) {
             const collectBtn = actionsEl.createEl("button", {
-                cls: `${textBtnCls} episteme-pulse-collect`,
+                cls: `${textBtnCls} true-recall-pulse-collect`,
                 attr: {
                     "aria-label": `Collect ${this.props.uncollectedCount} flashcards`,
                 },
