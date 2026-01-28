@@ -56,7 +56,7 @@ export abstract class BaseModal extends Modal {
 		contentEl.empty();
 
 		// Add base class (keep for CSS selectors that need :has() targeting)
-		contentEl.addClass("episteme-modal");
+		contentEl.addClass("true-recall-modal");
 
 		// Set width on .modal container
 		modalEl.style.width = this.modalWidth;

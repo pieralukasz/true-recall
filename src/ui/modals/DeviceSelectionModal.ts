@@ -44,7 +44,7 @@ export class DeviceSelectionModal extends BasePromiseModal<DeviceSelectionResult
 
     constructor(app: App, options: DeviceSelectionModalOptions) {
         super(app, {
-            title: "Episteme Database Setup",
+            title: "True Recall Database Setup",
             width: "480px",
         });
         this.databases = options.databases;
@@ -57,14 +57,14 @@ export class DeviceSelectionModal extends BasePromiseModal<DeviceSelectionResult
 
     protected renderBody(container: HTMLElement): void {
         // Introduction
-        const introEl = container.createDiv({ cls: "episteme-device-intro" });
+        const introEl = container.createDiv({ cls: "true-recall-device-intro" });
         introEl.createEl("p", {
             text: "Choose how to initialize the database on this device:",
         });
         introEl.style.marginBottom = "16px";
 
         // Radio group container
-        const optionsEl = container.createDiv({ cls: "episteme-device-options" });
+        const optionsEl = container.createDiv({ cls: "true-recall-device-options" });
 
         // Option 1: Start fresh
         const freshOption = this.createRadioOption(
@@ -86,7 +86,7 @@ export class DeviceSelectionModal extends BasePromiseModal<DeviceSelectionResult
 
             // Database list (shown when import is selected)
             const dbListContainer = container.createDiv({
-                cls: "episteme-device-db-list",
+                cls: "true-recall-device-db-list",
             });
             dbListContainer.style.display = "none";
             dbListContainer.style.marginLeft = "28px";
@@ -116,7 +116,7 @@ export class DeviceSelectionModal extends BasePromiseModal<DeviceSelectionResult
         }
 
         // Actions
-        const actionsEl = container.createDiv({ cls: "episteme-modal-actions" });
+        const actionsEl = container.createDiv({ cls: "true-recall-modal-actions" });
         actionsEl.style.display = "flex";
         actionsEl.style.justifyContent = "flex-end";
         actionsEl.style.gap = "8px";
@@ -141,7 +141,7 @@ export class DeviceSelectionModal extends BasePromiseModal<DeviceSelectionResult
         label: string,
         description: string
     ): { itemEl: HTMLElement; radioEl: HTMLInputElement } {
-        const itemEl = container.createDiv({ cls: "episteme-device-option" });
+        const itemEl = container.createDiv({ cls: "true-recall-device-option" });
         itemEl.style.display = "flex";
         itemEl.style.alignItems = "flex-start";
         itemEl.style.gap = "12px";
@@ -175,7 +175,7 @@ export class DeviceSelectionModal extends BasePromiseModal<DeviceSelectionResult
         // Highlight on selection
         radioEl.addEventListener("change", () => {
             container
-                .querySelectorAll(".episteme-device-option")
+                .querySelectorAll(".true-recall-device-option")
                 .forEach((el) => {
                     (el as HTMLElement).style.backgroundColor =
                         "var(--background-secondary)";
@@ -198,7 +198,7 @@ export class DeviceSelectionModal extends BasePromiseModal<DeviceSelectionResult
         container: HTMLElement,
         db: DeviceDatabaseInfo
     ): void {
-        const itemEl = container.createDiv({ cls: "episteme-device-db-item" });
+        const itemEl = container.createDiv({ cls: "true-recall-device-db-item" });
         itemEl.style.display = "flex";
         itemEl.style.justifyContent = "space-between";
         itemEl.style.alignItems = "center";
@@ -219,7 +219,7 @@ export class DeviceSelectionModal extends BasePromiseModal<DeviceSelectionResult
         headerEl.createSpan({ text: "📱" });
         headerEl.createSpan({
             text: db.deviceId,
-            cls: "episteme-device-id",
+            cls: "true-recall-device-id",
         }).style.fontFamily = "monospace";
 
         // Card count and last review
@@ -249,7 +249,7 @@ export class DeviceSelectionModal extends BasePromiseModal<DeviceSelectionResult
         // Selection handling
         itemEl.addEventListener("click", () => {
             // Remove selection from all items
-            container.querySelectorAll(".episteme-device-db-item").forEach((el) => {
+            container.querySelectorAll(".true-recall-device-db-item").forEach((el) => {
                 (el as HTMLElement).style.backgroundColor =
                     "var(--background-secondary)";
                 (el as HTMLElement).style.border = "none";

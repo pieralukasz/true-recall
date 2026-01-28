@@ -6,8 +6,8 @@
  * maintains its own unique identifier.
  */
 
-const DEVICE_ID_KEY = "episteme-device-id";
-const DEVICE_LABEL_KEY = "episteme-device-label";
+const DEVICE_ID_KEY = "true-recall-device-id";
+const DEVICE_LABEL_KEY = "true-recall-device-label";
 const DEVICE_ID_LENGTH = 8;
 
 /**

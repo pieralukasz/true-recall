@@ -328,7 +328,7 @@ export class EditableTextField extends BaseComponent {
 		this.events.addEventListener(this.textarea, "blur", (e) => {
 			// Don't save if clicking toolbar
 			const relatedTarget = (e as FocusEvent).relatedTarget as HTMLElement;
-			if (relatedTarget?.closest(".episteme-edit-toolbar")) return;
+			if (relatedTarget?.closest(".true-recall-edit-toolbar")) return;
 
 			this.props.onSave?.(this.getValue());
 		});

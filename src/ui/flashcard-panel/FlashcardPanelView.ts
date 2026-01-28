@@ -29,13 +29,13 @@ import type { FlashcardItem, FlashcardChange } from "../../types";
 import type { CardAddedEvent, CardRemovedEvent, CardUpdatedEvent, BulkChangeEvent } from "../../types/events.types";
 import { createDefaultFSRSData } from "../../types";
 import { State } from "ts-fsrs";
-import type EpistemePlugin from "../../main";
+import type TrueRecallPlugin from "../../main";
 
 /**
  * Main flashcard panel view
  */
 export class FlashcardPanelView extends ItemView {
-    private plugin: EpistemePlugin;
+    private plugin: TrueRecallPlugin;
     private flashcardManager: FlashcardManager;
     private openRouterService: OpenRouterService;
     private stateManager: PanelStateManager;
@@ -76,7 +76,7 @@ export class FlashcardPanelView extends ItemView {
     // Mobile header FSRS status element
     private mobileStatusEl: HTMLElement | null = null;
 
-    constructor(leaf: WorkspaceLeaf, plugin: EpistemePlugin) {
+    constructor(leaf: WorkspaceLeaf, plugin: TrueRecallPlugin) {
         super(leaf);
         this.plugin = plugin;
         this.flashcardManager = plugin.flashcardManager;
@@ -90,7 +90,7 @@ export class FlashcardPanelView extends ItemView {
     }
 
     getDisplayText(): string {
-        return "Episteme";
+        return "True Recall";
     }
 
     getIcon(): string {
@@ -1329,14 +1329,14 @@ export class FlashcardPanelView extends ItemView {
         const titleContainer = this.containerEl.querySelector(".view-header-title-container");
         if (!titleContainer) return;
 
-        // Hide the "Episteme" title
+        // Hide the "True Recall" title
         const titleEl = titleContainer.querySelector(".view-header-title") as HTMLElement;
         if (titleEl) {
             titleEl.style.display = "none";
         }
 
         // Create status element
-        this.mobileStatusEl = createDiv({ cls: "episteme-mobile-status" });
+        this.mobileStatusEl = createDiv({ cls: "true-recall-mobile-status" });
         titleContainer.appendChild(this.mobileStatusEl);
     }
 

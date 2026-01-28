@@ -51,7 +51,7 @@ export class MediaPickerModal extends BasePromiseModal<MediaPickerResult> {
 
 	onOpen(): void {
 		super.onOpen();
-		this.contentEl.addClass("episteme-media-picker-modal");
+		this.contentEl.addClass("true-recall-media-picker-modal");
 
 		// Initialize render component for preview
 		this.renderComponent = new Component();
@@ -97,16 +97,16 @@ export class MediaPickerModal extends BasePromiseModal<MediaPickerResult> {
         // Drag and drop handlers
         zone.addEventListener("dragover", (e) => {
             e.preventDefault();
-            zone.addClass("episteme-paste-zone-active");
+            zone.addClass("true-recall-paste-zone-active");
         });
 
         zone.addEventListener("dragleave", () => {
-            zone.removeClass("episteme-paste-zone-active");
+            zone.removeClass("true-recall-paste-zone-active");
         });
 
         zone.addEventListener("drop", async (e) => {
             e.preventDefault();
-            zone.removeClass("episteme-paste-zone-active");
+            zone.removeClass("true-recall-paste-zone-active");
 
             const files = e.dataTransfer?.files;
             if (files && files.length > 0) {

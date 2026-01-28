@@ -5,7 +5,7 @@
 import { ItemView, WorkspaceLeaf } from "obsidian";
 import { VIEW_TYPE_DASHBOARD } from "../../constants";
 import { DashboardContent } from "./DashboardContent";
-import type EpistemePlugin from "../../main";
+import type TrueRecallPlugin from "../../main";
 
 /**
  * Dashboard View
@@ -13,7 +13,7 @@ import type EpistemePlugin from "../../main";
  * Uses native Obsidian header (no custom header needed)
  */
 export class DashboardView extends ItemView {
-	private plugin: EpistemePlugin;
+	private plugin: TrueRecallPlugin;
 
 	// UI Components
 	private contentComponent: DashboardContent | null = null;
@@ -21,7 +21,7 @@ export class DashboardView extends ItemView {
 	// Container element
 	private contentContainer!: HTMLElement;
 
-	constructor(leaf: WorkspaceLeaf, plugin: EpistemePlugin) {
+	constructor(leaf: WorkspaceLeaf, plugin: TrueRecallPlugin) {
 		super(leaf);
 		this.plugin = plugin;
 	}

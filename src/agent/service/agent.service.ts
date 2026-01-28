@@ -10,7 +10,7 @@ import type {
 } from "../types";
 import { getToolRegistry, ToolRegistry } from "../registry";
 import { createToolContext } from "../context";
-import type EpistemePlugin from "../../main";
+import type TrueRecallPlugin from "../../main";
 
 /**
  * Service for AI agent interaction with tools
@@ -18,9 +18,9 @@ import type EpistemePlugin from "../../main";
  */
 export class AgentService {
 	private registry: ToolRegistry;
-	private plugin: EpistemePlugin;
+	private plugin: TrueRecallPlugin;
 
-	constructor(plugin: EpistemePlugin) {
+	constructor(plugin: TrueRecallPlugin) {
 		this.plugin = plugin;
 		this.registry = getToolRegistry();
 	}

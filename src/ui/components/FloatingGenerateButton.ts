@@ -3,16 +3,16 @@
  * Shows a FAB when text is selected in markdown editor
  */
 import { Notice, TFile } from "obsidian";
-import type EpistemePlugin from "../../main";
+import type TrueRecallPlugin from "../../main";
 
 export class FloatingGenerateButton {
-	private plugin: EpistemePlugin;
+	private plugin: TrueRecallPlugin;
 	private buttonEl: HTMLElement | null = null;
 	private isVisible = false;
 	private selectionCheckInterval: number | null = null;
 	private currentSelection = "";
 
-	constructor(plugin: EpistemePlugin) {
+	constructor(plugin: TrueRecallPlugin) {
 		this.plugin = plugin;
 	}
 

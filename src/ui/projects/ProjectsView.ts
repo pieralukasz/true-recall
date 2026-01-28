@@ -12,7 +12,7 @@ import { createProjectsStateManager } from "../../state/projects.state";
 import { Panel } from "../components/Panel";
 import { ProjectsContent } from "./ProjectsContent";
 import { SelectNoteModal } from "../modals";
-import type EpistemePlugin from "../../main";
+import type TrueRecallPlugin from "../../main";
 import type { ProjectNoteInfo } from "../../types";
 
 /**
@@ -20,7 +20,7 @@ import type { ProjectNoteInfo } from "../../types";
  * Panel for managing projects (CRUD, review)
  */
 export class ProjectsView extends ItemView {
-	private plugin: EpistemePlugin;
+	private plugin: TrueRecallPlugin;
 	private stateManager = createProjectsStateManager();
 
 	// UI Components
@@ -33,7 +33,7 @@ export class ProjectsView extends ItemView {
 	// State subscription
 	private unsubscribe: (() => void) | null = null;
 
-	constructor(leaf: WorkspaceLeaf, plugin: EpistemePlugin) {
+	constructor(leaf: WorkspaceLeaf, plugin: TrueRecallPlugin) {
 		super(leaf);
 		this.plugin = plugin;
 	}

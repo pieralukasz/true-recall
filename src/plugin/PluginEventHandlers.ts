@@ -4,14 +4,14 @@
  * Projects are read from frontmatter (source of truth)
  */
 import { TFile } from "obsidian";
-import type EpistemePlugin from "../main";
+import type TrueRecallPlugin from "../main";
 import { FlashcardPanelView } from "../ui/flashcard-panel/FlashcardPanelView";
 import { VIEW_TYPE_FLASHCARD_PANEL } from "../constants";
 
 /**
  * Register workspace and vault event handlers
  */
-export function registerEventHandlers(plugin: EpistemePlugin): void {
+export function registerEventHandlers(plugin: TrueRecallPlugin): void {
 	// File context menu for custom review
 	plugin.registerEvent(
 		plugin.app.workspace.on("file-menu", (menu, file) => {
@@ -59,7 +59,7 @@ export function registerEventHandlers(plugin: EpistemePlugin): void {
 /**
  * Update the panel view with current file
  */
-function updatePanelView(plugin: EpistemePlugin, file: TFile | null): void {
+function updatePanelView(plugin: TrueRecallPlugin, file: TFile | null): void {
 	const leaves = plugin.app.workspace.getLeavesOfType(
 		VIEW_TYPE_FLASHCARD_PANEL
 	);

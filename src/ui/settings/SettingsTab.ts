@@ -3,7 +3,7 @@
  * Plugin settings configuration interface
  */
 import { App, Notice, PluginSettingTab, Setting, TFile } from "obsidian";
-import type EpistemePlugin from "../../main";
+import type TrueRecallPlugin from "../../main";
 import {
 	DEFAULT_SETTINGS,
 	AI_MODELS_EXTENDED,
@@ -14,7 +14,7 @@ import {
 import { TemplatePickerModal, DeviceSelectionModal, FirstSyncConflictModal } from "../modals";
 import type { AIModelKey, AIModelInfo } from "../../constants";
 import type {
-	EpistemeSettings,
+	TrueRecallSettings,
 	ReviewViewMode,
 	NewCardOrder,
 	ReviewOrder,
@@ -23,18 +23,18 @@ import type {
 
 // Re-export for convenience
 export { DEFAULT_SETTINGS };
-export type { EpistemeSettings };
+export type { TrueRecallSettings };
 
 type SettingsTabId = "general" | "ai" | "scheduling" | "data" | "sync";
 
 /**
  * Settings tab for Episteme plugin
  */
-export class EpistemeSettingTab extends PluginSettingTab {
-	plugin: EpistemePlugin;
+export class TrueRecallSettingTab extends PluginSettingTab {
+	plugin: TrueRecallPlugin;
 	private activeTab: SettingsTabId = "general";
 
-	constructor(app: App, plugin: EpistemePlugin) {
+	constructor(app: App, plugin: TrueRecallPlugin) {
 		super(app, plugin);
 		this.plugin = plugin;
 	}
@@ -690,7 +690,7 @@ export class EpistemeSettingTab extends PluginSettingTab {
 		});
 		deviceInfo.innerHTML = `
 			<p>Device ID: <code>${deviceId}</code></p>
-			<p>Database: <code>.episteme/episteme-${deviceId}.db</code></p>
+			<p>Database: <code>.true-recall/true-recall-${deviceId}.db</code></p>
 		`;
 
 		new Setting(container)
@@ -721,7 +721,7 @@ export class EpistemeSettingTab extends PluginSettingTab {
 		});
 		backupInfo.innerHTML = `
             <p>Create backups of your flashcard database to prevent data loss.</p>
-            <p>Backups are stored in <code>.episteme/backups/</code></p>
+            <p>Backups are stored in <code>.true-recall/backups/</code></p>
         `;
 
 		new Setting(container)
@@ -882,7 +882,7 @@ export class EpistemeSettingTab extends PluginSettingTab {
 
 	private renderSyncTab(container: HTMLElement): void {
 		// ===== Episteme Cloud Header =====
-		container.createEl("h2", { text: "Episteme Cloud" });
+		container.createEl("h2", { text: "True Recall Cloud" });
 
 		const cloudInfo = container.createDiv({
 			cls: "setting-item-description",
@@ -898,7 +898,7 @@ export class EpistemeSettingTab extends PluginSettingTab {
 		const authContainer = container.createDiv({
 			cls: "ep:mt-4",
 		});
-		authContainer.id = "episteme-auth-container";
+		authContainer.id = "true-recall-auth-container";
 
 		this.renderAuthSection(authContainer);
 	}
@@ -1112,7 +1112,7 @@ export class EpistemeSettingTab extends PluginSettingTab {
 		const syncStatusEl = container.createDiv({
 			cls: "setting-item-description",
 		});
-		syncStatusEl.id = "episteme-sync-status";
+		syncStatusEl.id = "true-recall-sync-status";
 		syncStatusEl.setText(`Last sync: ${lastSyncText}`);
 
 		// Sync button

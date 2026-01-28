@@ -12,7 +12,7 @@ import type { SessionSelectedEvent } from "../../types/events.types";
 import type { FSRSFlashcardItem } from "../../types";
 import { Panel } from "../components/Panel";
 import { SessionContent } from "./SessionContent";
-import type EpistemePlugin from "../../main";
+import type TrueRecallPlugin from "../../main";
 import { SessionResultFactory } from "../../utils/session-result-factory";
 import { MoveCardModal } from "../modals/MoveCardModal";
 import { AddToProjectModal } from "../modals/AddToProjectModal";
@@ -31,7 +31,7 @@ export interface SessionViewOptions {
  * Panel-based view for session selection
  */
 export class SessionView extends ItemView {
-	private plugin: EpistemePlugin;
+	private plugin: TrueRecallPlugin;
 	private stateManager = createSessionStateManager();
 	private logic: SessionLogic | null = null;
 	private dayBoundaryService: DayBoundaryService | null = null;
@@ -50,7 +50,7 @@ export class SessionView extends ItemView {
 	// State subscription
 	private unsubscribe: (() => void) | null = null;
 
-	constructor(leaf: WorkspaceLeaf, plugin: EpistemePlugin) {
+	constructor(leaf: WorkspaceLeaf, plugin: TrueRecallPlugin) {
 		super(leaf);
 		this.plugin = plugin;
 	}
@@ -418,7 +418,7 @@ export class SessionView extends ItemView {
 		const contentContainer = this.panelComponent.getContentContainer();
 
 		// Preserve scroll position before re-render
-		const scrollWrapper = contentContainer.querySelector(".episteme-session-scroll");
+		const scrollWrapper = contentContainer.querySelector(".true-recall-session-scroll");
 		const scrollTop = scrollWrapper?.scrollTop ?? 0;
 
 		const state = this.stateManager.getState();
@@ -443,7 +443,7 @@ export class SessionView extends ItemView {
 
 		// Restore scroll position after re-render
 		const newScrollWrapper = contentContainer.querySelector(
-			".episteme-session-scroll"
+			".true-recall-session-scroll"
 		);
 		if (newScrollWrapper) {
 			newScrollWrapper.scrollTop = scrollTop;
@@ -452,9 +452,9 @@ export class SessionView extends ItemView {
 		// Add/remove class based on search query content (for mobile CSS)
 		const panelEl = this.panelComponent.getElement();
 		if (state.searchQuery.length > 0) {
-			panelEl?.addClass("episteme-has-search-query");
+			panelEl?.addClass("true-recall-has-search-query");
 		} else {
-			panelEl?.removeClass("episteme-has-search-query");
+			panelEl?.removeClass("true-recall-has-search-query");
 		}
 
 		// Render selection bar (desktop only - hidden on mobile via responsive classes)
@@ -481,12 +481,12 @@ export class SessionView extends ItemView {
 		if (!contentContainer) return;
 
 		// Find SessionContent element and add selection bar at the end
-		const sessionContentEl = contentContainer.querySelector(".episteme-session-content");
+		const sessionContentEl = contentContainer.querySelector(".true-recall-session-content");
 		if (!sessionContentEl) return;
 
 		// Create selection bar at bottom of SessionContent (hidden on mobile - use header actions instead)
 		this.selectionBarEl = sessionContentEl.createDiv({
-			cls: "episteme-session-selection-bar ep:hidden ep:md:flex ep:items-center ep:justify-between ep:p-3 ep:mt-2 ep:bg-obs-secondary ep:rounded-md ep:gap-3 ep:shrink-0",
+			cls: "true-recall-session-selection-bar ep:hidden ep:md:flex ep:items-center ep:justify-between ep:p-3 ep:mt-2 ep:bg-obs-secondary ep:rounded-md ep:gap-3 ep:shrink-0",
 		});
 
 		// Selection count text

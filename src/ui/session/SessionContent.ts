@@ -43,7 +43,7 @@ export class SessionContent extends BaseComponent {
 		}
 
 		this.element = this.container.createDiv({
-			cls: "episteme-session-content ep:flex ep:flex-col ep:h-full ep:gap-2",
+			cls: "true-recall-session-content ep:flex ep:flex-col ep:h-full ep:gap-2",
 		});
 
 		// Section header with title (desktop only - matching Projects style)
@@ -62,7 +62,7 @@ export class SessionContent extends BaseComponent {
 
 		// Quick actions section header
 		this.element.createDiv({
-			cls: "episteme-section-header ep:text-ui-small ep:font-semibold ep:text-obs-normal ep:my-2",
+			cls: "true-recall-section-header ep:text-ui-small ep:font-semibold ep:text-obs-normal ep:my-2",
 			text: "Quick access",
 		});
 
@@ -71,13 +71,13 @@ export class SessionContent extends BaseComponent {
 
 		// Notes section header (fixed, not scrolling)
 		this.element.createDiv({
-			cls: "episteme-section-header ep:text-ui-small ep:font-semibold ep:text-obs-normal ep:my-2 ep:shrink-0",
+			cls: "true-recall-section-header ep:text-ui-small ep:font-semibold ep:text-obs-normal ep:my-2 ep:shrink-0",
 			text: "Select notes",
 		});
 
 		// Scroll wrapper for note list only
 		const scrollWrapper = this.element.createDiv({
-			cls: "episteme-session-scroll ep:flex-1 ep:overflow-y-auto ep:min-h-0",
+			cls: "true-recall-session-scroll ep:flex-1 ep:overflow-y-auto ep:min-h-0",
 		});
 
 		// Note list (card-based)
@@ -87,7 +87,7 @@ export class SessionContent extends BaseComponent {
 	private renderQuickActions(): void {
 		const { currentNoteName, logic, onQuickAction } = this.props;
 		const quickActionsEl = this.element!.createDiv({
-			cls: "episteme-quick-actions ep:grid ep:grid-cols-2 ep:gap-2",
+			cls: "true-recall-quick-actions ep:grid ep:grid-cols-2 ep:gap-2",
 		});
 
 		const now = new Date();
@@ -229,7 +229,7 @@ export class SessionContent extends BaseComponent {
 	private renderSearchInput(): void {
 		const { searchQuery, onSearchChange } = this.props;
 		const searchContainer = this.element!.createDiv({
-			cls: "episteme-search-container ep:mb-2",
+			cls: "true-recall-search-container ep:mb-2",
 		});
 		const searchInput = searchContainer.createEl("input", {
 			cls: "ep:w-full ep:py-2 ep:px-3 ep:border ep:border-obs-border ep:rounded-md ep:bg-obs-primary ep:text-obs-normal ep:text-ui-small ep:focus:outline-none ep:focus:border-obs-interactive ep:placeholder:text-obs-muted",
@@ -250,7 +250,7 @@ export class SessionContent extends BaseComponent {
 		const filteredStats = logic.getFilteredNoteStats(searchQuery, now);
 
 		const noteListEl = container.createDiv({
-			cls: "episteme-note-list",
+			cls: "true-recall-note-list",
 		});
 		this.noteTableBody = noteListEl;
 
