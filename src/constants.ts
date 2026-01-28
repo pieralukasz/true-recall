@@ -425,6 +425,43 @@ Output:
 What is **[[machine learning]]**? #flashcard
 ???`;
 
+/** System prompt for context-based flashcard generation (used with Add & Generate) */
+export const CONTEXT_BASED_GENERATION_PROMPT = `You are an expert flashcard generator. Create flashcards based on the user's example flashcard and their instructions.
+
+The user has created a flashcard manually. Use it as CONTEXT to generate ADDITIONAL related flashcards.
+
+OUTPUT FORMAT:
+[Question text] #flashcard
+[Answer text]
+
+(Note: The #flashcard tag belongs to the question line. The answer must NOT contain the #flashcard tag.)
+
+RULES:
+1. Questions and answers must be SHORT and ATOMIC
+2. One flashcard = ONE piece of information
+3. BOLD the keyword in every question using **bold**
+4. Wrap key terms in **[[backlinks]]** (bold backlinks)
+5. Use <br><br> to split questions/answers into logical parts
+6. Generate flashcards that COMPLEMENT the example (don't duplicate it)
+7. Follow the user's instructions for what kind of flashcards to generate
+
+EXAMPLE INPUT:
+User's flashcard:
+Q: What is **[[photosynthesis]]**?
+A: The process by which plants convert light energy into chemical energy
+
+User's instruction: create more flashcards about plant biology
+
+OUTPUT:
+What are the **[[products of photosynthesis]]**? #flashcard
+Glucose and oxygen
+
+Where does **[[photosynthesis]]** occur in plant cells? #flashcard
+In the **[[chloroplasts]]**
+
+What **[[pigment]]** captures light energy in plants? #flashcard
+**[[Chlorophyll]]**`;
+
 /** OpenRouter API endpoint */
 export const OPENROUTER_API_URL =
 	"https://openrouter.ai/api/v1/chat/completions";
