@@ -201,7 +201,7 @@ export class SessionPersistenceService {
 				return; // No JSON file to migrate
 			}
 
-			console.log("[Episteme] Migrating stats.json to SQL...");
+			console.log("[True Recall] Migrating stats.json to SQL...");
 
 			const content = await this.app.vault.adapter.read(statsPath);
 			const data = JSON.parse(content) as PersistentStatsData;
@@ -241,10 +241,10 @@ export class SessionPersistenceService {
 			await this.app.vault.adapter.remove(statsPath);
 
 			console.log(
-				`[Episteme] Migrated stats.json to SQL: ${migratedDays} days, ${migratedCards} card entries. JSON file removed.`
+				`[True Recall] Migrated stats.json to SQL: ${migratedDays} days, ${migratedCards} card entries. JSON file removed.`
 			);
 		} catch (error) {
-			console.error("[Episteme] Failed to migrate stats.json:", error);
+			console.error("[True Recall] Failed to migrate stats.json:", error);
 			// Don't throw - migration failure shouldn't block plugin startup
 		}
 	}

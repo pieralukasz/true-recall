@@ -68,7 +68,7 @@ export class SqliteStoreService {
             existingData = await this.loadFromFile(dbPath);
         } catch (error) {
             // File exists but cannot be read - CRITICAL ERROR
-            console.error("[Episteme] Database load failed:", error);
+            console.error("[True Recall] Database load failed:", error);
             new Notice(
                 "True Recall: Cannot load database. Please restore from backup (Settings → Data & Backup → Restore).",
                 0  // Don't auto-hide
@@ -79,7 +79,7 @@ export class SqliteStoreService {
         // Initialize database with sql.js
         await this.db.init(existingData);
 
-        console.log("[Episteme] Using sql.js for local storage");
+        console.log("[True Recall] Using sql.js for local storage");
 
         // Schema setup
         const schemaManager = new SqliteSchemaManager(this.db.raw, () => this.markDirty());
@@ -185,7 +185,7 @@ export class SqliteStoreService {
     private async loadFromFile(path: string): Promise<Uint8Array | null> {
         const exists = await this.app.vault.adapter.exists(path);
         if (!exists) {
-            console.log("[Episteme] Database file not found - will create new");
+            console.log("[True Recall] Database file not found - will create new");
             return null;
         }
 
@@ -206,7 +206,7 @@ export class SqliteStoreService {
             return new Uint8Array(data);
         } catch (error) {
             // DO NOT return null - this would create an empty database!
-            console.error("[Episteme] CRITICAL: Failed to load existing database:", error);
+            console.error("[True Recall] CRITICAL: Failed to load existing database:", error);
             throw new Error(`Cannot load database: ${error instanceof Error ? error.message : error}`);
         }
     }
@@ -242,7 +242,7 @@ export class SqliteStoreService {
             await this.app.vault.adapter.writeBinary(dbPath, data.buffer);
             this.isDirty = false;
         } catch (error) {
-            console.error("[Episteme] Failed to save database:", error);
+            console.error("[True Recall] Failed to save database:", error);
         }
     }
 

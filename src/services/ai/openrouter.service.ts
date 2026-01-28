@@ -258,7 +258,7 @@ Format each as: [Question text] #flashcard\\n[Answer text]`;
             headers: {
                 Authorization: `Bearer ${this.apiKey}`,
                 "Content-Type": "application/json",
-                "HTTP-Referer": "obsidian://episteme",
+                "HTTP-Referer": "obsidian://true-recall",
                 "X-Title": "True Recall",
             },
             body: JSON.stringify(requestBody),

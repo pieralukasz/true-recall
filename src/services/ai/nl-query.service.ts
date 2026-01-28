@@ -66,7 +66,7 @@ export class NLQueryService {
                 baseURL: "https://openrouter.ai/api/v1",
                 apiKey: this.config.apiKey,
                 defaultHeaders: {
-                    "HTTP-Referer": "obsidian://episteme",
+                    "HTTP-Referer": "obsidian://true-recall",
                     "X-Title": "True Recall",
                 },
             },

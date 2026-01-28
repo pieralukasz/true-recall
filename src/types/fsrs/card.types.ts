@@ -27,7 +27,7 @@ export interface CardReviewLogEntry {
 
 /**
  * FSRS metadata stored in SQLite
- * Table: cards in .true-recall/episteme.db
+ * Table: cards in .true-recall/true-recall.db
  */
 export interface FSRSCardData {
     /** Unique card ID (UUID) */
