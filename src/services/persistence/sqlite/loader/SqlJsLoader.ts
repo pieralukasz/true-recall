@@ -6,7 +6,7 @@ import type { App } from "obsidian";
 import initSqlJs, { type Database as SqlJsDatabase, type SqlJsStatic } from "sql.js";
 
 // Plugin ID for path resolution
-const PLUGIN_ID = "episteme";
+const PLUGIN_ID = "true-recall";
 
 /**
  * Common query result interface matching sql.js format
@@ -92,7 +92,7 @@ async function loadWasmAsUrl(app: App, filename: string): Promise<string | null>
         const blob = new Blob([buffer], { type: "application/wasm" });
         return URL.createObjectURL(blob);
     } catch (e) {
-        console.warn(`[Episteme] Failed to load local WASM file ${filename}:`, e);
+        console.warn(`[True Recall] Failed to load local WASM file ${filename}:`, e);
         return null;
     }
 }
@@ -108,24 +108,24 @@ async function loadSqlJs(app: App): Promise<SqlJsStatic> {
     const localWasmUrl = await loadWasmAsUrl(app, "sql-wasm.wasm");
 
     if (localWasmUrl) {
-        console.log("[Episteme] Loading sql.js from local WASM...");
+        console.log("[True Recall] Loading sql.js from local WASM...");
         try {
             const SQL = await initSqlJs({
                 locateFile: () => localWasmUrl,
             });
-            console.log("[Episteme] sql.js loaded successfully from local WASM");
+            console.log("[True Recall] sql.js loaded successfully from local WASM");
             return SQL;
         } catch (e) {
-            console.warn("[Episteme] Failed to load sql.js from local WASM, falling back to CDN:", e);
+            console.warn("[True Recall] Failed to load sql.js from local WASM, falling back to CDN:", e);
         }
     }
 
     // Fallback to CDN
-    console.log("[Episteme] Loading sql.js from CDN fallback...");
+    console.log("[True Recall] Loading sql.js from CDN fallback...");
     const SQL = await initSqlJs({
         locateFile: (file: string) => `${SQLJS_CDN}/${file}`,
     });
-    console.log("[Episteme] sql.js loaded successfully from CDN");
+    console.log("[True Recall] sql.js loaded successfully from CDN");
     return SQL;
 }
 

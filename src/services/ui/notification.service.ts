@@ -44,7 +44,7 @@ export class NotificationService {
 	 */
 	error(message: string, error?: unknown, duration?: number): void {
 		if (error) {
-			console.error(`[Episteme] ${message}:`, error);
+			console.error(`[True Recall] ${message}:`, error);
 		}
 		new Notice(message, duration ?? NOTIFICATION_DURATION.LONG);
 	}

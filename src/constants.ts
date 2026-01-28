@@ -429,10 +429,10 @@ What is **[[machine learning]]**? #flashcard
 export const OPENROUTER_API_URL =
 	"https://openrouter.ai/api/v1/chat/completions";
 
-// ===== Episteme Cloud Configuration =====
+// ===== True Recall Cloud Configuration =====
 
 /**
- * Episteme Cloud Supabase credentials (public anon key)
+ * True Recall Cloud Supabase credentials (public anon key)
  * Safe to expose - RLS policies protect data per-user
  */
 export const TRUE_RECALL_CLOUD = {

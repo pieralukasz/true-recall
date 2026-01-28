@@ -1,8 +1,8 @@
-# Episteme - AI-Powered Spaced Repetition for Obsidian
+# True Recall - AI-Powered Spaced Repetition for Obsidian
 
 > **"Operating System for the Mind"** - UNDERSTAND, REMEMBER, CREATE
 
-Episteme is an Obsidian plugin that combines AI-powered flashcard generation with FSRS v6 spaced repetition. All data is stored locally in SQLite with optional cloud sync.
+True Recall is an Obsidian plugin that combines AI-powered flashcard generation with FSRS v6 spaced repetition. All data is stored locally in SQLite with optional cloud sync.
 
 ---
 
@@ -12,7 +12,7 @@ Episteme is an Obsidian plugin that combines AI-powered flashcard generation wit
 | ---------------------------- | --------------------------------------------------------------- |
 | **AI Flashcard Generation**  | 7 AI models via OpenRouter create atomic, well-formatted cards  |
 | **FSRS v6 Algorithm**        | State-of-the-art spaced repetition with 21 trainable parameters |
-| **SQLite Storage**           | All data in portable `.episteme/episteme.db` file               |
+| **SQLite Storage**           | All data in portable `.true-recall/true-recall.db` file               |
 | **Projects System**          | Organize cards across notes with many-to-many relationships     |
 | **Card Browser**             | Search, filter, and manage all flashcards in one place          |
 | **FSRS Simulator**           | Visualize scheduling behavior with different parameters         |
@@ -26,14 +26,14 @@ Episteme is an Obsidian plugin that combines AI-powered flashcard generation wit
 ### Manual Installation
 
 1. Download the latest release
-2. Copy `main.js`, `styles.css`, and `manifest.json` to your vault's `.obsidian/plugins/episteme/` folder
+2. Copy `main.js`, `styles.css`, and `manifest.json` to your vault's `.obsidian/plugins/true-recall/` folder
 3. Enable the plugin in Obsidian settings
 
 ### From Source
 
 ```bash
-git clone https://github.com/yourusername/obsidian-episteme.git
-cd obsidian-episteme
+git clone https://github.com/yourusername/obsidian-true-recall.git
+cd obsidian-true-recall
 npm install
 npm run build
 ```
@@ -42,7 +42,7 @@ npm run build
 
 ## Quick Start
 
-1. **Configure API Key**: Settings → Episteme → Enter your [OpenRouter](https://openrouter.ai) API key
+1. **Configure API Key**: Settings → True Recall → Enter your [OpenRouter](https://openrouter.ai) API key
 2. **Open a Note**: Navigate to any note you want to create flashcards from
 3. **Generate**: Click the floating brain button or open the flashcard panel
 4. **Review**: Click the brain ribbon icon to start a review session
@@ -213,11 +213,11 @@ Projects organize flashcards into collections spanning multiple notes.
 
 ### Using Projects
 
-Add `episteme_projects` to note frontmatter:
+Add `true_recall_projects` to note frontmatter:
 
 ```yaml
 ---
-episteme_projects:
+true_recall_projects:
     - Machine Learning
     - Python Course
 ---
@@ -250,7 +250,7 @@ All accessed via [OpenRouter](https://openrouter.ai) with a single API key:
 
 ### SQLite Database
 
-All data stored in `.episteme/episteme.db` using sql.js:
+All data stored in `.true-recall/true-recall.db` using sql.js:
 
 | Table                    | Purpose                                                |
 | ------------------------ | ------------------------------------------------------ |
@@ -365,4 +365,4 @@ Contributions welcome! Please submit a Pull Request.
 
 ---
 
-**Episteme** - Transform your Obsidian vault into an intelligent learning system.
+**True Recall** - Transform your Obsidian vault into an intelligent learning system.

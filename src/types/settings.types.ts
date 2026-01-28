@@ -22,7 +22,7 @@ export type NewReviewMix = "show-after-reviews" | "mix-with-reviews" | "show-bef
 
 
 /**
- * Ustawienia pluginu Episteme
+ * Ustawienia pluginu True Recall
  */
 export interface TrueRecallSettings {
     // ===== AI Generation Settings =====

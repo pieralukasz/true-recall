@@ -1,6 +1,6 @@
 /**
  * Plugin Commands
- * All command registrations for the Episteme plugin
+ * All command registrations for the True Recall plugin
  */
 import type TrueRecallPlugin from "../main";
 

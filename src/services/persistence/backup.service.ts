@@ -120,7 +120,7 @@ export class BackupService {
             // Sort by timestamp, newest first
             backups.sort((a, b) => b.timestamp.getTime() - a.timestamp.getTime());
         } catch (error) {
-            console.warn("[Episteme] Failed to list backups:", error);
+            console.warn("[True Recall] Failed to list backups:", error);
         }
 
         return backups;
@@ -136,7 +136,7 @@ export class BackupService {
         try {
             // Create safety backup first
             const safetyBackupPath = await this.createBackup();
-            console.log(`[Episteme] Safety backup created at: ${safetyBackupPath}`);
+            console.log(`[True Recall] Safety backup created at: ${safetyBackupPath}`);
 
             // Read backup file
             const backupData = await this.app.vault.adapter.readBinary(backupPath);
@@ -149,7 +149,7 @@ export class BackupService {
             new Notice("Backup restored. Please reload Obsidian to apply changes.");
             return true;
         } catch (error) {
-            console.error("[Episteme] Failed to restore backup:", error);
+            console.error("[True Recall] Failed to restore backup:", error);
             new Notice("Failed to restore backup. Check console for details.");
             return false;
         }
@@ -174,7 +174,7 @@ export class BackupService {
                 await this.app.vault.adapter.remove(backup.path);
                 deleted++;
             } catch (error) {
-                console.warn(`[Episteme] Failed to delete backup ${backup.path}:`, error);
+                console.warn(`[True Recall] Failed to delete backup ${backup.path}:`, error);
             }
         }
 
@@ -191,7 +191,7 @@ export class BackupService {
             await this.app.vault.adapter.remove(backupPath);
             return true;
         } catch (error) {
-            console.warn(`[Episteme] Failed to delete backup ${backupPath}:`, error);
+            console.warn(`[True Recall] Failed to delete backup ${backupPath}:`, error);
             return false;
         }
     }

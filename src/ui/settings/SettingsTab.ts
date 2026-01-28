@@ -28,7 +28,7 @@ export type { TrueRecallSettings };
 type SettingsTabId = "general" | "ai" | "scheduling" | "data" | "sync";
 
 /**
- * Settings tab for Episteme plugin
+ * Settings tab for True Recall plugin
  */
 export class TrueRecallSettingTab extends PluginSettingTab {
 	plugin: TrueRecallPlugin;
@@ -881,14 +881,14 @@ export class TrueRecallSettingTab extends PluginSettingTab {
 	}
 
 	private renderSyncTab(container: HTMLElement): void {
-		// ===== Episteme Cloud Header =====
+		// ===== True Recall Cloud Header =====
 		container.createEl("h2", { text: "True Recall Cloud" });
 
 		const cloudInfo = container.createDiv({
 			cls: "setting-item-description",
 		});
 		cloudInfo.innerHTML = `
-			<p>Synchronize your flashcards across devices with Episteme Cloud.</p>
+			<p>Synchronize your flashcards across devices with True Recall Cloud.</p>
 			<p>Your data is encrypted and secure.</p>
 		`;
 
@@ -928,7 +928,7 @@ export class TrueRecallSettingTab extends PluginSettingTab {
 			});
 			statusDiv.innerHTML = `
 				<span class="ep:w-2 ep:h-2 ep:rounded-full ep:bg-green-500 ep:shadow-[0_0_6px_theme(colors.green.500)]"></span>
-				<span>Connected to Episteme Cloud</span>
+				<span>Connected to True Recall Cloud</span>
 			`;
 
 			const userInfo = container.createDiv({
@@ -938,7 +938,7 @@ export class TrueRecallSettingTab extends PluginSettingTab {
 
 			new Setting(container)
 				.setName("Sign out")
-				.setDesc("Sign out of your Episteme Cloud account")
+				.setDesc("Sign out of your True Recall Cloud account")
 				.addButton((button) =>
 					button
 						.setButtonText("Sign Out")
@@ -1390,7 +1390,7 @@ export class TrueRecallSettingTab extends PluginSettingTab {
 				`Imported data from device ${result.sourceDeviceId}. Please restart Obsidian.`
 			);
 		} catch (error) {
-			console.error("[Episteme] Database switch failed:", error);
+			console.error("[True Recall] Database switch failed:", error);
 			new Notice("Failed to switch database.");
 		}
 	}

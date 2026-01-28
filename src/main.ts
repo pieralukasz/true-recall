@@ -587,7 +587,7 @@ export default class TrueRecallPlugin extends Plugin {
 			await this.initializeCardStore(deviceId);
 		} catch (error) {
 			console.error(
-				"[Episteme] Failed to initialize device context:",
+				"[True Recall] Failed to initialize device context:",
 				error
 			);
 			new Notice(
@@ -607,7 +607,7 @@ export default class TrueRecallPlugin extends Plugin {
 		// 1. Get or create device ID
 		this.deviceIdService = new DeviceIdService();
 		const deviceId = this.deviceIdService.getDeviceId();
-		console.log(`[Episteme] Device ID: ${deviceId}`);
+		console.log(`[True Recall] Device ID: ${deviceId}`);
 
 		// 2. Initialize discovery service
 		this.deviceDiscovery = new DeviceDiscoveryService(this.app, deviceId);
@@ -623,7 +623,7 @@ export default class TrueRecallPlugin extends Plugin {
 		if (deviceDbExists) {
 			// Database for this device already exists - nothing to do
 			console.log(
-				`[Episteme] Using existing device database: ${deviceDbPath}`
+				`[True Recall] Using existing device database: ${deviceDbPath}`
 			);
 			return deviceId;
 		}
@@ -633,7 +633,7 @@ export default class TrueRecallPlugin extends Plugin {
 		const hasLegacy = await this.deviceDiscovery.hasLegacyDatabase();
 
 		console.log(
-			`[Episteme] First run on device. Legacy DB: ${hasLegacy}, Other devices: ${databases.length}`
+			`[True Recall] First run on device. Legacy DB: ${hasLegacy}, Other devices: ${databases.length}`
 		);
 
 		// 5. Handle different scenarios
@@ -657,14 +657,14 @@ export default class TrueRecallPlugin extends Plugin {
 	}
 
 	/**
-	 * Migrate legacy episteme.db to device-specific format.
+	 * Migrate legacy true-recall.db to device-specific format.
 	 */
 	private async migrateLegacyDatabase(deviceId: string): Promise<void> {
-		const legacyPath = normalizePath(`${DB_FOLDER}/episteme.db`);
+		const legacyPath = normalizePath(`${DB_FOLDER}/true-recall.db`);
 		const newPath = normalizePath(
 			`${DB_FOLDER}/${getDeviceDbFilename(deviceId)}`
 		);
-		const backupPath = normalizePath(`${DB_FOLDER}/episteme.db.migrated`);
+		const backupPath = normalizePath(`${DB_FOLDER}/true-recall.db.migrated`);
 
 		try {
 			// Create backup of legacy database
@@ -674,10 +674,10 @@ export default class TrueRecallPlugin extends Plugin {
 			// Rename legacy to device-specific
 			await this.app.vault.adapter.rename(legacyPath, newPath);
 
-			console.log(`[Episteme] Migrated legacy database to ${newPath}`);
+			console.log(`[True Recall] Migrated legacy database to ${newPath}`);
 			new Notice("Database migrated to per-device format.");
 		} catch (error) {
-			console.error("[Episteme] Legacy migration failed:", error);
+			console.error("[True Recall] Legacy migration failed:", error);
 			new Notice("Failed to migrate legacy database.");
 			throw error;
 		}
@@ -719,13 +719,13 @@ export default class TrueRecallPlugin extends Plugin {
 				);
 
 				console.log(
-					`[Episteme] Imported database from ${result.sourceDeviceId} to ${deviceId}`
+					`[True Recall] Imported database from ${result.sourceDeviceId} to ${deviceId}`
 				);
 				new Notice(
 					`Imported data from device ${result.sourceDeviceId}`
 				);
 			} catch (error) {
-				console.error("[Episteme] Database import failed:", error);
+				console.error("[True Recall] Database import failed:", error);
 				new Notice("Failed to import database.");
 				throw error;
 			}
@@ -770,7 +770,7 @@ export default class TrueRecallPlugin extends Plugin {
 			this.initializeSyncService();
 		} catch (error) {
 			console.error(
-				"[Episteme] Failed to initialize SQLite store:",
+				"[True Recall] Failed to initialize SQLite store:",
 				error
 			);
 			new Notice(
@@ -792,7 +792,7 @@ export default class TrueRecallPlugin extends Plugin {
 			const db = this.cardStore.getDatabase();
 			if (!db) {
 				console.warn(
-					"[Episteme] Database not ready for NL Query Service"
+					"[True Recall] Database not ready for NL Query Service"
 				);
 				return;
 			}
@@ -809,7 +809,7 @@ export default class TrueRecallPlugin extends Plugin {
 			await this.nlQueryService.initialize();
 		} catch (error) {
 			console.warn(
-				"[Episteme] Failed to initialize NL Query Service:",
+				"[True Recall] Failed to initialize NL Query Service:",
 				error
 			);
 			// Non-critical: plugin continues without NL Query feature
@@ -920,7 +920,7 @@ export default class TrueRecallPlugin extends Plugin {
 				await this.backupService.pruneBackups(this.settings.maxBackups);
 			}
 		} catch (error) {
-			console.warn("[Episteme] Auto-backup failed:", error);
+			console.warn("[True Recall] Auto-backup failed:", error);
 		}
 	}
 
@@ -944,11 +944,11 @@ export default class TrueRecallPlugin extends Plugin {
 					this.settings.maxBackups
 				);
 				if (deleted > 0) {
-					console.log(`[Episteme] Pruned ${deleted} old backup(s)`);
+					console.log(`[True Recall] Pruned ${deleted} old backup(s)`);
 				}
 			}
 		} catch (error) {
-			console.error("[Episteme] Manual backup failed:", error);
+			console.error("[True Recall] Manual backup failed:", error);
 			new Notice("Failed to create backup. Check console for details.");
 		}
 	}

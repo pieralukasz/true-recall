@@ -6,14 +6,14 @@
 import type { DatabaseLike } from "../sqlite.types";
 
 export function migrate(db: DatabaseLike): void {
-	console.log("[Episteme] Migrating schema v16 -> v17...");
+	console.log("[True Recall] Migrating schema v16 -> v17...");
 
 	// Drop source_notes table (no longer needed)
 	db.exec("DROP TABLE IF EXISTS source_notes");
-	console.log("[Episteme] Dropped source_notes table");
+	console.log("[True Recall] Dropped source_notes table");
 
 	// Update schema version
 	db.run(`INSERT OR REPLACE INTO meta (key, value) VALUES ('schema_version', '17')`);
 
-	console.log("[Episteme] Schema migration v16->v17 completed");
+	console.log("[True Recall] Schema migration v16->v17 completed");
 }

@@ -1,5 +1,5 @@
 {
-	"name": "obsidian-episteme",
+	"name": "obsidian-true-recall",
 	"version": "0.1.0",
 	"description": "Spaced repetition and flashcard generation powered by AI for Obsidian",
 	"main": "main.js",

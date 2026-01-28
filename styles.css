@@ -1757,23 +1757,23 @@
   --ep-color-obs-interactive-hover: var(--interactive-accent-hover);
 }
 @layer components {
-  .modal:has(.episteme-modal) {
+  .modal:has(.true-recall-modal) {
     width: 50vw !important;
     min-height: 50vh;
     max-height: 85vh;
   }
-  .modal:has(.episteme-modal) .modal-content {
+  .modal:has(.true-recall-modal) .modal-content {
     height: 100%;
     display: flex;
     flex-direction: column;
   }
-  .modal:has(.episteme-modal) .episteme-modal {
+  .modal:has(.true-recall-modal) .true-recall-modal {
     flex: 1;
     overflow-y: auto;
     display: flex;
     flex-direction: column;
   }
-  .is-mobile .modal:has(.episteme-modal) {
+  .is-mobile .modal:has(.true-recall-modal) {
     position: fixed;
     top: 0;
     left: 0;
@@ -1787,60 +1787,60 @@
     margin: 0;
     border-radius: 0;
   }
-  .is-mobile .modal:has(.episteme-modal) .modal-content {
+  .is-mobile .modal:has(.true-recall-modal) .modal-content {
     height: 100%;
     max-height: 100%;
     overflow-y: auto;
     padding-bottom: env(safe-area-inset-bottom, 20px);
   }
-  .modal:has(.episteme-modal) .modal-title {
+  .modal:has(.true-recall-modal) .modal-title {
     font-size: var(--font-ui-small);
     font-weight: 500;
   }
-  .episteme-answer-blur {
+  .true-recall-answer-blur {
     filter: blur(4px);
     transition: filter 0.2s ease;
     cursor: pointer;
   }
-  .episteme-answer-blur:hover {
+  .true-recall-answer-blur:hover {
     filter: none;
   }
-  @keyframes episteme-spin {
+  @keyframes true-recall-spin {
     to {
       transform: rotate(360deg);
     }
   }
-  .episteme-spinner {
-    animation: episteme-spin 1s linear infinite;
+  .true-recall-spinner {
+    animation: true-recall-spin 1s linear infinite;
   }
-  .episteme-safe-area-bottom {
+  .true-recall-safe-area-bottom {
     padding-bottom: env(safe-area-inset-bottom, 0);
   }
-  .is-mobile [data-type^="episteme-"] .view-content {
+  .is-mobile [data-type^="true-recall-"] .view-content {
     padding-bottom: 60px;
   }
-  .episteme-mobile-status {
+  .true-recall-mobile-status {
     display: flex;
     gap: 4px;
     align-items: center;
     font-size: var(--font-ui-smaller);
   }
-  [data-type="episteme-review"] .view-content {
+  [data-type="true-recall-review"] .view-content {
     padding: 0;
   }
-  .episteme-review-buttons button {
+  .true-recall-review-buttons button {
     height: auto !important;
     padding: 0.5rem 1rem !important;
   }
-  .episteme-review-buttons {
+  .true-recall-review-buttons {
     gap: 1rem !important;
   }
-  .episteme-review-question,
-	.episteme-review-answer {
+  .true-recall-review-question,
+	.true-recall-review-answer {
     user-select: text;
     -webkit-user-select: text;
   }
-  @keyframes episteme-fade-in {
+  @keyframes true-recall-fade-in {
     from {
       opacity: 0;
       transform: translateY(4px);
@@ -1850,10 +1850,10 @@
       transform: translateY(0);
     }
   }
-  .episteme-chart-fade-in {
-    animation: episteme-fade-in 0.3s ease-out;
+  .true-recall-chart-fade-in {
+    animation: true-recall-fade-in 0.3s ease-out;
   }
-  @keyframes episteme-pulse {
+  @keyframes true-recall-pulse {
     0%,
 		100% {
       transform: scale(1);
@@ -1862,10 +1862,10 @@
       transform: scale(1.05);
     }
   }
-  .episteme-metric-updated {
-    animation: episteme-pulse 0.3s ease-in-out;
+  .true-recall-metric-updated {
+    animation: true-recall-pulse 0.3s ease-in-out;
   }
-  @keyframes episteme-pulse-collect {
+  @keyframes true-recall-pulse-collect {
     0%,
 		100% {
       opacity: 1;
@@ -1876,81 +1876,81 @@
       transform: scale(1.1);
     }
   }
-  .episteme-pulse-collect {
-    animation: episteme-pulse-collect 2s ease-in-out infinite;
+  .true-recall-pulse-collect {
+    animation: true-recall-pulse-collect 2s ease-in-out infinite;
     color: var(--color-yellow) !important;
   }
-  .episteme-pulse-collect:hover {
+  .true-recall-pulse-collect:hover {
     animation: none;
   }
-  .episteme-inline-markdown {
+  .true-recall-inline-markdown {
     display: flex;
     align-items: center;
     overflow: hidden;
   }
-  .episteme-inline-markdown p {
+  .true-recall-inline-markdown p {
     margin: 0;
     display: inline;
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
   }
-  .episteme-inline-markdown > p:first-child {
+  .true-recall-inline-markdown > p:first-child {
     flex: 1;
     min-width: 0;
   }
-  .episteme-inline-markdown p:not(:first-child),
-	.episteme-inline-markdown br,
-	.episteme-inline-markdown ul,
-	.episteme-inline-markdown ol,
-	.episteme-inline-markdown blockquote,
-	.episteme-inline-markdown pre,
-	.episteme-inline-markdown hr {
+  .true-recall-inline-markdown p:not(:first-child),
+	.true-recall-inline-markdown br,
+	.true-recall-inline-markdown ul,
+	.true-recall-inline-markdown ol,
+	.true-recall-inline-markdown blockquote,
+	.true-recall-inline-markdown pre,
+	.true-recall-inline-markdown hr {
     display: none;
   }
-  .episteme-inline-markdown strong,
-	.episteme-inline-markdown em,
-	.episteme-inline-markdown code,
-	.episteme-inline-markdown a {
+  .true-recall-inline-markdown strong,
+	.true-recall-inline-markdown em,
+	.true-recall-inline-markdown code,
+	.true-recall-inline-markdown a {
     display: inline;
   }
-  .episteme-inline-markdown .internal-link {
+  .true-recall-inline-markdown .internal-link {
     color: var(--text-accent);
     text-decoration: none;
   }
-  .episteme-card-markdown p {
+  .true-recall-card-markdown p {
     margin: 0;
   }
-  .episteme-card-markdown p + p {
+  .true-recall-card-markdown p + p {
     margin-top: 0.25rem;
   }
-  .episteme-card-markdown strong,
-	.episteme-card-markdown em,
-	.episteme-card-markdown code,
-	.episteme-card-markdown a {
+  .true-recall-card-markdown strong,
+	.true-recall-card-markdown em,
+	.true-recall-card-markdown code,
+	.true-recall-card-markdown a {
     display: inline;
   }
-  .episteme-card-markdown .internal-link {
+  .true-recall-card-markdown .internal-link {
     color: var(--text-accent);
     text-decoration: none;
   }
-  .episteme-scrollbar-thin::-webkit-scrollbar {
+  .true-recall-scrollbar-thin::-webkit-scrollbar {
     height: 4px;
   }
-  .episteme-scrollbar-thin::-webkit-scrollbar-track {
+  .true-recall-scrollbar-thin::-webkit-scrollbar-track {
     background: var(--background-modifier-border);
     border-radius: 2px;
   }
-  .episteme-scrollbar-thin::-webkit-scrollbar-thumb {
+  .true-recall-scrollbar-thin::-webkit-scrollbar-thumb {
     background: var(--background-modifier-border-hover);
     border-radius: 2px;
   }
-  .episteme-scrollbar-thin::-webkit-scrollbar-thumb:hover {
+  .true-recall-scrollbar-thin::-webkit-scrollbar-thumb:hover {
     background: var(--interactive-accent);
   }
 }
 @layer components {
-  .episteme-theme-showcase {
+  .true-recall-theme-showcase {
     position: fixed;
     top: 50%;
     left: 50%;
@@ -1968,20 +1968,20 @@
     font-family: var(--font-interface);
     font-size: 13px;
   }
-  .episteme-theme-showcase h2 {
+  .true-recall-theme-showcase h2 {
     color: var(--text-normal);
     font-size: 24px;
     font-weight: 600;
     margin-bottom: 8px;
   }
-  .episteme-theme-showcase p {
+  .true-recall-theme-showcase p {
     color: var(--text-muted);
     margin-bottom: 24px;
   }
-  .episteme-theme-showcase-section {
+  .true-recall-theme-showcase-section {
     margin-bottom: 32px;
   }
-  .episteme-theme-showcase-section h3 {
+  .true-recall-theme-showcase-section h3 {
     color: var(--text-accent);
     font-size: 14px;
     font-weight: 600;
@@ -1991,12 +1991,12 @@
     padding-bottom: 8px;
     border-bottom: 1px solid var(--background-modifier-border);
   }
-  .episteme-theme-showcase-grid {
+  .true-recall-theme-showcase-grid {
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
     gap: 12px;
   }
-  .episteme-theme-showcase-item {
+  .true-recall-theme-showcase-item {
     display: flex;
     align-items: center;
     gap: 12px;
@@ -2005,7 +2005,7 @@
     border-radius: 8px;
     border: 1px solid var(--background-modifier-border);
   }
-  .episteme-theme-showcase-swatch {
+  .true-recall-theme-showcase-swatch {
     width: 48px;
     height: 48px;
     border-radius: 8px;
@@ -2018,11 +2018,11 @@
     font-weight: 600;
     text-transform: uppercase;
   }
-  .episteme-theme-showcase-info {
+  .true-recall-theme-showcase-info {
     flex: 1;
     min-width: 0;
   }
-  .episteme-theme-showcase-name {
+  .true-recall-theme-showcase-name {
     font-weight: 600;
     color: var(--text-normal);
     margin-bottom: 2px;
@@ -2030,7 +2030,7 @@
     overflow: hidden;
     text-overflow: ellipsis;
   }
-  .episteme-theme-showcase-value {
+  .true-recall-theme-showcase-value {
     font-family: var(--font-monospace);
     font-size: 11px;
     color: var(--text-muted);
@@ -2038,12 +2038,12 @@
     overflow: hidden;
     text-overflow: ellipsis;
   }
-  .episteme-theme-showcase-desc {
+  .true-recall-theme-showcase-desc {
     font-size: 11px;
     color: var(--text-faint);
     margin-top: 2px;
   }
-  .episteme-theme-showcase::before {
+  .true-recall-theme-showcase::before {
     content: "×";
     position: absolute;
     top: 16px;
@@ -2059,11 +2059,11 @@
     border-radius: 6px;
     transition: all 0.2s;
   }
-  .episteme-theme-showcase:hover::before {
+  .true-recall-theme-showcase:hover::before {
     background: var(--background-modifier-hover);
     color: var(--text-normal);
   }
-  .episteme-theme-showcase {
+  .true-recall-theme-showcase {
     cursor: pointer;
   }
 }

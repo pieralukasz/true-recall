@@ -73,6 +73,9 @@ export class CompactCardItem extends BaseComponent {
             // Don't trigger if clicked on menu button
             if ((e.target as HTMLElement).closest("button")) return;
 
+            // Prevent event bubbling to avoid scroll position reset
+            e.stopPropagation();
+
             if (isSelectionMode) {
                 this.props.onToggleSelect?.();
             } else {

@@ -1,5 +1,5 @@
 /**
- * Authentication service using Supabase (Episteme Cloud)
+ * Authentication service using Supabase (True Recall Cloud)
  * Handles user login, signup, and session management
  *
  * Note: Credentials are hardcoded (SaaS model). The anon key is public
@@ -21,7 +21,7 @@ export interface AuthResult {
 }
 
 /**
- * Supabase authentication service for Episteme Cloud
+ * Supabase authentication service for True Recall Cloud
  */
 export class AuthService {
 	private client: SupabaseClient;
@@ -29,7 +29,7 @@ export class AuthService {
 	private supabaseAnonKey: string;
 
 	constructor() {
-		// Use hardcoded Episteme Cloud credentials (SaaS model)
+		// Use hardcoded True Recall Cloud credentials (SaaS model)
 		this.supabaseUrl = TRUE_RECALL_CLOUD.supabaseUrl;
 		this.supabaseAnonKey = TRUE_RECALL_CLOUD.supabaseAnonKey;
 		this.client = this.createClient();

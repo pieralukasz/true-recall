@@ -1,6 +1,6 @@
 /**
  * Flashcard Panel View
- * Main panel view for the Episteme plugin
+ * Main panel view for the True Recall plugin
  * Uses PanelStateManager and UI components for clean architecture
  */
 import {
@@ -509,8 +509,20 @@ export class FlashcardPanelView extends ItemView {
                 onSelectAll: (selected) => this.handleSelectAll(selected),
                 onEditSave: async (card, field, newContent) => void this.handleEditSave(card, field, newContent),
                 onEditChange: (change, field, newContent) => this.handleDiffEditChange(change, field, newContent),
-                onToggleExpand: (cardId) => this.stateManager.toggleCardExpanded(cardId),
-                onToggleSelect: (cardId) => this.stateManager.toggleCardSelection(cardId),
+                onToggleExpand: (cardId) => {
+                    const scrollPosition = this.contentContainer.scrollTop;
+                    this.stateManager.toggleCardExpanded(cardId);
+                    requestAnimationFrame(() => {
+                        this.contentContainer.scrollTop = scrollPosition;
+                    });
+                },
+                onToggleSelect: (cardId) => {
+                    const scrollPosition = this.contentContainer.scrollTop;
+                    this.stateManager.toggleCardSelection(cardId);
+                    requestAnimationFrame(() => {
+                        this.contentContainer.scrollTop = scrollPosition;
+                    });
+                },
                 onEnterSelectionMode: (cardId) => this.stateManager.enterSelectionMode(cardId),
                 onAdd: () => void this.handleAddFlashcard(),
                 onToggleAddExpand: () => this.handleToggleAddCard(),
