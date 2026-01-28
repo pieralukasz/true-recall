@@ -30,4 +30,11 @@ styles.css.backup
 # Test coverage
 coverage/
 
+# Claude Code configuration (project-specific)
+CLAUDE.md
+.claude/plans/
+.claude/agents/supabase-sync-updater.md
+.claude/agents/sql-migration.md
 
+# Documentation and plans
+docs/
