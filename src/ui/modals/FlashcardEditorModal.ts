@@ -557,7 +557,7 @@ export class FlashcardEditorModal extends BaseModal {
 					this.insertAtCursor(textarea, markdown);
 					new Notice("Image inserted");
 				} catch (error) {
-					console.error("[Episteme] Failed to save pasted image:", error);
+					console.error("[True Recall] Failed to save pasted image:", error);
 					new Notice("Failed to save image");
 				}
 				return;

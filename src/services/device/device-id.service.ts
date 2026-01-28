@@ -63,7 +63,7 @@ export class DeviceIdService {
      */
     isLocalStorageAvailable(): boolean {
         try {
-            const testKey = "__episteme_test__";
+            const testKey = "__true_recall_test__";
             window.localStorage.setItem(testKey, "test");
             window.localStorage.removeItem(testKey);
             return true;
@@ -85,7 +85,7 @@ export class DeviceIdService {
     private loadOrCreateDeviceId(): string {
         if (!this.isLocalStorageAvailable()) {
             console.warn(
-                "[Episteme] localStorage unavailable - using ephemeral device ID"
+                "[True Recall] localStorage unavailable - using ephemeral device ID"
             );
             return this.generateDeviceId();
         }
@@ -97,7 +97,7 @@ export class DeviceIdService {
 
         const newId = this.generateDeviceId();
         window.localStorage.setItem(DEVICE_ID_KEY, newId);
-        console.log(`[Episteme] Created new device ID: ${newId}`);
+        console.log(`[True Recall] Created new device ID: ${newId}`);
         return newId;
     }
 
