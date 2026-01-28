@@ -1,6 +1,6 @@
 {
-	"id": "episteme",
-	"name": "Episteme",
+	"id": "true-recall",
+	"name": "True Recall",
 	"version": "0.1.0",
 	"minAppVersion": "0.15.0",
 	"description": "AI-powered flashcard generation and spaced repetition for Obsidian",

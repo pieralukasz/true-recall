@@ -21,8 +21,6 @@
     --ep-color-white: #fff;
     --ep-spacing: 0.25rem;
     --ep-container-md: 28rem;
-    --ep-text-xs: 0.75rem;
-    --ep-text-xs--line-height: calc(1 / 0.75);
     --ep-text-sm: 0.875rem;
     --ep-text-sm--line-height: calc(1.25 / 0.875);
     --ep-text-lg: 1.125rem;
@@ -294,9 +292,6 @@
   .ep\:my-6 {
     margin-block: calc(var(--ep-spacing) * 6);
   }
-  .ep\:mt-0 {
-    margin-top: calc(var(--ep-spacing) * 0);
-  }
   .ep\:mt-0\.5 {
     margin-top: calc(var(--ep-spacing) * 0.5);
   }
@@ -558,9 +553,6 @@
   .ep\:w-full\! {
     width: 100% !important;
   }
-  .ep\:max-w-\[150px\] {
-    max-width: 150px;
-  }
   .ep\:max-w-\[300px\] {
     max-width: 300px;
   }
@@ -816,12 +808,6 @@
   }
   .ep\:border-obs-interactive {
     border-color: var(--ep-color-obs-interactive);
-  }
-  .ep\:border-obs-interactive\/30 {
-    border-color: var(--ep-color-obs-interactive);
-    @supports (color: color-mix(in lab, red, red)) {
-      border-color: color-mix(in oklab, var(--ep-color-obs-interactive) 30%, transparent);
-    }
   }
   .ep\:border-obs-modifier-border {
     border-color: var(--ep-color-obs-modifier-border);
@@ -1166,17 +1152,9 @@
     font-size: var(--ep-text-lg);
     line-height: var(--tw-leading, var(--ep-text-lg--line-height));
   }
-  .ep\:text-sm {
-    font-size: var(--ep-text-sm);
-    line-height: var(--tw-leading, var(--ep-text-sm--line-height));
-  }
   .ep\:text-xl {
     font-size: var(--ep-text-xl);
     line-height: var(--tw-leading, var(--ep-text-xl--line-height));
-  }
-  .ep\:text-xs {
-    font-size: var(--ep-text-xs);
-    line-height: var(--tw-leading, var(--ep-text-xs--line-height));
   }
   .ep\:text-\[9px\] {
     font-size: 9px;

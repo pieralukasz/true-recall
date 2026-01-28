@@ -14,7 +14,7 @@ if you want to view the source, please visit the github repository of this plugi
 `;
 
 const prod = (process.argv[2] === "production");
-const PLUGIN_ID = "episteme";
+const PLUGIN_ID = "true-recall";
 const VAULT_PATH = process.env.VAULT;
 
 // Determine output paths
