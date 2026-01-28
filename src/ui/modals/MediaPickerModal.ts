@@ -297,7 +297,7 @@ export class MediaPickerModal extends BasePromiseModal<MediaPickerResult> {
                 new Notice("Image saved");
             }
         } catch (error) {
-            console.error("[Episteme] Failed to save pasted image:", error);
+            console.error("[True Recall] Failed to save pasted image:", error);
             new Notice("Failed to save image");
         }
     }
@@ -322,7 +322,7 @@ export class MediaPickerModal extends BasePromiseModal<MediaPickerResult> {
                 new Notice("Image saved");
             }
         } catch (error) {
-            console.error("[Episteme] Failed to save dropped image:", error);
+            console.error("[True Recall] Failed to save dropped image:", error);
             new Notice("Failed to save image");
         }
     }

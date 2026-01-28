@@ -133,23 +133,23 @@ export class SqliteSchemaManager {
 		}
 
 		console.log(
-			`[Episteme] Running migrations from v${currentVersion} to v${latestVersion}...`
+			`[True Recall] Running migrations from v${currentVersion} to v${latestVersion}...`
 		);
 
 		for (let v = currentVersion + 1; v <= latestVersion; v++) {
-			console.log(`[Episteme] Migrating to schema v${v}...`);
+			console.log(`[True Recall] Migrating to schema v${v}...`);
 
 			const migration = this.MIGRATIONS[v];
 			if (migration) {
 				try {
 					migration(this.db);
 				} catch (e) {
-					console.error(`[Episteme] Migration failed for v${v}:`, e);
+					console.error(`[True Recall] Migration failed for v${v}:`, e);
 					throw e;
 				}
 			} else {
 				console.error(
-					`[Episteme] No migration found for version v${v}`
+					`[True Recall] No migration found for version v${v}`
 				);
 				throw new Error(`Missing migration for schema version ${v}`);
 			}
@@ -163,7 +163,7 @@ export class SqliteSchemaManager {
 		}
 
 		console.log(
-			`[Episteme] All migrations completed. Current schema version: v${latestVersion}`
+			`[True Recall] All migrations completed. Current schema version: v${latestVersion}`
 		);
 	}
 
@@ -183,16 +183,16 @@ export class SqliteSchemaManager {
 			for (const table of requiredTables) {
 				if (!existingTables.includes(table)) {
 					console.error(
-						`[Episteme] Missing required table: ${table}`
+						`[True Recall] Missing required table: ${table}`
 					);
 					return false;
 				}
 			}
 
-			console.log("[Episteme] Database integrity check passed");
+			console.log("[True Recall] Database integrity check passed");
 			return true;
 		} catch (error) {
-			console.error("[Episteme] Integrity check failed:", error);
+			console.error("[True Recall] Integrity check failed:", error);
 			return false;
 		}
 	}

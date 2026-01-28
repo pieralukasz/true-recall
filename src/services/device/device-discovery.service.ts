@@ -114,7 +114,7 @@ export class DeviceDiscoveryService {
                 lastReviewDate = dbInfo.lastReviewDate;
             } catch (e) {
                 console.warn(
-                    `[Episteme] Could not read database info from ${filename}:`,
+                    `[True Recall] Could not read database info from ${filename}:`,
                     e
                 );
             }
@@ -131,14 +131,14 @@ export class DeviceDiscoveryService {
                 isCurrentDevice: deviceId === this.currentDeviceId,
             };
         } catch (e) {
-            console.error(`[Episteme] Error getting metadata for ${path}:`, e);
+            console.error(`[True Recall] Error getting metadata for ${path}:`, e);
             return null;
         }
     }
 
     /**
      * Check if a legacy (non-device-specific) database exists.
-     * @returns True if episteme.db exists
+     * @returns True if true-recall.db exists
      */
     async hasLegacyDatabase(): Promise<boolean> {
         const legacyPath = normalizePath(`${DB_FOLDER}/${LEGACY_DB_FILE}`);

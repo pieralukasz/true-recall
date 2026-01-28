@@ -20,7 +20,7 @@ src/ui/
 
 ## CSS
 - Main styles: `styles.css`
-- Prefix all classes: `episteme-*`
+- Prefix all classes: `true-recall-*`
 - Use Obsidian CSS variables for theming
 
 ## Key Patterns

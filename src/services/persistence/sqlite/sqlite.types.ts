@@ -8,10 +8,10 @@ import type { QueryExecResult } from "./loader";
 export type { DatabaseLike, QueryExecResult, BindParams } from "./loader";
 
 export const DB_FOLDER = ".true-recall";
-export const DB_FILE = "episteme.db"; // legacy single-device database
+export const DB_FILE = "true-recall.db"; // legacy single-device database
 export const DB_FILE_PREFIX = "true-recall-";
 export const DB_FILE_SUFFIX = ".db";
-export const LEGACY_DB_FILE = "episteme.db";
+export const LEGACY_DB_FILE = "true-recall.db";
 export const SAVE_DEBOUNCE_MS = 60000; // 60 seconds - reduces UI jank on large databases
 
 /**
