@@ -2,23 +2,22 @@
 
 > **"Operating System for the Mind"** - UNDERSTAND, REMEMBER, CREATE
 
-Episteme is a comprehensive Obsidian plugin that combines AI-powered flashcard generation with FSRS v6 spaced repetition and Zettelkasten workflow integration. All data is stored locally in SQLite.
+Episteme is an Obsidian plugin that combines AI-powered flashcard generation with FSRS v6 spaced repetition. All data is stored locally in SQLite with optional cloud sync.
 
 ---
 
 ## Features at a Glance
 
-| Feature                      | Description                                                         |
-| ---------------------------- | ------------------------------------------------------------------- |
-| **AI Flashcard Generation**  | 7 AI models via OpenRouter create atomic, well-formatted flashcards |
-| **FSRS v6 Algorithm**        | State-of-the-art spaced repetition with 21 trainable parameters     |
-| **SQLite Storage**           | All data in portable `.episteme/episteme.db` file                   |
-| **Projects System**          | Organize cards across notes with many-to-many relationships         |
-| **12 Commands**              | Full command palette integration                                    |
-| **12+ Keyboard Shortcuts**   | Efficient review workflow                                           |
-| **9 Views/Panels**           | Specialized interfaces for every task                               |
-| **Natural Language Queries** | Ask questions about your stats in plain English                     |
-| **Image/Media Support**      | Embed images and videos with auto-path tracking                     |
+| Feature                      | Description                                                     |
+| ---------------------------- | --------------------------------------------------------------- |
+| **AI Flashcard Generation**  | 7 AI models via OpenRouter create atomic, well-formatted cards  |
+| **FSRS v6 Algorithm**        | State-of-the-art spaced repetition with 21 trainable parameters |
+| **SQLite Storage**           | All data in portable `.episteme/episteme.db` file               |
+| **Projects System**          | Organize cards across notes with many-to-many relationships     |
+| **Card Browser**             | Search, filter, and manage all flashcards in one place          |
+| **FSRS Simulator**           | Visualize scheduling behavior with different parameters         |
+| **Cloud Sync**               | Optional Supabase sync across devices                           |
+| **Natural Language Queries** | Ask questions about your stats in plain English                 |
 
 ---
 
@@ -45,30 +44,31 @@ npm run build
 
 1. **Configure API Key**: Settings → Episteme → Enter your [OpenRouter](https://openrouter.ai) API key
 2. **Open a Note**: Navigate to any note you want to create flashcards from
-3. **Generate**: Click the brain icon or run "Generate flashcards for current note"
+3. **Generate**: Click the floating brain button or open the flashcard panel
 4. **Review**: Click the brain ribbon icon to start a review session
 5. **Rate Cards**: Press 1-4 or use buttons (Again, Hard, Good, Easy)
 
 ---
 
-## Commands (12)
+## Commands (13)
 
 Access via Command Palette (`Cmd/Ctrl+P`):
 
-| Command                                  | Description                                                                                                                       |
-| ---------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------- |
-| **Open flashcard panel**                 | Opens the main sidebar showing flashcards for the current note. Add, edit, delete cards, and trigger AI generation from here.     |
-| **Generate flashcards for current note** | AI analyzes the active note and creates atomic flashcards. If cards exist, proposes updates via diff mode (NEW/MODIFIED/DELETED). |
-| **Start review session**                 | Opens review interface with cards filtered by daily limits and due dates. Rate cards 1-4 to schedule next review.                 |
-| **Review flashcards from current note**  | Reviews ONLY cards from the currently open note. Useful for focused topic study.                                                  |
-| **Review today's new cards**             | Reviews flashcards created today regardless of scheduling. Reinforce newly generated cards immediately.                           |
-| **Open statistics panel**                | Displays analytics: retention rate, future due forecast, card maturity pie chart, daily heatmap, and more.                        |
-| **Show notes missing flashcards**        | Lists all notes without flashcards (respects excluded folders). Find gaps in your knowledge coverage.                             |
-| **Show ready to harvest**                | Lists cards with 21+ day intervals ready to move from literature notes to permanent Zettel notes.                                 |
-| **Sync source notes with vault**         | Reconciles database with vault state. Detects renamed/moved/deleted notes and updates references.                                 |
-| **Show orphaned cards**                  | Shows flashcards whose source notes were deleted. Review, delete, or re-attach them to other notes.                               |
-| **Show projects**                        | Opens Projects panel showing all project groupings with card counts. Start project-filtered reviews.                              |
-| **Add current note to project**          | Add/remove current note from projects. Projects stored in frontmatter and auto-synced.                                            |
+| Command                                  | Description                                                              |
+| ---------------------------------------- | ------------------------------------------------------------------------ |
+| **Open flashcard panel**                 | Opens the sidebar showing flashcards for the current note                |
+| **Generate flashcards for current note** | Opens panel and triggers AI generation for the active note               |
+| **Start review session**                 | Opens session builder to configure and start a review                    |
+| **Review flashcards from current note**  | Reviews ONLY cards from the currently open note                          |
+| **Review today's new cards**             | Reviews flashcards created today regardless of scheduling                |
+| **Open statistics panel**                | Displays analytics: retention, forecasts, charts, and heatmap            |
+| **Open projects panel**                  | Shows all projects with card counts. Start project-filtered reviews      |
+| **Add current note to project**          | Add/remove current note from projects                                    |
+| **Open card browser**                    | Full-featured browser to search, filter, and manage all flashcards       |
+| **Open FSRS simulator**                  | Interactive simulator to visualize FSRS scheduling with different params |
+| **Create database backup**               | Creates a timestamped backup of your flashcard database                  |
+| **Sync cloud data**                      | Synchronize flashcards with Supabase cloud (pull + push)                 |
+| **Add flashcard UID to current note**    | Adds a unique identifier to link flashcards to the source note           |
 
 ---
 
@@ -76,123 +76,115 @@ Access via Command Palette (`Cmd/Ctrl+P`):
 
 All shortcuts work during review sessions:
 
-| Key             | Action                  | Context                                               |
-| --------------- | ----------------------- | ----------------------------------------------------- |
-| **Space**       | Show answer / Rate Good | Hidden → reveals answer; Revealed → rates 3           |
-| **1**           | Rate "Again"            | Schedules for immediate re-review (failed)            |
-| **2**           | Rate "Hard"             | Shorter interval than default                         |
-| **3**           | Rate "Good"             | Normal interval progression                           |
-| **4**           | Rate "Easy"             | Longer interval, card is well-known                   |
-| **Cmd/Ctrl+Z**  | Undo last rating        | Restores previous card state                          |
-| **! (Shift+1)** | Suspend card            | Removes from queue until manually unsuspended         |
-| **-**           | Bury card               | Hides until tomorrow                                  |
-| **=**           | Bury note               | Buries ALL cards from same source note until tomorrow |
-| **M**           | Move card               | Opens modal to transfer to different source note      |
-| **N**           | New flashcard           | Opens editor to add card to current source            |
-| **B**           | Branch/copy card        | Duplicates the card                                   |
-| **E**           | Edit card               | Opens inline editor for question/answer               |
+| Key             | Action                       | Context                                       |
+| --------------- | ---------------------------- | --------------------------------------------- |
+| **Space**       | Show answer / Rate Good      | Hidden → reveals answer; Revealed → rates 3   |
+| **1**           | Rate "Again"                 | Schedules for immediate re-review (failed)    |
+| **2**           | Rate "Hard"                  | Shorter interval than default                 |
+| **3**           | Rate "Good"                  | Normal interval progression                   |
+| **4**           | Rate "Easy"                  | Longer interval, card is well-known           |
+| **Cmd/Ctrl+Z**  | Undo last rating             | Restores previous card state                  |
+| **! (Shift+1)** | Suspend card                 | Removes from queue until manually unsuspended |
+| **-**           | Bury card                    | Hides until tomorrow                          |
+| **=**           | Bury note                    | Buries ALL cards from same source note        |
+| **M**           | Move card                    | Opens modal to transfer to different note     |
+| **N**           | New flashcard                | Opens editor to add card manually             |
+| **G**           | AI Generate                  | Generate flashcard with AI instructions       |
+| **B**           | Branch/copy card             | Duplicates the card                           |
+| **E**           | Edit card                    | Opens editor for question/answer              |
 
 ---
 
-## Views & Panels (9)
+## Views & Panels (8)
 
-### 1. Flashcard Panel (Main Sidebar)
+### 1. Flashcard Panel (Sidebar)
 
 Primary interface for managing flashcards:
 
--   List of all flashcards from current note
--   Add new flashcard button
--   AI generation with diff mode for updates
--   Edit/delete/move actions per card
--   Card preview with markdown rendering
+- List of all flashcards from current note
+- Add new flashcard button
+- AI generation with diff mode for updates
+- Edit/delete/move actions per card
+- Card preview with markdown rendering
 
 ### 2. Review View
 
 Study interface for spaced repetition:
 
--   Question display (Space to reveal answer)
--   Answer with markdown formatting
--   Four rating buttons: Again (1), Hard (2), Good (3), Easy (4)
--   Next interval preview for each rating
--   Progress header: "New: 5 | Learning: 3 | Due: 12"
--   Undo button (Cmd+Z)
--   Edit card inline
+- Question display (Space to reveal answer)
+- Answer with markdown formatting
+- Four rating buttons: Again (1), Hard (2), Good (3), Easy (4)
+- Next interval preview for each rating
+- Progress header: "New: 5 | Learning: 3 | Due: 12"
+- Undo button (Cmd+Z)
 
 ### 3. Statistics View
 
 Comprehensive analytics dashboard:
 
--   **Today's Summary**: Cards reviewed, time spent, accuracy %
--   **Future Due Chart**: Bar chart of upcoming workload
--   **Retention Rate**: Line chart over 1m/3m/6m/1y/all-time
--   **Card Maturity**: Pie chart (New, Learning, Young <21d, Mature >=21d, Suspended, Buried)
--   **Calendar Heatmap**: Daily activity visualization
--   **Natural Language Query**: Ask questions like "How many cards did I review last week?"
+- **Today's Summary**: Cards reviewed, time spent, accuracy %
+- **Future Due Chart**: Bar chart of upcoming workload
+- **Retention Rate**: Line chart over time ranges
+- **Card Counts**: Distribution by state
+- **Calendar Heatmap**: Daily activity visualization
+- **Natural Language Query**: Ask questions about your data
 
-### 4. Custom Session View
+### 4. Session View
 
 Advanced session builder for filtered reviews:
 
--   **Current Note**: Review only active note's cards
--   **Today's Cards**: Cards created today
--   **Multi-Note Selection**: Search and select multiple notes
--   **State Filters**: Due, Learning, New, Buried checkboxes
--   **Ignore Daily Limits**: Override new/review limits
--   **Bypass Scheduling**: Study cards regardless of due dates
--   **Project Filter**: Review only cards from specific projects
+- **Current Note**: Review only active note's cards
+- **Today's Cards**: Cards created today
+- **Multi-Note Selection**: Search and select multiple notes
+- **State Filters**: Due, Learning, New, Buried checkboxes
+- **Ignore Daily Limits**: Override new/review limits
+- **Bypass Scheduling**: Study cards regardless of due dates
 
-### 5. Missing Flashcards View
-
-Find notes without flashcards:
-
--   Click note name to open it
--   Shows note path for disambiguation
--   Respects excluded folders setting
--   Identify coverage gaps
-
-### 6. Ready to Harvest View
-
-Cards ready for "graduation" to permanent notes:
-
--   Cards with 21+ day intervals (well-learned)
--   Grouped by source note
--   Part of literature → permanent workflow
-
-### 7. Orphaned Cards View
-
-Manage cards without source notes:
-
--   Lists cards whose source files were deleted
--   Actions: Edit, Delete, Re-attach to note
--   Prevents knowledge loss from deletions
-
-### 8. Projects View
-
-Project organization interface:
-
--   All projects with card counts
--   Due/New cards per project
--   Click to start filtered review
--   Create/rename/delete projects
-
-### 9. Dashboard View
+### 5. Dashboard View
 
 Quick command center:
 
--   Searchable command list
--   Organized by category
--   One-click execution
--   Today's quick stats
+- Searchable command list
+- Organized by category
+- One-click execution
+
+### 6. Projects View
+
+Project organization interface:
+
+- All projects with card counts
+- Due/New cards per project
+- Click to start filtered review
+- Create/rename/delete projects
+
+### 7. Browser View
+
+Full-featured card browser:
+
+- Search cards by question/answer content
+- Filter by state, source note, project
+- Sort by various criteria
+- Bulk operations
+- Preview and edit cards
+
+### 8. Simulator View
+
+FSRS algorithm simulator:
+
+- Adjust retention, weights, intervals
+- Visualize scheduling curves
+- Compare different configurations
+- Understand FSRS behavior
 
 ---
 
 ## Ribbon Icons (3)
 
-| Icon      | Color  | Action                        |
-| --------- | ------ | ----------------------------- |
-| Brain     | Purple | Opens review session selector |
-| Bar Chart | Orange | Opens statistics panel        |
-| Blocks    | Light  | Opens command dashboard       |
+| Icon      | Color  | Action                 |
+| --------- | ------ | ---------------------- |
+| Brain     | Purple | Opens session builder  |
+| Bar Chart | Orange | Opens statistics panel |
+| Blocks    | Light  | Opens command dashboard|
 
 ---
 
@@ -204,6 +196,7 @@ When right-clicking a markdown file:
 | ------------------------------------ | -------------------------------------------- |
 | **Review flashcards from this note** | Starts review with ONLY cards from this file |
 | **Create project from this note**    | Creates a new project using note's name      |
+| **Open flashcard panel**             | Opens the sidebar panel                      |
 
 ---
 
@@ -213,10 +206,10 @@ Projects organize flashcards into collections spanning multiple notes.
 
 ### What Are Projects?
 
--   Named groups (e.g., "Spanish Course", "Machine Learning", "Book: Atomic Habits")
--   Notes can belong to multiple projects (many-to-many)
--   Cards inherit their source note's project memberships
--   Review sessions can filter by project
+- Named groups (e.g., "Spanish Course", "Machine Learning", "Book: Atomic Habits")
+- Notes can belong to multiple projects (many-to-many)
+- Cards inherit their source note's project memberships
+- Review sessions can filter by project
 
 ### Using Projects
 
@@ -232,47 +225,8 @@ episteme_projects:
 
 Or use:
 
--   Command: "Add current note to project"
--   Right-click: "Create project from this note"
-
-Projects auto-create when first used and sync automatically when notes are modified.
-
-### Project-Filtered Reviews
-
-1. Open Projects panel
-2. Click a project to start filtered review
-3. Or use Custom Session → select project
-4. Only cards from notes in that project appear
-
----
-
-## Tagging System (Zettelkasten)
-
-Tags determine which notes generate flashcards:
-
-### Literature Notes (`#input/*`)
-
-Temporary flashcards for processing source material:
-
-| Tag              | Purpose             |
-| ---------------- | ------------------- |
-| `#input/book`    | Book notes          |
-| `#input/article` | Article/paper notes |
-| `#input/video`   | Video/lecture notes |
-| `#input/course`  | Course material     |
-
-### Permanent Notes (`#mind/*`)
-
-| Tag                 | Flashcards | Purpose                                       |
-| ------------------- | ---------- | --------------------------------------------- |
-| `#mind/zettel`      | Yes        | Your ideas and insights - permanent knowledge |
-| `#mind/application` | Optional   | Real-world case studies                       |
-| `#mind/protocol`    | Optional   | Procedures and how-to guides                  |
-| `#mind/question`    | No         | Open questions to explore                     |
-| `#mind/hub`         | No         | Entry points to topics                        |
-| `#mind/structure`   | No         | Writing outlines                              |
-| `#mind/index`       | No         | Category connectors                           |
-| `#mind/person`      | No         | People profiles                               |
+- Command: "Add current note to project"
+- Right-click: "Create project from this note"
 
 ---
 
@@ -280,70 +234,15 @@ Temporary flashcards for processing source material:
 
 All accessed via [OpenRouter](https://openrouter.ai) with a single API key:
 
-| Model                | Provider  | Best For                                     |
-| -------------------- | --------- | -------------------------------------------- |
-| **Gemini 3 Flash**   | Google    | Default - fast, affordable, good quality     |
-| **Gemini 2.5 Pro**   | Google    | Complex notes requiring deeper understanding |
-| **GPT-5.1**          | OpenAI    | Excellent reasoning                          |
-| **GPT-4o**           | OpenAI    | Balanced speed and quality                   |
-| **Claude Opus 4.5**  | Anthropic | Most capable, nuanced content                |
-| **Claude Sonnet 4**  | Anthropic | Fast with good quality                       |
-| **Llama 4 Maverick** | Meta      | Open-source, privacy-focused                 |
-
----
-
-## Settings Reference
-
-### AI Generation
-
-| Setting                  | Description                                 | Default        |
-| ------------------------ | ------------------------------------------- | -------------- |
-| **OpenRouter API Key**   | Required for AI generation                  | None           |
-| **AI Model**             | Model for flashcard generation              | Gemini 3 Flash |
-| **Flashcards Folder**    | Legacy folder setting                       | "Flashcards"   |
-| **Store Source Content** | Save note content for diff updates          | false          |
-| **Excluded Folders**     | Ignore when scanning for missing flashcards | []             |
-
-### FSRS Algorithm
-
-| Setting                 | Description                            | Default     |
-| ----------------------- | -------------------------------------- | ----------- |
-| **Request Retention**   | Target recall probability (0.70-0.99)  | 0.90        |
-| **Maximum Interval**    | Longest possible review interval       | 36500 days  |
-| **New Cards Per Day**   | Daily new card limit                   | 20          |
-| **Reviews Per Day**     | Daily review limit                     | 200         |
-| **Learning Steps**      | Minutes between new card reviews       | [1, 10]     |
-| **Relearning Steps**    | Minutes for lapsed cards               | [10]        |
-| **Graduating Interval** | Days until first review after learning | 1           |
-| **Easy Interval**       | Days if rated "Easy" first time        | 4           |
-| **FSRS Weights**        | 21 algorithm parameters                | v6 defaults |
-
-### Review UI
-
-| Setting                       | Description                            | Default    |
-| ----------------------------- | -------------------------------------- | ---------- |
-| **Review Mode**               | Fullscreen or sidebar panel            | Fullscreen |
-| **Custom Session Interface**  | Modal or panel                         | Modal      |
-| **Show Next Review Time**     | Display predicted intervals            | true       |
-| **Auto-Advance**              | Auto-show next card after rating       | false      |
-| **Show Review Header**        | Display progress bar and stats         | true       |
-| **Show Header Stats**         | Show New/Learning/Due counters         | true       |
-| **Continuous Custom Reviews** | "Next Session" button after completing | false      |
-
-### Display Order
-
-| Setting            | Description                             | Default       |
-| ------------------ | --------------------------------------- | ------------- |
-| **New Card Order** | Random, Oldest First, Newest First      | Random        |
-| **Review Order**   | Due Date, Random, Due Date + Random     | Due Date      |
-| **New/Review Mix** | After Reviews, Mixed In, Before Reviews | After Reviews |
-
-### Scheduling
-
-| Setting            | Description                     | Default     |
-| ------------------ | ------------------------------- | ----------- |
-| **Day Start Hour** | When "day" resets (Anki-style)  | 4 (4:00 AM) |
-| **Zettel Folder**  | Where to create permanent notes | "Zettel"    |
+| Model                | Provider  | Best For                                 |
+| -------------------- | --------- | ---------------------------------------- |
+| **Gemini 3 Flash**   | Google    | Default - fast, affordable, good quality |
+| **Gemini 2.5 Pro**   | Google    | Complex notes requiring deep reasoning   |
+| **GPT-5.1**          | OpenAI    | Latest OpenAI model                      |
+| **GPT-4o**           | OpenAI    | Balanced speed and quality               |
+| **Claude Opus 4.5**  | Anthropic | Most capable, nuanced content            |
+| **Claude Sonnet 4**  | Anthropic | Fast with good quality                   |
+| **Llama 4 Maverick** | Meta      | Open-source option                       |
 
 ---
 
@@ -353,78 +252,19 @@ All accessed via [OpenRouter](https://openrouter.ai) with a single API key:
 
 All data stored in `.episteme/episteme.db` using sql.js:
 
-| Table                    | Purpose                                                                               |
-| ------------------------ | ------------------------------------------------------------------------------------- |
-| **cards**                | Flashcard content (Q&A) + FSRS data (due, stability, difficulty, state, reps, lapses) |
-| **review_log**           | Every review: card_id, rating, response_time_ms, scheduled/elapsed days               |
-| **daily_stats**          | Daily aggregates: reviews, new cards, time, rating breakdown                          |
-| **daily_reviewed_cards** | Which cards reviewed each day                                                         |
-| **meta**                 | Schema version for migrations                                                         |
+| Table                    | Purpose                                                |
+| ------------------------ | ------------------------------------------------------ |
+| **cards**                | Flashcard content (Q&A) + FSRS scheduling data         |
+| **review_log**           | Every review: card_id, rating, response time           |
+| **daily_stats**          | Daily aggregates: reviews, new cards, time, accuracy   |
+| **daily_reviewed_cards** | Which cards reviewed each day                          |
+| **meta**                 | Schema version for migrations                          |
 
-### Benefits
+### Cloud Sync (Optional)
 
--   Fast queries with proper indexing
--   Portable single-file database
--   No external server needed
--   Full review history for analytics
-
----
-
-## Advanced Features
-
-### Natural Language Queries
-
-Ask questions about your data in plain English:
-
-**How it works:**
-
--   Uses LangChain with OpenRouter LLM
--   AI generates read-only SQL queries
--   Results interpreted in natural language
-
-**Example questions:**
-
--   "How many cards did I review last week?"
--   "What's my average retention rate?"
--   "Which cards have I failed the most?"
--   "What's my longest review streak?"
-
-**Access:** Statistics panel → "Ask a Question" section
-
-### Image & Media Support
-
-**Supported formats:**
-
--   Images: png, jpg, jpeg, gif, webp, svg
--   Videos: mp4, webm, mov, ogg
-
-**Features:**
-
--   Image Picker Modal: Browse vault for images
--   Clipboard Paste: Paste directly into editor
--   Wiki-Link Syntax: `![[image.png|width]]`
--   Auto-Path Updates: References update when images move/rename
-
-### Auto-Sync Behaviors
-
-The plugin automatically responds to file changes:
-
-| Event            | Behavior                                                           |
-| ---------------- | ------------------------------------------------------------------ |
-| **File Modify**  | Syncs `episteme_projects` frontmatter to database (500ms debounce) |
-| **File Rename**  | Updates source note paths and image references in cards            |
-| **File Delete**  | Marks cards as orphaned (preserves cards, unlinks source)          |
-| **Image Rename** | Updates all flashcard image paths                                  |
-| **Leaf Change**  | Flashcard panel updates to show current note's cards               |
-
-### Diff Mode Updates
-
-When generating flashcards for a note that already has cards:
-
--   AI compares current note content with existing flashcards
--   Proposes: NEW cards for uncovered content, MODIFIED for errors, DELETED for removed content
--   Preserves existing stable flashcards (stability over perfection)
--   Requires "Store Source Content" setting enabled
+- Supabase-based synchronization
+- Pull/push with conflict resolution
+- Force replace option for recovery
 
 ---
 
@@ -434,10 +274,10 @@ Free Spaced Repetition Scheduler version 6 - superior to Anki's SM-2:
 
 ### Key Concepts
 
--   **Stability**: Days until 90% retention probability
--   **Difficulty**: Per-card difficulty (0-10)
--   **Fuzzing**: ±2.5% interval randomization prevents bunching
--   **States**: New → Learning → Review → Relearning (on lapse)
+- **Stability**: Days until 90% retention probability
+- **Difficulty**: Per-card difficulty (0-10)
+- **Fuzzing**: ±2.5% interval randomization prevents bunching
+- **States**: New → Learning → Review → Relearning (on lapse)
 
 ### Learning Flow
 
@@ -462,12 +302,47 @@ npm run test:coverage # Coverage report
 
 ### Dependencies
 
--   **obsidian** - Plugin API
--   **ts-fsrs** - FSRS v6 algorithm
--   **sql.js** - SQLite in JavaScript
--   **chart.js** - Visualizations
--   **langchain** - Natural language queries
--   **zod** - Schema validation
+- **obsidian** - Plugin API
+- **ts-fsrs** - FSRS v6 algorithm
+- **sql.js** - SQLite in JavaScript
+- **chart.js** - Visualizations
+- **@langchain/*** - Natural language queries
+- **@supabase/supabase-js** - Cloud sync
+- **zod** - Schema validation
+
+---
+
+## TODO
+
+### High Priority
+
+- [ ] FSRS weight optimization from review history
+- [ ] Mobile-responsive UI improvements
+- [ ] Bulk card operations in browser
+- [ ] Export/import flashcards (Anki format)
+
+### Features
+
+- [ ] Cloze deletion support
+- [ ] Audio/TTS for flashcards
+- [ ] Spaced repetition for images (visual memory)
+- [ ] Custom card templates
+- [ ] Shared decks/projects
+
+### Quality of Life
+
+- [ ] Keyboard shortcuts customization
+- [ ] Statistics export (CSV/JSON)
+- [ ] Review session history
+- [ ] Card difficulty hints during review
+- [ ] Improved diff mode accuracy
+
+### Technical
+
+- [ ] Performance optimization for large databases
+- [ ] Offline-first sync conflict resolution
+- [ ] Plugin API for extensions
+- [ ] Automated testing coverage improvement
 
 ---
 
@@ -485,9 +360,8 @@ Contributions welcome! Please submit a Pull Request.
 
 ## Support
 
--   Report issues on GitHub
--   **[FSRS Documentation](docs/FSRS.md)** - Comprehensive guide to the FSRS algorithm, card states, and scheduling
--   FSRS4Anki Wiki: [https://github.com/open-spaced-repetition/fsrs4anki/wiki](https://github.com/open-spaced-repetition/fsrs4anki/wiki)
+- Report issues on GitHub
+- FSRS4Anki Wiki: [https://github.com/open-spaced-repetition/fsrs4anki/wiki](https://github.com/open-spaced-repetition/fsrs4anki/wiki)
 
 ---
 
