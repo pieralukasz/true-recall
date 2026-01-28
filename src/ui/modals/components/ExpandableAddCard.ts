@@ -14,6 +14,7 @@ export interface ExpandableAddCardProps {
 	isExpanded: boolean;
 	onToggleExpand: () => void;
 	onSave: (question: string, answer: string) => void;
+	onSaveWithAI: (question: string, answer: string, aiInstruction: string) => void;
 	onCancel: () => void;
 }
 
@@ -26,6 +27,8 @@ export class ExpandableAddCard extends BaseComponent {
 	private answerField: EditableTextField | null = null;
 	private questionValue: string = "";
 	private answerValue: string = "";
+	private aiInstructionValue: string = "";
+	private isAiAssistExpanded: boolean = false;
 
 	constructor(container: HTMLElement, props: ExpandableAddCardProps) {
 		super(container);
@@ -123,6 +126,41 @@ export class ExpandableAddCard extends BaseComponent {
 			},
 		});
 
+		// AI Assist toggle section
+		const aiAssistSection = editContainer.createDiv({
+			cls: "ep:mt-3 ep:pt-3 ep:border-t ep:border-obs-border",
+		});
+
+		const aiToggleRow = aiAssistSection.createDiv({
+			cls: "ep:flex ep:items-center ep:gap-2 ep:cursor-pointer ep:text-obs-muted ep:hover:text-obs-normal ep:transition-colors",
+		});
+
+		const toggleIcon = aiToggleRow.createSpan({ cls: "ep:w-4 ep:h-4 ep:transition-transform" });
+		setIcon(toggleIcon, this.isAiAssistExpanded ? "chevron-down" : "chevron-right");
+
+		aiToggleRow.createSpan({
+			text: "AI Assist",
+			cls: "ep:text-ui-smaller ep:font-medium",
+		});
+
+		this.events.addEventListener(aiToggleRow, "click", () => {
+			this.isAiAssistExpanded = !this.isAiAssistExpanded;
+			this.render();
+		});
+
+		// AI instruction textarea (shown when expanded)
+		if (this.isAiAssistExpanded) {
+			const aiInputWrapper = aiAssistSection.createDiv({ cls: "ep:mt-2" });
+			const aiTextarea = aiInputWrapper.createEl("textarea", {
+				cls: "ep:w-full ep:min-h-16 ep:p-2 ep:border ep:border-obs-border ep:rounded ep:bg-obs-primary ep:text-obs-normal ep:text-ui-smaller ep:resize-y ep:focus:outline-none ep:focus:border-obs-interactive ep:placeholder:text-obs-muted",
+				placeholder: "np. stwórz podobne fiszki, rozwiń temat, dodaj więcej przykładów...",
+			});
+			aiTextarea.value = this.aiInstructionValue;
+			this.events.addEventListener(aiTextarea, "input", () => {
+				this.aiInstructionValue = aiTextarea.value;
+			});
+		}
+
 		// Buttons
 		const buttonsRow = editContainer.createDiv({
 			cls: "ep:flex ep:justify-end ep:gap-2 ep:pt-2 ep:border-t ep:border-obs-border",
@@ -135,11 +173,15 @@ export class ExpandableAddCard extends BaseComponent {
 		this.events.addEventListener(cancelBtn, "click", () => {
 			this.questionValue = "";
 			this.answerValue = "";
+			this.aiInstructionValue = "";
+			this.isAiAssistExpanded = false;
 			onCancel();
 		});
 
+		// Dynamic button based on AI instruction
+		const hasAiInstruction = this.aiInstructionValue.trim().length > 0;
 		const addBtn = buttonsRow.createEl("button", {
-			text: "Add flashcard",
+			text: hasAiInstruction ? "Add & Generate" : "Add flashcard",
 			cls: "mod-cta ep:py-1.5 ep:px-3 ep:text-ui-smaller ep:rounded",
 		});
 		this.events.addEventListener(addBtn, "click", () => {
@@ -147,10 +189,16 @@ export class ExpandableAddCard extends BaseComponent {
 			const answer = this.answerField?.getValue() || this.answerValue;
 
 			if (question.trim() && answer.trim()) {
-				onSave(question, answer);
+				if (hasAiInstruction) {
+					this.props.onSaveWithAI(question, answer, this.aiInstructionValue);
+				} else {
+					onSave(question, answer);
+				}
 				// Reset after save
 				this.questionValue = "";
 				this.answerValue = "";
+				this.aiInstructionValue = "";
+				this.isAiAssistExpanded = false;
 			}
 		});
 	}

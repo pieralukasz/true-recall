@@ -298,6 +298,9 @@ export class FlashcardReviewModal extends BaseModal {
 			isExpanded: this.state.isAddCardExpanded,
 			onToggleExpand: () => this.handleToggleAddCard(),
 			onSave: (question, answer) => this.handleAddCard(question, answer),
+			onSaveWithAI: () => {
+				// AI assist not supported in review modal - just save normally
+			},
 			onCancel: () => this.handleCancelAddCard(),
 		});
 
