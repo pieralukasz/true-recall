@@ -137,6 +137,20 @@ export class FlashcardPanelView extends ItemView {
             menu.addSeparator();
 
             menu.addItem((item) => {
+                item.setTitle("Copy to clipboard")
+                    .setIcon("clipboard-copy")
+                    .onClick(() => void this.handleCopyAllToClipboard());
+            });
+
+            menu.addItem((item) => {
+                item.setTitle("Export as CSV")
+                    .setIcon("file-down")
+                    .onClick(() => void this.handleExportCsv());
+            });
+
+            menu.addSeparator();
+
+            menu.addItem((item) => {
                 item.setTitle("Open flashcard file")
                     .setIcon("file-text")
                     .onClick(() => void this.handleOpenFlashcardFile());
@@ -439,6 +453,8 @@ export class FlashcardPanelView extends ItemView {
                     onReview: () => void this.handleReviewFromPanel(),
                     onExitSelectionMode: () => this.stateManager.exitSelectionMode(),
                     onSearchChange: (query) => this.stateManager.setSearchQuery(query),
+                    onExportCsv: () => void this.handleExportCsv(),
+                    onCopyToClipboard: () => void this.handleCopyAllToClipboard(),
                 });
                 this.headerComponent.render();
             } else {
@@ -900,6 +916,69 @@ export class FlashcardPanelView extends ItemView {
         const text = `Q: ${card.question}\nA: ${card.answer}`;
         await navigator.clipboard.writeText(text);
         new Notice("Copied to clipboard");
+    }
+
+    // ===== Export Handlers =====
+
+    /**
+     * Copy all flashcards to clipboard as formatted text
+     */
+    private async handleCopyAllToClipboard(): Promise<void> {
+        const state = this.stateManager.getState();
+        if (!state.flashcardInfo?.flashcards || state.flashcardInfo.flashcards.length === 0) {
+            new Notice("No flashcards to copy");
+            return;
+        }
+
+        const text = state.flashcardInfo.flashcards
+            .map((card, i) => `${i + 1}. Q: ${card.question}\n   A: ${card.answer}`)
+            .join("\n\n");
+
+        await navigator.clipboard.writeText(text);
+        new Notice(`Copied ${state.flashcardInfo.flashcards.length} flashcard(s) to clipboard`);
+    }
+
+    /**
+     * Export all flashcards as CSV file
+     */
+    private async handleExportCsv(): Promise<void> {
+        const state = this.stateManager.getState();
+        if (!state.flashcardInfo?.flashcards || state.flashcardInfo.flashcards.length === 0) {
+            new Notice("No flashcards to export");
+            return;
+        }
+
+        // Build CSV content with proper escaping
+        const escapeCSV = (str: string): string => {
+            if (str.includes(",") || str.includes("\n") || str.includes('"')) {
+                return `"${str.replace(/"/g, '""')}"`;
+            }
+            return str;
+        };
+
+        const header = "Question,Answer";
+        const rows = state.flashcardInfo.flashcards.map(
+            (card) => `${escapeCSV(card.question)},${escapeCSV(card.answer)}`
+        );
+        const csvContent = [header, ...rows].join("\n");
+
+        // Generate filename from current file
+        const filename = state.currentFile
+            ? `${state.currentFile.basename}-flashcards.csv`
+            : "flashcards.csv";
+
+        // Create blob and download
+        const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement("a");
+        link.href = url;
+        link.download = filename;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        URL.revokeObjectURL(url);
+
+        new Notice(`Exported ${state.flashcardInfo.flashcards.length} flashcard(s) to CSV`);
     }
 
     // ===== Move Card Handlers =====

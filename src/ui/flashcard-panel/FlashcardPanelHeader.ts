@@ -26,6 +26,8 @@ export interface FlashcardPanelHeaderProps {
     onReview?: () => void;
     onExitSelectionMode?: () => void;
     onSearchChange?: (query: string) => void;
+    onExportCsv?: () => void;
+    onCopyToClipboard?: () => void;
 }
 
 interface StatusCounts {
@@ -241,6 +243,27 @@ export class FlashcardPanelHeader extends BaseComponent {
                     .setIcon("sparkles")
                     .onClick(() => this.props.onGenerate?.());
             });
+        }
+
+        // Export options (only when flashcards exist)
+        if (hasFlashcards) {
+            menu.addSeparator();
+
+            if (this.props.onCopyToClipboard) {
+                menu.addItem((item) => {
+                    item.setTitle("Copy to clipboard")
+                        .setIcon("clipboard-copy")
+                        .onClick(() => this.props.onCopyToClipboard?.());
+                });
+            }
+
+            if (this.props.onExportCsv) {
+                menu.addItem((item) => {
+                    item.setTitle("Export as CSV")
+                        .setIcon("file-down")
+                        .onClick(() => this.props.onExportCsv?.());
+                });
+            }
         }
 
         menu.showAtMouseEvent(e);
