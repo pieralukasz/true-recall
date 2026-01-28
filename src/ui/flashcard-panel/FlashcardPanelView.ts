@@ -881,6 +881,11 @@ export class FlashcardPanelView extends ItemView {
             requestAnimationFrame(() => {
                 this.contentContainer.scrollTop = scrollPosition;
             });
+
+            // If AI instruction provided, generate additional flashcards
+            if (result.aiInstruction) {
+                await this.generateAdditionalCards(result.question, result.answer, result.aiInstruction);
+            }
         } catch (error) {
             new Notice(`Failed to update flashcard: ${error instanceof Error ? error.message : String(error)}`);
         }
@@ -1169,13 +1174,20 @@ export class FlashcardPanelView extends ItemView {
             mode: "add",
             currentFilePath: state.currentFile.path,
             sourceNoteName: state.currentFile.basename,
-            prefillQuestion: "question",
-            prefillAnswer: "answer",
+            prefillQuestion: "",
+            prefillAnswer: "",
         });
 
         const result = await modal.openAndWait();
         if (result.cancelled) return;
 
+        // If AI instruction provided, use the AI generation flow
+        if (result.aiInstruction) {
+            await this.handleAddCardSaveWithAI(result.question, result.answer, result.aiInstruction);
+            return;
+        }
+
+        // Normal save without AI
         try {
             await this.flashcardManager.addSingleFlashcard(
                 result.question,
@@ -1330,6 +1342,87 @@ Generate additional flashcards based on the context and instruction above.`;
 
         } catch (error) {
             console.error("Error in Add & Generate:", error);
+            new Notice(`Error: ${error instanceof Error ? error.message : String(error)}`);
+        }
+    }
+
+    /**
+     * Generate additional flashcards based on an existing card (used in edit mode)
+     */
+    private async generateAdditionalCards(
+        question: string,
+        answer: string,
+        aiInstruction: string
+    ): Promise<void> {
+        const state = this.stateManager.getState();
+        if (!state.currentFile) return;
+
+        // Check API key
+        if (!this.plugin.settings.openRouterApiKey) {
+            new Notice("Please configure your OpenRouter API key in settings.");
+            return;
+        }
+
+        try {
+            new Notice("Generating additional flashcards...");
+
+            // Generate flashcards with AI using edited card as context
+            const contextPrompt = `User's flashcard for context:
+Q: ${question}
+A: ${answer}
+
+User's instruction: ${aiInstruction}
+
+Generate additional flashcards based on the context and instruction above.`;
+
+            const flashcardsMarkdown = await this.openRouterService.generateFlashcards(
+                contextPrompt,
+                undefined,
+                CONTEXT_BASED_GENERATION_PROMPT
+            );
+
+            if (flashcardsMarkdown.trim() === "NO_NEW_CARDS") {
+                new Notice("No additional flashcards generated.");
+                return;
+            }
+
+            // Parse generated flashcards
+            const { FlashcardParserService } = await import("../../services/flashcard/flashcard-parser.service");
+            const parser = new FlashcardParserService();
+            const generatedFlashcards = parser.extractFlashcards(flashcardsMarkdown);
+
+            if (generatedFlashcards.length === 0) {
+                new Notice("No flashcards were generated. Please try different instructions.");
+                return;
+            }
+
+            // Show review modal for selection
+            const modal = new FlashcardReviewModal(this.app, {
+                initialFlashcards: generatedFlashcards,
+                sourceNoteName: state.currentFile.basename,
+                openRouterService: this.openRouterService,
+            });
+
+            const result = await modal.openAndWait();
+
+            if (result.cancelled || !result.flashcards || result.flashcards.length === 0) {
+                new Notice("No additional flashcards saved.");
+                return;
+            }
+
+            // Save selected flashcards
+            const flashcardsWithIds = result.flashcards.map((f) => ({
+                id: f.id || crypto.randomUUID(),
+                question: f.question,
+                answer: f.answer,
+            }));
+
+            await this.flashcardManager.saveFlashcardsToSql(state.currentFile, flashcardsWithIds);
+            new Notice(`Saved ${result.flashcards.length} additional flashcard(s)`);
+            await this.loadFlashcardInfo();
+
+        } catch (error) {
+            console.error("Error generating additional flashcards:", error);
             new Notice(`Error: ${error instanceof Error ? error.message : String(error)}`);
         }
     }
