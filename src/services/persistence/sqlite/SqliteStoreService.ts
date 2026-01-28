@@ -70,7 +70,7 @@ export class SqliteStoreService {
             // File exists but cannot be read - CRITICAL ERROR
             console.error("[Episteme] Database load failed:", error);
             new Notice(
-                "Episteme: Cannot load database. Please restore from backup (Settings → Data & Backup → Restore).",
+                "True Recall: Cannot load database. Please restore from backup (Settings → Data & Backup → Restore).",
                 0  // Don't auto-hide
             );
             throw error;  // Don't continue with empty database!

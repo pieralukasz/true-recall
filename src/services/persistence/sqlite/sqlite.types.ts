@@ -7,9 +7,9 @@ import type { QueryExecResult } from "./loader";
 // Re-export database types from loader module
 export type { DatabaseLike, QueryExecResult, BindParams } from "./loader";
 
-export const DB_FOLDER = ".episteme";
+export const DB_FOLDER = ".true-recall";
 export const DB_FILE = "episteme.db"; // legacy single-device database
-export const DB_FILE_PREFIX = "episteme-";
+export const DB_FILE_PREFIX = "true-recall-";
 export const DB_FILE_SUFFIX = ".db";
 export const LEGACY_DB_FILE = "episteme.db";
 export const SAVE_DEBOUNCE_MS = 60000; // 60 seconds - reduces UI jank on large databases
@@ -17,7 +17,7 @@ export const SAVE_DEBOUNCE_MS = 60000; // 60 seconds - reduces UI jank on large 
 /**
  * Get the database filename for a specific device.
  * @param deviceId - 8-character alphanumeric device identifier
- * @returns Filename like "episteme-a1b2c3d4.db"
+ * @returns Filename like "true-recall-a1b2c3d4.db"
  */
 export function getDeviceDbFilename(deviceId: string): string {
     return `${DB_FILE_PREFIX}${deviceId}${DB_FILE_SUFFIX}`;
@@ -25,11 +25,11 @@ export function getDeviceDbFilename(deviceId: string): string {
 
 /**
  * Extract device ID from a device-specific database filename.
- * @param filename - Filename like "episteme-a1b2c3d4.db"
+ * @param filename - Filename like "true-recall-a1b2c3d4.db"
  * @returns Device ID or null if not a valid device database filename
  */
 export function extractDeviceIdFromFilename(filename: string): string | null {
-    const match = filename.match(/^episteme-([a-z0-9]{8})\.db$/);
+    const match = filename.match(/^true-recall-([a-z0-9]{8})\.db$/);
     return match?.[1] ?? null;
 }
 

@@ -22,7 +22,7 @@ import { SimulatorChart } from "./SimulatorChart";
 import { SimulatorControls } from "./SimulatorControls";
 import { SimulatorSliders } from "./SimulatorSliders";
 import { SimulatorResultsTable } from "./SimulatorResultsTable";
-import type EpistemePlugin from "../../main";
+import type TrueRecallPlugin from "../../main";
 
 // Register Chart.js components
 Chart.register(
@@ -38,7 +38,7 @@ Chart.register(
 );
 
 export class SimulatorView extends ItemView {
-	private plugin: EpistemePlugin;
+	private plugin: TrueRecallPlugin;
 	private stateManager: SimulatorStateManager;
 	private simulatorService: FSRSSimulatorService;
 
@@ -59,7 +59,7 @@ export class SimulatorView extends ItemView {
 	// Debounce timer
 	private updateTimer: ReturnType<typeof setTimeout> | null = null;
 
-	constructor(leaf: WorkspaceLeaf, plugin: EpistemePlugin) {
+	constructor(leaf: WorkspaceLeaf, plugin: TrueRecallPlugin) {
 		super(leaf);
 		this.plugin = plugin;
 		this.stateManager = new SimulatorStateManager({

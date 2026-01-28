@@ -5,7 +5,7 @@
  */
 import { App, TFile, WorkspaceLeaf } from "obsidian";
 import type {
-	EpistemeSettings,
+	TrueRecallSettings,
 	FSRSCardData,
 	FSRSFlashcardItem,
 	CardReviewLogEntry,
@@ -52,13 +52,13 @@ export interface FlashcardInfo {
  */
 export class FlashcardManager {
 	private app: App;
-	private settings: EpistemeSettings;
+	private settings: TrueRecallSettings;
 	private store: SqliteStoreService | null = null;
 	private frontmatterService: FrontmatterService;
 	private parserService: FlashcardParserService;
 	private sourceNoteService: SourceNoteService;
 
-	constructor(app: App, settings: EpistemeSettings, frontmatterIndex?: FrontmatterIndexService) {
+	constructor(app: App, settings: TrueRecallSettings, frontmatterIndex?: FrontmatterIndexService) {
 		this.app = app;
 		this.settings = settings;
 		this.frontmatterService = new FrontmatterService(app);
@@ -102,7 +102,7 @@ export class FlashcardManager {
 	/**
 	 * Update settings reference
 	 */
-	updateSettings(settings: EpistemeSettings): void {
+	updateSettings(settings: TrueRecallSettings): void {
 		this.settings = settings;
 	}
 

@@ -68,7 +68,7 @@ export abstract class ChartSection<TData = unknown> extends BaseComponent {
 
 		// Create canvas element
 		this.canvas = canvasContainer.createEl("canvas", {
-			cls: "episteme-chart-fade-in",
+			cls: "true-recall-chart-fade-in",
 		});
 	}
 

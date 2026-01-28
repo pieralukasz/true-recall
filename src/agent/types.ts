@@ -8,7 +8,7 @@ import type { FlashcardManager } from "../services/flashcard/flashcard.service";
 import type { FSRSService } from "../services/core/fsrs.service";
 import type { OpenRouterService } from "../services/ai/openrouter.service";
 import type { DayBoundaryService } from "../services/core/day-boundary.service";
-import type { EpistemeSettings } from "../types";
+import type { TrueRecallSettings } from "../types";
 import type { SqliteStoreService } from "../services/persistence/sqlite/SqliteStoreService";
 import type { EventBusService } from "../services/core/event-bus.service";
 
@@ -79,7 +79,7 @@ export interface ToolContext {
 	app: App;
 
 	// Settings (read-only snapshot)
-	settings: Readonly<EpistemeSettings>;
+	settings: Readonly<TrueRecallSettings>;
 
 	// Event bus for emitting events
 	eventBus: EventBusService;
