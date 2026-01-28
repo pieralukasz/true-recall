@@ -7,6 +7,7 @@ import {
 	type Component,
 	type TFile,
 	type MarkdownRenderer,
+	setIcon,
 } from "obsidian";
 import { BaseComponent } from "../component.base";
 import type { ProcessingStatus, ViewMode, SelectionMode } from "../../state";
@@ -60,6 +61,7 @@ export interface FlashcardPanelContentHandlers {
 	// Inline add flashcard handlers
 	onToggleAddExpand?: () => void;
 	onAddSave?: (question: string, answer: string) => void;
+	onAddSaveWithAI?: (question: string, answer: string, aiInstruction: string) => void;
 	onAddCancel?: () => void;
 }
 
@@ -237,6 +239,8 @@ export class FlashcardPanelContent extends BaseComponent {
 				isExpanded: this.props.isAddCardExpanded,
 				onToggleExpand: () => handlers.onToggleAddExpand?.(),
 				onSave: (question, answer) => handlers.onAddSave?.(question, answer),
+				onSaveWithAI: (question, answer, aiInstruction) =>
+					handlers.onAddSaveWithAI?.(question, answer, aiInstruction),
 				onCancel: () => handlers.onAddCancel?.(),
 			});
 			this.childComponents.push(addCard);

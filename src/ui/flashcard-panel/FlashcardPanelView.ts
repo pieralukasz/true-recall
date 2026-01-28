@@ -13,7 +13,7 @@ import {
     Platform,
     Menu,
 } from "obsidian";
-import { VIEW_TYPE_FLASHCARD_PANEL } from "../../constants";
+import { VIEW_TYPE_FLASHCARD_PANEL, CONTEXT_BASED_GENERATION_PROMPT } from "../../constants";
 import { FlashcardManager, OpenRouterService, getEventBus } from "../../services";
 import { CollectService } from "../../services/flashcard/collect.service";
 import { PanelStateManager } from "../../state";
@@ -23,10 +23,11 @@ import { FlashcardPanelFooter } from "./FlashcardPanelFooter";
 import { FlashcardPanelHeader } from "./FlashcardPanelHeader";
 import { SelectionFooter } from "./SelectionFooter";
 import { MoveCardModal } from "../modals/MoveCardModal";
+import { FlashcardReviewModal } from "../modals/FlashcardReviewModal";
 import type { FSRSFlashcardItem } from "../../types/fsrs/card.types";
 import { FlashcardEditorModal } from "../modals/FlashcardEditorModal";
 import type { FlashcardItem, FlashcardChange } from "../../types";
-import type { CardAddedEvent, CardRemovedEvent, CardUpdatedEvent, BulkChangeEvent } from "../../types/events.types";
+import type { CardAddedEvent, CardRemovedEvent, CardUpdatedEvent, CardReviewedEvent, BulkChangeEvent } from "../../types/events.types";
 import { createDefaultFSRSData } from "../../types";
 import { State } from "ts-fsrs";
 import type TrueRecallPlugin from "../../main";
@@ -325,9 +326,15 @@ export class FlashcardPanelView extends ItemView {
 
         // When card content is updated, reload flashcard info
         const unsubUpdated = eventBus.on<CardUpdatedEvent>("card:updated", (event) => {
-            // Only reload for content changes (question/answer), not FSRS updates
-            if (!event.changes.question && !event.changes.answer) return;
-            void this.loadFlashcardInfo();
+            // For content changes, do full reload
+            if (event.changes.question || event.changes.answer) {
+                void this.loadFlashcardInfo();
+                return;
+            }
+            // For FSRS-only changes, just update the header stats
+            if (event.changes.fsrs) {
+                void this.updateHeaderStatsOnly();
+            }
         });
         this.eventUnsubscribers.push(unsubUpdated);
 
@@ -336,6 +343,12 @@ export class FlashcardPanelView extends ItemView {
             void this.loadFlashcardInfo();
         });
         this.eventUnsubscribers.push(unsubBulk);
+
+        // When a card is reviewed, update header stats for FSRS counts
+        const unsubReviewed = eventBus.on<CardReviewedEvent>("card:reviewed", () => {
+            void this.updateHeaderStatsOnly();
+        });
+        this.eventUnsubscribers.push(unsubReviewed);
     }
 
     /**
@@ -527,6 +540,8 @@ export class FlashcardPanelView extends ItemView {
                 onAdd: () => void this.handleAddFlashcard(),
                 onToggleAddExpand: () => this.handleToggleAddCard(),
                 onAddSave: (question, answer) => void this.handleAddCardSave(question, answer),
+                onAddSaveWithAI: (question, answer, aiInstruction) =>
+                    void this.handleAddCardSaveWithAI(question, answer, aiInstruction),
                 onAddCancel: () => this.handleAddCardCancel(),
             },
         });
@@ -569,6 +584,26 @@ export class FlashcardPanelView extends ItemView {
             this.footerComponent.render();
         }
         // Normal mode: no footer (actions in header)
+    }
+
+    /**
+     * Update header FSRS stats only (no full re-render)
+     * Called when cards are reviewed to update New/Learning/Review counts
+     */
+    private updateHeaderStatsOnly(): void {
+        const cardsWithFsrs = this.getCardsWithFsrs();
+
+        // Update header component with new FSRS data only
+        if (this.headerComponent) {
+            this.headerComponent.updateProps({
+                cardsWithFsrs,
+            });
+        }
+
+        // Update mobile header if on mobile
+        if (Platform.isMobile) {
+            this.updateMobileHeaderStatus();
+        }
     }
 
     /**
@@ -1116,10 +1151,51 @@ export class FlashcardPanelView extends ItemView {
     }
 
     /**
-     * Toggle the inline add card expansion
+     * Add a single flashcard manually via modal
+     */
+    private async handleAddFlashcard(): Promise<void> {
+        const state = this.stateManager.getState();
+        if (!state.currentFile) return;
+
+        // Get or create sourceUid for the current file
+        const frontmatterService = this.flashcardManager.getFrontmatterService();
+        let sourceUid = await frontmatterService.getSourceNoteUid(state.currentFile);
+        if (!sourceUid) {
+            sourceUid = frontmatterService.generateUid();
+            await frontmatterService.setSourceNoteUid(state.currentFile, sourceUid);
+        }
+
+        const modal = new FlashcardEditorModal(this.app, {
+            mode: "add",
+            currentFilePath: state.currentFile.path,
+            sourceNoteName: state.currentFile.basename,
+            prefillQuestion: "question",
+            prefillAnswer: "answer",
+        });
+
+        const result = await modal.openAndWait();
+        if (result.cancelled) return;
+
+        try {
+            await this.flashcardManager.addSingleFlashcard(
+                result.question,
+                result.answer,
+                sourceUid
+            );
+            new Notice("Flashcard added!");
+            await this.loadFlashcardInfo();
+        } catch (error) {
+            console.error("Error adding flashcard:", error);
+            new Notice(`Failed to add flashcard: ${error instanceof Error ? error.message : String(error)}`);
+        }
+    }
+
+    /**
+     * Toggle inline add card expansion
      */
     private handleToggleAddCard(): void {
-        this.stateManager.toggleAddCardExpanded();
+        const state = this.stateManager.getState();
+        this.stateManager.setAddCardExpanded(!state.isAddCardExpanded);
         this.render();
     }
 
@@ -1159,11 +1235,21 @@ export class FlashcardPanelView extends ItemView {
     }
 
     /**
-     * Add a single flashcard manually via modal
+     * Save flashcard and generate additional ones with AI
      */
-    private async handleAddFlashcard(): Promise<void> {
+    private async handleAddCardSaveWithAI(
+        question: string,
+        answer: string,
+        aiInstruction: string
+    ): Promise<void> {
         const state = this.stateManager.getState();
         if (!state.currentFile) return;
+
+        // Check API key
+        if (!this.plugin.settings.openRouterApiKey) {
+            new Notice("Please configure your OpenRouter API key in settings.");
+            return;
+        }
 
         // Get or create sourceUid for the current file
         const frontmatterService = this.flashcardManager.getFrontmatterService();
@@ -1173,28 +1259,78 @@ export class FlashcardPanelView extends ItemView {
             await frontmatterService.setSourceNoteUid(state.currentFile, sourceUid);
         }
 
-        const modal = new FlashcardEditorModal(this.app, {
-            mode: "add",
-            currentFilePath: state.currentFile.path,
-            sourceNoteName: state.currentFile.basename,
-            prefillQuestion: "question",
-            prefillAnswer: "answer",
-        });
-
-        const result = await modal.openAndWait();
-        if (result.cancelled) return;
-
         try {
-            await this.flashcardManager.addSingleFlashcard(
-                result.question,
-                result.answer,
-                sourceUid
+            // Step 1: Save the manual flashcard first
+            await this.flashcardManager.addSingleFlashcard(question, answer, sourceUid);
+            new Notice("Flashcard added! Generating more...");
+
+            // Step 2: Generate additional flashcards with AI
+            const contextPrompt = `User's flashcard for context:
+Q: ${question}
+A: ${answer}
+
+User's instruction: ${aiInstruction}
+
+Generate additional flashcards based on the context and instruction above.`;
+
+            const flashcardsMarkdown = await this.openRouterService.generateFlashcards(
+                contextPrompt,
+                undefined,
+                CONTEXT_BASED_GENERATION_PROMPT
             );
-            new Notice("Flashcard added!");
+
+            if (flashcardsMarkdown.trim() === "NO_NEW_CARDS") {
+                new Notice("No additional flashcards generated.");
+                this.stateManager.setAddCardExpanded(false);
+                await this.loadFlashcardInfo();
+                return;
+            }
+
+            // Parse generated flashcards
+            const { FlashcardParserService } = await import("../../services/flashcard/flashcard-parser.service");
+            const parser = new FlashcardParserService();
+            const generatedFlashcards = parser.extractFlashcards(flashcardsMarkdown);
+
+            if (generatedFlashcards.length === 0) {
+                new Notice("No flashcards were generated. Please try different instructions.");
+                this.stateManager.setAddCardExpanded(false);
+                await this.loadFlashcardInfo();
+                return;
+            }
+
+            // Step 3: Show review modal for selection
+            const modal = new FlashcardReviewModal(this.app, {
+                initialFlashcards: generatedFlashcards,
+                sourceNoteName: state.currentFile.basename,
+                openRouterService: this.openRouterService,
+            });
+
+            const result = await modal.openAndWait();
+
+            if (result.cancelled || !result.flashcards || result.flashcards.length === 0) {
+                new Notice("No additional flashcards saved.");
+                this.stateManager.setAddCardExpanded(false);
+                await this.loadFlashcardInfo();
+                return;
+            }
+
+            // Step 4: Save selected flashcards
+            const flashcardsWithIds = result.flashcards.map((f) => ({
+                id: f.id || crypto.randomUUID(),
+                question: f.question,
+                answer: f.answer,
+            }));
+
+            await this.flashcardManager.saveFlashcardsToSql(state.currentFile, flashcardsWithIds);
+            new Notice(`Saved ${result.flashcards.length} additional flashcard(s)`);
+
+            // Collapse form and reload
+            this.stateManager.setAddCardExpanded(false);
             await this.loadFlashcardInfo();
+
         } catch (error) {
-            console.error("Error adding flashcard:", error);
-            new Notice(`Failed to add flashcard: ${error instanceof Error ? error.message : String(error)}`);
+            console.error("Error in Add & Generate:", error);
+            new Notice(`Error: ${error instanceof Error ? error.message : String(error)}`);
         }
     }
 

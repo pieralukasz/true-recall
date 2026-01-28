@@ -345,14 +345,7 @@ export class PanelStateManager {
     }
 
     /**
-     * Toggle add card expanded state
-     */
-    toggleAddCardExpanded(): void {
-        this.setState({ isAddCardExpanded: !this.state.isAddCardExpanded });
-    }
-
-    /**
-     * Set add card expanded state
+     * Set whether the inline add card form is expanded
      */
     setAddCardExpanded(expanded: boolean): void {
         this.setState({ isAddCardExpanded: expanded });

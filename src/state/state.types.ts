@@ -63,7 +63,7 @@ export interface PanelState {
     expandedCardIds: Set<string>;
     /** Search query for filtering flashcards */
     searchQuery: string;
-    /** Whether the add card component is expanded */
+    /** Whether the inline add card form is expanded */
     isAddCardExpanded: boolean;
 }
 
