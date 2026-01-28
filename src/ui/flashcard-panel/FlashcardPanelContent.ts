@@ -167,6 +167,8 @@ export class FlashcardPanelContent extends BaseComponent {
 	private renderNoFlashcardsState(): void {
 		if (!this.element) return;
 
+		const { handlers, selectionMode } = this.props;
+
 		const stateEl = this.element.createDiv({
 			cls: "ep:py-4 ep:text-center",
 		});
@@ -174,6 +176,20 @@ export class FlashcardPanelContent extends BaseComponent {
 			text: "No flashcards",
 			cls: "ep:text-ui-small ep:text-obs-muted ep:m-0",
 		});
+
+		// Add flashcard component (expandable inline form)
+		if (handlers.onAddSave && selectionMode !== "selecting") {
+			const addCardWrapper = this.element.createDiv();
+			const addCard = createExpandableAddCard(addCardWrapper, {
+				isExpanded: this.props.isAddCardExpanded,
+				onToggleExpand: () => handlers.onToggleAddExpand?.(),
+				onSave: (question, answer) => handlers.onAddSave?.(question, answer),
+				onSaveWithAI: (question, answer, aiInstruction) =>
+					handlers.onAddSaveWithAI?.(question, answer, aiInstruction),
+				onCancel: () => handlers.onAddCancel?.(),
+			});
+			this.childComponents.push(addCard);
+		}
 	}
 
 	private renderPreviewState(): void {
