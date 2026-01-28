@@ -39,7 +39,7 @@ export class InstructionsModal extends BasePromiseModal<InstructionsModalResult>
 
 	onOpen(): void {
 		super.onOpen();
-		this.contentEl.addClass("episteme-instructions-modal");
+		this.contentEl.addClass("true-recall-instructions-modal");
 	}
 
 	protected renderBody(container: HTMLElement): void {

@@ -57,7 +57,7 @@ export class AIGeneratorModal extends BaseModal {
 
 	onOpen(): void {
 		super.onOpen();
-		this.contentEl.addClass("episteme-ai-generator-modal");
+		this.contentEl.addClass("true-recall-ai-generator-modal");
 	}
 
 	protected renderBody(container: HTMLElement): void {

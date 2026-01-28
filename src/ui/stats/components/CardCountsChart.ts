@@ -111,7 +111,7 @@ export class CardCountsChart extends BaseComponent {
 		});
 
 		const canvas = canvasContainer.createEl("canvas", {
-			cls: "ep:w-full! ep:h-full! episteme-chart-fade-in",
+			cls: "ep:w-full! ep:h-full! true-recall-chart-fade-in",
 		});
 
 		// Prepare chart data

@@ -24,7 +24,7 @@ import { VIEW_TYPE_STATS } from "../../constants";
 import { StatsCalculatorService, getEventBus } from "../../services";
 import { CardPreviewModal } from "../modals";
 import { NLQueryPanel } from "./NLQueryPanel";
-import type EpistemePlugin from "../../main";
+import type TrueRecallPlugin from "../../main";
 import type {
 	StatsTimeRange,
 	CardMaturityBreakdown,
@@ -65,7 +65,7 @@ Chart.register(
 );
 
 export class StatsView extends ItemView {
-	private plugin: EpistemePlugin;
+	private plugin: TrueRecallPlugin;
 	private statsCalculator: StatsCalculatorService;
 	private currentRange: StatsTimeRange = "1m";
 
@@ -90,7 +90,7 @@ export class StatsView extends ItemView {
 	private contentWrapper!: HTMLElement;
 	private nlQueryEl!: HTMLElement;
 
-	constructor(leaf: WorkspaceLeaf, plugin: EpistemePlugin) {
+	constructor(leaf: WorkspaceLeaf, plugin: TrueRecallPlugin) {
 		super(leaf);
 		this.plugin = plugin;
 		this.statsCalculator = new StatsCalculatorService(

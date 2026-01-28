@@ -102,7 +102,7 @@ export class FlashcardEditorModal extends BaseModal {
 
 		// Now call super which will call renderBody()
 		super.onOpen();
-		this.contentEl.addClass("episteme-flashcard-editor-modal");
+		this.contentEl.addClass("true-recall-flashcard-editor-modal");
 	}
 
 	protected renderBody(container: HTMLElement): void {
@@ -273,7 +273,7 @@ export class FlashcardEditorModal extends BaseModal {
 		const baseCls = "ep:p-4 ep:min-h-20 ep:cursor-text ep:rounded-lg ep:border ep:border-obs-border ep:bg-obs-primary ep:text-ui-small ep:text-center ep:hover:border-obs-interactive ep:transition-colors";
 		const answerCls = field === "answer" ? "ep:text-obs-muted" : "";
 		const preview = container.createDiv({
-			cls: `${baseCls} ${answerCls} episteme-card-markdown`.trim(),
+			cls: `${baseCls} ${answerCls} true-recall-card-markdown`.trim(),
 		});
 
 		// Render markdown

@@ -12,14 +12,14 @@ import { VirtualTable } from "./VirtualTable";
 import { BrowserPreview } from "./BrowserPreview";
 import { FlashcardEditorModal } from "../modals/FlashcardEditorModal";
 import { getEventBus } from "../../services/core/event-bus.service";
-import type EpistemePlugin from "../../main";
+import type TrueRecallPlugin from "../../main";
 
 /**
  * Card Browser View
  * Three-panel layout: Sidebar | Table | Preview
  */
 export class BrowserView extends ItemView {
-    private plugin: EpistemePlugin;
+    private plugin: TrueRecallPlugin;
     private stateManager = createBrowserStateManager();
 
     // UI Components
@@ -45,7 +45,7 @@ export class BrowserView extends ItemView {
     // EventBus subscriptions
     private eventUnsubscribers: (() => void)[] = [];
 
-    constructor(leaf: WorkspaceLeaf, plugin: EpistemePlugin) {
+    constructor(leaf: WorkspaceLeaf, plugin: TrueRecallPlugin) {
         super(leaf);
         this.plugin = plugin;
     }

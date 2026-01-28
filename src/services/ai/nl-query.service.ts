@@ -67,7 +67,7 @@ export class NLQueryService {
                 apiKey: this.config.apiKey,
                 defaultHeaders: {
                     "HTTP-Referer": "obsidian://episteme",
-                    "X-Title": "Episteme",
+                    "X-Title": "True Recall",
                 },
             },
             temperature: 0, // Lower temperature for more consistent SQL generation

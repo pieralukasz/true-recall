@@ -24,7 +24,7 @@ export type {
 
 // Settings types
 export type {
-    EpistemeSettings,
+    TrueRecallSettings,
     FSRSSettings,
     NewCardOrder,
     ReviewOrder,

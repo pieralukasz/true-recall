@@ -18,7 +18,7 @@ export interface DeviceDatabaseInfo {
     deviceId: string;
     /** Full path to the database file */
     path: string;
-    /** Filename (e.g., "episteme-a1b2c3d4.db") */
+    /** Filename (e.g., "true-recall-a1b2c3d4.db") */
     filename: string;
     /** Last modification timestamp */
     lastModified: Date;
@@ -47,7 +47,7 @@ export class DeviceDiscoveryService {
     }
 
     /**
-     * Discover all device-specific databases in the .episteme folder.
+     * Discover all device-specific databases in the .true-recall folder.
      * @returns Array of database info, sorted by last modified (newest first)
      */
     async discoverDeviceDatabases(): Promise<DeviceDatabaseInfo[]> {
@@ -60,7 +60,7 @@ export class DeviceDiscoveryService {
             return databases;
         }
 
-        // List files in the .episteme folder
+        // List files in the .true-recall folder
         const items = await this.app.vault.adapter.list(folderPath);
 
         for (const filePath of items.files) {

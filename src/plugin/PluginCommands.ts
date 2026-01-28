@@ -2,12 +2,12 @@
  * Plugin Commands
  * All command registrations for the Episteme plugin
  */
-import type EpistemePlugin from "../main";
+import type TrueRecallPlugin from "../main";
 
 /**
  * Register all plugin commands
  */
-export function registerCommands(plugin: EpistemePlugin): void {
+export function registerCommands(plugin: TrueRecallPlugin): void {
 	// Open flashcard panel
 	plugin.addCommand({
 		id: "open-flashcard-panel",

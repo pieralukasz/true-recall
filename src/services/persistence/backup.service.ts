@@ -6,7 +6,7 @@ import { App, normalizePath, Notice } from "obsidian";
 import type { SqliteStoreService } from "./sqlite";
 import { DB_FOLDER, getDeviceDbFilename } from "./sqlite";
 
-const BACKUP_PREFIX = "episteme-backup-";
+const BACKUP_PREFIX = "true-recall-backup-";
 
 /**
  * Backup file information
@@ -224,10 +224,10 @@ export class BackupService {
 
     /**
      * Parse timestamp from backup filename
-     * Format: episteme-backup-YYYY-MM-DD-HHmmss.db
+     * Format: true-recall-backup-YYYY-MM-DD-HHmmss.db
      */
     private parseFilenameTimestamp(filename: string): Date | null {
-        const match = filename.match(/episteme-backup-(\d{4})-(\d{2})-(\d{2})-(\d{2})(\d{2})(\d{2})\.db$/);
+        const match = filename.match(/true-recall-backup-(\d{4})-(\d{2})-(\d{2})-(\d{2})(\d{2})(\d{2})\.db$/);
         if (!match) return null;
 
         const [, year, month, day, hours, minutes, seconds] = match;

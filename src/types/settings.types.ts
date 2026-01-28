@@ -24,7 +24,7 @@ export type NewReviewMix = "show-after-reviews" | "mix-with-reviews" | "show-bef
 /**
  * Ustawienia pluginu Episteme
  */
-export interface EpistemeSettings {
+export interface TrueRecallSettings {
     // ===== AI Generation Settings =====
     /** Klucz API OpenRouter */
     openRouterApiKey: string;
@@ -133,7 +133,7 @@ export interface FSRSSettings {
 /**
  * Wyciąga ustawienia FSRS z głównych ustawień
  */
-export function extractFSRSSettings(settings: EpistemeSettings): FSRSSettings {
+export function extractFSRSSettings(settings: TrueRecallSettings): FSRSSettings {
     return {
         requestRetention: settings.fsrsRequestRetention,
         maximumInterval: settings.fsrsMaximumInterval,

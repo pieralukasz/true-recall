@@ -49,7 +49,7 @@ export class ImagePickerModal extends BasePromiseModal<ImagePickerResult> {
 
 	onOpen(): void {
 		super.onOpen();
-		this.contentEl.addClass("episteme-image-picker-modal");
+		this.contentEl.addClass("true-recall-image-picker-modal");
 
 		// Initialize render component for preview
 		this.renderComponent = new Component();
@@ -94,16 +94,16 @@ export class ImagePickerModal extends BasePromiseModal<ImagePickerResult> {
         // Drag and drop handlers
         zone.addEventListener("dragover", (e) => {
             e.preventDefault();
-            zone.addClass("episteme-paste-zone-active");
+            zone.addClass("true-recall-paste-zone-active");
         });
 
         zone.addEventListener("dragleave", () => {
-            zone.removeClass("episteme-paste-zone-active");
+            zone.removeClass("true-recall-paste-zone-active");
         });
 
         zone.addEventListener("drop", async (e) => {
             e.preventDefault();
-            zone.removeClass("episteme-paste-zone-active");
+            zone.removeClass("true-recall-paste-zone-active");
 
             const files = e.dataTransfer?.files;
             if (files && files.length > 0) {

@@ -49,7 +49,7 @@ export class ProjectsContent extends BaseComponent {
 		}
 
 		this.element = this.container.createDiv({
-			cls: "episteme-projects-content ep:flex ep:flex-col ep:h-full ep:gap-2",
+			cls: "true-recall-projects-content ep:flex ep:flex-col ep:h-full ep:gap-2",
 		});
 
 		// Section header with buttons (desktop only - on mobile actions are in "..." menu)
@@ -120,7 +120,7 @@ export class ProjectsContent extends BaseComponent {
 
 	private renderProjectList(container: HTMLElement): void {
 		const listEl = container.createDiv({
-			cls: "episteme-project-list",
+			cls: "true-recall-project-list",
 		});
 
 		const emptyStateCls =
