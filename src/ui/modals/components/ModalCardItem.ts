@@ -269,7 +269,7 @@ export class ModalCardItem extends BaseComponent {
 		this.questionField = createEditableTextField(questionWrapper, {
 			initialValue: card.question,
 			showToolbar: true,
-			toolbarButtons: TOOLBAR_BUTTONS.MINIMAL,
+			toolbarButtons: TOOLBAR_BUTTONS.UNIFIED,
 			toolbarPositioned: false,
 			autoFocus: editingField === "question",
 			onChange: (value) => {
@@ -287,7 +287,7 @@ export class ModalCardItem extends BaseComponent {
 		this.answerField = createEditableTextField(answerWrapper, {
 			initialValue: card.answer,
 			showToolbar: true,
-			toolbarButtons: TOOLBAR_BUTTONS.MINIMAL,
+			toolbarButtons: TOOLBAR_BUTTONS.UNIFIED,
 			toolbarPositioned: false,
 			autoFocus: editingField === "answer",
 			onChange: (value) => {

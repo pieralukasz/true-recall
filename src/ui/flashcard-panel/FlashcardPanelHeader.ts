@@ -28,6 +28,7 @@ export interface FlashcardPanelHeaderProps {
     onSearchChange?: (query: string) => void;
     onExportCsv?: () => void;
     onCopyToClipboard?: () => void;
+    onDeleteAll?: () => void;
 }
 
 interface StatusCounts {
@@ -241,6 +242,15 @@ export class FlashcardPanelHeader extends BaseComponent {
                     item.setTitle("Export as CSV")
                         .setIcon("file-down")
                         .onClick(() => this.props.onExportCsv?.());
+                });
+            }
+
+            if (this.props.onDeleteAll) {
+                menu.addSeparator();
+                menu.addItem((item) => {
+                    item.setTitle("Delete all flashcards")
+                        .setIcon("trash-2")
+                        .onClick(() => this.props.onDeleteAll?.());
                 });
             }
         }

@@ -461,6 +461,7 @@ export class FlashcardPanelView extends ItemView {
                     onSearchChange: (query) => this.stateManager.setSearchQuery(query),
                     onExportCsv: () => void this.handleExportCsv(),
                     onCopyToClipboard: () => void this.handleCopyAllToClipboard(),
+                    onDeleteAll: () => void this.handleDeleteAllFlashcards(),
                 });
                 this.headerComponent.render();
             } else {
@@ -1149,6 +1150,7 @@ Transform/process the flashcard based on the instruction above.`;
                 initialFlashcards: processedFlashcards,
                 sourceNoteName: state.currentFile.basename,
                 openRouterService: this.openRouterService,
+                settings: this.plugin.settings,
             });
 
             const result = await modal.openAndWait();
@@ -1235,6 +1237,7 @@ Transform/process the flashcard based on the instruction above.`;
                 initialFlashcards: processedFlashcards,
                 sourceNoteName: state.currentFile.basename,
                 openRouterService: this.openRouterService,
+                settings: this.plugin.settings,
             });
 
             const result = await modal.openAndWait();
