@@ -21,20 +21,6 @@ export type ReviewOrder = "due-date" | "random" | "due-date-random";
 export type NewReviewMix = "show-after-reviews" | "mix-with-reviews" | "show-before-reviews";
 
 /**
- * Refine preset for AI flashcard refinement
- */
-export interface RefinePreset {
-    /** Unique identifier (UUID for custom, static string for defaults) */
-    id: string;
-    /** Display label shown in dropdown */
-    label: string;
-    /** Instruction text sent to AI */
-    instruction: string;
-    /** Whether this is a built-in default preset (not editable/deletable) */
-    isDefault?: boolean;
-}
-
-/**
  * Ustawienia pluginu True Recall
  */
 export interface TrueRecallSettings {
@@ -47,10 +33,6 @@ export interface TrueRecallSettings {
     // ===== Custom Prompts =====
     /** Custom system prompt for flashcard generation (empty = use default SYSTEM_PROMPT) */
     customGeneratePrompt: string;
-
-    // ===== AI Refine Presets =====
-    /** User's custom refine presets (defaults are in constants.ts) */
-    customRefinePresets: RefinePreset[];
 
     // ===== FSRS Algorithm Settings =====
     /** Docelowa retencja (0.7-0.99, domyślnie 0.9 = 90%) */

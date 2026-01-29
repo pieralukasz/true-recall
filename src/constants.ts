@@ -1,4 +1,4 @@
-import type { TrueRecallSettings, RefinePreset } from "./types/settings.types";
+import type { TrueRecallSettings } from "./types/settings.types";
 import type { GeneratedNoteType } from "./types/flashcard.types";
 
 // ===== View Types =====
@@ -90,45 +90,6 @@ export const AI_MODELS = {
 
 export type AIModelKey = keyof typeof AI_MODELS;
 
-// ===== Default Refine Presets =====
-
-/**
- * Default AI refine presets (built-in, not editable by user)
- */
-export const DEFAULT_REFINE_PRESETS: RefinePreset[] = [
-	{
-		id: "default-more-specific",
-		label: "More specific",
-		instruction: "Make questions more specific and focused",
-		isDefault: true,
-	},
-	{
-		id: "default-add-examples",
-		label: "Add examples",
-		instruction: "Add concrete examples to answers",
-		isDefault: true,
-	},
-	{
-		id: "default-simplify",
-		label: "Simplify",
-		instruction: "Use simpler language, avoid jargon",
-		isDefault: true,
-	},
-	{
-		id: "default-split-complex",
-		label: "Split complex",
-		instruction: "Split complex cards into multiple simpler ones",
-		isDefault: true,
-	},
-	{
-		id: "default-reverse",
-		label: "Reverse",
-		instruction:
-			"Create reverse flashcards by swapping the perspective: turn each answer into a question and the original question into an answer. For example, if the card is 'What is a dog? → An animal', create a reverse like 'What animal is known as human's best friend? → A dog'. Make the new questions natural and contextual.",
-		isDefault: true,
-	},
-];
-
 // ===== Default Settings =====
 
 /** Default plugin settings */
@@ -139,9 +100,6 @@ export const DEFAULT_SETTINGS: TrueRecallSettings = {
 
 	// Custom Prompts (empty = use default)
 	customGeneratePrompt: "",
-
-	// AI Refine Presets
-	customRefinePresets: [],
 
 	// FSRS Algorithm
 	fsrsRequestRetention: 0.9, // 90% retention
