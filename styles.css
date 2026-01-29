@@ -482,9 +482,6 @@
   .ep\:min-h-35 {
     min-height: calc(var(--ep-spacing) * 35);
   }
-  .ep\:min-h-64 {
-    min-height: calc(var(--ep-spacing) * 64);
-  }
   .ep\:min-h-\[3rem\] {
     min-height: 3rem;
   }
@@ -619,9 +616,6 @@
   }
   .ep\:resize-y {
     resize: vertical;
-  }
-  .ep\:list-disc {
-    list-style-type: disc;
   }
   .ep\:grid-cols-1 {
     grid-template-columns: repeat(1, minmax(0, 1fr));
@@ -917,12 +911,6 @@
   .ep\:bg-obs-secondary {
     background-color: var(--ep-color-obs-secondary);
   }
-  .ep\:bg-obs-secondary\/50 {
-    background-color: var(--ep-color-obs-secondary);
-    @supports (color: color-mix(in lab, red, red)) {
-      background-color: color-mix(in oklab, var(--ep-color-obs-secondary) 50%, transparent);
-    }
-  }
   .ep\:bg-orange-500 {
     background-color: var(--ep-color-orange-500);
   }
@@ -1108,9 +1096,6 @@
   }
   .ep\:pb-4 {
     padding-bottom: calc(var(--ep-spacing) * 4);
-  }
-  .ep\:pl-4 {
-    padding-left: calc(var(--ep-spacing) * 4);
   }
   .ep\:pl-6 {
     padding-left: calc(var(--ep-spacing) * 6);
@@ -1551,16 +1536,6 @@
     &:hover {
       @media (hover: hover) {
         background-color: var(--ep-color-obs-secondary);
-      }
-    }
-  }
-  .ep\:hover\:bg-obs-secondary\/30 {
-    &:hover {
-      @media (hover: hover) {
-        background-color: var(--ep-color-obs-secondary);
-        @supports (color: color-mix(in lab, red, red)) {
-          background-color: color-mix(in oklab, var(--ep-color-obs-secondary) 30%, transparent);
-        }
       }
     }
   }

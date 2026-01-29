@@ -20,7 +20,6 @@ export interface FlashcardPanelHeaderProps {
     selectedCount: number;
     searchQuery: string;
     onAdd?: () => void;
-    onBatchImport?: () => void;
     onGenerate?: () => void;
     onCollect?: () => void;
     onRefresh?: () => void;
@@ -142,16 +141,6 @@ export class FlashcardPanelHeader extends BaseComponent {
             });
             setIcon(addBtn, "plus");
             this.events.addEventListener(addBtn, "click", () => this.props.onAdd?.());
-        }
-
-        // Batch import button
-        if (this.props.onBatchImport) {
-            const batchBtn = actionsEl.createEl("button", {
-                cls: iconBtnCls,
-                attr: { "aria-label": "Batch import flashcards" },
-            });
-            setIcon(batchBtn, "list-plus");
-            this.events.addEventListener(batchBtn, "click", () => this.props.onBatchImport?.());
         }
 
         // More menu button

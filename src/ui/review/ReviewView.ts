@@ -35,7 +35,6 @@ import {
 	createEditableTextField,
 	TOOLBAR_BUTTONS,
 } from "../components";
-import { BatchImportModal } from "../modals";
 import type TrueRecallPlugin from "../../main";
 import type { ReviewViewState, UndoEntry } from "./review.types";
 import { CardActionsHandler, KeyboardHandler } from "./handlers";
@@ -78,9 +77,7 @@ export class ReviewView extends ItemView {
 	private buttonsEl!: HTMLElement;
 
 	// Native header action elements
-	private addCardAction: HTMLElement | null = null;
 	private aiGenerateAction: HTMLElement | null = null;
-	private batchImportAction: HTMLElement | null = null;
 	private openNoteAction: HTMLElement | null = null;
 
 	// State subscription
@@ -136,7 +133,6 @@ export class ReviewView extends ItemView {
 			onBuryCard: () => this.cardActionsHandler.handleBuryCard(),
 			onBuryNote: () => this.cardActionsHandler.handleBuryNote(),
 			onMoveCard: () => this.cardActionsHandler.handleMoveCard(),
-			onAddCard: () => this.cardActionsHandler.handleAddNewFlashcard(),
 			onAIGenerate: () =>
 				this.cardActionsHandler.handleAIGenerateFlashcard(),
 			onCopyCard: () => this.cardActionsHandler.handleCopyCurrentCard(),
@@ -275,17 +271,9 @@ export class ReviewView extends ItemView {
 	 */
 	private updateHeaderActions(): void {
 		// Remove existing actions
-		if (this.addCardAction) {
-			this.addCardAction.remove();
-			this.addCardAction = null;
-		}
 		if (this.aiGenerateAction) {
 			this.aiGenerateAction.remove();
 			this.aiGenerateAction = null;
-		}
-		if (this.batchImportAction) {
-			this.batchImportAction.remove();
-			this.batchImportAction = null;
 		}
 		if (this.openNoteAction) {
 			this.openNoteAction.remove();
@@ -311,20 +299,6 @@ export class ReviewView extends ItemView {
 			"Generate flashcard with AI (G)",
 			() => void this.cardActionsHandler.handleAIGenerateFlashcard()
 		);
-
-		// Add new flashcard action
-		this.addCardAction = this.addAction(
-			"plus",
-			"Add new flashcard (N)",
-			() => void this.cardActionsHandler.handleAddNewFlashcard()
-		);
-
-		// Batch import flashcards action
-		this.batchImportAction = this.addAction(
-			"list-plus",
-			"Batch import flashcards",
-			() => void this.handleBatchImport()
-		);
 	}
 
 	async onClose(): Promise<void> {
@@ -340,17 +314,9 @@ export class ReviewView extends ItemView {
 		this.eventUnsubscribers = [];
 
 		// Remove native header actions
-		if (this.addCardAction) {
-			this.addCardAction.remove();
-			this.addCardAction = null;
-		}
 		if (this.aiGenerateAction) {
 			this.aiGenerateAction.remove();
 			this.aiGenerateAction = null;
-		}
-		if (this.batchImportAction) {
-			this.batchImportAction.remove();
-			this.batchImportAction = null;
 		}
 		if (this.openNoteAction) {
 			this.openNoteAction.remove();
@@ -1162,15 +1128,6 @@ export class ReviewView extends ItemView {
 
 		menu.addItem((item) =>
 			item
-				.setTitle("Add New Flashcard")
-				.setIcon("plus")
-				.onClick(
-					() => void this.cardActionsHandler.handleAddNewFlashcard()
-				)
-		);
-
-		menu.addItem((item) =>
-			item
 				.setTitle("Generate with AI (G)")
 				.setIcon("sparkles")
 				.onClick(
@@ -1601,62 +1558,6 @@ export class ReviewView extends ItemView {
 			this.handleOpenSourceNote();
 		} else {
 			notify().info("This card has no associated source note");
-		}
-	}
-
-	/**
-	 * Batch import multiple flashcards at once via modal
-	 */
-	private async handleBatchImport(): Promise<void> {
-		if (!this.plugin.settings.openRouterApiKey) {
-			notify().aiNotConfigured();
-			return;
-		}
-
-		// Get source file path from current card for image saving
-		const currentCard = this.stateManager.getCurrentCard();
-		const currentFilePath = currentCard?.sourceNotePath || "";
-
-		const modal = new BatchImportModal(this.app, {
-			openRouterService: this.plugin.openRouterService,
-			settings: this.plugin.settings,
-			currentFilePath,
-		});
-
-		const result = await modal.openAndWait();
-		if (result.cancelled || !result.flashcards?.length) return;
-
-		try {
-			// Get source file from current card (or null for orphaned)
-			const sourceFile = currentCard?.sourceNotePath
-				? this.app.vault.getAbstractFileByPath(currentCard.sourceNotePath)
-				: null;
-
-			const flashcardsWithIds = result.flashcards.map((f) => ({
-				id: f.id || crypto.randomUUID(),
-				question: f.question,
-				answer: f.answer,
-			}));
-
-			if (sourceFile instanceof TFile) {
-				// Save to SQL and get created cards
-				const createdCards = await this.flashcardManager.saveFlashcardsToSql(sourceFile, flashcardsWithIds);
-				// Add each new card to the current review queue
-				for (const card of createdCards) {
-					this.stateManager.addCardToQueue(card);
-				}
-			} else {
-				// Save as orphaned cards and add to queue
-				for (const f of flashcardsWithIds) {
-					const newCard = await this.flashcardManager.addSingleFlashcard(f.question, f.answer, undefined);
-					this.stateManager.addCardToQueue(newCard);
-				}
-			}
-
-			notify().flashcardsGeneratedAndAdded(result.flashcards.length);
-		} catch (error) {
-			console.error("Error batch importing flashcards:", error);
-			notify().operationFailed("batch import flashcards", error);
 		}
 	}
 

@@ -22,7 +22,6 @@ import { FlashcardPanelFooter } from "./FlashcardPanelFooter";
 import { FlashcardPanelHeader } from "./FlashcardPanelHeader";
 import { SelectionFooter } from "../components";
 import { MoveCardModal } from "../modals/MoveCardModal";
-import { BatchImportModal } from "../modals/BatchImportModal";
 import type { FSRSFlashcardItem } from "../../types/fsrs/card.types";
 import { SimpleFlashcardEditorModal, flashcardToMarkdown } from "../modals/SimpleFlashcardEditorModal";
 import type { FlashcardItem } from "../../types";
@@ -451,7 +450,6 @@ export class FlashcardPanelView extends ItemView {
                     selectedCount: state.selectedCardIds.size,
                     searchQuery: state.searchQuery,
                     onAdd: () => void this.handleAddFlashcard(),
-                    onBatchImport: () => void this.handleBatchImport(),
                     onGenerate: () => void this.handleGenerate(),
                     onCollect: () => void this.handleCollect(),
                     onRefresh: () => void this.loadFlashcardInfo(),
@@ -1000,6 +998,7 @@ export class FlashcardPanelView extends ItemView {
 
     /**
      * Add flashcards via simple markdown editor modal
+     * Includes AI formatting option if OpenRouter is configured
      */
     private async handleAddFlashcard(): Promise<void> {
         const state = this.stateManager.getState();
@@ -1016,6 +1015,8 @@ export class FlashcardPanelView extends ItemView {
         const modal = new SimpleFlashcardEditorModal(this.app, {
             mode: "add",
             currentFilePath: state.currentFile.path,
+            openRouterService: this.openRouterService,
+            settings: this.plugin.settings,
         });
 
         const result = await modal.openAndWait();
@@ -1035,47 +1036,6 @@ export class FlashcardPanelView extends ItemView {
         } catch (error) {
             console.error("Error adding flashcards:", error);
             notify().operationFailed("add flashcards", error);
-        }
-    }
-
-    /**
-     * Batch import multiple flashcards at once via modal
-     */
-    private async handleBatchImport(): Promise<void> {
-        const state = this.stateManager.getState();
-        if (!state.currentFile) return;
-
-        if (!this.plugin.settings.openRouterApiKey) {
-            notify().aiNotConfigured();
-            return;
-        }
-
-        const modal = new BatchImportModal(this.app, {
-            openRouterService: this.openRouterService,
-            settings: this.plugin.settings,
-            currentFilePath: state.currentFile.path,
-        });
-
-        const result = await modal.openAndWait();
-        if (result.cancelled || !result.flashcards?.length) return;
-
-        try {
-            const flashcardsWithIds = result.flashcards.map((f) => ({
-                id: f.id || crypto.randomUUID(),
-                question: f.question,
-                answer: f.answer,
-            }));
-
-            await this.flashcardManager.saveFlashcardsToSql(
-                state.currentFile,
-                flashcardsWithIds
-            );
-
-            notify().cardsCreated(result.flashcards.length);
-            await this.loadFlashcardInfo();
-        } catch (error) {
-            console.error("Error batch importing flashcards:", error);
-            notify().operationFailed("batch import flashcards", error);
         }
     }
 
