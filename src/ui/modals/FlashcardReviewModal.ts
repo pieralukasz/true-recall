@@ -3,10 +3,10 @@
  * Allows reviewing and editing generated flashcards before saving
  * Redesigned with CompactCardItem-style interface
  */
-import { App, Notice, Component } from "obsidian";
+import { App, Component } from "obsidian";
 import { BaseModal } from "./BaseModal";
 import type { FlashcardItem, GeneratedNoteType, TrueRecallSettings } from "../../types";
-import type { OpenRouterService } from "../../services";
+import { notify, type OpenRouterService } from "../../services";
 import { GENERATED_NOTE_TYPES, DEFAULT_REFINE_PRESETS } from "../../constants";
 import { createModalCardItem, ModalCardItem } from "./components/ModalCardItem";
 import { createExpandableAddCard, ExpandableAddCard } from "./components/ExpandableAddCard";
@@ -579,7 +579,7 @@ export class FlashcardReviewModal extends BaseModal {
 		this.state.isAddCardExpanded = false;
 		this.updateTitle(`Review Flashcards (${this.state.flashcards.length})`);
 		this.renderFlashcardsList();
-		new Notice("Flashcard added");
+		notify().success("Flashcard added");
 	}
 
 	private handleCancelAddCard(): void {
@@ -658,7 +658,7 @@ export class FlashcardReviewModal extends BaseModal {
 		this.renderSelectionToolbar();
 		this.renderFlashcardsList();
 
-		new Notice(`Deleted ${selectedCount} flashcard${selectedCount !== 1 ? "s" : ""}`);
+		notify().cardsDeleted(selectedCount);
 	}
 
 	private updateButtons(): void {
@@ -676,12 +676,12 @@ export class FlashcardReviewModal extends BaseModal {
 	private async handleRefine(): Promise<void> {
 		const instructions = this.state.refineInstructions.trim();
 		if (!instructions) {
-			new Notice("Please enter refinement instructions or select a quick action");
+			notify().warning("Please enter refinement instructions or select a quick action");
 			return;
 		}
 
 		if (this.state.flashcards.length === 0) {
-			new Notice("No flashcards to refine");
+			notify().warning("No flashcards to refine");
 			return;
 		}
 
@@ -707,11 +707,11 @@ export class FlashcardReviewModal extends BaseModal {
 			this.renderFlashcardsList();
 			this.updateRollbackButton();
 
-			new Notice(`Flashcards refined (${refined.length} cards)`);
+			notify().success(`Flashcards refined (${refined.length} cards)`);
 		} catch (error) {
 			// Remove the history entry if refinement failed
 			this.state.flashcardHistory.pop();
-			new Notice(`Refinement failed: ${error instanceof Error ? error.message : String(error)}`);
+			notify().operationFailed("refine flashcards", error);
 		} finally {
 			this.state.isRefining = false;
 			this.updateRefineButton();
@@ -747,7 +747,7 @@ export class FlashcardReviewModal extends BaseModal {
 		this.renderFlashcardsList();
 		this.updateRollbackButton();
 
-		new Notice("Rolled back to previous version");
+		notify().success("Rolled back to previous version");
 	}
 
 	private updateRollbackButton(): void {
@@ -761,7 +761,7 @@ export class FlashcardReviewModal extends BaseModal {
 
 	private handleSave(): void {
 		if (this.state.flashcards.length === 0) {
-			new Notice("No flashcards to save");
+			notify().warning("No flashcards to save");
 			return;
 		}
 

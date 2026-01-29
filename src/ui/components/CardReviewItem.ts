@@ -4,8 +4,9 @@
  * Matches the FlashcardReviewModal design
  */
 import type { App, Component } from "obsidian";
-import { MarkdownRenderer, Notice } from "obsidian";
+import { MarkdownRenderer } from "obsidian";
 import type { FlashcardItem, FSRSFlashcardItem } from "../../types";
+import { notify } from "../../services";
 import { BaseComponent } from "../component.base";
 import {
 	createEditableTextField,
@@ -191,7 +192,7 @@ export class CardReviewItem extends BaseComponent {
 		try {
 			await this.props.onEditSave?.(this.props.card, field, content);
 		} catch (error) {
-			new Notice(`Failed to save: ${error instanceof Error ? error.message : String(error)}`);
+			notify().operationFailed("save", error);
 			return;
 		}
 
