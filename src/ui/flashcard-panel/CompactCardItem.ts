@@ -6,6 +6,7 @@
 import { App, Component, Menu, MarkdownRenderer } from "obsidian";
 import { State } from "ts-fsrs";
 import { BaseComponent } from "../component.base";
+import { setupLongPress, type LongPressResult } from "../utils";
 import type { FlashcardItem } from "../../types";
 import type { FSRSFlashcardItem } from "../../types/fsrs/card.types";
 
@@ -29,15 +30,12 @@ export interface CompactCardItemProps {
     onLongPress?: () => void;
 }
 
-const LONG_PRESS_DURATION = 500;
-
 /**
  * Compact card item with expandable answer
  */
 export class CompactCardItem extends BaseComponent {
     private props: CompactCardItemProps;
-    private longPressTimer: ReturnType<typeof setTimeout> | null = null;
-    private didLongPress = false;
+    private longPressHandler: LongPressResult | null = null;
 
     constructor(container: HTMLElement, props: CompactCardItemProps) {
         super(container);
@@ -62,12 +60,13 @@ export class CompactCardItem extends BaseComponent {
         });
 
         // Setup long press for main row
-        this.setupLongPress(mainRow);
+        this.longPressHandler = setupLongPress(mainRow, this.events, {
+            onLongPress: () => this.props.onLongPress?.(),
+        });
 
         // Click handler for expand/collapse or select
         this.events.addEventListener(mainRow, "click", (e) => {
-            if (this.didLongPress) {
-                this.didLongPress = false;
+            if (this.longPressHandler?.didLongPress()) {
                 return;
             }
             // Don't trigger if clicked on menu button
@@ -141,30 +140,6 @@ export class CompactCardItem extends BaseComponent {
         });
 
         void MarkdownRenderer.render(app, card.answer, answerContent, filePath, component);
-    }
-
-    private setupLongPress(element: HTMLElement): void {
-        this.events.addEventListener(element, "pointerdown", () => {
-            this.didLongPress = false;
-            this.longPressTimer = setTimeout(() => {
-                this.didLongPress = true;
-                this.props.onLongPress?.();
-            }, LONG_PRESS_DURATION);
-        });
-
-        this.events.addEventListener(element, "pointerup", () => {
-            if (this.longPressTimer) {
-                clearTimeout(this.longPressTimer);
-                this.longPressTimer = null;
-            }
-        });
-
-        this.events.addEventListener(element, "pointerleave", () => {
-            if (this.longPressTimer) {
-                clearTimeout(this.longPressTimer);
-                this.longPressTimer = null;
-            }
-        });
     }
 
     private showCardMenu(e: MouseEvent): void {
@@ -261,9 +236,7 @@ export class CompactCardItem extends BaseComponent {
     }
 
     destroy(): void {
-        if (this.longPressTimer) {
-            clearTimeout(this.longPressTimer);
-        }
+        this.longPressHandler = null;
         super.destroy();
     }
 }

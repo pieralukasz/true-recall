@@ -4,6 +4,7 @@
  */
 import { Platform } from "obsidian";
 import { BaseComponent } from "../component.base";
+import { createSectionHeader, createCardCountDisplay } from "../components";
 import type { SessionLogic } from "./SessionLogic";
 import type { FSRSFlashcardItem } from "../../types";
 
@@ -48,31 +49,25 @@ export class SessionContent extends BaseComponent {
 
 		// Section header with title (desktop only - matching Projects style)
 		if (!Platform.isMobile) {
-			const headerRow = this.element.createDiv({
-				cls: "ep:flex ep:items-center ep:justify-between",
-			});
-			headerRow.createDiv({
-				cls: "ep:text-ui-small ep:font-semibold ep:text-obs-normal",
-				text: "Session",
-			});
+			createSectionHeader(this.element, { title: "Session" });
 		}
 
 		// Search input at the top
 		this.renderSearchInput();
 
 		// Quick actions section header
-		this.element.createDiv({
-			cls: "true-recall-section-header ep:text-ui-small ep:font-semibold ep:text-obs-normal ep:my-2",
-			text: "Quick access",
+		createSectionHeader(this.element, {
+			title: "Quick access",
+			className: "true-recall-section-header ep:my-2",
 		});
 
 		// Quick actions section
 		this.renderQuickActions();
 
 		// Notes section header (fixed, not scrolling)
-		this.element.createDiv({
-			cls: "true-recall-section-header ep:text-ui-small ep:font-semibold ep:text-obs-normal ep:my-2 ep:shrink-0",
-			text: "Select notes",
+		createSectionHeader(this.element, {
+			title: "Select notes",
+			className: "true-recall-section-header ep:my-2 ep:shrink-0",
 		});
 
 		// Scroll wrapper for note list only
@@ -335,18 +330,13 @@ export class SessionContent extends BaseComponent {
 				cls: "ep:text-ui-smaller ep:mt-0.5 ep:flex ep:items-center ep:gap-1",
 			});
 			if (hasCards) {
-				// New count (blue)
-				statsEl.createSpan({
-					text: String(stat.newCount),
-					cls: "ep:text-blue-500 ep:font-medium",
-				});
-
-				statsEl.createSpan({ text: "·", cls: "ep:text-obs-faint" });
-
-				// Due count (green)
-				statsEl.createSpan({
-					text: String(stat.dueCount),
-					cls: "ep:text-green-500 ep:font-medium",
+				createCardCountDisplay(statsEl, {
+					newCount: stat.newCount,
+					learningCount: 0,
+					dueCount: stat.dueCount,
+					variant: "compact",
+					size: "smaller",
+					bold: true,
 				});
 			} else {
 				// eslint-disable-next-line obsidianmd/ui/sentence-case
