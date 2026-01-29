@@ -1,4 +1,4 @@
-import type { TrueRecallSettings } from "./types/settings.types";
+import type { TrueRecallSettings, RefinePreset } from "./types/settings.types";
 import type { GeneratedNoteType } from "./types/flashcard.types";
 
 // ===== View Types =====
@@ -14,9 +14,6 @@ export const VIEW_TYPE_STATS = "true-recall-stats";
 
 /** View type identifier for the session panel */
 export const VIEW_TYPE_SESSION = "true-recall-session";
-
-/** View type identifier for the dashboard panel */
-export const VIEW_TYPE_DASHBOARD = "true-recall-dashboard";
 
 /** View type identifier for the projects panel */
 export const VIEW_TYPE_PROJECTS = "true-recall-projects";
@@ -90,6 +87,45 @@ export const AI_MODELS = {
 
 export type AIModelKey = keyof typeof AI_MODELS;
 
+// ===== Default Refine Presets =====
+
+/**
+ * Default AI refine presets (built-in, not editable by user)
+ */
+export const DEFAULT_REFINE_PRESETS: RefinePreset[] = [
+	{
+		id: "default-more-specific",
+		label: "More specific",
+		instruction: "Make questions more specific and focused",
+		isDefault: true,
+	},
+	{
+		id: "default-add-examples",
+		label: "Add examples",
+		instruction: "Add concrete examples to answers",
+		isDefault: true,
+	},
+	{
+		id: "default-simplify",
+		label: "Simplify",
+		instruction: "Use simpler language, avoid jargon",
+		isDefault: true,
+	},
+	{
+		id: "default-split-complex",
+		label: "Split complex",
+		instruction: "Split complex cards into multiple simpler ones",
+		isDefault: true,
+	},
+	{
+		id: "default-reverse",
+		label: "Reverse",
+		instruction:
+			"Create reverse flashcards by swapping the perspective: turn each answer into a question and the original question into an answer. For example, if the card is 'What is a dog? → An animal', create a reverse like 'What animal is known as human's best friend? → A dog'. Make the new questions natural and contextual.",
+		isDefault: true,
+	},
+];
+
 // ===== Default Settings =====
 
 /** Default plugin settings */
@@ -100,7 +136,9 @@ export const DEFAULT_SETTINGS: TrueRecallSettings = {
 
 	// Custom Prompts (empty = use default)
 	customGeneratePrompt: "",
-	customUpdatePrompt: "",
+
+	// AI Refine Presets
+	customRefinePresets: [],
 
 	// FSRS Algorithm
 	fsrsRequestRetention: 0.9, // 90% retention
@@ -318,66 +356,6 @@ Reddening of the skin
 
 How does advanced **[[rosacea]]** manifest? #flashcard
 **[[papulopustular changes]]**`;
-
-/** System prompt for update mode (diff-based) */
-export const UPDATE_SYSTEM_PROMPT = `You are an expert flashcard generator working in DIFF MODE.
-
-Your task is to analyze the note content and compare it with existing flashcards to propose:
-1. NEW flashcards for information not yet covered
-2. MODIFIED flashcards where existing ones contain ERRORS or MISSING DATA
-3. DELETED flashcards where information is no longer in the note
-
-FLASHCARD CREATION RULES (same as standard mode):
-- Questions and answers must be as SHORT as possible
-- One flashcard = ONE piece of information
-- Formulate questions and answers UNAMBIGUOUSLY
-- BOLD the keyword in every question using **bold**
-- Wrap key terms in **[[backlinks]]** (bold backlinks)
-- Use <br><br> to split questions/answers into logical parts
-
-OUTPUT FORMAT - Return ONLY valid JSON:
-{
-  "changes": [
-    {
-      "type": "NEW",
-      "question": "What is **[[term]]**?",
-      "answer": "Definition here"
-    },
-    {
-      "type": "MODIFIED",
-      "originalQuestion": "exact original question text from existing list",
-      "question": "improved question with **[[term]]**",
-      "answer": "improved or corrected answer"
-    },
-    {
-      "type": "DELETED",
-      "originalQuestion": "exact question text to delete",
-      "reason": "brief reason why this should be deleted"
-    }
-  ]
-}
-
-CRITICAL RULES - READ CAREFULLY:
-
-1. **CHECK EACH EXISTING FLASHCARD**: Go through EVERY flashcard in the existing list and verify if its topic appears in the note content.
-
-2. **DELETED** - If a flashcard mentions a topic/concept/term that is NOT mentioned ANYWHERE in the note content, you MUST propose DELETED.
-   - Example: Note talks about "algorithms" but flashcard asks about "Vietnam history" → DELETED (reason: "Topic not in note")
-
-3. **MODIFIED** - USE EXTREME CAUTION. ONLY modify a flashcard if it is FACTUALLY WRONG or SERIOUSLY MISFORMATTED.
-   - **STABILITY OVER PERFECTION**: If the existing flashcard is correct and usable, DO NOT MODIFY IT.
-   - **STRICTLY FORBIDDEN**: Do NOT propose modifications for stylistic choices, synonyms, slight rephrasing, or different bolding placement if the current one is acceptable.
-   - Example of BAD modification (DO NOT DO THIS): Changing "What is **X**?" to "What defines **X**?". This is unnecessary churn.
-   - Only modify if the answer is outdated based on the new note text.
-
-4. **NEW** - If there's information in the note not covered by any flashcard.
-
-5. "originalQuestion" MUST exactly match one from the existing list (character for character).
-
-6. If truly no changes needed (all flashcards match note content perfectly and are correct), return: {"changes": []}
-
-EXISTING FLASHCARDS:
-`;
 
 /** System prompt for instruction-based flashcard generation (used in review mode) */
 export const INSTRUCTION_BASED_GENERATION_PROMPT = `You are an expert flashcard generator. Create flashcards based ONLY on the user's instructions.

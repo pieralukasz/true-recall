@@ -13,7 +13,6 @@ import { deleteFlashcardTool } from "./delete-flashcard.tool";
 import { moveCardTool } from "./move-card.tool";
 import { assignCardToNoteTool } from "./assign-card-to-note.tool";
 import { saveFlashcardsTool } from "./save-flashcards.tool";
-import { applyDiffChangesTool } from "./apply-diff-changes.tool";
 
 /**
  * Register all tools with the registry
@@ -33,7 +32,6 @@ export function registerAllTools(): void {
 
 	// Batch operations
 	registry.register(saveFlashcardsTool);
-	registry.register(applyDiffChangesTool);
 
 	// Note tools
 	registry.register(createZettelTool);
@@ -51,4 +49,3 @@ export { deleteFlashcardTool } from "./delete-flashcard.tool";
 export { moveCardTool } from "./move-card.tool";
 export { assignCardToNoteTool } from "./assign-card-to-note.tool";
 export { saveFlashcardsTool } from "./save-flashcards.tool";
-export { applyDiffChangesTool } from "./apply-diff-changes.tool";

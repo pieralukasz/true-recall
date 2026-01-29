@@ -5,9 +5,6 @@
 // Flashcard types
 export type {
     FlashcardItem,
-    FlashcardChangeType,
-    FlashcardChange,
-    DiffResult,
     FlashcardInfo,
     NoteFlashcardType,
     GeneratedNoteType,
@@ -29,6 +26,7 @@ export type {
     NewCardOrder,
     ReviewOrder,
     NewReviewMix,
+    RefinePreset,
 } from "./settings.types";
 export { extractFSRSSettings } from "./settings.types";
 

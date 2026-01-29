@@ -3,7 +3,7 @@
  * Defines the state structure for the flashcard panel
  */
 import type { TFile } from "obsidian";
-import type { FlashcardInfo, DiffResult, NoteFlashcardType } from "../types";
+import type { FlashcardInfo, NoteFlashcardType } from "../types";
 import type { AppError } from "../errors";
 
 /**
@@ -14,7 +14,7 @@ export type ProcessingStatus = "none" | "exists" | "processing";
 /**
  * View mode of the panel
  */
-export type ViewMode = "list" | "diff";
+export type ViewMode = "list";
 
 /**
  * Selection mode state
@@ -27,14 +27,12 @@ export type SelectionMode = "normal" | "selecting";
 export interface PanelState {
     /** Current processing status */
     status: ProcessingStatus;
-    /** Current view mode (list of cards or diff view) */
+    /** Current view mode */
     viewMode: ViewMode;
     /** Currently active file */
     currentFile: TFile | null;
     /** Information about flashcards for current file */
     flashcardInfo: FlashcardInfo | null;
-    /** Diff result when in diff mode */
-    diffResult: DiffResult | null;
     /** User's additional instructions for AI */
     userInstructions: string;
     /** Whether current file is a flashcard file (flashcards_*.md) */
