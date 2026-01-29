@@ -174,6 +174,12 @@ export interface ProjectNoteInfo {
     name: string;
     /** Number of flashcards from this note in the project */
     cardCount: number;
+    /** New cards count (blue in Anki) */
+    newCount: number;
+    /** Learning/Relearning cards count (orange in Anki) */
+    learningCount: number;
+    /** Due review cards count (green in Anki) */
+    dueCount: number;
 }
 
 /**

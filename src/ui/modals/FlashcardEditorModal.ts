@@ -685,8 +685,8 @@ export class FlashcardEditorModal extends BaseModal {
 	private isFormValid(): boolean {
 		// Use stored values (they're updated on every change)
 		const question = this.questionValue.trim();
-		const answer = this.answerValue.trim();
-		return question.length > 0 && answer.length > 0;
+		// Answer is optional - will default to empty string if not provided
+		return question.length > 0;
 	}
 
 	/**
@@ -706,7 +706,7 @@ export class FlashcardEditorModal extends BaseModal {
 		const question = this.questionValue.trim();
 		const answer = this.answerValue.trim();
 
-		if (!question || !answer) return;
+		if (!question) return;
 
 		this.hasSubmitted = true;
 		if (this.resolvePromise) {

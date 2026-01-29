@@ -18,6 +18,10 @@ export interface ProjectsState {
 	editingProjectId: number | null;
 	/** Set of expanded project IDs */
 	expandedProjectIds: Set<string>;
+	/** Selection mode: normal or selecting */
+	selectionMode: "normal" | "selecting";
+	/** Set of selected note paths (paths are unique identifiers) */
+	selectedNotePaths: Set<string>;
 }
 
 /**
@@ -40,6 +44,8 @@ function createInitialState(): ProjectsState {
 		searchQuery: "",
 		editingProjectId: null,
 		expandedProjectIds: new Set<string>(),
+		selectionMode: "normal",
+		selectedNotePaths: new Set<string>(),
 	};
 }
 
@@ -62,6 +68,7 @@ export class ProjectsStateManager {
 			...this.state,
 			projects: [...this.state.projects],
 			expandedProjectIds: new Set(this.state.expandedProjectIds),
+			selectedNotePaths: new Set(this.state.selectedNotePaths),
 		};
 	}
 
@@ -145,6 +152,59 @@ export class ProjectsStateManager {
 	 */
 	isProjectExpanded(projectId: string): boolean {
 		return this.state.expandedProjectIds.has(projectId);
+	}
+
+	// ===== Selection Methods =====
+
+	/**
+	 * Enter selection mode, optionally selecting an initial note
+	 */
+	enterSelectionMode(initialNotePath?: string): void {
+		const selectedNotePaths = new Set<string>();
+		if (initialNotePath) {
+			selectedNotePaths.add(initialNotePath);
+		}
+		this.setState({
+			selectionMode: "selecting",
+			selectedNotePaths,
+		});
+	}
+
+	/**
+	 * Exit selection mode and clear all selections
+	 */
+	exitSelectionMode(): void {
+		this.setState({
+			selectionMode: "normal",
+			selectedNotePaths: new Set<string>(),
+		});
+	}
+
+	/**
+	 * Toggle note selection
+	 */
+	toggleNoteSelection(notePath: string): void {
+		const newSet = new Set(this.state.selectedNotePaths);
+		if (newSet.has(notePath)) {
+			newSet.delete(notePath);
+		} else {
+			newSet.add(notePath);
+		}
+		this.setState({ selectedNotePaths: newSet });
+	}
+
+	/**
+	 * Check if in selection mode
+	 */
+	isInSelectionMode(): boolean {
+		return this.state.selectionMode === "selecting";
+	}
+
+	/**
+	 * Get selected note paths as array
+	 */
+	getSelectedNotePaths(): string[] {
+		return Array.from(this.state.selectedNotePaths);
 	}
 
 	/**

@@ -31,6 +31,7 @@ const REFINE_QUICK_ACTIONS = [
 	{ label: "Add examples", instruction: "Add concrete examples to answers" },
 	{ label: "Simplify", instruction: "Use simpler language, avoid jargon" },
 	{ label: "Split complex", instruction: "Split complex cards into multiple simpler ones" },
+	{ label: "Reverse", instruction: "Create reverse flashcards by swapping the perspective: turn each answer into a question and the original question into an answer. For example, if the card is 'What is a dog? → An animal', create a reverse like 'What animal is known as human's best friend? → A dog'. Make the new questions natural and contextual." },
 ];
 
 /**
@@ -38,6 +39,7 @@ const REFINE_QUICK_ACTIONS = [
  */
 interface FlashcardReviewState {
 	flashcards: FlashcardItem[];
+	flashcardHistory: FlashcardItem[][];
 	expandedCardIndex: number | null;
 	editingCardIndex: number | null;
 	editingField: "question" | "answer" | null;
@@ -73,6 +75,7 @@ export class FlashcardReviewModal extends BaseModal {
 	private selectionToolbarEl: HTMLElement | null = null;
 	private refineInputEl: HTMLTextAreaElement | null = null;
 	private refineButtonEl: HTMLButtonElement | null = null;
+	private rollbackButtonEl: HTMLButtonElement | null = null;
 	private saveButtonEl: HTMLButtonElement | null = null;
 	private destinationOptionsEl: HTMLElement | null = null;
 	private noteNameInputEl: HTMLInputElement | null = null;
@@ -93,6 +96,7 @@ export class FlashcardReviewModal extends BaseModal {
 		// Initialize state
 		this.state = {
 			flashcards: [...options.initialFlashcards],
+			flashcardHistory: [],
 			expandedCardIndex: null,
 			editingCardIndex: null,
 			editingField: null,
@@ -190,6 +194,14 @@ export class FlashcardReviewModal extends BaseModal {
 			cls: "ep:py-1.5 ep:px-3 ep:text-ui-smaller ep:bg-obs-interactive ep:text-white ep:border-none ep:rounded ep:cursor-pointer ep:transition-colors ep:hover:bg-obs-interactive-hover ep:disabled:opacity-50 ep:disabled:cursor-not-allowed",
 		});
 		this.refineButtonEl.addEventListener("click", () => void this.handleRefine());
+
+		// Rollback button (hidden when no history)
+		this.rollbackButtonEl = inputRow.createEl("button", {
+			text: "Undo",
+			cls: "ep:py-1.5 ep:px-3 ep:text-ui-smaller ep:bg-obs-secondary ep:text-obs-muted ep:border ep:border-obs-border ep:rounded ep:cursor-pointer ep:transition-colors ep:hover:bg-obs-modifier-hover ep:hover:text-obs-normal ep:disabled:opacity-50 ep:disabled:cursor-not-allowed",
+		});
+		this.rollbackButtonEl.addEventListener("click", () => this.handleRollback());
+		this.updateRollbackButton();
 	}
 
 	private renderSelectionToolbar(): void {
@@ -645,6 +657,9 @@ export class FlashcardReviewModal extends BaseModal {
 		this.state.isRefining = true;
 		this.updateRefineButton();
 
+		// Save current state to history before refinement
+		this.state.flashcardHistory.push([...this.state.flashcards]);
+
 		try {
 			const refined = await this.openRouterService.refineFlashcards(
 				this.state.flashcards,
@@ -659,9 +674,12 @@ export class FlashcardReviewModal extends BaseModal {
 
 			this.updateTitle(`Review Flashcards (${this.state.flashcards.length})`);
 			this.renderFlashcardsList();
+			this.updateRollbackButton();
 
 			new Notice(`Flashcards refined (${refined.length} cards)`);
 		} catch (error) {
+			// Remove the history entry if refinement failed
+			this.state.flashcardHistory.pop();
 			new Notice(`Refinement failed: ${error instanceof Error ? error.message : String(error)}`);
 		} finally {
 			this.state.isRefining = false;
@@ -679,6 +697,33 @@ export class FlashcardReviewModal extends BaseModal {
 			this.refineButtonEl.disabled = false;
 			this.refineButtonEl.textContent = "Refine with AI";
 		}
+	}
+
+	private handleRollback(): void {
+		if (this.state.flashcardHistory.length === 0) return;
+
+		// Pop last state from history
+		const previousState = this.state.flashcardHistory.pop()!;
+		this.state.flashcards = previousState;
+
+		// Reset UI states
+		this.state.expandedCardIndex = null;
+		this.state.editingCardIndex = null;
+		this.state.editingField = null;
+
+		// Update UI
+		this.updateTitle(`Review Flashcards (${this.state.flashcards.length})`);
+		this.renderFlashcardsList();
+		this.updateRollbackButton();
+
+		new Notice("Rolled back to previous version");
+	}
+
+	private updateRollbackButton(): void {
+		if (!this.rollbackButtonEl) return;
+		const hasHistory = this.state.flashcardHistory.length > 0;
+		this.rollbackButtonEl.disabled = !hasHistory;
+		this.rollbackButtonEl.style.display = hasHistory ? "" : "none";
 	}
 
 	// ===== Actions =====
