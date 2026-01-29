@@ -20,6 +20,7 @@ export interface FlashcardPanelHeaderProps {
     selectedCount: number;
     searchQuery: string;
     onAdd?: () => void;
+    onBatchImport?: () => void;
     onGenerate?: () => void;
     onCollect?: () => void;
     onRefresh?: () => void;
@@ -143,6 +144,16 @@ export class FlashcardPanelHeader extends BaseComponent {
             this.events.addEventListener(addBtn, "click", () => this.props.onAdd?.());
         }
 
+        // Batch import button
+        if (this.props.onBatchImport) {
+            const batchBtn = actionsEl.createEl("button", {
+                cls: iconBtnCls,
+                attr: { "aria-label": "Batch import flashcards" },
+            });
+            setIcon(batchBtn, "list-plus");
+            this.events.addEventListener(batchBtn, "click", () => this.props.onBatchImport?.());
+        }
+
         // More menu button
         const menuBtn = actionsEl.createEl("button", {
             cls: iconBtnCls,
@@ -260,7 +271,13 @@ export class FlashcardPanelHeader extends BaseComponent {
 
     private countByState(cards: FSRSFlashcardItem[]): StatusCounts {
         const counts: StatusCounts = { new: 0, learning: 0, review: 0 };
+        const now = new Date();
+
         for (const card of cards) {
+            // Skip buried/suspended cards
+            if (card.fsrs.suspended) continue;
+            if (card.fsrs.buriedUntil && new Date(card.fsrs.buriedUntil) > now) continue;
+
             switch (card.fsrs.state) {
                 case State.New:
                     counts.new++;
