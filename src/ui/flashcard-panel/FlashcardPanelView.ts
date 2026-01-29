@@ -23,6 +23,7 @@ import { FlashcardPanelHeader } from "./FlashcardPanelHeader";
 import { SelectionFooter } from "../components";
 import { MoveCardModal } from "../modals/MoveCardModal";
 import { FlashcardReviewModal } from "../modals/FlashcardReviewModal";
+import { BatchImportModal } from "../modals/BatchImportModal";
 import type { FSRSFlashcardItem } from "../../types/fsrs/card.types";
 import { FlashcardEditorModal } from "../modals/FlashcardEditorModal";
 import type { FlashcardItem } from "../../types";
@@ -452,6 +453,7 @@ export class FlashcardPanelView extends ItemView {
                     selectedCount: state.selectedCardIds.size,
                     searchQuery: state.searchQuery,
                     onAdd: () => void this.handleAddFlashcard(),
+                    onBatchImport: () => void this.handleBatchImport(),
                     onGenerate: () => void this.handleGenerate(),
                     onCollect: () => void this.handleCollect(),
                     onRefresh: () => void this.loadFlashcardInfo(),
@@ -510,17 +512,17 @@ export class FlashcardPanelView extends ItemView {
                 onMoveCard: (card) => void this.handleMoveCard(card),
                 onEditSave: async (card, field, newContent) => void this.handleEditSave(card, field, newContent),
                 onToggleExpand: (cardId) => {
-                    const scrollPosition = this.contentContainer.scrollTop;
+                    const scrollPosition = this.contentDiv?.scrollTop ?? 0;
                     this.stateManager.toggleCardExpanded(cardId);
                     requestAnimationFrame(() => {
-                        this.contentContainer.scrollTop = scrollPosition;
+                        if (this.contentDiv) this.contentDiv.scrollTop = scrollPosition;
                     });
                 },
                 onToggleSelect: (cardId) => {
-                    const scrollPosition = this.contentContainer.scrollTop;
+                    const scrollPosition = this.contentDiv?.scrollTop ?? 0;
                     this.stateManager.toggleCardSelection(cardId);
                     requestAnimationFrame(() => {
-                        this.contentContainer.scrollTop = scrollPosition;
+                        if (this.contentDiv) this.contentDiv.scrollTop = scrollPosition;
                     });
                 },
                 onEnterSelectionMode: (cardId) => this.stateManager.enterSelectionMode(cardId),
@@ -695,7 +697,7 @@ export class FlashcardPanelView extends ItemView {
         if (!state.currentFile) return;
 
         // TODO: In the future, avoid full re-render - aim for targeted DOM update instead
-        const scrollPosition = this.contentContainer.scrollTop;
+        const scrollPosition = this.contentDiv?.scrollTop ?? 0;
 
         // Use card directly - it already has question/answer from the panel UI
         // No need to look up from SQLite which may return cards with empty content
@@ -735,7 +737,7 @@ export class FlashcardPanelView extends ItemView {
             await this.loadFlashcardInfo();
 
             requestAnimationFrame(() => {
-                this.contentContainer.scrollTop = scrollPosition;
+                if (this.contentDiv) this.contentDiv.scrollTop = scrollPosition;
             });
 
             // If AI instruction provided, generate additional flashcards
@@ -756,7 +758,7 @@ export class FlashcardPanelView extends ItemView {
         if (!state.currentFile || !state.flashcardInfo) return;
 
         // TODO: In the future, avoid full re-render - aim for targeted DOM update instead
-        const scrollPosition = this.contentContainer.scrollTop;
+        const scrollPosition = this.contentDiv?.scrollTop ?? 0;
 
         try {
             if (field === "question") {
@@ -779,7 +781,7 @@ export class FlashcardPanelView extends ItemView {
             await this.loadFlashcardInfo();
 
             requestAnimationFrame(() => {
-                this.contentContainer.scrollTop = scrollPosition;
+                if (this.contentDiv) this.contentDiv.scrollTop = scrollPosition;
             });
         } catch (error) {
             notify().operationFailed("update flashcard", error);
@@ -791,7 +793,7 @@ export class FlashcardPanelView extends ItemView {
         if (!state.currentFile) return;
 
         // Save scroll position before re-render
-        const scrollPosition = this.contentContainer.scrollTop;
+        const scrollPosition = this.contentDiv?.scrollTop ?? 0;
 
         const removed = await this.flashcardManager.removeFlashcardById(card.id);
 
@@ -801,7 +803,7 @@ export class FlashcardPanelView extends ItemView {
 
             // Restore scroll position after render completes
             requestAnimationFrame(() => {
-                this.contentContainer.scrollTop = scrollPosition;
+                if (this.contentDiv) this.contentDiv.scrollTop = scrollPosition;
             });
         } else {
             notify().error("Failed to remove flashcard from file");
@@ -1043,6 +1045,47 @@ export class FlashcardPanelView extends ItemView {
         } catch (error) {
             console.error("Error adding flashcard:", error);
             notify().operationFailed("add flashcard", error);
+        }
+    }
+
+    /**
+     * Batch import multiple flashcards at once via modal
+     */
+    private async handleBatchImport(): Promise<void> {
+        const state = this.stateManager.getState();
+        if (!state.currentFile) return;
+
+        if (!this.plugin.settings.openRouterApiKey) {
+            notify().aiNotConfigured();
+            return;
+        }
+
+        const modal = new BatchImportModal(this.app, {
+            openRouterService: this.openRouterService,
+            settings: this.plugin.settings,
+            currentFilePath: state.currentFile.path,
+        });
+
+        const result = await modal.openAndWait();
+        if (result.cancelled || !result.flashcards?.length) return;
+
+        try {
+            const flashcardsWithIds = result.flashcards.map((f) => ({
+                id: f.id || crypto.randomUUID(),
+                question: f.question,
+                answer: f.answer,
+            }));
+
+            await this.flashcardManager.saveFlashcardsToSql(
+                state.currentFile,
+                flashcardsWithIds
+            );
+
+            notify().cardsCreated(result.flashcards.length);
+            await this.loadFlashcardInfo();
+        } catch (error) {
+            console.error("Error batch importing flashcards:", error);
+            notify().operationFailed("batch import flashcards", error);
         }
     }
 
@@ -1527,11 +1570,17 @@ Transform/process the flashcard based on the instruction above.`;
     }
 
     /**
-     * Count cards by FSRS state
+     * Count cards by FSRS state (excludes buried/suspended cards)
      */
     private countByState(cards: FSRSFlashcardItem[]): { new: number; learning: number; review: number } {
         const counts = { new: 0, learning: 0, review: 0 };
+        const now = new Date();
+
         for (const card of cards) {
+            // Skip buried/suspended cards
+            if (card.fsrs.suspended) continue;
+            if (card.fsrs.buriedUntil && new Date(card.fsrs.buriedUntil) > now) continue;
+
             switch (card.fsrs.state) {
                 case State.New:
                     counts.new++;
