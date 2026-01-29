@@ -11,7 +11,8 @@
  * - Buffer rows above/below viewport for smooth scrolling
  */
 import { setIcon } from "obsidian";
-import { State } from "ts-fsrs";
+import { truncateText, stripHtml, formatDueDate, getDueDateStatus } from "../utils";
+import { renderStateBadge } from "../components";
 import type { BrowserCardItem, BrowserColumn, SortDirection } from "../../types/browser.types";
 
 export interface VirtualTableProps {
@@ -301,7 +302,7 @@ export class VirtualTable {
         questionTd.style.width = "30%";
         questionTd.style.flexShrink = "0";
         questionTd.createSpan({
-            text: this.truncateText(this.stripHtml(card.question ?? ""), 60),
+            text: truncateText(stripHtml(card.question ?? ""), 60),
             cls: cellContentClasses.join(" "),
         });
 
@@ -310,7 +311,7 @@ export class VirtualTable {
         answerTd.style.width = "25%";
         answerTd.style.flexShrink = "0";
         answerTd.createSpan({
-            text: this.truncateText(this.stripHtml(card.answer ?? ""), 50),
+            text: truncateText(stripHtml(card.answer ?? ""), 50),
             cls: cellContentClasses.join(" "),
         });
 
@@ -320,12 +321,12 @@ export class VirtualTable {
         dueTd.style.flexShrink = "0";
 
         const dueClasses = [...cellContentClasses];
-        const dueClass = this.getDueClass(card.due);
-        if (dueClass === "due-overdue") dueClasses.push("ep:text-obs-error");
-        if (dueClass === "due-today") dueClasses.push("ep:text-obs-interactive", "ep:font-medium");
+        const dueStatus = getDueDateStatus(card.due);
+        if (dueStatus === "overdue") dueClasses.push("ep:text-obs-error");
+        if (dueStatus === "today") dueClasses.push("ep:text-obs-interactive", "ep:font-medium");
 
         dueTd.createSpan({
-            text: this.formatDue(card.due),
+            text: formatDueDate(card.due),
             cls: dueClasses.join(" "),
         });
 
@@ -333,7 +334,11 @@ export class VirtualTable {
         const stateTd = tr.createEl("td", { cls: tdClasses.join(" ") });
         stateTd.style.width = "8%";
         stateTd.style.flexShrink = "0";
-        this.renderStateBadge(stateTd, card);
+        renderStateBadge(stateTd, {
+            state: card.state,
+            suspended: card.suspended,
+            buriedUntil: card.buriedUntil,
+        });
 
         // Stability
         const stabilityTd = tr.createEl("td", { cls: tdClasses.join(" ") });
@@ -370,7 +375,7 @@ export class VirtualTable {
         sourceTd.style.flexShrink = "0";
         if (card.sourceNoteName) {
             const sourceLink = sourceTd.createEl("a", {
-                text: this.truncateText(card.sourceNoteName, 20),
+                text: truncateText(card.sourceNoteName, 20),
                 cls: ["ep:text-obs-accent", "ep:no-underline", "ep:cursor-pointer", "ep:hover:underline"].join(" "),
                 attr: { title: card.sourceNoteName },
             });
@@ -475,111 +480,11 @@ export class VirtualTable {
         });
     }
 
-    private renderStateBadge(container: HTMLElement, card: BrowserCardItem): void {
-        const now = new Date();
-        let label: string;
-        let badgeClasses: string[];
-
-        const baseClasses = [
-            "ep:inline-flex", "ep:items-center", "ep:py-0.75", "ep:px-2",
-            "ep:rounded-full", "ep:text-ui-smaller", "ep:font-semibold",
-            "ep:uppercase", "ep:tracking-wider"
-        ];
-
-        if (card.suspended) {
-            label = "Suspended";
-            badgeClasses = [...baseClasses, "ep:bg-obs-modifier-hover", "ep:text-obs-muted"];
-        } else if (card.buriedUntil && new Date(card.buriedUntil) > now) {
-            label = "Buried";
-            badgeClasses = [...baseClasses, "ep:bg-obs-modifier-hover", "ep:text-obs-muted"];
-        } else {
-            switch (card.state) {
-                case State.New:
-                    label = "New";
-                    badgeClasses = [...baseClasses, "ep:bg-[rgba(var(--obs-blue-rgb),0.15)]", "ep:text-obs-blue"];
-                    break;
-                case State.Learning:
-                    label = "Learning";
-                    badgeClasses = [...baseClasses, "ep:bg-[rgba(var(--obs-orange-rgb),0.15)]", "ep:text-obs-orange"];
-                    break;
-                case State.Review:
-                    label = "Review";
-                    badgeClasses = [...baseClasses, "ep:bg-[rgba(var(--obs-green-rgb),0.15)]", "ep:text-obs-green"];
-                    break;
-                case State.Relearning:
-                    label = "Relearn";
-                    badgeClasses = [...baseClasses, "ep:bg-[rgba(var(--obs-yellow-rgb),0.15)]", "ep:text-obs-yellow"];
-                    break;
-                default:
-                    label = "Unknown";
-                    badgeClasses = baseClasses;
-            }
-        }
-
-        container.createSpan({
-            text: label,
-            cls: badgeClasses.join(" "),
-        });
-    }
-
     private getRowStateClass(card: BrowserCardItem): string {
         const now = new Date();
         if (card.suspended) return " row-suspended";
         if (card.buriedUntil && new Date(card.buriedUntil) > now) return " row-buried";
         return "";
-    }
-
-    private formatDue(due: string): string {
-        const dueDate = new Date(due);
-        const now = new Date();
-        const diffMs = dueDate.getTime() - now.getTime();
-        const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
-
-        if (diffDays < 0) {
-            return diffDays === -1 ? "Yesterday" : `${Math.abs(diffDays)}d ago`;
-        } else if (diffDays === 0) {
-            const diffHours = Math.floor(diffMs / (1000 * 60 * 60));
-            if (diffHours < 0) {
-                return "Today";
-            } else if (diffHours < 24) {
-                return `${diffHours}h`;
-            }
-            return "Today";
-        } else if (diffDays === 1) {
-            return "Tomorrow";
-        } else if (diffDays < 7) {
-            return `${diffDays}d`;
-        } else if (diffDays < 30) {
-            return `${Math.floor(diffDays / 7)}w`;
-        } else if (diffDays < 365) {
-            return `${Math.floor(diffDays / 30)}mo`;
-        } else {
-            return `${Math.floor(diffDays / 365)}y`;
-        }
-    }
-
-    private getDueClass(due: string): string {
-        const dueDate = new Date(due);
-        const now = new Date();
-        const diffMs = dueDate.getTime() - now.getTime();
-        const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
-
-        if (diffDays < 0) return "due-overdue";
-        if (diffDays === 0) return "due-today";
-        return "due-future";
-    }
-
-    private truncateText(text: string, maxLength: number): string {
-        if (text.length <= maxLength) return text;
-        return text.slice(0, maxLength - 3) + "...";
-    }
-
-    private stripHtml(html: string): string {
-        return html
-            .replace(/<br\s*\/?>/gi, " ")
-            .replace(/<[^>]+>/g, "")
-            .replace(/\s+/g, " ")
-            .trim();
     }
 
     /**

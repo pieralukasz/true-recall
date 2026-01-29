@@ -223,13 +223,6 @@ export class CompactCardItem extends BaseComponent {
         }
     }
 
-    private truncateText(text: string, maxLength: number): string {
-        // Remove newlines and excess whitespace
-        const cleaned = text.replace(/\s+/g, " ").trim();
-        if (cleaned.length <= maxLength) return cleaned;
-        return cleaned.substring(0, maxLength) + "...";
-    }
-
     updateProps(props: Partial<CompactCardItemProps>): void {
         this.props = { ...this.props, ...props };
         this.render();
