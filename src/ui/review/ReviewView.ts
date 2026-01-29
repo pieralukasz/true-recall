@@ -10,6 +10,7 @@ import {
 	Platform,
 	Menu,
 	setIcon,
+	TFile,
 	type ViewStateResult,
 } from "obsidian";
 import { Rating, State, type Grade } from "ts-fsrs";
@@ -34,6 +35,7 @@ import {
 	createEditableTextField,
 	TOOLBAR_BUTTONS,
 } from "../components";
+import { BatchImportModal } from "../modals";
 import type TrueRecallPlugin from "../../main";
 import type { ReviewViewState, UndoEntry } from "./review.types";
 import { CardActionsHandler, KeyboardHandler } from "./handlers";
@@ -78,6 +80,7 @@ export class ReviewView extends ItemView {
 	// Native header action elements
 	private addCardAction: HTMLElement | null = null;
 	private aiGenerateAction: HTMLElement | null = null;
+	private batchImportAction: HTMLElement | null = null;
 	private openNoteAction: HTMLElement | null = null;
 
 	// State subscription
@@ -280,6 +283,10 @@ export class ReviewView extends ItemView {
 			this.aiGenerateAction.remove();
 			this.aiGenerateAction = null;
 		}
+		if (this.batchImportAction) {
+			this.batchImportAction.remove();
+			this.batchImportAction = null;
+		}
 		if (this.openNoteAction) {
 			this.openNoteAction.remove();
 			this.openNoteAction = null;
@@ -311,6 +318,13 @@ export class ReviewView extends ItemView {
 			"Add new flashcard (N)",
 			() => void this.cardActionsHandler.handleAddNewFlashcard()
 		);
+
+		// Batch import flashcards action
+		this.batchImportAction = this.addAction(
+			"list-plus",
+			"Batch import flashcards",
+			() => void this.handleBatchImport()
+		);
 	}
 
 	async onClose(): Promise<void> {
@@ -333,6 +347,10 @@ export class ReviewView extends ItemView {
 		if (this.aiGenerateAction) {
 			this.aiGenerateAction.remove();
 			this.aiGenerateAction = null;
+		}
+		if (this.batchImportAction) {
+			this.batchImportAction.remove();
+			this.batchImportAction = null;
 		}
 		if (this.openNoteAction) {
 			this.openNoteAction.remove();
@@ -711,10 +729,10 @@ export class ReviewView extends ItemView {
 			// Edit mode - contenteditable
 			this.renderEditableField(questionEl, card.question, "question");
 		} else {
-			// View mode - markdown
+			// View mode - markdown (convert legacy <br> to newlines)
 			void MarkdownRenderer.render(
 				this.app,
-				card.question,
+				card.question.replace(/<br\s*\/?>/gi, "\n"),
 				questionEl,
 				sourcePath,
 				this
@@ -744,10 +762,10 @@ export class ReviewView extends ItemView {
 				// Edit mode - contenteditable
 				this.renderEditableField(answerEl, card.answer, "answer");
 			} else {
-				// View mode - markdown
+				// View mode - markdown (convert legacy <br> to newlines)
 				void MarkdownRenderer.render(
 					this.app,
-					card.answer,
+					card.answer.replace(/<br\s*\/?>/gi, "\n"),
 					answerEl,
 					sourcePath,
 					this
@@ -962,16 +980,17 @@ export class ReviewView extends ItemView {
 		const editState = this.stateManager.getEditState();
 		if (!card || !editState.active) return;
 
-		// Convert newlines to <br> for storage
-		const newContent = textarea.value.replace(/\n/g, "<br>");
+		// Keep newlines as-is (no <br> conversion)
+		const newContent = textarea.value;
 		const newQuestion = field === "question" ? newContent : card.question;
 		const newAnswer = field === "answer" ? newContent : card.answer;
 
 		// Only save if content actually changed
-		const hasChanges =
-			(field === "question" &&
-				newContent !== editState.originalQuestion) ||
-			(field === "answer" && newContent !== editState.originalAnswer);
+		// Compare with normalized content (convert legacy <br> to newlines for comparison)
+		const normalizedOriginal = field === "question"
+			? editState.originalQuestion.replace(/<br\s*\/?>/gi, "\n")
+			: editState.originalAnswer.replace(/<br\s*\/?>/gi, "\n");
+		const hasChanges = newContent !== normalizedOriginal;
 
 		if (hasChanges) {
 			try {
@@ -1582,6 +1601,62 @@ export class ReviewView extends ItemView {
 			this.handleOpenSourceNote();
 		} else {
 			notify().info("This card has no associated source note");
+		}
+	}
+
+	/**
+	 * Batch import multiple flashcards at once via modal
+	 */
+	private async handleBatchImport(): Promise<void> {
+		if (!this.plugin.settings.openRouterApiKey) {
+			notify().aiNotConfigured();
+			return;
+		}
+
+		// Get source file path from current card for image saving
+		const currentCard = this.stateManager.getCurrentCard();
+		const currentFilePath = currentCard?.sourceNotePath || "";
+
+		const modal = new BatchImportModal(this.app, {
+			openRouterService: this.plugin.openRouterService,
+			settings: this.plugin.settings,
+			currentFilePath,
+		});
+
+		const result = await modal.openAndWait();
+		if (result.cancelled || !result.flashcards?.length) return;
+
+		try {
+			// Get source file from current card (or null for orphaned)
+			const sourceFile = currentCard?.sourceNotePath
+				? this.app.vault.getAbstractFileByPath(currentCard.sourceNotePath)
+				: null;
+
+			const flashcardsWithIds = result.flashcards.map((f) => ({
+				id: f.id || crypto.randomUUID(),
+				question: f.question,
+				answer: f.answer,
+			}));
+
+			if (sourceFile instanceof TFile) {
+				// Save to SQL and get created cards
+				const createdCards = await this.flashcardManager.saveFlashcardsToSql(sourceFile, flashcardsWithIds);
+				// Add each new card to the current review queue
+				for (const card of createdCards) {
+					this.stateManager.addCardToQueue(card);
+				}
+			} else {
+				// Save as orphaned cards and add to queue
+				for (const f of flashcardsWithIds) {
+					const newCard = await this.flashcardManager.addSingleFlashcard(f.question, f.answer, undefined);
+					this.stateManager.addCardToQueue(newCard);
+				}
+			}
+
+			notify().flashcardsGeneratedAndAdded(result.flashcards.length);
+		} catch (error) {
+			console.error("Error batch importing flashcards:", error);
+			notify().operationFailed("batch import flashcards", error);
 		}
 	}
 

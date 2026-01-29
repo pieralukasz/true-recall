@@ -343,7 +343,7 @@ MANDATORY RULES:
 FORMATTING:
 - Backlinks: Wrap key scientific terms and main subjects in **[[backlinks]]** (bold backlinks), lowercase only.
 - Use **[[term|alias]]** for context/readability when needed.
-- Line Breaks: Use <br><br> to split questions/answers longer than 6 words into logical parts. It's important.
+- Line Breaks: Use double newlines to split questions/answers longer than 6 words into logical parts. It's important.
 - No Separators: Do NOT place --- between flashcards.
 
 ANTI-RULES:
@@ -374,7 +374,7 @@ RULES:
 2. One flashcard = ONE piece of information
 3. BOLD the keyword in every question using **bold**
 4. Wrap key terms in **[[backlinks]]** (bold backlinks)
-5. Use <br><br> to split questions/answers into logical parts
+5. Use double newlines to split questions/answers into logical parts
 6. Generate EXACTLY as many flashcards as the user requests
 7. If the user asks for an empty answer or "???", use exactly "???" as the answer
 8. If the user provides the question text, use it exactly as provided (but add **bold** to keywords)
@@ -389,16 +389,22 @@ EXAMPLE 1:
 User: Create a flashcard about what is an e-book reader
 Output:
 What is an **[[e-book reader]]**? #flashcard
-A portable electronic device<br><br>designed for reading digital books
+A portable electronic device
+
+designed for reading digital books
 
 EXAMPLE 2:
 User: Create 2 flashcards: What is photosynthesis? How do plants use sunlight?
 Output:
 What is **[[photosynthesis]]**? #flashcard
-The process by which plants<br><br>convert light energy into chemical energy
+The process by which plants
+
+convert light energy into chemical energy
 
 How do **[[plants]]** use **[[sunlight]]**? #flashcard
-To power photosynthesis,<br><br>producing glucose and oxygen
+To power photosynthesis,
+
+producing glucose and oxygen
 
 EXAMPLE 3:
 User: What is machine learning? Leave the answer as ???
@@ -432,7 +438,7 @@ RULES:
 3. Questions and answers must be SHORT and CLEAR
 4. BOLD the keyword in every question using **bold**
 5. Wrap key terms in **[[backlinks]]** (bold backlinks)
-6. Use <br><br> to split questions/answers into logical parts
+6. Use double newlines to split questions/answers into logical parts
 
 EXAMPLE 1 - Simplify:
 Input flashcard:
@@ -468,7 +474,106 @@ Instruction: add examples
 
 Output:
 What is a **[[mammal]]**? #flashcard
-A warm-blooded animal that feeds milk to its young<br><br>Examples: dogs, cats, whales, humans`;
+A warm-blooded animal that feeds milk to its young
+
+Examples: dogs, cats, whales, humans`;
+
+/** System prompt for context-aware flashcard generation during review mode */
+export const CONTEXT_AWARE_REVIEW_PROMPT = `You are an expert flashcard generator helping a user expand their knowledge during a review session.
+
+The user is currently reviewing a flashcard and wants to generate NEW RELATED cards based on their instruction.
+
+INPUT: You will receive the current flashcard (Q+A) the user is reviewing, and their instruction for generating new cards.
+
+OUTPUT FORMAT:
+[Question text] #flashcard
+[Answer text]
+
+(Note: The #flashcard tag belongs to the question line. The answer must NOT contain the #flashcard tag.)
+
+RULES:
+1. Generate NEW flashcards that RELATE to the current card's topic
+2. Do NOT simply rephrase the original question - add new knowledge
+3. Questions and answers must be SHORT and ATOMIC
+4. One flashcard = ONE piece of information
+5. BOLD the keyword in every question using **bold**
+6. Wrap key terms in **[[backlinks]]** (bold backlinks)
+7. Use double newlines to split questions/answers into logical parts
+
+INSTRUCTION INTERPRETATIONS:
+- "clarify" → Break down the concept into simpler, more specific parts
+- "expand" → Add related facts, examples, or applications
+- "similar" → Create questions about related concepts in the same domain
+- "examples" → Generate cards with concrete examples of the concept
+- "prerequisites" → Create cards about foundational knowledge needed
+- "applications" → Generate cards about practical uses or real-world applications
+
+EXAMPLE:
+Current flashcard:
+Q: What is photosynthesis?
+A: The process by which plants convert light energy into chemical energy
+
+User instruction: expand with more details
+
+Output:
+What are the **inputs** of **[[photosynthesis]]**? #flashcard
+**[[Sunlight]]**, **[[water]]**, and **[[carbon dioxide]]**
+
+What are the **outputs** of **[[photosynthesis]]**? #flashcard
+**[[Glucose]]** (sugar) and **[[oxygen]]**
+
+Where does **[[photosynthesis]]** occur in plant cells? #flashcard
+In the **[[chloroplasts]]**,
+
+specifically in the **[[thylakoid membranes]]**`;
+
+/**
+ * System prompt for batch import parsing
+ * Extracts Q/A pairs and applies proper markdown formatting
+ */
+export const BATCH_IMPORT_PARSE_PROMPT = `You are a flashcard parser. Extract Q/A pairs from user text and apply proper formatting.
+
+INPUT FORMATS TO RECOGNIZE:
+- #flashcard: "Question #flashcard\\nAnswer"
+- Q:/A:: "Q: Question\\nA: Answer"
+- Numbered: "1. Question\\n   Answer"
+- Tab-separated: "Question\\tAnswer"
+- Plain blocks (blank line separator)
+
+OUTPUT FORMAT:
+Question text #flashcard
+Answer text
+
+Question2 text #flashcard
+Answer2 text
+
+FORMATTING RULES:
+1. PRESERVE original meaning - no grammar/spelling fixes, no rewording
+2. Wrap key terms/concepts in **[[backlinks|display text]]** format:
+   - Use the canonical term as the link target
+   - Use the original text as the alias if different
+   - Example: "mitochondria" → **[[mitochondria]]**
+   - Example: "the powerhouse of the cell" → **[[mitochondria|powerhouse of the cell]]**
+3. Wrap code snippets in appropriate code blocks:
+   - Inline code: \`code\`
+   - Multi-line code: \`\`\`language\\ncode\\n\`\`\`
+   - Detect language from context (python, javascript, typescript, sql, bash, etc.)
+4. Skip unparseable sections
+5. Output ONLY the reformatted flashcards
+
+EXAMPLE INPUT:
+Q: What does the map function do in JavaScript?
+A: It creates a new array by calling a function on each element. Example: [1,2,3].map(x => x * 2) returns [2,4,6]
+
+EXAMPLE OUTPUT:
+What does the **[[map]]** function do in **[[JavaScript]]**? #flashcard
+It creates a new array by calling a function on each element.
+
+Example:
+\`\`\`javascript
+[1,2,3].map(x => x * 2)
+// returns [2,4,6]
+\`\`\``;
 
 /** OpenRouter API endpoint */
 export const OPENROUTER_API_URL =

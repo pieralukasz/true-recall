@@ -131,6 +131,12 @@ export const TOOLBAR_BUTTONS = {
 			action: { type: "toggle", before: "`", after: "`" },
 		},
 		{
+			id: "codeblock",
+			label: "```",
+			title: "Code Block (TSX)",
+			action: { type: "toggle", before: "```tsx\n", after: "\n```" },
+		},
+		{
 			id: "superscript",
 			label: "x\u00B2",
 			title: "Superscript",
@@ -335,14 +341,14 @@ export class EditableTextField extends BaseComponent {
 	}
 
 	/**
-	 * Get current value (with newlines converted to <br>)
+	 * Get current value (preserves newlines)
 	 */
 	getValue(): string {
-		return this.textarea?.value.replace(/\n/g, "<br>") || "";
+		return this.textarea?.value || "";
 	}
 
 	/**
-	 * Get raw value (with newlines preserved)
+	 * Get raw value (alias for getValue, kept for compatibility)
 	 */
 	getRawValue(): string {
 		return this.textarea?.value || "";

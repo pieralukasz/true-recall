@@ -10,7 +10,7 @@ import type { FSRSFlashcardItem, TrueRecallSettings } from "../../../types";
 import type { UndoEntry } from "../review.types";
 import { MoveCardModal, FlashcardEditorModal, AIGeneratorModal } from "../../modals";
 import { notify } from "../../../services";
-import { GENERATED_NOTE_TYPES, UI_CONFIG } from "../../../constants";
+import { UI_CONFIG } from "../../../constants";
 
 /**
  * Templater plugin interface for processing templates
@@ -568,11 +568,16 @@ export class CardActionsHandler {
 			return;
 		}
 
-		// Open AI Generator modal
+		// Open AI Generator modal with current card context
 		const modal = new AIGeneratorModal(this.deps.app, {
 			openRouterService: this.deps.openRouterService,
 			customSystemPrompt: this.deps.settings.customGeneratePrompt,
 			settings: this.deps.settings,
+			cardContext: {
+				question: currentCard.question,
+				answer: currentCard.answer,
+				sourceNoteName: currentCard.sourceNoteName,
+			},
 		});
 
 		const result = await modal.openAndWait();
@@ -581,34 +586,10 @@ export class CardActionsHandler {
 			return;
 		}
 
-		// Determine target source UID
-		let targetSourceUid: string | undefined;
-		let targetFilePath: string;
+		// Use current card's source note
+		const targetSourceUid = currentCard.sourceUid;
 
 		try {
-			if (result.createNewNote && result.noteType) {
-				// Create a new note for the flashcards
-				const noteConfig = GENERATED_NOTE_TYPES[result.noteType];
-
-				// Generate note name
-				const noteName = result.noteName || this.generateNoteName(result.noteType, result.flashcards[0]?.question);
-
-				// Create the note
-				const { uid, filePath } = await this.createSourceNoteForGeneratedCards(
-					noteName,
-					noteConfig.tag
-				);
-
-				targetSourceUid = uid;
-				targetFilePath = filePath;
-
-				notify().noteCreated(noteName);
-			} else {
-				// Use current card's source note
-				targetSourceUid = currentCard.sourceUid;
-				targetFilePath = currentCard.sourceNotePath || "";
-			}
-
 			// Save generated flashcards and add to queue
 			for (const flashcard of result.flashcards) {
 				const newCard = await this.deps.flashcardManager.addSingleFlashcard(
@@ -628,82 +609,6 @@ export class CardActionsHandler {
 			console.error("[CardActionsHandler] Error saving generated flashcards:", error);
 			notify().operationFailed("save flashcards", error);
 		}
-	}
-
-	/**
-	 * Generate a note name based on note type and first flashcard question
-	 */
-	private generateNoteName(noteType: string, firstQuestion?: string): string {
-		const config = GENERATED_NOTE_TYPES[noteType as keyof typeof GENERATED_NOTE_TYPES];
-		if (!config) return `Note - ${Date.now()}`;
-
-		if (firstQuestion) {
-			// Clean up the question to use as part of the name
-			const cleanQuestion = firstQuestion
-				.replace(/\*\*/g, "")
-				.replace(/\[\[([^\]|]+)(\|[^\]]+)?\]\]/g, "$1")
-				.replace(/#flashcard/g, "")
-				.replace(/<br>/g, " ")
-				.trim()
-				.substring(0, 40);
-
-			return `${config.defaultNamePrefix}${cleanQuestion}`;
-		}
-
-		return `${config.defaultNamePrefix}${Date.now()}`;
-	}
-
-	/**
-	 * Create a new source note for generated flashcards
-	 */
-	private async createSourceNoteForGeneratedCards(
-		noteName: string,
-		tag: string
-	): Promise<{ uid: string; filePath: string }> {
-		const folderPath = normalizePath(this.deps.settings.zettelFolder || "Zettel");
-
-		// Ensure folder exists
-		if (!this.deps.app.vault.getAbstractFileByPath(folderPath)) {
-			await this.deps.app.vault.createFolder(folderPath);
-		}
-
-		// Find unique file path
-		let filePath = normalizePath(`${folderPath}/${noteName}.md`);
-		let counter = 1;
-		while (this.deps.app.vault.getAbstractFileByPath(filePath)) {
-			filePath = normalizePath(`${folderPath}/${noteName} ${counter}.md`);
-			counter++;
-		}
-
-		// Generate UID
-		const uid = this.generateUid();
-
-		// Create note content with frontmatter
-		const content = `---
-flashcard_uid: ${uid}
-tags: [${tag}]
----
-
-# ${noteName}
-
-`;
-
-		// Create the file
-		const file = await this.deps.app.vault.create(filePath, content);
-
-		return { uid, filePath: file.path };
-	}
-
-	/**
-	 * Generate a random 8-character hex UID
-	 */
-	private generateUid(): string {
-		const chars = "0123456789abcdef";
-		let uid = "";
-		for (let i = 0; i < 8; i++) {
-			uid += chars[Math.floor(Math.random() * chars.length)];
-		}
-		return uid;
 	}
 
 	/**
