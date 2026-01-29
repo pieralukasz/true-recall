@@ -4,7 +4,6 @@ import {
 	VIEW_TYPE_REVIEW,
 	VIEW_TYPE_STATS,
 	VIEW_TYPE_SESSION,
-	VIEW_TYPE_DASHBOARD,
 	VIEW_TYPE_PROJECTS,
 	VIEW_TYPE_BROWSER,
 	VIEW_TYPE_SIMULATOR,
@@ -39,7 +38,6 @@ import { FlashcardPanelView } from "./ui/flashcard-panel/FlashcardPanelView";
 import { ReviewView } from "./ui/review/ReviewView";
 import { StatsView } from "./ui/stats/StatsView";
 import { SessionView } from "./ui/session";
-import { DashboardView } from "./ui/dashboard";
 import { ProjectsView } from "./ui/projects";
 import { BrowserView } from "./ui/browser";
 import { SimulatorView } from "./ui/simulator";
@@ -143,12 +141,6 @@ export default class TrueRecallPlugin extends Plugin {
 			(leaf) => new SessionView(leaf, this)
 		);
 
-		// Register the dashboard view
-		this.registerView(
-			VIEW_TYPE_DASHBOARD,
-			(leaf) => new DashboardView(leaf, this)
-		);
-
 		// Register the projects view
 		this.registerView(
 			VIEW_TYPE_PROJECTS,
@@ -175,11 +167,6 @@ export default class TrueRecallPlugin extends Plugin {
 		// Add ribbon icon to open statistics
 		this.addRibbonIcon("bar-chart-2", "True Recall - Statistics", () => {
 			void this.openStatsView();
-		});
-
-		// Add ribbon icon for command dashboard
-		this.addRibbonIcon("blocks", "True Recall - Command Dashboard", () => {
-			this.openCommandDashboard();
 		});
 
 		// Initialize floating generate button
@@ -294,13 +281,6 @@ export default class TrueRecallPlugin extends Plugin {
 				dayBoundaryService: this.dayBoundaryService,
 			});
 		}
-	}
-
-	/**
-	 * Activate the dashboard view
-	 */
-	async activateDashboardView(): Promise<void> {
-		await activateView(this.app, VIEW_TYPE_DASHBOARD);
 	}
 
 	/**
@@ -532,13 +512,6 @@ export default class TrueRecallPlugin extends Plugin {
 			createdTodayOnly: true,
 			ignoreDailyLimits: true,
 		});
-	}
-
-	/**
-	 * Open the command dashboard modal
-	 */
-	openCommandDashboard(): void {
-		void this.activateDashboardView();
 	}
 
 	/**

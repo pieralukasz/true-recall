@@ -3,7 +3,7 @@
  * Centralized state management for the flashcard panel
  */
 import type { TFile } from "obsidian";
-import type { FlashcardInfo, DiffResult } from "../types";
+import type { FlashcardInfo } from "../types";
 import type { AppError } from "../errors";
 import type {
     PanelState,
@@ -23,7 +23,6 @@ function createInitialState(): PanelState {
         viewMode: "list",
         currentFile: null,
         flashcardInfo: null,
-        diffResult: null,
         userInstructions: "",
         isFlashcardFile: false,
         noteFlashcardType: "unknown",
@@ -137,7 +136,6 @@ export class PanelStateManager {
             currentFile: file,
             status: "none",
             viewMode: "list",
-            diffResult: null,
             flashcardInfo: null,
             isFlashcardFile: false,
             noteFlashcardType: "unknown",
@@ -166,17 +164,6 @@ export class PanelStateManager {
         this.setState({
             flashcardInfo: info,
             status: info?.exists ? "exists" : "none",
-        });
-    }
-
-    /**
-     * Set diff result and switch to diff mode
-     */
-    setDiffResult(result: DiffResult | null): void {
-        this.setState({
-            diffResult: result,
-            viewMode: result ? "diff" : "list",
-            status: result ? "exists" : this.state.status,
         });
     }
 
@@ -217,16 +204,6 @@ export class PanelStateManager {
     }
 
     /**
-     * Clear diff result and return to list mode
-     */
-    clearDiff(): void {
-        this.setState({
-            diffResult: null,
-            viewMode: "list",
-        });
-    }
-
-    /**
      * Check if current file matches the given file
      */
     isCurrentFile(file: TFile | null): boolean {
@@ -241,13 +218,6 @@ export class PanelStateManager {
      */
     isProcessing(): boolean {
         return this.state.status === "processing";
-    }
-
-    /**
-     * Check if in diff mode
-     */
-    isInDiffMode(): boolean {
-        return this.state.viewMode === "diff" && this.state.diffResult !== null;
     }
 
     /**

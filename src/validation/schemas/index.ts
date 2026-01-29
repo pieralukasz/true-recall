@@ -16,21 +16,12 @@ export {
 
 // Flashcard Schemas
 export {
-    FlashcardChangeTypeSchema,
     FlashcardItemSchema,
-    FlashcardChangeSchema,
-    RawFlashcardChangeSchema,
-    NewFlashcardChangeSchema,
-    ModifiedFlashcardChangeSchema,
-    DeletedFlashcardChangeSchema,
-    DiffResponseSchema,
     FlashcardInfoSchema,
 } from "./flashcard.schema";
 
 // Validation-specific types (from Zod schemas)
-export type { RawFlashcardChange, DiffResponse, FlashcardInfo } from "./flashcard.schema";
-
-// Note: FlashcardChangeType, FlashcardItem, FlashcardChange are exported from src/types/index.ts
+export type { FlashcardInfo } from "./flashcard.schema";
 
 // Settings Schemas
 export {
