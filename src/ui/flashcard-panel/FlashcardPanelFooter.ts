@@ -4,6 +4,7 @@
  */
 import type { TFile } from "obsidian";
 import { BaseComponent } from "../component.base";
+import { createActionButton, type ActionButton } from "../components";
 import type { ProcessingStatus } from "../../state";
 import type { NoteFlashcardType } from "../../types";
 
@@ -73,13 +74,6 @@ export class FlashcardPanelFooter extends BaseComponent {
 
 		if (!this.element) return;
 
-		// Shared button base classes
-		const btnBase = "ep:flex-1 ep:border-none ep:py-2.5 ep:px-4 ep:rounded-md ep:cursor-pointer ep:font-medium ep:text-ui-small ep:transition-colors";
-		const btnPrimary = `${btnBase} mod-cta`;
-		const btnSecondary = `${btnBase} ep:bg-obs-border ep:text-obs-normal ep:hover:bg-obs-modifier-hover`;
-		const btnDanger = `${btnBase} ep:bg-red-500 ep:text-white ep:hover:bg-red-600`;
-		const btnSeed = `${btnBase} ep:bg-obs-border ep:text-obs-normal ep:font-semibold ep:hover:bg-amber-400 ep:hover:text-white`;
-
 		// Create footer buttons wrapper (horizontal row layout)
 		const buttonsWrapper = this.element.createDiv({
 			cls: "ep:flex ep:gap-2",
@@ -88,19 +82,21 @@ export class FlashcardPanelFooter extends BaseComponent {
 		// Show selection action buttons when cards are selected
 		if (selectedCount && selectedCount > 0) {
 			if (onMoveSelected) {
-				const moveBtn = buttonsWrapper.createEl("button", {
-					cls: btnSeed,
+				createActionButton(buttonsWrapper, {
+					label: `Move (${selectedCount})`,
+					variant: "seed",
+					fullWidth: true,
+					onClick: onMoveSelected,
 				});
-				moveBtn.textContent = `Move (${selectedCount})`;
-				this.events.addEventListener(moveBtn, "click", onMoveSelected);
 			}
 
 			if (onDeleteSelected) {
-				const deleteBtn = buttonsWrapper.createEl("button", {
-					cls: btnDanger,
+				createActionButton(buttonsWrapper, {
+					label: `Delete (${selectedCount})`,
+					variant: "danger",
+					fullWidth: true,
+					onClick: onDeleteSelected,
 				});
-				deleteBtn.textContent = `Delete (${selectedCount})`;
-				this.events.addEventListener(deleteBtn, "click", onDeleteSelected);
 			}
 			return;
 		}
@@ -111,9 +107,10 @@ export class FlashcardPanelFooter extends BaseComponent {
 		}
 
 		// ===== COLLECT BUTTON (when uncollected flashcards exist) =====
+		// Custom styling with gradient - not using ActionButton
 		if (hasUncollectedFlashcards && onCollect) {
 			const collectBtn = buttonsWrapper.createEl("button", {
-				cls: `${btnBase} ep:text-gray-800 ep:font-semibold`,
+				cls: "ep:flex-1 ep:border-none ep:py-2.5 ep:px-4 ep:rounded-md ep:cursor-pointer ep:font-semibold ep:text-ui-small ep:transition-colors ep:text-gray-800",
 			});
 			collectBtn.style.background = "linear-gradient(135deg, #fbbf24, #f59e0b)";
 			collectBtn.textContent = `Collect (${uncollectedCount})`;
@@ -122,29 +119,24 @@ export class FlashcardPanelFooter extends BaseComponent {
 
 		// Main action button (Generate only when no flashcards exist)
 		if (status !== "exists") {
-			const mainBtn = buttonsWrapper.createEl("button", {
-				cls: btnPrimary,
+			const isProcessing = status === "processing";
+			createActionButton(buttonsWrapper, {
+				label: isProcessing ? "Processing..." : "Generate",
+				variant: "primary",
+				fullWidth: true,
+				disabled: isProcessing,
+				onClick: isProcessing ? undefined : onGenerate,
 			});
-
-			if (status === "processing") {
-				mainBtn.textContent = "Processing...";
-				mainBtn.disabled = true;
-				mainBtn.classList.add("ep:opacity-60", "ep:cursor-not-allowed");
-			} else {
-				mainBtn.textContent = "Generate";
-				if (onGenerate) {
-					this.events.addEventListener(mainBtn, "click", onGenerate);
-				}
-			}
 		}
 
 		// Add flashcard button - second in row
 		if (onAddFlashcard) {
-			const addBtn = buttonsWrapper.createEl("button", {
-				text: "+ Add",
-				cls: btnSecondary,
+			createActionButton(buttonsWrapper, {
+				label: "+ Add",
+				variant: "secondary",
+				fullWidth: true,
+				onClick: onAddFlashcard,
 			});
-			this.events.addEventListener(addBtn, "click", onAddFlashcard);
 		}
 	}
 
