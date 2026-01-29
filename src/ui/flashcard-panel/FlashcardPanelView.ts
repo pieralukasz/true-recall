@@ -21,12 +21,12 @@ import { Panel } from "../components/Panel";
 import { FlashcardPanelContent } from "./FlashcardPanelContent";
 import { FlashcardPanelFooter } from "./FlashcardPanelFooter";
 import { FlashcardPanelHeader } from "./FlashcardPanelHeader";
-import { SelectionFooter } from "./SelectionFooter";
+import { SelectionFooter } from "../components";
 import { MoveCardModal } from "../modals/MoveCardModal";
 import { FlashcardReviewModal } from "../modals/FlashcardReviewModal";
 import type { FSRSFlashcardItem } from "../../types/fsrs/card.types";
 import { FlashcardEditorModal } from "../modals/FlashcardEditorModal";
-import type { FlashcardItem, FlashcardChange } from "../../types";
+import type { FlashcardItem } from "../../types";
 import type { CardAddedEvent, CardRemovedEvent, CardUpdatedEvent, CardReviewedEvent, BulkChangeEvent } from "../../types/events.types";
 import { createDefaultFSRSData } from "../../types";
 import { State } from "ts-fsrs";
@@ -118,14 +118,8 @@ export class FlashcardPanelView extends ItemView {
 
         const hasFlashcards = state.status === "exists";
 
-        // Generate or Update flashcards
-        if (hasFlashcards) {
-            menu.addItem((item) => {
-                item.setTitle("Update flashcards")
-                    .setIcon("sparkles")
-                    .onClick(() => void this.handleUpdate());
-            });
-        } else {
+        // Generate flashcards (only when none exist)
+        if (!hasFlashcards) {
             menu.addItem((item) => {
                 item.setTitle("Generate flashcards")
                     .setIcon("sparkles")
@@ -460,7 +454,6 @@ export class FlashcardPanelView extends ItemView {
                     searchQuery: state.searchQuery,
                     onAdd: () => void this.handleAddFlashcard(),
                     onGenerate: () => void this.handleGenerate(),
-                    onUpdate: () => void this.handleUpdate(),
                     onCollect: () => void this.handleCollect(),
                     onRefresh: () => void this.loadFlashcardInfo(),
                     onReview: () => void this.handleReviewFromPanel(),
@@ -498,9 +491,7 @@ export class FlashcardPanelView extends ItemView {
         this.contentComponent = new FlashcardPanelContent(this.contentDiv, {
             currentFile: state.currentFile,
             status: state.status,
-            viewMode: state.viewMode,
             flashcardInfo: state.flashcardInfo,
-            diffResult: state.diffResult,
             isFlashcardFile: state.isFlashcardFile,
             noteFlashcardType: state.noteFlashcardType,
             selectionMode: state.selectionMode,
@@ -512,16 +503,12 @@ export class FlashcardPanelView extends ItemView {
             handlers: {
                 app: this.app,
                 component: this,
-                markdownRenderer: MarkdownRenderer,
                 onEditCard: (card) => void this.handleEditCard(card),
                 onEditButton: (card) => void this.handleEditButton(card),
                 onCopyCard: (card) => void this.handleCopyCard(card),
                 onDeleteCard: (card) => void this.handleRemoveCard(card),
                 onMoveCard: (card) => void this.handleMoveCard(card),
-                onChangeAccept: (change, index, accepted) => this.handleChangeAccept(change, index, accepted),
-                onSelectAll: (selected) => this.handleSelectAll(selected),
                 onEditSave: async (card, field, newContent) => void this.handleEditSave(card, field, newContent),
-                onEditChange: (change, field, newContent) => this.handleDiffEditChange(change, field, newContent),
                 onToggleExpand: (cardId) => {
                     const scrollPosition = this.contentContainer.scrollTop;
                     this.stateManager.toggleCardExpanded(cardId);
@@ -547,41 +534,34 @@ export class FlashcardPanelView extends ItemView {
         });
         this.contentComponent.render();
 
-        // Render Footer (different based on mode)
+        // Render Footer (only for selection mode)
         this.footerComponent?.destroy();
         this.selectionFooterComponent?.destroy();
         this.footerContainer.empty();
 
         if (state.selectionMode === "selecting") {
             // Selection mode footer
+            const selectedCount = state.selectedCardIds.size;
             this.selectionFooterComponent = new SelectionFooter(this.footerContainer, {
-                selectedCount: state.selectedCardIds.size,
-                onMove: () => void this.handleMoveSelected(),
-                onDelete: () => void this.handleDeleteSelected(),
+                display: { type: "selectedCount", count: selectedCount },
+                actions: [
+                    {
+                        label: "Move",
+                        icon: "folder-input",
+                        onClick: () => void this.handleMoveSelected(),
+                        variant: "secondary",
+                        disabled: selectedCount === 0,
+                    },
+                    {
+                        label: "Delete",
+                        icon: "trash-2",
+                        onClick: () => void this.handleDeleteSelected(),
+                        variant: "danger",
+                        disabled: selectedCount === 0,
+                    },
+                ],
             });
             this.selectionFooterComponent.render();
-        } else if (state.viewMode === "diff" && state.diffResult) {
-            // Diff mode footer (keep existing)
-            this.footerComponent = new FlashcardPanelFooter(this.footerContainer, {
-                currentFile: state.currentFile,
-                status: state.status,
-                viewMode: state.viewMode,
-                diffResult: state.diffResult,
-                isFlashcardFile: state.isFlashcardFile,
-                noteFlashcardType: state.noteFlashcardType,
-                selectedCount: 0,
-                hasUncollectedFlashcards: state.hasUncollectedFlashcards,
-                uncollectedCount: state.uncollectedCount,
-                onGenerate: () => void this.handleGenerate(),
-                onUpdate: () => void this.handleUpdate(),
-                onApplyDiff: () => void this.handleApplyDiff(),
-                onCancelDiff: () => void this.handleCancelDiff(),
-                onMoveSelected: () => void this.handleMoveSelected(),
-                onDeleteSelected: () => void this.handleDeleteSelected(),
-                onAddFlashcard: () => void this.handleAddFlashcard(),
-                onCollect: () => void this.handleCollect(),
-            });
-            this.footerComponent.render();
         }
         // Normal mode: no footer (actions in header)
     }
@@ -643,14 +623,13 @@ export class FlashcardPanelView extends ItemView {
         }
 
         // Note: Selection-based generation moved to floating button
-        const userInstructions = this.footerComponent?.getInstructions() || "";
         this.stateManager.startProcessing();
 
         try {
             const content = await this.app.vault.read(state.currentFile);
             const flashcards = await this.openRouterService.generateFlashcards(
                 content,
-                userInstructions || undefined,
+                undefined,
                 this.plugin.settings.customGeneratePrompt || undefined
             );
 
@@ -691,129 +670,6 @@ export class FlashcardPanelView extends ItemView {
         } catch (error) {
             console.error("Failed to load flashcard info after generation:", error);
         }
-    }
-
-    /**
-     * Helper: Convert FlashcardItem[] to markdown format
-     * Generates block IDs for cards that don't have them
-     */
-    private flashcardsToMarkdown(flashcards: FlashcardItem[]): string {
-        return flashcards
-            .map(f => {
-                // Generate block ID if not present
-                const cardId = f.id || crypto.randomUUID();
-                return `${f.question} #flashcard\n${f.answer}\n^${cardId}`;
-            })
-            .join("\n\n");
-    }
-
-    private async handleUpdate(): Promise<void> {
-        const state = this.stateManager.getState();
-        if (!state.currentFile) return;
-
-        if (!this.plugin.settings.openRouterApiKey) {
-            new Notice("Please configure your OpenRouter API key in settings.");
-            return;
-        }
-
-        const userInstructions = this.footerComponent?.getInstructions() || "";
-        this.stateManager.startProcessing();
-
-        try {
-            const info = await this.flashcardManager.getFlashcardInfo(state.currentFile);
-            const content = await this.app.vault.read(state.currentFile);
-            const oldNoteContent = await this.flashcardManager.extractSourceContent(state.currentFile);
-
-            const diffResult = await this.openRouterService.generateFlashcardsDiff(
-                content,
-                info.flashcards,
-                userInstructions || undefined,
-                oldNoteContent ?? undefined,
-                this.plugin.settings.customUpdatePrompt || undefined
-            );
-
-            if (diffResult.changes.length === 0) {
-                new Notice("No changes needed. Flashcards are up to date.");
-                this.stateManager.finishProcessing(true);
-                return;
-            }
-
-            this.stateManager.setDiffResult(diffResult);
-        } catch (error) {
-            new Notice(`Error: ${error instanceof Error ? error.message : String(error)}`);
-            this.stateManager.finishProcessing(true);
-        }
-    }
-
-    private async handleApplyDiff(): Promise<void> {
-        const state = this.stateManager.getState();
-        if (!state.currentFile || !state.diffResult) return;
-
-        // Check if store is ready (needed for new cards)
-        if (!this.flashcardManager.hasStore()) {
-            new Notice("Flashcard store not ready. Please restart Obsidian.");
-            return;
-        }
-
-        const acceptedChanges = state.diffResult.changes.filter((c) => c.accepted);
-        if (acceptedChanges.length === 0) {
-            new Notice("No changes selected");
-            return;
-        }
-
-        try {
-            await this.flashcardManager.applyDiffChanges(
-                state.currentFile,
-                state.diffResult.changes,
-                state.diffResult.existingFlashcards
-            );
-
-            const counts = {
-                new: acceptedChanges.filter((c) => c.type === "NEW").length,
-                modified: acceptedChanges.filter((c) => c.type === "MODIFIED").length,
-                deleted: acceptedChanges.filter((c) => c.type === "DELETED").length,
-            };
-
-            const parts = [];
-            if (counts.new > 0) parts.push(`${counts.new} new`);
-            if (counts.modified > 0) parts.push(`${counts.modified} modified`);
-            if (counts.deleted > 0) parts.push(`${counts.deleted} deleted`);
-            new Notice(`Applied: ${parts.join(", ")}`);
-        } catch (error) {
-            new Notice(`Error: ${error instanceof Error ? error.message : String(error)}`);
-        }
-
-        this.stateManager.clearDiff();
-        await this.loadFlashcardInfo();
-    }
-
-    private handleCancelDiff(): void {
-        this.stateManager.clearDiff();
-    }
-
-    private handleChangeAccept(change: FlashcardChange, index: number, accepted: boolean): void {
-        const state = this.stateManager.getState();
-        if (!state.diffResult) return;
-
-        const changes = [...state.diffResult.changes];
-        if (changes[index]) {
-            changes[index] = { ...changes[index], accepted };
-            this.stateManager.setDiffResult({
-                ...state.diffResult,
-                changes,
-            });
-        }
-    }
-
-    private handleSelectAll(selected: boolean): void {
-        const state = this.stateManager.getState();
-        if (!state.diffResult) return;
-
-        const changes = state.diffResult.changes.map((c) => ({ ...c, accepted: selected }));
-        this.stateManager.setDiffResult({
-            ...state.diffResult,
-            changes,
-        });
     }
 
     private async handleOpenFlashcardFile(): Promise<void> {
@@ -928,18 +784,6 @@ export class FlashcardPanelView extends ItemView {
         } catch (error) {
             new Notice(`Failed to update flashcard: ${error instanceof Error ? error.message : String(error)}`);
         }
-    }
-
-    private handleDiffEditChange(
-        change: FlashcardChange,
-        field: "question" | "answer",
-        newContent: string
-    ): void {
-        // Update the FlashcardChange object in the diff result
-        change[field] = newContent;
-
-        // Re-render to show updated content
-        this.render();
     }
 
     private async handleRemoveCard(card: FlashcardItem): Promise<void> {

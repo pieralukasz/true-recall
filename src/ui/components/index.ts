@@ -30,13 +30,6 @@ export {
 } from "./CardReviewItem";
 
 export {
-	DiffCard,
-	createDiffCard,
-	type DiffCardHandlers,
-	type DiffCardProps,
-} from "./DiffCard";
-
-export {
 	EditableTextField,
 	createEditableTextField,
 	TOOLBAR_BUTTONS,
@@ -51,3 +44,44 @@ export {
 	autoResizeTextarea,
 	setupAutoResize,
 } from "./edit-toolbar.utils";
+
+// Shared UI Components
+export {
+	CardCountDisplay,
+	createCardCountDisplay,
+	type CardCountDisplayProps,
+} from "./CardCountDisplay";
+
+export {
+	IconButton,
+	createIconButton,
+	type IconButtonProps,
+} from "./IconButton";
+
+export {
+	SearchInput,
+	createSearchInput,
+	type SearchInputProps,
+} from "./SearchInput";
+
+export {
+	SectionHeader,
+	createSectionHeader,
+	type SectionHeaderProps,
+	type SectionHeaderAction,
+} from "./SectionHeader";
+
+export {
+	ActionButton,
+	createActionButton,
+	type ActionButtonProps,
+	type ActionButtonVariant,
+} from "./ActionButton";
+
+export {
+	SelectionFooter,
+	createSelectionFooter,
+	type SelectionFooterProps,
+	type SelectionFooterDisplay,
+	type SelectionFooterAction,
+} from "./SelectionFooter";

@@ -28,9 +28,3 @@ export {
     createCompactCardItem,
     type CompactCardItemProps,
 } from "./CompactCardItem";
-
-export {
-    SelectionFooter,
-    createSelectionFooter,
-    type SelectionFooterProps,
-} from "./SelectionFooter";

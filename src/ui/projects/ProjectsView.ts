@@ -12,7 +12,7 @@ import { createProjectsStateManager } from "../../state/projects.state";
 import { getEventBus } from "../../services";
 import { Panel } from "../components/Panel";
 import { ProjectsContent } from "./ProjectsContent";
-import { ProjectsSelectionFooter } from "./ProjectsSelectionFooter";
+import { SelectionFooter } from "../components";
 import { SelectNoteModal } from "../modals";
 import type TrueRecallPlugin from "../../main";
 import type { ProjectNoteInfo } from "../../types";
@@ -29,7 +29,7 @@ export class ProjectsView extends ItemView {
 	// UI Components
 	private panelComponent: Panel | null = null;
 	private contentComponent: ProjectsContent | null = null;
-	private selectionFooterComponent: ProjectsSelectionFooter | null = null;
+	private selectionFooterComponent: SelectionFooter | null = null;
 
 	// Native header action elements
 	private refreshAction: HTMLElement | null = null;
@@ -792,14 +792,20 @@ export class ProjectsView extends ItemView {
 				}
 			}
 
-			this.selectionFooterComponent = new ProjectsSelectionFooter(
+			this.selectionFooterComponent = new SelectionFooter(
 				footerContainer,
 				{
-					newCount,
-					learningCount,
-					dueCount,
-					onReviewSelected: () => void this.handleStartReviewSelected(),
-					onExitSelectionMode: () => this.stateManager.exitSelectionMode(),
+					display: { type: "cardCounts", newCount, learningCount, dueCount },
+					actions: [
+						{
+							label: "Review Selected",
+							icon: "play",
+							onClick: () => void this.handleStartReviewSelected(),
+							variant: "primary",
+							disabled: newCount + learningCount + dueCount === 0,
+						},
+					],
+					onCancel: () => this.stateManager.exitSelectionMode(),
 				}
 			);
 			this.selectionFooterComponent.render();

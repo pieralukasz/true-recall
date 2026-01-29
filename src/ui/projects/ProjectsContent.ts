@@ -11,6 +11,8 @@ import {
 	type Component,
 } from "obsidian";
 import { BaseComponent } from "../component.base";
+import { createCardCountDisplay, createSectionHeader } from "../components";
+import { setupLongPress } from "../utils";
 import type { ProjectInfo, ProjectNoteInfo } from "../../types";
 
 export interface ProjectsContentProps {
@@ -61,39 +63,12 @@ export class ProjectsContent extends BaseComponent {
 
 		// Section header with buttons (desktop only - on mobile actions are in "..." menu)
 		if (!Platform.isMobile) {
-			const headerRow = this.element.createDiv({
-				cls: "ep:flex ep:items-center ep:justify-between",
-			});
-			headerRow.createDiv({
-				cls: "ep:text-ui-small ep:font-semibold ep:text-obs-normal",
-				text: "Projects",
-			});
-
-			// Buttons container
-			const buttonsContainer = headerRow.createDiv({
-				cls: "ep:flex ep:items-center ep:gap-1",
-			});
-
-			const iconBtnCls = "clickable-icon";
-
-			// Refresh button
-			const refreshBtn = buttonsContainer.createEl("button", {
-				cls: iconBtnCls,
-				attr: { "aria-label": "Refresh" },
-			});
-			setIcon(refreshBtn, "refresh-cw");
-			this.events.addEventListener(refreshBtn, "click", () => {
-				this.props.onRefresh();
-			});
-
-			// New button
-			const newBtn = buttonsContainer.createEl("button", {
-				cls: iconBtnCls,
-				attr: { "aria-label": "New project" },
-			});
-			setIcon(newBtn, "plus");
-			this.events.addEventListener(newBtn, "click", () => {
-				this.props.onCreateFromNote();
+			createSectionHeader(this.element, {
+				title: "Projects",
+				actions: [
+					{ icon: "refresh-cw", ariaLabel: "Refresh", onClick: () => this.props.onRefresh() },
+					{ icon: "plus", ariaLabel: "New project", onClick: () => this.props.onCreateFromNote() },
+				],
 			});
 
 			// Search input (desktop only)
@@ -260,30 +235,13 @@ export class ProjectsContent extends BaseComponent {
 
 		// Anki-style card counts (New · Learning · Due)
 		if (hasCards) {
-			const countsEl = statsEl.createSpan({
-				cls: "ep:flex ep:items-center ep:gap-1 ep:font-medium",
-			});
-
-			// New count (blue)
-			countsEl.createSpan({
-				text: String(project.newCount),
-				cls: "ep:text-blue-500",
-			});
-
-			countsEl.createSpan({ text: "·", cls: "ep:text-obs-faint" });
-
-			// Learning count (orange)
-			countsEl.createSpan({
-				text: String(project.learningCount),
-				cls: "ep:text-orange-500",
-			});
-
-			countsEl.createSpan({ text: "·", cls: "ep:text-obs-faint" });
-
-			// Due/Review count (green)
-			countsEl.createSpan({
-				text: String(project.dueCount),
-				cls: "ep:text-green-500",
+			createCardCountDisplay(statsEl, {
+				newCount: project.newCount,
+				learningCount: project.learningCount,
+				dueCount: project.dueCount,
+				variant: "full",
+				size: "smaller",
+				bold: true,
 			});
 		}
 
@@ -411,10 +369,12 @@ export class ProjectsContent extends BaseComponent {
 			});
 
 			// Long press for entering selection mode (mobile-friendly)
-			this.setupLongPress(noteItem, () => {
-				if (selectionMode !== "selecting") {
-					this.props.onEnterSelectionMode(note.path);
-				}
+			setupLongPress(noteItem, this.events, {
+				onLongPress: () => {
+					if (selectionMode !== "selecting") {
+						this.props.onEnterSelectionMode(note.path);
+					}
+				},
 			});
 
 			// Context menu for "Select" option (when not in selection mode)
@@ -438,34 +398,6 @@ export class ProjectsContent extends BaseComponent {
 				cls: `ep:text-ui-smaller ep:whitespace-nowrap ep:flex-shrink-0 ${colorClass}`,
 			});
 		}
-	}
-
-	/**
-	 * Setup long press handler for entering selection mode (mobile-friendly)
-	 */
-	private setupLongPress(element: HTMLElement, callback: () => void): void {
-		let longPressTimer: ReturnType<typeof setTimeout> | null = null;
-
-		this.events.addEventListener(element, "pointerdown", () => {
-			longPressTimer = setTimeout(() => {
-				callback();
-				longPressTimer = null;
-			}, 500);
-		});
-
-		this.events.addEventListener(element, "pointerup", () => {
-			if (longPressTimer) {
-				clearTimeout(longPressTimer);
-				longPressTimer = null;
-			}
-		});
-
-		this.events.addEventListener(element, "pointerleave", () => {
-			if (longPressTimer) {
-				clearTimeout(longPressTimer);
-				longPressTimer = null;
-			}
-		});
 	}
 
 	/**

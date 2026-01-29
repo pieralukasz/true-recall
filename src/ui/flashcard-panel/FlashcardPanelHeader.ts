@@ -5,6 +5,7 @@
 import { Menu, setIcon } from "obsidian";
 import { State } from "ts-fsrs";
 import { BaseComponent } from "../component.base";
+import { createCardCountDisplay, type CardCountDisplay } from "../components";
 import type { FlashcardInfo } from "../../types";
 import type { FSRSFlashcardItem } from "../../types/fsrs/card.types";
 import type { SelectionMode } from "../../state/state.types";
@@ -20,7 +21,6 @@ export interface FlashcardPanelHeaderProps {
     searchQuery: string;
     onAdd?: () => void;
     onGenerate?: () => void;
-    onUpdate?: () => void;
     onCollect?: () => void;
     onRefresh?: () => void;
     onReview?: () => void;
@@ -101,28 +101,13 @@ export class FlashcardPanelHeader extends BaseComponent {
         // Anki-style counts (New · Learning · Due)
         if (this.props.cardsWithFsrs && this.props.cardsWithFsrs.length > 0) {
             const counts = this.countByState(this.props.cardsWithFsrs);
-            const countsEl = leftSide.createSpan({
-                cls: "ep:flex ep:items-center ep:gap-1 ep:text-ui-smaller",
-            });
-
-            // New count (blue)
-            countsEl.createSpan({
-                text: String(counts.new),
-                cls: "ep:text-blue-500",
-            });
-            countsEl.createSpan({ text: "·", cls: "ep:text-obs-faint" });
-
-            // Learning count (orange)
-            countsEl.createSpan({
-                text: String(counts.learning),
-                cls: "ep:text-orange-500",
-            });
-            countsEl.createSpan({ text: "·", cls: "ep:text-obs-faint" });
-
-            // Review count (green)
-            countsEl.createSpan({
-                text: String(counts.review),
-                cls: "ep:text-green-500",
+            createCardCountDisplay(leftSide, {
+                newCount: counts.new,
+                learningCount: counts.learning,
+                dueCount: counts.review,
+                variant: "full",
+                size: "smaller",
+                bold: false,
             });
         }
 
@@ -231,13 +216,7 @@ export class FlashcardPanelHeader extends BaseComponent {
             });
         }
 
-        if (hasFlashcards && this.props.onUpdate) {
-            menu.addItem((item) => {
-                item.setTitle("Update flashcards")
-                    .setIcon("sparkles")
-                    .onClick(() => this.props.onUpdate?.());
-            });
-        } else if (this.props.onGenerate) {
+        if (!hasFlashcards && this.props.onGenerate) {
             menu.addItem((item) => {
                 item.setTitle("Generate flashcards")
                     .setIcon("sparkles")
