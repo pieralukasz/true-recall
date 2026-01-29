@@ -102,6 +102,22 @@ export class CompactCardItem extends BaseComponent {
         });
         statusDotEl.addClass(this.getStatusDotColor());
 
+        // Buried/Suspended indicator
+        if (this.isSuspended()) {
+            mainRow.createSpan({
+                cls: "ep:text-ui-smaller ep:text-red-500 ep:font-medium ep:flex-shrink-0",
+                text: "S",
+                attr: { title: "Suspended - excluded from review" },
+            });
+        } else if (this.isBuried()) {
+            const buriedDate = new Date(this.props.fsrsCard!.fsrs.buriedUntil!);
+            mainRow.createSpan({
+                cls: "ep:text-ui-smaller ep:text-obs-faint ep:font-medium ep:flex-shrink-0",
+                text: "B",
+                attr: { title: `Buried until ${buriedDate.toLocaleDateString()}` },
+            });
+        }
+
         // Question (rendered markdown, full content with line breaks)
         const questionEl = mainRow.createDiv({
             cls: "ep:flex-1 ep:text-ui-small ep:text-obs-normal true-recall-card-markdown",
@@ -221,6 +237,16 @@ export class CompactCardItem extends BaseComponent {
             default:
                 return "Unknown";
         }
+    }
+
+    private isSuspended(): boolean {
+        return this.props.fsrsCard?.fsrs.suspended === true;
+    }
+
+    private isBuried(): boolean {
+        const buriedUntil = this.props.fsrsCard?.fsrs.buriedUntil;
+        if (!buriedUntil) return false;
+        return new Date(buriedUntil) > new Date();
     }
 
     updateProps(props: Partial<CompactCardItemProps>): void {
