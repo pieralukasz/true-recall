@@ -3,30 +3,37 @@
  * Allows generating flashcards using AI based on user instructions
  * Used during review mode to quickly create new cards
  */
-import { App } from "obsidian";
+import { App, Component, MarkdownRenderer } from "obsidian";
 import { BaseModal } from "./BaseModal";
 import { notify } from "../../services";
 import { FlashcardReviewModal } from "./FlashcardReviewModal";
-import type { FlashcardItem, GeneratedNoteType, TrueRecallSettings } from "../../types";
+import type { FlashcardItem, TrueRecallSettings } from "../../types";
 import {
 	OpenRouterService,
 	FlashcardParserService,
 } from "../../services";
-import { INSTRUCTION_BASED_GENERATION_PROMPT } from "../../constants";
+import {
+	INSTRUCTION_BASED_GENERATION_PROMPT,
+	CONTEXT_AWARE_REVIEW_PROMPT,
+} from "../../constants";
 
 export interface AIGeneratorResult {
 	cancelled: boolean;
 	flashcards?: FlashcardItem[];
-	// Options for creating a new note as destination (passed through from review modal)
-	createNewNote?: boolean;
-	noteType?: GeneratedNoteType;
-	noteName?: string;
+}
+
+export interface CardContext {
+	question: string;
+	answer: string;
+	sourceNoteName?: string;
 }
 
 export interface AIGeneratorModalOptions {
 	openRouterService: OpenRouterService;
 	customSystemPrompt?: string;
 	settings: TrueRecallSettings;
+	/** Optional card context for context-aware generation in review mode */
+	cardContext?: CardContext;
 }
 
 /**
@@ -41,6 +48,7 @@ export class AIGeneratorModal extends BaseModal {
 	private instructionsTextarea: HTMLTextAreaElement | null = null;
 	private generateButton: HTMLButtonElement | null = null;
 	private isGenerating = false;
+	private renderComponent: Component | null = null;
 
 	constructor(app: App, options: AIGeneratorModalOptions) {
 		super(app, {
@@ -58,11 +66,21 @@ export class AIGeneratorModal extends BaseModal {
 	}
 
 	onOpen(): void {
+		// Create component for markdown rendering BEFORE super.onOpen()
+		// because renderBody() is called from super.onOpen() and needs renderComponent
+		this.renderComponent = new Component();
+		this.renderComponent.load();
+
 		super.onOpen();
 		this.contentEl.addClass("true-recall-ai-generator-modal");
 	}
 
 	protected renderBody(container: HTMLElement): void {
+		// Context section (if card context is provided)
+		if (this.options.cardContext) {
+			this.renderContextSection(container);
+		}
+
 		// Instructions section
 		const instructionsSection = container.createDiv({
 			cls: "ep:flex ep:flex-col ep:gap-2",
@@ -73,16 +91,26 @@ export class AIGeneratorModal extends BaseModal {
 			cls: "ep:font-semibold ep:text-ui-small ep:text-obs-normal",
 		});
 
-		this.instructionsTextarea = instructionsSection.createEl("textarea", {
-			cls: "ep:w-full ep:min-h-35 ep:p-3 ep:border ep:border-obs-border ep:rounded-md ep:bg-obs-primary ep:text-obs-normal ep:font-sans ep:text-ui-small ep:resize-y ep:leading-normal ep:focus:outline-none ep:focus:border-obs-interactive ep:disabled:opacity-60 ep:disabled:cursor-not-allowed ep:disabled:bg-obs-secondary ep:placeholder:text-obs-muted ep:placeholder:text-sm",
-			attr: {
-				placeholder: `Examples:
+		// Different placeholder text based on whether we have context
+		const placeholder = this.options.cardContext
+			? `Examples:
+• Expand with more details
+• Clarify the main concept
+• Create similar questions about related topics
+• Add examples and applications
+• What are the prerequisites for this?`
+			: `Examples:
 • Create a flashcard about what is an e-book reader
 • Make 3 flashcards about the phases of cell division
 • What is photosynthesis? (leave answer as ???)
 • Create two flashcards:
   - What is machine learning?
-  - How does neural network work?`,
+  - How does neural network work?`;
+
+		this.instructionsTextarea = instructionsSection.createEl("textarea", {
+			cls: "ep:w-full ep:min-h-35 ep:p-3 ep:border ep:border-obs-border ep:rounded-md ep:bg-obs-primary ep:text-obs-normal ep:font-sans ep:text-ui-small ep:resize-y ep:leading-normal ep:focus:outline-none ep:focus:border-obs-interactive ep:disabled:opacity-60 ep:disabled:cursor-not-allowed ep:disabled:bg-obs-secondary ep:placeholder:text-obs-muted ep:placeholder:text-sm",
+			attr: {
+				placeholder,
 				rows: "6",
 			},
 		});
@@ -122,6 +150,58 @@ export class AIGeneratorModal extends BaseModal {
 		this.generateButton.addEventListener("click", () => void this.handleGenerate());
 	}
 
+	/**
+	 * Render the context section showing the current card being reviewed
+	 */
+	private renderContextSection(container: HTMLElement): void {
+		const context = this.options.cardContext;
+		if (!context) return;
+
+		const contextSection = container.createDiv({
+			cls: "ep:mb-4 ep:p-3 ep:bg-obs-secondary ep:rounded-md ep:border ep:border-obs-border",
+		});
+
+		// Header
+		const headerRow = contextSection.createDiv({
+			cls: "ep:flex ep:items-center ep:gap-2 ep:mb-2",
+		});
+
+		headerRow.createSpan({
+			text: "Current card context",
+			cls: "ep:text-ui-smaller ep:font-medium ep:text-obs-muted",
+		});
+
+		// Question preview
+		const questionRow = contextSection.createDiv({
+			cls: "ep:flex ep:gap-2 ep:mb-1",
+		});
+		questionRow.createSpan({
+			text: "Q:",
+			cls: "ep:text-ui-smaller ep:font-semibold ep:text-obs-muted ep:shrink-0",
+		});
+		const questionContent = questionRow.createDiv({
+			cls: "ep:text-ui-smaller ep:text-obs-normal ep:inline [&_p]:ep:m-0 [&_p]:ep:inline",
+		});
+		if (this.renderComponent) {
+			void MarkdownRenderer.render(this.app, context.question, questionContent, "", this.renderComponent);
+		}
+
+		// Answer preview
+		const answerRow = contextSection.createDiv({
+			cls: "ep:flex ep:gap-2",
+		});
+		answerRow.createSpan({
+			text: "A:",
+			cls: "ep:text-ui-smaller ep:font-semibold ep:text-obs-muted ep:shrink-0",
+		});
+		const answerContent = answerRow.createDiv({
+			cls: "ep:text-ui-smaller ep:text-obs-normal ep:inline [&_p]:ep:m-0 [&_p]:ep:inline",
+		});
+		if (this.renderComponent) {
+			void MarkdownRenderer.render(this.app, context.answer, answerContent, "", this.renderComponent);
+		}
+	}
+
 	private async handleGenerate(): Promise<void> {
 		const instructions = this.instructionsTextarea?.value.trim();
 		if (!instructions) {
@@ -134,13 +214,32 @@ export class AIGeneratorModal extends BaseModal {
 		this.setGenerating(true);
 
 		try {
-			// Use the instruction-based prompt, falling back to custom prompt if provided
-			const systemPrompt = this.options.customSystemPrompt?.trim()
-				|| INSTRUCTION_BASED_GENERATION_PROMPT;
+			// Build prompt based on whether we have card context
+			let noteContent: string;
+			let systemPrompt: string;
 
-			// Generate flashcards using the instructions as the content
+			if (this.options.cardContext) {
+				// Context-aware generation: include current card as reference
+				noteContent = `Current flashcard being reviewed:
+Q: ${this.options.cardContext.question}
+A: ${this.options.cardContext.answer}
+
+User instruction: ${instructions}
+
+Generate new flashcards based on the instruction above, using the current flashcard as context/reference.`;
+
+				systemPrompt = this.options.customSystemPrompt?.trim()
+					|| CONTEXT_AWARE_REVIEW_PROMPT;
+			} else {
+				// Original instruction-only generation
+				noteContent = instructions;
+				systemPrompt = this.options.customSystemPrompt?.trim()
+					|| INSTRUCTION_BASED_GENERATION_PROMPT;
+			}
+
+			// Generate flashcards
 			const response = await this.options.openRouterService.generateFlashcards(
-				instructions,
+				noteContent,
 				undefined,
 				systemPrompt
 			);
@@ -158,7 +257,7 @@ export class AIGeneratorModal extends BaseModal {
 			// Open review modal for editing before save
 			const reviewModal = new FlashcardReviewModal(this.app, {
 				initialFlashcards: flashcards,
-				sourceNoteName: undefined,
+				sourceNoteName: this.options.cardContext?.sourceNoteName,
 				openRouterService: this.options.openRouterService,
 				settings: this.options.settings,
 			});
@@ -171,13 +270,10 @@ export class AIGeneratorModal extends BaseModal {
 				return;
 			}
 
-			// Return the reviewed flashcards with destination options
+			// Return the reviewed flashcards
 			this.resolve({
 				cancelled: false,
 				flashcards: reviewResult.flashcards,
-				createNewNote: reviewResult.createNewNote,
-				noteType: reviewResult.noteType,
-				noteName: reviewResult.noteName,
 			});
 
 		} catch (error) {
@@ -215,6 +311,12 @@ export class AIGeneratorModal extends BaseModal {
 		if (!this.hasSelected && this.resolvePromise) {
 			this.resolvePromise({ cancelled: true });
 			this.resolvePromise = null;
+		}
+
+		// Cleanup render component
+		if (this.renderComponent) {
+			this.renderComponent.unload();
+			this.renderComponent = null;
 		}
 
 		const { contentEl } = this;
