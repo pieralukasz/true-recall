@@ -18,7 +18,6 @@ import type { FSRSFlashcardItem } from "../../types/fsrs/card.types";
 import { createLoadingSpinner } from "../components/LoadingSpinner";
 import { createEmptyState, EmptyStateMessages } from "../components/EmptyState";
 import { createCompactCardItem } from "./CompactCardItem";
-import { createExpandableAddCard } from "../modals/components/ExpandableAddCard";
 
 export interface FlashcardPanelContentHandlers {
 	app: App;
@@ -40,11 +39,6 @@ export interface FlashcardPanelContentHandlers {
 	onEnterSelectionMode?: (cardId: string) => void;
 	// Add flashcard handler (opens modal)
 	onAdd?: () => void;
-	// Inline add flashcard handlers
-	onToggleAddExpand?: () => void;
-	onAddSave?: (question: string, answer: string) => void;
-	onAddSaveWithAI?: (question: string, answer: string, aiInstruction: string) => void;
-	onAddCancel?: () => void;
 }
 
 export interface FlashcardPanelContentProps {
@@ -151,19 +145,6 @@ export class FlashcardPanelContent extends BaseComponent {
 			cls: "ep:text-ui-small ep:text-obs-muted ep:m-0",
 		});
 
-		// Add flashcard component (expandable inline form)
-		if (handlers.onAddSave && selectionMode !== "selecting") {
-			const addCardWrapper = this.element.createDiv();
-			const addCard = createExpandableAddCard(addCardWrapper, {
-				isExpanded: this.props.isAddCardExpanded,
-				onToggleExpand: () => handlers.onToggleAddExpand?.(),
-				onSave: (question, answer) => handlers.onAddSave?.(question, answer),
-				onSaveWithAI: (question, answer, aiInstruction) =>
-					handlers.onAddSaveWithAI?.(question, answer, aiInstruction),
-				onCancel: () => handlers.onAddCancel?.(),
-			});
-			this.childComponents.push(addCard);
-		}
 	}
 
 	private renderPreviewState(): void {
@@ -222,19 +203,6 @@ export class FlashcardPanelContent extends BaseComponent {
 			}
 		}
 
-		// Add flashcard component at the bottom (expandable inline form)
-		if (handlers.onAddSave && selectionMode !== "selecting") {
-			const addCardWrapper = previewEl.createDiv();
-			const addCard = createExpandableAddCard(addCardWrapper, {
-				isExpanded: this.props.isAddCardExpanded,
-				onToggleExpand: () => handlers.onToggleAddExpand?.(),
-				onSave: (question, answer) => handlers.onAddSave?.(question, answer),
-				onSaveWithAI: (question, answer, aiInstruction) =>
-					handlers.onAddSaveWithAI?.(question, answer, aiInstruction),
-				onCancel: () => handlers.onAddCancel?.(),
-			});
-			this.childComponents.push(addCard);
-		}
 	}
 
 	private cleanupChildren(): void {

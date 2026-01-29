@@ -12,7 +12,7 @@ import {
     Platform,
     Menu,
 } from "obsidian";
-import { VIEW_TYPE_FLASHCARD_PANEL, CONTEXT_BASED_GENERATION_PROMPT } from "../../constants";
+import { VIEW_TYPE_FLASHCARD_PANEL } from "../../constants";
 import { FlashcardManager, OpenRouterService, getEventBus, notify } from "../../services";
 import { CollectService } from "../../services/flashcard/collect.service";
 import { PanelStateManager } from "../../state";
@@ -22,13 +22,11 @@ import { FlashcardPanelFooter } from "./FlashcardPanelFooter";
 import { FlashcardPanelHeader } from "./FlashcardPanelHeader";
 import { SelectionFooter } from "../components";
 import { MoveCardModal } from "../modals/MoveCardModal";
-import { FlashcardReviewModal } from "../modals/FlashcardReviewModal";
 import { BatchImportModal } from "../modals/BatchImportModal";
 import type { FSRSFlashcardItem } from "../../types/fsrs/card.types";
-import { FlashcardEditorModal } from "../modals/FlashcardEditorModal";
+import { SimpleFlashcardEditorModal, flashcardToMarkdown } from "../modals/SimpleFlashcardEditorModal";
 import type { FlashcardItem } from "../../types";
 import type { CardAddedEvent, CardRemovedEvent, CardUpdatedEvent, CardReviewedEvent, BulkChangeEvent } from "../../types/events.types";
-import { createDefaultFSRSData } from "../../types";
 import { State } from "ts-fsrs";
 import type TrueRecallPlugin from "../../main";
 
@@ -527,11 +525,6 @@ export class FlashcardPanelView extends ItemView {
                 },
                 onEnterSelectionMode: (cardId) => this.stateManager.enterSelectionMode(cardId),
                 onAdd: () => void this.handleAddFlashcard(),
-                onToggleAddExpand: () => this.handleToggleAddCard(),
-                onAddSave: (question, answer) => void this.handleAddCardSave(question, answer),
-                onAddSaveWithAI: (question, answer, aiInstruction) =>
-                    void this.handleAddCardSaveWithAI(question, answer, aiInstruction),
-                onAddCancel: () => this.handleAddCardCancel(),
             },
         });
         this.contentComponent.render();
@@ -696,40 +689,49 @@ export class FlashcardPanelView extends ItemView {
         const state = this.stateManager.getState();
         if (!state.currentFile) return;
 
-        // TODO: In the future, avoid full re-render - aim for targeted DOM update instead
         const scrollPosition = this.contentDiv?.scrollTop ?? 0;
 
-        // Use card directly - it already has question/answer from the panel UI
-        // No need to look up from SQLite which may return cards with empty content
-        const modal = new FlashcardEditorModal(this.app, {
+        const modal = new SimpleFlashcardEditorModal(this.app, {
             mode: "edit",
-            card: {
-                ...card,
-                fsrs: createDefaultFSRSData(card.id),
-                projects: [],
-            },
             currentFilePath: state.currentFile.path,
-            sourceNoteName: state.currentFile.basename,
+            prefillContent: flashcardToMarkdown(card.question, card.answer),
+            editCardId: card.id,
         });
 
         const result = await modal.openAndWait();
-        if (result.cancelled) return;
+        if (result.cancelled || result.flashcards.length === 0) return;
 
-        // Update card content using card.id
         try {
-            this.flashcardManager.updateCardContent(
-                card.id,
-                result.question,
-                result.answer
-            );
-
-            // If source was changed, move the card
-            if (result.newSourceNotePath) {
-                await this.flashcardManager.moveCard(
+            // First flashcard updates the original card
+            const firstFlashcard = result.flashcards[0];
+            if (firstFlashcard) {
+                this.flashcardManager.updateCardContent(
                     card.id,
-                    result.newSourceNotePath
+                    firstFlashcard.question,
+                    firstFlashcard.answer
                 );
-                notify().cardUpdatedAndMoved();
+            }
+
+            // Additional flashcards (if any) are created as new cards
+            if (result.flashcards.length > 1) {
+                const frontmatterService = this.flashcardManager.getFrontmatterService();
+                let sourceUid = await frontmatterService.getSourceNoteUid(state.currentFile);
+                if (!sourceUid) {
+                    sourceUid = frontmatterService.generateUid();
+                    await frontmatterService.setSourceNoteUid(state.currentFile, sourceUid);
+                }
+
+                for (let i = 1; i < result.flashcards.length; i++) {
+                    const flashcard = result.flashcards[i];
+                    if (flashcard) {
+                        await this.flashcardManager.addSingleFlashcard(
+                            flashcard.question,
+                            flashcard.answer,
+                            sourceUid
+                        );
+                    }
+                }
+                notify().success(`Updated card and created ${result.flashcards.length - 1} new cards`);
             } else {
                 notify().cardUpdated();
             }
@@ -997,7 +999,7 @@ export class FlashcardPanelView extends ItemView {
     }
 
     /**
-     * Add a single flashcard manually via modal
+     * Add flashcards via simple markdown editor modal
      */
     private async handleAddFlashcard(): Promise<void> {
         const state = this.stateManager.getState();
@@ -1011,35 +1013,28 @@ export class FlashcardPanelView extends ItemView {
             await frontmatterService.setSourceNoteUid(state.currentFile, sourceUid);
         }
 
-        const modal = new FlashcardEditorModal(this.app, {
+        const modal = new SimpleFlashcardEditorModal(this.app, {
             mode: "add",
             currentFilePath: state.currentFile.path,
-            sourceNoteName: state.currentFile.basename,
-            prefillQuestion: "",
-            prefillAnswer: "",
         });
 
         const result = await modal.openAndWait();
-        if (result.cancelled) return;
+        if (result.cancelled || result.flashcards.length === 0) return;
 
-        // If AI instruction provided, use the AI generation flow
-        if (result.aiInstruction) {
-            await this.handleAddCardSaveWithAI(result.question, result.answer, result.aiInstruction);
-            return;
-        }
-
-        // Normal save without AI
         try {
-            await this.flashcardManager.addSingleFlashcard(
-                result.question,
-                result.answer,
-                sourceUid
-            );
-            notify().cardsCreated(1);
+            // Save all parsed flashcards
+            for (const flashcard of result.flashcards) {
+                await this.flashcardManager.addSingleFlashcard(
+                    flashcard.question,
+                    flashcard.answer,
+                    sourceUid
+                );
+            }
+            notify().cardsCreated(result.flashcards.length);
             await this.loadFlashcardInfo();
         } catch (error) {
-            console.error("Error adding flashcard:", error);
-            notify().operationFailed("add flashcard", error);
+            console.error("Error adding flashcards:", error);
+            notify().operationFailed("add flashcards", error);
         }
     }
 
@@ -1081,140 +1076,6 @@ export class FlashcardPanelView extends ItemView {
         } catch (error) {
             console.error("Error batch importing flashcards:", error);
             notify().operationFailed("batch import flashcards", error);
-        }
-    }
-
-    /**
-     * Toggle inline add card expansion
-     */
-    private handleToggleAddCard(): void {
-        const state = this.stateManager.getState();
-        this.stateManager.setAddCardExpanded(!state.isAddCardExpanded);
-        this.render();
-    }
-
-    /**
-     * Cancel inline add card and collapse
-     */
-    private handleAddCardCancel(): void {
-        this.stateManager.setAddCardExpanded(false);
-        this.render();
-    }
-
-    /**
-     * Save flashcard from inline add card form
-     */
-    private async handleAddCardSave(question: string, answer: string): Promise<void> {
-        const state = this.stateManager.getState();
-        if (!state.currentFile) return;
-
-        // Get or create sourceUid for the current file
-        const frontmatterService = this.flashcardManager.getFrontmatterService();
-        let sourceUid = await frontmatterService.getSourceNoteUid(state.currentFile);
-        if (!sourceUid) {
-            sourceUid = frontmatterService.generateUid();
-            await frontmatterService.setSourceNoteUid(state.currentFile, sourceUid);
-        }
-
-        try {
-            await this.flashcardManager.addSingleFlashcard(question, answer, sourceUid);
-            notify().cardsCreated(1);
-            // Collapse the add card form and reload
-            this.stateManager.setAddCardExpanded(false);
-            await this.loadFlashcardInfo();
-        } catch (error) {
-            console.error("Error adding flashcard:", error);
-            notify().operationFailed("add flashcard", error);
-        }
-    }
-
-    /**
-     * Process flashcard with AI and show preview for approval
-     * Does NOT save anything until user confirms in preview modal
-     */
-    private async handleAddCardSaveWithAI(
-        question: string,
-        answer: string,
-        aiInstruction: string
-    ): Promise<void> {
-        const state = this.stateManager.getState();
-        if (!state.currentFile) return;
-
-        // Check API key
-        if (!this.plugin.settings.openRouterApiKey) {
-            notify().aiNotConfigured();
-            return;
-        }
-
-        try {
-            notify().info("Processing flashcard with AI...");
-
-            // Process the flashcard with AI according to instruction
-            // (NOT generating additional - transforming/processing the input)
-            const contextPrompt = `Process this flashcard according to the instruction:
-Q: ${question}
-A: ${answer}
-
-Instruction: ${aiInstruction}
-
-Transform/process the flashcard based on the instruction above.`;
-
-            const flashcardsMarkdown = await this.openRouterService.generateFlashcards(
-                contextPrompt,
-                undefined,
-                CONTEXT_BASED_GENERATION_PROMPT
-            );
-
-            if (flashcardsMarkdown.trim() === "NO_NEW_CARDS") {
-                notify().warning("AI could not process the flashcard. Please try different instructions.");
-                this.stateManager.setAddCardExpanded(false);
-                return;
-            }
-
-            // Parse processed flashcards
-            const { FlashcardParserService } = await import("../../services/flashcard/flashcard-parser.service");
-            const parser = new FlashcardParserService();
-            const processedFlashcards = parser.extractFlashcards(flashcardsMarkdown);
-
-            if (processedFlashcards.length === 0) {
-                notify().warning("No flashcards were generated. Please try different instructions.");
-                this.stateManager.setAddCardExpanded(false);
-                return;
-            }
-
-            // Show review modal for approval - NOTHING saved yet
-            const modal = new FlashcardReviewModal(this.app, {
-                initialFlashcards: processedFlashcards,
-                sourceNoteName: state.currentFile.basename,
-                openRouterService: this.openRouterService,
-                settings: this.plugin.settings,
-            });
-
-            const result = await modal.openAndWait();
-
-            if (result.cancelled || !result.flashcards || result.flashcards.length === 0) {
-                notify().info("No flashcards saved.");
-                this.stateManager.setAddCardExpanded(false);
-                return;
-            }
-
-            // Only now save the approved flashcards
-            const flashcardsWithIds = result.flashcards.map((f) => ({
-                id: f.id || crypto.randomUUID(),
-                question: f.question,
-                answer: f.answer,
-            }));
-
-            await this.flashcardManager.saveFlashcardsToSql(state.currentFile, flashcardsWithIds);
-            notify().cardsCreated(result.flashcards.length);
-
-            // Collapse form and reload
-            this.stateManager.setAddCardExpanded(false);
-            await this.loadFlashcardInfo();
-
-        } catch (error) {
-            console.error("Error in Add & Generate:", error);
-            notify().operationFailed("save flashcards", error);
         }
     }
 

@@ -8,7 +8,7 @@ import type { ReviewStateManager } from "../../../state";
 import type { FlashcardManager, FSRSService, ReviewService, ZettelTemplateService, OpenRouterService, SqliteStoreService } from "../../../services";
 import type { FSRSFlashcardItem, TrueRecallSettings } from "../../../types";
 import type { UndoEntry } from "../review.types";
-import { MoveCardModal, FlashcardEditorModal, AIGeneratorModal } from "../../modals";
+import { MoveCardModal, AIGeneratorModal, SimpleFlashcardEditorModal, flashcardToMarkdown } from "../../modals";
 import { notify } from "../../../services";
 import { UI_CONFIG } from "../../../constants";
 
@@ -313,72 +313,73 @@ export class CardActionsHandler {
 	}
 
 	/**
-	 * Add a new flashcard to the same file as the current card
+	 * Add new flashcards to the same file as the current card
 	 */
 	async handleAddNewFlashcard(): Promise<void> {
 		const card = this.deps.stateManager.getCurrentCard();
 		if (!card) return;
 
-		// Open modal to enter question/answer
-		const modal = new FlashcardEditorModal(this.deps.app, {
+		// Open simple markdown editor modal
+		const modal = new SimpleFlashcardEditorModal(this.deps.app, {
 			mode: "add",
 			currentFilePath: card.sourceNotePath || "",
-			sourceNoteName: card.sourceNoteName,
 		});
 
 		const result = await modal.openAndWait();
-		if (result.cancelled) return;
+		if (result.cancelled || result.flashcards.length === 0) return;
 
 		try {
-			// Add flashcard with auto-generated FSRS ID
-			const newCard = await this.deps.flashcardManager.addSingleFlashcard(
-				result.question,
-				result.answer,
-				card.sourceUid
-			);
+			// Add all parsed flashcards
+			for (const flashcard of result.flashcards) {
+				const newCard = await this.deps.flashcardManager.addSingleFlashcard(
+					flashcard.question,
+					flashcard.answer,
+					card.sourceUid
+				);
 
-			// Add new card to current session queue
-			this.deps.stateManager.addCardToQueue(newCard);
+				// Add new card to current session queue
+				this.deps.stateManager.addCardToQueue(newCard);
+			}
 
-			notify().cardAddedToQueue();
+			notify().cardsCreated(result.flashcards.length);
 		} catch (error) {
-			console.error("[CardActionsHandler] Error adding flashcard:", error);
-			notify().operationFailed("add flashcard", error);
+			console.error("[CardActionsHandler] Error adding flashcards:", error);
+			notify().operationFailed("add flashcards", error);
 		}
 	}
 
 	/**
 	 * Copy current card to new flashcard
-	 * Opens Add Flashcard modal with current card's Q&A pre-filled
+	 * Opens simple markdown editor with current card's Q&A pre-filled
 	 */
 	async handleCopyCurrentCard(): Promise<void> {
 		const card = this.deps.stateManager.getCurrentCard();
 		if (!card) return;
 
-		// Open modal with pre-filled content
-		const modal = new FlashcardEditorModal(this.deps.app, {
+		// Open modal with pre-filled content in markdown format
+		const modal = new SimpleFlashcardEditorModal(this.deps.app, {
 			mode: "add",
 			currentFilePath: card.sourceNotePath || "",
-			sourceNoteName: card.sourceNoteName,
-			prefillQuestion: card.question,
-			prefillAnswer: card.answer,
+			prefillContent: flashcardToMarkdown(card.question, card.answer),
 		});
 
 		const result = await modal.openAndWait();
-		if (result.cancelled) return;
+		if (result.cancelled || result.flashcards.length === 0) return;
 
 		try {
-			// Add flashcard with auto-generated FSRS ID
-			const newCard = await this.deps.flashcardManager.addSingleFlashcard(
-				result.question,
-				result.answer,
-				card.sourceUid
-			);
+			// Add all parsed flashcards
+			for (const flashcard of result.flashcards) {
+				const newCard = await this.deps.flashcardManager.addSingleFlashcard(
+					flashcard.question,
+					flashcard.answer,
+					card.sourceUid
+				);
 
-			// Add new card to current session queue
-			this.deps.stateManager.addCardToQueue(newCard);
+				// Add new card to current session queue
+				this.deps.stateManager.addCardToQueue(newCard);
+			}
 
-			notify().cardCopied();
+			notify().cardsCreated(result.flashcards.length);
 		} catch (error) {
 			console.error("[CardActionsHandler] Error copying flashcard:", error);
 			notify().operationFailed("copy flashcard", error);
@@ -392,38 +393,47 @@ export class CardActionsHandler {
 		const card = this.deps.stateManager.getCurrentCard();
 		if (!card) return;
 
-		const modal = new FlashcardEditorModal(this.deps.app, {
+		const modal = new SimpleFlashcardEditorModal(this.deps.app, {
 			mode: "edit",
-			card: card,
 			currentFilePath: card.sourceNotePath || "",
-			prefillQuestion: card.question,
-			prefillAnswer: card.answer,
+			prefillContent: flashcardToMarkdown(card.question, card.answer),
+			editCardId: card.id,
 		});
 
 		const result = await modal.openAndWait();
-		if (result.cancelled) return;
+		if (result.cancelled || result.flashcards.length === 0) return;
 
 		try {
-			// Update card content
-			this.deps.flashcardManager.updateCardContent(
-				card.id,
-				result.question,
-				result.answer
-			);
-
-			// Update in state manager queue
-			this.deps.stateManager.updateCurrentCardContent(
-				result.question,
-				result.answer
-			);
-
-			// If source was changed, move the card
-			if (result.newSourceNotePath) {
-				await this.deps.flashcardManager.moveCard(
+			// First flashcard updates the original card
+			const firstFlashcard = result.flashcards[0];
+			if (firstFlashcard) {
+				this.deps.flashcardManager.updateCardContent(
 					card.id,
-					result.newSourceNotePath
+					firstFlashcard.question,
+					firstFlashcard.answer
 				);
-				notify().cardUpdatedAndMoved();
+
+				// Update in state manager queue
+				this.deps.stateManager.updateCurrentCardContent(
+					firstFlashcard.question,
+					firstFlashcard.answer
+				);
+			}
+
+			// Additional flashcards (if any) are created as new cards
+			if (result.flashcards.length > 1) {
+				for (let i = 1; i < result.flashcards.length; i++) {
+					const flashcard = result.flashcards[i];
+					if (flashcard) {
+						const newCard = await this.deps.flashcardManager.addSingleFlashcard(
+							flashcard.question,
+							flashcard.answer,
+							card.sourceUid
+						);
+						this.deps.stateManager.addCardToQueue(newCard);
+					}
+				}
+				notify().success(`Updated card and created ${result.flashcards.length - 1} new cards`);
 			} else {
 				notify().cardUpdated();
 			}
