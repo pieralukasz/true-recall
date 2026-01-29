@@ -7,7 +7,6 @@ import { App, Component } from "obsidian";
 import { BaseModal } from "./BaseModal";
 import type { FlashcardItem, TrueRecallSettings } from "../../types";
 import { notify, type OpenRouterService } from "../../services";
-import { DEFAULT_REFINE_PRESETS } from "../../constants";
 import { createModalCardItem, ModalCardItem } from "./components/ModalCardItem";
 import { createExpandableAddCard, ExpandableAddCard } from "./components/ExpandableAddCard";
 
@@ -28,13 +27,10 @@ export interface FlashcardReviewModalOptions {
  */
 interface FlashcardReviewState {
 	flashcards: FlashcardItem[];
-	flashcardHistory: FlashcardItem[][];
 	expandedCardIndex: number | null;
 	editingCardIndex: number | null;
 	editingField: "question" | "answer" | null;
 	isAddCardExpanded: boolean;
-	refineInstructions: string;
-	isRefining: boolean;
 	isSelectionMode: boolean;
 	selectedCardIds: Set<string>;
 }
@@ -59,9 +55,6 @@ export class FlashcardReviewModal extends BaseModal {
 	// UI refs
 	private flashcardsListEl: HTMLElement | null = null;
 	private selectionToolbarEl: HTMLElement | null = null;
-	private refineInputEl: HTMLTextAreaElement | null = null;
-	private refineButtonEl: HTMLButtonElement | null = null;
-	private rollbackButtonEl: HTMLButtonElement | null = null;
 	private saveButtonEl: HTMLButtonElement | null = null;
 
 	// Child components
@@ -80,13 +73,10 @@ export class FlashcardReviewModal extends BaseModal {
 		// Initialize state
 		this.state = {
 			flashcards: [...options.initialFlashcards],
-			flashcardHistory: [],
 			expandedCardIndex: null,
 			editingCardIndex: null,
 			editingField: null,
 			isAddCardExpanded: false,
-			refineInstructions: "",
-			isRefining: false,
 			isSelectionMode: false,
 			selectedCardIds: new Set(),
 		};
@@ -106,9 +96,6 @@ export class FlashcardReviewModal extends BaseModal {
 	}
 
 	protected renderBody(container: HTMLElement): void {
-		// AI Refine section
-		this.renderRefineSection(container);
-
 		// Selection toolbar (hidden by default)
 		this.selectionToolbarEl = container.createDiv({
 			cls: "ep:mb-2",
@@ -126,100 +113,6 @@ export class FlashcardReviewModal extends BaseModal {
 	}
 
 	// ===== Rendering methods =====
-
-	private renderRefineSection(container: HTMLElement): void {
-		const sectionEl = container.createDiv({
-			cls: "ep:mb-3 ep:p-2 ep:bg-obs-secondary ep:rounded-md",
-		});
-
-		// Row 1: Preset dropdown
-		const dropdownRow = sectionEl.createDiv({
-			cls: "ep:flex ep:items-center ep:gap-2 ep:mb-2",
-		});
-
-		const select = dropdownRow.createEl("select", {
-			cls: "ep:flex-1 ep:py-1.5 ep:px-2 ep:text-ui-smaller ep:bg-obs-primary ep:text-obs-normal ep:border ep:border-obs-border ep:rounded ep:cursor-pointer ep:focus:outline-none ep:focus:border-obs-interactive",
-		});
-
-		// Default option (placeholder)
-		const defaultOption = select.createEl("option", {
-			text: "Select a preset...",
-			value: "",
-		});
-		defaultOption.selected = true;
-
-		// Default presets group
-		const defaultGroup = select.createEl("optgroup");
-		defaultGroup.label = "── Defaults ──";
-
-		for (const preset of DEFAULT_REFINE_PRESETS) {
-			defaultGroup.createEl("option", {
-				text: preset.label,
-				value: preset.id,
-			});
-		}
-
-		// Custom presets group (only if there are custom presets)
-		const customPresets = this.options.settings.customRefinePresets;
-		if (customPresets.length > 0) {
-			const customGroup = select.createEl("optgroup");
-			customGroup.label = "── Custom ──";
-
-			for (const preset of customPresets) {
-				customGroup.createEl("option", {
-					text: preset.label,
-					value: preset.id,
-				});
-			}
-		}
-
-		// Handle selection change
-		select.addEventListener("change", () => {
-			const selectedId = select.value;
-			if (!selectedId) return;
-
-			const allPresets = [...DEFAULT_REFINE_PRESETS, ...customPresets];
-			const preset = allPresets.find((p) => p.id === selectedId);
-
-			if (preset && this.refineInputEl) {
-				this.refineInputEl.value = preset.instruction;
-				this.state.refineInstructions = preset.instruction;
-			}
-
-			// Reset dropdown to placeholder for next selection
-			select.value = "";
-		});
-
-		// Row 2: Input + Refine button
-		const inputRow = sectionEl.createDiv({
-			cls: "ep:flex ep:items-start ep:gap-2",
-		});
-
-		// Textarea (2 lines)
-		this.refineInputEl = inputRow.createEl("textarea", {
-			placeholder: "Custom instructions or select a preset above...",
-			cls: "ep:flex-1 ep:min-w-32 ep:py-1.5 ep:px-2 ep:border ep:border-obs-border ep:rounded ep:bg-obs-primary ep:text-obs-normal ep:text-ui-smaller ep:focus:outline-none ep:focus:border-obs-interactive ep:resize-none",
-		}) as HTMLTextAreaElement;
-		this.refineInputEl.rows = 2;
-		this.refineInputEl.addEventListener("input", () => {
-			this.state.refineInstructions = this.refineInputEl?.value || "";
-		});
-
-		// Refine button
-		this.refineButtonEl = inputRow.createEl("button", {
-			text: "Refine",
-			cls: "ep:py-1.5 ep:px-3 ep:text-ui-smaller ep:bg-obs-interactive ep:text-white ep:border-none ep:rounded ep:cursor-pointer ep:transition-colors ep:hover:bg-obs-interactive-hover ep:disabled:opacity-50 ep:disabled:cursor-not-allowed",
-		});
-		this.refineButtonEl.addEventListener("click", () => void this.handleRefine());
-
-		// Rollback button (hidden when no history)
-		this.rollbackButtonEl = inputRow.createEl("button", {
-			text: "Undo",
-			cls: "ep:py-1.5 ep:px-3 ep:text-ui-smaller ep:bg-obs-secondary ep:text-obs-muted ep:border ep:border-obs-border ep:rounded ep:cursor-pointer ep:transition-colors ep:hover:bg-obs-modifier-hover ep:hover:text-obs-normal ep:disabled:opacity-50 ep:disabled:cursor-not-allowed",
-		});
-		this.rollbackButtonEl.addEventListener("click", () => this.handleRollback());
-		this.updateRollbackButton();
-	}
 
 	private renderSelectionToolbar(): void {
 		if (!this.selectionToolbarEl) return;
@@ -521,92 +414,6 @@ export class FlashcardReviewModal extends BaseModal {
 				? "No cards to save"
 				: `Save ${count} flashcard${count !== 1 ? "s" : ""}`;
 		}
-	}
-
-	// ===== AI Refine =====
-
-	private async handleRefine(): Promise<void> {
-		const instructions = this.state.refineInstructions.trim();
-		if (!instructions) {
-			notify().warning("Please enter refinement instructions or select a quick action");
-			return;
-		}
-
-		if (this.state.flashcards.length === 0) {
-			notify().warning("No flashcards to refine");
-			return;
-		}
-
-		this.state.isRefining = true;
-		this.updateRefineButton();
-
-		// Save current state to history before refinement
-		this.state.flashcardHistory.push([...this.state.flashcards]);
-
-		try {
-			const refined = await this.openRouterService.refineFlashcards(
-				this.state.flashcards,
-				instructions
-			);
-
-			// Replace flashcards with refined version
-			this.state.flashcards = refined;
-			this.state.expandedCardIndex = null;
-			this.state.editingCardIndex = null;
-			this.state.editingField = null;
-
-			this.updateTitle(`Review Flashcards (${this.state.flashcards.length})`);
-			this.renderFlashcardsList();
-			this.updateRollbackButton();
-
-			notify().success(`Flashcards refined (${refined.length} cards)`);
-		} catch (error) {
-			// Remove the history entry if refinement failed
-			this.state.flashcardHistory.pop();
-			notify().operationFailed("refine flashcards", error);
-		} finally {
-			this.state.isRefining = false;
-			this.updateRefineButton();
-		}
-	}
-
-	private updateRefineButton(): void {
-		if (!this.refineButtonEl) return;
-
-		if (this.state.isRefining) {
-			this.refineButtonEl.disabled = true;
-			this.refineButtonEl.textContent = "Refining...";
-		} else {
-			this.refineButtonEl.disabled = false;
-			this.refineButtonEl.textContent = "Refine with AI";
-		}
-	}
-
-	private handleRollback(): void {
-		if (this.state.flashcardHistory.length === 0) return;
-
-		// Pop last state from history
-		const previousState = this.state.flashcardHistory.pop()!;
-		this.state.flashcards = previousState;
-
-		// Reset UI states
-		this.state.expandedCardIndex = null;
-		this.state.editingCardIndex = null;
-		this.state.editingField = null;
-
-		// Update UI
-		this.updateTitle(`Review Flashcards (${this.state.flashcards.length})`);
-		this.renderFlashcardsList();
-		this.updateRollbackButton();
-
-		notify().success("Rolled back to previous version");
-	}
-
-	private updateRollbackButton(): void {
-		if (!this.rollbackButtonEl) return;
-		const hasHistory = this.state.flashcardHistory.length > 0;
-		this.rollbackButtonEl.disabled = !hasHistory;
-		this.rollbackButtonEl.style.display = hasHistory ? "" : "none";
 	}
 
 	// ===== Actions =====
