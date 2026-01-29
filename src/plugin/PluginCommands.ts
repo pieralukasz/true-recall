@@ -105,6 +105,13 @@ export function registerCommands(plugin: TrueRecallPlugin): void {
 		callback: () => void plugin.openSimulator(),
 	});
 
+	// Open orphaned cards panel
+	plugin.addCommand({
+		id: "open-orphaned-cards",
+		name: "Open orphaned cards panel",
+		callback: () => void plugin.openOrphanedCardsView(),
+	});
+
 	// Create database backup
 	plugin.addCommand({
 		id: "create-backup",

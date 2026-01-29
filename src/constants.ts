@@ -24,6 +24,9 @@ export const VIEW_TYPE_BROWSER = "true-recall-browser";
 /** View type identifier for the FSRS simulator */
 export const VIEW_TYPE_SIMULATOR = "true-recall-simulator";
 
+/** View type identifier for the orphaned cards panel */
+export const VIEW_TYPE_ORPHANED_CARDS = "true-recall-orphaned-cards";
+
 // ===== AI Models =====
 
 /** AI Model metadata */
