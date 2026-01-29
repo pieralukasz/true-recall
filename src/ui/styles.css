@@ -291,6 +291,7 @@
 	.true-recall-review-answer {
 		user-select: text;
 		-webkit-user-select: text;
+		white-space: pre-line;
 	}
 
 	/* Chart fade-in animation */

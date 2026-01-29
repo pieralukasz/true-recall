@@ -5,18 +5,15 @@
  */
 import { App, Component } from "obsidian";
 import { BaseModal } from "./BaseModal";
-import type { FlashcardItem, GeneratedNoteType, TrueRecallSettings } from "../../types";
+import type { FlashcardItem, TrueRecallSettings } from "../../types";
 import { notify, type OpenRouterService } from "../../services";
-import { GENERATED_NOTE_TYPES, DEFAULT_REFINE_PRESETS } from "../../constants";
+import { DEFAULT_REFINE_PRESETS } from "../../constants";
 import { createModalCardItem, ModalCardItem } from "./components/ModalCardItem";
 import { createExpandableAddCard, ExpandableAddCard } from "./components/ExpandableAddCard";
 
 export interface FlashcardReviewResult {
 	cancelled: boolean;
 	flashcards?: FlashcardItem[];
-	createNewNote?: boolean;
-	noteType?: GeneratedNoteType;
-	noteName?: string;
 }
 
 export interface FlashcardReviewModalOptions {
@@ -38,9 +35,6 @@ interface FlashcardReviewState {
 	isAddCardExpanded: boolean;
 	refineInstructions: string;
 	isRefining: boolean;
-	createNewNote: boolean;
-	selectedNoteType: GeneratedNoteType;
-	customNoteName: string;
 	isSelectionMode: boolean;
 	selectedCardIds: Set<string>;
 }
@@ -69,8 +63,6 @@ export class FlashcardReviewModal extends BaseModal {
 	private refineButtonEl: HTMLButtonElement | null = null;
 	private rollbackButtonEl: HTMLButtonElement | null = null;
 	private saveButtonEl: HTMLButtonElement | null = null;
-	private destinationOptionsEl: HTMLElement | null = null;
-	private noteNameInputEl: HTMLInputElement | null = null;
 
 	// Child components
 	private cardComponents: ModalCardItem[] = [];
@@ -95,9 +87,6 @@ export class FlashcardReviewModal extends BaseModal {
 			isAddCardExpanded: false,
 			refineInstructions: "",
 			isRefining: false,
-			createNewNote: false,
-			selectedNoteType: "question",
-			customNoteName: "",
 			isSelectionMode: false,
 			selectedCardIds: new Set(),
 		};
@@ -131,9 +120,6 @@ export class FlashcardReviewModal extends BaseModal {
 			cls: "ep:max-h-[350px] ep:overflow-y-auto ep:mb-4 ep:pr-1",
 		});
 		this.renderFlashcardsList();
-
-		// Destination section
-		this.renderDestinationSection(container);
 
 		// Action buttons
 		this.renderActions(container);
@@ -348,140 +334,6 @@ export class FlashcardReviewModal extends BaseModal {
 		});
 
 		this.updateButtons();
-	}
-
-	private renderDestinationSection(container: HTMLElement): void {
-		const sectionEl = container.createDiv({
-			cls: "ep:mb-3 ep:p-3 ep:bg-obs-secondary ep:rounded-md",
-		});
-
-		// Checkbox row
-		const checkboxRow = sectionEl.createDiv({
-			cls: "ep:flex ep:items-center ep:gap-2",
-		});
-
-		const checkbox = checkboxRow.createEl("input", {
-			type: "checkbox",
-			cls: "ep:w-4 ep:h-4 ep:accent-obs-interactive ep:cursor-pointer",
-		});
-		checkbox.id = "true-recall-create-new-note";
-		checkbox.checked = this.state.createNewNote;
-
-		const label = checkboxRow.createEl("label", {
-			text: "Create new note for these flashcards",
-			cls: "ep:text-ui-small ep:font-medium ep:text-obs-normal ep:cursor-pointer",
-		});
-		label.htmlFor = "true-recall-create-new-note";
-
-		// Options container (hidden by default)
-		this.destinationOptionsEl = sectionEl.createDiv({
-			cls: "ep:mt-3 ep:pt-3 ep:border-t ep:border-obs-border",
-		});
-		this.destinationOptionsEl.style.display = this.state.createNewNote ? "block" : "none";
-
-		// Note type radio buttons
-		this.destinationOptionsEl.createDiv({
-			cls: "ep:text-ui-small ep:font-medium ep:text-obs-muted ep:mb-2",
-			text: "Note type:",
-		});
-
-		const radioGroup = this.destinationOptionsEl.createDiv({
-			cls: "ep:flex ep:flex-col ep:gap-1.5 ep:mb-3",
-		});
-
-		const baseItemCls = "ep:flex ep:items-start ep:gap-2 ep:py-2 ep:px-2.5 ep:bg-obs-primary ep:border ep:border-obs-border ep:rounded ep:cursor-pointer ep:transition-colors ep:hover:border-obs-interactive";
-		const selectedItemCls = "ep:border-obs-interactive ep:bg-obs-interactive/10";
-
-		for (const [key, config] of Object.entries(GENERATED_NOTE_TYPES)) {
-			const typeKey = key as GeneratedNoteType;
-			const isSelected = this.state.selectedNoteType === typeKey;
-			const radioItem = radioGroup.createDiv({
-				cls: `${baseItemCls}${isSelected ? ` ${selectedItemCls}` : ""}`,
-				attr: { "data-type": typeKey },
-			});
-
-			const radio = radioItem.createEl("input", {
-				type: "radio",
-				cls: "ep:w-4 ep:h-4 ep:mt-0.5 ep:accent-obs-interactive ep:cursor-pointer",
-			});
-			radio.name = "note-type";
-			radio.value = typeKey;
-			radio.id = `true-recall-note-type-${typeKey}`;
-			radio.checked = isSelected;
-
-			const radioLabel = radioItem.createEl("label", {
-				cls: "ep:flex ep:flex-col ep:gap-0.5 ep:cursor-pointer ep:flex-1",
-			});
-			radioLabel.htmlFor = `true-recall-note-type-${typeKey}`;
-
-			radioLabel.createEl("span", {
-				text: config.label,
-				cls: "ep:text-ui-small ep:font-semibold ep:text-obs-normal",
-			});
-			radioLabel.createEl("span", {
-				text: config.description,
-				cls: "ep:text-ui-smaller ep:text-obs-muted",
-			});
-
-			radio.addEventListener("change", () => {
-				if (radio.checked) {
-					this.state.selectedNoteType = typeKey;
-					this.updateSuggestedNoteName();
-					radioGroup.querySelectorAll("[data-type]").forEach((el) => {
-						el.classList.remove(...selectedItemCls.split(" "));
-					});
-					radioItem.classList.add(...selectedItemCls.split(" "));
-				}
-			});
-		}
-
-		// Note name input
-		const nameContainer = this.destinationOptionsEl.createDiv({
-			cls: "ep:flex ep:flex-col ep:gap-1.5",
-		});
-
-		nameContainer.createEl("label", {
-			text: "Note name (optional):",
-			cls: "ep:text-ui-small ep:font-medium ep:text-obs-muted",
-		});
-
-		this.noteNameInputEl = nameContainer.createEl("input", {
-			type: "text",
-			cls: "ep:w-full ep:py-2 ep:px-3 ep:border ep:border-obs-border ep:rounded-md ep:bg-obs-primary ep:text-obs-normal ep:text-ui-small ep:focus:outline-none ep:focus:border-obs-interactive ep:placeholder:text-obs-muted ep:placeholder:text-sm",
-			placeholder: "Leave empty for auto-generated name",
-		});
-		this.noteNameInputEl.value = this.state.customNoteName;
-		this.noteNameInputEl.addEventListener("input", () => {
-			this.state.customNoteName = this.noteNameInputEl?.value || "";
-		});
-
-		// Toggle visibility on checkbox change
-		checkbox.addEventListener("change", () => {
-			this.state.createNewNote = checkbox.checked;
-			if (this.destinationOptionsEl) {
-				this.destinationOptionsEl.style.display = this.state.createNewNote ? "block" : "none";
-			}
-			if (this.state.createNewNote) {
-				this.updateSuggestedNoteName();
-			}
-		});
-	}
-
-	private updateSuggestedNoteName(): void {
-		if (!this.noteNameInputEl || this.state.customNoteName) return;
-
-		const firstCard = this.state.flashcards[0];
-		if (firstCard) {
-			const config = GENERATED_NOTE_TYPES[this.state.selectedNoteType];
-			const firstQuestion = firstCard.question
-				.replace(/\*\*/g, "")
-				.replace(/\[\[([^\]|]+)(\|[^\]]+)?\]\]/g, "$1")
-				.replace(/#flashcard/g, "")
-				.replace(/<br\s*\/?>/gi, " ")
-				.trim()
-				.substring(0, 50);
-			this.noteNameInputEl.placeholder = `${config.defaultNamePrefix}${firstQuestion}...`;
-		}
 	}
 
 	private renderActions(container: HTMLElement): void {
@@ -767,20 +619,10 @@ export class FlashcardReviewModal extends BaseModal {
 
 		this.hasSelected = true;
 		if (this.resolvePromise) {
-			const result: FlashcardReviewResult = {
+			this.resolvePromise({
 				cancelled: false,
 				flashcards: this.state.flashcards,
-			};
-
-			if (this.state.createNewNote) {
-				result.createNewNote = true;
-				result.noteType = this.state.selectedNoteType;
-				if (this.state.customNoteName.trim()) {
-					result.noteName = this.state.customNoteName.trim();
-				}
-			}
-
-			this.resolvePromise(result);
+			});
 			this.resolvePromise = null;
 		}
 		this.close();
