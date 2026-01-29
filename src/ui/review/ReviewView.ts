@@ -31,9 +31,8 @@ import type {
 	BulkChangeEvent,
 } from "../../types/events.types";
 import {
-	toggleTextareaWrap,
-	insertAtTextareaCursor,
-	setupAutoResize,
+	createEditableTextField,
+	TOOLBAR_BUTTONS,
 } from "../components";
 import type TrueRecallPlugin from "../../main";
 import type { ReviewViewState, UndoEntry } from "./review.types";
@@ -114,14 +113,7 @@ export class ReviewView extends ItemView {
 				cardStore: this.plugin.cardStore,
 				createZettelTemplateService: () =>
 					new ZettelTemplateService(this.app),
-				settings: {
-					dayStartHour: this.plugin.settings.dayStartHour,
-					zettelFolder: this.plugin.settings.zettelFolder,
-					zettelTemplatePath: this.plugin.settings.zettelTemplatePath,
-					customGeneratePrompt:
-						this.plugin.settings.customGeneratePrompt,
-					openRouterApiKey: this.plugin.settings.openRouterApiKey,
-				},
+				settings: this.plugin.settings,
 			},
 			{
 				onUpdateSchedulingPreview: () => this.updateSchedulingPreview(),
@@ -909,166 +901,53 @@ export class ReviewView extends ItemView {
 	}
 
 	/**
-	 * Render an editable field (textarea + preview)
+	 * Render an editable field (textarea + toolbar) using unified EditableTextField
 	 */
 	private renderEditableField(
 		container: HTMLElement,
 		content: string,
 		field: "question" | "answer"
 	): void {
-		// Use container directly as relative context (no wrapper to avoid layout shift)
+		// Use container directly as relative context
 		container.addClass("ep:relative");
 
-		// Textarea for editing - matches parent's font styling exactly
-		const textarea = container.createEl("textarea", {
-			cls: "ep:w-full ep:text-center ep:text-obs-normal ep:resize-none",
-			attr: { "data-field": field },
-		});
-		// Force styles to override Obsidian defaults (classes get overridden)
-		textarea.style.fontSize = "inherit";
-		textarea.style.lineHeight = "inherit";
-		textarea.style.padding = "0";
-		textarea.style.margin = "0";
-		textarea.style.border = "none";
-		textarea.style.background = "transparent";
-		textarea.style.outline = "none";
-		textarea.style.boxShadow = "none";
-		textarea.value = content.replace(/<br\s*\/?>/gi, "\n");
-
-		// Auto-resize textarea to fit content
-		setupAutoResize(textarea);
-
-		// Toolbar under textarea
-		this.renderEditToolbar(container, textarea);
-
-		// Events
-		textarea.addEventListener("blur", (e) => {
-			// Don't blur if clicking toolbar
-			const relatedTarget = e.relatedTarget as HTMLElement;
-			if (relatedTarget?.closest(".true-recall-edit-toolbar")) return;
-			void this.saveEditFromTextarea(textarea, field);
-		});
-		textarea.addEventListener("keydown", (e) =>
-			this.handleEditKeydown(e, field)
-		);
-
-		// Auto-focus
-		setTimeout(() => {
-			textarea.focus();
-			textarea.setSelectionRange(
-				textarea.value.length,
-				textarea.value.length
-			);
-			// Scroll editable field into view (important for mobile with keyboard)
-			textarea.scrollIntoView({ behavior: "smooth", block: "center" });
-		}, 10);
-	}
-
-	/**
-	 * Handle keydown events in edit mode
-	 */
-	private handleEditKeydown(
-		e: KeyboardEvent,
-		currentField: "question" | "answer"
-	): void {
-		const textarea = e.target as HTMLTextAreaElement;
-
-		if (e.key === "Escape") {
-			e.preventDefault();
-			void this.saveEditFromTextarea(textarea, currentField);
-		} else if (e.key === "Tab") {
-			e.preventDefault();
-			// Switch between question and answer
-			const nextField =
-				currentField === "question" ? "answer" : "question";
-			// Only switch to answer if it's revealed
-			if (
-				nextField === "answer" &&
-				!this.stateManager.isAnswerRevealed()
-			) {
-				return;
-			}
-			void (async () => {
-				await this.saveEditFromTextarea(textarea, currentField);
-				this.startEdit(nextField);
-			})();
-		}
-		// Ctrl+Z, Ctrl+B, Ctrl+I are handled natively by textarea
-	}
-
-	/**
-	 * Render formatting toolbar for edit mode
-	 */
-	private renderEditToolbar(
-		container: HTMLElement,
-		textarea: HTMLTextAreaElement
-	): void {
-		const toolbar = container.createDiv({
-			cls: "true-recall-edit-toolbar ep:flex ep:flex-wrap ep:justify-center ep:gap-1 ep:py-2 ep:border-t ep:border-obs-border ep:absolute ep:left-0 ep:right-0 ep:top-full ep:mt-4 ep:z-10",
+		// Create editable text field with unified toolbar
+		const editableField = createEditableTextField(container, {
+			initialValue: content,
+			field,
+			showToolbar: true,
+			toolbarButtons: TOOLBAR_BUTTONS.UNIFIED,
+			toolbarPositioned: true,
+			invisibleTextarea: true,
+			wrapperClass: "ep:w-full ep:relative",
+			autoFocus: true,
+			onSave: (value) => {
+				const textarea = editableField.getTextarea();
+				if (textarea) {
+					void this.saveEditFromTextarea(textarea, field);
+				}
+			},
+			onTab: () => {
+				// Switch between question and answer
+				const nextField = field === "question" ? "answer" : "question";
+				// Only switch to answer if it's revealed
+				if (nextField === "answer" && !this.stateManager.isAnswerRevealed()) {
+					return;
+				}
+				const textarea = editableField.getTextarea();
+				if (textarea) {
+					void (async () => {
+						await this.saveEditFromTextarea(textarea, field);
+						this.startEdit(nextField);
+					})();
+				}
+			},
 		});
 
-		const buttons = [
-			{
-				label: "**[[]]**",
-				title: "Bold Wiki Link",
-				action: () => toggleTextareaWrap(textarea, "**[[", "]]**"),
-			},
-			{
-				label: "⏎⏎",
-				title: "Double Line Break",
-				action: () => insertAtTextareaCursor(textarea, "\n\n"),
-			},
-			{
-				label: "B",
-				title: "Bold",
-				action: () => toggleTextareaWrap(textarea, "**", "**"),
-			},
-			{
-				label: "I",
-				title: "Italic",
-				action: () => toggleTextareaWrap(textarea, "*", "*"),
-			},
-			{
-				label: "U",
-				title: "Underline",
-				action: () => toggleTextareaWrap(textarea, "<u>", "</u>"),
-			},
-			{
-				label: "[[]]",
-				title: "Wiki Link",
-				action: () => toggleTextareaWrap(textarea, "[[", "]]"),
-			},
-			{
-				label: "$",
-				title: "Math",
-				action: () => toggleTextareaWrap(textarea, "$", "$"),
-			},
-			{
-				label: "x²",
-				title: "Superscript",
-				action: () => toggleTextareaWrap(textarea, "<sup>", "</sup>"),
-			},
-			{
-				label: "x₂",
-				title: "Subscript",
-				action: () => toggleTextareaWrap(textarea, "<sub>", "</sub>"),
-			},
-		];
-
-		for (const btn of buttons) {
-			const btnEl = toolbar.createEl("button", {
-				cls: "ep:px-2 ep:py-1 ep:text-ui-smaller ep:bg-obs-secondary ep:text-obs-normal ep:border ep:border-obs-border ep:rounded ep:cursor-pointer ep:hover:bg-obs-modifier-hover ep:hover:border-obs-interactive ep:transition-colors",
-				text: btn.label,
-				attr: { title: btn.title, tabindex: "-1" },
-			});
-			btnEl.addEventListener("mousedown", (e) => {
-				e.preventDefault(); // Prevent blur on textarea
-			});
-			btnEl.addEventListener("click", (e) => {
-				e.preventDefault();
-				btn.action();
-				textarea.focus();
-			});
+		// Add toolbar class for blur detection
+		const toolbar = editableField.getToolbar();
+		if (toolbar) {
+			toolbar.addClass("true-recall-edit-toolbar");
 		}
 	}
 

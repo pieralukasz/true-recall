@@ -229,6 +229,7 @@ export class FloatingGenerateButton {
 					initialFlashcards: generatedFlashcards,
 					sourceNoteName: file.basename,
 					openRouterService: this.plugin.openRouterService,
+					settings: this.plugin.settings,
 				});
 
 				const result = await modal.openAndWait();

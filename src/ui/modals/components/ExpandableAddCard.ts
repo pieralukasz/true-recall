@@ -99,7 +99,7 @@ export class ExpandableAddCard extends BaseComponent {
 			initialValue: "",
 			placeholder: "Enter question...",
 			showToolbar: true,
-			toolbarButtons: TOOLBAR_BUTTONS.MINIMAL,
+			toolbarButtons: TOOLBAR_BUTTONS.UNIFIED,
 			toolbarPositioned: false,
 			autoFocus: true,
 			onChange: (value) => {
@@ -118,7 +118,7 @@ export class ExpandableAddCard extends BaseComponent {
 			initialValue: "",
 			placeholder: "Enter answer...",
 			showToolbar: true,
-			toolbarButtons: TOOLBAR_BUTTONS.MINIMAL,
+			toolbarButtons: TOOLBAR_BUTTONS.UNIFIED,
 			toolbarPositioned: false,
 			autoFocus: false,
 			onChange: (value) => {
