@@ -2,13 +2,14 @@
  * Card Actions Handler for ReviewView
  * Handles card operations: suspend, bury, move, add, copy, edit, AI generate, create zettel
  */
-import { App, Notice, TFile, normalizePath } from "obsidian";
+import { App, TFile, normalizePath } from "obsidian";
 import { Rating } from "ts-fsrs";
 import type { ReviewStateManager } from "../../../state";
 import type { FlashcardManager, FSRSService, ReviewService, ZettelTemplateService, OpenRouterService, SqliteStoreService } from "../../../services";
 import type { FSRSFlashcardItem, TrueRecallSettings } from "../../../types";
 import type { UndoEntry } from "../review.types";
 import { MoveCardModal, FlashcardEditorModal, AIGeneratorModal } from "../../modals";
+import { notify } from "../../../services";
 import { GENERATED_NOTE_TYPES, UI_CONFIG } from "../../../constants";
 
 /**
@@ -128,7 +129,7 @@ export class CardActionsHandler {
 			this.deps.flashcardManager.updateCardFSRS(card.id, updatedFsrs);
 		} catch (error) {
 			console.error("[CardActionsHandler] Error suspending card:", error);
-			new Notice("Failed to suspend card");
+			notify().operationFailed("suspend card", error);
 			// Remove the undo entry since the operation failed
 			this.undoStack.pop();
 			return;
@@ -142,7 +143,7 @@ export class CardActionsHandler {
 			this.callbacks.onUpdateSchedulingPreview();
 		}
 
-		new Notice("Card suspended");
+		notify().cardSuspended();
 		this.callbacks.onRender();
 	}
 
@@ -172,7 +173,7 @@ export class CardActionsHandler {
 			this.deps.flashcardManager.updateCardFSRS(card.id, updatedFsrs);
 		} catch (error) {
 			console.error("[CardActionsHandler] Error burying card:", error);
-			new Notice("Failed to bury card");
+			notify().operationFailed("bury card", error);
 			// Remove the undo entry since the operation failed
 			this.undoStack.pop();
 			return;
@@ -186,7 +187,7 @@ export class CardActionsHandler {
 			this.callbacks.onUpdateSchedulingPreview();
 		}
 
-		new Notice("Card buried until tomorrow");
+		notify().cardBuried();
 		this.callbacks.onRender();
 	}
 
@@ -257,7 +258,7 @@ export class CardActionsHandler {
 			this.callbacks.onUpdateSchedulingPreview();
 		}
 
-		new Notice(`Buried ${buriedCount} card${buriedCount !== 1 ? "s" : ""} until tomorrow`);
+		notify().cardsBuried(buriedCount);
 		this.callbacks.onRender();
 	}
 
@@ -303,11 +304,11 @@ export class CardActionsHandler {
 					this.callbacks.onUpdateSchedulingPreview();
 				}
 
-				new Notice("Card graded as Good and moved");
+				notify().cardGradedAndMoved();
 			}
 		} catch (error) {
 			console.error("[CardActionsHandler] Error moving card:", error);
-			new Notice(`Failed to move card: ${error instanceof Error ? error.message : String(error)}`);
+			notify().operationFailed("move card", error);
 		}
 	}
 
@@ -339,10 +340,10 @@ export class CardActionsHandler {
 			// Add new card to current session queue
 			this.deps.stateManager.addCardToQueue(newCard);
 
-			new Notice("Flashcard added to queue!");
+			notify().cardAddedToQueue();
 		} catch (error) {
 			console.error("[CardActionsHandler] Error adding flashcard:", error);
-			new Notice(`Failed to add flashcard: ${error instanceof Error ? error.message : String(error)}`);
+			notify().operationFailed("add flashcard", error);
 		}
 	}
 
@@ -377,10 +378,10 @@ export class CardActionsHandler {
 			// Add new card to current session queue
 			this.deps.stateManager.addCardToQueue(newCard);
 
-			new Notice("Flashcard copied and added to queue!");
+			notify().cardCopied();
 		} catch (error) {
 			console.error("[CardActionsHandler] Error copying flashcard:", error);
-			new Notice(`Failed to copy flashcard: ${error instanceof Error ? error.message : String(error)}`);
+			notify().operationFailed("copy flashcard", error);
 		}
 	}
 
@@ -422,15 +423,15 @@ export class CardActionsHandler {
 					card.id,
 					result.newSourceNotePath
 				);
-				new Notice("Card updated and moved");
+				notify().cardUpdatedAndMoved();
 			} else {
-				new Notice("Card updated");
+				notify().cardUpdated();
 			}
 
 			this.callbacks.onRender();
 		} catch (error) {
 			console.error("[CardActionsHandler] Error updating card:", error);
-			new Notice(`Failed to update card: ${error instanceof Error ? error.message : String(error)}`);
+			notify().operationFailed("update card", error);
 		}
 	}
 
@@ -440,7 +441,7 @@ export class CardActionsHandler {
 	async handleUndo(): Promise<boolean> {
 		const undoEntry = this.undoStack.pop();
 		if (!undoEntry) {
-			new Notice("Nothing to undo");
+			notify().nothingToUndo();
 			return false;
 		}
 
@@ -480,11 +481,11 @@ export class CardActionsHandler {
 
 			this.callbacks.onUpdateSchedulingPreview();
 			this.callbacks.onRender();
-			new Notice("Bury undone");
+			notify().undoComplete("Bury");
 			return true;
 		} catch (error) {
 			console.error("[CardActionsHandler] Error undoing bury:", error);
-			new Notice("Failed to undo bury");
+			notify().undoFailed("bury");
 			return false;
 		}
 	}
@@ -505,11 +506,11 @@ export class CardActionsHandler {
 
 			this.callbacks.onUpdateSchedulingPreview();
 			this.callbacks.onRender();
-			new Notice("Suspend undone");
+			notify().undoComplete("Suspend");
 			return true;
 		} catch (error) {
 			console.error("[CardActionsHandler] Error undoing suspend:", error);
-			new Notice("Failed to undo suspend");
+			notify().undoFailed("suspend");
 			return false;
 		}
 	}
@@ -530,7 +531,7 @@ export class CardActionsHandler {
 			return true;
 		} catch (error) {
 			console.error("[CardActionsHandler] Error undoing answer:", error);
-			new Notice("Failed to undo answer");
+			notify().undoFailed("answer");
 			return false;
 		}
 	}
@@ -563,7 +564,7 @@ export class CardActionsHandler {
 
 		// Check if API key is configured
 		if (!this.deps.settings.openRouterApiKey) {
-			new Notice("AI service not configured. Please add your API key in settings.");
+			notify().aiNotConfigured();
 			return;
 		}
 
@@ -601,7 +602,7 @@ export class CardActionsHandler {
 				targetSourceUid = uid;
 				targetFilePath = filePath;
 
-				new Notice(`Created new note: ${noteName}`);
+				notify().noteCreated(noteName);
 			} else {
 				// Use current card's source note
 				targetSourceUid = currentCard.sourceUid;
@@ -621,11 +622,11 @@ export class CardActionsHandler {
 			}
 
 			const count = result.flashcards.length;
-			new Notice(`${count} flashcard${count > 1 ? "s" : ""} generated and added to queue!`);
+			notify().flashcardsGeneratedAndAdded(count);
 
 		} catch (error) {
 			console.error("[CardActionsHandler] Error saving generated flashcards:", error);
-			new Notice(`Failed to save flashcards: ${error instanceof Error ? error.message : String(error)}`);
+			notify().operationFailed("save flashcards", error);
 		}
 	}
 
@@ -735,7 +736,7 @@ tags: [${tag}]
 		if (templatePath) {
 			const templateFile = this.deps.app.vault.getAbstractFileByPath(templatePath);
 			if (!templateFile) {
-				new Notice(`Template not found: ${templatePath}. Using default template.`);
+				notify().templateNotFound(templatePath);
 			}
 		}
 

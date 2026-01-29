@@ -3,11 +3,12 @@
  * Preview/edit toggle like ReviewView
  * Supports both adding new flashcards and editing existing ones
  */
-import { App, Notice, MarkdownRenderer, Component, setIcon } from "obsidian";
+import { App, MarkdownRenderer, Component, setIcon } from "obsidian";
 import { BaseModal } from "./BaseModal";
 import { MediaPickerModal } from "./MediaPickerModal";
 import type { FSRSFlashcardItem } from "../../types";
 import { ImageService } from "../../services/image";
+import { notify } from "../../services";
 import {
 	createEditableTextField,
 	EditableTextField,
@@ -310,7 +311,7 @@ export class FlashcardEditorModal extends BaseModal {
 	private startSourceEdit(): void {
 		if (!this.sourceContainer) return;
 		// Source editing disabled (autocomplete removed)
-		new Notice("Source editing is not available");
+		notify().info("Source editing is not available");
 	}
 
 	/**
@@ -631,19 +632,19 @@ export class FlashcardEditorModal extends BaseModal {
 
 				if (this.imageService.isBlobTooLarge(blob)) {
 					const size = this.imageService.formatFileSize(blob.size);
-					new Notice(`Image is too large (${size}). Maximum size is 5MB.`);
+					notify().imageTooLarge(size);
 					return;
 				}
 
 				try {
-					new Notice("Saving image...");
+					notify().imageSaving();
 					const path = await this.imageService.saveImageFromClipboard(blob);
 					const markdown = this.imageService.buildImageMarkdown(path);
 					this.insertAtCursor(textarea, markdown);
-					new Notice("Image inserted");
+					notify().success("Image inserted");
 				} catch (error) {
 					console.error("[True Recall] Failed to save pasted image:", error);
-					new Notice("Failed to save image");
+					notify().operationFailed("save image", error);
 				}
 				return;
 			}

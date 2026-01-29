@@ -3,8 +3,9 @@
  * Allows generating flashcards using AI based on user instructions
  * Used during review mode to quickly create new cards
  */
-import { App, Notice } from "obsidian";
+import { App } from "obsidian";
 import { BaseModal } from "./BaseModal";
+import { notify } from "../../services";
 import { FlashcardReviewModal } from "./FlashcardReviewModal";
 import type { FlashcardItem, GeneratedNoteType, TrueRecallSettings } from "../../types";
 import {
@@ -124,7 +125,7 @@ export class AIGeneratorModal extends BaseModal {
 	private async handleGenerate(): Promise<void> {
 		const instructions = this.instructionsTextarea?.value.trim();
 		if (!instructions) {
-			new Notice("Please enter instructions for flashcard generation");
+			notify().warning("Please enter instructions for flashcard generation");
 			return;
 		}
 
@@ -149,7 +150,7 @@ export class AIGeneratorModal extends BaseModal {
 			const flashcards = parser.extractFlashcards(response);
 
 			if (flashcards.length === 0) {
-				new Notice("No flashcards could be generated. Please try different instructions.");
+				notify().warning("No flashcards could be generated. Please try different instructions.");
 				this.setGenerating(false);
 				return;
 			}
@@ -181,7 +182,7 @@ export class AIGeneratorModal extends BaseModal {
 
 		} catch (error) {
 			console.error("Error generating flashcards:", error);
-			new Notice(`Generation failed: ${error instanceof Error ? error.message : String(error)}`);
+			notify().generationFailed(error);
 			this.setGenerating(false);
 		}
 	}

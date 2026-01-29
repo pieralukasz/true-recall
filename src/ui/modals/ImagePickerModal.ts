@@ -2,9 +2,10 @@
  * Image Picker Modal
  * Modal for selecting images from vault or pasting from clipboard
  */
-import { App, TFile, Notice, Component, MarkdownRenderer } from "obsidian";
+import { App, TFile, Component, MarkdownRenderer } from "obsidian";
 import { BasePromiseModal } from "./BasePromiseModal";
 import { ImageService } from "../../services/image";
+import { notify } from "../../services";
 
 export interface ImagePickerResult {
 	cancelled: boolean;
@@ -111,7 +112,7 @@ export class ImagePickerModal extends BasePromiseModal<ImagePickerResult> {
                 if (file.type.startsWith("image/")) {
                     await this.handleDroppedFile(file);
                 } else {
-                    new Notice("Please drop an image file");
+                    notify().warning("Please drop an image file");
                 }
             }
         });
@@ -261,34 +262,34 @@ export class ImagePickerModal extends BasePromiseModal<ImagePickerResult> {
     private async handlePastedImage(blob: Blob): Promise<void> {
         if (this.imageService.isBlobTooLarge(blob)) {
             const size = this.imageService.formatFileSize(blob.size);
-            new Notice(`Image is too large (${size}). Maximum size is 5MB.`);
+            notify().imageTooLarge(size);
             return;
         }
 
         try {
-            new Notice("Saving image...");
+            notify().imageSaving();
             const path = await this.imageService.saveImageFromClipboard(blob);
             const file = this.app.vault.getAbstractFileByPath(path);
 
             if (file instanceof TFile) {
                 this.selectImage(file);
-                new Notice("Image saved");
+                notify().imageSaved();
             }
         } catch (error) {
             console.error("[True Recall] Failed to save pasted image:", error);
-            new Notice("Failed to save image");
+            notify().operationFailed("save image", error);
         }
     }
 
     private async handleDroppedFile(file: File): Promise<void> {
         if (file.size > 5 * 1024 * 1024) {
             const size = this.imageService.formatFileSize(file.size);
-            new Notice(`Image is too large (${size}). Maximum size is 5MB.`);
+            notify().imageTooLarge(size);
             return;
         }
 
         try {
-            new Notice("Saving image...");
+            notify().imageSaving();
             const arrayBuffer = await file.arrayBuffer();
             const blob = new Blob([arrayBuffer], { type: file.type });
             const path = await this.imageService.saveImageFromClipboard(blob);
@@ -296,11 +297,11 @@ export class ImagePickerModal extends BasePromiseModal<ImagePickerResult> {
 
             if (savedFile instanceof TFile) {
                 this.selectImage(savedFile);
-                new Notice("Image saved");
+                notify().imageSaved();
             }
         } catch (error) {
             console.error("[True Recall] Failed to save dropped image:", error);
-            new Notice("Failed to save image");
+            notify().operationFailed("save image", error);
         }
     }
 

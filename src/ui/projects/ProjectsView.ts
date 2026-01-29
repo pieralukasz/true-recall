@@ -5,11 +5,11 @@
  * v15: Projects are read from frontmatter (source of truth)
  * v19: Uses FrontmatterIndexService for O(1) project lookups
  */
-import { ItemView, WorkspaceLeaf, Notice, TFile, Platform, Menu } from "obsidian";
+import { ItemView, WorkspaceLeaf, TFile, Platform, Menu } from "obsidian";
 import { State } from "ts-fsrs";
 import { VIEW_TYPE_PROJECTS, VIEW_TYPE_REVIEW } from "../../constants";
 import { createProjectsStateManager } from "../../state/projects.state";
-import { getEventBus } from "../../services";
+import { getEventBus, notify } from "../../services";
 import { Panel } from "../components/Panel";
 import { ProjectsContent } from "./ProjectsContent";
 import { SelectionFooter } from "../components";
@@ -303,7 +303,7 @@ export class ProjectsView extends ItemView {
 			this.stateManager.setProjects(projects);
 		} catch (error) {
 			console.error("[ProjectsView] Error loading projects:", error);
-			new Notice("Failed to load projects");
+			notify().error("Failed to load projects");
 			this.stateManager.setLoading(false);
 		}
 	}
@@ -485,10 +485,10 @@ export class ProjectsView extends ItemView {
 			// v16: No database deletion - projects are in frontmatter only
 
 			this.stateManager.removeProject(projectId);
-			new Notice(`Project "${project.name}" deleted`);
+			notify().success(`Project "${project.name}" deleted`);
 		} catch (error) {
 			console.error("[ProjectsView] Error deleting project:", error);
-			new Notice("Failed to delete project");
+			notify().error("Failed to delete project");
 		}
 	}
 
@@ -525,7 +525,7 @@ export class ProjectsView extends ItemView {
 		const selectedPaths = Array.from(state.selectedNotePaths);
 
 		if (selectedPaths.length === 0) {
-			new Notice("No notes selected");
+			notify().warning("No notes selected");
 			return;
 		}
 
@@ -541,7 +541,7 @@ export class ProjectsView extends ItemView {
 		}
 
 		if (sourceUids.length === 0) {
-			new Notice("Selected notes have no flashcards");
+			notify().warning("Selected notes have no flashcards");
 			return;
 		}
 
@@ -591,7 +591,7 @@ export class ProjectsView extends ItemView {
 				(p) => p.name.toLowerCase() === projectName.toLowerCase()
 			)
 		) {
-			new Notice(`Project "${projectName}" already exists`);
+			notify().warning(`Project "${projectName}" already exists`);
 			return;
 		}
 
@@ -626,13 +626,13 @@ export class ProjectsView extends ItemView {
 			// Refresh projects list
 			await this.loadProjects();
 
-			new Notice(`Project "${projectName}" created from note`);
+			notify().success(`Project "${projectName}" created from note`);
 		} catch (error) {
 			console.error(
 				"[ProjectsView] Error creating project from note:",
 				error
 			);
-			new Notice("Failed to create project from note");
+			notify().error("Failed to create project from note");
 		}
 	}
 
@@ -672,7 +672,7 @@ export class ProjectsView extends ItemView {
 				frontmatterService.extractProjectsFromFrontmatter(content);
 
 			if (currentProjects.includes(projectName)) {
-				new Notice(`Note already in project "${projectName}"`);
+				notify().info(`Note already in project "${projectName}"`);
 				return;
 			}
 
@@ -690,14 +690,14 @@ export class ProjectsView extends ItemView {
 				await frontmatterService.setSourceNoteUid(note, sourceUid);
 			}
 
-			new Notice(`Added "${note.basename}" to "${projectName}"`);
+			notify().success(`Added "${note.basename}" to "${projectName}"`);
 			await this.loadProjects();
 		} catch (error) {
 			console.error(
 				`[ProjectsView] Error adding note to project:`,
 				error
 			);
-			new Notice("Failed to add note to project");
+			notify().error("Failed to add note to project");
 		}
 	}
 

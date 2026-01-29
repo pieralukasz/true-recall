@@ -2,7 +2,8 @@
  * Settings Tab UI
  * Plugin settings configuration interface
  */
-import { App, Notice, PluginSettingTab, Setting, TFile } from "obsidian";
+import { App, PluginSettingTab, Setting, TFile } from "obsidian";
+import { notify } from "../../services";
 import type TrueRecallPlugin from "../../main";
 import {
 	DEFAULT_SETTINGS,
@@ -404,7 +405,7 @@ export class TrueRecallSettingTab extends PluginSettingTab {
 				button.setButtonText("Reset to Default").onClick(async () => {
 					this.plugin.settings.customGeneratePrompt = "";
 					await this.plugin.saveSettings();
-					new Notice("Prompt reset to default");
+					notify().success("Prompt reset to default");
 					this.display();
 				})
 			);
@@ -768,14 +769,14 @@ export class TrueRecallSettingTab extends PluginSettingTab {
 							.map((s) => parseFloat(s.trim()));
 						const validLengths = [17, 19, 21];
 						if (!validLengths.includes(parts.length)) {
-							new Notice(
+							notify().error(
 								`Invalid weights count: ${parts.length}. Expected 17, 19, or 21 values.`
 							);
 							return;
 						}
 
 						if (parts.some((n) => isNaN(n))) {
-							new Notice(
+							notify().error(
 								"Invalid weights: some values are not numbers."
 							);
 							return;
@@ -785,7 +786,7 @@ export class TrueRecallSettingTab extends PluginSettingTab {
 						this.plugin.settings.lastOptimization =
 							new Date().toISOString();
 						await this.plugin.saveSettings();
-						new Notice("FSRS weights saved!");
+						notify().success("FSRS weights saved!");
 					});
 			});
 	}
@@ -990,6 +991,7 @@ export class TrueRecallSettingTab extends PluginSettingTab {
 						await this.plugin.saveSettings();
 					})
 			);
+
 	}
 
 	private renderSyncTab(container: HTMLElement): void {
@@ -1058,11 +1060,11 @@ export class TrueRecallSettingTab extends PluginSettingTab {
 						.onClick(async () => {
 							const result = await authService.signOut();
 							if (result.success) {
-								new Notice("Signed out successfully");
+								notify().success("Signed out successfully");
 								container.empty();
 								this.renderAuthSection(container);
 							} else {
-								new Notice(`Sign out failed: ${result.error}`);
+								notify().error(`Sign out failed: ${result.error}`);
 							}
 						})
 				);
@@ -1150,7 +1152,7 @@ export class TrueRecallSettingTab extends PluginSettingTab {
 			const result = await authService.signIn(emailValue, passwordValue);
 
 			if (result.success) {
-				new Notice("Logged in successfully");
+				notify().success("Logged in successfully");
 				container.empty();
 				this.renderAuthSection(container);
 			} else {
@@ -1185,7 +1187,7 @@ export class TrueRecallSettingTab extends PluginSettingTab {
 					passwordValue
 				);
 				if (loginResult.success) {
-					new Notice("Account created and logged in");
+					notify().success("Account created and logged in");
 					container.empty();
 					this.renderAuthSection(container);
 				} else {
@@ -1298,10 +1300,10 @@ export class TrueRecallSettingTab extends PluginSettingTab {
 							syncStatusEl.setText(
 								`Last sync: ${newTimeText} (↓${result.pulled} ↑${result.pushed})`
 							);
-							new Notice(`Sync complete: ${result.pulled} pulled, ${result.pushed} pushed`);
+							notify().success(`Sync complete: ${result.pulled} pulled, ${result.pushed} pushed`);
 						} else {
 							syncStatusEl.setText(`Sync failed: ${result.error}`);
-							new Notice(`Sync failed: ${result.error}`);
+							notify().error(`Sync failed: ${result.error}`);
 						}
 
 						button.setDisabled(false);
@@ -1339,10 +1341,10 @@ export class TrueRecallSettingTab extends PluginSettingTab {
 							syncStatusEl.setText(
 								`Last sync: ${newTimeText} (replaced ↑${result.pushed})`
 							);
-							new Notice(`Force replace complete: ${result.pushed} records uploaded`);
+							notify().success(`Force replace complete: ${result.pushed} records uploaded`);
 						} else {
 							syncStatusEl.setText(`Replace failed: ${result.error}`);
-							new Notice(`Replace failed: ${result.error}`);
+							notify().error(`Replace failed: ${result.error}`);
 						}
 
 						button.setDisabled(false);
@@ -1380,10 +1382,10 @@ export class TrueRecallSettingTab extends PluginSettingTab {
 							syncStatusEl.setText(
 								`Last sync: ${newTimeText} (pulled ↓${result.pulled})`
 							);
-							new Notice(`Force pull complete: ${result.pulled} records downloaded`);
+							notify().success(`Force pull complete: ${result.pulled} records downloaded`);
 						} else {
 							syncStatusEl.setText(`Pull failed: ${result.error}`);
-							new Notice(`Pull failed: ${result.error}`);
+							notify().error(`Pull failed: ${result.error}`);
 						}
 
 						button.setDisabled(false);
@@ -1442,7 +1444,7 @@ export class TrueRecallSettingTab extends PluginSettingTab {
 	 */
 	private async showDeviceSwitchModal(): Promise<void> {
 		if (!this.plugin.deviceDiscovery || !this.plugin.deviceIdService) {
-			new Notice("Device services not initialized");
+			notify().error("Device services not initialized");
 			return;
 		}
 
@@ -1450,7 +1452,7 @@ export class TrueRecallSettingTab extends PluginSettingTab {
 		const otherDevices = databases.filter((db) => !db.isCurrentDevice);
 
 		if (otherDevices.length === 0) {
-			new Notice("No other device databases available to import");
+			notify().info("No other device databases available to import");
 			return;
 		}
 
@@ -1498,12 +1500,12 @@ export class TrueRecallSettingTab extends PluginSettingTab {
 			);
 			await this.app.vault.adapter.writeBinary(targetPath, sourceData);
 
-			new Notice(
+			notify().success(
 				`Imported data from device ${result.sourceDeviceId}. Please restart Obsidian.`
 			);
 		} catch (error) {
 			console.error("[True Recall] Database switch failed:", error);
-			new Notice("Failed to switch database.");
+			notify().error("Failed to switch database.");
 		}
 	}
 }

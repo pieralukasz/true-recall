@@ -2,7 +2,7 @@
  * Browser View
  * Anki-style card browser for viewing, filtering, and managing flashcards
  */
-import { ItemView, WorkspaceLeaf, Notice, TFile } from "obsidian";
+import { ItemView, WorkspaceLeaf, TFile } from "obsidian";
 import { VIEW_TYPE_BROWSER } from "../../constants";
 import { createBrowserStateManager } from "../../state/browser.state";
 import type { BrowserCardItem, BulkOperation } from "../../types/browser.types";
@@ -11,7 +11,7 @@ import { BrowserSidebar } from "./BrowserSidebar";
 import { VirtualTable } from "./VirtualTable";
 import { BrowserPreview } from "./BrowserPreview";
 import { FlashcardEditorModal } from "../modals/FlashcardEditorModal";
-import { getEventBus } from "../../services/core/event-bus.service";
+import { getEventBus, notify } from "../../services";
 import type TrueRecallPlugin from "../../main";
 
 /**
@@ -150,7 +150,7 @@ export class BrowserView extends ItemView {
             this.stateManager.setCards(cards);
         } catch (error) {
             console.error("[BrowserView] Failed to load cards:", error);
-            new Notice("Failed to load cards");
+            notify().error("Failed to load cards");
             this.stateManager.setCards([]);
         }
     }
@@ -225,12 +225,12 @@ export class BrowserView extends ItemView {
                     card.id,
                     result.newSourceNotePath
                 );
-                new Notice("Card updated and moved");
+                notify().cardUpdatedAndMoved();
             } else {
-                new Notice("Card updated");
+                notify().cardUpdated();
             }
         } catch (error) {
-            new Notice(`Failed to update card: ${error instanceof Error ? error.message : String(error)}`);
+            notify().operationFailed("update card", error);
         }
     }
 
@@ -239,7 +239,7 @@ export class BrowserView extends ItemView {
      */
     private async handleOpenSourceNote(card: BrowserCardItem): Promise<void> {
         if (!card.sourceNotePath) {
-            new Notice("No source note linked");
+            notify().warning("No source note linked");
             return;
         }
 
@@ -248,7 +248,7 @@ export class BrowserView extends ItemView {
             const leaf = this.app.workspace.getLeaf(false);
             await leaf.openFile(file);
         } else {
-            new Notice("Source note not found");
+            notify().fileNotFound("Source note");
         }
     }
 
@@ -260,7 +260,7 @@ export class BrowserView extends ItemView {
     private async executeBulkOperation(operation: BulkOperation): Promise<void> {
         const selectedIds = [...this.stateManager.getState().selectedCardIds];
         if (selectedIds.length === 0) {
-            new Notice("No cards selected");
+            notify().warning("No cards selected");
             return;
         }
 
@@ -273,12 +273,12 @@ export class BrowserView extends ItemView {
             switch (operation) {
                 case "suspend":
                     count = browser.bulkSuspend(selectedIds);
-                    new Notice(`${count} card(s) suspended`);
+                    notify().cardsStatusChanged(count, "suspended");
                     break;
 
                 case "unsuspend":
                     count = browser.bulkUnsuspend(selectedIds);
-                    new Notice(`${count} card(s) unsuspended`);
+                    notify().success(`${count} card(s) unsuspended`);
                     break;
 
                 case "bury": {
@@ -287,13 +287,13 @@ export class BrowserView extends ItemView {
                     tomorrow.setDate(tomorrow.getDate() + 1);
                     tomorrow.setHours(4, 0, 0, 0); // 4 AM tomorrow
                     count = browser.bulkBury(selectedIds, tomorrow.toISOString());
-                    new Notice(`${count} card(s) buried until tomorrow`);
+                    notify().cardsBuried(count);
                     break;
                 }
 
                 case "unbury":
                     count = browser.bulkUnbury(selectedIds);
-                    new Notice(`${count} card(s) unburied`);
+                    notify().cardsStatusChanged(count, "unburied");
                     break;
 
                 case "delete":
@@ -302,7 +302,7 @@ export class BrowserView extends ItemView {
                     }
                     count = browser.bulkDelete(selectedIds);
                     this.stateManager.removeCards(selectedIds);
-                    new Notice(`${count} card(s) deleted`);
+                    notify().cardsDeleted(count);
                     break;
 
                 case "reset":
@@ -310,7 +310,7 @@ export class BrowserView extends ItemView {
                         return;
                     }
                     count = browser.bulkReset(selectedIds);
-                    new Notice(`${count} card(s) reset to New`);
+                    notify().success(`${count} card(s) reset to New`);
                     break;
 
                 case "reschedule": {
@@ -318,11 +318,11 @@ export class BrowserView extends ItemView {
                     if (!dateStr) return;
                     const date = new Date(dateStr);
                     if (isNaN(date.getTime())) {
-                        new Notice("Invalid date format");
+                        notify().warning("Invalid date format");
                         return;
                     }
                     count = browser.bulkReschedule(selectedIds, date.toISOString());
-                    new Notice(`${count} card(s) rescheduled`);
+                    notify().success(`${count} card(s) rescheduled`);
                     break;
                 }
             }
@@ -339,7 +339,7 @@ export class BrowserView extends ItemView {
             await this.loadCards();
             this.stateManager.clearSelection();
         } catch (error) {
-            new Notice(`Operation failed: ${error instanceof Error ? error.message : String(error)}`);
+            notify().operationFailed("execute operation", error);
         }
     }
 

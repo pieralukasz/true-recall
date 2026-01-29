@@ -34,7 +34,17 @@ export {
 export { FrontmatterService } from "./flashcard/frontmatter.service";
 export { FlashcardParserService } from "./flashcard/flashcard-parser.service";
 export { SourceNoteService } from "./flashcard/source-note.service";
-export { OrphanedCardsService } from "./flashcard/orphaned-cards.service";
+export {
+	OrphanedCardsService,
+	type OrphanReason,
+	type OrphanedCardInfo,
+	type OrphanedCardGroup,
+} from "./flashcard/orphaned-cards.service";
+export {
+	DeletionHandlerService,
+	type DeletionHandlerDeps,
+	type OrphanedCardsContext,
+} from "./flashcard/deletion-handler.service";
 export {
 	CardNavigationService,
 	type OpenFileOptions,

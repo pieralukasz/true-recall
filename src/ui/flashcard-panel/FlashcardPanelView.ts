@@ -7,14 +7,13 @@ import {
     ItemView,
     WorkspaceLeaf,
     TFile,
-    Notice,
     MarkdownRenderer,
     setIcon,
     Platform,
     Menu,
 } from "obsidian";
 import { VIEW_TYPE_FLASHCARD_PANEL, CONTEXT_BASED_GENERATION_PROMPT } from "../../constants";
-import { FlashcardManager, OpenRouterService, getEventBus } from "../../services";
+import { FlashcardManager, OpenRouterService, getEventBus, notify } from "../../services";
 import { CollectService } from "../../services/flashcard/collect.service";
 import { PanelStateManager } from "../../state";
 import { Panel } from "../components/Panel";
@@ -614,12 +613,12 @@ export class FlashcardPanelView extends ItemView {
 
         // Check if store is ready
         if (!this.flashcardManager.hasStore()) {
-            new Notice("Flashcard store not ready. Please restart Obsidian.");
+            notify().error("Flashcard store not ready. Please restart Obsidian.");
             return;
         }
 
         if (!this.plugin.settings.openRouterApiKey) {
-            new Notice("Please configure your OpenRouter API key in settings.");
+            notify().aiNotConfigured();
             return;
         }
 
@@ -635,7 +634,7 @@ export class FlashcardPanelView extends ItemView {
             );
 
             if (flashcards.trim() === "NO_NEW_CARDS") {
-                new Notice("No flashcard-worthy content found in this note.");
+                notify().info("No flashcard-worthy content found in this note.");
                 this.stateManager.finishProcessing(false);
                 return;
             }
@@ -658,10 +657,10 @@ export class FlashcardPanelView extends ItemView {
                 flashcardsWithIds
             );
 
-            new Notice(`Generated flashcards for ${state.currentFile.basename}`);
+            notify().success(`Generated flashcards for ${state.currentFile.basename}`);
             this.stateManager.finishProcessing(false);
         } catch (error) {
-            new Notice(`Error: ${error instanceof Error ? error.message : String(error)}`);
+            notify().operationFailed("generate flashcards", error);
             this.stateManager.finishProcessing(false);
         }
 
@@ -728,9 +727,9 @@ export class FlashcardPanelView extends ItemView {
                     card.id,
                     result.newSourceNotePath
                 );
-                new Notice("Flashcard updated and moved");
+                notify().cardUpdatedAndMoved();
             } else {
-                new Notice("Flashcard updated");
+                notify().cardUpdated();
             }
 
             await this.loadFlashcardInfo();
@@ -744,7 +743,7 @@ export class FlashcardPanelView extends ItemView {
                 await this.generateAdditionalCards(result.question, result.answer, result.aiInstruction);
             }
         } catch (error) {
-            new Notice(`Failed to update flashcard: ${error instanceof Error ? error.message : String(error)}`);
+            notify().operationFailed("update flashcard", error);
         }
     }
 
@@ -774,7 +773,7 @@ export class FlashcardPanelView extends ItemView {
                 );
             }
 
-            new Notice("Flashcard updated");
+            notify().cardUpdated();
 
             // Reload flashcard info to reflect changes
             await this.loadFlashcardInfo();
@@ -783,7 +782,7 @@ export class FlashcardPanelView extends ItemView {
                 this.contentContainer.scrollTop = scrollPosition;
             });
         } catch (error) {
-            new Notice(`Failed to update flashcard: ${error instanceof Error ? error.message : String(error)}`);
+            notify().operationFailed("update flashcard", error);
         }
     }
 
@@ -797,7 +796,7 @@ export class FlashcardPanelView extends ItemView {
         const removed = await this.flashcardManager.removeFlashcardById(card.id);
 
         if (removed) {
-            new Notice("Flashcard removed");
+            notify().cardsDeleted(1);
             await this.loadFlashcardInfo();
 
             // Restore scroll position after render completes
@@ -805,14 +804,14 @@ export class FlashcardPanelView extends ItemView {
                 this.contentContainer.scrollTop = scrollPosition;
             });
         } else {
-            new Notice("Failed to remove flashcard from file");
+            notify().error("Failed to remove flashcard from file");
         }
     }
 
     private async handleCopyCard(card: FlashcardItem): Promise<void> {
         const text = `Q: ${card.question}\nA: ${card.answer}`;
         await navigator.clipboard.writeText(text);
-        new Notice("Copied to clipboard");
+        notify().success("Copied to clipboard");
     }
 
     // ===== Export Handlers =====
@@ -823,7 +822,7 @@ export class FlashcardPanelView extends ItemView {
     private async handleCopyAllToClipboard(): Promise<void> {
         const state = this.stateManager.getState();
         if (!state.flashcardInfo?.flashcards || state.flashcardInfo.flashcards.length === 0) {
-            new Notice("No flashcards to copy");
+            notify().warning("No flashcards to copy");
             return;
         }
 
@@ -832,7 +831,7 @@ export class FlashcardPanelView extends ItemView {
             .join("\n\n");
 
         await navigator.clipboard.writeText(text);
-        new Notice(`Copied ${state.flashcardInfo.flashcards.length} flashcard(s) to clipboard`);
+        notify().success(`Copied ${state.flashcardInfo.flashcards.length} flashcard(s) to clipboard`);
     }
 
     /**
@@ -841,7 +840,7 @@ export class FlashcardPanelView extends ItemView {
     private async handleExportCsv(): Promise<void> {
         const state = this.stateManager.getState();
         if (!state.flashcardInfo?.flashcards || state.flashcardInfo.flashcards.length === 0) {
-            new Notice("No flashcards to export");
+            notify().warning("No flashcards to export");
             return;
         }
 
@@ -875,7 +874,7 @@ export class FlashcardPanelView extends ItemView {
         document.body.removeChild(link);
         URL.revokeObjectURL(url);
 
-        new Notice(`Exported ${state.flashcardInfo.flashcards.length} flashcard(s) to CSV`);
+        notify().success(`Exported ${state.flashcardInfo.flashcards.length} flashcard(s) to CSV`);
     }
 
     // ===== Move Card Handlers =====
@@ -885,7 +884,7 @@ export class FlashcardPanelView extends ItemView {
         if (!state.flashcardInfo) return;
 
         if (!card.id) {
-            new Notice("Cannot move card without UUID. Please regenerate flashcards.");
+            notify().error("Cannot move card without UUID. Please regenerate flashcards.");
             return;
         }
 
@@ -906,10 +905,10 @@ export class FlashcardPanelView extends ItemView {
                 card.id,
                 result.targetNotePath
             );
-            new Notice("Card moved successfully");
+            notify().cardsMoved(1, result.targetNotePath);
             await this.loadFlashcardInfo();
         } catch (error) {
-            new Notice(`Failed to move card: ${error instanceof Error ? error.message : String(error)}`);
+            notify().operationFailed("move card", error);
         }
     }
 
@@ -925,7 +924,7 @@ export class FlashcardPanelView extends ItemView {
         );
 
         if (selectedCards.length === 0) {
-            new Notice("No cards with valid UUIDs selected. Please regenerate flashcards.");
+            notify().error("No cards with valid UUIDs selected. Please regenerate flashcards.");
             return;
         }
 
@@ -962,7 +961,7 @@ export class FlashcardPanelView extends ItemView {
 
         // Clear selection and refresh
         this.stateManager.exitSelectionMode();
-        new Notice(`Moved ${successCount} of ${selectedCards.length} cards`);
+        notify().success(`Moved ${successCount} of ${selectedCards.length} cards`);
         await this.loadFlashcardInfo();
     }
 
@@ -996,7 +995,7 @@ export class FlashcardPanelView extends ItemView {
 
         // Clear selection and refresh
         this.stateManager.exitSelectionMode();
-        new Notice(`Deleted ${successCount} of ${selectedCards.length} card(s)`);
+        notify().cardsDeleted(successCount);
         await this.loadFlashcardInfo();
     }
 
@@ -1039,11 +1038,11 @@ export class FlashcardPanelView extends ItemView {
                 result.answer,
                 sourceUid
             );
-            new Notice("Flashcard added!");
+            notify().cardsCreated(1);
             await this.loadFlashcardInfo();
         } catch (error) {
             console.error("Error adding flashcard:", error);
-            new Notice(`Failed to add flashcard: ${error instanceof Error ? error.message : String(error)}`);
+            notify().operationFailed("add flashcard", error);
         }
     }
 
@@ -1081,13 +1080,13 @@ export class FlashcardPanelView extends ItemView {
 
         try {
             await this.flashcardManager.addSingleFlashcard(question, answer, sourceUid);
-            new Notice("Flashcard added!");
+            notify().cardsCreated(1);
             // Collapse the add card form and reload
             this.stateManager.setAddCardExpanded(false);
             await this.loadFlashcardInfo();
         } catch (error) {
             console.error("Error adding flashcard:", error);
-            new Notice(`Failed to add flashcard: ${error instanceof Error ? error.message : String(error)}`);
+            notify().operationFailed("add flashcard", error);
         }
     }
 
@@ -1105,12 +1104,12 @@ export class FlashcardPanelView extends ItemView {
 
         // Check API key
         if (!this.plugin.settings.openRouterApiKey) {
-            new Notice("Please configure your OpenRouter API key in settings.");
+            notify().aiNotConfigured();
             return;
         }
 
         try {
-            new Notice("Processing flashcard with AI...");
+            notify().info("Processing flashcard with AI...");
 
             // Process the flashcard with AI according to instruction
             // (NOT generating additional - transforming/processing the input)
@@ -1129,7 +1128,7 @@ Transform/process the flashcard based on the instruction above.`;
             );
 
             if (flashcardsMarkdown.trim() === "NO_NEW_CARDS") {
-                new Notice("AI could not process the flashcard. Please try different instructions.");
+                notify().warning("AI could not process the flashcard. Please try different instructions.");
                 this.stateManager.setAddCardExpanded(false);
                 return;
             }
@@ -1140,7 +1139,7 @@ Transform/process the flashcard based on the instruction above.`;
             const processedFlashcards = parser.extractFlashcards(flashcardsMarkdown);
 
             if (processedFlashcards.length === 0) {
-                new Notice("No flashcards were generated. Please try different instructions.");
+                notify().warning("No flashcards were generated. Please try different instructions.");
                 this.stateManager.setAddCardExpanded(false);
                 return;
             }
@@ -1156,7 +1155,7 @@ Transform/process the flashcard based on the instruction above.`;
             const result = await modal.openAndWait();
 
             if (result.cancelled || !result.flashcards || result.flashcards.length === 0) {
-                new Notice("No flashcards saved.");
+                notify().info("No flashcards saved.");
                 this.stateManager.setAddCardExpanded(false);
                 return;
             }
@@ -1169,7 +1168,7 @@ Transform/process the flashcard based on the instruction above.`;
             }));
 
             await this.flashcardManager.saveFlashcardsToSql(state.currentFile, flashcardsWithIds);
-            new Notice(`Saved ${result.flashcards.length} flashcard(s)`);
+            notify().cardsCreated(result.flashcards.length);
 
             // Collapse form and reload
             this.stateManager.setAddCardExpanded(false);
@@ -1177,7 +1176,7 @@ Transform/process the flashcard based on the instruction above.`;
 
         } catch (error) {
             console.error("Error in Add & Generate:", error);
-            new Notice(`Error: ${error instanceof Error ? error.message : String(error)}`);
+            notify().operationFailed("save flashcards", error);
         }
     }
 
@@ -1195,12 +1194,12 @@ Transform/process the flashcard based on the instruction above.`;
 
         // Check API key
         if (!this.plugin.settings.openRouterApiKey) {
-            new Notice("Please configure your OpenRouter API key in settings.");
+            notify().aiNotConfigured();
             return;
         }
 
         try {
-            new Notice("Processing with AI...");
+            notify().info("Processing with AI...");
 
             // Process the flashcard with AI according to instruction
             const contextPrompt = `Process this flashcard according to the instruction:
@@ -1218,7 +1217,7 @@ Transform/process the flashcard based on the instruction above.`;
             );
 
             if (flashcardsMarkdown.trim() === "NO_NEW_CARDS") {
-                new Notice("AI could not process the flashcard.");
+                notify().warning("AI could not process the flashcard.");
                 return;
             }
 
@@ -1228,7 +1227,7 @@ Transform/process the flashcard based on the instruction above.`;
             const processedFlashcards = parser.extractFlashcards(flashcardsMarkdown);
 
             if (processedFlashcards.length === 0) {
-                new Notice("No flashcards were generated. Please try different instructions.");
+                notify().warning("No flashcards were generated. Please try different instructions.");
                 return;
             }
 
@@ -1243,7 +1242,7 @@ Transform/process the flashcard based on the instruction above.`;
             const result = await modal.openAndWait();
 
             if (result.cancelled || !result.flashcards || result.flashcards.length === 0) {
-                new Notice("No additional flashcards saved.");
+                notify().info("No additional flashcards saved.");
                 return;
             }
 
@@ -1255,12 +1254,12 @@ Transform/process the flashcard based on the instruction above.`;
             }));
 
             await this.flashcardManager.saveFlashcardsToSql(state.currentFile, flashcardsWithIds);
-            new Notice(`Saved ${result.flashcards.length} processed flashcard(s)`);
+            notify().cardsCreated(result.flashcards.length);
             await this.loadFlashcardInfo();
 
         } catch (error) {
             console.error("Error processing flashcard with AI:", error);
-            new Notice(`Error: ${error instanceof Error ? error.message : String(error)}`);
+            notify().operationFailed("process flashcard with AI", error);
         }
     }
 
@@ -1284,7 +1283,7 @@ Transform/process the flashcard based on the instruction above.`;
             }
         }
 
-        new Notice(`Deleted ${successCount} flashcard(s)`);
+        notify().cardsDeleted(successCount);
         await this.loadFlashcardInfo();
     }
 
@@ -1309,7 +1308,7 @@ Transform/process the flashcard based on the instruction above.`;
 
         // Check if store is ready
         if (!this.flashcardManager.hasStore()) {
-            new Notice("Flashcard store not ready. Please restart Obsidian.");
+            notify().error("Flashcard store not ready. Please restart Obsidian.");
             return;
         }
 
@@ -1318,7 +1317,7 @@ Transform/process the flashcard based on the instruction above.`;
             const result = this.collectService.collect(content);
 
             if (result.collectedCount === 0) {
-                new Notice("No flashcards to collect");
+                notify().info("No flashcards to collect");
                 return;
             }
 
@@ -1338,10 +1337,10 @@ Transform/process the flashcard based on the instruction above.`;
                 : result.newContent;
             await this.app.vault.modify(state.currentFile, contentToSave);
 
-            new Notice(`Collected ${result.collectedCount} flashcard(s)`);
+            notify().success(`Collected ${result.collectedCount} flashcard(s)`);
             await this.loadFlashcardInfo();
         } catch (error) {
-            new Notice(`Error: ${error instanceof Error ? error.message : String(error)}`);
+            notify().operationFailed("collect flashcards", error);
         }
     }
 

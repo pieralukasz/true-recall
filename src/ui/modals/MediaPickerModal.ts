@@ -2,10 +2,11 @@
  * Media Picker Modal
  * Modal for selecting images or videos from vault with size control
  */
-import { App, TFile, Notice, Component, MarkdownRenderer } from "obsidian";
+import { App, TFile, Component, MarkdownRenderer } from "obsidian";
 import { BasePromiseModal } from "./BasePromiseModal";
 import { ImageService } from "../../services/image";
 import { isVideoExtension } from "../../types";
+import { notify } from "../../services";
 
 export interface MediaPickerResult {
 	cancelled: boolean;
@@ -114,7 +115,7 @@ export class MediaPickerModal extends BasePromiseModal<MediaPickerResult> {
                 if (file.type.startsWith("image/")) {
                     await this.handleDroppedFile(file);
                 } else {
-                    new Notice("Please drop an image file");
+                    notify().warning("Please drop an image file");
                 }
             }
         });
@@ -282,35 +283,35 @@ export class MediaPickerModal extends BasePromiseModal<MediaPickerResult> {
     private async handlePastedImage(blob: Blob): Promise<void> {
         if (this.imageService.isBlobTooLarge(blob)) {
             const size = this.imageService.formatFileSize(blob.size);
-            new Notice(`Image is too large (${size}). Maximum size is 5MB.`);
+            notify().imageTooLarge(size);
             return;
         }
 
         try {
-            new Notice("Saving image...");
+            notify().imageSaving();
             const path = await this.imageService.saveImageFromClipboard(blob);
             const file = this.app.vault.getAbstractFileByPath(path);
 
             if (file instanceof TFile) {
                 this.selectFile(file);
                 this.renderMediaGrid(); // Refresh grid to show new image
-                new Notice("Image saved");
+                notify().imageSaved();
             }
         } catch (error) {
             console.error("[True Recall] Failed to save pasted image:", error);
-            new Notice("Failed to save image");
+            notify().operationFailed("save image", error);
         }
     }
 
     private async handleDroppedFile(file: File): Promise<void> {
         if (file.size > 5 * 1024 * 1024) {
             const size = this.imageService.formatFileSize(file.size);
-            new Notice(`Image is too large (${size}). Maximum size is 5MB.`);
+            notify().imageTooLarge(size);
             return;
         }
 
         try {
-            new Notice("Saving image...");
+            notify().imageSaving();
             const arrayBuffer = await file.arrayBuffer();
             const blob = new Blob([arrayBuffer], { type: file.type });
             const path = await this.imageService.saveImageFromClipboard(blob);
@@ -319,11 +320,11 @@ export class MediaPickerModal extends BasePromiseModal<MediaPickerResult> {
             if (savedFile instanceof TFile) {
                 this.selectFile(savedFile);
                 this.renderMediaGrid(); // Refresh grid to show new image
-                new Notice("Image saved");
+                notify().imageSaved();
             }
         } catch (error) {
             console.error("[True Recall] Failed to save dropped image:", error);
-            new Notice("Failed to save image");
+            notify().operationFailed("save image", error);
         }
     }
 

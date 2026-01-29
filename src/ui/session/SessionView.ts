@@ -2,9 +2,9 @@
  * Session View
  * Panel-based view for session selection
  */
-import { ItemView, Notice, WorkspaceLeaf } from "obsidian";
+import { ItemView, WorkspaceLeaf } from "obsidian";
 import { VIEW_TYPE_SESSION } from "../../constants";
-import { getEventBus } from "../../services";
+import { getEventBus, notify } from "../../services";
 import { SessionLogic } from "./SessionLogic";
 import { createSessionStateManager } from "../../state/session.state";
 import type { DayBoundaryService } from "../../services";
@@ -305,7 +305,7 @@ export class SessionView extends ItemView {
 		);
 
 		if (cardsToMove.length === 0) {
-			new Notice("No flashcards found in selected notes");
+			notify().warning("No flashcards found in selected notes");
 			return;
 		}
 
@@ -327,7 +327,7 @@ export class SessionView extends ItemView {
 			if (success) movedCount++;
 		}
 
-		new Notice(`Moved ${movedCount} flashcard(s)`);
+		notify().cardsMoved(movedCount, result.targetNotePath);
 
 		// Clear selection
 		this.stateManager.clearSelection();
@@ -382,7 +382,7 @@ export class SessionView extends ItemView {
 			updatedCount++;
 		}
 
-		new Notice(`Added ${updatedCount} note(s) to project(s)`);
+		notify().success(`Added ${updatedCount} note(s) to project(s)`);
 
 		// Clear selection
 		this.stateManager.clearSelection();

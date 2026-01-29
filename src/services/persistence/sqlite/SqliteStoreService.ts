@@ -8,7 +8,8 @@
  * - store.stats.* for review log and statistics
  * - store.browser.* for browser view queries
  */
-import { App, normalizePath, Notice } from "obsidian";
+import { App, normalizePath } from "obsidian";
+import { notify, NOTIFICATION_DURATION } from "../../ui/notification.service";
 import type { FSRSCardData } from "../../../types";
 import { SqliteDatabase } from "./SqliteDatabase";
 import { SqliteSchemaManager } from "./SqliteSchemaManager";
@@ -69,9 +70,10 @@ export class SqliteStoreService {
         } catch (error) {
             // File exists but cannot be read - CRITICAL ERROR
             console.error("[True Recall] Database load failed:", error);
-            new Notice(
+            notify().error(
                 "True Recall: Cannot load database. Please restore from backup (Settings → Data & Backup → Restore).",
-                0  // Don't auto-hide
+                undefined,
+                NOTIFICATION_DURATION.PERSIST  // Don't auto-hide
             );
             throw error;  // Don't continue with empty database!
         }

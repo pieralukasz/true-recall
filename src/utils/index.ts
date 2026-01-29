@@ -11,3 +11,5 @@ export {
 } from "./event.utils";
 
 export { SessionResultFactory } from "./session-result-factory";
+
+export { getErrorMessage, formatErrorMessage } from "./error.utils";

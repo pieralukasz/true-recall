@@ -2,7 +2,8 @@
  * Backup Service
  * Handles database backup creation, restoration, and management
  */
-import { App, normalizePath, Notice } from "obsidian";
+import { App, normalizePath } from "obsidian";
+import { notify } from "../ui/notification.service";
 import type { SqliteStoreService } from "./sqlite";
 import { DB_FOLDER, getDeviceDbFilename } from "./sqlite";
 
@@ -146,11 +147,11 @@ export class BackupService {
             const dbPath = normalizePath(`${DB_FOLDER}/${getDeviceDbFilename(deviceId)}`);
             await this.app.vault.adapter.writeBinary(dbPath, backupData);
 
-            new Notice("Backup restored. Please reload Obsidian to apply changes.");
+            notify().success("Backup restored. Please reload Obsidian to apply changes.");
             return true;
         } catch (error) {
             console.error("[True Recall] Failed to restore backup:", error);
-            new Notice("Failed to restore backup. Check console for details.");
+            notify().error("Failed to restore backup. Check console for details.");
             return false;
         }
     }
