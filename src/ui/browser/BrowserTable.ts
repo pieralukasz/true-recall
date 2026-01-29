@@ -3,7 +3,8 @@
  * Sortable table displaying flashcards with state badges
  */
 import { setIcon } from "obsidian";
-import { State } from "ts-fsrs";
+import { truncateText, stripHtml, formatDueDate, getDueDateTailwindClass } from "../utils";
+import { renderStateBadge } from "../components";
 import type { BrowserCardItem, BrowserColumn, SortDirection } from "../../types/browser.types";
 
 export interface BrowserTableProps {
@@ -159,25 +160,29 @@ export class BrowserTable {
             // Question
             const questionTd = tr.createEl("td", { cls: `${tdCls} ${tdTruncateCls}` });
             questionTd.createSpan({
-                text: this.truncateText(this.stripHtml(card.question ?? ""), 60),
+                text: truncateText(stripHtml(card.question ?? ""), 60),
             });
 
             // Answer
             const answerTd = tr.createEl("td", { cls: `${tdCls} ${tdTruncateCls}` });
             answerTd.createSpan({
-                text: this.truncateText(this.stripHtml(card.answer ?? ""), 50),
+                text: truncateText(stripHtml(card.answer ?? ""), 50),
             });
 
             // Due
             const dueTd = tr.createEl("td", { cls: tdCls });
             dueTd.createSpan({
-                text: this.formatDue(card.due),
-                cls: this.getDueTailwindClass(card.due),
+                text: formatDueDate(card.due),
+                cls: getDueDateTailwindClass(card.due),
             });
 
             // State
             const stateTd = tr.createEl("td", { cls: tdCls });
-            this.renderStateBadge(stateTd, card);
+            renderStateBadge(stateTd, {
+                state: card.state,
+                suspended: card.suspended,
+                buriedUntil: card.buriedUntil,
+            });
 
             // Stability
             const stabilityTd = tr.createEl("td", { cls: tdCls });
@@ -203,7 +208,7 @@ export class BrowserTable {
             const sourceTd = tr.createEl("td", { cls: tdCls });
             if (card.sourceNoteName) {
                 const sourceLink = sourceTd.createEl("a", {
-                    text: this.truncateText(card.sourceNoteName, 20),
+                    text: truncateText(card.sourceNoteName, 20),
                     cls: "ep:text-obs-interactive ep:no-underline ep:cursor-pointer ep:hover:underline",
                     attr: { title: card.sourceNoteName },
                 });
@@ -224,104 +229,6 @@ export class BrowserTable {
                 this.props.onCardDoubleClick(card);
             });
         }
-    }
-
-    private renderStateBadge(container: HTMLElement, card: BrowserCardItem): void {
-        const now = new Date();
-        let label: string;
-        let colorCls: string;
-
-        const baseCls = "ep:inline-flex ep:items-center ep:gap-1 ep:py-0.5 ep:px-2 ep:rounded-xl ep:text-[11px] ep:font-semibold ep:uppercase ep:tracking-[0.3px]";
-
-        if (card.suspended) {
-            label = "Suspended";
-            colorCls = "ep:bg-red-500/15 ep:text-obs-error";
-        } else if (card.buriedUntil && new Date(card.buriedUntil) > now) {
-            label = "Buried";
-            colorCls = "ep:bg-obs-modifier-hover ep:text-obs-muted";
-        } else {
-            switch (card.state) {
-                case State.New:
-                    label = "New";
-                    colorCls = "ep:bg-blue-500/15 ep:text-blue-500";
-                    break;
-                case State.Learning:
-                    label = "Learning";
-                    colorCls = "ep:bg-orange-500/15 ep:text-orange-500";
-                    break;
-                case State.Review:
-                    label = "Review";
-                    colorCls = "ep:bg-green-500/15 ep:text-green-500";
-                    break;
-                case State.Relearning:
-                    label = "Relearn";
-                    colorCls = "ep:bg-yellow-500/15 ep:text-yellow-500";
-                    break;
-                default:
-                    label = "Unknown";
-                    colorCls = "ep:bg-obs-modifier-hover ep:text-obs-muted";
-            }
-        }
-
-        container.createSpan({
-            text: label,
-            cls: `${baseCls} ${colorCls}`,
-        });
-    }
-
-    private formatDue(due: string): string {
-        const dueDate = new Date(due);
-        const now = new Date();
-        const diffMs = dueDate.getTime() - now.getTime();
-        const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
-
-        if (diffDays < 0) {
-            return diffDays === -1 ? "Yesterday" : `${Math.abs(diffDays)}d ago`;
-        } else if (diffDays === 0) {
-            // Check if it's actually due today or in the future
-            const diffHours = Math.floor(diffMs / (1000 * 60 * 60));
-            if (diffHours < 0) {
-                return "Today";
-            } else if (diffHours < 24) {
-                return `${diffHours}h`;
-            }
-            return "Today";
-        } else if (diffDays === 1) {
-            return "Tomorrow";
-        } else if (diffDays < 7) {
-            return `${diffDays}d`;
-        } else if (diffDays < 30) {
-            return `${Math.floor(diffDays / 7)}w`;
-        } else if (diffDays < 365) {
-            return `${Math.floor(diffDays / 30)}mo`;
-        } else {
-            return `${Math.floor(diffDays / 365)}y`;
-        }
-    }
-
-    private getDueTailwindClass(due: string): string {
-        const dueDate = new Date(due);
-        const now = new Date();
-        const diffMs = dueDate.getTime() - now.getTime();
-        const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
-
-        if (diffDays < 0) return "ep:text-obs-error";
-        if (diffDays === 0) return "ep:text-obs-interactive ep:font-medium";
-        return "";
-    }
-
-    private truncateText(text: string, maxLength: number): string {
-        if (text.length <= maxLength) return text;
-        return text.slice(0, maxLength - 3) + "...";
-    }
-
-    private stripHtml(html: string): string {
-        // Remove HTML tags and convert <br> to spaces
-        return html
-            .replace(/<br\s*\/?>/gi, " ")
-            .replace(/<[^>]+>/g, "")
-            .replace(/\s+/g, " ")
-            .trim();
     }
 
     destroy(): void {

@@ -5,3 +5,9 @@ export {
 	type LongPressOptions,
 	type LongPressResult,
 } from "./long-press";
+export { truncateText, stripHtml, stripAndTruncate } from "./text.utils";
+export {
+	formatDueDate,
+	getDueDateStatus,
+	getDueDateTailwindClass,
+} from "./date.utils";
