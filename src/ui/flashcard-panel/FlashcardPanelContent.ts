@@ -6,52 +6,34 @@ import {
 	type App,
 	type Component,
 	type TFile,
-	type MarkdownRenderer,
-	setIcon,
 } from "obsidian";
 import { BaseComponent } from "../component.base";
-import type { ProcessingStatus, ViewMode, SelectionMode } from "../../state";
+import type { ProcessingStatus, SelectionMode } from "../../state";
 import type {
 	FlashcardInfo,
 	FlashcardItem,
-	FlashcardChange,
-	DiffResult,
 	NoteFlashcardType,
 } from "../../types";
 import type { FSRSFlashcardItem } from "../../types/fsrs/card.types";
 import { createLoadingSpinner } from "../components/LoadingSpinner";
 import { createEmptyState, EmptyStateMessages } from "../components/EmptyState";
 import { createCompactCardItem } from "./CompactCardItem";
-import { createDiffCard } from "../components/DiffCard";
 import { createExpandableAddCard } from "../modals/components/ExpandableAddCard";
 
 export interface FlashcardPanelContentHandlers {
 	app: App;
 	component: Component;
-	markdownRenderer: typeof MarkdownRenderer;
 	onEditCard?: (card: FlashcardItem) => void;
 	onEditButton?: (card: FlashcardItem) => void;
 	onCopyCard?: (card: FlashcardItem) => void;
 	onDeleteCard?: (card: FlashcardItem) => void;
 	onMoveCard?: (card: FlashcardItem) => void;
-	onChangeAccept?: (
-		change: FlashcardChange,
-		index: number,
-		accepted: boolean
-	) => void;
-	onSelectAll?: (selected: boolean) => void;
 	// In-place edit save handler
 	onEditSave?: (
 		card: FlashcardItem,
 		field: "question" | "answer",
 		newContent: string
 	) => Promise<void>;
-	// Diff edit change handler
-	onEditChange?: (
-		change: FlashcardChange,
-		field: "question" | "answer",
-		newContent: string
-	) => void;
 	// Handlers for compact design
 	onToggleExpand?: (cardId: string) => void;
 	onToggleSelect?: (cardId: string) => void;
@@ -68,9 +50,7 @@ export interface FlashcardPanelContentHandlers {
 export interface FlashcardPanelContentProps {
 	currentFile: TFile | null;
 	status: ProcessingStatus;
-	viewMode: ViewMode;
 	flashcardInfo: FlashcardInfo | null;
-	diffResult: DiffResult | null;
 	isFlashcardFile: boolean;
 	// Note flashcard type based on tags
 	noteFlashcardType?: NoteFlashcardType;
@@ -112,17 +92,11 @@ export class FlashcardPanelContent extends BaseComponent {
 			cls: "ep:flex ep:flex-col ep:flex-1 ep:overflow-y-auto",
 		});
 
-		const { status, viewMode, diffResult, currentFile } = this.props;
+		const { status, currentFile } = this.props;
 
 		// Show loader if processing
 		if (status === "processing") {
 			this.renderProcessingState();
-			return;
-		}
-
-		// Show diff view if in diff mode
-		if (viewMode === "diff" && diffResult) {
-			this.renderDiffState();
 			return;
 		}
 
@@ -260,79 +234,6 @@ export class FlashcardPanelContent extends BaseComponent {
 				onCancel: () => handlers.onAddCancel?.(),
 			});
 			this.childComponents.push(addCard);
-		}
-	}
-
-	private renderDiffState(): void {
-		const { diffResult, currentFile, handlers } = this.props;
-
-		if (!this.element || !diffResult || !currentFile) return;
-
-		const diffEl = this.element.createDiv({
-			cls: "ep:py-2",
-		});
-
-		// Header with count
-		const acceptedCount = diffResult.changes.filter(
-			(c) => c.accepted
-		).length;
-		const totalCount = diffResult.changes.length;
-
-		const headerEl = diffEl.createDiv({
-			cls: "ep:flex ep:items-center ep:mb-3",
-		});
-		headerEl.createSpan({
-			text: `Proposed Changes (${acceptedCount}/${totalCount} selected)`,
-			cls: "ep:text-ui-small ep:font-semibold ep:text-obs-normal",
-		});
-
-		// Select All / Deselect All button
-		const allSelected = acceptedCount === totalCount;
-		const selectAllBtn = headerEl.createEl("button", {
-			text: allSelected ? "Deselect all" : "Select all",
-			cls: "ep:ml-auto ep:px-2 ep:py-1 ep:text-ui-smaller ep:bg-obs-border ep:text-obs-normal ep:border-none ep:rounded ep:cursor-pointer ep:hover:bg-obs-modifier-hover ep:transition-colors",
-		});
-
-		if (handlers.onSelectAll) {
-			this.events.addEventListener(selectAllBtn, "click", () => {
-				handlers.onSelectAll?.(!allSelected);
-			});
-		}
-
-		// No changes case
-		if (diffResult.changes.length === 0) {
-			diffEl.createDiv({
-				text: "No changes needed. Flashcards are up to date.",
-				cls: "ep:text-obs-muted ep:text-center ep:py-6 ep:px-3",
-			});
-			return;
-		}
-
-		// Render each change
-		const changesContainer = diffEl.createDiv({
-			cls: "ep:flex ep:flex-col ep:gap-3",
-		});
-
-		for (let i = 0; i < diffResult.changes.length; i++) {
-			const change = diffResult.changes[i];
-			if (!change) continue;
-
-			const diffCard = createDiffCard(changesContainer, {
-				change,
-				index: i,
-				filePath: currentFile.path,
-				handlers: {
-					app: handlers.app,
-					component: handlers.component,
-					onAccept: (c, idx) =>
-						handlers.onChangeAccept?.(c, idx, true),
-					onReject: (c, idx) =>
-						handlers.onChangeAccept?.(c, idx, false),
-					onEditChange: handlers.onEditChange,
-				},
-				markdownRenderer: handlers.markdownRenderer,
-			});
-			this.childComponents.push(diffCard);
 		}
 	}
 

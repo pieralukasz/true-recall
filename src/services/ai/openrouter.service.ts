@@ -5,30 +5,19 @@
 import { requestUrl, RequestUrlParam } from "obsidian";
 import {
     SYSTEM_PROMPT,
-    UPDATE_SYSTEM_PROMPT,
     API_CONFIG,
     AIModelKey,
 } from "../../constants";
 import {
     validateOpenRouterResponse,
     extractContent,
-    parseDiffJson,
-    enrichFlashcardChanges,
 } from "../../validation";
-import { type FlashcardItem, type FlashcardChange, type ChatMessage } from "../../types";
+import { type FlashcardItem, type ChatMessage } from "../../types";
 import {
     APIError,
     NetworkError,
     ConfigurationError,
 } from "../../errors";
-
-/**
- * Result of diff generation
- */
-export interface DiffResult {
-    changes: FlashcardChange[];
-    existingFlashcards: FlashcardItem[];
-}
 
 /**
  * Service for interacting with OpenRouter API
@@ -72,43 +61,6 @@ export class OpenRouterService {
 
         const content = await this.callAPI(messages);
         return content.trim();
-    }
-
-    /**
-     * Generate flashcard diff for update mode
-     * @param noteContent - The current note content
-     * @param existingFlashcards - Existing flashcards to compare against
-     * @param userInstructions - Optional user instructions to append to the prompt
-     * @param oldNoteContent - Optional previous note content for comparison
-     * @param customSystemPrompt - Optional custom system prompt (empty = use default UPDATE_SYSTEM_PROMPT)
-     */
-    async generateFlashcardsDiff(
-        noteContent: string,
-        existingFlashcards: FlashcardItem[],
-        userInstructions?: string,
-        oldNoteContent?: string,
-        customSystemPrompt?: string
-    ): Promise<DiffResult> {
-        this.validateApiKey();
-
-        // Build the existing flashcards list for the prompt
-        const existingList = this.formatExistingFlashcards(existingFlashcards);
-        const basePrompt = customSystemPrompt?.trim() || UPDATE_SYSTEM_PROMPT;
-        const systemPrompt = this.buildSystemPrompt(
-            basePrompt + existingList,
-            userInstructions
-        );
-
-        // Build user message with optional old note content for comparison
-        const userMessage = this.buildDiffUserMessage(noteContent, oldNoteContent);
-
-        const messages: ChatMessage[] = [
-            { role: "system", content: systemPrompt },
-            { role: "user", content: userMessage },
-        ];
-
-        const content = await this.callAPI(messages);
-        return this.parseDiffResponse(content, existingFlashcards);
     }
 
     /**
@@ -188,57 +140,6 @@ Format each as: [Question text] #flashcard\\n[Answer text]`;
             return `${basePrompt}\n\nADDITIONAL USER INSTRUCTIONS:\n${userInstructions.trim()}`;
         }
         return basePrompt;
-    }
-
-    /**
-     * Format existing flashcards for the prompt
-     */
-    private formatExistingFlashcards(flashcards: FlashcardItem[]): string {
-        return flashcards
-            .map((f, i) => `${i + 1}. Q: ${f.question}\n   A: ${f.answer}`)
-            .join("\n\n");
-    }
-
-    /**
-     * Build user message for diff generation
-     */
-    private buildDiffUserMessage(noteContent: string, oldNoteContent?: string): string {
-        if (oldNoteContent?.trim()) {
-            return `PREVIOUS NOTE VERSION:\n${oldNoteContent}\n\n---\n\nCURRENT NOTE VERSION:\n${noteContent}\n\nPlease analyze what changed between the two versions and update flashcards accordingly.`;
-        }
-        return `NOTE CONTENT:\n${noteContent}`;
-    }
-
-    /**
-     * Parse AI response and enrich with original data using Zod validators
-     */
-    private parseDiffResponse(
-        content: string,
-        existingFlashcards: FlashcardItem[]
-    ): DiffResult {
-        // Handle empty or NO_NEW_CARDS responses
-        if (content.includes("NO_NEW_CARDS") || content.trim() === "") {
-            return { changes: [], existingFlashcards };
-        }
-
-        // Use Zod validator to parse and validate changes
-        const rawChanges = parseDiffJson(content);
-
-        // Enrich changes with data from existing flashcards
-        const changes = enrichFlashcardChanges(
-            rawChanges.map(c => ({
-                type: c.type,
-                question: c.question,
-                answer: c.answer,
-                originalQuestion: c.originalQuestion,
-                originalAnswer: c.originalAnswer,
-                originalCardId: c.originalCardId,
-                reason: c.reason,
-            })),
-            existingFlashcards
-        );
-
-        return { changes, existingFlashcards };
     }
 
     /**

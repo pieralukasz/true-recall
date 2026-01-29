@@ -27,27 +27,6 @@ export interface FlashcardItem {
     id: string;
 }
 
-// Type of flashcard change
-export type FlashcardChangeType = "NEW" | "MODIFIED" | "DELETED";
-
-// Represents a proposed change (new, modified, or deleted flashcard)
-export interface FlashcardChange {
-    type: FlashcardChangeType;
-    question: string;
-    answer: string;
-    originalQuestion?: string; // For MODIFIED/DELETED - exact match from existing
-    originalAnswer?: string;   // For MODIFIED/DELETED - filled from existing flashcards
-    originalCardId?: string;   // For MODIFIED/DELETED - card UUID of original
-    reason?: string;           // For DELETED - reason for deletion
-    accepted: boolean;         // UI state for accept/reject
-}
-
-// Result of diff generation
-export interface DiffResult {
-    changes: FlashcardChange[];
-    existingFlashcards: FlashcardItem[]; // All existing flashcards for reference
-}
-
 // Flashcard file data structure
 export interface FlashcardInfo {
     exists: boolean;

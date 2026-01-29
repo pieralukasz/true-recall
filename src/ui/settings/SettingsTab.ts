@@ -9,7 +9,6 @@ import {
 	AI_MODELS_EXTENDED,
 	FSRS_CONFIG,
 	SYSTEM_PROMPT,
-	UPDATE_SYSTEM_PROMPT,
 } from "../../constants";
 import { TemplatePickerModal, DeviceSelectionModal, FirstSyncConflictModal } from "../modals";
 import type { AIModelKey, AIModelInfo } from "../../constants";
@@ -398,34 +397,13 @@ export class TrueRecallSettingTab extends PluginSettingTab {
 			});
 
 		new Setting(container)
-			.setName("Flashcard update prompt")
-			.setDesc(
-				"Custom system prompt for updating existing flashcards. Leave empty to use default."
-			)
-			.addTextArea((text) => {
-				text.inputEl.rows = 8;
-				text.inputEl.style.width = "100%";
-				text.inputEl.style.fontFamily = "monospace";
-				text.inputEl.style.fontSize = "12px";
-				text.setPlaceholder(
-					this.truncatePrompt(UPDATE_SYSTEM_PROMPT, 500)
-				)
-					.setValue(this.plugin.settings.customUpdatePrompt)
-					.onChange(async (value) => {
-						this.plugin.settings.customUpdatePrompt = value;
-						await this.plugin.saveSettings();
-					});
-			});
-
-		new Setting(container)
-			.setName("Reset prompts to defaults")
-			.setDesc("Clear custom prompts and use the built-in defaults")
+			.setName("Reset prompt to default")
+			.setDesc("Clear custom prompt and use the built-in default")
 			.addButton((button) =>
-				button.setButtonText("Reset to Defaults").onClick(async () => {
+				button.setButtonText("Reset to Default").onClick(async () => {
 					this.plugin.settings.customGeneratePrompt = "";
-					this.plugin.settings.customUpdatePrompt = "";
 					await this.plugin.saveSettings();
-					new Notice("Prompts reset to defaults");
+					new Notice("Prompt reset to default");
 					this.display();
 				})
 			);

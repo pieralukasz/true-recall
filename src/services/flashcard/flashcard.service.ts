@@ -11,11 +11,9 @@ import type {
 	CardReviewLogEntry,
 	NoteFlashcardType,
 	FlashcardItem,
-	FlashcardChange,
 	CardAddedEvent,
 	CardRemovedEvent,
 	CardUpdatedEvent,
-	BulkChangeEvent,
 } from "../../types";
 import type { SqliteStoreService } from "../persistence/sqlite/SqliteStoreService";
 import { createDefaultFSRSData, State } from "../../types";
@@ -602,75 +600,6 @@ export class FlashcardManager {
 			}
 		}
 		return successCount;
-	}
-
-	// ===== Diff Methods (SQL-based) =====
-
-	/**
-	 * Apply accepted diff changes to SQL
-	 * - DELETED: remove card from SQL
-	 * - MODIFIED: update question/answer in SQL
-	 * - NEW: add new card to SQL
-	 */
-	async applyDiffChanges(
-		sourceFile: TFile,
-		changes: FlashcardChange[],
-		_existingFlashcards: FlashcardItem[]
-	): Promise<void> {
-		if (!this.store) {
-			throw new Error("Store not initialized");
-		}
-
-		// Get source UID for new cards
-		let sourceUid = await this.frontmatterService.getSourceNoteUid(sourceFile);
-		if (!sourceUid) {
-			sourceUid = this.frontmatterService.generateUid();
-			await this.frontmatterService.setSourceNoteUid(sourceFile, sourceUid);
-		}
-
-		// Process DELETED changes
-		const deletedChanges = changes.filter((c) => c.type === "DELETED" && c.accepted && c.originalCardId);
-		for (const change of deletedChanges) {
-			await this.removeFlashcardById(change.originalCardId!);
-		}
-
-		// Process MODIFIED changes
-		const modifiedChanges = changes.filter((c) => c.type === "MODIFIED" && c.accepted && c.originalCardId);
-		for (const change of modifiedChanges) {
-			this.updateCardContent(change.originalCardId!, change.question, change.answer);
-		}
-
-		// Process NEW changes
-		const newChanges = changes.filter((c) => c.type === "NEW" && c.accepted);
-		for (const change of newChanges) {
-			await this.addSingleFlashcardToSql(change.question, change.answer, sourceUid);
-		}
-
-		// Emit bulk change events
-		if (deletedChanges.length > 0) {
-			getEventBus().emit({
-				type: "cards:bulk-change",
-				action: "removed",
-				cardIds: deletedChanges.map((c) => c.originalCardId!),
-				timestamp: Date.now(),
-			} as BulkChangeEvent);
-		}
-		if (newChanges.length > 0) {
-			getEventBus().emit({
-				type: "cards:bulk-change",
-				action: "added",
-				cardIds: [],
-				timestamp: Date.now(),
-			} as BulkChangeEvent);
-		}
-		if (modifiedChanges.length > 0) {
-			getEventBus().emit({
-				type: "cards:bulk-change",
-				action: "updated",
-				cardIds: modifiedChanges.map((c) => c.originalCardId!),
-				timestamp: Date.now(),
-			} as BulkChangeEvent);
-		}
 	}
 
 	// ===== Move Card Methods (SQL-based) =====
