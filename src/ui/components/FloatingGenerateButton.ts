@@ -2,8 +2,9 @@
  * Floating Generate Button Component
  * Shows a FAB when text is selected in markdown editor
  */
-import { Notice, TFile } from "obsidian";
+import { TFile } from "obsidian";
 import type TrueRecallPlugin from "../../main";
+import { notify } from "../../services";
 
 export class FloatingGenerateButton {
 	private plugin: TrueRecallPlugin;
@@ -144,13 +145,13 @@ export class FloatingGenerateButton {
 
 	private async handleClick(): Promise<void> {
 		if (!this.currentSelection) {
-			new Notice("No text selected");
+			notify().warning("No text selected");
 			return;
 		}
 
 		const activeFile = this.plugin.app.workspace.getActiveFile();
 		if (!activeFile) {
-			new Notice("No active file");
+			notify().noActiveFile();
 			return;
 		}
 
@@ -188,7 +189,7 @@ export class FloatingGenerateButton {
 				userInstructions = instructionsResult.instructions;
 			}
 
-			new Notice("Generating flashcards...");
+			notify().generationStarted();
 
 			// Step 2: Generate flashcards with optional user instructions
 			const flashcardsMarkdown = await this.plugin.openRouterService.generateFlashcards(
@@ -198,7 +199,7 @@ export class FloatingGenerateButton {
 			);
 
 			if (flashcardsMarkdown.trim() === "NO_NEW_CARDS") {
-				new Notice("No flashcard-worthy content found in selection.");
+				notify().info("No flashcard-worthy content found in selection.");
 				return;
 			}
 
@@ -208,7 +209,7 @@ export class FloatingGenerateButton {
 			const generatedFlashcards = parser.extractFlashcards(flashcardsMarkdown);
 
 			if (generatedFlashcards.length === 0) {
-				new Notice("No flashcards were generated. Please try again.");
+				notify().warning("No flashcards were generated. Please try again.");
 				return;
 			}
 
@@ -221,7 +222,7 @@ export class FloatingGenerateButton {
 				}));
 
 				await this.plugin.flashcardManager.saveFlashcardsToSql(file, flashcardsWithIds);
-				new Notice(`Created ${flashcardsWithIds.length} flashcard(s) from selection`);
+				notify().cardsCreated(flashcardsWithIds.length);
 			} else {
 				// Step 3: Preview mode - open review modal
 				const { FlashcardReviewModal } = await import("../modals/FlashcardReviewModal");
@@ -235,7 +236,7 @@ export class FloatingGenerateButton {
 				const result = await modal.openAndWait();
 
 				if (result.cancelled || !result.flashcards || result.flashcards.length === 0) {
-					new Notice("Flashcard generation cancelled");
+					notify().info("Flashcard generation cancelled");
 					return;
 				}
 
@@ -246,10 +247,10 @@ export class FloatingGenerateButton {
 				}));
 
 				await this.plugin.flashcardManager.saveFlashcardsToSql(file, flashcardsWithIds);
-				new Notice(`Saved ${result.flashcards.length} flashcard(s) from selection`);
+				notify().cardsCreated(result.flashcards.length);
 			}
 		} catch (error) {
-			new Notice(`Error: ${error instanceof Error ? error.message : String(error)}`);
+			notify().generationFailed(error);
 		}
 	}
 }

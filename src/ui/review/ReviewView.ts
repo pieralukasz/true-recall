@@ -7,7 +7,6 @@ import {
 	ItemView,
 	WorkspaceLeaf,
 	MarkdownRenderer,
-	Notice,
 	Platform,
 	Menu,
 	setIcon,
@@ -22,6 +21,7 @@ import {
 	SessionPersistenceService,
 	getEventBus,
 	ZettelTemplateService,
+	notify,
 } from "../../services";
 import { ReviewStateManager } from "../../state";
 import { extractFSRSSettings, type FSRSFlashcardItem } from "../../types";
@@ -567,7 +567,7 @@ export class ReviewView extends ItemView {
 			this.updateSchedulingPreview();
 		} catch (error) {
 			console.error("Error starting review session:", error);
-			new Notice(
+			notify().error(
 				`Error: ${
 					error instanceof Error ? error.message : String(error)
 				}`
@@ -988,10 +988,10 @@ export class ReviewView extends ItemView {
 					newAnswer
 				);
 
-				new Notice("Card updated");
+				notify().cardUpdated();
 			} catch (error) {
 				console.error("Error saving card content:", error);
-				new Notice("Failed to save card");
+				notify().operationFailed("save card", error);
 			}
 		}
 
@@ -1176,7 +1176,7 @@ export class ReviewView extends ItemView {
 	private handleOpenSourceNote(): void {
 		const card = this.stateManager.getCurrentCard();
 		if (!card || !card.sourceNoteName) {
-			new Notice("Source note not found");
+			notify().warning("Source note not found");
 			return;
 		}
 
@@ -1189,7 +1189,7 @@ export class ReviewView extends ItemView {
 		if (sourceFile) {
 			void this.app.workspace.openLinkText(sourceFile.path, "", false);
 		} else {
-			new Notice(`Source note "${card.sourceNoteName}" not found`);
+			notify().warning(`Source note "${card.sourceNoteName}" not found`);
 		}
 	}
 
@@ -1581,7 +1581,7 @@ export class ReviewView extends ItemView {
 		if (card.sourceNoteName) {
 			this.handleOpenSourceNote();
 		} else {
-			new Notice("This card has no associated source note");
+			notify().info("This card has no associated source note");
 		}
 	}
 
