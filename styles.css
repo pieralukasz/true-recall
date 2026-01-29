@@ -9,6 +9,7 @@
       "Courier New", monospace;
     --ep-color-red-500: oklch(63.7% 0.237 25.331);
     --ep-color-red-600: oklch(57.7% 0.245 27.325);
+    --ep-color-red-700: oklch(50.5% 0.213 27.518);
     --ep-color-orange-500: oklch(70.5% 0.213 47.604);
     --ep-color-amber-400: oklch(82.8% 0.189 84.429);
     --ep-color-yellow-500: oklch(79.5% 0.184 86.047);
@@ -30,6 +31,8 @@
     --ep-text-2xl--line-height: calc(2 / 1.5);
     --ep-text-3xl: 1.875rem;
     --ep-text-3xl--line-height: calc(2.25 / 1.875);
+    --ep-text-4xl: 2.25rem;
+    --ep-text-4xl--line-height: calc(2.5 / 2.25);
     --ep-text-5xl: 3rem;
     --ep-text-5xl--line-height: 1;
     --ep-font-weight-medium: 500;
@@ -467,6 +470,9 @@
   .ep\:max-h-\[350px\] {
     max-height: 350px;
   }
+  .ep\:max-h-\[500px\] {
+    max-height: 500px;
+  }
   .ep\:min-h-0 {
     min-height: calc(var(--ep-spacing) * 0);
   }
@@ -785,6 +791,18 @@
     --tw-border-style: none;
     border-style: none;
   }
+  .ep\:border-blue-500\/30 {
+    border-color: var(--ep-color-blue-500);
+    @supports (color: color-mix(in lab, red, red)) {
+      border-color: color-mix(in oklab, var(--ep-color-blue-500) 30%, transparent);
+    }
+  }
+  .ep\:border-green-500\/30 {
+    border-color: var(--ep-color-green-500);
+    @supports (color: color-mix(in lab, red, red)) {
+      border-color: color-mix(in oklab, var(--ep-color-green-500) 30%, transparent);
+    }
+  }
   .ep\:border-obs-border {
     border-color: var(--ep-color-obs-border);
   }
@@ -793,6 +811,12 @@
   }
   .ep\:border-obs-modifier-border {
     border-color: var(--ep-color-obs-modifier-border);
+  }
+  .ep\:border-orange-500\/30 {
+    border-color: var(--ep-color-orange-500);
+    @supports (color: color-mix(in lab, red, red)) {
+      border-color: color-mix(in oklab, var(--ep-color-orange-500) 30%, transparent);
+    }
   }
   .ep\:border-red-500\/30 {
     border-color: var(--ep-color-red-500);
@@ -826,6 +850,12 @@
   }
   .ep\:bg-blue-500 {
     background-color: var(--ep-color-blue-500);
+  }
+  .ep\:bg-blue-500\/10 {
+    background-color: var(--ep-color-blue-500);
+    @supports (color: color-mix(in lab, red, red)) {
+      background-color: color-mix(in oklab, var(--ep-color-blue-500) 10%, transparent);
+    }
   }
   .ep\:bg-blue-500\/15 {
     background-color: var(--ep-color-blue-500);
@@ -890,6 +920,12 @@
   .ep\:bg-orange-500 {
     background-color: var(--ep-color-orange-500);
   }
+  .ep\:bg-orange-500\/10 {
+    background-color: var(--ep-color-orange-500);
+    @supports (color: color-mix(in lab, red, red)) {
+      background-color: color-mix(in oklab, var(--ep-color-orange-500) 10%, transparent);
+    }
+  }
   .ep\:bg-orange-500\/15 {
     background-color: var(--ep-color-orange-500);
     @supports (color: color-mix(in lab, red, red)) {
@@ -916,6 +952,9 @@
     @supports (color: color-mix(in lab, red, red)) {
       background-color: color-mix(in oklab, var(--ep-color-red-500) 15%, transparent);
     }
+  }
+  .ep\:bg-red-600 {
+    background-color: var(--ep-color-red-600);
   }
   .ep\:bg-transparent {
     background-color: transparent;
@@ -1031,6 +1070,9 @@
   .ep\:py-\[60px\] {
     padding-block: 60px;
   }
+  .ep\:pt-1 {
+    padding-top: calc(var(--ep-spacing) * 1);
+  }
   .ep\:pt-2 {
     padding-top: calc(var(--ep-spacing) * 2);
   }
@@ -1046,6 +1088,9 @@
   .ep\:pr-2 {
     padding-right: calc(var(--ep-spacing) * 2);
   }
+  .ep\:pr-3 {
+    padding-right: calc(var(--ep-spacing) * 3);
+  }
   .ep\:pr-8 {
     padding-right: calc(var(--ep-spacing) * 8);
   }
@@ -1060,6 +1105,9 @@
   }
   .ep\:pl-6 {
     padding-left: calc(var(--ep-spacing) * 6);
+  }
+  .ep\:pl-8 {
+    padding-left: calc(var(--ep-spacing) * 8);
   }
   .ep\:pl-9 {
     padding-left: calc(var(--ep-spacing) * 9);
@@ -1095,6 +1143,10 @@
   .ep\:text-3xl {
     font-size: var(--ep-text-3xl);
     line-height: var(--tw-leading, var(--ep-text-3xl--line-height));
+  }
+  .ep\:text-4xl {
+    font-size: var(--ep-text-4xl);
+    line-height: var(--tw-leading, var(--ep-text-4xl--line-height));
   }
   .ep\:text-5xl {
     font-size: var(--ep-text-5xl);
@@ -1527,6 +1579,13 @@
     &:hover {
       @media (hover: hover) {
         background-color: var(--ep-color-red-600);
+      }
+    }
+  }
+  .ep\:hover\:bg-red-700 {
+    &:hover {
+      @media (hover: hover) {
+        background-color: var(--ep-color-red-700);
       }
     }
   }
