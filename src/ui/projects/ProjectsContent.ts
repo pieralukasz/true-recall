@@ -6,6 +6,7 @@ import {
 	setIcon,
 	MarkdownRenderer,
 	Platform,
+	Menu,
 	type App,
 	type Component,
 } from "obsidian";
@@ -27,6 +28,12 @@ export interface ProjectsContentProps {
 	onCreateFromNote: () => void;
 	onRefresh: () => void;
 	onToggleExpand: (projectId: string) => void;
+	// Selection props
+	selectionMode: "normal" | "selecting";
+	selectedNotePaths: Set<string>;
+	onEnterSelectionMode: (notePath: string) => void;
+	onExitSelectionMode: () => void;
+	onToggleNoteSelection: (notePath: string) => void;
 }
 
 /**
@@ -333,20 +340,30 @@ export class ProjectsContent extends BaseComponent {
 		container: HTMLElement,
 		notes: ProjectNoteInfo[]
 	): void {
+		const { selectionMode, selectedNotePaths } = this.props;
 		const notesContainer = container.createDiv({
 			cls: "ep:border-t ep:border-obs-modifier-border",
 		});
 
 		for (const note of notes) {
+			const isSelected = selectedNotePaths.has(note.path);
+
 			const noteItem = notesContainer.createDiv({
-				cls: "ep:flex ep:items-center ep:gap-2 ep:py-2 ep:px-3 ep:pl-11 ep:hover:bg-obs-modifier-hover ep:transition-colors ep:cursor-pointer",
+				cls: `ep:flex ep:items-center ep:gap-2 ep:py-2 ep:px-3 ep:pl-11 ep:hover:bg-obs-modifier-hover ep:transition-colors ep:cursor-pointer${isSelected ? " ep:bg-obs-modifier-hover" : ""}`,
 			});
 
-			// Note icon
-			const iconEl = noteItem.createSpan({
-				cls: "ep:text-obs-muted",
-			});
-			setIcon(iconEl, "file-text");
+			// Checkbox (only in selection mode)
+			if (selectionMode === "selecting") {
+				const checkbox = noteItem.createEl("input", {
+					type: "checkbox",
+					cls: "ep:w-4 ep:h-4 ep:cursor-pointer ep:flex-shrink-0",
+				});
+				checkbox.checked = isSelected;
+				this.events.addEventListener(checkbox, "click", (e) => {
+					e.stopPropagation();
+					this.props.onToggleNoteSelection(note.path);
+				});
+			}
 
 			// Note name as clickable wiki link
 			const nameEl = noteItem.createDiv({
@@ -360,28 +377,110 @@ export class ProjectsContent extends BaseComponent {
 				this.props.component
 			);
 
-			// Handle internal link clicks
-			this.events.addEventListener(nameEl, "click", (e) => {
-				const target = e.target as HTMLElement;
-				const linkEl = target.closest("a.internal-link");
-				if (!linkEl) return;
+			// Handle clicks on note item
+			this.events.addEventListener(noteItem, "click", (e) => {
+				// Don't trigger if clicked on checkbox
+				if (
+					(e.target as HTMLElement).closest("input[type=checkbox]")
+				) {
+					return;
+				}
 
-				e.preventDefault();
-				e.stopPropagation();
-				const href = linkEl.getAttribute("data-href");
-				if (href) {
-					void this.props.app.workspace.openLinkText(href, "", false);
+				// Check if clicked on internal link
+				const linkEl = (e.target as HTMLElement).closest(
+					"a.internal-link"
+				);
+				if (linkEl) {
+					e.preventDefault();
+					e.stopPropagation();
+					const href = linkEl.getAttribute("data-href");
+					if (href) {
+						void this.props.app.workspace.openLinkText(
+							href,
+							"",
+							false
+						);
+					}
+					return;
+				}
+
+				// In selection mode, toggle selection
+				if (selectionMode === "selecting") {
+					this.props.onToggleNoteSelection(note.path);
 				}
 			});
 
-			// Card count
+			// Long press for entering selection mode (mobile-friendly)
+			this.setupLongPress(noteItem, () => {
+				if (selectionMode !== "selecting") {
+					this.props.onEnterSelectionMode(note.path);
+				}
+			});
+
+			// Context menu for "Select" option (when not in selection mode)
+			if (selectionMode !== "selecting") {
+				this.events.addEventListener(noteItem, "contextmenu", (e) => {
+					e.preventDefault();
+					this.showNoteContextMenu(e, note);
+				});
+			}
+
+			// Card count - colored when there are cards to review
+			const hasDueCards = note.newCount > 0 || note.learningCount > 0 || note.dueCount > 0;
 			const cardCountText =
 				note.cardCount === 1 ? "1 card" : `${note.cardCount} cards`;
+
+			// Green when has cards to review, muted otherwise
+			const colorClass = hasDueCards ? "ep:text-green-500" : "ep:text-obs-muted";
+
 			noteItem.createSpan({
 				text: cardCountText,
-				cls: "ep:text-ui-smaller ep:text-obs-muted ep:whitespace-nowrap",
+				cls: `ep:text-ui-smaller ep:whitespace-nowrap ep:flex-shrink-0 ${colorClass}`,
 			});
 		}
+	}
+
+	/**
+	 * Setup long press handler for entering selection mode (mobile-friendly)
+	 */
+	private setupLongPress(element: HTMLElement, callback: () => void): void {
+		let longPressTimer: ReturnType<typeof setTimeout> | null = null;
+
+		this.events.addEventListener(element, "pointerdown", () => {
+			longPressTimer = setTimeout(() => {
+				callback();
+				longPressTimer = null;
+			}, 500);
+		});
+
+		this.events.addEventListener(element, "pointerup", () => {
+			if (longPressTimer) {
+				clearTimeout(longPressTimer);
+				longPressTimer = null;
+			}
+		});
+
+		this.events.addEventListener(element, "pointerleave", () => {
+			if (longPressTimer) {
+				clearTimeout(longPressTimer);
+				longPressTimer = null;
+			}
+		});
+	}
+
+	/**
+	 * Show context menu for note with "Select" option
+	 */
+	private showNoteContextMenu(e: MouseEvent, note: ProjectNoteInfo): void {
+		const menu = new Menu();
+
+		menu.addItem((item) => {
+			item.setTitle("Select")
+				.setIcon("check-square")
+				.onClick(() => this.props.onEnterSelectionMode(note.path));
+		});
+
+		menu.showAtMouseEvent(e);
 	}
 
 	updateProps(props: Partial<ProjectsContentProps>): void {

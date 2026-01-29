@@ -1247,7 +1247,8 @@ export class FlashcardPanelView extends ItemView {
     }
 
     /**
-     * Save flashcard and generate additional ones with AI
+     * Process flashcard with AI and show preview for approval
+     * Does NOT save anything until user confirms in preview modal
      */
     private async handleAddCardSaveWithAI(
         question: string,
@@ -1263,27 +1264,18 @@ export class FlashcardPanelView extends ItemView {
             return;
         }
 
-        // Get or create sourceUid for the current file
-        const frontmatterService = this.flashcardManager.getFrontmatterService();
-        let sourceUid = await frontmatterService.getSourceNoteUid(state.currentFile);
-        if (!sourceUid) {
-            sourceUid = frontmatterService.generateUid();
-            await frontmatterService.setSourceNoteUid(state.currentFile, sourceUid);
-        }
-
         try {
-            // Step 1: Save the manual flashcard first
-            await this.flashcardManager.addSingleFlashcard(question, answer, sourceUid);
-            new Notice("Flashcard added! Generating more...");
+            new Notice("Processing flashcard with AI...");
 
-            // Step 2: Generate additional flashcards with AI
-            const contextPrompt = `User's flashcard for context:
+            // Process the flashcard with AI according to instruction
+            // (NOT generating additional - transforming/processing the input)
+            const contextPrompt = `Process this flashcard according to the instruction:
 Q: ${question}
 A: ${answer}
 
-User's instruction: ${aiInstruction}
+Instruction: ${aiInstruction}
 
-Generate additional flashcards based on the context and instruction above.`;
+Transform/process the flashcard based on the instruction above.`;
 
             const flashcardsMarkdown = await this.openRouterService.generateFlashcards(
                 contextPrompt,
@@ -1292,27 +1284,25 @@ Generate additional flashcards based on the context and instruction above.`;
             );
 
             if (flashcardsMarkdown.trim() === "NO_NEW_CARDS") {
-                new Notice("No additional flashcards generated.");
+                new Notice("AI could not process the flashcard. Please try different instructions.");
                 this.stateManager.setAddCardExpanded(false);
-                await this.loadFlashcardInfo();
                 return;
             }
 
-            // Parse generated flashcards
+            // Parse processed flashcards
             const { FlashcardParserService } = await import("../../services/flashcard/flashcard-parser.service");
             const parser = new FlashcardParserService();
-            const generatedFlashcards = parser.extractFlashcards(flashcardsMarkdown);
+            const processedFlashcards = parser.extractFlashcards(flashcardsMarkdown);
 
-            if (generatedFlashcards.length === 0) {
+            if (processedFlashcards.length === 0) {
                 new Notice("No flashcards were generated. Please try different instructions.");
                 this.stateManager.setAddCardExpanded(false);
-                await this.loadFlashcardInfo();
                 return;
             }
 
-            // Step 3: Show review modal for selection
+            // Show review modal for approval - NOTHING saved yet
             const modal = new FlashcardReviewModal(this.app, {
-                initialFlashcards: generatedFlashcards,
+                initialFlashcards: processedFlashcards,
                 sourceNoteName: state.currentFile.basename,
                 openRouterService: this.openRouterService,
             });
@@ -1320,13 +1310,12 @@ Generate additional flashcards based on the context and instruction above.`;
             const result = await modal.openAndWait();
 
             if (result.cancelled || !result.flashcards || result.flashcards.length === 0) {
-                new Notice("No additional flashcards saved.");
+                new Notice("No flashcards saved.");
                 this.stateManager.setAddCardExpanded(false);
-                await this.loadFlashcardInfo();
                 return;
             }
 
-            // Step 4: Save selected flashcards
+            // Only now save the approved flashcards
             const flashcardsWithIds = result.flashcards.map((f) => ({
                 id: f.id || crypto.randomUUID(),
                 question: f.question,
@@ -1334,7 +1323,7 @@ Generate additional flashcards based on the context and instruction above.`;
             }));
 
             await this.flashcardManager.saveFlashcardsToSql(state.currentFile, flashcardsWithIds);
-            new Notice(`Saved ${result.flashcards.length} additional flashcard(s)`);
+            new Notice(`Saved ${result.flashcards.length} flashcard(s)`);
 
             // Collapse form and reload
             this.stateManager.setAddCardExpanded(false);
@@ -1347,7 +1336,8 @@ Generate additional flashcards based on the context and instruction above.`;
     }
 
     /**
-     * Generate additional flashcards based on an existing card (used in edit mode)
+     * Process flashcard with AI and add results as new cards (used in edit mode)
+     * Original card is already updated - this generates processed versions as NEW cards
      */
     private async generateAdditionalCards(
         question: string,
@@ -1364,16 +1354,16 @@ Generate additional flashcards based on the context and instruction above.`;
         }
 
         try {
-            new Notice("Generating additional flashcards...");
+            new Notice("Processing with AI...");
 
-            // Generate flashcards with AI using edited card as context
-            const contextPrompt = `User's flashcard for context:
+            // Process the flashcard with AI according to instruction
+            const contextPrompt = `Process this flashcard according to the instruction:
 Q: ${question}
 A: ${answer}
 
-User's instruction: ${aiInstruction}
+Instruction: ${aiInstruction}
 
-Generate additional flashcards based on the context and instruction above.`;
+Transform/process the flashcard based on the instruction above.`;
 
             const flashcardsMarkdown = await this.openRouterService.generateFlashcards(
                 contextPrompt,
@@ -1382,23 +1372,23 @@ Generate additional flashcards based on the context and instruction above.`;
             );
 
             if (flashcardsMarkdown.trim() === "NO_NEW_CARDS") {
-                new Notice("No additional flashcards generated.");
+                new Notice("AI could not process the flashcard.");
                 return;
             }
 
-            // Parse generated flashcards
+            // Parse processed flashcards
             const { FlashcardParserService } = await import("../../services/flashcard/flashcard-parser.service");
             const parser = new FlashcardParserService();
-            const generatedFlashcards = parser.extractFlashcards(flashcardsMarkdown);
+            const processedFlashcards = parser.extractFlashcards(flashcardsMarkdown);
 
-            if (generatedFlashcards.length === 0) {
+            if (processedFlashcards.length === 0) {
                 new Notice("No flashcards were generated. Please try different instructions.");
                 return;
             }
 
             // Show review modal for selection
             const modal = new FlashcardReviewModal(this.app, {
-                initialFlashcards: generatedFlashcards,
+                initialFlashcards: processedFlashcards,
                 sourceNoteName: state.currentFile.basename,
                 openRouterService: this.openRouterService,
             });
@@ -1410,7 +1400,7 @@ Generate additional flashcards based on the context and instruction above.`;
                 return;
             }
 
-            // Save selected flashcards
+            // Save selected flashcards as NEW (original remains unchanged)
             const flashcardsWithIds = result.flashcards.map((f) => ({
                 id: f.id || crypto.randomUUID(),
                 question: f.question,
@@ -1418,11 +1408,11 @@ Generate additional flashcards based on the context and instruction above.`;
             }));
 
             await this.flashcardManager.saveFlashcardsToSql(state.currentFile, flashcardsWithIds);
-            new Notice(`Saved ${result.flashcards.length} additional flashcard(s)`);
+            new Notice(`Saved ${result.flashcards.length} processed flashcard(s)`);
             await this.loadFlashcardInfo();
 
         } catch (error) {
-            console.error("Error generating additional flashcards:", error);
+            console.error("Error processing flashcard with AI:", error);
             new Notice(`Error: ${error instanceof Error ? error.message : String(error)}`);
         }
     }

@@ -425,10 +425,19 @@ Output:
 What is **[[machine learning]]**? #flashcard
 ???`;
 
-/** System prompt for context-based flashcard generation (used with Add & Generate) */
-export const CONTEXT_BASED_GENERATION_PROMPT = `You are an expert flashcard generator. Create flashcards based on the user's example flashcard and their instructions.
+/** System prompt for AI-assisted flashcard processing (used with Add & Generate) */
+export const CONTEXT_BASED_GENERATION_PROMPT = `You are an expert flashcard processor.
+Transform the given flashcard according to the user's instruction.
 
-The user has created a flashcard manually. Use it as CONTEXT to generate ADDITIONAL related flashcards.
+INPUT: A flashcard (Q+A) and an instruction
+OUTPUT: Processed flashcard(s) based on the instruction
+
+Examples of instructions and expected behavior:
+- "simplify" → Make the Q+A simpler, easier to understand
+- "split into smaller cards" → Break into multiple atomic flashcards
+- "add examples" → Expand the answer with concrete examples
+- "make it more detailed" → Add more information to the answer
+- "reverse" → Create a reverse card (answer becomes question)
 
 OUTPUT FORMAT:
 [Question text] #flashcard
@@ -437,30 +446,48 @@ OUTPUT FORMAT:
 (Note: The #flashcard tag belongs to the question line. The answer must NOT contain the #flashcard tag.)
 
 RULES:
-1. Questions and answers must be SHORT and ATOMIC
-2. One flashcard = ONE piece of information
-3. BOLD the keyword in every question using **bold**
-4. Wrap key terms in **[[backlinks]]** (bold backlinks)
-5. Use <br><br> to split questions/answers into logical parts
-6. Generate flashcards that COMPLEMENT the example (don't duplicate it)
-7. Follow the user's instructions for what kind of flashcards to generate
+1. Apply the instruction to TRANSFORM the flashcard
+2. If splitting, create multiple cards - each atomic (one concept)
+3. Questions and answers must be SHORT and CLEAR
+4. BOLD the keyword in every question using **bold**
+5. Wrap key terms in **[[backlinks]]** (bold backlinks)
+6. Use <br><br> to split questions/answers into logical parts
 
-EXAMPLE INPUT:
-User's flashcard:
-Q: What is **[[photosynthesis]]**?
-A: The process by which plants convert light energy into chemical energy
+EXAMPLE 1 - Simplify:
+Input flashcard:
+Q: What is photosynthesis?
+A: The process by which plants convert light energy into chemical energy stored in glucose
 
-User's instruction: create more flashcards about plant biology
+Instruction: simplify
 
-OUTPUT:
-What are the **[[products of photosynthesis]]**? #flashcard
-Glucose and oxygen
+Output:
+What is **[[photosynthesis]]**? #flashcard
+Plants converting light into food energy
 
-Where does **[[photosynthesis]]** occur in plant cells? #flashcard
-In the **[[chloroplasts]]**
+EXAMPLE 2 - Split:
+Input flashcard:
+Q: What is photosynthesis?
+A: Plants use sunlight, water, and CO2 to produce glucose and oxygen
 
-What **[[pigment]]** captures light energy in plants? #flashcard
-**[[Chlorophyll]]**`;
+Instruction: split into smaller cards
+
+Output:
+What do **[[plants]]** need for photosynthesis? #flashcard
+Sunlight, water, and **[[CO2]]**
+
+What do **[[plants]]** produce during photosynthesis? #flashcard
+**[[Glucose]]** and **[[oxygen]]**
+
+EXAMPLE 3 - Add examples:
+Input flashcard:
+Q: What is a mammal?
+A: A warm-blooded animal that feeds milk to its young
+
+Instruction: add examples
+
+Output:
+What is a **[[mammal]]**? #flashcard
+A warm-blooded animal that feeds milk to its young<br><br>Examples: dogs, cats, whales, humans`;
 
 /** OpenRouter API endpoint */
 export const OPENROUTER_API_URL =
