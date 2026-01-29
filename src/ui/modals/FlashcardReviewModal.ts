@@ -5,9 +5,9 @@
  */
 import { App, Notice, Component } from "obsidian";
 import { BaseModal } from "./BaseModal";
-import type { FlashcardItem, GeneratedNoteType } from "../../types";
+import type { FlashcardItem, GeneratedNoteType, TrueRecallSettings } from "../../types";
 import type { OpenRouterService } from "../../services";
-import { GENERATED_NOTE_TYPES } from "../../constants";
+import { GENERATED_NOTE_TYPES, DEFAULT_REFINE_PRESETS } from "../../constants";
 import { createModalCardItem, ModalCardItem } from "./components/ModalCardItem";
 import { createExpandableAddCard, ExpandableAddCard } from "./components/ExpandableAddCard";
 
@@ -23,16 +23,8 @@ export interface FlashcardReviewModalOptions {
 	initialFlashcards: FlashcardItem[];
 	sourceNoteName?: string;
 	openRouterService: OpenRouterService;
+	settings: TrueRecallSettings;
 }
-
-// Quick refine action presets
-const REFINE_QUICK_ACTIONS = [
-	{ label: "More specific", instruction: "Make questions more specific and focused" },
-	{ label: "Add examples", instruction: "Add concrete examples to answers" },
-	{ label: "Simplify", instruction: "Use simpler language, avoid jargon" },
-	{ label: "Split complex", instruction: "Split complex cards into multiple simpler ones" },
-	{ label: "Reverse", instruction: "Create reverse flashcards by swapping the perspective: turn each answer into a question and the original question into an answer. For example, if the card is 'What is a dog? → An animal', create a reverse like 'What animal is known as human's best friend? → A dog'. Make the new questions natural and contextual." },
-];
 
 /**
  * Modal state
@@ -154,24 +146,63 @@ export class FlashcardReviewModal extends BaseModal {
 			cls: "ep:mb-3 ep:p-2 ep:bg-obs-secondary ep:rounded-md",
 		});
 
-		// Row 1: Quick action buttons
-		const quickActionsRow = sectionEl.createDiv({
-			cls: "ep:flex ep:items-center ep:gap-2 ep:flex-wrap ep:mb-2",
+		// Row 1: Preset dropdown
+		const dropdownRow = sectionEl.createDiv({
+			cls: "ep:flex ep:items-center ep:gap-2 ep:mb-2",
 		});
 
-		for (const action of REFINE_QUICK_ACTIONS) {
-			const btn = quickActionsRow.createEl("button", {
-				text: action.label,
-				cls: "ep:py-1 ep:px-2 ep:text-ui-smaller ep:bg-obs-primary ep:text-obs-muted ep:border ep:border-obs-border ep:rounded ep:cursor-pointer ep:transition-colors ep:hover:bg-obs-modifier-hover ep:hover:text-obs-normal ep:hover:border-obs-interactive",
-			});
-			btn.addEventListener("click", () => {
-				if (this.refineInputEl) {
-					this.refineInputEl.value = action.instruction;
-					this.state.refineInstructions = action.instruction;
-					void this.handleRefine();
-				}
+		const select = dropdownRow.createEl("select", {
+			cls: "ep:flex-1 ep:py-1.5 ep:px-2 ep:text-ui-smaller ep:bg-obs-primary ep:text-obs-normal ep:border ep:border-obs-border ep:rounded ep:cursor-pointer ep:focus:outline-none ep:focus:border-obs-interactive",
+		});
+
+		// Default option (placeholder)
+		const defaultOption = select.createEl("option", {
+			text: "Select a preset...",
+			value: "",
+		});
+		defaultOption.selected = true;
+
+		// Default presets group
+		const defaultGroup = select.createEl("optgroup");
+		defaultGroup.label = "── Defaults ──";
+
+		for (const preset of DEFAULT_REFINE_PRESETS) {
+			defaultGroup.createEl("option", {
+				text: preset.label,
+				value: preset.id,
 			});
 		}
+
+		// Custom presets group (only if there are custom presets)
+		const customPresets = this.options.settings.customRefinePresets;
+		if (customPresets.length > 0) {
+			const customGroup = select.createEl("optgroup");
+			customGroup.label = "── Custom ──";
+
+			for (const preset of customPresets) {
+				customGroup.createEl("option", {
+					text: preset.label,
+					value: preset.id,
+				});
+			}
+		}
+
+		// Handle selection change
+		select.addEventListener("change", () => {
+			const selectedId = select.value;
+			if (!selectedId) return;
+
+			const allPresets = [...DEFAULT_REFINE_PRESETS, ...customPresets];
+			const preset = allPresets.find((p) => p.id === selectedId);
+
+			if (preset && this.refineInputEl) {
+				this.refineInputEl.value = preset.instruction;
+				this.state.refineInstructions = preset.instruction;
+			}
+
+			// Reset dropdown to placeholder for next selection
+			select.value = "";
+		});
 
 		// Row 2: Input + Refine button
 		const inputRow = sectionEl.createDiv({
@@ -180,7 +211,7 @@ export class FlashcardReviewModal extends BaseModal {
 
 		// Textarea (2 lines)
 		this.refineInputEl = inputRow.createEl("textarea", {
-			placeholder: "Custom instructions...",
+			placeholder: "Custom instructions or select a preset above...",
 			cls: "ep:flex-1 ep:min-w-32 ep:py-1.5 ep:px-2 ep:border ep:border-obs-border ep:rounded ep:bg-obs-primary ep:text-obs-normal ep:text-ui-smaller ep:focus:outline-none ep:focus:border-obs-interactive ep:resize-none",
 		}) as HTMLTextAreaElement;
 		this.refineInputEl.rows = 2;

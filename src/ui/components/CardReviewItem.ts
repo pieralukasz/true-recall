@@ -167,7 +167,7 @@ export class CardReviewItem extends BaseComponent {
 		this.editableField = createEditableTextField(this.element, {
 			initialValue: content,
 			showToolbar: true,
-			toolbarButtons: TOOLBAR_BUTTONS.MINIMAL,
+			toolbarButtons: TOOLBAR_BUTTONS.UNIFIED,
 			toolbarPositioned: false, // Don't use absolute positioning here
 			field,
 			autoFocus: true,

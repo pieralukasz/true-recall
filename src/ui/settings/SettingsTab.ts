@@ -10,7 +10,7 @@ import {
 	FSRS_CONFIG,
 	SYSTEM_PROMPT,
 } from "../../constants";
-import { TemplatePickerModal, DeviceSelectionModal, FirstSyncConflictModal } from "../modals";
+import { TemplatePickerModal, DeviceSelectionModal, FirstSyncConflictModal, RefinePresetEditorModal } from "../modals";
 import type { AIModelKey, AIModelInfo } from "../../constants";
 import type {
 	TrueRecallSettings,
@@ -18,6 +18,7 @@ import type {
 	NewCardOrder,
 	ReviewOrder,
 	NewReviewMix,
+	RefinePreset,
 } from "../../types";
 
 // Re-export for convenience
@@ -407,6 +408,139 @@ export class TrueRecallSettingTab extends PluginSettingTab {
 					this.display();
 				})
 			);
+
+		// ===== Custom Refine Presets Section =====
+		container.createEl("h2", { text: "Custom Refine Presets" });
+
+		const presetsInfo = container.createDiv({
+			cls: "setting-item-description",
+		});
+		presetsInfo.innerHTML = `
+			<p>Add your own preset instructions for refining flashcards with AI. These appear in the refine dropdown when reviewing generated flashcards.</p>
+		`;
+
+		// Preset list container
+		const presetsListEl = container.createDiv({
+			cls: "ep:mb-4",
+		});
+		this.renderPresetsList(presetsListEl);
+
+		// Add preset button
+		new Setting(container)
+			.setName("Add custom preset")
+			.setDesc("Create a new refine preset with custom instructions")
+			.addButton((button) =>
+				button.setButtonText("Add Preset").onClick(async () => {
+					await this.openPresetEditorModal(null, presetsListEl);
+				})
+			);
+	}
+
+	/**
+	 * Render the list of custom presets
+	 */
+	private renderPresetsList(container: HTMLElement): void {
+		container.empty();
+
+		const presets = this.plugin.settings.customRefinePresets;
+
+		if (presets.length === 0) {
+			container.createDiv({
+				text: "No custom presets yet. Add one to get started.",
+				cls: "ep:text-obs-muted ep:italic ep:py-4",
+			});
+			return;
+		}
+
+		const list = container.createDiv({
+			cls: "ep:border ep:border-obs-border ep:rounded-md ep:overflow-hidden",
+		});
+
+		for (const preset of presets) {
+			this.renderPresetItem(list, preset, container);
+		}
+	}
+
+	/**
+	 * Render a single preset item
+	 */
+	private renderPresetItem(
+		container: HTMLElement,
+		preset: RefinePreset,
+		listContainer: HTMLElement
+	): void {
+		const item = container.createDiv({
+			cls: "ep:flex ep:items-center ep:justify-between ep:p-3 ep:border-b ep:border-obs-border ep:last:border-b-0 ep:hover:bg-obs-modifier-hover ep:group",
+		});
+
+		// Info section
+		const info = item.createDiv({ cls: "ep:flex-1 ep:min-w-0" });
+		info.createDiv({
+			text: preset.label,
+			cls: "ep:font-medium ep:text-obs-normal ep:text-ui-small",
+		});
+		info.createDiv({
+			text: this.truncatePrompt(preset.instruction, 80),
+			cls: "ep:text-obs-muted ep:text-ui-smaller ep:truncate",
+		});
+
+		// Action buttons
+		const actions = item.createDiv({
+			cls: "ep:flex ep:gap-2 ep:opacity-0 ep:group-hover:opacity-100 ep:transition-opacity ep:ml-2",
+		});
+
+		const editBtn = actions.createEl("button", {
+			text: "Edit",
+			cls: "ep:py-1 ep:px-2 ep:text-ui-smaller ep:bg-obs-secondary ep:text-obs-normal ep:border ep:border-obs-border ep:rounded ep:cursor-pointer ep:hover:bg-obs-modifier-hover",
+		});
+		editBtn.addEventListener("click", async () => {
+			await this.openPresetEditorModal(preset, listContainer);
+		});
+
+		const deleteBtn = actions.createEl("button", {
+			text: "Delete",
+			cls: "ep:py-1 ep:px-2 ep:text-ui-smaller ep:bg-red-500/10 ep:text-red-500 ep:border ep:border-red-500/30 ep:rounded ep:cursor-pointer ep:hover:bg-red-500/20",
+		});
+		deleteBtn.addEventListener("click", async () => {
+			this.plugin.settings.customRefinePresets =
+				this.plugin.settings.customRefinePresets.filter(
+					(p) => p.id !== preset.id
+				);
+			await this.plugin.saveSettings();
+			this.renderPresetsList(listContainer);
+		});
+	}
+
+	/**
+	 * Open modal to add/edit a preset
+	 */
+	private async openPresetEditorModal(
+		preset: RefinePreset | null,
+		listContainer: HTMLElement
+	): Promise<void> {
+		const modal = new RefinePresetEditorModal(this.app, {
+			preset: preset ?? undefined,
+			mode: preset ? "edit" : "add",
+		});
+
+		const result = await modal.openAndWait();
+
+		if (!result.cancelled && result.preset) {
+			if (preset) {
+				// Update existing
+				const index = this.plugin.settings.customRefinePresets.findIndex(
+					(p) => p.id === preset.id
+				);
+				if (index !== -1) {
+					this.plugin.settings.customRefinePresets[index] = result.preset;
+				}
+			} else {
+				// Add new
+				this.plugin.settings.customRefinePresets.push(result.preset);
+			}
+			await this.plugin.saveSettings();
+			this.renderPresetsList(listContainer);
+		}
 	}
 
 	private renderSchedulingTab(container: HTMLElement): void {

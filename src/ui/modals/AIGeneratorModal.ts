@@ -6,7 +6,7 @@
 import { App, Notice } from "obsidian";
 import { BaseModal } from "./BaseModal";
 import { FlashcardReviewModal } from "./FlashcardReviewModal";
-import type { FlashcardItem, GeneratedNoteType } from "../../types";
+import type { FlashcardItem, GeneratedNoteType, TrueRecallSettings } from "../../types";
 import {
 	OpenRouterService,
 	FlashcardParserService,
@@ -25,6 +25,7 @@ export interface AIGeneratorResult {
 export interface AIGeneratorModalOptions {
 	openRouterService: OpenRouterService;
 	customSystemPrompt?: string;
+	settings: TrueRecallSettings;
 }
 
 /**
@@ -158,6 +159,7 @@ export class AIGeneratorModal extends BaseModal {
 				initialFlashcards: flashcards,
 				sourceNoteName: undefined,
 				openRouterService: this.options.openRouterService,
+				settings: this.options.settings,
 			});
 
 			const reviewResult = await reviewModal.openAndWait();

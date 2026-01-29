@@ -63,10 +63,6 @@
     --ep-color-obs-border: var(--background-modifier-border);
     --ep-color-obs-modifier-border: var(--background-modifier-border);
     --ep-color-obs-modifier-border-hover: var(--background-modifier-border-hover);
-    --ep-color-obs-orange: var(--color-orange);
-    --ep-color-obs-yellow: var(--color-yellow);
-    --ep-color-obs-green: var(--color-green);
-    --ep-color-obs-blue: var(--color-blue);
     --ep-text-ui-smaller: var(--font-ui-smaller);
     --ep-text-ui-small: var(--font-ui-small);
     --ep-text-ui-medium: var(--font-ui-medium);
@@ -480,6 +476,9 @@
   .ep\:min-h-20 {
     min-height: calc(var(--ep-spacing) * 20);
   }
+  .ep\:min-h-32 {
+    min-height: calc(var(--ep-spacing) * 32);
+  }
   .ep\:min-h-35 {
     min-height: calc(var(--ep-spacing) * 35);
   }
@@ -822,20 +821,8 @@
   .ep\:\!bg-obs-modifier-border {
     background-color: var(--ep-color-obs-modifier-border) !important;
   }
-  .ep\:bg-\[rgba\(var\(--obs-blue-rgb\)\,0\.15\)\] {
-    background-color: rgba(var(--obs-blue-rgb),0.15);
-  }
-  .ep\:bg-\[rgba\(var\(--obs-green-rgb\)\,0\.15\)\] {
-    background-color: rgba(var(--obs-green-rgb),0.15);
-  }
   .ep\:bg-\[rgba\(var\(--obs-interactive-rgb\)\,0\.1\)\] {
     background-color: rgba(var(--obs-interactive-rgb),0.1);
-  }
-  .ep\:bg-\[rgba\(var\(--obs-orange-rgb\)\,0\.15\)\] {
-    background-color: rgba(var(--obs-orange-rgb),0.15);
-  }
-  .ep\:bg-\[rgba\(var\(--obs-yellow-rgb\)\,0\.15\)\] {
-    background-color: rgba(var(--obs-yellow-rgb),0.15);
   }
   .ep\:bg-blue-500 {
     background-color: var(--ep-color-blue-500);
@@ -1007,9 +994,6 @@
   }
   .ep\:py-0\.5 {
     padding-block: calc(var(--ep-spacing) * 0.5);
-  }
-  .ep\:py-0\.75 {
-    padding-block: calc(var(--ep-spacing) * 0.75);
   }
   .ep\:py-1 {
     padding-block: calc(var(--ep-spacing) * 1);
@@ -1228,17 +1212,11 @@
   .ep\:text-obs-accent {
     color: var(--ep-color-obs-accent);
   }
-  .ep\:text-obs-blue {
-    color: var(--ep-color-obs-blue);
-  }
   .ep\:text-obs-error {
     color: var(--ep-color-obs-error);
   }
   .ep\:text-obs-faint {
     color: var(--ep-color-obs-faint);
-  }
-  .ep\:text-obs-green {
-    color: var(--ep-color-obs-green);
   }
   .ep\:text-obs-interactive {
     color: var(--ep-color-obs-interactive);
@@ -1249,14 +1227,8 @@
   .ep\:text-obs-normal {
     color: var(--ep-color-obs-normal);
   }
-  .ep\:text-obs-orange {
-    color: var(--ep-color-obs-orange);
-  }
   .ep\:text-obs-warning {
     color: var(--ep-color-obs-warning);
-  }
-  .ep\:text-obs-yellow {
-    color: var(--ep-color-obs-yellow);
   }
   .ep\:text-orange-500 {
     color: var(--ep-color-orange-500);
