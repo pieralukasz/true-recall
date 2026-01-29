@@ -79,11 +79,6 @@ export {
     type OrphanedCardsActionModalOptions,
 } from "./OrphanedCardsActionModal";
 export {
-    BatchImportModal,
-    type BatchImportResult,
-    type BatchImportModalOptions,
-} from "./BatchImportModal";
-export {
     SimpleFlashcardEditorModal,
     flashcardToMarkdown,
     type SimpleFlashcardEditorResult,
