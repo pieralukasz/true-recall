@@ -169,32 +169,13 @@ export class FloatingGenerateButton {
 	}
 
 	private async generateFromSelection(file: TFile, text: string): Promise<void> {
-		const directGenerate = this.plugin.settings.floatingButtonDirectGenerate;
-
 		try {
-			// Step 1: Open InstructionsModal (unless direct generate is enabled)
-			let userInstructions: string | undefined;
-
-			if (!directGenerate) {
-				const { InstructionsModal } = await import("../modals/InstructionsModal");
-				const instructionsModal = new InstructionsModal(this.plugin.app, {
-					sourceText: text,
-					sourceNoteName: file.basename,
-				});
-
-				const instructionsResult = await instructionsModal.openAndWait();
-				if (instructionsResult.cancelled) {
-					return;
-				}
-				userInstructions = instructionsResult.instructions;
-			}
-
 			notify().generationStarted();
 
-			// Step 2: Generate flashcards with optional user instructions
+			// Generate flashcards directly
 			const flashcardsMarkdown = await this.plugin.openRouterService.generateFlashcards(
 				text,
-				userInstructions,
+				undefined,
 				this.plugin.settings.customGeneratePrompt || undefined
 			);
 
@@ -213,42 +194,30 @@ export class FloatingGenerateButton {
 				return;
 			}
 
-			if (directGenerate) {
-				// Direct generation: save immediately
-				const flashcardsWithIds = generatedFlashcards.map((f) => ({
-					id: f.id || crypto.randomUUID(),
-					question: f.question,
-					answer: f.answer,
-				}));
+			// Open review modal for preview
+			const { FlashcardReviewModal } = await import("../modals/FlashcardReviewModal");
+			const modal = new FlashcardReviewModal(this.plugin.app, {
+				initialFlashcards: generatedFlashcards,
+				sourceNoteName: file.basename,
+				openRouterService: this.plugin.openRouterService,
+				settings: this.plugin.settings,
+			});
 
-				await this.plugin.flashcardManager.saveFlashcardsToSql(file, flashcardsWithIds);
-				notify().cardsCreated(flashcardsWithIds.length);
-			} else {
-				// Step 3: Preview mode - open review modal
-				const { FlashcardReviewModal } = await import("../modals/FlashcardReviewModal");
-				const modal = new FlashcardReviewModal(this.plugin.app, {
-					initialFlashcards: generatedFlashcards,
-					sourceNoteName: file.basename,
-					openRouterService: this.plugin.openRouterService,
-					settings: this.plugin.settings,
-				});
+			const result = await modal.openAndWait();
 
-				const result = await modal.openAndWait();
-
-				if (result.cancelled || !result.flashcards || result.flashcards.length === 0) {
-					notify().info("Flashcard generation cancelled");
-					return;
-				}
-
-				const flashcardsWithIds = result.flashcards.map((f) => ({
-					id: f.id || crypto.randomUUID(),
-					question: f.question,
-					answer: f.answer,
-				}));
-
-				await this.plugin.flashcardManager.saveFlashcardsToSql(file, flashcardsWithIds);
-				notify().cardsCreated(result.flashcards.length);
+			if (result.cancelled || !result.flashcards || result.flashcards.length === 0) {
+				notify().info("Flashcard generation cancelled");
+				return;
 			}
+
+			const flashcardsWithIds = result.flashcards.map((f) => ({
+				id: f.id || crypto.randomUUID(),
+				question: f.question,
+				answer: f.answer,
+			}));
+
+			await this.plugin.flashcardManager.saveFlashcardsToSql(file, flashcardsWithIds);
+			notify().cardsCreated(result.flashcards.length);
 		} catch (error) {
 			notify().generationFailed(error);
 		}

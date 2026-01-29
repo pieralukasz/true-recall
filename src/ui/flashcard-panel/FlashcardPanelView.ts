@@ -739,11 +739,6 @@ export class FlashcardPanelView extends ItemView {
             requestAnimationFrame(() => {
                 if (this.contentDiv) this.contentDiv.scrollTop = scrollPosition;
             });
-
-            // If AI instruction provided, generate additional flashcards
-            if (result.aiInstruction) {
-                await this.generateAdditionalCards(result.question, result.answer, result.aiInstruction);
-            }
         } catch (error) {
             notify().operationFailed("update flashcard", error);
         }
@@ -1220,89 +1215,6 @@ Transform/process the flashcard based on the instruction above.`;
         } catch (error) {
             console.error("Error in Add & Generate:", error);
             notify().operationFailed("save flashcards", error);
-        }
-    }
-
-    /**
-     * Process flashcard with AI and add results as new cards (used in edit mode)
-     * Original card is already updated - this generates processed versions as NEW cards
-     */
-    private async generateAdditionalCards(
-        question: string,
-        answer: string,
-        aiInstruction: string
-    ): Promise<void> {
-        const state = this.stateManager.getState();
-        if (!state.currentFile) return;
-
-        // Check API key
-        if (!this.plugin.settings.openRouterApiKey) {
-            notify().aiNotConfigured();
-            return;
-        }
-
-        try {
-            notify().info("Processing with AI...");
-
-            // Process the flashcard with AI according to instruction
-            const contextPrompt = `Process this flashcard according to the instruction:
-Q: ${question}
-A: ${answer}
-
-Instruction: ${aiInstruction}
-
-Transform/process the flashcard based on the instruction above.`;
-
-            const flashcardsMarkdown = await this.openRouterService.generateFlashcards(
-                contextPrompt,
-                undefined,
-                CONTEXT_BASED_GENERATION_PROMPT
-            );
-
-            if (flashcardsMarkdown.trim() === "NO_NEW_CARDS") {
-                notify().warning("AI could not process the flashcard.");
-                return;
-            }
-
-            // Parse processed flashcards
-            const { FlashcardParserService } = await import("../../services/flashcard/flashcard-parser.service");
-            const parser = new FlashcardParserService();
-            const processedFlashcards = parser.extractFlashcards(flashcardsMarkdown);
-
-            if (processedFlashcards.length === 0) {
-                notify().warning("No flashcards were generated. Please try different instructions.");
-                return;
-            }
-
-            // Show review modal for selection
-            const modal = new FlashcardReviewModal(this.app, {
-                initialFlashcards: processedFlashcards,
-                sourceNoteName: state.currentFile.basename,
-                openRouterService: this.openRouterService,
-                settings: this.plugin.settings,
-            });
-
-            const result = await modal.openAndWait();
-
-            if (result.cancelled || !result.flashcards || result.flashcards.length === 0) {
-                notify().info("No additional flashcards saved.");
-                return;
-            }
-
-            // Save selected flashcards as NEW (original remains unchanged)
-            const flashcardsWithIds = result.flashcards.map((f) => ({
-                id: f.id || crypto.randomUUID(),
-                question: f.question,
-                answer: f.answer,
-            }));
-
-            await this.flashcardManager.saveFlashcardsToSql(state.currentFile, flashcardsWithIds);
-            notify().cardsCreated(result.flashcards.length);
-            await this.loadFlashcardInfo();
-
-        } catch (error) {
-            console.error("Error processing flashcard with AI:", error);
-            notify().operationFailed("process flashcard with AI", error);
         }
     }
 

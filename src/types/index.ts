@@ -26,7 +26,6 @@ export type {
     NewCardOrder,
     ReviewOrder,
     NewReviewMix,
-    RefinePreset,
 } from "./settings.types";
 export { extractFSRSSettings } from "./settings.types";
 

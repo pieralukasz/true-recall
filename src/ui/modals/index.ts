@@ -73,16 +73,6 @@ export {
     type FirstSyncChoice,
 } from "./FirstSyncConflictModal";
 export {
-    InstructionsModal,
-    type InstructionsModalResult,
-    type InstructionsModalOptions,
-} from "./InstructionsModal";
-export {
-    RefinePresetEditorModal,
-    type RefinePresetEditorResult,
-    type RefinePresetEditorModalOptions,
-} from "./RefinePresetEditorModal";
-export {
     OrphanedCardsActionModal,
     type OrphanedCardsActionResult,
     type OrphanedCardsAction,
