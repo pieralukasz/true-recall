@@ -455,9 +455,6 @@
   .ep\:h-px {
     height: 1px;
   }
-  .ep\:max-h-40 {
-    max-height: calc(var(--ep-spacing) * 40);
-  }
   .ep\:max-h-\[60vh\] {
     max-height: 60vh;
   }
@@ -482,14 +479,8 @@
   .ep\:min-h-20 {
     min-height: calc(var(--ep-spacing) * 20);
   }
-  .ep\:min-h-32 {
-    min-height: calc(var(--ep-spacing) * 32);
-  }
   .ep\:min-h-35 {
     min-height: calc(var(--ep-spacing) * 35);
-  }
-  .ep\:min-h-44 {
-    min-height: calc(var(--ep-spacing) * 44);
   }
   .ep\:min-h-64 {
     min-height: calc(var(--ep-spacing) * 64);
@@ -577,9 +568,6 @@
   }
   .ep\:min-w-20 {
     min-width: calc(var(--ep-spacing) * 20);
-  }
-  .ep\:min-w-32 {
-    min-width: calc(var(--ep-spacing) * 32);
   }
   .ep\:min-w-\[50px\] {
     min-width: 50px;
@@ -697,6 +685,12 @@
   }
   .ep\:gap-8 {
     gap: calc(var(--ep-spacing) * 8);
+  }
+  .ep\:gap-x-4 {
+    column-gap: calc(var(--ep-spacing) * 4);
+  }
+  .ep\:gap-y-1 {
+    row-gap: calc(var(--ep-spacing) * 1);
   }
   .ep\:self-center {
     align-self: center;
@@ -1245,9 +1239,6 @@
   .ep\:tracking-wider {
     --tw-tracking: var(--ep-tracking-wider);
     letter-spacing: var(--ep-tracking-wider);
-  }
-  .ep\:break-words {
-    overflow-wrap: break-word;
   }
   .ep\:break-all {
     word-break: break-all;
@@ -1853,6 +1844,11 @@
     -webkit-user-select: text;
     white-space: pre-line;
   }
+  .true-recall-review-question img,
+	.true-recall-review-answer img {
+    margin-left: auto;
+    margin-right: auto;
+  }
   @keyframes true-recall-fade-in {
     from {
       opacity: 0;
@@ -2129,6 +2125,39 @@
 }
 .ep\:simulator-slider:focus::-moz-range-thumb {
   box-shadow: 0 0 0 2px var(--interactive-accent-hover);
+}
+.simple-flashcard-editor-textarea {
+  width: 100%;
+  min-height: 350px;
+  padding: 16px;
+  font-family: var(--font-monospace);
+  font-size: var(--font-ui-small);
+  line-height: 1.6;
+  background: var(--background-primary);
+  border: 1px solid var(--background-modifier-border);
+  border-radius: 8px;
+  resize: vertical;
+  color: var(--text-normal);
+}
+.simple-flashcard-editor-textarea:focus {
+  outline: none;
+  border-color: var(--interactive-accent);
+}
+.simple-flashcard-editor-textarea::placeholder {
+  color: var(--text-faint);
+}
+.simple-flashcard-editor-preview {
+  width: 100%;
+  min-height: 350px;
+  max-height: 450px;
+  padding: 16px;
+  font-size: var(--font-ui-small);
+  line-height: 1.6;
+  background: var(--background-primary);
+  border: 1px solid var(--background-modifier-border);
+  border-radius: 8px;
+  color: var(--text-normal);
+  overflow-y: auto;
 }
 .ep-floating-generate-btn {
   position: fixed;

@@ -294,6 +294,13 @@
 		white-space: pre-line;
 	}
 
+	/* Center images in review cards */
+	.true-recall-review-question img,
+	.true-recall-review-answer img {
+		margin-left: auto;
+		margin-right: auto;
+	}
+
 	/* Chart fade-in animation */
 	@keyframes true-recall-fade-in {
 		from {
@@ -715,6 +722,44 @@
 
 /* Simulator CSS (native styles not expressible via Tailwind) */
 @import "./simulator/styles.css";
+
+/* ===== Simple Flashcard Editor ===== */
+.simple-flashcard-editor-textarea {
+	width: 100%;
+	min-height: 350px;
+	padding: 16px;
+	font-family: var(--font-monospace);
+	font-size: var(--font-ui-small);
+	line-height: 1.6;
+	background: var(--background-primary);
+	border: 1px solid var(--background-modifier-border);
+	border-radius: 8px;
+	resize: vertical;
+	color: var(--text-normal);
+}
+
+.simple-flashcard-editor-textarea:focus {
+	outline: none;
+	border-color: var(--interactive-accent);
+}
+
+.simple-flashcard-editor-textarea::placeholder {
+	color: var(--text-faint);
+}
+
+.simple-flashcard-editor-preview {
+	width: 100%;
+	min-height: 350px;
+	max-height: 450px;
+	padding: 16px;
+	font-size: var(--font-ui-small);
+	line-height: 1.6;
+	background: var(--background-primary);
+	border: 1px solid var(--background-modifier-border);
+	border-radius: 8px;
+	color: var(--text-normal);
+	overflow-y: auto;
+}
 
 /* ===== Floating Generate Button ===== */
 .ep-floating-generate-btn {

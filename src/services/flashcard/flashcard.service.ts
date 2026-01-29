@@ -401,13 +401,13 @@ export class FlashcardManager {
 		const cardsWithContent = this.store.getCardsWithContent();
 
 		const filteredCards = cardsWithContent
-			.filter((card): card is FSRSCardData & { question: string; answer: string } =>
-				Boolean(card.question && card.answer)
+			.filter((card): card is FSRSCardData & { question: string } =>
+				Boolean(card.question)
 			)
 			.map((card) => ({
 				id: card.id,
 				question: card.question,
-				answer: card.answer,
+				answer: card.answer ?? "",
 				fsrs: card,
 				sourceUid: card.sourceUid,
 			}));
@@ -504,13 +504,13 @@ export class FlashcardManager {
 		const cards = this.store.getCardsBySourceUid(sourceUid);
 
 		return cards
-			.filter((card): card is FSRSCardData & { question: string; answer: string } =>
-				Boolean(card.question && card.answer)
+			.filter((card): card is FSRSCardData & { question: string } =>
+				Boolean(card.question)
 			)
 			.map((card) => ({
 				id: card.id,
 				question: card.question,
-				answer: card.answer,
+				answer: card.answer ?? "",
 				fsrs: card,
 				projects: card.projects || [],
 				sourceUid: card.sourceUid,
@@ -530,13 +530,13 @@ export class FlashcardManager {
 		const cards = this.store.getOrphanedCards();
 
 		return cards
-			.filter((card): card is FSRSCardData & { question: string; answer: string } =>
-				Boolean(card.question && card.answer)
+			.filter((card): card is FSRSCardData & { question: string } =>
+				Boolean(card.question)
 			)
 			.map((card) => ({
 				id: card.id,
 				question: card.question,
-				answer: card.answer,
+				answer: card.answer ?? "",
 				fsrs: card,
 				projects: card.projects || [],
 				sourceUid: undefined,

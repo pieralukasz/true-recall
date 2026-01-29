@@ -33,7 +33,7 @@ export class BrowserActions {
                 '' as sourceNoteName,
                 '' as sourceNotePath
             FROM cards c
-            WHERE c.deleted_at IS NULL AND c.question IS NOT NULL AND c.answer IS NOT NULL
+            WHERE c.deleted_at IS NULL AND c.question IS NOT NULL
             ORDER BY c.due ASC
         `
 			)
@@ -81,7 +81,7 @@ export class BrowserActions {
                 SUM(CASE WHEN suspended = 0 AND (buried_until IS NULL OR buried_until <= ?) AND state = 2 THEN 1 ELSE 0 END) as review,
                 SUM(CASE WHEN suspended = 0 AND (buried_until IS NULL OR buried_until <= ?) AND state = 3 THEN 1 ELSE 0 END) as relearning
             FROM cards
-            WHERE deleted_at IS NULL AND question IS NOT NULL AND answer IS NOT NULL
+            WHERE deleted_at IS NULL AND question IS NOT NULL
         `,
 			[now, now, now, now, now]
 		);
