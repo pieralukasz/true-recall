@@ -9,7 +9,8 @@ export type ActionButtonVariant = "primary" | "secondary" | "danger" | "seed";
 
 export interface ActionButtonProps {
 	label: string;
-	onClick: () => void;
+	/** Click handler - optional if button is disabled */
+	onClick?: () => void;
 	variant: ActionButtonVariant;
 	/** Optional icon before label */
 	icon?: string;
@@ -92,7 +93,7 @@ export class ActionButton extends BaseComponent {
 
 		if (disabled) {
 			this.buttonEl.disabled = true;
-		} else {
+		} else if (onClick) {
 			this.events.addEventListener(this.buttonEl, "click", (e) => {
 				e.stopPropagation();
 				onClick();
