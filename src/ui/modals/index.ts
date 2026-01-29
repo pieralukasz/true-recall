@@ -83,3 +83,9 @@ export {
     type BatchImportResult,
     type BatchImportModalOptions,
 } from "./BatchImportModal";
+export {
+    SimpleFlashcardEditorModal,
+    flashcardToMarkdown,
+    type SimpleFlashcardEditorResult,
+    type SimpleFlashcardEditorOptions,
+} from "./SimpleFlashcardEditorModal";

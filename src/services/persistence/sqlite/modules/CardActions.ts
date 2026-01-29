@@ -54,13 +54,13 @@ export class CardActions {
         `, [cardId]);
 
         if (!row) return undefined;
-        if (!row.question || !row.answer) return undefined;
+        if (!row.question) return undefined;
 
         const { question: q, answer: a, suspended, buriedUntil, createdAt, updatedAt, sourceUid, ...rest } = row;
         return {
             ...rest,
             question: q,
-            answer: a,
+            answer: a ?? undefined,
             suspended: suspended === 1,
             buriedUntil: buriedUntil ?? undefined,
             createdAt: createdAt ?? undefined,
@@ -311,7 +311,7 @@ export class CardActions {
                 c.question, c.answer,
                 c.source_uid as sourceUid
             FROM cards c
-            WHERE c.deleted_at IS NULL AND c.question IS NOT NULL AND c.answer IS NOT NULL
+            WHERE c.deleted_at IS NULL AND c.question IS NOT NULL
         `);
 
         // Note: sourceNoteName, sourceNotePath, projects empty - caller must enrich via SourceNoteService
@@ -344,7 +344,7 @@ export class CardActions {
     hasCardContent(cardId: string): boolean {
         return this.db.get<{ exists: number }>(
             `SELECT 1 as exists FROM cards
-             WHERE id = ? AND deleted_at IS NULL AND question IS NOT NULL AND answer IS NOT NULL
+             WHERE id = ? AND deleted_at IS NULL AND question IS NOT NULL
              LIMIT 1`,
             [cardId]
         ) !== null;
@@ -356,7 +356,7 @@ export class CardActions {
     hasAnyCardContent(): boolean {
         return this.db.get<{ exists: number }>(
             `SELECT 1 as exists FROM cards
-             WHERE deleted_at IS NULL AND question IS NOT NULL AND answer IS NOT NULL
+             WHERE deleted_at IS NULL AND question IS NOT NULL
              LIMIT 1`
         ) !== null;
     }
@@ -367,7 +367,7 @@ export class CardActions {
     getCardsWithContentCount(): number {
         return this.db.get<{ count: number }>(
             `SELECT COUNT(*) as count FROM cards
-             WHERE deleted_at IS NULL AND question IS NOT NULL AND answer IS NOT NULL`
+             WHERE deleted_at IS NULL AND question IS NOT NULL`
         )?.count ?? 0;
     }
 
@@ -408,7 +408,7 @@ export class CardActions {
                 source_uid as sourceUid
             FROM cards
             WHERE deleted_at IS NULL AND source_uid IS NULL
-            AND question IS NOT NULL AND answer IS NOT NULL
+            AND question IS NOT NULL
         `);
 
         return rows.map((row) => {
