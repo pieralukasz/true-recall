@@ -84,6 +84,62 @@ export class NotificationService {
 	}
 
 	/**
+	 * Show notification for single card update
+	 */
+	cardUpdated(): void {
+		this.success("Card updated");
+	}
+
+	/**
+	 * Show notification for card update with move
+	 */
+	cardUpdatedAndMoved(): void {
+		this.success("Card updated and moved");
+	}
+
+	/**
+	 * Show notification for card added to queue
+	 */
+	cardAddedToQueue(): void {
+		this.success("Flashcard added to queue!");
+	}
+
+	/**
+	 * Show notification for card copied
+	 */
+	cardCopied(): void {
+		this.success("Flashcard copied and added to queue!");
+	}
+
+	/**
+	 * Show notification for card graded and moved
+	 */
+	cardGradedAndMoved(): void {
+		this.success("Card graded as Good and moved");
+	}
+
+	/**
+	 * Show notification for card suspended
+	 */
+	cardSuspended(): void {
+		this.success("Card suspended");
+	}
+
+	/**
+	 * Show notification for card buried
+	 */
+	cardBuried(): void {
+		this.success("Card buried until tomorrow");
+	}
+
+	/**
+	 * Show notification for multiple cards buried
+	 */
+	cardsBuried(count: number): void {
+		this.success(`Buried ${count} card${count !== 1 ? "s" : ""} until tomorrow`);
+	}
+
+	/**
 	 * Show notification for card update
 	 *
 	 * @param count - Number of cards updated
@@ -129,6 +185,29 @@ export class NotificationService {
 	cardsStatusChanged(count: number, action: "suspended" | "buried" | "unburied"): void {
 		const cardWord = count === 1 ? "card" : "cards";
 		this.success(`${count} ${cardWord} ${action}`);
+	}
+
+	// ===== Undo Notifications =====
+
+	/**
+	 * Show notification when there's nothing to undo
+	 */
+	nothingToUndo(): void {
+		this.info("Nothing to undo");
+	}
+
+	/**
+	 * Show notification for successful undo
+	 */
+	undoComplete(action: string): void {
+		this.success(`${action} undone`);
+	}
+
+	/**
+	 * Show notification for failed undo
+	 */
+	undoFailed(action: string): void {
+		this.error(`Failed to undo ${action.toLowerCase()}`);
 	}
 
 	// ===== Session Notifications =====
@@ -186,6 +265,34 @@ export class NotificationService {
 		this.error(`Flashcard generation failed: ${msg}`, error);
 	}
 
+	/**
+	 * Show notification for flashcards generated and added to queue
+	 */
+	flashcardsGeneratedAndAdded(count: number): void {
+		this.success(`${count} flashcard${count > 1 ? "s" : ""} generated and added to queue!`);
+	}
+
+	/**
+	 * Show notification when AI service is not configured
+	 */
+	aiNotConfigured(): void {
+		this.error("AI service not configured. Please add your API key in settings.");
+	}
+
+	/**
+	 * Show notification for zettel/note created
+	 */
+	noteCreated(noteName: string): void {
+		this.success(`Created new note: ${noteName}`);
+	}
+
+	/**
+	 * Show notification when template is not found
+	 */
+	templateNotFound(templatePath: string): void {
+		this.warning(`Template not found: ${templatePath}. Using default template.`);
+	}
+
 	// ===== File Operation Notifications =====
 
 	/**
@@ -212,6 +319,21 @@ export class NotificationService {
 	 */
 	fileOperationFailed(operation: string, error?: unknown): void {
 		this.error(`Failed to ${operation}`, error);
+	}
+
+	/**
+	 * Show notification for a failed operation with error message
+	 *
+	 * @param operation - The operation that failed (e.g., "suspend card", "move card")
+	 * @param error - Optional error for detailed message
+	 */
+	operationFailed(operation: string, error?: unknown): void {
+		if (error) {
+			const msg = error instanceof Error ? error.message : String(error);
+			this.error(`Failed to ${operation}: ${msg}`, error);
+		} else {
+			this.error(`Failed to ${operation}`);
+		}
 	}
 
 	// ===== Image Notifications =====

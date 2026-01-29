@@ -2,10 +2,10 @@
  * Card Preview Modal
  * Displays a list of flashcards with preview and navigation to source note
  */
-import { App, Component, Notice, TFile } from "obsidian";
+import { App, Component } from "obsidian";
 import type { FSRSFlashcardItem, CardMaturityBreakdown } from "../../types";
 import { BaseModal } from "./BaseModal";
-import type { FlashcardManager } from "../../services";
+import { notify, type FlashcardManager } from "../../services";
 import { createCardReviewItem, type CardData } from "../components/CardReviewItem";
 
 export interface CardPreviewModalOptions {
@@ -109,7 +109,7 @@ export class CardPreviewModal extends BaseModal {
 		const success = await this.flashcardManager.removeFlashcardById(card.id);
 
 		if (success) {
-			new Notice("Flashcard deleted");
+			notify().cardsDeleted(1);
 			// Remove card from list (filter by id since card types differ)
 			this.options.cards = this.options.cards.filter(c => c.id !== card.id);
 			// Re-render
@@ -117,7 +117,7 @@ export class CardPreviewModal extends BaseModal {
 			// Update title
 			this.updateTitle(`${this.options.cards.length} cards`);
 		} else {
-			new Notice("Failed to delete flashcard");
+			notify().operationFailed("delete flashcard");
 		}
 	}
 
@@ -137,14 +137,14 @@ export class CardPreviewModal extends BaseModal {
 		}
 
 		// No source note found
-		new Notice("Could not find source note for this card");
+		notify().warning("Could not find source note for this card");
 	}
 
 	private async handleUnburyCard(card: CardData): Promise<void> {
 		// Find the full card data
 		const fullCard = this.options.cards.find(c => c.id === card.id);
 		if (!fullCard) {
-			new Notice("Could not find card");
+			notify().error("Could not find card");
 			return;
 		}
 
@@ -168,10 +168,10 @@ export class CardPreviewModal extends BaseModal {
 			// Update title
 			this.updateTitle(`${this.options.cards.length} cards`);
 
-			new Notice("Card unburied");
+			notify().cardsStatusChanged(1, "unburied");
 		} catch (error) {
 			console.error("Error unburying card:", error);
-			new Notice("Failed to unbury card");
+			notify().operationFailed("unbury card", error);
 		}
 	}
 
@@ -204,7 +204,7 @@ export class CardPreviewModal extends BaseModal {
 		// Update title
 		this.updateTitle("0 cards");
 
-		new Notice(`${unburiedCount} card${unburiedCount > 1 ? "s" : ""} unburied`);
+		notify().cardsStatusChanged(unburiedCount, "unburied");
 	}
 
 	private async handleDeleteAll(): Promise<void> {
@@ -233,6 +233,6 @@ export class CardPreviewModal extends BaseModal {
 		// Update title
 		this.updateTitle("0 cards");
 
-		new Notice(`${deletedCount} card${deletedCount !== 1 ? "s" : ""} deleted`);
+		notify().cardsDeleted(deletedCount);
 	}
 }

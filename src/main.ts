@@ -1,4 +1,4 @@
-import { Plugin, TFile, Notice } from "obsidian";
+import { Plugin, TFile } from "obsidian";
 import {
 	VIEW_TYPE_FLASHCARD_PANEL,
 	VIEW_TYPE_REVIEW,
@@ -7,6 +7,7 @@ import {
 	VIEW_TYPE_PROJECTS,
 	VIEW_TYPE_BROWSER,
 	VIEW_TYPE_SIMULATOR,
+	VIEW_TYPE_ORPHANED_CARDS,
 } from "./constants";
 import { normalizePath } from "obsidian";
 import {
@@ -25,6 +26,9 @@ import {
 	AuthService,
 	SyncService,
 	FrontmatterIndexService,
+	DeletionHandlerService,
+	OrphanedCardsService,
+	notify,
 } from "./services";
 import {
 	DB_FOLDER,
@@ -41,6 +45,7 @@ import { SessionView } from "./ui/session";
 import { ProjectsView } from "./ui/projects";
 import { BrowserView } from "./ui/browser";
 import { SimulatorView } from "./ui/simulator";
+import { OrphanedCardsView } from "./ui/orphaned-cards";
 import { FloatingGenerateButton } from "./ui/components/FloatingGenerateButton";
 import {
 	TrueRecallSettingTab,
@@ -51,10 +56,11 @@ import {
 	AddToProjectModal,
 	RestoreBackupModal,
 	DeviceSelectionModal,
+	OrphanedCardsActionModal,
 	type DeviceSelectionResult,
 } from "./ui/modals";
 import { registerCommands } from "./plugin/PluginCommands";
-import { registerEventHandlers } from "./plugin/PluginEventHandlers";
+import { registerEventHandlers, registerDeletionHandler } from "./plugin/PluginEventHandlers";
 import { AgentService, registerAllTools, resetToolRegistry } from "./agent";
 import {
 	activateView,
@@ -82,6 +88,8 @@ export default class TrueRecallPlugin extends Plugin {
 	authService: AuthService | null = null;
 	syncService: SyncService | null = null;
 	floatingButton: FloatingGenerateButton | null = null;
+	deletionHandler: DeletionHandlerService | null = null;
+	orphanedCardsService: OrphanedCardsService | null = null;
 
 	async onload(): Promise<void> {
 		await this.loadSettings();
@@ -159,6 +167,12 @@ export default class TrueRecallPlugin extends Plugin {
 			(leaf) => new SimulatorView(leaf, this)
 		);
 
+		// Register the orphaned cards view
+		this.registerView(
+			VIEW_TYPE_ORPHANED_CARDS,
+			(leaf) => new OrphanedCardsView(leaf, this)
+		);
+
 		// Add ribbon icon to start review
 		this.addRibbonIcon("brain", "True Recall - Study", () => {
 			void this.startReviewSession();
@@ -204,6 +218,134 @@ export default class TrueRecallPlugin extends Plugin {
 				this.cardStore
 			);
 		}
+	}
+
+	/**
+	 * Initialize the deletion handler for orphaned cards management
+	 * Shows a modal when a note with flashcards is deleted
+	 */
+	private initializeDeletionHandler(): void {
+		if (!this.cardStore || !this.frontmatterIndex) return;
+
+		// Initialize orphaned cards service
+		this.orphanedCardsService = new OrphanedCardsService();
+
+		// Initialize deletion handler with modal callback
+		this.deletionHandler = new DeletionHandlerService({
+			app: this.app,
+			frontmatterIndex: this.frontmatterIndex,
+			store: this.cardStore,
+			onOrphanedCards: async (context) => {
+				// Show modal asking what to do with orphaned cards
+				const modal = new OrphanedCardsActionModal(this.app, {
+					cards: context.cards,
+					deletedNoteName: context.deletedNoteName,
+					sourceUid: context.sourceUid,
+				});
+
+				const result = await modal.openAndWait();
+
+				if (result.cancelled || result.action === "leave_orphaned") {
+					return; // Do nothing, cards become orphaned
+				}
+
+				if (result.action === "delete") {
+					// Soft delete all cards
+					const cardIds = context.cards.map((c) => c.id);
+					this.cardStore.browser.bulkSoftDelete(cardIds);
+					notify().cardsDeleted(cardIds.length);
+				} else if (result.action === "move" && result.targetNotePath) {
+					// Move cards to target note
+					await this.moveCardsToNote(context.cards, result.targetNotePath);
+				} else if (result.action === "create_note" && result.newNotePath) {
+					// Create new note and move cards
+					await this.createNoteForOrphanedCards(
+						context.cards,
+						result.newNotePath,
+						context.deletedNoteName
+					);
+				}
+			},
+		});
+
+		// Register the deletion event handler
+		registerDeletionHandler(this, this.deletionHandler);
+	}
+
+	/**
+	 * Move orphaned cards to a target note
+	 */
+	private async moveCardsToNote(
+		cards: FSRSCardData[],
+		targetNotePath: string
+	): Promise<void> {
+		const targetFile = this.app.vault.getAbstractFileByPath(targetNotePath);
+		if (!(targetFile instanceof TFile)) {
+			notify().error("Target note not found");
+			return;
+		}
+
+		// Get or create flashcard_uid for target note
+		const frontmatterService = this.flashcardManager.getFrontmatterService();
+		let targetUid = await frontmatterService.getSourceNoteUid(targetFile);
+		if (!targetUid) {
+			targetUid = frontmatterService.generateUid();
+			await frontmatterService.setSourceNoteUid(targetFile, targetUid);
+		}
+
+		// Update all cards
+		for (const card of cards) {
+			this.cardStore.cards.updateCardSourceUid(card.id, targetUid);
+		}
+
+		notify().cardsMoved(cards.length, targetFile.basename);
+	}
+
+	/**
+	 * Create a new note for orphaned cards
+	 */
+	private async createNoteForOrphanedCards(
+		cards: FSRSCardData[],
+		newNotePath: string,
+		originalNoteName: string
+	): Promise<void> {
+		const frontmatterService = this.flashcardManager.getFrontmatterService();
+		const newUid = frontmatterService.generateUid();
+
+		// Create note content
+		const cardList = cards
+			.slice(0, 10)
+			.map((c) => `- ${(c.question ?? "").slice(0, 80)}${(c.question ?? "").length > 80 ? "..." : ""}`)
+			.join("\n");
+
+		const moreText = cards.length > 10
+			? `\n- ... and ${cards.length - 10} more cards`
+			: "";
+
+		const content = `---
+flashcard_uid: ${newUid}
+tags:
+  - recovered
+---
+
+# Recovered from "${originalNoteName}"
+
+This note was created to recover flashcards from a deleted note.
+
+## Cards
+
+${cardList}${moreText}
+`;
+
+		// Create the file
+		await this.app.vault.create(newNotePath, content);
+
+		// Update all cards to point to this note
+		for (const card of cards) {
+			this.cardStore.cards.updateCardSourceUid(card.id, newUid);
+		}
+
+		notify().success(`Created note with ${cards.length} recovered flashcard${cards.length === 1 ? "" : "s"}`);
 	}
 
 	onunload(): void {
@@ -318,6 +460,13 @@ export default class TrueRecallPlugin extends Plugin {
 		await activateView(this.app, VIEW_TYPE_SIMULATOR, { useMainArea: true });
 	}
 
+	/**
+	 * Open orphaned cards management panel
+	 */
+	async openOrphanedCardsView(): Promise<void> {
+		await activateView(this.app, VIEW_TYPE_ORPHANED_CARDS);
+	}
+
 	// Start a review session (opens modal with options)
 	async startReviewSession(): Promise<void> {
 		// Check for existing review view
@@ -352,7 +501,7 @@ export default class TrueRecallPlugin extends Plugin {
 	private async openNewReviewSession(): Promise<void> {
 		const allCards = await this.flashcardManager.getAllFSRSCards();
 		if (allCards.length === 0) {
-			new Notice("No flashcards found. Generate some flashcards first!");
+			notify().info("No flashcards found. Generate some flashcards first!");
 			return;
 		}
 
@@ -447,7 +596,7 @@ export default class TrueRecallPlugin extends Plugin {
 	async reviewCurrentNote(): Promise<void> {
 		const file = this.app.workspace.getActiveFile();
 		if (!file) {
-			new Notice("No active note");
+			notify().noActiveFile();
 			return;
 		}
 		await this.reviewNoteFlashcards(file);
@@ -463,7 +612,7 @@ export default class TrueRecallPlugin extends Plugin {
 		);
 
 		if (noteCards.length === 0) {
-			new Notice(`No flashcards found for "${file.basename}"`);
+			notify().info(`No flashcards found for "${file.basename}"`);
 			return;
 		}
 
@@ -473,7 +622,7 @@ export default class TrueRecallPlugin extends Plugin {
 		});
 
 		if (availableCards.length === 0) {
-			new Notice(
+			notify().info(
 				`No cards due for "${file.basename}". All ${noteCards.length} cards are scheduled for later.`
 			);
 			return;
@@ -503,7 +652,7 @@ export default class TrueRecallPlugin extends Plugin {
 		});
 
 		if (todaysCards.length === 0) {
-			new Notice("No new cards created today");
+			notify().info("No new cards created today");
 			return;
 		}
 
@@ -563,7 +712,7 @@ export default class TrueRecallPlugin extends Plugin {
 				"[True Recall] Failed to initialize device context:",
 				error
 			);
-			new Notice(
+			notify().error(
 				"Failed to initialize device context. Using default configuration."
 			);
 			// Fallback: create ephemeral device ID and continue
@@ -648,10 +797,10 @@ export default class TrueRecallPlugin extends Plugin {
 			await this.app.vault.adapter.rename(legacyPath, newPath);
 
 			console.log(`[True Recall] Migrated legacy database to ${newPath}`);
-			new Notice("Database migrated to per-device format.");
+			notify().success("Database migrated to per-device format.");
 		} catch (error) {
 			console.error("[True Recall] Legacy migration failed:", error);
-			new Notice("Failed to migrate legacy database.");
+			notify().error("Failed to migrate legacy database.");
 			throw error;
 		}
 	}
@@ -694,12 +843,12 @@ export default class TrueRecallPlugin extends Plugin {
 				console.log(
 					`[True Recall] Imported database from ${result.sourceDeviceId} to ${deviceId}`
 				);
-				new Notice(
+				notify().success(
 					`Imported data from device ${result.sourceDeviceId}`
 				);
 			} catch (error) {
 				console.error("[True Recall] Database import failed:", error);
-				new Notice("Failed to import database.");
+				notify().error("Failed to import database.");
 				throw error;
 			}
 		}
@@ -741,12 +890,15 @@ export default class TrueRecallPlugin extends Plugin {
 
 			// Initialize SyncService now that cardStore is ready
 			this.initializeSyncService();
+
+			// Initialize orphaned cards management
+			this.initializeDeletionHandler();
 		} catch (error) {
 			console.error(
 				"[True Recall] Failed to initialize SQLite store:",
 				error
 			);
-			new Notice(
+			notify().error(
 				"Failed to load flashcard data. Please restart Obsidian."
 			);
 		}
@@ -796,7 +948,7 @@ export default class TrueRecallPlugin extends Plugin {
 	async addCurrentNoteToProject(): Promise<void> {
 		const file = this.app.workspace.getActiveFile();
 		if (!file || file.extension !== "md") {
-			new Notice("No active markdown file");
+			notify().noActiveFile();
 			return;
 		}
 
@@ -835,9 +987,9 @@ export default class TrueRecallPlugin extends Plugin {
 		);
 
 		if (result.projects.length > 0) {
-			new Notice(`Projects updated: ${result.projects.join(", ")}`);
+			notify().success(`Projects updated: ${result.projects.join(", ")}`);
 		} else {
-			new Notice("Removed all projects from note");
+			notify().info("Removed all projects from note");
 		}
 	}
 
@@ -861,7 +1013,7 @@ export default class TrueRecallPlugin extends Plugin {
 					(p) => p.toLowerCase() === projectName.toLowerCase()
 				)
 			) {
-				new Notice(`Project "${projectName}" already exists`);
+				notify().warning(`Project "${projectName}" already exists`);
 				return;
 			}
 		}
@@ -876,7 +1028,7 @@ export default class TrueRecallPlugin extends Plugin {
 		// Add note to project (update frontmatter - v16: frontmatter is source of truth)
 		await frontmatterService.setProjectsInFrontmatter(file, [projectName]);
 
-		new Notice(`Project "${projectName}" created`);
+		notify().success(`Project "${projectName}" created`);
 	}
 
 	/**
@@ -902,14 +1054,14 @@ export default class TrueRecallPlugin extends Plugin {
 	 */
 	async createManualBackup(): Promise<void> {
 		if (!this.backupService) {
-			new Notice("Backup service not available");
+			notify().error("Backup service not available");
 			return;
 		}
 
 		try {
 			const backupPath = await this.backupService.createBackup();
 			const filename = backupPath.split("/").pop();
-			new Notice(`Backup created: ${filename}`);
+			notify().success(`Backup created: ${filename}`);
 
 			// Prune old backups if limit is set
 			if (this.settings.maxBackups > 0) {
@@ -922,7 +1074,7 @@ export default class TrueRecallPlugin extends Plugin {
 			}
 		} catch (error) {
 			console.error("[True Recall] Manual backup failed:", error);
-			new Notice("Failed to create backup. Check console for details.");
+			notify().error("Failed to create backup. Check console for details.");
 		}
 	}
 
@@ -931,13 +1083,13 @@ export default class TrueRecallPlugin extends Plugin {
 	 */
 	async openRestoreBackupModal(): Promise<void> {
 		if (!this.backupService) {
-			new Notice("Backup service not available");
+			notify().error("Backup service not available");
 			return;
 		}
 
 		const backups = await this.backupService.listBackups();
 		if (backups.length === 0) {
-			new Notice("No backups available");
+			notify().info("No backups available");
 			return;
 		}
 
@@ -954,21 +1106,21 @@ export default class TrueRecallPlugin extends Plugin {
 	 */
 	async syncCloud(): Promise<void> {
 		if (!this.syncService?.isAvailable()) {
-			new Notice(
+			notify().error(
 				"Cloud sync not available. Check Supabase configuration."
 			);
 			return;
 		}
 
-		new Notice("Syncing...");
+		notify().info("Syncing...");
 		const result = await this.syncService.sync();
 
 		if (result.success) {
-			new Notice(
+			notify().success(
 				`Sync complete: ${result.pulled} pulled, ${result.pushed} pushed`
 			);
 		} else {
-			new Notice(`Sync failed: ${result.error}`);
+			notify().error(`Sync failed: ${result.error}`);
 		}
 	}
 
@@ -979,7 +1131,7 @@ export default class TrueRecallPlugin extends Plugin {
 	async addFlashcardUidToCurrentNote(): Promise<void> {
 		const file = this.app.workspace.getActiveFile();
 		if (!file || file.extension !== "md") {
-			new Notice("No active markdown file");
+			notify().noActiveFile();
 			return;
 		}
 
@@ -989,7 +1141,7 @@ export default class TrueRecallPlugin extends Plugin {
 		// Check if UID already exists
 		const existingUid = await frontmatterService.getSourceNoteUid(file);
 		if (existingUid) {
-			new Notice(`Note already has flashcard UID: ${existingUid}`);
+			notify().info(`Note already has flashcard UID: ${existingUid}`);
 			return;
 		}
 
@@ -998,7 +1150,7 @@ export default class TrueRecallPlugin extends Plugin {
 		await frontmatterService.setSourceNoteUid(file, newUid);
 		// Note: FrontmatterIndexService updates automatically via metadataCache 'changed' event
 
-		new Notice(`Added flashcard UID: ${newUid}`);
+		notify().success(`Added flashcard UID: ${newUid}`);
 	}
 
 	/**
@@ -1007,7 +1159,7 @@ export default class TrueRecallPlugin extends Plugin {
 	 */
 	async forceReplaceCloud(): Promise<void> {
 		if (!this.syncService?.isAvailable()) {
-			new Notice(
+			notify().error(
 				"Cloud sync not available. Check Supabase configuration."
 			);
 			return;
@@ -1022,15 +1174,15 @@ export default class TrueRecallPlugin extends Plugin {
 
 		if (!confirmed) return;
 
-		new Notice("Replacing all server data...");
+		notify().info("Replacing all server data...");
 		const result = await this.syncService.forceReplace();
 
 		if (result.success) {
-			new Notice(
+			notify().success(
 				`Force replace complete: ${result.pushed} records uploaded`
 			);
 		} else {
-			new Notice(`Replace failed: ${result.error}`);
+			notify().error(`Replace failed: ${result.error}`);
 		}
 	}
 }
