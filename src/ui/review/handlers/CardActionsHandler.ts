@@ -6,7 +6,7 @@ import { App, Notice, TFile, normalizePath } from "obsidian";
 import { Rating } from "ts-fsrs";
 import type { ReviewStateManager } from "../../../state";
 import type { FlashcardManager, FSRSService, ReviewService, ZettelTemplateService, OpenRouterService, SqliteStoreService } from "../../../services";
-import type { FSRSFlashcardItem } from "../../../types";
+import type { FSRSFlashcardItem, TrueRecallSettings } from "../../../types";
 import type { UndoEntry } from "../review.types";
 import { MoveCardModal, FlashcardEditorModal, AIGeneratorModal } from "../../modals";
 import { GENERATED_NOTE_TYPES, UI_CONFIG } from "../../../constants";
@@ -34,13 +34,7 @@ export interface CardActionsHandlerDeps {
 	cardStore: SqliteStoreService;
 	/** Function to create ZettelTemplateService */
 	createZettelTemplateService: () => ZettelTemplateService;
-	settings: {
-		dayStartHour: number;
-		zettelFolder: string;
-		zettelTemplatePath: string;
-		customGeneratePrompt: string;
-		openRouterApiKey: string;
-	};
+	settings: TrueRecallSettings;
 }
 
 /**
@@ -577,6 +571,7 @@ export class CardActionsHandler {
 		const modal = new AIGeneratorModal(this.deps.app, {
 			openRouterService: this.deps.openRouterService,
 			customSystemPrompt: this.deps.settings.customGeneratePrompt,
+			settings: this.deps.settings,
 		});
 
 		const result = await modal.openAndWait();

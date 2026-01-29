@@ -32,7 +32,7 @@ export interface EditableTextFieldProps {
 	placeholder?: string;
 	/** Whether to show the formatting toolbar */
 	showToolbar?: boolean;
-	/** Custom toolbar buttons (defaults to TOOLBAR_BUTTONS.REVIEW) */
+	/** Custom toolbar buttons (defaults to TOOLBAR_BUTTONS.UNIFIED) */
 	toolbarButtons?: ToolbarButton[];
 	/** Position toolbar absolutely below the field */
 	toolbarPositioned?: boolean;
@@ -58,66 +58,8 @@ export interface EditableTextFieldProps {
 
 // Predefined toolbar button sets
 export const TOOLBAR_BUTTONS = {
-	/** ReviewView buttons - comprehensive set with HTML tags */
-	REVIEW: [
-		{
-			id: "bold-wiki",
-			label: "**[[]]**",
-			title: "Bold Wiki Link",
-			action: { type: "toggle", before: "**[[", after: "]]**" },
-		},
-		{
-			id: "linebreak",
-			label: "\u23CE\u23CE",
-			title: "Double Line Break",
-			action: { type: "insert", text: "\n\n" },
-		},
-		{
-			id: "bold",
-			label: "B",
-			title: "Bold",
-			action: { type: "toggle", before: "**", after: "**" },
-		},
-		{
-			id: "italic",
-			label: "I",
-			title: "Italic",
-			action: { type: "toggle", before: "*", after: "*" },
-		},
-		{
-			id: "underline",
-			label: "U",
-			title: "Underline",
-			action: { type: "toggle", before: "<u>", after: "</u>" },
-		},
-		{
-			id: "wiki",
-			label: "[[]]",
-			title: "Wiki Link",
-			action: { type: "toggle", before: "[[", after: "]]" },
-		},
-		{
-			id: "math",
-			label: "$",
-			title: "Math",
-			action: { type: "toggle", before: "$", after: "$" },
-		},
-		{
-			id: "superscript",
-			label: "x\u00B2",
-			title: "Superscript",
-			action: { type: "toggle", before: "<sup>", after: "</sup>" },
-		},
-		{
-			id: "subscript",
-			label: "x\u2082",
-			title: "Subscript",
-			action: { type: "toggle", before: "<sub>", after: "</sub>" },
-		},
-	] as ToolbarButton[],
-
-	/** FlashcardEditorModal buttons - markdown focused */
-	EDITOR: [
+	/** Unified toolbar - full set of formatting buttons used across the app */
+	UNIFIED: [
 		{
 			id: "bold",
 			label: "B",
@@ -133,6 +75,13 @@ export const TOOLBAR_BUTTONS = {
 			action: { type: "toggle", before: "*", after: "*" },
 		},
 		{
+			id: "underline",
+			label: "U",
+			title: "Underline",
+			shortcut: "Ctrl+U",
+			action: { type: "toggle", before: "<u>", after: "</u>" },
+		},
+		{
 			id: "wiki",
 			label: "[[]]",
 			title: "Wiki Link",
@@ -141,23 +90,23 @@ export const TOOLBAR_BUTTONS = {
 		},
 		{
 			id: "math",
-			label: "$$",
+			label: "$",
 			title: "Math",
 			shortcut: "Ctrl+M",
-			action: { type: "toggle", before: "$$", after: "$$" },
+			action: { type: "toggle", before: "$", after: "$" },
 		},
 		{
 			id: "h1",
 			label: "H1",
 			title: "Heading 1",
-			shortcut: "Ctrl+Alt+1",
+			shortcut: "Ctrl+1",
 			action: { type: "insert", text: "# " },
 		},
 		{
 			id: "h2",
 			label: "H2",
 			title: "Heading 2",
-			shortcut: "Ctrl+Alt+2",
+			shortcut: "Ctrl+2",
 			action: { type: "insert", text: "## " },
 		},
 		{
@@ -171,7 +120,7 @@ export const TOOLBAR_BUTTONS = {
 			id: "quote",
 			label: ">",
 			title: "Quote",
-			shortcut: "Ctrl+Shift+.",
+			shortcut: "Ctrl+.",
 			action: { type: "insert", text: "> " },
 		},
 		{
@@ -181,29 +130,24 @@ export const TOOLBAR_BUTTONS = {
 			shortcut: "Ctrl+`",
 			action: { type: "toggle", before: "`", after: "`" },
 		},
+		{
+			id: "superscript",
+			label: "x\u00B2",
+			title: "Superscript",
+			action: { type: "toggle", before: "<sup>", after: "</sup>" },
+		},
+		{
+			id: "subscript",
+			label: "x\u2082",
+			title: "Subscript",
+			action: { type: "toggle", before: "<sub>", after: "</sub>" },
+		},
 	] as ToolbarButton[],
 
-	/** Minimal buttons for simple editing */
-	MINIMAL: [
-		{
-			id: "bold",
-			label: "B",
-			title: "Bold",
-			action: { type: "toggle", before: "**", after: "**" },
-		},
-		{
-			id: "italic",
-			label: "I",
-			title: "Italic",
-			action: { type: "toggle", before: "*", after: "*" },
-		},
-		{
-			id: "wiki",
-			label: "[[]]",
-			title: "Wiki Link",
-			action: { type: "toggle", before: "[[", after: "]]" },
-		},
-	] as ToolbarButton[],
+	/** @deprecated Use UNIFIED instead. EDITOR is an alias for UNIFIED for backwards compatibility. */
+	get EDITOR() {
+		return TOOLBAR_BUTTONS.UNIFIED;
+	},
 };
 
 /**
@@ -287,7 +231,7 @@ export class EditableTextField extends BaseComponent {
 	private renderToolbar(): void {
 		if (!this.element || !this.textarea) return;
 
-		const buttons = this.props.toolbarButtons || TOOLBAR_BUTTONS.REVIEW;
+		const buttons = this.props.toolbarButtons || TOOLBAR_BUTTONS.UNIFIED;
 		const positioned = this.props.toolbarPositioned !== false;
 
 		const positionedCls = positioned ? "ep:absolute ep:left-0 ep:right-0 ep:top-full ep:mt-1 ep:z-10" : "";
@@ -381,7 +325,7 @@ export class EditableTextField extends BaseComponent {
 	 * Execute action by button ID (for keyboard shortcuts)
 	 */
 	executeButtonAction(buttonId: string): boolean {
-		const buttons = this.props.toolbarButtons || TOOLBAR_BUTTONS.REVIEW;
+		const buttons = this.props.toolbarButtons || TOOLBAR_BUTTONS.UNIFIED;
 		const btn = buttons.find((b) => b.id === buttonId);
 		if (btn) {
 			this.executeAction(btn.action);
