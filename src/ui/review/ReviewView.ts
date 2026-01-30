@@ -130,6 +130,7 @@ export class ReviewView extends ItemView {
 				createZettelTemplateService: () =>
 					new ZettelTemplateService(this.app),
 				settings: this.plugin.settings,
+				plugin: this.plugin,
 			},
 			{
 				onUpdateSchedulingPreview: () => this.updateSchedulingPreview(),
@@ -378,9 +379,17 @@ export class ReviewView extends ItemView {
 				if (!this.stateManager.isActive()) return;
 				if (!event.changes.question && !event.changes.answer) return;
 
-				// If current card was updated externally, re-render
+				// If current card was updated externally, reload from database and re-render
 				const currentCard = this.stateManager.getCurrentCard();
 				if (currentCard && currentCard.id === event.cardId) {
+					// Reload card content from database (needed for undo to show reverted content)
+					const updatedData = this.plugin.cardStore.get(event.cardId);
+					if (updatedData) {
+						this.stateManager.updateCurrentCardContent(
+							updatedData.question ?? currentCard.question,
+							updatedData.answer ?? currentCard.answer
+						);
+					}
 					this.render();
 				}
 			}
@@ -1088,12 +1097,17 @@ export class ReviewView extends ItemView {
 
 		if (hasChanges) {
 			try {
-				// Update card in SQL store
-				this.flashcardManager.updateCardContent(
-					card.id,
+				// Update card via AgentService for undo support
+				const updateResult = await this.plugin.agentService?.execute("update-card", {
+					cardId: card.id,
 					newQuestion,
-					newAnswer
-				);
+					newAnswer,
+				});
+
+				if (!updateResult?.success) {
+					notify().operationFailed("save card", updateResult?.error?.message ?? "Unknown error");
+					return;
+				}
 
 				// Update card in state
 				this.stateManager.updateCurrentCardContent(

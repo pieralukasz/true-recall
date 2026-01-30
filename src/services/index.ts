@@ -100,3 +100,15 @@ export { AuthService, type AuthState, type AuthResult } from "./auth";
 
 // Sync services
 export { SyncService, type SyncResult, type SyncOptions } from "./sync";
+
+// Undo services
+export {
+	UndoService,
+	type UndoEntry,
+	type UndoActionType,
+	type UndoPayload,
+	type CreateUndoPayload,
+	type UpdateUndoPayload,
+	type DeleteUndoPayload,
+	type BatchCreateUndoPayload,
+} from "./undo";

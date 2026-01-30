@@ -29,6 +29,7 @@ import {
 	DeletionHandlerService,
 	OrphanedCardsService,
 	notify,
+	UndoService,
 } from "./services";
 import {
 	DB_FOLDER,
@@ -90,6 +91,7 @@ export default class TrueRecallPlugin extends Plugin {
 	floatingButton: FloatingGenerateButton | null = null;
 	deletionHandler: DeletionHandlerService | null = null;
 	orphanedCardsService: OrphanedCardsService | null = null;
+	undoService: UndoService | null = null;
 
 	async onload(): Promise<void> {
 		await this.loadSettings();
@@ -195,6 +197,9 @@ export default class TrueRecallPlugin extends Plugin {
 
 		// Register event handlers (extracted to PluginEventHandlers.ts)
 		registerEventHandlers(this);
+
+		// Initialize UndoService (before AgentService which uses it)
+		this.undoService = new UndoService(this);
 
 		// Register agent tools and initialize AgentService
 		registerAllTools();
@@ -351,6 +356,9 @@ ${cardList}${moreText}
 	onunload(): void {
 		// Cleanup floating button
 		this.floatingButton?.destroy();
+
+		// Clear undo stack
+		this.undoService?.clear();
 
 		// Save card store immediately on unload (critical with 60s debounce)
 		if (this.cardStore) {
