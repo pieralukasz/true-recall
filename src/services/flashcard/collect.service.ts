@@ -3,11 +3,12 @@
  * Handles collecting flashcards from markdown and stripping #flashcard tags
  *
  * Uses a single-pass algorithm to:
- * - Extract flashcards
+ * - Extract flashcards (supports multi-line questions with code blocks)
  * - Strip #flashcard tags from content
  * - Remove entire flashcard blocks
  *
  * All in O(n) time with proper handling of:
+ * - Multi-line questions (including code blocks)
  * - Legacy ID lines (ID: 123)
  * - Code blocks (``` or ~~~) - empty lines inside code blocks don't end flashcards
  * - Consecutive flashcards
@@ -39,15 +40,14 @@ export interface CollectResult {
  */
 export class CollectService {
 	private readonly flashcardTag = FLASHCARD_CONFIG.tag;
-	private readonly flashcardPattern: RegExp;
+	private readonly tagPattern: RegExp;
 	private readonly legacyIdPattern: RegExp;
 	private readonly codeBlockPattern: RegExp;
 
 	constructor() {
-		// Pattern from FlashcardParserService - matches line ending with #flashcard
-		// Group 1 captures the question text before the tag
-		this.flashcardPattern = new RegExp(
-			`^(.+?)\\s*${FLASHCARD_CONFIG.tag}\\s*$`
+		// Matches any line ending with #flashcard, captures everything before
+		this.tagPattern = new RegExp(
+			`^(.*)\\s*${FLASHCARD_CONFIG.tag}\\s*$`
 		);
 		// Matches legacy ID lines (old format)
 		this.legacyIdPattern = /^ID:\s*\d+/;
@@ -60,6 +60,7 @@ export class CollectService {
 	 * Returns the flashcards and content with tags/flashcards removed
 	 *
 	 * Single-pass algorithm: O(n) where n is number of lines
+	 * Supports multi-line questions including code blocks.
 	 */
 	collect(content: string): CollectResult {
 		const lines = content.split(/\r?\n/);
@@ -67,66 +68,54 @@ export class CollectService {
 		const tagsStrippedLines: string[] = [];
 		const noFlashcardsLines: string[] = [];
 
+		// For accumulating potential question lines
+		let potentialQuestionLines: string[] = [];
+		let potentialQuestionOutputLines: string[] = []; // For tagsStrippedLines
+		let inQuestionCodeBlock = false;
+
+		// For collecting answer
 		let currentQuestion: string | null = null;
 		let currentAnswerLines: string[] = [];
 		let inFlashcard = false;
-		let inCodeBlock = false; // Track if we're inside a code block
+		let inAnswerCodeBlock = false;
 
 		for (let i = 0; i < lines.length; i++) {
 			const line = lines[i] ?? "";
-			const match = line.match(this.flashcardPattern);
 			const trimmedLine = line.trim();
 
-			// Toggle code block state if we hit a marker
-			if (this.codeBlockPattern.test(trimmedLine)) {
-				if (inFlashcard) {
-					inCodeBlock = !inCodeBlock;
-				}
-			}
-
-			if (match?.[1]) {
-				// Start of new flashcard - save previous if exists
-				if (inFlashcard && currentQuestion) {
-					this.saveFlashcard(flashcards, currentQuestion, currentAnswerLines);
+			if (inFlashcard) {
+				// We're collecting answer lines
+				if (this.codeBlockPattern.test(trimmedLine)) {
+					inAnswerCodeBlock = !inAnswerCodeBlock;
 				}
 
-				currentQuestion = match[1].trim();
-				currentAnswerLines = [];
-				inFlashcard = true;
-				inCodeBlock = false;
-
-				// newContent: line without tag
-				tagsStrippedLines.push(currentQuestion);
-				// newContentWithoutFlashcards: skip this line
-			} else if (inFlashcard) {
-				// Check for end conditions (same as FlashcardParserService)
 				if (this.legacyIdPattern.test(line)) {
 					// Skip legacy ID lines from answer, but keep in file content
 					tagsStrippedLines.push(line);
+				} else if (trimmedLine === "" && !inAnswerCodeBlock && currentAnswerLines.length === 0) {
+					// Skip leading empty lines between question and answer
+					tagsStrippedLines.push(line);
+					// Don't add to noFlashcardsLines - this is part of the flashcard block
 				} else if (
-					(trimmedLine === "" && !inCodeBlock) ||
-					this.flashcardPattern.test(line)
+					(trimmedLine === "" && !inAnswerCodeBlock) ||
+					this.tagPattern.test(line)
 				) {
 					// Empty line (when NOT in code block) or new flashcard - end current flashcard
 					if (currentQuestion) {
-						this.saveFlashcard(
-							flashcards,
-							currentQuestion,
-							currentAnswerLines
-						);
+						this.saveFlashcard(flashcards, currentQuestion, currentAnswerLines);
 					}
 					inFlashcard = false;
-					inCodeBlock = false;
+					inAnswerCodeBlock = false;
 					currentQuestion = null;
 					currentAnswerLines = [];
 
-					// Keep empty line in both outputs
-					tagsStrippedLines.push(line);
-					noFlashcardsLines.push(line);
-
-					// If it's a flashcard line, re-process it
-					if (this.flashcardPattern.test(line)) {
+					// If it's a new flashcard line, re-process it
+					if (this.tagPattern.test(line)) {
 						i--;
+					} else {
+						// Keep empty line in both outputs
+						tagsStrippedLines.push(line);
+						noFlashcardsLines.push(line);
 					}
 				} else {
 					// Part of answer (including empty lines inside code blocks)
@@ -135,15 +124,69 @@ export class CollectService {
 					// Skip in noFlashcardsLines
 				}
 			} else {
-				// Regular text
-				tagsStrippedLines.push(line);
-				noFlashcardsLines.push(line);
+				// Not in flashcard - either regular text or accumulating question
+
+				// Toggle code block state for question accumulation
+				if (this.codeBlockPattern.test(line)) {
+					inQuestionCodeBlock = !inQuestionCodeBlock;
+				}
+
+				const tagMatch = line.match(this.tagPattern);
+
+				if (tagMatch) {
+					// Found #flashcard - finalize question and start collecting answer
+					const beforeTag = tagMatch[1] ?? "";
+
+					// Add the part before #flashcard to question lines
+					potentialQuestionLines.push(beforeTag);
+					potentialQuestionOutputLines.push(beforeTag);
+
+					const question = potentialQuestionLines.join("\n").trim();
+
+					// Add accumulated question lines to tagsStrippedLines (without the tag)
+					tagsStrippedLines.push(...potentialQuestionOutputLines);
+					// Don't add to noFlashcardsLines - question is part of flashcard
+
+					// Reset accumulation
+					potentialQuestionLines = [];
+					potentialQuestionOutputLines = [];
+					inQuestionCodeBlock = false;
+
+					if (question) {
+						currentQuestion = question;
+						currentAnswerLines = [];
+						inFlashcard = true;
+						inAnswerCodeBlock = false;
+					}
+				} else if (trimmedLine === "" && !inQuestionCodeBlock) {
+					// Empty line outside code block - this separates content
+					// Flush any accumulated question lines as regular text
+					if (potentialQuestionLines.length > 0) {
+						tagsStrippedLines.push(...potentialQuestionOutputLines);
+						noFlashcardsLines.push(...potentialQuestionOutputLines);
+						potentialQuestionLines = [];
+						potentialQuestionOutputLines = [];
+					}
+					// Add the empty line
+					tagsStrippedLines.push(line);
+					noFlashcardsLines.push(line);
+				} else {
+					// Accumulate as potential question line
+					potentialQuestionLines.push(line);
+					potentialQuestionOutputLines.push(line);
+				}
 			}
 		}
 
 		// Handle edge case: file ends with flashcard
 		if (inFlashcard && currentQuestion) {
 			this.saveFlashcard(flashcards, currentQuestion, currentAnswerLines);
+		}
+
+		// Flush any remaining accumulated lines as regular text
+		if (potentialQuestionLines.length > 0) {
+			tagsStrippedLines.push(...potentialQuestionOutputLines);
+			noFlashcardsLines.push(...potentialQuestionOutputLines);
 		}
 
 		return {
@@ -186,7 +229,7 @@ export class CollectService {
 		const lines = content.split(/\r?\n/);
 		let count = 0;
 		for (const line of lines) {
-			if (this.flashcardPattern.test(line)) count++;
+			if (this.tagPattern.test(line)) count++;
 		}
 		return count;
 	}
