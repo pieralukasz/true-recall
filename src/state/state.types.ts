@@ -63,6 +63,10 @@ export interface PanelState {
     searchQuery: string;
     /** Whether the inline add card form is expanded */
     isAddCardExpanded: boolean;
+    /** Whether panel is following active review session */
+    isFollowingReview: boolean;
+    /** Source note path from review session */
+    reviewSourceNotePath: string | null;
 }
 
 /**

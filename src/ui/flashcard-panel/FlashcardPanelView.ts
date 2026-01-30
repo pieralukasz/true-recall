@@ -25,7 +25,7 @@ import { MoveCardModal } from "../modals/MoveCardModal";
 import type { FSRSFlashcardItem } from "../../types/fsrs/card.types";
 import { SimpleFlashcardEditorModal, flashcardToMarkdown } from "../modals/SimpleFlashcardEditorModal";
 import type { FlashcardItem } from "../../types";
-import type { CardAddedEvent, CardRemovedEvent, CardUpdatedEvent, CardReviewedEvent, BulkChangeEvent } from "../../types/events.types";
+import type { CardAddedEvent, CardRemovedEvent, CardUpdatedEvent, CardReviewedEvent, BulkChangeEvent, ReviewCardChangedEvent } from "../../types/events.types";
 import { State } from "ts-fsrs";
 import type TrueRecallPlugin from "../../main";
 
@@ -340,6 +340,13 @@ export class FlashcardPanelView extends ItemView {
             void this.updateHeaderStatsOnly();
         });
         this.eventUnsubscribers.push(unsubReviewed);
+
+        // Handle review card changes - sync panel with review session
+        const unsubReviewCard = eventBus.on<ReviewCardChangedEvent>(
+            "review:card-changed",
+            (event) => void this.handleReviewCardChanged(event)
+        );
+        this.eventUnsubscribers.push(unsubReviewCard);
     }
 
     /**
@@ -355,6 +362,36 @@ export class FlashcardPanelView extends ItemView {
 
         this.stateManager.setCurrentFile(file);
         await this.loadFlashcardInfo();
+    }
+
+    /**
+     * Check if panel is currently following a review session
+     */
+    isFollowingReview(): boolean {
+        return this.stateManager.getState().isFollowingReview;
+    }
+
+    /**
+     * Handle card change during review session
+     * Updates panel to show flashcards from current review card's source note
+     */
+    private async handleReviewCardChanged(event: ReviewCardChangedEvent): Promise<void> {
+        // Update review follow state
+        this.stateManager.setReviewFollowState(event.sourceNotePath, event.isActive);
+
+        if (!event.isActive || !event.sourceNotePath) {
+            // Session ended or no source - revert to active file mode
+            const activeFile = this.app.workspace.getActiveFile();
+            await this.handleFileChange(activeFile);
+            return;
+        }
+
+        // Find the source file
+        const sourceFile = this.app.vault.getAbstractFileByPath(event.sourceNotePath);
+        if (sourceFile instanceof TFile) {
+            // Update panel to show this file's flashcards
+            await this.handleFileChange(sourceFile);
+        }
     }
 
     // ===== Private Methods =====
@@ -449,6 +486,7 @@ export class FlashcardPanelView extends ItemView {
                     selectionMode: state.selectionMode,
                     selectedCount: state.selectedCardIds.size,
                     searchQuery: state.searchQuery,
+                    isFollowingReview: state.isFollowingReview,
                     onAdd: () => void this.handleAddFlashcard(),
                     onGenerate: () => void this.handleGenerate(),
                     onCollect: () => void this.handleCollect(),
@@ -459,6 +497,7 @@ export class FlashcardPanelView extends ItemView {
                     onExportCsv: () => void this.handleExportCsv(),
                     onCopyToClipboard: () => void this.handleCopyAllToClipboard(),
                     onDeleteAll: () => void this.handleDeleteAllFlashcards(),
+                    onOpenSourceNote: () => this.handleOpenSourceNote(),
                 });
                 this.headerComponent.render();
             } else {
@@ -470,6 +509,7 @@ export class FlashcardPanelView extends ItemView {
                     selectionMode: state.selectionMode,
                     selectedCount: state.selectedCardIds.size,
                     searchQuery: state.searchQuery,
+                    isFollowingReview: state.isFollowingReview,
                 });
             }
         } else {
@@ -1072,6 +1112,18 @@ export class FlashcardPanelView extends ItemView {
         if (!state.currentFile) return;
 
         await this.plugin.reviewNoteFlashcards(state.currentFile);
+    }
+
+    /**
+     * Open the source note in the editor
+     * Used when following a review session to quickly open the source file
+     */
+    private handleOpenSourceNote(): void {
+        const state = this.stateManager.getState();
+        if (!state.currentFile) return;
+
+        // Open the file in a new leaf
+        void this.app.workspace.getLeaf("tab").openFile(state.currentFile);
     }
 
     /**

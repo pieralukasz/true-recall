@@ -38,6 +38,8 @@ function createInitialState(): PanelState {
         expandedCardIds: new Set(),
         searchQuery: "",
         isAddCardExpanded: false,
+        isFollowingReview: false,
+        reviewSourceNotePath: null,
     };
 }
 
@@ -319,6 +321,16 @@ export class PanelStateManager {
      */
     setAddCardExpanded(expanded: boolean): void {
         this.setState({ isAddCardExpanded: expanded });
+    }
+
+    /**
+     * Set review follow state (when panel should follow review session)
+     */
+    setReviewFollowState(sourcePath: string | null, isActive: boolean): void {
+        this.setState({
+            isFollowingReview: isActive && sourcePath !== null,
+            reviewSourceNotePath: isActive ? sourcePath : null,
+        });
     }
 
     // ===== Private Methods =====

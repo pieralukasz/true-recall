@@ -31,6 +31,7 @@ import type {
 	CardRemovedEvent,
 	CardUpdatedEvent,
 	BulkChangeEvent,
+	ReviewCardChangedEvent,
 } from "../../types/events.types";
 import {
 	createEditableTextField,
@@ -320,6 +321,9 @@ export class ReviewView extends ItemView {
 	}
 
 	async onClose(): Promise<void> {
+		// Notify panel that review session ended
+		this.emitCardChangedEvent();
+
 		// Flush store to disk before closing
 		if (this.plugin.cardStore) {
 			await this.plugin.cardStore.flush();
@@ -581,6 +585,9 @@ export class ReviewView extends ItemView {
 
 			// Start session
 			this.stateManager.startSession(queue);
+
+			// Notify panel of first card
+			this.emitCardChangedEvent();
 
 			// Calculate scheduling preview for first card
 			this.updateSchedulingPreview();
@@ -1572,6 +1579,23 @@ export class ReviewView extends ItemView {
 	}
 
 	/**
+	 * Emit event to notify FlashcardPanelView of card change
+	 */
+	private emitCardChangedEvent(): void {
+		const card = this.stateManager.getCurrentCard();
+		const isActive = this.stateManager.isActive();
+
+		getEventBus().emit({
+			type: "review:card-changed",
+			sourceNoteName: card?.sourceNoteName ?? null,
+			sourceNotePath: card?.sourceNotePath ?? null,
+			sourceUid: card?.sourceUid ?? null,
+			isActive,
+			timestamp: Date.now(),
+		} as ReviewCardChangedEvent);
+	}
+
+	/**
 	 * Update scheduling preview for current card
 	 */
 	private updateSchedulingPreview(): void {
@@ -1662,6 +1686,10 @@ export class ReviewView extends ItemView {
 
 		// Move to next card
 		const hasMore = this.stateManager.nextCard();
+
+		// Notify panel of card change (even when session ends)
+		this.emitCardChangedEvent();
+
 		if (hasMore) {
 			this.updateSchedulingPreview();
 		}
@@ -1708,6 +1736,7 @@ export class ReviewView extends ItemView {
 	 * Handle "Next Session" button click - opens new session modal
 	 */
 	private handleNextSession(): void {
-		void this.plugin.startNewReviewSession();
+		this.leaf.detach();
+		void this.plugin.activateProjectsView();
 	}
 }
