@@ -6,7 +6,7 @@
 import { TFile } from "obsidian";
 import type TrueRecallPlugin from "../main";
 import { FlashcardPanelView } from "../ui/flashcard-panel/FlashcardPanelView";
-import { VIEW_TYPE_FLASHCARD_PANEL } from "../constants";
+import { VIEW_TYPE_FLASHCARD_PANEL, VIEW_TYPE_REVIEW } from "../constants";
 import type { DeletionHandlerService } from "../services/flashcard/deletion-handler.service";
 
 /**
@@ -59,19 +59,29 @@ export function registerEventHandlers(plugin: TrueRecallPlugin): void {
 
 /**
  * Update the panel view with current file
- * Respects review follow mode - doesn't override when following review
+ * Respects review follow mode only when ReviewView is the active view
  */
 function updatePanelView(plugin: TrueRecallPlugin, file: TFile | null): void {
+	// Check if ReviewView is currently the active view
+	const activeLeaf = plugin.app.workspace.activeLeaf;
+	const isReviewViewActive = activeLeaf?.view?.getViewType() === VIEW_TYPE_REVIEW;
+
 	const leaves = plugin.app.workspace.getLeavesOfType(
 		VIEW_TYPE_FLASHCARD_PANEL
 	);
 	leaves.forEach((leaf) => {
 		const view = leaf.view;
 		if (view instanceof FlashcardPanelView) {
-			// Don't override when following review session
-			if (view.isFollowingReview()) {
+			// Only block updates if ReviewView is active AND we're following review
+			if (isReviewViewActive && view.isFollowingReview()) {
 				return;
 			}
+
+			// Clear review follow state when navigating away from ReviewView
+			if (!isReviewViewActive && view.isFollowingReview()) {
+				view.clearReviewFollowState();
+			}
+
 			void view.handleFileChange(file);
 		}
 	});

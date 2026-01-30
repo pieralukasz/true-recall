@@ -89,7 +89,6 @@ export class ReviewView extends ItemView {
 	private buttonsEl!: HTMLElement;
 
 	// Native header action elements
-	private aiGenerateAction: HTMLElement | null = null;
 	private openNoteAction: HTMLElement | null = null;
 
 	// State subscription
@@ -127,7 +126,6 @@ export class ReviewView extends ItemView {
 				flashcardManager: this.flashcardManager,
 				fsrsService: this.fsrsService,
 				reviewService: this.reviewService,
-				openRouterService: this.plugin.openRouterService,
 				cardStore: this.plugin.cardStore,
 				createZettelTemplateService: () =>
 					new ZettelTemplateService(this.app),
@@ -151,8 +149,6 @@ export class ReviewView extends ItemView {
 			onBuryCard: () => this.cardActionsHandler.handleBuryCard(),
 			onBuryNote: () => this.cardActionsHandler.handleBuryNote(),
 			onMoveCard: () => this.cardActionsHandler.handleMoveCard(),
-			onAIGenerate: () =>
-				this.cardActionsHandler.handleAIGenerateFlashcard(),
 			onAddCard: () => this.cardActionsHandler.handleAddNewFlashcard(),
 			onCopyCard: () => this.cardActionsHandler.handleCopyCurrentCard(),
 			onEditCard: () => this.cardActionsHandler.handleEditCardModal(),
@@ -270,6 +266,16 @@ export class ReviewView extends ItemView {
 		// Subscribe to EventBus for cross-component reactivity
 		this.subscribeToEvents();
 
+		// Re-emit card changed event when this view becomes active again
+		// This syncs the flashcard panel back to review when user returns to this view
+		this.registerEvent(
+			this.app.workspace.on("active-leaf-change", (leaf) => {
+				if (leaf === this.leaf && this.stateManager.isActive()) {
+					this.emitCardChangedEvent();
+				}
+			})
+		);
+
 		// Register keyboard shortcuts using the KeyboardHandler
 		this.registerDomEvent(document, "keydown", (e: KeyboardEvent) => {
 			// Only handle when this view is active
@@ -290,10 +296,6 @@ export class ReviewView extends ItemView {
 	 */
 	private updateHeaderActions(): void {
 		// Remove existing actions
-		if (this.aiGenerateAction) {
-			this.aiGenerateAction.remove();
-			this.aiGenerateAction = null;
-		}
 		if (this.openNoteAction) {
 			this.openNoteAction.remove();
 			this.openNoteAction = null;
@@ -310,13 +312,6 @@ export class ReviewView extends ItemView {
 		// Open note action
 		this.openNoteAction = this.addAction("external-link", "Open note", () =>
 			this.handleOpenNote()
-		);
-
-		// AI Generate flashcard action
-		this.aiGenerateAction = this.addAction(
-			"sparkles",
-			"Generate flashcard with AI (G)",
-			() => void this.cardActionsHandler.handleAIGenerateFlashcard()
 		);
 	}
 
@@ -336,10 +331,6 @@ export class ReviewView extends ItemView {
 		this.eventUnsubscribers = [];
 
 		// Remove native header actions
-		if (this.aiGenerateAction) {
-			this.aiGenerateAction.remove();
-			this.aiGenerateAction = null;
-		}
 		if (this.openNoteAction) {
 			this.openNoteAction.remove();
 			this.openNoteAction = null;
@@ -1269,16 +1260,6 @@ export class ReviewView extends ItemView {
 				.setIcon("plus")
 				.onClick(
 					() => void this.cardActionsHandler.handleAddNewFlashcard()
-				)
-		);
-
-		menu.addItem((item) =>
-			item
-				.setTitle("Generate with AI (G)")
-				.setIcon("sparkles")
-				.onClick(
-					() =>
-						void this.cardActionsHandler.handleAIGenerateFlashcard()
 				)
 		);
 

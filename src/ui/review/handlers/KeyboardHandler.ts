@@ -19,7 +19,6 @@ export interface KeyboardShortcuts {
 	buryCard: string;          // -
 	buryNote: string;          // =
 	moveCard: string;          // M
-	aiGenerate: string;        // G
 	copyCard: string;          // B
 	editCard: string;          // E
 }
@@ -35,7 +34,6 @@ export interface KeyboardActionCallbacks {
 	onBuryCard: () => Promise<void>;
 	onBuryNote: () => Promise<void>;
 	onMoveCard: () => Promise<void>;
-	onAIGenerate: () => Promise<void>;
 	onAddCard: () => Promise<void>;
 	onCopyCard: () => Promise<void>;
 	onEditCard: () => Promise<void>;
@@ -130,13 +128,6 @@ export class KeyboardHandler {
 			return true;
 		}
 
-		// G = Generate flashcard with AI
-		if (e.key === "g" || e.key === "G") {
-			e.preventDefault();
-			void this.callbacks.onAIGenerate();
-			return true;
-		}
-
 		// B = Copy current card to new flashcard
 		if (e.key === "b" || e.key === "B") {
 			e.preventDefault();
@@ -210,7 +201,6 @@ export class KeyboardHandler {
 			{ key: "-", description: "Bury card until tomorrow" },
 			{ key: "=", description: "Bury note (all sibling cards)" },
 			{ key: "M", description: "Move card to another note" },
-			{ key: "G", description: "Generate flashcard with AI" },
 			{ key: "A", description: "Add new flashcard" },
 			{ key: "B", description: "Copy card (branch)" },
 			{ key: "E", description: "Edit card" },

@@ -372,6 +372,13 @@ export class FlashcardPanelView extends ItemView {
     }
 
     /**
+     * Clear review follow state (called when user navigates away from ReviewView)
+     */
+    clearReviewFollowState(): void {
+        this.stateManager.setReviewFollowState(null, false);
+    }
+
+    /**
      * Handle card change during review session
      * Updates panel to show flashcards from current review card's source note
      */
