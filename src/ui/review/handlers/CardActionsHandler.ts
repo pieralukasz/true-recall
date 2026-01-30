@@ -11,6 +11,7 @@ import type { UndoEntry } from "../review.types";
 import { MoveCardModal, SimpleFlashcardEditorModal, flashcardToMarkdown } from "../../modals";
 import { notify } from "../../../services";
 import { UI_CONFIG } from "../../../constants";
+import type TrueRecallPlugin from "../../../main";
 
 /**
  * Templater plugin interface for processing templates
@@ -35,6 +36,8 @@ export interface CardActionsHandlerDeps {
 	/** Function to create ZettelTemplateService */
 	createZettelTemplateService: () => ZettelTemplateService;
 	settings: TrueRecallSettings;
+	/** Plugin instance for accessing AgentService */
+	plugin: TrueRecallPlugin;
 }
 
 /**
@@ -328,16 +331,35 @@ export class CardActionsHandler {
 		if (result.cancelled || result.flashcards.length === 0) return;
 
 		try {
-			// Add all parsed flashcards
-			for (const flashcard of result.flashcards) {
-				const newCard = await this.deps.flashcardManager.addSingleFlashcard(
-					flashcard.question,
-					flashcard.answer,
-					card.sourceUid
-				);
+			const sourceNotePath = card.sourceNotePath;
 
-				// Add new card to current session queue
-				this.deps.stateManager.addCardToQueue(newCard);
+			// Add all parsed flashcards (via AgentService for undo support)
+			for (const flashcard of result.flashcards) {
+				const createResult = await this.deps.plugin.agentService?.execute<{
+					id: string;
+					question: string;
+					answer: string;
+					sourceUid?: string;
+					sourceNoteName?: string;
+				}>("create-flashcard", {
+					question: flashcard.question,
+					answer: flashcard.answer,
+					sourceNotePath: sourceNotePath,
+				});
+
+				if (createResult?.success && createResult.data) {
+					// Add new card to current session queue
+					const newCard: FSRSFlashcardItem = {
+						id: createResult.data.id,
+						question: createResult.data.question,
+						answer: createResult.data.answer,
+						sourceNoteName: createResult.data.sourceNoteName,
+						sourceUid: createResult.data.sourceUid,
+						projects: [],
+						fsrs: this.deps.cardStore.get(createResult.data.id) ?? {} as any,
+					};
+					this.deps.stateManager.addCardToQueue(newCard);
+				}
 			}
 
 			notify().cardsCreated(result.flashcards.length);
@@ -366,16 +388,35 @@ export class CardActionsHandler {
 		if (result.cancelled || result.flashcards.length === 0) return;
 
 		try {
-			// Add all parsed flashcards
-			for (const flashcard of result.flashcards) {
-				const newCard = await this.deps.flashcardManager.addSingleFlashcard(
-					flashcard.question,
-					flashcard.answer,
-					card.sourceUid
-				);
+			const sourceNotePath = card.sourceNotePath;
 
-				// Add new card to current session queue
-				this.deps.stateManager.addCardToQueue(newCard);
+			// Add all parsed flashcards (via AgentService for undo support)
+			for (const flashcard of result.flashcards) {
+				const createResult = await this.deps.plugin.agentService?.execute<{
+					id: string;
+					question: string;
+					answer: string;
+					sourceUid?: string;
+					sourceNoteName?: string;
+				}>("create-flashcard", {
+					question: flashcard.question,
+					answer: flashcard.answer,
+					sourceNotePath: sourceNotePath,
+				});
+
+				if (createResult?.success && createResult.data) {
+					// Add new card to current session queue
+					const newCard: FSRSFlashcardItem = {
+						id: createResult.data.id,
+						question: createResult.data.question,
+						answer: createResult.data.answer,
+						sourceNoteName: createResult.data.sourceNoteName,
+						sourceUid: createResult.data.sourceUid,
+						projects: [],
+						fsrs: this.deps.cardStore.get(createResult.data.id) ?? {} as any,
+					};
+					this.deps.stateManager.addCardToQueue(newCard);
+				}
 			}
 
 			notify().cardsCreated(result.flashcards.length);
@@ -403,14 +444,19 @@ export class CardActionsHandler {
 		if (result.cancelled || result.flashcards.length === 0) return;
 
 		try {
-			// First flashcard updates the original card
+			// First flashcard updates the original card (via AgentService for undo support)
 			const firstFlashcard = result.flashcards[0];
 			if (firstFlashcard) {
-				this.deps.flashcardManager.updateCardContent(
-					card.id,
-					firstFlashcard.question,
-					firstFlashcard.answer
-				);
+				const updateResult = await this.deps.plugin.agentService?.execute("update-card", {
+					cardId: card.id,
+					newQuestion: firstFlashcard.question,
+					newAnswer: firstFlashcard.answer,
+				});
+
+				if (!updateResult?.success) {
+					notify().operationFailed("update card", updateResult?.error?.message ?? "Unknown error");
+					return;
+				}
 
 				// Update in state manager queue
 				this.deps.stateManager.updateCurrentCardContent(
@@ -419,20 +465,38 @@ export class CardActionsHandler {
 				);
 			}
 
-			// Additional flashcards (if any) are created as new cards
+			// Additional flashcards (if any) are created as new cards (via AgentService for undo support)
 			if (result.flashcards.length > 1) {
-				// Fallback to fsrs.sourceUid if top-level sourceUid is undefined
-				const sourceUidToUse = card.sourceUid ?? card.fsrs?.sourceUid;
+				const sourceNotePath = card.sourceNotePath;
 
 				for (let i = 1; i < result.flashcards.length; i++) {
 					const flashcard = result.flashcards[i];
 					if (flashcard) {
-						const newCard = await this.deps.flashcardManager.addSingleFlashcard(
-							flashcard.question,
-							flashcard.answer,
-							sourceUidToUse
-						);
-						this.deps.stateManager.addCardToQueue(newCard);
+						const createResult = await this.deps.plugin.agentService?.execute<{
+							id: string;
+							question: string;
+							answer: string;
+							sourceUid?: string;
+							sourceNoteName?: string;
+						}>("create-flashcard", {
+							question: flashcard.question,
+							answer: flashcard.answer,
+							sourceNotePath: sourceNotePath,
+						});
+
+						if (createResult?.success && createResult.data) {
+							// Add new card to current session queue
+							const newCard: FSRSFlashcardItem = {
+								id: createResult.data.id,
+								question: createResult.data.question,
+								answer: createResult.data.answer,
+								sourceNoteName: createResult.data.sourceNoteName,
+								sourceUid: createResult.data.sourceUid,
+								projects: [],
+								fsrs: this.deps.cardStore.get(createResult.data.id) ?? {} as any,
+							};
+							this.deps.stateManager.addCardToQueue(newCard);
+						}
 					}
 				}
 				notify().success(`Updated card and created ${result.flashcards.length - 1} new cards`);
@@ -448,9 +512,16 @@ export class CardActionsHandler {
 	}
 
 	/**
-	 * Undo the last action (answer, bury, or suspend)
+	 * Undo the last action (edit/add/delete from global UndoService, or answer/bury/suspend from review session)
 	 */
 	async handleUndo(): Promise<boolean> {
+		// First check global UndoService for edit/add/delete undos
+		const globalUndoService = this.deps.plugin.undoService;
+		if (globalUndoService?.canUndo()) {
+			return await globalUndoService.undo();
+		}
+
+		// Fall back to review session undo (answer, bury, suspend)
 		const undoEntry = this.undoStack.pop();
 		if (!undoEntry) {
 			notify().nothingToUndo();

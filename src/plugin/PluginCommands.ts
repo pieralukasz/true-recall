@@ -141,4 +141,20 @@ export function registerCommands(plugin: TrueRecallPlugin): void {
 			return false;
 		},
 	});
+
+	// Undo last flashcard action (edit, add, delete)
+	plugin.addCommand({
+		id: "undo-flashcard-action",
+		name: "Undo last flashcard action",
+		checkCallback: (checking) => {
+			// Only show command if undo is available
+			if (!plugin.undoService?.canUndo()) {
+				return false;
+			}
+			if (!checking) {
+				void plugin.undoService.undo();
+			}
+			return true;
+		},
+	});
 }
