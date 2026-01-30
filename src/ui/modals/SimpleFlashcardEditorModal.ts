@@ -6,6 +6,7 @@
 import { App, Component, MarkdownRenderer } from "obsidian";
 import { BaseModal } from "./BaseModal";
 import { FlashcardParserService, notify, type OpenRouterService } from "../../services";
+import { ImageService } from "../../services/image";
 import type { FlashcardItem, TrueRecallSettings } from "../../types";
 import { BATCH_IMPORT_PARSE_PROMPT, FLASHCARD_CONFIG } from "../../constants";
 import { FlashcardReviewModal } from "./FlashcardReviewModal";
@@ -56,6 +57,9 @@ export class SimpleFlashcardEditorModal extends BaseModal {
 	// AI processing state
 	private isProcessingAI = false;
 
+	// Image service for pasting images
+	private imageService: ImageService | null = null;
+
 	constructor(app: App, options: SimpleFlashcardEditorOptions) {
 		super(app, {
 			title: options.mode === "add" ? "Add Flashcards" : "Edit Flashcard",
@@ -76,6 +80,7 @@ export class SimpleFlashcardEditorModal extends BaseModal {
 	}
 
 	onOpen(): void {
+		this.imageService = new ImageService(this.app);
 		super.onOpen();
 		this.contentEl.addClass("true-recall-simple-flashcard-editor-modal");
 	}
@@ -148,6 +153,9 @@ export class SimpleFlashcardEditorModal extends BaseModal {
 
 		// Setup keyboard shortcuts
 		this.setupKeyboardShortcuts();
+
+		// Setup paste handler for images
+		this.setupPasteHandler();
 
 		// Focus textarea
 		setTimeout(() => {
@@ -272,6 +280,71 @@ export class SimpleFlashcardEditorModal extends BaseModal {
 				return;
 			}
 		});
+	}
+
+	/**
+	 * Setup paste handler for images
+	 */
+	private setupPasteHandler(): void {
+		if (!this.textarea) return;
+
+		this.textarea.addEventListener("paste", (e) => {
+			const items = e.clipboardData?.items;
+			if (!items) return;
+
+			for (const item of Array.from(items)) {
+				if (item.type.startsWith("image/")) {
+					e.preventDefault();
+					const file = item.getAsFile();
+					if (file) {
+						void this.handleImagePaste(file);
+					}
+					return;
+				}
+			}
+		});
+	}
+
+	/**
+	 * Handle pasted image - save to vault and insert markdown
+	 */
+	private async handleImagePaste(file: File): Promise<void> {
+		if (!this.imageService || !this.textarea) return;
+
+		try {
+			// Save image to vault
+			const savedPath = await this.imageService.saveImageFromClipboard(file);
+			if (!savedPath) {
+				notify().warning("Failed to save image");
+				return;
+			}
+
+			// Build markdown and insert at cursor
+			const markdown = this.imageService.buildImageMarkdown(savedPath, 500);
+			this.insertTextAtCursor(markdown);
+		} catch (error) {
+			console.error("Error saving image:", error);
+			notify().operationFailed("save image", error);
+		}
+	}
+
+	/**
+	 * Insert text at current cursor position in textarea
+	 */
+	private insertTextAtCursor(text: string): void {
+		if (!this.textarea) return;
+
+		const start = this.textarea.selectionStart;
+		const end = this.textarea.selectionEnd;
+		const value = this.textarea.value;
+
+		this.textarea.value = value.slice(0, start) + text + value.slice(end);
+
+		// Move cursor after inserted text
+		const newPos = start + text.length;
+		this.textarea.selectionStart = newPos;
+		this.textarea.selectionEnd = newPos;
+		this.textarea.focus();
 	}
 
 	/**

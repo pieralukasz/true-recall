@@ -362,12 +362,6 @@
   .ep\:ml-auto {
     margin-left: auto;
   }
-  .ep\:line-clamp-1 {
-    overflow: hidden;
-    display: -webkit-box;
-    -webkit-box-orient: vertical;
-    -webkit-line-clamp: 1;
-  }
   .ep\:line-clamp-2 {
     overflow: hidden;
     display: -webkit-box;
@@ -596,9 +590,6 @@
   .ep\:border-collapse {
     border-collapse: collapse;
   }
-  .ep\:rotate-90 {
-    rotate: 90deg;
-  }
   .ep\:cursor-default {
     cursor: default;
   }
@@ -685,9 +676,6 @@
   }
   .ep\:gap-y-1 {
     row-gap: calc(var(--ep-spacing) * 1);
-  }
-  .ep\:self-center {
-    align-self: center;
   }
   .ep\:self-end {
     align-self: flex-end;
@@ -1105,9 +1093,6 @@
   }
   .ep\:pl-9 {
     padding-left: calc(var(--ep-spacing) * 9);
-  }
-  .ep\:pl-11 {
-    padding-left: calc(var(--ep-spacing) * 11);
   }
   .ep\:pl-\[7px\] {
     padding-left: 7px;
