@@ -13,7 +13,7 @@ import { getEventBus, notify } from "../../services";
 import { Panel } from "../components/Panel";
 import { ProjectsContent } from "./ProjectsContent";
 import { SelectionFooter } from "../components";
-import { SelectNoteModal } from "../modals";
+import { SelectNoteModal, AddToProjectModal } from "../modals";
 import type TrueRecallPlugin from "../../main";
 import type { ProjectNoteInfo } from "../../types";
 import type { CardReviewedEvent, BulkChangeEvent } from "../../types/events.types";
@@ -181,14 +181,14 @@ export class ProjectsView extends ItemView {
 				projectNoteCounts.set(projectName, notes.length);
 			}
 
-			// Count cards per project and per note
+			// Count cards per project and per note (using sourceUid as key)
 			const projectCardCounts = new Map<string, number>();
 			const projectNewCounts = new Map<string, number>();
 			const projectLearningCounts = new Map<string, number>();
 			const projectDueCounts = new Map<string, number>();
 			const noteCardCounts = new Map<string, Map<string, number>>(); // projectName -> notePath -> count
-			// Per-note state counts: notePath -> { newCount, learningCount, dueCount }
-			const noteStateCounts = new Map<string, { newCount: number; learningCount: number; dueCount: number }>();
+			// Per-uid state counts: sourceUid -> { newCount, learningCount, dueCount }
+			const uidStateCounts = new Map<string, { newCount: number; learningCount: number; dueCount: number }>();
 			const allCards = this.plugin.cardStore.cards.getAll();
 			const now = new Date();
 			const tomorrowBoundary =
@@ -212,6 +212,23 @@ export class ProjectsView extends ItemView {
 				const sourceFile = frontmatterIndex.getFilesByValue("flashcard_uid", card.sourceUid)[0];
 				if (!sourceFile) continue;
 
+				// Per-uid state counts (count once per card using sourceUid as key)
+				if (!uidStateCounts.has(card.sourceUid)) {
+					uidStateCounts.set(card.sourceUid, { newCount: 0, learningCount: 0, dueCount: 0 });
+				}
+				const uidStats = uidStateCounts.get(card.sourceUid)!;
+
+				const dueDate = new Date(card.due);
+				const isNew = card.state === State.New;
+				const isLearning = card.state === State.Learning || card.state === State.Relearning;
+				const isDue = card.state === State.Review && dueDate < tomorrowBoundary;
+
+				// Update uid stats (once per card)
+				if (isNew) uidStats.newCount++;
+				if (isLearning) uidStats.learningCount++;
+				if (isDue) uidStats.dueCount++;
+
+				// Update project-level counts (for each project the note belongs to)
 				for (const projectName of projects) {
 					// Total card count
 					projectCardCounts.set(
@@ -219,52 +236,35 @@ export class ProjectsView extends ItemView {
 						(projectCardCounts.get(projectName) || 0) + 1
 					);
 
-					// Update note-level card count
+					// Update note-level card count (for project)
 					if (!noteCardCounts.has(projectName)) {
 						noteCardCounts.set(projectName, new Map());
 					}
 					const noteCounts = noteCardCounts.get(projectName)!;
 					noteCounts.set(sourceFile.path, (noteCounts.get(sourceFile.path) || 0) + 1);
 
-					// Initialize per-note state counts if needed
-					if (!noteStateCounts.has(sourceFile.path)) {
-						noteStateCounts.set(sourceFile.path, { newCount: 0, learningCount: 0, dueCount: 0 });
-					}
-					const noteStats = noteStateCounts.get(sourceFile.path)!;
-
 					// New count: State.New cards (blue in Anki)
-					if (card.state === State.New) {
+					if (isNew) {
 						projectNewCounts.set(
 							projectName,
 							(projectNewCounts.get(projectName) || 0) + 1
 						);
-						noteStats.newCount++;
 					}
 
-					const dueDate = new Date(card.due);
-
 					// Learning count: All Learning/Relearning cards (orange in Anki)
-					if (
-						card.state === State.Learning ||
-						card.state === State.Relearning
-					) {
+					if (isLearning) {
 						projectLearningCounts.set(
 							projectName,
 							(projectLearningCounts.get(projectName) || 0) + 1
 						);
-						noteStats.learningCount++;
 					}
 
 					// Due count: Review cards due today (green in Anki)
-					if (
-						card.state === State.Review &&
-						dueDate < tomorrowBoundary
-					) {
+					if (isDue) {
 						projectDueCounts.set(
 							projectName,
 							(projectDueCounts.get(projectName) || 0) + 1
 						);
-						noteStats.dueCount++;
 					}
 				}
 			}
@@ -275,9 +275,10 @@ export class ProjectsView extends ItemView {
 					const rawNotes = projectNotes.get(name) ?? [];
 					const noteCountsForProject = noteCardCounts.get(name);
 
-					// Apply card counts to notes
+					// Apply card counts to notes (using uid to look up stats)
 					const notesWithCounts = rawNotes.map(note => {
-						const stats = noteStateCounts.get(note.path);
+						const uid = frontmatterIndex.getValues("flashcard_uid", note.path)[0];
+						const stats = uid ? uidStateCounts.get(uid) : undefined;
 						return {
 							...note,
 							cardCount: noteCountsForProject?.get(note.path) ?? 0,
@@ -300,7 +301,59 @@ export class ProjectsView extends ItemView {
 				})
 				.sort((a, b) => a.name.localeCompare(b.name));
 
+			// Find files without projects from the Zettel Folder only
+			const zettelFolder = this.plugin.settings.zettelFolder;
+			const unassignedNotes: ProjectNoteInfo[] = [];
+			for (const file of this.app.vault.getMarkdownFiles()) {
+				// Only include files from the Zettel Folder
+				if (!file.path.startsWith(zettelFolder + "/") && file.path !== zettelFolder) continue;
+
+				// Check if this file is in any project
+				const fileProjects = frontmatterIndex.getValues("projects", file.path);
+				if (fileProjects.length > 0) continue; // Has projects, skip
+
+				// This note has no projects - count cards if any
+				const fileUid = frontmatterIndex.getValues("flashcard_uid", file.path)[0];
+				let cardCount = 0;
+				let newCount = 0;
+				let learningCount = 0;
+				let dueCount = 0;
+
+				if (fileUid) {
+					for (const card of activeCards) {
+						if (card.sourceUid !== fileUid) continue;
+						cardCount++;
+
+						if (card.state === State.New) {
+							newCount++;
+						}
+
+						const dueDate = new Date(card.due);
+						if (card.state === State.Learning || card.state === State.Relearning) {
+							learningCount++;
+						}
+
+						if (card.state === State.Review && dueDate < tomorrowBoundary) {
+							dueCount++;
+						}
+					}
+				}
+
+				unassignedNotes.push({
+					path: file.path,
+					name: file.basename,
+					cardCount,
+					newCount,
+					learningCount,
+					dueCount,
+				});
+			}
+
+			// Sort unassigned notes alphabetically
+			unassignedNotes.sort((a, b) => a.name.localeCompare(b.name));
+
 			this.stateManager.setProjects(projects);
+			this.stateManager.setUnassignedNotes(unassignedNotes);
 		} catch (error) {
 			console.error("[ProjectsView] Error loading projects:", error);
 			notify().error("Failed to load projects");
@@ -518,6 +571,43 @@ export class ProjectsView extends ItemView {
 	}
 
 	/**
+	 * Handle starting a review session for unassigned notes
+	 */
+	private async handleStartReviewUnassigned(): Promise<void> {
+		const state = this.stateManager.getState();
+		const unassignedNotes = state.unassignedNotes;
+
+		if (unassignedNotes.length === 0) {
+			notify().warning("No unassigned notes");
+			return;
+		}
+
+		// Get note names for unassigned notes
+		const noteNames = unassignedNotes.map(note => note.name);
+
+		// Open review view with sourceNoteFilters
+		const leaves = this.app.workspace.getLeavesOfType(VIEW_TYPE_REVIEW);
+		let leaf: WorkspaceLeaf;
+
+		if (leaves.length > 0) {
+			leaf = leaves[0]!;
+		} else {
+			leaf = this.app.workspace.getLeaf("tab");
+		}
+
+		await leaf.setViewState({
+			type: VIEW_TYPE_REVIEW,
+			active: true,
+			state: {
+				sourceNoteFilters: noteNames,
+				ignoreDailyLimits: true,
+			},
+		});
+
+		this.app.workspace.revealLeaf(leaf);
+	}
+
+	/**
 	 * Handle starting a review session with selected notes
 	 */
 	private async handleStartReviewSelected(): Promise<void> {
@@ -529,19 +619,19 @@ export class ProjectsView extends ItemView {
 			return;
 		}
 
-		// Get source UIDs for selected notes
-		const frontmatterIndex = this.plugin.frontmatterIndex;
-		const sourceUids: string[] = [];
+		// Get note names (basenames) for selected notes
+		// ReviewService.filterCards() expects note names in sourceNoteFilters, not UIDs
+		const noteNames: string[] = [];
 
 		for (const path of selectedPaths) {
-			const uids = frontmatterIndex.getValues("flashcard_uid", path);
-			if (uids.length > 0 && uids[0]) {
-				sourceUids.push(uids[0]);
+			const file = this.app.vault.getAbstractFileByPath(path);
+			if (file instanceof TFile) {
+				noteNames.push(file.basename);
 			}
 		}
 
-		if (sourceUids.length === 0) {
-			notify().warning("Selected notes have no flashcards");
+		if (noteNames.length === 0) {
+			notify().warning("Could not resolve note names");
 			return;
 		}
 
@@ -562,7 +652,7 @@ export class ProjectsView extends ItemView {
 			type: VIEW_TYPE_REVIEW,
 			active: true,
 			state: {
-				sourceNoteFilters: sourceUids,
+				sourceNoteFilters: noteNames,
 				ignoreDailyLimits: true,
 			},
 		});
@@ -740,6 +830,11 @@ export class ProjectsView extends ItemView {
 				onExitSelectionMode: () => this.stateManager.exitSelectionMode(),
 				onToggleNoteSelection: (path) =>
 					this.stateManager.toggleNoteSelection(path),
+				// Unassigned notes props
+				unassignedNotes: state.unassignedNotes,
+				isUnassignedExpanded: state.isUnassignedExpanded,
+				onToggleUnassignedExpanded: () => this.stateManager.toggleUnassignedExpanded(),
+				onStartReviewUnassigned: () => void this.handleStartReviewUnassigned(),
 			});
 			this.contentComponent.render();
 		} else {
@@ -752,6 +847,8 @@ export class ProjectsView extends ItemView {
 				expandedProjectIds: state.expandedProjectIds,
 				selectionMode: state.selectionMode,
 				selectedNotePaths: state.selectedNotePaths,
+				unassignedNotes: state.unassignedNotes,
+				isUnassignedExpanded: state.isUnassignedExpanded,
 			});
 		}
 
@@ -792,11 +889,26 @@ export class ProjectsView extends ItemView {
 				}
 			}
 
+			// Also include unassigned notes
+			for (const note of state.unassignedNotes) {
+				if (selectedPaths.has(note.path)) {
+					newCount += note.newCount;
+					learningCount += note.learningCount;
+					dueCount += note.dueCount;
+				}
+			}
+
 			this.selectionFooterComponent = new SelectionFooter(
 				footerContainer,
 				{
 					display: { type: "cardCounts", newCount, learningCount, dueCount },
 					actions: [
+						{
+							label: "Add to Project",
+							icon: "folder-plus",
+							onClick: () => void this.handleAddSelectedToProject(),
+							variant: "secondary",
+						},
 						{
 							label: "Review Selected",
 							icon: "play",
@@ -810,5 +922,51 @@ export class ProjectsView extends ItemView {
 			);
 			this.selectionFooterComponent.render();
 		}
+	}
+
+	/**
+	 * Handle adding selected notes to a project
+	 */
+	private async handleAddSelectedToProject(): Promise<void> {
+		const state = this.stateManager.getState();
+		const selectedPaths = Array.from(state.selectedNotePaths);
+
+		if (selectedPaths.length === 0) {
+			notify().warning("No notes selected");
+			return;
+		}
+
+		// Get all available project names
+		const availableProjects = [...this.plugin.frontmatterIndex.getAllValues("projects")];
+
+		// Open modal to select projects
+		const modal = new AddToProjectModal(this.app, {
+			availableProjects,
+			currentProjects: [], // No common projects pre-selected
+		});
+
+		const result = await modal.openAndWait();
+		if (result.cancelled || result.projects.length === 0) return;
+
+		// Add selected projects to each selected note
+		const frontmatterService = this.plugin.flashcardManager.getFrontmatterService();
+
+		for (const path of selectedPaths) {
+			const file = this.app.vault.getAbstractFileByPath(path);
+			if (!(file instanceof TFile)) continue;
+
+			// Get current projects for this note
+			const content = await this.app.vault.cachedRead(file);
+			const currentProjects = frontmatterService.extractProjectsFromFrontmatter(content);
+
+			// Merge with new projects (avoid duplicates)
+			const newProjects = [...new Set([...currentProjects, ...result.projects])];
+			await frontmatterService.setProjectsInFrontmatter(file, newProjects);
+		}
+
+		// Exit selection mode and refresh
+		this.stateManager.exitSelectionMode();
+		await this.loadProjects();
+		notify().success(`Added ${selectedPaths.length} note(s) to ${result.projects.length} project(s)`);
 	}
 }

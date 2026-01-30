@@ -2,7 +2,7 @@
  * Projects State Manager
  * Centralized state management for the projects view
  */
-import type { ProjectInfo } from "../types";
+import type { ProjectInfo, ProjectNoteInfo } from "../types";
 
 /**
  * Complete state of the projects view
@@ -22,6 +22,10 @@ export interface ProjectsState {
 	selectionMode: "normal" | "selecting";
 	/** Set of selected note paths (paths are unique identifiers) */
 	selectedNotePaths: Set<string>;
+	/** Notes with flashcards but no project assigned */
+	unassignedNotes: ProjectNoteInfo[];
+	/** Whether the unassigned section is expanded */
+	isUnassignedExpanded: boolean;
 }
 
 /**
@@ -46,6 +50,8 @@ function createInitialState(): ProjectsState {
 		expandedProjectIds: new Set<string>(),
 		selectionMode: "normal",
 		selectedNotePaths: new Set<string>(),
+		unassignedNotes: [],
+		isUnassignedExpanded: false,
 	};
 }
 
@@ -69,6 +75,7 @@ export class ProjectsStateManager {
 			projects: [...this.state.projects],
 			expandedProjectIds: new Set(this.state.expandedProjectIds),
 			selectedNotePaths: new Set(this.state.selectedNotePaths),
+			unassignedNotes: [...this.state.unassignedNotes],
 		};
 	}
 
@@ -118,6 +125,20 @@ export class ProjectsStateManager {
 			projects,
 			isLoading: false,
 		});
+	}
+
+	/**
+	 * Set unassigned notes
+	 */
+	setUnassignedNotes(unassignedNotes: ProjectNoteInfo[]): void {
+		this.setState({ unassignedNotes });
+	}
+
+	/**
+	 * Toggle unassigned section expanded state
+	 */
+	toggleUnassignedExpanded(): void {
+		this.setState({ isUnassignedExpanded: !this.state.isUnassignedExpanded });
 	}
 
 	/**

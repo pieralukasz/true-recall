@@ -113,6 +113,10 @@ export interface TrueRecallSettings {
     autoBackupOnLoad: boolean;
     /** Maximum number of backups to keep (0 = unlimited) */
     maxBackups: number;
+
+    // ===== Copilot Integration =====
+    /** Auto-add source note to Obsidian Copilot context during review */
+    copilotAutoContext: boolean;
 }
 
 /**

@@ -12,6 +12,8 @@ import {
 	SYSTEM_PROMPT,
 } from "../../constants";
 import { TemplatePickerModal, DeviceSelectionModal, FirstSyncConflictModal } from "../modals";
+// HIDDEN: Copilot integration waiting for public API
+// import { CopilotIntegrationService } from "../../services/integration/copilot-integration.service";
 import type { AIModelKey, AIModelInfo } from "../../constants";
 import type {
 	TrueRecallSettings,
@@ -303,6 +305,42 @@ export class TrueRecallSettingTab extends PluginSettingTab {
 						await this.plugin.saveSettings();
 					})
 			);
+
+		// ===== Copilot Integration Section =====
+		// HIDDEN: Waiting for Copilot to expose a public API for adding notes to context.
+		// The underlying code exists in CopilotIntegrationService and ReviewView.
+		// Uncomment this section when Copilot adds API support.
+		// See: https://github.com/logancyang/obsidian-copilot
+		/*
+		container.createEl("h2", { text: "Copilot Integration" });
+
+		const copilotService = new CopilotIntegrationService(this.app);
+		const isCopilotAvailable = copilotService.isAvailable();
+
+		if (!isCopilotAvailable) {
+			const warningDiv = container.createDiv({
+				cls: "setting-item-description",
+			});
+			warningDiv.innerHTML = `
+				<p style="color: var(--text-warning);">⚠️ Obsidian Copilot plugin not detected. Install and enable it to use this feature.</p>
+			`;
+		}
+
+		new Setting(container)
+			.setName("Auto-add source to Copilot context")
+			.setDesc(
+				"During review, automatically add the source note to Obsidian Copilot's context"
+			)
+			.addToggle((toggle) =>
+				toggle
+					.setValue(this.plugin.settings.copilotAutoContext)
+					.setDisabled(!isCopilotAvailable)
+					.onChange(async (value) => {
+						this.plugin.settings.copilotAutoContext = value;
+						await this.plugin.saveSettings();
+					})
+			);
+		*/
 	}
 
 	private renderAITab(container: HTMLElement): void {
