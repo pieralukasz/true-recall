@@ -59,6 +59,7 @@ export function registerEventHandlers(plugin: TrueRecallPlugin): void {
 
 /**
  * Update the panel view with current file
+ * Respects review follow mode - doesn't override when following review
  */
 function updatePanelView(plugin: TrueRecallPlugin, file: TFile | null): void {
 	const leaves = plugin.app.workspace.getLeavesOfType(
@@ -67,6 +68,10 @@ function updatePanelView(plugin: TrueRecallPlugin, file: TFile | null): void {
 	leaves.forEach((leaf) => {
 		const view = leaf.view;
 		if (view instanceof FlashcardPanelView) {
+			// Don't override when following review session
+			if (view.isFollowingReview()) {
+				return;
+			}
 			void view.handleFileChange(file);
 		}
 	});

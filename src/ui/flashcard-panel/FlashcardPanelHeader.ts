@@ -19,6 +19,8 @@ export interface FlashcardPanelHeaderProps {
     selectionMode: SelectionMode;
     selectedCount: number;
     searchQuery: string;
+    /** Whether panel is following a review session */
+    isFollowingReview?: boolean;
     onAdd?: () => void;
     onGenerate?: () => void;
     onCollect?: () => void;
@@ -29,6 +31,7 @@ export interface FlashcardPanelHeaderProps {
     onExportCsv?: () => void;
     onCopyToClipboard?: () => void;
     onDeleteAll?: () => void;
+    onOpenSourceNote?: () => void;
 }
 
 interface StatusCounts {
@@ -119,6 +122,16 @@ export class FlashcardPanelHeader extends BaseComponent {
 
         const iconBtnCls = "clickable-icon";
         const textBtnCls = "clickable-icon ep:flex ep:items-center ep:gap-1";
+
+        // Open source note button (when following review)
+        if (this.props.isFollowingReview && this.props.onOpenSourceNote) {
+            const openNoteBtn = actionsEl.createEl("button", {
+                cls: iconBtnCls,
+                attr: { "aria-label": "Open source note" },
+            });
+            setIcon(openNoteBtn, "file-text");
+            this.events.addEventListener(openNoteBtn, "click", () => this.props.onOpenSourceNote?.());
+        }
 
         // Collect button (pulsing when available)
         if (this.props.hasUncollectedFlashcards && this.props.onCollect) {

@@ -16,7 +16,8 @@ export type FlashcardEventType =
 	| "card:reviewed"
 	| "cards:bulk-change"
 	| "store:synced"
-	| "session:selected";
+	| "session:selected"
+	| "review:card-changed";
 
 /**
  * Base event interface
@@ -88,6 +89,22 @@ export interface StoreSyncedEvent extends FlashcardEvent {
 }
 
 /**
+ * Emitted when the current card changes during a review session
+ * Used to sync FlashcardPanelView with the current card's source note
+ */
+export interface ReviewCardChangedEvent extends FlashcardEvent {
+	type: "review:card-changed";
+	/** Source note name of current card, null if session ended or card has no source */
+	sourceNoteName: string | null;
+	/** Source note path for file lookup */
+	sourceNotePath: string | null;
+	/** Source UID for flashcard lookup */
+	sourceUid: string | null;
+	/** Whether review session is active */
+	isActive: boolean;
+}
+
+/**
  * Union type for all events
  */
 export type AnyFlashcardEvent =
@@ -97,7 +114,8 @@ export type AnyFlashcardEvent =
 	| CardReviewedEvent
 	| BulkChangeEvent
 	| StoreSyncedEvent
-	| SessionSelectedEvent;
+	| SessionSelectedEvent
+	| ReviewCardChangedEvent;
 
 /**
  * Event listener callback type
