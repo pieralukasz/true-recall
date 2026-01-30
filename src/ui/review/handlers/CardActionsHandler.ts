@@ -1,14 +1,14 @@
 /**
  * Card Actions Handler for ReviewView
- * Handles card operations: suspend, bury, move, add, copy, edit, AI generate, create zettel
+ * Handles card operations: suspend, bury, move, add, copy, edit, create zettel
  */
 import { App, TFile, normalizePath } from "obsidian";
 import { Rating } from "ts-fsrs";
 import type { ReviewStateManager } from "../../../state";
-import type { FlashcardManager, FSRSService, ReviewService, ZettelTemplateService, OpenRouterService, SqliteStoreService } from "../../../services";
+import type { FlashcardManager, FSRSService, ReviewService, ZettelTemplateService, SqliteStoreService } from "../../../services";
 import type { FSRSFlashcardItem, TrueRecallSettings } from "../../../types";
 import type { UndoEntry } from "../review.types";
-import { MoveCardModal, AIGeneratorModal, SimpleFlashcardEditorModal, flashcardToMarkdown } from "../../modals";
+import { MoveCardModal, SimpleFlashcardEditorModal, flashcardToMarkdown } from "../../modals";
 import { notify } from "../../../services";
 import { UI_CONFIG } from "../../../constants";
 
@@ -30,7 +30,6 @@ export interface CardActionsHandlerDeps {
 	flashcardManager: FlashcardManager;
 	fsrsService: FSRSService;
 	reviewService: ReviewService;
-	openRouterService: OpenRouterService;
 	/** SQLite store for registering source notes */
 	cardStore: SqliteStoreService;
 	/** Function to create ZettelTemplateService */
@@ -422,13 +421,16 @@ export class CardActionsHandler {
 
 			// Additional flashcards (if any) are created as new cards
 			if (result.flashcards.length > 1) {
+				// Fallback to fsrs.sourceUid if top-level sourceUid is undefined
+				const sourceUidToUse = card.sourceUid ?? card.fsrs?.sourceUid;
+
 				for (let i = 1; i < result.flashcards.length; i++) {
 					const flashcard = result.flashcards[i];
 					if (flashcard) {
 						const newCard = await this.deps.flashcardManager.addSingleFlashcard(
 							flashcard.question,
 							flashcard.answer,
-							card.sourceUid
+							sourceUidToUse
 						);
 						this.deps.stateManager.addCardToQueue(newCard);
 					}
@@ -561,64 +563,6 @@ export class CardActionsHandler {
 
 		tomorrow.setHours(this.deps.settings.dayStartHour, 0, 0, 0);
 		return tomorrow;
-	}
-
-	/**
-	 * Generate flashcards using AI
-	 * Associates generated cards with current card's source note and projects,
-	 * or creates a new note if user requested
-	 */
-	async handleAIGenerateFlashcard(): Promise<void> {
-		const currentCard = this.deps.stateManager.getCurrentCard();
-		if (!currentCard) return;
-
-		// Check if API key is configured
-		if (!this.deps.settings.openRouterApiKey) {
-			notify().aiNotConfigured();
-			return;
-		}
-
-		// Open AI Generator modal with current card context
-		const modal = new AIGeneratorModal(this.deps.app, {
-			openRouterService: this.deps.openRouterService,
-			customSystemPrompt: this.deps.settings.customGeneratePrompt,
-			settings: this.deps.settings,
-			cardContext: {
-				question: currentCard.question,
-				answer: currentCard.answer,
-				sourceNoteName: currentCard.sourceNoteName,
-			},
-		});
-
-		const result = await modal.openAndWait();
-
-		if (result.cancelled || !result.flashcards || result.flashcards.length === 0) {
-			return;
-		}
-
-		// Use current card's source note
-		const targetSourceUid = currentCard.sourceUid;
-
-		try {
-			// Save generated flashcards and add to queue
-			for (const flashcard of result.flashcards) {
-				const newCard = await this.deps.flashcardManager.addSingleFlashcard(
-					flashcard.question,
-					flashcard.answer,
-					targetSourceUid
-				);
-
-				// Add to current review queue
-				this.deps.stateManager.addCardToQueue(newCard);
-			}
-
-			const count = result.flashcards.length;
-			notify().flashcardsGeneratedAndAdded(count);
-
-		} catch (error) {
-			console.error("[CardActionsHandler] Error saving generated flashcards:", error);
-			notify().operationFailed("save flashcards", error);
-		}
 	}
 
 	/**

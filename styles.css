@@ -1804,6 +1804,16 @@
     -webkit-user-select: text;
     white-space: pre-line;
   }
+  .true-recall-review-question pre,
+	.true-recall-review-answer pre {
+    text-align: left;
+    white-space: pre;
+    overflow-x: auto;
+  }
+  .true-recall-review-question code,
+	.true-recall-review-answer code {
+    text-align: left;
+  }
   .true-recall-review-question img,
 	.true-recall-review-answer img {
     margin-left: auto;
