@@ -211,7 +211,17 @@ export class BrowserView extends ItemView {
         if (result.cancelled) return;
 
         try {
-            this.plugin.flashcardManager.updateCardContent(card.id, result.question, result.answer);
+            // Use AgentService for undo support
+            const updateResult = await this.plugin.agentService?.execute("update-card", {
+                cardId: card.id,
+                newQuestion: result.question,
+                newAnswer: result.answer,
+            });
+
+            if (!updateResult?.success) {
+                notify().operationFailed("update card", updateResult?.error?.message ?? "Unknown error");
+                return;
+            }
 
             // Update state
             this.stateManager.updateCard(card.id, {
