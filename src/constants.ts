@@ -144,13 +144,16 @@ export const DEFAULT_SETTINGS: TrueRecallSettings = {
 	excludedFolders: [],
 
 	// Floating Generate Button
-	floatingButtonEnabled: true,
+	floatingButtonEnabled: false,
 	floatingButtonMinChars: 50,
 	floatingButtonDirectGenerate: false,
 
 	// Backup Settings
 	autoBackupOnLoad: false,
 	maxBackups: 10,
+
+	// Copilot Integration
+	copilotAutoContext: false,
 };
 
 // ===== FSRS Default Weights =====

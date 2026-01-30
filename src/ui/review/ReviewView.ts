@@ -24,6 +24,7 @@ import {
 	ZettelTemplateService,
 	notify,
 } from "../../services";
+import { ImageService } from "../../services/image";
 import { ReviewStateManager } from "../../state";
 import { extractFSRSSettings, type FSRSFlashcardItem } from "../../types";
 import type {
@@ -38,6 +39,7 @@ import {
 import type TrueRecallPlugin from "../../main";
 import type { ReviewViewState, UndoEntry } from "./review.types";
 import { CardActionsHandler, KeyboardHandler } from "./handlers";
+import { CopilotIntegrationService } from "../../services/integration/copilot-integration.service";
 
 export class ReviewView extends ItemView {
 	private plugin: TrueRecallPlugin;
@@ -71,6 +73,15 @@ export class ReviewView extends ItemView {
 	private cardActionsHandler!: CardActionsHandler;
 	private keyboardHandler!: KeyboardHandler;
 
+	// Image service for paste handling
+	private imageService!: ImageService;
+
+	// Copilot integration service
+	private copilotService!: CopilotIntegrationService;
+
+	// Track last card ID to avoid repeated Copilot context additions
+	private lastCopilotContextCardId: string | null = null;
+
 	// UI Elements
 	private headerEl!: HTMLElement;
 	private cardContainerEl!: HTMLElement;
@@ -100,6 +111,12 @@ export class ReviewView extends ItemView {
 		// Initialize FSRS service with current settings
 		const fsrsSettings = extractFSRSSettings(plugin.settings);
 		this.fsrsService = new FSRSService(fsrsSettings);
+
+		// Initialize image service for paste handling
+		this.imageService = new ImageService(this.app);
+
+		// Initialize Copilot integration service
+		this.copilotService = new CopilotIntegrationService(this.app);
 
 		// Initialize CardActionsHandler
 		this.cardActionsHandler = new CardActionsHandler(
@@ -135,6 +152,7 @@ export class ReviewView extends ItemView {
 			onMoveCard: () => this.cardActionsHandler.handleMoveCard(),
 			onAIGenerate: () =>
 				this.cardActionsHandler.handleAIGenerateFlashcard(),
+			onAddCard: () => this.cardActionsHandler.handleAddNewFlashcard(),
 			onCopyCard: () => this.cardActionsHandler.handleCopyCurrentCard(),
 			onEditCard: () => this.cardActionsHandler.handleEditCardModal(),
 		});
@@ -538,6 +556,23 @@ export class ReviewView extends ItemView {
 			);
 
 			if (queue.length === 0) {
+				// Diagnostic logging for project filter debugging
+				if (this.projectFilters && this.projectFilters.length > 0) {
+					console.log("[ReviewView] Project filter active but queue empty");
+					console.log("[ReviewView] projectFilters:", this.projectFilters);
+					console.log("[ReviewView] sourceUidToProjects size:", sourceUidToProjects?.size ?? 0);
+					console.log("[ReviewView] activeCards count:", activeCards.length);
+					// Sample card projects for debugging
+					const sampleCards = activeCards.slice(0, 3);
+					for (const card of sampleCards) {
+						console.log("[ReviewView] Sample card:", {
+							id: card.id,
+							sourceUid: card.sourceUid,
+							sourceNoteName: card.sourceNoteName,
+							projects: card.projects,
+						});
+					}
+				}
 				this.renderEmptyState(
 					"Congratulations! No cards due for review."
 				);
@@ -664,6 +699,41 @@ export class ReviewView extends ItemView {
 	}
 
 	/**
+	 * Add source note to Copilot context if enabled
+	 */
+	private async addSourceToCopilotContext(
+		card: FSRSFlashcardItem
+	): Promise<void> {
+		// Check if feature is enabled
+		if (!this.plugin.settings.copilotAutoContext) return;
+
+		// Check if Copilot is available
+		if (!this.copilotService.isAvailable()) return;
+
+		// Skip if we already added this card's source to context
+		if (this.lastCopilotContextCardId === card.id) return;
+
+		// Need a source to add
+		if (!card.sourceUid) return;
+
+		// Find the source file using frontmatter index
+		const sourceFile = this.plugin.frontmatterIndex?.getFileByValue(
+			"flashcard_uid",
+			card.sourceUid
+		);
+		if (!sourceFile) return;
+
+		// Try to add to context
+		const success = await this.copilotService.addNoteToContext(sourceFile);
+		if (success) {
+			this.lastCopilotContextCardId = card.id;
+			console.debug(
+				`[ReviewView] Added source note to Copilot context: ${sourceFile.path}`
+			);
+		}
+	}
+
+	/**
 	 * Render the current flashcard
 	 */
 	private renderCard(): void {
@@ -671,6 +741,9 @@ export class ReviewView extends ItemView {
 
 		const card = this.stateManager.getCurrentCard();
 		if (!card) return;
+
+		// Add source note to Copilot context (async, fire-and-forget)
+		void this.addSourceToCopilotContext(card);
 
 		const editState = this.stateManager.getEditState();
 
@@ -933,6 +1006,63 @@ export class ReviewView extends ItemView {
 		if (toolbar) {
 			toolbar.addClass("true-recall-edit-toolbar");
 		}
+
+		// Add paste handler for images
+		const textarea = editableField.getTextarea();
+		console.log("[ReviewView] Setting up paste handler, textarea:", !!textarea);
+		if (textarea) {
+			textarea.addEventListener("paste", (e) => {
+				console.log("[ReviewView] Paste event triggered");
+				const items = e.clipboardData?.items;
+				console.log("[ReviewView] Clipboard items:", items?.length);
+				if (!items) return;
+
+				for (const item of Array.from(items)) {
+					console.log("[ReviewView] Item type:", item.type);
+					if (item.type.startsWith("image/")) {
+						e.preventDefault();
+						const file = item.getAsFile();
+						console.log("[ReviewView] Got image file:", !!file);
+						if (file) {
+							void this.handleInlineImagePaste(file, textarea);
+						}
+						return;
+					}
+				}
+			});
+		}
+	}
+
+	/**
+	 * Handle pasted image in inline edit - save to vault and insert markdown
+	 */
+	private async handleInlineImagePaste(
+		file: File,
+		textarea: HTMLTextAreaElement
+	): Promise<void> {
+		console.log("[ReviewView] handleInlineImagePaste called, file:", file.name, file.type);
+		try {
+			const savedPath = await this.imageService.saveImageFromClipboard(file);
+			console.log("[ReviewView] Image saved to:", savedPath);
+			if (!savedPath) {
+				notify().warning("Failed to save image");
+				return;
+			}
+
+			const markdown = this.imageService.buildImageMarkdown(savedPath, 500);
+			console.log("[ReviewView] Generated markdown:", markdown);
+			const start = textarea.selectionStart;
+			const end = textarea.selectionEnd;
+			const value = textarea.value;
+
+			textarea.value = value.substring(0, start) + markdown + value.substring(end);
+			textarea.selectionStart = textarea.selectionEnd = start + markdown.length;
+			textarea.dispatchEvent(new Event("input", { bubbles: true }));
+			console.log("[ReviewView] Textarea updated");
+		} catch (error) {
+			console.error("Error saving image:", error);
+			notify().operationFailed("save image", error);
+		}
 	}
 
 	/**
@@ -1123,6 +1253,15 @@ export class ReviewView extends ItemView {
 				.setIcon("pencil")
 				.onClick(
 					() => void this.cardActionsHandler.handleEditCardModal()
+				)
+		);
+
+		menu.addItem((item) =>
+			item
+				.setTitle("Add Flashcard (A)")
+				.setIcon("plus")
+				.onClick(
+					() => void this.cardActionsHandler.handleAddNewFlashcard()
 				)
 		);
 

@@ -117,3 +117,9 @@ export {
 	type CardActionMenuOptions,
 	type CardMenuItem,
 } from "./CardActionMenu";
+
+export {
+	NoteListItem,
+	createNoteListItem,
+	type NoteListItemProps,
+} from "./NoteListItem";

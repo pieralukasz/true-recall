@@ -36,6 +36,7 @@ export interface KeyboardActionCallbacks {
 	onBuryNote: () => Promise<void>;
 	onMoveCard: () => Promise<void>;
 	onAIGenerate: () => Promise<void>;
+	onAddCard: () => Promise<void>;
 	onCopyCard: () => Promise<void>;
 	onEditCard: () => Promise<void>;
 }
@@ -150,6 +151,13 @@ export class KeyboardHandler {
 			return true;
 		}
 
+		// A = Add new flashcard
+		if (e.key === "a" || e.key === "A") {
+			e.preventDefault();
+			void this.callbacks.onAddCard();
+			return true;
+		}
+
 		return false;
 	}
 
@@ -203,6 +211,7 @@ export class KeyboardHandler {
 			{ key: "=", description: "Bury note (all sibling cards)" },
 			{ key: "M", description: "Move card to another note" },
 			{ key: "G", description: "Generate flashcard with AI" },
+			{ key: "A", description: "Add new flashcard" },
 			{ key: "B", description: "Copy card (branch)" },
 			{ key: "E", description: "Edit card" },
 		];
