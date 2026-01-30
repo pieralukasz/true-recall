@@ -294,6 +294,19 @@
 		white-space: pre-line;
 	}
 
+	/* Code blocks in review cards - preserve formatting */
+	.true-recall-review-question pre,
+	.true-recall-review-answer pre {
+		text-align: left;
+		white-space: pre;
+		overflow-x: auto;
+	}
+
+	.true-recall-review-question code,
+	.true-recall-review-answer code {
+		text-align: left;
+	}
+
 	/* Center images in review cards */
 	.true-recall-review-question img,
 	.true-recall-review-answer img {
