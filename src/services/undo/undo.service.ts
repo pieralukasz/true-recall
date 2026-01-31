@@ -5,8 +5,22 @@
 
 import type TrueRecallPlugin from "../../main";
 import type { FSRSCardData } from "../../types";
+import type { ReviewStateManager } from "../../state";
 import { getEventBus, notify } from "../index";
-import type { UndoEntry } from "./undo.types";
+import type {
+	UndoEntry,
+	AnswerUndoPayload,
+	BuryUndoPayload,
+	SuspendUndoPayload,
+} from "./undo.types";
+
+/**
+ * Callback interface for review session updates after undo
+ */
+export interface ReviewUndoCallbacks {
+	onUpdateSchedulingPreview: () => void;
+	onUndoAnswer: (payload: AnswerUndoPayload) => Promise<void>;
+}
 
 /**
  * Service for managing undo operations on flashcard mutations
@@ -15,9 +29,24 @@ export class UndoService {
 	private stack: UndoEntry[] = [];
 	private readonly maxStackSize = 50;
 	private plugin: TrueRecallPlugin;
+	/** ReviewStateManager for inserting cards back into queue (set when ReviewView is open) */
+	private reviewStateManager: ReviewStateManager | null = null;
+	/** Callbacks for review session updates */
+	private reviewCallbacks: ReviewUndoCallbacks | null = null;
 
 	constructor(plugin: TrueRecallPlugin) {
 		this.plugin = plugin;
+	}
+
+	/**
+	 * Set the ReviewStateManager (called when ReviewView opens)
+	 */
+	setReviewStateManager(
+		manager: ReviewStateManager | null,
+		callbacks: ReviewUndoCallbacks | null
+	): void {
+		this.reviewStateManager = manager;
+		this.reviewCallbacks = callbacks;
 	}
 
 	/**
@@ -91,7 +120,7 @@ export class UndoService {
 	 * Execute the actual undo based on payload type
 	 */
 	private async executeUndo(entry: UndoEntry): Promise<boolean> {
-		const { flashcardManager, cardStore } = this.plugin;
+		const { flashcardManager } = this.plugin;
 		const payload = entry.payload;
 
 		switch (payload.type) {
@@ -118,6 +147,15 @@ export class UndoService {
 					await flashcardManager.removeFlashcardById(cardId);
 				}
 				return true;
+
+			case "answer":
+				return await this.undoAnswer(payload);
+
+			case "bury":
+				return this.undoBury(payload);
+
+			case "suspend":
+				return this.undoSuspend(payload);
 
 			default:
 				console.warn(`[UndoService] Unknown undo payload type`);
@@ -147,6 +185,91 @@ export class UndoService {
 			console.error("[UndoService] Error restoring card:", error);
 			return false;
 		}
+	}
+
+	/**
+	 * Undo an answer action (restore FSRS state and re-queue card)
+	 */
+	private async undoAnswer(payload: AnswerUndoPayload): Promise<boolean> {
+		const { flashcardManager } = this.plugin;
+
+		// Restore original FSRS data
+		flashcardManager.updateCardFSRS(payload.card.id, payload.originalFsrs);
+
+		// Re-insert card at original position if ReviewView is active
+		if (this.reviewStateManager) {
+			this.reviewStateManager.insertCardAtPosition(
+				{ ...payload.card, fsrs: payload.originalFsrs },
+				payload.previousIndex
+			);
+		}
+
+		// Call review-specific callbacks (e.g., update session persistence)
+		if (this.reviewCallbacks) {
+			await this.reviewCallbacks.onUndoAnswer(payload);
+			this.reviewCallbacks.onUpdateSchedulingPreview();
+		}
+
+		return true;
+	}
+
+	/**
+	 * Undo a bury action (restore buriedUntil and re-queue card)
+	 */
+	private undoBury(payload: BuryUndoPayload): boolean {
+		const { flashcardManager } = this.plugin;
+
+		// Restore original FSRS data for main card
+		flashcardManager.updateCardFSRS(payload.card.id, payload.originalFsrs);
+
+		// Re-insert main card at original position
+		if (this.reviewStateManager) {
+			this.reviewStateManager.insertCardAtPosition(
+				{ ...payload.card, fsrs: payload.originalFsrs },
+				payload.previousIndex
+			);
+		}
+
+		// Restore additional cards (for "bury note" operation)
+		if (payload.additionalCards) {
+			for (const additionalCard of payload.additionalCards) {
+				flashcardManager.updateCardFSRS(
+					additionalCard.card.id,
+					additionalCard.originalFsrs
+				);
+				// Note: We don't re-insert additional cards as they might have been after current position
+			}
+		}
+
+		if (this.reviewCallbacks) {
+			this.reviewCallbacks.onUpdateSchedulingPreview();
+		}
+
+		return true;
+	}
+
+	/**
+	 * Undo a suspend action (restore suspended flag and re-queue card)
+	 */
+	private undoSuspend(payload: SuspendUndoPayload): boolean {
+		const { flashcardManager } = this.plugin;
+
+		// Restore original FSRS data (with suspended: false)
+		flashcardManager.updateCardFSRS(payload.card.id, payload.originalFsrs);
+
+		// Re-insert card at original position
+		if (this.reviewStateManager) {
+			this.reviewStateManager.insertCardAtPosition(
+				{ ...payload.card, fsrs: payload.originalFsrs },
+				payload.previousIndex
+			);
+		}
+
+		if (this.reviewCallbacks) {
+			this.reviewCallbacks.onUpdateSchedulingPreview();
+		}
+
+		return true;
 	}
 
 	/**

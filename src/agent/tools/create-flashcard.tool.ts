@@ -12,6 +12,10 @@ const InputSchema = z.object({
 		.string()
 		.optional()
 		.describe("Path to the source note. If not provided, uses active note."),
+	sourceUid: z
+		.string()
+		.optional()
+		.describe("Direct sourceUid to use (bypasses file lookup). Takes priority over sourceNotePath."),
 	useActiveNote: z
 		.boolean()
 		.optional()
@@ -46,26 +50,30 @@ export const createFlashcardTool: ToolDefinition<
 		input,
 		ctx
 	): Promise<ToolResult<CreateFlashcardOutput>> {
-		// Resolve source file
-		let sourceFile = null;
-		if (input.useActiveNote) {
-			sourceFile = ctx.getActiveFile();
-		} else if (input.sourceNotePath) {
-			sourceFile = ctx.resolveFile(input.sourceNotePath);
-		}
+		// Use directly passed sourceUid if available (takes priority)
+		let sourceUid: string | undefined = input.sourceUid;
 
-		// Get source UID if we have a source file
-		let sourceUid: string | undefined;
-		if (sourceFile) {
-			const frontmatterService =
-				ctx.flashcardManager.getFrontmatterService();
-			sourceUid =
-				(await frontmatterService.getSourceNoteUid(sourceFile)) ?? undefined;
+		// If no sourceUid passed, resolve from file
+		if (!sourceUid) {
+			let sourceFile = null;
+			if (input.useActiveNote) {
+				sourceFile = ctx.getActiveFile();
+			} else if (input.sourceNotePath) {
+				sourceFile = ctx.resolveFile(input.sourceNotePath);
+			}
 
-			// If no UID exists, create one
-			if (!sourceUid) {
-				sourceUid = frontmatterService.generateUid();
-				await frontmatterService.setSourceNoteUid(sourceFile, sourceUid);
+			// Get source UID if we have a source file
+			if (sourceFile) {
+				const frontmatterService =
+					ctx.flashcardManager.getFrontmatterService();
+				sourceUid =
+					(await frontmatterService.getSourceNoteUid(sourceFile)) ?? undefined;
+
+				// If no UID exists, create one
+				if (!sourceUid) {
+					sourceUid = frontmatterService.generateUid();
+					await frontmatterService.setSourceNoteUid(sourceFile, sourceUid);
+				}
 			}
 		}
 

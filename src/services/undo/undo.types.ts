@@ -3,7 +3,8 @@
  * Type definitions for the undo/redo system
  */
 
-import type { FSRSCardData } from "../../types";
+import type { State, Grade } from "ts-fsrs";
+import type { FSRSCardData, FSRSFlashcardItem } from "../../types";
 
 /**
  * Types of operations that can be undone
@@ -12,7 +13,10 @@ export type UndoActionType =
 	| "create-flashcard"
 	| "update-card"
 	| "delete-flashcard"
-	| "save-flashcards";
+	| "save-flashcards"
+	| "answer"
+	| "bury"
+	| "suspend";
 
 /**
  * Payload for undoing card creation (delete the created card)
@@ -50,13 +54,66 @@ export interface BatchCreateUndoPayload {
 }
 
 /**
+ * Payload for undoing a review answer (restore FSRS state and re-queue card)
+ */
+export interface AnswerUndoPayload {
+	type: "answer";
+	/** Full card data to restore */
+	card: FSRSFlashcardItem;
+	/** Original FSRS state before the answer */
+	originalFsrs: FSRSCardData;
+	/** Position in queue before answering */
+	previousIndex: number;
+	/** Whether this was a new card */
+	wasNewCard?: boolean;
+	/** Rating that was given */
+	rating?: Grade;
+	/** FSRS state before the answer */
+	previousState?: State;
+}
+
+/**
+ * Payload for undoing a bury action (restore card and remove buriedUntil)
+ */
+export interface BuryUndoPayload {
+	type: "bury";
+	/** Full card data to restore */
+	card: FSRSFlashcardItem;
+	/** Original FSRS state before bury */
+	originalFsrs: FSRSCardData;
+	/** Position in queue before bury */
+	previousIndex: number;
+	/** Additional cards if "bury note" was used */
+	additionalCards?: Array<{
+		card: FSRSFlashcardItem;
+		originalFsrs: FSRSCardData;
+	}>;
+}
+
+/**
+ * Payload for undoing a suspend action (restore card and remove suspended flag)
+ */
+export interface SuspendUndoPayload {
+	type: "suspend";
+	/** Full card data to restore */
+	card: FSRSFlashcardItem;
+	/** Original FSRS state before suspend */
+	originalFsrs: FSRSCardData;
+	/** Position in queue before suspend */
+	previousIndex: number;
+}
+
+/**
  * Union type for all undo payloads
  */
 export type UndoPayload =
 	| CreateUndoPayload
 	| UpdateUndoPayload
 	| DeleteUndoPayload
-	| BatchCreateUndoPayload;
+	| BatchCreateUndoPayload
+	| AnswerUndoPayload
+	| BuryUndoPayload
+	| SuspendUndoPayload;
 
 /**
  * Single undo stack entry
