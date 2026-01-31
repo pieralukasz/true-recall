@@ -37,6 +37,8 @@ export interface KeyboardActionCallbacks {
 	onAddCard: () => Promise<void>;
 	onCopyCard: () => Promise<void>;
 	onEditCard: () => Promise<void>;
+	onZoomIn?: () => void;
+	onZoomOut?: () => void;
 }
 
 /**
@@ -74,6 +76,20 @@ export class KeyboardHandler {
 		if ((e.metaKey || e.ctrlKey) && e.key === "z") {
 			e.preventDefault();
 			void this.callbacks.onUndo();
+			return;
+		}
+
+		// Cmd/Ctrl + = or + (zoom in)
+		if ((e.metaKey || e.ctrlKey) && (e.key === "=" || e.key === "+")) {
+			e.preventDefault();
+			this.callbacks.onZoomIn?.();
+			return;
+		}
+
+		// Cmd/Ctrl + - (zoom out)
+		if ((e.metaKey || e.ctrlKey) && e.key === "-") {
+			e.preventDefault();
+			this.callbacks.onZoomOut?.();
 			return;
 		}
 
@@ -197,6 +213,8 @@ export class KeyboardHandler {
 			{ key: "Space", description: "Show answer / Good rating" },
 			{ key: "1-4", description: "Rate: Again(1), Hard(2), Good(3), Easy(4)" },
 			{ key: "Cmd/Ctrl+Z", description: "Undo last action" },
+			{ key: "Cmd/Ctrl++", description: "Increase font size" },
+			{ key: "Cmd/Ctrl+-", description: "Decrease font size" },
 			{ key: "!", description: "Suspend card" },
 			{ key: "-", description: "Bury card until tomorrow" },
 			{ key: "=", description: "Bury note (all sibling cards)" },

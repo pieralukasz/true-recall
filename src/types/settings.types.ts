@@ -117,6 +117,10 @@ export interface TrueRecallSettings {
     // ===== Copilot Integration =====
     /** Auto-add source note to Obsidian Copilot context during review */
     copilotAutoContext: boolean;
+
+    // ===== Review Font Size =====
+    /** Review card font size scale (0.5-2.0, default 1.0 = 100%) */
+    reviewFontScale: number;
 }
 
 /**
