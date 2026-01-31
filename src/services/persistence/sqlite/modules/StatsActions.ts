@@ -250,41 +250,43 @@ export class StatsActions {
      * Called after sync to ensure stats are consistent across devices
      */
     rebuildDailyStatsFromReviewLog(): void {
-        // Clear existing stats
-        this.db.run(`DELETE FROM daily_stats`);
-        this.db.run(`DELETE FROM daily_reviewed_cards`);
+        this.db.transaction(() => {
+            // Clear existing stats
+            this.db.run(`DELETE FROM daily_stats`);
+            this.db.run(`DELETE FROM daily_reviewed_cards`);
 
-        // Rebuild daily_stats from review_log
-        this.db.run(`
-            INSERT INTO daily_stats (
-                date, reviews_completed, new_cards_studied, total_time_ms,
-                again_count, hard_count, good_count, easy_count
-            )
-            SELECT
-                date(reviewed_at) as date,
-                COUNT(*) as reviews_completed,
-                SUM(CASE WHEN state = 0 THEN 1 ELSE 0 END) as new_cards_studied,
-                COALESCE(SUM(time_spent_ms), 0) as total_time_ms,
-                SUM(CASE WHEN rating = 1 THEN 1 ELSE 0 END) as again_count,
-                SUM(CASE WHEN rating = 2 THEN 1 ELSE 0 END) as hard_count,
-                SUM(CASE WHEN rating = 3 THEN 1 ELSE 0 END) as good_count,
-                SUM(CASE WHEN rating = 4 THEN 1 ELSE 0 END) as easy_count
-            FROM review_log
-            WHERE deleted_at IS NULL
-              AND reviewed_at IS NOT NULL
-              AND date(reviewed_at) IS NOT NULL
-            GROUP BY date(reviewed_at)
-        `);
+            // Rebuild daily_stats from review_log
+            this.db.run(`
+                INSERT INTO daily_stats (
+                    date, reviews_completed, new_cards_studied, total_time_ms,
+                    again_count, hard_count, good_count, easy_count
+                )
+                SELECT
+                    date(reviewed_at) as date,
+                    COUNT(*) as reviews_completed,
+                    SUM(CASE WHEN state = 0 THEN 1 ELSE 0 END) as new_cards_studied,
+                    COALESCE(SUM(time_spent_ms), 0) as total_time_ms,
+                    SUM(CASE WHEN rating = 1 THEN 1 ELSE 0 END) as again_count,
+                    SUM(CASE WHEN rating = 2 THEN 1 ELSE 0 END) as hard_count,
+                    SUM(CASE WHEN rating = 3 THEN 1 ELSE 0 END) as good_count,
+                    SUM(CASE WHEN rating = 4 THEN 1 ELSE 0 END) as easy_count
+                FROM review_log
+                WHERE deleted_at IS NULL
+                  AND reviewed_at IS NOT NULL
+                  AND date(reviewed_at) IS NOT NULL
+                GROUP BY date(reviewed_at)
+            `);
 
-        // Rebuild daily_reviewed_cards from review_log
-        this.db.run(`
-            INSERT INTO daily_reviewed_cards (date, card_id)
-            SELECT DISTINCT date(reviewed_at), card_id
-            FROM review_log
-            WHERE deleted_at IS NULL
-              AND reviewed_at IS NOT NULL
-              AND date(reviewed_at) IS NOT NULL
-        `);
+            // Rebuild daily_reviewed_cards from review_log
+            this.db.run(`
+                INSERT INTO daily_reviewed_cards (date, card_id)
+                SELECT DISTINCT date(reviewed_at), card_id
+                FROM review_log
+                WHERE deleted_at IS NULL
+                  AND reviewed_at IS NOT NULL
+                  AND date(reviewed_at) IS NOT NULL
+            `);
+        });
     }
 
     /**

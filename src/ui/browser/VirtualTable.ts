@@ -72,6 +72,7 @@ export class VirtualTable {
     // Virtual scrolling state
     private visibleRange: VisibleRange = { start: 0, end: 0 };
     private rowPool: Map<number, HTMLElement> = new Map();
+    private rowAbortControllers: Map<number, AbortController> = new Map();
     private rafId: number | null = null;
 
     // Scroll handler bound reference for cleanup
@@ -229,6 +230,10 @@ export class VirtualTable {
         for (const index of rowsToRemove) {
             const row = this.rowPool.get(index);
             if (row) {
+                // Abort event listeners before removing from DOM
+                const controller = this.rowAbortControllers.get(index);
+                controller?.abort();
+                this.rowAbortControllers.delete(index);
                 row.remove();
                 this.rowPool.delete(index);
             }
@@ -241,8 +246,11 @@ export class VirtualTable {
 
             let row = this.rowPool.get(i);
             if (!row) {
+                // Create AbortController for row's event listeners
+                const abortController = new AbortController();
+                this.rowAbortControllers.set(i, abortController);
                 // Create new row
-                row = this.createRow(card, i);
+                row = this.createRow(card, i, abortController.signal);
                 this.rowPool.set(i, row);
                 this.tbody.appendChild(row);
             }
@@ -259,7 +267,7 @@ export class VirtualTable {
     /**
      * Create a single table row for a card
      */
-    private createRow(card: BrowserCardItem, index: number): HTMLElement {
+    private createRow(card: BrowserCardItem, index: number, signal: AbortSignal): HTMLElement {
         const isSelected = this.props.selectedCardIds.has(card.id);
         const rowStateClass = this.getRowStateClass(card);
         const tr = document.createElement("tr");
@@ -382,7 +390,7 @@ export class VirtualTable {
             sourceLink.addEventListener("click", (e) => {
                 e.stopPropagation();
                 this.props.onOpenSourceNote(card);
-            });
+            }, { signal });
         } else {
             sourceTd.createSpan({ text: "-", cls: [...cellContentClasses, "ep:text-obs-muted"].join(" ") });
         }
@@ -390,11 +398,11 @@ export class VirtualTable {
         // Row click handlers
         tr.addEventListener("click", (e) => {
             this.props.onCardClick(card.id, e);
-        });
+        }, { signal });
 
         tr.addEventListener("dblclick", () => {
             this.props.onCardDoubleClick(card);
-        });
+        }, { signal });
 
         return tr;
     }
@@ -499,6 +507,12 @@ export class VirtualTable {
         if (this.scrollContainer) {
             this.scrollContainer.removeEventListener("scroll", this.boundScrollHandler);
         }
+
+        // Abort all row event listeners
+        for (const controller of this.rowAbortControllers.values()) {
+            controller.abort();
+        }
+        this.rowAbortControllers.clear();
 
         this.rowPool.clear();
         this.scrollContainer = null;

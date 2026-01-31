@@ -77,6 +77,9 @@ export class FlashcardPanelView extends ItemView {
     // Mobile header FSRS status element
     private mobileStatusEl: HTMLElement | null = null;
 
+    // Track RAF IDs for cleanup
+    private pendingRafIds: Set<number> = new Set();
+
     constructor(leaf: WorkspaceLeaf, plugin: TrueRecallPlugin) {
         super(leaf);
         this.plugin = plugin;
@@ -84,6 +87,17 @@ export class FlashcardPanelView extends ItemView {
         this.openRouterService = plugin.openRouterService;
         this.stateManager = new PanelStateManager();
         this.collectService = new CollectService();
+    }
+
+    /**
+     * Schedule a RAF callback that will be tracked and cancelled on close
+     */
+    private scheduleRaf(callback: () => void): void {
+        const id = requestAnimationFrame(() => {
+            this.pendingRafIds.delete(id);
+            callback();
+        });
+        this.pendingRafIds.add(id);
     }
 
     getViewType(): string {
@@ -274,6 +288,12 @@ export class FlashcardPanelView extends ItemView {
             clearTimeout(this.headerStatsTimer);
             this.headerStatsTimer = null;
         }
+
+        // Cancel pending RAF callbacks
+        for (const id of this.pendingRafIds) {
+            cancelAnimationFrame(id);
+        }
+        this.pendingRafIds.clear();
 
         // Remove native header actions
         if (this.reviewAction) {
@@ -566,14 +586,14 @@ export class FlashcardPanelView extends ItemView {
                 onToggleExpand: (cardId) => {
                     const scrollPosition = this.contentDiv?.scrollTop ?? 0;
                     this.stateManager.toggleCardExpanded(cardId);
-                    requestAnimationFrame(() => {
+                    this.scheduleRaf(() => {
                         if (this.contentDiv) this.contentDiv.scrollTop = scrollPosition;
                     });
                 },
                 onToggleSelect: (cardId) => {
                     const scrollPosition = this.contentDiv?.scrollTop ?? 0;
                     this.stateManager.toggleCardSelection(cardId);
-                    requestAnimationFrame(() => {
+                    this.scheduleRaf(() => {
                         if (this.contentDiv) this.contentDiv.scrollTop = scrollPosition;
                     });
                 },
@@ -806,7 +826,7 @@ export class FlashcardPanelView extends ItemView {
 
             await this.loadFlashcardInfo();
 
-            requestAnimationFrame(() => {
+            this.scheduleRaf(() => {
                 if (this.contentDiv) this.contentDiv.scrollTop = scrollPosition;
             });
         } catch (error) {
@@ -845,7 +865,7 @@ export class FlashcardPanelView extends ItemView {
             // Reload flashcard info to reflect changes
             await this.loadFlashcardInfo();
 
-            requestAnimationFrame(() => {
+            this.scheduleRaf(() => {
                 if (this.contentDiv) this.contentDiv.scrollTop = scrollPosition;
             });
         } catch (error) {
@@ -867,7 +887,7 @@ export class FlashcardPanelView extends ItemView {
             await this.loadFlashcardInfo();
 
             // Restore scroll position after render completes
-            requestAnimationFrame(() => {
+            this.scheduleRaf(() => {
                 if (this.contentDiv) this.contentDiv.scrollTop = scrollPosition;
             });
         } else {
