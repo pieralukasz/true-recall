@@ -473,8 +473,18 @@ export class ReviewStateManager {
         let newQueue = [...this.state.queue];
         newQueue[previousIndex] = restoredCard;
 
+        // Revert badge counts: increment for restored card (goes back to remaining)
+        const restoredBadgeType = this.getBadgeTypeForState(restoredCard.fsrs.state);
+        this.badgeCounts[restoredBadgeType]++;
+
         // Remove requeued copy if it exists (for learning cards)
         if (requeuedAtIndex !== undefined && requeuedAtIndex < newQueue.length) {
+            // Decrement badge for the requeued card we're removing
+            const requeuedCard = newQueue[requeuedAtIndex];
+            if (requeuedCard) {
+                const requeuedBadgeType = this.getBadgeTypeForState(requeuedCard.fsrs.state);
+                this.badgeCounts[requeuedBadgeType] = Math.max(0, this.badgeCounts[requeuedBadgeType] - 1);
+            }
             // The requeued card is after previousIndex, so we can safely remove it
             newQueue.splice(requeuedAtIndex, 1);
         }
@@ -781,6 +791,10 @@ export class ReviewStateManager {
 
         const prevState = this.state;
         const newQueue = [...this.state.queue, card];
+
+        // Increment badge count for added card
+        const badgeType = this.getBadgeTypeForState(card.fsrs.state);
+        this.badgeCounts[badgeType]++;
 
         this.state = {
             ...this.state,

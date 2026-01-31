@@ -1143,17 +1143,12 @@ export class ReviewView extends ItemView {
 
 		if (hasChanges) {
 			try {
-				// Update card via AgentService for undo support
-				const updateResult = await this.plugin.agentService?.execute("update-card", {
-					cardId: cardIdBeforeSave,
+				// Update card directly in database
+				this.plugin.cardStore.cards.updateCardContent(
+					cardIdBeforeSave,
 					newQuestion,
-					newAnswer,
-				});
-
-				if (!updateResult?.success) {
-					notify().operationFailed("save card", updateResult?.error?.message ?? "Unknown error");
-					return;
-				}
+					newAnswer
+				);
 
 				// Validate that current card is still the same before updating state
 				const currentCard = this.stateManager.getCurrentCard();
