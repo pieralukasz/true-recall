@@ -59,12 +59,12 @@ export function registerEventHandlers(plugin: TrueRecallPlugin): void {
 
 /**
  * Update the panel view with current file
- * Respects review follow mode only when ReviewView is the active view
+ * Respects review follow mode and panel interactions
  */
 function updatePanelView(plugin: TrueRecallPlugin, file: TFile | null): void {
-	// Check if ReviewView is currently the active view
 	const activeLeaf = plugin.app.workspace.activeLeaf;
 	const isReviewViewActive = activeLeaf?.view?.getViewType() === VIEW_TYPE_REVIEW;
+	const isPanelActive = activeLeaf?.view?.getViewType() === VIEW_TYPE_FLASHCARD_PANEL;
 
 	const leaves = plugin.app.workspace.getLeavesOfType(
 		VIEW_TYPE_FLASHCARD_PANEL
@@ -72,13 +72,19 @@ function updatePanelView(plugin: TrueRecallPlugin, file: TFile | null): void {
 	leaves.forEach((leaf) => {
 		const view = leaf.view;
 		if (view instanceof FlashcardPanelView) {
-			// Only block updates if ReviewView is active AND we're following review
+			// Block updates if ReviewView is active AND we're following review
 			if (isReviewViewActive && view.isFollowingReview()) {
 				return;
 			}
 
-			// Clear review follow state when navigating away from ReviewView
-			if (!isReviewViewActive && view.isFollowingReview()) {
+			// Don't update if user clicked on the panel itself (to interact with it)
+			if (isPanelActive) {
+				return;
+			}
+
+			// Clear review follow state only when navigating to a markdown note
+			// (not when clicking on panel or other non-file views)
+			if (file && !isReviewViewActive && view.isFollowingReview()) {
 				view.clearReviewFollowState();
 			}
 

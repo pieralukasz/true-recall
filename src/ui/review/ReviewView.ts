@@ -38,7 +38,7 @@ import {
 	TOOLBAR_BUTTONS,
 } from "../components";
 import type TrueRecallPlugin from "../../main";
-import type { ReviewViewState, UndoEntry } from "./review.types";
+import type { ReviewViewState } from "./review.types";
 import { CardActionsHandler, KeyboardHandler } from "./handlers";
 import { CopilotIntegrationService } from "../../services/integration/copilot-integration.service";
 
@@ -135,7 +135,6 @@ export class ReviewView extends ItemView {
 			{
 				onUpdateSchedulingPreview: () => this.updateSchedulingPreview(),
 				onRender: () => this.render(),
-				onUndoAnswer: (entry) => this.handleUndoAnswer(entry),
 			}
 		);
 
@@ -267,6 +266,12 @@ export class ReviewView extends ItemView {
 		// Subscribe to EventBus for cross-component reactivity
 		this.subscribeToEvents();
 
+		// Register ReviewStateManager with global UndoService for review undo support
+		this.plugin.undoService?.setReviewStateManager(this.stateManager, {
+			onUpdateSchedulingPreview: () => this.updateSchedulingPreview(),
+			onUndoAnswer: (payload) => this.handleUndoAnswerFromService(payload),
+		});
+
 		// Re-emit card changed event when this view becomes active again
 		// This syncs the flashcard panel back to review when user returns to this view
 		this.registerEvent(
@@ -319,6 +324,9 @@ export class ReviewView extends ItemView {
 	async onClose(): Promise<void> {
 		// Notify panel that review session ended
 		this.emitCardChangedEvent();
+
+		// Unregister ReviewStateManager from global UndoService
+		this.plugin.undoService?.setReviewStateManager(null, null);
 
 		// Flush store to disk before closing
 		if (this.plugin.cardStore) {
@@ -1016,7 +1024,6 @@ export class ReviewView extends ItemView {
 
 		// Add paste handler for images
 		const textarea = editableField.getTextarea();
-		console.log("[ReviewView] Setting up paste handler, textarea:", !!textarea);
 		if (textarea) {
 			textarea.addEventListener("paste", (e) => {
 				console.log("[ReviewView] Paste event triggered");
@@ -1622,17 +1629,7 @@ export class ReviewView extends ItemView {
 
 		// Check if this was a new card (before state update)
 		const isNewCard = card.fsrs.state === State.New;
-
-		// Store undo entry in handler's stack BEFORE making changes
-		this.cardActionsHandler.pushUndoEntry({
-			actionType: "answer",
-			card: { ...card },
-			originalFsrs: { ...card.fsrs },
-			wasNewCard: isNewCard,
-			previousIndex: currentIndex,
-			rating,
-			previousState: card.fsrs.state,
-		});
+		const previousState = card.fsrs.state;
 
 		// Process answer and save to store (single method)
 		const { updatedCard, result } = await this.reviewService.gradeCard(
@@ -1643,6 +1640,23 @@ export class ReviewView extends ItemView {
 			responseTime
 		);
 
+		// Push undo entry to global UndoService AFTER successful operation
+		this.plugin.undoService?.push({
+			id: crypto.randomUUID(),
+			actionType: "answer",
+			description: `Review (${Rating[rating]})`,
+			timestamp: Date.now(),
+			payload: {
+				type: "answer",
+				card: { ...card },
+				originalFsrs: { ...card.fsrs },
+				previousIndex: currentIndex,
+				wasNewCard: isNewCard,
+				rating,
+				previousState,
+			},
+		});
+
 		// Record to persistent storage (with extended stats for statistics panel)
 		try {
 			this.sessionPersistence.recordReview(
@@ -1650,7 +1664,7 @@ export class ReviewView extends ItemView {
 				isNewCard,
 				responseTime,
 				rating,
-				card.fsrs.state, // previousState before the answer
+				previousState, // previousState before the answer
 				result.scheduledDays,
 				result.elapsedDays
 			);
@@ -1691,20 +1705,25 @@ export class ReviewView extends ItemView {
 	}
 
 	/**
-	 * Handle undo answer callback from CardActionsHandler
-	 * Removes review from persistent storage and restores state
+	 * Handle undo answer callback from global UndoService
+	 * Removes review from persistent storage
+	 * Note: The card is already re-inserted by UndoService via ReviewStateManager
 	 */
-	private async handleUndoAnswer(entry: UndoEntry): Promise<void> {
+	private async handleUndoAnswerFromService(
+		payload: import("../../services/undo").AnswerUndoPayload
+	): Promise<void> {
 		try {
 			this.sessionPersistence.removeLastReview(
-				entry.card.id,
-				entry.wasNewCard ?? false,
-				entry.rating,
-				entry.previousState
+				payload.card.id,
+				payload.wasNewCard ?? false,
+				payload.rating,
+				payload.previousState
 			);
-			this.stateManager.undoLastAnswer(entry.previousIndex, {
-				...entry.card,
-				fsrs: entry.originalFsrs,
+			// Note: stateManager.insertCardAtPosition is called by UndoService
+			// We just need to update the internal state tracking
+			this.stateManager.undoLastAnswer(payload.previousIndex, {
+				...payload.card,
+				fsrs: payload.originalFsrs,
 			});
 		} catch (error) {
 			console.error("Error undoing answer:", error);

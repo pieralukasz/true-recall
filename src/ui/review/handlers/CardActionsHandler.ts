@@ -7,7 +7,6 @@ import { Rating } from "ts-fsrs";
 import type { ReviewStateManager } from "../../../state";
 import type { FlashcardManager, FSRSService, ReviewService, ZettelTemplateService, SqliteStoreService } from "../../../services";
 import type { FSRSFlashcardItem, TrueRecallSettings } from "../../../types";
-import type { UndoEntry } from "../review.types";
 import { MoveCardModal, SimpleFlashcardEditorModal, flashcardToMarkdown } from "../../modals";
 import { notify } from "../../../services";
 import { UI_CONFIG } from "../../../constants";
@@ -46,8 +45,6 @@ export interface CardActionsHandlerDeps {
 export interface CardActionsCallbacks {
 	onUpdateSchedulingPreview: () => void;
 	onRender: () => void;
-	/** Called when undoing an answer - requires session persistence updates */
-	onUndoAnswer: (entry: UndoEntry) => Promise<void>;
 }
 
 /**
@@ -57,12 +54,11 @@ export interface CardActionsCallbacks {
  * - Suspend/bury operations
  * - Move card to another note
  * - Add/copy/edit flashcards
- * - Undo operations
+ * - Undo operations (delegated to global UndoService)
  */
 export class CardActionsHandler {
 	private deps: CardActionsHandlerDeps;
 	private callbacks: CardActionsCallbacks;
-	private undoStack: UndoEntry[] = [];
 
 	constructor(
 		deps: CardActionsHandlerDeps,
@@ -73,38 +69,10 @@ export class CardActionsHandler {
 	}
 
 	/**
-	 * Get the undo stack (for UI display)
-	 */
-	getUndoStack(): ReadonlyArray<UndoEntry> {
-		return this.undoStack;
-	}
-
-	/**
-	 * Check if undo is available
+	 * Check if undo is available (delegated to global UndoService)
 	 */
 	canUndo(): boolean {
-		return this.undoStack.length > 0;
-	}
-
-	/**
-	 * Clear the undo stack
-	 */
-	clearUndoStack(): void {
-		this.undoStack = [];
-	}
-
-	/**
-	 * Add an undo entry (for external use, e.g., from answer handler)
-	 */
-	pushUndoEntry(entry: UndoEntry): void {
-		this.undoStack.push(entry);
-	}
-
-	/**
-	 * Pop the last undo entry
-	 */
-	popUndoEntry(): UndoEntry | undefined {
-		return this.undoStack.pop();
+		return this.deps.plugin.undoService?.canUndo() ?? false;
 	}
 
 	/**
@@ -116,14 +84,7 @@ export class CardActionsHandler {
 		if (!card) return;
 
 		const currentIndex = this.deps.stateManager.getState().currentIndex;
-
-		// Store undo entry BEFORE making changes
-		this.undoStack.push({
-			actionType: "suspend",
-			card: { ...card },
-			originalFsrs: { ...card.fsrs },
-			previousIndex: currentIndex,
-		});
+		const undoService = this.deps.plugin.undoService;
 
 		const updatedFsrs = { ...card.fsrs, suspended: true };
 
@@ -132,10 +93,22 @@ export class CardActionsHandler {
 		} catch (error) {
 			console.error("[CardActionsHandler] Error suspending card:", error);
 			notify().operationFailed("suspend card", error);
-			// Remove the undo entry since the operation failed
-			this.undoStack.pop();
 			return;
 		}
+
+		// Push undo entry AFTER successful operation
+		undoService?.push({
+			id: crypto.randomUUID(),
+			actionType: "suspend",
+			description: "Suspend card",
+			timestamp: Date.now(),
+			payload: {
+				type: "suspend",
+				card: { ...card },
+				originalFsrs: { ...card.fsrs },
+				previousIndex: currentIndex,
+			},
+		});
 
 		// Remove from current queue
 		this.deps.stateManager.removeCurrentCard();
@@ -158,14 +131,7 @@ export class CardActionsHandler {
 		if (!card) return;
 
 		const currentIndex = this.deps.stateManager.getState().currentIndex;
-
-		// Store undo entry BEFORE making changes
-		this.undoStack.push({
-			actionType: "bury",
-			card: { ...card },
-			originalFsrs: { ...card.fsrs },
-			previousIndex: currentIndex,
-		});
+		const undoService = this.deps.plugin.undoService;
 
 		// Calculate tomorrow's date based on dayStartHour
 		const tomorrow = this.getTomorrowDate();
@@ -176,10 +142,22 @@ export class CardActionsHandler {
 		} catch (error) {
 			console.error("[CardActionsHandler] Error burying card:", error);
 			notify().operationFailed("bury card", error);
-			// Remove the undo entry since the operation failed
-			this.undoStack.pop();
 			return;
 		}
+
+		// Push undo entry AFTER successful operation
+		undoService?.push({
+			id: crypto.randomUUID(),
+			actionType: "bury",
+			description: "Bury card",
+			timestamp: Date.now(),
+			payload: {
+				type: "bury",
+				card: { ...card },
+				originalFsrs: { ...card.fsrs },
+				previousIndex: currentIndex,
+			},
+		});
 
 		// Remove from current queue
 		this.deps.stateManager.removeCurrentCard();
@@ -219,24 +197,17 @@ export class CardActionsHandler {
 		}
 
 		const currentIndex = this.deps.stateManager.getState().currentIndex;
-
-		// Store undo entry for all sibling cards BEFORE making changes
-		const additionalCards = siblingCards.slice(1).map(c => ({
-			card: { ...c },
-			originalFsrs: { ...c.fsrs },
-		}));
-
-		this.undoStack.push({
-			actionType: "bury",
-			card: { ...firstSibling },
-			originalFsrs: { ...firstSibling.fsrs },
-			previousIndex: currentIndex,
-			additionalCards: additionalCards.length > 0 ? additionalCards : undefined,
-		});
+		const undoService = this.deps.plugin.undoService;
 
 		// Calculate tomorrow's date based on dayStartHour
 		const tomorrow = this.getTomorrowDate();
 		const buriedUntil = tomorrow.toISOString();
+
+		// Capture undo data for all sibling cards BEFORE making changes
+		const additionalCards = siblingCards.slice(1).map(c => ({
+			card: { ...c },
+			originalFsrs: { ...c.fsrs },
+		}));
 
 		let buriedCount = 0;
 
@@ -253,6 +224,23 @@ export class CardActionsHandler {
 
 			// Remove from queue (by ID since indices change)
 			this.deps.stateManager.removeCardById(siblingCard.id);
+		}
+
+		// Push undo entry AFTER successful operations
+		if (buriedCount > 0) {
+			undoService?.push({
+				id: crypto.randomUUID(),
+				actionType: "bury",
+				description: `Bury ${buriedCount} cards`,
+				timestamp: Date.now(),
+				payload: {
+					type: "bury",
+					card: { ...firstSibling },
+					originalFsrs: { ...firstSibling.fsrs },
+					previousIndex: currentIndex,
+					additionalCards: additionalCards.length > 0 ? additionalCards : undefined,
+				},
+			});
 		}
 
 		// Update scheduling preview for next card
@@ -331,35 +319,16 @@ export class CardActionsHandler {
 		if (result.cancelled || result.flashcards.length === 0) return;
 
 		try {
-			const sourceNotePath = card.sourceNotePath;
-
-			// Add all parsed flashcards (via AgentService for undo support)
+			// Add all parsed flashcards directly using the current card's sourceUid
 			for (const flashcard of result.flashcards) {
-				const createResult = await this.deps.plugin.agentService?.execute<{
-					id: string;
-					question: string;
-					answer: string;
-					sourceUid?: string;
-					sourceNoteName?: string;
-				}>("create-flashcard", {
-					question: flashcard.question,
-					answer: flashcard.answer,
-					sourceNotePath: sourceNotePath,
-				});
+				const newCard = await this.deps.flashcardManager.addSingleFlashcard(
+					flashcard.question,
+					flashcard.answer,
+					card.sourceUid
+				);
 
-				if (createResult?.success && createResult.data) {
-					// Add new card to current session queue
-					const newCard: FSRSFlashcardItem = {
-						id: createResult.data.id,
-						question: createResult.data.question,
-						answer: createResult.data.answer,
-						sourceNoteName: createResult.data.sourceNoteName,
-						sourceUid: createResult.data.sourceUid,
-						projects: [],
-						fsrs: this.deps.cardStore.get(createResult.data.id) ?? {} as any,
-					};
-					this.deps.stateManager.addCardToQueue(newCard);
-				}
+				// Add new card to current session queue
+				this.deps.stateManager.addCardToQueue(newCard);
 			}
 
 			notify().cardsCreated(result.flashcards.length);
@@ -388,35 +357,16 @@ export class CardActionsHandler {
 		if (result.cancelled || result.flashcards.length === 0) return;
 
 		try {
-			const sourceNotePath = card.sourceNotePath;
-
-			// Add all parsed flashcards (via AgentService for undo support)
+			// Add all parsed flashcards directly using the current card's sourceUid
 			for (const flashcard of result.flashcards) {
-				const createResult = await this.deps.plugin.agentService?.execute<{
-					id: string;
-					question: string;
-					answer: string;
-					sourceUid?: string;
-					sourceNoteName?: string;
-				}>("create-flashcard", {
-					question: flashcard.question,
-					answer: flashcard.answer,
-					sourceNotePath: sourceNotePath,
-				});
+				const newCard = await this.deps.flashcardManager.addSingleFlashcard(
+					flashcard.question,
+					flashcard.answer,
+					card.sourceUid
+				);
 
-				if (createResult?.success && createResult.data) {
-					// Add new card to current session queue
-					const newCard: FSRSFlashcardItem = {
-						id: createResult.data.id,
-						question: createResult.data.question,
-						answer: createResult.data.answer,
-						sourceNoteName: createResult.data.sourceNoteName,
-						sourceUid: createResult.data.sourceUid,
-						projects: [],
-						fsrs: this.deps.cardStore.get(createResult.data.id) ?? {} as any,
-					};
-					this.deps.stateManager.addCardToQueue(newCard);
-				}
+				// Add new card to current session queue
+				this.deps.stateManager.addCardToQueue(newCard);
 			}
 
 			notify().cardsCreated(result.flashcards.length);
@@ -512,111 +462,21 @@ export class CardActionsHandler {
 	}
 
 	/**
-	 * Undo the last action (edit/add/delete from global UndoService, or answer/bury/suspend from review session)
+	 * Undo the last action (delegated to global UndoService)
+	 * All undo logic is now unified in UndoService for proper LIFO ordering
 	 */
 	async handleUndo(): Promise<boolean> {
-		// First check global UndoService for edit/add/delete undos
-		const globalUndoService = this.deps.plugin.undoService;
-		if (globalUndoService?.canUndo()) {
-			return await globalUndoService.undo();
-		}
-
-		// Fall back to review session undo (answer, bury, suspend)
-		const undoEntry = this.undoStack.pop();
-		if (!undoEntry) {
+		const undoService = this.deps.plugin.undoService;
+		if (!undoService?.canUndo()) {
 			notify().nothingToUndo();
 			return false;
 		}
 
-		if (undoEntry.actionType === "bury") {
-			return this.undoBury(undoEntry);
-		} else if (undoEntry.actionType === "suspend") {
-			return this.undoSuspend(undoEntry);
-		} else {
-			return this.undoAnswer(undoEntry);
-		}
-	}
-
-	/**
-	 * Undo a bury action
-	 */
-	private async undoBury(entry: UndoEntry): Promise<boolean> {
-		try {
-			// Restore the main card
-			this.deps.flashcardManager.updateCardFSRS(entry.card.id, entry.originalFsrs);
-
-			// Re-insert card at original position
-			this.deps.stateManager.insertCardAtPosition(
-				{ ...entry.card, fsrs: entry.originalFsrs },
-				entry.previousIndex
-			);
-
-			// Restore additional cards (for bury note)
-			if (entry.additionalCards) {
-				for (const additionalCard of entry.additionalCards) {
-					this.deps.flashcardManager.updateCardFSRS(
-						additionalCard.card.id,
-						additionalCard.originalFsrs
-					);
-					// Note: We don't re-insert additional cards as they might have been after current position
-				}
-			}
-
-			this.callbacks.onUpdateSchedulingPreview();
+		const success = await undoService.undo();
+		if (success) {
 			this.callbacks.onRender();
-			notify().undoComplete("Bury");
-			return true;
-		} catch (error) {
-			console.error("[CardActionsHandler] Error undoing bury:", error);
-			notify().undoFailed("bury");
-			return false;
 		}
-	}
-
-	/**
-	 * Undo a suspend action
-	 */
-	private async undoSuspend(entry: UndoEntry): Promise<boolean> {
-		try {
-			// Restore original FSRS data (with suspended: false)
-			this.deps.flashcardManager.updateCardFSRS(entry.card.id, entry.originalFsrs);
-
-			// Re-insert card at original position
-			this.deps.stateManager.insertCardAtPosition(
-				{ ...entry.card, fsrs: entry.originalFsrs },
-				entry.previousIndex
-			);
-
-			this.callbacks.onUpdateSchedulingPreview();
-			this.callbacks.onRender();
-			notify().undoComplete("Suspend");
-			return true;
-		} catch (error) {
-			console.error("[CardActionsHandler] Error undoing suspend:", error);
-			notify().undoFailed("suspend");
-			return false;
-		}
-	}
-
-	/**
-	 * Undo an answer action
-	 */
-	private async undoAnswer(entry: UndoEntry): Promise<boolean> {
-		try {
-			// Restore original FSRS data
-			this.deps.flashcardManager.updateCardFSRS(entry.card.id, entry.originalFsrs);
-
-			// Delegate session persistence updates to the view
-			await this.callbacks.onUndoAnswer(entry);
-
-			this.callbacks.onUpdateSchedulingPreview();
-			this.callbacks.onRender();
-			return true;
-		} catch (error) {
-			console.error("[CardActionsHandler] Error undoing answer:", error);
-			notify().undoFailed("answer");
-			return false;
-		}
+		return success;
 	}
 
 	/**
