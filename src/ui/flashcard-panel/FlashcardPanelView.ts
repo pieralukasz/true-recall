@@ -1101,7 +1101,7 @@ export class FlashcardPanelView extends ItemView {
                     sourceUid
                 );
             }
-            notify().cardsCreated(result.flashcards.length);
+            notify().cardsCreated(result.flashcards.length, state.currentFile.basename);
             await this.loadFlashcardInfo();
         } catch (error) {
             console.error("Error adding flashcards:", error);
