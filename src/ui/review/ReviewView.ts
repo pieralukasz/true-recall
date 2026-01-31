@@ -105,9 +105,6 @@ export class ReviewView extends ItemView {
 	// Reference to waiting timer for countdown updates
 	private waitingTimerId: ReturnType<typeof setInterval> | null = null;
 
-	// Debounce render calls using requestAnimationFrame
-	private pendingRenderFrame: number | null = null;
-
 	// AbortController for cleaning up event listeners between renders
 	private cardEventAbortController: AbortController | null = null;
 
@@ -163,6 +160,8 @@ export class ReviewView extends ItemView {
 			onAddCard: () => this.cardActionsHandler.handleAddNewFlashcard(),
 			onCopyCard: () => this.cardActionsHandler.handleCopyCurrentCard(),
 			onEditCard: () => this.cardActionsHandler.handleEditCardModal(),
+			onZoomIn: () => this.handleZoom(0.1),
+			onZoomOut: () => this.handleZoom(-0.1),
 		});
 	}
 
@@ -249,6 +248,15 @@ export class ReviewView extends ItemView {
 			"ep:p-0"
 		);
 
+		// Add scoped styles for font scaling
+		const styleEl = container.createEl("style");
+		styleEl.textContent = `
+			.true-recall-review-question,
+			.true-recall-review-answer {
+				font-size: calc(1em * var(--review-font-scale, 1));
+			}
+		`;
+
 		// Create UI structure
 		this.headerEl = container.createDiv({
 			cls: "ep:flex ep:justify-center ep:items-center ep:border-b ep:border-obs-border ep:relative ep:shrink-0 ep:p-2 ep:pb-4",
@@ -308,9 +316,13 @@ export class ReviewView extends ItemView {
 			cls: "true-recall-review-buttons ep:flex ep:justify-center ep:gap-3 ep:border-t ep:border-obs-border ep:flex-nowrap ep:shrink-0 ep:p-4",
 		});
 
-		// Subscribe to state changes - debounced render using RAF
+		// Apply saved font scale
+		this.applyFontScale();
+
+		// Subscribe to state changes - update render and header actions
 		this.unsubscribe = this.stateManager.subscribe(() => {
-			this.scheduleRender();
+			this.render();
+			this.updateHeaderActions();
 		});
 
 		// Subscribe to EventBus for cross-component reactivity
@@ -372,12 +384,6 @@ export class ReviewView extends ItemView {
 	}
 
 	async onClose(): Promise<void> {
-		// Cancel pending render frame
-		if (this.pendingRenderFrame !== null) {
-			cancelAnimationFrame(this.pendingRenderFrame);
-			this.pendingRenderFrame = null;
-		}
-
 		// Notify panel that review session ended
 		this.emitCardChangedEvent();
 
@@ -646,21 +652,6 @@ export class ReviewView extends ItemView {
 				}`
 			);
 		}
-	}
-
-	/**
-	 * Schedule a render using requestAnimationFrame for debouncing
-	 * Prevents multiple render calls in the same frame
-	 */
-	private scheduleRender(): void {
-		if (this.pendingRenderFrame !== null) {
-			return; // Already scheduled
-		}
-		this.pendingRenderFrame = requestAnimationFrame(() => {
-			this.pendingRenderFrame = null;
-			this.render();
-			this.updateHeaderActions();
-		});
 	}
 
 	/**
@@ -1650,6 +1641,28 @@ export class ReviewView extends ItemView {
 	private handleShowAnswer(): void {
 		this.stateManager.revealAnswer();
 		this.updateSchedulingPreview();
+	}
+
+	/**
+	 * Handle font zoom (Cmd+/Cmd-)
+	 * @param delta - Amount to change (positive = zoom in, negative = zoom out)
+	 */
+	private handleZoom(delta: number): void {
+		const current = this.plugin.settings.reviewFontScale;
+		const newScale = Math.max(0.5, Math.min(2.0, current + delta));
+		if (newScale !== current) {
+			this.plugin.settings.reviewFontScale = newScale;
+			void this.plugin.saveSettings();
+			this.applyFontScale();
+		}
+	}
+
+	/**
+	 * Apply current font scale to Q&A content
+	 */
+	private applyFontScale(): void {
+		const scale = this.plugin.settings.reviewFontScale;
+		this.cardContainerEl.style.setProperty("--review-font-scale", String(scale));
 	}
 
 	private async handleAnswer(rating: Grade): Promise<void> {
