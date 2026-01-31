@@ -27,6 +27,7 @@ export class SqliteSchemaManager {
 		17: migrations.migration016ToV17,
 		18: migrations.migration017ToV18,
 		19: migrations.migration018ToV19,
+		20: migrations.migration019ToV20,
 	};
 
 	constructor(db: DatabaseLike, onSchemaChange: () => void) {
@@ -35,7 +36,7 @@ export class SqliteSchemaManager {
 	}
 
 	/**
-	 * Create database tables (schema v19 - cleaned invalid review_log entries)
+	 * Create database tables (schema v20 - added composite indexes)
 	 */
 	createTables(): void {
 		this.db.run(`
@@ -68,6 +69,10 @@ export class SqliteSchemaManager {
             CREATE INDEX IF NOT EXISTS idx_cards_source_uid ON cards(source_uid);
             CREATE INDEX IF NOT EXISTS idx_cards_deleted ON cards(deleted_at);
 
+            -- Composite indexes for common filtered queries
+            CREATE INDEX IF NOT EXISTS idx_cards_active ON cards(deleted_at, suspended, state);
+            CREATE INDEX IF NOT EXISTS idx_cards_due_active ON cards(due, deleted_at, suspended);
+
             -- Review history log 
             CREATE TABLE IF NOT EXISTS review_log (
                 id TEXT PRIMARY KEY NOT NULL,
@@ -86,6 +91,7 @@ export class SqliteSchemaManager {
             CREATE INDEX IF NOT EXISTS idx_revlog_card ON review_log(card_id);
             CREATE INDEX IF NOT EXISTS idx_revlog_date ON review_log(reviewed_at);
             CREATE INDEX IF NOT EXISTS idx_revlog_deleted ON review_log(deleted_at);
+            CREATE INDEX IF NOT EXISTS idx_revlog_card_active ON review_log(card_id, deleted_at);
 
             -- Daily statistics
             CREATE TABLE IF NOT EXISTS daily_stats (
@@ -116,7 +122,7 @@ export class SqliteSchemaManager {
             );
 
             -- Set schema version
-            INSERT OR REPLACE INTO meta (key, value) VALUES ('schema_version', '19');
+            INSERT OR REPLACE INTO meta (key, value) VALUES ('schema_version', '20');
             INSERT OR REPLACE INTO meta (key, value) VALUES ('created_at', datetime('now'));
         `);
 	}

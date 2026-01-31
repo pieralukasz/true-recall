@@ -231,20 +231,38 @@ export class SqliteStoreService {
     private async doFlush(): Promise<void> {
         if (!this.db.isReady() || !this.isDirty) return;
 
-        try {
-            const data = this.db.export();
-            const dbPath = this.getDbPath();
+        const MAX_RETRIES = 3;
+        const BASE_DELAY_MS = 100;
 
-            const folderPath = normalizePath(DB_FOLDER);
-            const folderExists = await this.app.vault.adapter.exists(folderPath);
-            if (!folderExists) {
-                await this.app.vault.adapter.mkdir(folderPath);
+        for (let attempt = 1; attempt <= MAX_RETRIES; attempt++) {
+            try {
+                const data = this.db.export();
+                const dbPath = this.getDbPath();
+
+                const folderPath = normalizePath(DB_FOLDER);
+                const folderExists = await this.app.vault.adapter.exists(folderPath);
+                if (!folderExists) {
+                    await this.app.vault.adapter.mkdir(folderPath);
+                }
+
+                await this.app.vault.adapter.writeBinary(dbPath, data.buffer);
+                this.isDirty = false;
+                return; // Success
+            } catch (error) {
+                console.error(`[True Recall] Failed to save database (attempt ${attempt}/${MAX_RETRIES}):`, error);
+
+                if (attempt < MAX_RETRIES) {
+                    // Exponential backoff: 100ms, 200ms, 400ms...
+                    const delay = BASE_DELAY_MS * Math.pow(2, attempt - 1);
+                    await new Promise((resolve) => setTimeout(resolve, delay));
+                } else {
+                    // Final failure - notify user
+                    notify().error(
+                        "Failed to save database after multiple attempts. Your recent changes may not be saved.",
+                        NOTIFICATION_DURATION.LONG
+                    );
+                }
             }
-
-            await this.app.vault.adapter.writeBinary(dbPath, data.buffer);
-            this.isDirty = false;
-        } catch (error) {
-            console.error("[True Recall] Failed to save database:", error);
         }
     }
 

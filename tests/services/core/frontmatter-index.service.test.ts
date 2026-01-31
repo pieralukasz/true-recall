@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach } from "vitest";
+import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import type { App, Vault, MetadataCache, TFile, CachedMetadata } from "obsidian";
 import { FrontmatterIndexService } from "../../../src/services/core/frontmatter-index.service";
 
@@ -43,6 +43,7 @@ describe("FrontmatterIndexService", () => {
 				if (event === "rename") onRenameHandler = handler as typeof onRenameHandler;
 				return { unload: vi.fn() };
 			}),
+			off: vi.fn(),
 		} as unknown as Vault;
 
 		mockMetadataCache = {
@@ -51,6 +52,7 @@ describe("FrontmatterIndexService", () => {
 				if (event === "changed") onChangedHandler = handler as typeof onChangedHandler;
 				return { unload: vi.fn() };
 			}),
+			off: vi.fn(),
 		} as unknown as MetadataCache;
 
 		mockApp = { vault: mockVault, metadataCache: mockMetadataCache } as unknown as App;
@@ -60,6 +62,10 @@ describe("FrontmatterIndexService", () => {
 		beforeEach(() => {
 			service = new FrontmatterIndexService(mockApp);
 			service.register({ field: "flashcard_uid", type: "string", unique: true });
+		});
+
+		afterEach(() => {
+			service.unregisterEventsDirect();
 		});
 
 		it("indexes unique string field and provides O(1) lookup", () => {

@@ -286,20 +286,30 @@
 		gap: 1rem !important;
 	}
 
-	/* Enable text selection in review cards */
+	/* Enable text selection in review cards + max-width for readability */
 	.true-recall-review-question,
 	.true-recall-review-answer {
 		user-select: text;
 		-webkit-user-select: text;
 		white-space: pre-line;
+		max-width: 60rem;
+		margin-left: auto;
+		margin-right: auto;
 	}
 
-	/* Code blocks in review cards - preserve formatting */
+	/* Code blocks in review cards - preserve formatting, center, and style */
 	.true-recall-review-question pre,
 	.true-recall-review-answer pre {
 		text-align: left;
 		white-space: pre;
 		overflow-x: auto;
+		width: fit-content;
+		max-width: 100%;
+		margin-left: auto;
+		margin-right: auto;
+		background-color: var(--code-background);
+		padding: 1rem;
+		border-radius: 0.5rem;
 	}
 
 	.true-recall-review-question code,

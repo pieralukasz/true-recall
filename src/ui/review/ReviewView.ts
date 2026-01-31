@@ -380,6 +380,9 @@ export class ReviewView extends ItemView {
 		// Unregister ReviewStateManager from global UndoService
 		this.plugin.undoService?.setReviewStateManager(null, null);
 
+		// Clear session-specific undo entries to prevent memory accumulation
+		this.plugin.undoService?.clearSessionEntries();
+
 		// Flush store to disk before closing
 		if (this.plugin.cardStore) {
 			await this.plugin.cardStore.flush();
@@ -410,6 +413,12 @@ export class ReviewView extends ItemView {
 	 * Handles card removal during active review sessions
 	 */
 	private subscribeToEvents(): void {
+		// Guard: clean up existing subscriptions before creating new ones
+		if (this.eventUnsubscribers.length > 0) {
+			this.eventUnsubscribers.forEach((unsub) => unsub());
+			this.eventUnsubscribers = [];
+		}
+
 		const eventBus = getEventBus();
 
 		// Handle card removal during active review
@@ -1136,6 +1145,9 @@ export class ReviewView extends ItemView {
 		const editState = this.stateManager.getEditState();
 		if (!card || !editState.active) return;
 
+		// Capture card ID before async operation to prevent race conditions
+		const cardIdBeforeSave = card.id;
+
 		// Keep newlines as-is (no <br> conversion)
 		const newContent = textarea.value;
 		const newQuestion = field === "question" ? newContent : card.question;
@@ -1152,7 +1164,7 @@ export class ReviewView extends ItemView {
 			try {
 				// Update card via AgentService for undo support
 				const updateResult = await this.plugin.agentService?.execute("update-card", {
-					cardId: card.id,
+					cardId: cardIdBeforeSave,
 					newQuestion,
 					newAnswer,
 				});
@@ -1162,13 +1174,17 @@ export class ReviewView extends ItemView {
 					return;
 				}
 
-				// Update card in state
-				this.stateManager.updateCurrentCardContent(
-					newQuestion,
-					newAnswer
-				);
-
-				notify().cardUpdated();
+				// Validate that current card is still the same before updating state
+				const currentCard = this.stateManager.getCurrentCard();
+				if (currentCard?.id === cardIdBeforeSave) {
+					// Update card in state
+					this.stateManager.updateCurrentCardContent(
+						newQuestion,
+						newAnswer
+					);
+					notify().cardUpdated();
+				}
+				// If card changed during save, database is already updated but we don't update stale state
 			} catch (error) {
 				console.error("Error saving card content:", error);
 				notify().operationFailed("save card", error);
