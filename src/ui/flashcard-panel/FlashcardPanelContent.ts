@@ -173,13 +173,18 @@ export class FlashcardPanelContent extends BaseComponent {
 			  )
 			: flashcardInfo.flashcards;
 
+		// Pre-build Map for O(1) FSRS lookups (instead of O(N*M) .find() calls)
+		const fsrsMap = cardsWithFsrs
+			? new Map(cardsWithFsrs.map((c) => [c.id, c]))
+			: null;
+
 		// Flashcard list (compact)
 		if (filteredFlashcards.length > 0) {
 			for (const card of filteredFlashcards) {
 				const cardWrapper = previewEl.createDiv();
 
-				// Find FSRS data for this card
-				const fsrsCard = cardsWithFsrs?.find((c) => c.id === card.id);
+				// O(1) FSRS lookup via Map
+				const fsrsCard = fsrsMap?.get(card.id);
 
 				const compactCard = createCompactCardItem(cardWrapper, {
 					card,

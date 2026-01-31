@@ -80,6 +80,11 @@ export class FlashcardPanelView extends ItemView {
     // Track RAF IDs for cleanup
     private pendingRafIds: Set<number> = new Set();
 
+    // Render optimization: track last rendered state to avoid unnecessary rebuilds
+    private lastRenderedFileUid: string | null = null;
+    private lastRenderedFlashcardCount: number = 0;
+    private lastRenderedSelectionMode: string | null = null;
+
     constructor(leaf: WorkspaceLeaf, plugin: TrueRecallPlugin) {
         super(leaf);
         this.plugin = plugin;
@@ -558,50 +563,76 @@ export class FlashcardPanelView extends ItemView {
             this.contentDiv = this.contentContainer.createDiv({ cls: "ep:flex-1 ep:overflow-y-auto ep:min-h-0" });
         }
 
-        // Destroy and recreate content component (flashcard list needs full re-render)
-        this.contentComponent?.destroy();
-        this.contentDiv.empty();
+        // Check if we need full rebuild or can use incremental update
+        const currentFileUid = state.flashcardInfo?.sourceUid ?? null;
+        const currentFlashcardCount = state.flashcardInfo?.flashcards?.length ?? 0;
+        const currentSelectionMode = state.selectionMode;
 
-        this.contentComponent = new FlashcardPanelContent(this.contentDiv, {
-            currentFile: state.currentFile,
-            status: state.status,
-            flashcardInfo: state.flashcardInfo,
-            isFlashcardFile: state.isFlashcardFile,
-            noteFlashcardType: state.noteFlashcardType,
-            selectionMode: state.selectionMode,
-            selectedCardIds: state.selectedCardIds,
-            expandedCardIds: state.expandedCardIds,
-            cardsWithFsrs: this.getCardsWithFsrs(),
-            searchQuery: state.searchQuery,
-            isAddCardExpanded: state.isAddCardExpanded,
-            handlers: {
-                app: this.app,
-                component: this,
-                onEditCard: (card) => void this.handleEditCard(card),
-                onEditButton: (card) => void this.handleEditButton(card),
-                onCopyCard: (card) => void this.handleCopyCard(card),
-                onDeleteCard: (card) => void this.handleRemoveCard(card),
-                onMoveCard: (card) => void this.handleMoveCard(card),
-                onEditSave: async (card, field, newContent) => void this.handleEditSave(card, field, newContent),
-                onToggleExpand: (cardId) => {
-                    const scrollPosition = this.contentDiv?.scrollTop ?? 0;
-                    this.stateManager.toggleCardExpanded(cardId);
-                    this.scheduleRaf(() => {
-                        if (this.contentDiv) this.contentDiv.scrollTop = scrollPosition;
-                    });
+        const needsFullRebuild =
+            !this.contentComponent ||
+            currentFileUid !== this.lastRenderedFileUid ||
+            currentFlashcardCount !== this.lastRenderedFlashcardCount ||
+            currentSelectionMode !== this.lastRenderedSelectionMode;
+
+        if (needsFullRebuild) {
+            // Full rebuild: destroy and recreate content component
+            this.contentComponent?.destroy();
+            this.contentDiv.empty();
+
+            this.contentComponent = new FlashcardPanelContent(this.contentDiv, {
+                currentFile: state.currentFile,
+                status: state.status,
+                flashcardInfo: state.flashcardInfo,
+                isFlashcardFile: state.isFlashcardFile,
+                noteFlashcardType: state.noteFlashcardType,
+                selectionMode: state.selectionMode,
+                selectedCardIds: state.selectedCardIds,
+                expandedCardIds: state.expandedCardIds,
+                cardsWithFsrs: this.getCardsWithFsrs(),
+                searchQuery: state.searchQuery,
+                isAddCardExpanded: state.isAddCardExpanded,
+                handlers: {
+                    app: this.app,
+                    component: this,
+                    onEditCard: (card) => void this.handleEditCard(card),
+                    onEditButton: (card) => void this.handleEditButton(card),
+                    onCopyCard: (card) => void this.handleCopyCard(card),
+                    onDeleteCard: (card) => void this.handleRemoveCard(card),
+                    onMoveCard: (card) => void this.handleMoveCard(card),
+                    onEditSave: async (card, field, newContent) => void this.handleEditSave(card, field, newContent),
+                    onToggleExpand: (cardId) => {
+                        const scrollPosition = this.contentDiv?.scrollTop ?? 0;
+                        this.stateManager.toggleCardExpanded(cardId);
+                        this.scheduleRaf(() => {
+                            if (this.contentDiv) this.contentDiv.scrollTop = scrollPosition;
+                        });
+                    },
+                    onToggleSelect: (cardId) => {
+                        const scrollPosition = this.contentDiv?.scrollTop ?? 0;
+                        this.stateManager.toggleCardSelection(cardId);
+                        this.scheduleRaf(() => {
+                            if (this.contentDiv) this.contentDiv.scrollTop = scrollPosition;
+                        });
+                    },
+                    onEnterSelectionMode: (cardId) => this.stateManager.enterSelectionMode(cardId),
+                    onAdd: () => void this.handleAddFlashcard(),
                 },
-                onToggleSelect: (cardId) => {
-                    const scrollPosition = this.contentDiv?.scrollTop ?? 0;
-                    this.stateManager.toggleCardSelection(cardId);
-                    this.scheduleRaf(() => {
-                        if (this.contentDiv) this.contentDiv.scrollTop = scrollPosition;
-                    });
-                },
-                onEnterSelectionMode: (cardId) => this.stateManager.enterSelectionMode(cardId),
-                onAdd: () => void this.handleAddFlashcard(),
-            },
-        });
-        this.contentComponent.render();
+            });
+            this.contentComponent.render();
+
+            // Update tracking state
+            this.lastRenderedFileUid = currentFileUid;
+            this.lastRenderedFlashcardCount = currentFlashcardCount;
+            this.lastRenderedSelectionMode = currentSelectionMode;
+        } else if (this.contentComponent) {
+            // Incremental update: just update props (avoids DOM recreation)
+            this.contentComponent.updateProps({
+                selectedCardIds: state.selectedCardIds,
+                expandedCardIds: state.expandedCardIds,
+                cardsWithFsrs: this.getCardsWithFsrs(),
+                searchQuery: state.searchQuery,
+            });
+        }
 
         // Render Footer (only for selection mode)
         this.footerComponent?.destroy();
@@ -681,11 +712,9 @@ export class FlashcardPanelView extends ItemView {
             return [];
         }
 
-        // Get all FSRS cards and filter to current file's cards
-        const allFsrsCards = this.flashcardManager.getAllFSRSCards();
-        const cardIds = new Set(state.flashcardInfo.flashcards.map(c => c.id));
-
-        return allFsrsCards.filter(c => cardIds.has(c.id));
+        // Get only the cards we need by IDs (optimized batch fetch)
+        const cardIds = state.flashcardInfo.flashcards.map(c => c.id);
+        return this.flashcardManager.getCardsByIds(cardIds);
     }
 
     // ===== Action Handlers =====
@@ -1031,20 +1060,20 @@ export class FlashcardPanelView extends ItemView {
         const result = await modal.openAndWait();
         if (result.cancelled || !result.targetNotePath) return;
 
-        // Move all selected cards
-        let successCount = 0;
+        // Move all selected cards in parallel
+        const targetPath = result.targetNotePath;
+        const results = await Promise.allSettled(
+            selectedCards.map((card) =>
+                this.flashcardManager.moveCard(card.id, targetPath)
+            )
+        );
 
-        for (const card of selectedCards) {
-            try {
-                await this.flashcardManager.moveCard(
-                    card.id,
-                    result.targetNotePath
-                );
-                successCount++;
-            } catch (error) {
-                console.error(`Failed to move card ${card.id}:`, error);
+        const successCount = results.filter((r) => r.status === "fulfilled").length;
+        results.forEach((r, i) => {
+            if (r.status === "rejected") {
+                console.error(`Failed to move card ${selectedCards[i]?.id}:`, r.reason);
             }
-        }
+        });
 
         // Clear selection and refresh
         this.stateManager.exitSelectionMode();
@@ -1066,19 +1095,21 @@ export class FlashcardPanelView extends ItemView {
         const confirmed = confirm(`Delete ${selectedCards.length} selected card(s)?`);
         if (!confirmed) return;
 
-        // Delete cards by ID (order doesn't matter with ID-based deletion)
-        let successCount = 0;
-        for (const card of selectedCards) {
-            try {
-                const removed = await this.flashcardManager.removeFlashcardById(card.id);
+        // Delete cards by ID in parallel (order doesn't matter)
+        const results = await Promise.allSettled(
+            selectedCards.map((card) =>
+                this.flashcardManager.removeFlashcardById(card.id)
+            )
+        );
 
-                if (removed) {
-                    successCount++;
-                }
-            } catch (error) {
-                console.error(`Failed to delete card ${card.id}:`, error);
+        const successCount = results.filter(
+            (r) => r.status === "fulfilled" && r.value === true
+        ).length;
+        results.forEach((r, i) => {
+            if (r.status === "rejected") {
+                console.error(`Failed to delete card ${selectedCards[i]?.id}:`, r.reason);
             }
-        }
+        });
 
         // Clear selection and refresh
         this.stateManager.exitSelectionMode();
@@ -1113,14 +1144,16 @@ export class FlashcardPanelView extends ItemView {
         if (result.cancelled || result.flashcards.length === 0) return;
 
         try {
-            // Save all parsed flashcards
-            for (const flashcard of result.flashcards) {
-                await this.flashcardManager.addSingleFlashcard(
-                    flashcard.question,
-                    flashcard.answer,
-                    sourceUid
-                );
-            }
+            // Save all parsed flashcards in parallel
+            await Promise.all(
+                result.flashcards.map((flashcard) =>
+                    this.flashcardManager.addSingleFlashcard(
+                        flashcard.question,
+                        flashcard.answer,
+                        sourceUid
+                    )
+                )
+            );
             notify().cardsCreated(result.flashcards.length, state.currentFile.basename);
             await this.loadFlashcardInfo();
         } catch (error) {
@@ -1137,17 +1170,20 @@ export class FlashcardPanelView extends ItemView {
         const confirmed = confirm(`Delete all ${count} flashcard(s) for this note?`);
         if (!confirmed) return;
 
-        let successCount = 0;
-        for (const card of state.flashcardInfo.flashcards) {
-            try {
-                const removed = await this.flashcardManager.removeFlashcardById(card.id);
-                if (removed) {
-                    successCount++;
-                }
-            } catch (error) {
-                console.error(`Failed to delete card ${card.id}:`, error);
+        // Delete all cards in parallel
+        const cards = state.flashcardInfo.flashcards;
+        const results = await Promise.allSettled(
+            cards.map((card) => this.flashcardManager.removeFlashcardById(card.id))
+        );
+
+        const successCount = results.filter(
+            (r) => r.status === "fulfilled" && r.value === true
+        ).length;
+        results.forEach((r, i) => {
+            if (r.status === "rejected") {
+                console.error(`Failed to delete card ${cards[i]?.id}:`, r.reason);
             }
-        }
+        });
 
         notify().cardsDeleted(successCount);
         await this.loadFlashcardInfo();

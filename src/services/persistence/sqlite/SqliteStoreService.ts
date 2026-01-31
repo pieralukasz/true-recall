@@ -136,6 +136,11 @@ export class SqliteStoreService {
         return this.cards.size();
     }
 
+    /** Get multiple cards by IDs (optimized batch fetch) */
+    getByIds(cardIds: string[]): FSRSCardData[] {
+        return this.cards.getByIds(cardIds);
+    }
+
     // ===== Content & Source Operations (delegates to cards module) =====
 
     /** Get all cards that have content */

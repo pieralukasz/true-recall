@@ -708,16 +708,28 @@ export class ReviewService {
 			return queue.length;
 		}
 
-		// For due-date or due-date-random: find position based on due time
-		for (let i = 0; i < queue.length; i++) {
-			const queueCard = queue[i];
-			if (!queueCard) continue;
-			const queueDue = new Date(queueCard.fsrs.due);
-			if (dueDate < queueDue) {
-				return i;
+		// For due-date or due-date-random: binary search for insertion position
+		// Queue is sorted by due date, so we can use O(log n) search
+		const dueTime = dueDate.getTime();
+		let low = 0;
+		let high = queue.length;
+
+		while (low < high) {
+			const mid = (low + high) >>> 1; // Unsigned right shift for safe integer division
+			const midCard = queue[mid];
+			if (!midCard) {
+				// Skip null entries
+				low = mid + 1;
+				continue;
+			}
+			const midDue = new Date(midCard.fsrs.due).getTime();
+			if (midDue < dueTime) {
+				low = mid + 1;
+			} else {
+				high = mid;
 			}
 		}
-		return queue.length;
+		return low;
 	}
 
 	/**

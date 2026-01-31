@@ -69,44 +69,37 @@ export class StatsCalculatorService {
 		const allCards = await this.flashcardManager.getAllFSRSCards();
 		const now = new Date();
 
-		// Helper to check if card is active (not suspended and not currently buried)
-		const isActive = (c: FSRSFlashcardItem) => {
-			if (c.fsrs.suspended) return false;
-			if (c.fsrs.buriedUntil && new Date(c.fsrs.buriedUntil) > now) return false;
-			return true;
-		};
+		// Single-pass accumulator (O(n) instead of O(n*6))
+		const counts = { new: 0, learning: 0, young: 0, mature: 0, suspended: 0, buried: 0 };
 
-		// Helper to check if card is currently buried
-		const isBuried = (c: FSRSFlashcardItem) => {
-			if (c.fsrs.suspended) return false; // Suspended takes precedence
-			return c.fsrs.buriedUntil && new Date(c.fsrs.buriedUntil) > now;
-		};
+		for (const c of allCards) {
+			// Suspended takes precedence
+			if (c.fsrs.suspended) {
+				counts.suspended++;
+				continue;
+			}
 
-		return {
-			new: allCards.filter(
-				(c) => isActive(c) && c.fsrs.state === State.New
-			).length,
-			learning: allCards.filter(
-				(c) =>
-					isActive(c) &&
-					(c.fsrs.state === State.Learning ||
-						c.fsrs.state === State.Relearning)
-			).length,
-			young: allCards.filter(
-				(c) =>
-					isActive(c) &&
-					c.fsrs.state === State.Review &&
-					c.fsrs.scheduledDays < 21
-			).length,
-			mature: allCards.filter(
-				(c) =>
-					isActive(c) &&
-					c.fsrs.state === State.Review &&
-					c.fsrs.scheduledDays >= 21
-			).length,
-			suspended: allCards.filter((c) => c.fsrs.suspended).length,
-			buried: allCards.filter((c) => isBuried(c)).length,
-		};
+			// Check if buried
+			if (c.fsrs.buriedUntil && new Date(c.fsrs.buriedUntil) > now) {
+				counts.buried++;
+				continue;
+			}
+
+			// Active cards - categorize by state
+			if (c.fsrs.state === State.New) {
+				counts.new++;
+			} else if (c.fsrs.state === State.Learning || c.fsrs.state === State.Relearning) {
+				counts.learning++;
+			} else if (c.fsrs.state === State.Review) {
+				if (c.fsrs.scheduledDays < 21) {
+					counts.young++;
+				} else {
+					counts.mature++;
+				}
+			}
+		}
+
+		return counts;
 	}
 
 	/**
