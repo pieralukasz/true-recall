@@ -189,6 +189,8 @@ export class UndoService {
 
 	/**
 	 * Undo an answer action (restore FSRS state and re-queue card)
+	 * Note: undoLastAnswer() handles queue restoration + stats reversion,
+	 * so we don't call insertCardAtPosition here (would cause duplicate)
 	 */
 	private async undoAnswer(payload: AnswerUndoPayload): Promise<boolean> {
 		const { flashcardManager } = this.plugin;
@@ -196,15 +198,8 @@ export class UndoService {
 		// Restore original FSRS data
 		flashcardManager.updateCardFSRS(payload.card.id, payload.originalFsrs);
 
-		// Re-insert card at original position if ReviewView is active
-		if (this.reviewStateManager) {
-			this.reviewStateManager.insertCardAtPosition(
-				{ ...payload.card, fsrs: payload.originalFsrs },
-				payload.previousIndex
-			);
-		}
-
 		// Call review-specific callbacks (e.g., update session persistence)
+		// onUndoAnswer calls undoLastAnswer() which handles queue + stats
 		if (this.reviewCallbacks) {
 			await this.reviewCallbacks.onUndoAnswer(payload);
 			this.reviewCallbacks.onUpdateSchedulingPreview();

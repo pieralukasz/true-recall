@@ -119,7 +119,7 @@ export class CardActionsHandler {
 		}
 
 		notify().cardSuspended();
-		this.callbacks.onRender();
+		// Note: render triggered by removeCurrentCard() → notifyListeners()
 	}
 
 	/**
@@ -168,7 +168,7 @@ export class CardActionsHandler {
 		}
 
 		notify().cardBuried();
-		this.callbacks.onRender();
+		// Note: render triggered by removeCurrentCard() → notifyListeners()
 	}
 
 	/**
@@ -249,7 +249,7 @@ export class CardActionsHandler {
 		}
 
 		notify().cardsBuried(buriedCount);
-		this.callbacks.onRender();
+		// Note: render triggered by removeCardById() → notifyListeners()
 	}
 
 	/**
@@ -378,6 +378,7 @@ export class CardActionsHandler {
 
 	/**
 	 * Edit the current card via modal
+	 * Uses direct FlashcardManager calls (no undo support for simplicity)
 	 */
 	async handleEditCardModal(): Promise<void> {
 		const card = this.deps.stateManager.getCurrentCard();
@@ -394,19 +395,14 @@ export class CardActionsHandler {
 		if (result.cancelled || result.flashcards.length === 0) return;
 
 		try {
-			// First flashcard updates the original card (via AgentService for undo support)
+			// First flashcard updates the original card directly
 			const firstFlashcard = result.flashcards[0];
 			if (firstFlashcard) {
-				const updateResult = await this.deps.plugin.agentService?.execute("update-card", {
-					cardId: card.id,
-					newQuestion: firstFlashcard.question,
-					newAnswer: firstFlashcard.answer,
-				});
-
-				if (!updateResult?.success) {
-					notify().operationFailed("update card", updateResult?.error?.message ?? "Unknown error");
-					return;
-				}
+				this.deps.flashcardManager.updateCardContent(
+					card.id,
+					firstFlashcard.question,
+					firstFlashcard.answer
+				);
 
 				// Update in state manager queue
 				this.deps.stateManager.updateCurrentCardContent(
@@ -415,46 +411,26 @@ export class CardActionsHandler {
 				);
 			}
 
-			// Additional flashcards (if any) are created as new cards (via AgentService for undo support)
+			// Additional flashcards (if any) are created as new cards directly
 			if (result.flashcards.length > 1) {
-				const sourceNotePath = card.sourceNotePath;
-
 				for (let i = 1; i < result.flashcards.length; i++) {
 					const flashcard = result.flashcards[i];
 					if (flashcard) {
-						const createResult = await this.deps.plugin.agentService?.execute<{
-							id: string;
-							question: string;
-							answer: string;
-							sourceUid?: string;
-							sourceNoteName?: string;
-						}>("create-flashcard", {
-							question: flashcard.question,
-							answer: flashcard.answer,
-							sourceNotePath: sourceNotePath,
-						});
+						const newCard = await this.deps.flashcardManager.addSingleFlashcard(
+							flashcard.question,
+							flashcard.answer,
+							card.sourceUid
+						);
 
-						if (createResult?.success && createResult.data) {
-							// Add new card to current session queue
-							const newCard: FSRSFlashcardItem = {
-								id: createResult.data.id,
-								question: createResult.data.question,
-								answer: createResult.data.answer,
-								sourceNoteName: createResult.data.sourceNoteName,
-								sourceUid: createResult.data.sourceUid,
-								projects: [],
-								fsrs: this.deps.cardStore.get(createResult.data.id) ?? {} as any,
-							};
-							this.deps.stateManager.addCardToQueue(newCard);
-						}
+						// Add new card to current session queue
+						this.deps.stateManager.addCardToQueue(newCard);
 					}
 				}
 				notify().success(`Updated card and created ${result.flashcards.length - 1} new cards`);
 			} else {
 				notify().cardUpdated();
 			}
-
-			this.callbacks.onRender();
+			// Note: render triggered by updateCurrentCardContent/addCardToQueue → notifyListeners()
 		} catch (error) {
 			console.error("[CardActionsHandler] Error updating card:", error);
 			notify().operationFailed("update card", error);
@@ -473,9 +449,7 @@ export class CardActionsHandler {
 		}
 
 		const success = await undoService.undo();
-		if (success) {
-			this.callbacks.onRender();
-		}
+		// Note: render triggered by UndoService via insertCardAtPosition/undoLastAnswer → notifyListeners()
 		return success;
 	}
 

@@ -70,6 +70,8 @@ export interface AnswerUndoPayload {
 	rating?: Grade;
 	/** FSRS state before the answer */
 	previousState?: State;
+	/** Position where card was requeued (for learning cards) - needs cleanup on undo */
+	requeuedAtIndex?: number;
 }
 
 /**
