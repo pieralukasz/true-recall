@@ -38,6 +38,7 @@ import {
 	createEditableTextField,
 	TOOLBAR_BUTTONS,
 } from "../components";
+import { SubscriptionManager } from "../utils";
 import type TrueRecallPlugin from "../../main";
 import type { ReviewViewState } from "./review.types";
 import { CardActionsHandler, KeyboardHandler } from "./handlers";
@@ -98,16 +99,14 @@ export class ReviewView extends ItemView {
 	// State subscription
 	private unsubscribe: (() => void) | null = null;
 
-	// Event subscriptions for cross-component reactivity
-	private eventUnsubscribers: (() => void)[] = [];
+	// Consolidated subscription/timer management
+	private subs = new SubscriptionManager();
 
-	// Timer for waiting screen countdown
-	private waitingTimer: ReturnType<typeof setInterval> | null = null;
+	// Reference to waiting timer for countdown updates
+	private waitingTimerId: ReturnType<typeof setInterval> | null = null;
 
-	// Cache for badge calculations (avoid O(3N) on every render)
-	private cachedBadgeCounts: { new: number; learning: number; due: number } | null = null;
-	private cachedQueueLength: number = 0;
-	private cachedCurrentIndex: number = -1;
+	// Debounce render calls using requestAnimationFrame
+	private pendingRenderFrame: number | null = null;
 
 	// AbortController for cleaning up event listeners between renders
 	private cardEventAbortController: AbortController | null = null;
@@ -309,10 +308,9 @@ export class ReviewView extends ItemView {
 			cls: "true-recall-review-buttons ep:flex ep:justify-center ep:gap-3 ep:border-t ep:border-obs-border ep:flex-nowrap ep:shrink-0 ep:p-4",
 		});
 
-		// Subscribe to state changes - update render and header actions
+		// Subscribe to state changes - debounced render using RAF
 		this.unsubscribe = this.stateManager.subscribe(() => {
-			this.render();
-			this.updateHeaderActions();
+			this.scheduleRender();
 		});
 
 		// Subscribe to EventBus for cross-component reactivity
@@ -374,6 +372,12 @@ export class ReviewView extends ItemView {
 	}
 
 	async onClose(): Promise<void> {
+		// Cancel pending render frame
+		if (this.pendingRenderFrame !== null) {
+			cancelAnimationFrame(this.pendingRenderFrame);
+			this.pendingRenderFrame = null;
+		}
+
 		// Notify panel that review session ended
 		this.emitCardChangedEvent();
 
@@ -390,9 +394,8 @@ export class ReviewView extends ItemView {
 
 		this.unsubscribe?.();
 
-		// Cleanup EventBus subscriptions
-		this.eventUnsubscribers.forEach((unsub) => unsub());
-		this.eventUnsubscribers = [];
+		// Cleanup all EventBus subscriptions and timers via SubscriptionManager
+		this.subs.dispose();
 
 		// Cleanup card event listeners via AbortController
 		this.cardEventAbortController?.abort();
@@ -404,7 +407,6 @@ export class ReviewView extends ItemView {
 			this.openNoteAction = null;
 		}
 
-		this.clearWaitingTimer();
 		this.stateManager.reset();
 	}
 
@@ -413,18 +415,11 @@ export class ReviewView extends ItemView {
 	 * Handles card removal during active review sessions
 	 */
 	private subscribeToEvents(): void {
-		// Guard: clean up existing subscriptions before creating new ones
-		if (this.eventUnsubscribers.length > 0) {
-			this.eventUnsubscribers.forEach((unsub) => unsub());
-			this.eventUnsubscribers = [];
-		}
-
 		const eventBus = getEventBus();
 
 		// Handle card removal during active review
-		const unsubRemoved = eventBus.on<CardRemovedEvent>(
-			"card:removed",
-			(event) => {
+		this.subs.track(
+			eventBus.on<CardRemovedEvent>("card:removed", (event) => {
 				if (!this.stateManager.isActive()) return;
 
 				// Check if removed card is in our queue
@@ -435,14 +430,12 @@ export class ReviewView extends ItemView {
 					// Remove card from queue - triggers notifyListeners() → render
 					this.stateManager.removeCardById(event.cardId);
 				}
-			}
+			})
 		);
-		this.eventUnsubscribers.push(unsubRemoved);
 
 		// Handle card content updates during review
-		const unsubUpdated = eventBus.on<CardUpdatedEvent>(
-			"card:updated",
-			(event) => {
+		this.subs.track(
+			eventBus.on<CardUpdatedEvent>("card:updated", (event) => {
 				if (!this.stateManager.isActive()) return;
 				if (!event.changes.question && !event.changes.answer) return;
 
@@ -459,37 +452,33 @@ export class ReviewView extends ItemView {
 						);
 					}
 				}
-			}
+			})
 		);
-		this.eventUnsubscribers.push(unsubUpdated);
 
 		// Handle bulk removals (e.g., from diff apply)
-		const unsubBulk = eventBus.on<BulkChangeEvent>(
-			"cards:bulk-change",
-			(event) => {
+		this.subs.track(
+			eventBus.on<BulkChangeEvent>("cards:bulk-change", (event) => {
 				if (!this.stateManager.isActive()) return;
 				if (event.action !== "removed") return;
 
-				// Remove any deleted cards from queue
-				// Each removeCardById() triggers notifyListeners() → render
-				for (const cardId of event.cardIds) {
-					const queue = this.stateManager.getState().queue;
-					if (queue.find((c) => c.id === cardId)) {
-						this.stateManager.removeCardById(cardId);
-					}
+				// Remove all deleted cards in one batch operation (single render)
+				const queue = this.stateManager.getState().queue;
+				const queueIds = new Set(queue.map((c) => c.id));
+				const idsToRemove = event.cardIds.filter((id) => queueIds.has(id));
+				if (idsToRemove.length > 0) {
+					this.stateManager.removeCardsByIds(idsToRemove);
 				}
-			}
+			})
 		);
-		this.eventUnsubscribers.push(unsubBulk);
 	}
 
 	/**
 	 * Clear the waiting screen timer
 	 */
 	private clearWaitingTimer(): void {
-		if (this.waitingTimer) {
-			clearInterval(this.waitingTimer);
-			this.waitingTimer = null;
+		if (this.waitingTimerId) {
+			this.subs.clearInterval(this.waitingTimerId);
+			this.waitingTimerId = null;
 		}
 	}
 
@@ -660,6 +649,21 @@ export class ReviewView extends ItemView {
 	}
 
 	/**
+	 * Schedule a render using requestAnimationFrame for debouncing
+	 * Prevents multiple render calls in the same frame
+	 */
+	private scheduleRender(): void {
+		if (this.pendingRenderFrame !== null) {
+			return; // Already scheduled
+		}
+		this.pendingRenderFrame = requestAnimationFrame(() => {
+			this.pendingRenderFrame = null;
+			this.render();
+			this.updateHeaderActions();
+		});
+	}
+
+	/**
 	 * Render the current state
 	 */
 	private render(): void {
@@ -706,9 +710,9 @@ export class ReviewView extends ItemView {
 	private renderHeader(): void {
 		this.headerEl.empty();
 
-		// Stats badges (centered)
+		// Stats badges (centered) - O(1) access from StateManager
 		if (this.plugin.settings.showReviewHeaderStats) {
-			const remaining = this.calculateRemainingByType();
+			const remaining = this.stateManager.getBadgeCounts();
 			const statsContainer = this.headerEl.createDiv({
 				cls: "ep:flex ep:items-center ep:gap-1.5",
 			});
@@ -720,50 +724,6 @@ export class ReviewView extends ItemView {
 			);
 			this.renderHeaderStatBadge(statsContainer, "due", remaining.due);
 		}
-	}
-
-	/**
-	 * Calculate remaining cards by type in the current queue
-	 * Uses cached values when queue/index haven't changed (avoids O(3N) on every render)
-	 */
-	private calculateRemainingByType(): {
-		new: number;
-		learning: number;
-		due: number;
-	} {
-		const state = this.stateManager.getState();
-
-		// Return cached values if queue and index haven't changed
-		if (
-			this.cachedBadgeCounts &&
-			state.queue.length === this.cachedQueueLength &&
-			state.currentIndex === this.cachedCurrentIndex
-		) {
-			return this.cachedBadgeCounts;
-		}
-
-		// Recalculate with single pass (O(N) instead of O(3N))
-		let newCount = 0;
-		let learningCount = 0;
-		let dueCount = 0;
-		const queue = state.queue;
-		for (let i = state.currentIndex; i < queue.length; i++) {
-			const card = queue[i];
-			if (!card) continue;
-			const cardState = card.fsrs.state;
-			if (cardState === State.New) {
-				newCount++;
-			} else if (cardState === State.Learning || cardState === State.Relearning) {
-				learningCount++;
-			} else if (cardState === State.Review) {
-				dueCount++;
-			}
-		}
-		this.cachedBadgeCounts = { new: newCount, learning: learningCount, due: dueCount };
-		this.cachedQueueLength = state.queue.length;
-		this.cachedCurrentIndex = state.currentIndex;
-
-		return this.cachedBadgeCounts;
 	}
 
 	/**
@@ -1629,7 +1589,7 @@ export class ReviewView extends ItemView {
 
 		// Start countdown timer - update every second (only if there's time to wait)
 		if (timeUntilDue > 0) {
-			this.waitingTimer = setInterval(() => {
+			this.waitingTimerId = this.subs.setInterval(() => {
 				const remaining = this.stateManager.getTimeUntilNextDue();
 				if (remaining <= 0) {
 					// Card is now due, re-render to show it

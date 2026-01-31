@@ -31,3 +31,5 @@ export {
 	setupInternalLinkHandlers,
 	type InternalLinkHandlerOptions,
 } from "./internal-link.utils";
+
+export { SubscriptionManager } from "./SubscriptionManager";

@@ -37,6 +37,16 @@ export interface EditModeState {
 }
 
 /**
+ * Badge counts for remaining cards by type
+ * Updated incrementally to avoid O(N) recalculation on each render
+ */
+export interface BadgeCounts {
+    new: number;
+    learning: number;
+    due: number;
+}
+
+/**
  * Review State Manager
  * Manages the state of a review session with reactive updates
  */
@@ -50,6 +60,11 @@ export class ReviewStateManager {
         originalQuestion: "",
         originalAnswer: "",
     };
+
+    /**
+     * Badge counts for remaining cards - updated incrementally for O(1) access
+     */
+    private badgeCounts: BadgeCounts = { new: 0, learning: 0, due: 0 };
 
     constructor() {
         this.state = createDefaultSessionState();
@@ -74,6 +89,23 @@ export class ReviewStateManager {
      */
     setSchedulingPreview(preview: SchedulingPreview | null): void {
         this.schedulingPreview = preview;
+    }
+
+    /**
+     * Get badge counts for remaining cards (O(1) access)
+     * Returns counts for cards from currentIndex to end of queue
+     */
+    getBadgeCounts(): BadgeCounts {
+        return { ...this.badgeCounts };
+    }
+
+    /**
+     * Get badge type for a card state
+     */
+    private getBadgeTypeForState(cardState: State): keyof BadgeCounts {
+        if (cardState === State.New) return "new";
+        if (cardState === State.Learning || cardState === State.Relearning) return "learning";
+        return "due";
     }
 
     /**
@@ -114,6 +146,14 @@ export class ReviewStateManager {
      */
     startSession(queue: FSRSFlashcardItem[]): void {
         const prevState = this.state;
+
+        // Initialize badge counts (O(N) once at session start)
+        this.badgeCounts = { new: 0, learning: 0, due: 0 };
+        for (const card of queue) {
+            const badgeType = this.getBadgeTypeForState(card.fsrs.state);
+            this.badgeCounts[badgeType]++;
+        }
+
         this.state = {
             isActive: true,
             queue: [...queue],
@@ -349,6 +389,11 @@ export class ReviewStateManager {
             stats.learningCards++;
         else if (currentCard.fsrs.state === State.Review) stats.reviewCards++;
 
+        // === Update badge counts incrementally (O(1) instead of O(N)) ===
+        // Decrement count for the answered card
+        const answeredBadgeType = this.getBadgeTypeForState(currentCard.fsrs.state);
+        this.badgeCounts[answeredBadgeType] = Math.max(0, this.badgeCounts[answeredBadgeType] - 1);
+
         // Update queue with new card data
         let newQueue = [...this.state.queue];
         newQueue[this.state.currentIndex] = updatedCard;
@@ -357,6 +402,9 @@ export class ReviewStateManager {
         if (requeueData) {
             newQueue.splice(requeueData.position, 0, requeueData.card);
             stats.total = newQueue.length;
+            // Increment badge count for requeued card
+            const requeuedBadgeType = this.getBadgeTypeForState(requeueData.card.fsrs.state);
+            this.badgeCounts[requeuedBadgeType]++;
         }
 
         // === Next card logic ===
@@ -627,6 +675,14 @@ export class ReviewStateManager {
             return; // Card not found
         }
 
+        const removedCard = this.state.queue[cardIndex];
+
+        // Update badge counts if card is in remaining queue (at or after currentIndex)
+        if (cardIndex >= this.state.currentIndex && removedCard) {
+            const badgeType = this.getBadgeTypeForState(removedCard.fsrs.state);
+            this.badgeCounts[badgeType] = Math.max(0, this.badgeCounts[badgeType] - 1);
+        }
+
         const newQueue = [...this.state.queue];
         newQueue.splice(cardIndex, 1);
 
@@ -650,6 +706,59 @@ export class ReviewStateManager {
             },
         };
         this.schedulingPreview = null;
+        this.notifyListeners(prevState);
+    }
+
+    /**
+     * Remove multiple cards from queue by IDs (batch operation)
+     * Only notifies listeners once at the end for better performance
+     */
+    removeCardsByIds(cardIds: string[]): void {
+        if (!this.state.isActive || cardIds.length === 0) {
+            return;
+        }
+
+        const prevState = this.state;
+        const idsToRemove = new Set(cardIds);
+        let newIndex = this.state.currentIndex;
+        let removedBeforeCurrent = 0;
+
+        // Update badge counts and track removals before current index
+        for (let i = 0; i < this.state.queue.length; i++) {
+            const card = this.state.queue[i];
+            if (card && idsToRemove.has(card.id)) {
+                if (i < this.state.currentIndex) {
+                    removedBeforeCurrent++;
+                } else {
+                    // Card is in remaining queue, decrement badge
+                    const badgeType = this.getBadgeTypeForState(card.fsrs.state);
+                    this.badgeCounts[badgeType] = Math.max(0, this.badgeCounts[badgeType] - 1);
+                }
+            }
+        }
+
+        // Filter out removed cards
+        const newQueue = this.state.queue.filter(c => !idsToRemove.has(c.id));
+
+        // Adjust currentIndex based on cards removed before it
+        newIndex = Math.max(0, newIndex - removedBeforeCurrent);
+        if (newIndex >= newQueue.length && newQueue.length > 0) {
+            newIndex = newQueue.length - 1;
+        }
+
+        this.state = {
+            ...this.state,
+            queue: newQueue,
+            currentIndex: newIndex,
+            isAnswerRevealed: false,
+            questionShownTime: Date.now(),
+            stats: {
+                ...this.state.stats,
+                total: newQueue.length,
+            },
+        };
+        this.schedulingPreview = null;
+        // Single notification for all removals
         this.notifyListeners(prevState);
     }
 
