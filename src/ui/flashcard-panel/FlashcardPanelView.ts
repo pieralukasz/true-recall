@@ -71,6 +71,9 @@ export class FlashcardPanelView extends ItemView {
     // Editor change timer for real-time #flashcard tag detection
     private editorChangeTimer: ReturnType<typeof setTimeout> | null = null;
 
+    // Header stats update timer for debouncing (expensive getAllFSRSCards call)
+    private headerStatsTimer: ReturnType<typeof setTimeout> | null = null;
+
     // Mobile header FSRS status element
     private mobileStatusEl: HTMLElement | null = null;
 
@@ -266,6 +269,12 @@ export class FlashcardPanelView extends ItemView {
             this.editorChangeTimer = null;
         }
 
+        // Cleanup header stats timer
+        if (this.headerStatsTimer) {
+            clearTimeout(this.headerStatsTimer);
+            this.headerStatsTimer = null;
+        }
+
         // Remove native header actions
         if (this.reviewAction) {
             this.reviewAction.remove();
@@ -322,9 +331,9 @@ export class FlashcardPanelView extends ItemView {
                 void this.loadFlashcardInfo();
                 return;
             }
-            // For FSRS-only changes, just update the header stats
+            // For FSRS-only changes, debounce header stats update (expensive for large collections)
             if (event.changes.fsrs) {
-                void this.updateHeaderStatsOnly();
+                this.scheduleHeaderStatsUpdate();
             }
         });
         this.eventUnsubscribers.push(unsubUpdated);
@@ -335,9 +344,9 @@ export class FlashcardPanelView extends ItemView {
         });
         this.eventUnsubscribers.push(unsubBulk);
 
-        // When a card is reviewed, update header stats for FSRS counts
+        // When a card is reviewed, debounce header stats update
         const unsubReviewed = eventBus.on<CardReviewedEvent>("card:reviewed", () => {
-            void this.updateHeaderStatsOnly();
+            this.scheduleHeaderStatsUpdate();
         });
         this.eventUnsubscribers.push(unsubReviewed);
 
@@ -604,6 +613,20 @@ export class FlashcardPanelView extends ItemView {
             this.selectionFooterComponent.render();
         }
         // Normal mode: no footer (actions in header)
+    }
+
+    /**
+     * Schedule debounced header stats update
+     * Prevents expensive getAllFSRSCards() calls on every card:updated/card:reviewed event
+     */
+    private scheduleHeaderStatsUpdate(): void {
+        if (this.headerStatsTimer) {
+            clearTimeout(this.headerStatsTimer);
+        }
+        this.headerStatsTimer = setTimeout(() => {
+            this.updateHeaderStatsOnly();
+            this.headerStatsTimer = null;
+        }, 100); // 100ms debounce - fast enough to feel responsive
     }
 
     /**

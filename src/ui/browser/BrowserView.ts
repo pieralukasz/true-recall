@@ -12,6 +12,7 @@ import { VirtualTable } from "./VirtualTable";
 import { BrowserPreview } from "./BrowserPreview";
 import { FlashcardEditorModal } from "../modals/FlashcardEditorModal";
 import { getEventBus, notify } from "../../services";
+import type { CardUpdatedEvent } from "../../types/events.types";
 import type TrueRecallPlugin from "../../main";
 
 /**
@@ -129,7 +130,13 @@ export class BrowserView extends ItemView {
         // Refresh on card changes
         this.eventUnsubscribers.push(
             eventBus.on("card:added", () => void this.loadCards()),
-            eventBus.on("card:updated", () => void this.loadCards()),
+            eventBus.on<CardUpdatedEvent>("card:updated", (event) => {
+                // Skip FSRS-only updates (from review) - content hasn't changed
+                if (event.changes.fsrs && !event.changes.question && !event.changes.answer) {
+                    return;
+                }
+                void this.loadCards();
+            }),
             eventBus.on("card:removed", () => void this.loadCards()),
             eventBus.on("cards:bulk-change", () => void this.loadCards())
         );

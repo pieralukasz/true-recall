@@ -297,6 +297,89 @@ export class ReviewStateManager {
     }
 
     /**
+     * Record an answer and move to next card in a single batched update.
+     * This eliminates double rendering by calling notifyListeners only once.
+     * @param requeueData Optional data for requeuing learning cards
+     * @returns true if there are more cards, false if session is complete
+     */
+    recordAnswerAndNext(
+        rating: Grade,
+        updatedCard: FSRSFlashcardItem,
+        requeueData?: { card: FSRSFlashcardItem; position: number }
+    ): boolean {
+        if (!this.state.isActive) {
+            return false;
+        }
+
+        const currentCard = this.getCurrentCard();
+        if (!currentCard) {
+            return false;
+        }
+
+        const prevState = this.state;
+
+        // === Record answer logic ===
+        const responseTime = Date.now() - this.state.questionShownTime;
+        const result: ReviewResult = {
+            cardId: currentCard.id,
+            rating,
+            timestamp: Date.now(),
+            responseTime,
+            previousState: currentCard.fsrs.state,
+            scheduledDays: currentCard.fsrs.scheduledDays,
+            elapsedDays: currentCard.fsrs.lastReview
+                ? Math.floor(
+                      (Date.now() - new Date(currentCard.fsrs.lastReview).getTime()) /
+                          (1000 * 60 * 60 * 24)
+                  )
+                : 0,
+        };
+
+        // Update stats
+        const stats = { ...this.state.stats };
+        stats.reviewed++;
+        if (rating === Rating.Again) stats.again++;
+        else if (rating === Rating.Hard) stats.hard++;
+        else if (rating === Rating.Good) stats.good++;
+        else if (rating === Rating.Easy) stats.easy++;
+
+        // Count card types
+        if (currentCard.fsrs.state === State.New) stats.newCards++;
+        else if (currentCard.fsrs.state === State.Learning || currentCard.fsrs.state === State.Relearning)
+            stats.learningCards++;
+        else if (currentCard.fsrs.state === State.Review) stats.reviewCards++;
+
+        // Update queue with new card data
+        let newQueue = [...this.state.queue];
+        newQueue[this.state.currentIndex] = updatedCard;
+
+        // === Requeue logic (if needed) ===
+        if (requeueData) {
+            newQueue.splice(requeueData.position, 0, requeueData.card);
+            stats.total = newQueue.length;
+        }
+
+        // === Next card logic ===
+        const nextIndex = this.state.currentIndex + 1;
+
+        this.state = {
+            ...this.state,
+            queue: newQueue,
+            results: [...this.state.results, result],
+            stats,
+            currentIndex: nextIndex,
+            isAnswerRevealed: false,
+            questionShownTime: Date.now(),
+        };
+        this.schedulingPreview = null;
+
+        // Single notification for both operations
+        this.notifyListeners(prevState);
+
+        return nextIndex < newQueue.length;
+    }
+
+    /**
      * Re-queue a card (for learning cards that need to be reviewed again soon)
      */
     requeueCard(card: FSRSFlashcardItem, position?: number): void {
@@ -325,8 +408,13 @@ export class ReviewStateManager {
 
     /**
      * Undo the last answer - go back to previous card with restored data
+     * @param requeuedAtIndex - if the card was requeued, remove it from this position
      */
-    undoLastAnswer(previousIndex: number, restoredCard: FSRSFlashcardItem): void {
+    undoLastAnswer(
+        previousIndex: number,
+        restoredCard: FSRSFlashcardItem,
+        requeuedAtIndex?: number
+    ): void {
         if (!this.state.isActive) {
             return;
         }
@@ -334,8 +422,14 @@ export class ReviewStateManager {
         const prevState = this.state;
 
         // Restore the card in the queue
-        const newQueue = [...this.state.queue];
+        let newQueue = [...this.state.queue];
         newQueue[previousIndex] = restoredCard;
+
+        // Remove requeued copy if it exists (for learning cards)
+        if (requeuedAtIndex !== undefined && requeuedAtIndex < newQueue.length) {
+            // The requeued card is after previousIndex, so we can safely remove it
+            newQueue.splice(requeuedAtIndex, 1);
+        }
 
         // Remove the last result
         const newResults = this.state.results.slice(0, -1);
@@ -343,6 +437,7 @@ export class ReviewStateManager {
         // Revert stats (decrement reviewed count and rating count)
         const lastResult = this.state.results[this.state.results.length - 1];
         const stats = { ...this.state.stats };
+        stats.total = newQueue.length;
         if (lastResult) {
             stats.reviewed = Math.max(0, stats.reviewed - 1);
             if (lastResult.rating === Rating.Again) stats.again = Math.max(0, stats.again - 1);
