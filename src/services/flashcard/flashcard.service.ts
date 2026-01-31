@@ -484,10 +484,19 @@ export class FlashcardManager {
 
 		this.store.set(cardId, entry);
 
+		// Detect specific changes for more targeted UI updates
+		const changes: CardUpdatedEvent["changes"] = { fsrs: true };
+		if (existing && newFSRSData.suspended !== existing.suspended) {
+			changes.suspended = true;
+		}
+		if (existing && newFSRSData.buriedUntil !== existing.buriedUntil) {
+			changes.buried = true;
+		}
+
 		getEventBus().emit({
 			type: "card:updated",
 			cardId,
-			changes: { fsrs: true },
+			changes,
 			timestamp: Date.now(),
 		} as CardUpdatedEvent);
 	}

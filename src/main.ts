@@ -398,6 +398,12 @@ ${cardList}${moreText}
 		}
 		// Reinitialize NL Query Service with new settings (API key or model may have changed)
 		void this.initializeNLQueryService();
+
+		// Emit settings changed event for UI components to refresh
+		getEventBus().emit({
+			type: "settings:changed",
+			timestamp: Date.now(),
+		});
 	}
 
 	// Activate the sidebar view
