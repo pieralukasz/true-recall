@@ -222,6 +222,14 @@ export class FlashcardPanelHeader extends BaseComponent {
             });
         }
 
+        if (this.props.onOpenSourceNote) {
+            menu.addItem((item) => {
+                item.setTitle("Open source note")
+                    .setIcon("file-text")
+                    .onClick(() => this.props.onOpenSourceNote?.());
+            });
+        }
+
         if (hasFlashcards && this.props.onReview) {
             menu.addItem((item) => {
                 item.setTitle("Start review")

@@ -417,6 +417,35 @@ export class FlashcardManager {
 	}
 
 	/**
+	 * Get specific flashcards by IDs (optimized batch fetch)
+	 * Uses SQL WHERE IN instead of fetching all cards
+	 */
+	getCardsByIds(cardIds: string[]): FSRSFlashcardItem[] {
+		if (!this.store) {
+			throw new Error("Store not initialized. Please restart Obsidian.");
+		}
+
+		if (cardIds.length === 0) return [];
+
+		const cards = this.store.getByIds(cardIds);
+
+		const mappedCards = cards
+			.filter((card): card is FSRSCardData & { question: string } =>
+				Boolean(card.question)
+			)
+			.map((card) => ({
+				id: card.id,
+				question: card.question,
+				answer: card.answer ?? "",
+				fsrs: card,
+				sourceUid: card.sourceUid,
+			}));
+
+		// Enrich with source note info from vault
+		return this.sourceNoteService.enrichCards(mappedCards);
+	}
+
+	/**
 	 * Update FSRS data for a card
 	 */
 	updateCardFSRS(

@@ -108,6 +108,11 @@ export class ReviewView extends ItemView {
 	// AbortController for cleaning up event listeners between renders
 	private cardEventAbortController: AbortController | null = null;
 
+	// Render optimization: track last rendered state to avoid unnecessary re-renders
+	private lastRenderedCardId: string | null = null;
+	private lastRenderedAnswerRevealed: boolean = false;
+	private lastRenderedEditState: boolean = false;
+
 	constructor(leaf: WorkspaceLeaf, plugin: TrueRecallPlugin) {
 		super(leaf);
 		this.plugin = plugin;
@@ -656,6 +661,7 @@ export class ReviewView extends ItemView {
 
 	/**
 	 * Render the current state
+	 * Uses selective re-rendering to avoid unnecessary DOM operations
 	 */
 	private render(): void {
 		const state = this.stateManager.getState();
@@ -664,6 +670,7 @@ export class ReviewView extends ItemView {
 			if (state.stats.reviewed > 0) {
 				this.renderSummary();
 			}
+			this.lastRenderedCardId = null;
 			return;
 		}
 
@@ -671,18 +678,30 @@ export class ReviewView extends ItemView {
 		if (this.stateManager.isComplete()) {
 			this.stateManager.endSession();
 			this.renderSummary();
+			this.lastRenderedCardId = null;
 			return;
 		}
 
 		// Check if waiting for learning cards (Anki-like behavior)
 		if (this.stateManager.isWaitingForLearningCards()) {
 			this.renderWaitingScreen();
+			this.lastRenderedCardId = null;
 			return;
 		}
 
 		// Clear waiting timer if we're showing a card
 		this.clearWaitingTimer();
 
+		const currentCard = this.stateManager.getCurrentCard();
+		const answerRevealed = this.stateManager.isAnswerRevealed();
+		const editState = this.stateManager.getEditState();
+
+		// Determine what needs to be re-rendered
+		const cardChanged = currentCard?.id !== this.lastRenderedCardId;
+		const answerJustRevealed = answerRevealed && !this.lastRenderedAnswerRevealed;
+		const editStateChanged = editState.active !== this.lastRenderedEditState;
+
+		// Header always updates (badge counts change)
 		if (this.plugin.settings.showReviewHeader) {
 			this.headerEl.style.display = "";
 			this.renderHeader();
@@ -690,8 +709,19 @@ export class ReviewView extends ItemView {
 			this.headerEl.style.display = "none";
 			this.headerEl.empty();
 		}
-		this.renderCard();
+
+		// Card content: only re-render if card changed, answer revealed, or edit state changed
+		if (cardChanged || answerJustRevealed || editStateChanged) {
+			this.renderCard();
+		}
+
+		// Buttons always update (scheduling preview changes, answer reveal state)
 		this.renderButtons();
+
+		// Update tracking state
+		this.lastRenderedCardId = currentCard?.id ?? null;
+		this.lastRenderedAnswerRevealed = answerRevealed;
+		this.lastRenderedEditState = editState.active;
 	}
 
 	/**

@@ -975,15 +975,10 @@ ${cardList}${moreText}
 		const currentProjects =
 			frontmatterService.extractProjectsFromFrontmatter(content);
 
-		// v16: Scan all files for available projects (from frontmatter)
-		const allProjectsSet = new Set<string>();
-		const files = this.app.vault.getMarkdownFiles();
-		for (const f of files) {
-			const c = await this.app.vault.cachedRead(f);
-			const projects =
-				frontmatterService.extractProjectsFromFrontmatter(c);
-			projects.forEach((p) => allProjectsSet.add(p));
-		}
+		// v18: Use FrontmatterIndex for O(1) project list access (instead of O(n) vault scan)
+		const allProjectsSet = this.frontmatterIndex
+			? this.frontmatterIndex.getAllValues("projects")
+			: new Set<string>();
 		const allProjects = Array.from(allProjectsSet).sort();
 
 		// Open modal
@@ -1017,17 +1012,13 @@ ${cardList}${moreText}
 		const frontmatterService =
 			this.flashcardManager.getFrontmatterService();
 
-		// v16: Check if project exists by scanning frontmatter
-		const files = this.app.vault.getMarkdownFiles();
-		for (const f of files) {
-			const content = await this.app.vault.cachedRead(f);
-			const projects =
-				frontmatterService.extractProjectsFromFrontmatter(content);
-			if (
-				projects.some(
-					(p) => p.toLowerCase() === projectName.toLowerCase()
-				)
-			) {
+		// v18: Check if project exists using FrontmatterIndex (O(1) instead of O(n) vault scan)
+		if (this.frontmatterIndex) {
+			const existingProjects = this.frontmatterIndex.getAllValues("projects");
+			const projectExists = Array.from(existingProjects).some(
+				(p) => p.toLowerCase() === projectName.toLowerCase()
+			);
+			if (projectExists) {
 				notify().warning(`Project "${projectName}" already exists`);
 				return;
 			}
