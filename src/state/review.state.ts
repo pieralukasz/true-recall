@@ -643,8 +643,17 @@ export class ReviewStateManager {
         }
 
         const prevState = this.state;
+        const currentCard = this.state.queue[this.state.currentIndex];
         const newQueue = [...this.state.queue];
         newQueue.splice(this.state.currentIndex, 1);
+
+        // Decrement badge count for removed card
+        if (currentCard) {
+            const badgeType = this.getBadgeTypeForState(currentCard.fsrs.state);
+            if (this.badgeCounts[badgeType] > 0) {
+                this.badgeCounts[badgeType]--;
+            }
+        }
 
         this.state = {
             ...this.state,
@@ -798,6 +807,10 @@ export class ReviewStateManager {
         // Clamp position to valid range
         const clampedPosition = Math.max(0, Math.min(position, newQueue.length));
         newQueue.splice(clampedPosition, 0, card);
+
+        // Increment badge count for inserted card
+        const badgeType = this.getBadgeTypeForState(card.fsrs.state);
+        this.badgeCounts[badgeType]++;
 
         this.state = {
             ...this.state,

@@ -192,13 +192,11 @@ export class FSRSService {
 
 	/**
 	 * Get due cards from a list
+	 * Optimized to compare timestamps directly (avoids Date object creation per card)
 	 */
 	getDueCards(cards: FSRSFlashcardItem[], now?: Date): FSRSFlashcardItem[] {
-		const currentTime = now ?? new Date();
-		return cards.filter((card) => {
-			const dueDate = new Date(card.fsrs.due);
-			return dueDate <= currentTime;
-		});
+		const currentTimestamp = (now ?? new Date()).getTime();
+		return cards.filter((card) => new Date(card.fsrs.due).getTime() <= currentTimestamp);
 	}
 
 	/**
@@ -289,6 +287,7 @@ export class FSRSService {
 
 	/**
 	 * Calculate statistics for a set of cards
+	 * Uses single-pass accumulator (O(n) instead of O(n*5))
 	 */
 	getStats(cards: FSRSFlashcardItem[]): {
 		total: number;
@@ -298,22 +297,35 @@ export class FSRSService {
 		relearning: number;
 		dueToday: number;
 	} {
-		const now = new Date();
-		const todayEnd = new Date(now);
+		const todayEnd = new Date();
 		todayEnd.setHours(23, 59, 59, 999);
+		const todayEndTime = todayEnd.getTime();
 
-		return {
-			total: cards.length,
-			new: cards.filter((c) => c.fsrs.state === State.New).length,
-			learning: cards.filter((c) => c.fsrs.state === State.Learning)
-				.length,
-			review: cards.filter((c) => c.fsrs.state === State.Review).length,
-			relearning: cards.filter((c) => c.fsrs.state === State.Relearning)
-				.length,
-			dueToday: cards.filter((c) => {
-				const due = new Date(c.fsrs.due);
-				return due <= todayEnd;
-			}).length,
-		};
+		const stats = { total: cards.length, new: 0, learning: 0, review: 0, relearning: 0, dueToday: 0 };
+
+		for (const c of cards) {
+			// Count by state
+			switch (c.fsrs.state) {
+				case State.New:
+					stats.new++;
+					break;
+				case State.Learning:
+					stats.learning++;
+					break;
+				case State.Review:
+					stats.review++;
+					break;
+				case State.Relearning:
+					stats.relearning++;
+					break;
+			}
+
+			// Count due today
+			if (new Date(c.fsrs.due).getTime() <= todayEndTime) {
+				stats.dueToday++;
+			}
+		}
+
+		return stats;
 	}
 }

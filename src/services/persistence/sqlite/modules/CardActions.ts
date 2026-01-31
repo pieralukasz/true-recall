@@ -207,6 +207,62 @@ export class CardActions {
         )?.count ?? 0;
     }
 
+    /**
+     * Get multiple cards by IDs (optimized batch fetch)
+     * Uses SQL WHERE IN instead of fetching all cards and filtering
+     */
+    getByIds(cardIds: string[]): FSRSCardData[] {
+        if (cardIds.length === 0) return [];
+
+        // Build parameterized query with placeholders
+        const placeholders = cardIds.map(() => "?").join(",");
+        const rows = this.db.query<{
+            id: string;
+            due: string;
+            stability: number;
+            difficulty: number;
+            reps: number;
+            lapses: number;
+            state: number;
+            lastReview: string | null;
+            scheduledDays: number;
+            learningStep: number;
+            suspended: number;
+            buriedUntil: string | null;
+            createdAt: number | null;
+            question: string | null;
+            answer: string | null;
+            sourceUid: string | null;
+        }>(`
+            SELECT
+                id, due, stability, difficulty, reps, lapses, state,
+                last_review as lastReview,
+                scheduled_days as scheduledDays,
+                learning_step as learningStep,
+                suspended = 1 as suspended,
+                buried_until as buriedUntil,
+                created_at as createdAt,
+                question,
+                answer,
+                source_uid as sourceUid
+            FROM cards
+            WHERE id IN (${placeholders}) AND deleted_at IS NULL
+        `, cardIds);
+
+        return rows.map((row) => {
+            const { question: q, answer: a, suspended, buriedUntil, createdAt, sourceUid, ...rest } = row;
+            return {
+                ...rest,
+                question: q ?? undefined,
+                answer: a ?? undefined,
+                suspended: suspended === 1,
+                buriedUntil: buriedUntil ?? undefined,
+                createdAt: createdAt ?? undefined,
+                sourceUid: sourceUid ?? undefined,
+            };
+        });
+    }
+
     // ===== Content Operations =====
 
     /**

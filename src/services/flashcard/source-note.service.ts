@@ -21,6 +21,11 @@ export class SourceNoteService {
 	private frontmatterService: FrontmatterService;
 	private frontmatterIndex: FrontmatterIndexService | null;
 
+	// Fallback cache for when FrontmatterIndex is not available
+	// Built lazily on first access, invalidated on vault changes
+	private fallbackUidCache: Map<string, TFile> | null = null;
+	private fallbackCacheBuilt = false;
+
 	constructor(app: App, frontmatterIndex?: FrontmatterIndexService) {
 		this.app = app;
 		this.frontmatterService = new FrontmatterService(app);
@@ -116,24 +121,45 @@ export class SourceNoteService {
 	 * Uses FrontmatterIndexService for O(1) lookup if available
 	 */
 	private findFileByUidSync(uid: string): TFile | null {
-		// O(1) lookup via index
+		// O(1) lookup via index (preferred)
 		if (this.frontmatterIndex) {
 			return this.frontmatterIndex.getFileByValue("flashcard_uid", uid);
 		}
 
-		// Fallback: O(n) scan (for backward compatibility when index not available)
-		const files = this.app.vault.getMarkdownFiles();
+		// Fallback: Use cached Map (built once, O(1) lookups after)
+		if (!this.fallbackCacheBuilt) {
+			this.buildFallbackCache();
+		}
 
+		return this.fallbackUidCache?.get(uid) ?? null;
+	}
+
+	/**
+	 * Build fallback UID cache by scanning vault once
+	 * Called only when FrontmatterIndex is not available
+	 */
+	private buildFallbackCache(): void {
+		console.warn("[SourceNoteService] FrontmatterIndex not available, building fallback cache");
+		this.fallbackUidCache = new Map();
+
+		const files = this.app.vault.getMarkdownFiles();
 		for (const file of files) {
 			const cache = this.app.metadataCache.getFileCache(file);
-			const frontmatter = cache?.frontmatter;
-
-			if (frontmatter?.flashcard_uid === uid) {
-				return file;
+			const uid = cache?.frontmatter?.flashcard_uid;
+			if (uid && typeof uid === "string") {
+				this.fallbackUidCache.set(uid, file);
 			}
 		}
 
-		return null;
+		this.fallbackCacheBuilt = true;
+	}
+
+	/**
+	 * Invalidate fallback cache (call when vault changes)
+	 */
+	invalidateFallbackCache(): void {
+		this.fallbackUidCache = null;
+		this.fallbackCacheBuilt = false;
 	}
 
 	/**
