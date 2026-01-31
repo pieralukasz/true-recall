@@ -32,6 +32,7 @@ import type {
 	CardUpdatedEvent,
 	BulkChangeEvent,
 	ReviewCardChangedEvent,
+	CardReviewedEvent,
 } from "../../types/events.types";
 import {
 	createEditableTextField,
@@ -43,6 +44,9 @@ import { CardActionsHandler, KeyboardHandler } from "./handlers";
 import { CopilotIntegrationService } from "../../services/integration/copilot-integration.service";
 
 export class ReviewView extends ItemView {
+	// Pre-compiled regex for converting legacy <br> tags (avoid recompiling on every render)
+	private static readonly BR_REGEX = /<br\s*\/?>/gi;
+
 	private plugin: TrueRecallPlugin;
 	private fsrsService: FSRSService;
 	private reviewService: ReviewService;
@@ -99,6 +103,14 @@ export class ReviewView extends ItemView {
 
 	// Timer for waiting screen countdown
 	private waitingTimer: ReturnType<typeof setInterval> | null = null;
+
+	// Cache for badge calculations (avoid O(3N) on every render)
+	private cachedBadgeCounts: { new: number; learning: number; due: number } | null = null;
+	private cachedQueueLength: number = 0;
+	private cachedCurrentIndex: number = -1;
+
+	// AbortController for cleaning up event listeners between renders
+	private cardEventAbortController: AbortController | null = null;
 
 	constructor(leaf: WorkspaceLeaf, plugin: TrueRecallPlugin) {
 		super(leaf);
@@ -246,10 +258,50 @@ export class ReviewView extends ItemView {
 			cls: "true-recall-review-card-container ep:flex-1 ep:min-h-0 ep:flex ep:items-start ep:justify-center ep:p-2 ep:mt-8 ep:overflow-y-auto",
 		});
 
-		// Clear text selection when clicking outside content
+		// Delegated click handler for all card interactions
+		// Uses event delegation pattern for better performance (single listener vs many)
 		this.cardContainerEl.addEventListener("click", (e: MouseEvent) => {
-			if (e.target === this.cardContainerEl) {
+			const target = e.target as HTMLElement;
+
+			// Clear text selection when clicking outside content
+			if (target === this.cardContainerEl) {
 				window.getSelection()?.removeAllRanges();
+				return;
+			}
+
+			// Handle data-action clicks (open-source, toggle-projects, open-project)
+			const actionEl = target.closest("[data-action]") as HTMLElement | null;
+			if (actionEl) {
+				const action = actionEl.dataset.action;
+				if (action === "open-source") {
+					this.handleOpenSourceNote();
+					return;
+				}
+				if (action === "toggle-projects") {
+					const cardId = actionEl.dataset.cardId;
+					if (cardId) {
+						this.expandedProjects.add(cardId);
+						this.renderCard();
+					}
+					return;
+				}
+				if (action === "open-project") {
+					const project = actionEl.dataset.project;
+					if (project) {
+						this.handleProjectClick(project);
+					}
+					return;
+				}
+			}
+
+			// Handle field clicks (question/answer) for internal links and edit mode
+			const fieldEl = target.closest("[data-field]") as HTMLElement | null;
+			if (fieldEl) {
+				const field = fieldEl.dataset.field as "question" | "answer" | undefined;
+				const sourcePath = fieldEl.dataset.sourcePath || "";
+				if (field) {
+					this.handleFieldClick(e, field, sourcePath);
+				}
 			}
 		});
 
@@ -339,6 +391,10 @@ export class ReviewView extends ItemView {
 		this.eventUnsubscribers.forEach((unsub) => unsub());
 		this.eventUnsubscribers = [];
 
+		// Cleanup card event listeners via AbortController
+		this.cardEventAbortController?.abort();
+		this.cardEventAbortController = null;
+
 		// Remove native header actions
 		if (this.openNoteAction) {
 			this.openNoteAction.remove();
@@ -367,14 +423,8 @@ export class ReviewView extends ItemView {
 				const cardInQueue = queue.find((c) => c.id === event.cardId);
 
 				if (cardInQueue) {
-					// Remove card from queue gracefully
+					// Remove card from queue - triggers notifyListeners() → render
 					this.stateManager.removeCardById(event.cardId);
-
-					// If we were showing this card, re-render
-					const currentCard = this.stateManager.getCurrentCard();
-					if (!currentCard || currentCard.id === event.cardId) {
-						this.render();
-					}
 				}
 			}
 		);
@@ -387,18 +437,18 @@ export class ReviewView extends ItemView {
 				if (!this.stateManager.isActive()) return;
 				if (!event.changes.question && !event.changes.answer) return;
 
-				// If current card was updated externally, reload from database and re-render
+				// If current card was updated externally, reload from database
 				const currentCard = this.stateManager.getCurrentCard();
 				if (currentCard && currentCard.id === event.cardId) {
 					// Reload card content from database (needed for undo to show reverted content)
 					const updatedData = this.plugin.cardStore.get(event.cardId);
 					if (updatedData) {
+						// updateCurrentCardContent triggers notifyListeners() → render
 						this.stateManager.updateCurrentCardContent(
 							updatedData.question ?? currentCard.question,
 							updatedData.answer ?? currentCard.answer
 						);
 					}
-					this.render();
 				}
 			}
 		);
@@ -412,21 +462,12 @@ export class ReviewView extends ItemView {
 				if (event.action !== "removed") return;
 
 				// Remove any deleted cards from queue
-				let needsRerender = false;
-				const currentCard = this.stateManager.getCurrentCard();
-
+				// Each removeCardById() triggers notifyListeners() → render
 				for (const cardId of event.cardIds) {
 					const queue = this.stateManager.getState().queue;
 					if (queue.find((c) => c.id === cardId)) {
 						this.stateManager.removeCardById(cardId);
-						if (currentCard?.id === cardId) {
-							needsRerender = true;
-						}
 					}
-				}
-
-				if (needsRerender) {
-					this.render();
 				}
 			}
 		);
@@ -674,6 +715,7 @@ export class ReviewView extends ItemView {
 
 	/**
 	 * Calculate remaining cards by type in the current queue
+	 * Uses cached values when queue/index haven't changed (avoids O(3N) on every render)
 	 */
 	private calculateRemainingByType(): {
 		new: number;
@@ -681,17 +723,38 @@ export class ReviewView extends ItemView {
 		due: number;
 	} {
 		const state = this.stateManager.getState();
-		const remaining = state.queue.slice(state.currentIndex);
 
-		return {
-			new: remaining.filter((c) => c.fsrs.state === State.New).length,
-			learning: remaining.filter(
-				(c) =>
-					c.fsrs.state === State.Learning ||
-					c.fsrs.state === State.Relearning
-			).length,
-			due: remaining.filter((c) => c.fsrs.state === State.Review).length,
-		};
+		// Return cached values if queue and index haven't changed
+		if (
+			this.cachedBadgeCounts &&
+			state.queue.length === this.cachedQueueLength &&
+			state.currentIndex === this.cachedCurrentIndex
+		) {
+			return this.cachedBadgeCounts;
+		}
+
+		// Recalculate with single pass (O(N) instead of O(3N))
+		let newCount = 0;
+		let learningCount = 0;
+		let dueCount = 0;
+		const queue = state.queue;
+		for (let i = state.currentIndex; i < queue.length; i++) {
+			const card = queue[i];
+			if (!card) continue;
+			const cardState = card.fsrs.state;
+			if (cardState === State.New) {
+				newCount++;
+			} else if (cardState === State.Learning || cardState === State.Relearning) {
+				learningCount++;
+			} else if (cardState === State.Review) {
+				dueCount++;
+			}
+		}
+		this.cachedBadgeCounts = { new: newCount, learning: learningCount, due: dueCount };
+		this.cachedQueueLength = state.queue.length;
+		this.cachedCurrentIndex = state.currentIndex;
+
+		return this.cachedBadgeCounts;
 	}
 
 	/**
@@ -750,8 +813,14 @@ export class ReviewView extends ItemView {
 
 	/**
 	 * Render the current flashcard
+	 * Uses event delegation for click handlers and AbortController for cleanup
 	 */
 	private renderCard(): void {
+		// Cleanup previous event listeners
+		this.cardEventAbortController?.abort();
+		this.cardEventAbortController = new AbortController();
+		const signal = this.cardEventAbortController.signal;
+
 		this.cardContainerEl.empty();
 
 		const card = this.stateManager.getCurrentCard();
@@ -778,6 +847,7 @@ export class ReviewView extends ItemView {
 		// Question (always visible)
 		const questionEl = cardEl.createDiv({
 			cls: "true-recall-review-question ep:text-xl ep:leading-relaxed ep:text-obs-normal ep:mb-6",
+			attr: { "data-field": "question", "data-source-path": sourcePath },
 		});
 		if (isEditingQuestion) {
 			// Edit mode - contenteditable
@@ -786,19 +856,14 @@ export class ReviewView extends ItemView {
 			// View mode - markdown (convert legacy <br> to newlines)
 			void MarkdownRenderer.render(
 				this.app,
-				card.question.replace(/<br\s*\/?>/gi, "\n"),
+				card.question.replace(ReviewView.BR_REGEX, "\n"),
 				questionEl,
 				sourcePath,
 				this
 			);
-			questionEl.addEventListener("click", (e: MouseEvent) => {
-				this.handleFieldClick(e, "question", sourcePath);
-			});
-			// Long press on mobile to edit
+			// Long press on mobile to edit (with AbortController cleanup)
 			if (Platform.isMobile) {
-				this.addLongPressListener(questionEl, () =>
-					this.startEdit("question")
-				);
+				this.addLongPressListener(questionEl, () => this.startEdit("question"), signal);
 			}
 		}
 
@@ -811,6 +876,7 @@ export class ReviewView extends ItemView {
 
 			const answerEl = cardEl.createDiv({
 				cls: "true-recall-review-answer ep:text-lg ep:leading-relaxed ep:text-obs-muted",
+				attr: { "data-field": "answer", "data-source-path": sourcePath },
 			});
 			if (isEditingAnswer) {
 				// Edit mode - contenteditable
@@ -819,19 +885,14 @@ export class ReviewView extends ItemView {
 				// View mode - markdown (convert legacy <br> to newlines)
 				void MarkdownRenderer.render(
 					this.app,
-					card.answer.replace(/<br\s*\/?>/gi, "\n"),
+					card.answer.replace(ReviewView.BR_REGEX, "\n"),
 					answerEl,
 					sourcePath,
 					this
 				);
-				answerEl.addEventListener("click", (e: MouseEvent) => {
-					this.handleFieldClick(e, "answer", sourcePath);
-				});
-				// Long press on mobile to edit
+				// Long press on mobile to edit (with AbortController cleanup)
 				if (Platform.isMobile) {
-					this.addLongPressListener(answerEl, () =>
-						this.startEdit("answer")
-					);
+					this.addLongPressListener(answerEl, () => this.startEdit("answer"), signal);
 				}
 			}
 
@@ -841,14 +902,11 @@ export class ReviewView extends ItemView {
 					cls: "ep:mt-6 ep:text-center",
 				});
 
-				// Create clickable link to source note (using span to avoid Obsidian's default link color)
-				const linkEl = backlinkEl.createEl("span", {
+				// Create clickable link to source note with data-action attribute
+				backlinkEl.createEl("span", {
 					text: card.sourceNoteName,
 					cls: "ep:text-obs-faint ep:text-ui-small ep:cursor-pointer ep:hover:text-obs-muted ep:hover:underline ep:transition-colors",
-				});
-
-				linkEl.addEventListener("click", () => {
-					this.handleOpenSourceNote();
+					attr: { "data-action": "open-source" },
 				});
 			}
 
@@ -861,29 +919,23 @@ export class ReviewView extends ItemView {
 				const isExpanded = this.expandedProjects.has(card.id);
 
 				if (!isExpanded) {
-					// Show toggle link
-					const toggleBtn = projectsContainer.createEl("span", {
+					// Show toggle link with data-action attribute
+					projectsContainer.createEl("span", {
 						text: `Show projects (${card.projects.length})`,
 						cls: "ep:text-ui-small ep:text-obs-muted ep:cursor-pointer ep:hover:text-obs-normal ep:hover:underline ep:transition-colors",
-					});
-					toggleBtn.addEventListener("click", () => {
-						this.expandedProjects.add(card.id);
-						this.renderCard();
+						attr: { "data-action": "toggle-projects", "data-card-id": card.id },
 					});
 				} else {
-					// Show projects badges
+					// Show projects badges with data-action attributes
 					const projectsEl = projectsContainer.createDiv({
 						cls: "ep:flex ep:flex-wrap ep:justify-center ep:gap-1.5",
 					});
 
 					for (const project of card.projects) {
-						const badgeEl = projectsEl.createEl("span", {
+						projectsEl.createEl("span", {
 							text: project,
 							cls: "ep:py-0.5 ep:px-2 ep:text-ui-smaller ep:border ep:border-obs-border ep:rounded-xl ep:bg-obs-primary ep:text-obs-muted ep:cursor-pointer ep:transition-all ep:hover:border-obs-interactive ep:hover:text-obs-normal",
-						});
-
-						badgeEl.addEventListener("click", () => {
-							this.handleProjectClick(project);
+							attr: { "data-action": "open-project", "data-project": project },
 						});
 					}
 				}
@@ -893,10 +945,12 @@ export class ReviewView extends ItemView {
 
 	/**
 	 * Add long press listener for mobile editing
+	 * Uses AbortSignal for automatic cleanup when card is re-rendered
 	 */
 	private addLongPressListener(
 		element: HTMLElement,
 		callback: () => void,
+		signal: AbortSignal,
 		duration = UI_CONFIG.longPressDuration
 	): void {
 		let timer: number | null = null;
@@ -905,15 +959,15 @@ export class ReviewView extends ItemView {
 			timer = window.setTimeout(() => {
 				callback();
 			}, duration);
-		});
+		}, { signal });
 
 		element.addEventListener("touchend", () => {
 			if (timer) clearTimeout(timer);
-		});
+		}, { signal });
 
 		element.addEventListener("touchmove", () => {
 			if (timer) clearTimeout(timer);
-		});
+		}, { signal });
 	}
 
 	/**
@@ -1026,17 +1080,13 @@ export class ReviewView extends ItemView {
 		const textarea = editableField.getTextarea();
 		if (textarea) {
 			textarea.addEventListener("paste", (e) => {
-				console.log("[ReviewView] Paste event triggered");
 				const items = e.clipboardData?.items;
-				console.log("[ReviewView] Clipboard items:", items?.length);
 				if (!items) return;
 
 				for (const item of Array.from(items)) {
-					console.log("[ReviewView] Item type:", item.type);
 					if (item.type.startsWith("image/")) {
 						e.preventDefault();
 						const file = item.getAsFile();
-						console.log("[ReviewView] Got image file:", !!file);
 						if (file) {
 							void this.handleInlineImagePaste(file, textarea);
 						}
@@ -1054,17 +1104,14 @@ export class ReviewView extends ItemView {
 		file: File,
 		textarea: HTMLTextAreaElement
 	): Promise<void> {
-		console.log("[ReviewView] handleInlineImagePaste called, file:", file.name, file.type);
 		try {
 			const savedPath = await this.imageService.saveImageFromClipboard(file);
-			console.log("[ReviewView] Image saved to:", savedPath);
 			if (!savedPath) {
 				notify().warning("Failed to save image");
 				return;
 			}
 
 			const markdown = this.imageService.buildImageMarkdown(savedPath, 500);
-			console.log("[ReviewView] Generated markdown:", markdown);
 			const start = textarea.selectionStart;
 			const end = textarea.selectionEnd;
 			const value = textarea.value;
@@ -1072,7 +1119,6 @@ export class ReviewView extends ItemView {
 			textarea.value = value.substring(0, start) + markdown + value.substring(end);
 			textarea.selectionStart = textarea.selectionEnd = start + markdown.length;
 			textarea.dispatchEvent(new Event("input", { bubbles: true }));
-			console.log("[ReviewView] Textarea updated");
 		} catch (error) {
 			console.error("Error saving image:", error);
 			notify().operationFailed("save image", error);
@@ -1098,8 +1144,8 @@ export class ReviewView extends ItemView {
 		// Only save if content actually changed
 		// Compare with normalized content (convert legacy <br> to newlines for comparison)
 		const normalizedOriginal = field === "question"
-			? editState.originalQuestion.replace(/<br\s*\/?>/gi, "\n")
-			: editState.originalAnswer.replace(/<br\s*\/?>/gi, "\n");
+			? editState.originalQuestion.replace(ReviewView.BR_REGEX, "\n")
+			: editState.originalAnswer.replace(ReviewView.BR_REGEX, "\n");
 		const hasChanges = newContent !== normalizedOriginal;
 
 		if (hasChanges) {
@@ -1304,11 +1350,22 @@ export class ReviewView extends ItemView {
 			return;
 		}
 
-		// Find the source note file by name
-		const files = this.app.vault.getMarkdownFiles();
-		const sourceFile = files.find(
-			(f) => f.basename === card.sourceNoteName
-		);
+		// Use frontmatterIndex for O(1) lookup instead of O(N) vault scan
+		let sourceFile: TFile | null | undefined;
+		if (card.sourceUid && this.plugin.frontmatterIndex) {
+			sourceFile = this.plugin.frontmatterIndex.getFileByValue(
+				"flashcard_uid",
+				card.sourceUid
+			);
+		}
+
+		// Fallback to path-based lookup if frontmatterIndex unavailable or failed
+		if (!sourceFile && card.sourceNotePath) {
+			const abstractFile = this.app.vault.getAbstractFileByPath(card.sourceNotePath);
+			if (abstractFile instanceof TFile) {
+				sourceFile = abstractFile;
+			}
+		}
 
 		if (sourceFile) {
 			void this.app.workspace.openLinkText(sourceFile.path, "", false);
@@ -1627,87 +1684,102 @@ export class ReviewView extends ItemView {
 		const responseTime =
 			Date.now() - this.stateManager.getState().questionShownTime;
 
-		// Check if this was a new card (before state update)
+		// Capture state before any changes
 		const isNewCard = card.fsrs.state === State.New;
 		const previousState = card.fsrs.state;
 
-		// Process answer and save to store (single method)
-		const { updatedCard, result } = await this.reviewService.gradeCard(
+		// === CRITICAL PATH: Only essential operations before render ===
+
+		// 1. Calculate FSRS data (sync, <1ms)
+		const { updatedCard, result } = this.reviewService.processAnswer(
 			card,
 			rating,
 			this.fsrsService,
-			this.flashcardManager,
 			responseTime
 		);
 
-		// Push undo entry to global UndoService AFTER successful operation
-		this.plugin.undoService?.push({
-			id: crypto.randomUUID(),
-			actionType: "answer",
-			description: `Review (${Rating[rating]})`,
-			timestamp: Date.now(),
-			payload: {
-				type: "answer",
-				card: { ...card },
-				originalFsrs: { ...card.fsrs },
-				previousIndex: currentIndex,
-				wasNewCard: isNewCard,
-				rating,
-				previousState,
-			},
-		});
+		// 2. Save to database (sync, <1ms - no event emission)
+		this.flashcardManager.updateCardFSRS(card.id, updatedCard.fsrs);
 
-		// Record to persistent storage (with extended stats for statistics panel)
-		try {
-			this.sessionPersistence.recordReview(
-				card.id,
-				isNewCard,
-				responseTime,
-				rating,
-				previousState, // previousState before the answer
-				result.scheduledDays,
-				result.elapsedDays
-			);
-		} catch (error) {
-			console.error(
-				"Error recording review to persistent storage:",
-				error
-			);
-		}
-
-		// Record the answer
-		this.stateManager.recordAnswer(rating, updatedCard);
-
-		// Check if card needs to be requeued (for learning cards)
+		// 3. Calculate requeue data BEFORE state update (needs current state)
+		let requeueData: { card: FSRSFlashcardItem; position: number } | undefined;
 		if (this.reviewService.shouldRequeue(updatedCard)) {
-			const position = this.reviewService.getRequeuePosition(
+			const relativePosition = this.reviewService.getRequeuePosition(
 				this.stateManager
 					.getState()
 					.queue.slice(this.stateManager.getState().currentIndex + 1),
 				updatedCard,
 				this.plugin.settings.reviewOrder
 			);
-			this.stateManager.requeueCard(
-				updatedCard,
-				this.stateManager.getState().currentIndex + 1 + position
-			);
+			requeueData = {
+				card: updatedCard,
+				position: this.stateManager.getState().currentIndex + 1 + relativePosition,
+			};
 		}
 
-		// Move to next card
-		const hasMore = this.stateManager.nextCard();
+		// 4. RENDER IMMEDIATELY - update state and show next card
+		const hasMore = this.stateManager.recordAnswerAndNext(rating, updatedCard, requeueData);
 
-		// Notify panel of card change (even when session ends)
-		this.emitCardChangedEvent();
+		// === NON-BLOCKING: Fire-and-forget operations after render ===
+		queueMicrotask(() => {
+			// Push undo entry
+			this.plugin.undoService?.push({
+				id: crypto.randomUUID(),
+				actionType: "answer",
+				description: `Review (${Rating[rating]})`,
+				timestamp: Date.now(),
+				payload: {
+					type: "answer",
+					card: { ...card },
+					originalFsrs: { ...card.fsrs },
+					previousIndex: currentIndex,
+					wasNewCard: isNewCard,
+					rating,
+					previousState,
+					requeuedAtIndex: requeueData?.position,
+				},
+			});
 
-		if (hasMore) {
-			this.updateSchedulingPreview();
-		}
+			// Record to persistent storage
+			try {
+				this.sessionPersistence.recordReview(
+					card.id,
+					isNewCard,
+					responseTime,
+					rating,
+					previousState,
+					result.scheduledDays,
+					result.elapsedDays
+				);
+			} catch (error) {
+				console.error(
+					"Error recording review to persistent storage:",
+					error
+				);
+			}
+
+			// Emit card:reviewed event for stats/panel updates
+			getEventBus().emit({
+				type: "card:reviewed",
+				cardId: card.id,
+				rating: rating as number,
+				newState: updatedCard.fsrs.state,
+				timestamp: Date.now(),
+			} as CardReviewedEvent);
+
+			// Notify panel of card change
+			this.emitCardChangedEvent();
+
+			// Update scheduling preview for next card
+			if (hasMore) {
+				this.updateSchedulingPreview();
+			}
+		});
 	}
 
 	/**
 	 * Handle undo answer callback from global UndoService
-	 * Removes review from persistent storage
-	 * Note: The card is already re-inserted by UndoService via ReviewStateManager
+	 * Removes review from persistent storage and restores queue state
 	 */
 	private async handleUndoAnswerFromService(
 		payload: import("../../services/undo").AnswerUndoPayload
@@ -1719,12 +1791,13 @@ export class ReviewView extends ItemView {
 				payload.rating,
 				payload.previousState
 			);
-			// Note: stateManager.insertCardAtPosition is called by UndoService
-			// We just need to update the internal state tracking
-			this.stateManager.undoLastAnswer(payload.previousIndex, {
-				...payload.card,
-				fsrs: payload.originalFsrs,
-			});
+			// undoLastAnswer() handles queue restoration + stats reversion
+			// If card was requeued, requeuedAtIndex tells us where to remove the copy
+			this.stateManager.undoLastAnswer(
+				payload.previousIndex,
+				{ ...payload.card, fsrs: payload.originalFsrs },
+				payload.requeuedAtIndex
+			);
 		} catch (error) {
 			console.error("Error undoing answer:", error);
 		}
