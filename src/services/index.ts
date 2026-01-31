@@ -112,3 +112,6 @@ export {
 	type DeleteUndoPayload,
 	type BatchCreateUndoPayload,
 } from "./undo";
+
+// Cache services
+export { ReactiveCache, type ReactiveCacheOptions } from "./cache";
