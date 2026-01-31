@@ -75,11 +75,12 @@ export class NotificationService {
 	 * Show notification for card creation
 	 *
 	 * @param count - Number of cards created
+	 * @param noteName - Optional note name to display
 	 */
-	cardsCreated(count: number): void {
+	cardsCreated(count: number, noteName?: string): void {
 		const msg = count === 1
-			? "1 flashcard created"
-			: `${count} flashcards created`;
+			? noteName ? `1 flashcard created in "${noteName}"` : "1 flashcard created"
+			: noteName ? `${count} flashcards created in "${noteName}"` : `${count} flashcards created`;
 		this.success(msg);
 	}
 

@@ -331,7 +331,8 @@ export class CardActionsHandler {
 				this.deps.stateManager.addCardToQueue(newCard);
 			}
 
-			notify().cardsCreated(result.flashcards.length);
+			const noteName = card.sourceNotePath?.split("/").pop()?.replace(/\.md$/, "");
+			notify().cardsCreated(result.flashcards.length, noteName);
 		} catch (error) {
 			console.error("[CardActionsHandler] Error adding flashcards:", error);
 			notify().operationFailed("add flashcards", error);
@@ -369,7 +370,8 @@ export class CardActionsHandler {
 				this.deps.stateManager.addCardToQueue(newCard);
 			}
 
-			notify().cardsCreated(result.flashcards.length);
+			const noteName = card.sourceNotePath?.split("/").pop()?.replace(/\.md$/, "");
+			notify().cardsCreated(result.flashcards.length, noteName);
 		} catch (error) {
 			console.error("[CardActionsHandler] Error copying flashcard:", error);
 			notify().operationFailed("copy flashcard", error);
