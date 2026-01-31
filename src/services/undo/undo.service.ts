@@ -276,6 +276,18 @@ export class UndoService {
 	}
 
 	/**
+	 * Clear only review session-specific entries (answer, bury, suspend)
+	 * Keeps global mutation entries (create, update, delete, batch-create)
+	 */
+	clearSessionEntries(): void {
+		const sessionTypes = new Set(["answer", "bury", "suspend"]);
+		this.stack = this.stack.filter(
+			(entry) => !sessionTypes.has(entry.payload.type)
+		);
+		this.emitUndoChanged();
+	}
+
+	/**
 	 * Emit undo state change event
 	 */
 	private emitUndoChanged(): void {

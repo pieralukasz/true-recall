@@ -31,6 +31,12 @@ export class BrowserToolbar {
     /** Debounced search handler to prevent excessive updates while typing */
     private debouncedSearch: (query: string) => void;
 
+    /** Track active document listeners for cleanup */
+    private activeDocumentListeners: Array<{
+        type: string;
+        handler: EventListener;
+    }> = [];
+
     constructor(container: HTMLElement, props: BrowserToolbarProps) {
         this.container = container;
         this.props = props;
@@ -193,6 +199,10 @@ export class BrowserToolbar {
                     dropdown.classList.remove("ep:block");
                     dropdown.classList.add("ep:hidden");
                     document.removeEventListener("click", closeDropdown);
+                    // Remove from tracked listeners
+                    this.activeDocumentListeners = this.activeDocumentListeners.filter(
+                        (l) => l.handler !== closeDropdown
+                    );
                 }
             };
 
@@ -204,11 +214,20 @@ export class BrowserToolbar {
                     dropdown.classList.add("ep:block");
                     setTimeout(() => {
                         document.addEventListener("click", closeDropdown);
+                        // Track for cleanup
+                        this.activeDocumentListeners.push({
+                            type: "click",
+                            handler: closeDropdown as EventListener,
+                        });
                     }, 0);
                 } else {
                     dropdown.classList.add("ep:hidden");
                     dropdown.classList.remove("ep:block");
                     document.removeEventListener("click", closeDropdown);
+                    // Remove from tracked listeners
+                    this.activeDocumentListeners = this.activeDocumentListeners.filter(
+                        (l) => l.handler !== closeDropdown
+                    );
                 }
             });
         }
@@ -269,6 +288,10 @@ export class BrowserToolbar {
     }
 
     destroy(): void {
-        // Cleanup if needed
+        // Clean up document listeners
+        for (const { type, handler } of this.activeDocumentListeners) {
+            document.removeEventListener(type, handler);
+        }
+        this.activeDocumentListeners = [];
     }
 }

@@ -29,6 +29,12 @@ interface FieldIndex {
 export class FrontmatterIndexService {
 	private app: App;
 	private fields: Map<string, FieldIndex> = new Map();
+	// Track direct event handlers for cleanup
+	private directEventHandlers: {
+		changed?: (file: TFile, data: string, cache: CachedMetadata) => void;
+		delete?: (file: TFile) => void;
+		rename?: (file: TFile, oldPath: string) => void;
+	} = {};
 
 	constructor(app: App) {
 		this.app = app;
@@ -270,11 +276,33 @@ export class FrontmatterIndexService {
 
 	/**
 	 * Register events directly (for testing)
+	 * WARNING: Must call unregisterEventsDirect() when done to prevent memory leaks
 	 */
 	registerEventsDirect(): void {
-		this.app.metadataCache.on("changed", this.handleMetadataChanged.bind(this));
-		this.app.vault.on("delete", this.handleFileDeleted.bind(this));
-		this.app.vault.on("rename", this.handleFileRenamed.bind(this));
+		// Store bound handlers for later cleanup
+		this.directEventHandlers.changed = this.handleMetadataChanged.bind(this);
+		this.directEventHandlers.delete = this.handleFileDeleted.bind(this);
+		this.directEventHandlers.rename = this.handleFileRenamed.bind(this);
+
+		this.app.metadataCache.on("changed", this.directEventHandlers.changed);
+		this.app.vault.on("delete", this.directEventHandlers.delete);
+		this.app.vault.on("rename", this.directEventHandlers.rename);
+	}
+
+	/**
+	 * Unregister direct events (for testing cleanup)
+	 */
+	unregisterEventsDirect(): void {
+		if (this.directEventHandlers.changed) {
+			this.app.metadataCache.off("changed", this.directEventHandlers.changed);
+		}
+		if (this.directEventHandlers.delete) {
+			this.app.vault.off("delete", this.directEventHandlers.delete);
+		}
+		if (this.directEventHandlers.rename) {
+			this.app.vault.off("rename", this.directEventHandlers.rename);
+		}
+		this.directEventHandlers = {};
 	}
 
 	private handleMetadataChanged(file: TFile, _data: string, cache: CachedMetadata): void {
