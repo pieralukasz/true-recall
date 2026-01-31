@@ -518,6 +518,9 @@ export class FlashcardPanelView extends ItemView {
                 this.headerDiv = this.contentContainer.createDiv({ cls: "ep:shrink-0" });
             }
 
+            const reviewedToday = this.plugin.sessionPersistence?.getReviewedToday();
+            const dayStartHour = this.plugin.settings.dayStartHour;
+
             if (!this.headerComponent) {
                 this.headerComponent = new FlashcardPanelHeader(this.headerDiv, {
                     flashcardInfo: state.flashcardInfo,
@@ -528,6 +531,8 @@ export class FlashcardPanelView extends ItemView {
                     selectedCount: state.selectedCardIds.size,
                     searchQuery: state.searchQuery,
                     isFollowingReview: state.isFollowingReview,
+                    reviewedToday,
+                    dayStartHour,
                     onAdd: () => void this.handleAddFlashcard(),
                     onGenerate: () => void this.handleGenerate(),
                     onCollect: () => void this.handleCollect(),
@@ -551,6 +556,8 @@ export class FlashcardPanelView extends ItemView {
                     selectedCount: state.selectedCardIds.size,
                     searchQuery: state.searchQuery,
                     isFollowingReview: state.isFollowingReview,
+                    reviewedToday,
+                    dayStartHour,
                 });
             }
         } else {
@@ -627,6 +634,7 @@ export class FlashcardPanelView extends ItemView {
         } else if (this.contentComponent) {
             // Incremental update: just update props (avoids DOM recreation)
             this.contentComponent.updateProps({
+                flashcardInfo: state.flashcardInfo,
                 selectedCardIds: state.selectedCardIds,
                 expandedCardIds: state.expandedCardIds,
                 cardsWithFsrs: this.getCardsWithFsrs(),

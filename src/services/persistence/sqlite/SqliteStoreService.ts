@@ -30,6 +30,7 @@ export class SqliteStoreService {
     private db: SqliteDatabase;
     private isLoaded = false;
     private isDirty = false;
+    private saveInProgress = false;
     private saveTimer: ReturnType<typeof setTimeout> | null = null;
 
     // Domain modules - public for direct access
@@ -236,38 +237,50 @@ export class SqliteStoreService {
     private async doFlush(): Promise<void> {
         if (!this.db.isReady() || !this.isDirty) return;
 
+        // Prevent concurrent saves
+        if (this.saveInProgress) {
+            // Another save is running, schedule a retry after it completes
+            this.scheduleSave();
+            return;
+        }
+
+        this.saveInProgress = true;
         const MAX_RETRIES = 3;
         const BASE_DELAY_MS = 100;
 
-        for (let attempt = 1; attempt <= MAX_RETRIES; attempt++) {
-            try {
-                const data = this.db.export();
-                const dbPath = this.getDbPath();
+        try {
+            for (let attempt = 1; attempt <= MAX_RETRIES; attempt++) {
+                try {
+                    const data = this.db.export();
+                    const dbPath = this.getDbPath();
 
-                const folderPath = normalizePath(DB_FOLDER);
-                const folderExists = await this.app.vault.adapter.exists(folderPath);
-                if (!folderExists) {
-                    await this.app.vault.adapter.mkdir(folderPath);
-                }
+                    const folderPath = normalizePath(DB_FOLDER);
+                    const folderExists = await this.app.vault.adapter.exists(folderPath);
+                    if (!folderExists) {
+                        await this.app.vault.adapter.mkdir(folderPath);
+                    }
 
-                await this.app.vault.adapter.writeBinary(dbPath, data.buffer);
-                this.isDirty = false;
-                return; // Success
-            } catch (error) {
-                console.error(`[True Recall] Failed to save database (attempt ${attempt}/${MAX_RETRIES}):`, error);
+                    await this.app.vault.adapter.writeBinary(dbPath, data.buffer);
+                    this.isDirty = false;
+                    return; // Success
+                } catch (error) {
+                    console.error(`[True Recall] Failed to save database (attempt ${attempt}/${MAX_RETRIES}):`, error);
 
-                if (attempt < MAX_RETRIES) {
-                    // Exponential backoff: 100ms, 200ms, 400ms...
-                    const delay = BASE_DELAY_MS * Math.pow(2, attempt - 1);
-                    await new Promise((resolve) => setTimeout(resolve, delay));
-                } else {
-                    // Final failure - notify user
-                    notify().error(
-                        "Failed to save database after multiple attempts. Your recent changes may not be saved.",
-                        NOTIFICATION_DURATION.LONG
-                    );
+                    if (attempt < MAX_RETRIES) {
+                        // Exponential backoff: 100ms, 200ms, 400ms...
+                        const delay = BASE_DELAY_MS * Math.pow(2, attempt - 1);
+                        await new Promise((resolve) => setTimeout(resolve, delay));
+                    } else {
+                        // Final failure - notify user, but keep isDirty=true for retry
+                        notify().error(
+                            "Failed to save database after multiple attempts. Your recent changes may not be saved.",
+                            NOTIFICATION_DURATION.LONG
+                        );
+                    }
                 }
             }
+        } finally {
+            this.saveInProgress = false;
         }
     }
 
@@ -283,6 +296,14 @@ export class SqliteStoreService {
         await this.saveNow();
         this.db.close();
         this.isLoaded = false;
+    }
+
+    /**
+     * Execute a function within a database transaction.
+     * Provides atomicity - either all operations succeed or none do.
+     */
+    transaction<T>(fn: () => T): T {
+        return this.db.transaction(fn);
     }
 
     /**

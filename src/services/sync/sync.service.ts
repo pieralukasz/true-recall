@@ -234,40 +234,43 @@ export class SyncService {
 	}
 
 	/**
-	 * Apply pulled data locally using LWW conflict resolution
+	 * Apply pulled data locally using LWW conflict resolution.
+	 * Wrapped in a transaction for atomicity - if any upsert fails, all changes are rolled back.
 	 */
 	private applyPulledData(data: {
 		cards: RemoteCardRow[];
 		reviewLog: RemoteReviewLogRow[];
 	}): number {
-		let pulled = 0;
+		return this.cardStore.transaction(() => {
+			let pulled = 0;
 
-		// 1. Cards
-		for (const remote of data.cards) {
-			const local = this.cardStore.cards.get(remote.id) as
-				| LocalCardForSync
-				| undefined;
-			const localUpdatedAt = local?.updatedAt ?? 0;
-			if (!local || remote.updated_at > localUpdatedAt) {
-				this.cardStore.cards.upsertFromRemote(
-					this.mapRemoteCardToLocal(remote)
-				);
-				pulled++;
+			// 1. Cards
+			for (const remote of data.cards) {
+				const local = this.cardStore.cards.get(remote.id) as
+					| LocalCardForSync
+					| undefined;
+				const localUpdatedAt = local?.updatedAt ?? 0;
+				if (!local || remote.updated_at > localUpdatedAt) {
+					this.cardStore.cards.upsertFromRemote(
+						this.mapRemoteCardToLocal(remote)
+					);
+					pulled++;
+				}
 			}
-		}
 
-		// 2. Review log (depends on cards)
-		for (const remote of data.reviewLog) {
-			const local = this.cardStore.stats.getReviewLogForSync(remote.id);
-			if (!local || remote.updated_at > local.updatedAt) {
-				this.cardStore.stats.upsertReviewLogFromRemote(
-					this.mapRemoteReviewLogToLocal(remote)
-				);
-				pulled++;
+			// 2. Review log (depends on cards)
+			for (const remote of data.reviewLog) {
+				const local = this.cardStore.stats.getReviewLogForSync(remote.id);
+				if (!local || remote.updated_at > local.updatedAt) {
+					this.cardStore.stats.upsertReviewLogFromRemote(
+						this.mapRemoteReviewLogToLocal(remote)
+					);
+					pulled++;
+				}
 			}
-		}
 
-		return pulled;
+			return pulled;
+		});
 	}
 
 	/**

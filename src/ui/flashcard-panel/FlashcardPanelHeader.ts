@@ -21,6 +21,10 @@ export interface FlashcardPanelHeaderProps {
     searchQuery: string;
     /** Whether panel is following a review session */
     isFollowingReview?: boolean;
+    /** Cards reviewed today - for filtering counts to match review session */
+    reviewedToday?: Set<string>;
+    /** Hour when day starts (0-23, default 4 like Anki) */
+    dayStartHour?: number;
     onAdd?: () => void;
     onGenerate?: () => void;
     onCollect?: () => void;
@@ -282,11 +286,27 @@ export class FlashcardPanelHeader extends BaseComponent {
     private countByState(cards: FSRSFlashcardItem[]): StatusCounts {
         const counts: StatusCounts = { new: 0, learning: 0, review: 0 };
         const now = new Date();
+        const reviewedToday = this.props.reviewedToday;
+        const dayStartHour = this.props.dayStartHour ?? 4;
+
+        // Calculate today boundary for due cards (like Anki's "Next day starts at")
+        const todayBoundary = new Date(now);
+        if (now.getHours() < dayStartHour) {
+            todayBoundary.setDate(todayBoundary.getDate() - 1);
+        }
+        todayBoundary.setHours(dayStartHour, 0, 0, 0);
+        const tomorrowBoundary = new Date(todayBoundary);
+        tomorrowBoundary.setDate(tomorrowBoundary.getDate() + 1);
 
         for (const card of cards) {
             // Skip buried/suspended cards
             if (card.fsrs.suspended) continue;
             if (card.fsrs.buriedUntil && new Date(card.fsrs.buriedUntil) > now) continue;
+
+            // Skip cards already reviewed today (except learning cards)
+            const isLearning = card.fsrs.state === State.Learning ||
+                              card.fsrs.state === State.Relearning;
+            if (!isLearning && reviewedToday?.has(card.id)) continue;
 
             switch (card.fsrs.state) {
                 case State.New:
@@ -297,7 +317,11 @@ export class FlashcardPanelHeader extends BaseComponent {
                     counts.learning++;
                     break;
                 case State.Review:
-                    counts.review++;
+                    // Only count if actually due today
+                    const dueDate = new Date(card.fsrs.due);
+                    if (dueDate < tomorrowBoundary) {
+                        counts.review++;
+                    }
                     break;
             }
         }

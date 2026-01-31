@@ -62,8 +62,6 @@ import {
 } from "./ui/modals";
 import { registerCommands } from "./plugin/PluginCommands";
 import { registerEventHandlers, registerDeletionHandler } from "./plugin/PluginEventHandlers";
-import { AgentService, registerAllTools, resetToolRegistry } from "./agent";
-import { createLoggingMiddleware, createUndoMiddleware } from "./agent/middleware";
 import {
 	activateView,
 	activateReviewView,
@@ -84,7 +82,6 @@ export default class TrueRecallPlugin extends Plugin {
 	frontmatterIndex!: FrontmatterIndexService;
 	nlQueryService: NLQueryService | null = null;
 	backupService: BackupService | null = null;
-	agentService: AgentService | null = null;
 	deviceIdService: DeviceIdService | null = null;
 	deviceDiscovery: DeviceDiscoveryService | null = null;
 	authService: AuthService | null = null;
@@ -200,17 +197,8 @@ export default class TrueRecallPlugin extends Plugin {
 		// Register event handlers (extracted to PluginEventHandlers.ts)
 		registerEventHandlers(this);
 
-		// Initialize UndoService (before AgentService which uses it)
+		// Initialize UndoService for undo/redo support
 		this.undoService = new UndoService(this);
-
-		// Register agent tools and initialize AgentService with middleware
-		registerAllTools();
-		this.agentService = new AgentService(this)
-			.use(createLoggingMiddleware({ skipReadOnly: true }))
-			.use(createUndoMiddleware(
-				() => this.undoService ?? undefined,
-				() => this.cardStore
-			));
 
 		// Initialize AuthService (SaaS model - always available)
 		this.authService = new AuthService();
@@ -374,9 +362,6 @@ ${cardList}${moreText}
 
 		// Clear EventBus subscriptions
 		resetEventBus();
-
-		// Clear ToolRegistry
-		resetToolRegistry();
 
 		// Obsidian automatically handles leaf cleanup when plugin unloads
 	}
