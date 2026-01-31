@@ -63,6 +63,7 @@ import {
 import { registerCommands } from "./plugin/PluginCommands";
 import { registerEventHandlers, registerDeletionHandler } from "./plugin/PluginEventHandlers";
 import { AgentService, registerAllTools, resetToolRegistry } from "./agent";
+import { createLoggingMiddleware, createUndoMiddleware } from "./agent/middleware";
 import {
 	activateView,
 	activateReviewView,
@@ -119,7 +120,8 @@ export default class TrueRecallPlugin extends Plugin {
 		this.fsrsService = new FSRSService(fsrsSettings);
 		this.statsService = new StatsService(
 			this.flashcardManager,
-			this.fsrsService
+			this.fsrsService,
+			getEventBus()
 		);
 
 		// Initialize device context and SQLite store
@@ -201,9 +203,14 @@ export default class TrueRecallPlugin extends Plugin {
 		// Initialize UndoService (before AgentService which uses it)
 		this.undoService = new UndoService(this);
 
-		// Register agent tools and initialize AgentService
+		// Register agent tools and initialize AgentService with middleware
 		registerAllTools();
-		this.agentService = new AgentService(this);
+		this.agentService = new AgentService(this)
+			.use(createLoggingMiddleware({ skipReadOnly: true }))
+			.use(createUndoMiddleware(
+				() => this.undoService ?? undefined,
+				() => this.cardStore
+			));
 
 		// Initialize AuthService (SaaS model - always available)
 		this.authService = new AuthService();

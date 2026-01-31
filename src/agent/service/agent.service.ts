@@ -8,16 +8,10 @@ import type {
 	AIFunctionDefinition,
 	ToolCallRequest,
 } from "../types";
+import type { ToolMiddleware, ToolExecutionContext } from "../middleware";
 import { getToolRegistry, ToolRegistry } from "../registry";
 import { createToolContext } from "../context";
 import type TrueRecallPlugin from "../../main";
-import type {
-	UndoEntry,
-	CreateUndoPayload,
-	UpdateUndoPayload,
-	DeleteUndoPayload,
-	BatchCreateUndoPayload,
-} from "../../services/undo";
 
 /**
  * Service for AI agent interaction with tools
@@ -26,10 +20,20 @@ import type {
 export class AgentService {
 	private registry: ToolRegistry;
 	private plugin: TrueRecallPlugin;
+	private middlewares: ToolMiddleware[] = [];
 
 	constructor(plugin: TrueRecallPlugin) {
 		this.plugin = plugin;
 		this.registry = getToolRegistry();
+	}
+
+	/**
+	 * Add middleware to the execution pipeline
+	 * @returns this for chaining
+	 */
+	use(middleware: ToolMiddleware): this {
+		this.middlewares.push(middleware);
+		return this;
 	}
 
 	/**
@@ -90,111 +94,52 @@ export class AgentService {
 	/**
 	 * Execute a tool by name with arguments
 	 * Convenience method for direct tool invocation
-	 * Automatically captures undo state for mutating operations
+	 * Runs through middleware pipeline for cross-cutting concerns
 	 */
 	async execute<T = unknown>(
 		toolName: string,
 		args: Record<string, unknown>
 	): Promise<ToolResult<T>> {
 		const tool = this.registry.get(toolName);
-
-		// Capture undo state before mutating operations
-		let undoEntry: UndoEntry | null = null;
-		if (tool?.mutates && this.plugin.undoService) {
-			undoEntry = this.captureUndoState(toolName, args);
+		if (!tool) {
+			return {
+				success: false,
+				error: {
+					code: "TOOL_NOT_FOUND",
+					message: `Tool '${toolName}' not found`,
+				},
+			};
 		}
 
-		const result = await this.executeToolCall<T>({ name: toolName, arguments: args });
+		const context = this.createContext();
+		const executionId = crypto.randomUUID();
+		const startTime = Date.now();
 
-		// Push undo entry on success
-		if (result.success && undoEntry && this.plugin.undoService) {
-			// Update cardId for create operations (ID not known until after execution)
-			if (toolName === "create-flashcard" && result.data) {
-				const data = result.data as { id?: string };
-				if (data.id) {
-					(undoEntry.payload as CreateUndoPayload).cardId = data.id;
-				}
-			}
-			// Update cardIds for batch create operations
-			if (toolName === "save-flashcards" && result.data) {
-				const data = result.data as { cardIds?: string[] };
-				if (data.cardIds) {
-					(undoEntry.payload as BatchCreateUndoPayload).cardIds = data.cardIds;
-				}
-			}
-			this.plugin.undoService.push(undoEntry);
+		// Build middleware execution context
+		const execCtx: ToolExecutionContext = {
+			tool,
+			args,
+			toolContext: context,
+			executionId,
+			startTime,
+		};
+
+		// Build the middleware chain
+		// The innermost function is the actual tool execution
+		const executeCore = async (): Promise<ToolResult<T>> => {
+			return this.registry.execute<T>(toolName, args, context);
+		};
+
+		// Wrap with middlewares (in reverse order so first middleware runs first)
+		let chain = executeCore;
+		for (let i = this.middlewares.length - 1; i >= 0; i--) {
+			const middleware = this.middlewares[i]!;
+			const next = chain;
+			chain = () => middleware<T>(execCtx, next);
 		}
 
-		return result;
-	}
-
-	/**
-	 * Capture undo state before a mutating operation
-	 */
-	private captureUndoState(
-		toolName: string,
-		args: Record<string, unknown>
-	): UndoEntry | null {
-		const id = crypto.randomUUID();
-		const timestamp = Date.now();
-
-		switch (toolName) {
-			case "create-flashcard":
-				return {
-					id,
-					actionType: "create-flashcard",
-					description: "Create flashcard",
-					timestamp,
-					payload: { type: "create", cardId: "" } as CreateUndoPayload,
-				};
-
-			case "update-card": {
-				const cardId = args.cardId as string;
-				const existing = this.plugin.cardStore?.get(cardId);
-				if (!existing) return null;
-				return {
-					id,
-					actionType: "update-card",
-					description: "Edit flashcard",
-					timestamp,
-					payload: {
-						type: "update",
-						cardId,
-						previousQuestion: existing.question ?? "",
-						previousAnswer: existing.answer ?? "",
-					} as UpdateUndoPayload,
-				};
-			}
-
-			case "delete-flashcard": {
-				const cardId = args.cardId as string;
-				const existing = this.plugin.cardStore?.get(cardId);
-				if (!existing) return null;
-				return {
-					id,
-					actionType: "delete-flashcard",
-					description: "Delete flashcard",
-					timestamp,
-					payload: {
-						type: "delete",
-						cardData: { ...existing },
-					} as DeleteUndoPayload,
-				};
-			}
-
-			case "save-flashcards":
-				return {
-					id,
-					actionType: "save-flashcards",
-					description: "Create flashcards",
-					timestamp,
-					payload: { type: "batch-create", cardIds: [] } as BatchCreateUndoPayload,
-				};
-
-			default:
-				// Other mutating tools don't support undo yet
-				return null;
-		}
+		// Execute the chain
+		return chain();
 	}
 
 	/**

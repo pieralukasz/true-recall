@@ -1,9 +1,11 @@
 /**
  * Stats Service
- * Provides flashcard statistics with caching to avoid repeated file scans
+ * Provides flashcard statistics with auto-invalidating cache
  */
 import type { FlashcardManager } from "../flashcard/flashcard.service";
 import type { FSRSService } from "../core/fsrs.service";
+import type { EventBusService } from "../core/event-bus.service";
+import { ReactiveCache } from "../cache";
 
 /**
  * Global flashcard statistics
@@ -18,49 +20,76 @@ export interface GlobalFlashcardStats {
 export class StatsService {
 	private flashcardManager: FlashcardManager;
 	private fsrsService: FSRSService;
+	private statsCache: ReactiveCache<GlobalFlashcardStats>;
 
-	private cachedStats: GlobalFlashcardStats | null = null;
-	private cacheTimestamp = 0;
-	private cacheValidityMs = 30000; // 30 seconds
-
-	constructor(flashcardManager: FlashcardManager, fsrsService: FSRSService) {
+	constructor(
+		flashcardManager: FlashcardManager,
+		fsrsService: FSRSService,
+		eventBus?: EventBusService
+	) {
 		this.flashcardManager = flashcardManager;
 		this.fsrsService = fsrsService;
+
+		// Initialize reactive cache with auto-invalidation on card events
+		// If no eventBus provided, cache only uses TTL-based expiration
+		this.statsCache = new ReactiveCache({
+			compute: () => this.computeStats(),
+			invalidateOn: eventBus
+				? ["card:added", "card:removed", "card:updated", "card:reviewed", "cards:bulk-change"]
+				: [],
+			ttlMs: 30000, // 30 seconds fallback TTL
+			eventBus: eventBus ?? createNoOpEventBus(),
+			label: "StatsService",
+		});
+	}
+
+	/**
+	 * Compute stats from all cards
+	 */
+	private async computeStats(): Promise<GlobalFlashcardStats> {
+		const allCards = await this.flashcardManager.getAllFSRSCards();
+		const rawStats = this.fsrsService.getStats(allCards);
+
+		return {
+			total: rawStats.total,
+			new: rawStats.new,
+			learning: rawStats.learning + rawStats.relearning,
+			due: rawStats.dueToday,
+		};
 	}
 
 	/**
 	 * Get global statistics with caching
 	 */
 	async getGlobalStats(forceRefresh = false): Promise<GlobalFlashcardStats> {
-		const now = Date.now();
-
-		if (
-			!forceRefresh &&
-			this.cachedStats &&
-			now - this.cacheTimestamp < this.cacheValidityMs
-		) {
-			return this.cachedStats;
-		}
-
-		const allCards = await this.flashcardManager.getAllFSRSCards();
-		const rawStats = this.fsrsService.getStats(allCards);
-
-		this.cachedStats = {
-			total: rawStats.total,
-			new: rawStats.new,
-			learning: rawStats.learning + rawStats.relearning,
-			due: rawStats.dueToday,
-		};
-		this.cacheTimestamp = now;
-
-		return this.cachedStats;
+		return this.statsCache.get(forceRefresh);
 	}
 
 	/**
-	 * Invalidate cache (call after reviews or file changes)
+	 * Invalidate cache (manual trigger - usually not needed with reactive cache)
 	 */
 	invalidateCache(): void {
-		this.cachedStats = null;
-		this.cacheTimestamp = 0;
+		this.statsCache.invalidate();
 	}
+
+	/**
+	 * Dispose the service and cleanup subscriptions
+	 */
+	dispose(): void {
+		this.statsCache.dispose();
+	}
+}
+
+/**
+ * Create a no-op EventBus for backwards compatibility when eventBus is not provided
+ */
+function createNoOpEventBus(): EventBusService {
+	return {
+		on: () => () => {},
+		off: () => {},
+		emit: () => {},
+		onAll: () => () => {},
+		clear: () => {},
+		getListenerCount: () => 0,
+	} as unknown as EventBusService;
 }
