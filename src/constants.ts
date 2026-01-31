@@ -154,6 +154,9 @@ export const DEFAULT_SETTINGS: TrueRecallSettings = {
 
 	// Copilot Integration
 	copilotAutoContext: false,
+
+	// Review Font Size
+	reviewFontScale: 1.0,
 };
 
 // ===== FSRS Default Weights =====
