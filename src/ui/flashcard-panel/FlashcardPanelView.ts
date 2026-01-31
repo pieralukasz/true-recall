@@ -25,7 +25,7 @@ import { MoveCardModal } from "../modals/MoveCardModal";
 import type { FSRSFlashcardItem } from "../../types/fsrs/card.types";
 import { SimpleFlashcardEditorModal, flashcardToMarkdown } from "../modals/SimpleFlashcardEditorModal";
 import type { FlashcardItem } from "../../types";
-import type { CardAddedEvent, CardRemovedEvent, CardUpdatedEvent, CardReviewedEvent, BulkChangeEvent, ReviewCardChangedEvent } from "../../types/events.types";
+import type { CardAddedEvent, CardRemovedEvent, CardUpdatedEvent, CardReviewedEvent, BulkChangeEvent, ReviewCardChangedEvent, SettingsChangedEvent } from "../../types/events.types";
 import { State } from "ts-fsrs";
 import type TrueRecallPlugin from "../../main";
 
@@ -351,8 +351,9 @@ export class FlashcardPanelView extends ItemView {
 
         // When card content is updated, reload flashcard info
         const unsubUpdated = eventBus.on<CardUpdatedEvent>("card:updated", (event) => {
-            // For content changes, do full reload
-            if (event.changes.question || event.changes.answer) {
+            // For content changes or visibility changes (suspended/buried), do full reload
+            if (event.changes.question || event.changes.answer ||
+                event.changes.suspended || event.changes.buried) {
                 void this.loadFlashcardInfo();
                 return;
             }
@@ -381,6 +382,12 @@ export class FlashcardPanelView extends ItemView {
             (event) => void this.handleReviewCardChanged(event)
         );
         this.eventUnsubscribers.push(unsubReviewCard);
+
+        // Refresh when settings change (dayStartHour affects due card counting)
+        const unsubSettings = eventBus.on<SettingsChangedEvent>("settings:changed", () => {
+            this.scheduleHeaderStatsUpdate();
+        });
+        this.eventUnsubscribers.push(unsubSettings);
     }
 
     /**

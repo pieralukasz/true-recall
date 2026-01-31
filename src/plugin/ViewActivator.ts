@@ -95,12 +95,13 @@ export async function activateMainAreaView(
 /**
  * Activate a view based on review mode setting
  * Handles fullscreen vs panel (sidebar) mode
+ * Only allows one review session at a time
  *
  * @param app - The Obsidian app instance
  * @param viewType - The view type constant
  * @param reviewMode - "fullscreen" or "panel"
  * @param state - Optional initial state
- * @returns The activated leaf
+ * @returns The activated leaf, or existing leaf if session already active
  */
 export async function activateReviewView(
 	app: App,
@@ -109,6 +110,13 @@ export async function activateReviewView(
 	state?: Record<string, unknown>
 ): Promise<WorkspaceLeaf | null> {
 	const { workspace } = app;
+
+	// Check if review session already exists - only allow one at a time
+	const existingLeaf = workspace.getLeavesOfType(viewType)[0];
+	if (existingLeaf) {
+		workspace.revealLeaf(existingLeaf);
+		return existingLeaf;
+	}
 
 	// Force fullscreen on mobile or when configured
 	if (Platform.isMobile || reviewMode === "fullscreen") {
