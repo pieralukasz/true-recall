@@ -18,7 +18,8 @@ export type FlashcardEventType =
 	| "store:synced"
 	| "session:selected"
 	| "review:card-changed"
-	| "undo:changed";
+	| "undo:changed"
+	| "settings:changed";
 
 /**
  * Base event interface
@@ -116,6 +117,16 @@ export interface UndoChangedEvent extends FlashcardEvent {
 }
 
 /**
+ * Emitted when plugin settings are changed
+ * Used to notify services and views to refresh with new settings
+ */
+export interface SettingsChangedEvent extends FlashcardEvent {
+	type: "settings:changed";
+	/** Keys that were changed (optional, for targeted updates) */
+	changedKeys?: string[];
+}
+
+/**
  * Union type for all events
  */
 export type AnyFlashcardEvent =
@@ -127,7 +138,8 @@ export type AnyFlashcardEvent =
 	| StoreSyncedEvent
 	| SessionSelectedEvent
 	| ReviewCardChangedEvent
-	| UndoChangedEvent;
+	| UndoChangedEvent
+	| SettingsChangedEvent;
 
 /**
  * Event listener callback type

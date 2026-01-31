@@ -36,6 +36,7 @@ import type {
 	CardUpdatedEvent,
 	BulkChangeEvent,
 	StoreSyncedEvent,
+	SettingsChangedEvent,
 } from "../../types/events.types";
 import {
 	TodaySection,
@@ -272,6 +273,12 @@ export class StatsView extends ItemView {
 			void this.refresh();
 		});
 		this.eventUnsubscribers.push(unsubSynced);
+
+		// Refresh when settings change (dayStartHour, retention, etc. affect stats)
+		const unsubSettings = eventBus.on<SettingsChangedEvent>("settings:changed", () => {
+			void this.refresh();
+		});
+		this.eventUnsubscribers.push(unsubSettings);
 	}
 
 	/**
