@@ -217,7 +217,7 @@ export class FloatingGenerateButton {
 			}));
 
 			await this.plugin.flashcardManager.saveFlashcardsToSql(file, flashcardsWithIds);
-			notify().cardsCreated(result.flashcards.length);
+			notify().cardsCreated(result.flashcards.length, file.basename);
 		} catch (error) {
 			notify().generationFailed(error);
 		}
