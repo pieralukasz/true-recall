@@ -457,6 +457,8 @@ export class CardActions {
     /**
      * Get cards due within a date range
      * Used by FSRS Helper for workload balancing and forecasting
+     * Excludes Learning (1) and Relearning (3) cards - they have short intervals
+     * that should not be modified by load balancing
      */
     getDueCardsByDateRange(startDate: string, endDate: string): FSRSCardData[] {
         const rows = this.db.query<CardRow>(
@@ -464,6 +466,7 @@ export class CardActions {
              WHERE deleted_at IS NULL
                AND suspended = 0
                AND (buried_until IS NULL OR buried_until <= datetime('now'))
+               AND state NOT IN (1, 3)
                AND date(due) BETWEEN ? AND ?
              ORDER BY due ASC`,
             [startDate, endDate]
