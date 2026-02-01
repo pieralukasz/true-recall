@@ -16,7 +16,8 @@ export type UndoActionType =
 	| "save-flashcards"
 	| "answer"
 	| "bury"
-	| "suspend";
+	| "suspend"
+	| "fsrs-helper-operation";
 
 /**
  * Payload for undoing card creation (delete the created card)
@@ -106,6 +107,33 @@ export interface SuspendUndoPayload {
 }
 
 /**
+ * FSRS Helper operation types that can be undone
+ */
+export type FSRSHelperOperationType =
+	| "balance-workload"
+	| "apply-easy-days"
+	| "shift-due-dates"
+	| "flatten-date"
+	| "disperse-siblings"
+	| "schedule-break"
+	| "reschedule-cards";
+
+/**
+ * Payload for undoing FSRS Helper bulk scheduling operations
+ */
+export interface FSRSHelperUndoPayload {
+	type: "fsrs-helper-operation";
+	/** Which FSRS Helper operation was performed */
+	operation: FSRSHelperOperationType;
+	/** Card changes to reverse */
+	changes: Array<{
+		cardId: string;
+		originalDue: string;
+		newDue: string;
+	}>;
+}
+
+/**
  * Union type for all undo payloads
  */
 export type UndoPayload =
@@ -115,7 +143,8 @@ export type UndoPayload =
 	| BatchCreateUndoPayload
 	| AnswerUndoPayload
 	| BuryUndoPayload
-	| SuspendUndoPayload;
+	| SuspendUndoPayload
+	| FSRSHelperUndoPayload;
 
 /**
  * Single undo stack entry

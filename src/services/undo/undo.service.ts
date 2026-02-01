@@ -12,6 +12,7 @@ import type {
 	AnswerUndoPayload,
 	BuryUndoPayload,
 	SuspendUndoPayload,
+	FSRSHelperUndoPayload,
 } from "./undo.types";
 
 /**
@@ -157,6 +158,9 @@ export class UndoService {
 			case "suspend":
 				return this.undoSuspend(payload);
 
+			case "fsrs-helper-operation":
+				return this.undoFSRSHelperOperation(payload);
+
 			default:
 				console.warn(`[UndoService] Unknown undo payload type`);
 				return false;
@@ -265,6 +269,33 @@ export class UndoService {
 		}
 
 		return true;
+	}
+
+	/**
+	 * Undo an FSRS Helper bulk scheduling operation
+	 * Restores all affected cards to their original due dates
+	 */
+	private undoFSRSHelperOperation(payload: FSRSHelperUndoPayload): boolean {
+		try {
+			const { cardStore } = this.plugin;
+
+			for (const change of payload.changes) {
+				cardStore.cards.updateCardDue(change.cardId, change.originalDue);
+			}
+
+			// Emit bulk change event for UI sync
+			getEventBus().emit({
+				type: "cards:bulk-change",
+				action: "reschedule",
+				cardIds: payload.changes.map((c) => c.cardId),
+				timestamp: Date.now(),
+			});
+
+			return true;
+		} catch (error) {
+			console.error("[UndoService] Failed to undo FSRS Helper operation:", error);
+			return false;
+		}
 	}
 
 	/**

@@ -157,6 +157,29 @@ export const DEFAULT_SETTINGS: TrueRecallSettings = {
 
 	// Review Font Size
 	reviewFontScale: 1.0,
+
+	// FSRS Helper: Load Balance
+	loadBalanceEnabled: false,
+	loadBalanceTarget: 100,
+	loadBalanceMaxDeviation: 20,
+
+	// FSRS Helper: Easy Days
+	easyDays: {
+		recurringDays: [],
+		specificDates: [],
+	},
+	easyDaysMultiplier: 0.5,
+
+	// FSRS Helper: Sibling Disperse
+	siblingMinInterval: 3,
+	siblingDisperseEnabled: false,
+
+	// FSRS Helper: Optimizer Metadata
+	lastOptimizationReviewCount: null,
+	lastOptimizationMetrics: null,
+
+	// FSRS Helper: Schedule Breaks
+	scheduledBreaks: [],
 };
 
 // ===== FSRS Default Weights =====

@@ -452,6 +452,9 @@
   .ep\:max-h-\[60vh\] {
     max-height: 60vh;
   }
+  .ep\:max-h-\[150px\] {
+    max-height: 150px;
+  }
   .ep\:max-h-\[180px\] {
     max-height: 180px;
   }
@@ -505,6 +508,9 @@
   }
   .ep\:w-10 {
     width: calc(var(--ep-spacing) * 10);
+  }
+  .ep\:w-12 {
+    width: calc(var(--ep-spacing) * 12);
   }
   .ep\:w-45 {
     width: calc(var(--ep-spacing) * 45);
@@ -670,6 +676,13 @@
   }
   .ep\:gap-8 {
     gap: calc(var(--ep-spacing) * 8);
+  }
+  .ep\:space-y-2 {
+    :where(& > :not(:last-child)) {
+      --tw-space-y-reverse: 0;
+      margin-block-start: calc(calc(var(--ep-spacing) * 2) * var(--tw-space-y-reverse));
+      margin-block-end: calc(calc(var(--ep-spacing) * 2) * calc(1 - var(--tw-space-y-reverse)));
+    }
   }
   .ep\:gap-x-4 {
     column-gap: calc(var(--ep-spacing) * 4);
@@ -2183,6 +2196,11 @@
     height: 20px;
   }
 }
+@property --tw-space-y-reverse {
+  syntax: "*";
+  inherits: false;
+  initial-value: 0;
+}
 @property --tw-border-style {
   syntax: "*";
   inherits: false;
@@ -2375,6 +2393,7 @@
 @layer properties {
   @supports ((-webkit-hyphens: none) and (not (margin-trim: inline))) or ((-moz-orient: inline) and (not (color:rgb(from red r g b)))) {
     *, ::before, ::after, ::backdrop {
+      --tw-space-y-reverse: 0;
       --tw-border-style: solid;
       --tw-leading: initial;
       --tw-font-weight: initial;

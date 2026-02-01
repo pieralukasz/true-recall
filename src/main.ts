@@ -31,6 +31,7 @@ import {
 	notify,
 	UndoService,
 } from "./services";
+import { FSRSHelperService } from "./services/fsrs-helper";
 import {
 	DB_FOLDER,
 	getDeviceDbFilename,
@@ -90,6 +91,7 @@ export default class TrueRecallPlugin extends Plugin {
 	deletionHandler: DeletionHandlerService | null = null;
 	orphanedCardsService: OrphanedCardsService | null = null;
 	undoService: UndoService | null = null;
+	fsrsHelper: FSRSHelperService | null = null;
 
 	/**
 	 * Assert that the card store is initialized and ready.
@@ -398,6 +400,15 @@ ${cardList}${moreText}
 			DEFAULT_SETTINGS,
 			(await this.loadData()) as Partial<TrueRecallSettings>
 		);
+
+		// Migrate old easyDays format (number[]) to new format (EasyDaysConfig)
+		if (Array.isArray(this.settings.easyDays)) {
+			this.settings.easyDays = {
+				recurringDays: this.settings.easyDays as unknown as number[],
+				specificDates: [],
+			};
+			await this.saveData(this.settings);
+		}
 	}
 
 	async saveSettings(): Promise<void> {
@@ -421,6 +432,9 @@ ${cardList}${moreText}
 			this.dayBoundaryService.updateDayStartHour(
 				this.settings.dayStartHour
 			);
+		}
+		if (this.fsrsHelper) {
+			this.fsrsHelper.updateSettings(this.settings);
 		}
 		// Reinitialize NL Query Service with new settings (API key or model may have changed)
 		this.initializeNLQueryService().catch((error) => {
@@ -936,6 +950,9 @@ ${cardList}${moreText}
 
 			// Initialize SyncService now that cardStore is ready
 			this.initializeSyncService();
+
+			// Initialize FSRS Helper Service
+			this.fsrsHelper = new FSRSHelperService(this.cardStore, this.settings);
 
 			// Initialize orphaned cards management
 			this.initializeDeletionHandler();
