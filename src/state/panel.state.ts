@@ -56,9 +56,14 @@ export class PanelStateManager {
 
     /**
      * Get current state (immutable copy)
+     * Creates deep copies of Set fields to prevent external mutation
      */
     getState(): PanelState {
-        return { ...this.state };
+        return {
+            ...this.state,
+            selectedCardIds: new Set(this.state.selectedCardIds),
+            expandedCardIds: new Set(this.state.expandedCardIds),
+        };
     }
 
     /**

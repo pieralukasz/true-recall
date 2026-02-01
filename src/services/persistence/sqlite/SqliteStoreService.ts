@@ -234,14 +234,18 @@ export class SqliteStoreService {
         }, SAVE_DEBOUNCE_MS);
     }
 
-    private async doFlush(): Promise<void> {
-        if (!this.db.isReady() || !this.isDirty) return;
+    /**
+     * Flush pending changes to disk with retry logic
+     * @returns true if save succeeded, false if failed after retries
+     */
+    private async doFlush(): Promise<boolean> {
+        if (!this.db.isReady() || !this.isDirty) return true; // Nothing to save = success
 
         // Prevent concurrent saves
         if (this.saveInProgress) {
             // Another save is running, schedule a retry after it completes
             this.scheduleSave();
-            return;
+            return true; // Will be saved by scheduled retry
         }
 
         this.saveInProgress = true;
@@ -262,7 +266,7 @@ export class SqliteStoreService {
 
                     await this.app.vault.adapter.writeBinary(dbPath, data.buffer);
                     this.isDirty = false;
-                    return; // Success
+                    return true; // Success
                 } catch (error) {
                     console.error(`[True Recall] Failed to save database (attempt ${attempt}/${MAX_RETRIES}):`, error);
 
@@ -271,25 +275,31 @@ export class SqliteStoreService {
                         const delay = BASE_DELAY_MS * Math.pow(2, attempt - 1);
                         await new Promise((resolve) => setTimeout(resolve, delay));
                     } else {
-                        // Final failure - notify user, but keep isDirty=true for retry
+                        // Final failure - notify user, keep isDirty=true for retry
                         notify().error(
                             "Failed to save database after multiple attempts. Your recent changes may not be saved.",
                             NOTIFICATION_DURATION.LONG
                         );
+                        return false; // Caller can react to failure
                     }
                 }
             }
         } finally {
             this.saveInProgress = false;
         }
+        return false; // Should not reach here
     }
 
-    async saveNow(): Promise<void> {
+    /**
+     * Save immediately, bypassing debounce
+     * @returns true if save succeeded, false if failed
+     */
+    async saveNow(): Promise<boolean> {
         if (this.saveTimer) {
             clearTimeout(this.saveTimer);
             this.saveTimer = null;
         }
-        await this.doFlush();
+        return this.doFlush();
     }
 
     async close(): Promise<void> {
