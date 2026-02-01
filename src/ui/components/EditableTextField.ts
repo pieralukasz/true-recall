@@ -133,8 +133,9 @@ export const TOOLBAR_BUTTONS = {
 		{
 			id: "codeblock",
 			label: "```",
-			title: "Code Block (TSX)",
-			action: { type: "toggle", before: "```tsx\n", after: "\n```" },
+			title: "Code Block",
+			shortcut: "Ctrl+Shift+C",
+			action: { type: "toggle", before: "```\n", after: "\n```" },
 		},
 		{
 			id: "superscript",
