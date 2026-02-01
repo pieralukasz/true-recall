@@ -658,6 +658,7 @@ export class ReviewStateManager {
      * - Session is active
      * - Current card exists but is not due yet
      * - All previous cards have been reviewed
+     * - Time until due is <= 60 minutes (otherwise treat as session complete)
      */
     isWaitingForLearningCards(): boolean {
         if (!this.state.isActive) return false;
@@ -669,7 +670,12 @@ export class ReviewStateManager {
         const isLearning = currentCard.fsrs.state === State.Learning || currentCard.fsrs.state === State.Relearning;
         if (!isLearning) return false;
 
-        return !this.isCardDueNow(currentCard);
+        if (this.isCardDueNow(currentCard)) return false;
+
+        // Don't show waiting screen for >60 min waits - treat as session complete
+        const MAX_WAIT_MS = 60 * 60 * 1000;
+        const timeUntilDue = this.getTimeUntilNextDue();
+        return timeUntilDue <= MAX_WAIT_MS;
     }
 
     /**
