@@ -2,9 +2,7 @@ import { describe, it, expect } from "vitest";
 import {
     OpenRouterResponseSchema,
     FlashcardItemSchema,
-    FlashcardChangeTypeSchema,
     SettingsSchema,
-    DiffResponseSchema,
 } from "../../src/validation/schemas";
 
 describe("Zod Schemas", () => {
@@ -89,72 +87,6 @@ describe("Zod Schemas", () => {
             };
 
             const result = FlashcardItemSchema.safeParse(data);
-
-            expect(result.success).toBe(false);
-        });
-    });
-
-    describe("FlashcardChangeTypeSchema", () => {
-        it("should accept NEW", () => {
-            const result = FlashcardChangeTypeSchema.safeParse("NEW");
-            expect(result.success).toBe(true);
-        });
-
-        it("should accept MODIFIED", () => {
-            const result = FlashcardChangeTypeSchema.safeParse("MODIFIED");
-            expect(result.success).toBe(true);
-        });
-
-        it("should accept DELETED", () => {
-            const result = FlashcardChangeTypeSchema.safeParse("DELETED");
-            expect(result.success).toBe(true);
-        });
-
-        it("should reject invalid type", () => {
-            const result = FlashcardChangeTypeSchema.safeParse("UPDATED");
-            expect(result.success).toBe(false);
-        });
-
-        it("should reject lowercase", () => {
-            const result = FlashcardChangeTypeSchema.safeParse("new");
-            expect(result.success).toBe(false);
-        });
-    });
-
-    describe("DiffResponseSchema", () => {
-        it("should parse valid diff response", () => {
-            const data = {
-                changes: [
-                    {
-                        type: "NEW",
-                        question: "Test",
-                        answer: "Answer",
-                    },
-                ],
-            };
-
-            const result = DiffResponseSchema.safeParse(data);
-
-            expect(result.success).toBe(true);
-        });
-
-        it("should parse empty changes array", () => {
-            const data = {
-                changes: [],
-            };
-
-            const result = DiffResponseSchema.safeParse(data);
-
-            expect(result.success).toBe(true);
-            if (result.success) {
-                expect(result.data.changes).toHaveLength(0);
-            }
-        });
-
-        it("should reject missing changes array", () => {
-            const data = {};
-
-            const result = DiffResponseSchema.safeParse(data);
 
             expect(result.success).toBe(false);
         });

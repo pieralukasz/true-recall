@@ -103,7 +103,7 @@ Primary interface for managing flashcards:
 
 - List of all flashcards from current note
 - Add new flashcard button
-- AI generation with diff mode for updates
+- AI generation for flashcards
 - Edit/delete/move actions per card
 - Card preview with markdown rendering
 
@@ -140,15 +140,7 @@ Advanced session builder for filtered reviews:
 - **Ignore Daily Limits**: Override new/review limits
 - **Bypass Scheduling**: Study cards regardless of due dates
 
-### 5. Dashboard View
-
-Quick command center:
-
-- Searchable command list
-- Organized by category
-- One-click execution
-
-### 6. Projects View
+### 5. Projects View
 
 Project organization interface:
 
@@ -157,7 +149,7 @@ Project organization interface:
 - Click to start filtered review
 - Create/rename/delete projects
 
-### 7. Browser View
+### 6. Browser View
 
 Full-featured card browser:
 
@@ -167,7 +159,7 @@ Full-featured card browser:
 - Bulk operations
 - Preview and edit cards
 
-### 8. Simulator View
+### 7. Simulator View
 
 FSRS algorithm simulator:
 
@@ -178,13 +170,12 @@ FSRS algorithm simulator:
 
 ---
 
-## Ribbon Icons (3)
+## Ribbon Icons (2)
 
 | Icon      | Color  | Action                 |
 | --------- | ------ | ---------------------- |
 | Brain     | Purple | Opens session builder  |
 | Bar Chart | Orange | Opens statistics panel |
-| Blocks    | Light  | Opens command dashboard|
 
 ---
 
@@ -335,7 +326,6 @@ npm run test:coverage # Coverage report
 - [ ] Statistics export (CSV/JSON)
 - [ ] Review session history
 - [ ] Card difficulty hints during review
-- [ ] Improved diff mode accuracy
 
 ### Technical
 
