@@ -4,7 +4,7 @@
 import { describe, it, expect, beforeEach, vi } from "vitest";
 import { PanelStateManager, createPanelStateManager } from "../../src/state/panel.state";
 import type { TFile } from "obsidian";
-import type { FlashcardInfo, DiffResult } from "../../src/types";
+import type { FlashcardInfo } from "../../src/types";
 import type { AppError } from "../../src/errors";
 
 // Mock TFile
@@ -36,17 +36,6 @@ function createMockFlashcardInfo(exists: boolean = true): FlashcardInfo {
     };
 }
 
-// Mock DiffResult
-function createMockDiffResult(): DiffResult {
-    return {
-        changes: [
-            { type: "NEW", question: "New Q", answer: "New A", accepted: true },
-            { type: "MODIFIED", question: "Modified Q", answer: "Modified A", originalQuestion: "Old Q", accepted: false },
-        ],
-        existingFlashcards: [],
-    };
-}
-
 describe("PanelStateManager", () => {
     let stateManager: PanelStateManager;
 
@@ -62,7 +51,6 @@ describe("PanelStateManager", () => {
             expect(state.viewMode).toBe("list");
             expect(state.currentFile).toBeNull();
             expect(state.flashcardInfo).toBeNull();
-            expect(state.diffResult).toBeNull();
             expect(state.userInstructions).toBe("");
             expect(state.isFlashcardFile).toBe(false);
             expect(state.error).toBeNull();
@@ -185,7 +173,6 @@ describe("PanelStateManager", () => {
             stateManager.setState({
                 status: "processing",
                 userInstructions: "test",
-                viewMode: "diff",
             });
 
             stateManager.reset();
@@ -238,8 +225,6 @@ describe("PanelStateManager", () => {
                 // Set some state first
                 stateManager.setState({
                     status: "exists",
-                    viewMode: "diff",
-                    diffResult: createMockDiffResult(),
                 });
 
                 stateManager.setCurrentFile(file);
@@ -248,7 +233,6 @@ describe("PanelStateManager", () => {
                 expect(state.currentFile).toBe(file);
                 expect(state.status).toBe("none");
                 expect(state.viewMode).toBe("list");
-                expect(state.diffResult).toBeNull();
                 expect(state.isFlashcardFile).toBe(false);
             });
 
@@ -286,27 +270,6 @@ describe("PanelStateManager", () => {
                 stateManager.setFlashcardInfo(info);
 
                 expect(stateManager.getState().status).toBe("none");
-            });
-        });
-
-        describe("setDiffResult", () => {
-            it("should set diff result and switch to diff mode", () => {
-                const diff = createMockDiffResult();
-                stateManager.setDiffResult(diff);
-
-                const state = stateManager.getState();
-                expect(state.diffResult).toBe(diff);
-                expect(state.viewMode).toBe("diff");
-                expect(state.status).toBe("exists");
-            });
-
-            it("should clear diff and return to list mode", () => {
-                stateManager.setDiffResult(createMockDiffResult());
-                stateManager.setDiffResult(null);
-
-                const state = stateManager.getState();
-                expect(state.diffResult).toBeNull();
-                expect(state.viewMode).toBe("list");
             });
         });
 
@@ -376,27 +339,6 @@ describe("PanelStateManager", () => {
 
                 stateManager.finishProcessing();
                 expect(stateManager.isProcessing()).toBe(false);
-            });
-
-            it("should check if in diff mode", () => {
-                expect(stateManager.isInDiffMode()).toBe(false);
-
-                stateManager.setDiffResult(createMockDiffResult());
-                expect(stateManager.isInDiffMode()).toBe(true);
-
-                stateManager.clearDiff();
-                expect(stateManager.isInDiffMode()).toBe(false);
-            });
-        });
-
-        describe("clearDiff", () => {
-            it("should clear diff and return to list mode", () => {
-                stateManager.setDiffResult(createMockDiffResult());
-                stateManager.clearDiff();
-
-                const state = stateManager.getState();
-                expect(state.diffResult).toBeNull();
-                expect(state.viewMode).toBe("list");
             });
         });
     });
