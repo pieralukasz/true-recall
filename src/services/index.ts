@@ -31,6 +31,8 @@ export {
 	type FlashcardInfo,
 	type ScanResult,
 } from "./flashcard/flashcard.service";
+export { CardRepository } from "./flashcard/card-repository.service";
+export { CardQueryService } from "./flashcard/card-query.service";
 export { FrontmatterService } from "./flashcard/frontmatter.service";
 export { FlashcardParserService } from "./flashcard/flashcard-parser.service";
 export { SourceNoteService } from "./flashcard/source-note.service";
