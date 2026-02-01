@@ -9,6 +9,42 @@ import type { NoteFlashcardType } from "../../types";
  * Service for managing frontmatter in flashcard and source note files
  */
 export class FrontmatterService {
+	// ===== Cached regex patterns for performance =====
+	/** Matches YAML frontmatter block */
+	private static readonly FRONTMATTER_REGEX = /^---\n([\s\S]*?)\n---/;
+	/** Matches wiki link syntax for stripping */
+	private static readonly WIKI_LINK_SYNTAX_REGEX = /^\[\[|\]\]$/g;
+	/** Matches projects array format: projects: ["a", "b"] */
+	private static readonly PROJECTS_ARRAY_REGEX = /^projects:\s*\[(.*)\]\s*$/m;
+	/** Matches projects list start: projects: */
+	private static readonly PROJECTS_LIST_START_REGEX = /^projects:\s*$/m;
+	/** Matches list item format: - item */
+	private static readonly LIST_ITEM_REGEX = /^\s+-\s+(.+)/;
+	/** Matches inline tags: #tag/subtag */
+	private static readonly INLINE_TAG_REGEX = /#[\w/-]+/g;
+	/** Matches tags array format: tags: [a, b] */
+	private static readonly TAGS_ARRAY_REGEX = /^tags:\s*\[([^\]]+)\]/m;
+	/** Matches tags list format */
+	private static readonly TAGS_LIST_REGEX = /^tags:\s*\n(\s+-\s+\S+\s*)+/m;
+	/** Matches source_link field */
+	private static readonly SOURCE_LINK_REGEX = /source_link:\s*"\[\[(.+?)\]\]"/;
+	/** Matches #input/ tag pattern */
+	private static readonly INPUT_TAG_REGEX = /#input\//i;
+	/** Matches flashcard_uid field */
+	private static readonly UID_FIELD_REGEX =
+		/flashcard_uid:\s*["']?([a-f0-9]+)["']?/i;
+	/** Matches flashcard_uid field for existence check */
+	private static readonly UID_FIELD_EXISTS_REGEX = /^flashcard_uid:/m;
+	/** Matches flashcard_uid field line for replacement */
+	private static readonly UID_FIELD_LINE_REGEX = /^flashcard_uid:.*$/m;
+	/** Matches projects field existence */
+	private static readonly PROJECTS_FIELD_REGEX = /^projects:/m;
+	/** Matches projects field line for replacement */
+	private static readonly PROJECTS_FIELD_LINE_REGEX = /^projects:.*$/m;
+	/** Matches projects list for replacement */
+	private static readonly PROJECTS_LIST_FULL_REGEX =
+		/^projects:\s*\n(\s+-\s+.+\s*)+/m;
+
 	constructor(private app: App) {}
 
 	/**
@@ -36,7 +72,7 @@ ${projectsArray}
 	 * "[[Note Name]]" -> "Note Name"
 	 */
 	private stripWikiLinkSyntax(name: string): string {
-		return name.replace(/^\[\[|\]\]$/g, "").trim();
+		return name.replace(FrontmatterService.WIKI_LINK_SYNTAX_REGEX, "").trim();
 	}
 
 	/**
@@ -49,7 +85,9 @@ ${projectsArray}
 	 * Also strips wiki link syntax: "[[Note]]" -> "Note"
 	 */
 	extractProjectsFromFrontmatter(content: string): string[] {
-		const frontmatterMatch = content.match(/^---\n([\s\S]*?)\n---/);
+		const frontmatterMatch = content.match(
+			FrontmatterService.FRONTMATTER_REGEX
+		);
 		if (!frontmatterMatch) {
 			return [];
 		}
@@ -57,20 +95,22 @@ ${projectsArray}
 		const frontmatter = frontmatterMatch[1] ?? "";
 
 		// Try array format: projects: ["Project 1", "Project 2"]
-		// Use greedy match but stop at ] followed by end of line or newline
-		const arrayMatch = frontmatter.match(/^projects:\s*\[(.*)\]\s*$/m);
+		const arrayMatch = frontmatter.match(
+			FrontmatterService.PROJECTS_ARRAY_REGEX
+		);
 		if (arrayMatch) {
 			const arrayContent = arrayMatch[1] ?? "";
 			return arrayContent
 				.split(",")
-				.map(p => p.trim().replace(/^["']|["']$/g, ""))
-				.map(p => this.stripWikiLinkSyntax(p))
-				.filter(p => p.length > 0);
+				.map((p) => p.trim().replace(/^["']|["']$/g, ""))
+				.map((p) => this.stripWikiLinkSyntax(p))
+				.filter((p) => p.length > 0);
 		}
 
 		// Try list format: projects:\n  - Project 1
-		// Match "projects:" followed by indented list items until we hit a non-indented line or end
-		const listStartMatch = frontmatter.match(/^projects:\s*$/m);
+		const listStartMatch = frontmatter.match(
+			FrontmatterService.PROJECTS_LIST_START_REGEX
+		);
 		if (listStartMatch) {
 			const startIndex = listStartMatch.index! + listStartMatch[0].length;
 			const remainingContent = frontmatter.slice(startIndex);
@@ -79,7 +119,7 @@ ${projectsArray}
 			const lines = remainingContent.split("\n");
 			for (const line of lines) {
 				// Check if line is a list item (starts with whitespace + dash)
-				const itemMatch = line.match(/^\s+-\s+(.+)/);
+				const itemMatch = line.match(FrontmatterService.LIST_ITEM_REGEX);
 				if (itemMatch) {
 					listItems.push(itemMatch[1]!.trim().replace(/^["']|["']$/g, ""));
 				} else if (line.trim() && !line.match(/^\s/)) {
@@ -89,8 +129,8 @@ ${projectsArray}
 			}
 			if (listItems.length > 0) {
 				return listItems
-					.map(p => this.stripWikiLinkSyntax(p))
-					.filter(p => p.length > 0);
+					.map((p) => this.stripWikiLinkSyntax(p))
+					.filter((p) => p.length > 0);
 			}
 		}
 
@@ -102,7 +142,7 @@ ${projectsArray}
 	 * Returns the note name from source_link: "[[NoteName]]"
 	 */
 	extractSourceLinkFromContent(content: string): string | null {
-		const match = content.match(/source_link:\s*"\[\[(.+?)\]\]"/);
+		const match = content.match(FrontmatterService.SOURCE_LINK_REGEX);
 		return match?.[1] ?? null;
 	}
 
@@ -113,37 +153,36 @@ ${projectsArray}
 		const tags: string[] = [];
 
 		// Extract inline tags
-		const inlineTagPattern = /#[\w/-]+/g;
-		const inlineMatches = content.match(inlineTagPattern);
+		const inlineMatches = content.match(FrontmatterService.INLINE_TAG_REGEX);
 		if (inlineMatches) {
 			tags.push(...inlineMatches.map((t) => t.replace(/^#/, "")));
 		}
 
 		// Extract frontmatter tags
-		const frontmatterMatch = content.match(/^---\n([\s\S]*?)\n---/);
+		const frontmatterMatch = content.match(
+			FrontmatterService.FRONTMATTER_REGEX
+		);
 		if (frontmatterMatch) {
 			const frontmatter = frontmatterMatch[1] ?? "";
 
 			// Array format: tags: [input/book, mind/zettel]
 			const tagsArrayMatch = frontmatter.match(
-				/^tags:\s*\[([^\]]+)\]/m
+				FrontmatterService.TAGS_ARRAY_REGEX
 			);
 			if (tagsArrayMatch) {
 				const arrayTags =
 					tagsArrayMatch[1]
 						?.split(",")
-						.map((t) =>
-							t.trim().replace(/^["']|["']$/g, "")
-						) ?? [];
+						.map((t) => t.trim().replace(/^["']|["']$/g, "")) ?? [];
 				tags.push(...arrayTags);
 			}
 
 			// List format: tags:\n  - input/book
-			const tagsListPattern = /^tags:\s*\n(\s+-\s+\S+\s*)+/m;
-			const tagsListMatch = frontmatter.match(tagsListPattern);
+			const tagsListMatch = frontmatter.match(
+				FrontmatterService.TAGS_LIST_REGEX
+			);
 			if (tagsListMatch) {
-				const tagLines =
-					tagsListMatch[0].match(/-\s+(\S+)/g) ?? [];
+				const tagLines = tagsListMatch[0].match(/-\s+(\S+)/g) ?? [];
 				const listTags = tagLines.map((t) =>
 					t.replace(/^-\s+/, "").replace(/^["']|["']$/g, "")
 				);
@@ -162,33 +201,33 @@ ${projectsArray}
 		const content = await this.app.vault.read(sourceFile);
 
 		// Check for #input/ tags in content (inline tags)
-		const inputTagPattern = /#input\//i;
-		if (inputTagPattern.test(content)) {
+		if (FrontmatterService.INPUT_TAG_REGEX.test(content)) {
 			return true;
 		}
 
 		// Check frontmatter tags
-		const frontmatterMatch = content.match(/^---\n([\s\S]*?)\n---/);
+		const frontmatterMatch = content.match(
+			FrontmatterService.FRONTMATTER_REGEX
+		);
 		if (frontmatterMatch) {
 			const frontmatter = frontmatterMatch[1] ?? "";
 			// Match tags array format: tags: [input/book, other/tag]
 			const tagsArrayMatch = frontmatter.match(
-				/^tags:\s*\[([^\]]+)\]/m
+				FrontmatterService.TAGS_ARRAY_REGEX
 			);
 			if (tagsArrayMatch) {
 				const tags =
-					tagsArrayMatch[1]?.split(",").map((t) => t.trim()) ??
-					[];
+					tagsArrayMatch[1]?.split(",").map((t) => t.trim()) ?? [];
 				if (tags.some((t) => t.startsWith("input/"))) {
 					return true;
 				}
 			}
 			// Match tags list format: tags:\n  - input/book
-			const tagsListPattern = /^tags:\s*\n(\s+-\s+\S+\s*)+/m;
-			const tagsListMatch = frontmatter.match(tagsListPattern);
+			const tagsListMatch = frontmatter.match(
+				FrontmatterService.TAGS_LIST_REGEX
+			);
 			if (tagsListMatch) {
-				const tagLines =
-					tagsListMatch[0].match(/-\s+(\S+)/g) ?? [];
+				const tagLines = tagsListMatch[0].match(/-\s+(\S+)/g) ?? [];
 				const tags = tagLines.map((t) => t.replace(/^-\s+/, ""));
 				if (tags.some((t) => t.startsWith("input/"))) {
 					return true;
@@ -257,33 +296,35 @@ ${projectsArray}
 	 * Set projects in source note frontmatter
 	 * Creates or updates the projects field
 	 */
-	async setProjectsInFrontmatter(file: TFile, projects: string[]): Promise<void> {
+	async setProjectsInFrontmatter(
+		file: TFile,
+		projects: string[]
+	): Promise<void> {
 		const content = await this.app.vault.read(file);
-		const frontmatterRegex = /^---\n([\s\S]*?)\n---/;
-		const match = content.match(frontmatterRegex);
+		const match = content.match(FrontmatterService.FRONTMATTER_REGEX);
 
 		let newContent: string;
-		const projectsLine = projects.length > 0
-			? `projects: [${projects.map(p => `"[[${p}]]"`).join(", ")}]`
-			: "";
+		const projectsLine =
+			projects.length > 0
+				? `projects: [${projects.map((p) => `"[[${p}]]"`).join(", ")}]`
+				: "";
 
 		if (match) {
 			const frontmatter = match[1] ?? "";
 			// Check if projects field already exists
-			if (/^projects:/m.test(frontmatter)) {
+			if (FrontmatterService.PROJECTS_FIELD_REGEX.test(frontmatter)) {
 				// Update existing projects field
-				const updatedFrontmatter = frontmatter.replace(
-					/^projects:.*$/m,
-					projectsLine
-				).replace(/^projects:\s*\n(\s+-\s+.+\s*)+/m, projectsLine);
+				const updatedFrontmatter = frontmatter
+					.replace(FrontmatterService.PROJECTS_FIELD_LINE_REGEX, projectsLine)
+					.replace(FrontmatterService.PROJECTS_LIST_FULL_REGEX, projectsLine);
 				newContent = content.replace(
-					frontmatterRegex,
+					FrontmatterService.FRONTMATTER_REGEX,
 					`---\n${updatedFrontmatter}\n---`
 				);
 			} else if (projectsLine) {
 				// Add projects field to existing frontmatter
 				newContent = content.replace(
-					frontmatterRegex,
+					FrontmatterService.FRONTMATTER_REGEX,
 					`---\n${projectsLine}\n${frontmatter}\n---`
 				);
 			} else {
@@ -322,8 +363,7 @@ ${projectsArray}
 	 */
 	async getSourceNoteUid(sourceFile: TFile): Promise<string | null> {
 		const content = await this.app.vault.read(sourceFile);
-		const uidField = this.SOURCE_UID_FIELD;
-		const match = content.match(new RegExp(`${uidField}:\\s*["']?([a-f0-9]+)["']?`, "i"));
+		const match = content.match(FrontmatterService.UID_FIELD_REGEX);
 		return match?.[1] ?? null;
 	}
 
@@ -334,27 +374,26 @@ ${projectsArray}
 	async setSourceNoteUid(sourceFile: TFile, uid: string): Promise<void> {
 		const content = await this.app.vault.read(sourceFile);
 		const uidField = this.SOURCE_UID_FIELD;
-		const frontmatterRegex = /^---\n([\s\S]*?)\n---/;
-		const match = content.match(frontmatterRegex);
+		const match = content.match(FrontmatterService.FRONTMATTER_REGEX);
 
 		let newContent: string;
 
 		if (match) {
 			const frontmatter = match[1] ?? "";
 			// Check if UID field already exists
-			if (new RegExp(`^${uidField}:`, "m").test(frontmatter)) {
+			if (FrontmatterService.UID_FIELD_EXISTS_REGEX.test(frontmatter)) {
 				// Update existing UID
 				newContent = content.replace(
-					frontmatterRegex,
+					FrontmatterService.FRONTMATTER_REGEX,
 					`---\n${frontmatter.replace(
-						new RegExp(`^${uidField}:.*$`, "m"),
+						FrontmatterService.UID_FIELD_LINE_REGEX,
 						`${uidField}: "${uid}"`
 					)}\n---`
 				);
 			} else {
 				// Add UID field to existing frontmatter
 				newContent = content.replace(
-					frontmatterRegex,
+					FrontmatterService.FRONTMATTER_REGEX,
 					`---\n${uidField}: "${uid}"\n${frontmatter}\n---`
 				);
 			}

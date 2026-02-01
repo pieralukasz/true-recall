@@ -1,7 +1,13 @@
 /**
  * Flashcard Manager Service
- * Handles flashcard operations with SQL-only storage
- * All flashcard content is stored in SQLite, no MD files
+ * Facade for flashcard operations - delegates to specialized services
+ *
+ * Architecture:
+ * - CardRepository: CRUD operations (create, update, delete)
+ * - CardQueryService: Read-only queries (getAll, getByIds, getOrphaned)
+ * - FrontmatterService: Source note frontmatter operations
+ * - SourceNoteService: Enriching cards with vault data
+ * - FlashcardParserService: Parsing flashcards from markdown
  */
 import { App, TFile, WorkspaceLeaf } from "obsidian";
 import type {
@@ -11,16 +17,13 @@ import type {
 	CardReviewLogEntry,
 	NoteFlashcardType,
 	FlashcardItem,
-	CardAddedEvent,
-	CardRemovedEvent,
-	CardUpdatedEvent,
 } from "../../types";
 import type { SqliteStoreService } from "../persistence/sqlite/SqliteStoreService";
-import { createDefaultFSRSData, State } from "../../types";
-import { getEventBus } from "../core/event-bus.service";
 import { FrontmatterService } from "./frontmatter.service";
 import { FlashcardParserService } from "./flashcard-parser.service";
 import { SourceNoteService } from "./source-note.service";
+import { CardRepository } from "./card-repository.service";
+import { CardQueryService } from "./card-query.service";
 import type { FrontmatterIndexService } from "../core/frontmatter-index.service";
 
 /**
@@ -47,6 +50,7 @@ export interface FlashcardInfo {
 
 /**
  * Service for managing flashcards with SQL-only storage
+ * Acts as a facade delegating to specialized services
  */
 export class FlashcardManager {
 	private app: App;
@@ -55,6 +59,10 @@ export class FlashcardManager {
 	private frontmatterService: FrontmatterService;
 	private parserService: FlashcardParserService;
 	private sourceNoteService: SourceNoteService;
+
+	// Specialized services (initialized after setStore)
+	private cardRepository: CardRepository | null = null;
+	private cardQueryService: CardQueryService | null = null;
 
 	constructor(app: App, settings: TrueRecallSettings, frontmatterIndex?: FrontmatterIndexService) {
 		this.app = app;
@@ -66,9 +74,12 @@ export class FlashcardManager {
 
 	/**
 	 * Set the card store for FSRS data
+	 * Also initializes CardRepository and CardQueryService
 	 */
 	setStore(store: SqliteStoreService): void {
 		this.store = store;
+		this.cardRepository = new CardRepository(store);
+		this.cardQueryService = new CardQueryService(store, this.sourceNoteService);
 	}
 
 	/**
@@ -84,19 +95,10 @@ export class FlashcardManager {
 	 * @returns true if card was saved, false if skipped (already exists)
 	 */
 	setStoreData(cardId: string, fsrsData: FSRSCardData): boolean {
-		if (!this.store) {
+		if (!this.cardRepository) {
 			throw new Error("Store not initialized");
 		}
-
-		// Only set if not already exists (prevent overwriting existing data)
-		const existing = this.store.get(cardId);
-		if (existing) {
-			console.debug(`[FlashcardManager] Card ${cardId} already exists, skipping`);
-			return false;
-		}
-
-		this.store.set(cardId, fsrsData);
-		return true;
+		return this.cardRepository.setIfNotExists(cardId, fsrsData);
 	}
 
 	/**
@@ -243,7 +245,7 @@ export class FlashcardManager {
 		sourceFile: TFile,
 		flashcards: Array<{ id: string; question: string; answer: string }>
 	): Promise<FSRSFlashcardItem[]> {
-		if (!this.store) {
+		if (!this.cardRepository) {
 			throw new Error("Card store not initialized");
 		}
 
@@ -254,41 +256,7 @@ export class FlashcardManager {
 			await this.frontmatterService.setSourceNoteUid(sourceFile, sourceUid);
 		}
 
-		const createdCards: FSRSFlashcardItem[] = [];
-
-		for (const flashcard of flashcards) {
-			const fsrsData = createDefaultFSRSData(flashcard.id);
-
-			const extendedData: FSRSCardData = {
-				...fsrsData,
-				question: flashcard.question,
-				answer: flashcard.answer,
-				sourceUid: sourceUid,
-			};
-
-			this.store.set(flashcard.id, extendedData);
-
-			const card: FSRSFlashcardItem = {
-				id: flashcard.id,
-				question: flashcard.question,
-				answer: flashcard.answer,
-				fsrs: extendedData,
-				projects: [],
-				sourceNoteName: sourceFile.basename,
-				sourceUid: sourceUid,
-			};
-
-			createdCards.push(card);
-
-			getEventBus().emit({
-				type: "card:added",
-				cardId: flashcard.id,
-				sourceNoteName: sourceFile.basename,
-				timestamp: Date.now(),
-			} as CardAddedEvent);
-		}
-
-		return createdCards;
+		return this.cardRepository.createBatch(flashcards, sourceUid, sourceFile.basename);
 	}
 
 	/**
@@ -311,44 +279,10 @@ export class FlashcardManager {
 		answer: string,
 		sourceUid?: string
 	): Promise<FSRSFlashcardItem> {
-		if (!this.store) {
+		if (!this.cardRepository) {
 			throw new Error("Card store not initialized");
 		}
-
-		// Check for duplicate question
-		const existingCardId = this.store.cards.getCardIdByQuestion(question);
-		if (existingCardId) {
-			throw new Error("A card with this question already exists");
-		}
-
-		const cardId = this.generateCardId();
-		const fsrsData = createDefaultFSRSData(cardId);
-
-		const extendedData: FSRSCardData = {
-			...fsrsData,
-			question,
-			answer,
-			sourceUid,
-		};
-
-		this.store.set(cardId, extendedData);
-
-		const card: FSRSFlashcardItem = {
-			id: cardId,
-			question,
-			answer,
-			fsrs: extendedData,
-			projects: [],
-			sourceUid,
-		};
-
-		getEventBus().emit({
-			type: "card:added",
-			cardId,
-			timestamp: Date.now(),
-		} as CardAddedEvent);
-
-		return card;
+		return this.cardRepository.create(question, answer, sourceUid);
 	}
 
 	/**
@@ -363,25 +297,10 @@ export class FlashcardManager {
 	 * Remove a flashcard directly by ID
 	 */
 	async removeFlashcardById(cardId: string): Promise<boolean> {
-		if (!this.store) {
+		if (!this.cardRepository) {
 			return false;
 		}
-
-		const card = this.store.get(cardId);
-		if (!card) {
-			return false;
-		}
-
-		// Soft delete card with cascade (also soft-deletes review_log)
-		this.store.cards.softDeleteWithCascade(cardId);
-
-		getEventBus().emit({
-			type: "card:removed",
-			cardId,
-			timestamp: Date.now(),
-		} as CardRemovedEvent);
-
-		return true;
+		return this.cardRepository.delete(cardId);
 	}
 
 	/**
@@ -396,26 +315,10 @@ export class FlashcardManager {
 	 * Enriches cards with sourceNoteName, sourceNotePath, and projects from vault
 	 */
 	getAllFSRSCards(): FSRSFlashcardItem[] {
-		if (!this.store) {
+		if (!this.cardQueryService) {
 			throw new Error("Store not initialized. Please restart Obsidian.");
 		}
-
-		const cardsWithContent = this.store.getCardsWithContent();
-
-		const filteredCards = cardsWithContent
-			.filter((card): card is FSRSCardData & { question: string } =>
-				Boolean(card.question)
-			)
-			.map((card) => ({
-				id: card.id,
-				question: card.question,
-				answer: card.answer ?? "",
-				fsrs: card,
-				sourceUid: card.sourceUid,
-			}));
-
-		// Enrich with source note info from vault (sourceNoteName, sourceNotePath, projects)
-		return this.sourceNoteService.enrichCards(filteredCards);
+		return this.cardQueryService.getAll();
 	}
 
 	/**
@@ -423,28 +326,10 @@ export class FlashcardManager {
 	 * Uses SQL WHERE IN instead of fetching all cards
 	 */
 	getCardsByIds(cardIds: string[]): FSRSFlashcardItem[] {
-		if (!this.store) {
+		if (!this.cardQueryService) {
 			throw new Error("Store not initialized. Please restart Obsidian.");
 		}
-
-		if (cardIds.length === 0) return [];
-
-		const cards = this.store.getByIds(cardIds);
-
-		const mappedCards = cards
-			.filter((card): card is FSRSCardData & { question: string } =>
-				Boolean(card.question)
-			)
-			.map((card) => ({
-				id: card.id,
-				question: card.question,
-				answer: card.answer ?? "",
-				fsrs: card,
-				sourceUid: card.sourceUid,
-			}));
-
-		// Enrich with source note info from vault
-		return this.sourceNoteService.enrichCards(mappedCards);
+		return this.cardQueryService.getByIds(cardIds);
 	}
 
 	/**
@@ -455,81 +340,20 @@ export class FlashcardManager {
 		newFSRSData: FSRSCardData,
 		reviewLogEntry?: CardReviewLogEntry
 	): void {
-		if (!this.store) {
+		if (!this.cardRepository) {
 			throw new Error("Store not initialized");
 		}
-
-		const existing = this.store.get(cardId);
-		const entry: FSRSCardData = { ...newFSRSData };
-
-		// Append review to history if provided
-		if (reviewLogEntry) {
-			const history: CardReviewLogEntry[] =
-				(existing?.history as CardReviewLogEntry[] | undefined) || [];
-			history.push(reviewLogEntry);
-			// Keep only last 20 entries
-			entry.history = history.length > 20 ? history.slice(-20) : history;
-		} else if (existing?.history) {
-			entry.history = existing.history;
-		}
-
-		// Preserve question/answer if not in newFSRSData
-		if (existing?.question && !entry.question) {
-			entry.question = existing.question;
-		}
-		if (existing?.answer && !entry.answer) {
-			entry.answer = existing.answer;
-		}
-		if (existing?.sourceUid && !entry.sourceUid) {
-			entry.sourceUid = existing.sourceUid;
-		}
-
-		this.store.set(cardId, entry);
-
-		// Detect specific changes for more targeted UI updates
-		const changes: CardUpdatedEvent["changes"] = { fsrs: true };
-		if (existing && newFSRSData.suspended !== existing.suspended) {
-			changes.suspended = true;
-		}
-		if (existing && newFSRSData.buriedUntil !== existing.buriedUntil) {
-			changes.buried = true;
-		}
-
-		getEventBus().emit({
-			type: "card:updated",
-			cardId,
-			changes,
-			timestamp: Date.now(),
-		} as CardUpdatedEvent);
+		this.cardRepository.updateFSRS(cardId, newFSRSData, reviewLogEntry);
 	}
 
 	/**
 	 * Update card content (question and answer) in SQL
 	 */
 	updateCardContent(cardId: string, newQuestion: string, newAnswer: string): void {
-		if (!this.store) {
+		if (!this.cardRepository) {
 			throw new Error("Store not initialized");
 		}
-
-		const existing = this.store.get(cardId);
-		if (!existing) {
-			throw new Error(`Card ${cardId} not found`);
-		}
-
-		const updated: FSRSCardData = {
-			...existing,
-			question: newQuestion,
-			answer: newAnswer,
-		};
-
-		this.store.set(cardId, updated);
-
-		getEventBus().emit({
-			type: "card:updated",
-			cardId,
-			changes: { question: true, answer: true },
-			timestamp: Date.now(),
-		} as CardUpdatedEvent);
+		this.cardRepository.updateContent(cardId, newQuestion, newAnswer);
 	}
 
 	/**
@@ -537,24 +361,10 @@ export class FlashcardManager {
 	 * v15: Projects are resolved from frontmatter at runtime (not stored in DB)
 	 */
 	getFlashcardsBySourceUid(sourceUid: string): FSRSFlashcardItem[] {
-		if (!this.store) {
+		if (!this.cardQueryService) {
 			return [];
 		}
-
-		const cards = this.store.getCardsBySourceUid(sourceUid);
-
-		return cards
-			.filter((card): card is FSRSCardData & { question: string } =>
-				Boolean(card.question)
-			)
-			.map((card) => ({
-				id: card.id,
-				question: card.question,
-				answer: card.answer ?? "",
-				fsrs: card,
-				projects: card.projects || [],
-				sourceUid: card.sourceUid,
-			}));
+		return this.cardQueryService.getBySourceUid(sourceUid);
 	}
 
 	// ===== Orphaned Cards Methods =====
@@ -563,24 +373,10 @@ export class FlashcardManager {
 	 * Get all orphaned cards (cards without source_uid)
 	 */
 	getOrphanedCards(): FSRSFlashcardItem[] {
-		if (!this.store) {
+		if (!this.cardQueryService) {
 			return [];
 		}
-
-		const cards = this.store.getOrphanedCards();
-
-		return cards
-			.filter((card): card is FSRSCardData & { question: string } =>
-				Boolean(card.question)
-			)
-			.map((card) => ({
-				id: card.id,
-				question: card.question,
-				answer: card.answer ?? "",
-				fsrs: card,
-				projects: card.projects || [],
-				sourceUid: undefined,
-			}));
+		return this.cardQueryService.getOrphaned();
 	}
 
 	/**
@@ -590,12 +386,12 @@ export class FlashcardManager {
 	 * @returns true if successful
 	 */
 	async assignCardToSourceNote(cardId: string, targetNotePath: string): Promise<boolean> {
-		if (!this.store) {
+		if (!this.cardRepository) {
 			throw new Error("Store not initialized");
 		}
 
-		const existing = this.store.get(cardId);
-		if (!existing) {
+		// Check card exists
+		if (!this.cardRepository.has(cardId)) {
 			return false;
 		}
 
@@ -612,17 +408,8 @@ export class FlashcardManager {
 			await this.frontmatterService.setSourceNoteUid(targetNote, targetSourceUid);
 		}
 
-		// Update card's source UID
-		this.store.cards.updateCardSourceUid(cardId, targetSourceUid);
-
-		getEventBus().emit({
-			type: "card:updated",
-			cardId,
-			changes: { sourceUid: true },
-			timestamp: Date.now(),
-		} as CardUpdatedEvent);
-
-		return true;
+		// Update card's source UID (CardRepository emits event)
+		return this.cardRepository.updateSourceUid(cardId, targetSourceUid);
 	}
 
 	/**
@@ -646,6 +433,7 @@ export class FlashcardManager {
 
 	/**
 	 * Move a flashcard to a different source note
+	 * Delegates to assignCardToSourceNote (same operation)
 	 *
 	 * @param cardId - UUID of the flashcard to move
 	 * @param targetNotePath - Path to the target note
@@ -655,44 +443,7 @@ export class FlashcardManager {
 		cardId: string,
 		targetNotePath: string
 	): Promise<boolean> {
-		if (!this.store) {
-			throw new Error("Store not initialized");
-		}
-
-		const existing = this.store.get(cardId);
-		if (!existing) {
-			return false;
-		}
-
-		// Get target note to determine deck and source UID
-		const targetNote = this.app.vault.getAbstractFileByPath(targetNotePath);
-		if (!(targetNote instanceof TFile)) {
-			return false;
-		}
-
-		// Get or create source UID for target note
-		let targetSourceUid = await this.frontmatterService.getSourceNoteUid(targetNote);
-		if (!targetSourceUid) {
-			targetSourceUid = this.frontmatterService.generateUid();
-			await this.frontmatterService.setSourceNoteUid(targetNote, targetSourceUid);
-		}
-
-		// Update card's source UID
-		const updated: FSRSCardData = {
-			...existing,
-			sourceUid: targetSourceUid,
-		};
-
-		this.store.set(cardId, updated);
-
-		getEventBus().emit({
-			type: "card:updated",
-			cardId,
-			changes: { sourceUid: true },
-			timestamp: Date.now(),
-		} as CardUpdatedEvent);
-
-		return true;
+		return this.assignCardToSourceNote(cardId, targetNotePath);
 	}
 
 	// ===== Navigation Methods =====

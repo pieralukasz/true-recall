@@ -277,6 +277,20 @@ export const FSRS_CONFIG = {
 	maxRetention: 0.99,
 } as const;
 
+// ===== Review Service Configuration =====
+
+/** Stability threshold for "weak card" filter (days) */
+export const WEAK_CARD_STABILITY_THRESHOLD = 7;
+
+/** Time window for requeue check (10 minutes in ms) */
+export const REQUEUE_WINDOW_MS = 10 * 60 * 1000;
+
+/** Maximum position for random queue insertion of learning cards */
+export const RANDOM_QUEUE_INSERT_MAX_POS = 5;
+
+/** Maximum number of history entries to keep per card */
+export const CARD_HISTORY_LIMIT = 20;
+
 // ===== System Prompts =====
 
 /** System prompt for flashcard generation */

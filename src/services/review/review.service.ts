@@ -18,7 +18,12 @@ import type {
 import type { FSRSService } from "../core/fsrs.service";
 import type { FlashcardManager } from "../flashcard/flashcard.service";
 import type { DayBoundaryService } from "../core/day-boundary.service";
-import { LEARN_AHEAD_LIMIT_MINUTES } from "../../constants";
+import {
+	LEARN_AHEAD_LIMIT_MINUTES,
+	WEAK_CARD_STABILITY_THRESHOLD,
+	REQUEUE_WINDOW_MS,
+	RANDOM_QUEUE_INSERT_MAX_POS,
+} from "../../constants";
 import { getEventBus } from "../core/event-bus.service";
 
 /**
@@ -55,7 +60,7 @@ export interface QueueBuildOptions {
 	createdTodayOnly?: boolean;
 	/** Only include cards created in the last 7 days */
 	createdThisWeek?: boolean;
-	/** Only include weak cards (stability < 7 days) */
+	/** Only include weak cards (stability < WEAK_CARD_STABILITY_THRESHOLD days) */
 	weakCardsOnly?: boolean;
 	/** Filter by card state: due, learning, new, or buried */
 	stateFilter?: "due" | "learning" | "new" | "buried";
@@ -221,7 +226,10 @@ export class ReviewService {
 			}
 
 			// Weak cards filter
-			if (options.weakCardsOnly && card.fsrs.stability >= 7) {
+			if (
+				options.weakCardsOnly &&
+				card.fsrs.stability >= WEAK_CARD_STABILITY_THRESHOLD
+			) {
 				return false;
 			}
 
@@ -241,6 +249,13 @@ export class ReviewService {
 					case "due":
 						if (card.fsrs.state !== State.Review) return false;
 						break;
+					case "buried": {
+						// Card is buried if buriedUntil is set and hasn't passed
+						const buriedUntil = card.fsrs.buriedUntil;
+						if (!buriedUntil || new Date(buriedUntil).getTime() <= Date.now())
+							return false;
+						break;
+					}
 				}
 			}
 
@@ -589,6 +604,7 @@ export class ReviewService {
 
 	/**
 	 * Calculate session statistics from review results
+	 * Uses single-pass accumulator for O(N) performance instead of O(5N)
 	 */
 	calculateSessionStats(
 		results: ReviewResult[],
@@ -597,22 +613,53 @@ export class ReviewService {
 	): ReviewSessionStats {
 		const now = Date.now();
 
+		// Single-pass accumulator - count all stats in one iteration
+		const counts = {
+			again: 0,
+			hard: 0,
+			good: 0,
+			easy: 0,
+			newCards: 0,
+			learningCards: 0,
+			reviewCards: 0,
+		};
+
+		for (const r of results) {
+			// Count by rating
+			switch (r.rating) {
+				case Rating.Again:
+					counts.again++;
+					break;
+				case Rating.Hard:
+					counts.hard++;
+					break;
+				case Rating.Good:
+					counts.good++;
+					break;
+				case Rating.Easy:
+					counts.easy++;
+					break;
+			}
+
+			// Count by previous state
+			switch (r.previousState) {
+				case State.New:
+					counts.newCards++;
+					break;
+				case State.Learning:
+				case State.Relearning:
+					counts.learningCards++;
+					break;
+				case State.Review:
+					counts.reviewCards++;
+					break;
+			}
+		}
+
 		return {
 			total: totalCards,
 			reviewed: results.length,
-			again: results.filter((r) => r.rating === Rating.Again).length,
-			hard: results.filter((r) => r.rating === Rating.Hard).length,
-			good: results.filter((r) => r.rating === Rating.Good).length,
-			easy: results.filter((r) => r.rating === Rating.Easy).length,
-			newCards: results.filter((r) => r.previousState === State.New)
-				.length,
-			learningCards: results.filter(
-				(r) =>
-					r.previousState === State.Learning ||
-					r.previousState === State.Relearning
-			).length,
-			reviewCards: results.filter((r) => r.previousState === State.Review)
-				.length,
+			...counts,
 			duration: now - startTime,
 		};
 	}
@@ -672,9 +719,9 @@ export class ReviewService {
 		) {
 			const dueDate = new Date(card.fsrs.due);
 			const now = new Date();
-			// Re-add if due within 10 minutes
-			const tenMinutesFromNow = new Date(now.getTime() + 10 * 60 * 1000);
-			return dueDate <= tenMinutesFromNow;
+			// Re-add if due within requeue window
+			const requeueDeadline = new Date(now.getTime() + REQUEUE_WINDOW_MS);
+			return dueDate <= requeueDeadline;
 		}
 		return false;
 	}
@@ -700,8 +747,8 @@ export class ReviewService {
 				now.getTime() + LEARN_AHEAD_LIMIT_MINUTES * 60 * 1000
 			);
 			if (dueDate <= learnAheadTime) {
-				// Card is due soon - insert randomly in first 5 positions
-				const maxPos = Math.min(5, queue.length);
+				// Card is due soon - insert randomly in first positions
+				const maxPos = Math.min(RANDOM_QUEUE_INSERT_MAX_POS, queue.length);
 				return Math.floor(Math.random() * (maxPos + 1));
 			}
 			// Card not due yet - append to end
@@ -793,6 +840,14 @@ export class ReviewService {
 		const today = formatDate(now);
 		const yesterday = formatDate(now - 86400000);
 
+		// Helper to add one day to YYYY-MM-DD string (avoids Date object creation in loop)
+		const addOneDay = (dateStr: string): string => {
+			const [year, month, day] = dateStr.split("-").map(Number);
+			const d = new Date(year!, month! - 1, day!);
+			d.setDate(d.getDate() + 1);
+			return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+		};
+
 		for (let i = 0; i < sortedDays.length; i++) {
 			const currentDay = sortedDays[i];
 			if (!currentDay) continue;
@@ -803,13 +858,9 @@ export class ReviewService {
 				const prevDay = sortedDays[i - 1];
 				if (!prevDay) continue;
 
-				const prevDate = new Date(prevDay);
-				const currDate = new Date(currentDay);
-				const diffDays = Math.floor(
-					(currDate.getTime() - prevDate.getTime()) / 86400000
-				);
-
-				if (diffDays === 1) {
+				// Compare strings directly - check if currentDay is exactly one day after prevDay
+				const expectedNextDay = addOneDay(prevDay);
+				if (currentDay === expectedNextDay) {
 					streak++;
 				} else {
 					streak = 1;

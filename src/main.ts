@@ -91,6 +91,23 @@ export default class TrueRecallPlugin extends Plugin {
 	orphanedCardsService: OrphanedCardsService | null = null;
 	undoService: UndoService | null = null;
 
+	/**
+	 * Assert that the card store is initialized and ready.
+	 * Throws an error if called before initialization completes.
+	 */
+	private assertStoreReady(): asserts this is this & { cardStore: SqliteStoreService } {
+		if (!this.cardStore) {
+			throw new Error("Card store not initialized. Please wait for plugin to fully load.");
+		}
+	}
+
+	/**
+	 * Check if the card store is ready (non-throwing version)
+	 */
+	isStoreReady(): boolean {
+		return this.cardStore !== null && this.cardStore !== undefined;
+	}
+
 	async onload(): Promise<void> {
 		await this.loadSettings();
 
@@ -122,11 +139,14 @@ export default class TrueRecallPlugin extends Plugin {
 		);
 
 		// Initialize device context and SQLite store
-		// Note: This runs async but errors are handled internally with user notification
-		this.initializeDeviceAndStore().catch((error) => {
+		// IMPORTANT: Must await to ensure cardStore is ready before views/commands access it
+		try {
+			await this.initializeDeviceAndStore();
+		} catch (error) {
 			console.error("[True Recall] Critical: Device/store initialization failed:", error);
 			notify().error("Failed to initialize database. Please restart Obsidian.");
-		});
+			// Continue plugin load - some features may work without database
+		}
 
 		// Initialize day boundary service (Anki-style day scheduling)
 		this.dayBoundaryService = new DayBoundaryService(
@@ -211,9 +231,7 @@ export default class TrueRecallPlugin extends Plugin {
 		// Initialize AuthService (SaaS model - always available)
 		this.authService = new AuthService();
 
-		// Initialize SyncService (requires authService and cardStore)
-		// Note: cardStore may not be ready yet, sync will check availability
-		this.initializeSyncService();
+		// Note: SyncService is initialized in initializeCardStore() after cardStore is ready
 	}
 
 	/**
@@ -515,6 +533,10 @@ ${cardList}${moreText}
 	 * Called after checking/closing existing views
 	 */
 	private async openNewReviewSession(): Promise<void> {
+		if (!this.isStoreReady()) {
+			notify().error("Database not ready. Please wait for plugin to fully load.");
+			return;
+		}
 		const allCards = await this.flashcardManager.getAllFSRSCards();
 		if (allCards.length === 0) {
 			notify().info("No flashcards found. Generate some flashcards first!");
@@ -610,6 +632,10 @@ ${cardList}${moreText}
 	 * Review flashcards from current note
 	 */
 	async reviewCurrentNote(): Promise<void> {
+		if (!this.isStoreReady()) {
+			notify().error("Database not ready. Please wait for plugin to fully load.");
+			return;
+		}
 		const file = this.app.workspace.getActiveFile();
 		if (!file) {
 			notify().noActiveFile();
@@ -655,6 +681,10 @@ ${cardList}${moreText}
 	 * Review today's new cards
 	 */
 	async reviewTodaysCards(): Promise<void> {
+		if (!this.isStoreReady()) {
+			notify().error("Database not ready. Please wait for plugin to fully load.");
+			return;
+		}
 		const allCards = await this.flashcardManager.getAllFSRSCards();
 
 		const todayStart = new Date();
