@@ -24,6 +24,9 @@ export type { CardsCreatedChartProps } from "./CardsCreatedChart";
 export { CreatedVsReviewedChart } from "./CreatedVsReviewedChart";
 export type { CreatedVsReviewedChartProps } from "./CreatedVsReviewedChart";
 
+export { ReviewsChart } from "./ReviewsChart";
+export type { ReviewsChartProps } from "./ReviewsChart";
+
 export { RetentionChart } from "./RetentionChart";
 export type { RetentionChartProps } from "./RetentionChart";
 

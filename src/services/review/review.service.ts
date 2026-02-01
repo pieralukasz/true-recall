@@ -340,6 +340,8 @@ export class ReviewService {
 				}
 				return result;
 			}
+			case "by-retrievability":
+				return fsrsService.sortByRetrievability(cards);
 			default:
 				return fsrsService.sortByDue(cards);
 		}
@@ -735,7 +737,7 @@ export class ReviewService {
 	getRequeuePosition(
 		queue: FSRSFlashcardItem[],
 		card: FSRSFlashcardItem,
-		reviewOrder?: "due-date" | "random" | "due-date-random"
+		reviewOrder?: ReviewOrder
 	): number {
 		const dueDate = new Date(card.fsrs.due);
 		const now = new Date();

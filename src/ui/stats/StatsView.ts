@@ -42,8 +42,7 @@ import {
 	TodaySection,
 	TimeRangeSelector,
 	FutureDueChart,
-	CardsCreatedChart,
-	CreatedVsReviewedChart,
+	ReviewsChart,
 	RetentionChart,
 	CardCountsChart,
 	CalendarHeatmap,
@@ -78,8 +77,7 @@ export class StatsView extends ItemView {
 	private todaySection: TodaySection | null = null;
 	private timeRangeSelector: TimeRangeSelector | null = null;
 	private futureDueChart: FutureDueChart | null = null;
-	private cardsCreatedChart: CardsCreatedChart | null = null;
-	private createdVsReviewedChart: CreatedVsReviewedChart | null = null;
+	private reviewsChart: ReviewsChart | null = null;
 	private retentionChart: RetentionChart | null = null;
 	private cardCountsChart: CardCountsChart | null = null;
 	private calendarHeatmap: CalendarHeatmap | null = null;
@@ -152,8 +150,7 @@ export class StatsView extends ItemView {
 		this.todaySection?.destroy();
 		this.timeRangeSelector?.destroy();
 		this.futureDueChart?.destroy();
-		this.cardsCreatedChart?.destroy();
-		this.createdVsReviewedChart?.destroy();
+		this.reviewsChart?.destroy();
 		this.retentionChart?.destroy();
 		this.cardCountsChart?.destroy();
 		this.calendarHeatmap?.destroy();
@@ -196,19 +193,12 @@ export class StatsView extends ItemView {
 		});
 		this.futureDueChart.render();
 
-		this.cardsCreatedChart = new CardsCreatedChart(this.contentWrapper, {
-			statsCalculator: this.statsCalculator,
-			currentRange: this.currentRange,
-			onCardPreview: (date, cards) => this.openCardPreviewForCreatedDate(date, cards),
-		});
-		this.cardsCreatedChart.render();
-
-		this.createdVsReviewedChart = new CreatedVsReviewedChart(this.contentWrapper, {
+		this.reviewsChart = new ReviewsChart(this.contentWrapper, {
 			statsCalculator: this.statsCalculator,
 			currentRange: this.currentRange,
 			onCardPreview: (date, cards) => this.openCardPreviewForDate(date, cards),
 		});
-		this.createdVsReviewedChart.render();
+		this.reviewsChart.render();
 
 		this.retentionChart = new RetentionChart(this.contentWrapper, {
 			statsCalculator: this.statsCalculator,
@@ -309,8 +299,7 @@ export class StatsView extends ItemView {
 		// Update chart components
 		await Promise.all([
 			this.futureDueChart?.updateRange(range),
-			this.cardsCreatedChart?.updateRange(range),
-			this.createdVsReviewedChart?.updateRange(range),
+			this.reviewsChart?.updateRange(range),
 			this.retentionChart?.updateRange(range),
 		]);
 	}
@@ -322,8 +311,7 @@ export class StatsView extends ItemView {
 		await Promise.all([
 			this.todaySection?.refresh(),
 			this.futureDueChart?.refresh(),
-			this.cardsCreatedChart?.refresh(),
-			this.createdVsReviewedChart?.refresh(),
+			this.reviewsChart?.refresh(),
 			this.retentionChart?.refresh(),
 			this.cardCountsChart?.refresh(),
 			this.calendarHeatmap?.refresh(),
@@ -344,15 +332,7 @@ export class StatsView extends ItemView {
 
 	private openCardPreviewForDate(date: string, cards: any[]): void {
 		new CardPreviewModal(this.plugin.app, {
-			title: `Cards due: ${this.formatDateForDisplay(date)}`,
-			cards,
-			flashcardManager: this.plugin.flashcardManager,
-		}).open();
-	}
-
-	private openCardPreviewForCreatedDate(date: string, cards: any[]): void {
-		new CardPreviewModal(this.plugin.app, {
-			title: `Cards created: ${this.formatDateForDisplay(date)}`,
+			title: `Cards reviewed: ${this.formatDateForDisplay(date)}`,
 			cards,
 			flashcardManager: this.plugin.flashcardManager,
 		}).open();

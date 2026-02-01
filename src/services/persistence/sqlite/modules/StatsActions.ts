@@ -777,4 +777,133 @@ export class StatsActions {
     deleteAllReviewLogForSync(): void {
         this.db.run(`DELETE FROM review_log`);
     }
+
+    // ===== FSRS Helper: Optimization Data =====
+
+    /**
+     * Get review data for FSRS parameter optimization
+     * Returns review history with card states for the optimizer algorithm
+     */
+    getReviewDataForOptimization(): {
+        cardId: string;
+        reviewedAt: number;
+        rating: number;
+        scheduledDays: number;
+        elapsedDays: number;
+        state: number;
+        stability: number;
+        difficulty: number;
+    }[] {
+        const rows = this.db.query<{
+            cardId: string;
+            reviewedAt: string;
+            rating: number;
+            scheduledDays: number;
+            elapsedDays: number;
+            state: number;
+            stability: number;
+            difficulty: number;
+        }>(`
+            SELECT
+                r.card_id as cardId,
+                r.reviewed_at as reviewedAt,
+                r.rating,
+                r.scheduled_days as scheduledDays,
+                r.elapsed_days as elapsedDays,
+                r.state,
+                c.stability,
+                c.difficulty
+            FROM review_log r
+            JOIN cards c ON r.card_id = c.id
+            WHERE r.deleted_at IS NULL
+              AND c.deleted_at IS NULL
+            ORDER BY r.reviewed_at ASC
+        `);
+
+        return rows.map(row => ({
+            ...row,
+            reviewedAt: new Date(row.reviewedAt).getTime(),
+        }));
+    }
+
+    // ===== FSRS Helper: Retention Data =====
+
+    /**
+     * Get review data for true retention calculation
+     * Only includes reviews on mature cards (state = 2, Review state)
+     */
+    getReviewsForRetention(startDate: string, endDate: string): {
+        date: string;
+        rating: number;
+    }[] {
+        return this.db.query<{ date: string; rating: number }>(`
+            SELECT
+                date(r.reviewed_at) as date,
+                r.rating
+            FROM review_log r
+            JOIN cards c ON r.card_id = c.id
+            WHERE r.deleted_at IS NULL
+              AND c.deleted_at IS NULL
+              AND r.state = 2
+              AND date(r.reviewed_at) BETWEEN ? AND ?
+        `, [startDate, endDate]);
+    }
+
+    /**
+     * Get true retention (Good + Easy) / Total for mature cards only
+     */
+    getTrueRetention(startDate: string, endDate: string): number {
+        const row = this.db.get<{ retention: number | null }>(`
+            SELECT
+                CAST(SUM(CASE WHEN rating >= 3 THEN 1 ELSE 0 END) AS REAL) /
+                NULLIF(CAST(COUNT(*) AS REAL), 0) as retention
+            FROM review_log r
+            JOIN cards c ON r.card_id = c.id
+            WHERE r.deleted_at IS NULL
+              AND c.deleted_at IS NULL
+              AND r.state = 2
+              AND date(r.reviewed_at) BETWEEN ? AND ?
+        `, [startDate, endDate]);
+
+        return row?.retention ?? 0;
+    }
+
+    /**
+     * Get forecast of cards due per day
+     */
+    getForecastDueByDay(days: number): { date: string; count: number }[] {
+        return this.db.query<{ date: string; count: number }>(`
+            SELECT date(due) as date, COUNT(*) as count
+            FROM cards
+            WHERE deleted_at IS NULL
+              AND suspended = 0
+              AND (buried_until IS NULL OR buried_until <= datetime('now'))
+              AND state != 0
+              AND date(due) BETWEEN date('now') AND date('now', '+' || ? || ' days')
+            GROUP BY date(due)
+            ORDER BY date
+        `, [days]);
+    }
+
+    /**
+     * Get sibling cards (cards sharing the same source_uid)
+     */
+    getSiblingCards(sourceUid: string): {
+        id: string;
+        due: string;
+        scheduledDays: number;
+    }[] {
+        return this.db.query<{
+            id: string;
+            due: string;
+            scheduledDays: number;
+        }>(`
+            SELECT id, due, scheduled_days as scheduledDays
+            FROM cards
+            WHERE source_uid = ?
+              AND deleted_at IS NULL
+              AND suspended = 0
+            ORDER BY due ASC
+        `, [sourceUid]);
+    }
 }

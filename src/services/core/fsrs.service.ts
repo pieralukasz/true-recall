@@ -269,6 +269,27 @@ export class FSRSService {
 	}
 
 	/**
+	 * Sort cards by retrievability (lowest R first - most at risk of forgetting)
+	 * Uses single-pass R calculation with Map for O(N log N) performance
+	 */
+	sortByRetrievability(cards: FSRSFlashcardItem[], now?: Date): FSRSFlashcardItem[] {
+		const currentTime = now ?? new Date();
+
+		// Single pass: compute R for all cards
+		const retrievabilityMap = new Map<string, number>();
+		for (const card of cards) {
+			const r = this.getRetrievability(card.fsrs, currentTime);
+			retrievabilityMap.set(card.id, r);
+		}
+
+		return [...cards].sort((a, b) => {
+			const rA = retrievabilityMap.get(a.id) ?? 0;
+			const rB = retrievabilityMap.get(b.id) ?? 0;
+			return rA - rB; // Lowest R first
+		});
+	}
+
+	/**
 	 * Get the retrievability (probability of recall) for a card
 	 * @param cardData Card data
 	 * @param now Current time (optional)

@@ -451,4 +451,50 @@ export class CardActions {
     deleteAllForSync(): void {
         this.db.run(`DELETE FROM cards`);
     }
+
+    // ===== FSRS Helper Operations =====
+
+    /**
+     * Get cards due within a date range
+     * Used by FSRS Helper for workload balancing and forecasting
+     */
+    getDueCardsByDateRange(startDate: string, endDate: string): FSRSCardData[] {
+        const rows = this.db.query<CardRow>(
+            `SELECT ${CARD_SELECT_COLUMNS} FROM cards
+             WHERE deleted_at IS NULL
+               AND suspended = 0
+               AND (buried_until IS NULL OR buried_until <= datetime('now'))
+               AND date(due) BETWEEN ? AND ?
+             ORDER BY due ASC`,
+            [startDate, endDate]
+        );
+        return rows.map(mapRowToCard);
+    }
+
+    /**
+     * Update only the due date for a card
+     * Used by FSRS Helper scheduler services
+     */
+    updateCardDue(cardId: string, newDue: string): void {
+        this.db.run(`
+            UPDATE cards SET
+                due = ?,
+                updated_at = ?
+            WHERE id = ?
+        `, [newDue, Date.now(), cardId]);
+    }
+
+    /**
+     * Update card scheduling data (due, scheduledDays)
+     * Used by FSRS Helper reschedule service
+     */
+    updateCardScheduling(cardId: string, data: { due: string; scheduledDays: number }): void {
+        this.db.run(`
+            UPDATE cards SET
+                due = ?,
+                scheduled_days = ?,
+                updated_at = ?
+            WHERE id = ?
+        `, [data.due, data.scheduledDays, Date.now(), cardId]);
+    }
 }

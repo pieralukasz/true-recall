@@ -15,4 +15,6 @@ export type {
 	AnswerUndoPayload,
 	BuryUndoPayload,
 	SuspendUndoPayload,
+	FSRSHelperOperationType,
+	FSRSHelperUndoPayload,
 } from "./undo.types";
