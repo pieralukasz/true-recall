@@ -27,8 +27,8 @@ export interface ReactiveCacheOptions<T> {
 	invalidateOn: FlashcardEventType[];
 	/** Optional TTL in milliseconds (cache expires after this time) */
 	ttlMs?: number;
-	/** EventBus instance for subscribing to events */
-	eventBus: EventBusService;
+	/** EventBus instance for subscribing to events. If not provided, only TTL-based expiration is used. */
+	eventBus?: EventBusService;
 	/** Optional debug label for logging */
 	label?: string;
 }
@@ -50,12 +50,14 @@ export class ReactiveCache<T> {
 		this.ttlMs = options.ttlMs ?? 0; // 0 = no TTL expiration
 		this.label = options.label ?? "ReactiveCache";
 
-		// Subscribe to invalidation events
-		for (const eventType of options.invalidateOn) {
-			const unsub = options.eventBus.on(eventType, () => {
-				this.invalidate();
-			});
-			this.unsubscribers.push(unsub);
+		// Subscribe to invalidation events (only if eventBus provided)
+		if (options.eventBus) {
+			for (const eventType of options.invalidateOn) {
+				const unsub = options.eventBus.on(eventType, () => {
+					this.invalidate();
+				});
+				this.unsubscribers.push(unsub);
+			}
 		}
 	}
 

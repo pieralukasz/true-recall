@@ -38,17 +38,48 @@ export interface SelectableItemConfig extends ListItemConfig {
 }
 
 /**
+ * Event listener registration for cleanup
+ */
+interface RegisteredEvent {
+	el: HTMLElement;
+	type: string;
+	handler: EventListener;
+}
+
+/**
  * Abstract base class for plugin modals
  * Uses Obsidian's native titleEl for proper alignment with close button
+ * Includes automatic event listener cleanup on modal close
  */
 export abstract class BaseModal extends Modal {
 	protected modalTitle: string;
 	protected modalWidth: string;
+	private registeredEvents: RegisteredEvent[] = [];
 
 	constructor(app: App, options: BaseModalOptions) {
 		super(app);
 		this.modalTitle = options.title;
 		this.modalWidth = options.width ?? "fit-content";
+	}
+
+	/**
+	 * Register a DOM event listener that will be automatically removed on modal close
+	 */
+	protected addDomEvent<K extends keyof HTMLElementEventMap>(
+		el: HTMLElement,
+		type: K,
+		handler: (ev: HTMLElementEventMap[K]) => void
+	): void {
+		el.addEventListener(type, handler as EventListener);
+		this.registeredEvents.push({ el, type, handler: handler as EventListener });
+	}
+
+	onClose(): void {
+		// Clean up all registered event listeners
+		for (const { el, type, handler } of this.registeredEvents) {
+			el.removeEventListener(type, handler);
+		}
+		this.registeredEvents = [];
 	}
 
 	onOpen(): void {
@@ -115,7 +146,8 @@ export abstract class BaseModal extends Modal {
 				btnEl.addClass("ep:opacity-50", "ep:cursor-not-allowed");
 			}
 
-			btnEl.addEventListener("click", btn.onClick);
+			// Use addDomEvent for automatic cleanup on modal close
+			this.addDomEvent(btnEl, "click", btn.onClick);
 		}
 
 		return buttonsEl;
@@ -159,7 +191,8 @@ export abstract class BaseModal extends Modal {
 			cls: "ep:w-full ep:py-2.5 ep:px-3 ep:border ep:border-obs-border ep:rounded-md ep:bg-obs-primary ep:text-obs-normal ep:text-ui-small ep:focus:outline-none ep:focus:border-obs-interactive ep:placeholder:text-obs-muted",
 		});
 
-		searchInput.addEventListener("input", (e) => {
+		// Use addDomEvent for automatic cleanup on modal close
+		this.addDomEvent(searchInput, "input", (e: Event) => {
 			onInput((e.target as HTMLInputElement).value.toLowerCase());
 		});
 
@@ -252,13 +285,14 @@ export abstract class BaseModal extends Modal {
 			cls: "ep:shrink-0 ep:py-1 ep:px-3 ep:rounded ep:bg-obs-interactive ep:text-white ep:border-none ep:text-ui-smaller ep:cursor-pointer ep:opacity-0 ep:group-hover:opacity-100 ep:hover:opacity-100",
 		});
 
-		selectBtn.addEventListener("click", (e) => {
+		// Use addDomEvent for automatic cleanup on modal close
+		this.addDomEvent(selectBtn, "click", (e: MouseEvent) => {
 			e.stopPropagation();
 			onSelect();
 		});
 
 		// Row click also selects
-		itemEl.addEventListener("click", () => onSelect());
+		this.addDomEvent(itemEl, "click", () => onSelect());
 
 		return itemEl;
 	}
@@ -284,7 +318,8 @@ export abstract class BaseModal extends Modal {
 		});
 		checkbox.checked = item.selected;
 
-		checkbox.addEventListener("change", () => {
+		// Use addDomEvent for automatic cleanup on modal close
+		this.addDomEvent(checkbox, "change", () => {
 			item.onToggle(checkbox.checked);
 		});
 
@@ -318,7 +353,7 @@ export abstract class BaseModal extends Modal {
 		}
 
 		// Row click toggles checkbox
-		itemEl.addEventListener("click", (e) => {
+		this.addDomEvent(itemEl, "click", (e: MouseEvent) => {
 			if (e.target !== checkbox) {
 				checkbox.checked = !checkbox.checked;
 				item.onToggle(checkbox.checked);
