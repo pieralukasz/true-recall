@@ -46,6 +46,16 @@ export interface BadgeCounts {
 }
 
 /**
+ * Session phase - explicit state machine for review flow
+ * Replaces multiple boolean checks with a single discriminated union
+ */
+export type SessionPhase =
+    | { type: "idle" }
+    | { type: "active"; card: FSRSFlashcardItem }
+    | { type: "waiting"; timeUntilDue: number }
+    | { type: "complete"; stats: ReviewSessionStats };
+
+/**
  * Review State Manager
  * Manages the state of a review session with reactive updates
  */
@@ -59,6 +69,8 @@ export class ReviewStateManager {
         originalQuestion: "",
         originalAnswer: "",
     };
+    // Cached badge counts - O(1) access, updated incrementally
+    private cachedBadgeCounts: BadgeCounts = { new: 0, learning: 0, due: 0 };
 
     constructor() {
         this.state = createDefaultSessionState();
@@ -86,20 +98,25 @@ export class ReviewStateManager {
     }
 
     /**
-     * Get badge counts computed from remaining queue
-     * O(N) where N = remaining cards, but N is typically small (<100)
-     * and this runs once per render (not per card)
+     * Get badge counts for remaining queue - O(1) cached access
+     * Counts are computed once at session start and updated incrementally
      */
     getBadgeCounts(): BadgeCounts {
+        return { ...this.cachedBadgeCounts };
+    }
+
+    /**
+     * Compute badge counts from scratch - O(N), called only at session start
+     */
+    private computeBadgeCounts(queue: FSRSFlashcardItem[], startIndex: number): BadgeCounts {
         const counts: BadgeCounts = { new: 0, learning: 0, due: 0 };
-
-        // Count only remaining cards (from currentIndex to end)
-        const remaining = this.state.queue.slice(this.state.currentIndex);
-        for (const card of remaining) {
-            const badgeType = this.getBadgeTypeForState(card.fsrs.state);
-            counts[badgeType]++;
+        for (let i = startIndex; i < queue.length; i++) {
+            const card = queue[i];
+            if (card) {
+                const badgeType = this.getBadgeTypeForState(card.fsrs.state);
+                counts[badgeType]++;
+            }
         }
-
         return counts;
     }
 
@@ -173,6 +190,8 @@ export class ReviewStateManager {
             },
         };
         this.schedulingPreview = null;
+        // Compute initial badge counts - O(N) once at session start
+        this.cachedBadgeCounts = this.computeBadgeCounts(queue, 0);
         this.notifyListeners(prevState);
     }
 
@@ -200,6 +219,7 @@ export class ReviewStateManager {
         const prevState = this.state;
         this.state = createDefaultSessionState();
         this.schedulingPreview = null;
+        this.cachedBadgeCounts = { new: 0, learning: 0, due: 0 };
         this.notifyListeners(prevState);
     }
 
@@ -301,6 +321,14 @@ export class ReviewStateManager {
             return false;
         }
 
+        // === Update badge counts incrementally - O(1) ===
+        // Decrement count for the card we're leaving behind
+        const currentCard = this.getCurrentCard();
+        if (currentCard) {
+            const badgeType = this.getBadgeTypeForState(currentCard.fsrs.state);
+            this.cachedBadgeCounts[badgeType]--;
+        }
+
         const nextIndex = this.state.currentIndex + 1;
         const prevState = this.state;
 
@@ -339,6 +367,17 @@ export class ReviewStateManager {
         }
 
         const prevState = this.state;
+
+        // === Update badge counts incrementally - O(1) ===
+        // Decrement count for the card we just answered (it's leaving "remaining")
+        const oldBadgeType = this.getBadgeTypeForState(currentCard.fsrs.state);
+        this.cachedBadgeCounts[oldBadgeType]--;
+
+        // If card is requeued, increment count for its new state
+        if (requeueData) {
+            const newBadgeType = this.getBadgeTypeForState(requeueData.card.fsrs.state);
+            this.cachedBadgeCounts[newBadgeType]++;
+        }
 
         // === Record answer logic ===
         const responseTime = Date.now() - this.state.questionShownTime;
@@ -392,10 +431,18 @@ export class ReviewStateManager {
         const prevState = this.state;
         const newQueue = [...this.state.queue];
 
+        const insertPosition = position !== undefined ? position : newQueue.length;
         if (position !== undefined) {
             newQueue.splice(position, 0, card);
         } else {
             newQueue.push(card);
+        }
+
+        // === Update badge counts incrementally - O(1) ===
+        // Only increment if inserted position is in remaining queue (>= currentIndex)
+        if (insertPosition >= this.state.currentIndex) {
+            const badgeType = this.getBadgeTypeForState(card.fsrs.state);
+            this.cachedBadgeCounts[badgeType]++;
         }
 
         this.state = {
@@ -419,6 +466,20 @@ export class ReviewStateManager {
         }
 
         const prevState = this.state;
+
+        // === Update badge counts incrementally - O(1) ===
+        // Add back the restored card (it's re-entering "remaining")
+        const restoredBadgeType = this.getBadgeTypeForState(restoredCard.fsrs.state);
+        this.cachedBadgeCounts[restoredBadgeType]++;
+
+        // If there was a requeued copy, remove its count
+        if (requeuedAtIndex !== undefined && requeuedAtIndex < this.state.queue.length) {
+            const requeuedCard = this.state.queue[requeuedAtIndex];
+            if (requeuedCard) {
+                const requeuedBadgeType = this.getBadgeTypeForState(requeuedCard.fsrs.state);
+                this.cachedBadgeCounts[requeuedBadgeType]--;
+            }
+        }
 
         // Restore the card in the queue
         let newQueue = [...this.state.queue];
@@ -506,6 +567,39 @@ export class ReviewStateManager {
     }
 
     /**
+     * Get current session phase - explicit state machine
+     * Consolidates multiple boolean checks into a single discriminated union
+     */
+    getPhase(): SessionPhase {
+        // Not active and has stats = just finished
+        if (!this.state.isActive) {
+            if (this.state.stats.reviewed > 0) {
+                return { type: "complete", stats: this.getStats() };
+            }
+            return { type: "idle" };
+        }
+
+        // All cards reviewed
+        if (this.state.currentIndex >= this.state.queue.length) {
+            return { type: "complete", stats: this.getStats() };
+        }
+
+        // Check if waiting for learning cards
+        const currentCard = this.getCurrentCard();
+        if (currentCard) {
+            const isLearning =
+                currentCard.fsrs.state === State.Learning ||
+                currentCard.fsrs.state === State.Relearning;
+            if (isLearning && !this.isCardDueNow(currentCard)) {
+                return { type: "waiting", timeUntilDue: this.getTimeUntilNextDue() };
+            }
+            return { type: "active", card: currentCard };
+        }
+
+        return { type: "idle" };
+    }
+
+    /**
      * Get remaining cards count
      */
     getRemainingCount(): number {
@@ -586,6 +680,13 @@ export class ReviewStateManager {
             return;
         }
 
+        // === Update badge counts incrementally - O(1) ===
+        const currentCard = this.getCurrentCard();
+        if (currentCard) {
+            const badgeType = this.getBadgeTypeForState(currentCard.fsrs.state);
+            this.cachedBadgeCounts[badgeType]--;
+        }
+
         const prevState = this.state;
         const newQueue = [...this.state.queue];
         newQueue.splice(this.state.currentIndex, 1);
@@ -608,13 +709,23 @@ export class ReviewStateManager {
             return;
         }
 
-        const prevState = this.state;
         const cardIndex = this.state.queue.findIndex(c => c.id === cardId);
 
         if (cardIndex === -1) {
             return; // Card not found
         }
 
+        // === Update badge counts incrementally - O(1) ===
+        // Only decrement if card is in remaining queue (index >= currentIndex)
+        if (cardIndex >= this.state.currentIndex) {
+            const card = this.state.queue[cardIndex];
+            if (card) {
+                const badgeType = this.getBadgeTypeForState(card.fsrs.state);
+                this.cachedBadgeCounts[badgeType]--;
+            }
+        }
+
+        const prevState = this.state;
         const newQueue = [...this.state.queue];
         newQueue.splice(cardIndex, 1);
 
@@ -659,6 +770,16 @@ export class ReviewStateManager {
             }
         }
 
+        // === Update badge counts incrementally - O(N) but only for removed cards ===
+        // Decrement counts for cards in remaining queue (index >= currentIndex)
+        for (let i = this.state.currentIndex; i < this.state.queue.length; i++) {
+            const card = this.state.queue[i];
+            if (card && idsToRemove.has(card.id)) {
+                const badgeType = this.getBadgeTypeForState(card.fsrs.state);
+                this.cachedBadgeCounts[badgeType]--;
+            }
+        }
+
         // Filter out removed cards
         const newQueue = this.state.queue.filter(c => !idsToRemove.has(c.id));
 
@@ -688,6 +809,11 @@ export class ReviewStateManager {
             return;
         }
 
+        // === Update badge counts incrementally - O(1) ===
+        // Card added to end is always in remaining queue
+        const badgeType = this.getBadgeTypeForState(card.fsrs.state);
+        this.cachedBadgeCounts[badgeType]++;
+
         const prevState = this.state;
         const newQueue = [...this.state.queue, card];
 
@@ -706,11 +832,18 @@ export class ReviewStateManager {
             return;
         }
 
+        // Clamp position to valid range
+        const clampedPosition = Math.max(0, Math.min(position, this.state.queue.length));
+
+        // === Update badge counts incrementally - O(1) ===
+        // Only increment if inserted position is in remaining queue (>= currentIndex)
+        if (clampedPosition >= this.state.currentIndex) {
+            const badgeType = this.getBadgeTypeForState(card.fsrs.state);
+            this.cachedBadgeCounts[badgeType]++;
+        }
+
         const prevState = this.state;
         const newQueue = [...this.state.queue];
-
-        // Clamp position to valid range
-        const clampedPosition = Math.max(0, Math.min(position, newQueue.length));
         newQueue.splice(clampedPosition, 0, card);
 
         this.state = {
