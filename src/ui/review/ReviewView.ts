@@ -35,14 +35,16 @@ import type {
 	ReviewCardChangedEvent,
 	CardReviewedEvent,
 } from "../../types/events.types";
-import {
-	createEditableTextField,
-	TOOLBAR_BUTTONS,
-} from "../components";
 import { SubscriptionManager } from "../utils";
 import type TrueRecallPlugin from "../../main";
 import type { ReviewViewState } from "./review.types";
 import { CardActionsHandler, KeyboardHandler } from "./handlers";
+import { CardContent, CardBacklink, CardProjects } from "./components";
+import {
+	filterActiveCards,
+	buildSourceUidToProjectsMap,
+	getEmptyQueueMessage,
+} from "./helpers";
 import { CopilotIntegrationService } from "../../services/integration/copilot-integration.service";
 
 export class ReviewView extends ItemView {
@@ -80,6 +82,11 @@ export class ReviewView extends ItemView {
 	private cardActionsHandler!: CardActionsHandler;
 	private keyboardHandler!: KeyboardHandler;
 
+	// UI Components (extracted for better separation of concerns)
+	private cardContent!: CardContent;
+	private cardBacklink!: CardBacklink;
+	private cardProjects!: CardProjects;
+
 	// Image service for paste handling
 	private imageService!: ImageService;
 
@@ -113,6 +120,7 @@ export class ReviewView extends ItemView {
 	private lastRenderedCardId: string | null = null;
 	private lastRenderedAnswerRevealed: boolean = false;
 	private lastRenderedEditState: boolean = false;
+	private lastRenderedBadgeCounts: { new: number; learning: number; due: number } | null = null;
 
 	constructor(leaf: WorkspaceLeaf, plugin: TrueRecallPlugin) {
 		super(leaf);
@@ -148,7 +156,6 @@ export class ReviewView extends ItemView {
 			},
 			{
 				onUpdateSchedulingPreview: () => this.updateSchedulingPreview(),
-				onRender: () => this.render(),
 			}
 		);
 
@@ -168,6 +175,31 @@ export class ReviewView extends ItemView {
 			onEditCard: () => this.cardActionsHandler.handleEditCardModal(),
 			onZoomIn: () => this.handleZoom(0.1),
 			onZoomOut: () => this.handleZoom(-0.1),
+		});
+
+		// Initialize UI components
+		this.cardContent = new CardContent(
+			{ app: this.app, component: this },
+			{
+				onStartEdit: (field) => this.startEdit(field),
+				onSaveEdit: (textarea, field) =>
+					this.saveEditFromTextarea(textarea, field),
+				onImagePaste: (file, textarea) =>
+					this.handleInlineImagePaste(file, textarea),
+				isAnswerRevealed: () => this.stateManager.isAnswerRevealed(),
+			}
+		);
+
+		this.cardBacklink = new CardBacklink({
+			onOpenSource: () => this.handleOpenSourceNote(),
+		});
+
+		this.cardProjects = new CardProjects({
+			onToggleProjects: (cardId) => {
+				this.expandedProjects.add(cardId);
+				this.renderCard();
+			},
+			onOpenProject: (project) => this.handleProjectClick(project),
 		});
 	}
 
@@ -413,6 +445,9 @@ export class ReviewView extends ItemView {
 		this.cardEventAbortController?.abort();
 		this.cardEventAbortController = null;
 
+		// Cleanup UI components
+		this.cardContent.destroy();
+
 		// Remove native header actions
 		if (this.openNoteAction) {
 			this.openNoteAction.remove();
@@ -539,25 +574,9 @@ export class ReviewView extends ItemView {
 				return;
 			}
 
-			// Filter out suspended and buried cards (unless reviewing buried specifically)
-			const now = new Date();
-			const activeCards = allCards.filter((c) => {
-				// Skip suspended cards always
-				if (c.fsrs.suspended) return false;
-
-				// If reviewing buried cards, ONLY include buried
-				if (this.stateFilter === "buried") {
-					if (!c.fsrs.buriedUntil) return false;
-					return new Date(c.fsrs.buriedUntil) > now;
-				}
-
-				// Normal mode: exclude buried cards
-				if (c.fsrs.buriedUntil) {
-					const buriedUntil = new Date(c.fsrs.buriedUntil);
-					if (buriedUntil > now) return false;
-				}
-
-				return true;
+			// Filter out suspended and buried cards (using helper)
+			const activeCards = filterActiveCards(allCards, {
+				stateFilter: this.stateFilter,
 			});
 
 			if (activeCards.length === 0) {
@@ -571,50 +590,23 @@ export class ReviewView extends ItemView {
 				return;
 			}
 
-			// Get persistent stats for today (ensure sessionPersistence is available)
+			// Get persistent stats for today
 			if (!this.sessionPersistence) {
 				this.sessionPersistence = this.plugin.sessionPersistence;
 			}
 			if (!this.sessionPersistence) {
-				console.error(
-					"[ReviewView] sessionPersistence not initialized"
-				);
-				this.renderEmptyState(
-					"Session persistence not ready. Please try again."
-				);
+				console.error("[ReviewView] sessionPersistence not initialized");
+				this.renderEmptyState("Session persistence not ready. Please try again.");
 				return;
 			}
-			const reviewedToday =
-				await this.sessionPersistence.getReviewedToday();
-			const newCardsStudiedToday =
-				await this.sessionPersistence.getNewCardsStudiedToday();
+			const reviewedToday = await this.sessionPersistence.getReviewedToday();
+			const newCardsStudiedToday = await this.sessionPersistence.getNewCardsStudiedToday();
 
-			// Build sourceUidToProjects map for project filtering fallback
-			let sourceUidToProjects: Map<string, string[]> | undefined;
-			if (this.projectFilters && this.projectFilters.length > 0) {
-				sourceUidToProjects = new Map();
-				const files = this.app.vault.getMarkdownFiles();
-
-				// Helper to normalize project names (strip [[...]] wiki-link brackets)
-				const normalizeProjectName = (name: string): string =>
-					name.replace(/^\[\[|\]\]$/g, "");
-
-				for (const file of files) {
-					const cache = this.app.metadataCache.getFileCache(file);
-					const frontmatter = cache?.frontmatter;
-					if (!frontmatter) continue;
-
-					const uid = frontmatter.flashcard_uid as string | undefined;
-					const rawProjects = frontmatter.projects;
-					const projects = Array.isArray(rawProjects)
-						? rawProjects.map(normalizeProjectName)
-						: [];
-
-					if (uid && projects.length > 0) {
-						sourceUidToProjects.set(uid, projects);
-					}
-				}
-			}
+			// Build sourceUidToProjects map for project filtering (using helper)
+			const sourceUidToProjects = buildSourceUidToProjectsMap(
+				this.app,
+				this.projectFilters
+			);
 
 			// Build review queue with persistent stats, project filters, custom session filters, and display order settings
 			const queue = this.reviewService.buildQueue(
@@ -651,19 +643,9 @@ export class ReviewView extends ItemView {
 					console.log("[ReviewView] projectFilters:", this.projectFilters);
 					console.log("[ReviewView] sourceUidToProjects size:", sourceUidToProjects?.size ?? 0);
 					console.log("[ReviewView] activeCards count:", activeCards.length);
-					// Sample card projects for debugging
-					const sampleCards = activeCards.slice(0, 3);
-					for (const card of sampleCards) {
-						console.log("[ReviewView] Sample card:", {
-							id: card.id,
-							sourceUid: card.sourceUid,
-							sourceNoteName: card.sourceNoteName,
-							projects: card.projects,
-						});
-					}
 				}
 				this.renderEmptyState(
-					"Congratulations! No cards due for review."
+					getEmptyQueueMessage(this.stateFilter, this.projectFilters)
 				);
 				return;
 			}
@@ -687,44 +669,43 @@ export class ReviewView extends ItemView {
 	}
 
 	/**
-	 * Render the current state
+	 * Render the current state using state machine pattern
 	 * Uses selective re-rendering to avoid unnecessary DOM operations
 	 */
 	private render(): void {
-		const state = this.stateManager.getState();
+		const phase = this.stateManager.getPhase();
 
-		if (!state.isActive) {
-			if (state.stats.reviewed > 0) {
+		// Handle non-active phases with early return
+		switch (phase.type) {
+			case "idle":
+				this.lastRenderedCardId = null;
+				return;
+
+			case "complete":
+				this.stateManager.endSession();
 				this.renderSummary();
-			}
-			this.lastRenderedCardId = null;
-			return;
+				this.lastRenderedCardId = null;
+				return;
+
+			case "waiting":
+				this.renderWaitingScreen();
+				this.lastRenderedCardId = null;
+				return;
+
+			case "active":
+				// Continue to active card rendering below
+				break;
 		}
 
-		// Check if session is complete
-		if (this.stateManager.isComplete()) {
-			this.stateManager.endSession();
-			this.renderSummary();
-			this.lastRenderedCardId = null;
-			return;
-		}
-
-		// Check if waiting for learning cards (Anki-like behavior)
-		if (this.stateManager.isWaitingForLearningCards()) {
-			this.renderWaitingScreen();
-			this.lastRenderedCardId = null;
-			return;
-		}
-
-		// Clear waiting timer if we're showing a card
+		// Clear waiting timer when showing a card
 		this.clearWaitingTimer();
 
-		const currentCard = this.stateManager.getCurrentCard();
+		const currentCard = phase.card;
 		const answerRevealed = this.stateManager.isAnswerRevealed();
 		const editState = this.stateManager.getEditState();
 
 		// Determine what needs to be re-rendered
-		const cardChanged = currentCard?.id !== this.lastRenderedCardId;
+		const cardChanged = currentCard.id !== this.lastRenderedCardId;
 		const answerJustRevealed = answerRevealed && !this.lastRenderedAnswerRevealed;
 		const editStateChanged = editState.active !== this.lastRenderedEditState;
 
@@ -746,7 +727,7 @@ export class ReviewView extends ItemView {
 		this.renderButtons();
 
 		// Update tracking state
-		this.lastRenderedCardId = currentCard?.id ?? null;
+		this.lastRenderedCardId = currentCard.id;
 		this.lastRenderedAnswerRevealed = answerRevealed;
 		this.lastRenderedEditState = editState.active;
 	}
@@ -756,22 +737,34 @@ export class ReviewView extends ItemView {
 	 * Action buttons are now in the native Obsidian header via addAction()
 	 */
 	private renderHeader(): void {
-		this.headerEl.empty();
-
 		// Stats badges (centered) - O(1) access from StateManager
-		if (this.plugin.settings.showReviewHeaderStats) {
-			const remaining = this.stateManager.getBadgeCounts();
-			const statsContainer = this.headerEl.createDiv({
-				cls: "ep:flex ep:items-center ep:gap-1.5",
-			});
-			this.renderHeaderStatBadge(statsContainer, "new", remaining.new);
-			this.renderHeaderStatBadge(
-				statsContainer,
-				"learning",
-				remaining.learning
-			);
-			this.renderHeaderStatBadge(statsContainer, "due", remaining.due);
+		if (!this.plugin.settings.showReviewHeaderStats) {
+			this.headerEl.empty();
+			this.lastRenderedBadgeCounts = null;
+			return;
 		}
+
+		const counts = this.stateManager.getBadgeCounts();
+
+		// Skip re-render if counts haven't changed (memoization)
+		if (
+			this.lastRenderedBadgeCounts &&
+			this.lastRenderedBadgeCounts.new === counts.new &&
+			this.lastRenderedBadgeCounts.learning === counts.learning &&
+			this.lastRenderedBadgeCounts.due === counts.due
+		) {
+			return;
+		}
+
+		this.headerEl.empty();
+		this.lastRenderedBadgeCounts = { ...counts };
+
+		const statsContainer = this.headerEl.createDiv({
+			cls: "ep:flex ep:items-center ep:gap-1.5",
+		});
+		this.renderHeaderStatBadge(statsContainer, "new", counts.new);
+		this.renderHeaderStatBadge(statsContainer, "learning", counts.learning);
+		this.renderHeaderStatBadge(statsContainer, "due", counts.due);
 	}
 
 	/**
@@ -830,161 +823,43 @@ export class ReviewView extends ItemView {
 
 	/**
 	 * Render the current flashcard
-	 * Uses event delegation for click handlers and AbortController for cleanup
+	 * Delegates to extracted components for better separation of concerns
 	 */
 	private renderCard(): void {
-		// Cleanup previous event listeners
-		this.cardEventAbortController?.abort();
-		this.cardEventAbortController = new AbortController();
-		const signal = this.cardEventAbortController.signal;
-
-		this.cardContainerEl.empty();
-
 		const card = this.stateManager.getCurrentCard();
-		if (!card) return;
+		if (!card) {
+			this.cardContainerEl.empty();
+			return;
+		}
 
 		// Add source note to Copilot context (async, fire-and-forget)
 		void this.addSourceToCopilotContext(card);
 
 		const editState = this.stateManager.getEditState();
+		const isAnswerRevealed = this.stateManager.isAnswerRevealed();
 
-		const cardEl = this.cardContainerEl.createDiv({
-			cls: "ep:w-full ep:text-center",
-		});
+		// Render question and answer using CardContent component
+		this.cardContent.render(
+			this.cardContainerEl,
+			card,
+			editState,
+			isAnswerRevealed
+		);
 
-		// Use sourceNotePath for link resolution
-		const sourcePath = card.sourceNotePath || "";
-
-		// When editing question, hide answer. When editing answer, keep question visible.
-		const isEditingQuestion =
-			editState.active && editState.field === "question";
-		const isEditingAnswer =
-			editState.active && editState.field === "answer";
-
-		// Question (always visible)
-		const questionEl = cardEl.createDiv({
-			cls: "true-recall-review-question ep:text-xl ep:leading-relaxed ep:text-obs-normal ep:mb-6",
-			attr: { "data-field": "question", "data-source-path": sourcePath },
-		});
-		if (isEditingQuestion) {
-			// Edit mode - contenteditable
-			this.renderEditableField(questionEl, card.question, "question");
-		} else {
-			// View mode - markdown (convert legacy <br> to newlines)
-			void MarkdownRenderer.render(
-				this.app,
-				card.question.replace(ReviewView.BR_REGEX, "\n"),
-				questionEl,
-				sourcePath,
-				this
-			);
-			// Long press on mobile to edit (with AbortController cleanup)
-			if (Platform.isMobile) {
-				this.addLongPressListener(questionEl, () => this.startEdit("question"), signal);
-			}
-		}
-
-		// Answer (if revealed and not editing question)
-		if (this.stateManager.isAnswerRevealed() && !isEditingQuestion) {
-			// Separator between question and answer
-			cardEl.createDiv({
-				cls: "ep:border-t ep:border-obs-border ep:my-6",
-			});
-
-			const answerEl = cardEl.createDiv({
-				cls: "true-recall-review-answer ep:text-lg ep:leading-relaxed ep:text-obs-muted",
-				attr: { "data-field": "answer", "data-source-path": sourcePath },
-			});
-			if (isEditingAnswer) {
-				// Edit mode - contenteditable
-				this.renderEditableField(answerEl, card.answer, "answer");
-			} else {
-				// View mode - markdown (convert legacy <br> to newlines)
-				void MarkdownRenderer.render(
-					this.app,
-					card.answer.replace(ReviewView.BR_REGEX, "\n"),
-					answerEl,
-					sourcePath,
-					this
+		// Render backlink and projects only when answer revealed and not editing
+		if (isAnswerRevealed && !editState.active) {
+			// Get the card element created by CardContent
+			const cardEl = this.cardContainerEl.querySelector(".ep\\:w-full");
+			if (cardEl instanceof HTMLElement) {
+				this.cardBacklink.render(cardEl, card.sourceNoteName ?? null);
+				this.cardProjects.render(
+					cardEl,
+					card.id,
+					card.projects,
+					this.expandedProjects.has(card.id)
 				);
-				// Long press on mobile to edit (with AbortController cleanup)
-				if (Platform.isMobile) {
-					this.addLongPressListener(answerEl, () => this.startEdit("answer"), signal);
-				}
-			}
-
-			// Source note backlink (only in view mode)
-			if (card.sourceNoteName && !editState.active) {
-				const backlinkEl = cardEl.createDiv({
-					cls: "ep:mt-6 ep:text-center",
-				});
-
-				// Create clickable link to source note with data-action attribute
-				backlinkEl.createEl("span", {
-					text: card.sourceNoteName,
-					cls: "ep:text-obs-faint ep:text-ui-small ep:cursor-pointer ep:hover:text-obs-muted ep:hover:underline ep:transition-colors",
-					attr: { "data-action": "open-source" },
-				});
-			}
-
-			// Projects toggle (only in view mode, after source)
-			if (card.projects && card.projects.length > 0 && !editState.active) {
-				const projectsContainer = cardEl.createDiv({
-					cls: "ep:mt-6 ep:flex ep:flex-col ep:items-center",
-				});
-
-				const isExpanded = this.expandedProjects.has(card.id);
-
-				if (!isExpanded) {
-					// Show toggle link with data-action attribute
-					projectsContainer.createEl("span", {
-						text: `Show projects (${card.projects.length})`,
-						cls: "ep:text-ui-small ep:text-obs-muted ep:cursor-pointer ep:hover:text-obs-normal ep:hover:underline ep:transition-colors",
-						attr: { "data-action": "toggle-projects", "data-card-id": card.id },
-					});
-				} else {
-					// Show projects badges with data-action attributes
-					const projectsEl = projectsContainer.createDiv({
-						cls: "ep:flex ep:flex-wrap ep:justify-center ep:gap-1.5",
-					});
-
-					for (const project of card.projects) {
-						projectsEl.createEl("span", {
-							text: project,
-							cls: "ep:py-0.5 ep:px-2 ep:text-ui-smaller ep:border ep:border-obs-border ep:rounded-xl ep:bg-obs-primary ep:text-obs-muted ep:cursor-pointer ep:transition-all ep:hover:border-obs-interactive ep:hover:text-obs-normal",
-							attr: { "data-action": "open-project", "data-project": project },
-						});
-					}
-				}
 			}
 		}
-	}
-
-	/**
-	 * Add long press listener for mobile editing
-	 * Uses AbortSignal for automatic cleanup when card is re-rendered
-	 */
-	private addLongPressListener(
-		element: HTMLElement,
-		callback: () => void,
-		signal: AbortSignal,
-		duration = UI_CONFIG.longPressDuration
-	): void {
-		let timer: number | null = null;
-
-		element.addEventListener("touchstart", () => {
-			timer = window.setTimeout(() => {
-				callback();
-			}, duration);
-		}, { signal });
-
-		element.addEventListener("touchend", () => {
-			if (timer) clearTimeout(timer);
-		}, { signal });
-
-		element.addEventListener("touchmove", () => {
-			if (timer) clearTimeout(timer);
-		}, { signal });
 	}
 
 	/**
@@ -1041,77 +916,6 @@ export class ReviewView extends ItemView {
 		);
 		this.renderCard();
 		this.renderButtons(); // Hide buttons when entering edit mode (prevents keyboard overlap on mobile)
-	}
-
-	/**
-	 * Render an editable field (textarea + toolbar) using unified EditableTextField
-	 */
-	private renderEditableField(
-		container: HTMLElement,
-		content: string,
-		field: "question" | "answer"
-	): void {
-		// Use container directly as relative context
-		container.addClass("ep:relative");
-
-		// Create editable text field with unified toolbar
-		const editableField = createEditableTextField(container, {
-			initialValue: content,
-			field,
-			showToolbar: true,
-			toolbarButtons: TOOLBAR_BUTTONS.UNIFIED,
-			toolbarPositioned: true,
-			invisibleTextarea: true,
-			wrapperClass: "ep:w-full ep:relative",
-			autoFocus: true,
-			onSave: (value) => {
-				const textarea = editableField.getTextarea();
-				if (textarea) {
-					void this.saveEditFromTextarea(textarea, field);
-				}
-			},
-			onTab: () => {
-				// Switch between question and answer
-				const nextField = field === "question" ? "answer" : "question";
-				// Only switch to answer if it's revealed
-				if (nextField === "answer" && !this.stateManager.isAnswerRevealed()) {
-					return;
-				}
-				const textarea = editableField.getTextarea();
-				if (textarea) {
-					void (async () => {
-						await this.saveEditFromTextarea(textarea, field);
-						this.startEdit(nextField);
-					})();
-				}
-			},
-		});
-
-		// Add toolbar class for blur detection
-		const toolbar = editableField.getToolbar();
-		if (toolbar) {
-			toolbar.addClass("true-recall-edit-toolbar");
-		}
-
-		// Add paste handler for images
-		const textarea = editableField.getTextarea();
-		if (textarea) {
-			textarea.addEventListener("paste", (e) => {
-				const items = e.clipboardData?.items;
-				if (!items) return;
-
-				for (const item of Array.from(items)) {
-					if (item.type.startsWith("image/")) {
-						e.preventDefault();
-						const file = item.getAsFile();
-						if (file) {
-							void this.handleInlineImagePaste(file, textarea);
-						}
-						return;
-					}
-				}
-			});
-		}
 	}
 
 	/**
@@ -1207,14 +1011,33 @@ export class ReviewView extends ItemView {
 	 * Render answer buttons
 	 */
 	private renderButtons(): void {
-		this.buttonsEl.empty();
+		const isEditing = this.stateManager.getEditState().active;
+		const answerRevealed = this.stateManager.isAnswerRevealed();
+		const currentCardId = this.stateManager.getCurrentCard()?.id ?? null;
 
 		// Hide buttons when in edit mode (prevents keyboard from pushing buttons up on mobile)
-		if (this.stateManager.getEditState().active) {
+		if (isEditing) {
 			this.buttonsEl.style.display = "none";
 			return;
 		}
 		this.buttonsEl.style.display = "";
+
+		// Skip re-render if nothing relevant has changed
+		// Buttons need re-render when: card changes, answer revealed, or returning from edit mode
+		const cardChanged = currentCardId !== this.lastRenderedCardId;
+		const answerJustRevealed = answerRevealed && !this.lastRenderedAnswerRevealed;
+		const editEnded = !isEditing && this.lastRenderedEditState;
+
+		if (
+			this.buttonsEl.children.length > 0 &&
+			!cardChanged &&
+			!answerJustRevealed &&
+			!editEnded
+		) {
+			return;
+		}
+
+		this.buttonsEl.empty();
 
 		// Create wrapper for buttons layout
 		const buttonsWrapper = this.buttonsEl.createDiv({

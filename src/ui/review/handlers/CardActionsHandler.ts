@@ -44,7 +44,6 @@ export interface CardActionsHandlerDeps {
  */
 export interface CardActionsCallbacks {
 	onUpdateSchedulingPreview: () => void;
-	onRender: () => void;
 }
 
 /**
