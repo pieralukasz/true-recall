@@ -115,6 +115,7 @@ export class SimpleFlashcardEditorModal extends BaseModal {
 			{ key: "Ctrl+B", action: "bold" },
 			{ key: "Ctrl+I", action: "italic" },
 			{ key: "Ctrl+K", action: "[[link]]" },
+			{ key: "Ctrl+Shift+C", action: "```code```" },
 			{ key: "Ctrl+Enter", action: "save" },
 		];
 		for (const s of shortcuts) {
@@ -263,6 +264,13 @@ export class SimpleFlashcardEditorModal extends BaseModal {
 			if (isMod && e.key === "k") {
 				e.preventDefault();
 				this.wrapSelection("[[", "]]");
+				return;
+			}
+
+			// Ctrl+Shift+C - code block
+			if (isMod && e.shiftKey && e.key.toLowerCase() === "c") {
+				e.preventDefault();
+				this.wrapSelection("```\n", "\n```");
 				return;
 			}
 

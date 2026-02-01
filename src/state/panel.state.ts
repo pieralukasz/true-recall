@@ -32,7 +32,6 @@ function createInitialState(): PanelState {
         hasSelection: false,
         sourceNoteName: null,
         uncollectedCount: 0,
-        hasUncollectedFlashcards: false,
         selectionMode: "normal",
         selectedCardIds: new Set(),
         expandedCardIds: new Set(),
@@ -243,13 +242,19 @@ export class PanelStateManager {
     }
 
     /**
-     * Set uncollected flashcards info
+     * Set uncollected flashcards count
      */
     setUncollectedInfo(count: number): void {
         this.setState({
             uncollectedCount: count,
-            hasUncollectedFlashcards: count > 0,
         });
+    }
+
+    /**
+     * Check if there are uncollected flashcards (computed from count)
+     */
+    hasUncollectedFlashcards(): boolean {
+        return this.state.uncollectedCount > 0;
     }
 
     /**

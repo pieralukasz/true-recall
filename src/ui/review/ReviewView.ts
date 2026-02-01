@@ -28,6 +28,7 @@ import { ImageService } from "../../services/image";
 import { ReviewStateManager } from "../../state";
 import { extractFSRSSettings, type FSRSFlashcardItem } from "../../types";
 import type {
+	CardAddedEvent,
 	CardRemovedEvent,
 	CardUpdatedEvent,
 	BulkChangeEvent,
@@ -479,6 +480,32 @@ export class ReviewView extends ItemView {
 				if (idsToRemove.length > 0) {
 					this.stateManager.removeCardsByIds(idsToRemove);
 				}
+			})
+		);
+
+		// Handle new cards being added during review (e.g., from floating button)
+		this.subs.track(
+			eventBus.on<CardAddedEvent>("card:added", (event) => {
+				if (!this.stateManager.isActive()) return;
+
+				// Fetch the new card data
+				const cards = this.flashcardManager.getCardsByIds([event.cardId]);
+				const newCard = cards[0];
+				if (!newCard) return;
+
+				// Check if card matches current session filters
+				if (this.sourceNoteFilter && newCard.sourceNoteName !== this.sourceNoteFilter) {
+					return;
+				}
+				if (this.sourceNoteFilters && this.sourceNoteFilters.length > 0) {
+					if (!this.sourceNoteFilters.includes(newCard.sourceNoteName ?? "")) {
+						return;
+					}
+				}
+
+				// Add card to queue and update UI
+				this.stateManager.addCardToQueue(newCard);
+				this.renderHeader();
 			})
 		);
 	}

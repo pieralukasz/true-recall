@@ -236,12 +236,13 @@ export class ProjectsContent extends BaseComponent {
 			cls: hasCards ? "ep:text-obs-muted" : "ep:text-obs-faint",
 		});
 
-		// Anki-style card counts (New · Learning · Due)
+		// Anki-style card counts (New · Learning · Due) with total
 		if (hasCards) {
 			createCardCountDisplay(statsEl, {
 				newCount: project.newCount,
 				learningCount: project.learningCount,
 				dueCount: project.dueCount,
+				totalCount: project.cardCount,
 				variant: "full",
 				size: "smaller",
 				bold: true,
@@ -416,12 +417,13 @@ export class ProjectsContent extends BaseComponent {
 			cls: hasCards ? "ep:text-obs-muted" : "ep:text-obs-faint",
 		});
 
-		// Anki-style card counts (New · Learning · Due)
+		// Anki-style card counts (New · Learning · Due) with total
 		if (hasCards) {
 			createCardCountDisplay(statsEl, {
 				newCount: totalNew,
 				learningCount: totalLearning,
 				dueCount: totalDue,
+				totalCount: totalCards,
 				variant: "full",
 				size: "smaller",
 				bold: true,

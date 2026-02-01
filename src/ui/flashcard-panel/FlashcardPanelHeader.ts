@@ -106,13 +106,14 @@ export class FlashcardPanelHeader extends BaseComponent {
             text: "Cards",
         });
 
-        // Anki-style counts (New · Learning · Due)
+        // Anki-style counts (New · Learning · Due) with total
         if (this.props.cardsWithFsrs && this.props.cardsWithFsrs.length > 0) {
             const counts = this.countByState(this.props.cardsWithFsrs);
             createCardCountDisplay(leftSide, {
                 newCount: counts.new,
                 learningCount: counts.learning,
                 dueCount: counts.review,
+                totalCount: this.props.cardsWithFsrs.length,
                 variant: "full",
                 size: "smaller",
                 bold: false,

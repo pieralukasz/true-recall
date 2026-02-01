@@ -8,6 +8,8 @@ export interface CardCountDisplayProps {
 	newCount: number;
 	learningCount: number;
 	dueCount: number;
+	/** Optional total card count to display as (N) */
+	totalCount?: number;
 	/** "full" = New · Learning · Due, "compact" = New · Due only */
 	variant?: "full" | "compact";
 	/** Text size class */
@@ -74,6 +76,14 @@ export class CardCountDisplay extends BaseComponent {
 			text: String(dueCount),
 			cls: "ep:text-green-500",
 		});
+
+		// Total count (optional)
+		if (this.props.totalCount !== undefined) {
+			this.element.createSpan({
+				text: ` (${this.props.totalCount})`,
+				cls: "ep:text-obs-faint",
+			});
+		}
 	}
 
 	updateProps(props: Partial<CardCountDisplayProps>): void {
