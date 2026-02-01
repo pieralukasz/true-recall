@@ -26,7 +26,7 @@ import type { FSRSFlashcardItem } from "../../types/fsrs/card.types";
 import { SimpleFlashcardEditorModal, flashcardToMarkdown } from "../modals/SimpleFlashcardEditorModal";
 import type { FlashcardItem } from "../../types";
 import type { CardAddedEvent, CardRemovedEvent, CardUpdatedEvent, CardReviewedEvent, BulkChangeEvent, ReviewCardChangedEvent, SettingsChangedEvent } from "../../types/events.types";
-import { State } from "ts-fsrs";
+import { countCardsByState } from "../shared/helpers";
 import type TrueRecallPlugin from "../../main";
 
 /**
@@ -1423,7 +1423,7 @@ export class FlashcardPanelView extends ItemView {
         if (!this.mobileStatusEl) return;
 
         const cards = this.getCardsWithFsrs();
-        const counts = this.countByState(cards);
+        const counts = countCardsByState(cards);
 
         this.mobileStatusEl.empty();
 
@@ -1444,34 +1444,6 @@ export class FlashcardPanelView extends ItemView {
         // Review count (green)
         const reviewEl = this.mobileStatusEl.createSpan({ cls: "ep:text-green-500" });
         reviewEl.textContent = String(counts.review);
-    }
-
-    /**
-     * Count cards by FSRS state (excludes buried/suspended cards)
-     */
-    private countByState(cards: FSRSFlashcardItem[]): { new: number; learning: number; review: number } {
-        const counts = { new: 0, learning: 0, review: 0 };
-        const now = new Date();
-
-        for (const card of cards) {
-            // Skip buried/suspended cards
-            if (card.fsrs.suspended) continue;
-            if (card.fsrs.buriedUntil && new Date(card.fsrs.buriedUntil) > now) continue;
-
-            switch (card.fsrs.state) {
-                case State.New:
-                    counts.new++;
-                    break;
-                case State.Learning:
-                case State.Relearning:
-                    counts.learning++;
-                    break;
-                case State.Review:
-                    counts.review++;
-                    break;
-            }
-        }
-        return counts;
     }
 
 }

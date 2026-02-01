@@ -14,6 +14,7 @@ import { Panel } from "../components/Panel";
 import { ProjectsContent } from "./ProjectsContent";
 import { SelectionFooter } from "../components";
 import { SelectNoteModal, AddToProjectModal } from "../modals";
+import { filterActiveCardsOnly } from "../shared/helpers";
 import type TrueRecallPlugin from "../../main";
 import type { ProjectNoteInfo } from "../../types";
 import type { CardReviewedEvent, BulkChangeEvent } from "../../types/events.types";
@@ -195,14 +196,7 @@ export class ProjectsView extends ItemView {
 				this.plugin.dayBoundaryService.getTomorrowBoundary(now);
 
 			// Filter out suspended and buried cards (consistent with ReviewView)
-			const activeCards = allCards.filter((card) => {
-				if (card.suspended) return false;
-				if (card.buriedUntil) {
-					const buriedUntil = new Date(card.buriedUntil);
-					if (buriedUntil > now) return false;
-				}
-				return true;
-			});
+			const activeCards = filterActiveCardsOnly(allCards, { now });
 
 			for (const card of activeCards) {
 				if (!card.sourceUid) continue;
@@ -412,14 +406,7 @@ export class ProjectsView extends ItemView {
 		}
 
 		// Filter active cards
-		const activeCards = allCards.filter((card) => {
-			if (card.suspended) return false;
-			if (card.buriedUntil) {
-				const buriedUntil = new Date(card.buriedUntil);
-				if (buriedUntil > now) return false;
-			}
-			return true;
-		});
+		const activeCards = filterActiveCardsOnly(allCards, { now });
 
 		// Recalculate counts per project and per note
 		const projectCardCounts = new Map<string, number>();
