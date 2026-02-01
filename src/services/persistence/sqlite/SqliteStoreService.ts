@@ -365,4 +365,51 @@ export class SqliteStoreService {
     getBrowserQueries() {
         return this.browser;
     }
+
+    // ===== FSRS Helper Operations =====
+
+    /**
+     * Alias for getAll() - used by FSRS Helper services
+     */
+    getCards(): FSRSCardData[] {
+        return this.cards.getAll();
+    }
+
+    /**
+     * Get cards due within a date range
+     */
+    getDueCardsByDateRange(startDate: string, endDate: string): FSRSCardData[] {
+        return this.cards.getDueCardsByDateRange(startDate, endDate);
+    }
+
+    /**
+     * Update card due date
+     */
+    async updateCardDue(cardId: string, newDue: string): Promise<void> {
+        this.cards.updateCardDue(cardId, newDue);
+    }
+
+    /**
+     * Update card scheduling data
+     */
+    async updateCardScheduling(
+        cardId: string,
+        data: { due: string; scheduledDays: number }
+    ): Promise<void> {
+        this.cards.updateCardScheduling(cardId, data);
+    }
+
+    /**
+     * Get review data for FSRS parameter optimization
+     */
+    getReviewDataForOptimization() {
+        return this.stats.getReviewDataForOptimization();
+    }
+
+    /**
+     * Get review data for retention calculation
+     */
+    getReviewsForRetention(startDate: string, endDate: string) {
+        return this.stats.getReviewsForRetention(startDate, endDate);
+    }
 }

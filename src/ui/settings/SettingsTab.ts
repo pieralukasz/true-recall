@@ -11,7 +11,7 @@ import {
 	FSRS_CONFIG,
 	SYSTEM_PROMPT,
 } from "../../constants";
-import { TemplatePickerModal, DeviceSelectionModal, FirstSyncConflictModal } from "../modals";
+import { TemplatePickerModal, DeviceSelectionModal, FirstSyncConflictModal, EasyDaysModal } from "../modals";
 // HIDDEN: Copilot integration waiting for public API
 // import { CopilotIntegrationService } from "../../services/integration/copilot-integration.service";
 import type { AIModelKey, AIModelInfo } from "../../constants";
@@ -27,7 +27,7 @@ import type {
 export { DEFAULT_SETTINGS };
 export type { TrueRecallSettings };
 
-type SettingsTabId = "general" | "ai" | "scheduling" | "data" | "sync";
+type SettingsTabId = "general" | "ai" | "scheduling" | "fsrs" | "data" | "sync";
 
 /**
  * Settings tab for True Recall plugin
@@ -54,6 +54,7 @@ export class TrueRecallSettingTab extends PluginSettingTab {
 			{ id: "general", label: "General" },
 			{ id: "ai", label: "AI" },
 			{ id: "scheduling", label: "Scheduling" },
+			{ id: "fsrs", label: "FSRS" },
 			{ id: "data", label: "Data & Backup" },
 			{ id: "sync", label: "Cloud Sync" },
 		];
@@ -90,6 +91,7 @@ export class TrueRecallSettingTab extends PluginSettingTab {
 		this.renderGeneralTab(tabContents.get("general")!);
 		this.renderAITab(tabContents.get("ai")!);
 		this.renderSchedulingTab(tabContents.get("scheduling")!);
+		this.renderFSRSTab(tabContents.get("fsrs")!);
 		this.renderDataTab(tabContents.get("data")!);
 		this.renderSyncTab(tabContents.get("sync")!);
 	}
@@ -449,46 +451,6 @@ export class TrueRecallSettingTab extends PluginSettingTab {
 	}
 
 	private renderSchedulingTab(container: HTMLElement): void {
-		// ===== FSRS Algorithm Section =====
-		container.createEl("h2", { text: "FSRS Algorithm" });
-
-		new Setting(container)
-			.setName("Desired retention")
-			.setDesc(
-				`Target probability of recall (${FSRS_CONFIG.minRetention}-${FSRS_CONFIG.maxRetention}). Default: 0.9 (90%)`
-			)
-			.addSlider((slider) =>
-				slider
-					.setLimits(
-						FSRS_CONFIG.minRetention,
-						FSRS_CONFIG.maxRetention,
-						0.01
-					)
-					.setValue(this.plugin.settings.fsrsRequestRetention)
-					.setDynamicTooltip()
-					.onChange(async (value) => {
-						this.plugin.settings.fsrsRequestRetention = value;
-						await this.plugin.saveSettings();
-					})
-			);
-
-		new Setting(container)
-			.setName("Maximum interval (days)")
-			.setDesc("Maximum days between reviews. Default: 36500 (100 years)")
-			.addText((text) =>
-				text
-					.setPlaceholder("36500")
-					.setValue(String(this.plugin.settings.fsrsMaximumInterval))
-					.onChange(async (value) => {
-						const num = parseInt(value) || 36500;
-						this.plugin.settings.fsrsMaximumInterval = Math.max(
-							1,
-							num
-						);
-						await this.plugin.saveSettings();
-					})
-			);
-
 		// ===== Learning Steps Section =====
 		container.createEl("h2", { text: "Learning Steps" });
 
@@ -589,6 +551,7 @@ export class TrueRecallSettingTab extends PluginSettingTab {
 				dropdown.addOption("due-date", "By due date");
 				dropdown.addOption("random", "Random");
 				dropdown.addOption("due-date-random", "Due date, then random");
+				dropdown.addOption("by-retrievability", "By retrievability (lowest R first)");
 				dropdown.setValue(this.plugin.settings.reviewOrder);
 				dropdown.onChange(async (value) => {
 					this.plugin.settings.reviewOrder = value as ReviewOrder;
@@ -612,34 +575,102 @@ export class TrueRecallSettingTab extends PluginSettingTab {
 					await this.plugin.saveSettings();
 				});
 			});
+	}
+
+	private renderFSRSTab(container: HTMLElement): void {
+		// ===== FSRS Algorithm Section =====
+		container.createEl("h2", { text: "FSRS Algorithm" });
+
+		new Setting(container)
+			.setName("Desired retention")
+			.setDesc(
+				`Target probability of recall (${FSRS_CONFIG.minRetention}-${FSRS_CONFIG.maxRetention}). Default: 0.9 (90%)`
+			)
+			.addSlider((slider) =>
+				slider
+					.setLimits(
+						FSRS_CONFIG.minRetention,
+						FSRS_CONFIG.maxRetention,
+						0.01
+					)
+					.setValue(this.plugin.settings.fsrsRequestRetention)
+					.setDynamicTooltip()
+					.onChange(async (value) => {
+						this.plugin.settings.fsrsRequestRetention = value;
+						await this.plugin.saveSettings();
+					})
+			);
+
+		new Setting(container)
+			.setName("Maximum interval (days)")
+			.setDesc("Maximum days between reviews. Default: 36500 (100 years)")
+			.addText((text) =>
+				text
+					.setPlaceholder("36500")
+					.setValue(String(this.plugin.settings.fsrsMaximumInterval))
+					.onChange(async (value) => {
+						const num = parseInt(value) || 36500;
+						this.plugin.settings.fsrsMaximumInterval = Math.max(
+							1,
+							num
+						);
+						await this.plugin.saveSettings();
+					})
+			);
 
 		// ===== FSRS Parameters Section =====
 		container.createEl("h2", { text: "FSRS Parameters" });
 
-		const infoEl = container.createDiv({ cls: "setting-item-description" });
-		infoEl.innerHTML = `
-            <p>FSRS parameters affect how cards are scheduled. The plugin starts with default parameters optimized for most users.</p>
-            <p>You can optimize parameters based on your review history to get the best results for your memory and content.</p>
-            <p><strong>Minimum ${FSRS_CONFIG.minReviewsForOptimization} reviews required.</strong> Recommended: ${FSRS_CONFIG.recommendedReviewsForOptimization}+ reviews.</p>
-        `;
-
+		const totalReviews = this.plugin.cardStore?.stats.getTotalReviewCount() ?? 0;
 		const lastOpt = this.plugin.settings.lastOptimization;
+		const lastOptCount = this.plugin.settings.lastOptimizationReviewCount;
+
+		const optimizerInfo = container.createDiv({ cls: "setting-item-description" });
+		optimizerInfo.innerHTML = `
+			<p>FSRS parameters affect how cards are scheduled. You can optimize them based on your review history.</p>
+			<p><strong>Current reviews:</strong> ${totalReviews.toLocaleString()} ${totalReviews < FSRS_CONFIG.minReviewsForOptimization ? `(need ${FSRS_CONFIG.minReviewsForOptimization}+ for optimization)` : "(ready for optimization)"}</p>
+			${lastOpt ? `<p><strong>Last optimized:</strong> ${new Date(lastOpt).toLocaleDateString()} (${lastOptCount?.toLocaleString() ?? "unknown"} reviews used)</p>` : ""}
+		`;
+
 		new Setting(container)
-			.setName("Last optimization")
-			.setDesc(lastOpt ? new Date(lastOpt).toLocaleDateString() : "Never")
+			.setName("Optimize parameters")
+			.setDesc("Analyze your review history to find optimal FSRS weights")
 			.addButton((button) =>
 				button
-					.setButtonText("Optimize Parameters")
-					.setDisabled(true)
+					.setButtonText("Optimize Now")
+					.setDisabled(totalReviews < FSRS_CONFIG.minReviewsForOptimization)
 					.onClick(async () => {
-						// TODO: Implement optimization
+						button.setButtonText("Optimizing...");
+						button.setDisabled(true);
+						try {
+							const result = await this.plugin.fsrsHelper?.optimizeParameters();
+							if (result && result.metrics.convergenceStatus !== "insufficient_data") {
+								this.plugin.settings.fsrsWeights = result.weights;
+								this.plugin.settings.lastOptimization = new Date().toISOString();
+								this.plugin.settings.lastOptimizationReviewCount = result.metrics.reviewCount;
+								this.plugin.settings.lastOptimizationMetrics = result.metrics;
+								await this.plugin.saveSettings();
+								notify().success(`Optimization complete! RMSE: ${result.metrics.rmse.toFixed(4)}`);
+								this.display();
+							} else {
+								notify().error("Optimization failed: insufficient data");
+							}
+						} catch (err) {
+							notify().error(`Optimization failed: ${err}`);
+						} finally {
+							button.setButtonText("Optimize Now");
+							button.setDisabled(totalReviews < FSRS_CONFIG.minReviewsForOptimization);
+						}
 					})
 			)
 			.addButton((button) =>
 				button.setButtonText("Reset to Defaults").onClick(async () => {
 					this.plugin.settings.fsrsWeights = null;
 					this.plugin.settings.lastOptimization = null;
+					this.plugin.settings.lastOptimizationReviewCount = null;
+					this.plugin.settings.lastOptimizationMetrics = null;
 					await this.plugin.saveSettings();
+					notify().success("Parameters reset to defaults");
 					this.display();
 				})
 			);
@@ -693,6 +724,406 @@ export class TrueRecallSettingTab extends PluginSettingTab {
 						notify().success("FSRS weights saved!");
 					});
 			});
+
+		// ===== Easy Days Section =====
+		container.createEl("h2", { text: "Easy Days" });
+
+		const easyDaysInfo = container.createDiv({ cls: "setting-item-description" });
+		easyDaysInfo.innerHTML = `
+			<p>Reduce your review workload on specific days (recurring weekdays or specific dates). Cards due on easy days will be moved to adjacent days.</p>
+		`;
+
+		// Summary of current easy days
+		const easyDays = this.plugin.settings.easyDays;
+		const dayNames = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+		const recurringDaysText = easyDays.recurringDays.length > 0
+			? easyDays.recurringDays.map((d) => dayNames[d]).join(", ")
+			: "None";
+		const specificDatesCount = easyDays.specificDates.length;
+
+		new Setting(container)
+			.setName("Easy days")
+			.setDesc(`Recurring: ${recurringDaysText} | Specific dates: ${specificDatesCount} | Workload: ${Math.round(this.plugin.settings.easyDaysMultiplier * 100)}%`)
+			.addButton((button) =>
+				button.setButtonText("Configure...").onClick(async () => {
+					const modal = new EasyDaysModal(this.app, {
+						easyDays: this.plugin.settings.easyDays,
+						multiplier: this.plugin.settings.easyDaysMultiplier,
+					});
+					const result = await modal.openAndWait();
+
+					if (!result.cancelled && result.easyDays) {
+						this.plugin.settings.easyDays = result.easyDays;
+						if (result.multiplier !== undefined) {
+							this.plugin.settings.easyDaysMultiplier = result.multiplier;
+						}
+						await this.plugin.saveSettings();
+
+						if (result.applyNow) {
+							const applyResult = await this.plugin.fsrsHelper?.applyEasyDays({ dryRun: false });
+							if (applyResult && applyResult.affectedCount > 0) {
+								this.plugin.undoService?.push({
+									id: crypto.randomUUID(),
+									actionType: "fsrs-helper-operation",
+									description: `Apply easy days (${applyResult.affectedCount} cards)`,
+									timestamp: Date.now(),
+									payload: {
+										type: "fsrs-helper-operation",
+										operation: "apply-easy-days",
+										changes: applyResult.changes.map((c) => ({
+											cardId: c.cardId,
+											originalDue: c.originalDue,
+											newDue: c.newDue,
+										})),
+									},
+								});
+								notify().success(`Applied easy days: ${applyResult.affectedCount} cards moved (Ctrl+Z to undo)`);
+							} else if (applyResult) {
+								notify().info("No cards needed to be moved");
+							}
+						}
+
+						this.display();
+					}
+				})
+			)
+			.addButton((button) =>
+				button.setButtonText("Apply Now").onClick(async () => {
+					const applyResult = await this.plugin.fsrsHelper?.applyEasyDays({ dryRun: false });
+					if (applyResult && applyResult.affectedCount > 0) {
+						this.plugin.undoService?.push({
+							id: crypto.randomUUID(),
+							actionType: "fsrs-helper-operation",
+							description: `Apply easy days (${applyResult.affectedCount} cards)`,
+							timestamp: Date.now(),
+							payload: {
+								type: "fsrs-helper-operation",
+								operation: "apply-easy-days",
+								changes: applyResult.changes.map((c) => ({
+									cardId: c.cardId,
+									originalDue: c.originalDue,
+									newDue: c.newDue,
+								})),
+							},
+						});
+						notify().success(`Applied easy days: ${applyResult.affectedCount} cards moved (Ctrl+Z to undo)`);
+					} else if (applyResult) {
+						notify().info("No cards needed to be moved");
+					}
+				})
+			);
+
+		// ===== Load Balance Section =====
+		container.createEl("h2", { text: "Load Balance" });
+
+		new Setting(container)
+			.setName("Enable load balancing")
+			.setDesc("Automatically distribute reviews to prevent workload spikes")
+			.addToggle((toggle) =>
+				toggle
+					.setValue(this.plugin.settings.loadBalanceEnabled)
+					.onChange(async (value) => {
+						this.plugin.settings.loadBalanceEnabled = value;
+						await this.plugin.saveSettings();
+					})
+			);
+
+		new Setting(container)
+			.setName("Target daily reviews")
+			.setDesc("Target number of reviews per day for balancing")
+			.addText((text) =>
+				text
+					.setPlaceholder("100")
+					.setValue(String(this.plugin.settings.loadBalanceTarget))
+					.onChange(async (value) => {
+						const num = parseInt(value) || 100;
+						this.plugin.settings.loadBalanceTarget = Math.max(1, num);
+						await this.plugin.saveSettings();
+					})
+			);
+
+		new Setting(container)
+			.setName("Maximum deviation (%)")
+			.setDesc("Allow this much deviation from target before rebalancing")
+			.addSlider((slider) =>
+				slider
+					.setLimits(0, 50, 5)
+					.setValue(this.plugin.settings.loadBalanceMaxDeviation)
+					.setDynamicTooltip()
+					.onChange(async (value) => {
+						this.plugin.settings.loadBalanceMaxDeviation = value;
+						await this.plugin.saveSettings();
+					})
+			);
+
+		new Setting(container)
+			.setName("Balance workload now")
+			.setDesc("Redistribute reviews for the next 30 days")
+			.addButton((button) =>
+				button.setButtonText("Balance Now").onClick(async () => {
+					button.setButtonText("Balancing...");
+					button.setDisabled(true);
+					try {
+						const result = await this.plugin.fsrsHelper?.balanceWorkload({ dryRun: false });
+						if (result && result.affectedCount > 0) {
+							this.plugin.undoService?.push({
+								id: crypto.randomUUID(),
+								actionType: "fsrs-helper-operation",
+								description: `Balance workload (${result.affectedCount} cards)`,
+								timestamp: Date.now(),
+								payload: {
+									type: "fsrs-helper-operation",
+									operation: "balance-workload",
+									changes: result.changes.map((c) => ({
+										cardId: c.cardId,
+										originalDue: c.originalDue,
+										newDue: c.newDue,
+									})),
+								},
+							});
+							notify().success(`Balanced ${result.affectedCount} cards (Ctrl+Z to undo)`);
+						} else if (result) {
+							notify().info("No cards needed balancing");
+						}
+					} catch (err) {
+						notify().error(`Balance failed: ${err}`);
+					} finally {
+						button.setButtonText("Balance Now");
+						button.setDisabled(false);
+					}
+				})
+			);
+
+		// ===== Sibling Dispersal Section =====
+		container.createEl("h2", { text: "Sibling Dispersal" });
+
+		const siblingInfo = container.createDiv({ cls: "setting-item-description" });
+		siblingInfo.innerHTML = `
+			<p>Cards from the same source note are "siblings". Spreading them apart helps avoid interference during review.</p>
+		`;
+
+		new Setting(container)
+			.setName("Enable sibling dispersal")
+			.setDesc("Automatically space out cards from the same note")
+			.addToggle((toggle) =>
+				toggle
+					.setValue(this.plugin.settings.siblingDisperseEnabled)
+					.onChange(async (value) => {
+						this.plugin.settings.siblingDisperseEnabled = value;
+						await this.plugin.saveSettings();
+					})
+			);
+
+		new Setting(container)
+			.setName("Minimum sibling interval")
+			.setDesc("Minimum days between siblings from the same source")
+			.addText((text) =>
+				text
+					.setPlaceholder("3")
+					.setValue(String(this.plugin.settings.siblingMinInterval))
+					.onChange(async (value) => {
+						const num = parseInt(value) || 3;
+						this.plugin.settings.siblingMinInterval = Math.max(1, num);
+						await this.plugin.saveSettings();
+					})
+			);
+
+		new Setting(container)
+			.setName("Disperse siblings now")
+			.setDesc("Spread out siblings that are currently too close")
+			.addButton((button) =>
+				button.setButtonText("Disperse Now").onClick(async () => {
+					button.setButtonText("Dispersing...");
+					button.setDisabled(true);
+					try {
+						const result = await this.plugin.fsrsHelper?.disperseSiblings({ dryRun: false });
+						if (result && result.affectedCount > 0) {
+							this.plugin.undoService?.push({
+								id: crypto.randomUUID(),
+								actionType: "fsrs-helper-operation",
+								description: `Disperse siblings (${result.affectedCount} cards)`,
+								timestamp: Date.now(),
+								payload: {
+									type: "fsrs-helper-operation",
+									operation: "disperse-siblings",
+									changes: result.changes.map((c) => ({
+										cardId: c.cardId,
+										originalDue: c.originalDue,
+										newDue: c.newDue,
+									})),
+								},
+							});
+							notify().success(`Dispersed ${result.affectedCount} cards (Ctrl+Z to undo)`);
+						} else if (result) {
+							notify().info("No siblings needed dispersing");
+						}
+					} catch (err) {
+						notify().error(`Disperse failed: ${err}`);
+					} finally {
+						button.setButtonText("Disperse Now");
+						button.setDisabled(false);
+					}
+				})
+			);
+
+		// ===== Scheduled Breaks Section =====
+		container.createEl("h2", { text: "Scheduled Breaks" });
+
+		const breaksInfo = container.createDiv({ cls: "setting-item-description" });
+		breaksInfo.innerHTML = `
+			<p>Schedule breaks (vacations) to redistribute reviews and prevent backlog accumulation.</p>
+		`;
+
+		const breaks = this.plugin.settings.scheduledBreaks;
+		if (breaks.length > 0) {
+			const breaksList = container.createDiv({ cls: "ep:space-y-2 ep:mb-4" });
+			breaks.forEach((brk, index) => {
+				const breakItem = breaksList.createDiv({
+					cls: "ep:flex ep:items-center ep:justify-between ep:p-2 ep:bg-obs-background-modifier-form ep:rounded",
+				});
+				breakItem.createSpan({
+					text: `${brk.startDate} to ${brk.endDate}`,
+				});
+				const deleteBtn = breakItem.createEl("button", {
+					text: "Delete",
+					cls: "ep:text-ui-small",
+				});
+				deleteBtn.addEventListener("click", async () => {
+					this.plugin.settings.scheduledBreaks = breaks.filter((_, i) => i !== index);
+					await this.plugin.saveSettings();
+					this.display();
+				});
+			});
+		}
+
+		new Setting(container)
+			.setName("Add scheduled break")
+			.setDesc("Schedule a break period")
+			.addButton((button) =>
+				button.setButtonText("Add Break...").onClick(() => {
+					// Simple prompt for now - could be a modal
+					const startDate = prompt("Start date (YYYY-MM-DD):");
+					const endDate = prompt("End date (YYYY-MM-DD):");
+					if (startDate && endDate) {
+						const newBreak = {
+							id: crypto.randomUUID(),
+							startDate,
+							endDate,
+							redistributeBefore: true,
+							redistributeAfter: true,
+						};
+						this.plugin.settings.scheduledBreaks = [
+							...this.plugin.settings.scheduledBreaks,
+							newBreak,
+						];
+						this.plugin.saveSettings();
+						this.display();
+					}
+				})
+			);
+
+		// ===== Bulk Operations Section =====
+		container.createEl("h2", { text: "Bulk Operations" });
+
+		new Setting(container)
+			.setName("Reschedule all cards")
+			.setDesc("Recalculate all intervals with current FSRS weights (preview first)")
+			.addButton((button) =>
+				button.setButtonText("Preview Reschedule").onClick(async () => {
+					button.setButtonText("Calculating...");
+					button.setDisabled(true);
+					try {
+						const previewResult = await this.plugin.fsrsHelper?.rescheduleCards({
+							scope: "all",
+							dryRun: true,
+						});
+						if (previewResult && previewResult.affectedCount > 0) {
+							const confirmed = window.confirm(
+								`This will reschedule ${previewResult.affectedCount} cards. Proceed?`
+							);
+							if (confirmed) {
+								const result = await this.plugin.fsrsHelper?.rescheduleCards({
+									scope: "all",
+									dryRun: false,
+								});
+								if (result && result.affectedCount > 0) {
+									this.plugin.undoService?.push({
+										id: crypto.randomUUID(),
+										actionType: "fsrs-helper-operation",
+										description: `Reschedule cards (${result.affectedCount} cards)`,
+										timestamp: Date.now(),
+										payload: {
+											type: "fsrs-helper-operation",
+											operation: "reschedule-cards",
+											changes: result.changes.map((c) => ({
+												cardId: c.cardId,
+												originalDue: c.originalDue,
+												newDue: c.newDue,
+											})),
+										},
+									});
+									notify().success(`Rescheduled ${result.affectedCount} cards (Ctrl+Z to undo)`);
+								}
+							}
+						} else if (previewResult) {
+							notify().info("No cards to reschedule");
+						}
+					} catch (err) {
+						notify().error(`Reschedule failed: ${err}`);
+					} finally {
+						button.setButtonText("Preview Reschedule");
+						button.setDisabled(false);
+					}
+				})
+			);
+
+		new Setting(container)
+			.setName("Postpone all due cards")
+			.setDesc("Push all due cards forward by N days")
+			.addText((text) =>
+				text.setPlaceholder("7").onChange(() => {})
+			)
+			.addButton((button) =>
+				button.setButtonText("Postpone").onClick(async () => {
+					const daysInput = button.buttonEl.parentElement?.querySelector("input");
+					const days = parseInt(daysInput?.value || "7") || 7;
+					button.setButtonText("Postponing...");
+					button.setDisabled(true);
+					try {
+						const result = await this.plugin.fsrsHelper?.shiftDueDates({
+							action: "postpone",
+							days,
+							scope: "due_today",
+							dryRun: false,
+						});
+						if (result && result.affectedCount > 0) {
+							this.plugin.undoService?.push({
+								id: crypto.randomUUID(),
+								actionType: "fsrs-helper-operation",
+								description: `Postpone ${result.affectedCount} cards by ${days} days`,
+								timestamp: Date.now(),
+								payload: {
+									type: "fsrs-helper-operation",
+									operation: "shift-due-dates",
+									changes: result.changes.map((c) => ({
+										cardId: c.cardId,
+										originalDue: c.originalDue,
+										newDue: c.newDue,
+									})),
+								},
+							});
+							notify().success(`Postponed ${result.affectedCount} cards by ${days} days (Ctrl+Z to undo)`);
+						} else if (result) {
+							notify().info("No cards to postpone");
+						}
+					} catch (err) {
+						notify().error(`Postpone failed: ${err}`);
+					} finally {
+						button.setButtonText("Postpone");
+						button.setDisabled(false);
+					}
+				})
+			);
 	}
 
 	private renderDataTab(container: HTMLElement): void {

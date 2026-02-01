@@ -26,6 +26,9 @@ export type {
     NewCardOrder,
     ReviewOrder,
     NewReviewMix,
+    OptimizationMetrics,
+    ScheduledBreak,
+    EasyDaysConfig,
 } from "./settings.types";
 export { extractFSRSSettings } from "./settings.types";
 

@@ -5,6 +5,48 @@
 import type { AIModelKey } from "../constants";
 import type { ReviewViewMode } from "./fsrs";
 
+// ===== FSRS Helper Types =====
+
+/**
+ * Optimization result metrics from FSRS parameter optimization
+ */
+export interface OptimizationMetrics {
+	/** Root mean square error of the optimization */
+	rmse: number;
+	/** Log loss of the optimization */
+	logLoss: number;
+	/** Number of reviews used in optimization */
+	reviewCount: number;
+	/** Optimization convergence status */
+	convergenceStatus: "converged" | "max_iterations" | "insufficient_data";
+}
+
+/**
+ * Scheduled break period for vacation/time off
+ */
+export interface ScheduledBreak {
+	/** Unique identifier for the break */
+	id: string;
+	/** Start date (ISO date string YYYY-MM-DD) */
+	startDate: string;
+	/** End date (ISO date string YYYY-MM-DD) */
+	endDate: string;
+	/** Redistribute reviews before the break */
+	redistributeBefore: boolean;
+	/** Redistribute reviews after the break */
+	redistributeAfter: boolean;
+}
+
+/**
+ * Easy Days configuration for reduced workload
+ */
+export interface EasyDaysConfig {
+	/** Recurring days of week with reduced load (0=Sun, 1=Mon, ..., 6=Sat) */
+	recurringDays: number[];
+	/** Specific dates with reduced load (ISO date strings YYYY-MM-DD) */
+	specificDates: string[];
+}
+
 /**
  * Display order for new cards
  */
@@ -13,7 +55,7 @@ export type NewCardOrder = "random" | "oldest-first" | "newest-first";
 /**
  * Display order for review cards
  */
-export type ReviewOrder = "due-date" | "random" | "due-date-random";
+export type ReviewOrder = "due-date" | "random" | "due-date-random" | "by-retrievability";
 
 /**
  * How to mix new cards with reviews
@@ -121,6 +163,36 @@ export interface TrueRecallSettings {
     // ===== Review Font Size =====
     /** Review card font size scale (0.5-2.0, default 1.0 = 100%) */
     reviewFontScale: number;
+
+    // ===== FSRS Helper: Load Balance =====
+    /** Enable automatic load balancing when scheduling */
+    loadBalanceEnabled: boolean;
+    /** Target daily review count for load balancing */
+    loadBalanceTarget: number;
+    /** Maximum deviation from target (percentage 0-100) */
+    loadBalanceMaxDeviation: number;
+
+    // ===== FSRS Helper: Easy Days =====
+    /** Easy days configuration (recurring weekdays + specific dates) */
+    easyDays: EasyDaysConfig;
+    /** Workload multiplier for easy days (0.0-1.0) */
+    easyDaysMultiplier: number;
+
+    // ===== FSRS Helper: Sibling Disperse =====
+    /** Minimum days between siblings from same source note */
+    siblingMinInterval: number;
+    /** Enable automatic sibling dispersal on review */
+    siblingDisperseEnabled: boolean;
+
+    // ===== FSRS Helper: Optimizer Metadata =====
+    /** Number of reviews used in last optimization */
+    lastOptimizationReviewCount: number | null;
+    /** Optimization convergence metrics from last run */
+    lastOptimizationMetrics: OptimizationMetrics | null;
+
+    // ===== FSRS Helper: Schedule Breaks =====
+    /** Scheduled breaks (vacations) for review redistribution */
+    scheduledBreaks: ScheduledBreak[];
 }
 
 /**

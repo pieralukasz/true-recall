@@ -84,3 +84,7 @@ export {
     type SimpleFlashcardEditorResult,
     type SimpleFlashcardEditorOptions,
 } from "./SimpleFlashcardEditorModal";
+export {
+    EasyDaysModal,
+    type EasyDaysResult,
+} from "./EasyDaysModal";
