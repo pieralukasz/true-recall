@@ -122,7 +122,11 @@ export default class TrueRecallPlugin extends Plugin {
 		);
 
 		// Initialize device context and SQLite store
-		void this.initializeDeviceAndStore();
+		// Note: This runs async but errors are handled internally with user notification
+		this.initializeDeviceAndStore().catch((error) => {
+			console.error("[True Recall] Critical: Device/store initialization failed:", error);
+			notify().error("Failed to initialize database. Please restart Obsidian.");
+		});
 
 		// Initialize day boundary service (Anki-style day scheduling)
 		this.dayBoundaryService = new DayBoundaryService(
@@ -176,12 +180,16 @@ export default class TrueRecallPlugin extends Plugin {
 
 		// Add ribbon icon to start review
 		this.addRibbonIcon("brain", "True Recall - Study", () => {
-			void this.startReviewSession();
+			this.startReviewSession().catch((error) => {
+				console.error("[True Recall] Failed to start review session:", error);
+			});
 		});
 
 		// Add ribbon icon to open statistics
 		this.addRibbonIcon("bar-chart-2", "True Recall - Statistics", () => {
-			void this.openStatsView();
+			this.openStatsView().catch((error) => {
+				console.error("[True Recall] Failed to open stats view:", error);
+			});
 		});
 
 		// Initialize floating generate button
@@ -397,7 +405,9 @@ ${cardList}${moreText}
 			);
 		}
 		// Reinitialize NL Query Service with new settings (API key or model may have changed)
-		void this.initializeNLQueryService();
+		this.initializeNLQueryService().catch((error) => {
+			console.warn("[True Recall] Failed to reinitialize NL Query Service:", error);
+		});
 
 		// Emit settings changed event for UI components to refresh
 		getEventBus().emit({

@@ -81,8 +81,9 @@ export class FlashcardManager {
 	/**
 	 * Set FSRS data for a card (public method for external use)
 	 * Prevents overwriting existing FSRS data to avoid duplicates
+	 * @returns true if card was saved, false if skipped (already exists)
 	 */
-	setStoreData(cardId: string, fsrsData: FSRSCardData): void {
+	setStoreData(cardId: string, fsrsData: FSRSCardData): boolean {
 		if (!this.store) {
 			throw new Error("Store not initialized");
 		}
@@ -90,11 +91,12 @@ export class FlashcardManager {
 		// Only set if not already exists (prevent overwriting existing data)
 		const existing = this.store.get(cardId);
 		if (existing) {
-			console.warn(`Card ${cardId} already exists in store. Skipping to prevent duplicates.`);
-			return;
+			console.debug(`[FlashcardManager] Card ${cardId} already exists, skipping`);
+			return false;
 		}
 
 		this.store.set(cardId, fsrsData);
+		return true;
 	}
 
 	/**

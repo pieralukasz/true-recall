@@ -3,11 +3,108 @@
  * CRUD operations for flashcard data
  *
  * Uses SQL column aliases to map directly to FSRSCardData interface
- * No manual row mapping needed - `query<FSRSCardData>()` returns correctly typed objects
+ * Centralized column definitions and row mapping to avoid duplication
  */
-import type { State } from "ts-fsrs";
 import type { FSRSCardData } from "types";
 import { SqliteDatabase } from "../SqliteDatabase";
+
+// ===== Centralized Column Definitions =====
+
+/**
+ * SQL SELECT columns with aliases for standard card queries
+ * Used by get, getAll, getByIds, getCardsBySourceUid, getOrphanedCards, getAllIncludingDeleted
+ */
+const CARD_SELECT_COLUMNS = `
+    id, due, stability, difficulty, reps, lapses, state,
+    last_review as lastReview,
+    scheduled_days as scheduledDays,
+    learning_step as learningStep,
+    suspended = 1 as suspended,
+    buried_until as buriedUntil,
+    created_at as createdAt,
+    question,
+    answer,
+    source_uid as sourceUid
+`;
+
+/**
+ * SQL SELECT columns for sync queries (includes updated_at, deleted_at)
+ */
+const CARD_SELECT_COLUMNS_FOR_SYNC = `
+    id, due, stability, difficulty, reps, lapses, state,
+    last_review as lastReview,
+    scheduled_days as scheduledDays,
+    learning_step as learningStep,
+    suspended = 1 as suspended,
+    buried_until as buriedUntil,
+    created_at as createdAt,
+    updated_at as updatedAt,
+    deleted_at as deletedAt,
+    question,
+    answer,
+    source_uid as sourceUid
+`;
+
+/**
+ * Raw row type returned by SQL queries
+ */
+interface CardRow {
+    id: string;
+    due: string;
+    stability: number;
+    difficulty: number;
+    reps: number;
+    lapses: number;
+    state: number;
+    lastReview: string | null;
+    scheduledDays: number;
+    learningStep: number;
+    suspended: number;
+    buriedUntil: string | null;
+    createdAt: number | null;
+    updatedAt?: number | null;
+    deletedAt?: number | null;
+    question: string | null;
+    answer: string | null;
+    sourceUid: string | null;
+}
+
+/**
+ * Map a raw SQL row to FSRSCardData
+ */
+function mapRowToCard(row: CardRow): FSRSCardData {
+    return {
+        id: row.id,
+        due: row.due,
+        stability: row.stability,
+        difficulty: row.difficulty,
+        reps: row.reps,
+        lapses: row.lapses,
+        state: row.state,
+        lastReview: row.lastReview,
+        scheduledDays: row.scheduledDays,
+        learningStep: row.learningStep,
+        suspended: row.suspended === 1,
+        buriedUntil: row.buriedUntil ?? undefined,
+        createdAt: row.createdAt ?? undefined,
+        question: row.question ?? undefined,
+        answer: row.answer ?? undefined,
+        sourceUid: row.sourceUid ?? undefined,
+    };
+}
+
+/**
+ * Map a raw SQL row to FSRSCardData with sync fields
+ */
+function mapRowToCardWithSync(row: CardRow): FSRSCardData & { updatedAt?: number; deletedAt?: number | null } {
+    return {
+        ...mapRowToCard(row),
+        updatedAt: row.updatedAt ?? undefined,
+        deletedAt: row.deletedAt,
+    };
+}
+
+// ===== Card CRUD Operations =====
 
 /**
  * Card CRUD operations
@@ -19,54 +116,13 @@ export class CardActions {
      * Get a card by ID
      */
     get(cardId: string): FSRSCardData | undefined {
-        const row = this.db.get<{
-            id: string;
-            due: string;
-            stability: number;
-            difficulty: number;
-            reps: number;
-            lapses: number;
-            state: number;
-            lastReview: string | null;
-            scheduledDays: number;
-            learningStep: number;
-            suspended: number;
-            buriedUntil: string | null;
-            createdAt: number | null;
-            updatedAt: number | null;
-            question: string | null;
-            answer: string | null;
-            sourceUid: string | null;
-        }>(`
-            SELECT
-                id, due, stability, difficulty, reps, lapses, state,
-                last_review as lastReview,
-                scheduled_days as scheduledDays,
-                learning_step as learningStep,
-                suspended = 1 as suspended,
-                buried_until as buriedUntil,
-                created_at as createdAt,
-                updated_at as updatedAt,
-                question,
-                answer,
-                source_uid as sourceUid
-            FROM cards WHERE id = ? AND deleted_at IS NULL
-        `, [cardId]);
+        const row = this.db.get<CardRow>(
+            `SELECT ${CARD_SELECT_COLUMNS} FROM cards WHERE id = ? AND deleted_at IS NULL`,
+            [cardId]
+        );
 
-        if (!row) return undefined;
-        if (!row.question) return undefined;
-
-        const { question: q, answer: a, suspended, buriedUntil, createdAt, updatedAt, sourceUid, ...rest } = row;
-        return {
-            ...rest,
-            question: q,
-            answer: a ?? undefined,
-            suspended: suspended === 1,
-            buriedUntil: buriedUntil ?? undefined,
-            createdAt: createdAt ?? undefined,
-            updatedAt: updatedAt ?? undefined,
-            sourceUid: sourceUid ?? undefined,
-        };
+        if (!row || !row.question) return undefined;
+        return mapRowToCard(row);
     }
 
     /**
@@ -152,50 +208,10 @@ export class CardActions {
      * Get all cards
      */
     getAll(): FSRSCardData[] {
-        const rows = this.db.query<{
-            id: string;
-            due: string;
-            stability: number;
-            difficulty: number;
-            reps: number;
-            lapses: number;
-            state: number;
-            lastReview: string | null;
-            scheduledDays: number;
-            learningStep: number;
-            suspended: number;
-            buriedUntil: string | null;
-            createdAt: number | null;
-            question: string | null;
-            answer: string | null;
-            sourceUid: string | null;
-        }>(`
-            SELECT
-                id, due, stability, difficulty, reps, lapses, state,
-                last_review as lastReview,
-                scheduled_days as scheduledDays,
-                learning_step as learningStep,
-                suspended = 1 as suspended,
-                buried_until as buriedUntil,
-                created_at as createdAt,
-                question,
-                answer,
-                source_uid as sourceUid
-            FROM cards WHERE deleted_at IS NULL
-        `);
-
-        return rows.map((row) => {
-            const { question: q, answer: a, suspended, buriedUntil, createdAt, sourceUid, ...rest } = row;
-            return {
-                ...rest,
-                question: q ?? undefined,
-                answer: a ?? undefined,
-                suspended: suspended === 1,
-                buriedUntil: buriedUntil ?? undefined,
-                createdAt: createdAt ?? undefined,
-                sourceUid: sourceUid ?? undefined,
-            };
-        });
+        const rows = this.db.query<CardRow>(
+            `SELECT ${CARD_SELECT_COLUMNS} FROM cards WHERE deleted_at IS NULL`
+        );
+        return rows.map(mapRowToCard);
     }
 
     /**
@@ -214,53 +230,12 @@ export class CardActions {
     getByIds(cardIds: string[]): FSRSCardData[] {
         if (cardIds.length === 0) return [];
 
-        // Build parameterized query with placeholders
         const placeholders = cardIds.map(() => "?").join(",");
-        const rows = this.db.query<{
-            id: string;
-            due: string;
-            stability: number;
-            difficulty: number;
-            reps: number;
-            lapses: number;
-            state: number;
-            lastReview: string | null;
-            scheduledDays: number;
-            learningStep: number;
-            suspended: number;
-            buriedUntil: string | null;
-            createdAt: number | null;
-            question: string | null;
-            answer: string | null;
-            sourceUid: string | null;
-        }>(`
-            SELECT
-                id, due, stability, difficulty, reps, lapses, state,
-                last_review as lastReview,
-                scheduled_days as scheduledDays,
-                learning_step as learningStep,
-                suspended = 1 as suspended,
-                buried_until as buriedUntil,
-                created_at as createdAt,
-                question,
-                answer,
-                source_uid as sourceUid
-            FROM cards
-            WHERE id IN (${placeholders}) AND deleted_at IS NULL
-        `, cardIds);
-
-        return rows.map((row) => {
-            const { question: q, answer: a, suspended, buriedUntil, createdAt, sourceUid, ...rest } = row;
-            return {
-                ...rest,
-                question: q ?? undefined,
-                answer: a ?? undefined,
-                suspended: suspended === 1,
-                buriedUntil: buriedUntil ?? undefined,
-                createdAt: createdAt ?? undefined,
-                sourceUid: sourceUid ?? undefined,
-            };
-        });
+        const rows = this.db.query<CardRow>(
+            `SELECT ${CARD_SELECT_COLUMNS} FROM cards WHERE id IN (${placeholders}) AND deleted_at IS NULL`,
+            cardIds
+        );
+        return rows.map(mapRowToCard);
     }
 
     // ===== Content Operations =====
@@ -282,112 +257,25 @@ export class CardActions {
      * Get cards by source note UID
      */
     getCardsBySourceUid(sourceUid: string): FSRSCardData[] {
-        const rows = this.db.query<{
-            id: string;
-            due: string;
-            stability: number;
-            difficulty: number;
-            reps: number;
-            lapses: number;
-            state: number;
-            lastReview: string | null;
-            scheduledDays: number;
-            learningStep: number;
-            suspended: number;
-            buriedUntil: string | null;
-            createdAt: number | null;
-            question: string | null;
-            answer: string | null;
-            sourceUid: string | null;
-        }>(`
-            SELECT
-                id, due, stability, difficulty, reps, lapses, state,
-                last_review as lastReview,
-                scheduled_days as scheduledDays,
-                learning_step as learningStep,
-                suspended = 1 as suspended,
-                buried_until as buriedUntil,
-                created_at as createdAt,
-                question,
-                answer,
-                source_uid as sourceUid
-            FROM cards
-            WHERE source_uid = ? AND deleted_at IS NULL
-            ORDER BY created_at ASC, id ASC
-        `, [sourceUid]);
-
-        return rows.map((row) => {
-            const { question: q, answer: a, suspended, buriedUntil, createdAt, sourceUid, ...rest } = row;
-            return {
-                ...rest,
-                question: q ?? undefined,
-                answer: a ?? undefined,
-                suspended: suspended === 1,
-                buriedUntil: buriedUntil ?? undefined,
-                createdAt: createdAt ?? undefined,
-                sourceUid: sourceUid ?? undefined,
-            };
-        });
+        const rows = this.db.query<CardRow>(
+            `SELECT ${CARD_SELECT_COLUMNS} FROM cards WHERE source_uid = ? AND deleted_at IS NULL ORDER BY created_at ASC, id ASC`,
+            [sourceUid]
+        );
+        return rows.map(mapRowToCard);
     }
 
-    /**
-     * Get all cards that have content (with source note JOIN and projects)
-     */
     /**
      * Get all cards with content (v15: no note_projects, source_notes has only uid)
      * Source note name/path and projects are resolved at runtime from vault
      */
     getCardsWithContent(): FSRSCardData[] {
-        const rows = this.db.query<{
-            id: string;
-            due: string;
-            stability: number;
-            difficulty: number;
-            reps: number;
-            lapses: number;
-            state: State;
-            lastReview: string | null;
-            scheduledDays: number;
-            learningStep: number;
-            suspended: boolean;
-            buriedUntil: string | null;
-            createdAt: number | null;
-            question: string;
-            answer: string;
-            sourceUid: string | null;
-        }>(`
-            SELECT
-                c.id, c.due, c.stability, c.difficulty, c.reps, c.lapses, c.state,
-                c.last_review as lastReview,
-                c.scheduled_days as scheduledDays,
-                c.learning_step as learningStep,
-                c.suspended = 1 as suspended,
-                c.buried_until as buriedUntil,
-                c.created_at as createdAt,
-                c.question, c.answer,
-                c.source_uid as sourceUid
-            FROM cards c
-            WHERE c.deleted_at IS NULL AND c.question IS NOT NULL
-        `);
+        const rows = this.db.query<CardRow>(
+            `SELECT ${CARD_SELECT_COLUMNS} FROM cards WHERE deleted_at IS NULL AND question IS NOT NULL`
+        );
 
         // Note: sourceNoteName, sourceNotePath, projects empty - caller must enrich via SourceNoteService
         return rows.map((row) => ({
-            id: row.id,
-            due: row.due,
-            stability: row.stability,
-            difficulty: row.difficulty,
-            reps: row.reps,
-            lapses: row.lapses,
-            state: row.state,
-            lastReview: row.lastReview,
-            scheduledDays: row.scheduledDays,
-            learningStep: row.learningStep,
-            suspended: row.suspended,
-            buriedUntil: row.buriedUntil ?? undefined,
-            createdAt: row.createdAt ?? undefined,
-            question: row.question,
-            answer: row.answer,
-            sourceUid: row.sourceUid ?? undefined,
+            ...mapRowToCard(row),
             sourceNoteName: "",
             sourceNotePath: "",
             projects: [],
@@ -433,52 +321,10 @@ export class CardActions {
      * Get all orphaned cards (cards without source_uid)
      */
     getOrphanedCards(): FSRSCardData[] {
-        const rows = this.db.query<{
-            id: string;
-            due: string;
-            stability: number;
-            difficulty: number;
-            reps: number;
-            lapses: number;
-            state: number;
-            lastReview: string | null;
-            scheduledDays: number;
-            learningStep: number;
-            suspended: number;
-            buriedUntil: string | null;
-            createdAt: number | null;
-            question: string | null;
-            answer: string | null;
-            sourceUid: string | null;
-        }>(`
-            SELECT
-                id, due, stability, difficulty, reps, lapses, state,
-                last_review as lastReview,
-                scheduled_days as scheduledDays,
-                learning_step as learningStep,
-                suspended = 1 as suspended,
-                buried_until as buriedUntil,
-                created_at as createdAt,
-                question,
-                answer,
-                source_uid as sourceUid
-            FROM cards
-            WHERE deleted_at IS NULL AND source_uid IS NULL
-            AND question IS NOT NULL
-        `);
-
-        return rows.map((row) => {
-            const { question: q, answer: a, suspended, buriedUntil, createdAt, sourceUid, ...rest } = row;
-            return {
-                ...rest,
-                question: q ?? undefined,
-                answer: a ?? undefined,
-                suspended: suspended === 1,
-                buriedUntil: buriedUntil ?? undefined,
-                createdAt: createdAt ?? undefined,
-                sourceUid: sourceUid ?? undefined,
-            };
-        });
+        const rows = this.db.query<CardRow>(
+            `SELECT ${CARD_SELECT_COLUMNS} FROM cards WHERE deleted_at IS NULL AND source_uid IS NULL AND question IS NOT NULL`
+        );
+        return rows.map(mapRowToCard);
     }
 
     /**
@@ -526,50 +372,10 @@ export class CardActions {
      * Get all cards including soft-deleted (for sync)
      */
     getAllIncludingDeleted(): FSRSCardData[] {
-        const rows = this.db.query<{
-            id: string;
-            due: string;
-            stability: number;
-            difficulty: number;
-            reps: number;
-            lapses: number;
-            state: number;
-            lastReview: string | null;
-            scheduledDays: number;
-            learningStep: number;
-            suspended: number;
-            buriedUntil: string | null;
-            createdAt: number | null;
-            question: string | null;
-            answer: string | null;
-            sourceUid: string | null;
-        }>(`
-            SELECT
-                id, due, stability, difficulty, reps, lapses, state,
-                last_review as lastReview,
-                scheduled_days as scheduledDays,
-                learning_step as learningStep,
-                suspended = 1 as suspended,
-                buried_until as buriedUntil,
-                created_at as createdAt,
-                question,
-                answer,
-                source_uid as sourceUid
-            FROM cards
-        `);
-
-        return rows.map((row) => {
-            const { question: q, answer: a, suspended, buriedUntil, createdAt, sourceUid, ...rest } = row;
-            return {
-                ...rest,
-                question: q ?? undefined,
-                answer: a ?? undefined,
-                suspended: suspended === 1,
-                buriedUntil: buriedUntil ?? undefined,
-                createdAt: createdAt ?? undefined,
-                sourceUid: sourceUid ?? undefined,
-            };
-        });
+        const rows = this.db.query<CardRow>(
+            `SELECT ${CARD_SELECT_COLUMNS} FROM cards`
+        );
+        return rows.map(mapRowToCard);
     }
 
     // ===== Sync Operations =====
@@ -578,57 +384,11 @@ export class CardActions {
      * Get cards modified since a timestamp (including deleted, for sync push)
      */
     getModifiedSince(timestamp: number): (FSRSCardData & { updatedAt?: number; deletedAt?: number | null })[] {
-        const rows = this.db.query<{
-            id: string;
-            due: string;
-            stability: number;
-            difficulty: number;
-            reps: number;
-            lapses: number;
-            state: number;
-            lastReview: string | null;
-            scheduledDays: number;
-            learningStep: number;
-            suspended: number;
-            buriedUntil: string | null;
-            createdAt: number | null;
-            updatedAt: number | null;
-            deletedAt: number | null;
-            question: string | null;
-            answer: string | null;
-            sourceUid: string | null;
-        }>(`
-            SELECT
-                id, due, stability, difficulty, reps, lapses, state,
-                last_review as lastReview,
-                scheduled_days as scheduledDays,
-                learning_step as learningStep,
-                suspended = 1 as suspended,
-                buried_until as buriedUntil,
-                created_at as createdAt,
-                updated_at as updatedAt,
-                deleted_at as deletedAt,
-                question,
-                answer,
-                source_uid as sourceUid
-            FROM cards
-            WHERE updated_at > ?
-        `, [timestamp]);
-
-        return rows.map((row) => {
-            const { question: q, answer: a, suspended, buriedUntil, createdAt, updatedAt, deletedAt, sourceUid, ...rest } = row;
-            return {
-                ...rest,
-                question: q ?? undefined,
-                answer: a ?? undefined,
-                suspended: suspended === 1,
-                buriedUntil: buriedUntil ?? undefined,
-                createdAt: createdAt ?? undefined,
-                updatedAt: updatedAt ?? undefined,
-                deletedAt: deletedAt,
-                sourceUid: sourceUid ?? undefined,
-            };
-        });
+        const rows = this.db.query<CardRow>(
+            `SELECT ${CARD_SELECT_COLUMNS_FOR_SYNC} FROM cards WHERE updated_at > ?`,
+            [timestamp]
+        );
+        return rows.map(mapRowToCardWithSync);
     }
 
     /**

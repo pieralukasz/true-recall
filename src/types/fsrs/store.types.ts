@@ -39,8 +39,8 @@ export interface CardStore {
     /** Flush pending changes to disk */
     flush(): Promise<void>;
 
-    /** Force immediate save */
-    saveNow(): Promise<void>;
+    /** Force immediate save, returns true if succeeded */
+    saveNow(): Promise<boolean>;
 
     // === Schema v2 methods (optional - for SQL storage) ===
 

@@ -507,7 +507,8 @@ export class SessionView extends ItemView {
 			cls: "ep:py-1.5 ep:px-3 ep:text-ui-small ep:bg-obs-border ep:text-obs-normal ep:border-none ep:rounded ep:cursor-pointer ep:hover:bg-obs-modifier-hover",
 			text: "Move",
 		});
-		moveBtn.addEventListener("click", () =>
+		// Use registerDomEvent for automatic cleanup on view close
+		this.registerDomEvent(moveBtn, "click", () =>
 			void this.handleMoveSelectedNotes()
 		);
 
@@ -516,7 +517,7 @@ export class SessionView extends ItemView {
 			cls: "ep:py-1.5 ep:px-3 ep:text-ui-small ep:bg-obs-border ep:text-obs-normal ep:border-none ep:rounded ep:cursor-pointer ep:hover:bg-obs-modifier-hover",
 			text: "Add to project",
 		});
-		addProjectBtn.addEventListener("click", () =>
+		this.registerDomEvent(addProjectBtn, "click", () =>
 			void this.handleAddToProject()
 		);
 
@@ -525,7 +526,7 @@ export class SessionView extends ItemView {
 			cls: "ep:py-1.5 ep:px-3 ep:text-ui-small ep:bg-obs-border ep:text-obs-normal ep:border-none ep:rounded ep:cursor-pointer ep:hover:bg-obs-modifier-hover",
 			text: "Clear",
 		});
-		clearBtn.addEventListener("click", () => this.handleClearSelection());
+		this.registerDomEvent(clearBtn, "click", () => this.handleClearSelection());
 
 		// Start button
 		const startBtn = buttons.createEl("button", {
@@ -533,6 +534,6 @@ export class SessionView extends ItemView {
 			// eslint-disable-next-line obsidianmd/ui/sentence-case
 			text: "Start Session",
 		});
-		startBtn.addEventListener("click", () => this.handleStartSession());
+		this.registerDomEvent(startBtn, "click", () => this.handleStartSession());
 	}
 }

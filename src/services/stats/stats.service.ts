@@ -34,11 +34,9 @@ export class StatsService {
 		// If no eventBus provided, cache only uses TTL-based expiration
 		this.statsCache = new ReactiveCache({
 			compute: () => this.computeStats(),
-			invalidateOn: eventBus
-				? ["card:added", "card:removed", "card:updated", "card:reviewed", "cards:bulk-change"]
-				: [],
+			invalidateOn: ["card:added", "card:removed", "card:updated", "card:reviewed", "cards:bulk-change"],
 			ttlMs: 30000, // 30 seconds fallback TTL
-			eventBus: eventBus ?? createNoOpEventBus(),
+			eventBus, // undefined is now valid - ReactiveCache handles it
 			label: "StatsService",
 		});
 	}
@@ -78,18 +76,4 @@ export class StatsService {
 	dispose(): void {
 		this.statsCache.dispose();
 	}
-}
-
-/**
- * Create a no-op EventBus for backwards compatibility when eventBus is not provided
- */
-function createNoOpEventBus(): EventBusService {
-	return {
-		on: () => () => {},
-		off: () => {},
-		emit: () => {},
-		onAll: () => () => {},
-		clear: () => {},
-		getListenerCount: () => 0,
-	} as unknown as EventBusService;
 }
