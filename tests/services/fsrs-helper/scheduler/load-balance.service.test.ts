@@ -1,5 +1,13 @@
 /**
  * Load Balance Service Tests
+ *
+ * NOTE: Learning and Relearning cards are excluded from load balancing at the
+ * database query level (getDueCardsByDateRange excludes state IN (1, 3)).
+ * This ensures learning cards with short intervals (minutes) are not moved to
+ * days in the future, which would break FSRS's learning algorithm.
+ *
+ * The tests below use mock data that represents the filtered result (only
+ * Review and New cards), as that's what the service receives in production.
  */
 import { describe, it, expect, beforeEach, vi, afterEach } from "vitest";
 import { LoadBalanceService } from "../../../../src/services/fsrs-helper/scheduler/load-balance.service";

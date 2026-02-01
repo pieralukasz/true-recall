@@ -120,6 +120,8 @@ export class ReviewView extends ItemView {
 	private lastRenderedCardId: string | null = null;
 	private lastRenderedAnswerRevealed: boolean = false;
 	private lastRenderedEditState: boolean = false;
+	private lastRenderedQuestion: string | null = null;
+	private lastRenderedAnswer: string | null = null;
 	private lastRenderedBadgeCounts: { new: number; learning: number; due: number } | null = null;
 
 	constructor(leaf: WorkspaceLeaf, plugin: TrueRecallPlugin) {
@@ -679,17 +681,23 @@ export class ReviewView extends ItemView {
 		switch (phase.type) {
 			case "idle":
 				this.lastRenderedCardId = null;
+				this.lastRenderedQuestion = null;
+				this.lastRenderedAnswer = null;
 				return;
 
 			case "complete":
 				this.stateManager.endSession();
 				this.renderSummary();
 				this.lastRenderedCardId = null;
+				this.lastRenderedQuestion = null;
+				this.lastRenderedAnswer = null;
 				return;
 
 			case "waiting":
 				this.renderWaitingScreen();
 				this.lastRenderedCardId = null;
+				this.lastRenderedQuestion = null;
+				this.lastRenderedAnswer = null;
 				return;
 
 			case "active":
@@ -708,6 +716,8 @@ export class ReviewView extends ItemView {
 		const cardChanged = currentCard.id !== this.lastRenderedCardId;
 		const answerJustRevealed = answerRevealed && !this.lastRenderedAnswerRevealed;
 		const editStateChanged = editState.active !== this.lastRenderedEditState;
+		const contentChanged = currentCard.question !== this.lastRenderedQuestion ||
+			currentCard.answer !== this.lastRenderedAnswer;
 
 		// Header always updates (badge counts change)
 		if (this.plugin.settings.showReviewHeader) {
@@ -718,8 +728,8 @@ export class ReviewView extends ItemView {
 			this.headerEl.empty();
 		}
 
-		// Card content: only re-render if card changed, answer revealed, or edit state changed
-		if (cardChanged || answerJustRevealed || editStateChanged) {
+		// Card content: only re-render if card changed, answer revealed, edit state changed, or content changed
+		if (cardChanged || answerJustRevealed || editStateChanged || contentChanged) {
 			this.renderCard();
 		}
 
@@ -730,6 +740,8 @@ export class ReviewView extends ItemView {
 		this.lastRenderedCardId = currentCard.id;
 		this.lastRenderedAnswerRevealed = answerRevealed;
 		this.lastRenderedEditState = editState.active;
+		this.lastRenderedQuestion = currentCard.question;
+		this.lastRenderedAnswer = currentCard.answer;
 	}
 
 	/**
