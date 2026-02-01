@@ -48,7 +48,7 @@ anki-sync/
 │   │   └── index.ts
 │   │
 │   ├── types/                     # Definicje TypeScript
-│   │   ├── flashcard.types.ts     # FlashcardItem, FlashcardChange, DiffResult
+│   │   ├── flashcard.types.ts     # FlashcardItem, FlashcardInfo
 │   │   ├── api.types.ts           # ChatMessage, OpenRouterResponse
 │   │   ├── settings.types.ts      # ShadowAnkiSettings
 │   │   └── index.ts
@@ -57,7 +57,6 @@ anki-sync/
 │   │   ├── component.base.ts      # Bazowa klasa komponentów (88 linii)
 │   │   ├── components/            # Komponenty wielokrotnego użytku
 │   │   │   ├── CardPreview.ts     # Podgląd pojedynczej fiszki (186 linii)
-│   │   │   ├── DiffCard.ts        # Karta zmiany diff (309 linii)
 │   │   │   ├── LoadingSpinner.ts  # Animowany spinner (105 linii)
 │   │   │   ├── EmptyState.ts      # Komunikaty pustego stanu (96 linii)
 │   │   │   └── index.ts
@@ -397,14 +396,13 @@ Odpowiedź druga
 
 ```typescript
 ProcessingStatus = "none" | "exists" | "processing"
-ViewMode = "list" | "diff"
+ViewMode = "list"
 
 PanelState = {
   status: ProcessingStatus,       // Stan przetwarzania
   viewMode: ViewMode,             // Tryb wyświetlania
   currentFile: TFile | null,      // Aktualny plik
   flashcardInfo: FlashcardInfo,   // Info o fiszkach
-  diffResult: DiffResult | null,  // Wynik diff
   userInstructions: string,       // Instrukcje użytkownika
   isFlashcardFile: boolean,       // Czy oglądamy plik fiszek
   error: AppError | null,         // Błąd
@@ -417,17 +415,7 @@ PanelState = {
 FlashcardItem = {
   question: string,
   answer: string,
-  lineNumber: number       // Linia w pliku
-}
-
-FlashcardChange = {
-  type: "NEW" | "MODIFIED" | "DELETED",
-  question: string,
-  answer: string,
-  originalQuestion?: string,   // Dla MODIFIED/DELETED
-  originalAnswer?: string,
-  reason?: string,             // Powód zmiany
-  accepted: boolean            // Czy zaakceptowane
+  id: string               // Unikalny identyfikator
 }
 ```
 

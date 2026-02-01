@@ -140,6 +140,13 @@ export default class TrueRecallPlugin extends Plugin {
 			getEventBus()
 		);
 
+		// Initialize day boundary service (Anki-style day scheduling)
+		// Must be initialized BEFORE initializeDeviceAndStore because
+		// SessionPersistenceService requires dayBoundaryService
+		this.dayBoundaryService = new DayBoundaryService(
+			this.settings.dayStartHour
+		);
+
 		// Initialize device context and SQLite store
 		// IMPORTANT: Must await to ensure cardStore is ready before views/commands access it
 		try {
@@ -149,11 +156,6 @@ export default class TrueRecallPlugin extends Plugin {
 			notify().error("Failed to initialize database. Please restart Obsidian.");
 			// Continue plugin load - some features may work without database
 		}
-
-		// Initialize day boundary service (Anki-style day scheduling)
-		this.dayBoundaryService = new DayBoundaryService(
-			this.settings.dayStartHour
-		);
 
 		// Register the sidebar view
 		this.registerView(

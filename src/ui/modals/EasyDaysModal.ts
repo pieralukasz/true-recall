@@ -93,7 +93,7 @@ export class EasyDaysModal extends BasePromiseModal<EasyDaysResult> {
 			const isSelected = this.recurringDays.has(index);
 			const dayBtn = daysContainer.createEl("button", {
 				text: name,
-				type: "button",
+				attr: { type: "button" },
 				cls: this.getDayButtonClass(isSelected),
 			});
 
