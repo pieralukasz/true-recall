@@ -80,10 +80,8 @@ export class FlashcardPanelView extends ItemView {
     // Track RAF IDs for cleanup
     private pendingRafIds: Set<number> = new Set();
 
-    // Render optimization: track last rendered state to avoid unnecessary rebuilds
-    private lastRenderedFileUid: string | null = null;
-    private lastRenderedFlashcardCount: number = 0;
-    private lastRenderedSelectionMode: string | null = null;
+    // Render optimization: single key to track state changes
+    private lastRenderKey: string | null = null;
 
     constructor(leaf: WorkspaceLeaf, plugin: TrueRecallPlugin) {
         super(leaf);
@@ -505,7 +503,6 @@ export class FlashcardPanelView extends ItemView {
                 noteFlashcardType: noteType,
                 sourceNoteName,
                 uncollectedCount,
-                hasUncollectedFlashcards: uncollectedCount > 0,
             });
         } catch (error) {
             console.error("Error loading flashcard info:", error);
@@ -528,11 +525,13 @@ export class FlashcardPanelView extends ItemView {
             const reviewedToday = this.plugin.sessionPersistence?.getReviewedToday();
             const dayStartHour = this.plugin.settings.dayStartHour;
 
+            const hasUncollectedFlashcards = state.uncollectedCount > 0;
+
             if (!this.headerComponent) {
                 this.headerComponent = new FlashcardPanelHeader(this.headerDiv, {
                     flashcardInfo: state.flashcardInfo,
                     cardsWithFsrs: this.getCardsWithFsrs(),
-                    hasUncollectedFlashcards: state.hasUncollectedFlashcards,
+                    hasUncollectedFlashcards,
                     uncollectedCount: state.uncollectedCount,
                     selectionMode: state.selectionMode,
                     selectedCount: state.selectedCardIds.size,
@@ -557,7 +556,7 @@ export class FlashcardPanelView extends ItemView {
                 this.headerComponent.updateProps({
                     flashcardInfo: state.flashcardInfo,
                     cardsWithFsrs: this.getCardsWithFsrs(),
-                    hasUncollectedFlashcards: state.hasUncollectedFlashcards,
+                    hasUncollectedFlashcards,
                     uncollectedCount: state.uncollectedCount,
                     selectionMode: state.selectionMode,
                     selectedCount: state.selectedCardIds.size,
@@ -577,16 +576,11 @@ export class FlashcardPanelView extends ItemView {
             this.contentDiv = this.contentContainer.createDiv({ cls: "ep:flex-1 ep:overflow-y-auto ep:min-h-0" });
         }
 
-        // Check if we need full rebuild or can use incremental update
-        const currentFileUid = state.flashcardInfo?.sourceUid ?? null;
+        // Check if we need full rebuild using single render key
+        const currentFileUid = state.flashcardInfo?.sourceUid ?? "";
         const currentFlashcardCount = state.flashcardInfo?.flashcards?.length ?? 0;
-        const currentSelectionMode = state.selectionMode;
-
-        const needsFullRebuild =
-            !this.contentComponent ||
-            currentFileUid !== this.lastRenderedFileUid ||
-            currentFlashcardCount !== this.lastRenderedFlashcardCount ||
-            currentSelectionMode !== this.lastRenderedSelectionMode;
+        const renderKey = `${currentFileUid}:${currentFlashcardCount}:${state.selectionMode}`;
+        const needsFullRebuild = !this.contentComponent || renderKey !== this.lastRenderKey;
 
         if (needsFullRebuild) {
             // Full rebuild: destroy and recreate content component
@@ -634,10 +628,7 @@ export class FlashcardPanelView extends ItemView {
             });
             this.contentComponent.render();
 
-            // Update tracking state
-            this.lastRenderedFileUid = currentFileUid;
-            this.lastRenderedFlashcardCount = currentFlashcardCount;
-            this.lastRenderedSelectionMode = currentSelectionMode;
+            this.lastRenderKey = renderKey;
         } else if (this.contentComponent) {
             // Incremental update: just update props (avoids DOM recreation)
             this.contentComponent.updateProps({

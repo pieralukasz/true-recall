@@ -51,8 +51,6 @@ export interface PanelState {
     sourceNoteName: string | null;
     /** Number of uncollected flashcards (with #flashcard tag) in current file */
     uncollectedCount: number;
-    /** Whether there are flashcards to collect */
-    hasUncollectedFlashcards: boolean;
     /** Selection mode */
     selectionMode: SelectionMode;
     /** Selected card IDs in selection mode */

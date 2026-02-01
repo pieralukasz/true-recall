@@ -278,20 +278,6 @@ export class ReviewStateManager {
 
         const prevState = this.state;
 
-        // Update stats
-        const stats = { ...this.state.stats };
-        stats.reviewed++;
-        if (rating === Rating.Again) stats.again++;
-        else if (rating === Rating.Hard) stats.hard++;
-        else if (rating === Rating.Good) stats.good++;
-        else if (rating === Rating.Easy) stats.easy++;
-
-        // Count card types
-        if (currentCard.fsrs.state === State.New) stats.newCards++;
-        else if (currentCard.fsrs.state === State.Learning || currentCard.fsrs.state === State.Relearning)
-            stats.learningCards++;
-        else if (currentCard.fsrs.state === State.Review) stats.reviewCards++;
-
         // Update queue with new card data
         const newQueue = [...this.state.queue];
         newQueue[this.state.currentIndex] = updatedCard;
@@ -300,7 +286,6 @@ export class ReviewStateManager {
             ...this.state,
             queue: newQueue,
             results: [...this.state.results, result],
-            stats,
         };
 
         this.notifyListeners(prevState);
@@ -372,20 +357,6 @@ export class ReviewStateManager {
                 : 0,
         };
 
-        // Update stats
-        const stats = { ...this.state.stats };
-        stats.reviewed++;
-        if (rating === Rating.Again) stats.again++;
-        else if (rating === Rating.Hard) stats.hard++;
-        else if (rating === Rating.Good) stats.good++;
-        else if (rating === Rating.Easy) stats.easy++;
-
-        // Count card types
-        if (currentCard.fsrs.state === State.New) stats.newCards++;
-        else if (currentCard.fsrs.state === State.Learning || currentCard.fsrs.state === State.Relearning)
-            stats.learningCards++;
-        else if (currentCard.fsrs.state === State.Review) stats.reviewCards++;
-
         // Update queue with new card data
         let newQueue = [...this.state.queue];
         newQueue[this.state.currentIndex] = updatedCard;
@@ -393,7 +364,6 @@ export class ReviewStateManager {
         // === Requeue logic (if needed) ===
         if (requeueData) {
             newQueue.splice(requeueData.position, 0, requeueData.card);
-            stats.total = newQueue.length;
         }
 
         // === Next card logic ===
@@ -403,7 +373,6 @@ export class ReviewStateManager {
             ...this.state,
             queue: newQueue,
             results: [...this.state.results, result],
-            stats,
             currentIndex: nextIndex,
             isAnswerRevealed: false,
             questionShownTime: Date.now(),
@@ -429,16 +398,9 @@ export class ReviewStateManager {
             newQueue.push(card);
         }
 
-        // Update total count
-        const stats = {
-            ...this.state.stats,
-            total: newQueue.length,
-        };
-
         this.state = {
             ...this.state,
             queue: newQueue,
-            stats,
         };
         this.notifyListeners(prevState);
     }
@@ -468,26 +430,8 @@ export class ReviewStateManager {
             newQueue.splice(requeuedAtIndex, 1);
         }
 
-        // Remove the last result
+        // Remove the last result - stats are computed from results array
         const newResults = this.state.results.slice(0, -1);
-
-        // Revert stats (decrement reviewed count and rating count)
-        const lastResult = this.state.results[this.state.results.length - 1];
-        const stats = { ...this.state.stats };
-        stats.total = newQueue.length;
-        if (lastResult) {
-            stats.reviewed = Math.max(0, stats.reviewed - 1);
-            if (lastResult.rating === Rating.Again) stats.again = Math.max(0, stats.again - 1);
-            else if (lastResult.rating === Rating.Hard) stats.hard = Math.max(0, stats.hard - 1);
-            else if (lastResult.rating === Rating.Good) stats.good = Math.max(0, stats.good - 1);
-            else if (lastResult.rating === Rating.Easy) stats.easy = Math.max(0, stats.easy - 1);
-
-            // Revert card type counts
-            if (lastResult.previousState === State.New) stats.newCards = Math.max(0, stats.newCards - 1);
-            else if (lastResult.previousState === State.Learning || lastResult.previousState === State.Relearning)
-                stats.learningCards = Math.max(0, stats.learningCards - 1);
-            else if (lastResult.previousState === State.Review) stats.reviewCards = Math.max(0, stats.reviewCards - 1);
-        }
 
         this.state = {
             ...this.state,
@@ -496,7 +440,6 @@ export class ReviewStateManager {
             isAnswerRevealed: false,
             questionShownTime: Date.now(),
             results: newResults,
-            stats,
         };
         this.schedulingPreview = null;
         this.notifyListeners(prevState);
@@ -515,11 +458,23 @@ export class ReviewStateManager {
     }
 
     /**
-     * Get session statistics
+     * Get session statistics computed from results array
+     * Single source of truth - no manual counter tracking needed
      */
     getStats(): ReviewSessionStats {
+        const results = this.state.results;
         return {
-            ...this.state.stats,
+            total: this.state.queue.length,
+            reviewed: results.length,
+            again: results.filter(r => r.rating === Rating.Again).length,
+            hard: results.filter(r => r.rating === Rating.Hard).length,
+            good: results.filter(r => r.rating === Rating.Good).length,
+            easy: results.filter(r => r.rating === Rating.Easy).length,
+            newCards: results.filter(r => r.previousState === State.New).length,
+            learningCards: results.filter(r =>
+                r.previousState === State.Learning || r.previousState === State.Relearning
+            ).length,
+            reviewCards: results.filter(r => r.previousState === State.Review).length,
             duration: this.state.isActive
                 ? Date.now() - this.state.startTime
                 : this.state.stats.duration,
@@ -640,10 +595,6 @@ export class ReviewStateManager {
             queue: newQueue,
             isAnswerRevealed: false,
             questionShownTime: Date.now(),
-            stats: {
-                ...this.state.stats,
-                total: newQueue.length,
-            },
         };
         this.schedulingPreview = null;
         this.notifyListeners(prevState);
@@ -681,10 +632,6 @@ export class ReviewStateManager {
             currentIndex: newIndex,
             isAnswerRevealed: false,
             questionShownTime: Date.now(),
-            stats: {
-                ...this.state.stats,
-                total: newQueue.length,
-            },
         };
         this.schedulingPreview = null;
         this.notifyListeners(prevState);
@@ -727,10 +674,6 @@ export class ReviewStateManager {
             currentIndex: newIndex,
             isAnswerRevealed: false,
             questionShownTime: Date.now(),
-            stats: {
-                ...this.state.stats,
-                total: newQueue.length,
-            },
         };
         this.schedulingPreview = null;
         // Single notification for all removals
@@ -751,10 +694,6 @@ export class ReviewStateManager {
         this.state = {
             ...this.state,
             queue: newQueue,
-            stats: {
-                ...this.state.stats,
-                total: newQueue.length,
-            },
         };
         this.notifyListeners(prevState);
     }
@@ -779,10 +718,6 @@ export class ReviewStateManager {
             queue: newQueue,
             isAnswerRevealed: false,
             questionShownTime: Date.now(),
-            stats: {
-                ...this.state.stats,
-                total: newQueue.length,
-            },
         };
         this.schedulingPreview = null;
         this.notifyListeners(prevState);

@@ -590,6 +590,13 @@ export class FlashcardEditorModal extends BaseModal {
 				void this.openMediaPicker();
 				return;
 			}
+
+			// Ctrl+Shift+C for code block
+			if ((e.metaKey || e.ctrlKey) && e.shiftKey && e.key.toLowerCase() === "c") {
+				e.preventDefault();
+				focusedField.executeButtonAction("codeblock");
+				return;
+			}
 		});
 	}
 
@@ -769,6 +776,7 @@ export class KeyboardShortcutsModal extends BaseModal {
 			{ key: "Ctrl+K", action: "Wiki link ([[link]])" },
 			{ key: "Ctrl+M", action: "Math ($$formula$$)" },
 			{ key: "Ctrl+L", action: "List item (- )" },
+			{ key: "Ctrl+Shift+C", action: "Code block (```code```)" },
 			{ key: "Ctrl+Shift+I", action: "Insert media (image/video)" },
 			{ key: "Ctrl+V", action: "Paste (images auto-saved)" },
 			{ key: "Ctrl+/", action: "Show this help" },
