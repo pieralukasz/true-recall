@@ -1,25 +1,15 @@
 /**
  * Card Actions Handler for ReviewView
- * Handles card operations: suspend, bury, move, add, copy, edit, create zettel
+ * Handles card operations: suspend, bury, move, add, copy, edit
  */
-import { App, TFile, normalizePath } from "obsidian";
+import { App } from "obsidian";
 import { Rating } from "ts-fsrs";
 import type { ReviewStateManager } from "../../../state";
-import type { FlashcardManager, FSRSService, ReviewService, ZettelTemplateService, SqliteStoreService } from "../../../services";
+import type { FlashcardManager, FSRSService, ReviewService, SqliteStoreService } from "../../../services";
 import type { FSRSFlashcardItem, TrueRecallSettings } from "../../../types";
 import { MoveCardModal, SimpleFlashcardEditorModal, flashcardToMarkdown } from "../../modals";
 import { notify } from "../../../services";
-import { UI_CONFIG } from "../../../constants";
 import type TrueRecallPlugin from "../../../main";
-
-/**
- * Templater plugin interface for processing templates
- */
-interface TemplaterPlugin {
-	templater?: {
-		overwrite_file_commands: (file: TFile) => Promise<void>;
-	};
-}
 
 /**
  * Dependencies required by CardActionsHandler
@@ -32,8 +22,6 @@ export interface CardActionsHandlerDeps {
 	reviewService: ReviewService;
 	/** SQLite store for registering source notes */
 	cardStore: SqliteStoreService;
-	/** Function to create ZettelTemplateService */
-	createZettelTemplateService: () => ZettelTemplateService;
 	settings: TrueRecallSettings;
 	/** Plugin instance for accessing AgentService */
 	plugin: TrueRecallPlugin;
@@ -469,65 +457,5 @@ export class CardActionsHandler {
 
 		tomorrow.setHours(this.deps.settings.dayStartHour, 0, 0, 0);
 		return tomorrow;
-	}
-
-	/**
-	 * Create a new zettel note from the current card
-	 */
-	async handleCreateZettel(): Promise<void> {
-		const card = this.deps.stateManager.getCurrentCard();
-		if (!card) return;
-
-		const folderPath = normalizePath(this.deps.settings.zettelFolder);
-
-		// Ensure folder exists
-		if (!this.deps.app.vault.getAbstractFileByPath(folderPath)) {
-			await this.deps.app.vault.createFolder(folderPath);
-		}
-
-		// Find unique filename
-		let filePath = normalizePath(`${folderPath}/${UI_CONFIG.defaultFileName}.md`);
-		let counter = 1;
-		while (this.deps.app.vault.getAbstractFileByPath(filePath)) {
-			filePath = normalizePath(`${folderPath}/${UI_CONFIG.defaultFileName} ${counter}.md`);
-			counter++;
-		}
-
-		// Generate content using template service
-		const templateService = this.deps.createZettelTemplateService();
-		const templatePath = this.deps.settings.zettelTemplatePath;
-
-		// Check if template exists
-		if (templatePath) {
-			const templateFile = this.deps.app.vault.getAbstractFileByPath(templatePath);
-			if (!templateFile) {
-				notify().templateNotFound(templatePath);
-			}
-		}
-
-		const content = await templateService.generateContent(templatePath, card);
-
-		// Create file
-		await this.deps.app.vault.create(filePath, content);
-
-		// Open file
-		await this.deps.app.workspace.openLinkText(filePath, "", true);
-
-		// Small delay for file-open event
-		await new Promise(resolve => setTimeout(resolve, 50));
-
-		// Process Templater syntax if installed
-		const templaterPlugin = (this.deps.app as unknown as { plugins: { plugins: Record<string, TemplaterPlugin> } })
-			.plugins.plugins['templater-obsidian'];
-		if (templaterPlugin?.templater?.overwrite_file_commands) {
-			try {
-				const activeFile = this.deps.app.workspace.getActiveFile();
-				if (activeFile) {
-					await templaterPlugin.templater.overwrite_file_commands(activeFile);
-				}
-			} catch (error) {
-				console.error("[CardActionsHandler] Templater processing failed:", error);
-			}
-		}
 	}
 }

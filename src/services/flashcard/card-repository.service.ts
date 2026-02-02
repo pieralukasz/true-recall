@@ -73,12 +73,36 @@ export class CardRepository {
 
 	/**
 	 * Create multiple flashcards in batch
+	 * @throws Error if any card has a duplicate question (existing or within batch)
 	 */
 	createBatch(
 		flashcards: Array<{ id: string; question: string; answer: string }>,
 		sourceUid: string,
 		sourceNoteName?: string
 	): FSRSFlashcardItem[] {
+		// Check for duplicates before creating any cards
+		const seenQuestions = new Set<string>();
+		for (const flashcard of flashcards) {
+			// Check for duplicate within batch
+			if (seenQuestions.has(flashcard.question)) {
+				throw new Error(
+					`Duplicate question within batch: "${flashcard.question.slice(0, 50)}..."`
+				);
+			}
+			seenQuestions.add(flashcard.question);
+
+			// Check for existing card with same question
+			const existingCardId = this.store.cards.getCardIdByQuestion(
+				flashcard.question
+			);
+			if (existingCardId) {
+				throw new Error(
+					`A card with this question already exists: "${flashcard.question.slice(0, 50)}..."`
+				);
+			}
+		}
+
+		// All checks passed, create cards
 		const createdCards: FSRSFlashcardItem[] = [];
 
 		for (const flashcard of flashcards) {
