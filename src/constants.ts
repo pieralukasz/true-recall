@@ -145,7 +145,7 @@ export const DEFAULT_SETTINGS: TrueRecallSettings = {
 
 	// Floating Generate Button
 	floatingButtonEnabled: false,
-	floatingButtonMinChars: 50,
+	floatingButtonMinChars: 1,
 	floatingButtonDirectGenerate: false,
 
 	// Backup Settings

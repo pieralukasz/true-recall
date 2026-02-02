@@ -43,12 +43,6 @@ export {
     type SelectNoteModalOptions,
 } from "./SelectNoteModal";
 export {
-    AddNotesToProjectModal,
-    type AddNotesToProjectResult,
-    type AddNotesToProjectModalOptions,
-    type OrphanedNoteInfo,
-} from "./AddNotesToProjectModal";
-export {
     TemplatePickerModal,
     type TemplatePickerResult,
 } from "./TemplatePickerModal";
@@ -57,11 +51,6 @@ export {
     type RestoreBackupResult,
     type RestoreBackupModalOptions,
 } from "./RestoreBackupModal";
-export {
-    AIGeneratorModal,
-    type AIGeneratorResult,
-    type AIGeneratorModalOptions,
-} from "./AIGeneratorModal";
 export {
     DeviceSelectionModal,
     type DeviceSelectionResult,

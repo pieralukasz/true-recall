@@ -60,9 +60,6 @@ export class UndoService {
 		if (this.stack.length > this.maxStackSize) {
 			this.stack.shift();
 		}
-
-		// Emit event for UI updates
-		this.emitUndoChanged();
 	}
 
 	/**
@@ -105,14 +102,10 @@ export class UndoService {
 				notify().undoFailed(entry.description);
 			}
 
-			// Emit event for UI updates
-			this.emitUndoChanged();
-
 			return success;
 		} catch (error) {
 			console.error("[UndoService] Error executing undo:", error);
 			notify().undoFailed(entry.description);
-			this.emitUndoChanged();
 			return false;
 		}
 	}
@@ -303,7 +296,6 @@ export class UndoService {
 	 */
 	clear(): void {
 		this.stack = [];
-		this.emitUndoChanged();
 	}
 
 	/**
@@ -315,17 +307,5 @@ export class UndoService {
 		this.stack = this.stack.filter(
 			(entry) => !sessionTypes.has(entry.payload.type)
 		);
-		this.emitUndoChanged();
-	}
-
-	/**
-	 * Emit undo state change event
-	 */
-	private emitUndoChanged(): void {
-		getEventBus().emit({
-			type: "undo:changed",
-			canUndo: this.stack.length > 0,
-			timestamp: Date.now(),
-		});
 	}
 }

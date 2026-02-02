@@ -8,7 +8,6 @@ import { BaseModal } from "./BaseModal";
 import type { FlashcardItem, TrueRecallSettings } from "../../types";
 import { notify, type OpenRouterService } from "../../services";
 import { createModalCardItem, ModalCardItem } from "./components/ModalCardItem";
-import { createExpandableAddCard, ExpandableAddCard } from "./components/ExpandableAddCard";
 
 export interface FlashcardReviewResult {
 	cancelled: boolean;
@@ -30,7 +29,6 @@ interface FlashcardReviewState {
 	expandedCardIndex: number | null;
 	editingCardIndex: number | null;
 	editingField: "question" | "answer" | null;
-	isAddCardExpanded: boolean;
 	isSelectionMode: boolean;
 	selectedCardIds: Set<string>;
 }
@@ -59,7 +57,6 @@ export class FlashcardReviewModal extends BaseModal {
 
 	// Child components
 	private cardComponents: ModalCardItem[] = [];
-	private addCardComponent: ExpandableAddCard | null = null;
 
 	constructor(app: App, options: FlashcardReviewModalOptions) {
 		super(app, {
@@ -76,7 +73,6 @@ export class FlashcardReviewModal extends BaseModal {
 			expandedCardIndex: null,
 			editingCardIndex: null,
 			editingField: null,
-			isAddCardExpanded: false,
 			isSelectionMode: false,
 			selectedCardIds: new Set(),
 		};
@@ -174,8 +170,6 @@ export class FlashcardReviewModal extends BaseModal {
 		// Cleanup existing components
 		this.cardComponents.forEach((c) => c.destroy());
 		this.cardComponents = [];
-		this.addCardComponent?.destroy();
-		this.addCardComponent = null;
 
 		this.flashcardsListEl.empty();
 
@@ -184,7 +178,7 @@ export class FlashcardReviewModal extends BaseModal {
 		if (flashcards.length === 0) {
 			this.flashcardsListEl.createDiv({
 				cls: "ep:text-center ep:text-obs-muted ep:py-6 ep:px-4 ep:italic",
-				text: "No flashcards. Add one below or use AI to generate.",
+				text: "No flashcards to review.",
 			});
 		} else {
 			for (let i = 0; i < flashcards.length; i++) {
@@ -213,18 +207,6 @@ export class FlashcardReviewModal extends BaseModal {
 				this.cardComponents.push(cardComponent);
 			}
 		}
-
-		// Add card component
-		const addCardWrapper = this.flashcardsListEl.createDiv();
-		this.addCardComponent = createExpandableAddCard(addCardWrapper, {
-			isExpanded: this.state.isAddCardExpanded,
-			onToggleExpand: () => this.handleToggleAddCard(),
-			onSave: (question, answer) => this.handleAddCard(question, answer),
-			onSaveWithAI: () => {
-				// AI assist not supported in review modal - just save normally
-			},
-			onCancel: () => this.handleCancelAddCard(),
-		});
 
 		this.updateButtons();
 	}
@@ -306,29 +288,6 @@ export class FlashcardReviewModal extends BaseModal {
 			this.state.editingCardIndex--;
 		}
 		this.updateTitle(`Review Flashcards (${this.state.flashcards.length})`);
-		this.renderFlashcardsList();
-	}
-
-	private handleToggleAddCard(): void {
-		this.state.isAddCardExpanded = !this.state.isAddCardExpanded;
-		this.renderFlashcardsList();
-	}
-
-	private handleAddCard(question: string, answer: string): void {
-		const newCard: FlashcardItem = {
-			id: crypto.randomUUID(),
-			question,
-			answer,
-		};
-		this.state.flashcards.push(newCard);
-		this.state.isAddCardExpanded = false;
-		this.updateTitle(`Review Flashcards (${this.state.flashcards.length})`);
-		this.renderFlashcardsList();
-		notify().success("Flashcard added");
-	}
-
-	private handleCancelAddCard(): void {
-		this.state.isAddCardExpanded = false;
 		this.renderFlashcardsList();
 	}
 
@@ -453,8 +412,6 @@ export class FlashcardReviewModal extends BaseModal {
 		// Cleanup components
 		this.cardComponents.forEach((c) => c.destroy());
 		this.cardComponents = [];
-		this.addCardComponent?.destroy();
-		this.addCardComponent = null;
 
 		this.component.unload();
 		this.contentEl.empty();

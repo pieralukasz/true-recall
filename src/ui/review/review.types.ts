@@ -42,11 +42,3 @@ export interface UndoEntry {
     }>;
 }
 
-/**
- * Remaining cards breakdown by type
- */
-export interface RemainingByType {
-    new: number;
-    learning: number;
-    due: number;
-}

@@ -289,7 +289,7 @@ export class TrueRecallSettingTab extends PluginSettingTab {
 					.setValue(String(this.plugin.settings.floatingButtonMinChars))
 					.onChange(async (value) => {
 						const num = parseInt(value) || 50;
-						this.plugin.settings.floatingButtonMinChars = Math.max(10, num);
+						this.plugin.settings.floatingButtonMinChars = Math.max(1, num);
 						await this.plugin.saveSettings();
 					})
 			);
