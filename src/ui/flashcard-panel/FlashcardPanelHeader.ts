@@ -44,9 +44,6 @@ interface StatusCounts {
     review: number;
 }
 
-/**
- * Flashcard panel header component with stats and actions
- */
 export class FlashcardPanelHeader extends BaseComponent {
     private props: FlashcardPanelHeaderProps;
     private searchInput: HTMLInputElement | null = null;

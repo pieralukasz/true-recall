@@ -1,15 +1,8 @@
-/**
- * Stats Service
- * Provides flashcard statistics with auto-invalidating cache
- */
 import type { FlashcardManager } from "../flashcard/flashcard.service";
 import type { FSRSService } from "../core/fsrs.service";
 import type { EventBusService } from "../core/event-bus.service";
 import { ReactiveCache } from "../cache";
 
-/**
- * Global flashcard statistics
- */
 export interface GlobalFlashcardStats {
 	total: number;
 	new: number;
@@ -41,9 +34,6 @@ export class StatsService {
 		});
 	}
 
-	/**
-	 * Compute stats from all cards
-	 */
 	private async computeStats(): Promise<GlobalFlashcardStats> {
 		const allCards = await this.flashcardManager.getAllFSRSCards();
 		const rawStats = this.fsrsService.getStats(allCards);
@@ -56,23 +46,14 @@ export class StatsService {
 		};
 	}
 
-	/**
-	 * Get global statistics with caching
-	 */
 	async getGlobalStats(forceRefresh = false): Promise<GlobalFlashcardStats> {
 		return this.statsCache.get(forceRefresh);
 	}
 
-	/**
-	 * Invalidate cache (manual trigger - usually not needed with reactive cache)
-	 */
 	invalidateCache(): void {
 		this.statsCache.invalidate();
 	}
 
-	/**
-	 * Dispose the service and cleanup subscriptions
-	 */
 	dispose(): void {
 		this.statsCache.dispose();
 	}

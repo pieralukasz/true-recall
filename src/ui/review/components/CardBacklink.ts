@@ -7,9 +7,6 @@ export interface CardBacklinkCallbacks {
 	onOpenSource: () => void;
 }
 
-/**
- * Renders source note backlink
- */
 export class CardBacklink {
 	constructor(private readonly callbacks: CardBacklinkCallbacks) {}
 

@@ -1,21 +1,12 @@
-/**
- * Plugin Commands
- * All command registrations for the True Recall plugin
- */
 import type TrueRecallPlugin from "../main";
 
-/**
- * Register all plugin commands
- */
 export function registerCommands(plugin: TrueRecallPlugin): void {
-	// Open flashcard panel
 	plugin.addCommand({
 		id: "open-flashcard-panel",
 		name: "Open flashcard panel",
 		callback: () => void plugin.activateView(),
 	});
 
-	// Generate flashcards for current note
 	plugin.addCommand({
 		id: "generate-flashcards",
 		name: "Generate flashcards for current note",
@@ -31,14 +22,12 @@ export function registerCommands(plugin: TrueRecallPlugin): void {
 		},
 	});
 
-	// Start review session
 	plugin.addCommand({
 		id: "start-review",
 		name: "Start review session",
 		callback: () => void plugin.startReviewSession(),
 	});
 
-	// Review flashcards from current note
 	plugin.addCommand({
 		id: "review-current-note",
 		name: "Review flashcards from current note",
@@ -54,28 +43,24 @@ export function registerCommands(plugin: TrueRecallPlugin): void {
 		},
 	});
 
-	// Review today's new cards
 	plugin.addCommand({
 		id: "review-todays-cards",
 		name: "Review today's new cards",
 		callback: () => void plugin.reviewTodaysCards(),
 	});
 
-	// Open statistics panel
 	plugin.addCommand({
 		id: "open-statistics",
 		name: "Open statistics panel",
 		callback: () => void plugin.openStatsView(),
 	});
 
-	// Show projects panel
 	plugin.addCommand({
 		id: "show-projects",
 		name: "Open projects panel",
 		callback: () => void plugin.showProjects(),
 	});
 
-	// Add current note to project
 	plugin.addCommand({
 		id: "add-to-project",
 		name: "Add current note to project",
@@ -91,42 +76,36 @@ export function registerCommands(plugin: TrueRecallPlugin): void {
 		},
 	});
 
-	// Open card browser
 	plugin.addCommand({
 		id: "open-browser",
 		name: "Open card browser",
 		callback: () => void plugin.showBrowser(),
 	});
 
-	// Open FSRS simulator
 	plugin.addCommand({
 		id: "open-fsrs-simulator",
 		name: "Open FSRS simulator",
 		callback: () => void plugin.openSimulator(),
 	});
 
-	// Open orphaned cards panel
 	plugin.addCommand({
 		id: "open-orphaned-cards",
 		name: "Open orphaned cards panel",
 		callback: () => void plugin.openOrphanedCardsView(),
 	});
 
-	// Create database backup
 	plugin.addCommand({
 		id: "create-backup",
 		name: "Create database backup",
 		callback: () => void plugin.createManualBackup(),
 	});
 
-	// Sync cloud data
 	plugin.addCommand({
 		id: "sync-cloud",
 		name: "Sync cloud data",
 		callback: () => void plugin.syncCloud(),
 	});
 
-	// Add flashcard UID to current note
 	plugin.addCommand({
 		id: "add-flashcard-uid",
 		name: "Add flashcard UID to current note",
@@ -142,7 +121,6 @@ export function registerCommands(plugin: TrueRecallPlugin): void {
 		},
 	});
 
-	// Undo last flashcard action (edit, add, delete)
 	plugin.addCommand({
 		id: "undo-flashcard-action",
 		name: "Undo last flashcard action",

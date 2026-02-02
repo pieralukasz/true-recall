@@ -1,15 +1,10 @@
 /**
- * Day Boundary Service
- * Centralizes Anki-style day-based scheduling logic
+ * Implements Anki-style "Next day starts at" logic for day-based scheduling
  */
 import { State } from "ts-fsrs";
 import type { FSRSFlashcardItem } from "../../types";
 import { formatLocalDate as formatLocalDateUtil } from "../../utils";
 
-/**
- * Service for day-based scheduling calculations
- * Implements Anki-style "Next day starts at" logic
- */
 export class DayBoundaryService {
 	private dayStartHour: number;
 
@@ -17,17 +12,11 @@ export class DayBoundaryService {
 		this.dayStartHour = dayStartHour;
 	}
 
-	/**
-	 * Update the day start hour setting
-	 */
 	updateDayStartHour(hour: number): void {
 		this.dayStartHour = hour;
 	}
 
-	/**
-	 * Get today's boundary based on dayStartHour
-	 * If current hour < dayStartHour, we're still in "yesterday"
-	 */
+	/** If current hour < dayStartHour, we're still in "yesterday" */
 	getTodayBoundary(now?: Date): Date {
 		const currentTime = now ?? new Date();
 		const boundary = new Date(currentTime);
@@ -38,9 +27,6 @@ export class DayBoundaryService {
 		return boundary;
 	}
 
-	/**
-	 * Get tomorrow's boundary (end of "today")
-	 */
 	getTomorrowBoundary(now?: Date): Date {
 		const today = this.getTodayBoundary(now);
 		const tomorrow = new Date(today);
@@ -49,7 +35,6 @@ export class DayBoundaryService {
 	}
 
 	/**
-	 * Check if a card is due today (day-based, not exact timestamp)
 	 * For Review cards: due before tomorrow's boundary
 	 * For Learning/Relearning: exact timestamp check
 	 */
@@ -75,31 +60,19 @@ export class DayBoundaryService {
 		return false;
 	}
 
-	/**
-	 * Check if a card is available for study (new OR due)
-	 */
 	isCardAvailable(card: FSRSFlashcardItem, now?: Date): boolean {
 		if (card.fsrs.state === State.New) return true;
 		return this.isCardDueToday(card, now);
 	}
 
-	/**
-	 * Count due cards (excluding new)
-	 */
 	countDueCards(cards: FSRSFlashcardItem[], now?: Date): number {
 		return cards.filter((c) => this.isCardDueToday(c, now)).length;
 	}
 
-	/**
-	 * Filter cards to get only due cards
-	 */
 	getDueCards(cards: FSRSFlashcardItem[], now?: Date): FSRSFlashcardItem[] {
 		return cards.filter((c) => this.isCardDueToday(c, now));
 	}
 
-	/**
-	 * Filter cards to get available cards (new or due)
-	 */
 	getAvailableCards(
 		cards: FSRSFlashcardItem[],
 		now?: Date
@@ -107,26 +80,16 @@ export class DayBoundaryService {
 		return cards.filter((c) => this.isCardAvailable(c, now));
 	}
 
-	/**
-	 * Format a date as local YYYY-MM-DD (NOT UTC)
-	 * Uses local calendar date to avoid timezone issues with toISOString()
-	 */
 	formatLocalDate(date: Date): string {
 		return formatLocalDateUtil(date);
 	}
 
-	/**
-	 * Get today's date key (YYYY-MM-DD) respecting dayStartHour
-	 * At 3 AM with dayStartHour=4, this returns yesterday's date
-	 */
+	/** At 3 AM with dayStartHour=4, this returns yesterday's date */
 	getTodayKey(now?: Date): string {
 		const boundary = this.getTodayBoundary(now);
 		return this.formatLocalDate(boundary);
 	}
 
-	/**
-	 * Check if a timestamp falls within "today" (respecting dayStartHour)
-	 */
 	isTimestampToday(timestamp: number, now?: Date): boolean {
 		const date = new Date(timestamp);
 		const todayBoundary = this.getTodayBoundary(now);
@@ -134,9 +97,6 @@ export class DayBoundaryService {
 		return date >= todayBoundary && date < tomorrowBoundary;
 	}
 
-	/**
-	 * Get the current dayStartHour setting
-	 */
 	getDayStartHour(): number {
 		return this.dayStartHour;
 	}

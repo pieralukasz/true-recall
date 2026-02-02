@@ -1,7 +1,3 @@
-/**
- * Panel State Manager
- * Centralized state management for the flashcard panel
- */
 import type { TFile } from "obsidian";
 import type { FlashcardInfo } from "../types";
 import type { AppError } from "../errors";
@@ -14,9 +10,6 @@ import type {
     StateSelector,
 } from "./state.types";
 
-/**
- * Creates the initial panel state
- */
 function createInitialState(): PanelState {
     return {
         status: "none",
@@ -42,10 +35,6 @@ function createInitialState(): PanelState {
     };
 }
 
-/**
- * Centralized state manager for the flashcard panel
- * Provides reactive state updates and subscription capabilities
- */
 export class PanelStateManager {
     private state: PanelState;
     private listeners: Set<StateListener> = new Set();
@@ -54,10 +43,6 @@ export class PanelStateManager {
         this.state = createInitialState();
     }
 
-    /**
-     * Get current state (immutable copy)
-     * Creates deep copies of Set fields to prevent external mutation
-     */
     getState(): PanelState {
         return {
             ...this.state,
@@ -66,29 +51,18 @@ export class PanelStateManager {
         };
     }
 
-    /**
-     * Update state with partial updates
-     * Notifies all listeners of the change
-     */
     setState(partial: PartialPanelState): void {
         const prevState = this.state;
         this.state = { ...this.state, ...partial };
         this.notifyListeners(prevState);
     }
 
-    /**
-     * Subscribe to state changes
-     * Returns unsubscribe function
-     */
     subscribe(listener: StateListener): () => void {
         this.listeners.add(listener);
         return () => this.listeners.delete(listener);
     }
 
-    /**
-     * Subscribe to specific state changes using a selector
-     * Only notifies when selected value changes
-     */
+    /** Only notifies when selected value changes */
     subscribeToSelector<T>(
         selector: StateSelector<T>,
         listener: (value: T, prevValue: T) => void
@@ -108,35 +82,21 @@ export class PanelStateManager {
         return () => this.listeners.delete(wrappedListener);
     }
 
-    /**
-     * Reset state to initial values
-     */
     reset(): void {
         const prevState = this.state;
         this.state = createInitialState();
         this.notifyListeners(prevState);
     }
 
-    /**
-     * Increment render version (for race condition prevention)
-     */
     incrementRenderVersion(): number {
         this.state = { ...this.state, renderVersion: this.state.renderVersion + 1 };
         return this.state.renderVersion;
     }
 
-    /**
-     * Check if render version matches current
-     */
     isCurrentRender(version: number): boolean {
         return this.state.renderVersion === version;
     }
 
-    // ===== Convenience Methods =====
-
-    /**
-     * Set current file and reset related state
-     */
     setCurrentFile(file: TFile | null): void {
         this.setState({
             currentFile: file,
@@ -149,23 +109,14 @@ export class PanelStateManager {
         });
     }
 
-    /**
-     * Set processing status
-     */
     setStatus(status: ProcessingStatus): void {
         this.setState({ status });
     }
 
-    /**
-     * Set view mode
-     */
     setViewMode(mode: ViewMode): void {
         this.setState({ viewMode: mode });
     }
 
-    /**
-     * Set flashcard info
-     */
     setFlashcardInfo(info: FlashcardInfo | null): void {
         this.setState({
             flashcardInfo: info,
@@ -173,16 +124,10 @@ export class PanelStateManager {
         });
     }
 
-    /**
-     * Set user instructions for AI
-     */
     setUserInstructions(instructions: string): void {
         this.setState({ userInstructions: instructions });
     }
 
-    /**
-     * Set error state
-     */
     setError(error: AppError | null): void {
         this.setState({
             error,
@@ -190,9 +135,6 @@ export class PanelStateManager {
         });
     }
 
-    /**
-     * Start processing (set status to processing)
-     */
     startProcessing(): void {
         this.setState({
             status: "processing",
@@ -200,18 +142,12 @@ export class PanelStateManager {
         });
     }
 
-    /**
-     * Finish processing (set status based on flashcard existence)
-     */
     finishProcessing(hasFlashcards: boolean = false): void {
         this.setState({
             status: hasFlashcards ? "exists" : "none",
         });
     }
 
-    /**
-     * Check if current file matches the given file
-     */
     isCurrentFile(file: TFile | null): boolean {
         if (!file || !this.state.currentFile) {
             return file === this.state.currentFile;
@@ -219,16 +155,10 @@ export class PanelStateManager {
         return this.state.currentFile.path === file.path;
     }
 
-    /**
-     * Check if currently processing
-     */
     isProcessing(): boolean {
         return this.state.status === "processing";
     }
 
-    /**
-     * Set selected text for literature note generation
-     */
     setSelectedText(text: string): void {
         this.setState({
             selectedText: text,
@@ -236,9 +166,6 @@ export class PanelStateManager {
         });
     }
 
-    /**
-     * Clear selection state
-     */
     clearSelection(): void {
         this.setState({
             selectedText: "",
@@ -246,25 +173,16 @@ export class PanelStateManager {
         });
     }
 
-    /**
-     * Set uncollected flashcards count
-     */
     setUncollectedInfo(count: number): void {
         this.setState({
             uncollectedCount: count,
         });
     }
 
-    /**
-     * Check if there are uncollected flashcards (computed from count)
-     */
     hasUncollectedFlashcards(): boolean {
         return this.state.uncollectedCount > 0;
     }
 
-    /**
-     * Enter selection mode and optionally select a card
-     */
     enterSelectionMode(initialCardId?: string): void {
         const selectedCardIds = new Set<string>();
         if (initialCardId) {
@@ -276,9 +194,6 @@ export class PanelStateManager {
         });
     }
 
-    /**
-     * Exit selection mode and clear selections
-     */
     exitSelectionMode(): void {
         this.setState({
             selectionMode: "normal",
@@ -286,9 +201,6 @@ export class PanelStateManager {
         });
     }
 
-    /**
-     * Toggle card selection
-     */
     toggleCardSelection(cardId: string): void {
         const newSet = new Set(this.state.selectedCardIds);
         if (newSet.has(cardId)) {
@@ -299,9 +211,6 @@ export class PanelStateManager {
         this.setState({ selectedCardIds: newSet });
     }
 
-    /**
-     * Toggle card expanded state
-     */
     toggleCardExpanded(cardId: string): void {
         const newSet = new Set(this.state.expandedCardIds);
         if (newSet.has(cardId)) {
@@ -312,38 +221,24 @@ export class PanelStateManager {
         this.setState({ expandedCardIds: newSet });
     }
 
-    /**
-     * Check if in selection mode
-     */
     isInSelectionMode(): boolean {
         return this.state.selectionMode === "selecting";
     }
 
-    /**
-     * Set search query for filtering flashcards
-     */
     setSearchQuery(query: string): void {
         this.setState({ searchQuery: query });
     }
 
-    /**
-     * Set whether the inline add card form is expanded
-     */
     setAddCardExpanded(expanded: boolean): void {
         this.setState({ isAddCardExpanded: expanded });
     }
 
-    /**
-     * Set review follow state (when panel should follow review session)
-     */
     setReviewFollowState(sourcePath: string | null, isActive: boolean): void {
         this.setState({
             isFollowingReview: isActive && sourcePath !== null,
             reviewSourceNotePath: isActive ? sourcePath : null,
         });
     }
-
-    // ===== Private Methods =====
 
     private notifyListeners(prevState: PanelState): void {
         const currentState = this.state;
@@ -357,9 +252,6 @@ export class PanelStateManager {
     }
 }
 
-/**
- * Create a new PanelStateManager instance
- */
 export function createPanelStateManager(): PanelStateManager {
     return new PanelStateManager();
 }

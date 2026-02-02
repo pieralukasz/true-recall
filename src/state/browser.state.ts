@@ -1,7 +1,3 @@
-/**
- * Browser State Manager
- * Centralized state management for the card browser view
- */
 import { State } from "ts-fsrs";
 import type {
     BrowserState,
@@ -15,9 +11,6 @@ import type {
 } from "../types/browser.types";
 import { parseSearchQuery } from "../ui/browser/BrowserSearchParser";
 
-/**
- * Creates the initial browser state
- */
 function createInitialState(): BrowserState {
     return {
         allCards: [],
@@ -36,9 +29,6 @@ function createInitialState(): BrowserState {
     };
 }
 
-/**
- * State manager for the browser view
- */
 export class BrowserStateManager {
     private state: BrowserState;
     private listeners: Set<BrowserStateListener> = new Set();
@@ -58,17 +48,11 @@ export class BrowserStateManager {
         this.state = createInitialState();
     }
 
-    /**
-     * Invalidate cached computations when underlying data changes
-     */
     private invalidateCache(): void {
         this.cache.stateCounts = null;
         this.cache.uniqueProjects = null;
     }
 
-    /**
-     * Build card map for O(1) lookups
-     */
     private buildCardMap(cards: BrowserCardItem[]): void {
         this.cache.cardMap.clear();
         for (const card of cards) {
@@ -76,9 +60,6 @@ export class BrowserStateManager {
         }
     }
 
-    /**
-     * Get current state (immutable copy)
-     */
     getState(): BrowserState {
         return {
             ...this.state,
@@ -89,9 +70,6 @@ export class BrowserStateManager {
         };
     }
 
-    /**
-     * Update state with partial updates
-     */
     setState(partial: PartialBrowserState): void {
         const prevState = this.state;
 
@@ -111,28 +89,17 @@ export class BrowserStateManager {
         this.notifyListeners(prevState);
     }
 
-    /**
-     * Subscribe to state changes
-     */
     subscribe(listener: BrowserStateListener): () => void {
         this.listeners.add(listener);
         return () => this.listeners.delete(listener);
     }
 
-    /**
-     * Reset state to initial values
-     */
     reset(): void {
         const prevState = this.state;
         this.state = createInitialState();
         this.notifyListeners(prevState);
     }
 
-    // ===== Data Loading =====
-
-    /**
-     * Set all cards and apply filters
-     */
     setCards(cards: BrowserCardItem[]): void {
         this.state.allCards = cards;
         this.state.isLoading = false;
@@ -141,26 +108,15 @@ export class BrowserStateManager {
         this.applyFiltersAndSort();
     }
 
-    /**
-     * Set loading state
-     */
     setLoading(isLoading: boolean): void {
         this.setState({ isLoading });
     }
 
-    // ===== Search & Filters =====
-
-    /**
-     * Set search query and apply filters
-     */
     setSearchQuery(query: string): void {
         this.state.searchQuery = query;
         this.applyFiltersAndSort();
     }
 
-    /**
-     * Set sidebar filters and apply
-     */
     setSidebarFilters(filters: Partial<SidebarFilters>): void {
         this.state.sidebarFilters = {
             ...this.state.sidebarFilters,
@@ -169,9 +125,6 @@ export class BrowserStateManager {
         this.applyFiltersAndSort();
     }
 
-    /**
-     * Clear all filters
-     */
     clearFilters(): void {
         this.state.searchQuery = "";
         this.state.sidebarFilters = {
@@ -181,11 +134,6 @@ export class BrowserStateManager {
         this.applyFiltersAndSort();
     }
 
-    // ===== Sorting =====
-
-    /**
-     * Set sort column and direction
-     */
     setSortColumn(column: BrowserColumn): void {
         if (this.state.sortColumn === column) {
             // Toggle direction if same column
@@ -197,19 +145,11 @@ export class BrowserStateManager {
         this.applyFiltersAndSort();
     }
 
-    /**
-     * Set sort direction explicitly
-     */
     setSortDirection(direction: SortDirection): void {
         this.state.sortDirection = direction;
         this.applyFiltersAndSort();
     }
 
-    // ===== Selection =====
-
-    /**
-     * Toggle card selection
-     */
     toggleCardSelection(cardId: string): void {
         const newSelection = new Set(this.state.selectedCardIds);
         if (newSelection.has(cardId)) {
@@ -225,9 +165,6 @@ export class BrowserStateManager {
         this.setState({ selectedCardIds: newSelection });
     }
 
-    /**
-     * Select a range of cards (Shift+click behavior)
-     */
     selectRange(toIndex: number): void {
         if (this.state.lastClickedIndex === null) {
             // No previous click, just select the clicked card
@@ -253,51 +190,29 @@ export class BrowserStateManager {
         this.setState({ selectedCardIds: newSelection });
     }
 
-    /**
-     * Select all filtered cards
-     */
     selectAll(): void {
         const newSelection = new Set(this.state.filteredCards.map(c => c.id));
         this.setState({ selectedCardIds: newSelection });
     }
 
-    /**
-     * Clear selection
-     */
     clearSelection(): void {
         this.state.lastClickedIndex = null;
         this.setState({ selectedCardIds: new Set() });
     }
 
-    /**
-     * Get selected cards
-     */
     getSelectedCards(): BrowserCardItem[] {
         return this.state.filteredCards.filter(c => this.state.selectedCardIds.has(c.id));
     }
 
-    // ===== Preview =====
-
-    /**
-     * Set the previewed card
-     */
     setPreviewCard(cardId: string | null): void {
         this.setState({ previewCardId: cardId });
     }
 
-    /**
-     * Get the previewed card (O(1) lookup using cardMap)
-     */
     getPreviewCard(): BrowserCardItem | null {
         if (!this.state.previewCardId) return null;
         return this.cache.cardMap.get(this.state.previewCardId) ?? null;
     }
 
-    // ===== Card Updates =====
-
-    /**
-     * Update a card in the state (after edit)
-     */
     updateCard(cardId: string, updates: Partial<BrowserCardItem>): void {
         const prevState = this.state;
 
@@ -313,9 +228,6 @@ export class BrowserStateManager {
         this.notifyListeners(prevState);
     }
 
-    /**
-     * Remove cards from state (after deletion or bulk operation)
-     */
     removeCards(cardIds: string[]): void {
         const cardIdSet = new Set(cardIds);
         const prevState = this.state;
@@ -338,11 +250,7 @@ export class BrowserStateManager {
         this.notifyListeners(prevState);
     }
 
-    // ===== Aggregations =====
-
-    /**
-     * Get unique projects from all cards (memoized)
-     */
+    /** Memoized */
     getUniqueProjects(): string[] {
         if (this.cache.uniqueProjects) {
             return this.cache.uniqueProjects;
@@ -358,9 +266,7 @@ export class BrowserStateManager {
         return this.cache.uniqueProjects;
     }
 
-    /**
-     * Get card counts by state (memoized)
-     */
+    /** Memoized */
     getStateCounts(): { new: number; learning: number; review: number; relearning: number; suspended: number; buried: number } {
         if (this.cache.stateCounts) {
             return this.cache.stateCounts;
@@ -404,11 +310,6 @@ export class BrowserStateManager {
         return counts;
     }
 
-    // ===== Private Methods =====
-
-    /**
-     * Apply all filters and sorting to allCards
-     */
     private applyFiltersAndSort(): void {
         const prevState = this.state;
         let cards = [...this.state.allCards];
@@ -428,9 +329,6 @@ export class BrowserStateManager {
         this.notifyListeners(prevState);
     }
 
-    /**
-     * Apply sidebar filters
-     */
     private applySidebarFilters(cards: BrowserCardItem[]): BrowserCardItem[] {
         const { stateFilter, projectFilter } = this.state.sidebarFilters;
         const now = new Date();
@@ -457,9 +355,6 @@ export class BrowserStateManager {
         });
     }
 
-    /**
-     * Apply search query with Anki-style syntax
-     */
     private applySearchQuery(cards: BrowserCardItem[], query: string): BrowserCardItem[] {
         const tokens = parseSearchQuery(query);
         if (tokens.length === 0) return cards;
@@ -467,9 +362,6 @@ export class BrowserStateManager {
         return cards.filter(card => this.cardMatchesTokens(card, tokens));
     }
 
-    /**
-     * Check if a card matches all search tokens
-     */
     private cardMatchesTokens(card: BrowserCardItem, tokens: SearchToken[]): boolean {
         for (const token of tokens) {
             const matches = this.cardMatchesToken(card, token);
@@ -480,9 +372,6 @@ export class BrowserStateManager {
         return true;
     }
 
-    /**
-     * Check if a card matches a single token
-     */
     private cardMatchesToken(card: BrowserCardItem, token: SearchToken): boolean {
         const now = new Date();
 
@@ -548,9 +437,6 @@ export class BrowserStateManager {
         }
     }
 
-    /**
-     * Get a property value from a card for prop: queries
-     */
     private getPropertyValue(card: BrowserCardItem, property: string): number | null {
         switch (property.toLowerCase()) {
             case "stability":
@@ -569,9 +455,6 @@ export class BrowserStateManager {
         }
     }
 
-    /**
-     * Compare two values with an operator
-     */
     private compareValues(a: number, op: string, b: number): boolean {
         switch (op) {
             case "<": return a < b;
@@ -583,9 +466,6 @@ export class BrowserStateManager {
         }
     }
 
-    /**
-     * Sort cards by current column and direction
-     */
     private sortCards(cards: BrowserCardItem[]): BrowserCardItem[] {
         const { sortColumn, sortDirection } = this.state;
         const modifier = sortDirection === "asc" ? 1 : -1;
@@ -634,9 +514,6 @@ export class BrowserStateManager {
         });
     }
 
-    /**
-     * Notify all listeners of state change
-     */
     private notifyListeners(prevState: BrowserState): void {
         const currentState = this.state;
         this.listeners.forEach(listener => {
@@ -649,9 +526,6 @@ export class BrowserStateManager {
     }
 }
 
-/**
- * Create a new BrowserStateManager instance
- */
 export function createBrowserStateManager(): BrowserStateManager {
     return new BrowserStateManager();
 }

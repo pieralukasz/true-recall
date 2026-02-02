@@ -15,9 +15,6 @@ export interface RestoreBackupModalOptions {
     backupService: BackupService;
 }
 
-/**
- * Modal for selecting and restoring a database backup
- */
 export class RestoreBackupModal extends BasePromiseModal<RestoreBackupResult> {
     private backups: BackupInfo[];
     private backupService: BackupService;

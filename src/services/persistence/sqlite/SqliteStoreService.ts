@@ -1,12 +1,6 @@
 /**
- * SQLite Store Service
- * High-performance storage for FSRS card data using sql.js
- *
- * Refactored to use domain modules (CardActions, StatsActions, BrowserActions).
- * All operations are now performed directly on the appropriate module:
- * - store.cards.* for card operations
- * - store.stats.* for review log and statistics
- * - store.browser.* for browser view queries
+ * High-performance storage for FSRS card data using sql.js.
+ * Uses domain modules: store.cards.*, store.stats.*, store.browser.*
  */
 import { App, normalizePath } from "obsidian";
 import { notify, NOTIFICATION_DURATION } from "../../ui/notification.service";
@@ -16,14 +10,6 @@ import { SqliteSchemaManager } from "./SqliteSchemaManager";
 import { CardActions, StatsActions, BrowserActions } from "./modules";
 import { DB_FOLDER, SAVE_DEBOUNCE_MS, getDeviceDbFilename } from "./sqlite.types";
 
-/**
- * SQLite-based storage service for FSRS card data
- *
- * Domain modules are exposed directly for all operations:
- * - store.cards.get(id) - Get a card
- * - store.stats.getDailyStats(date) - Get daily stats
- * - store.browser.getAllCardsForBrowser() - Get all cards for browser view
- */
 export class SqliteStoreService {
     private app: App;
     private deviceId: string;
@@ -49,16 +35,10 @@ export class SqliteStoreService {
         this.browser = new BrowserActions(this.db);
     }
 
-    /**
-     * Get the device ID for this store instance.
-     */
     getDeviceId(): string {
         return this.deviceId;
     }
 
-    /**
-     * Initialize the SQLite database
-     */
     async load(): Promise<void> {
         if (this.isLoaded) return;
 
@@ -100,81 +80,66 @@ export class SqliteStoreService {
         return this.isLoaded && this.db.isReady();
     }
 
-    // ===== Core CardStore methods (delegates to cards module) =====
+    // ===== Core CardStore methods =====
 
-    /** Check if store is loaded and ready */
     get(cardId: string): FSRSCardData | undefined {
         return this.cards.get(cardId);
     }
 
-    /** Set/update a card */
     set(cardId: string, data: FSRSCardData): void {
         this.cards.set(cardId, data);
     }
 
-    /** Delete a card */
     delete(cardId: string): void {
         this.cards.delete(cardId);
     }
 
-    /** Check if a card exists */
     has(cardId: string): boolean {
         return this.cards.has(cardId);
     }
 
-    /** Get all card IDs */
     keys(): string[] {
         return this.cards.keys();
     }
 
-    /** Get all cards */
     getAll(): FSRSCardData[] {
         return this.cards.getAll();
     }
 
-    /** Get total card count */
     size(): number {
         return this.cards.size();
     }
 
-    /** Get multiple cards by IDs (optimized batch fetch) */
     getByIds(cardIds: string[]): FSRSCardData[] {
         return this.cards.getByIds(cardIds);
     }
 
-    // ===== Content & Source Operations (delegates to cards module) =====
+    // ===== Content & Source Operations =====
 
-    /** Get all cards that have content */
     getCardsWithContent(): FSRSCardData[] {
         return this.cards.getCardsWithContent();
     }
 
-    /** Get cards by source note UID */
     getCardsBySourceUid(sourceUid: string): FSRSCardData[] {
         return this.cards.getCardsBySourceUid(sourceUid);
     }
 
-    /** Check if card has content */
     hasCardContent(cardId: string): boolean {
         return this.cards.hasCardContent(cardId);
     }
 
-    /** Check if any cards have content */
     hasAnyCardContent(): boolean {
         return this.cards.hasAnyCardContent();
     }
 
-    /** Get count of cards with content */
     getCardsWithContentCount(): number {
         return this.cards.getCardsWithContentCount();
     }
 
-    /** Get all orphaned cards */
     getOrphanedCards(): FSRSCardData[] {
         return this.cards.getOrphanedCards();
     }
 
-    /** Flush pending changes to disk */
     async flush(): Promise<void> {
         if (this.saveTimer) {
             clearTimeout(this.saveTimer);
@@ -234,10 +199,6 @@ export class SqliteStoreService {
         }, SAVE_DEBOUNCE_MS);
     }
 
-    /**
-     * Flush pending changes to disk with retry logic
-     * @returns true if save succeeded, false if failed after retries
-     */
     private async doFlush(): Promise<boolean> {
         if (!this.db.isReady() || !this.isDirty) return true; // Nothing to save = success
 
@@ -290,10 +251,6 @@ export class SqliteStoreService {
         return false; // Should not reach here
     }
 
-    /**
-     * Save immediately, bypassing debounce
-     * @returns true if save succeeded, false if failed
-     */
     async saveNow(): Promise<boolean> {
         if (this.saveTimer) {
             clearTimeout(this.saveTimer);
@@ -308,17 +265,10 @@ export class SqliteStoreService {
         this.isLoaded = false;
     }
 
-    /**
-     * Execute a function within a database transaction.
-     * Provides atomicity - either all operations succeed or none do.
-     */
     transaction<T>(fn: () => T): T {
         return this.db.transaction(fn);
     }
 
-    /**
-     * Get database statistics
-     */
     getStats(): {
         totalCards: number;
         totalReviews: number;
@@ -342,56 +292,34 @@ export class SqliteStoreService {
         };
     }
 
-    /**
-     * Get the raw database instance for advanced queries
-     * Used by NLQueryService for AI-powered natural language queries
-     */
     getDatabase() {
         return this.db.raw;
     }
 
-    /**
-     * Get aggregations service for extended statistics
-     * @deprecated Use store.stats directly instead
-     */
+    /** @deprecated Use store.stats directly */
     getAggregations() {
         return this.stats;
     }
 
-    /**
-     * Get browser queries service for browser view
-     * @deprecated Use store.browser directly instead
-     */
+    /** @deprecated Use store.browser directly */
     getBrowserQueries() {
         return this.browser;
     }
 
     // ===== FSRS Helper Operations =====
 
-    /**
-     * Alias for getAll() - used by FSRS Helper services
-     */
     getCards(): FSRSCardData[] {
         return this.cards.getAll();
     }
 
-    /**
-     * Get cards due within a date range
-     */
     getDueCardsByDateRange(startDate: string, endDate: string): FSRSCardData[] {
         return this.cards.getDueCardsByDateRange(startDate, endDate);
     }
 
-    /**
-     * Update card due date
-     */
     async updateCardDue(cardId: string, newDue: string): Promise<void> {
         this.cards.updateCardDue(cardId, newDue);
     }
 
-    /**
-     * Update card scheduling data
-     */
     async updateCardScheduling(
         cardId: string,
         data: { due: string; scheduledDays: number }
@@ -399,16 +327,10 @@ export class SqliteStoreService {
         this.cards.updateCardScheduling(cardId, data);
     }
 
-    /**
-     * Get review data for FSRS parameter optimization
-     */
     getReviewDataForOptimization() {
         return this.stats.getReviewDataForOptimization();
     }
 
-    /**
-     * Get review data for retention calculation
-     */
     getReviewsForRetention(startDate: string, endDate: string) {
         return this.stats.getReviewsForRetention(startDate, endDate);
     }
