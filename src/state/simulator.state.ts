@@ -10,7 +10,7 @@ import { DEFAULT_FSRS_WEIGHTS } from "../constants";
 const MAX_HISTORY_SIZE = 50;
 
 /** Initial config for simulator */
-export interface SimulatorInitConfig {
+interface SimulatorInitConfig {
 	weights: number[] | null;
 	retention: number;
 }

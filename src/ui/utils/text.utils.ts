@@ -23,9 +23,3 @@ export function stripHtml(html: string): string {
 		.trim();
 }
 
-/**
- * Strip HTML and truncate in one operation
- */
-export function stripAndTruncate(html: string, maxLength: number): string {
-	return truncateText(stripHtml(html), maxLength);
-}

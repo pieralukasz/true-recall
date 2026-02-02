@@ -9,7 +9,6 @@ export {
     OpenRouterResponseSchema,
     ChatMessageSchema,
     type OpenRouterError,
-    type OpenRouterChoice,
     type OpenRouterResponse,
     type ChatMessage,
 } from "./api.schema";

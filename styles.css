@@ -476,9 +476,6 @@
   .ep\:min-h-20 {
     min-height: calc(var(--ep-spacing) * 20);
   }
-  .ep\:min-h-35 {
-    min-height: calc(var(--ep-spacing) * 35);
-  }
   .ep\:min-h-\[3rem\] {
     min-height: 3rem;
   }
@@ -1125,9 +1122,6 @@
   .ep\:font-mono {
     font-family: var(--ep-font-mono);
   }
-  .ep\:font-sans {
-    font-family: var(--ep-font-sans);
-  }
   .ep\:text-2xl {
     font-size: var(--ep-text-2xl);
     line-height: var(--tw-leading, var(--ep-text-2xl--line-height));
@@ -1373,12 +1367,6 @@
       @media (hover: hover) {
         opacity: 100%;
       }
-    }
-  }
-  .ep\:placeholder\:text-sm {
-    &::placeholder {
-      font-size: var(--ep-text-sm);
-      line-height: var(--tw-leading, var(--ep-text-sm--line-height));
     }
   }
   .ep\:placeholder\:text-obs-faint {
@@ -1689,19 +1677,9 @@
       cursor: not-allowed;
     }
   }
-  .ep\:disabled\:bg-obs-secondary {
-    &:disabled {
-      background-color: var(--ep-color-obs-secondary);
-    }
-  }
   .ep\:disabled\:opacity-50 {
     &:disabled {
       opacity: 50%;
-    }
-  }
-  .ep\:disabled\:opacity-60 {
-    &:disabled {
-      opacity: 60%;
     }
   }
   .ep\:md\:flex {
