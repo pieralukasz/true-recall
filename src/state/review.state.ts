@@ -607,11 +607,24 @@ export class ReviewStateManager {
     }
 
     /**
-     * Check if a card is due now (or within learn ahead limit)
+     * Check if a card is due now (or within learn ahead limit for Review cards)
+     * Learning/Relearning cards must be actually due (no learn-ahead) to respect
+     * learning step intervals - showing them early defeats spaced repetition.
      */
     isCardDueNow(card: FSRSFlashcardItem): boolean {
         const dueDate = new Date(card.fsrs.due);
         const now = new Date();
+
+        // For Learning/Relearning: strict check, must be actually due
+        // This ensures learning steps are respected (e.g., 30-min step waits 30 min)
+        const isLearning =
+            card.fsrs.state === State.Learning ||
+            card.fsrs.state === State.Relearning;
+        if (isLearning) {
+            return dueDate <= now;
+        }
+
+        // For Review/New cards: allow learn-ahead window
         const learnAheadTime = new Date(
             now.getTime() + LEARN_AHEAD_LIMIT_MINUTES * 60 * 1000
         );

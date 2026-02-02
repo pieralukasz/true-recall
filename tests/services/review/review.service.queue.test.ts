@@ -150,10 +150,12 @@ describe("Queue Building - Advanced", () => {
 			expect(reviewService.shouldRequeue(card)).toBe(true);
 		});
 
-		it("should NOT requeue learning card due in 11 minutes", () => {
+		it("should requeue learning card due in 11 minutes (positioned at end, shows waiting screen)", () => {
 			const card = createCardWithDue("learning-11", State.Learning, 11);
 
-			expect(reviewService.shouldRequeue(card)).toBe(false);
+			// Learning cards are always requeued - getRequeuePosition places them
+			// at end if not due soon, and getPhase() shows waiting screen when reached
+			expect(reviewService.shouldRequeue(card)).toBe(true);
 		});
 	});
 
