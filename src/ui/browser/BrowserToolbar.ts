@@ -5,6 +5,8 @@
 import { setIcon } from "obsidian";
 import type { BulkOperation } from "../../types/browser.types";
 import { debounce } from "../../utils/event.utils";
+import { BaseComponent } from "./BaseComponent";
+import { TOOLBAR_STYLES } from "./styles";
 
 /** Search debounce delay in milliseconds */
 const SEARCH_DEBOUNCE_MS = 300;
@@ -14,6 +16,9 @@ export interface BrowserToolbarProps {
     selectedCount: number;
     totalCount: number;
     filteredCount: number;
+}
+
+export interface BrowserToolbarCallbacks {
     onSearchChange: (query: string) => void;
     onBulkOperation: (operation: BulkOperation) => void;
     onSelectAll: () => void;
@@ -23,10 +28,12 @@ export interface BrowserToolbarProps {
 /**
  * Toolbar component with search and actions
  */
-export class BrowserToolbar {
-    private container: HTMLElement;
-    private props: BrowserToolbarProps;
+export class BrowserToolbar extends BaseComponent<BrowserToolbarProps, BrowserToolbarCallbacks> {
     private searchInput: HTMLInputElement | null = null;
+
+    // Cached DOM references for incremental updates
+    private statsContainer: HTMLElement | null = null;
+    private actionsContainer: HTMLElement | null = null;
 
     /** Debounced search handler to prevent excessive updates while typing */
     private debouncedSearch: (query: string) => void;
@@ -37,13 +44,16 @@ export class BrowserToolbar {
         handler: EventListener;
     }> = [];
 
-    constructor(container: HTMLElement, props: BrowserToolbarProps) {
-        this.container = container;
-        this.props = props;
+    constructor(
+        container: HTMLElement,
+        props: BrowserToolbarProps,
+        callbacks: BrowserToolbarCallbacks
+    ) {
+        super(container, props, callbacks);
 
         // Create debounced search function
         this.debouncedSearch = debounce((query: string) => {
-            this.props.onSearchChange(query);
+            this.callbacks.onSearchChange(query);
         }, SEARCH_DEBOUNCE_MS);
     }
 
@@ -57,26 +67,55 @@ export class BrowserToolbar {
         this.renderSearch(searchSection);
 
         // Center: Stats
-        const statsSection = this.container.createDiv({
+        this.statsContainer = this.container.createDiv({
             cls: "ep:flex ep:items-center ep:gap-2 ep:text-obs-muted ep:text-[13px] ep:whitespace-nowrap",
         });
-        this.renderStats(statsSection);
+        this.renderStats();
 
         // Right side: Actions
-        const actionsSection = this.container.createDiv({
+        this.actionsContainer = this.container.createDiv({
             cls: "ep:flex ep:items-center ep:gap-2 ep:ml-auto",
         });
-        this.renderActions(actionsSection);
+        this.renderActions();
+
+        this.isRendered = true;
+    }
+
+    /**
+     * Handle incremental updates based on what changed
+     */
+    protected onUpdate(changedKeys: (keyof BrowserToolbarProps)[]): void {
+        const needsStats = changedKeys.some(k =>
+            k === "selectedCount" || k === "filteredCount" || k === "totalCount"
+        );
+        const needsActions = changedKeys.includes("selectedCount");
+
+        if (needsStats && this.statsContainer) {
+            this.statsContainer.empty();
+            this.renderStats();
+        }
+
+        if (needsActions && this.actionsContainer) {
+            this.actionsContainer.empty();
+            this.renderActions();
+        }
+
+        // Update search input if query changed externally
+        if (changedKeys.includes("searchQuery") && this.searchInput) {
+            if (this.searchInput.value !== this.props.searchQuery) {
+                this.searchInput.value = this.props.searchQuery;
+            }
+        }
     }
 
     private renderSearch(container: HTMLElement): void {
         const searchWrapper = container.createDiv({
-            cls: "ep:relative ep:flex ep:items-center",
+            cls: TOOLBAR_STYLES.SEARCH_WRAPPER,
         });
 
         // Search icon
         const iconEl = searchWrapper.createSpan({
-            cls: "ep:absolute ep:left-2.5 ep:text-obs-muted ep:pointer-events-none ep:flex ep:items-center",
+            cls: TOOLBAR_STYLES.SEARCH_ICON,
         });
         setIcon(iconEl, "search");
 
@@ -84,7 +123,7 @@ export class BrowserToolbar {
         this.searchInput = searchWrapper.createEl("input", {
             type: "text",
             placeholder: "Search cards... (is:due tag:xxx prop:stability>10)",
-            cls: "ep:w-full ep:py-2 ep:pr-8 ep:pl-9 ep:border ep:border-obs-border ep:rounded-md ep:bg-obs-primary ep:text-obs-normal ep:text-[13px] focus:ep:border-obs-interactive focus:ep:outline-none",
+            cls: TOOLBAR_STYLES.SEARCH_INPUT,
             value: this.props.searchQuery,
         });
 
@@ -96,110 +135,113 @@ export class BrowserToolbar {
         // Clear button
         if (this.props.searchQuery) {
             const clearBtn = searchWrapper.createSpan({
-                cls: "ep:absolute ep:right-2 ep:flex ep:items-center ep:justify-center ep:w-5 ep:h-5 ep:rounded ep:text-obs-muted ep:cursor-pointer ep:hover:bg-obs-modifier-hover ep:hover:text-obs-normal",
+                cls: TOOLBAR_STYLES.SEARCH_CLEAR,
             });
             setIcon(clearBtn, "x");
             clearBtn.addEventListener("click", () => {
                 if (this.searchInput) {
                     this.searchInput.value = "";
                 }
-                this.props.onSearchChange("");
+                this.callbacks.onSearchChange("");
             });
         }
     }
 
-    private renderStats(container: HTMLElement): void {
+    private renderStats(): void {
+        if (!this.statsContainer) return;
+
         const { selectedCount, filteredCount, totalCount } = this.props;
 
         if (selectedCount > 0) {
-            container.createSpan({
+            this.statsContainer.createSpan({
                 text: `${selectedCount} selected`,
-                cls: "ep:font-semibold ep:text-obs-interactive",
+                cls: TOOLBAR_STYLES.STATS_SELECTED,
             });
-            container.createSpan({ text: " · " });
+            this.statsContainer.createSpan({ text: " · " });
         }
 
-        container.createSpan({
+        this.statsContainer.createSpan({
             text: filteredCount === totalCount
                 ? `${totalCount} cards`
                 : `${filteredCount} of ${totalCount} cards`,
-            cls: "ep:text-obs-muted",
+            cls: TOOLBAR_STYLES.STATS_TEXT,
         });
     }
 
-    private renderActions(container: HTMLElement): void {
+    private renderActions(): void {
+        if (!this.actionsContainer) return;
+
         const { selectedCount } = this.props;
 
         // Selection actions (always visible)
-        const selectionGroup = container.createDiv({
+        const selectionGroup = this.actionsContainer.createDiv({
             cls: "ep:flex ep:items-center ep:gap-1",
         });
 
         this.createActionButton(selectionGroup, "check-square", "Select All", () => {
-            this.props.onSelectAll();
+            this.callbacks.onSelectAll();
         });
 
         if (selectedCount > 0) {
             this.createActionButton(selectionGroup, "square", "Clear Selection", () => {
-                this.props.onClearSelection();
+                this.callbacks.onClearSelection();
             });
         }
 
         // Bulk actions (only when cards selected)
         if (selectedCount > 0) {
-            const bulkGroup = container.createDiv({
+            const bulkGroup = this.actionsContainer.createDiv({
                 cls: "ep:flex ep:items-center ep:gap-1 ep:relative",
             });
 
             // Dropdown menu for bulk operations
             const dropdownBtn = bulkGroup.createEl("button", {
-                cls: "ep:flex ep:items-center ep:justify-center ep:gap-1.5 ep:py-1.5 ep:px-3 ep:border-none ep:rounded-md ep:bg-obs-modifier-hover ep:text-obs-muted ep:text-[13px] ep:cursor-pointer ep:transition-all ep:hover:bg-obs-modifier-border ep:hover:text-obs-normal",
+                cls: TOOLBAR_STYLES.ACTION_BTN_FILLED,
             });
             setIcon(dropdownBtn, "more-vertical");
             dropdownBtn.createSpan({ text: "Actions" });
 
             const dropdown = bulkGroup.createDiv({
-                cls: "ep:hidden ep:absolute ep:top-full ep:right-0 ep:mt-1 ep:min-w-[160px] ep:p-1 ep:bg-obs-primary ep:border ep:border-obs-border ep:rounded-lg ep:shadow-s ep:z-[100]",
+                cls: TOOLBAR_STYLES.DROPDOWN,
             });
 
             this.createDropdownItem(dropdown, "pause", "Suspend", () => {
-                this.props.onBulkOperation("suspend");
+                this.callbacks.onBulkOperation("suspend");
             });
             this.createDropdownItem(dropdown, "play", "Unsuspend", () => {
-                this.props.onBulkOperation("unsuspend");
+                this.callbacks.onBulkOperation("unsuspend");
             });
 
-            dropdown.createDiv({ cls: "ep:h-px ep:my-1 ep:bg-obs-border" });
+            dropdown.createDiv({ cls: TOOLBAR_STYLES.DROPDOWN_DIVIDER });
 
             this.createDropdownItem(dropdown, "archive", "Bury", () => {
-                this.props.onBulkOperation("bury");
+                this.callbacks.onBulkOperation("bury");
             });
             this.createDropdownItem(dropdown, "archive-restore", "Unbury", () => {
-                this.props.onBulkOperation("unbury");
+                this.callbacks.onBulkOperation("unbury");
             });
 
-            dropdown.createDiv({ cls: "ep:h-px ep:my-1 ep:bg-obs-border" });
+            dropdown.createDiv({ cls: TOOLBAR_STYLES.DROPDOWN_DIVIDER });
 
             this.createDropdownItem(dropdown, "refresh-cw", "Reset", () => {
-                this.props.onBulkOperation("reset");
+                this.callbacks.onBulkOperation("reset");
             });
             this.createDropdownItem(dropdown, "calendar", "Reschedule", () => {
-                this.props.onBulkOperation("reschedule");
+                this.callbacks.onBulkOperation("reschedule");
             });
 
-            dropdown.createDiv({ cls: "ep:h-px ep:my-1 ep:bg-obs-border" });
+            dropdown.createDiv({ cls: TOOLBAR_STYLES.DROPDOWN_DIVIDER });
 
             this.createDropdownItem(dropdown, "trash-2", "Delete", () => {
-                this.props.onBulkOperation("delete");
+                this.callbacks.onBulkOperation("delete");
             }, true);
 
             // Toggle dropdown on click
             const closeDropdown = (e: MouseEvent) => {
                 if (!bulkGroup.contains(e.target as Node)) {
-                    dropdown.classList.remove("ep:block");
+                    dropdown.classList.remove(TOOLBAR_STYLES.DROPDOWN_VISIBLE);
                     dropdown.classList.add("ep:hidden");
                     document.removeEventListener("click", closeDropdown);
-                    // Remove from tracked listeners
                     this.activeDocumentListeners = this.activeDocumentListeners.filter(
                         (l) => l.handler !== closeDropdown
                     );
@@ -211,10 +253,9 @@ export class BrowserToolbar {
                 const isHidden = dropdown.classList.contains("ep:hidden");
                 if (isHidden) {
                     dropdown.classList.remove("ep:hidden");
-                    dropdown.classList.add("ep:block");
+                    dropdown.classList.add(TOOLBAR_STYLES.DROPDOWN_VISIBLE);
                     setTimeout(() => {
                         document.addEventListener("click", closeDropdown);
-                        // Track for cleanup
                         this.activeDocumentListeners.push({
                             type: "click",
                             handler: closeDropdown as EventListener,
@@ -222,9 +263,8 @@ export class BrowserToolbar {
                     }, 0);
                 } else {
                     dropdown.classList.add("ep:hidden");
-                    dropdown.classList.remove("ep:block");
+                    dropdown.classList.remove(TOOLBAR_STYLES.DROPDOWN_VISIBLE);
                     document.removeEventListener("click", closeDropdown);
-                    // Remove from tracked listeners
                     this.activeDocumentListeners = this.activeDocumentListeners.filter(
                         (l) => l.handler !== closeDropdown
                     );
@@ -240,7 +280,7 @@ export class BrowserToolbar {
         onClick: () => void
     ): HTMLButtonElement {
         const btn = container.createEl("button", {
-            cls: "ep:flex ep:items-center ep:justify-center ep:gap-1.5 ep:py-1.5 ep:px-2.5 ep:border-none ep:rounded-md ep:bg-transparent ep:text-obs-muted ep:text-[13px] ep:cursor-pointer ep:transition-all ep:hover:bg-obs-modifier-hover ep:hover:text-obs-normal",
+            cls: TOOLBAR_STYLES.ACTION_BTN,
             attr: { "aria-label": tooltip, title: tooltip },
         });
         setIcon(btn, icon);
@@ -255,13 +295,12 @@ export class BrowserToolbar {
         onClick: () => void,
         isDanger = false
     ): void {
-        const baseCls = "ep:flex ep:items-center ep:gap-2 ep:w-full ep:py-2 ep:px-3 ep:rounded ep:text-[13px] ep:cursor-pointer ep:transition-colors ep:hover:bg-obs-modifier-hover";
         const colorCls = isDanger
-            ? "ep:text-obs-error ep:hover:bg-red-500/10"
-            : "ep:text-obs-normal";
+            ? `${TOOLBAR_STYLES.DROPDOWN_ITEM} ${TOOLBAR_STYLES.DROPDOWN_ITEM_DANGER}`
+            : TOOLBAR_STYLES.DROPDOWN_ITEM;
 
         const item = container.createDiv({
-            cls: `${baseCls} ${colorCls}`,
+            cls: colorCls,
         });
 
         const iconColorCls = isDanger ? "ep:text-obs-error" : "ep:text-obs-muted";
@@ -275,7 +314,7 @@ export class BrowserToolbar {
         item.addEventListener("click", (e) => {
             e.stopPropagation();
             container.classList.add("ep:hidden");
-            container.classList.remove("ep:block");
+            container.classList.remove(TOOLBAR_STYLES.DROPDOWN_VISIBLE);
             onClick();
         });
     }
@@ -287,11 +326,17 @@ export class BrowserToolbar {
         this.searchInput?.focus();
     }
 
-    destroy(): void {
+    override destroy(): void {
         // Clean up document listeners
         for (const { type, handler } of this.activeDocumentListeners) {
             document.removeEventListener(type, handler);
         }
         this.activeDocumentListeners = [];
+
+        this.searchInput = null;
+        this.statsContainer = null;
+        this.actionsContainer = null;
+
+        super.destroy();
     }
 }

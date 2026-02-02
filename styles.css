@@ -1324,6 +1324,13 @@
     --tw-shadow: 0 1px 3px 0 var(--tw-shadow-color, rgb(0 0 0 / 0.1)), 0 1px 2px -1px var(--tw-shadow-color, rgb(0 0 0 / 0.1));
     box-shadow: var(--tw-inset-shadow), var(--tw-inset-ring-shadow), var(--tw-ring-offset-shadow), var(--tw-ring-shadow), var(--tw-shadow);
   }
+  .ep\:ring-2 {
+    --tw-ring-shadow: var(--tw-ring-inset,) 0 0 0 calc(2px + var(--tw-ring-offset-width)) var(--tw-ring-color, currentcolor);
+    box-shadow: var(--tw-inset-shadow), var(--tw-inset-ring-shadow), var(--tw-ring-offset-shadow), var(--tw-ring-shadow), var(--tw-shadow);
+  }
+  .ep\:ring-obs-interactive {
+    --tw-ring-color: var(--ep-color-obs-interactive);
+  }
   .ep\:transition-all {
     transition-property: all;
     transition-timing-function: var(--tw-ease, var(--ep-default-transition-timing-function));
@@ -1359,6 +1366,9 @@
   .ep\:select-none {
     -webkit-user-select: none;
     user-select: none;
+  }
+  .ep\:ring-inset {
+    --tw-ring-inset: inset;
   }
   .ep\:group-hover\:opacity-100 {
     &:is(:where(.ep\:group):hover *) {

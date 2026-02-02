@@ -12,6 +12,7 @@ import type {
 } from "../../../../../src/services/persistence/sqlite/loader";
 import { CardActions } from "../../../../../src/services/persistence/sqlite/modules/CardActions";
 import { StatsActions } from "../../../../../src/services/persistence/sqlite/modules/StatsActions";
+import { BrowserActions } from "../../../../../src/services/persistence/sqlite/modules/BrowserActions";
 
 /**
  * Wrapper that makes sql.js Database compatible with DatabaseLike interface
@@ -168,6 +169,14 @@ export class TestSqliteDatabase {
 		this.dirtyCallback();
 	}
 
+	runMany(statements: [string, BindParams][]): void {
+		if (!this.db) throw new Error("Database not initialized");
+		for (const [sql, params] of statements) {
+			this.db.run(sql, params);
+		}
+		this.dirtyCallback();
+	}
+
 	transaction<T>(fn: () => T): T {
 		if (!this.db) throw new Error("Database not initialized");
 
@@ -210,6 +219,7 @@ export interface TestContext {
 	db: TestSqliteDatabase;
 	cards: CardActions;
 	stats: StatsActions;
+	browser: BrowserActions;
 	close: () => void;
 }
 
@@ -223,11 +233,13 @@ export async function createTestContext(): Promise<TestContext> {
 
 	const cards = new CardActions(db as never);
 	const stats = new StatsActions(db as never);
+	const browser = new BrowserActions(db as never);
 
 	return {
 		db,
 		cards,
 		stats,
+		browser,
 		close: () => db.close(),
 	};
 }

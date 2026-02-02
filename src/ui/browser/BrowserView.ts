@@ -359,14 +359,13 @@ export class BrowserView extends ItemView {
 
     /**
      * Render all components with incremental updates
-     * Only re-renders components whose data actually changed
+     * Uses update() pattern instead of destroy/recreate for performance
      */
     private render(): void {
         const state = this.stateManager.getState();
         const prev = this.prevState;
 
         // Track what changed
-        // Check if cards actually changed (length or IDs) since getState() creates new arrays
         const cardsChanged = !prev || prev.filteredCards.length !== state.filteredCards.length ||
             prev.filteredCards.some((c, i) => c.id !== state.filteredCards[i]?.id);
         const selectionChanged = !prev || prev.selectedCardIds !== state.selectedCardIds;
@@ -376,41 +375,58 @@ export class BrowserView extends ItemView {
         const previewChanged = !prev || prev.previewCardId !== state.previewCardId;
         const searchChanged = !prev || prev.searchQuery !== state.searchQuery;
 
-        // Render toolbar (only if counts or search changed)
-        if (!this.toolbarComponent || cardsChanged || selectionChanged || searchChanged) {
-            this.toolbarComponent?.destroy();
-            this.toolbarContainer.empty();
-            this.toolbarComponent = new BrowserToolbar(this.toolbarContainer, {
+        // Toolbar - create once, then update
+        if (!this.toolbarComponent) {
+            this.toolbarComponent = new BrowserToolbar(
+                this.toolbarContainer,
+                {
+                    searchQuery: state.searchQuery,
+                    selectedCount: state.selectedCardIds.size,
+                    totalCount: state.allCards.length,
+                    filteredCount: state.filteredCards.length,
+                },
+                {
+                    onSearchChange: (query) => this.stateManager.setSearchQuery(query),
+                    onBulkOperation: (op) => void this.executeBulkOperation(op),
+                    onSelectAll: () => this.stateManager.selectAll(),
+                    onClearSelection: () => this.stateManager.clearSelection(),
+                }
+            );
+            this.toolbarComponent.render();
+        } else if (cardsChanged || selectionChanged || searchChanged) {
+            this.toolbarComponent.update({
                 searchQuery: state.searchQuery,
                 selectedCount: state.selectedCardIds.size,
                 totalCount: state.allCards.length,
                 filteredCount: state.filteredCards.length,
-                onSearchChange: (query) => this.stateManager.setSearchQuery(query),
-                onBulkOperation: (op) => void this.executeBulkOperation(op),
-                onSelectAll: () => this.stateManager.selectAll(),
-                onClearSelection: () => this.stateManager.clearSelection(),
             });
-            this.toolbarComponent.render();
         }
 
-        // Render sidebar (only if filters or card data changed)
-        if (!this.sidebarComponent || cardsChanged || filtersChanged) {
-            this.sidebarComponent?.destroy();
-            this.sidebarContainer.empty();
-            this.sidebarComponent = new BrowserSidebar(this.sidebarContainer, {
+        // Sidebar - create once, then update
+        if (!this.sidebarComponent) {
+            this.sidebarComponent = new BrowserSidebar(
+                this.sidebarContainer,
+                {
+                    stateCounts: this.stateManager.getStateCounts(),
+                    projects: this.stateManager.getUniqueProjects(),
+                    currentFilters: state.sidebarFilters,
+                },
+                {
+                    onFilterChange: (filters) => this.stateManager.setSidebarFilters(filters),
+                    onClearFilters: () => this.stateManager.clearFilters(),
+                }
+            );
+            this.sidebarComponent.render();
+        } else if (cardsChanged || filtersChanged) {
+            this.sidebarComponent.update({
                 stateCounts: this.stateManager.getStateCounts(),
                 projects: this.stateManager.getUniqueProjects(),
                 currentFilters: state.sidebarFilters,
-                onFilterChange: (filters) => this.stateManager.setSidebarFilters(filters),
-                onClearFilters: () => this.stateManager.clearFilters(),
             });
-            this.sidebarComponent.render();
         }
 
-        // Render table with VirtualTable
-        // VirtualTable handles its own incremental updates
+        // Table - VirtualTable handles its own incremental updates
         if (!this.tableComponent || loadingChanged || sortChanged) {
-            // Full re-render needed for loading state or sort change
             this.tableComponent?.destroy();
             this.tableContainer.empty();
             this.tableComponent = new VirtualTable(this.tableContainer, {
@@ -426,34 +442,38 @@ export class BrowserView extends ItemView {
             });
             this.tableComponent.render();
         } else if (cardsChanged) {
-            // Cards changed - let VirtualTable handle efficiently
             this.tableComponent.setCards(state.filteredCards);
         } else if (selectionChanged) {
-            // Only selection changed - fast update
             this.tableComponent.updateSelection(state.selectedCardIds);
         }
 
-        // Render preview (only if preview card changed)
-        if (!this.previewComponent || previewChanged || cardsChanged) {
-            this.previewComponent?.destroy();
-            this.previewContainer.empty();
+        // Preview - create once, then update
+        if (!this.previewComponent) {
             const previewCard = this.stateManager.getPreviewCard();
-            this.previewComponent = new BrowserPreview(this.previewContainer, {
-                card: previewCard,
-                app: this.app,
-                component: this,
-                onEdit: (card) => void this.handleEditCard(card),
-                onOpenSource: (card) => void this.handleOpenSourceNote(card),
-                onSuspend: (card) => {
-                    void this.executeSingleOperation(card.id, card.suspended ? "unsuspend" : "suspend");
+            this.previewComponent = new BrowserPreview(
+                this.previewContainer,
+                {
+                    card: previewCard,
+                    app: this.app,
+                    component: this,
                 },
-                onBury: (card) => {
-                    const isBuried = card.buriedUntil && new Date(card.buriedUntil) > new Date();
-                    void this.executeSingleOperation(card.id, isBuried ? "unbury" : "bury");
-                },
-                onDelete: (card) => void this.executeSingleOperation(card.id, "delete"),
-            });
+                {
+                    onEdit: (card) => void this.handleEditCard(card),
+                    onOpenSource: (card) => void this.handleOpenSourceNote(card),
+                    onSuspend: (card) => {
+                        void this.executeSingleOperation(card.id, card.suspended ? "unsuspend" : "suspend");
+                    },
+                    onBury: (card) => {
+                        const isBuried = card.buriedUntil && new Date(card.buriedUntil) > new Date();
+                        void this.executeSingleOperation(card.id, isBuried ? "unbury" : "bury");
+                    },
+                    onDelete: (card) => void this.executeSingleOperation(card.id, "delete"),
+                }
+            );
             this.previewComponent.render();
+        } else if (previewChanged || cardsChanged) {
+            const previewCard = this.stateManager.getPreviewCard();
+            this.previewComponent.update({ card: previewCard });
         }
 
         // Store state for next comparison

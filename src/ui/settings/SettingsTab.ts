@@ -1185,9 +1185,9 @@ export class TrueRecallSettingTab extends PluginSettingTab {
 			);
 
 		new Setting(container)
-			.setName("Maximum backups to keep")
+			.setName("Maximum backups to keep (legacy)")
 			.setDesc(
-				"Number of backups to keep (0 = unlimited). Oldest backups are deleted automatically."
+				"Simple retention: keep last N backups. Use Smart Retention below for better control."
 			)
 			.addText((text) =>
 				text
@@ -1199,6 +1199,154 @@ export class TrueRecallSettingTab extends PluginSettingTab {
 						await this.plugin.saveSettings();
 					})
 			);
+
+		// ===== Background Backup Section =====
+		container.createEl("h2", { text: "Background Backup" });
+
+		const bgBackupInfo = container.createDiv({
+			cls: "setting-item-description",
+		});
+		bgBackupInfo.innerHTML = `
+			<p>Automatic periodic backups run in the background to protect your data.</p>
+			<p>Smart retention keeps recent backups densely and older ones sparsely (like Time Machine).</p>
+		`;
+
+		new Setting(container)
+			.setName("Enable periodic backups")
+			.setDesc("Automatically backup database at regular intervals")
+			.addToggle((toggle) =>
+				toggle
+					.setValue(this.plugin.settings.periodicBackupEnabled)
+					.onChange(async (value) => {
+						this.plugin.settings.periodicBackupEnabled = value;
+						await this.plugin.saveSettings();
+					})
+			);
+
+		new Setting(container)
+			.setName("Backup interval")
+			.setDesc("How often to create automatic backups (only when changes exist)")
+			.addDropdown((dropdown) => {
+				dropdown.addOption("15", "Every 15 minutes");
+				dropdown.addOption("30", "Every 30 minutes");
+				dropdown.addOption("60", "Every hour");
+				dropdown.addOption("120", "Every 2 hours");
+				dropdown.addOption("240", "Every 4 hours");
+				dropdown.setValue(String(this.plugin.settings.backupIntervalMinutes));
+				dropdown.onChange(async (value) => {
+					this.plugin.settings.backupIntervalMinutes = parseInt(value) as 0 | 15 | 30 | 60 | 120 | 240;
+					await this.plugin.saveSettings();
+				});
+			});
+
+		new Setting(container)
+			.setName("Activity-triggered backup")
+			.setDesc("Create backup after completing a certain number of reviews")
+			.addToggle((toggle) =>
+				toggle
+					.setValue(this.plugin.settings.activityTriggeredBackup)
+					.onChange(async (value) => {
+						this.plugin.settings.activityTriggeredBackup = value;
+						await this.plugin.saveSettings();
+					})
+			);
+
+		new Setting(container)
+			.setName("Reviews before backup")
+			.setDesc("Number of reviews after which to trigger an automatic backup")
+			.addText((text) =>
+				text
+					.setPlaceholder("50")
+					.setValue(String(this.plugin.settings.reviewsBeforeBackup))
+					.onChange(async (value) => {
+						const num = parseInt(value) || 50;
+						this.plugin.settings.reviewsBeforeBackup = Math.max(10, num);
+						await this.plugin.saveSettings();
+					})
+			);
+
+		// ===== Smart Retention Section =====
+		container.createEl("h2", { text: "Smart Retention" });
+
+		const retentionInfo = container.createDiv({
+			cls: "setting-item-description",
+		});
+		const { hourlyBackupsToKeep, dailyBackupsToKeep, weeklyBackupsToKeep } =
+			this.plugin.settings.retentionPolicy;
+		retentionInfo.innerHTML = `
+			<p>Multi-tier retention keeps recent backups densely and older ones sparsely.</p>
+			<p>Current policy: <strong>${hourlyBackupsToKeep}h / ${dailyBackupsToKeep}d / ${weeklyBackupsToKeep}w</strong></p>
+		`;
+
+		new Setting(container)
+			.setName("Hourly backups")
+			.setDesc("Keep one backup per hour for the last N hours (0 = disabled)")
+			.addSlider((slider) =>
+				slider
+					.setLimits(0, 48, 1)
+					.setValue(this.plugin.settings.retentionPolicy.hourlyBackupsToKeep)
+					.setDynamicTooltip()
+					.onChange(async (value) => {
+						this.plugin.settings.retentionPolicy.hourlyBackupsToKeep = value;
+						await this.plugin.saveSettings();
+						this.display(); // Refresh to update summary
+					})
+			);
+
+		new Setting(container)
+			.setName("Daily backups")
+			.setDesc("Keep one backup per day for the last N days (0 = disabled)")
+			.addSlider((slider) =>
+				slider
+					.setLimits(0, 30, 1)
+					.setValue(this.plugin.settings.retentionPolicy.dailyBackupsToKeep)
+					.setDynamicTooltip()
+					.onChange(async (value) => {
+						this.plugin.settings.retentionPolicy.dailyBackupsToKeep = value;
+						await this.plugin.saveSettings();
+						this.display();
+					})
+			);
+
+		new Setting(container)
+			.setName("Weekly backups")
+			.setDesc("Keep one backup per week for the last N weeks (0 = disabled)")
+			.addSlider((slider) =>
+				slider
+					.setLimits(0, 12, 1)
+					.setValue(this.plugin.settings.retentionPolicy.weeklyBackupsToKeep)
+					.setDynamicTooltip()
+					.onChange(async (value) => {
+						this.plugin.settings.retentionPolicy.weeklyBackupsToKeep = value;
+						await this.plugin.saveSettings();
+						this.display();
+					})
+			);
+
+		// Backup status display
+		if (this.plugin.backgroundBackupManager) {
+			const status = this.plugin.backgroundBackupManager.getStatus();
+			const statusDiv = container.createDiv({
+				cls: "setting-item-description ep:mt-4",
+			});
+
+			const lastBackup = status.lastBackupTime
+				? new Date(status.lastBackupTime).toLocaleString()
+				: "Never (this session)";
+			const nextBackup = status.nextScheduledBackup
+				? new Date(status.nextScheduledBackup).toLocaleString()
+				: "Not scheduled";
+
+			statusDiv.innerHTML = `
+				<p><strong>Backup Status:</strong></p>
+				<p>Last backup: ${lastBackup}</p>
+				<p>Next scheduled: ${nextBackup}</p>
+				<p>Reviews since last backup: ${status.reviewsSinceLastBackup}</p>
+			`;
+		}
+
+		// ===== Manual Backup Actions =====
+		container.createEl("h2", { text: "Manual Backup" });
 
 		new Setting(container)
 			.setName("Create backup now")
