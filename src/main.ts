@@ -31,6 +31,7 @@ import {
 	notify,
 	UndoService,
 } from "./services";
+import { BackgroundBackupManager } from "./services/persistence/background-backup.service";
 import { FSRSHelperService } from "./services/fsrs-helper";
 import {
 	DB_FOLDER,
@@ -83,6 +84,7 @@ export default class TrueRecallPlugin extends Plugin {
 	frontmatterIndex!: FrontmatterIndexService;
 	nlQueryService: NLQueryService | null = null;
 	backupService: BackupService | null = null;
+	backgroundBackupManager: BackgroundBackupManager | null = null;
 	deviceIdService: DeviceIdService | null = null;
 	deviceDiscovery: DeviceDiscoveryService | null = null;
 	authService: AuthService | null = null;
@@ -385,6 +387,9 @@ ${cardList}${moreText}
 		// Clear undo stack
 		this.undoService?.clear();
 
+		// Stop background backup manager
+		this.backgroundBackupManager?.stop();
+
 		// Save card store immediately on unload (critical with 60s debounce)
 		if (this.cardStore) {
 			void this.cardStore.saveNow();
@@ -437,6 +442,9 @@ ${cardList}${moreText}
 		}
 		if (this.fsrsHelper) {
 			this.fsrsHelper.updateSettings(this.settings);
+		}
+		if (this.backgroundBackupManager) {
+			this.backgroundBackupManager.updateConfig(this.settings);
 		}
 		// Reinitialize NL Query Service with new settings (API key or model may have changed)
 		this.initializeNLQueryService().catch((error) => {
@@ -942,7 +950,19 @@ ${cardList}${moreText}
 			// Initialize Backup Service
 			this.backupService = new BackupService(this.app, this.cardStore);
 
-			// Auto-backup on load if enabled
+			// Initialize Background Backup Manager
+			this.backgroundBackupManager = new BackgroundBackupManager(
+				this.app,
+				this.backupService,
+				this.settings
+			);
+
+			// Start background backups if enabled
+			if (this.settings.periodicBackupEnabled || this.settings.activityTriggeredBackup) {
+				this.backgroundBackupManager.start();
+			}
+
+			// Auto-backup on load if enabled (legacy setting)
 			if (this.settings.autoBackupOnLoad) {
 				await this.runAutoBackup();
 			}

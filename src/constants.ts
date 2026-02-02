@@ -144,9 +144,20 @@ export const DEFAULT_SETTINGS: TrueRecallSettings = {
 	floatingButtonMinChars: 1,
 	floatingButtonDirectGenerate: false,
 
-	// Backup Settings
+	// Backup Settings (Legacy)
 	autoBackupOnLoad: false,
 	maxBackups: 10,
+
+	// Background Backup Settings
+	periodicBackupEnabled: false,
+	backupIntervalMinutes: 60, // 1 hour default
+	activityTriggeredBackup: false,
+	reviewsBeforeBackup: 50,
+	retentionPolicy: {
+		hourlyBackupsToKeep: 24, // Keep 24 hourly backups (1 day)
+		dailyBackupsToKeep: 7, // Keep 7 daily backups (1 week)
+		weeklyBackupsToKeep: 4, // Keep 4 weekly backups (1 month)
+	},
 
 	// Copilot Integration
 	copilotAutoContext: false,

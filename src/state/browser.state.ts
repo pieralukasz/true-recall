@@ -43,8 +43,37 @@ export class BrowserStateManager {
     private state: BrowserState;
     private listeners: Set<BrowserStateListener> = new Set();
 
+    // Memoization cache for expensive computations
+    private cache: {
+        stateCounts: { new: number; learning: number; review: number; relearning: number; suspended: number; buried: number } | null;
+        uniqueProjects: string[] | null;
+        cardMap: Map<string, BrowserCardItem>;
+    } = {
+        stateCounts: null,
+        uniqueProjects: null,
+        cardMap: new Map(),
+    };
+
     constructor() {
         this.state = createInitialState();
+    }
+
+    /**
+     * Invalidate cached computations when underlying data changes
+     */
+    private invalidateCache(): void {
+        this.cache.stateCounts = null;
+        this.cache.uniqueProjects = null;
+    }
+
+    /**
+     * Build card map for O(1) lookups
+     */
+    private buildCardMap(cards: BrowserCardItem[]): void {
+        this.cache.cardMap.clear();
+        for (const card of cards) {
+            this.cache.cardMap.set(card.id, card);
+        }
     }
 
     /**
@@ -107,6 +136,8 @@ export class BrowserStateManager {
     setCards(cards: BrowserCardItem[]): void {
         this.state.allCards = cards;
         this.state.isLoading = false;
+        this.buildCardMap(cards);
+        this.invalidateCache();
         this.applyFiltersAndSort();
     }
 
@@ -255,11 +286,11 @@ export class BrowserStateManager {
     }
 
     /**
-     * Get the previewed card
+     * Get the previewed card (O(1) lookup using cardMap)
      */
     getPreviewCard(): BrowserCardItem | null {
         if (!this.state.previewCardId) return null;
-        return this.state.allCards.find(c => c.id === this.state.previewCardId) ?? null;
+        return this.cache.cardMap.get(this.state.previewCardId) ?? null;
     }
 
     // ===== Card Updates =====
@@ -273,6 +304,10 @@ export class BrowserStateManager {
         this.state.allCards = this.state.allCards.map(c =>
             c.id === cardId ? { ...c, ...updates } : c
         );
+
+        // Rebuild cardMap and invalidate cache
+        this.buildCardMap(this.state.allCards);
+        this.invalidateCache();
 
         this.applyFiltersAndSort();
         this.notifyListeners(prevState);
@@ -295,6 +330,10 @@ export class BrowserStateManager {
             this.state.previewCardId = null;
         }
 
+        // Rebuild cardMap and invalidate cache
+        this.buildCardMap(this.state.allCards);
+        this.invalidateCache();
+
         this.applyFiltersAndSort();
         this.notifyListeners(prevState);
     }
@@ -302,22 +341,31 @@ export class BrowserStateManager {
     // ===== Aggregations =====
 
     /**
-     * Get unique projects from all cards
+     * Get unique projects from all cards (memoized)
      */
     getUniqueProjects(): string[] {
+        if (this.cache.uniqueProjects) {
+            return this.cache.uniqueProjects;
+        }
+
         const projects = new Set<string>();
         for (const card of this.state.allCards) {
             for (const project of card.projects) {
                 projects.add(project);
             }
         }
-        return [...projects].sort();
+        this.cache.uniqueProjects = [...projects].sort();
+        return this.cache.uniqueProjects;
     }
 
     /**
-     * Get card counts by state
+     * Get card counts by state (memoized)
      */
     getStateCounts(): { new: number; learning: number; review: number; relearning: number; suspended: number; buried: number } {
+        if (this.cache.stateCounts) {
+            return this.cache.stateCounts;
+        }
+
         const counts = {
             new: 0,
             learning: 0,
@@ -327,12 +375,12 @@ export class BrowserStateManager {
             buried: 0,
         };
 
-        const now = new Date();
+        const now = Date.now();
 
         for (const card of this.state.allCards) {
             if (card.suspended) {
                 counts.suspended++;
-            } else if (card.buriedUntil && new Date(card.buriedUntil) > now) {
+            } else if (card.buriedUntil && new Date(card.buriedUntil).getTime() > now) {
                 counts.buried++;
             } else {
                 switch (card.state) {
@@ -352,6 +400,7 @@ export class BrowserStateManager {
             }
         }
 
+        this.cache.stateCounts = counts;
         return counts;
     }
 
