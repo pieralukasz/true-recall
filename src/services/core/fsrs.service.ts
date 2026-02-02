@@ -1,7 +1,3 @@
-/**
- * FSRS Service
- * Wrapper around ts-fsrs library for spaced repetition scheduling
- */
 import {
 	FSRS,
 	createEmptyCard,
@@ -20,9 +16,6 @@ import type {
 import { formatInterval } from "../../types";
 import { DEFAULT_FSRS_WEIGHTS } from "../../constants";
 
-/**
- * Service for FSRS scheduling calculations
- */
 export class FSRSService {
 	private fsrs: FSRS;
 	private settings: FSRSSettings;
@@ -32,9 +25,6 @@ export class FSRSService {
 		this.fsrs = this.createFSRS(settings);
 	}
 
-	/**
-	 * Create FSRS instance with given settings
-	 */
 	private createFSRS(settings: FSRSSettings): FSRS {
 		// Convert minutes to step format (e.g., [1, 10] -> ["1m", "10m"])
 		const learningSteps = settings.learningSteps.map(
@@ -55,17 +45,11 @@ export class FSRSService {
 		});
 	}
 
-	/**
-	 * Update FSRS settings
-	 */
 	updateSettings(settings: FSRSSettings): void {
 		this.settings = settings;
 		this.fsrs = this.createFSRS(settings);
 	}
 
-	/**
-	 * Create new card data with default values
-	 */
 	createNewCard(id: string): FSRSCardData {
 		const emptyCard = createEmptyCard();
 		return {
@@ -82,9 +66,6 @@ export class FSRSService {
 		};
 	}
 
-	/**
-	 * Convert FSRSCardData to ts-fsrs Card
-	 */
 	private toCard(data: FSRSCardData): Card {
 		return {
 			due: new Date(data.due),
@@ -102,9 +83,6 @@ export class FSRSService {
 		};
 	}
 
-	/**
-	 * Convert ts-fsrs Card back to FSRSCardData
-	 */
 	private fromCard(card: Card, id: string): FSRSCardData {
 		return {
 			id,
@@ -120,13 +98,6 @@ export class FSRSService {
 		};
 	}
 
-	/**
-	 * Schedule a card after a review
-	 * @param cardData Current card data
-	 * @param rating User's rating (Again=1, Hard=2, Good=3, Easy=4)
-	 * @param reviewTime Optional review timestamp (defaults to now)
-	 * @returns Updated card data
-	 */
 	scheduleCard(
 		cardData: FSRSCardData,
 		rating: Grade,
@@ -140,9 +111,6 @@ export class FSRSService {
 		return this.fromCard(result.card, cardData.id);
 	}
 
-	/**
-	 * Get scheduling preview for all ratings
-	 */
 	getSchedulingPreview(cardData: FSRSCardData): SchedulingPreview {
 		const card = this.toCard(cardData);
 		const now = new Date();
@@ -170,9 +138,6 @@ export class FSRSService {
 		};
 	}
 
-	/**
-	 * Format schedule interval for display
-	 */
 	private formatScheduleInterval(recordLogItem: RecordLogItem): string {
 		const card = recordLogItem.card;
 		const now = new Date();
@@ -181,27 +146,17 @@ export class FSRSService {
 		return formatInterval(diffMinutes);
 	}
 
-	/**
-	 * Check if a card is due for review
-	 */
 	isDue(cardData: FSRSCardData, now?: Date): boolean {
 		const dueDate = new Date(cardData.due);
 		const currentTime = now ?? new Date();
 		return dueDate <= currentTime;
 	}
 
-	/**
-	 * Get due cards from a list
-	 * Optimized to compare timestamps directly (avoids Date object creation per card)
-	 */
 	getDueCards(cards: FSRSFlashcardItem[], now?: Date): FSRSFlashcardItem[] {
 		const currentTimestamp = (now ?? new Date()).getTime();
 		return cards.filter((card) => new Date(card.fsrs.due).getTime() <= currentTimestamp);
 	}
 
-	/**
-	 * Get new cards (state === New) from a list
-	 */
 	getNewCards(
 		cards: FSRSFlashcardItem[],
 		limit?: number
@@ -210,9 +165,6 @@ export class FSRSService {
 		return limit !== undefined ? newCards.slice(0, limit) : newCards;
 	}
 
-	/**
-	 * Get learning cards (state === Learning or Relearning)
-	 */
 	getLearningCards(cards: FSRSFlashcardItem[]): FSRSFlashcardItem[] {
 		return cards.filter(
 			(card) =>
@@ -222,13 +174,8 @@ export class FSRSService {
 	}
 
 	/**
-	 * Get review cards (state === Review and due)
 	 * Uses day-based scheduling like Anki: all review cards due "today" are available
 	 * after the dayStartHour cutoff, regardless of exact time
-	 *
-	 * @param cards - Cards to filter
-	 * @param now - Current time (optional)
-	 * @param dayStartHour - Hour when new day starts (0-23, default 4 like Anki)
 	 */
 	getReviewCards(
 		cards: FSRSFlashcardItem[],
@@ -257,9 +204,6 @@ export class FSRSService {
 		});
 	}
 
-	/**
-	 * Sort cards by due date (earliest first)
-	 */
 	sortByDue(cards: FSRSFlashcardItem[]): FSRSFlashcardItem[] {
 		return [...cards].sort((a, b) => {
 			const dateA = new Date(a.fsrs.due);
@@ -268,10 +212,7 @@ export class FSRSService {
 		});
 	}
 
-	/**
-	 * Sort cards by retrievability (lowest R first - most at risk of forgetting)
-	 * Uses single-pass R calculation with Map for O(N log N) performance
-	 */
+	/** Sort cards by retrievability (lowest R first - most at risk of forgetting) */
 	sortByRetrievability(cards: FSRSFlashcardItem[], now?: Date): FSRSFlashcardItem[] {
 		const currentTime = now ?? new Date();
 
@@ -289,12 +230,7 @@ export class FSRSService {
 		});
 	}
 
-	/**
-	 * Get the retrievability (probability of recall) for a card
-	 * @param cardData Card data
-	 * @param now Current time (optional)
-	 * @returns Retrievability as a number between 0 and 1
-	 */
+	/** Returns probability of recall (0-1) */
 	getRetrievability(cardData: FSRSCardData, now?: Date): number {
 		if (cardData.state === State.New) {
 			return 0;
@@ -306,10 +242,6 @@ export class FSRSService {
 		return this.fsrs.get_retrievability(card, currentTime, false) ?? 0;
 	}
 
-	/**
-	 * Calculate statistics for a set of cards
-	 * Uses single-pass accumulator (O(n) instead of O(n*5))
-	 */
 	getStats(cards: FSRSFlashcardItem[]): {
 		total: number;
 		new: number;

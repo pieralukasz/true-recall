@@ -1,7 +1,7 @@
-# Shadow Anki - Szczegółowa Dokumentacja Pluginu
+# True Recall - Szczegółowa Dokumentacja Pluginu
 
 ## Spis treści
-1. [Czym jest Shadow Anki](#czym-jest-shadow-anki)
+1. [Czym jest True Recall](#czym-jest-true-recall)
 2. [Struktura plików projektu](#struktura-plików-projektu)
 3. [Ekrany i interfejs użytkownika](#ekrany-i-interfejs-użytkownika)
 4. [Funkcjonalności](#funkcjonalności)
@@ -10,9 +10,9 @@
 
 ---
 
-## Czym jest Shadow Anki
+## Czym jest True Recall
 
-**Shadow Anki** to plugin do Obsidian, który automatycznie generuje fiszki do nauki za pomocą sztucznej inteligencji (AI). Główne cechy:
+**True Recall** to plugin do Obsidian, który automatycznie generuje fiszki do nauki za pomocą sztucznej inteligencji (AI). Główne cechy:
 
 - Generuje fiszki z treści notatek używając API OpenRouter (obsługa wielu modeli AI)
 - Przechowuje fiszki w osobnych plikach "shadow" (`flashcards_*.md`), aby nie zaśmiecać oryginalnych notatek
@@ -247,7 +247,7 @@ Po kliknięciu ikony w ribbonie (📚) lub użyciu komendy, otwiera się panel b
 
 ### 2. Ekran ustawień (SettingsTab)
 
-Dostępny w: Settings → Plugin Options → Shadow Anki
+Dostępny w: Settings → Plugin Options → True Recall
 
 ```
 ┌────────────────────────────────────────────┐
@@ -351,12 +351,12 @@ Odpowiedź druga
 **Dwa poziomy integracji:**
 
 1. **Przez plugin obsidian-to-anki:**
-   - Shadow Anki uruchamia komendę skanowania vault'a
+   - True Recall uruchamia komendę skanowania vault'a
    - obsidian-to-anki czyta pliki fiszek i tworzy karty w Anki
    - Zapisuje ID Anki w plikach fiszek
 
 2. **Bezpośrednio przez AnkiConnect:**
-   - Shadow Anki może usuwać karty z Anki
+   - True Recall może usuwać karty z Anki
    - Sprawdza dostępność Anki
    - Pobiera informacje o taliach
 

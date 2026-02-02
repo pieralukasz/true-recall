@@ -60,9 +60,6 @@ export interface FlashcardPanelContentProps {
 	isAddCardExpanded: boolean;
 }
 
-/**
- * Flashcard panel content component
- */
 export class FlashcardPanelContent extends BaseComponent {
 	private props: FlashcardPanelContentProps;
 	private childComponents: BaseComponent[] = [];

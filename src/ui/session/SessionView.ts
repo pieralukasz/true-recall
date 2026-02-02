@@ -17,19 +17,12 @@ import { SessionResultFactory } from "../../utils/session-result-factory";
 import { MoveCardModal } from "../modals/MoveCardModal";
 import { AddToProjectModal } from "../modals/AddToProjectModal";
 
-/**
- * Options for initializing SessionView
- */
 export interface SessionViewOptions {
 	currentNoteName: string | null;
 	allCards: FSRSFlashcardItem[];
 	dayBoundaryService: DayBoundaryService;
 }
 
-/**
- * Session View
- * Panel-based view for session selection
- */
 export class SessionView extends ItemView {
 	private plugin: TrueRecallPlugin;
 	private stateManager = createSessionStateManager();

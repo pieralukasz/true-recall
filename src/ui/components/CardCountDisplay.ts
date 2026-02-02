@@ -18,12 +18,6 @@ export interface CardCountDisplayProps {
 	bold?: boolean;
 }
 
-/**
- * Displays card counts in Anki-style format with colors
- * - New: blue
- * - Learning: orange
- * - Due/Review: green
- */
 export class CardCountDisplay extends BaseComponent {
 	private props: CardCountDisplayProps;
 
@@ -92,9 +86,6 @@ export class CardCountDisplay extends BaseComponent {
 	}
 }
 
-/**
- * Factory function to create CardCountDisplay
- */
 export function createCardCountDisplay(
 	container: HTMLElement,
 	props: CardCountDisplayProps

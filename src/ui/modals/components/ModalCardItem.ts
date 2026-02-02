@@ -33,9 +33,6 @@ export interface ModalCardItemProps {
 
 const LONG_PRESS_DURATION = 500;
 
-/**
- * Modal card item with expandable answer and inline editing
- */
 export class ModalCardItem extends BaseComponent {
 	private props: ModalCardItemProps;
 	private questionField: EditableTextField | null = null;
@@ -350,9 +347,6 @@ export class ModalCardItem extends BaseComponent {
 	}
 }
 
-/**
- * Factory function to create and render modal card item
- */
 export function createModalCardItem(
 	container: HTMLElement,
 	props: ModalCardItemProps

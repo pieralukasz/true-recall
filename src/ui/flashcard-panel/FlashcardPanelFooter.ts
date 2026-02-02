@@ -26,9 +26,6 @@ export interface FlashcardPanelFooterProps {
 	onCollect?: () => void;
 }
 
-/**
- * Flashcard panel footer component
- */
 export class FlashcardPanelFooter extends BaseComponent {
 	private props: FlashcardPanelFooterProps;
 

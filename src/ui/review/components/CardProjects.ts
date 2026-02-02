@@ -8,10 +8,6 @@ export interface CardProjectsCallbacks {
 	onOpenProject: (project: string) => void;
 }
 
-/**
- * Renders project badges for a card
- * Supports collapsed (show count) and expanded (show badges) states
- */
 export class CardProjects {
 	constructor(private readonly callbacks: CardProjectsCallbacks) {}
 

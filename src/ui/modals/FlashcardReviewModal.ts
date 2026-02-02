@@ -21,9 +21,6 @@ export interface FlashcardReviewModalOptions {
 	settings: TrueRecallSettings;
 }
 
-/**
- * Modal state
- */
 interface FlashcardReviewState {
 	flashcards: FlashcardItem[];
 	expandedCardIndex: number | null;
@@ -33,9 +30,6 @@ interface FlashcardReviewState {
 	selectedCardIds: Set<string>;
 }
 
-/**
- * Modal for reviewing and editing AI-generated flashcards
- */
 export class FlashcardReviewModal extends BaseModal {
 	private options: FlashcardReviewModalOptions;
 	private resolvePromise: ((result: FlashcardReviewResult) => void) | null = null;

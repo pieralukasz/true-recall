@@ -1,7 +1,3 @@
-/**
- * Central export for state management
- */
-
 // Base state manager
 export {
 	BaseStateManager,

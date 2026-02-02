@@ -1,7 +1,3 @@
-/**
- * Review State Manager
- * Centralized state management for the review session
- */
 import { State, Rating, type Grade } from "ts-fsrs";
 import type {
     FSRSFlashcardItem,
@@ -13,22 +9,13 @@ import type {
 import { createDefaultSessionState } from "../types";
 import { LEARN_AHEAD_LIMIT_MINUTES } from "../constants";
 
-/**
- * State listener type
- */
 export type ReviewStateListener = (
     state: ReviewSessionState,
     prevState: ReviewSessionState
 ) => void;
 
-/**
- * State selector type
- */
 export type ReviewStateSelector<T> = (state: ReviewSessionState) => T;
 
-/**
- * Edit mode state for inline editing during review
- */
 export interface EditModeState {
     active: boolean;
     field: "question" | "answer" | null;
@@ -36,9 +23,6 @@ export interface EditModeState {
     originalAnswer: string;
 }
 
-/**
- * Badge counts for remaining cards by type
- */
 export interface BadgeCounts {
     new: number;
     learning: number;
@@ -55,10 +39,6 @@ export type SessionPhase =
     | { type: "waiting"; timeUntilDue: number }
     | { type: "complete"; stats: ReviewSessionStats };
 
-/**
- * Review State Manager
- * Manages the state of a review session with reactive updates
- */
 export class ReviewStateManager {
     private state: ReviewSessionState;
     private listeners: Set<ReviewStateListener> = new Set();
@@ -76,23 +56,14 @@ export class ReviewStateManager {
         this.state = createDefaultSessionState();
     }
 
-    /**
-     * Get current state (immutable copy)
-     */
     getState(): ReviewSessionState {
         return { ...this.state };
     }
 
-    /**
-     * Get scheduling preview for current card
-     */
     getSchedulingPreview(): SchedulingPreview | null {
         return this.schedulingPreview;
     }
 
-    /**
-     * Set scheduling preview
-     */
     setSchedulingPreview(preview: SchedulingPreview | null): void {
         this.schedulingPreview = preview;
     }
@@ -105,9 +76,7 @@ export class ReviewStateManager {
         return { ...this.cachedBadgeCounts };
     }
 
-    /**
-     * Compute badge counts from scratch - O(N), called only at session start
-     */
+    /** O(N), called only at session start */
     private computeBadgeCounts(queue: FSRSFlashcardItem[], startIndex: number): BadgeCounts {
         const counts: BadgeCounts = { new: 0, learning: 0, due: 0 };
         for (let i = startIndex; i < queue.length; i++) {
@@ -120,27 +89,17 @@ export class ReviewStateManager {
         return counts;
     }
 
-    /**
-     * Get badge type for a card state
-     */
     private getBadgeTypeForState(cardState: State): keyof BadgeCounts {
         if (cardState === State.New) return "new";
         if (cardState === State.Learning || cardState === State.Relearning) return "learning";
         return "due";
     }
 
-    /**
-     * Subscribe to state changes
-     * Returns unsubscribe function
-     */
     subscribe(listener: ReviewStateListener): () => void {
         this.listeners.add(listener);
         return () => this.listeners.delete(listener);
     }
 
-    /**
-     * Subscribe to specific state changes using a selector
-     */
     subscribeToSelector<T>(
         selector: ReviewStateSelector<T>,
         listener: (value: T, prevValue: T) => void
@@ -160,11 +119,6 @@ export class ReviewStateManager {
         return () => this.listeners.delete(wrappedListener);
     }
 
-    // ===== Session Control Methods =====
-
-    /**
-     * Start a new review session with the given queue
-     */
     startSession(queue: FSRSFlashcardItem[]): void {
         const prevState = this.state;
 
@@ -195,9 +149,6 @@ export class ReviewStateManager {
         this.notifyListeners(prevState);
     }
 
-    /**
-     * End the current review session
-     */
     endSession(): void {
         const prevState = this.state;
         this.state = {
@@ -212,9 +163,6 @@ export class ReviewStateManager {
         this.notifyListeners(prevState);
     }
 
-    /**
-     * Reset state to initial values
-     */
     reset(): void {
         const prevState = this.state;
         this.state = createDefaultSessionState();
@@ -223,11 +171,6 @@ export class ReviewStateManager {
         this.notifyListeners(prevState);
     }
 
-    // ===== Card Navigation Methods =====
-
-    /**
-     * Get the current card being reviewed
-     */
     getCurrentCard(): FSRSFlashcardItem | null {
         if (!this.state.isActive || this.state.currentIndex >= this.state.queue.length) {
             return null;
@@ -235,9 +178,6 @@ export class ReviewStateManager {
         return this.state.queue[this.state.currentIndex] ?? null;
     }
 
-    /**
-     * Reveal the answer for the current card
-     */
     revealAnswer(): void {
         if (!this.state.isActive || this.state.isAnswerRevealed) {
             return;
@@ -251,9 +191,6 @@ export class ReviewStateManager {
         this.notifyListeners(prevState);
     }
 
-    /**
-     * Hide the answer (reset reveal state)
-     */
     hideAnswer(): void {
         const prevState = this.state;
         this.state = {
@@ -424,9 +361,7 @@ export class ReviewStateManager {
         return nextIndex < newQueue.length;
     }
 
-    /**
-     * Re-queue a card (for learning cards that need to be reviewed again soon)
-     */
+    /** For learning cards that need to be reviewed again soon */
     requeueCard(card: FSRSFlashcardItem, position?: number): void {
         const prevState = this.state;
         const newQueue = [...this.state.queue];
@@ -452,10 +387,7 @@ export class ReviewStateManager {
         this.notifyListeners(prevState);
     }
 
-    /**
-     * Undo the last answer - go back to previous card with restored data
-     * @param requeuedAtIndex - if the card was requeued, remove it from this position
-     */
+    /** @param requeuedAtIndex - if the card was requeued, remove it from this position */
     undoLastAnswer(
         previousIndex: number,
         restoredCard: FSRSFlashcardItem,
@@ -506,11 +438,6 @@ export class ReviewStateManager {
         this.notifyListeners(prevState);
     }
 
-    // ===== Progress & Stats Methods =====
-
-    /**
-     * Get current progress
-     */
     getProgress(): { current: number; total: number; percentage: number } {
         const current = Math.min(this.state.currentIndex + 1, this.state.queue.length);
         const total = this.state.queue.length;
@@ -542,23 +469,14 @@ export class ReviewStateManager {
         };
     }
 
-    /**
-     * Check if session is active
-     */
     isActive(): boolean {
         return this.state.isActive;
     }
 
-    /**
-     * Check if answer is revealed
-     */
     isAnswerRevealed(): boolean {
         return this.state.isAnswerRevealed;
     }
 
-    /**
-     * Check if session is complete (all cards reviewed)
-     */
     isComplete(): boolean {
         return (
             this.state.isActive &&
@@ -599,9 +517,6 @@ export class ReviewStateManager {
         return { type: "idle" };
     }
 
-    /**
-     * Get remaining cards count
-     */
     getRemainingCount(): number {
         return Math.max(0, this.state.queue.length - this.state.currentIndex);
     }
@@ -631,9 +546,6 @@ export class ReviewStateManager {
         return dueDate <= learnAheadTime;
     }
 
-    /**
-     * Get pending learning cards (not yet due) from remaining queue
-     */
     getPendingLearningCards(): FSRSFlashcardItem[] {
         const remaining = this.state.queue.slice(this.state.currentIndex);
         return remaining.filter((card) => {
@@ -642,10 +554,7 @@ export class ReviewStateManager {
         });
     }
 
-    /**
-     * Get time until next learning card is due (in ms)
-     * Returns 0 if no pending learning cards or card is already due
-     */
+    /** Returns 0 if no pending learning cards or card is already due */
     getTimeUntilNextDue(): number {
         const pending = this.getPendingLearningCards();
         if (pending.length === 0) return 0;
@@ -691,9 +600,6 @@ export class ReviewStateManager {
         return timeUntilDue <= MAX_WAIT_MS;
     }
 
-    /**
-     * Remove current card from queue (for suspend/delete)
-     */
     removeCurrentCard(): void {
         if (!this.state.isActive) {
             return;
@@ -720,9 +626,6 @@ export class ReviewStateManager {
         this.notifyListeners(prevState);
     }
 
-    /**
-     * Remove a specific card from queue by ID (for bury note)
-     */
     removeCardById(cardId: string): void {
         if (!this.state.isActive) {
             return;
@@ -767,10 +670,7 @@ export class ReviewStateManager {
         this.notifyListeners(prevState);
     }
 
-    /**
-     * Remove multiple cards from queue by IDs (batch operation)
-     * Only notifies listeners once at the end for better performance
-     */
+    /** Only notifies listeners once at the end for better performance */
     removeCardsByIds(cardIds: string[]): void {
         if (!this.state.isActive || cardIds.length === 0) {
             return;
@@ -820,9 +720,6 @@ export class ReviewStateManager {
         this.notifyListeners(prevState);
     }
 
-    /**
-     * Add a new card to the end of the queue
-     */
     addCardToQueue(card: FSRSFlashcardItem): void {
         if (!this.state.isActive) {
             return;
@@ -843,9 +740,6 @@ export class ReviewStateManager {
         this.notifyListeners(prevState);
     }
 
-    /**
-     * Insert a card at a specific position in the queue (for undo bury)
-     */
     insertCardAtPosition(card: FSRSFlashcardItem, position: number): void {
         if (!this.state.isActive) {
             return;
@@ -875,18 +769,10 @@ export class ReviewStateManager {
         this.notifyListeners(prevState);
     }
 
-    // ===== Edit Mode Methods =====
-
-    /**
-     * Get current edit mode state
-     */
     getEditState(): EditModeState {
         return { ...this.editMode };
     }
 
-    /**
-     * Start editing a field (question or answer)
-     */
     startEdit(field: "question" | "answer"): void {
         const card = this.getCurrentCard();
         if (!card) return;
@@ -899,9 +785,6 @@ export class ReviewStateManager {
         };
     }
 
-    /**
-     * Cancel edit mode without saving
-     */
     cancelEdit(): void {
         this.editMode = {
             active: false,
@@ -911,16 +794,10 @@ export class ReviewStateManager {
         };
     }
 
-    /**
-     * Check if currently in edit mode
-     */
     isEditing(): boolean {
         return this.editMode.active;
     }
 
-    /**
-     * Update current card's content in the queue (after saving to file)
-     */
     updateCurrentCardContent(newQuestion: string, newAnswer: string): void {
         const card = this.getCurrentCard();
         if (!card) return;
@@ -941,8 +818,6 @@ export class ReviewStateManager {
         this.notifyListeners(prevState);
     }
 
-    // ===== Private Methods =====
-
     private notifyListeners(prevState: ReviewSessionState): void {
         const currentState = this.state;
         this.listeners.forEach((listener) => {
@@ -955,9 +830,6 @@ export class ReviewStateManager {
     }
 }
 
-/**
- * Create a new ReviewStateManager instance
- */
 export function createReviewStateManager(): ReviewStateManager {
     return new ReviewStateManager();
 }

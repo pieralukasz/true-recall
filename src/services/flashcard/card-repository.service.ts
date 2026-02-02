@@ -1,8 +1,3 @@
-/**
- * Card Repository Service
- * Handles CRUD operations for flashcards in SQLite storage
- * Extracted from FlashcardManager for single responsibility
- */
 import type {
 	FSRSCardData,
 	FSRSFlashcardItem,
@@ -16,17 +11,10 @@ import { createDefaultFSRSData } from "../../types";
 import { getEventBus } from "../core/event-bus.service";
 import { CARD_HISTORY_LIMIT } from "../../constants";
 
-/**
- * Repository for flashcard CRUD operations
- * Emits events on mutations for UI updates
- */
 export class CardRepository {
 	constructor(private store: SqliteStoreService) {}
 
-	/**
-	 * Create a new flashcard
-	 * @throws Error if card with same question already exists
-	 */
+	/** @throws Error if card with same question already exists */
 	create(
 		question: string,
 		answer: string,
@@ -71,10 +59,7 @@ export class CardRepository {
 		return card;
 	}
 
-	/**
-	 * Create multiple flashcards in batch
-	 * @throws Error if any card has a duplicate question (existing or within batch)
-	 */
+	/** @throws Error if any card has a duplicate question */
 	createBatch(
 		flashcards: Array<{ id: string; question: string; answer: string }>,
 		sourceUid: string,
@@ -140,24 +125,15 @@ export class CardRepository {
 		return createdCards;
 	}
 
-	/**
-	 * Get a card by ID (raw data without enrichment)
-	 */
 	get(cardId: string): FSRSCardData | undefined {
 		return this.store.get(cardId);
 	}
 
-	/**
-	 * Check if a card exists
-	 */
 	has(cardId: string): boolean {
 		return this.store.has(cardId);
 	}
 
-	/**
-	 * Update card content (question and answer)
-	 * @throws Error if card not found
-	 */
+	/** @throws Error if card not found */
 	updateContent(cardId: string, newQuestion: string, newAnswer: string): void {
 		const existing = this.store.get(cardId);
 		if (!existing) {
@@ -180,9 +156,6 @@ export class CardRepository {
 		} as CardUpdatedEvent);
 	}
 
-	/**
-	 * Update FSRS scheduling data
-	 */
 	updateFSRS(
 		cardId: string,
 		newFSRSData: FSRSCardData,
@@ -235,9 +208,6 @@ export class CardRepository {
 		} as CardUpdatedEvent);
 	}
 
-	/**
-	 * Update card's source UID (for moving cards between notes)
-	 */
 	updateSourceUid(cardId: string, newSourceUid: string): boolean {
 		const existing = this.store.get(cardId);
 		if (!existing) {
@@ -256,9 +226,6 @@ export class CardRepository {
 		return true;
 	}
 
-	/**
-	 * Soft delete a card (marks as deleted, preserves data)
-	 */
 	delete(cardId: string): boolean {
 		const card = this.store.get(cardId);
 		if (!card) {
@@ -277,10 +244,7 @@ export class CardRepository {
 		return true;
 	}
 
-	/**
-	 * Set FSRS data for a card (prevents overwriting existing data)
-	 * @returns true if card was saved, false if skipped (already exists)
-	 */
+	/** Returns true if card was saved, false if skipped (already exists) */
 	setIfNotExists(cardId: string, fsrsData: FSRSCardData): boolean {
 		// Only set if not already exists (prevent overwriting existing data)
 		const existing = this.store.get(cardId);

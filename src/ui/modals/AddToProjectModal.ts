@@ -17,9 +17,6 @@ export interface AddToProjectModalOptions {
 	currentProjects: string[];
 }
 
-/**
- * Modal for managing project assignments for a source note
- */
 export class AddToProjectModal extends BasePromiseModal<AddToProjectResult> {
 	private options: AddToProjectModalOptions;
 	private selectedProjects: Set<string>;
