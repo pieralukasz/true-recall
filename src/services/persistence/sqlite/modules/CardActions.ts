@@ -190,8 +190,8 @@ export class CardActions {
      * Check if a card exists
      */
     has(cardId: string): boolean {
-        return this.db.get<{ exists: number }>(
-            `SELECT 1 as exists FROM cards WHERE id = ? AND deleted_at IS NULL LIMIT 1`,
+        return this.db.get<{ found: number }>(
+            `SELECT 1 as found FROM cards WHERE id = ? AND deleted_at IS NULL LIMIT 1`,
             [cardId]
         ) !== null;
     }
@@ -286,8 +286,8 @@ export class CardActions {
      * Check if card has content
      */
     hasCardContent(cardId: string): boolean {
-        return this.db.get<{ exists: number }>(
-            `SELECT 1 as exists FROM cards
+        return this.db.get<{ found: number }>(
+            `SELECT 1 as found FROM cards
              WHERE id = ? AND deleted_at IS NULL AND question IS NOT NULL
              LIMIT 1`,
             [cardId]
@@ -298,8 +298,8 @@ export class CardActions {
      * Check if any cards have content
      */
     hasAnyCardContent(): boolean {
-        return this.db.get<{ exists: number }>(
-            `SELECT 1 as exists FROM cards
+        return this.db.get<{ found: number }>(
+            `SELECT 1 as found FROM cards
              WHERE deleted_at IS NULL AND question IS NOT NULL
              LIMIT 1`
         ) !== null;

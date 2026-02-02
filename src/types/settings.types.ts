@@ -132,12 +132,6 @@ export interface TrueRecallSettings {
     /** Godzina rozpoczęcia nowego dnia (0-23, domyślnie 4 = 4:00 AM jak w Anki) */
     dayStartHour: number;
 
-    // ===== Zettelkasten Settings =====
-    /** Folder na notatki zettelkasten tworzone z fiszek */
-    zettelFolder: string;
-    /** Template file path for creating zettels from flashcards (empty = use default) */
-    zettelTemplatePath: string;
-
     // ===== Folder Exclusions =====
     /** Foldery wykluczone z wyszukiwania notatek bez fiszek */
     excludedFolders: string[];

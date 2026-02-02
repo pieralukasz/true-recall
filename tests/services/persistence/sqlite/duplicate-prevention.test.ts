@@ -1,0 +1,254 @@
+/**
+ * Duplicate Prevention Tests
+ * Behavior-first tests for preventing duplicate flashcards
+ *
+ * These tests define expected behavior for duplicate prevention.
+ * The createBatch() test is expected to FAIL initially - code needs fixing.
+ */
+import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
+import {
+	createTestContext,
+	createTestCard,
+	type TestContext,
+} from "./__setup__/test-database";
+import { CardRepository } from "../../../../src/services/flashcard/card-repository.service";
+import type { SqliteStoreService } from "../../../../src/services/persistence/sqlite/SqliteStoreService";
+
+// Mock the event bus to prevent errors
+vi.mock("../../../../src/services/core/event-bus.service", () => ({
+	getEventBus: () => ({
+		emit: vi.fn(),
+	}),
+}));
+
+describe("Duplicate Prevention", () => {
+	let ctx: TestContext;
+
+	beforeEach(async () => {
+		ctx = await createTestContext();
+	});
+
+	afterEach(() => {
+		ctx.close();
+	});
+
+	describe("Duplicate Question Check (CardActions)", () => {
+		it("should find card ID by exact question match", async () => {
+			const question = "What is the capital of France?";
+			const card = createTestCard({ id: "card-123", question });
+
+			ctx.cards.set(card.id, card);
+
+			const foundId = ctx.cards.getCardIdByQuestion(question);
+			expect(foundId).toBe("card-123");
+		});
+
+		it("should return undefined when question not found", async () => {
+			const foundId = ctx.cards.getCardIdByQuestion("Non-existent question");
+			expect(foundId).toBeUndefined();
+		});
+
+		it("should exclude soft-deleted cards from duplicate check", async () => {
+			const question = "What is the capital of France?";
+			const card = createTestCard({ id: "card-123", question });
+
+			ctx.cards.set(card.id, card);
+			ctx.cards.softDelete(card.id);
+
+			const foundId = ctx.cards.getCardIdByQuestion(question);
+			expect(foundId).toBeUndefined();
+		});
+
+		it("should distinguish between different questions", async () => {
+			ctx.cards.set(
+				"card-1",
+				createTestCard({ id: "card-1", question: "Question A" })
+			);
+			ctx.cards.set(
+				"card-2",
+				createTestCard({ id: "card-2", question: "Question B" })
+			);
+
+			expect(ctx.cards.getCardIdByQuestion("Question A")).toBe("card-1");
+			expect(ctx.cards.getCardIdByQuestion("Question B")).toBe("card-2");
+			expect(ctx.cards.getCardIdByQuestion("Question C")).toBeUndefined();
+		});
+
+		it("should be case-sensitive for question matching", async () => {
+			const card = createTestCard({
+				id: "card-1",
+				question: "What is X?",
+			});
+			ctx.cards.set(card.id, card);
+
+			expect(ctx.cards.getCardIdByQuestion("What is X?")).toBe("card-1");
+			expect(ctx.cards.getCardIdByQuestion("what is x?")).toBeUndefined();
+			expect(ctx.cards.getCardIdByQuestion("WHAT IS X?")).toBeUndefined();
+		});
+
+		it("should match exact whitespace in questions", async () => {
+			const card = createTestCard({
+				id: "card-1",
+				question: "What is X?",
+			});
+			ctx.cards.set(card.id, card);
+
+			expect(ctx.cards.getCardIdByQuestion("What is X?")).toBe("card-1");
+			expect(ctx.cards.getCardIdByQuestion(" What is X?")).toBeUndefined();
+			expect(ctx.cards.getCardIdByQuestion("What is X? ")).toBeUndefined();
+			expect(ctx.cards.getCardIdByQuestion("What  is X?")).toBeUndefined();
+		});
+	});
+
+	describe("CardRepository.create() - Duplicate Rejection", () => {
+		it("should reject card with duplicate question", async () => {
+			const question = "What is the capital of France?";
+			const card = createTestCard({ question });
+			ctx.cards.set(card.id, card);
+
+			// Create a mock store that delegates to our test context
+			const mockStore = {
+				cards: ctx.cards,
+				get: (id: string) => ctx.cards.get(id),
+				set: (id: string, data: unknown) => ctx.cards.set(id, data as never),
+				has: (id: string) => ctx.cards.has(id),
+			} as unknown as SqliteStoreService;
+
+			const repository = new CardRepository(mockStore);
+
+			expect(() => {
+				repository.create(question, "Paris");
+			}).toThrow("A card with this question already exists");
+		});
+
+		it("should allow different questions", async () => {
+			const card = createTestCard({
+				question: "What is X?",
+			});
+			ctx.cards.set(card.id, card);
+
+			const mockStore = {
+				cards: ctx.cards,
+				get: (id: string) => ctx.cards.get(id),
+				set: (id: string, data: unknown) => ctx.cards.set(id, data as never),
+				has: (id: string) => ctx.cards.has(id),
+			} as unknown as SqliteStoreService;
+
+			const repository = new CardRepository(mockStore);
+
+			const newCard = repository.create("What is Y?", "Answer Y");
+			expect(newCard).toBeDefined();
+			expect(newCard.question).toBe("What is Y?");
+		});
+
+		it("should allow same question after original is soft-deleted", async () => {
+			const question = "What is the capital of France?";
+			const card = createTestCard({ question });
+			ctx.cards.set(card.id, card);
+			ctx.cards.softDelete(card.id);
+
+			const mockStore = {
+				cards: ctx.cards,
+				get: (id: string) => ctx.cards.get(id),
+				set: (id: string, data: unknown) => ctx.cards.set(id, data as never),
+				has: (id: string) => ctx.cards.has(id),
+			} as unknown as SqliteStoreService;
+
+			const repository = new CardRepository(mockStore);
+
+			// Should not throw because original is deleted
+			const newCard = repository.create(question, "Paris");
+			expect(newCard).toBeDefined();
+			expect(newCard.question).toBe(question);
+		});
+	});
+
+	describe("CardRepository.createBatch() - Duplicate Check", () => {
+		/**
+		 * BUG FOUND: createBatch() does NOT check for duplicates!
+		 * This test is expected to FAIL with current implementation.
+		 * Code needs to be fixed to pass this test.
+		 */
+		it("should check for duplicates in createBatch()", async () => {
+			// Create an existing card
+			const existingQuestion = "What is X?";
+			const existingCard = createTestCard({ question: existingQuestion });
+			ctx.cards.set(existingCard.id, existingCard);
+
+			const mockStore = {
+				cards: ctx.cards,
+				get: (id: string) => ctx.cards.get(id),
+				set: (id: string, data: unknown) => ctx.cards.set(id, data as never),
+				has: (id: string) => ctx.cards.has(id),
+			} as unknown as SqliteStoreService;
+
+			const repository = new CardRepository(mockStore);
+
+			// Try to create batch with one duplicate
+			const flashcards = [
+				{ id: "new-1", question: existingQuestion, answer: "A1" }, // Duplicate!
+				{ id: "new-2", question: "What is Y?", answer: "A2" }, // New
+			];
+
+			// Current behavior: silently allows duplicates
+			// Expected behavior: reject or skip duplicates
+			expect(() => {
+				repository.createBatch(flashcards, "source123");
+			}).toThrow(); // Or should return only non-duplicate cards
+		});
+
+		it("should detect duplicates within the same batch", async () => {
+			const mockStore = {
+				cards: ctx.cards,
+				get: (id: string) => ctx.cards.get(id),
+				set: (id: string, data: unknown) => ctx.cards.set(id, data as never),
+				has: (id: string) => ctx.cards.has(id),
+			} as unknown as SqliteStoreService;
+
+			const repository = new CardRepository(mockStore);
+
+			// Try to create batch with duplicate questions within the batch
+			const flashcards = [
+				{ id: "new-1", question: "Same question", answer: "A1" },
+				{ id: "new-2", question: "Same question", answer: "A2" }, // Duplicate within batch!
+				{ id: "new-3", question: "Different question", answer: "A3" },
+			];
+
+			// Current behavior: allows duplicates within batch
+			// Expected behavior: reject or skip duplicates
+			expect(() => {
+				repository.createBatch(flashcards, "source123");
+			}).toThrow(); // Or should return only first occurrence
+		});
+	});
+
+	describe("ID Uniqueness", () => {
+		it("should overwrite existing card when using same ID (INSERT OR REPLACE)", async () => {
+			const id = "same-id";
+			const card1 = createTestCard({ id, question: "Question 1" });
+			const card2 = createTestCard({ id, question: "Question 2" });
+
+			ctx.cards.set(id, card1);
+			expect(ctx.cards.get(id)?.question).toBe("Question 1");
+
+			ctx.cards.set(id, card2);
+			expect(ctx.cards.get(id)?.question).toBe("Question 2");
+
+			// Only one card should exist
+			expect(ctx.cards.size()).toBe(1);
+		});
+
+		it("should generate unique UUIDs across multiple creations", async () => {
+			const ids = new Set<string>();
+
+			for (let i = 0; i < 100; i++) {
+				const card = createTestCard(); // Uses random ID
+				ctx.cards.set(card.id, card);
+				ids.add(card.id);
+			}
+
+			// All IDs should be unique
+			expect(ids.size).toBe(100);
+		});
+	});
+});

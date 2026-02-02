@@ -21,8 +21,6 @@
     --ep-color-white: #fff;
     --ep-spacing: 0.25rem;
     --ep-container-md: 28rem;
-    --ep-text-sm: 0.875rem;
-    --ep-text-sm--line-height: calc(1.25 / 0.875);
     --ep-text-lg: 1.125rem;
     --ep-text-lg--line-height: calc(1.75 / 1.125);
     --ep-text-xl: 1.25rem;
