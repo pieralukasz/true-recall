@@ -21,7 +21,6 @@ import {
 	FlashcardManager,
 	SessionPersistenceService,
 	getEventBus,
-	ZettelTemplateService,
 	notify,
 } from "../../services";
 import { ImageService } from "../../services/image";
@@ -151,8 +150,6 @@ export class ReviewView extends ItemView {
 				fsrsService: this.fsrsService,
 				reviewService: this.reviewService,
 				cardStore: this.plugin.cardStore,
-				createZettelTemplateService: () =>
-					new ZettelTemplateService(this.app),
 				settings: this.plugin.settings,
 				plugin: this.plugin,
 			},
@@ -1136,13 +1133,6 @@ export class ReviewView extends ItemView {
 				.setTitle("Move Card (M)")
 				.setIcon("folder-input")
 				.onClick(() => this.cardActionsHandler.handleMoveCard())
-		);
-
-		menu.addItem((item) =>
-			item
-				.setTitle("Create zettel")
-				.setIcon("file-plus")
-				.onClick(() => this.cardActionsHandler.handleCreateZettel())
 		);
 
 		menu.addItem((item) =>

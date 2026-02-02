@@ -11,7 +11,7 @@ import {
 	FSRS_CONFIG,
 	SYSTEM_PROMPT,
 } from "../../constants";
-import { TemplatePickerModal, DeviceSelectionModal, FirstSyncConflictModal, EasyDaysModal } from "../modals";
+import { DeviceSelectionModal, FirstSyncConflictModal, EasyDaysModal } from "../modals";
 // HIDDEN: Copilot integration waiting for public API
 // import { CopilotIntegrationService } from "../../services/integration/copilot-integration.service";
 import type { AIModelKey, AIModelInfo } from "../../constants";
@@ -1225,87 +1225,6 @@ export class TrueRecallSettingTab extends PluginSettingTab {
 
 		// ===== Content Settings Section =====
 		container.createEl("h2", { text: "Content Settings" });
-
-		// Zettelkasten
-
-		new Setting(container)
-			.setName("Zettel folder")
-			.setDesc(
-				"Folder where zettel notes created from flashcards will be stored"
-			)
-			.addText((text) =>
-				text
-					.setPlaceholder("Zettel")
-					.setValue(this.plugin.settings.zettelFolder)
-					.onChange(async (value) => {
-						this.plugin.settings.zettelFolder = value || "Zettel";
-						await this.plugin.saveSettings();
-					})
-			);
-
-		// Template file setting
-		const templateSetting = new Setting(container)
-			.setName("Zettel template")
-			.setDesc(
-				"Template file for creating zettels. Variables: {{question}}, {{answer}}, {{source}}, {{date}}, {{time}}, {{datetime}}, {{card_id}}"
-			);
-
-		const templateInputEl = templateSetting.controlEl.createEl("input", {
-			type: "text",
-			cls: "ep:w-full ep:py-1.5 ep:px-2 ep:border ep:border-obs-border ep:rounded ep:bg-obs-primary ep:text-obs-normal",
-			placeholder: "Default template",
-			value: this.plugin.settings.zettelTemplatePath,
-		});
-		templateInputEl.readOnly = true;
-		templateInputEl.style.cursor = "pointer";
-
-		// Display basename if path is set, otherwise show placeholder
-		const updateTemplateDisplay = (): void => {
-			const path = this.plugin.settings.zettelTemplatePath;
-			if (path) {
-				const file = this.app.vault.getAbstractFileByPath(path);
-				if (file instanceof TFile) {
-					templateInputEl.value = file.basename;
-				} else {
-					templateInputEl.value = path;
-				}
-			} else {
-				templateInputEl.value = "";
-			}
-		};
-		updateTemplateDisplay();
-
-		templateInputEl.addEventListener("click", async () => {
-			const modal = new TemplatePickerModal(this.app);
-			const result = await modal.openAndWait();
-			if (!result.cancelled) {
-				this.plugin.settings.zettelTemplatePath =
-					result.templatePath ?? "";
-				await this.plugin.saveSettings();
-				updateTemplateDisplay();
-			}
-		});
-
-		templateSetting.addButton((button) =>
-			button.setButtonText("Browse").onClick(async () => {
-				const modal = new TemplatePickerModal(this.app);
-				const result = await modal.openAndWait();
-				if (!result.cancelled) {
-					this.plugin.settings.zettelTemplatePath =
-						result.templatePath ?? "";
-					await this.plugin.saveSettings();
-					updateTemplateDisplay();
-				}
-			})
-		);
-
-		templateSetting.addButton((button) =>
-			button.setButtonText("Clear").onClick(async () => {
-				this.plugin.settings.zettelTemplatePath = "";
-				await this.plugin.saveSettings();
-				updateTemplateDisplay();
-			})
-		);
 
 		// Excluded folders
 		new Setting(container)

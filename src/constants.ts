@@ -136,10 +136,6 @@ export const DEFAULT_SETTINGS: TrueRecallSettings = {
 	// Scheduling
 	dayStartHour: 4, // 4 AM like Anki - new day starts at this hour
 
-	// Zettelkasten
-	zettelFolder: "Zettel",
-	zettelTemplatePath: "",
-
 	// Folder Exclusions
 	excludedFolders: [],
 

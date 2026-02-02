@@ -280,20 +280,6 @@ export class NotificationService {
 		this.error("AI service not configured. Please add your API key in settings.");
 	}
 
-	/**
-	 * Show notification for zettel/note created
-	 */
-	noteCreated(noteName: string): void {
-		this.success(`Created new note: ${noteName}`);
-	}
-
-	/**
-	 * Show notification when template is not found
-	 */
-	templateNotFound(templatePath: string): void {
-		this.warning(`Template not found: ${templatePath}. Using default template.`);
-	}
-
 	// ===== File Operation Notifications =====
 
 	/**

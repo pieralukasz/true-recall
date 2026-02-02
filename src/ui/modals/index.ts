@@ -43,10 +43,6 @@ export {
     type SelectNoteModalOptions,
 } from "./SelectNoteModal";
 export {
-    TemplatePickerModal,
-    type TemplatePickerResult,
-} from "./TemplatePickerModal";
-export {
     RestoreBackupModal,
     type RestoreBackupResult,
     type RestoreBackupModalOptions,

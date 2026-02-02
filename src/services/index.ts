@@ -83,9 +83,6 @@ export {
 	NOTIFICATION_DURATION,
 } from "./ui/notification.service";
 
-// Zettel services
-export { ZettelTemplateService } from "./zettel/zettel-template.service";
-
 // Device services
 export {
 	DeviceIdService,

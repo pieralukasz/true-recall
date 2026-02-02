@@ -295,13 +295,9 @@ export class ProjectsView extends ItemView {
 				})
 				.sort((a, b) => a.name.localeCompare(b.name));
 
-			// Find files without projects from the Zettel Folder only
-			const zettelFolder = this.plugin.settings.zettelFolder;
+			// Find files with flashcards but no projects assigned
 			const unassignedNotes: ProjectNoteInfo[] = [];
 			for (const file of this.app.vault.getMarkdownFiles()) {
-				// Only include files from the Zettel Folder
-				if (!file.path.startsWith(zettelFolder + "/") && file.path !== zettelFolder) continue;
-
 				// Check if this file is in any project
 				const fileProjects = frontmatterIndex.getValues("projects", file.path);
 				if (fileProjects.length > 0) continue; // Has projects, skip
