@@ -1,19 +1,10 @@
-/**
- * Plugin Event Handlers
- * Event registrations for file and workspace events
- * Projects are read from frontmatter (source of truth)
- */
 import { TFile } from "obsidian";
 import type TrueRecallPlugin from "../main";
 import { FlashcardPanelView } from "../ui/flashcard-panel/FlashcardPanelView";
 import { VIEW_TYPE_FLASHCARD_PANEL, VIEW_TYPE_REVIEW } from "../constants";
 import type { DeletionHandlerService } from "../services/flashcard/deletion-handler.service";
 
-/**
- * Register workspace and vault event handlers
- */
 export function registerEventHandlers(plugin: TrueRecallPlugin): void {
-	// File context menu for custom review
 	plugin.registerEvent(
 		plugin.app.workspace.on("file-menu", (menu, file) => {
 			if (file instanceof TFile && file.extension === "md") {
@@ -41,14 +32,12 @@ export function registerEventHandlers(plugin: TrueRecallPlugin): void {
 		})
 	);
 
-	// Listen for active file changes
 	plugin.registerEvent(
 		plugin.app.workspace.on("file-open", (file) => {
 			updatePanelView(plugin, file);
 		})
 	);
 
-	// Also listen for active leaf changes
 	plugin.registerEvent(
 		plugin.app.workspace.on("active-leaf-change", () => {
 			const file = plugin.app.workspace.getActiveFile();
@@ -57,10 +46,7 @@ export function registerEventHandlers(plugin: TrueRecallPlugin): void {
 	);
 }
 
-/**
- * Update the panel view with current file
- * Respects review follow mode and panel interactions
- */
+/** Respects review follow mode and panel interactions */
 function updatePanelView(plugin: TrueRecallPlugin, file: TFile | null): void {
 	const activeLeaf = plugin.app.workspace.activeLeaf;
 	const isReviewViewActive = activeLeaf?.view?.getViewType() === VIEW_TYPE_REVIEW;
@@ -94,8 +80,7 @@ function updatePanelView(plugin: TrueRecallPlugin, file: TFile | null): void {
 }
 
 /**
- * Register deletion handler for orphaned cards management
- * This is called BEFORE FrontmatterIndexService updates its index,
+ * Called BEFORE FrontmatterIndexService updates its index,
  * so we can still retrieve the flashcard_uid from the deleted file
  */
 export function registerDeletionHandler(

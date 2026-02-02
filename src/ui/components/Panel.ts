@@ -10,10 +10,6 @@ export interface PanelProps {
 	disableScroll?: boolean;
 }
 
-/**
- * Shared panel component that creates the view structure
- * Header is handled by native Obsidian view header with addAction()
- */
 export class Panel extends BaseComponent {
 	private props: PanelProps;
 	private contentContainer!: HTMLElement;

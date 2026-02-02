@@ -1,46 +1,21 @@
-/**
- * Projects State Manager
- * Centralized state management for the projects view
- */
 import type { ProjectInfo, ProjectNoteInfo } from "../types";
 
-/**
- * Complete state of the projects view
- */
 export interface ProjectsState {
-	/** Loading state */
 	isLoading: boolean;
-	/** All projects */
 	projects: ProjectInfo[];
-	/** Search query for filtering */
 	searchQuery: string;
-	/** Project ID being edited (null if none) */
 	editingProjectId: number | null;
-	/** Set of expanded project IDs */
 	expandedProjectIds: Set<string>;
-	/** Selection mode: normal or selecting */
 	selectionMode: "normal" | "selecting";
-	/** Set of selected note paths (paths are unique identifiers) */
 	selectedNotePaths: Set<string>;
-	/** Notes with flashcards but no project assigned */
 	unassignedNotes: ProjectNoteInfo[];
-	/** Whether the unassigned section is expanded */
 	isUnassignedExpanded: boolean;
 }
 
-/**
- * Listener callback type for projects state changes
- */
 export type ProjectsStateListener = (state: ProjectsState, prevState: ProjectsState) => void;
 
-/**
- * Partial state update type for projects
- */
 export type PartialProjectsState = Partial<ProjectsState>;
 
-/**
- * Creates the initial projects state
- */
 function createInitialState(): ProjectsState {
 	return {
 		isLoading: true,
@@ -55,9 +30,6 @@ function createInitialState(): ProjectsState {
 	};
 }
 
-/**
- * Centralized state manager for the projects view
- */
 export class ProjectsStateManager {
 	private state: ProjectsState;
 	private listeners: Set<ProjectsStateListener> = new Set();
@@ -66,9 +38,6 @@ export class ProjectsStateManager {
 		this.state = createInitialState();
 	}
 
-	/**
-	 * Get current state (immutable copy)
-	 */
 	getState(): ProjectsState {
 		return {
 			...this.state,
@@ -79,9 +48,6 @@ export class ProjectsStateManager {
 		};
 	}
 
-	/**
-	 * Update state with partial updates
-	 */
 	setState(partial: PartialProjectsState): void {
 		const prevState = this.state;
 		this.state = {
@@ -91,35 +57,21 @@ export class ProjectsStateManager {
 		this.notifyListeners(prevState);
 	}
 
-	/**
-	 * Subscribe to state changes
-	 */
 	subscribe(listener: ProjectsStateListener): () => void {
 		this.listeners.add(listener);
 		return () => this.listeners.delete(listener);
 	}
 
-	/**
-	 * Reset state to initial values
-	 */
 	reset(): void {
 		const prevState = this.state;
 		this.state = createInitialState();
 		this.notifyListeners(prevState);
 	}
 
-	// ===== Convenience Methods =====
-
-	/**
-	 * Set loading state
-	 */
 	setLoading(isLoading: boolean): void {
 		this.setState({ isLoading });
 	}
 
-	/**
-	 * Set all projects
-	 */
 	setProjects(projects: ProjectInfo[]): void {
 		this.setState({
 			projects,
@@ -127,37 +79,22 @@ export class ProjectsStateManager {
 		});
 	}
 
-	/**
-	 * Set unassigned notes
-	 */
 	setUnassignedNotes(unassignedNotes: ProjectNoteInfo[]): void {
 		this.setState({ unassignedNotes });
 	}
 
-	/**
-	 * Toggle unassigned section expanded state
-	 */
 	toggleUnassignedExpanded(): void {
 		this.setState({ isUnassignedExpanded: !this.state.isUnassignedExpanded });
 	}
 
-	/**
-	 * Set search query
-	 */
 	setSearchQuery(query: string): void {
 		this.setState({ searchQuery: query });
 	}
 
-	/**
-	 * Set editing project ID
-	 */
 	setEditingProject(id: number | null): void {
 		this.setState({ editingProjectId: id });
 	}
 
-	/**
-	 * Toggle project expansion state
-	 */
 	toggleProjectExpanded(projectId: string): void {
 		const newSet = new Set(this.state.expandedProjectIds);
 		if (newSet.has(projectId)) {
@@ -168,18 +105,10 @@ export class ProjectsStateManager {
 		this.setState({ expandedProjectIds: newSet });
 	}
 
-	/**
-	 * Check if project is expanded
-	 */
 	isProjectExpanded(projectId: string): boolean {
 		return this.state.expandedProjectIds.has(projectId);
 	}
 
-	// ===== Selection Methods =====
-
-	/**
-	 * Enter selection mode, optionally selecting an initial note
-	 */
 	enterSelectionMode(initialNotePath?: string): void {
 		const selectedNotePaths = new Set<string>();
 		if (initialNotePath) {
@@ -191,9 +120,6 @@ export class ProjectsStateManager {
 		});
 	}
 
-	/**
-	 * Exit selection mode and clear all selections
-	 */
 	exitSelectionMode(): void {
 		this.setState({
 			selectionMode: "normal",
@@ -201,9 +127,6 @@ export class ProjectsStateManager {
 		});
 	}
 
-	/**
-	 * Toggle note selection
-	 */
 	toggleNoteSelection(notePath: string): void {
 		const newSet = new Set(this.state.selectedNotePaths);
 		if (newSet.has(notePath)) {
@@ -214,23 +137,14 @@ export class ProjectsStateManager {
 		this.setState({ selectedNotePaths: newSet });
 	}
 
-	/**
-	 * Check if in selection mode
-	 */
 	isInSelectionMode(): boolean {
 		return this.state.selectionMode === "selecting";
 	}
 
-	/**
-	 * Get selected note paths as array
-	 */
 	getSelectedNotePaths(): string[] {
 		return Array.from(this.state.selectedNotePaths);
 	}
 
-	/**
-	 * Update a project in the list
-	 */
 	updateProject(projectId: string, updates: Partial<ProjectInfo>): void {
 		const projects = this.state.projects.map(p =>
 			p.id === projectId ? { ...p, ...updates } : p
@@ -238,26 +152,17 @@ export class ProjectsStateManager {
 		this.setState({ projects });
 	}
 
-	/**
-	 * Remove a project from the list
-	 */
 	removeProject(projectId: string): void {
 		const projects = this.state.projects.filter(p => p.id !== projectId);
 		this.setState({ projects });
 	}
 
-	/**
-	 * Add a new project to the list
-	 */
 	addProject(project: ProjectInfo): void {
 		this.setState({
 			projects: [...this.state.projects, project],
 		});
 	}
 
-	/**
-	 * Get filtered projects based on current state
-	 */
 	getFilteredProjects(): ProjectInfo[] {
 		let projects = [...this.state.projects];
 
@@ -279,23 +184,14 @@ export class ProjectsStateManager {
 		return projects;
 	}
 
-	/**
-	 * Get projects with cards
-	 */
 	getProjectsWithCards(): ProjectInfo[] {
 		return this.getFilteredProjects().filter(p => p.cardCount > 0);
 	}
 
-	/**
-	 * Get empty projects
-	 */
 	getEmptyProjects(): ProjectInfo[] {
 		return this.getFilteredProjects().filter(p => p.cardCount === 0);
 	}
 
-	/**
-	 * Get total stats
-	 */
 	getTotalStats(): { projectCount: number; totalCards: number; totalDue: number } {
 		const projects = this.state.projects;
 		return {
@@ -304,8 +200,6 @@ export class ProjectsStateManager {
 			totalDue: projects.reduce((sum, p) => sum + p.dueCount, 0),
 		};
 	}
-
-	// ===== Private Methods =====
 
 	private notifyListeners(prevState: ProjectsState): void {
 		const currentState = this.state;
@@ -319,9 +213,6 @@ export class ProjectsStateManager {
 	}
 }
 
-/**
- * Create a new ProjectsStateManager instance
- */
 export function createProjectsStateManager(): ProjectsStateManager {
 	return new ProjectsStateManager();
 }

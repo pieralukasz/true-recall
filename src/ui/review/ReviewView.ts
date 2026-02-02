@@ -99,8 +99,6 @@ export class ReviewView extends ItemView {
 	private headerEl!: HTMLElement;
 	private cardContainerEl!: HTMLElement;
 	private buttonsEl!: HTMLElement;
-
-	// Native header action elements
 	private openNoteAction: HTMLElement | null = null;
 
 	// State subscription

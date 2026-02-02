@@ -5,9 +5,6 @@
 import type { App } from "obsidian";
 import type { FSRSFlashcardItem } from "../../../types";
 
-/**
- * Filter options for card selection
- */
 export interface CardFilterOptions {
 	/** Filter specifically for buried cards */
 	stateFilter?: "due" | "learning" | "new" | "buried";

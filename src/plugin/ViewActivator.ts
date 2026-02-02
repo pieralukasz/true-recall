@@ -1,27 +1,12 @@
-/**
- * ViewActivator - Consolidated view activation utility
- * Replaces 6+ duplicate activateXxxView methods in main.ts
- */
 import { App, Platform, WorkspaceLeaf } from "obsidian";
 
 export interface ViewActivationOptions {
-	/** Force open in main area instead of sidebar */
 	useMainArea?: boolean;
-	/** Initial state to pass to the view */
 	state?: Record<string, unknown>;
-	/** Skip revealing the leaf after activation */
 	skipReveal?: boolean;
 }
 
-/**
- * Activate a view by type, creating it if it doesn't exist
- * Handles mobile vs desktop differences automatically
- *
- * @param app - The Obsidian app instance
- * @param viewType - The view type constant (e.g., VIEW_TYPE_REVIEW)
- * @param options - Optional configuration
- * @returns The activated leaf, or null if activation failed
- */
+/** Handles mobile vs desktop differences automatically */
 export async function activateView(
 	app: App,
 	viewType: string,
@@ -65,15 +50,6 @@ export async function activateView(
 	return leaf;
 }
 
-/**
- * Activate a view in the main content area (fullscreen mode)
- * Used for review views when fullscreen mode is enabled
- *
- * @param app - The Obsidian app instance
- * @param viewType - The view type constant
- * @param state - Optional initial state
- * @returns The activated leaf
- */
 export async function activateMainAreaView(
 	app: App,
 	viewType: string,
@@ -92,17 +68,7 @@ export async function activateMainAreaView(
 	return leaf;
 }
 
-/**
- * Activate a view based on review mode setting
- * Handles fullscreen vs panel (sidebar) mode
- * Only allows one review session at a time
- *
- * @param app - The Obsidian app instance
- * @param viewType - The view type constant
- * @param reviewMode - "fullscreen" or "panel"
- * @param state - Optional initial state
- * @returns The activated leaf, or existing leaf if session already active
- */
+/** Only allows one review session at a time */
 export async function activateReviewView(
 	app: App,
 	viewType: string,
@@ -138,12 +104,6 @@ export async function activateReviewView(
 	return null;
 }
 
-/**
- * Close all leaves of a specific view type
- *
- * @param app - The Obsidian app instance
- * @param viewType - The view type to close
- */
 export function closeAllViews(app: App, viewType: string): void {
 	const leaves = app.workspace.getLeavesOfType(viewType);
 	for (const leaf of leaves) {
@@ -151,24 +111,10 @@ export function closeAllViews(app: App, viewType: string): void {
 	}
 }
 
-/**
- * Check if a view of the given type exists
- *
- * @param app - The Obsidian app instance
- * @param viewType - The view type to check
- * @returns true if at least one leaf of this type exists
- */
 export function viewExists(app: App, viewType: string): boolean {
 	return app.workspace.getLeavesOfType(viewType).length > 0;
 }
 
-/**
- * Get the first leaf of a specific view type
- *
- * @param app - The Obsidian app instance
- * @param viewType - The view type to find
- * @returns The leaf if found, null otherwise
- */
 export function getView(app: App, viewType: string): WorkspaceLeaf | null {
 	return app.workspace.getLeavesOfType(viewType)[0] ?? null;
 }

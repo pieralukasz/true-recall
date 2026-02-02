@@ -1,14 +1,8 @@
-/**
- * API-related types for OpenRouter integration
- */
-
-// Chat message format for OpenRouter API
 export interface ChatMessage {
     role: "system" | "user" | "assistant";
     content: string;
 }
 
-// OpenRouter API response structure
 export interface OpenRouterResponse {
     id?: string;
     choices?: Array<{
@@ -21,13 +15,11 @@ export interface OpenRouterResponse {
     error?: OpenRouterError;
 }
 
-// OpenRouter API error structure
 export interface OpenRouterError {
     message: string;
     code?: string;
 }
 
-// Configuration for OpenRouter service
 export interface OpenRouterConfig {
     apiKey: string;
     model: string;
@@ -35,7 +27,6 @@ export interface OpenRouterConfig {
     maxTokens?: number;
 }
 
-// API request configuration
 export interface APIRequestConfig {
     endpoint: string;
     timeout: number;

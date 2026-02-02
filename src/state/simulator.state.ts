@@ -1,7 +1,3 @@
-/**
- * Simulator State Manager
- * Manages state for the FSRS Simulator view with undo/redo support
- */
 import { BaseStateManager } from "./base.state";
 import type { SimulatorState, MetricType, SequenceSimulation } from "../ui/simulator/types";
 import { DEFAULT_SEQUENCES } from "../ui/simulator/constants";
@@ -9,15 +5,11 @@ import { DEFAULT_FSRS_WEIGHTS } from "../constants";
 
 const MAX_HISTORY_SIZE = 50;
 
-/** Initial config for simulator */
 interface SimulatorInitConfig {
 	weights: number[] | null;
 	retention: number;
 }
 
-/**
- * Initial state for the simulator
- */
 function createInitialState(config?: SimulatorInitConfig): SimulatorState {
 	const initialParams = config?.weights ? [...config.weights] : [...DEFAULT_FSRS_WEIGHTS];
 	const initialRetention = config?.retention ?? 0.9;
@@ -34,9 +26,6 @@ function createInitialState(config?: SimulatorInitConfig): SimulatorState {
 	};
 }
 
-/**
- * State manager for FSRS Simulator
- */
 export class SimulatorStateManager extends BaseStateManager<SimulatorState> {
 	private initialConfig?: SimulatorInitConfig;
 
@@ -44,8 +33,6 @@ export class SimulatorStateManager extends BaseStateManager<SimulatorState> {
 		super(createInitialState(config));
 		this.initialConfig = config;
 	}
-
-	// ===== Getters =====
 
 	getSequences(): string[] {
 		return [...this.state.sequences];
@@ -82,8 +69,6 @@ export class SimulatorStateManager extends BaseStateManager<SimulatorState> {
 	canRedo(): boolean {
 		return this.state.historyIndex < this.state.parameterHistory.length - 1;
 	}
-
-	// ===== Setters =====
 
 	setSequences(sequences: string[]): void {
 		this.setState({ sequences: [...sequences] });
@@ -122,18 +107,10 @@ export class SimulatorStateManager extends BaseStateManager<SimulatorState> {
 		this.setState({ simulations });
 	}
 
-	// ===== Actions =====
-
-	/**
-	 * Reset sequences to default
-	 */
 	resetSequences(): void {
 		this.setState({ sequences: [...DEFAULT_SEQUENCES] });
 	}
 
-	/**
-	 * Reset parameters to initial (from user settings or defaults)
-	 */
 	resetParameters(): void {
 		const initialParams = this.initialConfig?.weights
 			? [...this.initialConfig.weights]
@@ -146,9 +123,6 @@ export class SimulatorStateManager extends BaseStateManager<SimulatorState> {
 		});
 	}
 
-	/**
-	 * Undo last parameter change
-	 */
 	undo(): void {
 		if (!this.canUndo()) return;
 
@@ -161,9 +135,6 @@ export class SimulatorStateManager extends BaseStateManager<SimulatorState> {
 		});
 	}
 
-	/**
-	 * Redo last undone parameter change
-	 */
 	redo(): void {
 		if (!this.canRedo()) return;
 
@@ -176,19 +147,11 @@ export class SimulatorStateManager extends BaseStateManager<SimulatorState> {
 		});
 	}
 
-	/**
-	 * Reset all state to initial values
-	 */
 	reset(): void {
 		this.replaceState(createInitialState());
 	}
 
-	// ===== Private Helpers =====
-
-	/**
-	 * Push parameters to history (for undo/redo)
-	 * Clears any redo history when new changes are made
-	 */
+	/** Clears any redo history when new changes are made */
 	private pushParameterHistory(params: number[]): void {
 		// If we're not at the end of history, truncate redo stack
 		const history = this.state.parameterHistory.slice(0, this.state.historyIndex + 1);
@@ -207,9 +170,6 @@ export class SimulatorStateManager extends BaseStateManager<SimulatorState> {
 		});
 	}
 
-	/**
-	 * Get parameters as formatted string for display
-	 */
 	getParametersString(): string {
 		return this.state.parameters.map((p) => p.toFixed(4)).join(", ");
 	}

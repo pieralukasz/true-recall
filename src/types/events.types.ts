@@ -1,14 +1,8 @@
 /**
- * Event Types for Cross-Component Reactivity
- *
- * These events enable automatic UI synchronization across views:
- * - When a card is modified in one view, others update automatically
- * - Services emit events, UI components subscribe
+ * Events enable automatic UI synchronization across views.
+ * Services emit events, UI components subscribe.
  */
 
-/**
- * All possible event types
- */
 export type FlashcardEventType =
 	| "card:added"
 	| "card:updated"
@@ -20,26 +14,17 @@ export type FlashcardEventType =
 	| "review:card-changed"
 	| "settings:changed";
 
-/**
- * Base event interface
- */
 export interface FlashcardEvent {
 	type: FlashcardEventType;
 	timestamp: number;
 }
 
-/**
- * Emitted when a new flashcard is created
- */
 export interface CardAddedEvent extends FlashcardEvent {
 	type: "card:added";
 	cardId: string;
 	sourceNoteName?: string;
 }
 
-/**
- * Emitted when a flashcard's content or FSRS data changes
- */
 export interface CardUpdatedEvent extends FlashcardEvent {
 	type: "card:updated";
 	cardId: string;
@@ -53,17 +38,11 @@ export interface CardUpdatedEvent extends FlashcardEvent {
 	};
 }
 
-/**
- * Emitted when a flashcard is deleted
- */
 export interface CardRemovedEvent extends FlashcardEvent {
 	type: "card:removed";
 	cardId: string;
 }
 
-/**
- * Emitted when a card is graded during review
- */
 export interface CardReviewedEvent extends FlashcardEvent {
 	type: "card:reviewed";
 	cardId: string;
@@ -71,53 +50,32 @@ export interface CardReviewedEvent extends FlashcardEvent {
 	newState: number; // State enum from ts-fsrs
 }
 
-/**
- * Emitted for bulk operations (e.g., applying diff changes, browser operations)
- */
 export interface BulkChangeEvent extends FlashcardEvent {
 	type: "cards:bulk-change";
 	action: "added" | "removed" | "updated" | "suspend" | "unsuspend" | "bury" | "unbury" | "delete" | "reset" | "reschedule";
 	cardIds: string[];
 }
 
-/**
- * Emitted after SQLite store syncs with disk
- */
 export interface StoreSyncedEvent extends FlashcardEvent {
 	type: "store:synced";
 	merged: number;
 	conflicts: number;
 }
 
-/**
- * Emitted when the current card changes during a review session
- * Used to sync FlashcardPanelView with the current card's source note
- */
+/** Used to sync FlashcardPanelView with the current card's source note */
 export interface ReviewCardChangedEvent extends FlashcardEvent {
 	type: "review:card-changed";
-	/** Source note name of current card, null if session ended or card has no source */
 	sourceNoteName: string | null;
-	/** Source note path for file lookup */
 	sourceNotePath: string | null;
-	/** Source UID for flashcard lookup */
 	sourceUid: string | null;
-	/** Whether review session is active */
 	isActive: boolean;
 }
 
-/**
- * Emitted when plugin settings are changed
- * Used to notify services and views to refresh with new settings
- */
 export interface SettingsChangedEvent extends FlashcardEvent {
 	type: "settings:changed";
-	/** Keys that were changed (optional, for targeted updates) */
 	changedKeys?: string[];
 }
 
-/**
- * Union type for all events
- */
 export type AnyFlashcardEvent =
 	| CardAddedEvent
 	| CardUpdatedEvent
@@ -129,17 +87,10 @@ export type AnyFlashcardEvent =
 	| ReviewCardChangedEvent
 	| SettingsChangedEvent;
 
-/**
- * Event listener callback type
- */
 export type FlashcardEventListener<
 	T extends FlashcardEvent = AnyFlashcardEvent,
 > = (event: T) => void;
 
-/**
- * Result of session selection
- * Re-used from SessionModal
- */
 export interface SessionResult {
 	cancelled: boolean;
 	sessionType: "current-note" | "created-today" | "select-notes" | "state-filter" | "default" | null;
@@ -153,9 +104,6 @@ export interface SessionResult {
 	stateFilter?: "due" | "learning" | "new" | "buried";
 }
 
-/**
- * Emitted when user makes a selection in session view
- */
 export interface SessionSelectedEvent extends FlashcardEvent {
 	type: "session:selected";
 	result: SessionResult;

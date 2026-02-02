@@ -1,8 +1,3 @@
-/**
- * Undo Service
- * Manages undo stack for flashcard mutation operations
- */
-
 import type TrueRecallPlugin from "../../main";
 import type { FSRSCardData } from "../../types";
 import type { ReviewStateManager } from "../../state";
@@ -15,17 +10,11 @@ import type {
 	FSRSHelperUndoPayload,
 } from "./undo.types";
 
-/**
- * Callback interface for review session updates after undo
- */
 export interface ReviewUndoCallbacks {
 	onUpdateSchedulingPreview: () => void;
 	onUndoAnswer: (payload: AnswerUndoPayload) => Promise<void>;
 }
 
-/**
- * Service for managing undo operations on flashcard mutations
- */
 export class UndoService {
 	private stack: UndoEntry[] = [];
 	private readonly maxStackSize = 50;
@@ -39,9 +28,6 @@ export class UndoService {
 		this.plugin = plugin;
 	}
 
-	/**
-	 * Set the ReviewStateManager (called when ReviewView opens)
-	 */
 	setReviewStateManager(
 		manager: ReviewStateManager | null,
 		callbacks: ReviewUndoCallbacks | null
@@ -50,9 +36,6 @@ export class UndoService {
 		this.reviewCallbacks = callbacks;
 	}
 
-	/**
-	 * Push an undo entry onto the stack
-	 */
 	push(entry: UndoEntry): void {
 		this.stack.push(entry);
 
@@ -62,31 +45,19 @@ export class UndoService {
 		}
 	}
 
-	/**
-	 * Check if undo is available
-	 */
 	canUndo(): boolean {
 		return this.stack.length > 0;
 	}
 
-	/**
-	 * Get description of next undo action (for UI display)
-	 */
 	peekDescription(): string | null {
 		const entry = this.stack[this.stack.length - 1];
 		return entry?.description ?? null;
 	}
 
-	/**
-	 * Get the number of entries in the undo stack
-	 */
 	getStackSize(): number {
 		return this.stack.length;
 	}
 
-	/**
-	 * Execute undo for the last action
-	 */
 	async undo(): Promise<boolean> {
 		const entry = this.stack.pop();
 		if (!entry) {
@@ -110,9 +81,6 @@ export class UndoService {
 		}
 	}
 
-	/**
-	 * Execute the actual undo based on payload type
-	 */
 	private async executeUndo(entry: UndoEntry): Promise<boolean> {
 		const { flashcardManager } = this.plugin;
 		const payload = entry.payload;
@@ -160,9 +128,6 @@ export class UndoService {
 		}
 	}
 
-	/**
-	 * Restore a deleted card to the database
-	 */
 	private restoreDeletedCard(cardData: FSRSCardData): boolean {
 		try {
 			const { cardStore } = this.plugin;
@@ -184,11 +149,6 @@ export class UndoService {
 		}
 	}
 
-	/**
-	 * Undo an answer action (restore FSRS state and re-queue card)
-	 * Note: undoLastAnswer() handles queue restoration + stats reversion,
-	 * so we don't call insertCardAtPosition here (would cause duplicate)
-	 */
 	private async undoAnswer(payload: AnswerUndoPayload): Promise<boolean> {
 		const { flashcardManager } = this.plugin;
 
@@ -205,9 +165,6 @@ export class UndoService {
 		return true;
 	}
 
-	/**
-	 * Undo a bury action (restore buriedUntil and re-queue card)
-	 */
 	private undoBury(payload: BuryUndoPayload): boolean {
 		const { flashcardManager } = this.plugin;
 
@@ -240,9 +197,6 @@ export class UndoService {
 		return true;
 	}
 
-	/**
-	 * Undo a suspend action (restore suspended flag and re-queue card)
-	 */
 	private undoSuspend(payload: SuspendUndoPayload): boolean {
 		const { flashcardManager } = this.plugin;
 
@@ -264,10 +218,6 @@ export class UndoService {
 		return true;
 	}
 
-	/**
-	 * Undo an FSRS Helper bulk scheduling operation
-	 * Restores all affected cards to their original due dates
-	 */
 	private undoFSRSHelperOperation(payload: FSRSHelperUndoPayload): boolean {
 		try {
 			const { cardStore } = this.plugin;
@@ -291,17 +241,10 @@ export class UndoService {
 		}
 	}
 
-	/**
-	 * Clear the undo stack (e.g., on session end)
-	 */
 	clear(): void {
 		this.stack = [];
 	}
 
-	/**
-	 * Clear only review session-specific entries (answer, bury, suspend)
-	 * Keeps global mutation entries (create, update, delete, batch-create)
-	 */
 	clearSessionEntries(): void {
 		const sessionTypes = new Set(["answer", "bury", "suspend"]);
 		this.stack = this.stack.filter(

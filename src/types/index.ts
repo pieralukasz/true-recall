@@ -1,7 +1,3 @@
-/**
- * Central export point for all types
- */
-
 // Flashcard types
 export type {
     FlashcardItem,

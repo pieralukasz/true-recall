@@ -53,8 +53,6 @@ export class FlashcardPanelView extends ItemView {
     // Container elements for header and content (created once, reused)
     private headerDiv: HTMLElement | null = null;
     private contentDiv: HTMLElement | null = null;
-
-    // Native header action elements
     private reviewAction: HTMLElement | null = null;
     private openFileAction: HTMLElement | null = null;
     private deleteAllAction: HTMLElement | null = null;
