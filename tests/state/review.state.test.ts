@@ -92,12 +92,13 @@ describe("ReviewStateManager", () => {
             expect(stateManager.isWaitingForLearningCards()).toBe(false);
         });
 
-        it("should return false when learning card is due now (within learn ahead limit)", () => {
-            // Card due in 5 minutes (within 20 minute learn ahead limit)
+        it("should return true when learning card is due in 5 minutes (Learning cards have no learn-ahead)", () => {
+            // Learning cards must be actually due - no learn-ahead window
+            // Card due in 5 minutes should still be waiting
             const learningCard = createLearningCard(5);
             stateManager.startSession([learningCard], "due-date");
 
-            expect(stateManager.isWaitingForLearningCards()).toBe(false);
+            expect(stateManager.isWaitingForLearningCards()).toBe(true);
         });
 
         it("should return true when learning card is due in <60 minutes but beyond learn ahead", () => {

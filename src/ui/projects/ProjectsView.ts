@@ -190,6 +190,9 @@ export class ProjectsView extends ItemView {
 			const noteCardCounts = new Map<string, Map<string, number>>(); // projectName -> notePath -> count
 			// Per-uid state counts: sourceUid -> { newCount, learningCount, dueCount }
 			const uidStateCounts = new Map<string, { newCount: number; learningCount: number; dueCount: number }>();
+			// For optimized unassigned notes lookup (O(U) instead of O(N*M))
+			const uidCardCounts = new Map<string, number>();
+			const sourceUidToPath = new Map<string, string>();
 			const allCards = this.plugin.cardStore.cards.getAll();
 			const now = new Date();
 			const tomorrowBoundary =
@@ -200,11 +203,20 @@ export class ProjectsView extends ItemView {
 
 			for (const card of activeCards) {
 				if (!card.sourceUid) continue;
+
+				// Track total card count per UID (for unassigned notes)
+				uidCardCounts.set(card.sourceUid, (uidCardCounts.get(card.sourceUid) || 0) + 1);
+
 				const projects = sourceUidToProjects.get(card.sourceUid) || [];
 
 				// Find the source file path for this card
 				const sourceFile = frontmatterIndex.getFilesByValue("flashcard_uid", card.sourceUid)[0];
 				if (!sourceFile) continue;
+
+				// Track UID to file path (for unassigned notes lookup, only on first occurrence)
+				if (!sourceUidToPath.has(card.sourceUid)) {
+					sourceUidToPath.set(card.sourceUid, sourceFile.path);
+				}
 
 				// Per-uid state counts (count once per card using sourceUid as key)
 				if (!uidStateCounts.has(card.sourceUid)) {
@@ -295,47 +307,29 @@ export class ProjectsView extends ItemView {
 				})
 				.sort((a, b) => a.name.localeCompare(b.name));
 
-			// Find files with flashcards but no projects assigned
+			// Find notes with flashcards but no projects assigned
+			// OPTIMIZED: O(U) where U = unique source UIDs with cards (vs O(N*M) before)
 			const unassignedNotes: ProjectNoteInfo[] = [];
-			for (const file of this.app.vault.getMarkdownFiles()) {
-				// Check if this file is in any project
-				const fileProjects = frontmatterIndex.getValues("projects", file.path);
-				if (fileProjects.length > 0) continue; // Has projects, skip
 
-				// This note has no projects - count cards if any
-				const fileUid = frontmatterIndex.getValues("flashcard_uid", file.path)[0];
-				let cardCount = 0;
-				let newCount = 0;
-				let learningCount = 0;
-				let dueCount = 0;
+			for (const [uid, stats] of uidStateCounts) {
+				// Check if this UID's note has any projects (O(1) lookup)
+				const projects = sourceUidToProjects.get(uid);
+				if (projects && projects.length > 0) continue;
 
-				if (fileUid) {
-					for (const card of activeCards) {
-						if (card.sourceUid !== fileUid) continue;
-						cardCount++;
+				// No projects - this note is unassigned
+				const filePath = sourceUidToPath.get(uid);
+				if (!filePath) continue;
 
-						if (card.state === State.New) {
-							newCount++;
-						}
-
-						const dueDate = new Date(card.due);
-						if (card.state === State.Learning || card.state === State.Relearning) {
-							learningCount++;
-						}
-
-						if (card.state === State.Review && dueDate < tomorrowBoundary) {
-							dueCount++;
-						}
-					}
-				}
+				const file = this.app.vault.getAbstractFileByPath(filePath);
+				if (!(file instanceof TFile)) continue;
 
 				unassignedNotes.push({
-					path: file.path,
+					path: filePath,
 					name: file.basename,
-					cardCount,
-					newCount,
-					learningCount,
-					dueCount,
+					cardCount: uidCardCounts.get(uid) ?? 0,
+					newCount: stats.newCount,
+					learningCount: stats.learningCount,
+					dueCount: stats.dueCount,
 				});
 			}
 

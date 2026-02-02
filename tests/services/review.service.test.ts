@@ -285,7 +285,7 @@ describe("ReviewService", () => {
 			expect(reviewService.shouldRequeue(card)).toBe(true);
 		});
 
-		it("should return false for Learning cards due later", () => {
+		it("should return true for Learning cards even if due later (position determines when shown)", () => {
 			const later = new Date(Date.now() + 30 * 60 * 1000); // 30 minutes
 			const card = createMockFlashcard({
 				fsrs: {
@@ -294,7 +294,9 @@ describe("ReviewService", () => {
 				},
 			});
 
-			expect(reviewService.shouldRequeue(card)).toBe(false);
+			// Learning cards are always requeued - getRequeuePosition determines where
+			// When reached, getPhase() will show waiting screen if not yet due
+			expect(reviewService.shouldRequeue(card)).toBe(true);
 		});
 
 		it("should return false for Review cards even if due soon", () => {
