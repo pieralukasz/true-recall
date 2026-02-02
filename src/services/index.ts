@@ -48,10 +48,6 @@ export {
 	type OrphanedCardsContext,
 } from "./flashcard/deletion-handler.service";
 export {
-	CardNavigationService,
-	type OpenFileOptions,
-} from "./flashcard/card-navigation.service";
-export {
 	CollectService,
 	type CollectResult,
 } from "./flashcard/collect.service";

@@ -18,7 +18,6 @@ export type FlashcardEventType =
 	| "store:synced"
 	| "session:selected"
 	| "review:card-changed"
-	| "undo:changed"
 	| "settings:changed";
 
 /**
@@ -107,16 +106,6 @@ export interface ReviewCardChangedEvent extends FlashcardEvent {
 }
 
 /**
- * Emitted when the undo stack state changes
- * Used to update UI elements that show undo availability
- */
-export interface UndoChangedEvent extends FlashcardEvent {
-	type: "undo:changed";
-	/** Whether undo is currently available */
-	canUndo: boolean;
-}
-
-/**
  * Emitted when plugin settings are changed
  * Used to notify services and views to refresh with new settings
  */
@@ -138,7 +127,6 @@ export type AnyFlashcardEvent =
 	| StoreSyncedEvent
 	| SessionSelectedEvent
 	| ReviewCardChangedEvent
-	| UndoChangedEvent
 	| SettingsChangedEvent;
 
 /**

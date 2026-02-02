@@ -113,32 +113,6 @@ export interface SearchToken {
 }
 
 /**
- * Card state badge info
- */
-export interface CardStateBadge {
-    /** Display label */
-    label: string;
-    /** CSS class for styling */
-    cssClass: string;
-}
-
-/**
- * Sidebar item (project, tag, or state filter)
- */
-export interface SidebarItem {
-    /** Display label */
-    label: string;
-    /** Filter value to apply */
-    value: string | State | null;
-    /** Number of matching cards */
-    count: number;
-    /** Item type for styling */
-    type: "state" | "project";
-    /** Is this item currently selected? */
-    isSelected: boolean;
-}
-
-/**
  * Bulk operation type
  */
 export type BulkOperation =
@@ -150,14 +124,3 @@ export type BulkOperation =
     | "reset"
     | "reschedule";
 
-/**
- * Result of a bulk operation
- */
-export interface BulkOperationResult {
-    /** Number of cards successfully updated */
-    successCount: number;
-    /** Number of cards that failed */
-    failCount: number;
-    /** Error message if any */
-    error?: string;
-}

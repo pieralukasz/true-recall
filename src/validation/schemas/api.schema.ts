@@ -53,6 +53,5 @@ export const ChatMessageSchema = z.object({
 // ===== Inferred Types from Schemas =====
 
 export type OpenRouterError = z.infer<typeof OpenRouterErrorSchema>;
-export type OpenRouterChoice = z.infer<typeof OpenRouterChoiceSchema>;
 export type OpenRouterResponse = z.infer<typeof OpenRouterResponseSchema>;
 export type ChatMessage = z.infer<typeof ChatMessageSchema>;
