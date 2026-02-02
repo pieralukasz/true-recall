@@ -21,6 +21,27 @@ export interface OptimizationMetrics {
 	convergenceStatus: "converged" | "max_iterations" | "insufficient_data";
 }
 
+// ===== Background Backup Types =====
+
+/**
+ * Backup interval options (in minutes)
+ * 0 = disabled
+ */
+export type BackupInterval = 0 | 15 | 30 | 60 | 120 | 240;
+
+/**
+ * Multi-tier retention policy configuration
+ * Similar to Time Machine - keeps recent backups densely, older ones sparsely
+ */
+export interface RetentionPolicy {
+    /** Keep one backup per hour for the last N hours (0 = disabled) */
+    hourlyBackupsToKeep: number;
+    /** Keep one backup per day for the last N days (0 = disabled) */
+    dailyBackupsToKeep: number;
+    /** Keep one backup per week for the last N weeks (0 = disabled) */
+    weeklyBackupsToKeep: number;
+}
+
 /**
  * Scheduled break period for vacation/time off
  */
@@ -144,11 +165,23 @@ export interface TrueRecallSettings {
     /** Skip preview modal and generate directly */
     floatingButtonDirectGenerate: boolean;
 
-    // ===== Backup Settings =====
+    // ===== Backup Settings (Legacy) =====
     /** Automatic backup on plugin load */
     autoBackupOnLoad: boolean;
-    /** Maximum number of backups to keep (0 = unlimited) */
+    /** Maximum number of backups to keep (0 = unlimited) - legacy, use retentionPolicy instead */
     maxBackups: number;
+
+    // ===== Background Backup Settings =====
+    /** Enable periodic background backups */
+    periodicBackupEnabled: boolean;
+    /** Backup interval in minutes (0 = disabled) */
+    backupIntervalMinutes: BackupInterval;
+    /** Enable activity-based backup triggers (backup after N reviews) */
+    activityTriggeredBackup: boolean;
+    /** Number of reviews after which to trigger a backup */
+    reviewsBeforeBackup: number;
+    /** Multi-tier retention policy (hourly/daily/weekly) */
+    retentionPolicy: RetentionPolicy;
 
     // ===== Copilot Integration =====
     /** Auto-add source note to Obsidian Copilot context during review */

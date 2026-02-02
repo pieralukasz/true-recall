@@ -5,11 +5,16 @@
 import { App, Component, MarkdownRenderer, setIcon } from "obsidian";
 import { State } from "ts-fsrs";
 import type { BrowserCardItem } from "../../types/browser.types";
+import { BaseComponent } from "./BaseComponent";
+import { PREVIEW_STYLES } from "./styles";
 
 export interface BrowserPreviewProps {
     card: BrowserCardItem | null;
     app: App;
     component: Component;
+}
+
+export interface BrowserPreviewCallbacks {
     onEdit: (card: BrowserCardItem) => void;
     onOpenSource: (card: BrowserCardItem) => void;
     onSuspend: (card: BrowserCardItem) => void;
@@ -20,13 +25,20 @@ export interface BrowserPreviewProps {
 /**
  * Preview panel component
  */
-export class BrowserPreview {
-    private container: HTMLElement;
-    private props: BrowserPreviewProps;
+export class BrowserPreview extends BaseComponent<BrowserPreviewProps, BrowserPreviewCallbacks> {
+    // Cached card ID to avoid re-rendering when unchanged
+    private lastRenderedCardId: string | null = null;
 
-    constructor(container: HTMLElement, props: BrowserPreviewProps) {
-        this.container = container;
-        this.props = props;
+    // Cached DOM references
+    private contentContainer: HTMLElement | null = null;
+    private headerActionsContainer: HTMLElement | null = null;
+
+    constructor(
+        container: HTMLElement,
+        props: BrowserPreviewProps,
+        callbacks: BrowserPreviewCallbacks
+    ) {
+        super(container, props, callbacks);
     }
 
     render(): void {
@@ -36,6 +48,8 @@ export class BrowserPreview {
 
         if (!card) {
             this.renderEmpty();
+            this.lastRenderedCardId = null;
+            this.isRendered = true;
             return;
         }
 
@@ -43,108 +57,137 @@ export class BrowserPreview {
         this.renderHeader(card);
 
         // Content
+        this.contentContainer = this.container.createDiv({
+            cls: PREVIEW_STYLES.CONTENT,
+        });
         this.renderContent(card);
 
         // Info section
         this.renderInfo(card);
+
+        this.lastRenderedCardId = card.id;
+        this.isRendered = true;
+    }
+
+    /**
+     * Handle incremental updates
+     * For preview, if card ID changed we need full re-render
+     */
+    protected onUpdate(changedKeys: (keyof BrowserPreviewProps)[]): void {
+        if (!changedKeys.includes("card")) return;
+
+        const { card } = this.props;
+
+        // If card changed to different card or null, full re-render
+        if (card?.id !== this.lastRenderedCardId) {
+            this.render();
+            return;
+        }
+
+        // Same card but content may have changed - update content and header
+        if (card && this.contentContainer) {
+            this.contentContainer.empty();
+            this.renderContent(card);
+        }
+
+        if (card && this.headerActionsContainer) {
+            this.updateHeaderActions(card);
+        }
     }
 
     private renderEmpty(): void {
         const empty = this.container.createDiv({
-            cls: "ep:flex ep:flex-col ep:items-center ep:justify-center ep:h-full ep:py-10 ep:px-5 ep:text-obs-muted ep:text-center",
+            cls: PREVIEW_STYLES.EMPTY,
         });
         const iconEl = empty.createDiv({
-            cls: "ep:text-[32px] ep:mb-3 ep:opacity-50",
+            cls: PREVIEW_STYLES.EMPTY_ICON,
         });
         setIcon(iconEl, "eye");
         empty.createDiv({
             text: "Select a card to preview",
-            cls: "ep:text-[13px]",
+            cls: PREVIEW_STYLES.EMPTY_TEXT,
         });
     }
 
     private renderHeader(card: BrowserCardItem): void {
         const header = this.container.createDiv({
-            cls: "ep:flex ep:items-center ep:justify-between ep:py-3 ep:px-4 ep:border-b ep:border-obs-border ep:bg-obs-secondary ep:sticky ep:top-0 ep:z-10",
+            cls: PREVIEW_STYLES.HEADER,
         });
 
         // Title (source note name or "Card Preview")
         header.createDiv({
             text: card.sourceNoteName || "Card Preview",
-            cls: "ep:text-[13px] ep:font-semibold ep:text-obs-normal ep:overflow-hidden ep:text-ellipsis ep:whitespace-nowrap",
+            cls: PREVIEW_STYLES.HEADER_TITLE,
         });
 
         // Action buttons
-        const actions = header.createDiv({
-            cls: "ep:flex ep:items-center ep:gap-1 ep:shrink-0",
+        this.headerActionsContainer = header.createDiv({
+            cls: PREVIEW_STYLES.HEADER_ACTIONS,
         });
+        this.updateHeaderActions(card);
+    }
 
-        const actionBtnCls = "ep:flex ep:items-center ep:justify-center ep:w-7 ep:h-7 ep:p-0 ep:border-none ep:rounded-md ep:bg-transparent ep:text-obs-muted ep:cursor-pointer ep:transition-all ep:hover:bg-obs-modifier-hover ep:hover:text-obs-normal";
-        const actionBtnActiveCls = "ep:bg-obs-interactive ep:text-on-accent ep:hover:bg-obs-interactive ep:hover:text-on-accent";
-        const actionBtnDangerCls = "ep:text-obs-muted ep:hover:bg-red-500/10 ep:hover:text-obs-error";
+    private updateHeaderActions(card: BrowserCardItem): void {
+        if (!this.headerActionsContainer) return;
+        this.headerActionsContainer.empty();
 
         // Edit button
-        const editBtn = actions.createEl("button", {
-            cls: actionBtnCls,
+        const editBtn = this.headerActionsContainer.createEl("button", {
+            cls: PREVIEW_STYLES.ACTION_BTN,
             attr: { "aria-label": "Edit card" },
         });
         setIcon(editBtn, "edit");
-        editBtn.addEventListener("click", () => this.props.onEdit(card));
+        editBtn.addEventListener("click", () => this.callbacks.onEdit(card));
 
         // Open source button (if available)
         if (card.sourceNotePath) {
-            const sourceBtn = actions.createEl("button", {
-                cls: actionBtnCls,
+            const sourceBtn = this.headerActionsContainer.createEl("button", {
+                cls: PREVIEW_STYLES.ACTION_BTN,
                 attr: { "aria-label": "Open source note" },
             });
             setIcon(sourceBtn, "external-link");
-            sourceBtn.addEventListener("click", () => this.props.onOpenSource(card));
+            sourceBtn.addEventListener("click", () => this.callbacks.onOpenSource(card));
         }
 
         // Suspend button
         const suspendBtnCls = card.suspended
-            ? `${actionBtnCls} ${actionBtnActiveCls}`
-            : actionBtnCls;
-        const suspendBtn = actions.createEl("button", {
+            ? `${PREVIEW_STYLES.ACTION_BTN} ${PREVIEW_STYLES.ACTION_BTN_ACTIVE}`
+            : PREVIEW_STYLES.ACTION_BTN;
+        const suspendBtn = this.headerActionsContainer.createEl("button", {
             cls: suspendBtnCls,
             attr: { "aria-label": card.suspended ? "Unsuspend" : "Suspend" },
         });
         setIcon(suspendBtn, card.suspended ? "play" : "pause");
-        suspendBtn.addEventListener("click", () => this.props.onSuspend(card));
+        suspendBtn.addEventListener("click", () => this.callbacks.onSuspend(card));
 
         // Bury button
         const isBuried = card.buriedUntil && new Date(card.buriedUntil) > new Date();
         const buryBtnCls = isBuried
-            ? `${actionBtnCls} ${actionBtnActiveCls}`
-            : actionBtnCls;
-        const buryBtn = actions.createEl("button", {
+            ? `${PREVIEW_STYLES.ACTION_BTN} ${PREVIEW_STYLES.ACTION_BTN_ACTIVE}`
+            : PREVIEW_STYLES.ACTION_BTN;
+        const buryBtn = this.headerActionsContainer.createEl("button", {
             cls: buryBtnCls,
             attr: { "aria-label": isBuried ? "Unbury" : "Bury" },
         });
         setIcon(buryBtn, isBuried ? "archive-restore" : "archive");
-        buryBtn.addEventListener("click", () => this.props.onBury(card));
+        buryBtn.addEventListener("click", () => this.callbacks.onBury(card));
 
         // Delete button
-        const deleteBtn = actions.createEl("button", {
-            cls: `${actionBtnCls} ${actionBtnDangerCls}`,
+        const deleteBtn = this.headerActionsContainer.createEl("button", {
+            cls: `${PREVIEW_STYLES.ACTION_BTN} ${PREVIEW_STYLES.ACTION_BTN_DANGER}`,
             attr: { "aria-label": "Delete card" },
         });
         setIcon(deleteBtn, "trash-2");
-        deleteBtn.addEventListener("click", () => this.props.onDelete(card));
+        deleteBtn.addEventListener("click", () => this.callbacks.onDelete(card));
     }
 
     private renderContent(card: BrowserCardItem): void {
-        const content = this.container.createDiv({
-            cls: "ep:flex-1 ep:overflow-y-auto ep:p-4",
-        });
-
-        const sectionLabelCls = "ep:block ep:mb-2 ep:text-obs-muted ep:text-[11px] ep:font-semibold ep:uppercase ep:tracking-[0.5px]";
-        const sectionContentCls = "ep:p-3 ep:bg-obs-secondary ep:rounded-lg ep:text-obs-normal ep:text-ui-small ep:leading-relaxed markdown-rendered";
+        if (!this.contentContainer) return;
 
         // Question section
-        const questionSection = content.createDiv({ cls: "ep:mb-4" });
-        questionSection.createDiv({ text: "Question", cls: sectionLabelCls });
-        const questionContent = questionSection.createDiv({ cls: sectionContentCls });
+        const questionSection = this.contentContainer.createDiv({ cls: "ep:mb-4" });
+        questionSection.createDiv({ text: "Question", cls: PREVIEW_STYLES.SECTION_LABEL });
+        const questionContent = questionSection.createDiv({ cls: PREVIEW_STYLES.SECTION_CONTENT });
         void MarkdownRenderer.render(
             this.props.app,
             card.question ?? "",
@@ -154,12 +197,12 @@ export class BrowserPreview {
         );
 
         // Divider
-        content.createDiv({ cls: "ep:h-px ep:my-4 ep:bg-obs-border" });
+        this.contentContainer.createDiv({ cls: PREVIEW_STYLES.DIVIDER });
 
         // Answer section
-        const answerSection = content.createDiv({ cls: "ep:mb-4" });
-        answerSection.createDiv({ text: "Answer", cls: sectionLabelCls });
-        const answerContent = answerSection.createDiv({ cls: sectionContentCls });
+        const answerSection = this.contentContainer.createDiv({ cls: "ep:mb-4" });
+        answerSection.createDiv({ text: "Answer", cls: PREVIEW_STYLES.SECTION_LABEL });
+        const answerContent = answerSection.createDiv({ cls: PREVIEW_STYLES.SECTION_CONTENT });
         void MarkdownRenderer.render(
             this.props.app,
             card.answer ?? "",
@@ -171,29 +214,25 @@ export class BrowserPreview {
 
     private renderInfo(card: BrowserCardItem): void {
         const info = this.container.createDiv({
-            cls: "ep:mt-4 ep:pt-4 ep:border-t ep:border-obs-border ep:mx-4 ep:mb-4",
+            cls: PREVIEW_STYLES.INFO,
         });
 
-        const infoRowCls = "ep:flex ep:items-start ep:py-1.5 ep:border-b ep:border-obs-border last:ep:border-b-0";
-        const infoLabelCls = "ep:shrink-0 ep:min-w-[80px] ep:mr-3 ep:text-obs-muted ep:text-ui-smaller";
-        const infoValueCls = "ep:text-obs-normal ep:text-[13px]";
-
         // State badge
-        const stateRow = info.createDiv({ cls: infoRowCls });
-        stateRow.createSpan({ text: "State:", cls: infoLabelCls });
+        const stateRow = info.createDiv({ cls: PREVIEW_STYLES.INFO_ROW });
+        stateRow.createSpan({ text: "State:", cls: PREVIEW_STYLES.INFO_LABEL });
         this.renderStateBadge(stateRow, card);
 
         // Due date
-        const dueRow = info.createDiv({ cls: infoRowCls });
-        dueRow.createSpan({ text: "Due:", cls: infoLabelCls });
+        const dueRow = info.createDiv({ cls: PREVIEW_STYLES.INFO_ROW });
+        dueRow.createSpan({ text: "Due:", cls: PREVIEW_STYLES.INFO_LABEL });
         dueRow.createSpan({
             text: this.formatDueDate(card.due),
-            cls: infoValueCls,
+            cls: PREVIEW_STYLES.INFO_VALUE,
         });
 
         // FSRS stats
         const statsRow = info.createDiv({
-            cls: "ep:flex ep:flex-wrap ep:gap-2 ep:py-2 ep:border-b ep:border-obs-border",
+            cls: PREVIEW_STYLES.STATS_ROW,
         });
 
         this.renderStat(statsRow, "Stability", `${Math.round(card.stability)}d`);
@@ -203,36 +242,36 @@ export class BrowserPreview {
 
         // Projects
         if (card.projects.length > 0) {
-            const projectsRow = info.createDiv({ cls: infoRowCls });
-            projectsRow.createSpan({ text: "Projects:", cls: infoLabelCls });
+            const projectsRow = info.createDiv({ cls: PREVIEW_STYLES.INFO_ROW });
+            projectsRow.createSpan({ text: "Projects:", cls: PREVIEW_STYLES.INFO_LABEL });
             const projectsContainer = projectsRow.createDiv({
                 cls: "ep:flex ep:flex-wrap ep:gap-1",
             });
             for (const project of card.projects) {
                 projectsContainer.createSpan({
                     text: project,
-                    cls: "ep:py-0.5 ep:px-2 ep:bg-obs-modifier-hover ep:rounded ep:text-ui-smaller ep:text-obs-muted",
+                    cls: PREVIEW_STYLES.PROJECT_TAG,
                 });
             }
         }
 
         // Created date
         if (card.createdAt) {
-            const createdRow = info.createDiv({ cls: infoRowCls });
-            createdRow.createSpan({ text: "Created:", cls: infoLabelCls });
+            const createdRow = info.createDiv({ cls: PREVIEW_STYLES.INFO_ROW });
+            createdRow.createSpan({ text: "Created:", cls: PREVIEW_STYLES.INFO_LABEL });
             createdRow.createSpan({
                 text: new Date(card.createdAt).toLocaleDateString(),
-                cls: infoValueCls,
+                cls: PREVIEW_STYLES.INFO_VALUE,
             });
         }
 
         // Last review
         if (card.lastReview) {
-            const reviewRow = info.createDiv({ cls: infoRowCls });
-            reviewRow.createSpan({ text: "Last Review:", cls: infoLabelCls });
+            const reviewRow = info.createDiv({ cls: PREVIEW_STYLES.INFO_ROW });
+            reviewRow.createSpan({ text: "Last Review:", cls: PREVIEW_STYLES.INFO_LABEL });
             reviewRow.createSpan({
                 text: new Date(card.lastReview).toLocaleDateString(),
-                cls: infoValueCls,
+                cls: PREVIEW_STYLES.INFO_VALUE,
             });
         }
     }
@@ -240,57 +279,55 @@ export class BrowserPreview {
     private renderStateBadge(container: HTMLElement, card: BrowserCardItem): void {
         const now = new Date();
         let label: string;
-        let colorCls: string;
-
-        const baseCls = "ep:inline-flex ep:items-center ep:py-0.5 ep:px-2 ep:rounded-xl ep:text-[11px] ep:font-semibold ep:uppercase ep:tracking-[0.3px]";
+        let badgeCls: string;
 
         if (card.suspended) {
             label = "Suspended";
-            colorCls = "ep:bg-red-500/15 ep:text-obs-error";
+            badgeCls = `${PREVIEW_STYLES.BADGE_BASE} ${PREVIEW_STYLES.BADGE_SUSPENDED}`;
         } else if (card.buriedUntil && new Date(card.buriedUntil) > now) {
             label = "Buried";
-            colorCls = "ep:bg-obs-modifier-hover ep:text-obs-muted";
+            badgeCls = `${PREVIEW_STYLES.BADGE_BASE} ${PREVIEW_STYLES.BADGE_BURIED}`;
         } else {
             switch (card.state) {
                 case State.New:
                     label = "New";
-                    colorCls = "ep:bg-blue-500/15 ep:text-blue-500";
+                    badgeCls = `${PREVIEW_STYLES.BADGE_BASE} ${PREVIEW_STYLES.BADGE_NEW}`;
                     break;
                 case State.Learning:
                     label = "Learning";
-                    colorCls = "ep:bg-orange-500/15 ep:text-orange-500";
+                    badgeCls = `${PREVIEW_STYLES.BADGE_BASE} ${PREVIEW_STYLES.BADGE_LEARNING}`;
                     break;
                 case State.Review:
                     label = "Review";
-                    colorCls = "ep:bg-green-500/15 ep:text-green-500";
+                    badgeCls = `${PREVIEW_STYLES.BADGE_BASE} ${PREVIEW_STYLES.BADGE_REVIEW}`;
                     break;
                 case State.Relearning:
                     label = "Relearning";
-                    colorCls = "ep:bg-yellow-500/15 ep:text-yellow-500";
+                    badgeCls = `${PREVIEW_STYLES.BADGE_BASE} ${PREVIEW_STYLES.BADGE_RELEARNING}`;
                     break;
                 default:
                     label = "Unknown";
-                    colorCls = "ep:bg-obs-modifier-hover ep:text-obs-muted";
+                    badgeCls = `${PREVIEW_STYLES.BADGE_BASE} ${PREVIEW_STYLES.BADGE_UNKNOWN}`;
             }
         }
 
         container.createSpan({
             text: label,
-            cls: `${baseCls} ${colorCls}`,
+            cls: badgeCls,
         });
     }
 
     private renderStat(container: HTMLElement, label: string, value: string): void {
         const stat = container.createDiv({
-            cls: "ep:flex ep:flex-col ep:py-2 ep:px-3 ep:bg-obs-secondary ep:rounded-md ep:min-w-[70px]",
+            cls: PREVIEW_STYLES.STAT_BOX,
         });
         stat.createSpan({
             text: label,
-            cls: "ep:text-[10px] ep:font-semibold ep:text-obs-muted ep:uppercase ep:tracking-[0.3px] ep:mb-0.5",
+            cls: PREVIEW_STYLES.STAT_LABEL,
         });
         stat.createSpan({
             text: value,
-            cls: "ep:text-ui-small ep:font-semibold ep:text-obs-normal",
+            cls: PREVIEW_STYLES.STAT_VALUE,
         });
     }
 
@@ -313,7 +350,10 @@ export class BrowserPreview {
         }
     }
 
-    destroy(): void {
-        // Cleanup if needed
+    override destroy(): void {
+        this.contentContainer = null;
+        this.headerActionsContainer = null;
+        this.lastRenderedCardId = null;
+        super.destroy();
     }
 }

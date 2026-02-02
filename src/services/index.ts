@@ -55,7 +55,12 @@ export {
 // Persistence services
 export { SqliteStoreService } from "./persistence/sqlite";
 export { SessionPersistenceService } from "./persistence/session-persistence.service";
-export { BackupService, type BackupInfo } from "./persistence/backup.service";
+export { BackupService, type BackupInfo, type PruneResult } from "./persistence/backup.service";
+export {
+	BackgroundBackupManager,
+	type BackgroundBackupConfig,
+	type BackupStatus,
+} from "./persistence/background-backup.service";
 
 // Stats services
 export {

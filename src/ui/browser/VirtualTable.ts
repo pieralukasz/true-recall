@@ -14,6 +14,7 @@ import { setIcon } from "obsidian";
 import { truncateText, stripHtml, formatDueDate, getDueDateStatus } from "../utils";
 import { renderStateBadge } from "../components";
 import type { BrowserCardItem, BrowserColumn, SortDirection } from "../../types/browser.types";
+import { TABLE_STYLES } from "./styles";
 
 export interface VirtualTableProps {
     cards: BrowserCardItem[];
@@ -72,16 +73,23 @@ export class VirtualTable {
     // Virtual scrolling state
     private visibleRange: VisibleRange = { start: 0, end: 0 };
     private rowPool: Map<number, HTMLElement> = new Map();
-    private rowAbortControllers: Map<number, AbortController> = new Map();
     private rafId: number | null = null;
+
+    // Single AbortController for all row events (reused across renders)
+    private rowEventController: AbortController | null = null;
 
     // Scroll handler bound reference for cleanup
     private boundScrollHandler: () => void;
+
+    // Keyboard navigation
+    private focusedIndex: number = -1;
+    private boundKeyHandler: (e: KeyboardEvent) => void;
 
     constructor(container: HTMLElement, props: VirtualTableProps) {
         this.container = container;
         this.props = props;
         this.boundScrollHandler = this.handleScroll.bind(this);
+        this.boundKeyHandler = this.handleKeyDown.bind(this);
     }
 
     /**
@@ -90,6 +98,10 @@ export class VirtualTable {
     render(): void {
         this.container.empty();
         this.container.addClass("browser-table");
+
+        // Reset event controller for fresh render
+        this.rowEventController?.abort();
+        this.rowEventController = new AbortController();
 
         if (this.props.isLoading) {
             this.renderLoading();
@@ -101,14 +113,15 @@ export class VirtualTable {
             return;
         }
 
-        // Create scroll container
+        // Create scroll container with keyboard focus support
         this.scrollContainer = this.container.createDiv({
-            cls: ["ep:relative", "ep:h-full", "ep:overflow-auto"].join(" "),
+            cls: TABLE_STYLES.SCROLL_CONTAINER,
+            attr: { tabindex: "0" },
         });
 
         // Create table wrapper (holds spacers + table)
         this.tableWrapper = this.scrollContainer.createDiv({
-            cls: ["ep:relative", "ep:w-full"].join(" "),
+            cls: TABLE_STYLES.TABLE_WRAPPER,
         });
 
         // Calculate total height for scroll
@@ -117,25 +130,25 @@ export class VirtualTable {
 
         // Create the actual table
         const table = this.tableWrapper.createEl("table", {
-            cls: [
-                "ep:absolute", "ep:inset-0", "ep:w-full",
-                "[border-collapse:collapse]", "[table-layout:fixed]"
-            ].join(" "),
+            cls: TABLE_STYLES.TABLE,
         });
 
         // Create header (sticky)
         this.thead = table.createEl("thead", {
-            cls: ["ep:sticky", "ep:top-0", "ep:z-10", "ep:bg-obs-secondary"].join(" "),
+            cls: TABLE_STYLES.THEAD,
         });
         this.renderHeader();
 
         // Create body container
         this.tbody = table.createEl("tbody", {
-            cls: ["ep:relative", "ep:block"].join(" "),
+            cls: TABLE_STYLES.TBODY,
         });
 
         // Add scroll listener
         this.scrollContainer.addEventListener("scroll", this.boundScrollHandler, { passive: true });
+
+        // Add keyboard listener for navigation
+        this.scrollContainer.addEventListener("keydown", this.boundKeyHandler);
 
         // Initial render of visible rows
         this.updateVisibleRows();
@@ -153,11 +166,20 @@ export class VirtualTable {
             this.tableWrapper.style.height = `${totalHeight}px`;
         }
 
-        // Clear row pool and re-render
+        // Reset event controller and clear row pool
+        this.rowEventController?.abort();
+        this.rowEventController = new AbortController();
         this.rowPool.clear();
+
         if (this.tbody) {
             this.tbody.empty();
         }
+
+        // Clamp focused index to new card count
+        if (this.focusedIndex >= cards.length) {
+            this.focusedIndex = cards.length - 1;
+        }
+
         this.updateVisibleRows();
     }
 
@@ -200,7 +222,7 @@ export class VirtualTable {
      * Calculate which rows should be visible and render them
      */
     private updateVisibleRows(): void {
-        if (!this.scrollContainer || !this.tbody || !this.tableWrapper) return;
+        if (!this.scrollContainer || !this.tbody || !this.tableWrapper || !this.rowEventController) return;
 
         const scrollTop = this.scrollContainer.scrollTop;
         const viewportHeight = this.scrollContainer.clientHeight;
@@ -230,14 +252,13 @@ export class VirtualTable {
         for (const index of rowsToRemove) {
             const row = this.rowPool.get(index);
             if (row) {
-                // Abort event listeners before removing from DOM
-                const controller = this.rowAbortControllers.get(index);
-                controller?.abort();
-                this.rowAbortControllers.delete(index);
                 row.remove();
                 this.rowPool.delete(index);
             }
         }
+
+        // Use shared abort signal for all rows
+        const signal = this.rowEventController.signal;
 
         // Add/update rows in visible range
         for (let i = startIndex; i < endIndex; i++) {
@@ -246,11 +267,8 @@ export class VirtualTable {
 
             let row = this.rowPool.get(i);
             if (!row) {
-                // Create AbortController for row's event listeners
-                const abortController = new AbortController();
-                this.rowAbortControllers.set(i, abortController);
-                // Create new row
-                row = this.createRow(card, i, abortController.signal);
+                // Create new row with shared signal
+                row = this.createRow(card, i, signal);
                 this.rowPool.set(i, row);
                 this.tbody.appendChild(row);
             }
@@ -269,32 +287,23 @@ export class VirtualTable {
      */
     private createRow(card: BrowserCardItem, index: number, signal: AbortSignal): HTMLElement {
         const isSelected = this.props.selectedCardIds.has(card.id);
-        const rowStateClass = this.getRowStateClass(card);
+        const isFocused = index === this.focusedIndex;
         const tr = document.createElement("tr");
 
-        // Build base classes
-        const baseClasses = [
-            "ep:absolute", "ep:flex", "ep:items-center", "ep:w-full",
-            "ep:border-b", "ep:border-obs-border",
-            "ep:transition-colors", "ep:duration-100", "ep:cursor-pointer",
-            "ep:hover:bg-obs-modifier-hover",
-        ];
+        // Build class list from style constants
+        let className = TABLE_STYLES.ROW_BASE;
+        if (isSelected) className += ` ${TABLE_STYLES.ROW_SELECTED}`;
+        if (isFocused) className += ` ${TABLE_STYLES.ROW_FOCUSED}`;
 
-        if (isSelected) {
-            baseClasses.push(
-                "ep:bg-[rgba(var(--obs-interactive-rgb),0.1)]",
-                "ep:hover:!bg-[rgba(var(--obs-interactive-rgb),0.15)]"
-            );
+        // Check card state (use timestamp comparison for performance)
+        const now = Date.now();
+        if (card.suspended) {
+            className += ` ${TABLE_STYLES.ROW_SUSPENDED}`;
+        } else if (card.buriedUntil && new Date(card.buriedUntil).getTime() > now) {
+            className += ` ${TABLE_STYLES.ROW_BURIED}`;
         }
 
-        if (rowStateClass.includes("row-suspended")) {
-            baseClasses.push("ep:opacity-60");
-        }
-        if (rowStateClass.includes("row-buried")) {
-            baseClasses.push("ep:opacity-60", "ep:italic");
-        }
-
-        tr.className = baseClasses.join(" ");
+        tr.className = className;
         tr.dataset.cardId = card.id;
         tr.dataset.index = String(index);
         tr.style.top = `${index * ROW_HEIGHT}px`;
@@ -302,44 +311,41 @@ export class VirtualTable {
         tr.style.right = "0";
         tr.style.height = `${ROW_HEIGHT}px`;
 
-        const tdClasses = ["ep:py-2.5", "ep:px-3", "ep:text-obs-normal", "ep:overflow-hidden", "ep:text-ellipsis", "ep:whitespace-nowrap"];
-        const cellContentClasses = ["ep:block", "ep:overflow-hidden", "ep:text-ellipsis", "ep:whitespace-nowrap"];
-
         // Question
-        const questionTd = tr.createEl("td", { cls: tdClasses.join(" ") });
+        const questionTd = tr.createEl("td", { cls: TABLE_STYLES.CELL });
         questionTd.style.width = "30%";
         questionTd.style.flexShrink = "0";
         questionTd.createSpan({
             text: truncateText(stripHtml(card.question ?? ""), 60),
-            cls: cellContentClasses.join(" "),
+            cls: TABLE_STYLES.CELL_CONTENT,
         });
 
         // Answer
-        const answerTd = tr.createEl("td", { cls: tdClasses.join(" ") });
+        const answerTd = tr.createEl("td", { cls: TABLE_STYLES.CELL });
         answerTd.style.width = "25%";
         answerTd.style.flexShrink = "0";
         answerTd.createSpan({
             text: truncateText(stripHtml(card.answer ?? ""), 50),
-            cls: cellContentClasses.join(" "),
+            cls: TABLE_STYLES.CELL_CONTENT,
         });
 
         // Due
-        const dueTd = tr.createEl("td", { cls: tdClasses.join(" ") });
+        const dueTd = tr.createEl("td", { cls: TABLE_STYLES.CELL });
         dueTd.style.width = "10%";
         dueTd.style.flexShrink = "0";
 
-        const dueClasses = [...cellContentClasses];
+        let dueCls = TABLE_STYLES.CELL_CONTENT;
         const dueStatus = getDueDateStatus(card.due);
-        if (dueStatus === "overdue") dueClasses.push("ep:text-obs-error");
-        if (dueStatus === "today") dueClasses.push("ep:text-obs-interactive", "ep:font-medium");
+        if (dueStatus === "overdue") dueCls += ` ${TABLE_STYLES.DUE_OVERDUE}`;
+        if (dueStatus === "today") dueCls += ` ${TABLE_STYLES.DUE_TODAY}`;
 
         dueTd.createSpan({
             text: formatDueDate(card.due),
-            cls: dueClasses.join(" "),
+            cls: dueCls,
         });
 
         // State
-        const stateTd = tr.createEl("td", { cls: tdClasses.join(" ") });
+        const stateTd = tr.createEl("td", { cls: TABLE_STYLES.CELL });
         stateTd.style.width = "8%";
         stateTd.style.flexShrink = "0";
         renderStateBadge(stateTd, {
@@ -349,42 +355,43 @@ export class VirtualTable {
         });
 
         // Stability
-        const stabilityTd = tr.createEl("td", { cls: tdClasses.join(" ") });
+        const stabilityTd = tr.createEl("td", { cls: TABLE_STYLES.CELL });
         stabilityTd.style.width = "8%";
         stabilityTd.style.flexShrink = "0";
         stabilityTd.createSpan({
             text: card.stability > 0 ? `${Math.round(card.stability)}d` : "-",
-            cls: cellContentClasses.join(" "),
+            cls: TABLE_STYLES.CELL_CONTENT,
         });
 
         // Reps
-        const repsTd = tr.createEl("td", { cls: tdClasses.join(" ") });
+        const repsTd = tr.createEl("td", { cls: TABLE_STYLES.CELL });
         repsTd.style.width = "6%";
         repsTd.style.flexShrink = "0";
         repsTd.createSpan({
             text: String(card.reps),
-            cls: cellContentClasses.join(" "),
+            cls: TABLE_STYLES.CELL_CONTENT,
         });
 
         // Lapses
-        const lapsesTd = tr.createEl("td", { cls: tdClasses.join(" ") });
+        const lapsesTd = tr.createEl("td", { cls: TABLE_STYLES.CELL });
         lapsesTd.style.width = "6%";
         lapsesTd.style.flexShrink = "0";
-        const lapsesClasses = [...cellContentClasses];
-        if (card.lapses > 3) lapsesClasses.push("ep:text-obs-error");
+        const lapsesCls = card.lapses > 3
+            ? `${TABLE_STYLES.CELL_CONTENT} ${TABLE_STYLES.LAPSES_HIGH}`
+            : TABLE_STYLES.CELL_CONTENT;
         lapsesTd.createSpan({
             text: String(card.lapses),
-            cls: lapsesClasses.join(" "),
+            cls: lapsesCls,
         });
 
         // Source
-        const sourceTd = tr.createEl("td", { cls: tdClasses.join(" ") });
+        const sourceTd = tr.createEl("td", { cls: TABLE_STYLES.CELL });
         sourceTd.style.width = "7%";
         sourceTd.style.flexShrink = "0";
         if (card.sourceNoteName) {
             const sourceLink = sourceTd.createEl("a", {
                 text: truncateText(card.sourceNoteName, 20),
-                cls: ["ep:text-obs-accent", "ep:no-underline", "ep:cursor-pointer", "ep:hover:underline"].join(" "),
+                cls: TABLE_STYLES.SOURCE_LINK,
                 attr: { title: card.sourceNoteName },
             });
             sourceLink.addEventListener("click", (e) => {
@@ -392,11 +399,13 @@ export class VirtualTable {
                 this.props.onOpenSourceNote(card);
             }, { signal });
         } else {
-            sourceTd.createSpan({ text: "-", cls: [...cellContentClasses, "ep:text-obs-muted"].join(" ") });
+            sourceTd.createSpan({ text: "-", cls: `${TABLE_STYLES.CELL_CONTENT} ${TABLE_STYLES.SOURCE_EMPTY}` });
         }
 
         // Row click handlers
         tr.addEventListener("click", (e) => {
+            // Update focused index on click
+            this.focusedIndex = index;
             this.props.onCardClick(card.id, e);
         }, { signal });
 
@@ -415,29 +424,19 @@ export class VirtualTable {
         this.thead.empty();
 
         const tr = this.thead.createEl("tr", {
-            cls: ["ep:flex"].join(" "),
+            cls: TABLE_STYLES.HEADER_ROW,
         });
 
         for (const col of COLUMNS) {
             const th = tr.createEl("th", {
-                cls: [
-                    "ep:py-2.5", "ep:px-3", "ep:text-left", "ep:font-semibold",
-                    "ep:text-obs-muted", "ep:text-ui-smaller", "ep:uppercase",
-                    "ep:tracking-wider", "ep:border-b", "ep:border-obs-border",
-                    "ep:whitespace-nowrap", "ep:select-none",
-                    "ep:hover:bg-obs-modifier-hover"
-                ].join(" "),
+                cls: TABLE_STYLES.HEADER_CELL,
             });
             th.style.width = col.width;
             th.style.flexShrink = "0";
 
             if (col.sortable) {
                 const sortBtn = th.createEl("button", {
-                    cls: [
-                        "ep:flex", "ep:items-center", "ep:gap-1",
-                        "ep:bg-transparent", "ep:border-0", "ep:p-0",
-                        "ep:cursor-pointer", "ep:text-inherit", "ep:font-inherit"
-                    ].join(" "),
+                    cls: TABLE_STYLES.SORT_BTN,
                 });
 
                 sortBtn.createSpan({ text: col.label });
@@ -459,40 +458,134 @@ export class VirtualTable {
 
     private renderLoading(): void {
         const loading = this.container.createDiv({
-            cls: [
-                "ep:flex", "ep:flex-col", "ep:items-center", "ep:justify-center",
-                "ep:py-15", "ep:px-5", "ep:text-obs-muted", "ep:text-center", "ep:h-full"
-            ].join(" "),
+            cls: TABLE_STYLES.EMPTY_CONTAINER,
         });
         loading.createSpan({ text: "Loading cards..." });
     }
 
     private renderEmpty(): void {
         const empty = this.container.createDiv({
-            cls: [
-                "ep:flex", "ep:flex-col", "ep:items-center", "ep:justify-center",
-                "ep:py-15", "ep:px-5", "ep:text-obs-muted", "ep:text-center", "ep:h-full"
-            ].join(" "),
+            cls: TABLE_STYLES.EMPTY_CONTAINER,
         });
         const iconEl = empty.createDiv({
-            cls: ["ep:text-5xl", "ep:mb-4", "ep:opacity-50"].join(" "),
+            cls: TABLE_STYLES.EMPTY_ICON,
         });
         setIcon(iconEl, "inbox");
         empty.createDiv({
             text: "No cards found",
-            cls: ["ep:text-ui-small", "ep:mb-2"].join(" "),
+            cls: TABLE_STYLES.EMPTY_TITLE,
         });
         empty.createDiv({
             text: "Try adjusting your search or filters",
-            cls: ["ep:text-ui-smaller", "ep:opacity-70"].join(" "),
+            cls: TABLE_STYLES.EMPTY_SUBTITLE,
         });
     }
 
-    private getRowStateClass(card: BrowserCardItem): string {
-        const now = new Date();
-        if (card.suspended) return " row-suspended";
-        if (card.buriedUntil && new Date(card.buriedUntil) > now) return " row-buried";
-        return "";
+    // ===== Keyboard Navigation =====
+
+    /**
+     * Handle keyboard events for navigation
+     */
+    private handleKeyDown(e: KeyboardEvent): void {
+        if (!this.props.cards.length) return;
+
+        switch (e.key) {
+            case "ArrowDown":
+                e.preventDefault();
+                this.moveFocus(1);
+                break;
+            case "ArrowUp":
+                e.preventDefault();
+                this.moveFocus(-1);
+                break;
+            case "Enter":
+                if (this.focusedIndex >= 0) {
+                    const card = this.props.cards[this.focusedIndex];
+                    if (card) this.props.onCardDoubleClick(card);
+                }
+                break;
+            case "Home":
+                e.preventDefault();
+                this.setFocus(0);
+                break;
+            case "End":
+                e.preventDefault();
+                this.setFocus(this.props.cards.length - 1);
+                break;
+        }
+    }
+
+    /**
+     * Move focus by delta (positive = down, negative = up)
+     */
+    private moveFocus(delta: number): void {
+        const newIndex = Math.max(0, Math.min(
+            this.props.cards.length - 1,
+            this.focusedIndex < 0 ? 0 : this.focusedIndex + delta
+        ));
+        this.setFocus(newIndex);
+    }
+
+    /**
+     * Set focus to a specific index
+     */
+    private setFocus(index: number): void {
+        if (index < 0 || index >= this.props.cards.length) return;
+
+        const prevFocusedIndex = this.focusedIndex;
+        this.focusedIndex = index;
+
+        // Update focus styles on rows
+        if (prevFocusedIndex >= 0) {
+            const prevRow = this.rowPool.get(prevFocusedIndex);
+            if (prevRow) {
+                prevRow.classList.remove(...TABLE_STYLES.ROW_FOCUSED.split(" "));
+            }
+        }
+
+        const currentRow = this.rowPool.get(index);
+        if (currentRow) {
+            currentRow.classList.add(...TABLE_STYLES.ROW_FOCUSED.split(" "));
+        }
+
+        // Select the focused card
+        const card = this.props.cards[index];
+        if (card) {
+            // Create a synthetic mouse event for selection
+            this.props.onCardClick(card.id, {
+                shiftKey: false,
+                ctrlKey: false,
+                metaKey: false,
+            } as MouseEvent);
+        }
+
+        // Scroll to keep focused row visible
+        this.scrollToIndex(index);
+    }
+
+    /**
+     * Scroll to ensure a row is visible
+     */
+    private scrollToIndex(index: number): void {
+        if (!this.scrollContainer) return;
+
+        const rowTop = index * ROW_HEIGHT;
+        const rowBottom = rowTop + ROW_HEIGHT;
+        const viewTop = this.scrollContainer.scrollTop;
+        const viewBottom = viewTop + this.scrollContainer.clientHeight;
+
+        if (rowTop < viewTop) {
+            this.scrollContainer.scrollTop = rowTop;
+        } else if (rowBottom > viewBottom) {
+            this.scrollContainer.scrollTop = rowBottom - this.scrollContainer.clientHeight;
+        }
+    }
+
+    /**
+     * Set focused index from external click
+     */
+    setFocusedIndex(index: number): void {
+        this.focusedIndex = index;
     }
 
     /**
@@ -506,15 +599,15 @@ export class VirtualTable {
 
         if (this.scrollContainer) {
             this.scrollContainer.removeEventListener("scroll", this.boundScrollHandler);
+            this.scrollContainer.removeEventListener("keydown", this.boundKeyHandler);
         }
 
-        // Abort all row event listeners
-        for (const controller of this.rowAbortControllers.values()) {
-            controller.abort();
-        }
-        this.rowAbortControllers.clear();
+        // Abort all row event listeners with single controller
+        this.rowEventController?.abort();
+        this.rowEventController = null;
 
         this.rowPool.clear();
+        this.focusedIndex = -1;
         this.scrollContainer = null;
         this.tableWrapper = null;
         this.thead = null;

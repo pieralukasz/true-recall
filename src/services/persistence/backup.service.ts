@@ -6,6 +6,7 @@ import { App, normalizePath } from "obsidian";
 import { notify } from "../ui/notification.service";
 import type { SqliteStoreService } from "./sqlite";
 import { DB_FOLDER, getDeviceDbFilename } from "./sqlite";
+import type { RetentionPolicy } from "../../types/settings.types";
 
 const BACKUP_PREFIX = "true-recall-backup-";
 
@@ -25,6 +26,20 @@ export interface BackupInfo {
     formattedDate: string;
     /** Formatted size string (e.g., "1.5 MB") */
     formattedSize: string;
+}
+
+/**
+ * Result of smart retention pruning
+ */
+export interface PruneResult {
+    /** Number of backups deleted */
+    deleted: number;
+    /** Backups kept per tier */
+    kept: {
+        hourly: number;
+        daily: number;
+        weekly: number;
+    };
 }
 
 /**
@@ -195,6 +210,173 @@ export class BackupService {
             console.warn(`[True Recall] Failed to delete backup ${backupPath}:`, error);
             return false;
         }
+    }
+
+    /**
+     * Apply smart multi-tier retention policy
+     * Keeps: N hourly (one per hour), M daily (one per day), P weekly (one per week)
+     * @param policy Retention policy configuration
+     * @returns Result with deletion count and kept counts per tier
+     */
+    async applySmartRetention(policy: RetentionPolicy): Promise<PruneResult> {
+        const backups = await this.listBackups();
+        if (backups.length === 0) {
+            return { deleted: 0, kept: { hourly: 0, daily: 0, weekly: 0 } };
+        }
+
+        const now = new Date();
+        const toKeep = new Set<string>();
+        const kept = { hourly: 0, daily: 0, weekly: 0 };
+
+        // Select backups to keep from each tier
+        const hourlyBackups = this.selectHourlyBackups(backups, now, policy.hourlyBackupsToKeep);
+        const dailyBackups = this.selectDailyBackups(backups, now, policy.dailyBackupsToKeep);
+        const weeklyBackups = this.selectWeeklyBackups(backups, now, policy.weeklyBackupsToKeep);
+
+        // Merge all kept backups (a backup can be kept by multiple tiers)
+        for (const b of hourlyBackups) {
+            if (!toKeep.has(b.path)) {
+                toKeep.add(b.path);
+                kept.hourly++;
+            }
+        }
+        for (const b of dailyBackups) {
+            if (!toKeep.has(b.path)) {
+                toKeep.add(b.path);
+                kept.daily++;
+            }
+        }
+        for (const b of weeklyBackups) {
+            if (!toKeep.has(b.path)) {
+                toKeep.add(b.path);
+                kept.weekly++;
+            }
+        }
+
+        // Delete backups not in keep set
+        const toDelete = backups.filter(b => !toKeep.has(b.path));
+        let deleted = 0;
+
+        for (const backup of toDelete) {
+            try {
+                await this.app.vault.adapter.remove(backup.path);
+                deleted++;
+            } catch (error) {
+                console.warn(`[True Recall] Failed to delete backup ${backup.path}:`, error);
+            }
+        }
+
+        if (deleted > 0) {
+            console.log(`[True Recall] Smart retention: deleted ${deleted} old backups, kept ${toKeep.size} (hourly: ${kept.hourly}, daily: ${kept.daily}, weekly: ${kept.weekly})`);
+        }
+
+        return { deleted, kept };
+    }
+
+    /**
+     * Select best hourly backups (newest within each hour in the retention window)
+     */
+    private selectHourlyBackups(backups: BackupInfo[], now: Date, count: number): BackupInfo[] {
+        if (count <= 0) return [];
+
+        const hourlyMap = new Map<string, BackupInfo>();
+        const cutoff = new Date(now.getTime() - count * 60 * 60 * 1000);
+
+        for (const backup of backups) {
+            if (backup.timestamp < cutoff) continue;
+
+            const hourKey = this.getHourKey(backup.timestamp);
+            const existing = hourlyMap.get(hourKey);
+
+            // Keep newest backup for each hour
+            if (!existing || backup.timestamp > existing.timestamp) {
+                hourlyMap.set(hourKey, backup);
+            }
+        }
+
+        return Array.from(hourlyMap.values());
+    }
+
+    /**
+     * Select best daily backups (newest per day within the retention window)
+     */
+    private selectDailyBackups(backups: BackupInfo[], now: Date, count: number): BackupInfo[] {
+        if (count <= 0) return [];
+
+        const dailyMap = new Map<string, BackupInfo>();
+        const cutoff = new Date(now.getTime() - count * 24 * 60 * 60 * 1000);
+
+        for (const backup of backups) {
+            if (backup.timestamp < cutoff) continue;
+
+            const dayKey = this.getDayKey(backup.timestamp);
+            const existing = dailyMap.get(dayKey);
+
+            // Keep newest backup for each day
+            if (!existing || backup.timestamp > existing.timestamp) {
+                dailyMap.set(dayKey, backup);
+            }
+        }
+
+        return Array.from(dailyMap.values());
+    }
+
+    /**
+     * Select best weekly backups (newest per week within the retention window)
+     */
+    private selectWeeklyBackups(backups: BackupInfo[], now: Date, count: number): BackupInfo[] {
+        if (count <= 0) return [];
+
+        const weeklyMap = new Map<string, BackupInfo>();
+        const cutoff = new Date(now.getTime() - count * 7 * 24 * 60 * 60 * 1000);
+
+        for (const backup of backups) {
+            if (backup.timestamp < cutoff) continue;
+
+            const weekKey = this.getWeekKey(backup.timestamp);
+            const existing = weeklyMap.get(weekKey);
+
+            // Keep newest backup for each week
+            if (!existing || backup.timestamp > existing.timestamp) {
+                weeklyMap.set(weekKey, backup);
+            }
+        }
+
+        return Array.from(weeklyMap.values());
+    }
+
+    /**
+     * Get hour bucket key for a date
+     */
+    private getHourKey(date: Date): string {
+        return `${date.getFullYear()}-${date.getMonth()}-${date.getDate()}-${date.getHours()}`;
+    }
+
+    /**
+     * Get day bucket key for a date
+     */
+    private getDayKey(date: Date): string {
+        return `${date.getFullYear()}-${date.getMonth()}-${date.getDate()}`;
+    }
+
+    /**
+     * Get week bucket key for a date (ISO week number)
+     */
+    private getWeekKey(date: Date): string {
+        const year = date.getFullYear();
+        const weekNumber = this.getWeekNumber(date);
+        return `${year}-W${weekNumber}`;
+    }
+
+    /**
+     * Calculate ISO week number for a date
+     */
+    private getWeekNumber(date: Date): number {
+        const d = new Date(Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()));
+        const dayNum = d.getUTCDay() || 7;
+        d.setUTCDate(d.getUTCDate() + 4 - dayNum);
+        const yearStart = new Date(Date.UTC(d.getUTCFullYear(), 0, 1));
+        return Math.ceil((((d.getTime() - yearStart.getTime()) / 86400000) + 1) / 7);
     }
 
     /**
