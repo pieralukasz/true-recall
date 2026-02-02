@@ -425,11 +425,13 @@ export class ReviewService {
 		const allLearningCards = fsrsService.getLearningCards(availableCards);
 
 		// Split learning cards by due status
+		// For Learning cards: use strict check (must be actually due, not just within learn-ahead)
+		// This aligns with isCardDueNow() which doesn't apply learn-ahead to Learning cards
 		const dueLearningCards = allLearningCards.filter(
-			(card) => new Date(card.fsrs.due) <= learnAheadTime
+			(card) => new Date(card.fsrs.due) <= now
 		);
 		const pendingLearningCards = allLearningCards.filter(
-			(card) => new Date(card.fsrs.due) > learnAheadTime
+			(card) => new Date(card.fsrs.due) > now
 		);
 
 		// Get due review cards
@@ -712,20 +714,15 @@ export class ReviewService {
 
 	/**
 	 * Check if a card should be re-added to queue (for learning cards)
+	 * Learning/Relearning cards are ALWAYS requeued - the position is determined
+	 * by getRequeuePosition(). Cards due soon go near the front, cards due later
+	 * go at the end where getPhase() will trigger the waiting screen.
 	 */
 	shouldRequeue(card: FSRSFlashcardItem): boolean {
-		// Learning and relearning cards get re-added if their due time is soon
-		if (
+		return (
 			card.fsrs.state === State.Learning ||
 			card.fsrs.state === State.Relearning
-		) {
-			const dueDate = new Date(card.fsrs.due);
-			const now = new Date();
-			// Re-add if due within requeue window
-			const requeueDeadline = new Date(now.getTime() + REQUEUE_WINDOW_MS);
-			return dueDate <= requeueDeadline;
-		}
-		return false;
+		);
 	}
 
 	/**

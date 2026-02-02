@@ -79,21 +79,21 @@ describe("Review State - Waiting", () => {
 			expect(stateManager.isCardDueNow(card)).toBe(true);
 		});
 
-		it("should return true for card due in 10 minutes (within learn-ahead)", () => {
+		it("should return false for Learning card due in 10 minutes (no learn-ahead for Learning)", () => {
+			// Learning cards must be actually due - no learn-ahead window
 			const card = createLearningCardWithDue("soon", 10);
-			expect(stateManager.isCardDueNow(card)).toBe(true);
+			expect(stateManager.isCardDueNow(card)).toBe(false);
 		});
 
-		it("should return true for card due in 19 minutes (within learn-ahead)", () => {
+		it("should return false for Learning card due in 19 minutes (no learn-ahead for Learning)", () => {
 			const card = createLearningCardWithDue("almostLimit", 19);
-			expect(stateManager.isCardDueNow(card)).toBe(true);
+			expect(stateManager.isCardDueNow(card)).toBe(false);
 		});
 
-		it("should return true for card due exactly at 20 minutes (at boundary)", () => {
-			// LEARN_AHEAD_LIMIT_MINUTES = 20
-			// isCardDueNow checks: dueDate <= now + 20 min
+		it("should return false for Learning card due in 20 minutes (no learn-ahead for Learning)", () => {
+			// Learning/Relearning cards don't get learn-ahead - must be actually due
 			const card = createLearningCardWithDue("boundary", 20);
-			expect(stateManager.isCardDueNow(card)).toBe(true);
+			expect(stateManager.isCardDueNow(card)).toBe(false);
 		});
 
 		it("should return false for card due in 21 minutes (beyond learn-ahead)", () => {
@@ -139,19 +139,20 @@ describe("Review State - Waiting", () => {
 			expect(stateManager.isWaitingForLearningCards()).toBe(false);
 		});
 
-		it("should NOT wait when learning card is within learn-ahead (19 min)", () => {
+		it("should wait when learning card is 19 minutes away (Learning cards have no learn-ahead)", () => {
+			// Learning cards must be actually due - no learn-ahead window
 			const queue = [createLearningCardWithDue("soon", 19)];
 			stateManager.startSession(queue);
 
-			expect(stateManager.isWaitingForLearningCards()).toBe(false);
+			expect(stateManager.isWaitingForLearningCards()).toBe(true);
 		});
 
-		it("should NOT wait when learning card is at exactly learn-ahead boundary (20 min)", () => {
+		it("should wait when learning card is 20 minutes away (Learning cards have no learn-ahead)", () => {
+			// Learning/Relearning cards don't get learn-ahead - must be actually due
 			const queue = [createLearningCardWithDue("boundary", 20)];
 			stateManager.startSession(queue);
 
-			// At 20 min, isCardDueNow returns true, so no waiting
-			expect(stateManager.isWaitingForLearningCards()).toBe(false);
+			expect(stateManager.isWaitingForLearningCards()).toBe(true);
 		});
 
 		it("should wait when learning card is beyond learn-ahead (21 min)", () => {
@@ -351,18 +352,26 @@ describe("Review State - Waiting", () => {
 			expect(stateManager.isWaitingForLearningCards()).toBe(true);
 		});
 
-		it("should become active again when time advances to make card due", () => {
+		it("should become active again when time advances to make card actually due", () => {
 			const queue = [createLearningCardWithDue("future", 25)];
 			stateManager.startSession(queue);
 
-			// Initially waiting (>20 min)
+			// Initially waiting (25 min away)
 			expect(stateManager.isWaitingForLearningCards()).toBe(true);
 			expect(stateManager.getPhase().type).toBe("waiting");
 
-			// Advance clock to bring card within learn-ahead window
+			// Advance clock but not enough - Learning cards must be ACTUALLY due
 			vi.advanceTimersByTime(10 * 60 * 1000);
 
-			// Now only 15 min away - should be due (within 20 min window)
+			// Still 15 min away - Learning cards don't get learn-ahead, so still waiting
+			expect(stateManager.isCardDueNow(queue[0]!)).toBe(false);
+			expect(stateManager.isWaitingForLearningCards()).toBe(true);
+			expect(stateManager.getPhase().type).toBe("waiting");
+
+			// Advance clock to make card actually due
+			vi.advanceTimersByTime(15 * 60 * 1000);
+
+			// Now actually due - should be active
 			expect(stateManager.isCardDueNow(queue[0]!)).toBe(true);
 			expect(stateManager.isWaitingForLearningCards()).toBe(false);
 			expect(stateManager.getPhase().type).toBe("active");
@@ -438,14 +447,19 @@ describe("Review State - Waiting", () => {
 			expect(LEARN_AHEAD_LIMIT_MINUTES).toBe(20);
 		});
 
-		it("should apply constant consistently in isCardDueNow", () => {
-			// Card at exactly LEARN_AHEAD_LIMIT_MINUTES should be considered due
-			const atLimit = createLearningCardWithDue("atLimit", LEARN_AHEAD_LIMIT_MINUTES);
+		it("should apply constant consistently in isCardDueNow for Review cards", () => {
+			// Learn-ahead only applies to Review cards, not Learning cards
+			// Review card at exactly LEARN_AHEAD_LIMIT_MINUTES should be considered due
+			const atLimit = createReviewCardWithDue("atLimit", LEARN_AHEAD_LIMIT_MINUTES);
 			expect(stateManager.isCardDueNow(atLimit)).toBe(true);
 
-			// Card just past LEARN_AHEAD_LIMIT_MINUTES should NOT be due
-			const pastLimit = createLearningCardWithDue("pastLimit", LEARN_AHEAD_LIMIT_MINUTES + 1);
+			// Review card just past LEARN_AHEAD_LIMIT_MINUTES should NOT be due
+			const pastLimit = createReviewCardWithDue("pastLimit", LEARN_AHEAD_LIMIT_MINUTES + 1);
 			expect(stateManager.isCardDueNow(pastLimit)).toBe(false);
+
+			// Learning cards don't get learn-ahead - must be actually due
+			const learningAtLimit = createLearningCardWithDue("learningAtLimit", LEARN_AHEAD_LIMIT_MINUTES);
+			expect(stateManager.isCardDueNow(learningAtLimit)).toBe(false);
 		});
 	});
 });
