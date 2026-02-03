@@ -1,8 +1,3 @@
-/**
- * Flashcard Editor Modal
- * Preview/edit toggle like ReviewView
- * Supports both adding new flashcards and editing existing ones
- */
 import { App, MarkdownRenderer, Component, setIcon } from "obsidian";
 import { BaseModal } from "./BaseModal";
 import { MediaPickerModal } from "./MediaPickerModal";
@@ -42,9 +37,6 @@ export interface FlashcardEditorModalOptions {
 	prefillAnswer?: string;
 }
 
-/**
- * Modal for creating/editing flashcards with preview/edit toggle
- */
 export class FlashcardEditorModal extends BaseModal {
 	private options: FlashcardEditorModalOptions;
 	private resolvePromise: ((result: FlashcardEditorResult) => void) | null = null;
@@ -91,9 +83,6 @@ export class FlashcardEditorModal extends BaseModal {
 		this.options = options;
 	}
 
-	/**
-	 * Open modal and return promise with result
-	 */
 	async openAndWait(): Promise<FlashcardEditorResult> {
 		return new Promise((resolve) => {
 			this.resolvePromise = resolve;
@@ -140,9 +129,6 @@ export class FlashcardEditorModal extends BaseModal {
 		this.setupKeyboardShortcuts(container);
 	}
 
-	/**
-	 * Render both fields (question and answer)
-	 */
 	private renderFields(): void {
 		if (!this.fieldsContainer) return;
 
@@ -170,9 +156,6 @@ export class FlashcardEditorModal extends BaseModal {
 		this.renderField(answerSection, this.answerValue, "answer");
 	}
 
-	/**
-	 * Render collapsible AI Assist section
-	 */
 	private renderAiAssistSection(container: HTMLElement): void {
 		this.aiAssistContainer = container.createDiv({
 			cls: "ep:mb-4 ep:pb-4 ep:border-b ep:border-obs-border",
@@ -201,9 +184,6 @@ export class FlashcardEditorModal extends BaseModal {
 		this.renderAiAssistContent();
 	}
 
-	/**
-	 * Render AI Assist content (expanded/collapsed)
-	 */
 	private renderAiAssistContent(): void {
 		if (!this.aiAssistContainer) return;
 
@@ -227,9 +207,6 @@ export class FlashcardEditorModal extends BaseModal {
 		}
 	}
 
-	/**
-	 * Update save button text based on AI instruction
-	 */
 	private updateButtonText(): void {
 		if (!this.saveButton) return;
 
@@ -243,9 +220,6 @@ export class FlashcardEditorModal extends BaseModal {
 		this.saveButton.textContent = buttonText;
 	}
 
-	/**
-	 * Clean up existing field components
-	 */
 	private cleanupFields(): void {
 		// Clean up EditableTextField instances
 		if (this.questionField) {
@@ -258,9 +232,6 @@ export class FlashcardEditorModal extends BaseModal {
 		}
 	}
 
-	/**
-	 * Render source section (clickable to change source note)
-	 */
 	private renderSourceSection(container: HTMLElement): void {
 		const { card, sourceNoteName } = this.options;
 
@@ -275,9 +246,6 @@ export class FlashcardEditorModal extends BaseModal {
 		this.renderSourceDisplay();
 	}
 
-	/**
-	 * Render source in display mode (clickable text)
-	 */
 	private renderSourceDisplay(): void {
 		if (!this.sourceContainer) return;
 		this.sourceContainer.empty();
@@ -305,26 +273,17 @@ export class FlashcardEditorModal extends BaseModal {
 		}
 	}
 
-	/**
-	 * Start editing source (show search input)
-	 */
 	private startSourceEdit(): void {
 		if (!this.sourceContainer) return;
 		// Source editing disabled (autocomplete removed)
 		notify().info("Source editing is not available");
 	}
 
-	/**
-	 * Cancel source editing and restore display
-	 */
 	private cancelSourceEdit(): void {
 		this.sourceEditing = false;
 		this.renderSourceDisplay();
 	}
 
-	/**
-	 * Render a single field (question or answer)
-	 */
 	private renderField(
 		container: HTMLElement,
 		content: string,
@@ -347,9 +306,6 @@ export class FlashcardEditorModal extends BaseModal {
 		}
 	}
 
-	/**
-	 * Render field in preview mode (rendered markdown)
-	 */
 	private renderPreviewMode(
 		container: HTMLElement,
 		content: string,
@@ -379,9 +335,6 @@ export class FlashcardEditorModal extends BaseModal {
 		});
 	}
 
-	/**
-	 * Render empty placeholder (clickable to start editing)
-	 */
 	private renderEmptyPlaceholder(
 		container: HTMLElement,
 		field: "question" | "answer"
@@ -400,9 +353,6 @@ export class FlashcardEditorModal extends BaseModal {
 		});
 	}
 
-	/**
-	 * Render field in edit mode (textarea with toolbar)
-	 */
 	private renderEditMode(
 		container: HTMLElement,
 		content: string,
@@ -472,9 +422,6 @@ export class FlashcardEditorModal extends BaseModal {
 		}
 	}
 
-	/**
-	 * Get toolbar buttons with Media picker added
-	 */
 	private getToolbarButtons(): ToolbarButton[] {
 		return [
 			...TOOLBAR_BUTTONS.UNIFIED,
@@ -495,9 +442,6 @@ export class FlashcardEditorModal extends BaseModal {
 		];
 	}
 
-	/**
-	 * Render action buttons
-	 */
 	private renderButtons(container: HTMLElement): void {
 		this.buttonsContainer = container.createDiv({ cls: "ep:flex ep:justify-end ep:gap-3 ep:mt-5 ep:pt-4 ep:border-t ep:border-obs-border" });
 
@@ -517,9 +461,6 @@ export class FlashcardEditorModal extends BaseModal {
 		this.saveButton.addEventListener("click", () => this.handleSubmit());
 	}
 
-	/**
-	 * Setup keyboard shortcuts
-	 */
 	private setupKeyboardShortcuts(container: HTMLElement): void {
 		container.addEventListener("keydown", (e) => {
 			// Ctrl/Cmd+Enter to submit
@@ -600,9 +541,6 @@ export class FlashcardEditorModal extends BaseModal {
 		});
 	}
 
-	/**
-	 * Get the currently focused EditableTextField
-	 */
 	private getFocusedField(): EditableTextField | null {
 		const activeElement = document.activeElement;
 		const questionTextarea = this.questionField?.getTextarea();
@@ -616,16 +554,10 @@ export class FlashcardEditorModal extends BaseModal {
 		return null;
 	}
 
-	/**
-	 * Show keyboard shortcuts modal
-	 */
 	private showKeyboardShortcuts(): void {
 		new KeyboardShortcutsModal(this.app).open();
 	}
 
-	/**
-	 * Handle image paste from clipboard
-	 */
 	private async handleImagePaste(e: ClipboardEvent, textarea: HTMLTextAreaElement): Promise<void> {
 		const items = e.clipboardData?.items;
 		if (!items || !this.imageService) return;
@@ -658,9 +590,6 @@ export class FlashcardEditorModal extends BaseModal {
 		}
 	}
 
-	/**
-	 * Open the media picker modal (images and videos)
-	 */
 	private async openMediaPicker(): Promise<void> {
 		const modal = new MediaPickerModal(this.app, {
 			currentFilePath: this.options.currentFilePath,
@@ -679,17 +608,11 @@ export class FlashcardEditorModal extends BaseModal {
 		}
 	}
 
-	/**
-	 * Insert text at cursor position in textarea
-	 */
 	private insertAtCursor(textarea: HTMLTextAreaElement, text: string): void {
 		insertAtTextareaCursor(textarea, text);
 		textarea.focus();
 	}
 
-	/**
-	 * Check if the form is valid
-	 */
 	private isFormValid(): boolean {
 		// Use stored values (they're updated on every change)
 		const question = this.questionValue.trim();
@@ -697,18 +620,12 @@ export class FlashcardEditorModal extends BaseModal {
 		return question.length > 0;
 	}
 
-	/**
-	 * Validate and update form state
-	 */
 	private validateForm(): void {
 		if (this.saveButton) {
 			this.saveButton.disabled = !this.isFormValid();
 		}
 	}
 
-	/**
-	 * Handle form submission
-	 */
 	private handleSubmit(): void {
 		// Use stored values
 		const question = this.questionValue.trim();
@@ -754,10 +671,6 @@ export class FlashcardEditorModal extends BaseModal {
 	}
 }
 
-/**
- * Keyboard Shortcuts Modal
- * Displays all available keyboard shortcuts
- */
 export class KeyboardShortcutsModal extends BaseModal {
 	constructor(app: App) {
 		super(app, {

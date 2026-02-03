@@ -73,7 +73,6 @@ export class ReviewService {
 			primaryIndex < primary.length ||
 			secondaryIndex < secondary.length
 		) {
-			// Add primary cards based on ratio
 			const targetPrimary = Math.floor((secondaryIndex + 1) * ratio);
 			while (
 				primaryIndex < targetPrimary &&
@@ -82,13 +81,11 @@ export class ReviewService {
 				result.push(primary[primaryIndex]!);
 				primaryIndex++;
 			}
-			// Add one secondary card
 			if (secondaryIndex < secondary.length) {
 				result.push(secondary[secondaryIndex]!);
 				secondaryIndex++;
 			}
 		}
-		// Add remaining primary cards
 		while (primaryIndex < primary.length) {
 			result.push(primary[primaryIndex]!);
 			primaryIndex++;
@@ -97,10 +94,6 @@ export class ReviewService {
 		return result;
 	}
 
-	/**
-	 * Sort cards by creation date (oldest first)
-	 * Falls back to card ID for cards without createdAt (backward compatibility)
-	 */
 	private sortByCreatedAt(cards: FSRSFlashcardItem[]): FSRSFlashcardItem[] {
 		return [...cards].sort((a, b) => {
 			const aTime = a.fsrs.createdAt ?? 0;
@@ -111,9 +104,6 @@ export class ReviewService {
 		});
 	}
 
-	/**
-	 * Sort cards by creation date (newest first)
-	 */
 	private sortByCreatedAtDesc(
 		cards: FSRSFlashcardItem[]
 	): FSRSFlashcardItem[] {
@@ -125,9 +115,6 @@ export class ReviewService {
 		});
 	}
 
-	/**
-	 * Calculate date boundaries for filtering (respects dayStartHour like Anki)
-	 */
 	private calculateBoundaries(dayStartHour: number = 4): {
 		now: Date;
 		todayBoundary: Date;
@@ -146,9 +133,6 @@ export class ReviewService {
 		return { now, todayBoundary, weekAgoBoundary };
 	}
 
-	/**
-	 * Filter cards based on queue build options
-	 */
 	private filterCards(
 		cards: FSRSFlashcardItem[],
 		options: QueueBuildOptions,
@@ -258,9 +242,6 @@ export class ReviewService {
 		});
 	}
 
-	/**
-	 * Sort new cards based on order setting
-	 */
 	private sortNewCards(
 		cards: FSRSFlashcardItem[],
 		order: NewCardOrder
@@ -277,9 +258,6 @@ export class ReviewService {
 		}
 	}
 
-	/**
-	 * Sort review cards based on order setting
-	 */
 	private sortReviewCards(
 		cards: FSRSFlashcardItem[],
 		order: ReviewOrder,
@@ -316,9 +294,6 @@ export class ReviewService {
 		}
 	}
 
-	/**
-	 * Mix review and new cards based on mix setting
-	 */
 	private mixQueues(
 		reviews: FSRSFlashcardItem[],
 		newCards: FSRSFlashcardItem[],
@@ -335,9 +310,6 @@ export class ReviewService {
 		}
 	}
 
-	/**
-	 * Build queue with bypass scheduling (Custom Study mode)
-	 */
 	private buildCustomStudyQueue(
 		availableCards: FSRSFlashcardItem[],
 		fsrsService: FSRSService,
@@ -379,9 +351,6 @@ export class ReviewService {
 		return [...fsrsService.sortByDue(dueLearningCards), ...mainQueue];
 	}
 
-	/**
-	 * Build queue with standard scheduling (respects due dates)
-	 */
 	private buildStandardQueue(
 		availableCards: FSRSFlashcardItem[],
 		fsrsService: FSRSService,
@@ -400,7 +369,6 @@ export class ReviewService {
 			(card) => new Date(card.fsrs.due) > now
 		);
 
-		// Get due review cards
 		const dayStartHour = options.dayStartHour ?? 4;
 		const reviewCards = fsrsService.getReviewCards(
 			availableCards,
@@ -441,10 +409,7 @@ export class ReviewService {
 		];
 	}
 
-	/**
-	 * Build a review queue from all available cards
-	 * Order (Anki-like): Due Learning → Review → New → Pending Learning
-	 */
+	/** Order (Anki-like): Due Learning → Review → New → Pending Learning */
 	buildQueue(
 		allCards: FSRSFlashcardItem[],
 		fsrsService: FSRSService,
@@ -470,7 +435,6 @@ export class ReviewService {
 			return isLearning || !reviewedToday.has(card.id);
 		});
 
-		// Build queue based on scheduling mode
 		if (options.bypassScheduling) {
 			return this.buildCustomStudyQueue(
 				availableCards,
@@ -487,9 +451,6 @@ export class ReviewService {
 		);
 	}
 
-	/**
-	 * Process an answer and return updated card data
-	 */
 	processAnswer(
 		card: FSRSFlashcardItem,
 		rating: Grade,
@@ -536,10 +497,6 @@ export class ReviewService {
 		return { updatedCard, result };
 	}
 
-	/**
-	 * Grade a card and save FSRS data to store
-	 * Single method for all grading operations (answer, move, etc.)
-	 */
 	async gradeCard(
 		card: FSRSFlashcardItem,
 		rating: Grade,
@@ -572,10 +529,6 @@ export class ReviewService {
 		return { updatedCard, result };
 	}
 
-	/**
-	 * Calculate session statistics from review results
-	 * Uses single-pass accumulator for O(N) performance instead of O(5N)
-	 */
 	calculateSessionStats(
 		results: ReviewResult[],
 		totalCards: number,
@@ -634,10 +587,6 @@ export class ReviewService {
 		};
 	}
 
-	/**
-	 * Calculate daily statistics
-	 * @param dayBoundaryService Optional day boundary service for accurate due counts
-	 */
 	calculateDailyStats(
 		allCards: FSRSFlashcardItem[],
 		todayResults: ReviewResult[],
@@ -691,12 +640,6 @@ export class ReviewService {
 		);
 	}
 
-	/**
-	 * Get the next position to insert a re-queued card
-	 * @param queue Current queue of cards
-	 * @param card Card to requeue
-	 * @param reviewOrder Optional sort order - affects positioning strategy
-	 */
 	getRequeuePosition(
 		queue: FSRSFlashcardItem[],
 		card: FSRSFlashcardItem,
@@ -744,9 +687,6 @@ export class ReviewService {
 		return low;
 	}
 
-	/**
-	 * Calculate retention rate from review history
-	 */
 	calculateRetentionRate(results: ReviewResult[]): number {
 		if (results.length === 0) return 0;
 
@@ -757,11 +697,6 @@ export class ReviewService {
 		return successfulReviews / results.length;
 	}
 
-	/**
-	 * Get streak information (consecutive days of review)
-	 * @param reviewHistory Array of review results with timestamps
-	 * @param dayBoundaryService Optional service for dayStartHour-aware date formatting
-	 */
 	getStreakInfo(
 		reviewHistory: ReviewResult[],
 		dayBoundaryService?: DayBoundaryService
@@ -790,7 +725,6 @@ export class ReviewService {
 			return `${year}-${month}-${day}`;
 		};
 
-		// Get unique review days using local dates
 		const reviewDays = new Set(
 			reviewHistory.map((r) => formatDate(r.timestamp))
 		);

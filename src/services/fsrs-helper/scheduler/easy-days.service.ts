@@ -12,9 +12,6 @@ import type {
 	WorkloadDistribution,
 } from "./scheduler.types";
 
-/**
- * Options for applying easy days
- */
 export interface EasyDaysOptions {
 	/** Easy days configuration (recurring weekdays + specific dates) */
 	easyDays: EasyDaysConfig;
@@ -28,12 +25,6 @@ export interface EasyDaysOptions {
 	dryRun?: boolean;
 }
 
-/**
- * Check if a date is an easy day
- * @param date - The date to check
- * @param easyDays - Easy days configuration
- * @returns true if the date is an easy day
- */
 export function isEasyDay(date: Date, easyDays: EasyDaysConfig): boolean {
 	const dayOfWeek = date.getDay();
 	const dateStr = date.toISOString().split("T")[0]!;
@@ -51,19 +42,9 @@ export function isEasyDay(date: Date, easyDays: EasyDaysConfig): boolean {
 	return false;
 }
 
-/**
- * Easy Days Service
- *
- * Reduces workload on specified days by moving excess cards to adjacent days.
- * For example, if Saturday is an easy day with 50% multiplier and target is 100,
- * only 50 cards will remain on Saturday.
- */
 export class EasyDaysService {
 	constructor(private cardStore: SchedulerCardStore) {}
 
-	/**
-	 * Apply easy days configuration to upcoming reviews
-	 */
 	async applyEasyDays(options: EasyDaysOptions): Promise<SchedulingResult> {
 		const {
 			easyDays,
@@ -181,9 +162,6 @@ export class EasyDaysService {
 		};
 	}
 
-	/**
-	 * Find the next non-easy day after the given date
-	 */
 	private findNextNonEasyDay(
 		from: Date,
 		easyDays: EasyDaysConfig,
@@ -202,9 +180,6 @@ export class EasyDaysService {
 		return null;
 	}
 
-	/**
-	 * Preview impact of easy days configuration
-	 */
 	previewImpact(
 		easyDays: EasyDaysConfig,
 		multiplier: number,
@@ -266,24 +241,15 @@ export class EasyDaysService {
 		return { totalMoved, byDay };
 	}
 
-	/**
-	 * Calculate days between two dates
-	 */
 	private daysBetween(from: Date, to: Date): number {
 		const diff = to.getTime() - from.getTime();
 		return Math.round(diff / (1000 * 60 * 60 * 24));
 	}
 
-	/**
-	 * Format date as YYYY-MM-DD
-	 */
 	private formatDate(date: Date): string {
 		return date.toISOString().split("T")[0]!;
 	}
 
-	/**
-	 * Convert distribution map to array
-	 */
 	private mapToDistribution(
 		map: Map<string, number>
 	): WorkloadDistribution[] {

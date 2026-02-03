@@ -23,8 +23,6 @@ export class StatsService {
 		this.flashcardManager = flashcardManager;
 		this.fsrsService = fsrsService;
 
-		// Initialize reactive cache with auto-invalidation on card events
-		// If no eventBus provided, cache only uses TTL-based expiration
 		this.statsCache = new ReactiveCache({
 			compute: () => this.computeStats(),
 			invalidateOn: ["card:added", "card:removed", "card:updated", "card:reviewed", "cards:bulk-change"],

@@ -72,8 +72,6 @@ export class BrowserStateManager {
 
     setState(partial: PartialBrowserState): void {
         const prevState = this.state;
-
-        // Handle selectedCardIds conversion
         let selectedCardIds = this.state.selectedCardIds;
         if (partial.selectedCardIds !== undefined) {
             selectedCardIds = partial.selectedCardIds instanceof Set
@@ -158,7 +156,6 @@ export class BrowserStateManager {
             newSelection.add(cardId);
         }
 
-        // Update lastClickedIndex
         const index = this.state.filteredCards.findIndex(c => c.id === cardId);
         this.state.lastClickedIndex = index >= 0 ? index : null;
 
@@ -237,7 +234,6 @@ export class BrowserStateManager {
             [...this.state.selectedCardIds].filter(id => !cardIdSet.has(id))
         );
 
-        // Clear preview if removed
         if (this.state.previewCardId && cardIdSet.has(this.state.previewCardId)) {
             this.state.previewCardId = null;
         }

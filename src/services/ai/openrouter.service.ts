@@ -15,9 +15,6 @@ import {
     ConfigurationError,
 } from "../../errors";
 
-/**
- * Service for interacting with OpenRouter API
- */
 export class OpenRouterService {
     private apiKey: string;
     private model: AIModelKey;
@@ -27,20 +24,11 @@ export class OpenRouterService {
         this.model = model;
     }
 
-    /**
-     * Update credentials (called when settings change)
-     */
     updateCredentials(apiKey: string, model: AIModelKey): void {
         this.apiKey = apiKey;
         this.model = model;
     }
 
-    /**
-     * Generate flashcards from note content (for initial generation)
-     * @param noteContent - The note content to generate flashcards from
-     * @param userInstructions - Optional user instructions to append to the prompt
-     * @param customSystemPrompt - Optional custom system prompt (empty = use default SYSTEM_PROMPT)
-     */
     async generateFlashcards(
         noteContent: string,
         userInstructions?: string,
@@ -59,9 +47,6 @@ export class OpenRouterService {
         return content.trim();
     }
 
-    /**
-     * Validate that API key is configured
-     */
     private validateApiKey(): void {
         if (!this.apiKey?.trim()) {
             throw new ConfigurationError(
@@ -71,9 +56,6 @@ export class OpenRouterService {
         }
     }
 
-    /**
-     * Build system prompt with optional user instructions
-     */
     private buildSystemPrompt(basePrompt: string, userInstructions?: string): string {
         if (userInstructions?.trim()) {
             return `${basePrompt}\n\nADDITIONAL USER INSTRUCTIONS:\n${userInstructions.trim()}`;
@@ -81,9 +63,6 @@ export class OpenRouterService {
         return basePrompt;
     }
 
-    /**
-     * Make API call to OpenRouter
-     */
     private async callAPI(messages: ChatMessage[]): Promise<string> {
         const requestBody = {
             model: this.model,
