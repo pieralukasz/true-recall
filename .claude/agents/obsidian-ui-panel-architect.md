@@ -145,7 +145,6 @@ private renderHeader(container: HTMLElement): void {
   refreshBtn.addEventListener('click', () => this.refresh());
 }
 
-// Card component
 private renderCard(container: HTMLElement, data: CardData): HTMLElement {
   const card = container.createDiv({ cls: 'true-recall-card' });
   

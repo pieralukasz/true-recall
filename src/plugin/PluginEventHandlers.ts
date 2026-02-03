@@ -56,18 +56,15 @@ function updatePanelView(plugin: TrueRecallPlugin, file: TFile | null): void {
 	leaves.forEach((leaf) => {
 		const view = leaf.view;
 		if (view instanceof FlashcardPanelView) {
-			// Block updates if ReviewView is active AND we're following review
 			if (isReviewViewActive && view.isFollowingReview()) {
 				return;
 			}
 
-			// Don't update if user clicked on the panel itself (to interact with it)
 			if (isPanelActive) {
 				return;
 			}
 
-			// Clear review follow state only when navigating to a markdown note
-			// (not when clicking on panel or other non-file views)
+	
 			if (file && !isReviewViewActive && view.isFollowingReview()) {
 				view.clearReviewFollowState();
 			}

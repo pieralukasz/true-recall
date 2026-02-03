@@ -11,7 +11,6 @@
  * - ui: UI-specific services
  */
 
-// Core services
 export { FSRSService } from "./core/fsrs.service";
 export { FSRSSimulatorService } from "./core/fsrs-simulator.service";
 export { DayBoundaryService } from "./core/day-boundary.service";
@@ -25,7 +24,6 @@ export {
 	type FieldConfig,
 } from "./core/frontmatter-index.service";
 
-// Flashcard services
 export {
 	FlashcardManager,
 	type FlashcardInfo,
@@ -52,7 +50,6 @@ export {
 	type CollectResult,
 } from "./flashcard/collect.service";
 
-// Persistence services
 export { SqliteStoreService } from "./persistence/sqlite";
 export { SessionPersistenceService } from "./persistence/session-persistence.service";
 export { BackupService, type BackupInfo, type PruneResult } from "./persistence/backup.service";
@@ -62,25 +59,21 @@ export {
 	type BackupStatus,
 } from "./persistence/background-backup.service";
 
-// Stats services
 export {
 	StatsService,
 	type GlobalFlashcardStats,
 } from "./stats/stats.service";
 export { StatsCalculatorService } from "./stats/stats-calculator.service";
 
-// Review services
 export {
 	ReviewService,
 	type QueueBuildOptions,
 } from "./review/review.service";
 
-// AI services
 export { OpenRouterService } from "./ai/openrouter.service";
 export { NLQueryService } from "./ai/nl-query.service";
 export { SqlJsAdapter } from "./ai/langchain-sqlite.adapter";
 
-// UI services
 export {
 	NotificationService,
 	notify,
@@ -88,20 +81,16 @@ export {
 	NOTIFICATION_DURATION,
 } from "./ui/notification.service";
 
-// Device services
 export {
 	DeviceIdService,
 	DeviceDiscoveryService,
 	type DeviceDatabaseInfo,
 } from "./device";
 
-// Auth services
 export { AuthService, type AuthState, type AuthResult } from "./auth";
 
-// Sync services
 export { SyncService, type SyncResult, type SyncOptions } from "./sync";
 
-// Undo services
 export {
 	UndoService,
 	type UndoEntry,
@@ -113,5 +102,4 @@ export {
 	type BatchCreateUndoPayload,
 } from "./undo";
 
-// Cache services
 export { ReactiveCache, type ReactiveCacheOptions } from "./cache";

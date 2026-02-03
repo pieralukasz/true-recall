@@ -23,7 +23,6 @@ export class SqlJsAdapter {
      */
     run(sql: string): string {
         try {
-            // Security: Only allow SELECT queries
             const normalizedSql = sql.trim().toUpperCase();
             if (!normalizedSql.startsWith("SELECT")) {
                 return JSON.stringify({
@@ -36,7 +35,6 @@ export class SqlJsAdapter {
                 return JSON.stringify([]);
             }
 
-            // Convert to array of objects for better readability
             const queryResult = result[0];
             if (!queryResult) {
                 return JSON.stringify([]);
@@ -58,16 +56,11 @@ export class SqlJsAdapter {
         }
     }
 
-    /**
-     * Get information about all tables (schema)
-     * Used by LangChain to understand database structure
-     */
     getTableInfo(): string {
         const tables = this.getTableNames();
         const schemaInfo: string[] = [];
 
         for (const table of tables) {
-            // Get column information
             const columnsResult = this.db.exec(
                 `PRAGMA table_info("${table}")`
             );
@@ -79,7 +72,6 @@ export class SqlJsAdapter {
                 const notNull = row[3] as number;
                 const pk = row[5] as number;
 
-                // Add FSRS annotations for cards table
                 let annotation = "";
                 if (table === "cards") {
                     annotation = this.getFsrsFieldAnnotation(name);
@@ -88,7 +80,6 @@ export class SqlJsAdapter {
                 return `  ${name} ${type}${notNull ? " NOT NULL" : ""}${pk ? " PRIMARY KEY" : ""}${annotation}`;
             });
 
-            // Add FSRS notes section for cards table
             let fsrsNotesSection = "";
             if (table === "cards") {
                 fsrsNotesSection = `\n\nFSRS Notes:

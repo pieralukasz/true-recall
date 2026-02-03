@@ -1,27 +1,13 @@
-/**
- * Validators for OpenRouter API responses
- */
 import {
     OpenRouterResponseSchema,
     type OpenRouterResponse,
 } from "./schemas/api.schema";
 import { APIError, ValidationError } from "../errors";
 
-/**
- * Result of validation - either success with data or failure with error
- */
 export type ValidationResult<T> =
     | { success: true; data: T }
     | { success: false; error: ValidationError };
 
-/**
- * Validates an OpenRouter API response
- *
- * @param data - Raw response data from the API
- * @returns Validated OpenRouterResponse
- * @throws ValidationError if the response is invalid
- * @throws APIError if the response contains an API error
- */
 export function validateOpenRouterResponse(data: unknown): OpenRouterResponse {
     const result = OpenRouterResponseSchema.safeParse(data);
 
@@ -50,12 +36,6 @@ export function validateOpenRouterResponse(data: unknown): OpenRouterResponse {
     return result.data;
 }
 
-/**
- * Safely validates an OpenRouter API response without throwing
- *
- * @param data - Raw response data from the API
- * @returns ValidationResult with either the parsed data or an error
- */
 export function safeValidateOpenRouterResponse(
     data: unknown
 ): ValidationResult<OpenRouterResponse> {
@@ -75,12 +55,6 @@ export function safeValidateOpenRouterResponse(
     }
 }
 
-/**
- * Extracts the content from a validated OpenRouter response
- *
- * @param response - Validated OpenRouter response
- * @returns The content string from the first choice
- */
 export function extractContent(response: OpenRouterResponse): string {
     const content = response.choices[0]?.message?.content;
     if (!content) {
@@ -89,13 +63,6 @@ export function extractContent(response: OpenRouterResponse): string {
     return content;
 }
 
-/**
- * Validates and extracts content from raw API response data
- *
- * @param data - Raw response data from the API
- * @returns The content string from the response
- * @throws ValidationError if the response is invalid
- */
 export function validateAndExtractContent(data: unknown): string {
     const response = validateOpenRouterResponse(data);
     return extractContent(response);

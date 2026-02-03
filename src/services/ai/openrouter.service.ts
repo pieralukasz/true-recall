@@ -1,7 +1,3 @@
-/**
- * OpenRouter API Service
- * Handles communication with OpenRouter AI API for flashcard generation
- */
 import { requestUrl, RequestUrlParam } from "obsidian";
 import {
     SYSTEM_PROMPT,

@@ -10,44 +10,21 @@ import type { FSRSCardData, FSRSFlashcardItem } from "../../types";
 import type { SqliteStoreService } from "../persistence/sqlite/SqliteStoreService";
 import type { FrontmatterIndexService } from "../core/frontmatter-index.service";
 
-/**
- * Reason why a card is orphaned
- */
 export type OrphanReason = "no_source_uid" | "missing_source_file";
 
-/**
- * Extended orphaned card info with reason
- */
 export interface OrphanedCardInfo extends FSRSFlashcardItem {
 	orphanReason: OrphanReason;
-	/** The source_uid that doesn't match any file (for missing_source_file) */
 	missingSourceUid?: string;
 }
 
-/**
- * Group of orphaned cards from the same deleted note
- */
 export interface OrphanedCardGroup {
-	/** The source_uid (or "no_source_uid" for cards without one) */
 	groupKey: string;
-	/** Display name for the group */
 	displayName: string;
-	/** Cards in this group */
 	cards: OrphanedCardInfo[];
-	/** Reason for orphaning */
 	reason: OrphanReason;
 }
 
-/**
- * Service for managing orphaned cards
- */
 export class OrphanedCardsService {
-	/**
-	 * Get all orphaned cards (cards without source_uid)
-	 *
-	 * @param store - The card store
-	 * @returns Array of orphaned cards
-	 */
 	getOrphanedCards(store: SqliteStoreService): FSRSFlashcardItem[] {
 		const cards = store.getOrphanedCards();
 
@@ -65,12 +42,6 @@ export class OrphanedCardsService {
 		}));
 	}
 
-	/**
-	 * Check if a card is orphaned
-	 *
-	 * @param card - The card to check
-	 * @returns True if the card has no source_uid
-	 */
 	isOrphaned(card: FSRSCardData | FSRSFlashcardItem): boolean {
 		if ("sourceUid" in card) {
 			return !card.sourceUid;
@@ -78,35 +49,17 @@ export class OrphanedCardsService {
 		return !card.sourceUid;
 	}
 
-	/**
-	 * Count orphaned cards
-	 *
-	 * @param store - The card store
-	 * @returns Number of orphaned cards
-	 */
 	countOrphanedCards(store: SqliteStoreService): number {
 		return this.getOrphanedCards(store).length;
 	}
 
-	/**
-	 * Get orphaned card IDs
-	 *
-	 * @param store - The card store
-	 * @returns Array of orphaned card IDs
-	 */
 	getOrphanedCardIds(store: SqliteStoreService): string[] {
 		return this.getOrphanedCards(store).map((card) => card.id);
 	}
 
 	/**
-	 * Get all orphaned cards with detailed reason
-	 * Detects both:
-	 * 1. Cards with no source_uid
-	 * 2. Cards with source_uid pointing to non-existent files
-	 *
-	 * @param store - The card store
-	 * @param frontmatterIndex - The frontmatter index for file lookup
-	 * @returns Array of orphaned cards with reason
+	 * Detects both cards with no source_uid and cards with source_uid
+	 * pointing to non-existent files
 	 */
 	getOrphanedCardsExtended(
 		store: SqliteStoreService,
@@ -138,11 +91,7 @@ export class OrphanedCardsService {
 	}
 
 	/**
-	 * Group orphaned cards by their source_uid
 	 * Cards from the same deleted note will be grouped together
-	 *
-	 * @param orphans - Array of orphaned cards
-	 * @returns Array of groups
 	 */
 	groupOrphanedCards(orphans: OrphanedCardInfo[]): OrphanedCardGroup[] {
 		const groups = new Map<string, OrphanedCardInfo[]>();
@@ -165,9 +114,6 @@ export class OrphanedCardsService {
 		}));
 	}
 
-	/**
-	 * Count all orphaned cards (extended)
-	 */
 	countOrphanedCardsExtended(
 		store: SqliteStoreService,
 		frontmatterIndex: FrontmatterIndexService
@@ -175,9 +121,6 @@ export class OrphanedCardsService {
 		return this.getOrphanedCardsExtended(store, frontmatterIndex).length;
 	}
 
-	/**
-	 * Convert FSRSCardData to OrphanedCardInfo
-	 */
 	private cardToOrphanInfo(
 		card: FSRSCardData,
 		reason: OrphanReason,
