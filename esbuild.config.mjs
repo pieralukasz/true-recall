@@ -16,18 +16,16 @@ const prod = (process.argv[2] === "production");
 const PLUGIN_ID = "true-recall";
 const VAULT_PATH = process.env.VAULT;
 
-// Determine output paths
+
 const projectOutfile = "main.js";
 const vaultPluginDir = VAULT_PATH
 	? join(VAULT_PATH, ".obsidian", "plugins", PLUGIN_ID)
 	: null;
 
-// Ensure vault plugin directory exists
 if (vaultPluginDir && !existsSync(vaultPluginDir)) {
 	mkdirSync(vaultPluginDir, { recursive: true });
 }
 
-// Process CSS with PostCSS (Tailwind v4)
 function buildCSS() {
 	try {
 		execSync('npx postcss src/ui/styles.css -o styles.css', { stdio: 'pipe' });
@@ -38,15 +36,12 @@ function buildCSS() {
 	}
 }
 
-// Copy static files to vault
 function copyToVault() {
 	if (!vaultPluginDir) return;
 
 	try {
-		// Copy main.js
 		copyFileSync(projectOutfile, join(vaultPluginDir, "main.js"));
 
-		// Copy manifest.json and styles.css if they exist
 		if (existsSync("manifest.json")) {
 			copyFileSync("manifest.json", join(vaultPluginDir, "manifest.json"));
 		}
@@ -54,16 +49,13 @@ function copyToVault() {
 			copyFileSync("styles.css", join(vaultPluginDir, "styles.css"));
 		}
 
-		// Copy sql.js WASM
 		const sqljsWasm = "node_modules/sql.js/dist/sql-wasm.wasm";
 		if (existsSync(sqljsWasm)) {
 			copyFileSync(sqljsWasm, join(vaultPluginDir, "sql-wasm.wasm"));
 			console.log("✓ Copied sql-wasm.wasm");
 		}
 
-		// Note: wa-sqlite WASM is now bundled directly via esbuild's binary loader
 
-		// Create .hotreload file for hot-reload plugin
 		if (!prod) {
 			writeFileSync(join(vaultPluginDir, ".hotreload"), "");
 		}
@@ -86,7 +78,6 @@ const context = await esbuild.context({
 		'process.env.POWERSYNC_URL': JSON.stringify(process.env.POWERSYNC_URL || ''),
 	},
 	loader: {
-		// Bundle WASM as binary data to avoid fetch issues in Electron
 		'.wasm': 'binary',
 	},
 	external: [
@@ -115,7 +106,7 @@ const context = await esbuild.context({
 		name: "copy-to-vault",
 		setup(build) {
 			build.onStart(() => {
-				buildCSS(); // Process CSS with PostCSS (Tailwind + legacy)
+				buildCSS(); 
 			});
 			build.onEnd(() => {
 				copyToVault();

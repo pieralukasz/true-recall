@@ -1,11 +1,3 @@
-/**
- * FSRS Scheduling Types
- * Scheduling preview and optimization
- */
-
-/**
- * Scheduling preview for each rating
- */
 export interface SchedulingPreview {
     again: {
         due: Date;
@@ -25,9 +17,6 @@ export interface SchedulingPreview {
     };
 }
 
-/**
- * History validation result before optimization
- */
 export interface HistoryValidationResult {
     isValid: boolean;
     totalReviews: number;
@@ -36,21 +25,12 @@ export interface HistoryValidationResult {
     warnings: string[];
 }
 
-/**
- * FSRS parameter optimization options
- */
 export interface OptimizationOptions {
-    /** Search filter (e.g., "folder:Math") */
     searchQuery?: string;
-    /** Minimum reviews to use */
     minReviews?: number;
-    /** Skip first N days (learning phase) */
     excludeFirstDays?: number;
 }
 
-/**
- * Parameter optimization result
- */
 export interface OptimizationResult {
     success: boolean;
     weights: number[];

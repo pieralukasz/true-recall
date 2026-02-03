@@ -20,24 +20,17 @@ export interface AuthResult {
 	user?: User;
 }
 
-/**
- * Supabase authentication service for True Recall Cloud
- */
 export class AuthService {
 	private client: SupabaseClient;
 	private supabaseUrl: string;
 	private supabaseAnonKey: string;
 
 	constructor() {
-		// Use hardcoded True Recall Cloud credentials (SaaS model)
 		this.supabaseUrl = TRUE_RECALL_CLOUD.supabaseUrl;
 		this.supabaseAnonKey = TRUE_RECALL_CLOUD.supabaseAnonKey;
 		this.client = this.createClient();
 	}
 
-	/**
-	 * Create Supabase client with current credentials
-	 */
 	private createClient(): SupabaseClient {
 		// eslint-disable-next-line @typescript-eslint/no-unsafe-return -- Supabase's createClient has complex generic types
 		return createClient(this.supabaseUrl, this.supabaseAnonKey, {
@@ -49,27 +42,18 @@ export class AuthService {
 		});
 	}
 
-	/**
-	 * Update Supabase credentials and reinitialize client
-	 * Kept for potential future use (e.g., self-hosted option)
-	 */
+	// Kept for potential future use (e.g., self-hosted option)
 	updateCredentials(supabaseUrl: string, supabaseAnonKey: string): void {
 		this.supabaseUrl = supabaseUrl;
 		this.supabaseAnonKey = supabaseAnonKey;
 		this.client = this.createClient();
 	}
 
-	/**
-	 * Check if the service is properly configured
-	 * Always true in SaaS model since credentials are hardcoded
-	 */
+	// Always true in SaaS model since credentials are hardcoded
 	isConfigured(): boolean {
 		return true;
 	}
 
-	/**
-	 * Get current authentication state
-	 */
 	async getAuthState(): Promise<AuthState> {
 		const {
 			data: { session },
@@ -81,9 +65,6 @@ export class AuthService {
 		};
 	}
 
-	/**
-	 * Get current user
-	 */
 	async getCurrentUser(): Promise<User | null> {
 		const {
 			data: { user },
@@ -91,9 +72,6 @@ export class AuthService {
 		return user;
 	}
 
-	/**
-	 * Sign up a new user with email and password
-	 */
 	async signUp(email: string, password: string): Promise<AuthResult> {
 		const { data, error } = await this.client.auth.signUp({
 			email,
@@ -107,9 +85,6 @@ export class AuthService {
 		return { success: true, user: data.user ?? undefined };
 	}
 
-	/**
-	 * Sign in with email and password
-	 */
 	async signIn(email: string, password: string): Promise<AuthResult> {
 		const { data, error } = await this.client.auth.signInWithPassword({
 			email,
@@ -123,9 +98,6 @@ export class AuthService {
 		return { success: true, user: data.user ?? undefined };
 	}
 
-	/**
-	 * Sign out the current user
-	 */
 	async signOut(): Promise<AuthResult> {
 		const { error } = await this.client.auth.signOut();
 
@@ -136,10 +108,6 @@ export class AuthService {
 		return { success: true };
 	}
 
-	/**
-	 * Get the Supabase client instance
-	 * Useful for other services that need direct access
-	 */
 	getClient(): SupabaseClient {
 		return this.client;
 	}

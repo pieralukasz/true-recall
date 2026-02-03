@@ -126,7 +126,7 @@ export function registerCommands(plugin: TrueRecallPlugin): void {
 		id: "undo-flashcard-action",
 		name: "Undo last flashcard action",
 		checkCallback: (checking) => {
-			// Only show command if undo is available
+
 			if (!plugin.undoService?.canUndo()) {
 				return false;
 			}
