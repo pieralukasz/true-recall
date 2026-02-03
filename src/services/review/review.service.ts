@@ -1,7 +1,3 @@
-/**
- * Review Session Service
- * Manages review session logic: queue building, answer processing, statistics
- */
 import { Rating, State, type Grade } from "ts-fsrs";
 import type {
 	FSRSFlashcardItem,
@@ -25,59 +21,36 @@ import {
 } from "../../constants";
 import { getEventBus } from "../core/event-bus.service";
 
-/**
- * Options for building review queue
- */
 export interface QueueBuildOptions {
-	/** Maximum new cards to include */
 	newCardsLimit: number;
-	/** Maximum reviews to include */
 	reviewsLimit: number;
-	/** Cards already reviewed today (to exclude) */
 	reviewedToday?: Set<string>;
-	/** New cards already studied today */
 	newCardsStudiedToday?: number;
-	/** Filter by project names (many-to-many, card matches if it has ANY of these projects) */
+	/** Card matches if it has ANY of these projects */
 	projectFilters?: string[];
-	/** Map sourceUid -> projects for fallback resolution when card.projects is empty */
+	/** Fallback for project resolution when card.projects is empty */
 	sourceUidToProjects?: Map<string, string[]>;
-	/** Order for new cards */
 	newCardOrder?: NewCardOrder;
-	/** Order for review cards */
 	reviewOrder?: ReviewOrder;
-	/** How to mix new cards with reviews */
 	newReviewMix?: NewReviewMix;
 
 	// Custom session filters
-	/** Filter by source note name (sourceNoteName field) */
 	sourceNoteFilter?: string;
-	/** Filter by multiple source note names */
 	sourceNoteFilters?: string[];
-	/** Filter by flashcard file path */
 	filePathFilter?: string;
-	/** Only include cards created today */
 	createdTodayOnly?: boolean;
-	/** Only include cards created in the last 7 days */
 	createdThisWeek?: boolean;
-	/** Only include weak cards (stability < WEAK_CARD_STABILITY_THRESHOLD days) */
+	/** stability < WEAK_CARD_STABILITY_THRESHOLD days */
 	weakCardsOnly?: boolean;
-	/** Filter by card state: due, learning, new, or buried */
 	stateFilter?: "due" | "learning" | "new" | "buried";
-	/** Ignore daily limits for custom sessions */
 	ignoreDailyLimits?: boolean;
-	/** Bypass scheduling - show all matching cards regardless of due date (like Anki Custom Study) */
+	/** Show all matching cards regardless of due date (like Anki Custom Study) */
 	bypassScheduling?: boolean;
-	/** Hour when new day starts (0-23, default 4 like Anki) */
+	/** 0-23, default 4 like Anki */
 	dayStartHour?: number;
 }
 
-/**
- * Service for managing review sessions
- */
 export class ReviewService {
-	/**
-	 * Shuffle an array using Fisher-Yates algorithm
-	 */
 	private shuffle<T>(array: T[]): T[] {
 		const result = [...array];
 		for (let i = result.length - 1; i > 0; i--) {
@@ -87,9 +60,6 @@ export class ReviewService {
 		return result;
 	}
 
-	/**
-	 * Interleave two arrays (distribute items evenly)
-	 */
 	private interleave<T>(primary: T[], secondary: T[]): T[] {
 		if (secondary.length === 0) return [...primary];
 		if (primary.length === 0) return [...secondary];

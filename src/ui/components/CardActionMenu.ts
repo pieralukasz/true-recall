@@ -1,25 +1,13 @@
-/**
- * CardActionMenu Utility
- * Provides consistent card action menu across all card components
- */
 import { Menu } from "obsidian";
 
 export interface CardActionMenuOptions {
-	/** Edit card handler */
 	onEdit?: () => void;
-	/** Delete card handler */
 	onDelete?: () => void;
-	/** Copy card handler */
 	onCopy?: () => void;
-	/** Move card handler */
 	onMove?: () => void;
-	/** Enter selection mode handler */
 	onSelect?: () => void;
-	/** Whether currently in selection mode */
 	isSelectionMode?: boolean;
-	/** Additional menu items to add before standard items */
 	prependItems?: CardMenuItem[];
-	/** Additional menu items to add after standard items */
 	appendItems?: CardMenuItem[];
 }
 
@@ -27,13 +15,9 @@ export interface CardMenuItem {
 	title: string;
 	icon?: string;
 	onClick: () => void;
-	/** Add separator before this item */
 	separator?: boolean;
 }
 
-/**
- * Show a card action menu at the mouse event position
- */
 export function showCardActionMenu(
 	event: MouseEvent,
 	options: CardActionMenuOptions

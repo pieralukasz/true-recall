@@ -1,15 +1,7 @@
-/**
- * Review View Types
- * Type definitions for the review session
- */
 import type { State, Grade } from "ts-fsrs";
 import type { FSRSFlashcardItem } from "../../types";
 
-/**
- * Review view state for persistence
- */
 export interface ReviewViewState extends Record<string, unknown> {
-    /** Filter by project names (many-to-many) */
     projectFilters?: string[];
     // Custom session filters
     sourceNoteFilter?: string;
@@ -23,9 +15,6 @@ export interface ReviewViewState extends Record<string, unknown> {
     bypassScheduling?: boolean;
 }
 
-/**
- * Undo entry for reverting card actions
- */
 export interface UndoEntry {
     actionType: "answer" | "bury" | "suspend";
     card: FSRSFlashcardItem;

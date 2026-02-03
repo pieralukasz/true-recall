@@ -15,26 +15,20 @@ export async function activateView(
 	const { workspace } = app;
 	const { useMainArea = false, state, skipReveal = false } = options;
 
-	// Check if view already exists
 	let leaf = workspace.getLeavesOfType(viewType)[0];
 
 	if (!leaf) {
-		// Create new leaf based on platform and options
 		if (Platform.isMobile || useMainArea) {
-			// On mobile or when explicitly requested, open in main area
 			leaf = workspace.getLeaf(true);
 		} else {
-			// Desktop: use right sidebar by default
 			const rightLeaf = workspace.getRightLeaf(false);
 			if (rightLeaf) {
 				leaf = rightLeaf;
 			} else {
-				// Fallback to main area if right leaf unavailable
 				leaf = workspace.getLeaf(true);
 			}
 		}
 
-		// Set view state
 		await leaf.setViewState({
 			type: viewType,
 			active: true,
@@ -42,7 +36,6 @@ export async function activateView(
 		});
 	}
 
-	// Reveal and focus the leaf
 	if (leaf && !skipReveal) {
 		void workspace.revealLeaf(leaf);
 	}
@@ -68,7 +61,6 @@ export async function activateMainAreaView(
 	return leaf;
 }
 
-/** Only allows one review session at a time */
 export async function activateReviewView(
 	app: App,
 	viewType: string,
@@ -77,19 +69,16 @@ export async function activateReviewView(
 ): Promise<WorkspaceLeaf | null> {
 	const { workspace } = app;
 
-	// Check if review session already exists - only allow one at a time
 	const existingLeaf = workspace.getLeavesOfType(viewType)[0];
 	if (existingLeaf) {
 		void workspace.revealLeaf(existingLeaf);
 		return existingLeaf;
 	}
 
-	// Force fullscreen on mobile or when configured
 	if (Platform.isMobile || reviewMode === "fullscreen") {
 		return activateMainAreaView(app, viewType, state);
 	}
 
-	// Desktop panel mode (right sidebar)
 	const rightLeaf = workspace.getRightLeaf(false);
 	if (rightLeaf) {
 		await rightLeaf.setViewState({

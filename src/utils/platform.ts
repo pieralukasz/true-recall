@@ -1,15 +1,9 @@
 import { Platform } from 'obsidian';
 
-/**
- * Check if the plugin is running on a mobile device
- */
 export function isMobile(): boolean {
   return Platform.isMobile;
 }
 
-/**
- * Check if the plugin is running on desktop
- */
 export function isDesktop(): boolean {
   return !Platform.isMobile;
 }

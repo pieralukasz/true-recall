@@ -114,7 +114,6 @@ export default class TrueRecallPlugin extends Plugin {
 	async onload(): Promise<void> {
 		await this.loadSettings();
 
-		// Initialize frontmatter index for O(1) lookups by flashcard_uid, projects, etc.
 		this.frontmatterIndex = new FrontmatterIndexService(this.app);
 		this.frontmatterIndex.register({ field: "flashcard_uid", type: "string", unique: true });
 		this.frontmatterIndex.register({ field: "projects", type: "array", unique: false });
@@ -125,14 +124,12 @@ export default class TrueRecallPlugin extends Plugin {
 			this.frontmatterIndex.rebuildIndex();
 		});
 
-		// Initialize services
 		this.flashcardManager = new FlashcardManager(this.app, this.settings, this.frontmatterIndex);
 		this.openRouterService = new OpenRouterService(
 			this.settings.openRouterApiKey,
 			this.settings.aiModel
 		);
 
-		// Initialize FSRS and Stats services
 		const fsrsSettings = extractFSRSSettings(this.settings);
 		this.fsrsService = new FSRSService(fsrsSettings);
 		this.statsService = new StatsService(
@@ -141,69 +138,55 @@ export default class TrueRecallPlugin extends Plugin {
 			getEventBus()
 		);
 
-		// Initialize day boundary service (Anki-style day scheduling)
-		// Must be initialized BEFORE initializeDeviceAndStore because
-		// SessionPersistenceService requires dayBoundaryService
+
 		this.dayBoundaryService = new DayBoundaryService(
 			this.settings.dayStartHour
 		);
 
-		// Initialize device context and SQLite store
-		// IMPORTANT: Must await to ensure cardStore is ready before views/commands access it
 		try {
 			await this.initializeDeviceAndStore();
 		} catch (error) {
 			console.error("[True Recall] Critical: Device/store initialization failed:", error);
 			notify().error("Failed to initialize database. Please restart Obsidian.");
-			// Continue plugin load - some features may work without database
 		}
 
-		// Register the sidebar view
 		this.registerView(
 			VIEW_TYPE_FLASHCARD_PANEL,
 			(leaf) => new FlashcardPanelView(leaf, this)
 		);
 
-		// Register the review view
 		this.registerView(
 			VIEW_TYPE_REVIEW,
 			(leaf) => new ReviewView(leaf, this)
 		);
 
-		// Register the statistics view
 		this.registerView(VIEW_TYPE_STATS, (leaf) => new StatsView(leaf, this));
 
-		// Register the session view
 		this.registerView(
 			VIEW_TYPE_SESSION,
 			(leaf) => new SessionView(leaf, this)
 		);
 
-		// Register the projects view
 		this.registerView(
 			VIEW_TYPE_PROJECTS,
 			(leaf) => new ProjectsView(leaf, this)
 		);
 
-		// Register the browser view
 		this.registerView(
 			VIEW_TYPE_BROWSER,
 			(leaf) => new BrowserView(leaf, this)
 		);
 
-		// Register the FSRS simulator view
 		this.registerView(
 			VIEW_TYPE_SIMULATOR,
 			(leaf) => new SimulatorView(leaf, this)
 		);
 
-		// Register the orphaned cards view
 		this.registerView(
 			VIEW_TYPE_ORPHANED_CARDS,
 			(leaf) => new OrphanedCardsView(leaf, this)
 		);
 
-		// Add ribbon icon to start review
 		// eslint-disable-next-line obsidianmd/ui/sentence-case -- True Recall is a proper noun
 		this.addRibbonIcon("brain", "True Recall - study", () => {
 			this.startReviewSession().catch((error) => {
@@ -211,7 +194,6 @@ export default class TrueRecallPlugin extends Plugin {
 			});
 		});
 
-		// Add ribbon icon to open statistics
 		// eslint-disable-next-line obsidianmd/ui/sentence-case -- True Recall is a proper noun
 		this.addRibbonIcon("bar-chart-2", "True Recall - statistics", () => {
 			this.openStatsView().catch((error) => {
@@ -219,31 +201,18 @@ export default class TrueRecallPlugin extends Plugin {
 			});
 		});
 
-		// Initialize floating generate button
 		this.floatingButton = new FloatingGenerateButton(this);
 		this.floatingButton.initialize();
 
-		// Register commands (extracted to PluginCommands.ts)
 		registerCommands(this);
-
-		// Register settings tab
 		this.addSettingTab(new TrueRecallSettingTab(this.app, this));
-
-		// Register event handlers (extracted to PluginEventHandlers.ts)
 		registerEventHandlers(this);
 
-		// Initialize UndoService for undo/redo support
 		this.undoService = new UndoService(this);
-
-		// Initialize AuthService (SaaS model - always available)
 		this.authService = new AuthService();
 
-		// Note: SyncService is initialized in initializeCardStore() after cardStore is ready
 	}
 
-	/**
-	 * Initialize or reinitialize SyncService when auth/store are ready
-	 */
 	private initializeSyncService(): void {
 		if (this.authService && this.cardStore) {
 			this.syncService = new SyncService(
@@ -253,23 +222,16 @@ export default class TrueRecallPlugin extends Plugin {
 		}
 	}
 
-	/**
-	 * Initialize the deletion handler for orphaned cards management
-	 * Shows a modal when a note with flashcards is deleted
-	 */
+
 	private initializeDeletionHandler(): void {
 		if (!this.cardStore || !this.frontmatterIndex) return;
 
-		// Initialize orphaned cards service
 		this.orphanedCardsService = new OrphanedCardsService();
-
-		// Initialize deletion handler with modal callback
 		this.deletionHandler = new DeletionHandlerService({
 			app: this.app,
 			frontmatterIndex: this.frontmatterIndex,
 			store: this.cardStore,
 			onOrphanedCards: async (context) => {
-				// Show modal asking what to do with orphaned cards
 				const modal = new OrphanedCardsActionModal(this.app, {
 					cards: context.cards,
 					deletedNoteName: context.deletedNoteName,
@@ -279,19 +241,16 @@ export default class TrueRecallPlugin extends Plugin {
 				const result = await modal.openAndWait();
 
 				if (result.cancelled || result.action === "leave_orphaned") {
-					return; // Do nothing, cards become orphaned
+					return; 
 				}
 
 				if (result.action === "delete") {
-					// Soft delete all cards
 					const cardIds = context.cards.map((c) => c.id);
 					this.cardStore.browser.bulkSoftDelete(cardIds);
 					notify().cardsDeleted(cardIds.length);
 				} else if (result.action === "move" && result.targetNotePath) {
-					// Move cards to target note
 					await this.moveCardsToNote(context.cards, result.targetNotePath);
 				} else if (result.action === "create_note" && result.newNotePath) {
-					// Create new note and move cards
 					await this.createNoteForOrphanedCards(
 						context.cards,
 						result.newNotePath,
@@ -301,13 +260,9 @@ export default class TrueRecallPlugin extends Plugin {
 			},
 		});
 
-		// Register the deletion event handler
 		registerDeletionHandler(this, this.deletionHandler);
 	}
 
-	/**
-	 * Move orphaned cards to a target note
-	 */
 	private async moveCardsToNote(
 		cards: FSRSCardData[],
 		targetNotePath: string
@@ -318,7 +273,6 @@ export default class TrueRecallPlugin extends Plugin {
 			return;
 		}
 
-		// Get or create flashcard_uid for target note
 		const frontmatterService = this.flashcardManager.getFrontmatterService();
 		let targetUid = await frontmatterService.getSourceNoteUid(targetFile);
 		if (!targetUid) {
@@ -326,7 +280,6 @@ export default class TrueRecallPlugin extends Plugin {
 			await frontmatterService.setSourceNoteUid(targetFile, targetUid);
 		}
 
-		// Update all cards
 		for (const card of cards) {
 			this.cardStore.cards.updateCardSourceUid(card.id, targetUid);
 		}
@@ -334,9 +287,6 @@ export default class TrueRecallPlugin extends Plugin {
 		notify().cardsMoved(cards.length, targetFile.basename);
 	}
 
-	/**
-	 * Create a new note for orphaned cards
-	 */
 	private async createNoteForOrphanedCards(
 		cards: FSRSCardData[],
 		newNotePath: string,
@@ -345,7 +295,6 @@ export default class TrueRecallPlugin extends Plugin {
 		const frontmatterService = this.flashcardManager.getFrontmatterService();
 		const newUid = frontmatterService.generateUid();
 
-		// Create note content
 		const cardList = cards
 			.slice(0, 10)
 			.map((c) => `- ${(c.question ?? "").slice(0, 80)}${(c.question ?? "").length > 80 ? "..." : ""}`)
@@ -370,10 +319,7 @@ This note was created to recover flashcards from a deleted note.
 ${cardList}${moreText}
 `;
 
-		// Create the file
 		await this.app.vault.create(newNotePath, content);
-
-		// Update all cards to point to this note
 		for (const card of cards) {
 			this.cardStore.cards.updateCardSourceUid(card.id, newUid);
 		}
@@ -382,24 +328,16 @@ ${cardList}${moreText}
 	}
 
 	onunload(): void {
-		// Cleanup floating button
 		this.floatingButton?.destroy();
-
-		// Clear undo stack
 		this.undoService?.clear();
-
-		// Stop background backup manager
 		this.backgroundBackupManager?.stop();
 
-		// Save card store immediately on unload (critical with 60s debounce)
 		if (this.cardStore) {
 			void this.cardStore.saveNow();
 		}
 
-		// Clear EventBus subscriptions
 		resetEventBus();
 
-		// Obsidian automatically handles leaf cleanup when plugin unloads
 	}
 
 	async loadSettings(): Promise<void> {
@@ -409,7 +347,6 @@ ${cardList}${moreText}
 			(await this.loadData()) as Partial<TrueRecallSettings>
 		);
 
-		// Migrate old easyDays format (number[]) to new format (EasyDaysConfig)
 		if (Array.isArray(this.settings.easyDays)) {
 			this.settings.easyDays = {
 				recurringDays: this.settings.easyDays as unknown as number[],
@@ -422,7 +359,6 @@ ${cardList}${moreText}
 	async saveSettings(): Promise<void> {
 		await this.saveData(this.settings);
 
-		// Update services with new settings
 		if (this.flashcardManager) {
 			this.flashcardManager.updateSettings(this.settings);
 		}
@@ -447,33 +383,26 @@ ${cardList}${moreText}
 		if (this.backgroundBackupManager) {
 			this.backgroundBackupManager.updateConfig(this.settings);
 		}
-		// Reinitialize NL Query Service with new settings (API key or model may have changed)
 		this.initializeNLQueryService().catch((error) => {
 			console.warn("[True Recall] Failed to reinitialize NL Query Service:", error);
 		});
 
-		// Emit settings changed event for UI components to refresh
 		getEventBus().emit({
 			type: "settings:changed",
 			timestamp: Date.now(),
 		});
 	}
 
-	// Activate the sidebar view
 	async activateView(): Promise<void> {
 		await activateView(this.app, VIEW_TYPE_FLASHCARD_PANEL);
 	}
 
-	/**
-	 * Activate the session view
-	 */
 	async activateSessionView(
 		currentNoteName: string | null,
 		allCards: import("./types").FSRSFlashcardItem[]
 	): Promise<void> {
 		const leaf = await activateView(this.app, VIEW_TYPE_SESSION);
 
-		// Initialize view with data
 		if (leaf) {
 			const view = leaf.view as SessionView;
 			view.initialize({
@@ -484,51 +413,31 @@ ${cardList}${moreText}
 		}
 	}
 
-	/**
-	 * Activate the projects view
-	 */
 	async activateProjectsView(): Promise<void> {
 		await activateView(this.app, VIEW_TYPE_PROJECTS);
 	}
 
-	/**
-	 * Show projects panel
-	 */
 	async showProjects(): Promise<void> {
 		await this.activateProjectsView();
 	}
 
-	/**
-	 * Activate the browser view
-	 */
 	async activateBrowserView(): Promise<void> {
 		await activateView(this.app, VIEW_TYPE_BROWSER, { useMainArea: true });
 	}
 
-	/**
-	 * Show card browser
-	 */
 	async showBrowser(): Promise<void> {
 		await this.activateBrowserView();
 	}
 
-	/**
-	 * Open FSRS simulator
-	 */
 	async openSimulator(): Promise<void> {
 		await activateView(this.app, VIEW_TYPE_SIMULATOR, { useMainArea: true });
 	}
 
-	/**
-	 * Open orphaned cards management panel
-	 */
 	async openOrphanedCardsView(): Promise<void> {
 		await activateView(this.app, VIEW_TYPE_ORPHANED_CARDS);
 	}
 
-	// Start a review session (opens modal with options)
 	async startReviewSession(): Promise<void> {
-		// Check for existing review view
 		const existingLeaf = getView(this.app, VIEW_TYPE_REVIEW);
 		if (existingLeaf) {
 			void this.app.workspace.revealLeaf(existingLeaf);
@@ -538,25 +447,14 @@ ${cardList}${moreText}
 		await this.openNewReviewSession();
 	}
 
-	/**
-	 * Start a new review session, closing any existing review views first.
-	 * Used by "Next Session" button to avoid race conditions.
-	 */
+
 	async startNewReviewSession(): Promise<void> {
-		// Force close all existing review views first
 		closeAllViews(this.app, VIEW_TYPE_REVIEW);
 
-		// Wait for next event loop tick to ensure leaves are fully detached
 		await new Promise((resolve) => setTimeout(resolve, 0));
-
-		// Now open new session (existing leaves already closed)
 		await this.openNewReviewSession();
 	}
 
-	/**
-	 * Internal method to open review session modal/panel
-	 * Called after checking/closing existing views
-	 */
 	private async openNewReviewSession(): Promise<void> {
 		if (!this.isStoreReady()) {
 			notify().error("Database not ready. Please wait for plugin to fully load.");
@@ -571,7 +469,6 @@ ${cardList}${moreText}
 		const currentFile = this.app.workspace.getActiveFile();
 		const currentNoteName = currentFile ? currentFile.basename : null;
 
-		// Open session panel and wait for result
 		return new Promise<void>((resolve) => {
 			const eventBus = getEventBus();
 			const unsubscribe = eventBus.on("session:selected", (event: import("./types/events.types").SessionSelectedEvent) => {
@@ -584,21 +481,16 @@ ${cardList}${moreText}
 		});
 	}
 
-	/**
-	 * Handle session result (shared by modal and panel)
-	 */
 	private async handleSessionResult(
 		result: import("./types/events.types").SessionResult
 	): Promise<void> {
 		if (result.cancelled) return;
 
-		// Handle "Default" option - open with Knowledge deck, no filters
 		if (result.useDefaultDeck) {
 			await this.openReviewView("Knowledge");
 			return;
 		}
 
-		// Handle state filter (including buried cards)
 		if (result.stateFilter) {
 			await this.openReviewViewWithFilters({
 				deckFilter: null,
@@ -609,7 +501,6 @@ ${cardList}${moreText}
 			return;
 		}
 
-		// Handle other options with filters
 		await this.openReviewViewWithFilters({
 			deckFilter: null,
 			sourceNoteFilter: result.sourceNoteFilter,
@@ -621,9 +512,6 @@ ${cardList}${moreText}
 		});
 	}
 
-	/**
-	 * Open the review view with optional deck filter
-	 */
 	private async openReviewView(deckFilter: string | null): Promise<void> {
 		await activateReviewView(
 			this.app,
@@ -633,15 +521,11 @@ ${cardList}${moreText}
 		);
 	}
 
-	/**
-	 * Open the statistics view
-	 */
 	async openStatsView(): Promise<void> {
-		// Check if stats view already exists
 		const existingLeaf = getView(this.app, VIEW_TYPE_STATS);
 		if (existingLeaf) {
 			void this.app.workspace.revealLeaf(existingLeaf);
-			// Refresh the view
+
 			const view = existingLeaf.view;
 			if (view instanceof StatsView) {
 				void view.refresh();
@@ -649,13 +533,9 @@ ${cardList}${moreText}
 			return;
 		}
 
-		// Open stats in main area (not sidebar)
 		await activateView(this.app, VIEW_TYPE_STATS, { useMainArea: true });
 	}
 
-	/**
-	 * Review flashcards from current note
-	 */
 	async reviewCurrentNote(): Promise<void> {
 		if (!this.isStoreReady()) {
 			notify().error("Database not ready. Please wait for plugin to fully load.");
@@ -669,9 +549,6 @@ ${cardList}${moreText}
 		await this.reviewNoteFlashcards(file);
 	}
 
-	/**
-	 * Review flashcards linked to a specific note
-	 */
 	async reviewNoteFlashcards(file: TFile): Promise<void> {
 		const allCards = this.flashcardManager.getAllFSRSCards();
 		const noteCards = allCards.filter(
@@ -683,7 +560,6 @@ ${cardList}${moreText}
 			return;
 		}
 
-		// Count available cards (new or due) using day-based scheduling
 		const availableCards = noteCards.filter((c) => {
 			return this.dayBoundaryService.isCardAvailable(c);
 		});
@@ -702,9 +578,6 @@ ${cardList}${moreText}
 		});
 	}
 
-	/**
-	 * Review today's new cards
-	 */
 	async reviewTodaysCards(): Promise<void> {
 		if (!this.isStoreReady()) {
 			notify().error("Database not ready. Please wait for plugin to fully load.");
@@ -718,7 +591,6 @@ ${cardList}${moreText}
 		const todaysCards = allCards.filter((c) => {
 			const createdAt = c.fsrs.createdAt;
 			if (!createdAt || createdAt < todayStart.getTime()) return false;
-			// Only show new or due (using day-based scheduling)
 			return this.dayBoundaryService.isCardAvailable(c);
 		});
 
@@ -734,9 +606,6 @@ ${cardList}${moreText}
 		});
 	}
 
-	/**
-	 * Open review view with custom filters
-	 */
 	private async openReviewViewWithFilters(filters: {
 		deckFilter?: string | null;
 		sourceNoteFilter?: string;
@@ -770,10 +639,6 @@ ${cardList}${moreText}
 		);
 	}
 
-	/**
-	 * Initialize device context and then the card store.
-	 * Handles first-run detection, legacy migration, and device selection.
-	 */
 	private async initializeDeviceAndStore(): Promise<void> {
 		try {
 			const deviceId = await this.initializeDeviceContext();
@@ -786,26 +651,17 @@ ${cardList}${moreText}
 			notify().error(
 				"Failed to initialize device context. Using default configuration."
 			);
-			// Fallback: create ephemeral device ID and continue
 			this.deviceIdService = new DeviceIdService();
 			await this.initializeCardStore(this.deviceIdService.getDeviceId());
 		}
 	}
 
-	/**
-	 * Initialize device context: ID, discovery, and first-run handling.
-	 * @returns The device ID to use for this session
-	 */
 	private async initializeDeviceContext(): Promise<string> {
-		// 1. Get or create device ID
 		this.deviceIdService = new DeviceIdService();
 		const deviceId = this.deviceIdService.getDeviceId();
 		console.debug(`[True Recall] Device ID: ${deviceId}`);
 
-		// 2. Initialize discovery service
 		this.deviceDiscovery = new DeviceDiscoveryService(this.app, deviceId);
-
-		// 3. Check if device-specific database exists
 		const deviceDbPath = normalizePath(
 			`${DB_FOLDER}/${getDeviceDbFilename(deviceId)}`
 		);
@@ -814,14 +670,12 @@ ${cardList}${moreText}
 		);
 
 		if (deviceDbExists) {
-			// Database for this device already exists - nothing to do
 			console.debug(
 				`[True Recall] Using existing device database: ${deviceDbPath}`
 			);
 			return deviceId;
 		}
 
-		// 4. First-run detection - check for other databases
 		const databases = await this.deviceDiscovery.discoverDeviceDatabases();
 		const hasLegacy = await this.deviceDiscovery.hasLegacyDatabase();
 
@@ -829,12 +683,9 @@ ${cardList}${moreText}
 			`[True Recall] First run on device. Legacy DB: ${hasLegacy}, Other devices: ${databases.length}`
 		);
 
-		// 5. Handle different scenarios
 		if (hasLegacy && databases.length === 0) {
-			// Migrate legacy database to device-specific
 			await this.migrateLegacyDatabase(deviceId);
 		} else if (databases.length > 0) {
-			// Show selection modal
 			const result = await this.showDeviceSelectionModal(
 				databases,
 				hasLegacy
@@ -842,16 +693,12 @@ ${cardList}${moreText}
 			if (!result.cancelled) {
 				await this.handleDeviceSelection(result, deviceId);
 			}
-			// If cancelled, SqliteStoreService will create a new empty database
+			
 		}
-		// If no databases exist, SqliteStoreService will create a new empty database
 
 		return deviceId;
 	}
 
-	/**
-	 * Migrate legacy true-recall.db to device-specific format.
-	 */
 	private async migrateLegacyDatabase(deviceId: string): Promise<void> {
 		const legacyPath = normalizePath(`${DB_FOLDER}/true-recall.db`);
 		const newPath = normalizePath(
@@ -860,11 +707,8 @@ ${cardList}${moreText}
 		const backupPath = normalizePath(`${DB_FOLDER}/true-recall.db.migrated`);
 
 		try {
-			// Create backup of legacy database
 			const data = await this.app.vault.adapter.readBinary(legacyPath);
 			await this.app.vault.adapter.writeBinary(backupPath, data);
-
-			// Rename legacy to device-specific
 			await this.app.vault.adapter.rename(legacyPath, newPath);
 
 			console.debug(`[True Recall] Migrated legacy database to ${newPath}`);
@@ -876,9 +720,6 @@ ${cardList}${moreText}
 		}
 	}
 
-	/**
-	 * Show device selection modal and return result.
-	 */
 	private async showDeviceSelectionModal(
 		databases: import("./services").DeviceDatabaseInfo[],
 		hasLegacy: boolean
@@ -890,9 +731,6 @@ ${cardList}${moreText}
 		return await modal.openAndWait();
 	}
 
-	/**
-	 * Handle result of device selection modal.
-	 */
 	private async handleDeviceSelection(
 		result: DeviceSelectionResult,
 		deviceId: string
@@ -923,61 +761,39 @@ ${cardList}${moreText}
 				throw error;
 			}
 		}
-		// "fresh" action - do nothing, SqliteStoreService will create new database
 	}
 
-	/**
-	 * Initialize the SQLite card store and session persistence
-	 */
 	private async initializeCardStore(deviceId: string): Promise<void> {
 		try {
-			// Create and load SQLite store with device ID
 			this.cardStore = new SqliteStoreService(this.app, deviceId);
 			await this.cardStore.load();
-
-			// Set store in flashcard manager
 			this.flashcardManager.setStore(this.cardStore);
 
-			// Initialize session persistence with SQL store (uses dayBoundaryService for Anki-style day boundaries)
 			this.sessionPersistence = new SessionPersistenceService(
 				this.app,
 				this.cardStore,
 				this.dayBoundaryService
 			);
 
-			// Migrate stats.json to SQL if exists (one-time migration)
 			await this.sessionPersistence.migrateStatsJsonToSql();
-
-			// Initialize Backup Service
 			this.backupService = new BackupService(this.app, this.cardStore);
-
-			// Initialize Background Backup Manager
 			this.backgroundBackupManager = new BackgroundBackupManager(
 				this.app,
 				this.backupService,
 				this.settings
 			);
 
-			// Start background backups if enabled
 			if (this.settings.periodicBackupEnabled || this.settings.activityTriggeredBackup) {
 				this.backgroundBackupManager.start();
 			}
 
-			// Auto-backup on load if enabled (legacy setting)
 			if (this.settings.autoBackupOnLoad) {
 				await this.runAutoBackup();
 			}
 
-			// Initialize NL Query Service (AI-powered stats queries)
 			await this.initializeNLQueryService();
-
-			// Initialize SyncService now that cardStore is ready
 			this.initializeSyncService();
-
-			// Initialize FSRS Helper Service
 			this.fsrsHelper = new FSRSHelperService(this.cardStore, this.settings);
-
-			// Initialize orphaned cards management
 			this.initializeDeletionHandler();
 		} catch (error) {
 			console.error(
@@ -995,7 +811,6 @@ ${cardList}${moreText}
 	 */
 	private async initializeNLQueryService(): Promise<void> {
 		if (!this.cardStore || !this.settings.openRouterApiKey) {
-			// Service requires API key and database
 			return;
 		}
 
@@ -1023,14 +838,10 @@ ${cardList}${moreText}
 				"[True Recall] Failed to initialize NL Query Service:",
 				error
 			);
-			// Non-critical: plugin continues without NL Query feature
+			
 		}
 	}
 
-	/**
-	 * Add current note to a project via modal
-	 * v16: Projects scanned from frontmatter (no database)
-	 */
 	async addCurrentNoteToProject(): Promise<void> {
 		const file = this.app.workspace.getActiveFile();
 		if (!file || file.extension !== "md") {
@@ -1041,18 +852,15 @@ ${cardList}${moreText}
 		const frontmatterService =
 			this.flashcardManager.getFrontmatterService();
 
-		// Get current projects from frontmatter
 		const content = await this.app.vault.read(file);
 		const currentProjects =
 			frontmatterService.extractProjectsFromFrontmatter(content);
 
-		// v18: Use FrontmatterIndex for O(1) project list access (instead of O(n) vault scan)
 		const allProjectsSet = this.frontmatterIndex
 			? this.frontmatterIndex.getAllValues("projects")
 			: new Set<string>();
 		const allProjects = Array.from(allProjectsSet).sort();
 
-		// Open modal
 		const modal = new AddToProjectModal(this.app, {
 			availableProjects: allProjects,
 			currentProjects: currentProjects,
@@ -1061,7 +869,6 @@ ${cardList}${moreText}
 		const result = await modal.openAndWait();
 		if (result.cancelled) return;
 
-		// Update frontmatter (v16: frontmatter is source of truth)
 		await frontmatterService.setProjectsInFrontmatter(
 			file,
 			result.projects
@@ -1074,16 +881,11 @@ ${cardList}${moreText}
 		}
 	}
 
-	/**
-	 * Create a project from a file (used by file-menu context action)
-	 * v16: Projects only in frontmatter (no database)
-	 */
 	async createProjectFromNote(file: TFile): Promise<void> {
 		const projectName = file.basename;
 		const frontmatterService =
 			this.flashcardManager.getFrontmatterService();
 
-		// v18: Check if project exists using FrontmatterIndex (O(1) instead of O(n) vault scan)
 		if (this.frontmatterIndex) {
 			const existingProjects = this.frontmatterIndex.getAllValues("projects");
 			const projectExists = Array.from(existingProjects).some(
@@ -1095,29 +897,23 @@ ${cardList}${moreText}
 			}
 		}
 
-		// Get or create source note UID
 		let sourceUid = await frontmatterService.getSourceNoteUid(file);
 		if (!sourceUid) {
 			sourceUid = frontmatterService.generateUid();
 			await frontmatterService.setSourceNoteUid(file, sourceUid);
 		}
 
-		// Add note to project (update frontmatter - v16: frontmatter is source of truth)
 		await frontmatterService.setProjectsInFrontmatter(file, [projectName]);
 
 		notify().success(`Project "${projectName}" created`);
 	}
 
-	/**
-	 * Run automatic backup on plugin load
-	 */
 	private async runAutoBackup(): Promise<void> {
 		if (!this.backupService) return;
 
 		try {
 			await this.backupService.createBackup();
 
-			// Prune old backups if limit is set
 			if (this.settings.maxBackups > 0) {
 				await this.backupService.pruneBackups(this.settings.maxBackups);
 			}
@@ -1126,9 +922,6 @@ ${cardList}${moreText}
 		}
 	}
 
-	/**
-	 * Create a manual backup (called from command or settings)
-	 */
 	async createManualBackup(): Promise<void> {
 		if (!this.backupService) {
 			notify().error("Backup service not available");
@@ -1140,7 +933,6 @@ ${cardList}${moreText}
 			const filename = backupPath.split("/").pop();
 			notify().success(`Backup created: ${filename}`);
 
-			// Prune old backups if limit is set
 			if (this.settings.maxBackups > 0) {
 				const deleted = await this.backupService.pruneBackups(
 					this.settings.maxBackups
@@ -1155,9 +947,6 @@ ${cardList}${moreText}
 		}
 	}
 
-	/**
-	 * Open the restore backup modal
-	 */
 	async openRestoreBackupModal(): Promise<void> {
 		if (!this.backupService) {
 			notify().error("Backup service not available");
@@ -1178,9 +967,6 @@ ${cardList}${moreText}
 		await modal.openAndWait();
 	}
 
-	/**
-	 * Synchronize with cloud (pull + push with conflict resolution)
-	 */
 	async syncCloud(): Promise<void> {
 		if (!this.syncService?.isAvailable()) {
 			notify().error(
@@ -1201,10 +987,6 @@ ${cardList}${moreText}
 		}
 	}
 
-	/**
-	 * Add flashcard UID to current note's frontmatter
-	 * Creates a unique identifier for linking flashcards to the source note
-	 */
 	async addFlashcardUidToCurrentNote(): Promise<void> {
 		const file = this.app.workspace.getActiveFile();
 		if (!file || file.extension !== "md") {
@@ -1215,25 +997,18 @@ ${cardList}${moreText}
 		const frontmatterService =
 			this.flashcardManager.getFrontmatterService();
 
-		// Check if UID already exists
 		const existingUid = await frontmatterService.getSourceNoteUid(file);
 		if (existingUid) {
 			notify().info(`Note already has flashcard UID: ${existingUid}`);
 			return;
 		}
 
-		// Generate and set new UID
 		const newUid = frontmatterService.generateUid();
 		await frontmatterService.setSourceNoteUid(file, newUid);
-		// Note: FrontmatterIndexService updates automatically via metadataCache 'changed' event
 
 		notify().success(`Added flashcard UID: ${newUid}`);
 	}
 
-	/**
-	 * Force replace - overwrites all server data with local database
-	 * WARNING: Destructive operation
-	 */
 	async forceReplaceCloud(): Promise<void> {
 		if (!this.syncService?.isAvailable()) {
 			notify().error(
@@ -1242,7 +1017,7 @@ ${cardList}${moreText}
 			return;
 		}
 
-		// Confirmation dialog
+		
 		// eslint-disable-next-line no-alert -- destructive operation requires explicit user confirmation
 		const confirmed = confirm(
 			"WARNING: This will DELETE all your data on the server and replace it with your local database.\n\n" +

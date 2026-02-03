@@ -1,22 +1,13 @@
-/**
- * Session Helpers
- * Helper functions for building review sessions
- */
 import type { App } from "obsidian";
 import type { FSRSFlashcardItem } from "../../../types";
 
 export interface CardFilterOptions {
-	/** Filter specifically for buried cards */
 	stateFilter?: "due" | "learning" | "new" | "buried";
 }
 
 /**
- * Filter cards to get active (non-suspended, non-buried) cards
- * Or specifically buried cards if stateFilter is "buried"
- *
- * @param cards All cards to filter
- * @param options Filter options
- * @returns Filtered cards
+ * Returns active (non-suspended, non-buried) cards, or specifically
+ * buried cards if stateFilter is "buried"
  */
 export function filterActiveCards(
 	cards: FSRSFlashcardItem[],
@@ -46,12 +37,9 @@ export function filterActiveCards(
 }
 
 /**
- * Build a map of source UIDs to their project names
- * Used for project filtering when cards don't have projects directly
- *
- * @param app Obsidian app instance
- * @param projectFilters Project filters to match (if empty, returns undefined)
- * @returns Map of sourceUid -> projects[], or undefined if no filters
+ * Build a map of source UIDs to their project names.
+ * Used for project filtering when cards don't have projects directly.
+ * Returns undefined if projectFilters is empty.
  */
 export function buildSourceUidToProjectsMap(
 	app: App,
@@ -87,9 +75,6 @@ export function buildSourceUidToProjectsMap(
 	return sourceUidToProjects;
 }
 
-/**
- * Get empty state message based on filter configuration
- */
 export function getEmptyQueueMessage(
 	stateFilter?: string,
 	projectFilters?: string[]
