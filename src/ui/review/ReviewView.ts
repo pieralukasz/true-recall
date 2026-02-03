@@ -1,8 +1,3 @@
-/**
- * Review View
- * Main view for spaced repetition review sessions
- * Can be displayed in fullscreen (main area) or panel (sidebar)
- */
 import {
 	ItemView,
 	WorkspaceLeaf,
@@ -198,9 +193,6 @@ export class ReviewView extends ItemView {
 		});
 	}
 
-	/**
-	 * Set view state (including project filters and custom session filters)
-	 */
 	async setState(state: unknown, result: ViewStateResult): Promise<void> {
 		const viewState = state as ReviewViewState | null;
 		this.projectFilters = viewState?.projectFilters ?? [];
@@ -232,9 +224,6 @@ export class ReviewView extends ItemView {
 		await this.startSession();
 	}
 
-	/**
-	 * Get current view state
-	 */
 	getState(): ReviewViewState {
 		return {
 			projectFilters: this.projectFilters,
@@ -262,9 +251,6 @@ export class ReviewView extends ItemView {
 		return "brain";
 	}
 
-	/**
-	 * Get the currently reviewed card (for external access, e.g., copy to add panel)
-	 */
 	getCurrentReviewedCard(): FSRSFlashcardItem | null {
 		return this.stateManager.getCurrentCard();
 	}
@@ -383,9 +369,6 @@ export class ReviewView extends ItemView {
 		// Note: startSession() is called from setState() after filters are applied
 	}
 
-	/**
-	 * Update native header actions based on current session state
-	 */
 	private updateHeaderActions(): void {
 		// Remove existing actions
 		if (this.openNoteAction) {
@@ -443,10 +426,6 @@ export class ReviewView extends ItemView {
 		this.stateManager.reset();
 	}
 
-	/**
-	 * Subscribe to EventBus events for cross-component reactivity
-	 * Handles card removal during active review sessions
-	 */
 	private subscribeToEvents(): void {
 		const eventBus = getEventBus();
 

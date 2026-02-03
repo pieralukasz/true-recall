@@ -153,13 +153,9 @@ export class SimulatorStateManager extends BaseStateManager<SimulatorState> {
 
 	/** Clears any redo history when new changes are made */
 	private pushParameterHistory(params: number[]): void {
-		// If we're not at the end of history, truncate redo stack
 		const history = this.state.parameterHistory.slice(0, this.state.historyIndex + 1);
-
-		// Add new snapshot
 		history.push([...params]);
 
-		// Limit history size
 		while (history.length > MAX_HISTORY_SIZE) {
 			history.shift();
 		}

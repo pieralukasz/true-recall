@@ -1,9 +1,3 @@
-/**
- * Statistics View
- * Displays comprehensive statistics with elegant card-based layout
- *
- * Refactored to use modular components for better maintainability
- */
 import { ItemView, WorkspaceLeaf } from "obsidian";
 import {
 	Chart,
@@ -158,9 +152,6 @@ export class StatsView extends ItemView {
 		// Note: NLQueryPanel doesn't have a destroy method, managed by component lifecycle
 	}
 
-	/**
-	 * Create the layout and initialize all components
-	 */
 	private createLayout(): void {
 		// 1. NL Query Section (Learning Insights) - uses StatsCard internally
 		this.nlQueryEl = this.contentWrapper.createDiv();
@@ -220,9 +211,6 @@ export class StatsView extends ItemView {
 		this.calendarHeatmap.render();
 	}
 
-	/**
-	 * Subscribe to EventBus events for cross-component reactivity
-	 */
 	private subscribeToEvents(): void {
 		const eventBus = getEventBus();
 
@@ -272,9 +260,6 @@ export class StatsView extends ItemView {
 		this.eventUnsubscribers.push(unsubSettings);
 	}
 
-	/**
-	 * Schedule a debounced refresh to avoid excessive re-renders
-	 */
 	private scheduleRefresh(): void {
 		if (this.refreshTimer) {
 			clearTimeout(this.refreshTimer);
@@ -285,9 +270,6 @@ export class StatsView extends ItemView {
 		}, 500);
 	}
 
-	/**
-	 * Set the time range and refresh all affected components
-	 */
 	private async setRange(range: StatsTimeRange): Promise<void> {
 		this.currentRange = range;
 
@@ -305,9 +287,6 @@ export class StatsView extends ItemView {
 		]);
 	}
 
-	/**
-	 * Refresh all components
-	 */
 	async refresh(): Promise<void> {
 		await Promise.all([
 			this.todaySection?.refresh(),

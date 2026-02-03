@@ -1,8 +1,3 @@
-/**
- * Flashcard Panel View
- * Main panel view for the True Recall plugin
- * Uses PanelStateManager and UI components for clean architecture
- */
 import {
     ItemView,
     WorkspaceLeaf,
@@ -27,9 +22,6 @@ import type { CardAddedEvent, CardRemovedEvent, CardUpdatedEvent, CardReviewedEv
 import { countCardsByState } from "../shared/helpers";
 import type TrueRecallPlugin from "../../main";
 
-/**
- * Main flashcard panel view
- */
 export class FlashcardPanelView extends ItemView {
     private plugin: TrueRecallPlugin;
     private flashcardManager: FlashcardManager;
@@ -88,9 +80,6 @@ export class FlashcardPanelView extends ItemView {
         this.collectService = new CollectService();
     }
 
-    /**
-     * Schedule a RAF callback that will be tracked and cancelled on close
-     */
     private scheduleRaf(callback: () => void): void {
         const id = requestAnimationFrame(() => {
             this.pendingRafIds.delete(id);
@@ -217,9 +206,6 @@ export class FlashcardPanelView extends ItemView {
         await this.loadCurrentFile();
     }
 
-    /**
-     * Update native header actions based on current state
-     */
     private updateHeaderActions(): void {
         const state = this.stateManager.getState();
 
@@ -326,9 +312,6 @@ export class FlashcardPanelView extends ItemView {
         this.selectionFooterComponent?.destroy();
     }
 
-    /**
-     * Subscribe to EventBus events for cross-component reactivity
-     */
     private subscribeToEvents(): void {
         const eventBus = getEventBus();
 
@@ -385,9 +368,6 @@ export class FlashcardPanelView extends ItemView {
         this.eventUnsubscribers.push(unsubSettings);
     }
 
-    /**
-     * Called when active file changes
-     */
     async handleFileChange(file: TFile | null): Promise<void> {
         const state = this.stateManager.getState();
 
@@ -400,24 +380,14 @@ export class FlashcardPanelView extends ItemView {
         await this.loadFlashcardInfo();
     }
 
-    /**
-     * Check if panel is currently following a review session
-     */
     isFollowingReview(): boolean {
         return this.stateManager.getState().isFollowingReview;
     }
 
-    /**
-     * Clear review follow state (called when user navigates away from ReviewView)
-     */
     clearReviewFollowState(): void {
         this.stateManager.setReviewFollowState(null, false);
     }
 
-    /**
-     * Handle card change during review session
-     * Updates panel to show flashcards from current review card's source note
-     */
     private async handleReviewCardChanged(event: ReviewCardChangedEvent): Promise<void> {
         // Update review follow state
         this.stateManager.setReviewFollowState(event.sourceNotePath, event.isActive);
@@ -703,9 +673,6 @@ export class FlashcardPanelView extends ItemView {
         }
     }
 
-    /**
-     * Get cards with FSRS data from flashcard manager
-     */
     private getCardsWithFsrs(): FSRSFlashcardItem[] {
         const state = this.stateManager.getState();
         if (!state.flashcardInfo?.flashcards) return [];
@@ -958,9 +925,6 @@ export class FlashcardPanelView extends ItemView {
 
     // ===== Export Handlers =====
 
-    /**
-     * Copy all flashcards to clipboard as formatted text
-     */
     private async handleCopyAllToClipboard(): Promise<void> {
         const state = this.stateManager.getState();
         if (!state.flashcardInfo?.flashcards || state.flashcardInfo.flashcards.length === 0) {
@@ -976,9 +940,6 @@ export class FlashcardPanelView extends ItemView {
         notify().success(`Copied ${state.flashcardInfo.flashcards.length} flashcard(s) to clipboard`);
     }
 
-    /**
-     * Export all flashcards as CSV file
-     */
     private async handleExportCsv(): Promise<void> {
         const state = this.stateManager.getState();
         if (!state.flashcardInfo?.flashcards || state.flashcardInfo.flashcards.length === 0) {
@@ -1233,10 +1194,6 @@ export class FlashcardPanelView extends ItemView {
         await this.loadFlashcardInfo();
     }
 
-    /**
-     * Start review from the flashcard panel
-     * Opens review session for current note's flashcards
-     */
     private async handleReviewFromPanel(): Promise<void> {
         const state = this.stateManager.getState();
         if (!state.currentFile) return;
@@ -1244,10 +1201,6 @@ export class FlashcardPanelView extends ItemView {
         await this.plugin.reviewNoteFlashcards(state.currentFile);
     }
 
-    /**
-     * Open the source note in the editor
-     * Used when following a review session to quickly open the source file
-     */
     private handleOpenSourceNote(): void {
         const state = this.stateManager.getState();
         if (!state.currentFile) return;
@@ -1360,9 +1313,6 @@ export class FlashcardPanelView extends ItemView {
         this.registerDomEvent(document, "keyup", updateSelection);
     }
 
-    /**
-     * Get currently selected text from the active editor
-     */
     private getCurrentSelection(): string | null {
         const activeFile = this.app.workspace.getActiveFile();
         if (!activeFile) return null;
@@ -1382,10 +1332,6 @@ export class FlashcardPanelView extends ItemView {
 
     // ===== Editor Change Tracking for Real-time #flashcard Detection =====
 
-    /**
-     * Register editor change tracking for real-time #flashcard tag detection
-     * Uses debouncing to avoid performance issues
-     */
     private registerEditorChangeTracking(): void {
         this.registerEvent(
             this.app.workspace.on("editor-change", () => {
@@ -1447,10 +1393,6 @@ export class FlashcardPanelView extends ItemView {
 
     // ===== Mobile Header FSRS Status =====
 
-    /**
-     * Setup mobile header FSRS status element
-     * Injects a colored status element into the native Obsidian header
-     */
     private setupMobileHeaderStatus(): void {
         const titleContainer = this.containerEl.querySelector(".view-header-title-container");
         if (!titleContainer) return;
@@ -1467,9 +1409,6 @@ export class FlashcardPanelView extends ItemView {
         titleContainer.appendChild(this.mobileStatusEl);
     }
 
-    /**
-     * Update mobile header FSRS status counts
-     */
     private updateMobileHeaderStatus(): void {
         if (!this.mobileStatusEl) return;
 

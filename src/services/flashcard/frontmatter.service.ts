@@ -1,13 +1,6 @@
-/**
- * Frontmatter Service
- * Handles parsing and manipulation of YAML frontmatter in flashcard files
- */
 import { App, TFile } from "obsidian";
 import type { NoteFlashcardType } from "../../types";
 
-/**
- * Service for managing frontmatter in flashcard and source note files
- */
 export class FrontmatterService {
 	// ===== Cached regex patterns for performance =====
 	/** Matches YAML frontmatter block */
@@ -137,18 +130,11 @@ ${projectsArray}
 		return [];
 	}
 
-	/**
-	 * Extract source_link from frontmatter
-	 * Returns the note name from source_link: "[[NoteName]]"
-	 */
 	extractSourceLinkFromContent(content: string): string | null {
 		const match = content.match(FrontmatterService.SOURCE_LINK_REGEX);
 		return match?.[1] ?? null;
 	}
 
-	/**
-	 * Extract all tags from content (inline and frontmatter)
-	 */
 	extractAllTags(content: string): string[] {
 		const tags: string[] = [];
 
@@ -238,10 +224,6 @@ ${projectsArray}
 		return false;
 	}
 
-	/**
-	 * Get note flashcard type based on tags
-	 * Determines what kind of flashcards should be created for a note
-	 */
 	async getNoteFlashcardType(sourceFile: TFile): Promise<NoteFlashcardType> {
 		const content = await this.app.vault.read(sourceFile);
 		const tags = this.extractAllTags(content);
@@ -292,10 +274,6 @@ ${projectsArray}
 		return "unknown";
 	}
 
-	/**
-	 * Set projects in source note frontmatter
-	 * Creates or updates the projects field
-	 */
 	async setProjectsInFrontmatter(
 		file: TFile,
 		projects: string[]
@@ -358,19 +336,12 @@ ${projectsArray}
 		return crypto.randomUUID().replace(/-/g, "").slice(0, this.UID_LENGTH);
 	}
 
-	/**
-	 * Read flashcard_uid from source note frontmatter
-	 */
 	async getSourceNoteUid(sourceFile: TFile): Promise<string | null> {
 		const content = await this.app.vault.read(sourceFile);
 		const match = content.match(FrontmatterService.UID_FIELD_REGEX);
 		return match?.[1] ?? null;
 	}
 
-	/**
-	 * Set flashcard_uid in source note frontmatter
-	 * Creates frontmatter if it doesn't exist
-	 */
 	async setSourceNoteUid(sourceFile: TFile, uid: string): Promise<void> {
 		const content = await this.app.vault.read(sourceFile);
 		const uidField = this.SOURCE_UID_FIELD;

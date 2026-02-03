@@ -40,9 +40,6 @@ export class FrontmatterIndexService {
 		this.app = app;
 	}
 
-	/**
-	 * Register a field to be indexed
-	 */
 	register(config: FieldConfig): void {
 		if (this.fields.has(config.field)) {
 			console.warn(`[FrontmatterIndex] Field "${config.field}" already registered`);
@@ -82,9 +79,6 @@ export class FrontmatterIndexService {
 		return value.replace(/^\[\[|\]\]$/g, "").trim();
 	}
 
-	/**
-	 * Extract and normalize values from frontmatter for a field
-	 */
 	private extractValues(frontmatter: Record<string, unknown> | undefined, config: FieldConfig): string[] {
 		if (!frontmatter) return [];
 
@@ -108,10 +102,7 @@ export class FrontmatterIndexService {
 		return [];
 	}
 
-	/**
-	 * Rebuild all field indexes from vault files
-	 * Call after metadataCache is fully loaded (e.g., in onLayoutReady)
-	 */
+	/** Call after metadataCache is fully loaded (e.g., in onLayoutReady) */
 	rebuildIndex(): void {
 		// Clear all indexes
 		for (const index of this.fields.values()) {
@@ -132,9 +123,6 @@ export class FrontmatterIndexService {
 		}
 	}
 
-	/**
-	 * Index a single file for all registered fields
-	 */
 	private indexFile(path: string, frontmatter: Record<string, unknown> | undefined): void {
 		for (const index of this.fields.values()) {
 			const values = this.extractValues(frontmatter, index.config);
@@ -142,9 +130,6 @@ export class FrontmatterIndexService {
 		}
 	}
 
-	/**
-	 * Update a single field's index for a file
-	 */
 	private updateFieldIndex(index: FieldIndex, path: string, newValues: string[]): void {
 		const { config, valueToPath, pathToValue } = index;
 
@@ -196,10 +181,6 @@ export class FrontmatterIndexService {
 		}
 	}
 
-	/**
-	 * Get file by unique field value (for unique string fields like flashcard_uid)
-	 * Returns null if field is not unique or value not found
-	 */
 	getFileByValue(field: string, value: string): TFile | null {
 		const index = this.fields.get(field);
 		if (!index || !index.config.unique) return null;
@@ -218,10 +199,6 @@ export class FrontmatterIndexService {
 		return null;
 	}
 
-	/**
-	 * Get all files that have a specific value (for non-unique fields like projects)
-	 * Returns empty array if field is unique or value not found
-	 */
 	getFilesByValue(field: string, value: string): TFile[] {
 		const index = this.fields.get(field);
 		if (!index) return [];
@@ -235,9 +212,6 @@ export class FrontmatterIndexService {
 			.filter((f): f is TFile => f !== null && "extension" in f);
 	}
 
-	/**
-	 * Get values for a file path
-	 */
 	getValues(field: string, path: string): string[] {
 		const index = this.fields.get(field);
 		if (!index) return [];
@@ -248,9 +222,6 @@ export class FrontmatterIndexService {
 		return entry instanceof Set ? Array.from(entry) : [entry];
 	}
 
-	/**
-	 * Get all unique values for a field
-	 */
 	getAllValues(field: string): Set<string> {
 		const index = this.fields.get(field);
 		if (!index) return new Set();
@@ -258,17 +229,11 @@ export class FrontmatterIndexService {
 		return new Set(index.valueToPath.keys());
 	}
 
-	/**
-	 * Get count of indexed values for a field
-	 */
 	getValueCount(field: string): number {
 		const index = this.fields.get(field);
 		return index?.valueToPath.size ?? 0;
 	}
 
-	/**
-	 * Register event handlers with plugin for proper cleanup
-	 */
 	registerEvents(plugin: Plugin): void {
 		plugin.registerEvent(
 			this.app.metadataCache.on("changed", this.handleMetadataChanged.bind(this))
@@ -281,10 +246,7 @@ export class FrontmatterIndexService {
 		);
 	}
 
-	/**
-	 * Register events directly (for testing)
-	 * WARNING: Must call unregisterEventsDirect() when done to prevent memory leaks
-	 */
+	/** WARNING: Must call unregisterEventsDirect() when done to prevent memory leaks */
 	registerEventsDirect(): void {
 		// Store bound handlers for later cleanup
 		this.directEventHandlers.changed = this.handleMetadataChanged.bind(this);
@@ -296,9 +258,6 @@ export class FrontmatterIndexService {
 		this.app.vault.on("rename", this.directEventHandlers.rename);
 	}
 
-	/**
-	 * Unregister direct events (for testing cleanup)
-	 */
 	unregisterEventsDirect(): void {
 		if (this.directEventHandlers.changed) {
 			this.app.metadataCache.off("changed", this.directEventHandlers.changed);

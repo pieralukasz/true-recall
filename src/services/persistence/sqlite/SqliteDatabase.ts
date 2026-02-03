@@ -1,10 +1,3 @@
-/**
- * SQLite Database Helper Class
- * Provides high-level database operations with automatic dirty state tracking
- *
- * This class wraps the raw sql.js DatabaseLike interface and provides
- * typed query helpers that eliminate boilerplate from repository classes.
- */
 import type { App } from "obsidian";
 import type {
     BindParams,
@@ -13,17 +6,11 @@ import type {
 } from "./loader";
 import { loadDatabase } from "./loader";
 
-/**
- * High-level SQLite database wrapper with query helpers
- */
 export class SqliteDatabase {
     private db: DatabaseLike | null = null;
 
     constructor(private app: App, private onDirty: () => void) {}
 
-    /**
-     * Initialize the database with existing data or create new
-     */
     async init(existingData: Uint8Array | null): Promise<void> {
         const result: DatabaseLoadResult = await loadDatabase(this.app, existingData);
         this.db = result.db;
@@ -137,25 +124,16 @@ export class SqliteDatabase {
         return this.db;
     }
 
-    /**
-     * Export database as binary data
-     */
     export(): Uint8Array {
         if (!this.db) throw new Error("Database not initialized");
         return this.db.export();
     }
 
-    /**
-     * Close the database
-     */
     close(): void {
         this.db?.close();
         this.db = null;
     }
 
-    /**
-     * Check if database is initialized
-     */
     isReady(): boolean {
         return this.db !== null;
     }

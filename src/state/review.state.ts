@@ -234,8 +234,6 @@ export class ReviewStateManager {
         };
 
         const prevState = this.state;
-
-        // Update queue with new card data
         const newQueue = [...this.state.queue];
         newQueue[this.state.currentIndex] = updatedCard;
 
@@ -333,16 +331,13 @@ export class ReviewStateManager {
                 : 0,
         };
 
-        // Update queue with new card data
         let newQueue = [...this.state.queue];
         newQueue[this.state.currentIndex] = updatedCard;
 
-        // === Requeue logic (if needed) ===
         if (requeueData) {
             newQueue.splice(requeueData.position, 0, requeueData.card);
         }
 
-        // === Next card logic ===
         const nextIndex = this.state.currentIndex + 1;
 
         this.state = {
@@ -399,8 +394,6 @@ export class ReviewStateManager {
 
         const prevState = this.state;
 
-        // === Update badge counts incrementally - O(1) ===
-        // Add back the restored card (it's re-entering "remaining")
         const restoredBadgeType = this.getBadgeTypeForState(restoredCard.fsrs.state);
         this.cachedBadgeCounts[restoredBadgeType]++;
 
@@ -413,17 +406,13 @@ export class ReviewStateManager {
             }
         }
 
-        // Restore the card in the queue
         let newQueue = [...this.state.queue];
         newQueue[previousIndex] = restoredCard;
 
-        // Remove requeued copy if it exists (for learning cards)
         if (requeuedAtIndex !== undefined && requeuedAtIndex < newQueue.length) {
-            // The requeued card is after previousIndex, so we can safely remove it
             newQueue.splice(requeuedAtIndex, 1);
         }
 
-        // Remove the last result - stats are computed from results array
         const newResults = this.state.results.slice(0, -1);
 
         this.state = {
@@ -588,7 +577,6 @@ export class ReviewStateManager {
         const currentCard = this.getCurrentCard();
         if (!currentCard) return false;
 
-        // Check if current card is a learning/relearning card that's not due yet
         const isLearning = currentCard.fsrs.state === State.Learning || currentCard.fsrs.state === State.Relearning;
         if (!isLearning) return false;
 

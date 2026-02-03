@@ -1,8 +1,3 @@
-/**
- * Image Service
- * Handles image operations for flashcards including clipboard paste,
- * vault operations, and markdown generation
- */
 import { App, TFile, normalizePath } from "obsidian";
 import {
     MAX_IMAGE_SIZE_BYTES,
@@ -11,9 +6,6 @@ import {
     isVideoExtension,
 } from "../../types";
 
-/**
- * Service for handling images in flashcards
- */
 export class ImageService {
     private app: App;
 
@@ -21,10 +13,6 @@ export class ImageService {
         this.app = app;
     }
 
-    /**
-     * Save image from clipboard blob to attachments folder
-     * Returns the path to the saved image
-     */
     async saveImageFromClipboard(blob: Blob): Promise<string> {
         const attachmentFolder = this.getAttachmentFolder();
 
@@ -45,9 +33,6 @@ export class ImageService {
         return path;
     }
 
-    /**
-     * Get the attachment folder from Obsidian settings
-     */
     getAttachmentFolder(): string {
         const attachmentFolderPath = (this.app.vault as unknown as { getConfig: (key: string) => string }).getConfig("attachmentFolderPath");
 
@@ -79,10 +64,6 @@ export class ImageService {
         return `![[${filename}]]`;
     }
 
-    /**
-     * Extract image references from markdown content
-     * Returns array of image paths found in the content
-     */
     extractImageRefs(content: string): string[] {
         const refs: string[] = [];
 
@@ -112,9 +93,6 @@ export class ImageService {
         return [...new Set(refs)]; // Remove duplicates
     }
 
-    /**
-     * Get recent images from the vault
-     */
     getRecentImages(limit = 20): TFile[] {
         const imageFiles = this.app.vault.getFiles()
             .filter(file => isImageExtension(file.extension))
@@ -124,9 +102,6 @@ export class ImageService {
         return imageFiles;
     }
 
-    /**
-     * Get all images in a specific folder
-     */
     getImagesInFolder(folderPath: string): TFile[] {
         return this.app.vault.getFiles()
             .filter(file =>
@@ -136,9 +111,6 @@ export class ImageService {
             .sort((a, b) => a.basename.localeCompare(b.basename));
     }
 
-    /**
-     * Get recent videos from the vault
-     */
     getRecentVideos(limit = 20): TFile[] {
         const videoFiles = this.app.vault.getFiles()
             .filter(file => isVideoExtension(file.extension))
@@ -148,10 +120,6 @@ export class ImageService {
         return videoFiles;
     }
 
-    /**
-     * Get recent media files (images + videos) from vault
-     * Sorted by modification time
-     */
     getRecentMedia(limit = 20): TFile[] {
         return this.app.vault.getFiles()
             .filter(file => isImageExtension(file.extension) || isVideoExtension(file.extension))
@@ -159,10 +127,6 @@ export class ImageService {
             .slice(0, limit);
     }
 
-    /**
-     * Build HTML video tag with optional width
-     * Uses Obsidian's getResourcePath for proper URL
-     */
     buildVideoHtml(file: TFile, width?: number): string {
         const resourcePath = this.app.vault.getResourcePath(file);
         const widthAttr = width ? ` width="${width}"` : '';
@@ -176,32 +140,20 @@ export class ImageService {
         return file.stat.size > MAX_VIDEO_SIZE_BYTES;
     }
 
-    /**
-     * Check if a file is too large
-     */
     isFileTooLarge(file: TFile): boolean {
         return file.stat.size > MAX_IMAGE_SIZE_BYTES;
     }
 
-    /**
-     * Check if a blob is too large
-     */
     isBlobTooLarge(blob: Blob): boolean {
         return blob.size > MAX_IMAGE_SIZE_BYTES;
     }
 
-    /**
-     * Get file size in human readable format
-     */
     formatFileSize(bytes: number): string {
         if (bytes < 1024) return `${bytes} B`;
         if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
         return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
     }
 
-    /**
-     * Replace old image path with new path in content
-     */
     replaceImagePath(content: string, oldPath: string, newPath: string): string {
         const oldFilename = this.getFilenameFromPath(oldPath);
         const newFilename = this.getFilenameFromPath(newPath);
@@ -228,9 +180,6 @@ export class ImageService {
         return content;
     }
 
-    /**
-     * Get image file by path
-     */
     getImageFile(path: string): TFile | null {
         const file = this.app.vault.getAbstractFileByPath(path);
         if (file instanceof TFile && isImageExtension(file.extension)) {
@@ -239,10 +188,6 @@ export class ImageService {
         return null;
     }
 
-    /**
-     * Resolve image path to full vault path
-     * Handles both full paths and filenames
-     */
     resolveImagePath(ref: string): string | null {
         // Try direct path first
         const directFile = this.app.vault.getAbstractFileByPath(ref);

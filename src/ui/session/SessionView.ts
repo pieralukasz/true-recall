@@ -68,7 +68,6 @@ export class SessionView extends ItemView {
 		// Ensure container fills available space (mobile padding handled by global CSS)
 		container.addClass("ep:h-full", "ep:flex", "ep:flex-col");
 
-		// Create Panel component (header is native Obsidian header)
 		this.panelComponent = new Panel(container, {
 			disableScroll: true,
 		});
@@ -89,7 +88,6 @@ export class SessionView extends ItemView {
 		const state = this.stateManager.getState();
 		const selectionCount = state.selectedNotes.size;
 
-		// Remove existing actions
 		if (this.clearSelectionAction) {
 			this.clearSelectionAction.remove();
 			this.clearSelectionAction = null;
@@ -107,30 +105,25 @@ export class SessionView extends ItemView {
 			this.addToProjectAction = null;
 		}
 
-		// Add actions when notes are selected
 		if (selectionCount > 0) {
-			// Start session button (play icon)
 			this.startSessionAction = this.addAction(
 				"play",
 				"Start session",
 				() => this.handleStartSession()
 			);
 
-			// Move flashcards action
 			this.moveAction = this.addAction(
 				"folder-input",
 				"Move flashcards",
 				() => void this.handleMoveSelectedNotes()
 			);
 
-			// Add to project action
 			this.addToProjectAction = this.addAction(
 				"folder-plus",
 				"Add to project",
 				() => void this.handleAddToProject()
 			);
 
-			// Clear selection button
 			this.clearSelectionAction = this.addAction(
 				"x-circle",
 				"Clear selection",
@@ -155,10 +148,8 @@ export class SessionView extends ItemView {
 	}
 
 	async onClose(): Promise<void> {
-		// Cleanup subscriptions
 		this.unsubscribe?.();
 
-		// Remove native header actions
 		if (this.clearSelectionAction) {
 			this.clearSelectionAction.remove();
 			this.clearSelectionAction = null;
@@ -176,13 +167,11 @@ export class SessionView extends ItemView {
 			this.addToProjectAction = null;
 		}
 
-		// Cleanup selection bar
 		if (this.selectionBarEl) {
 			this.selectionBarEl.remove();
 			this.selectionBarEl = null;
 		}
 
-		// Cleanup components
 		this.panelComponent?.destroy();
 		this.contentComponent?.destroy();
 	}
@@ -194,23 +183,14 @@ export class SessionView extends ItemView {
 	initialize(options: SessionViewOptions): void {
 		// Store services
 		this.dayBoundaryService = options.dayBoundaryService;
-
-		// Create logic instance
 		this.logic = new SessionLogic(
 			options.allCards,
 			options.dayBoundaryService
 		);
-
-		// Initialize state
 		this.stateManager.initialize(options.currentNoteName, options.allCards);
-
-		// Update timestamp
 		this.stateManager.updateTimestamp();
 	}
 
-	/**
-	 * Handle quick action button click
-	 */
 	private handleQuickAction(
 		action: "current-note" | "today" | "default" | "buried"
 	): void {
@@ -221,23 +201,14 @@ export class SessionView extends ItemView {
 		this.emitResultAndClose(result);
 	}
 
-	/**
-	 * Handle note selection toggle
-	 */
 	private handleNoteToggle(noteName: string): void {
 		this.stateManager.toggleNoteSelection(noteName);
 	}
 
-	/**
-	 * Handle search query change
-	 */
 	private handleSearchChange(query: string): void {
 		this.stateManager.setSearchQuery(query);
 	}
 
-	/**
-	 * Handle select all toggle
-	 */
 	private handleSelectAll(select: boolean): void {
 		if (!this.logic) return;
 
@@ -253,23 +224,14 @@ export class SessionView extends ItemView {
 		this.stateManager.setAllNotesSelected(availableNotes, select);
 	}
 
-	/**
-	 * Handle clear selection
-	 */
 	private handleClearSelection(): void {
 		this.stateManager.clearSelection();
 	}
 
-	/**
-	 * Handle navigation to a note
-	 */
 	private handleNavigateToNote(notePath: string): void {
 		void this.app.workspace.openLinkText(notePath, "", false);
 	}
 
-	/**
-	 * Handle start session button click
-	 */
 	private handleStartSession(): void {
 		const state = this.stateManager.getState();
 		const selectedNotes = state.selectedNotes;
@@ -282,15 +244,11 @@ export class SessionView extends ItemView {
 		this.emitResultAndClose(result);
 	}
 
-	/**
-	 * Handle move selected notes - moves all flashcards from selected notes to a target note
-	 */
 	private async handleMoveSelectedNotes(): Promise<void> {
 		const state = this.stateManager.getState();
 		const selectedNotes = state.selectedNotes;
 		if (selectedNotes.size === 0) return;
 
-		// Get all cards from selected notes
 		const allCards = state.allCards;
 		const cardsToMove = allCards.filter(
 			(card) =>
@@ -360,8 +318,7 @@ export class SessionView extends ItemView {
 				.find((f) => f.basename === noteName);
 			if (!noteFile) continue;
 
-			// Get current projects and merge with new ones
-			const content = await this.app.vault.cachedRead(noteFile);
+				const content = await this.app.vault.cachedRead(noteFile);
 			const currentProjects =
 				frontmatterService.extractProjectsFromFrontmatter(content);
 			const newProjects = [
@@ -377,13 +334,9 @@ export class SessionView extends ItemView {
 
 		notify().success(`Added ${updatedCount} note(s) to project(s)`);
 
-		// Clear selection
 		this.stateManager.clearSelection();
 	}
 
-	/**
-	 * Emit result event and close the view
-	 */
 	private emitResultAndClose(result: SessionSelectedEvent["result"]): void {
 		const eventBus = getEventBus();
 
@@ -402,9 +355,6 @@ export class SessionView extends ItemView {
 		}
 	}
 
-	/**
-	 * Render all components
-	 */
 	private render(): void {
 		if (!this.logic || !this.panelComponent) return;
 
@@ -416,7 +366,6 @@ export class SessionView extends ItemView {
 
 		const state = this.stateManager.getState();
 
-		// Render Content
 		this.contentComponent?.destroy();
 		contentContainer.empty();
 		this.contentComponent = new SessionContent(contentContainer, {
@@ -450,18 +399,13 @@ export class SessionView extends ItemView {
 			panelEl?.removeClass("true-recall-has-search-query");
 		}
 
-		// Render selection bar (desktop only - hidden on mobile via responsive classes)
 		this.renderSelectionBar();
 	}
 
-	/**
-	 * Render selection bar at bottom of content (desktop only)
-	 */
 	private renderSelectionBar(): void {
 		const state = this.stateManager.getState();
 		const selectionCount = state.selectedNotes.size;
 
-		// Remove existing bar
 		if (this.selectionBarEl) {
 			this.selectionBarEl.remove();
 			this.selectionBarEl = null;
@@ -473,16 +417,14 @@ export class SessionView extends ItemView {
 		const contentContainer = this.panelComponent?.getContentContainer();
 		if (!contentContainer) return;
 
-		// Find SessionContent element and add selection bar at the end
 		const sessionContentEl = contentContainer.querySelector(".true-recall-session-content");
 		if (!sessionContentEl) return;
 
-		// Create selection bar at bottom of SessionContent (hidden on mobile - use header actions instead)
+		// Hidden on mobile - use header actions instead
 		this.selectionBarEl = sessionContentEl.createDiv({
 			cls: "true-recall-session-selection-bar ep:hidden ep:md:flex ep:items-center ep:justify-between ep:p-3 ep:mt-2 ep:bg-obs-secondary ep:rounded-md ep:gap-3 ep:shrink-0",
 		});
 
-		// Selection count text
 		this.selectionBarEl.createSpan({
 			cls: "ep:text-ui-small ep:text-obs-muted ep:font-medium",
 			text: `${selectionCount} note${
@@ -490,12 +432,10 @@ export class SessionView extends ItemView {
 			} selected`,
 		});
 
-		// Button container
 		const buttons = this.selectionBarEl.createDiv({
 			cls: "ep:flex ep:gap-2",
 		});
 
-		// Move button
 		const moveBtn = buttons.createEl("button", {
 			cls: "ep:py-1.5 ep:px-3 ep:text-ui-small ep:bg-obs-border ep:text-obs-normal ep:border-none ep:rounded ep:cursor-pointer ep:hover:bg-obs-modifier-hover",
 			text: "Move",
@@ -505,7 +445,6 @@ export class SessionView extends ItemView {
 			void this.handleMoveSelectedNotes()
 		);
 
-		// Add to project button
 		const addProjectBtn = buttons.createEl("button", {
 			cls: "ep:py-1.5 ep:px-3 ep:text-ui-small ep:bg-obs-border ep:text-obs-normal ep:border-none ep:rounded ep:cursor-pointer ep:hover:bg-obs-modifier-hover",
 			text: "Add to project",
@@ -514,14 +453,12 @@ export class SessionView extends ItemView {
 			void this.handleAddToProject()
 		);
 
-		// Clear button
 		const clearBtn = buttons.createEl("button", {
 			cls: "ep:py-1.5 ep:px-3 ep:text-ui-small ep:bg-obs-border ep:text-obs-normal ep:border-none ep:rounded ep:cursor-pointer ep:hover:bg-obs-modifier-hover",
 			text: "Clear",
 		});
 		this.registerDomEvent(clearBtn, "click", () => this.handleClearSelection());
 
-		// Start button
 		const startBtn = buttons.createEl("button", {
 			cls: "mod-cta ep:py-1.5 ep:px-4 ep:text-ui-small",
 			// eslint-disable-next-line obsidianmd/ui/sentence-case
