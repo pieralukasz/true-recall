@@ -81,7 +81,25 @@ export class ImagePickerModal extends BasePromiseModal<ImagePickerResult> {
         const zone = container.createDiv({ cls: "ep:flex ep:flex-col ep:items-center ep:justify-center ep:p-6 ep:mb-4 ep:border-2 ep:border-dashed ep:border-obs-border ep:rounded-lg ep:cursor-pointer ep:transition-all ep:hover:border-obs-interactive" });
 
         const icon = zone.createDiv({ cls: "ep:text-obs-muted" });
-        icon.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>`;
+        const iconSvg = icon.createSvg("svg", {
+            attr: {
+                xmlns: "http://www.w3.org/2000/svg",
+                width: "32",
+                height: "32",
+                viewBox: "0 0 24 24",
+                fill: "none",
+                stroke: "currentColor",
+                "stroke-width": "2",
+                "stroke-linecap": "round",
+                "stroke-linejoin": "round",
+            },
+        });
+        iconSvg.createSvg("rect", {
+            attr: { x: "9", y: "9", width: "13", height: "13", rx: "2", ry: "2" },
+        });
+        iconSvg.createSvg("path", {
+            attr: { d: "M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" },
+        });
 
         zone.createDiv({
             text: "Paste image from clipboard",
@@ -102,7 +120,7 @@ export class ImagePickerModal extends BasePromiseModal<ImagePickerResult> {
             zone.removeClass("true-recall-paste-zone-active");
         });
 
-        zone.addEventListener("drop", async (e) => {
+        zone.addEventListener("drop", (e) => {
             e.preventDefault();
             zone.removeClass("true-recall-paste-zone-active");
 
@@ -110,7 +128,7 @@ export class ImagePickerModal extends BasePromiseModal<ImagePickerResult> {
             if (files && files.length > 0) {
                 const file = files[0]!;
                 if (file.type.startsWith("image/")) {
-                    await this.handleDroppedFile(file);
+                    void this.handleDroppedFile(file);
                 } else {
                     notify().warning("Please drop an image file");
                 }
@@ -122,7 +140,7 @@ export class ImagePickerModal extends BasePromiseModal<ImagePickerResult> {
         const section = container.createDiv({ cls: "ep:flex ep:flex-col ep:gap-2" });
 
         section.createEl("h4", {
-            text: "Recent Images",
+            text: "Recent images",
             cls: "ep:text-ui-small ep:font-semibold ep:text-obs-muted ep:m-0",
         });
 
@@ -142,7 +160,7 @@ export class ImagePickerModal extends BasePromiseModal<ImagePickerResult> {
             const item = grid.createDiv({ cls: "ep:relative ep:aspect-square ep:rounded-md ep:overflow-hidden ep:cursor-pointer ep:border-2 ep:border-transparent ep:transition-all ep:hover:border-obs-interactive ep:hover:scale-[1.02]" });
 
             // Create thumbnail using Obsidian's resource path
-            const img = item.createEl("img", {
+            item.createEl("img", {
                 cls: "ep:w-full ep:h-full ep:object-cover",
                 attr: {
                     src: this.app.vault.getResourcePath(file),
@@ -239,7 +257,7 @@ export class ImagePickerModal extends BasePromiseModal<ImagePickerResult> {
     private pasteHandler: ((e: ClipboardEvent) => void) | null = null;
 
     private setupPasteHandler(): void {
-        this.pasteHandler = async (e: ClipboardEvent) => {
+        this.pasteHandler = (e: ClipboardEvent) => {
             const items = e.clipboardData?.items;
             if (!items) return;
 
@@ -249,7 +267,7 @@ export class ImagePickerModal extends BasePromiseModal<ImagePickerResult> {
                     e.preventDefault();
                     const blob = item.getAsFile();
                     if (blob) {
-                        await this.handlePastedImage(blob);
+                        void this.handlePastedImage(blob);
                     }
                     return;
                 }
@@ -322,7 +340,7 @@ export class ImagePickerModal extends BasePromiseModal<ImagePickerResult> {
         );
 
         // Show the markdown that will be inserted
-        const codeEl = this.previewContainer.createEl("code", {
+        this.previewContainer.createEl("code", {
             text: markdown,
             cls: "ep:block ep:py-2 ep:px-3 ep:bg-obs-primary ep:rounded ep:text-ui-smaller ep:mb-2",
         });
@@ -330,7 +348,7 @@ export class ImagePickerModal extends BasePromiseModal<ImagePickerResult> {
         // Show visual preview
         const previewEl = this.previewContainer.createDiv({ cls: "ep:max-h-[200px] ep:overflow-auto" });
 
-        MarkdownRenderer.render(
+        void MarkdownRenderer.render(
             this.app,
             markdown,
             previewEl,

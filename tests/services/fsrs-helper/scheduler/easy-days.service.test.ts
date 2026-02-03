@@ -10,8 +10,6 @@ import {
 	createMockCardStore,
 	createCardsOnDate,
 	createEasyDaysConfig,
-	formatDate,
-	addDays,
 } from "../mocks/scheduler.mocks";
 
 describe("Easy Days Service", () => {

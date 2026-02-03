@@ -5,7 +5,7 @@
 import { Menu, setIcon } from "obsidian";
 import { State } from "ts-fsrs";
 import { BaseComponent } from "../component.base";
-import { createCardCountDisplay, type CardCountDisplay } from "../components";
+import { createCardCountDisplay } from "../components";
 import type { FlashcardInfo } from "../../types";
 import type { FSRSFlashcardItem } from "../../types/fsrs/card.types";
 import type { SelectionMode } from "../../state/state.types";
@@ -314,13 +314,14 @@ export class FlashcardPanelHeader extends BaseComponent {
                 case State.Relearning:
                     counts.learning++;
                     break;
-                case State.Review:
+                case State.Review: {
                     // Only count if actually due today
                     const dueDate = new Date(card.fsrs.due);
                     if (dueDate < tomorrowBoundary) {
                         counts.review++;
                     }
                     break;
+                }
             }
         }
         return counts;

@@ -1,4 +1,3 @@
-import 'dotenv/config';
 import esbuild from "esbuild";
 import process from "process";
 import { builtinModules } from 'node:module';

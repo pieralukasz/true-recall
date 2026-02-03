@@ -148,6 +148,7 @@ export class NLQueryPanel {
 
         if (!isReady) {
             this.submitBtn.textContent = "Not configured";
+            // eslint-disable-next-line obsidianmd/ui/sentence-case -- OpenRouter is a proper noun
             this.inputEl.placeholder = "Configure OpenRouter API key in settings to enable AI queries";
         } else if (this.isLoading) {
             this.submitBtn.textContent = "Analyzing...";

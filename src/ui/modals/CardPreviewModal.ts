@@ -56,7 +56,7 @@ export class CardPreviewModal extends BaseModal {
 		if (this.options.category === "buried" && this.options.cards.length > 0) {
 			const unburyAllBtn = headerEl.createEl("button", {
 				cls: "ep:text-ui-smaller ep:py-1.5 ep:px-3 ep:bg-obs-interactive ep:text-white ep:border-none ep:rounded ep:cursor-pointer ep:transition-colors ep:hover:opacity-90",
-				text: "Unbury All",
+				text: "Unbury all",
 			});
 			unburyAllBtn.addEventListener("click", () => void this.handleUnburyAll());
 		}
@@ -65,7 +65,7 @@ export class CardPreviewModal extends BaseModal {
 		if (this.options.category === "suspended" && this.options.cards.length > 0) {
 			const deleteAllBtn = headerEl.createEl("button", {
 				cls: "ep:text-ui-smaller ep:py-1.5 ep:px-3 ep:bg-red-500 ep:text-white ep:border-none ep:rounded ep:cursor-pointer ep:transition-colors ep:hover:bg-red-600",
-				text: "Delete All",
+				text: "Delete all",
 			});
 			deleteAllBtn.addEventListener("click", () => void this.handleDeleteAll());
 		}
@@ -103,7 +103,8 @@ export class CardPreviewModal extends BaseModal {
 	}
 
 	private async handleDeleteCard(card: CardData): Promise<void> {
-		const confirmed = confirm("Delete this flashcard? This action cannot be undone.");
+		// eslint-disable-next-line no-alert -- destructive operation requires explicit user confirmation
+		const confirmed = window.confirm("Delete this flashcard? This action cannot be undone.");
 		if (!confirmed) return;
 
 		const success = await this.flashcardManager.removeFlashcardById(card.id);
@@ -208,8 +209,8 @@ export class CardPreviewModal extends BaseModal {
 	}
 
 	private async handleDeleteAll(): Promise<void> {
-		// Confirm with user
-		const confirmed = confirm(`Delete all ${this.options.cards.length} suspended cards? This action cannot be undone.`);
+		// eslint-disable-next-line no-alert -- destructive operation requires explicit user confirmation
+		const confirmed = window.confirm(`Delete all ${this.options.cards.length} suspended cards? This action cannot be undone.`);
 		if (!confirmed) return;
 
 		let deletedCount = 0;

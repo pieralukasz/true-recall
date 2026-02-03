@@ -4,14 +4,14 @@
  * Click on bars to open card preview for that date
  */
 import { Chart } from "chart.js";
-import type { CardsCreatedEntry, StatsTimeRange } from "../../../types";
+import type { CardsCreatedEntry, FSRSFlashcardItem, StatsTimeRange } from "../../../types";
 import { ChartSection, type ChartSectionProps } from "./ChartSection";
 import type { StatsCalculatorService } from "../../../services";
 
 export interface CardsCreatedChartProps extends ChartSectionProps {
 	statsCalculator: StatsCalculatorService;
 	currentRange: StatsTimeRange;
-	onCardPreview?: (date: string, cards: any[]) => void;
+	onCardPreview?: (date: string, cards: FSRSFlashcardItem[]) => void;
 }
 
 /**
@@ -35,7 +35,7 @@ export class CardsCreatedChart extends ChartSection<CardsCreatedEntry> {
 		if (this.props.currentRange === "backlog") {
 			return [];
 		}
-		return await this.props.statsCalculator.getCardsCreatedHistoryFilled(this.props.currentRange);
+		return this.props.statsCalculator.getCardsCreatedHistoryFilled(this.props.currentRange);
 	}
 
 	/**
@@ -152,8 +152,8 @@ export class CardsCreatedChart extends ChartSection<CardsCreatedEntry> {
 	/**
 	 * Handle click on a date bar
 	 */
-	private async handleDateClick(date: string): Promise<void> {
-		const cards = await this.props.statsCalculator.getCardsCreatedOnDate(date);
+	private handleDateClick(date: string): void {
+		const cards = this.props.statsCalculator.getCardsCreatedOnDate(date);
 
 		if (this.props.onCardPreview) {
 			this.props.onCardPreview(date, cards);
@@ -171,7 +171,7 @@ export class CardsCreatedChart extends ChartSection<CardsCreatedEntry> {
 	/**
 	 * Override render to show message for backlog range
 	 */
-	override async render(): Promise<void> {
+	override render(): void {
 		if (this.props.currentRange === "backlog") {
 			// Render card with message
 			this.statsCard.render();
@@ -195,6 +195,6 @@ export class CardsCreatedChart extends ChartSection<CardsCreatedEntry> {
 
 		// Call parent render for normal flow
 		super.render();
-		await this.refresh();
+		void this.refresh();
 	}
 }

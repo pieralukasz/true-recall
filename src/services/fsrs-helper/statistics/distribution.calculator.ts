@@ -4,6 +4,7 @@
  * Calculates distribution statistics for card intervals, stability, and difficulty.
  */
 
+import { State } from "ts-fsrs";
 import type { SqliteStoreService } from "../../persistence/sqlite/SqliteStoreService";
 
 /**
@@ -59,7 +60,7 @@ export class DistributionCalculator {
 		stats: DistributionStats;
 	} {
 		const cards = this.cardStore.getCards().filter(
-			(c) => !c.suspended && c.state === 2 // Review state only
+			(c) => !c.suspended && c.state === State.Review // Review state only
 		);
 
 		const intervals = cards.map((c) => c.scheduledDays);
@@ -97,7 +98,7 @@ export class DistributionCalculator {
 		stats: DistributionStats;
 	} {
 		const cards = this.cardStore.getCards().filter(
-			(c) => !c.suspended && c.state !== 0 // Exclude new cards
+			(c) => !c.suspended && c.state !== State.New // Exclude new cards
 		);
 
 		const stabilities = cards.map((c) => c.stability);
@@ -135,7 +136,7 @@ export class DistributionCalculator {
 		stats: DistributionStats;
 	} {
 		const cards = this.cardStore.getCards().filter(
-			(c) => !c.suspended && c.state !== 0 // Exclude new cards
+			(c) => !c.suspended && c.state !== State.New // Exclude new cards
 		);
 
 		const difficulties = cards.map((c) => c.difficulty);

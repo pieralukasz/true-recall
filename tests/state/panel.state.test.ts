@@ -17,6 +17,7 @@ function createMockFile(name: string, path?: string): TFile {
         vault: {} as TFile["vault"],
         name: `${name}.md`,
         parent: null,
+        // eslint-disable-next-line obsidianmd/no-tfile-tfolder-cast -- Test mock helper
     } as TFile;
 }
 

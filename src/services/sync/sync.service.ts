@@ -322,6 +322,7 @@ export class SyncService {
 		};
 
 		// Single atomic RPC call
+		// eslint-disable-next-line @typescript-eslint/no-unsafe-assignment -- Supabase client returns any for RPC data
 		const { data, error } = await client.rpc("sync_all_data", payload);
 
 		if (error) {
@@ -334,6 +335,11 @@ export class SyncService {
 			throw new Error(
 				`Push RPC error: ${response.message ?? "Unknown error"}`
 			);
+		}
+
+		// Validate response structure for successful case
+		if (!response || typeof response !== "object") {
+			console.warn("[SyncService] Unexpected response from sync_all_data RPC");
 		}
 
 		return totalChanges;
@@ -399,6 +405,7 @@ export class SyncService {
 			};
 
 			// Call replace RPC (deletes all user data, then inserts fresh)
+			// eslint-disable-next-line @typescript-eslint/no-unsafe-assignment -- Supabase client returns any for RPC data
 			const { data, error } = await client.rpc(
 				"replace_all_data",
 				payload

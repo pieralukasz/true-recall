@@ -14,6 +14,7 @@ describe("FrontmatterIndexService", () => {
 	let service: FrontmatterIndexService;
 
 	function createMockFile(path: string): TFile {
+		// eslint-disable-next-line obsidianmd/no-tfile-tfolder-cast -- Test mock helper
 		return { path, extension: "md" } as TFile;
 	}
 
@@ -108,7 +109,7 @@ describe("FrontmatterIndexService", () => {
 		});
 
 		it("updates path when file renamed", () => {
-			const file = addMockFile("old.md", { flashcard_uid: "uid-1" });
+			addMockFile("old.md", { flashcard_uid: "uid-1" });
 			service.rebuildIndex();
 			service.registerEventsDirect();
 

@@ -84,6 +84,7 @@ export function registerCommands(plugin: TrueRecallPlugin): void {
 
 	plugin.addCommand({
 		id: "open-fsrs-simulator",
+		// eslint-disable-next-line obsidianmd/ui/sentence-case -- FSRS is an acronym
 		name: "Open FSRS simulator",
 		callback: () => void plugin.openSimulator(),
 	});
@@ -108,7 +109,7 @@ export function registerCommands(plugin: TrueRecallPlugin): void {
 
 	plugin.addCommand({
 		id: "add-flashcard-uid",
-		name: "Add flashcard UID to current note",
+		name: "Add flashcard uid to current note",
 		checkCallback: (checking) => {
 			const file = plugin.app.workspace.getActiveFile();
 			if (file && file.extension === "md") {

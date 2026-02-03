@@ -74,7 +74,7 @@ export function buildSourceUidToProjectsMap(
 		if (!frontmatter) continue;
 
 		const uid = frontmatter.flashcard_uid as string | undefined;
-		const rawProjects = frontmatter.projects;
+		const rawProjects = frontmatter.projects as unknown[];
 		const projects = Array.isArray(rawProjects)
 			? rawProjects.map(normalizeProjectName)
 			: [];

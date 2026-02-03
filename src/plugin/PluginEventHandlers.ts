@@ -1,4 +1,4 @@
-import { TFile } from "obsidian";
+import { ItemView, TFile } from "obsidian";
 import type TrueRecallPlugin from "../main";
 import { FlashcardPanelView } from "../ui/flashcard-panel/FlashcardPanelView";
 import { VIEW_TYPE_FLASHCARD_PANEL, VIEW_TYPE_REVIEW } from "../constants";
@@ -8,8 +8,6 @@ export function registerEventHandlers(plugin: TrueRecallPlugin): void {
 	plugin.registerEvent(
 		plugin.app.workspace.on("file-menu", (menu, file) => {
 			if (file instanceof TFile && file.extension === "md") {
-				// Don't show on flashcard files themselves
-				if (plugin.flashcardManager.isFlashcardFile(file)) return;
 
 				menu.addItem((item) => {
 					item.setTitle("Review flashcards from this note")
@@ -48,9 +46,9 @@ export function registerEventHandlers(plugin: TrueRecallPlugin): void {
 
 /** Respects review follow mode and panel interactions */
 function updatePanelView(plugin: TrueRecallPlugin, file: TFile | null): void {
-	const activeLeaf = plugin.app.workspace.activeLeaf;
-	const isReviewViewActive = activeLeaf?.view?.getViewType() === VIEW_TYPE_REVIEW;
-	const isPanelActive = activeLeaf?.view?.getViewType() === VIEW_TYPE_FLASHCARD_PANEL;
+	const activeView = plugin.app.workspace.getActiveViewOfType(ItemView);
+	const isReviewViewActive = activeView?.getViewType() === VIEW_TYPE_REVIEW;
+	const isPanelActive = activeView?.getViewType() === VIEW_TYPE_FLASHCARD_PANEL;
 
 	const leaves = plugin.app.workspace.getLeavesOfType(
 		VIEW_TYPE_FLASHCARD_PANEL

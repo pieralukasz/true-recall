@@ -84,7 +84,25 @@ export class MediaPickerModal extends BasePromiseModal<MediaPickerResult> {
         const zone = container.createDiv({ cls: "ep:flex ep:flex-col ep:items-center ep:justify-center ep:p-6 ep:mb-4 ep:border-2 ep:border-dashed ep:border-obs-border ep:rounded-lg ep:cursor-pointer ep:transition-all ep:hover:border-obs-interactive" });
 
         const icon = zone.createDiv({ cls: "ep:text-obs-muted" });
-        icon.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>`;
+        const iconSvg = icon.createSvg("svg", {
+            attr: {
+                xmlns: "http://www.w3.org/2000/svg",
+                width: "32",
+                height: "32",
+                viewBox: "0 0 24 24",
+                fill: "none",
+                stroke: "currentColor",
+                "stroke-width": "2",
+                "stroke-linecap": "round",
+                "stroke-linejoin": "round",
+            },
+        });
+        iconSvg.createSvg("rect", {
+            attr: { x: "9", y: "9", width: "13", height: "13", rx: "2", ry: "2" },
+        });
+        iconSvg.createSvg("path", {
+            attr: { d: "M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" },
+        });
 
         zone.createDiv({
             text: "Paste image from clipboard",
@@ -105,7 +123,7 @@ export class MediaPickerModal extends BasePromiseModal<MediaPickerResult> {
             zone.removeClass("true-recall-paste-zone-active");
         });
 
-        zone.addEventListener("drop", async (e) => {
+        zone.addEventListener("drop", (e) => {
             e.preventDefault();
             zone.removeClass("true-recall-paste-zone-active");
 
@@ -113,7 +131,7 @@ export class MediaPickerModal extends BasePromiseModal<MediaPickerResult> {
             if (files && files.length > 0) {
                 const file = files[0]!;
                 if (file.type.startsWith("image/")) {
-                    await this.handleDroppedFile(file);
+                    void this.handleDroppedFile(file);
                 } else {
                     notify().warning("Please drop an image file");
                 }
@@ -127,7 +145,7 @@ export class MediaPickerModal extends BasePromiseModal<MediaPickerResult> {
         this.mediaGridContainer.empty();
 
         this.mediaGridContainer.createEl("h4", {
-            text: "Recent Media",
+            text: "Recent media",
             cls: "ep:text-ui-small ep:font-semibold ep:text-obs-muted ep:m-0",
         });
 
@@ -151,7 +169,22 @@ export class MediaPickerModal extends BasePromiseModal<MediaPickerResult> {
                 // Video: show icon + filename - need flex column layout
                 item.addClass("ep:flex", "ep:flex-col");
                 const videoThumb = item.createDiv({ cls: "ep:flex ep:items-center ep:justify-center ep:w-full ep:h-[60%] ep:text-obs-muted" });
-                videoThumb.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg>`;
+                const videoSvg = videoThumb.createSvg("svg", {
+                    attr: {
+                        xmlns: "http://www.w3.org/2000/svg",
+                        width: "32",
+                        height: "32",
+                        viewBox: "0 0 24 24",
+                        fill: "none",
+                        stroke: "currentColor",
+                        "stroke-width": "2",
+                        "stroke-linecap": "round",
+                        "stroke-linejoin": "round",
+                    },
+                });
+                videoSvg.createSvg("polygon", {
+                    attr: { points: "5 3 19 12 5 21 5 3" },
+                });
                 item.createDiv({
                     text: file.name,
                     cls: "ep:text-[11px] ep:text-obs-normal ep:text-center ep:p-1 ep:overflow-hidden ep:text-ellipsis ep:whitespace-nowrap",
@@ -260,7 +293,7 @@ export class MediaPickerModal extends BasePromiseModal<MediaPickerResult> {
     private pasteHandler: ((e: ClipboardEvent) => void) | null = null;
 
     private setupPasteHandler(): void {
-        this.pasteHandler = async (e: ClipboardEvent) => {
+        this.pasteHandler = (e: ClipboardEvent) => {
             const items = e.clipboardData?.items;
             if (!items) return;
 
@@ -270,7 +303,7 @@ export class MediaPickerModal extends BasePromiseModal<MediaPickerResult> {
                     e.preventDefault();
                     const blob = item.getAsFile();
                     if (blob) {
-                        await this.handlePastedImage(blob);
+                        void this.handlePastedImage(blob);
                     }
                     return;
                 }
@@ -369,10 +402,17 @@ export class MediaPickerModal extends BasePromiseModal<MediaPickerResult> {
         const previewEl = this.previewContainer.createDiv({ cls: "ep:max-h-[200px] ep:overflow-auto" });
 
         if (isVideo) {
-            // For video, directly render HTML (MarkdownRenderer won't handle <video> well)
-            previewEl.innerHTML = markdown;
+            // For video, create video element (MarkdownRenderer won't handle <video> well)
+            const video = previewEl.createEl("video", {
+                attr: {
+                    src: this.app.vault.getResourcePath(this.selectedFile),
+                    controls: "true",
+                    ...(width ? { width: String(width) } : {}),
+                },
+            });
+            video.muted = true;
         } else {
-            MarkdownRenderer.render(
+            void MarkdownRenderer.render(
                 this.app,
                 markdown,
                 previewEl,

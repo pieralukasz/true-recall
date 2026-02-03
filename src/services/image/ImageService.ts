@@ -49,8 +49,7 @@ export class ImageService {
      * Get the attachment folder from Obsidian settings
      */
     getAttachmentFolder(): string {
-        // @ts-expect-error - Accessing internal Obsidian API for attachment folder
-        const attachmentFolderPath = this.app.vault.getConfig("attachmentFolderPath") as string;
+        const attachmentFolderPath = (this.app.vault as unknown as { getConfig: (key: string) => string }).getConfig("attachmentFolderPath");
 
         if (!attachmentFolderPath || attachmentFolderPath === "/") {
             // Default to root if not configured

@@ -152,7 +152,7 @@ export class BackupService {
         try {
             // Create safety backup first
             const safetyBackupPath = await this.createBackup();
-            console.log(`[True Recall] Safety backup created at: ${safetyBackupPath}`);
+            console.debug(`[True Recall] Safety backup created at: ${safetyBackupPath}`);
 
             // Read backup file
             const backupData = await this.app.vault.adapter.readBinary(backupPath);
@@ -267,7 +267,7 @@ export class BackupService {
         }
 
         if (deleted > 0) {
-            console.log(`[True Recall] Smart retention: deleted ${deleted} old backups, kept ${toKeep.size} (hourly: ${kept.hourly}, daily: ${kept.daily}, weekly: ${kept.weekly})`);
+            console.debug(`[True Recall] Smart retention: deleted ${deleted} old backups, kept ${toKeep.size} (hourly: ${kept.hourly}, daily: ${kept.daily}, weekly: ${kept.weekly})`);
         }
 
         return { deleted, kept };

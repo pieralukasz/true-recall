@@ -87,7 +87,7 @@ export class SourceNoteService {
 		const files = this.app.vault.getMarkdownFiles();
 		for (const file of files) {
 			const cache = this.app.metadataCache.getFileCache(file);
-			const uid = cache?.frontmatter?.flashcard_uid;
+			const uid = cache?.frontmatter?.flashcard_uid as unknown;
 			if (uid && typeof uid === "string") {
 				this.fallbackUidCache.set(uid, file);
 			}
@@ -121,8 +121,10 @@ export class SourceNoteService {
 		}
 
 		const frontmatter = this.app.metadataCache.getFileCache(file)?.frontmatter;
-		const rawProjects = frontmatter?.projects;
-		const projects = Array.isArray(rawProjects) ? rawProjects : [];
+		const rawProjects = frontmatter?.projects as unknown;
+		const projects: string[] = Array.isArray(rawProjects)
+			? rawProjects.filter((p): p is string => typeof p === "string")
+			: [];
 
 		return {
 			...card,

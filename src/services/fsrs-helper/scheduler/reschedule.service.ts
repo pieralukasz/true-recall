@@ -5,7 +5,7 @@
  * Useful after parameter optimization to apply new weights to existing cards.
  */
 
-import { FSRS, State, type Card } from "ts-fsrs";
+import { State } from "ts-fsrs";
 import type { FSRSSettings } from "../../../types";
 import type {
 	SchedulerCardStore,
@@ -34,13 +34,6 @@ export class RescheduleService {
 	async reschedule(options: RescheduleOptions): Promise<SchedulingResult> {
 		const { scope, cardIds, dryRun = true } = options;
 
-		// Create FSRS instance with current weights
-		const fsrs = new FSRS({
-			w: this.fsrsSettings.weights ?? undefined,
-			request_retention: this.fsrsSettings.requestRetention,
-			maximum_interval: this.fsrsSettings.maximumInterval,
-		});
-
 		// Get cards to reschedule based on scope
 		const cards = await this.getCardsForScope(scope, cardIds);
 
@@ -50,7 +43,7 @@ export class RescheduleService {
 
 		for (const card of cards) {
 			// Skip new cards (they don't have scheduling yet)
-			if (card.state === State.New) continue;
+			if (card.state === (State.New as number)) continue;
 
 			// Record before
 			const beforeDateStr = this.formatDate(new Date(card.due));
@@ -134,7 +127,7 @@ export class RescheduleService {
 		{
 			id: string;
 			due: string;
-			state: State;
+			state: number;
 			stability: number;
 			lastReview: string | null;
 		}[]
@@ -152,7 +145,7 @@ export class RescheduleService {
 							? {
 									id: card.id,
 									due: card.due,
-									state: card.state as State,
+									state: card.state,
 									stability: card.stability,
 									lastReview: card.lastReview,
 								}
@@ -164,7 +157,7 @@ export class RescheduleService {
 						): c is {
 							id: string;
 							due: string;
-							state: State;
+							state: number;
 							stability: number;
 							lastReview: string | null;
 						} => c !== null
@@ -182,7 +175,7 @@ export class RescheduleService {
 					.map((c) => ({
 						id: c.id,
 						due: c.due,
-						state: c.state as State,
+						state: c.state,
 						stability: c.stability,
 						lastReview: c.lastReview,
 					}));
@@ -202,7 +195,7 @@ export class RescheduleService {
 					.map((c) => ({
 						id: c.id,
 						due: c.due,
-						state: c.state as State,
+						state: c.state,
 						stability: c.stability,
 						lastReview: c.lastReview,
 					}));
@@ -216,7 +209,7 @@ export class RescheduleService {
 					.map((c) => ({
 						id: c.id,
 						due: c.due,
-						state: c.state as State,
+						state: c.state,
 						stability: c.stability,
 						lastReview: c.lastReview,
 					}));

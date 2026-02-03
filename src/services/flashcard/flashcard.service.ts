@@ -106,7 +106,7 @@ export class FlashcardManager {
 			throw new Error("Store not initialized");
 		}
 
-		const cards = await this.getAllFSRSCards();
+		const cards = this.getAllFSRSCards();
 		return {
 			totalCards: cards.length,
 			newCardsProcessed: 0,
@@ -223,7 +223,7 @@ export class FlashcardManager {
 	}
 
 	removeFlashcardFromSql(cardId: string): void {
-		this.removeFlashcardById(cardId);
+		void this.removeFlashcardById(cardId);
 	}
 
 	getAllFSRSCards(): FSRSFlashcardItem[] {

@@ -5,7 +5,7 @@
  * Uses gradient descent optimization to minimize prediction error.
  */
 
-import { FSRS, Rating, State, type Card, type ReviewLog } from "ts-fsrs";
+import { FSRS, State, Rating } from "ts-fsrs";
 import { DEFAULT_FSRS_WEIGHTS } from "../../../constants";
 import type {
 	OptimizationInput,
@@ -174,9 +174,9 @@ export class ParameterOptimizerService {
 						elapsedDays: curr.elapsedDays,
 						stability: prev.stability,
 						difficulty: prev.difficulty,
-						state: prev.state as State,
-						rating: curr.rating as Rating,
-						wasRecalled: curr.rating >= 3, // Good or Easy = recalled
+						state: prev.state as unknown as State,
+						rating: curr.rating as unknown as Rating,
+						wasRecalled: (curr.rating as number) >= 3, // Good or Easy = recalled
 					});
 				}
 			}
@@ -193,7 +193,7 @@ export class ParameterOptimizerService {
 		data: TrainingDataPoint[]
 	): { loss: number; gradients: number[] } {
 		// Create FSRS instance with current weights
-		const fsrs = new FSRS({ w: weights });
+		new FSRS({ w: weights });
 
 		let totalLoss = 0;
 		const gradients = new Array(weights.length).fill(0);
@@ -234,7 +234,7 @@ export class ParameterOptimizerService {
 			gradients[i] = (lossPlus - lossMinus) / (2 * epsilon);
 		}
 
-		return { loss: avgLoss, gradients };
+		return { loss: avgLoss, gradients: gradients as number[] };
 	}
 
 	/**
@@ -350,7 +350,7 @@ interface TrainingDataPoint {
 	/** Card state at time of review */
 	state: State;
 	/** Rating given */
-	rating: Rating;
+	rating: number;
 	/** Whether the card was recalled (rating >= 3) */
 	wasRecalled: boolean;
 }

@@ -13,7 +13,6 @@ import { State, Rating } from "ts-fsrs";
 import { FSRSService } from "../../src/services/core/fsrs.service";
 import {
 	createNewCard,
-	createLearningCard,
 	createReviewCard,
 	createRelearningCard,
 	createDefaultFSRSSettings,

@@ -190,14 +190,14 @@ export class StatsView extends ItemView {
 		this.futureDueChart = new FutureDueChart(this.contentWrapper, {
 			statsCalculator: this.statsCalculator,
 			currentRange: this.currentRange,
-			onCardPreview: (date, cards) => this.openCardPreviewForDate(date, cards as FSRSFlashcardItem[]),
+			onCardPreview: (date, cards) => this.openCardPreviewForDate(date, cards),
 		});
 		this.futureDueChart.render();
 
 		this.reviewsChart = new ReviewsChart(this.contentWrapper, {
 			statsCalculator: this.statsCalculator,
 			currentRange: this.currentRange,
-			onCardPreview: (date, cards) => this.openCardPreviewForDate(date, cards as FSRSFlashcardItem[]),
+			onCardPreview: (date, cards) => this.openCardPreviewForDate(date, cards),
 		});
 		this.reviewsChart.render();
 
@@ -209,13 +209,13 @@ export class StatsView extends ItemView {
 
 		this.cardCountsChart = new CardCountsChart(this.contentWrapper, {
 			statsCalculator: this.statsCalculator,
-			onCardPreview: (category, label, cards) => this.openCardPreviewForCategory(category, label, cards as FSRSFlashcardItem[]),
+			onCardPreview: (category, label, cards) => this.openCardPreviewForCategory(category, label, cards),
 		});
 		this.cardCountsChart.render();
 
 		this.calendarHeatmap = new CalendarHeatmap(this.contentWrapper, {
 			statsCalculator: this.statsCalculator,
-			onCardPreview: (date, cards) => this.openCardPreviewForDate(date, cards as FSRSFlashcardItem[]),
+			onCardPreview: (date, cards) => this.openCardPreviewForDate(date, cards),
 		});
 		this.calendarHeatmap.render();
 	}

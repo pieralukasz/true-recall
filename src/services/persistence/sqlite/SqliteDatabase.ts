@@ -10,7 +10,6 @@ import type {
     BindParams,
     DatabaseLike,
     DatabaseLoadResult,
-    QueryExecResult,
 } from "./loader";
 import { loadDatabase } from "./loader";
 

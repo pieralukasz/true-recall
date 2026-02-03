@@ -4,6 +4,7 @@
  * Predicts future review workload based on current card scheduling.
  */
 
+import { State } from "ts-fsrs";
 import type { SqliteStoreService } from "../../persistence/sqlite/SqliteStoreService";
 
 /**
@@ -56,9 +57,6 @@ export class WorkloadForecastCalculator {
 		const endDate = new Date(today);
 		endDate.setDate(endDate.getDate() + days);
 
-		const startDateStr = this.formatDate(today);
-		const endDateStr = this.formatDate(endDate);
-
 		// Get all cards with due dates in range
 		const cards = this.cardStore.getCards().filter(
 			(c) =>
@@ -87,12 +85,12 @@ export class WorkloadForecastCalculator {
 			const existing = forecast.get(dateStr);
 
 			if (existing) {
-				// State 0 = New (not counted in forecast)
-				// State 1 = Learning, State 3 = Relearning
-				// State 2 = Review
-				if (card.state === 2) {
+				// State.New = 0 (not counted in forecast)
+				// State.Learning = 1, State.Relearning = 3
+				// State.Review = 2
+				if (card.state === State.Review) {
 					existing.review++;
-				} else if (card.state === 1 || card.state === 3) {
+				} else if (card.state === State.Learning || card.state === State.Relearning) {
 					existing.learning++;
 				}
 			}
