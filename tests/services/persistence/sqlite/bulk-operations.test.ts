@@ -284,7 +284,6 @@ describe("Bulk Operations", () => {
 			const card = createTestCard({ id: "card-timestamp" });
 			ctx.cards.set(card.id, card);
 
-			const initialCard = ctx.cards.get("card-timestamp");
 			const initialUpdatedAt = ctx.cards.getModifiedSince(0)[0]?.updatedAt;
 
 			vi.advanceTimersByTime(5000);

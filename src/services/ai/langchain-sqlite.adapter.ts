@@ -138,7 +138,7 @@ export class SqlJsAdapter {
             const rowCount = countResult[0]?.values[0]?.[0] ?? 0;
 
             schemaInfo.push(
-                `Table: ${table} (${rowCount} rows)\nColumns:\n${columns.join("\n")}${fsrsNotesSection}${sampleSection}`
+                `Table: ${table} (${String(rowCount)} rows)\nColumns:\n${columns.join("\n")}${fsrsNotesSection}${sampleSection}`
             );
         }
 

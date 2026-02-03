@@ -49,8 +49,8 @@ export function insertAtTextareaCursor(
  * Auto-resize textarea to fit content
  */
 export function autoResizeTextarea(textarea: HTMLTextAreaElement): void {
-	textarea.style.height = "auto";
-	textarea.style.height = textarea.scrollHeight + "px";
+	textarea.setCssProps({ height: "auto" });
+	textarea.setCssProps({ height: textarea.scrollHeight + "px" });
 }
 
 /**

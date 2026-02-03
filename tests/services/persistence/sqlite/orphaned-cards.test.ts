@@ -6,10 +6,9 @@
  * 1. Don't have a source_uid (no_source_uid)
  * 2. Have a source_uid that doesn't match any existing file (missing_source_file)
  */
-import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
+import { describe, it, expect, beforeEach, afterEach } from "vitest";
 import {
 	createTestContext,
-	createTestCard,
 	createCardWithSource,
 	createOrphanedCard,
 	type TestContext,

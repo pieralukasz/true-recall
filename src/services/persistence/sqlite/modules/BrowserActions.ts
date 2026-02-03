@@ -179,16 +179,16 @@ export class BrowserActions {
 		const now = Date.now();
 		const placeholders = cardIds.map(() => "?").join(",");
 
-		this.db.runMany([
-			[
+		this.db.transaction(() => {
+			this.db.run(
 				`UPDATE review_log SET deleted_at = ?, updated_at = ? WHERE card_id IN (${placeholders})`,
-				[now, now, ...cardIds],
-			],
-			[
+				[now, now, ...cardIds]
+			);
+			this.db.run(
 				`UPDATE cards SET deleted_at = ?, updated_at = ? WHERE id IN (${placeholders})`,
-				[now, now, ...cardIds],
-			],
-		]);
+				[now, now, ...cardIds]
+			);
+		});
 
 		return cardIds.length;
 	}
@@ -202,14 +202,14 @@ export class BrowserActions {
 
 		const placeholders = cardIds.map(() => "?").join(",");
 
-		// Use runMany for multiple operations
-		this.db.runMany([
-			[
+		// Use transaction for multiple operations
+		this.db.transaction(() => {
+			this.db.run(
 				`DELETE FROM review_log WHERE card_id IN (${placeholders})`,
-				cardIds,
-			],
-			[`DELETE FROM cards WHERE id IN (${placeholders})`, cardIds],
-		]);
+				cardIds
+			);
+			this.db.run(`DELETE FROM cards WHERE id IN (${placeholders})`, cardIds);
+		});
 
 		return cardIds.length;
 	}

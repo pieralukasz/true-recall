@@ -3,7 +3,7 @@
  * Single-line card with status dot, question, and dropdown menu
  * Expands to show answer on click
  */
-import { App, Component, Menu, MarkdownRenderer } from "obsidian";
+import { App, Component, Menu, MarkdownRenderer, setIcon } from "obsidian";
 import { State } from "ts-fsrs";
 import { BaseComponent } from "../component.base";
 import { setupLongPress, type LongPressResult } from "../utils";
@@ -129,7 +129,7 @@ export class CompactCardItem extends BaseComponent {
             cls: "clickable-icon",
             attr: { "aria-label": "Card actions" },
         });
-        menuBtn.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="1"/><circle cx="12" cy="5" r="1"/><circle cx="12" cy="19" r="1"/></svg>`;
+        setIcon(menuBtn, "more-vertical");
         this.events.addEventListener(menuBtn, "click", (e) => {
             e.stopPropagation();
             this.showCardMenu(e);

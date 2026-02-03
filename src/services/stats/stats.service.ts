@@ -34,16 +34,16 @@ export class StatsService {
 		});
 	}
 
-	private async computeStats(): Promise<GlobalFlashcardStats> {
-		const allCards = await this.flashcardManager.getAllFSRSCards();
+	private computeStats(): Promise<GlobalFlashcardStats> {
+		const allCards = this.flashcardManager.getAllFSRSCards();
 		const rawStats = this.fsrsService.getStats(allCards);
 
-		return {
+		return Promise.resolve({
 			total: rawStats.total,
 			new: rawStats.new,
 			learning: rawStats.learning + rawStats.relearning,
 			due: rawStats.dueToday,
-		};
+		});
 	}
 
 	async getGlobalStats(forceRefresh = false): Promise<GlobalFlashcardStats> {

@@ -4,7 +4,7 @@
 import { describe, it, expect, beforeEach, vi, afterEach } from "vitest";
 import { ReviewStateManager } from "../../src/state/review.state";
 import { State } from "ts-fsrs";
-import type { FSRSFlashcardItem, ReviewSessionState } from "../../src/types";
+import type { FSRSFlashcardItem } from "../../src/types";
 
 /**
  * Create a mock FSRSFlashcardItem for testing

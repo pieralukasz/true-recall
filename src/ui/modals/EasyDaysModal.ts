@@ -74,7 +74,7 @@ export class EasyDaysModal extends BasePromiseModal<EasyDaysResult> {
 		const section = container.createDiv({ cls: "ep:mb-5" });
 
 		section.createEl("h4", {
-			text: "Recurring Days",
+			text: "Recurring days",
 			cls: "ep:text-ui-small ep:font-semibold ep:mb-2 ep:text-obs-normal",
 		});
 
@@ -120,7 +120,7 @@ export class EasyDaysModal extends BasePromiseModal<EasyDaysResult> {
 		const section = container.createDiv({ cls: "ep:mb-5" });
 
 		section.createEl("h4", {
-			text: "Specific Dates",
+			text: "Specific dates",
 			cls: "ep:text-ui-small ep:font-semibold ep:mb-2 ep:text-obs-normal",
 		});
 
@@ -145,7 +145,7 @@ export class EasyDaysModal extends BasePromiseModal<EasyDaysResult> {
 		dateInput.value = today;
 
 		const addBtn = inputRow.createEl("button", {
-			text: "+ Add",
+			text: "+ add",
 			type: "button",
 			cls: "ep:px-4 ep:py-2 ep:rounded-md ep:bg-obs-interactive ep:text-on-accent ep:border-none ep:text-ui-small ep:font-medium ep:cursor-pointer ep:hover:opacity-90",
 		});
@@ -217,7 +217,7 @@ export class EasyDaysModal extends BasePromiseModal<EasyDaysResult> {
 		const section = container.createDiv({ cls: "ep:mb-5" });
 
 		section.createEl("h4", {
-			text: "Workload Reduction",
+			text: "Workload reduction",
 			cls: "ep:text-ui-small ep:font-semibold ep:mb-2 ep:text-obs-normal",
 		});
 

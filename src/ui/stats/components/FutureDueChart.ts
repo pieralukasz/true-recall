@@ -4,14 +4,14 @@
  * Click on bars to open card preview for that date
  */
 import { Chart } from "chart.js";
-import type { FutureDueEntry, StatsTimeRange } from "../../../types";
+import type { FSRSFlashcardItem, FutureDueEntry, StatsTimeRange } from "../../../types";
 import { ChartSection, type ChartSectionProps } from "./ChartSection";
 import type { StatsCalculatorService } from "../../../services";
 
 export interface FutureDueChartProps extends ChartSectionProps {
 	statsCalculator: StatsCalculatorService;
 	currentRange: StatsTimeRange;
-	onCardPreview?: (date: string, cards: any[]) => void;
+	onCardPreview?: (date: string, cards: FSRSFlashcardItem[]) => void;
 }
 
 /**
@@ -31,7 +31,7 @@ export class FutureDueChart extends ChartSection<FutureDueEntry> {
 	 * Fetch future due data from stats calculator
 	 */
 	async fetchData(): Promise<FutureDueEntry[]> {
-		return await this.props.statsCalculator.getFutureDueStatsFilled(this.props.currentRange);
+		return this.props.statsCalculator.getFutureDueStatsFilled(this.props.currentRange);
 	}
 
 	/**
@@ -150,8 +150,8 @@ export class FutureDueChart extends ChartSection<FutureDueEntry> {
 	/**
 	 * Handle click on a date bar
 	 */
-	private async handleDateClick(date: string): Promise<void> {
-		const cards = await this.props.statsCalculator.getCardsDueOnDate(date);
+	private handleDateClick(date: string): void {
+		const cards = this.props.statsCalculator.getCardsDueOnDate(date);
 
 		if (this.props.onCardPreview) {
 			this.props.onCardPreview(date, cards);

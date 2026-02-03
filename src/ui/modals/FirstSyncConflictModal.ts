@@ -46,14 +46,14 @@ export class FirstSyncConflictModal extends BasePromiseModal<FirstSyncConflictRe
 
 		// Upload option
 		const uploadOption = optionsEl.createDiv({ cls: "ep:p-3 ep:bg-obs-secondary ep:border ep:border-obs-border ep:rounded-lg" });
-		const h4Upload = uploadOption.createEl("h4", { text: "Upload to Server" });
+		const h4Upload = uploadOption.createEl("h4", { text: "Upload to server" });
 		h4Upload.addClass("ep:m-0", "ep:mb-2", "ep:text-ui-small", "ep:font-semibold");
 		const pUpload = uploadOption.createEl("p", {
 			text: "Replace server data with your local flashcards. Use this if your local data is more complete.",
 		});
 		pUpload.addClass("ep:m-0", "ep:mb-3", "ep:text-ui-small", "ep:text-obs-muted", "ep:leading-snug");
 		new ButtonComponent(uploadOption)
-			.setButtonText("Upload Local → Server")
+			.setButtonText("Upload local → server")
 			.setWarning()
 			.onClick(() => {
 				this.resolve({ cancelled: false, choice: "upload" });
@@ -61,14 +61,14 @@ export class FirstSyncConflictModal extends BasePromiseModal<FirstSyncConflictRe
 
 		// Download option
 		const downloadOption = optionsEl.createDiv({ cls: "ep:p-3 ep:bg-obs-secondary ep:border ep:border-obs-border ep:rounded-lg" });
-		const h4Download = downloadOption.createEl("h4", { text: "Download from Server" });
+		const h4Download = downloadOption.createEl("h4", { text: "Download from server" });
 		h4Download.addClass("ep:m-0", "ep:mb-2", "ep:text-ui-small", "ep:font-semibold");
 		const pDownload = downloadOption.createEl("p", {
 			text: "Replace local data with server flashcards. Use this if another device has your main data.",
 		});
 		pDownload.addClass("ep:m-0", "ep:mb-3", "ep:text-ui-small", "ep:text-obs-muted", "ep:leading-snug");
 		new ButtonComponent(downloadOption)
-			.setButtonText("Download Server → Local")
+			.setButtonText("Download server → local")
 			.setWarning()
 			.onClick(() => {
 				this.resolve({ cancelled: false, choice: "download" });

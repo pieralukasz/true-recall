@@ -141,12 +141,12 @@ export class OrphanedCardsActionModal extends BasePromiseModal<OrphanedCardsActi
 			label: "Create new note",
 			description: "Create a note with these cards",
 			type: "secondary",
-			onClick: () => this.handleCreateNote(),
+			onClick: () => void this.handleCreateNote(),
 		});
 
 		// Leave orphaned button (smaller, muted)
 		actionsContainer.createEl("button", {
-			text: "Leave as orphaned (can manage later in Settings)",
+			text: "Leave as orphaned (can manage later in settings)",
 			cls: "ep:w-full ep:py-2 ep:px-3 ep:rounded ep:text-ui-smaller ep:text-obs-muted ep:bg-transparent ep:border ep:border-obs-border ep:cursor-pointer ep:hover:bg-obs-modifier-hover ep:mt-2",
 		}).addEventListener("click", () => {
 			this.resolve({ cancelled: false, action: "leave_orphaned" });
@@ -198,7 +198,8 @@ export class OrphanedCardsActionModal extends BasePromiseModal<OrphanedCardsActi
 	}
 
 	private handleDelete(): void {
-		const confirmed = confirm(
+		// eslint-disable-next-line no-alert -- destructive operation requires explicit user confirmation
+		const confirmed = window.confirm(
 			`Are you sure you want to delete ${this.options.cards.length} flashcard${this.options.cards.length === 1 ? "" : "s"}? This cannot be undone.`
 		);
 

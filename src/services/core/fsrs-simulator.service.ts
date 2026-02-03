@@ -2,7 +2,7 @@
  * FSRS Simulator Service
  * Simulates FSRS v6 scheduling for visualization
  */
-import { FSRS, createEmptyCard, Rating, type Grade } from "ts-fsrs";
+import { FSRS, createEmptyCard, type Grade } from "ts-fsrs";
 import type { SequenceSimulation, SequenceReview } from "../../ui/simulator/types";
 import { SEQUENCE_COLORS } from "../../ui/simulator/constants";
 

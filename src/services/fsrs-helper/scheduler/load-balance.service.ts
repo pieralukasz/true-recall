@@ -4,7 +4,6 @@
  * Distributes reviews evenly across days to prevent workload spikes.
  */
 
-import type { EasyDaysConfig } from "../../../types";
 import { isEasyDay } from "./easy-days.service";
 import type {
 	SchedulerCardStore,

@@ -4,7 +4,7 @@
  */
 import type { TFile } from "obsidian";
 import { BaseComponent } from "../component.base";
-import { createActionButton, type ActionButton } from "../components";
+import { createActionButton } from "../components";
 import type { ProcessingStatus } from "../../state";
 import type { NoteFlashcardType } from "../../types";
 
@@ -109,7 +109,7 @@ export class FlashcardPanelFooter extends BaseComponent {
 			const collectBtn = buttonsWrapper.createEl("button", {
 				cls: "ep:flex-1 ep:border-none ep:py-2.5 ep:px-4 ep:rounded-md ep:cursor-pointer ep:font-semibold ep:text-ui-small ep:transition-colors ep:text-gray-800",
 			});
-			collectBtn.style.background = "linear-gradient(135deg, #fbbf24, #f59e0b)";
+			collectBtn.setCssProps({ background: "linear-gradient(135deg, #fbbf24, #f59e0b)" });
 			collectBtn.textContent = `Collect (${uncollectedCount})`;
 			this.events.addEventListener(collectBtn, "click", onCollect);
 		}

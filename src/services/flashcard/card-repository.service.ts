@@ -180,8 +180,7 @@ export class CardRepository {
 
 		// Append review to history if provided
 		if (reviewLogEntry) {
-			const history: CardReviewLogEntry[] =
-				(existing?.history as CardReviewLogEntry[] | undefined) || [];
+			const history: CardReviewLogEntry[] = existing?.history ?? [];
 			history.push(reviewLogEntry);
 			// Keep only last N entries
 			entry.history =

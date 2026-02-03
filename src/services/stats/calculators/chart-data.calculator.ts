@@ -216,10 +216,10 @@ export class ChartDataCalculator {
 			if (date < startDateStr || date > todayStr) continue;
 
 			// Calculate total reviews with rating breakdown
-			const again = (stats as ExtendedDailyStats).again ?? 0;
-			const hard = (stats as ExtendedDailyStats).hard ?? 0;
-			const good = (stats as ExtendedDailyStats).good ?? 0;
-			const easy = (stats as ExtendedDailyStats).easy ?? 0;
+			const again = stats.again ?? 0;
+			const hard = stats.hard ?? 0;
+			const good = stats.good ?? 0;
+			const easy = stats.easy ?? 0;
 
 			const total = again + hard + good + easy;
 			if (total === 0) continue;

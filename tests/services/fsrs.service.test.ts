@@ -9,7 +9,6 @@ import {
 	createNewCard,
 	createLearningCard,
 	createReviewCard,
-	createRelearningCard,
 	createMockFlashcard,
 	createDefaultFSRSSettings,
 	createMixedCardQueue,

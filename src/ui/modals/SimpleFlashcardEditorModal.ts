@@ -223,7 +223,7 @@ export class SimpleFlashcardEditorModal extends BaseModal {
 		this.isPreviewMode = !this.isPreviewMode;
 
 		if (this.isPreviewMode) {
-			this.renderPreviewMode();
+			void this.renderPreviewMode();
 		} else {
 			this.renderEditMode();
 		}
@@ -459,7 +459,7 @@ export class SimpleFlashcardEditorModal extends BaseModal {
 				text: "Save with AI",
 				cls: "ep:py-2.5 ep:px-5 ep:bg-obs-secondary ep:text-obs-normal ep:border ep:border-obs-border ep:rounded-md ep:cursor-pointer ep:font-medium ep:transition-colors ep:hover:bg-obs-modifier-hover",
 			});
-			this.saveWithAIButton.addEventListener("click", () => this.handleSaveWithAI());
+			this.saveWithAIButton.addEventListener("click", () => void this.handleSaveWithAI());
 		}
 
 		const buttonText = this.options.mode === "add" ? "Save Flashcards" : "Save Changes";

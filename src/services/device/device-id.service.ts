@@ -97,7 +97,7 @@ export class DeviceIdService {
 
         const newId = this.generateDeviceId();
         window.localStorage.setItem(DEVICE_ID_KEY, newId);
-        console.log(`[True Recall] Created new device ID: ${newId}`);
+        console.debug(`[True Recall] Created new device ID: ${newId}`);
         return newId;
     }
 

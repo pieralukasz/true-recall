@@ -132,7 +132,6 @@ export class FlashcardPanelContent extends BaseComponent {
 	private renderNoFlashcardsState(): void {
 		if (!this.element) return;
 
-		const { handlers, selectionMode } = this.props;
 
 		const stateEl = this.element.createDiv({
 			cls: "ep:py-4 ep:text-center",

@@ -3,15 +3,15 @@
  * Unified chart showing cards created and reviewed with toggleable datasets
  * Similar to Anki's "Reviews" statistics chart
  */
-import { Chart } from "chart.js";
-import type { CardsCreatedVsReviewedEntry, StatsTimeRange } from "../../../types";
+import { Chart, type ChartDataset } from "chart.js";
+import type { CardsCreatedVsReviewedEntry, FSRSFlashcardItem, StatsTimeRange } from "../../../types";
 import { ChartSection, type ChartSectionProps } from "./ChartSection";
 import type { StatsCalculatorService } from "../../../services";
 
 export interface ReviewsChartProps extends ChartSectionProps {
 	statsCalculator: StatsCalculatorService;
 	currentRange: StatsTimeRange;
-	onCardPreview?: (date: string, cards: any[]) => void;
+	onCardPreview?: (date: string, cards: FSRSFlashcardItem[]) => void;
 }
 
 interface DatasetVisibility {
@@ -47,7 +47,7 @@ export class ReviewsChart extends ChartSection<CardsCreatedVsReviewedEntry> {
 		if (this.props.currentRange === "backlog") {
 			return [];
 		}
-		return await this.props.statsCalculator.getCardsCreatedVsReviewedHistory(this.props.currentRange);
+		return this.props.statsCalculator.getCardsCreatedVsReviewedHistory(this.props.currentRange);
 	}
 
 	/**
@@ -181,7 +181,7 @@ export class ReviewsChart extends ChartSection<CardsCreatedVsReviewedEntry> {
 		const maxTicks = this.getMaxTicksForRange();
 
 		// Build datasets based on visibility
-		const datasets: any[] = [];
+		const datasets: ChartDataset<"bar", number[]>[] = [];
 
 		if (this.visibility.reviewed) {
 			datasets.push({
@@ -327,8 +327,8 @@ export class ReviewsChart extends ChartSection<CardsCreatedVsReviewedEntry> {
 	/**
 	 * Handle click on a date bar
 	 */
-	private async handleDateClick(date: string): Promise<void> {
-		const cards = await this.props.statsCalculator.getCardsDueOnDate(date);
+	private handleDateClick(date: string): void {
+		const cards = this.props.statsCalculator.getCardsDueOnDate(date);
 
 		if (this.props.onCardPreview) {
 			this.props.onCardPreview(date, cards);

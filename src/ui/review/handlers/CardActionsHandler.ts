@@ -6,7 +6,7 @@ import { App } from "obsidian";
 import { Rating } from "ts-fsrs";
 import type { ReviewStateManager } from "../../../state";
 import type { FlashcardManager, FSRSService, ReviewService, SqliteStoreService } from "../../../services";
-import type { FSRSFlashcardItem, TrueRecallSettings } from "../../../types";
+import type { TrueRecallSettings } from "../../../types";
 import { MoveCardModal, SimpleFlashcardEditorModal, flashcardToMarkdown } from "../../modals";
 import { notify } from "../../../services";
 import type TrueRecallPlugin from "../../../main";

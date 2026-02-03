@@ -74,7 +74,8 @@ export class SimulatorView extends ItemView {
 	}
 
 	getDisplayText(): string {
-		return "FSRS Simulator";
+		// eslint-disable-next-line obsidianmd/ui/sentence-case -- FSRS is an acronym
+		return "FSRS simulator";
 	}
 
 	getIcon(): string {
@@ -184,7 +185,8 @@ export class SimulatorView extends ItemView {
 
 		// Title
 		header.createEl("h2", {
-			text: "FSRS-6",
+			// eslint-disable-next-line obsidianmd/ui/sentence-case -- FSRS is an acronym
+			text: "FSRS 6",
 			cls: "ep:text-xl ep:font-bold ep:text-obs-normal ep:m-0",
 		});
 

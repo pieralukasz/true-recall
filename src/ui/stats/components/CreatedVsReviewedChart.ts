@@ -4,14 +4,14 @@
  * Shows three metrics: Created, Reviewed, Created & Reviewed Same Day
  */
 import { Chart } from "chart.js";
-import type { CardsCreatedVsReviewedEntry, StatsTimeRange } from "../../../types";
+import type { CardsCreatedVsReviewedEntry, FSRSFlashcardItem, StatsTimeRange } from "../../../types";
 import { ChartSection, type ChartSectionProps } from "./ChartSection";
 import type { StatsCalculatorService } from "../../../services";
 
 export interface CreatedVsReviewedChartProps extends ChartSectionProps {
 	statsCalculator: StatsCalculatorService;
 	currentRange: StatsTimeRange;
-	onCardPreview?: (date: string, cards: any[]) => void;
+	onCardPreview?: (date: string, cards: FSRSFlashcardItem[]) => void;
 }
 
 /**
@@ -35,7 +35,7 @@ export class CreatedVsReviewedChart extends ChartSection<CardsCreatedVsReviewedE
 		if (this.props.currentRange === "backlog") {
 			return [];
 		}
-		return await this.props.statsCalculator.getCardsCreatedVsReviewedHistory(this.props.currentRange);
+		return this.props.statsCalculator.getCardsCreatedVsReviewedHistory(this.props.currentRange);
 	}
 
 	/**
@@ -168,9 +168,9 @@ export class CreatedVsReviewedChart extends ChartSection<CardsCreatedVsReviewedE
 	/**
 	 * Handle click on a date bar
 	 */
-	private async handleDateClick(date: string): Promise<void> {
+	private handleDateClick(date: string): void {
 		// For now, open cards due on date (same as future due)
-		const cards = await this.props.statsCalculator.getCardsDueOnDate(date);
+		const cards = this.props.statsCalculator.getCardsDueOnDate(date);
 
 		if (this.props.onCardPreview) {
 			this.props.onCardPreview(date, cards);
@@ -188,7 +188,7 @@ export class CreatedVsReviewedChart extends ChartSection<CardsCreatedVsReviewedE
 	/**
 	 * Override render to show message for backlog range
 	 */
-	override async render(): Promise<void> {
+	override render(): void {
 		if (this.props.currentRange === "backlog") {
 			// Render card with message
 			this.statsCard.render();
@@ -212,6 +212,6 @@ export class CreatedVsReviewedChart extends ChartSection<CardsCreatedVsReviewedE
 
 		// Call parent render for normal flow
 		super.render();
-		await this.refresh();
+		void this.refresh();
 	}
 }
