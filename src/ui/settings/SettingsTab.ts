@@ -2,7 +2,7 @@
  * Settings Tab UI
  * Plugin settings configuration interface
  */
-import { App, PluginSettingTab, Setting, TFile } from "obsidian";
+import { App, PluginSettingTab, Setting } from "obsidian";
 import { notify } from "../../services";
 import type TrueRecallPlugin from "../../main";
 import {
@@ -126,7 +126,7 @@ export class TrueRecallSettingTab extends PluginSettingTab {
 
 	private renderGeneralTab(container: HTMLElement): void {
 		// ===== Review Interface Section =====
-		container.createEl("h2", { text: "Review Interface" });
+		new Setting(container).setName("Review interface").setHeading();
 
 		new Setting(container)
 			.setName("Review mode")
@@ -183,9 +183,8 @@ export class TrueRecallSettingTab extends PluginSettingTab {
 
 		new Setting(container)
 			.setName("Continuous custom reviews")
-			.setDesc(
-				"Show 'Next Session' button after completing a custom review session"
-			)
+			// eslint-disable-next-line obsidianmd/ui/sentence-case -- 'Next session' is a button name
+			.setDesc("Show 'Next session' button after completing a custom review session")
 			.addToggle((toggle) =>
 				toggle
 					.setValue(this.plugin.settings.continuousCustomReviews)
@@ -196,7 +195,7 @@ export class TrueRecallSettingTab extends PluginSettingTab {
 			);
 
 		// ===== Daily Limits Section =====
-		container.createEl("h2", { text: "Daily Limits" });
+		new Setting(container).setName("Daily limits").setHeading();
 
 		new Setting(container)
 			.setName("New cards per day")
@@ -227,11 +226,11 @@ export class TrueRecallSettingTab extends PluginSettingTab {
 			);
 
 		// ===== Day Boundary Section =====
-		container.createEl("h2", { text: "Day Boundary" });
+		new Setting(container).setName("Day boundary").setHeading();
 
 		new Setting(container)
 			.setName("Next day starts at")
-			.setDesc("Hour when a new day begins (0-23). Default: 4 (4:00 AM)")
+			.setDesc("Hour when a new day begins (0-23). Default: 4 (4:00 am)")
 			.addSlider((slider) =>
 				slider
 					.setLimits(0, 23, 1)
@@ -244,13 +243,12 @@ export class TrueRecallSettingTab extends PluginSettingTab {
 			);
 
 		// ===== Flashcard Collection Section =====
-		container.createEl("h2", { text: "Flashcard Collection" });
+		new Setting(container).setName("Flashcard collection").setHeading();
 
 		new Setting(container)
 			.setName("Remove content after collecting")
-			.setDesc(
-				"When enabled, removes the entire flashcard (Q+A) from markdown after collecting. When disabled, only removes the #flashcard tag."
-			)
+			// eslint-disable-next-line obsidianmd/ui/sentence-case -- Q+A and #flashcard are technical terms
+			.setDesc("Removes the entire flashcard (Q+A) from markdown after collecting. When disabled, only removes the #flashcard tag")
 			.addToggle((toggle) =>
 				toggle
 					.setValue(
@@ -264,7 +262,7 @@ export class TrueRecallSettingTab extends PluginSettingTab {
 			);
 
 		// ===== Floating Generate Button Section =====
-		container.createEl("h2", { text: "Floating Generate Button" });
+		new Setting(container).setName("Floating generate button").setHeading();
 
 		new Setting(container)
 			.setName("Enable floating button")
@@ -347,19 +345,25 @@ export class TrueRecallSettingTab extends PluginSettingTab {
 
 	private renderAITab(container: HTMLElement): void {
 		// ===== AI Generation Section =====
-		container.createEl("h2", { text: "AI Generation (OpenRouter)" });
+		// eslint-disable-next-line obsidianmd/ui/sentence-case -- OpenRouter is a proper noun
+		new Setting(container).setName("AI generation (OpenRouter)").setHeading();
 
 		const apiKeyInfo = container.createDiv({
 			cls: "setting-item-description",
 		});
-		apiKeyInfo.innerHTML = `
-            <p>OpenRouter provides access to multiple AI models through a single API.</p>
-            <p><a href="https://openrouter.ai/keys" target="_blank">Get your API key at openrouter.ai/keys</a></p>
-        `;
+		// eslint-disable-next-line obsidianmd/ui/sentence-case -- OpenRouter is a proper noun
+		apiKeyInfo.createEl("p", { text: "OpenRouter provides access to multiple AI models through a single API." });
+		const linkP = apiKeyInfo.createEl("p");
+		linkP.createEl("a", {
+			text: "Get your API key at openrouter.ai/keys",
+			href: "https://openrouter.ai/keys",
+			attr: { target: "_blank" }
+		});
 
 		new Setting(container)
 			.setName("API key")
-			.setDesc("Your OpenRouter API key for flashcard generation")
+			// eslint-disable-next-line obsidianmd/ui/sentence-case -- OpenRouter is a proper noun
+			.setDesc("Your OpenRouter API key for flashcard generation.")
 			.addText((text) => {
 				text.inputEl.type = "password";
 				text.inputEl.addClass("ep:w-[300px]");
@@ -403,21 +407,18 @@ export class TrueRecallSettingTab extends PluginSettingTab {
 			Array.from(selectEl.options).forEach((option) => {
 				if (option.value.startsWith("__group_")) {
 					option.disabled = true;
-					option.style.fontWeight = "bold";
-					option.style.color = "var(--text-muted)";
+					option.addClass("ep:font-bold ep:text-obs-muted");
 				}
 			});
 		});
 
 		// ===== Custom Prompts Section =====
-		container.createEl("h2", { text: "Custom Prompts" });
+		new Setting(container).setName("Custom prompts").setHeading();
 
 		const promptsInfo = container.createDiv({
 			cls: "setting-item-description",
 		});
-		promptsInfo.innerHTML = `
-            <p>Customize the AI prompts used for flashcard generation. Leave empty to use the default prompts.</p>
-        `;
+		promptsInfo.createEl("p", { text: "Customize the AI prompts used for flashcard generation. Leave empty to use the default prompts." });
 
 		new Setting(container)
 			.setName("Flashcard generation prompt")
@@ -426,9 +427,7 @@ export class TrueRecallSettingTab extends PluginSettingTab {
 			)
 			.addTextArea((text) => {
 				text.inputEl.rows = 8;
-				text.inputEl.style.width = "100%";
-				text.inputEl.style.fontFamily = "monospace";
-				text.inputEl.style.fontSize = "12px";
+				text.inputEl.addClass("ep:w-full ep:font-mono ep:text-ui-small");
 				text.setPlaceholder(this.truncatePrompt(SYSTEM_PROMPT, 500))
 					.setValue(this.plugin.settings.customGeneratePrompt)
 					.onChange(async (value) => {
@@ -441,7 +440,7 @@ export class TrueRecallSettingTab extends PluginSettingTab {
 			.setName("Reset prompt to default")
 			.setDesc("Clear custom prompt and use the built-in default")
 			.addButton((button) =>
-				button.setButtonText("Reset to Default").onClick(async () => {
+				button.setButtonText("Reset to default").onClick(async () => {
 					this.plugin.settings.customGeneratePrompt = "";
 					await this.plugin.saveSettings();
 					notify().success("Prompt reset to default");
@@ -452,7 +451,7 @@ export class TrueRecallSettingTab extends PluginSettingTab {
 
 	private renderSchedulingTab(container: HTMLElement): void {
 		// ===== Learning Steps Section =====
-		container.createEl("h2", { text: "Learning Steps" });
+		new Setting(container).setName("Learning steps").setHeading();
 
 		new Setting(container)
 			.setName("Learning steps (minutes)")
@@ -509,7 +508,7 @@ export class TrueRecallSettingTab extends PluginSettingTab {
 
 		new Setting(container)
 			.setName("Easy interval (days)")
-			.setDesc("Interval when pressing Easy on new card. Default: 4")
+			.setDesc("Interval when pressing easy on new card. Default: 4")
 			.addText((text) =>
 				text
 					.setPlaceholder("4")
@@ -522,7 +521,7 @@ export class TrueRecallSettingTab extends PluginSettingTab {
 			);
 
 		// ===== Display Order Section =====
-		container.createEl("h2", { text: "Display Order" });
+		new Setting(container).setName("Display order").setHeading();
 
 		new Setting(container)
 			.setName("New card order")
@@ -551,6 +550,7 @@ export class TrueRecallSettingTab extends PluginSettingTab {
 				dropdown.addOption("due-date", "By due date");
 				dropdown.addOption("random", "Random");
 				dropdown.addOption("due-date-random", "Due date, then random");
+				// eslint-disable-next-line obsidianmd/ui/sentence-case -- R is a technical term (Retrievability)
 				dropdown.addOption("by-retrievability", "By retrievability (lowest R first)");
 				dropdown.setValue(this.plugin.settings.reviewOrder);
 				dropdown.onChange(async (value) => {
@@ -579,7 +579,8 @@ export class TrueRecallSettingTab extends PluginSettingTab {
 
 	private renderFSRSTab(container: HTMLElement): void {
 		// ===== FSRS Algorithm Section =====
-		container.createEl("h2", { text: "FSRS Algorithm" });
+		// eslint-disable-next-line obsidianmd/ui/sentence-case -- FSRS is an acronym
+		new Setting(container).setName("FSRS algorithm").setHeading();
 
 		new Setting(container)
 			.setName("Desired retention")
@@ -619,25 +620,32 @@ export class TrueRecallSettingTab extends PluginSettingTab {
 			);
 
 		// ===== FSRS Parameters Section =====
-		container.createEl("h2", { text: "FSRS Parameters" });
+		// eslint-disable-next-line obsidianmd/ui/sentence-case -- FSRS is an acronym
+		new Setting(container).setName("FSRS parameters").setHeading();
 
 		const totalReviews = this.plugin.cardStore?.stats.getTotalReviewCount() ?? 0;
 		const lastOpt = this.plugin.settings.lastOptimization;
 		const lastOptCount = this.plugin.settings.lastOptimizationReviewCount;
 
 		const optimizerInfo = container.createDiv({ cls: "setting-item-description" });
-		optimizerInfo.innerHTML = `
-			<p>FSRS parameters affect how cards are scheduled. You can optimize them based on your review history.</p>
-			<p><strong>Current reviews:</strong> ${totalReviews.toLocaleString()} ${totalReviews < FSRS_CONFIG.minReviewsForOptimization ? `(need ${FSRS_CONFIG.minReviewsForOptimization}+ for optimization)` : "(ready for optimization)"}</p>
-			${lastOpt ? `<p><strong>Last optimized:</strong> ${new Date(lastOpt).toLocaleDateString()} (${lastOptCount?.toLocaleString() ?? "unknown"} reviews used)</p>` : ""}
-		`;
+		// eslint-disable-next-line obsidianmd/ui/sentence-case -- FSRS is an acronym
+		optimizerInfo.createEl("p", { text: "FSRS parameters affect how cards are scheduled. You can optimize them based on your review history." });
+		const reviewsP = optimizerInfo.createEl("p");
+		reviewsP.createEl("strong", { text: "Current reviews: " });
+		reviewsP.appendText(`${totalReviews.toLocaleString()} ${totalReviews < FSRS_CONFIG.minReviewsForOptimization ? `(need ${FSRS_CONFIG.minReviewsForOptimization}+ for optimization)` : "(ready for optimization)"}`);
+		if (lastOpt) {
+			const lastOptP = optimizerInfo.createEl("p");
+			lastOptP.createEl("strong", { text: "Last optimized: " });
+			lastOptP.appendText(`${new Date(lastOpt).toLocaleDateString()} (${lastOptCount?.toLocaleString() ?? "unknown"} reviews used)`);
+		}
 
 		new Setting(container)
 			.setName("Optimize parameters")
+			// eslint-disable-next-line obsidianmd/ui/sentence-case -- FSRS is an acronym
 			.setDesc("Analyze your review history to find optimal FSRS weights")
 			.addButton((button) =>
 				button
-					.setButtonText("Optimize Now")
+					.setButtonText("Optimize now")
 					.setDisabled(totalReviews < FSRS_CONFIG.minReviewsForOptimization)
 					.onClick(async () => {
 						button.setButtonText("Optimizing...");
@@ -656,15 +664,15 @@ export class TrueRecallSettingTab extends PluginSettingTab {
 								notify().error("Optimization failed: insufficient data");
 							}
 						} catch (err) {
-							notify().error(`Optimization failed: ${err}`);
+							notify().error(`Optimization failed: ${String(err)}`);
 						} finally {
-							button.setButtonText("Optimize Now");
+							button.setButtonText("Optimize now");
 							button.setDisabled(totalReviews < FSRS_CONFIG.minReviewsForOptimization);
 						}
 					})
 			)
 			.addButton((button) =>
-				button.setButtonText("Reset to Defaults").onClick(async () => {
+				button.setButtonText("Reset to defaults").onClick(async () => {
 					this.plugin.settings.fsrsWeights = null;
 					this.plugin.settings.lastOptimization = null;
 					this.plugin.settings.lastOptimizationReviewCount = null;
@@ -679,16 +687,14 @@ export class TrueRecallSettingTab extends PluginSettingTab {
 		const weightsString = currentWeights ? currentWeights.join(", ") : "";
 
 		new Setting(container)
+			// eslint-disable-next-line obsidianmd/ui/sentence-case -- FSRS is an acronym
 			.setName("Custom FSRS weights")
-			.setDesc(
-				"Enter 17, 19, or 21 comma-separated values (from FSRS optimizer). Leave empty to use defaults."
-			)
+			// eslint-disable-next-line obsidianmd/ui/sentence-case -- FSRS is an acronym
+			.setDesc("Enter 17, 19, or 21 comma-separated values (from FSRS optimizer). Leave empty to use defaults")
 			.addTextArea((text) => {
 				text.inputEl.rows = 3;
 				text.inputEl.cols = 50;
-				text.inputEl.style.width = "100%";
-				text.inputEl.style.fontFamily = "monospace";
-				text.inputEl.style.fontSize = "12px";
+				text.inputEl.addClass("ep:w-full ep:font-mono ep:text-ui-small");
 				text.setPlaceholder("0.40255, 1.18385, 3.173, 15.69105, ...")
 					.setValue(weightsString)
 					.onChange(async (value) => {
@@ -726,12 +732,10 @@ export class TrueRecallSettingTab extends PluginSettingTab {
 			});
 
 		// ===== Easy Days Section =====
-		container.createEl("h2", { text: "Easy Days" });
+		new Setting(container).setName("Easy days").setHeading();
 
 		const easyDaysInfo = container.createDiv({ cls: "setting-item-description" });
-		easyDaysInfo.innerHTML = `
-			<p>Reduce your review workload on specific days (recurring weekdays or specific dates). Cards due on easy days will be moved to adjacent days.</p>
-		`;
+		easyDaysInfo.createEl("p", { text: "Reduce your review workload on specific days (recurring weekdays or specific dates). Cards due on easy days will be moved to adjacent days." });
 
 		// Summary of current easy days
 		const easyDays = this.plugin.settings.easyDays;
@@ -788,7 +792,7 @@ export class TrueRecallSettingTab extends PluginSettingTab {
 				})
 			)
 			.addButton((button) =>
-				button.setButtonText("Apply Now").onClick(async () => {
+				button.setButtonText("Apply now").onClick(async () => {
 					const applyResult = await this.plugin.fsrsHelper?.applyEasyDays({ dryRun: false });
 					if (applyResult && applyResult.affectedCount > 0) {
 						this.plugin.undoService?.push({
@@ -814,7 +818,7 @@ export class TrueRecallSettingTab extends PluginSettingTab {
 			);
 
 		// ===== Load Balance Section =====
-		container.createEl("h2", { text: "Load Balance" });
+		new Setting(container).setName("Load balance").setHeading();
 
 		new Setting(container)
 			.setName("Enable load balancing")
@@ -860,7 +864,7 @@ export class TrueRecallSettingTab extends PluginSettingTab {
 			.setName("Balance workload now")
 			.setDesc("Redistribute reviews for the next 30 days")
 			.addButton((button) =>
-				button.setButtonText("Balance Now").onClick(async () => {
+				button.setButtonText("Balance now").onClick(async () => {
 					button.setButtonText("Balancing...");
 					button.setDisabled(true);
 					try {
@@ -886,21 +890,19 @@ export class TrueRecallSettingTab extends PluginSettingTab {
 							notify().info("No cards needed balancing");
 						}
 					} catch (err) {
-						notify().error(`Balance failed: ${err}`);
+						notify().error(`Balance failed: ${String(err)}`);
 					} finally {
-						button.setButtonText("Balance Now");
+						button.setButtonText("Balance now");
 						button.setDisabled(false);
 					}
 				})
 			);
 
 		// ===== Sibling Dispersal Section =====
-		container.createEl("h2", { text: "Sibling Dispersal" });
+		new Setting(container).setName("Sibling dispersal").setHeading();
 
 		const siblingInfo = container.createDiv({ cls: "setting-item-description" });
-		siblingInfo.innerHTML = `
-			<p>Cards from the same source note are "siblings". Spreading them apart helps avoid interference during review.</p>
-		`;
+		siblingInfo.createEl("p", { text: "Cards from the same source note are \"siblings\". Spreading them apart helps avoid interference during review." });
 
 		new Setting(container)
 			.setName("Enable sibling dispersal")
@@ -932,7 +934,7 @@ export class TrueRecallSettingTab extends PluginSettingTab {
 			.setName("Disperse siblings now")
 			.setDesc("Spread out siblings that are currently too close")
 			.addButton((button) =>
-				button.setButtonText("Disperse Now").onClick(async () => {
+				button.setButtonText("Disperse now").onClick(async () => {
 					button.setButtonText("Dispersing...");
 					button.setDisabled(true);
 					try {
@@ -958,21 +960,19 @@ export class TrueRecallSettingTab extends PluginSettingTab {
 							notify().info("No siblings needed dispersing");
 						}
 					} catch (err) {
-						notify().error(`Disperse failed: ${err}`);
+						notify().error(`Disperse failed: ${String(err)}`);
 					} finally {
-						button.setButtonText("Disperse Now");
+						button.setButtonText("Disperse now");
 						button.setDisabled(false);
 					}
 				})
 			);
 
 		// ===== Scheduled Breaks Section =====
-		container.createEl("h2", { text: "Scheduled Breaks" });
+		new Setting(container).setName("Scheduled breaks").setHeading();
 
 		const breaksInfo = container.createDiv({ cls: "setting-item-description" });
-		breaksInfo.innerHTML = `
-			<p>Schedule breaks (vacations) to redistribute reviews and prevent backlog accumulation.</p>
-		`;
+		breaksInfo.createEl("p", { text: "Schedule breaks (vacations) to redistribute reviews and prevent backlog accumulation." });
 
 		const breaks = this.plugin.settings.scheduledBreaks;
 		if (breaks.length > 0) {
@@ -988,10 +988,9 @@ export class TrueRecallSettingTab extends PluginSettingTab {
 					text: "Delete",
 					cls: "ep:text-ui-small",
 				});
-				deleteBtn.addEventListener("click", async () => {
+				deleteBtn.addEventListener("click", () => {
 					this.plugin.settings.scheduledBreaks = breaks.filter((_, i) => i !== index);
-					await this.plugin.saveSettings();
-					this.display();
+					void this.plugin.saveSettings().then(() => this.display());
 				});
 			});
 		}
@@ -1000,9 +999,11 @@ export class TrueRecallSettingTab extends PluginSettingTab {
 			.setName("Add scheduled break")
 			.setDesc("Schedule a break period")
 			.addButton((button) =>
-				button.setButtonText("Add Break...").onClick(() => {
+				button.setButtonText("Add break...").onClick(() => {
 					// Simple prompt for now - could be a modal
+					// eslint-disable-next-line no-alert
 					const startDate = prompt("Start date (YYYY-MM-DD):");
+					// eslint-disable-next-line no-alert
 					const endDate = prompt("End date (YYYY-MM-DD):");
 					if (startDate && endDate) {
 						const newBreak = {
@@ -1016,20 +1017,20 @@ export class TrueRecallSettingTab extends PluginSettingTab {
 							...this.plugin.settings.scheduledBreaks,
 							newBreak,
 						];
-						this.plugin.saveSettings();
-						this.display();
+						void this.plugin.saveSettings().then(() => this.display());
 					}
 				})
 			);
 
 		// ===== Bulk Operations Section =====
-		container.createEl("h2", { text: "Bulk Operations" });
+		new Setting(container).setName("Bulk operations").setHeading();
 
 		new Setting(container)
 			.setName("Reschedule all cards")
+			// eslint-disable-next-line obsidianmd/ui/sentence-case -- FSRS is an acronym
 			.setDesc("Recalculate all intervals with current FSRS weights (preview first)")
 			.addButton((button) =>
-				button.setButtonText("Preview Reschedule").onClick(async () => {
+				button.setButtonText("Preview reschedule").onClick(async () => {
 					button.setButtonText("Calculating...");
 					button.setDisabled(true);
 					try {
@@ -1038,9 +1039,8 @@ export class TrueRecallSettingTab extends PluginSettingTab {
 							dryRun: true,
 						});
 						if (previewResult && previewResult.affectedCount > 0) {
-							const confirmed = window.confirm(
-								`This will reschedule ${previewResult.affectedCount} cards. Proceed?`
-							);
+							// eslint-disable-next-line no-alert
+							const confirmed = window.confirm(`This will reschedule ${previewResult.affectedCount} cards. Proceed?`);
 							if (confirmed) {
 								const result = await this.plugin.fsrsHelper?.rescheduleCards({
 									scope: "all",
@@ -1069,9 +1069,9 @@ export class TrueRecallSettingTab extends PluginSettingTab {
 							notify().info("No cards to reschedule");
 						}
 					} catch (err) {
-						notify().error(`Reschedule failed: ${err}`);
+						notify().error(`Reschedule failed: ${String(err)}`);
 					} finally {
-						button.setButtonText("Preview Reschedule");
+						button.setButtonText("Preview reschedule");
 						button.setDisabled(false);
 					}
 				})
@@ -1079,6 +1079,7 @@ export class TrueRecallSettingTab extends PluginSettingTab {
 
 		new Setting(container)
 			.setName("Postpone all due cards")
+			// eslint-disable-next-line obsidianmd/ui/sentence-case -- N is a variable placeholder
 			.setDesc("Push all due cards forward by N days")
 			.addText((text) =>
 				text.setPlaceholder("7").onChange(() => {})
@@ -1117,7 +1118,7 @@ export class TrueRecallSettingTab extends PluginSettingTab {
 							notify().info("No cards to postpone");
 						}
 					} catch (err) {
-						notify().error(`Postpone failed: ${err}`);
+						notify().error(`Postpone failed: ${String(err)}`);
 					} finally {
 						button.setButtonText("Postpone");
 						button.setDisabled(false);
@@ -1128,7 +1129,7 @@ export class TrueRecallSettingTab extends PluginSettingTab {
 
 	private renderDataTab(container: HTMLElement): void {
 		// ===== Device Database Section =====
-		container.createEl("h2", { text: "Device Database" });
+		new Setting(container).setName("Device database").setHeading();
 
 		const deviceId = this.plugin.deviceIdService?.getDeviceId() || "unknown";
 		const deviceLabel = this.plugin.deviceIdService?.getDeviceLabel();
@@ -1136,16 +1137,19 @@ export class TrueRecallSettingTab extends PluginSettingTab {
 		const deviceInfo = container.createDiv({
 			cls: "setting-item-description",
 		});
-		deviceInfo.innerHTML = `
-			<p>Device ID: <code>${deviceId}</code></p>
-			<p>Database: <code>.true-recall/true-recall-${deviceId}.db</code></p>
-		`;
+		const deviceIdP = deviceInfo.createEl("p");
+		deviceIdP.appendText("Device ID: ");
+		deviceIdP.createEl("code", { text: deviceId });
+		const dbP = deviceInfo.createEl("p");
+		dbP.appendText("Database: ");
+		dbP.createEl("code", { text: `.true-recall/true-recall-${deviceId}.db` });
 
 		new Setting(container)
 			.setName("Device name")
 			.setDesc("Optional name (stored locally)")
 			.addText((text) => {
-				text.setPlaceholder("e.g. MacBook Pro, iPhone")
+				// eslint-disable-next-line obsidianmd/ui/sentence-case -- placeholder example text
+				text.setPlaceholder("e.g., work laptop, phone")
 					.setValue(deviceLabel || "")
 					.onChange((value) => {
 						this.plugin.deviceIdService?.setDeviceLabel(value);
@@ -1162,15 +1166,15 @@ export class TrueRecallSettingTab extends PluginSettingTab {
 			);
 
 		// ===== Database Backup Section =====
-		container.createEl("h2", { text: "Database Backup" });
+		new Setting(container).setName("Database backup").setHeading();
 
 		const backupInfo = container.createDiv({
 			cls: "setting-item-description",
 		});
-		backupInfo.innerHTML = `
-            <p>Create backups of your flashcard database to prevent data loss.</p>
-            <p>Backups are stored in <code>.true-recall/backups/</code></p>
-        `;
+		backupInfo.createEl("p", { text: "Create backups of your flashcard database to prevent data loss." });
+		const backupPathP = backupInfo.createEl("p");
+		backupPathP.appendText("Backups are stored in ");
+		backupPathP.createEl("code", { text: ".true-recall/backups/" });
 
 		new Setting(container)
 			.setName("Automatic backup on load")
@@ -1186,9 +1190,8 @@ export class TrueRecallSettingTab extends PluginSettingTab {
 
 		new Setting(container)
 			.setName("Maximum backups to keep (legacy)")
-			.setDesc(
-				"Simple retention: keep last N backups. Use Smart Retention below for better control."
-			)
+			// eslint-disable-next-line obsidianmd/ui/sentence-case -- N is a variable placeholder
+			.setDesc("Simple retention: keep last N backups. Use smart retention below for better control.")
 			.addText((text) =>
 				text
 					.setPlaceholder("10")
@@ -1201,15 +1204,13 @@ export class TrueRecallSettingTab extends PluginSettingTab {
 			);
 
 		// ===== Background Backup Section =====
-		container.createEl("h2", { text: "Background Backup" });
+		new Setting(container).setName("Background backup").setHeading();
 
 		const bgBackupInfo = container.createDiv({
 			cls: "setting-item-description",
 		});
-		bgBackupInfo.innerHTML = `
-			<p>Automatic periodic backups run in the background to protect your data.</p>
-			<p>Smart retention keeps recent backups densely and older ones sparsely (like Time Machine).</p>
-		`;
+		bgBackupInfo.createEl("p", { text: "Automatic periodic backups run in the background to protect your data." });
+		bgBackupInfo.createEl("p", { text: "Smart retention keeps recent backups densely and older ones sparsely." });
 
 		new Setting(container)
 			.setName("Enable periodic backups")
@@ -1266,20 +1267,21 @@ export class TrueRecallSettingTab extends PluginSettingTab {
 			);
 
 		// ===== Smart Retention Section =====
-		container.createEl("h2", { text: "Smart Retention" });
+		new Setting(container).setName("Smart retention").setHeading();
 
 		const retentionInfo = container.createDiv({
 			cls: "setting-item-description",
 		});
 		const { hourlyBackupsToKeep, dailyBackupsToKeep, weeklyBackupsToKeep } =
 			this.plugin.settings.retentionPolicy;
-		retentionInfo.innerHTML = `
-			<p>Multi-tier retention keeps recent backups densely and older ones sparsely.</p>
-			<p>Current policy: <strong>${hourlyBackupsToKeep}h / ${dailyBackupsToKeep}d / ${weeklyBackupsToKeep}w</strong></p>
-		`;
+		retentionInfo.createEl("p", { text: "Multi-tier retention keeps recent backups densely and older ones sparsely." });
+		const policyP = retentionInfo.createEl("p");
+		policyP.appendText("Current policy: ");
+		policyP.createEl("strong", { text: `${hourlyBackupsToKeep}h / ${dailyBackupsToKeep}d / ${weeklyBackupsToKeep}w` });
 
 		new Setting(container)
 			.setName("Hourly backups")
+			// eslint-disable-next-line obsidianmd/ui/sentence-case -- N is a variable placeholder
 			.setDesc("Keep one backup per hour for the last N hours (0 = disabled)")
 			.addSlider((slider) =>
 				slider
@@ -1295,6 +1297,7 @@ export class TrueRecallSettingTab extends PluginSettingTab {
 
 		new Setting(container)
 			.setName("Daily backups")
+			// eslint-disable-next-line obsidianmd/ui/sentence-case -- N is a variable placeholder
 			.setDesc("Keep one backup per day for the last N days (0 = disabled)")
 			.addSlider((slider) =>
 				slider
@@ -1310,6 +1313,7 @@ export class TrueRecallSettingTab extends PluginSettingTab {
 
 		new Setting(container)
 			.setName("Weekly backups")
+			// eslint-disable-next-line obsidianmd/ui/sentence-case -- N is a variable placeholder
 			.setDesc("Keep one backup per week for the last N weeks (0 = disabled)")
 			.addSlider((slider) =>
 				slider
@@ -1337,22 +1341,21 @@ export class TrueRecallSettingTab extends PluginSettingTab {
 				? new Date(status.nextScheduledBackup).toLocaleString()
 				: "Not scheduled";
 
-			statusDiv.innerHTML = `
-				<p><strong>Backup Status:</strong></p>
-				<p>Last backup: ${lastBackup}</p>
-				<p>Next scheduled: ${nextBackup}</p>
-				<p>Reviews since last backup: ${status.reviewsSinceLastBackup}</p>
-			`;
+			const statusTitleP = statusDiv.createEl("p");
+			statusTitleP.createEl("strong", { text: "Backup status:" });
+			statusDiv.createEl("p", { text: `Last backup: ${lastBackup}` });
+			statusDiv.createEl("p", { text: `Next scheduled: ${nextBackup}` });
+			statusDiv.createEl("p", { text: `Reviews since last backup: ${status.reviewsSinceLastBackup}` });
 		}
 
 		// ===== Manual Backup Actions =====
-		container.createEl("h2", { text: "Manual Backup" });
+		new Setting(container).setName("Manual backup").setHeading();
 
 		new Setting(container)
 			.setName("Create backup now")
 			.setDesc("Manually create a backup of the current database")
 			.addButton((button) =>
-				button.setButtonText("Create Backup").onClick(async () => {
+				button.setButtonText("Create backup").onClick(async () => {
 					await this.plugin.createManualBackup();
 				})
 			);
@@ -1371,8 +1374,8 @@ export class TrueRecallSettingTab extends PluginSettingTab {
 					})
 			);
 
-		// ===== Content Settings Section =====
-		container.createEl("h2", { text: "Content Settings" });
+		// ===== Content Section =====
+		new Setting(container).setName("Content").setHeading();
 
 		// Excluded folders
 		new Setting(container)
@@ -1382,6 +1385,7 @@ export class TrueRecallSettingTab extends PluginSettingTab {
 			)
 			.addText((text) =>
 				text
+					// eslint-disable-next-line obsidianmd/ui/sentence-case -- placeholder example text
 					.setPlaceholder("templates, archive")
 					.setValue(this.plugin.settings.excludedFolders.join(", "))
 					.onChange(async (value) => {
@@ -1397,19 +1401,18 @@ export class TrueRecallSettingTab extends PluginSettingTab {
 	}
 
 	private renderSyncTab(container: HTMLElement): void {
-		// ===== True Recall Cloud Header =====
-		container.createEl("h2", { text: "True Recall Cloud" });
+		// ===== Cloud sync Header =====
+		new Setting(container).setName("Cloud sync").setHeading();
 
 		const cloudInfo = container.createDiv({
 			cls: "setting-item-description",
 		});
-		cloudInfo.innerHTML = `
-			<p>Synchronize your flashcards across devices with True Recall Cloud.</p>
-			<p>Your data is encrypted and secure.</p>
-		`;
+		// eslint-disable-next-line obsidianmd/ui/sentence-case -- True Recall Cloud is a proper noun
+		cloudInfo.createEl("p", { text: "Synchronize your flashcards across devices with True Recall Cloud." });
+		cloudInfo.createEl("p", { text: "Your data is encrypted and secure." });
 
 		// ===== Account Section =====
-		container.createEl("h2", { text: "Account" });
+		new Setting(container).setName("Account").setHeading();
 
 		const authContainer = container.createDiv({
 			cls: "ep:mt-4",
@@ -1442,22 +1445,23 @@ export class TrueRecallSettingTab extends PluginSettingTab {
 			const statusDiv = container.createDiv({
 				cls: "ep:flex ep:items-center ep:gap-2 ep:p-3 ep:bg-obs-secondary ep:rounded-md ep:mb-4",
 			});
-			statusDiv.innerHTML = `
-				<span class="ep:w-2 ep:h-2 ep:rounded-full ep:bg-green-500 ep:shadow-[0_0_6px_theme(colors.green.500)]"></span>
-				<span>Connected to True Recall Cloud</span>
-			`;
+			statusDiv.createSpan({ cls: "ep:w-2 ep:h-2 ep:rounded-full ep:bg-green-500 ep:shadow-[0_0_6px_theme(colors.green.500)]" });
+			statusDiv.createSpan({ text: "Connected to True Recall Cloud" });
 
 			const userInfo = container.createDiv({
 				cls: "setting-item-description",
 			});
-			userInfo.innerHTML = `<p>Signed in as: <strong>${authState.user.email}</strong></p>`;
+			const userP = userInfo.createEl("p");
+			userP.appendText("Signed in as: ");
+			userP.createEl("strong", { text: authState.user.email });
 
 			new Setting(container)
 				.setName("Sign out")
+				// eslint-disable-next-line obsidianmd/ui/sentence-case -- True Recall Cloud is a proper noun
 				.setDesc("Sign out of your True Recall Cloud account")
 				.addButton((button) =>
 					button
-						.setButtonText("Sign Out")
+						.setButtonText("Sign out")
 						.setWarning()
 						.onClick(async () => {
 							const result = await authService.signOut();
@@ -1494,6 +1498,7 @@ export class TrueRecallSettingTab extends PluginSettingTab {
 			.setName("Email")
 			.addText((text) => {
 				text.inputEl.type = "email";
+				// eslint-disable-next-line obsidianmd/ui/sentence-case -- email placeholder
 				text.setPlaceholder("your@email.com").onChange((value) => {
 					emailValue = value;
 				});
@@ -1518,7 +1523,7 @@ export class TrueRecallSettingTab extends PluginSettingTab {
 		});
 
 		const signupBtn = buttonContainer.createEl("button", {
-			text: "Sign Up",
+			text: "Sign up",
 		});
 
 		const setStatus = (message: string, isError: boolean): void => {
@@ -1535,7 +1540,7 @@ export class TrueRecallSettingTab extends PluginSettingTab {
 			}
 		};
 
-		loginBtn.addEventListener("click", async () => {
+		loginBtn.addEventListener("click", () => {
 			if (!emailValue || !passwordValue) {
 				setStatus("Please enter email and password", true);
 				return;
@@ -1551,20 +1556,20 @@ export class TrueRecallSettingTab extends PluginSettingTab {
 			signupBtn.disabled = true;
 			setStatus("Logging in...", false);
 
-			const result = await authService.signIn(emailValue, passwordValue);
-
-			if (result.success) {
-				notify().success("Logged in successfully");
-				container.empty();
-				this.renderAuthSection(container);
-			} else {
-				setStatus(result.error ?? "Login failed", true);
-				loginBtn.disabled = false;
-				signupBtn.disabled = false;
-			}
+			void authService.signIn(emailValue, passwordValue).then((result) => {
+				if (result.success) {
+					notify().success("Logged in successfully");
+					container.empty();
+					this.renderAuthSection(container);
+				} else {
+					setStatus(result.error ?? "Login failed", true);
+					loginBtn.disabled = false;
+					signupBtn.disabled = false;
+				}
+			});
 		});
 
-		signupBtn.addEventListener("click", async () => {
+		signupBtn.addEventListener("click", () => {
 			if (!emailValue || !passwordValue) {
 				setStatus("Please enter email and password", true);
 				return;
@@ -1580,31 +1585,26 @@ export class TrueRecallSettingTab extends PluginSettingTab {
 			signupBtn.disabled = true;
 			setStatus("Creating account...", false);
 
-			const result = await authService.signUp(emailValue, passwordValue);
-
-			if (result.success) {
-				// Auto-login after signup
-				const loginResult = await authService.signIn(
-					emailValue,
-					passwordValue
-				);
-				if (loginResult.success) {
-					notify().success("Account created and logged in");
-					container.empty();
-					this.renderAuthSection(container);
+			void authService.signUp(emailValue, passwordValue).then((result) => {
+				if (result.success) {
+					// Auto-login after signup
+					void authService.signIn(emailValue, passwordValue).then((loginResult) => {
+						if (loginResult.success) {
+							notify().success("Account created and logged in");
+							container.empty();
+							this.renderAuthSection(container);
+						} else {
+							setStatus("Account created. Please log in.", false);
+							loginBtn.disabled = false;
+							signupBtn.disabled = false;
+						}
+					});
 				} else {
-					setStatus(
-						"Account created. Please log in.",
-						false
-					);
+					setStatus(result.error ?? "Sign up failed", true);
 					loginBtn.disabled = false;
 					signupBtn.disabled = false;
 				}
-			} else {
-				setStatus(result.error ?? "Sign up failed", true);
-				loginBtn.disabled = false;
-				signupBtn.disabled = false;
-			}
+			});
 		});
 	}
 
@@ -1617,7 +1617,7 @@ export class TrueRecallSettingTab extends PluginSettingTab {
 			return;
 		}
 
-		container.createEl("h3", { text: "Synchronization" });
+		new Setting(container).setName("Synchronization").setHeading();
 
 		// Last sync info
 		const lastSyncTimestamp = syncService.getLastSyncTimestamp();
@@ -1676,11 +1676,11 @@ export class TrueRecallSettingTab extends PluginSettingTab {
 						} else if (status.isFirstSync) {
 							// First sync - auto-detect direction
 							if (status.hasLocalData && !status.hasRemoteData) {
-								syncStatusEl.setText("First sync: Uploading...");
+								syncStatusEl.setText("First sync: uploading...");
 								button.setButtonText("Uploading...");
 								result = await syncService.forceReplace();
 							} else if (!status.hasLocalData && status.hasRemoteData) {
-								syncStatusEl.setText("First sync: Downloading...");
+								syncStatusEl.setText("First sync: downloading...");
 								button.setButtonText("Downloading...");
 								result = await syncService.forcePull();
 							} else {
@@ -1716,18 +1716,15 @@ export class TrueRecallSettingTab extends PluginSettingTab {
 		// Force replace option (destructive - overwrites server)
 		new Setting(container)
 			.setName("Force replace")
-			.setDesc("⚠️ Deletes ALL server data and uploads local database")
+			// eslint-disable-next-line obsidianmd/ui/sentence-case -- intentional warning emoji prefix
+			.setDesc("⚠️ Deletes all server data and uploads local database")
 			.addButton((button) =>
 				button
-					.setButtonText("Force Replace")
+					.setButtonText("Force replace")
 					.setWarning()
 					.onClick(async () => {
-						// Confirmation dialog
-						const confirmed = confirm(
-							"WARNING: This will DELETE all your data on the server and replace it with your local database.\n\n" +
-							"Other devices will lose their changes.\n\n" +
-							"Are you sure you want to continue?"
-						);
+						// eslint-disable-next-line no-alert
+						const confirmed = confirm("WARNING: This will DELETE all your data on the server and replace it with your local database.\n\nOther devices will lose their changes.\n\nAre you sure you want to continue?");
 
 						if (!confirmed) return;
 
@@ -1750,25 +1747,22 @@ export class TrueRecallSettingTab extends PluginSettingTab {
 						}
 
 						button.setDisabled(false);
-						button.setButtonText("Force Replace");
+						button.setButtonText("Force replace");
 					})
 			);
 
 		// Force pull option (destructive - overwrites local)
 		new Setting(container)
 			.setName("Force pull")
-			.setDesc("⚠️ Deletes ALL local data and downloads from server")
+			// eslint-disable-next-line obsidianmd/ui/sentence-case -- intentional warning emoji prefix
+			.setDesc("⚠️ Deletes all local data and downloads from server")
 			.addButton((button) =>
 				button
-					.setButtonText("Force Pull")
+					.setButtonText("Force pull")
 					.setWarning()
 					.onClick(async () => {
-						// Confirmation dialog
-						const confirmed = confirm(
-							"WARNING: This will DELETE all your LOCAL data and replace it with server data.\n\n" +
-							"Any local changes not synced will be lost.\n\n" +
-							"Are you sure you want to continue?"
-						);
+						// eslint-disable-next-line no-alert
+						const confirmed = confirm("WARNING: This will DELETE all your LOCAL data and replace it with server data.\n\nAny local changes not synced will be lost.\n\nAre you sure you want to continue?");
 
 						if (!confirmed) return;
 
@@ -1791,7 +1785,7 @@ export class TrueRecallSettingTab extends PluginSettingTab {
 						}
 
 						button.setDisabled(false);
-						button.setButtonText("Force Pull");
+						button.setButtonText("Force pull");
 					})
 			);
 	}
@@ -1868,11 +1862,8 @@ export class TrueRecallSettingTab extends PluginSettingTab {
 			return;
 		}
 
-		// Confirm the switch
-		const confirmed = confirm(
-			`Are you sure you want to replace the current database with data from device ${result.sourceDeviceId}?\n\n` +
-			"The current database will be overwritten. This requires restarting Obsidian."
-		);
+		// eslint-disable-next-line no-alert
+		const confirmed = confirm(`Are you sure you want to replace the current database with data from device ${result.sourceDeviceId}?\n\nThe current database will be overwritten. This requires restarting Obsidian.`);
 
 		if (!confirmed) {
 			return;

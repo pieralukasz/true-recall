@@ -485,7 +485,8 @@ export class ProjectsView extends ItemView {
 				? `Delete project "${project.name}"? This will remove it from ${project.noteCount} note(s).`
 				: `Delete project "${project.name}"?`;
 
-		if (!confirm(confirmMessage)) {
+		// eslint-disable-next-line no-alert -- destructive operation requires explicit user confirmation
+		if (!window.confirm(confirmMessage)) {
 			return;
 		}
 
@@ -544,7 +545,7 @@ export class ProjectsView extends ItemView {
 			},
 		});
 
-		this.app.workspace.revealLeaf(leaf);
+		void this.app.workspace.revealLeaf(leaf);
 	}
 
 	/**
@@ -581,7 +582,7 @@ export class ProjectsView extends ItemView {
 			},
 		});
 
-		this.app.workspace.revealLeaf(leaf);
+		void this.app.workspace.revealLeaf(leaf);
 	}
 
 	/**
@@ -634,7 +635,7 @@ export class ProjectsView extends ItemView {
 			},
 		});
 
-		this.app.workspace.revealLeaf(leaf);
+		void this.app.workspace.revealLeaf(leaf);
 	}
 
 	/**

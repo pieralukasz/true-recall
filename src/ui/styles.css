@@ -286,7 +286,7 @@
 		gap: 1rem !important;
 	}
 
-	/* Enable text selection in review cards + max-width for readability */
+	/* Enable text selection in review cards + max-width for readability + font scaling */
 	.true-recall-review-question,
 	.true-recall-review-answer {
 		user-select: text;
@@ -295,6 +295,7 @@
 		max-width: 60rem;
 		margin-left: auto;
 		margin-right: auto;
+		font-size: calc(1em * var(--review-font-scale, 1));
 	}
 
 	/* Code blocks in review cards - preserve formatting, center, and style */

@@ -4,9 +4,9 @@
  * Manages reduced workload on specific days (recurring weekdays + specific dates).
  */
 
-import type { SqliteStoreService } from "../../persistence/sqlite/SqliteStoreService";
 import type { EasyDaysConfig } from "../../../types";
 import type {
+	SchedulerCardStore,
 	SchedulingResult,
 	CardScheduleChange,
 	WorkloadDistribution,
@@ -59,7 +59,7 @@ export function isEasyDay(date: Date, easyDays: EasyDaysConfig): boolean {
  * only 50 cards will remain on Saturday.
  */
 export class EasyDaysService {
-	constructor(private cardStore: SqliteStoreService) {}
+	constructor(private cardStore: SchedulerCardStore) {}
 
 	/**
 	 * Apply easy days configuration to upcoming reviews

@@ -2,6 +2,7 @@
  * Types for FSRS Helper scheduler services
  */
 
+import type { State } from "ts-fsrs";
 import type { EasyDaysConfig } from "../../../types";
 
 /**
@@ -16,6 +17,36 @@ export interface CardDueInfo {
 	scheduledDays: number;
 	/** Source note UID (for sibling detection) */
 	sourceUid?: string;
+}
+
+/**
+ * Full card data with FSRS state (for reschedule operations)
+ */
+export interface SchedulerCardData extends CardDueInfo {
+	state: State;
+	stability: number;
+	lastReview: string | null;
+	suspended?: boolean;
+}
+
+/**
+ * Interface for card store operations needed by scheduler services.
+ * This is a subset of SqliteStoreService focused on scheduling operations.
+ */
+export interface SchedulerCardStore {
+	/** Get a card by ID */
+	get(cardId: string): SchedulerCardData | undefined;
+	/** Get all cards */
+	getCards(): SchedulerCardData[];
+	/** Get cards due in a date range */
+	getDueCardsByDateRange(startDate: string, endDate: string): CardDueInfo[];
+	/** Update a card's due date */
+	updateCardDue(cardId: string, newDue: string): Promise<void>;
+	/** Update a card's scheduling data (due + scheduledDays) */
+	updateCardScheduling(
+		cardId: string,
+		data: { due: string; scheduledDays: number }
+	): Promise<void>;
 }
 
 /**

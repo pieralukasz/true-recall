@@ -4,8 +4,8 @@
  * Redistributes excess cards from overloaded days to nearby days.
  */
 
-import type { SqliteStoreService } from "../../persistence/sqlite/SqliteStoreService";
 import type {
+	SchedulerCardStore,
 	FlattenOptions,
 	SchedulingResult,
 	CardScheduleChange,
@@ -19,7 +19,7 @@ import type {
  * moved to adjacent days to reduce the peak.
  */
 export class FlattenService {
-	constructor(private cardStore: SqliteStoreService) {}
+	constructor(private cardStore: SchedulerCardStore) {}
 
 	/**
 	 * Flatten a specific date by moving excess cards

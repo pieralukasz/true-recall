@@ -80,7 +80,7 @@ export class BackgroundBackupManager {
     start(): void {
         this.setupEventListeners();
         this.startPeriodicBackups();
-        console.log("[True Recall] Background backup manager started");
+        console.debug("[True Recall] Background backup manager started");
     }
 
     /**
@@ -89,7 +89,7 @@ export class BackgroundBackupManager {
     stop(): void {
         this.stopPeriodicBackups();
         this.cleanupEventListeners();
-        console.log("[True Recall] Background backup manager stopped");
+        console.debug("[True Recall] Background backup manager stopped");
     }
 
     /**
@@ -128,7 +128,7 @@ export class BackgroundBackupManager {
      */
     async triggerBackup(force = false): Promise<boolean> {
         if (!force && !this.isDirty) {
-            console.log("[True Recall] Skipping backup - no changes since last backup");
+            console.debug("[True Recall] Skipping backup - no changes since last backup");
             return false;
         }
 
@@ -180,7 +180,7 @@ export class BackgroundBackupManager {
             void this.performPeriodicBackup();
         }, intervalMs);
 
-        console.log(`[True Recall] Periodic backups scheduled every ${this.config.backupIntervalMinutes} minutes`);
+        console.debug(`[True Recall] Periodic backups scheduled every ${this.config.backupIntervalMinutes} minutes`);
     }
 
     private stopPeriodicBackups(): void {
@@ -192,7 +192,7 @@ export class BackgroundBackupManager {
 
     private async performPeriodicBackup(): Promise<void> {
         if (!this.isDirty) {
-            console.log("[True Recall] Skipping periodic backup - no changes");
+            console.debug("[True Recall] Skipping periodic backup - no changes");
             return;
         }
 
@@ -203,14 +203,14 @@ export class BackgroundBackupManager {
         if (!this.config.activityTriggeredBackup) return;
 
         if (this.reviewsSinceLastBackup >= this.config.reviewsBeforeBackup) {
-            console.log(`[True Recall] Activity trigger: ${this.reviewsSinceLastBackup} reviews since last backup`);
+            console.debug(`[True Recall] Activity trigger: ${this.reviewsSinceLastBackup} reviews since last backup`);
             void this.performBackup();
         }
     }
 
     private async performBackup(): Promise<boolean> {
         if (this.isBackupInProgress) {
-            console.log("[True Recall] Backup already in progress, skipping");
+            console.debug("[True Recall] Backup already in progress, skipping");
             return false;
         }
 
@@ -226,7 +226,7 @@ export class BackgroundBackupManager {
             // Apply smart retention
             await this.backupService.applySmartRetention(this.config.retentionPolicy);
 
-            console.log("[True Recall] Background backup completed successfully");
+            console.debug("[True Recall] Background backup completed successfully");
             return true;
         } catch (error) {
             console.error("[True Recall] Background backup failed:", error);

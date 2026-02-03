@@ -45,7 +45,7 @@ describe("RescheduleService", () => {
 		vi.useFakeTimers();
 		vi.setSystemTime(new Date("2026-02-01T10:00:00Z"));
 		mockStore = createMockCardStore();
-		service = new RescheduleService(mockStore as any, defaultFSRSSettings);
+		service = new RescheduleService(mockStore , defaultFSRSSettings);
 	});
 
 	afterEach(() => {
@@ -60,7 +60,7 @@ describe("RescheduleService", () => {
 			});
 			mockStore = createMockCardStore([card]);
 			mockStore.getCards.mockReturnValue([card]);
-			service = new RescheduleService(mockStore as any, defaultFSRSSettings);
+			service = new RescheduleService(mockStore , defaultFSRSSettings);
 
 			const result = await service.reschedule({
 				scope: "all",
@@ -79,7 +79,7 @@ describe("RescheduleService", () => {
 			});
 			mockStore = createMockCardStore([card]);
 			mockStore.getCards.mockReturnValue([card]);
-			service = new RescheduleService(mockStore as any, {
+			service = new RescheduleService(mockStore , {
 				...defaultFSRSSettings,
 				maximumInterval: 30, // Cap at 30 days
 			});
@@ -109,7 +109,7 @@ describe("RescheduleService", () => {
 			});
 			mockStore = createMockCardStore([card]);
 			mockStore.getCards.mockReturnValue([card]);
-			service = new RescheduleService(mockStore as any, defaultFSRSSettings);
+			service = new RescheduleService(mockStore , defaultFSRSSettings);
 
 			const result = await service.reschedule({
 				scope: "all",
@@ -133,7 +133,7 @@ describe("RescheduleService", () => {
 
 			mockStore = createMockCardStore([reviewCard, newCard, suspendedCard]);
 			mockStore.getCards.mockReturnValue([reviewCard, newCard, suspendedCard]);
-			service = new RescheduleService(mockStore as any, defaultFSRSSettings);
+			service = new RescheduleService(mockStore , defaultFSRSSettings);
 
 			const result = await service.reschedule({
 				scope: "all",
@@ -160,7 +160,7 @@ describe("RescheduleService", () => {
 
 			mockStore = createMockCardStore([dueCard, futureCard]);
 			mockStore.getCards.mockReturnValue([dueCard, futureCard]);
-			service = new RescheduleService(mockStore as any, defaultFSRSSettings);
+			service = new RescheduleService(mockStore , defaultFSRSSettings);
 
 			const result = await service.reschedule({
 				scope: "due",
@@ -187,7 +187,7 @@ describe("RescheduleService", () => {
 
 			mockStore = createMockCardStore([overdueCard, dueToday]);
 			mockStore.getCards.mockReturnValue([overdueCard, dueToday]);
-			service = new RescheduleService(mockStore as any, defaultFSRSSettings);
+			service = new RescheduleService(mockStore , defaultFSRSSettings);
 
 			const result = await service.reschedule({
 				scope: "overdue",
@@ -207,7 +207,7 @@ describe("RescheduleService", () => {
 			mockStore.get.mockImplementation((id: string) => {
 				return [card1, card2, card3].find((c) => c.id === id);
 			});
-			service = new RescheduleService(mockStore as any, defaultFSRSSettings);
+			service = new RescheduleService(mockStore , defaultFSRSSettings);
 
 			const result = await service.reschedule({
 				scope: "selected",
@@ -223,7 +223,7 @@ describe("RescheduleService", () => {
 			const card = createFSRSCard({ stability: 30 });
 			mockStore = createMockCardStore([card]);
 			mockStore.getCards.mockReturnValue([card]);
-			service = new RescheduleService(mockStore as any, defaultFSRSSettings);
+			service = new RescheduleService(mockStore , defaultFSRSSettings);
 
 			await service.reschedule({
 				scope: "all",
@@ -238,7 +238,7 @@ describe("RescheduleService", () => {
 			const card = createFSRSCard({ stability: 30 });
 			mockStore = createMockCardStore([card]);
 			mockStore.getCards.mockReturnValue([card]);
-			service = new RescheduleService(mockStore as any, defaultFSRSSettings);
+			service = new RescheduleService(mockStore , defaultFSRSSettings);
 
 			await service.reschedule({
 				scope: "all",
@@ -256,7 +256,7 @@ describe("RescheduleService", () => {
 			});
 			mockStore = createMockCardStore([card]);
 			mockStore.getCards.mockReturnValue([card]);
-			service = new RescheduleService(mockStore as any, defaultFSRSSettings);
+			service = new RescheduleService(mockStore , defaultFSRSSettings);
 
 			await service.reschedule({
 				scope: "all",
@@ -278,7 +278,7 @@ describe("RescheduleService", () => {
 			});
 			mockStore = createMockCardStore([card]);
 			mockStore.getCards.mockReturnValue([card]);
-			service = new RescheduleService(mockStore as any, defaultFSRSSettings);
+			service = new RescheduleService(mockStore , defaultFSRSSettings);
 
 			const result = await service.reschedule({
 				scope: "all",

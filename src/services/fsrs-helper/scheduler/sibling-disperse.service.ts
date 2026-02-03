@@ -5,8 +5,8 @@
  * too close together in time.
  */
 
-import type { SqliteStoreService } from "../../persistence/sqlite/SqliteStoreService";
 import type {
+	SchedulerCardStore,
 	DisperseOptions,
 	SchedulingResult,
 	CardScheduleChange,
@@ -30,7 +30,7 @@ interface SiblingGroup {
  * siblings are spaced apart by a minimum interval to avoid interference.
  */
 export class SiblingDisperseService {
-	constructor(private cardStore: SqliteStoreService) {}
+	constructor(private cardStore: SchedulerCardStore) {}
 
 	/**
 	 * Disperse sibling cards

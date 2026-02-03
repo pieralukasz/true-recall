@@ -114,7 +114,7 @@ export class SimulatorChart extends BaseComponent {
 
 		// Update scale type
 		if (this.chart.options.scales?.y) {
-			const yScale = this.chart.options.scales.y as any;
+			const yScale = this.chart.options.scales.y as { type?: string; title?: { display: boolean; text: string } };
 			yScale.type = useLogarithmic ? "logarithmic" : "linear";
 			yScale.title = {
 				display: true,
@@ -145,9 +145,10 @@ export class SimulatorChart extends BaseComponent {
 			});
 
 			// Color box
-			item.createDiv({
+			const colorBox = item.createDiv({
 				cls: "ep:w-4 ep:h-4 ep:rounded",
-			}).style.backgroundColor = sim.color;
+			});
+			colorBox.setCssProps({ "background-color": sim.color });
 
 			// Label
 			item.createSpan({

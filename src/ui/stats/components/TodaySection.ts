@@ -105,8 +105,8 @@ export class TodaySection extends BaseComponent {
 	 */
 	async refresh(): Promise<void> {
 		try {
-			const summary = await this.props.statsCalculator.getTodaySummary();
-			const streak = await this.props.statsCalculator.getStreakInfo();
+			const summary = this.props.statsCalculator.getTodaySummary();
+			const streak = this.props.statsCalculator.getStreakInfo();
 			const rangeSummary = await this.props.statsCalculator.getRangeSummary(this.props.currentRange);
 
 			// Build metrics array
@@ -178,7 +178,7 @@ export class TodaySection extends BaseComponent {
 			].join(" "),
 			text: metric.value,
 		});
-		valueEl.style.fontFamily = "var(--font-interface)";
+		valueEl.setCssProps({ "font-family": "var(--font-interface)" });
 
 		// Label
 		card.createSpan({
@@ -196,7 +196,10 @@ export class TodaySection extends BaseComponent {
 	/**
 	 * Render the summary section below the grid
 	 */
-	private renderSummary(summary: any, rangeSummary: any): void {
+	private renderSummary(
+		summary: { studied: number; minutes: number; newCards: number; again: number; correctRate: number },
+		rangeSummary: { dueTomorrow: number; dailyLoad: number }
+	): void {
 		this.summaryEl.empty();
 
 		if (summary.studied === 0) {

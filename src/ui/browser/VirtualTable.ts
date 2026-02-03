@@ -274,11 +274,13 @@ export class VirtualTable {
             }
 
             // Position row absolutely
-            row.style.position = "absolute";
-            row.style.top = `${i * ROW_HEIGHT}px`;
-            row.style.left = "0";
-            row.style.right = "0";
-            row.style.height = `${ROW_HEIGHT}px`;
+            row.setCssProps({
+                position: "absolute",
+                top: `${i * ROW_HEIGHT}px`,
+                left: "0",
+                right: "0",
+                height: `${ROW_HEIGHT}px`,
+            });
         }
     }
 
@@ -306,15 +308,16 @@ export class VirtualTable {
         tr.className = className;
         tr.dataset.cardId = card.id;
         tr.dataset.index = String(index);
-        tr.style.top = `${index * ROW_HEIGHT}px`;
-        tr.style.left = "0";
-        tr.style.right = "0";
-        tr.style.height = `${ROW_HEIGHT}px`;
+        tr.setCssProps({
+            top: `${index * ROW_HEIGHT}px`,
+            left: "0",
+            right: "0",
+            height: `${ROW_HEIGHT}px`,
+        });
 
         // Question
         const questionTd = tr.createEl("td", { cls: TABLE_STYLES.CELL });
-        questionTd.style.width = "30%";
-        questionTd.style.flexShrink = "0";
+        questionTd.setCssProps({ width: "30%", "flex-shrink": "0" });
         questionTd.createSpan({
             text: truncateText(stripHtml(card.question ?? ""), 60),
             cls: TABLE_STYLES.CELL_CONTENT,
@@ -322,8 +325,7 @@ export class VirtualTable {
 
         // Answer
         const answerTd = tr.createEl("td", { cls: TABLE_STYLES.CELL });
-        answerTd.style.width = "25%";
-        answerTd.style.flexShrink = "0";
+        answerTd.setCssProps({ width: "25%", "flex-shrink": "0" });
         answerTd.createSpan({
             text: truncateText(stripHtml(card.answer ?? ""), 50),
             cls: TABLE_STYLES.CELL_CONTENT,
@@ -331,8 +333,7 @@ export class VirtualTable {
 
         // Due
         const dueTd = tr.createEl("td", { cls: TABLE_STYLES.CELL });
-        dueTd.style.width = "10%";
-        dueTd.style.flexShrink = "0";
+        dueTd.setCssProps({ width: "10%", "flex-shrink": "0" });
 
         let dueCls = TABLE_STYLES.CELL_CONTENT;
         const dueStatus = getDueDateStatus(card.due);
@@ -346,8 +347,7 @@ export class VirtualTable {
 
         // State
         const stateTd = tr.createEl("td", { cls: TABLE_STYLES.CELL });
-        stateTd.style.width = "8%";
-        stateTd.style.flexShrink = "0";
+        stateTd.setCssProps({ width: "8%", "flex-shrink": "0" });
         renderStateBadge(stateTd, {
             state: card.state,
             suspended: card.suspended,
@@ -356,8 +356,7 @@ export class VirtualTable {
 
         // Stability
         const stabilityTd = tr.createEl("td", { cls: TABLE_STYLES.CELL });
-        stabilityTd.style.width = "8%";
-        stabilityTd.style.flexShrink = "0";
+        stabilityTd.setCssProps({ width: "8%", "flex-shrink": "0" });
         stabilityTd.createSpan({
             text: card.stability > 0 ? `${Math.round(card.stability)}d` : "-",
             cls: TABLE_STYLES.CELL_CONTENT,
@@ -365,8 +364,7 @@ export class VirtualTable {
 
         // Reps
         const repsTd = tr.createEl("td", { cls: TABLE_STYLES.CELL });
-        repsTd.style.width = "6%";
-        repsTd.style.flexShrink = "0";
+        repsTd.setCssProps({ width: "6%", "flex-shrink": "0" });
         repsTd.createSpan({
             text: String(card.reps),
             cls: TABLE_STYLES.CELL_CONTENT,
@@ -374,8 +372,7 @@ export class VirtualTable {
 
         // Lapses
         const lapsesTd = tr.createEl("td", { cls: TABLE_STYLES.CELL });
-        lapsesTd.style.width = "6%";
-        lapsesTd.style.flexShrink = "0";
+        lapsesTd.setCssProps({ width: "6%", "flex-shrink": "0" });
         const lapsesCls = card.lapses > 3
             ? `${TABLE_STYLES.CELL_CONTENT} ${TABLE_STYLES.LAPSES_HIGH}`
             : TABLE_STYLES.CELL_CONTENT;
@@ -386,8 +383,7 @@ export class VirtualTable {
 
         // Source
         const sourceTd = tr.createEl("td", { cls: TABLE_STYLES.CELL });
-        sourceTd.style.width = "7%";
-        sourceTd.style.flexShrink = "0";
+        sourceTd.setCssProps({ width: "7%", "flex-shrink": "0" });
         if (card.sourceNoteName) {
             const sourceLink = sourceTd.createEl("a", {
                 text: truncateText(card.sourceNoteName, 20),
@@ -431,8 +427,7 @@ export class VirtualTable {
             const th = tr.createEl("th", {
                 cls: TABLE_STYLES.HEADER_CELL,
             });
-            th.style.width = col.width;
-            th.style.flexShrink = "0";
+            th.setCssProps({ width: col.width, "flex-shrink": "0" });
 
             if (col.sortable) {
                 const sortBtn = th.createEl("button", {

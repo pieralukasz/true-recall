@@ -1,21 +1,48 @@
 /**
  * Mock factories for FSRS Helper scheduler service tests
  */
-import { vi } from "vitest";
-import type { CardDueInfo, WorkloadDistribution } from "../../../../src/services/fsrs-helper/scheduler/scheduler.types";
+import { vi, type Mock } from "vitest";
+import type {
+	CardDueInfo,
+	SchedulerCardStore,
+	SchedulerCardData,
+	WorkloadDistribution,
+} from "../../../../src/services/fsrs-helper/scheduler/scheduler.types";
 import type { EasyDaysConfig } from "../../../../src/types";
 
 /**
- * Create a mock SqliteStoreService for scheduler tests
+ * Mock implementation of SchedulerCardStore for testing.
+ * Each method is a Vitest mock function that can be spied on and configured.
  */
-export function createMockCardStore(cards: CardDueInfo[] = []) {
+export interface MockSchedulerCardStore extends SchedulerCardStore {
+	get: Mock<(cardId: string) => SchedulerCardData | undefined>;
+	getCards: Mock<() => SchedulerCardData[]>;
+	getDueCardsByDateRange: Mock<(startDate: string, endDate: string) => CardDueInfo[]>;
+	updateCardDue: Mock<(cardId: string, newDue: string) => Promise<void>>;
+	updateCardScheduling: Mock<
+		(cardId: string, data: { due: string; scheduledDays: number }) => Promise<void>
+	>;
+}
+
+/**
+ * Create a mock SchedulerCardStore for scheduler tests.
+ * Returns a properly typed mock that satisfies the SchedulerCardStore interface.
+ */
+export function createMockCardStore(cards: CardDueInfo[] = []): MockSchedulerCardStore {
 	return {
-		getDueCardsByDateRange: vi.fn().mockReturnValue(cards),
-		updateCardDue: vi.fn().mockResolvedValue(undefined),
-		updateCardScheduling: vi.fn().mockResolvedValue(undefined),
-		getCards: vi.fn().mockReturnValue(cards),
-		get: vi.fn((id: string) => cards.find((c) => c.id === id)),
-		getReviewDataForOptimization: vi.fn().mockReturnValue([]),
+		getDueCardsByDateRange: vi
+			.fn<(startDate: string, endDate: string) => CardDueInfo[]>()
+			.mockReturnValue(cards),
+		updateCardDue: vi
+			.fn<(cardId: string, newDue: string) => Promise<void>>()
+			.mockResolvedValue(undefined),
+		updateCardScheduling: vi
+			.fn<(cardId: string, data: { due: string; scheduledDays: number }) => Promise<void>>()
+			.mockResolvedValue(undefined),
+		getCards: vi.fn<() => SchedulerCardData[]>().mockReturnValue(cards as SchedulerCardData[]),
+		get: vi
+			.fn<(cardId: string) => SchedulerCardData | undefined>()
+			.mockImplementation((id: string) => cards.find((c) => c.id === id) as SchedulerCardData | undefined),
 	};
 }
 

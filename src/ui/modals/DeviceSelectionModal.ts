@@ -7,34 +7,17 @@ import { App } from "obsidian";
 import { BasePromiseModal, type CancellableResult } from "./BasePromiseModal";
 import type { DeviceDatabaseInfo } from "../../services/device";
 
-/**
- * Result from the device selection modal.
- */
 export interface DeviceSelectionResult extends CancellableResult {
-    /** Action to take: start fresh or import from another device */
     action: "fresh" | "import";
-    /** Device ID of the source database (if importing) */
     sourceDeviceId?: string;
-    /** Full path to the source database (if importing) */
     sourcePath?: string;
 }
 
-/**
- * Options for the device selection modal.
- */
 export interface DeviceSelectionModalOptions {
-    /** Available device databases to import from */
     databases: DeviceDatabaseInfo[];
-    /** Whether a legacy database exists */
     hasLegacy: boolean;
 }
 
-/**
- * Modal for selecting database initialization strategy.
- * Shown when:
- * - First run on a new device
- * - Other device databases are available to import from
- */
 export class DeviceSelectionModal extends BasePromiseModal<DeviceSelectionResult> {
     private databases: DeviceDatabaseInfo[];
     private hasLegacy: boolean;
@@ -44,7 +27,7 @@ export class DeviceSelectionModal extends BasePromiseModal<DeviceSelectionResult
 
     constructor(app: App, options: DeviceSelectionModalOptions) {
         super(app, {
-            title: "True Recall Database Setup",
+            title: "True Recall database setup",
             width: "480px",
         });
         this.databases = options.databases;
@@ -56,17 +39,14 @@ export class DeviceSelectionModal extends BasePromiseModal<DeviceSelectionResult
     }
 
     protected renderBody(container: HTMLElement): void {
-        // Introduction
         const introEl = container.createDiv({ cls: "true-recall-device-intro" });
         introEl.createEl("p", {
             text: "Choose how to initialize the database on this device:",
         });
-        introEl.style.marginBottom = "16px";
+        introEl.setCssProps({ "margin-bottom": "16px" });
 
-        // Radio group container
         const optionsEl = container.createDiv({ cls: "true-recall-device-options" });
 
-        // Option 1: Start fresh
         const freshOption = this.createRadioOption(
             optionsEl,
             "fresh",
@@ -75,7 +55,6 @@ export class DeviceSelectionModal extends BasePromiseModal<DeviceSelectionResult
         );
         freshOption.radioEl.checked = true;
 
-        // Option 2: Import from other device (if databases available)
         if (this.databases.length > 0) {
             const importOption = this.createRadioOption(
                 optionsEl,
@@ -84,24 +63,24 @@ export class DeviceSelectionModal extends BasePromiseModal<DeviceSelectionResult
                 "Copy data from an existing database"
             );
 
-            // Database list (shown when import is selected)
             const dbListContainer = container.createDiv({
                 cls: "true-recall-device-db-list",
             });
-            dbListContainer.style.display = "none";
-            dbListContainer.style.marginLeft = "28px";
-            dbListContainer.style.marginTop = "8px";
-            dbListContainer.style.marginBottom = "16px";
+            dbListContainer.setCssProps({
+                display: "none",
+                "margin-left": "28px",
+                "margin-top": "8px",
+                "margin-bottom": "16px",
+            });
 
             for (const db of this.databases) {
                 this.renderDatabaseItem(dbListContainer, db);
             }
 
-            // Toggle database list visibility based on radio selection
             freshOption.radioEl.addEventListener("change", () => {
                 if (freshOption.radioEl.checked) {
                     this.selectedAction = "fresh";
-                    dbListContainer.style.display = "none";
+                    dbListContainer.setCssProps({ display: "none" });
                     this.updateContinueButton();
                 }
             });
@@ -109,18 +88,19 @@ export class DeviceSelectionModal extends BasePromiseModal<DeviceSelectionResult
             importOption.radioEl.addEventListener("change", () => {
                 if (importOption.radioEl.checked) {
                     this.selectedAction = "import";
-                    dbListContainer.style.display = "block";
+                    dbListContainer.setCssProps({ display: "block" });
                     this.updateContinueButton();
                 }
             });
         }
 
-        // Actions
         const actionsEl = container.createDiv({ cls: "true-recall-modal-actions" });
-        actionsEl.style.display = "flex";
-        actionsEl.style.justifyContent = "flex-end";
-        actionsEl.style.gap = "8px";
-        actionsEl.style.marginTop = "24px";
+        actionsEl.setCssProps({
+            display: "flex",
+            "justify-content": "flex-end",
+            gap: "8px",
+            "margin-top": "24px",
+        });
 
         const cancelBtn = actionsEl.createEl("button", { text: "Cancel" });
         cancelBtn.addEventListener("click", () => this.close());
@@ -132,9 +112,6 @@ export class DeviceSelectionModal extends BasePromiseModal<DeviceSelectionResult
         this.continueButton.addEventListener("click", () => this.handleContinue());
     }
 
-    /**
-     * Create a radio option with label and description.
-     */
     private createRadioOption(
         container: HTMLElement,
         value: string,
@@ -142,29 +119,32 @@ export class DeviceSelectionModal extends BasePromiseModal<DeviceSelectionResult
         description: string
     ): { itemEl: HTMLElement; radioEl: HTMLInputElement } {
         const itemEl = container.createDiv({ cls: "true-recall-device-option" });
-        itemEl.style.display = "flex";
-        itemEl.style.alignItems = "flex-start";
-        itemEl.style.gap = "12px";
-        itemEl.style.padding = "12px";
-        itemEl.style.borderRadius = "6px";
-        itemEl.style.marginBottom = "8px";
-        itemEl.style.cursor = "pointer";
-        itemEl.style.backgroundColor = "var(--background-secondary)";
+        itemEl.setCssProps({
+            display: "flex",
+            "align-items": "flex-start",
+            gap: "12px",
+            padding: "12px",
+            "border-radius": "6px",
+            "margin-bottom": "8px",
+            cursor: "pointer",
+            "background-color": "var(--background-secondary)",
+        });
 
         const radioEl = itemEl.createEl("input", {
             type: "radio",
             attr: { name: "device-action", value },
         });
-        radioEl.style.marginTop = "2px";
+        radioEl.setCssProps({ "margin-top": "2px" });
 
         const textEl = itemEl.createDiv();
-        textEl.createDiv({ text: label }).style.fontWeight = "500";
-        textEl.createDiv({
+        const labelEl = textEl.createDiv({ text: label });
+        labelEl.setCssProps({ "font-weight": "500" });
+        const descEl = textEl.createDiv({
             text: description,
             cls: "setting-item-description",
-        }).style.marginTop = "2px";
+        });
+        descEl.setCssProps({ "margin-top": "2px" });
 
-        // Click on row to select radio
         itemEl.addEventListener("click", (e) => {
             if (e.target !== radioEl) {
                 radioEl.checked = true;
@@ -172,61 +152,64 @@ export class DeviceSelectionModal extends BasePromiseModal<DeviceSelectionResult
             }
         });
 
-        // Highlight on selection
         radioEl.addEventListener("change", () => {
             container
                 .querySelectorAll(".true-recall-device-option")
                 .forEach((el) => {
-                    (el as HTMLElement).style.backgroundColor =
-                        "var(--background-secondary)";
-                    (el as HTMLElement).style.border = "none";
+                    (el as HTMLElement).setCssProps({
+                        "background-color": "var(--background-secondary)",
+                        border: "none",
+                    });
                 });
             if (radioEl.checked) {
-                itemEl.style.backgroundColor = "var(--background-modifier-hover)";
-                itemEl.style.border =
-                    "1px solid var(--interactive-accent)";
+                itemEl.setCssProps({
+                    "background-color": "var(--background-modifier-hover)",
+                    border: "1px solid var(--interactive-accent)",
+                });
             }
         });
 
         return { itemEl, radioEl };
     }
 
-    /**
-     * Render a database item in the import list.
-     */
     private renderDatabaseItem(
         container: HTMLElement,
         db: DeviceDatabaseInfo
     ): void {
         const itemEl = container.createDiv({ cls: "true-recall-device-db-item" });
-        itemEl.style.display = "flex";
-        itemEl.style.justifyContent = "space-between";
-        itemEl.style.alignItems = "center";
-        itemEl.style.padding = "10px 12px";
-        itemEl.style.borderRadius = "6px";
-        itemEl.style.marginBottom = "4px";
-        itemEl.style.cursor = "pointer";
-        itemEl.style.backgroundColor = "var(--background-secondary)";
-        itemEl.style.transition = "background-color 0.15s ease";
+        itemEl.setCssProps({
+            display: "flex",
+            "justify-content": "space-between",
+            "align-items": "center",
+            padding: "10px 12px",
+            "border-radius": "6px",
+            "margin-bottom": "4px",
+            cursor: "pointer",
+            "background-color": "var(--background-secondary)",
+            transition: "background-color 0.15s ease",
+        });
 
-        // Left side: device info
         const infoEl = itemEl.createDiv();
         const headerEl = infoEl.createDiv();
-        headerEl.style.display = "flex";
-        headerEl.style.alignItems = "center";
-        headerEl.style.gap = "8px";
+        headerEl.setCssProps({
+            display: "flex",
+            "align-items": "center",
+            gap: "8px",
+        });
 
-        headerEl.createSpan({ text: "📱" });
-        headerEl.createSpan({
+        headerEl.createSpan({ text: "device" });
+        const deviceIdEl = headerEl.createSpan({
             text: db.deviceId,
             cls: "true-recall-device-id",
-        }).style.fontFamily = "monospace";
+        });
+        deviceIdEl.setCssProps({ "font-family": "monospace" });
 
-        // Card count and last review
         const statsEl = infoEl.createDiv();
-        statsEl.style.fontSize = "0.85em";
-        statsEl.style.color = "var(--text-muted)";
-        statsEl.style.marginTop = "4px";
+        statsEl.setCssProps({
+            "font-size": "0.85em",
+            color: "var(--text-muted)",
+            "margin-top": "4px",
+        });
 
         const statsParts: string[] = [];
         if (db.cardCount !== null) {
@@ -237,53 +220,47 @@ export class DeviceSelectionModal extends BasePromiseModal<DeviceSelectionResult
         }
         statsEl.textContent = statsParts.join(" | ");
 
-        // Right side: size and modification date
         const rightEl = itemEl.createDiv();
-        rightEl.style.textAlign = "right";
-        rightEl.style.fontSize = "0.85em";
-        rightEl.style.color = "var(--text-muted)";
+        rightEl.setCssProps({
+            "text-align": "right",
+            "font-size": "0.85em",
+            color: "var(--text-muted)",
+        });
 
         rightEl.createDiv({ text: db.formattedSize });
         rightEl.createDiv({ text: `Mod: ${this.formatRelativeTime(db.lastModified)}` });
 
-        // Selection handling
         itemEl.addEventListener("click", () => {
-            // Remove selection from all items
             container.querySelectorAll(".true-recall-device-db-item").forEach((el) => {
-                (el as HTMLElement).style.backgroundColor =
-                    "var(--background-secondary)";
-                (el as HTMLElement).style.border = "none";
+                (el as HTMLElement).setCssProps({
+                    "background-color": "var(--background-secondary)",
+                    border: "none",
+                });
             });
 
-            // Select this item
-            itemEl.style.backgroundColor = "var(--interactive-accent)";
-            itemEl.style.border = "2px solid var(--interactive-accent-hover)";
+            itemEl.setCssProps({
+                "background-color": "var(--interactive-accent)",
+                border: "2px solid var(--interactive-accent-hover)",
+            });
             this.selectedDatabase = db;
             this.updateContinueButton();
         });
 
-        // Hover effect
         itemEl.addEventListener("mouseenter", () => {
             if (this.selectedDatabase !== db) {
-                itemEl.style.backgroundColor = "var(--background-modifier-hover)";
+                itemEl.setCssProps({ "background-color": "var(--background-modifier-hover)" });
             }
         });
         itemEl.addEventListener("mouseleave", () => {
             if (this.selectedDatabase !== db) {
-                itemEl.style.backgroundColor = "var(--background-secondary)";
+                itemEl.setCssProps({ "background-color": "var(--background-secondary)" });
             }
         });
     }
 
-    /**
-     * Update the continue button state.
-     */
     private updateContinueButton(): void {
         if (!this.continueButton) return;
 
-        // Enable button if:
-        // - Fresh action is selected, OR
-        // - Import action is selected AND a database is selected
         const canContinue =
             this.selectedAction === "fresh" ||
             (this.selectedAction === "import" && this.selectedDatabase !== null);
@@ -291,9 +268,6 @@ export class DeviceSelectionModal extends BasePromiseModal<DeviceSelectionResult
         this.continueButton.disabled = !canContinue;
     }
 
-    /**
-     * Handle continue button click.
-     */
     private handleContinue(): void {
         if (this.selectedAction === "fresh") {
             this.resolve({
@@ -310,9 +284,6 @@ export class DeviceSelectionModal extends BasePromiseModal<DeviceSelectionResult
         }
     }
 
-    /**
-     * Format date for display.
-     */
     private formatDate(date: Date): string {
         return date.toLocaleDateString("en-US", {
             day: "numeric",
@@ -320,9 +291,6 @@ export class DeviceSelectionModal extends BasePromiseModal<DeviceSelectionResult
         });
     }
 
-    /**
-     * Format relative time for display.
-     */
     private formatRelativeTime(date: Date): string {
         const now = Date.now();
         const diffMs = now - date.getTime();

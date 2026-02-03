@@ -28,6 +28,7 @@ import type TrueRecallPlugin from "../../main";
 import type {
 	StatsTimeRange,
 	CardMaturityBreakdown,
+	FSRSFlashcardItem,
 } from "../../types";
 import type {
 	CardReviewedEvent,
@@ -189,14 +190,14 @@ export class StatsView extends ItemView {
 		this.futureDueChart = new FutureDueChart(this.contentWrapper, {
 			statsCalculator: this.statsCalculator,
 			currentRange: this.currentRange,
-			onCardPreview: (date, cards) => this.openCardPreviewForDate(date, cards),
+			onCardPreview: (date, cards) => this.openCardPreviewForDate(date, cards as FSRSFlashcardItem[]),
 		});
 		this.futureDueChart.render();
 
 		this.reviewsChart = new ReviewsChart(this.contentWrapper, {
 			statsCalculator: this.statsCalculator,
 			currentRange: this.currentRange,
-			onCardPreview: (date, cards) => this.openCardPreviewForDate(date, cards),
+			onCardPreview: (date, cards) => this.openCardPreviewForDate(date, cards as FSRSFlashcardItem[]),
 		});
 		this.reviewsChart.render();
 
@@ -208,13 +209,13 @@ export class StatsView extends ItemView {
 
 		this.cardCountsChart = new CardCountsChart(this.contentWrapper, {
 			statsCalculator: this.statsCalculator,
-			onCardPreview: (category, label, cards) => this.openCardPreviewForCategory(category, label, cards),
+			onCardPreview: (category, label, cards) => this.openCardPreviewForCategory(category, label, cards as FSRSFlashcardItem[]),
 		});
 		this.cardCountsChart.render();
 
 		this.calendarHeatmap = new CalendarHeatmap(this.contentWrapper, {
 			statsCalculator: this.statsCalculator,
-			onCardPreview: (date, cards) => this.openCardPreviewForDate(date, cards),
+			onCardPreview: (date, cards) => this.openCardPreviewForDate(date, cards as FSRSFlashcardItem[]),
 		});
 		this.calendarHeatmap.render();
 	}
@@ -330,7 +331,7 @@ export class StatsView extends ItemView {
 		});
 	}
 
-	private openCardPreviewForDate(date: string, cards: any[]): void {
+	private openCardPreviewForDate(date: string, cards: FSRSFlashcardItem[]): void {
 		new CardPreviewModal(this.plugin.app, {
 			title: `Cards reviewed: ${this.formatDateForDisplay(date)}`,
 			cards,
@@ -341,10 +342,10 @@ export class StatsView extends ItemView {
 	private openCardPreviewForCategory(
 		category: keyof CardMaturityBreakdown,
 		label: string,
-		cards: any[]
+		cards: FSRSFlashcardItem[]
 	): void {
 		new CardPreviewModal(this.plugin.app, {
-			title: `${label} Cards (${cards.length})`,
+			title: `${label} cards (${cards.length})`,
 			cards,
 			flashcardManager: this.plugin.flashcardManager,
 			category,

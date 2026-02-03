@@ -197,14 +197,16 @@ export class EditableTextField extends BaseComponent {
 
 		// Apply inline styles for invisible mode (overrides Obsidian defaults)
 		if (this.props.invisibleTextarea) {
-			this.textarea.style.fontSize = "inherit";
-			this.textarea.style.lineHeight = "inherit";
-			this.textarea.style.padding = "0";
-			this.textarea.style.margin = "0";
-			this.textarea.style.border = "none";
-			this.textarea.style.background = "transparent";
-			this.textarea.style.outline = "none";
-			this.textarea.style.boxShadow = "none";
+			this.textarea.setCssProps({
+				"font-size": "inherit",
+				"line-height": "inherit",
+				"padding": "0",
+				"margin": "0",
+				"border": "none",
+				"background": "transparent",
+				"outline": "none",
+				"box-shadow": "none",
+			});
 		}
 
 		// Set initial value (convert <br> to newlines for editing)
@@ -276,9 +278,10 @@ export class EditableTextField extends BaseComponent {
 		if (!this.textarea) return;
 
 		// Blur handler
-		this.events.addEventListener(this.textarea, "blur", (e) => {
+		this.events.addEventListener(this.textarea, "blur", (e: Event) => {
 			// Don't save if clicking toolbar
-			const relatedTarget = (e as FocusEvent).relatedTarget as HTMLElement;
+			const focusEvent = e as FocusEvent;
+			const relatedTarget = focusEvent.relatedTarget as HTMLElement | null;
 			if (relatedTarget?.closest(".true-recall-edit-toolbar")) return;
 
 			this.props.onSave?.(this.getValue());
@@ -290,7 +293,7 @@ export class EditableTextField extends BaseComponent {
 		});
 
 		// Keydown handler
-		this.events.addEventListener(this.textarea, "keydown", (e) => {
+		this.events.addEventListener(this.textarea, "keydown", (e: Event) => {
 			this.handleKeydown(e as KeyboardEvent);
 		});
 	}
