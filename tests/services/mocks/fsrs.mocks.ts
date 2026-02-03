@@ -7,9 +7,20 @@ import type {
 	FSRSFlashcardItem,
 	ReviewResult,
 	ReviewSessionState,
-	SourceNoteInfo,
-} from "../../../src/types/fsrs.types";
-import type { FSRSSettings } from "../../../src/types/settings.types";
+	FSRSSettings,
+} from "../../../src/types";
+
+/**
+ * Source note information (test-only type)
+ */
+export interface SourceNoteInfo {
+	uid: string;
+	noteName: string;
+	notePath?: string;
+	projects?: string[];
+	createdAt?: number;
+	updatedAt?: number;
+}
 
 /**
  * Create a mock FSRSCardData with sensible defaults
@@ -123,11 +134,11 @@ export function createMockFlashcard(
 		id: overrides.id ?? cardData.id,
 		question: overrides.question ?? "What is the capital of France?",
 		answer: overrides.answer ?? "Paris",
-		filePath: overrides.filePath ?? "",
 		fsrs: cardData,
 		projects: overrides.projects ?? ["Geography"],
 		sourceNoteName: overrides.sourceNoteName,
 		sourceUid: overrides.sourceUid,
+		sourceNotePath: overrides.sourceNotePath,
 	};
 }
 
@@ -270,7 +281,6 @@ export function createMockFlashcardWithSourcePath(
 		id: overrides.id ?? cardData.id,
 		question: overrides.question ?? "What is machine learning?",
 		answer: overrides.answer ?? "A type of AI that learns from data",
-		filePath: overrides.filePath ?? "", // Empty for SQL-only cards
 		fsrs: cardData,
 		projects: overrides.projects ?? ["AI/ML"],
 		sourceNoteName: overrides.sourceNoteName ?? "Machine Learning Basics",

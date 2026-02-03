@@ -9,12 +9,13 @@ import {
 	formatInterval,
 	formatIntervalDays,
 } from "../../src/types";
-import type { FSRSFlashcardItem, SourceNoteInfo } from "../../src/types";
+import type { FSRSFlashcardItem } from "../../src/types";
 import {
 	createMockFlashcard,
 	createMockFlashcardWithSourcePath,
 	createMockSourceNote,
 } from "../services/mocks/fsrs.mocks";
+import type { SourceNoteInfo } from "../services/mocks/fsrs.mocks";
 
 describe("fsrs.types utilities", () => {
 	describe("createDefaultFSRSData", () => {
@@ -244,33 +245,19 @@ describe("fsrs.types utilities", () => {
 			});
 
 			expect(card.sourceNotePath).toBe("input/my-source.md");
-			expect(card.filePath).toBe(""); // Empty for SQL-only cards
 		});
 
-		it("should allow empty filePath with valid sourceNotePath", () => {
+		it("should support sourceNotePath for source note linking", () => {
 			const card: FSRSFlashcardItem = {
 				id: "card-1",
 				question: "Test question?",
 				answer: "Test answer",
-				filePath: "",
 				fsrs: createDefaultFSRSData("card-1"),
 				projects: ["Test"],
 				sourceNotePath: "notes/source.md",
 			};
 
-			expect(card.filePath).toBe("");
 			expect(card.sourceNotePath).toBe("notes/source.md");
-		});
-
-		it("should use filePath when available over sourceNotePath", () => {
-			const card = createMockFlashcardWithSourcePath({
-				filePath: "flashcards/card.md",
-				sourceNotePath: "input/source.md",
-			});
-
-			// When filePath is present, it takes precedence for link resolution
-			expect(card.filePath).toBe("flashcards/card.md");
-			expect(card.sourceNotePath).toBe("input/source.md");
 		});
 
 		it("should work with createMockFlashcard defaults", () => {
@@ -279,7 +266,6 @@ describe("fsrs.types utilities", () => {
 			expect(card).toHaveProperty("id");
 			expect(card).toHaveProperty("question");
 			expect(card).toHaveProperty("answer");
-			expect(card).toHaveProperty("filePath");
 			expect(card).toHaveProperty("fsrs");
 			expect(card).toHaveProperty("projects");
 		});

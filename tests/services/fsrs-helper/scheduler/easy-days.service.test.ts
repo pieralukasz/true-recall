@@ -61,7 +61,7 @@ describe("Easy Days Service", () => {
 			vi.useFakeTimers();
 			vi.setSystemTime(new Date("2026-02-01T10:00:00Z")); // Sunday
 			mockStore = createMockCardStore();
-			service = new EasyDaysService(mockStore as any);
+			service = new EasyDaysService(mockStore );
 		});
 
 		afterEach(() => {
@@ -87,7 +87,7 @@ describe("Easy Days Service", () => {
 				const sundayCards = createCardsOnDate("2026-02-01", 10);
 				mockStore = createMockCardStore(sundayCards);
 				mockStore.getDueCardsByDateRange.mockReturnValue(sundayCards);
-				service = new EasyDaysService(mockStore as any);
+				service = new EasyDaysService(mockStore );
 
 				const result = await service.applyEasyDays({
 					easyDays: createEasyDaysConfig([0], []), // Sunday
@@ -109,7 +109,7 @@ describe("Easy Days Service", () => {
 				const sundayCards = createCardsOnDate("2026-02-01", 5);
 				mockStore = createMockCardStore(sundayCards);
 				mockStore.getDueCardsByDateRange.mockReturnValue(sundayCards);
-				service = new EasyDaysService(mockStore as any);
+				service = new EasyDaysService(mockStore );
 
 				const result = await service.applyEasyDays({
 					easyDays: createEasyDaysConfig([0], []),
@@ -125,7 +125,7 @@ describe("Easy Days Service", () => {
 				const sundayCards = createCardsOnDate("2026-02-01", 5);
 				mockStore = createMockCardStore(sundayCards);
 				mockStore.getDueCardsByDateRange.mockReturnValue(sundayCards);
-				service = new EasyDaysService(mockStore as any);
+				service = new EasyDaysService(mockStore );
 
 				const result = await service.applyEasyDays({
 					easyDays: createEasyDaysConfig([0], []),
@@ -143,7 +143,7 @@ describe("Easy Days Service", () => {
 				const sundayCards = createCardsOnDate("2026-02-01", 5);
 				mockStore = createMockCardStore(sundayCards);
 				mockStore.getDueCardsByDateRange.mockReturnValue(sundayCards);
-				service = new EasyDaysService(mockStore as any);
+				service = new EasyDaysService(mockStore );
 
 				const result = await service.applyEasyDays({
 					easyDays: createEasyDaysConfig([0, 1], []), // Sun, Mon
@@ -164,7 +164,7 @@ describe("Easy Days Service", () => {
 				const sundayCards = createCardsOnDate("2026-02-01", 3);
 				mockStore = createMockCardStore(sundayCards);
 				mockStore.getDueCardsByDateRange.mockReturnValue(sundayCards);
-				service = new EasyDaysService(mockStore as any);
+				service = new EasyDaysService(mockStore );
 
 				await service.applyEasyDays({
 					easyDays: createEasyDaysConfig([0], []),
@@ -181,7 +181,7 @@ describe("Easy Days Service", () => {
 				const sundayCards = createCardsOnDate("2026-02-01", 3);
 				mockStore = createMockCardStore(sundayCards);
 				mockStore.getDueCardsByDateRange.mockReturnValue(sundayCards);
-				service = new EasyDaysService(mockStore as any);
+				service = new EasyDaysService(mockStore );
 
 				await service.applyEasyDays({
 					easyDays: createEasyDaysConfig([0], []),
@@ -197,7 +197,7 @@ describe("Easy Days Service", () => {
 				const holidayCards = createCardsOnDate("2026-02-15", 8);
 				mockStore = createMockCardStore(holidayCards);
 				mockStore.getDueCardsByDateRange.mockReturnValue(holidayCards);
-				service = new EasyDaysService(mockStore as any);
+				service = new EasyDaysService(mockStore );
 
 				const result = await service.applyEasyDays({
 					easyDays: createEasyDaysConfig([], ["2026-02-15"]),
@@ -222,7 +222,7 @@ describe("Easy Days Service", () => {
 				];
 				mockStore = createMockCardStore(cards);
 				mockStore.getDueCardsByDateRange.mockReturnValue(cards);
-				service = new EasyDaysService(mockStore as any);
+				service = new EasyDaysService(mockStore );
 
 				const result = await service.applyEasyDays({
 					easyDays: createEasyDaysConfig([0], []),
@@ -247,7 +247,7 @@ describe("Easy Days Service", () => {
 				];
 				mockStore = createMockCardStore(cards);
 				mockStore.getDueCardsByDateRange.mockReturnValue(cards);
-				service = new EasyDaysService(mockStore as any);
+				service = new EasyDaysService(mockStore );
 
 				const result = service.previewImpact(
 					createEasyDaysConfig([0], []), // Sundays
@@ -270,7 +270,7 @@ describe("Easy Days Service", () => {
 				];
 				mockStore = createMockCardStore(cards);
 				mockStore.getDueCardsByDateRange.mockReturnValue(cards);
-				service = new EasyDaysService(mockStore as any);
+				service = new EasyDaysService(mockStore );
 
 				const result = service.previewImpact(
 					createEasyDaysConfig([0, 6], []), // Sun, Sat
@@ -287,7 +287,7 @@ describe("Easy Days Service", () => {
 				const cards = createCardsOnDate("2026-02-15", 8);
 				mockStore = createMockCardStore(cards);
 				mockStore.getDueCardsByDateRange.mockReturnValue(cards);
-				service = new EasyDaysService(mockStore as any);
+				service = new EasyDaysService(mockStore );
 
 				const result = service.previewImpact(
 					createEasyDaysConfig([], ["2026-02-15"]),

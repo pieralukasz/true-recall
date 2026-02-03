@@ -4,8 +4,8 @@
  * Shifts card due dates forward (postpone) or backward (advance) in bulk.
  */
 
-import type { SqliteStoreService } from "../../persistence/sqlite/SqliteStoreService";
 import type {
+	SchedulerCardStore,
 	ShiftOptions,
 	SchedulingResult,
 	CardScheduleChange,
@@ -18,7 +18,7 @@ import type {
  * Allows bulk shifting of due dates for workload management.
  */
 export class PostponeAdvanceService {
-	constructor(private cardStore: SqliteStoreService) {}
+	constructor(private cardStore: SchedulerCardStore) {}
 
 	/**
 	 * Shift card due dates

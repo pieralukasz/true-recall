@@ -2,7 +2,7 @@
  * Restore Backup Modal
  * Allows user to select and restore a database backup
  */
-import { App, Setting } from "obsidian";
+import { App } from "obsidian";
 import { BasePromiseModal, type CancellableResult } from "./BasePromiseModal";
 import type { BackupInfo, BackupService } from "../../services/persistence/backup.service";
 
@@ -22,7 +22,7 @@ export class RestoreBackupModal extends BasePromiseModal<RestoreBackupResult> {
 
     constructor(app: App, options: RestoreBackupModalOptions) {
         super(app, {
-            title: "Restore from Backup",
+            title: "Restore from backup",
             width: "500px",
         });
         this.backups = options.backups;
@@ -34,22 +34,24 @@ export class RestoreBackupModal extends BasePromiseModal<RestoreBackupResult> {
     }
 
     protected renderBody(container: HTMLElement): void {
-        // Warning message
         const warningEl = container.createDiv({ cls: "true-recall-backup-warning" });
         warningEl.createEl("p", {
             text: "Restoring a backup will replace your current database. A safety backup will be created automatically before restoration.",
         });
-        warningEl.style.backgroundColor = "var(--background-modifier-error)";
-        warningEl.style.padding = "12px";
-        warningEl.style.borderRadius = "6px";
-        warningEl.style.marginBottom = "16px";
-        warningEl.style.color = "var(--text-on-accent)";
+        warningEl.setCssProps({
+            "background-color": "var(--background-modifier-error)",
+            padding: "12px",
+            "border-radius": "6px",
+            "margin-bottom": "16px",
+            color: "var(--text-on-accent)",
+        });
 
-        // Backup list
         const listContainer = container.createDiv({ cls: "true-recall-backup-list" });
-        listContainer.style.maxHeight = "300px";
-        listContainer.style.overflowY = "auto";
-        listContainer.style.marginBottom = "16px";
+        listContainer.setCssProps({
+            "max-height": "300px",
+            "overflow-y": "auto",
+            "margin-bottom": "16px",
+        });
 
         if (this.backups.length === 0) {
             listContainer.createEl("p", {
@@ -62,23 +64,25 @@ export class RestoreBackupModal extends BasePromiseModal<RestoreBackupResult> {
             }
         }
 
-        // Actions
         const actionsEl = container.createDiv({ cls: "true-recall-modal-actions" });
-        actionsEl.style.display = "flex";
-        actionsEl.style.justifyContent = "flex-end";
-        actionsEl.style.gap = "8px";
+        actionsEl.setCssProps({
+            display: "flex",
+            "justify-content": "flex-end",
+            gap: "8px",
+        });
 
         const cancelBtn = actionsEl.createEl("button", { text: "Cancel" });
         cancelBtn.addEventListener("click", () => this.close());
 
         const restoreBtn = actionsEl.createEl("button", {
-            text: "Restore Selected",
+            text: "Restore selected",
             cls: "mod-warning",
         });
         restoreBtn.disabled = true;
-        restoreBtn.addEventListener("click", () => this.handleRestore());
+        restoreBtn.addEventListener("click", () => {
+            void this.handleRestore();
+        });
 
-        // Store reference for enabling/disabling
         this.restoreButton = restoreBtn;
     }
 
@@ -86,90 +90,95 @@ export class RestoreBackupModal extends BasePromiseModal<RestoreBackupResult> {
 
     private renderBackupItem(container: HTMLElement, backup: BackupInfo): void {
         const itemEl = container.createDiv({ cls: "true-recall-backup-item" });
-        itemEl.style.display = "flex";
-        itemEl.style.justifyContent = "space-between";
-        itemEl.style.alignItems = "center";
-        itemEl.style.padding = "10px 12px";
-        itemEl.style.borderRadius = "6px";
-        itemEl.style.marginBottom = "4px";
-        itemEl.style.cursor = "pointer";
-        itemEl.style.backgroundColor = "var(--background-secondary)";
-        itemEl.style.transition = "background-color 0.15s ease";
-
-        // Left side: date and filename
-        const infoEl = itemEl.createDiv();
-        infoEl.createDiv({
-            text: backup.formattedDate,
-            cls: "true-recall-backup-date",
-        }).style.fontWeight = "500";
-        infoEl.createDiv({
-            text: backup.filename,
-            cls: "true-recall-backup-filename",
-        }).style.fontSize = "0.85em";
-        infoEl.querySelector(".true-recall-backup-filename")?.setAttribute("style",
-            "font-size: 0.85em; color: var(--text-muted);");
-
-        // Right side: size and delete button
-        const rightEl = itemEl.createDiv();
-        rightEl.style.display = "flex";
-        rightEl.style.alignItems = "center";
-        rightEl.style.gap = "12px";
-
-        rightEl.createSpan({
-            text: backup.formattedSize,
-            cls: "true-recall-backup-size",
-        }).style.color = "var(--text-muted)";
-
-        const deleteBtn = rightEl.createEl("button", { text: "Delete" });
-        deleteBtn.style.fontSize = "0.85em";
-        deleteBtn.addEventListener("click", async (e) => {
-            e.stopPropagation();
-            await this.handleDeleteBackup(backup, itemEl);
+        itemEl.setCssProps({
+            display: "flex",
+            "justify-content": "space-between",
+            "align-items": "center",
+            padding: "10px 12px",
+            "border-radius": "6px",
+            "margin-bottom": "4px",
+            cursor: "pointer",
+            "background-color": "var(--background-secondary)",
+            transition: "background-color 0.15s ease",
         });
 
-        // Selection handling
+        const infoEl = itemEl.createDiv();
+        const dateEl = infoEl.createDiv({
+            text: backup.formattedDate,
+            cls: "true-recall-backup-date",
+        });
+        dateEl.setCssProps({ "font-weight": "500" });
+
+        const filenameEl = infoEl.createDiv({
+            text: backup.filename,
+            cls: "true-recall-backup-filename",
+        });
+        filenameEl.setCssProps({
+            "font-size": "0.85em",
+            color: "var(--text-muted)",
+        });
+
+        const rightEl = itemEl.createDiv();
+        rightEl.setCssProps({
+            display: "flex",
+            "align-items": "center",
+            gap: "12px",
+        });
+
+        const sizeEl = rightEl.createSpan({
+            text: backup.formattedSize,
+            cls: "true-recall-backup-size",
+        });
+        sizeEl.setCssProps({ color: "var(--text-muted)" });
+
+        const deleteBtn = rightEl.createEl("button", { text: "Delete" });
+        deleteBtn.setCssProps({ "font-size": "0.85em" });
+        deleteBtn.addEventListener("click", (e) => {
+            e.stopPropagation();
+            void this.handleDeleteBackup(backup, itemEl);
+        });
+
         itemEl.addEventListener("click", () => {
-            // Remove selection from all items
             container.querySelectorAll(".true-recall-backup-item").forEach(el => {
-                (el as HTMLElement).style.backgroundColor = "var(--background-secondary)";
-                (el as HTMLElement).style.border = "none";
+                (el as HTMLElement).setCssProps({
+                    "background-color": "var(--background-secondary)",
+                    border: "none",
+                });
             });
 
-            // Select this item
-            itemEl.style.backgroundColor = "var(--interactive-accent)";
-            itemEl.style.border = "2px solid var(--interactive-accent-hover)";
+            itemEl.setCssProps({
+                "background-color": "var(--interactive-accent)",
+                border: "2px solid var(--interactive-accent-hover)",
+            });
             this.selectedBackup = backup;
 
-            // Enable restore button
             if (this.restoreButton) {
                 this.restoreButton.disabled = false;
             }
         });
 
-        // Hover effect
         itemEl.addEventListener("mouseenter", () => {
             if (this.selectedBackup !== backup) {
-                itemEl.style.backgroundColor = "var(--background-modifier-hover)";
+                itemEl.setCssProps({ "background-color": "var(--background-modifier-hover)" });
             }
         });
         itemEl.addEventListener("mouseleave", () => {
             if (this.selectedBackup !== backup) {
-                itemEl.style.backgroundColor = "var(--background-secondary)";
+                itemEl.setCssProps({ "background-color": "var(--background-secondary)" });
             }
         });
     }
 
     private async handleDeleteBackup(backup: BackupInfo, itemEl: HTMLElement): Promise<void> {
+        // eslint-disable-next-line no-alert
         const confirmed = confirm(`Delete backup from ${backup.formattedDate}?`);
         if (!confirmed) return;
 
         const success = await this.backupService.deleteBackup(backup.path);
         if (success) {
-            // Remove from list
             this.backups = this.backups.filter(b => b.path !== backup.path);
             itemEl.remove();
 
-            // Clear selection if deleted backup was selected
             if (this.selectedBackup === backup) {
                 this.selectedBackup = null;
                 if (this.restoreButton) {
@@ -182,6 +191,7 @@ export class RestoreBackupModal extends BasePromiseModal<RestoreBackupResult> {
     private async handleRestore(): Promise<void> {
         if (!this.selectedBackup) return;
 
+        // eslint-disable-next-line no-alert
         const confirmed = confirm(
             `Are you sure you want to restore the backup from ${this.selectedBackup.formattedDate}?\n\n` +
             "Your current database will be replaced. A safety backup will be created first.\n\n" +

@@ -5,10 +5,7 @@
  */
 import { App, TFile, normalizePath } from "obsidian";
 import type TrueRecallPlugin from "../../main";
-import type {
-	OrphanedCardInfo,
-	OrphanedCardGroup,
-} from "../../services/flashcard/orphaned-cards.service";
+import type { OrphanedCardGroup } from "../../services/flashcard/orphaned-cards.service";
 
 /**
  * Content component for orphaned cards management
@@ -119,13 +116,21 @@ export class OrphanedCardsContent {
 	private renderEmptyState(): void {
 		if (!this.contentContainer) return;
 
-		this.contentContainer.createDiv({
+		const emptyContainer = this.contentContainer.createDiv({
 			cls: "ep:flex ep:flex-col ep:items-center ep:justify-center ep:py-12",
-		}).innerHTML = `
-			<div class="ep:text-4xl ep:mb-4">✨</div>
-			<div class="ep:text-obs-normal ep:text-ui-small ep:font-medium ep:mb-2">No orphaned cards!</div>
-			<div class="ep:text-obs-muted ep:text-ui-smaller">All your flashcards are properly linked to source notes.</div>
-		`;
+		});
+		emptyContainer.createDiv({
+			cls: "ep:text-4xl ep:mb-4",
+			text: "✨",
+		});
+		emptyContainer.createDiv({
+			cls: "ep:text-obs-normal ep:text-ui-small ep:font-medium ep:mb-2",
+			text: "No orphaned cards!",
+		});
+		emptyContainer.createDiv({
+			cls: "ep:text-obs-muted ep:text-ui-smaller",
+			text: "All your flashcards are properly linked to source notes.",
+		});
 	}
 
 	private renderGroup(container: HTMLElement, group: OrphanedCardGroup): void {
@@ -171,7 +176,7 @@ export class OrphanedCardsContent {
 
 		// Create note button
 		const createBtn = actionsEl.createEl("button", {
-			text: "Create Note",
+			text: "Create note",
 			cls: "ep:py-1 ep:px-2 ep:rounded ep:bg-obs-secondary ep:text-obs-normal ep:text-ui-smaller ep:cursor-pointer ep:hover:bg-obs-modifier-hover ep:border ep:border-obs-border",
 		});
 		createBtn.addEventListener("click", (e) => {
@@ -348,7 +353,8 @@ export class OrphanedCardsContent {
 	}
 
 	private handleDeleteGroup(group: OrphanedCardGroup): void {
-		const confirmed = confirm(
+		// eslint-disable-next-line no-alert -- destructive operation requires explicit user confirmation
+		const confirmed = window.confirm(
 			`Delete ${group.cards.length} card${group.cards.length === 1 ? "" : "s"}? This cannot be undone.`
 		);
 
@@ -364,7 +370,8 @@ export class OrphanedCardsContent {
 	private handleDeleteAll(): void {
 		const totalCount = this.groups.reduce((sum, g) => sum + g.cards.length, 0);
 
-		const confirmed = confirm(
+		// eslint-disable-next-line no-alert -- destructive operation requires explicit user confirmation
+		const confirmed = window.confirm(
 			`Delete all ${totalCount} orphaned cards? This cannot be undone.`
 		);
 

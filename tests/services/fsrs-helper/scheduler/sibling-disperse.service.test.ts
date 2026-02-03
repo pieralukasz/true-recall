@@ -16,7 +16,7 @@ describe("SiblingDisperseService", () => {
 		vi.useFakeTimers();
 		vi.setSystemTime(new Date("2026-02-01T10:00:00Z"));
 		mockStore = createMockCardStore();
-		service = new SiblingDisperseService(mockStore as any);
+		service = new SiblingDisperseService(mockStore );
 	});
 
 	afterEach(() => {
@@ -35,7 +35,7 @@ describe("SiblingDisperseService", () => {
 			mockStore.getCards.mockReturnValue(
 				siblings.map((c) => ({ ...c, suspended: false, state: 2 }))
 			);
-			service = new SiblingDisperseService(mockStore as any);
+			service = new SiblingDisperseService(mockStore );
 
 			const result = await service.disperse({
 				minInterval: 3,
@@ -59,7 +59,7 @@ describe("SiblingDisperseService", () => {
 			mockStore.getCards.mockReturnValue(
 				singleCard.map((c) => ({ ...c, suspended: false, state: 2 }))
 			);
-			service = new SiblingDisperseService(mockStore as any);
+			service = new SiblingDisperseService(mockStore );
 
 			const result = await service.disperse({
 				minInterval: 3,
@@ -79,7 +79,7 @@ describe("SiblingDisperseService", () => {
 			mockStore.getCards.mockReturnValue(
 				siblings.map((c) => ({ ...c, suspended: false, state: 2 }))
 			);
-			service = new SiblingDisperseService(mockStore as any);
+			service = new SiblingDisperseService(mockStore );
 
 			const result = await service.disperse({
 				minInterval: 3,
@@ -106,7 +106,7 @@ describe("SiblingDisperseService", () => {
 			mockStore.getCards.mockReturnValue(
 				allCards.map((c) => ({ ...c, suspended: false, state: 2 }))
 			);
-			service = new SiblingDisperseService(mockStore as any);
+			service = new SiblingDisperseService(mockStore );
 
 			const result = await service.disperse({
 				minInterval: 3,
@@ -134,7 +134,7 @@ describe("SiblingDisperseService", () => {
 			mockStore.getCards.mockReturnValue(
 				allCards.map((c) => ({ ...c, suspended: false, state: 2 }))
 			);
-			service = new SiblingDisperseService(mockStore as any);
+			service = new SiblingDisperseService(mockStore );
 
 			const result = await service.disperse({
 				minInterval: 3,
@@ -155,7 +155,7 @@ describe("SiblingDisperseService", () => {
 			mockStore.getCards.mockReturnValue(
 				siblings.map((c) => ({ ...c, suspended: false, state: 2 }))
 			);
-			service = new SiblingDisperseService(mockStore as any);
+			service = new SiblingDisperseService(mockStore );
 
 			const result = await service.disperse({
 				minInterval: 3,
@@ -174,7 +174,7 @@ describe("SiblingDisperseService", () => {
 			mockStore.getCards.mockReturnValue(
 				siblings.map((c) => ({ ...c, suspended: false, state: 2 }))
 			);
-			service = new SiblingDisperseService(mockStore as any);
+			service = new SiblingDisperseService(mockStore );
 
 			await service.disperse({
 				minInterval: 3,
@@ -193,7 +193,7 @@ describe("SiblingDisperseService", () => {
 			mockStore.getCards.mockReturnValue(
 				siblings.map((c) => ({ ...c, suspended: false, state: 2 }))
 			);
-			service = new SiblingDisperseService(mockStore as any);
+			service = new SiblingDisperseService(mockStore );
 
 			await service.disperse({
 				minInterval: 3,
@@ -216,7 +216,7 @@ describe("SiblingDisperseService", () => {
 			mockStore.getCards.mockReturnValue(
 				siblings.map((c) => ({ ...c, suspended: false, state: 2 }))
 			);
-			service = new SiblingDisperseService(mockStore as any);
+			service = new SiblingDisperseService(mockStore );
 
 			const result = await service.disperse({
 				minInterval: 2,
@@ -247,7 +247,7 @@ describe("SiblingDisperseService", () => {
 			mockStore.getCards.mockReturnValue(
 				siblings.map((c) => ({ ...c, suspended: false, state: 2 }))
 			);
-			service = new SiblingDisperseService(mockStore as any);
+			service = new SiblingDisperseService(mockStore );
 
 			const violations = service.findViolations(3);
 
@@ -267,7 +267,7 @@ describe("SiblingDisperseService", () => {
 			mockStore.getCards.mockReturnValue(
 				siblings.map((c) => ({ ...c, suspended: false, state: 2 }))
 			);
-			service = new SiblingDisperseService(mockStore as any);
+			service = new SiblingDisperseService(mockStore );
 
 			const violations = service.findViolations(3);
 
@@ -284,7 +284,7 @@ describe("SiblingDisperseService", () => {
 			mockStore.getCards.mockReturnValue(
 				siblings.map((c) => ({ ...c, suspended: false, state: 2 }))
 			);
-			service = new SiblingDisperseService(mockStore as any);
+			service = new SiblingDisperseService(mockStore );
 
 			const violations = service.findViolations(3);
 
@@ -306,7 +306,7 @@ describe("SiblingDisperseService", () => {
 			mockStore.getCards.mockReturnValue(
 				allCards.map((c) => ({ ...c, suspended: false, state: 2 }))
 			);
-			service = new SiblingDisperseService(mockStore as any);
+			service = new SiblingDisperseService(mockStore );
 
 			const violations = service.findViolations(3);
 

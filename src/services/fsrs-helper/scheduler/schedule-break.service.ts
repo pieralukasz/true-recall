@@ -5,8 +5,8 @@
  * workload accumulation.
  */
 
-import type { SqliteStoreService } from "../../persistence/sqlite/SqliteStoreService";
 import type {
+	SchedulerCardStore,
 	BreakScheduleOptions,
 	SchedulingResult,
 	CardScheduleChange,
@@ -20,7 +20,7 @@ import type {
  * are redistributed to before or after the break period.
  */
 export class ScheduleBreakService {
-	constructor(private cardStore: SqliteStoreService) {}
+	constructor(private cardStore: SchedulerCardStore) {}
 
 	/**
 	 * Schedule a break and redistribute cards

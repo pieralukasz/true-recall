@@ -7,8 +7,6 @@ import {
     ItemView,
     WorkspaceLeaf,
     TFile,
-    MarkdownRenderer,
-    setIcon,
     Platform,
     Menu,
 } from "obsidian";
@@ -106,6 +104,7 @@ export class FlashcardPanelView extends ItemView {
     }
 
     getDisplayText(): string {
+        // eslint-disable-next-line obsidianmd/ui/sentence-case -- Application name
         return "True Recall";
     }
 
@@ -1119,7 +1118,8 @@ export class FlashcardPanelView extends ItemView {
         if (selectedCards.length === 0) return;
 
         // Confirm deletion
-        const confirmed = confirm(`Delete ${selectedCards.length} selected card(s)?`);
+        // eslint-disable-next-line no-alert -- destructive operation requires explicit user confirmation
+        const confirmed = window.confirm(`Delete ${selectedCards.length} selected card(s)?`);
         if (!confirmed) return;
 
         // Delete cards by ID in parallel (order doesn't matter)
@@ -1210,7 +1210,8 @@ export class FlashcardPanelView extends ItemView {
         if (!state.flashcardInfo || state.flashcardInfo.flashcards.length === 0) return;
 
         const count = state.flashcardInfo.flashcards.length;
-        const confirmed = confirm(`Delete all ${count} flashcard(s) for this note?`);
+        // eslint-disable-next-line no-alert -- destructive operation requires explicit user confirmation
+        const confirmed = window.confirm(`Delete all ${count} flashcard(s) for this note?`);
         if (!confirmed) return;
 
         // Delete all cards in parallel
@@ -1457,11 +1458,12 @@ export class FlashcardPanelView extends ItemView {
         // Hide the "True Recall" title
         const titleEl = titleContainer.querySelector(".view-header-title") as HTMLElement;
         if (titleEl) {
-            titleEl.style.display = "none";
+            titleEl.setCssProps({ display: "none" });
         }
 
         // Create status element
-        this.mobileStatusEl = createDiv({ cls: "true-recall-mobile-status" });
+        this.mobileStatusEl = document.createElement("div");
+        this.mobileStatusEl.addClass("true-recall-mobile-status");
         titleContainer.appendChild(this.mobileStatusEl);
     }
 

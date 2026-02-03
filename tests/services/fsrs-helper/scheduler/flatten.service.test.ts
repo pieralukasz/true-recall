@@ -13,7 +13,7 @@ describe("FlattenService", () => {
 		vi.useFakeTimers();
 		vi.setSystemTime(new Date("2026-02-01T10:00:00Z"));
 		mockStore = createMockCardStore();
-		service = new FlattenService(mockStore as any);
+		service = new FlattenService(mockStore );
 	});
 
 	afterEach(() => {
@@ -25,7 +25,7 @@ describe("FlattenService", () => {
 			const cards = createCardsOnDate("2026-02-01", 5);
 			mockStore = createMockCardStore(cards);
 			mockStore.getDueCardsByDateRange.mockReturnValue(cards);
-			service = new FlattenService(mockStore as any);
+			service = new FlattenService(mockStore );
 
 			const result = await service.flatten({
 				date: "2026-02-01",
@@ -48,7 +48,7 @@ describe("FlattenService", () => {
 			];
 			mockStore = createMockCardStore(cards);
 			mockStore.getDueCardsByDateRange.mockReturnValue(cards);
-			service = new FlattenService(mockStore as any);
+			service = new FlattenService(mockStore );
 
 			const result = await service.flatten({
 				date: "2026-02-01",
@@ -70,7 +70,7 @@ describe("FlattenService", () => {
 			const cards = createCardsOnDate("2026-02-01", 10);
 			mockStore = createMockCardStore(cards);
 			mockStore.getDueCardsByDateRange.mockReturnValue(cards);
-			service = new FlattenService(mockStore as any);
+			service = new FlattenService(mockStore );
 
 			const result = await service.flatten({
 				date: "2026-02-01",
@@ -94,7 +94,7 @@ describe("FlattenService", () => {
 			const cards = createCardsOnDate("2026-02-01", 15);
 			mockStore = createMockCardStore(cards);
 			mockStore.getDueCardsByDateRange.mockReturnValue(cards);
-			service = new FlattenService(mockStore as any);
+			service = new FlattenService(mockStore );
 
 			const result = await service.flatten({
 				date: "2026-02-01",
@@ -115,7 +115,7 @@ describe("FlattenService", () => {
 			const cards = createCardsOnDate("2026-02-01", 10);
 			mockStore = createMockCardStore(cards);
 			mockStore.getDueCardsByDateRange.mockReturnValue(cards);
-			service = new FlattenService(mockStore as any);
+			service = new FlattenService(mockStore );
 
 			await service.flatten({
 				date: "2026-02-01",
@@ -130,7 +130,7 @@ describe("FlattenService", () => {
 			const cards = createCardsOnDate("2026-02-01", 10);
 			mockStore = createMockCardStore(cards);
 			mockStore.getDueCardsByDateRange.mockReturnValue(cards);
-			service = new FlattenService(mockStore as any);
+			service = new FlattenService(mockStore );
 
 			await service.flatten({
 				date: "2026-02-01",
@@ -145,7 +145,7 @@ describe("FlattenService", () => {
 			const cards = createCardsOnDate("2026-02-01", 10);
 			mockStore = createMockCardStore(cards);
 			mockStore.getDueCardsByDateRange.mockReturnValue(cards);
-			service = new FlattenService(mockStore as any);
+			service = new FlattenService(mockStore );
 
 			const result = await service.flatten({
 				date: "2026-02-01",
@@ -176,7 +176,7 @@ describe("FlattenService", () => {
 			];
 			mockStore = createMockCardStore(cards);
 			mockStore.getDueCardsByDateRange.mockReturnValue(cards);
-			service = new FlattenService(mockStore as any);
+			service = new FlattenService(mockStore );
 
 			const overloaded = service.findOverloadedDays(10, 7);
 
@@ -189,7 +189,7 @@ describe("FlattenService", () => {
 			const cards = createCardsOnDate("2026-02-01", 25);
 			mockStore = createMockCardStore(cards);
 			mockStore.getDueCardsByDateRange.mockReturnValue(cards);
-			service = new FlattenService(mockStore as any);
+			service = new FlattenService(mockStore );
 
 			const overloaded = service.findOverloadedDays(10, 7);
 
@@ -205,7 +205,7 @@ describe("FlattenService", () => {
 			];
 			mockStore = createMockCardStore(cards);
 			mockStore.getDueCardsByDateRange.mockReturnValue(cards);
-			service = new FlattenService(mockStore as any);
+			service = new FlattenService(mockStore );
 
 			const overloaded = service.findOverloadedDays(10, 7);
 
@@ -220,7 +220,7 @@ describe("FlattenService", () => {
 			];
 			mockStore = createMockCardStore(cards);
 			mockStore.getDueCardsByDateRange.mockReturnValue(cards);
-			service = new FlattenService(mockStore as any);
+			service = new FlattenService(mockStore );
 
 			const overloaded = service.findOverloadedDays(10, 7);
 

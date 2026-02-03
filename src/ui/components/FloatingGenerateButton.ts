@@ -37,12 +37,24 @@ export class FloatingGenerateButton {
 		// Create button element
 		this.buttonEl = document.createElement("div");
 		this.buttonEl.addClass("ep-floating-generate-btn");
-		this.buttonEl.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l1.912 5.813a2 2 0 0 0 1.275 1.275L21 12l-5.813 1.912a2 2 0 0 0-1.275 1.275L12 21l-1.912-5.813a2 2 0 0 0-1.275-1.275L3 12l5.813-1.912a2 2 0 0 0 1.275-1.275L12 3z"/></svg>`;
+		const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+		svg.setAttribute("width", "20");
+		svg.setAttribute("height", "20");
+		svg.setAttribute("viewBox", "0 0 24 24");
+		svg.setAttribute("fill", "none");
+		svg.setAttribute("stroke", "currentColor");
+		svg.setAttribute("stroke-width", "2");
+		svg.setAttribute("stroke-linecap", "round");
+		svg.setAttribute("stroke-linejoin", "round");
+		const path = document.createElementNS("http://www.w3.org/2000/svg", "path");
+		path.setAttribute("d", "M12 3l1.912 5.813a2 2 0 0 0 1.275 1.275L21 12l-5.813 1.912a2 2 0 0 0-1.275 1.275L12 21l-1.912-5.813a2 2 0 0 0-1.275-1.275L3 12l5.813-1.912a2 2 0 0 0 1.275-1.275L12 3z");
+		svg.appendChild(path);
+		this.buttonEl.appendChild(svg);
 		this.buttonEl.setAttribute("aria-label", "Generate flashcards from selection");
-		this.buttonEl.style.display = "none";
+		this.buttonEl.setCssProps({ display: "none" });
 
 		// Add click handler
-		this.buttonEl.addEventListener("click", () => this.handleClick());
+		this.buttonEl.addEventListener("click", () => void this.handleClick());
 
 		// Append to body
 		document.body.appendChild(this.buttonEl);
@@ -122,7 +134,7 @@ export class FloatingGenerateButton {
 	private show(): void {
 		if (this.isVisible || !this.buttonEl) return;
 
-		this.buttonEl.style.display = "flex";
+		this.buttonEl.setCssProps({ display: "flex" });
 		// Trigger reflow for animation
 		void this.buttonEl.offsetWidth;
 		this.buttonEl.addClass("ep-floating-generate-btn--visible");
@@ -136,7 +148,7 @@ export class FloatingGenerateButton {
 		// Wait for fade animation to complete
 		setTimeout(() => {
 			if (this.buttonEl && !this.isVisible) {
-				this.buttonEl.style.display = "none";
+				this.buttonEl.setCssProps({ display: "none" });
 			}
 		}, 200);
 		this.isVisible = false;

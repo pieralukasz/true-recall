@@ -72,8 +72,8 @@ export class StatsCalculatorService {
 	 * Young: Review cards with interval < 21 days
 	 * Mature: Review cards with interval >= 21 days
 	 */
-	async getCardMaturityBreakdown(): Promise<CardMaturityBreakdown> {
-		const allCards = await this.flashcardManager.getAllFSRSCards();
+	getCardMaturityBreakdown(): CardMaturityBreakdown {
+		const allCards = this.flashcardManager.getAllFSRSCards();
 		return this.maturityCalculator.calculate(allCards);
 	}
 
@@ -81,8 +81,8 @@ export class StatsCalculatorService {
 	 * Get future due predictions for bar chart
 	 * @param range Time range: 'backlog' | '1m' | '3m' | '1y' | 'all'
 	 */
-	async getFutureDueStats(range: StatsTimeRange): Promise<FutureDueEntry[]> {
-		const allCards = await this.flashcardManager.getAllFSRSCards();
+	getFutureDueStats(range: StatsTimeRange): FutureDueEntry[] {
+		const allCards = this.flashcardManager.getAllFSRSCards();
 		return this.chartDataCalculator.getFutureDueStats(allCards, range);
 	}
 
@@ -105,9 +105,8 @@ export class StatsCalculatorService {
 	/**
 	 * Get today's summary statistics
 	 */
-	async getTodaySummary(): Promise<TodaySummary> {
-		const todayStats =
-			(await this.sessionPersistence.getTodayStats()) as ExtendedDailyStats;
+	getTodaySummary(): TodaySummary {
+		const todayStats = this.sessionPersistence.getTodayStats();
 
 		const totalRatings =
 			(todayStats.again ?? 0) +
@@ -129,11 +128,11 @@ export class StatsCalculatorService {
 	/**
 	 * Get streak information
 	 */
-	async getStreakInfo(): Promise<StreakInfo> {
+	getStreakInfo(): StreakInfo {
 		if (!this.sessionPersistence) {
 			return { current: 0, longest: 0 };
 		}
-		const allStats = await this.sessionPersistence.getAllDailyStatsSummary();
+		const allStats = this.sessionPersistence.getAllDailyStatsSummary();
 		return this.streakCalculator.calculate(allStats);
 	}
 
@@ -150,7 +149,7 @@ export class StatsCalculatorService {
 		dailyLoad: number;
 	}> {
 		const history = await this.getReviewHistory(range);
-		const allCards = await this.flashcardManager.getAllFSRSCards();
+		const allCards = this.flashcardManager.getAllFSRSCards();
 
 		const endDate = new Date();
 		const startDate = this.calculateStartDate(endDate, range);
@@ -180,7 +179,7 @@ export class StatsCalculatorService {
 		}).length;
 
 		// Calculate daily load (average cards due per day in next 30 days)
-		const futureStats = await this.getFutureDueStats("1m");
+		const futureStats = this.getFutureDueStats("1m");
 		const dailyLoad =
 			futureStats.length > 0
 				? Math.round(
@@ -205,11 +204,11 @@ export class StatsCalculatorService {
 	 * Get retention rate history for line chart
 	 * Retention = (Good + Easy) / Total reviews
 	 */
-	async getRetentionHistory(range: StatsTimeRange): Promise<RetentionEntry[]> {
+	getRetentionHistory(range: StatsTimeRange): RetentionEntry[] {
 		if (!this.sessionPersistence) {
 			return [];
 		}
-		const allStats = await this.sessionPersistence.getAllDailyStatsSummary();
+		const allStats = this.sessionPersistence.getAllDailyStatsSummary();
 		return this.chartDataCalculator.getRetentionHistory(allStats, range);
 	}
 
@@ -244,10 +243,8 @@ export class StatsCalculatorService {
 	 * Get future due stats with filled-in missing days
 	 * Returns one entry per day for the entire range (30, 90, 365 days)
 	 */
-	async getFutureDueStatsFilled(
-		range: StatsTimeRange
-	): Promise<FutureDueEntry[]> {
-		const allCards = await this.flashcardManager.getAllFSRSCards();
+	getFutureDueStatsFilled(range: StatsTimeRange): FutureDueEntry[] {
+		const allCards = this.flashcardManager.getAllFSRSCards();
 		return this.chartDataCalculator.getFutureDueStatsFilled(allCards, range);
 	}
 
@@ -255,8 +252,8 @@ export class StatsCalculatorService {
 	 * Get cards due on a specific date
 	 * @param date ISO date string (YYYY-MM-DD)
 	 */
-	async getCardsDueOnDate(date: string): Promise<FSRSFlashcardItem[]> {
-		const allCards = await this.flashcardManager.getAllFSRSCards();
+	getCardsDueOnDate(date: string): FSRSFlashcardItem[] {
+		const allCards = this.flashcardManager.getAllFSRSCards();
 		return this.chartDataCalculator.getCardsDueOnDate(allCards, date);
 	}
 
@@ -264,10 +261,8 @@ export class StatsCalculatorService {
 	 * Get cards by maturity category
 	 * @param category Category key from CardMaturityBreakdown
 	 */
-	async getCardsByCategory(
-		category: keyof CardMaturityBreakdown
-	): Promise<FSRSFlashcardItem[]> {
-		const allCards = await this.flashcardManager.getAllFSRSCards();
+	getCardsByCategory(category: keyof CardMaturityBreakdown): FSRSFlashcardItem[] {
+		const allCards = this.flashcardManager.getAllFSRSCards();
 		return this.maturityCalculator.getCardsByCategory(allCards, category);
 	}
 
@@ -276,10 +271,8 @@ export class StatsCalculatorService {
 	 * Returns one entry per day for the entire range
 	 * Note: "backlog" range is skipped as it's for future predictions, not creation history
 	 */
-	async getCardsCreatedHistoryFilled(
-		range: StatsTimeRange
-	): Promise<CardsCreatedEntry[]> {
-		const allCards = await this.flashcardManager.getAllFSRSCards();
+	async getCardsCreatedHistoryFilled(range: StatsTimeRange): Promise<CardsCreatedEntry[]> {
+		const allCards = this.flashcardManager.getAllFSRSCards();
 		return this.chartDataCalculator.getCardsCreatedHistoryFilled(allCards, range);
 	}
 
@@ -287,8 +280,8 @@ export class StatsCalculatorService {
 	 * Get cards created on a specific date
 	 * @param date ISO date string (YYYY-MM-DD)
 	 */
-	async getCardsCreatedOnDate(date: string): Promise<FSRSFlashcardItem[]> {
-		const allCards = await this.flashcardManager.getAllFSRSCards();
+	getCardsCreatedOnDate(date: string): FSRSFlashcardItem[] {
+		const allCards = this.flashcardManager.getAllFSRSCards();
 		return this.chartDataCalculator.getCardsCreatedOnDate(allCards, date);
 	}
 
@@ -297,9 +290,7 @@ export class StatsCalculatorService {
 	 * Shows for each day: created count, reviewed count, and same-day reviewed count
 	 * @param range Time range for the chart
 	 */
-	async getCardsCreatedVsReviewedHistory(
-		range: StatsTimeRange
-	): Promise<CardsCreatedVsReviewedEntry[]> {
+	getCardsCreatedVsReviewedHistory(range: StatsTimeRange): CardsCreatedVsReviewedEntry[] {
 		return this.chartDataCalculator.getCardsCreatedVsReviewedHistory(range);
 	}
 }

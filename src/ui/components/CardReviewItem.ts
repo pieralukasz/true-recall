@@ -220,7 +220,24 @@ export class CardReviewItem extends BaseComponent {
 				attr: { "aria-label": "Unbury card", "title": "Unbury" },
 			});
 			// Eye icon (opposite of eye-off used for bury)
-			unburyBtn.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>`;
+			const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+			svg.setAttribute("width", "16");
+			svg.setAttribute("height", "16");
+			svg.setAttribute("viewBox", "0 0 24 24");
+			svg.setAttribute("fill", "none");
+			svg.setAttribute("stroke", "currentColor");
+			svg.setAttribute("stroke-width", "2");
+			svg.setAttribute("stroke-linecap", "round");
+			svg.setAttribute("stroke-linejoin", "round");
+			const path1 = document.createElementNS("http://www.w3.org/2000/svg", "path");
+			path1.setAttribute("d", "M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z");
+			const circle = document.createElementNS("http://www.w3.org/2000/svg", "circle");
+			circle.setAttribute("cx", "12");
+			circle.setAttribute("cy", "12");
+			circle.setAttribute("r", "3");
+			svg.appendChild(path1);
+			svg.appendChild(circle);
+			unburyBtn.appendChild(svg);
 			this.events.addEventListener(unburyBtn, "click", (e) => {
 				e.stopPropagation();
 				onUnbury(card);
@@ -233,7 +250,22 @@ export class CardReviewItem extends BaseComponent {
 				cls: btnCls,
 				attr: { "aria-label": "Edit flashcard", "title": "Edit" },
 			});
-			editBtn.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>`;
+			const editSvg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+			editSvg.setAttribute("width", "16");
+			editSvg.setAttribute("height", "16");
+			editSvg.setAttribute("viewBox", "0 0 24 24");
+			editSvg.setAttribute("fill", "none");
+			editSvg.setAttribute("stroke", "currentColor");
+			editSvg.setAttribute("stroke-width", "2");
+			editSvg.setAttribute("stroke-linecap", "round");
+			editSvg.setAttribute("stroke-linejoin", "round");
+			const editPath1 = document.createElementNS("http://www.w3.org/2000/svg", "path");
+			editPath1.setAttribute("d", "M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7");
+			const editPath2 = document.createElementNS("http://www.w3.org/2000/svg", "path");
+			editPath2.setAttribute("d", "M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z");
+			editSvg.appendChild(editPath1);
+			editSvg.appendChild(editPath2);
+			editBtn.appendChild(editSvg);
 			this.events.addEventListener(editBtn, "click", (e) => {
 				e.stopPropagation();
 				onEditButton(card);
@@ -246,7 +278,25 @@ export class CardReviewItem extends BaseComponent {
 				cls: btnCls,
 				attr: { "aria-label": "Delete flashcard", "title": "Delete" },
 			});
-			deleteBtn.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/></svg>`;
+			const deleteSvg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+			deleteSvg.setAttribute("width", "16");
+			deleteSvg.setAttribute("height", "16");
+			deleteSvg.setAttribute("viewBox", "0 0 24 24");
+			deleteSvg.setAttribute("fill", "none");
+			deleteSvg.setAttribute("stroke", "currentColor");
+			deleteSvg.setAttribute("stroke-width", "2");
+			deleteSvg.setAttribute("stroke-linecap", "round");
+			deleteSvg.setAttribute("stroke-linejoin", "round");
+			const deletePath1 = document.createElementNS("http://www.w3.org/2000/svg", "path");
+			deletePath1.setAttribute("d", "M3 6h18");
+			const deletePath2 = document.createElementNS("http://www.w3.org/2000/svg", "path");
+			deletePath2.setAttribute("d", "M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6");
+			const deletePath3 = document.createElementNS("http://www.w3.org/2000/svg", "path");
+			deletePath3.setAttribute("d", "M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2");
+			deleteSvg.appendChild(deletePath1);
+			deleteSvg.appendChild(deletePath2);
+			deleteSvg.appendChild(deletePath3);
+			deleteBtn.appendChild(deleteSvg);
 			this.events.addEventListener(deleteBtn, "click", (e) => {
 				e.stopPropagation();
 				onDelete(card);
@@ -259,7 +309,28 @@ export class CardReviewItem extends BaseComponent {
 				cls: btnCls,
 				attr: { "aria-label": "Open source note", "title": "Open" },
 			});
-			openBtn.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>`;
+			const openSvg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+			openSvg.setAttribute("width", "16");
+			openSvg.setAttribute("height", "16");
+			openSvg.setAttribute("viewBox", "0 0 24 24");
+			openSvg.setAttribute("fill", "none");
+			openSvg.setAttribute("stroke", "currentColor");
+			openSvg.setAttribute("stroke-width", "2");
+			openSvg.setAttribute("stroke-linecap", "round");
+			openSvg.setAttribute("stroke-linejoin", "round");
+			const openPath = document.createElementNS("http://www.w3.org/2000/svg", "path");
+			openPath.setAttribute("d", "M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6");
+			const openPolyline = document.createElementNS("http://www.w3.org/2000/svg", "polyline");
+			openPolyline.setAttribute("points", "15 3 21 3 21 9");
+			const openLine = document.createElementNS("http://www.w3.org/2000/svg", "line");
+			openLine.setAttribute("x1", "10");
+			openLine.setAttribute("y1", "14");
+			openLine.setAttribute("x2", "21");
+			openLine.setAttribute("y2", "3");
+			openSvg.appendChild(openPath);
+			openSvg.appendChild(openPolyline);
+			openSvg.appendChild(openLine);
+			openBtn.appendChild(openSvg);
 			this.events.addEventListener(openBtn, "click", (e) => {
 				e.stopPropagation();
 				onOpen(card);
@@ -272,7 +343,27 @@ export class CardReviewItem extends BaseComponent {
 				cls: btnCls,
 				attr: { "aria-label": "Copy flashcard", "title": "Copy" },
 			});
-			copyBtn.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>`;
+			const copySvg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+			copySvg.setAttribute("width", "16");
+			copySvg.setAttribute("height", "16");
+			copySvg.setAttribute("viewBox", "0 0 24 24");
+			copySvg.setAttribute("fill", "none");
+			copySvg.setAttribute("stroke", "currentColor");
+			copySvg.setAttribute("stroke-width", "2");
+			copySvg.setAttribute("stroke-linecap", "round");
+			copySvg.setAttribute("stroke-linejoin", "round");
+			const copyRect = document.createElementNS("http://www.w3.org/2000/svg", "rect");
+			copyRect.setAttribute("x", "9");
+			copyRect.setAttribute("y", "9");
+			copyRect.setAttribute("width", "13");
+			copyRect.setAttribute("height", "13");
+			copyRect.setAttribute("rx", "2");
+			copyRect.setAttribute("ry", "2");
+			const copyPath = document.createElementNS("http://www.w3.org/2000/svg", "path");
+			copyPath.setAttribute("d", "M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1");
+			copySvg.appendChild(copyRect);
+			copySvg.appendChild(copyPath);
+			copyBtn.appendChild(copySvg);
 			this.events.addEventListener(copyBtn, "click", (e) => {
 				e.stopPropagation();
 				onCopy(card);
@@ -285,7 +376,34 @@ export class CardReviewItem extends BaseComponent {
 				cls: btnCls,
 				attr: { "aria-label": "Move flashcard", "title": "Move" },
 			});
-			moveBtn.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="5 9 2 12 5 15"/><polyline points="9 5 12 2 15 5"/><polyline points="15 19 12 22 9 19"/><polyline points="19 9 22 12 19 15"/><line x1="2" y1="12" x2="22" y2="12"/></svg>`;
+			const moveSvg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+			moveSvg.setAttribute("width", "16");
+			moveSvg.setAttribute("height", "16");
+			moveSvg.setAttribute("viewBox", "0 0 24 24");
+			moveSvg.setAttribute("fill", "none");
+			moveSvg.setAttribute("stroke", "currentColor");
+			moveSvg.setAttribute("stroke-width", "2");
+			moveSvg.setAttribute("stroke-linecap", "round");
+			moveSvg.setAttribute("stroke-linejoin", "round");
+			const movePoly1 = document.createElementNS("http://www.w3.org/2000/svg", "polyline");
+			movePoly1.setAttribute("points", "5 9 2 12 5 15");
+			const movePoly2 = document.createElementNS("http://www.w3.org/2000/svg", "polyline");
+			movePoly2.setAttribute("points", "9 5 12 2 15 5");
+			const movePoly3 = document.createElementNS("http://www.w3.org/2000/svg", "polyline");
+			movePoly3.setAttribute("points", "15 19 12 22 9 19");
+			const movePoly4 = document.createElementNS("http://www.w3.org/2000/svg", "polyline");
+			movePoly4.setAttribute("points", "19 9 22 12 19 15");
+			const moveLine = document.createElementNS("http://www.w3.org/2000/svg", "line");
+			moveLine.setAttribute("x1", "2");
+			moveLine.setAttribute("y1", "12");
+			moveLine.setAttribute("x2", "22");
+			moveLine.setAttribute("y2", "12");
+			moveSvg.appendChild(movePoly1);
+			moveSvg.appendChild(movePoly2);
+			moveSvg.appendChild(movePoly3);
+			moveSvg.appendChild(movePoly4);
+			moveSvg.appendChild(moveLine);
+			moveBtn.appendChild(moveSvg);
 			this.events.addEventListener(moveBtn, "click", (e) => {
 				e.stopPropagation();
 				onMove(card);
