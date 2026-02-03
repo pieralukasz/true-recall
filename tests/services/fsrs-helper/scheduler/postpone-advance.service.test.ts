@@ -13,7 +13,7 @@ describe("PostponeAdvanceService", () => {
 		vi.useFakeTimers();
 		vi.setSystemTime(new Date("2026-02-01T10:00:00Z"));
 		mockStore = createMockCardStore();
-		service = new PostponeAdvanceService(mockStore as any);
+		service = new PostponeAdvanceService(mockStore );
 	});
 
 	afterEach(() => {
@@ -28,7 +28,7 @@ describe("PostponeAdvanceService", () => {
 			mockStore.getCards.mockReturnValue(
 				cards.map((c) => ({ ...c, suspended: false, state: 2 }))
 			);
-			service = new PostponeAdvanceService(mockStore as any);
+			service = new PostponeAdvanceService(mockStore );
 
 			const result = await service.shift({
 				action: "postpone",
@@ -51,7 +51,7 @@ describe("PostponeAdvanceService", () => {
 
 			mockStore = createMockCardStore(allCards);
 			mockStore.getDueCardsByDateRange.mockReturnValue(todayCards);
-			service = new PostponeAdvanceService(mockStore as any);
+			service = new PostponeAdvanceService(mockStore );
 
 			const result = await service.shift({
 				action: "postpone",
@@ -77,7 +77,7 @@ describe("PostponeAdvanceService", () => {
 
 			mockStore = createMockCardStore(allCards);
 			mockStore.getCards.mockReturnValue(allCards);
-			service = new PostponeAdvanceService(mockStore as any);
+			service = new PostponeAdvanceService(mockStore );
 
 			const result = await service.shift({
 				action: "postpone",
@@ -93,7 +93,7 @@ describe("PostponeAdvanceService", () => {
 			const cards = createCardsOnDate("2026-02-01", 5);
 			mockStore = createMockCardStore(cards);
 			mockStore.get.mockImplementation((id: string) => cards.find((c) => c.id === id));
-			service = new PostponeAdvanceService(mockStore as any);
+			service = new PostponeAdvanceService(mockStore );
 
 			const result = await service.shift({
 				action: "postpone",
@@ -115,7 +115,7 @@ describe("PostponeAdvanceService", () => {
 
 			mockStore = createMockCardStore(cards);
 			mockStore.getCards.mockReturnValue(cards);
-			service = new PostponeAdvanceService(mockStore as any);
+			service = new PostponeAdvanceService(mockStore );
 
 			const result = await service.shift({
 				action: "postpone",
@@ -137,7 +137,7 @@ describe("PostponeAdvanceService", () => {
 			mockStore.getCards.mockReturnValue(
 				cards.map((c) => ({ ...c, suspended: false, state: 2 }))
 			);
-			service = new PostponeAdvanceService(mockStore as any);
+			service = new PostponeAdvanceService(mockStore );
 
 			const result = await service.shift({
 				action: "advance",
@@ -160,7 +160,7 @@ describe("PostponeAdvanceService", () => {
 			mockStore.getCards.mockReturnValue(
 				cards.map((c) => ({ ...c, suspended: false, state: 2 }))
 			);
-			service = new PostponeAdvanceService(mockStore as any);
+			service = new PostponeAdvanceService(mockStore );
 
 			const result = await service.shift({
 				action: "advance",
@@ -186,7 +186,7 @@ describe("PostponeAdvanceService", () => {
 			mockStore.getCards.mockReturnValue(
 				cards.map((c) => ({ ...c, suspended: false, state: 2 }))
 			);
-			service = new PostponeAdvanceService(mockStore as any);
+			service = new PostponeAdvanceService(mockStore );
 
 			await service.shift({
 				action: "postpone",
@@ -204,7 +204,7 @@ describe("PostponeAdvanceService", () => {
 			mockStore.getCards.mockReturnValue(
 				cards.map((c) => ({ ...c, suspended: false, state: 2 }))
 			);
-			service = new PostponeAdvanceService(mockStore as any);
+			service = new PostponeAdvanceService(mockStore );
 
 			await service.shift({
 				action: "postpone",
@@ -224,7 +224,7 @@ describe("PostponeAdvanceService", () => {
 			];
 			mockStore = createMockCardStore(cards);
 			mockStore.getCards.mockReturnValue(cards);
-			service = new PostponeAdvanceService(mockStore as any);
+			service = new PostponeAdvanceService(mockStore );
 
 			const result = await service.shift({
 				action: "postpone",
@@ -244,7 +244,7 @@ describe("PostponeAdvanceService", () => {
 			mockStore.getCards.mockReturnValue(
 				cards.map((c) => ({ ...c, suspended: false, state: 2 }))
 			);
-			service = new PostponeAdvanceService(mockStore as any);
+			service = new PostponeAdvanceService(mockStore );
 
 			const result = await service.shift({
 				action: "postpone",

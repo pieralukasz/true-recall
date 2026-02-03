@@ -56,7 +56,7 @@ export class BrowserView extends ItemView {
     }
 
     getDisplayText(): string {
-        return "Card Browser";
+        return "Card browser";
     }
 
     getIcon(): string {
@@ -309,16 +309,18 @@ export class BrowserView extends ItemView {
                     break;
 
                 case "delete":
-                    if (!confirm(`Delete ${selectedIds.length} card(s)? This cannot be undone.`)) {
+                    // eslint-disable-next-line no-alert -- destructive operation requires explicit user confirmation
+                    if (!window.confirm(`Delete ${selectedIds.length} card(s)? This cannot be undone.`)) {
                         return;
                     }
-                    count = browser.bulkDelete(selectedIds);
+                    count = browser.bulkSoftDelete(selectedIds);
                     this.stateManager.removeCards(selectedIds);
                     notify().cardsDeleted(count);
                     break;
 
                 case "reset":
-                    if (!confirm(`Reset ${selectedIds.length} card(s) to New state?`)) {
+                    // eslint-disable-next-line no-alert -- destructive operation requires explicit user confirmation
+                    if (!window.confirm(`Reset ${selectedIds.length} card(s) to new state?`)) {
                         return;
                     }
                     count = browser.bulkReset(selectedIds);
@@ -326,7 +328,8 @@ export class BrowserView extends ItemView {
                     break;
 
                 case "reschedule": {
-                    const dateStr = prompt("Enter new due date (YYYY-MM-DD):");
+                    // eslint-disable-next-line no-alert -- simple input prompt for date
+                    const dateStr = window.prompt("Enter new due date (YYYY-MM-DD):");
                     if (!dateStr) return;
                     const date = new Date(dateStr);
                     if (isNaN(date.getTime())) {

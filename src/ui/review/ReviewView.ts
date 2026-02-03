@@ -6,8 +6,6 @@
 import {
 	ItemView,
 	WorkspaceLeaf,
-	MarkdownRenderer,
-	Platform,
 	Menu,
 	setIcon,
 	TFile,
@@ -257,7 +255,7 @@ export class ReviewView extends ItemView {
 	}
 
 	getDisplayText(): string {
-		return "Review Session";
+		return "Review session";
 	}
 
 	getIcon(): string {
@@ -283,15 +281,6 @@ export class ReviewView extends ItemView {
 			"ep:p-0"
 		);
 
-		// Add scoped styles for font scaling
-		const styleEl = container.createEl("style");
-		styleEl.textContent = `
-			.true-recall-review-question,
-			.true-recall-review-answer {
-				font-size: calc(1em * var(--review-font-scale, 1));
-			}
-		`;
-
 		// Create UI structure
 		this.headerEl = container.createDiv({
 			cls: "ep:flex ep:justify-center ep:items-center ep:border-b ep:border-obs-border ep:relative ep:shrink-0 ep:p-2 ep:pb-4",
@@ -312,7 +301,7 @@ export class ReviewView extends ItemView {
 			}
 
 			// Handle data-action clicks (open-source, toggle-projects, open-project)
-			const actionEl = target.closest("[data-action]") as HTMLElement | null;
+			const actionEl = target.closest<HTMLElement>("[data-action]");
 			if (actionEl) {
 				const action = actionEl.dataset.action;
 				if (action === "open-source") {
@@ -337,7 +326,7 @@ export class ReviewView extends ItemView {
 			}
 
 			// Handle field clicks (question/answer) for internal links and edit mode
-			const fieldEl = target.closest("[data-field]") as HTMLElement | null;
+			const fieldEl = target.closest<HTMLElement>("[data-field]");
 			if (fieldEl) {
 				const field = fieldEl.dataset.field as "question" | "answer" | undefined;
 				const sourcePath = fieldEl.dataset.sourcePath || "";
@@ -382,8 +371,8 @@ export class ReviewView extends ItemView {
 		// Register keyboard shortcuts using the KeyboardHandler
 		this.registerDomEvent(document, "keydown", (e: KeyboardEvent) => {
 			// Only handle when this view is active
-			const activeLeaf = this.app.workspace.activeLeaf;
-			if (activeLeaf?.view !== this) return;
+			const activeView = this.app.workspace.getActiveViewOfType(ReviewView);
+			if (activeView !== this) return;
 
 			// Skip if modal is open
 			if (document.querySelector(".modal-container")) return;
@@ -562,7 +551,7 @@ export class ReviewView extends ItemView {
 			this.fsrsService.updateSettings(fsrsSettings);
 
 			// Get all cards
-			const allCards = await this.flashcardManager.getAllFSRSCards();
+			const allCards = this.flashcardManager.getAllFSRSCards();
 
 			if (allCards.length === 0) {
 				this.renderEmptyState(
@@ -596,8 +585,8 @@ export class ReviewView extends ItemView {
 				this.renderEmptyState("Session persistence not ready. Please try again.");
 				return;
 			}
-			const reviewedToday = await this.sessionPersistence.getReviewedToday();
-			const newCardsStudiedToday = await this.sessionPersistence.getNewCardsStudiedToday();
+			const reviewedToday = this.sessionPersistence.getReviewedToday();
+			const newCardsStudiedToday = this.sessionPersistence.getNewCardsStudiedToday();
 
 			// Build sourceUidToProjects map for project filtering (using helper)
 			const sourceUidToProjects = buildSourceUidToProjectsMap(
@@ -636,10 +625,10 @@ export class ReviewView extends ItemView {
 			if (queue.length === 0) {
 				// Diagnostic logging for project filter debugging
 				if (this.projectFilters && this.projectFilters.length > 0) {
-					console.log("[ReviewView] Project filter active but queue empty");
-					console.log("[ReviewView] projectFilters:", this.projectFilters);
-					console.log("[ReviewView] sourceUidToProjects size:", sourceUidToProjects?.size ?? 0);
-					console.log("[ReviewView] activeCards count:", activeCards.length);
+					console.debug("[ReviewView] Project filter active but queue empty");
+					console.debug("[ReviewView] projectFilters:", this.projectFilters);
+					console.debug("[ReviewView] sourceUidToProjects size:", sourceUidToProjects?.size ?? 0);
+					console.debug("[ReviewView] activeCards count:", activeCards.length);
 				}
 				this.renderEmptyState(
 					getEmptyQueueMessage(this.stateFilter, this.projectFilters)
@@ -716,10 +705,10 @@ export class ReviewView extends ItemView {
 
 		// Header always updates (badge counts change)
 		if (this.plugin.settings.showReviewHeader) {
-			this.headerEl.style.display = "";
+			this.headerEl.setCssProps({ display: "" });
 			this.renderHeader();
 		} else {
-			this.headerEl.style.display = "none";
+			this.headerEl.setCssProps({ display: "none" });
 			this.headerEl.empty();
 		}
 
@@ -1024,10 +1013,10 @@ export class ReviewView extends ItemView {
 
 		// Hide buttons when in edit mode (prevents keyboard from pushing buttons up on mobile)
 		if (isEditing) {
-			this.buttonsEl.style.display = "none";
+			this.buttonsEl.setCssProps({ display: "none" });
 			return;
 		}
-		this.buttonsEl.style.display = "";
+		this.buttonsEl.setCssProps({ display: "" });
 
 		// Skip re-render if nothing relevant has changed
 		// Buttons need re-render when: card changes, answer revealed, or returning from edit mode
@@ -1119,7 +1108,7 @@ export class ReviewView extends ItemView {
 		if (this.cardActionsHandler.canUndo()) {
 			menu.addItem((item) =>
 				item
-					.setTitle("Undo Last Answer (Z)")
+					.setTitle("Undo last answer (z)")
 					.setIcon("undo")
 					.onClick(() => this.cardActionsHandler.handleUndo())
 			);
@@ -1128,7 +1117,7 @@ export class ReviewView extends ItemView {
 
 		menu.addItem((item) =>
 			item
-				.setTitle("Move Card (M)")
+				.setTitle("Move card (m)")
 				.setIcon("folder-input")
 				.onClick(() => this.cardActionsHandler.handleMoveCard())
 		);
@@ -1142,21 +1131,21 @@ export class ReviewView extends ItemView {
 
 		menu.addItem((item) =>
 			item
-				.setTitle("Bury Card (-)")
+				.setTitle("Bury card (-)")
 				.setIcon("eye-off")
 				.onClick(() => this.cardActionsHandler.handleBuryCard())
 		);
 
 		menu.addItem((item) =>
 			item
-				.setTitle("Bury Note (=)")
+				.setTitle("Bury note (=)")
 				.setIcon("eye-off")
 				.onClick(() => this.cardActionsHandler.handleBuryNote())
 		);
 
 		menu.addItem((item) =>
 			item
-				.setTitle("Edit Card (E)")
+				.setTitle("Edit card (e)")
 				.setIcon("pencil")
 				.onClick(
 					() => void this.cardActionsHandler.handleEditCardModal()
@@ -1165,7 +1154,7 @@ export class ReviewView extends ItemView {
 
 		menu.addItem((item) =>
 			item
-				.setTitle("Add Flashcard (A)")
+				.setTitle("Add flashcard (a)")
 				.setIcon("plus")
 				.onClick(
 					() => void this.cardActionsHandler.handleAddNewFlashcard()
@@ -1174,7 +1163,7 @@ export class ReviewView extends ItemView {
 
 		menu.addItem((item) =>
 			item
-				.setTitle("Open Source Note")
+				.setTitle("Open source note")
 				.setIcon("external-link")
 				.onClick(() => this.handleOpenSourceNote())
 		);
@@ -1244,7 +1233,7 @@ export class ReviewView extends ItemView {
 			});
 		}
 
-		btn.addEventListener("click", () => this.handleAnswer(rating));
+		btn.addEventListener("click", () => void this.handleAnswer(rating));
 	}
 
 	/**
@@ -1285,7 +1274,7 @@ export class ReviewView extends ItemView {
 			cls: "ep:text-center ep:py-8 ep:px-6 ep:max-w-md ep:mx-auto",
 		});
 		summaryEl.createEl("h2", {
-			text: "Session Complete!",
+			text: "Session complete!",
 			cls: "ep:text-2xl ep:m-0 ep:mb-6 ep:text-obs-normal",
 		});
 
@@ -1548,13 +1537,10 @@ export class ReviewView extends ItemView {
 		const responseTime =
 			Date.now() - this.stateManager.getState().questionShownTime;
 
-		// Capture state before any changes
 		const isNewCard = card.fsrs.state === State.New;
 		const previousState = card.fsrs.state;
 
-		// === CRITICAL PATH: Only essential operations before render ===
 
-		// 1. Calculate FSRS data (sync, <1ms)
 		const { updatedCard, result } = this.reviewService.processAnswer(
 			card,
 			rating,
@@ -1562,10 +1548,8 @@ export class ReviewView extends ItemView {
 			responseTime
 		);
 
-		// 2. Save to database (sync, <1ms - no event emission)
 		this.flashcardManager.updateCardFSRS(card.id, updatedCard.fsrs);
 
-		// 3. Calculate requeue data BEFORE state update (needs current state)
 		let requeueData: { card: FSRSFlashcardItem; position: number } | undefined;
 		if (this.reviewService.shouldRequeue(updatedCard)) {
 			const relativePosition = this.reviewService.getRequeuePosition(
@@ -1581,12 +1565,9 @@ export class ReviewView extends ItemView {
 			};
 		}
 
-		// 4. RENDER IMMEDIATELY - update state and show next card
 		const hasMore = this.stateManager.recordAnswerAndNext(rating, updatedCard, requeueData);
 
-		// === NON-BLOCKING: Fire-and-forget operations after render ===
 		queueMicrotask(() => {
-			// Push undo entry
 			this.plugin.undoService?.push({
 				id: crypto.randomUUID(),
 				actionType: "answer",
@@ -1604,7 +1585,6 @@ export class ReviewView extends ItemView {
 				},
 			});
 
-			// Record to persistent storage
 			try {
 				this.sessionPersistence.recordReview(
 					card.id,
@@ -1622,7 +1602,6 @@ export class ReviewView extends ItemView {
 				);
 			}
 
-			// Emit card:reviewed event for stats/panel updates
 			getEventBus().emit({
 				type: "card:reviewed",
 				cardId: card.id,
@@ -1631,10 +1610,8 @@ export class ReviewView extends ItemView {
 				timestamp: Date.now(),
 			} as CardReviewedEvent);
 
-			// Notify panel of card change
 			this.emitCardChangedEvent();
 
-			// Update scheduling preview for next card
 			if (hasMore) {
 				this.updateSchedulingPreview();
 			}
@@ -1655,8 +1632,7 @@ export class ReviewView extends ItemView {
 				payload.rating,
 				payload.previousState
 			);
-			// undoLastAnswer() handles queue restoration + stats reversion
-			// If card was requeued, requeuedAtIndex tells us where to remove the copy
+			
 			this.stateManager.undoLastAnswer(
 				payload.previousIndex,
 				{ ...payload.card, fsrs: payload.originalFsrs },
@@ -1671,7 +1647,6 @@ export class ReviewView extends ItemView {
 		const card = this.stateManager.getCurrentCard();
 		if (!card) return;
 
-		// All cards are SQL-only - try to open source note
 		if (card.sourceNoteName) {
 			this.handleOpenSourceNote();
 		} else {
@@ -1683,9 +1658,6 @@ export class ReviewView extends ItemView {
 		this.leaf.detach();
 	}
 
-	/**
-	 * Handle "Next Session" button click - opens new session modal
-	 */
 	private handleNextSession(): void {
 		this.leaf.detach();
 		void this.plugin.activateProjectsView();

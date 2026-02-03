@@ -67,7 +67,6 @@ import { registerEventHandlers, registerDeletionHandler } from "./plugin/PluginE
 import {
 	activateView,
 	activateReviewView,
-	viewExists,
 	getView,
 	closeAllViews,
 } from "./plugin/ViewActivator";
@@ -205,14 +204,16 @@ export default class TrueRecallPlugin extends Plugin {
 		);
 
 		// Add ribbon icon to start review
-		this.addRibbonIcon("brain", "True Recall - Study", () => {
+		// eslint-disable-next-line obsidianmd/ui/sentence-case -- True Recall is a proper noun
+		this.addRibbonIcon("brain", "True Recall - study", () => {
 			this.startReviewSession().catch((error) => {
 				console.error("[True Recall] Failed to start review session:", error);
 			});
 		});
 
 		// Add ribbon icon to open statistics
-		this.addRibbonIcon("bar-chart-2", "True Recall - Statistics", () => {
+		// eslint-disable-next-line obsidianmd/ui/sentence-case -- True Recall is a proper noun
+		this.addRibbonIcon("bar-chart-2", "True Recall - statistics", () => {
 			this.openStatsView().catch((error) => {
 				console.error("[True Recall] Failed to open stats view:", error);
 			});
@@ -530,7 +531,7 @@ ${cardList}${moreText}
 		// Check for existing review view
 		const existingLeaf = getView(this.app, VIEW_TYPE_REVIEW);
 		if (existingLeaf) {
-			this.app.workspace.revealLeaf(existingLeaf);
+			void this.app.workspace.revealLeaf(existingLeaf);
 			return;
 		}
 
@@ -561,7 +562,7 @@ ${cardList}${moreText}
 			notify().error("Database not ready. Please wait for plugin to fully load.");
 			return;
 		}
-		const allCards = await this.flashcardManager.getAllFSRSCards();
+		const allCards = this.flashcardManager.getAllFSRSCards();
 		if (allCards.length === 0) {
 			notify().info("No flashcards found. Generate some flashcards first!");
 			return;
@@ -573,7 +574,7 @@ ${cardList}${moreText}
 		// Open session panel and wait for result
 		return new Promise<void>((resolve) => {
 			const eventBus = getEventBus();
-			const unsubscribe = eventBus.on("session:selected", (event: any) => {
+			const unsubscribe = eventBus.on("session:selected", (event: import("./types/events.types").SessionSelectedEvent) => {
 				unsubscribe();
 				void this.handleSessionResult(event.result);
 				resolve();
@@ -639,7 +640,7 @@ ${cardList}${moreText}
 		// Check if stats view already exists
 		const existingLeaf = getView(this.app, VIEW_TYPE_STATS);
 		if (existingLeaf) {
-			this.app.workspace.revealLeaf(existingLeaf);
+			void this.app.workspace.revealLeaf(existingLeaf);
 			// Refresh the view
 			const view = existingLeaf.view;
 			if (view instanceof StatsView) {
@@ -672,7 +673,7 @@ ${cardList}${moreText}
 	 * Review flashcards linked to a specific note
 	 */
 	async reviewNoteFlashcards(file: TFile): Promise<void> {
-		const allCards = await this.flashcardManager.getAllFSRSCards();
+		const allCards = this.flashcardManager.getAllFSRSCards();
 		const noteCards = allCards.filter(
 			(c) => c.sourceNoteName === file.basename
 		);
@@ -709,7 +710,7 @@ ${cardList}${moreText}
 			notify().error("Database not ready. Please wait for plugin to fully load.");
 			return;
 		}
-		const allCards = await this.flashcardManager.getAllFSRSCards();
+		const allCards = this.flashcardManager.getAllFSRSCards();
 
 		const todayStart = new Date();
 		todayStart.setHours(0, 0, 0, 0);
@@ -799,7 +800,7 @@ ${cardList}${moreText}
 		// 1. Get or create device ID
 		this.deviceIdService = new DeviceIdService();
 		const deviceId = this.deviceIdService.getDeviceId();
-		console.log(`[True Recall] Device ID: ${deviceId}`);
+		console.debug(`[True Recall] Device ID: ${deviceId}`);
 
 		// 2. Initialize discovery service
 		this.deviceDiscovery = new DeviceDiscoveryService(this.app, deviceId);
@@ -814,7 +815,7 @@ ${cardList}${moreText}
 
 		if (deviceDbExists) {
 			// Database for this device already exists - nothing to do
-			console.log(
+			console.debug(
 				`[True Recall] Using existing device database: ${deviceDbPath}`
 			);
 			return deviceId;
@@ -824,7 +825,7 @@ ${cardList}${moreText}
 		const databases = await this.deviceDiscovery.discoverDeviceDatabases();
 		const hasLegacy = await this.deviceDiscovery.hasLegacyDatabase();
 
-		console.log(
+		console.debug(
 			`[True Recall] First run on device. Legacy DB: ${hasLegacy}, Other devices: ${databases.length}`
 		);
 
@@ -866,7 +867,7 @@ ${cardList}${moreText}
 			// Rename legacy to device-specific
 			await this.app.vault.adapter.rename(legacyPath, newPath);
 
-			console.log(`[True Recall] Migrated legacy database to ${newPath}`);
+			console.debug(`[True Recall] Migrated legacy database to ${newPath}`);
 			notify().success("Database migrated to per-device format.");
 		} catch (error) {
 			console.error("[True Recall] Legacy migration failed:", error);
@@ -910,7 +911,7 @@ ${cardList}${moreText}
 					sourceData
 				);
 
-				console.log(
+				console.debug(
 					`[True Recall] Imported database from ${result.sourceDeviceId} to ${deviceId}`
 				);
 				notify().success(
@@ -1145,7 +1146,7 @@ ${cardList}${moreText}
 					this.settings.maxBackups
 				);
 				if (deleted > 0) {
-					console.log(`[True Recall] Pruned ${deleted} old backup(s)`);
+					console.debug(`[True Recall] Pruned ${deleted} old backup(s)`);
 				}
 			}
 		} catch (error) {
@@ -1242,6 +1243,7 @@ ${cardList}${moreText}
 		}
 
 		// Confirmation dialog
+		// eslint-disable-next-line no-alert -- destructive operation requires explicit user confirmation
 		const confirmed = confirm(
 			"WARNING: This will DELETE all your data on the server and replace it with your local database.\n\n" +
 				"Other devices will lose their changes.\n\n" +

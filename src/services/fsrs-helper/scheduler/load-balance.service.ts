@@ -4,10 +4,10 @@
  * Distributes reviews evenly across days to prevent workload spikes.
  */
 
-import type { SqliteStoreService } from "../../persistence/sqlite/SqliteStoreService";
 import type { EasyDaysConfig } from "../../../types";
 import { isEasyDay } from "./easy-days.service";
 import type {
+	SchedulerCardStore,
 	CardDueInfo,
 	LoadBalanceOptions,
 	SchedulingResult,
@@ -21,7 +21,7 @@ import type {
  * Redistributes cards due on peak days to maintain a consistent workload.
  */
 export class LoadBalanceService {
-	constructor(private cardStore: SqliteStoreService) {}
+	constructor(private cardStore: SchedulerCardStore) {}
 
 	/**
 	 * Balance workload over a date range

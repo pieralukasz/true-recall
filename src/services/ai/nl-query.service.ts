@@ -154,28 +154,32 @@ export class NLQueryService {
                 schema,
             });
 
-            // Extract intermediate steps
+            // Extract intermediate steps (LangChain AgentExecutor returns untyped intermediate steps)
             const steps: NLQueryStep[] = [];
-            if (result.intermediateSteps) {
-                for (const step of result.intermediateSteps) {
-                    if (step.action && step.observation) {
+            if (result.intermediateSteps && Array.isArray(result.intermediateSteps)) {
+                for (const step of result.intermediateSteps as Array<{ action?: { tool?: string; toolInput?: unknown }; observation?: unknown }>) {
+                    if (step.action && step.observation !== undefined) {
+                        const toolName = typeof step.action.tool === "string" ? step.action.tool : "unknown";
+                        const toolInput = step.action.toolInput;
+                        const observation = step.observation;
                         steps.push({
-                            action: step.action.tool || "unknown",
-                            input: typeof step.action.toolInput === "string"
-                                ? step.action.toolInput
-                                : JSON.stringify(step.action.toolInput, null, 2),
+                            action: toolName,
+                            input: typeof toolInput === "string"
+                                ? toolInput
+                                : JSON.stringify(toolInput, null, 2),
                             output:
-                                typeof step.observation === "string"
-                                    ? step.observation
-                                    : JSON.stringify(step.observation),
+                                typeof observation === "string"
+                                    ? observation
+                                    : JSON.stringify(observation),
                         });
                     }
                 }
             }
 
+            const output: string = typeof result.output === "string" ? result.output : "No response generated";
             return {
                 question,
-                answer: result.output || "No response generated",
+                answer: output,
                 intermediateSteps: steps,
             };
         } catch (error) {

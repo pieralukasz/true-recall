@@ -7,8 +7,8 @@
 
 import { FSRS, State, type Card } from "ts-fsrs";
 import type { FSRSSettings } from "../../../types";
-import type { SqliteStoreService } from "../../persistence/sqlite/SqliteStoreService";
 import type {
+	SchedulerCardStore,
 	RescheduleOptions,
 	SchedulingResult,
 	CardScheduleChange,
@@ -24,7 +24,7 @@ import type {
  */
 export class RescheduleService {
 	constructor(
-		private cardStore: SqliteStoreService,
+		private cardStore: SchedulerCardStore,
 		private fsrsSettings: FSRSSettings
 	) {}
 
