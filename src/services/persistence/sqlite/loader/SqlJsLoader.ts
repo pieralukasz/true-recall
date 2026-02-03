@@ -108,12 +108,12 @@ async function loadSqlJs(app: App): Promise<SqlJsStatic> {
     const localWasmUrl = await loadWasmAsUrl(app, "sql-wasm.wasm");
 
     if (localWasmUrl) {
-        console.log("[True Recall] Loading sql.js from local WASM...");
+        console.debug("[True Recall] Loading sql.js from local WASM...");
         try {
             const SQL = await initSqlJs({
                 locateFile: () => localWasmUrl,
             });
-            console.log("[True Recall] sql.js loaded successfully from local WASM");
+            console.debug("[True Recall] sql.js loaded successfully from local WASM");
             return SQL;
         } catch (e) {
             console.warn("[True Recall] Failed to load sql.js from local WASM, falling back to CDN:", e);
@@ -121,17 +121,16 @@ async function loadSqlJs(app: App): Promise<SqlJsStatic> {
     }
 
     // Fallback to CDN
-    console.log("[True Recall] Loading sql.js from CDN fallback...");
+    console.debug("[True Recall] Loading sql.js from CDN fallback...");
     const SQL = await initSqlJs({
         locateFile: (file: string) => `${SQLJS_CDN}/${file}`,
     });
-    console.log("[True Recall] sql.js loaded successfully from CDN");
+    console.debug("[True Recall] sql.js loaded successfully from CDN");
     return SQL;
 }
 
 // Cached instance
 let cachedSqlJs: SqlJsStatic | null = null;
-let loadAttempted = false;
 
 /**
  * Load the database with sql.js
@@ -147,7 +146,6 @@ export async function loadDatabase(
     // Load sql.js
     if (!cachedSqlJs) {
         cachedSqlJs = await loadSqlJs(app);
-        loadAttempted = true;
     }
 
     const sqlDb = existingData
@@ -164,5 +162,4 @@ export async function loadDatabase(
  */
 export function resetLoaderState(): void {
     cachedSqlJs = null;
-    loadAttempted = false;
 }

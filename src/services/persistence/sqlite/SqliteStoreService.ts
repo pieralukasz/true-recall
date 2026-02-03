@@ -62,7 +62,7 @@ export class SqliteStoreService {
         // Initialize database with sql.js
         await this.db.init(existingData);
 
-        console.log("[True Recall] Using sql.js for local storage");
+        console.debug("[True Recall] Using sql.js for local storage");
 
         // Schema setup
         const schemaManager = new SqliteSchemaManager(this.db.raw, () => this.markDirty());
@@ -91,6 +91,7 @@ export class SqliteStoreService {
     }
 
     delete(cardId: string): void {
+        // eslint-disable-next-line @typescript-eslint/no-deprecated -- Wrapper maintains backward compatibility
         this.cards.delete(cardId);
     }
 
@@ -158,7 +159,7 @@ export class SqliteStoreService {
     private async loadFromFile(path: string): Promise<Uint8Array | null> {
         const exists = await this.app.vault.adapter.exists(path);
         if (!exists) {
-            console.log("[True Recall] Database file not found - will create new");
+            console.debug("[True Recall] Database file not found - will create new");
             return null;
         }
 
@@ -180,7 +181,7 @@ export class SqliteStoreService {
         } catch (error) {
             // DO NOT return null - this would create an empty database!
             console.error("[True Recall] CRITICAL: Failed to load existing database:", error);
-            throw new Error(`Cannot load database: ${error instanceof Error ? error.message : error}`);
+            throw new Error(`Cannot load database: ${error instanceof Error ? error.message : String(error)}`);
         }
     }
 
@@ -194,8 +195,8 @@ export class SqliteStoreService {
             clearTimeout(this.saveTimer);
         }
 
-        this.saveTimer = setTimeout(async () => {
-            await this.doFlush();
+        this.saveTimer = setTimeout(() => {
+            void this.doFlush();
         }, SAVE_DEBOUNCE_MS);
     }
 

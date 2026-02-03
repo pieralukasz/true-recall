@@ -5,6 +5,7 @@
  * too close together in time.
  */
 
+import { State } from "ts-fsrs";
 import type {
 	SchedulerCardStore,
 	DisperseOptions,
@@ -121,7 +122,7 @@ export class SiblingDisperseService {
 	 */
 	private async getSiblingGroup(sourceUid: string): Promise<SiblingGroup | null> {
 		const cards = this.cardStore.getCards().filter(
-			(c) => c.sourceUid === sourceUid && !c.suspended && c.state !== 0
+			(c) => c.sourceUid === sourceUid && !c.suspended && c.state !== State.New
 		);
 
 		if (cards.length === 0) return null;
@@ -141,7 +142,7 @@ export class SiblingDisperseService {
 	 */
 	private async getAllSiblingGroups(): Promise<SiblingGroup[]> {
 		const cards = this.cardStore.getCards().filter(
-			(c) => c.sourceUid && !c.suspended && c.state !== 0
+			(c) => c.sourceUid && !c.suspended && c.state !== State.New
 		);
 
 		// Group by source UID
@@ -181,7 +182,7 @@ export class SiblingDisperseService {
 		minInterval: number
 	): { sourceUid: string; cardCount: number; violations: number }[] {
 		const groups = this.cardStore.getCards().filter(
-			(c) => c.sourceUid && !c.suspended && c.state !== 0
+			(c) => c.sourceUid && !c.suspended && c.state !== State.New
 		);
 
 		// Group by source UID

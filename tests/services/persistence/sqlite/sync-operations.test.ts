@@ -9,7 +9,6 @@ import {
 	createTestCard,
 	type TestContext,
 } from "./__setup__/test-database";
-import type { FSRSCardData } from "../../../../src/types";
 
 describe("Sync Operations", () => {
 	let ctx: TestContext;

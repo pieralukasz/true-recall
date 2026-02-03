@@ -44,7 +44,7 @@ export async function activateView(
 
 	// Reveal and focus the leaf
 	if (leaf && !skipReveal) {
-		workspace.revealLeaf(leaf);
+		void workspace.revealLeaf(leaf);
 	}
 
 	return leaf;
@@ -63,7 +63,7 @@ export async function activateMainAreaView(
 		active: true,
 		state,
 	});
-	workspace.revealLeaf(leaf);
+	void workspace.revealLeaf(leaf);
 
 	return leaf;
 }
@@ -80,7 +80,7 @@ export async function activateReviewView(
 	// Check if review session already exists - only allow one at a time
 	const existingLeaf = workspace.getLeavesOfType(viewType)[0];
 	if (existingLeaf) {
-		workspace.revealLeaf(existingLeaf);
+		void workspace.revealLeaf(existingLeaf);
 		return existingLeaf;
 	}
 
@@ -97,7 +97,7 @@ export async function activateReviewView(
 			active: true,
 			state,
 		});
-		workspace.revealLeaf(rightLeaf);
+		void workspace.revealLeaf(rightLeaf);
 		return rightLeaf;
 	}
 

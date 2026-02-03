@@ -339,7 +339,6 @@ export class SessionContent extends BaseComponent {
 					bold: true,
 				});
 			} else {
-				// eslint-disable-next-line obsidianmd/ui/sentence-case
 				statsEl.createSpan({
 					text: "done",
 					cls: "ep:text-obs-faint",

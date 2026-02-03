@@ -32,7 +32,7 @@ export class OrphanedCardsView extends ItemView {
 	}
 
 	getDisplayText(): string {
-		return "Orphaned Cards";
+		return "Orphaned cards";
 	}
 
 	getIcon(): string {

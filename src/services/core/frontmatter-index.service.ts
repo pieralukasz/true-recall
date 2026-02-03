@@ -7,7 +7,7 @@
  * - Array fields (non-unique: many files per value, like projects)
  * - Nested paths (e.g., "metadata.category")
  */
-import type { App, TFile, CachedMetadata, Plugin } from "obsidian";
+import { TFile, type App, type CachedMetadata, type Plugin } from "obsidian";
 
 export interface FieldConfig {
 	/** Field path in frontmatter (e.g., "flashcard_uid", "projects", "metadata.category") */
@@ -128,7 +128,7 @@ export class FrontmatterIndexService {
 
 		// Log stats
 		for (const [field, index] of this.fields) {
-			console.log(`[FrontmatterIndex] ${field}: ${index.valueToPath.size} values indexed`);
+			console.debug(`[FrontmatterIndex] ${field}: ${index.valueToPath.size} values indexed`);
 		}
 	}
 
@@ -208,7 +208,14 @@ export class FrontmatterIndexService {
 		if (typeof path !== "string") return null;
 
 		const file = this.app.vault.getAbstractFileByPath(path);
-		return file && "extension" in file ? (file as TFile) : null;
+		// Use instanceof for production, "extension" property check for test mocks
+		if (file instanceof TFile) return file;
+		// Fallback for test mocks that aren't actual TFile instances
+		if (file && typeof file === "object" && "extension" in file) {
+			// eslint-disable-next-line obsidianmd/no-tfile-tfolder-cast -- Fallback for test mocks only
+			return file as unknown as TFile;
+		}
+		return null;
 	}
 
 	/**

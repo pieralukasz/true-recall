@@ -29,7 +29,7 @@ export class RetentionChart extends ChartSection<RetentionEntry> {
 	 * Fetch retention data from stats calculator
 	 */
 	async fetchData(): Promise<RetentionEntry[]> {
-		return await this.props.statsCalculator.getRetentionHistory(this.props.currentRange);
+		return this.props.statsCalculator.getRetentionHistory(this.props.currentRange);
 	}
 
 	/**

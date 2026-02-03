@@ -3,13 +3,14 @@
  * GitHub-style activity calendar showing review history
  * Shows last 365 days as a 53x7 grid with color intensity levels
  */
+import type { FSRSFlashcardItem } from "../../../types";
 import { BaseComponent } from "../../component.base";
 import { StatsCard } from "./StatsCard";
 import type { StatsCalculatorService } from "../../../services";
 
 export interface CalendarHeatmapProps {
 	statsCalculator: StatsCalculatorService;
-	onCardPreview?: (date: string, cards: any[]) => void;
+	onCardPreview?: (date: string, cards: FSRSFlashcardItem[]) => void;
 }
 
 /**
@@ -45,8 +46,8 @@ export class CalendarHeatmap extends BaseComponent {
 	 */
 	async refresh(): Promise<void> {
 		try {
-			const allStats = await this.props.statsCalculator.getAllDailyStats();
-			await this.renderCalendar(allStats);
+			const allStats = this.props.statsCalculator.getAllDailyStats();
+			this.renderCalendar(allStats);
 		} catch (error) {
 			console.error("Error refreshing calendar heatmap:", error);
 			this.renderErrorState();
@@ -56,7 +57,7 @@ export class CalendarHeatmap extends BaseComponent {
 	/**
 	 * Render the calendar heatmap
 	 */
-	private async renderCalendar(allStats: Record<string, DailyStats>): Promise<void> {
+	private renderCalendar(allStats: Record<string, DailyStats>): void {
 		const contentContainer = this.statsCard.getContentContainer();
 		contentContainer.empty();
 
@@ -195,8 +196,8 @@ export class CalendarHeatmap extends BaseComponent {
 	/**
 	 * Handle click on a calendar cell
 	 */
-	private async handleDateClick(date: string): Promise<void> {
-		const cards = await this.props.statsCalculator.getCardsDueOnDate(date);
+	private handleDateClick(date: string): void {
+		const cards = this.props.statsCalculator.getCardsDueOnDate(date);
 
 		if (this.props.onCardPreview) {
 			this.props.onCardPreview(date, cards);

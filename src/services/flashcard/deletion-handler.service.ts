@@ -14,7 +14,6 @@ import type { FSRSCardData } from "../../types";
 import {
 	OrphanedCardsService,
 	type OrphanedCardInfo,
-	type OrphanReason,
 } from "./orphaned-cards.service";
 
 export interface DeletionHandlerDeps {

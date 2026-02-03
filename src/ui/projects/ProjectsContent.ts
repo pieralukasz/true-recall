@@ -12,7 +12,6 @@ import {
 } from "obsidian";
 import { BaseComponent } from "../component.base";
 import { createCardCountDisplay, createSectionHeader, createNoteListItem } from "../components";
-import { setupLongPress } from "../utils";
 import type { ProjectInfo, ProjectNoteInfo } from "../../types";
 
 export interface ProjectsContentProps {

@@ -813,7 +813,7 @@ export class FlashcardPanelView extends ItemView {
     private async handleOpenFlashcardFile(): Promise<void> {
         const state = this.stateManager.getState();
         if (state.currentFile) {
-            await this.flashcardManager.openFlashcardFile(state.currentFile);
+            await this.flashcardManager.openSourceNote(state.currentFile);
         }
     }
 
@@ -824,7 +824,7 @@ export class FlashcardPanelView extends ItemView {
         if (state.isFlashcardFile) {
             await this.flashcardManager.openFileAtCard(state.currentFile, card.id);
         } else {
-            await this.flashcardManager.openFlashcardFileAtCard(state.currentFile, card.id);
+            await this.flashcardManager.openSourceNote(state.currentFile);
         }
     }
 
@@ -1458,7 +1458,7 @@ export class FlashcardPanelView extends ItemView {
         // Hide the "True Recall" title
         const titleEl = titleContainer.querySelector(".view-header-title") as HTMLElement;
         if (titleEl) {
-            titleEl.setCssProps({ display: "none" });
+            titleEl.addClass("ep:hidden");
         }
 
         // Create status element

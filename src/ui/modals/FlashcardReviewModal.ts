@@ -133,7 +133,7 @@ export class FlashcardReviewModal extends BaseModal {
 			});
 			selectAllBtn.addEventListener("click", () => this.handleToggleSelectAll());
 
-			const countEl = leftSide.createSpan({
+			leftSide.createSpan({
 				text: `${selectedCardIds.size} selected`,
 				cls: "ep:text-ui-smaller ep:text-obs-muted",
 			});

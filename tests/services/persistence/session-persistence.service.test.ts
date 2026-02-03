@@ -31,8 +31,8 @@ describe("SessionPersistenceService", () => {
 			recordReviewedCard: vi.fn(),
 			updateDailyStats: vi.fn(),
 			addReviewLog: vi.fn(),
-			getDailyStats: vi.fn().mockReturnValue(null),
-			getReviewedCardIds: vi.fn().mockReturnValue([]),
+			getDailyStats: vi.fn().mockReturnValue(null) as ReturnType<typeof vi.fn>,
+			getReviewedCardIds: vi.fn().mockReturnValue([]) as ReturnType<typeof vi.fn>,
 		};
 
 		mockStore = {
@@ -42,7 +42,7 @@ describe("SessionPersistenceService", () => {
 		mockApp = {};
 
 		mockDayBoundaryService = {
-			getTodayKey: vi.fn().mockReturnValue("2024-01-15"),
+			getTodayKey: vi.fn().mockReturnValue("2024-01-15") as ReturnType<typeof vi.fn>,
 		};
 
 		service = new SessionPersistenceService(

@@ -21,7 +21,6 @@ import type { DayBoundaryService } from "../core/day-boundary.service";
 import {
 	LEARN_AHEAD_LIMIT_MINUTES,
 	WEAK_CARD_STABILITY_THRESHOLD,
-	REQUEUE_WINDOW_MS,
 	RANDOM_QUEUE_INSERT_MAX_POS,
 } from "../../constants";
 import { getEventBus } from "../core/event-bus.service";
@@ -419,9 +418,6 @@ export class ReviewService {
 		options: QueueBuildOptions,
 		now: Date
 	): FSRSFlashcardItem[] {
-		const learnAheadTime = new Date(
-			now.getTime() + LEARN_AHEAD_LIMIT_MINUTES * 60 * 1000
-		);
 		const allLearningCards = fsrsService.getLearningCards(availableCards);
 
 		// Split learning cards by due status
@@ -841,8 +837,8 @@ export class ReviewService {
 
 		// Helper to add one day to YYYY-MM-DD string (avoids Date object creation in loop)
 		const addOneDay = (dateStr: string): string => {
-			const [year, month, day] = dateStr.split("-").map(Number);
-			const d = new Date(year!, month! - 1, day!);
+			const parts = dateStr.split("-").map(Number);
+			const d = new Date(parts[0] as number, (parts[1] as number) - 1, parts[2] as number);
 			d.setDate(d.getDate() + 1);
 			return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
 		};

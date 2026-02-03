@@ -184,7 +184,7 @@ export class MoveCardModal extends BasePromiseModal<MoveCardResult> {
 		const prefixLower = tagPrefix.toLowerCase();
 
 		// Check frontmatter tags
-		const frontmatterTags = cache.frontmatter?.tags ?? [];
+		const frontmatterTags = (cache.frontmatter?.tags ?? []) as string | string[];
 		const normalizedTags = Array.isArray(frontmatterTags)
 			? frontmatterTags
 			: [frontmatterTags];

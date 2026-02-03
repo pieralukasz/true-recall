@@ -4,14 +4,14 @@
  * Categories: New, Learning, Young, Mature, Suspended, Buried
  */
 import { Chart } from "chart.js";
-import type { CardMaturityBreakdown } from "../../../types";
+import type { CardMaturityBreakdown, FSRSFlashcardItem } from "../../../types";
 import { BaseComponent } from "../../component.base";
 import { StatsCard } from "./StatsCard";
 import type { StatsCalculatorService } from "../../../services";
 
 export interface CardCountsChartProps {
 	statsCalculator: StatsCalculatorService;
-	onCardPreview?: (category: keyof CardMaturityBreakdown, label: string, cards: any[]) => void;
+	onCardPreview?: (category: keyof CardMaturityBreakdown, label: string, cards: FSRSFlashcardItem[]) => void;
 }
 
 /**
@@ -67,7 +67,7 @@ export class CardCountsChart extends BaseComponent {
 	 */
 	async refresh(): Promise<void> {
 		try {
-			const breakdown = await this.props.statsCalculator.getCardMaturityBreakdown();
+			const breakdown = this.props.statsCalculator.getCardMaturityBreakdown();
 			const activeTotal = breakdown.new + breakdown.learning + breakdown.young + breakdown.mature;
 			const total = activeTotal + breakdown.suspended + breakdown.buried;
 
@@ -268,8 +268,8 @@ export class CardCountsChart extends BaseComponent {
 	/**
 	 * Handle click on a legend item
 	 */
-	private async handleCategoryClick(category: keyof CardMaturityBreakdown, label: string): Promise<void> {
-		const cards = await this.props.statsCalculator.getCardsByCategory(category);
+	private handleCategoryClick(category: keyof CardMaturityBreakdown, label: string): void {
+		const cards = this.props.statsCalculator.getCardsByCategory(category);
 
 		if (this.props.onCardPreview) {
 			this.props.onCardPreview(category, label, cards);

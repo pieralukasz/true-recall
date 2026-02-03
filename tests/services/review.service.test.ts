@@ -7,10 +7,6 @@ import { ReviewService, type QueueBuildOptions } from "../../src/services/review
 import { FSRSService } from "../../src/services/core/fsrs.service";
 import type { FSRSFlashcardItem, ReviewResult } from "../../src/types/fsrs.types";
 import {
-	createMockCard,
-	createNewCard,
-	createLearningCard,
-	createReviewCard,
 	createMockFlashcard,
 	createDefaultFSRSSettings,
 	createMockReviewResult,
@@ -150,14 +146,14 @@ describe("ReviewService", () => {
 
 	describe("calculateSessionStats", () => {
 		it("should count ratings correctly", () => {
-			const results: ReviewResult[] = [
-				createMockReviewResult({ rating: Rating.Again as number }),
-				createMockReviewResult({ rating: Rating.Again as number }),
-				createMockReviewResult({ rating: Rating.Hard as number }),
-				createMockReviewResult({ rating: Rating.Good as number }),
-				createMockReviewResult({ rating: Rating.Good as number }),
-				createMockReviewResult({ rating: Rating.Good as number }),
-				createMockReviewResult({ rating: Rating.Easy as number }),
+			const results = [
+				createMockReviewResult({ rating: Rating.Again }),
+				createMockReviewResult({ rating: Rating.Again }),
+				createMockReviewResult({ rating: Rating.Hard }),
+				createMockReviewResult({ rating: Rating.Good }),
+				createMockReviewResult({ rating: Rating.Good }),
+				createMockReviewResult({ rating: Rating.Good }),
+				createMockReviewResult({ rating: Rating.Easy }),
 			];
 
 			const stats = reviewService.calculateSessionStats(
@@ -194,7 +190,7 @@ describe("ReviewService", () => {
 		});
 
 		it("should count new, learning, and review cards", () => {
-			const results: ReviewResult[] = [
+			const results = [
 				createMockReviewResult({ previousState: State.New }),
 				createMockReviewResult({ previousState: State.New }),
 				createMockReviewResult({ previousState: State.Learning }),
@@ -228,9 +224,9 @@ describe("ReviewService", () => {
 
 		it("should return 1.0 for all Good/Easy ratings", () => {
 			const results = [
-				createMockReviewResult({ rating: Rating.Good as number }),
-				createMockReviewResult({ rating: Rating.Easy as number }),
-				createMockReviewResult({ rating: Rating.Good as number }),
+				createMockReviewResult({ rating: Rating.Good }),
+				createMockReviewResult({ rating: Rating.Easy }),
+				createMockReviewResult({ rating: Rating.Good }),
 			];
 
 			const rate = reviewService.calculateRetentionRate(results);
@@ -239,8 +235,8 @@ describe("ReviewService", () => {
 
 		it("should return 0 for all Again/Hard ratings", () => {
 			const results = [
-				createMockReviewResult({ rating: Rating.Again as number }),
-				createMockReviewResult({ rating: Rating.Hard as number }),
+				createMockReviewResult({ rating: Rating.Again }),
+				createMockReviewResult({ rating: Rating.Hard }),
 			];
 
 			const rate = reviewService.calculateRetentionRate(results);
@@ -249,10 +245,10 @@ describe("ReviewService", () => {
 
 		it("should calculate correct ratio", () => {
 			const results = [
-				createMockReviewResult({ rating: Rating.Good as number }),
-				createMockReviewResult({ rating: Rating.Again as number }),
-				createMockReviewResult({ rating: Rating.Easy as number }),
-				createMockReviewResult({ rating: Rating.Hard as number }),
+				createMockReviewResult({ rating: Rating.Good }),
+				createMockReviewResult({ rating: Rating.Again }),
+				createMockReviewResult({ rating: Rating.Easy }),
+				createMockReviewResult({ rating: Rating.Hard }),
 			];
 
 			const rate = reviewService.calculateRetentionRate(results);
@@ -394,7 +390,7 @@ describe("ReviewService", () => {
 		};
 
 		it("should respect new cards limit", () => {
-			const cards: FSRSFlashcardItem[] = [];
+			const cards = [];
 			for (let i = 0; i < 30; i++) {
 				cards.push(
 					createMockFlashcard({
@@ -404,7 +400,8 @@ describe("ReviewService", () => {
 				);
 			}
 
-			const queue = reviewService.buildQueue(cards, fsrsService, {
+			// eslint-disable-next-line @typescript-eslint/no-unsafe-argument -- Test mocks with minimal types
+			const queue = reviewService.buildQueue(cards as FSRSFlashcardItem[], fsrsService, {
 				...defaultOptions,
 				newCardsLimit: 5,
 			});
@@ -481,7 +478,7 @@ describe("ReviewService", () => {
 		});
 
 		it("should respect newCardsStudiedToday", () => {
-			const cards: FSRSFlashcardItem[] = [];
+			const cards = [];
 			for (let i = 0; i < 10; i++) {
 				cards.push(
 					createMockFlashcard({
@@ -491,7 +488,8 @@ describe("ReviewService", () => {
 				);
 			}
 
-			const queue = reviewService.buildQueue(cards, fsrsService, {
+			// eslint-disable-next-line @typescript-eslint/no-unsafe-argument -- Test mocks with minimal types
+			const queue = reviewService.buildQueue(cards as FSRSFlashcardItem[], fsrsService, {
 				...defaultOptions,
 				newCardsLimit: 5,
 				newCardsStudiedToday: 3, // Already studied 3
@@ -739,12 +737,13 @@ describe("ReviewService", () => {
 		});
 
 		it("should not go below 0 for remaining", () => {
-			const results: ReviewResult[] = [];
+			const results = [];
 			for (let i = 0; i < 25; i++) {
 				results.push(createMockReviewResult({ previousState: State.New }));
 			}
 
-			const stats = reviewService.calculateDailyStats([], results, {
+			// eslint-disable-next-line @typescript-eslint/no-unsafe-argument -- Test mocks with minimal types
+			const stats = reviewService.calculateDailyStats([], results as ReviewResult[], {
 				newCardsPerDay: 20,
 				reviewsPerDay: 200,
 			});

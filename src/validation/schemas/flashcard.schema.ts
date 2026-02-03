@@ -2,7 +2,6 @@
  * Zod schemas for flashcard data structures
  */
 import { z } from "zod";
-import type { FlashcardItem } from "../../types/flashcard.types";
 
 // ===== Flashcard Item Schema =====
 

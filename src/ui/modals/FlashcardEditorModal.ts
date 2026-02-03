@@ -115,7 +115,7 @@ export class FlashcardEditorModal extends BaseModal {
 	}
 
 	protected renderBody(container: HTMLElement): void {
-		const { mode, card, sourceNoteName } = this.options;
+		const { card } = this.options;
 
 		// Initialize stored values
 		this.questionValue = card?.question || this.options.prefillQuestion || "";
@@ -477,7 +477,7 @@ export class FlashcardEditorModal extends BaseModal {
 	 */
 	private getToolbarButtons(): ToolbarButton[] {
 		return [
-			...TOOLBAR_BUTTONS.EDITOR,
+			...TOOLBAR_BUTTONS.UNIFIED,
 			{
 				id: "media",
 				label: "Media",

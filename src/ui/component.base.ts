@@ -57,7 +57,7 @@ export abstract class BaseComponent {
      */
     show(): void {
         if (this.element) {
-            this.element.style.display = "";
+            this.element.removeClass("ep:hidden");
         }
     }
 
@@ -66,7 +66,7 @@ export abstract class BaseComponent {
      */
     hide(): void {
         if (this.element) {
-            this.element.style.display = "none";
+            this.element.addClass("ep:hidden");
         }
     }
 
@@ -74,7 +74,7 @@ export abstract class BaseComponent {
      * Check if component is visible
      */
     isVisible(): boolean {
-        return this.element?.style.display !== "none";
+        return !this.element?.hasClass("ep:hidden");
     }
 
     /**
