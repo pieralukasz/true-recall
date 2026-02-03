@@ -1,7 +1,3 @@
-/**
- * FSRS Simulator View
- * Interactive visualization of FSRS v6 algorithm behavior
- */
 import { ItemView, WorkspaceLeaf } from "obsidian";
 import {
 	Chart,
@@ -175,9 +171,6 @@ export class SimulatorView extends ItemView {
 		this.stateManager.clearListeners();
 	}
 
-	/**
-	 * Create header with title and legend
-	 */
 	private createHeader(container: HTMLElement): void {
 		const header = container.createDiv({
 			cls: "ep:flex ep:items-center ep:justify-between ep:mb-4",
@@ -193,9 +186,6 @@ export class SimulatorView extends ItemView {
 		// Legend will be rendered by the chart component
 	}
 
-	/**
-	 * Schedule debounced update
-	 */
 	private scheduleUpdate(): void {
 		if (this.updateTimer) {
 			clearTimeout(this.updateTimer);
@@ -206,9 +196,6 @@ export class SimulatorView extends ItemView {
 		}, 100);
 	}
 
-	/**
-	 * Run simulation and update chart
-	 */
 	private runSimulation(): void {
 		const sequences = this.stateManager.getSequences();
 		const parameters = this.stateManager.getParameters();
@@ -226,16 +213,10 @@ export class SimulatorView extends ItemView {
 		this.updateUndoRedoButtons();
 	}
 
-	/**
-	 * Update chart without re-running simulation
-	 */
 	private updateChart(): void {
 		this.chart?.update();
 	}
 
-	/**
-	 * Create parameters bar with params display and Reset/Undo/Redo buttons
-	 */
 	private createParametersBar(container: HTMLElement): void {
 		const bar = container.createDiv({
 			cls: "ep:mb-4",
@@ -295,9 +276,6 @@ export class SimulatorView extends ItemView {
 		});
 	}
 
-	/**
-	 * Get button classes
-	 */
 	private getButtonCls(): string {
 		return [
 			"ep:px-3 ep:py-1.5",
@@ -308,18 +286,12 @@ export class SimulatorView extends ItemView {
 		].join(" ");
 	}
 
-	/**
-	 * Update parameters display
-	 */
 	private updateParametersDisplay(): void {
 		if (this.paramsDisplay) {
 			this.paramsDisplay.setText(this.stateManager.getParametersString());
 		}
 	}
 
-	/**
-	 * Update undo/redo button states
-	 */
 	private updateUndoRedoButtons(): void {
 		if (this.undoBtn) {
 			this.undoBtn.disabled = !this.stateManager.canUndo();

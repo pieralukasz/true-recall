@@ -91,7 +91,6 @@ export class SqlJsAdapter {
   - Day boundary: 4 AM (Review cards due before tomorrow's 4 AM)`;
             }
 
-            // Add rating annotations for review_log table
             if (table === "review_log") {
                 fsrsNotesSection = `\n\nRating values:
   - 1 = Again (failed recall)
@@ -100,7 +99,6 @@ export class SqlJsAdapter {
   - 4 = Easy (perfect recall)`;
             }
 
-            // Get sample data (first 3 rows)
             const sampleResult = this.db.exec(
                 `SELECT * FROM "${table}" LIMIT 3`
             );
@@ -122,7 +120,6 @@ export class SqlJsAdapter {
                 sampleSection = `\n\nSample data:\n  ${sampleRows}`;
             }
 
-            // Get row count
             const countResult = this.db.exec(
                 `SELECT COUNT(*) FROM "${table}"`
             );

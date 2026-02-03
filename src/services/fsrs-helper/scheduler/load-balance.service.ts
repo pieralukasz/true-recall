@@ -14,17 +14,9 @@ import type {
 	WorkloadDistribution,
 } from "./scheduler.types";
 
-/**
- * Load Balance Service
- *
- * Redistributes cards due on peak days to maintain a consistent workload.
- */
 export class LoadBalanceService {
 	constructor(private cardStore: SchedulerCardStore) {}
 
-	/**
-	 * Balance workload over a date range
-	 */
 	async balance(options: LoadBalanceOptions): Promise<SchedulingResult> {
 		const {
 			targetPerDay,
@@ -148,9 +140,6 @@ export class LoadBalanceService {
 		};
 	}
 
-	/**
-	 * Find the best day to move a card to
-	 */
 	private findBestDay(
 		fromDate: string,
 		distribution: Map<string, CardDueInfo[]>,
@@ -188,16 +177,10 @@ export class LoadBalanceService {
 		return bestDate;
 	}
 
-	/**
-	 * Format date as YYYY-MM-DD
-	 */
 	private formatDate(date: Date): string {
 		return date.toISOString().split("T")[0]!;
 	}
 
-	/**
-	 * Calculate days difference between two date strings
-	 */
 	private daysDiff(from: string, to: string): number {
 		const fromDate = new Date(from);
 		const toDate = new Date(to);
@@ -206,9 +189,6 @@ export class LoadBalanceService {
 		);
 	}
 
-	/**
-	 * Get current workload distribution for visualization
-	 */
 	getDistribution(days: number): WorkloadDistribution[] {
 		const today = new Date();
 		const endDate = new Date(today);

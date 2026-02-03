@@ -55,9 +55,6 @@ interface VisibleRange {
     end: number;
 }
 
-/**
- * Virtual scrolling table for high-performance card browsing
- */
 export class VirtualTable {
     private container: HTMLElement;
     private props: VirtualTableProps;
@@ -92,9 +89,6 @@ export class VirtualTable {
         this.boundKeyHandler = this.handleKeyDown.bind(this);
     }
 
-    /**
-     * Initial render - creates DOM structure
-     */
     render(): void {
         this.container.empty();
         this.container.addClass("browser-table");
@@ -154,9 +148,6 @@ export class VirtualTable {
         this.updateVisibleRows();
     }
 
-    /**
-     * Update cards data and re-render visible rows
-     */
     setCards(cards: BrowserCardItem[]): void {
         this.props.cards = cards;
 
@@ -183,9 +174,6 @@ export class VirtualTable {
         this.updateVisibleRows();
     }
 
-    /**
-     * Update selection state without full re-render
-     */
     updateSelection(selectedCardIds: Set<string>): void {
         this.props.selectedCardIds = selectedCardIds;
 
@@ -218,9 +206,6 @@ export class VirtualTable {
         });
     }
 
-    /**
-     * Calculate which rows should be visible and render them
-     */
     private updateVisibleRows(): void {
         if (!this.scrollContainer || !this.tbody || !this.tableWrapper || !this.rowEventController) return;
 
@@ -284,9 +269,6 @@ export class VirtualTable {
         }
     }
 
-    /**
-     * Create a single table row for a card
-     */
     private createRow(card: BrowserCardItem, index: number, signal: AbortSignal): HTMLElement {
         const isSelected = this.props.selectedCardIds.has(card.id);
         const isFocused = index === this.focusedIndex;
@@ -412,9 +394,6 @@ export class VirtualTable {
         return tr;
     }
 
-    /**
-     * Render the table header
-     */
     private renderHeader(): void {
         if (!this.thead) return;
         this.thead.empty();
@@ -478,9 +457,6 @@ export class VirtualTable {
 
     // ===== Keyboard Navigation =====
 
-    /**
-     * Handle keyboard events for navigation
-     */
     private handleKeyDown(e: KeyboardEvent): void {
         if (!this.props.cards.length) return;
 
@@ -521,9 +497,6 @@ export class VirtualTable {
         this.setFocus(newIndex);
     }
 
-    /**
-     * Set focus to a specific index
-     */
     private setFocus(index: number): void {
         if (index < 0 || index >= this.props.cards.length) return;
 
@@ -558,9 +531,6 @@ export class VirtualTable {
         this.scrollToIndex(index);
     }
 
-    /**
-     * Scroll to ensure a row is visible
-     */
     private scrollToIndex(index: number): void {
         if (!this.scrollContainer) return;
 
@@ -576,16 +546,10 @@ export class VirtualTable {
         }
     }
 
-    /**
-     * Set focused index from external click
-     */
     setFocusedIndex(index: number): void {
         this.focusedIndex = index;
     }
 
-    /**
-     * Clean up resources
-     */
     destroy(): void {
         if (this.rafId !== null) {
             cancelAnimationFrame(this.rafId);

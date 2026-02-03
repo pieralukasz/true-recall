@@ -1,10 +1,3 @@
-/**
- * Supabase Sync Service
- * Synchronizes local SQLite data with Supabase cloud backend
- * using Last Write Wins (LWW) conflict resolution
- *
- * Uses atomic `sync_all_data` RPC for all-or-nothing transactions
- */
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { AuthService } from "../auth";
 import type { SqliteStoreService } from "../persistence/sqlite";
@@ -17,9 +10,6 @@ import type {
 import type { ReviewLogForSync } from "../persistence/sqlite/modules/StatsActions";
 import { getEventBus } from "../core/event-bus.service";
 
-/**
- * Remote card row from Supabase (snake_case)
- */
 interface RemoteCardRow {
 	id: string;
 	due: string;
@@ -41,9 +31,6 @@ interface RemoteCardRow {
 	source_uid: string | null;
 }
 
-/**
- * Remote review log row from Supabase (snake_case)
- */
 interface RemoteReviewLogRow {
 	id: string;
 	card_id: string;
@@ -57,27 +44,17 @@ interface RemoteReviewLogRow {
 	deleted_at: number | null;
 }
 
-/**
- * Response from sync_all_data/replace_all_data RPC
- * The functions return 'success' on success, 'error' on failure
- */
 interface SyncRpcResponse {
 	status: "success" | "error";
 	message?: string;
 	time?: string;
 }
 
-/**
- * Local card with sync fields (for push)
- */
 interface LocalCardForSync extends FSRSCardData {
 	updatedAt?: number;
 	deletedAt?: number | null;
 }
 
-/**
- * Supabase sync service for cloud synchronization
- */
 export class SyncService {
 	private authService: AuthService;
 	private cardStore: SqliteStoreService;
@@ -87,17 +64,10 @@ export class SyncService {
 		this.cardStore = cardStore;
 	}
 
-	/**
-	 * Check if sync is available (authenticated and configured)
-	 */
 	isAvailable(): boolean {
 		return this.authService.isConfigured();
 	}
 
-	/**
-	 * Check first sync status for conflict detection (Anki-style)
-	 * Used to determine if user needs to choose between upload/download
-	 */
 	async checkFirstSyncStatus(): Promise<FirstSyncStatus> {
 		const hadPreviousSync = this.getLastSyncTimestamp() > 0;
 
@@ -139,9 +109,6 @@ export class SyncService {
 		};
 	}
 
-	/**
-	 * Main sync method: Pull then Push (atomic)
-	 */
 	async sync(options: SyncOptions = {}): Promise<SyncResult> {
 		const client = this.authService.getClient();
 		if (!client) {
@@ -204,9 +171,6 @@ export class SyncService {
 		}
 	}
 
-	/**
-	 * Pull all tables from Supabase in parallel
-	 */
 	private async pullAllTables(
 		client: SupabaseClient,
 		lastSync: number
@@ -242,10 +206,7 @@ export class SyncService {
 		};
 	}
 
-	/**
-	 * Apply pulled data locally using LWW conflict resolution.
-	 * Wrapped in a transaction for atomicity - if any upsert fails, all changes are rolled back.
-	 */
+	/** Wrapped in a transaction for atomicity - if any upsert fails, all changes are rolled back. */
 	private applyPulledData(data: {
 		cards: RemoteCardRow[];
 		reviewLog: RemoteReviewLogRow[];
@@ -282,9 +243,6 @@ export class SyncService {
 		});
 	}
 
-	/**
-	 * Gathered local changes for push
-	 */
 	private gatherLocalChanges(lastSync: number): {
 		cards: LocalCardForSync[];
 		reviewLog: ReviewLogForSync[];
@@ -295,9 +253,6 @@ export class SyncService {
 		};
 	}
 
-	/**
-	 * Push pre-gathered local changes to Supabase via atomic RPC
-	 */
 	private async pushLocalChanges(
 		client: SupabaseClient,
 		localChanges: {
@@ -345,9 +300,6 @@ export class SyncService {
 		return totalChanges;
 	}
 
-	/**
-	 * Get last sync timestamp from META table
-	 */
 	getLastSyncTimestamp(): number {
 		const value = this.cardStore.cards.getSyncMetadata(
 			"last_sync_timestamp"
@@ -355,9 +307,6 @@ export class SyncService {
 		return value ? parseInt(value, 10) : 0;
 	}
 
-	/**
-	 * Set last sync timestamp in META table
-	 */
 	private setLastSyncTimestamp(timestamp: number): void {
 		this.cardStore.cards.setSyncMetadata(
 			"last_sync_timestamp",
@@ -528,9 +477,6 @@ export class SyncService {
 		}
 	}
 
-	/**
-	 * Delete all local sync-able data
-	 */
 	private deleteAllLocalData(): void {
 		// Order matters - delete dependent tables first
 		this.cardStore.stats.deleteAllReviewLogForSync();

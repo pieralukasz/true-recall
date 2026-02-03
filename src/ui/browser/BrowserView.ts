@@ -1,7 +1,3 @@
-/**
- * Browser View
- * Anki-style card browser for viewing, filtering, and managing flashcards
- */
 import { ItemView, WorkspaceLeaf, TFile } from "obsidian";
 import { VIEW_TYPE_BROWSER } from "../../constants";
 import { createBrowserStateManager } from "../../state/browser.state";
@@ -15,10 +11,6 @@ import { getEventBus, notify } from "../../services";
 import type { CardUpdatedEvent } from "../../types/events.types";
 import type TrueRecallPlugin from "../../main";
 
-/**
- * Card Browser View
- * Three-panel layout: Sidebar | Table | Preview
- */
 export class BrowserView extends ItemView {
     private plugin: TrueRecallPlugin;
     private stateManager = createBrowserStateManager();
@@ -121,9 +113,6 @@ export class BrowserView extends ItemView {
         this.previewComponent?.destroy();
     }
 
-    /**
-     * Set up EventBus subscriptions
-     */
     private setupEventSubscriptions(): void {
         const eventBus = getEventBus();
 
@@ -142,10 +131,6 @@ export class BrowserView extends ItemView {
         );
     }
 
-    /**
-     * Load cards from database
-     * Enriches cards with sourceNoteName, sourceNotePath, and projects from vault
-     */
     private async loadCards(): Promise<void> {
         this.stateManager.setLoading(true);
 
@@ -164,9 +149,6 @@ export class BrowserView extends ItemView {
 
     // ===== Card Actions =====
 
-    /**
-     * Handle card click (select + preview)
-     */
     private handleCardClick(cardId: string, event: MouseEvent): void {
         const index = this.stateManager.getState().filteredCards.findIndex(c => c.id === cardId);
 
@@ -186,9 +168,6 @@ export class BrowserView extends ItemView {
         this.stateManager.setPreviewCard(cardId);
     }
 
-    /**
-     * Handle edit card
-     */
     private async handleEditCard(card: BrowserCardItem): Promise<void> {
         const modal = new FlashcardEditorModal(this.app, {
             mode: "edit",
@@ -246,9 +225,6 @@ export class BrowserView extends ItemView {
         }
     }
 
-    /**
-     * Handle open source note
-     */
     private async handleOpenSourceNote(card: BrowserCardItem): Promise<void> {
         if (!card.sourceNotePath) {
             notify().warning("No source note linked");
@@ -266,9 +242,6 @@ export class BrowserView extends ItemView {
 
     // ===== Bulk Operations =====
 
-    /**
-     * Execute bulk operation on selected cards
-     */
     private async executeBulkOperation(operation: BulkOperation): Promise<void> {
         const selectedIds = [...this.stateManager.getState().selectedCardIds];
         if (selectedIds.length === 0) {
@@ -360,10 +333,6 @@ export class BrowserView extends ItemView {
 
     // ===== Render =====
 
-    /**
-     * Render all components with incremental updates
-     * Uses update() pattern instead of destroy/recreate for performance
-     */
     private render(): void {
         const state = this.stateManager.getState();
         const prev = this.prevState;
@@ -483,9 +452,6 @@ export class BrowserView extends ItemView {
         this.prevState = state;
     }
 
-    /**
-     * Execute operation on single card
-     */
     private async executeSingleOperation(cardId: string, operation: BulkOperation): Promise<void> {
         // Temporarily select just this card
         const prevSelection = this.stateManager.getState().selectedCardIds;
@@ -499,9 +465,6 @@ export class BrowserView extends ItemView {
         }
     }
 
-    /**
-     * Refresh the view
-     */
     async refresh(): Promise<void> {
         await this.loadCards();
     }
