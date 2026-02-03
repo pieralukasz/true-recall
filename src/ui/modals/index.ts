@@ -66,6 +66,7 @@ export {
 export {
     SimpleFlashcardEditorModal,
     flashcardToMarkdown,
+    flashcardsToMarkdown,
     type SimpleFlashcardEditorResult,
     type SimpleFlashcardEditorOptions,
 } from "./SimpleFlashcardEditorModal";

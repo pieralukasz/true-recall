@@ -1,8 +1,8 @@
-# True Recall - AI-Powered Spaced Repetition for Obsidian
+# True Recall - Spaced Repetition System for Obsidian
 
 > **"Operating System for the Mind"** - UNDERSTAND, REMEMBER, CREATE
 
-True Recall is an Obsidian plugin that combines AI-powered flashcard generation with FSRS v6 spaced repetition. All data is stored locally in SQLite with optional cloud sync.
+True Recall is an Obsidian plugin that combines AI-powered flashcard generation with FSRS v6 spaced repetition. All data is stored locally in SQLite with optional cloud sync (coming soon).
 
 ---
 
@@ -12,12 +12,12 @@ True Recall is an Obsidian plugin that combines AI-powered flashcard generation 
 | ---------------------------- | --------------------------------------------------------------- |
 | **AI Flashcard Generation**  | 7 AI models via OpenRouter create atomic, well-formatted cards  |
 | **FSRS v6 Algorithm**        | State-of-the-art spaced repetition with 21 trainable parameters |
-| **SQLite Storage**           | All data in portable `.true-recall/true-recall.db` file               |
+| **SQLite Storage**           | All data in portable `.true-recall/true-recall.db` file         |
 | **Projects System**          | Organize cards across notes with many-to-many relationships     |
 | **Card Browser**             | Search, filter, and manage all flashcards in one place          |
 | **FSRS Simulator**           | Visualize scheduling behavior with different parameters         |
-| **Cloud Sync**               | Optional Supabase sync across devices                           |
-| **Natural Language Queries** | Ask questions about your stats in plain English                 |
+| **Cloud Sync** (coming soon) | Optional sync across devices                                    |
+| **Natural Language Queries** | Ask questions about your stats                                  |
 
 ---
 
