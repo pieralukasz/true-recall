@@ -85,6 +85,26 @@ export class NotificationService {
 	}
 
 	/**
+	 * Show notification for partial success in card creation
+	 */
+	cardsCreatedWithDuplicates(created: number, duplicates: number, noteName?: string): void {
+		const createdMsg = created === 1 ? "1 card" : `${created} cards`;
+		const dupMsg = duplicates === 1 ? "1 duplicate skipped" : `${duplicates} duplicates skipped`;
+		const noteMsg = noteName ? ` in "${noteName}"` : "";
+		this.warning(`${createdMsg} created${noteMsg}. ${dupMsg}.`);
+	}
+
+	/**
+	 * Show notification when all cards were duplicates
+	 */
+	allCardsDuplicates(count: number): void {
+		const msg = count === 1
+			? "Card already exists"
+			: `All ${count} cards already exist`;
+		this.warning(msg);
+	}
+
+	/**
 	 * Show notification for single card update
 	 */
 	cardUpdated(): void {

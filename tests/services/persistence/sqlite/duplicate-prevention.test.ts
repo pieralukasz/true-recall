@@ -163,13 +163,8 @@ describe("Duplicate Prevention", () => {
 		});
 	});
 
-	describe("CardRepository.createBatch() - Duplicate Check", () => {
-		/**
-		 * BUG FOUND: createBatch() does NOT check for duplicates!
-		 * This test is expected to FAIL with current implementation.
-		 * Code needs to be fixed to pass this test.
-		 */
-		it("should check for duplicates in createBatch()", async () => {
+	describe("CardRepository.createBatch() - Partial Success", () => {
+		it("should return partial success with duplicates when existing card matches", async () => {
 			// Create an existing card
 			const existingQuestion = "What is X?";
 			const existingCard = createTestCard({ question: existingQuestion });
@@ -190,11 +185,14 @@ describe("Duplicate Prevention", () => {
 				{ id: "new-2", question: "What is Y?", answer: "A2" }, // New
 			];
 
-			// Current behavior: silently allows duplicates
-			// Expected behavior: reject or skip duplicates
-			expect(() => {
-				repository.createBatch(flashcards, "source123");
-			}).toThrow(); // Or should return only non-duplicate cards
+			const result = repository.createBatch(flashcards, "source123");
+
+			// Should create the non-duplicate and return duplicate info
+			expect(result.created).toHaveLength(1);
+			expect(result.created[0].question).toBe("What is Y?");
+			expect(result.duplicates).toHaveLength(1);
+			expect(result.duplicates[0].type).toBe("existing");
+			expect(result.duplicates[0].flashcard.question).toBe(existingQuestion);
 		});
 
 		it("should detect duplicates within the same batch", async () => {
@@ -214,11 +212,40 @@ describe("Duplicate Prevention", () => {
 				{ id: "new-3", question: "Different question", answer: "A3" },
 			];
 
-			// Current behavior: allows duplicates within batch
-			// Expected behavior: reject or skip duplicates
-			expect(() => {
-				repository.createBatch(flashcards, "source123");
-			}).toThrow(); // Or should return only first occurrence
+			const result = repository.createBatch(flashcards, "source123");
+
+			// Should create first occurrence and different question, skip within-batch duplicate
+			expect(result.created).toHaveLength(2);
+			expect(result.created.map(c => c.question)).toContain("Same question");
+			expect(result.created.map(c => c.question)).toContain("Different question");
+			expect(result.duplicates).toHaveLength(1);
+			expect(result.duplicates[0].type).toBe("batch");
+			expect(result.duplicates[0].flashcard.id).toBe("new-2");
+		});
+
+		it("should return all duplicates when entire batch consists of duplicates", async () => {
+			// Create existing cards
+			ctx.cards.set("existing-1", createTestCard({ id: "existing-1", question: "Q1" }));
+			ctx.cards.set("existing-2", createTestCard({ id: "existing-2", question: "Q2" }));
+
+			const mockStore = {
+				cards: ctx.cards,
+				get: (id: string) => ctx.cards.get(id),
+				set: (id: string, data: unknown) => ctx.cards.set(id, data as never),
+				has: (id: string) => ctx.cards.has(id),
+			} as unknown as SqliteStoreService;
+
+			const repository = new CardRepository(mockStore);
+
+			const flashcards = [
+				{ id: "new-1", question: "Q1", answer: "A1" },
+				{ id: "new-2", question: "Q2", answer: "A2" },
+			];
+
+			const result = repository.createBatch(flashcards, "source123");
+
+			expect(result.created).toHaveLength(0);
+			expect(result.duplicates).toHaveLength(2);
 		});
 	});
 

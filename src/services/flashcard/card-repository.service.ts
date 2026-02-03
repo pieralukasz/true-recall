@@ -11,6 +11,17 @@ import { createDefaultFSRSData } from "../../types";
 import { getEventBus } from "../core/event-bus.service";
 import { CARD_HISTORY_LIMIT } from "../../constants";
 
+export interface DuplicateInfo {
+	flashcard: { id: string; question: string; answer: string };
+	type: "batch" | "existing";
+	existingCardId?: string;
+}
+
+export interface CreateBatchResult {
+	created: FSRSFlashcardItem[];
+	duplicates: DuplicateInfo[];
+}
+
 export class CardRepository {
 	constructor(private store: SqliteStoreService) {}
 
@@ -59,38 +70,41 @@ export class CardRepository {
 		return card;
 	}
 
-	/** @throws Error if any card has a duplicate question */
 	createBatch(
 		flashcards: Array<{ id: string; question: string; answer: string }>,
 		sourceUid: string,
 		sourceNoteName?: string
-	): FSRSFlashcardItem[] {
-		// Check for duplicates before creating any cards
+	): CreateBatchResult {
+		const createdCards: FSRSFlashcardItem[] = [];
+		const duplicates: DuplicateInfo[] = [];
 		const seenQuestions = new Set<string>();
+
 		for (const flashcard of flashcards) {
 			// Check for duplicate within batch
 			if (seenQuestions.has(flashcard.question)) {
-				throw new Error(
-					`Duplicate question within batch: "${flashcard.question.slice(0, 50)}..."`
-				);
+				duplicates.push({
+					flashcard,
+					type: "batch",
+				});
+				continue;
 			}
-			seenQuestions.add(flashcard.question);
 
 			// Check for existing card with same question
 			const existingCardId = this.store.cards.getCardIdByQuestion(
 				flashcard.question
 			);
 			if (existingCardId) {
-				throw new Error(
-					`A card with this question already exists: "${flashcard.question.slice(0, 50)}..."`
-				);
+				duplicates.push({
+					flashcard,
+					type: "existing",
+					existingCardId,
+				});
+				continue;
 			}
-		}
 
-		// All checks passed, create cards
-		const createdCards: FSRSFlashcardItem[] = [];
+			// Mark question as seen and create the card
+			seenQuestions.add(flashcard.question);
 
-		for (const flashcard of flashcards) {
 			const fsrsData = createDefaultFSRSData(flashcard.id);
 
 			const extendedData: FSRSCardData = {
@@ -122,7 +136,7 @@ export class CardRepository {
 			} as CardAddedEvent);
 		}
 
-		return createdCards;
+		return { created: createdCards, duplicates };
 	}
 
 	get(cardId: string): FSRSCardData | undefined {
