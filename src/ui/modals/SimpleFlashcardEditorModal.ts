@@ -613,3 +613,14 @@ export class SimpleFlashcardEditorModal extends BaseModal {
 export function flashcardToMarkdown(question: string, answer: string): string {
 	return `${question} ${FLASHCARD_CONFIG.tag}\n${answer}`;
 }
+
+/**
+ * Helper to convert multiple flashcards to markdown format for editing
+ */
+export function flashcardsToMarkdown(
+	flashcards: Array<{ question: string; answer: string }>
+): string {
+	return flashcards
+		.map((f) => flashcardToMarkdown(f.question, f.answer))
+		.join("\n\n");
+}

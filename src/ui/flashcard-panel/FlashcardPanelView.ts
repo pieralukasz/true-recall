@@ -23,7 +23,7 @@ import { FlashcardPanelHeader } from "./FlashcardPanelHeader";
 import { SelectionFooter } from "../components";
 import { MoveCardModal } from "../modals/MoveCardModal";
 import type { FSRSFlashcardItem } from "../../types/fsrs/card.types";
-import { SimpleFlashcardEditorModal, flashcardToMarkdown } from "../modals/SimpleFlashcardEditorModal";
+import { SimpleFlashcardEditorModal, flashcardToMarkdown, flashcardsToMarkdown } from "../modals/SimpleFlashcardEditorModal";
 import type { FlashcardItem } from "../../types";
 import type { CardAddedEvent, CardRemovedEvent, CardUpdatedEvent, CardReviewedEvent, BulkChangeEvent, ReviewCardChangedEvent, SettingsChangedEvent } from "../../types/events.types";
 import { countCardsByState } from "../shared/helpers";
@@ -768,10 +768,33 @@ export class FlashcardPanelView extends ItemView {
             }));
 
             // Save directly to SQL (no MD file created)
-            await this.flashcardManager.saveFlashcardsToSql(
+            const saveResult = await this.flashcardManager.saveFlashcardsToSql(
                 state.currentFile,
                 flashcardsWithIds
             );
+
+            // Handle partial success
+            if (saveResult.duplicates.length > 0) {
+                if (saveResult.created.length === 0) {
+                    notify().allCardsDuplicates(saveResult.duplicates.length);
+                } else {
+                    notify().cardsCreatedWithDuplicates(
+                        saveResult.created.length,
+                        saveResult.duplicates.length,
+                        state.currentFile.basename
+                    );
+                }
+
+                // Re-open add modal with duplicates for editing
+                this.stateManager.finishProcessing(false);
+                await this.loadFlashcardInfo();
+                const duplicateFlashcards = saveResult.duplicates.map((d) => ({
+                    question: d.flashcard.question,
+                    answer: d.flashcard.answer,
+                }));
+                await this.handleAddFlashcard(duplicateFlashcards);
+                return;
+            }
 
             notify().success(`Generated flashcards for ${state.currentFile.basename}`);
             this.stateManager.finishProcessing(false);
@@ -1124,42 +1147,58 @@ export class FlashcardPanelView extends ItemView {
     /**
      * Add flashcards via simple markdown editor modal
      * Includes AI formatting option if OpenRouter is configured
+     * Handles partial success: adds non-duplicates and re-opens modal with duplicates
      */
-    private async handleAddFlashcard(): Promise<void> {
+    private async handleAddFlashcard(prefillFlashcards?: Array<{ question: string; answer: string }>): Promise<void> {
         const state = this.stateManager.getState();
         if (!state.currentFile) return;
-
-        // Get or create sourceUid for the current file
-        const frontmatterService = this.flashcardManager.getFrontmatterService();
-        let sourceUid = await frontmatterService.getSourceNoteUid(state.currentFile);
-        if (!sourceUid) {
-            sourceUid = frontmatterService.generateUid();
-            await frontmatterService.setSourceNoteUid(state.currentFile, sourceUid);
-        }
 
         const modal = new SimpleFlashcardEditorModal(this.app, {
             mode: "add",
             currentFilePath: state.currentFile.path,
             openRouterService: this.openRouterService,
             settings: this.plugin.settings,
+            prefillContent: prefillFlashcards ? flashcardsToMarkdown(prefillFlashcards) : undefined,
         });
 
         const result = await modal.openAndWait();
         if (result.cancelled || result.flashcards.length === 0) return;
 
         try {
-            // Save all parsed flashcards in parallel
-            await Promise.all(
-                result.flashcards.map((flashcard) =>
-                    this.flashcardManager.addSingleFlashcard(
-                        flashcard.question,
-                        flashcard.answer,
-                        sourceUid
-                    )
-                )
+            const flashcardsWithIds = result.flashcards.map((f) => ({
+                id: f.id || crypto.randomUUID(),
+                question: f.question,
+                answer: f.answer,
+            }));
+
+            const saveResult = await this.flashcardManager.saveFlashcardsToSql(
+                state.currentFile,
+                flashcardsWithIds
             );
-            notify().cardsCreated(result.flashcards.length, state.currentFile.basename);
-            await this.loadFlashcardInfo();
+
+            // Handle partial success
+            if (saveResult.duplicates.length > 0) {
+                if (saveResult.created.length === 0) {
+                    notify().allCardsDuplicates(saveResult.duplicates.length);
+                } else {
+                    notify().cardsCreatedWithDuplicates(
+                        saveResult.created.length,
+                        saveResult.duplicates.length,
+                        state.currentFile.basename
+                    );
+                }
+
+                // Re-open modal with only the duplicate flashcards for editing
+                const duplicateFlashcards = saveResult.duplicates.map((d) => ({
+                    question: d.flashcard.question,
+                    answer: d.flashcard.answer,
+                }));
+                await this.loadFlashcardInfo();
+                await this.handleAddFlashcard(duplicateFlashcards);
+            } else {
+                notify().cardsCreated(saveResult.created.length, state.currentFile.basename);
+                await this.loadFlashcardInfo();
+            }
         } catch (error) {
             console.error("Error adding flashcards:", error);
             notify().operationFailed("add flashcards", error);
@@ -1240,7 +1279,7 @@ export class FlashcardPanelView extends ItemView {
             }
 
             // Save flashcards to SQL
-            await this.flashcardManager.saveFlashcardsToSql(
+            const saveResult = await this.flashcardManager.saveFlashcardsToSql(
                 state.currentFile,
                 result.flashcards.map((f) => ({
                     id: f.id || crypto.randomUUID(),
@@ -1255,7 +1294,19 @@ export class FlashcardPanelView extends ItemView {
                 : result.newContent;
             await this.app.vault.modify(state.currentFile, contentToSave);
 
-            notify().success(`Collected ${result.collectedCount} flashcard(s)`);
+            // Handle partial success
+            if (saveResult.duplicates.length > 0) {
+                if (saveResult.created.length === 0) {
+                    notify().warning("All collected flashcards already exist");
+                } else {
+                    notify().cardsCreatedWithDuplicates(
+                        saveResult.created.length,
+                        saveResult.duplicates.length
+                    );
+                }
+            } else {
+                notify().success(`Collected ${saveResult.created.length} flashcard(s)`);
+            }
             await this.loadFlashcardInfo();
         } catch (error) {
             notify().operationFailed("collect flashcards", error);

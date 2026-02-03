@@ -16,7 +16,7 @@ import type { SqliteStoreService } from "../persistence/sqlite/SqliteStoreServic
 import { FrontmatterService } from "./frontmatter.service";
 import { FlashcardParserService } from "./flashcard-parser.service";
 import { SourceNoteService } from "./source-note.service";
-import { CardRepository } from "./card-repository.service";
+import { CardRepository, type CreateBatchResult } from "./card-repository.service";
 import { CardQueryService } from "./card-query.service";
 import type { FrontmatterIndexService } from "../core/frontmatter-index.service";
 
@@ -177,7 +177,7 @@ export class FlashcardManager {
 	async saveFlashcardsToSql(
 		sourceFile: TFile,
 		flashcards: Array<{ id: string; question: string; answer: string }>
-	): Promise<FSRSFlashcardItem[]> {
+	): Promise<CreateBatchResult> {
 		if (!this.cardRepository) {
 			throw new Error("Card store not initialized");
 		}

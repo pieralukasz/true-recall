@@ -216,8 +216,51 @@ export class FloatingGenerateButton {
 				answer: f.answer,
 			}));
 
-			await this.plugin.flashcardManager.saveFlashcardsToSql(file, flashcardsWithIds);
-			notify().cardsCreated(result.flashcards.length, file.basename);
+			const saveResult = await this.plugin.flashcardManager.saveFlashcardsToSql(file, flashcardsWithIds);
+
+			// Handle partial success
+			if (saveResult.duplicates.length > 0) {
+				if (saveResult.created.length === 0) {
+					notify().allCardsDuplicates(saveResult.duplicates.length);
+				} else {
+					notify().cardsCreatedWithDuplicates(
+						saveResult.created.length,
+						saveResult.duplicates.length,
+						file.basename
+					);
+				}
+
+				// Re-open review modal with only the duplicate flashcards for editing
+				const duplicateFlashcards = saveResult.duplicates.map((d) => ({
+					id: crypto.randomUUID(),
+					question: d.flashcard.question,
+					answer: d.flashcard.answer,
+				}));
+
+				const { FlashcardReviewModal: ReviewModal } = await import("../modals/FlashcardReviewModal");
+				const retryModal = new ReviewModal(this.plugin.app, {
+					initialFlashcards: duplicateFlashcards,
+					sourceNoteName: file.basename,
+					openRouterService: this.plugin.openRouterService,
+					settings: this.plugin.settings,
+				});
+
+				const retryResult = await retryModal.openAndWait();
+				if (!retryResult.cancelled && retryResult.flashcards && retryResult.flashcards.length > 0) {
+					// Recursively try to save the edited cards
+					const retryWithIds = retryResult.flashcards.map((f) => ({
+						id: f.id || crypto.randomUUID(),
+						question: f.question,
+						answer: f.answer,
+					}));
+					const retrySaveResult = await this.plugin.flashcardManager.saveFlashcardsToSql(file, retryWithIds);
+					if (retrySaveResult.created.length > 0) {
+						notify().cardsCreated(retrySaveResult.created.length, file.basename);
+					}
+				}
+			} else {
+				notify().cardsCreated(saveResult.created.length, file.basename);
+			}
 		} catch (error) {
 			notify().generationFailed(error);
 		}
