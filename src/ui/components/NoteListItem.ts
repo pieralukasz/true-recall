@@ -3,7 +3,7 @@
  * Shared component for displaying note items with checkbox, name, and card counts
  * Used by both Session and Projects views
  */
-import { MarkdownRenderer, type App, type Component } from "obsidian";
+import { type App, type Component } from "obsidian";
 import { BaseComponent } from "../component.base";
 import { createCardCountDisplay } from "./CardCountDisplay";
 
@@ -27,10 +27,25 @@ export interface NoteListItemProps {
  */
 export class NoteListItem extends BaseComponent {
 	private props: NoteListItemProps;
+	private checkbox: HTMLInputElement | null = null;
 
 	constructor(container: HTMLElement, props: NoteListItemProps) {
 		super(container);
 		this.props = props;
+	}
+
+	updateSelected(isSelected: boolean): void {
+		if (this.checkbox) {
+			this.checkbox.checked = isSelected;
+		}
+		if (this.element) {
+			this.element.classList.toggle("ep:bg-obs-interactive/10", isSelected);
+		}
+		this.props.isSelected = isSelected;
+	}
+
+	getPath(): string | undefined {
+		return this.props.notePath;
 	}
 
 	render(): void {
@@ -50,47 +65,39 @@ export class NoteListItem extends BaseComponent {
 			}`,
 		});
 
-		// Checkbox
-		const checkbox = this.element.createEl("input", {
+		// Checkbox (disabled for notes without cards)
+		this.checkbox = this.element.createEl("input", {
 			type: "checkbox",
-			cls: "ep:shrink-0 ep:w-4 ep:h-4",
+			cls: "ep:shrink-0 ep:w-4 ep:h-4 ep:disabled:opacity-40 ep:disabled:cursor-not-allowed",
 		});
-		checkbox.checked = isSelected;
-		this.events.addEventListener(checkbox, "change", () => {
-			this.props.onCheckboxChange();
-		});
+		this.checkbox.checked = isSelected;
+		this.checkbox.disabled = !hasCards;
+		if (hasCards) {
+			this.events.addEventListener(this.checkbox, "change", () => {
+				this.props.onCheckboxChange();
+			});
+		}
 
 		// Content container
 		const content = this.element.createDiv({
 			cls: "ep:flex-1 ep:min-w-0",
 		});
 
-		// Note name (wiki link style)
+		// Note name as clickable link (no MarkdownRenderer for performance)
 		const nameEl = content.createDiv({
-			cls: "ep:text-ui-small ep:font-medium ep:text-obs-normal ep:leading-snug ep:line-clamp-2 [&_p]:ep:m-0 [&_p]:ep:inline [&_a.internal-link]:ep:text-obs-normal [&_a.internal-link]:ep:no-underline [&_a.internal-link:hover]:ep:text-obs-link [&_a.internal-link:hover]:ep:underline",
+			cls: "ep:text-ui-small ep:font-medium ep:leading-snug ep:line-clamp-2",
 		});
-		void MarkdownRenderer.render(
-			this.props.app,
-			`[[${noteName}]]`,
-			nameEl,
-			"",
-			this.props.component
-		);
-
-		// Handle link clicks
-		this.events.addEventListener(nameEl, "click", (e) => {
-			const linkEl = (e.target as HTMLElement).closest("a.internal-link");
-			if (linkEl) {
-				e.preventDefault();
-				e.stopPropagation();
-				const href = linkEl.getAttribute("data-href");
-				if (href) {
-					if (this.props.onNavigate) {
-						this.props.onNavigate(href);
-					} else {
-						void this.props.app.workspace.openLinkText(href, "", false);
-					}
-				}
+		const link = nameEl.createEl("span", {
+			text: noteName,
+			cls: "ep:text-obs-normal ep:cursor-pointer ep:hover:text-obs-link ep:hover:underline",
+		});
+		this.events.addEventListener(link, "click", (e) => {
+			e.preventDefault();
+			e.stopPropagation();
+			if (this.props.onNavigate) {
+				this.props.onNavigate(noteName);
+			} else {
+				void this.props.app.workspace.openLinkText(noteName, "", false);
 			}
 		});
 
@@ -114,14 +121,17 @@ export class NoteListItem extends BaseComponent {
 			});
 		}
 
-		// Click on row toggles checkbox
-		this.events.addEventListener(this.element, "click", (e) => {
-			const target = e.target as HTMLElement;
-			if (target.tagName !== "INPUT" && !target.closest("a")) {
-				checkbox.checked = !checkbox.checked;
-				this.props.onCheckboxChange();
-			}
-		});
+		// Click on row toggles checkbox (only for notes with cards)
+		if (hasCards) {
+			this.events.addEventListener(this.element, "click", (e) => {
+				const target = e.target as HTMLElement;
+				// Don't toggle if clicked on checkbox or note name link
+				if (target.tagName !== "INPUT" && target !== link && this.checkbox) {
+					this.checkbox.checked = !this.checkbox.checked;
+					this.props.onCheckboxChange();
+				}
+			});
+		}
 	}
 }
 
