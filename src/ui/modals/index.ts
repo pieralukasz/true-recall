@@ -74,3 +74,13 @@ export {
     EasyDaysModal,
     type EasyDaysResult,
 } from "./EasyDaysModal";
+export {
+    MergeNotesModal,
+    type MergeNotesModalResult,
+    type MergeNotesModalOptions,
+} from "./MergeNotesModal";
+export {
+    MergeNotesNameModal,
+    type MergeNotesNameResult,
+    type MergeNotesNameModalOptions,
+} from "./MergeNotesNameModal";

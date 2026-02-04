@@ -11,8 +11,24 @@ import {
 	type Component,
 } from "obsidian";
 import { BaseComponent } from "../component.base";
-import { createCardCountDisplay, createSectionHeader, createNoteListItem } from "../components";
+import {
+	createCardCountDisplay,
+	createSectionHeader,
+	createNoteListItem,
+	NoteListItem,
+} from "../components";
 import type { ProjectInfo, ProjectNoteInfo } from "../../types";
+import {
+	setsEqual,
+	difference,
+	projectsEqual,
+	notesEqual,
+} from "./helpers/set-utils";
+
+interface ProjectElementRefs {
+	container: HTMLElement;
+	notesContainer: HTMLElement | null;
+}
 
 export interface ProjectsContentProps {
 	isLoading: boolean;
@@ -50,6 +66,11 @@ export class ProjectsContent extends BaseComponent {
 	private searchInput: HTMLInputElement | null = null;
 	private projectListContainer: HTMLElement | null = null;
 
+	// References for granular updates
+	private projectElements: Map<string, ProjectElementRefs> = new Map();
+	private noteListItems: Map<string, NoteListItem> = new Map();
+	private unassignedRefs: ProjectElementRefs | null = null;
+
 	constructor(container: HTMLElement, props: ProjectsContentProps) {
 		super(container);
 		this.props = props;
@@ -60,6 +81,9 @@ export class ProjectsContent extends BaseComponent {
 			this.element.remove();
 			this.events.cleanup();
 		}
+
+		// Clear references on full render
+		this.clearReferences();
 
 		this.element = this.container.createDiv({
 			cls: "true-recall-projects-content ep:flex ep:flex-col ep:h-full ep:gap-2",
@@ -86,6 +110,12 @@ export class ProjectsContent extends BaseComponent {
 
 		// Project list
 		this.renderProjectList(this.projectListContainer);
+	}
+
+	private clearReferences(): void {
+		this.projectElements.clear();
+		this.noteListItems.clear();
+		this.unassignedRefs = null;
 	}
 
 	private renderSearchInput(): void {
@@ -291,16 +321,24 @@ export class ProjectsContent extends BaseComponent {
 			});
 		}
 
+		// Store project element reference
+		const refs: ProjectElementRefs = {
+			container: item,
+			notesContainer: null,
+		};
+
 		// Expanded content (notes list)
 		if (isExpanded && project.notes.length > 0) {
-			this.renderNotesList(item, project.notes);
+			refs.notesContainer = this.renderNotesList(item, project.notes);
 		}
+
+		this.projectElements.set(project.id, refs);
 	}
 
 	private renderNotesList(
 		container: HTMLElement,
 		notes: ProjectNoteInfo[]
-	): void {
+	): HTMLElement {
 		const { selectionMode, selectedNotePaths } = this.props;
 		const notesContainer = container.createDiv({
 			cls: "ep:border-t ep:border-obs-modifier-border",
@@ -318,7 +356,7 @@ export class ProjectsContent extends BaseComponent {
 		for (const note of sortedNotes) {
 			const isSelected = selectedNotePaths.has(note.path);
 
-			createNoteListItem(notesContainer, {
+			const noteItem = createNoteListItem(notesContainer, {
 				noteName: note.name,
 				notePath: note.path,
 				newCount: note.newCount,
@@ -329,14 +367,19 @@ export class ProjectsContent extends BaseComponent {
 				component: this.props.component,
 				indent: true,
 				onCheckboxChange: () => {
-					if (selectionMode !== "selecting") {
+					if (this.props.selectionMode !== "selecting") {
 						this.props.onEnterSelectionMode(note.path);
 					} else {
 						this.props.onToggleNoteSelection(note.path);
 					}
 				},
 			});
+
+			// Store reference for granular selection updates
+			this.noteListItems.set(note.path, noteItem);
 		}
+
+		return notesContainer;
 	}
 
 	/**
@@ -450,20 +493,171 @@ export class ProjectsContent extends BaseComponent {
 			});
 		}
 
+		// Store unassigned section reference
+		this.unassignedRefs = {
+			container: item,
+			notesContainer: null,
+		};
+
 		// Expanded content (notes list)
 		if (isUnassignedExpanded && unassignedNotes.length > 0) {
-			this.renderNotesList(item, unassignedNotes);
+			this.unassignedRefs.notesContainer = this.renderNotesList(
+				item,
+				unassignedNotes
+			);
 		}
 	}
 
 	updateProps(props: Partial<ProjectsContentProps>): void {
+		const prevProps = this.props;
 		this.props = { ...this.props, ...props };
 
-		// Only re-render the project list - never destroy the input
+		// First render - no references yet
+		if (this.projectElements.size === 0) {
+			this.fullRender();
+			return;
+		}
+
+		// Detect what changed
+		const dataChanged =
+			!projectsEqual(prevProps.projectsWithCards, this.props.projectsWithCards) ||
+			!projectsEqual(prevProps.emptyProjects, this.props.emptyProjects) ||
+			!notesEqual(prevProps.unassignedNotes, this.props.unassignedNotes) ||
+			prevProps.isLoading !== this.props.isLoading ||
+			prevProps.searchQuery !== this.props.searchQuery;
+
+		// Data changed (counts, loading, search) → full re-render needed
+		if (dataChanged) {
+			this.fullRender();
+			return;
+		}
+
+		// Granular updates for UI-only state changes
+		const expandedChanged = !setsEqual(
+			prevProps.expandedProjectIds,
+			this.props.expandedProjectIds
+		);
+		const selectionChanged = !setsEqual(
+			prevProps.selectedNotePaths,
+			this.props.selectedNotePaths
+		);
+		const unassignedExpandedChanged =
+			prevProps.isUnassignedExpanded !== this.props.isUnassignedExpanded;
+
+		if (expandedChanged) {
+			const toExpand = difference(
+				this.props.expandedProjectIds,
+				prevProps.expandedProjectIds
+			);
+			const toCollapse = difference(
+				prevProps.expandedProjectIds,
+				this.props.expandedProjectIds
+			);
+			this.applyExpansionChanges(toExpand, toCollapse);
+		}
+
+		if (unassignedExpandedChanged) {
+			this.applyUnassignedExpansionChange();
+		}
+
+		if (selectionChanged) {
+			const added = difference(
+				this.props.selectedNotePaths,
+				prevProps.selectedNotePaths
+			);
+			const removed = difference(
+				prevProps.selectedNotePaths,
+				this.props.selectedNotePaths
+			);
+			this.applySelectionChanges(added, removed);
+		}
+	}
+
+	private fullRender(): void {
+		this.clearReferences();
 		if (this.projectListContainer) {
 			this.projectListContainer.empty();
 			this.renderProjectList(this.projectListContainer);
 		}
+	}
+
+	private applyExpansionChanges(
+		toExpand: Set<string>,
+		toCollapse: Set<string>
+	): void {
+		// Collapse projects
+		for (const id of toCollapse) {
+			const refs = this.projectElements.get(id);
+			if (refs?.notesContainer) {
+				// Remove NoteListItem references for collapsed notes
+				const project = this.findProject(id);
+				if (project) {
+					for (const note of project.notes) {
+						this.noteListItems.delete(note.path);
+					}
+				}
+				refs.notesContainer.remove();
+				refs.notesContainer = null;
+			}
+		}
+
+		// Expand projects
+		for (const id of toExpand) {
+			const refs = this.projectElements.get(id);
+			const project = this.findProject(id);
+			if (refs && project && project.notes.length > 0) {
+				refs.notesContainer = this.renderNotesList(
+					refs.container,
+					project.notes
+				);
+			}
+		}
+	}
+
+	private applyUnassignedExpansionChange(): void {
+		if (!this.unassignedRefs) return;
+
+		if (this.props.isUnassignedExpanded) {
+			// Expand
+			if (this.props.unassignedNotes.length > 0) {
+				this.unassignedRefs.notesContainer = this.renderNotesList(
+					this.unassignedRefs.container,
+					this.props.unassignedNotes
+				);
+			}
+		} else {
+			// Collapse
+			if (this.unassignedRefs.notesContainer) {
+				for (const note of this.props.unassignedNotes) {
+					this.noteListItems.delete(note.path);
+				}
+				this.unassignedRefs.notesContainer.remove();
+				this.unassignedRefs.notesContainer = null;
+			}
+		}
+	}
+
+	private applySelectionChanges(added: Set<string>, removed: Set<string>): void {
+		for (const path of added) {
+			const noteItem = this.noteListItems.get(path);
+			if (noteItem) {
+				noteItem.updateSelected(true);
+			}
+		}
+
+		for (const path of removed) {
+			const noteItem = this.noteListItems.get(path);
+			if (noteItem) {
+				noteItem.updateSelected(false);
+			}
+		}
+	}
+
+	private findProject(id: string): ProjectInfo | undefined {
+		return (
+			this.props.projectsWithCards.find((p) => p.id === id) ||
+			this.props.emptyProjects.find((p) => p.id === id)
+		);
 	}
 
 	focusSearch(): void {
