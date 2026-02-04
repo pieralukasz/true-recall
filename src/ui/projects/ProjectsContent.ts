@@ -16,6 +16,8 @@ import {
 	createSectionHeader,
 	createNoteListItem,
 	NoteListItem,
+	SectionHeader,
+	type SectionHeaderAction,
 } from "../components";
 import type { ProjectInfo, ProjectNoteInfo } from "../../types";
 import {
@@ -24,6 +26,9 @@ import {
 	projectsEqual,
 	notesEqual,
 } from "./helpers/set-utils";
+import { VirtualNotesList } from "./components/VirtualNotesList";
+
+const VIRTUAL_SCROLL_THRESHOLD = 30; // Use virtual scrolling when more than 30 notes
 
 interface ProjectElementRefs {
 	container: HTMLElement;
@@ -56,6 +61,9 @@ export interface ProjectsContentProps {
 	isUnassignedExpanded: boolean;
 	onToggleUnassignedExpanded: () => void;
 	onStartReviewUnassigned: () => void;
+	// Show/hide done notes
+	showDoneNotes: boolean;
+	onToggleShowDoneNotes: () => void;
 }
 
 /**
@@ -70,6 +78,8 @@ export class ProjectsContent extends BaseComponent {
 	private projectElements: Map<string, ProjectElementRefs> = new Map();
 	private noteListItems: Map<string, NoteListItem> = new Map();
 	private unassignedRefs: ProjectElementRefs | null = null;
+	private virtualLists: Map<string, VirtualNotesList> = new Map();
+	private sectionHeader: SectionHeader | null = null;
 
 	constructor(container: HTMLElement, props: ProjectsContentProps) {
 		super(container);
@@ -91,12 +101,9 @@ export class ProjectsContent extends BaseComponent {
 
 		// Section header with buttons (desktop only - on mobile actions are in "..." menu)
 		if (!Platform.isMobile) {
-			createSectionHeader(this.element, {
+			this.sectionHeader = createSectionHeader(this.element, {
 				title: "Projects",
-				actions: [
-					{ icon: "refresh-cw", ariaLabel: "Refresh", onClick: () => this.props.onRefresh() },
-					{ icon: "plus", ariaLabel: "New project", onClick: () => this.props.onCreateFromNote() },
-				],
+				actions: this.getSectionHeaderActions(),
 			});
 
 			// Search input (desktop only)
@@ -116,6 +123,38 @@ export class ProjectsContent extends BaseComponent {
 		this.projectElements.clear();
 		this.noteListItems.clear();
 		this.unassignedRefs = null;
+
+		// Clean up virtual lists
+		for (const vl of this.virtualLists.values()) {
+			vl.destroy();
+		}
+		this.virtualLists.clear();
+
+		// Clean up section header
+		this.sectionHeader?.destroy();
+		this.sectionHeader = null;
+	}
+
+	private getSectionHeaderActions(): SectionHeaderAction[] {
+		return [
+			{
+				icon: this.props.showDoneNotes ? "eye" : "eye-off",
+				ariaLabel: this.props.showDoneNotes
+					? "Hide completed notes"
+					: "Show completed notes",
+				onClick: () => this.props.onToggleShowDoneNotes(),
+			},
+			{
+				icon: "refresh-cw",
+				ariaLabel: "Refresh",
+				onClick: () => this.props.onRefresh(),
+			},
+			{
+				icon: "plus",
+				ariaLabel: "New project",
+				onClick: () => this.props.onCreateFromNote(),
+			},
+		];
 	}
 
 	private renderSearchInput(): void {
@@ -329,7 +368,7 @@ export class ProjectsContent extends BaseComponent {
 
 		// Expanded content (notes list)
 		if (isExpanded && project.notes.length > 0) {
-			refs.notesContainer = this.renderNotesList(item, project.notes);
+			refs.notesContainer = this.renderNotesList(item, project.notes, project.id);
 		}
 
 		this.projectElements.set(project.id, refs);
@@ -337,15 +376,32 @@ export class ProjectsContent extends BaseComponent {
 
 	private renderNotesList(
 		container: HTMLElement,
-		notes: ProjectNoteInfo[]
+		notes: ProjectNoteInfo[],
+		listId?: string
 	): HTMLElement {
-		const { selectionMode, selectedNotePaths } = this.props;
+		const { selectedNotePaths, showDoneNotes } = this.props;
 		const notesContainer = container.createDiv({
 			cls: "ep:border-t ep:border-obs-modifier-border",
 		});
 
+		// Filter: hide notes without any flashcards unless showDoneNotes is true
+		// Notes WITH flashcards are always shown (even if all cards are "done")
+		let filteredNotes = notes;
+		if (!showDoneNotes) {
+			filteredNotes = notes.filter((n) => n.cardCount > 0);
+		}
+
+		// Show message if all notes are done (filtered out)
+		if (filteredNotes.length === 0 && notes.length > 0 && !showDoneNotes) {
+			notesContainer.createDiv({
+				cls: "ep:py-4 ep:px-3 ep:text-center ep:text-obs-faint ep:text-ui-small",
+				text: "All notes are done",
+			});
+			return notesContainer;
+		}
+
 		// Sort: notes with cards to review first, then completed notes
-		const sortedNotes = [...notes].sort((a, b) => {
+		const sortedNotes = [...filteredNotes].sort((a, b) => {
 			const aHasCards = a.newCount + a.learningCount + a.dueCount > 0;
 			const bHasCards = b.newCount + b.learningCount + b.dueCount > 0;
 			if (aHasCards && !bHasCards) return -1;
@@ -353,30 +409,57 @@ export class ProjectsContent extends BaseComponent {
 			return a.name.localeCompare(b.name);
 		});
 
-		for (const note of sortedNotes) {
-			const isSelected = selectedNotePaths.has(note.path);
-
-			const noteItem = createNoteListItem(notesContainer, {
-				noteName: note.name,
-				notePath: note.path,
-				newCount: note.newCount,
-				learningCount: note.learningCount,
-				dueCount: note.dueCount,
-				isSelected,
+		// Use virtual scrolling for large lists
+		if (sortedNotes.length > VIRTUAL_SCROLL_THRESHOLD) {
+			const virtualList = new VirtualNotesList(notesContainer, {
+				notes: sortedNotes,
+				selectedNotePaths,
 				app: this.props.app,
 				component: this.props.component,
-				indent: true,
-				onCheckboxChange: () => {
+				onCheckboxChange: (notePath, isSelecting) => {
 					if (this.props.selectionMode !== "selecting") {
-						this.props.onEnterSelectionMode(note.path);
+						this.props.onEnterSelectionMode(notePath);
 					} else {
-						this.props.onToggleNoteSelection(note.path);
+						this.props.onToggleNoteSelection(notePath);
 					}
 				},
+				onNoteListItemCreated: (notePath, item) => {
+					this.noteListItems.set(notePath, item);
+				},
 			});
+			virtualList.render();
 
-			// Store reference for granular selection updates
-			this.noteListItems.set(note.path, noteItem);
+			// Track virtual list for cleanup and selection updates
+			if (listId) {
+				this.virtualLists.set(listId, virtualList);
+			}
+		} else {
+			// Simple rendering for small lists
+			for (const note of sortedNotes) {
+				const isSelected = selectedNotePaths.has(note.path);
+
+				const noteItem = createNoteListItem(notesContainer, {
+					noteName: note.name,
+					notePath: note.path,
+					newCount: note.newCount,
+					learningCount: note.learningCount,
+					dueCount: note.dueCount,
+					isSelected,
+					app: this.props.app,
+					component: this.props.component,
+					indent: true,
+					onCheckboxChange: () => {
+						if (this.props.selectionMode !== "selecting") {
+							this.props.onEnterSelectionMode(note.path);
+						} else {
+							this.props.onToggleNoteSelection(note.path);
+						}
+					},
+				});
+
+				// Store reference for granular selection updates
+				this.noteListItems.set(note.path, noteItem);
+			}
 		}
 
 		return notesContainer;
@@ -503,7 +586,8 @@ export class ProjectsContent extends BaseComponent {
 		if (isUnassignedExpanded && unassignedNotes.length > 0) {
 			this.unassignedRefs.notesContainer = this.renderNotesList(
 				item,
-				unassignedNotes
+				unassignedNotes,
+				"unassigned"
 			);
 		}
 	}
@@ -511,6 +595,11 @@ export class ProjectsContent extends BaseComponent {
 	updateProps(props: Partial<ProjectsContentProps>): void {
 		const prevProps = this.props;
 		this.props = { ...this.props, ...props };
+
+		// Update section header icon when showDoneNotes changes
+		if (prevProps.showDoneNotes !== this.props.showDoneNotes && this.sectionHeader) {
+			this.sectionHeader.updateProps({ actions: this.getSectionHeaderActions() });
+		}
 
 		// First render - no references yet
 		if (this.projectElements.size === 0) {
@@ -524,7 +613,8 @@ export class ProjectsContent extends BaseComponent {
 			!projectsEqual(prevProps.emptyProjects, this.props.emptyProjects) ||
 			!notesEqual(prevProps.unassignedNotes, this.props.unassignedNotes) ||
 			prevProps.isLoading !== this.props.isLoading ||
-			prevProps.searchQuery !== this.props.searchQuery;
+			prevProps.searchQuery !== this.props.searchQuery ||
+			prevProps.showDoneNotes !== this.props.showDoneNotes;
 
 		// Data changed (counts, loading, search) → full re-render needed
 		if (dataChanged) {
@@ -596,6 +686,12 @@ export class ProjectsContent extends BaseComponent {
 						this.noteListItems.delete(note.path);
 					}
 				}
+				// Clean up virtual list if exists
+				const vl = this.virtualLists.get(id);
+				if (vl) {
+					vl.destroy();
+					this.virtualLists.delete(id);
+				}
 				refs.notesContainer.remove();
 				refs.notesContainer = null;
 			}
@@ -608,7 +704,8 @@ export class ProjectsContent extends BaseComponent {
 			if (refs && project && project.notes.length > 0) {
 				refs.notesContainer = this.renderNotesList(
 					refs.container,
-					project.notes
+					project.notes,
+					id
 				);
 			}
 		}
@@ -622,7 +719,8 @@ export class ProjectsContent extends BaseComponent {
 			if (this.props.unassignedNotes.length > 0) {
 				this.unassignedRefs.notesContainer = this.renderNotesList(
 					this.unassignedRefs.container,
-					this.props.unassignedNotes
+					this.props.unassignedNotes,
+					"unassigned"
 				);
 			}
 		} else {
@@ -631,6 +729,12 @@ export class ProjectsContent extends BaseComponent {
 				for (const note of this.props.unassignedNotes) {
 					this.noteListItems.delete(note.path);
 				}
+				// Clean up virtual list if exists
+				const vl = this.virtualLists.get("unassigned");
+				if (vl) {
+					vl.destroy();
+					this.virtualLists.delete("unassigned");
+				}
 				this.unassignedRefs.notesContainer.remove();
 				this.unassignedRefs.notesContainer = null;
 			}
@@ -638,6 +742,7 @@ export class ProjectsContent extends BaseComponent {
 	}
 
 	private applySelectionChanges(added: Set<string>, removed: Set<string>): void {
+		// Update individual note items
 		for (const path of added) {
 			const noteItem = this.noteListItems.get(path);
 			if (noteItem) {
@@ -650,6 +755,11 @@ export class ProjectsContent extends BaseComponent {
 			if (noteItem) {
 				noteItem.updateSelected(false);
 			}
+		}
+
+		// Update virtual lists with new selection
+		for (const vl of this.virtualLists.values()) {
+			vl.updateSelection(this.props.selectedNotePaths);
 		}
 	}
 

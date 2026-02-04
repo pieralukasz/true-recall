@@ -10,6 +10,7 @@ export interface ProjectsState {
 	selectedNotePaths: Set<string>;
 	unassignedNotes: ProjectNoteInfo[];
 	isUnassignedExpanded: boolean;
+	showDoneNotes: boolean;
 }
 
 export type ProjectsStateListener = (state: ProjectsState, prevState: ProjectsState) => void;
@@ -27,6 +28,7 @@ function createInitialState(): ProjectsState {
 		selectedNotePaths: new Set<string>(),
 		unassignedNotes: [],
 		isUnassignedExpanded: false,
+		showDoneNotes: false,
 	};
 }
 
@@ -85,6 +87,10 @@ export class ProjectsStateManager {
 
 	toggleUnassignedExpanded(): void {
 		this.setState({ isUnassignedExpanded: !this.state.isUnassignedExpanded });
+	}
+
+	toggleShowDoneNotes(): void {
+		this.setState({ showDoneNotes: !this.state.showDoneNotes });
 	}
 
 	setSearchQuery(query: string): void {

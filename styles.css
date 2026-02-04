@@ -462,6 +462,9 @@
   .ep\:max-h-\[350px\] {
     max-height: 350px;
   }
+  .ep\:max-h-\[400px\] {
+    max-height: 400px;
+  }
   .ep\:max-h-\[500px\] {
     max-height: 500px;
   }
