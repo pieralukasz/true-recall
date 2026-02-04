@@ -5,6 +5,7 @@ import { VIEW_TYPE_FLASHCARD_PANEL, VIEW_TYPE_REVIEW } from "../constants";
 import type { DeletionHandlerService } from "../services/flashcard/deletion-handler.service";
 
 export function registerEventHandlers(plugin: TrueRecallPlugin): void {
+	// Single file context menu
 	plugin.registerEvent(
 		plugin.app.workspace.on("file-menu", (menu, file) => {
 			if (file instanceof TFile && file.extension === "md") {
@@ -25,6 +26,23 @@ export function registerEventHandlers(plugin: TrueRecallPlugin): void {
 					item.setTitle("Open flashcard panel")
 						.setIcon("book-text")
 						.onClick(() => void plugin.activateView());
+				});
+			}
+		})
+	);
+
+	// Multi-file context menu (Obsidian 1.4.10+)
+	plugin.registerEvent(
+		plugin.app.workspace.on("files-menu", (menu, files) => {
+			const mdFiles = files.filter(
+				(f): f is TFile => f instanceof TFile && f.extension === "md"
+			);
+
+			if (mdFiles.length >= 2) {
+				menu.addItem((item) => {
+					item.setTitle("Merge notes with flashcards")
+						.setIcon("git-merge")
+						.onClick(() => void plugin.mergeSelectedNotes(mdFiles));
 				});
 			}
 		})

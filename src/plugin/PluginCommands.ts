@@ -136,4 +136,10 @@ export function registerCommands(plugin: TrueRecallPlugin): void {
 			return true;
 		},
 	});
+
+	plugin.addCommand({
+		id: "merge-zettel-notes",
+		name: "Merge zettel notes into thinking note",
+		callback: () => void plugin.mergeNotes(),
+	});
 }

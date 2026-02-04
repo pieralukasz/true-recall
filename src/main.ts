@@ -60,8 +60,11 @@ import {
 	RestoreBackupModal,
 	DeviceSelectionModal,
 	OrphanedCardsActionModal,
+	MergeNotesModal,
+	MergeNotesNameModal,
 	type DeviceSelectionResult,
 } from "./ui/modals";
+import { MergeNotesService } from "./services/notes/merge-notes.service";
 import { registerCommands } from "./plugin/PluginCommands";
 import { registerEventHandlers, registerDeletionHandler } from "./plugin/PluginEventHandlers";
 import {
@@ -1007,6 +1010,117 @@ ${cardList}${moreText}
 		await frontmatterService.setSourceNoteUid(file, newUid);
 
 		notify().success(`Added flashcard UID: ${newUid}`);
+	}
+
+	async mergeNotes(): Promise<void> {
+		if (!this.isStoreReady()) {
+			notify().error("Database not ready. Please wait for plugin to fully load.");
+			return;
+		}
+
+		const frontmatterService = this.flashcardManager.getFrontmatterService();
+		const cardRepository = (this.flashcardManager as unknown as { cardRepository: import("./services/flashcard/card-repository.service").CardRepository }).cardRepository;
+
+		if (!cardRepository) {
+			notify().error("Card repository not initialized");
+			return;
+		}
+
+		const mergeService = new MergeNotesService(
+			this.app,
+			this.cardStore,
+			frontmatterService,
+			cardRepository
+		);
+
+		const modal = new MergeNotesModal(this.app, { mergeService });
+		const result = await modal.openAndWait();
+
+		if (result.cancelled) return;
+
+		const mergeResult = await mergeService.mergeNotes({
+			sourceNotes: result.selectedNotes,
+			newNoteName: result.newNoteName,
+		});
+
+		if (mergeResult.success) {
+			notify().success(
+				`Merged ${result.selectedNotes.length} notes into "${result.newNoteName}" (${mergeResult.cardsMoved} flashcards moved)`
+			);
+
+			if (mergeResult.mergedNote) {
+				await this.app.workspace.openLinkText(
+					mergeResult.mergedNote.path,
+					"",
+					true
+				);
+			}
+		} else {
+			notify().error(`Merge failed: ${mergeResult.errors.join(", ")}`);
+		}
+	}
+
+	async mergeSelectedNotes(files: TFile[]): Promise<void> {
+		if (!this.isStoreReady()) {
+			notify().error("Database not ready. Please wait for plugin to fully load.");
+			return;
+		}
+
+		if (files.length < 2) {
+			notify().error("Select at least 2 notes to merge");
+			return;
+		}
+
+		const frontmatterService = this.flashcardManager.getFrontmatterService();
+		const cardRepository = (this.flashcardManager as unknown as { cardRepository: import("./services/flashcard/card-repository.service").CardRepository }).cardRepository;
+
+		if (!cardRepository) {
+			notify().error("Card repository not initialized");
+			return;
+		}
+
+		const mergeService = new MergeNotesService(
+			this.app,
+			this.cardStore,
+			frontmatterService,
+			cardRepository
+		);
+
+		// Count total cards for selected files
+		let totalCards = 0;
+		for (const file of files) {
+			totalCards += mergeService.getCardCountForNote(file);
+		}
+
+		// Show simple modal for name only
+		const modal = new MergeNotesNameModal(this.app, {
+			files,
+			totalCards,
+		});
+		const result = await modal.openAndWait();
+
+		if (result.cancelled) return;
+
+		const mergeResult = await mergeService.mergeNotes({
+			sourceNotes: files,
+			newNoteName: result.newNoteName,
+		});
+
+		if (mergeResult.success) {
+			notify().success(
+				`Merged ${files.length} notes into "${result.newNoteName}" (${mergeResult.cardsMoved} flashcards moved)`
+			);
+
+			if (mergeResult.mergedNote) {
+				await this.app.workspace.openLinkText(
+					mergeResult.mergedNote.path,
+					"",
+					true
+				);
+			}
+		} else {
+			notify().error(`Merge failed: ${mergeResult.errors.join(", ")}`);
+		}
 	}
 
 	async forceReplaceCloud(): Promise<void> {
