@@ -85,7 +85,7 @@ export class NoteListItem extends BaseComponent {
 
 		// Note name as clickable link (no MarkdownRenderer for performance)
 		const nameEl = content.createDiv({
-			cls: "ep:text-ui-small ep:font-medium ep:leading-snug ep:line-clamp-2",
+			cls: "ep:text-ui-small ep:font-medium ep:leading-snug ep:truncate",
 		});
 		const link = nameEl.createEl("span", {
 			text: noteName,

@@ -407,7 +407,8 @@ export class TrueRecallSettingTab extends PluginSettingTab {
 			Array.from(selectEl.options).forEach((option) => {
 				if (option.value.startsWith("__group_")) {
 					option.disabled = true;
-					option.addClass("ep:font-bold ep:text-obs-muted");
+					option.addClass("ep:font-bold");
+					option.addClass("ep:text-obs-muted");
 				}
 			});
 		});
@@ -427,7 +428,7 @@ export class TrueRecallSettingTab extends PluginSettingTab {
 			)
 			.addTextArea((text) => {
 				text.inputEl.rows = 8;
-				text.inputEl.addClass("ep:w-full ep:font-mono ep:text-ui-small");
+				text.inputEl.addClass("ep:w-full", "ep:font-mono", "ep:text-ui-small");
 				text.setPlaceholder(this.truncatePrompt(SYSTEM_PROMPT, 500))
 					.setValue(this.plugin.settings.customGeneratePrompt)
 					.onChange(async (value) => {
@@ -623,7 +624,7 @@ export class TrueRecallSettingTab extends PluginSettingTab {
 		// eslint-disable-next-line obsidianmd/ui/sentence-case -- FSRS is an acronym
 		new Setting(container).setName("FSRS parameters").setHeading();
 
-		const totalReviews = this.plugin.cardStore?.stats.getTotalReviewCount() ?? 0;
+		const totalReviews = this.plugin.cardStore?.stats?.getTotalReviewCount() ?? 0;
 		const lastOpt = this.plugin.settings.lastOptimization;
 		const lastOptCount = this.plugin.settings.lastOptimizationReviewCount;
 
@@ -694,7 +695,7 @@ export class TrueRecallSettingTab extends PluginSettingTab {
 			.addTextArea((text) => {
 				text.inputEl.rows = 3;
 				text.inputEl.cols = 50;
-				text.inputEl.addClass("ep:w-full ep:font-mono ep:text-ui-small");
+				text.inputEl.addClass("ep:w-full", "ep:font-mono", "ep:text-ui-small");
 				text.setPlaceholder("0.40255, 1.18385, 3.173, 15.69105, ...")
 					.setValue(weightsString)
 					.onChange(async (value) => {

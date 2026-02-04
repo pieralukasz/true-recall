@@ -813,6 +813,9 @@ export class ProjectsView extends ItemView {
 				isUnassignedExpanded: state.isUnassignedExpanded,
 				onToggleUnassignedExpanded: () => this.stateManager.toggleUnassignedExpanded(),
 				onStartReviewUnassigned: () => void this.handleStartReviewUnassigned(),
+				// Show/hide done notes
+				showDoneNotes: state.showDoneNotes,
+				onToggleShowDoneNotes: () => this.stateManager.toggleShowDoneNotes(),
 			});
 			this.contentComponent.render();
 		} else {
@@ -827,6 +830,7 @@ export class ProjectsView extends ItemView {
 				selectedNotePaths: state.selectedNotePaths,
 				unassignedNotes: state.unassignedNotes,
 				isUnassignedExpanded: state.isUnassignedExpanded,
+				showDoneNotes: state.showDoneNotes,
 			});
 		}
 
