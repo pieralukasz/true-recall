@@ -10,6 +10,24 @@ import { FlashcardEditorModal } from "../modals/FlashcardEditorModal";
 import { getEventBus, notify } from "../../services";
 import type { CardUpdatedEvent } from "../../types/events.types";
 import type TrueRecallPlugin from "../../main";
+import { RESIZE_STYLES } from "./styles";
+
+interface PanelSizes {
+    sidebarWidth: number;
+    previewWidth: number;
+}
+
+const DEFAULT_PANEL_SIZES: PanelSizes = {
+    sidebarWidth: 220,
+    previewWidth: 320,
+};
+
+const PANEL_CONSTRAINTS = {
+    sidebar: { min: 180, max: 350 },
+    preview: { min: 280, max: 500 },
+};
+
+const PANEL_STORAGE_KEY = "true-recall-browser-panel-sizes";
 
 export class BrowserView extends ItemView {
     private plugin: TrueRecallPlugin;
@@ -38,9 +56,29 @@ export class BrowserView extends ItemView {
     // EventBus subscriptions
     private eventUnsubscribers: (() => void)[] = [];
 
+    // Panel resize state
+    private panelSizes: PanelSizes;
+
     constructor(leaf: WorkspaceLeaf, plugin: TrueRecallPlugin) {
         super(leaf);
         this.plugin = plugin;
+        this.panelSizes = this.loadPanelSizes();
+    }
+
+    private loadPanelSizes(): PanelSizes {
+        try {
+            const stored: unknown = this.app.loadLocalStorage(PANEL_STORAGE_KEY);
+            if (stored && typeof stored === "string") {
+                return { ...DEFAULT_PANEL_SIZES, ...JSON.parse(stored) as Partial<PanelSizes> };
+            }
+        } catch {
+            // Ignore parse errors
+        }
+        return { ...DEFAULT_PANEL_SIZES };
+    }
+
+    private savePanelSizes(): void {
+        this.app.saveLocalStorage(PANEL_STORAGE_KEY, JSON.stringify(this.panelSizes));
     }
 
     getViewType(): string {
@@ -78,18 +116,32 @@ export class BrowserView extends ItemView {
 
         // Create sidebar
         this.sidebarContainer = this.contentContainer.createDiv({
-            cls: "ep:w-[220px] ep:min-w-[180px] ep:max-w-[300px] ep:flex ep:flex-col ep:border-r ep:border-obs-border ep:bg-obs-secondary ep:overflow-y-auto ep:shrink-0",
+            cls: "ep:flex ep:flex-col ep:border-r ep:border-obs-border ep:bg-obs-secondary ep:overflow-y-auto ep:shrink-0",
         });
+        this.sidebarContainer.style.width = `${this.panelSizes.sidebarWidth}px`;
+        this.sidebarContainer.style.minWidth = `${PANEL_CONSTRAINTS.sidebar.min}px`;
+        this.sidebarContainer.style.maxWidth = `${PANEL_CONSTRAINTS.sidebar.max}px`;
+
+        // Sidebar resize handle
+        const sidebarResizeHandle = this.contentContainer.createDiv({ cls: RESIZE_STYLES.PANEL_HANDLE });
+        this.setupPanelResize(sidebarResizeHandle, "sidebar");
 
         // Create table (center)
         this.tableContainer = this.contentContainer.createDiv({
             cls: "ep:flex-1 ep:min-w-0 ep:flex ep:flex-col ep:overflow-auto",
         });
 
+        // Preview resize handle
+        const previewResizeHandle = this.contentContainer.createDiv({ cls: RESIZE_STYLES.PANEL_HANDLE });
+        this.setupPanelResize(previewResizeHandle, "preview");
+
         // Create preview panel
         this.previewContainer = this.contentContainer.createDiv({
-            cls: "ep:w-80 ep:min-w-[280px] ep:max-w-[450px] ep:h-full ep:flex ep:flex-col ep:border-l ep:border-obs-border ep:bg-obs-primary ep:overflow-y-auto ep:shrink-0",
+            cls: "ep:h-full ep:flex ep:flex-col ep:border-l ep:border-obs-border ep:bg-obs-primary ep:overflow-y-auto ep:shrink-0",
         });
+        this.previewContainer.style.width = `${this.panelSizes.previewWidth}px`;
+        this.previewContainer.style.minWidth = `${PANEL_CONSTRAINTS.preview.min}px`;
+        this.previewContainer.style.maxWidth = `${PANEL_CONSTRAINTS.preview.max}px`;
 
         // Subscribe to state changes
         this.unsubscribe = this.stateManager.subscribe(() => this.render());
@@ -102,6 +154,67 @@ export class BrowserView extends ItemView {
 
         // Load cards
         void this.loadCards();
+    }
+
+    private setupPanelResize(handle: HTMLElement, panel: "sidebar" | "preview"): void {
+        let startX = 0;
+        let startWidth = 0;
+        let rafId: number | null = null;
+
+        const container = panel === "sidebar" ? this.sidebarContainer : this.previewContainer;
+        const constraints = PANEL_CONSTRAINTS[panel];
+
+        const onMouseMove = (e: MouseEvent) => {
+            if (rafId !== null) return;
+            rafId = requestAnimationFrame(() => {
+                rafId = null;
+                const delta = e.clientX - startX;
+                // For preview, dragging left (negative delta) makes it wider
+                const adjustedDelta = panel === "preview" ? -delta : delta;
+                const newWidth = Math.max(constraints.min, Math.min(constraints.max, startWidth + adjustedDelta));
+
+                if (panel === "sidebar") {
+                    this.panelSizes.sidebarWidth = newWidth;
+                } else {
+                    this.panelSizes.previewWidth = newWidth;
+                }
+                container.style.width = `${newWidth}px`;
+            });
+        };
+
+        const onMouseUp = () => {
+            document.removeEventListener("mousemove", onMouseMove);
+            document.removeEventListener("mouseup", onMouseUp);
+            document.body.setCssProps({ "user-select": "" });
+            handle.removeClass(RESIZE_STYLES.PANEL_HANDLE_ACTIVE);
+            if (rafId !== null) {
+                cancelAnimationFrame(rafId);
+                rafId = null;
+            }
+            this.savePanelSizes();
+        };
+
+        handle.addEventListener("mousedown", (e) => {
+            e.preventDefault();
+            startX = e.clientX;
+            startWidth = panel === "sidebar" ? this.panelSizes.sidebarWidth : this.panelSizes.previewWidth;
+            document.body.setCssProps({ "user-select": "none" });
+            handle.addClass(RESIZE_STYLES.PANEL_HANDLE_ACTIVE);
+            document.addEventListener("mousemove", onMouseMove);
+            document.addEventListener("mouseup", onMouseUp);
+        });
+
+        // Double-click to reset
+        handle.addEventListener("dblclick", () => {
+            const defaultWidth = panel === "sidebar" ? DEFAULT_PANEL_SIZES.sidebarWidth : DEFAULT_PANEL_SIZES.previewWidth;
+            if (panel === "sidebar") {
+                this.panelSizes.sidebarWidth = defaultWidth;
+            } else {
+                this.panelSizes.previewWidth = defaultWidth;
+            }
+            container.style.width = `${defaultWidth}px`;
+            this.savePanelSizes();
+        });
     }
 
     async onClose(): Promise<void> {
@@ -402,6 +515,7 @@ export class BrowserView extends ItemView {
             this.tableComponent?.destroy();
             this.tableContainer.empty();
             this.tableComponent = new VirtualTable(this.tableContainer, {
+                app: this.app,
                 cards: state.filteredCards,
                 selectedCardIds: state.selectedCardIds,
                 sortColumn: state.sortColumn,

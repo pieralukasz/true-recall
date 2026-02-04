@@ -10,13 +10,13 @@
  * - DOM recycling: reuse row elements, only update content
  * - Buffer rows above/below viewport for smooth scrolling
  */
-import { setIcon } from "obsidian";
+import { setIcon, type App } from "obsidian";
 import { truncateText, stripHtml, formatDueDate, getDueDateStatus } from "../utils";
-import { renderStateBadge } from "../components";
 import type { BrowserCardItem, BrowserColumn, SortDirection } from "../../types/browser.types";
-import { TABLE_STYLES } from "./styles";
+import { TABLE_STYLES, RESIZE_STYLES } from "./styles";
 
 export interface VirtualTableProps {
+    app: App;
     cards: BrowserCardItem[];
     selectedCardIds: Set<string>;
     sortColumn: BrowserColumn;
@@ -31,20 +31,21 @@ export interface VirtualTableProps {
 interface ColumnDef {
     key: BrowserColumn;
     label: string;
-    width: string;
+    minWidth: number;
+    defaultWidth: number;
     sortable: boolean;
 }
 
 const COLUMNS: ColumnDef[] = [
-    { key: "question", label: "Question", width: "30%", sortable: true },
-    { key: "answer", label: "Answer", width: "25%", sortable: true },
-    { key: "due", label: "Due", width: "10%", sortable: true },
-    { key: "state", label: "State", width: "8%", sortable: true },
-    { key: "stability", label: "Stability", width: "8%", sortable: true },
-    { key: "reps", label: "Reps", width: "6%", sortable: true },
-    { key: "lapses", label: "Lapses", width: "6%", sortable: true },
-    { key: "source", label: "Source", width: "7%", sortable: true },
+    { key: "question", label: "Question", minWidth: 150, defaultWidth: 300, sortable: true },
+    { key: "answer", label: "Answer", minWidth: 150, defaultWidth: 250, sortable: true },
+    { key: "due", label: "Due", minWidth: 80, defaultWidth: 100, sortable: true },
+    { key: "source", label: "Source", minWidth: 80, defaultWidth: 120, sortable: true },
 ];
+
+const STORAGE_KEY = "true-recall-browser-column-widths";
+
+type ColumnWidths = Record<string, number>;
 
 // Virtual scrolling constants
 const ROW_HEIGHT = 40; // px - matches CSS padding + content
@@ -82,11 +83,36 @@ export class VirtualTable {
     private focusedIndex: number = -1;
     private boundKeyHandler: (e: KeyboardEvent) => void;
 
+    // Column widths (pixels)
+    private columnWidths: ColumnWidths;
+
     constructor(container: HTMLElement, props: VirtualTableProps) {
         this.container = container;
         this.props = props;
         this.boundScrollHandler = this.handleScroll.bind(this);
         this.boundKeyHandler = this.handleKeyDown.bind(this);
+        this.columnWidths = this.loadColumnWidths();
+    }
+
+    private loadColumnWidths(): ColumnWidths {
+        try {
+            const stored: unknown = this.props.app.loadLocalStorage(STORAGE_KEY);
+            if (stored && typeof stored === "string") {
+                return JSON.parse(stored) as ColumnWidths;
+            }
+        } catch {
+            // Ignore parse errors
+        }
+        return {};
+    }
+
+    private saveColumnWidths(): void {
+        this.props.app.saveLocalStorage(STORAGE_KEY, JSON.stringify(this.columnWidths));
+    }
+
+    private getColumnWidth(key: string): number {
+        const col = COLUMNS.find(c => c.key === key);
+        return this.columnWidths[key] ?? col?.defaultWidth ?? 100;
     }
 
     render(): void {
@@ -299,7 +325,7 @@ export class VirtualTable {
 
         // Question
         const questionTd = tr.createEl("td", { cls: TABLE_STYLES.CELL });
-        questionTd.setCssProps({ width: "30%", "flex-shrink": "0" });
+        questionTd.setCssProps({ width: `${this.getColumnWidth("question")}px`, "flex-shrink": "0" });
         questionTd.createSpan({
             text: truncateText(stripHtml(card.question ?? ""), 60),
             cls: TABLE_STYLES.CELL_CONTENT,
@@ -307,7 +333,7 @@ export class VirtualTable {
 
         // Answer
         const answerTd = tr.createEl("td", { cls: TABLE_STYLES.CELL });
-        answerTd.setCssProps({ width: "25%", "flex-shrink": "0" });
+        answerTd.setCssProps({ width: `${this.getColumnWidth("answer")}px`, "flex-shrink": "0" });
         answerTd.createSpan({
             text: truncateText(stripHtml(card.answer ?? ""), 50),
             cls: TABLE_STYLES.CELL_CONTENT,
@@ -315,7 +341,7 @@ export class VirtualTable {
 
         // Due
         const dueTd = tr.createEl("td", { cls: TABLE_STYLES.CELL });
-        dueTd.setCssProps({ width: "10%", "flex-shrink": "0" });
+        dueTd.setCssProps({ width: `${this.getColumnWidth("due")}px`, "flex-shrink": "0" });
 
         let dueCls = TABLE_STYLES.CELL_CONTENT;
         const dueStatus = getDueDateStatus(card.due);
@@ -327,45 +353,9 @@ export class VirtualTable {
             cls: dueCls,
         });
 
-        // State
-        const stateTd = tr.createEl("td", { cls: TABLE_STYLES.CELL });
-        stateTd.setCssProps({ width: "8%", "flex-shrink": "0" });
-        renderStateBadge(stateTd, {
-            state: card.state,
-            suspended: card.suspended,
-            buriedUntil: card.buriedUntil,
-        });
-
-        // Stability
-        const stabilityTd = tr.createEl("td", { cls: TABLE_STYLES.CELL });
-        stabilityTd.setCssProps({ width: "8%", "flex-shrink": "0" });
-        stabilityTd.createSpan({
-            text: card.stability > 0 ? `${Math.round(card.stability)}d` : "-",
-            cls: TABLE_STYLES.CELL_CONTENT,
-        });
-
-        // Reps
-        const repsTd = tr.createEl("td", { cls: TABLE_STYLES.CELL });
-        repsTd.setCssProps({ width: "6%", "flex-shrink": "0" });
-        repsTd.createSpan({
-            text: String(card.reps),
-            cls: TABLE_STYLES.CELL_CONTENT,
-        });
-
-        // Lapses
-        const lapsesTd = tr.createEl("td", { cls: TABLE_STYLES.CELL });
-        lapsesTd.setCssProps({ width: "6%", "flex-shrink": "0" });
-        const lapsesCls = card.lapses > 3
-            ? `${TABLE_STYLES.CELL_CONTENT} ${TABLE_STYLES.LAPSES_HIGH}`
-            : TABLE_STYLES.CELL_CONTENT;
-        lapsesTd.createSpan({
-            text: String(card.lapses),
-            cls: lapsesCls,
-        });
-
         // Source
         const sourceTd = tr.createEl("td", { cls: TABLE_STYLES.CELL });
-        sourceTd.setCssProps({ width: "7%", "flex-shrink": "0" });
+        sourceTd.setCssProps({ width: `${this.getColumnWidth("source")}px`, "flex-shrink": "0" });
         if (card.sourceNoteName) {
             const sourceLink = sourceTd.createEl("a", {
                 text: truncateText(card.sourceNoteName, 20),
@@ -402,11 +392,13 @@ export class VirtualTable {
             cls: TABLE_STYLES.HEADER_ROW,
         });
 
-        for (const col of COLUMNS) {
+        for (const [i, col] of COLUMNS.entries()) {
+            const width = this.getColumnWidth(col.key);
+
             const th = tr.createEl("th", {
-                cls: TABLE_STYLES.HEADER_CELL,
+                cls: `${TABLE_STYLES.HEADER_CELL} ep:relative`,
             });
-            th.setCssProps({ width: col.width, "flex-shrink": "0" });
+            th.setCssProps({ width: `${width}px`, "min-width": `${col.minWidth}px`, "flex-shrink": "0" });
 
             if (col.sortable) {
                 const sortBtn = th.createEl("button", {
@@ -427,6 +419,80 @@ export class VirtualTable {
             } else {
                 th.createSpan({ text: col.label });
             }
+
+            // Resize handle (except for last column)
+            if (i < COLUMNS.length - 1) {
+                const handle = th.createDiv({ cls: RESIZE_STYLES.COLUMN_HANDLE });
+                this.setupColumnResize(handle, col.key, th);
+            }
+        }
+    }
+
+    private setupColumnResize(handle: HTMLElement, columnKey: string, th: HTMLElement): void {
+        let startX = 0;
+        let startWidth = 0;
+        let rafId: number | null = null;
+
+        const onMouseMove = (e: MouseEvent) => {
+            if (rafId !== null) return;
+            rafId = requestAnimationFrame(() => {
+                rafId = null;
+                const delta = e.clientX - startX;
+                const col = COLUMNS.find(c => c.key === columnKey);
+                if (!col) return;
+
+                const newWidth = Math.max(col.minWidth, startWidth + delta);
+                this.columnWidths[columnKey] = newWidth;
+                th.style.width = `${newWidth}px`;
+                this.updateRowCellWidths();
+            });
+        };
+
+        const onMouseUp = () => {
+            document.removeEventListener("mousemove", onMouseMove);
+            document.removeEventListener("mouseup", onMouseUp);
+            document.body.setCssProps({ "user-select": "" });
+            handle.removeClass(RESIZE_STYLES.COLUMN_HANDLE_ACTIVE);
+            if (rafId !== null) {
+                cancelAnimationFrame(rafId);
+                rafId = null;
+            }
+            this.saveColumnWidths();
+        };
+
+        handle.addEventListener("mousedown", (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            startX = e.clientX;
+            startWidth = this.getColumnWidth(columnKey);
+            document.body.setCssProps({ "user-select": "none" });
+            handle.addClass(RESIZE_STYLES.COLUMN_HANDLE_ACTIVE);
+            document.addEventListener("mousemove", onMouseMove);
+            document.addEventListener("mouseup", onMouseUp);
+        });
+
+        // Double-click to reset to default
+        handle.addEventListener("dblclick", (e) => {
+            e.stopPropagation();
+            const col = COLUMNS.find(c => c.key === columnKey);
+            if (col) {
+                this.columnWidths[columnKey] = col.defaultWidth;
+                th.style.width = `${col.defaultWidth}px`;
+                this.updateRowCellWidths();
+                this.saveColumnWidths();
+            }
+        });
+    }
+
+    private updateRowCellWidths(): void {
+        for (const [, row] of this.rowPool) {
+            const cells = row.querySelectorAll("td");
+            COLUMNS.forEach((col, i) => {
+                if (cells[i]) {
+                    const width = this.getColumnWidth(col.key);
+                    (cells[i] as HTMLElement).style.width = `${width}px`;
+                }
+            });
         }
     }
 

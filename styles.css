@@ -252,6 +252,9 @@
   .ep\:right-2 {
     right: calc(var(--ep-spacing) * 2);
   }
+  .ep\:bottom-0 {
+    bottom: calc(var(--ep-spacing) * 0);
+  }
   .ep\:left-0 {
     left: calc(var(--ep-spacing) * 0);
   }
@@ -483,6 +486,9 @@
   .ep\:min-h-\[100px\] {
     min-height: 100px;
   }
+  .ep\:w-1 {
+    width: calc(var(--ep-spacing) * 1);
+  }
   .ep\:w-1\.5 {
     width: calc(var(--ep-spacing) * 1.5);
   }
@@ -513,9 +519,6 @@
   .ep\:w-45 {
     width: calc(var(--ep-spacing) * 45);
   }
-  .ep\:w-80 {
-    width: calc(var(--ep-spacing) * 80);
-  }
   .ep\:w-\[40px\] {
     width: 40px;
   }
@@ -542,9 +545,6 @@
   }
   .ep\:max-w-\[400px\] {
     max-width: 400px;
-  }
-  .ep\:max-w-\[450px\] {
-    max-width: 450px;
   }
   .ep\:max-w-\[900px\] {
     max-width: 900px;
@@ -576,12 +576,6 @@
   .ep\:min-w-\[160px\] {
     min-width: 160px;
   }
-  .ep\:min-w-\[180px\] {
-    min-width: 180px;
-  }
-  .ep\:min-w-\[280px\] {
-    min-width: 280px;
-  }
   .ep\:flex-1 {
     flex: 1;
   }
@@ -593,6 +587,9 @@
   }
   .ep\:border-collapse {
     border-collapse: collapse;
+  }
+  .ep\:cursor-col-resize {
+    cursor: col-resize;
   }
   .ep\:cursor-default {
     cursor: default;
@@ -899,6 +896,12 @@
     background-color: var(--ep-color-obs-interactive);
     @supports (color: color-mix(in lab, red, red)) {
       background-color: color-mix(in oklab, var(--ep-color-obs-interactive) 10%, transparent);
+    }
+  }
+  .ep\:bg-obs-interactive\/60 {
+    background-color: var(--ep-color-obs-interactive);
+    @supports (color: color-mix(in lab, red, red)) {
+      background-color: color-mix(in oklab, var(--ep-color-obs-interactive) 60%, transparent);
     }
   }
   .ep\:bg-obs-modifier-hover {
@@ -1504,6 +1507,26 @@
         background-color: var(--ep-color-obs-interactive);
         @supports (color: color-mix(in lab, red, red)) {
           background-color: color-mix(in oklab, var(--ep-color-obs-interactive) 15%, transparent);
+        }
+      }
+    }
+  }
+  .ep\:hover\:bg-obs-interactive\/30 {
+    &:hover {
+      @media (hover: hover) {
+        background-color: var(--ep-color-obs-interactive);
+        @supports (color: color-mix(in lab, red, red)) {
+          background-color: color-mix(in oklab, var(--ep-color-obs-interactive) 30%, transparent);
+        }
+      }
+    }
+  }
+  .ep\:hover\:bg-obs-interactive\/50 {
+    &:hover {
+      @media (hover: hover) {
+        background-color: var(--ep-color-obs-interactive);
+        @supports (color: color-mix(in lab, red, red)) {
+          background-color: color-mix(in oklab, var(--ep-color-obs-interactive) 50%, transparent);
         }
       }
     }

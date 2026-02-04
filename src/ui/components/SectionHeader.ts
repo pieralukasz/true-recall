@@ -36,6 +36,7 @@ export class SectionHeader extends BaseComponent {
 	}
 
 	render(): void {
+		console.log('[SectionHeader] render() called, title:', this.props.title);
 		if (this.element) {
 			this.element.remove();
 			this.events.cleanup();
@@ -45,6 +46,7 @@ export class SectionHeader extends BaseComponent {
 
 		// Skip rendering on mobile if hideOnMobile is true
 		if (hideOnMobile && Platform.isMobile) {
+			console.log('[SectionHeader] Skipping render (mobile + hideOnMobile)');
 			this.element = this.container.createDiv();
 			return;
 		}
@@ -55,15 +57,18 @@ export class SectionHeader extends BaseComponent {
 			classes.push(className);
 		}
 
+		console.log('[SectionHeader] Creating element with classes:', classes.join(" "));
 		this.element = this.container.createDiv({
 			cls: classes.join(" "),
 		});
+		console.log('[SectionHeader] Element created:', !!this.element);
 
 		// Title
 		this.element.createDiv({
 			cls: "ep:text-ui-small ep:font-semibold ep:text-obs-normal",
 			text: title,
 		});
+		console.log('[SectionHeader] Title div created, actions count:', actions?.length ?? 0);
 
 		// Actions container (if any actions provided)
 		if (actions && actions.length > 0) {
