@@ -135,3 +135,12 @@ export const PREVIEW_STYLES = {
     BADGE_BURIED: "ep:bg-obs-modifier-hover ep:text-obs-muted",
     BADGE_UNKNOWN: "ep:bg-obs-modifier-hover ep:text-obs-muted",
 } as const;
+
+// ===== Resize Handle Styles =====
+
+export const RESIZE_STYLES = {
+    COLUMN_HANDLE: "ep:absolute ep:right-0 ep:top-0 ep:bottom-0 ep:w-1 ep:cursor-col-resize ep:bg-transparent ep:hover:bg-obs-interactive/50 ep:z-10",
+    COLUMN_HANDLE_ACTIVE: "ep:bg-obs-interactive",
+    PANEL_HANDLE: "ep:w-1.5 ep:bg-transparent ep:cursor-col-resize ep:shrink-0 ep:transition-colors ep:hover:bg-obs-interactive/30",
+    PANEL_HANDLE_ACTIVE: "ep:bg-obs-interactive/60",
+} as const;
