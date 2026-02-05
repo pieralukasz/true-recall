@@ -17,7 +17,7 @@ import { MoveCardModal } from "../modals/MoveCardModal";
 import type { FSRSFlashcardItem } from "../../types/fsrs/card.types";
 import { SimpleFlashcardEditorModal, flashcardToMarkdown, flashcardsToMarkdown } from "../modals/SimpleFlashcardEditorModal";
 import type { FlashcardItem } from "../../types";
-import type { CardAddedEvent, CardRemovedEvent, CardUpdatedEvent, CardReviewedEvent, BulkChangeEvent, ReviewCardChangedEvent, SettingsChangedEvent } from "../../types/events.types";
+import type { CardAddedEvent, CardRemovedEvent, CardUpdatedEvent, BulkChangeEvent, SettingsChangedEvent } from "../../types/events.types";
 import { countCardsByState } from "../shared/helpers";
 import type TrueRecallPlugin from "../../main";
 import type { PanelApi } from "../../state/store";
@@ -48,6 +48,14 @@ export class FlashcardPanelView extends ItemView {
 
     // State subscription
     private unsubscribe: (() => void) | null = null;
+
+    // Review state subscription (for tracking current review card)
+    private reviewUnsubscribe: (() => void) | null = null;
+    private lastReviewCardPath: string | null = null;
+    private lastReviewActive: boolean = false;
+
+    // Stats subscription (for header stats updates)
+    private statsUnsubscribe: (() => void) | null = null;
 
     // Event subscriptions for cross-component reactivity
     private eventUnsubscribers: (() => void)[] = [];
@@ -196,6 +204,12 @@ export class FlashcardPanelView extends ItemView {
         // Subscribe to EventBus for cross-component reactivity
         this.subscribeToEvents();
 
+        // Subscribe to review state for syncing panel with review session
+        this.subscribeToReviewState();
+
+        // Subscribe to stats for header stats updates
+        this.subscribeToStats();
+
         // Register selection tracking for literature notes
         this.registerSelectionTracking();
 
@@ -257,6 +271,8 @@ export class FlashcardPanelView extends ItemView {
     async onClose(): Promise<void> {
         // Cleanup subscriptions
         this.unsubscribe?.();
+        this.reviewUnsubscribe?.();
+        this.statsUnsubscribe?.();
 
         // Cleanup EventBus subscriptions
         this.eventUnsubscribers.forEach((unsub) => unsub());
@@ -353,24 +369,62 @@ export class FlashcardPanelView extends ItemView {
         });
         this.eventUnsubscribers.push(unsubBulk);
 
-        // When a card is reviewed, debounce header stats update
-        const unsubReviewed = eventBus.on<CardReviewedEvent>("card:reviewed", () => {
-            this.scheduleHeaderStatsUpdate();
-        });
-        this.eventUnsubscribers.push(unsubReviewed);
-
-        // Handle review card changes - sync panel with review session
-        const unsubReviewCard = eventBus.on<ReviewCardChangedEvent>(
-            "review:card-changed",
-            (event) => void this.handleReviewCardChanged(event)
-        );
-        this.eventUnsubscribers.push(unsubReviewCard);
-
         // Refresh when settings change (dayStartHour affects due card counting)
         const unsubSettings = eventBus.on<SettingsChangedEvent>("settings:changed", () => {
             this.scheduleHeaderStatsUpdate();
         });
         this.eventUnsubscribers.push(unsubSettings);
+    }
+
+    private subscribeToReviewState(): void {
+        const store = this.plugin.store;
+        if (!store) return;
+
+        this.reviewUnsubscribe = store.subscribe(
+            (state) => state.review,
+            () => {
+                const review = store.getState().review;
+                const currentCard = review.getCurrentCard();
+                const currentPath = currentCard?.sourceNotePath ?? null;
+                const isActive = review.isActive;
+
+                // Only sync when relevant state changes
+                if (currentPath !== this.lastReviewCardPath || isActive !== this.lastReviewActive) {
+                    this.lastReviewCardPath = currentPath;
+                    this.lastReviewActive = isActive;
+                    void this.syncWithReviewCard(currentPath, isActive);
+                }
+            }
+        );
+    }
+
+    private async syncWithReviewCard(sourceNotePath: string | null, isActive: boolean): Promise<void> {
+        this.panel.setReviewFollowState(sourceNotePath, isActive);
+
+        if (!isActive || !sourceNotePath) {
+            const activeFile = this.app.workspace.getActiveFile();
+            await this.handleFileChange(activeFile);
+            return;
+        }
+
+        const sourceFile = this.app.vault.getAbstractFileByPath(sourceNotePath);
+        if (sourceFile instanceof TFile) {
+            await this.handleFileChange(sourceFile);
+        }
+    }
+
+    private subscribeToStats(): void {
+        const store = this.plugin.store;
+        if (!store) return;
+
+        this.statsUnsubscribe = store.subscribe(
+            (state) => state.stats.isStale,
+            (isStale) => {
+                if (isStale) {
+                    this.scheduleHeaderStatsUpdate();
+                }
+            }
+        );
     }
 
     async handleFileChange(file: TFile | null): Promise<void> {
@@ -391,25 +445,6 @@ export class FlashcardPanelView extends ItemView {
 
     clearReviewFollowState(): void {
         this.panel.setReviewFollowState(null, false);
-    }
-
-    private async handleReviewCardChanged(event: ReviewCardChangedEvent): Promise<void> {
-        // Update review follow state
-        this.panel.setReviewFollowState(event.sourceNotePath, event.isActive);
-
-        if (!event.isActive || !event.sourceNotePath) {
-            // Session ended or no source - revert to active file mode
-            const activeFile = this.app.workspace.getActiveFile();
-            await this.handleFileChange(activeFile);
-            return;
-        }
-
-        // Find the source file
-        const sourceFile = this.app.vault.getAbstractFileByPath(event.sourceNotePath);
-        if (sourceFile instanceof TFile) {
-            // Update panel to show this file's flashcards
-            await this.handleFileChange(sourceFile);
-        }
     }
 
     // ===== Private Methods =====

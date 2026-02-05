@@ -40,6 +40,10 @@ export type {
 	SimulatorSliceState,
 	SimulatorSliceActions,
 	SimulatorApi,
+	// Stats slice
+	StatsSliceState,
+	StatsSliceActions,
+	StatsApi,
 	// Helper types
 	SliceCreator,
 } from "./types";
