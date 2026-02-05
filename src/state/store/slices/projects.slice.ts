@@ -31,17 +31,7 @@ export function createProjectsSlice(
 	const initial = createInitialState();
 
 	const slice: ProjectsSlice = {
-		// State
-		isLoading: initial.isLoading,
-		projects: initial.projects,
-		searchQuery: initial.searchQuery,
-		editingProjectId: initial.editingProjectId,
-		expandedProjectIds: initial.expandedProjectIds,
-		selectionMode: initial.selectionMode,
-		selectedNotePaths: initial.selectedNotePaths,
-		unassignedNotes: initial.unassignedNotes,
-		isUnassignedExpanded: initial.isUnassignedExpanded,
-		showDoneNotes: initial.showDoneNotes,
+		...initial,
 
 		setState: (partial: Partial<ProjectsSliceState>) => {
 			set((s) => ({
@@ -50,21 +40,8 @@ export function createProjectsSlice(
 		},
 
 		reset: () => {
-			const initialState = createInitialState();
 			set((s) => ({
-				projects: {
-					...s.projects,
-					isLoading: initialState.isLoading,
-					projects: initialState.projects,
-					searchQuery: initialState.searchQuery,
-					editingProjectId: initialState.editingProjectId,
-					expandedProjectIds: initialState.expandedProjectIds,
-					selectionMode: initialState.selectionMode,
-					selectedNotePaths: initialState.selectedNotePaths,
-					unassignedNotes: initialState.unassignedNotes,
-					isUnassignedExpanded: initialState.isUnassignedExpanded,
-					showDoneNotes: initialState.showDoneNotes,
-				},
+				projects: { ...s.projects, ...createInitialState() },
 			}));
 		},
 

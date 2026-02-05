@@ -21,12 +21,7 @@ export function createSessionSlice(
 	const initial = createInitialState();
 
 	const slice: SessionSlice = {
-		// State
-		currentNoteName: initial.currentNoteName,
-		allCards: initial.allCards,
-		selectedNotes: initial.selectedNotes,
-		searchQuery: initial.searchQuery,
-		now: initial.now,
+		...initial,
 
 		setState: (partial: Partial<SessionSliceState>) => {
 			set((s) => {
@@ -47,16 +42,8 @@ export function createSessionSlice(
 		},
 
 		reset: () => {
-			const initialState = createInitialState();
 			set((s) => ({
-				session: {
-					...s.session,
-					currentNoteName: initialState.currentNoteName,
-					allCards: initialState.allCards,
-					selectedNotes: initialState.selectedNotes,
-					searchQuery: initialState.searchQuery,
-					now: initialState.now,
-				},
+				session: { ...s.session, ...createInitialState() },
 			}));
 		},
 
