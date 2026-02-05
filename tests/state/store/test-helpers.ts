@@ -1,21 +1,26 @@
 import { State } from "ts-fsrs";
+import type { App } from "obsidian";
 import type { AppStoreDeps, BadgeCounts } from "../../../src/state/store";
-import type { FSRSFlashcardItem } from "../../../src/types";
+import type { FSRSFlashcardItem, TrueRecallSettings } from "../../../src/types";
+import type { SqliteStoreService } from "../../../src/services/persistence/sqlite/SqliteStoreService";
+import type { DayBoundaryService } from "../../../src/services/core/day-boundary.service";
+import type { FrontmatterIndexService } from "../../../src/services/core/frontmatter-index.service";
+import type { EventBusService } from "../../../src/services/core/event-bus.service";
 import { createAppStore } from "../../../src/state/store";
 
 export function createMockDeps(): AppStoreDeps {
 	return {
-		app: {} as any,
-		cardStore: {} as any,
-		dayBoundaryService: {} as any,
-		frontmatterIndex: {} as any,
+		app: {} as unknown as App,
+		cardStore: {} as unknown as SqliteStoreService,
+		dayBoundaryService: {} as unknown as DayBoundaryService,
+		frontmatterIndex: {} as unknown as FrontmatterIndexService,
 		eventBus: {
 			on: () => () => {},
 			emit: () => {},
-		} as any,
+		} as unknown as EventBusService,
 		getSettings: () => ({
 			dayStartHour: 4,
-		}) as any,
+		}) as TrueRecallSettings,
 	};
 }
 
