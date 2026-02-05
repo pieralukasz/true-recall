@@ -1,6 +1,9 @@
 import { describe, it, expect, beforeEach } from "vitest";
+import type { TFile } from "obsidian";
 import { createTestStore } from "./test-helpers";
 import type { AppStore } from "../../../src/state/store";
+import type { FlashcardInfo } from "../../../src/types";
+import type { AppError } from "../../../src/errors";
 
 describe("Panel Slice", () => {
 	let store: AppStore;
@@ -74,10 +77,11 @@ describe("Panel Slice", () => {
 		it("should set current file and reset related state", () => {
 			store.getState().panel.setState({
 				status: "exists",
-				flashcardInfo: { exists: true, cards: [] } as any,
+				flashcardInfo: { exists: true, flashcards: [] } as FlashcardInfo,
 			});
 
-			const mockFile = { path: "/test/file.md" } as any;
+			// eslint-disable-next-line obsidianmd/no-tfile-tfolder-cast -- test mock
+			const mockFile = { path: "/test/file.md" } as unknown as TFile;
 			store.getState().panel.setCurrentFile(mockFile);
 
 			const panel = store.getState().panel;
@@ -87,11 +91,13 @@ describe("Panel Slice", () => {
 		});
 
 		it("should check if file is current file", () => {
-			const mockFile = { path: "/test/file.md" } as any;
+			// eslint-disable-next-line obsidianmd/no-tfile-tfolder-cast -- test mock
+			const mockFile = { path: "/test/file.md" } as unknown as TFile;
 			store.getState().panel.setCurrentFile(mockFile);
 
 			expect(store.getState().panel.isCurrentFile(mockFile)).toBe(true);
-			expect(store.getState().panel.isCurrentFile({ path: "/other.md" } as any)).toBe(false);
+			// eslint-disable-next-line obsidianmd/no-tfile-tfolder-cast -- test mock
+			expect(store.getState().panel.isCurrentFile({ path: "/other.md" } as unknown as TFile)).toBe(false);
 			expect(store.getState().panel.isCurrentFile(null)).toBe(false);
 		});
 	});
@@ -103,7 +109,7 @@ describe("Panel Slice", () => {
 		});
 
 		it("should start processing", () => {
-			store.getState().panel.setState({ error: { message: "Error" } as any });
+			store.getState().panel.setState({ error: { message: "Error" } as AppError });
 
 			store.getState().panel.startProcessing();
 
@@ -146,7 +152,7 @@ describe("Panel Slice", () => {
 
 	describe("Flashcard Info", () => {
 		it("should set flashcard info and update status", () => {
-			const info = { exists: true, cards: [] } as any;
+			const info = { exists: true, flashcards: [] } as FlashcardInfo;
 
 			store.getState().panel.setFlashcardInfo(info);
 
@@ -156,7 +162,7 @@ describe("Panel Slice", () => {
 		});
 
 		it("should set status to none when no flashcards", () => {
-			const info = { exists: false, cards: [] } as any;
+			const info = { exists: false, flashcards: [] } as FlashcardInfo;
 
 			store.getState().panel.setFlashcardInfo(info);
 
@@ -166,7 +172,7 @@ describe("Panel Slice", () => {
 
 	describe("Error Handling", () => {
 		it("should set error", () => {
-			const error = { message: "Test error" } as any;
+			const error = { message: "Test error" } as AppError;
 
 			store.getState().panel.setError(error);
 

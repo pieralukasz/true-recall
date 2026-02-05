@@ -100,15 +100,12 @@ export class ProjectsContent extends BaseComponent {
 		});
 
 		// Section header with buttons (desktop only - on mobile actions are in "..." menu)
-		console.log('[ProjectsContent] isMobile:', Platform.isMobile);
 		if (!Platform.isMobile) {
 			const actions = this.getSectionHeaderActions();
-			console.log('[ProjectsContent] Creating section header with', actions.length, 'actions');
 			this.sectionHeader = createSectionHeader(this.element, {
 				title: "Projects",
 				actions,
 			});
-			console.log('[ProjectsContent] Section header created:', !!this.sectionHeader);
 
 			// Search input (desktop only)
 			this.renderSearchInput();

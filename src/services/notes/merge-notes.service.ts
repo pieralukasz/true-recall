@@ -75,7 +75,7 @@ export class MergeNotesService {
 				success: false,
 				mergedNote: null,
 				cardsMoved: 0,
-				errors: [`Failed to create merged note: ${error}`],
+				errors: [`Failed to create merged note: ${error instanceof Error ? error.message : String(error)}`],
 			};
 		}
 
@@ -85,9 +85,9 @@ export class MergeNotesService {
 		// 8. Move source notes to trash
 		for (const data of sourceData) {
 			try {
-				await this.app.vault.trash(data.file, false);
+				await this.app.fileManager.trashFile(data.file);
 			} catch (error) {
-				errors.push(`Failed to delete source note ${data.file.basename}: ${error}`);
+				errors.push(`Failed to delete source note ${data.file.basename}: ${error instanceof Error ? error.message : String(error)}`);
 			}
 		}
 
@@ -197,9 +197,9 @@ export class MergeNotesService {
 			if (!cache) return false;
 
 			// Check frontmatter tags
-			const fmTags = cache.frontmatter?.tags;
+			const fmTags = cache.frontmatter?.tags as string | string[] | undefined;
 			if (fmTags) {
-				const tagList = Array.isArray(fmTags) ? fmTags : [fmTags];
+				const tagList: string[] = Array.isArray(fmTags) ? fmTags : [fmTags];
 				if (tagList.some(t => t === "mind/zettel" || t === "#mind/zettel")) {
 					return true;
 				}
