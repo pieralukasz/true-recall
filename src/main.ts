@@ -67,6 +67,7 @@ import {
 import { MergeNotesService } from "./services/notes/merge-notes.service";
 import { registerCommands } from "./plugin/PluginCommands";
 import { registerEventHandlers, registerDeletionHandler } from "./plugin/PluginEventHandlers";
+import { createAppStore, ProjectDataService, type AppStore } from "./state/store";
 import {
 	activateView,
 	activateReviewView,
@@ -96,6 +97,8 @@ export default class TrueRecallPlugin extends Plugin {
 	orphanedCardsService: OrphanedCardsService | null = null;
 	undoService: UndoService | null = null;
 	fsrsHelper: FSRSHelperService | null = null;
+	store: AppStore | null = null;
+	projectDataService: ProjectDataService | null = null;
 
 	/**
 	 * Assert that the card store is initialized and ready.
@@ -334,13 +337,13 @@ ${cardList}${moreText}
 		this.floatingButton?.destroy();
 		this.undoService?.clear();
 		this.backgroundBackupManager?.stop();
+		this.projectDataService?.dispose();
 
 		if (this.cardStore) {
 			void this.cardStore.saveNow();
 		}
 
 		resetEventBus();
-
 	}
 
 	async loadSettings(): Promise<void> {
@@ -798,6 +801,7 @@ ${cardList}${moreText}
 			this.initializeSyncService();
 			this.fsrsHelper = new FSRSHelperService(this.cardStore, this.settings);
 			this.initializeDeletionHandler();
+			this.initializeStore();
 		} catch (error) {
 			console.error(
 				"[True Recall] Failed to initialize SQLite store:",
@@ -807,6 +811,32 @@ ${cardList}${moreText}
 				"Failed to load flashcard data. Please restart Obsidian."
 			);
 		}
+	}
+
+	private initializeStore(): void {
+		const eventBus = getEventBus();
+
+		this.projectDataService = new ProjectDataService(
+			this.frontmatterIndex,
+			this.cardStore,
+			eventBus
+		);
+
+		this.store = createAppStore({
+			app: this.app,
+			cardStore: this.cardStore,
+			dayBoundaryService: this.dayBoundaryService,
+			frontmatterIndex: this.frontmatterIndex,
+			eventBus,
+			getSettings: () => this.settings,
+		});
+
+		// Invalidate project cache on frontmatter changes
+		this.registerEvent(
+			this.app.metadataCache.on("changed", () => {
+				this.projectDataService?.invalidateProjectsCache();
+			})
+		);
 	}
 
 	/**
