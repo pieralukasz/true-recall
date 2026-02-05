@@ -39,6 +39,16 @@ export class CardContent {
 	) {}
 
 	/**
+	 * Get or create AbortController lazily (avoids allocation on desktop)
+	 */
+	private getSignal(): AbortSignal {
+		if (!this.abortController) {
+			this.abortController = new AbortController();
+		}
+		return this.abortController.signal;
+	}
+
+	/**
 	 * Render the card content (question and answer)
 	 */
 	render(
@@ -47,10 +57,11 @@ export class CardContent {
 		editState: EditModeState,
 		isAnswerRevealed: boolean
 	): void {
-		// Cleanup previous event listeners
-		this.abortController?.abort();
-		this.abortController = new AbortController();
-		const signal = this.abortController.signal;
+		// Cleanup previous event listeners (only if AbortController was created)
+		if (this.abortController) {
+			this.abortController.abort();
+			this.abortController = null;
+		}
 
 		container.empty();
 
@@ -64,11 +75,11 @@ export class CardContent {
 		const isEditingAnswer = editState.active && editState.field === "answer";
 
 		// Question (always visible)
-		this.renderQuestion(cardEl, card, sourcePath, isEditingQuestion, signal);
+		this.renderQuestion(cardEl, card, sourcePath, isEditingQuestion);
 
 		// Answer (if revealed and not editing question)
 		if (isAnswerRevealed && !isEditingQuestion) {
-			this.renderAnswer(cardEl, card, sourcePath, isEditingAnswer, signal);
+			this.renderAnswer(cardEl, card, sourcePath, isEditingAnswer);
 		}
 	}
 
@@ -84,8 +95,7 @@ export class CardContent {
 		cardEl: HTMLElement,
 		card: FSRSFlashcardItem,
 		sourcePath: string,
-		isEditing: boolean,
-		signal: AbortSignal
+		isEditing: boolean
 	): void {
 		const questionEl = cardEl.createDiv({
 			cls: "true-recall-review-question ep:text-xl ep:leading-relaxed ep:text-obs-normal ep:mb-6",
@@ -103,11 +113,12 @@ export class CardContent {
 				this.deps.component
 			);
 
+			// Only create AbortController on mobile where we need touch listeners
 			if (Platform.isMobile) {
 				this.addLongPressListener(
 					questionEl,
 					() => this.callbacks.onStartEdit("question"),
-					signal
+					this.getSignal()
 				);
 			}
 		}
@@ -117,8 +128,7 @@ export class CardContent {
 		cardEl: HTMLElement,
 		card: FSRSFlashcardItem,
 		sourcePath: string,
-		isEditing: boolean,
-		signal: AbortSignal
+		isEditing: boolean
 	): void {
 		// Separator
 		cardEl.createDiv({
@@ -141,11 +151,12 @@ export class CardContent {
 				this.deps.component
 			);
 
+			// Only create AbortController on mobile where we need touch listeners
 			if (Platform.isMobile) {
 				this.addLongPressListener(
 					answerEl,
 					() => this.callbacks.onStartEdit("answer"),
-					signal
+					this.getSignal()
 				);
 			}
 		}

@@ -1,5 +1,5 @@
 import { State } from "ts-fsrs";
-import type { AppStoreDeps } from "../../../src/state/store";
+import type { AppStoreDeps, BadgeCounts } from "../../../src/state/store";
 import type { FSRSFlashcardItem } from "../../../src/types";
 import { createAppStore } from "../../../src/state/store";
 
@@ -64,4 +64,34 @@ export function createMockCardWithState(state: State, dueOffset = 0): FSRSFlashc
 			buriedUntil: null,
 		},
 	});
+}
+
+/**
+ * Manually count cards in remaining queue (for verification against cached counts)
+ */
+export function countRemainingCards(
+	queue: FSRSFlashcardItem[],
+	currentIndex: number
+): BadgeCounts {
+	const counts: BadgeCounts = { new: 0, learning: 0, due: 0 };
+
+	for (let i = currentIndex; i < queue.length; i++) {
+		const card = queue[i];
+		if (!card) continue;
+
+		switch (card.fsrs.state) {
+			case State.New:
+				counts.new++;
+				break;
+			case State.Learning:
+			case State.Relearning:
+				counts.learning++;
+				break;
+			case State.Review:
+				counts.due++;
+				break;
+		}
+	}
+
+	return counts;
 }
