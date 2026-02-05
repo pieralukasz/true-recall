@@ -25,11 +25,6 @@ import type {
 	FSRSFlashcardItem,
 } from "../../types";
 import type {
-	CardReviewedEvent,
-	CardAddedEvent,
-	CardRemovedEvent,
-	CardUpdatedEvent,
-	BulkChangeEvent,
 	StoreSyncedEvent,
 	SettingsChangedEvent,
 } from "../../types/events.types";
@@ -66,6 +61,7 @@ export class StatsView extends ItemView {
 
 	// Event subscriptions for cross-component reactivity
 	private eventUnsubscribers: (() => void)[] = [];
+	private storeUnsubscribe: (() => void) | null = null;
 	private refreshTimer: ReturnType<typeof setTimeout> | null = null;
 
 	// Child components
@@ -120,8 +116,11 @@ export class StatsView extends ItemView {
 		// Set SQLite store BEFORE createLayout - charts call refresh() during render
 		this.statsCalculator.setSqliteStore(this.plugin.cardStore);
 
-		// Subscribe to EventBus for cross-component reactivity
+		// Subscribe to EventBus for sync/settings events
 		this.subscribeToEvents();
+
+		// Subscribe to stats slice for data invalidation
+		this.subscribeToStats();
 
 		// Create layout and initialize components (charts will have SQLite store)
 		this.createLayout();
@@ -140,6 +139,9 @@ export class StatsView extends ItemView {
 		// Cleanup EventBus subscriptions
 		this.eventUnsubscribers.forEach((unsub) => unsub());
 		this.eventUnsubscribers = [];
+
+		// Cleanup Zustand subscription
+		this.storeUnsubscribe?.();
 
 		// Destroy all components
 		this.todaySection?.destroy();
@@ -214,40 +216,7 @@ export class StatsView extends ItemView {
 	private subscribeToEvents(): void {
 		const eventBus = getEventBus();
 
-		// Refresh stats when cards are reviewed (debounced)
-		const unsubReviewed = eventBus.on<CardReviewedEvent>("card:reviewed", () => {
-			this.scheduleRefresh();
-		});
-		this.eventUnsubscribers.push(unsubReviewed);
-
-		// Refresh when cards are added
-		const unsubAdded = eventBus.on<CardAddedEvent>("card:added", () => {
-			this.scheduleRefresh();
-		});
-		this.eventUnsubscribers.push(unsubAdded);
-
-		// Refresh when cards are removed
-		const unsubRemoved = eventBus.on<CardRemovedEvent>("card:removed", () => {
-			this.scheduleRefresh();
-		});
-		this.eventUnsubscribers.push(unsubRemoved);
-
-		// Refresh for bulk changes
-		const unsubBulk = eventBus.on<BulkChangeEvent>("cards:bulk-change", () => {
-			this.scheduleRefresh();
-		});
-		this.eventUnsubscribers.push(unsubBulk);
-
-		// Refresh when cards are updated (suspended, buried, etc.)
-		const unsubUpdated = eventBus.on<CardUpdatedEvent>("card:updated", (event) => {
-			// Only refresh for changes that affect stats (not just content edits)
-			if (event.changes.fsrs || event.changes.suspended || event.changes.buried) {
-				this.scheduleRefresh();
-			}
-		});
-		this.eventUnsubscribers.push(unsubUpdated);
-
-		// Refresh after store sync
+		// Refresh after store sync (full refresh needed)
 		const unsubSynced = eventBus.on<StoreSyncedEvent>("store:synced", () => {
 			void this.refresh();
 		});
@@ -258,6 +227,20 @@ export class StatsView extends ItemView {
 			void this.refresh();
 		});
 		this.eventUnsubscribers.push(unsubSettings);
+	}
+
+	private subscribeToStats(): void {
+		const store = this.plugin.store;
+		if (!store) return;
+
+		this.storeUnsubscribe = store.subscribe(
+			(state) => state.stats.isStale,
+			(isStale) => {
+				if (isStale) {
+					this.scheduleRefresh();
+				}
+			}
+		);
 	}
 
 	private scheduleRefresh(): void {
@@ -296,6 +279,9 @@ export class StatsView extends ItemView {
 			this.cardCountsChart?.refresh(),
 			this.calendarHeatmap?.refresh(),
 		]);
+
+		// Mark stats as fresh after successful refresh
+		this.plugin.store?.getState().stats.markFresh();
 	}
 
 	// ===== Card Preview Handlers =====
