@@ -4,19 +4,19 @@
  */
 import { App } from "obsidian";
 import { Rating } from "ts-fsrs";
-import type { ReviewStateManager } from "../../../state";
 import type { FlashcardManager, FSRSService, ReviewService, SqliteStoreService } from "../../../services";
 import type { TrueRecallSettings } from "../../../types";
 import { MoveCardModal, SimpleFlashcardEditorModal, flashcardToMarkdown } from "../../modals";
 import { notify } from "../../../services";
 import type TrueRecallPlugin from "../../../main";
+import type { ReviewApi } from "../../../state/store";
 
 /**
  * Dependencies required by CardActionsHandler
  */
 export interface CardActionsHandlerDeps {
 	app: App;
-	stateManager: ReviewStateManager;
+	getReview: () => ReviewApi;
 	flashcardManager: FlashcardManager;
 	fsrsService: FSRSService;
 	reviewService: ReviewService;
@@ -67,10 +67,10 @@ export class CardActionsHandler {
 	 * Card will be excluded from future reviews until unsuspended
 	 */
 	async handleSuspend(): Promise<void> {
-		const card = this.deps.stateManager.getCurrentCard();
+		const card = this.deps.getReview().getCurrentCard();
 		if (!card) return;
 
-		const currentIndex = this.deps.stateManager.getState().currentIndex;
+		const currentIndex = this.deps.getReview().currentIndex;
 		const undoService = this.deps.plugin.undoService;
 
 		const updatedFsrs = { ...card.fsrs, suspended: true };
@@ -98,10 +98,10 @@ export class CardActionsHandler {
 		});
 
 		// Remove from current queue
-		this.deps.stateManager.removeCurrentCard();
+		this.deps.getReview().removeCurrentCard();
 
 		// Update scheduling preview for next card
-		if (!this.deps.stateManager.isComplete()) {
+		if (!this.deps.getReview().isComplete()) {
 			this.callbacks.onUpdateSchedulingPreview();
 		}
 
@@ -114,10 +114,10 @@ export class CardActionsHandler {
 	 * Card will reappear in the next day's review
 	 */
 	async handleBuryCard(): Promise<void> {
-		const card = this.deps.stateManager.getCurrentCard();
+		const card = this.deps.getReview().getCurrentCard();
 		if (!card) return;
 
-		const currentIndex = this.deps.stateManager.getState().currentIndex;
+		const currentIndex = this.deps.getReview().currentIndex;
 		const undoService = this.deps.plugin.undoService;
 
 		// Calculate tomorrow's date based on dayStartHour
@@ -147,10 +147,10 @@ export class CardActionsHandler {
 		});
 
 		// Remove from current queue
-		this.deps.stateManager.removeCurrentCard();
+		this.deps.getReview().removeCurrentCard();
 
 		// Update scheduling preview for next card
-		if (!this.deps.stateManager.isComplete()) {
+		if (!this.deps.getReview().isComplete()) {
 			this.callbacks.onUpdateSchedulingPreview();
 		}
 
@@ -163,7 +163,7 @@ export class CardActionsHandler {
 	 * All sibling cards will reappear in the next day's review
 	 */
 	async handleBuryNote(): Promise<void> {
-		const card = this.deps.stateManager.getCurrentCard();
+		const card = this.deps.getReview().getCurrentCard();
 		if (!card) return;
 
 		const sourceNoteName = card.sourceNoteName;
@@ -174,7 +174,7 @@ export class CardActionsHandler {
 		}
 
 		// Find all cards from the same source note in the queue
-		const queue = this.deps.stateManager.getState().queue;
+		const queue = this.deps.getReview().queue;
 		const siblingCards = queue.filter(c => c.sourceNoteName === sourceNoteName);
 
 		const firstSibling = siblingCards[0];
@@ -183,7 +183,7 @@ export class CardActionsHandler {
 			return;
 		}
 
-		const currentIndex = this.deps.stateManager.getState().currentIndex;
+		const currentIndex = this.deps.getReview().currentIndex;
 		const undoService = this.deps.plugin.undoService;
 
 		// Calculate tomorrow's date based on dayStartHour
@@ -210,7 +210,7 @@ export class CardActionsHandler {
 			}
 
 			// Remove from queue (by ID since indices change)
-			this.deps.stateManager.removeCardById(siblingCard.id);
+			this.deps.getReview().removeCardById(siblingCard.id);
 		}
 
 		// Push undo entry AFTER successful operations
@@ -231,7 +231,7 @@ export class CardActionsHandler {
 		}
 
 		// Update scheduling preview for next card
-		if (!this.deps.stateManager.isComplete()) {
+		if (!this.deps.getReview().isComplete()) {
 			this.callbacks.onUpdateSchedulingPreview();
 		}
 
@@ -243,7 +243,7 @@ export class CardActionsHandler {
 	 * Move the current card to another note
 	 */
 	async handleMoveCard(): Promise<void> {
-		const card = this.deps.stateManager.getCurrentCard();
+		const card = this.deps.getReview().getCurrentCard();
 		if (!card) return;
 
 		// Open move modal with card content for backlink suggestions
@@ -274,10 +274,10 @@ export class CardActionsHandler {
 
 			if (success) {
 				// Remove from current queue (card no longer exists in original file)
-				this.deps.stateManager.removeCurrentCard();
+				this.deps.getReview().removeCurrentCard();
 
 				// Update scheduling preview for next card
-				if (!this.deps.stateManager.isComplete()) {
+				if (!this.deps.getReview().isComplete()) {
 					this.callbacks.onUpdateSchedulingPreview();
 				}
 
@@ -293,7 +293,7 @@ export class CardActionsHandler {
 	 * Add new flashcards to the same file as the current card
 	 */
 	async handleAddNewFlashcard(): Promise<void> {
-		const card = this.deps.stateManager.getCurrentCard();
+		const card = this.deps.getReview().getCurrentCard();
 		if (!card) return;
 
 		// Open simple markdown editor modal
@@ -315,7 +315,7 @@ export class CardActionsHandler {
 				);
 
 				// Add new card to current session queue
-				this.deps.stateManager.addCardToQueue(newCard);
+				this.deps.getReview().addCardToQueue(newCard);
 			}
 
 			const noteName = card.sourceNotePath?.split("/").pop()?.replace(/\.md$/, "");
@@ -331,7 +331,7 @@ export class CardActionsHandler {
 	 * Opens simple markdown editor with current card's Q&A pre-filled
 	 */
 	async handleCopyCurrentCard(): Promise<void> {
-		const card = this.deps.stateManager.getCurrentCard();
+		const card = this.deps.getReview().getCurrentCard();
 		if (!card) return;
 
 		// Open modal with pre-filled content in markdown format
@@ -354,7 +354,7 @@ export class CardActionsHandler {
 				);
 
 				// Add new card to current session queue
-				this.deps.stateManager.addCardToQueue(newCard);
+				this.deps.getReview().addCardToQueue(newCard);
 			}
 
 			const noteName = card.sourceNotePath?.split("/").pop()?.replace(/\.md$/, "");
@@ -370,7 +370,7 @@ export class CardActionsHandler {
 	 * Uses direct FlashcardManager calls (no undo support for simplicity)
 	 */
 	async handleEditCardModal(): Promise<void> {
-		const card = this.deps.stateManager.getCurrentCard();
+		const card = this.deps.getReview().getCurrentCard();
 		if (!card) return;
 
 		const modal = new SimpleFlashcardEditorModal(this.deps.app, {
@@ -394,7 +394,7 @@ export class CardActionsHandler {
 				);
 
 				// Update in state manager queue
-				this.deps.stateManager.updateCurrentCardContent(
+				this.deps.getReview().updateCurrentCardContent(
 					firstFlashcard.question,
 					firstFlashcard.answer
 				);
@@ -412,7 +412,7 @@ export class CardActionsHandler {
 						);
 
 						// Add new card to current session queue
-						this.deps.stateManager.addCardToQueue(newCard);
+						this.deps.getReview().addCardToQueue(newCard);
 					}
 				}
 				notify().success(`Updated card and created ${result.flashcards.length - 1} new cards`);

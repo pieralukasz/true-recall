@@ -8,7 +8,7 @@ import {
 	type TFile,
 } from "obsidian";
 import { BaseComponent } from "../component.base";
-import type { ProcessingStatus, SelectionMode } from "../../state";
+import type { ProcessingStatus, SelectionMode } from "../../state/store";
 import type {
 	FlashcardInfo,
 	FlashcardItem,

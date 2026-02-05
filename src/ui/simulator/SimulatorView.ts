@@ -12,13 +12,13 @@ import {
 	Legend,
 } from "chart.js";
 import { VIEW_TYPE_SIMULATOR } from "../../constants";
-import { SimulatorStateManager } from "../../state/simulator.state";
 import { FSRSSimulatorService } from "../../services/core/fsrs-simulator.service";
 import { SimulatorChart } from "./SimulatorChart";
 import { SimulatorControls } from "./SimulatorControls";
 import { SimulatorSliders } from "./SimulatorSliders";
 import { SimulatorResultsTable } from "./SimulatorResultsTable";
 import type TrueRecallPlugin from "../../main";
+import type { SimulatorApi } from "../../state/store";
 
 // Register Chart.js components
 Chart.register(
@@ -35,7 +35,6 @@ Chart.register(
 
 export class SimulatorView extends ItemView {
 	private plugin: TrueRecallPlugin;
-	private stateManager: SimulatorStateManager;
 	private simulatorService: FSRSSimulatorService;
 
 	// Child components
@@ -58,11 +57,11 @@ export class SimulatorView extends ItemView {
 	constructor(leaf: WorkspaceLeaf, plugin: TrueRecallPlugin) {
 		super(leaf);
 		this.plugin = plugin;
-		this.stateManager = new SimulatorStateManager({
-			weights: plugin.settings.fsrsWeights,
-			retention: plugin.settings.fsrsRequestRetention,
-		});
 		this.simulatorService = new FSRSSimulatorService();
+	}
+
+	private get simulator(): SimulatorApi {
+		return this.plugin.store!.getState().simulator;
 	}
 
 	getViewType(): string {
@@ -109,7 +108,7 @@ export class SimulatorView extends ItemView {
 
 		// Create components
 		this.controls = new SimulatorControls(leftPanel, {
-			stateManager: this.stateManager,
+			simulator: this.simulator,
 			onSequencesChange: () => this.scheduleUpdate(),
 			onMetricChange: () => this.updateChart(),
 			onOptionsChange: () => this.updateChart(),
@@ -117,7 +116,7 @@ export class SimulatorView extends ItemView {
 		this.controls.render();
 
 		this.chart = new SimulatorChart(rightPanel, {
-			stateManager: this.stateManager,
+			simulator: this.simulator,
 		});
 		this.chart.render();
 
@@ -127,7 +126,7 @@ export class SimulatorView extends ItemView {
 		// Sliders section (full width)
 		const slidersContainer = wrapper.createDiv();
 		this.sliders = new SimulatorSliders(slidersContainer, {
-			stateManager: this.stateManager,
+			simulator: this.simulator,
 			onParameterChange: () => this.scheduleUpdate(),
 		});
 		this.sliders.render();
@@ -135,14 +134,15 @@ export class SimulatorView extends ItemView {
 		// Results table (full width, below everything)
 		const tableContainer = wrapper.createDiv();
 		this.resultsTable = new SimulatorResultsTable(tableContainer, {
-			stateManager: this.stateManager,
+			simulator: this.simulator,
 		});
 		this.resultsTable.render();
 
 		// Subscribe to state changes
-		this.stateUnsubscribe = this.stateManager.subscribe(() => {
-			this.resultsTable?.update();
-		});
+		this.stateUnsubscribe = this.plugin.store!.subscribe(
+			(state) => state.simulator.simulations,
+			() => this.resultsTable?.update()
+		);
 
 		// Initial simulation
 		this.runSimulation();
@@ -166,9 +166,6 @@ export class SimulatorView extends ItemView {
 		this.controls?.destroy();
 		this.sliders?.destroy();
 		this.resultsTable?.destroy();
-
-		// Clear state listeners
-		this.stateManager.clearListeners();
 	}
 
 	private createHeader(container: HTMLElement): void {
@@ -197,9 +194,9 @@ export class SimulatorView extends ItemView {
 	}
 
 	private runSimulation(): void {
-		const sequences = this.stateManager.getSequences();
-		const parameters = this.stateManager.getParameters();
-		const retention = this.stateManager.getDesiredRetention();
+		const sequences = this.simulator.getSequences();
+		const parameters = this.simulator.getParameters();
+		const retention = this.simulator.getDesiredRetention();
 
 		const simulations = this.simulatorService.simulate(
 			sequences,
@@ -207,7 +204,7 @@ export class SimulatorView extends ItemView {
 			retention
 		);
 
-		this.stateManager.setSimulations(simulations);
+		this.simulator.setSimulations(simulations);
 		this.chart?.update();
 		this.updateParametersDisplay();
 		this.updateUndoRedoButtons();
@@ -242,7 +239,7 @@ export class SimulatorView extends ItemView {
 			cls: this.getButtonCls(),
 		});
 		resetBtn.addEventListener("click", () => {
-			this.stateManager.resetParameters();
+			this.simulator.resetParameters();
 			this.scheduleUpdate();
 			this.sliders?.update();
 		});
@@ -253,7 +250,7 @@ export class SimulatorView extends ItemView {
 			cls: this.getButtonCls(),
 		});
 		this.undoBtn.addEventListener("click", () => {
-			this.stateManager.undo();
+			this.simulator.undo();
 			this.scheduleUpdate();
 			this.sliders?.update();
 		});
@@ -264,7 +261,7 @@ export class SimulatorView extends ItemView {
 			cls: this.getButtonCls(),
 		});
 		this.redoBtn.addEventListener("click", () => {
-			this.stateManager.redo();
+			this.simulator.redo();
 			this.scheduleUpdate();
 			this.sliders?.update();
 		});
@@ -288,18 +285,18 @@ export class SimulatorView extends ItemView {
 
 	private updateParametersDisplay(): void {
 		if (this.paramsDisplay) {
-			this.paramsDisplay.setText(this.stateManager.getParametersString());
+			this.paramsDisplay.setText(this.simulator.getParametersString());
 		}
 	}
 
 	private updateUndoRedoButtons(): void {
 		if (this.undoBtn) {
-			this.undoBtn.disabled = !this.stateManager.canUndo();
-			this.undoBtn.classList.toggle("ep:opacity-50", !this.stateManager.canUndo());
+			this.undoBtn.disabled = !this.simulator.canUndo();
+			this.undoBtn.classList.toggle("ep:opacity-50", !this.simulator.canUndo());
 		}
 		if (this.redoBtn) {
-			this.redoBtn.disabled = !this.stateManager.canRedo();
-			this.redoBtn.classList.toggle("ep:opacity-50", !this.stateManager.canRedo());
+			this.redoBtn.disabled = !this.simulator.canRedo();
+			this.redoBtn.classList.toggle("ep:opacity-50", !this.simulator.canRedo());
 		}
 	}
 }

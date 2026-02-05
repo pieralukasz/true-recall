@@ -3,7 +3,7 @@
  * Centralizes keyboard shortcut handling for review sessions
  */
 import { Rating } from "ts-fsrs";
-import type { ReviewStateManager } from "../../../state";
+import type { ReviewApi } from "../../../state/store";
 
 /**
  * Keyboard shortcut configuration
@@ -51,14 +51,14 @@ export interface KeyboardActionCallbacks {
  * ```
  */
 export class KeyboardHandler {
-	private stateManager: ReviewStateManager;
+	private getReview: () => ReviewApi;
 	private callbacks: KeyboardActionCallbacks;
 
 	constructor(
-		stateManager: ReviewStateManager,
+		getReview: () => ReviewApi,
 		callbacks: KeyboardActionCallbacks
 	) {
-		this.stateManager = stateManager;
+		this.getReview = getReview;
 		this.callbacks = callbacks;
 	}
 
@@ -172,10 +172,10 @@ export class KeyboardHandler {
 	 * Handle session-specific shortcuts (answer reveal, ratings)
 	 */
 	private handleSessionShortcuts(e: KeyboardEvent): void {
-		const state = this.stateManager.getState();
-		if (!state.isActive || this.stateManager.isComplete()) return;
+		const review = this.getReview();
+		if (!review.isActive || review.isComplete()) return;
 
-		if (!this.stateManager.isAnswerRevealed()) {
+		if (!this.getReview().isAnswerRevealed) {
 			// Show answer on Space
 			if (e.code === "Space") {
 				e.preventDefault();

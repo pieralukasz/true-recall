@@ -3,11 +3,11 @@
  * Left panel with sequence input and display options
  */
 import { BaseComponent } from "../component.base";
-import type { SimulatorStateManager } from "../../state/simulator.state";
+import type { SimulatorApi } from "../../state/store";
 import type { MetricType } from "./types";
 
 interface SimulatorControlsProps {
-	stateManager: SimulatorStateManager;
+	simulator: SimulatorApi;
 	onSequencesChange: () => void;
 	onMetricChange: () => void;
 	onOptionsChange: () => void;
@@ -39,7 +39,7 @@ export class SimulatorControls extends BaseComponent {
 			].join(" "),
 		});
 		this.events.addEventListener(resetReviewsBtn, "click", () => {
-			this.props.stateManager.resetSequences();
+			this.props.simulator.resetSequences();
 			this.updateTextarea();
 			this.props.onSequencesChange();
 		});
@@ -77,7 +77,7 @@ export class SimulatorControls extends BaseComponent {
 	 */
 	private updateTextarea(): void {
 		if (this.textarea) {
-			this.textarea.value = this.props.stateManager
+			this.textarea.value = this.props.simulator
 				.getSequences()
 				.join("\n");
 		}
@@ -95,7 +95,7 @@ export class SimulatorControls extends BaseComponent {
 			.filter((line) => line.length > 0 && /^[1-4]+$/.test(line));
 
 		if (lines.length > 0) {
-			this.props.stateManager.setSequences(lines);
+			this.props.simulator.setSequences(lines);
 			this.props.onSequencesChange();
 		}
 	}
@@ -115,7 +115,7 @@ export class SimulatorControls extends BaseComponent {
 			{ value: "cumulative", label: "CumulativeInterval" },
 		];
 
-		const currentMetric = this.props.stateManager.getMetricType();
+		const currentMetric = this.props.simulator.getMetricType();
 
 		for (const metric of metrics) {
 			const label = metricGroup.createEl("label", {
@@ -132,7 +132,7 @@ export class SimulatorControls extends BaseComponent {
 
 			this.events.addEventListener(radio, "change", () => {
 				if (radio.checked) {
-					this.props.stateManager.setMetricType(metric.value);
+					this.props.simulator.setMetricType(metric.value);
 					this.props.onMetricChange();
 				}
 			});
@@ -158,9 +158,9 @@ export class SimulatorControls extends BaseComponent {
 			type: "checkbox",
 			cls: "ep:cursor-pointer",
 		});
-		animCheckbox.checked = this.props.stateManager.getUseAnimation();
+		animCheckbox.checked = this.props.simulator.getUseAnimation();
 		this.events.addEventListener(animCheckbox, "change", () => {
-			this.props.stateManager.setUseAnimation(animCheckbox.checked);
+			this.props.simulator.setUseAnimation(animCheckbox.checked);
 			this.props.onOptionsChange();
 		});
 		animLabel.createSpan({
@@ -176,9 +176,9 @@ export class SimulatorControls extends BaseComponent {
 			type: "checkbox",
 			cls: "ep:cursor-pointer",
 		});
-		logCheckbox.checked = this.props.stateManager.getUseLogarithmic();
+		logCheckbox.checked = this.props.simulator.getUseLogarithmic();
 		this.events.addEventListener(logCheckbox, "change", () => {
-			this.props.stateManager.setUseLogarithmic(logCheckbox.checked);
+			this.props.simulator.setUseLogarithmic(logCheckbox.checked);
 			this.props.onOptionsChange();
 		});
 		logLabel.createSpan({

@@ -8,7 +8,7 @@ import { BaseComponent } from "../component.base";
 import { createCardCountDisplay } from "../components";
 import type { FlashcardInfo } from "../../types";
 import type { FSRSFlashcardItem } from "../../types/fsrs/card.types";
-import type { SelectionMode } from "../../state/state.types";
+import type { SelectionMode } from "../../state/store";
 
 export interface FlashcardPanelHeaderProps {
     flashcardInfo: FlashcardInfo | null;
