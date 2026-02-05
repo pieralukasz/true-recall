@@ -1,6 +1,6 @@
-import { describe, it, expect, beforeEach } from "vitest";
+import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
 import { State, Rating } from "ts-fsrs";
-import { createTestStore, createMockCard, createMockCardWithState } from "./test-helpers";
+import { createTestStore, createMockCard, createMockCardWithState, countRemainingCards } from "./test-helpers";
 import type { AppStore } from "../../../src/state/store";
 
 describe("Review Slice", () => {
@@ -226,6 +226,211 @@ describe("Review Slice", () => {
 			expect(counts1).not.toBe(counts2);
 			expect(counts1).toEqual(counts2);
 		});
+
+		it("should return zeros for empty queue", () => {
+			store.getState().review.startSession([]);
+
+			const counts = store.getState().review.getBadgeCounts();
+			expect(counts.new).toBe(0);
+			expect(counts.learning).toBe(0);
+			expect(counts.due).toBe(0);
+		});
+
+		it("should NOT decrement count when removing card before current index", () => {
+			const cards = [
+				createMockCardWithState(State.New),
+				createMockCardWithState(State.Review),
+			];
+			store.getState().review.startSession(cards);
+			store.getState().review.nextCard(); // Move to index 1
+
+			const countsBefore = store.getState().review.getBadgeCounts();
+			expect(countsBefore.due).toBe(1);
+
+			// Remove the New card which is before current index
+			store.getState().review.removeCardById(cards[0]!.id);
+
+			// Count should stay the same (card was already passed)
+			const countsAfter = store.getState().review.getBadgeCounts();
+			expect(countsAfter.due).toBe(1);
+		});
+
+		it("should handle batch removal and update badge counts", () => {
+			const cards = [
+				createMockCardWithState(State.New),
+				createMockCardWithState(State.Review),
+				createMockCardWithState(State.Review),
+				createMockCardWithState(State.New),
+			];
+			store.getState().review.startSession(cards);
+
+			const countsBefore = store.getState().review.getBadgeCounts();
+			expect(countsBefore.new).toBe(2);
+			expect(countsBefore.due).toBe(2);
+
+			// Remove all review cards
+			store.getState().review.removeCardsByIds([cards[1]!.id, cards[2]!.id]);
+
+			const countsAfter = store.getState().review.getBadgeCounts();
+			expect(countsAfter.new).toBe(2);
+			expect(countsAfter.due).toBe(0);
+		});
+
+		it("should not count requeue if inserted before current index", () => {
+			const cards = [
+				createMockCardWithState(State.New),
+				createMockCardWithState(State.Review),
+			];
+			store.getState().review.startSession(cards);
+			store.getState().review.nextCard(); // At index 1 now
+
+			const countsBefore = store.getState().review.getBadgeCounts();
+			expect(countsBefore.learning).toBe(0);
+
+			// Requeue at position 0 (before current index)
+			const requeuedCard = createMockCardWithState(State.Learning);
+			store.getState().review.requeueCard(requeuedCard, 0);
+
+			// Since inserted before current index, shouldn't affect remaining counts
+			const countsAfter = store.getState().review.getBadgeCounts();
+			expect(countsAfter.learning).toBe(0);
+		});
+
+		it("should update badge count when requeue at specific position after current", () => {
+			const cards = [
+				createMockCardWithState(State.Learning),
+				createMockCardWithState(State.New),
+				createMockCardWithState(State.Review),
+			];
+			store.getState().review.startSession(cards);
+
+			const countsBefore = store.getState().review.getBadgeCounts();
+			expect(countsBefore.learning).toBe(1);
+
+			// Requeue learning card at position 2 (after current, before review)
+			const requeuedCard = createMockCardWithState(State.Learning);
+			store.getState().review.requeueCard(requeuedCard, 2);
+
+			const countsAfter = store.getState().review.getBadgeCounts();
+			expect(countsAfter.learning).toBe(2);
+		});
+
+		it("should restore badge counts correctly on undo with requeued card", () => {
+			const card = createMockCardWithState(State.Learning);
+			store.getState().review.startSession([card, createMockCardWithState(State.Review)]);
+
+			const countsBefore = store.getState().review.getBadgeCounts();
+			expect(countsBefore.learning).toBe(1);
+			expect(countsBefore.due).toBe(1);
+
+			// Answer and requeue
+			const updatedCard = { ...card, fsrs: { ...card.fsrs, state: State.Learning } };
+			const requeuedCard = { ...updatedCard, id: "requeued" };
+			store.getState().review.recordAnswerAndNext(Rating.Again, updatedCard, {
+				card: requeuedCard,
+				position: 2,
+			});
+
+			// Undo with requeue removal
+			store.getState().review.undoLastAnswer(0, card, 2);
+
+			const countsAfter = store.getState().review.getBadgeCounts();
+			expect(countsAfter.learning).toBe(1);
+			expect(countsAfter.due).toBe(1);
+		});
+	});
+
+	describe("Badge Count Consistency", () => {
+		it("should stay consistent after 10 transitions", () => {
+			const cards = [
+				createMockCardWithState(State.New),
+				createMockCardWithState(State.New),
+				createMockCardWithState(State.Learning),
+				createMockCardWithState(State.Review),
+				createMockCardWithState(State.Review),
+				createMockCardWithState(State.New),
+				createMockCardWithState(State.Learning),
+				createMockCardWithState(State.Review),
+				createMockCardWithState(State.Review),
+				createMockCardWithState(State.Review),
+			];
+
+			store.getState().review.startSession(cards);
+
+			// Verify after each transition
+			for (let i = 0; i < 10; i++) {
+				const state = store.getState().review;
+				const manualCounts = countRemainingCards(state.queue, state.currentIndex);
+				const badgeCounts = state.getBadgeCounts();
+
+				expect(badgeCounts.new).toBe(manualCounts.new);
+				expect(badgeCounts.learning).toBe(manualCounts.learning);
+				expect(badgeCounts.due).toBe(manualCounts.due);
+
+				if (store.getState().review.nextCard() === false) break;
+			}
+		});
+
+		it("should match full recount at any point", () => {
+			const cards = [
+				createMockCardWithState(State.New),
+				createMockCardWithState(State.Learning),
+				createMockCardWithState(State.Review),
+				createMockCardWithState(State.New),
+				createMockCardWithState(State.Review),
+			];
+
+			store.getState().review.startSession(cards);
+
+			// Move to middle of queue
+			store.getState().review.nextCard();
+			store.getState().review.nextCard();
+
+			// Get badge counts via O(1) method
+			const cached = store.getState().review.getBadgeCounts();
+
+			// Manually count remaining cards
+			const state = store.getState().review;
+			const manual = countRemainingCards(state.queue, state.currentIndex);
+
+			expect(cached.new).toBe(manual.new);
+			expect(cached.learning).toBe(manual.learning);
+			expect(cached.due).toBe(manual.due);
+		});
+
+		it("should never go negative", () => {
+			const cards = [createMockCardWithState(State.New)];
+
+			store.getState().review.startSession(cards);
+
+			store.getState().review.nextCard();
+			store.getState().review.nextCard(); // Try to advance again
+
+			const counts = store.getState().review.getBadgeCounts();
+			expect(counts.new).toBeGreaterThanOrEqual(0);
+			expect(counts.learning).toBeGreaterThanOrEqual(0);
+			expect(counts.due).toBeGreaterThanOrEqual(0);
+		});
+
+		it("should handle all cards of same type", () => {
+			const cards = [
+				createMockCardWithState(State.New),
+				createMockCardWithState(State.New),
+				createMockCardWithState(State.New),
+			];
+
+			store.getState().review.startSession(cards);
+			expect(store.getState().review.getBadgeCounts().new).toBe(3);
+
+			store.getState().review.nextCard();
+			expect(store.getState().review.getBadgeCounts().new).toBe(2);
+
+			store.getState().review.nextCard();
+			expect(store.getState().review.getBadgeCounts().new).toBe(1);
+
+			store.getState().review.nextCard();
+			expect(store.getState().review.getBadgeCounts().new).toBe(0);
+		});
 	});
 
 	describe("Waiting State", () => {
@@ -284,6 +489,69 @@ describe("Review Slice", () => {
 		});
 	});
 
+	describe("Waiting State Boundaries", () => {
+		beforeEach(() => {
+			vi.useFakeTimers();
+			vi.setSystemTime(new Date("2024-06-15T10:00:00Z"));
+		});
+
+		afterEach(() => {
+			vi.useRealTimers();
+		});
+
+		it("should wait when learning card is exactly 60 min away (at boundary)", () => {
+			const card = createMockCardWithState(State.Learning, 60);
+			store.getState().review.startSession([card]);
+
+			// At 60 min, timeUntilDue <= MAX_WAIT_MS (60 min), so should wait
+			expect(store.getState().review.isWaitingForLearningCards()).toBe(true);
+		});
+
+		it("should NOT wait when learning card is 61 min away (beyond max wait)", () => {
+			const card = createMockCardWithState(State.Learning, 61);
+			store.getState().review.startSession([card]);
+
+			// Beyond MAX_WAIT_MS, so isWaitingForLearningCards returns false
+			expect(store.getState().review.isWaitingForLearningCards()).toBe(false);
+		});
+
+		it("should wait for Relearning cards same as Learning", () => {
+			const card = createMockCardWithState(State.Relearning, 30);
+			store.getState().review.startSession([card]);
+
+			expect(store.getState().review.isWaitingForLearningCards()).toBe(true);
+		});
+
+		it("should return false when session is not active", () => {
+			expect(store.getState().review.isWaitingForLearningCards()).toBe(false);
+		});
+
+		it("should return false when current card is Review (not Learning)", () => {
+			const card = createMockCardWithState(State.Review, 30);
+			store.getState().review.startSession([card]);
+
+			expect(store.getState().review.isWaitingForLearningCards()).toBe(false);
+		});
+
+		it("should return false when Learning card is due now", () => {
+			const card = createMockCardWithState(State.Learning, 0);
+			store.getState().review.startSession([card]);
+
+			expect(store.getState().review.isWaitingForLearningCards()).toBe(false);
+		});
+
+		it("should return waiting phase for 30 min future learning card", () => {
+			const card = createMockCardWithState(State.Learning, 30);
+			store.getState().review.startSession([card]);
+
+			const phase = store.getState().review.getPhase();
+			expect(phase.type).toBe("waiting");
+			if (phase.type === "waiting") {
+				expect(phase.timeUntilDue).toBeGreaterThan(29 * 60 * 1000);
+			}
+		});
+	});
+
 	describe("Session Phase", () => {
 		it("should return idle phase when not active", () => {
 			const phase = store.getState().review.getPhase();
@@ -316,6 +584,31 @@ describe("Review Slice", () => {
 
 			const phase = store.getState().review.getPhase();
 			expect(phase.type).toBe("waiting");
+		});
+
+		it("should return complete phase with populated stats", () => {
+			const newCard = createMockCardWithState(State.New);
+			const reviewCard = createMockCardWithState(State.Review);
+			store.getState().review.startSession([newCard, reviewCard]);
+
+			// Answer both cards
+			store.getState().review.recordAnswerAndNext(
+				Rating.Good,
+				{ ...newCard, fsrs: { ...newCard.fsrs, state: State.Learning } }
+			);
+			store.getState().review.recordAnswerAndNext(
+				Rating.Easy,
+				{ ...reviewCard, fsrs: { ...reviewCard.fsrs } }
+			);
+
+			const phase = store.getState().review.getPhase();
+			expect(phase.type).toBe("complete");
+			if (phase.type === "complete") {
+				expect(phase.stats.reviewed).toBe(2);
+				expect(phase.stats.good).toBe(1);
+				expect(phase.stats.easy).toBe(1);
+				expect(phase.stats.total).toBe(2);
+			}
 		});
 	});
 

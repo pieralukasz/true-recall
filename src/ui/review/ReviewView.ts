@@ -96,8 +96,11 @@ export class ReviewView extends ItemView {
 	// State subscription
 	private unsubscribe: (() => void) | null = null;
 
-	// Consolidated subscription/timer management
+	// Consolidated subscription/timer management (view lifecycle)
 	private subs = new SubscriptionManager();
+
+	// Session-specific event subscriptions (active only during review)
+	private sessionEventUnsubscribers: (() => void)[] = [];
 
 	// Reference to waiting timer for countdown updates
 	private waitingTimerId: ReturnType<typeof setInterval> | null = null;
@@ -106,12 +109,21 @@ export class ReviewView extends ItemView {
 	private cardEventAbortController: AbortController | null = null;
 
 	// Render optimization: track last rendered state to avoid unnecessary re-renders
-	private lastRenderedCardId: string | null = null;
-	private lastRenderedAnswerRevealed: boolean = false;
-	private lastRenderedEditState: boolean = false;
-	private lastRenderedQuestion: string | null = null;
-	private lastRenderedAnswer: string | null = null;
-	private lastRenderedBadgeCounts: { new: number; learning: number; due: number } | null = null;
+	private lastRenderedState: {
+		cardId: string | null;
+		answerRevealed: boolean;
+		editActive: boolean;
+		question: string | null;
+		answer: string | null;
+		badgeCounts: { new: number; learning: number; due: number } | null;
+	} = {
+		cardId: null,
+		answerRevealed: false,
+		editActive: false,
+		question: null,
+		answer: null,
+		badgeCounts: null,
+	};
 
 	private get review(): ReviewApi {
 		return this.plugin.store!.getState().review;
@@ -340,8 +352,8 @@ export class ReviewView extends ItemView {
 			}
 		);
 
-		// Subscribe to EventBus for cross-component reactivity
-		this.subscribeToEvents();
+		// Note: EventBus subscriptions are managed conditionally per session
+		// See subscribeToSessionEvents() called from startSession()
 
 		// Register ReviewStateManager with global UndoService for review undo support
 		this.plugin.undoService?.setReviewStateManager(this.review, {
@@ -412,6 +424,9 @@ export class ReviewView extends ItemView {
 
 		this.unsubscribe?.();
 
+		// Cleanup session-specific EventBus subscriptions
+		this.unsubscribeFromSessionEvents();
+
 		// Cleanup all EventBus subscriptions and timers via SubscriptionManager
 		this.subs.dispose();
 
@@ -431,14 +446,19 @@ export class ReviewView extends ItemView {
 		this.review.reset();
 	}
 
-	private subscribeToEvents(): void {
+	/**
+	 * Subscribe to EventBus events for the active review session
+	 * Only called when session starts to avoid unnecessary event processing
+	 */
+	private subscribeToSessionEvents(): void {
+		// Unsubscribe from any existing session events first
+		this.unsubscribeFromSessionEvents();
+
 		const eventBus = getEventBus();
 
 		// Handle card removal during active review
-		this.subs.track(
+		this.sessionEventUnsubscribers.push(
 			eventBus.on<CardRemovedEvent>("card:removed", (event) => {
-				if (!this.review.isActive) return;
-
 				// Check if removed card is in our queue
 				const queue = this.review.queue;
 				const cardInQueue = queue.find((c) => c.id === event.cardId);
@@ -451,9 +471,8 @@ export class ReviewView extends ItemView {
 		);
 
 		// Handle card content updates during review
-		this.subs.track(
+		this.sessionEventUnsubscribers.push(
 			eventBus.on<CardUpdatedEvent>("card:updated", (event) => {
-				if (!this.review.isActive) return;
 				if (!event.changes.question && !event.changes.answer) return;
 
 				// If current card was updated externally, reload from database
@@ -473,9 +492,8 @@ export class ReviewView extends ItemView {
 		);
 
 		// Handle bulk removals (e.g., from diff apply)
-		this.subs.track(
+		this.sessionEventUnsubscribers.push(
 			eventBus.on<BulkChangeEvent>("cards:bulk-change", (event) => {
-				if (!this.review.isActive) return;
 				if (event.action !== "removed") return;
 
 				// Remove all deleted cards in one batch operation (single render)
@@ -489,10 +507,8 @@ export class ReviewView extends ItemView {
 		);
 
 		// Handle new cards being added during review (e.g., from floating button)
-		this.subs.track(
+		this.sessionEventUnsubscribers.push(
 			eventBus.on<CardAddedEvent>("card:added", (event) => {
-				if (!this.review.isActive) return;
-
 				// Fetch the new card data
 				const cards = this.flashcardManager.getCardsByIds([event.cardId]);
 				const newCard = cards[0];
@@ -513,6 +529,16 @@ export class ReviewView extends ItemView {
 				this.renderHeader();
 			})
 		);
+	}
+
+	/**
+	 * Unsubscribe from session-specific EventBus events
+	 */
+	private unsubscribeFromSessionEvents(): void {
+		for (const unsub of this.sessionEventUnsubscribers) {
+			unsub();
+		}
+		this.sessionEventUnsubscribers = [];
 	}
 
 	/**
@@ -623,6 +649,9 @@ export class ReviewView extends ItemView {
 			// Start session
 			this.review.startSession(queue);
 
+			// Subscribe to EventBus events for this session
+			this.subscribeToSessionEvents();
+
 			// Notify panel of first card
 			this.emitCardChangedEvent();
 
@@ -639,6 +668,15 @@ export class ReviewView extends ItemView {
 	}
 
 	/**
+	 * Reset render state when leaving active card rendering
+	 */
+	private resetRenderState(): void {
+		this.lastRenderedState.cardId = null;
+		this.lastRenderedState.question = null;
+		this.lastRenderedState.answer = null;
+	}
+
+	/**
 	 * Render the current state using state machine pattern
 	 * Uses selective re-rendering to avoid unnecessary DOM operations
 	 */
@@ -648,24 +686,18 @@ export class ReviewView extends ItemView {
 		// Handle non-active phases with early return
 		switch (phase.type) {
 			case "idle":
-				this.lastRenderedCardId = null;
-				this.lastRenderedQuestion = null;
-				this.lastRenderedAnswer = null;
+				this.resetRenderState();
 				return;
 
 			case "complete":
 				this.review.endSession();
 				this.renderSummary();
-				this.lastRenderedCardId = null;
-				this.lastRenderedQuestion = null;
-				this.lastRenderedAnswer = null;
+				this.resetRenderState();
 				return;
 
 			case "waiting":
 				this.renderWaitingScreen();
-				this.lastRenderedCardId = null;
-				this.lastRenderedQuestion = null;
-				this.lastRenderedAnswer = null;
+				this.resetRenderState();
 				return;
 
 			case "active":
@@ -679,13 +711,14 @@ export class ReviewView extends ItemView {
 		const currentCard = phase.card;
 		const answerRevealed = this.review.isAnswerRevealed;
 		const editState = this.review.getEditState();
+		const prev = this.lastRenderedState;
 
 		// Determine what needs to be re-rendered
-		const cardChanged = currentCard.id !== this.lastRenderedCardId;
-		const answerJustRevealed = answerRevealed && !this.lastRenderedAnswerRevealed;
-		const editStateChanged = editState.active !== this.lastRenderedEditState;
-		const contentChanged = currentCard.question !== this.lastRenderedQuestion ||
-			currentCard.answer !== this.lastRenderedAnswer;
+		const cardChanged = currentCard.id !== prev.cardId;
+		const answerJustRevealed = answerRevealed && !prev.answerRevealed;
+		const editStateChanged = editState.active !== prev.editActive;
+		const contentChanged = currentCard.question !== prev.question ||
+			currentCard.answer !== prev.answer;
 
 		// Header always updates (badge counts change)
 		if (this.plugin.settings.showReviewHeader) {
@@ -705,11 +738,14 @@ export class ReviewView extends ItemView {
 		this.renderButtons();
 
 		// Update tracking state
-		this.lastRenderedCardId = currentCard.id;
-		this.lastRenderedAnswerRevealed = answerRevealed;
-		this.lastRenderedEditState = editState.active;
-		this.lastRenderedQuestion = currentCard.question;
-		this.lastRenderedAnswer = currentCard.answer;
+		this.lastRenderedState = {
+			cardId: currentCard.id,
+			answerRevealed,
+			editActive: editState.active,
+			question: currentCard.question,
+			answer: currentCard.answer,
+			badgeCounts: prev.badgeCounts,
+		};
 	}
 
 	/**
@@ -720,24 +756,25 @@ export class ReviewView extends ItemView {
 		// Stats badges (centered) - O(1) access from StateManager
 		if (!this.plugin.settings.showReviewHeaderStats) {
 			this.headerEl.empty();
-			this.lastRenderedBadgeCounts = null;
+			this.lastRenderedState.badgeCounts = null;
 			return;
 		}
 
 		const counts = this.review.getBadgeCounts();
+		const prevCounts = this.lastRenderedState.badgeCounts;
 
 		// Skip re-render if counts haven't changed (memoization)
 		if (
-			this.lastRenderedBadgeCounts &&
-			this.lastRenderedBadgeCounts.new === counts.new &&
-			this.lastRenderedBadgeCounts.learning === counts.learning &&
-			this.lastRenderedBadgeCounts.due === counts.due
+			prevCounts &&
+			prevCounts.new === counts.new &&
+			prevCounts.learning === counts.learning &&
+			prevCounts.due === counts.due
 		) {
 			return;
 		}
 
 		this.headerEl.empty();
-		this.lastRenderedBadgeCounts = { ...counts };
+		this.lastRenderedState.badgeCounts = { ...counts };
 
 		const statsContainer = this.headerEl.createDiv({
 			cls: "ep:flex ep:items-center ep:gap-1.5",
@@ -994,6 +1031,7 @@ export class ReviewView extends ItemView {
 		const isEditing = this.review.getEditState().active;
 		const answerRevealed = this.review.isAnswerRevealed;
 		const currentCardId = this.review.getCurrentCard()?.id ?? null;
+		const prev = this.lastRenderedState;
 
 		// Hide buttons when in edit mode (prevents keyboard from pushing buttons up on mobile)
 		if (isEditing) {
@@ -1004,9 +1042,9 @@ export class ReviewView extends ItemView {
 
 		// Skip re-render if nothing relevant has changed
 		// Buttons need re-render when: card changes, answer revealed, or returning from edit mode
-		const cardChanged = currentCardId !== this.lastRenderedCardId;
-		const answerJustRevealed = answerRevealed && !this.lastRenderedAnswerRevealed;
-		const editEnded = !isEditing && this.lastRenderedEditState;
+		const cardChanged = currentCardId !== prev.cardId;
+		const answerJustRevealed = answerRevealed && !prev.answerRevealed;
+		const editEnded = !isEditing && prev.editActive;
 
 		if (
 			this.buttonsEl.children.length > 0 &&
