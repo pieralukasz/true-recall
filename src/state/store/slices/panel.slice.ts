@@ -45,27 +45,7 @@ export function createPanelSlice(
 	const initial = createInitialState();
 
 	const slice: PanelSlice = {
-		// State
-		status: initial.status,
-		viewMode: initial.viewMode,
-		currentFile: initial.currentFile,
-		flashcardInfo: initial.flashcardInfo,
-		userInstructions: initial.userInstructions,
-		isFlashcardFile: initial.isFlashcardFile,
-		noteFlashcardType: initial.noteFlashcardType,
-		error: initial.error,
-		renderVersion: initial.renderVersion,
-		selectedText: initial.selectedText,
-		hasSelection: initial.hasSelection,
-		sourceNoteName: initial.sourceNoteName,
-		uncollectedCount: initial.uncollectedCount,
-		selectionMode: initial.selectionMode,
-		selectedCardIds: initial.selectedCardIds,
-		expandedCardIds: initial.expandedCardIds,
-		searchQuery: initial.searchQuery,
-		isAddCardExpanded: initial.isAddCardExpanded,
-		isFollowingReview: initial.isFollowingReview,
-		reviewSourceNotePath: initial.reviewSourceNotePath,
+		...initial,
 
 		setState: (partial: Partial<PanelSliceState>) => {
 			set((s) => ({
@@ -74,31 +54,8 @@ export function createPanelSlice(
 		},
 
 		reset: () => {
-			const initialState = createInitialState();
 			set((s) => ({
-				panel: {
-					...s.panel,
-					status: initialState.status,
-					viewMode: initialState.viewMode,
-					currentFile: initialState.currentFile,
-					flashcardInfo: initialState.flashcardInfo,
-					userInstructions: initialState.userInstructions,
-					isFlashcardFile: initialState.isFlashcardFile,
-					noteFlashcardType: initialState.noteFlashcardType,
-					error: initialState.error,
-					renderVersion: initialState.renderVersion,
-					selectedText: initialState.selectedText,
-					hasSelection: initialState.hasSelection,
-					sourceNoteName: initialState.sourceNoteName,
-					uncollectedCount: initialState.uncollectedCount,
-					selectionMode: initialState.selectionMode,
-					selectedCardIds: initialState.selectedCardIds,
-					expandedCardIds: initialState.expandedCardIds,
-					searchQuery: initialState.searchQuery,
-					isAddCardExpanded: initialState.isAddCardExpanded,
-					isFollowingReview: initialState.isFollowingReview,
-					reviewSourceNotePath: initialState.reviewSourceNotePath,
-				},
+				panel: { ...s.panel, ...createInitialState() },
 			}));
 		},
 
