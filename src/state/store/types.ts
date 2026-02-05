@@ -1,0 +1,378 @@
+import type { App, TFile } from "obsidian";
+import type { State, Grade } from "ts-fsrs";
+import type { SqliteStoreService } from "../../services/persistence/sqlite";
+import type { DayBoundaryService } from "../../services/core/day-boundary.service";
+import type { FrontmatterIndexService } from "../../services/core/frontmatter-index.service";
+import type { EventBusService } from "../../services/core/event-bus.service";
+import type { TrueRecallSettings } from "../../ui/settings";
+import type {
+	FSRSFlashcardItem,
+	ReviewResult,
+	ReviewSessionStats,
+	FlashcardInfo,
+	NoteFlashcardType,
+	ProjectInfo,
+	ProjectNoteInfo,
+	SchedulingPreview,
+} from "../../types";
+import type { AppError } from "../../errors";
+import type {
+	BrowserCardItem,
+	BrowserColumn,
+	SortDirection,
+	SidebarFilters,
+} from "../../types/browser.types";
+import type {
+	MetricType,
+	SequenceSimulation,
+} from "../../ui/simulator/types";
+
+// ============================================================================
+// Store Dependencies
+// ============================================================================
+
+export interface AppStoreDeps {
+	app: App;
+	cardStore: SqliteStoreService;
+	dayBoundaryService: DayBoundaryService;
+	frontmatterIndex: FrontmatterIndexService;
+	eventBus: EventBusService;
+	getSettings: () => TrueRecallSettings;
+}
+
+// ============================================================================
+// Review Slice Types
+// ============================================================================
+
+export interface BadgeCounts {
+	new: number;
+	learning: number;
+	due: number;
+}
+
+export interface EditModeState {
+	active: boolean;
+	field: "question" | "answer" | null;
+	originalQuestion: string;
+	originalAnswer: string;
+}
+
+export type SessionPhase =
+	| { type: "idle" }
+	| { type: "active"; card: FSRSFlashcardItem }
+	| { type: "waiting"; timeUntilDue: number }
+	| { type: "complete"; stats: ReviewSessionStats };
+
+export interface ReviewSliceState {
+	isActive: boolean;
+	queue: FSRSFlashcardItem[];
+	currentIndex: number;
+	isAnswerRevealed: boolean;
+	results: ReviewResult[];
+	startTime: number;
+	questionShownTime: number;
+	stats: ReviewSessionStats;
+	cachedBadgeCounts: BadgeCounts;
+}
+
+export interface ReviewSliceActions {
+	// Session lifecycle
+	startSession: (queue: FSRSFlashcardItem[]) => void;
+	endSession: () => void;
+	reset: () => void;
+
+	// Answer display
+	revealAnswer: () => void;
+	hideAnswer: () => void;
+
+	// Card navigation
+	nextCard: () => boolean;
+	recordAnswer: (rating: Grade, updatedCard: FSRSFlashcardItem) => boolean;
+	recordAnswerAndNext: (
+		rating: Grade,
+		updatedCard: FSRSFlashcardItem,
+		requeueData?: { card: FSRSFlashcardItem; position: number }
+	) => boolean;
+
+	// Queue manipulation
+	requeueCard: (card: FSRSFlashcardItem, position?: number) => void;
+	removeCurrentCard: () => void;
+	removeCardById: (cardId: string) => void;
+	removeCardsByIds: (cardIds: string[]) => void;
+	addCardToQueue: (card: FSRSFlashcardItem) => void;
+	insertCardAtPosition: (card: FSRSFlashcardItem, position: number) => void;
+
+	// Undo
+	undoLastAnswer: (
+		previousIndex: number,
+		restoredCard: FSRSFlashcardItem,
+		requeuedAtIndex?: number
+	) => void;
+
+	// Edit mode (stored outside state to avoid triggering subscriptions)
+	getEditState: () => EditModeState;
+	startEdit: (field: "question" | "answer") => void;
+	cancelEdit: () => void;
+	isEditing: () => boolean;
+	updateCurrentCardContent: (question: string, answer: string) => void;
+
+	// Scheduling preview (ephemeral)
+	getSchedulingPreview: () => SchedulingPreview | null;
+	setSchedulingPreview: (preview: SchedulingPreview | null) => void;
+
+	// Computed getters
+	getCurrentCard: () => FSRSFlashcardItem | null;
+	getPhase: () => SessionPhase;
+	getBadgeCounts: () => BadgeCounts;
+	getStats: () => ReviewSessionStats;
+	getProgress: () => { current: number; total: number; percentage: number };
+	getRemainingCount: () => number;
+	isCardDueNow: (card: FSRSFlashcardItem) => boolean;
+	getPendingLearningCards: () => FSRSFlashcardItem[];
+	getTimeUntilNextDue: () => number;
+	isWaitingForLearningCards: () => boolean;
+	isComplete: () => boolean;
+	isActiveSession: () => boolean;
+	isAnswerShown: () => boolean;
+}
+
+// ============================================================================
+// Panel Slice Types
+// ============================================================================
+
+export type ProcessingStatus = "none" | "exists" | "processing";
+export type ViewMode = "list";
+export type SelectionMode = "normal" | "selecting";
+
+export interface PanelSliceState {
+	status: ProcessingStatus;
+	viewMode: ViewMode;
+	currentFile: TFile | null;
+	flashcardInfo: FlashcardInfo | null;
+	userInstructions: string;
+	isFlashcardFile: boolean;
+	noteFlashcardType: NoteFlashcardType;
+	error: AppError | null;
+	renderVersion: number;
+	selectedText: string;
+	hasSelection: boolean;
+	sourceNoteName: string | null;
+	uncollectedCount: number;
+	selectionMode: SelectionMode;
+	selectedCardIds: Set<string>;
+	expandedCardIds: Set<string>;
+	searchQuery: string;
+	isAddCardExpanded: boolean;
+	isFollowingReview: boolean;
+	reviewSourceNotePath: string | null;
+}
+
+export interface PanelSliceActions {
+	setState: (partial: Partial<PanelSliceState>) => void;
+	reset: () => void;
+	incrementRenderVersion: () => number;
+	isCurrentRender: (version: number) => boolean;
+	setCurrentFile: (file: TFile | null) => void;
+	setStatus: (status: ProcessingStatus) => void;
+	setViewMode: (mode: ViewMode) => void;
+	setFlashcardInfo: (info: FlashcardInfo | null) => void;
+	setUserInstructions: (instructions: string) => void;
+	setError: (error: AppError | null) => void;
+	startProcessing: () => void;
+	finishProcessing: (hasFlashcards?: boolean) => void;
+	isCurrentFile: (file: TFile | null) => boolean;
+	isProcessing: () => boolean;
+	setSelectedText: (text: string) => void;
+	clearSelection: () => void;
+	setUncollectedInfo: (count: number) => void;
+	hasUncollectedFlashcards: () => boolean;
+	enterSelectionMode: (initialCardId?: string) => void;
+	exitSelectionMode: () => void;
+	toggleCardSelection: (cardId: string) => void;
+	toggleCardExpanded: (cardId: string) => void;
+	isInSelectionMode: () => boolean;
+	setSearchQuery: (query: string) => void;
+	setAddCardExpanded: (expanded: boolean) => void;
+	setReviewFollowState: (sourcePath: string | null, isActive: boolean) => void;
+}
+
+// ============================================================================
+// Session Slice Types
+// ============================================================================
+
+export interface SessionSliceState {
+	currentNoteName: string | null;
+	allCards: FSRSFlashcardItem[];
+	selectedNotes: Set<string>;
+	searchQuery: string;
+	now: Date;
+}
+
+export interface SessionSliceActions {
+	setState: (partial: Partial<SessionSliceState>) => void;
+	reset: () => void;
+	initialize: (currentNoteName: string | null, allCards: FSRSFlashcardItem[]) => void;
+	setSearchQuery: (query: string) => void;
+	toggleNoteSelection: (noteName: string) => void;
+	setNoteSelection: (noteName: string, selected: boolean) => void;
+	setAllNotesSelected: (noteNames: string[], selected: boolean) => void;
+	clearSelection: () => void;
+	getSelectedNotesArray: () => string[];
+	getSelectionCount: () => number;
+	updateTimestamp: () => void;
+}
+
+// ============================================================================
+// Browser Slice Types
+// ============================================================================
+
+export interface BrowserSliceState {
+	allCards: BrowserCardItem[];
+	filteredCards: BrowserCardItem[];
+	selectedCardIds: Set<string>;
+	searchQuery: string;
+	sortColumn: BrowserColumn;
+	sortDirection: SortDirection;
+	sidebarFilters: SidebarFilters;
+	isLoading: boolean;
+	previewCardId: string | null;
+	lastClickedIndex: number | null;
+}
+
+export interface BrowserSliceActions {
+	setState: (partial: Partial<BrowserSliceState>) => void;
+	reset: () => void;
+	setCards: (cards: BrowserCardItem[]) => void;
+	setLoading: (isLoading: boolean) => void;
+	setSearchQuery: (query: string) => void;
+	setSidebarFilters: (filters: Partial<SidebarFilters>) => void;
+	clearFilters: () => void;
+	setSortColumn: (column: BrowserColumn) => void;
+	setSortDirection: (direction: SortDirection) => void;
+	toggleCardSelection: (cardId: string) => void;
+	selectRange: (toIndex: number) => void;
+	selectAll: () => void;
+	clearSelection: () => void;
+	getSelectedCards: () => BrowserCardItem[];
+	setPreviewCard: (cardId: string | null) => void;
+	getPreviewCard: () => BrowserCardItem | null;
+	updateCard: (cardId: string, updates: Partial<BrowserCardItem>) => void;
+	removeCards: (cardIds: string[]) => void;
+	getUniqueProjects: () => string[];
+	getStateCounts: () => {
+		new: number;
+		learning: number;
+		review: number;
+		relearning: number;
+		suspended: number;
+		buried: number;
+	};
+}
+
+// ============================================================================
+// Projects Slice Types
+// ============================================================================
+
+export interface ProjectsSliceState {
+	isLoading: boolean;
+	projects: ProjectInfo[];
+	searchQuery: string;
+	editingProjectId: number | null;
+	expandedProjectIds: Set<string>;
+	selectionMode: "normal" | "selecting";
+	selectedNotePaths: Set<string>;
+	unassignedNotes: ProjectNoteInfo[];
+	isUnassignedExpanded: boolean;
+	showDoneNotes: boolean;
+}
+
+export interface ProjectsSliceActions {
+	setState: (partial: Partial<ProjectsSliceState>) => void;
+	reset: () => void;
+	setLoading: (isLoading: boolean) => void;
+	setProjects: (projects: ProjectInfo[]) => void;
+	setUnassignedNotes: (notes: ProjectNoteInfo[]) => void;
+	toggleUnassignedExpanded: () => void;
+	toggleShowDoneNotes: () => void;
+	setSearchQuery: (query: string) => void;
+	setEditingProject: (id: number | null) => void;
+	toggleProjectExpanded: (projectId: string) => void;
+	isProjectExpanded: (projectId: string) => boolean;
+	enterSelectionMode: (initialNotePath?: string) => void;
+	exitSelectionMode: () => void;
+	toggleNoteSelection: (notePath: string) => void;
+	isInSelectionMode: () => boolean;
+	getSelectedNotePaths: () => string[];
+	updateProject: (projectId: string, updates: Partial<ProjectInfo>) => void;
+	removeProject: (projectId: string) => void;
+	addProject: (project: ProjectInfo) => void;
+	getFilteredProjects: () => ProjectInfo[];
+	getProjectsWithCards: () => ProjectInfo[];
+	getEmptyProjects: () => ProjectInfo[];
+	getTotalStats: () => { projectCount: number; totalCards: number; totalDue: number };
+}
+
+// ============================================================================
+// Simulator Slice Types
+// ============================================================================
+
+export interface SimulatorSliceState {
+	sequences: string[];
+	parameters: number[];
+	desiredRetention: number;
+	metricType: MetricType;
+	useAnimation: boolean;
+	useLogarithmic: boolean;
+	parameterHistory: number[][];
+	historyIndex: number;
+	simulations: SequenceSimulation[];
+}
+
+export interface SimulatorSliceActions {
+	getSequences: () => string[];
+	getParameters: () => number[];
+	getDesiredRetention: () => number;
+	getMetricType: () => MetricType;
+	getUseAnimation: () => boolean;
+	getUseLogarithmic: () => boolean;
+	getSimulations: () => SequenceSimulation[];
+	canUndo: () => boolean;
+	canRedo: () => boolean;
+	setSequences: (sequences: string[]) => void;
+	setParameter: (index: number, value: number) => void;
+	setAllParameters: (parameters: number[]) => void;
+	setDesiredRetention: (value: number) => void;
+	setMetricType: (type: MetricType) => void;
+	setUseAnimation: (value: boolean) => void;
+	setUseLogarithmic: (value: boolean) => void;
+	setSimulations: (simulations: SequenceSimulation[]) => void;
+	resetSequences: () => void;
+	resetParameters: () => void;
+	undo: () => void;
+	redo: () => void;
+	reset: () => void;
+	getParametersString: () => string;
+}
+
+// ============================================================================
+// Combined AppState
+// ============================================================================
+
+export interface AppState {
+	review: ReviewSliceState & ReviewSliceActions;
+	panel: PanelSliceState & PanelSliceActions;
+	session: SessionSliceState & SessionSliceActions;
+	browser: BrowserSliceState & BrowserSliceActions;
+	projects: ProjectsSliceState & ProjectsSliceActions;
+	simulator: SimulatorSliceState & SimulatorSliceActions;
+}
+
+// ============================================================================
+// Helper type for slice creators
+// ============================================================================
+
+export type SliceCreator<T> = (
+	set: (fn: (state: AppState) => Partial<AppState>) => void,
+	get: () => AppState,
+	deps: AppStoreDeps
+) => T;
