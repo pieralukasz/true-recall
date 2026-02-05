@@ -276,17 +276,7 @@ export function createBrowserSlice(
 	const initial = createInitialState();
 
 	const slice: BrowserSlice = {
-		// State
-		allCards: initial.allCards,
-		filteredCards: initial.filteredCards,
-		selectedCardIds: initial.selectedCardIds,
-		searchQuery: initial.searchQuery,
-		sortColumn: initial.sortColumn,
-		sortDirection: initial.sortDirection,
-		sidebarFilters: initial.sidebarFilters,
-		isLoading: initial.isLoading,
-		previewCardId: initial.previewCardId,
-		lastClickedIndex: initial.lastClickedIndex,
+		...initial,
 
 		setState: (partial: Partial<BrowserSliceState>) => {
 			let selectedCardIds = get().browser.selectedCardIds;
@@ -309,21 +299,8 @@ export function createBrowserSlice(
 		reset: () => {
 			invalidateCache();
 			cache.cardMap.clear();
-			const initialState = createInitialState();
 			set((s) => ({
-				browser: {
-					...s.browser,
-					allCards: initialState.allCards,
-					filteredCards: initialState.filteredCards,
-					selectedCardIds: initialState.selectedCardIds,
-					searchQuery: initialState.searchQuery,
-					sortColumn: initialState.sortColumn,
-					sortDirection: initialState.sortDirection,
-					sidebarFilters: initialState.sidebarFilters,
-					isLoading: initialState.isLoading,
-					previewCardId: initialState.previewCardId,
-					lastClickedIndex: initialState.lastClickedIndex,
-				},
+				browser: { ...s.browser, ...createInitialState() },
 			}));
 		},
 

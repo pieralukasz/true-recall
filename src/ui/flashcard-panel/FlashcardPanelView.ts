@@ -93,6 +93,7 @@ export class FlashcardPanelView extends ItemView {
     private scheduleRaf(callback: () => void): void {
         const id = requestAnimationFrame(() => {
             this.pendingRafIds.delete(id);
+            if (!this.containerEl.isConnected) return;
             callback();
         });
         this.pendingRafIds.add(id);
