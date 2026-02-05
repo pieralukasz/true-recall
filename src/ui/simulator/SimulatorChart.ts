@@ -5,11 +5,11 @@
 import { Chart, type ChartConfiguration } from "chart.js";
 import { BaseComponent } from "../component.base";
 import { GRADE_NAMES } from "./constants";
-import type { SimulatorStateManager } from "../../state/simulator.state";
+import type { SimulatorApi } from "../../state/store";
 import type { MetricType, SequenceSimulation, SequenceReview } from "./types";
 
 interface SimulatorChartProps {
-	stateManager: SimulatorStateManager;
+	simulator: SimulatorApi;
 }
 
 export class SimulatorChart extends BaseComponent {
@@ -61,10 +61,10 @@ export class SimulatorChart extends BaseComponent {
 	private createChart(): void {
 		if (!this.canvas) return;
 
-		const simulations = this.props.stateManager.getSimulations();
-		const metricType = this.props.stateManager.getMetricType();
-		const useLogarithmic = this.props.stateManager.getUseLogarithmic();
-		const useAnimation = this.props.stateManager.getUseAnimation();
+		const simulations = this.props.simulator.getSimulations();
+		const metricType = this.props.simulator.getMetricType();
+		const useLogarithmic = this.props.simulator.getUseLogarithmic();
+		const useAnimation = this.props.simulator.getUseAnimation();
 
 		const config = this.createChartConfig(
 			simulations,
@@ -83,10 +83,10 @@ export class SimulatorChart extends BaseComponent {
 	private updateChartData(): void {
 		if (!this.chart) return;
 
-		const simulations = this.props.stateManager.getSimulations();
-		const metricType = this.props.stateManager.getMetricType();
-		const useLogarithmic = this.props.stateManager.getUseLogarithmic();
-		const useAnimation = this.props.stateManager.getUseAnimation();
+		const simulations = this.props.simulator.getSimulations();
+		const metricType = this.props.simulator.getMetricType();
+		const useLogarithmic = this.props.simulator.getUseLogarithmic();
+		const useAnimation = this.props.simulator.getUseAnimation();
 
 		// Get max review count
 		const maxReviews = Math.max(
@@ -137,7 +137,7 @@ export class SimulatorChart extends BaseComponent {
 		if (!this.legendEl) return;
 		this.legendEl.empty();
 
-		const simulations = this.props.stateManager.getSimulations();
+		const simulations = this.props.simulator.getSimulations();
 
 		for (const sim of simulations) {
 			const item = this.legendEl.createDiv({

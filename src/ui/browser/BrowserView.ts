@@ -1,6 +1,5 @@
 import { ItemView, WorkspaceLeaf, TFile } from "obsidian";
 import { VIEW_TYPE_BROWSER } from "../../constants";
-import { createBrowserStateManager } from "../../state/browser.state";
 import type { BrowserCardItem, BulkOperation } from "../../types/browser.types";
 import { BrowserToolbar } from "./BrowserToolbar";
 import { BrowserSidebar } from "./BrowserSidebar";
@@ -11,6 +10,7 @@ import { getEventBus, notify } from "../../services";
 import type { CardUpdatedEvent } from "../../types/events.types";
 import type TrueRecallPlugin from "../../main";
 import { RESIZE_STYLES } from "./styles";
+import type { BrowserApi } from "../../state/store";
 
 interface PanelSizes {
     sidebarWidth: number;
@@ -31,7 +31,6 @@ const PANEL_STORAGE_KEY = "true-recall-browser-panel-sizes";
 
 export class BrowserView extends ItemView {
     private plugin: TrueRecallPlugin;
-    private stateManager = createBrowserStateManager();
 
     // UI Components
     private toolbarComponent: BrowserToolbar | null = null;
@@ -40,7 +39,7 @@ export class BrowserView extends ItemView {
     private previewComponent: BrowserPreview | null = null;
 
     // Previous state for incremental rendering
-    private prevState: ReturnType<typeof this.stateManager.getState> | null = null;
+    private prevState: BrowserApi | null = null;
 
     // Container elements
     private mainContainer!: HTMLElement;
@@ -63,6 +62,10 @@ export class BrowserView extends ItemView {
         super(leaf);
         this.plugin = plugin;
         this.panelSizes = this.loadPanelSizes();
+    }
+
+    private get browser(): BrowserApi {
+        return this.plugin.store!.getState().browser;
     }
 
     private loadPanelSizes(): PanelSizes {
@@ -144,7 +147,10 @@ export class BrowserView extends ItemView {
         this.previewContainer.style.maxWidth = `${PANEL_CONSTRAINTS.preview.max}px`;
 
         // Subscribe to state changes
-        this.unsubscribe = this.stateManager.subscribe(() => this.render());
+        this.unsubscribe = this.plugin.store!.subscribe(
+            (state) => state.browser,
+            () => this.render()
+        );
 
         // Subscribe to EventBus events
         this.setupEventSubscriptions();
@@ -245,40 +251,40 @@ export class BrowserView extends ItemView {
     }
 
     private async loadCards(): Promise<void> {
-        this.stateManager.setLoading(true);
+        this.browser.setLoading(true);
 
         try {
             const rawCards = this.plugin.cardStore.browser.getAllCardsForBrowser();
             // Enrich cards with source note info from vault (sourceNoteName, sourceNotePath, projects)
             const sourceNoteService = this.plugin.flashcardManager.getSourceNoteService();
             const cards = sourceNoteService.enrichCards(rawCards);
-            this.stateManager.setCards(cards);
+            this.browser.setCards(cards);
         } catch (error) {
             console.error("[BrowserView] Failed to load cards:", error);
             notify().error("Failed to load cards");
-            this.stateManager.setCards([]);
+            this.browser.setCards([]);
         }
     }
 
     // ===== Card Actions =====
 
     private handleCardClick(cardId: string, event: MouseEvent): void {
-        const index = this.stateManager.getState().filteredCards.findIndex(c => c.id === cardId);
+        const index = this.browser.filteredCards.findIndex(c => c.id === cardId);
 
-        if (event.shiftKey && this.stateManager.getState().lastClickedIndex !== null) {
+        if (event.shiftKey && this.browser.lastClickedIndex !== null) {
             // Range selection
-            this.stateManager.selectRange(index);
+            this.browser.selectRange(index);
         } else if (event.ctrlKey || event.metaKey) {
             // Toggle selection
-            this.stateManager.toggleCardSelection(cardId);
+            this.browser.toggleCardSelection(cardId);
         } else {
             // Single selection
-            this.stateManager.clearSelection();
-            this.stateManager.toggleCardSelection(cardId);
+            this.browser.clearSelection();
+            this.browser.toggleCardSelection(cardId);
         }
 
         // Set preview
-        this.stateManager.setPreviewCard(cardId);
+        this.browser.setPreviewCard(cardId);
     }
 
     private async handleEditCard(card: BrowserCardItem): Promise<void> {
@@ -318,7 +324,7 @@ export class BrowserView extends ItemView {
             );
 
             // Update state
-            this.stateManager.updateCard(card.id, {
+            this.browser.updateCard(card.id, {
                 question: result.question,
                 answer: result.answer,
             });
@@ -356,7 +362,7 @@ export class BrowserView extends ItemView {
     // ===== Bulk Operations =====
 
     private async executeBulkOperation(operation: BulkOperation): Promise<void> {
-        const selectedIds = [...this.stateManager.getState().selectedCardIds];
+        const selectedIds = [...this.browser.selectedCardIds];
         if (selectedIds.length === 0) {
             notify().warning("No cards selected");
             return;
@@ -400,7 +406,7 @@ export class BrowserView extends ItemView {
                         return;
                     }
                     count = browser.bulkSoftDelete(selectedIds);
-                    this.stateManager.removeCards(selectedIds);
+                    this.browser.removeCards(selectedIds);
                     notify().cardsDeleted(count);
                     break;
 
@@ -438,7 +444,7 @@ export class BrowserView extends ItemView {
 
             // Reload cards to reflect changes
             await this.loadCards();
-            this.stateManager.clearSelection();
+            this.browser.clearSelection();
         } catch (error) {
             notify().operationFailed("execute operation", error);
         }
@@ -447,7 +453,7 @@ export class BrowserView extends ItemView {
     // ===== Render =====
 
     private render(): void {
-        const state = this.stateManager.getState();
+        const state = this.browser;
         const prev = this.prevState;
 
         // Track what changed
@@ -471,10 +477,10 @@ export class BrowserView extends ItemView {
                     filteredCount: state.filteredCards.length,
                 },
                 {
-                    onSearchChange: (query) => this.stateManager.setSearchQuery(query),
+                    onSearchChange: (query) => this.browser.setSearchQuery(query),
                     onBulkOperation: (op) => void this.executeBulkOperation(op),
-                    onSelectAll: () => this.stateManager.selectAll(),
-                    onClearSelection: () => this.stateManager.clearSelection(),
+                    onSelectAll: () => this.browser.selectAll(),
+                    onClearSelection: () => this.browser.clearSelection(),
                 }
             );
             this.toolbarComponent.render();
@@ -492,20 +498,20 @@ export class BrowserView extends ItemView {
             this.sidebarComponent = new BrowserSidebar(
                 this.sidebarContainer,
                 {
-                    stateCounts: this.stateManager.getStateCounts(),
-                    projects: this.stateManager.getUniqueProjects(),
+                    stateCounts: this.browser.getStateCounts(),
+                    projects: this.browser.getUniqueProjects(),
                     currentFilters: state.sidebarFilters,
                 },
                 {
-                    onFilterChange: (filters) => this.stateManager.setSidebarFilters(filters),
-                    onClearFilters: () => this.stateManager.clearFilters(),
+                    onFilterChange: (filters) => this.browser.setSidebarFilters(filters),
+                    onClearFilters: () => this.browser.clearFilters(),
                 }
             );
             this.sidebarComponent.render();
         } else if (cardsChanged || filtersChanged) {
             this.sidebarComponent.update({
-                stateCounts: this.stateManager.getStateCounts(),
-                projects: this.stateManager.getUniqueProjects(),
+                stateCounts: this.browser.getStateCounts(),
+                projects: this.browser.getUniqueProjects(),
                 currentFilters: state.sidebarFilters,
             });
         }
@@ -523,7 +529,7 @@ export class BrowserView extends ItemView {
                 isLoading: state.isLoading,
                 onCardClick: (cardId, event) => this.handleCardClick(cardId, event),
                 onCardDoubleClick: (card) => void this.handleEditCard(card),
-                onSortChange: (column) => this.stateManager.setSortColumn(column),
+                onSortChange: (column) => this.browser.setSortColumn(column),
                 onOpenSourceNote: (card) => void this.handleOpenSourceNote(card),
             });
             this.tableComponent.render();
@@ -535,7 +541,7 @@ export class BrowserView extends ItemView {
 
         // Preview - create once, then update
         if (!this.previewComponent) {
-            const previewCard = this.stateManager.getPreviewCard();
+            const previewCard = this.browser.getPreviewCard();
             this.previewComponent = new BrowserPreview(
                 this.previewContainer,
                 {
@@ -558,7 +564,7 @@ export class BrowserView extends ItemView {
             );
             this.previewComponent.render();
         } else if (previewChanged || cardsChanged) {
-            const previewCard = this.stateManager.getPreviewCard();
+            const previewCard = this.browser.getPreviewCard();
             this.previewComponent.update({ card: previewCard });
         }
 
@@ -568,14 +574,14 @@ export class BrowserView extends ItemView {
 
     private async executeSingleOperation(cardId: string, operation: BulkOperation): Promise<void> {
         // Temporarily select just this card
-        const prevSelection = this.stateManager.getState().selectedCardIds;
-        this.stateManager.setState({ selectedCardIds: new Set([cardId]) });
+        const prevSelection = this.browser.selectedCardIds;
+        this.browser.setState({ selectedCardIds: new Set([cardId]) });
 
         await this.executeBulkOperation(operation);
 
         // Restore selection (if card still exists)
         if (operation !== "delete") {
-            this.stateManager.setState({ selectedCardIds: prevSelection });
+            this.browser.setState({ selectedCardIds: prevSelection });
         }
     }
 

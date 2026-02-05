@@ -6,7 +6,7 @@ import { MarkdownRenderer, Platform, type App, type Component } from "obsidian";
 import { createEditableTextField, TOOLBAR_BUTTONS } from "../../components";
 import { UI_CONFIG } from "../../../constants";
 import type { FSRSFlashcardItem } from "../../../types";
-import type { EditModeState } from "../../../state/review.state";
+import type { EditModeState } from "../../../state/store";
 
 export interface CardContentCallbacks {
 	onStartEdit: (field: "question" | "answer") => void;

@@ -4,11 +4,11 @@
  */
 import { BaseComponent } from "../component.base";
 import { ALL_SLIDERS } from "./constants";
-import type { SimulatorStateManager } from "../../state/simulator.state";
+import type { SimulatorApi } from "../../state/store";
 import type { SliderConfig } from "./types";
 
 interface SimulatorSlidersProps {
-	stateManager: SimulatorStateManager;
+	simulator: SimulatorApi;
 	onParameterChange: () => void;
 }
 
@@ -128,9 +128,9 @@ export class SimulatorSliders extends BaseComponent {
 	 */
 	private getValue(index: number): number {
 		if (index === -1) {
-			return this.props.stateManager.getDesiredRetention();
+			return this.props.simulator.getDesiredRetention();
 		}
-		return this.props.stateManager.getParameters()[index] ?? 0;
+		return this.props.simulator.getParameters()[index] ?? 0;
 	}
 
 	/**
@@ -155,9 +155,9 @@ export class SimulatorSliders extends BaseComponent {
 		// Set new timer
 		const timer = setTimeout(() => {
 			if (index === -1) {
-				this.props.stateManager.setDesiredRetention(value);
+				this.props.simulator.setDesiredRetention(value);
 			} else {
-				this.props.stateManager.setParameter(index, value);
+				this.props.simulator.setParameter(index, value);
 			}
 			this.props.onParameterChange();
 			this.debounceTimers.delete(index);

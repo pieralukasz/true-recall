@@ -1,6 +1,6 @@
 import type TrueRecallPlugin from "../../main";
 import type { FSRSCardData } from "../../types";
-import type { ReviewStateManager } from "../../state";
+import type { ReviewApi } from "../../state/store";
 import { getEventBus, notify } from "../index";
 import type {
 	UndoEntry,
@@ -19,8 +19,8 @@ export class UndoService {
 	private stack: UndoEntry[] = [];
 	private readonly maxStackSize = 50;
 	private plugin: TrueRecallPlugin;
-	/** ReviewStateManager for inserting cards back into queue (set when ReviewView is open) */
-	private reviewStateManager: ReviewStateManager | null = null;
+	/** ReviewApi for inserting cards back into queue (set when ReviewView is open) */
+	private reviewStateManager: ReviewApi | null = null;
 	/** Callbacks for review session updates */
 	private reviewCallbacks: ReviewUndoCallbacks | null = null;
 
@@ -29,7 +29,7 @@ export class UndoService {
 	}
 
 	setReviewStateManager(
-		manager: ReviewStateManager | null,
+		manager: ReviewApi | null,
 		callbacks: ReviewUndoCallbacks | null
 	): void {
 		this.reviewStateManager = manager;

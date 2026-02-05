@@ -5,7 +5,7 @@
 import type { TFile } from "obsidian";
 import { BaseComponent } from "../component.base";
 import { createActionButton } from "../components";
-import type { ProcessingStatus } from "../../state";
+import type { ProcessingStatus } from "../../state/store";
 import type { NoteFlashcardType } from "../../types";
 
 export interface FlashcardPanelFooterProps {
