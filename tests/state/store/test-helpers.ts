@@ -9,7 +9,10 @@ export function createMockDeps(): AppStoreDeps {
 		cardStore: {} as any,
 		dayBoundaryService: {} as any,
 		frontmatterIndex: {} as any,
-		eventBus: {} as any,
+		eventBus: {
+			on: () => () => {},
+			emit: () => {},
+		} as any,
 		getSettings: () => ({
 			dayStartHour: 4,
 		}) as any,

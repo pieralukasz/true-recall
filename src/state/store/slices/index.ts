@@ -4,3 +4,4 @@ export { createPanelSlice } from "./panel.slice";
 export { createProjectsSlice } from "./projects.slice";
 export { createBrowserSlice } from "./browser.slice";
 export { createReviewSlice } from "./review.slice";
+export { createStatsSlice } from "./stats.slice";

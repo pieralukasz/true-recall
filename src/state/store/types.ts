@@ -1,5 +1,5 @@
 import type { App, TFile } from "obsidian";
-import type { State, Grade } from "ts-fsrs";
+import type { Grade } from "ts-fsrs";
 import type { SqliteStoreService } from "../../services/persistence/sqlite";
 import type { DayBoundaryService } from "../../services/core/day-boundary.service";
 import type { FrontmatterIndexService } from "../../services/core/frontmatter-index.service";
@@ -370,6 +370,23 @@ export interface SimulatorSliceActions {
 export type SimulatorApi = SimulatorSliceState & SimulatorSliceActions;
 
 // ============================================================================
+// Stats Slice Types
+// ============================================================================
+
+export interface StatsSliceState {
+	isStale: boolean;
+	lastRefreshed: number;
+}
+
+export interface StatsSliceActions {
+	markStale: () => void;
+	markFresh: () => void;
+	getIsStale: () => boolean;
+}
+
+export type StatsApi = StatsSliceState & StatsSliceActions;
+
+// ============================================================================
 // Review API type for components to depend on
 // ============================================================================
 
@@ -386,6 +403,7 @@ export interface AppState {
 	browser: BrowserSliceState & BrowserSliceActions;
 	projects: ProjectsSliceState & ProjectsSliceActions;
 	simulator: SimulatorSliceState & SimulatorSliceActions;
+	stats: StatsSliceState & StatsSliceActions;
 }
 
 // ============================================================================

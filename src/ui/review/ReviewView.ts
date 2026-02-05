@@ -24,7 +24,6 @@ import type {
 	CardRemovedEvent,
 	CardUpdatedEvent,
 	BulkChangeEvent,
-	ReviewCardChangedEvent,
 	CardReviewedEvent,
 } from "../../types/events.types";
 import { SubscriptionManager } from "../utils";
@@ -361,16 +360,6 @@ export class ReviewView extends ItemView {
 			onUndoAnswer: (payload) => this.handleUndoAnswerFromService(payload),
 		});
 
-		// Re-emit card changed event when this view becomes active again
-		// This syncs the flashcard panel back to review when user returns to this view
-		this.registerEvent(
-			this.app.workspace.on("active-leaf-change", (leaf) => {
-				if (leaf === this.leaf && this.review.isActive) {
-					this.emitCardChangedEvent();
-				}
-			})
-		);
-
 		// Register keyboard shortcuts using the KeyboardHandler
 		this.registerDomEvent(document, "keydown", (e: KeyboardEvent) => {
 			// Only handle when this view is active
@@ -408,9 +397,6 @@ export class ReviewView extends ItemView {
 	}
 
 	async onClose(): Promise<void> {
-		// Notify panel that review session ended
-		this.emitCardChangedEvent();
-
 		// Unregister ReviewStateManager from global UndoService
 		this.plugin.undoService?.setReviewStateManager(null, null);
 
@@ -651,9 +637,6 @@ export class ReviewView extends ItemView {
 
 			// Subscribe to EventBus events for this session
 			this.subscribeToSessionEvents();
-
-			// Notify panel of first card
-			this.emitCardChangedEvent();
 
 			// Calculate scheduling preview for first card
 			this.updateSchedulingPreview();
@@ -1491,23 +1474,6 @@ export class ReviewView extends ItemView {
 	}
 
 	/**
-	 * Emit event to notify FlashcardPanelView of card change
-	 */
-	private emitCardChangedEvent(): void {
-		const card = this.review.getCurrentCard();
-		const isActive = this.review.isActive;
-
-		getEventBus().emit({
-			type: "review:card-changed",
-			sourceNoteName: card?.sourceNoteName ?? null,
-			sourceNotePath: card?.sourceNotePath ?? null,
-			sourceUid: card?.sourceUid ?? null,
-			isActive,
-			timestamp: Date.now(),
-		} as ReviewCardChangedEvent);
-	}
-
-	/**
 	 * Update scheduling preview for current card
 	 */
 	private updateSchedulingPreview(): void {
@@ -1629,8 +1595,6 @@ export class ReviewView extends ItemView {
 				newState: updatedCard.fsrs.state,
 				timestamp: Date.now(),
 			} as CardReviewedEvent);
-
-			this.emitCardChangedEvent();
 
 			if (hasMore) {
 				this.updateSchedulingPreview();

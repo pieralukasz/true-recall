@@ -11,7 +11,6 @@ export type FlashcardEventType =
 	| "cards:bulk-change"
 	| "store:synced"
 	| "session:selected"
-	| "review:card-changed"
 	| "settings:changed";
 
 export interface FlashcardEvent {
@@ -62,15 +61,6 @@ export interface StoreSyncedEvent extends FlashcardEvent {
 	conflicts: number;
 }
 
-/** Used to sync FlashcardPanelView with the current card's source note */
-export interface ReviewCardChangedEvent extends FlashcardEvent {
-	type: "review:card-changed";
-	sourceNoteName: string | null;
-	sourceNotePath: string | null;
-	sourceUid: string | null;
-	isActive: boolean;
-}
-
 export interface SettingsChangedEvent extends FlashcardEvent {
 	type: "settings:changed";
 	changedKeys?: string[];
@@ -84,7 +74,6 @@ export type AnyFlashcardEvent =
 	| BulkChangeEvent
 	| StoreSyncedEvent
 	| SessionSelectedEvent
-	| ReviewCardChangedEvent
 	| SettingsChangedEvent;
 
 export type FlashcardEventListener<
