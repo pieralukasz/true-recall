@@ -196,6 +196,9 @@ export interface PanelSliceActions {
 	setReviewFollowState: (sourcePath: string | null, isActive: boolean) => void;
 }
 
+// API type for components to depend on
+export type PanelApi = PanelSliceState & PanelSliceActions;
+
 // ============================================================================
 // Session Slice Types
 // ============================================================================
@@ -221,6 +224,9 @@ export interface SessionSliceActions {
 	getSelectionCount: () => number;
 	updateTimestamp: () => void;
 }
+
+// API type for components to depend on
+export type SessionApi = SessionSliceState & SessionSliceActions;
 
 // ============================================================================
 // Browser Slice Types
@@ -269,6 +275,9 @@ export interface BrowserSliceActions {
 	};
 }
 
+// API type for components to depend on
+export type BrowserApi = BrowserSliceState & BrowserSliceActions;
+
 // ============================================================================
 // Projects Slice Types
 // ============================================================================
@@ -312,6 +321,9 @@ export interface ProjectsSliceActions {
 	getTotalStats: () => { projectCount: number; totalCards: number; totalDue: number };
 }
 
+// API type for components to depend on
+export type ProjectsApi = ProjectsSliceState & ProjectsSliceActions;
+
 // ============================================================================
 // Simulator Slice Types
 // ============================================================================
@@ -353,6 +365,15 @@ export interface SimulatorSliceActions {
 	reset: () => void;
 	getParametersString: () => string;
 }
+
+// API type for components to depend on
+export type SimulatorApi = SimulatorSliceState & SimulatorSliceActions;
+
+// ============================================================================
+// Review API type for components to depend on
+// ============================================================================
+
+export type ReviewApi = ReviewSliceState & ReviewSliceActions;
 
 // ============================================================================
 // Combined AppState

@@ -1,38 +1,42 @@
-// Base state manager
+// Re-export all types and functions from the Zustand store
 export {
-	BaseStateManager,
-	createSimpleStateManager,
-	type StateListener as BaseStateListener,
-	type StateSelector as BaseStateSelector,
-} from "./base.state";
-
-export { PanelStateManager, createPanelStateManager } from "./panel.state";
-export type {
-    PanelState,
-    ProcessingStatus,
-    ViewMode,
-    SelectionMode,
-    StateListener,
-    PartialPanelState,
-    StateSelector,
-} from "./state.types";
-
-export {
-    ReviewStateManager,
-    createReviewStateManager,
-    type ReviewStateListener,
-    type ReviewStateSelector,
-    type EditModeState,
-} from "./review.state";
-
-export {
-	SessionStateManager,
-	createSessionStateManager,
-} from "./session.state";
-export type {
-	SessionState,
-	SessionStateListener,
-	PartialSessionState,
-} from "./state.types";
-
-export { SimulatorStateManager } from "./simulator.state";
+	createAppStore,
+	ProjectDataService,
+	type AppStore,
+	type AppState,
+	type AppStoreDeps,
+	// Review slice
+	type ReviewSliceState,
+	type ReviewSliceActions,
+	type ReviewApi,
+	type BadgeCounts,
+	type EditModeState,
+	type SessionPhase,
+	// Panel slice
+	type PanelSliceState,
+	type PanelSliceActions,
+	type PanelApi,
+	type ProcessingStatus,
+	type ViewMode,
+	type SelectionMode,
+	// Session slice
+	type SessionSliceState,
+	type SessionSliceActions,
+	type SessionApi,
+	// Browser slice
+	type BrowserSliceState,
+	type BrowserSliceActions,
+	type BrowserApi,
+	// Projects slice
+	type ProjectsSliceState,
+	type ProjectsSliceActions,
+	type ProjectsApi,
+	// Simulator slice
+	type SimulatorSliceState,
+	type SimulatorSliceActions,
+	type SimulatorApi,
+	// Helper types
+	type SliceCreator,
+	type ProjectStats,
+	type ProjectDataSnapshot,
+} from "./store";

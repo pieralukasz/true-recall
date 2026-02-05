@@ -13,27 +13,33 @@ export type {
 	// Review slice
 	ReviewSliceState,
 	ReviewSliceActions,
+	ReviewApi,
 	BadgeCounts,
 	EditModeState,
 	SessionPhase,
 	// Panel slice
 	PanelSliceState,
 	PanelSliceActions,
+	PanelApi,
 	ProcessingStatus,
 	ViewMode,
 	SelectionMode,
 	// Session slice
 	SessionSliceState,
 	SessionSliceActions,
+	SessionApi,
 	// Browser slice
 	BrowserSliceState,
 	BrowserSliceActions,
+	BrowserApi,
 	// Projects slice
 	ProjectsSliceState,
 	ProjectsSliceActions,
+	ProjectsApi,
 	// Simulator slice
 	SimulatorSliceState,
 	SimulatorSliceActions,
+	SimulatorApi,
 	// Helper types
 	SliceCreator,
 } from "./types";

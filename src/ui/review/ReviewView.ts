@@ -17,8 +17,8 @@ import {
 	notify,
 } from "../../services";
 import { ImageService } from "../../services/image";
-import { ReviewStateManager } from "../../state";
 import { extractFSRSSettings, type FSRSFlashcardItem } from "../../types";
+import type { ReviewApi } from "../../state/store";
 import type {
 	CardAddedEvent,
 	CardRemovedEvent,
@@ -47,7 +47,6 @@ export class ReviewView extends ItemView {
 	private fsrsService: FSRSService;
 	private reviewService: ReviewService;
 	private flashcardManager: FlashcardManager;
-	private stateManager: ReviewStateManager;
 	private sessionPersistence: SessionPersistenceService;
 
 	// Project filter (empty = all projects)
@@ -114,11 +113,14 @@ export class ReviewView extends ItemView {
 	private lastRenderedAnswer: string | null = null;
 	private lastRenderedBadgeCounts: { new: number; learning: number; due: number } | null = null;
 
+	private get review(): ReviewApi {
+		return this.plugin.store!.getState().review;
+	}
+
 	constructor(leaf: WorkspaceLeaf, plugin: TrueRecallPlugin) {
 		super(leaf);
 		this.plugin = plugin;
 		this.flashcardManager = plugin.flashcardManager;
-		this.stateManager = new ReviewStateManager();
 		this.reviewService = new ReviewService();
 		this.sessionPersistence = plugin.sessionPersistence;
 
@@ -136,7 +138,7 @@ export class ReviewView extends ItemView {
 		this.cardActionsHandler = new CardActionsHandler(
 			{
 				app: this.app,
-				stateManager: this.stateManager,
+				getReview: () => this.review,
 				flashcardManager: this.flashcardManager,
 				fsrsService: this.fsrsService,
 				reviewService: this.reviewService,
@@ -150,7 +152,7 @@ export class ReviewView extends ItemView {
 		);
 
 		// Initialize KeyboardHandler
-		this.keyboardHandler = new KeyboardHandler(this.stateManager, {
+		this.keyboardHandler = new KeyboardHandler(() => this.review, {
 			onShowAnswer: () => this.handleShowAnswer(),
 			onAnswer: (rating) => this.handleAnswer(rating as Grade),
 			onUndo: async () => {
@@ -176,7 +178,7 @@ export class ReviewView extends ItemView {
 					this.saveEditFromTextarea(textarea, field),
 				onImagePaste: (file, textarea) =>
 					this.handleInlineImagePaste(file, textarea),
-				isAnswerRevealed: () => this.stateManager.isAnswerRevealed(),
+				isAnswerRevealed: () => this.review.isAnswerShown(),
 			}
 		);
 
@@ -252,7 +254,7 @@ export class ReviewView extends ItemView {
 	}
 
 	getCurrentReviewedCard(): FSRSFlashcardItem | null {
-		return this.stateManager.getCurrentCard();
+		return this.review.getCurrentCard();
 	}
 
 	async onOpen(): Promise<void> {
@@ -330,16 +332,19 @@ export class ReviewView extends ItemView {
 		this.applyFontScale();
 
 		// Subscribe to state changes - update render and header actions
-		this.unsubscribe = this.stateManager.subscribe(() => {
-			this.render();
-			this.updateHeaderActions();
-		});
+		this.unsubscribe = this.plugin.store!.subscribe(
+			(state) => state.review,
+			() => {
+				this.render();
+				this.updateHeaderActions();
+			}
+		);
 
 		// Subscribe to EventBus for cross-component reactivity
 		this.subscribeToEvents();
 
 		// Register ReviewStateManager with global UndoService for review undo support
-		this.plugin.undoService?.setReviewStateManager(this.stateManager, {
+		this.plugin.undoService?.setReviewStateManager(this.review, {
 			onUpdateSchedulingPreview: () => this.updateSchedulingPreview(),
 			onUndoAnswer: (payload) => this.handleUndoAnswerFromService(payload),
 		});
@@ -348,7 +353,7 @@ export class ReviewView extends ItemView {
 		// This syncs the flashcard panel back to review when user returns to this view
 		this.registerEvent(
 			this.app.workspace.on("active-leaf-change", (leaf) => {
-				if (leaf === this.leaf && this.stateManager.isActive()) {
+				if (leaf === this.leaf && this.review.isActive) {
 					this.emitCardChangedEvent();
 				}
 			})
@@ -378,7 +383,7 @@ export class ReviewView extends ItemView {
 
 		// Only show actions when session is active and header is shown
 		if (
-			!this.stateManager.isActive() ||
+			!this.review.isActive ||
 			!this.plugin.settings.showReviewHeader
 		) {
 			return;
@@ -423,7 +428,7 @@ export class ReviewView extends ItemView {
 			this.openNoteAction = null;
 		}
 
-		this.stateManager.reset();
+		this.review.reset();
 	}
 
 	private subscribeToEvents(): void {
@@ -432,15 +437,15 @@ export class ReviewView extends ItemView {
 		// Handle card removal during active review
 		this.subs.track(
 			eventBus.on<CardRemovedEvent>("card:removed", (event) => {
-				if (!this.stateManager.isActive()) return;
+				if (!this.review.isActive) return;
 
 				// Check if removed card is in our queue
-				const queue = this.stateManager.getState().queue;
+				const queue = this.review.queue;
 				const cardInQueue = queue.find((c) => c.id === event.cardId);
 
 				if (cardInQueue) {
 					// Remove card from queue - triggers notifyListeners() → render
-					this.stateManager.removeCardById(event.cardId);
+					this.review.removeCardById(event.cardId);
 				}
 			})
 		);
@@ -448,17 +453,17 @@ export class ReviewView extends ItemView {
 		// Handle card content updates during review
 		this.subs.track(
 			eventBus.on<CardUpdatedEvent>("card:updated", (event) => {
-				if (!this.stateManager.isActive()) return;
+				if (!this.review.isActive) return;
 				if (!event.changes.question && !event.changes.answer) return;
 
 				// If current card was updated externally, reload from database
-				const currentCard = this.stateManager.getCurrentCard();
+				const currentCard = this.review.getCurrentCard();
 				if (currentCard && currentCard.id === event.cardId) {
 					// Reload card content from database (needed for undo to show reverted content)
 					const updatedData = this.plugin.cardStore.get(event.cardId);
 					if (updatedData) {
 						// updateCurrentCardContent triggers notifyListeners() → render
-						this.stateManager.updateCurrentCardContent(
+						this.review.updateCurrentCardContent(
 							updatedData.question ?? currentCard.question,
 							updatedData.answer ?? currentCard.answer
 						);
@@ -470,15 +475,15 @@ export class ReviewView extends ItemView {
 		// Handle bulk removals (e.g., from diff apply)
 		this.subs.track(
 			eventBus.on<BulkChangeEvent>("cards:bulk-change", (event) => {
-				if (!this.stateManager.isActive()) return;
+				if (!this.review.isActive) return;
 				if (event.action !== "removed") return;
 
 				// Remove all deleted cards in one batch operation (single render)
-				const queue = this.stateManager.getState().queue;
+				const queue = this.review.queue;
 				const queueIds = new Set(queue.map((c) => c.id));
 				const idsToRemove = event.cardIds.filter((id) => queueIds.has(id));
 				if (idsToRemove.length > 0) {
-					this.stateManager.removeCardsByIds(idsToRemove);
+					this.review.removeCardsByIds(idsToRemove);
 				}
 			})
 		);
@@ -486,7 +491,7 @@ export class ReviewView extends ItemView {
 		// Handle new cards being added during review (e.g., from floating button)
 		this.subs.track(
 			eventBus.on<CardAddedEvent>("card:added", (event) => {
-				if (!this.stateManager.isActive()) return;
+				if (!this.review.isActive) return;
 
 				// Fetch the new card data
 				const cards = this.flashcardManager.getCardsByIds([event.cardId]);
@@ -504,7 +509,7 @@ export class ReviewView extends ItemView {
 				}
 
 				// Add card to queue and update UI
-				this.stateManager.addCardToQueue(newCard);
+				this.review.addCardToQueue(newCard);
 				this.renderHeader();
 			})
 		);
@@ -616,7 +621,7 @@ export class ReviewView extends ItemView {
 			}
 
 			// Start session
-			this.stateManager.startSession(queue);
+			this.review.startSession(queue);
 
 			// Notify panel of first card
 			this.emitCardChangedEvent();
@@ -638,7 +643,7 @@ export class ReviewView extends ItemView {
 	 * Uses selective re-rendering to avoid unnecessary DOM operations
 	 */
 	private render(): void {
-		const phase = this.stateManager.getPhase();
+		const phase = this.review.getPhase();
 
 		// Handle non-active phases with early return
 		switch (phase.type) {
@@ -649,7 +654,7 @@ export class ReviewView extends ItemView {
 				return;
 
 			case "complete":
-				this.stateManager.endSession();
+				this.review.endSession();
 				this.renderSummary();
 				this.lastRenderedCardId = null;
 				this.lastRenderedQuestion = null;
@@ -672,8 +677,8 @@ export class ReviewView extends ItemView {
 		this.clearWaitingTimer();
 
 		const currentCard = phase.card;
-		const answerRevealed = this.stateManager.isAnswerRevealed();
-		const editState = this.stateManager.getEditState();
+		const answerRevealed = this.review.isAnswerRevealed;
+		const editState = this.review.getEditState();
 
 		// Determine what needs to be re-rendered
 		const cardChanged = currentCard.id !== this.lastRenderedCardId;
@@ -719,7 +724,7 @@ export class ReviewView extends ItemView {
 			return;
 		}
 
-		const counts = this.stateManager.getBadgeCounts();
+		const counts = this.review.getBadgeCounts();
 
 		// Skip re-render if counts haven't changed (memoization)
 		if (
@@ -801,7 +806,7 @@ export class ReviewView extends ItemView {
 	 * Delegates to extracted components for better separation of concerns
 	 */
 	private renderCard(): void {
-		const card = this.stateManager.getCurrentCard();
+		const card = this.review.getCurrentCard();
 		if (!card) {
 			this.cardContainerEl.empty();
 			return;
@@ -810,8 +815,8 @@ export class ReviewView extends ItemView {
 		// Add source note to Copilot context (async, fire-and-forget)
 		void this.addSourceToCopilotContext(card);
 
-		const editState = this.stateManager.getEditState();
-		const isAnswerRevealed = this.stateManager.isAnswerRevealed();
+		const editState = this.review.getEditState();
+		const isAnswerRevealed = this.review.isAnswerRevealed;
 
 		// Render question and answer using CardContent component
 		this.cardContent.render(
@@ -882,10 +887,10 @@ export class ReviewView extends ItemView {
 	 */
 	private startEdit(field: "question" | "answer"): void {
 		// Don't start editing answer if not revealed
-		if (field === "answer" && !this.stateManager.isAnswerRevealed()) {
+		if (field === "answer" && !this.review.isAnswerRevealed) {
 			return;
 		}
-		this.stateManager.startEdit(field);
+		this.review.startEdit(field);
 		this.cardContainerEl.addClass(
 			"true-recall-review-card-container--editing"
 		);
@@ -928,8 +933,8 @@ export class ReviewView extends ItemView {
 		textarea: HTMLTextAreaElement,
 		field: "question" | "answer"
 	): Promise<void> {
-		const card = this.stateManager.getCurrentCard();
-		const editState = this.stateManager.getEditState();
+		const card = this.review.getCurrentCard();
+		const editState = this.review.getEditState();
 		if (!card || !editState.active) return;
 
 		// Capture card ID before async operation to prevent race conditions
@@ -957,10 +962,10 @@ export class ReviewView extends ItemView {
 				);
 
 				// Validate that current card is still the same before updating state
-				const currentCard = this.stateManager.getCurrentCard();
+				const currentCard = this.review.getCurrentCard();
 				if (currentCard?.id === cardIdBeforeSave) {
 					// Update card in state
-					this.stateManager.updateCurrentCardContent(
+					this.review.updateCurrentCardContent(
 						newQuestion,
 						newAnswer
 					);
@@ -974,7 +979,7 @@ export class ReviewView extends ItemView {
 		}
 
 		// Exit edit mode
-		this.stateManager.cancelEdit();
+		this.review.cancelEdit();
 		this.cardContainerEl.removeClass(
 			"true-recall-review-card-container--editing"
 		);
@@ -986,9 +991,9 @@ export class ReviewView extends ItemView {
 	 * Render answer buttons
 	 */
 	private renderButtons(): void {
-		const isEditing = this.stateManager.getEditState().active;
-		const answerRevealed = this.stateManager.isAnswerRevealed();
-		const currentCardId = this.stateManager.getCurrentCard()?.id ?? null;
+		const isEditing = this.review.getEditState().active;
+		const answerRevealed = this.review.isAnswerRevealed;
+		const currentCardId = this.review.getCurrentCard()?.id ?? null;
 
 		// Hide buttons when in edit mode (prevents keyboard from pushing buttons up on mobile)
 		if (isEditing) {
@@ -1028,7 +1033,7 @@ export class ReviewView extends ItemView {
 		const baseBtnCls =
 			"ep:flex ep:flex-col ep:items-center ep:gap-1 !ep:py-4 ep:px-6 ep:h-auto ep:border-none ep:rounded-lg ep:cursor-pointer ep:font-medium ep:text-ui-small ep:min-w-20 ep:whitespace-nowrap ep:transition-transform ep:hover:brightness-110 ep:active:scale-98";
 
-		if (!this.stateManager.isAnswerRevealed()) {
+		if (!this.review.isAnswerRevealed) {
 			// Show answer button
 			const showBtn = mainButtonsEl.createEl("button", {
 				cls: `${baseBtnCls} mod-cta ep:py-2 ep:px-4`,
@@ -1037,7 +1042,7 @@ export class ReviewView extends ItemView {
 			showBtn.addEventListener("click", () => this.handleShowAnswer());
 		} else {
 			// Rating buttons
-			const preview = this.stateManager.getSchedulingPreview();
+			const preview = this.review.getSchedulingPreview();
 			this.renderRatingButton(
 				mainButtonsEl,
 				"Again",
@@ -1154,7 +1159,7 @@ export class ReviewView extends ItemView {
 	 * Open the source note (not the flashcard file)
 	 */
 	private handleOpenSourceNote(): void {
-		const card = this.stateManager.getCurrentCard();
+		const card = this.review.getCurrentCard();
 		if (!card || !card.sourceNoteName) {
 			notify().warning("Source note not found");
 			return;
@@ -1247,7 +1252,7 @@ export class ReviewView extends ItemView {
 		this.cardContainerEl.empty();
 		this.buttonsEl.empty();
 
-		const stats = this.stateManager.getStats();
+		const stats = this.review.getStats();
 
 		const summaryEl = this.cardContainerEl.createDiv({
 			cls: "ep:text-center ep:py-8 ep:px-6 ep:max-w-md ep:mx-auto",
@@ -1368,8 +1373,8 @@ export class ReviewView extends ItemView {
 		this.cardContainerEl.empty();
 		this.buttonsEl.empty();
 
-		const timeUntilDue = this.stateManager.getTimeUntilNextDue();
-		const pendingCards = this.stateManager.getPendingLearningCards();
+		const timeUntilDue = this.review.getTimeUntilNextDue();
+		const pendingCards = this.review.getPendingLearningCards();
 
 		const waitingEl = this.cardContainerEl.createDiv({
 			cls: "ep:text-center ep:py-8 ep:px-6 ep:max-w-md ep:mx-auto",
@@ -1417,14 +1422,14 @@ export class ReviewView extends ItemView {
 		});
 		endBtn.addEventListener("click", () => {
 			this.clearWaitingTimer();
-			this.stateManager.endSession();
+			this.review.endSession();
 			this.renderSummary();
 		});
 
 		// Start countdown timer - update every second (only if there's time to wait)
 		if (timeUntilDue > 0) {
 			this.waitingTimerId = this.subs.setInterval(() => {
-				const remaining = this.stateManager.getTimeUntilNextDue();
+				const remaining = this.review.getTimeUntilNextDue();
 				if (remaining <= 0) {
 					// Card is now due, re-render to show it
 					this.clearWaitingTimer();
@@ -1451,8 +1456,8 @@ export class ReviewView extends ItemView {
 	 * Emit event to notify FlashcardPanelView of card change
 	 */
 	private emitCardChangedEvent(): void {
-		const card = this.stateManager.getCurrentCard();
-		const isActive = this.stateManager.isActive();
+		const card = this.review.getCurrentCard();
+		const isActive = this.review.isActive;
 
 		getEventBus().emit({
 			type: "review:card-changed",
@@ -1472,17 +1477,17 @@ export class ReviewView extends ItemView {
 		const fsrsSettings = extractFSRSSettings(this.plugin.settings);
 		this.fsrsService.updateSettings(fsrsSettings);
 
-		const card = this.stateManager.getCurrentCard();
+		const card = this.review.getCurrentCard();
 		if (card) {
 			const preview = this.fsrsService.getSchedulingPreview(card.fsrs);
-			this.stateManager.setSchedulingPreview(preview);
+			this.review.setSchedulingPreview(preview);
 		}
 	}
 
 	// ===== Event Handlers =====
 
 	private handleShowAnswer(): void {
-		this.stateManager.revealAnswer();
+		this.review.revealAnswer();
 		this.updateSchedulingPreview();
 	}
 
@@ -1509,12 +1514,12 @@ export class ReviewView extends ItemView {
 	}
 
 	private async handleAnswer(rating: Grade): Promise<void> {
-		const card = this.stateManager.getCurrentCard();
+		const card = this.review.getCurrentCard();
 		if (!card) return;
 
-		const currentIndex = this.stateManager.getState().currentIndex;
+		const currentIndex = this.review.currentIndex;
 		const responseTime =
-			Date.now() - this.stateManager.getState().questionShownTime;
+			Date.now() - this.review.questionShownTime;
 
 		const isNewCard = card.fsrs.state === State.New;
 		const previousState = card.fsrs.state;
@@ -1532,19 +1537,17 @@ export class ReviewView extends ItemView {
 		let requeueData: { card: FSRSFlashcardItem; position: number } | undefined;
 		if (this.reviewService.shouldRequeue(updatedCard)) {
 			const relativePosition = this.reviewService.getRequeuePosition(
-				this.stateManager
-					.getState()
-					.queue.slice(this.stateManager.getState().currentIndex + 1),
+				this.review.queue.slice(this.review.currentIndex + 1),
 				updatedCard,
 				this.plugin.settings.reviewOrder
 			);
 			requeueData = {
 				card: updatedCard,
-				position: this.stateManager.getState().currentIndex + 1 + relativePosition,
+				position: this.review.currentIndex + 1 + relativePosition,
 			};
 		}
 
-		const hasMore = this.stateManager.recordAnswerAndNext(rating, updatedCard, requeueData);
+		const hasMore = this.review.recordAnswerAndNext(rating, updatedCard, requeueData);
 
 		queueMicrotask(() => {
 			this.plugin.undoService?.push({
@@ -1612,7 +1615,7 @@ export class ReviewView extends ItemView {
 				payload.previousState
 			);
 			
-			this.stateManager.undoLastAnswer(
+			this.review.undoLastAnswer(
 				payload.previousIndex,
 				{ ...payload.card, fsrs: payload.originalFsrs },
 				payload.requeuedAtIndex
@@ -1623,7 +1626,7 @@ export class ReviewView extends ItemView {
 	}
 
 	private handleOpenNote(): void {
-		const card = this.stateManager.getCurrentCard();
+		const card = this.review.getCurrentCard();
 		if (!card) return;
 
 		if (card.sourceNoteName) {

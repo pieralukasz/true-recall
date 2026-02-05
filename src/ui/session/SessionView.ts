@@ -6,7 +6,6 @@ import { ItemView, WorkspaceLeaf } from "obsidian";
 import { VIEW_TYPE_SESSION } from "../../constants";
 import { getEventBus, notify } from "../../services";
 import { SessionLogic } from "./SessionLogic";
-import { createSessionStateManager } from "../../state/session.state";
 import type { DayBoundaryService } from "../../services";
 import type { SessionSelectedEvent } from "../../types/events.types";
 import type { FSRSFlashcardItem } from "../../types";
@@ -16,6 +15,7 @@ import type TrueRecallPlugin from "../../main";
 import { SessionResultFactory } from "../../utils/session-result-factory";
 import { MoveCardModal } from "../modals/MoveCardModal";
 import { AddToProjectModal } from "../modals/AddToProjectModal";
+import type { SessionApi } from "../../state/store";
 
 export interface SessionViewOptions {
 	currentNoteName: string | null;
@@ -25,7 +25,6 @@ export interface SessionViewOptions {
 
 export class SessionView extends ItemView {
 	private plugin: TrueRecallPlugin;
-	private stateManager = createSessionStateManager();
 	private logic: SessionLogic | null = null;
 	private dayBoundaryService: DayBoundaryService | null = null;
 
@@ -46,6 +45,10 @@ export class SessionView extends ItemView {
 	constructor(leaf: WorkspaceLeaf, plugin: TrueRecallPlugin) {
 		super(leaf);
 		this.plugin = plugin;
+	}
+
+	private get session(): SessionApi {
+		return this.plugin.store!.getState().session;
 	}
 
 	getViewType(): string {
@@ -74,18 +77,21 @@ export class SessionView extends ItemView {
 		this.panelComponent.render();
 
 		// Subscribe to state changes - update render, header actions, and title
-		this.unsubscribe = this.stateManager.subscribe(() => {
-			this.render();
-			this.updateHeaderActions();
-			this.updateTitle();
-		});
+		this.unsubscribe = this.plugin.store!.subscribe(
+			(state) => state.session,
+			() => {
+				this.render();
+				this.updateHeaderActions();
+				this.updateTitle();
+			}
+		);
 	}
 
 	/**
 	 * Update native header actions based on selection state
 	 */
 	private updateHeaderActions(): void {
-		const state = this.stateManager.getState();
+		const state = this.session;
 		const selectionCount = state.selectedNotes.size;
 
 		if (this.clearSelectionAction) {
@@ -136,7 +142,7 @@ export class SessionView extends ItemView {
 	 * Update native header title to show selection count
 	 */
 	private updateTitle(): void {
-		const state = this.stateManager.getState();
+		const state = this.session;
 		const selectionCount = state.selectedNotes.size;
 
 		// Access title element in view header
@@ -187,8 +193,8 @@ export class SessionView extends ItemView {
 			options.allCards,
 			options.dayBoundaryService
 		);
-		this.stateManager.initialize(options.currentNoteName, options.allCards);
-		this.stateManager.updateTimestamp();
+		this.session.initialize(options.currentNoteName, options.allCards);
+		this.session.updateTimestamp();
 	}
 
 	private handleQuickAction(
@@ -196,23 +202,23 @@ export class SessionView extends ItemView {
 	): void {
 		const result = SessionResultFactory.createActionResult(
 			action,
-			this.stateManager.getState().currentNoteName
+			this.session.currentNoteName
 		);
 		this.emitResultAndClose(result);
 	}
 
 	private handleNoteToggle(noteName: string): void {
-		this.stateManager.toggleNoteSelection(noteName);
+		this.session.toggleNoteSelection(noteName);
 	}
 
 	private handleSearchChange(query: string): void {
-		this.stateManager.setSearchQuery(query);
+		this.session.setSearchQuery(query);
 	}
 
 	private handleSelectAll(select: boolean): void {
 		if (!this.logic) return;
 
-		const state = this.stateManager.getState();
+		const state = this.session;
 		const filteredStats = this.logic.getFilteredNoteStats(
 			state.searchQuery,
 			state.now
@@ -221,11 +227,11 @@ export class SessionView extends ItemView {
 			.filter((s) => s.newCount > 0 || s.dueCount > 0)
 			.map((s) => s.noteName);
 
-		this.stateManager.setAllNotesSelected(availableNotes, select);
+		this.session.setAllNotesSelected(availableNotes, select);
 	}
 
 	private handleClearSelection(): void {
-		this.stateManager.clearSelection();
+		this.session.clearSelection();
 	}
 
 	private handleNavigateToNote(notePath: string): void {
@@ -233,7 +239,7 @@ export class SessionView extends ItemView {
 	}
 
 	private handleStartSession(): void {
-		const state = this.stateManager.getState();
+		const state = this.session;
 		const selectedNotes = state.selectedNotes;
 
 		if (selectedNotes.size === 0) return;
@@ -245,7 +251,7 @@ export class SessionView extends ItemView {
 	}
 
 	private async handleMoveSelectedNotes(): Promise<void> {
-		const state = this.stateManager.getState();
+		const state = this.session;
 		const selectedNotes = state.selectedNotes;
 		if (selectedNotes.size === 0) return;
 
@@ -281,14 +287,14 @@ export class SessionView extends ItemView {
 		notify().cardsMoved(movedCount, result.targetNotePath);
 
 		// Clear selection
-		this.stateManager.clearSelection();
+		this.session.clearSelection();
 	}
 
 	/**
 	 * Handle add to project - adds selected notes to project(s)
 	 */
 	private async handleAddToProject(): Promise<void> {
-		const state = this.stateManager.getState();
+		const state = this.session;
 		const selectedNotes = state.selectedNotes;
 		if (selectedNotes.size === 0) return;
 
@@ -334,7 +340,7 @@ export class SessionView extends ItemView {
 
 		notify().success(`Added ${updatedCount} note(s) to project(s)`);
 
-		this.stateManager.clearSelection();
+		this.session.clearSelection();
 	}
 
 	private emitResultAndClose(result: SessionSelectedEvent["result"]): void {
@@ -364,7 +370,7 @@ export class SessionView extends ItemView {
 		const scrollWrapper = contentContainer.querySelector(".true-recall-session-scroll");
 		const scrollTop = scrollWrapper?.scrollTop ?? 0;
 
-		const state = this.stateManager.getState();
+		const state = this.session;
 
 		this.contentComponent?.destroy();
 		contentContainer.empty();
@@ -403,7 +409,7 @@ export class SessionView extends ItemView {
 	}
 
 	private renderSelectionBar(): void {
-		const state = this.stateManager.getState();
+		const state = this.session;
 		const selectionCount = state.selectedNotes.size;
 
 		if (this.selectionBarEl) {

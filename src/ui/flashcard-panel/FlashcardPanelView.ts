@@ -8,7 +8,6 @@ import {
 import { VIEW_TYPE_FLASHCARD_PANEL } from "../../constants";
 import { FlashcardManager, OpenRouterService, getEventBus, notify } from "../../services";
 import { CollectService } from "../../services/flashcard/collect.service";
-import { PanelStateManager } from "../../state";
 import { Panel } from "../components/Panel";
 import { FlashcardPanelContent } from "./FlashcardPanelContent";
 import { FlashcardPanelFooter } from "./FlashcardPanelFooter";
@@ -21,12 +20,12 @@ import type { FlashcardItem } from "../../types";
 import type { CardAddedEvent, CardRemovedEvent, CardUpdatedEvent, CardReviewedEvent, BulkChangeEvent, ReviewCardChangedEvent, SettingsChangedEvent } from "../../types/events.types";
 import { countCardsByState } from "../shared/helpers";
 import type TrueRecallPlugin from "../../main";
+import type { PanelApi } from "../../state/store";
 
 export class FlashcardPanelView extends ItemView {
     private plugin: TrueRecallPlugin;
     private flashcardManager: FlashcardManager;
     private openRouterService: OpenRouterService;
-    private stateManager: PanelStateManager;
     private collectService: CollectService;
 
     // UI Components
@@ -76,8 +75,11 @@ export class FlashcardPanelView extends ItemView {
         this.plugin = plugin;
         this.flashcardManager = plugin.flashcardManager;
         this.openRouterService = plugin.openRouterService;
-        this.stateManager = new PanelStateManager();
         this.collectService = new CollectService();
+    }
+
+    private get panel(): PanelApi {
+        return this.plugin.store!.getState().panel;
     }
 
     private scheduleRaf(callback: () => void): void {
@@ -109,7 +111,7 @@ export class FlashcardPanelView extends ItemView {
 
         if (!Platform.isMobile) return;
 
-        const state = this.stateManager.getState();
+        const state = this.panel;
         if (!state.currentFile) return;
 
         // Refresh
@@ -183,10 +185,13 @@ export class FlashcardPanelView extends ItemView {
         this.footerContainer = footerContainer;
 
         // Subscribe to state changes - update render and header actions
-        this.unsubscribe = this.stateManager.subscribe(() => {
-            this.render();
-            this.updateHeaderActions();
-        });
+        this.unsubscribe = this.plugin.store!.subscribe(
+            (state) => state.panel,
+            () => {
+                this.render();
+                this.updateHeaderActions();
+            }
+        );
 
         // Subscribe to EventBus for cross-component reactivity
         this.subscribeToEvents();
@@ -207,7 +212,7 @@ export class FlashcardPanelView extends ItemView {
     }
 
     private updateHeaderActions(): void {
-        const state = this.stateManager.getState();
+        const state = this.panel;
 
         // Remove existing actions
         if (this.reviewAction) {
@@ -369,28 +374,28 @@ export class FlashcardPanelView extends ItemView {
     }
 
     async handleFileChange(file: TFile | null): Promise<void> {
-        const state = this.stateManager.getState();
+        const state = this.panel;
 
         // Don't reset if same file or processing
         if (state.currentFile?.path === file?.path || state.status === "processing") {
             return;
         }
 
-        this.stateManager.setCurrentFile(file);
+        this.panel.setCurrentFile(file);
         await this.loadFlashcardInfo();
     }
 
     isFollowingReview(): boolean {
-        return this.stateManager.getState().isFollowingReview;
+        return this.panel.isFollowingReview;
     }
 
     clearReviewFollowState(): void {
-        this.stateManager.setReviewFollowState(null, false);
+        this.panel.setReviewFollowState(null, false);
     }
 
     private async handleReviewCardChanged(event: ReviewCardChangedEvent): Promise<void> {
         // Update review follow state
-        this.stateManager.setReviewFollowState(event.sourceNotePath, event.isActive);
+        this.panel.setReviewFollowState(event.sourceNotePath, event.isActive);
 
         if (!event.isActive || !event.sourceNotePath) {
             // Session ended or no source - revert to active file mode
@@ -411,16 +416,16 @@ export class FlashcardPanelView extends ItemView {
 
     private async loadCurrentFile(): Promise<void> {
         const file = this.app.workspace.getActiveFile();
-        this.stateManager.setCurrentFile(file);
+        this.panel.setCurrentFile(file);
         await this.loadFlashcardInfo();
     }
 
     private async loadFlashcardInfo(): Promise<void> {
-        const state = this.stateManager.getState();
+        const state = this.panel;
         const file = state.currentFile;
 
         // Clear selection when loading new file info
-        this.stateManager.exitSelectionMode();
+        this.panel.exitSelectionMode();
 
         // Check if store is ready before accessing it
         if (!this.flashcardManager.hasStore()) {
@@ -430,12 +435,12 @@ export class FlashcardPanelView extends ItemView {
         }
 
         if (!file || file.extension !== "md") {
-            this.stateManager.setFlashcardInfo(null);
-            this.stateManager.setUncollectedInfo(0);
+            this.panel.setFlashcardInfo(null);
+            this.panel.setUncollectedInfo(0);
             return;
         }
 
-        const renderVersion = this.stateManager.incrementRenderVersion();
+        const renderVersion = this.panel.incrementRenderVersion();
 
         try {
             // Load flashcard info, note type, and file content in parallel
@@ -452,7 +457,7 @@ export class FlashcardPanelView extends ItemView {
             ]);
 
             // Check for race condition
-            if (!this.stateManager.isCurrentRender(renderVersion)) return;
+            if (!this.panel.isCurrentRender(renderVersion)) return;
 
             // Extract source note name for flashcard files
             const sourceNoteName = state.isFlashcardFile
@@ -464,7 +469,7 @@ export class FlashcardPanelView extends ItemView {
                 ? 0
                 : this.collectService.countFlashcardTags(content);
 
-            this.stateManager.setState({
+            this.panel.setState({
                 flashcardInfo: info,
                 status: info?.exists ? "exists" : "none",
                 noteFlashcardType: noteType,
@@ -477,7 +482,7 @@ export class FlashcardPanelView extends ItemView {
     }
 
     private render(): void {
-        const state = this.stateManager.getState();
+        const state = this.panel;
 
         // Make content container a flex column so header stays at top (only once)
         this.contentContainer.addClass("ep:flex", "ep:flex-col", "ep:gap-2");
@@ -511,8 +516,8 @@ export class FlashcardPanelView extends ItemView {
                     onCollect: () => void this.handleCollect(),
                     onRefresh: () => void this.loadFlashcardInfo(),
                     onReview: () => void this.handleReviewFromPanel(),
-                    onExitSelectionMode: () => this.stateManager.exitSelectionMode(),
-                    onSearchChange: (query) => this.stateManager.setSearchQuery(query),
+                    onExitSelectionMode: () => this.panel.exitSelectionMode(),
+                    onSearchChange: (query) => this.panel.setSearchQuery(query),
                     onExportCsv: () => void this.handleExportCsv(),
                     onCopyToClipboard: () => void this.handleCopyAllToClipboard(),
                     onDeleteAll: () => void this.handleDeleteAllFlashcards(),
@@ -577,19 +582,19 @@ export class FlashcardPanelView extends ItemView {
                     onEditSave: async (card, field, newContent) => void this.handleEditSave(card, field, newContent),
                     onToggleExpand: (cardId) => {
                         const scrollPosition = this.contentDiv?.scrollTop ?? 0;
-                        this.stateManager.toggleCardExpanded(cardId);
+                        this.panel.toggleCardExpanded(cardId);
                         this.scheduleRaf(() => {
                             if (this.contentDiv) this.contentDiv.scrollTop = scrollPosition;
                         });
                     },
                     onToggleSelect: (cardId) => {
                         const scrollPosition = this.contentDiv?.scrollTop ?? 0;
-                        this.stateManager.toggleCardSelection(cardId);
+                        this.panel.toggleCardSelection(cardId);
                         this.scheduleRaf(() => {
                             if (this.contentDiv) this.contentDiv.scrollTop = scrollPosition;
                         });
                     },
-                    onEnterSelectionMode: (cardId) => this.stateManager.enterSelectionMode(cardId),
+                    onEnterSelectionMode: (cardId) => this.panel.enterSelectionMode(cardId),
                     onAdd: () => void this.handleAddFlashcard(),
                 },
             });
@@ -674,7 +679,7 @@ export class FlashcardPanelView extends ItemView {
     }
 
     private getCardsWithFsrs(): FSRSFlashcardItem[] {
-        const state = this.stateManager.getState();
+        const state = this.panel;
         if (!state.flashcardInfo?.flashcards) return [];
 
         // Check if store is ready before accessing it
@@ -690,7 +695,7 @@ export class FlashcardPanelView extends ItemView {
     // ===== Action Handlers =====
 
     private async handleGenerate(): Promise<void> {
-        const state = this.stateManager.getState();
+        const state = this.panel;
         if (!state.currentFile) return;
 
         // Check if store is ready
@@ -705,7 +710,7 @@ export class FlashcardPanelView extends ItemView {
         }
 
         // Note: Selection-based generation moved to floating button
-        this.stateManager.startProcessing();
+        this.panel.startProcessing();
 
         try {
             const content = await this.app.vault.read(state.currentFile);
@@ -717,7 +722,7 @@ export class FlashcardPanelView extends ItemView {
 
             if (flashcards.trim() === "NO_NEW_CARDS") {
                 notify().info("No flashcard-worthy content found in this note.");
-                this.stateManager.finishProcessing(false);
+                this.panel.finishProcessing(false);
                 return;
             }
 
@@ -752,7 +757,7 @@ export class FlashcardPanelView extends ItemView {
                 }
 
                 // Re-open add modal with duplicates for editing
-                this.stateManager.finishProcessing(false);
+                this.panel.finishProcessing(false);
                 await this.loadFlashcardInfo();
                 const duplicateFlashcards = saveResult.duplicates.map((d) => ({
                     question: d.flashcard.question,
@@ -763,10 +768,10 @@ export class FlashcardPanelView extends ItemView {
             }
 
             notify().success(`Generated flashcards for ${state.currentFile.basename}`);
-            this.stateManager.finishProcessing(false);
+            this.panel.finishProcessing(false);
         } catch (error) {
             notify().operationFailed("generate flashcards", error);
-            this.stateManager.finishProcessing(false);
+            this.panel.finishProcessing(false);
         }
 
         // Load flashcard info outside main try-catch to avoid double error handling
@@ -778,14 +783,14 @@ export class FlashcardPanelView extends ItemView {
     }
 
     private async handleOpenFlashcardFile(): Promise<void> {
-        const state = this.stateManager.getState();
+        const state = this.panel;
         if (state.currentFile) {
             await this.flashcardManager.openSourceNote(state.currentFile);
         }
     }
 
     private async handleEditCard(card: FlashcardItem): Promise<void> {
-        const state = this.stateManager.getState();
+        const state = this.panel;
         if (!state.currentFile) return;
 
         if (state.isFlashcardFile) {
@@ -796,7 +801,7 @@ export class FlashcardPanelView extends ItemView {
     }
 
     private async handleEditButton(card: FlashcardItem): Promise<void> {
-        const state = this.stateManager.getState();
+        const state = this.panel;
         if (!state.currentFile) return;
 
         const scrollPosition = this.contentDiv?.scrollTop ?? 0;
@@ -861,7 +866,7 @@ export class FlashcardPanelView extends ItemView {
         field: "question" | "answer",
         newContent: string
     ): Promise<void> {
-        const state = this.stateManager.getState();
+        const state = this.panel;
         if (!state.currentFile || !state.flashcardInfo) return;
 
         // TODO: In the future, avoid full re-render - aim for targeted DOM update instead
@@ -896,7 +901,7 @@ export class FlashcardPanelView extends ItemView {
     }
 
     private async handleRemoveCard(card: FlashcardItem): Promise<void> {
-        const state = this.stateManager.getState();
+        const state = this.panel;
         if (!state.currentFile) return;
 
         // Save scroll position before re-render
@@ -926,7 +931,7 @@ export class FlashcardPanelView extends ItemView {
     // ===== Export Handlers =====
 
     private async handleCopyAllToClipboard(): Promise<void> {
-        const state = this.stateManager.getState();
+        const state = this.panel;
         if (!state.flashcardInfo?.flashcards || state.flashcardInfo.flashcards.length === 0) {
             notify().warning("No flashcards to copy");
             return;
@@ -941,7 +946,7 @@ export class FlashcardPanelView extends ItemView {
     }
 
     private async handleExportCsv(): Promise<void> {
-        const state = this.stateManager.getState();
+        const state = this.panel;
         if (!state.flashcardInfo?.flashcards || state.flashcardInfo.flashcards.length === 0) {
             notify().warning("No flashcards to export");
             return;
@@ -983,7 +988,7 @@ export class FlashcardPanelView extends ItemView {
     // ===== Move Card Handlers =====
 
     private async handleMoveCard(card: FlashcardItem): Promise<void> {
-        const state = this.stateManager.getState();
+        const state = this.panel;
         if (!state.flashcardInfo) return;
 
         if (!card.id) {
@@ -1018,7 +1023,7 @@ export class FlashcardPanelView extends ItemView {
     // ===== Selection Handlers for Bulk Operations =====
 
     private async handleMoveSelected(): Promise<void> {
-        const state = this.stateManager.getState();
+        const state = this.panel;
         if (!state.flashcardInfo || state.selectedCardIds.size === 0) return;
 
         // Get selected cards with valid IDs
@@ -1063,13 +1068,13 @@ export class FlashcardPanelView extends ItemView {
         });
 
         // Clear selection and refresh
-        this.stateManager.exitSelectionMode();
+        this.panel.exitSelectionMode();
         notify().success(`Moved ${successCount} of ${selectedCards.length} cards`);
         await this.loadFlashcardInfo();
     }
 
     private async handleDeleteSelected(): Promise<void> {
-        const state = this.stateManager.getState();
+        const state = this.panel;
         if (!state.flashcardInfo || !state.currentFile || state.selectedCardIds.size === 0) return;
 
         // Get selected cards by ID
@@ -1100,7 +1105,7 @@ export class FlashcardPanelView extends ItemView {
         });
 
         // Clear selection and refresh
-        this.stateManager.exitSelectionMode();
+        this.panel.exitSelectionMode();
         notify().cardsDeleted(successCount);
         await this.loadFlashcardInfo();
     }
@@ -1111,7 +1116,7 @@ export class FlashcardPanelView extends ItemView {
      * Handles partial success: adds non-duplicates and re-opens modal with duplicates
      */
     private async handleAddFlashcard(prefillFlashcards?: Array<{ question: string; answer: string }>): Promise<void> {
-        const state = this.stateManager.getState();
+        const state = this.panel;
         if (!state.currentFile) return;
 
         const modal = new SimpleFlashcardEditorModal(this.app, {
@@ -1167,7 +1172,7 @@ export class FlashcardPanelView extends ItemView {
     }
 
     private async handleDeleteAllFlashcards(): Promise<void> {
-        const state = this.stateManager.getState();
+        const state = this.panel;
         if (!state.flashcardInfo || state.flashcardInfo.flashcards.length === 0) return;
 
         const count = state.flashcardInfo.flashcards.length;
@@ -1195,14 +1200,14 @@ export class FlashcardPanelView extends ItemView {
     }
 
     private async handleReviewFromPanel(): Promise<void> {
-        const state = this.stateManager.getState();
+        const state = this.panel;
         if (!state.currentFile) return;
 
         await this.plugin.reviewNoteFlashcards(state.currentFile);
     }
 
     private handleOpenSourceNote(): void {
-        const state = this.stateManager.getState();
+        const state = this.panel;
         if (!state.currentFile) return;
 
         // Open the file in a new leaf
@@ -1214,7 +1219,7 @@ export class FlashcardPanelView extends ItemView {
      * Saves them to SQL and removes the #flashcard tags from the file
      */
     private async handleCollect(): Promise<void> {
-        const state = this.stateManager.getState();
+        const state = this.panel;
         if (!state.currentFile) return;
 
         // Check if store is ready
@@ -1276,13 +1281,13 @@ export class FlashcardPanelView extends ItemView {
     private registerSelectionTracking(): void {
         // Function to update selection state
         const updateSelection = () => {
-            const state = this.stateManager.getState();
+            const state = this.panel;
 
             // Skip if no current file
             if (!state.currentFile) {
                 // Only clear if there was a selection before
                 if (state.hasSelection) {
-                    this.stateManager.clearSelection();
+                    this.panel.clearSelection();
                 }
                 return;
             }
@@ -1295,10 +1300,10 @@ export class FlashcardPanelView extends ItemView {
             this.selectionTimer = setTimeout(() => {
                 const selection = this.getCurrentSelection();
                 if (selection) {
-                    this.stateManager.setSelectedText(selection);
+                    this.panel.setSelectedText(selection);
                 } else if (state.hasSelection) {
                     // Only clear if there was a selection before
-                    this.stateManager.clearSelection();
+                    this.panel.clearSelection();
                 }
             }, 300);
         };
@@ -1317,7 +1322,7 @@ export class FlashcardPanelView extends ItemView {
         const activeFile = this.app.workspace.getActiveFile();
         if (!activeFile) return null;
 
-        const state = this.stateManager.getState();
+        const state = this.panel;
         if (!state.currentFile || activeFile.path !== state.currentFile.path) {
             return null;
         }
@@ -1352,7 +1357,7 @@ export class FlashcardPanelView extends ItemView {
      * Called on editor changes with debouncing
      */
     private async checkUncollectedFlashcards(): Promise<void> {
-        const state = this.stateManager.getState();
+        const state = this.panel;
         const file = state.currentFile;
 
         if (!file || file.extension !== "md" || state.isFlashcardFile) {
@@ -1365,7 +1370,7 @@ export class FlashcardPanelView extends ItemView {
 
             // Only update if changed (avoids unnecessary renders)
             if (state.uncollectedCount !== uncollectedCount) {
-                this.stateManager.setUncollectedInfo(uncollectedCount);
+                this.panel.setUncollectedInfo(uncollectedCount);
             }
         } catch {
             // Ignore errors (file might be deleted/moved)
@@ -1377,7 +1382,7 @@ export class FlashcardPanelView extends ItemView {
      * With SQL-only storage, this method reads source_link from the current file if it exists
      */
     private async getSourceNoteNameFromFile(): Promise<string | undefined> {
-        const state = this.stateManager.getState();
+        const state = this.panel;
         if (!state.currentFile || !state.flashcardInfo) return undefined;
 
         // Try to read source_link from the current file (legacy flashcard files)

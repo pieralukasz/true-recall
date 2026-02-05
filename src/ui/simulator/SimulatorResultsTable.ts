@@ -3,10 +3,10 @@
  * Displays interval progression for each sequence
  */
 import { BaseComponent } from "../component.base";
-import type { SimulatorStateManager } from "../../state/simulator.state";
+import type { SimulatorApi } from "../../state/store";
 
 interface SimulatorResultsTableProps {
-	stateManager: SimulatorStateManager;
+	simulator: SimulatorApi;
 }
 
 export class SimulatorResultsTable extends BaseComponent {
@@ -44,7 +44,7 @@ export class SimulatorResultsTable extends BaseComponent {
 	private updateTable(): void {
 		if (!this.tableHead || !this.tableBody) return;
 
-		const simulations = this.props.stateManager.getSimulations();
+		const simulations = this.props.simulator.getSimulations();
 
 		// Get max review count
 		const maxReviews = Math.max(

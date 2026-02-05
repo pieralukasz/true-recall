@@ -8,7 +8,6 @@
 import { ItemView, WorkspaceLeaf, TFile, Platform, Menu } from "obsidian";
 import { State } from "ts-fsrs";
 import { VIEW_TYPE_PROJECTS, VIEW_TYPE_REVIEW } from "../../constants";
-import { createProjectsStateManager } from "../../state/projects.state";
 import { getEventBus, notify } from "../../services";
 import { Panel } from "../components/Panel";
 import { ProjectsContent } from "./ProjectsContent";
@@ -18,6 +17,7 @@ import { filterActiveCardsOnly } from "../shared/helpers";
 import type TrueRecallPlugin from "../../main";
 import type { ProjectNoteInfo } from "../../types";
 import type { CardReviewedEvent, BulkChangeEvent } from "../../types/events.types";
+import type { ProjectsApi } from "../../state/store";
 
 /**
  * Projects View
@@ -25,7 +25,6 @@ import type { CardReviewedEvent, BulkChangeEvent } from "../../types/events.type
  */
 export class ProjectsView extends ItemView {
 	private plugin: TrueRecallPlugin;
-	private stateManager = createProjectsStateManager();
 
 	// UI Components
 	private panelComponent: Panel | null = null;
@@ -44,6 +43,10 @@ export class ProjectsView extends ItemView {
 	constructor(leaf: WorkspaceLeaf, plugin: TrueRecallPlugin) {
 		super(leaf);
 		this.plugin = plugin;
+	}
+
+	private get projects(): ProjectsApi {
+		return this.plugin.store!.getState().projects;
 	}
 
 	getViewType(): string {
@@ -96,8 +99,9 @@ export class ProjectsView extends ItemView {
 		}
 
 		// Subscribe to state changes
-		this.unsubscribe = this.stateManager.subscribe(() =>
-			this.renderContent()
+		this.unsubscribe = this.plugin.store!.subscribe(
+			(state) => state.projects,
+			() => this.renderContent()
 		);
 
 		// Initial render
@@ -133,7 +137,7 @@ export class ProjectsView extends ItemView {
 	 * v19: Uses FrontmatterIndexService instead of scanning all files
 	 */
 	private async loadProjects(): Promise<void> {
-		this.stateManager.setLoading(true);
+		this.projects.setLoading(true);
 
 		try {
 			const frontmatterIndex = this.plugin.frontmatterIndex;
@@ -336,12 +340,12 @@ export class ProjectsView extends ItemView {
 			// Sort unassigned notes alphabetically
 			unassignedNotes.sort((a, b) => a.name.localeCompare(b.name));
 
-			this.stateManager.setProjects(projects);
-			this.stateManager.setUnassignedNotes(unassignedNotes);
+			this.projects.setProjects(projects);
+			this.projects.setUnassignedNotes(unassignedNotes);
 		} catch (error) {
 			console.error("[ProjectsView] Error loading projects:", error);
 			notify().error("Failed to load projects");
-			this.stateManager.setLoading(false);
+			this.projects.setLoading(false);
 		}
 	}
 
@@ -369,7 +373,7 @@ export class ProjectsView extends ItemView {
 	 * Recalculates due/new/learning counts from current card store
 	 */
 	private async updateProjectStatsOnly(): Promise<void> {
-		const state = this.stateManager.getState();
+		const state = this.projects;
 		if (state.isLoading) return;
 
 		const frontmatterIndex = this.plugin.frontmatterIndex;
@@ -467,7 +471,7 @@ export class ProjectsView extends ItemView {
 			}),
 		}));
 
-		this.stateManager.setProjects(updatedProjects);
+		this.projects.setProjects(updatedProjects);
 	}
 
 	/**
@@ -475,7 +479,7 @@ export class ProjectsView extends ItemView {
 	 * Updates frontmatter in all associated notes before removing the project
 	 */
 	private async handleDeleteProject(projectId: string): Promise<void> {
-		const state = this.stateManager.getState();
+		const state = this.projects;
 		const project = state.projects.find((p) => p.id === projectId);
 		if (!project) return;
 
@@ -515,7 +519,7 @@ export class ProjectsView extends ItemView {
 
 			// v16: No database deletion - projects are in frontmatter only
 
-			this.stateManager.removeProject(projectId);
+			this.projects.removeProject(projectId);
 			notify().success(`Project "${project.name}" deleted`);
 		} catch (error) {
 			console.error("[ProjectsView] Error deleting project:", error);
@@ -552,7 +556,7 @@ export class ProjectsView extends ItemView {
 	 * Handle starting a review session for unassigned notes
 	 */
 	private async handleStartReviewUnassigned(): Promise<void> {
-		const state = this.stateManager.getState();
+		const state = this.projects;
 		const unassignedNotes = state.unassignedNotes;
 
 		if (unassignedNotes.length === 0) {
@@ -589,7 +593,7 @@ export class ProjectsView extends ItemView {
 	 * Handle starting a review session with selected notes
 	 */
 	private async handleStartReviewSelected(): Promise<void> {
-		const state = this.stateManager.getState();
+		const state = this.projects;
 		const selectedPaths = Array.from(state.selectedNotePaths);
 
 		if (selectedPaths.length === 0) {
@@ -614,7 +618,7 @@ export class ProjectsView extends ItemView {
 		}
 
 		// Exit selection mode
-		this.stateManager.exitSelectionMode();
+		this.projects.exitSelectionMode();
 
 		// Open review view with sourceNoteFilters
 		const leaves = this.app.workspace.getLeavesOfType(VIEW_TYPE_REVIEW);
@@ -653,7 +657,7 @@ export class ProjectsView extends ItemView {
 		const projectName = note.basename;
 
 		// Check if project already exists
-		const state = this.stateManager.getState();
+		const state = this.projects;
 		if (
 			state.projects.some(
 				(p) => p.name.toLowerCase() === projectName.toLowerCase()
@@ -775,9 +779,9 @@ export class ProjectsView extends ItemView {
 	private renderContent(): void {
 		if (!this.panelComponent) return;
 
-		const state = this.stateManager.getState();
-		const projectsWithCards = this.stateManager.getProjectsWithCards();
-		const emptyProjects = this.stateManager.getEmptyProjects();
+		const state = this.projects;
+		const projectsWithCards = this.projects.getProjectsWithCards();
+		const emptyProjects = this.projects.getEmptyProjects();
 
 		const contentContainer = this.panelComponent.getContentContainer();
 
@@ -792,30 +796,30 @@ export class ProjectsView extends ItemView {
 				expandedProjectIds: state.expandedProjectIds,
 				app: this.app,
 				component: this,
-				onSearchChange: (query) => this.stateManager.setSearchQuery(query),
+				onSearchChange: (query) => this.projects.setSearchQuery(query),
 				onStartReview: (name) => void this.handleStartReview(name),
 				onDelete: (id) => void this.handleDeleteProject(id),
 				onAddNotes: (id, name) =>
 					void this.handleAddNotesToProject(id, name),
 				onCreateFromNote: () => void this.handleCreateFromNote(),
 				onRefresh: () => void this.loadProjects(),
-				onToggleExpand: (id) => this.stateManager.toggleProjectExpanded(id),
+				onToggleExpand: (id) => this.projects.toggleProjectExpanded(id),
 				// Selection props
 				selectionMode: state.selectionMode,
 				selectedNotePaths: state.selectedNotePaths,
 				onEnterSelectionMode: (path) =>
-					this.stateManager.enterSelectionMode(path),
-				onExitSelectionMode: () => this.stateManager.exitSelectionMode(),
+					this.projects.enterSelectionMode(path),
+				onExitSelectionMode: () => this.projects.exitSelectionMode(),
 				onToggleNoteSelection: (path) =>
-					this.stateManager.toggleNoteSelection(path),
+					this.projects.toggleNoteSelection(path),
 				// Unassigned notes props
 				unassignedNotes: state.unassignedNotes,
 				isUnassignedExpanded: state.isUnassignedExpanded,
-				onToggleUnassignedExpanded: () => this.stateManager.toggleUnassignedExpanded(),
+				onToggleUnassignedExpanded: () => this.projects.toggleUnassignedExpanded(),
 				onStartReviewUnassigned: () => void this.handleStartReviewUnassigned(),
 				// Show/hide done notes
 				showDoneNotes: state.showDoneNotes,
-				onToggleShowDoneNotes: () => this.stateManager.toggleShowDoneNotes(),
+				onToggleShowDoneNotes: () => this.projects.toggleShowDoneNotes(),
 			});
 			this.contentComponent.render();
 		} else {
@@ -845,7 +849,7 @@ export class ProjectsView extends ItemView {
 		const footerContainer = this.panelComponent?.getFooterContainer();
 		if (!footerContainer) return;
 
-		const state = this.stateManager.getState();
+		const state = this.projects;
 
 		// Clean up existing footer
 		this.selectionFooterComponent?.destroy();
@@ -899,7 +903,7 @@ export class ProjectsView extends ItemView {
 							disabled: newCount + learningCount + dueCount === 0,
 						},
 					],
-					onCancel: () => this.stateManager.exitSelectionMode(),
+					onCancel: () => this.projects.exitSelectionMode(),
 				}
 			);
 			this.selectionFooterComponent.render();
@@ -910,7 +914,7 @@ export class ProjectsView extends ItemView {
 	 * Handle adding selected notes to a project
 	 */
 	private async handleAddSelectedToProject(): Promise<void> {
-		const state = this.stateManager.getState();
+		const state = this.projects;
 		const selectedPaths = Array.from(state.selectedNotePaths);
 
 		if (selectedPaths.length === 0) {
@@ -947,7 +951,7 @@ export class ProjectsView extends ItemView {
 		}
 
 		// Exit selection mode and refresh
-		this.stateManager.exitSelectionMode();
+		this.projects.exitSelectionMode();
 		await this.loadProjects();
 		notify().success(`Added ${selectedPaths.length} note(s) to ${result.projects.length} project(s)`);
 	}
