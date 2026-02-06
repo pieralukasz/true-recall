@@ -284,8 +284,6 @@ export class StatsView extends ItemView {
 		this.plugin.store?.getState().stats.markFresh();
 	}
 
-	// ===== Card Preview Handlers =====
-
 	private formatDateForDisplay(isoDate: string): string {
 		const date = new Date(isoDate);
 		return date.toLocaleDateString(undefined, {

@@ -133,44 +133,34 @@ export class VirtualTable {
             return;
         }
 
-        // Create scroll container with keyboard focus support
         this.scrollContainer = this.container.createDiv({
             cls: TABLE_STYLES.SCROLL_CONTAINER,
             attr: { tabindex: "0" },
         });
 
-        // Create table wrapper (holds spacers + table)
         this.tableWrapper = this.scrollContainer.createDiv({
             cls: TABLE_STYLES.TABLE_WRAPPER,
         });
 
-        // Calculate total height for scroll
         const totalHeight = this.props.cards.length * ROW_HEIGHT;
         this.tableWrapper.style.height = `${totalHeight}px`;
 
-        // Create the actual table
         const table = this.tableWrapper.createEl("table", {
             cls: TABLE_STYLES.TABLE,
         });
 
-        // Create header (sticky)
         this.thead = table.createEl("thead", {
             cls: TABLE_STYLES.THEAD,
         });
         this.renderHeader();
 
-        // Create body container
         this.tbody = table.createEl("tbody", {
             cls: TABLE_STYLES.TBODY,
         });
 
-        // Add scroll listener
         this.scrollContainer.addEventListener("scroll", this.boundScrollHandler, { passive: true });
-
-        // Add keyboard listener for navigation
         this.scrollContainer.addEventListener("keydown", this.boundKeyHandler);
 
-        // Initial render of visible rows
         this.updateVisibleRows();
     }
 
@@ -178,12 +168,10 @@ export class VirtualTable {
         this.props.cards = cards;
 
         if (this.tableWrapper) {
-            // Update total height
             const totalHeight = cards.length * ROW_HEIGHT;
             this.tableWrapper.style.height = `${totalHeight}px`;
         }
 
-        // Reset event controller and clear row pool
         this.rowEventController?.abort();
         this.rowEventController = new AbortController();
         this.rowPool.clear();
@@ -203,12 +191,10 @@ export class VirtualTable {
     updateSelection(selectedCardIds: Set<string>): void {
         this.props.selectedCardIds = selectedCardIds;
 
-        // Ensure visible rows exist (in case pool was cleared)
         if (this.rowPool.size === 0 && this.props.cards.length > 0) {
             this.updateVisibleRows();
         }
 
-        // Update selection classes on visible rows
         for (const [index, rowEl] of this.rowPool) {
             const card = this.props.cards[index];
             if (card) {
@@ -239,21 +225,18 @@ export class VirtualTable {
         const viewportHeight = this.scrollContainer.clientHeight;
         const totalCards = this.props.cards.length;
 
-        // Calculate visible range with buffer
         const startIndex = Math.max(0, Math.floor(scrollTop / ROW_HEIGHT) - BUFFER_ROWS);
         const visibleCount = Math.ceil(viewportHeight / ROW_HEIGHT) + BUFFER_ROWS * 2;
         const endIndex = Math.min(totalCards, startIndex + visibleCount);
 
         const newRange: VisibleRange = { start: startIndex, end: endIndex };
 
-        // Check if range changed significantly
         if (newRange.start === this.visibleRange.start && newRange.end === this.visibleRange.end) {
-            return; // No change needed
+            return;
         }
 
         this.visibleRange = newRange;
 
-        // Remove rows outside new range
         const rowsToRemove: number[] = [];
         for (const index of this.rowPool.keys()) {
             if (index < startIndex || index >= endIndex) {
@@ -271,20 +254,17 @@ export class VirtualTable {
         // Use shared abort signal for all rows
         const signal = this.rowEventController.signal;
 
-        // Add/update rows in visible range
         for (let i = startIndex; i < endIndex; i++) {
             const card = this.props.cards[i];
             if (!card) continue;
 
             let row = this.rowPool.get(i);
             if (!row) {
-                // Create new row with shared signal
                 row = this.createRow(card, i, signal);
                 this.rowPool.set(i, row);
                 this.tbody.appendChild(row);
             }
 
-            // Position row absolutely
             row.setCssProps({
                 position: "absolute",
                 top: `${i * ROW_HEIGHT}px`,
@@ -300,7 +280,6 @@ export class VirtualTable {
         const isFocused = index === this.focusedIndex;
         const tr = document.createElement("tr");
 
-        // Build class list from style constants
         let className = TABLE_STYLES.ROW_BASE;
         if (isSelected) className += ` ${TABLE_STYLES.ROW_SELECTED}`;
         if (isFocused) className += ` ${TABLE_STYLES.ROW_FOCUSED}`;
@@ -323,7 +302,6 @@ export class VirtualTable {
             height: `${ROW_HEIGHT}px`,
         });
 
-        // Question
         const questionTd = tr.createEl("td", { cls: TABLE_STYLES.CELL });
         questionTd.setCssProps({ width: `${this.getColumnWidth("question")}px`, "flex-shrink": "0" });
         questionTd.createSpan({
@@ -331,7 +309,6 @@ export class VirtualTable {
             cls: TABLE_STYLES.CELL_CONTENT,
         });
 
-        // Answer
         const answerTd = tr.createEl("td", { cls: TABLE_STYLES.CELL });
         answerTd.setCssProps({ width: `${this.getColumnWidth("answer")}px`, "flex-shrink": "0" });
         answerTd.createSpan({
@@ -339,7 +316,6 @@ export class VirtualTable {
             cls: TABLE_STYLES.CELL_CONTENT,
         });
 
-        // Due
         const dueTd = tr.createEl("td", { cls: TABLE_STYLES.CELL });
         dueTd.setCssProps({ width: `${this.getColumnWidth("due")}px`, "flex-shrink": "0" });
 
@@ -353,7 +329,6 @@ export class VirtualTable {
             cls: dueCls,
         });
 
-        // Source
         const sourceTd = tr.createEl("td", { cls: TABLE_STYLES.CELL });
         sourceTd.setCssProps({ width: `${this.getColumnWidth("source")}px`, "flex-shrink": "0" });
         if (card.sourceNoteName) {
@@ -370,9 +345,7 @@ export class VirtualTable {
             sourceTd.createSpan({ text: "-", cls: `${TABLE_STYLES.CELL_CONTENT} ${TABLE_STYLES.SOURCE_EMPTY}` });
         }
 
-        // Row click handlers
         tr.addEventListener("click", (e) => {
-            // Update focused index on click
             this.focusedIndex = index;
             this.props.onCardClick(card.id, e);
         }, { signal });
@@ -407,7 +380,6 @@ export class VirtualTable {
 
                 sortBtn.createSpan({ text: col.label });
 
-                // Sort indicator
                 if (this.props.sortColumn === col.key) {
                     const sortIcon = sortBtn.createSpan({ cls: "sort-icon" });
                     setIcon(sortIcon, this.props.sortDirection === "asc" ? "chevron-up" : "chevron-down");
@@ -521,8 +493,6 @@ export class VirtualTable {
         });
     }
 
-    // ===== Keyboard Navigation =====
-
     private handleKeyDown(e: KeyboardEvent): void {
         if (!this.props.cards.length) return;
 
@@ -569,7 +539,6 @@ export class VirtualTable {
         const prevFocusedIndex = this.focusedIndex;
         this.focusedIndex = index;
 
-        // Update focus styles on rows
         if (prevFocusedIndex >= 0) {
             const prevRow = this.rowPool.get(prevFocusedIndex);
             if (prevRow) {
@@ -582,7 +551,6 @@ export class VirtualTable {
             currentRow.classList.add(...TABLE_STYLES.ROW_FOCUSED.split(" "));
         }
 
-        // Select the focused card
         const card = this.props.cards[index];
         if (card) {
             // Create a synthetic mouse event for selection
@@ -593,7 +561,6 @@ export class VirtualTable {
             } as MouseEvent);
         }
 
-        // Scroll to keep focused row visible
         this.scrollToIndex(index);
     }
 

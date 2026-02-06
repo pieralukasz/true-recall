@@ -1,7 +1,3 @@
-/**
- * Base Modal Component
- * Provides consistent styling and structure for all plugin modals
- */
 import { App, Modal } from "obsidian";
 
 export interface BaseModalOptions {
@@ -9,9 +5,6 @@ export interface BaseModalOptions {
 	width?: string; // e.g. "500px", defaults to "fit-content"
 }
 
-/**
- * Button configuration for renderButtons helper
- */
 export interface ModalButton {
 	text: string;
 	type: "primary" | "secondary" | "danger";
@@ -19,9 +12,6 @@ export interface ModalButton {
 	disabled?: boolean;
 }
 
-/**
- * List item configuration for renderListItem helper
- */
 export interface ListItemConfig {
 	icon?: string;
 	name: string;
@@ -29,28 +19,17 @@ export interface ListItemConfig {
 	badge?: string;
 }
 
-/**
- * Selectable item configuration for renderSelectableItem helper
- */
 export interface SelectableItemConfig extends ListItemConfig {
 	selected: boolean;
 	onToggle: (selected: boolean) => void;
 }
 
-/**
- * Event listener registration for cleanup
- */
 interface RegisteredEvent {
 	el: HTMLElement;
 	type: string;
 	handler: EventListener;
 }
 
-/**
- * Abstract base class for plugin modals
- * Uses Obsidian's native titleEl for proper alignment with close button
- * Includes automatic event listener cleanup on modal close
- */
 export abstract class BaseModal extends Modal {
 	protected modalTitle: string;
 	protected modalWidth: string;
@@ -116,17 +95,6 @@ export abstract class BaseModal extends Modal {
 	 */
 	protected abstract renderBody(container: HTMLElement): void;
 
-	// ============================================================
-	// Helper methods for common modal patterns
-	// Use "create" prefix to avoid conflicts with existing private methods
-	// ============================================================
-
-	/**
-	 * Create a standard button section with consistent styling
-	 * @param container Parent element
-	 * @param buttons Array of button configs
-	 * @returns The buttons container element
-	 */
 	protected createButtonsSection(
 		container: HTMLElement,
 		buttons: ModalButton[]

@@ -1,35 +1,15 @@
 import type { TrueRecallSettings } from "./types/settings.types";
 import type { GeneratedNoteType } from "./types/flashcard.types";
 
-// ===== View Types =====
-
-/** View type identifier for the sidebar panel */
 export const VIEW_TYPE_FLASHCARD_PANEL = "true-recall-flashcard-panel";
-
-/** View type identifier for the review session */
 export const VIEW_TYPE_REVIEW = "true-recall-review";
-
-/** View type identifier for the statistics panel */
 export const VIEW_TYPE_STATS = "true-recall-stats";
-
-/** View type identifier for the session panel */
 export const VIEW_TYPE_SESSION = "true-recall-session";
-
-/** View type identifier for the projects panel */
 export const VIEW_TYPE_PROJECTS = "true-recall-projects";
-
-/** View type identifier for the browser panel */
 export const VIEW_TYPE_BROWSER = "true-recall-browser";
-
-/** View type identifier for the FSRS simulator */
 export const VIEW_TYPE_SIMULATOR = "true-recall-simulator";
-
-/** View type identifier for the orphaned cards panel */
 export const VIEW_TYPE_ORPHANED_CARDS = "true-recall-orphaned-cards";
 
-// ===== AI Models =====
-
-/** AI Model metadata */
 export interface AIModelInfo {
 	name: string;
 	provider: "Google" | "OpenAI" | "Anthropic" | "Meta";
@@ -37,7 +17,6 @@ export interface AIModelInfo {
 	recommended?: boolean;
 }
 
-/** AI Models available via OpenRouter with metadata */
 export const AI_MODELS_EXTENDED: Record<string, AIModelInfo> = {
 	"google/gemini-3-flash-preview": {
 		name: "Gemini 3 Flash",
@@ -77,7 +56,7 @@ export const AI_MODELS_EXTENDED: Record<string, AIModelInfo> = {
 	},
 } as const;
 
-/** AI Models available via OpenRouter (legacy format for backward compatibility) */
+// Legacy format for backward compatibility
 export const AI_MODELS = {
 	"google/gemini-3-flash-preview": "Gemini 3 Flash (Google)",
 	"google/gemini-2.5-pro-preview": "Gemini 2.5 Pro (Google)",
@@ -90,34 +69,24 @@ export const AI_MODELS = {
 
 export type AIModelKey = keyof typeof AI_MODELS;
 
-// ===== Default Settings =====
-
-/** Default plugin settings */
 export const DEFAULT_SETTINGS: TrueRecallSettings = {
-	// AI Generation
 	openRouterApiKey: "",
 	aiModel: "google/gemini-3-flash-preview" as AIModelKey,
-
-	// Custom Prompts (empty = use default)
 	customGeneratePrompt: "",
 
-	// FSRS Algorithm
-	fsrsRequestRetention: 0.9, // 90% retention
-	fsrsMaximumInterval: 36500, // 100 lat
+	fsrsRequestRetention: 0.9,
+	fsrsMaximumInterval: 36500, // 100 years
 	newCardsPerDay: 20,
 	reviewsPerDay: 200,
 
-	// FSRS Learning Steps
-	learningSteps: [1, 10], // 1min, 10min
-	relearningSteps: [10], // 10min
-	graduatingInterval: 1, // 1 dzień
-	easyInterval: 4, // 4 dni
+	learningSteps: [1, 10], // minutes
+	relearningSteps: [10], // minutes
+	graduatingInterval: 1, // days
+	easyInterval: 4, // days
 
-	// FSRS Parameters
-	fsrsWeights: null, // null = domyślne wagi ts-fsrs
+	fsrsWeights: null, // null = use ts-fsrs defaults
 	lastOptimization: null,
 
-	// UI
 	reviewMode: "fullscreen",
 	showNextReviewTime: true,
 	autoAdvance: false,
@@ -125,76 +94,58 @@ export const DEFAULT_SETTINGS: TrueRecallSettings = {
 	showReviewHeaderStats: true,
 	continuousCustomReviews: true,
 
-	// Flashcard Collection
-	removeFlashcardContentAfterCollect: false, // Default: keep content, only remove #flashcard tag
+	removeFlashcardContentAfterCollect: false, // keep content, only remove #flashcard tag
 
-	// Display Order
 	newCardOrder: "random",
 	reviewOrder: "due-date",
 	newReviewMix: "mix-with-reviews",
 
-	// Scheduling
 	dayStartHour: 4, // 4 AM like Anki - new day starts at this hour
 
-	// Folder Exclusions
 	excludedFolders: [],
 
-	// Floating Generate Button
 	floatingButtonEnabled: false,
 	floatingButtonMinChars: 1,
 	floatingButtonDirectGenerate: false,
 
-	// Backup Settings (Legacy)
 	autoBackupOnLoad: false,
 	maxBackups: 10,
 
-	// Background Backup Settings
 	periodicBackupEnabled: false,
-	backupIntervalMinutes: 60, // 1 hour default
+	backupIntervalMinutes: 60,
 	activityTriggeredBackup: false,
 	reviewsBeforeBackup: 50,
 	retentionPolicy: {
-		hourlyBackupsToKeep: 24, // Keep 24 hourly backups (1 day)
-		dailyBackupsToKeep: 7, // Keep 7 daily backups (1 week)
-		weeklyBackupsToKeep: 4, // Keep 4 weekly backups (1 month)
+		hourlyBackupsToKeep: 24,
+		dailyBackupsToKeep: 7,
+		weeklyBackupsToKeep: 4,
 	},
 
-	// Copilot Integration
 	copilotAutoContext: false,
 
-	// Review Font Size
 	reviewFontScale: 1.0,
 
-	// FSRS Helper: Load Balance
 	loadBalanceEnabled: false,
 	loadBalanceTarget: 100,
 	loadBalanceMaxDeviation: 20,
 
-	// FSRS Helper: Easy Days
 	easyDays: {
 		recurringDays: [],
 		specificDates: [],
 	},
 	easyDaysMultiplier: 0.5,
 
-	// FSRS Helper: Sibling Disperse
 	siblingMinInterval: 3,
 	siblingDisperseEnabled: false,
 
-	// FSRS Helper: Optimizer Metadata
 	lastOptimizationReviewCount: null,
 	lastOptimizationMetrics: null,
 
-	// FSRS Helper: Schedule Breaks
 	scheduledBreaks: [],
 };
 
-// ===== FSRS Default Weights =====
-
-/**
- * Domyślne wagi FSRS v6 (21 parametrów)
- * @see https://github.com/open-spaced-repetition/fsrs4anki/wiki/The-Algorithm
- */
+// FSRS v6 default weights (21 parameters)
+// See: https://github.com/open-spaced-repetition/fsrs4anki/wiki/The-Algorithm
 export const DEFAULT_FSRS_WEIGHTS = [
 	0.212, // w0: initial stability for Again
 	1.2931, // w1: initial stability for Hard
@@ -219,41 +170,26 @@ export const DEFAULT_FSRS_WEIGHTS = [
 	0.1542, // w20: forgetting curve decay
 ] as const;
 
-// ===== API Configuration =====
-
-/** OpenRouter API configuration */
 export const API_CONFIG = {
 	endpoint: "https://openrouter.ai/api/v1/chat/completions",
 	timeout: 60000, // 60 seconds
 	defaultTemperature: 0.7,
 	defaultMaxTokens: 4000,
 	retryAttempts: 3,
-	retryDelay: 1000, // 1 second
+	retryDelay: 1000,
 } as const;
 
-// ===== UI Configuration =====
-
-/** UI-related constants */
 export const UI_CONFIG = {
-	/** Long press duration for showing card edit UI (milliseconds) */
-	longPressDuration: 500,
-	/** Timer interval for countdown display (milliseconds) */
-	timerInterval: 1000,
-	/** Default filename for new flashcard files */
+	longPressDuration: 500, // ms, for showing card edit UI
+	timerInterval: 1000, // ms
 	defaultFileName: "Untitled",
 } as const;
 
-// ===== Flashcard Configuration =====
-
-/** Flashcard constants */
 export const FLASHCARD_CONFIG = {
-	sourceUidField: "flashcard_uid", // Field in source note frontmatter
+	sourceUidField: "flashcard_uid", // frontmatter field linking source note to cards
 	tag: "#flashcard",
 } as const;
 
-// ===== Generated Note Types =====
-
-/** Configuration for each generated note type */
 export interface GeneratedNoteTypeConfig {
 	type: GeneratedNoteType;
 	label: string;
@@ -262,7 +198,6 @@ export interface GeneratedNoteTypeConfig {
 	defaultNamePrefix: string;
 }
 
-/** Note type configurations for AI-generated flashcard destinations */
 export const GENERATED_NOTE_TYPES: Record<
 	GeneratedNoteType,
 	GeneratedNoteTypeConfig
@@ -290,40 +225,24 @@ export const GENERATED_NOTE_TYPES: Record<
 	},
 } as const;
 
-// ===== FSRS Configuration =====
-
-/** Learn ahead limit in minutes (like Anki) - cards can be shown early if nothing else to study */
+// Cards can be shown early if nothing else to study (like Anki)
 export const LEARN_AHEAD_LIMIT_MINUTES = 20;
 
-/** FSRS algorithm configuration */
 export const FSRS_CONFIG = {
-	/** Minimalna liczba powtórek do optymalizacji */
 	minReviewsForOptimization: 400,
-	/** Zalecana liczba powtórek do optymalizacji */
 	recommendedReviewsForOptimization: 1000,
-	/** Minimalna retencja */
 	minRetention: 0.7,
-	/** Maksymalna retencja */
 	maxRetention: 0.99,
 } as const;
 
-// ===== Review Service Configuration =====
+export const WEAK_CARD_STABILITY_THRESHOLD = 7; // days
 
-/** Stability threshold for "weak card" filter (days) */
-export const WEAK_CARD_STABILITY_THRESHOLD = 7;
+export const REQUEUE_WINDOW_MS = 10 * 60 * 1000; // 10 minutes
 
-/** Time window for requeue check (10 minutes in ms) */
-export const REQUEUE_WINDOW_MS = 10 * 60 * 1000;
-
-/** Maximum position for random queue insertion of learning cards */
 export const RANDOM_QUEUE_INSERT_MAX_POS = 5;
 
-/** Maximum number of history entries to keep per card */
 export const CARD_HISTORY_LIMIT = 20;
 
-// ===== System Prompts =====
-
-/** System prompt for flashcard generation */
 export const SYSTEM_PROMPT = `I would like you to help me create flashcards based on text. Here are the guidelines for creating them.
 
 Transform text into atomic, high-retention flashcards.
@@ -368,7 +287,7 @@ Reddening of the skin
 How does advanced **[[rosacea]]** manifest? #flashcard
 **[[papulopustular changes]]**`;
 
-/** System prompt for instruction-based flashcard generation (used in review mode) */
+// Used in review mode for free-form card creation
 export const INSTRUCTION_BASED_GENERATION_PROMPT = `You are an expert flashcard generator. Create flashcards based ONLY on the user's instructions.
 
 OUTPUT FORMAT:
@@ -420,7 +339,7 @@ Output:
 What is **[[machine learning]]**? #flashcard
 ???`;
 
-/** System prompt for AI-assisted flashcard processing (used with Add & Generate) */
+// Used with Add & Generate to transform existing flashcards
 export const CONTEXT_BASED_GENERATION_PROMPT = `You are an expert flashcard processor.
 Transform the given flashcard according to the user's instruction.
 
@@ -486,7 +405,7 @@ A warm-blooded animal that feeds milk to its young
 
 Examples: dogs, cats, whales, humans`;
 
-/** System prompt for context-aware flashcard generation during review mode */
+// Generates related cards based on the card being reviewed
 export const CONTEXT_AWARE_REVIEW_PROMPT = `You are an expert flashcard generator helping a user expand their knowledge during a review session.
 
 The user is currently reviewing a flashcard and wants to generate NEW RELATED cards based on their instruction.
@@ -535,10 +454,7 @@ In the **[[chloroplasts]]**,
 
 specifically in the **[[thylakoid membranes]]**`;
 
-/**
- * System prompt for batch import parsing
- * Extracts Q/A pairs and applies proper markdown formatting
- */
+// Parses various import formats (Q:/A:, numbered, tab-separated) into flashcard format
 export const BATCH_IMPORT_PARSE_PROMPT = `You are a flashcard parser. Extract Q/A pairs from user text and apply proper formatting.
 
 INPUT FORMATS TO RECOGNIZE:
@@ -583,16 +499,10 @@ Example:
 // returns [2,4,6]
 \`\`\``;
 
-/** OpenRouter API endpoint */
 export const OPENROUTER_API_URL =
 	"https://openrouter.ai/api/v1/chat/completions";
 
-// ===== True Recall Cloud Configuration =====
-
-/**
- * True Recall Cloud Supabase credentials (public anon key)
- * Safe to expose - RLS policies protect data per-user
- */
+// Public anon key - safe to expose, RLS policies protect data per-user
 export const TRUE_RECALL_CLOUD = {
 	supabaseUrl: "https://webogcxwvgbwdcjibbno.supabase.co",
 	supabaseAnonKey:

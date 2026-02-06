@@ -32,16 +32,13 @@ const PANEL_STORAGE_KEY = "true-recall-browser-panel-sizes";
 export class BrowserView extends ItemView {
     private plugin: TrueRecallPlugin;
 
-    // UI Components
     private toolbarComponent: BrowserToolbar | null = null;
     private sidebarComponent: BrowserSidebar | null = null;
     private tableComponent: VirtualTable | null = null;
     private previewComponent: BrowserPreview | null = null;
 
-    // Previous state for incremental rendering
     private prevState: BrowserApi | null = null;
 
-    // Container elements
     private mainContainer!: HTMLElement;
     private toolbarContainer!: HTMLElement;
     private contentContainer!: HTMLElement;
@@ -49,13 +46,8 @@ export class BrowserView extends ItemView {
     private tableContainer!: HTMLElement;
     private previewContainer!: HTMLElement;
 
-    // State subscription
     private unsubscribe: (() => void) | null = null;
-
-    // EventBus subscriptions
     private eventUnsubscribers: (() => void)[] = [];
-
-    // Panel resize state
     private panelSizes: PanelSizes;
 
     constructor(leaf: WorkspaceLeaf, plugin: TrueRecallPlugin) {
@@ -102,22 +94,18 @@ export class BrowserView extends ItemView {
         container.empty();
         container.addClass("ep:flex", "ep:flex-col", "ep:h-full", "ep:overflow-hidden", "ep:bg-obs-primary");
 
-        // Create main container
         this.mainContainer = container.createDiv({
             cls: "ep:flex ep:flex-col ep:flex-1 ep:overflow-hidden ep:min-h-0",
         });
 
-        // Create toolbar at top
         this.toolbarContainer = this.mainContainer.createDiv({
             cls: "ep:flex ep:items-center ep:gap-3 ep:py-3 ep:px-4 ep:border-b ep:border-obs-border ep:bg-obs-secondary ep:shrink-0",
         });
 
-        // Create content area (3-panel layout)
         this.contentContainer = this.mainContainer.createDiv({
             cls: "ep:flex ep:flex-1 ep:overflow-hidden ep:min-h-0",
         });
 
-        // Create sidebar
         this.sidebarContainer = this.contentContainer.createDiv({
             cls: "ep:flex ep:flex-col ep:border-r ep:border-obs-border ep:bg-obs-secondary ep:overflow-y-auto ep:shrink-0",
         });
@@ -125,20 +113,16 @@ export class BrowserView extends ItemView {
         this.sidebarContainer.style.minWidth = `${PANEL_CONSTRAINTS.sidebar.min}px`;
         this.sidebarContainer.style.maxWidth = `${PANEL_CONSTRAINTS.sidebar.max}px`;
 
-        // Sidebar resize handle
         const sidebarResizeHandle = this.contentContainer.createDiv({ cls: RESIZE_STYLES.PANEL_HANDLE });
         this.setupPanelResize(sidebarResizeHandle, "sidebar");
 
-        // Create table (center)
         this.tableContainer = this.contentContainer.createDiv({
             cls: "ep:flex-1 ep:min-w-0 ep:flex ep:flex-col ep:overflow-auto",
         });
 
-        // Preview resize handle
         const previewResizeHandle = this.contentContainer.createDiv({ cls: RESIZE_STYLES.PANEL_HANDLE });
         this.setupPanelResize(previewResizeHandle, "preview");
 
-        // Create preview panel
         this.previewContainer = this.contentContainer.createDiv({
             cls: "ep:h-full ep:flex ep:flex-col ep:border-l ep:border-obs-border ep:bg-obs-primary ep:overflow-y-auto ep:shrink-0",
         });
@@ -146,19 +130,13 @@ export class BrowserView extends ItemView {
         this.previewContainer.style.minWidth = `${PANEL_CONSTRAINTS.preview.min}px`;
         this.previewContainer.style.maxWidth = `${PANEL_CONSTRAINTS.preview.max}px`;
 
-        // Subscribe to state changes
         this.unsubscribe = this.plugin.store!.subscribe(
             (state) => state.browser,
             () => this.render()
         );
 
-        // Subscribe to EventBus events
         this.setupEventSubscriptions();
-
-        // Initial render
         this.render();
-
-        // Load cards
         void this.loadCards();
     }
 
@@ -235,7 +213,6 @@ export class BrowserView extends ItemView {
     private setupEventSubscriptions(): void {
         const eventBus = getEventBus();
 
-        // Refresh on card changes
         this.eventUnsubscribers.push(
             eventBus.on("card:added", () => void this.loadCards()),
             eventBus.on<CardUpdatedEvent>("card:updated", (event) => {
@@ -255,7 +232,6 @@ export class BrowserView extends ItemView {
 
         try {
             const rawCards = this.plugin.cardStore.browser.getAllCardsForBrowser();
-            // Enrich cards with source note info from vault (sourceNoteName, sourceNotePath, projects)
             const sourceNoteService = this.plugin.flashcardManager.getSourceNoteService();
             const cards = sourceNoteService.enrichCards(rawCards);
             this.browser.setCards(cards);
@@ -266,24 +242,18 @@ export class BrowserView extends ItemView {
         }
     }
 
-    // ===== Card Actions =====
-
     private handleCardClick(cardId: string, event: MouseEvent): void {
         const index = this.browser.filteredCards.findIndex(c => c.id === cardId);
 
         if (event.shiftKey && this.browser.lastClickedIndex !== null) {
-            // Range selection
             this.browser.selectRange(index);
         } else if (event.ctrlKey || event.metaKey) {
-            // Toggle selection
             this.browser.toggleCardSelection(cardId);
         } else {
-            // Single selection
             this.browser.clearSelection();
             this.browser.toggleCardSelection(cardId);
         }
 
-        // Set preview
         this.browser.setPreviewCard(cardId);
     }
 
@@ -316,20 +286,17 @@ export class BrowserView extends ItemView {
         if (result.cancelled) return;
 
         try {
-            // Update card directly in database
             this.plugin.cardStore.cards.updateCardContent(
                 card.id,
                 result.question,
                 result.answer
             );
 
-            // Update state
             this.browser.updateCard(card.id, {
                 question: result.question,
                 answer: result.answer,
             });
 
-            // If source was changed, move the card
             if (result.newSourceNotePath) {
                 await this.plugin.flashcardManager.moveCard(
                     card.id,
@@ -359,8 +326,6 @@ export class BrowserView extends ItemView {
         }
     }
 
-    // ===== Bulk Operations =====
-
     private async executeBulkOperation(operation: BulkOperation): Promise<void> {
         const selectedIds = [...this.browser.selectedCardIds];
         if (selectedIds.length === 0) {
@@ -386,7 +351,6 @@ export class BrowserView extends ItemView {
                     break;
 
                 case "bury": {
-                    // Bury until tomorrow
                     const tomorrow = new Date();
                     tomorrow.setDate(tomorrow.getDate() + 1);
                     tomorrow.setHours(4, 0, 0, 0); // 4 AM tomorrow
@@ -434,7 +398,6 @@ export class BrowserView extends ItemView {
                 }
             }
 
-            // Emit event and reload
             eventBus.emit({
                 type: "cards:bulk-change",
                 action: operation,
@@ -442,7 +405,6 @@ export class BrowserView extends ItemView {
                 timestamp: Date.now(),
             });
 
-            // Reload cards to reflect changes
             await this.loadCards();
             this.browser.clearSelection();
         } catch (error) {
@@ -450,13 +412,10 @@ export class BrowserView extends ItemView {
         }
     }
 
-    // ===== Render =====
-
     private render(): void {
         const state = this.browser;
         const prev = this.prevState;
 
-        // Track what changed
         const cardsChanged = !prev || prev.filteredCards.length !== state.filteredCards.length ||
             prev.filteredCards.some((c, i) => c.id !== state.filteredCards[i]?.id);
         const selectionChanged = !prev || prev.selectedCardIds !== state.selectedCardIds;
@@ -466,7 +425,6 @@ export class BrowserView extends ItemView {
         const previewChanged = !prev || prev.previewCardId !== state.previewCardId;
         const searchChanged = !prev || prev.searchQuery !== state.searchQuery;
 
-        // Toolbar - create once, then update
         if (!this.toolbarComponent) {
             this.toolbarComponent = new BrowserToolbar(
                 this.toolbarContainer,
@@ -493,7 +451,6 @@ export class BrowserView extends ItemView {
             });
         }
 
-        // Sidebar - create once, then update
         if (!this.sidebarComponent) {
             this.sidebarComponent = new BrowserSidebar(
                 this.sidebarContainer,
@@ -516,7 +473,6 @@ export class BrowserView extends ItemView {
             });
         }
 
-        // Table - VirtualTable handles its own incremental updates
         if (!this.tableComponent || loadingChanged || sortChanged) {
             this.tableComponent?.destroy();
             this.tableContainer.empty();
@@ -539,7 +495,6 @@ export class BrowserView extends ItemView {
             this.tableComponent.updateSelection(state.selectedCardIds);
         }
 
-        // Preview - create once, then update
         if (!this.previewComponent) {
             const previewCard = this.browser.getPreviewCard();
             this.previewComponent = new BrowserPreview(
@@ -568,18 +523,15 @@ export class BrowserView extends ItemView {
             this.previewComponent.update({ card: previewCard });
         }
 
-        // Store state for next comparison
         this.prevState = state;
     }
 
     private async executeSingleOperation(cardId: string, operation: BulkOperation): Promise<void> {
-        // Temporarily select just this card
         const prevSelection = this.browser.selectedCardIds;
         this.browser.setState({ selectedCardIds: new Set([cardId]) });
 
         await this.executeBulkOperation(operation);
 
-        // Restore selection (if card still exists)
         if (operation !== "delete") {
             this.browser.setState({ selectedCardIds: prevSelection });
         }

@@ -5,8 +5,6 @@
 import type { AIModelKey } from "../constants";
 import type { ReviewViewMode } from "./fsrs";
 
-// ===== FSRS Helper Types =====
-
 /**
  * Optimization result metrics from FSRS parameter optimization
  */
@@ -20,8 +18,6 @@ export interface OptimizationMetrics {
 	/** Optimization convergence status */
 	convergenceStatus: "converged" | "max_iterations" | "insufficient_data";
 }
-
-// ===== Background Backup Types =====
 
 /**
  * Backup interval options (in minutes)
@@ -84,80 +80,69 @@ export type ReviewOrder = "due-date" | "random" | "due-date-random" | "by-retrie
 export type NewReviewMix = "show-after-reviews" | "mix-with-reviews" | "show-before-reviews";
 
 /**
- * Ustawienia pluginu True Recall
+ * True Recall plugin settings
  */
 export interface TrueRecallSettings {
-    // ===== AI Generation Settings =====
-    /** Klucz API OpenRouter */
+    /** OpenRouter API key */
     openRouterApiKey: string;
-    /** Model AI do generowania fiszek */
+    /** AI model for flashcard generation */
     aiModel: AIModelKey;
 
-    // ===== Custom Prompts =====
     /** Custom system prompt for flashcard generation (empty = use default SYSTEM_PROMPT) */
     customGeneratePrompt: string;
 
-    // ===== FSRS Algorithm Settings =====
-    /** Docelowa retencja (0.7-0.99, domyślnie 0.9 = 90%) */
+    /** Target retention (0.7-0.99, default 0.9 = 90%) */
     fsrsRequestRetention: number;
-    /** Maksymalny interwał w dniach (domyślnie 36500 = 100 lat) */
+    /** Maximum interval in days (default 36500 = 100 years) */
     fsrsMaximumInterval: number;
-    /** Limit nowych kart dziennie */
+    /** Daily new cards limit */
     newCardsPerDay: number;
-    /** Limit powtórek dziennie */
+    /** Daily reviews limit */
     reviewsPerDay: number;
 
-    // ===== FSRS Learning Steps =====
-    /** Kroki nauki w minutach (np. [1, 10] = 1min, 10min) */
+    /** Learning steps in minutes (e.g., [1, 10] = 1min, 10min) */
     learningSteps: number[];
-    /** Kroki ponownej nauki w minutach (np. [10]) */
+    /** Relearning steps in minutes (e.g., [10]) */
     relearningSteps: number[];
-    /** Interwał po ukończeniu nauki w dniach (domyślnie 1) */
+    /** Interval after graduating from learning in days (default 1) */
     graduatingInterval: number;
-    /** Interwał dla "Easy" w dniach (domyślnie 4) */
+    /** Interval for 'Easy' in days (default 4) */
     easyInterval: number;
 
-    // ===== FSRS Parameters (21 weights for v6) =====
-    /** Wagi FSRS (null = domyślne v6, lub tablica 17/19/21 liczb po optymalizacji) */
+    /** FSRS weights (null = default v6, or array of 17/19/21 numbers after optimization) */
     fsrsWeights: number[] | null;
-    /** Data ostatniej optymalizacji (ISO string lub null) */
+    /** Last optimization date (ISO string or null) */
     lastOptimization: string | null;
 
-    // ===== UI Settings =====
-    /** Tryb wyświetlania Review View */
+    /** Review View display mode */
     reviewMode: ReviewViewMode;
-    /** Pokaż przewidywany czas przy przyciskach odpowiedzi */
+    /** Show predicted time on answer buttons */
     showNextReviewTime: boolean;
-    /** Automatycznie przejdź do następnej karty po odpowiedzi */
+    /** Auto-advance to next card after answer */
     autoAdvance: boolean;
-    /** Pokaż nagłówek w sesji Review */
+    /** Show header in Review session */
     showReviewHeader: boolean;
-    /** Pokaż statystyki new/learning/due w nagłówku Review */
+    /** Show new/learning/due stats in Review header */
     showReviewHeaderStats: boolean;
-    /** Pokaż przycisk "Next Session" po zakończeniu sesji niestandardowej */
+    /** Show 'Next Session' button after custom session ends */
     continuousCustomReviews: boolean;
 
-    // ===== Flashcard Collection Settings =====
     /** Remove flashcard content from markdown after collecting (default: false = keep content, only remove tag) */
     removeFlashcardContentAfterCollect: boolean;
 
-    // ===== Display Order Settings =====
-    /** Kolejność nowych kart */
+    /** New cards display order */
     newCardOrder: NewCardOrder;
-    /** Kolejność kart do powtórki */
+    /** Review cards display order */
     reviewOrder: ReviewOrder;
-    /** Jak mieszać nowe karty z powtórkami */
+    /** How to mix new cards with reviews */
     newReviewMix: NewReviewMix;
 
-    // ===== Scheduling Settings =====
-    /** Godzina rozpoczęcia nowego dnia (0-23, domyślnie 4 = 4:00 AM jak w Anki) */
+    /** New day start hour (0-23, default 4 = 4:00 AM like Anki) */
     dayStartHour: number;
 
-    // ===== Folder Exclusions =====
-    /** Foldery wykluczone z wyszukiwania notatek bez fiszek */
+    /** Folders excluded from searching notes without flashcards */
     excludedFolders: string[];
 
-    // ===== Floating Generate Button =====
     /** Enable floating button for generate from selection */
     floatingButtonEnabled: boolean;
     /** Minimum selection length to show floating button (chars) */
@@ -165,13 +150,11 @@ export interface TrueRecallSettings {
     /** Skip preview modal and generate directly */
     floatingButtonDirectGenerate: boolean;
 
-    // ===== Backup Settings (Legacy) =====
     /** Automatic backup on plugin load */
     autoBackupOnLoad: boolean;
     /** Maximum number of backups to keep (0 = unlimited) - legacy, use retentionPolicy instead */
     maxBackups: number;
 
-    // ===== Background Backup Settings =====
     /** Enable periodic background backups */
     periodicBackupEnabled: boolean;
     /** Backup interval in minutes (0 = disabled) */
@@ -183,15 +166,12 @@ export interface TrueRecallSettings {
     /** Multi-tier retention policy (hourly/daily/weekly) */
     retentionPolicy: RetentionPolicy;
 
-    // ===== Copilot Integration =====
     /** Auto-add source note to Obsidian Copilot context during review */
     copilotAutoContext: boolean;
 
-    // ===== Review Font Size =====
     /** Review card font size scale (0.5-2.0, default 1.0 = 100%) */
     reviewFontScale: number;
 
-    // ===== FSRS Helper: Load Balance =====
     /** Enable automatic load balancing when scheduling */
     loadBalanceEnabled: boolean;
     /** Target daily review count for load balancing */
@@ -199,31 +179,27 @@ export interface TrueRecallSettings {
     /** Maximum deviation from target (percentage 0-100) */
     loadBalanceMaxDeviation: number;
 
-    // ===== FSRS Helper: Easy Days =====
     /** Easy days configuration (recurring weekdays + specific dates) */
     easyDays: EasyDaysConfig;
     /** Workload multiplier for easy days (0.0-1.0) */
     easyDaysMultiplier: number;
 
-    // ===== FSRS Helper: Sibling Disperse =====
     /** Minimum days between siblings from same source note */
     siblingMinInterval: number;
     /** Enable automatic sibling dispersal on review */
     siblingDisperseEnabled: boolean;
 
-    // ===== FSRS Helper: Optimizer Metadata =====
     /** Number of reviews used in last optimization */
     lastOptimizationReviewCount: number | null;
     /** Optimization convergence metrics from last run */
     lastOptimizationMetrics: OptimizationMetrics | null;
 
-    // ===== FSRS Helper: Schedule Breaks =====
     /** Scheduled breaks (vacations) for review redistribution */
     scheduledBreaks: ScheduledBreak[];
 }
 
 /**
- * Ustawienia FSRS (podzbiór do przekazania do serwisu)
+ * FSRS settings (subset to pass to service)
  */
 export interface FSRSSettings {
     requestRetention: number;
@@ -235,7 +211,7 @@ export interface FSRSSettings {
 }
 
 /**
- * Wyciąga ustawienia FSRS z głównych ustawień
+ * Extracts FSRS settings from main settings
  */
 export function extractFSRSSettings(settings: TrueRecallSettings): FSRSSettings {
     return {
@@ -244,6 +220,6 @@ export function extractFSRSSettings(settings: TrueRecallSettings): FSRSSettings 
         weights: settings.fsrsWeights,
         learningSteps: settings.learningSteps,
         relearningSteps: settings.relearningSteps,
-        enableShortTerm: true, // Zawsze włączone dla obsługi learning steps
+        enableShortTerm: true, // Always enabled to support learning steps
     };
 }

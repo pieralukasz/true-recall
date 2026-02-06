@@ -1,14 +1,6 @@
-/**
- * Browser Actions Module
- * Specialized queries for the Browser view
- * Source note names and projects are resolved from vault at runtime
- */
 import type { BrowserCardItem } from "types/browser.types";
 import { SqliteDatabase } from "../SqliteDatabase";
 
-/**
- * Browser-specific queries for the Browser view
- */
 export class BrowserActions {
 	constructor(private db: SqliteDatabase) {}
 
@@ -96,11 +88,6 @@ export class BrowserActions {
 		};
 	}
 
-	// ===== Bulk Operations =====
-
-	/**
-	 * Bulk suspend cards
-	 */
 	bulkSuspend(cardIds: string[]): number {
 		if (cardIds.length === 0) return 0;
 

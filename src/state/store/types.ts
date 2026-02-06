@@ -27,10 +27,6 @@ import type {
 	SequenceSimulation,
 } from "../../ui/simulator/types";
 
-// ============================================================================
-// Store Dependencies
-// ============================================================================
-
 export interface AppStoreDeps {
 	app: App;
 	cardStore: SqliteStoreService;
@@ -39,10 +35,6 @@ export interface AppStoreDeps {
 	eventBus: EventBusService;
 	getSettings: () => TrueRecallSettings;
 }
-
-// ============================================================================
-// Review Slice Types
-// ============================================================================
 
 export interface BadgeCounts {
 	new: number;
@@ -136,10 +128,6 @@ export interface ReviewSliceActions {
 	isAnswerShown: () => boolean;
 }
 
-// ============================================================================
-// Panel Slice Types
-// ============================================================================
-
 export type ProcessingStatus = "none" | "exists" | "processing";
 export type ViewMode = "list";
 export type SelectionMode = "normal" | "selecting";
@@ -199,10 +187,6 @@ export interface PanelSliceActions {
 // API type for components to depend on
 export type PanelApi = PanelSliceState & PanelSliceActions;
 
-// ============================================================================
-// Session Slice Types
-// ============================================================================
-
 export interface SessionSliceState {
 	currentNoteName: string | null;
 	allCards: FSRSFlashcardItem[];
@@ -227,10 +211,6 @@ export interface SessionSliceActions {
 
 // API type for components to depend on
 export type SessionApi = SessionSliceState & SessionSliceActions;
-
-// ============================================================================
-// Browser Slice Types
-// ============================================================================
 
 export interface BrowserSliceState {
 	allCards: BrowserCardItem[];
@@ -278,10 +258,6 @@ export interface BrowserSliceActions {
 // API type for components to depend on
 export type BrowserApi = BrowserSliceState & BrowserSliceActions;
 
-// ============================================================================
-// Projects Slice Types
-// ============================================================================
-
 export interface ProjectsSliceState {
 	isLoading: boolean;
 	projects: ProjectInfo[];
@@ -324,10 +300,6 @@ export interface ProjectsSliceActions {
 // API type for components to depend on
 export type ProjectsApi = ProjectsSliceState & ProjectsSliceActions;
 
-// ============================================================================
-// Simulator Slice Types
-// ============================================================================
-
 export interface SimulatorSliceState {
 	sequences: string[];
 	parameters: number[];
@@ -369,10 +341,6 @@ export interface SimulatorSliceActions {
 // API type for components to depend on
 export type SimulatorApi = SimulatorSliceState & SimulatorSliceActions;
 
-// ============================================================================
-// Stats Slice Types
-// ============================================================================
-
 export interface StatsSliceState {
 	isStale: boolean;
 	lastRefreshed: number;
@@ -386,15 +354,7 @@ export interface StatsSliceActions {
 
 export type StatsApi = StatsSliceState & StatsSliceActions;
 
-// ============================================================================
-// Review API type for components to depend on
-// ============================================================================
-
 export type ReviewApi = ReviewSliceState & ReviewSliceActions;
-
-// ============================================================================
-// Combined AppState
-// ============================================================================
 
 export interface AppState {
 	review: ReviewSliceState & ReviewSliceActions;
@@ -405,10 +365,6 @@ export interface AppState {
 	simulator: SimulatorSliceState & SimulatorSliceActions;
 	stats: StatsSliceState & StatsSliceActions;
 }
-
-// ============================================================================
-// Helper type for slice creators
-// ============================================================================
 
 export type SliceCreator<T> = (
 	set: (fn: (state: AppState) => Partial<AppState>) => void,

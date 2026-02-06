@@ -1,22 +1,9 @@
-/**
- * Background Backup Manager Service
- *
- * Handles automatic periodic backups with smart retention policy.
- * Features:
- * - Configurable backup intervals (15min, 30min, 1hr, 2hr, 4hr)
- * - Activity-based triggers (backup after N reviews)
- * - Dirty flag tracking (only backup when changes exist)
- * - Multi-tier retention (hourly/daily/weekly)
- * - Non-blocking async operation
- */
 import type { App } from "obsidian";
 import type { BackupService } from "./backup.service";
 import type { TrueRecallSettings, RetentionPolicy, BackupInterval } from "../../types/settings.types";
 import { getEventBus } from "../core/event-bus.service";
+import { notify } from "../ui/notification.service";
 
-/**
- * Configuration extracted from plugin settings
- */
 export interface BackgroundBackupConfig {
     periodicBackupEnabled: boolean;
     backupIntervalMinutes: BackupInterval;
@@ -25,9 +12,6 @@ export interface BackgroundBackupConfig {
     retentionPolicy: RetentionPolicy;
 }
 
-/**
- * Current backup status for UI display
- */
 export interface BackupStatus {
     lastBackupTime: number | null;
     nextScheduledBackup: number | null;
@@ -35,9 +19,6 @@ export interface BackupStatus {
     isBackupInProgress: boolean;
 }
 
-/**
- * Manages automatic background backups
- */
 export class BackgroundBackupManager {
     private app: App;
     private backupService: BackupService;
@@ -50,6 +31,7 @@ export class BackgroundBackupManager {
     private isBackupInProgress = false;
     private isDirty = false;
     private unsubscribeEvents: (() => void)[] = [];
+    private consecutiveFailures = 0;
 
     constructor(
         app: App,
@@ -61,9 +43,6 @@ export class BackgroundBackupManager {
         this.config = this.extractConfig(settings);
     }
 
-    /**
-     * Extract backup config from full settings
-     */
     private extractConfig(settings: TrueRecallSettings): BackgroundBackupConfig {
         return {
             periodicBackupEnabled: settings.periodicBackupEnabled,
@@ -74,27 +53,18 @@ export class BackgroundBackupManager {
         };
     }
 
-    /**
-     * Start the background backup system
-     */
     start(): void {
         this.setupEventListeners();
         this.startPeriodicBackups();
         console.debug("[True Recall] Background backup manager started");
     }
 
-    /**
-     * Stop all background backup operations
-     */
     stop(): void {
         this.stopPeriodicBackups();
         this.cleanupEventListeners();
         console.debug("[True Recall] Background backup manager stopped");
     }
 
-    /**
-     * Update configuration and restart if needed
-     */
     updateConfig(settings: TrueRecallSettings): void {
         const newConfig = this.extractConfig(settings);
         const intervalChanged = newConfig.backupIntervalMinutes !== this.config.backupIntervalMinutes;
@@ -111,9 +81,6 @@ export class BackgroundBackupManager {
         }
     }
 
-    /**
-     * Get current backup status for UI display
-     */
     getStatus(): BackupStatus {
         return {
             lastBackupTime: this.lastBackupTime,
@@ -123,9 +90,6 @@ export class BackgroundBackupManager {
         };
     }
 
-    /**
-     * Manually trigger a backup (bypasses dirty flag if force=true)
-     */
     async triggerBackup(force = false): Promise<boolean> {
         if (!force && !this.isDirty) {
             console.debug("[True Recall] Skipping backup - no changes since last backup");
@@ -135,14 +99,9 @@ export class BackgroundBackupManager {
         return this.performBackup();
     }
 
-    /**
-     * Mark data as changed (should be called after any modification)
-     */
     markDirty(): void {
         this.isDirty = true;
     }
-
-    // ===== Private Methods =====
 
     private setupEventListeners(): void {
         const eventBus = getEventBus();
@@ -222,6 +181,7 @@ export class BackgroundBackupManager {
             this.lastBackupTime = Date.now();
             this.reviewsSinceLastBackup = 0;
             this.isDirty = false;
+            this.consecutiveFailures = 0;
 
             // Apply smart retention
             await this.backupService.applySmartRetention(this.config.retentionPolicy);
@@ -230,6 +190,11 @@ export class BackgroundBackupManager {
             return true;
         } catch (error) {
             console.error("[True Recall] Background backup failed:", error);
+            this.consecutiveFailures++;
+            if (this.consecutiveFailures >= 3) {
+                notify().warning("Automatic backups are failing. Check console for details.");
+                this.consecutiveFailures = 0; // Reset to avoid spamming
+            }
             return false;
         } finally {
             this.isBackupInProgress = false;

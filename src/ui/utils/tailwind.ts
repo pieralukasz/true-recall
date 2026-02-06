@@ -31,11 +31,6 @@ export function cn(
 	return result.join(" ");
 }
 
-// ============================================================================
-// Reusable CSS Class Constants
-// ============================================================================
-
-/** Form input field styling */
 export const INPUT_CLASSES =
 	"ep:w-full ep:py-2.5 ep:px-3 ep:border ep:border-obs-border ep:rounded-md ep:bg-obs-primary ep:text-obs-normal ep:text-ui-small ep:focus:outline-none ep:focus:border-obs-interactive ep:placeholder:text-obs-muted";
 
