@@ -8,6 +8,7 @@ import {
 	VIEW_TYPE_BROWSER,
 	VIEW_TYPE_SIMULATOR,
 	VIEW_TYPE_ORPHANED_CARDS,
+	VIEW_TYPE_NOTE_HUB,
 } from "./constants";
 import { normalizePath } from "obsidian";
 import {
@@ -49,6 +50,7 @@ import { ProjectsView } from "./ui/projects";
 import { BrowserView } from "./ui/browser";
 import { SimulatorView } from "./ui/simulator";
 import { OrphanedCardsView } from "./ui/orphaned-cards";
+import { NoteHubView } from "./ui/note-hub";
 import { FloatingGenerateButton } from "./ui/components/FloatingGenerateButton";
 import {
 	TrueRecallSettingTab,
@@ -193,6 +195,11 @@ export default class TrueRecallPlugin extends Plugin {
 			(leaf) => new OrphanedCardsView(leaf, this)
 		);
 
+		this.registerView(
+			VIEW_TYPE_NOTE_HUB,
+			(leaf) => new NoteHubView(leaf, this)
+		);
+
 		// eslint-disable-next-line obsidianmd/ui/sentence-case -- True Recall is a proper noun
 		this.addRibbonIcon("brain", "True Recall - study", () => {
 			this.startReviewSession().catch((error) => {
@@ -204,6 +211,13 @@ export default class TrueRecallPlugin extends Plugin {
 		this.addRibbonIcon("bar-chart-2", "True Recall - statistics", () => {
 			this.openStatsView().catch((error) => {
 				notify().error("Failed to open statistics view", error);
+			});
+		});
+
+		// eslint-disable-next-line obsidianmd/ui/sentence-case -- True Recall is a proper noun
+		this.addRibbonIcon("layout-grid", "True Recall - note hub", () => {
+			this.openNoteHub().catch((error) => {
+				notify().error("Failed to open note hub", error);
 			});
 		});
 
@@ -441,6 +455,10 @@ ${cardList}${moreText}
 
 	async openOrphanedCardsView(): Promise<void> {
 		await activateView(this.app, VIEW_TYPE_ORPHANED_CARDS);
+	}
+
+	async openNoteHub(): Promise<void> {
+		await activateView(this.app, VIEW_TYPE_NOTE_HUB, { useMainArea: true });
 	}
 
 	async startReviewSession(): Promise<void> {
