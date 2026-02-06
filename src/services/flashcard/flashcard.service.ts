@@ -90,8 +90,6 @@ export class FlashcardManager {
 		return this.parserService.extractFlashcards(content);
 	}
 
-	// ===== Compatibility Methods =====
-
 	/** @deprecated Always returns false - flashcard MD files no longer exist */
 	isFlashcardFile(_file: TFile): boolean {
 		return false;
@@ -114,8 +112,6 @@ export class FlashcardManager {
 			orphanedRemoved: 0,
 		};
 	}
-
-	// ===== Flashcard Info Methods =====
 
 	async getFlashcardInfo(sourceFile: TFile): Promise<FlashcardInfo> {
 		const sourceUid = await this.frontmatterService.getSourceNoteUid(sourceFile);
@@ -162,17 +158,14 @@ export class FlashcardManager {
 		};
 	}
 
-	// ===== Source Content Methods =====
-
 	async extractSourceContent(sourceFile: TFile): Promise<string | null> {
 		try {
 			return await this.app.vault.read(sourceFile);
-		} catch {
+		} catch (error) {
+			console.error(`[FlashcardManager] Failed to read file ${sourceFile.path}:`, error);
 			return null;
 		}
 	}
-
-	// ===== SQL Card Operations =====
 
 	async saveFlashcardsToSql(
 		sourceFile: TFile,
@@ -265,8 +258,6 @@ export class FlashcardManager {
 		return this.cardQueryService.getBySourceUid(sourceUid);
 	}
 
-	// ===== Orphaned Cards Methods =====
-
 	getOrphanedCards(): FSRSFlashcardItem[] {
 		if (!this.cardQueryService) {
 			return [];
@@ -312,16 +303,12 @@ export class FlashcardManager {
 		return successCount;
 	}
 
-	// ===== Move Card Methods =====
-
 	async moveCard(
 		cardId: string,
 		targetNotePath: string
 	): Promise<boolean> {
 		return this.assignCardToSourceNote(cardId, targetNotePath);
 	}
-
-	// ===== Navigation Methods =====
 
 	async openFileAtCard(file: TFile, _cardId: string): Promise<void> {
 		const leaf = this.getLeafForFile(file);

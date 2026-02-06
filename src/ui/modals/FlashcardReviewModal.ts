@@ -1,8 +1,3 @@
-/**
- * Flashcard Review Modal
- * Allows reviewing and editing generated flashcards before saving
- * Redesigned with CompactCardItem-style interface
- */
 import { App, Component } from "obsidian";
 import { BaseModal } from "./BaseModal";
 import type { FlashcardItem, TrueRecallSettings } from "../../types";
@@ -102,8 +97,6 @@ export class FlashcardReviewModal extends BaseModal {
 		// Action buttons
 		this.renderActions(container);
 	}
-
-	// ===== Rendering methods =====
 
 	private renderSelectionToolbar(): void {
 		if (!this.selectionToolbarEl) return;
@@ -228,8 +221,6 @@ export class FlashcardReviewModal extends BaseModal {
 		this.saveButtonEl.addEventListener("click", () => this.handleSave());
 	}
 
-	// ===== State handlers =====
-
 	private handleToggleExpand(index: number): void {
 		if (this.state.expandedCardIndex === index) {
 			this.state.expandedCardIndex = null;
@@ -285,8 +276,6 @@ export class FlashcardReviewModal extends BaseModal {
 		this.updateTitle(`Review Flashcards (${this.state.flashcards.length})`);
 		this.renderFlashcardsList();
 	}
-
-	// ===== Selection mode handlers =====
 
 	private handleEnterSelectionMode(index?: number): void {
 		this.state.isSelectionMode = true;
@@ -369,8 +358,6 @@ export class FlashcardReviewModal extends BaseModal {
 				: `Save ${count} flashcard${count !== 1 ? "s" : ""}`;
 		}
 	}
-
-	// ===== Actions =====
 
 	private handleSave(): void {
 		if (this.state.flashcards.length === 0) {

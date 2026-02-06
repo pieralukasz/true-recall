@@ -1,12 +1,3 @@
-/**
- * Stats Calculator Service
- * Facade for statistics calculations - delegates to specialized calculators
- *
- * Architecture:
- * - StreakCalculator: Current and longest study streaks
- * - MaturityCalculator: Card maturity breakdown, cards by category
- * - ChartDataCalculator: Future due, cards created, retention history
- */
 import { State } from "ts-fsrs";
 import type { FSRSService } from "../core/fsrs.service";
 import type { FlashcardManager } from "../flashcard/flashcard.service";
@@ -25,10 +16,6 @@ import type {
 } from "../../types";
 import { StreakCalculator, MaturityCalculator, ChartDataCalculator, type StreakInfo } from "./calculators";
 
-/**
- * Service for calculating statistics for the statistics panel
- * Acts as a facade delegating to specialized calculators
- */
 export class StatsCalculatorService {
 	private sessionPersistence: SessionPersistenceService;
 	private sqliteStore: SqliteStoreService | null = null;
@@ -211,8 +198,6 @@ export class StatsCalculatorService {
 		const allStats = this.sessionPersistence.getAllDailyStatsSummary();
 		return this.chartDataCalculator.getRetentionHistory(allStats, range);
 	}
-
-	// ===== Private helpers =====
 
 	private calculateStartDate(today: Date, range: StatsTimeRange): Date {
 		const startDate = new Date(today);

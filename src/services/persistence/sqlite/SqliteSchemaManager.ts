@@ -7,15 +7,8 @@
 import { getQueryResult, type DatabaseLike } from "./sqlite.types";
 import * as migrations from "./migrations";
 
-// ===== Migration Type Definitions =====
-
 type MigrationFn = (db: DatabaseLike) => void;
 
-// ===== Schema Manager Class =====
-
-/**
- * Manages SQLite database schema and migrations
- */
 export class SqliteSchemaManager {
 	private db: DatabaseLike;
 	private onSchemaChange: () => void;
@@ -35,9 +28,6 @@ export class SqliteSchemaManager {
 		this.onSchemaChange = onSchemaChange;
 	}
 
-	/**
-	 * Create database tables (schema v20 - added composite indexes)
-	 */
 	createTables(): void {
 		this.db.run(`
             -- Cards table with FSRS scheduling data + content
@@ -127,12 +117,9 @@ export class SqliteSchemaManager {
         `);
 	}
 
-	/**
-	 * Run all necessary migrations using data-driven approach
-	 */
 	runMigrations(): void {
 		const currentVersion = this.getSchemaVersion();
-		const latestVersion = 19;
+		const latestVersion = 20;
 
 		if (currentVersion >= latestVersion) {
 			return; // Already at latest version
@@ -173,9 +160,6 @@ export class SqliteSchemaManager {
 		);
 	}
 
-	/**
-	 * Validate that required tables exist after migrations
-	 */
 	private validateDatabaseIntegrity(): boolean {
 		try {
 			const tables = this.db.exec(
@@ -203,9 +187,6 @@ export class SqliteSchemaManager {
 		}
 	}
 
-	/**
-	 * Get current schema version
-	 */
 	private getSchemaVersion(): number {
 		try {
 			const result = this.db.exec(

@@ -1,7 +1,3 @@
-/**
- * Flashcard Panel Footer Component
- * Displays action buttons and instructions input
- */
 import type { TFile } from "obsidian";
 import { BaseComponent } from "../component.base";
 import { createActionButton } from "../components";
@@ -103,7 +99,6 @@ export class FlashcardPanelFooter extends BaseComponent {
 			return;
 		}
 
-		// ===== COLLECT BUTTON (when uncollected flashcards exist) =====
 		// Custom styling with gradient - not using ActionButton
 		if (hasUncollectedFlashcards && onCollect) {
 			const collectBtn = buttonsWrapper.createEl("button", {
@@ -137,18 +132,12 @@ export class FlashcardPanelFooter extends BaseComponent {
 		}
 	}
 
-	/**
-	 * Update the footer with new props
-	 */
 	updateProps(props: Partial<FlashcardPanelFooterProps>): void {
 		this.props = { ...this.props, ...props };
 		this.render();
 	}
 }
 
-/**
- * Create a flashcard panel footer component
- */
 export function createFlashcardPanelFooter(
 	container: HTMLElement,
 	props: FlashcardPanelFooterProps

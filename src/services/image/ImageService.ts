@@ -209,8 +209,6 @@ export class ImageService {
         return null;
     }
 
-    // ===== Private Helpers =====
-
     private async ensureFolderExists(folderPath: string): Promise<void> {
         if (!folderPath) return;
 

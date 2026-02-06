@@ -3,7 +3,6 @@ import type { NoteFlashcardType } from "../../types";
 import { stripWikiLinkSyntax } from "../../utils";
 
 export class FrontmatterService {
-	// ===== Cached regex patterns for performance =====
 	/** Matches YAML frontmatter block */
 	private static readonly FRONTMATTER_REGEX = /^---\n([\s\S]*?)\n---/;
 	// Wiki link stripping now uses shared stripWikiLinkSyntax from utils
@@ -317,8 +316,6 @@ ${projectsArray}
 			await this.app.vault.modify(file, newContent);
 		}
 	}
-
-	// ===== UID-based linking methods =====
 
 	/** UID field name in source note frontmatter */
 	private readonly SOURCE_UID_FIELD = "flashcard_uid";

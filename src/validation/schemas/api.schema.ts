@@ -1,21 +1,10 @@
-/**
- * Zod schemas for OpenRouter API responses
- */
 import { z } from "zod";
 
-// ===== OpenRouter API Response Schemas =====
-
-/**
- * Schema for API error response
- */
 export const OpenRouterErrorSchema = z.object({
     message: z.string(),
     code: z.string().optional(),
 });
 
-/**
- * Schema for a single choice in the response
- */
 export const OpenRouterChoiceSchema = z.object({
     message: z.object({
         content: z.string(),
@@ -25,9 +14,6 @@ export const OpenRouterChoiceSchema = z.object({
     index: z.number().optional(),
 });
 
-/**
- * Schema for the complete OpenRouter API response
- */
 export const OpenRouterResponseSchema = z.object({
     id: z.string().optional(),
     model: z.string().optional(),
@@ -40,17 +26,10 @@ export const OpenRouterResponseSchema = z.object({
     }).optional(),
 });
 
-// ===== Chat Message Schema =====
-
-/**
- * Schema for chat messages sent to API
- */
 export const ChatMessageSchema = z.object({
     role: z.enum(["system", "user", "assistant"]),
     content: z.string().min(1, "Message content cannot be empty"),
 });
-
-// ===== Inferred Types from Schemas =====
 
 export type OpenRouterError = z.infer<typeof OpenRouterErrorSchema>;
 export type OpenRouterResponse = z.infer<typeof OpenRouterResponseSchema>;

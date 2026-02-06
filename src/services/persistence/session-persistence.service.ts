@@ -1,7 +1,3 @@
-/**
- * Session Persistence Service
- * Handles persistent storage of daily review statistics in SQL (daily_stats table)
- */
 import { App, normalizePath } from "obsidian";
 import { State, Rating } from "ts-fsrs";
 import type { PersistentStatsData, ExtendedDailyStats, Grade } from "../../types";
@@ -11,10 +7,6 @@ import type { DayBoundaryService } from "../core/day-boundary.service";
 const STATS_FOLDER = ".true-recall";
 const STATS_FILE = "stats.json";
 
-/**
- * Service for persisting review session data across plugin restarts
- * Uses SQLite for storage (daily_stats and daily_reviewed_cards tables)
- */
 export class SessionPersistenceService {
 	private app: App;
 	private store: SqliteStoreService;
@@ -248,8 +240,6 @@ export class SessionPersistenceService {
 			// Don't throw - migration failure shouldn't block plugin startup
 		}
 	}
-
-	// ===== Private helpers =====
 
 	private createEmptyDayStats(date: string): ExtendedDailyStats {
 		return {

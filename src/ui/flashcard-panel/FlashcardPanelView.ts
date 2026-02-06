@@ -448,8 +448,6 @@ export class FlashcardPanelView extends ItemView {
         this.panel.setReviewFollowState(null, false);
     }
 
-    // ===== Private Methods =====
-
     private async loadCurrentFile(): Promise<void> {
         const file = this.app.workspace.getActiveFile();
         this.panel.setCurrentFile(file);
@@ -728,8 +726,6 @@ export class FlashcardPanelView extends ItemView {
         return this.flashcardManager.getCardsByIds(cardIds);
     }
 
-    // ===== Action Handlers =====
-
     private async handleGenerate(): Promise<void> {
         const state = this.panel;
         if (!state.currentFile) return;
@@ -964,8 +960,6 @@ export class FlashcardPanelView extends ItemView {
         notify().success("Copied to clipboard");
     }
 
-    // ===== Export Handlers =====
-
     private async handleCopyAllToClipboard(): Promise<void> {
         const state = this.panel;
         if (!state.flashcardInfo?.flashcards || state.flashcardInfo.flashcards.length === 0) {
@@ -1021,8 +1015,6 @@ export class FlashcardPanelView extends ItemView {
         notify().success(`Exported ${state.flashcardInfo.flashcards.length} flashcard(s) to CSV`);
     }
 
-    // ===== Move Card Handlers =====
-
     private async handleMoveCard(card: FlashcardItem): Promise<void> {
         const state = this.panel;
         if (!state.flashcardInfo) return;
@@ -1055,8 +1047,6 @@ export class FlashcardPanelView extends ItemView {
             notify().operationFailed("move card", error);
         }
     }
-
-    // ===== Selection Handlers for Bulk Operations =====
 
     private async handleMoveSelected(): Promise<void> {
         const state = this.panel;
@@ -1308,12 +1298,6 @@ export class FlashcardPanelView extends ItemView {
         }
     }
 
-    // ===== Selection Tracking for All Notes =====
-
-    /**
-     * Track text selection in the active editor for all note types
-     * Selection-based flashcard generation is now available for all notes
-     */
     private registerSelectionTracking(): void {
         // Function to update selection state
         const updateSelection = () => {
@@ -1370,8 +1354,6 @@ export class FlashcardPanelView extends ItemView {
         const selectedText = selection.toString().trim();
         return selectedText.length > 0 ? selectedText : null;
     }
-
-    // ===== Editor Change Tracking for Real-time #flashcard Detection =====
 
     private registerEditorChangeTracking(): void {
         this.registerEvent(
@@ -1431,8 +1413,6 @@ export class FlashcardPanelView extends ItemView {
             return undefined;
         }
     }
-
-    // ===== Mobile Header FSRS Status =====
 
     private setupMobileHeaderStatus(): void {
         const titleContainer = this.containerEl.querySelector(".view-header-title-container");

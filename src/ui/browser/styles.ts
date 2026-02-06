@@ -1,10 +1,3 @@
-/**
- * Browser Component Styles
- * Pre-computed class strings to avoid repeated string concatenation
- */
-
-// ===== VirtualTable Styles =====
-
 export const TABLE_STYLES = {
     // Containers
     SCROLL_CONTAINER: "ep:relative ep:h-full ep:overflow-auto",
@@ -47,8 +40,6 @@ export const TABLE_STYLES = {
     EMPTY_SUBTITLE: "ep:text-ui-smaller ep:opacity-70",
 } as const;
 
-// ===== Toolbar Styles =====
-
 export const TOOLBAR_STYLES = {
     SEARCH_WRAPPER: "ep:relative ep:flex ep:items-center",
     SEARCH_ICON: "ep:absolute ep:left-2.5 ep:text-obs-muted ep:pointer-events-none ep:flex ep:items-center",
@@ -67,8 +58,6 @@ export const TOOLBAR_STYLES = {
     DROPDOWN_ITEM_DANGER: "ep:text-obs-error ep:hover:bg-red-500/10",
     DROPDOWN_DIVIDER: "ep:h-px ep:my-1 ep:bg-obs-border",
 } as const;
-
-// ===== Sidebar Styles =====
 
 export const SIDEBAR_STYLES = {
     HEADER: "ep:flex ep:items-center ep:justify-between ep:p-3 ep:border-b ep:border-obs-border",
@@ -91,8 +80,6 @@ export const SIDEBAR_STYLES = {
     FILTER_COUNT_DEFAULT: "ep:shrink-0 ep:ml-2 ep:text-[11px] ep:font-medium ep:py-0.5 ep:px-1.5 ep:bg-obs-modifier-hover ep:rounded-full ep:text-obs-muted",
     FILTER_COUNT_SELECTED: "ep:shrink-0 ep:ml-2 ep:text-[11px] ep:font-medium ep:py-0.5 ep:px-1.5 ep:bg-white/20 ep:rounded-full ep:text-on-accent",
 } as const;
-
-// ===== Preview Styles =====
 
 export const PREVIEW_STYLES = {
     EMPTY: "ep:flex ep:flex-col ep:items-center ep:justify-center ep:h-full ep:py-10 ep:px-5 ep:text-obs-muted ep:text-center",
@@ -135,8 +122,6 @@ export const PREVIEW_STYLES = {
     BADGE_BURIED: "ep:bg-obs-modifier-hover ep:text-obs-muted",
     BADGE_UNKNOWN: "ep:bg-obs-modifier-hover ep:text-obs-muted",
 } as const;
-
-// ===== Resize Handle Styles =====
 
 export const RESIZE_STYLES = {
     COLUMN_HANDLE: "ep:absolute ep:right-0 ep:top-0 ep:bottom-0 ep:w-1 ep:cursor-col-resize ep:bg-transparent ep:hover:bg-obs-interactive/50 ep:z-10",

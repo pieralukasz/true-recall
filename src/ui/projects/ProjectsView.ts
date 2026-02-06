@@ -1,7 +1,4 @@
 /**
- * Projects View
- * Panel-based view for managing projects
- *
  * v15: Projects are read from frontmatter (source of truth)
  * v19: Uses FrontmatterIndexService for O(1) project lookups
  */
@@ -19,25 +16,13 @@ import type { ProjectNoteInfo } from "../../types";
 import type { CardReviewedEvent, BulkChangeEvent } from "../../types/events.types";
 import type { ProjectsApi } from "../../state/store";
 
-/**
- * Projects View
- * Panel for managing projects (CRUD, review)
- */
 export class ProjectsView extends ItemView {
 	private plugin: TrueRecallPlugin;
-
-	// UI Components
 	private panelComponent: Panel | null = null;
 	private contentComponent: ProjectsContent | null = null;
 	private selectionFooterComponent: SelectionFooter | null = null;
-
-	// Native header action elements
 	private refreshAction: HTMLElement | null = null;
-
-	// State subscription
 	private unsubscribe: (() => void) | null = null;
-
-	// Event subscriptions for cross-component reactivity
 	private eventUnsubscribers: (() => void)[] = [];
 
 	constructor(leaf: WorkspaceLeaf, plugin: TrueRecallPlugin) {
@@ -61,9 +46,6 @@ export class ProjectsView extends ItemView {
 		return "folder";
 	}
 
-	/**
-	 * Add items to the native "..." menu (mobile)
-	 */
 	onPaneMenu(menu: Menu, source: string): void {
 		super.onPaneMenu(menu, source);
 
@@ -87,41 +69,30 @@ export class ProjectsView extends ItemView {
 		if (!(container instanceof HTMLElement)) return;
 		container.empty();
 
-		// Create Panel component (header is native Obsidian header)
 		this.panelComponent = new Panel(container, { showFooter: true });
 		this.panelComponent.render();
 
-		// Add native refresh action (desktop only - on mobile it's in "..." menu)
 		if (!Platform.isMobile) {
 			this.refreshAction = this.addAction("refresh-cw", "Refresh", () => {
 				void this.loadProjects();
 			});
 		}
 
-		// Subscribe to state changes
 		this.unsubscribe = this.plugin.store!.subscribe(
 			(state) => state.projects,
 			() => this.renderContent()
 		);
 
-		// Initial render
 		this.renderContent();
-
-		// Load projects
 		void this.loadProjects();
-
-		// Subscribe to EventBus for reactive updates
 		this.subscribeToEvents();
 	}
 
 	async onClose(): Promise<void> {
 		this.unsubscribe?.();
-
-		// Cleanup EventBus subscriptions
 		this.eventUnsubscribers.forEach((unsub) => unsub());
 		this.eventUnsubscribers = [];
 
-		// Remove native header action
 		if (this.refreshAction) {
 			this.refreshAction.remove();
 			this.refreshAction = null;
@@ -132,29 +103,18 @@ export class ProjectsView extends ItemView {
 		this.selectionFooterComponent?.destroy();
 	}
 
-	/**
-	 * Load projects using FrontmatterIndexService for O(1) lookups
-	 * v19: Uses FrontmatterIndexService instead of scanning all files
-	 */
 	private async loadProjects(): Promise<void> {
 		this.projects.setLoading(true);
 
 		try {
 			const frontmatterIndex = this.plugin.frontmatterIndex;
-
-			// Get all project names from index (O(1))
 			const allProjectNames = frontmatterIndex.getAllValues("projects");
-
-			// Build project stats and notes using index
 			const projectNoteCounts = new Map<string, number>();
 			const projectNotes = new Map<string, ProjectNoteInfo[]>();
 			const sourceUidToProjects = new Map<string, string[]>();
 
 			for (const projectName of allProjectNames) {
-				// Get files for this project from index (O(1) per project)
 				const files = frontmatterIndex.getFilesByValue("projects", projectName);
-
-				// Build notes array for this project
 				const notes: ProjectNoteInfo[] = [];
 				for (const file of files) {
 					const uid = frontmatterIndex.getValues("flashcard_uid", file.path)[0];
@@ -171,7 +131,6 @@ export class ProjectsView extends ItemView {
 						continue;
 					}
 
-					// Add note to project's notes array
 					notes.push({
 						path: file.path,
 						name: file.basename,
@@ -182,47 +141,36 @@ export class ProjectsView extends ItemView {
 					});
 				}
 				projectNotes.set(projectName, notes);
-				// Set count after filtering out main project note
 				projectNoteCounts.set(projectName, notes.length);
 			}
 
-			// Count cards per project and per note (using sourceUid as key)
 			const projectCardCounts = new Map<string, number>();
 			const projectNewCounts = new Map<string, number>();
 			const projectLearningCounts = new Map<string, number>();
 			const projectDueCounts = new Map<string, number>();
-			const noteCardCounts = new Map<string, Map<string, number>>(); // projectName -> notePath -> count
-			// Per-uid state counts: sourceUid -> { newCount, learningCount, dueCount }
+			const noteCardCounts = new Map<string, Map<string, number>>();
 			const uidStateCounts = new Map<string, { newCount: number; learningCount: number; dueCount: number }>();
-			// For optimized unassigned notes lookup (O(U) instead of O(N*M))
 			const uidCardCounts = new Map<string, number>();
 			const sourceUidToPath = new Map<string, string>();
 			const allCards = this.plugin.cardStore.cards.getAll();
 			const now = new Date();
 			const tomorrowBoundary =
 				this.plugin.dayBoundaryService.getTomorrowBoundary(now);
-
-			// Filter out suspended and buried cards (consistent with ReviewView)
 			const activeCards = filterActiveCardsOnly(allCards, { now });
 
 			for (const card of activeCards) {
 				if (!card.sourceUid) continue;
 
-				// Track total card count per UID (for unassigned notes)
 				uidCardCounts.set(card.sourceUid, (uidCardCounts.get(card.sourceUid) || 0) + 1);
 
 				const projects = sourceUidToProjects.get(card.sourceUid) || [];
-
-				// Find the source file path for this card
 				const sourceFile = frontmatterIndex.getFilesByValue("flashcard_uid", card.sourceUid)[0];
 				if (!sourceFile) continue;
 
-				// Track UID to file path (for unassigned notes lookup, only on first occurrence)
 				if (!sourceUidToPath.has(card.sourceUid)) {
 					sourceUidToPath.set(card.sourceUid, sourceFile.path);
 				}
 
-				// Per-uid state counts (count once per card using sourceUid as key)
 				if (!uidStateCounts.has(card.sourceUid)) {
 					uidStateCounts.set(card.sourceUid, { newCount: 0, learningCount: 0, dueCount: 0 });
 				}
@@ -233,27 +181,22 @@ export class ProjectsView extends ItemView {
 				const isLearning = card.state === State.Learning || card.state === State.Relearning;
 				const isDue = card.state === State.Review && dueDate < tomorrowBoundary;
 
-				// Update uid stats (once per card)
 				if (isNew) uidStats.newCount++;
 				if (isLearning) uidStats.learningCount++;
 				if (isDue) uidStats.dueCount++;
 
-				// Update project-level counts (for each project the note belongs to)
 				for (const projectName of projects) {
-					// Total card count
 					projectCardCounts.set(
 						projectName,
 						(projectCardCounts.get(projectName) || 0) + 1
 					);
 
-					// Update note-level card count (for project)
 					if (!noteCardCounts.has(projectName)) {
 						noteCardCounts.set(projectName, new Map());
 					}
 					const noteCounts = noteCardCounts.get(projectName)!;
 					noteCounts.set(sourceFile.path, (noteCounts.get(sourceFile.path) || 0) + 1);
 
-					// New count: State.New cards (blue in Anki)
 					if (isNew) {
 						projectNewCounts.set(
 							projectName,
@@ -261,7 +204,6 @@ export class ProjectsView extends ItemView {
 						);
 					}
 
-					// Learning count: All Learning/Relearning cards (orange in Anki)
 					if (isLearning) {
 						projectLearningCounts.set(
 							projectName,
@@ -269,7 +211,6 @@ export class ProjectsView extends ItemView {
 						);
 					}
 
-					// Due count: Review cards due today (green in Anki)
 					if (isDue) {
 						projectDueCounts.set(
 							projectName,
@@ -279,13 +220,10 @@ export class ProjectsView extends ItemView {
 				}
 			}
 
-			// Build final projects array with notes
 			const projects = Array.from(projectNoteCounts.keys())
 				.map((name) => {
 					const rawNotes = projectNotes.get(name) ?? [];
 					const noteCountsForProject = noteCardCounts.get(name);
-
-					// Apply card counts to notes (using uid to look up stats)
 					const notesWithCounts = rawNotes.map(note => {
 						const uid = frontmatterIndex.getValues("flashcard_uid", note.path)[0];
 						const stats = uid ? uidStateCounts.get(uid) : undefined;
@@ -311,16 +249,13 @@ export class ProjectsView extends ItemView {
 				})
 				.sort((a, b) => a.name.localeCompare(b.name));
 
-			// Find notes with flashcards but no projects assigned
-			// OPTIMIZED: O(U) where U = unique source UIDs with cards (vs O(N*M) before)
+			// O(U) where U = unique source UIDs with cards (vs O(N*M) before)
 			const unassignedNotes: ProjectNoteInfo[] = [];
 
 			for (const [uid, stats] of uidStateCounts) {
-				// Check if this UID's note has any projects (O(1) lookup)
 				const projects = sourceUidToProjects.get(uid);
 				if (projects && projects.length > 0) continue;
 
-				// No projects - this note is unassigned
 				const filePath = sourceUidToPath.get(uid);
 				if (!filePath) continue;
 
@@ -339,7 +274,6 @@ export class ProjectsView extends ItemView {
 
 			// Sort unassigned notes alphabetically
 			unassignedNotes.sort((a, b) => a.name.localeCompare(b.name));
-
 			this.projects.setProjects(projects);
 			this.projects.setUnassignedNotes(unassignedNotes);
 		} catch (error) {
@@ -349,29 +283,20 @@ export class ProjectsView extends ItemView {
 		}
 	}
 
-	/**
-	 * Subscribe to EventBus events for cross-component reactivity
-	 */
 	private subscribeToEvents(): void {
 		const eventBus = getEventBus();
 
-		// Refresh project stats when cards are reviewed
 		const unsubReviewed = eventBus.on<CardReviewedEvent>("card:reviewed", () => {
 			void this.updateProjectStatsOnly();
 		});
 		this.eventUnsubscribers.push(unsubReviewed);
 
-		// Refresh on bulk changes (suspend, bury, delete, etc.)
 		const unsubBulk = eventBus.on<BulkChangeEvent>("cards:bulk-change", () => {
 			void this.loadProjects();
 		});
 		this.eventUnsubscribers.push(unsubBulk);
 	}
 
-	/**
-	 * Update project statistics only (no full project list reload)
-	 * Recalculates due/new/learning counts from current card store
-	 */
 	private async updateProjectStatsOnly(): Promise<void> {
 		const state = this.projects;
 		if (state.isLoading) return;
@@ -381,7 +306,6 @@ export class ProjectsView extends ItemView {
 		const now = new Date();
 		const tomorrowBoundary = this.plugin.dayBoundaryService.getTomorrowBoundary(now);
 
-		// Build sourceUid -> projects map and sourceUid -> filePath map
 		const sourceUidToProjects = new Map<string, string[]>();
 		const sourceUidToPath = new Map<string, string>();
 		for (const projectName of frontmatterIndex.getAllValues("projects")) {
@@ -399,10 +323,7 @@ export class ProjectsView extends ItemView {
 			}
 		}
 
-		// Filter active cards
 		const activeCards = filterActiveCardsOnly(allCards, { now });
-
-		// Recalculate counts per project and per note
 		const projectCardCounts = new Map<string, number>();
 		const projectNewCounts = new Map<string, number>();
 		const projectLearningCounts = new Map<string, number>();
@@ -414,7 +335,6 @@ export class ProjectsView extends ItemView {
 			const projects = sourceUidToProjects.get(card.sourceUid) || [];
 			const notePath = sourceUidToPath.get(card.sourceUid);
 
-			// Initialize per-note state counts if needed
 			if (notePath && !noteStateCounts.has(notePath)) {
 				noteStateCounts.set(notePath, { newCount: 0, learningCount: 0, dueCount: 0 });
 			}
@@ -453,7 +373,6 @@ export class ProjectsView extends ItemView {
 			}
 		}
 
-		// Update existing projects with new counts (in-place update)
 		const updatedProjects = state.projects.map(project => ({
 			...project,
 			cardCount: projectCardCounts.get(project.name) ?? project.cardCount,
@@ -474,16 +393,11 @@ export class ProjectsView extends ItemView {
 		this.projects.setProjects(updatedProjects);
 	}
 
-	/**
-	 * Handle deleting a project
-	 * Updates frontmatter in all associated notes before removing the project
-	 */
 	private async handleDeleteProject(projectId: string): Promise<void> {
 		const state = this.projects;
 		const project = state.projects.find((p) => p.id === projectId);
 		if (!project) return;
 
-		// Confirm deletion
 		const confirmMessage =
 			project.noteCount > 0
 				? `Delete project "${project.name}"? This will remove it from ${project.noteCount} note(s).`
@@ -499,14 +413,12 @@ export class ProjectsView extends ItemView {
 				this.plugin.flashcardManager.getFrontmatterService();
 			const files = this.app.vault.getMarkdownFiles();
 
-			// Find all notes with this project in frontmatter and remove it
 			for (const file of files) {
 				const content = await this.app.vault.cachedRead(file);
 				const projects =
 					frontmatterService.extractProjectsFromFrontmatter(content);
 
 				if (projects.includes(project.name)) {
-					// Remove project from frontmatter
 					const updatedProjects = projects.filter(
 						(p) => p !== project.name
 					);
@@ -527,11 +439,7 @@ export class ProjectsView extends ItemView {
 		}
 	}
 
-	/**
-	 * Handle starting a review session for a project
-	 */
 	private async handleStartReview(projectName: string): Promise<void> {
-		// Open review view with project filter
 		const leaves = this.app.workspace.getLeavesOfType(VIEW_TYPE_REVIEW);
 		let leaf: WorkspaceLeaf;
 
@@ -552,9 +460,6 @@ export class ProjectsView extends ItemView {
 		void this.app.workspace.revealLeaf(leaf);
 	}
 
-	/**
-	 * Handle starting a review session for unassigned notes
-	 */
 	private async handleStartReviewUnassigned(): Promise<void> {
 		const state = this.projects;
 		const unassignedNotes = state.unassignedNotes;
@@ -564,10 +469,7 @@ export class ProjectsView extends ItemView {
 			return;
 		}
 
-		// Get note names for unassigned notes
 		const noteNames = unassignedNotes.map(note => note.name);
-
-		// Open review view with sourceNoteFilters
 		const leaves = this.app.workspace.getLeavesOfType(VIEW_TYPE_REVIEW);
 		let leaf: WorkspaceLeaf;
 
@@ -589,9 +491,6 @@ export class ProjectsView extends ItemView {
 		void this.app.workspace.revealLeaf(leaf);
 	}
 
-	/**
-	 * Handle starting a review session with selected notes
-	 */
 	private async handleStartReviewSelected(): Promise<void> {
 		const state = this.projects;
 		const selectedPaths = Array.from(state.selectedNotePaths);
@@ -601,7 +500,6 @@ export class ProjectsView extends ItemView {
 			return;
 		}
 
-		// Get note names (basenames) for selected notes
 		// ReviewService.filterCards() expects note names in sourceNoteFilters, not UIDs
 		const noteNames: string[] = [];
 
@@ -617,10 +515,7 @@ export class ProjectsView extends ItemView {
 			return;
 		}
 
-		// Exit selection mode
 		this.projects.exitSelectionMode();
-
-		// Open review view with sourceNoteFilters
 		const leaves = this.app.workspace.getLeavesOfType(VIEW_TYPE_REVIEW);
 		let leaf: WorkspaceLeaf;
 
@@ -642,9 +537,6 @@ export class ProjectsView extends ItemView {
 		void this.app.workspace.revealLeaf(leaf);
 	}
 
-	/**
-	 * Handle creating a project from a selected note
-	 */
 	private async handleCreateFromNote(): Promise<void> {
 		const modal = new SelectNoteModal(this.app, {
 			title: "Create Project from Note",
@@ -655,8 +547,6 @@ export class ProjectsView extends ItemView {
 
 		const note = result.selectedNote;
 		const projectName = note.basename;
-
-		// Check if project already exists
 		const state = this.projects;
 		if (
 			state.projects.some(
@@ -667,14 +557,10 @@ export class ProjectsView extends ItemView {
 			return;
 		}
 
-		// Create project and add note to it
 		await this.createProjectFromNote(note, projectName);
 	}
 
-	/**
-	 * Create a project from a note and add that note to the project
-	 * v16: Projects only in frontmatter (no database)
-	 */
+	// v16: Projects only in frontmatter (no database)
 	private async createProjectFromNote(
 		note: TFile,
 		projectName: string
@@ -683,19 +569,16 @@ export class ProjectsView extends ItemView {
 			const frontmatterService =
 				this.plugin.flashcardManager.getFrontmatterService();
 
-			// Get or create source note UID
 			let sourceUid = await frontmatterService.getSourceNoteUid(note);
 			if (!sourceUid) {
 				sourceUid = frontmatterService.generateUid();
 				await frontmatterService.setSourceNoteUid(note, sourceUid);
 			}
 
-			// Add project to note frontmatter (v16: frontmatter is source of truth)
 			await frontmatterService.setProjectsInFrontmatter(note, [
 				projectName,
 			]);
 
-			// Refresh projects list
 			await this.loadProjects();
 
 			notify().success(`Project "${projectName}" created from note`);
@@ -708,10 +591,6 @@ export class ProjectsView extends ItemView {
 		}
 	}
 
-	/**
-	 * Handle adding notes to a project
-	 * v15: Simplified - opens note selector instead of orphaned notes
-	 */
 	private async handleAddNotesToProject(
 		projectId: string,
 		projectName: string
@@ -727,9 +606,6 @@ export class ProjectsView extends ItemView {
 		await this.addNoteToProject(result.selectedNote, projectName);
 	}
 
-	/**
-	 * Add a single note to a project (update frontmatter)
-	 */
 	private async addNoteToProject(
 		note: TFile,
 		projectName: string
@@ -738,7 +614,6 @@ export class ProjectsView extends ItemView {
 			this.plugin.flashcardManager.getFrontmatterService();
 
 		try {
-			// Get current projects for this note
 			const content = await this.app.vault.cachedRead(note);
 			const currentProjects =
 				frontmatterService.extractProjectsFromFrontmatter(content);
@@ -748,14 +623,12 @@ export class ProjectsView extends ItemView {
 				return;
 			}
 
-			// Add project to frontmatter
 			const newProjects = [...currentProjects, projectName];
 			await frontmatterService.setProjectsInFrontmatter(
 				note,
 				newProjects
 			);
 
-			// Ensure source note has UID
 			let sourceUid = await frontmatterService.getSourceNoteUid(note);
 			if (!sourceUid) {
 				sourceUid = frontmatterService.generateUid();
@@ -773,9 +646,6 @@ export class ProjectsView extends ItemView {
 		}
 	}
 
-	/**
-	 * Render content (Panel is created once in onOpen)
-	 */
 	private renderContent(): void {
 		if (!this.panelComponent) return;
 
@@ -785,7 +655,6 @@ export class ProjectsView extends ItemView {
 
 		const contentContainer = this.panelComponent.getContentContainer();
 
-		// Create component once, then just update props
 		if (!this.contentComponent) {
 			contentContainer.empty();
 			this.contentComponent = new ProjectsContent(contentContainer, {
@@ -804,7 +673,6 @@ export class ProjectsView extends ItemView {
 				onCreateFromNote: () => void this.handleCreateFromNote(),
 				onRefresh: () => void this.loadProjects(),
 				onToggleExpand: (id) => this.projects.toggleProjectExpanded(id),
-				// Selection props
 				selectionMode: state.selectionMode,
 				selectedNotePaths: state.selectedNotePaths,
 				onEnterSelectionMode: (path) =>
@@ -812,18 +680,15 @@ export class ProjectsView extends ItemView {
 				onExitSelectionMode: () => this.projects.exitSelectionMode(),
 				onToggleNoteSelection: (path) =>
 					this.projects.toggleNoteSelection(path),
-				// Unassigned notes props
 				unassignedNotes: state.unassignedNotes,
 				isUnassignedExpanded: state.isUnassignedExpanded,
 				onToggleUnassignedExpanded: () => this.projects.toggleUnassignedExpanded(),
 				onStartReviewUnassigned: () => void this.handleStartReviewUnassigned(),
-				// Show/hide done notes
 				showDoneNotes: state.showDoneNotes,
 				onToggleShowDoneNotes: () => this.projects.toggleShowDoneNotes(),
 			});
 			this.contentComponent.render();
 		} else {
-			// Just update props - don't destroy/recreate
 			this.contentComponent.updateProps({
 				isLoading: state.isLoading,
 				projectsWithCards,
@@ -838,33 +703,25 @@ export class ProjectsView extends ItemView {
 			});
 		}
 
-		// Render selection footer when in selection mode
 		this.renderSelectionFooter();
 	}
 
-	/**
-	 * Render selection footer (only in selection mode)
-	 */
 	private renderSelectionFooter(): void {
 		const footerContainer = this.panelComponent?.getFooterContainer();
 		if (!footerContainer) return;
 
 		const state = this.projects;
 
-		// Clean up existing footer
 		this.selectionFooterComponent?.destroy();
 		this.selectionFooterComponent = null;
 		footerContainer.empty();
 
-		// Only show footer in selection mode
 		if (state.selectionMode === "selecting") {
-			// Calculate sums from selected notes
 			const selectedPaths = state.selectedNotePaths;
 			let newCount = 0;
 			let learningCount = 0;
 			let dueCount = 0;
 
-			// Iterate through all projects and their notes to sum counts
 			for (const project of state.projects) {
 				for (const note of project.notes) {
 					if (selectedPaths.has(note.path)) {
@@ -875,7 +732,6 @@ export class ProjectsView extends ItemView {
 				}
 			}
 
-			// Also include unassigned notes
 			for (const note of state.unassignedNotes) {
 				if (selectedPaths.has(note.path)) {
 					newCount += note.newCount;
@@ -910,9 +766,6 @@ export class ProjectsView extends ItemView {
 		}
 	}
 
-	/**
-	 * Handle adding selected notes to a project
-	 */
 	private async handleAddSelectedToProject(): Promise<void> {
 		const state = this.projects;
 		const selectedPaths = Array.from(state.selectedNotePaths);
@@ -922,35 +775,28 @@ export class ProjectsView extends ItemView {
 			return;
 		}
 
-		// Get all available project names
 		const availableProjects = [...this.plugin.frontmatterIndex.getAllValues("projects")];
 
-		// Open modal to select projects
 		const modal = new AddToProjectModal(this.app, {
 			availableProjects,
-			currentProjects: [], // No common projects pre-selected
+			currentProjects: [],
 		});
 
 		const result = await modal.openAndWait();
 		if (result.cancelled || result.projects.length === 0) return;
 
-		// Add selected projects to each selected note
 		const frontmatterService = this.plugin.flashcardManager.getFrontmatterService();
 
 		for (const path of selectedPaths) {
 			const file = this.app.vault.getAbstractFileByPath(path);
 			if (!(file instanceof TFile)) continue;
 
-			// Get current projects for this note
 			const content = await this.app.vault.cachedRead(file);
 			const currentProjects = frontmatterService.extractProjectsFromFrontmatter(content);
-
-			// Merge with new projects (avoid duplicates)
 			const newProjects = [...new Set([...currentProjects, ...result.projects])];
 			await frontmatterService.setProjectsInFrontmatter(file, newProjects);
 		}
 
-		// Exit selection mode and refresh
 		this.projects.exitSelectionMode();
 		await this.loadProjects();
 		notify().success(`Added ${selectedPaths.length} note(s) to ${result.projects.length} project(s)`);

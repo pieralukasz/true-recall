@@ -80,8 +80,6 @@ export class SqliteStoreService {
         return this.isLoaded && this.db.isReady();
     }
 
-    // ===== Core CardStore methods =====
-
     get(cardId: string): FSRSCardData | undefined {
         return this.cards.get(cardId);
     }
@@ -115,8 +113,6 @@ export class SqliteStoreService {
         return this.cards.getByIds(cardIds);
     }
 
-    // ===== Content & Source Operations =====
-
     getCardsWithContent(): FSRSCardData[] {
         return this.cards.getCardsWithContent();
     }
@@ -148,8 +144,6 @@ export class SqliteStoreService {
         }
         await this.doFlush();
     }
-
-    // ===== Persistence =====
 
     private getDbPath(): string {
         const filename = getDeviceDbFilename(this.deviceId);
@@ -306,8 +300,6 @@ export class SqliteStoreService {
     getBrowserQueries() {
         return this.browser;
     }
-
-    // ===== FSRS Helper Operations =====
 
     getCards(): FSRSCardData[] {
         return this.cards.getAll();
