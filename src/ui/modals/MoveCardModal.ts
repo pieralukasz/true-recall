@@ -4,6 +4,7 @@
  */
 import { App, TFile } from "obsidian";
 import { BasePromiseModal } from "./BasePromiseModal";
+import { filterNotesByQuery, MAX_DISPLAY_NOTES, renderTruncationMessage } from "./note-filter.utils";
 
 export interface MoveCardResult {
 	cancelled: boolean;
@@ -221,20 +222,13 @@ export class MoveCardModal extends BasePromiseModal<MoveCardResult> {
 			return;
 		}
 
-		// Show max 50 notes to prevent performance issues
-		const displayNotes = filteredNotes.slice(0, 50);
+		const displayNotes = filteredNotes.slice(0, MAX_DISPLAY_NOTES);
 
 		for (const note of displayNotes) {
 			this.renderNoteItem(this.noteListEl, note, false);
 		}
 
-		// Show "more results" message if truncated
-		if (filteredNotes.length > 50) {
-			this.noteListEl.createEl("div", {
-				text: `Showing 50 of ${filteredNotes.length} notes. Type to search for more.`,
-				cls: "ep:p-3 ep:text-center ep:text-obs-muted ep:text-ui-small",
-			});
-		}
+		renderTruncationMessage(this.noteListEl, filteredNotes.length);
 	}
 
 	private getValidNotes(): TFile[] {
@@ -249,39 +243,15 @@ export class MoveCardModal extends BasePromiseModal<MoveCardResult> {
 	}
 
 	private filterNotes(): TFile[] {
-		const notes = [...this.allNotes];
-
-		if (!this.searchQuery) {
-			// Sort by modification time (most recent first) when no search
-			return notes.sort((a, b) => b.stat.mtime - a.stat.mtime);
-		}
-
-		const query = this.searchQuery.toLowerCase();
-
 		// Tag search mode: query starts with #
-		if (query.startsWith("#")) {
-			const tagPrefix = query.slice(1); // Remove #
-			return notes
+		if (this.searchQuery.startsWith("#")) {
+			const tagPrefix = this.searchQuery.slice(1).toLowerCase();
+			return [...this.allNotes]
 				.filter(note => this.noteHasTagPrefix(note, tagPrefix))
 				.sort((a, b) => b.stat.mtime - a.stat.mtime);
 		}
 
-		// Normal search: filter by name/path
-		return notes
-			.filter((note) => {
-				return (
-					note.basename.toLowerCase().includes(query) ||
-					note.path.toLowerCase().includes(query)
-				);
-			})
-			.sort((a, b) => {
-				// Prioritize exact basename matches
-				const aExact = a.basename.toLowerCase().startsWith(query);
-				const bExact = b.basename.toLowerCase().startsWith(query);
-				if (aExact && !bExact) return -1;
-				if (bExact && !aExact) return 1;
-				return a.basename.localeCompare(b.basename);
-			});
+		return filterNotesByQuery(this.allNotes, this.searchQuery);
 	}
 
 	private selectNote(notePath: string): void {

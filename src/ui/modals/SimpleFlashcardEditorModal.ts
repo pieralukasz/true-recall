@@ -10,6 +10,7 @@ import { ImageService } from "../../services/image";
 import type { FlashcardItem, TrueRecallSettings } from "../../types";
 import { BATCH_IMPORT_PARSE_PROMPT, FLASHCARD_CONFIG } from "../../constants";
 import { FlashcardReviewModal } from "./FlashcardReviewModal";
+import { SECONDARY_BUTTON_CLASSES } from "../utils/tailwind";
 
 export interface SimpleFlashcardEditorResult {
 	cancelled: boolean;
@@ -449,7 +450,7 @@ export class SimpleFlashcardEditorModal extends BaseModal {
 
 		const cancelBtn = rightEl.createEl("button", {
 			text: "Cancel",
-			cls: "ep:py-2.5 ep:px-5 ep:bg-obs-secondary ep:text-obs-normal ep:border ep:border-obs-border ep:rounded-md ep:cursor-pointer ep:font-medium ep:transition-colors ep:hover:bg-obs-modifier-hover",
+			cls: SECONDARY_BUTTON_CLASSES,
 		});
 		cancelBtn.addEventListener("click", () => this.close());
 
@@ -457,7 +458,7 @@ export class SimpleFlashcardEditorModal extends BaseModal {
 		if (this.options.openRouterService && this.options.settings) {
 			this.saveWithAIButton = rightEl.createEl("button", {
 				text: "Save with AI",
-				cls: "ep:py-2.5 ep:px-5 ep:bg-obs-secondary ep:text-obs-normal ep:border ep:border-obs-border ep:rounded-md ep:cursor-pointer ep:font-medium ep:transition-colors ep:hover:bg-obs-modifier-hover",
+				cls: SECONDARY_BUTTON_CLASSES,
 			});
 			this.saveWithAIButton.addEventListener("click", () => void this.handleSaveWithAI());
 		}

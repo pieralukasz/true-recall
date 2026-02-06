@@ -9,6 +9,7 @@ import type {
 } from "../types";
 import type { FlashcardInfo } from "../../../types";
 import type { AppError } from "../../../errors";
+import { createSelectionActions, toggleSetItem } from "../helpers/slice-helpers";
 
 type PanelSlice = PanelSliceState & PanelSliceActions;
 
@@ -185,57 +186,17 @@ export function createPanelSlice(
 			return get().panel.uncollectedCount > 0;
 		},
 
-		enterSelectionMode: (initialCardId?: string) => {
-			const selectedCardIds = new Set<string>();
-			if (initialCardId) {
-				selectedCardIds.add(initialCardId);
-			}
-			set((s) => ({
-				panel: {
-					...s.panel,
-					selectionMode: "selecting",
-					selectedCardIds,
-				},
-			}));
-		},
+		...(() => {
+			const sel = createSelectionActions(set, get, "panel", "selectionMode", "selectedCardIds");
+			return {
+				enterSelectionMode: sel.enterSelectionMode,
+				exitSelectionMode: sel.exitSelectionMode,
+				toggleCardSelection: sel.toggleSelection,
+				isInSelectionMode: sel.isInSelectionMode,
+			};
+		})(),
 
-		exitSelectionMode: () => {
-			set((s) => ({
-				panel: {
-					...s.panel,
-					selectionMode: "normal",
-					selectedCardIds: new Set(),
-				},
-			}));
-		},
-
-		toggleCardSelection: (cardId: string) => {
-			const newSet = new Set(get().panel.selectedCardIds);
-			if (newSet.has(cardId)) {
-				newSet.delete(cardId);
-			} else {
-				newSet.add(cardId);
-			}
-			set((s) => ({
-				panel: { ...s.panel, selectedCardIds: newSet },
-			}));
-		},
-
-		toggleCardExpanded: (cardId: string) => {
-			const newSet = new Set(get().panel.expandedCardIds);
-			if (newSet.has(cardId)) {
-				newSet.delete(cardId);
-			} else {
-				newSet.add(cardId);
-			}
-			set((s) => ({
-				panel: { ...s.panel, expandedCardIds: newSet },
-			}));
-		},
-
-		isInSelectionMode: () => {
-			return get().panel.selectionMode === "selecting";
-		},
+		toggleCardExpanded: toggleSetItem(set, get, "panel", "expandedCardIds"),
 
 		setSearchQuery: (query: string) => {
 			set((s) => ({

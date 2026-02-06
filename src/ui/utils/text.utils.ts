@@ -2,6 +2,7 @@
  * Text Utilities
  * Common text formatting functions for UI components
  */
+import { BR_REGEX } from "../../utils";
 
 /**
  * Truncate text to a maximum length with ellipsis
@@ -17,7 +18,7 @@ export function truncateText(text: string, maxLength: number): string {
  */
 export function stripHtml(html: string): string {
 	return html
-		.replace(/<br\s*\/?>/gi, " ")
+		.replace(BR_REGEX, " ")
 		.replace(/<[^>]+>/g, "")
 		.replace(/\s+/g, " ")
 		.trim();

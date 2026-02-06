@@ -2,6 +2,7 @@
  * Editable Text Field Component
  * Provides a textarea with optional formatting toolbar, auto-resize, and toggle logic
  */
+import { stripBrTags } from "../../utils";
 import { BaseComponent } from "../component.base";
 import {
 	toggleTextareaWrap,
@@ -209,8 +210,7 @@ export class EditableTextField extends BaseComponent {
 			});
 		}
 
-		// Set initial value (convert <br> to newlines for editing)
-		this.textarea.value = this.props.initialValue.replace(/<br\s*\/?>/gi, "\n");
+		this.textarea.value = stripBrTags(this.props.initialValue);
 
 		// Setup auto-resize
 		this.cleanupAutoResize = setupAutoResize(this.textarea);
@@ -363,7 +363,7 @@ export class EditableTextField extends BaseComponent {
 	 */
 	setValue(value: string): void {
 		if (this.textarea) {
-			this.textarea.value = value.replace(/<br\s*\/?>/gi, "\n");
+			this.textarea.value = stripBrTags(value);
 		}
 	}
 

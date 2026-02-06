@@ -4,6 +4,7 @@
  */
 import { App, TFile, normalizePath } from "obsidian";
 import { BasePromiseModal } from "./BasePromiseModal";
+import { filterNotesByQuery, MAX_DISPLAY_NOTES, renderTruncationMessage } from "./note-filter.utils";
 
 export interface SelectNoteResult {
 	cancelled: boolean;
@@ -82,8 +83,7 @@ export class SelectNoteModal extends BasePromiseModal<SelectNoteResult> {
 			return;
 		}
 
-		// Show max 50 notes
-		const displayNotes = filteredNotes.slice(0, 50);
+		const displayNotes = filteredNotes.slice(0, MAX_DISPLAY_NOTES);
 
 		for (const note of displayNotes) {
 			const folderPath = note.parent?.path;
@@ -98,13 +98,7 @@ export class SelectNoteModal extends BasePromiseModal<SelectNoteResult> {
 			);
 		}
 
-		// Show "more results" message if truncated
-		if (filteredNotes.length > 50) {
-			this.noteListEl.createEl("div", {
-				text: `Showing 50 of ${filteredNotes.length} notes. Type to search for more.`,
-				cls: "ep:p-3 ep:text-center ep:text-obs-muted ep:text-ui-small",
-			});
-		}
+		renderTruncationMessage(this.noteListEl, filteredNotes.length);
 	}
 
 	private getValidNotes(): TFile[] {
@@ -123,30 +117,7 @@ export class SelectNoteModal extends BasePromiseModal<SelectNoteResult> {
 	}
 
 	private filterNotes(): TFile[] {
-		let notes = [...this.allNotes];
-
-		if (!this.searchQuery) {
-			// Sort by modification time (most recent first)
-			return notes.sort((a, b) => b.stat.mtime - a.stat.mtime);
-		}
-
-		// Filter by search query
-		const query = this.searchQuery.toLowerCase();
-		return notes
-			.filter((note) => {
-				return (
-					note.basename.toLowerCase().includes(query) ||
-					note.path.toLowerCase().includes(query)
-				);
-			})
-			.sort((a, b) => {
-				// Prioritize exact basename matches
-				const aExact = a.basename.toLowerCase().startsWith(query);
-				const bExact = b.basename.toLowerCase().startsWith(query);
-				if (aExact && !bExact) return -1;
-				if (bExact && !aExact) return 1;
-				return a.basename.localeCompare(b.basename);
-			});
+		return filterNotesByQuery(this.allNotes, this.searchQuery);
 	}
 
 	private selectNote(note: TFile): void {
