@@ -37,10 +37,9 @@ import {
 	getEmptyQueueMessage,
 } from "./helpers";
 import { CopilotIntegrationService } from "../../services/integration/copilot-integration.service";
+import { BR_REGEX } from "../../utils";
 
 export class ReviewView extends ItemView {
-	// Pre-compiled regex for converting legacy <br> tags (avoid recompiling on every render)
-	private static readonly BR_REGEX = /<br\s*\/?>/gi;
 
 	private plugin: TrueRecallPlugin;
 	private fsrsService: FSRSService;
@@ -968,8 +967,8 @@ export class ReviewView extends ItemView {
 		// Only save if content actually changed
 		// Compare with normalized content (convert legacy <br> to newlines for comparison)
 		const normalizedOriginal = field === "question"
-			? editState.originalQuestion.replace(ReviewView.BR_REGEX, "\n")
-			: editState.originalAnswer.replace(ReviewView.BR_REGEX, "\n");
+			? editState.originalQuestion.replace(BR_REGEX, "\n")
+			: editState.originalAnswer.replace(BR_REGEX, "\n");
 		const hasChanges = newContent !== normalizedOriginal;
 
 		if (hasChanges) {

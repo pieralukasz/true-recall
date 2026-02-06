@@ -8,6 +8,7 @@
  * - Nested paths (e.g., "metadata.category")
  */
 import { TFile, type App, type CachedMetadata, type Plugin } from "obsidian";
+import { stripWikiLinkSyntax } from "../../utils";
 
 export interface FieldConfig {
 	/** Field path in frontmatter (e.g., "flashcard_uid", "projects", "metadata.category") */
@@ -71,12 +72,8 @@ export class FrontmatterIndexService {
 		return current;
 	}
 
-	/**
-	 * Strip wiki link syntax from value
-	 * "[[Note Name]]" -> "Note Name"
-	 */
 	private stripWikiLinkSyntax(value: string): string {
-		return value.replace(/^\[\[|\]\]$/g, "").trim();
+		return stripWikiLinkSyntax(value);
 	}
 
 	private extractValues(frontmatter: Record<string, unknown> | undefined, config: FieldConfig): string[] {

@@ -4,6 +4,7 @@
  */
 import type { App, Component, MarkdownRenderer } from "obsidian";
 import type { FlashcardItem } from "../../types";
+import { stripBrTags } from "../../utils";
 import { BaseComponent } from "../component.base";
 
 export interface CardPreviewHandlers {
@@ -97,7 +98,7 @@ export class CardPreview extends BaseComponent {
 		// Render markdown (strip <br> tags for cleaner display)
 		void markdownRenderer.render(
 			handlers.app,
-			this.stripBrTags(flashcard.question),
+			stripBrTags(flashcard.question),
 			questionContent,
 			filePath,
 			handlers.component
@@ -126,19 +127,11 @@ export class CardPreview extends BaseComponent {
 		// Render markdown (strip <br> tags for cleaner display)
 		void markdownRenderer.render(
 			handlers.app,
-			this.stripBrTags(flashcard.answer),
+			stripBrTags(flashcard.answer),
 			answerContent,
 			filePath,
 			handlers.component
 		);
-	}
-
-	/**
-	 * Remove <br> tags from text for cleaner display
-	 * Replaces <br>, <br/>, <br /> with newlines
-	 */
-	private stripBrTags(text: string): string {
-		return text.replace(/<br\s*\/?>/gi, "\n");
 	}
 
 	private renderActions(header: HTMLElement): void {

@@ -5,6 +5,7 @@ import type {
 	ProjectsSliceActions,
 } from "../types";
 import type { ProjectInfo, ProjectNoteInfo } from "../../../types";
+import { createSelectionActions, toggleSetItem } from "../helpers/slice-helpers";
 
 type ProjectsSlice = ProjectsSliceState & ProjectsSliceActions;
 
@@ -97,65 +98,22 @@ export function createProjectsSlice(
 			}));
 		},
 
-		toggleProjectExpanded: (projectId: string) => {
-			const newSet = new Set(get().projects.expandedProjectIds);
-			if (newSet.has(projectId)) {
-				newSet.delete(projectId);
-			} else {
-				newSet.add(projectId);
-			}
-			set((s) => ({
-				projects: { ...s.projects, expandedProjectIds: newSet },
-			}));
-		},
+		toggleProjectExpanded: toggleSetItem(set, get, "projects", "expandedProjectIds"),
 
 		isProjectExpanded: (projectId: string) => {
 			return get().projects.expandedProjectIds.has(projectId);
 		},
 
-		enterSelectionMode: (initialNotePath?: string) => {
-			const selectedNotePaths = new Set<string>();
-			if (initialNotePath) {
-				selectedNotePaths.add(initialNotePath);
-			}
-			set((s) => ({
-				projects: {
-					...s.projects,
-					selectionMode: "selecting",
-					selectedNotePaths,
-				},
-			}));
-		},
-
-		exitSelectionMode: () => {
-			set((s) => ({
-				projects: {
-					...s.projects,
-					selectionMode: "normal",
-					selectedNotePaths: new Set<string>(),
-				},
-			}));
-		},
-
-		toggleNoteSelection: (notePath: string) => {
-			const newSet = new Set(get().projects.selectedNotePaths);
-			if (newSet.has(notePath)) {
-				newSet.delete(notePath);
-			} else {
-				newSet.add(notePath);
-			}
-			set((s) => ({
-				projects: { ...s.projects, selectedNotePaths: newSet },
-			}));
-		},
-
-		isInSelectionMode: () => {
-			return get().projects.selectionMode === "selecting";
-		},
-
-		getSelectedNotePaths: () => {
-			return Array.from(get().projects.selectedNotePaths);
-		},
+		...(() => {
+			const sel = createSelectionActions(set, get, "projects", "selectionMode", "selectedNotePaths");
+			return {
+				enterSelectionMode: sel.enterSelectionMode,
+				exitSelectionMode: sel.exitSelectionMode,
+				toggleNoteSelection: sel.toggleSelection,
+				isInSelectionMode: sel.isInSelectionMode,
+				getSelectedNotePaths: sel.getSelectedIds,
+			};
+		})(),
 
 		updateProject: (projectId: string, updates: Partial<ProjectInfo>) => {
 			const projects = get().projects.projects.map((p) =>

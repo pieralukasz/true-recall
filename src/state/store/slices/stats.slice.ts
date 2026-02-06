@@ -1,18 +1,5 @@
-import type { AppState, AppStoreDeps } from "../types";
+import type { AppState, AppStoreDeps, StatsSliceState, StatsSliceActions } from "../types";
 import type { FlashcardEventType } from "../../../types/events.types";
-
-export interface StatsSliceState {
-	isStale: boolean;
-	lastRefreshed: number;
-}
-
-export interface StatsSliceActions {
-	markStale: () => void;
-	markFresh: () => void;
-	getIsStale: () => boolean;
-}
-
-export type StatsApi = StatsSliceState & StatsSliceActions;
 
 type StatsSlice = StatsSliceState & StatsSliceActions;
 

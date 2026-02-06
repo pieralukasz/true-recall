@@ -15,6 +15,7 @@ import type {
 } from "../../types";
 import { formatInterval } from "../../types";
 import { DEFAULT_FSRS_WEIGHTS } from "../../constants";
+import { getTomorrowBoundary } from "../../utils";
 
 export class FSRSService {
 	private fsrs: FSRS;
@@ -182,24 +183,11 @@ export class FSRSService {
 		now?: Date,
 		dayStartHour = 4
 	): FSRSFlashcardItem[] {
-		const currentTime = now ?? new Date();
-
-		// Calculate "today" boundary based on dayStartHour (like Anki's "Next day starts at")
-		// If current hour < dayStartHour, we're still in "yesterday"
-		const todayBoundary = new Date(currentTime);
-		if (currentTime.getHours() < dayStartHour) {
-			todayBoundary.setDate(todayBoundary.getDate() - 1);
-		}
-		todayBoundary.setHours(dayStartHour, 0, 0, 0);
-
-		// Tomorrow boundary = end of "today"
-		const tomorrowBoundary = new Date(todayBoundary);
-		tomorrowBoundary.setDate(tomorrowBoundary.getDate() + 1);
+		const tomorrowBoundary = getTomorrowBoundary(dayStartHour, now);
 
 		return cards.filter((card) => {
 			if (card.fsrs.state !== State.Review) return false;
 			const dueDate = new Date(card.fsrs.due);
-			// Card is due if its due date is before tomorrow's boundary
 			return dueDate < tomorrowBoundary;
 		});
 	}

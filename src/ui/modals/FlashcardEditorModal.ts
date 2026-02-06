@@ -11,6 +11,7 @@ import {
 	ToolbarButton,
 	insertAtTextareaCursor,
 } from "../components";
+import { SECONDARY_BUTTON_CLASSES } from "../utils/tailwind";
 
 export interface FlashcardEditorResult {
 	cancelled: boolean;
@@ -447,7 +448,7 @@ export class FlashcardEditorModal extends BaseModal {
 
 		const cancelBtn = this.buttonsContainer.createEl("button", {
 			text: "Cancel",
-			cls: "ep:py-2.5 ep:px-5 ep:bg-obs-secondary ep:text-obs-normal ep:border ep:border-obs-border ep:rounded-md ep:cursor-pointer ep:font-medium ep:transition-colors ep:hover:bg-obs-modifier-hover",
+			cls: SECONDARY_BUTTON_CLASSES,
 		});
 		cancelBtn.addEventListener("click", () => this.close());
 
