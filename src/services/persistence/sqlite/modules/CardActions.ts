@@ -8,12 +8,6 @@
 import type { FSRSCardData } from "types";
 import { SqliteDatabase } from "../SqliteDatabase";
 
-// ===== Centralized Column Definitions =====
-
-/**
- * SQL SELECT columns with aliases for standard card queries
- * Used by get, getAll, getByIds, getCardsBySourceUid, getOrphanedCards, getAllIncludingDeleted
- */
 const CARD_SELECT_COLUMNS = `
     id, due, stability, difficulty, reps, lapses, state,
     last_review as lastReview,
@@ -27,9 +21,6 @@ const CARD_SELECT_COLUMNS = `
     source_uid as sourceUid
 `;
 
-/**
- * SQL SELECT columns for sync queries (includes updated_at, deleted_at)
- */
 const CARD_SELECT_COLUMNS_FOR_SYNC = `
     id, due, stability, difficulty, reps, lapses, state,
     last_review as lastReview,
@@ -45,9 +36,6 @@ const CARD_SELECT_COLUMNS_FOR_SYNC = `
     source_uid as sourceUid
 `;
 
-/**
- * Raw row type returned by SQL queries
- */
 interface CardRow {
     id: string;
     due: string;
@@ -69,9 +57,6 @@ interface CardRow {
     sourceUid: string | null;
 }
 
-/**
- * Map a raw SQL row to FSRSCardData
- */
 function mapRowToCard(row: CardRow): FSRSCardData {
     return {
         id: row.id,
@@ -93,9 +78,6 @@ function mapRowToCard(row: CardRow): FSRSCardData {
     };
 }
 
-/**
- * Map a raw SQL row to FSRSCardData with sync fields
- */
 function mapRowToCardWithSync(row: CardRow): FSRSCardData & { updatedAt?: number; deletedAt?: number | null } {
     return {
         ...mapRowToCard(row),
@@ -104,17 +86,9 @@ function mapRowToCardWithSync(row: CardRow): FSRSCardData & { updatedAt?: number
     };
 }
 
-// ===== Card CRUD Operations =====
-
-/**
- * Card CRUD operations
- */
 export class CardActions {
     constructor(private db: SqliteDatabase) {}
 
-    /**
-     * Get a card by ID
-     */
     get(cardId: string): FSRSCardData | undefined {
         const row = this.db.get<CardRow>(
             `SELECT ${CARD_SELECT_COLUMNS} FROM cards WHERE id = ? AND deleted_at IS NULL`,
@@ -125,9 +99,6 @@ export class CardActions {
         return mapRowToCard(row);
     }
 
-    /**
-     * Set/update a card
-     */
     set(cardId: string, data: FSRSCardData): void {
         const now = Date.now();
 
@@ -167,9 +138,6 @@ export class CardActions {
         ]);
     }
 
-    /**
-     * Soft delete a card
-     */
     softDelete(cardId: string): void {
         const now = Date.now();
         this.db.run(
@@ -178,17 +146,11 @@ export class CardActions {
         );
     }
 
-    /**
-     * Hard delete a card (for cleanup operations)
-     * @deprecated Use softDelete() instead for sync compatibility
-     */
+    /** @deprecated Use softDelete() instead for sync compatibility */
     delete(cardId: string): void {
         this.db.run(`DELETE FROM cards WHERE id = ?`, [cardId]);
     }
 
-    /**
-     * Check if a card exists
-     */
     has(cardId: string): boolean {
         return this.db.get<{ found: number }>(
             `SELECT 1 as found FROM cards WHERE id = ? AND deleted_at IS NULL LIMIT 1`,
@@ -196,17 +158,11 @@ export class CardActions {
         ) !== null;
     }
 
-    /**
-     * Get all card IDs
-     */
     keys(): string[] {
         const rows = this.db.query<{ id: string }>(`SELECT id FROM cards WHERE deleted_at IS NULL`);
         return rows.map((r) => r.id);
     }
 
-    /**
-     * Get all cards
-     */
     getAll(): FSRSCardData[] {
         const rows = this.db.query<CardRow>(
             `SELECT ${CARD_SELECT_COLUMNS} FROM cards WHERE deleted_at IS NULL`
@@ -214,19 +170,12 @@ export class CardActions {
         return rows.map(mapRowToCard);
     }
 
-    /**
-     * Get total card count
-     */
     size(): number {
         return this.db.get<{ count: number }>(
             `SELECT COUNT(*) as count FROM cards WHERE deleted_at IS NULL`
         )?.count ?? 0;
     }
 
-    /**
-     * Get multiple cards by IDs (optimized batch fetch)
-     * Uses SQL WHERE IN instead of fetching all cards and filtering
-     */
     getByIds(cardIds: string[]): FSRSCardData[] {
         if (cardIds.length === 0) return [];
 
@@ -238,11 +187,6 @@ export class CardActions {
         return rows.map(mapRowToCard);
     }
 
-    // ===== Content Operations =====
-
-    /**
-     * Update only card content (question/answer)
-     */
     updateCardContent(cardId: string, question: string, answer: string): void {
         this.db.run(`
             UPDATE cards SET
@@ -253,9 +197,6 @@ export class CardActions {
         `, [question, answer, Date.now(), cardId]);
     }
 
-    /**
-     * Get cards by source note UID
-     */
     getCardsBySourceUid(sourceUid: string): FSRSCardData[] {
         const rows = this.db.query<CardRow>(
             `SELECT ${CARD_SELECT_COLUMNS} FROM cards WHERE source_uid = ? AND deleted_at IS NULL ORDER BY created_at ASC, id ASC`,
@@ -264,10 +205,7 @@ export class CardActions {
         return rows.map(mapRowToCard);
     }
 
-    /**
-     * Get all cards with content (v15: no note_projects, source_notes has only uid)
-     * Source note name/path and projects are resolved at runtime from vault
-     */
+    // Source note name/path and projects are resolved at runtime from vault
     getCardsWithContent(): FSRSCardData[] {
         const rows = this.db.query<CardRow>(
             `SELECT ${CARD_SELECT_COLUMNS} FROM cards WHERE deleted_at IS NULL AND question IS NOT NULL`
@@ -282,9 +220,6 @@ export class CardActions {
         }));
     }
 
-    /**
-     * Check if card has content
-     */
     hasCardContent(cardId: string): boolean {
         return this.db.get<{ found: number }>(
             `SELECT 1 as found FROM cards
@@ -294,9 +229,6 @@ export class CardActions {
         ) !== null;
     }
 
-    /**
-     * Check if any cards have content
-     */
     hasAnyCardContent(): boolean {
         return this.db.get<{ found: number }>(
             `SELECT 1 as found FROM cards
@@ -305,9 +237,6 @@ export class CardActions {
         ) !== null;
     }
 
-    /**
-     * Get count of cards with content
-     */
     getCardsWithContentCount(): number {
         return this.db.get<{ count: number }>(
             `SELECT COUNT(*) as count FROM cards
@@ -315,11 +244,6 @@ export class CardActions {
         )?.count ?? 0;
     }
 
-    // ===== Orphaned Cards Operations =====
-
-    /**
-     * Get all orphaned cards (cards without source_uid)
-     */
     getOrphanedCards(): FSRSCardData[] {
         const rows = this.db.query<CardRow>(
             `SELECT ${CARD_SELECT_COLUMNS} FROM cards WHERE deleted_at IS NULL AND source_uid IS NULL AND question IS NOT NULL`
@@ -327,9 +251,6 @@ export class CardActions {
         return rows.map(mapRowToCard);
     }
 
-    /**
-     * Update source_uid for a card
-     */
     updateCardSourceUid(cardId: string, sourceUid: string): void {
         this.db.run(`
             UPDATE cards SET
@@ -339,9 +260,6 @@ export class CardActions {
         `, [sourceUid, Date.now(), cardId]);
     }
 
-    /**
-     * Get card ID by exact question match
-     */
     getCardIdByQuestion(question: string): string | undefined {
         return this.db.get<{ id: string }>(
             `SELECT id FROM cards WHERE deleted_at IS NULL AND question = ? LIMIT 1`,
@@ -349,11 +267,6 @@ export class CardActions {
         )?.id;
     }
 
-    // ===== Soft Delete Operations =====
-
-    /**
-     * Soft delete a card with cascade to related records
-     */
     softDeleteWithCascade(cardId: string): void {
         const now = Date.now();
         this.db.transaction(() => {
@@ -368,9 +281,6 @@ export class CardActions {
         });
     }
 
-    /**
-     * Get all cards including soft-deleted (for sync)
-     */
     getAllIncludingDeleted(): FSRSCardData[] {
         const rows = this.db.query<CardRow>(
             `SELECT ${CARD_SELECT_COLUMNS} FROM cards`
@@ -378,11 +288,6 @@ export class CardActions {
         return rows.map(mapRowToCard);
     }
 
-    // ===== Sync Operations =====
-
-    /**
-     * Get cards modified since a timestamp (including deleted, for sync push)
-     */
     getModifiedSince(timestamp: number): (FSRSCardData & { updatedAt?: number; deletedAt?: number | null })[] {
         const rows = this.db.query<CardRow>(
             `SELECT ${CARD_SELECT_COLUMNS_FOR_SYNC} FROM cards WHERE updated_at > ?`,
@@ -391,9 +296,6 @@ export class CardActions {
         return rows.map(mapRowToCardWithSync);
     }
 
-    /**
-     * Upsert a card from remote sync (preserves remote timestamps)
-     */
     upsertFromRemote(data: FSRSCardData & { updatedAt?: number; deletedAt?: number | null }): void {
         this.db.run(`
             INSERT OR REPLACE INTO cards (
@@ -424,9 +326,6 @@ export class CardActions {
         ]);
     }
 
-    /**
-     * Get sync metadata from META table
-     */
     getSyncMetadata(key: string): string | null {
         const row = this.db.get<{ value: string }>(
             `SELECT value FROM meta WHERE key = ?`,
@@ -435,9 +334,6 @@ export class CardActions {
         return row?.value ?? null;
     }
 
-    /**
-     * Set sync metadata in META table
-     */
     setSyncMetadata(key: string, value: string): void {
         this.db.run(
             `INSERT OR REPLACE INTO meta (key, value) VALUES (?, ?)`,
@@ -445,21 +341,12 @@ export class CardActions {
         );
     }
 
-    /**
-     * Delete all cards (for force pull sync)
-     */
     deleteAllForSync(): void {
         this.db.run(`DELETE FROM cards`);
     }
 
-    // ===== FSRS Helper Operations =====
-
-    /**
-     * Get cards due within a date range
-     * Used by FSRS Helper for workload balancing and forecasting
-     * Excludes Learning (1) and Relearning (3) cards - they have short intervals
-     * that should not be modified by load balancing
-     */
+    // Excludes Learning (1) and Relearning (3) cards - they have short intervals
+    // that should not be modified by load balancing
     getDueCardsByDateRange(startDate: string, endDate: string): FSRSCardData[] {
         const rows = this.db.query<CardRow>(
             `SELECT ${CARD_SELECT_COLUMNS} FROM cards
@@ -474,10 +361,6 @@ export class CardActions {
         return rows.map(mapRowToCard);
     }
 
-    /**
-     * Update only the due date for a card
-     * Used by FSRS Helper scheduler services
-     */
     updateCardDue(cardId: string, newDue: string): void {
         this.db.run(`
             UPDATE cards SET
@@ -487,10 +370,6 @@ export class CardActions {
         `, [newDue, Date.now(), cardId]);
     }
 
-    /**
-     * Update card scheduling data (due, scheduledDays)
-     * Used by FSRS Helper reschedule service
-     */
     updateCardScheduling(cardId: string, data: { due: string; scheduledDays: number }): void {
         this.db.run(`
             UPDATE cards SET

@@ -4,10 +4,21 @@ import type {
 	FlashcardEventListener,
 } from "../../types/events.types";
 
+export type ListenerErrorCallback = (eventType: FlashcardEventType, error: unknown) => void;
+
 export class EventBusService {
 	private listeners: Map<FlashcardEventType, Set<FlashcardEventListener>> =
 		new Map();
 	private globalListeners: Set<FlashcardEventListener> = new Set();
+	private errorCallback: ListenerErrorCallback | null = null;
+
+	/**
+	 * Set a callback to be notified when a listener throws an error.
+	 * Useful for aggregating errors and debugging state desync issues.
+	 */
+	setErrorCallback(callback: ListenerErrorCallback | null): void {
+		this.errorCallback = callback;
+	}
 
 	on<T extends AnyFlashcardEvent>(
 		eventType: T["type"],
@@ -37,12 +48,10 @@ export class EventBusService {
 	}
 
 	emit(event: AnyFlashcardEvent): void {
-		// Add timestamp if not present
 		if (!event.timestamp) {
 			event.timestamp = Date.now();
 		}
 
-		// Notify specific listeners
 		const listeners = this.listeners.get(event.type);
 		if (listeners) {
 			listeners.forEach((listener) => {
@@ -53,16 +62,17 @@ export class EventBusService {
 						`[EventBus] Error in listener for ${event.type}:`,
 						error
 					);
+					this.errorCallback?.(event.type, error);
 				}
 			});
 		}
 
-		// Notify global listeners
 		this.globalListeners.forEach((listener) => {
 			try {
 				listener(event);
 			} catch (error) {
 				console.error(`[EventBus] Error in global listener:`, error);
+				this.errorCallback?.(event.type, error);
 			}
 		});
 	}

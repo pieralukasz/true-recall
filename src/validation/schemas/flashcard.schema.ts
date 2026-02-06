@@ -1,24 +1,11 @@
-/**
- * Zod schemas for flashcard data structures
- */
 import { z } from "zod";
 
-// ===== Flashcard Item Schema =====
-
-/**
- * Schema for a single flashcard
- */
 export const FlashcardItemSchema = z.object({
     question: z.string().min(1, "Question cannot be empty"),
     answer: z.string().min(1, "Answer cannot be empty"),
     id: z.string().min(1, "Card ID is required"),
 });
 
-// ===== Flashcard Info Schema =====
-
-/**
- * Schema for flashcard file information
- */
 export const FlashcardInfoSchema = z.object({
     exists: z.boolean(),
     filePath: z.string(),

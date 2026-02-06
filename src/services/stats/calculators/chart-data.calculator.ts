@@ -1,7 +1,3 @@
-/**
- * Chart Data Calculator
- * Calculates data for various charts (future due, cards created, retention)
- */
 import { State } from "ts-fsrs";
 import type {
 	FutureDueEntry,
@@ -15,22 +11,13 @@ import type {
 import type { SqliteStoreService } from "../../persistence/sqlite";
 import { formatLocalDate } from "../../../utils";
 
-/**
- * Calculator for chart data statistics
- */
 export class ChartDataCalculator {
 	constructor(private sqliteStore: SqliteStoreService | null = null) {}
 
-	/**
-	 * Set SQLite store for optimized queries
-	 */
 	setSqliteStore(store: SqliteStoreService): void {
 		this.sqliteStore = store;
 	}
 
-	/**
-	 * Get future due predictions for bar chart
-	 */
 	getFutureDueStats(allCards: FSRSFlashcardItem[], range: StatsTimeRange): FutureDueEntry[] {
 		const today = new Date();
 		today.setHours(0, 0, 0, 0);
@@ -73,9 +60,6 @@ export class ChartDataCalculator {
 		});
 	}
 
-	/**
-	 * Get future due stats with filled-in missing days
-	 */
 	getFutureDueStatsFilled(
 		allCards: FSRSFlashcardItem[],
 		range: StatsTimeRange
@@ -129,9 +113,6 @@ export class ChartDataCalculator {
 		});
 	}
 
-	/**
-	 * Get cards created history with filled-in missing days
-	 */
 	async getCardsCreatedHistoryFilled(
 		allCards: FSRSFlashcardItem[],
 		range: StatsTimeRange
@@ -194,9 +175,6 @@ export class ChartDataCalculator {
 		});
 	}
 
-	/**
-	 * Get retention rate history for line chart
-	 */
 	getRetentionHistory(
 		allStats: Record<string, ExtendedDailyStats>,
 		range: StatsTimeRange
@@ -234,9 +212,6 @@ export class ChartDataCalculator {
 		return entries.sort((a, b) => a.date.localeCompare(b.date));
 	}
 
-	/**
-	 * Get cards created vs reviewed history for comparison chart
-	 */
 	getCardsCreatedVsReviewedHistory(range: StatsTimeRange): CardsCreatedVsReviewedEntry[] {
 		if (range === "backlog") {
 			return [];
@@ -258,9 +233,6 @@ export class ChartDataCalculator {
 		return [];
 	}
 
-	/**
-	 * Get cards due on a specific date
-	 */
 	getCardsDueOnDate(allCards: FSRSFlashcardItem[], date: string): FSRSFlashcardItem[] {
 		// Parse date as local (not UTC)
 		const parts = date.split("-").map(Number);
@@ -281,9 +253,6 @@ export class ChartDataCalculator {
 		});
 	}
 
-	/**
-	 * Get cards created on a specific date
-	 */
 	getCardsCreatedOnDate(allCards: FSRSFlashcardItem[], date: string): FSRSFlashcardItem[] {
 		// Use SQLite when available
 		if (this.sqliteStore) {
@@ -312,8 +281,6 @@ export class ChartDataCalculator {
 			return createdDate.toDateString() === targetDate.toDateString();
 		});
 	}
-
-	// ===== Date calculation helpers =====
 
 	calculateEndDate(today: Date, range: StatsTimeRange): Date {
 		const endDate = new Date(today);

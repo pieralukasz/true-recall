@@ -1,7 +1,3 @@
-/**
- * Settings Tab UI
- * Plugin settings configuration interface
- */
 import { App, PluginSettingTab, Setting } from "obsidian";
 import { notify } from "../../services";
 import type TrueRecallPlugin from "../../main";
@@ -29,9 +25,6 @@ export type { TrueRecallSettings };
 
 type SettingsTabId = "general" | "ai" | "scheduling" | "fsrs" | "data" | "sync";
 
-/**
- * Settings tab for True Recall plugin
- */
 export class TrueRecallSettingTab extends PluginSettingTab {
 	plugin: TrueRecallPlugin;
 	private activeTab: SettingsTabId = "general";
@@ -46,7 +39,6 @@ export class TrueRecallSettingTab extends PluginSettingTab {
 		containerEl.empty();
 		containerEl.addClass("ep:overflow-x-hidden");
 
-		// Tab navigation
 		const tabsNav = containerEl.createDiv({
 			cls: "ep:flex ep:gap-1 ep:mb-5 ep:border-b ep:border-obs-border ep:pb-2 ep:overflow-x-auto",
 		});
@@ -76,7 +68,6 @@ export class TrueRecallSettingTab extends PluginSettingTab {
 			tabButtons.set(tab.id, btn);
 		});
 
-		// Tab content containers
 		const tabContents: Map<SettingsTabId, HTMLElement> = new Map();
 		tabs.forEach((tab) => {
 			const isActive = this.activeTab === tab.id;
@@ -87,7 +78,6 @@ export class TrueRecallSettingTab extends PluginSettingTab {
 			tabContents.set(tab.id, content);
 		});
 
-		// Render content for each tab
 		this.renderGeneralTab(tabContents.get("general")!);
 		this.renderAITab(tabContents.get("ai")!);
 		this.renderSchedulingTab(tabContents.get("scheduling")!);
@@ -125,7 +115,6 @@ export class TrueRecallSettingTab extends PluginSettingTab {
 	}
 
 	private renderGeneralTab(container: HTMLElement): void {
-		// ===== Review Interface Section =====
 		new Setting(container).setName("Review interface").setHeading();
 
 		new Setting(container)
@@ -194,7 +183,6 @@ export class TrueRecallSettingTab extends PluginSettingTab {
 					})
 			);
 
-		// ===== Daily Limits Section =====
 		new Setting(container).setName("Daily limits").setHeading();
 
 		new Setting(container)
@@ -225,7 +213,6 @@ export class TrueRecallSettingTab extends PluginSettingTab {
 					})
 			);
 
-		// ===== Day Boundary Section =====
 		new Setting(container).setName("Day boundary").setHeading();
 
 		new Setting(container)
@@ -242,7 +229,6 @@ export class TrueRecallSettingTab extends PluginSettingTab {
 					})
 			);
 
-		// ===== Flashcard Collection Section =====
 		new Setting(container).setName("Flashcard collection").setHeading();
 
 		new Setting(container)
@@ -261,7 +247,6 @@ export class TrueRecallSettingTab extends PluginSettingTab {
 					})
 			);
 
-		// ===== Floating Generate Button Section =====
 		new Setting(container).setName("Floating generate button").setHeading();
 
 		new Setting(container)
@@ -306,7 +291,6 @@ export class TrueRecallSettingTab extends PluginSettingTab {
 					})
 			);
 
-		// ===== Copilot Integration Section =====
 		// HIDDEN: Waiting for Copilot to expose a public API for adding notes to context.
 		// The underlying code exists in CopilotIntegrationService and ReviewView.
 		// Uncomment this section when Copilot adds API support.
@@ -344,7 +328,6 @@ export class TrueRecallSettingTab extends PluginSettingTab {
 	}
 
 	private renderAITab(container: HTMLElement): void {
-		// ===== AI Generation Section =====
 		// eslint-disable-next-line obsidianmd/ui/sentence-case -- OpenRouter is a proper noun
 		new Setting(container).setName("AI generation (OpenRouter)").setHeading();
 
@@ -413,7 +396,6 @@ export class TrueRecallSettingTab extends PluginSettingTab {
 			});
 		});
 
-		// ===== Custom Prompts Section =====
 		new Setting(container).setName("Custom prompts").setHeading();
 
 		const promptsInfo = container.createDiv({
@@ -451,7 +433,6 @@ export class TrueRecallSettingTab extends PluginSettingTab {
 	}
 
 	private renderSchedulingTab(container: HTMLElement): void {
-		// ===== Learning Steps Section =====
 		new Setting(container).setName("Learning steps").setHeading();
 
 		new Setting(container)
@@ -521,7 +502,6 @@ export class TrueRecallSettingTab extends PluginSettingTab {
 					})
 			);
 
-		// ===== Display Order Section =====
 		new Setting(container).setName("Display order").setHeading();
 
 		new Setting(container)
@@ -579,7 +559,6 @@ export class TrueRecallSettingTab extends PluginSettingTab {
 	}
 
 	private renderFSRSTab(container: HTMLElement): void {
-		// ===== FSRS Algorithm Section =====
 		// eslint-disable-next-line obsidianmd/ui/sentence-case -- FSRS is an acronym
 		new Setting(container).setName("FSRS algorithm").setHeading();
 
@@ -620,7 +599,6 @@ export class TrueRecallSettingTab extends PluginSettingTab {
 					})
 			);
 
-		// ===== FSRS Parameters Section =====
 		// eslint-disable-next-line obsidianmd/ui/sentence-case -- FSRS is an acronym
 		new Setting(container).setName("FSRS parameters").setHeading();
 
@@ -732,7 +710,6 @@ export class TrueRecallSettingTab extends PluginSettingTab {
 					});
 			});
 
-		// ===== Easy Days Section =====
 		new Setting(container).setName("Easy days").setHeading();
 
 		const easyDaysInfo = container.createDiv({ cls: "setting-item-description" });
@@ -818,7 +795,6 @@ export class TrueRecallSettingTab extends PluginSettingTab {
 				})
 			);
 
-		// ===== Load Balance Section =====
 		new Setting(container).setName("Load balance").setHeading();
 
 		new Setting(container)
@@ -899,7 +875,6 @@ export class TrueRecallSettingTab extends PluginSettingTab {
 				})
 			);
 
-		// ===== Sibling Dispersal Section =====
 		new Setting(container).setName("Sibling dispersal").setHeading();
 
 		const siblingInfo = container.createDiv({ cls: "setting-item-description" });
@@ -969,7 +944,6 @@ export class TrueRecallSettingTab extends PluginSettingTab {
 				})
 			);
 
-		// ===== Scheduled Breaks Section =====
 		new Setting(container).setName("Scheduled breaks").setHeading();
 
 		const breaksInfo = container.createDiv({ cls: "setting-item-description" });
@@ -1023,7 +997,6 @@ export class TrueRecallSettingTab extends PluginSettingTab {
 				})
 			);
 
-		// ===== Bulk Operations Section =====
 		new Setting(container).setName("Bulk operations").setHeading();
 
 		new Setting(container)
@@ -1129,7 +1102,6 @@ export class TrueRecallSettingTab extends PluginSettingTab {
 	}
 
 	private renderDataTab(container: HTMLElement): void {
-		// ===== Device Database Section =====
 		new Setting(container).setName("Device database").setHeading();
 
 		const deviceId = this.plugin.deviceIdService?.getDeviceId() || "unknown";
@@ -1166,7 +1138,6 @@ export class TrueRecallSettingTab extends PluginSettingTab {
 				})
 			);
 
-		// ===== Database Backup Section =====
 		new Setting(container).setName("Database backup").setHeading();
 
 		const backupInfo = container.createDiv({
@@ -1204,7 +1175,6 @@ export class TrueRecallSettingTab extends PluginSettingTab {
 					})
 			);
 
-		// ===== Background Backup Section =====
 		new Setting(container).setName("Background backup").setHeading();
 
 		const bgBackupInfo = container.createDiv({
@@ -1267,7 +1237,6 @@ export class TrueRecallSettingTab extends PluginSettingTab {
 					})
 			);
 
-		// ===== Smart Retention Section =====
 		new Setting(container).setName("Smart retention").setHeading();
 
 		const retentionInfo = container.createDiv({
@@ -1349,7 +1318,6 @@ export class TrueRecallSettingTab extends PluginSettingTab {
 			statusDiv.createEl("p", { text: `Reviews since last backup: ${status.reviewsSinceLastBackup}` });
 		}
 
-		// ===== Manual Backup Actions =====
 		new Setting(container).setName("Manual backup").setHeading();
 
 		new Setting(container)
@@ -1375,10 +1343,8 @@ export class TrueRecallSettingTab extends PluginSettingTab {
 					})
 			);
 
-		// ===== Content Section =====
 		new Setting(container).setName("Content").setHeading();
 
-		// Excluded folders
 		new Setting(container)
 			.setName("Excluded folders")
 			.setDesc(
@@ -1402,7 +1368,6 @@ export class TrueRecallSettingTab extends PluginSettingTab {
 	}
 
 	private renderSyncTab(container: HTMLElement): void {
-		// ===== Cloud sync Header =====
 		new Setting(container).setName("Cloud sync").setHeading();
 
 		const cloudInfo = container.createDiv({
@@ -1412,7 +1377,6 @@ export class TrueRecallSettingTab extends PluginSettingTab {
 		cloudInfo.createEl("p", { text: "Synchronize your flashcards across devices with True Recall Cloud." });
 		cloudInfo.createEl("p", { text: "Your data is encrypted and secure." });
 
-		// ===== Account Section =====
 		new Setting(container).setName("Account").setHeading();
 
 		const authContainer = container.createDiv({
@@ -1476,7 +1440,6 @@ export class TrueRecallSettingTab extends PluginSettingTab {
 						})
 				);
 
-			// ===== Sync Controls (shown when authenticated) =====
 			this.renderSyncControls(container);
 		} else {
 			// Not logged in - show login form
@@ -1609,9 +1572,6 @@ export class TrueRecallSettingTab extends PluginSettingTab {
 		});
 	}
 
-	/**
-	 * Render sync controls (shown when authenticated)
-	 */
 	private renderSyncControls(container: HTMLElement): void {
 		const syncService = this.plugin.syncService;
 		if (!syncService) {
@@ -1791,13 +1751,8 @@ export class TrueRecallSettingTab extends PluginSettingTab {
 			);
 	}
 
-	hide(): void {
-		// No cleanup needed currently
-	}
+	hide(): void {}
 
-	/**
-	 * Group AI models by provider for the dropdown
-	 */
 	private groupModelsByProvider(): Record<string, [string, AIModelInfo][]> {
 		const groups: Record<string, [string, AIModelInfo][]> = {
 			Google: [],
@@ -1828,17 +1783,11 @@ export class TrueRecallSettingTab extends PluginSettingTab {
 		return groups;
 	}
 
-	/**
-	 * Truncate prompt for placeholder display
-	 */
 	private truncatePrompt(prompt: string, maxLength: number): string {
 		if (prompt.length <= maxLength) return prompt;
 		return prompt.substring(0, maxLength) + "...";
 	}
 
-	/**
-	 * Show modal to switch device database
-	 */
 	private async showDeviceSwitchModal(): Promise<void> {
 		if (!this.plugin.deviceDiscovery || !this.plugin.deviceIdService) {
 			notify().error("Device services not initialized");
@@ -1881,14 +1830,12 @@ export class TrueRecallSettingTab extends PluginSettingTab {
 				`${DB_FOLDER}/${getDeviceDbFilename(deviceId)}`
 			);
 
-			// Create backup of current database
 			const backupPath = normalizePath(
 				`${DB_FOLDER}/${getDeviceDbFilename(deviceId)}.backup`
 			);
 			const currentData = await this.app.vault.adapter.readBinary(targetPath);
 			await this.app.vault.adapter.writeBinary(backupPath, currentData);
 
-			// Copy source database to current
 			const sourceData = await this.app.vault.adapter.readBinary(
 				result.sourcePath
 			);

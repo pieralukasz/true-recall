@@ -47,16 +47,12 @@ export class ReviewView extends ItemView {
 	private flashcardManager: FlashcardManager;
 	private sessionPersistence: SessionPersistenceService;
 
-	// Project filter (empty = all projects)
 	private projectFilters: string[] = [];
 
-	// Track which cards have projects expanded
 	private expandedProjects: Set<string> = new Set();
 
-	// Track if this is a custom review session (with filters)
 	private isCustomSession: boolean = false;
 
-	// Custom session filters
 	private sourceNoteFilter?: string;
 	private sourceNoteFilters?: string[];
 	private filePathFilter?: string;
@@ -67,46 +63,34 @@ export class ReviewView extends ItemView {
 	private ignoreDailyLimits?: boolean;
 	private bypassScheduling?: boolean;
 
-	// Handlers (initialized in constructor)
 	private cardActionsHandler!: CardActionsHandler;
 	private keyboardHandler!: KeyboardHandler;
 
-	// UI Components (extracted for better separation of concerns)
 	private cardContent!: CardContent;
 	private cardBacklink!: CardBacklink;
 	private cardProjects!: CardProjects;
 
-	// Image service for paste handling
 	private imageService!: ImageService;
 
-	// Copilot integration service
 	private copilotService!: CopilotIntegrationService;
 
-	// Track last card ID to avoid repeated Copilot context additions
 	private lastCopilotContextCardId: string | null = null;
 
-	// UI Elements
 	private headerEl!: HTMLElement;
 	private cardContainerEl!: HTMLElement;
 	private buttonsEl!: HTMLElement;
 	private openNoteAction: HTMLElement | null = null;
 
-	// State subscription
 	private unsubscribe: (() => void) | null = null;
 
-	// Consolidated subscription/timer management (view lifecycle)
 	private subs = new SubscriptionManager();
 
-	// Session-specific event subscriptions (active only during review)
 	private sessionEventUnsubscribers: (() => void)[] = [];
 
-	// Reference to waiting timer for countdown updates
 	private waitingTimerId: ReturnType<typeof setInterval> | null = null;
 
-	// AbortController for cleaning up event listeners between renders
 	private cardEventAbortController: AbortController | null = null;
 
-	// Render optimization: track last rendered state to avoid unnecessary re-renders
 	private lastRenderedState: {
 		cardId: string | null;
 		answerRevealed: boolean;
@@ -134,17 +118,13 @@ export class ReviewView extends ItemView {
 		this.reviewService = new ReviewService();
 		this.sessionPersistence = plugin.sessionPersistence;
 
-		// Initialize FSRS service with current settings
 		const fsrsSettings = extractFSRSSettings(plugin.settings);
 		this.fsrsService = new FSRSService(fsrsSettings);
 
-		// Initialize image service for paste handling
 		this.imageService = new ImageService(this.app);
 
-		// Initialize Copilot integration service
 		this.copilotService = new CopilotIntegrationService(this.app);
 
-		// Initialize CardActionsHandler
 		this.cardActionsHandler = new CardActionsHandler(
 			{
 				app: this.app,
@@ -161,7 +141,6 @@ export class ReviewView extends ItemView {
 			}
 		);
 
-		// Initialize KeyboardHandler
 		this.keyboardHandler = new KeyboardHandler(() => this.review, {
 			onShowAnswer: () => this.handleShowAnswer(),
 			onAnswer: (rating) => this.handleAnswer(rating as Grade),
@@ -179,7 +158,6 @@ export class ReviewView extends ItemView {
 			onZoomOut: () => this.handleZoom(-0.1),
 		});
 
-		// Initialize UI components
 		this.cardContent = new CardContent(
 			{ app: this.app, component: this },
 			{
@@ -218,7 +196,6 @@ export class ReviewView extends ItemView {
 		this.ignoreDailyLimits = viewState?.ignoreDailyLimits;
 		this.bypassScheduling = viewState?.bypassScheduling;
 
-		// Detect if this is a custom review session (any custom filter is set)
 		this.isCustomSession = !!(
 			viewState?.sourceNoteFilter ||
 			(viewState?.sourceNoteFilters &&
@@ -232,7 +209,6 @@ export class ReviewView extends ItemView {
 
 		await super.setState(state, result);
 
-		// Start session after filters are set
 		await this.startSession();
 	}
 
@@ -279,7 +255,6 @@ export class ReviewView extends ItemView {
 			"ep:p-0"
 		);
 
-		// Create UI structure
 		this.headerEl = container.createDiv({
 			cls: "ep:flex ep:justify-center ep:items-center ep:border-b ep:border-obs-border ep:relative ep:shrink-0 ep:p-2 ep:pb-4",
 		});
@@ -338,10 +313,8 @@ export class ReviewView extends ItemView {
 			cls: "true-recall-review-buttons ep:flex ep:justify-center ep:gap-3 ep:border-t ep:border-obs-border ep:flex-nowrap ep:shrink-0 ep:p-4",
 		});
 
-		// Apply saved font scale
 		this.applyFontScale();
 
-		// Subscribe to state changes - update render and header actions
 		this.unsubscribe = this.plugin.store!.subscribe(
 			(state) => state.review,
 			() => {
@@ -350,38 +323,27 @@ export class ReviewView extends ItemView {
 			}
 		);
 
-		// Note: EventBus subscriptions are managed conditionally per session
-		// See subscribeToSessionEvents() called from startSession()
-
-		// Register ReviewStateManager with global UndoService for review undo support
 		this.plugin.undoService?.setReviewStateManager(this.review, {
 			onUpdateSchedulingPreview: () => this.updateSchedulingPreview(),
 			onUndoAnswer: (payload) => this.handleUndoAnswerFromService(payload),
 		});
 
-		// Register keyboard shortcuts using the KeyboardHandler
 		this.registerDomEvent(document, "keydown", (e: KeyboardEvent) => {
-			// Only handle when this view is active
 			const activeView = this.app.workspace.getActiveViewOfType(ReviewView);
 			if (activeView !== this) return;
 
-			// Skip if modal is open
 			if (document.querySelector(".modal-container")) return;
 
 			this.keyboardHandler.handleKeyDown(e);
 		});
-
-		// Note: startSession() is called from setState() after filters are applied
 	}
 
 	private updateHeaderActions(): void {
-		// Remove existing actions
 		if (this.openNoteAction) {
 			this.openNoteAction.remove();
 			this.openNoteAction = null;
 		}
 
-		// Only show actions when session is active and header is shown
 		if (
 			!this.review.isActive ||
 			!this.plugin.settings.showReviewHeader
@@ -389,40 +351,26 @@ export class ReviewView extends ItemView {
 			return;
 		}
 
-		// Open note action
 		this.openNoteAction = this.addAction("external-link", "Open note", () =>
 			this.handleOpenNote()
 		);
 	}
 
 	async onClose(): Promise<void> {
-		// Unregister ReviewStateManager from global UndoService
 		this.plugin.undoService?.setReviewStateManager(null, null);
-
-		// Clear session-specific undo entries to prevent memory accumulation
 		this.plugin.undoService?.clearSessionEntries();
 
-		// Flush store to disk before closing
 		if (this.plugin.cardStore) {
 			await this.plugin.cardStore.flush();
 		}
 
 		this.unsubscribe?.();
-
-		// Cleanup session-specific EventBus subscriptions
 		this.unsubscribeFromSessionEvents();
-
-		// Cleanup all EventBus subscriptions and timers via SubscriptionManager
 		this.subs.dispose();
-
-		// Cleanup card event listeners via AbortController
 		this.cardEventAbortController?.abort();
 		this.cardEventAbortController = null;
-
-		// Cleanup UI components
 		this.cardContent.destroy();
 
-		// Remove native header actions
 		if (this.openNoteAction) {
 			this.openNoteAction.remove();
 			this.openNoteAction = null;
@@ -431,42 +379,31 @@ export class ReviewView extends ItemView {
 		this.review.reset();
 	}
 
-	/**
-	 * Subscribe to EventBus events for the active review session
-	 * Only called when session starts to avoid unnecessary event processing
-	 */
 	private subscribeToSessionEvents(): void {
-		// Unsubscribe from any existing session events first
 		this.unsubscribeFromSessionEvents();
 
 		const eventBus = getEventBus();
 
-		// Handle card removal during active review
 		this.sessionEventUnsubscribers.push(
 			eventBus.on<CardRemovedEvent>("card:removed", (event) => {
-				// Check if removed card is in our queue
 				const queue = this.review.queue;
 				const cardInQueue = queue.find((c) => c.id === event.cardId);
 
 				if (cardInQueue) {
-					// Remove card from queue - triggers notifyListeners() → render
 					this.review.removeCardById(event.cardId);
 				}
 			})
 		);
 
-		// Handle card content updates during review
 		this.sessionEventUnsubscribers.push(
 			eventBus.on<CardUpdatedEvent>("card:updated", (event) => {
 				if (!event.changes.question && !event.changes.answer) return;
 
-				// If current card was updated externally, reload from database
+				// Reload card content from database (needed for undo to show reverted content)
 				const currentCard = this.review.getCurrentCard();
 				if (currentCard && currentCard.id === event.cardId) {
-					// Reload card content from database (needed for undo to show reverted content)
 					const updatedData = this.plugin.cardStore.get(event.cardId);
 					if (updatedData) {
-						// updateCurrentCardContent triggers notifyListeners() → render
 						this.review.updateCurrentCardContent(
 							updatedData.question ?? currentCard.question,
 							updatedData.answer ?? currentCard.answer
@@ -476,12 +413,10 @@ export class ReviewView extends ItemView {
 			})
 		);
 
-		// Handle bulk removals (e.g., from diff apply)
 		this.sessionEventUnsubscribers.push(
 			eventBus.on<BulkChangeEvent>("cards:bulk-change", (event) => {
 				if (event.action !== "removed") return;
 
-				// Remove all deleted cards in one batch operation (single render)
 				const queue = this.review.queue;
 				const queueIds = new Set(queue.map((c) => c.id));
 				const idsToRemove = event.cardIds.filter((id) => queueIds.has(id));
@@ -491,15 +426,12 @@ export class ReviewView extends ItemView {
 			})
 		);
 
-		// Handle new cards being added during review (e.g., from floating button)
 		this.sessionEventUnsubscribers.push(
 			eventBus.on<CardAddedEvent>("card:added", (event) => {
-				// Fetch the new card data
 				const cards = this.flashcardManager.getCardsByIds([event.cardId]);
 				const newCard = cards[0];
 				if (!newCard) return;
 
-				// Check if card matches current session filters
 				if (this.sourceNoteFilter && newCard.sourceNoteName !== this.sourceNoteFilter) {
 					return;
 				}
@@ -509,16 +441,12 @@ export class ReviewView extends ItemView {
 					}
 				}
 
-				// Add card to queue and update UI
 				this.review.addCardToQueue(newCard);
 				this.renderHeader();
 			})
 		);
 	}
 
-	/**
-	 * Unsubscribe from session-specific EventBus events
-	 */
 	private unsubscribeFromSessionEvents(): void {
 		for (const unsub of this.sessionEventUnsubscribers) {
 			unsub();
@@ -526,9 +454,6 @@ export class ReviewView extends ItemView {
 		this.sessionEventUnsubscribers = [];
 	}
 
-	/**
-	 * Clear the waiting screen timer
-	 */
 	private clearWaitingTimer(): void {
 		if (this.waitingTimerId) {
 			this.subs.clearInterval(this.waitingTimerId);
@@ -536,16 +461,11 @@ export class ReviewView extends ItemView {
 		}
 	}
 
-	/**
-	 * Start a new review session
-	 */
 	async startSession(): Promise<void> {
 		try {
-			// Update FSRS service with latest settings
 			const fsrsSettings = extractFSRSSettings(this.plugin.settings);
 			this.fsrsService.updateSettings(fsrsSettings);
 
-			// Get all cards
 			const allCards = this.flashcardManager.getAllFSRSCards();
 
 			if (allCards.length === 0) {
@@ -555,7 +475,6 @@ export class ReviewView extends ItemView {
 				return;
 			}
 
-			// Filter out suspended and buried cards (using helper)
 			const activeCards = filterActiveCards(allCards, {
 				stateFilter: this.stateFilter,
 			});
@@ -571,7 +490,6 @@ export class ReviewView extends ItemView {
 				return;
 			}
 
-			// Get persistent stats for today
 			if (!this.sessionPersistence) {
 				this.sessionPersistence = this.plugin.sessionPersistence;
 			}
@@ -583,13 +501,11 @@ export class ReviewView extends ItemView {
 			const reviewedToday = this.sessionPersistence.getReviewedToday();
 			const newCardsStudiedToday = this.sessionPersistence.getNewCardsStudiedToday();
 
-			// Build sourceUidToProjects map for project filtering (using helper)
 			const sourceUidToProjects = buildSourceUidToProjectsMap(
 				this.app,
 				this.projectFilters
 			);
 
-			// Build review queue with persistent stats, project filters, custom session filters, and display order settings
 			const queue = this.reviewService.buildQueue(
 				activeCards,
 				this.fsrsService,
@@ -631,13 +547,8 @@ export class ReviewView extends ItemView {
 				return;
 			}
 
-			// Start session
 			this.review.startSession(queue);
-
-			// Subscribe to EventBus events for this session
 			this.subscribeToSessionEvents();
-
-			// Calculate scheduling preview for first card
 			this.updateSchedulingPreview();
 		} catch (error) {
 			console.error("Error starting review session:", error);
@@ -649,23 +560,15 @@ export class ReviewView extends ItemView {
 		}
 	}
 
-	/**
-	 * Reset render state when leaving active card rendering
-	 */
 	private resetRenderState(): void {
 		this.lastRenderedState.cardId = null;
 		this.lastRenderedState.question = null;
 		this.lastRenderedState.answer = null;
 	}
 
-	/**
-	 * Render the current state using state machine pattern
-	 * Uses selective re-rendering to avoid unnecessary DOM operations
-	 */
 	private render(): void {
 		const phase = this.review.getPhase();
 
-		// Handle non-active phases with early return
 		switch (phase.type) {
 			case "idle":
 				this.resetRenderState();
@@ -687,7 +590,6 @@ export class ReviewView extends ItemView {
 				break;
 		}
 
-		// Clear waiting timer when showing a card
 		this.clearWaitingTimer();
 
 		const currentCard = phase.card;
@@ -695,14 +597,12 @@ export class ReviewView extends ItemView {
 		const editState = this.review.getEditState();
 		const prev = this.lastRenderedState;
 
-		// Determine what needs to be re-rendered
 		const cardChanged = currentCard.id !== prev.cardId;
 		const answerJustRevealed = answerRevealed && !prev.answerRevealed;
 		const editStateChanged = editState.active !== prev.editActive;
 		const contentChanged = currentCard.question !== prev.question ||
 			currentCard.answer !== prev.answer;
 
-		// Header always updates (badge counts change)
 		if (this.plugin.settings.showReviewHeader) {
 			this.headerEl.setCssProps({ display: "" });
 			this.renderHeader();
@@ -711,15 +611,12 @@ export class ReviewView extends ItemView {
 			this.headerEl.empty();
 		}
 
-		// Card content: only re-render if card changed, answer revealed, edit state changed, or content changed
 		if (cardChanged || answerJustRevealed || editStateChanged || contentChanged) {
 			this.renderCard();
 		}
 
-		// Buttons always update (scheduling preview changes, answer reveal state)
 		this.renderButtons();
 
-		// Update tracking state
 		this.lastRenderedState = {
 			cardId: currentCard.id,
 			answerRevealed,
@@ -730,12 +627,7 @@ export class ReviewView extends ItemView {
 		};
 	}
 
-	/**
-	 * Render header with stats badges
-	 * Action buttons are now in the native Obsidian header via addAction()
-	 */
 	private renderHeader(): void {
-		// Stats badges (centered) - O(1) access from StateManager
 		if (!this.plugin.settings.showReviewHeaderStats) {
 			this.headerEl.empty();
 			this.lastRenderedState.badgeCounts = null;
@@ -745,7 +637,6 @@ export class ReviewView extends ItemView {
 		const counts = this.review.getBadgeCounts();
 		const prevCounts = this.lastRenderedState.badgeCounts;
 
-		// Skip re-render if counts haven't changed (memoization)
 		if (
 			prevCounts &&
 			prevCounts.new === counts.new &&
@@ -766,9 +657,6 @@ export class ReviewView extends ItemView {
 		this.renderHeaderStatBadge(statsContainer, "due", counts.due);
 	}
 
-	/**
-	 * Render a single stat badge in the header
-	 */
 	private renderHeaderStatBadge(
 		container: HTMLElement,
 		type: "new" | "learning" | "due",
@@ -785,32 +673,20 @@ export class ReviewView extends ItemView {
 		badge.createSpan({ text: String(count) });
 	}
 
-	/**
-	 * Add source note to Copilot context if enabled
-	 */
 	private async addSourceToCopilotContext(
 		card: FSRSFlashcardItem
 	): Promise<void> {
-		// Check if feature is enabled
 		if (!this.plugin.settings.copilotAutoContext) return;
-
-		// Check if Copilot is available
 		if (!this.copilotService.isAvailable()) return;
-
-		// Skip if we already added this card's source to context
 		if (this.lastCopilotContextCardId === card.id) return;
-
-		// Need a source to add
 		if (!card.sourceUid) return;
 
-		// Find the source file using frontmatter index
 		const sourceFile = this.plugin.frontmatterIndex?.getFileByValue(
 			"flashcard_uid",
 			card.sourceUid
 		);
 		if (!sourceFile) return;
 
-		// Try to add to context
 		const success = await this.copilotService.addNoteToContext(sourceFile);
 		if (success) {
 			this.lastCopilotContextCardId = card.id;
@@ -820,10 +696,6 @@ export class ReviewView extends ItemView {
 		}
 	}
 
-	/**
-	 * Render the current flashcard
-	 * Delegates to extracted components for better separation of concerns
-	 */
 	private renderCard(): void {
 		const card = this.review.getCurrentCard();
 		if (!card) {
@@ -831,13 +703,11 @@ export class ReviewView extends ItemView {
 			return;
 		}
 
-		// Add source note to Copilot context (async, fire-and-forget)
 		void this.addSourceToCopilotContext(card);
 
 		const editState = this.review.getEditState();
 		const isAnswerRevealed = this.review.isAnswerRevealed;
 
-		// Render question and answer using CardContent component
 		this.cardContent.render(
 			this.cardContainerEl,
 			card,
@@ -845,9 +715,7 @@ export class ReviewView extends ItemView {
 			isAnswerRevealed
 		);
 
-		// Render backlink and projects only when answer revealed and not editing
 		if (isAnswerRevealed && !editState.active) {
-			// Get the card element created by CardContent
 			const cardEl = this.cardContainerEl.querySelector(".ep\\:w-full");
 			if (cardEl instanceof HTMLElement) {
 				this.cardBacklink.render(cardEl, card.sourceNoteName ?? null);
@@ -861,11 +729,6 @@ export class ReviewView extends ItemView {
 		}
 	}
 
-	/**
-	 * Handle click on question/answer field
-	 * - Normal click on backlink = navigate to note
-	 * - Cmd/Ctrl+click anywhere = start edit mode
-	 */
 	private handleFieldClick(
 		e: MouseEvent,
 		field: "question" | "answer",
@@ -881,31 +744,21 @@ export class ReviewView extends ItemView {
 			const href = linkEl.getAttribute("data-href");
 
 			if (e.metaKey || e.ctrlKey) {
-				// Cmd/Ctrl+click on link = edit mode
 				this.startEdit(field);
 			} else if (href) {
-				// Normal click on link = navigate to note
-				// Use getMostRecentLeaf to find an existing leaf (not the review view)
 				const existingLeaf = this.app.workspace.getMostRecentLeaf();
 				if (existingLeaf && existingLeaf !== this.leaf) {
-					// Open in existing leaf
 					void this.app.workspace.openLinkText(href, filePath, false);
 				} else {
-					// No suitable existing leaf, open in new tab
 					void this.app.workspace.openLinkText(href, filePath, "tab");
 				}
 			}
 		} else if (e.metaKey || e.ctrlKey) {
-			// Cmd/Ctrl+click outside link = edit mode
 			this.startEdit(field);
 		}
 	}
 
-	/**
-	 * Start editing a field (question or answer)
-	 */
 	private startEdit(field: "question" | "answer"): void {
-		// Don't start editing answer if not revealed
 		if (field === "answer" && !this.review.isAnswerRevealed) {
 			return;
 		}
@@ -914,12 +767,10 @@ export class ReviewView extends ItemView {
 			"true-recall-review-card-container--editing"
 		);
 		this.renderCard();
-		this.renderButtons(); // Hide buttons when entering edit mode (prevents keyboard overlap on mobile)
+		// Hide buttons when entering edit mode (prevents keyboard overlap on mobile)
+		this.renderButtons();
 	}
 
-	/**
-	 * Handle pasted image in inline edit - save to vault and insert markdown
-	 */
 	private async handleInlineImagePaste(
 		file: File,
 		textarea: HTMLTextAreaElement
@@ -945,9 +796,6 @@ export class ReviewView extends ItemView {
 		}
 	}
 
-	/**
-	 * Save the current edit from textarea
-	 */
 	private async saveEditFromTextarea(
 		textarea: HTMLTextAreaElement,
 		field: "question" | "answer"
@@ -959,12 +807,10 @@ export class ReviewView extends ItemView {
 		// Capture card ID before async operation to prevent race conditions
 		const cardIdBeforeSave = card.id;
 
-		// Keep newlines as-is (no <br> conversion)
 		const newContent = textarea.value;
 		const newQuestion = field === "question" ? newContent : card.question;
 		const newAnswer = field === "answer" ? newContent : card.answer;
 
-		// Only save if content actually changed
 		// Compare with normalized content (convert legacy <br> to newlines for comparison)
 		const normalizedOriginal = field === "question"
 			? editState.originalQuestion.replace(BR_REGEX, "\n")
@@ -973,57 +819,47 @@ export class ReviewView extends ItemView {
 
 		if (hasChanges) {
 			try {
-				// Update card directly in database
 				this.plugin.cardStore.cards.updateCardContent(
 					cardIdBeforeSave,
 					newQuestion,
 					newAnswer
 				);
 
-				// Validate that current card is still the same before updating state
 				const currentCard = this.review.getCurrentCard();
 				if (currentCard?.id === cardIdBeforeSave) {
-					// Update card in state
 					this.review.updateCurrentCardContent(
 						newQuestion,
 						newAnswer
 					);
 					notify().cardUpdated();
 				}
-				// If card changed during save, database is already updated but we don't update stale state
 			} catch (error) {
 				console.error("Error saving card content:", error);
 				notify().operationFailed("save card", error);
 			}
 		}
 
-		// Exit edit mode
 		this.review.cancelEdit();
 		this.cardContainerEl.removeClass(
 			"true-recall-review-card-container--editing"
 		);
 		this.renderCard();
-		this.renderButtons(); // Restore buttons after exiting edit mode
+		this.renderButtons();
 	}
 
-	/**
-	 * Render answer buttons
-	 */
 	private renderButtons(): void {
 		const isEditing = this.review.getEditState().active;
 		const answerRevealed = this.review.isAnswerRevealed;
 		const currentCardId = this.review.getCurrentCard()?.id ?? null;
 		const prev = this.lastRenderedState;
 
-		// Hide buttons when in edit mode (prevents keyboard from pushing buttons up on mobile)
+		// Prevents keyboard from pushing buttons up on mobile
 		if (isEditing) {
 			this.buttonsEl.setCssProps({ display: "none" });
 			return;
 		}
 		this.buttonsEl.setCssProps({ display: "" });
 
-		// Skip re-render if nothing relevant has changed
-		// Buttons need re-render when: card changes, answer revealed, or returning from edit mode
 		const cardChanged = currentCardId !== prev.cardId;
 		const answerJustRevealed = answerRevealed && !prev.answerRevealed;
 		const editEnded = !isEditing && prev.editActive;
@@ -1039,29 +875,24 @@ export class ReviewView extends ItemView {
 
 		this.buttonsEl.empty();
 
-		// Create wrapper for buttons layout
 		const buttonsWrapper = this.buttonsEl.createDiv({
 			cls: "ep:flex ep:items-center ep:justify-center ep:w-full ep:relative",
 		});
 
-		// Main buttons container (left/center)
 		const mainButtonsEl = buttonsWrapper.createDiv({
 			cls: "ep:flex ep:justify-center ep:gap-3 ep:flex-nowrap ep:py-4",
 		});
 
-		// Base button class for all review buttons
 		const baseBtnCls =
 			"ep:flex ep:flex-col ep:items-center ep:gap-1 !ep:py-4 ep:px-6 ep:h-auto ep:border-none ep:rounded-lg ep:cursor-pointer ep:font-medium ep:text-ui-small ep:min-w-20 ep:whitespace-nowrap ep:transition-transform ep:hover:brightness-110 ep:active:scale-98";
 
 		if (!this.review.isAnswerRevealed) {
-			// Show answer button
 			const showBtn = mainButtonsEl.createEl("button", {
 				cls: `${baseBtnCls} mod-cta ep:py-2 ep:px-4`,
 				text: "Show answer",
 			});
 			showBtn.addEventListener("click", () => this.handleShowAnswer());
 		} else {
-			// Rating buttons
 			const preview = this.review.getSchedulingPreview();
 			this.renderRatingButton(
 				mainButtonsEl,
@@ -1093,7 +924,6 @@ export class ReviewView extends ItemView {
 			);
 		}
 
-		// Actions menu button (always visible)
 		const menuBtn = buttonsWrapper.createEl("button", {
 			cls: "ep:flex ep:items-center ep:justify-center ep:w-10 ep:h-10 ep:p-0 ep:border-none ep:rounded-lg ep:bg-obs-modifier-hover ep:text-obs-muted ep:cursor-pointer ep:transition-colors ep:absolute ep:right-0 ep:hover:bg-obs-border ep:hover:text-obs-normal ep:active:scale-95",
 			attr: { "aria-label": "Card actions" },
@@ -1102,13 +932,9 @@ export class ReviewView extends ItemView {
 		menuBtn.addEventListener("click", (e) => this.showActionsMenu(e));
 	}
 
-	/**
-	 * Show actions menu for current card
-	 */
 	private showActionsMenu(event: MouseEvent): void {
 		const menu = new Menu();
 
-		// Only show undo if there's something to undo
 		if (this.cardActionsHandler.canUndo()) {
 			menu.addItem((item) =>
 				item
@@ -1175,9 +1001,6 @@ export class ReviewView extends ItemView {
 		menu.showAtMouseEvent(event);
 	}
 
-	/**
-	 * Open the source note (not the flashcard file)
-	 */
 	private handleOpenSourceNote(): void {
 		const card = this.review.getCurrentCard();
 		if (!card || !card.sourceNoteName) {
@@ -1185,7 +1008,6 @@ export class ReviewView extends ItemView {
 			return;
 		}
 
-		// Use frontmatterIndex for O(1) lookup instead of O(N) vault scan
 		let sourceFile: TFile | null | undefined;
 		if (card.sourceUid && this.plugin.frontmatterIndex) {
 			sourceFile = this.plugin.frontmatterIndex.getFileByValue(
@@ -1194,7 +1016,6 @@ export class ReviewView extends ItemView {
 			);
 		}
 
-		// Fallback to path-based lookup if frontmatterIndex unavailable or failed
 		if (!sourceFile && card.sourceNotePath) {
 			const abstractFile = this.app.vault.getAbstractFileByPath(card.sourceNotePath);
 			if (abstractFile instanceof TFile) {
@@ -1209,16 +1030,10 @@ export class ReviewView extends ItemView {
 		}
 	}
 
-	/**
-	 * Handle project badge click - opens projects view
-	 */
 	private handleProjectClick(_projectName: string): void {
 		void this.plugin.activateProjectsView();
 	}
 
-	/**
-	 * Render a single rating button
-	 */
 	private renderRatingButton(
 		container: HTMLElement,
 		label: string,
@@ -1240,9 +1055,6 @@ export class ReviewView extends ItemView {
 		btn.addEventListener("click", () => void this.handleAnswer(rating));
 	}
 
-	/**
-	 * Render empty state
-	 */
 	private renderEmptyState(message: string): void {
 		this.headerEl.empty();
 		this.cardContainerEl.empty();
@@ -1264,9 +1076,6 @@ export class ReviewView extends ItemView {
 		closeBtn.addEventListener("click", () => this.handleClose());
 	}
 
-	/**
-	 * Render session summary
-	 */
 	private renderSummary(): void {
 		this.headerEl.empty();
 		this.cardContainerEl.empty();
@@ -1328,11 +1137,9 @@ export class ReviewView extends ItemView {
 			cls: "ep:flex ep:gap-3 ep:py-4ep:justify-center",
 		});
 
-		// Shared button classes for summary
 		const summaryBtnCls =
 			"ep:py-3 ep:px-8 ep:border-none ep:rounded-lg ep:cursor-pointer ep:font-medium ep:text-ui-small ep:transition-transform ep:hover:brightness-110 ep:active:scale-98";
 
-		// Show "Next Session" button for custom sessions when setting is enabled
 		if (
 			this.isCustomSession &&
 			this.plugin.settings.continuousCustomReviews
@@ -1351,7 +1158,6 @@ export class ReviewView extends ItemView {
 			});
 			finishBtn.addEventListener("click", () => this.handleClose());
 		} else {
-			// Standard close button for normal sessions or when continuous mode is disabled
 			const closeBtn = buttonsEl.createEl("button", {
 				cls: `${summaryBtnCls} mod-cta`,
 				text: "Close",
@@ -1360,9 +1166,6 @@ export class ReviewView extends ItemView {
 		}
 	}
 
-	/**
-	 * Render a stat item
-	 */
 	private renderStatItem(
 		container: HTMLElement,
 		label: string,
@@ -1384,9 +1187,6 @@ export class ReviewView extends ItemView {
 		});
 	}
 
-	/**
-	 * Render waiting screen for learning cards (Anki-like behavior)
-	 */
 	private renderWaitingScreen(): void {
 		this.clearWaitingTimer();
 		this.headerEl.empty();
@@ -1396,6 +1196,7 @@ export class ReviewView extends ItemView {
 		const timeUntilDue = this.review.getTimeUntilNextDue();
 		const pendingCards = this.review.getPendingLearningCards();
 
+		// Anki-like behavior: show countdown while waiting for learning cards
 		const waitingEl = this.cardContainerEl.createDiv({
 			cls: "ep:text-center ep:py-8 ep:px-6 ep:max-w-md ep:mx-auto",
 		});
@@ -1408,7 +1209,6 @@ export class ReviewView extends ItemView {
 			cls: "ep:text-obs-muted ep:m-0 ep:mb-6",
 		});
 
-		// Countdown display
 		const countdownContainer = waitingEl.createDiv({ cls: "ep:mb-6" });
 		countdownContainer.createEl("p", {
 			text: `${pendingCards.length} learning card${
@@ -1421,7 +1221,6 @@ export class ReviewView extends ItemView {
 			text: this.formatCountdown(timeUntilDue),
 		});
 
-		// Buttons
 		const waitingBtnCls =
 			"ep:py-3 ep:px-8 ep:border-none ep:rounded-lg ep:cursor-pointer ep:font-medium ep:text-ui-small ep:transition-transform ep:hover:brightness-110 ep:active:scale-98";
 		const buttonsContainerEl = waitingEl.createDiv({
@@ -1432,9 +1231,7 @@ export class ReviewView extends ItemView {
 			cls: `${waitingBtnCls} mod-cta`,
 			text: "Wait",
 		});
-		waitBtn.addEventListener("click", () => {
-			// Just keep waiting, timer will auto-refresh
-		});
+		waitBtn.addEventListener("click", () => {});
 
 		const endBtn = buttonsContainerEl.createEl("button", {
 			cls: `${waitingBtnCls} ep:bg-obs-border ep:text-obs-normal ep:hover:bg-obs-modifier-hover`,
@@ -1446,12 +1243,10 @@ export class ReviewView extends ItemView {
 			this.renderSummary();
 		});
 
-		// Start countdown timer - update every second (only if there's time to wait)
 		if (timeUntilDue > 0) {
 			this.waitingTimerId = this.subs.setInterval(() => {
 				const remaining = this.review.getTimeUntilNextDue();
 				if (remaining <= 0) {
-					// Card is now due, re-render to show it
 					this.clearWaitingTimer();
 					this.render();
 				} else {
@@ -1461,9 +1256,6 @@ export class ReviewView extends ItemView {
 		}
 	}
 
-	/**
-	 * Format milliseconds as MM:SS countdown
-	 */
 	private formatCountdown(ms: number): string {
 		if (ms <= 0) return "0:00";
 		const totalSeconds = Math.ceil(ms / 1000);
@@ -1472,11 +1264,7 @@ export class ReviewView extends ItemView {
 		return `${minutes}:${seconds.toString().padStart(2, "0")}`;
 	}
 
-	/**
-	 * Update scheduling preview for current card
-	 */
 	private updateSchedulingPreview(): void {
-		// Always update FSRS with latest settings (in case user changed them)
 		const fsrsSettings = extractFSRSSettings(this.plugin.settings);
 		this.fsrsService.updateSettings(fsrsSettings);
 
@@ -1487,17 +1275,11 @@ export class ReviewView extends ItemView {
 		}
 	}
 
-	// ===== Event Handlers =====
-
 	private handleShowAnswer(): void {
 		this.review.revealAnswer();
 		this.updateSchedulingPreview();
 	}
 
-	/**
-	 * Handle font zoom (Cmd+/Cmd-)
-	 * @param delta - Amount to change (positive = zoom in, negative = zoom out)
-	 */
 	private handleZoom(delta: number): void {
 		const current = this.plugin.settings.reviewFontScale;
 		const newScale = Math.max(0.5, Math.min(2.0, current + delta));
@@ -1508,9 +1290,6 @@ export class ReviewView extends ItemView {
 		}
 	}
 
-	/**
-	 * Apply current font scale to Q&A content
-	 */
 	private applyFontScale(): void {
 		const scale = this.plugin.settings.reviewFontScale;
 		this.cardContainerEl.style.setProperty("--review-font-scale", String(scale));
@@ -1601,10 +1380,6 @@ export class ReviewView extends ItemView {
 		});
 	}
 
-	/**
-	 * Handle undo answer callback from global UndoService
-	 * Removes review from persistent storage and restores queue state
-	 */
 	private async handleUndoAnswerFromService(
 		payload: import("../../services/undo").AnswerUndoPayload
 	): Promise<void> {

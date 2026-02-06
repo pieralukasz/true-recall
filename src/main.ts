@@ -196,14 +196,14 @@ export default class TrueRecallPlugin extends Plugin {
 		// eslint-disable-next-line obsidianmd/ui/sentence-case -- True Recall is a proper noun
 		this.addRibbonIcon("brain", "True Recall - study", () => {
 			this.startReviewSession().catch((error) => {
-				console.error("[True Recall] Failed to start review session:", error);
+				notify().error("Failed to start review session", error);
 			});
 		});
 
 		// eslint-disable-next-line obsidianmd/ui/sentence-case -- True Recall is a proper noun
 		this.addRibbonIcon("bar-chart-2", "True Recall - statistics", () => {
 			this.openStatsView().catch((error) => {
-				console.error("[True Recall] Failed to open stats view:", error);
+				notify().error("Failed to open statistics view", error);
 			});
 		});
 

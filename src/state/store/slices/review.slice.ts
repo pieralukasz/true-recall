@@ -112,10 +112,6 @@ export function createReviewSlice(
 		stats: initial.stats,
 		cachedBadgeCounts: initial.cachedBadgeCounts,
 
-		// ============================================================
-		// Session Lifecycle
-		// ============================================================
-
 		startSession: (queue: FSRSFlashcardItem[]) => {
 			const cachedBadgeCounts = computeBadgeCounts(queue, 0);
 			schedulingPreview = null;
@@ -186,10 +182,6 @@ export function createReviewSlice(
 			}));
 		},
 
-		// ============================================================
-		// Answer Display
-		// ============================================================
-
 		revealAnswer: () => {
 			const state = get().review;
 			if (!state.isActive || state.isAnswerRevealed) return;
@@ -204,10 +196,6 @@ export function createReviewSlice(
 				review: { ...s.review, isAnswerRevealed: false },
 			}));
 		},
-
-		// ============================================================
-		// Card Navigation
-		// ============================================================
 
 		nextCard: () => {
 			const state = get().review;
@@ -336,10 +324,6 @@ export function createReviewSlice(
 
 			return nextIndex < newQueue.length;
 		},
-
-		// ============================================================
-		// Queue Manipulation
-		// ============================================================
 
 		requeueCard: (card: FSRSFlashcardItem, position?: number) => {
 			const state = get().review;
@@ -526,10 +510,6 @@ export function createReviewSlice(
 			}));
 		},
 
-		// ============================================================
-		// Undo
-		// ============================================================
-
 		undoLastAnswer: (
 			previousIndex: number,
 			restoredCard: FSRSFlashcardItem,
@@ -573,10 +553,6 @@ export function createReviewSlice(
 			}));
 		},
 
-		// ============================================================
-		// Edit Mode (outside state)
-		// ============================================================
-
 		getEditState: () => ({ ...editMode }),
 
 		startEdit: (field: "question" | "answer") => {
@@ -619,19 +595,11 @@ export function createReviewSlice(
 			}));
 		},
 
-		// ============================================================
-		// Scheduling Preview (ephemeral)
-		// ============================================================
-
 		getSchedulingPreview: () => schedulingPreview,
 
 		setSchedulingPreview: (preview: SchedulingPreview | null) => {
 			schedulingPreview = preview;
 		},
-
-		// ============================================================
-		// Computed Getters
-		// ============================================================
 
 		getCurrentCard: () => {
 			const state = get().review;

@@ -1,17 +1,7 @@
-/**
- * Stats Actions Module
- * Review log, daily statistics, and aggregate queries
- *
- * Consolidates functionality from SqliteDailyStatsRepo and SqliteAggregations
- * Uses SQL column aliases to map directly to interface properties where possible
- */
 import type { CardReviewLogEntry, ExtendedDailyStats, CardMaturityBreakdown, CardsCreatedVsReviewedEntry, ProblemCard, StudyPattern, TimeToMasteryStats } from "types";
 import { SqliteDatabase } from "../SqliteDatabase";
 import { generateUUID } from "../sqlite.types";
 
-/**
- * Review log entry with sync timestamps
- */
 export interface ReviewLogForSync {
     id: string;
     cardId: string;
@@ -25,17 +15,9 @@ export interface ReviewLogForSync {
     deletedAt: number | null;
 }
 
-/**
- * Stats and aggregations operations
- */
 export class StatsActions {
     constructor(private db: SqliteDatabase) {}
 
-    // ===== Review Log =====
-
-    /**
-     * Add a review log entry with UUID primary key
-     */
     addReviewLog(
         cardId: string,
         rating: number,
@@ -90,11 +72,6 @@ export class StatsActions {
         )?.count ?? 0;
     }
 
-    // ===== Daily Stats =====
-
-    /**
-     * Get daily stats for a date (optimized with single JOIN query)
-     */
     getDailyStats(date: string): ExtendedDailyStats | null {
         const row = this.db.get<{
             date: string;
@@ -401,11 +378,6 @@ export class StatsActions {
         return stats;
     }
 
-    // ===== Aggregations =====
-
-    /**
-     * Get card maturity breakdown (for stats panel)
-     */
     getCardMaturityBreakdown(): CardMaturityBreakdown {
         const row = this.db.get<{
             suspended: number;
@@ -705,11 +677,6 @@ export class StatsActions {
         }];
     }
 
-    // ===== Sync Operations =====
-
-    /**
-     * Get review log entries modified since timestamp (for sync push)
-     */
     getModifiedReviewLogSince(timestamp: number): ReviewLogForSync[] {
         return this.db.query<ReviewLogForSync>(`
             SELECT
@@ -778,8 +745,6 @@ export class StatsActions {
         this.db.run(`DELETE FROM review_log`);
     }
 
-    // ===== FSRS Helper: Optimization Data =====
-
     /**
      * Get review data for FSRS parameter optimization
      * Returns review history with card states for the optimizer algorithm
@@ -825,8 +790,6 @@ export class StatsActions {
             reviewedAt: new Date(row.reviewedAt).getTime(),
         }));
     }
-
-    // ===== FSRS Helper: Retention Data =====
 
     /**
      * Get review data for true retention calculation
