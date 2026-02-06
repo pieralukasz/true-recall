@@ -576,6 +576,9 @@
   .ep\:min-w-\[160px\] {
     min-width: 160px;
   }
+  .ep\:min-w-\[200px\] {
+    min-width: 200px;
+  }
   .ep\:flex-1 {
     flex: 1;
   }

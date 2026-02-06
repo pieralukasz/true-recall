@@ -44,6 +44,13 @@ export type {
 	StatsSliceState,
 	StatsSliceActions,
 	StatsApi,
+	// Note Hub slice
+	NoteHubSliceState,
+	NoteHubSliceActions,
+	NoteHubApi,
+	NoteHubStatusFilter,
+	NoteHubSortBy,
+	NoteHubSortDirection,
 	// Helper types
 	SliceCreator,
 } from "./types";

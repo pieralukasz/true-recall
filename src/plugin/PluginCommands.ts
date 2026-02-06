@@ -96,6 +96,12 @@ export function registerCommands(plugin: TrueRecallPlugin): void {
 	});
 
 	plugin.addCommand({
+		id: "open-note-hub",
+		name: "Open note hub",
+		callback: () => void plugin.openNoteHub(),
+	});
+
+	plugin.addCommand({
 		id: "create-backup",
 		name: "Create database backup",
 		callback: () => void plugin.createManualBackup(),

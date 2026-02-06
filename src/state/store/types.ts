@@ -356,6 +356,46 @@ export type StatsApi = StatsSliceState & StatsSliceActions;
 
 export type ReviewApi = ReviewSliceState & ReviewSliceActions;
 
+export type NoteHubStatusFilter = "all" | "has-due" | "has-new" | "needs-cards" | "no-due";
+export type NoteHubSortBy = "name" | "due" | "cards";
+export type NoteHubSortDirection = "asc" | "desc";
+
+export interface NoteHubSliceState {
+	isLoading: boolean;
+	projects: ProjectInfo[];
+	unassignedNotes: ProjectNoteInfo[];
+	searchQuery: string;
+	expandedProjectIds: Set<string>;
+	selectionMode: SelectionMode;
+	selectedNotePaths: Set<string>;
+	statusFilter: NoteHubStatusFilter;
+	sortBy: NoteHubSortBy;
+	sortDirection: NoteHubSortDirection;
+}
+
+export interface NoteHubSliceActions {
+	setState: (partial: Partial<NoteHubSliceState>) => void;
+	reset: () => void;
+	setLoading: (isLoading: boolean) => void;
+	setProjects: (projects: ProjectInfo[]) => void;
+	setUnassignedNotes: (notes: ProjectNoteInfo[]) => void;
+	setSearchQuery: (query: string) => void;
+	toggleProjectExpanded: (projectId: string) => void;
+	isProjectExpanded: (projectId: string) => boolean;
+	enterSelectionMode: (initialNotePath?: string) => void;
+	exitSelectionMode: () => void;
+	toggleNoteSelection: (notePath: string) => void;
+	isInSelectionMode: () => boolean;
+	getSelectedNotePaths: () => string[];
+	setStatusFilter: (filter: NoteHubStatusFilter) => void;
+	setSortBy: (sortBy: NoteHubSortBy) => void;
+	toggleSortDirection: () => void;
+	getFilteredProjects: () => ProjectInfo[];
+	getFilteredUnassignedNotes: () => ProjectNoteInfo[];
+}
+
+export type NoteHubApi = NoteHubSliceState & NoteHubSliceActions;
+
 export interface AppState {
 	review: ReviewSliceState & ReviewSliceActions;
 	panel: PanelSliceState & PanelSliceActions;
@@ -364,6 +404,7 @@ export interface AppState {
 	projects: ProjectsSliceState & ProjectsSliceActions;
 	simulator: SimulatorSliceState & SimulatorSliceActions;
 	stats: StatsSliceState & StatsSliceActions;
+	noteHub: NoteHubSliceState & NoteHubSliceActions;
 }
 
 export type SliceCreator<T> = (
