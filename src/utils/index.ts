@@ -22,3 +22,5 @@ export {
     getTodayKey,
     isTimestampToday,
 } from "./date.utils";
+
+export { BR_REGEX, stripBrTags, stripWikiLinkSyntax } from "./string.utils";

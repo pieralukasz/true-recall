@@ -1,12 +1,12 @@
 import { App, TFile } from "obsidian";
 import type { NoteFlashcardType } from "../../types";
+import { stripWikiLinkSyntax } from "../../utils";
 
 export class FrontmatterService {
 	// ===== Cached regex patterns for performance =====
 	/** Matches YAML frontmatter block */
 	private static readonly FRONTMATTER_REGEX = /^---\n([\s\S]*?)\n---/;
-	/** Matches wiki link syntax for stripping */
-	private static readonly WIKI_LINK_SYNTAX_REGEX = /^\[\[|\]\]$/g;
+	// Wiki link stripping now uses shared stripWikiLinkSyntax from utils
 	/** Matches projects array format: projects: ["a", "b"] */
 	private static readonly PROJECTS_ARRAY_REGEX = /^projects:\s*\[(.*)\]\s*$/m;
 	/** Matches projects list start: projects: */
@@ -60,12 +60,8 @@ ${projectsArray}
 `;
 	}
 
-	/**
-	 * Strip wiki link syntax from project name
-	 * "[[Note Name]]" -> "Note Name"
-	 */
 	private stripWikiLinkSyntax(name: string): string {
-		return name.replace(FrontmatterService.WIKI_LINK_SYNTAX_REGEX, "").trim();
+		return stripWikiLinkSyntax(name);
 	}
 
 	/**

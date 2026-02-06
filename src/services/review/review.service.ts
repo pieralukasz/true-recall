@@ -1,4 +1,5 @@
 import { Rating, State, type Grade } from "ts-fsrs";
+import { stripWikiLinkSyntax, getTodayBoundary } from "../../utils";
 import type {
 	FSRSFlashcardItem,
 	ReviewResult,
@@ -121,11 +122,7 @@ export class ReviewService {
 		weekAgoBoundary: Date;
 	} {
 		const now = new Date();
-		const todayBoundary = new Date(now);
-		if (now.getHours() < dayStartHour) {
-			todayBoundary.setDate(todayBoundary.getDate() - 1);
-		}
-		todayBoundary.setHours(dayStartHour, 0, 0, 0);
+		const todayBoundary = getTodayBoundary(dayStartHour, now);
 
 		const weekAgoBoundary = new Date(todayBoundary);
 		weekAgoBoundary.setDate(weekAgoBoundary.getDate() - 7);
@@ -226,12 +223,8 @@ export class ReviewService {
 						options.sourceUidToProjects.get(card.sourceUid) || [];
 				}
 
-				// Normalize project names (strip [[...]] wiki-link brackets if present)
-				const normalizeProjectName = (name: string): string =>
-					name.replace(/^\[\[|\]\]$/g, "");
-
 				const matches = cardProjects.some((p) =>
-					projectSet.has(normalizeProjectName(p))
+					projectSet.has(stripWikiLinkSyntax(p))
 				);
 				if (!matches) {
 					return false;

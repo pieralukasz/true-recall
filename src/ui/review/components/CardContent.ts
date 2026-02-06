@@ -7,6 +7,7 @@ import { createEditableTextField, TOOLBAR_BUTTONS } from "../../components";
 import { UI_CONFIG } from "../../../constants";
 import type { FSRSFlashcardItem } from "../../../types";
 import type { EditModeState } from "../../../state/store";
+import { BR_REGEX } from "../../../utils";
 
 export interface CardContentCallbacks {
 	onStartEdit: (field: "question" | "answer") => void;
@@ -28,8 +29,6 @@ export interface CardContentDeps {
  * Supports both view mode (markdown) and edit mode (textarea)
  */
 export class CardContent {
-	// Pre-compiled regex for converting legacy <br> tags
-	private static readonly BR_REGEX = /<br\s*\/?>/gi;
 
 	private abortController: AbortController | null = null;
 
@@ -107,7 +106,7 @@ export class CardContent {
 		} else {
 			void MarkdownRenderer.render(
 				this.deps.app,
-				card.question.replace(CardContent.BR_REGEX, "\n"),
+				card.question.replace(BR_REGEX, "\n"),
 				questionEl,
 				sourcePath,
 				this.deps.component
@@ -145,7 +144,7 @@ export class CardContent {
 		} else {
 			void MarkdownRenderer.render(
 				this.deps.app,
-				card.answer.replace(CardContent.BR_REGEX, "\n"),
+				card.answer.replace(BR_REGEX, "\n"),
 				answerEl,
 				sourcePath,
 				this.deps.component

@@ -8,6 +8,7 @@ import { BaseModal } from "./BaseModal";
 import type { FlashcardItem, TrueRecallSettings } from "../../types";
 import { notify, type OpenRouterService } from "../../services";
 import { createModalCardItem, ModalCardItem } from "./components/ModalCardItem";
+import { SECONDARY_BUTTON_CLASSES } from "../utils/tailwind";
 
 export interface FlashcardReviewResult {
 	cancelled: boolean;
@@ -216,7 +217,7 @@ export class FlashcardReviewModal extends BaseModal {
 
 		const cancelButton = buttonsContainer.createEl("button", {
 			text: "Cancel",
-			cls: "ep:py-2.5 ep:px-5 ep:text-ui-small ep:font-medium ep:bg-obs-secondary ep:text-obs-normal ep:border ep:border-obs-border ep:rounded-md ep:cursor-pointer ep:transition-colors ep:hover:bg-obs-modifier-hover",
+			cls: SECONDARY_BUTTON_CLASSES,
 		});
 		cancelButton.addEventListener("click", () => this.handleCancel());
 

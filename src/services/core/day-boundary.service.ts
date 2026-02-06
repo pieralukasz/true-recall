@@ -3,7 +3,11 @@
  */
 import { State } from "ts-fsrs";
 import type { FSRSFlashcardItem } from "../../types";
-import { formatLocalDate as formatLocalDateUtil } from "../../utils";
+import {
+	formatLocalDate as formatLocalDateUtil,
+	getTodayBoundary as getTodayBoundaryUtil,
+	getTomorrowBoundary as getTomorrowBoundaryUtil,
+} from "../../utils";
 
 export class DayBoundaryService {
 	private dayStartHour: number;
@@ -18,20 +22,11 @@ export class DayBoundaryService {
 
 	/** If current hour < dayStartHour, we're still in "yesterday" */
 	getTodayBoundary(now?: Date): Date {
-		const currentTime = now ?? new Date();
-		const boundary = new Date(currentTime);
-		if (currentTime.getHours() < this.dayStartHour) {
-			boundary.setDate(boundary.getDate() - 1);
-		}
-		boundary.setHours(this.dayStartHour, 0, 0, 0);
-		return boundary;
+		return getTodayBoundaryUtil(this.dayStartHour, now);
 	}
 
 	getTomorrowBoundary(now?: Date): Date {
-		const today = this.getTodayBoundary(now);
-		const tomorrow = new Date(today);
-		tomorrow.setDate(tomorrow.getDate() + 1);
-		return tomorrow;
+		return getTomorrowBoundaryUtil(this.dayStartHour, now);
 	}
 
 	/**
