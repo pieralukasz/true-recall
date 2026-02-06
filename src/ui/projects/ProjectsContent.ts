@@ -101,8 +101,10 @@ export class ProjectsContent extends BaseComponent {
 
 		// Section header with buttons (desktop only - on mobile actions are in "..." menu)
 		if (!Platform.isMobile) {
+			// Wrapper div maintains position when SectionHeader re-renders
+			const headerWrapper = this.element.createDiv();
 			const actions = this.getSectionHeaderActions();
-			this.sectionHeader = createSectionHeader(this.element, {
+			this.sectionHeader = createSectionHeader(headerWrapper, {
 				title: "Projects",
 				actions,
 			});
@@ -131,9 +133,8 @@ export class ProjectsContent extends BaseComponent {
 		}
 		this.virtualLists.clear();
 
-		// Clean up section header
-		this.sectionHeader?.destroy();
-		this.sectionHeader = null;
+		// Note: SectionHeader is NOT cleared here - it's independent of project data
+		// and only needs updating when showDoneNotes changes (handled in updateProps)
 	}
 
 	private getSectionHeaderActions(): SectionHeaderAction[] {
