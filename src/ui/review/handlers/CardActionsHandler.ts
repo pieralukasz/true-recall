@@ -75,15 +75,6 @@ export class CardActionsHandler {
 
 		const updatedFsrs = { ...card.fsrs, suspended: true };
 
-		try {
-			this.deps.flashcardManager.updateCardFSRS(card.id, updatedFsrs);
-		} catch (error) {
-			console.error("[CardActionsHandler] Error suspending card:", error);
-			notify().operationFailed("suspend card", error);
-			return;
-		}
-
-		// Push undo entry AFTER successful operation
 		undoService?.push({
 			id: crypto.randomUUID(),
 			actionType: "suspend",
@@ -97,7 +88,7 @@ export class CardActionsHandler {
 			},
 		});
 
-		// Remove from current queue
+		// Remove from current queue first (triggers render immediately)
 		this.deps.getReview().removeCurrentCard();
 
 		// Update scheduling preview for next card
@@ -106,7 +97,15 @@ export class CardActionsHandler {
 		}
 
 		notify().cardSuspended();
-		// Note: render triggered by removeCurrentCard() → notifyListeners()
+
+		// Defer SQLite write until after the browser paints the next card
+		setTimeout(() => {
+			try {
+				this.deps.flashcardManager.updateCardFSRS(card.id, updatedFsrs);
+			} catch (error) {
+				console.error("[CardActionsHandler] Error suspending card:", error);
+			}
+		}, 0);
 	}
 
 	/**
@@ -124,15 +123,6 @@ export class CardActionsHandler {
 		const tomorrow = this.getTomorrowDate();
 		const updatedFsrs = { ...card.fsrs, buriedUntil: tomorrow.toISOString() };
 
-		try {
-			this.deps.flashcardManager.updateCardFSRS(card.id, updatedFsrs);
-		} catch (error) {
-			console.error("[CardActionsHandler] Error burying card:", error);
-			notify().operationFailed("bury card", error);
-			return;
-		}
-
-		// Push undo entry AFTER successful operation
 		undoService?.push({
 			id: crypto.randomUUID(),
 			actionType: "bury",
@@ -146,7 +136,7 @@ export class CardActionsHandler {
 			},
 		});
 
-		// Remove from current queue
+		// Remove from current queue first (triggers render immediately)
 		this.deps.getReview().removeCurrentCard();
 
 		// Update scheduling preview for next card
@@ -155,7 +145,15 @@ export class CardActionsHandler {
 		}
 
 		notify().cardBuried();
-		// Note: render triggered by removeCurrentCard() → notifyListeners()
+
+		// Defer SQLite write until after the browser paints the next card
+		setTimeout(() => {
+			try {
+				this.deps.flashcardManager.updateCardFSRS(card.id, updatedFsrs);
+			} catch (error) {
+				console.error("[CardActionsHandler] Error burying card:", error);
+			}
+		}, 0);
 	}
 
 	/**
