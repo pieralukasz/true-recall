@@ -61,6 +61,11 @@ export class CollapsibleSection extends BaseComponent {
 		// Toggle row (header)
 		const toggleRow = this.element.createDiv({
 			cls: "ep:flex ep:items-center ep:gap-2 ep:cursor-pointer ep:text-obs-muted ep:hover:text-obs-normal ep:transition-colors",
+			attr: {
+				role: "button",
+				tabindex: "0",
+				"aria-expanded": String(this.isExpanded),
+			},
 		});
 
 		// Chevron icon

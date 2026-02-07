@@ -22,9 +22,9 @@ export class CardBacklink {
 			cls: "ep:mt-6 ep:text-center",
 		});
 
-		const linkEl = backlinkEl.createEl("span", {
+		const linkEl = backlinkEl.createEl("button", {
 			text: sourceNoteName,
-			cls: "ep:text-obs-faint ep:text-ui-small ep:cursor-pointer ep:hover:text-obs-muted ep:hover:underline ep:transition-colors",
+			cls: "ep:text-obs-faint ep:text-ui-small ep:cursor-pointer ep:hover:text-obs-muted ep:hover:underline ep:transition-colors ep:bg-transparent ep:border-none ep:p-0",
 			attr: { "data-action": "open-source" },
 		});
 

@@ -42,9 +42,9 @@ export class CardProjects {
 		cardId: string,
 		count: number
 	): void {
-		const toggleEl = container.createEl("span", {
+		const toggleEl = container.createEl("button", {
 			text: `Show projects (${count})`,
-			cls: "ep:text-ui-small ep:text-obs-muted ep:cursor-pointer ep:hover:text-obs-normal ep:hover:underline ep:transition-colors",
+			cls: "ep:text-ui-small ep:text-obs-muted ep:cursor-pointer ep:hover:text-obs-normal ep:hover:underline ep:transition-colors ep:bg-transparent ep:border-none ep:p-0",
 			attr: { "data-action": "toggle-projects", "data-card-id": cardId },
 		});
 
@@ -59,7 +59,7 @@ export class CardProjects {
 		});
 
 		for (const project of projects) {
-			const badgeEl = projectsEl.createEl("span", {
+			const badgeEl = projectsEl.createEl("button", {
 				text: project,
 				cls: "ep:py-0.5 ep:px-2 ep:text-ui-smaller ep:border ep:border-obs-border ep:rounded-xl ep:bg-obs-primary ep:text-obs-muted ep:cursor-pointer ep:transition-all ep:hover:border-obs-interactive ep:hover:text-obs-normal",
 				attr: { "data-action": "open-project", "data-project": project },
