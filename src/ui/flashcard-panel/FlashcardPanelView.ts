@@ -78,6 +78,9 @@ export class FlashcardPanelView extends ItemView {
     // Render optimization: single key to track state changes
     private lastRenderKey: string | null = null;
 
+    // Cache for getCardsWithFsrs() to avoid redundant SQLite queries within a render cycle
+    private cachedCardsWithFsrs: FSRSFlashcardItem[] | null = null;
+
     constructor(leaf: WorkspaceLeaf, plugin: TrueRecallPlugin) {
         super(leaf);
         this.plugin = plugin;
@@ -112,9 +115,6 @@ export class FlashcardPanelView extends ItemView {
         return "layers";
     }
 
-    /**
-     * Add items to the native "..." menu (mobile)
-     */
     onPaneMenu(menu: Menu, source: string): void {
         super.onPaneMenu(menu, source);
 
@@ -123,7 +123,6 @@ export class FlashcardPanelView extends ItemView {
         const state = this.panel;
         if (!state.currentFile) return;
 
-        // Refresh
         menu.addItem((item) => {
             item.setTitle("Refresh")
                 .setIcon("refresh-cw")
@@ -132,7 +131,6 @@ export class FlashcardPanelView extends ItemView {
 
         const hasFlashcards = state.status === "exists";
 
-        // Generate flashcards (only when none exist)
         if (!hasFlashcards) {
             menu.addItem((item) => {
                 item.setTitle("Generate flashcards")
@@ -141,7 +139,6 @@ export class FlashcardPanelView extends ItemView {
             });
         }
 
-        // Actions only when flashcards exist
         if (hasFlashcards) {
             menu.addSeparator();
 
@@ -178,13 +175,11 @@ export class FlashcardPanelView extends ItemView {
         if (!(container instanceof HTMLElement)) return;
         container.empty();
 
-        // Create Panel component (header is native Obsidian header)
         this.panelComponent = new Panel(container, {
             showFooter: true,
         });
         this.panelComponent.render();
 
-        // Get container elements from Panel
         this.contentContainer = this.panelComponent.getContentContainer();
         const footerContainer = this.panelComponent.getFooterContainer();
         if (!footerContainer) {
@@ -193,7 +188,6 @@ export class FlashcardPanelView extends ItemView {
         }
         this.footerContainer = footerContainer;
 
-        // Subscribe to state changes - update render and header actions
         this.unsubscribe = this.plugin.store!.subscribe(
             (state) => state.panel,
             () => {
@@ -202,34 +196,26 @@ export class FlashcardPanelView extends ItemView {
             }
         );
 
-        // Subscribe to EventBus for cross-component reactivity
         this.subscribeToEvents();
 
-        // Subscribe to review state for syncing panel with review session
         this.subscribeToReviewState();
 
-        // Subscribe to stats for header stats updates
         this.subscribeToStats();
 
-        // Register selection tracking for literature notes
         this.registerSelectionTracking();
 
-        // Register editor change tracking for real-time #flashcard tag detection
         this.registerEditorChangeTracking();
 
-        // Setup mobile header FSRS status
         if (Platform.isMobile) {
             this.setupMobileHeaderStatus();
         }
 
-        // Initial render
         await this.loadCurrentFile();
     }
 
     private updateHeaderActions(): void {
         const state = this.panel;
 
-        // Remove existing actions
         if (this.reviewAction) {
             this.reviewAction.remove();
             this.reviewAction = null;
@@ -243,9 +229,7 @@ export class FlashcardPanelView extends ItemView {
             this.deleteAllAction = null;
         }
 
-        // Only show actions when flashcards exist
         if (state.status === "exists" && state.currentFile) {
-            // Desktop only: Delete and Open file actions (on mobile these are in "..." menu)
             if (!Platform.isMobile) {
                 this.deleteAllAction = this.addAction(
                     "trash-2",
@@ -260,7 +244,6 @@ export class FlashcardPanelView extends ItemView {
                 );
             }
 
-            // Review flashcards (both desktop and mobile)
             this.reviewAction = this.addAction(
                 "brain",
                 "Review flashcards",
@@ -275,17 +258,14 @@ export class FlashcardPanelView extends ItemView {
         this.reviewUnsubscribe?.();
         this.statsUnsubscribe?.();
 
-        // Cleanup EventBus subscriptions
         this.eventUnsubscribers.forEach((unsub) => unsub());
         this.eventUnsubscribers = [];
 
-        // Cleanup selection timer
         if (this.selectionTimer) {
             clearTimeout(this.selectionTimer);
             this.selectionTimer = null;
         }
 
-        // Cleanup editor change timer
         if (this.editorChangeTimer) {
             clearTimeout(this.editorChangeTimer);
             this.editorChangeTimer = null;
@@ -297,13 +277,11 @@ export class FlashcardPanelView extends ItemView {
             this.headerStatsTimer = null;
         }
 
-        // Cancel pending RAF callbacks
         for (const id of this.pendingRafIds) {
             cancelAnimationFrame(id);
         }
         this.pendingRafIds.clear();
 
-        // Remove native header actions
         if (this.reviewAction) {
             this.reviewAction.remove();
             this.reviewAction = null;
@@ -337,41 +315,39 @@ export class FlashcardPanelView extends ItemView {
     private subscribeToEvents(): void {
         const eventBus = getEventBus();
 
-        // When a card is added, reload flashcard info
         const unsubAdded = eventBus.on<CardAddedEvent>("card:added", () => {
+            this.invalidateCardsCache();
             void this.loadFlashcardInfo();
         });
         this.eventUnsubscribers.push(unsubAdded);
 
-        // When a card is removed, reload flashcard info
         const unsubRemoved = eventBus.on<CardRemovedEvent>("card:removed", () => {
+            this.invalidateCardsCache();
             void this.loadFlashcardInfo();
         });
         this.eventUnsubscribers.push(unsubRemoved);
 
-        // When card content is updated, reload flashcard info
         const unsubUpdated = eventBus.on<CardUpdatedEvent>("card:updated", (event) => {
-            // For content changes or visibility changes (suspended/buried), do full reload
+            this.invalidateCardsCache();
             if (event.changes.question || event.changes.answer ||
                 event.changes.suspended || event.changes.buried) {
                 void this.loadFlashcardInfo();
                 return;
             }
-            // For FSRS-only changes, debounce header stats update (expensive for large collections)
             if (event.changes.fsrs) {
                 this.scheduleHeaderStatsUpdate();
             }
         });
         this.eventUnsubscribers.push(unsubUpdated);
 
-        // Handle bulk changes (e.g., from diff apply)
         const unsubBulk = eventBus.on<BulkChangeEvent>("cards:bulk-change", () => {
+            this.invalidateCardsCache();
             void this.loadFlashcardInfo();
         });
         this.eventUnsubscribers.push(unsubBulk);
 
-        // Refresh when settings change (dayStartHour affects due card counting)
         const unsubSettings = eventBus.on<SettingsChangedEvent>("settings:changed", () => {
+            this.invalidateCardsCache();
             this.scheduleHeaderStatsUpdate();
         });
         this.eventUnsubscribers.push(unsubSettings);
@@ -422,6 +398,7 @@ export class FlashcardPanelView extends ItemView {
             (state) => state.stats.isStale,
             (isStale) => {
                 if (isStale) {
+                    this.invalidateCardsCache();
                     this.scheduleHeaderStatsUpdate();
                 }
             }
@@ -455,10 +432,10 @@ export class FlashcardPanelView extends ItemView {
     }
 
     private async loadFlashcardInfo(): Promise<void> {
+        this.invalidateCardsCache();
         const state = this.panel;
         const file = state.currentFile;
 
-        // Clear selection when loading new file info
         this.panel.exitSelectionMode();
 
         // Check if store is ready before accessing it
@@ -699,31 +676,36 @@ export class FlashcardPanelView extends ItemView {
     private updateHeaderStatsOnly(): void {
         const cardsWithFsrs = this.getCardsWithFsrs();
 
-        // Update header component with new FSRS data only
         if (this.headerComponent) {
             this.headerComponent.updateProps({
                 cardsWithFsrs,
             });
         }
 
-        // Update mobile header if on mobile
         if (Platform.isMobile) {
-            this.updateMobileHeaderStatus();
+            this.updateMobileHeaderStatus(cardsWithFsrs);
         }
     }
 
     private getCardsWithFsrs(): FSRSFlashcardItem[] {
+        if (this.cachedCardsWithFsrs !== null) {
+            return this.cachedCardsWithFsrs;
+        }
+
         const state = this.panel;
         if (!state.flashcardInfo?.flashcards) return [];
 
-        // Check if store is ready before accessing it
         if (!this.flashcardManager.hasStore()) {
             return [];
         }
 
-        // Get only the cards we need by IDs (optimized batch fetch)
         const cardIds = state.flashcardInfo.flashcards.map(c => c.id);
-        return this.flashcardManager.getCardsByIds(cardIds);
+        this.cachedCardsWithFsrs = this.flashcardManager.getCardsByIds(cardIds);
+        return this.cachedCardsWithFsrs;
+    }
+
+    private invalidateCardsCache(): void {
+        this.cachedCardsWithFsrs = null;
     }
 
     private async handleGenerate(): Promise<void> {
@@ -1405,10 +1387,10 @@ export class FlashcardPanelView extends ItemView {
         titleContainer.appendChild(this.mobileStatusEl);
     }
 
-    private updateMobileHeaderStatus(): void {
+    private updateMobileHeaderStatus(precomputedCards?: FSRSFlashcardItem[]): void {
         if (!this.mobileStatusEl) return;
 
-        const cards = this.getCardsWithFsrs();
+        const cards = precomputedCards ?? this.getCardsWithFsrs();
         const counts = countCardsByState(cards);
 
         this.mobileStatusEl.empty();

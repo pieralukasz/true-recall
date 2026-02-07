@@ -115,6 +115,13 @@ export class VirtualTable {
         return this.columnWidths[key] ?? col?.defaultWidth ?? 100;
     }
 
+    private syncColumnWidthVars(): void {
+        if (!this.tableWrapper) return;
+        for (const col of COLUMNS) {
+            this.tableWrapper.style.setProperty(`--col-${col.key}-w`, `${this.getColumnWidth(col.key)}px`);
+        }
+    }
+
     render(): void {
         this.container.empty();
         this.container.addClass("browser-table");
@@ -144,6 +151,7 @@ export class VirtualTable {
 
         const totalHeight = this.props.cards.length * ROW_HEIGHT;
         this.tableWrapper.style.height = `${totalHeight}px`;
+        this.syncColumnWidthVars();
 
         const table = this.tableWrapper.createEl("table", {
             cls: TABLE_STYLES.TABLE,
@@ -303,21 +311,21 @@ export class VirtualTable {
         });
 
         const questionTd = tr.createEl("td", { cls: TABLE_STYLES.CELL });
-        questionTd.setCssProps({ width: `${this.getColumnWidth("question")}px`, "flex-shrink": "0" });
+        questionTd.setCssProps({ width: "var(--col-question-w)", "flex-shrink": "0" });
         questionTd.createSpan({
             text: truncateText(stripHtml(card.question ?? ""), 60),
             cls: TABLE_STYLES.CELL_CONTENT,
         });
 
         const answerTd = tr.createEl("td", { cls: TABLE_STYLES.CELL });
-        answerTd.setCssProps({ width: `${this.getColumnWidth("answer")}px`, "flex-shrink": "0" });
+        answerTd.setCssProps({ width: "var(--col-answer-w)", "flex-shrink": "0" });
         answerTd.createSpan({
             text: truncateText(stripHtml(card.answer ?? ""), 50),
             cls: TABLE_STYLES.CELL_CONTENT,
         });
 
         const dueTd = tr.createEl("td", { cls: TABLE_STYLES.CELL });
-        dueTd.setCssProps({ width: `${this.getColumnWidth("due")}px`, "flex-shrink": "0" });
+        dueTd.setCssProps({ width: "var(--col-due-w)", "flex-shrink": "0" });
 
         let dueCls = TABLE_STYLES.CELL_CONTENT;
         const dueStatus = getDueDateStatus(card.due);
@@ -330,7 +338,7 @@ export class VirtualTable {
         });
 
         const sourceTd = tr.createEl("td", { cls: TABLE_STYLES.CELL });
-        sourceTd.setCssProps({ width: `${this.getColumnWidth("source")}px`, "flex-shrink": "0" });
+        sourceTd.setCssProps({ width: "var(--col-source-w)", "flex-shrink": "0" });
         if (card.sourceNoteName) {
             const sourceLink = sourceTd.createEl("a", {
                 text: truncateText(card.sourceNoteName, 20),
@@ -366,12 +374,10 @@ export class VirtualTable {
         });
 
         for (const [i, col] of COLUMNS.entries()) {
-            const width = this.getColumnWidth(col.key);
-
             const th = tr.createEl("th", {
                 cls: `${TABLE_STYLES.HEADER_CELL} ep:relative`,
             });
-            th.setCssProps({ width: `${width}px`, "min-width": `${col.minWidth}px`, "flex-shrink": "0" });
+            th.setCssProps({ width: `var(--col-${col.key}-w)`, "min-width": `${col.minWidth}px`, "flex-shrink": "0" });
 
             if (col.sortable) {
                 const sortBtn = th.createEl("button", {
@@ -395,12 +401,12 @@ export class VirtualTable {
             // Resize handle (except for last column)
             if (i < COLUMNS.length - 1) {
                 const handle = th.createDiv({ cls: RESIZE_STYLES.COLUMN_HANDLE });
-                this.setupColumnResize(handle, col.key, th);
+                this.setupColumnResize(handle, col.key);
             }
         }
     }
 
-    private setupColumnResize(handle: HTMLElement, columnKey: string, th: HTMLElement): void {
+    private setupColumnResize(handle: HTMLElement, columnKey: string): void {
         let startX = 0;
         let startWidth = 0;
         let rafId: number | null = null;
@@ -415,8 +421,7 @@ export class VirtualTable {
 
                 const newWidth = Math.max(col.minWidth, startWidth + delta);
                 this.columnWidths[columnKey] = newWidth;
-                th.style.width = `${newWidth}px`;
-                this.updateRowCellWidths();
+                this.syncColumnWidthVars();
             });
         };
 
@@ -443,29 +448,19 @@ export class VirtualTable {
             document.addEventListener("mouseup", onMouseUp);
         });
 
-        // Double-click to reset to default
         handle.addEventListener("dblclick", (e) => {
             e.stopPropagation();
             const col = COLUMNS.find(c => c.key === columnKey);
             if (col) {
                 this.columnWidths[columnKey] = col.defaultWidth;
-                th.style.width = `${col.defaultWidth}px`;
-                this.updateRowCellWidths();
+                this.syncColumnWidthVars();
                 this.saveColumnWidths();
             }
         });
     }
 
     private updateRowCellWidths(): void {
-        for (const [, row] of this.rowPool) {
-            const cells = row.querySelectorAll("td");
-            COLUMNS.forEach((col, i) => {
-                if (cells[i]) {
-                    const width = this.getColumnWidth(col.key);
-                    (cells[i] as HTMLElement).style.width = `${width}px`;
-                }
-            });
-        }
+        this.syncColumnWidthVars();
     }
 
     private renderLoading(): void {
