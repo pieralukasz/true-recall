@@ -160,4 +160,6 @@ export interface UndoEntry {
 	timestamp: number;
 	/** Data needed to reverse the action */
 	payload: UndoPayload;
+	/** Cancel a deferred DB write. Returns true if cancelled (write never happened). */
+	cancelPendingWrite?: () => boolean;
 }

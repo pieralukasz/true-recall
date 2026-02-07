@@ -75,6 +75,9 @@ export class CardActionsHandler {
 
 		const updatedFsrs = { ...card.fsrs, suspended: true };
 
+		let writeExecuted = false;
+		let pendingTimeoutId: ReturnType<typeof setTimeout> | null = null;
+
 		undoService?.push({
 			id: crypto.randomUUID(),
 			actionType: "suspend",
@@ -86,20 +89,27 @@ export class CardActionsHandler {
 				originalFsrs: { ...card.fsrs },
 				previousIndex: currentIndex,
 			},
+			cancelPendingWrite: () => {
+				if (!writeExecuted && pendingTimeoutId !== null) {
+					clearTimeout(pendingTimeoutId);
+					pendingTimeoutId = null;
+					return true;
+				}
+				return false;
+			},
 		});
 
-		// Remove from current queue first (triggers render immediately)
 		this.deps.getReview().removeCurrentCard();
 
-		// Update scheduling preview for next card
 		if (!this.deps.getReview().isComplete()) {
 			this.callbacks.onUpdateSchedulingPreview();
 		}
 
 		notify().cardSuspended();
 
-		// Defer SQLite write until after the browser paints the next card
-		setTimeout(() => {
+		pendingTimeoutId = setTimeout(() => {
+			writeExecuted = true;
+			pendingTimeoutId = null;
 			try {
 				this.deps.flashcardManager.updateCardFSRS(card.id, updatedFsrs);
 			} catch (error) {
@@ -119,9 +129,11 @@ export class CardActionsHandler {
 		const currentIndex = this.deps.getReview().currentIndex;
 		const undoService = this.deps.plugin.undoService;
 
-		// Calculate tomorrow's date based on dayStartHour
 		const tomorrow = this.getTomorrowDate();
 		const updatedFsrs = { ...card.fsrs, buriedUntil: tomorrow.toISOString() };
+
+		let writeExecuted = false;
+		let pendingTimeoutId: ReturnType<typeof setTimeout> | null = null;
 
 		undoService?.push({
 			id: crypto.randomUUID(),
@@ -134,20 +146,27 @@ export class CardActionsHandler {
 				originalFsrs: { ...card.fsrs },
 				previousIndex: currentIndex,
 			},
+			cancelPendingWrite: () => {
+				if (!writeExecuted && pendingTimeoutId !== null) {
+					clearTimeout(pendingTimeoutId);
+					pendingTimeoutId = null;
+					return true;
+				}
+				return false;
+			},
 		});
 
-		// Remove from current queue first (triggers render immediately)
 		this.deps.getReview().removeCurrentCard();
 
-		// Update scheduling preview for next card
 		if (!this.deps.getReview().isComplete()) {
 			this.callbacks.onUpdateSchedulingPreview();
 		}
 
 		notify().cardBuried();
 
-		// Defer SQLite write until after the browser paints the next card
-		setTimeout(() => {
+		pendingTimeoutId = setTimeout(() => {
+			writeExecuted = true;
+			pendingTimeoutId = null;
 			try {
 				this.deps.flashcardManager.updateCardFSRS(card.id, updatedFsrs);
 			} catch (error) {
