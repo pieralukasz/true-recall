@@ -325,7 +325,8 @@ export class ReviewView extends ItemView {
 
 		this.plugin.undoService?.setReviewStateManager(this.review, {
 			onUpdateSchedulingPreview: () => this.updateSchedulingPreview(),
-			onUndoAnswer: (payload) => this.handleUndoAnswerFromService(payload),
+			onUndoAnswer: (payload, writeCancelled) =>
+				this.handleUndoAnswerFromService(payload, writeCancelled),
 		});
 
 		this.registerDomEvent(document, "keydown", (e: KeyboardEvent) => {
@@ -1330,26 +1331,41 @@ export class ReviewView extends ItemView {
 
 		const hasMore = this.review.recordAnswerAndNext(rating, updatedCard, requeueData);
 
-		// Defer persistence and side-effects until after the browser paints the next card
-		setTimeout(() => {
-			this.flashcardManager.updateCardFSRS(card.id, updatedCard.fsrs);
+		// Push undo entry immediately so it's available for instant undo
+		let writeExecuted = false;
+		let pendingTimeoutId: ReturnType<typeof setTimeout> | null = null;
 
-			this.plugin.undoService?.push({
-				id: crypto.randomUUID(),
-				actionType: "answer",
-				description: `Review (${Rating[rating]})`,
-				timestamp: Date.now(),
-				payload: {
-					type: "answer",
-					card: { ...card },
-					originalFsrs: { ...card.fsrs },
-					previousIndex: currentIndex,
-					wasNewCard: isNewCard,
-					rating,
-					previousState,
-					requeuedAtIndex: requeueData?.position,
-				},
-			});
+		this.plugin.undoService?.push({
+			id: crypto.randomUUID(),
+			actionType: "answer",
+			description: `Review (${Rating[rating]})`,
+			timestamp: Date.now(),
+			payload: {
+				type: "answer",
+				card: { ...card },
+				originalFsrs: { ...card.fsrs },
+				previousIndex: currentIndex,
+				wasNewCard: isNewCard,
+				rating,
+				previousState,
+				requeuedAtIndex: requeueData?.position,
+			},
+			cancelPendingWrite: () => {
+				if (!writeExecuted && pendingTimeoutId !== null) {
+					clearTimeout(pendingTimeoutId);
+					pendingTimeoutId = null;
+					return true;
+				}
+				return false;
+			},
+		});
+
+		// Defer persistence until after the browser paints the next card
+		pendingTimeoutId = setTimeout(() => {
+			writeExecuted = true;
+			pendingTimeoutId = null;
+
+			this.flashcardManager.updateCardFSRS(card.id, updatedCard.fsrs);
 
 			try {
 				this.sessionPersistence.recordReview(
@@ -1383,16 +1399,20 @@ export class ReviewView extends ItemView {
 	}
 
 	private async handleUndoAnswerFromService(
-		payload: import("../../services/undo").AnswerUndoPayload
+		payload: import("../../services/undo").AnswerUndoPayload,
+		writeCancelled: boolean
 	): Promise<void> {
 		try {
-			this.sessionPersistence.removeLastReview(
-				payload.card.id,
-				payload.wasNewCard ?? false,
-				payload.rating,
-				payload.previousState
-			);
-			
+			// Only revert stats if the deferred write actually executed
+			if (!writeCancelled) {
+				this.sessionPersistence.removeLastReview(
+					payload.card.id,
+					payload.wasNewCard ?? false,
+					payload.rating,
+					payload.previousState
+				);
+			}
+
 			this.review.undoLastAnswer(
 				payload.previousIndex,
 				{ ...payload.card, fsrs: payload.originalFsrs },

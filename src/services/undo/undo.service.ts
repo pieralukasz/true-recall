@@ -12,7 +12,7 @@ import type {
 
 export interface ReviewUndoCallbacks {
 	onUpdateSchedulingPreview: () => void;
-	onUndoAnswer: (payload: AnswerUndoPayload) => Promise<void>;
+	onUndoAnswer: (payload: AnswerUndoPayload, writeCancelled: boolean) => Promise<void>;
 }
 
 export class UndoService {
@@ -82,16 +82,15 @@ export class UndoService {
 	}
 
 	private async executeUndo(entry: UndoEntry): Promise<boolean> {
+		const writeCancelled = entry.cancelPendingWrite?.() ?? false;
 		const { flashcardManager } = this.plugin;
 		const payload = entry.payload;
 
 		switch (payload.type) {
 			case "create":
-				// Undo create = delete the card
 				return await flashcardManager.removeFlashcardById(payload.cardId);
 
 			case "update":
-				// Undo update = restore previous content
 				flashcardManager.updateCardContent(
 					payload.cardId,
 					payload.previousQuestion,
@@ -100,24 +99,22 @@ export class UndoService {
 				return true;
 
 			case "delete":
-				// Undo delete = restore the card
 				return this.restoreDeletedCard(payload.cardData);
 
 			case "batch-create":
-				// Undo batch create = delete all created cards
 				for (const cardId of payload.cardIds) {
 					await flashcardManager.removeFlashcardById(cardId);
 				}
 				return true;
 
 			case "answer":
-				return await this.undoAnswer(payload);
+				return await this.undoAnswer(payload, writeCancelled);
 
 			case "bury":
-				return this.undoBury(payload);
+				return this.undoBury(payload, writeCancelled);
 
 			case "suspend":
-				return this.undoSuspend(payload);
+				return this.undoSuspend(payload, writeCancelled);
 
 			case "fsrs-helper-operation":
 				return this.undoFSRSHelperOperation(payload);
@@ -149,29 +146,27 @@ export class UndoService {
 		}
 	}
 
-	private async undoAnswer(payload: AnswerUndoPayload): Promise<boolean> {
-		const { flashcardManager } = this.plugin;
+	private async undoAnswer(payload: AnswerUndoPayload, writeCancelled: boolean): Promise<boolean> {
+		// If the deferred write was cancelled, DB still has original FSRS — no write needed
+		if (!writeCancelled) {
+			this.plugin.flashcardManager.updateCardFSRS(payload.card.id, payload.originalFsrs);
+		}
 
-		// Restore original FSRS data
-		flashcardManager.updateCardFSRS(payload.card.id, payload.originalFsrs);
-
-		// Call review-specific callbacks (e.g., update session persistence)
-		// onUndoAnswer calls undoLastAnswer() which handles queue + stats
 		if (this.reviewCallbacks) {
-			await this.reviewCallbacks.onUndoAnswer(payload);
+			await this.reviewCallbacks.onUndoAnswer(payload, writeCancelled);
 			this.reviewCallbacks.onUpdateSchedulingPreview();
 		}
 
 		return true;
 	}
 
-	private undoBury(payload: BuryUndoPayload): boolean {
+	private undoBury(payload: BuryUndoPayload, writeCancelled: boolean): boolean {
 		const { flashcardManager } = this.plugin;
 
-		// Restore original FSRS data for main card
-		flashcardManager.updateCardFSRS(payload.card.id, payload.originalFsrs);
+		if (!writeCancelled) {
+			flashcardManager.updateCardFSRS(payload.card.id, payload.originalFsrs);
+		}
 
-		// Re-insert main card at original position
 		if (this.reviewStateManager) {
 			this.reviewStateManager.insertCardAtPosition(
 				{ ...payload.card, fsrs: payload.originalFsrs },
@@ -179,14 +174,14 @@ export class UndoService {
 			);
 		}
 
-		// Restore additional cards (for "bury note" operation)
 		if (payload.additionalCards) {
 			for (const additionalCard of payload.additionalCards) {
-				flashcardManager.updateCardFSRS(
-					additionalCard.card.id,
-					additionalCard.originalFsrs
-				);
-				// Note: We don't re-insert additional cards as they might have been after current position
+				if (!writeCancelled) {
+					flashcardManager.updateCardFSRS(
+						additionalCard.card.id,
+						additionalCard.originalFsrs
+					);
+				}
 			}
 		}
 
@@ -197,13 +192,11 @@ export class UndoService {
 		return true;
 	}
 
-	private undoSuspend(payload: SuspendUndoPayload): boolean {
-		const { flashcardManager } = this.plugin;
+	private undoSuspend(payload: SuspendUndoPayload, writeCancelled: boolean): boolean {
+		if (!writeCancelled) {
+			this.plugin.flashcardManager.updateCardFSRS(payload.card.id, payload.originalFsrs);
+		}
 
-		// Restore original FSRS data (with suspended: false)
-		flashcardManager.updateCardFSRS(payload.card.id, payload.originalFsrs);
-
-		// Re-insert card at original position
 		if (this.reviewStateManager) {
 			this.reviewStateManager.insertCardAtPosition(
 				{ ...payload.card, fsrs: payload.originalFsrs },
