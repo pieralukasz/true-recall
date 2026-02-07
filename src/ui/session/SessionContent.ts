@@ -297,7 +297,7 @@ export class SessionContent extends BaseComponent {
 				});
 			} else if (stat.isCompleted) {
 				item.createSpan({
-					cls: "ep:text-green-500 ep:text-ui-medium ep:font-semibold ep:w-4 ep:text-center",
+					cls: "ep:text-obs-green ep:text-ui-medium ep:font-semibold ep:w-4 ep:text-center",
 					text: "\u2713",
 				});
 			}

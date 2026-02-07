@@ -3,6 +3,7 @@
  */
 import type { SliderConfig } from "./types";
 import { DEFAULT_FSRS_WEIGHTS } from "../../constants";
+import { getThemeColor } from "../utils/theme-colors";
 
 /** Default review sequences */
 export const DEFAULT_SEQUENCES = [
@@ -15,16 +16,18 @@ export const DEFAULT_SEQUENCES = [
 ];
 
 /** Color palette for sequences */
-export const SEQUENCE_COLORS = [
-	"#3b82f6", // blue
-	"#ef4444", // red
-	"#f59e0b", // amber
-	"#22c55e", // green
-	"#06b6d4", // cyan
-	"#8b5cf6", // violet
-	"#ec4899", // pink
-	"#14b8a6", // teal
-];
+export function getSequenceColors(): string[] {
+	return [
+		getThemeColor("--color-blue"),
+		getThemeColor("--color-red"),
+		getThemeColor("--color-yellow"),
+		getThemeColor("--color-green"),
+		getThemeColor("--color-cyan"),
+		getThemeColor("--color-purple"),
+		getThemeColor("--color-pink"),
+		getThemeColor("--color-orange"),
+	];
+}
 
 /** Grade names for display */
 export const GRADE_NAMES: Record<number, string> = {

@@ -7,6 +7,7 @@ import { Chart } from "chart.js";
 import type { CardsCreatedVsReviewedEntry, FSRSFlashcardItem, StatsTimeRange } from "../../../types";
 import { ChartSection, type ChartSectionProps } from "./ChartSection";
 import type { StatsCalculatorService } from "../../../services";
+import { getThemeColor, getThemeColorWithAlpha } from "../../utils/theme-colors";
 
 export interface CreatedVsReviewedChartProps extends ChartSectionProps {
 	statsCalculator: StatsCalculatorService;
@@ -65,22 +66,22 @@ export class CreatedVsReviewedChart extends ChartSection<CardsCreatedVsReviewedE
 					{
 						label: "Created",
 						data: data.map((d) => d.created),
-						backgroundColor: "rgba(34, 197, 94, 0.7)", // Green
-						borderColor: "rgb(34, 197, 94)",
+						backgroundColor: getThemeColorWithAlpha("--color-green", 0.7),
+						borderColor: getThemeColor("--color-green"),
 						borderWidth: 1,
 					},
 					{
 						label: "Reviewed",
 						data: data.map((d) => d.reviewed),
-						backgroundColor: "rgba(59, 130, 246, 0.7)", // Blue
-						borderColor: "rgb(59, 130, 246)",
+						backgroundColor: getThemeColorWithAlpha("--color-blue", 0.7),
+						borderColor: getThemeColor("--color-blue"),
 						borderWidth: 1,
 					},
 					{
 						label: "Created & Reviewed Same Day",
 						data: data.map((d) => d.createdAndReviewedSameDay),
-						backgroundColor: "rgba(251, 146, 60, 0.8)", // Orange
-						borderColor: "rgb(251, 146, 60)",
+						backgroundColor: getThemeColorWithAlpha("--color-orange", 0.8),
+						borderColor: getThemeColor("--color-orange"),
 						borderWidth: 1,
 					},
 				],

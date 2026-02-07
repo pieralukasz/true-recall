@@ -50,7 +50,7 @@ export class CardCountDisplay extends BaseComponent {
 		// New count (blue)
 		this.element.createSpan({
 			text: String(newCount),
-			cls: "ep:text-blue-500",
+			cls: "ep:text-obs-blue",
 		});
 
 		this.element.createSpan({ text: "·", cls: "ep:text-obs-faint" });
@@ -59,7 +59,7 @@ export class CardCountDisplay extends BaseComponent {
 		if (variant === "full") {
 			this.element.createSpan({
 				text: String(learningCount),
-				cls: "ep:text-orange-500",
+				cls: "ep:text-obs-orange",
 			});
 
 			this.element.createSpan({ text: "·", cls: "ep:text-obs-faint" });
@@ -68,7 +68,7 @@ export class CardCountDisplay extends BaseComponent {
 		// Due/Review count (green)
 		this.element.createSpan({
 			text: String(dueCount),
-			cls: "ep:text-green-500",
+			cls: "ep:text-obs-green",
 		});
 
 		// Total count (optional)

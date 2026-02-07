@@ -666,9 +666,9 @@ export class ReviewView extends ItemView {
 		count: number
 	): void {
 		const typeColors = {
-			new: "ep:bg-green-500/20 ep:text-green-500",
-			learning: "ep:bg-orange-500/20 ep:text-orange-500",
-			due: "ep:bg-blue-500/20 ep:text-blue-500",
+			new: "ep-bg-obs-green-20 ep:text-obs-green",
+			learning: "ep-bg-obs-orange-20 ep:text-obs-orange",
+			due: "ep-bg-obs-blue-20 ep:text-obs-blue",
 		};
 		const badge = container.createDiv({
 			cls: `ep:flex ep:items-center ep:justify-center ep:min-w-5 ep:h-5 ep:px-1.5 ep:rounded-full ep:text-ui-smaller ep:font-semibold ${typeColors[type]}`,
@@ -901,28 +901,28 @@ export class ReviewView extends ItemView {
 				mainButtonsEl,
 				"Again",
 				Rating.Again,
-				`${baseBtnCls} ep:bg-red-500 ep:text-white`,
+				`${baseBtnCls} ep:bg-obs-red ep:text-obs-on-accent`,
 				preview?.again.interval
 			);
 			this.renderRatingButton(
 				mainButtonsEl,
 				"Hard",
 				Rating.Hard,
-				`${baseBtnCls} ep:bg-orange-500 ep:text-white`,
+				`${baseBtnCls} ep:bg-obs-orange ep:text-obs-on-accent`,
 				preview?.hard.interval
 			);
 			this.renderRatingButton(
 				mainButtonsEl,
 				"Good",
 				Rating.Good,
-				`${baseBtnCls} ep:bg-green-500 ep:text-white`,
+				`${baseBtnCls} ep:bg-obs-green ep:text-obs-on-accent`,
 				preview?.good.interval
 			);
 			this.renderRatingButton(
 				mainButtonsEl,
 				"Easy",
 				Rating.Easy,
-				`${baseBtnCls} ep:bg-cyan-500 ep:text-white`,
+				`${baseBtnCls} ep:bg-obs-cyan ep:text-obs-on-accent`,
 				preview?.easy.interval
 			);
 		}
@@ -1106,25 +1106,25 @@ export class ReviewView extends ItemView {
 			statsEl,
 			"Again",
 			stats.again.toString(),
-			"ep:text-red-500"
+			"ep:text-obs-red"
 		);
 		this.renderStatItem(
 			statsEl,
 			"Hard",
 			stats.hard.toString(),
-			"ep:text-orange-500"
+			"ep:text-obs-orange"
 		);
 		this.renderStatItem(
 			statsEl,
 			"Good",
 			stats.good.toString(),
-			"ep:text-green-500"
+			"ep:text-obs-green"
 		);
 		this.renderStatItem(
 			statsEl,
 			"Easy",
 			stats.easy.toString(),
-			"ep:text-cyan-500"
+			"ep:text-obs-cyan"
 		);
 
 		const durationMin = Math.floor(stats.duration / 60000);

@@ -6,6 +6,7 @@ import { Chart } from "chart.js";
 import type { RetentionEntry, StatsTimeRange } from "../../../types";
 import { ChartSection, type ChartSectionProps } from "./ChartSection";
 import type { StatsCalculatorService } from "../../../services";
+import { getThemeColor, getThemeColorWithAlpha } from "../../utils/theme-colors";
 
 export interface RetentionChartProps extends ChartSectionProps {
 	statsCalculator: StatsCalculatorService;
@@ -59,8 +60,8 @@ export class RetentionChart extends ChartSection<RetentionEntry> {
 					{
 						label: "Retention %",
 						data: data.map((d) => d.retention),
-						borderColor: "rgb(34, 197, 94)",
-						backgroundColor: "rgba(34, 197, 94, 0.1)",
+						borderColor: getThemeColor("--color-green"),
+						backgroundColor: getThemeColorWithAlpha("--color-green", 0.1),
 						fill: true,
 						tension: 0.3,
 						pointRadius: data.length > 30 ? 0 : 3,
