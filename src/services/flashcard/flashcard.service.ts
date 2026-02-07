@@ -215,6 +215,11 @@ export class FlashcardManager {
 		return this.cardRepository.delete(cardId);
 	}
 
+	removeFlashcardsByIds(cardIds: string[]): number {
+		if (!this.cardRepository) return 0;
+		return this.cardRepository.deleteBatch(cardIds);
+	}
+
 	removeFlashcardFromSql(cardId: string): void {
 		void this.removeFlashcardById(cardId);
 	}

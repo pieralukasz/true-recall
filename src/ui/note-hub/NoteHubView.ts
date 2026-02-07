@@ -1,7 +1,7 @@
 import { ItemView, WorkspaceLeaf, TFile } from "obsidian";
 import { State } from "ts-fsrs";
 import { VIEW_TYPE_NOTE_HUB, VIEW_TYPE_REVIEW } from "../../constants";
-import { getEventBus, notify } from "../../services";
+import { notify } from "../../services";
 import { SelectionFooter } from "../components";
 import { AddToProjectModal, SelectNoteModal } from "../modals";
 import { NoteHubToolbar } from "./NoteHubToolbar";
@@ -9,7 +9,6 @@ import { NoteHubContent } from "./NoteHubContent";
 import { filterActiveCardsOnly } from "../shared/helpers";
 import type TrueRecallPlugin from "../../main";
 import type { ProjectNoteInfo } from "../../types";
-import type { CardReviewedEvent, BulkChangeEvent } from "../../types/events.types";
 import type { NoteHubApi } from "../../state/store";
 
 export class NoteHubView extends ItemView {
@@ -25,8 +24,8 @@ export class NoteHubView extends ItemView {
 	private footerContainer!: HTMLElement;
 
 	private unsubscribe: (() => void) | null = null;
-	private eventUnsubscribers: (() => void)[] = [];
-	private reviewDebounceTimer: ReturnType<typeof setTimeout> | null = null;
+	private staleUnsubscribe: (() => void) | null = null;
+	private refreshTimer: ReturnType<typeof setTimeout> | null = null;
 
 	constructor(leaf: WorkspaceLeaf, plugin: TrueRecallPlugin) {
 		super(leaf);
@@ -77,16 +76,21 @@ export class NoteHubView extends ItemView {
 			() => this.render()
 		);
 
+		this.staleUnsubscribe = this.plugin.store!.subscribe(
+			(state) => state.noteHub.isStale,
+			(isStale) => {
+				if (isStale) this.scheduleRefresh();
+			}
+		);
+
 		this.render();
 		void this.loadData();
-		this.subscribeToEvents();
 	}
 
 	async onClose(): Promise<void> {
-		if (this.reviewDebounceTimer) clearTimeout(this.reviewDebounceTimer);
+		if (this.refreshTimer) clearTimeout(this.refreshTimer);
 		this.unsubscribe?.();
-		this.eventUnsubscribers.forEach((unsub) => unsub());
-		this.eventUnsubscribers = [];
+		this.staleUnsubscribe?.();
 		this.toolbarComponent?.destroy();
 		this.contentComponent?.destroy();
 		this.selectionFooterComponent?.destroy();
@@ -385,16 +389,12 @@ export class NoteHubView extends ItemView {
 		this.selectionFooterComponent.render();
 	}
 
-	private subscribeToEvents(): void {
-		const eventBus = getEventBus();
-
-		this.eventUnsubscribers.push(
-			eventBus.on<CardReviewedEvent>("card:reviewed", () => {
-				if (this.reviewDebounceTimer) clearTimeout(this.reviewDebounceTimer);
-				this.reviewDebounceTimer = setTimeout(() => void this.loadData(), 2000);
-			}),
-			eventBus.on<BulkChangeEvent>("cards:bulk-change", () => void this.loadData())
-		);
+	private scheduleRefresh(): void {
+		if (this.refreshTimer) clearTimeout(this.refreshTimer);
+		this.refreshTimer = setTimeout(() => {
+			this.noteHub.markFresh();
+			void this.loadData();
+		}, 500);
 	}
 
 	private async handleOpenNote(path: string): Promise<void> {

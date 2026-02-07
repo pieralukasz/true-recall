@@ -260,6 +260,7 @@ export type BrowserApi = BrowserSliceState & BrowserSliceActions;
 
 export interface ProjectsSliceState {
 	isLoading: boolean;
+	isStale: boolean;
 	projects: ProjectInfo[];
 	searchQuery: string;
 	editingProjectId: number | null;
@@ -295,6 +296,9 @@ export interface ProjectsSliceActions {
 	getProjectsWithCards: () => ProjectInfo[];
 	getEmptyProjects: () => ProjectInfo[];
 	getTotalStats: () => { projectCount: number; totalCards: number; totalDue: number };
+	markStale: () => void;
+	markFresh: () => void;
+	getIsStale: () => boolean;
 }
 
 // API type for components to depend on
@@ -362,6 +366,7 @@ export type NoteHubSortDirection = "asc" | "desc";
 
 export interface NoteHubSliceState {
 	isLoading: boolean;
+	isStale: boolean;
 	projects: ProjectInfo[];
 	unassignedNotes: ProjectNoteInfo[];
 	searchQuery: string;
@@ -392,6 +397,9 @@ export interface NoteHubSliceActions {
 	toggleSortDirection: () => void;
 	getFilteredProjects: () => ProjectInfo[];
 	getFilteredUnassignedNotes: () => ProjectNoteInfo[];
+	markStale: () => void;
+	markFresh: () => void;
+	getIsStale: () => boolean;
 }
 
 export type NoteHubApi = NoteHubSliceState & NoteHubSliceActions;

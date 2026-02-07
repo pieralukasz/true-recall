@@ -5,13 +5,14 @@ import type {
 	ProjectsSliceActions,
 } from "../types";
 import type { ProjectInfo, ProjectNoteInfo } from "../../../types";
-import { createSelectionActions, toggleSetItem } from "../helpers/slice-helpers";
+import { createSelectionActions, createStaleTracking, toggleSetItem } from "../helpers/slice-helpers";
 
 type ProjectsSlice = ProjectsSliceState & ProjectsSliceActions;
 
 function createInitialState(): ProjectsSliceState {
 	return {
 		isLoading: true,
+		isStale: false,
 		projects: [],
 		searchQuery: "",
 		editingProjectId: null,
@@ -27,12 +28,14 @@ function createInitialState(): ProjectsSliceState {
 export function createProjectsSlice(
 	set: (fn: (state: AppState) => Partial<AppState>) => void,
 	get: () => AppState,
-	_deps: AppStoreDeps
+	deps: AppStoreDeps
 ): ProjectsSlice {
 	const initial = createInitialState();
+	const stale = createStaleTracking(set, get, "projects", deps.eventBus);
 
 	const slice: ProjectsSlice = {
 		...initial,
+		...stale,
 
 		setState: (partial: Partial<ProjectsSliceState>) => {
 			set((s) => ({
