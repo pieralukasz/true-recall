@@ -114,7 +114,7 @@ export class TimeRangeSelector extends BaseComponent {
 				...baseClasses,
 				// Active state styling - NO border, NO shadow
 				"ep:bg-obs-interactive",
-				"ep:text-white",
+				"ep:text-obs-on-accent",
 			].join(" ");
 		}
 

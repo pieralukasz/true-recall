@@ -8,6 +8,7 @@ import type { CardMaturityBreakdown, FSRSFlashcardItem } from "../../../types";
 import { BaseComponent } from "../../component.base";
 import { StatsCard } from "./StatsCard";
 import type { StatsCalculatorService } from "../../../services";
+import { getThemeColor } from "../../utils/theme-colors";
 
 export interface CardCountsChartProps {
 	statsCalculator: StatsCalculatorService;
@@ -32,15 +33,16 @@ export class CardCountsChart extends BaseComponent {
 	private statsCard: StatsCard;
 	private chart: Chart | null = null;
 
-	// Color definitions
-	private readonly colors = {
-		new: "#4ade80",        // green
-		learning: "#fb923c",   // orange
-		young: "#3b82f6",      // blue
-		mature: "#8b5cf6",     // purple
-		suspended: "#6b7280",  // gray
-		buried: "#9ca3af",     // lighter gray
-	};
+	private getColors() {
+		return {
+			new: getThemeColor("--color-green"),
+			learning: getThemeColor("--color-orange"),
+			young: getThemeColor("--color-blue"),
+			mature: getThemeColor("--color-purple"),
+			suspended: getThemeColor("--text-faint"),
+			buried: getThemeColor("--text-muted"),
+		};
+	}
 
 	constructor(container: HTMLElement, props: CardCountsChartProps) {
 		super(container);
@@ -87,6 +89,7 @@ export class CardCountsChart extends BaseComponent {
 	 * Render the doughnut chart and legend
 	 */
 	private renderChart(breakdown: CardMaturityBreakdown, total: number): void {
+		const colors = this.getColors();
 		const contentContainer = this.statsCard.getContentContainer();
 		contentContainer.empty();
 
@@ -118,24 +121,24 @@ export class CardCountsChart extends BaseComponent {
 		const chartData: number[] = [breakdown.new, breakdown.learning, breakdown.young, breakdown.mature];
 		const chartLabels: string[] = ["New", "Learning", "Young", "Mature"];
 		const chartColors: string[] = [
-			"rgba(74, 222, 128, 0.8)",  // New
-			"rgba(251, 146, 60, 0.8)",  // Learning
-			"rgba(59, 130, 246, 0.8)",  // Young
-			"rgba(139, 92, 246, 0.8)",  // Mature
+			colors.new,
+			colors.learning,
+			colors.young,
+			colors.mature,
 		];
 
 		// Add suspended if any
 		if (breakdown.suspended > 0) {
 			chartData.push(breakdown.suspended);
 			chartLabels.push("Suspended");
-			chartColors.push("rgba(107, 114, 128, 0.8)");
+			chartColors.push(colors.suspended);
 		}
 
 		// Add buried if any
 		if (breakdown.buried > 0) {
 			chartData.push(breakdown.buried);
 			chartLabels.push("Buried");
-			chartColors.push("rgba(156, 163, 175, 0.8)");
+			chartColors.push(colors.buried);
 		}
 
 		// Create chart
@@ -167,6 +170,7 @@ export class CardCountsChart extends BaseComponent {
 	 * Render the interactive legend
 	 */
 	private renderLegend(container: HTMLElement, breakdown: CardMaturityBreakdown, total: number): void {
+		const colors = this.getColors();
 		const legendEl = container.createDiv({
 			cls: [
 				"ep:flex",
@@ -177,10 +181,10 @@ export class CardCountsChart extends BaseComponent {
 
 		// Build legend items
 		const items: LegendItem[] = [
-			{ label: "New", value: breakdown.new, color: this.colors.new, category: "new" },
-			{ label: "Learning", value: breakdown.learning, color: this.colors.learning, category: "learning" },
-			{ label: "Young", value: breakdown.young, color: this.colors.young, category: "young" },
-			{ label: "Mature", value: breakdown.mature, color: this.colors.mature, category: "mature" },
+			{ label: "New", value: breakdown.new, color: colors.new, category: "new" },
+			{ label: "Learning", value: breakdown.learning, color: colors.learning, category: "learning" },
+			{ label: "Young", value: breakdown.young, color: colors.young, category: "young" },
+			{ label: "Mature", value: breakdown.mature, color: colors.mature, category: "mature" },
 		];
 
 		// Add suspended if any
@@ -188,7 +192,7 @@ export class CardCountsChart extends BaseComponent {
 			items.push({
 				label: "Suspended",
 				value: breakdown.suspended,
-				color: this.colors.suspended,
+				color: colors.suspended,
 				category: "suspended",
 			});
 		}
@@ -198,7 +202,7 @@ export class CardCountsChart extends BaseComponent {
 			items.push({
 				label: "Buried",
 				value: breakdown.buried,
-				color: this.colors.buried,
+				color: colors.buried,
 				category: "buried",
 			});
 		}

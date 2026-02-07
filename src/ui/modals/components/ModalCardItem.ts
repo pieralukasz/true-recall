@@ -100,7 +100,7 @@ export class ModalCardItem extends BaseComponent {
 		} else {
 			// Status dot (new cards are blue) - only show when not in selection mode
 			mainRow.createSpan({
-				cls: "ep:w-2 ep:h-2 ep:rounded-full ep:flex-shrink-0 ep:mt-1.5 ep:bg-blue-500",
+				cls: "ep:w-2 ep:h-2 ep:rounded-full ep:flex-shrink-0 ep:mt-1.5 ep:bg-obs-blue",
 				attr: { title: "New" },
 			});
 		}
@@ -188,7 +188,7 @@ export class ModalCardItem extends BaseComponent {
 
 		// Status dot
 		questionRow.createSpan({
-			cls: "ep:w-2 ep:h-2 ep:rounded-full ep:flex-shrink-0 ep:mt-1.5 ep:bg-blue-500",
+			cls: "ep:w-2 ep:h-2 ep:rounded-full ep:flex-shrink-0 ep:mt-1.5 ep:bg-obs-blue",
 			attr: { title: "New" },
 		});
 

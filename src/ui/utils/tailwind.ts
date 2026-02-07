@@ -55,19 +55,19 @@ export const FORM_LABEL_CLASSES =
 
 /** Error message box */
 export const ERROR_BOX_CLASSES =
-	"ep:p-3 ep:bg-red-500/10 ep:border ep:border-red-500/30 ep:rounded ep:text-red-500 ep:text-ui-small";
+	"ep:p-3 ep-bg-obs-red-10 ep:border ep-border-obs-red-30 ep:rounded ep:text-obs-red ep:text-ui-small";
 
 /** Success message box */
 export const SUCCESS_BOX_CLASSES =
-	"ep:p-3 ep:bg-green-500/10 ep:border ep:border-green-500/30 ep:rounded ep:text-green-500 ep:text-ui-small";
+	"ep:p-3 ep-bg-obs-green-10 ep:border ep-border-obs-green-30 ep:rounded ep:text-obs-green ep:text-ui-small";
 
 /** Warning message box */
 export const WARNING_BOX_CLASSES =
-	"ep:p-3 ep:bg-orange-500/10 ep:border ep:border-orange-500/30 ep:rounded ep:text-orange-500 ep:text-ui-small";
+	"ep:p-3 ep-bg-obs-orange-10 ep:border ep-border-obs-orange-30 ep:rounded ep:text-obs-orange ep:text-ui-small";
 
 /** Info message box */
 export const INFO_BOX_CLASSES =
-	"ep:p-3 ep:bg-blue-500/10 ep:border ep:border-blue-500/30 ep:rounded ep:text-blue-500 ep:text-ui-small";
+	"ep:p-3 ep-bg-obs-blue-10 ep:border ep-border-obs-blue-30 ep:rounded ep:text-obs-blue ep:text-ui-small";
 
 /** Secondary button styling */
 export const SECONDARY_BUTTON_CLASSES =

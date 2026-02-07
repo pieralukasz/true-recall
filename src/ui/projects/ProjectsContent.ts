@@ -340,7 +340,7 @@ export class ProjectsContent extends BaseComponent {
 
 		// Delete button
 		const deleteBtn = actions.createEl("button", {
-			cls: `${iconBtnCls} ep:hover:text-red-500`,
+			cls: `${iconBtnCls} ep:hover:text-obs-red`,
 			attr: { "aria-label": "Delete" },
 		});
 		setIcon(deleteBtn, "trash-2");

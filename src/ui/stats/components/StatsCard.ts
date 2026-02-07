@@ -125,7 +125,7 @@ export class StatsCard extends BaseComponent {
 					"ep:text-ui-small",
 					"ep:font-medium",
 					"ep:bg-obs-interactive",
-					"ep:text-white",
+					"ep:text-obs-on-accent",
 					"ep:transition-all",
 					"ep:duration-200",
 					"ep:hover:bg-obs-interactive-hover",

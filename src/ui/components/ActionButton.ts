@@ -115,17 +115,17 @@ export class ActionButton extends BaseComponent {
 				];
 			case "danger":
 				return [
-					"ep:bg-red-500",
-					"ep:text-white",
-					"ep:hover:bg-red-600",
+					"ep:bg-obs-red",
+					"ep:text-obs-on-accent",
+					"ep:hover:bg-obs-red",
 				];
 			case "seed":
 				return [
 					"ep:bg-obs-border",
 					"ep:text-obs-normal",
 					"ep:font-semibold",
-					"ep:hover:bg-amber-400",
-					"ep:hover:text-white",
+					"ep:hover:bg-obs-yellow",
+					"ep:hover:text-obs-on-accent",
 				];
 			default:
 				return [];

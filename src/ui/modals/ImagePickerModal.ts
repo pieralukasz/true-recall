@@ -173,7 +173,7 @@ export class ImagePickerModal extends BasePromiseModal<ImagePickerResult> {
 
             // Size warning badge
             if (this.imageService.isFileTooLarge(file)) {
-                const badge = item.createDiv({ cls: "ep:absolute ep:top-1 ep:right-1 ep:py-0.5 ep:px-1.5 ep:bg-red-500 ep:text-white ep:text-[10px] ep:rounded" });
+                const badge = item.createDiv({ cls: "ep:absolute ep:top-1 ep:right-1 ep:py-0.5 ep:px-1.5 ep:bg-obs-red ep:text-obs-on-accent ep:text-[10px] ep:rounded" });
                 badge.setText("Large");
             }
 

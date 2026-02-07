@@ -164,7 +164,7 @@ export class OrphanedCardsActionModal extends BasePromiseModal<OrphanedCardsActi
 		}
 	): void {
 		const btnCls = config.type === "danger"
-			? "ep:bg-red-600 ep:text-white ep:hover:bg-red-700"
+			? "ep:bg-obs-red ep:text-obs-on-accent ep:hover:opacity-90"
 			: "ep:bg-obs-secondary ep:text-obs-normal ep:hover:bg-obs-modifier-hover";
 
 		const btn = container.createEl("button", {

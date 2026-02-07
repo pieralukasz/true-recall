@@ -4,7 +4,7 @@
  */
 import { FSRS, createEmptyCard, type Grade } from "ts-fsrs";
 import type { SequenceSimulation, SequenceReview } from "../../ui/simulator/types";
-import { SEQUENCE_COLORS } from "../../ui/simulator/constants";
+import { getSequenceColors } from "../../ui/simulator/constants";
 
 /**
  * Service for simulating FSRS review sequences
@@ -18,9 +18,10 @@ export class FSRSSimulatorService {
 		weights: number[],
 		desiredRetention: number
 	): SequenceSimulation[] {
+		const colors = getSequenceColors();
 		return sequences.map((seq, i) => ({
 			sequence: seq,
-			color: SEQUENCE_COLORS[i % SEQUENCE_COLORS.length] ?? "#3b82f6",
+			color: colors[i % colors.length] ?? "#3b82f6",
 			reviews: this.simulateSequence(seq, weights, desiredRetention),
 		}));
 	}
@@ -90,7 +91,8 @@ export class FSRSSimulatorService {
 	 * Generate colors for sequences
 	 */
 	private getColor(index: number): string {
-		return SEQUENCE_COLORS[index % SEQUENCE_COLORS.length] ?? "#3b82f6";
+		const colors = getSequenceColors();
+		return colors[index % colors.length] ?? "#3b82f6";
 	}
 
 	/**

@@ -105,7 +105,7 @@ export class CompactCardItem extends BaseComponent {
         // Buried/Suspended indicator
         if (this.isSuspended()) {
             mainRow.createSpan({
-                cls: "ep:text-ui-smaller ep:text-red-500 ep:font-medium ep:flex-shrink-0",
+                cls: "ep:text-ui-smaller ep:text-obs-red ep:font-medium ep:flex-shrink-0",
                 text: "S",
                 attr: { title: "Suspended - excluded from review" },
             });
@@ -207,18 +207,18 @@ export class CompactCardItem extends BaseComponent {
     }
 
     private getStatusDotColor(): string {
-        if (!this.props.fsrsCard) return "ep:bg-gray-400";
+        if (!this.props.fsrsCard) return "ep:bg-obs-base-40";
 
         switch (this.props.fsrsCard.fsrs.state) {
             case State.New:
-                return "ep:bg-blue-500";
+                return "ep:bg-obs-blue";
             case State.Learning:
             case State.Relearning:
-                return "ep:bg-orange-500";
+                return "ep:bg-obs-orange";
             case State.Review:
-                return "ep:bg-green-500";
+                return "ep:bg-obs-green";
             default:
-                return "ep:bg-gray-400";
+                return "ep:bg-obs-base-40";
         }
     }
 

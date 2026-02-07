@@ -7,6 +7,7 @@ import { Chart } from "chart.js";
 import type { FSRSFlashcardItem, FutureDueEntry, StatsTimeRange } from "../../../types";
 import { ChartSection, type ChartSectionProps } from "./ChartSection";
 import type { StatsCalculatorService } from "../../../services";
+import { getThemeColor, getThemeColorWithAlpha } from "../../utils/theme-colors";
 
 export interface FutureDueChartProps extends ChartSectionProps {
 	statsCalculator: StatsCalculatorService;
@@ -61,8 +62,8 @@ export class FutureDueChart extends ChartSection<FutureDueEntry> {
 					{
 						label: "Cards Due",
 						data: data.map((d) => d.count),
-						backgroundColor: "rgba(59, 130, 246, 0.7)",
-						borderColor: "rgb(59, 130, 246)",
+						backgroundColor: getThemeColorWithAlpha("--color-blue", 0.7),
+						borderColor: getThemeColor("--color-blue"),
 						borderWidth: 1,
 					},
 				],

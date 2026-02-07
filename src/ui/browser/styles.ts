@@ -55,7 +55,7 @@ export const TOOLBAR_STYLES = {
     DROPDOWN: "ep:hidden ep:absolute ep:top-full ep:right-0 ep:mt-1 ep:min-w-[160px] ep:p-1 ep:bg-obs-primary ep:border ep:border-obs-border ep:rounded-lg ep:shadow-s ep:z-[100]",
     DROPDOWN_VISIBLE: "ep:block",
     DROPDOWN_ITEM: "ep:flex ep:items-center ep:gap-2 ep:w-full ep:py-2 ep:px-3 ep:rounded ep:text-[13px] ep:cursor-pointer ep:transition-colors ep:hover:bg-obs-modifier-hover ep:text-obs-normal",
-    DROPDOWN_ITEM_DANGER: "ep:text-obs-error ep:hover:bg-red-500/10",
+    DROPDOWN_ITEM_DANGER: "ep:text-obs-error ep-hover-bg-obs-red-10",
     DROPDOWN_DIVIDER: "ep:h-px ep:my-1 ep:bg-obs-border",
 } as const;
 
@@ -70,7 +70,7 @@ export const SIDEBAR_STYLES = {
 
     FILTER_ITEM_BASE: "ep:flex ep:items-center ep:py-1.5 ep:px-2.5 ep:border-none ep:rounded-md ep:text-[13px] ep:text-left ep:cursor-pointer ep:transition-all",
     FILTER_ITEM_DEFAULT: "ep:bg-transparent ep:text-obs-normal ep:hover:bg-obs-modifier-hover",
-    FILTER_ITEM_SELECTED: "ep:bg-obs-interactive ep:text-on-accent",
+    FILTER_ITEM_SELECTED: "ep:bg-obs-interactive ep:text-obs-on-accent",
 
     FILTER_ICON_DEFAULT: "ep:shrink-0 ep:mr-2 ep:opacity-70",
     FILTER_ICON_SELECTED: "ep:shrink-0 ep:mr-2 ep:opacity-100",
@@ -78,7 +78,7 @@ export const SIDEBAR_STYLES = {
     FILTER_LABEL: "ep:flex-1 ep:overflow-hidden ep:text-ellipsis ep:whitespace-nowrap",
 
     FILTER_COUNT_DEFAULT: "ep:shrink-0 ep:ml-2 ep:text-[11px] ep:font-medium ep:py-0.5 ep:px-1.5 ep:bg-obs-modifier-hover ep:rounded-full ep:text-obs-muted",
-    FILTER_COUNT_SELECTED: "ep:shrink-0 ep:ml-2 ep:text-[11px] ep:font-medium ep:py-0.5 ep:px-1.5 ep:bg-white/20 ep:rounded-full ep:text-on-accent",
+    FILTER_COUNT_SELECTED: "ep:shrink-0 ep:ml-2 ep:text-[11px] ep:font-medium ep:py-0.5 ep:px-1.5 ep:bg-obs-base-100/20 ep:rounded-full ep:text-obs-on-accent",
 } as const;
 
 export const PREVIEW_STYLES = {
@@ -91,8 +91,8 @@ export const PREVIEW_STYLES = {
     HEADER_ACTIONS: "ep:flex ep:items-center ep:gap-1 ep:shrink-0",
 
     ACTION_BTN: "ep:flex ep:items-center ep:justify-center ep:w-7 ep:h-7 ep:p-0 ep:border-none ep:rounded-md ep:bg-transparent ep:text-obs-muted ep:cursor-pointer ep:transition-all ep:hover:bg-obs-modifier-hover ep:hover:text-obs-normal",
-    ACTION_BTN_ACTIVE: "ep:bg-obs-interactive ep:text-on-accent ep:hover:bg-obs-interactive ep:hover:text-on-accent",
-    ACTION_BTN_DANGER: "ep:text-obs-muted ep:hover:bg-red-500/10 ep:hover:text-obs-error",
+    ACTION_BTN_ACTIVE: "ep:bg-obs-interactive ep:text-obs-on-accent ep:hover:bg-obs-interactive ep:hover:text-obs-on-accent",
+    ACTION_BTN_DANGER: "ep:text-obs-muted ep-hover-bg-obs-red-10 ep:hover:text-obs-error",
 
     CONTENT: "ep:flex-1 ep:overflow-y-auto ep:p-4",
     SECTION_LABEL: "ep:block ep:mb-2 ep:text-obs-muted ep:text-[11px] ep:font-semibold ep:uppercase ep:tracking-[0.5px]",
@@ -114,11 +114,11 @@ export const PREVIEW_STYLES = {
 
     // State badges
     BADGE_BASE: "ep:inline-flex ep:items-center ep:py-0.5 ep:px-2 ep:rounded-xl ep:text-[11px] ep:font-semibold ep:uppercase ep:tracking-[0.3px]",
-    BADGE_NEW: "ep:bg-blue-500/15 ep:text-blue-500",
-    BADGE_LEARNING: "ep:bg-orange-500/15 ep:text-orange-500",
-    BADGE_REVIEW: "ep:bg-green-500/15 ep:text-green-500",
-    BADGE_RELEARNING: "ep:bg-yellow-500/15 ep:text-yellow-500",
-    BADGE_SUSPENDED: "ep:bg-red-500/15 ep:text-obs-error",
+    BADGE_NEW: "ep-bg-obs-blue-15 ep:text-obs-blue",
+    BADGE_LEARNING: "ep-bg-obs-orange-15 ep:text-obs-orange",
+    BADGE_REVIEW: "ep-bg-obs-green-15 ep:text-obs-green",
+    BADGE_RELEARNING: "ep-bg-obs-yellow-15 ep:text-obs-yellow",
+    BADGE_SUSPENDED: "ep-bg-obs-red-15 ep:text-obs-error",
     BADGE_BURIED: "ep:bg-obs-modifier-hover ep:text-obs-muted",
     BADGE_UNKNOWN: "ep:bg-obs-modifier-hover ep:text-obs-muted",
 } as const;

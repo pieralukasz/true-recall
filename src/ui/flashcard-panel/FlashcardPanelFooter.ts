@@ -102,9 +102,9 @@ export class FlashcardPanelFooter extends BaseComponent {
 		// Custom styling with gradient - not using ActionButton
 		if (hasUncollectedFlashcards && onCollect) {
 			const collectBtn = buttonsWrapper.createEl("button", {
-				cls: "ep:flex-1 ep:border-none ep:py-2.5 ep:px-4 ep:rounded-md ep:cursor-pointer ep:font-semibold ep:text-ui-small ep:transition-colors ep:text-gray-800",
+				cls: "ep:flex-1 ep:border-none ep:py-2.5 ep:px-4 ep:rounded-md ep:cursor-pointer ep:font-semibold ep:text-ui-small ep:transition-colors ep:text-obs-normal",
 			});
-			collectBtn.setCssProps({ background: "linear-gradient(135deg, #fbbf24, #f59e0b)" });
+			collectBtn.setCssProps({ background: "linear-gradient(135deg, var(--color-yellow), var(--color-orange))" });
 			collectBtn.textContent = `Collect (${uncollectedCount})`;
 			this.events.addEventListener(collectBtn, "click", onCollect);
 		}

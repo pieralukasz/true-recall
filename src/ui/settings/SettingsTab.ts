@@ -54,7 +54,7 @@ export class TrueRecallSettingTab extends PluginSettingTab {
 
 		const tabButtons: Map<SettingsTabId, HTMLElement> = new Map();
 		const tabBtnBase = "ep:py-2 ep:px-4 ep:border-none ep:bg-transparent ep:text-obs-muted ep:cursor-pointer ep:rounded-t ep:text-ui-small ep:font-medium ep:transition-colors ep:shrink-0 ep:whitespace-nowrap ep:hover:bg-obs-modifier-hover ep:hover:text-obs-normal";
-		const tabBtnActive = "ep:bg-obs-interactive ep:text-on-accent ep:hover:bg-obs-interactive ep:hover:text-on-accent";
+		const tabBtnActive = "ep:bg-obs-interactive ep:text-obs-on-accent ep:hover:bg-obs-interactive ep:hover:text-obs-on-accent";
 
 		tabs.forEach((tab) => {
 			const isActive = this.activeTab === tab.id;
@@ -103,7 +103,7 @@ export class TrueRecallSettingTab extends PluginSettingTab {
 	): void {
 		this.activeTab = tabId;
 
-		const activeBtnClasses = ["ep:bg-obs-interactive", "ep:text-on-accent", "ep:hover:bg-obs-interactive", "ep:hover:text-on-accent"];
+		const activeBtnClasses = ["ep:bg-obs-interactive", "ep:text-obs-on-accent", "ep:hover:bg-obs-interactive", "ep:hover:text-obs-on-accent"];
 
 		buttons.forEach((btn, id) => {
 			if (id === tabId) {
@@ -1422,7 +1422,7 @@ export class TrueRecallSettingTab extends PluginSettingTab {
 			const statusDiv = container.createDiv({
 				cls: "ep:flex ep:items-center ep:gap-2 ep:p-3 ep:bg-obs-secondary ep:rounded-md ep:mb-4",
 			});
-			statusDiv.createSpan({ cls: "ep:w-2 ep:h-2 ep:rounded-full ep:bg-green-500 ep:shadow-[0_0_6px_theme(colors.green.500)]" });
+			statusDiv.createSpan({ cls: "ep:w-2 ep:h-2 ep:rounded-full ep:bg-obs-green" });
 			statusDiv.createSpan({ text: "Connected to True Recall Cloud" });
 
 			const userInfo = container.createDiv({
@@ -1508,11 +1508,11 @@ export class TrueRecallSettingTab extends PluginSettingTab {
 			statusEl.classList.remove("ep:hidden");
 			// Error: red background/text, Success: green background/text
 			if (isError) {
-				statusEl.classList.add("ep:bg-red-500/10", "ep:text-red-500");
-				statusEl.classList.remove("ep:bg-green-500/10", "ep:text-green-500");
+				statusEl.classList.add("ep-bg-obs-red-10", "ep:text-obs-red");
+				statusEl.classList.remove("ep-bg-obs-green-10", "ep:text-obs-green");
 			} else {
-				statusEl.classList.add("ep:bg-green-500/10", "ep:text-green-500");
-				statusEl.classList.remove("ep:bg-red-500/10", "ep:text-red-500");
+				statusEl.classList.add("ep-bg-obs-green-10", "ep:text-obs-green");
+				statusEl.classList.remove("ep-bg-obs-red-10", "ep:text-obs-red");
 			}
 		};
 
