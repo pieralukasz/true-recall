@@ -635,6 +635,7 @@ export class ReviewService {
 
 	getRequeuePosition(
 		queue: FSRSFlashcardItem[],
+		startIndex: number,
 		card: FSRSFlashcardItem,
 		reviewOrder?: ReviewOrder
 	): number {
@@ -648,25 +649,24 @@ export class ReviewService {
 				now.getTime() + LEARN_AHEAD_LIMIT_MINUTES * 60 * 1000
 			);
 			if (dueDate <= learnAheadTime) {
-				// Card is due soon - insert randomly in first positions
-				const maxPos = Math.min(RANDOM_QUEUE_INSERT_MAX_POS, queue.length);
-				return Math.floor(Math.random() * (maxPos + 1));
+				// Card is due soon - insert randomly in first positions after startIndex
+				const remaining = queue.length - startIndex;
+				const maxPos = Math.min(RANDOM_QUEUE_INSERT_MAX_POS, remaining);
+				return startIndex + Math.floor(Math.random() * (maxPos + 1));
 			}
 			// Card not due yet - append to end
 			return queue.length;
 		}
 
-		// For due-date or due-date-random: binary search for insertion position
-		// Queue is sorted by due date, so we can use O(log n) search
+		// For due-date or due-date-random: binary search within remaining queue
 		const dueTime = dueDate.getTime();
-		let low = 0;
+		let low = startIndex;
 		let high = queue.length;
 
 		while (low < high) {
-			const mid = (low + high) >>> 1; // Unsigned right shift for safe integer division
+			const mid = (low + high) >>> 1;
 			const midCard = queue[mid];
 			if (!midCard) {
-				// Skip null entries
 				low = mid + 1;
 				continue;
 			}

@@ -26,6 +26,7 @@ export class NoteHubView extends ItemView {
 
 	private unsubscribe: (() => void) | null = null;
 	private eventUnsubscribers: (() => void)[] = [];
+	private reviewDebounceTimer: ReturnType<typeof setTimeout> | null = null;
 
 	constructor(leaf: WorkspaceLeaf, plugin: TrueRecallPlugin) {
 		super(leaf);
@@ -82,6 +83,7 @@ export class NoteHubView extends ItemView {
 	}
 
 	async onClose(): Promise<void> {
+		if (this.reviewDebounceTimer) clearTimeout(this.reviewDebounceTimer);
 		this.unsubscribe?.();
 		this.eventUnsubscribers.forEach((unsub) => unsub());
 		this.eventUnsubscribers = [];
@@ -387,7 +389,10 @@ export class NoteHubView extends ItemView {
 		const eventBus = getEventBus();
 
 		this.eventUnsubscribers.push(
-			eventBus.on<CardReviewedEvent>("card:reviewed", () => void this.loadData()),
+			eventBus.on<CardReviewedEvent>("card:reviewed", () => {
+				if (this.reviewDebounceTimer) clearTimeout(this.reviewDebounceTimer);
+				this.reviewDebounceTimer = setTimeout(() => void this.loadData(), 2000);
+			}),
 			eventBus.on<BulkChangeEvent>("cards:bulk-change", () => void this.loadData())
 		);
 	}

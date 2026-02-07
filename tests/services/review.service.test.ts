@@ -337,11 +337,11 @@ describe("ReviewService", () => {
 				fsrs: { due: new Date("2024-01-15T10:10:00Z").toISOString() },
 			});
 
-			const position = reviewService.getRequeuePosition(queue, card);
+			const position = reviewService.getRequeuePosition(queue, 0, card);
 			expect(position).toBe(1); // Between card-1 and card-2
 		});
 
-		it("should return 0 for earliest due card", () => {
+		it("should return startIndex for earliest due card", () => {
 			const queue = [
 				createMockFlashcard({
 					fsrs: { due: new Date("2024-01-15T10:30:00Z").toISOString() },
@@ -352,7 +352,7 @@ describe("ReviewService", () => {
 				fsrs: { due: new Date("2024-01-15T10:00:00Z").toISOString() },
 			});
 
-			const position = reviewService.getRequeuePosition(queue, card);
+			const position = reviewService.getRequeuePosition(queue, 0, card);
 			expect(position).toBe(0);
 		});
 
@@ -370,14 +370,38 @@ describe("ReviewService", () => {
 				fsrs: { due: new Date("2024-01-15T11:00:00Z").toISOString() },
 			});
 
-			const position = reviewService.getRequeuePosition(queue, card);
+			const position = reviewService.getRequeuePosition(queue, 0, card);
 			expect(position).toBe(2);
 		});
 
 		it("should handle empty queue", () => {
 			const card = createMockFlashcard();
-			const position = reviewService.getRequeuePosition([], card);
+			const position = reviewService.getRequeuePosition([], 0, card);
 			expect(position).toBe(0);
+		});
+
+		it("should search only from startIndex", () => {
+			const queue = [
+				createMockFlashcard({
+					id: "already-reviewed",
+					fsrs: { due: new Date("2024-01-15T10:00:00Z").toISOString() },
+				}),
+				createMockFlashcard({
+					id: "card-1",
+					fsrs: { due: new Date("2024-01-15T10:20:00Z").toISOString() },
+				}),
+				createMockFlashcard({
+					id: "card-2",
+					fsrs: { due: new Date("2024-01-15T10:40:00Z").toISOString() },
+				}),
+			];
+
+			const card = createMockFlashcard({
+				fsrs: { due: new Date("2024-01-15T10:30:00Z").toISOString() },
+			});
+
+			const position = reviewService.getRequeuePosition(queue, 1, card);
+			expect(position).toBe(2); // Between card-1 and card-2
 		});
 	});
 

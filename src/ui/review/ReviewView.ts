@@ -575,12 +575,14 @@ export class ReviewView extends ItemView {
 				return;
 
 			case "complete":
+				this.renderHeader();
 				this.review.endSession();
 				this.renderSummary();
 				this.resetRenderState();
 				return;
 
 			case "waiting":
+				this.renderHeader();
 				this.renderWaitingScreen();
 				this.resetRenderState();
 				return;
@@ -1077,7 +1079,6 @@ export class ReviewView extends ItemView {
 	}
 
 	private renderSummary(): void {
-		this.headerEl.empty();
 		this.cardContainerEl.empty();
 		this.buttonsEl.empty();
 
@@ -1189,7 +1190,6 @@ export class ReviewView extends ItemView {
 
 	private renderWaitingScreen(): void {
 		this.clearWaitingTimer();
-		this.headerEl.empty();
 		this.cardContainerEl.empty();
 		this.buttonsEl.empty();
 
@@ -1314,24 +1314,26 @@ export class ReviewView extends ItemView {
 			responseTime
 		);
 
-		this.flashcardManager.updateCardFSRS(card.id, updatedCard.fsrs);
-
 		let requeueData: { card: FSRSFlashcardItem; position: number } | undefined;
 		if (this.reviewService.shouldRequeue(updatedCard)) {
 			const relativePosition = this.reviewService.getRequeuePosition(
-				this.review.queue.slice(this.review.currentIndex + 1),
+				this.review.queue,
+				this.review.currentIndex + 1,
 				updatedCard,
 				this.plugin.settings.reviewOrder
 			);
 			requeueData = {
 				card: updatedCard,
-				position: this.review.currentIndex + 1 + relativePosition,
+				position: relativePosition,
 			};
 		}
 
 		const hasMore = this.review.recordAnswerAndNext(rating, updatedCard, requeueData);
 
-		queueMicrotask(() => {
+		// Defer persistence and side-effects until after the browser paints the next card
+		setTimeout(() => {
+			this.flashcardManager.updateCardFSRS(card.id, updatedCard.fsrs);
+
 			this.plugin.undoService?.push({
 				id: crypto.randomUUID(),
 				actionType: "answer",
@@ -1377,7 +1379,7 @@ export class ReviewView extends ItemView {
 			if (hasMore) {
 				this.updateSchedulingPreview();
 			}
-		});
+		}, 0);
 	}
 
 	private async handleUndoAnswerFromService(
