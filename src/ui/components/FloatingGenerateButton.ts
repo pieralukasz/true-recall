@@ -10,7 +10,7 @@ export class FloatingGenerateButton {
 	private plugin: TrueRecallPlugin;
 	private buttonEl: HTMLElement | null = null;
 	private isVisible = false;
-	private selectionCheckInterval: number | null = null;
+	private selectionDebounceTimer: number | null = null;
 	private currentSelection = "";
 
 	constructor(plugin: TrueRecallPlugin) {
@@ -68,27 +68,32 @@ export class FloatingGenerateButton {
 	}
 
 	private startSelectionMonitoring(): void {
-		// Check selection every 200ms
-		this.selectionCheckInterval = window.setInterval(() => {
-			this.checkSelection();
-		}, 200);
-
-		// Also listen for mouseup for faster response
+		document.addEventListener("selectionchange", this.handleSelectionChange);
 		document.addEventListener("mouseup", this.handleMouseUp);
 		document.addEventListener("keyup", this.handleKeyUp);
 	}
 
 	private stopSelectionMonitoring(): void {
-		if (this.selectionCheckInterval !== null) {
-			window.clearInterval(this.selectionCheckInterval);
-			this.selectionCheckInterval = null;
-		}
+		document.removeEventListener("selectionchange", this.handleSelectionChange);
 		document.removeEventListener("mouseup", this.handleMouseUp);
 		document.removeEventListener("keyup", this.handleKeyUp);
+		if (this.selectionDebounceTimer !== null) {
+			window.clearTimeout(this.selectionDebounceTimer);
+			this.selectionDebounceTimer = null;
+		}
 	}
 
+	private handleSelectionChange = (): void => {
+		if (this.selectionDebounceTimer !== null) {
+			window.clearTimeout(this.selectionDebounceTimer);
+		}
+		this.selectionDebounceTimer = window.setTimeout(() => {
+			this.selectionDebounceTimer = null;
+			this.checkSelection();
+		}, 150);
+	};
+
 	private handleMouseUp = (): void => {
-		// Small delay to let selection finalize
 		setTimeout(() => this.checkSelection(), 50);
 	};
 
@@ -134,11 +139,13 @@ export class FloatingGenerateButton {
 	private show(): void {
 		if (this.isVisible || !this.buttonEl) return;
 
-		this.buttonEl.setCssProps({ display: "flex" });
-		// Trigger reflow for animation
-		void this.buttonEl.offsetWidth;
-		this.buttonEl.addClass("ep-floating-generate-btn--visible");
 		this.isVisible = true;
+		this.buttonEl.setCssProps({ display: "flex" });
+		requestAnimationFrame(() => {
+			requestAnimationFrame(() => {
+				this.buttonEl?.addClass("ep-floating-generate-btn--visible");
+			});
+		});
 	}
 
 	private hide(): void {
