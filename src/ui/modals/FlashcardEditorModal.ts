@@ -165,6 +165,11 @@ export class FlashcardEditorModal extends BaseModal {
 		// Toggle row
 		const toggleRow = this.aiAssistContainer.createDiv({
 			cls: "ep:flex ep:items-center ep:gap-2 ep:cursor-pointer ep:text-obs-muted ep:hover:text-obs-normal ep:transition-colors",
+			attr: {
+				role: "button",
+				tabindex: "0",
+				"aria-expanded": String(this.isAiAssistExpanded),
+			},
 		});
 
 		const toggleIcon = toggleRow.createSpan({ cls: "ep:w-4 ep:h-4 ep:transition-transform" });

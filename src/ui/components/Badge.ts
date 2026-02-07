@@ -85,7 +85,7 @@ const CHIP_ACTIVE_CLASSES =
 export function createChip(
 	container: HTMLElement,
 	props: ChipProps
-): HTMLSpanElement {
+): HTMLSpanElement | HTMLButtonElement {
 	const { text, isActive = false, onClick, className } = props;
 
 	const stateClasses = isActive ? CHIP_ACTIVE_CLASSES : CHIP_INACTIVE_CLASSES;
@@ -93,14 +93,17 @@ export function createChip(
 		.filter(Boolean)
 		.join(" ");
 
-	const chip = container.createSpan({
+	if (onClick) {
+		const chip = container.createEl("button", {
+			text,
+			cls: classes,
+		});
+		chip.addEventListener("click", onClick);
+		return chip;
+	}
+
+	return container.createSpan({
 		text,
 		cls: classes,
 	});
-
-	if (onClick) {
-		chip.addEventListener("click", onClick);
-	}
-
-	return chip;
 }

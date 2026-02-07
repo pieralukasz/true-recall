@@ -230,6 +230,7 @@ export class SessionContent extends BaseComponent {
 			cls: "ep:w-full ep:py-2 ep:px-3 ep:border ep:border-obs-border ep:rounded-md ep:bg-obs-primary ep:text-obs-normal ep:text-ui-small ep:focus:outline-none ep:focus:border-obs-interactive ep:placeholder:text-obs-muted",
 			type: "text",
 			placeholder: "Search notes...",
+			attr: { "aria-label": "Search notes" },
 		});
 		searchInput.value = searchQuery;
 

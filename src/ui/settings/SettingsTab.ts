@@ -41,6 +41,7 @@ export class TrueRecallSettingTab extends PluginSettingTab {
 
 		const tabsNav = containerEl.createDiv({
 			cls: "ep:flex ep:gap-1 ep:mb-5 ep:border-b ep:border-obs-border ep:pb-2 ep:overflow-x-auto",
+			attr: { role: "tablist" },
 		});
 		const tabs: { id: SettingsTabId; label: string }[] = [
 			{ id: "general", label: "General" },
@@ -60,6 +61,11 @@ export class TrueRecallSettingTab extends PluginSettingTab {
 			const btn = tabsNav.createEl("button", {
 				text: tab.label,
 				cls: `${tabBtnBase} ${isActive ? tabBtnActive : ""}`,
+				attr: {
+					role: "tab",
+					"aria-selected": String(isActive),
+					"aria-controls": `true-recall-tabpanel-${tab.id}`,
+				},
 			});
 			btn.dataset.tabId = tab.id;
 			btn.addEventListener("click", () =>
@@ -73,6 +79,10 @@ export class TrueRecallSettingTab extends PluginSettingTab {
 			const isActive = this.activeTab === tab.id;
 			const content = containerEl.createDiv({
 				cls: isActive ? "ep:block ep:animate-in ep:fade-in" : "ep:hidden",
+				attr: {
+					role: "tabpanel",
+					id: `true-recall-tabpanel-${tab.id}`,
+				},
 			});
 			content.dataset.tabId = tab.id;
 			tabContents.set(tab.id, content);
@@ -98,8 +108,10 @@ export class TrueRecallSettingTab extends PluginSettingTab {
 		buttons.forEach((btn, id) => {
 			if (id === tabId) {
 				activeBtnClasses.forEach(cls => btn.classList.add(cls));
+				btn.setAttribute("aria-selected", "true");
 			} else {
 				activeBtnClasses.forEach(cls => btn.classList.remove(cls));
+				btn.setAttribute("aria-selected", "false");
 			}
 		});
 
