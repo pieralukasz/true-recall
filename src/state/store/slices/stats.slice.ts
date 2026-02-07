@@ -1,5 +1,5 @@
 import type { AppState, AppStoreDeps, StatsSliceState, StatsSliceActions } from "../types";
-import type { FlashcardEventType } from "../../../types/events.types";
+import { createStaleTracking } from "../helpers/slice-helpers";
 
 type StatsSlice = StatsSliceState & StatsSliceActions;
 
@@ -8,41 +8,17 @@ export function createStatsSlice(
 	get: () => AppState,
 	deps: AppStoreDeps
 ): StatsSlice {
-	const eventBus = deps.eventBus;
-
-	const markStale = (): void => {
-		set((s) => ({
-			stats: { ...s.stats, isStale: true },
-		}));
-	};
-
-	// Auto-invalidate stats on card events
-	const invalidatingEvents: FlashcardEventType[] = [
-		"card:added",
-		"card:removed",
-		"card:updated",
-		"card:reviewed",
-		"cards:bulk-change",
-	];
-
-	for (const eventType of invalidatingEvents) {
-		eventBus.on(eventType, markStale);
-	}
+	const stale = createStaleTracking(set, get, "stats", deps.eventBus);
 
 	return {
-		// State
+		...stale,
 		isStale: true,
 		lastRefreshed: 0,
-
-		// Actions
-		markStale,
 
 		markFresh: (): void => {
 			set((s) => ({
 				stats: { ...s.stats, isStale: false, lastRefreshed: Date.now() },
 			}));
 		},
-
-		getIsStale: (): boolean => get().stats.isStale,
 	};
 }

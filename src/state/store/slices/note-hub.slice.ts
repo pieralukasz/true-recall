@@ -7,13 +7,14 @@ import type {
 	NoteHubSortBy,
 } from "../types";
 import type { ProjectInfo, ProjectNoteInfo } from "../../../types";
-import { createSelectionActions, toggleSetItem } from "../helpers/slice-helpers";
+import { createSelectionActions, createStaleTracking, toggleSetItem } from "../helpers/slice-helpers";
 
 type NoteHubSlice = NoteHubSliceState & NoteHubSliceActions;
 
 function createInitialState(): NoteHubSliceState {
 	return {
 		isLoading: true,
+		isStale: false,
 		projects: [],
 		unassignedNotes: [],
 		searchQuery: "",
@@ -58,12 +59,14 @@ function sortNotes(notes: ProjectNoteInfo[], sortBy: NoteHubSortBy, direction: "
 export function createNoteHubSlice(
 	set: (fn: (state: AppState) => Partial<AppState>) => void,
 	get: () => AppState,
-	_deps: AppStoreDeps
+	deps: AppStoreDeps
 ): NoteHubSlice {
 	const initial = createInitialState();
+	const stale = createStaleTracking(set, get, "noteHub", deps.eventBus);
 
 	const slice: NoteHubSlice = {
 		...initial,
+		...stale,
 
 		setState: (partial: Partial<NoteHubSliceState>) => {
 			set((s) => ({

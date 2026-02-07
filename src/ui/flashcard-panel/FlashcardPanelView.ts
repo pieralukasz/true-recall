@@ -1114,21 +1114,8 @@ export class FlashcardPanelView extends ItemView {
         const confirmed = window.confirm(`Delete ${selectedCards.length} selected card(s)?`);
         if (!confirmed) return;
 
-        // Delete cards by ID in parallel (order doesn't matter)
-        const results = await Promise.allSettled(
-            selectedCards.map((card) =>
-                this.flashcardManager.removeFlashcardById(card.id)
-            )
-        );
-
-        const successCount = results.filter(
-            (r) => r.status === "fulfilled" && r.value === true
-        ).length;
-        results.forEach((r, i) => {
-            if (r.status === "rejected") {
-                console.error(`Failed to delete card ${selectedCards[i]?.id}:`, r.reason);
-            }
-        });
+        const cardIds = selectedCards.map((card) => card.id);
+        const successCount = this.flashcardManager.removeFlashcardsByIds(cardIds);
 
         // Clear selection and refresh
         this.panel.exitSelectionMode();
@@ -1206,20 +1193,8 @@ export class FlashcardPanelView extends ItemView {
         const confirmed = window.confirm(`Delete all ${count} flashcard(s) for this note?`);
         if (!confirmed) return;
 
-        // Delete all cards in parallel
-        const cards = state.flashcardInfo.flashcards;
-        const results = await Promise.allSettled(
-            cards.map((card) => this.flashcardManager.removeFlashcardById(card.id))
-        );
-
-        const successCount = results.filter(
-            (r) => r.status === "fulfilled" && r.value === true
-        ).length;
-        results.forEach((r, i) => {
-            if (r.status === "rejected") {
-                console.error(`Failed to delete card ${cards[i]?.id}:`, r.reason);
-            }
-        });
+        const cardIds = state.flashcardInfo.flashcards.map((card) => card.id);
+        const successCount = this.flashcardManager.removeFlashcardsByIds(cardIds);
 
         notify().cardsDeleted(successCount);
         await this.loadFlashcardInfo();

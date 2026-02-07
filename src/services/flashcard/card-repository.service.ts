@@ -5,6 +5,7 @@ import type {
 	CardAddedEvent,
 	CardRemovedEvent,
 	CardUpdatedEvent,
+	BulkChangeEvent,
 } from "../../types";
 import type { SqliteStoreService } from "../persistence/sqlite/SqliteStoreService";
 import { createDefaultFSRSData } from "../../types";
@@ -255,6 +256,22 @@ export class CardRepository {
 		} as CardRemovedEvent);
 
 		return true;
+	}
+
+	deleteBatch(cardIds: string[]): number {
+		if (cardIds.length === 0) return 0;
+
+		// Single SQL transaction instead of N individual deletes
+		const count = this.store.browser.bulkSoftDelete(cardIds);
+
+		getEventBus().emit({
+			type: "cards:bulk-change",
+			action: "removed",
+			cardIds,
+			timestamp: Date.now(),
+		} as BulkChangeEvent);
+
+		return count;
 	}
 
 	/** Returns true if card was saved, false if skipped (already exists) */

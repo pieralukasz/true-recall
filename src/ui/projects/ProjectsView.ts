@@ -5,7 +5,7 @@
 import { ItemView, WorkspaceLeaf, TFile, Platform, Menu } from "obsidian";
 import { State } from "ts-fsrs";
 import { VIEW_TYPE_PROJECTS, VIEW_TYPE_REVIEW } from "../../constants";
-import { getEventBus, notify } from "../../services";
+import { notify } from "../../services";
 import { Panel } from "../components/Panel";
 import { ProjectsContent } from "./ProjectsContent";
 import { SelectionFooter } from "../components";
@@ -13,7 +13,6 @@ import { SelectNoteModal, AddToProjectModal } from "../modals";
 import { filterActiveCardsOnly } from "../shared/helpers";
 import type TrueRecallPlugin from "../../main";
 import type { ProjectNoteInfo } from "../../types";
-import type { CardReviewedEvent, BulkChangeEvent } from "../../types/events.types";
 import type { ProjectsApi } from "../../state/store";
 
 export class ProjectsView extends ItemView {
@@ -23,7 +22,8 @@ export class ProjectsView extends ItemView {
 	private selectionFooterComponent: SelectionFooter | null = null;
 	private refreshAction: HTMLElement | null = null;
 	private unsubscribe: (() => void) | null = null;
-	private eventUnsubscribers: (() => void)[] = [];
+	private staleUnsubscribe: (() => void) | null = null;
+	private refreshTimer: ReturnType<typeof setTimeout> | null = null;
 
 	constructor(leaf: WorkspaceLeaf, plugin: TrueRecallPlugin) {
 		super(leaf);
@@ -83,15 +83,21 @@ export class ProjectsView extends ItemView {
 			() => this.renderContent()
 		);
 
+		this.staleUnsubscribe = this.plugin.store!.subscribe(
+			(state) => state.projects.isStale,
+			(isStale) => {
+				if (isStale) this.scheduleRefresh();
+			}
+		);
+
 		this.renderContent();
 		void this.loadProjects();
-		this.subscribeToEvents();
 	}
 
 	async onClose(): Promise<void> {
 		this.unsubscribe?.();
-		this.eventUnsubscribers.forEach((unsub) => unsub());
-		this.eventUnsubscribers = [];
+		this.staleUnsubscribe?.();
+		if (this.refreshTimer) clearTimeout(this.refreshTimer);
 
 		if (this.refreshAction) {
 			this.refreshAction.remove();
@@ -283,114 +289,12 @@ export class ProjectsView extends ItemView {
 		}
 	}
 
-	private subscribeToEvents(): void {
-		const eventBus = getEventBus();
-
-		const unsubReviewed = eventBus.on<CardReviewedEvent>("card:reviewed", () => {
-			void this.updateProjectStatsOnly();
-		});
-		this.eventUnsubscribers.push(unsubReviewed);
-
-		const unsubBulk = eventBus.on<BulkChangeEvent>("cards:bulk-change", () => {
+	private scheduleRefresh(): void {
+		if (this.refreshTimer) clearTimeout(this.refreshTimer);
+		this.refreshTimer = setTimeout(() => {
+			this.projects.markFresh();
 			void this.loadProjects();
-		});
-		this.eventUnsubscribers.push(unsubBulk);
-	}
-
-	private async updateProjectStatsOnly(): Promise<void> {
-		const state = this.projects;
-		if (state.isLoading) return;
-
-		const frontmatterIndex = this.plugin.frontmatterIndex;
-		const allCards = this.plugin.cardStore.cards.getAll();
-		const now = new Date();
-		const tomorrowBoundary = this.plugin.dayBoundaryService.getTomorrowBoundary(now);
-
-		const sourceUidToProjects = new Map<string, string[]>();
-		const sourceUidToPath = new Map<string, string>();
-		for (const projectName of frontmatterIndex.getAllValues("projects")) {
-			const files = frontmatterIndex.getFilesByValue("projects", projectName);
-			for (const file of files) {
-				const uid = frontmatterIndex.getValues("flashcard_uid", file.path)[0];
-				if (uid) {
-					const existing = sourceUidToProjects.get(uid) ?? [];
-					if (!existing.includes(projectName)) {
-						existing.push(projectName);
-						sourceUidToProjects.set(uid, existing);
-					}
-					sourceUidToPath.set(uid, file.path);
-				}
-			}
-		}
-
-		const activeCards = filterActiveCardsOnly(allCards, { now });
-		const projectCardCounts = new Map<string, number>();
-		const projectNewCounts = new Map<string, number>();
-		const projectLearningCounts = new Map<string, number>();
-		const projectDueCounts = new Map<string, number>();
-		const noteStateCounts = new Map<string, { newCount: number; learningCount: number; dueCount: number }>();
-
-		for (const card of activeCards) {
-			if (!card.sourceUid) continue;
-			const projects = sourceUidToProjects.get(card.sourceUid) || [];
-			const notePath = sourceUidToPath.get(card.sourceUid);
-
-			if (notePath && !noteStateCounts.has(notePath)) {
-				noteStateCounts.set(notePath, { newCount: 0, learningCount: 0, dueCount: 0 });
-			}
-			const noteStats = notePath ? noteStateCounts.get(notePath) : undefined;
-
-			for (const projectName of projects) {
-				projectCardCounts.set(
-					projectName,
-					(projectCardCounts.get(projectName) || 0) + 1
-				);
-
-				if (card.state === State.New) {
-					projectNewCounts.set(
-						projectName,
-						(projectNewCounts.get(projectName) || 0) + 1
-					);
-					if (noteStats) noteStats.newCount++;
-				}
-
-				const dueDate = new Date(card.due);
-				if (card.state === State.Learning || card.state === State.Relearning) {
-					projectLearningCounts.set(
-						projectName,
-						(projectLearningCounts.get(projectName) || 0) + 1
-					);
-					if (noteStats) noteStats.learningCount++;
-				}
-
-				if (card.state === State.Review && dueDate < tomorrowBoundary) {
-					projectDueCounts.set(
-						projectName,
-						(projectDueCounts.get(projectName) || 0) + 1
-					);
-					if (noteStats) noteStats.dueCount++;
-				}
-			}
-		}
-
-		const updatedProjects = state.projects.map(project => ({
-			...project,
-			cardCount: projectCardCounts.get(project.name) ?? project.cardCount,
-			newCount: projectNewCounts.get(project.name) ?? 0,
-			learningCount: projectLearningCounts.get(project.name) ?? 0,
-			dueCount: projectDueCounts.get(project.name) ?? 0,
-			notes: project.notes.map(note => {
-				const stats = noteStateCounts.get(note.path);
-				return {
-					...note,
-					newCount: stats?.newCount ?? 0,
-					learningCount: stats?.learningCount ?? 0,
-					dueCount: stats?.dueCount ?? 0,
-				};
-			}),
-		}));
-
-		this.projects.setProjects(updatedProjects);
+		}, 500);
 	}
 
 	private async handleDeleteProject(projectId: string): Promise<void> {
