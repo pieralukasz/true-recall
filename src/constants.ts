@@ -269,7 +269,7 @@ MANDATORY RULES:
 12. Use english language for questions and answers.
 
 FORMATTING:
-- Backlinks: Wrap key scientific terms and main subjects in **[[backlinks]]** (bold backlinks), lowercase only.
+- Backlinks: Wrap key scientific terms and main subjects in [[backlinks]] (bold backlinks). Use lowercase by default, but strictly preserve the original casing for technical terms (e.g., camelCase for useFetch, useState) and proper nouns.
 - Use **[[term|alias]]** for context/readability when needed.
 - Line Breaks: Use double newlines to split questions/answers longer than 6 words into logical parts. It's important.
 - No Separators: Do NOT place --- between flashcards.
