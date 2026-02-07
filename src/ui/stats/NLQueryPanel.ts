@@ -245,7 +245,7 @@ export class NLQueryPanel {
         // Error indicator
         if (result.error) {
             const errorEl = resultContainer.createDiv({
-                cls: "ep:mt-2 ep:text-ui-smaller ep:text-orange-500",
+                cls: "ep:mt-2 ep:text-ui-smaller ep:text-obs-orange",
             });
             errorEl.createEl("span", { text: `Note: ${result.error}` });
         }
@@ -258,7 +258,7 @@ export class NLQueryPanel {
         this.resultsEl.empty();
 
         const errorEl = this.resultsEl.createDiv({
-            cls: "ep:p-3 ep:bg-red-500/10 ep:border ep:border-red-500/30 ep:rounded-md ep:text-red-500",
+            cls: "ep:p-3 ep-bg-obs-red-10 ep:border ep-border-obs-red-30 ep:rounded-md ep:text-obs-red",
         });
         errorEl.createEl("strong", { text: "Error: " });
         errorEl.createEl("span", { text: message });

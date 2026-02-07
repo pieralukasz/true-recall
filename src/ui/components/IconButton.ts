@@ -85,7 +85,7 @@ export class IconButton extends BaseComponent {
 		}
 
 		if (danger) {
-			classes.push("ep:hover:text-red-500");
+			classes.push("ep:hover:text-obs-red");
 		}
 
 		if (disabled) {

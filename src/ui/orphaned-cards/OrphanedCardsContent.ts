@@ -93,7 +93,7 @@ export class OrphanedCardsContent {
 			});
 			const deleteAllBtn = actionsRow.createEl("button", {
 				text: `Delete all ${totalCount} cards`,
-				cls: "ep:py-1.5 ep:px-3 ep:rounded ep:bg-red-600 ep:text-white ep:text-ui-smaller ep:cursor-pointer ep:hover:bg-red-700 ep:border-none",
+				cls: "ep:py-1.5 ep:px-3 ep:rounded ep:bg-obs-red ep:text-obs-on-accent ep:text-ui-smaller ep:cursor-pointer ep:hover:opacity-90 ep:border-none",
 			});
 			deleteAllBtn.addEventListener("click", () => this.handleDeleteAll());
 		}
@@ -167,7 +167,7 @@ export class OrphanedCardsContent {
 		// Move button
 		const moveBtn = actionsEl.createEl("button", {
 			text: "Move",
-			cls: "ep:py-1 ep:px-2 ep:rounded ep:bg-obs-interactive ep:text-white ep:text-ui-smaller ep:cursor-pointer ep:hover:opacity-80 ep:border-none",
+			cls: "ep:py-1 ep:px-2 ep:rounded ep:bg-obs-interactive ep:text-obs-on-accent ep:text-ui-smaller ep:cursor-pointer ep:hover:opacity-80 ep:border-none",
 		});
 		moveBtn.addEventListener("click", (e) => {
 			e.stopPropagation();
@@ -187,7 +187,7 @@ export class OrphanedCardsContent {
 		// Delete button
 		const deleteBtn = actionsEl.createEl("button", {
 			text: "Delete",
-			cls: "ep:py-1 ep:px-2 ep:rounded ep:bg-red-600 ep:text-white ep:text-ui-smaller ep:cursor-pointer ep:hover:bg-red-700 ep:border-none",
+			cls: "ep:py-1 ep:px-2 ep:rounded ep:bg-obs-red ep:text-obs-on-accent ep:text-ui-smaller ep:cursor-pointer ep:hover:opacity-90 ep:border-none",
 		});
 		deleteBtn.addEventListener("click", (e) => {
 			e.stopPropagation();

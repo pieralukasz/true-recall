@@ -97,7 +97,7 @@ export class SelectionFooter extends BaseComponent {
 		// New count (blue)
 		countsEl.createSpan({
 			text: String(display.newCount),
-			cls: "ep:text-blue-500",
+			cls: "ep:text-obs-blue",
 		});
 
 		countsEl.createSpan({ text: "·", cls: "ep:text-obs-faint" });
@@ -105,7 +105,7 @@ export class SelectionFooter extends BaseComponent {
 		// Learning count (orange)
 		countsEl.createSpan({
 			text: String(display.learningCount),
-			cls: "ep:text-orange-500",
+			cls: "ep:text-obs-orange",
 		});
 
 		countsEl.createSpan({ text: "·", cls: "ep:text-obs-faint" });
@@ -113,7 +113,7 @@ export class SelectionFooter extends BaseComponent {
 		// Due count (green)
 		countsEl.createSpan({
 			text: String(display.dueCount),
-			cls: "ep:text-green-500",
+			cls: "ep:text-obs-green",
 		});
 	}
 
@@ -132,11 +132,11 @@ export class SelectionFooter extends BaseComponent {
 				variantCls = "mod-cta";
 				break;
 			case "danger":
-				variantCls = "ep:bg-red-500/10 ep:text-red-500 ep:hover:bg-red-500 ep:hover:text-white";
+				variantCls = "ep-bg-obs-red-10 ep:text-obs-red ep:hover:bg-obs-red ep:hover:text-obs-on-accent";
 				break;
 			case "secondary":
 			default:
-				variantCls = "ep:bg-obs-modifier-hover ep:text-obs-normal ep:hover:bg-obs-interactive ep:hover:text-white";
+				variantCls = "ep:bg-obs-modifier-hover ep:text-obs-normal ep:hover:bg-obs-interactive ep:hover:text-obs-on-accent";
 				break;
 		}
 

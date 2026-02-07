@@ -466,7 +466,7 @@ export class SimpleFlashcardEditorModal extends BaseModal {
 		const buttonText = this.options.mode === "add" ? "Save Flashcards" : "Save Changes";
 		this.saveButton = rightEl.createEl("button", {
 			text: buttonText,
-			cls: "ep:py-2.5 ep:px-5 ep:bg-obs-interactive ep:text-white ep:border-none ep:rounded-md ep:cursor-pointer ep:font-medium ep:transition-colors ep:hover:bg-obs-interactive-hover",
+			cls: "ep:py-2.5 ep:px-5 ep:bg-obs-interactive ep:text-obs-on-accent ep:border-none ep:rounded-md ep:cursor-pointer ep:font-medium ep:transition-colors ep:hover:bg-obs-interactive-hover",
 		});
 		this.saveButton.addEventListener("click", () => this.handleSave());
 	}

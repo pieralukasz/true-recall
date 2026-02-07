@@ -139,7 +139,7 @@ export class FlashcardReviewModal extends BaseModal {
 
 			const deleteBtn = rightSide.createEl("button", {
 				text: "Delete selected",
-				cls: "ep:py-1 ep:px-2 ep:text-ui-smaller ep:bg-red-500/10 ep:text-red-500 ep:border ep:border-red-500/30 ep:rounded ep:cursor-pointer ep:transition-colors ep:hover:bg-red-500/20 ep:disabled:opacity-50 ep:disabled:cursor-not-allowed",
+				cls: "ep:py-1 ep:px-2 ep:text-ui-smaller ep-bg-obs-red-10 ep:text-obs-red ep:border ep-border-obs-red-30 ep:rounded ep:cursor-pointer ep:transition-colors ep-hover-bg-obs-red-20 ep:disabled:opacity-50 ep:disabled:cursor-not-allowed",
 			});
 			deleteBtn.disabled = selectedCardIds.size === 0;
 			deleteBtn.addEventListener("click", () => this.handleDeleteSelected());

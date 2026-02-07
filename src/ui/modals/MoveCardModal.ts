@@ -160,7 +160,7 @@ export class MoveCardModal extends BasePromiseModal<MoveCardResult> {
 		// Select button
 		const selectBtn = noteEl.createEl("button", {
 			text: "Select",
-			cls: "ep:shrink-0 ep:py-1 ep:px-3 ep:rounded ep:bg-obs-interactive ep:text-white ep:border-none ep:text-ui-smaller ep:cursor-pointer ep:opacity-0 ep:group-hover:opacity-100 ep:hover:opacity-100",
+			cls: "ep:shrink-0 ep:py-1 ep:px-3 ep:rounded ep:bg-obs-interactive ep:text-obs-on-accent ep:border-none ep:text-ui-smaller ep:cursor-pointer ep:opacity-0 ep:group-hover:opacity-100 ep:hover:opacity-100",
 		});
 
 		selectBtn.addEventListener("click", () => {

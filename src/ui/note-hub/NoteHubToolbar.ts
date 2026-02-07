@@ -30,7 +30,7 @@ const SORT_OPTIONS: { label: string; value: NoteHubSortBy }[] = [
 ];
 
 const PILL_BASE = "ep:px-2 ep:py-1 ep:rounded ep:text-ui-smaller ep:font-medium ep:border-none ep:cursor-pointer ep:transition-colors";
-const PILL_ACTIVE = `${PILL_BASE} ep:bg-obs-interactive ep:text-on-accent`;
+const PILL_ACTIVE = `${PILL_BASE} ep:bg-obs-interactive ep:text-obs-on-accent`;
 const PILL_INACTIVE = `${PILL_BASE} ep:bg-obs-modifier-hover ep:text-obs-muted ep:hover:text-obs-normal`;
 
 export class NoteHubToolbar extends BaseComponent {

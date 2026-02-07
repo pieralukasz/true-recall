@@ -1414,21 +1414,21 @@ export class FlashcardPanelView extends ItemView {
         this.mobileStatusEl.empty();
 
         // New count (blue)
-        const newEl = this.mobileStatusEl.createSpan({ cls: "ep:text-blue-500" });
+        const newEl = this.mobileStatusEl.createSpan({ cls: "ep:text-obs-blue" });
         newEl.textContent = String(counts.new);
 
         // Separator
         this.mobileStatusEl.createSpan({ cls: "ep:text-obs-faint", text: "·" });
 
         // Learning count (orange)
-        const learningEl = this.mobileStatusEl.createSpan({ cls: "ep:text-orange-500" });
+        const learningEl = this.mobileStatusEl.createSpan({ cls: "ep:text-obs-orange" });
         learningEl.textContent = String(counts.learning);
 
         // Separator
         this.mobileStatusEl.createSpan({ cls: "ep:text-obs-faint", text: "·" });
 
         // Review count (green)
-        const reviewEl = this.mobileStatusEl.createSpan({ cls: "ep:text-green-500" });
+        const reviewEl = this.mobileStatusEl.createSpan({ cls: "ep:text-obs-green" });
         reviewEl.textContent = String(counts.review);
     }
 

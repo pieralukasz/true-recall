@@ -7,6 +7,7 @@ import { Chart } from "chart.js";
 import type { CardsCreatedEntry, FSRSFlashcardItem, StatsTimeRange } from "../../../types";
 import { ChartSection, type ChartSectionProps } from "./ChartSection";
 import type { StatsCalculatorService } from "../../../services";
+import { getThemeColor, getThemeColorWithAlpha } from "../../utils/theme-colors";
 
 export interface CardsCreatedChartProps extends ChartSectionProps {
 	statsCalculator: StatsCalculatorService;
@@ -65,8 +66,8 @@ export class CardsCreatedChart extends ChartSection<CardsCreatedEntry> {
 					{
 						label: "Cards Created",
 						data: data.map((d) => d.count),
-						backgroundColor: "rgba(34, 197, 94, 0.7)", // Green for creation
-						borderColor: "rgb(34, 197, 94)",
+						backgroundColor: getThemeColorWithAlpha("--color-green", 0.7),
+						borderColor: getThemeColor("--color-green"),
 						borderWidth: 1,
 					},
 				],

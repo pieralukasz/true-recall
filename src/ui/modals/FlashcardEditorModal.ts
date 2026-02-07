@@ -461,7 +461,7 @@ export class FlashcardEditorModal extends BaseModal {
 		const buttonText = this.options.mode === "add" ? "Add flashcard" : "Save changes";
 		this.saveButton = this.buttonsContainer.createEl("button", {
 			text: buttonText,
-			cls: "ep:py-2.5 ep:px-5 ep:bg-obs-interactive ep:text-white ep:border-none ep:rounded-md ep:cursor-pointer ep:font-medium ep:transition-colors ep:hover:bg-obs-interactive-hover ep:disabled:opacity-50 ep:disabled:cursor-not-allowed",
+			cls: "ep:py-2.5 ep:px-5 ep:bg-obs-interactive ep:text-obs-on-accent ep:border-none ep:rounded-md ep:cursor-pointer ep:font-medium ep:transition-colors ep:hover:bg-obs-interactive-hover ep:disabled:opacity-50 ep:disabled:cursor-not-allowed",
 		});
 		this.saveButton.disabled = !this.isFormValid();
 		this.saveButton.addEventListener("click", () => this.handleSubmit());
