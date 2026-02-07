@@ -255,7 +255,6 @@ export class ProjectsView extends ItemView {
 				})
 				.sort((a, b) => a.name.localeCompare(b.name));
 
-			// O(U) where U = unique source UIDs with cards (vs O(N*M) before)
 			const unassignedNotes: ProjectNoteInfo[] = [];
 
 			for (const [uid, stats] of uidStateCounts) {
@@ -278,10 +277,10 @@ export class ProjectsView extends ItemView {
 				});
 			}
 
-			// Sort unassigned notes alphabetically
 			unassignedNotes.sort((a, b) => a.name.localeCompare(b.name));
 			this.projects.setProjects(projects);
 			this.projects.setUnassignedNotes(unassignedNotes);
+			this.projects.markFresh();
 		} catch (error) {
 			console.error("[ProjectsView] Error loading projects:", error);
 			notify().error("Failed to load projects");
@@ -333,7 +332,6 @@ export class ProjectsView extends ItemView {
 				}
 			}
 
-			// v16: No database deletion - projects are in frontmatter only
 
 			this.projects.removeProject(projectId);
 			notify().success(`Project "${project.name}" deleted`);

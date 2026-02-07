@@ -266,6 +266,7 @@ export class NoteHubView extends ItemView {
 			unassignedNotes.sort((a, b) => a.name.localeCompare(b.name));
 			this.noteHub.setProjects(projects);
 			this.noteHub.setUnassignedNotes(unassignedNotes);
+			this.noteHub.markFresh();
 		} catch (error) {
 			console.error("[NoteHubView] Error loading data:", error);
 			notify().error("Failed to load note hub data");
