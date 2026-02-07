@@ -470,6 +470,29 @@
 	}
 }
 
+/* Respect user motion preferences */
+@media (prefers-reduced-motion: reduce) {
+	.true-recall-spinner {
+		animation: none;
+	}
+
+	.true-recall-chart-fade-in {
+		animation: none;
+	}
+
+	.true-recall-metric-updated {
+		animation: none;
+	}
+
+	.true-recall-pulse-collect {
+		animation: none;
+	}
+
+	.true-recall-answer-blur {
+		transition: none;
+	}
+}
+
 /*
  * ============================================================================
  * THEME COLOR SHOWCASE
@@ -762,7 +785,7 @@
 	color: var(--text-normal);
 }
 
-.simple-flashcard-editor-textarea:focus {
+.simple-flashcard-editor-textarea:focus-visible {
 	outline: none;
 	border-color: var(--interactive-accent);
 }

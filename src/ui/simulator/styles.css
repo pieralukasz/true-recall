@@ -52,14 +52,14 @@
 }
 
 /* Focus states */
-.ep\:simulator-slider:focus {
+.ep\:simulator-slider:focus-visible {
 	outline: none;
 }
 
-.ep\:simulator-slider:focus::-webkit-slider-thumb {
+.ep\:simulator-slider:focus-visible::-webkit-slider-thumb {
 	box-shadow: 0 0 0 2px var(--interactive-accent-hover);
 }
 
-.ep\:simulator-slider:focus::-moz-range-thumb {
+.ep\:simulator-slider:focus-visible::-moz-range-thumb {
 	box-shadow: 0 0 0 2px var(--interactive-accent-hover);
 }

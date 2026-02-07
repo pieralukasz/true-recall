@@ -125,6 +125,7 @@ export class BrowserToolbar extends BaseComponent<BrowserToolbarProps, BrowserTo
             placeholder: "Search cards... (is:due tag:xxx prop:stability>10)",
             cls: TOOLBAR_STYLES.SEARCH_INPUT,
             value: this.props.searchQuery,
+            attr: { "aria-label": "Search cards" },
         });
 
         // Use debounced search to avoid excessive updates while typing

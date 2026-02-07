@@ -1972,6 +1972,23 @@
     background: var(--interactive-accent);
   }
 }
+@media (prefers-reduced-motion: reduce) {
+  .true-recall-spinner {
+    animation: none;
+  }
+  .true-recall-chart-fade-in {
+    animation: none;
+  }
+  .true-recall-metric-updated {
+    animation: none;
+  }
+  .true-recall-pulse-collect {
+    animation: none;
+  }
+  .true-recall-answer-blur {
+    transition: none;
+  }
+}
 @layer components {
   .true-recall-theme-showcase {
     position: fixed;
@@ -2131,13 +2148,13 @@
 .ep\:simulator-slider::-moz-range-thumb:hover {
   background: var(--interactive-accent-hover);
 }
-.ep\:simulator-slider:focus {
+.ep\:simulator-slider:focus-visible {
   outline: none;
 }
-.ep\:simulator-slider:focus::-webkit-slider-thumb {
+.ep\:simulator-slider:focus-visible::-webkit-slider-thumb {
   box-shadow: 0 0 0 2px var(--interactive-accent-hover);
 }
-.ep\:simulator-slider:focus::-moz-range-thumb {
+.ep\:simulator-slider:focus-visible::-moz-range-thumb {
   box-shadow: 0 0 0 2px var(--interactive-accent-hover);
 }
 .simple-flashcard-editor-textarea {
@@ -2153,7 +2170,7 @@
   resize: vertical;
   color: var(--text-normal);
 }
-.simple-flashcard-editor-textarea:focus {
+.simple-flashcard-editor-textarea:focus-visible {
   outline: none;
   border-color: var(--interactive-accent);
 }
