@@ -38,23 +38,28 @@ import {
 	CalendarHeatmap,
 } from "./components";
 
-// Register Chart.js components
-Chart.register(
-	CategoryScale,
-	LinearScale,
-	BarElement,
-	BarController,
-	ArcElement,
-	DoughnutController,
-	LineElement,
-	LineController,
-	PointElement,
-	Title,
-	Tooltip,
-	Legend
-);
-
 export class StatsView extends ItemView {
+	private static chartRegistered = false;
+
+	private static registerChartJs(): void {
+		if (StatsView.chartRegistered) return;
+		Chart.register(
+			CategoryScale,
+			LinearScale,
+			BarElement,
+			BarController,
+			ArcElement,
+			DoughnutController,
+			LineElement,
+			LineController,
+			PointElement,
+			Title,
+			Tooltip,
+			Legend
+		);
+		StatsView.chartRegistered = true;
+	}
+
 	private plugin: TrueRecallPlugin;
 	private statsCalculator: StatsCalculatorService;
 	private currentRange: StatsTimeRange = "1m";
@@ -103,6 +108,8 @@ export class StatsView extends ItemView {
 	}
 
 	async onOpen(): Promise<void> {
+		StatsView.registerChartJs();
+
 		const container = this.containerEl.children[1];
 		if (!(container instanceof HTMLElement)) return;
 		container.empty();
