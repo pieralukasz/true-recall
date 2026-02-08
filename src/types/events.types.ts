@@ -82,7 +82,7 @@ export type FlashcardEventListener<
 
 export interface SessionResult {
 	cancelled: boolean;
-	sessionType: "current-note" | "created-today" | "select-notes" | "state-filter" | "default" | null;
+	sessionType: "current-note" | "created-today" | "select-notes" | "state-filter" | "default" | "custom-study" | null;
 	sourceNoteFilter?: string;
 	sourceNoteFilters?: string[];
 	filePathFilter?: string;
@@ -91,6 +91,17 @@ export interface SessionResult {
 	useDefaultDeck?: boolean;
 	bypassScheduling?: boolean;
 	stateFilter?: "due" | "learning" | "new" | "buried";
+	// Advanced custom study filters
+	difficultyRange?: { min: number; max: number };
+	lapsesRange?: { min: number; max: number };
+	stabilityRange?: { min: number; max: number };
+	overdueOnly?: boolean;
+	recentlyFailed?: boolean;
+	cardLimit?: number;
+	studyAheadDays?: number;
+	reviewOrder?: import("./settings.types").ReviewOrder;
+	projectFilters?: string[];
+	crammingMode?: boolean;
 }
 
 export interface SessionSelectedEvent extends FlashcardEvent {

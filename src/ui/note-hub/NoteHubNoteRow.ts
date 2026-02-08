@@ -12,6 +12,7 @@ export interface NoteHubNoteRowProps {
 	onEnterSelectionMode: (path: string) => void;
 	onOpenNote: (path: string) => void;
 	onStartReview: (filter: { sourceNoteFilters: string[] }) => void;
+	onCustomStudy: (filter: { sourceNoteFilters: string[] }) => void;
 	onGenerateCards: (path: string) => void;
 	onAddToProject: (path: string) => void;
 	onRemoveFromProject: (path: string, projectName: string) => void;
@@ -148,6 +149,14 @@ export class NoteHubNoteRow extends BaseComponent {
 				.setIcon("play")
 				.onClick(() =>
 					this.props.onStartReview({ sourceNoteFilters: [note.name] })
+				)
+		);
+		menu.addItem((item) =>
+			item
+				.setTitle("Custom study")
+				.setIcon("sliders-horizontal")
+				.onClick(() =>
+					this.props.onCustomStudy({ sourceNoteFilters: [note.name] })
 				)
 		);
 		menu.addItem((item) =>

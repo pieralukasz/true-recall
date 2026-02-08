@@ -90,9 +90,48 @@ export class SessionResultFactory {
 		}
 	}
 
-	/**
-	 * Create cancelled result
-	 */
+	static createFailedCardsResult(): SessionResult {
+		return {
+			cancelled: false,
+			sessionType: "custom-study",
+			recentlyFailed: true,
+			bypassScheduling: true,
+			ignoreDailyLimits: true,
+		};
+	}
+
+	static createDifficultCardsResult(): SessionResult {
+		return {
+			cancelled: false,
+			sessionType: "custom-study",
+			difficultyRange: { min: 7, max: 10 },
+			bypassScheduling: true,
+			ignoreDailyLimits: true,
+		};
+	}
+
+	static createStudyAheadResult(days: number = 3): SessionResult {
+		return {
+			cancelled: false,
+			sessionType: "custom-study",
+			studyAheadDays: days,
+			bypassScheduling: true,
+			reviewOrder: "due-date",
+			ignoreDailyLimits: true,
+		};
+	}
+
+	static createMostForgottenResult(limit: number = 50): SessionResult {
+		return {
+			cancelled: false,
+			sessionType: "custom-study",
+			reviewOrder: "most-lapses",
+			cardLimit: limit,
+			bypassScheduling: true,
+			ignoreDailyLimits: true,
+		};
+	}
+
 	static createCancelledResult(): SessionResult {
 		return {
 			cancelled: true,

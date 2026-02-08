@@ -62,6 +62,16 @@ export class ReviewView extends ItemView {
 	private stateFilter?: "due" | "learning" | "new" | "buried";
 	private ignoreDailyLimits?: boolean;
 	private bypassScheduling?: boolean;
+	private difficultyRange?: { min: number; max: number };
+	private lapsesRange?: { min: number; max: number };
+	private stabilityRange?: { min: number; max: number };
+	private overdueOnly?: boolean;
+	private recentlyFailed?: boolean;
+	private cardLimit?: number;
+	private studyAheadDays?: number;
+	private customReviewOrder?: import("../../types/settings.types").ReviewOrder;
+	private crammingMode?: boolean;
+	private crammedCardIds = new Set<string>();
 
 	private cardActionsHandler!: CardActionsHandler;
 	private keyboardHandler!: KeyboardHandler;
@@ -195,6 +205,16 @@ export class ReviewView extends ItemView {
 		this.stateFilter = viewState?.stateFilter;
 		this.ignoreDailyLimits = viewState?.ignoreDailyLimits;
 		this.bypassScheduling = viewState?.bypassScheduling;
+		this.difficultyRange = viewState?.difficultyRange;
+		this.lapsesRange = viewState?.lapsesRange;
+		this.stabilityRange = viewState?.stabilityRange;
+		this.overdueOnly = viewState?.overdueOnly;
+		this.recentlyFailed = viewState?.recentlyFailed;
+		this.cardLimit = viewState?.cardLimit;
+		this.studyAheadDays = viewState?.studyAheadDays;
+		this.customReviewOrder = viewState?.reviewOrder;
+		this.crammingMode = viewState?.crammingMode;
+		this.crammedCardIds.clear();
 
 		this.isCustomSession = !!(
 			viewState?.sourceNoteFilter ||
@@ -204,7 +224,13 @@ export class ReviewView extends ItemView {
 			viewState?.createdTodayOnly ||
 			viewState?.createdThisWeek ||
 			viewState?.weakCardsOnly ||
-			viewState?.stateFilter
+			viewState?.stateFilter ||
+			viewState?.difficultyRange ||
+			viewState?.lapsesRange ||
+			viewState?.stabilityRange ||
+			viewState?.overdueOnly ||
+			viewState?.recentlyFailed ||
+			viewState?.studyAheadDays
 		);
 
 		await super.setState(state, result);
@@ -224,6 +250,15 @@ export class ReviewView extends ItemView {
 			stateFilter: this.stateFilter,
 			ignoreDailyLimits: this.ignoreDailyLimits,
 			bypassScheduling: this.bypassScheduling,
+			difficultyRange: this.difficultyRange,
+			lapsesRange: this.lapsesRange,
+			stabilityRange: this.stabilityRange,
+			overdueOnly: this.overdueOnly,
+			recentlyFailed: this.recentlyFailed,
+			cardLimit: this.cardLimit,
+			studyAheadDays: this.studyAheadDays,
+			reviewOrder: this.customReviewOrder,
+			crammingMode: this.crammingMode,
 		};
 	}
 
@@ -518,7 +553,7 @@ export class ReviewView extends ItemView {
 					projectFilters: this.projectFilters,
 					sourceUidToProjects,
 					newCardOrder: this.plugin.settings.newCardOrder,
-					reviewOrder: this.plugin.settings.reviewOrder,
+					reviewOrder: this.customReviewOrder ?? this.plugin.settings.reviewOrder,
 					newReviewMix: this.plugin.settings.newReviewMix,
 					dayStartHour: this.plugin.settings.dayStartHour,
 					// Custom session filters
@@ -531,6 +566,14 @@ export class ReviewView extends ItemView {
 					stateFilter: this.stateFilter,
 					ignoreDailyLimits: this.ignoreDailyLimits,
 					bypassScheduling: this.bypassScheduling,
+					// Advanced custom study filters
+					difficultyRange: this.difficultyRange,
+					lapsesRange: this.lapsesRange,
+					stabilityRange: this.stabilityRange,
+					overdueOnly: this.overdueOnly,
+					recentlyFailed: this.recentlyFailed,
+					cardLimit: this.cardLimit,
+					studyAheadDays: this.studyAheadDays,
 				}
 			);
 
@@ -658,6 +701,13 @@ export class ReviewView extends ItemView {
 		this.renderHeaderStatBadge(statsContainer, "new", counts.new);
 		this.renderHeaderStatBadge(statsContainer, "learning", counts.learning);
 		this.renderHeaderStatBadge(statsContainer, "due", counts.due);
+
+		if (this.crammingMode) {
+			statsContainer.createDiv({
+				cls: "ep:flex ep:items-center ep:justify-center ep:h-5 ep:px-1.5 ep:rounded-full ep:text-ui-smaller ep:font-semibold ep-bg-obs-orange-20 ep:text-obs-orange ep:ml-1",
+				text: "Cram",
+			});
+		}
 	}
 
 	private renderHeaderStatBadge(
@@ -1314,6 +1364,16 @@ export class ReviewView extends ItemView {
 			this.fsrsService,
 			responseTime
 		);
+
+		// Cramming mode: skip persistence, track card to avoid infinite requeue
+		if (this.crammingMode) {
+			this.crammedCardIds.add(card.id);
+			const hasMore = this.review.recordAnswerAndNext(rating, updatedCard);
+			if (hasMore) {
+				this.updateSchedulingPreview();
+			}
+			return;
+		}
 
 		let requeueData: { card: FSRSFlashcardItem; position: number } | undefined;
 		if (this.reviewService.shouldRequeue(updatedCard)) {

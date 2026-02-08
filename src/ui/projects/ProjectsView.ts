@@ -362,6 +362,13 @@ export class ProjectsView extends ItemView {
 		void this.app.workspace.revealLeaf(leaf);
 	}
 
+	private async handleCustomStudy(projectName: string): Promise<void> {
+		await this.plugin.openCustomStudyModal({
+			projectFilters: [projectName],
+			scopeLabel: projectName,
+		});
+	}
+
 	private async handleStartReviewUnassigned(): Promise<void> {
 		const state = this.projects;
 		const unassignedNotes = state.unassignedNotes;
@@ -569,6 +576,7 @@ export class ProjectsView extends ItemView {
 				component: this,
 				onSearchChange: (query) => this.projects.setSearchQuery(query),
 				onStartReview: (name) => void this.handleStartReview(name),
+				onCustomStudy: (name) => void this.handleCustomStudy(name),
 				onDelete: (id) => void this.handleDeleteProject(id),
 				onAddNotes: (id, name) =>
 					void this.handleAddNotesToProject(id, name),

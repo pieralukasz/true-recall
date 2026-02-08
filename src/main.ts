@@ -64,6 +64,7 @@ import {
 	MergeNotesNameModal,
 	type DeviceSelectionResult,
 } from "./ui/modals";
+import { CustomStudyModal, type CustomStudyModalScope } from "./ui/modals/CustomStudyModal";
 import { MergeNotesService } from "./services/notes/merge-notes.service";
 import { registerCommands } from "./plugin/PluginCommands";
 import { registerEventHandlers, registerDeletionHandler } from "./plugin/PluginEventHandlers";
@@ -500,24 +501,25 @@ ${cardList}${moreText}
 			return;
 		}
 
-		if (result.stateFilter) {
-			await this.openReviewViewWithFilters({
-				deckFilter: null,
-				stateFilter: result.stateFilter,
-				ignoreDailyLimits: result.ignoreDailyLimits,
-				bypassScheduling: result.bypassScheduling,
-			});
-			return;
-		}
-
 		await this.openReviewViewWithFilters({
 			deckFilter: null,
 			sourceNoteFilter: result.sourceNoteFilter,
 			sourceNoteFilters: result.sourceNoteFilters,
 			filePathFilter: result.filePathFilter,
 			createdTodayOnly: result.createdTodayOnly,
+			stateFilter: result.stateFilter,
 			ignoreDailyLimits: result.ignoreDailyLimits,
 			bypassScheduling: result.bypassScheduling,
+			difficultyRange: result.difficultyRange,
+			lapsesRange: result.lapsesRange,
+			stabilityRange: result.stabilityRange,
+			overdueOnly: result.overdueOnly,
+			recentlyFailed: result.recentlyFailed,
+			cardLimit: result.cardLimit,
+			studyAheadDays: result.studyAheadDays,
+			reviewOrder: result.reviewOrder,
+			projectFilters: result.projectFilters,
+			crammingMode: result.crammingMode,
 		});
 	}
 
@@ -543,6 +545,42 @@ ${cardList}${moreText}
 		}
 
 		await activateView(this.app, VIEW_TYPE_STATS, { useMainArea: true });
+	}
+
+	async openCustomStudyModal(scope?: CustomStudyModalScope): Promise<void> {
+		const modal = new CustomStudyModal(this.app, {
+			title: scope?.scopeLabel ? `Custom study — ${scope.scopeLabel}` : "Custom study",
+			width: "480px",
+		}, scope);
+		const result = await modal.openAndWait();
+		if (result.cancelled || !result.sessionResult) return;
+
+		if (result.saveAsPreset && result.presetName) {
+			const preset: import("./types/settings.types").SessionPreset = {
+				id: crypto.randomUUID(),
+				name: result.presetName,
+				createdAt: Date.now(),
+				stateFilter: result.sessionResult.stateFilter,
+				difficultyRange: result.sessionResult.difficultyRange,
+				lapsesRange: result.sessionResult.lapsesRange,
+				stabilityRange: result.sessionResult.stabilityRange,
+				overdueOnly: result.sessionResult.overdueOnly,
+				recentlyFailed: result.sessionResult.recentlyFailed,
+				reviewOrder: result.sessionResult.reviewOrder,
+				cardLimit: result.sessionResult.cardLimit,
+				studyAheadDays: result.sessionResult.studyAheadDays,
+				crammingMode: result.sessionResult.crammingMode,
+				projectFilters: result.sessionResult.projectFilters,
+			};
+			this.settings.sessionPresets = [
+				...this.settings.sessionPresets,
+				preset,
+			];
+			await this.saveSettings();
+			notify().success(`Preset "${result.presetName}" saved`);
+		}
+
+		await this.handleSessionResult(result.sessionResult);
 	}
 
 	async reviewCurrentNote(): Promise<void> {
@@ -626,6 +664,16 @@ ${cardList}${moreText}
 		stateFilter?: "due" | "learning" | "new" | "buried";
 		ignoreDailyLimits?: boolean;
 		bypassScheduling?: boolean;
+		difficultyRange?: { min: number; max: number };
+		lapsesRange?: { min: number; max: number };
+		stabilityRange?: { min: number; max: number };
+		overdueOnly?: boolean;
+		recentlyFailed?: boolean;
+		cardLimit?: number;
+		studyAheadDays?: number;
+		reviewOrder?: import("./types/settings.types").ReviewOrder;
+		projectFilters?: string[];
+		crammingMode?: boolean;
 	}): Promise<void> {
 		const state = {
 			deckFilter: filters.deckFilter ?? null,
@@ -638,6 +686,16 @@ ${cardList}${moreText}
 			stateFilter: filters.stateFilter,
 			ignoreDailyLimits: filters.ignoreDailyLimits,
 			bypassScheduling: filters.bypassScheduling,
+			difficultyRange: filters.difficultyRange,
+			lapsesRange: filters.lapsesRange,
+			stabilityRange: filters.stabilityRange,
+			overdueOnly: filters.overdueOnly,
+			recentlyFailed: filters.recentlyFailed,
+			cardLimit: filters.cardLimit,
+			studyAheadDays: filters.studyAheadDays,
+			reviewOrder: filters.reviewOrder,
+			projectFilters: filters.projectFilters,
+			crammingMode: filters.crammingMode,
 		};
 
 		await activateReviewView(
