@@ -3,7 +3,7 @@
  * Shared business logic for session selection
  * Used by SessionView
  */
-import { State } from "ts-fsrs";
+import { Rating, State } from "ts-fsrs";
 import type { FSRSFlashcardItem } from "../../types";
 import type { DayBoundaryService } from "../../services";
 
@@ -175,6 +175,37 @@ export class SessionLogic {
 		if (newCount > 0) parts.push(`${newCount} new`);
 		if (dueCount > 0) parts.push(`${dueCount} due`);
 		return parts.join(" \u00b7 ") || "no cards";
+	}
+
+	getFailedCardsCount(): number {
+		return this.allCards.filter((c) => {
+			if (c.fsrs.suspended) return false;
+			const history = c.fsrs.history;
+			if (!history || history.length === 0) return false;
+			return history[history.length - 1]!.r === Rating.Again;
+		}).length;
+	}
+
+	getDifficultCardsCount(): number {
+		return this.allCards.filter(
+			(c) => !c.fsrs.suspended && c.fsrs.difficulty >= 7
+		).length;
+	}
+
+	getStudyAheadCount(days: number): number {
+		const cutoff = new Date(Date.now() + days * 86_400_000);
+		return this.allCards.filter((c) => {
+			if (c.fsrs.suspended) return false;
+			if (c.fsrs.state !== State.Review) return false;
+			const due = new Date(c.fsrs.due);
+			return due > new Date() && due <= cutoff;
+		}).length;
+	}
+
+	getMostForgottenCount(minLapses: number = 1): number {
+		return this.allCards.filter(
+			(c) => !c.fsrs.suspended && c.fsrs.lapses >= minLapses
+		).length;
 	}
 
 	/**

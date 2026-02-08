@@ -25,6 +25,8 @@ export interface NoteHubContentProps {
 	onOpenNote: (path: string) => void;
 	onStartReview: (filter: { sourceNoteFilters?: string[]; projectFilters?: string[] }) => void;
 	onStartReviewProject: (projectName: string) => void;
+	onCustomStudyProject: (projectName: string) => void;
+	onCustomStudyNote: (filter: { sourceNoteFilters: string[] }) => void;
 	onGenerateCards: (notePath: string) => void;
 	onAddToProject: (notePath: string) => void;
 	onRemoveFromProject: (notePath: string, projectName: string) => void;
@@ -140,6 +142,16 @@ export class NoteHubContent extends BaseComponent {
 		const iconBtnCls =
 			"clickable-icon ep:cursor-pointer ep:w-6 ep:h-6 ep:flex ep:items-center ep:justify-center ep:rounded ep:text-obs-muted ep:hover:bg-obs-modifier-hover ep:hover:text-obs-normal ep:transition-colors [&_svg]:ep:w-3.5 [&_svg]:ep:h-3.5";
 
+		const customStudyBtn = actions.createEl("button", {
+			cls: iconBtnCls,
+			attr: { "aria-label": "Custom study" },
+		});
+		setIcon(customStudyBtn, "sliders-horizontal");
+		this.events.addEventListener(customStudyBtn, "click", (e) => {
+			e.stopPropagation();
+			this.props.onCustomStudyProject(project.name);
+		});
+
 		const reviewBtn = actions.createEl("button", {
 			cls: iconBtnCls,
 			attr: { "aria-label": "Review project" },
@@ -241,6 +253,7 @@ export class NoteHubContent extends BaseComponent {
 				onEnterSelectionMode: this.props.onEnterSelectionMode,
 				onOpenNote: this.props.onOpenNote,
 				onStartReview: this.props.onStartReview,
+				onCustomStudy: this.props.onCustomStudyNote,
 				onGenerateCards: this.props.onGenerateCards,
 				onAddToProject: this.props.onAddToProject,
 				onRemoveFromProject: this.props.onRemoveFromProject,

@@ -15,6 +15,7 @@ import type TrueRecallPlugin from "../../main";
 import { SessionResultFactory } from "../../utils/session-result-factory";
 import { MoveCardModal } from "../modals/MoveCardModal";
 import { AddToProjectModal } from "../modals/AddToProjectModal";
+import { CustomStudyModal } from "../modals/CustomStudyModal";
 import type { SessionApi } from "../../state/store";
 
 export interface SessionViewOptions {
@@ -238,6 +239,91 @@ export class SessionView extends ItemView {
 		void this.app.workspace.openLinkText(notePath, "", false);
 	}
 
+	private handleCustomStudyAction(
+		action: "failed" | "difficult" | "study-ahead" | "most-forgotten"
+	): void {
+		let result;
+		switch (action) {
+			case "failed":
+				result = SessionResultFactory.createFailedCardsResult();
+				break;
+			case "difficult":
+				result = SessionResultFactory.createDifficultCardsResult();
+				break;
+			case "study-ahead":
+				result = SessionResultFactory.createStudyAheadResult(3);
+				break;
+			case "most-forgotten":
+				result = SessionResultFactory.createMostForgottenResult(50);
+				break;
+		}
+		this.emitResultAndClose(result);
+	}
+
+	private async handleOpenCustomStudyModal(): Promise<void> {
+		const modal = new CustomStudyModal(this.app, {
+			title: "Custom study",
+			width: "480px",
+		});
+		const result = await modal.openAndWait();
+		if (result.cancelled) return;
+
+		if (result.saveAsPreset && result.presetName && result.sessionResult) {
+			const preset: import("../../types/settings.types").SessionPreset = {
+				id: crypto.randomUUID(),
+				name: result.presetName,
+				createdAt: Date.now(),
+				stateFilter: result.sessionResult.stateFilter,
+				difficultyRange: result.sessionResult.difficultyRange,
+				lapsesRange: result.sessionResult.lapsesRange,
+				stabilityRange: result.sessionResult.stabilityRange,
+				overdueOnly: result.sessionResult.overdueOnly,
+				recentlyFailed: result.sessionResult.recentlyFailed,
+				reviewOrder: result.sessionResult.reviewOrder,
+				cardLimit: result.sessionResult.cardLimit,
+				studyAheadDays: result.sessionResult.studyAheadDays,
+				crammingMode: result.sessionResult.crammingMode,
+				projectFilters: result.sessionResult.projectFilters,
+			};
+			this.plugin.settings.sessionPresets = [
+				...this.plugin.settings.sessionPresets,
+				preset,
+			];
+			await this.plugin.saveSettings();
+			notify().success(`Preset "${result.presetName}" saved`);
+		}
+
+		this.emitResultAndClose(result.sessionResult!);
+	}
+
+	private handlePresetAction(preset: import("../../types/settings.types").SessionPreset): void {
+		const result: import("../../types/events.types").SessionResult = {
+			cancelled: false,
+			sessionType: "custom-study",
+			ignoreDailyLimits: true,
+			bypassScheduling: true,
+			stateFilter: preset.stateFilter,
+			difficultyRange: preset.difficultyRange,
+			lapsesRange: preset.lapsesRange,
+			stabilityRange: preset.stabilityRange,
+			overdueOnly: preset.overdueOnly,
+			recentlyFailed: preset.recentlyFailed,
+			reviewOrder: preset.reviewOrder,
+			cardLimit: preset.cardLimit,
+			studyAheadDays: preset.studyAheadDays,
+			crammingMode: preset.crammingMode,
+			projectFilters: preset.projectFilters,
+		};
+		this.emitResultAndClose(result);
+	}
+
+	private async handlePresetDelete(presetId: string): Promise<void> {
+		this.plugin.settings.sessionPresets =
+			this.plugin.settings.sessionPresets.filter((p) => p.id !== presetId);
+		await this.plugin.saveSettings();
+		this.render();
+	}
+
 	private handleStartSession(): void {
 		const state = this.session;
 		const selectedNotes = state.selectedNotes;
@@ -382,6 +468,11 @@ export class SessionView extends ItemView {
 			now: state.now,
 			logic: this.logic,
 			onQuickAction: (action) => this.handleQuickAction(action),
+			onCustomStudyAction: (action) => this.handleCustomStudyAction(action),
+			onOpenCustomStudyModal: () => void this.handleOpenCustomStudyModal(),
+			onPresetAction: (preset) => this.handlePresetAction(preset),
+			onPresetDelete: (id) => void this.handlePresetDelete(id),
+			sessionPresets: this.plugin.settings.sessionPresets,
 			onNoteToggle: (note) => this.handleNoteToggle(note),
 			onSearchChange: (query) => this.handleSearchChange(query),
 			onSelectAll: (select) => this.handleSelectAll(select),

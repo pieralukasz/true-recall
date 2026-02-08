@@ -45,6 +45,7 @@ export interface ProjectsContentProps {
 	component: Component;
 	onSearchChange: (query: string) => void;
 	onStartReview: (projectName: string) => void;
+	onCustomStudy: (projectName: string) => void;
 	onDelete: (projectId: string) => void;
 	onAddNotes: (projectId: string, projectName: string) => void;
 	onCreateFromNote: () => void;
@@ -349,8 +350,18 @@ export class ProjectsContent extends BaseComponent {
 			this.props.onDelete(project.id);
 		});
 
-		// Review button (only if has cards)
+		// Review & custom study buttons (only if has cards)
 		if (hasCards) {
+			const customStudyBtn = actions.createEl("button", {
+				cls: iconBtnCls,
+				attr: { "aria-label": "Custom study" },
+			});
+			setIcon(customStudyBtn, "sliders-horizontal");
+			this.events.addEventListener(customStudyBtn, "click", (e) => {
+				e.stopPropagation();
+				this.props.onCustomStudy(project.name);
+			});
+
 			const reviewBtn = actions.createEl("button", {
 				cls: iconBtnCls,
 				attr: { "aria-label": "Start review" },

@@ -13,6 +13,16 @@ export interface ReviewViewState extends Record<string, unknown> {
     stateFilter?: "due" | "learning" | "new" | "buried";
     ignoreDailyLimits?: boolean;
     bypassScheduling?: boolean;
+    // Advanced custom study filters
+    difficultyRange?: { min: number; max: number };
+    lapsesRange?: { min: number; max: number };
+    stabilityRange?: { min: number; max: number };
+    overdueOnly?: boolean;
+    recentlyFailed?: boolean;
+    cardLimit?: number;
+    studyAheadDays?: number;
+    reviewOrder?: import("../../types/settings.types").ReviewOrder;
+    crammingMode?: boolean;
 }
 
 export interface UndoEntry {

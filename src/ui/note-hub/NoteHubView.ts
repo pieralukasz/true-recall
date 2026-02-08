@@ -316,6 +316,8 @@ export class NoteHubView extends ItemView {
 				onOpenNote: (path) => void this.handleOpenNote(path),
 				onStartReview: (filter) => void this.handleStartReview(filter),
 				onStartReviewProject: (name) => void this.handleStartReviewProject(name),
+				onCustomStudyProject: (name) => void this.handleCustomStudyProject(name),
+				onCustomStudyNote: (filter) => void this.handleCustomStudyNote(filter),
 				onGenerateCards: (path) => void this.handleGenerateCards(path),
 				onAddToProject: (path) => void this.handleAddNoteToProject(path),
 				onRemoveFromProject: (notePath, project) => void this.handleRemoveFromProject(notePath, project),
@@ -423,6 +425,23 @@ export class NoteHubView extends ItemView {
 
 	private async handleStartReviewProject(projectName: string): Promise<void> {
 		await this.handleStartReview({ projectFilters: [projectName] });
+	}
+
+	private async handleCustomStudyProject(projectName: string): Promise<void> {
+		await this.plugin.openCustomStudyModal({
+			projectFilters: [projectName],
+			scopeLabel: projectName,
+		});
+	}
+
+	private async handleCustomStudyNote(filter: { sourceNoteFilters: string[] }): Promise<void> {
+		const label = filter.sourceNoteFilters.length === 1
+			? filter.sourceNoteFilters[0]
+			: `${filter.sourceNoteFilters.length} notes`;
+		await this.plugin.openCustomStudyModal({
+			sourceNoteFilters: filter.sourceNoteFilters,
+			scopeLabel: label,
+		});
 	}
 
 	private async handleGenerateCards(notePath: string): Promise<void> {

@@ -7,6 +7,7 @@ import { BaseComponent } from "../component.base";
 import { createSectionHeader, createCardCountDisplay } from "../components";
 import type { SessionLogic } from "./SessionLogic";
 import type { FSRSFlashcardItem } from "../../types";
+import type { SessionPreset } from "../../types/settings.types";
 
 export interface SessionContentProps {
 	currentNoteName: string | null;
@@ -18,6 +19,13 @@ export interface SessionContentProps {
 	onQuickAction: (
 		action: "current-note" | "today" | "default" | "buried"
 	) => void;
+	onCustomStudyAction: (
+		action: "failed" | "difficult" | "study-ahead" | "most-forgotten"
+	) => void;
+	onOpenCustomStudyModal: () => void;
+	onPresetAction: (preset: SessionPreset) => void;
+	onPresetDelete: (presetId: string) => void;
+	sessionPresets: SessionPreset[];
 	onNoteToggle: (noteName: string) => void;
 	onSearchChange: (query: string) => void;
 	onSelectAll: (select: boolean) => void;
@@ -63,6 +71,14 @@ export class SessionContent extends BaseComponent {
 
 		// Quick actions section
 		this.renderQuickActions();
+
+		// Custom study section
+		this.renderCustomStudySection();
+
+		// Saved presets section
+		if (this.props.sessionPresets.length > 0) {
+			this.renderSavedPresets();
+		}
 
 		// Notes section header (fixed, not scrolling)
 		createSectionHeader(this.element, {
@@ -218,6 +234,185 @@ export class SessionContent extends BaseComponent {
 			});
 			buriedBtn.disabled = true;
 			buriedBtn.addClasses(disabledBtnCls);
+		}
+	}
+
+	private renderCustomStudySection(): void {
+		const { logic, onCustomStudyAction, onOpenCustomStudyModal } = this.props;
+
+		const headerContainer = this.element!.createDiv({
+			cls: "ep:flex ep:items-center ep:justify-between ep:my-2",
+		});
+		createSectionHeader(headerContainer, {
+			title: "Custom study",
+			className: "true-recall-section-header",
+		});
+
+		const customBtn = headerContainer.createEl("button", {
+			cls: "ep:text-ui-smaller ep:text-obs-muted ep:bg-transparent ep:border-none ep:cursor-pointer ep:hover:text-obs-normal ep:px-1",
+			text: "Advanced",
+			attr: { "aria-label": "Open custom study modal" },
+		});
+		this.events.addEventListener(customBtn, "click", () =>
+			onOpenCustomStudyModal()
+		);
+
+		const customActionsEl = this.element!.createDiv({
+			cls: "true-recall-custom-study ep:grid ep:grid-cols-2 ep:gap-2",
+		});
+
+		const baseBtnCls =
+			"ep:flex ep:flex-col ep:items-start ep:gap-1 ep:px-3 ep:py-2.5 ep:bg-obs-secondary ep:border ep:border-obs-border ep:rounded-md ep:cursor-pointer ep:text-left ep:transition-colors ep:hover:bg-obs-modifier-hover ep:hover:border-obs-interactive";
+		const disabledBtnCls = [
+			"ep:opacity-50",
+			"ep:cursor-not-allowed",
+			"ep:hover:bg-obs-secondary",
+			"ep:hover:border-obs-border",
+		];
+
+		const failedCount = logic.getFailedCardsCount();
+		const failedBtn = customActionsEl.createEl("button", { cls: baseBtnCls });
+		failedBtn.createSpan({
+			text: "Failed cards",
+			cls: "ep:text-ui-small ep:font-medium ep:text-obs-normal",
+		});
+		if (failedCount > 0) {
+			failedBtn.createSpan({
+				cls: "ep:text-ui-smaller ep:text-obs-muted",
+				text: `${failedCount} cards`,
+			});
+			this.events.addEventListener(failedBtn, "click", () =>
+				onCustomStudyAction("failed")
+			);
+		} else {
+			failedBtn.createSpan({
+				cls: "ep:text-ui-smaller ep:text-obs-faint",
+				text: "none",
+			});
+			failedBtn.disabled = true;
+			failedBtn.addClasses(disabledBtnCls);
+		}
+
+		const difficultCount = logic.getDifficultCardsCount();
+		const difficultBtn = customActionsEl.createEl("button", { cls: baseBtnCls });
+		difficultBtn.createSpan({
+			text: "Difficult",
+			cls: "ep:text-ui-small ep:font-medium ep:text-obs-normal",
+		});
+		if (difficultCount > 0) {
+			difficultBtn.createSpan({
+				cls: "ep:text-ui-smaller ep:text-obs-muted",
+				text: `${difficultCount} cards`,
+			});
+			this.events.addEventListener(difficultBtn, "click", () =>
+				onCustomStudyAction("difficult")
+			);
+		} else {
+			difficultBtn.createSpan({
+				cls: "ep:text-ui-smaller ep:text-obs-faint",
+				text: "none",
+			});
+			difficultBtn.disabled = true;
+			difficultBtn.addClasses(disabledBtnCls);
+		}
+
+		const aheadCount = logic.getStudyAheadCount(3);
+		const aheadBtn = customActionsEl.createEl("button", { cls: baseBtnCls });
+		aheadBtn.createSpan({
+			text: "Study ahead",
+			cls: "ep:text-ui-small ep:font-medium ep:text-obs-normal",
+		});
+		if (aheadCount > 0) {
+			aheadBtn.createSpan({
+				cls: "ep:text-ui-smaller ep:text-obs-muted",
+				text: `${aheadCount} cards (3d)`,
+			});
+			this.events.addEventListener(aheadBtn, "click", () =>
+				onCustomStudyAction("study-ahead")
+			);
+		} else {
+			aheadBtn.createSpan({
+				cls: "ep:text-ui-smaller ep:text-obs-faint",
+				text: "none",
+			});
+			aheadBtn.disabled = true;
+			aheadBtn.addClasses(disabledBtnCls);
+		}
+
+		const forgottenCount = logic.getMostForgottenCount(1);
+		const forgottenBtn = customActionsEl.createEl("button", { cls: baseBtnCls });
+		forgottenBtn.createSpan({
+			text: "Most forgotten",
+			cls: "ep:text-ui-small ep:font-medium ep:text-obs-normal",
+		});
+		if (forgottenCount > 0) {
+			forgottenBtn.createSpan({
+				cls: "ep:text-ui-smaller ep:text-obs-muted",
+				text: `${forgottenCount} cards`,
+			});
+			this.events.addEventListener(forgottenBtn, "click", () =>
+				onCustomStudyAction("most-forgotten")
+			);
+		} else {
+			forgottenBtn.createSpan({
+				cls: "ep:text-ui-smaller ep:text-obs-faint",
+				text: "none",
+			});
+			forgottenBtn.disabled = true;
+			forgottenBtn.addClasses(disabledBtnCls);
+		}
+	}
+
+	private renderSavedPresets(): void {
+		const { sessionPresets, onPresetAction, onPresetDelete } = this.props;
+
+		createSectionHeader(this.element!, {
+			title: "Saved presets",
+			className: "true-recall-section-header ep:my-2",
+		});
+
+		const presetsEl = this.element!.createDiv({
+			cls: "true-recall-saved-presets ep:flex ep:flex-col ep:gap-1.5",
+		});
+
+		for (const preset of sessionPresets) {
+			const row = presetsEl.createDiv({
+				cls: "ep:flex ep:items-center ep:gap-2 ep:px-3 ep:py-2 ep:bg-obs-secondary ep:border ep:border-obs-border ep:rounded-md ep:cursor-pointer ep:transition-colors ep:hover:bg-obs-modifier-hover ep:hover:border-obs-interactive ep:group",
+			});
+
+			const info = row.createDiv({ cls: "ep:flex-1 ep:min-w-0" });
+			info.createSpan({
+				text: preset.name,
+				cls: "ep:text-ui-small ep:font-medium ep:text-obs-normal",
+			});
+
+			const details: string[] = [];
+			if (preset.crammingMode) details.push("cram");
+			if (preset.stateFilter) details.push(preset.stateFilter);
+			if (preset.reviewOrder && preset.reviewOrder !== "due-date")
+				details.push(preset.reviewOrder);
+			if (preset.cardLimit) details.push(`limit ${preset.cardLimit}`);
+			if (details.length > 0) {
+				info.createSpan({
+					text: details.join(" \u00b7 "),
+					cls: "ep:text-ui-smaller ep:text-obs-muted ep:ml-2",
+				});
+			}
+
+			const deleteBtn = row.createEl("button", {
+				cls: "ep:text-ui-smaller ep:text-obs-faint ep:bg-transparent ep:border-none ep:cursor-pointer ep:hover:text-obs-red ep:opacity-0 ep:group-hover:opacity-100 ep:px-1",
+				text: "\u00d7",
+				attr: { "aria-label": "Delete preset" },
+			});
+
+			this.events.addEventListener(row, "click", (e) => {
+				if (e.target === deleteBtn) return;
+				onPresetAction(preset);
+			});
+			this.events.addEventListener(deleteBtn, "click", (e) => {
+				e.stopPropagation();
+				onPresetDelete(preset.id);
+			});
 		}
 	}
 
