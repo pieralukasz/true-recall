@@ -5,7 +5,6 @@ import {
 	VIEW_TYPE_STATS,
 	VIEW_TYPE_SESSION,
 	VIEW_TYPE_PROJECTS,
-	VIEW_TYPE_BROWSER,
 	VIEW_TYPE_SIMULATOR,
 	VIEW_TYPE_ORPHANED_CARDS,
 	VIEW_TYPE_NOTE_HUB,
@@ -47,7 +46,6 @@ import { ReviewView } from "./ui/review/ReviewView";
 import { StatsView } from "./ui/stats/StatsView";
 import { SessionView } from "./ui/session";
 import { ProjectsView } from "./ui/projects";
-import { BrowserView } from "./ui/browser";
 import { SimulatorView } from "./ui/simulator";
 import { OrphanedCardsView } from "./ui/orphaned-cards";
 import { NoteHubView } from "./ui/note-hub";
@@ -181,11 +179,6 @@ export default class TrueRecallPlugin extends Plugin {
 		);
 
 		this.registerView(
-			VIEW_TYPE_BROWSER,
-			(leaf) => new BrowserView(leaf, this)
-		);
-
-		this.registerView(
 			VIEW_TYPE_SIMULATOR,
 			(leaf) => new SimulatorView(leaf, this)
 		);
@@ -266,7 +259,7 @@ export default class TrueRecallPlugin extends Plugin {
 
 				if (result.action === "delete") {
 					const cardIds = context.cards.map((c) => c.id);
-					this.cardStore.browser.bulkSoftDelete(cardIds);
+					this.cardStore.cards.bulkSoftDelete(cardIds);
 					notify().cardsDeleted(cardIds.length);
 				} else if (result.action === "move" && result.targetNotePath) {
 					await this.moveCardsToNote(context.cards, result.targetNotePath);
@@ -439,14 +432,6 @@ ${cardList}${moreText}
 
 	async showProjects(): Promise<void> {
 		await this.activateProjectsView();
-	}
-
-	async activateBrowserView(): Promise<void> {
-		await activateView(this.app, VIEW_TYPE_BROWSER, { useMainArea: true });
-	}
-
-	async showBrowser(): Promise<void> {
-		await this.activateBrowserView();
 	}
 
 	async openSimulator(): Promise<void> {

@@ -77,12 +77,6 @@ export function registerCommands(plugin: TrueRecallPlugin): void {
 	});
 
 	plugin.addCommand({
-		id: "open-browser",
-		name: "Open card browser",
-		callback: () => void plugin.showBrowser(),
-	});
-
-	plugin.addCommand({
 		id: "open-fsrs-simulator",
 		// eslint-disable-next-line obsidianmd/ui/sentence-case -- FSRS is an acronym
 		name: "Open FSRS simulator",

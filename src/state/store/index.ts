@@ -28,10 +28,6 @@ export type {
 	SessionSliceState,
 	SessionSliceActions,
 	SessionApi,
-	// Browser slice
-	BrowserSliceState,
-	BrowserSliceActions,
-	BrowserApi,
 	// Projects slice
 	ProjectsSliceState,
 	ProjectsSliceActions,

@@ -7,7 +7,7 @@ import { notify, NOTIFICATION_DURATION } from "../../ui/notification.service";
 import type { FSRSCardData } from "../../../types";
 import { SqliteDatabase } from "./SqliteDatabase";
 import { SqliteSchemaManager } from "./SqliteSchemaManager";
-import { CardActions, StatsActions, BrowserActions } from "./modules";
+import { CardActions, StatsActions } from "./modules";
 import { DB_FOLDER, SAVE_DEBOUNCE_MS, getDeviceDbFilename } from "./sqlite.types";
 
 export class SqliteStoreService {
@@ -22,7 +22,6 @@ export class SqliteStoreService {
     // Domain modules - public for direct access
     public readonly cards: CardActions;
     public readonly stats: StatsActions;
-    public readonly browser: BrowserActions;
 
     constructor(app: App, deviceId: string) {
         this.app = app;
@@ -32,7 +31,6 @@ export class SqliteStoreService {
         // Initialize domain modules
         this.cards = new CardActions(this.db);
         this.stats = new StatsActions(this.db);
-        this.browser = new BrowserActions(this.db);
     }
 
     getDeviceId(): string {
@@ -294,11 +292,6 @@ export class SqliteStoreService {
     /** @deprecated Use store.stats directly */
     getAggregations() {
         return this.stats;
-    }
-
-    /** @deprecated Use store.browser directly */
-    getBrowserQueries() {
-        return this.browser;
     }
 
     getCards(): FSRSCardData[] {

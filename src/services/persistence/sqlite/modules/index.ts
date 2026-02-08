@@ -7,4 +7,3 @@
 
 export { CardActions } from "./CardActions";
 export { StatsActions } from "./StatsActions";
-export { BrowserActions } from "./BrowserActions";

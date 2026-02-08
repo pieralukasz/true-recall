@@ -262,7 +262,7 @@ export class CardRepository {
 		if (cardIds.length === 0) return 0;
 
 		// Single SQL transaction instead of N individual deletes
-		const count = this.store.browser.bulkSoftDelete(cardIds);
+		const count = this.store.cards.bulkSoftDelete(cardIds);
 
 		getEventBus().emit({
 			type: "cards:bulk-change",
