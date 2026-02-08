@@ -1,6 +1,6 @@
 /**
  * Bulk Operations Tests
- * Behavior-first tests for browser view bulk operations
+ * Behavior-first tests for card bulk operations
  */
 import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
 import { State } from "ts-fsrs";
@@ -34,7 +34,7 @@ describe("Bulk Operations", () => {
 			];
 			cards.forEach((c) => ctx.cards.set(c.id, c));
 
-			const affected = ctx.browser.bulkSuspend(["card-1", "card-2"]);
+			const affected = ctx.cards.bulkSuspend(["card-1", "card-2"]);
 
 			expect(affected).toBe(2);
 
@@ -54,13 +54,13 @@ describe("Bulk Operations", () => {
 			];
 			cards.forEach((c) => ctx.cards.set(c.id, c));
 
-			const affected = ctx.browser.bulkSuspend(["card-1", "card-2"]);
+			const affected = ctx.cards.bulkSuspend(["card-1", "card-2"]);
 
 			expect(affected).toBe(2);
 		});
 
 		it("should return 0 for empty array", async () => {
-			const affected = ctx.browser.bulkSuspend([]);
+			const affected = ctx.cards.bulkSuspend([]);
 			expect(affected).toBe(0);
 		});
 
@@ -68,7 +68,7 @@ describe("Bulk Operations", () => {
 			const card = createTestCard({ id: "card-1" });
 			ctx.cards.set(card.id, card);
 
-			const affected = ctx.browser.bulkSuspend(["card-1", "nonexistent"]);
+			const affected = ctx.cards.bulkSuspend(["card-1", "nonexistent"]);
 
 			expect(affected).toBe(1); // Only card-1 exists
 		});
@@ -82,7 +82,7 @@ describe("Bulk Operations", () => {
 			];
 			cards.forEach((c) => ctx.cards.set(c.id, c));
 
-			const affected = ctx.browser.bulkUnsuspend(["card-1", "card-2"]);
+			const affected = ctx.cards.bulkUnsuspend(["card-1", "card-2"]);
 
 			expect(affected).toBe(2);
 
@@ -94,7 +94,7 @@ describe("Bulk Operations", () => {
 		});
 
 		it("should return 0 for empty array", async () => {
-			const affected = ctx.browser.bulkUnsuspend([]);
+			const affected = ctx.cards.bulkUnsuspend([]);
 			expect(affected).toBe(0);
 		});
 	});
@@ -108,7 +108,7 @@ describe("Bulk Operations", () => {
 			cards.forEach((c) => ctx.cards.set(c.id, c));
 
 			const untilDate = "2026-02-15T00:00:00Z";
-			const affected = ctx.browser.bulkBury(["card-1", "card-2"], untilDate);
+			const affected = ctx.cards.bulkBury(["card-1", "card-2"], untilDate);
 
 			expect(affected).toBe(2);
 
@@ -120,7 +120,7 @@ describe("Bulk Operations", () => {
 		});
 
 		it("should return 0 for empty array", async () => {
-			const affected = ctx.browser.bulkBury([], "2026-02-15");
+			const affected = ctx.cards.bulkBury([], "2026-02-15");
 			expect(affected).toBe(0);
 		});
 	});
@@ -133,7 +133,7 @@ describe("Bulk Operations", () => {
 			];
 			cards.forEach((c) => ctx.cards.set(c.id, c));
 
-			const affected = ctx.browser.bulkUnbury(["card-1", "card-2"]);
+			const affected = ctx.cards.bulkUnbury(["card-1", "card-2"]);
 
 			expect(affected).toBe(2);
 
@@ -145,7 +145,7 @@ describe("Bulk Operations", () => {
 		});
 
 		it("should return 0 for empty array", async () => {
-			const affected = ctx.browser.bulkUnbury([]);
+			const affected = ctx.cards.bulkUnbury([]);
 			expect(affected).toBe(0);
 		});
 	});
@@ -160,7 +160,7 @@ describe("Bulk Operations", () => {
 
 			expect(ctx.cards.size()).toBe(2);
 
-			const affected = ctx.browser.bulkSoftDelete(["card-1", "card-2"]);
+			const affected = ctx.cards.bulkSoftDelete(["card-1", "card-2"]);
 
 			expect(affected).toBe(2);
 			expect(ctx.cards.size()).toBe(0); // Soft deleted, not visible
@@ -177,14 +177,14 @@ describe("Bulk Operations", () => {
 
 			expect(ctx.stats.getTotalReviewCount()).toBe(1);
 
-			ctx.browser.bulkSoftDelete(["card-1"]);
+			ctx.cards.bulkSoftDelete(["card-1"]);
 
 			// Review log should also be soft deleted
 			expect(ctx.stats.getTotalReviewCount()).toBe(0);
 		});
 
 		it("should return 0 for empty array", async () => {
-			const affected = ctx.browser.bulkSoftDelete([]);
+			const affected = ctx.cards.bulkSoftDelete([]);
 			expect(affected).toBe(0);
 		});
 	});
@@ -209,7 +209,7 @@ describe("Bulk Operations", () => {
 			];
 			cards.forEach((c) => ctx.cards.set(c.id, c));
 
-			const affected = ctx.browser.bulkReset(["card-1", "card-2"]);
+			const affected = ctx.cards.bulkReset(["card-1", "card-2"]);
 
 			expect(affected).toBe(2);
 
@@ -234,7 +234,7 @@ describe("Bulk Operations", () => {
 		});
 
 		it("should return 0 for empty array", async () => {
-			const affected = ctx.browser.bulkReset([]);
+			const affected = ctx.cards.bulkReset([]);
 			expect(affected).toBe(0);
 		});
 	});
@@ -248,7 +248,7 @@ describe("Bulk Operations", () => {
 			cards.forEach((c) => ctx.cards.set(c.id, c));
 
 			const newDue = "2026-03-01T00:00:00Z";
-			const affected = ctx.browser.bulkReschedule(["card-1", "card-2"], newDue);
+			const affected = ctx.cards.bulkReschedule(["card-1", "card-2"], newDue);
 
 			expect(affected).toBe(2);
 
@@ -260,7 +260,7 @@ describe("Bulk Operations", () => {
 		});
 
 		it("should return 0 for empty array", async () => {
-			const affected = ctx.browser.bulkReschedule([], "2026-03-01");
+			const affected = ctx.cards.bulkReschedule([], "2026-03-01");
 			expect(affected).toBe(0);
 		});
 	});
@@ -275,7 +275,7 @@ describe("Bulk Operations", () => {
 			cards.forEach((c) => ctx.cards.set(c.id, c));
 
 			const cardIds = cards.map((c) => c.id);
-			const affected = ctx.browser.bulkSuspend(cardIds);
+			const affected = ctx.cards.bulkSuspend(cardIds);
 
 			expect(affected).toBe(100);
 		});
@@ -288,7 +288,7 @@ describe("Bulk Operations", () => {
 
 			vi.advanceTimersByTime(5000);
 
-			ctx.browser.bulkSuspend(["card-timestamp"]);
+			ctx.cards.bulkSuspend(["card-timestamp"]);
 
 			const afterCard = ctx.cards.getModifiedSince(0)[0];
 			expect(afterCard?.updatedAt).toBeGreaterThan(initialUpdatedAt!);
@@ -301,7 +301,7 @@ describe("Bulk Operations", () => {
 			];
 			cards.forEach((c) => ctx.cards.set(c.id, c));
 
-			const affected = ctx.browser.bulkSuspend([
+			const affected = ctx.cards.bulkSuspend([
 				"exists-1",
 				"nonexistent-1",
 				"exists-2",
@@ -310,135 +310,6 @@ describe("Bulk Operations", () => {
 
 			// Only existing cards are affected
 			expect(affected).toBe(2);
-		});
-	});
-
-	describe("getCardCountsByState", () => {
-		it("should count cards by state correctly", async () => {
-			const cards = [
-				createTestCard({ id: "new-1", state: State.New }),
-				createTestCard({ id: "new-2", state: State.New }),
-				createTestCard({ id: "learning-1", state: State.Learning }),
-				createTestCard({ id: "review-1", state: State.Review }),
-				createTestCard({ id: "review-2", state: State.Review }),
-				createTestCard({ id: "review-3", state: State.Review }),
-				createTestCard({ id: "relearning-1", state: State.Relearning }),
-			];
-			cards.forEach((c) => ctx.cards.set(c.id, c));
-
-			const counts = ctx.browser.getCardCountsByState();
-
-			expect(counts.new).toBe(2);
-			expect(counts.learning).toBe(1);
-			expect(counts.review).toBe(3);
-			expect(counts.relearning).toBe(1);
-		});
-
-		it("should count suspended cards separately", async () => {
-			const cards = [
-				createTestCard({ id: "suspended-1", state: State.New, suspended: true }),
-				createTestCard({ id: "suspended-2", state: State.Review, suspended: true }),
-				createTestCard({ id: "active", state: State.New, suspended: false }),
-			];
-			cards.forEach((c) => ctx.cards.set(c.id, c));
-
-			const counts = ctx.browser.getCardCountsByState();
-
-			expect(counts.suspended).toBe(2);
-			expect(counts.new).toBe(1); // Only the non-suspended new card
-		});
-
-		it("should count buried cards separately", async () => {
-			const futureDate = "2026-02-15T00:00:00Z";
-			const pastDate = "2026-01-15T00:00:00Z";
-
-			const cards = [
-				createTestCard({ id: "buried-future", state: State.New, buriedUntil: futureDate }),
-				createTestCard({ id: "buried-past", state: State.New, buriedUntil: pastDate }),
-				createTestCard({ id: "not-buried", state: State.New }),
-			];
-			cards.forEach((c) => ctx.cards.set(c.id, c));
-
-			const counts = ctx.browser.getCardCountsByState();
-
-			expect(counts.buried).toBe(1); // Only future burial counts
-			expect(counts.new).toBe(2); // past burial + not buried
-		});
-	});
-
-	describe("getAllCardsForBrowser", () => {
-		it("should return all non-deleted cards", async () => {
-			const cards = [
-				createTestCard({ id: "card-1" }),
-				createTestCard({ id: "card-2" }),
-				createTestCard({ id: "card-3" }),
-			];
-			cards.forEach((c) => ctx.cards.set(c.id, c));
-
-			const browserCards = ctx.browser.getAllCardsForBrowser();
-
-			expect(browserCards).toHaveLength(3);
-		});
-
-		it("should exclude soft-deleted cards", async () => {
-			const cards = [
-				createTestCard({ id: "active" }),
-				createTestCard({ id: "deleted" }),
-			];
-			cards.forEach((c) => ctx.cards.set(c.id, c));
-			ctx.cards.softDelete("deleted");
-
-			const browserCards = ctx.browser.getAllCardsForBrowser();
-
-			expect(browserCards).toHaveLength(1);
-			expect(browserCards[0]?.id).toBe("active");
-		});
-
-		it("should order by due date ascending", async () => {
-			const cards = [
-				createTestCard({ id: "later", due: "2026-02-10T10:00:00Z" }),
-				createTestCard({ id: "earlier", due: "2026-02-01T10:00:00Z" }),
-				createTestCard({ id: "middle", due: "2026-02-05T10:00:00Z" }),
-			];
-			cards.forEach((c) => ctx.cards.set(c.id, c));
-
-			const browserCards = ctx.browser.getAllCardsForBrowser();
-
-			expect(browserCards[0]?.id).toBe("earlier");
-			expect(browserCards[1]?.id).toBe("middle");
-			expect(browserCards[2]?.id).toBe("later");
-		});
-	});
-
-	describe("getUniqueSourceNoteUids", () => {
-		it("should return unique source UIDs", async () => {
-			const cards = [
-				createTestCard({ id: "card-1", sourceUid: "src-1" }),
-				createTestCard({ id: "card-2", sourceUid: "src-1" }),
-				createTestCard({ id: "card-3", sourceUid: "src-2" }),
-				createTestCard({ id: "card-4", sourceUid: "src-3" }),
-			];
-			cards.forEach((c) => ctx.cards.set(c.id, c));
-
-			const uids = ctx.browser.getUniqueSourceNoteUids();
-
-			expect(uids).toHaveLength(3);
-			expect(uids).toContain("src-1");
-			expect(uids).toContain("src-2");
-			expect(uids).toContain("src-3");
-		});
-
-		it("should exclude null source UIDs", async () => {
-			const cards = [
-				createTestCard({ id: "card-1", sourceUid: "src-1" }),
-				createTestCard({ id: "card-2", sourceUid: undefined }),
-			];
-			cards.forEach((c) => ctx.cards.set(c.id, c));
-
-			const uids = ctx.browser.getUniqueSourceNoteUids();
-
-			expect(uids).toHaveLength(1);
-			expect(uids[0]).toBe("src-1");
 		});
 	});
 });

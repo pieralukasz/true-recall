@@ -106,7 +106,7 @@ export class DeletionHandlerService {
 	 * Soft delete all orphaned cards
 	 */
 	deleteOrphanedCards(cardIds: string[]): void {
-		this.deps.store.browser.bulkSoftDelete(cardIds);
+		this.deps.store.cards.bulkSoftDelete(cardIds);
 	}
 
 	/**

@@ -17,12 +17,6 @@ import type {
 } from "../../types";
 import type { AppError } from "../../errors";
 import type {
-	BrowserCardItem,
-	BrowserColumn,
-	SortDirection,
-	SidebarFilters,
-} from "../../types/browser.types";
-import type {
 	MetricType,
 	SequenceSimulation,
 } from "../../ui/simulator/types";
@@ -212,52 +206,6 @@ export interface SessionSliceActions {
 // API type for components to depend on
 export type SessionApi = SessionSliceState & SessionSliceActions;
 
-export interface BrowserSliceState {
-	allCards: BrowserCardItem[];
-	filteredCards: BrowserCardItem[];
-	selectedCardIds: Set<string>;
-	searchQuery: string;
-	sortColumn: BrowserColumn;
-	sortDirection: SortDirection;
-	sidebarFilters: SidebarFilters;
-	isLoading: boolean;
-	previewCardId: string | null;
-	lastClickedIndex: number | null;
-}
-
-export interface BrowserSliceActions {
-	setState: (partial: Partial<BrowserSliceState>) => void;
-	reset: () => void;
-	setCards: (cards: BrowserCardItem[]) => void;
-	setLoading: (isLoading: boolean) => void;
-	setSearchQuery: (query: string) => void;
-	setSidebarFilters: (filters: Partial<SidebarFilters>) => void;
-	clearFilters: () => void;
-	setSortColumn: (column: BrowserColumn) => void;
-	setSortDirection: (direction: SortDirection) => void;
-	toggleCardSelection: (cardId: string) => void;
-	selectRange: (toIndex: number) => void;
-	selectAll: () => void;
-	clearSelection: () => void;
-	getSelectedCards: () => BrowserCardItem[];
-	setPreviewCard: (cardId: string | null) => void;
-	getPreviewCard: () => BrowserCardItem | null;
-	updateCard: (cardId: string, updates: Partial<BrowserCardItem>) => void;
-	removeCards: (cardIds: string[]) => void;
-	getUniqueProjects: () => string[];
-	getStateCounts: () => {
-		new: number;
-		learning: number;
-		review: number;
-		relearning: number;
-		suspended: number;
-		buried: number;
-	};
-}
-
-// API type for components to depend on
-export type BrowserApi = BrowserSliceState & BrowserSliceActions;
-
 export interface ProjectsSliceState {
 	isLoading: boolean;
 	isStale: boolean;
@@ -408,7 +356,6 @@ export interface AppState {
 	review: ReviewSliceState & ReviewSliceActions;
 	panel: PanelSliceState & PanelSliceActions;
 	session: SessionSliceState & SessionSliceActions;
-	browser: BrowserSliceState & BrowserSliceActions;
 	projects: ProjectsSliceState & ProjectsSliceActions;
 	simulator: SimulatorSliceState & SimulatorSliceActions;
 	stats: StatsSliceState & StatsSliceActions;
