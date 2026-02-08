@@ -49,6 +49,19 @@ export interface QueueBuildOptions {
 	bypassScheduling?: boolean;
 	/** 0-23, default 4 like Anki */
 	dayStartHour?: number;
+
+	// Advanced custom study filters
+	difficultyRange?: { min: number; max: number };
+	lapsesRange?: { min: number; max: number };
+	stabilityRange?: { min: number; max: number };
+	/** Only cards past their due date */
+	overdueOnly?: boolean;
+	/** Cards whose last review was rated Again */
+	recentlyFailed?: boolean;
+	/** Overall cap on session size */
+	cardLimit?: number;
+	/** Include cards due within the next N days (study ahead) */
+	studyAheadDays?: number;
 }
 
 export class ReviewService {
@@ -209,6 +222,56 @@ export class ReviewService {
 				}
 			}
 
+			// Difficulty range filter
+			if (options.difficultyRange) {
+				if (
+					card.fsrs.difficulty < options.difficultyRange.min ||
+					card.fsrs.difficulty > options.difficultyRange.max
+				)
+					return false;
+			}
+
+			// Lapses range filter
+			if (options.lapsesRange) {
+				if (
+					card.fsrs.lapses < options.lapsesRange.min ||
+					card.fsrs.lapses > options.lapsesRange.max
+				)
+					return false;
+			}
+
+			// Stability range filter
+			if (options.stabilityRange) {
+				if (
+					card.fsrs.stability < options.stabilityRange.min ||
+					card.fsrs.stability > options.stabilityRange.max
+				)
+					return false;
+			}
+
+			// Overdue only: exclude new cards and cards not yet due
+			if (options.overdueOnly) {
+				if (card.fsrs.state === State.New) return false;
+				if (new Date(card.fsrs.due) > new Date()) return false;
+			}
+
+			// Recently failed: last review was Again
+			if (options.recentlyFailed) {
+				const history = card.fsrs.history;
+				if (!history || history.length === 0) return false;
+				if (history[history.length - 1]!.r !== Rating.Again) return false;
+			}
+
+			// Study ahead: include cards due within the next N days
+			if (options.studyAheadDays !== undefined && options.studyAheadDays > 0) {
+				if (card.fsrs.state === State.Review) {
+					const cutoff = new Date(
+						Date.now() + options.studyAheadDays * 86_400_000
+					);
+					if (new Date(card.fsrs.due) > cutoff) return false;
+				}
+			}
+
 			// Project filter - use sourceUidToProjects map as fallback
 			if (projectSet) {
 				let cardProjects = card.projects;
@@ -282,6 +345,26 @@ export class ReviewService {
 			}
 			case "by-retrievability":
 				return fsrsService.sortByRetrievability(cards);
+			case "most-lapses":
+				return [...cards].sort((a, b) => b.fsrs.lapses - a.fsrs.lapses);
+			case "relative-overdueness": {
+				const now = Date.now();
+				return [...cards].sort((a, b) => {
+					const aOverdue =
+						(now - new Date(a.fsrs.due).getTime()) /
+						Math.max(1, a.fsrs.scheduledDays * 86_400_000);
+					const bOverdue =
+						(now - new Date(b.fsrs.due).getTime()) /
+						Math.max(1, b.fsrs.scheduledDays * 86_400_000);
+					return bOverdue - aOverdue;
+				});
+			}
+			case "lowest-stability":
+				return [...cards].sort(
+					(a, b) => a.fsrs.stability - b.fsrs.stability
+				);
+			case "order-added":
+				return this.sortByCreatedAt(cards);
 			default:
 				return fsrsService.sortByDue(cards);
 		}
@@ -428,20 +511,28 @@ export class ReviewService {
 			return isLearning || !reviewedToday.has(card.id);
 		});
 
+		let queue: FSRSFlashcardItem[];
+
 		if (options.bypassScheduling) {
-			return this.buildCustomStudyQueue(
+			queue = this.buildCustomStudyQueue(
 				availableCards,
 				fsrsService,
 				options
 			);
+		} else {
+			queue = this.buildStandardQueue(
+				availableCards,
+				fsrsService,
+				options,
+				now
+			);
 		}
 
-		return this.buildStandardQueue(
-			availableCards,
-			fsrsService,
-			options,
-			now
-		);
+		if (options.cardLimit && options.cardLimit > 0 && queue.length > options.cardLimit) {
+			queue = queue.slice(0, options.cardLimit);
+		}
+
+		return queue;
 	}
 
 	processAnswer(

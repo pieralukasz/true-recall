@@ -142,6 +142,8 @@ export const DEFAULT_SETTINGS: TrueRecallSettings = {
 	lastOptimizationMetrics: null,
 
 	scheduledBreaks: [],
+
+	sessionPresets: [],
 };
 
 // FSRS v6 default weights (21 parameters)

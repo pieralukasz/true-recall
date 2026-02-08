@@ -72,7 +72,15 @@ export type NewCardOrder = "random" | "oldest-first" | "newest-first";
 /**
  * Display order for review cards
  */
-export type ReviewOrder = "due-date" | "random" | "due-date-random" | "by-retrievability";
+export type ReviewOrder =
+	| "due-date"
+	| "random"
+	| "due-date-random"
+	| "by-retrievability"
+	| "most-lapses"
+	| "relative-overdueness"
+	| "lowest-stability"
+	| "order-added";
 
 /**
  * How to mix new cards with reviews
@@ -196,6 +204,26 @@ export interface TrueRecallSettings {
 
     /** Scheduled breaks (vacations) for review redistribution */
     scheduledBreaks: ScheduledBreak[];
+
+    /** Saved custom study session presets */
+    sessionPresets: SessionPreset[];
+}
+
+export interface SessionPreset {
+    id: string;
+    name: string;
+    createdAt: number;
+    stateFilter?: "due" | "learning" | "new" | "buried";
+    difficultyRange?: { min: number; max: number };
+    lapsesRange?: { min: number; max: number };
+    stabilityRange?: { min: number; max: number };
+    overdueOnly?: boolean;
+    recentlyFailed?: boolean;
+    reviewOrder?: ReviewOrder;
+    cardLimit?: number;
+    studyAheadDays?: number;
+    crammingMode?: boolean;
+    projectFilters?: string[];
 }
 
 /**
