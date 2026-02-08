@@ -6,7 +6,6 @@ export const VIEW_TYPE_REVIEW = "true-recall-review";
 export const VIEW_TYPE_STATS = "true-recall-stats";
 export const VIEW_TYPE_SESSION = "true-recall-session";
 export const VIEW_TYPE_PROJECTS = "true-recall-projects";
-export const VIEW_TYPE_BROWSER = "true-recall-browser";
 export const VIEW_TYPE_SIMULATOR = "true-recall-simulator";
 export const VIEW_TYPE_ORPHANED_CARDS = "true-recall-orphaned-cards";
 export const VIEW_TYPE_NOTE_HUB = "true-recall-note-hub";

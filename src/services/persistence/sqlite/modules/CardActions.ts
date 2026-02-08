@@ -379,4 +379,153 @@ export class CardActions {
             WHERE id = ?
         `, [data.due, data.scheduledDays, Date.now(), cardId]);
     }
+
+    bulkSuspend(cardIds: string[]): number {
+        if (cardIds.length === 0) return 0;
+
+        const placeholders = cardIds.map(() => "?").join(",");
+        const params = [Date.now(), ...cardIds] as [number, ...string[]];
+
+        this.db.run(
+            `UPDATE cards SET suspended = 1, updated_at = ? WHERE id IN (${placeholders})`,
+            params
+        );
+
+        return this.db.getRowsModified();
+    }
+
+    bulkUnsuspend(cardIds: string[]): number {
+        if (cardIds.length === 0) return 0;
+
+        const placeholders = cardIds.map(() => "?").join(",");
+        const params = [Date.now(), ...cardIds] as [number, ...string[]];
+
+        this.db.run(
+            `UPDATE cards SET suspended = 0, updated_at = ? WHERE id IN (${placeholders})`,
+            params
+        );
+
+        return this.db.getRowsModified();
+    }
+
+    bulkBury(cardIds: string[], untilDate: string): number {
+        if (cardIds.length === 0) return 0;
+
+        const placeholders = cardIds.map(() => "?").join(",");
+        const params = [untilDate, Date.now(), ...cardIds] as [
+            string,
+            number,
+            ...string[]
+        ];
+
+        this.db.run(
+            `UPDATE cards SET buried_until = ?, updated_at = ? WHERE id IN (${placeholders})`,
+            params
+        );
+
+        return this.db.getRowsModified();
+    }
+
+    bulkUnbury(cardIds: string[]): number {
+        if (cardIds.length === 0) return 0;
+
+        const placeholders = cardIds.map(() => "?").join(",");
+        const params = [Date.now(), ...cardIds] as [number, ...string[]];
+
+        this.db.run(
+            `UPDATE cards SET buried_until = NULL, updated_at = ? WHERE id IN (${placeholders})`,
+            params
+        );
+
+        return this.db.getRowsModified();
+    }
+
+    bulkSoftDelete(cardIds: string[]): number {
+        if (cardIds.length === 0) return 0;
+
+        const now = Date.now();
+        const placeholders = cardIds.map(() => "?").join(",");
+
+        this.db.transaction(() => {
+            this.db.run(
+                `UPDATE review_log SET deleted_at = ?, updated_at = ? WHERE card_id IN (${placeholders})`,
+                [now, now, ...cardIds]
+            );
+            this.db.run(
+                `UPDATE cards SET deleted_at = ?, updated_at = ? WHERE id IN (${placeholders})`,
+                [now, now, ...cardIds]
+            );
+        });
+
+        return cardIds.length;
+    }
+
+    /** @deprecated Use bulkSoftDelete() instead for sync compatibility */
+    bulkDelete(cardIds: string[]): number {
+        if (cardIds.length === 0) return 0;
+
+        const placeholders = cardIds.map(() => "?").join(",");
+
+        this.db.transaction(() => {
+            this.db.run(
+                `DELETE FROM review_log WHERE card_id IN (${placeholders})`,
+                cardIds
+            );
+            this.db.run(`DELETE FROM cards WHERE id IN (${placeholders})`, cardIds);
+        });
+
+        return cardIds.length;
+    }
+
+    bulkReset(cardIds: string[]): number {
+        if (cardIds.length === 0) return 0;
+
+        const placeholders = cardIds.map(() => "?").join(",");
+        const now = new Date().toISOString();
+        const params = [now, Date.now(), ...cardIds] as [
+            string,
+            number,
+            ...string[]
+        ];
+
+        this.db.run(
+            `
+            UPDATE cards SET
+                state = 0,
+                reps = 0,
+                lapses = 0,
+                stability = 0,
+                difficulty = 0,
+                scheduled_days = 0,
+                learning_step = 0,
+                due = ?,
+                last_review = NULL,
+                suspended = 0,
+                buried_until = NULL,
+                updated_at = ?
+            WHERE id IN (${placeholders})
+        `,
+            params
+        );
+
+        return this.db.getRowsModified();
+    }
+
+    bulkReschedule(cardIds: string[], dueDate: string): number {
+        if (cardIds.length === 0) return 0;
+
+        const placeholders = cardIds.map(() => "?").join(",");
+        const params = [dueDate, Date.now(), ...cardIds] as [
+            string,
+            number,
+            ...string[]
+        ];
+
+        this.db.run(
+            `UPDATE cards SET due = ?, updated_at = ? WHERE id IN (${placeholders})`,
+            params
+        );
+
+        return this.db.getRowsModified();
+    }
 }

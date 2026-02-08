@@ -12,7 +12,6 @@ import type {
 } from "../../../../../src/services/persistence/sqlite/loader";
 import { CardActions } from "../../../../../src/services/persistence/sqlite/modules/CardActions";
 import { StatsActions } from "../../../../../src/services/persistence/sqlite/modules/StatsActions";
-import { BrowserActions } from "../../../../../src/services/persistence/sqlite/modules/BrowserActions";
 
 /**
  * Wrapper that makes sql.js Database compatible with DatabaseLike interface
@@ -219,7 +218,6 @@ export interface TestContext {
 	db: TestSqliteDatabase;
 	cards: CardActions;
 	stats: StatsActions;
-	browser: BrowserActions;
 	close: () => void;
 }
 
@@ -233,13 +231,11 @@ export async function createTestContext(): Promise<TestContext> {
 
 	const cards = new CardActions(db as never);
 	const stats = new StatsActions(db as never);
-	const browser = new BrowserActions(db as never);
 
 	return {
 		db,
 		cards,
 		stats,
-		browser,
 		close: () => db.close(),
 	};
 }

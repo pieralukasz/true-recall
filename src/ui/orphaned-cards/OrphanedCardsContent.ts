@@ -361,7 +361,7 @@ export class OrphanedCardsContent {
 		if (!confirmed) return;
 
 		const cardIds = group.cards.map((c) => c.id);
-		this.plugin.cardStore.browser.bulkSoftDelete(cardIds);
+		this.plugin.cardStore.cards.bulkSoftDelete(cardIds);
 
 		// Refresh and re-render
 		this.refresh();
@@ -378,7 +378,7 @@ export class OrphanedCardsContent {
 		if (!confirmed) return;
 
 		const allCardIds = this.groups.flatMap((g) => g.cards.map((c) => c.id));
-		this.plugin.cardStore.browser.bulkSoftDelete(allCardIds);
+		this.plugin.cardStore.cards.bulkSoftDelete(allCardIds);
 
 		// Refresh and re-render
 		this.refresh();

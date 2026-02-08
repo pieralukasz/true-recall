@@ -22,7 +22,6 @@ vi.mock("../../../src/services/core/event-bus.service", () => ({
 function createMockStore(ctx: TestContext): SqliteStoreService {
 	return {
 		cards: ctx.cards,
-		browser: ctx.browser,
 		get: (id: string) => ctx.cards.get(id),
 		set: (id: string, data: unknown) => ctx.cards.set(id, data as never),
 		has: (id: string) => ctx.cards.has(id),
