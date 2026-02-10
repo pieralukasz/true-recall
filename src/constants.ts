@@ -192,9 +192,8 @@ export const RANDOM_QUEUE_INSERT_MAX_POS = 5;
 
 export const CARD_HISTORY_LIMIT = 20;
 
-// Public anon key - safe to expose, RLS policies protect data per-user
+// Cloud sync - coming soon
 export const TRUE_RECALL_CLOUD = {
-	supabaseUrl: "https://REDACTED_PROJECT_REF.supabase.co",
-	supabaseAnonKey:
-		"REDACTED_SUPABASE_ANON_KEY",
+	supabaseUrl: process.env.SUPABASE_URL ?? "",
+	supabaseAnonKey: process.env.SUPABASE_ANON_KEY ?? "",
 } as const;
