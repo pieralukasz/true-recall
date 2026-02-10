@@ -79,3 +79,5 @@ export {
     type MergeNotesNameResult,
     type MergeNotesNameModalOptions,
 } from "./MergeNotesNameModal";
+export { AnkiImportModal } from "./AnkiImportModal";
+export { AnkiExportModal } from "./AnkiExportModal";

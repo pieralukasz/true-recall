@@ -1245,6 +1245,26 @@ export class TrueRecallSettingTab extends PluginSettingTab {
 					})
 			);
 
+		new Setting(container).setName("Anki import / export").setHeading();
+
+		new Setting(container)
+			.setName("Import Anki deck")
+			.setDesc("Import flashcards from an Anki .apkg file with optional scheduling data")
+			.addButton((button) =>
+				button.setButtonText("Import .apkg").onClick(async () => {
+					await this.plugin.importAnki();
+				})
+			);
+
+		new Setting(container)
+			.setName("Export to Anki")
+			.setDesc("Export your flashcards as an Anki-compatible .apkg file")
+			.addButton((button) =>
+				button.setButtonText("Export .apkg").onClick(async () => {
+					await this.plugin.exportAnki();
+				})
+			);
+
 		new Setting(container).setName("Content").setHeading();
 
 		new Setting(container)

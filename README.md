@@ -40,16 +40,6 @@ npm run build
 
 ---
 
-## Quick Start
-
-1. **Configure API Key**: Settings → True Recall → Enter your [OpenRouter](https://openrouter.ai) API key
-2. **Open a Note**: Navigate to any note you want to create flashcards from
-3. **Generate**: Click the floating brain button or open the flashcard panel
-4. **Review**: Click the brain ribbon icon to start a review session
-5. **Rate Cards**: Press 1-4 or use buttons (Again, Hard, Good, Easy)
-
----
-
 ## Commands (13)
 
 Access via Command Palette (`Cmd/Ctrl+P`):
@@ -64,10 +54,8 @@ Access via Command Palette (`Cmd/Ctrl+P`):
 | **Open statistics panel**                | Displays analytics: retention, forecasts, charts, and heatmap            |
 | **Open projects panel**                  | Shows all projects with card counts. Start project-filtered reviews      |
 | **Add current note to project**          | Add/remove current note from projects                                    |
-| **Open card browser**                    | Full-featured browser to search, filter, and manage all flashcards       |
 | **Open FSRS simulator**                  | Interactive simulator to visualize FSRS scheduling with different params |
 | **Create database backup**               | Creates a timestamped backup of your flashcard database                  |
-| **Sync cloud data**                      | Synchronize flashcards with Supabase cloud (pull + push)                 |
 | **Add flashcard UID to current note**    | Adds a unique identifier to link flashcards to the source note           |
 
 ---
@@ -76,22 +64,22 @@ Access via Command Palette (`Cmd/Ctrl+P`):
 
 All shortcuts work during review sessions:
 
-| Key             | Action                       | Context                                       |
-| --------------- | ---------------------------- | --------------------------------------------- |
-| **Space**       | Show answer / Rate Good      | Hidden → reveals answer; Revealed → rates 3   |
-| **1**           | Rate "Again"                 | Schedules for immediate re-review (failed)    |
-| **2**           | Rate "Hard"                  | Shorter interval than default                 |
-| **3**           | Rate "Good"                  | Normal interval progression                   |
-| **4**           | Rate "Easy"                  | Longer interval, card is well-known           |
-| **Cmd/Ctrl+Z**  | Undo last rating             | Restores previous card state                  |
-| **! (Shift+1)** | Suspend card                 | Removes from queue until manually unsuspended |
-| **-**           | Bury card                    | Hides until tomorrow                          |
-| **=**           | Bury note                    | Buries ALL cards from same source note        |
-| **M**           | Move card                    | Opens modal to transfer to different note     |
-| **N**           | New flashcard                | Opens editor to add card manually             |
-| **G**           | AI Generate                  | Generate flashcard with AI instructions       |
-| **B**           | Branch/copy card             | Duplicates the card                           |
-| **E**           | Edit card                    | Opens editor for question/answer              |
+| Key             | Action                  | Context                                       |
+| --------------- | ----------------------- | --------------------------------------------- |
+| **Space**       | Show answer / Rate Good | Hidden → reveals answer; Revealed → rates 3   |
+| **1**           | Rate "Again"            | Schedules for immediate re-review (failed)    |
+| **2**           | Rate "Hard"             | Shorter interval than default                 |
+| **3**           | Rate "Good"             | Normal interval progression                   |
+| **4**           | Rate "Easy"             | Longer interval, card is well-known           |
+| **Cmd/Ctrl+Z**  | Undo last rating        | Restores previous card state                  |
+| **! (Shift+1)** | Suspend card            | Removes from queue until manually unsuspended |
+| **-**           | Bury card               | Hides until tomorrow                          |
+| **=**           | Bury note               | Buries ALL cards from same source note        |
+| **M**           | Move card               | Opens modal to transfer to different note     |
+| **N**           | New flashcard           | Opens editor to add card manually             |
+| **G**           | AI Generate             | Generate flashcard with AI instructions       |
+| **B**           | Branch/copy card        | Duplicates the card                           |
+| **E**           | Edit card               | Opens editor for question/answer              |
 
 ---
 
@@ -149,17 +137,7 @@ Project organization interface:
 - Click to start filtered review
 - Create/rename/delete projects
 
-### 6. Browser View
-
-Full-featured card browser:
-
-- Search cards by question/answer content
-- Filter by state, source note, project
-- Sort by various criteria
-- Bulk operations
-- Preview and edit cards
-
-### 7. Simulator View
+### 6. Simulator View
 
 FSRS algorithm simulator:
 
@@ -204,13 +182,13 @@ Projects organize flashcards into collections spanning multiple notes.
 
 ### Using Projects
 
-Add `true_recall_projects` to note frontmatter:
+Add `projects` to note frontmatter:
 
 ```yaml
 ---
-true_recall_projects:
-    - Machine Learning
-    - Python Course
+projects:
+    - [[Machine Learning]]
+    - [[Python Course]]
 ---
 ```
 
@@ -243,13 +221,13 @@ All accessed via [OpenRouter](https://openrouter.ai) with a single API key:
 
 All data stored in `.true-recall/true-recall.db` using sql.js:
 
-| Table                    | Purpose                                                |
-| ------------------------ | ------------------------------------------------------ |
-| **cards**                | Flashcard content (Q&A) + FSRS scheduling data         |
-| **review_log**           | Every review: card_id, rating, response time           |
-| **daily_stats**          | Daily aggregates: reviews, new cards, time, accuracy   |
-| **daily_reviewed_cards** | Which cards reviewed each day                          |
-| **meta**                 | Schema version for migrations                          |
+| Table                    | Purpose                                              |
+| ------------------------ | ---------------------------------------------------- |
+| **cards**                | Flashcard content (Q&A) + FSRS scheduling data       |
+| **review_log**           | Every review: card_id, rating, response time         |
+| **daily_stats**          | Daily aggregates: reviews, new cards, time, accuracy |
+| **daily_reviewed_cards** | Which cards reviewed each day                        |
+| **meta**                 | Schema version for migrations                        |
 
 ### Cloud Sync (Optional)
 
@@ -297,42 +275,9 @@ npm run test:coverage # Coverage report
 - **ts-fsrs** - FSRS v6 algorithm
 - **sql.js** - SQLite in JavaScript
 - **chart.js** - Visualizations
-- **@langchain/*** - Natural language queries
+- **@langchain/\*** - Natural language queries
 - **@supabase/supabase-js** - Cloud sync
 - **zod** - Schema validation
-
----
-
-## TODO
-
-### High Priority
-
-- [ ] FSRS weight optimization from review history
-- [ ] Mobile-responsive UI improvements
-- [ ] Bulk card operations in browser
-- [ ] Export/import flashcards (Anki format)
-
-### Features
-
-- [ ] Cloze deletion support
-- [ ] Audio/TTS for flashcards
-- [ ] Spaced repetition for images (visual memory)
-- [ ] Custom card templates
-- [ ] Shared decks/projects
-
-### Quality of Life
-
-- [ ] Keyboard shortcuts customization
-- [ ] Statistics export (CSV/JSON)
-- [ ] Review session history
-- [ ] Card difficulty hints during review
-
-### Technical
-
-- [ ] Performance optimization for large databases
-- [ ] Offline-first sync conflict resolution
-- [ ] Plugin API for extensions
-- [ ] Automated testing coverage improvement
 
 ---
 
