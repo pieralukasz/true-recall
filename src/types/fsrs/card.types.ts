@@ -10,6 +10,8 @@ export { State, Rating };
 export type { Grade };
 export type { Card as FSRSCard };
 
+export type CardType = "basic" | "cloze" | "reversed";
+
 /**
  * Single review log entry stored per-card for FSRS optimization
  * Compact format: ~50 bytes per entry
@@ -75,6 +77,17 @@ export interface FSRSCardData {
     sourceNotePath?: string;
     /** Projects associated with this card (resolved from frontmatter at runtime) */
     projects?: string[];
+
+    // === Card type fields (schema v21) ===
+
+    /** Card type: 'basic' (default), 'cloze', or 'reversed' */
+    cardType?: CardType;
+    /** For cloze cards: original template with {{cN::...}} syntax */
+    clozeTemplate?: string;
+    /** For cloze cards: which cloze number this card tests */
+    clozeIndex?: number;
+    /** For reversed cards: ID of the original card this is the reverse of */
+    reverseOf?: string;
 }
 
 /**
@@ -98,4 +111,12 @@ export interface FSRSFlashcardItem {
     sourceUid?: string;
     /** Path to source note (resolved from vault at runtime via sourceUid) */
     sourceNotePath?: string;
+    /** Card type: 'basic' (default), 'cloze', or 'reversed' */
+    cardType?: CardType;
+    /** For cloze cards: original template with {{cN::...}} syntax */
+    clozeTemplate?: string;
+    /** For cloze cards: which cloze number this card tests */
+    clozeIndex?: number;
+    /** For reversed cards: ID of the original card this is the reverse of */
+    reverseOf?: string;
 }

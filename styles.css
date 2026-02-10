@@ -9,6 +9,8 @@
       "Courier New", monospace;
     --ep-spacing: 0.25rem;
     --ep-container-md: 28rem;
+    --ep-text-xs: 0.75rem;
+    --ep-text-xs--line-height: calc(1 / 0.75);
     --ep-text-lg: 1.125rem;
     --ep-text-lg--line-height: calc(1.75 / 1.125);
     --ep-text-xl: 1.25rem;
@@ -923,6 +925,10 @@
   .ep\:text-xl {
     font-size: var(--ep-text-xl);
     line-height: var(--tw-leading, var(--ep-text-xl--line-height));
+  }
+  .ep\:text-xs {
+    font-size: var(--ep-text-xs);
+    line-height: var(--tw-leading, var(--ep-text-xs--line-height));
   }
   .ep\:text-\[9px\] {
     font-size: 9px;
