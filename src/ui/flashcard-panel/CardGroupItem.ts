@@ -45,7 +45,7 @@ export class CardGroupItem extends BaseComponent {
 		const { isExpanded, isSelected } = this.props;
 
 		this.element = this.container.createDiv({
-			cls: `ep:flex ep:flex-col ep:mb-2 ep:rounded ep:bg-obs-secondary ep:border ep:border-obs-border ${isSelected ? "ep:border-obs-interactive ep:border-2" : ""}`,
+			cls: `ep:flex ep:flex-col ep:mb-2 ep:rounded-lg ep:bg-obs-secondary ep:border ep:border-obs-border ${isSelected ? "ep:border-obs-interactive ep:border-2" : ""}`,
 		});
 
 		this.renderHeader();
@@ -61,7 +61,7 @@ export class CardGroupItem extends BaseComponent {
 		const { cards, isSelectionMode, isSelected } = this.props;
 
 		const headerRow = this.element.createDiv({
-			cls: "ep:flex ep:items-start ep:gap-2 ep:p-2 ep:cursor-pointer ep:hover:bg-obs-modifier-hover ep:rounded ep:transition-colors",
+			cls: "ep:flex ep:items-start ep:gap-2 ep:p-2 ep:cursor-pointer ep:hover:bg-obs-modifier-hover ep:rounded-md ep:transition-colors",
 		});
 
 		this.longPressHandler = setupLongPress(headerRow, this.events, {
@@ -115,7 +115,7 @@ export class CardGroupItem extends BaseComponent {
 
 		// Card count badge
 		headerRow.createSpan({
-			cls: "ep:text-ui-smaller ep:text-obs-muted ep:bg-obs-base-25 ep:rounded ep:px-1.5 ep:py-0.5 ep:flex-shrink-0",
+			cls: "ep:text-ui-smaller ep:text-obs-muted ep:bg-obs-base-25 ep:rounded ep:px-2 ep:py-1 ep:flex-shrink-0",
 			text: `${cards.length}`,
 		});
 

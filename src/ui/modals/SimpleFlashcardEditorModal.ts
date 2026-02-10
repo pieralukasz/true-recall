@@ -87,7 +87,7 @@ export class SimpleFlashcardEditorModal extends BaseModal {
 		hintEl.createSpan({ text: "Format: " });
 		hintEl.createEl("code", {
 			text: `Question ${FLASHCARD_CONFIG.tag}`,
-			cls: "ep:px-1 ep:py-0.5 ep:bg-obs-secondary ep:rounded ep:text-[10px]",
+			cls: "ep:px-1 ep:py-1 ep:bg-obs-secondary ep:rounded ep:text-ui-smaller",
 		});
 		hintEl.createSpan({ text: " then answer on next line(s)" });
 
@@ -116,7 +116,7 @@ export class SimpleFlashcardEditorModal extends BaseModal {
 			const span = shortcutsHint.createSpan();
 			span.createEl("kbd", {
 				text: s.key,
-				cls: "ep:px-1 ep:py-0.5 ep:bg-obs-secondary ep:rounded ep:text-[9px] ep:font-mono",
+				cls: "ep:px-1 ep:py-1 ep:bg-obs-secondary ep:rounded ep:text-ui-smaller ep:font-mono",
 			});
 			span.createSpan({ text: ` ${s.action}` });
 		}
@@ -410,7 +410,7 @@ export class SimpleFlashcardEditorModal extends BaseModal {
 		const buttonText = this.options.mode === "add" ? "Save Flashcards" : "Save Changes";
 		this.saveButton = rightEl.createEl("button", {
 			text: buttonText,
-			cls: "ep:py-2.5 ep:px-5 ep:bg-obs-interactive ep:text-obs-on-accent ep:border-none ep:rounded-md ep:cursor-pointer ep:font-medium ep:transition-colors ep:hover:bg-obs-interactive-hover",
+			cls: "ep:py-3 ep:px-5 ep:bg-obs-interactive ep:text-obs-on-accent ep:border-none ep:rounded-md ep:cursor-pointer ep:font-medium ep:transition-colors ep:hover:bg-obs-interactive-hover",
 		});
 		this.saveButton.addEventListener("click", () => this.handleSave());
 	}

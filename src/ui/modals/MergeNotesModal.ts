@@ -115,7 +115,7 @@ export class MergeNotesModal extends BasePromiseModal<MergeNotesModalResult> {
 
 		this.continueBtn = actionsRow.createEl("button", {
 			text: "Continue",
-			cls: "mod-cta ep:py-2 ep:px-4 ep:rounded ep:text-ui-small ep:font-medium ep:cursor-pointer",
+			cls: "mod-cta ep:py-2 ep:px-4 ep:rounded-md ep:text-ui-small ep:font-medium ep:cursor-pointer",
 		});
 		this.continueBtn.disabled = this.selectedNotes.size < 2;
 
@@ -289,13 +289,13 @@ export class MergeNotesModal extends BasePromiseModal<MergeNotesModalResult> {
 
 		const backBtn = buttonsRow.createEl("button", {
 			text: "Back",
-			cls: "ep:py-2 ep:px-4 ep:rounded ep:text-ui-small ep:bg-obs-secondary ep:text-obs-normal ep:border ep:border-obs-border ep:cursor-pointer ep:hover:bg-obs-modifier-hover",
+			cls: "ep:py-2 ep:px-4 ep:rounded-md ep:text-ui-small ep:bg-obs-secondary ep:text-obs-normal ep:border ep:border-obs-border ep:cursor-pointer ep:hover:bg-obs-modifier-hover",
 		});
 		this.addDomEvent(backBtn, "click", () => this.goBackToStep1());
 
 		const mergeBtn = buttonsRow.createEl("button", {
 			text: "Merge notes",
-			cls: "mod-cta ep:py-2 ep:px-4 ep:rounded ep:text-ui-small ep:font-medium ep:cursor-pointer",
+			cls: "mod-cta ep:py-2 ep:px-4 ep:rounded-md ep:text-ui-small ep:font-medium ep:cursor-pointer",
 		});
 		mergeBtn.disabled = !this.newNoteName.trim();
 

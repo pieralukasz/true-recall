@@ -147,7 +147,7 @@ export class OrphanedCardsActionModal extends BasePromiseModal<OrphanedCardsActi
 		// Leave orphaned button (smaller, muted)
 		actionsContainer.createEl("button", {
 			text: "Leave as orphaned (can manage later in settings)",
-			cls: "ep:w-full ep:py-2 ep:px-3 ep:rounded ep:text-ui-smaller ep:text-obs-muted ep:bg-transparent ep:border ep:border-obs-border ep:cursor-pointer ep:hover:bg-obs-modifier-hover ep:mt-2",
+			cls: "ep:w-full ep:py-2 ep:px-3 ep:rounded-md ep:text-ui-smaller ep:text-obs-muted ep:bg-transparent ep:border ep:border-obs-border ep:cursor-pointer ep:hover:bg-obs-modifier-hover ep:mt-2",
 		}).addEventListener("click", () => {
 			this.resolve({ cancelled: false, action: "leave_orphaned" });
 		});
@@ -233,7 +233,7 @@ export class OrphanedCardsActionModal extends BasePromiseModal<OrphanedCardsActi
 		// Cancel button
 		this.moveSection.createEl("button", {
 			text: "Cancel",
-			cls: "ep:mt-3 ep:py-2 ep:px-4 ep:rounded ep:bg-obs-secondary ep:text-obs-normal ep:border ep:border-obs-border ep:cursor-pointer ep:hover:bg-obs-modifier-hover",
+			cls: "ep:mt-3 ep:py-2 ep:px-4 ep:rounded-md ep:bg-obs-secondary ep:text-obs-normal ep:border ep:border-obs-border ep:cursor-pointer ep:hover:bg-obs-modifier-hover",
 		}).addEventListener("click", () => {
 			if (this.moveSection) {
 				this.moveSection.addClass("ep:hidden");

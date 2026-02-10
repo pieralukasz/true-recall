@@ -33,7 +33,7 @@ export class SimulatorControls extends BaseComponent {
 			cls: [
 				"ep:w-full ep:mb-3 ep:px-3 ep:py-2",
 				"ep:bg-obs-primary ep:text-obs-normal",
-				"ep:border ep:border-obs-border ep:rounded",
+				"ep:border ep:border-obs-border ep:rounded-lg",
 				"ep:cursor-pointer ep:text-ui-small",
 				"hover:ep:bg-obs-modifier-hover",
 			].join(" "),
@@ -55,7 +55,7 @@ export class SimulatorControls extends BaseComponent {
 			cls: [
 				"ep:w-full ep:h-[150px] ep:mb-4",
 				"ep:bg-obs-primary ep:text-obs-normal",
-				"ep:border ep:border-obs-border ep:rounded",
+				"ep:border ep:border-obs-border ep:rounded-lg",
 				"ep:p-2 ep:text-ui-small ep:font-mono",
 				"ep:resize-none",
 			].join(" "),

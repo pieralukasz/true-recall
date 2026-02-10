@@ -64,7 +64,7 @@ export class ExpandableAddCard extends BaseComponent {
 		const { onToggleExpand } = this.props;
 
 		const placeholder = this.element.createDiv({
-			cls: "ep:flex ep:items-center ep:justify-center ep:gap-2 ep:py-3 ep:px-4 ep:border ep:border-dashed ep:border-obs-border ep:rounded ep:bg-transparent ep:text-obs-muted ep:text-ui-small ep:cursor-pointer ep:transition-colors ep:hover:bg-obs-modifier-hover ep:hover:text-obs-normal ep:hover:border-obs-modifier-border-hover",
+			cls: "ep:flex ep:items-center ep:justify-center ep:gap-2 ep:py-3 ep:px-4 ep:border ep:border-dashed ep:border-obs-border ep:rounded-lg ep:bg-transparent ep:text-obs-muted ep:text-ui-small ep:cursor-pointer ep:transition-colors ep:hover:bg-obs-modifier-hover ep:hover:text-obs-normal ep:hover:border-obs-modifier-border-hover",
 		});
 
 		const iconEl = placeholder.createSpan({ cls: "ep:w-4 ep:h-4" });
@@ -85,7 +85,7 @@ export class ExpandableAddCard extends BaseComponent {
 		this.answerValue = "";
 
 		const editContainer = this.element.createDiv({
-			cls: "ep:p-3 ep:bg-obs-secondary ep:border ep:border-obs-interactive ep:rounded",
+			cls: "ep:p-3 ep:bg-obs-secondary ep:border ep:border-obs-interactive ep:rounded-lg",
 		});
 
 		// Question field
@@ -152,7 +152,7 @@ export class ExpandableAddCard extends BaseComponent {
 		if (this.isAiAssistExpanded) {
 			const aiInputWrapper = aiAssistSection.createDiv({ cls: "ep:mt-2" });
 			const aiTextarea = aiInputWrapper.createEl("textarea", {
-				cls: "ep:w-full ep:min-h-16 ep:p-2 ep:border ep:border-obs-border ep:rounded ep:bg-obs-primary ep:text-obs-normal ep:text-ui-smaller ep:resize-y ep:focus:outline-none ep:focus:border-obs-interactive ep:placeholder:text-obs-muted",
+				cls: "ep:w-full ep:min-h-16 ep:p-2 ep:border ep:border-obs-border ep:rounded-lg ep:bg-obs-primary ep:text-obs-normal ep:text-ui-smaller ep:resize-y ep:focus:outline-none ep:focus:border-obs-interactive ep:placeholder:text-obs-muted",
 				placeholder: "np. stwórz podobne fiszki, rozwiń temat, dodaj więcej przykładów...",
 			});
 			aiTextarea.value = this.aiInstructionValue;
@@ -168,7 +168,7 @@ export class ExpandableAddCard extends BaseComponent {
 
 		const cancelBtn = buttonsRow.createEl("button", {
 			text: "Cancel",
-			cls: "ep:py-1.5 ep:px-3 ep:text-ui-smaller ep:bg-obs-secondary ep:text-obs-normal ep:border ep:border-obs-border ep:rounded ep:cursor-pointer ep:hover:bg-obs-modifier-hover",
+			cls: "ep:py-1.5 ep:px-3 ep:text-ui-smaller ep:bg-obs-secondary ep:text-obs-normal ep:border ep:border-obs-border ep:rounded-md ep:cursor-pointer ep:hover:bg-obs-modifier-hover",
 		});
 		this.events.addEventListener(cancelBtn, "click", () => {
 			this.questionValue = "";
@@ -182,7 +182,7 @@ export class ExpandableAddCard extends BaseComponent {
 		const hasAiInstruction = this.aiInstructionValue.trim().length > 0;
 		const addBtn = buttonsRow.createEl("button", {
 			text: hasAiInstruction ? "Add & Generate" : "Add flashcard",
-			cls: "mod-cta ep:py-1.5 ep:px-3 ep:text-ui-smaller ep:rounded",
+			cls: "mod-cta ep:py-1.5 ep:px-3 ep:text-ui-smaller ep:rounded-md",
 		});
 		this.events.addEventListener(addBtn, "click", () => {
 			const question = this.questionField?.getValue() || this.questionValue;

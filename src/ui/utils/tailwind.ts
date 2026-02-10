@@ -4,4 +4,4 @@ export const FORM_LABEL_CLASSES =
 
 /** Secondary button styling */
 export const SECONDARY_BUTTON_CLASSES =
-	"ep:py-2.5 ep:px-5 ep:bg-obs-secondary ep:text-obs-normal ep:border ep:border-obs-border ep:rounded-md ep:cursor-pointer ep:font-medium ep:transition-colors ep:hover:bg-obs-modifier-hover";
+	"ep:py-3 ep:px-5 ep:bg-obs-secondary ep:text-obs-normal ep:border ep:border-obs-border ep:rounded-md ep:cursor-pointer ep:font-medium ep:transition-colors ep:hover:bg-obs-modifier-hover";

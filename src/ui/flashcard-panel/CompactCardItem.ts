@@ -52,12 +52,12 @@ export class CompactCardItem extends BaseComponent {
         const { card, isExpanded, isSelected, isSelectionMode, app, filePath, component } = this.props;
 
         this.element = this.container.createDiv({
-            cls: `ep:flex ep:flex-col ep:mb-2 ep:rounded ep:bg-obs-secondary ep:border ep:border-obs-border ${isSelected ? "ep:border-obs-interactive ep:border-2" : ""}`,
+            cls: `ep:flex ep:flex-col ep:mb-2 ep:rounded-lg ep:bg-obs-secondary ep:border ep:border-obs-border ${isSelected ? "ep:border-obs-interactive ep:border-2" : ""}`,
         });
 
         // Main row (always visible)
         const mainRow = this.element.createDiv({
-            cls: "ep:flex ep:items-start ep:gap-2 ep:p-2 ep:cursor-pointer ep:hover:bg-obs-modifier-hover ep:rounded ep:transition-colors",
+            cls: "ep:flex ep:items-start ep:gap-2 ep:p-2 ep:cursor-pointer ep:hover:bg-obs-modifier-hover ep:rounded-md ep:transition-colors",
         });
 
         // Setup long press for main row

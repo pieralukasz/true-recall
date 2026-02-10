@@ -242,7 +242,7 @@ export abstract class BaseModal extends Modal {
 		// Badge (optional)
 		if (item.badge) {
 			infoEl.createSpan({
-				cls: "ep:text-ui-smaller ep:text-obs-muted ep:bg-obs-secondary ep:px-1.5 ep:py-0.5 ep:rounded ep:ml-2",
+				cls: "ep:text-ui-smaller ep:text-obs-muted ep:bg-obs-secondary ep:px-2 ep:py-1 ep:rounded ep:ml-2",
 				text: item.badge,
 			});
 		}
@@ -250,7 +250,7 @@ export abstract class BaseModal extends Modal {
 		// Select button
 		const selectBtn = itemEl.createEl("button", {
 			text: "Select",
-			cls: "ep:shrink-0 ep:py-1 ep:px-3 ep:rounded ep:bg-obs-interactive ep:text-obs-on-accent ep:border-none ep:text-ui-smaller ep:cursor-pointer ep:opacity-0 ep:group-hover:opacity-100 ep:hover:opacity-100",
+			cls: "ep:shrink-0 ep:py-1 ep:px-3 ep:rounded-md ep:bg-obs-interactive ep:text-obs-on-accent ep:border-none ep:text-ui-smaller ep:cursor-pointer ep:opacity-0 ep:group-hover:opacity-100 ep:hover:opacity-100",
 		});
 
 		// Use addDomEvent for automatic cleanup on modal close
@@ -315,7 +315,7 @@ export abstract class BaseModal extends Modal {
 		// Badge
 		if (item.badge) {
 			infoEl.createSpan({
-				cls: "ep:text-ui-smaller ep:text-obs-muted ep:bg-obs-secondary ep:px-1.5 ep:py-0.5 ep:rounded ep:ml-2",
+				cls: "ep:text-ui-smaller ep:text-obs-muted ep:bg-obs-secondary ep:px-2 ep:py-1 ep:rounded ep:ml-2",
 				text: item.badge,
 			});
 		}

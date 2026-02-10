@@ -146,7 +146,7 @@ export class SimulatorChart extends BaseComponent {
 
 			// Color box
 			const colorBox = item.createDiv({
-				cls: "ep:w-4 ep:h-4 ep:rounded",
+				cls: "ep:w-4 ep:h-4 ep:rounded-sm",
 			});
 			colorBox.setCssProps({ "background-color": sim.color });
 
