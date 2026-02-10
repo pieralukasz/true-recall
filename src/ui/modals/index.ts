@@ -81,3 +81,4 @@ export {
 } from "./MergeNotesNameModal";
 export { AnkiImportModal } from "./AnkiImportModal";
 export { AnkiExportModal } from "./AnkiExportModal";
+export { CsvExportModal } from "./CsvExportModal";

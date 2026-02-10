@@ -1,12 +1,18 @@
-import type { App, TFile } from "obsidian";
+import type { App } from "obsidian";
 import type { AnkiExportOptions, FSRSCardData } from "types";
 import type { SqliteStoreService } from "../persistence/sqlite/SqliteStoreService";
 import type { FSRSService } from "../core/fsrs.service";
 import { ApkgBuilderService } from "./apkg-builder.service";
+import { stripWikiLinkSyntax } from "../../utils";
 
 interface DeckInfo {
     id: number;
     name: string;
+}
+
+interface SourceNoteInfo {
+    name: string;
+    projects: string[];
 }
 
 export class AnkiExportService {
@@ -20,8 +26,9 @@ export class AnkiExportService {
         options: AnkiExportOptions
     ): Promise<{ data: ArrayBuffer; filename: string }> {
         const allCards = this.store.getAll();
+        const mode = options.exportMode ?? "all";
 
-        const cards = this.resolveProjectsAndFilter(allCards, options.projects);
+        const cards = this.resolveAndFilter(allCards, mode, options);
 
         if (cards.length === 0) {
             throw new Error("No cards to export");
@@ -54,36 +61,63 @@ export class AnkiExportService {
         return { data, filename };
     }
 
-    private resolveProjectsAndFilter(
+    private resolveAndFilter(
         allCards: FSRSCardData[],
-        projectFilter?: string[]
+        mode: "all" | "projects" | "notes",
+        options: AnkiExportOptions
     ): FSRSCardData[] {
-        // Resolve projects for each card from frontmatter via sourceUid
-        const sourceUidToProjects = this.buildSourceUidToProjectsMap();
+        const sourceUidMap = this.buildSourceUidMap();
 
+        // Enrich every card with projects, sourceNoteName, and deckKey
         const enriched = allCards.map((card) => {
-            if (card.sourceUid) {
-                const projects = sourceUidToProjects.get(card.sourceUid);
-                if (projects) {
-                    return { ...card, projects };
-                }
-            }
-            return card;
+            const info = card.sourceUid ? sourceUidMap.get(card.sourceUid) : undefined;
+            const projects = info?.projects ?? card.projects ?? [];
+            const sourceNoteName = info?.name ?? card.sourceNoteName;
+
+            const deckKey = this.computeDeckKey(mode, projects, sourceNoteName);
+
+            return { ...card, projects, sourceNoteName, deckKey };
         });
 
-        if (!projectFilter || projectFilter.length === 0) {
-            return enriched;
+        // Filter based on mode
+        if (mode === "notes" && options.sourceUids?.length) {
+            const uidSet = new Set(options.sourceUids);
+            return enriched.filter((card) => card.sourceUid && uidSet.has(card.sourceUid));
         }
 
-        const filterSet = new Set(projectFilter);
-        return enriched.filter((card) => {
-            if (!card.projects || card.projects.length === 0) return false;
-            return card.projects.some((p) => filterSet.has(p));
-        });
+        if (mode === "projects" && options.projects?.length) {
+            const filterSet = new Set(options.projects);
+            return enriched.filter((card) => {
+                if (!card.projects || card.projects.length === 0) return false;
+                return card.projects.some((p) => filterSet.has(p));
+            });
+        }
+
+        return enriched;
     }
 
-    private buildSourceUidToProjectsMap(): Map<string, string[]> {
-        const map = new Map<string, string[]>();
+    private computeDeckKey(
+        mode: "all" | "projects" | "notes",
+        projects: string[],
+        sourceNoteName?: string
+    ): string {
+        if (mode === "notes") {
+            return sourceNoteName ?? "Default";
+        }
+
+        // For 'all' and 'projects': Project::NoteName hierarchy
+        const project = projects[0];
+        if (project && sourceNoteName) {
+            return `${project}::${sourceNoteName}`;
+        }
+        if (project) {
+            return project;
+        }
+        return "Default";
+    }
+
+    private buildSourceUidMap(): Map<string, SourceNoteInfo> {
+        const map = new Map<string, SourceNoteInfo>();
         const files = this.app.vault.getMarkdownFiles();
 
         for (const file of files) {
@@ -93,46 +127,54 @@ export class AnkiExportService {
             const uid = cache.frontmatter["flashcard_uid"] as string | undefined;
             if (!uid) continue;
 
-            const projects = this.extractProjects(file, cache.frontmatter);
-            if (projects.length > 0) {
-                map.set(uid, projects);
-            }
+            const projects = this.extractProjects(cache.frontmatter);
+            map.set(uid, { name: file.basename, projects });
         }
 
         return map;
     }
 
     private extractProjects(
-        file: TFile,
         frontmatter: Record<string, unknown>
     ): string[] {
-        const projects: string[] = [];
+        const raw = frontmatter["projects"];
+        if (!Array.isArray(raw)) return [];
 
-        // Extract from tags: #mind/projectname or #input/projectname
-        const tags = frontmatter["tags"];
-        if (Array.isArray(tags)) {
-            for (const tag of tags) {
-                if (typeof tag !== "string") continue;
-                const match = tag.match(/^(?:mind|input)\/(.+)$/);
-                if (match?.[1]) {
-                    projects.push(match[1]);
+        return raw
+            .filter((p): p is string => typeof p === "string")
+            .map((p) => stripWikiLinkSyntax(p))
+            .filter((p) => p.length > 0);
+    }
+
+    private buildDeckMap(cards: FSRSCardData[]): Map<string, DeckInfo> {
+        const deckMap = new Map<string, DeckInfo>();
+
+        deckMap.set("Default", { id: 1, name: "Default" });
+
+        // Collect unique deckKeys
+        for (const card of cards) {
+            const key = card.deckKey ?? "Default";
+            if (key === "Default" || deckMap.has(key)) continue;
+
+            const id = deckIdFromName(key);
+            deckMap.set(key, { id, name: key });
+        }
+
+        // Ensure parent decks exist (Anki requires them for nested decks)
+        for (const key of [...deckMap.keys()]) {
+            const parts = key.split("::");
+            for (let i = 1; i < parts.length; i++) {
+                const parentKey = parts.slice(0, i).join("::");
+                if (!deckMap.has(parentKey)) {
+                    deckMap.set(parentKey, {
+                        id: deckIdFromName(parentKey),
+                        name: parentKey,
+                    });
                 }
             }
         }
 
-        // Also check parent folder as implicit project
-        const parts = file.path.split("/");
-        if (parts.length > 1) {
-            const folder = parts[parts.length - 2];
-            if (folder && !projects.includes(folder)) {
-                // Only use folder if no tags found
-                if (projects.length === 0) {
-                    projects.push(folder);
-                }
-            }
-        }
-
-        return projects;
+        return deckMap;
     }
 
     private getReviewLogsForCards(cards: FSRSCardData[]) {
@@ -147,7 +189,6 @@ export class AnkiExportService {
         const media = new Map<string, ArrayBuffer>();
         const filenames = new Set<string>();
 
-        // Extract media references from card content
         const mediaRegex = /!\[\[([^\]]+)\]\]/g;
         for (const card of cards) {
             const content = (card.question ?? "") + (card.answer ?? "");
@@ -157,7 +198,6 @@ export class AnkiExportService {
             }
         }
 
-        // Read each media file from the vault
         for (const filename of filenames) {
             const file = this.app.vault.getFiles().find(
                 (f) => f.name === filename || f.path.endsWith("/" + filename)
@@ -175,35 +215,7 @@ export class AnkiExportService {
         return media;
     }
 
-    private buildDeckMap(cards: FSRSCardData[]): Map<string, DeckInfo> {
-        const deckMap = new Map<string, DeckInfo>();
-
-        // Always include Default deck
-        deckMap.set("Default", { id: 1, name: "Default" });
-
-        // Create a deck for each unique project
-        const projectNames = new Set<string>();
-        for (const card of cards) {
-            if (card.projects) {
-                for (const project of card.projects) {
-                    projectNames.add(project);
-                }
-            }
-        }
-
-        for (const name of projectNames) {
-            if (name === "Default") continue;
-            const id = deckIdFromName(name);
-            // Anki uses :: for nested decks, True Recall uses /
-            const ankiName = "True Recall::" + name.replace(/\//g, "::");
-            deckMap.set(name, { id, name: ankiName });
-        }
-
-        return deckMap;
-    }
-
     private getCollectionCreatedAt(cards: FSRSCardData[]): number {
-        // Use the earliest card creation time as the collection epoch
         let earliest = Date.now();
         for (const card of cards) {
             if (card.createdAt && card.createdAt < earliest) {
@@ -220,6 +232,5 @@ function deckIdFromName(name: string): number {
         const char = name.charCodeAt(i);
         hash = ((hash << 5) - hash + char) | 0;
     }
-    // Anki deck IDs are large positive integers
     return Math.abs(hash) + 2000000000;
 }

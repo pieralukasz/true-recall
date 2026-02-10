@@ -8,6 +8,7 @@ import {
 	VIEW_TYPE_SIMULATOR,
 	VIEW_TYPE_ORPHANED_CARDS,
 	VIEW_TYPE_NOTE_HUB,
+	VIEW_TYPE_CARD_BROWSER,
 } from "./constants";
 import { normalizePath } from "obsidian";
 import {
@@ -48,6 +49,7 @@ import { ProjectsView } from "./ui/projects";
 import { SimulatorView } from "./ui/simulator";
 import { OrphanedCardsView } from "./ui/orphaned-cards";
 import { NoteHubView } from "./ui/note-hub";
+import { CardBrowserView } from "./ui/card-browser";
 import {
 	TrueRecallSettingTab,
 	type TrueRecallSettings,
@@ -62,6 +64,7 @@ import {
 	MergeNotesNameModal,
 	AnkiImportModal,
 	AnkiExportModal,
+	CsvExportModal,
 	type DeviceSelectionResult,
 } from "./ui/modals";
 import { CustomStudyModal, type CustomStudyModalScope } from "./ui/modals/CustomStudyModal";
@@ -186,6 +189,11 @@ export default class TrueRecallPlugin extends Plugin {
 		this.registerView(
 			VIEW_TYPE_NOTE_HUB,
 			(leaf) => new NoteHubView(leaf, this)
+		);
+
+		this.registerView(
+			VIEW_TYPE_CARD_BROWSER,
+			(leaf) => new CardBrowserView(leaf, this)
 		);
 
 		// eslint-disable-next-line obsidianmd/ui/sentence-case -- True Recall is a proper noun
@@ -429,6 +437,10 @@ ${cardList}${moreText}
 
 	async openNoteHub(): Promise<void> {
 		await activateView(this.app, VIEW_TYPE_NOTE_HUB, { useMainArea: true });
+	}
+
+	async openCardBrowser(): Promise<void> {
+		await activateView(this.app, VIEW_TYPE_CARD_BROWSER, { useMainArea: true });
 	}
 
 	async startReviewSession(): Promise<void> {
@@ -1081,7 +1093,17 @@ ${cardList}${moreText}
 			return;
 		}
 
-		const modal = new AnkiExportModal(this.app, this.cardStore, this.fsrsService);
+		const modal = new AnkiExportModal(this.app, this.cardStore, this.fsrsService, this.frontmatterIndex);
+		modal.open();
+	}
+
+	async exportCsv(): Promise<void> {
+		if (!this.isStoreReady()) {
+			notify().error("Database not ready. Please wait for plugin to fully load.");
+			return;
+		}
+
+		const modal = new CsvExportModal(this.app, this.cardStore, this.frontmatterIndex);
 		modal.open();
 	}
 

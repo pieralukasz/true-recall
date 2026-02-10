@@ -1,10 +1,8 @@
 import { App } from "obsidian";
 import { BaseModal } from "./BaseModal";
 import type { SqliteStoreService } from "../../services/persistence/sqlite/SqliteStoreService";
-import type { FSRSService } from "../../services/core/fsrs.service";
 import type { FrontmatterIndexService } from "../../services/core/frontmatter-index.service";
-import { AnkiExportService } from "../../services/anki/anki-export.service";
-import type { AnkiExportOptions } from "types";
+import { CsvExportService, type CsvSeparator } from "../../services/export/csv-export.service";
 
 interface NoteEntry {
 	uid: string;
@@ -12,26 +10,24 @@ interface NoteEntry {
 	project: string;
 }
 
-export class AnkiExportModal extends BaseModal {
+export class CsvExportModal extends BaseModal {
 	private store: SqliteStoreService;
-	private fsrsService: FSRSService;
 	private frontmatterIndex: FrontmatterIndexService;
 	private allProjects: string[] = [];
 	private allNotes: NoteEntry[] = [];
 	private selectedProjects = new Set<string>();
 	private selectedSourceUids = new Set<string>();
-	private includeScheduling = true;
-	private includeMedia = true;
+	private includeScheduling = false;
+	private separator: CsvSeparator = ",";
 	private exportMode: "all" | "projects" | "notes" = "all";
 
 	private bodyEl: HTMLElement | null = null;
 	private projectListEl: HTMLElement | null = null;
 	private noteListEl: HTMLElement | null = null;
 
-	constructor(app: App, store: SqliteStoreService, fsrsService: FSRSService, frontmatterIndex: FrontmatterIndexService) {
-		super(app, { title: "Export to Anki", width: "520px" });
+	constructor(app: App, store: SqliteStoreService, frontmatterIndex: FrontmatterIndexService) {
+		super(app, { title: "Export as CSV", width: "520px" });
 		this.store = store;
-		this.fsrsService = fsrsService;
 		this.frontmatterIndex = frontmatterIndex;
 		this.allProjects = this.resolveProjects();
 		this.allNotes = this.resolveNotes();
@@ -41,7 +37,7 @@ export class AnkiExportModal extends BaseModal {
 		this.bodyEl = container;
 
 		const totalCards = this.store.size();
-		this.updateTitle(`Export to Anki (${totalCards} cards)`);
+		this.updateTitle(`Export as CSV (${totalCards} cards)`);
 
 		// Scope selection
 		const scopeSection = container.createDiv({ cls: "ep:mb-4" });
@@ -52,19 +48,19 @@ export class AnkiExportModal extends BaseModal {
 
 		const allRadio = this.createRadio(
 			scopeSection,
-			"export-scope",
+			"csv-scope",
 			`All cards (${totalCards})`,
 			true,
 		);
 		const projectRadio = this.createRadio(
 			scopeSection,
-			"export-scope",
+			"csv-scope",
 			"Selected projects only",
 			false,
 		);
 		const noteRadio = this.createRadio(
 			scopeSection,
-			"export-scope",
+			"csv-scope",
 			"Selected notes only",
 			false,
 		);
@@ -89,7 +85,6 @@ export class AnkiExportModal extends BaseModal {
 			if (noteRadio.checked) setMode("notes");
 		});
 
-		// Project list (hidden by default)
 		if (this.allProjects.length > 0) {
 			this.projectListEl = scopeSection.createDiv({
 				cls: "ep:border ep:border-obs-border ep:rounded-md ep:max-h-[150px] ep:overflow-y-auto ep:mt-2 ep:ml-6",
@@ -100,7 +95,6 @@ export class AnkiExportModal extends BaseModal {
 			}
 		}
 
-		// Note list (hidden by default)
 		if (this.allNotes.length > 0) {
 			this.noteListEl = scopeSection.createDiv({
 				cls: "ep:border ep:border-obs-border ep:rounded-md ep:max-h-[150px] ep:overflow-y-auto ep:mt-2 ep:ml-6",
@@ -110,6 +104,31 @@ export class AnkiExportModal extends BaseModal {
 				const label = note.project ? `${note.name} (${note.project})` : note.name;
 				this.renderCheckboxItem(this.noteListEl, label, this.selectedSourceUids, note.uid);
 			}
+		}
+
+		// Separator selection
+		const sepSection = container.createDiv({ cls: "ep:mb-4" });
+		sepSection.createDiv({
+			text: "Separator",
+			cls: "ep:text-ui-small ep:font-medium ep:mb-2",
+		});
+
+		const separators: { label: string; value: CsvSeparator }[] = [
+			{ label: "Comma (,)", value: "," },
+			{ label: "Tab", value: "\t" },
+			{ label: "Semicolon (;)", value: ";" },
+		];
+
+		for (const sep of separators) {
+			const radio = this.createRadio(
+				sepSection,
+				"csv-separator",
+				sep.label,
+				sep.value === this.separator,
+			);
+			this.addDomEvent(radio, "change", () => {
+				if (radio.checked) this.separator = sep.value;
+			});
 		}
 
 		// Options
@@ -122,17 +141,9 @@ export class AnkiExportModal extends BaseModal {
 		this.renderOptionCheckbox(
 			optionsSection,
 			"Include scheduling data",
-			"Export review history and card progress",
+			"Adds State, Due, Interval, Lapses columns",
 			this.includeScheduling,
 			(val) => (this.includeScheduling = val),
-		);
-
-		this.renderOptionCheckbox(
-			optionsSection,
-			"Include media",
-			"Export images and audio files",
-			this.includeMedia,
-			(val) => (this.includeMedia = val),
 		);
 
 		// Buttons
@@ -153,38 +164,18 @@ export class AnkiExportModal extends BaseModal {
 	private async startExport(): Promise<void> {
 		if (!this.bodyEl) return;
 		const container = this.bodyEl;
-		container.empty();
-
-		const progressEl = container.createDiv({
-			cls: "ep:text-center ep:py-6",
-		});
-		progressEl.createDiv({
-			text: "Building .apkg file...",
-			cls: "ep:text-ui-small ep:font-medium ep:mb-2",
-		});
-		progressEl.createDiv({
-			text: "This may take a moment for large collections",
-			cls: "ep:text-ui-smaller ep:text-obs-muted",
-		});
 
 		try {
-			const exportService = new AnkiExportService(
-				this.app,
-				this.store,
-				this.fsrsService,
-			);
+			const service = new CsvExportService(this.app, this.store);
 
-			const options: AnkiExportOptions = {
-				exportMode: this.exportMode,
+			const { content, filename } = service.export({
 				projects: this.exportMode === "projects" ? [...this.selectedProjects] : undefined,
 				sourceUids: this.exportMode === "notes" ? [...this.selectedSourceUids] : undefined,
 				includeScheduling: this.includeScheduling,
-				includeMedia: this.includeMedia,
-			};
+				separator: this.separator,
+			});
 
-			const { data, filename } = await exportService.exportApkg(options);
-
-			this.downloadFile(data, filename);
+			this.downloadFile(content, filename);
 
 			container.empty();
 			container.createDiv({
@@ -218,8 +209,8 @@ export class AnkiExportModal extends BaseModal {
 		}
 	}
 
-	private downloadFile(data: ArrayBuffer, filename: string): void {
-		const blob = new Blob([data], { type: "application/octet-stream" });
+	private downloadFile(content: string, filename: string): void {
+		const blob = new Blob([content], { type: "text/plain;charset=utf-8" });
 		const url = URL.createObjectURL(blob);
 		const a = document.createElement("a");
 		a.href = url;

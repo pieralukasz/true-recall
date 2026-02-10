@@ -70,6 +70,8 @@ export interface AnkiImportResult {
 
 export interface AnkiExportOptions {
 	projects?: string[];
+	sourceUids?: string[];
+	exportMode?: "all" | "projects" | "notes";
 	includeScheduling: boolean;
 	includeMedia: boolean;
 }

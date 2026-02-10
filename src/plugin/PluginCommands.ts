@@ -81,6 +81,12 @@ export function registerCommands(plugin: TrueRecallPlugin): void {
 	});
 
 	plugin.addCommand({
+		id: "open-card-browser",
+		name: "Open card browser",
+		callback: () => void plugin.openCardBrowser(),
+	});
+
+	plugin.addCommand({
 		id: "create-backup",
 		name: "Create database backup",
 		callback: () => void plugin.createManualBackup(),
@@ -138,5 +144,12 @@ export function registerCommands(plugin: TrueRecallPlugin): void {
 		id: "export-anki",
 		name: "Export to Anki (.apkg)",
 		callback: () => void plugin.exportAnki(),
+	});
+
+	plugin.addCommand({
+		id: "export-csv",
+		// eslint-disable-next-line obsidianmd/ui/sentence-case -- CSV/TSV is an acronym
+		name: "Export as CSV/TSV",
+		callback: () => void plugin.exportCsv(),
 	});
 }

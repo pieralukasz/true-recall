@@ -340,6 +340,54 @@ export interface NoteHubSliceActions {
 
 export type NoteHubApi = NoteHubSliceState & NoteHubSliceActions;
 
+// ── Card Browser ──
+
+export type BrowserSortColumn =
+	| "question" | "answer" | "state" | "due" | "interval"
+	| "lapses" | "stability" | "difficulty" | "source";
+
+export type BrowserStateFilter =
+	| "all" | "new" | "learning" | "review" | "relearning"
+	| "suspended" | "buried";
+
+export interface BrowserSliceState {
+	isLoading: boolean;
+	isStale: boolean;
+	allCards: FSRSFlashcardItem[];
+	searchQuery: string;
+	stateFilter: BrowserStateFilter;
+	sortColumn: BrowserSortColumn;
+	sortDirection: "asc" | "desc";
+	selectionMode: SelectionMode;
+	selectedCardIds: Set<string>;
+	previewCardId: string | null;
+}
+
+export interface BrowserSliceActions {
+	setState: (partial: Partial<BrowserSliceState>) => void;
+	reset: () => void;
+	setLoading: (isLoading: boolean) => void;
+	setCards: (cards: FSRSFlashcardItem[]) => void;
+	setSearchQuery: (query: string) => void;
+	setStateFilter: (filter: BrowserStateFilter) => void;
+	setSortColumn: (column: BrowserSortColumn) => void;
+	toggleSortDirection: () => void;
+	cycleSortOnColumn: (column: BrowserSortColumn) => void;
+	enterSelectionMode: (initialCardId?: string) => void;
+	exitSelectionMode: () => void;
+	toggleCardSelection: (cardId: string) => void;
+	selectAll: () => void;
+	isInSelectionMode: () => boolean;
+	getSelectedCardIds: () => string[];
+	setPreviewCardId: (cardId: string | null) => void;
+	getFilteredAndSortedCards: () => FSRSFlashcardItem[];
+	markStale: () => void;
+	markFresh: () => void;
+	getIsStale: () => boolean;
+}
+
+export type BrowserApi = BrowserSliceState & BrowserSliceActions;
+
 export interface AppState {
 	review: ReviewSliceState & ReviewSliceActions;
 	panel: PanelSliceState & PanelSliceActions;
@@ -348,6 +396,7 @@ export interface AppState {
 	simulator: SimulatorSliceState & SimulatorSliceActions;
 	stats: StatsSliceState & StatsSliceActions;
 	noteHub: NoteHubSliceState & NoteHubSliceActions;
+	browser: BrowserSliceState & BrowserSliceActions;
 }
 
 export type SliceCreator<T> = (

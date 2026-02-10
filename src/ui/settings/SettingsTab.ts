@@ -1265,6 +1265,16 @@ export class TrueRecallSettingTab extends PluginSettingTab {
 				})
 			);
 
+		new Setting(container)
+			// eslint-disable-next-line obsidianmd/ui/sentence-case -- CSV/TSV is an acronym
+			.setName("Export as CSV/TSV")
+			.setDesc("Export your flashcards as a CSV or TSV file for use in spreadsheets or other tools")
+			.addButton((button) =>
+				button.setButtonText("Export CSV").onClick(async () => {
+					await this.plugin.exportCsv();
+				})
+			);
+
 		new Setting(container).setName("Content").setHeading();
 
 		new Setting(container)

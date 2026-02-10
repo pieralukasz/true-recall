@@ -47,6 +47,12 @@ export type {
 	NoteHubStatusFilter,
 	NoteHubSortBy,
 	NoteHubSortDirection,
+	// Browser slice
+	BrowserSliceState,
+	BrowserSliceActions,
+	BrowserApi,
+	BrowserSortColumn,
+	BrowserStateFilter,
 	// Helper types
 	SliceCreator,
 } from "./types";
