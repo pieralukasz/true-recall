@@ -78,8 +78,6 @@ export const DEFAULT_SETTINGS: TrueRecallSettings = {
 
 	learningSteps: [1, 10], // minutes
 	relearningSteps: [10], // minutes
-	graduatingInterval: 1, // days
-	easyInterval: 4, // days
 
 	fsrsWeights: null, // null = use ts-fsrs defaults
 	lastOptimization: null,

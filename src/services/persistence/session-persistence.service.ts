@@ -107,6 +107,15 @@ export class SessionPersistenceService {
 	}
 
 	/**
+	 * Get count of Review-state cards reviewed today (excludes Learning/Relearning)
+	 */
+	getReviewCardsCompletedToday(): number {
+		const today = this.getTodayKey();
+		const stats = this.store.stats.getDailyStats(today);
+		return stats?.reviewCards ?? 0;
+	}
+
+	/**
 	 * Remove the last review (for undo functionality)
 	 */
 	removeLastReview(
