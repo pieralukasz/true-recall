@@ -15,6 +15,7 @@ import type {
 	SchedulingPreview,
 } from "../../types";
 import type { AppError } from "../../errors";
+import type { ProjectGraph } from "../../utils/project-hierarchy";
 import type {
 	MetricType,
 	SequenceSimulation,
@@ -206,6 +207,7 @@ export interface ProjectsSliceState {
 	unassignedNotes: ProjectNoteInfo[];
 	isUnassignedExpanded: boolean;
 	showDoneNotes: boolean;
+	projectGraph: ProjectGraph | null;
 }
 
 export interface ProjectsSliceActions {
@@ -229,8 +231,10 @@ export interface ProjectsSliceActions {
 	removeProject: (projectId: string) => void;
 	addProject: (project: ProjectInfo) => void;
 	getFilteredProjects: () => ProjectInfo[];
+	setProjectGraph: (graph: ProjectGraph | null) => void;
 	getProjectsWithCards: () => ProjectInfo[];
 	getEmptyProjects: () => ProjectInfo[];
+	getRootProjects: () => ProjectInfo[];
 	getTotalStats: () => { projectCount: number; totalCards: number; totalDue: number };
 	markStale: () => void;
 	markFresh: () => void;

@@ -237,6 +237,8 @@ export class NoteHubView extends ItemView {
 						newCount: projectNewCounts.get(name) ?? 0,
 						learningCount: projectLearningCounts.get(name) ?? 0,
 						notes: notesWithCounts,
+						childProjectNames: [],
+						parentProjectNames: [],
 					};
 				})
 				.sort((a, b) => a.name.localeCompare(b.name));

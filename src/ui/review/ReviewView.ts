@@ -37,7 +37,7 @@ import {
 	getEmptyQueueMessage,
 } from "./helpers";
 import { CopilotIntegrationService } from "../../services/integration/copilot-integration.service";
-import { BR_REGEX } from "../../utils";
+import { BR_REGEX, buildProjectGraph, getDescendantProjects } from "../../utils";
 
 export class ReviewView extends ItemView {
 
@@ -534,9 +534,21 @@ export class ReviewView extends ItemView {
 			const newCardsStudiedToday = this.sessionPersistence.getNewCardsStudiedToday();
 			const reviewsCompletedToday = this.sessionPersistence.getReviewCardsCompletedToday();
 
+			// Cascade: expand project filters to include all descendant projects
+			let effectiveProjectFilters = this.projectFilters;
+			if (this.projectFilters.length > 0) {
+				const graph = buildProjectGraph(this.plugin.frontmatterIndex);
+				const expanded = new Set(this.projectFilters);
+				for (const filter of this.projectFilters) {
+					const descendants = getDescendantProjects(filter, graph.childrenMap);
+					for (const d of descendants) expanded.add(d);
+				}
+				effectiveProjectFilters = [...expanded];
+			}
+
 			const sourceUidToProjects = buildSourceUidToProjectsMap(
 				this.app,
-				this.projectFilters
+				effectiveProjectFilters
 			);
 
 			const queue = this.reviewService.buildQueue(
@@ -548,7 +560,7 @@ export class ReviewView extends ItemView {
 					reviewedToday,
 					newCardsStudiedToday,
 					reviewsCompletedToday,
-					projectFilters: this.projectFilters,
+					projectFilters: effectiveProjectFilters,
 					sourceUidToProjects,
 					newCardOrder: this.plugin.settings.newCardOrder,
 					reviewOrder: this.customReviewOrder ?? this.plugin.settings.reviewOrder,

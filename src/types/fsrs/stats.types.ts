@@ -202,5 +202,9 @@ export interface ProjectInfo {
     learningCount: number;
     /** Notes belonging to this project (populated during loadProjects) */
     notes: ProjectNoteInfo[];
+    /** Child project names (sub-projects nested under this project) */
+    childProjectNames: string[];
+    /** Parent project names (projects this project belongs to) */
+    parentProjectNames: string[];
 }
 
