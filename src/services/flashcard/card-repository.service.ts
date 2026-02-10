@@ -291,6 +291,18 @@ export class CardRepository {
 		if (existing?.sourceUid && !entry.sourceUid) {
 			entry.sourceUid = existing.sourceUid;
 		}
+		if (existing?.cardType && !entry.cardType) {
+			entry.cardType = existing.cardType;
+		}
+		if (existing?.clozeTemplate && !entry.clozeTemplate) {
+			entry.clozeTemplate = existing.clozeTemplate;
+		}
+		if (existing?.clozeIndex !== undefined && entry.clozeIndex === undefined) {
+			entry.clozeIndex = existing.clozeIndex;
+		}
+		if (existing?.reverseOf && !entry.reverseOf) {
+			entry.reverseOf = existing.reverseOf;
+		}
 
 		this.store.set(cardId, entry);
 
