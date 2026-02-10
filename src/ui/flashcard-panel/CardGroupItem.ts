@@ -4,6 +4,7 @@ import { BaseComponent } from "../component.base";
 import { setupLongPress, type LongPressResult } from "../utils";
 import type { FlashcardItem } from "../../types";
 import type { FSRSFlashcardItem } from "../../types/fsrs/card.types";
+import { stripBrTags } from "../../utils";
 
 export interface CardGroupItemProps {
 	groupType: "cloze" | "reverse";
@@ -173,7 +174,7 @@ export class CardGroupItem extends BaseComponent {
 			const questionEl = labelEl.createDiv({
 				cls: "ep:text-ui-small ep:text-obs-normal true-recall-card-markdown",
 			});
-			void MarkdownRenderer.render(app, card.question, questionEl, filePath, component);
+			void MarkdownRenderer.render(app, stripBrTags(card.question), questionEl, filePath, component);
 		}
 	}
 

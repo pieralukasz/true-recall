@@ -4,6 +4,7 @@ import { MediaPickerModal } from "./MediaPickerModal";
 import type { FSRSFlashcardItem } from "../../types";
 import { ImageService } from "../../services/image";
 import { notify } from "../../services";
+import { stripBrTags } from "../../utils";
 import {
 	createEditableTextField,
 	EditableTextField,
@@ -327,7 +328,7 @@ export class FlashcardEditorModal extends BaseModal {
 		if (this.renderComponent) {
 			void MarkdownRenderer.render(
 				this.app,
-				content,
+				stripBrTags(content),
 				preview,
 				this.options.currentFilePath,
 				this.renderComponent
