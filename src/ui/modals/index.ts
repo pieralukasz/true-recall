@@ -9,11 +9,6 @@ export {
 } from "./BasePromiseModal";
 export { CardPreviewModal, type CardPreviewModalOptions } from "./CardPreviewModal";
 export {
-    FlashcardReviewModal,
-    type FlashcardReviewResult,
-    type FlashcardReviewModalOptions,
-} from "./FlashcardReviewModal";
-export {
     MoveCardModal,
     type MoveCardResult,
     type MoveCardModalOptions,

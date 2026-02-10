@@ -93,11 +93,8 @@ export type NewReviewMix = "show-after-reviews" | "mix-with-reviews" | "show-bef
 export interface TrueRecallSettings {
     /** OpenRouter API key */
     openRouterApiKey: string;
-    /** AI model for flashcard generation */
+    /** AI model for NL query */
     aiModel: AIModelKey;
-
-    /** Custom system prompt for flashcard generation (empty = use default SYSTEM_PROMPT) */
-    customGeneratePrompt: string;
 
     /** Target retention (0.7-0.99, default 0.9 = 90%) */
     fsrsRequestRetention: number;
@@ -150,13 +147,6 @@ export interface TrueRecallSettings {
 
     /** Folders excluded from searching notes without flashcards */
     excludedFolders: string[];
-
-    /** Enable floating button for generate from selection */
-    floatingButtonEnabled: boolean;
-    /** Minimum selection length to show floating button (chars) */
-    floatingButtonMinChars: number;
-    /** Skip preview modal and generate directly */
-    floatingButtonDirectGenerate: boolean;
 
     /** Automatic backup on plugin load */
     autoBackupOnLoad: boolean;

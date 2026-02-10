@@ -9,7 +9,6 @@ import type {
 	FSRSCardData,
 	FSRSFlashcardItem,
 	CardReviewLogEntry,
-	NoteFlashcardType,
 	FlashcardItem,
 } from "../../types";
 import type { SqliteStoreService } from "../persistence/sqlite/SqliteStoreService";
@@ -93,10 +92,6 @@ export class FlashcardManager {
 	/** @deprecated Always returns false - flashcard MD files no longer exist */
 	isFlashcardFile(_file: TFile): boolean {
 		return false;
-	}
-
-	async getNoteFlashcardType(sourceFile: TFile): Promise<NoteFlashcardType> {
-		return this.frontmatterService.getNoteFlashcardType(sourceFile);
 	}
 
 	async scanVault(): Promise<ScanResult> {

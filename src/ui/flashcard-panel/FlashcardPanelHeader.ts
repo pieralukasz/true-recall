@@ -26,7 +26,6 @@ export interface FlashcardPanelHeaderProps {
     /** Hour when day starts (0-23, default 4 like Anki) */
     dayStartHour?: number;
     onAdd?: () => void;
-    onGenerate?: () => void;
     onCollect?: () => void;
     onRefresh?: () => void;
     onReview?: () => void;
@@ -240,13 +239,6 @@ export class FlashcardPanelHeader extends BaseComponent {
             });
         }
 
-        if (!hasFlashcards && this.props.onGenerate) {
-            menu.addItem((item) => {
-                item.setTitle("Generate flashcards")
-                    .setIcon("sparkles")
-                    .onClick(() => this.props.onGenerate?.());
-            });
-        }
 
         // Export options (only when flashcards exist)
         if (hasFlashcards) {
