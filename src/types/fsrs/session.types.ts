@@ -88,29 +88,3 @@ export interface ReviewSessionState {
     stats: ReviewSessionStats;
 }
 
-/**
- * Default session state
- */
-export function createDefaultSessionState(): ReviewSessionState {
-    return {
-        isActive: false,
-        queue: [],
-        currentIndex: 0,
-        isAnswerRevealed: false,
-        results: [],
-        startTime: 0,
-        questionShownTime: 0,
-        stats: {
-            total: 0,
-            reviewed: 0,
-            again: 0,
-            hard: 0,
-            good: 0,
-            easy: 0,
-            newCards: 0,
-            learningCards: 0,
-            reviewCards: 0,
-            duration: 0,
-        },
-    };
-}

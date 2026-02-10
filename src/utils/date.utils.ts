@@ -19,21 +19,6 @@ export function formatLocalDate(date: Date): string {
 }
 
 /**
- * Parse a local YYYY-MM-DD string to Date
- * Returns a Date at midnight local time
- *
- * @example
- * parseLocalDate("2024-01-15") // Date at 00:00:00 local
- */
-export function parseLocalDate(dateStr: string): Date {
-	const parts = dateStr.split("-").map(Number);
-	const year = parts[0] ?? 1970;
-	const month = parts[1] ?? 1;
-	const day = parts[2] ?? 1;
-	return new Date(year, month - 1, day);
-}
-
-/**
  * Get today's date boundary based on dayStartHour (Anki-style)
  * If current hour < dayStartHour, we're still in "yesterday"
  *

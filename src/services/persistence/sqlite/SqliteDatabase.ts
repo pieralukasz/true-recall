@@ -64,25 +64,6 @@ export class SqliteDatabase {
     }
 
     /**
-     * Execute multiple SQL statements in a transaction-like manner
-     * Marks dirty after all statements complete
-     *
-     * @deprecated Use transaction() for proper atomicity
-     * @example
-     * db.runMany([
-     *     ["DELETE FROM cards WHERE id = ?", [cardId]],
-     *     ["DELETE FROM review_log WHERE card_id = ?", [cardId]]
-     * ]);
-     */
-    runMany(statements: Array<[sql: string, params: BindParams]>): void {
-        this.transaction(() => {
-            for (const [sql, params] of statements) {
-                this.db!.run(sql, params);
-            }
-        });
-    }
-
-    /**
      * Execute a function within a database transaction
      * Provides atomicity - either all operations succeed or none do
      *

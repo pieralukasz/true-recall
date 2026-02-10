@@ -436,30 +436,18 @@ export class FlashcardPanelView extends ItemView {
         try {
             // Load flashcard info and file content in parallel
             const [info, content] = await Promise.all([
-                state.isFlashcardFile
-                    ? this.flashcardManager.getFlashcardInfoDirect(file)
-                    : this.flashcardManager.getFlashcardInfo(file),
-                // Read file content for uncollected flashcard detection
+                this.flashcardManager.getFlashcardInfo(file),
                 this.app.vault.read(file),
             ]);
 
-            // Check for race condition
             if (!this.panel.isCurrentRender(renderVersion)) return;
 
-            // Extract source note name for flashcard files
-            const sourceNoteName = state.isFlashcardFile
-                ? await this.getSourceNoteNameFromFile() ?? null
-                : null;
-
-            // Detect uncollected flashcards (only for source notes, not flashcard files)
-            const uncollectedCount = state.isFlashcardFile
-                ? 0
-                : this.collectService.countFlashcardTags(content);
+            const uncollectedCount = this.collectService.countFlashcardTags(content);
 
             this.panel.setState({
                 flashcardInfo: info,
                 status: info?.exists ? "exists" : "none",
-                sourceNoteName,
+                sourceNoteName: null,
                 uncollectedCount,
             });
         } catch (error) {
@@ -548,7 +536,6 @@ export class FlashcardPanelView extends ItemView {
                 currentFile: state.currentFile,
                 status: state.status,
                 flashcardInfo: state.flashcardInfo,
-                isFlashcardFile: state.isFlashcardFile,
                 selectionMode: state.selectionMode,
                 selectedCardIds: state.selectedCardIds,
                 expandedCardIds: state.expandedCardIds,
@@ -692,11 +679,7 @@ export class FlashcardPanelView extends ItemView {
         const state = this.panel;
         if (!state.currentFile) return;
 
-        if (state.isFlashcardFile) {
-            await this.flashcardManager.openFileAtCard(state.currentFile, card.id);
-        } else {
-            await this.flashcardManager.openSourceNote(state.currentFile);
-        }
+        await this.flashcardManager.openSourceNote(state.currentFile);
     }
 
     private async handleEditButton(card: FlashcardItem): Promise<void> {
@@ -1161,7 +1144,7 @@ export class FlashcardPanelView extends ItemView {
         const state = this.panel;
         const file = state.currentFile;
 
-        if (!file || file.extension !== "md" || state.isFlashcardFile) {
+        if (!file || file.extension !== "md") {
             return;
         }
 

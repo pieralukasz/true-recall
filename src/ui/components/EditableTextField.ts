@@ -151,11 +151,6 @@ export const TOOLBAR_BUTTONS = {
 			action: { type: "toggle", before: "<sub>", after: "</sub>" },
 		},
 	] as ToolbarButton[],
-
-	/** @deprecated Use UNIFIED instead. EDITOR is an alias for UNIFIED for backwards compatibility. */
-	get EDITOR() {
-		return TOOLBAR_BUTTONS.UNIFIED;
-	},
 };
 
 /**

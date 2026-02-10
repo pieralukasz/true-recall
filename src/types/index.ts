@@ -52,9 +52,7 @@ export type {
 
 export {
     createDefaultFSRSData,
-    createDefaultSessionState,
     formatInterval,
-    formatIntervalDays,
 } from "./fsrs";
 
 // Event types

@@ -5,9 +5,7 @@ import { describe, it, expect, beforeEach, vi, afterEach } from "vitest";
 import { State } from "ts-fsrs";
 import {
 	createDefaultFSRSData,
-	createDefaultSessionState,
 	formatInterval,
-	formatIntervalDays,
 } from "../../src/types";
 import type { FSRSFlashcardItem } from "../../src/types";
 import {
@@ -62,51 +60,6 @@ describe("fsrs.types utilities", () => {
 		it("should set createdAt timestamp", () => {
 			const card = createDefaultFSRSData("test-id");
 			expect(card.createdAt).toBe(Date.now());
-		});
-	});
-
-	describe("createDefaultSessionState", () => {
-		it("should create inactive session by default", () => {
-			const state = createDefaultSessionState();
-			expect(state.isActive).toBe(false);
-		});
-
-		it("should have empty queue", () => {
-			const state = createDefaultSessionState();
-			expect(state.queue).toEqual([]);
-			expect(state.currentIndex).toBe(0);
-		});
-
-		it("should have answer hidden", () => {
-			const state = createDefaultSessionState();
-			expect(state.isAnswerRevealed).toBe(false);
-		});
-
-		it("should have empty results array", () => {
-			const state = createDefaultSessionState();
-			expect(state.results).toEqual([]);
-		});
-
-		it("should have zero timestamps", () => {
-			const state = createDefaultSessionState();
-			expect(state.startTime).toBe(0);
-			expect(state.questionShownTime).toBe(0);
-		});
-
-		it("should have zero stats", () => {
-			const state = createDefaultSessionState();
-			expect(state.stats).toEqual({
-				total: 0,
-				reviewed: 0,
-				again: 0,
-				hard: 0,
-				good: 0,
-				easy: 0,
-				newCards: 0,
-				learningCards: 0,
-				reviewCards: 0,
-				duration: 0,
-			});
 		});
 	});
 
@@ -207,34 +160,6 @@ describe("fsrs.types utilities", () => {
 			it("should handle large intervals", () => {
 				expect(formatInterval(10 * 365 * 24 * 60)).toBe("10y");
 			});
-		});
-	});
-
-	describe("formatIntervalDays", () => {
-		it("should convert days to minutes and format", () => {
-			// 1 day = 1440 minutes = "1d"
-			expect(formatIntervalDays(1)).toBe("1d");
-		});
-
-		it("should handle fractional days", () => {
-			// 0.5 day = 720 minutes = 12 hours
-			expect(formatIntervalDays(0.5)).toBe("12h");
-		});
-
-		it("should handle zero days", () => {
-			// 0 days = 0 minutes = "<1m"
-			expect(formatIntervalDays(0)).toBe("<1m");
-		});
-
-		it("should handle multiple days", () => {
-			expect(formatIntervalDays(7)).toBe("7d");
-			expect(formatIntervalDays(30)).toBe("1mo");
-			expect(formatIntervalDays(365)).toBe("1y");
-		});
-
-		it("should handle small fractional days", () => {
-			// 1/24 day = 1 hour = 60 minutes
-			expect(formatIntervalDays(1 / 24)).toBe("1h");
 		});
 	});
 

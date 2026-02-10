@@ -59,9 +59,3 @@ export function formatInterval(minutes: number): string {
     return `${years}y`;
 }
 
-/**
- * Format interval from days to readable form
- */
-export function formatIntervalDays(days: number): string {
-    return formatInterval(days * 24 * 60);
-}
