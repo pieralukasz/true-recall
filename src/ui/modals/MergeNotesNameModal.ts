@@ -101,13 +101,13 @@ export class MergeNotesNameModal extends BasePromiseModal<MergeNotesNameResult> 
 
 		const cancelBtn = buttonsRow.createEl("button", {
 			text: "Cancel",
-			cls: "ep:py-2 ep:px-4 ep:rounded ep:text-ui-small ep:bg-obs-secondary ep:text-obs-normal ep:border ep:border-obs-border ep:cursor-pointer ep:hover:bg-obs-modifier-hover",
+			cls: "ep:py-2 ep:px-4 ep:rounded-md ep:text-ui-small ep:bg-obs-secondary ep:text-obs-normal ep:border ep:border-obs-border ep:cursor-pointer ep:hover:bg-obs-modifier-hover",
 		});
 		this.addDomEvent(cancelBtn, "click", () => this.close());
 
 		const mergeBtn = buttonsRow.createEl("button", {
 			text: "Merge",
-			cls: "mod-cta ep:py-2 ep:px-4 ep:rounded ep:text-ui-small ep:font-medium ep:cursor-pointer",
+			cls: "mod-cta ep:py-2 ep:px-4 ep:rounded-md ep:text-ui-small ep:font-medium ep:cursor-pointer",
 		});
 		mergeBtn.disabled = true;
 		this.addDomEvent(mergeBtn, "click", () => this.executeMerge());

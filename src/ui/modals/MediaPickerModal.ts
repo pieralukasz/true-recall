@@ -187,7 +187,7 @@ export class MediaPickerModal extends BasePromiseModal<MediaPickerResult> {
                 });
                 item.createDiv({
                     text: file.name,
-                    cls: "ep:text-[11px] ep:text-obs-normal ep:text-center ep:p-1 ep:overflow-hidden ep:text-ellipsis ep:whitespace-nowrap",
+                    cls: "ep:text-ui-smaller ep:text-obs-normal ep:text-center ep:p-1 ep:overflow-hidden ep:text-ellipsis ep:whitespace-nowrap",
                 });
             } else {
                 // Create thumbnail using Obsidian's resource path
@@ -209,7 +209,7 @@ export class MediaPickerModal extends BasePromiseModal<MediaPickerResult> {
                 : this.imageService.isFileTooLarge(file);
 
             if (isTooLarge) {
-                const badge = item.createDiv({ cls: "ep:absolute ep:top-1 ep:right-1 ep:py-0.5 ep:px-1.5 ep:bg-obs-red ep:text-obs-on-accent ep:text-[10px] ep:rounded" });
+                const badge = item.createDiv({ cls: "ep:absolute ep:top-1 ep:right-1 ep:py-1 ep:px-2 ep:bg-obs-red ep:text-obs-on-accent ep:text-ui-smaller ep:rounded" });
                 badge.setText("Large");
             }
 
@@ -218,9 +218,9 @@ export class MediaPickerModal extends BasePromiseModal<MediaPickerResult> {
                 this.selectFile(file);
                 // Visual selection
                 grid.querySelectorAll(".media-item").forEach(el =>
-                    el.classList.remove("ep:border-obs-interactive", "ep:shadow-[0_0_0_2px_rgba(var(--interactive-accent-rgb),0.3)]")
+                    el.classList.remove("ep:border-obs-interactive", "ep:ring-2", "ep:ring-obs-interactive/30")
                 );
-                item.classList.add("ep:border-obs-interactive", "ep:shadow-[0_0_0_2px_rgba(var(--interactive-accent-rgb),0.3)]");
+                item.classList.add("ep:border-obs-interactive", "ep:ring-2", "ep:ring-obs-interactive/30");
             });
         }
     }
@@ -395,7 +395,7 @@ export class MediaPickerModal extends BasePromiseModal<MediaPickerResult> {
         // Show the markdown/HTML that will be inserted
         this.previewContainer.createEl("code", {
             text: markdown,
-            cls: "ep:block ep:py-2 ep:px-3 ep:bg-obs-primary ep:rounded ep:text-ui-smaller ep:mb-2",
+            cls: "ep:block ep:py-2 ep:px-3 ep:bg-obs-primary ep:rounded-lg ep:text-ui-smaller ep:mb-2",
         });
 
         // Show visual preview

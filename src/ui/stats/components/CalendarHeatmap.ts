@@ -118,10 +118,9 @@ export class CalendarHeatmap extends BaseComponent {
 						"ep:rounded-sm",
 						"ep:cursor-pointer",
 						"ep:transition-all",
-						"ep:duration-150",
+						"ep:duration-200",
 						// Hover effect
 						"ep:hover:scale-110",
-						"ep:hover:shadow-sm",
 						"ep:hover:opacity-80",
 						...this.getHeatmapLevelClasses(count),
 					].join(" "),

@@ -99,7 +99,7 @@ export class RestoreBackupModal extends BasePromiseModal<RestoreBackupResult> {
             "margin-bottom": "4px",
             cursor: "pointer",
             "background-color": "var(--background-secondary)",
-            transition: "background-color 0.15s ease",
+            transition: "background-color 0.2s ease",
         });
 
         const infoEl = itemEl.createDiv();

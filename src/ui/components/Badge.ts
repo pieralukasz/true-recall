@@ -30,8 +30,8 @@ const VARIANT_CLASSES: Record<BadgeVariant, string> = {
 };
 
 const SIZE_CLASSES: Record<BadgeSize, string> = {
-	sm: "ep:text-ui-smaller ep:py-0.5 ep:px-1.5",
-	md: "ep:text-ui-small ep:py-0.5 ep:px-2",
+	sm: "ep:text-ui-smaller ep:py-1 ep:px-2",
+	md: "ep:text-ui-small ep:py-1 ep:px-2",
 };
 
 /**

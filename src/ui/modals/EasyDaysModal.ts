@@ -109,7 +109,7 @@ export class EasyDaysModal extends BasePromiseModal<EasyDaysResult> {
 	}
 
 	private getDayButtonClass(isSelected: boolean): string {
-		const base = "ep:px-3 ep:py-1.5 ep:rounded ep:border ep:cursor-pointer ep:text-ui-small ep:font-medium ep:transition-colors";
+		const base = "ep:px-3 ep:py-1.5 ep:rounded-md ep:border ep:cursor-pointer ep:text-ui-small ep:font-medium ep:transition-colors";
 		if (isSelected) {
 			return `${base} ep:bg-obs-interactive ep:text-obs-on-accent ep:border-obs-interactive`;
 		}
@@ -203,7 +203,7 @@ export class EasyDaysModal extends BasePromiseModal<EasyDaysResult> {
 			const deleteBtn = dateItem.createEl("button", {
 				text: "×",
 				type: "button",
-				cls: "ep:w-6 ep:h-6 ep:rounded ep:bg-transparent ep:border-none ep:text-obs-muted ep:cursor-pointer ep:text-lg ep:hover:text-obs-red ep-hover-bg-obs-red-10",
+				cls: "ep:w-6 ep:h-6 ep:rounded-md ep:bg-transparent ep:border-none ep:text-obs-muted ep:cursor-pointer ep:text-lg ep:hover:text-obs-red ep-hover-bg-obs-red-10",
 			});
 
 			this.addDomEvent(deleteBtn, "click", () => {

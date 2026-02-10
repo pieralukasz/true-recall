@@ -173,7 +173,7 @@ export class ImagePickerModal extends BasePromiseModal<ImagePickerResult> {
 
             // Size warning badge
             if (this.imageService.isFileTooLarge(file)) {
-                const badge = item.createDiv({ cls: "ep:absolute ep:top-1 ep:right-1 ep:py-0.5 ep:px-1.5 ep:bg-obs-red ep:text-obs-on-accent ep:text-[10px] ep:rounded" });
+                const badge = item.createDiv({ cls: "ep:absolute ep:top-1 ep:right-1 ep:py-1 ep:px-2 ep:bg-obs-red ep:text-obs-on-accent ep:text-ui-smaller ep:rounded" });
                 badge.setText("Large");
             }
 
@@ -182,9 +182,9 @@ export class ImagePickerModal extends BasePromiseModal<ImagePickerResult> {
                 this.selectImage(file);
                 // Visual selection
                 grid.querySelectorAll("[class*='ep:aspect-square']").forEach(el =>
-                    el.classList.remove("ep:border-obs-interactive", "ep:shadow-[0_0_0_2px_rgba(var(--interactive-accent-rgb),0.3)]")
+                    el.classList.remove("ep:border-obs-interactive", "ep:ring-2", "ep:ring-obs-interactive/30")
                 );
-                item.classList.add("ep:border-obs-interactive", "ep:shadow-[0_0_0_2px_rgba(var(--interactive-accent-rgb),0.3)]");
+                item.classList.add("ep:border-obs-interactive", "ep:ring-2", "ep:ring-obs-interactive/30");
             });
         }
     }
@@ -342,7 +342,7 @@ export class ImagePickerModal extends BasePromiseModal<ImagePickerResult> {
         // Show the markdown that will be inserted
         this.previewContainer.createEl("code", {
             text: markdown,
-            cls: "ep:block ep:py-2 ep:px-3 ep:bg-obs-primary ep:rounded ep:text-ui-smaller ep:mb-2",
+            cls: "ep:block ep:py-2 ep:px-3 ep:bg-obs-primary ep:rounded-lg ep:text-ui-smaller ep:mb-2",
         });
 
         // Show visual preview

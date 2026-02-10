@@ -93,14 +93,14 @@ export class OrphanedCardsContent {
 			});
 			const deleteAllBtn = actionsRow.createEl("button", {
 				text: `Delete all ${totalCount} cards`,
-				cls: "ep:py-1.5 ep:px-3 ep:rounded ep:bg-obs-red ep:text-obs-on-accent ep:text-ui-smaller ep:cursor-pointer ep:hover:opacity-90 ep:border-none",
+				cls: "ep:py-1.5 ep:px-3 ep:rounded-md ep:bg-obs-red ep:text-obs-on-accent ep:text-ui-smaller ep:cursor-pointer ep:hover:opacity-90 ep:border-none",
 			});
 			deleteAllBtn.addEventListener("click", () => this.handleDeleteAll());
 		}
 
 		// Groups list
 		const groupsContainer = this.contentContainer.createDiv({
-			cls: "ep:max-h-[500px] ep:overflow-y-auto ep:border ep:border-obs-border ep:rounded",
+			cls: "ep:max-h-[500px] ep:overflow-y-auto ep:border ep:border-obs-border ep:rounded-lg",
 		});
 
 		for (const group of this.groups) {
@@ -167,7 +167,7 @@ export class OrphanedCardsContent {
 		// Move button
 		const moveBtn = actionsEl.createEl("button", {
 			text: "Move",
-			cls: "ep:py-1 ep:px-2 ep:rounded ep:bg-obs-interactive ep:text-obs-on-accent ep:text-ui-smaller ep:cursor-pointer ep:hover:opacity-80 ep:border-none",
+			cls: "ep:py-1 ep:px-2 ep:rounded-md ep:bg-obs-interactive ep:text-obs-on-accent ep:text-ui-smaller ep:cursor-pointer ep:hover:opacity-80 ep:border-none",
 		});
 		moveBtn.addEventListener("click", (e) => {
 			e.stopPropagation();
@@ -177,7 +177,7 @@ export class OrphanedCardsContent {
 		// Create note button
 		const createBtn = actionsEl.createEl("button", {
 			text: "Create note",
-			cls: "ep:py-1 ep:px-2 ep:rounded ep:bg-obs-secondary ep:text-obs-normal ep:text-ui-smaller ep:cursor-pointer ep:hover:bg-obs-modifier-hover ep:border ep:border-obs-border",
+			cls: "ep:py-1 ep:px-2 ep:rounded-md ep:bg-obs-secondary ep:text-obs-normal ep:text-ui-smaller ep:cursor-pointer ep:hover:bg-obs-modifier-hover ep:border ep:border-obs-border",
 		});
 		createBtn.addEventListener("click", (e) => {
 			e.stopPropagation();
@@ -187,7 +187,7 @@ export class OrphanedCardsContent {
 		// Delete button
 		const deleteBtn = actionsEl.createEl("button", {
 			text: "Delete",
-			cls: "ep:py-1 ep:px-2 ep:rounded ep:bg-obs-red ep:text-obs-on-accent ep:text-ui-smaller ep:cursor-pointer ep:hover:opacity-90 ep:border-none",
+			cls: "ep:py-1 ep:px-2 ep:rounded-md ep:bg-obs-red ep:text-obs-on-accent ep:text-ui-smaller ep:cursor-pointer ep:hover:opacity-90 ep:border-none",
 		});
 		deleteBtn.addEventListener("click", (e) => {
 			e.stopPropagation();
@@ -251,7 +251,7 @@ export class OrphanedCardsContent {
 		const searchInput = searchContainer.createEl("input", {
 			type: "text",
 			placeholder: "Search notes...",
-			cls: "ep:w-full ep:p-2 ep:rounded ep:border ep:border-obs-border ep:bg-obs-primary ep:text-obs-normal ep:text-ui-small",
+			cls: "ep:w-full ep:p-2 ep:rounded-lg ep:border ep:border-obs-border ep:bg-obs-primary ep:text-obs-normal ep:text-ui-small",
 		});
 		searchInput.addEventListener("input", (e) => {
 			this.searchQuery = (e.target as HTMLInputElement).value;
@@ -260,14 +260,14 @@ export class OrphanedCardsContent {
 
 		// Note list
 		this.noteListEl = this.moveSection.createDiv({
-			cls: "ep:max-h-[200px] ep:overflow-y-auto ep:border ep:border-obs-border ep:rounded",
+			cls: "ep:max-h-[200px] ep:overflow-y-auto ep:border ep:border-obs-border ep:rounded-lg",
 		});
 		this.renderNoteList();
 
 		// Cancel button
 		const cancelBtn = this.moveSection.createEl("button", {
 			text: "Cancel",
-			cls: "ep:mt-3 ep:py-2 ep:px-4 ep:rounded ep:bg-obs-secondary ep:text-obs-normal ep:border ep:border-obs-border ep:cursor-pointer ep:hover:bg-obs-modifier-hover",
+			cls: "ep:mt-3 ep:py-2 ep:px-4 ep:rounded-md ep:bg-obs-secondary ep:text-obs-normal ep:border ep:border-obs-border ep:cursor-pointer ep:hover:bg-obs-modifier-hover",
 		});
 		cancelBtn.addEventListener("click", () => {
 			if (this.moveSection) {

@@ -856,7 +856,7 @@ export class TrueRecallSettingTab extends PluginSettingTab {
 			const breaksList = container.createDiv({ cls: "ep:space-y-2 ep:mb-4" });
 			breaks.forEach((brk, index) => {
 				const breakItem = breaksList.createDiv({
-					cls: "ep:flex ep:items-center ep:justify-between ep:p-2 ep:bg-obs-background-modifier-form ep:rounded",
+					cls: "ep:flex ep:items-center ep:justify-between ep:p-2 ep:bg-obs-background-modifier-form ep:rounded-lg",
 				});
 				breakItem.createSpan({
 					text: `${brk.startDate} to ${brk.endDate}`,
@@ -1357,7 +1357,7 @@ export class TrueRecallSettingTab extends PluginSettingTab {
 		let emailValue = "";
 		let passwordValue = "";
 		const statusEl = formContainer.createDiv({
-			cls: "ep:mt-3 ep:p-2 ep:rounded ep:text-ui-small ep:hidden",
+			cls: "ep:mt-3 ep:p-2 ep:rounded-lg ep:text-ui-small ep:hidden",
 		});
 
 		new Setting(formContainer)

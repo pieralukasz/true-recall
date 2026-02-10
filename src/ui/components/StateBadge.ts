@@ -107,10 +107,10 @@ export function renderStateBadge(
 
 	const sizeCls =
 		props.size === "sm"
-			? "ep:text-[10px] ep:py-0.5 ep:px-1.5"
-			: "ep:text-[11px] ep:py-0.5 ep:px-2";
+			? "ep:text-ui-smaller ep:py-1 ep:px-2"
+			: "ep:text-ui-smaller ep:py-1 ep:px-2";
 
-	const baseCls = `ep:inline-flex ep:items-center ep:gap-1 ep:rounded-xl ep:font-semibold ep:uppercase ep:tracking-[0.3px] ${sizeCls}`;
+	const baseCls = `ep:inline-flex ep:items-center ep:gap-1 ep:rounded-xl ep:font-semibold ep:uppercase ep:tracking-wide ${sizeCls}`;
 
 	const badge = container.createSpan({
 		text: config.label,

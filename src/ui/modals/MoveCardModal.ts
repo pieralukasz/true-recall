@@ -138,7 +138,7 @@ export class MoveCardModal extends BasePromiseModal<MoveCardResult> {
 	 */
 	private renderNoteItem(container: HTMLElement, note: TFile, isSuggested = false): void {
 		const baseCls = "ep:flex ep:items-center ep:justify-between ep:p-3 ep:border-b ep:border-obs-border ep:cursor-pointer ep:transition-colors ep:hover:bg-obs-modifier-hover ep:last:border-b-0 ep:group";
-		const suggestedCls = "ep:bg-obs-interactive/10 ep:border-l-2 ep:border-l-obs-interactive ep:rounded ep:mb-1";
+		const suggestedCls = "ep:bg-obs-interactive/10 ep:border-l-2 ep:border-l-obs-interactive ep:rounded-lg ep:mb-1";
 		const noteEl = container.createDiv({
 			cls: isSuggested ? `${baseCls} ${suggestedCls}` : baseCls,
 		});
@@ -160,7 +160,7 @@ export class MoveCardModal extends BasePromiseModal<MoveCardResult> {
 		// Select button
 		const selectBtn = noteEl.createEl("button", {
 			text: "Select",
-			cls: "ep:shrink-0 ep:py-1 ep:px-3 ep:rounded ep:bg-obs-interactive ep:text-obs-on-accent ep:border-none ep:text-ui-smaller ep:cursor-pointer ep:opacity-0 ep:group-hover:opacity-100 ep:hover:opacity-100",
+			cls: "ep:shrink-0 ep:py-1 ep:px-3 ep:rounded-md ep:bg-obs-interactive ep:text-obs-on-accent ep:border-none ep:text-ui-smaller ep:cursor-pointer ep:opacity-0 ep:group-hover:opacity-100 ep:hover:opacity-100",
 		});
 
 		selectBtn.addEventListener("click", () => {
