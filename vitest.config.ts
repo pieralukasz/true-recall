@@ -18,7 +18,7 @@ export default defineConfig({
         },
         alias: {
             "@": "/src",
-      
+            "types": new URL("./src/types/index.ts", import.meta.url).pathname,
             "obsidian": new URL("./tests/__mocks__/obsidian.ts", import.meta.url).pathname,
         },
     },

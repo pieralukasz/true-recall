@@ -60,6 +60,8 @@ import {
 	OrphanedCardsActionModal,
 	MergeNotesModal,
 	MergeNotesNameModal,
+	AnkiImportModal,
+	AnkiExportModal,
 	type DeviceSelectionResult,
 } from "./ui/modals";
 import { CustomStudyModal, type CustomStudyModalScope } from "./ui/modals/CustomStudyModal";
@@ -1061,6 +1063,26 @@ ${cardList}${moreText}
 		} else {
 			notify().error(`Sync failed: ${result.error}`);
 		}
+	}
+
+	async importAnki(): Promise<void> {
+		if (!this.isStoreReady()) {
+			notify().error("Database not ready. Please wait for plugin to fully load.");
+			return;
+		}
+
+		const modal = new AnkiImportModal(this.app, this.cardStore, this.fsrsService);
+		modal.open();
+	}
+
+	async exportAnki(): Promise<void> {
+		if (!this.isStoreReady()) {
+			notify().error("Database not ready. Please wait for plugin to fully load.");
+			return;
+		}
+
+		const modal = new AnkiExportModal(this.app, this.cardStore, this.fsrsService);
+		modal.open();
 	}
 
 	async addFlashcardUidToCurrentNote(): Promise<void> {

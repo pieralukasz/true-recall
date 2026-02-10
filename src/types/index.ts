@@ -108,3 +108,17 @@ export type {
     SyncOptions,
     FirstSyncStatus,
 } from "./sync.types";
+
+// Anki types
+export type {
+    AnkiNote,
+    AnkiCard,
+    AnkiRevlogEntry,
+    AnkiModel,
+    AnkiDeck,
+    ApkgData,
+    AnkiImportOptions,
+    AnkiImportResult,
+    AnkiExportOptions,
+    ConvertedCard,
+} from "./anki.types";
