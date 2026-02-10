@@ -142,7 +142,7 @@ export class CardPreview extends BaseComponent {
 		});
 
 		// Button classes
-		const btnCls = "ep:cursor-pointer ep:opacity-60 ep:text-ui-smaller ep:px-1 ep:py-0.5 ep:rounded ep:hover:opacity-100 ep:hover:bg-obs-modifier-hover clickable-icon";
+		const btnCls = "ep:cursor-pointer ep:opacity-60 ep:text-ui-smaller ep:px-1 ep:py-1 ep:rounded-md ep:hover:opacity-100 ep:hover:bg-obs-modifier-hover clickable-icon";
 
 		// Copy button
 		if (handlers.onCopy) {

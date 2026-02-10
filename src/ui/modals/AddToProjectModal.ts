@@ -85,8 +85,8 @@ export class AddToProjectModal extends BasePromiseModal<AddToProjectResult> {
 		if (!this.projectListEl) return;
 
 		const isChecked = this.selectedProjects.has(projectName);
-		const baseCls = "ep:flex ep:items-center ep:gap-2.5 ep:py-2 ep:px-2.5 ep:border-b ep:border-obs-border ep:transition-colors ep:last:border-b-0 ep:hover:bg-obs-secondary";
-		const checkedCls = isChecked ? "ep:bg-obs-interactive/10 ep:border-l-[3px] ep:border-l-obs-interactive ep:pl-[7px]" : "";
+		const baseCls = "ep:flex ep:items-center ep:gap-3 ep:py-2 ep:px-3 ep:border-b ep:border-obs-border ep:transition-colors ep:last:border-b-0 ep:hover:bg-obs-secondary";
+		const checkedCls = isChecked ? "ep:bg-obs-interactive/10 ep:border-l-2 ep:border-l-obs-interactive ep:pl-2" : "";
 		const itemEl = this.projectListEl.createDiv({ cls: `project-item ${baseCls} ${checkedCls}` });
 
 		const checkbox = itemEl.createEl("input", {
@@ -104,10 +104,10 @@ export class AddToProjectModal extends BasePromiseModal<AddToProjectResult> {
 		checkbox.addEventListener("change", () => {
 			if (checkbox.checked) {
 				this.selectedProjects.add(projectName);
-				itemEl.classList.add("ep:bg-obs-interactive/10", "ep:border-l-[3px]", "ep:border-l-obs-interactive", "ep:pl-[7px]");
+				itemEl.classList.add("ep:bg-obs-interactive/10", "ep:border-l-2", "ep:border-l-obs-interactive", "ep:pl-2");
 			} else {
 				this.selectedProjects.delete(projectName);
-				itemEl.classList.remove("ep:bg-obs-interactive/10", "ep:border-l-[3px]", "ep:border-l-obs-interactive", "ep:pl-[7px]");
+				itemEl.classList.remove("ep:bg-obs-interactive/10", "ep:border-l-2", "ep:border-l-obs-interactive", "ep:pl-2");
 			}
 		});
 

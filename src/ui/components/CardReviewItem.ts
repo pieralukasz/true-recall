@@ -116,7 +116,7 @@ export class CardReviewItem extends BaseComponent {
 		component: Component
 	): void {
 		const fieldEl = container.createDiv({
-			cls: "ep:relative ep:cursor-pointer ep:px-2 ep:py-1 ep:rounded ep:transition-colors ep:hover:bg-obs-modifier-hover",
+			cls: "ep:relative ep:cursor-pointer ep:px-2 ep:py-1 ep:rounded-md ep:transition-colors ep:hover:bg-obs-modifier-hover",
 		});
 
 		const fieldContent = fieldEl.createDiv({ cls: "ep:inline" });
@@ -212,7 +212,7 @@ export class CardReviewItem extends BaseComponent {
 		const buttonsEl = this.element.createDiv({ cls: "ep:flex ep:flex-row ep:gap-2 ep:shrink-0 ep:self-end" });
 
 		// Shared button styles
-		const btnCls = "ep:p-1.5 ep:rounded ep:bg-transparent ep:border-none ep:cursor-pointer ep:text-obs-muted ep:hover:text-obs-normal ep:hover:bg-obs-modifier-hover ep:transition-colors";
+		const btnCls = "ep:p-1.5 ep:rounded-md ep:bg-transparent ep:border-none ep:cursor-pointer ep:text-obs-muted ep:hover:text-obs-normal ep:hover:bg-obs-modifier-hover ep:transition-colors";
 
 		// Unbury button (shows first if available)
 		if (onUnbury) {

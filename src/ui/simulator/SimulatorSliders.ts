@@ -67,7 +67,7 @@ export class SimulatorSliders extends BaseComponent {
 			cls: [
 				"ep:w-[70px] ep:px-2 ep:py-1",
 				"ep:bg-obs-primary ep:text-obs-normal",
-				"ep:border ep:border-obs-border ep:rounded",
+				"ep:border ep:border-obs-border ep:rounded-lg",
 				"ep:text-ui-smaller ep:text-center",
 			].join(" "),
 		});

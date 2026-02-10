@@ -122,7 +122,7 @@ export class NLQueryPanel {
 
         for (const example of EXAMPLE_QUERIES) {
             const chip = this.examplesEl.createEl("button", {
-                cls: "ep:py-1 ep:px-2.5 ep:text-ui-smaller ep:border ep:border-obs-border ep:rounded-xl ep:bg-obs-primary ep:text-obs-muted ep:cursor-pointer ep:transition-all ep:hover:border-obs-interactive ep:hover:text-obs-normal",
+                cls: "ep:py-1 ep:px-3 ep:text-ui-smaller ep:border ep:border-obs-border ep:rounded-xl ep:bg-obs-primary ep:text-obs-muted ep:cursor-pointer ep:transition-all ep:hover:border-obs-interactive ep:hover:text-obs-normal",
                 text: example.text,
             });
             chip.addEventListener("click", () => {
@@ -235,7 +235,7 @@ export class NLQueryPanel {
                 if (step.action === "sql_db_query") {
                     const stepEl = stepsEl.createDiv({ cls: "ep:mb-2" });
                     stepEl.createEl("code", {
-                        cls: "ep:block ep:py-2 ep:px-3 ep:bg-obs-secondary ep:rounded ep:font-mono ep:text-ui-smaller ep:whitespace-pre-wrap ep:break-all ep:text-obs-muted",
+                        cls: "ep:block ep:py-2 ep:px-3 ep:bg-obs-secondary ep:rounded-lg ep:font-mono ep:text-ui-smaller ep:whitespace-pre-wrap ep:break-all ep:text-obs-muted",
                         text: step.input,
                     });
                 }

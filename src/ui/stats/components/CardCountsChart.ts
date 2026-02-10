@@ -221,7 +221,6 @@ export class CardCountsChart extends BaseComponent {
 					"ep:cursor-pointer",
 					// Hover effect
 					"ep:hover:bg-obs-primary",
-					"ep:hover:shadow-sm",
 					"ep:hover:-translate-x-0.5",
 				].join(" "),
 			});
@@ -232,7 +231,6 @@ export class CardCountsChart extends BaseComponent {
 					"ep:w-4",
 					"ep:h-4",
 					"ep:rounded-sm",
-					"ep:shadow-sm",
 					"ep:shrink-0",
 				].join(" "),
 			});

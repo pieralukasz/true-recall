@@ -124,7 +124,7 @@ export class SelectionFooter extends BaseComponent {
 		const { label, icon, onClick, variant = "secondary", disabled = false } = action;
 
 		const btnBase =
-			"ep:flex ep:items-center ep:gap-1.5 ep:px-3 ep:py-1.5 ep:rounded ep:text-ui-small ep:font-medium ep:border-none ep:cursor-pointer ep:transition-colors";
+			"ep:flex ep:items-center ep:gap-2 ep:px-3 ep:py-1.5 ep:rounded-md ep:text-ui-small ep:font-medium ep:border-none ep:cursor-pointer ep:transition-colors";
 
 		let variantCls: string;
 		switch (variant) {

@@ -534,7 +534,7 @@ export class SessionView extends ItemView {
 		});
 
 		const moveBtn = buttons.createEl("button", {
-			cls: "ep:py-1.5 ep:px-3 ep:text-ui-small ep:bg-obs-border ep:text-obs-normal ep:border-none ep:rounded ep:cursor-pointer ep:hover:bg-obs-modifier-hover",
+			cls: "ep:py-1.5 ep:px-3 ep:text-ui-small ep:bg-obs-border ep:text-obs-normal ep:border-none ep:rounded-md ep:cursor-pointer ep:hover:bg-obs-modifier-hover",
 			text: "Move",
 		});
 		// Use registerDomEvent for automatic cleanup on view close
@@ -543,7 +543,7 @@ export class SessionView extends ItemView {
 		);
 
 		const addProjectBtn = buttons.createEl("button", {
-			cls: "ep:py-1.5 ep:px-3 ep:text-ui-small ep:bg-obs-border ep:text-obs-normal ep:border-none ep:rounded ep:cursor-pointer ep:hover:bg-obs-modifier-hover",
+			cls: "ep:py-1.5 ep:px-3 ep:text-ui-small ep:bg-obs-border ep:text-obs-normal ep:border-none ep:rounded-md ep:cursor-pointer ep:hover:bg-obs-modifier-hover",
 			text: "Add to project",
 		});
 		this.registerDomEvent(addProjectBtn, "click", () =>
@@ -551,7 +551,7 @@ export class SessionView extends ItemView {
 		);
 
 		const clearBtn = buttons.createEl("button", {
-			cls: "ep:py-1.5 ep:px-3 ep:text-ui-small ep:bg-obs-border ep:text-obs-normal ep:border-none ep:rounded ep:cursor-pointer ep:hover:bg-obs-modifier-hover",
+			cls: "ep:py-1.5 ep:px-3 ep:text-ui-small ep:bg-obs-border ep:text-obs-normal ep:border-none ep:rounded-md ep:cursor-pointer ep:hover:bg-obs-modifier-hover",
 			text: "Clear",
 		});
 		this.registerDomEvent(clearBtn, "click", () => this.handleClearSelection());

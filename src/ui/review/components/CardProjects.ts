@@ -55,13 +55,13 @@ export class CardProjects {
 
 	private renderExpanded(container: HTMLElement, projects: string[]): void {
 		const projectsEl = container.createDiv({
-			cls: "ep:flex ep:flex-wrap ep:justify-center ep:gap-1.5",
+			cls: "ep:flex ep:flex-wrap ep:justify-center ep:gap-2",
 		});
 
 		for (const project of projects) {
 			const badgeEl = projectsEl.createEl("button", {
 				text: project,
-				cls: "ep:py-0.5 ep:px-2 ep:text-ui-smaller ep:border ep:border-obs-border ep:rounded-xl ep:bg-obs-primary ep:text-obs-muted ep:cursor-pointer ep:transition-all ep:hover:border-obs-interactive ep:hover:text-obs-normal",
+				cls: "ep:py-1 ep:px-2 ep:text-ui-smaller ep:border ep:border-obs-border ep:rounded-xl ep:bg-obs-primary ep:text-obs-muted ep:cursor-pointer ep:transition-all ep:hover:border-obs-interactive ep:hover:text-obs-normal",
 				attr: { "data-action": "open-project", "data-project": project },
 			});
 

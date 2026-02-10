@@ -262,7 +262,7 @@ export class SessionContent extends BaseComponent {
 		});
 
 		const baseBtnCls =
-			"ep:flex ep:flex-col ep:items-start ep:gap-1 ep:px-3 ep:py-2.5 ep:bg-obs-secondary ep:border ep:border-obs-border ep:rounded-md ep:cursor-pointer ep:text-left ep:transition-colors ep:hover:bg-obs-modifier-hover ep:hover:border-obs-interactive";
+			"ep:flex ep:flex-col ep:items-start ep:gap-1 ep:px-3 ep:py-3 ep:bg-obs-secondary ep:border ep:border-obs-border ep:rounded-md ep:cursor-pointer ep:text-left ep:transition-colors ep:hover:bg-obs-modifier-hover ep:hover:border-obs-interactive";
 		const disabledBtnCls = [
 			"ep:opacity-50",
 			"ep:cursor-not-allowed",

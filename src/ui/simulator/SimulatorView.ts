@@ -223,7 +223,7 @@ export class SimulatorView extends ItemView {
 		this.paramsDisplay = bar.createDiv({
 			cls: [
 				"ep:text-ui-smaller ep:text-obs-muted",
-				"ep:bg-obs-secondary ep:p-2 ep:rounded",
+				"ep:bg-obs-secondary ep:p-2 ep:rounded-lg",
 				"ep:font-mono ep:mb-2",
 			].join(" "),
 		});
@@ -277,7 +277,7 @@ export class SimulatorView extends ItemView {
 		return [
 			"ep:px-3 ep:py-1.5",
 			"ep:bg-obs-secondary ep:text-obs-normal",
-			"ep:border ep:border-obs-border ep:rounded",
+			"ep:border ep:border-obs-border ep:rounded-md",
 			"ep:cursor-pointer ep:text-ui-smaller",
 			"hover:ep:bg-obs-modifier-hover",
 		].join(" ");
