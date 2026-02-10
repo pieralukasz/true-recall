@@ -5,7 +5,6 @@ import {
 	DEFAULT_SETTINGS,
 	AI_MODELS_EXTENDED,
 	FSRS_CONFIG,
-	SYSTEM_PROMPT,
 } from "../../constants";
 import { DeviceSelectionModal, FirstSyncConflictModal, EasyDaysModal } from "../modals";
 // HIDDEN: Copilot integration waiting for public API
@@ -259,50 +258,6 @@ export class TrueRecallSettingTab extends PluginSettingTab {
 					})
 			);
 
-		new Setting(container).setName("Floating generate button").setHeading();
-
-		new Setting(container)
-			.setName("Enable floating button")
-			.setDesc(
-				"Show a floating button when text is selected to quickly generate flashcards"
-			)
-			.addToggle((toggle) =>
-				toggle
-					.setValue(this.plugin.settings.floatingButtonEnabled)
-					.onChange(async (value) => {
-						this.plugin.settings.floatingButtonEnabled = value;
-						await this.plugin.saveSettings();
-					})
-			);
-
-		new Setting(container)
-			.setName("Minimum selection length")
-			.setDesc("Minimum number of characters to show the floating button")
-			.addText((text) =>
-				text
-					.setPlaceholder("50")
-					.setValue(String(this.plugin.settings.floatingButtonMinChars))
-					.onChange(async (value) => {
-						const num = parseInt(value) || 50;
-						this.plugin.settings.floatingButtonMinChars = Math.max(1, num);
-						await this.plugin.saveSettings();
-					})
-			);
-
-		new Setting(container)
-			.setName("Direct generation")
-			.setDesc(
-				"Skip the preview modal and generate flashcards directly (faster but no review)"
-			)
-			.addToggle((toggle) =>
-				toggle
-					.setValue(this.plugin.settings.floatingButtonDirectGenerate)
-					.onChange(async (value) => {
-						this.plugin.settings.floatingButtonDirectGenerate = value;
-						await this.plugin.saveSettings();
-					})
-			);
-
 		// HIDDEN: Waiting for Copilot to expose a public API for adding notes to context.
 		// The underlying code exists in CopilotIntegrationService and ReviewView.
 		// Uncomment this section when Copilot adds API support.
@@ -341,7 +296,7 @@ export class TrueRecallSettingTab extends PluginSettingTab {
 
 	private renderAITab(container: HTMLElement): void {
 		// eslint-disable-next-line obsidianmd/ui/sentence-case -- OpenRouter is a proper noun
-		new Setting(container).setName("AI generation (OpenRouter)").setHeading();
+		new Setting(container).setName("AI (OpenRouter)").setHeading();
 
 		const apiKeyInfo = container.createDiv({
 			cls: "setting-item-description",
@@ -358,7 +313,7 @@ export class TrueRecallSettingTab extends PluginSettingTab {
 		new Setting(container)
 			.setName("API key")
 			// eslint-disable-next-line obsidianmd/ui/sentence-case -- OpenRouter is a proper noun
-			.setDesc("Your OpenRouter API key for flashcard generation.")
+			.setDesc("Your OpenRouter API key.")
 			.addText((text) => {
 				text.inputEl.type = "password";
 				text.inputEl.addClass("ep:w-[300px]");
@@ -372,7 +327,7 @@ export class TrueRecallSettingTab extends PluginSettingTab {
 
 		const modelSetting = new Setting(container)
 			.setName("AI model")
-			.setDesc("Select the AI model for flashcard generation");
+			.setDesc("Select the AI model");
 
 		modelSetting.addDropdown((dropdown) => {
 			const modelsByProvider = this.groupModelsByProvider();
@@ -408,40 +363,6 @@ export class TrueRecallSettingTab extends PluginSettingTab {
 			});
 		});
 
-		new Setting(container).setName("Custom prompts").setHeading();
-
-		const promptsInfo = container.createDiv({
-			cls: "setting-item-description",
-		});
-		promptsInfo.createEl("p", { text: "Customize the AI prompts used for flashcard generation. Leave empty to use the default prompts." });
-
-		new Setting(container)
-			.setName("Flashcard generation prompt")
-			.setDesc(
-				"Custom system prompt for generating new flashcards. Leave empty to use default."
-			)
-			.addTextArea((text) => {
-				text.inputEl.rows = 8;
-				text.inputEl.addClass("ep:w-full", "ep:font-mono", "ep:text-ui-small");
-				text.setPlaceholder(this.truncatePrompt(SYSTEM_PROMPT, 500))
-					.setValue(this.plugin.settings.customGeneratePrompt)
-					.onChange(async (value) => {
-						this.plugin.settings.customGeneratePrompt = value;
-						await this.plugin.saveSettings();
-					});
-			});
-
-		new Setting(container)
-			.setName("Reset prompt to default")
-			.setDesc("Clear custom prompt and use the built-in default")
-			.addButton((button) =>
-				button.setButtonText("Reset to default").onClick(async () => {
-					this.plugin.settings.customGeneratePrompt = "";
-					await this.plugin.saveSettings();
-					notify().success("Prompt reset to default");
-					this.display();
-				})
-			);
 	}
 
 	private renderSchedulingTab(container: HTMLElement): void {
@@ -1793,11 +1714,6 @@ export class TrueRecallSettingTab extends PluginSettingTab {
 		}
 
 		return groups;
-	}
-
-	private truncatePrompt(prompt: string, maxLength: number): string {
-		if (prompt.length <= maxLength) return prompt;
-		return prompt.substring(0, maxLength) + "...";
 	}
 
 	private async showDeviceSwitchModal(): Promise<void> {

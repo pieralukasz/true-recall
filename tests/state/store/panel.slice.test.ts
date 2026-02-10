@@ -28,21 +28,18 @@ describe("Panel Slice", () => {
 	describe("setState", () => {
 		it("should update partial state", () => {
 			store.getState().panel.setState({
-				status: "processing",
-				userInstructions: "Test instructions",
+				status: "exists",
 			});
 
 			const panel = store.getState().panel;
-			expect(panel.status).toBe("processing");
-			expect(panel.userInstructions).toBe("Test instructions");
+			expect(panel.status).toBe("exists");
 		});
 	});
 
 	describe("reset", () => {
 		it("should reset to initial state", () => {
 			store.getState().panel.setState({
-				status: "processing",
-				userInstructions: "Test",
+				status: "exists",
 				searchQuery: "search",
 			});
 
@@ -50,7 +47,6 @@ describe("Panel Slice", () => {
 
 			const panel = store.getState().panel;
 			expect(panel.status).toBe("none");
-			expect(panel.userInstructions).toBe("");
 			expect(panel.searchQuery).toBe("");
 		});
 	});
@@ -104,42 +100,8 @@ describe("Panel Slice", () => {
 
 	describe("Status Management", () => {
 		it("should set status", () => {
-			store.getState().panel.setStatus("processing");
-			expect(store.getState().panel.status).toBe("processing");
-		});
-
-		it("should start processing", () => {
-			store.getState().panel.setState({ error: { message: "Error" } as AppError });
-
-			store.getState().panel.startProcessing();
-
-			const panel = store.getState().panel;
-			expect(panel.status).toBe("processing");
-			expect(panel.error).toBeNull();
-		});
-
-		it("should finish processing with flashcards", () => {
-			store.getState().panel.startProcessing();
-
-			store.getState().panel.finishProcessing(true);
-
+			store.getState().panel.setStatus("exists");
 			expect(store.getState().panel.status).toBe("exists");
-		});
-
-		it("should finish processing without flashcards", () => {
-			store.getState().panel.startProcessing();
-
-			store.getState().panel.finishProcessing(false);
-
-			expect(store.getState().panel.status).toBe("none");
-		});
-
-		it("should check if processing", () => {
-			expect(store.getState().panel.isProcessing()).toBe(false);
-
-			store.getState().panel.startProcessing();
-
-			expect(store.getState().panel.isProcessing()).toBe(true);
 		});
 	});
 
@@ -180,36 +142,10 @@ describe("Panel Slice", () => {
 		});
 
 		it("should reset status when error is cleared", () => {
-			store.getState().panel.setState({ status: "processing" });
+			store.getState().panel.setState({ status: "exists" });
 			store.getState().panel.setError(null);
 
-			expect(store.getState().panel.status).toBe("processing");
-		});
-	});
-
-	describe("Text Selection", () => {
-		it("should set selected text", () => {
-			store.getState().panel.setSelectedText("Selected content");
-
-			const panel = store.getState().panel;
-			expect(panel.selectedText).toBe("Selected content");
-			expect(panel.hasSelection).toBe(true);
-		});
-
-		it("should clear selection", () => {
-			store.getState().panel.setSelectedText("Some text");
-
-			store.getState().panel.clearSelection();
-
-			const panel = store.getState().panel;
-			expect(panel.selectedText).toBe("");
-			expect(panel.hasSelection).toBe(false);
-		});
-
-		it("should set hasSelection to false for empty text", () => {
-			store.getState().panel.setSelectedText("");
-
-			expect(store.getState().panel.hasSelection).toBe(false);
+			expect(store.getState().panel.status).toBe("exists");
 		});
 	});
 
@@ -330,11 +266,4 @@ describe("Panel Slice", () => {
 		});
 	});
 
-	describe("User Instructions", () => {
-		it("should set user instructions", () => {
-			store.getState().panel.setUserInstructions("Custom instructions");
-
-			expect(store.getState().panel.userInstructions).toBe("Custom instructions");
-		});
-	});
 });

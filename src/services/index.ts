@@ -7,7 +7,7 @@
  * - persistence: Data storage (SQLite, session persistence)
  * - stats: Statistics and calculations
  * - review: Review session management
- * - ai: AI integration (OpenRouter)
+ * - ai: AI integration (NL Query)
  * - ui: UI-specific services
  */
 
@@ -70,7 +70,6 @@ export {
 	type QueueBuildOptions,
 } from "./review/review.service";
 
-export { OpenRouterService } from "./ai/openrouter.service";
 export { NLQueryService } from "./ai/nl-query.service";
 export { SqlJsAdapter } from "./ai/langchain-sqlite.adapter";
 

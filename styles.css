@@ -410,9 +410,6 @@
   .ep\:max-h-\[200px\] {
     max-height: 200px;
   }
-  .ep\:max-h-\[350px\] {
-    max-height: 350px;
-  }
   .ep\:max-h-\[400px\] {
     max-height: 400px;
   }
@@ -866,9 +863,6 @@
   }
   .ep\:pt-4 {
     padding-top: calc(var(--ep-spacing) * 4);
-  }
-  .ep\:pr-1 {
-    padding-right: calc(var(--ep-spacing) * 1);
   }
   .ep\:pr-2 {
     padding-right: calc(var(--ep-spacing) * 2);
@@ -1906,50 +1900,6 @@
   color: var(--text-normal);
   overflow-y: auto;
 }
-.ep-floating-generate-btn {
-  position: fixed;
-  bottom: 24px;
-  right: 24px;
-  z-index: 1000;
-  width: 48px;
-  height: 48px;
-  border-radius: 50%;
-  background: var(--interactive-accent);
-  color: var(--text-on-accent);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  cursor: pointer;
-  box-shadow: 0 4px 12px rgba(var(--mono-rgb-0), 0.3);
-  opacity: 0;
-  transform: scale(0.8);
-  transition: opacity 150ms ease-out, transform 150ms ease-out,
-		background-color 150ms ease;
-}
-.ep-floating-generate-btn:hover {
-  background: var(--interactive-accent-hover);
-  transform: scale(1.05);
-}
-.ep-floating-generate-btn--visible {
-  opacity: 1;
-  transform: scale(1);
-}
-.ep-floating-generate-btn svg {
-  width: 24px;
-  height: 24px;
-}
-@media (max-width: 768px) {
-  .ep-floating-generate-btn {
-    bottom: 16px;
-    right: 16px;
-    width: 40px;
-    height: 40px;
-  }
-  .ep-floating-generate-btn svg {
-    width: 20px;
-    height: 20px;
-  }
-}
 @property --tw-space-y-reverse {
   syntax: "*";
   inherits: false;
@@ -2194,3 +2144,4 @@
     }
   }
 }
+

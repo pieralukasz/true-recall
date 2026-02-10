@@ -1,45 +1,10 @@
 import { describe, it, expect } from "vitest";
 import {
-    OpenRouterResponseSchema,
     FlashcardItemSchema,
     SettingsSchema,
 } from "../../src/validation/schemas";
 
 describe("Zod Schemas", () => {
-    describe("OpenRouterResponseSchema", () => {
-        it("should parse valid response", () => {
-            const data = {
-                choices: [
-                    {
-                        message: {
-                            content: "Hello world",
-                        },
-                    },
-                ],
-            };
-
-            const result = OpenRouterResponseSchema.safeParse(data);
-
-            expect(result.success).toBe(true);
-        });
-
-        it("should reject response without choices", () => {
-            const data = {};
-
-            const result = OpenRouterResponseSchema.safeParse(data);
-
-            expect(result.success).toBe(false);
-        });
-
-        it("should reject response with empty choices", () => {
-            const data = { choices: [] };
-
-            const result = OpenRouterResponseSchema.safeParse(data);
-
-            expect(result.success).toBe(false);
-        });
-    });
-
     describe("FlashcardItemSchema", () => {
         it("should parse valid flashcard", () => {
             const data = {

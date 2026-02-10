@@ -12,7 +12,6 @@ import {
 import { normalizePath } from "obsidian";
 import {
 	FlashcardManager,
-	OpenRouterService,
 	FSRSService,
 	StatsService,
 	SessionPersistenceService,
@@ -49,7 +48,6 @@ import { ProjectsView } from "./ui/projects";
 import { SimulatorView } from "./ui/simulator";
 import { OrphanedCardsView } from "./ui/orphaned-cards";
 import { NoteHubView } from "./ui/note-hub";
-import { FloatingGenerateButton } from "./ui/components/FloatingGenerateButton";
 import {
 	TrueRecallSettingTab,
 	type TrueRecallSettings,
@@ -79,7 +77,6 @@ import {
 export default class TrueRecallPlugin extends Plugin {
 	settings!: TrueRecallSettings;
 	flashcardManager!: FlashcardManager;
-	openRouterService!: OpenRouterService;
 	fsrsService!: FSRSService;
 	statsService!: StatsService;
 	sessionPersistence!: SessionPersistenceService;
@@ -93,7 +90,6 @@ export default class TrueRecallPlugin extends Plugin {
 	deviceDiscovery: DeviceDiscoveryService | null = null;
 	authService: AuthService | null = null;
 	syncService: SyncService | null = null;
-	floatingButton: FloatingGenerateButton | null = null;
 	deletionHandler: DeletionHandlerService | null = null;
 	orphanedCardsService: OrphanedCardsService | null = null;
 	undoService: UndoService | null = null;
@@ -132,10 +128,6 @@ export default class TrueRecallPlugin extends Plugin {
 		});
 
 		this.flashcardManager = new FlashcardManager(this.app, this.settings, this.frontmatterIndex);
-		this.openRouterService = new OpenRouterService(
-			this.settings.openRouterApiKey,
-			this.settings.aiModel
-		);
 
 		const fsrsSettings = extractFSRSSettings(this.settings);
 		this.fsrsService = new FSRSService(fsrsSettings);
@@ -214,9 +206,6 @@ export default class TrueRecallPlugin extends Plugin {
 				notify().error("Failed to open note hub", error);
 			});
 		});
-
-		this.floatingButton = new FloatingGenerateButton(this);
-		this.floatingButton.initialize();
 
 		registerCommands(this);
 		this.addSettingTab(new TrueRecallSettingTab(this.app, this));
@@ -342,7 +331,6 @@ ${cardList}${moreText}
 	}
 
 	onunload(): void {
-		this.floatingButton?.destroy();
 		this.undoService?.clear();
 		this.backgroundBackupManager?.stop();
 		this.projectDataService?.dispose();
@@ -375,12 +363,6 @@ ${cardList}${moreText}
 
 		if (this.flashcardManager) {
 			this.flashcardManager.updateSettings(this.settings);
-		}
-		if (this.openRouterService) {
-			this.openRouterService.updateCredentials(
-				this.settings.openRouterApiKey,
-				this.settings.aiModel
-			);
 		}
 		if (this.fsrsService) {
 			const fsrsSettings = extractFSRSSettings(this.settings);

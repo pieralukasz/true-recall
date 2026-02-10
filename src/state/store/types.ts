@@ -10,7 +10,6 @@ import type {
 	ReviewResult,
 	ReviewSessionStats,
 	FlashcardInfo,
-	NoteFlashcardType,
 	ProjectInfo,
 	ProjectNoteInfo,
 	SchedulingPreview,
@@ -122,7 +121,7 @@ export interface ReviewSliceActions {
 	isAnswerShown: () => boolean;
 }
 
-export type ProcessingStatus = "none" | "exists" | "processing";
+export type ProcessingStatus = "none" | "exists";
 export type ViewMode = "list";
 export type SelectionMode = "normal" | "selecting";
 
@@ -131,13 +130,9 @@ export interface PanelSliceState {
 	viewMode: ViewMode;
 	currentFile: TFile | null;
 	flashcardInfo: FlashcardInfo | null;
-	userInstructions: string;
 	isFlashcardFile: boolean;
-	noteFlashcardType: NoteFlashcardType;
 	error: AppError | null;
 	renderVersion: number;
-	selectedText: string;
-	hasSelection: boolean;
 	sourceNoteName: string | null;
 	uncollectedCount: number;
 	selectionMode: SelectionMode;
@@ -158,14 +153,8 @@ export interface PanelSliceActions {
 	setStatus: (status: ProcessingStatus) => void;
 	setViewMode: (mode: ViewMode) => void;
 	setFlashcardInfo: (info: FlashcardInfo | null) => void;
-	setUserInstructions: (instructions: string) => void;
 	setError: (error: AppError | null) => void;
-	startProcessing: () => void;
-	finishProcessing: (hasFlashcards?: boolean) => void;
 	isCurrentFile: (file: TFile | null) => boolean;
-	isProcessing: () => boolean;
-	setSelectedText: (text: string) => void;
-	clearSelection: () => void;
 	setUncollectedInfo: (count: number) => void;
 	hasUncollectedFlashcards: () => boolean;
 	enterSelectionMode: (initialCardId?: string) => void;

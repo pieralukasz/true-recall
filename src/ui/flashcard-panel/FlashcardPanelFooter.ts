@@ -2,20 +2,16 @@ import type { TFile } from "obsidian";
 import { BaseComponent } from "../component.base";
 import { createActionButton } from "../components";
 import type { ProcessingStatus } from "../../state/store";
-import type { NoteFlashcardType } from "../../types";
 
 export interface FlashcardPanelFooterProps {
 	currentFile: TFile | null;
 	status: ProcessingStatus;
 	isFlashcardFile: boolean;
-	/** Note type for determining button label (Seed vs Generate) */
-	noteFlashcardType?: NoteFlashcardType;
 	// Selection info for bulk move button
 	selectedCount?: number;
 	// Collect flashcards from markdown
 	hasUncollectedFlashcards?: boolean;
 	uncollectedCount?: number;
-	onGenerate?: () => void;
 	onMoveSelected?: () => void;
 	onDeleteSelected?: () => void;
 	onAddFlashcard?: () => void;
@@ -53,12 +49,10 @@ export class FlashcardPanelFooter extends BaseComponent {
 
 	private renderNormalFooter(): void {
 		const {
-			status,
 			isFlashcardFile,
 			selectedCount,
 			hasUncollectedFlashcards,
 			uncollectedCount,
-			onGenerate,
 			onMoveSelected,
 			onDeleteSelected,
 			onAddFlashcard,
@@ -109,19 +103,7 @@ export class FlashcardPanelFooter extends BaseComponent {
 			this.events.addEventListener(collectBtn, "click", onCollect);
 		}
 
-		// Main action button (Generate only when no flashcards exist)
-		if (status !== "exists") {
-			const isProcessing = status === "processing";
-			createActionButton(buttonsWrapper, {
-				label: isProcessing ? "Processing..." : "Generate",
-				variant: "primary",
-				fullWidth: true,
-				disabled: isProcessing,
-				onClick: isProcessing ? undefined : onGenerate,
-			});
-		}
-
-		// Add flashcard button - second in row
+		// Add flashcard button
 		if (onAddFlashcard) {
 			createActionButton(buttonsWrapper, {
 				label: "+ Add",

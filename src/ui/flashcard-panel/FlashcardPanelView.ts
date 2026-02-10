@@ -6,7 +6,7 @@ import {
     Menu,
 } from "obsidian";
 import { VIEW_TYPE_FLASHCARD_PANEL } from "../../constants";
-import { FlashcardManager, OpenRouterService, getEventBus, notify } from "../../services";
+import { FlashcardManager, getEventBus, notify } from "../../services";
 import { CollectService } from "../../services/flashcard/collect.service";
 import { Panel } from "../components/Panel";
 import { FlashcardPanelContent } from "./FlashcardPanelContent";
@@ -25,7 +25,6 @@ import type { PanelApi } from "../../state/store";
 export class FlashcardPanelView extends ItemView {
     private plugin: TrueRecallPlugin;
     private flashcardManager: FlashcardManager;
-    private openRouterService: OpenRouterService;
     private collectService: CollectService;
 
     // UI Components
@@ -60,9 +59,6 @@ export class FlashcardPanelView extends ItemView {
     // Event subscriptions for cross-component reactivity
     private eventUnsubscribers: (() => void)[] = [];
 
-    // Selection timer for debouncing
-    private selectionTimer: ReturnType<typeof setTimeout> | null = null;
-
     // Editor change timer for real-time #flashcard tag detection
     private editorChangeTimer: ReturnType<typeof setTimeout> | null = null;
 
@@ -85,7 +81,6 @@ export class FlashcardPanelView extends ItemView {
         super(leaf);
         this.plugin = plugin;
         this.flashcardManager = plugin.flashcardManager;
-        this.openRouterService = plugin.openRouterService;
         this.collectService = new CollectService();
     }
 
@@ -130,14 +125,6 @@ export class FlashcardPanelView extends ItemView {
         });
 
         const hasFlashcards = state.status === "exists";
-
-        if (!hasFlashcards) {
-            menu.addItem((item) => {
-                item.setTitle("Generate flashcards")
-                    .setIcon("sparkles")
-                    .onClick(() => void this.handleGenerate());
-            });
-        }
 
         if (hasFlashcards) {
             menu.addSeparator();
@@ -202,8 +189,6 @@ export class FlashcardPanelView extends ItemView {
 
         this.subscribeToStats();
 
-        this.registerSelectionTracking();
-
         this.registerEditorChangeTracking();
 
         if (Platform.isMobile) {
@@ -260,11 +245,6 @@ export class FlashcardPanelView extends ItemView {
 
         this.eventUnsubscribers.forEach((unsub) => unsub());
         this.eventUnsubscribers = [];
-
-        if (this.selectionTimer) {
-            clearTimeout(this.selectionTimer);
-            this.selectionTimer = null;
-        }
 
         if (this.editorChangeTimer) {
             clearTimeout(this.editorChangeTimer);
@@ -408,8 +388,8 @@ export class FlashcardPanelView extends ItemView {
     async handleFileChange(file: TFile | null): Promise<void> {
         const state = this.panel;
 
-        // Don't reset if same file or processing
-        if (state.currentFile?.path === file?.path || state.status === "processing") {
+        // Don't reset if same file
+        if (state.currentFile?.path === file?.path) {
             return;
         }
 
@@ -454,15 +434,11 @@ export class FlashcardPanelView extends ItemView {
         const renderVersion = this.panel.incrementRenderVersion();
 
         try {
-            // Load flashcard info, note type, and file content in parallel
-            const [info, noteType, content] = await Promise.all([
+            // Load flashcard info and file content in parallel
+            const [info, content] = await Promise.all([
                 state.isFlashcardFile
                     ? this.flashcardManager.getFlashcardInfoDirect(file)
                     : this.flashcardManager.getFlashcardInfo(file),
-                // Only get note type for source notes, not flashcard files
-                state.isFlashcardFile
-                    ? Promise.resolve("unknown" as const)
-                    : this.flashcardManager.getNoteFlashcardType(file),
                 // Read file content for uncollected flashcard detection
                 this.app.vault.read(file),
             ]);
@@ -483,7 +459,6 @@ export class FlashcardPanelView extends ItemView {
             this.panel.setState({
                 flashcardInfo: info,
                 status: info?.exists ? "exists" : "none",
-                noteFlashcardType: noteType,
                 sourceNoteName,
                 uncollectedCount,
             });
@@ -523,7 +498,6 @@ export class FlashcardPanelView extends ItemView {
                     reviewedToday,
                     dayStartHour,
                     onAdd: () => void this.handleAddFlashcard(),
-                    onGenerate: () => void this.handleGenerate(),
                     onCollect: () => void this.handleCollect(),
                     onRefresh: () => void this.loadFlashcardInfo(),
                     onReview: () => void this.handleReviewFromPanel(),
@@ -575,7 +549,6 @@ export class FlashcardPanelView extends ItemView {
                 status: state.status,
                 flashcardInfo: state.flashcardInfo,
                 isFlashcardFile: state.isFlashcardFile,
-                noteFlashcardType: state.noteFlashcardType,
                 selectionMode: state.selectionMode,
                 selectedCardIds: state.selectedCardIds,
                 expandedCardIds: state.expandedCardIds,
@@ -706,94 +679,6 @@ export class FlashcardPanelView extends ItemView {
 
     private invalidateCardsCache(): void {
         this.cachedCardsWithFsrs = null;
-    }
-
-    private async handleGenerate(): Promise<void> {
-        const state = this.panel;
-        if (!state.currentFile) return;
-
-        // Check if store is ready
-        if (!this.flashcardManager.hasStore()) {
-            notify().error("Flashcard store not ready. Please restart Obsidian.");
-            return;
-        }
-
-        if (!this.plugin.settings.openRouterApiKey) {
-            notify().aiNotConfigured();
-            return;
-        }
-
-        // Note: Selection-based generation moved to floating button
-        this.panel.startProcessing();
-
-        try {
-            const content = await this.app.vault.read(state.currentFile);
-            const flashcards = await this.openRouterService.generateFlashcards(
-                content,
-                undefined,
-                this.plugin.settings.customGeneratePrompt || undefined
-            );
-
-            if (flashcards.trim() === "NO_NEW_CARDS") {
-                notify().info("No flashcard-worthy content found in this note.");
-                this.panel.finishProcessing(false);
-                return;
-            }
-
-            // Parse flashcards and generate IDs
-            const { FlashcardParserService } = await import("../../services/flashcard/flashcard-parser.service");
-            const parser = new FlashcardParserService();
-            const parsedFlashcards = parser.extractFlashcards(flashcards);
-
-            // Generate IDs for each card
-            const flashcardsWithIds = parsedFlashcards.map((f) => ({
-                id: f.id || crypto.randomUUID(),
-                question: f.question,
-                answer: f.answer,
-            }));
-
-            // Save directly to SQL (no MD file created)
-            const saveResult = await this.flashcardManager.saveFlashcardsToSql(
-                state.currentFile,
-                flashcardsWithIds
-            );
-
-            // Handle partial success
-            if (saveResult.duplicates.length > 0) {
-                if (saveResult.created.length === 0) {
-                    notify().allCardsDuplicates(saveResult.duplicates.length);
-                } else {
-                    notify().cardsCreatedWithDuplicates(
-                        saveResult.created.length,
-                        saveResult.duplicates.length,
-                        state.currentFile.basename
-                    );
-                }
-
-                // Re-open add modal with duplicates for editing
-                this.panel.finishProcessing(false);
-                await this.loadFlashcardInfo();
-                const duplicateFlashcards = saveResult.duplicates.map((d) => ({
-                    question: d.flashcard.question,
-                    answer: d.flashcard.answer,
-                }));
-                await this.handleAddFlashcard(duplicateFlashcards);
-                return;
-            }
-
-            notify().success(`Generated flashcards for ${state.currentFile.basename}`);
-            this.panel.finishProcessing(false);
-        } catch (error) {
-            notify().operationFailed("generate flashcards", error);
-            this.panel.finishProcessing(false);
-        }
-
-        // Load flashcard info outside main try-catch to avoid double error handling
-        try {
-            await this.loadFlashcardInfo();
-        } catch (error) {
-            console.error("Failed to load flashcard info after generation:", error);
-        }
     }
 
     private async handleOpenFlashcardFile(): Promise<void> {
@@ -1117,8 +1002,6 @@ export class FlashcardPanelView extends ItemView {
         const modal = new SimpleFlashcardEditorModal(this.app, {
             mode: "add",
             currentFilePath: state.currentFile.path,
-            openRouterService: this.openRouterService,
-            settings: this.plugin.settings,
             prefillContent: prefillFlashcards ? flashcardsToMarkdown(prefillFlashcards) : undefined,
         });
 
@@ -1253,63 +1136,6 @@ export class FlashcardPanelView extends ItemView {
         } catch (error) {
             notify().operationFailed("collect flashcards", error);
         }
-    }
-
-    private registerSelectionTracking(): void {
-        // Function to update selection state
-        const updateSelection = () => {
-            const state = this.panel;
-
-            // Skip if no current file
-            if (!state.currentFile) {
-                // Only clear if there was a selection before
-                if (state.hasSelection) {
-                    this.panel.clearSelection();
-                }
-                return;
-            }
-
-            // Debounce selection updates to avoid excessive updates
-            if (this.selectionTimer) {
-                clearTimeout(this.selectionTimer);
-            }
-
-            this.selectionTimer = setTimeout(() => {
-                const selection = this.getCurrentSelection();
-                if (selection) {
-                    this.panel.setSelectedText(selection);
-                } else if (state.hasSelection) {
-                    // Only clear if there was a selection before
-                    this.panel.clearSelection();
-                }
-            }, 300);
-        };
-
-        // Register handler for active leaf changes using registerEvent for proper cleanup
-        this.registerEvent(
-            this.app.workspace.on("active-leaf-change", updateSelection)
-        );
-
-        // Also listen to mouseup/keyup events on the document to detect text selection
-        this.registerDomEvent(document, "mouseup", updateSelection);
-        this.registerDomEvent(document, "keyup", updateSelection);
-    }
-
-    private getCurrentSelection(): string | null {
-        const activeFile = this.app.workspace.getActiveFile();
-        if (!activeFile) return null;
-
-        const state = this.panel;
-        if (!state.currentFile || activeFile.path !== state.currentFile.path) {
-            return null;
-        }
-
-        // Get selection from window
-        const selection = window.getSelection();
-        if (!selection || selection.rangeCount === 0) return null;
-
-        const selectedText = selection.toString().trim();
-        return selectedText.length > 0 ? selectedText : null;
     }
 
     private registerEditorChangeTracking(): void {

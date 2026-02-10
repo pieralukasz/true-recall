@@ -5,11 +5,10 @@
  */
 import { App, Component, MarkdownRenderer } from "obsidian";
 import { BaseModal } from "./BaseModal";
-import { FlashcardParserService, notify, type OpenRouterService } from "../../services";
+import { FlashcardParserService, notify } from "../../services";
 import { ImageService } from "../../services/image";
-import type { FlashcardItem, TrueRecallSettings } from "../../types";
-import { BATCH_IMPORT_PARSE_PROMPT, FLASHCARD_CONFIG } from "../../constants";
-import { FlashcardReviewModal } from "./FlashcardReviewModal";
+import type { FlashcardItem } from "../../types";
+import { FLASHCARD_CONFIG } from "../../constants";
 import { SECONDARY_BUTTON_CLASSES } from "../utils/tailwind";
 
 export interface SimpleFlashcardEditorResult {
@@ -27,10 +26,6 @@ export interface SimpleFlashcardEditorOptions {
 	editCardId?: string;
 	/** Current file path for context */
 	currentFilePath: string;
-	/** Optional: OpenRouter service for AI formatting */
-	openRouterService?: OpenRouterService;
-	/** Optional: Settings for AI formatting */
-	settings?: TrueRecallSettings;
 }
 
 /**
@@ -46,7 +41,6 @@ export class SimpleFlashcardEditorModal extends BaseModal {
 
 	private textarea: HTMLTextAreaElement | null = null;
 	private saveButton: HTMLButtonElement | null = null;
-	private saveWithAIButton: HTMLButtonElement | null = null;
 	private parser: FlashcardParserService;
 
 	// Preview mode state
@@ -54,9 +48,6 @@ export class SimpleFlashcardEditorModal extends BaseModal {
 	private contentContainer: HTMLElement | null = null;
 	private currentContent = "";
 	private previewComponent: Component | null = null;
-
-	// AI processing state
-	private isProcessingAI = false;
 
 	// Image service for pasting images
 	private imageService: ImageService | null = null;
@@ -443,7 +434,7 @@ export class SimpleFlashcardEditorModal extends BaseModal {
 		toggle.addEventListener("change", () => this.togglePreviewMode());
 		toggleLabel.createSpan({ text: "Preview" });
 
-		// Right side: Cancel + Save with AI + Save buttons
+		// Right side: Cancel + Save buttons
 		const rightEl = buttonsEl.createDiv({
 			cls: "ep:flex ep:gap-3",
 		});
@@ -453,15 +444,6 @@ export class SimpleFlashcardEditorModal extends BaseModal {
 			cls: SECONDARY_BUTTON_CLASSES,
 		});
 		cancelBtn.addEventListener("click", () => this.close());
-
-		// Save with AI button (only if openRouterService is provided)
-		if (this.options.openRouterService && this.options.settings) {
-			this.saveWithAIButton = rightEl.createEl("button", {
-				text: "Save with AI",
-				cls: SECONDARY_BUTTON_CLASSES,
-			});
-			this.saveWithAIButton.addEventListener("click", () => void this.handleSaveWithAI());
-		}
 
 		const buttonText = this.options.mode === "add" ? "Save Flashcards" : "Save Changes";
 		this.saveButton = rightEl.createEl("button", {
@@ -503,89 +485,6 @@ export class SimpleFlashcardEditorModal extends BaseModal {
 			this.resolvePromise = null;
 		}
 		this.close();
-	}
-
-	/**
-	 * Handle save with AI formatting
-	 */
-	private async handleSaveWithAI(): Promise<void> {
-		const { openRouterService, settings } = this.options;
-		if (!openRouterService || !settings) {
-			notify().error("AI service not available");
-			return;
-		}
-
-		// Get content
-		const content = this.isPreviewMode
-			? this.currentContent.trim()
-			: (this.textarea?.value ?? "").trim();
-
-		if (!content) {
-			notify().warning("Please enter some content to format");
-			return;
-		}
-
-		// Prevent double-click
-		if (this.isProcessingAI) return;
-		this.isProcessingAI = true;
-
-		// Update button state
-		if (this.saveWithAIButton) {
-			this.saveWithAIButton.disabled = true;
-			this.saveWithAIButton.textContent = "Processing...";
-		}
-
-		try {
-			// Send to AI for formatting
-			const response = await openRouterService.generateFlashcards(
-				content,
-				undefined,
-				BATCH_IMPORT_PARSE_PROMPT
-			);
-
-			// Parse AI response
-			const flashcards = this.parser.extractFlashcards(response);
-
-			if (flashcards.length === 0) {
-				notify().warning("AI could not extract any flashcards from the content");
-				return;
-			}
-
-			// Open review modal
-			const reviewModal = new FlashcardReviewModal(this.app, {
-				initialFlashcards: flashcards,
-				sourceNoteName: this.options.currentFilePath,
-				openRouterService,
-				settings,
-			});
-
-			const reviewResult = await reviewModal.openAndWait();
-
-			if (reviewResult.cancelled || !reviewResult.flashcards) {
-				// User cancelled review - stay in editor
-				return;
-			}
-
-			// User approved - return flashcards
-			this.hasSubmitted = true;
-			if (this.resolvePromise) {
-				this.resolvePromise({
-					cancelled: false,
-					flashcards: reviewResult.flashcards,
-					editedCardId: this.options.editCardId,
-				});
-				this.resolvePromise = null;
-			}
-			this.close();
-		} catch (error) {
-			notify().error(`AI formatting failed: ${error instanceof Error ? error.message : "Unknown error"}`);
-		} finally {
-			this.isProcessingAI = false;
-			if (this.saveWithAIButton) {
-				this.saveWithAIButton.disabled = false;
-				this.saveWithAIButton.textContent = "Save with AI";
-			}
-		}
 	}
 
 	onClose(): void {
