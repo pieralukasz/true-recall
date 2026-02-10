@@ -2,18 +2,7 @@
 export type {
     FlashcardItem,
     FlashcardInfo,
-    NoteFlashcardType,
-    GeneratedNoteType,
 } from "./flashcard.types";
-
-// API types
-export type {
-    ChatMessage,
-    OpenRouterResponse,
-    OpenRouterError,
-    OpenRouterConfig,
-    APIRequestConfig,
-} from "./api.types";
 
 // Settings types
 export type {

@@ -12,10 +12,8 @@ import type { ProcessingStatus, SelectionMode } from "../../state/store";
 import type {
 	FlashcardInfo,
 	FlashcardItem,
-	NoteFlashcardType,
 } from "../../types";
 import type { FSRSFlashcardItem } from "../../types/fsrs/card.types";
-import { createLoadingSpinner } from "../components/LoadingSpinner";
 import { createEmptyState, EmptyStateMessages } from "../components/EmptyState";
 import { createCompactCardItem } from "./CompactCardItem";
 
@@ -46,8 +44,6 @@ export interface FlashcardPanelContentProps {
 	status: ProcessingStatus;
 	flashcardInfo: FlashcardInfo | null;
 	isFlashcardFile: boolean;
-	// Note flashcard type based on tags
-	noteFlashcardType?: NoteFlashcardType;
 	handlers: FlashcardPanelContentHandlers;
 	// Props for compact design
 	selectionMode: SelectionMode;
@@ -83,13 +79,7 @@ export class FlashcardPanelContent extends BaseComponent {
 			cls: "ep:flex ep:flex-col ep:flex-1 ep:overflow-y-auto",
 		});
 
-		const { status, currentFile } = this.props;
-
-		// Show loader if processing
-		if (status === "processing") {
-			this.renderProcessingState();
-			return;
-		}
+		const { currentFile } = this.props;
 
 		// No file selected
 		if (!currentFile) {
@@ -110,16 +100,6 @@ export class FlashcardPanelContent extends BaseComponent {
 		} else {
 			this.renderPreviewState();
 		}
-	}
-
-	private renderProcessingState(): void {
-		if (!this.element) return;
-
-		const spinner = createLoadingSpinner(this.element, {
-			message: "Generating flashcards...",
-			subMessage: "AI is analyzing your note",
-		});
-		this.childComponents.push(spinner);
 	}
 
 	private renderEmptyState(message: string): void {

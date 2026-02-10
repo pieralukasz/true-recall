@@ -1,5 +1,4 @@
 import { App, TFile } from "obsidian";
-import type { NoteFlashcardType } from "../../types";
 import { stripWikiLinkSyntax } from "../../utils";
 
 export class FrontmatterService {
@@ -217,56 +216,6 @@ ${projectsArray}
 		}
 
 		return false;
-	}
-
-	async getNoteFlashcardType(sourceFile: TFile): Promise<NoteFlashcardType> {
-		const content = await this.app.vault.read(sourceFile);
-		const tags = this.extractAllTags(content);
-
-		// Check for #input/* tags - permanent flashcards (Literature Notes)
-		if (tags.some((t) => t.startsWith("input/") || t.startsWith("#input/"))) {
-			return "permanent";
-		}
-
-		// Check for #mind/* tags
-		const mindTags = tags.filter(
-			(t) => t.startsWith("mind/") || t.startsWith("#mind/")
-		);
-
-		// Permanent flashcards: zettel
-		if (
-			mindTags.some(
-				(t) => t.includes("/zettel")
-			)
-		) {
-			return "permanent";
-		}
-
-		// Maybe flashcards: application, protocol
-		if (
-			mindTags.some(
-				(t) => t.includes("/application") || t.includes("/protocol")
-			)
-		) {
-			return "maybe";
-		}
-
-		// No flashcards: question, hub, structure, index, person
-		if (
-			mindTags.some(
-				(t) =>
-					t.includes("/question") ||
-					t.includes("/hub") ||
-					t.includes("/structure") ||
-					t.includes("/index") ||
-					t.includes("/person")
-			)
-		) {
-			return "none";
-		}
-
-		// Unknown - no recognized tags
-		return "unknown";
 	}
 
 	async setProjectsInFrontmatter(

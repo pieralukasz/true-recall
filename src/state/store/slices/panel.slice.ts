@@ -19,13 +19,9 @@ function createInitialState(): PanelSliceState {
 		viewMode: "list",
 		currentFile: null,
 		flashcardInfo: null,
-		userInstructions: "",
 		isFlashcardFile: false,
-		noteFlashcardType: "unknown",
 		error: null,
 		renderVersion: 0,
-		selectedText: "",
-		hasSelection: false,
 		sourceNoteName: null,
 		uncollectedCount: 0,
 		selectionMode: "normal",
@@ -81,7 +77,6 @@ export function createPanelSlice(
 					viewMode: "list",
 					flashcardInfo: null,
 					isFlashcardFile: false,
-					noteFlashcardType: "unknown",
 					error: null,
 				},
 			}));
@@ -109,12 +104,6 @@ export function createPanelSlice(
 			}));
 		},
 
-		setUserInstructions: (instructions: string) => {
-			set((s) => ({
-				panel: { ...s.panel, userInstructions: instructions },
-			}));
-		},
-
 		setError: (error: AppError | null) => {
 			set((s) => ({
 				panel: {
@@ -125,55 +114,12 @@ export function createPanelSlice(
 			}));
 		},
 
-		startProcessing: () => {
-			set((s) => ({
-				panel: {
-					...s.panel,
-					status: "processing",
-					error: null,
-				},
-			}));
-		},
-
-		finishProcessing: (hasFlashcards = false) => {
-			set((s) => ({
-				panel: {
-					...s.panel,
-					status: hasFlashcards ? "exists" : "none",
-				},
-			}));
-		},
-
 		isCurrentFile: (file: TFile | null) => {
 			const currentFile = get().panel.currentFile;
 			if (!file || !currentFile) {
 				return file === currentFile;
 			}
 			return currentFile.path === file.path;
-		},
-
-		isProcessing: () => {
-			return get().panel.status === "processing";
-		},
-
-		setSelectedText: (text: string) => {
-			set((s) => ({
-				panel: {
-					...s.panel,
-					selectedText: text,
-					hasSelection: text.length > 0,
-				},
-			}));
-		},
-
-		clearSelection: () => {
-			set((s) => ({
-				panel: {
-					...s.panel,
-					selectedText: "",
-					hasSelection: false,
-				},
-			}));
 		},
 
 		setUncollectedInfo: (count: number) => {

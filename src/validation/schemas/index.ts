@@ -2,17 +2,6 @@
  * Central export for all Zod schemas
  */
 
-// API Schemas
-export {
-    OpenRouterErrorSchema,
-    OpenRouterChoiceSchema,
-    OpenRouterResponseSchema,
-    ChatMessageSchema,
-    type OpenRouterError,
-    type OpenRouterResponse,
-    type ChatMessage,
-} from "./api.schema";
-
 // Flashcard Schemas
 export {
     FlashcardItemSchema,

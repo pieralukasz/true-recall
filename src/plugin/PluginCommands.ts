@@ -8,21 +8,6 @@ export function registerCommands(plugin: TrueRecallPlugin): void {
 	});
 
 	plugin.addCommand({
-		id: "generate-flashcards",
-		name: "Generate flashcards for current note",
-		checkCallback: (checking) => {
-			const file = plugin.app.workspace.getActiveFile();
-			if (file && file.extension === "md") {
-				if (!checking) {
-					void plugin.activateView();
-				}
-				return true;
-			}
-			return false;
-		},
-	});
-
-	plugin.addCommand({
 		id: "start-review",
 		name: "Start review session",
 		callback: () => void plugin.startReviewSession(),
