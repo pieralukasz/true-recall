@@ -9,6 +9,7 @@ import {
 	createSimulatorSlice,
 	createStatsSlice,
 	createNoteHubSlice,
+	createBrowserSlice,
 } from "./slices";
 
 export type AppStore = ReturnType<typeof createAppStore>;
@@ -23,6 +24,7 @@ export function createAppStore(deps: AppStoreDeps) {
 			simulator: createSimulatorSlice(set, get, deps),
 			stats: createStatsSlice(set, get, deps),
 			noteHub: createNoteHubSlice(set, get, deps),
+			browser: createBrowserSlice(set, get, deps),
 		}))
 	);
 }

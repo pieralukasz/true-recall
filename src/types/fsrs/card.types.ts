@@ -77,6 +77,8 @@ export interface FSRSCardData {
     sourceNotePath?: string;
     /** Projects associated with this card (resolved from frontmatter at runtime) */
     projects?: string[];
+    /** Anki deck key for export (resolved at runtime, not stored) */
+    deckKey?: string;
 
     // === Card type fields (schema v21) ===
 

@@ -5,3 +5,4 @@ export { createProjectsSlice } from "./projects.slice";
 export { createReviewSlice } from "./review.slice";
 export { createStatsSlice } from "./stats.slice";
 export { createNoteHubSlice } from "./note-hub.slice";
+export { createBrowserSlice } from "./browser.slice";

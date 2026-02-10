@@ -38,6 +38,7 @@
 		"@langchain/openai": "^1.2.2",
 		"@supabase/supabase-js": "^2.91.1",
 		"chart.js": "^4.5.1",
+		"fzstd": "^0.1.1",
 		"jszip": "^3.10.1",
 		"obsidian": "latest",
 		"sql.js": "^1.13.0",

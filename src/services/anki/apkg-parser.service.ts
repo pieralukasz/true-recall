@@ -1,5 +1,6 @@
 import type { App } from "obsidian";
 import JSZip from "jszip";
+import { decompress } from "fzstd";
 import type {
 	ApkgData,
 	AnkiNote,
@@ -10,7 +11,7 @@ import type {
 } from "types";
 import { loadDatabase, type DatabaseLike, type QueryExecResult } from "../persistence/sqlite/loader";
 
-// Anki stores models/decks JSON with numeric string keys
+// Legacy format: models/decks stored as JSON in the `col` table
 interface RawAnkiModel {
 	name: string;
 	flds: { name: string; ord: number }[];
@@ -22,8 +23,16 @@ interface RawAnkiDeck {
 	name: string;
 }
 
-// Preference order: newer format first, then legacy
-const DB_FILENAMES = ["collection.anki21b", "collection.anki21", "collection.anki2"];
+// Try anki21 (uncompressed) first, then anki21b (zstd-compressed, modern Anki).
+// anki2 is last because modern exports include a dummy anki2 stub.
+const DB_FILENAMES_UNCOMPRESSED = ["collection.anki21"];
+const DB_FILENAME_COMPRESSED = "collection.anki21b";
+const DB_FILENAME_LEGACY = "collection.anki2";
+
+interface DbFileResult {
+	file: JSZip.JSZipObject;
+	compressed: boolean;
+}
 
 export class ApkgParserService {
 	constructor(private app: App) {}
@@ -31,19 +40,26 @@ export class ApkgParserService {
 	async parseApkg(fileData: ArrayBuffer): Promise<ApkgData> {
 		const zip = await JSZip.loadAsync(fileData);
 
-		const dbFile = this.findDatabaseFile(zip);
-		if (!dbFile) {
+		const dbResult = this.findDatabaseFile(zip);
+		if (!dbResult) {
 			throw new Error("No Anki collection database found in .apkg file");
 		}
 
-		const dbData = await dbFile.async("uint8array");
+		let dbData = await dbResult.file.async("uint8array");
+
+		if (dbResult.compressed) {
+			dbData = decompress(dbData);
+		}
+
 		const { db } = await loadDatabase(this.app, dbData);
 
 		try {
 			const notes = this.readNotes(db);
 			const cards = this.readCards(db);
 			const revlog = this.readRevlog(db);
-			const { models, decks } = this.readCollection(db);
+			const { models, decks } = this.isSchemaV18(db)
+				? this.readCollectionV18(db)
+				: this.readCollectionLegacy(db);
 			const { media, mediaMap } = await this.readMedia(zip);
 
 			return { notes, cards, revlog, models, decks, media, mediaMap };
@@ -52,12 +68,32 @@ export class ApkgParserService {
 		}
 	}
 
-	private findDatabaseFile(zip: JSZip): JSZip.JSZipObject | null {
-		for (const name of DB_FILENAMES) {
+	private findDatabaseFile(zip: JSZip): DbFileResult | null {
+		// 1. Uncompressed anki21 (legacy export or "Support older versions" enabled)
+		for (const name of DB_FILENAMES_UNCOMPRESSED) {
 			const file = zip.file(name);
-			if (file) return file;
+			if (file) return { file, compressed: false };
 		}
+
+		// 2. Zstd-compressed anki21b (modern Anki 2.1.50+ default)
+		const compressed = zip.file(DB_FILENAME_COMPRESSED);
+		if (compressed) return { file: compressed, compressed: true };
+
+		// 3. Legacy anki2 (oldest format; also present as dummy in modern exports, hence last)
+		const legacy = zip.file(DB_FILENAME_LEGACY);
+		if (legacy) return { file: legacy, compressed: false };
+
 		return null;
+	}
+
+	// Schema v18 (Anki 2.1.50+) uses separate tables instead of JSON in `col`
+	private isSchemaV18(db: DatabaseLike): boolean {
+		try {
+			db.exec("SELECT id FROM notetypes LIMIT 1");
+			return true;
+		} catch {
+			return false;
+		}
 	}
 
 	private readNotes(db: DatabaseLike): AnkiNote[] {
@@ -106,7 +142,8 @@ export class ApkgParserService {
 		}));
 	}
 
-	private readCollection(db: DatabaseLike): {
+	// Legacy schema: models/decks stored as JSON columns in the `col` table
+	private readCollectionLegacy(db: DatabaseLike): {
 		models: Map<number, AnkiModel>;
 		decks: Map<number, AnkiDeck>;
 	} {
@@ -120,12 +157,77 @@ export class ApkgParserService {
 		const decksJson = row[1] as string;
 
 		return {
-			models: this.parseModels(modelsJson),
-			decks: this.parseDecks(decksJson),
+			models: this.parseModelsJson(modelsJson),
+			decks: this.parseDecksJson(decksJson),
 		};
 	}
 
-	private parseModels(json: string): Map<number, AnkiModel> {
+	// Schema v18: notetypes, fields, templates, decks as separate tables
+	private readCollectionV18(db: DatabaseLike): {
+		models: Map<number, AnkiModel>;
+		decks: Map<number, AnkiDeck>;
+	} {
+		const models = new Map<number, AnkiModel>();
+		const decks = new Map<number, AnkiDeck>();
+
+		// Read notetypes (equivalent to legacy models)
+		const ntResults = db.exec("SELECT id, name, config FROM notetypes");
+		for (const row of ntResults[0]?.values ?? []) {
+			const id = row[0] as number;
+			const name = row[1] as string;
+			const configBlob = row[2] as Uint8Array | null;
+
+			const type = this.detectNotetypeKind(configBlob);
+
+			// Read fields for this notetype
+			const fieldResults = db.exec(
+				"SELECT ord, name FROM fields WHERE ntid = ? ORDER BY ord",
+				[id]
+			);
+			const flds = (fieldResults[0]?.values ?? []).map((r) => ({
+				ord: r[0] as number,
+				name: r[1] as string,
+			}));
+
+			// Read templates for this notetype
+			const tmplResults = db.exec(
+				"SELECT ord, name FROM templates WHERE ntid = ? ORDER BY ord",
+				[id]
+			);
+			const tmpls = (tmplResults[0]?.values ?? []).map((r) => ({
+				ord: r[0] as number,
+				name: r[1] as string,
+				qfmt: "",
+				afmt: "",
+			}));
+
+			models.set(id, { id, name, flds, type, tmpls });
+		}
+
+		// Read decks
+		const deckResults = db.exec("SELECT id, name FROM decks");
+		for (const row of deckResults[0]?.values ?? []) {
+			decks.set(row[0] as number, {
+				id: row[0] as number,
+				name: row[1] as string,
+			});
+		}
+
+		return { models, decks };
+	}
+
+	// Protobuf Notetype.Config: field 1 (kind) is a varint
+	// tag byte 0x08 = field 1, wire type 0 (varint)
+	// KIND_NORMAL = 0 (default, often omitted), KIND_CLOZE = 1
+	private detectNotetypeKind(config: Uint8Array | null): number {
+		if (!config || config.length < 2) return 0;
+		if (config[0] === 0x08) {
+			return config[1]!;
+		}
+		return 0;
+	}
+
+	private parseModelsJson(json: string): Map<number, AnkiModel> {
 		const models = new Map<number, AnkiModel>();
 		let raw: Record<string, RawAnkiModel>;
 
@@ -157,7 +259,7 @@ export class ApkgParserService {
 		return models;
 	}
 
-	private parseDecks(json: string): Map<number, AnkiDeck> {
+	private parseDecksJson(json: string): Map<number, AnkiDeck> {
 		const decks = new Map<number, AnkiDeck>();
 		let raw: Record<string, RawAnkiDeck>;
 
@@ -185,7 +287,6 @@ export class ApkgParserService {
 		const media = new Map<string, ArrayBuffer>();
 		let mediaMap: Record<string, string> = {};
 
-		// The "media" file is a JSON mapping from numeric keys to original filenames
 		const mediaFile = zip.file("media");
 		if (!mediaFile) {
 			return { media, mediaMap };
@@ -199,7 +300,6 @@ export class ApkgParserService {
 			return { media, mediaMap };
 		}
 
-		// Extract each numbered media file and map it to its original filename
 		const extractionPromises: Promise<void>[] = [];
 		for (const [numericKey, originalName] of Object.entries(mediaMap)) {
 			const mediaEntry = zip.file(numericKey);
