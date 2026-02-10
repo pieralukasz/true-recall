@@ -177,9 +177,6 @@ export interface TrueRecallSettings {
     /** Auto-add source note to Obsidian Copilot context during review */
     copilotAutoContext: boolean;
 
-    /** Review card font size scale (0.5-2.0, default 1.0 = 100%) */
-    reviewFontScale: number;
-
     /** Enable automatic load balancing when scheduling */
     loadBalanceEnabled: boolean;
     /** Target daily review count for load balancing */

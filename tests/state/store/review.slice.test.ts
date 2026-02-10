@@ -830,4 +830,77 @@ describe("Review Slice", () => {
 			expect(store.getState().review.isAnswerShown()).toBe(true);
 		});
 	});
+
+	describe("Pending Learning Card Skip", () => {
+		it("should swap pending learning card at nextIndex with first actionable card", () => {
+			const reviewCard1 = createMockCardWithState(State.Review);
+			const reviewCard2 = createMockCardWithState(State.Review);
+			const reviewCard3 = createMockCardWithState(State.Review);
+
+			store.getState().review.startSession([reviewCard1, reviewCard2, reviewCard3]);
+
+			// Answer first card with requeue - relearning card goes to position 1 (nextIndex)
+			const updatedCard = {
+				...reviewCard1,
+				fsrs: { ...reviewCard1.fsrs, state: State.Relearning },
+			};
+			const relearningCard = createMockCardWithState(State.Relearning, 5); // due in 5 min
+
+			store.getState().review.recordAnswerAndNext(Rating.Again, updatedCard, {
+				card: relearningCard,
+				position: 1,
+			});
+
+			// Phase should be "active" (showing a due review card), NOT "waiting"
+			const phase = store.getState().review.getPhase();
+			expect(phase.type).toBe("active");
+		});
+
+		it("should show waiting when ALL remaining cards are pending learning", () => {
+			const reviewCard = createMockCardWithState(State.Review);
+
+			store.getState().review.startSession([reviewCard]);
+
+			// Answer and requeue as only card - no other actionable cards remain
+			const updatedCard = {
+				...reviewCard,
+				fsrs: { ...reviewCard.fsrs, state: State.Relearning },
+			};
+			const relearningCard = createMockCardWithState(State.Relearning, 5);
+
+			store.getState().review.recordAnswerAndNext(Rating.Again, updatedCard, {
+				card: relearningCard,
+				position: 1,
+			});
+
+			const phase = store.getState().review.getPhase();
+			expect(phase.type).toBe("waiting");
+		});
+
+		it("should update requeueData.position when requeued card is swapped", () => {
+			const reviewCard1 = createMockCardWithState(State.Review);
+			const reviewCard2 = createMockCardWithState(State.Review);
+
+			store.getState().review.startSession([reviewCard1, reviewCard2]);
+
+			const updatedCard = {
+				...reviewCard1,
+				fsrs: { ...reviewCard1.fsrs, state: State.Relearning },
+			};
+			const relearningCard = createMockCardWithState(State.Relearning, 5);
+
+			// Requeue at position 1 (nextIndex). After swap, the relearning card
+			// should be at position 2, and reviewCard2 at position 1.
+			const requeueData = { card: relearningCard, position: 1 };
+			store.getState().review.recordAnswerAndNext(Rating.Again, updatedCard, requeueData);
+
+			// requeueData.position should have been updated to reflect the swap
+			expect(requeueData.position).toBe(2);
+
+			// The queue should have reviewCard2 at index 1 (current) and relearning at index 2
+			const state = store.getState().review;
+			expect(state.queue[1]!.fsrs.state).toBe(State.Review);
+			expect(state.queue[2]!.fsrs.state).toBe(State.Relearning);
+		});
+	});
 });
