@@ -15,7 +15,8 @@ import { FlashcardPanelHeader } from "./FlashcardPanelHeader";
 import { SelectionFooter } from "../components";
 import { MoveCardModal } from "../modals/MoveCardModal";
 import type { FSRSFlashcardItem } from "../../types/fsrs/card.types";
-import { SimpleFlashcardEditorModal, flashcardToMarkdown, flashcardsToMarkdown } from "../modals/SimpleFlashcardEditorModal";
+import { SimpleFlashcardEditorModal } from "../modals/SimpleFlashcardEditorModal";
+import { cardToMarkdown, cardsToMarkdown } from "../../services/flashcard/flashcard-format.util";
 import type { FlashcardItem } from "../../types";
 import type { CardAddedEvent, CardRemovedEvent, CardUpdatedEvent, BulkChangeEvent, SettingsChangedEvent } from "../../types/events.types";
 import { countCardsByState } from "../shared/helpers";
@@ -567,6 +568,10 @@ export class FlashcardPanelView extends ItemView {
                     },
                     onEnterSelectionMode: (cardId) => this.panel.enterSelectionMode(cardId),
                     onAdd: () => void this.handleAddFlashcard(),
+                    onEditGroup: (cards, template) => void this.handleEditGroup(cards, template),
+                    onDeleteGroup: (cards) => void this.handleDeleteGroup(cards),
+                    onCopyGroup: (cards) => void this.handleCopyGroup(cards),
+                    onMoveGroup: (cards) => void this.handleMoveGroup(cards),
                 },
             });
             this.contentComponent.render();
@@ -691,7 +696,7 @@ export class FlashcardPanelView extends ItemView {
         const modal = new SimpleFlashcardEditorModal(this.app, {
             mode: "edit",
             currentFilePath: state.currentFile.path,
-            prefillContent: flashcardToMarkdown(card.question, card.answer),
+            prefillContent: cardToMarkdown(card),
             editCardId: card.id,
         });
 
@@ -898,6 +903,127 @@ export class FlashcardPanelView extends ItemView {
         }
     }
 
+    private async handleEditGroup(cards: FlashcardItem[], clozeTemplate?: string): Promise<void> {
+        const state = this.panel;
+        if (!state.currentFile) return;
+
+        const scrollPosition = this.contentDiv?.scrollTop ?? 0;
+
+        if (clozeTemplate) {
+            // Cloze group: edit the raw cloze template
+            const modal = new SimpleFlashcardEditorModal(this.app, {
+                mode: "edit",
+                currentFilePath: state.currentFile.path,
+                prefillContent: cardToMarkdown(cards[0]!),
+                editCardId: cards[0]?.id,
+            });
+
+            const result = await modal.openAndWait();
+            if (result.cancelled || result.flashcards.length === 0) return;
+
+            try {
+                const firstFlashcard = result.flashcards[0];
+                if (!firstFlashcard) return;
+
+                const frontmatterService = this.flashcardManager.getFrontmatterService();
+                const sourceUid = await frontmatterService.getSourceNoteUid(state.currentFile);
+                if (!sourceUid) return;
+
+                // Check if the edited content still has cloze syntax
+                const { hasClozeContent } = await import("../../services/flashcard/cloze-parser.service");
+                if (hasClozeContent(firstFlashcard.question)) {
+                    // Re-derive all siblings from the new template
+                    this.flashcardManager.updateClozeTemplate(
+                        sourceUid,
+                        clozeTemplate,
+                        firstFlashcard.question,
+                        state.currentFile.basename
+                    );
+                    notify().success("Updated cloze group");
+                } else {
+                    // Template no longer has cloze syntax - update first card as basic
+                    this.flashcardManager.updateCardContent(
+                        cards[0]!.id,
+                        firstFlashcard.question,
+                        firstFlashcard.answer
+                    );
+                    notify().cardUpdated();
+                }
+
+                await this.loadFlashcardInfo();
+                this.scheduleRaf(() => {
+                    if (this.contentDiv) this.contentDiv.scrollTop = scrollPosition;
+                });
+            } catch (error) {
+                notify().operationFailed("update cloze group", error);
+            }
+        } else {
+            // Reverse group: edit the original card (sync happens automatically via syncReversePair)
+            const originalCard = cards[0];
+            if (!originalCard) return;
+            await this.handleEditButton(originalCard);
+        }
+    }
+
+    private async handleDeleteGroup(cards: FlashcardItem[]): Promise<void> {
+        if (cards.length === 0) return;
+
+        const scrollPosition = this.contentDiv?.scrollTop ?? 0;
+
+        // Deleting any card in the group cascades to siblings (via CardRepository.delete)
+        const removed = await this.flashcardManager.removeFlashcardById(cards[0]!.id);
+        if (removed) {
+            notify().cardsDeleted(cards.length);
+            await this.loadFlashcardInfo();
+            this.scheduleRaf(() => {
+                if (this.contentDiv) this.contentDiv.scrollTop = scrollPosition;
+            });
+        } else {
+            notify().error("Failed to remove card group");
+        }
+    }
+
+    private async handleCopyGroup(cards: FlashcardItem[]): Promise<void> {
+        if (cards.length === 0) return;
+
+        // For cloze: copy the template; for reverse: copy both Q/A pairs
+        const firstCard = cards[0]!;
+        let text: string;
+        if (firstCard.clozeTemplate) {
+            text = firstCard.clozeTemplate;
+        } else {
+            text = cards.map((c) => `Q: ${c.question}\nA: ${c.answer}`).join("\n\n");
+        }
+        await navigator.clipboard.writeText(text);
+        notify().success("Copied to clipboard");
+    }
+
+    private async handleMoveGroup(cards: FlashcardItem[]): Promise<void> {
+        if (cards.length === 0) return;
+
+        const firstCard = cards[0]!;
+        const sourceNoteName = await this.getSourceNoteNameFromFile();
+
+        const modal = new MoveCardModal(this.app, {
+            cardCount: cards.length,
+            sourceNoteName,
+            cardQuestion: firstCard.question,
+            cardAnswer: firstCard.answer,
+        });
+
+        const result = await modal.openAndWait();
+        if (result.cancelled || !result.targetNotePath) return;
+
+        const targetPath = result.targetNotePath;
+        const results = await Promise.allSettled(
+            cards.map((card) => this.flashcardManager.moveCard(card.id, targetPath))
+        );
+
+        const successCount = results.filter((r) => r.status === "fulfilled").length;
+        notify().success(`Moved ${successCount} of ${cards.length} cards`);
+        await this.loadFlashcardInfo();
+    }
+
     private async handleMoveSelected(): Promise<void> {
         const state = this.panel;
         if (!state.flashcardInfo || state.selectedCardIds.size === 0) return;
@@ -985,7 +1111,7 @@ export class FlashcardPanelView extends ItemView {
         const modal = new SimpleFlashcardEditorModal(this.app, {
             mode: "add",
             currentFilePath: state.currentFile.path,
-            prefillContent: prefillFlashcards ? flashcardsToMarkdown(prefillFlashcards) : undefined,
+            prefillContent: prefillFlashcards ? cardsToMarkdown(prefillFlashcards) : undefined,
         });
 
         const result = await modal.openAndWait();
@@ -996,6 +1122,10 @@ export class FlashcardPanelView extends ItemView {
                 id: f.id || crypto.randomUUID(),
                 question: f.question,
                 answer: f.answer,
+                cardType: f.cardType,
+                clozeTemplate: f.clozeTemplate,
+                clozeIndex: f.clozeIndex,
+                reverseOfBatchId: f.reverseOfBatchId,
             }));
 
             const saveResult = await this.flashcardManager.saveFlashcardsToSql(

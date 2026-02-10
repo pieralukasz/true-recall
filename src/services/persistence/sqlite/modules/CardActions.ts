@@ -218,6 +218,17 @@ export class CardActions {
         `, [question, answer, Date.now(), cardId]);
     }
 
+    updateClozeCardContent(cardId: string, question: string, answer: string, clozeTemplate: string): void {
+        this.db.run(`
+            UPDATE cards SET
+                question = ?,
+                answer = ?,
+                cloze_template = ?,
+                updated_at = ?
+            WHERE id = ?
+        `, [question, answer, clozeTemplate, Date.now(), cardId]);
+    }
+
     getCardsBySourceUid(sourceUid: string): FSRSCardData[] {
         const rows = this.db.query<CardRow>(
             `SELECT ${CARD_SELECT_COLUMNS} FROM cards WHERE source_uid = ? AND deleted_at IS NULL ORDER BY created_at ASC, id ASC`,
@@ -551,6 +562,14 @@ export class CardActions {
             `SELECT id FROM cards WHERE source_uid = ? AND cloze_template = ? AND cloze_index = ? AND deleted_at IS NULL LIMIT 1`,
             [sourceUid, clozeTemplate, clozeIndex]
         )?.id;
+    }
+
+    getClozeSiblings(sourceUid: string, clozeTemplate: string): FSRSCardData[] {
+        const rows = this.db.query<CardRow>(
+            `SELECT ${CARD_SELECT_COLUMNS} FROM cards WHERE source_uid = ? AND cloze_template = ? AND deleted_at IS NULL ORDER BY cloze_index ASC`,
+            [sourceUid, clozeTemplate]
+        );
+        return rows.map(mapRowToCard);
     }
 
     bulkReschedule(cardIds: string[], dueDate: string): number {
