@@ -857,6 +857,66 @@ export class ReviewView extends ItemView {
 		const cardIdBeforeSave = card.id;
 
 		const newContent = textarea.value;
+
+		// Cloze template editing: when editing question of a cloze card,
+		// treat the text as a new cloze template and re-derive all siblings
+		if (
+			card.cardType === "cloze" &&
+			card.clozeTemplate &&
+			card.sourceUid &&
+			field === "question"
+		) {
+			const hasChanges = newContent !== card.clozeTemplate;
+			if (hasChanges) {
+				try {
+					const { hasClozeContent, parseClozeTemplate } = await import(
+						"../../services/flashcard/cloze-parser.service"
+					);
+					if (hasClozeContent(newContent)) {
+						this.flashcardManager.updateClozeTemplate(
+							card.sourceUid,
+							card.clozeTemplate,
+							newContent,
+							card.sourceNoteName
+						);
+
+						// Update current card in review queue with re-derived Q/A
+						const newCards = parseClozeTemplate(newContent);
+						const thisCard = newCards.find(
+							(c) => c.clozeIndex === card.clozeIndex
+						);
+						if (thisCard) {
+							this.review.updateCurrentCardContent(
+								thisCard.question,
+								thisCard.answer
+							);
+						}
+						notify().success("Updated cloze template");
+					} else {
+						// No longer cloze syntax — update as regular content
+						this.plugin.cardStore.cards.updateCardContent(
+							cardIdBeforeSave,
+							newContent,
+							card.answer
+						);
+						this.review.updateCurrentCardContent(newContent, card.answer);
+						notify().cardUpdated();
+					}
+				} catch (error) {
+					console.error("Error saving cloze template:", error);
+					notify().operationFailed("save cloze template", error);
+				}
+			}
+
+			this.review.cancelEdit();
+			this.cardContainerEl.removeClass(
+				"true-recall-review-card-container--editing"
+			);
+			this.renderCard();
+			this.renderButtons();
+			return;
+		}
+
 		const newQuestion = field === "question" ? newContent : card.question;
 		const newAnswer = field === "answer" ? newContent : card.answer;
 

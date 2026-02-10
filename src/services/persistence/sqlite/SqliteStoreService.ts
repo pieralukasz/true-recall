@@ -119,6 +119,10 @@ export class SqliteStoreService {
         return this.cards.getCardsBySourceUid(sourceUid);
     }
 
+    getClozeSiblings(sourceUid: string, clozeTemplate: string): FSRSCardData[] {
+        return this.cards.getClozeSiblings(sourceUid, clozeTemplate);
+    }
+
     hasCardContent(cardId: string): boolean {
         return this.cards.hasCardContent(cardId);
     }

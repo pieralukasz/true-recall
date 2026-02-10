@@ -120,6 +120,10 @@ export class FlashcardManager {
 				id: c.id,
 				question: c.question,
 				answer: c.answer,
+				cardType: c.cardType,
+				clozeTemplate: c.clozeTemplate,
+				clozeIndex: c.clozeIndex,
+				reverseOfBatchId: c.reverseOf,
 			})),
 			lastModified: this.getLatestCardTimestamp(cards),
 			sourceUid,
@@ -248,6 +252,18 @@ export class FlashcardManager {
 			throw new Error("Store not initialized");
 		}
 		this.cardRepository.updateContent(cardId, newQuestion, newAnswer);
+	}
+
+	updateClozeTemplate(
+		sourceUid: string,
+		oldTemplate: string,
+		newTemplate: string,
+		sourceNoteName?: string
+	): void {
+		if (!this.cardRepository) {
+			throw new Error("Store not initialized");
+		}
+		this.cardRepository.updateClozeTemplate(sourceUid, oldTemplate, newTemplate, sourceNoteName);
 	}
 
 	getFlashcardsBySourceUid(sourceUid: string): FSRSFlashcardItem[] {

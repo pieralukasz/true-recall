@@ -16,6 +16,8 @@ import type {
 import type { FSRSFlashcardItem } from "../../types/fsrs/card.types";
 import { createEmptyState, EmptyStateMessages } from "../components/EmptyState";
 import { createCompactCardItem } from "./CompactCardItem";
+import { createCardGroupItem } from "./CardGroupItem";
+import { groupCards } from "./group-cards";
 
 export interface FlashcardPanelContentHandlers {
 	app: App;
@@ -37,6 +39,11 @@ export interface FlashcardPanelContentHandlers {
 	onEnterSelectionMode?: (cardId: string) => void;
 	// Add flashcard handler (opens modal)
 	onAdd?: () => void;
+	// Group handlers (cloze/reverse)
+	onEditGroup?: (cards: FlashcardItem[], clozeTemplate?: string) => void;
+	onDeleteGroup?: (cards: FlashcardItem[]) => void;
+	onCopyGroup?: (cards: FlashcardItem[]) => void;
+	onMoveGroup?: (cards: FlashcardItem[]) => void;
 }
 
 export interface FlashcardPanelContentProps {
@@ -139,50 +146,120 @@ export class FlashcardPanelContent extends BaseComponent {
 			cls: "ep:flex ep:flex-col",
 		});
 
-		// Filter flashcards based on search query
-		const filteredFlashcards = searchQuery
-			? flashcardInfo.flashcards.filter(
-					(card) =>
-						card.question.toLowerCase().includes(searchQuery) ||
-						card.answer.toLowerCase().includes(searchQuery)
-			  )
-			: flashcardInfo.flashcards;
-
 		// Pre-build Map for O(1) FSRS lookups (instead of O(N*M) .find() calls)
 		const fsrsMap = cardsWithFsrs
 			? new Map(cardsWithFsrs.map((c) => [c.id, c]))
 			: null;
 
-		// Flashcard list (compact)
-		if (filteredFlashcards.length > 0) {
-			for (const card of filteredFlashcards) {
+		const filePath = this.props.currentFile?.path || "";
+
+		// Group cards into cloze-groups, reverse-groups, and basic items
+		const grouped = groupCards(flashcardInfo.flashcards);
+
+		// Filter grouped items based on search query
+		const filteredItems = searchQuery
+			? grouped.filter((item) => {
+					if (item.type === "basic") {
+						return (
+							item.card.question.toLowerCase().includes(searchQuery) ||
+							item.card.answer.toLowerCase().includes(searchQuery)
+						);
+					}
+					if (item.type === "cloze-group") {
+						return item.cards.some(
+							(c) =>
+								c.question.toLowerCase().includes(searchQuery) ||
+								c.answer.toLowerCase().includes(searchQuery)
+						);
+					}
+					// reverse-group
+					return (
+						item.original.question.toLowerCase().includes(searchQuery) ||
+						item.original.answer.toLowerCase().includes(searchQuery) ||
+						item.reversed.question.toLowerCase().includes(searchQuery) ||
+						item.reversed.answer.toLowerCase().includes(searchQuery)
+					);
+				})
+			: grouped;
+
+		for (const item of filteredItems) {
+			if (item.type === "basic") {
 				const cardWrapper = previewEl.createDiv();
-
-				// O(1) FSRS lookup via Map
-				const fsrsCard = fsrsMap?.get(card.id);
-
+				const fsrsCard = fsrsMap?.get(item.card.id);
 				const compactCard = createCompactCardItem(cardWrapper, {
-					card,
+					card: item.card,
 					fsrsCard,
-					filePath: this.props.currentFile?.path || "",
+					filePath,
 					app: handlers.app,
 					component: handlers.component,
-					isExpanded: expandedCardIds.has(card.id),
-					isSelected: selectedCardIds.has(card.id),
+					isExpanded: expandedCardIds.has(item.card.id),
+					isSelected: selectedCardIds.has(item.card.id),
 					isSelectionMode: selectionMode === "selecting",
-					onToggleExpand: () => handlers.onToggleExpand?.(card.id),
-					onToggleSelect: () => handlers.onToggleSelect?.(card.id),
-					onEdit: () => handlers.onEditButton?.(card),
-					onDelete: () => handlers.onDeleteCard?.(card),
-					onCopy: () => handlers.onCopyCard?.(card),
-					onMove: () => handlers.onMoveCard?.(card),
-					onSelect: () => handlers.onEnterSelectionMode?.(card.id),
-					onLongPress: () => handlers.onEnterSelectionMode?.(card.id),
+					onToggleExpand: () => handlers.onToggleExpand?.(item.card.id),
+					onToggleSelect: () => handlers.onToggleSelect?.(item.card.id),
+					onEdit: () => handlers.onEditButton?.(item.card),
+					onDelete: () => handlers.onDeleteCard?.(item.card),
+					onCopy: () => handlers.onCopyCard?.(item.card),
+					onMove: () => handlers.onMoveCard?.(item.card),
+					onSelect: () => handlers.onEnterSelectionMode?.(item.card.id),
+					onLongPress: () => handlers.onEnterSelectionMode?.(item.card.id),
 				});
 				this.childComponents.push(compactCard);
+			} else if (item.type === "cloze-group") {
+				const groupWrapper = previewEl.createDiv();
+				const groupId = `cloze:${item.cards[0]?.id}`;
+				const groupItem = createCardGroupItem(groupWrapper, {
+					groupType: "cloze",
+					cards: item.cards,
+					fsrsCards: item.cards.map((c) => fsrsMap?.get(c.id)),
+					template: item.template,
+					filePath,
+					app: handlers.app,
+					component: handlers.component,
+					isExpanded: expandedCardIds.has(groupId),
+					isSelected: item.cards.some((c) => selectedCardIds.has(c.id)),
+					isSelectionMode: selectionMode === "selecting",
+					onToggleExpand: () => handlers.onToggleExpand?.(groupId),
+					onToggleSelect: () => {
+						for (const c of item.cards) handlers.onToggleSelect?.(c.id);
+					},
+					onEditGroup: () => handlers.onEditGroup?.(item.cards, item.template),
+					onDeleteGroup: () => handlers.onDeleteGroup?.(item.cards),
+					onCopyGroup: () => handlers.onCopyGroup?.(item.cards),
+					onMoveGroup: () => handlers.onMoveGroup?.(item.cards),
+					onSelect: () => handlers.onEnterSelectionMode?.(item.cards[0]?.id ?? ""),
+					onLongPress: () => handlers.onEnterSelectionMode?.(item.cards[0]?.id ?? ""),
+				});
+				this.childComponents.push(groupItem);
+			} else {
+				// reverse-group
+				const groupWrapper = previewEl.createDiv();
+				const groupId = `reverse:${item.original.id}`;
+				const cards = [item.original, item.reversed];
+				const groupItem = createCardGroupItem(groupWrapper, {
+					groupType: "reverse",
+					cards,
+					fsrsCards: cards.map((c) => fsrsMap?.get(c.id)),
+					filePath,
+					app: handlers.app,
+					component: handlers.component,
+					isExpanded: expandedCardIds.has(groupId),
+					isSelected: cards.some((c) => selectedCardIds.has(c.id)),
+					isSelectionMode: selectionMode === "selecting",
+					onToggleExpand: () => handlers.onToggleExpand?.(groupId),
+					onToggleSelect: () => {
+						for (const c of cards) handlers.onToggleSelect?.(c.id);
+					},
+					onEditGroup: () => handlers.onEditGroup?.(cards),
+					onDeleteGroup: () => handlers.onDeleteGroup?.(cards),
+					onCopyGroup: () => handlers.onCopyGroup?.(cards),
+					onMoveGroup: () => handlers.onMoveGroup?.(cards),
+					onSelect: () => handlers.onEnterSelectionMode?.(item.original.id),
+					onLongPress: () => handlers.onEnterSelectionMode?.(item.original.id),
+				});
+				this.childComponents.push(groupItem);
 			}
 		}
-
 	}
 
 	private cleanupChildren(): void {

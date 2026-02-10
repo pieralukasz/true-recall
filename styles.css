@@ -40,6 +40,7 @@
     --ep-default-transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
     --ep-default-font-family: var(--ep-font-sans);
     --ep-default-mono-font-family: var(--ep-font-mono);
+    --ep-color-obs-base-25: var(--color-base-25);
     --ep-color-obs-base-40: var(--color-base-40);
     --ep-color-obs-normal: var(--text-normal);
     --ep-color-obs-muted: var(--text-muted);
@@ -720,6 +721,9 @@
     @supports (color: color-mix(in lab, red, red)) {
       background-color: color-mix(in oklab, var(--ep-color-obs-accent) 15%, transparent);
     }
+  }
+  .ep\:bg-obs-base-25 {
+    background-color: var(--ep-color-obs-base-25);
   }
   .ep\:bg-obs-base-40 {
     background-color: var(--ep-color-obs-base-40);

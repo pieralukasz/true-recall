@@ -60,8 +60,8 @@ export {
 } from "./OrphanedCardsActionModal";
 export {
     SimpleFlashcardEditorModal,
-    flashcardToMarkdown,
-    flashcardsToMarkdown,
+    cardToMarkdown,
+    cardsToMarkdown,
     type SimpleFlashcardEditorResult,
     type SimpleFlashcardEditorOptions,
 } from "./SimpleFlashcardEditorModal";
