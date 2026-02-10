@@ -5,7 +5,7 @@
  * Uses SQL column aliases to map directly to FSRSCardData interface
  * Centralized column definitions and row mapping to avoid duplication
  */
-import type { FSRSCardData } from "types";
+import type { FSRSCardData, CardType } from "types";
 import { SqliteDatabase } from "../SqliteDatabase";
 
 const CARD_SELECT_COLUMNS = `
@@ -18,7 +18,11 @@ const CARD_SELECT_COLUMNS = `
     created_at as createdAt,
     question,
     answer,
-    source_uid as sourceUid
+    source_uid as sourceUid,
+    card_type as cardType,
+    cloze_template as clozeTemplate,
+    cloze_index as clozeIndex,
+    reverse_of as reverseOf
 `;
 
 const CARD_SELECT_COLUMNS_FOR_SYNC = `
@@ -33,7 +37,11 @@ const CARD_SELECT_COLUMNS_FOR_SYNC = `
     deleted_at as deletedAt,
     question,
     answer,
-    source_uid as sourceUid
+    source_uid as sourceUid,
+    card_type as cardType,
+    cloze_template as clozeTemplate,
+    cloze_index as clozeIndex,
+    reverse_of as reverseOf
 `;
 
 interface CardRow {
@@ -55,6 +63,10 @@ interface CardRow {
     question: string | null;
     answer: string | null;
     sourceUid: string | null;
+    cardType: string | null;
+    clozeTemplate: string | null;
+    clozeIndex: number | null;
+    reverseOf: string | null;
 }
 
 function mapRowToCard(row: CardRow): FSRSCardData {
@@ -75,6 +87,10 @@ function mapRowToCard(row: CardRow): FSRSCardData {
         question: row.question ?? undefined,
         answer: row.answer ?? undefined,
         sourceUid: row.sourceUid ?? undefined,
+        cardType: (row.cardType as CardType) ?? "basic",
+        clozeTemplate: row.clozeTemplate ?? undefined,
+        clozeIndex: row.clozeIndex ?? undefined,
+        reverseOf: row.reverseOf ?? undefined,
     };
 }
 
@@ -115,8 +131,9 @@ export class CardActions {
                 id, due, stability, difficulty, reps, lapses, state,
                 last_review, scheduled_days, learning_step, suspended,
                 buried_until, created_at, updated_at,
-                question, answer, source_uid
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                question, answer, source_uid,
+                card_type, cloze_template, cloze_index, reverse_of
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         `, [
             cardId,
             data.due,
@@ -135,6 +152,10 @@ export class CardActions {
             data.question ?? null,
             data.answer ?? null,
             data.sourceUid ?? null,
+            data.cardType ?? "basic",
+            data.clozeTemplate ?? null,
+            data.clozeIndex ?? null,
+            data.reverseOf ?? null,
         ]);
     }
 
@@ -302,8 +323,9 @@ export class CardActions {
                 id, due, stability, difficulty, reps, lapses, state,
                 last_review, scheduled_days, learning_step, suspended,
                 buried_until, created_at, updated_at, deleted_at,
-                question, answer, source_uid
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                question, answer, source_uid,
+                card_type, cloze_template, cloze_index, reverse_of
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         `, [
             data.id,
             data.due,
@@ -323,6 +345,10 @@ export class CardActions {
             data.question ?? null,
             data.answer ?? null,
             data.sourceUid ?? null,
+            data.cardType ?? "basic",
+            data.clozeTemplate ?? null,
+            data.clozeIndex ?? null,
+            data.reverseOf ?? null,
         ]);
     }
 
@@ -509,6 +535,22 @@ export class CardActions {
         );
 
         return this.db.getRowsModified();
+    }
+
+    getCardByReverseOf(originalCardId: string): FSRSCardData | undefined {
+        const row = this.db.get<CardRow>(
+            `SELECT ${CARD_SELECT_COLUMNS} FROM cards WHERE reverse_of = ? AND deleted_at IS NULL LIMIT 1`,
+            [originalCardId]
+        );
+        if (!row || !row.question) return undefined;
+        return mapRowToCard(row);
+    }
+
+    findClozeCard(sourceUid: string, clozeTemplate: string, clozeIndex: number): string | undefined {
+        return this.db.get<{ id: string }>(
+            `SELECT id FROM cards WHERE source_uid = ? AND cloze_template = ? AND cloze_index = ? AND deleted_at IS NULL LIMIT 1`,
+            [sourceUid, clozeTemplate, clozeIndex]
+        )?.id;
     }
 
     bulkReschedule(cardIds: string[], dueDate: string): number {

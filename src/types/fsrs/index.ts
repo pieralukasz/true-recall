@@ -5,6 +5,7 @@
 
 // Card types
 export type {
+    CardType,
     CardReviewLogEntry,
     FSRSCardData,
     FSRSFlashcardItem,

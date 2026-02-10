@@ -2,12 +2,18 @@ import type { FSRSCardData, FSRSFlashcardItem } from "../../types";
 import type { SqliteStoreService } from "../persistence/sqlite/SqliteStoreService";
 import type { SourceNoteService } from "./source-note.service";
 
+import type { CardType } from "../../types";
+
 interface RawFlashcardItem {
 	id: string;
 	question: string;
 	answer: string;
 	fsrs: FSRSCardData;
 	sourceUid?: string;
+	cardType?: CardType;
+	clozeTemplate?: string;
+	clozeIndex?: number;
+	reverseOf?: string;
 }
 
 export class CardQueryService {
@@ -49,6 +55,10 @@ export class CardQueryService {
 				fsrs: card,
 				projects: card.projects || [],
 				sourceUid: card.sourceUid,
+				cardType: card.cardType,
+				clozeTemplate: card.clozeTemplate,
+				clozeIndex: card.clozeIndex,
+				reverseOf: card.reverseOf,
 			}));
 	}
 
@@ -66,6 +76,10 @@ export class CardQueryService {
 				fsrs: card,
 				projects: card.projects || [],
 				sourceUid: undefined,
+				cardType: card.cardType,
+				clozeTemplate: card.clozeTemplate,
+				clozeIndex: card.clozeIndex,
+				reverseOf: card.reverseOf,
 			}));
 	}
 
@@ -92,6 +106,10 @@ export class CardQueryService {
 				answer: card.answer ?? "",
 				fsrs: card,
 				sourceUid: card.sourceUid,
+				cardType: card.cardType,
+				clozeTemplate: card.clozeTemplate,
+				clozeIndex: card.clozeIndex,
+				reverseOf: card.reverseOf,
 			}));
 	}
 }

@@ -13,9 +13,12 @@
  * - Code blocks (``` or ~~~) - empty lines inside code blocks don't end flashcards
  * - Consecutive flashcards
  * - Files ending with flashcards (no trailing newline)
+ * - Cloze deletion syntax: {{c1::text}} and {{c1::text::hint}}
+ * - Reversed cards via #flashcard-reverse tag
  */
 import { FLASHCARD_CONFIG } from "../../constants";
 import type { FlashcardItem } from "../../types";
+import { hasClozeContent, parseClozeTemplate } from "./cloze-parser.service";
 
 /**
  * Result of collecting flashcards from markdown
@@ -45,9 +48,11 @@ export class CollectService {
 	private readonly codeBlockPattern: RegExp;
 
 	constructor() {
-		// Matches any line ending with #flashcard, captures everything before
+		// Matches line ending with #flashcard-reverse or #flashcard
+		// Captures: [1] text before tag, [2] the matched tag
+		// reverseTag must come first in alternation since it's a longer prefix match
 		this.tagPattern = new RegExp(
-			`^(.*)\\s*${FLASHCARD_CONFIG.tag}\\s*$`
+			`^(.*)\\s*(${FLASHCARD_CONFIG.reverseTag}|${FLASHCARD_CONFIG.tag})\\s*$`
 		);
 		// Matches legacy ID lines (old format)
 		this.legacyIdPattern = /^ID:\s*\d+/;
@@ -76,6 +81,7 @@ export class CollectService {
 		// For collecting answer
 		let currentQuestion: string | null = null;
 		let currentAnswerLines: string[] = [];
+		let currentIsReverse = false;
 		let inFlashcard = false;
 		let inAnswerCodeBlock = false;
 
@@ -102,12 +108,13 @@ export class CollectService {
 				) {
 					// Empty line (when NOT in code block) or new flashcard - end current flashcard
 					if (currentQuestion) {
-						this.saveFlashcard(flashcards, currentQuestion, currentAnswerLines);
+						this.saveFlashcard(flashcards, currentQuestion, currentAnswerLines, currentIsReverse);
 					}
 					inFlashcard = false;
 					inAnswerCodeBlock = false;
 					currentQuestion = null;
 					currentAnswerLines = [];
+					currentIsReverse = false;
 
 					// If it's a new flashcard line, re-process it
 					if (this.tagPattern.test(line)) {
@@ -134,10 +141,11 @@ export class CollectService {
 				const tagMatch = line.match(this.tagPattern);
 
 				if (tagMatch) {
-					// Found #flashcard - finalize question and start collecting answer
+					// Found #flashcard or #flashcard-reverse
 					const beforeTag = tagMatch[1] ?? "";
+					const matchedTag = tagMatch[2] ?? "";
 
-					// Add the part before #flashcard to question lines
+					// Add the part before tag to question lines
 					potentialQuestionLines.push(beforeTag);
 					potentialQuestionOutputLines.push(beforeTag);
 
@@ -155,6 +163,7 @@ export class CollectService {
 					if (question) {
 						currentQuestion = question;
 						currentAnswerLines = [];
+						currentIsReverse = matchedTag === FLASHCARD_CONFIG.reverseTag;
 						inFlashcard = true;
 						inAnswerCodeBlock = false;
 					}
@@ -180,7 +189,7 @@ export class CollectService {
 
 		// Handle edge case: file ends with flashcard
 		if (inFlashcard && currentQuestion) {
-			this.saveFlashcard(flashcards, currentQuestion, currentAnswerLines);
+			this.saveFlashcard(flashcards, currentQuestion, currentAnswerLines, currentIsReverse);
 		}
 
 		// Flush any remaining accumulated lines as regular text
@@ -198,19 +207,55 @@ export class CollectService {
 	}
 
 	/**
-	 * Save a flashcard to the collection
+	 * Save a flashcard to the collection.
+	 * Handles cloze expansion (one template -> N cards) and reversed card generation.
 	 */
 	private saveFlashcard(
 		flashcards: FlashcardItem[],
 		question: string,
-		answerLines: string[]
+		answerLines: string[],
+		isReverse = false
 	): void {
 		if (!question) return;
+		const answer = answerLines.join("\n").trim();
+
+		// Check for cloze syntax in the question
+		if (hasClozeContent(question)) {
+			const clozeCards = parseClozeTemplate(question);
+			for (const cloze of clozeCards) {
+				// If user provided answer text, append it to each cloze card's answer
+				const fullAnswer = answer ? `${cloze.answer}\n\n${answer}` : cloze.answer;
+				flashcards.push({
+					question: cloze.question,
+					answer: fullAnswer,
+					id: crypto.randomUUID(),
+					cardType: "cloze",
+					clozeTemplate: question,
+					clozeIndex: cloze.clozeIndex,
+				});
+			}
+			// Cloze + reverse not supported in v1
+			return;
+		}
+
+		// Generate basic card
+		const basicId = crypto.randomUUID();
 		flashcards.push({
 			question,
-			answer: answerLines.join("\n").trim(),
-			id: crypto.randomUUID(),
+			answer,
+			id: basicId,
 		});
+
+		// If #flashcard-reverse, also generate a reversed card
+		if (isReverse && answer) {
+			flashcards.push({
+				question: answer,
+				answer: question,
+				id: crypto.randomUUID(),
+				cardType: "reversed",
+				reverseOfBatchId: basicId,
+			});
+		}
 	}
 
 	/**

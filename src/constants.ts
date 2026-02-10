@@ -172,6 +172,7 @@ export const UI_CONFIG = {
 export const FLASHCARD_CONFIG = {
 	sourceUidField: "flashcard_uid", // frontmatter field linking source note to cards
 	tag: "#flashcard",
+	reverseTag: "#flashcard-reverse",
 } as const;
 
 // Cards can be shown early if nothing else to study (like Anki)
