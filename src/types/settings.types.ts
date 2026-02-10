@@ -109,11 +109,6 @@ export interface TrueRecallSettings {
     learningSteps: number[];
     /** Relearning steps in minutes (e.g., [10]) */
     relearningSteps: number[];
-    /** Interval after graduating from learning in days (default 1) */
-    graduatingInterval: number;
-    /** Interval for 'Easy' in days (default 4) */
-    easyInterval: number;
-
     /** FSRS weights (null = default v6, or array of 17/19/21 numbers after optimization) */
     fsrsWeights: number[] | null;
     /** Last optimization date (ISO string or null) */
