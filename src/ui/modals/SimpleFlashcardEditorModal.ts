@@ -10,6 +10,8 @@ import { ImageService } from "../../services/image";
 import type { FlashcardItem } from "../../types";
 import { FLASHCARD_CONFIG } from "../../constants";
 import { SECONDARY_BUTTON_CLASSES } from "../utils/tailwind";
+import { stripBrTags } from "../../utils";
+import { toggleTextareaWrap, insertAtTextareaCursor } from "../components";
 
 export interface SimpleFlashcardEditorResult {
 	cancelled: boolean;
@@ -196,7 +198,7 @@ export class SimpleFlashcardEditorModal extends BaseModal {
 		// Render markdown
 		await MarkdownRenderer.render(
 			this.app,
-			this.currentContent,
+			stripBrTags(this.currentContent),
 			previewEl,
 			this.options.currentFilePath,
 			this.previewComponent
@@ -241,28 +243,28 @@ export class SimpleFlashcardEditorModal extends BaseModal {
 			// Ctrl+B - bold
 			if (isMod && e.key === "b") {
 				e.preventDefault();
-				this.wrapSelection("**", "**");
+				if (this.textarea) toggleTextareaWrap(this.textarea, "**", "**");
 				return;
 			}
 
 			// Ctrl+I - italic
 			if (isMod && e.key === "i") {
 				e.preventDefault();
-				this.wrapSelection("*", "*");
+				if (this.textarea) toggleTextareaWrap(this.textarea, "*", "*");
 				return;
 			}
 
 			// Ctrl+K - wiki-link
 			if (isMod && e.key === "k") {
 				e.preventDefault();
-				this.wrapSelection("[[", "]]");
+				if (this.textarea) toggleTextareaWrap(this.textarea, "[[", "]]");
 				return;
 			}
 
 			// Ctrl+Shift+C - code block
 			if (isMod && e.shiftKey && e.key.toLowerCase() === "c") {
 				e.preventDefault();
-				this.wrapSelection("```\n", "\n```");
+				if (this.textarea) toggleTextareaWrap(this.textarea, "```\n", "\n```");
 				return;
 			}
 
@@ -333,17 +335,7 @@ export class SimpleFlashcardEditorModal extends BaseModal {
 	 */
 	private insertTextAtCursor(text: string): void {
 		if (!this.textarea) return;
-
-		const start = this.textarea.selectionStart;
-		const end = this.textarea.selectionEnd;
-		const value = this.textarea.value;
-
-		this.textarea.value = value.slice(0, start) + text + value.slice(end);
-
-		// Move cursor after inserted text
-		const newPos = start + text.length;
-		this.textarea.selectionStart = newPos;
-		this.textarea.selectionEnd = newPos;
+		insertAtTextareaCursor(this.textarea, text);
 		this.textarea.focus();
 	}
 
@@ -378,36 +370,6 @@ export class SimpleFlashcardEditorModal extends BaseModal {
 		const newPos = lineEnd + tagText.length;
 		this.textarea.selectionStart = newPos;
 		this.textarea.selectionEnd = newPos;
-		this.textarea.focus();
-	}
-
-	/**
-	 * Wrap selected text with prefix and suffix
-	 */
-	private wrapSelection(prefix: string, suffix: string): void {
-		if (!this.textarea) return;
-
-		const start = this.textarea.selectionStart;
-		const end = this.textarea.selectionEnd;
-		const text = this.textarea.value;
-		const selectedText = text.slice(start, end);
-
-		// If no selection, just insert markers and place cursor between
-		if (start === end) {
-			const newText = text.slice(0, start) + prefix + suffix + text.slice(end);
-			this.textarea.value = newText;
-			const cursorPos = start + prefix.length;
-			this.textarea.selectionStart = cursorPos;
-			this.textarea.selectionEnd = cursorPos;
-		} else {
-			// Wrap selected text
-			const newText = text.slice(0, start) + prefix + selectedText + suffix + text.slice(end);
-			this.textarea.value = newText;
-			// Select the wrapped text (including markers)
-			this.textarea.selectionStart = start;
-			this.textarea.selectionEnd = end + prefix.length + suffix.length;
-		}
-
 		this.textarea.focus();
 	}
 
