@@ -7,6 +7,8 @@
       "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji";
     --ep-font-mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono",
       "Courier New", monospace;
+    --ep-color-red-500: oklch(63.7% 0.237 25.331);
+    --ep-color-green-500: oklch(72.3% 0.219 149.579);
     --ep-spacing: 0.25rem;
     --ep-container-md: 28rem;
     --ep-text-xs: 0.75rem;
@@ -317,6 +319,9 @@
   .ep\:ml-2 {
     margin-left: calc(var(--ep-spacing) * 2);
   }
+  .ep\:ml-6 {
+    margin-left: calc(var(--ep-spacing) * 6);
+  }
   .ep\:ml-auto {
     margin-left: auto;
   }
@@ -403,6 +408,12 @@
   }
   .ep\:max-h-\[60vh\] {
     max-height: 60vh;
+  }
+  .ep\:max-h-\[100px\] {
+    max-height: 100px;
+  }
+  .ep\:max-h-\[120px\] {
+    max-height: 120px;
   }
   .ep\:max-h-\[150px\] {
     max-height: 150px;
@@ -787,6 +798,9 @@
   .ep\:p-6 {
     padding: calc(var(--ep-spacing) * 6);
   }
+  .ep\:p-8 {
+    padding: calc(var(--ep-spacing) * 8);
+  }
   .ep\:px-1 {
     padding-inline: calc(var(--ep-spacing) * 1);
   }
@@ -980,6 +994,9 @@
   .ep\:whitespace-pre-wrap {
     white-space: pre-wrap;
   }
+  .ep\:text-green-500 {
+    color: var(--ep-color-green-500);
+  }
   .ep\:text-obs-accent {
     color: var(--ep-color-obs-accent);
   }
@@ -1021,6 +1038,9 @@
   }
   .ep\:text-obs-yellow {
     color: var(--ep-color-obs-yellow);
+  }
+  .ep\:text-red-500 {
+    color: var(--ep-color-red-500);
   }
   .ep\:uppercase {
     text-transform: uppercase;
