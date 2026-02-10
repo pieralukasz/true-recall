@@ -20,6 +20,10 @@ export interface RemoteCardRow {
 	question: string | null;
 	answer: string | null;
 	source_uid: string | null;
+	card_type: string;
+	cloze_template: string | null;
+	cloze_index: number | null;
+	reverse_of: string | null;
 }
 
 export interface RemoteReviewLogRow {
@@ -60,6 +64,10 @@ export function mapRemoteCardToLocal(remote: RemoteCardRow): LocalCardForSync {
 		question: remote.question ?? undefined,
 		answer: remote.answer ?? undefined,
 		sourceUid: remote.source_uid ?? undefined,
+		cardType: (remote.card_type as import("../../types").CardType) ?? "basic",
+		clozeTemplate: remote.cloze_template ?? undefined,
+		clozeIndex: remote.cloze_index ?? undefined,
+		reverseOf: remote.reverse_of ?? undefined,
 	};
 }
 
@@ -135,6 +143,10 @@ export function mapLocalCardToRemote(
 		question: local.question ?? null,
 		answer: local.answer ?? null,
 		source_uid: local.sourceUid ?? null,
+		card_type: local.cardType ?? "basic",
+		cloze_template: local.clozeTemplate ?? null,
+		cloze_index: local.clozeIndex ?? null,
+		reverse_of: local.reverseOf ?? null,
 	};
 }
 

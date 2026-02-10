@@ -1,7 +1,14 @@
+import type { CardType } from "./fsrs/card.types";
+
 export interface FlashcardItem {
     question: string;
     answer: string;
     id: string;
+    cardType?: CardType;
+    clozeTemplate?: string;
+    clozeIndex?: number;
+    /** Temporary batch-level link: ID of the original card within the same batch */
+    reverseOfBatchId?: string;
 }
 
 export interface FlashcardInfo {

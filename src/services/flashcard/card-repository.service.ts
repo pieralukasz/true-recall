@@ -6,6 +6,7 @@ import type {
 	CardRemovedEvent,
 	CardUpdatedEvent,
 	BulkChangeEvent,
+	CardType,
 } from "../../types";
 import type { SqliteStoreService } from "../persistence/sqlite/SqliteStoreService";
 import { createDefaultFSRSData } from "../../types";
@@ -31,7 +32,8 @@ export class CardRepository {
 		question: string,
 		answer: string,
 		sourceUid?: string,
-		sourceNoteName?: string
+		sourceNoteName?: string,
+		options?: { cardType?: CardType; clozeTemplate?: string; clozeIndex?: number; reverseOf?: string }
 	): FSRSFlashcardItem {
 		// Check for duplicate question
 		const existingCardId = this.store.cards.getCardIdByQuestion(question);
@@ -47,6 +49,10 @@ export class CardRepository {
 			question,
 			answer,
 			sourceUid,
+			cardType: options?.cardType,
+			clozeTemplate: options?.clozeTemplate,
+			clozeIndex: options?.clozeIndex,
+			reverseOf: options?.reverseOf,
 		};
 
 		this.store.set(cardId, extendedData);
@@ -59,6 +65,10 @@ export class CardRepository {
 			projects: [],
 			sourceUid,
 			sourceNoteName,
+			cardType: options?.cardType,
+			clozeTemplate: options?.clozeTemplate,
+			clozeIndex: options?.clozeIndex,
+			reverseOf: options?.reverseOf,
 		};
 
 		getEventBus().emit({
@@ -72,13 +82,23 @@ export class CardRepository {
 	}
 
 	createBatch(
-		flashcards: Array<{ id: string; question: string; answer: string }>,
+		flashcards: Array<{
+			id: string;
+			question: string;
+			answer: string;
+			cardType?: CardType;
+			clozeTemplate?: string;
+			clozeIndex?: number;
+			reverseOfBatchId?: string;
+		}>,
 		sourceUid: string,
 		sourceNoteName?: string
 	): CreateBatchResult {
 		const createdCards: FSRSFlashcardItem[] = [];
 		const duplicates: DuplicateInfo[] = [];
 		const seenQuestions = new Set<string>();
+		// Map batch-level IDs to actual DB IDs for reverse pairing
+		const batchIdToDbId = new Map<string, string>();
 
 		for (const flashcard of flashcards) {
 			// Check for duplicate within batch
@@ -88,6 +108,21 @@ export class CardRepository {
 					type: "batch",
 				});
 				continue;
+			}
+
+			// Cloze-specific duplicate check
+			if (flashcard.cardType === "cloze" && flashcard.clozeTemplate && flashcard.clozeIndex !== undefined) {
+				const existingCloze = this.store.cards.findClozeCard(
+					sourceUid, flashcard.clozeTemplate, flashcard.clozeIndex
+				);
+				if (existingCloze) {
+					duplicates.push({
+						flashcard,
+						type: "existing",
+						existingCardId: existingCloze,
+					});
+					continue;
+				}
 			}
 
 			// Check for existing card with same question
@@ -108,14 +143,27 @@ export class CardRepository {
 
 			const fsrsData = createDefaultFSRSData(flashcard.id);
 
+			// Resolve reverse_of: if this card references a batch ID, look up the real DB ID
+			let reverseOf: string | undefined;
+			if (flashcard.reverseOfBatchId) {
+				reverseOf = batchIdToDbId.get(flashcard.reverseOfBatchId);
+			}
+
 			const extendedData: FSRSCardData = {
 				...fsrsData,
 				question: flashcard.question,
 				answer: flashcard.answer,
 				sourceUid,
+				cardType: flashcard.cardType,
+				clozeTemplate: flashcard.clozeTemplate,
+				clozeIndex: flashcard.clozeIndex,
+				reverseOf,
 			};
 
 			this.store.set(flashcard.id, extendedData);
+
+			// Track this card's batch ID -> DB ID mapping
+			batchIdToDbId.set(flashcard.id, flashcard.id);
 
 			const card: FSRSFlashcardItem = {
 				id: flashcard.id,
@@ -125,6 +173,10 @@ export class CardRepository {
 				projects: [],
 				sourceNoteName,
 				sourceUid,
+				cardType: flashcard.cardType,
+				clozeTemplate: flashcard.clozeTemplate,
+				clozeIndex: flashcard.clozeIndex,
+				reverseOf,
 			};
 
 			createdCards.push(card);
@@ -169,6 +221,42 @@ export class CardRepository {
 			changes: { question: true, answer: true },
 			timestamp: Date.now(),
 		} as CardUpdatedEvent);
+
+		// Sync reversed pair: update the paired card with swapped Q/A
+		this.syncReversePair(cardId, existing, newQuestion, newAnswer);
+	}
+
+	private syncReversePair(
+		cardId: string,
+		cardData: FSRSCardData,
+		newQuestion: string,
+		newAnswer: string
+	): void {
+		// Case 1: This card IS a reverse - update the original
+		if (cardData.reverseOf) {
+			const original = this.store.get(cardData.reverseOf);
+			if (original) {
+				this.store.cards.updateCardContent(cardData.reverseOf, newAnswer, newQuestion);
+				getEventBus().emit({
+					type: "card:updated",
+					cardId: cardData.reverseOf,
+					changes: { question: true, answer: true },
+					timestamp: Date.now(),
+				} as CardUpdatedEvent);
+			}
+		}
+
+		// Case 2: This card HAS a reverse - update the reverse
+		const reverseCard = this.store.cards.getCardByReverseOf(cardId);
+		if (reverseCard) {
+			this.store.cards.updateCardContent(reverseCard.id, newAnswer, newQuestion);
+			getEventBus().emit({
+				type: "card:updated",
+				cardId: reverseCard.id,
+				changes: { question: true, answer: true },
+				timestamp: Date.now(),
+			} as CardUpdatedEvent);
+		}
 	}
 
 	updateFSRS(
@@ -244,6 +332,19 @@ export class CardRepository {
 		const card = this.store.get(cardId);
 		if (!card) {
 			return false;
+		}
+
+		// If this is an original card with a reverse, cascade-delete the reverse
+		if (!card.reverseOf) {
+			const reverseCard = this.store.cards.getCardByReverseOf(cardId);
+			if (reverseCard) {
+				this.store.cards.softDeleteWithCascade(reverseCard.id);
+				getEventBus().emit({
+					type: "card:removed",
+					cardId: reverseCard.id,
+					timestamp: Date.now(),
+				} as CardRemovedEvent);
+			}
 		}
 
 		// Soft delete card with cascade (also soft-deletes review_log)

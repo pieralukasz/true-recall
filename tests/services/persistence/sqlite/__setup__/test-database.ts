@@ -103,7 +103,11 @@ export class TestSqliteDatabase {
 				deleted_at INTEGER DEFAULT NULL,
 				question TEXT,
 				answer TEXT,
-				source_uid TEXT
+				source_uid TEXT,
+				card_type TEXT NOT NULL DEFAULT 'basic',
+				cloze_template TEXT,
+				cloze_index INTEGER,
+				reverse_of TEXT
 			);
 
 			-- Indexes
@@ -112,6 +116,8 @@ export class TestSqliteDatabase {
 			CREATE INDEX IF NOT EXISTS idx_cards_suspended ON cards(suspended);
 			CREATE INDEX IF NOT EXISTS idx_cards_source_uid ON cards(source_uid);
 			CREATE INDEX IF NOT EXISTS idx_cards_deleted ON cards(deleted_at);
+			CREATE INDEX IF NOT EXISTS idx_cards_card_type ON cards(card_type);
+			CREATE INDEX IF NOT EXISTS idx_cards_reverse_of ON cards(reverse_of);
 
 			-- Review log
 			CREATE TABLE IF NOT EXISTS review_log (
@@ -137,7 +143,7 @@ export class TestSqliteDatabase {
 				value TEXT
 			);
 
-			INSERT OR REPLACE INTO meta (key, value) VALUES ('schema_version', '20');
+			INSERT OR REPLACE INTO meta (key, value) VALUES ('schema_version', '21');
 		`);
 	}
 

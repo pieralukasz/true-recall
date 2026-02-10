@@ -11,3 +11,4 @@ export { migrate as migration016ToV17 } from "./migration-016-to-v17.sql";
 export { migration017ToV18 } from "./migration-017-to-v18";
 export { migration018ToV19 } from "./migration-018-to-v19";
 export { migration019ToV20 } from "./migration-019-to-v20";
+export { migration020ToV21 } from "./migration-020-to-v21";

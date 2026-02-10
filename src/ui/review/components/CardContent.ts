@@ -96,6 +96,19 @@ export class CardContent {
 		sourcePath: string,
 		isEditing: boolean
 	): void {
+		// Card type label for cloze/reversed cards
+		if (card.cardType === "cloze" && card.clozeIndex !== undefined) {
+			cardEl.createDiv({
+				cls: "ep:text-xs ep:text-obs-faint ep:mb-2 ep:uppercase ep:tracking-wider",
+				text: `Cloze ${card.clozeIndex}`,
+			});
+		} else if (card.cardType === "reversed") {
+			cardEl.createDiv({
+				cls: "ep:text-xs ep:text-obs-faint ep:mb-2 ep:uppercase ep:tracking-wider",
+				text: "Reversed",
+			});
+		}
+
 		const questionEl = cardEl.createDiv({
 			cls: "true-recall-review-question ep:text-xl ep:leading-relaxed ep:text-obs-normal ep:mb-6",
 			attr: { "data-field": "question", "data-source-path": sourcePath },

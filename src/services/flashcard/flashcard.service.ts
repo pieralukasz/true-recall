@@ -164,7 +164,15 @@ export class FlashcardManager {
 
 	async saveFlashcardsToSql(
 		sourceFile: TFile,
-		flashcards: Array<{ id: string; question: string; answer: string }>
+		flashcards: Array<{
+			id: string;
+			question: string;
+			answer: string;
+			cardType?: import("../../types").CardType;
+			clozeTemplate?: string;
+			clozeIndex?: number;
+			reverseOfBatchId?: string;
+		}>
 	): Promise<CreateBatchResult> {
 		if (!this.cardRepository) {
 			throw new Error("Card store not initialized");
