@@ -164,8 +164,6 @@ export class ReviewView extends ItemView {
 			onAddCard: () => this.cardActionsHandler.handleAddNewFlashcard(),
 			onCopyCard: () => this.cardActionsHandler.handleCopyCurrentCard(),
 			onEditCard: () => this.cardActionsHandler.handleEditCardModal(),
-			onZoomIn: () => this.handleZoom(0.1),
-			onZoomOut: () => this.handleZoom(-0.1),
 		});
 
 		this.cardContent = new CardContent(
@@ -347,8 +345,6 @@ export class ReviewView extends ItemView {
 		this.buttonsEl = container.createDiv({
 			cls: "true-recall-review-buttons ep:flex ep:justify-center ep:gap-3 ep:border-t ep:border-obs-border ep:flex-nowrap ep:shrink-0 ep:p-4",
 		});
-
-		this.applyFontScale();
 
 		this.unsubscribe = this.plugin.store!.subscribe(
 			(state) => state.review,
@@ -1329,21 +1325,6 @@ export class ReviewView extends ItemView {
 	private handleShowAnswer(): void {
 		this.review.revealAnswer();
 		this.updateSchedulingPreview();
-	}
-
-	private handleZoom(delta: number): void {
-		const current = this.plugin.settings.reviewFontScale;
-		const newScale = Math.max(0.5, Math.min(2.0, current + delta));
-		if (newScale !== current) {
-			this.plugin.settings.reviewFontScale = newScale;
-			void this.plugin.saveSettings();
-			this.applyFontScale();
-		}
-	}
-
-	private applyFontScale(): void {
-		const scale = this.plugin.settings.reviewFontScale;
-		this.cardContainerEl.style.setProperty("--review-font-scale", String(scale));
 	}
 
 	private async handleAnswer(rating: Grade): Promise<void> {
