@@ -12,11 +12,10 @@ export {
 
 export { SessionResultFactory } from "./session-result-factory";
 
-export { getErrorMessage, formatErrorMessage } from "./error.utils";
+export { getErrorMessage } from "./error.utils";
 
 export {
     formatLocalDate,
-    parseLocalDate,
     getTodayBoundary,
     getTomorrowBoundary,
     getTodayKey,

@@ -21,8 +21,6 @@ export type {
     ReviewSessionStats,
     ReviewSessionState,
 } from "./session.types";
-export { createDefaultSessionState } from "./session.types";
-
 // Scheduling types
 export type {
     SchedulingPreview,
@@ -57,5 +55,4 @@ export type { ReviewViewMode } from "./fsrs.utils";
 export {
     createDefaultFSRSData,
     formatInterval,
-    formatIntervalDays,
 } from "./fsrs.utils";

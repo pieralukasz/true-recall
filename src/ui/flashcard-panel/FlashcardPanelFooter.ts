@@ -6,7 +6,6 @@ import type { ProcessingStatus } from "../../state/store";
 export interface FlashcardPanelFooterProps {
 	currentFile: TFile | null;
 	status: ProcessingStatus;
-	isFlashcardFile: boolean;
 	// Selection info for bulk move button
 	selectedCount?: number;
 	// Collect flashcards from markdown
@@ -49,7 +48,6 @@ export class FlashcardPanelFooter extends BaseComponent {
 
 	private renderNormalFooter(): void {
 		const {
-			isFlashcardFile,
 			selectedCount,
 			hasUncollectedFlashcards,
 			uncollectedCount,
@@ -85,11 +83,6 @@ export class FlashcardPanelFooter extends BaseComponent {
 					onClick: onDeleteSelected,
 				});
 			}
-			return;
-		}
-
-		// Don't show other buttons for flashcard files
-		if (isFlashcardFile) {
 			return;
 		}
 
