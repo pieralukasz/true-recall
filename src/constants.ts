@@ -192,9 +192,8 @@ export const RANDOM_QUEUE_INSERT_MAX_POS = 5;
 
 export const CARD_HISTORY_LIMIT = 20;
 
-// Public anon key - safe to expose, RLS policies protect data per-user
+// Cloud sync - coming soon
 export const TRUE_RECALL_CLOUD = {
-	supabaseUrl: "https://webogcxwvgbwdcjibbno.supabase.co",
-	supabaseAnonKey:
-		"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6IndlYm9nY3h3dmdid2RjamliYm5vIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjkyNTE4NzYsImV4cCI6MjA4NDgyNzg3Nn0.IGrKykHY1gC-knNSy0jX1MF9vWp_b6YCURWyBXRmt0U",
+	supabaseUrl: process.env.SUPABASE_URL ?? "",
+	supabaseAnonKey: process.env.SUPABASE_ANON_KEY ?? "",
 } as const;

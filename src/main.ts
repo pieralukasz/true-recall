@@ -23,8 +23,9 @@ import {
 	BackupService,
 	DeviceIdService,
 	DeviceDiscoveryService,
-	AuthService,
-	SyncService,
+	// Cloud sync - coming soon
+	// AuthService,
+	// SyncService,
 	FrontmatterIndexService,
 	DeletionHandlerService,
 	OrphanedCardsService,
@@ -93,8 +94,9 @@ export default class TrueRecallPlugin extends Plugin {
 	backgroundBackupManager: BackgroundBackupManager | null = null;
 	deviceIdService: DeviceIdService | null = null;
 	deviceDiscovery: DeviceDiscoveryService | null = null;
-	authService: AuthService | null = null;
-	syncService: SyncService | null = null;
+	// Cloud sync - coming soon
+	authService: null = null;
+	syncService: null = null;
 	deletionHandler: DeletionHandlerService | null = null;
 	orphanedCardsService: OrphanedCardsService | null = null;
 	undoService: UndoService | null = null;
@@ -222,18 +224,20 @@ export default class TrueRecallPlugin extends Plugin {
 		registerEventHandlers(this);
 
 		this.undoService = new UndoService(this);
-		this.authService = new AuthService();
+		// Cloud sync - coming soon
+		// this.authService = new AuthService();
 
 	}
 
-	private initializeSyncService(): void {
-		if (this.authService && this.cardStore) {
-			this.syncService = new SyncService(
-				this.authService,
-				this.cardStore
-			);
-		}
-	}
+	// Cloud sync - coming soon
+	// private initializeSyncService(): void {
+	// 	if (this.authService && this.cardStore) {
+	// 		this.syncService = new SyncService(
+	// 			this.authService,
+	// 			this.cardStore
+	// 		);
+	// 	}
+	// }
 
 
 	private initializeDeletionHandler(): void {
@@ -855,7 +859,8 @@ ${cardList}${moreText}
 			}
 
 			await this.initializeNLQueryService();
-			this.initializeSyncService();
+			// Cloud sync - coming soon
+		// this.initializeSyncService();
 			this.fsrsHelper = new FSRSHelperService(this.cardStore, this.settings);
 			this.initializeDeletionHandler();
 			this.initializeStore();
@@ -1057,25 +1062,26 @@ ${cardList}${moreText}
 		await modal.openAndWait();
 	}
 
-	async syncCloud(): Promise<void> {
-		if (!this.syncService?.isAvailable()) {
-			notify().error(
-				"Cloud sync not available. Check Supabase configuration."
-			);
-			return;
-		}
-
-		notify().info("Syncing...");
-		const result = await this.syncService.sync();
-
-		if (result.success) {
-			notify().success(
-				`Sync complete: ${result.pulled} pulled, ${result.pushed} pushed`
-			);
-		} else {
-			notify().error(`Sync failed: ${result.error}`);
-		}
-	}
+	// Cloud sync - coming soon
+	// async syncCloud(): Promise<void> {
+	// 	if (!this.syncService?.isAvailable()) {
+	// 		notify().error(
+	// 			"Cloud sync not available. Check Supabase configuration."
+	// 		);
+	// 		return;
+	// 	}
+	//
+	// 	notify().info("Syncing...");
+	// 	const result = await this.syncService.sync();
+	//
+	// 	if (result.success) {
+	// 		notify().success(
+	// 			`Sync complete: ${result.pulled} pulled, ${result.pushed} pushed`
+	// 		);
+	// 	} else {
+	// 		notify().error(`Sync failed: ${result.error}`);
+	// 	}
+	// }
 
 	async importAnki(): Promise<void> {
 		if (!this.isStoreReady()) {
@@ -1240,33 +1246,32 @@ ${cardList}${moreText}
 		}
 	}
 
-	async forceReplaceCloud(): Promise<void> {
-		if (!this.syncService?.isAvailable()) {
-			notify().error(
-				"Cloud sync not available. Check Supabase configuration."
-			);
-			return;
-		}
-
-		
-		// eslint-disable-next-line no-alert -- destructive operation requires explicit user confirmation
-		const confirmed = confirm(
-			"WARNING: This will DELETE all your data on the server and replace it with your local database.\n\n" +
-				"Other devices will lose their changes.\n\n" +
-				"Are you sure you want to continue?"
-		);
-
-		if (!confirmed) return;
-
-		notify().info("Replacing all server data...");
-		const result = await this.syncService.forceReplace();
-
-		if (result.success) {
-			notify().success(
-				`Force replace complete: ${result.pushed} records uploaded`
-			);
-		} else {
-			notify().error(`Replace failed: ${result.error}`);
-		}
-	}
+	// Cloud sync - coming soon
+	// async forceReplaceCloud(): Promise<void> {
+	// 	if (!this.syncService?.isAvailable()) {
+	// 		notify().error(
+	// 			"Cloud sync not available. Check Supabase configuration."
+	// 		);
+	// 		return;
+	// 	}
+	//
+	// 	const confirmed = confirm(
+	// 		"WARNING: This will DELETE all your data on the server and replace it with your local database.\n\n" +
+	// 			"Other devices will lose their changes.\n\n" +
+	// 			"Are you sure you want to continue?"
+	// 	);
+	//
+	// 	if (!confirmed) return;
+	//
+	// 	notify().info("Replacing all server data...");
+	// 	const result = await this.syncService.forceReplace();
+	//
+	// 	if (result.success) {
+	// 		notify().success(
+	// 			`Force replace complete: ${result.pushed} records uploaded`
+	// 		);
+	// 	} else {
+	// 		notify().error(`Replace failed: ${result.error}`);
+	// 	}
+	// }
 }
