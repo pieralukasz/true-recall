@@ -404,37 +404,6 @@ export class TrueRecallSettingTab extends PluginSettingTab {
 					})
 			);
 
-		new Setting(container)
-			.setName("Graduating interval (days)")
-			.setDesc("Interval after completing learning steps. Default: 1")
-			.addText((text) =>
-				text
-					.setPlaceholder("1")
-					.setValue(String(this.plugin.settings.graduatingInterval))
-					.onChange(async (value) => {
-						const num = parseInt(value) || 1;
-						this.plugin.settings.graduatingInterval = Math.max(
-							1,
-							num
-						);
-						await this.plugin.saveSettings();
-					})
-			);
-
-		new Setting(container)
-			.setName("Easy interval (days)")
-			.setDesc("Interval when pressing easy on new card. Default: 4")
-			.addText((text) =>
-				text
-					.setPlaceholder("4")
-					.setValue(String(this.plugin.settings.easyInterval))
-					.onChange(async (value) => {
-						const num = parseInt(value) || 4;
-						this.plugin.settings.easyInterval = Math.max(1, num);
-						await this.plugin.saveSettings();
-					})
-			);
-
 		new Setting(container).setName("Display order").setHeading();
 
 		new Setting(container)

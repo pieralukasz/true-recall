@@ -532,6 +532,7 @@ export class ReviewView extends ItemView {
 			}
 			const reviewedToday = this.sessionPersistence.getReviewedToday();
 			const newCardsStudiedToday = this.sessionPersistence.getNewCardsStudiedToday();
+			const reviewsCompletedToday = this.sessionPersistence.getReviewCardsCompletedToday();
 
 			const sourceUidToProjects = buildSourceUidToProjectsMap(
 				this.app,
@@ -546,6 +547,7 @@ export class ReviewView extends ItemView {
 					reviewsLimit: this.plugin.settings.reviewsPerDay,
 					reviewedToday,
 					newCardsStudiedToday,
+					reviewsCompletedToday,
 					projectFilters: this.projectFilters,
 					sourceUidToProjects,
 					newCardOrder: this.plugin.settings.newCardOrder,

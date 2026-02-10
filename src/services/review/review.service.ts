@@ -27,6 +27,8 @@ export interface QueueBuildOptions {
 	reviewsLimit: number;
 	reviewedToday?: Set<string>;
 	newCardsStudiedToday?: number;
+	/** Review-state cards already completed today (for per-day limit like Anki) */
+	reviewsCompletedToday?: number;
 	/** Card matches if it has ANY of these projects */
 	projectFilters?: string[];
 	/** Fallback for project resolution when card.projects is empty */
@@ -402,7 +404,10 @@ export class ReviewService {
 		);
 		const effectiveReviewsLimit = options.ignoreDailyLimits
 			? reviewCards.length
-			: options.reviewsLimit;
+			: Math.max(
+					0,
+					options.reviewsLimit - (options.reviewsCompletedToday ?? 0)
+			  );
 		const limitedReviewCards = this.sortReviewCards(
 			reviewCards.slice(0, effectiveReviewsLimit),
 			options.reviewOrder ?? "due-date",
@@ -453,7 +458,10 @@ export class ReviewService {
 		);
 		const effectiveReviewsLimit = options.ignoreDailyLimits
 			? reviewCards.length
-			: options.reviewsLimit;
+			: Math.max(
+					0,
+					options.reviewsLimit - (options.reviewsCompletedToday ?? 0)
+			  );
 		const limitedReviewCards = this.sortReviewCards(
 			reviewCards.slice(0, effectiveReviewsLimit),
 			options.reviewOrder ?? "due-date",
@@ -529,7 +537,15 @@ export class ReviewService {
 		}
 
 		if (options.cardLimit && options.cardLimit > 0 && queue.length > options.cardLimit) {
-			queue = queue.slice(0, options.cardLimit);
+			// Preserve pending learning cards that would be cut off - they need
+			// follow-up reviews within the session
+			const pendingLearning = queue.slice(options.cardLimit).filter((card) => {
+				const isLearning =
+					card.fsrs.state === State.Learning ||
+					card.fsrs.state === State.Relearning;
+				return isLearning && new Date(card.fsrs.due) > now;
+			});
+			queue = [...queue.slice(0, options.cardLimit), ...pendingLearning];
 		}
 
 		return queue;
