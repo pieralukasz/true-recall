@@ -100,7 +100,7 @@ export class CardContent {
 		if (card.cardType === "cloze" && card.clozeIndex !== undefined) {
 			cardEl.createDiv({
 				cls: "ep:text-xs ep:text-obs-faint ep:mb-2 ep:uppercase ep:tracking-wider",
-				text: `Cloze ${card.clozeIndex}`,
+				text: isEditing ? "Editing cloze template (all cards will update)" : `Cloze ${card.clozeIndex}`,
 			});
 		} else if (card.cardType === "reversed") {
 			cardEl.createDiv({
@@ -115,7 +115,11 @@ export class CardContent {
 		});
 
 		if (isEditing) {
-			this.renderEditableField(questionEl, card.question, "question");
+			// For cloze cards, edit the raw template instead of the rendered question
+			const editContent = card.cardType === "cloze" && card.clozeTemplate
+				? card.clozeTemplate
+				: card.question;
+			this.renderEditableField(questionEl, editContent, "question");
 		} else {
 			void MarkdownRenderer.render(
 				this.deps.app,

@@ -12,6 +12,7 @@ import type { SqliteStoreService } from "../persistence/sqlite/SqliteStoreServic
 import { createDefaultFSRSData } from "../../types";
 import { getEventBus } from "../core/event-bus.service";
 import { CARD_HISTORY_LIMIT } from "../../constants";
+import { parseClozeTemplate } from "./cloze-parser.service";
 
 export interface DuplicateInfo {
 	flashcard: { id: string; question: string; answer: string };
@@ -328,10 +329,92 @@ export class CardRepository {
 		return true;
 	}
 
+	updateClozeTemplate(
+		sourceUid: string,
+		oldTemplate: string,
+		newTemplate: string,
+		sourceNoteName?: string
+	): void {
+		const siblings = this.store.getClozeSiblings(sourceUid, oldTemplate);
+		const siblingsByIndex = new Map(
+			siblings.map((s) => [s.clozeIndex!, s])
+		);
+
+		const newClozeCards = parseClozeTemplate(newTemplate);
+		const newIndices = new Set(newClozeCards.map((c) => c.clozeIndex));
+
+		// Update or create cards for each new cloze index
+		for (const cloze of newClozeCards) {
+			const existing = siblingsByIndex.get(cloze.clozeIndex);
+			if (existing) {
+				// Update existing sibling's Q/A and template
+				this.store.cards.updateClozeCardContent(
+					existing.id,
+					cloze.question,
+					cloze.answer,
+					newTemplate
+				);
+				getEventBus().emit({
+					type: "card:updated",
+					cardId: existing.id,
+					changes: { question: true, answer: true },
+					timestamp: Date.now(),
+				} as CardUpdatedEvent);
+			} else {
+				// New cloze index — create a new card
+				const cardId = crypto.randomUUID();
+				const fsrsData = createDefaultFSRSData(cardId);
+				const extendedData: FSRSCardData = {
+					...fsrsData,
+					question: cloze.question,
+					answer: cloze.answer,
+					sourceUid,
+					cardType: "cloze",
+					clozeTemplate: newTemplate,
+					clozeIndex: cloze.clozeIndex,
+				};
+				this.store.set(cardId, extendedData);
+				getEventBus().emit({
+					type: "card:added",
+					cardId,
+					sourceNoteName,
+					timestamp: Date.now(),
+				} as CardAddedEvent);
+			}
+		}
+
+		// Soft-delete siblings whose cloze index was removed from the new template
+		for (const [index, sibling] of siblingsByIndex) {
+			if (!newIndices.has(index)) {
+				this.store.cards.softDeleteWithCascade(sibling.id);
+				getEventBus().emit({
+					type: "card:removed",
+					cardId: sibling.id,
+					timestamp: Date.now(),
+				} as CardRemovedEvent);
+			}
+		}
+	}
+
 	delete(cardId: string): boolean {
 		const card = this.store.get(cardId);
 		if (!card) {
 			return false;
+		}
+
+		// Cascade-delete cloze siblings (all cards sharing the same template)
+		if (card.cardType === "cloze" && card.clozeTemplate && card.sourceUid) {
+			const siblings = this.store.getClozeSiblings(card.sourceUid, card.clozeTemplate);
+			for (const sibling of siblings) {
+				if (sibling.id !== cardId) {
+					this.store.cards.softDeleteWithCascade(sibling.id);
+					getEventBus().emit({
+						type: "card:removed",
+						cardId: sibling.id,
+						timestamp: Date.now(),
+					} as CardRemovedEvent);
+				}
+			}
 		}
 
 		// If this is an original card with a reverse, cascade-delete the reverse

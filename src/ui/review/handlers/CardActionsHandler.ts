@@ -6,8 +6,9 @@ import { App } from "obsidian";
 import { Rating } from "ts-fsrs";
 import type { FlashcardManager, FSRSService, ReviewService, SqliteStoreService } from "../../../services";
 import type { TrueRecallSettings } from "../../../types";
-import { MoveCardModal, SimpleFlashcardEditorModal, flashcardToMarkdown } from "../../modals";
+import { MoveCardModal, SimpleFlashcardEditorModal } from "../../modals";
 import { notify } from "../../../services";
+import { cardToMarkdown } from "../../../services/flashcard/flashcard-format.util";
 import type TrueRecallPlugin from "../../../main";
 import type { ReviewApi } from "../../../state/store";
 
@@ -64,7 +65,7 @@ export class CardActionsHandler {
 
 	/**
 	 * Suspend the current card
-	 * Card will be excluded from future reviews until unsuspended
+	 * For cloze/reverse cards, suspends all siblings as a group
 	 */
 	async handleSuspend(): Promise<void> {
 		const card = this.deps.getReview().getCurrentCard();
@@ -73,7 +74,8 @@ export class CardActionsHandler {
 		const currentIndex = this.deps.getReview().currentIndex;
 		const undoService = this.deps.plugin.undoService;
 
-		const updatedFsrs = { ...card.fsrs, suspended: true };
+		// Find cloze siblings in the review queue
+		const siblingIds = this.getGroupSiblingIds(card);
 
 		let writeExecuted = false;
 		let pendingTimeoutId: ReturnType<typeof setTimeout> | null = null;
@@ -81,7 +83,7 @@ export class CardActionsHandler {
 		undoService?.push({
 			id: crypto.randomUUID(),
 			actionType: "suspend",
-			description: "Suspend card",
+			description: siblingIds.length > 1 ? `Suspend ${siblingIds.length} cards` : "Suspend card",
 			timestamp: Date.now(),
 			payload: {
 				type: "suspend",
@@ -99,7 +101,10 @@ export class CardActionsHandler {
 			},
 		});
 
-		this.deps.getReview().removeCurrentCard();
+		// Remove all siblings from the review queue
+		for (const id of siblingIds) {
+			this.deps.getReview().removeCardById(id);
+		}
 
 		if (!this.deps.getReview().isComplete()) {
 			this.callbacks.onUpdateSchedulingPreview();
@@ -111,16 +116,22 @@ export class CardActionsHandler {
 			writeExecuted = true;
 			pendingTimeoutId = null;
 			try {
-				this.deps.flashcardManager.updateCardFSRS(card.id, updatedFsrs);
+				// Suspend all siblings
+				for (const id of siblingIds) {
+					const siblingData = this.deps.cardStore.get(id);
+					if (siblingData) {
+						this.deps.flashcardManager.updateCardFSRS(id, { ...siblingData, suspended: true });
+					}
+				}
 			} catch (error) {
-				console.error("[CardActionsHandler] Error suspending card:", error);
+				console.error("[CardActionsHandler] Error suspending card(s):", error);
 			}
 		}, 0);
 	}
 
 	/**
 	 * Bury the current card until tomorrow
-	 * Card will reappear in the next day's review
+	 * For cloze/reverse cards, buries all siblings as a group
 	 */
 	async handleBuryCard(): Promise<void> {
 		const card = this.deps.getReview().getCurrentCard();
@@ -130,7 +141,10 @@ export class CardActionsHandler {
 		const undoService = this.deps.plugin.undoService;
 
 		const tomorrow = this.getTomorrowDate();
-		const updatedFsrs = { ...card.fsrs, buriedUntil: tomorrow.toISOString() };
+		const buriedUntil = tomorrow.toISOString();
+
+		// Find cloze siblings in the review queue
+		const siblingIds = this.getGroupSiblingIds(card);
 
 		let writeExecuted = false;
 		let pendingTimeoutId: ReturnType<typeof setTimeout> | null = null;
@@ -138,7 +152,7 @@ export class CardActionsHandler {
 		undoService?.push({
 			id: crypto.randomUUID(),
 			actionType: "bury",
-			description: "Bury card",
+			description: siblingIds.length > 1 ? `Bury ${siblingIds.length} cards` : "Bury card",
 			timestamp: Date.now(),
 			payload: {
 				type: "bury",
@@ -156,7 +170,10 @@ export class CardActionsHandler {
 			},
 		});
 
-		this.deps.getReview().removeCurrentCard();
+		// Remove all siblings from the review queue
+		for (const id of siblingIds) {
+			this.deps.getReview().removeCardById(id);
+		}
 
 		if (!this.deps.getReview().isComplete()) {
 			this.callbacks.onUpdateSchedulingPreview();
@@ -168,9 +185,15 @@ export class CardActionsHandler {
 			writeExecuted = true;
 			pendingTimeoutId = null;
 			try {
-				this.deps.flashcardManager.updateCardFSRS(card.id, updatedFsrs);
+				// Bury all siblings
+				for (const id of siblingIds) {
+					const siblingData = this.deps.cardStore.get(id);
+					if (siblingData) {
+						this.deps.flashcardManager.updateCardFSRS(id, { ...siblingData, buriedUntil });
+					}
+				}
 			} catch (error) {
-				console.error("[CardActionsHandler] Error burying card:", error);
+				console.error("[CardActionsHandler] Error burying card(s):", error);
 			}
 		}, 0);
 	}
@@ -355,7 +378,7 @@ export class CardActionsHandler {
 		const modal = new SimpleFlashcardEditorModal(this.deps.app, {
 			mode: "add",
 			currentFilePath: card.sourceNotePath || "",
-			prefillContent: flashcardToMarkdown(card.question, card.answer),
+			prefillContent: cardToMarkdown(card),
 		});
 
 		const result = await modal.openAndWait();
@@ -393,7 +416,7 @@ export class CardActionsHandler {
 		const modal = new SimpleFlashcardEditorModal(this.deps.app, {
 			mode: "edit",
 			currentFilePath: card.sourceNotePath || "",
-			prefillContent: flashcardToMarkdown(card.question, card.answer),
+			prefillContent: cardToMarkdown(card),
 			editCardId: card.id,
 		});
 
@@ -401,21 +424,36 @@ export class CardActionsHandler {
 		if (result.cancelled || result.flashcards.length === 0) return;
 
 		try {
-			// First flashcard updates the original card directly
 			const firstFlashcard = result.flashcards[0];
-			if (firstFlashcard) {
-				this.deps.flashcardManager.updateCardContent(
-					card.id,
-					firstFlashcard.question,
-					firstFlashcard.answer
-				);
+			if (!firstFlashcard) return;
 
-				// Update in state manager queue
-				this.deps.getReview().updateCurrentCardContent(
-					firstFlashcard.question,
-					firstFlashcard.answer
+			// Cloze template editing: parser sets clozeTemplate on each parsed FlashcardItem
+			if (card.cardType === "cloze" && card.clozeTemplate && card.sourceUid && firstFlashcard.clozeTemplate) {
+				this.deps.flashcardManager.updateClozeTemplate(
+					card.sourceUid,
+					card.clozeTemplate,
+					firstFlashcard.clozeTemplate,
+					card.sourceNoteName
 				);
+				// Update current card in review queue with re-derived Q/A
+				const thisCard = result.flashcards.find(c => c.clozeIndex === card.clozeIndex);
+				if (thisCard) {
+					this.deps.getReview().updateCurrentCardContent(thisCard.question, thisCard.answer);
+				}
+				notify().success("Updated cloze template");
+				return;
 			}
+
+			// Basic/reversed card: update directly
+			this.deps.flashcardManager.updateCardContent(
+				card.id,
+				firstFlashcard.question,
+				firstFlashcard.answer
+			);
+			this.deps.getReview().updateCurrentCardContent(
+				firstFlashcard.question,
+				firstFlashcard.answer
+			);
 
 			// Additional flashcards (if any) are created as new cards directly
 			if (result.flashcards.length > 1) {
@@ -436,7 +474,6 @@ export class CardActionsHandler {
 			} else {
 				notify().cardUpdated();
 			}
-			// Note: render triggered by updateCurrentCardContent/addCardToQueue → notifyListeners()
 		} catch (error) {
 			console.error("[CardActionsHandler] Error updating card:", error);
 			notify().operationFailed("update card", error);
@@ -457,6 +494,33 @@ export class CardActionsHandler {
 		const success = await undoService.undo();
 		// Note: render triggered by UndoService via insertCardAtPosition/undoLastAnswer → notifyListeners()
 		return success;
+	}
+
+	/**
+	 * Get IDs of all group siblings for cloze/reverse cards.
+	 * Returns [card.id] for basic cards (no siblings).
+	 */
+	private getGroupSiblingIds(card: { id: string; cardType?: string; sourceUid?: string; clozeTemplate?: string; reverseOf?: string }): string[] {
+		// Cloze card: get all cards sharing the same template
+		if (card.cardType === "cloze" && card.sourceUid && card.clozeTemplate) {
+			const siblings = this.deps.cardStore.getClozeSiblings(card.sourceUid, card.clozeTemplate);
+			if (siblings.length > 0) {
+				return siblings.map((s) => s.id);
+			}
+		}
+
+		// Reversed card: include the paired card
+		if (card.cardType === "reversed" && card.reverseOf) {
+			return [card.id, card.reverseOf];
+		}
+
+		// Original card with a reverse
+		const reverseCard = this.deps.cardStore.cards.getCardByReverseOf(card.id);
+		if (reverseCard) {
+			return [card.id, reverseCard.id];
+		}
+
+		return [card.id];
 	}
 
 	/**

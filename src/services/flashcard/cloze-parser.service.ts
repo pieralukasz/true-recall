@@ -12,6 +12,9 @@ export interface ClozeCard {
 const CLOZE_REGEX = /\{\{c(\d+)::([^}]*?)(?:::([^}]*?))?\}\}/g;
 
 export function hasClozeContent(text: string): boolean {
+	// Must reset lastIndex because CLOZE_REGEX has the /g flag,
+	// which causes .test() to advance lastIndex between calls
+	CLOZE_REGEX.lastIndex = 0;
 	return CLOZE_REGEX.test(text);
 }
 
