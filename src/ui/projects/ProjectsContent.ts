@@ -20,6 +20,7 @@ import {
 	type SectionHeaderAction,
 } from "../components";
 import type { ProjectInfo, ProjectNoteInfo } from "../../types";
+import type { ProjectGraph } from "../../utils/project-hierarchy";
 import {
 	setsEqual,
 	difference,
@@ -39,6 +40,8 @@ export interface ProjectsContentProps {
 	isLoading: boolean;
 	projectsWithCards: ProjectInfo[];
 	emptyProjects: ProjectInfo[];
+	allProjects: ProjectInfo[];
+	projectGraph: ProjectGraph | null;
 	searchQuery: string;
 	expandedProjectIds: Set<string>;
 	app: App;
@@ -49,6 +52,7 @@ export interface ProjectsContentProps {
 	onDelete: (projectId: string) => void;
 	onAddNotes: (projectId: string, projectName: string) => void;
 	onCreateFromNote: () => void;
+	onCreateSubProject: (projectName: string) => void;
 	onRefresh: () => void;
 	onToggleExpand: (projectId: string) => void;
 	// Selection props
@@ -127,6 +131,7 @@ export class ProjectsContent extends BaseComponent {
 		this.projectElements.clear();
 		this.noteListItems.clear();
 		this.unassignedRefs = null;
+		this.allProjectsMapCache = null;
 
 		// Clean up virtual lists
 		for (const vl of this.virtualLists.values()) {
@@ -213,9 +218,9 @@ export class ProjectsContent extends BaseComponent {
 			return;
 		}
 
-		// Render projects with cards
+		// Render root projects with cards (and their children recursively)
 		for (const project of projectsWithCards) {
-			this.renderProjectItem(listEl, project, false);
+			this.renderProjectTreeNode(listEl, project, 0);
 		}
 
 		// Render unassigned notes section (between projects with cards and empty projects)
@@ -223,7 +228,7 @@ export class ProjectsContent extends BaseComponent {
 			this.renderUnassignedSection(listEl);
 		}
 
-		// Render empty projects (with separator if both exist)
+		// Render empty root projects (with separator if both exist)
 		if (emptyProjects.length > 0 && (projectsWithCards.length > 0 || hasUnassigned)) {
 			listEl.createDiv({
 				cls: "ep:text-ui-small ep:font-semibold ep:text-obs-normal ep:py-3",
@@ -232,19 +237,57 @@ export class ProjectsContent extends BaseComponent {
 		}
 
 		for (const project of emptyProjects) {
-			this.renderProjectItem(listEl, project, true);
+			this.renderProjectTreeNode(listEl, project, 0);
 		}
+	}
+
+	private renderProjectTreeNode(
+		container: HTMLElement,
+		project: ProjectInfo,
+		depth: number
+	): void {
+		const isEmpty = project.cardCount === 0;
+		const isExpanded = this.props.expandedProjectIds.has(project.id);
+
+		this.renderProjectItem(container, project, isEmpty, depth);
+
+		if (!isExpanded) return;
+
+		// Render child sub-projects
+		const childNames = project.childProjectNames ?? [];
+		if (childNames.length > 0) {
+			const allProjectsMap = this.getAllProjectsMap();
+			for (const childName of childNames) {
+				const childProject = allProjectsMap.get(childName);
+				if (childProject) {
+					this.renderProjectTreeNode(container, childProject, depth + 1);
+				}
+			}
+		}
+	}
+
+	private allProjectsMapCache: Map<string, ProjectInfo> | null = null;
+
+	private getAllProjectsMap(): Map<string, ProjectInfo> {
+		if (!this.allProjectsMapCache) {
+			this.allProjectsMapCache = new Map(
+				this.props.allProjects.map((p) => [p.name, p])
+			);
+		}
+		return this.allProjectsMapCache;
 	}
 
 	private renderProjectItem(
 		container: HTMLElement,
 		project: ProjectInfo,
-		isEmpty: boolean
+		isEmpty: boolean,
+		depth: number = 0
 	): void {
 		const hasCards = project.cardCount > 0;
 		const isExpanded = this.props.expandedProjectIds.has(project.id);
+		const hasChildren = (project.childProjectNames?.length ?? 0) > 0;
 
-		// Project item container (flat list style)
+		// Project item container
 		const item = container.createDiv({
 			cls: `ep:flex ep:flex-col ep:border-b ep:border-obs-modifier-border${
 				isEmpty ? " ep:opacity-60" : ""
@@ -253,8 +296,11 @@ export class ProjectsContent extends BaseComponent {
 
 		// Main row (always visible) - clickable for expansion
 		const mainRow = item.createDiv({
-			cls: "ep:flex ep:items-start ep:gap-3 ep:py-2.5 ep:px-3 ep:cursor-pointer ep:transition-colors ep:hover:bg-obs-modifier-hover",
+			cls: "ep:flex ep:items-start ep:gap-2 ep:py-2.5 ep:px-3 ep:cursor-pointer ep:transition-colors ep:hover:bg-obs-modifier-hover",
 		});
+		if (depth > 0) {
+			mainRow.style.paddingLeft = `${12 + depth * 20}px`;
+		}
 
 		// Click handler for expand/collapse
 		this.events.addEventListener(mainRow, "click", (e) => {
@@ -262,6 +308,16 @@ export class ProjectsContent extends BaseComponent {
 			if ((e.target as HTMLElement).closest("button")) return;
 			this.props.onToggleExpand(project.id);
 		});
+
+		// Chevron icon for expandable projects
+		if (hasChildren || project.notes.length > 0) {
+			const chevron = mainRow.createDiv({
+				cls: "ep:w-4 ep:h-4 ep:flex ep:items-center ep:justify-center ep:shrink-0 ep:text-obs-muted ep:mt-0.5",
+			});
+			setIcon(chevron, isExpanded ? "chevron-down" : "chevron-right");
+		} else {
+			mainRow.createDiv({ cls: "ep:w-4 ep:shrink-0" });
+		}
 
 		// Content container
 		const content = mainRow.createDiv({
@@ -337,6 +393,17 @@ export class ProjectsContent extends BaseComponent {
 		this.events.addEventListener(addBtn, "click", (e) => {
 			e.stopPropagation();
 			this.props.onAddNotes(project.id, project.name);
+		});
+
+		// Create sub-project button
+		const subProjectBtn = actions.createEl("button", {
+			cls: iconBtnCls,
+			attr: { "aria-label": "Create sub-project" },
+		});
+		setIcon(subProjectBtn, "folder-plus");
+		this.events.addEventListener(subProjectBtn, "click", (e) => {
+			e.stopPropagation();
+			this.props.onCreateSubProject(project.name);
 		});
 
 		// Delete button
@@ -685,43 +752,11 @@ export class ProjectsContent extends BaseComponent {
 	}
 
 	private applyExpansionChanges(
-		toExpand: Set<string>,
-		toCollapse: Set<string>
+		_toExpand: Set<string>,
+		_toCollapse: Set<string>
 	): void {
-		// Collapse projects
-		for (const id of toCollapse) {
-			const refs = this.projectElements.get(id);
-			if (refs?.notesContainer) {
-				// Remove NoteListItem references for collapsed notes
-				const project = this.findProject(id);
-				if (project) {
-					for (const note of project.notes) {
-						this.noteListItems.delete(note.path);
-					}
-				}
-				// Clean up virtual list if exists
-				const vl = this.virtualLists.get(id);
-				if (vl) {
-					vl.destroy();
-					this.virtualLists.delete(id);
-				}
-				refs.notesContainer.remove();
-				refs.notesContainer = null;
-			}
-		}
-
-		// Expand projects
-		for (const id of toExpand) {
-			const refs = this.projectElements.get(id);
-			const project = this.findProject(id);
-			if (refs && project && project.notes.length > 0) {
-				refs.notesContainer = this.renderNotesList(
-					refs.container,
-					project.notes,
-					id
-				);
-			}
-		}
+		// Tree structure makes granular updates complex — full re-render is simpler
+		this.fullRender();
 	}
 
 	private applyUnassignedExpansionChange(): void {

@@ -5,6 +5,7 @@ import type {
 	ProjectsSliceActions,
 } from "../types";
 import type { ProjectInfo, ProjectNoteInfo } from "../../../types";
+import type { ProjectGraph } from "../../../utils/project-hierarchy";
 import { createSelectionActions, createStaleTracking, toggleSetItem } from "../helpers/slice-helpers";
 
 type ProjectsSlice = ProjectsSliceState & ProjectsSliceActions;
@@ -22,6 +23,7 @@ function createInitialState(): ProjectsSliceState {
 		unassignedNotes: [],
 		isUnassignedExpanded: false,
 		showDoneNotes: false,
+		projectGraph: null,
 	};
 }
 
@@ -143,6 +145,12 @@ export function createProjectsSlice(
 			}));
 		},
 
+		setProjectGraph: (projectGraph: ProjectGraph | null) => {
+			set((s) => ({
+				projects: { ...s.projects, projectGraph },
+			}));
+		},
+
 		getFilteredProjects: () => {
 			const state = get().projects;
 			let projects = [...state.projects];
@@ -169,6 +177,18 @@ export function createProjectsSlice(
 
 		getEmptyProjects: () => {
 			return get().projects.getFilteredProjects().filter((p) => p.cardCount === 0);
+		},
+
+		getRootProjects: () => {
+			const state = get().projects;
+			const graph = state.projectGraph;
+			if (!graph) return state.getFilteredProjects();
+
+			const rootSet = new Set(graph.roots);
+			// Root projects + non-project entries (projects without a project-note)
+			return state.getFilteredProjects().filter((p) =>
+				rootSet.has(p.name) || !graph.projectNames.has(p.name)
+			);
 		},
 
 		getTotalStats: () => {
