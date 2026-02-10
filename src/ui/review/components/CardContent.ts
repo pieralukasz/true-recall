@@ -7,7 +7,7 @@ import { createEditableTextField, TOOLBAR_BUTTONS } from "../../components";
 import { UI_CONFIG } from "../../../constants";
 import type { FSRSFlashcardItem } from "../../../types";
 import type { EditModeState } from "../../../state/store";
-import { BR_REGEX } from "../../../utils";
+import { stripBrTags } from "../../../utils";
 
 export interface CardContentCallbacks {
 	onStartEdit: (field: "question" | "answer") => void;
@@ -123,7 +123,7 @@ export class CardContent {
 		} else {
 			void MarkdownRenderer.render(
 				this.deps.app,
-				card.question.replace(BR_REGEX, "\n"),
+				stripBrTags(card.question),
 				questionEl,
 				sourcePath,
 				this.deps.component
@@ -161,7 +161,7 @@ export class CardContent {
 		} else {
 			void MarkdownRenderer.render(
 				this.deps.app,
-				card.answer.replace(BR_REGEX, "\n"),
+				stripBrTags(card.answer),
 				answerEl,
 				sourcePath,
 				this.deps.component

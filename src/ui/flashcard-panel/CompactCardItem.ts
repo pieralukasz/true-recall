@@ -9,6 +9,7 @@ import { BaseComponent } from "../component.base";
 import { setupLongPress, type LongPressResult } from "../utils";
 import type { FlashcardItem } from "../../types";
 import type { FSRSFlashcardItem } from "../../types/fsrs/card.types";
+import { stripBrTags } from "../../utils";
 
 export interface CompactCardItemProps {
     card: FlashcardItem;
@@ -122,7 +123,7 @@ export class CompactCardItem extends BaseComponent {
         const questionEl = mainRow.createDiv({
             cls: "ep:flex-1 ep:text-ui-small ep:text-obs-normal true-recall-card-markdown",
         });
-        void MarkdownRenderer.render(app, card.question, questionEl, filePath, component);
+        void MarkdownRenderer.render(app, stripBrTags(card.question), questionEl, filePath, component);
 
         // Menu icon
         const menuBtn = mainRow.createEl("button", {
@@ -155,7 +156,7 @@ export class CompactCardItem extends BaseComponent {
             cls: "ep:text-ui-small ep:text-obs-normal true-recall-panel-card-field",
         });
 
-        void MarkdownRenderer.render(app, card.answer, answerContent, filePath, component);
+        void MarkdownRenderer.render(app, stripBrTags(card.answer), answerContent, filePath, component);
     }
 
     private showCardMenu(e: MouseEvent): void {

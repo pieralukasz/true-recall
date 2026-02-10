@@ -7,6 +7,7 @@ import type { App, Component } from "obsidian";
 import { MarkdownRenderer } from "obsidian";
 import type { FlashcardItem, FSRSFlashcardItem } from "../../types";
 import { notify } from "../../services";
+import { stripBrTags } from "../../utils";
 import { BaseComponent } from "../component.base";
 import {
 	createEditableTextField,
@@ -126,7 +127,7 @@ export class CardReviewItem extends BaseComponent {
 			this.answerContentEl = fieldContent;
 		}
 
-		void MarkdownRenderer.render(app, content, fieldContent, filePath, component);
+		void MarkdownRenderer.render(app, stripBrTags(content), fieldContent, filePath, component);
 
 		// Add click handler for field
 		this.events.addEventListener(fieldEl, "click", (e) => this.handleFieldClick(e, field));
