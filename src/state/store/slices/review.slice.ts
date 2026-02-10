@@ -308,6 +308,39 @@ export function createReviewSlice(
 			}
 
 			const nextIndex = state.currentIndex + 1;
+
+			// If the next card is a pending learning card, swap it with
+			// the first actionable card further in the queue so due cards
+			// are shown before the waiting screen.
+			if (nextIndex < newQueue.length) {
+				const nextCard = newQueue[nextIndex];
+				if (nextCard) {
+					const nextIsLearning =
+						nextCard.fsrs.state === State.Learning ||
+						nextCard.fsrs.state === State.Relearning;
+					if (nextIsLearning && !isCardDueNowInternal(nextCard)) {
+						for (let i = nextIndex + 1; i < newQueue.length; i++) {
+							const candidate = newQueue[i];
+							if (!candidate) continue;
+							const candidateIsLearning =
+								candidate.fsrs.state === State.Learning ||
+								candidate.fsrs.state === State.Relearning;
+							if (!candidateIsLearning || isCardDueNowInternal(candidate)) {
+								[newQueue[nextIndex], newQueue[i]] = [newQueue[i]!, newQueue[nextIndex]!];
+								if (requeueData) {
+									if (requeueData.position === nextIndex) {
+										requeueData.position = i;
+									} else if (requeueData.position === i) {
+										requeueData.position = nextIndex;
+									}
+								}
+								break;
+							}
+						}
+					}
+				}
+			}
+
 			schedulingPreview = null;
 
 			set((s) => ({

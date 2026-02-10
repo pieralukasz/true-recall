@@ -123,8 +123,6 @@ export const DEFAULT_SETTINGS: TrueRecallSettings = {
 
 	copilotAutoContext: false,
 
-	reviewFontScale: 1.0,
-
 	loadBalanceEnabled: false,
 	loadBalanceTarget: 100,
 	loadBalanceMaxDeviation: 20,
