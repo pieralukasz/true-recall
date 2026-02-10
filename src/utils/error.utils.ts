@@ -17,11 +17,3 @@ export function getErrorMessage(error: unknown): string {
 	return String(error);
 }
 
-/**
- * Create a formatted error message with context
- * @param context - The action that failed (e.g., "save flashcard", "move card")
- * @param error - The error that occurred
- */
-export function formatErrorMessage(context: string, error: unknown): string {
-	return `Failed to ${context}: ${getErrorMessage(error)}`;
-}

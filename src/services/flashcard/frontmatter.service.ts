@@ -38,26 +38,6 @@ export class FrontmatterService {
 
 	constructor(private app: App) {}
 
-	/**
-	 * Generate frontmatter for a new flashcard file
-	 * @deprecated Flashcard MD files are no longer used - use SQL storage instead
-	 */
-	generateFrontmatter(
-		sourceFile: TFile,
-		projects: string[] = []
-	): string {
-		const projectsArray = projects.length > 0
-			? `projects: [${projects.map(p => `"${p}"`).join(", ")}]`
-			: "";
-		return `---
-source_link: "[[${sourceFile.basename}]]"
-tags: [flashcards/auto]
-${projectsArray}
----
-
-`;
-	}
-
 	private stripWikiLinkSyntax(name: string): string {
 		return stripWikiLinkSyntax(name);
 	}

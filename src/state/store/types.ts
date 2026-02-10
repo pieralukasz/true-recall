@@ -130,7 +130,6 @@ export interface PanelSliceState {
 	viewMode: ViewMode;
 	currentFile: TFile | null;
 	flashcardInfo: FlashcardInfo | null;
-	isFlashcardFile: boolean;
 	error: AppError | null;
 	renderVersion: number;
 	sourceNoteName: string | null;

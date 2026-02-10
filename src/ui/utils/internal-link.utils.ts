@@ -58,24 +58,3 @@ export function setupInternalLinkHandler(
 	return () => element.removeEventListener("click", handler, true);
 }
 
-/**
- * Setup internal link handlers for multiple elements
- *
- * @param elements - Array of container elements (filters out null/undefined)
- * @param options - Handler configuration
- * @returns Cleanup function to remove all event listeners
- */
-export function setupInternalLinkHandlers(
-	elements: (HTMLElement | null | undefined)[],
-	options: InternalLinkHandlerOptions
-): () => void {
-	const cleanups: (() => void)[] = [];
-
-	for (const el of elements) {
-		if (el) {
-			cleanups.push(setupInternalLinkHandler(el, options));
-		}
-	}
-
-	return () => cleanups.forEach((cleanup) => cleanup());
-}

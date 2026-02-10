@@ -19,7 +19,6 @@ function createInitialState(): PanelSliceState {
 		viewMode: "list",
 		currentFile: null,
 		flashcardInfo: null,
-		isFlashcardFile: false,
 		error: null,
 		renderVersion: 0,
 		sourceNoteName: null,
@@ -76,7 +75,6 @@ export function createPanelSlice(
 					status: "none",
 					viewMode: "list",
 					flashcardInfo: null,
-					isFlashcardFile: false,
 					error: null,
 				},
 			}));

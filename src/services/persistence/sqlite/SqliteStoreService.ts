@@ -289,11 +289,6 @@ export class SqliteStoreService {
         return this.db.raw;
     }
 
-    /** @deprecated Use store.stats directly */
-    getAggregations() {
-        return this.stats;
-    }
-
     getCards(): FSRSCardData[] {
         return this.cards.getAll();
     }

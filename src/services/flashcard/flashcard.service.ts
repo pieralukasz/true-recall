@@ -89,11 +89,6 @@ export class FlashcardManager {
 		return this.parserService.extractFlashcards(content);
 	}
 
-	/** @deprecated Always returns false - flashcard MD files no longer exist */
-	isFlashcardFile(_file: TFile): boolean {
-		return false;
-	}
-
 	async scanVault(): Promise<ScanResult> {
 		if (!this.store) {
 			throw new Error("Store not initialized");
@@ -136,10 +131,6 @@ export class FlashcardManager {
 		const timestamps = cards.map(c => c.fsrs.createdAt).filter((t): t is number => t !== undefined);
 		if (timestamps.length === 0) return null;
 		return Math.max(...timestamps);
-	}
-
-	async getFlashcardInfoDirect(sourceFile: TFile): Promise<FlashcardInfo> {
-		return this.getFlashcardInfo(sourceFile);
 	}
 
 	private createEmptyFlashcardInfo(_sourceFile: TFile): FlashcardInfo {
@@ -316,22 +307,6 @@ export class FlashcardManager {
 		targetNotePath: string
 	): Promise<boolean> {
 		return this.assignCardToSourceNote(cardId, targetNotePath);
-	}
-
-	async openFileAtCard(file: TFile, _cardId: string): Promise<void> {
-		const leaf = this.getLeafForFile(file);
-		await leaf.openFile(file);
-		this.app.workspace.setActiveLeaf(leaf, { focus: true });
-	}
-
-	/** @deprecated Use openSourceNote instead */
-	async openFlashcardFileAtCard(sourceFile: TFile, _cardId: string): Promise<void> {
-		await this.openSourceNote(sourceFile);
-	}
-
-	/** @deprecated Use openSourceNote instead */
-	async openFlashcardFile(sourceFile: TFile): Promise<void> {
-		await this.openSourceNote(sourceFile);
 	}
 
 	async openSourceNote(sourceFile: TFile): Promise<void> {

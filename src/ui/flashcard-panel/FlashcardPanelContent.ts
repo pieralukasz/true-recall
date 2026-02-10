@@ -43,7 +43,6 @@ export interface FlashcardPanelContentProps {
 	currentFile: TFile | null;
 	status: ProcessingStatus;
 	flashcardInfo: FlashcardInfo | null;
-	isFlashcardFile: boolean;
 	handlers: FlashcardPanelContentHandlers;
 	// Props for compact design
 	selectionMode: SelectionMode;
