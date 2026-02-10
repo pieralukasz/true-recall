@@ -11,6 +11,7 @@ import { ProjectsContent } from "./ProjectsContent";
 import { SelectionFooter } from "../components";
 import { SelectNoteModal, AddToProjectModal } from "../modals";
 import { filterActiveCardsOnly } from "../shared/helpers";
+import { buildProjectGraph, getDescendantProjects } from "../../utils/project-hierarchy";
 import type TrueRecallPlugin from "../../main";
 import type { ProjectNoteInfo } from "../../types";
 import type { ProjectsApi } from "../../state/store";
@@ -115,12 +116,14 @@ export class ProjectsView extends ItemView {
 		try {
 			const frontmatterIndex = this.plugin.frontmatterIndex;
 			const allProjectNames = frontmatterIndex.getAllValues("projects");
+			const projectGraph = buildProjectGraph(frontmatterIndex);
 			const projectNoteCounts = new Map<string, number>();
 			const projectNotes = new Map<string, ProjectNoteInfo[]>();
 			const sourceUidToProjects = new Map<string, string[]>();
 
 			for (const projectName of allProjectNames) {
 				const files = frontmatterIndex.getFilesByValue("projects", projectName);
+				const childProjects = projectGraph.childrenMap.get(projectName) ?? [];
 				const notes: ProjectNoteInfo[] = [];
 				for (const file of files) {
 					const uid = frontmatterIndex.getValues("flashcard_uid", file.path)[0];
@@ -137,10 +140,15 @@ export class ProjectsView extends ItemView {
 						continue;
 					}
 
+					// Skip child sub-project notes (they appear as children in the tree)
+					if (childProjects.includes(file.basename)) {
+						continue;
+					}
+
 					notes.push({
 						path: file.path,
 						name: file.basename,
-						cardCount: 0, // Will be updated after card counting
+						cardCount: 0,
 						newCount: 0,
 						learningCount: 0,
 						dueCount: 0,
@@ -251,9 +259,39 @@ export class ProjectsView extends ItemView {
 						newCount: projectNewCounts.get(name) ?? 0,
 						learningCount: projectLearningCounts.get(name) ?? 0,
 						notes: notesWithCounts,
+						childProjectNames: projectGraph.childrenMap.get(name) ?? [],
+						parentProjectNames: (projectGraph.parentMap.get(name) ?? [])
+							.filter((p) => projectGraph.projectNames.has(p)),
 					};
 				})
 				.sort((a, b) => a.name.localeCompare(b.name));
+
+			// Aggregate stats from descendant projects into parents
+			const ownStats = new Map(
+				projects.map((p) => [p.name, {
+					cardCount: p.cardCount,
+					newCount: p.newCount,
+					learningCount: p.learningCount,
+					dueCount: p.dueCount,
+					noteCount: p.noteCount,
+				}])
+			);
+			for (const project of projects) {
+				const descendants = getDescendantProjects(
+					project.name,
+					projectGraph.childrenMap
+				);
+				for (const descName of descendants) {
+					const own = ownStats.get(descName);
+					if (own) {
+						project.cardCount += own.cardCount;
+						project.newCount += own.newCount;
+						project.learningCount += own.learningCount;
+						project.dueCount += own.dueCount;
+						project.noteCount += own.noteCount;
+					}
+				}
+			}
 
 			const unassignedNotes: ProjectNoteInfo[] = [];
 
@@ -280,6 +318,7 @@ export class ProjectsView extends ItemView {
 			unassignedNotes.sort((a, b) => a.name.localeCompare(b.name));
 			this.projects.setProjects(projects);
 			this.projects.setUnassignedNotes(unassignedNotes);
+			this.projects.setProjectGraph(projectGraph);
 			this.projects.markFresh();
 		} catch (error) {
 			console.error("[ProjectsView] Error loading projects:", error);
@@ -469,6 +508,43 @@ export class ProjectsView extends ItemView {
 		await this.createProjectFromNote(note, projectName);
 	}
 
+	private async handleCreateSubProject(parentProjectName: string): Promise<void> {
+		const modal = new SelectNoteModal(this.app, {
+			title: `Create Sub-project under "${parentProjectName}"`,
+			excludeFlashcardFiles: true,
+		});
+		const result = await modal.openAndWait();
+		if (result.cancelled || !result.selectedNote) return;
+
+		const note = result.selectedNote;
+		const childProjectName = note.basename;
+
+		try {
+			const frontmatterService =
+				this.plugin.flashcardManager.getFrontmatterService();
+
+			let sourceUid = await frontmatterService.getSourceNoteUid(note);
+			if (!sourceUid) {
+				sourceUid = frontmatterService.generateUid();
+				await frontmatterService.setSourceNoteUid(note, sourceUid);
+			}
+
+			// Self-reference + parent project
+			await frontmatterService.setProjectsInFrontmatter(note, [
+				childProjectName,
+				parentProjectName,
+			]);
+
+			await this.loadProjects();
+			notify().success(
+				`Sub-project "${childProjectName}" created under "${parentProjectName}"`
+			);
+		} catch (error) {
+			console.error("[ProjectsView] Error creating sub-project:", error);
+			notify().error("Failed to create sub-project");
+		}
+	}
+
 	// v16: Projects only in frontmatter (no database)
 	private async createProjectFromNote(
 		note: TFile,
@@ -559,8 +635,10 @@ export class ProjectsView extends ItemView {
 		if (!this.panelComponent) return;
 
 		const state = this.projects;
-		const projectsWithCards = this.projects.getProjectsWithCards();
-		const emptyProjects = this.projects.getEmptyProjects();
+		const rootProjects = this.projects.getRootProjects();
+		const rootsWithCards = rootProjects.filter((p) => p.cardCount > 0);
+		const rootsEmpty = rootProjects.filter((p) => p.cardCount === 0);
+		const allProjects = state.projects;
 
 		const contentContainer = this.panelComponent.getContentContainer();
 
@@ -568,8 +646,10 @@ export class ProjectsView extends ItemView {
 			contentContainer.empty();
 			this.contentComponent = new ProjectsContent(contentContainer, {
 				isLoading: state.isLoading,
-				projectsWithCards,
-				emptyProjects,
+				projectsWithCards: rootsWithCards,
+				emptyProjects: rootsEmpty,
+				allProjects,
+				projectGraph: state.projectGraph,
 				searchQuery: state.searchQuery,
 				expandedProjectIds: state.expandedProjectIds,
 				app: this.app,
@@ -581,6 +661,8 @@ export class ProjectsView extends ItemView {
 				onAddNotes: (id, name) =>
 					void this.handleAddNotesToProject(id, name),
 				onCreateFromNote: () => void this.handleCreateFromNote(),
+				onCreateSubProject: (name) =>
+					void this.handleCreateSubProject(name),
 				onRefresh: () => void this.loadProjects(),
 				onToggleExpand: (id) => this.projects.toggleProjectExpanded(id),
 				selectionMode: state.selectionMode,
@@ -601,8 +683,10 @@ export class ProjectsView extends ItemView {
 		} else {
 			this.contentComponent.updateProps({
 				isLoading: state.isLoading,
-				projectsWithCards,
-				emptyProjects,
+				projectsWithCards: rootsWithCards,
+				emptyProjects: rootsEmpty,
+				allProjects,
+				projectGraph: state.projectGraph,
 				searchQuery: state.searchQuery,
 				expandedProjectIds: state.expandedProjectIds,
 				selectionMode: state.selectionMode,
