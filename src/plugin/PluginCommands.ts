@@ -92,11 +92,12 @@ export function registerCommands(plugin: TrueRecallPlugin): void {
 		callback: () => void plugin.createManualBackup(),
 	});
 
-	plugin.addCommand({
-		id: "sync-cloud",
-		name: "Sync cloud data",
-		callback: () => void plugin.syncCloud(),
-	});
+	// Cloud sync - coming soon
+	// plugin.addCommand({
+	// 	id: "sync-cloud",
+	// 	name: "Sync cloud data",
+	// 	callback: () => void plugin.syncCloud(),
+	// });
 
 	plugin.addCommand({
 		id: "add-flashcard-uid",
