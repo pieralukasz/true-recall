@@ -48,6 +48,12 @@ function createMockApp(): any {
 				mkdir: vi.fn(async () => {}),
 			},
 			getFiles: vi.fn(() => []),
+			getAbstractFileByPath: vi.fn(() => null),
+			createFolder: vi.fn(async () => {}),
+			create: vi.fn(async () => {}),
+		},
+		metadataCache: {
+			getFileCache: vi.fn(() => null),
 		},
 	};
 }
@@ -56,6 +62,8 @@ function createMockStore(): any {
 	return {
 		cards: {
 			getCardIdByQuestion: vi.fn(() => null),
+			getCardIdByQuestionAndClozeIndex: vi.fn(() => null),
+			updateCardSourceUid: vi.fn(),
 		},
 		set: vi.fn(),
 		flush: vi.fn(async () => {}),
@@ -331,7 +339,7 @@ describe("AnkiImportService", () => {
 
 			await service.importApkg(new ArrayBuffer(0), defaultOptions());
 
-			expect(store.flush).toHaveBeenCalledTimes(1);
+			expect(store.flush).toHaveBeenCalledTimes(2);
 		});
 
 		it("handles error in single card without aborting", async () => {

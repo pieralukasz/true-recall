@@ -8,6 +8,7 @@ export const VIEW_TYPE_PROJECTS = "true-recall-projects";
 export const VIEW_TYPE_SIMULATOR = "true-recall-simulator";
 export const VIEW_TYPE_ORPHANED_CARDS = "true-recall-orphaned-cards";
 export const VIEW_TYPE_NOTE_HUB = "true-recall-note-hub";
+export const VIEW_TYPE_CARD_BROWSER = "true-recall-card-browser";
 
 export interface AIModelInfo {
 	name: string;

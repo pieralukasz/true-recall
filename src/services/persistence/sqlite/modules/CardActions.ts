@@ -299,6 +299,13 @@ export class CardActions {
         )?.id;
     }
 
+    getCardIdByQuestionAndClozeIndex(question: string, clozeIndex: number): string | undefined {
+        return this.db.get<{ id: string }>(
+            `SELECT id FROM cards WHERE deleted_at IS NULL AND question = ? AND cloze_index = ? LIMIT 1`,
+            [question, clozeIndex]
+        )?.id;
+    }
+
     softDeleteWithCascade(cardId: string): void {
         const now = Date.now();
         this.db.transaction(() => {

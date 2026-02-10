@@ -1,4 +1,4 @@
-import type { App } from "obsidian";
+import { type App, normalizePath, type TFile } from "obsidian";
 import type {
 	AnkiCard,
 	AnkiImportOptions,
@@ -15,6 +15,8 @@ import { ApkgParserService } from "./apkg-parser.service";
 import { AnkiConverterService } from "./anki-converter.service";
 import { AnkiSchedulingService } from "./anki-scheduling.service";
 import { AnkiMediaService } from "./anki-media.service";
+
+const IMPORT_FOLDER = "Anki Import";
 
 export class AnkiImportService {
 	constructor(
@@ -82,9 +84,9 @@ export class AnkiImportService {
 
 		// 8. Process each converted card
 		const importedCardIds: string[] = [];
+		const deckToCardIds = new Map<string, string[]>();
 
 		this.store.transaction(() => {
-			// Track reversed card ID mapping: ankiCardId → TR cardId
 			const ankiToTrCardId = new Map<number, string>();
 
 			for (const converted of convertedCards) {
@@ -104,6 +106,10 @@ export class AnkiImportService {
 						importedCardIds.push(importResult.cardId);
 						result.imported++;
 						projectSet.add(converted.deckName);
+
+						const list = deckToCardIds.get(converted.deckName) ?? [];
+						list.push(importResult.cardId);
+						deckToCardIds.set(converted.deckName, list);
 					} else if (importResult.status === "duplicate") {
 						result.duplicates++;
 					} else {
@@ -118,7 +124,6 @@ export class AnkiImportService {
 				}
 			}
 
-			// Insert review logs for imported cards (if scheduling enabled)
 			if (options.importScheduling) {
 				this.importReviewLogs(
 					convertedCards,
@@ -131,10 +136,14 @@ export class AnkiImportService {
 
 		result.projects = [...projectSet];
 
-		// Flush to persist changes
 		await this.store.flush();
 
-		// Emit bulk-change event to refresh all views
+		// Create source notes per deck so imported cards appear in panel/projects
+		if (deckToCardIds.size > 0) {
+			await this.createSourceNotesForDecks(deckToCardIds);
+			await this.store.flush();
+		}
+
 		if (importedCardIds.length > 0) {
 			getEventBus().emit({
 				type: "cards:bulk-change",
@@ -157,11 +166,9 @@ export class AnkiImportService {
 		options: AnkiImportOptions,
 		ankiToTrCardId: Map<number, string>,
 	): { status: "imported"; cardId: string } | { status: "duplicate" | "skipped" } {
-		// Check for duplicates by question content
 		let question = converted.question;
 		let answer = converted.answer;
 
-		// Update media references if media was imported
 		if (mediaPathMapping.size > 0) {
 			question = mediaService.updateImportedContent(
 				question,
@@ -177,19 +184,18 @@ export class AnkiImportService {
 			return { status: "skipped" };
 		}
 
-		// Check duplicate by exact question match
-		const existingId = this.store.cards.getCardIdByQuestion(question);
+		const existingId =
+			converted.cardType === "cloze" && converted.clozeIndex !== undefined
+				? this.store.cards.getCardIdByQuestionAndClozeIndex(question, converted.clozeIndex)
+				: this.store.cards.getCardIdByQuestion(question);
 		if (existingId) {
-			// Map this anki card to the existing TR card for reversed linking
 			ankiToTrCardId.set(converted.ankiCardId, existingId);
 			return { status: "duplicate" };
 		}
 
-		// Generate new card ID
 		const cardId = generateUUID();
 		ankiToTrCardId.set(converted.ankiCardId, cardId);
 
-		// Build FSRS card data
 		let cardData: FSRSCardData;
 
 		if (options.importScheduling) {
@@ -200,7 +206,6 @@ export class AnkiImportService {
 			cardData = this.fsrsService.createNewCard(cardId);
 		}
 
-		// Set content fields
 		cardData.question = question;
 		cardData.answer = answer;
 		cardData.cardType = converted.cardType;
@@ -229,7 +234,6 @@ export class AnkiImportService {
 			}
 		}
 
-		// Save the card
 		this.store.set(cardId, cardData);
 
 		return { status: "imported", cardId };
@@ -265,6 +269,190 @@ export class AnkiImportService {
 				});
 			}
 		}
+	}
+
+	/**
+	 * Creates a hierarchical note structure matching the Anki deck hierarchy.
+	 *
+	 * For deck "Math::Calculus::Integrals":
+	 *   Anki Import/Math.md             (MOC, tag: input/Math)
+	 *   Anki Import/Math/Calculus.md    (MOC, tag: input/Math/Calculus)
+	 *   Anki Import/Math/Calculus/Integrals.md  (leaf, tag: input/Math/Calculus/Integrals)
+	 *
+	 * Only leaf decks (those with actual cards) get cards linked via source_uid.
+	 * Parent-only decks become MOC notes with [[child]] links.
+	 */
+	private async createSourceNotesForDecks(
+		deckToCardIds: Map<string, string[]>,
+	): Promise<void> {
+		const basePath = normalizePath(IMPORT_FOLDER);
+		if (!this.app.vault.getAbstractFileByPath(basePath)) {
+			await this.app.vault.createFolder(basePath);
+		}
+
+		// Collect all hierarchy levels needed
+		// Key: full deck path (e.g. "Math::Calculus"), Value: direct children names
+		const parentToChildren = new Map<string, Set<string>>();
+		const allSegmentPaths = new Set<string>();
+
+		for (const deckName of deckToCardIds.keys()) {
+			const segments = deckName.split("::");
+
+			// Register every prefix level
+			for (let i = 0; i < segments.length; i++) {
+				const path = segments.slice(0, i + 1).join("::");
+				allSegmentPaths.add(path);
+
+				// Track parent→child relationships
+				if (i > 0) {
+					const parentPath = segments.slice(0, i).join("::");
+					if (!parentToChildren.has(parentPath)) {
+						parentToChildren.set(parentPath, new Set());
+					}
+					parentToChildren.get(parentPath)!.add(segments[i]!);
+				}
+			}
+		}
+
+		// Create notes for each hierarchy level (sorted so parents are created before children)
+		const sortedPaths = [...allSegmentPaths].sort(
+			(a, b) => a.split("::").length - b.split("::").length,
+		);
+
+		for (const deckPath of sortedPaths) {
+			const segments = deckPath.split("::");
+			const name = segments[segments.length - 1]!;
+			const safeName = name.replace(/[\\/:*?"<>|]/g, " - ").trim() || "Default";
+
+			// Build hierarchical tag: input/Math/Calculus/Integrals
+			const tagPath = segments
+				.map((s) => s.replace(/[\\/:*?"<>|]/g, " - ").trim())
+				.join("/");
+
+			// Build filesystem path
+			const folderSegments = segments.slice(0, -1).map((s) =>
+				s.replace(/[\\/:*?"<>|]/g, " - ").trim(),
+			);
+			const folderPath =
+				folderSegments.length > 0
+					? normalizePath(`${IMPORT_FOLDER}/${folderSegments.join("/")}`)
+					: basePath;
+
+			// Ensure folder exists
+			if (folderPath !== basePath && !this.app.vault.getAbstractFileByPath(folderPath)) {
+				await this.ensureFolderRecursive(folderPath);
+			}
+
+			const notePath = normalizePath(`${folderPath}/${safeName}.md`);
+			const cardIds = deckToCardIds.get(deckPath);
+			const children = parentToChildren.get(deckPath);
+			const isLeaf = !children || children.size === 0;
+
+			const uid = await this.createOrUpdateNote(
+				notePath,
+				name,
+				tagPath,
+				isLeaf ? undefined : children,
+			);
+
+			// Link cards to this note (only if this deck level has cards)
+			if (cardIds) {
+				for (const cardId of cardIds) {
+					this.store.cards.updateCardSourceUid(cardId, uid);
+				}
+			}
+		}
+	}
+
+	private async createOrUpdateNote(
+		notePath: string,
+		title: string,
+		tagPath: string,
+		children?: Set<string>,
+	): Promise<string> {
+		const existingFile = this.app.vault.getAbstractFileByPath(notePath) as TFile | null;
+
+		if (existingFile) {
+			const cache = this.app.metadataCache.getFileCache(existingFile);
+			const existingUid = cache?.frontmatter?.["flashcard_uid"] as string | undefined;
+
+			if (existingUid) {
+				// Update child links if this is a parent note
+				if (children && children.size > 0) {
+					await this.updateChildLinks(existingFile, children);
+				}
+				return existingUid;
+			}
+
+			// No UID: prepend frontmatter
+			const uid = this.generateUid();
+			const content = await this.app.vault.read(existingFile);
+			const frontmatter = this.buildFrontmatter(uid, tagPath);
+			await this.app.vault.modify(existingFile, `${frontmatter}\n\n${content}`);
+			return uid;
+		}
+
+		// Create new note
+		const uid = this.generateUid();
+		const frontmatter = this.buildFrontmatter(uid, tagPath);
+
+		const bodyParts = [`# ${title}`, ""];
+
+		if (children && children.size > 0) {
+			for (const child of [...children].sort()) {
+				bodyParts.push(`- [[${child}]]`);
+			}
+			bodyParts.push("");
+		} else {
+			bodyParts.push("Imported from Anki.", "");
+		}
+
+		await this.app.vault.create(notePath, `${frontmatter}\n\n${bodyParts.join("\n")}`);
+		return uid;
+	}
+
+	private buildFrontmatter(uid: string, tagPath: string): string {
+		return [
+			"---",
+			`flashcard_uid: ${uid}`,
+			"tags:",
+			`  - input/${tagPath}`,
+			"---",
+		].join("\n");
+	}
+
+	private async updateChildLinks(
+		file: TFile,
+		children: Set<string>,
+	): Promise<void> {
+		const content = await this.app.vault.read(file);
+
+		// Check which children are already linked
+		const missingChildren = [...children].filter(
+			(child) => !content.includes(`[[${child}]]`),
+		);
+
+		if (missingChildren.length === 0) return;
+
+		const newLinks = missingChildren.map((child) => `- [[${child}]]`).join("\n");
+		await this.app.vault.modify(file, `${content}\n${newLinks}\n`);
+	}
+
+	private async ensureFolderRecursive(folderPath: string): Promise<void> {
+		const parts = folderPath.split("/");
+		let current = "";
+
+		for (const part of parts) {
+			current = current ? `${current}/${part}` : part;
+			const normalized = normalizePath(current);
+			if (!this.app.vault.getAbstractFileByPath(normalized)) {
+				await this.app.vault.createFolder(normalized);
+			}
+		}
+	}
+
+	private generateUid(): string {
+		return crypto.randomUUID().replace(/-/g, "").slice(0, 8);
 	}
 
 	private buildMinimalAnkiCard(converted: ConvertedCard) {

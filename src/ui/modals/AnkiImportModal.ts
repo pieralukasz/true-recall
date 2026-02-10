@@ -130,7 +130,18 @@ export class AnkiImportModal extends BaseModal {
 				text: `Failed to parse file: ${errMsg}`,
 				cls: "ep:text-ui-small ep:text-red-500 ep:py-4",
 			});
-			this.renderFileSelection(container);
+			this.createButtonsSection(container, [
+				{
+					text: "Try again",
+					type: "secondary",
+					onClick: () => this.renderFileSelection(container),
+				},
+				{
+					text: "Close",
+					type: "secondary",
+					onClick: () => this.close(),
+				},
+			]);
 		}
 	}
 

@@ -363,14 +363,18 @@ export class ApkgBuilderService {
         card: FSRSCardData,
         deckMap: Map<string, DeckInfo>
     ): number {
+        if (card.deckKey) {
+            const deck = deckMap.get(card.deckKey);
+            if (deck) return deck.id;
+        }
+
         if (card.projects && card.projects.length > 0) {
             const projectName = card.projects[0]!;
             const deck = deckMap.get(projectName);
             if (deck) return deck.id;
         }
 
-        const defaultDeck = deckMap.get("Default");
-        return defaultDeck?.id ?? 1;
+        return deckMap.get("Default")?.id ?? 1;
     }
 
     private buildModelsJson(): string {
