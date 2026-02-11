@@ -22,6 +22,7 @@ export class SqliteSchemaManager {
 		19: migrations.migration018ToV19,
 		20: migrations.migration019ToV20,
 		21: migrations.migration020ToV21,
+		22: migrations.migration021ToV22,
 	};
 
 	constructor(db: DatabaseLike, onSchemaChange: () => void) {
@@ -82,6 +83,7 @@ export class SqliteSchemaManager {
                 time_spent_ms INTEGER,
                 updated_at INTEGER,
                 deleted_at INTEGER DEFAULT NULL,
+                preset_name TEXT,
                 FOREIGN KEY (card_id) REFERENCES cards(id) ON DELETE CASCADE
             );
 
@@ -89,6 +91,7 @@ export class SqliteSchemaManager {
             CREATE INDEX IF NOT EXISTS idx_revlog_date ON review_log(reviewed_at);
             CREATE INDEX IF NOT EXISTS idx_revlog_deleted ON review_log(deleted_at);
             CREATE INDEX IF NOT EXISTS idx_revlog_card_active ON review_log(card_id, deleted_at);
+            CREATE INDEX IF NOT EXISTS idx_revlog_preset ON review_log(preset_name);
 
             -- Daily statistics
             CREATE TABLE IF NOT EXISTS daily_stats (
@@ -119,14 +122,14 @@ export class SqliteSchemaManager {
             );
 
             -- Set schema version
-            INSERT OR REPLACE INTO meta (key, value) VALUES ('schema_version', '21');
+            INSERT OR REPLACE INTO meta (key, value) VALUES ('schema_version', '22');
             INSERT OR REPLACE INTO meta (key, value) VALUES ('created_at', datetime('now'));
         `);
 	}
 
 	runMigrations(): void {
 		const currentVersion = this.getSchemaVersion();
-		const latestVersion = 21;
+		const latestVersion = 22;
 
 		if (currentVersion >= latestVersion) {
 			return; // Already at latest version

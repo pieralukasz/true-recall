@@ -320,6 +320,7 @@ describe("Sync Operations", () => {
 				timeSpentMs: 5000,
 				updatedAt: Date.now(),
 				deletedAt: null,
+				presetName: null,
 			};
 
 			ctx.stats.upsertReviewLogFromRemote(remoteLog);
@@ -342,6 +343,7 @@ describe("Sync Operations", () => {
 				timeSpentMs: 3000,
 				updatedAt: Date.now(),
 				deletedAt: null,
+				presetName: null,
 			};
 
 			ctx.stats.upsertReviewLogFromRemote(initialLog);

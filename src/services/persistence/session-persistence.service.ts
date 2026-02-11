@@ -50,7 +50,8 @@ export class SessionPersistenceService {
 		rating?: Grade,
 		previousState?: State,
 		scheduledDays?: number,
-		elapsedDays?: number
+		elapsedDays?: number,
+		presetName?: string
 	): void {
 		const today = this.getTodayKey();
 
@@ -83,7 +84,8 @@ export class SessionPersistenceService {
 				scheduledDays ?? 0,
 				elapsedDays ?? 0,
 				previousState ?? 0,
-				durationMs
+				durationMs,
+				presetName
 			);
 		}
 	}

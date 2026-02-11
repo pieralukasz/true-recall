@@ -59,9 +59,9 @@ export class CardProjects {
 		});
 
 		for (const project of projects) {
-			const badgeEl = projectsEl.createEl("button", {
+			const badgeEl = projectsEl.createEl("a", {
 				text: project,
-				cls: "ep:py-1 ep:px-2 ep:text-ui-smaller ep:border ep:border-obs-border ep:rounded-xl ep:bg-obs-primary ep:text-obs-muted ep:cursor-pointer ep:transition-all ep:hover:border-obs-interactive ep:hover:text-obs-normal",
+				cls: "ep:text-obs-accent ep:text-ui-smaller ep:cursor-pointer ep:no-underline ep:hover:underline ep:transition-colors",
 				attr: { "data-action": "open-project", "data-project": project },
 			});
 

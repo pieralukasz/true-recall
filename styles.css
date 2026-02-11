@@ -1288,13 +1288,6 @@
       }
     }
   }
-  .ep\:hover\:text-obs-muted {
-    &:hover {
-      @media (hover: hover) {
-        color: var(--ep-color-obs-muted);
-      }
-    }
-  }
   .ep\:hover\:text-obs-normal {
     &:hover {
       @media (hover: hover) {

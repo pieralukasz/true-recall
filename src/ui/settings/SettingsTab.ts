@@ -27,6 +27,7 @@ type SettingsTabId = "general" | "ai" | "scheduling" | "fsrs" | "data" | "sync";
 export class TrueRecallSettingTab extends PluginSettingTab {
 	plugin: TrueRecallPlugin;
 	private activeTab: SettingsTabId = "general";
+	private selectedPresetId: string = "";
 
 	constructor(app: App, plugin: TrueRecallPlugin) {
 		super(app, plugin);
@@ -366,7 +367,14 @@ export class TrueRecallSettingTab extends PluginSettingTab {
 	}
 
 	private renderSchedulingTab(container: HTMLElement): void {
+		const preset = this.getSelectedPreset();
+
 		new Setting(container).setName("Learning steps").setHeading();
+
+		const presetNote = container.createDiv({ cls: "setting-item-description" });
+		presetNote.createEl("p", {
+			text: `Learning steps are configured per-preset. Currently editing: "${preset.name}". Change preset in the FSRS tab.`,
+		});
 
 		new Setting(container)
 			.setName("Learning steps (minutes)")
@@ -374,15 +382,15 @@ export class TrueRecallSettingTab extends PluginSettingTab {
 			.addText((text) =>
 				text
 					.setPlaceholder("1, 10")
-					.setValue(this.plugin.settings.learningSteps.join(", "))
+					.setValue(preset.learningSteps.join(", "))
 					.onChange(async (value) => {
 						const steps = value
 							.split(",")
 							.map((s) => parseInt(s.trim()))
 							.filter((n) => !isNaN(n) && n > 0);
-						this.plugin.settings.learningSteps =
-							steps.length > 0 ? steps : [1, 10];
-						await this.plugin.saveSettings();
+						await this.updateSelectedPreset({
+							learningSteps: steps.length > 0 ? steps : [1, 10],
+						});
 					})
 			);
 
@@ -392,15 +400,15 @@ export class TrueRecallSettingTab extends PluginSettingTab {
 			.addText((text) =>
 				text
 					.setPlaceholder("10")
-					.setValue(this.plugin.settings.relearningSteps.join(", "))
+					.setValue(preset.relearningSteps.join(", "))
 					.onChange(async (value) => {
 						const steps = value
 							.split(",")
 							.map((s) => parseInt(s.trim()))
 							.filter((n) => !isNaN(n) && n > 0);
-						this.plugin.settings.relearningSteps =
-							steps.length > 0 ? steps : [10];
-						await this.plugin.saveSettings();
+						await this.updateSelectedPreset({
+							relearningSteps: steps.length > 0 ? steps : [10],
+						});
 					})
 			);
 
@@ -460,7 +468,86 @@ export class TrueRecallSettingTab extends PluginSettingTab {
 			});
 	}
 
+	private getSelectedPreset() {
+		const presets = this.plugin.settings.fsrsPresets;
+		if (!this.selectedPresetId) {
+			this.selectedPresetId = this.plugin.settings.defaultPresetId;
+		}
+		return presets.find(p => p.id === this.selectedPresetId) ?? presets[0]!;
+	}
+
+	private async updateSelectedPreset(changes: Partial<import("../../types/settings.types").FSRSPreset>): Promise<void> {
+		await this.plugin.presetService.updatePreset(this.getSelectedPreset().id, changes);
+	}
+
 	private renderFSRSTab(container: HTMLElement): void {
+		const presets = this.plugin.settings.fsrsPresets;
+		const preset = this.getSelectedPreset();
+
+		// ── Preset selector ──
+		// eslint-disable-next-line obsidianmd/ui/sentence-case -- FSRS is an acronym
+		new Setting(container).setName("FSRS presets").setHeading();
+
+		const presetSetting = new Setting(container)
+			.setName("Active preset")
+			.setDesc("Each preset has its own retention target, weights, steps, and daily limits")
+			.addDropdown((dropdown) => {
+				for (const p of presets) {
+					dropdown.addOption(p.id, p.name);
+				}
+				dropdown.setValue(preset.id);
+				dropdown.onChange((value) => {
+					this.selectedPresetId = value;
+					this.display();
+				});
+			});
+
+		presetSetting.addButton((btn) =>
+			btn.setButtonText("New").setTooltip("Create new preset").onClick(async () => {
+				const base = this.getSelectedPreset();
+				const newPreset = await this.plugin.presetService.createPreset({
+					name: `${base.name} (copy)`,
+					requestRetention: base.requestRetention,
+					maximumInterval: base.maximumInterval,
+					weights: base.weights ? [...base.weights] : null,
+					learningSteps: [...base.learningSteps],
+					relearningSteps: [...base.relearningSteps],
+					newCardsPerDay: base.newCardsPerDay,
+					reviewsPerDay: base.reviewsPerDay,
+					lastOptimization: null,
+					lastOptimizationReviewCount: null,
+					lastOptimizationMetrics: null,
+				});
+				this.selectedPresetId = newPreset.id;
+				this.display();
+			})
+		);
+
+		const isDefault = preset.id === this.plugin.settings.defaultPresetId;
+		if (!isDefault) {
+			presetSetting.addButton((btn) =>
+				btn.setButtonText("Delete").setWarning().onClick(async () => {
+					await this.plugin.presetService.deletePreset(preset.id);
+					this.selectedPresetId = this.plugin.settings.defaultPresetId;
+					this.display();
+				})
+			);
+		}
+
+		// Rename
+		if (!isDefault) {
+			new Setting(container)
+				.setName("Preset name")
+				.addText((text) =>
+					text.setValue(preset.name).onChange(async (value) => {
+						if (value.trim()) {
+							await this.updateSelectedPreset({ name: value.trim() });
+						}
+					})
+				);
+		}
+
+		// ── Algorithm settings (per-preset) ──
 		// eslint-disable-next-line obsidianmd/ui/sentence-case -- FSRS is an acronym
 		new Setting(container).setName("FSRS algorithm").setHeading();
 
@@ -476,11 +563,10 @@ export class TrueRecallSettingTab extends PluginSettingTab {
 						FSRS_CONFIG.maxRetention,
 						0.01
 					)
-					.setValue(this.plugin.settings.fsrsRequestRetention)
+					.setValue(preset.requestRetention)
 					.setDynamicTooltip()
 					.onChange(async (value) => {
-						this.plugin.settings.fsrsRequestRetention = value;
-						await this.plugin.saveSettings();
+						await this.updateSelectedPreset({ requestRetention: value });
 					})
 			);
 
@@ -490,23 +576,49 @@ export class TrueRecallSettingTab extends PluginSettingTab {
 			.addText((text) =>
 				text
 					.setPlaceholder("36500")
-					.setValue(String(this.plugin.settings.fsrsMaximumInterval))
+					.setValue(String(preset.maximumInterval))
 					.onChange(async (value) => {
 						const num = parseInt(value) || 36500;
-						this.plugin.settings.fsrsMaximumInterval = Math.max(
-							1,
-							num
-						);
-						await this.plugin.saveSettings();
+						await this.updateSelectedPreset({ maximumInterval: Math.max(1, num) });
 					})
 			);
 
+		// ── Daily limits (per-preset) ──
+		new Setting(container).setName("Daily limits").setHeading();
+
+		new Setting(container)
+			.setName("New cards per day")
+			.setDesc("Maximum number of new cards introduced per day")
+			.addText((text) =>
+				text
+					.setPlaceholder("20")
+					.setValue(String(preset.newCardsPerDay))
+					.onChange(async (value) => {
+						const num = parseInt(value) || 20;
+						await this.updateSelectedPreset({ newCardsPerDay: Math.max(0, num) });
+					})
+			);
+
+		new Setting(container)
+			.setName("Reviews per day")
+			.setDesc("Maximum number of reviews per day (0 = unlimited)")
+			.addText((text) =>
+				text
+					.setPlaceholder("200")
+					.setValue(String(preset.reviewsPerDay))
+					.onChange(async (value) => {
+						const num = parseInt(value) || 200;
+						await this.updateSelectedPreset({ reviewsPerDay: Math.max(0, num) });
+					})
+			);
+
+		// ── FSRS parameters (per-preset) ──
 		// eslint-disable-next-line obsidianmd/ui/sentence-case -- FSRS is an acronym
 		new Setting(container).setName("FSRS parameters").setHeading();
 
 		const totalReviews = this.plugin.cardStore?.stats?.getTotalReviewCount() ?? 0;
-		const lastOpt = this.plugin.settings.lastOptimization;
-		const lastOptCount = this.plugin.settings.lastOptimizationReviewCount;
+		const lastOpt = preset.lastOptimization;
+		const lastOptCount = preset.lastOptimizationReviewCount;
 
 		const optimizerInfo = container.createDiv({ cls: "setting-item-description" });
 		// eslint-disable-next-line obsidianmd/ui/sentence-case -- FSRS is an acronym
@@ -523,7 +635,7 @@ export class TrueRecallSettingTab extends PluginSettingTab {
 		new Setting(container)
 			.setName("Optimize parameters")
 			// eslint-disable-next-line obsidianmd/ui/sentence-case -- FSRS is an acronym
-			.setDesc("Analyze your review history to find optimal FSRS weights")
+			.setDesc("Analyze your review history to find optimal FSRS weights for this preset")
 			.addButton((button) =>
 				button
 					.setButtonText("Optimize now")
@@ -532,13 +644,18 @@ export class TrueRecallSettingTab extends PluginSettingTab {
 						button.setButtonText("Optimizing...");
 						button.setDisabled(true);
 						try {
-							const result = await this.plugin.fsrsHelper?.optimizeParameters();
+							const result = await this.plugin.fsrsHelper?.optimizeParameters(
+								undefined,
+								preset.name,
+								preset.weights
+							);
 							if (result && result.metrics.convergenceStatus !== "insufficient_data") {
-								this.plugin.settings.fsrsWeights = result.weights;
-								this.plugin.settings.lastOptimization = new Date().toISOString();
-								this.plugin.settings.lastOptimizationReviewCount = result.metrics.reviewCount;
-								this.plugin.settings.lastOptimizationMetrics = result.metrics;
-								await this.plugin.saveSettings();
+								await this.updateSelectedPreset({
+									weights: result.weights,
+									lastOptimization: new Date().toISOString(),
+									lastOptimizationReviewCount: result.metrics.reviewCount,
+									lastOptimizationMetrics: result.metrics,
+								});
 								notify().success(`Optimization complete! RMSE: ${result.metrics.rmse.toFixed(4)}`);
 								this.display();
 							} else {
@@ -554,17 +671,18 @@ export class TrueRecallSettingTab extends PluginSettingTab {
 			)
 			.addButton((button) =>
 				button.setButtonText("Reset to defaults").onClick(async () => {
-					this.plugin.settings.fsrsWeights = null;
-					this.plugin.settings.lastOptimization = null;
-					this.plugin.settings.lastOptimizationReviewCount = null;
-					this.plugin.settings.lastOptimizationMetrics = null;
-					await this.plugin.saveSettings();
+					await this.updateSelectedPreset({
+						weights: null,
+						lastOptimization: null,
+						lastOptimizationReviewCount: null,
+						lastOptimizationMetrics: null,
+					});
 					notify().success("Parameters reset to defaults");
 					this.display();
 				})
 			);
 
-		const currentWeights = this.plugin.settings.fsrsWeights;
+		const currentWeights = preset.weights;
 		const weightsString = currentWeights ? currentWeights.join(", ") : "";
 
 		new Setting(container)
@@ -581,8 +699,7 @@ export class TrueRecallSettingTab extends PluginSettingTab {
 					.onChange(async (value) => {
 						const trimmed = value.trim();
 						if (trimmed === "") {
-							this.plugin.settings.fsrsWeights = null;
-							await this.plugin.saveSettings();
+							await this.updateSelectedPreset({ weights: null });
 							return;
 						}
 
@@ -604,10 +721,10 @@ export class TrueRecallSettingTab extends PluginSettingTab {
 							return;
 						}
 
-						this.plugin.settings.fsrsWeights = parts;
-						this.plugin.settings.lastOptimization =
-							new Date().toISOString();
-						await this.plugin.saveSettings();
+						await this.updateSelectedPreset({
+							weights: parts,
+							lastOptimization: new Date().toISOString(),
+						});
 						notify().success("FSRS weights saved!");
 					});
 			});

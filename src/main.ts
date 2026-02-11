@@ -34,6 +34,7 @@ import {
 } from "./services";
 import { BackgroundBackupManager } from "./services/persistence/background-backup.service";
 import { FSRSHelperService } from "./services/fsrs-helper";
+import { PresetService } from "./services/core/preset.service";
 import {
 	DB_FOLDER,
 	getDeviceDbFilename,
@@ -66,6 +67,7 @@ import {
 	AnkiImportModal,
 	AnkiExportModal,
 	CsvExportModal,
+	SetPresetModal,
 	type DeviceSelectionResult,
 } from "./ui/modals";
 import { CustomStudyModal, type CustomStudyModalScope } from "./ui/modals/CustomStudyModal";
@@ -101,6 +103,7 @@ export default class TrueRecallPlugin extends Plugin {
 	orphanedCardsService: OrphanedCardsService | null = null;
 	undoService: UndoService | null = null;
 	fsrsHelper: FSRSHelperService | null = null;
+	presetService!: PresetService;
 	store: AppStore | null = null;
 	projectDataService: ProjectDataService | null = null;
 
@@ -127,6 +130,7 @@ export default class TrueRecallPlugin extends Plugin {
 		this.frontmatterIndex = new FrontmatterIndexService(this.app);
 		this.frontmatterIndex.register({ field: "flashcard_uid", type: "string", unique: true });
 		this.frontmatterIndex.register({ field: "projects", type: "array", unique: false });
+		this.frontmatterIndex.register({ field: "fsrs_preset", type: "string", unique: false });
 		this.frontmatterIndex.registerEvents(this);
 
 		// Build index after metadataCache is fully loaded
@@ -135,6 +139,12 @@ export default class TrueRecallPlugin extends Plugin {
 		});
 
 		this.flashcardManager = new FlashcardManager(this.app, this.settings, this.frontmatterIndex);
+
+		this.presetService = new PresetService(
+			() => this.settings,
+			() => this.saveSettings(),
+			this.frontmatterIndex
+		);
 
 		const fsrsSettings = extractFSRSSettings(this.settings);
 		this.fsrsService = new FSRSService(fsrsSettings);
@@ -357,10 +367,11 @@ ${cardList}${moreText}
 	}
 
 	async loadSettings(): Promise<void> {
+		const rawData = (await this.loadData()) as Partial<TrueRecallSettings> | null;
 		this.settings = Object.assign(
 			{},
 			DEFAULT_SETTINGS,
-			(await this.loadData()) as Partial<TrueRecallSettings>
+			rawData
 		);
 
 		if (Array.isArray(this.settings.easyDays)) {
@@ -368,6 +379,26 @@ ${cardList}${moreText}
 				recurringDays: this.settings.easyDays as unknown as number[],
 				specificDates: [],
 			};
+		}
+
+		// Migrate global FSRS settings → Default preset for existing users
+		if (!rawData?.fsrsPresets) {
+			this.settings.fsrsPresets = [{
+				id: "default",
+				name: "Default",
+				requestRetention: this.settings.fsrsRequestRetention,
+				maximumInterval: this.settings.fsrsMaximumInterval,
+				weights: this.settings.fsrsWeights,
+				learningSteps: this.settings.learningSteps,
+				relearningSteps: this.settings.relearningSteps,
+				newCardsPerDay: this.settings.newCardsPerDay,
+				reviewsPerDay: this.settings.reviewsPerDay,
+				createdAt: Date.now(),
+				lastOptimization: this.settings.lastOptimization,
+				lastOptimizationReviewCount: this.settings.lastOptimizationReviewCount,
+				lastOptimizationMetrics: this.settings.lastOptimizationMetrics,
+			}];
+			this.settings.defaultPresetId = "default";
 			await this.saveData(this.settings);
 		}
 	}
@@ -973,6 +1004,31 @@ ${cardList}${moreText}
 			notify().success(`Projects updated: ${result.projects.join(", ")}`);
 		} else {
 			notify().info("Removed all projects from note");
+		}
+	}
+
+	async setFsrsPresetForCurrentNote(): Promise<void> {
+		const file = this.app.workspace.getActiveFile();
+		if (!file || file.extension !== "md") {
+			notify().noActiveFile();
+			return;
+		}
+
+		const presetNames = this.settings.fsrsPresets.map(p => p.name);
+		const currentValues = this.frontmatterIndex.getValues("fsrs_preset", file.path);
+		const currentPreset = currentValues.length > 0 ? currentValues[0]! : null;
+
+		const modal = new SetPresetModal(this.app, presetNames, currentPreset);
+		const result = await modal.openAndWait();
+		if (result.cancelled) return;
+
+		const frontmatterService = this.flashcardManager.getFrontmatterService();
+		await frontmatterService.setFsrsPreset(file, result.presetName);
+
+		if (result.presetName) {
+			notify().success(`FSRS preset set to: ${result.presetName}`);
+		} else {
+			notify().info("FSRS preset override removed (using default)");
 		}
 	}
 

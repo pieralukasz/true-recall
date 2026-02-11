@@ -153,4 +153,20 @@ export function registerCommands(plugin: TrueRecallPlugin): void {
 		name: "Export as CSV/TSV",
 		callback: () => void plugin.exportCsv(),
 	});
+
+	plugin.addCommand({
+		id: "set-fsrs-preset",
+		// eslint-disable-next-line obsidianmd/ui/sentence-case -- FSRS is an acronym
+		name: "Set FSRS preset for current note",
+		checkCallback: (checking) => {
+			const file = plugin.app.workspace.getActiveFile();
+			if (file && file.extension === "md") {
+				if (!checking) {
+					void plugin.setFsrsPresetForCurrentNote();
+				}
+				return true;
+			}
+			return false;
+		},
+	});
 }

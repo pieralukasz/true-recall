@@ -312,8 +312,8 @@ export class SqliteStoreService {
         this.cards.updateCardScheduling(cardId, data);
     }
 
-    getReviewDataForOptimization() {
-        return this.stats.getReviewDataForOptimization();
+    getReviewDataForOptimization(presetName?: string) {
+        return this.stats.getReviewDataForOptimization(presetName);
     }
 
     getReviewsForRetention(startDate: string, endDate: string) {

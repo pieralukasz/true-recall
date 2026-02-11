@@ -70,7 +70,8 @@ describe("SessionPersistenceService", () => {
 				14,
 				7,
 				State.New,
-				5000
+				5000,
+				undefined
 			);
 		});
 
@@ -90,7 +91,8 @@ describe("SessionPersistenceService", () => {
 				0, // defaults to 0
 				0, // defaults to 0
 				State.Review,
-				3000
+				3000,
+				undefined
 			);
 		});
 
@@ -148,7 +150,8 @@ describe("SessionPersistenceService", () => {
 					10,
 					5,
 					State.Review,
-					1000
+					1000,
+					undefined
 				);
 			});
 		});
@@ -168,7 +171,8 @@ describe("SessionPersistenceService", () => {
 				0,
 				0,
 				0, // defaults to 0 when undefined
-				2000
+				2000,
+				undefined
 			);
 		});
 	});

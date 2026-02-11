@@ -87,9 +87,9 @@ export class NoteListItem extends BaseComponent {
 		const nameEl = content.createDiv({
 			cls: "ep:text-ui-small ep:font-medium ep:leading-snug ep:truncate",
 		});
-		const link = nameEl.createEl("button", {
+		const link = nameEl.createEl("a", {
 			text: noteName,
-			cls: "ep:text-obs-normal ep:cursor-pointer ep:hover:text-obs-link ep:hover:underline ep:bg-transparent ep:border-none ep:p-0 ep:text-left ep:font-medium",
+			cls: "ep:text-obs-accent ep:cursor-pointer ep:no-underline ep:hover:underline ep:transition-colors ep:font-medium",
 		});
 		this.events.addEventListener(link, "click", (e) => {
 			e.preventDefault();
