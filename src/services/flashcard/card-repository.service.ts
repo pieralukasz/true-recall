@@ -475,7 +475,6 @@ export class CardRepository {
 		// Only set if not already exists (prevent overwriting existing data)
 		const existing = this.store.get(cardId);
 		if (existing) {
-			console.debug(`[CardRepository] Card ${cardId} already exists, skipping`);
 			return false;
 		}
 

@@ -424,8 +424,8 @@ ${cardList}${moreText}
 		if (this.backgroundBackupManager) {
 			this.backgroundBackupManager.updateConfig(this.settings);
 		}
-		this.initializeNLQueryService().catch((error) => {
-			console.warn("[True Recall] Failed to reinitialize NL Query Service:", error);
+		this.initializeNLQueryService().catch(() => {
+			// NL Query Service reinitialization is non-critical
 		});
 
 		getEventBus().emit({
@@ -757,8 +757,6 @@ ${cardList}${moreText}
 	private async initializeDeviceContext(): Promise<string> {
 		this.deviceIdService = new DeviceIdService();
 		const deviceId = this.deviceIdService.getDeviceId();
-		console.debug(`[True Recall] Device ID: ${deviceId}`);
-
 		this.deviceDiscovery = new DeviceDiscoveryService(this.app, deviceId);
 		const deviceDbPath = normalizePath(
 			`${DB_FOLDER}/${getDeviceDbFilename(deviceId)}`
@@ -768,18 +766,11 @@ ${cardList}${moreText}
 		);
 
 		if (deviceDbExists) {
-			console.debug(
-				`[True Recall] Using existing device database: ${deviceDbPath}`
-			);
 			return deviceId;
 		}
 
 		const databases = await this.deviceDiscovery.discoverDeviceDatabases();
 		const hasLegacy = await this.deviceDiscovery.hasLegacyDatabase();
-
-		console.debug(
-			`[True Recall] First run on device. Legacy DB: ${hasLegacy}, Other devices: ${databases.length}`
-		);
 
 		if (hasLegacy && databases.length === 0) {
 			await this.migrateLegacyDatabase(deviceId);
@@ -809,7 +800,6 @@ ${cardList}${moreText}
 			await this.app.vault.adapter.writeBinary(backupPath, data);
 			await this.app.vault.adapter.rename(legacyPath, newPath);
 
-			console.debug(`[True Recall] Migrated legacy database to ${newPath}`);
 			notify().success("Database migrated to per-device format.");
 		} catch (error) {
 			console.error("[True Recall] Legacy migration failed:", error);
@@ -847,9 +837,6 @@ ${cardList}${moreText}
 					sourceData
 				);
 
-				console.debug(
-					`[True Recall] Imported database from ${result.sourceDeviceId} to ${deviceId}`
-				);
 				notify().success(
 					`Imported data from device ${result.sourceDeviceId}`
 				);
@@ -943,9 +930,6 @@ ${cardList}${moreText}
 		try {
 			const db = this.cardStore.getDatabase();
 			if (!db) {
-				console.warn(
-					"[True Recall] Database not ready for NL Query Service"
-				);
 				return;
 			}
 
@@ -959,12 +943,8 @@ ${cardList}${moreText}
 			);
 
 			await this.nlQueryService.initialize();
-		} catch (error) {
-			console.warn(
-				"[True Recall] Failed to initialize NL Query Service:",
-				error
-			);
-			
+		} catch {
+			// NL Query Service initialization is non-critical
 		}
 	}
 
@@ -1068,8 +1048,8 @@ ${cardList}${moreText}
 			if (this.settings.maxBackups > 0) {
 				await this.backupService.pruneBackups(this.settings.maxBackups);
 			}
-		} catch (error) {
-			console.warn("[True Recall] Auto-backup failed:", error);
+		} catch {
+			// Auto-backup failure is non-critical
 		}
 	}
 
@@ -1085,12 +1065,9 @@ ${cardList}${moreText}
 			notify().success(`Backup created: ${filename}`);
 
 			if (this.settings.maxBackups > 0) {
-				const deleted = await this.backupService.pruneBackups(
+				await this.backupService.pruneBackups(
 					this.settings.maxBackups
 				);
-				if (deleted > 0) {
-					console.debug(`[True Recall] Pruned ${deleted} old backup(s)`);
-				}
 			}
 		} catch (error) {
 			console.error("[True Recall] Manual backup failed:", error);

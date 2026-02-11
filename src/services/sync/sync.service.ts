@@ -265,7 +265,7 @@ export class SyncService {
 
 		// Validate response structure for successful case
 		if (!response || typeof response !== "object") {
-			console.warn("[SyncService] Unexpected response from sync_all_data RPC");
+			console.error("[SyncService] Unexpected response from sync_all_data RPC");
 		}
 
 		return totalChanges;

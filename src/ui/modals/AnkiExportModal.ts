@@ -71,12 +71,8 @@ export class AnkiExportModal extends BaseModal {
 
 		const setMode = (mode: "all" | "projects" | "notes") => {
 			this.exportMode = mode;
-			if (this.projectListEl) {
-				this.projectListEl.style.display = mode === "projects" ? "block" : "none";
-			}
-			if (this.noteListEl) {
-				this.noteListEl.style.display = mode === "notes" ? "block" : "none";
-			}
+			this.projectListEl?.toggleClass("ep-hidden", mode !== "projects");
+			this.noteListEl?.toggleClass("ep-hidden", mode !== "notes");
 		};
 
 		this.addDomEvent(allRadio, "change", () => {
@@ -92,8 +88,7 @@ export class AnkiExportModal extends BaseModal {
 		// Project list (hidden by default)
 		if (this.allProjects.length > 0) {
 			this.projectListEl = scopeSection.createDiv({
-				cls: "ep:border ep:border-obs-border ep:rounded-md ep:max-h-[150px] ep:overflow-y-auto ep:mt-2 ep:ml-6",
-				attr: { style: "display: none" },
+				cls: "ep-hidden ep:border ep:border-obs-border ep:rounded-md ep:max-h-[150px] ep:overflow-y-auto ep:mt-2 ep:ml-6",
 			});
 			for (const project of this.allProjects) {
 				this.renderCheckboxItem(this.projectListEl, project, this.selectedProjects);
@@ -103,8 +98,7 @@ export class AnkiExportModal extends BaseModal {
 		// Note list (hidden by default)
 		if (this.allNotes.length > 0) {
 			this.noteListEl = scopeSection.createDiv({
-				cls: "ep:border ep:border-obs-border ep:rounded-md ep:max-h-[150px] ep:overflow-y-auto ep:mt-2 ep:ml-6",
-				attr: { style: "display: none" },
+				cls: "ep-hidden ep:border ep:border-obs-border ep:rounded-md ep:max-h-[150px] ep:overflow-y-auto ep:mt-2 ep:ml-6",
 			});
 			for (const note of this.allNotes) {
 				const label = note.project ? `${note.name} (${note.project})` : note.name;

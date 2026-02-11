@@ -91,7 +91,8 @@ export class SimulatorResultsTable extends BaseComponent {
 			const colorDot = seqContent.createDiv({
 				cls: "ep:w-3 ep:h-3 ep:rounded-full ep:flex-shrink-0",
 			});
-			colorDot.style.backgroundColor = sim.color;
+			colorDot.addClass("ep-dynamic-bg");
+			colorDot.style.setProperty("--ep-dynamic-color", sim.color);
 
 			seqContent.createSpan({
 				text: sim.sequence,

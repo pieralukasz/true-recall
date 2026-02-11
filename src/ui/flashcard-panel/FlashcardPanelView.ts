@@ -1230,7 +1230,7 @@ export class FlashcardPanelView extends ItemView {
             const contentToSave = this.plugin.settings.removeFlashcardContentAfterCollect
                 ? result.newContentWithoutFlashcards
                 : result.newContent;
-            await this.app.vault.modify(state.currentFile, contentToSave);
+            await this.app.vault.process(state.currentFile, () => contentToSave);
 
             // Handle partial success
             if (saveResult.duplicates.length > 0) {

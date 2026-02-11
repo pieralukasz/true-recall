@@ -588,13 +588,6 @@ export class ReviewView extends ItemView {
 			);
 
 			if (queue.length === 0) {
-				// Diagnostic logging for project filter debugging
-				if (this.projectFilters && this.projectFilters.length > 0) {
-					console.debug("[ReviewView] Project filter active but queue empty");
-					console.debug("[ReviewView] projectFilters:", this.projectFilters);
-					console.debug("[ReviewView] sourceUidToProjects size:", sourceUidToProjects?.size ?? 0);
-					console.debug("[ReviewView] activeCards count:", activeCards.length);
-				}
 				this.renderEmptyState(
 					getEmptyQueueMessage(this.stateFilter, this.projectFilters)
 				);
@@ -753,9 +746,6 @@ export class ReviewView extends ItemView {
 		const success = await this.copilotService.addNoteToContext(sourceFile);
 		if (success) {
 			this.lastCopilotContextCardId = card.id;
-			console.debug(
-				`[ReviewView] Added source note to Copilot context: ${sourceFile.path}`
-			);
 		}
 	}
 

@@ -298,7 +298,8 @@ export class ProjectsContent extends BaseComponent {
 			cls: "ep:flex ep:flex-col ep:gap-1.5 ep:py-2.5 ep:px-3 ep:cursor-pointer ep:transition-colors ep:hover:bg-obs-modifier-hover",
 		});
 		if (depth > 0) {
-			mainContainer.style.paddingLeft = `${12 + depth * 20}px`;
+			mainContainer.addClass("ep-tree-indent");
+			mainContainer.style.setProperty("--ep-indent", `${12 + depth * 20}px`);
 		}
 
 		// Click handler for expand/collapse

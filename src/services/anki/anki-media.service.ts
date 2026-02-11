@@ -31,7 +31,7 @@ export class AnkiMediaService {
 				}
 				pathMapping.set(originalName, targetPath);
 			} catch (err) {
-				console.warn(
+				console.error(
 					`[True Recall] Failed to import media file "${originalName}":`,
 					err
 				);
@@ -140,7 +140,7 @@ export class AnkiMediaService {
 		try {
 			return await this.app.vault.adapter.readBinary(found.path);
 		} catch {
-			console.warn(
+			console.error(
 				`[True Recall] Failed to read media file "${found.path}" for export`
 			);
 			return null;

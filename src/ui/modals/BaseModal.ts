@@ -69,7 +69,8 @@ export abstract class BaseModal extends Modal {
 		contentEl.addClass("true-recall-modal");
 
 		// Set width on .modal container
-		modalEl.style.width = this.modalWidth;
+		modalEl.addClass("ep-modal-width");
+		modalEl.style.setProperty("--ep-modal-width", this.modalWidth);
 
 		// Use Obsidian's native titleEl (aligned with close button)
 		titleEl.setText(this.modalTitle);
