@@ -81,7 +81,7 @@ export class SourceNoteService {
 	}
 
 	private buildFallbackCache(): void {
-		console.warn("[SourceNoteService] FrontmatterIndex not available, building fallback cache");
+		console.error("[SourceNoteService] FrontmatterIndex not available, building fallback cache");
 		this.fallbackUidCache = new Map();
 
 		const files = this.app.vault.getMarkdownFiles();

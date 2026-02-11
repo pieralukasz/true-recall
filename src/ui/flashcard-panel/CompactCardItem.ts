@@ -102,7 +102,8 @@ export class CompactCardItem extends BaseComponent {
             cls: "ep:w-2.5 ep:h-2.5 ep:rounded-full ep:flex-shrink-0",
             attr: { title: this.getStatusTitle() },
         });
-        dot.style.backgroundColor = this.getStatusDotColor();
+        dot.addClass("ep-dynamic-bg");
+        dot.style.setProperty("--ep-dynamic-color", this.getStatusDotColor());
 
         // Buried/Suspended indicator
         if (this.isSuspended()) {

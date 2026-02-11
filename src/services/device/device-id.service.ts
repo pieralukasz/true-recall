@@ -84,7 +84,7 @@ export class DeviceIdService {
      */
     private loadOrCreateDeviceId(): string {
         if (!this.isLocalStorageAvailable()) {
-            console.warn(
+            console.error(
                 "[True Recall] localStorage unavailable - using ephemeral device ID"
             );
             return this.generateDeviceId();
@@ -97,7 +97,6 @@ export class DeviceIdService {
 
         const newId = this.generateDeviceId();
         window.localStorage.setItem(DEVICE_ID_KEY, newId);
-        console.debug(`[True Recall] Created new device ID: ${newId}`);
         return newId;
     }
 

@@ -60,8 +60,6 @@ export class SqliteStoreService {
         // Initialize database with sql.js
         await this.db.init(existingData);
 
-        console.debug("[True Recall] Using sql.js for local storage");
-
         // Schema setup
         const schemaManager = new SqliteSchemaManager(this.db.raw, () => this.markDirty());
         if (existingData) {
@@ -155,7 +153,6 @@ export class SqliteStoreService {
     private async loadFromFile(path: string): Promise<Uint8Array | null> {
         const exists = await this.app.vault.adapter.exists(path);
         if (!exists) {
-            console.debug("[True Recall] Database file not found - will create new");
             return null;
         }
 

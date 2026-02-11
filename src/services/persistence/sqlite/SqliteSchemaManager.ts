@@ -135,13 +135,7 @@ export class SqliteSchemaManager {
 			return; // Already at latest version
 		}
 
-		console.debug(
-			`[True Recall] Running migrations from v${currentVersion} to v${latestVersion}...`
-		);
-
 		for (let v = currentVersion + 1; v <= latestVersion; v++) {
-			console.debug(`[True Recall] Migrating to schema v${v}...`);
-
 			const migration = this.MIGRATIONS[v];
 			if (migration) {
 				try {
@@ -164,10 +158,6 @@ export class SqliteSchemaManager {
 		if (!this.validateDatabaseIntegrity()) {
 			throw new Error("Database integrity check failed after migration");
 		}
-
-		console.debug(
-			`[True Recall] All migrations completed. Current schema version: v${latestVersion}`
-		);
 	}
 
 	private validateDatabaseIntegrity(): boolean {
@@ -189,7 +179,6 @@ export class SqliteSchemaManager {
 				}
 			}
 
-			console.debug("[True Recall] Database integrity check passed");
 			return true;
 		} catch (error) {
 			console.error("[True Recall] Integrity check failed:", error);

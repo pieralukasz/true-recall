@@ -99,7 +99,8 @@ export class CardGroupItem extends BaseComponent {
 			cls: "ep:w-2.5 ep:h-2.5 ep:rounded-full ep:flex-shrink-0",
 			attr: { title: this.getAggregateStatusTitle() },
 		});
-		dot.style.backgroundColor = this.getAggregateStatusDotColor();
+		dot.addClass("ep-dynamic-bg");
+		dot.style.setProperty("--ep-dynamic-color", this.getAggregateStatusDotColor());
 
 		// Group type icon
 		const iconEl = headerRow.createSpan({
@@ -153,7 +154,8 @@ export class CardGroupItem extends BaseComponent {
 			const cardDot = cardRow.createDiv({
 				cls: "ep:w-2.5 ep:h-2.5 ep:rounded-full ep:flex-shrink-0",
 			});
-			cardDot.style.backgroundColor = this.getCardStatusDotColor(fsrsCard);
+			cardDot.addClass("ep-dynamic-bg");
+			cardDot.style.setProperty("--ep-dynamic-color", this.getCardStatusDotColor(fsrsCard));
 
 			// Card label
 			const labelEl = cardRow.createDiv({

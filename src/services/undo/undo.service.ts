@@ -120,7 +120,7 @@ export class UndoService {
 				return this.undoFSRSHelperOperation(payload);
 
 			default:
-				console.warn(`[UndoService] Unknown undo payload type`);
+				console.error(`[UndoService] Unknown undo payload type`);
 				return false;
 		}
 	}

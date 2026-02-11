@@ -982,9 +982,10 @@ export class TrueRecallSettingTab extends PluginSettingTab {
 					text: "Delete",
 					cls: "ep:text-ui-small",
 				});
-				deleteBtn.addEventListener("click", () => {
+				deleteBtn.addEventListener("click", async () => {
 					this.plugin.settings.scheduledBreaks = breaks.filter((_, i) => i !== index);
-					void this.plugin.saveSettings().then(() => this.display());
+					await this.plugin.saveSettings();
+					this.display();
 				});
 			});
 		}
@@ -993,7 +994,7 @@ export class TrueRecallSettingTab extends PluginSettingTab {
 			.setName("Add scheduled break")
 			.setDesc("Schedule a break period")
 			.addButton((button) =>
-				button.setButtonText("Add break...").onClick(() => {
+				button.setButtonText("Add break...").onClick(async () => {
 					// Simple prompt for now - could be a modal
 					// eslint-disable-next-line no-alert
 					const startDate = prompt("Start date (YYYY-MM-DD):");
@@ -1011,7 +1012,8 @@ export class TrueRecallSettingTab extends PluginSettingTab {
 							...this.plugin.settings.scheduledBreaks,
 							newBreak,
 						];
-						void this.plugin.saveSettings().then(() => this.display());
+						await this.plugin.saveSettings();
+						this.display();
 					}
 				})
 			);

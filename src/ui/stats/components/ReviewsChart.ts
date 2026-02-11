@@ -127,7 +127,8 @@ export class ReviewsChart extends ChartSection<CardsCreatedVsReviewedEntry> {
 				cls: "ep:cursor-pointer",
 			});
 			checkbox.checked = this.visibility[key];
-			checkbox.style.accentColor = color;
+			checkbox.addClass("ep-dynamic-accent");
+			checkbox.style.setProperty("--ep-dynamic-color", color);
 
 			const labelEl = checkboxWrapper.createEl("label", {
 				text: label,
@@ -136,13 +137,14 @@ export class ReviewsChart extends ChartSection<CardsCreatedVsReviewedEntry> {
 					"ep:cursor-pointer",
 				].join(" "),
 			});
-			labelEl.style.color = this.visibility[key] ? color : "var(--text-muted)";
+			labelEl.addClass("ep-dynamic-color");
+			labelEl.style.setProperty("--ep-dynamic-color", this.visibility[key] ? color : "var(--text-muted)");
 
 			// Toggle visibility on click
 			const toggleVisibility = () => {
 				this.visibility[key] = !this.visibility[key];
 				checkbox.checked = this.visibility[key];
-				labelEl.style.color = this.visibility[key] ? color : "var(--text-muted)";
+				labelEl.style.setProperty("--ep-dynamic-color", this.visibility[key] ? color : "var(--text-muted)");
 				this.updateChart();
 			};
 

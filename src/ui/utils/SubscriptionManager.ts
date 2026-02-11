@@ -29,7 +29,7 @@ export class SubscriptionManager {
 	 */
 	track(unsubscribe: () => void): this {
 		if (this.disposed) {
-			console.warn("[SubscriptionManager] Cannot track after dispose");
+			console.error("[SubscriptionManager] Cannot track after dispose");
 			return this;
 		}
 		this.unsubscribers.push(unsubscribe);
@@ -42,7 +42,7 @@ export class SubscriptionManager {
 	 */
 	trackAll(...unsubscribes: (() => void)[]): this {
 		if (this.disposed) {
-			console.warn("[SubscriptionManager] Cannot track after dispose");
+			console.error("[SubscriptionManager] Cannot track after dispose");
 			return this;
 		}
 		this.unsubscribers.push(...unsubscribes);
@@ -55,7 +55,7 @@ export class SubscriptionManager {
 	 */
 	setTimeout(callback: () => void, ms: number): ReturnType<typeof setTimeout> {
 		if (this.disposed) {
-			console.warn("[SubscriptionManager] Cannot create timer after dispose");
+			console.error("[SubscriptionManager] Cannot create timer after dispose");
 			return setTimeout(() => {}, 0);
 		}
 		const id = setTimeout(() => {
@@ -72,7 +72,7 @@ export class SubscriptionManager {
 	 */
 	setInterval(callback: () => void, ms: number): ReturnType<typeof setInterval> {
 		if (this.disposed) {
-			console.warn("[SubscriptionManager] Cannot create interval after dispose");
+			console.error("[SubscriptionManager] Cannot create interval after dispose");
 			return setInterval(() => {}, 0);
 		}
 		const id = setInterval(callback, ms);

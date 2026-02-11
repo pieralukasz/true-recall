@@ -43,7 +43,6 @@ export class FrontmatterIndexService {
 
 	register(config: FieldConfig): void {
 		if (this.fields.has(config.field)) {
-			console.warn(`[FrontmatterIndex] Field "${config.field}" already registered`);
 			return;
 		}
 
@@ -114,10 +113,6 @@ export class FrontmatterIndexService {
 			this.indexFile(file.path, cache?.frontmatter);
 		}
 
-		// Log stats
-		for (const [field, index] of this.fields) {
-			console.debug(`[FrontmatterIndex] ${field}: ${index.valueToPath.size} values indexed`);
-		}
 	}
 
 	private indexFile(path: string, frontmatter: Record<string, unknown> | undefined): void {

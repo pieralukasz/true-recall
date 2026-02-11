@@ -387,9 +387,8 @@ export class AnkiImportService {
 
 			// No UID: prepend frontmatter
 			const uid = this.generateUid();
-			const content = await this.app.vault.read(existingFile);
 			const frontmatter = this.buildFrontmatter(uid, tagPath);
-			await this.app.vault.modify(existingFile, `${frontmatter}\n\n${content}`);
+			await this.app.vault.process(existingFile, (content) => `${frontmatter}\n\n${content}`);
 			return uid;
 		}
 
@@ -426,17 +425,14 @@ export class AnkiImportService {
 		file: TFile,
 		children: Set<string>,
 	): Promise<void> {
-		const content = await this.app.vault.read(file);
-
-		// Check which children are already linked
-		const missingChildren = [...children].filter(
-			(child) => !content.includes(`[[${child}]]`),
-		);
-
-		if (missingChildren.length === 0) return;
-
-		const newLinks = missingChildren.map((child) => `- [[${child}]]`).join("\n");
-		await this.app.vault.modify(file, `${content}\n${newLinks}\n`);
+		await this.app.vault.process(file, (content) => {
+			const missingChildren = [...children].filter(
+				(child) => !content.includes(`[[${child}]]`),
+			);
+			if (missingChildren.length === 0) return content;
+			const newLinks = missingChildren.map((child) => `- [[${child}]]`).join("\n");
+			return `${content}\n${newLinks}\n`;
+		});
 	}
 
 	private async ensureFolderRecursive(folderPath: string): Promise<void> {
