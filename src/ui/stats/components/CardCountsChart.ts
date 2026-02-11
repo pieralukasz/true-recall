@@ -234,7 +234,8 @@ export class CardCountsChart extends BaseComponent {
 					"ep:shrink-0",
 				].join(" "),
 			});
-			colorBox.style.backgroundColor = item.color;
+			colorBox.addClass("ep-dynamic-bg");
+			colorBox.style.setProperty("--ep-dynamic-color", item.color);
 
 			// Label
 			row.createSpan({

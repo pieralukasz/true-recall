@@ -92,7 +92,7 @@ async function loadWasmAsUrl(app: App, filename: string): Promise<string | null>
         const blob = new Blob([buffer], { type: "application/wasm" });
         return URL.createObjectURL(blob);
     } catch (e) {
-        console.warn(`[True Recall] Failed to load local WASM file ${filename}:`, e);
+        console.error(`[True Recall] Failed to load local WASM file ${filename}:`, e);
         return null;
     }
 }
@@ -108,24 +108,20 @@ async function loadSqlJs(app: App): Promise<SqlJsStatic> {
     const localWasmUrl = await loadWasmAsUrl(app, "sql-wasm.wasm");
 
     if (localWasmUrl) {
-        console.debug("[True Recall] Loading sql.js from local WASM...");
         try {
             const SQL = await initSqlJs({
                 locateFile: () => localWasmUrl,
             });
-            console.debug("[True Recall] sql.js loaded successfully from local WASM");
             return SQL;
         } catch (e) {
-            console.warn("[True Recall] Failed to load sql.js from local WASM, falling back to CDN:", e);
+            console.error("[True Recall] Failed to load sql.js from local WASM, falling back to CDN:", e);
         }
     }
 
     // Fallback to CDN
-    console.debug("[True Recall] Loading sql.js from CDN fallback...");
     const SQL = await initSqlJs({
         locateFile: (file: string) => `${SQLJS_CDN}/${file}`,
     });
-    console.debug("[True Recall] sql.js loaded successfully from CDN");
     return SQL;
 }
 

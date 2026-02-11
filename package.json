@@ -11,7 +11,8 @@
 		"lint": "eslint .",
 		"test": "vitest run",
 		"test:watch": "vitest",
-		"test:coverage": "vitest run --coverage"
+		"test:coverage": "vitest run --coverage",
+		"render:excalidraw": "bunx --bun excalirender"
 	},
 	"keywords": [],
 	"license": "MIT",
@@ -23,6 +24,7 @@
 		"@vitest/coverage-v8": "^1.6.1",
 		"esbuild": "0.25.5",
 		"eslint-plugin-obsidianmd": "0.1.9",
+		"excalirender": "github:JonRC/excalirender",
 		"globals": "14.0.0",
 		"postcss": "^8.5.6",
 		"postcss-cli": "^11.0.1",

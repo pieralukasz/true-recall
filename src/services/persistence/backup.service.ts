@@ -135,8 +135,8 @@ export class BackupService {
 
             // Sort by timestamp, newest first
             backups.sort((a, b) => b.timestamp.getTime() - a.timestamp.getTime());
-        } catch (error) {
-            console.warn("[True Recall] Failed to list backups:", error);
+        } catch {
+            // Non-critical: listing backups failed
         }
 
         return backups;
@@ -151,8 +151,7 @@ export class BackupService {
     async restoreFromBackup(backupPath: string): Promise<boolean> {
         try {
             // Create safety backup first
-            const safetyBackupPath = await this.createBackup();
-            console.debug(`[True Recall] Safety backup created at: ${safetyBackupPath}`);
+            await this.createBackup();
 
             // Read backup file
             const backupData = await this.app.vault.adapter.readBinary(backupPath);
@@ -190,7 +189,7 @@ export class BackupService {
                 await this.app.vault.adapter.remove(backup.path);
                 deleted++;
             } catch (error) {
-                console.warn(`[True Recall] Failed to delete backup ${backup.path}:`, error);
+                console.error(`[True Recall] Failed to delete backup ${backup.path}:`, error);
             }
         }
 
@@ -207,7 +206,7 @@ export class BackupService {
             await this.app.vault.adapter.remove(backupPath);
             return true;
         } catch (error) {
-            console.warn(`[True Recall] Failed to delete backup ${backupPath}:`, error);
+            console.error(`[True Recall] Failed to delete backup ${backupPath}:`, error);
             return false;
         }
     }
@@ -262,12 +261,8 @@ export class BackupService {
                 await this.app.vault.adapter.remove(backup.path);
                 deleted++;
             } catch (error) {
-                console.warn(`[True Recall] Failed to delete backup ${backup.path}:`, error);
+                console.error(`[True Recall] Failed to delete backup ${backup.path}:`, error);
             }
-        }
-
-        if (deleted > 0) {
-            console.debug(`[True Recall] Smart retention: deleted ${deleted} old backups, kept ${toKeep.size} (hourly: ${kept.hourly}, daily: ${kept.daily}, weekly: ${kept.weekly})`);
         }
 
         return { deleted, kept };

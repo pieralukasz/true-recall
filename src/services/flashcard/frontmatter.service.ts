@@ -24,17 +24,6 @@ export class FrontmatterService {
 	/** Matches flashcard_uid field */
 	private static readonly UID_FIELD_REGEX =
 		/flashcard_uid:\s*["']?([a-f0-9]+)["']?/i;
-	/** Matches flashcard_uid field for existence check */
-	private static readonly UID_FIELD_EXISTS_REGEX = /^flashcard_uid:/m;
-	/** Matches flashcard_uid field line for replacement */
-	private static readonly UID_FIELD_LINE_REGEX = /^flashcard_uid:.*$/m;
-	/** Matches projects field existence */
-	private static readonly PROJECTS_FIELD_REGEX = /^projects:/m;
-	/** Matches projects field line for replacement */
-	private static readonly PROJECTS_FIELD_LINE_REGEX = /^projects:.*$/m;
-	/** Matches projects list for replacement */
-	private static readonly PROJECTS_LIST_FULL_REGEX =
-		/^projects:\s*\n(\s+-\s+.+\s*)+/m;
 
 	constructor(private app: App) {}
 
@@ -202,48 +191,13 @@ export class FrontmatterService {
 		file: TFile,
 		projects: string[]
 	): Promise<void> {
-		const content = await this.app.vault.read(file);
-		const match = content.match(FrontmatterService.FRONTMATTER_REGEX);
-
-		let newContent: string;
-		const projectsLine =
-			projects.length > 0
-				? `projects: [${projects.map((p) => `"[[${p}]]"`).join(", ")}]`
-				: "";
-
-		if (match) {
-			const frontmatter = match[1] ?? "";
-			// Check if projects field already exists
-			if (FrontmatterService.PROJECTS_FIELD_REGEX.test(frontmatter)) {
-				// Update existing projects field
-				const updatedFrontmatter = frontmatter
-					.replace(FrontmatterService.PROJECTS_FIELD_LINE_REGEX, projectsLine)
-					.replace(FrontmatterService.PROJECTS_LIST_FULL_REGEX, projectsLine);
-				newContent = content.replace(
-					FrontmatterService.FRONTMATTER_REGEX,
-					`---\n${updatedFrontmatter}\n---`
-				);
-			} else if (projectsLine) {
-				// Add projects field to existing frontmatter
-				newContent = content.replace(
-					FrontmatterService.FRONTMATTER_REGEX,
-					`---\n${projectsLine}\n${frontmatter}\n---`
-				);
+		await this.app.fileManager.processFrontMatter(file, (fm: Record<string, unknown>) => {
+			if (projects.length > 0) {
+				fm["projects"] = projects.map((p) => `[[${p}]]`);
 			} else {
-				// No projects to add
-				newContent = content;
+				delete fm["projects"];
 			}
-		} else if (projectsLine) {
-			// Create new frontmatter with projects
-			newContent = `---\n${projectsLine}\n---\n\n${content}`;
-		} else {
-			// No projects and no frontmatter - nothing to do
-			newContent = content;
-		}
-
-		if (newContent !== content) {
-			await this.app.vault.modify(file, newContent);
-		}
+		});
 	}
 
 	/** UID field name in source note frontmatter */
@@ -265,37 +219,9 @@ export class FrontmatterService {
 	}
 
 	async setSourceNoteUid(sourceFile: TFile, uid: string): Promise<void> {
-		const content = await this.app.vault.read(sourceFile);
-		const uidField = this.SOURCE_UID_FIELD;
-		const match = content.match(FrontmatterService.FRONTMATTER_REGEX);
-
-		let newContent: string;
-
-		if (match) {
-			const frontmatter = match[1] ?? "";
-			// Check if UID field already exists
-			if (FrontmatterService.UID_FIELD_EXISTS_REGEX.test(frontmatter)) {
-				// Update existing UID
-				newContent = content.replace(
-					FrontmatterService.FRONTMATTER_REGEX,
-					`---\n${frontmatter.replace(
-						FrontmatterService.UID_FIELD_LINE_REGEX,
-						`${uidField}: "${uid}"`
-					)}\n---`
-				);
-			} else {
-				// Add UID field to existing frontmatter
-				newContent = content.replace(
-					FrontmatterService.FRONTMATTER_REGEX,
-					`---\n${uidField}: "${uid}"\n${frontmatter}\n---`
-				);
-			}
-		} else {
-			// Create new frontmatter with UID
-			newContent = `---\n${uidField}: "${uid}"\n---\n\n${content}`;
-		}
-
-		await this.app.vault.modify(sourceFile, newContent);
+		await this.app.fileManager.processFrontMatter(sourceFile, (fm: Record<string, unknown>) => {
+			fm[this.SOURCE_UID_FIELD] = uid;
+		});
 	}
 
 	async setFsrsPreset(file: TFile, presetName: string | null): Promise<void> {

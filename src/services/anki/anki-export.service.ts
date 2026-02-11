@@ -208,7 +208,7 @@ export class AnkiExportService {
                 const data = await this.app.vault.readBinary(file);
                 media.set(filename, data);
             } catch {
-                console.warn(`[True Recall] Could not read media file: ${filename}`);
+                console.error(`[True Recall] Could not read media file: ${filename}`);
             }
         }
 

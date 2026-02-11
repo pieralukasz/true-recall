@@ -113,7 +113,7 @@ export class DeviceDiscoveryService {
                 cardCount = dbInfo.cardCount;
                 lastReviewDate = dbInfo.lastReviewDate;
             } catch (e) {
-                console.warn(
+                console.error(
                     `[True Recall] Could not read database info from ${filename}:`,
                     e
                 );

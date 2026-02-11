@@ -234,7 +234,7 @@ export class ApkgParserService {
 		try {
 			raw = JSON.parse(json) as Record<string, RawAnkiModel>;
 		} catch {
-			console.warn("[True Recall] Failed to parse Anki models JSON");
+			console.error("[True Recall] Failed to parse Anki models JSON");
 			return models;
 		}
 
@@ -266,7 +266,7 @@ export class ApkgParserService {
 		try {
 			raw = JSON.parse(json) as Record<string, RawAnkiDeck>;
 		} catch {
-			console.warn("[True Recall] Failed to parse Anki decks JSON");
+			console.error("[True Recall] Failed to parse Anki decks JSON");
 			return decks;
 		}
 
@@ -296,7 +296,7 @@ export class ApkgParserService {
 			const mediaJson = await mediaFile.async("string");
 			mediaMap = JSON.parse(mediaJson) as Record<string, string>;
 		} catch {
-			console.warn("[True Recall] Failed to parse media mapping from .apkg");
+			console.error("[True Recall] Failed to parse media mapping from .apkg");
 			return { media, mediaMap };
 		}
 

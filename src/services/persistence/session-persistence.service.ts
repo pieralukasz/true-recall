@@ -204,8 +204,6 @@ export class SessionPersistenceService {
 				return; // No JSON file to migrate
 			}
 
-			console.debug("[True Recall] Migrating stats.json to SQL...");
-
 			const content = await this.app.vault.adapter.read(statsPath);
 			const data = JSON.parse(content) as PersistentStatsData;
 
@@ -242,10 +240,6 @@ export class SessionPersistenceService {
 
 			// Delete the old JSON file
 			await this.app.vault.adapter.remove(statsPath);
-
-			console.debug(
-				`[True Recall] Migrated stats.json to SQL: ${migratedDays} days, ${migratedCards} card entries. JSON file removed.`
-			);
 		} catch (error) {
 			console.error("[True Recall] Failed to migrate stats.json:", error);
 			// Don't throw - migration failure shouldn't block plugin startup

@@ -195,6 +195,14 @@
 	/* Hover variants */
 	.ep-hover-bg-obs-red-10:hover { background: rgba(var(--color-red-rgb), 0.10); }
 	.ep-hover-bg-obs-red-20:hover { background: rgba(var(--color-red-rgb), 0.20); }
+
+	/* Dynamic color via CSS custom property (avoids hardcoded el.style assignments) */
+	.ep-dynamic-bg { background-color: var(--ep-dynamic-color); }
+	.ep-dynamic-color { color: var(--ep-dynamic-color); }
+	.ep-dynamic-accent { accent-color: var(--ep-dynamic-color); }
+	.ep-hidden { display: none; }
+	.ep-tree-indent { padding-left: var(--ep-indent, 12px); }
+	.ep-modal-width { width: var(--ep-modal-width, fit-content); }
 }
 
 /*
