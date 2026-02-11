@@ -45,7 +45,7 @@ export class CardGroupItem extends BaseComponent {
 		const { isExpanded, isSelected } = this.props;
 
 		this.element = this.container.createDiv({
-			cls: `ep:flex ep:flex-col ep:mb-2 ep:rounded-lg ep:bg-obs-secondary ep:border ep:border-obs-border ${isSelected ? "ep:border-obs-interactive ep:border-2" : ""}`,
+			cls: `ep:flex ep:flex-col ep:mb-2 ep:rounded-lg ep:bg-obs-secondary ep:border ep:border-obs-border ep:shadow-sm ${isSelected ? "ep:border-obs-interactive ep:border-2" : ""}`,
 		});
 
 		this.renderHeader();
@@ -61,7 +61,7 @@ export class CardGroupItem extends BaseComponent {
 		const { cards, isSelectionMode, isSelected } = this.props;
 
 		const headerRow = this.element.createDiv({
-			cls: "ep:flex ep:items-start ep:gap-2 ep:p-2 ep:cursor-pointer ep:hover:bg-obs-modifier-hover ep:rounded-md ep:transition-colors",
+			cls: "ep:flex ep:items-center ep:gap-2 ep:p-3 ep:cursor-pointer ep:hover:bg-obs-modifier-hover ep:rounded-md ep:transition-colors",
 		});
 
 		this.longPressHandler = setupLongPress(headerRow, this.events, {
@@ -71,6 +71,7 @@ export class CardGroupItem extends BaseComponent {
 		this.events.addEventListener(headerRow, "click", (e) => {
 			if (this.longPressHandler?.didLongPress()) return;
 			if ((e.target as HTMLElement).closest("button")) return;
+			if ((e.target as HTMLElement).closest("a")) return;
 			e.stopPropagation();
 
 			if (isSelectionMode) {
@@ -94,11 +95,11 @@ export class CardGroupItem extends BaseComponent {
 		}
 
 		// Aggregate status dot
-		const statusDotEl = headerRow.createSpan({
-			cls: "ep:w-2 ep:h-2 ep:rounded-full ep:flex-shrink-0 ep:mt-1.5",
+		const dot = headerRow.createDiv({
+			cls: "ep:w-2.5 ep:h-2.5 ep:rounded-full ep:flex-shrink-0",
 			attr: { title: this.getAggregateStatusTitle() },
 		});
-		statusDotEl.addClass(this.getAggregateStatusDotColor());
+		dot.style.backgroundColor = this.getAggregateStatusDotColor();
 
 		// Group type icon
 		const iconEl = headerRow.createSpan({
@@ -121,7 +122,7 @@ export class CardGroupItem extends BaseComponent {
 
 		// Menu button
 		const menuBtn = headerRow.createEl("button", {
-			cls: "clickable-icon",
+			cls: "clickable-icon ep:cursor-pointer ep:w-6 ep:h-6 ep:flex ep:items-center ep:justify-center ep:rounded-md ep:text-obs-muted ep:hover:bg-obs-modifier-hover ep:hover:text-obs-normal ep:transition-colors [&_svg]:ep:w-3.5 [&_svg]:ep:h-3.5",
 			attr: { "aria-label": "Group actions" },
 		});
 		setIcon(menuBtn, "more-vertical");
@@ -145,14 +146,14 @@ export class CardGroupItem extends BaseComponent {
 			const fsrsCard = fsrsCards[i];
 
 			const cardRow = contentEl.createDiv({
-				cls: "ep:flex ep:items-start ep:gap-2 ep:pl-6 ep:pr-2 ep:py-2 ep:border-b ep:border-obs-border last:ep:border-b-0",
+				cls: "ep:flex ep:items-center ep:gap-2 ep:px-3 ep:py-2 ep:border-b ep:border-obs-border last:ep:border-b-0",
 			});
 
 			// Individual status dot
-			const dotEl = cardRow.createSpan({
-				cls: "ep:w-2 ep:h-2 ep:rounded-full ep:flex-shrink-0 ep:mt-1.5",
+			const cardDot = cardRow.createDiv({
+				cls: "ep:w-2.5 ep:h-2.5 ep:rounded-full ep:flex-shrink-0",
 			});
-			dotEl.addClass(this.getCardStatusDotColor(fsrsCard));
+			cardDot.style.backgroundColor = this.getCardStatusDotColor(fsrsCard);
 
 			// Card label
 			const labelEl = cardRow.createDiv({
@@ -240,7 +241,6 @@ export class CardGroupItem extends BaseComponent {
 
 	private getAggregateStatusDotColor(): string {
 		const { fsrsCards } = this.props;
-		// Priority: New > Learning/Relearning > Review > unknown
 		let hasNew = false;
 		let hasLearning = false;
 		let hasReview = false;
@@ -255,10 +255,10 @@ export class CardGroupItem extends BaseComponent {
 			}
 		}
 
-		if (hasNew) return "ep:bg-obs-blue";
-		if (hasLearning) return "ep:bg-obs-orange";
-		if (hasReview) return "ep:bg-obs-green";
-		return "ep:bg-obs-base-40";
+		if (hasNew) return "var(--color-green)";
+		if (hasLearning) return "var(--color-orange)";
+		if (hasReview) return "var(--color-blue)";
+		return "var(--text-muted)";
 	}
 
 	private getAggregateStatusTitle(): string {
@@ -281,13 +281,13 @@ export class CardGroupItem extends BaseComponent {
 	}
 
 	private getCardStatusDotColor(fsrsCard?: FSRSFlashcardItem): string {
-		if (!fsrsCard) return "ep:bg-obs-base-40";
+		if (!fsrsCard) return "var(--text-muted)";
 		switch (fsrsCard.fsrs.state) {
-			case State.New: return "ep:bg-obs-blue";
+			case State.New: return "var(--color-green)";
 			case State.Learning:
-			case State.Relearning: return "ep:bg-obs-orange";
-			case State.Review: return "ep:bg-obs-green";
-			default: return "ep:bg-obs-base-40";
+			case State.Relearning: return "var(--color-orange)";
+			case State.Review: return "var(--color-blue)";
+			default: return "var(--text-muted)";
 		}
 	}
 

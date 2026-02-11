@@ -32,7 +32,7 @@ interface StateConfig {
 const STATE_CONFIGS: Record<CardStateType, StateConfig> = {
 	new: {
 		label: "New",
-		colorCls: "ep-bg-obs-blue-15 ep:text-obs-blue",
+		colorCls: "ep-bg-obs-green-15 ep:text-obs-green",
 	},
 	learning: {
 		label: "Learning",
@@ -40,7 +40,7 @@ const STATE_CONFIGS: Record<CardStateType, StateConfig> = {
 	},
 	review: {
 		label: "Review",
-		colorCls: "ep-bg-obs-green-15 ep:text-obs-green",
+		colorCls: "ep-bg-obs-blue-15 ep:text-obs-blue",
 	},
 	relearning: {
 		label: "Relearn",
