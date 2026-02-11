@@ -215,6 +215,9 @@ export interface TrueRecallSettings {
     fsrsPresets: FSRSPreset[];
     /** ID of the default preset used as fallback */
     defaultPresetId: string;
+
+    /** Custom ordering of projects in ProjectsView (empty = alphabetical) */
+    projectOrder: string[];
 }
 
 export interface SessionPreset {
