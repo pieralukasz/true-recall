@@ -27,7 +27,6 @@ export interface NoteListItemProps {
  */
 export class NoteListItem extends BaseComponent {
 	private props: NoteListItemProps;
-	private checkbox: HTMLInputElement | null = null;
 
 	constructor(container: HTMLElement, props: NoteListItemProps) {
 		super(container);
@@ -35,9 +34,6 @@ export class NoteListItem extends BaseComponent {
 	}
 
 	updateSelected(isSelected: boolean): void {
-		if (this.checkbox) {
-			this.checkbox.checked = isSelected;
-		}
 		if (this.element) {
 			this.element.classList.toggle("ep:bg-obs-interactive/10", isSelected);
 		}
@@ -60,23 +56,10 @@ export class NoteListItem extends BaseComponent {
 		// Note item container
 		const indentCls = indent ? "ep:pl-6" : "";
 		this.element = this.container.createDiv({
-			cls: `ep:flex ep:items-center ep:gap-3 ep:py-2.5 ep:px-3 ${indentCls} ep:border-b ep:border-obs-modifier-border ep:cursor-pointer ep:transition-colors ep:hover:bg-obs-modifier-hover ep:last:border-b-0${
+			cls: `ep:flex ep:items-center ep:gap-3 ep:py-2 ep:px-3 ${indentCls} ep:h-full ep:border-b ep:border-obs-border ep:cursor-pointer ep:transition-colors ep:hover:bg-obs-modifier-hover${
 				isSelected ? " ep:bg-obs-interactive/10" : ""
 			}`,
 		});
-
-		// Checkbox (disabled for notes without cards)
-		this.checkbox = this.element.createEl("input", {
-			type: "checkbox",
-			cls: "ep:shrink-0 ep:w-4 ep:h-4 ep:disabled:opacity-40 ep:disabled:cursor-not-allowed",
-		});
-		this.checkbox.checked = isSelected;
-		this.checkbox.disabled = !hasCards;
-		if (hasCards) {
-			this.events.addEventListener(this.checkbox, "change", () => {
-				this.props.onCheckboxChange();
-			});
-		}
 
 		// Content container
 		const content = this.element.createDiv({
@@ -121,13 +104,11 @@ export class NoteListItem extends BaseComponent {
 			});
 		}
 
-		// Click on row toggles checkbox (only for notes with cards)
+		// Click on row toggles selection (only for notes with cards)
 		if (hasCards) {
 			this.events.addEventListener(this.element, "click", (e) => {
 				const target = e.target as HTMLElement;
-				// Don't toggle if clicked on checkbox or note name link
-				if (target.tagName !== "INPUT" && target !== link && this.checkbox) {
-					this.checkbox.checked = !this.checkbox.checked;
+				if (target !== link) {
 					this.props.onCheckboxChange();
 				}
 			});
