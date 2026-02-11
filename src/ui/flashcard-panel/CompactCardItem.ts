@@ -52,12 +52,12 @@ export class CompactCardItem extends BaseComponent {
         const { card, isExpanded, isSelected, isSelectionMode, app, filePath, component } = this.props;
 
         this.element = this.container.createDiv({
-            cls: `ep:flex ep:flex-col ep:mb-2 ep:rounded-lg ep:bg-obs-secondary ep:border ep:border-obs-border ${isSelected ? "ep:border-obs-interactive ep:border-2" : ""}`,
+            cls: `ep:flex ep:flex-col ep:mb-2 ep:rounded-lg ep:bg-obs-secondary ep:border ep:border-obs-border ep:shadow-sm ${isSelected ? "ep:border-obs-interactive ep:border-2" : ""}`,
         });
 
         // Main row (always visible)
         const mainRow = this.element.createDiv({
-            cls: "ep:flex ep:items-start ep:gap-2 ep:p-2 ep:cursor-pointer ep:hover:bg-obs-modifier-hover ep:rounded-md ep:transition-colors",
+            cls: "ep:flex ep:items-center ep:gap-2 ep:p-3 ep:cursor-pointer ep:hover:bg-obs-modifier-hover ep:rounded-md ep:transition-colors",
         });
 
         // Setup long press for main row
@@ -70,8 +70,9 @@ export class CompactCardItem extends BaseComponent {
             if (this.longPressHandler?.didLongPress()) {
                 return;
             }
-            // Don't trigger if clicked on menu button
+            // Don't trigger if clicked on menu button or internal link
             if ((e.target as HTMLElement).closest("button")) return;
+            if ((e.target as HTMLElement).closest("a")) return;
 
             // Prevent event bubbling to avoid scroll position reset
             e.stopPropagation();
@@ -97,11 +98,11 @@ export class CompactCardItem extends BaseComponent {
         }
 
         // Status dot
-        const statusDotEl = mainRow.createSpan({
-            cls: "ep:w-2 ep:h-2 ep:rounded-full ep:flex-shrink-0 ep:mt-1.5",
+        const dot = mainRow.createDiv({
+            cls: "ep:w-2.5 ep:h-2.5 ep:rounded-full ep:flex-shrink-0",
             attr: { title: this.getStatusTitle() },
         });
-        statusDotEl.addClass(this.getStatusDotColor());
+        dot.style.backgroundColor = this.getStatusDotColor();
 
         // Buried/Suspended indicator
         if (this.isSuspended()) {
@@ -124,10 +125,11 @@ export class CompactCardItem extends BaseComponent {
             cls: "ep:flex-1 ep:text-ui-small ep:text-obs-normal true-recall-card-markdown",
         });
         void MarkdownRenderer.render(app, stripBrTags(card.question), questionEl, filePath, component);
+        this.setupCmdClickLinks(questionEl);
 
         // Menu icon
         const menuBtn = mainRow.createEl("button", {
-            cls: "clickable-icon",
+            cls: "clickable-icon ep:cursor-pointer ep:w-6 ep:h-6 ep:flex ep:items-center ep:justify-center ep:rounded-md ep:text-obs-muted ep:hover:bg-obs-modifier-hover ep:hover:text-obs-normal ep:transition-colors [&_svg]:ep:w-3.5 [&_svg]:ep:h-3.5",
             attr: { "aria-label": "Card actions" },
         });
         setIcon(menuBtn, "more-vertical");
@@ -148,7 +150,7 @@ export class CompactCardItem extends BaseComponent {
         const { card, filePath, app, component } = this.props;
 
         const answerContainer = this.element.createDiv({
-            cls: "ep:pl-6 ep:pr-2 ep:pb-3 ep:pt-2 ep:border-t ep:border-obs-border",
+            cls: "ep:px-3 ep:pb-3 ep:pt-3 ep:border-t ep:border-obs-border",
         });
 
         // Answer content with markdown rendering
@@ -157,6 +159,7 @@ export class CompactCardItem extends BaseComponent {
         });
 
         void MarkdownRenderer.render(app, stripBrTags(card.answer), answerContent, filePath, component);
+        this.setupCmdClickLinks(answerContent);
     }
 
     private showCardMenu(e: MouseEvent): void {
@@ -208,18 +211,18 @@ export class CompactCardItem extends BaseComponent {
     }
 
     private getStatusDotColor(): string {
-        if (!this.props.fsrsCard) return "ep:bg-obs-base-40";
+        if (!this.props.fsrsCard) return "var(--text-muted)";
 
         switch (this.props.fsrsCard.fsrs.state) {
             case State.New:
-                return "ep:bg-obs-blue";
+                return "var(--color-green)";
             case State.Learning:
             case State.Relearning:
-                return "ep:bg-obs-orange";
+                return "var(--color-orange)";
             case State.Review:
-                return "ep:bg-obs-green";
+                return "var(--color-blue)";
             default:
-                return "ep:bg-obs-base-40";
+                return "var(--text-muted)";
         }
     }
 
@@ -248,6 +251,26 @@ export class CompactCardItem extends BaseComponent {
         const buriedUntil = this.props.fsrsCard?.fsrs.buriedUntil;
         if (!buriedUntil) return false;
         return new Date(buriedUntil) > new Date();
+    }
+
+    private setupCmdClickLinks(container: HTMLElement): void {
+        const { app, filePath } = this.props;
+        this.events.addEventListener(container, "click", (e) => {
+            const target = e.target as HTMLElement;
+            const linkEl = target.closest("a.internal-link");
+            if (!linkEl) return;
+
+            e.preventDefault();
+            e.stopPropagation();
+            e.stopImmediatePropagation();
+
+            if (e.metaKey || e.ctrlKey) {
+                const href = linkEl.getAttribute("data-href");
+                if (href) {
+                    void app.workspace.openLinkText(href, filePath, false);
+                }
+            }
+        }, true);
     }
 
     updateProps(props: Partial<CompactCardItemProps>): void {

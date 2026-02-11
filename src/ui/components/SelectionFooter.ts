@@ -94,10 +94,10 @@ export class SelectionFooter extends BaseComponent {
 			cls: "ep:flex ep:items-center ep:gap-1 ep:font-medium ep:text-ui-small",
 		});
 
-		// New count (blue)
+		// New count (green)
 		countsEl.createSpan({
 			text: String(display.newCount),
-			cls: "ep:text-obs-blue",
+			cls: "ep:text-obs-green",
 		});
 
 		countsEl.createSpan({ text: "·", cls: "ep:text-obs-faint" });
@@ -110,10 +110,10 @@ export class SelectionFooter extends BaseComponent {
 
 		countsEl.createSpan({ text: "·", cls: "ep:text-obs-faint" });
 
-		// Due count (green)
+		// Due count (blue)
 		countsEl.createSpan({
 			text: String(display.dueCount),
-			cls: "ep:text-obs-green",
+			cls: "ep:text-obs-blue",
 		});
 	}
 
