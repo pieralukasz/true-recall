@@ -295,7 +295,7 @@ export class ProjectsContent extends BaseComponent {
 
 		// Main container - clickable for expansion
 		const mainContainer = item.createDiv({
-			cls: "ep:flex ep:flex-col ep:gap-0.5 ep:py-2.5 ep:px-3 ep:cursor-pointer ep:transition-colors ep:hover:bg-obs-modifier-hover",
+			cls: "ep:flex ep:flex-col ep:gap-1.5 ep:py-2.5 ep:px-3 ep:cursor-pointer ep:transition-colors ep:hover:bg-obs-modifier-hover",
 		});
 		if (depth > 0) {
 			mainContainer.style.paddingLeft = `${12 + depth * 20}px`;
@@ -444,7 +444,7 @@ export class ProjectsContent extends BaseComponent {
 	): HTMLElement {
 		const { selectedNotePaths, showDoneNotes } = this.props;
 		const notesContainer = container.createDiv({
-			cls: "ep:border-t ep:border-obs-modifier-border",
+			cls: "ep:border-t ep:border-obs-border",
 		});
 
 		// Filter: hide notes without any flashcards unless showDoneNotes is true
