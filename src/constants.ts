@@ -153,6 +153,8 @@ export const DEFAULT_SETTINGS: TrueRecallSettings = {
 
 	fsrsPresets: [DEFAULT_FSRS_PRESET],
 	defaultPresetId: "default",
+
+	projectOrder: [],
 };
 
 // FSRS v6 default weights (21 parameters)
