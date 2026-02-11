@@ -13,8 +13,11 @@ import { SelectNoteModal, AddToProjectModal } from "../modals";
 import { filterActiveCardsOnly } from "../shared/helpers";
 import { buildProjectGraph, getDescendantProjects } from "../../utils/project-hierarchy";
 import type TrueRecallPlugin from "../../main";
-import type { ProjectNoteInfo } from "../../types";
+import type { ProjectInfo, ProjectNoteInfo } from "../../types";
 import type { ProjectsApi } from "../../state/store";
+import type { ProjectContextAction } from "./helpers/project-context-menu";
+import type { NoteDropAction } from "./helpers/note-drop-menu";
+import type { NoteContextAction } from "./helpers/note-context-menu";
 
 export class ProjectsView extends ItemView {
 	private plugin: TrueRecallPlugin;
@@ -234,6 +237,10 @@ export class ProjectsView extends ItemView {
 				}
 			}
 
+			// Sort by custom order from settings, falling back to alphabetical
+			const savedOrder = this.plugin.settings.projectOrder ?? [];
+			const orderMap = new Map(savedOrder.map((name, i) => [name, i]));
+
 			const projects = Array.from(projectNoteCounts.keys())
 				.map((name) => {
 					const rawNotes = projectNotes.get(name) ?? [];
@@ -264,7 +271,28 @@ export class ProjectsView extends ItemView {
 							.filter((p) => projectGraph.projectNames.has(p)),
 					};
 				})
-				.sort((a, b) => a.name.localeCompare(b.name));
+				.sort((a, b) => {
+					const aIdx = orderMap.get(a.name) ?? Infinity;
+					const bIdx = orderMap.get(b.name) ?? Infinity;
+					if (aIdx !== bIdx) return aIdx - bIdx;
+					return a.name.localeCompare(b.name);
+				});
+
+			// Reconcile project order: remove deleted names, append new ones
+			const existingNames = new Set(projects.map((p) => p.name));
+			const reconciled = savedOrder.filter((n) => existingNames.has(n));
+			for (const p of projects) {
+				if (!reconciled.includes(p.name)) {
+					reconciled.push(p.name);
+				}
+			}
+			if (
+				reconciled.length !== savedOrder.length ||
+				reconciled.some((n, i) => n !== savedOrder[i])
+			) {
+				this.plugin.settings.projectOrder = reconciled;
+				void this.plugin.saveSettings();
+			}
 
 			// Aggregate stats from descendant projects into parents
 			const ownStats = new Map(
@@ -631,11 +659,166 @@ export class ProjectsView extends ItemView {
 		}
 	}
 
+	private async handleContextAction(
+		action: ProjectContextAction,
+		project: ProjectInfo
+	): Promise<void> {
+		switch (action) {
+			case "review":
+				return this.handleStartReview(project.name);
+			case "custom-study":
+				return this.handleCustomStudy(project.name);
+			case "add-notes":
+				return this.handleAddNotesToProject(project.id, project.name);
+			case "create-sub-project":
+				return this.handleCreateSubProject(project.name);
+			case "open-note":
+				return this.handleOpenProjectNote(project.name);
+			case "delete":
+				return this.handleDeleteProject(project.id);
+		}
+	}
+
+	private async handleOpenProjectNote(projectName: string): Promise<void> {
+		await this.app.workspace.openLinkText(projectName, "", false);
+	}
+
+	private async handleNoteDrop(
+		notePath: string,
+		noteName: string,
+		sourceProjectName: string | null,
+		targetProjectName: string,
+		action: NoteDropAction
+	): Promise<void> {
+		if (action === "cancel") return;
+
+		const file = this.app.vault.getAbstractFileByPath(notePath);
+		if (!(file instanceof TFile)) return;
+
+		const frontmatterService =
+			this.plugin.flashcardManager.getFrontmatterService();
+		const content = await this.app.vault.cachedRead(file);
+		const currentProjects =
+			frontmatterService.extractProjectsFromFrontmatter(content);
+
+		if (action === "move" && sourceProjectName) {
+			const updatedProjects = currentProjects.filter(
+				(p) => p !== sourceProjectName
+			);
+			if (!updatedProjects.includes(targetProjectName)) {
+				updatedProjects.push(targetProjectName);
+			}
+			await frontmatterService.setProjectsInFrontmatter(
+				file,
+				updatedProjects
+			);
+			notify().success(`Moved "${noteName}" to "${targetProjectName}"`);
+		} else if (action === "add") {
+			if (!currentProjects.includes(targetProjectName)) {
+				const updatedProjects = [...currentProjects, targetProjectName];
+				await frontmatterService.setProjectsInFrontmatter(
+					file,
+					updatedProjects
+				);
+				notify().success(
+					`Added "${noteName}" to "${targetProjectName}"`
+				);
+			} else {
+				notify().info(
+					`"${noteName}" is already in "${targetProjectName}"`
+				);
+			}
+		}
+
+		await this.loadProjects();
+	}
+
+	private async handleReorderProjects(newOrder: string[]): Promise<void> {
+		this.plugin.settings.projectOrder = newOrder;
+		await this.plugin.saveSettings();
+	}
+
+	private async handleStartReviewNote(notePath: string): Promise<void> {
+		const file = this.app.vault.getAbstractFileByPath(notePath);
+		if (!(file instanceof TFile)) return;
+
+		const leaves = this.app.workspace.getLeavesOfType(VIEW_TYPE_REVIEW);
+		let leaf: WorkspaceLeaf;
+
+		if (leaves.length > 0) {
+			leaf = leaves[0]!;
+		} else {
+			leaf = this.app.workspace.getLeaf("tab");
+		}
+
+		await leaf.setViewState({
+			type: VIEW_TYPE_REVIEW,
+			active: true,
+			state: {
+				sourceNoteFilters: [file.basename],
+				ignoreDailyLimits: true,
+			},
+		});
+
+		void this.app.workspace.revealLeaf(leaf);
+	}
+
+	private async handleNoteAction(
+		action: NoteContextAction,
+		notePath: string,
+		projectName: string
+	): Promise<void> {
+		switch (action) {
+			case "open": {
+				const file = this.app.vault.getAbstractFileByPath(notePath);
+				if (file instanceof TFile) {
+					await this.app.workspace.openLinkText(file.basename, "", false);
+				}
+				return;
+			}
+			case "remove-from-project": {
+				const file = this.app.vault.getAbstractFileByPath(notePath);
+				if (!(file instanceof TFile)) return;
+
+				const frontmatterService =
+					this.plugin.flashcardManager.getFrontmatterService();
+				const content = await this.app.vault.cachedRead(file);
+				const currentProjects =
+					frontmatterService.extractProjectsFromFrontmatter(content);
+				const updatedProjects = currentProjects.filter(
+					(p) => p !== projectName
+				);
+				await frontmatterService.setProjectsInFrontmatter(
+					file,
+					updatedProjects
+				);
+				notify().success(
+					`Removed "${file.basename}" from "${projectName}"`
+				);
+				await this.loadProjects();
+				return;
+			}
+		}
+	}
+
 	private renderContent(): void {
 		if (!this.panelComponent) return;
 
 		const state = this.projects;
 		const rootProjects = this.projects.getRootProjects();
+
+		// Sort by persisted order so drag reorder survives re-renders
+		const savedOrder = this.plugin.settings.projectOrder ?? [];
+		if (savedOrder.length > 0) {
+			const orderMap = new Map(savedOrder.map((name, i) => [name, i]));
+			rootProjects.sort((a, b) => {
+				const aIdx = orderMap.get(a.name) ?? Infinity;
+				const bIdx = orderMap.get(b.name) ?? Infinity;
+				if (aIdx !== bIdx) return aIdx - bIdx;
+				return a.name.localeCompare(b.name);
+			});
+		}
+
 		const rootsWithCards = rootProjects.filter((p) => p.cardCount > 0);
 		const rootsEmpty = rootProjects.filter((p) => p.cardCount === 0);
 		const allProjects = state.projects;
@@ -655,16 +838,21 @@ export class ProjectsView extends ItemView {
 				app: this.app,
 				component: this,
 				onSearchChange: (query) => this.projects.setSearchQuery(query),
-				onStartReview: (name) => void this.handleStartReview(name),
-				onCustomStudy: (name) => void this.handleCustomStudy(name),
-				onDelete: (id) => void this.handleDeleteProject(id),
-				onAddNotes: (id, name) =>
-					void this.handleAddNotesToProject(id, name),
 				onCreateFromNote: () => void this.handleCreateFromNote(),
-				onCreateSubProject: (name) =>
-					void this.handleCreateSubProject(name),
 				onRefresh: () => void this.loadProjects(),
 				onToggleExpand: (id) => this.projects.toggleProjectExpanded(id),
+				onContextAction: (action, project) =>
+					void this.handleContextAction(action, project),
+				onReorderProjects: (order) =>
+					void this.handleReorderProjects(order),
+				onNoteDrop: (notePath, noteName, source, target, action) =>
+					void this.handleNoteDrop(
+						notePath,
+						noteName,
+						source,
+						target,
+						action
+					),
 				selectionMode: state.selectionMode,
 				selectedNotePaths: state.selectedNotePaths,
 				onEnterSelectionMode: (path) =>
@@ -676,6 +864,10 @@ export class ProjectsView extends ItemView {
 				isUnassignedExpanded: state.isUnassignedExpanded,
 				onToggleUnassignedExpanded: () => this.projects.toggleUnassignedExpanded(),
 				onStartReviewUnassigned: () => void this.handleStartReviewUnassigned(),
+				onStartReviewNote: (path) =>
+					void this.handleStartReviewNote(path),
+				onNoteAction: (action, path, projectName) =>
+					void this.handleNoteAction(action, path, projectName),
 				showDoneNotes: state.showDoneNotes,
 				onToggleShowDoneNotes: () => this.projects.toggleShowDoneNotes(),
 			});

@@ -422,6 +422,64 @@
 		text-decoration: none;
 	}
 
+	/* Drag and drop: ghost element */
+	.ep-drag-ghost {
+		opacity: 0.4;
+	}
+
+	/* Drag and drop: active drag item */
+	.ep-drag-active {
+		opacity: 0.8;
+	}
+
+	/* Drag handle: hidden by default, visible on row hover */
+	.ep-drag-handle {
+		cursor: grab;
+		opacity: 0;
+		transition: opacity 0.15s ease;
+	}
+	.ep-project-row:hover .ep-drag-handle {
+		opacity: 0.4;
+	}
+	.ep-project-row:hover .ep-drag-handle:hover {
+		opacity: 1;
+	}
+
+	/* Note drag handle */
+	.ep-note-drag-handle {
+		cursor: grab;
+		opacity: 0;
+		transition: opacity 0.15s ease;
+	}
+	.ep-note-item:hover .ep-note-drag-handle {
+		opacity: 0.4;
+	}
+	.ep-note-item:hover .ep-note-drag-handle:hover {
+		opacity: 1;
+	}
+
+	/* Drop target highlight when dragging a note over a project header */
+	.ep-note-dragging .ep-project-row {
+		transition: border-left 0.15s ease, background-color 0.15s ease;
+	}
+	.ep-note-dragging .ep-project-row:hover {
+		border-left: 3px solid var(--interactive-accent);
+		background-color: var(--background-modifier-hover);
+	}
+
+	/* Chevron expand/collapse animation */
+	.ep-chevron {
+		transition: transform 0.2s ease;
+	}
+	.ep-chevron-expanded {
+		transform: rotate(90deg);
+	}
+
+	/* Prevent drag on non-draggable sections */
+	.ep-no-drag {
+		pointer-events: auto;
+	}
+
 	/* Thin scrollbar for calendar heatmap */
 	.true-recall-scrollbar-thin::-webkit-scrollbar {
 		height: 4px;
