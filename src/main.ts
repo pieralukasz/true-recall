@@ -933,7 +933,7 @@ ${cardList}${moreText}
 	}
 
 	/**
-	 * Initialize the NL Query Service for AI-powered statistics queries
+	 * Initialize the NL Query Service for natural language statistics queries
 	 */
 	private async initializeNLQueryService(): Promise<void> {
 		if (!this.cardStore || !this.settings.openRouterApiKey) {

@@ -2,7 +2,7 @@
 
 > **"Operating System for the Mind"** - UNDERSTAND, REMEMBER, CREATE
 
-True Recall is an Obsidian plugin that combines AI-powered flashcard generation with FSRS v6 spaced repetition. All data is stored locally in SQLite with optional cloud sync (coming soon).
+True Recall is an Obsidian plugin for FSRS v6 spaced repetition. All data is stored locally in SQLite with optional cloud sync (coming soon).
 
 **[Documentation](http://localhost:4321/)**
 

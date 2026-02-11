@@ -1376,11 +1376,6 @@
       cursor: not-allowed;
     }
   }
-  .ep\:disabled\:opacity-40 {
-    &:disabled {
-      opacity: 40%;
-    }
-  }
   .ep\:disabled\:opacity-50 {
     &:disabled {
       opacity: 50%;
