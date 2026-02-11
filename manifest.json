@@ -3,8 +3,8 @@
 	"name": "True Recall",
 	"version": "0.1.0",
 	"minAppVersion": "0.15.0",
-	"description": "AI-powered flashcard generation and spaced repetition for Obsidian",
+	"description": "Spaced repetition with FSRS algorithm. Anki import/export, projects, and detailed statistics.",
 	"author": "Lucas Piera",
-	"authorUrl": "",
+	"authorUrl": "https://www.truerecall.app/",
 	"isDesktopOnly": false
 }
