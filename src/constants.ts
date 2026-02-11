@@ -1,4 +1,4 @@
-import type { TrueRecallSettings } from "./types/settings.types";
+import type { FSRSPreset, TrueRecallSettings } from "./types/settings.types";
 
 export const VIEW_TYPE_FLASHCARD_PANEL = "true-recall-flashcard-panel";
 export const VIEW_TYPE_REVIEW = "true-recall-review";
@@ -69,6 +69,22 @@ export const AI_MODELS = {
 
 export type AIModelKey = keyof typeof AI_MODELS;
 
+export const DEFAULT_FSRS_PRESET: FSRSPreset = {
+	id: "default",
+	name: "Default",
+	requestRetention: 0.9,
+	maximumInterval: 36500,
+	weights: null,
+	learningSteps: [1, 10],
+	relearningSteps: [10],
+	newCardsPerDay: 20,
+	reviewsPerDay: 200,
+	createdAt: 0,
+	lastOptimization: null,
+	lastOptimizationReviewCount: null,
+	lastOptimizationMetrics: null,
+};
+
 export const DEFAULT_SETTINGS: TrueRecallSettings = {
 	openRouterApiKey: "",
 	aiModel: "google/gemini-3-flash-preview" as AIModelKey,
@@ -134,6 +150,9 @@ export const DEFAULT_SETTINGS: TrueRecallSettings = {
 	scheduledBreaks: [],
 
 	sessionPresets: [],
+
+	fsrsPresets: [DEFAULT_FSRS_PRESET],
+	defaultPresetId: "default",
 };
 
 // FSRS v6 default weights (21 parameters)

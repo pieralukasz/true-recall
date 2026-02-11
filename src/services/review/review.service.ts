@@ -555,7 +555,8 @@ export class ReviewService {
 		card: FSRSFlashcardItem,
 		rating: Grade,
 		fsrsService: FSRSService,
-		responseTime: number
+		responseTime: number,
+		presetSettings?: import("../../types/settings.types").FSRSSettings
 	): {
 		updatedCard: FSRSFlashcardItem;
 		result: ReviewResult;
@@ -576,8 +577,7 @@ export class ReviewService {
 			  )
 			: 0;
 
-		// Schedule the card
-		const newFsrsData = fsrsService.scheduleCard(card.fsrs, rating, now);
+		const newFsrsData = fsrsService.scheduleCard(card.fsrs, rating, now, presetSettings);
 
 		const updatedCard: FSRSFlashcardItem = {
 			...card,

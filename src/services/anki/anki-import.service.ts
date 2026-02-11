@@ -266,6 +266,7 @@ export class AnkiImportService {
 					timeSpentMs: Math.max(0, entry.time),
 					updatedAt: Date.now(),
 					deletedAt: null,
+					presetName: null,
 				});
 			}
 		}

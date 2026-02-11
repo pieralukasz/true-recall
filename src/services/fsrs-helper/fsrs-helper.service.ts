@@ -72,13 +72,15 @@ export class FSRSHelperService {
 	}
 
 	async optimizeParameters(
-		options?: OptimizerOptions
+		options?: OptimizerOptions,
+		presetName?: string,
+		currentWeights?: number[] | null
 	): Promise<OptimizationOutput> {
-		const reviews = this.cardStore.getReviewDataForOptimization();
+		const reviews = this.cardStore.getReviewDataForOptimization(presetName);
 
 		const input: OptimizationInput = {
 			reviews,
-			currentWeights: this.settings.fsrsWeights ?? undefined,
+			currentWeights: (currentWeights ?? this.settings.fsrsWeights) ?? undefined,
 			minReviews: 400,
 		};
 

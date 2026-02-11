@@ -12,7 +12,6 @@ import {
 } from "obsidian";
 import { BaseComponent } from "../component.base";
 import {
-	createCardCountDisplay,
 	createSectionHeader,
 	createNoteListItem,
 	NoteListItem,
@@ -294,39 +293,29 @@ export class ProjectsContent extends BaseComponent {
 			}`,
 		});
 
-		// Main row (always visible) - clickable for expansion
-		const mainRow = item.createDiv({
-			cls: "ep:flex ep:items-start ep:gap-2 ep:py-2.5 ep:px-3 ep:cursor-pointer ep:transition-colors ep:hover:bg-obs-modifier-hover",
+		// Main container - clickable for expansion
+		const mainContainer = item.createDiv({
+			cls: "ep:flex ep:flex-col ep:gap-0.5 ep:py-2.5 ep:px-3 ep:cursor-pointer ep:transition-colors ep:hover:bg-obs-modifier-hover",
 		});
 		if (depth > 0) {
-			mainRow.style.paddingLeft = `${12 + depth * 20}px`;
+			mainContainer.style.paddingLeft = `${12 + depth * 20}px`;
 		}
 
 		// Click handler for expand/collapse
-		this.events.addEventListener(mainRow, "click", (e) => {
+		this.events.addEventListener(mainContainer, "click", (e) => {
 			// Don't trigger if clicked on action buttons
 			if ((e.target as HTMLElement).closest("button")) return;
 			this.props.onToggleExpand(project.id);
 		});
 
-		// Chevron icon for expandable projects
-		if (hasChildren || project.notes.length > 0) {
-			const chevron = mainRow.createDiv({
-				cls: "ep:w-4 ep:h-4 ep:flex ep:items-center ep:justify-center ep:shrink-0 ep:text-obs-muted ep:mt-0.5",
-			});
-			setIcon(chevron, isExpanded ? "chevron-down" : "chevron-right");
-		} else {
-			mainRow.createDiv({ cls: "ep:w-4 ep:shrink-0" });
-		}
-
-		// Content container
-		const content = mainRow.createDiv({
-			cls: "ep:flex-1 ep:min-w-0",
+		// Top row: project name + action buttons
+		const topRow = mainContainer.createDiv({
+			cls: "ep:flex ep:items-start ep:gap-2",
 		});
 
 		// Project name as clickable wiki link
-		const nameEl = content.createDiv({
-			cls: "ep:text-ui-small ep:font-medium ep:text-obs-normal ep:leading-snug ep:line-clamp-2 [&_p]:ep:m-0 [&_p]:ep:inline [&_a.internal-link]:ep:text-obs-normal [&_a.internal-link]:ep:no-underline [&_a.internal-link:hover]:ep:text-obs-link [&_a.internal-link:hover]:ep:underline",
+		const nameEl = topRow.createDiv({
+			cls: "ep:flex-1 ep:min-w-0 ep:text-ui-small ep:font-medium ep:text-obs-normal ep:leading-snug ep:line-clamp-2 [&_p]:ep:m-0 [&_p]:ep:inline [&_a.internal-link]:ep:text-obs-normal [&_a.internal-link]:ep:no-underline [&_a.internal-link:hover]:ep:text-obs-link [&_a.internal-link:hover]:ep:underline",
 		});
 		void MarkdownRenderer.render(
 			this.props.app,
@@ -350,36 +339,41 @@ export class ProjectsContent extends BaseComponent {
 			}
 		});
 
-		// Stats line with Anki-style colored counts
-		const statsEl = content.createDiv({
-			cls: "ep:text-ui-smaller ep:mt-0.5 ep:flex ep:items-center ep:gap-2",
-		});
-
-		// Note count (muted)
-		const noteText =
-			project.noteCount === 1 ? "1 note" : `${project.noteCount} notes`;
-		statsEl.createSpan({
-			text: noteText,
-			cls: hasCards ? "ep:text-obs-muted" : "ep:text-obs-faint",
-		});
-
-		// Anki-style card counts (New · Learning · Due) with total
-		if (hasCards) {
-			createCardCountDisplay(statsEl, {
-				newCount: project.newCount,
-				learningCount: project.learningCount,
-				dueCount: project.dueCount,
-				totalCount: project.cardCount,
-				variant: "full",
-				size: "smaller",
-				bold: true,
-			});
-		}
-
-		// Actions container (right side)
-		const actions = mainRow.createDiv({
+		// Actions container (right side of top row)
+		const actions = topRow.createDiv({
 			cls: "ep:flex ep:items-center ep:gap-1 ep:shrink-0",
 		});
+
+		// Bottom row: note count + card counts (aligned)
+		const bottomRow = mainContainer.createDiv({
+			cls: "ep:flex ep:items-center ep:justify-between",
+		});
+
+		const noteText =
+			project.noteCount === 1 ? "1 note" : `${project.noteCount} notes`;
+		bottomRow.createSpan({
+			text: noteText,
+			cls: `ep:text-ui-smaller ${hasCards ? "ep:text-obs-muted" : "ep:text-obs-faint"}`,
+		});
+
+		if (hasCards) {
+			const countsEl = bottomRow.createDiv({
+				cls: "ep:flex ep:items-center ep:gap-1",
+			});
+			const badgeCls = "ep:flex ep:items-center ep:justify-center ep:min-w-5 ep:h-5 ep:px-1.5 ep:rounded-full ep:text-ui-smaller ep:font-semibold";
+			countsEl.createDiv({
+				text: String(project.newCount),
+				cls: `${badgeCls} ep-bg-obs-green-20 ep:text-obs-green`,
+			});
+			countsEl.createDiv({
+				text: String(project.learningCount),
+				cls: `${badgeCls} ep-bg-obs-orange-20 ep:text-obs-orange`,
+			});
+			countsEl.createDiv({
+				text: String(project.dueCount),
+				cls: `${badgeCls} ep-bg-obs-blue-20 ep:text-obs-blue`,
+			});
+		}
 
 		const iconBtnCls =
 			"clickable-icon ep:cursor-pointer ep:w-6 ep:h-6 ep:flex ep:items-center ep:justify-center ep:rounded-md ep:text-obs-muted ep:hover:bg-obs-modifier-hover ep:hover:text-obs-normal ep:transition-colors [&_svg]:ep:w-3.5 [&_svg]:ep:h-3.5";
@@ -404,17 +398,6 @@ export class ProjectsContent extends BaseComponent {
 		this.events.addEventListener(subProjectBtn, "click", (e) => {
 			e.stopPropagation();
 			this.props.onCreateSubProject(project.name);
-		});
-
-		// Delete button
-		const deleteBtn = actions.createEl("button", {
-			cls: `${iconBtnCls} ep:hover:text-obs-red`,
-			attr: { "aria-label": "Delete" },
-		});
-		setIcon(deleteBtn, "trash-2");
-		this.events.addEventListener(deleteBtn, "click", (e) => {
-			e.stopPropagation();
-			this.props.onDelete(project.id);
 		});
 
 		// Review & custom study buttons (only if has cards)
@@ -622,16 +605,22 @@ export class ProjectsContent extends BaseComponent {
 			cls: hasCards ? "ep:text-obs-muted" : "ep:text-obs-faint",
 		});
 
-		// Anki-style card counts (New · Learning · Due) with total
 		if (hasCards) {
-			createCardCountDisplay(statsEl, {
-				newCount: totalNew,
-				learningCount: totalLearning,
-				dueCount: totalDue,
-				totalCount: totalCards,
-				variant: "full",
-				size: "smaller",
-				bold: true,
+			const badgeCls = "ep:flex ep:items-center ep:justify-center ep:min-w-5 ep:h-5 ep:px-1.5 ep:rounded-full ep:text-ui-smaller ep:font-semibold";
+			const countsEl = statsEl.createDiv({
+				cls: "ep:flex ep:items-center ep:gap-1",
+			});
+			countsEl.createDiv({
+				text: String(totalNew),
+				cls: `${badgeCls} ep-bg-obs-green-20 ep:text-obs-green`,
+			});
+			countsEl.createDiv({
+				text: String(totalLearning),
+				cls: `${badgeCls} ep-bg-obs-orange-20 ep:text-obs-orange`,
+			});
+			countsEl.createDiv({
+				text: String(totalDue),
+				cls: `${badgeCls} ep-bg-obs-blue-20 ep:text-obs-blue`,
 			});
 		}
 

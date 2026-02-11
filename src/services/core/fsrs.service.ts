@@ -102,22 +102,23 @@ export class FSRSService {
 	scheduleCard(
 		cardData: FSRSCardData,
 		rating: Grade,
-		reviewTime?: Date
+		reviewTime?: Date,
+		presetSettings?: FSRSSettings
 	): FSRSCardData {
 		const card = this.toCard(cardData);
 		const now = reviewTime ?? new Date();
+		const fsrs = presetSettings ? this.createFSRS(presetSettings) : this.fsrs;
 
-		// Use next() for a single rating
-		const result = this.fsrs.next(card, now, rating);
+		const result = fsrs.next(card, now, rating);
 		return this.fromCard(result.card, cardData.id);
 	}
 
-	getSchedulingPreview(cardData: FSRSCardData): SchedulingPreview {
+	getSchedulingPreview(cardData: FSRSCardData, presetSettings?: FSRSSettings): SchedulingPreview {
 		const card = this.toCard(cardData);
 		const now = new Date();
+		const fsrs = presetSettings ? this.createFSRS(presetSettings) : this.fsrs;
 
-		// repeat() returns an IPreview which is a RecordLog
-		const result = this.fsrs.repeat(card, now);
+		const result = fsrs.repeat(card, now);
 
 		return {
 			again: {
