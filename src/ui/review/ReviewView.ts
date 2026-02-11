@@ -1386,12 +1386,11 @@ export class ReviewView extends ItemView {
 	}
 
 	private updateSchedulingPreview(): void {
-		const fsrsSettings = extractFSRSSettings(this.plugin.settings);
-		this.fsrsService.updateSettings(fsrsSettings);
-
 		const card = this.review.getCurrentCard();
 		if (card) {
-			const preview = this.fsrsService.getSchedulingPreview(card.fsrs);
+			const preset = this.plugin.presetService.resolvePresetForCard(card, this.projectFilters);
+			const presetSettings = this.plugin.presetService.toFSRSSettings(preset);
+			const preview = this.fsrsService.getSchedulingPreview(card.fsrs, presetSettings);
 			this.review.setSchedulingPreview(preview);
 		}
 	}
@@ -1413,11 +1412,15 @@ export class ReviewView extends ItemView {
 		const previousState = card.fsrs.state;
 
 
+		const preset = this.plugin.presetService.resolvePresetForCard(card, this.projectFilters);
+		const presetSettings = this.plugin.presetService.toFSRSSettings(preset);
+
 		const { updatedCard, result } = this.reviewService.processAnswer(
 			card,
 			rating,
 			this.fsrsService,
-			responseTime
+			responseTime,
+			presetSettings
 		);
 
 		// Cramming mode: skip persistence, track card to avoid infinite requeue
@@ -1490,7 +1493,8 @@ export class ReviewView extends ItemView {
 					rating,
 					previousState,
 					result.scheduledDays,
-					result.elapsedDays
+					result.elapsedDays,
+					preset.name
 				);
 			} catch (error) {
 				console.error(

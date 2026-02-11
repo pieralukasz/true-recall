@@ -37,6 +37,7 @@ export interface RemoteReviewLogRow {
 	time_spent_ms: number;
 	updated_at: number;
 	deleted_at: number | null;
+	preset_name: string | null;
 }
 
 export interface LocalCardForSync extends FSRSCardData {
@@ -118,6 +119,7 @@ export function mapRemoteReviewLogToLocal(
 		timeSpentMs: remote.time_spent_ms,
 		updatedAt: remote.updated_at,
 		deletedAt: remote.deleted_at,
+		presetName: remote.preset_name ?? null,
 	};
 }
 
@@ -164,5 +166,6 @@ export function mapLocalReviewLogToRemote(
 		time_spent_ms: local.timeSpentMs,
 		updated_at: local.updatedAt || Date.now(),
 		deleted_at: local.deletedAt,
+		preset_name: local.presetName ?? null,
 	};
 }

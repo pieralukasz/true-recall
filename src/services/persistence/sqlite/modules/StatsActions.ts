@@ -13,6 +13,7 @@ export interface ReviewLogForSync {
     timeSpentMs: number;
     updatedAt: number;
     deletedAt: number | null;
+    presetName: string | null;
 }
 
 export class StatsActions {
@@ -24,7 +25,8 @@ export class StatsActions {
         scheduledDays: number,
         elapsedDays: number,
         state: number,
-        timeSpentMs: number
+        timeSpentMs: number,
+        presetName?: string
     ): void {
         const id = generateUUID();
         const reviewedAt = new Date().toISOString();
@@ -33,9 +35,9 @@ export class StatsActions {
         this.db.run(`
             INSERT INTO review_log (
                 id, card_id, reviewed_at, rating, scheduled_days,
-                elapsed_days, state, time_spent_ms, updated_at
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
-        `, [id, cardId, reviewedAt, rating, scheduledDays, elapsedDays, state, timeSpentMs, updatedAt]);
+                elapsed_days, state, time_spent_ms, updated_at, preset_name
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        `, [id, cardId, reviewedAt, rating, scheduledDays, elapsedDays, state, timeSpentMs, updatedAt, presetName ?? null]);
     }
 
     /**
@@ -689,21 +691,19 @@ export class StatsActions {
                 state,
                 time_spent_ms as timeSpentMs,
                 updated_at as updatedAt,
-                deleted_at as deletedAt
+                deleted_at as deletedAt,
+                preset_name as presetName
             FROM review_log
             WHERE updated_at > ?
         `, [timestamp]);
     }
 
-    /**
-     * Upsert review log entry from remote sync
-     */
     upsertReviewLogFromRemote(data: ReviewLogForSync): void {
         this.db.run(`
             INSERT OR REPLACE INTO review_log (
                 id, card_id, reviewed_at, rating, scheduled_days,
-                elapsed_days, state, time_spent_ms, updated_at, deleted_at
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                elapsed_days, state, time_spent_ms, updated_at, deleted_at, preset_name
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         `, [
             data.id,
             data.cardId,
@@ -715,12 +715,10 @@ export class StatsActions {
             data.timeSpentMs,
             data.updatedAt,
             data.deletedAt,
+            data.presetName ?? null,
         ]);
     }
 
-    /**
-     * Get review log entry with sync fields (for LWW comparison)
-     */
     getReviewLogForSync(id: string): ReviewLogForSync | null {
         return this.db.get<ReviewLogForSync>(`
             SELECT
@@ -733,7 +731,8 @@ export class StatsActions {
                 state,
                 time_spent_ms as timeSpentMs,
                 updated_at as updatedAt,
-                deleted_at as deletedAt
+                deleted_at as deletedAt,
+                preset_name as presetName
             FROM review_log WHERE id = ?
         `, [id]);
     }
@@ -749,7 +748,7 @@ export class StatsActions {
      * Get review data for FSRS parameter optimization
      * Returns review history with card states for the optimizer algorithm
      */
-    getReviewDataForOptimization(): {
+    getReviewDataForOptimization(presetName?: string): {
         cardId: string;
         reviewedAt: number;
         rating: number;
@@ -759,6 +758,10 @@ export class StatsActions {
         stability: number;
         difficulty: number;
     }[] {
+        // NULL preset_name treated as "Default" for pre-migration reviews
+        const filterByPreset = presetName !== undefined;
+        const isDefault = presetName === "Default";
+
         const rows = this.db.query<{
             cardId: string;
             reviewedAt: string;
@@ -782,8 +785,9 @@ export class StatsActions {
             JOIN cards c ON r.card_id = c.id
             WHERE r.deleted_at IS NULL
               AND c.deleted_at IS NULL
+              AND (? = 0 OR r.preset_name = ? OR (? = 1 AND r.preset_name IS NULL))
             ORDER BY r.reviewed_at ASC
-        `);
+        `, [filterByPreset ? 1 : 0, presetName ?? null, isDefault ? 1 : 0]);
 
         return rows.map(row => ({
             ...row,

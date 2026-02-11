@@ -5,7 +5,7 @@
 import { Menu, setIcon } from "obsidian";
 import { State } from "ts-fsrs";
 import { BaseComponent } from "../component.base";
-import { createCardCountDisplay } from "../components";
+
 import type { FlashcardInfo } from "../../types";
 import type { FSRSFlashcardItem } from "../../types/fsrs/card.types";
 import type { SelectionMode } from "../../state/store";
@@ -102,17 +102,24 @@ export class FlashcardPanelHeader extends BaseComponent {
             text: "Cards",
         });
 
-        // Anki-style counts (New · Learning · Due) with total
+        // Colored pill badges (matching review header style)
         if (this.props.cardsWithFsrs && this.props.cardsWithFsrs.length > 0) {
             const counts = this.countByState(this.props.cardsWithFsrs);
-            createCardCountDisplay(leftSide, {
-                newCount: counts.new,
-                learningCount: counts.learning,
-                dueCount: counts.review,
-                totalCount: this.props.cardsWithFsrs.length,
-                variant: "full",
-                size: "smaller",
-                bold: false,
+            const countsEl = leftSide.createDiv({
+                cls: "ep:flex ep:items-center ep:gap-1",
+            });
+            const badgeCls = "ep:flex ep:items-center ep:justify-center ep:min-w-5 ep:h-5 ep:px-1.5 ep:rounded-full ep:text-ui-smaller ep:font-semibold";
+            countsEl.createDiv({
+                text: String(counts.new),
+                cls: `${badgeCls} ep-bg-obs-green-20 ep:text-obs-green`,
+            });
+            countsEl.createDiv({
+                text: String(counts.learning),
+                cls: `${badgeCls} ep-bg-obs-orange-20 ep:text-obs-orange`,
+            });
+            countsEl.createDiv({
+                text: String(counts.review),
+                cls: `${badgeCls} ep-bg-obs-blue-20 ep:text-obs-blue`,
             });
         }
 

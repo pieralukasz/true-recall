@@ -82,3 +82,7 @@ export {
 export { AnkiImportModal } from "./AnkiImportModal";
 export { AnkiExportModal } from "./AnkiExportModal";
 export { CsvExportModal } from "./CsvExportModal";
+export {
+    SetPresetModal,
+    type SetPresetResult,
+} from "./SetPresetModal";

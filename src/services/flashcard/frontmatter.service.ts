@@ -298,6 +298,16 @@ export class FrontmatterService {
 		await this.app.vault.modify(sourceFile, newContent);
 	}
 
+	async setFsrsPreset(file: TFile, presetName: string | null): Promise<void> {
+		await this.app.fileManager.processFrontMatter(file, (fm: Record<string, unknown>) => {
+			if (presetName) {
+				fm["fsrs_preset"] = presetName;
+			} else {
+				delete fm["fsrs_preset"];
+			}
+		});
+	}
+
 	/**
 	 * Remove "# Flashcards for [[...]]" header from content
 	 * Used for migration of existing files

@@ -131,11 +131,13 @@ export class TestSqliteDatabase {
 				time_spent_ms INTEGER,
 				updated_at INTEGER,
 				deleted_at INTEGER DEFAULT NULL,
+				preset_name TEXT,
 				FOREIGN KEY (card_id) REFERENCES cards(id) ON DELETE CASCADE
 			);
 
 			CREATE INDEX IF NOT EXISTS idx_revlog_card ON review_log(card_id);
 			CREATE INDEX IF NOT EXISTS idx_revlog_deleted ON review_log(deleted_at);
+			CREATE INDEX IF NOT EXISTS idx_revlog_preset ON review_log(preset_name);
 
 			-- Metadata
 			CREATE TABLE IF NOT EXISTS meta (
@@ -143,7 +145,7 @@ export class TestSqliteDatabase {
 				value TEXT
 			);
 
-			INSERT OR REPLACE INTO meta (key, value) VALUES ('schema_version', '21');
+			INSERT OR REPLACE INTO meta (key, value) VALUES ('schema_version', '22');
 		`);
 	}
 
