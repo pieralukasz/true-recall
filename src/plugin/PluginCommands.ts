@@ -41,12 +41,6 @@ export function registerCommands(plugin: TrueRecallPlugin): void {
 	});
 
 	plugin.addCommand({
-		id: "show-projects",
-		name: "Open projects panel",
-		callback: () => void plugin.showProjects(),
-	});
-
-	plugin.addCommand({
 		id: "add-to-project",
 		name: "Add current note to project",
 		checkCallback: (checking) => {

@@ -2,10 +2,6 @@
 export { createAppStore } from "./app-store";
 export type { AppStore } from "./app-store";
 
-// Services
-export { ProjectDataService } from "./services/project-data.service";
-export type { ProjectStats, ProjectDataSnapshot } from "./services/project-data.service";
-
 // Type exports
 export type {
 	AppState,
@@ -28,10 +24,6 @@ export type {
 	SessionSliceState,
 	SessionSliceActions,
 	SessionApi,
-	// Projects slice
-	ProjectsSliceState,
-	ProjectsSliceActions,
-	ProjectsApi,
 	// Simulator slice
 	SimulatorSliceState,
 	SimulatorSliceActions,

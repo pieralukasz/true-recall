@@ -195,6 +195,22 @@ export class TrueRecallSettingTab extends PluginSettingTab {
 					})
 			);
 
+		new Setting(container).setName("Editor integration").setHeading();
+
+		new Setting(container)
+			.setName("Show link status indicators")
+			.setDesc(
+				"Display inline flashcard counts (new/learning/review) next to [[links]] that point to notes with flashcards"
+			)
+			.addToggle((toggle) =>
+				toggle
+					.setValue(this.plugin.settings.showLinkStatusIndicators)
+					.onChange(async (value) => {
+						this.plugin.settings.showLinkStatusIndicators = value;
+						await this.plugin.saveSettings();
+					})
+			);
+
 		new Setting(container).setName("Daily limits").setHeading();
 
 		new Setting(container)

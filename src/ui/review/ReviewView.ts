@@ -1159,7 +1159,7 @@ export class ReviewView extends ItemView {
 	}
 
 	private handleProjectClick(_projectName: string): void {
-		void this.plugin.activateProjectsView();
+		// No-op: ProjectsView was removed
 	}
 
 	private renderRatingButton(
@@ -1564,6 +1564,6 @@ export class ReviewView extends ItemView {
 
 	private handleNextSession(): void {
 		this.leaf.detach();
-		void this.plugin.activateProjectsView();
+		void this.plugin.activateView();
 	}
 }
