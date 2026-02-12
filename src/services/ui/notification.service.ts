@@ -48,6 +48,14 @@ export class NotificationService {
 		this.warning(msg);
 	}
 
+	duplicateFound(question: string, sourceNoteName?: string): void {
+		const truncated = question.length > 50 ? question.slice(0, 50) + "..." : question;
+		const msg = sourceNoteName
+			? `Duplicate: "${truncated}" exists in "${sourceNoteName}"`
+			: `Duplicate: "${truncated}" already exists`;
+		this.warning(msg, NOTIFICATION_DURATION.LONG);
+	}
+
 	cardUpdated(): void {
 		this.success("Card updated");
 	}
