@@ -18,6 +18,14 @@ export interface DuplicateInfo {
 	flashcard: { id: string; question: string; answer: string };
 	type: "batch" | "existing";
 	existingCardId?: string;
+	existingSourceUid?: string;
+}
+
+export class DuplicateQuestionError extends Error {
+	constructor(public existingCardId: string, public existingSourceUid?: string) {
+		super("A card with this question already exists");
+		this.name = "DuplicateQuestionError";
+	}
 }
 
 export interface CreateBatchResult {
@@ -28,7 +36,7 @@ export interface CreateBatchResult {
 export class CardRepository {
 	constructor(private store: SqliteStoreService) {}
 
-	/** @throws Error if card with same question already exists */
+	/** @throws DuplicateQuestionError if card with same question already exists */
 	create(
 		question: string,
 		answer: string,
@@ -36,10 +44,9 @@ export class CardRepository {
 		sourceNoteName?: string,
 		options?: { cardType?: CardType; clozeTemplate?: string; clozeIndex?: number; reverseOf?: string }
 	): FSRSFlashcardItem {
-		// Check for duplicate question
-		const existingCardId = this.store.cards.getCardIdByQuestion(question);
-		if (existingCardId) {
-			throw new Error("A card with this question already exists");
+		const existingInfo = this.store.cards.getCardInfoByQuestion(question);
+		if (existingInfo) {
+			throw new DuplicateQuestionError(existingInfo.id, existingInfo.sourceUid);
 		}
 
 		const cardId = crypto.randomUUID();
@@ -117,24 +124,27 @@ export class CardRepository {
 					sourceUid, flashcard.clozeTemplate, flashcard.clozeIndex
 				);
 				if (existingCloze) {
+					const existingCard = this.store.get(existingCloze);
 					duplicates.push({
 						flashcard,
 						type: "existing",
 						existingCardId: existingCloze,
+						existingSourceUid: existingCard?.sourceUid,
 					});
 					continue;
 				}
 			}
 
 			// Check for existing card with same question
-			const existingCardId = this.store.cards.getCardIdByQuestion(
+			const existingInfo = this.store.cards.getCardInfoByQuestion(
 				flashcard.question
 			);
-			if (existingCardId) {
+			if (existingInfo) {
 				duplicates.push({
 					flashcard,
 					type: "existing",
-					existingCardId,
+					existingCardId: existingInfo.id,
+					existingSourceUid: existingInfo.sourceUid,
 				});
 				continue;
 			}
@@ -201,11 +211,18 @@ export class CardRepository {
 		return this.store.has(cardId);
 	}
 
-	/** @throws Error if card not found */
+	/** @throws Error if card not found, DuplicateQuestionError if question conflicts */
 	updateContent(cardId: string, newQuestion: string, newAnswer: string): void {
 		const existing = this.store.get(cardId);
 		if (!existing) {
 			throw new Error(`Card ${cardId} not found`);
+		}
+
+		if (newQuestion !== existing.question) {
+			const duplicateInfo = this.store.cards.getCardInfoByQuestion(newQuestion, cardId);
+			if (duplicateInfo) {
+				throw new DuplicateQuestionError(duplicateInfo.id, duplicateInfo.sourceUid);
+			}
 		}
 
 		const updated: FSRSCardData = {

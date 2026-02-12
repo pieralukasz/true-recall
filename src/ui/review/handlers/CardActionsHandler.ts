@@ -9,6 +9,7 @@ import type { TrueRecallSettings } from "../../../types";
 import { MoveCardModal, SimpleFlashcardEditorModal } from "../../modals";
 import { notify } from "../../../services";
 import { cardToMarkdown } from "../../../services/flashcard/flashcard-format.util";
+import { DuplicateQuestionError } from "../../../services/flashcard/card-repository.service";
 import type TrueRecallPlugin from "../../../main";
 import type { ReviewApi } from "../../../state/store";
 
@@ -361,8 +362,15 @@ export class CardActionsHandler {
 			const noteName = card.sourceNotePath?.split("/").pop()?.replace(/\.md$/, "");
 			notify().cardsCreated(result.flashcards.length, noteName);
 		} catch (error) {
-			console.error("[CardActionsHandler] Error adding flashcards:", error);
-			notify().operationFailed("add flashcards", error);
+			if (error instanceof DuplicateQuestionError) {
+				const sourceInfo = error.existingSourceUid
+					? this.deps.flashcardManager.getSourceNoteService().resolveSourceNote(error.existingSourceUid)
+					: {};
+				notify().duplicateFound(result.flashcards[0]?.question ?? "", sourceInfo.noteName);
+			} else {
+				console.error("[CardActionsHandler] Error adding flashcards:", error);
+				notify().operationFailed("add flashcards", error);
+			}
 		}
 	}
 
@@ -400,8 +408,15 @@ export class CardActionsHandler {
 			const noteName = card.sourceNotePath?.split("/").pop()?.replace(/\.md$/, "");
 			notify().cardsCreated(result.flashcards.length, noteName);
 		} catch (error) {
-			console.error("[CardActionsHandler] Error copying flashcard:", error);
-			notify().operationFailed("copy flashcard", error);
+			if (error instanceof DuplicateQuestionError) {
+				const sourceInfo = error.existingSourceUid
+					? this.deps.flashcardManager.getSourceNoteService().resolveSourceNote(error.existingSourceUid)
+					: {};
+				notify().duplicateFound(result.flashcards[0]?.question ?? "", sourceInfo.noteName);
+			} else {
+				console.error("[CardActionsHandler] Error copying flashcard:", error);
+				notify().operationFailed("copy flashcard", error);
+			}
 		}
 	}
 
@@ -475,8 +490,16 @@ export class CardActionsHandler {
 				notify().cardUpdated();
 			}
 		} catch (error) {
-			console.error("[CardActionsHandler] Error updating card:", error);
-			notify().operationFailed("update card", error);
+			if (error instanceof DuplicateQuestionError) {
+				const sourceInfo = error.existingSourceUid
+					? this.deps.flashcardManager.getSourceNoteService().resolveSourceNote(error.existingSourceUid)
+					: {};
+				const question = result.flashcards[0]?.question ?? "";
+				notify().duplicateFound(question, sourceInfo.noteName);
+			} else {
+				console.error("[CardActionsHandler] Error updating card:", error);
+				notify().operationFailed("update card", error);
+			}
 		}
 	}
 

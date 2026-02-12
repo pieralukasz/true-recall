@@ -299,6 +299,20 @@ export class CardActions {
         )?.id;
     }
 
+    getCardInfoByQuestion(question: string, excludeCardId?: string): { id: string; sourceUid?: string } | undefined {
+        const row = excludeCardId
+            ? this.db.get<{ id: string; sourceUid: string | null }>(
+                `SELECT id, source_uid as sourceUid FROM cards WHERE deleted_at IS NULL AND question = ? AND id != ? LIMIT 1`,
+                [question, excludeCardId]
+            )
+            : this.db.get<{ id: string; sourceUid: string | null }>(
+                `SELECT id, source_uid as sourceUid FROM cards WHERE deleted_at IS NULL AND question = ? LIMIT 1`,
+                [question]
+            );
+        if (!row) return undefined;
+        return { id: row.id, sourceUid: row.sourceUid ?? undefined };
+    }
+
     getCardIdByQuestionAndClozeIndex(question: string, clozeIndex: number): string | undefined {
         return this.db.get<{ id: string }>(
             `SELECT id FROM cards WHERE deleted_at IS NULL AND question = ? AND cloze_index = ? LIMIT 1`,

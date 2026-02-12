@@ -17,6 +17,7 @@ import { MoveCardModal } from "../modals/MoveCardModal";
 import type { FSRSFlashcardItem } from "../../types/fsrs/card.types";
 import { SimpleFlashcardEditorModal } from "../modals/SimpleFlashcardEditorModal";
 import { cardToMarkdown, cardsToMarkdown } from "../../services/flashcard/flashcard-format.util";
+import { DuplicateQuestionError, type DuplicateInfo } from "../../services/flashcard/card-repository.service";
 import type { FlashcardItem } from "../../types";
 import type { CardAddedEvent, CardRemovedEvent, CardUpdatedEvent, BulkChangeEvent, SettingsChangedEvent } from "../../types/events.types";
 import { countCardsByState } from "../shared/helpers";
@@ -445,6 +446,11 @@ export class FlashcardPanelView extends ItemView {
 
             const uncollectedCount = this.collectService.countFlashcardTags(content);
 
+            // Invalidate before setState to prevent stale cache from premature renders
+            // (exitSelectionMode/incrementRenderVersion trigger synchronous renders that
+            // re-populate the cache with old flashcardInfo before the await completes)
+            this.invalidateCardsCache();
+
             this.panel.setState({
                 flashcardInfo: info,
                 status: info?.exists ? "exists" : "none",
@@ -744,7 +750,12 @@ export class FlashcardPanelView extends ItemView {
                 if (this.contentDiv) this.contentDiv.scrollTop = scrollPosition;
             });
         } catch (error) {
-            notify().operationFailed("update flashcard", error);
+            if (error instanceof DuplicateQuestionError) {
+                const question = result.flashcards[0]?.question ?? "";
+                this.notifyDuplicateError(error, question);
+            } else {
+                notify().operationFailed("update flashcard", error);
+            }
         }
     }
 
@@ -783,7 +794,12 @@ export class FlashcardPanelView extends ItemView {
                 if (this.contentDiv) this.contentDiv.scrollTop = scrollPosition;
             });
         } catch (error) {
-            notify().operationFailed("update flashcard", error);
+            if (error instanceof DuplicateQuestionError) {
+                const question = field === "question" ? newContent : card.question;
+                this.notifyDuplicateError(error, question);
+            } else {
+                notify().operationFailed("update flashcard", error);
+            }
         }
     }
 
@@ -1135,15 +1151,11 @@ export class FlashcardPanelView extends ItemView {
 
             // Handle partial success
             if (saveResult.duplicates.length > 0) {
-                if (saveResult.created.length === 0) {
-                    notify().allCardsDuplicates(saveResult.duplicates.length);
-                } else {
-                    notify().cardsCreatedWithDuplicates(
-                        saveResult.created.length,
-                        saveResult.duplicates.length,
-                        state.currentFile.basename
-                    );
+                if (saveResult.created.length > 0) {
+                    notify().cardsCreated(saveResult.created.length, state.currentFile.basename);
                 }
+
+                this.showDuplicateNotifications(saveResult.duplicates);
 
                 // Re-open modal with only the duplicate flashcards for editing
                 const duplicateFlashcards = saveResult.duplicates.map((d) => ({
@@ -1234,14 +1246,10 @@ export class FlashcardPanelView extends ItemView {
 
             // Handle partial success
             if (saveResult.duplicates.length > 0) {
-                if (saveResult.created.length === 0) {
-                    notify().warning("All collected flashcards already exist");
-                } else {
-                    notify().cardsCreatedWithDuplicates(
-                        saveResult.created.length,
-                        saveResult.duplicates.length
-                    );
+                if (saveResult.created.length > 0) {
+                    notify().success(`Collected ${saveResult.created.length} flashcard(s)`);
                 }
+                this.showDuplicateNotifications(saveResult.duplicates);
             } else {
                 notify().success(`Collected ${saveResult.created.length} flashcard(s)`);
             }
@@ -1249,6 +1257,24 @@ export class FlashcardPanelView extends ItemView {
         } catch (error) {
             notify().operationFailed("collect flashcards", error);
         }
+    }
+
+    private showDuplicateNotifications(duplicates: DuplicateInfo[]): void {
+        const sourceNoteService = this.flashcardManager.getSourceNoteService();
+        for (const dup of duplicates) {
+            const sourceInfo = dup.existingSourceUid
+                ? sourceNoteService.resolveSourceNote(dup.existingSourceUid)
+                : {};
+            notify().duplicateFound(dup.flashcard.question, sourceInfo.noteName);
+        }
+    }
+
+    private notifyDuplicateError(error: DuplicateQuestionError, question: string): void {
+        const sourceNoteService = this.flashcardManager.getSourceNoteService();
+        const sourceInfo = error.existingSourceUid
+            ? sourceNoteService.resolveSourceNote(error.existingSourceUid)
+            : {};
+        notify().duplicateFound(question, sourceInfo.noteName);
     }
 
     private registerEditorChangeTracking(): void {
