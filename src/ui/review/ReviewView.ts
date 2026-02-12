@@ -37,6 +37,7 @@ import {
 	getEmptyQueueMessage,
 } from "./helpers";
 import { CopilotIntegrationService } from "../../services/integration/copilot-integration.service";
+import { DuplicateQuestionError } from "../../services/flashcard/card-repository.service";
 import { BR_REGEX, buildProjectGraph, getDescendantProjects } from "../../utils";
 
 export class ReviewView extends ItemView {
@@ -898,7 +899,7 @@ export class ReviewView extends ItemView {
 						notify().success("Updated cloze template");
 					} else {
 						// No longer cloze syntax — update as regular content
-						this.plugin.cardStore.cards.updateCardContent(
+						this.flashcardManager.updateCardContent(
 							cardIdBeforeSave,
 							newContent,
 							card.answer
@@ -907,8 +908,15 @@ export class ReviewView extends ItemView {
 						notify().cardUpdated();
 					}
 				} catch (error) {
-					console.error("Error saving cloze template:", error);
-					notify().operationFailed("save cloze template", error);
+					if (error instanceof DuplicateQuestionError) {
+						const sourceInfo = error.existingSourceUid
+							? this.flashcardManager.getSourceNoteService().resolveSourceNote(error.existingSourceUid)
+							: {};
+						notify().duplicateFound(newContent, sourceInfo.noteName);
+					} else {
+						console.error("Error saving cloze template:", error);
+						notify().operationFailed("save cloze template", error);
+					}
 				}
 			}
 
@@ -932,7 +940,7 @@ export class ReviewView extends ItemView {
 
 		if (hasChanges) {
 			try {
-				this.plugin.cardStore.cards.updateCardContent(
+				this.flashcardManager.updateCardContent(
 					cardIdBeforeSave,
 					newQuestion,
 					newAnswer
@@ -947,8 +955,15 @@ export class ReviewView extends ItemView {
 					notify().cardUpdated();
 				}
 			} catch (error) {
-				console.error("Error saving card content:", error);
-				notify().operationFailed("save card", error);
+				if (error instanceof DuplicateQuestionError) {
+					const sourceInfo = error.existingSourceUid
+						? this.flashcardManager.getSourceNoteService().resolveSourceNote(error.existingSourceUid)
+						: {};
+					notify().duplicateFound(newQuestion, sourceInfo.noteName);
+				} else {
+					console.error("Error saving card content:", error);
+					notify().operationFailed("save card", error);
+				}
 			}
 		}
 
