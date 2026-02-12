@@ -216,8 +216,8 @@ export interface TrueRecallSettings {
     /** ID of the default preset used as fallback */
     defaultPresetId: string;
 
-    /** Custom ordering of projects in ProjectsView (empty = alphabetical) */
-    projectOrder: string[];
+    /** Show inline flashcard status indicators next to [[links]] in editor */
+    showLinkStatusIndicators: boolean;
 }
 
 export interface SessionPreset {

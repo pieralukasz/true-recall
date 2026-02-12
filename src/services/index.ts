@@ -102,3 +102,4 @@ export {
 } from "./undo";
 
 export { ReactiveCache, type ReactiveCacheOptions } from "./cache";
+export { NoteStatusCacheService } from "./cache";

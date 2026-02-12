@@ -422,6 +422,40 @@
 		text-decoration: none;
 	}
 
+	/* Inline flashcard status indicators next to [[links]] */
+	.true-recall-link-status {
+		display: inline-flex;
+		align-items: center;
+		gap: 1px;
+		margin-left: 6px;
+		font-size: var(--font-ui-smaller);
+		font-weight: 500;
+		opacity: 0.85;
+		vertical-align: baseline;
+	}
+	.true-recall-link-status-new { color: var(--color-green); }
+	.true-recall-link-status-learning { color: var(--color-orange); }
+	.true-recall-link-status-due { color: var(--color-blue); }
+	.true-recall-link-status-dot { color: var(--text-faint); margin: 0 1px; }
+	.true-recall-link-status-total { color: var(--text-faint); margin-left: 2px; }
+	.true-recall-link-status-play {
+		display: inline-flex;
+		align-items: center;
+		margin-left: 2px;
+		cursor: pointer;
+		color: var(--text-faint);
+		transition: color 0.15s ease;
+	}
+	.true-recall-link-status-play:hover {
+		color: var(--text-accent);
+	}
+	.true-recall-link-status-play svg {
+		width: 8px;
+		height: 8px;
+		fill: currentColor;
+		stroke: currentColor;
+	}
+
 	/* Drag and drop: ghost element */
 	.ep-drag-ghost {
 		opacity: 0.4;

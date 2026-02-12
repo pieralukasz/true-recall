@@ -1,7 +1,6 @@
 // Re-export all types and functions from the Zustand store
 export {
 	createAppStore,
-	ProjectDataService,
 	type AppStore,
 	type AppState,
 	type AppStoreDeps,
@@ -23,16 +22,10 @@ export {
 	type SessionSliceState,
 	type SessionSliceActions,
 	type SessionApi,
-	// Projects slice
-	type ProjectsSliceState,
-	type ProjectsSliceActions,
-	type ProjectsApi,
 	// Simulator slice
 	type SimulatorSliceState,
 	type SimulatorSliceActions,
 	type SimulatorApi,
 	// Helper types
 	type SliceCreator,
-	type ProjectStats,
-	type ProjectDataSnapshot,
 } from "./store";
