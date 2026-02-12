@@ -15,7 +15,6 @@ import type {
 	SchedulingPreview,
 } from "../../types";
 import type { AppError } from "../../errors";
-import type { ProjectGraph } from "../../utils/project-hierarchy";
 import type {
 	MetricType,
 	SequenceSimulation,
@@ -195,55 +194,6 @@ export interface SessionSliceActions {
 // API type for components to depend on
 export type SessionApi = SessionSliceState & SessionSliceActions;
 
-export interface ProjectsSliceState {
-	isLoading: boolean;
-	isStale: boolean;
-	projects: ProjectInfo[];
-	searchQuery: string;
-	editingProjectId: number | null;
-	expandedProjectIds: Set<string>;
-	selectionMode: "normal" | "selecting";
-	selectedNotePaths: Set<string>;
-	unassignedNotes: ProjectNoteInfo[];
-	isUnassignedExpanded: boolean;
-	showDoneNotes: boolean;
-	projectGraph: ProjectGraph | null;
-}
-
-export interface ProjectsSliceActions {
-	setState: (partial: Partial<ProjectsSliceState>) => void;
-	reset: () => void;
-	setLoading: (isLoading: boolean) => void;
-	setProjects: (projects: ProjectInfo[]) => void;
-	setUnassignedNotes: (notes: ProjectNoteInfo[]) => void;
-	toggleUnassignedExpanded: () => void;
-	toggleShowDoneNotes: () => void;
-	setSearchQuery: (query: string) => void;
-	setEditingProject: (id: number | null) => void;
-	toggleProjectExpanded: (projectId: string) => void;
-	isProjectExpanded: (projectId: string) => boolean;
-	enterSelectionMode: (initialNotePath?: string) => void;
-	exitSelectionMode: () => void;
-	toggleNoteSelection: (notePath: string) => void;
-	isInSelectionMode: () => boolean;
-	getSelectedNotePaths: () => string[];
-	updateProject: (projectId: string, updates: Partial<ProjectInfo>) => void;
-	removeProject: (projectId: string) => void;
-	addProject: (project: ProjectInfo) => void;
-	getFilteredProjects: () => ProjectInfo[];
-	setProjectGraph: (graph: ProjectGraph | null) => void;
-	getProjectsWithCards: () => ProjectInfo[];
-	getEmptyProjects: () => ProjectInfo[];
-	getRootProjects: () => ProjectInfo[];
-	getTotalStats: () => { projectCount: number; totalCards: number; totalDue: number };
-	markStale: () => void;
-	markFresh: () => void;
-	getIsStale: () => boolean;
-}
-
-// API type for components to depend on
-export type ProjectsApi = ProjectsSliceState & ProjectsSliceActions;
-
 export interface SimulatorSliceState {
 	sequences: string[];
 	parameters: number[];
@@ -396,7 +346,6 @@ export interface AppState {
 	review: ReviewSliceState & ReviewSliceActions;
 	panel: PanelSliceState & PanelSliceActions;
 	session: SessionSliceState & SessionSliceActions;
-	projects: ProjectsSliceState & ProjectsSliceActions;
 	simulator: SimulatorSliceState & SimulatorSliceActions;
 	stats: StatsSliceState & StatsSliceActions;
 	noteHub: NoteHubSliceState & NoteHubSliceActions;

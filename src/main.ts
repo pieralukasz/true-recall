@@ -4,7 +4,6 @@ import {
 	VIEW_TYPE_REVIEW,
 	VIEW_TYPE_STATS,
 	VIEW_TYPE_SESSION,
-	VIEW_TYPE_PROJECTS,
 	VIEW_TYPE_SIMULATOR,
 	VIEW_TYPE_ORPHANED_CARDS,
 	VIEW_TYPE_NOTE_HUB,
@@ -32,6 +31,8 @@ import {
 	notify,
 	UndoService,
 } from "./services";
+import { NoteStatusCacheService } from "./services/cache/note-status-cache.service";
+import { createLinkStatusViewPlugin, createLinkStatusPostProcessor } from "./ui/editor";
 import { BackgroundBackupManager } from "./services/persistence/background-backup.service";
 import { FSRSHelperService } from "./services/fsrs-helper";
 import { PresetService } from "./services/core/preset.service";
@@ -47,7 +48,6 @@ import { FlashcardPanelView } from "./ui/flashcard-panel/FlashcardPanelView";
 import { ReviewView } from "./ui/review/ReviewView";
 import { StatsView } from "./ui/stats/StatsView";
 import { SessionView } from "./ui/session";
-import { ProjectsView } from "./ui/projects";
 import { SimulatorView } from "./ui/simulator";
 import { OrphanedCardsView } from "./ui/orphaned-cards";
 import { NoteHubView } from "./ui/note-hub";
@@ -74,7 +74,7 @@ import { CustomStudyModal, type CustomStudyModalScope } from "./ui/modals/Custom
 import { MergeNotesService } from "./services/notes/merge-notes.service";
 import { registerCommands } from "./plugin/PluginCommands";
 import { registerEventHandlers, registerDeletionHandler } from "./plugin/PluginEventHandlers";
-import { createAppStore, ProjectDataService, type AppStore } from "./state/store";
+import { createAppStore, type AppStore } from "./state/store";
 import {
 	activateView,
 	activateReviewView,
@@ -105,7 +105,7 @@ export default class TrueRecallPlugin extends Plugin {
 	fsrsHelper: FSRSHelperService | null = null;
 	presetService!: PresetService;
 	store: AppStore | null = null;
-	projectDataService: ProjectDataService | null = null;
+	noteStatusCache: NoteStatusCacheService | null = null;
 
 	/**
 	 * Assert that the card store is initialized and ready.
@@ -181,11 +181,6 @@ export default class TrueRecallPlugin extends Plugin {
 		this.registerView(
 			VIEW_TYPE_SESSION,
 			(leaf) => new SessionView(leaf, this)
-		);
-
-		this.registerView(
-			VIEW_TYPE_PROJECTS,
-			(leaf) => new ProjectsView(leaf, this)
 		);
 
 		this.registerView(
@@ -357,7 +352,7 @@ ${cardList}${moreText}
 	onunload(): void {
 		this.undoService?.clear();
 		this.backgroundBackupManager?.stop();
-		this.projectDataService?.dispose();
+		this.noteStatusCache?.dispose();
 
 		if (this.cardStore) {
 			void this.cardStore.saveNow();
@@ -428,6 +423,8 @@ ${cardList}${moreText}
 			// NL Query Service reinitialization is non-critical
 		});
 
+		this.noteStatusCache?.bumpVersion();
+
 		getEventBus().emit({
 			type: "settings:changed",
 			timestamp: Date.now(),
@@ -452,14 +449,6 @@ ${cardList}${moreText}
 				dayBoundaryService: this.dayBoundaryService,
 			});
 		}
-	}
-
-	async activateProjectsView(): Promise<void> {
-		await activateView(this.app, VIEW_TYPE_PROJECTS);
-	}
-
-	async showProjects(): Promise<void> {
-		await this.activateProjectsView();
 	}
 
 	async openSimulator(): Promise<void> {
@@ -882,6 +871,7 @@ ${cardList}${moreText}
 			this.fsrsHelper = new FSRSHelperService(this.cardStore, this.settings);
 			this.initializeDeletionHandler();
 			this.initializeStore();
+			this.initializeLinkStatusIndicators();
 		} catch (error) {
 			console.error(
 				"[True Recall] Failed to initialize SQLite store:",
@@ -896,12 +886,6 @@ ${cardList}${moreText}
 	private initializeStore(): void {
 		const eventBus = getEventBus();
 
-		this.projectDataService = new ProjectDataService(
-			this.frontmatterIndex,
-			this.cardStore,
-			eventBus
-		);
-
 		this.store = createAppStore({
 			app: this.app,
 			cardStore: this.cardStore,
@@ -910,18 +894,45 @@ ${cardList}${moreText}
 			eventBus,
 			getSettings: () => this.settings,
 		});
-
-		// Invalidate project cache on frontmatter changes
-		this.registerEvent(
-			this.app.metadataCache.on("changed", () => {
-				this.projectDataService?.invalidateProjectsCache();
-			})
-		);
 	}
 
-	/**
-	 * Initialize the NL Query Service for natural language statistics queries
-	 */
+	private initializeLinkStatusIndicators(): void {
+		if (!this.cardStore || !this.frontmatterIndex) return;
+
+		const eventBus = getEventBus();
+		this.noteStatusCache = new NoteStatusCacheService(this.cardStore, eventBus);
+
+		// Build cache after frontmatter index is ready
+		this.app.workspace.onLayoutReady(() => {
+			this.noteStatusCache!.buildFromStore();
+			this.noteStatusCache!.registerEvents();
+		});
+
+		const onReviewNote = (file: TFile) => {
+			this.reviewNoteFlashcards(file).catch((error) => {
+				notify().error("Failed to start review session", error);
+			});
+		};
+
+		const viewPlugin = createLinkStatusViewPlugin(
+			this.app,
+			this.noteStatusCache,
+			this.frontmatterIndex,
+			() => this.settings.showLinkStatusIndicators,
+			onReviewNote,
+		);
+		this.registerEditorExtension([viewPlugin]);
+
+		const postProcessor = createLinkStatusPostProcessor(
+			this.app,
+			this.noteStatusCache,
+			this.frontmatterIndex,
+			() => this.settings.showLinkStatusIndicators,
+			onReviewNote,
+		);
+		this.registerMarkdownPostProcessor(postProcessor);
+	}
+
 	private async initializeNLQueryService(): Promise<void> {
 		if (!this.cardStore || !this.settings.openRouterApiKey) {
 			return;
