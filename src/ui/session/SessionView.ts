@@ -4,10 +4,10 @@
  */
 import { ItemView, WorkspaceLeaf } from "obsidian";
 import { VIEW_TYPE_SESSION } from "../../constants";
-import { getEventBus, notify } from "../../services";
+import { notify } from "../../services";
 import { SessionLogic } from "./SessionLogic";
 import type { DayBoundaryService } from "../../services";
-import type { SessionSelectedEvent } from "../../types/events.types";
+import type { SessionResult } from "../../types/events.types";
 import type { FSRSFlashcardItem } from "../../types";
 import { Panel } from "../components/Panel";
 import { SessionContent } from "./SessionContent";
@@ -22,6 +22,7 @@ export interface SessionViewOptions {
 	currentNoteName: string | null;
 	allCards: FSRSFlashcardItem[];
 	dayBoundaryService: DayBoundaryService;
+	onSessionSelected: (result: SessionResult) => void;
 }
 
 export class SessionView extends ItemView {
@@ -39,6 +40,9 @@ export class SessionView extends ItemView {
 	private clearSelectionAction: HTMLElement | null = null;
 	private moveAction: HTMLElement | null = null;
 	private addToProjectAction: HTMLElement | null = null;
+
+	// Callback for session result
+	private onSessionSelected: ((result: SessionResult) => void) | null = null;
 
 	// State subscription
 	private unsubscribe: (() => void) | null = null;
@@ -188,8 +192,8 @@ export class SessionView extends ItemView {
 	 * Called by the plugin to set up the view
 	 */
 	initialize(options: SessionViewOptions): void {
-		// Store services
 		this.dayBoundaryService = options.dayBoundaryService;
+		this.onSessionSelected = options.onSessionSelected;
 		this.logic = new SessionLogic(
 			options.allCards,
 			options.dayBoundaryService
@@ -205,7 +209,7 @@ export class SessionView extends ItemView {
 			action,
 			this.session.currentNoteName
 		);
-		this.emitResultAndClose(result);
+		this.selectAndClose(result);
 	}
 
 	private handleNoteToggle(noteName: string): void {
@@ -257,7 +261,7 @@ export class SessionView extends ItemView {
 				result = SessionResultFactory.createMostForgottenResult(50);
 				break;
 		}
-		this.emitResultAndClose(result);
+		this.selectAndClose(result);
 	}
 
 	private async handleOpenCustomStudyModal(): Promise<void> {
@@ -293,7 +297,7 @@ export class SessionView extends ItemView {
 			notify().success(`Preset "${result.presetName}" saved`);
 		}
 
-		this.emitResultAndClose(result.sessionResult!);
+		this.selectAndClose(result.sessionResult!);
 	}
 
 	private handlePresetAction(preset: import("../../types/settings.types").SessionPreset): void {
@@ -314,7 +318,7 @@ export class SessionView extends ItemView {
 			crammingMode: preset.crammingMode,
 			projectFilters: preset.projectFilters,
 		};
-		this.emitResultAndClose(result);
+		this.selectAndClose(result);
 	}
 
 	private async handlePresetDelete(presetId: string): Promise<void> {
@@ -333,7 +337,7 @@ export class SessionView extends ItemView {
 		const result = SessionResultFactory.createSelectedNotesResult(
 			Array.from(selectedNotes)
 		);
-		this.emitResultAndClose(result);
+		this.selectAndClose(result);
 	}
 
 	private async handleMoveSelectedNotes(): Promise<void> {
@@ -429,16 +433,8 @@ export class SessionView extends ItemView {
 		this.session.clearSelection();
 	}
 
-	private emitResultAndClose(result: SessionSelectedEvent["result"]): void {
-		const eventBus = getEventBus();
-
-		const event: SessionSelectedEvent = {
-			type: "session:selected",
-			result,
-			timestamp: Date.now(),
-		};
-
-		eventBus.emit(event);
+	private selectAndClose(result: SessionResult): void {
+		this.onSessionSelected?.(result);
 
 		// Close the panel view
 		const leaves = this.app.workspace.getLeavesOfType(VIEW_TYPE_SESSION);

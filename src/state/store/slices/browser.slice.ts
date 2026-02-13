@@ -8,14 +8,13 @@ import type {
 	BrowserStateFilter,
 } from "../types";
 import type { FSRSFlashcardItem } from "../../../types";
-import { createSelectionActions, createStaleTracking } from "../helpers/slice-helpers";
+import { createSelectionActions } from "../helpers/slice-helpers";
 
 type BrowserSlice = BrowserSliceState & BrowserSliceActions;
 
 function createInitialState(): BrowserSliceState {
 	return {
 		isLoading: true,
-		isStale: false,
 		allCards: [],
 		searchQuery: "",
 		stateFilter: "all",
@@ -94,13 +93,11 @@ export function createBrowserSlice(
 	deps: AppStoreDeps
 ): BrowserSlice {
 	const initial = createInitialState();
-	const stale = createStaleTracking(set, get, "browser", deps.eventBus);
 
 	const selection = createSelectionActions(set, get, "browser", "selectionMode", "selectedCardIds");
 
 	const slice: BrowserSlice = {
 		...initial,
-		...stale,
 
 		setState: (partial: Partial<BrowserSliceState>) => {
 			set((s) => ({

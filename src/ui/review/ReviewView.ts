@@ -13,19 +13,13 @@ import {
 	ReviewService,
 	FlashcardManager,
 	SessionPersistenceService,
-	getEventBus,
 	notify,
 } from "../../services";
 import { ImageService } from "../../services/image";
 import { extractFSRSSettings, type FSRSFlashcardItem } from "../../types";
 import type { ReviewApi } from "../../state/store";
-import type {
-	CardAddedEvent,
-	CardRemovedEvent,
-	CardUpdatedEvent,
-	BulkChangeEvent,
-	CardReviewedEvent,
-} from "../../types/events.types";
+import { effect } from "@preact/signals-core";
+import { notifyCardChange, lastMutation, type CardMutation } from "../../services/core/signals";
 import { SubscriptionManager } from "../utils";
 import type TrueRecallPlugin from "../../main";
 import type { ReviewViewState } from "./review.types";
@@ -96,7 +90,7 @@ export class ReviewView extends ItemView {
 
 	private subs = new SubscriptionManager();
 
-	private sessionEventUnsubscribers: (() => void)[] = [];
+	private sessionSignalDisposer: (() => void) | null = null;
 
 	private waitingTimerId: ReturnType<typeof setInterval> | null = null;
 
@@ -415,27 +409,36 @@ export class ReviewView extends ItemView {
 	private subscribeToSessionEvents(): void {
 		this.unsubscribeFromSessionEvents();
 
-		const eventBus = getEventBus();
+		this.sessionSignalDisposer = effect(() => {
+			const m = lastMutation.value;
+			if (!m) return;
+			this.handleMutation(m);
+		});
+	}
 
-		this.sessionEventUnsubscribers.push(
-			eventBus.on<CardRemovedEvent>("card:removed", (event) => {
-				const queue = this.review.queue;
-				const cardInQueue = queue.find((c) => c.id === event.cardId);
-
-				if (cardInQueue) {
-					this.review.removeCardById(event.cardId);
+	private handleMutation(m: CardMutation): void {
+		switch (m.type) {
+			case "removed": {
+				if (m.cardId) {
+					const queue = this.review.queue;
+					if (queue.find((c) => c.id === m.cardId)) {
+						this.review.removeCardById(m.cardId);
+					}
 				}
-			})
-		);
-
-		this.sessionEventUnsubscribers.push(
-			eventBus.on<CardUpdatedEvent>("card:updated", (event) => {
-				if (!event.changes.question && !event.changes.answer) return;
-
-				// Reload card content from database (needed for undo to show reverted content)
+				if (m.cardIds && m.cardIds.length > 1) {
+					const queueIds = new Set(this.review.queue.map((c) => c.id));
+					const idsToRemove = m.cardIds.filter((id) => queueIds.has(id));
+					if (idsToRemove.length > 0) {
+						this.review.removeCardsByIds(idsToRemove);
+					}
+				}
+				break;
+			}
+			case "updated": {
+				if (!m.changes?.question && !m.changes?.answer) return;
 				const currentCard = this.review.getCurrentCard();
-				if (currentCard && currentCard.id === event.cardId) {
-					const updatedData = this.plugin.cardStore.get(event.cardId);
+				if (currentCard && m.cardId && currentCard.id === m.cardId) {
+					const updatedData = this.plugin.cardStore.get(m.cardId);
 					if (updatedData) {
 						this.review.updateCurrentCardContent(
 							updatedData.question ?? currentCard.question,
@@ -443,25 +446,20 @@ export class ReviewView extends ItemView {
 						);
 					}
 				}
-			})
-		);
-
-		this.sessionEventUnsubscribers.push(
-			eventBus.on<BulkChangeEvent>("cards:bulk-change", (event) => {
-				if (event.action !== "removed") return;
-
-				const queue = this.review.queue;
-				const queueIds = new Set(queue.map((c) => c.id));
-				const idsToRemove = event.cardIds.filter((id) => queueIds.has(id));
+				break;
+			}
+			case "bulk": {
+				if (m.action !== "removed" || !m.cardIds) return;
+				const queueIds = new Set(this.review.queue.map((c) => c.id));
+				const idsToRemove = m.cardIds.filter((id) => queueIds.has(id));
 				if (idsToRemove.length > 0) {
 					this.review.removeCardsByIds(idsToRemove);
 				}
-			})
-		);
-
-		this.sessionEventUnsubscribers.push(
-			eventBus.on<CardAddedEvent>("card:added", (event) => {
-				const cards = this.flashcardManager.getCardsByIds([event.cardId]);
+				break;
+			}
+			case "added": {
+				if (!m.cardId) return;
+				const cards = this.flashcardManager.getCardsByIds([m.cardId]);
 				const newCard = cards[0];
 				if (!newCard) return;
 
@@ -476,15 +474,14 @@ export class ReviewView extends ItemView {
 
 				this.review.addCardToQueue(newCard);
 				this.renderHeader();
-			})
-		);
+				break;
+			}
+		}
 	}
 
 	private unsubscribeFromSessionEvents(): void {
-		for (const unsub of this.sessionEventUnsubscribers) {
-			unsub();
-		}
-		this.sessionEventUnsubscribers = [];
+		this.sessionSignalDisposer?.();
+		this.sessionSignalDisposer = null;
 	}
 
 	private clearWaitingTimer(): void {
@@ -1508,13 +1505,12 @@ export class ReviewView extends ItemView {
 				);
 			}
 
-			getEventBus().emit({
-				type: "card:reviewed",
+			notifyCardChange({
+				type: "reviewed",
 				cardId: card.id,
 				rating: rating as number,
 				newState: updatedCard.fsrs.state,
-				timestamp: Date.now(),
-			} as CardReviewedEvent);
+			});
 
 			if (hasMore) {
 				this.updateSchedulingPreview();

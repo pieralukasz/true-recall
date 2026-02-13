@@ -1,7 +1,8 @@
 import type { App } from "obsidian";
 import type { BackupService } from "./backup.service";
 import type { TrueRecallSettings, RetentionPolicy, BackupInterval } from "../../types/settings.types";
-import { getEventBus } from "../core/event-bus.service";
+import { effect } from "@preact/signals-core";
+import { dataVersion, lastMutation, track } from "../core/signals";
 import { notify } from "../ui/notification.service";
 
 export interface BackgroundBackupConfig {
@@ -30,7 +31,7 @@ export class BackgroundBackupManager {
     private reviewsSinceLastBackup = 0;
     private isBackupInProgress = false;
     private isDirty = false;
-    private unsubscribeEvents: (() => void)[] = [];
+    private signalDisposers: (() => void)[] = [];
     private consecutiveFailures = 0;
 
     constructor(
@@ -101,28 +102,24 @@ export class BackgroundBackupManager {
     }
 
     private setupEventListeners(): void {
-        const eventBus = getEventBus();
-
-        // Track reviews for activity-based backup
-        const unsubReview = eventBus.on("card:reviewed", () => {
-            this.isDirty = true;
-            this.reviewsSinceLastBackup++;
-            this.checkActivityTrigger();
-        });
-        this.unsubscribeEvents.push(unsubReview);
-
-        // Track card changes
-        const unsubAdded = eventBus.on("card:added", () => { this.isDirty = true; });
-        const unsubUpdated = eventBus.on("card:updated", () => { this.isDirty = true; });
-        const unsubRemoved = eventBus.on("card:removed", () => { this.isDirty = true; });
-        const unsubBulk = eventBus.on("cards:bulk-change", () => { this.isDirty = true; });
-
-        this.unsubscribeEvents.push(unsubAdded, unsubUpdated, unsubRemoved, unsubBulk);
+        this.signalDisposers.push(
+            effect(() => {
+                track(dataVersion);
+                this.isDirty = true;
+            }),
+            effect(() => {
+                const m = lastMutation.value;
+                if (m?.type === "reviewed") {
+                    this.reviewsSinceLastBackup++;
+                    this.checkActivityTrigger();
+                }
+            }),
+        );
     }
 
     private cleanupEventListeners(): void {
-        this.unsubscribeEvents.forEach(unsub => unsub());
-        this.unsubscribeEvents = [];
+        this.signalDisposers.forEach(dispose => dispose());
+        this.signalDisposers = [];
     }
 
     private startPeriodicBackups(): void {

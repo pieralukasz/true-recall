@@ -3,7 +3,6 @@ import type { Grade } from "ts-fsrs";
 import type { SqliteStoreService } from "../../services/persistence/sqlite";
 import type { DayBoundaryService } from "../../services/core/day-boundary.service";
 import type { FrontmatterIndexService } from "../../services/core/frontmatter-index.service";
-import type { EventBusService } from "../../services/core/event-bus.service";
 import type { TrueRecallSettings } from "../../ui/settings";
 import type {
 	FSRSFlashcardItem,
@@ -25,7 +24,6 @@ export interface AppStoreDeps {
 	cardStore: SqliteStoreService;
 	dayBoundaryService: DayBoundaryService;
 	frontmatterIndex: FrontmatterIndexService;
-	eventBus: EventBusService;
 	getSettings: () => TrueRecallSettings;
 }
 
@@ -126,7 +124,6 @@ export type ViewMode = "list";
 export type SelectionMode = "normal" | "selecting";
 
 export interface PanelSliceState {
-	isStale: boolean;
 	status: ProcessingStatus;
 	viewMode: ViewMode;
 	currentFile: TFile | null;
@@ -147,9 +144,6 @@ export interface PanelSliceState {
 export interface PanelSliceActions {
 	setState: (partial: Partial<PanelSliceState>) => void;
 	reset: () => void;
-	markStale: () => void;
-	markFresh: () => void;
-	getIsStale: () => boolean;
 	incrementRenderVersion: () => number;
 	isCurrentRender: (version: number) => boolean;
 	setCurrentFile: (file: TFile | null) => void;
@@ -240,14 +234,11 @@ export interface SimulatorSliceActions {
 export type SimulatorApi = SimulatorSliceState & SimulatorSliceActions;
 
 export interface StatsSliceState {
-	isStale: boolean;
 	lastRefreshed: number;
 }
 
 export interface StatsSliceActions {
-	markStale: () => void;
-	markFresh: () => void;
-	getIsStale: () => boolean;
+	setLastRefreshed: (time: number) => void;
 }
 
 export type StatsApi = StatsSliceState & StatsSliceActions;
@@ -260,7 +251,6 @@ export type NoteHubSortDirection = "asc" | "desc";
 
 export interface NoteHubSliceState {
 	isLoading: boolean;
-	isStale: boolean;
 	projects: ProjectInfo[];
 	unassignedNotes: ProjectNoteInfo[];
 	searchQuery: string;
@@ -291,9 +281,6 @@ export interface NoteHubSliceActions {
 	toggleSortDirection: () => void;
 	getFilteredProjects: () => ProjectInfo[];
 	getFilteredUnassignedNotes: () => ProjectNoteInfo[];
-	markStale: () => void;
-	markFresh: () => void;
-	getIsStale: () => boolean;
 }
 
 export type NoteHubApi = NoteHubSliceState & NoteHubSliceActions;
@@ -310,7 +297,6 @@ export type BrowserStateFilter =
 
 export interface BrowserSliceState {
 	isLoading: boolean;
-	isStale: boolean;
 	allCards: FSRSFlashcardItem[];
 	searchQuery: string;
 	stateFilter: BrowserStateFilter;
@@ -339,9 +325,6 @@ export interface BrowserSliceActions {
 	getSelectedCardIds: () => string[];
 	setPreviewCardId: (cardId: string | null) => void;
 	getFilteredAndSortedCards: () => FSRSFlashcardItem[];
-	markStale: () => void;
-	markFresh: () => void;
-	getIsStale: () => boolean;
 }
 
 export type BrowserApi = BrowserSliceState & BrowserSliceActions;

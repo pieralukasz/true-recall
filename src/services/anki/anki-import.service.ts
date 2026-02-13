@@ -10,7 +10,7 @@ import type {
 import type { SqliteStoreService } from "../persistence/sqlite/SqliteStoreService";
 import type { FSRSService } from "../core/fsrs.service";
 import { generateUUID } from "../persistence/sqlite/sqlite.types";
-import { getEventBus } from "../core/event-bus.service";
+import { notifyCardChange } from "../core/signals";
 import { ApkgParserService } from "./apkg-parser.service";
 import { AnkiConverterService } from "./anki-converter.service";
 import { AnkiSchedulingService } from "./anki-scheduling.service";
@@ -145,12 +145,7 @@ export class AnkiImportService {
 		}
 
 		if (importedCardIds.length > 0) {
-			getEventBus().emit({
-				type: "cards:bulk-change",
-				action: "added",
-				cardIds: importedCardIds,
-				timestamp: Date.now(),
-			});
+			notifyCardChange({ type: "bulk", cardIds: importedCardIds, action: "added" });
 		}
 
 		return result;

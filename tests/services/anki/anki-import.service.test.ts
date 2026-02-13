@@ -23,12 +23,10 @@ vi.mock("../../../src/services/persistence/sqlite/sqlite.types", () => ({
 	generateUUID: vi.fn(() => `uuid-${++uuidCounter}`),
 }));
 
-// Mock event bus
-const mockEmit = vi.fn();
-vi.mock("../../../src/services/core/event-bus.service", () => ({
-	getEventBus: vi.fn(() => ({
-		emit: mockEmit,
-	})),
+// Mock signals
+const mockNotifyCardChange = vi.fn();
+vi.mock("../../../src/services/core/signals", () => ({
+	notifyCardChange: (...args: unknown[]) => mockNotifyCardChange(...args),
 }));
 
 // Import after mocks are set up
@@ -274,7 +272,7 @@ describe("AnkiImportService", () => {
 			expect(reversedData.reverseOf).toBe(basicId);
 		});
 
-		it("emits cards:bulk-change event after import", async () => {
+		it("notifies card change after import", async () => {
 			const model = createAnkiModel();
 			const deck = createAnkiDeck({ id: 1 });
 			const note = createAnkiNote({ id: 1, mid: model.id, flds: "Q\x1fA" });
@@ -291,16 +289,16 @@ describe("AnkiImportService", () => {
 
 			await service.importApkg(new ArrayBuffer(0), defaultOptions());
 
-			expect(mockEmit).toHaveBeenCalledTimes(1);
-			expect(mockEmit).toHaveBeenCalledWith(
+			expect(mockNotifyCardChange).toHaveBeenCalledTimes(1);
+			expect(mockNotifyCardChange).toHaveBeenCalledWith(
 				expect.objectContaining({
-					type: "cards:bulk-change",
+					type: "bulk",
 					action: "added",
 				}),
 			);
 		});
 
-		it("does not emit event when no cards imported", async () => {
+		it("does not notify when no cards imported", async () => {
 			const model = createAnkiModel();
 			const deck = createAnkiDeck({ id: 1 });
 			const note = createAnkiNote({ id: 1, mid: model.id, flds: "Q\x1fA" });
@@ -319,7 +317,7 @@ describe("AnkiImportService", () => {
 
 			await service.importApkg(new ArrayBuffer(0), defaultOptions());
 
-			expect(mockEmit).not.toHaveBeenCalled();
+			expect(mockNotifyCardChange).not.toHaveBeenCalled();
 		});
 
 		it("calls store.flush", async () => {
