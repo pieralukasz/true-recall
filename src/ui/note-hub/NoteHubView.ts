@@ -105,6 +105,7 @@ export class NoteHubView extends ItemView {
 			const projectNoteCounts = new Map<string, number>();
 			const projectNotes = new Map<string, ProjectNoteInfo[]>();
 			const sourceUidToProjects = new Map<string, string[]>();
+			const pathToUid = new Map<string, string>();
 
 			for (const projectName of allProjectNames) {
 				const files = frontmatterIndex.getFilesByValue("projects", projectName);
@@ -112,6 +113,7 @@ export class NoteHubView extends ItemView {
 				for (const file of files) {
 					const uid = frontmatterIndex.getValues("flashcard_uid", file.path)[0];
 					if (uid) {
+						pathToUid.set(file.path, uid);
 						const existing = sourceUidToProjects.get(uid) ?? [];
 						if (!existing.includes(projectName)) {
 							existing.push(projectName);
@@ -150,13 +152,24 @@ export class NoteHubView extends ItemView {
 				this.plugin.dayBoundaryService.getTomorrowBoundary(now);
 			const activeCards = filterActiveCardsOnly(allCards, { now });
 
+			// Pre-build sourceUid → file lookup to avoid repeated index queries
+			const sourceUidToFile = new Map<string, TFile | null>();
+			for (const card of activeCards) {
+				if (card.sourceUid && !sourceUidToFile.has(card.sourceUid)) {
+					sourceUidToFile.set(
+						card.sourceUid,
+						frontmatterIndex.getFilesByValue("flashcard_uid", card.sourceUid)[0] ?? null
+					);
+				}
+			}
+
 			for (const card of activeCards) {
 				if (!card.sourceUid) continue;
 
 				uidCardCounts.set(card.sourceUid, (uidCardCounts.get(card.sourceUid) || 0) + 1);
 
 				const projects = sourceUidToProjects.get(card.sourceUid) || [];
-				const sourceFile = frontmatterIndex.getFilesByValue("flashcard_uid", card.sourceUid)[0];
+				const sourceFile = sourceUidToFile.get(card.sourceUid);
 				if (!sourceFile) continue;
 
 				if (!sourceUidToPath.has(card.sourceUid)) {
@@ -217,7 +230,7 @@ export class NoteHubView extends ItemView {
 					const rawNotes = projectNotes.get(name) ?? [];
 					const noteCountsForProject = noteCardCounts.get(name);
 					const notesWithCounts = rawNotes.map(note => {
-						const uid = frontmatterIndex.getValues("flashcard_uid", note.path)[0];
+						const uid = pathToUid.get(note.path);
 						const stats = uid ? uidStateCounts.get(uid) : undefined;
 						return {
 							...note,
