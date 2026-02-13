@@ -17,8 +17,6 @@ import {
 	SessionPersistenceService,
 	SqliteStoreService,
 	DayBoundaryService,
-	resetEventBus,
-	getEventBus,
 	BackupService,
 	DeviceIdService,
 	DeviceDiscoveryService,
@@ -41,6 +39,7 @@ import {
 	getDeviceDbFilename,
 } from "./services/persistence/sqlite/sqlite.types";
 import { NLQueryService } from "./services/ai/nl-query.service";
+import { settingsVersion } from "./services/core/signals";
 import { SqlJsAdapter } from "./services/ai/langchain-sqlite.adapter";
 import type { FSRSCardData } from "./types";
 import { extractFSRSSettings } from "./types";
@@ -151,7 +150,6 @@ export default class TrueRecallPlugin extends Plugin {
 		this.statsService = new StatsService(
 			this.flashcardManager,
 			this.fsrsService,
-			getEventBus()
 		);
 
 
@@ -358,7 +356,6 @@ ${cardList}${moreText}
 			void this.cardStore.saveNow();
 		}
 
-		resetEventBus();
 	}
 
 	async loadSettings(): Promise<void> {
@@ -425,10 +422,7 @@ ${cardList}${moreText}
 
 		this.noteStatusCache?.bumpVersion();
 
-		getEventBus().emit({
-			type: "settings:changed",
-			timestamp: Date.now(),
-		});
+		settingsVersion.value++;
 	}
 
 	async activateView(): Promise<void> {
@@ -437,7 +431,8 @@ ${cardList}${moreText}
 
 	async activateSessionView(
 		currentNoteName: string | null,
-		allCards: import("./types").FSRSFlashcardItem[]
+		allCards: import("./types").FSRSFlashcardItem[],
+		onSessionSelected: (result: import("./types/events.types").SessionResult) => void
 	): Promise<void> {
 		const leaf = await activateView(this.app, VIEW_TYPE_SESSION);
 
@@ -447,6 +442,7 @@ ${cardList}${moreText}
 				currentNoteName,
 				allCards,
 				dayBoundaryService: this.dayBoundaryService,
+				onSessionSelected,
 			});
 		}
 	}
@@ -500,14 +496,10 @@ ${cardList}${moreText}
 		const currentNoteName = currentFile ? currentFile.basename : null;
 
 		return new Promise<void>((resolve) => {
-			const eventBus = getEventBus();
-			const unsubscribe = eventBus.on("session:selected", (event: import("./types/events.types").SessionSelectedEvent) => {
-				unsubscribe();
-				void this.handleSessionResult(event.result);
+			void this.activateSessionView(currentNoteName, allCards, (result) => {
+				void this.handleSessionResult(result);
 				resolve();
 			});
-
-			void this.activateSessionView(currentNoteName, allCards);
 		});
 	}
 
@@ -884,14 +876,11 @@ ${cardList}${moreText}
 	}
 
 	private initializeStore(): void {
-		const eventBus = getEventBus();
-
 		this.store = createAppStore({
 			app: this.app,
 			cardStore: this.cardStore,
 			dayBoundaryService: this.dayBoundaryService,
 			frontmatterIndex: this.frontmatterIndex,
-			eventBus,
 			getSettings: () => this.settings,
 		});
 	}
@@ -899,8 +888,7 @@ ${cardList}${moreText}
 	private initializeLinkStatusIndicators(): void {
 		if (!this.cardStore || !this.frontmatterIndex) return;
 
-		const eventBus = getEventBus();
-		this.noteStatusCache = new NoteStatusCacheService(this.cardStore, eventBus);
+		this.noteStatusCache = new NoteStatusCacheService(this.cardStore);
 
 		// Build cache after frontmatter index is ready
 		this.app.workspace.onLayoutReady(() => {

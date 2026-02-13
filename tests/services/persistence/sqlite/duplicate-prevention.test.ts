@@ -14,11 +14,9 @@ import {
 import { CardRepository } from "../../../../src/services/flashcard/card-repository.service";
 import type { SqliteStoreService } from "../../../../src/services/persistence/sqlite/SqliteStoreService";
 
-// Mock the event bus to prevent errors
-vi.mock("../../../../src/services/core/event-bus.service", () => ({
-	getEventBus: () => ({
-		emit: vi.fn(),
-	}),
+// Mock signals to prevent errors
+vi.mock("../../../../src/services/core/signals", () => ({
+	notifyCardChange: vi.fn(),
 }));
 
 describe("Duplicate Prevention", () => {

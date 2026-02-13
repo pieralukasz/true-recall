@@ -1,14 +1,14 @@
 /**
  * SubscriptionManager
  *
- * Consolidates cleanup of EventBus unsubscribers, timers, and other disposables.
+ * Consolidates cleanup of disposers, timers, and other disposables.
  * Use in views/components to track all subscriptions and dispose them in one call.
  *
  * Usage:
  *   private subs = new SubscriptionManager();
  *
- *   // Track EventBus subscriptions
- *   this.subs.track(eventBus.on('card:removed', handler));
+ *   // Track signal effect disposers
+ *   this.subs.track(effect(() => { track(dataVersion); reload(); }));
  *
  *   // Track timers (auto-cleared on dispose)
  *   this.subs.setTimeout(() => console.log('tick'), 1000);

@@ -1,12 +1,7 @@
 import { State } from "ts-fsrs";
-import type { EventBusService } from "../core/event-bus.service";
 import type { SqliteStoreService } from "../persistence/sqlite/SqliteStoreService";
-import type {
-	CardAddedEvent,
-	CardUpdatedEvent,
-	CardRemovedEvent,
-	CardReviewedEvent,
-} from "../../types/events.types";
+import { effect } from "@preact/signals-core";
+import { lastMutation, syncVersion, track, type CardMutation } from "../core/signals";
 
 export interface NoteStatusInfo {
 	new: number;
@@ -18,11 +13,10 @@ export interface NoteStatusInfo {
 export class NoteStatusCacheService {
 	private cache: Map<string, NoteStatusInfo> = new Map();
 	private version = 0;
-	private unsubscribers: (() => void)[] = [];
+	private disposers: (() => void)[] = [];
 
 	constructor(
 		private store: SqliteStoreService,
-		private eventBus: EventBusService,
 	) {}
 
 	buildFromStore(): void {
@@ -63,25 +57,25 @@ export class NoteStatusCacheService {
 	}
 
 	registerEvents(): void {
-		const granularHandler = (event: { cardId: string }) => {
-			this.handleCardEvent(event.cardId);
-		};
-
-		this.unsubscribers.push(
-			this.eventBus.on<CardAddedEvent>("card:added", granularHandler),
-			this.eventBus.on<CardUpdatedEvent>("card:updated", granularHandler),
-			this.eventBus.on<CardRemovedEvent>("card:removed", granularHandler),
-			this.eventBus.on<CardReviewedEvent>("card:reviewed", granularHandler),
+		this.disposers.push(
+			effect(() => {
+				const m = lastMutation.value;
+				if (!m) return;
+				this.handleMutation(m);
+			}),
+			effect(() => {
+				track(syncVersion);
+				this.buildFromStore();
+			}),
 		);
+	}
 
-		const bulkHandler = () => {
+	private handleMutation(m: CardMutation): void {
+		if (m.type === "bulk") {
 			this.buildFromStore();
-		};
-
-		this.unsubscribers.push(
-			this.eventBus.on("cards:bulk-change", bulkHandler),
-			this.eventBus.on("store:synced", bulkHandler),
-		);
+		} else if (m.cardId) {
+			this.handleCardEvent(m.cardId);
+		}
 	}
 
 	get(sourceUid: string): NoteStatusInfo | null {
@@ -101,10 +95,10 @@ export class NoteStatusCacheService {
 	}
 
 	dispose(): void {
-		for (const unsub of this.unsubscribers) {
-			unsub();
+		for (const dispose of this.disposers) {
+			dispose();
 		}
-		this.unsubscribers = [];
+		this.disposers = [];
 		this.cache.clear();
 	}
 

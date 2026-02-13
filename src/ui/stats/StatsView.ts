@@ -15,7 +15,7 @@ import {
 	Legend,
 } from "chart.js";
 import { VIEW_TYPE_STATS } from "../../constants";
-import { StatsCalculatorService, getEventBus } from "../../services";
+import { StatsCalculatorService } from "../../services";
 import { CardPreviewModal } from "../modals";
 import { NLQueryPanel } from "./NLQueryPanel";
 import type TrueRecallPlugin from "../../main";
@@ -24,10 +24,8 @@ import type {
 	CardMaturityBreakdown,
 	FSRSFlashcardItem,
 } from "../../types";
-import type {
-	StoreSyncedEvent,
-	SettingsChangedEvent,
-} from "../../types/events.types";
+import { effect } from "@preact/signals-core";
+import { dataVersion, settingsVersion, syncVersion, track } from "../../services/core/signals";
 import {
 	TodaySection,
 	TimeRangeSelector,
@@ -64,9 +62,7 @@ export class StatsView extends ItemView {
 	private statsCalculator: StatsCalculatorService;
 	private currentRange: StatsTimeRange = "1m";
 
-	// Event subscriptions for cross-component reactivity
-	private eventUnsubscribers: (() => void)[] = [];
-	private storeUnsubscribe: (() => void) | null = null;
+	private signalDisposer: (() => void) | null = null;
 	private refreshTimer: ReturnType<typeof setTimeout> | null = null;
 
 	// Child components
@@ -123,11 +119,7 @@ export class StatsView extends ItemView {
 		// Set SQLite store BEFORE createLayout - charts call refresh() during render
 		this.statsCalculator.setSqliteStore(this.plugin.cardStore);
 
-		// Subscribe to EventBus for sync/settings events
-		this.subscribeToEvents();
-
-		// Subscribe to stats slice for data invalidation
-		this.subscribeToStats();
+		this.subscribeToDataChanges();
 
 		// Create layout and initialize components (charts will have SQLite store)
 		this.createLayout();
@@ -143,12 +135,7 @@ export class StatsView extends ItemView {
 			this.refreshTimer = null;
 		}
 
-		// Cleanup EventBus subscriptions
-		this.eventUnsubscribers.forEach((unsub) => unsub());
-		this.eventUnsubscribers = [];
-
-		// Cleanup Zustand subscription
-		this.storeUnsubscribe?.();
+		this.signalDisposer?.();
 
 		// Destroy all components
 		this.todaySection?.destroy();
@@ -220,34 +207,11 @@ export class StatsView extends ItemView {
 		this.calendarHeatmap.render();
 	}
 
-	private subscribeToEvents(): void {
-		const eventBus = getEventBus();
-
-		// Refresh after store sync (full refresh needed)
-		const unsubSynced = eventBus.on<StoreSyncedEvent>("store:synced", () => {
-			void this.refresh();
+	private subscribeToDataChanges(): void {
+		this.signalDisposer = effect(() => {
+			track(dataVersion, settingsVersion, syncVersion);
+			this.scheduleRefresh();
 		});
-		this.eventUnsubscribers.push(unsubSynced);
-
-		// Refresh when settings change (dayStartHour, retention, etc. affect stats)
-		const unsubSettings = eventBus.on<SettingsChangedEvent>("settings:changed", () => {
-			void this.refresh();
-		});
-		this.eventUnsubscribers.push(unsubSettings);
-	}
-
-	private subscribeToStats(): void {
-		const store = this.plugin.store;
-		if (!store) return;
-
-		this.storeUnsubscribe = store.subscribe(
-			(state) => state.stats.isStale,
-			(isStale) => {
-				if (isStale) {
-					this.scheduleRefresh();
-				}
-			}
-		);
 	}
 
 	private scheduleRefresh(): void {
@@ -286,9 +250,6 @@ export class StatsView extends ItemView {
 			this.cardCountsChart?.refresh(),
 			this.calendarHeatmap?.refresh(),
 		]);
-
-		// Mark stats as fresh after successful refresh
-		this.plugin.store?.getState().stats.markFresh();
 	}
 
 	private formatDateForDisplay(isoDate: string): string {

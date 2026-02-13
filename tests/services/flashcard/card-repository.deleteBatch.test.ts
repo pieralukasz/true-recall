@@ -10,13 +10,9 @@ import { FlashcardManager } from "../../../src/services/flashcard/flashcard.serv
 import type { SqliteStoreService } from "../../../src/services/persistence/sqlite/SqliteStoreService";
 import type { App } from "obsidian";
 
-const mockEventBus = {
-	emit: vi.fn(),
-	on: () => () => {},
-};
-
-vi.mock("../../../src/services/core/event-bus.service", () => ({
-	getEventBus: () => mockEventBus,
+const mockNotifyCardChange = vi.fn();
+vi.mock("../../../src/services/core/signals", () => ({
+	notifyCardChange: (...args: unknown[]) => mockNotifyCardChange(...args),
 }));
 
 function createMockStore(ctx: TestContext): SqliteStoreService {
@@ -38,7 +34,7 @@ describe("CardRepository.deleteBatch", () => {
 		vi.setSystemTime(new Date("2026-02-01T10:00:00Z"));
 		ctx = await createTestContext();
 		repository = new CardRepository(createMockStore(ctx));
-		mockEventBus.emit.mockClear();
+		mockNotifyCardChange.mockClear();
 	});
 
 	afterEach(() => {
@@ -79,7 +75,7 @@ describe("CardRepository.deleteBatch", () => {
 		const count = repository.deleteBatch([]);
 
 		expect(count).toBe(0);
-		expect(mockEventBus.emit).not.toHaveBeenCalled();
+		expect(mockNotifyCardChange).not.toHaveBeenCalled();
 	});
 
 	it("should cascade soft delete to review_log", () => {
@@ -94,7 +90,7 @@ describe("CardRepository.deleteBatch", () => {
 		expect(ctx.stats.getTotalReviewCount()).toBe(0);
 	});
 
-	it("should emit single cards:bulk-change event", () => {
+	it("should notify single bulk change", () => {
 		const cards = [
 			createTestCard({ id: "card-1" }),
 			createTestCard({ id: "card-2" }),
@@ -103,30 +99,14 @@ describe("CardRepository.deleteBatch", () => {
 
 		repository.deleteBatch(["card-1", "card-2"]);
 
-		expect(mockEventBus.emit).toHaveBeenCalledTimes(1);
-		expect(mockEventBus.emit).toHaveBeenCalledWith(
+		expect(mockNotifyCardChange).toHaveBeenCalledTimes(1);
+		expect(mockNotifyCardChange).toHaveBeenCalledWith(
 			expect.objectContaining({
-				type: "cards:bulk-change",
+				type: "bulk",
 				action: "removed",
 				cardIds: ["card-1", "card-2"],
 			})
 		);
-	});
-
-	it("should NOT emit individual card:removed events", () => {
-		const cards = [
-			createTestCard({ id: "card-1" }),
-			createTestCard({ id: "card-2" }),
-		];
-		cards.forEach((c) => ctx.cards.set(c.id, c));
-
-		repository.deleteBatch(["card-1", "card-2"]);
-
-		const calls = mockEventBus.emit.mock.calls;
-		const removedEvents = calls.filter(
-			(call: unknown[]) => (call[0] as { type: string }).type === "card:removed"
-		);
-		expect(removedEvents).toHaveLength(0);
 	});
 });
 
@@ -137,7 +117,7 @@ describe("FlashcardManager.removeFlashcardsByIds", () => {
 		vi.useFakeTimers();
 		vi.setSystemTime(new Date("2026-02-01T10:00:00Z"));
 		ctx = await createTestContext();
-		mockEventBus.emit.mockClear();
+		mockNotifyCardChange.mockClear();
 	});
 
 	afterEach(() => {

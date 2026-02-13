@@ -1,6 +1,8 @@
 import { ItemView, type WorkspaceLeaf } from "obsidian";
 import { VIEW_TYPE_CARD_BROWSER } from "../../constants";
-import { getEventBus, notify } from "../../services";
+import { notify } from "../../services";
+import { effect } from "@preact/signals-core";
+import { dataVersion, notifyCardChange, track } from "../../services/core/signals";
 import { SelectionFooter } from "../components";
 import { renderStateBadge } from "../components/StateBadge";
 import { BrowserToolbar } from "./components/BrowserToolbar";
@@ -121,7 +123,7 @@ export class CardBrowserView extends ItemView {
 	private footerContainer!: HTMLElement;
 
 	private unsubscribe: (() => void) | null = null;
-	private staleUnsubscribe: (() => void) | null = null;
+	private signalDisposer: (() => void) | null = null;
 	private refreshTimer: ReturnType<typeof setTimeout> | null = null;
 
 	// Track what was last rendered to avoid unnecessary full rebuilds
@@ -170,12 +172,10 @@ export class CardBrowserView extends ItemView {
 			() => this.render()
 		);
 
-		this.staleUnsubscribe = this.plugin.store!.subscribe(
-			(state) => state.browser.isStale,
-			(isStale) => {
-				if (isStale) this.scheduleRefresh();
-			}
-		);
+		this.signalDisposer = effect(() => {
+			track(dataVersion);
+			this.scheduleRefresh();
+		});
 
 		this.render();
 		void this.loadData();
@@ -184,7 +184,7 @@ export class CardBrowserView extends ItemView {
 	async onClose(): Promise<void> {
 		if (this.refreshTimer) clearTimeout(this.refreshTimer);
 		this.unsubscribe?.();
-		this.staleUnsubscribe?.();
+		this.signalDisposer?.();
 		this.toolbarComponent?.destroy();
 		this.tableComponent?.destroy();
 		this.detailPanel?.destroy();
@@ -198,7 +198,6 @@ export class CardBrowserView extends ItemView {
 		try {
 			const cards = this.plugin.flashcardManager.getAllFSRSCards();
 			this.browser.setCards(cards);
-			this.browser.markFresh();
 		} catch (error) {
 			console.error("[CardBrowserView] Error loading data:", error);
 			notify().error("Failed to load card browser data");
@@ -373,26 +372,26 @@ export class CardBrowserView extends ItemView {
 
 	private handleSingleSuspend(cardId: string): void {
 		this.plugin.cardStore.cards.bulkSuspend([cardId]);
-		getEventBus().emit({ type: "cards:bulk-change", timestamp: Date.now(), cardIds: [cardId], action: "suspend" });
+		notifyCardChange({ type: "bulk", cardIds: [cardId], action: "suspend" });
 		notify().success("Card suspended");
 	}
 
 	private handleSingleUnsuspend(cardId: string): void {
 		this.plugin.cardStore.cards.bulkUnsuspend([cardId]);
-		getEventBus().emit({ type: "cards:bulk-change", timestamp: Date.now(), cardIds: [cardId], action: "unsuspend" });
+		notifyCardChange({ type: "bulk", cardIds: [cardId], action: "unsuspend" });
 		notify().success("Card unsuspended");
 	}
 
 	private handleSingleDelete(cardId: string): void {
 		this.plugin.cardStore.cards.bulkSoftDelete([cardId]);
-		getEventBus().emit({ type: "card:removed", timestamp: Date.now(), cardId });
+		notifyCardChange({ type: "removed", cardId });
 		this.browser.setPreviewCardId(null);
 		notify().success("Card deleted");
 	}
 
 	private handleSingleReset(cardId: string): void {
 		this.plugin.cardStore.cards.bulkReset([cardId]);
-		getEventBus().emit({ type: "cards:bulk-change", timestamp: Date.now(), cardIds: [cardId], action: "reset" });
+		notifyCardChange({ type: "bulk", cardIds: [cardId], action: "reset" });
 		notify().success("Card reset to new");
 	}
 
@@ -403,7 +402,7 @@ export class CardBrowserView extends ItemView {
 		if (ids.length === 0) return;
 
 		this.plugin.cardStore.cards.bulkSuspend(ids);
-		getEventBus().emit({ type: "cards:bulk-change", timestamp: Date.now(), cardIds: ids, action: "suspend" });
+		notifyCardChange({ type: "bulk", cardIds: ids, action: "suspend" });
 		this.browser.exitSelectionMode();
 		notify().success(`Suspended ${ids.length} card(s)`);
 	}
@@ -413,7 +412,7 @@ export class CardBrowserView extends ItemView {
 		if (ids.length === 0) return;
 
 		this.plugin.cardStore.cards.bulkUnsuspend(ids);
-		getEventBus().emit({ type: "cards:bulk-change", timestamp: Date.now(), cardIds: ids, action: "unsuspend" });
+		notifyCardChange({ type: "bulk", cardIds: ids, action: "unsuspend" });
 		this.browser.exitSelectionMode();
 		notify().success(`Unsuspended ${ids.length} card(s)`);
 	}
@@ -423,7 +422,7 @@ export class CardBrowserView extends ItemView {
 		if (ids.length === 0) return;
 
 		this.plugin.cardStore.cards.bulkReset(ids);
-		getEventBus().emit({ type: "cards:bulk-change", timestamp: Date.now(), cardIds: ids, action: "reset" });
+		notifyCardChange({ type: "bulk", cardIds: ids, action: "reset" });
 		this.browser.exitSelectionMode();
 		notify().success(`Reset ${ids.length} card(s) to new`);
 	}
@@ -433,7 +432,7 @@ export class CardBrowserView extends ItemView {
 		if (ids.length === 0) return;
 
 		this.plugin.cardStore.cards.bulkSoftDelete(ids);
-		getEventBus().emit({ type: "cards:bulk-change", timestamp: Date.now(), cardIds: ids, action: "delete" });
+		notifyCardChange({ type: "bulk", cardIds: ids, action: "delete" });
 		this.browser.exitSelectionMode();
 		notify().success(`Deleted ${ids.length} card(s)`);
 	}
@@ -443,7 +442,6 @@ export class CardBrowserView extends ItemView {
 	private scheduleRefresh(): void {
 		if (this.refreshTimer) clearTimeout(this.refreshTimer);
 		this.refreshTimer = setTimeout(() => {
-			this.browser.markFresh();
 			this.loadData();
 		}, 500);
 	}

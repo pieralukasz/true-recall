@@ -15,11 +15,6 @@ export { FSRSService } from "./core/fsrs.service";
 export { FSRSSimulatorService } from "./core/fsrs-simulator.service";
 export { DayBoundaryService } from "./core/day-boundary.service";
 export {
-	EventBusService,
-	getEventBus,
-	resetEventBus,
-} from "./core/event-bus.service";
-export {
 	FrontmatterIndexService,
 	type FieldConfig,
 } from "./core/frontmatter-index.service";

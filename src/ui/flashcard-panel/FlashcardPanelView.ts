@@ -22,6 +22,8 @@ import type { FlashcardItem } from "../../types";
 import { countCardsByState } from "../shared/helpers";
 import type TrueRecallPlugin from "../../main";
 import type { PanelApi } from "../../state/store";
+import { effect } from "@preact/signals-core";
+import { dataVersion, settingsVersion, track } from "../../services/core/signals";
 
 export class FlashcardPanelView extends ItemView {
     private plugin: TrueRecallPlugin;
@@ -54,8 +56,8 @@ export class FlashcardPanelView extends ItemView {
     private lastReviewCardPath: string | null = null;
     private lastReviewActive: boolean = false;
 
-    // Panel stale tracking subscription (replaces direct EventBus subscriptions)
-    private panelStaleUnsubscribe: (() => void) | null = null;
+    // Signal effect disposer for data change tracking
+    private signalDisposer: (() => void) | null = null;
 
     // Editor change timer for real-time #flashcard tag detection
     private editorChangeTimer: ReturnType<typeof setTimeout> | null = null;
@@ -184,7 +186,7 @@ export class FlashcardPanelView extends ItemView {
             }
         );
 
-        this.subscribeToPanelStale();
+        this.subscribeToDataChanges();
 
         this.subscribeToReviewState();
 
@@ -250,7 +252,7 @@ export class FlashcardPanelView extends ItemView {
         // Cleanup subscriptions
         this.unsubscribe?.();
         this.reviewUnsubscribe?.();
-        this.panelStaleUnsubscribe?.();
+        this.signalDisposer?.();
 
         if (this.editorChangeTimer) {
             clearTimeout(this.editorChangeTimer);
@@ -303,19 +305,12 @@ export class FlashcardPanelView extends ItemView {
         this.selectionFooterComponent?.destroy();
     }
 
-    private subscribeToPanelStale(): void {
-        const store = this.plugin.store;
-        if (!store) return;
-
-        this.panelStaleUnsubscribe = store.subscribe(
-            (state) => state.panel.isStale,
-            (isStale) => {
-                if (isStale) {
-                    this.invalidateCardsCache();
-                    this.scheduleFlashcardInfoReload();
-                }
-            }
-        );
+    private subscribeToDataChanges(): void {
+        this.signalDisposer = effect(() => {
+            track(dataVersion, settingsVersion);
+            this.invalidateCardsCache();
+            this.scheduleFlashcardInfoReload();
+        });
     }
 
     private flashcardInfoTimer: ReturnType<typeof setTimeout> | null = null;
@@ -453,8 +448,6 @@ export class FlashcardPanelView extends ItemView {
             }
         } catch (error) {
             console.error("Error loading flashcard info:", error);
-        } finally {
-            this.panel.markFresh();
         }
     }
 
@@ -1091,7 +1084,7 @@ export class FlashcardPanelView extends ItemView {
         const cardIds = selectedCards.map((card) => card.id);
         const successCount = this.flashcardManager.removeFlashcardsByIds(cardIds);
 
-        // Clear selection — stale tracking will trigger debounced reload
+        // Clear selection — signal effect will trigger debounced reload
         this.panel.exitSelectionMode();
         notify().cardsDeleted(successCount);
     }

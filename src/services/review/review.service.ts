@@ -6,7 +6,6 @@ import type {
 	ReviewSessionStats,
 	DailyStats,
 } from "../../types";
-import type { CardReviewedEvent } from "../../types/events.types";
 import type {
 	NewCardOrder,
 	ReviewOrder,
@@ -20,7 +19,7 @@ import {
 	WEAK_CARD_STABILITY_THRESHOLD,
 	RANDOM_QUEUE_INSERT_MAX_POS,
 } from "../../constants";
-import { getEventBus } from "../core/event-bus.service";
+import { notifyCardChange } from "../core/signals";
 
 export interface QueueBuildOptions {
 	newCardsLimit: number;
@@ -616,14 +615,12 @@ export class ReviewService {
 		if (card.id) {
 			flashcardManager.updateCardFSRS(card.id, updatedCard.fsrs);
 
-			// Emit review event for stats updates
-			getEventBus().emit({
-				type: "card:reviewed",
+			notifyCardChange({
+				type: "reviewed",
 				cardId: card.id,
 				rating: rating as number,
 				newState: updatedCard.fsrs.state,
-				timestamp: Date.now(),
-			} as CardReviewedEvent);
+			});
 		}
 
 		return { updatedCard, result };

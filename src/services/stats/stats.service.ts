@@ -1,7 +1,7 @@
 import type { FlashcardManager } from "../flashcard/flashcard.service";
 import type { FSRSService } from "../core/fsrs.service";
-import type { EventBusService } from "../core/event-bus.service";
 import { ReactiveCache } from "../cache";
+import { dataVersion } from "../core/signals";
 
 export interface GlobalFlashcardStats {
 	total: number;
@@ -18,16 +18,14 @@ export class StatsService {
 	constructor(
 		flashcardManager: FlashcardManager,
 		fsrsService: FSRSService,
-		eventBus?: EventBusService
 	) {
 		this.flashcardManager = flashcardManager;
 		this.fsrsService = fsrsService;
 
 		this.statsCache = new ReactiveCache({
 			compute: () => this.computeStats(),
-			invalidateOn: ["card:added", "card:removed", "card:updated", "card:reviewed", "cards:bulk-change"],
-			ttlMs: 30000, // 30 seconds fallback TTL
-			eventBus, // undefined is now valid - ReactiveCache handles it
+			invalidateOn: [dataVersion],
+			ttlMs: 30000,
 			label: "StatsService",
 		});
 	}

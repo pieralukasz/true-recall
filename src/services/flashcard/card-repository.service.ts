@@ -2,15 +2,11 @@ import type {
 	FSRSCardData,
 	FSRSFlashcardItem,
 	CardReviewLogEntry,
-	CardAddedEvent,
-	CardRemovedEvent,
-	CardUpdatedEvent,
-	BulkChangeEvent,
 	CardType,
 } from "../../types";
 import type { SqliteStoreService } from "../persistence/sqlite/SqliteStoreService";
 import { createDefaultFSRSData } from "../../types";
-import { getEventBus } from "../core/event-bus.service";
+import { notifyCardChange, type CardMutation } from "../core/signals";
 import { CARD_HISTORY_LIMIT } from "../../constants";
 import { parseClozeTemplate } from "./cloze-parser.service";
 
@@ -79,12 +75,7 @@ export class CardRepository {
 			reverseOf: options?.reverseOf,
 		};
 
-		getEventBus().emit({
-			type: "card:added",
-			cardId,
-			sourceNoteName,
-			timestamp: Date.now(),
-		} as CardAddedEvent);
+		notifyCardChange({ type: "added", cardId, sourceNoteName });
 
 		return card;
 	}
@@ -194,11 +185,7 @@ export class CardRepository {
 		}
 
 		if (createdCards.length > 0) {
-			getEventBus().emit({
-				type: "cards:bulk-change",
-				cardIds: createdCards.map(c => c.id),
-				timestamp: Date.now(),
-			} as BulkChangeEvent);
+			notifyCardChange({ type: "bulk", cardIds: createdCards.map(c => c.id) });
 		}
 
 		return { created: createdCards, duplicates };
@@ -234,12 +221,7 @@ export class CardRepository {
 
 		this.store.set(cardId, updated);
 
-		getEventBus().emit({
-			type: "card:updated",
-			cardId,
-			changes: { question: true, answer: true },
-			timestamp: Date.now(),
-		} as CardUpdatedEvent);
+		notifyCardChange({ type: "updated", cardId, changes: { question: true, answer: true } });
 
 		// Sync reversed pair: update the paired card with swapped Q/A
 		this.syncReversePair(cardId, existing, newQuestion, newAnswer);
@@ -264,7 +246,7 @@ export class CardRepository {
 		if (reverseCard) {
 			this.store.cards.updateCardContent(reverseCard.id, newAnswer, newQuestion);
 		}
-		// No events emitted — the caller (updateContent) already emits card:updated
+		// No notification — the caller (updateContent) already calls notifyCardChange
 	}
 
 	updateFSRS(
@@ -313,8 +295,7 @@ export class CardRepository {
 
 		this.store.set(cardId, entry);
 
-		// Detect specific changes for more targeted UI updates
-		const changes: CardUpdatedEvent["changes"] = { fsrs: true };
+		const changes: CardMutation["changes"] = { fsrs: true };
 		if (existing && newFSRSData.suspended !== existing.suspended) {
 			changes.suspended = true;
 		}
@@ -322,12 +303,7 @@ export class CardRepository {
 			changes.buried = true;
 		}
 
-		getEventBus().emit({
-			type: "card:updated",
-			cardId,
-			changes,
-			timestamp: Date.now(),
-		} as CardUpdatedEvent);
+		notifyCardChange({ type: "updated", cardId, changes });
 	}
 
 	updateSourceUid(cardId: string, newSourceUid: string): boolean {
@@ -338,12 +314,7 @@ export class CardRepository {
 
 		this.store.cards.updateCardSourceUid(cardId, newSourceUid);
 
-		getEventBus().emit({
-			type: "card:updated",
-			cardId,
-			changes: { sourceUid: true },
-			timestamp: Date.now(),
-		} as CardUpdatedEvent);
+		notifyCardChange({ type: "updated", cardId, changes: { sourceUid: true } });
 
 		return true;
 	}
@@ -361,26 +332,19 @@ export class CardRepository {
 
 		const newClozeCards = parseClozeTemplate(newTemplate);
 		const newIndices = new Set(newClozeCards.map((c) => c.clozeIndex));
+		const affectedCardIds: string[] = [];
 
-		// Update or create cards for each new cloze index
 		for (const cloze of newClozeCards) {
 			const existing = siblingsByIndex.get(cloze.clozeIndex);
 			if (existing) {
-				// Update existing sibling's Q/A and template
 				this.store.cards.updateClozeCardContent(
 					existing.id,
 					cloze.question,
 					cloze.answer,
 					newTemplate
 				);
-				getEventBus().emit({
-					type: "card:updated",
-					cardId: existing.id,
-					changes: { question: true, answer: true },
-					timestamp: Date.now(),
-				} as CardUpdatedEvent);
+				affectedCardIds.push(existing.id);
 			} else {
-				// New cloze index — create a new card
 				const cardId = crypto.randomUUID();
 				const fsrsData = createDefaultFSRSData(cardId);
 				const extendedData: FSRSCardData = {
@@ -393,25 +357,19 @@ export class CardRepository {
 					clozeIndex: cloze.clozeIndex,
 				};
 				this.store.set(cardId, extendedData);
-				getEventBus().emit({
-					type: "card:added",
-					cardId,
-					sourceNoteName,
-					timestamp: Date.now(),
-				} as CardAddedEvent);
+				affectedCardIds.push(cardId);
 			}
 		}
 
-		// Soft-delete siblings whose cloze index was removed from the new template
 		for (const [index, sibling] of siblingsByIndex) {
 			if (!newIndices.has(index)) {
 				this.store.cards.softDeleteWithCascade(sibling.id);
-				getEventBus().emit({
-					type: "card:removed",
-					cardId: sibling.id,
-					timestamp: Date.now(),
-				} as CardRemovedEvent);
+				affectedCardIds.push(sibling.id);
 			}
+		}
+
+		if (affectedCardIds.length > 0) {
+			notifyCardChange({ type: "bulk", cardIds: affectedCardIds });
 		}
 	}
 
@@ -421,17 +379,15 @@ export class CardRepository {
 			return false;
 		}
 
+		const removedIds: string[] = [];
+
 		// Cascade-delete cloze siblings (all cards sharing the same template)
 		if (card.cardType === "cloze" && card.clozeTemplate && card.sourceUid) {
 			const siblings = this.store.getClozeSiblings(card.sourceUid, card.clozeTemplate);
 			for (const sibling of siblings) {
 				if (sibling.id !== cardId) {
 					this.store.cards.softDeleteWithCascade(sibling.id);
-					getEventBus().emit({
-						type: "card:removed",
-						cardId: sibling.id,
-						timestamp: Date.now(),
-					} as CardRemovedEvent);
+					removedIds.push(sibling.id);
 				}
 			}
 		}
@@ -441,22 +397,14 @@ export class CardRepository {
 			const reverseCard = this.store.cards.getCardByReverseOf(cardId);
 			if (reverseCard) {
 				this.store.cards.softDeleteWithCascade(reverseCard.id);
-				getEventBus().emit({
-					type: "card:removed",
-					cardId: reverseCard.id,
-					timestamp: Date.now(),
-				} as CardRemovedEvent);
+				removedIds.push(reverseCard.id);
 			}
 		}
 
-		// Soft delete card with cascade (also soft-deletes review_log)
 		this.store.cards.softDeleteWithCascade(cardId);
+		removedIds.push(cardId);
 
-		getEventBus().emit({
-			type: "card:removed",
-			cardId,
-			timestamp: Date.now(),
-		} as CardRemovedEvent);
+		notifyCardChange({ type: "removed", cardId, cardIds: removedIds });
 
 		return true;
 	}
@@ -467,12 +415,7 @@ export class CardRepository {
 		// Single SQL transaction instead of N individual deletes
 		const count = this.store.cards.bulkSoftDelete(cardIds);
 
-		getEventBus().emit({
-			type: "cards:bulk-change",
-			action: "removed",
-			cardIds,
-			timestamp: Date.now(),
-		} as BulkChangeEvent);
+		notifyCardChange({ type: "bulk", cardIds, action: "removed" });
 
 		return count;
 	}

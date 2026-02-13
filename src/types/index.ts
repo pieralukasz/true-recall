@@ -55,19 +55,8 @@ export {
     formatInterval,
 } from "./fsrs";
 
-// Event types
-export type {
-	FlashcardEventType,
-	FlashcardEvent,
-	CardAddedEvent,
-	CardUpdatedEvent,
-	CardRemovedEvent,
-	CardReviewedEvent,
-	BulkChangeEvent,
-	StoreSyncedEvent,
-	AnyFlashcardEvent,
-	FlashcardEventListener,
-} from "./events.types";
+// Session types
+export type { SessionResult } from "./events.types";
 
 // Re-export ts-fsrs enums (for isolatedModules compatibility)
 export { State, Rating } from "./fsrs";

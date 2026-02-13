@@ -8,13 +8,9 @@ import {
 import { CardRepository } from "../../../src/services/flashcard/card-repository.service";
 import type { SqliteStoreService } from "../../../src/services/persistence/sqlite/SqliteStoreService";
 
-const mockEventBus = {
-	emit: vi.fn(),
-	on: () => () => {},
-};
-
-vi.mock("../../../src/services/core/event-bus.service", () => ({
-	getEventBus: () => mockEventBus,
+const mockNotifyCardChange = vi.fn();
+vi.mock("../../../src/services/core/signals", () => ({
+	notifyCardChange: (...args: unknown[]) => mockNotifyCardChange(...args),
 }));
 
 function createMockStore(ctx: TestContext): SqliteStoreService {
@@ -38,7 +34,7 @@ describe("CardRepository - cloze operations", () => {
 		vi.setSystemTime(new Date("2026-02-01T10:00:00Z"));
 		ctx = await createTestContext();
 		repository = new CardRepository(createMockStore(ctx));
-		mockEventBus.emit.mockClear();
+		mockNotifyCardChange.mockClear();
 	});
 
 	afterEach(() => {
@@ -317,7 +313,7 @@ describe("CardRepository - cloze operations", () => {
 				"source-uid-1"
 			);
 
-			mockEventBus.emit.mockClear();
+			mockNotifyCardChange.mockClear();
 
 			// Delete just c1 - should cascade to c2
 			const removed = repository.delete("c1");
@@ -351,14 +347,14 @@ describe("CardRepository - cloze operations", () => {
 				"source-uid-1"
 			);
 
-			mockEventBus.emit.mockClear();
+			mockNotifyCardChange.mockClear();
 			repository.delete("c1");
 
-			const removedEvents = mockEventBus.emit.mock.calls.filter(
-				(call: unknown[]) => (call[0] as { type: string }).type === "card:removed"
+			expect(mockNotifyCardChange).toHaveBeenCalledWith(
+				expect.objectContaining({
+					type: "removed",
+				}),
 			);
-			// c2 cascade + c1 itself
-			expect(removedEvents.length).toBeGreaterThanOrEqual(1);
 		});
 
 		it("does not cascade for basic cards", () => {
@@ -438,7 +434,7 @@ describe("CardRepository - cloze operations", () => {
 				],
 				SOURCE_UID
 			);
-			mockEventBus.emit.mockClear();
+			mockNotifyCardChange.mockClear();
 		});
 
 		it("updates Q/A for existing siblings when template text changes", () => {
@@ -488,34 +484,37 @@ describe("CardRepository - cloze operations", () => {
 			expect(card2).toBeUndefined();
 		});
 
-		it("emits card:updated events for updated siblings", () => {
+		it("notifies bulk change after updating siblings", () => {
 			const newTemplate = "{{c1::Italy}} is in {{c2::Europe}}";
 			repository.updateClozeTemplate(SOURCE_UID, OLD_TEMPLATE, newTemplate);
 
-			const updatedEvents = mockEventBus.emit.mock.calls.filter(
-				(call: unknown[]) => (call[0] as { type: string }).type === "card:updated"
+			expect(mockNotifyCardChange).toHaveBeenCalledWith(
+				expect.objectContaining({
+					type: "bulk",
+				}),
 			);
-			expect(updatedEvents).toHaveLength(2);
 		});
 
-		it("emits card:added event for newly created siblings", () => {
+		it("notifies bulk change when adding new siblings", () => {
 			const newTemplate = "{{c1::France}} is in {{c2::Europe}}, part of {{c3::EU}}";
 			repository.updateClozeTemplate(SOURCE_UID, OLD_TEMPLATE, newTemplate);
 
-			const addedEvents = mockEventBus.emit.mock.calls.filter(
-				(call: unknown[]) => (call[0] as { type: string }).type === "card:added"
+			expect(mockNotifyCardChange).toHaveBeenCalledWith(
+				expect.objectContaining({
+					type: "bulk",
+				}),
 			);
-			expect(addedEvents).toHaveLength(1);
 		});
 
-		it("emits card:removed event for soft-deleted siblings", () => {
+		it("notifies bulk change when removing siblings", () => {
 			const newTemplate = "{{c1::France}} is a country";
 			repository.updateClozeTemplate(SOURCE_UID, OLD_TEMPLATE, newTemplate);
 
-			const removedEvents = mockEventBus.emit.mock.calls.filter(
-				(call: unknown[]) => (call[0] as { type: string }).type === "card:removed"
+			expect(mockNotifyCardChange).toHaveBeenCalledWith(
+				expect.objectContaining({
+					type: "bulk",
+				}),
 			);
-			expect(removedEvents).toHaveLength(1);
 		});
 	});
 });
