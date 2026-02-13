@@ -10,6 +10,8 @@ import { filterActiveCardsOnly } from "../shared/helpers";
 import type TrueRecallPlugin from "../../main";
 import type { ProjectNoteInfo } from "../../types";
 import type { NoteHubApi } from "../../state/store";
+import { effect } from "@preact/signals-core";
+import { dataVersion, track } from "../../services/core/signals";
 
 export class NoteHubView extends ItemView {
 	private plugin: TrueRecallPlugin;
@@ -24,7 +26,7 @@ export class NoteHubView extends ItemView {
 	private footerContainer!: HTMLElement;
 
 	private unsubscribe: (() => void) | null = null;
-	private staleUnsubscribe: (() => void) | null = null;
+	private signalDisposer: (() => void) | null = null;
 	private refreshTimer: ReturnType<typeof setTimeout> | null = null;
 
 	constructor(leaf: WorkspaceLeaf, plugin: TrueRecallPlugin) {
@@ -76,12 +78,10 @@ export class NoteHubView extends ItemView {
 			() => this.render()
 		);
 
-		this.staleUnsubscribe = this.plugin.store!.subscribe(
-			(state) => state.noteHub.isStale,
-			(isStale) => {
-				if (isStale) this.scheduleRefresh();
-			}
-		);
+		this.signalDisposer = effect(() => {
+			track(dataVersion);
+			this.scheduleRefresh();
+		});
 
 		this.render();
 		void this.loadData();
@@ -90,7 +90,7 @@ export class NoteHubView extends ItemView {
 	async onClose(): Promise<void> {
 		if (this.refreshTimer) clearTimeout(this.refreshTimer);
 		this.unsubscribe?.();
-		this.staleUnsubscribe?.();
+		this.signalDisposer?.();
 		this.toolbarComponent?.destroy();
 		this.contentComponent?.destroy();
 		this.selectionFooterComponent?.destroy();
@@ -268,7 +268,6 @@ export class NoteHubView extends ItemView {
 			unassignedNotes.sort((a, b) => a.name.localeCompare(b.name));
 			this.noteHub.setProjects(projects);
 			this.noteHub.setUnassignedNotes(unassignedNotes);
-			this.noteHub.markFresh();
 		} catch (error) {
 			console.error("[NoteHubView] Error loading data:", error);
 			notify().error("Failed to load note hub data");
@@ -397,7 +396,6 @@ export class NoteHubView extends ItemView {
 	private scheduleRefresh(): void {
 		if (this.refreshTimer) clearTimeout(this.refreshTimer);
 		this.refreshTimer = setTimeout(() => {
-			this.noteHub.markFresh();
 			void this.loadData();
 		}, 500);
 	}

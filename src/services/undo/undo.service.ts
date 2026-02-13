@@ -1,7 +1,8 @@
 import type TrueRecallPlugin from "../../main";
 import type { FSRSCardData } from "../../types";
 import type { ReviewApi } from "../../state/store";
-import { getEventBus, notify } from "../index";
+import { notify } from "../index";
+import { notifyCardChange } from "../core/signals";
 import type {
 	UndoEntry,
 	AnswerUndoPayload,
@@ -132,12 +133,7 @@ export class UndoService {
 			// Restore the card using the store's set method
 			cardStore.set(cardData.id, cardData);
 
-			// Emit event for UI sync
-			getEventBus().emit({
-				type: "card:added",
-				cardId: cardData.id,
-				timestamp: Date.now(),
-			});
+			notifyCardChange({ type: "added", cardId: cardData.id });
 
 			return true;
 		} catch (error) {
@@ -219,12 +215,10 @@ export class UndoService {
 				cardStore.cards.updateCardDue(change.cardId, change.originalDue);
 			}
 
-			// Emit bulk change event for UI sync
-			getEventBus().emit({
-				type: "cards:bulk-change",
-				action: "reschedule",
+			notifyCardChange({
+				type: "bulk",
 				cardIds: payload.changes.map((c) => c.cardId),
-				timestamp: Date.now(),
+				action: "reschedule",
 			});
 
 			return true;

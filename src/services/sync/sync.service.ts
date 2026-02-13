@@ -7,7 +7,7 @@ import type {
 	FirstSyncStatus,
 } from "../../types";
 import type { ReviewLogForSync } from "../persistence/sqlite/modules/StatsActions";
-import { getEventBus } from "../core/event-bus.service";
+import { syncVersion } from "../core/signals";
 import {
 	mapRemoteCardToLocal,
 	mapRemoteReviewLogToLocal,
@@ -125,13 +125,7 @@ export class SyncService {
 			const now = Date.now();
 			this.setLastSyncTimestamp(now);
 
-			// Emit event for UI to refresh
-			getEventBus().emit({
-				type: "store:synced",
-				timestamp: now,
-				merged: pulled,
-				conflicts: 0,
-			});
+			syncVersion.value++;
 
 			return { success: true, pulled, pushed };
 		} catch (error) {
@@ -349,13 +343,7 @@ export class SyncService {
 			const now = Date.now();
 			this.setLastSyncTimestamp(now);
 
-			// Emit event for UI to refresh
-			getEventBus().emit({
-				type: "store:synced",
-				timestamp: now,
-				merged: 0,
-				conflicts: 0,
-			});
+			syncVersion.value++;
 
 			const totalPushed =
 				allLocalData.cards.length + allLocalData.reviewLog.length;
@@ -431,13 +419,7 @@ export class SyncService {
 			const now = Date.now();
 			this.setLastSyncTimestamp(now);
 
-			// Emit event for UI to refresh
-			getEventBus().emit({
-				type: "store:synced",
-				timestamp: now,
-				merged: pulled,
-				conflicts: 0,
-			});
+			syncVersion.value++;
 
 			return { success: true, pulled, pushed: 0 };
 		} catch (error) {

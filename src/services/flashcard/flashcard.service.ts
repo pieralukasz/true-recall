@@ -303,7 +303,7 @@ export class FlashcardManager {
 			await this.frontmatterService.setSourceNoteUid(targetNote, targetSourceUid);
 		}
 
-		// Update card's source UID (CardRepository emits event)
+		// Update card's source UID (CardRepository calls notifyCardChange)
 		return this.cardRepository.updateSourceUid(cardId, targetSourceUid);
 	}
 
