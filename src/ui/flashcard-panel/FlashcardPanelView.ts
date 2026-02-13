@@ -6,7 +6,7 @@ import {
     Menu,
 } from "obsidian";
 import { VIEW_TYPE_FLASHCARD_PANEL } from "../../constants";
-import { FlashcardManager, getEventBus, notify } from "../../services";
+import { FlashcardManager, notify } from "../../services";
 import { CollectService } from "../../services/flashcard/collect.service";
 import { Panel } from "../components/Panel";
 import { FlashcardPanelContent } from "./FlashcardPanelContent";
@@ -19,7 +19,6 @@ import { SimpleFlashcardEditorModal } from "../modals/SimpleFlashcardEditorModal
 import { cardToMarkdown, cardsToMarkdown } from "../../services/flashcard/flashcard-format.util";
 import { DuplicateQuestionError, type DuplicateInfo } from "../../services/flashcard/card-repository.service";
 import type { FlashcardItem } from "../../types";
-import type { CardAddedEvent, CardRemovedEvent, CardUpdatedEvent, BulkChangeEvent, SettingsChangedEvent } from "../../types/events.types";
 import { countCardsByState } from "../shared/helpers";
 import type TrueRecallPlugin from "../../main";
 import type { PanelApi } from "../../state/store";
@@ -55,11 +54,8 @@ export class FlashcardPanelView extends ItemView {
     private lastReviewCardPath: string | null = null;
     private lastReviewActive: boolean = false;
 
-    // Stats subscription (for header stats updates)
-    private statsUnsubscribe: (() => void) | null = null;
-
-    // Event subscriptions for cross-component reactivity
-    private eventUnsubscribers: (() => void)[] = [];
+    // Panel stale tracking subscription (replaces direct EventBus subscriptions)
+    private panelStaleUnsubscribe: (() => void) | null = null;
 
     // Editor change timer for real-time #flashcard tag detection
     private editorChangeTimer: ReturnType<typeof setTimeout> | null = null;
@@ -72,6 +68,9 @@ export class FlashcardPanelView extends ItemView {
 
     // Track RAF IDs for cleanup
     private pendingRafIds: Set<number> = new Set();
+
+    // Scroll position to restore after debounced reload
+    private pendingScrollRestore: number | null = null;
 
     // Render optimization: single key to track state changes
     private lastRenderKey: string | null = null;
@@ -185,11 +184,9 @@ export class FlashcardPanelView extends ItemView {
             }
         );
 
-        this.subscribeToEvents();
+        this.subscribeToPanelStale();
 
         this.subscribeToReviewState();
-
-        this.subscribeToStats();
 
         this.registerEditorChangeTracking();
 
@@ -253,14 +250,16 @@ export class FlashcardPanelView extends ItemView {
         // Cleanup subscriptions
         this.unsubscribe?.();
         this.reviewUnsubscribe?.();
-        this.statsUnsubscribe?.();
-
-        this.eventUnsubscribers.forEach((unsub) => unsub());
-        this.eventUnsubscribers = [];
+        this.panelStaleUnsubscribe?.();
 
         if (this.editorChangeTimer) {
             clearTimeout(this.editorChangeTimer);
             this.editorChangeTimer = null;
+        }
+
+        if (this.flashcardInfoTimer) {
+            clearTimeout(this.flashcardInfoTimer);
+            this.flashcardInfoTimer = null;
         }
 
         // Cleanup header stats timer
@@ -304,45 +303,29 @@ export class FlashcardPanelView extends ItemView {
         this.selectionFooterComponent?.destroy();
     }
 
-    private subscribeToEvents(): void {
-        const eventBus = getEventBus();
+    private subscribeToPanelStale(): void {
+        const store = this.plugin.store;
+        if (!store) return;
 
-        const unsubAdded = eventBus.on<CardAddedEvent>("card:added", () => {
-            this.invalidateCardsCache();
-            void this.loadFlashcardInfo();
-        });
-        this.eventUnsubscribers.push(unsubAdded);
-
-        const unsubRemoved = eventBus.on<CardRemovedEvent>("card:removed", () => {
-            this.invalidateCardsCache();
-            void this.loadFlashcardInfo();
-        });
-        this.eventUnsubscribers.push(unsubRemoved);
-
-        const unsubUpdated = eventBus.on<CardUpdatedEvent>("card:updated", (event) => {
-            this.invalidateCardsCache();
-            if (event.changes.question || event.changes.answer ||
-                event.changes.suspended || event.changes.buried) {
-                void this.loadFlashcardInfo();
-                return;
+        this.panelStaleUnsubscribe = store.subscribe(
+            (state) => state.panel.isStale,
+            (isStale) => {
+                if (isStale) {
+                    this.invalidateCardsCache();
+                    this.scheduleFlashcardInfoReload();
+                }
             }
-            if (event.changes.fsrs) {
-                this.scheduleHeaderStatsUpdate();
-            }
-        });
-        this.eventUnsubscribers.push(unsubUpdated);
+        );
+    }
 
-        const unsubBulk = eventBus.on<BulkChangeEvent>("cards:bulk-change", () => {
-            this.invalidateCardsCache();
+    private flashcardInfoTimer: ReturnType<typeof setTimeout> | null = null;
+
+    private scheduleFlashcardInfoReload(): void {
+        if (this.flashcardInfoTimer) clearTimeout(this.flashcardInfoTimer);
+        this.flashcardInfoTimer = setTimeout(() => {
+            this.flashcardInfoTimer = null;
             void this.loadFlashcardInfo();
-        });
-        this.eventUnsubscribers.push(unsubBulk);
-
-        const unsubSettings = eventBus.on<SettingsChangedEvent>("settings:changed", () => {
-            this.invalidateCardsCache();
-            this.scheduleHeaderStatsUpdate();
-        });
-        this.eventUnsubscribers.push(unsubSettings);
+        }, 100);
     }
 
     private subscribeToReviewState(): void {
@@ -382,20 +365,6 @@ export class FlashcardPanelView extends ItemView {
         }
     }
 
-    private subscribeToStats(): void {
-        const store = this.plugin.store;
-        if (!store) return;
-
-        this.statsUnsubscribe = store.subscribe(
-            (state) => state.stats.isStale,
-            (isStale) => {
-                if (isStale) {
-                    this.invalidateCardsCache();
-                    this.scheduleHeaderStatsUpdate();
-                }
-            }
-        );
-    }
 
     async handleFileChange(file: TFile | null): Promise<void> {
         const state = this.panel;
@@ -473,8 +442,19 @@ export class FlashcardPanelView extends ItemView {
                 sourceNoteName: null,
                 uncollectedCount,
             });
+
+            // Restore scroll position if a mutation handler requested it
+            const scrollRestore = this.pendingScrollRestore;
+            if (scrollRestore !== null) {
+                this.pendingScrollRestore = null;
+                this.scheduleRaf(() => {
+                    if (this.contentDiv) this.contentDiv.scrollTop = scrollRestore;
+                });
+            }
         } catch (error) {
             console.error("Error loading flashcard info:", error);
+        } finally {
+            this.panel.markFresh();
         }
     }
 
@@ -760,11 +740,7 @@ export class FlashcardPanelView extends ItemView {
                 notify().cardUpdated();
             }
 
-            await this.loadFlashcardInfo();
-
-            this.scheduleRaf(() => {
-                if (this.contentDiv) this.contentDiv.scrollTop = scrollPosition;
-            });
+            this.pendingScrollRestore = scrollPosition;
         } catch (error) {
             if (error instanceof DuplicateQuestionError) {
                 const question = result.flashcards[0]?.question ?? "";
@@ -803,12 +779,7 @@ export class FlashcardPanelView extends ItemView {
 
             notify().cardUpdated();
 
-            // Reload flashcard info to reflect changes
-            await this.loadFlashcardInfo();
-
-            this.scheduleRaf(() => {
-                if (this.contentDiv) this.contentDiv.scrollTop = scrollPosition;
-            });
+            this.pendingScrollRestore = scrollPosition;
         } catch (error) {
             if (error instanceof DuplicateQuestionError) {
                 const question = field === "question" ? newContent : card.question;
@@ -830,12 +801,7 @@ export class FlashcardPanelView extends ItemView {
 
         if (removed) {
             notify().cardsDeleted(1);
-            await this.loadFlashcardInfo();
-
-            // Restore scroll position after render completes
-            this.scheduleRaf(() => {
-                if (this.contentDiv) this.contentDiv.scrollTop = scrollPosition;
-            });
+            this.pendingScrollRestore = scrollPosition;
         } else {
             notify().error("Failed to remove flashcard from file");
         }
@@ -1125,10 +1091,9 @@ export class FlashcardPanelView extends ItemView {
         const cardIds = selectedCards.map((card) => card.id);
         const successCount = this.flashcardManager.removeFlashcardsByIds(cardIds);
 
-        // Clear selection and refresh
+        // Clear selection — stale tracking will trigger debounced reload
         this.panel.exitSelectionMode();
         notify().cardsDeleted(successCount);
-        await this.loadFlashcardInfo();
     }
 
     /**
@@ -1178,11 +1143,9 @@ export class FlashcardPanelView extends ItemView {
                     question: d.flashcard.question,
                     answer: d.flashcard.answer,
                 }));
-                await this.loadFlashcardInfo();
                 await this.handleAddFlashcard(duplicateFlashcards);
             } else {
                 notify().cardsCreated(saveResult.created.length, state.currentFile.basename);
-                await this.loadFlashcardInfo();
             }
         } catch (error) {
             console.error("Error adding flashcards:", error);
@@ -1203,7 +1166,6 @@ export class FlashcardPanelView extends ItemView {
         const successCount = this.flashcardManager.removeFlashcardsByIds(cardIds);
 
         notify().cardsDeleted(successCount);
-        await this.loadFlashcardInfo();
     }
 
     private async handleReviewFromPanel(): Promise<void> {

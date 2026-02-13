@@ -9,12 +9,23 @@ import type {
 } from "../types";
 import type { FlashcardInfo } from "../../../types";
 import type { AppError } from "../../../errors";
-import { createSelectionActions, toggleSetItem } from "../helpers/slice-helpers";
+import { createSelectionActions, createStaleTracking, toggleSetItem } from "../helpers/slice-helpers";
+import type { FlashcardEventType } from "../../../types/events.types";
 
 type PanelSlice = PanelSliceState & PanelSliceActions;
 
+const PANEL_STALE_EVENTS: FlashcardEventType[] = [
+	"card:added",
+	"card:removed",
+	"card:updated",
+	"card:reviewed",
+	"cards:bulk-change",
+	"settings:changed",
+];
+
 function createInitialState(): PanelSliceState {
 	return {
+		isStale: false,
 		status: "none",
 		viewMode: "list",
 		currentFile: null,
@@ -36,12 +47,14 @@ function createInitialState(): PanelSliceState {
 export function createPanelSlice(
 	set: (fn: (state: AppState) => Partial<AppState>) => void,
 	get: () => AppState,
-	_deps: AppStoreDeps
+	deps: AppStoreDeps
 ): PanelSlice {
 	const initial = createInitialState();
+	const stale = createStaleTracking(set, get, "panel", deps.eventBus, PANEL_STALE_EVENTS);
 
 	const slice: PanelSlice = {
 		...initial,
+		...stale,
 
 		setState: (partial: Partial<PanelSliceState>) => {
 			set((s) => ({
