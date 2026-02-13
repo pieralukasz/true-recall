@@ -191,13 +191,14 @@ export class CardRepository {
 			};
 
 			createdCards.push(card);
+		}
 
+		if (createdCards.length > 0) {
 			getEventBus().emit({
-				type: "card:added",
-				cardId: flashcard.id,
-				sourceNoteName,
+				type: "cards:bulk-change",
+				cardIds: createdCards.map(c => c.id),
 				timestamp: Date.now(),
-			} as CardAddedEvent);
+			} as BulkChangeEvent);
 		}
 
 		return { created: createdCards, duplicates };
@@ -255,12 +256,6 @@ export class CardRepository {
 			const original = this.store.get(cardData.reverseOf);
 			if (original) {
 				this.store.cards.updateCardContent(cardData.reverseOf, newAnswer, newQuestion);
-				getEventBus().emit({
-					type: "card:updated",
-					cardId: cardData.reverseOf,
-					changes: { question: true, answer: true },
-					timestamp: Date.now(),
-				} as CardUpdatedEvent);
 			}
 		}
 
@@ -268,13 +263,8 @@ export class CardRepository {
 		const reverseCard = this.store.cards.getCardByReverseOf(cardId);
 		if (reverseCard) {
 			this.store.cards.updateCardContent(reverseCard.id, newAnswer, newQuestion);
-			getEventBus().emit({
-				type: "card:updated",
-				cardId: reverseCard.id,
-				changes: { question: true, answer: true },
-				timestamp: Date.now(),
-			} as CardUpdatedEvent);
 		}
+		// No events emitted — the caller (updateContent) already emits card:updated
 	}
 
 	updateFSRS(

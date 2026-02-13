@@ -126,6 +126,7 @@ export type ViewMode = "list";
 export type SelectionMode = "normal" | "selecting";
 
 export interface PanelSliceState {
+	isStale: boolean;
 	status: ProcessingStatus;
 	viewMode: ViewMode;
 	currentFile: TFile | null;
@@ -146,6 +147,9 @@ export interface PanelSliceState {
 export interface PanelSliceActions {
 	setState: (partial: Partial<PanelSliceState>) => void;
 	reset: () => void;
+	markStale: () => void;
+	markFresh: () => void;
+	getIsStale: () => boolean;
 	incrementRenderVersion: () => number;
 	isCurrentRender: (version: number) => boolean;
 	setCurrentFile: (file: TFile | null) => void;
