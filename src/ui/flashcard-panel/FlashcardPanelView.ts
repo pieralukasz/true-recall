@@ -24,6 +24,7 @@ import type TrueRecallPlugin from "../../main";
 import type { PanelApi } from "../../state/store";
 import { effect } from "@preact/signals-core";
 import { dataVersion, settingsVersion, track } from "../../services/core/signals";
+import { shallow } from "zustand/vanilla/shallow";
 
 export class FlashcardPanelView extends ItemView {
     private plugin: TrueRecallPlugin;
@@ -48,8 +49,9 @@ export class FlashcardPanelView extends ItemView {
     private openFileAction: HTMLElement | null = null;
     private deleteAllAction: HTMLElement | null = null;
 
-    // State subscription
+    // State subscriptions
     private unsubscribe: (() => void) | null = null;
+    private interactionUnsub: (() => void) | null = null;
 
     // Review state subscription (for tracking current review card)
     private reviewUnsubscribe: (() => void) | null = null;
@@ -79,6 +81,10 @@ export class FlashcardPanelView extends ItemView {
 
     // Cache for getCardsWithFsrs() to avoid redundant SQLite queries within a render cycle
     private cachedCardsWithFsrs: FSRSFlashcardItem[] | null = null;
+
+    // Footer memoization — skip destroy/recreate when unchanged
+    private lastFooterSelectionMode: string | null = null;
+    private lastFooterSelectedCount: number = -1;
 
     constructor(leaf: WorkspaceLeaf, plugin: TrueRecallPlugin) {
         super(leaf);
@@ -178,12 +184,34 @@ export class FlashcardPanelView extends ItemView {
         }
         this.footerContainer = footerContainer;
 
+        // Structural changes → full render
         this.unsubscribe = this.plugin.store!.subscribe(
-            (state) => state.panel,
+            (state) => ({
+                file: state.panel.currentFile,
+                info: state.panel.flashcardInfo,
+                status: state.panel.status,
+                viewMode: state.panel.viewMode,
+                uncollected: state.panel.uncollectedCount,
+                isFollowing: state.panel.isFollowingReview,
+                addCard: state.panel.isAddCardExpanded,
+            }),
             () => {
                 this.render();
                 this.updateHeaderActions();
-            }
+            },
+            { equalityFn: shallow }
+        );
+
+        // Interaction changes → targeted patch (no full rebuild)
+        this.interactionUnsub = this.plugin.store!.subscribe(
+            (state) => ({
+                expanded: state.panel.expandedCardIds,
+                selected: state.panel.selectedCardIds,
+                selectionMode: state.panel.selectionMode,
+                search: state.panel.searchQuery,
+            }),
+            () => this.renderInteractionUpdate(),
+            { equalityFn: shallow }
         );
 
         this.subscribeToDataChanges();
@@ -251,6 +279,7 @@ export class FlashcardPanelView extends ItemView {
     async onClose(): Promise<void> {
         // Cleanup subscriptions
         this.unsubscribe?.();
+        this.interactionUnsub?.();
         this.reviewUnsubscribe?.();
         this.signalDisposer?.();
 
@@ -309,6 +338,7 @@ export class FlashcardPanelView extends ItemView {
         this.signalDisposer = effect(() => {
             track(dataVersion, settingsVersion);
             this.invalidateCardsCache();
+            this.scheduleHeaderStatsUpdate();
             this.scheduleFlashcardInfoReload();
         });
     }
@@ -398,12 +428,11 @@ export class FlashcardPanelView extends ItemView {
         const state = this.panel;
         const file = state.currentFile;
 
-        this.panel.exitSelectionMode();
+        if (state.selectionMode === "selecting") {
+            this.panel.exitSelectionMode();
+        }
 
-        // Check if store is ready before accessing it
         if (!this.flashcardManager.hasStore()) {
-            // Store not initialized yet, silently return
-            // The view will reload once the store is ready via event subscriptions
             return;
         }
 
@@ -449,6 +478,32 @@ export class FlashcardPanelView extends ItemView {
         } catch (error) {
             console.error("Error loading flashcard info:", error);
         }
+    }
+
+    private renderInteractionUpdate(): void {
+        const state = this.panel;
+
+        // Patch content component (handles expand/select via CSS toggle, not full rebuild)
+        if (this.contentComponent) {
+            this.contentComponent.updateProps({
+                selectedCardIds: state.selectedCardIds,
+                expandedCardIds: state.expandedCardIds,
+                selectionMode: state.selectionMode,
+                searchQuery: state.searchQuery,
+            });
+        }
+
+        // Update header search + selection state
+        if (this.headerComponent) {
+            this.headerComponent.updateProps({
+                selectionMode: state.selectionMode,
+                selectedCount: state.selectedCardIds.size,
+                searchQuery: state.searchQuery,
+            });
+        }
+
+        // Update footer (guarded — only rebuilds when actually changed)
+        this.renderFooter(state);
     }
 
     private render(): void {
@@ -583,14 +638,29 @@ export class FlashcardPanelView extends ItemView {
             });
         }
 
-        // Render Footer (only for selection mode)
+        // Render Footer — only rebuild when selection state actually changes
+        this.renderFooter(state);
+    }
+
+    private renderFooter(state: PanelApi): void {
+        const selectionMode = state.selectionMode;
+        const selectedCount = state.selectedCardIds.size;
+
+        if (
+            selectionMode === this.lastFooterSelectionMode &&
+            selectedCount === this.lastFooterSelectedCount
+        ) {
+            return;
+        }
+
+        this.lastFooterSelectionMode = selectionMode;
+        this.lastFooterSelectedCount = selectedCount;
+
         this.footerComponent?.destroy();
         this.selectionFooterComponent?.destroy();
         this.footerContainer.empty();
 
-        if (state.selectionMode === "selecting") {
-            // Selection mode footer
-            const selectedCount = state.selectedCardIds.size;
+        if (selectionMode === "selecting") {
             this.selectionFooterComponent = new SelectionFooter(this.footerContainer, {
                 display: { type: "selectedCount", count: selectedCount },
                 actions: [
@@ -612,12 +682,11 @@ export class FlashcardPanelView extends ItemView {
             });
             this.selectionFooterComponent.render();
         }
-        // Normal mode: no footer (actions in header)
     }
 
     /**
      * Schedule debounced header stats update
-     * Prevents expensive getAllFSRSCards() calls on every card:updated/card:reviewed event
+     * Prevents expensive getCardsByIds() calls on every dataVersion change
      */
     private scheduleHeaderStatsUpdate(): void {
         if (this.headerStatsTimer) {

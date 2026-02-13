@@ -128,6 +128,7 @@ export class CardBrowserView extends ItemView {
 
 	// Track what was last rendered to avoid unnecessary full rebuilds
 	private lastFilteredCards: FSRSFlashcardItem[] = [];
+	private lastPreviewCardId: string | null | undefined = undefined;
 
 	constructor(leaf: WorkspaceLeaf, plugin: TrueRecallPlugin) {
 		super(leaf);
@@ -269,6 +270,9 @@ export class CardBrowserView extends ItemView {
 
 	private renderDetailPanel(filteredCards: FSRSFlashcardItem[]): void {
 		const { previewCardId } = this.browser;
+
+		if (previewCardId === this.lastPreviewCardId) return;
+		this.lastPreviewCardId = previewCardId;
 
 		this.detailPanel?.destroy();
 		this.detailPanel = null;

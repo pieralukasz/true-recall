@@ -37,10 +37,15 @@ export interface CompactCardItemProps {
 export class CompactCardItem extends BaseComponent {
     private props: CompactCardItemProps;
     private longPressHandler: LongPressResult | null = null;
+    private answerContainer: HTMLElement | null = null;
 
     constructor(container: HTMLElement, props: CompactCardItemProps) {
         super(container);
         this.props = props;
+    }
+
+    getCardId(): string {
+        return this.props.card.id;
     }
 
     render(): void {
@@ -145,17 +150,44 @@ export class CompactCardItem extends BaseComponent {
         }
     }
 
+    updateExpandSelectState(state: {
+        isExpanded: boolean;
+        isSelected: boolean;
+    }): void {
+        if (!this.element) return;
+
+        // Update selected border
+        if (state.isSelected !== this.props.isSelected) {
+            if (state.isSelected) {
+                this.element.addClass("ep:border-obs-interactive", "ep:border-2");
+            } else {
+                this.element.removeClass("ep:border-obs-interactive", "ep:border-2");
+            }
+            this.props.isSelected = state.isSelected;
+        }
+
+        // Update expanded content
+        if (state.isExpanded !== this.props.isExpanded) {
+            if (state.isExpanded) {
+                this.renderExpandedContent();
+            } else if (this.answerContainer) {
+                this.answerContainer.remove();
+                this.answerContainer = null;
+            }
+            this.props.isExpanded = state.isExpanded;
+        }
+    }
+
     private renderExpandedContent(): void {
         if (!this.element) return;
 
         const { card, filePath, app, component } = this.props;
 
-        const answerContainer = this.element.createDiv({
+        this.answerContainer = this.element.createDiv({
             cls: "ep:px-3 ep:pb-3 ep:pt-3 ep:border-t ep:border-obs-border",
         });
 
-        // Answer content with markdown rendering
-        const answerContent = answerContainer.createDiv({
+        const answerContent = this.answerContainer.createDiv({
             cls: "ep:text-ui-small ep:text-obs-normal true-recall-panel-card-field",
         });
 
@@ -281,6 +313,7 @@ export class CompactCardItem extends BaseComponent {
 
     destroy(): void {
         this.longPressHandler = null;
+        this.answerContainer = null;
         super.destroy();
     }
 }
