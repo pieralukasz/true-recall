@@ -82,7 +82,19 @@ function updatePanelView(plugin: TrueRecallPlugin, file: TFile | null): void {
 				return;
 			}
 
-	
+			// When returning to review view, re-sync panel with the current review card
+			// (follow state was cleared when user navigated away, subscription won't fire
+			// because the review store hasn't changed)
+			if (isReviewViewActive) {
+				const review = plugin.store?.getState()?.review;
+				if (review?.isActive) {
+					const currentCard = review.getCurrentCard();
+					const currentPath = currentCard?.sourceNotePath ?? null;
+					view.syncWithReviewState(currentPath, true);
+					return;
+				}
+			}
+
 			if (file && !isReviewViewActive && view.isFollowingReview()) {
 				view.clearReviewFollowState();
 			}
