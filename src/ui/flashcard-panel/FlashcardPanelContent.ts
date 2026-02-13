@@ -15,8 +15,8 @@ import type {
 } from "../../types";
 import type { FSRSFlashcardItem } from "../../types/fsrs/card.types";
 import { createEmptyState, EmptyStateMessages } from "../components/EmptyState";
-import { createCompactCardItem } from "./CompactCardItem";
-import { createCardGroupItem } from "./CardGroupItem";
+import { CompactCardItem, createCompactCardItem } from "./CompactCardItem";
+import { CardGroupItem, createCardGroupItem } from "./CardGroupItem";
 import { groupCards } from "./group-cards";
 
 export interface FlashcardPanelContentHandlers {
@@ -62,9 +62,15 @@ export interface FlashcardPanelContentProps {
 	isAddCardExpanded: boolean;
 }
 
+type PatchableComponent = (CompactCardItem | CardGroupItem) & {
+	getCardId(): string;
+	updateExpandSelectState(state: { isExpanded: boolean; isSelected: boolean }): void;
+};
+
 export class FlashcardPanelContent extends BaseComponent {
 	private props: FlashcardPanelContentProps;
 	private childComponents: BaseComponent[] = [];
+	private patchableComponents: PatchableComponent[] = [];
 
 	constructor(container: HTMLElement, props: FlashcardPanelContentProps) {
 		super(container);
@@ -205,6 +211,7 @@ export class FlashcardPanelContent extends BaseComponent {
 					onLongPress: () => handlers.onEnterSelectionMode?.(item.card.id),
 				});
 				this.childComponents.push(compactCard);
+				this.patchableComponents.push(compactCard);
 			} else if (item.type === "cloze-group") {
 				const groupWrapper = previewEl.createDiv();
 				const groupId = `cloze:${item.cards[0]?.id}`;
@@ -229,8 +236,9 @@ export class FlashcardPanelContent extends BaseComponent {
 					onMoveGroup: () => handlers.onMoveGroup?.(item.cards),
 					onSelect: () => handlers.onEnterSelectionMode?.(item.cards[0]?.id ?? ""),
 					onLongPress: () => handlers.onEnterSelectionMode?.(item.cards[0]?.id ?? ""),
-				});
+				}, groupId);
 				this.childComponents.push(groupItem);
+				this.patchableComponents.push(groupItem);
 			} else {
 				// reverse-group
 				const groupWrapper = previewEl.createDiv();
@@ -256,8 +264,9 @@ export class FlashcardPanelContent extends BaseComponent {
 					onMoveGroup: () => handlers.onMoveGroup?.(cards),
 					onSelect: () => handlers.onEnterSelectionMode?.(item.original.id),
 					onLongPress: () => handlers.onEnterSelectionMode?.(item.original.id),
-				});
+				}, groupId);
 				this.childComponents.push(groupItem);
+				this.patchableComponents.push(groupItem);
 			}
 		}
 	}
@@ -265,14 +274,39 @@ export class FlashcardPanelContent extends BaseComponent {
 	private cleanupChildren(): void {
 		this.childComponents.forEach((comp) => comp.destroy());
 		this.childComponents = [];
+		this.patchableComponents = [];
 	}
 
-	/**
-	 * Update the content with new props
-	 */
 	updateProps(props: Partial<FlashcardPanelContentProps>): void {
-		this.props = { ...this.props, ...props };
+		const prev = this.props;
+		this.props = { ...prev, ...props };
+
+		// Structural keys that require a full DOM rebuild
+		const structuralKeys: (keyof FlashcardPanelContentProps)[] = [
+			"flashcardInfo", "cardsWithFsrs", "searchQuery",
+			"currentFile", "status", "selectionMode", "isAddCardExpanded",
+		];
+
+		const hasStructuralChange = structuralKeys.some(
+			(key) => key in props && props[key] !== prev[key]
+		);
+
+		if (!hasStructuralChange && this.patchableComponents.length > 0) {
+			this.patchExpandSelectState();
+			return;
+		}
+
 		this.render();
+	}
+
+	private patchExpandSelectState(): void {
+		const { expandedCardIds, selectedCardIds } = this.props;
+		for (const comp of this.patchableComponents) {
+			comp.updateExpandSelectState({
+				isExpanded: expandedCardIds.has(comp.getCardId()),
+				isSelected: selectedCardIds.has(comp.getCardId()),
+			});
+		}
 	}
 
 	destroy(): void {

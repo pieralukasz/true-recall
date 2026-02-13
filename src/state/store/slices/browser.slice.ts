@@ -94,6 +94,10 @@ export function createBrowserSlice(
 ): BrowserSlice {
 	const initial = createInitialState();
 
+	// Memoization cache for getFilteredAndSortedCards — avoids O(N log N) on every render
+	let filteredCache: FSRSFlashcardItem[] | null = null;
+	let filteredCacheKey = "";
+
 	const selection = createSelectionActions(set, get, "browser", "selectionMode", "selectedCardIds");
 
 	const slice: BrowserSlice = {
@@ -118,6 +122,7 @@ export function createBrowserSlice(
 		},
 
 		setCards: (cards: FSRSFlashcardItem[]) => {
+			filteredCache = null;
 			set((s) => ({
 				browser: { ...s.browser, allCards: cards, isLoading: false },
 			}));
@@ -194,6 +199,11 @@ export function createBrowserSlice(
 			const state = get().browser;
 			const { allCards, searchQuery, stateFilter, sortColumn, sortDirection } = state;
 
+			const cacheKey = `${allCards.length}:${searchQuery}:${stateFilter}:${sortColumn}:${sortDirection}`;
+			if (filteredCache && filteredCacheKey === cacheKey) {
+				return filteredCache;
+			}
+
 			let cards = allCards;
 
 			if (searchQuery) {
@@ -204,7 +214,9 @@ export function createBrowserSlice(
 				cards = cards.filter((c) => matchesStateFilter(c, stateFilter));
 			}
 
-			return [...cards].sort((a, b) => compareCards(a, b, sortColumn, sortDirection));
+			filteredCache = [...cards].sort((a, b) => compareCards(a, b, sortColumn, sortDirection));
+			filteredCacheKey = cacheKey;
+			return filteredCache;
 		},
 	};
 

@@ -502,6 +502,7 @@ export function createReviewSlice(
 		addCardToQueue: (card: FSRSFlashcardItem) => {
 			const state = get().review;
 			if (!state.isActive) return;
+			if (state.queue.some((c) => c.id === card.id)) return;
 
 			const badgeType = getBadgeTypeForState(card.fsrs.state);
 			const newCounts = { ...state.cachedBadgeCounts };

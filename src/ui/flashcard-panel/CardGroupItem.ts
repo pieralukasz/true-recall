@@ -30,10 +30,17 @@ export interface CardGroupItemProps {
 export class CardGroupItem extends BaseComponent {
 	private props: CardGroupItemProps;
 	private longPressHandler: LongPressResult | null = null;
+	private expandedContent: HTMLElement | null = null;
+	private groupId: string;
 
-	constructor(container: HTMLElement, props: CardGroupItemProps) {
+	constructor(container: HTMLElement, props: CardGroupItemProps, groupId: string) {
 		super(container);
 		this.props = props;
+		this.groupId = groupId;
+	}
+
+	getCardId(): string {
+		return this.groupId;
 	}
 
 	render(): void {
@@ -52,6 +59,32 @@ export class CardGroupItem extends BaseComponent {
 
 		if (isExpanded) {
 			this.renderExpandedContent();
+		}
+	}
+
+	updateExpandSelectState(state: {
+		isExpanded: boolean;
+		isSelected: boolean;
+	}): void {
+		if (!this.element) return;
+
+		if (state.isSelected !== this.props.isSelected) {
+			if (state.isSelected) {
+				this.element.addClass("ep:border-obs-interactive", "ep:border-2");
+			} else {
+				this.element.removeClass("ep:border-obs-interactive", "ep:border-2");
+			}
+			this.props.isSelected = state.isSelected;
+		}
+
+		if (state.isExpanded !== this.props.isExpanded) {
+			if (state.isExpanded) {
+				this.renderExpandedContent();
+			} else if (this.expandedContent) {
+				this.expandedContent.remove();
+				this.expandedContent = null;
+			}
+			this.props.isExpanded = state.isExpanded;
 		}
 	}
 
@@ -138,9 +171,10 @@ export class CardGroupItem extends BaseComponent {
 
 		const { cards, fsrsCards, filePath, app, component, groupType } = this.props;
 
-		const contentEl = this.element.createDiv({
+		this.expandedContent = this.element.createDiv({
 			cls: "ep:border-t ep:border-obs-border",
 		});
+		const contentEl = this.expandedContent;
 
 		for (let i = 0; i < cards.length; i++) {
 			const card = cards[i]!;
@@ -300,15 +334,17 @@ export class CardGroupItem extends BaseComponent {
 
 	destroy(): void {
 		this.longPressHandler = null;
+		this.expandedContent = null;
 		super.destroy();
 	}
 }
 
 export function createCardGroupItem(
 	container: HTMLElement,
-	props: CardGroupItemProps
+	props: CardGroupItemProps,
+	groupId: string
 ): CardGroupItem {
-	const item = new CardGroupItem(container, props);
+	const item = new CardGroupItem(container, props, groupId);
 	item.render();
 	return item;
 }

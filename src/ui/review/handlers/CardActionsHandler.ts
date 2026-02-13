@@ -349,14 +349,11 @@ export class CardActionsHandler {
 		try {
 			// Add all parsed flashcards directly using the current card's sourceUid
 			for (const flashcard of result.flashcards) {
-				const newCard = await this.deps.flashcardManager.addSingleFlashcard(
+				await this.deps.flashcardManager.addSingleFlashcard(
 					flashcard.question,
 					flashcard.answer,
 					card.sourceUid
 				);
-
-				// Add new card to current session queue
-				this.deps.getReview().addCardToQueue(newCard);
 			}
 
 			const noteName = card.sourceNotePath?.split("/").pop()?.replace(/\.md$/, "");
@@ -395,14 +392,11 @@ export class CardActionsHandler {
 		try {
 			// Add all parsed flashcards directly using the current card's sourceUid
 			for (const flashcard of result.flashcards) {
-				const newCard = await this.deps.flashcardManager.addSingleFlashcard(
+				await this.deps.flashcardManager.addSingleFlashcard(
 					flashcard.question,
 					flashcard.answer,
 					card.sourceUid
 				);
-
-				// Add new card to current session queue
-				this.deps.getReview().addCardToQueue(newCard);
 			}
 
 			const noteName = card.sourceNotePath?.split("/").pop()?.replace(/\.md$/, "");
@@ -475,14 +469,11 @@ export class CardActionsHandler {
 				for (let i = 1; i < result.flashcards.length; i++) {
 					const flashcard = result.flashcards[i];
 					if (flashcard) {
-						const newCard = await this.deps.flashcardManager.addSingleFlashcard(
+						await this.deps.flashcardManager.addSingleFlashcard(
 							flashcard.question,
 							flashcard.answer,
 							card.sourceUid
 						);
-
-						// Add new card to current session queue
-						this.deps.getReview().addCardToQueue(newCard);
 					}
 				}
 				notify().success(`Updated card and created ${result.flashcards.length - 1} new cards`);
