@@ -197,7 +197,17 @@ export class FlashcardPanelView extends ItemView {
             this.setupMobileHeaderStatus();
         }
 
-        await this.loadCurrentFile();
+        // If a review session is already active, sync with it instead of loading the active file
+        const reviewState = this.plugin.store?.getState()?.review;
+        if (reviewState?.isActive) {
+            const currentCard = reviewState.getCurrentCard();
+            const currentPath = currentCard?.sourceNotePath ?? null;
+            this.lastReviewCardPath = currentPath;
+            this.lastReviewActive = true;
+            void this.syncWithReviewCard(currentPath, true);
+        } else {
+            await this.loadCurrentFile();
+        }
     }
 
     private updateHeaderActions(): void {
@@ -405,6 +415,12 @@ export class FlashcardPanelView extends ItemView {
 
     clearReviewFollowState(): void {
         this.panel.setReviewFollowState(null, false);
+    }
+
+    syncWithReviewState(sourceNotePath: string | null, isActive: boolean): void {
+        this.lastReviewCardPath = sourceNotePath;
+        this.lastReviewActive = isActive;
+        void this.syncWithReviewCard(sourceNotePath, isActive);
     }
 
     private async loadCurrentFile(): Promise<void> {
