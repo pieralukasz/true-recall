@@ -218,6 +218,8 @@ export interface TrueRecallSettings {
 
     /** Show inline flashcard status indicators next to [[links]] in editor */
     showLinkStatusIndicators: boolean;
+    showSummaryBanner: boolean;
+    showSectionSummaries: boolean;
 }
 
 export interface SessionPreset {

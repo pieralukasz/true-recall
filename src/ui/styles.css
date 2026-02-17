@@ -457,6 +457,86 @@
 		stroke: currentColor;
 	}
 
+	/* Summary banner - top of note */
+	.true-recall-summary-banner {
+		display: flex;
+		align-items: center;
+		gap: 8px;
+		padding: 6px 0;
+		margin-bottom: 8px;
+		width: 100%;
+		font-size: var(--font-ui-smaller);
+		color: var(--text-muted);
+		border-bottom: 1px solid var(--background-modifier-border);
+	}
+	.true-recall-summary-icon {
+		display: inline-flex;
+		align-items: center;
+		color: var(--text-faint);
+	}
+	.true-recall-summary-icon svg {
+		width: 12px;
+		height: 12px;
+	}
+	.true-recall-summary-stats {
+		display: inline-flex;
+		align-items: center;
+		gap: 6px;
+	}
+	.true-recall-summary-stat-new,
+	.true-recall-summary-stat-learning,
+	.true-recall-summary-stat-due {
+		color: var(--text-normal);
+		font-weight: 400;
+		font-variant-numeric: tabular-nums;
+	}
+	.true-recall-summary-dot { color: var(--text-faint); opacity: 0.5; }
+	.true-recall-summary-total { color: var(--text-faint); margin-left: 2px; }
+	.true-recall-summary-actions {
+		display: inline-flex;
+		align-items: center;
+		gap: 4px;
+		margin-left: auto;
+	}
+	.true-recall-summary-action {
+		display: inline-flex;
+		align-items: center;
+		cursor: pointer;
+		color: var(--text-faint);
+		transition: color 0.15s ease;
+	}
+	.true-recall-summary-action:hover {
+		color: var(--text-accent);
+	}
+	.true-recall-summary-action svg {
+		width: 14px;
+		height: 14px;
+	}
+
+	/* Section summary - after headings */
+	.true-recall-section-summary {
+		display: flex;
+		align-items: center;
+		gap: 6px;
+		padding: 2px 0;
+		margin: 2px 0 6px 0;
+		width: 100%;
+		font-size: var(--font-ui-smaller);
+		color: var(--text-muted);
+	}
+	.true-recall-section-summary .true-recall-summary-stat-new,
+	.true-recall-section-summary .true-recall-summary-stat-due {
+		color: var(--text-muted);
+		font-weight: 400;
+	}
+	.true-recall-section-summary .true-recall-summary-total {
+		color: var(--text-faint);
+	}
+	.true-recall-summary-action-section svg {
+		width: 10px;
+		height: 10px;
+	}
+
 	/* Drag and drop: ghost element */
 	.ep-drag-ghost {
 		opacity: 0.4;

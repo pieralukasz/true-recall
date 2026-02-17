@@ -31,23 +31,6 @@ export function registerEventHandlers(plugin: TrueRecallPlugin): void {
 		})
 	);
 
-	// Multi-file context menu (Obsidian 1.4.10+)
-	plugin.registerEvent(
-		plugin.app.workspace.on("files-menu", (menu, files) => {
-			const mdFiles = files.filter(
-				(f): f is TFile => f instanceof TFile && f.extension === "md"
-			);
-
-			if (mdFiles.length >= 2) {
-				menu.addItem((item) => {
-					item.setTitle("Merge notes with flashcards")
-						.setIcon("git-merge")
-						.onClick(() => void plugin.mergeSelectedNotes(mdFiles));
-				});
-			}
-		})
-	);
-
 	plugin.registerEvent(
 		plugin.app.workspace.on("file-open", (file) => {
 			updatePanelView(plugin, file);
