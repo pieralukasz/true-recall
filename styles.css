@@ -1641,6 +1641,7 @@
     align-items: center;
     gap: 1px;
     margin-left: 6px;
+    margin-right: 6px;
     font-size: var(--font-ui-smaller);
     font-weight: 500;
     opacity: 0.85;

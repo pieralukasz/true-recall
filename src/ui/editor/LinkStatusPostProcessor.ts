@@ -1,7 +1,7 @@
 import type { App, MarkdownPostProcessorContext, TFile } from "obsidian";
 import type { NoteStatusCacheService } from "../../services/cache/note-status-cache.service";
 import type { FrontmatterIndexService } from "../../services/core/frontmatter-index.service";
-import { createLinkStatusElement } from "./link-status-widget";
+import { createLinkStatusElement } from "./LinkStatusWidget";
 
 export function createLinkStatusPostProcessor(
 	app: App,
@@ -21,7 +21,7 @@ export function createLinkStatusPostProcessor(
 			if (!href) continue;
 
 			if (
-				linkEl.nextElementSibling?.classList.contains(
+				linkEl.previousElementSibling?.classList.contains(
 					"true-recall-link-status",
 				)
 			) {
@@ -48,7 +48,7 @@ export function createLinkStatusPostProcessor(
 				info,
 				onPlay: () => onReviewNote(targetFile),
 			});
-			linkEl.insertAdjacentElement("afterend", statusEl);
+			linkEl.insertAdjacentElement("beforebegin", statusEl);
 		}
 	};
 }

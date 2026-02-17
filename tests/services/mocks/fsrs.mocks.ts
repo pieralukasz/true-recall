@@ -127,7 +127,7 @@ export function createRelearningCard(id?: string): FSRSCardData {
  * Create a mock FSRSFlashcardItem (UI flashcard with full data)
  */
 export function createMockFlashcard(
-	overrides: Partial<FSRSFlashcardItem> = {}
+	overrides: Partial<Omit<FSRSFlashcardItem, "fsrs">> & { fsrs?: Partial<FSRSCardData> } = {}
 ): FSRSFlashcardItem {
 	const cardData = createMockCard(overrides.fsrs);
 	return {
@@ -274,7 +274,7 @@ export function createMockSourceNote(
  * Create a mock flashcard with source note path (SQL-only card)
  */
 export function createMockFlashcardWithSourcePath(
-	overrides: Partial<FSRSFlashcardItem> = {}
+	overrides: Partial<Omit<FSRSFlashcardItem, "fsrs">> & { fsrs?: Partial<FSRSCardData> } = {}
 ): FSRSFlashcardItem {
 	const cardData = createMockCard(overrides.fsrs);
 	return {

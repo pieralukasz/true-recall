@@ -108,13 +108,12 @@ describe("FSRS State Transitions", () => {
 	});
 
 	describe("New → Review (Easy Fast-Track)", () => {
-		it("should transition to Review or Learning on Easy rating", () => {
+		it("should skip learning steps and graduate directly on Easy", () => {
 			const card = createNewCard("new-easy");
 			const result = service.scheduleCard(card, Rating.Easy);
 
-			// ts-fsrs behavior: Easy on New can go to Learning or Review depending on settings
-			// With enableShortTerm=true and learningSteps, it may still go to Learning first
-			expect([State.Learning, State.Review]).toContain(result.state);
+			// Easy on New card graduates directly to Review, skipping all learning steps
+			expect(result.state).toBe(State.Review);
 		});
 
 		it("should have longer initial interval on Easy vs Good", () => {
@@ -133,17 +132,19 @@ describe("FSRS State Transitions", () => {
 	});
 
 	describe("Learning Step Progression", () => {
-		it("should advance learning step on Good rating", () => {
-			const card = createCardAtLearningStep("learning-step0", 0);
-			const result = service.scheduleCard(card, Rating.Good);
+		it("should advance through learning steps on consecutive Good ratings", () => {
+			// Natural progression: New → Good → Learning(step=1)
+			const newCard = createNewCard("learning-progression");
+			const afterFirst = service.scheduleCard(newCard, Rating.Good);
 
-			// Should advance to step 1 or graduate (if only 2 steps)
-			if (result.state === State.Learning) {
-				expect(result.learningStep).toBeGreaterThan(0);
-			} else {
-				// Graduated to Review
-				expect(result.state).toBe(State.Review);
-			}
+			expect(afterFirst.state).toBe(State.Learning);
+			expect(afterFirst.learningStep).toBe(1);
+
+			// Learning(step=1) → Good → Review (graduates after completing all steps)
+			vi.advanceTimersByTime(11 * 60 * 1000);
+			const afterSecond = service.scheduleCard(afterFirst, Rating.Good);
+
+			expect(afterSecond.state).toBe(State.Review);
 		});
 
 		it("should reset to step 0 on Again rating", () => {
@@ -192,13 +193,12 @@ describe("FSRS State Transitions", () => {
 		});
 
 		it("should have scheduledDays > 0 after graduation", () => {
-			// Force graduation by using Easy on learning card
+			// Easy on last learning step should graduate to Review
 			const card = createCardAtLearningStep("learning-graduate", 1);
 			const result = service.scheduleCard(card, Rating.Easy);
 
-			if (result.state === State.Review) {
-				expect(result.scheduledDays).toBeGreaterThan(0);
-			}
+			expect(result.state).toBe(State.Review);
+			expect(result.scheduledDays).toBeGreaterThan(0);
 		});
 	});
 
@@ -280,12 +280,12 @@ describe("FSRS State Transitions", () => {
 	});
 
 	describe("Relearning → Review (Re-Graduation)", () => {
-		it("should transition back to Review on Good rating", () => {
+		it("should re-graduate to Review on Good rating", () => {
 			const card = createRelearningCard("relearning-good");
 			const result = service.scheduleCard(card, Rating.Good);
 
-			// Should re-graduate or advance relearning step
-			expect([State.Relearning, State.Review]).toContain(result.state);
+			// With relearningSteps=[10] (single step), Good graduates back to Review
+			expect(result.state).toBe(State.Review);
 		});
 
 		it("should stay in Relearning on Again rating", () => {

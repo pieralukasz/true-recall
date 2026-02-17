@@ -13,7 +13,7 @@ import type { App, TFile } from "obsidian";
 import type { NoteStatusCacheService } from "../../services/cache/note-status-cache.service";
 import type { NoteStatusInfo } from "../../services/cache/note-status-cache.service";
 import type { FrontmatterIndexService } from "../../services/core/frontmatter-index.service";
-import { createLinkStatusElement, infoEqual } from "./link-status-widget";
+import { createLinkStatusElement, infoEqual } from "./LinkStatusWidget";
 
 class LinkStatusWidget extends WidgetType {
 	constructor(
@@ -81,7 +81,7 @@ export function createLinkStatusViewPlugin(
 
 					while ((match = WIKI_LINK_RE.exec(text)) !== null) {
 						const linkText = match[1]!;
-						const absoluteEnd = from + match.index + match[0].length;
+						const absoluteStart = from + match.index;
 
 						const file = app.metadataCache.getFirstLinkpathDest(
 							linkText,
@@ -101,13 +101,13 @@ export function createLinkStatusViewPlugin(
 						const targetFile = file;
 
 						builder.add(
-							absoluteEnd,
-							absoluteEnd,
+							absoluteStart,
+							absoluteStart,
 							Decoration.widget({
 								widget: new LinkStatusWidget(info, () => {
 									onReviewNote(targetFile);
 								}),
-								side: 1,
+								side: -1,
 							}),
 						);
 					}

@@ -576,4 +576,164 @@ describe("FSRSService", () => {
 			expect(preview.good.interval).toBeDefined();
 		});
 	});
+
+	describe("sortByRetrievability", () => {
+		it("should sort cards with lowest retrievability first", () => {
+			// Card reviewed long ago = lower R
+			const oldCard = createMockFlashcard({
+				id: "old",
+				fsrs: {
+					state: State.Review,
+					stability: 10,
+					due: new Date("2024-01-10").toISOString(),
+					lastReview: new Date("2024-01-01").toISOString(),
+				},
+			});
+			// Card reviewed recently = higher R
+			const recentCard = createMockFlashcard({
+				id: "recent",
+				fsrs: {
+					state: State.Review,
+					stability: 10,
+					due: new Date("2024-06-20").toISOString(),
+					lastReview: new Date("2024-06-14").toISOString(),
+				},
+			});
+
+			const sorted = service.sortByRetrievability([recentCard, oldCard]);
+
+			// Old card has lower retrievability, should come first
+			expect(sorted[0].id).toBe("old");
+			expect(sorted[1].id).toBe("recent");
+		});
+
+		it("should handle New cards (R=0) as lowest retrievability", () => {
+			const newCard = createMockFlashcard({
+				id: "new",
+				fsrs: { state: State.New },
+			});
+			const reviewCard = createMockFlashcard({
+				id: "review",
+				fsrs: {
+					state: State.Review,
+					stability: 10,
+					due: new Date("2024-06-20").toISOString(),
+					lastReview: new Date("2024-06-14").toISOString(),
+				},
+			});
+
+			const sorted = service.sortByRetrievability([reviewCard, newCard]);
+
+			expect(sorted[0].id).toBe("new"); // R=0 is lowest
+			expect(sorted[1].id).toBe("review");
+		});
+
+		it("should not mutate original array", () => {
+			const cards = [
+				createMockFlashcard({
+					id: "a",
+					fsrs: { state: State.Review, stability: 10, lastReview: new Date("2024-06-14").toISOString() },
+				}),
+				createMockFlashcard({
+					id: "b",
+					fsrs: { state: State.Review, stability: 5, lastReview: new Date("2024-06-14").toISOString() },
+				}),
+			];
+			const originalFirst = cards[0].id;
+			service.sortByRetrievability(cards);
+			expect(cards[0].id).toBe(originalFirst);
+		});
+	});
+
+	describe("scheduleCard with presetSettings", () => {
+		it("should use preset settings instead of default", () => {
+			const card = createReviewCard("preset-test");
+
+			// Default service uses retention=0.9
+			const resultDefault = service.scheduleCard(card, Rating.Good);
+
+			// Preset with lower retention = longer intervals
+			const presetSettings = {
+				...createDefaultFSRSSettings(),
+				requestRetention: 0.8,
+			};
+			const resultPreset = service.scheduleCard(
+				{ ...card, id: "preset-test-2" },
+				Rating.Good,
+				undefined,
+				presetSettings,
+			);
+
+			expect(resultPreset.scheduledDays).toBeGreaterThan(resultDefault.scheduledDays);
+		});
+
+		it("should respect preset maximumInterval", () => {
+			const card = createReviewCard("preset-cap");
+			const presetSettings = {
+				...createDefaultFSRSSettings(),
+				maximumInterval: 5,
+			};
+
+			const result = service.scheduleCard(card, Rating.Easy, undefined, presetSettings);
+
+			// With max interval 5, scheduled days should be capped
+			expect(result.scheduledDays).toBeLessThanOrEqual(8); // fuzz tolerance
+		});
+	});
+
+	describe("getReviewCards with dayStartHour boundary", () => {
+		it("should include overdue review cards", () => {
+			const now = new Date("2024-06-15T10:00:00Z");
+			const cards = [
+				createMockFlashcard({
+					id: "overdue",
+					fsrs: {
+						state: State.Review,
+						due: new Date("2024-06-10T10:00:00Z").toISOString(),
+					},
+				}),
+			];
+
+			const reviewCards = service.getReviewCards(cards, now, 4);
+			expect(reviewCards.length).toBe(1);
+		});
+
+		it("should exclude cards due far in the future", () => {
+			const now = new Date("2024-06-15T10:00:00Z");
+			const cards = [
+				createMockFlashcard({
+					id: "future",
+					fsrs: {
+						state: State.Review,
+						due: new Date("2024-06-20T10:00:00Z").toISOString(),
+					},
+				}),
+			];
+
+			const reviewCards = service.getReviewCards(cards, now, 4);
+			expect(reviewCards.length).toBe(0);
+		});
+
+		it("should use day boundary not exact timestamp for review cards", () => {
+			// Card due "tomorrow" in wall-clock terms but before the dayStartHour boundary
+			// At 10 AM on June 15 with dayStartHour=4:
+			// Today boundary = June 15 at 4 AM local
+			// Tomorrow boundary = June 16 at 4 AM local
+			// A card due June 15 at any time should be available today
+			const now = new Date("2024-06-15T10:00:00Z");
+			const cards = [
+				createMockFlashcard({
+					id: "due-today-early",
+					fsrs: {
+						state: State.Review,
+						// Due at 6 AM local today (after today boundary, before tomorrow boundary)
+						due: new Date("2024-06-15T04:00:00Z").toISOString(),
+					},
+				}),
+			];
+
+			const reviewCards = service.getReviewCards(cards, now, 4);
+			expect(reviewCards.length).toBe(1);
+		});
+	});
 });
