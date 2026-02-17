@@ -124,12 +124,6 @@ export function registerCommands(plugin: TrueRecallPlugin): void {
 	});
 
 	plugin.addCommand({
-		id: "merge-zettel-notes",
-		name: "Merge zettel notes into thinking note",
-		callback: () => void plugin.mergeNotes(),
-	});
-
-	plugin.addCommand({
 		id: "import-anki",
 		name: "Import Anki deck (.apkg)",
 		callback: () => void plugin.importAnki(),
