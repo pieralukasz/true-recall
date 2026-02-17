@@ -5,8 +5,9 @@
  * Useful after parameter optimization to apply new weights to existing cards.
  */
 
-import { State } from "ts-fsrs";
+import { FSRS, State } from "ts-fsrs";
 import type { FSRSSettings } from "../../../types";
+import { DEFAULT_FSRS_WEIGHTS } from "../../../constants";
 import type {
 	SchedulerCardStore,
 	RescheduleOptions,
@@ -15,18 +16,20 @@ import type {
 	WorkloadDistribution,
 } from "./scheduler.types";
 
-/**
- * Reschedule Service
- *
- * After optimizing FSRS parameters, this service recalculates all card
- * intervals to use the new weights, maintaining the cards' stability
- * and difficulty values.
- */
 export class RescheduleService {
+	private fsrs: FSRS;
+
 	constructor(
 		private cardStore: SchedulerCardStore,
 		private fsrsSettings: FSRSSettings
-	) {}
+	) {
+		this.fsrs = new FSRS({
+			request_retention: fsrsSettings.requestRetention,
+			maximum_interval: fsrsSettings.maximumInterval,
+			w: fsrsSettings.weights ?? DEFAULT_FSRS_WEIGHTS,
+			enable_fuzz: false, // No fuzz for rescheduling — deterministic intervals
+		});
+	}
 
 	/**
 	 * Reschedule cards based on current FSRS weights
@@ -42,8 +45,12 @@ export class RescheduleService {
 		const afterDistribution = new Map<string, number>();
 
 		for (const card of cards) {
-			// Skip new cards (they don't have scheduling yet)
-			if (card.state === (State.New as number)) continue;
+			// Skip New and Learning/Relearning cards — only Review cards use stability-based intervals
+			if (
+				card.state === (State.New as number) ||
+				card.state === (State.Learning as number) ||
+				card.state === (State.Relearning as number)
+			) continue;
 
 			// Record before
 			const beforeDateStr = this.formatDate(new Date(card.due));
@@ -52,30 +59,20 @@ export class RescheduleService {
 				(beforeDistribution.get(beforeDateStr) ?? 0) + 1
 			);
 
-			// Calculate new interval based on current stability
-			// The retrievability formula: R = e^(-t/S * ln(9))
-			// For target retention r, solve for t: t = S * ln(9) / ln(1/r)
-			const targetRetention = this.fsrsSettings.requestRetention;
-			const stability = card.stability;
-
-			// Calculate new interval
-			const newInterval = Math.round(
-				stability * Math.log(9) / Math.log(1 / targetRetention)
-			);
-
-			// Calculate new due date from last review
 			const lastReview = card.lastReview
 				? new Date(card.lastReview)
 				: new Date();
-			const newDue = new Date(lastReview);
-			newDue.setDate(newDue.getDate() + Math.max(1, newInterval));
+			const elapsedDays = Math.max(
+				0,
+				Math.floor((Date.now() - lastReview.getTime()) / 86400000)
+			);
 
-			// Cap at maximum interval
-			const maxDue = new Date(lastReview);
-			maxDue.setDate(maxDue.getDate() + this.fsrsSettings.maximumInterval);
-			if (newDue > maxDue) {
-				newDue.setTime(maxDue.getTime());
-			}
+			// Delegate to ts-fsrs which uses the correct FSRS-6 power-law formula
+			// (includes interval_modifier, clamping to [1, maximumInterval], no fuzz)
+			const newInterval = this.fsrs.next_interval(card.stability, elapsedDays);
+
+			const newDue = new Date(lastReview);
+			newDue.setDate(newDue.getDate() + newInterval);
 
 			const afterDateStr = this.formatDate(newDue);
 			afterDistribution.set(
@@ -83,12 +80,10 @@ export class RescheduleService {
 				(afterDistribution.get(afterDateStr) ?? 0) + 1
 			);
 
-			// Only record if there's a change
 			const originalDueMs = new Date(card.due).getTime();
 			const newDueMs = newDue.getTime();
 
 			if (Math.abs(originalDueMs - newDueMs) > 86400000) {
-				// More than 1 day difference
 				const change: CardScheduleChange = {
 					cardId: card.id,
 					originalDue: card.due,
@@ -99,12 +94,15 @@ export class RescheduleService {
 			}
 		}
 
-		// Apply changes if not dry run
 		if (!dryRun) {
 			for (const change of changes) {
+				const lastReview = cards.find(c => c.id === change.cardId)?.lastReview;
+				const reviewDate = lastReview ? new Date(lastReview) : new Date();
+				const scheduledDays = Math.max(1, this.daysBetween(reviewDate, new Date(change.newDue)));
+
 				await this.cardStore.updateCardScheduling(change.cardId, {
 					due: change.newDue,
-					scheduledDays: Math.max(1, Math.abs(change.daysChanged)),
+					scheduledDays,
 				});
 			}
 		}

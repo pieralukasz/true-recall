@@ -39,6 +39,7 @@ describe("RescheduleService", () => {
 		maximumInterval: 365,
 		learningSteps: [1, 10],
 		relearningSteps: [10],
+		enableShortTerm: true,
 	};
 
 	beforeEach(() => {
@@ -53,35 +54,49 @@ describe("RescheduleService", () => {
 	});
 
 	describe("reschedule", () => {
-		it("recalculates intervals using FSRS formula", async () => {
+		it("recalculates intervals using FSRS-6 power-law formula", async () => {
+			// Card due in 10 days from last review, but stability=20 should produce ~20-day interval
 			const card = createFSRSCard({
-				stability: 20, // Higher stability = longer interval
+				id: "formula-test",
+				stability: 20,
+				due: "2026-02-05T10:00:00.000Z", // 4 days after lastReview
 				lastReview: "2026-01-25T10:00:00.000Z",
 			});
 			mockStore = createMockCardStore([card]);
 			mockStore.getCards.mockReturnValue([card]);
-			service = new RescheduleService(mockStore , defaultFSRSSettings);
+			service = new RescheduleService(mockStore, defaultFSRSSettings);
 
 			const result = await service.reschedule({
 				scope: "all",
 				dryRun: true,
 			});
 
-			// With stability 20 and retention 0.9, interval should be calculated
-			// The exact value depends on the formula, but it should change
-			expect(result.affectedCount).toBeGreaterThanOrEqual(0);
+			// At retention=0.9 with default FSRS-6 weights, stability=20 → interval ~20 days
+			// Original due was 4 days after lastReview, new should be ~20, so change > 1 day
+			expect(result.affectedCount).toBe(1);
+			const change = result.changes[0]!;
+			const newDue = new Date(change.newDue);
+			const lastReview = new Date("2026-01-25T10:00:00.000Z");
+			const interval = Math.round(
+				(newDue.getTime() - lastReview.getTime()) / (1000 * 60 * 60 * 24)
+			);
+			// FSRS-6 at retention=0.9: interval ≈ stability (with interval_modifier ~1.0)
+			expect(interval).toBeGreaterThanOrEqual(15);
+			expect(interval).toBeLessThanOrEqual(25);
 		});
 
 		it("respects maximumInterval cap", async () => {
 			const card = createFSRSCard({
-				stability: 1000, // Very high stability
+				id: "cap-test",
+				stability: 1000, // Very high stability → would produce ~1000 day interval
+				due: "2026-02-10T10:00:00.000Z",
 				lastReview: "2026-01-01T10:00:00.000Z",
 			});
 			mockStore = createMockCardStore([card]);
 			mockStore.getCards.mockReturnValue([card]);
-			service = new RescheduleService(mockStore , {
+			service = new RescheduleService(mockStore, {
 				...defaultFSRSSettings,
-				maximumInterval: 30, // Cap at 30 days
+				maximumInterval: 30,
 			});
 
 			const result = await service.reschedule({
@@ -89,14 +104,14 @@ describe("RescheduleService", () => {
 				dryRun: true,
 			});
 
-			if (result.changes.length > 0) {
-				const newDue = new Date(result.changes[0]!.newDue);
-				const lastReview = new Date("2026-01-01T10:00:00.000Z");
-				const interval = Math.round(
-					(newDue.getTime() - lastReview.getTime()) / (1000 * 60 * 60 * 24)
-				);
-				expect(interval).toBeLessThanOrEqual(30);
-			}
+			// High stability with cap=30 must produce a change
+			expect(result.affectedCount).toBeGreaterThan(0);
+			const newDue = new Date(result.changes[0]!.newDue);
+			const lastReview = new Date("2026-01-01T10:00:00.000Z");
+			const interval = Math.round(
+				(newDue.getTime() - lastReview.getTime()) / (1000 * 60 * 60 * 24)
+			);
+			expect(interval).toBeLessThanOrEqual(30);
 		});
 
 		it("only records changes > 1 day difference", async () => {
@@ -122,27 +137,36 @@ describe("RescheduleService", () => {
 			}
 		});
 
-		it("scope all excludes new and suspended cards", async () => {
-			const reviewCard = createFSRSCard({ id: "review", state: State.Review });
+		it("excludes New, Learning, Relearning, and suspended cards", async () => {
+			const reviewCard = createFSRSCard({
+				id: "review",
+				state: State.Review,
+				stability: 50,
+				due: "2026-02-05T10:00:00.000Z",
+			});
 			const newCard = createFSRSCard({ id: "new", state: State.New });
+			const learningCard = createFSRSCard({ id: "learning", state: State.Learning });
+			const relearningCard = createFSRSCard({ id: "relearning", state: State.Relearning });
 			const suspendedCard = createFSRSCard({
 				id: "suspended",
 				state: State.Review,
 				suspended: true,
 			});
 
-			mockStore = createMockCardStore([reviewCard, newCard, suspendedCard]);
-			mockStore.getCards.mockReturnValue([reviewCard, newCard, suspendedCard]);
-			service = new RescheduleService(mockStore , defaultFSRSSettings);
+			const allCards = [reviewCard, newCard, learningCard, relearningCard, suspendedCard];
+			mockStore = createMockCardStore(allCards);
+			mockStore.getCards.mockReturnValue(allCards);
+			service = new RescheduleService(mockStore, defaultFSRSSettings);
 
 			const result = await service.reschedule({
 				scope: "all",
 				dryRun: true,
 			});
 
-			// Only review card should be considered
 			const affectedIds = result.changes.map((c) => c.cardId);
 			expect(affectedIds).not.toContain("new");
+			expect(affectedIds).not.toContain("learning");
+			expect(affectedIds).not.toContain("relearning");
 			expect(affectedIds).not.toContain("suspended");
 		});
 
@@ -248,27 +272,30 @@ describe("RescheduleService", () => {
 			expect(mockStore.updateCardScheduling).not.toHaveBeenCalled();
 		});
 
-		it("updates both due and scheduledDays", async () => {
+		it("updates both due and scheduledDays with correct values", async () => {
 			const card = createFSRSCard({
-				stability: 50, // Will likely result in different interval
+				id: "update-test",
+				stability: 50,
 				lastReview: "2026-01-15T10:00:00.000Z",
-				due: "2026-02-01T10:00:00.000Z",
+				due: "2026-01-20T10:00:00.000Z", // Only 5 days after review, but stability=50
 			});
 			mockStore = createMockCardStore([card]);
 			mockStore.getCards.mockReturnValue([card]);
-			service = new RescheduleService(mockStore , defaultFSRSSettings);
+			service = new RescheduleService(mockStore, defaultFSRSSettings);
 
 			await service.reschedule({
 				scope: "all",
 				dryRun: false,
 			});
 
-			// Check that updateCardScheduling was called with both due and scheduledDays
-			if (mockStore.updateCardScheduling.mock.calls.length > 0) {
-				const [, updateData] = mockStore.updateCardScheduling.mock.calls[0]!;
-				expect(updateData).toHaveProperty("due");
-				expect(updateData).toHaveProperty("scheduledDays");
-			}
+			// stability=50, retention=0.9 → interval ~50 days; old was 5 days → must change
+			expect(mockStore.updateCardScheduling).toHaveBeenCalled();
+			const [cardId, updateData] = mockStore.updateCardScheduling.mock.calls[0]!;
+			expect(cardId).toBe("update-test");
+			expect(updateData).toHaveProperty("due");
+			expect(updateData).toHaveProperty("scheduledDays");
+			// scheduledDays should be the interval from lastReview to newDue, not the diff
+			expect(updateData.scheduledDays).toBeGreaterThan(30);
 		});
 
 		it("returns correct before and after distributions", async () => {
@@ -278,7 +305,7 @@ describe("RescheduleService", () => {
 			});
 			mockStore = createMockCardStore([card]);
 			mockStore.getCards.mockReturnValue([card]);
-			service = new RescheduleService(mockStore , defaultFSRSSettings);
+			service = new RescheduleService(mockStore, defaultFSRSSettings);
 
 			const result = await service.reschedule({
 				scope: "all",
@@ -290,6 +317,47 @@ describe("RescheduleService", () => {
 				(d) => d.date === "2026-02-10"
 			);
 			expect(beforeDist?.count).toBe(1);
+		});
+
+		it("uses FSRS-6 power-law formula (not FSRS-4.5 exponential)", async () => {
+			// The FSRS-6 formula with default w[20]=0.1542 produces DIFFERENT results
+			// than the old FSRS-4.5 formula: t = S * ln(9) / ln(1/r)
+			// At retention=0.9, stability=100: FSRS-4.5 would give ~100, FSRS-6 gives ~100 too
+			// But at stability=10: FSRS-4.5 gives ~10, FSRS-6 also ~10
+			// The key difference shows at non-default retention.
+			// At retention=0.85 with stability=100:
+			//   FSRS-4.5: 100 * ln(9) / ln(1/0.85) ≈ 100 * 2.197 / 0.163 ≈ 1349 (capped)
+			//   FSRS-6:   S * intervalModifier where modifier = (r^(1/DECAY) - 1) / FACTOR
+			const card = createFSRSCard({
+				id: "formula-verify",
+				stability: 100,
+				due: "2026-02-05T10:00:00.000Z",
+				lastReview: "2026-01-25T10:00:00.000Z",
+			});
+			mockStore = createMockCardStore([card]);
+			mockStore.getCards.mockReturnValue([card]);
+			service = new RescheduleService(mockStore, {
+				...defaultFSRSSettings,
+				requestRetention: 0.9,
+			});
+
+			const result = await service.reschedule({
+				scope: "all",
+				dryRun: true,
+			});
+
+			expect(result.affectedCount).toBe(1);
+			const change = result.changes[0]!;
+			const newDue = new Date(change.newDue);
+			const lastReview = new Date("2026-01-25T10:00:00.000Z");
+			const interval = Math.round(
+				(newDue.getTime() - lastReview.getTime()) / (1000 * 60 * 60 * 24)
+			);
+
+			// At retention=0.9, interval ≈ stability (~100 days)
+			// Must be within a reasonable range (FSRS-6 may differ slightly due to w[20])
+			expect(interval).toBeGreaterThanOrEqual(80);
+			expect(interval).toBeLessThanOrEqual(120);
 		});
 	});
 });

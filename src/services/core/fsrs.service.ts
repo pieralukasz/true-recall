@@ -231,7 +231,7 @@ export class FSRSService {
 		return this.fsrs.get_retrievability(card, currentTime, false) ?? 0;
 	}
 
-	getStats(cards: FSRSFlashcardItem[]): {
+	getStats(cards: FSRSFlashcardItem[], dayStartHour = 4): {
 		total: number;
 		new: number;
 		learning: number;
@@ -239,14 +239,13 @@ export class FSRSService {
 		relearning: number;
 		dueToday: number;
 	} {
-		const todayEnd = new Date();
-		todayEnd.setHours(23, 59, 59, 999);
-		const todayEndTime = todayEnd.getTime();
+		const now = new Date();
+		const tomorrowBoundary = getTomorrowBoundary(dayStartHour, now);
+		const nowTime = now.getTime();
 
 		const stats = { total: cards.length, new: 0, learning: 0, review: 0, relearning: 0, dueToday: 0 };
 
 		for (const c of cards) {
-			// Count by state
 			switch (c.fsrs.state) {
 				case State.New:
 					stats.new++;
@@ -262,9 +261,12 @@ export class FSRSService {
 					break;
 			}
 
-			// Count due today
-			if (new Date(c.fsrs.due).getTime() <= todayEndTime) {
-				stats.dueToday++;
+			// Learning/Relearning: exact timestamp; Review: day-based boundary
+			const dueTime = new Date(c.fsrs.due).getTime();
+			if (c.fsrs.state === State.Learning || c.fsrs.state === State.Relearning) {
+				if (dueTime <= nowTime) stats.dueToday++;
+			} else if (c.fsrs.state === State.Review) {
+				if (dueTime < tomorrowBoundary.getTime()) stats.dueToday++;
 			}
 		}
 

@@ -100,16 +100,19 @@ describe("Queue Building - Advanced", () => {
 	});
 
 	describe("Learn-Ahead Window (20 minutes)", () => {
-		it("should include learning card due in 19 minutes (within learn-ahead)", () => {
+		it("should place not-yet-due learning card after new cards (pending at end)", () => {
 			const cards = [
+				createCardWithDue("new-card", State.New, 0),
 				createCardWithDue("learning-19", State.Learning, 19),
 			];
 
 			const queue = reviewService.buildQueue(cards, fsrsService, defaultOptions);
 
-			// Card due in 19 min should be in queue (shown early)
-			expect(queue).toHaveLength(1);
-			expect(queue[0]?.id).toBe("learning-19");
+			expect(queue).toHaveLength(2);
+			// Queue order: [due learning] → [review] → [new] → [pending learning]
+			// Card due in 19min is pending (not yet due), goes AFTER new cards
+			expect(queue[0]?.id).toBe("new-card");
+			expect(queue[1]?.id).toBe("learning-19");
 		});
 
 		it("should include learning card due exactly at 20 minutes", () => {
@@ -119,43 +122,51 @@ describe("Queue Building - Advanced", () => {
 
 			const queue = reviewService.buildQueue(cards, fsrsService, defaultOptions);
 
-			// Exactly at boundary - should be included (<=)
 			expect(queue).toHaveLength(1);
 		});
 
-		it("should move learning card due in 21 minutes to pending", () => {
+		it("should exclude learning card beyond learn-ahead window (>20 min)", () => {
 			const cards = [
 				createCardWithDue("learning-21", State.Learning, 21),
 			];
 
 			const queue = reviewService.buildQueue(cards, fsrsService, defaultOptions);
 
-			// Card due in 21 min should still be in queue, but as pending (at end)
+			// Still in queue (for waiting screen display) but at the end
 			expect(queue).toHaveLength(1);
 			expect(queue[0]?.id).toBe("learning-21");
 		});
+
+		it("should place due learning cards BEFORE new and review cards", () => {
+			const cards = [
+				createCardWithDue("new-card", State.New, 0),
+				createCardWithDue("review-card", State.Review, -60), // 1 hour overdue
+				createCardWithDue("learning-due", State.Learning, -5), // 5 min overdue
+			];
+
+			const queue = reviewService.buildQueue(cards, fsrsService, defaultOptions);
+
+			// Due learning cards always come first in the queue
+			expect(queue[0]?.id).toBe("learning-due");
+		});
 	});
 
-	describe("Requeue Window (10 minutes)", () => {
-		it("should requeue learning card due in 9 minutes", () => {
+	describe("shouldRequeue — Learning cards always requeue", () => {
+		it("should requeue learning card due soon", () => {
 			const card = createCardWithDue("learning-9", State.Learning, 9);
-
 			expect(reviewService.shouldRequeue(card)).toBe(true);
 		});
 
-		it("should requeue learning card due exactly at 10 minutes", () => {
-			const card = createCardWithDue("learning-10", State.Learning, 10);
-
-			// Exactly at boundary - should requeue (<=)
+		it("should requeue learning card due later", () => {
+			const card = createCardWithDue("learning-30", State.Learning, 30);
+			// Learning/Relearning cards are ALWAYS requeued regardless of due time
+			// (getRequeuePosition decides WHERE in queue; getPhase shows waiting screen if not yet due)
 			expect(reviewService.shouldRequeue(card)).toBe(true);
 		});
 
-		it("should requeue learning card due in 11 minutes (positioned at end, shows waiting screen)", () => {
-			const card = createCardWithDue("learning-11", State.Learning, 11);
-
-			// Learning cards are always requeued - getRequeuePosition places them
-			// at end if not due soon, and getPhase() shows waiting screen when reached
-			expect(reviewService.shouldRequeue(card)).toBe(true);
+		it("should NOT requeue Review cards", () => {
+			const card = createCardWithDue("review-card", State.Review, -5);
+			expect(reviewService.shouldRequeue(card)).toBe(false);
 		});
 	});
 

@@ -170,19 +170,19 @@ describe("FSRS Settings Impact", () => {
 			expect(resultHigh.scheduledDays).toBeGreaterThan(resultLow.scheduledDays);
 		});
 
-		it("should not affect intervals below the cap", () => {
-			const settings = createSettings({ maximumInterval: 365 }); // High cap
+		it("should not affect learning step intervals", () => {
+			const settings = createSettings({ maximumInterval: 365 });
 			const service = new FSRSService(settings);
 
-			// New card going through learning shouldn't be affected
 			const card = createNewCard("below-cap");
 			const result = service.scheduleCard(card, Rating.Good);
 
-			// Learning intervals are in minutes, well below 365 days
+			// Learning intervals are in minutes (1m, 10m), must be < 1 day
 			const dueMs = new Date(result.due).getTime() - Date.now();
 			const dueDays = dueMs / (1000 * 60 * 60 * 24);
 
-			expect(dueDays).toBeLessThan(365);
+			expect(result.state).toBe(State.Learning);
+			expect(dueDays).toBeLessThan(1);
 		});
 
 		it("should cap even Easy ratings on review cards", () => {
@@ -399,8 +399,7 @@ describe("FSRS Settings Impact", () => {
 			expect(result.state).toBe(State.Learning);
 		});
 
-		it("should handle enableShortTerm consistently", () => {
-			// Both services should produce Learning state for new cards with Good rating
+		it("should skip learning steps when enableShortTerm is false", () => {
 			const settingsOn = createSettings({ enableShortTerm: true });
 			const settingsOff = createSettings({ enableShortTerm: false });
 
@@ -413,9 +412,10 @@ describe("FSRS Settings Impact", () => {
 			const resultOn = serviceOn.scheduleCard(cardOn, Rating.Good);
 			const resultOff = serviceOff.scheduleCard(cardOff, Rating.Good);
 
-			// Both should produce defined states
-			expect(resultOn.state).toBeDefined();
-			expect(resultOff.state).toBeDefined();
+			// enableShortTerm=true: uses learning steps, so card enters Learning
+			expect(resultOn.state).toBe(State.Learning);
+			// enableShortTerm=false: skips learning steps, card goes directly to Review
+			expect(resultOff.state).toBe(State.Review);
 		});
 	});
 
@@ -455,16 +455,16 @@ describe("FSRS Settings Impact", () => {
 	});
 
 	describe("Edge Cases", () => {
-		it("should handle empty learning steps gracefully", () => {
+		it("should graduate immediately with empty learning steps", () => {
 			const settings = createSettings({ learningSteps: [] });
 			const service = new FSRSService(settings);
 
 			const card = createNewCard("empty-steps");
 			const result = service.scheduleCard(card, Rating.Good);
 
-			// Should still produce valid output
-			expect(result).toBeDefined();
-			expect(result.due).toBeDefined();
+			// Empty learning steps = no learning phase, card graduates directly to Review
+			expect(result.state).toBe(State.Review);
+			expect(result.scheduledDays).toBeGreaterThan(0);
 		});
 
 		it("should limit intervals when very low maximum interval is set", () => {

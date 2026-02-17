@@ -15,12 +15,12 @@ import type { EasyDaysConfig } from "../../../../src/types";
  * Each method is a Vitest mock function that can be spied on and configured.
  */
 export interface MockSchedulerCardStore extends SchedulerCardStore {
-	get: Mock<(cardId: string) => SchedulerCardData | undefined>;
-	getCards: Mock<() => SchedulerCardData[]>;
-	getDueCardsByDateRange: Mock<(startDate: string, endDate: string) => CardDueInfo[]>;
-	updateCardDue: Mock<(cardId: string, newDue: string) => Promise<void>>;
+	get: Mock<[cardId: string], SchedulerCardData | undefined>;
+	getCards: Mock<[], SchedulerCardData[]>;
+	getDueCardsByDateRange: Mock<[startDate: string, endDate: string], CardDueInfo[]>;
+	updateCardDue: Mock<[cardId: string, newDue: string], Promise<void>>;
 	updateCardScheduling: Mock<
-		(cardId: string, data: { due: string; scheduledDays: number }) => Promise<void>
+		[cardId: string, data: { due: string; scheduledDays: number }], Promise<void>
 	>;
 }
 
@@ -31,17 +31,17 @@ export interface MockSchedulerCardStore extends SchedulerCardStore {
 export function createMockCardStore(cards: CardDueInfo[] = []): MockSchedulerCardStore {
 	return {
 		getDueCardsByDateRange: vi
-			.fn<(startDate: string, endDate: string) => CardDueInfo[]>()
+			.fn<[string, string], CardDueInfo[]>()
 			.mockReturnValue(cards),
 		updateCardDue: vi
-			.fn<(cardId: string, newDue: string) => Promise<void>>()
+			.fn<[string, string], Promise<void>>()
 			.mockResolvedValue(undefined),
 		updateCardScheduling: vi
-			.fn<(cardId: string, data: { due: string; scheduledDays: number }) => Promise<void>>()
+			.fn<[string, { due: string; scheduledDays: number }], Promise<void>>()
 			.mockResolvedValue(undefined),
-		getCards: vi.fn<() => SchedulerCardData[]>().mockReturnValue(cards as SchedulerCardData[]),
+		getCards: vi.fn<[], SchedulerCardData[]>().mockReturnValue(cards as SchedulerCardData[]),
 		get: vi
-			.fn<(cardId: string) => SchedulerCardData | undefined>()
+			.fn<[string], SchedulerCardData | undefined>()
 			.mockImplementation((id: string) => cards.find((c) => c.id === id) as SchedulerCardData | undefined),
 	};
 }
