@@ -6,6 +6,13 @@ export interface LinkStatusOptions {
 	onPlay?: () => void;
 }
 
+function createPill(label: string, count: number, variant: string): HTMLSpanElement {
+	const pill = document.createElement("span");
+	pill.className = `true-recall-pill true-recall-pill-${variant}`;
+	pill.textContent = `${count} ${label}`;
+	return pill;
+}
+
 export function createLinkStatusElement(options: LinkStatusOptions): HTMLSpanElement {
 	const { info, onPlay } = options;
 
@@ -16,39 +23,13 @@ export function createLinkStatusElement(options: LinkStatusOptions): HTMLSpanEle
 		`Flashcards: ${info.new} new, ${info.learning} learning, ${info.dueToday} due today (${info.total} total)`,
 	);
 
-	// New (green)
-	const newSpan = document.createElement("span");
-	newSpan.className = "true-recall-link-status-new";
-	newSpan.textContent = String(info.new);
-	wrapper.appendChild(newSpan);
+	wrapper.appendChild(createPill("new", info.new, "new"));
+	wrapper.appendChild(createPill("due", info.dueToday, "due"));
 
-	const dot1 = document.createElement("span");
-	dot1.className = "true-recall-link-status-dot";
-	dot1.textContent = "\u00B7";
-	wrapper.appendChild(dot1);
-
-	// Learning (orange)
-	const learningSpan = document.createElement("span");
-	learningSpan.className = "true-recall-link-status-learning";
-	learningSpan.textContent = String(info.learning);
-	wrapper.appendChild(learningSpan);
-
-	const dot2 = document.createElement("span");
-	dot2.className = "true-recall-link-status-dot";
-	dot2.textContent = "\u00B7";
-	wrapper.appendChild(dot2);
-
-	// Due today (blue)
-	const dueSpan = document.createElement("span");
-	dueSpan.className = "true-recall-link-status-due";
-	dueSpan.textContent = String(info.dueToday);
-	wrapper.appendChild(dueSpan);
-
-	// Total (faint, in parens)
-	const totalSpan = document.createElement("span");
-	totalSpan.className = "true-recall-link-status-total";
-	totalSpan.textContent = `(${info.total})`;
-	wrapper.appendChild(totalSpan);
+	const totalPill = document.createElement("span");
+	totalPill.className = "true-recall-pill true-recall-pill-total";
+	totalPill.textContent = String(info.total);
+	wrapper.appendChild(totalPill);
 
 	if (onPlay) {
 		const playBtn = document.createElement("span");
