@@ -115,13 +115,30 @@ export function createHeadingSummaryElement(options: HeadingSummaryOptions): HTM
 		onClick();
 	});
 
-	const donutEl = createLinkStatusElement({ info });
-	wrapper.appendChild(donutEl);
+	const parts: { count: number; label: string; cls: string }[] = [];
+	if (info.dueToday > 0) parts.push({ count: info.dueToday, label: "due", cls: "true-recall-hcount-due" });
+	if (info.learning > 0) parts.push({ count: info.learning, label: "lrn", cls: "true-recall-hcount-learning" });
+	if (info.new > 0) parts.push({ count: info.new, label: "new", cls: "true-recall-hcount-new" });
 
-	const text = document.createElement("span");
-	text.className = "true-recall-heading-due-text";
-	text.textContent = dueCount > 0 ? `${dueCount} due` : `${info.total} cards`;
-	wrapper.appendChild(text);
+	if (parts.length === 0) {
+		const t = document.createElement("span");
+		t.className = "true-recall-hcount-muted";
+		t.textContent = `${info.total}`;
+		wrapper.appendChild(t);
+	} else {
+		for (let i = 0; i < parts.length; i++) {
+			if (i > 0) {
+				const sep = document.createElement("span");
+				sep.className = "true-recall-hcount-sep";
+				sep.textContent = "\u00B7";
+				wrapper.appendChild(sep);
+			}
+			const span = document.createElement("span");
+			span.className = parts[i]!.cls;
+			span.textContent = `${parts[i]!.count} ${parts[i]!.label}`;
+			wrapper.appendChild(span);
+		}
+	}
 
 	return wrapper;
 }
