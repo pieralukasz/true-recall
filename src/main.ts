@@ -33,8 +33,6 @@ import { NoteStatusCacheService } from "./services/cache/note-status-cache.servi
 import {
 	createLinkStatusViewPlugin,
 	createLinkStatusPostProcessor,
-	createSummaryExtension,
-	createSummaryPostProcessor,
 } from "./ui/editor";
 import { BackgroundBackupManager } from "./services/persistence/background-backup.service";
 import { FSRSHelperService } from "./services/fsrs-helper";
@@ -904,24 +902,6 @@ ${cardList}${moreText}
 			});
 		};
 
-		const viewPlugin = createLinkStatusViewPlugin(
-			this.app,
-			this.noteStatusCache,
-			this.frontmatterIndex,
-			() => this.settings.showLinkStatusIndicators,
-			onReviewNote,
-		);
-		this.registerEditorExtension([viewPlugin]);
-
-		const postProcessor = createLinkStatusPostProcessor(
-			this.app,
-			this.noteStatusCache,
-			this.frontmatterIndex,
-			() => this.settings.showLinkStatusIndicators,
-			onReviewNote,
-		);
-		this.registerMarkdownPostProcessor(postProcessor);
-
 		const onReviewNotes = (noteNames: string[], dueOnly: boolean) => {
 			this.openReviewViewWithFilters({
 				deckFilter: null,
@@ -933,25 +913,25 @@ ${cardList}${moreText}
 			});
 		};
 
-		const summaryExtensions = createSummaryExtension(
+		const viewPlugin = createLinkStatusViewPlugin(
 			this.app,
 			this.noteStatusCache,
 			this.frontmatterIndex,
-			() => this.settings.showSummaryBanner,
-			() => this.settings.showSectionSummaries,
+			() => this.settings.showLinkStatusIndicators,
+			onReviewNote,
 			onReviewNotes,
 		);
-		this.registerEditorExtension(summaryExtensions);
+		this.registerEditorExtension([viewPlugin]);
 
-		const summaryPostProcessor = createSummaryPostProcessor(
+		const postProcessor = createLinkStatusPostProcessor(
 			this.app,
 			this.noteStatusCache,
 			this.frontmatterIndex,
-			() => this.settings.showSummaryBanner,
-			() => this.settings.showSectionSummaries,
+			() => this.settings.showLinkStatusIndicators,
+			onReviewNote,
 			onReviewNotes,
 		);
-		this.registerMarkdownPostProcessor(summaryPostProcessor);
+		this.registerMarkdownPostProcessor(postProcessor);
 	}
 
 	private async initializeNLQueryService(): Promise<void> {

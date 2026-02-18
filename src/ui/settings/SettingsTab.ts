@@ -211,34 +211,6 @@ export class TrueRecallSettingTab extends PluginSettingTab {
 					})
 			);
 
-		new Setting(container)
-			.setName("Show summary banner")
-			.setDesc(
-				"Display an aggregate flashcard stats banner at the top of notes that contain 2+ wiki links to flashcard notes"
-			)
-			.addToggle((toggle) =>
-				toggle
-					.setValue(this.plugin.settings.showSummaryBanner)
-					.onChange(async (value) => {
-						this.plugin.settings.showSummaryBanner = value;
-						await this.plugin.saveSettings();
-					})
-			);
-
-		new Setting(container)
-			.setName("Show section summaries")
-			.setDesc(
-				"Display per-heading flashcard stats for sections with 2+ flashcard links"
-			)
-			.addToggle((toggle) =>
-				toggle
-					.setValue(this.plugin.settings.showSectionSummaries)
-					.onChange(async (value) => {
-						this.plugin.settings.showSectionSummaries = value;
-						await this.plugin.saveSettings();
-					})
-			);
-
 		new Setting(container).setName("Daily limits").setHeading();
 
 		new Setting(container)
