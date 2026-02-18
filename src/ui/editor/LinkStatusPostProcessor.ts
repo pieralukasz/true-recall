@@ -1,7 +1,7 @@
 import type { App, MarkdownPostProcessorContext, TFile } from "obsidian";
 import type { NoteStatusCacheService, NoteStatusInfo } from "../../services/cache/note-status-cache.service";
 import type { FrontmatterIndexService } from "../../services/core/frontmatter-index.service";
-import { createLinkStatusElement, createLinkTextCountElement, createHeadingSummaryElement, aggregateInfos } from "./LinkStatusWidget";
+import { createLinkStatusElement, createLinkTextCountElement, aggregateInfos } from "./LinkStatusWidget";
 
 export function createLinkStatusPostProcessor(
 	app: App,
@@ -64,11 +64,14 @@ export function createLinkStatusPostProcessor(
 
 			const aggregated = aggregateInfos(sectionLinks.map((l) => l.info));
 			const noteNames = sectionLinks.map((l) => l.noteName);
+			const reviewSection = () => onReviewNotes(noteNames, true);
 
-			const summaryEl = createHeadingSummaryElement({
-				info: aggregated,
-				onClick: () => onReviewNotes(noteNames, true),
-			});
+			const donutEl = createLinkStatusElement({ info: aggregated, onPlay: reviewSection, small: true });
+			heading.prepend(donutEl);
+
+			const summaryEl = document.createElement("span");
+			summaryEl.className = "true-recall-heading-summary";
+			summaryEl.appendChild(createLinkTextCountElement({ info: aggregated, onPlay: reviewSection }));
 			heading.appendChild(summaryEl);
 		}
 	};

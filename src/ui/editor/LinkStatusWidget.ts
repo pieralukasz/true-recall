@@ -3,6 +3,7 @@ import type { NoteStatusInfo } from "../../services/cache/note-status-cache.serv
 export interface LinkStatusOptions {
 	info: NoteStatusInfo;
 	onPlay?: () => void;
+	small?: boolean;
 }
 
 const SVG_NS = "http://www.w3.org/2000/svg";
@@ -14,7 +15,7 @@ export function createLinkStatusElement(options: LinkStatusOptions): HTMLSpanEle
 	const { info, onPlay } = options;
 
 	const wrapper = document.createElement("span");
-	wrapper.className = "true-recall-donut";
+	wrapper.className = options.small ? "true-recall-donut true-recall-donut-sm" : "true-recall-donut";
 	wrapper.setAttribute(
 		"aria-label",
 		`Flashcards: ${info.new} new, ${info.learning} learning, ${info.dueToday} due today (${info.total} total)`,
@@ -84,68 +85,12 @@ export function infoEqual(a: NoteStatusInfo, b: NoteStatusInfo): boolean {
 	return a.new === b.new && a.learning === b.learning && a.dueToday === b.dueToday && a.total === b.total;
 }
 
-export interface HeadingSummaryOptions {
-	info: NoteStatusInfo;
-	onClick: () => void;
-}
-
-export function createHeadingSummaryElement(options: HeadingSummaryOptions): HTMLSpanElement {
-	const { info, onClick } = options;
-	const dueCount = info.dueToday + info.learning;
-
-	const wrapper = document.createElement("span");
-	wrapper.className = "true-recall-heading-summary";
-	wrapper.title = `Due: ${info.dueToday}, Learning: ${info.learning}, New: ${info.new}, Total: ${info.total}`;
-	wrapper.setAttribute("aria-label", `Review ${dueCount} due cards in this section`);
-
-	wrapper.addEventListener("click", (e) => {
-		e.preventDefault();
-		e.stopPropagation();
-		onClick();
-	});
-
-	const parts: { count: number; label: string; cls: string }[] = [];
-	if (info.dueToday > 0) parts.push({ count: info.dueToday, label: "due", cls: "true-recall-hcount-due" });
-	if (info.learning > 0) parts.push({ count: info.learning, label: "lrn", cls: "true-recall-hcount-learning" });
-	if (info.new > 0) parts.push({ count: info.new, label: "new", cls: "true-recall-hcount-new" });
-
-	if (parts.length === 0) {
-		const t = document.createElement("span");
-		t.className = "true-recall-hcount-muted";
-		t.textContent = `${info.total}`;
-		wrapper.appendChild(t);
-	} else {
-		for (let i = 0; i < parts.length; i++) {
-			if (i > 0) {
-				const sep = document.createElement("span");
-				sep.className = "true-recall-hcount-sep";
-				sep.textContent = "\u00B7";
-				wrapper.appendChild(sep);
-			}
-			const span = document.createElement("span");
-			span.className = parts[i]!.cls;
-			span.textContent = `${parts[i]!.count} ${parts[i]!.label}`;
-			wrapper.appendChild(span);
-		}
-	}
-
-	return wrapper;
-}
-
 export function createLinkTextCountElement(options: LinkStatusOptions): HTMLSpanElement {
 	const { info, onPlay } = options;
 
 	const wrapper = document.createElement("span");
 	wrapper.className = "true-recall-link-count";
 	wrapper.title = `Due: ${info.dueToday}, Learning: ${info.learning}, New: ${info.new}, Total: ${info.total}`;
-
-	if (onPlay) {
-		wrapper.addEventListener("click", (e) => {
-			e.preventDefault();
-			e.stopPropagation();
-			onPlay();
-		});
-	}
 
 	const parts: { count: number; label: string; cls: string }[] = [];
 	if (info.new > 0) parts.push({ count: info.new, label: "new", cls: "true-recall-hcount-new" });
@@ -169,6 +114,18 @@ export function createLinkTextCountElement(options: LinkStatusOptions): HTMLSpan
 	totalSpan.className = "true-recall-hcount-muted";
 	totalSpan.textContent = parts.length > 0 ? `(${info.total})` : `(${info.total} cards)`;
 	wrapper.appendChild(totalSpan);
+
+	const optionsBtn = document.createElement("span");
+	optionsBtn.className = "true-recall-link-options";
+	optionsBtn.textContent = "\u2026";
+	if (onPlay) {
+		optionsBtn.addEventListener("click", (e) => {
+			e.preventDefault();
+			e.stopPropagation();
+			onPlay();
+		});
+	}
+	wrapper.appendChild(optionsBtn);
 
 	return wrapper;
 }
