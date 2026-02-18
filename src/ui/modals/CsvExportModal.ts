@@ -7,7 +7,6 @@ import { CsvExportService, type CsvSeparator } from "../../services/export/csv-e
 interface NoteEntry {
 	uid: string;
 	name: string;
-	project: string;
 }
 
 export class CsvExportModal extends BaseModal {
@@ -95,7 +94,7 @@ export class CsvExportModal extends BaseModal {
 				cls: "ep-hidden ep:border ep:border-obs-border ep:rounded-md ep:max-h-[150px] ep:overflow-y-auto ep:mt-2 ep:ml-6",
 			});
 			for (const note of this.allNotes) {
-				const label = note.project ? `${note.name} (${note.project})` : note.name;
+				const label = note.name;
 				this.renderCheckboxItem(this.noteListEl, label, this.selectedSourceUids, note.uid);
 			}
 		}
@@ -230,20 +229,7 @@ export class CsvExportModal extends BaseModal {
 			const uid = cache.frontmatter["flashcard_uid"] as string | undefined;
 			if (!uid) continue;
 
-			let project = "";
-			const tags = cache.frontmatter["tags"] as unknown;
-			if (Array.isArray(tags)) {
-				for (const tag of tags) {
-					if (typeof tag !== "string") continue;
-					const match = tag.match(/^(?:mind|input)\/(.+)$/);
-					if (match?.[1]) {
-						project = match[1];
-						break;
-					}
-				}
-			}
-
-			notes.push({ uid, name: file.basename, project });
+			notes.push({ uid, name: file.basename });
 		}
 
 		return notes.sort((a, b) => a.name.localeCompare(b.name));
