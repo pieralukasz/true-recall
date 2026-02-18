@@ -3,14 +3,12 @@ import {
 	ViewPlugin,
 	Decoration,
 	WidgetType,
-	gutter,
-	GutterMarker,
 	type DecorationSet,
 	type EditorView,
 	type ViewUpdate,
 } from "@codemirror/view";
 // eslint-disable-next-line import/no-extraneous-dependencies -- provided by Obsidian at runtime
-import { RangeSetBuilder, RangeSet, type Extension } from "@codemirror/state";
+import { RangeSetBuilder } from "@codemirror/state";
 import type { App, TFile } from "obsidian";
 import type { NoteStatusCacheService } from "../../services/cache/note-status-cache.service";
 import type { NoteStatusInfo } from "../../services/cache/note-status-cache.service";
@@ -27,20 +25,25 @@ class LinkStatusWidget extends WidgetType {
 		readonly info: NoteStatusInfo,
 		readonly onPlay: () => void,
 		readonly small: boolean = false,
+		readonly headingLevel: number = 0,
 	) {
 		super();
 	}
 
 	toDOM(): HTMLElement {
-		return createLinkStatusElement({
+		const el = createLinkStatusElement({
 			info: this.info,
 			onPlay: this.onPlay,
 			small: this.small,
 		});
+		if (this.headingLevel > 0) {
+			el.classList.add(`true-recall-heading-donut-h${this.headingLevel}`);
+		}
+		return el;
 	}
 
 	eq(other: LinkStatusWidget): boolean {
-		return infoEqual(this.info, other.info) && this.small === other.small;
+		return infoEqual(this.info, other.info) && this.small === other.small && this.headingLevel === other.headingLevel;
 	}
 }
 
@@ -64,26 +67,6 @@ class LinkTextCountWidget extends WidgetType {
 	}
 }
 
-class DonutGutterMarker extends GutterMarker {
-	constructor(
-		readonly info: NoteStatusInfo,
-		readonly onPlay: () => void,
-		readonly level: number,
-	) {
-		super();
-	}
-
-	toDOM(): Node {
-		const el = createLinkStatusElement({ info: this.info, onPlay: this.onPlay, small: true });
-		el.classList.add(`true-recall-gutter-h${this.level}`);
-		return el;
-	}
-
-	eq(other: DonutGutterMarker): boolean {
-		return infoEqual(this.info, other.info) && this.level === other.level;
-	}
-}
-
 // Matches [[link]], [[link|alias]], [[link#heading]], [[link#heading|alias]]
 const WIKI_LINK_RE = /\[\[([^\]|#]+)(?:#[^\]|]*)?(?:\|[^\]]+)?\]\]/g;
 const HEADING_RE = /^(#{1,6})\s/;
@@ -93,23 +76,21 @@ interface ResolvedLink {
 	info: NoteStatusInfo;
 }
 
-export function createLinkStatusExtensions(
+export function createLinkStatusViewPlugin(
 	app: App,
 	noteStatusCache: NoteStatusCacheService,
 	frontmatterIndex: FrontmatterIndexService,
 	getEnabled: () => boolean,
 	onReviewNote: (file: TFile) => void,
 	onReviewNotes: (noteNames: string[], dueOnly: boolean) => void,
-): Extension[] {
-	const viewPlugin = ViewPlugin.fromClass(
+) {
+	return ViewPlugin.fromClass(
 		class {
 			decorations: DecorationSet;
-			gutterMarkers: RangeSet<GutterMarker> = RangeSet.empty;
 			private lastCacheVersion = -1;
 
 			constructor(view: EditorView) {
-				this.decorations = Decoration.none;
-				this.buildDecorations(view);
+				this.decorations = this.buildDecorations(view);
 			}
 
 			update(update: ViewUpdate): void {
@@ -119,16 +100,14 @@ export function createLinkStatusExtensions(
 					update.viewportChanged ||
 					currentVersion !== this.lastCacheVersion
 				) {
-					this.buildDecorations(update.view);
+					this.decorations = this.buildDecorations(update.view);
 				}
 			}
 
-			private buildDecorations(view: EditorView): void {
+			private buildDecorations(view: EditorView): DecorationSet {
 				if (!getEnabled() || !noteStatusCache.hasData()) {
 					this.lastCacheVersion = noteStatusCache.getVersion();
-					this.decorations = Decoration.none;
-					this.gutterMarkers = RangeSet.empty;
-					return;
+					return Decoration.none;
 				}
 
 				const builder = new RangeSetBuilder<Decoration>();
@@ -147,7 +126,6 @@ export function createLinkStatusExtensions(
 				// Two-pass approach: first collect all decorations, then add in order.
 				// RangeSetBuilder requires positions in ascending order.
 				const decorations: { pos: number; decoration: Decoration }[] = [];
-				const gutterDecorations: { pos: number; marker: DonutGutterMarker }[] = [];
 
 				for (const { from, to } of view.visibleRanges) {
 					const text = view.state.doc.sliceString(from, to);
@@ -244,9 +222,12 @@ export function createLinkStatusExtensions(
 						const noteNames = sectionLinks.map((l) => l.noteName);
 						const reviewSection = () => onReviewNotes(noteNames, true);
 
-						gutterDecorations.push({
+						decorations.push({
 							pos: lineStartPositions[i]!,
-							marker: new DonutGutterMarker(aggregated, reviewSection, heading.level),
+							decoration: Decoration.widget({
+								widget: new LinkStatusWidget(aggregated, reviewSection, true, heading.level),
+								side: -1,
+							}),
 						});
 
 						decorations.push({
@@ -265,28 +246,12 @@ export function createLinkStatusExtensions(
 					builder.add(pos, pos, decoration);
 				}
 
-				// Build gutter marker RangeSet
-				gutterDecorations.sort((a, b) => a.pos - b.pos);
-				const gutterBuilder = new RangeSetBuilder<GutterMarker>();
-				for (const { pos, marker } of gutterDecorations) {
-					gutterBuilder.add(pos, pos, marker);
-				}
-
 				this.lastCacheVersion = noteStatusCache.getVersion();
-				this.decorations = builder.finish();
-				this.gutterMarkers = gutterBuilder.finish();
+				return builder.finish();
 			}
 		},
 		{
 			decorations: (v) => v.decorations,
 		},
 	);
-
-	const headingGutter = gutter({
-		class: "true-recall-heading-gutter",
-		markers: (view) => view.plugin(viewPlugin)?.gutterMarkers ?? RangeSet.empty,
-		lineMarkerChange: (update) => update.docChanged || update.viewportChanged,
-	});
-
-	return [viewPlugin, headingGutter];
 }
