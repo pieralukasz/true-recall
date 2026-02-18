@@ -19,8 +19,6 @@ export class FrontmatterService {
 	private static readonly TAGS_LIST_REGEX = /^tags:\s*\n(\s+-\s+\S+\s*)+/m;
 	/** Matches source_link field */
 	private static readonly SOURCE_LINK_REGEX = /source_link:\s*"\[\[(.+?)\]\]"/;
-	/** Matches #input/ tag pattern */
-	private static readonly INPUT_TAG_REGEX = /#input\//i;
 	/** Matches flashcard_uid field */
 	private static readonly UID_FIELD_REGEX =
 		/flashcard_uid:\s*["']?([a-f0-9]+)["']?/i;
@@ -114,7 +112,7 @@ export class FrontmatterService {
 		if (frontmatterMatch) {
 			const frontmatter = frontmatterMatch[1] ?? "";
 
-			// Array format: tags: [input/book, mind/zettel]
+			// Array format: tags: [science, history]
 			const tagsArrayMatch = frontmatter.match(
 				FrontmatterService.TAGS_ARRAY_REGEX
 			);
@@ -126,7 +124,7 @@ export class FrontmatterService {
 				tags.push(...arrayTags);
 			}
 
-			// List format: tags:\n  - input/book
+			// List format: tags:\n  - science
 			const tagsListMatch = frontmatter.match(
 				FrontmatterService.TAGS_LIST_REGEX
 			);
@@ -142,50 +140,6 @@ export class FrontmatterService {
 		return tags;
 	}
 
-	/**
-	 * Check if a source note is a Literature Note (has #input/ tags)
-	 * Literature Notes generate temporary flashcards that should be moved later
-	 */
-	async isLiteratureNote(sourceFile: TFile): Promise<boolean> {
-		const content = await this.app.vault.read(sourceFile);
-
-		// Check for #input/ tags in content (inline tags)
-		if (FrontmatterService.INPUT_TAG_REGEX.test(content)) {
-			return true;
-		}
-
-		// Check frontmatter tags
-		const frontmatterMatch = content.match(
-			FrontmatterService.FRONTMATTER_REGEX
-		);
-		if (frontmatterMatch) {
-			const frontmatter = frontmatterMatch[1] ?? "";
-			// Match tags array format: tags: [input/book, other/tag]
-			const tagsArrayMatch = frontmatter.match(
-				FrontmatterService.TAGS_ARRAY_REGEX
-			);
-			if (tagsArrayMatch) {
-				const tags =
-					tagsArrayMatch[1]?.split(",").map((t) => t.trim()) ?? [];
-				if (tags.some((t) => t.startsWith("input/"))) {
-					return true;
-				}
-			}
-			// Match tags list format: tags:\n  - input/book
-			const tagsListMatch = frontmatter.match(
-				FrontmatterService.TAGS_LIST_REGEX
-			);
-			if (tagsListMatch) {
-				const tagLines = tagsListMatch[0].match(/-\s+(\S+)/g) ?? [];
-				const tags = tagLines.map((t) => t.replace(/^-\s+/, ""));
-				if (tags.some((t) => t.startsWith("input/"))) {
-					return true;
-				}
-			}
-		}
-
-		return false;
-	}
 
 	async setProjectsInFrontmatter(
 		file: TFile,

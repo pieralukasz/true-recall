@@ -271,9 +271,9 @@ export class AnkiImportService {
 	 * Creates a hierarchical note structure matching the Anki deck hierarchy.
 	 *
 	 * For deck "Math::Calculus::Integrals":
-	 *   Anki Import/Math.md             (MOC, tag: input/Math)
-	 *   Anki Import/Math/Calculus.md    (MOC, tag: input/Math/Calculus)
-	 *   Anki Import/Math/Calculus/Integrals.md  (leaf, tag: input/Math/Calculus/Integrals)
+	 *   Anki Import/Math.md             (MOC, tag: Math)
+	 *   Anki Import/Math/Calculus.md    (MOC, tag: Math/Calculus)
+	 *   Anki Import/Math/Calculus/Integrals.md  (leaf, tag: Math/Calculus/Integrals)
 	 *
 	 * Only leaf decks (those with actual cards) get cards linked via source_uid.
 	 * Parent-only decks become MOC notes with [[child]] links.
@@ -320,7 +320,7 @@ export class AnkiImportService {
 			const name = segments[segments.length - 1]!;
 			const safeName = name.replace(/[\\/:*?"<>|]/g, " - ").trim() || "Default";
 
-			// Build hierarchical tag: input/Math/Calculus/Integrals
+			// Build hierarchical tag: Math/Calculus/Integrals
 			const tagPath = segments
 				.map((s) => s.replace(/[\\/:*?"<>|]/g, " - ").trim())
 				.join("/");
@@ -411,7 +411,7 @@ export class AnkiImportService {
 			"---",
 			`flashcard_uid: ${uid}`,
 			"tags:",
-			`  - input/${tagPath}`,
+			`  - ${tagPath}`,
 			"---",
 		].join("\n");
 	}
