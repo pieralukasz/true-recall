@@ -1693,12 +1693,25 @@
   .true-recall-heading-summary:hover {
     color: var(--text-accent);
   }
-  .true-recall-heading-summary .true-recall-donut {
-    width: 1em;
-    height: 1em;
-  }
-  .true-recall-heading-due-text {
+  .true-recall-hcount-due {
+    color: var(--color-blue);
     font-variant-numeric: tabular-nums;
+  }
+  .true-recall-hcount-learning {
+    color: var(--color-orange);
+    font-variant-numeric: tabular-nums;
+  }
+  .true-recall-hcount-new {
+    color: var(--color-green);
+    font-variant-numeric: tabular-nums;
+  }
+  .true-recall-hcount-muted {
+    color: var(--text-muted);
+    font-variant-numeric: tabular-nums;
+  }
+  .true-recall-hcount-sep {
+    color: var(--text-faint);
+    margin: 0 1px;
   }
   .ep-drag-ghost {
     opacity: 0.4;
