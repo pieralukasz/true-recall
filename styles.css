@@ -1643,9 +1643,13 @@
     width: calc(1.6em - 2px);
     height: calc(1.6em - 2px);
     vertical-align: middle;
-    margin-right: 4px;
+    margin-right: 6px;
     cursor: pointer;
     transition: transform 0.15s ease;
+  }
+  .true-recall-donut-sm {
+    width: calc(1.6em - 8px);
+    height: calc(1.6em - 8px);
   }
   .true-recall-donut:hover {
     transform: scale(1.2);
@@ -1685,13 +1689,6 @@
     align-items: center;
     gap: 4px;
     float: right;
-    font-size: var(--font-ui-smaller);
-    color: var(--text-muted);
-    cursor: pointer;
-    transition: color 0.15s ease;
-  }
-  .true-recall-heading-summary:hover {
-    color: var(--text-accent);
   }
   .true-recall-hcount-due {
     color: var(--color-blue);
@@ -1720,10 +1717,15 @@
     vertical-align: middle;
     margin-left: 4px;
     font-size: var(--font-ui-smaller);
+  }
+  .true-recall-link-options {
+    color: var(--text-faint);
     cursor: pointer;
+    margin-left: 2px;
+    font-weight: 700;
     transition: color 0.15s ease;
   }
-  .true-recall-link-count:hover {
+  .true-recall-link-options:hover {
     color: var(--text-accent);
   }
   .ep-drag-ghost {
