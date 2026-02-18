@@ -485,6 +485,7 @@
 		margin-right: 6px;
 		cursor: pointer;
 		transition: transform 0.15s ease;
+		margin-bottom: 2px;
 	}
 	.true-recall-donut-sm {
 		width: calc(1.6em - 8px);
@@ -550,12 +551,42 @@
 	}
 
 	/* Heading-level inline donut sizing + spacing from heading text */
-	.true-recall-heading-donut-h1 { width: 24px; height: 24px; margin-right: 10px; }
-	.true-recall-heading-donut-h2 { width: 22px; height: 22px; margin-right: 10px; }
-	.true-recall-heading-donut-h3 { width: 18px; height: 18px; margin-right: 8px; }
-	.true-recall-heading-donut-h4 { width: 15px; height: 15px; margin-right: 8px; }
-	.true-recall-heading-donut-h5 { width: 13px; height: 13px; margin-right: 6px; }
-	.true-recall-heading-donut-h6 { width: 12px; height: 12px; margin-right: 6px; }
+	.true-recall-heading-donut-h1 {
+		width: 30px;
+		height: 30px;
+		margin-right: 22px;
+		margin-bottom: 3px;
+	}
+	.true-recall-heading-donut-h2 {
+		width: 28px;
+		height: 28px;
+		margin-right: 21px;
+		margin-bottom: 2px;
+	}
+	.true-recall-heading-donut-h3 {
+		width: 24px;
+		height: 24px;
+		margin-right: 19px;
+		margin-bottom: 2px;
+	}
+	.true-recall-heading-donut-h4 {
+		width: 21px;
+		height: 21px;
+		margin-right: 17px;
+		margin-bottom: 2px;
+	}
+	.true-recall-heading-donut-h5 {
+		width: 19px;
+		height: 19px;
+		margin-right: 16px;
+		margin-bottom: 2px;
+	}
+	.true-recall-heading-donut-h6 {
+		width: 18px;
+		height: 18px;
+		margin-right: 14px;
+		margin-bottom: 2px;
+	}
 
 	/* Inline text count next to [[links]] (right side) */
 	.true-recall-link-count {
