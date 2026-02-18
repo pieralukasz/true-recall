@@ -154,8 +154,6 @@ export const DEFAULT_SETTINGS: TrueRecallSettings = {
 	defaultPresetId: "default",
 
 	showLinkStatusIndicators: true,
-	showSummaryBanner: true,
-	showSectionSummaries: false,
 };
 
 // FSRS v6 default weights (21 parameters)

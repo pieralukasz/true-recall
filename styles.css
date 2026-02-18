@@ -1636,142 +1636,69 @@
     color: var(--text-accent);
     text-decoration: none;
   }
-  .true-recall-pill {
+  .true-recall-donut {
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    gap: 4px;
-    padding: 3px 8px;
-    border-radius: 10px;
-    font-size: var(--font-ui-smaller);
-    font-weight: 500;
-    font-variant-numeric: tabular-nums;
-    line-height: 1;
-    white-space: nowrap;
-  }
-  .true-recall-pill-new {
-    color: var(--color-green);
-    background: var(--color-green);
-    @supports (color: color-mix(in lab, red, red)) {
-      background: color-mix(in srgb, var(--color-green) 12%, transparent);
-    }
-  }
-  .true-recall-pill-learning {
-    color: var(--color-orange);
-    background: var(--color-orange);
-    @supports (color: color-mix(in lab, red, red)) {
-      background: color-mix(in srgb, var(--color-orange) 12%, transparent);
-    }
-  }
-  .true-recall-pill-due {
-    color: var(--color-blue);
-    background: var(--color-blue);
-    @supports (color: color-mix(in lab, red, red)) {
-      background: color-mix(in srgb, var(--color-blue) 12%, transparent);
-    }
-  }
-  .true-recall-pill-total {
-    color: var(--text-muted);
-    background: var(--text-muted);
-    @supports (color: color-mix(in lab, red, red)) {
-      background: color-mix(in srgb, var(--text-muted) 8%, transparent);
-    }
-  }
-  .true-recall-link-status {
-    display: inline-flex;
-    align-items: center;
-    gap: 4px;
-    margin-left: 6px;
+    width: 1.6em;
+    height: 1.6em;
+    vertical-align: middle;
     margin-right: 4px;
-    vertical-align: baseline;
-  }
-  .true-recall-link-status .true-recall-pill {
-    font-size: var(--font-ui-smaller);
-    padding: 0 6px;
-    line-height: 1.5;
-  }
-  .true-recall-link-status-play {
-    --icon-size: 14px;
-    display: inline-flex;
-    align-items: center;
-    margin-left: 2px;
     cursor: pointer;
-    color: var(--text-faint);
-    border-radius: 8px;
-    padding: 2px;
-    transition: color 0.15s ease, background 0.15s ease;
+    transition: transform 0.15s ease;
   }
-  .true-recall-link-status-play:hover {
-    color: var(--text-accent);
-    background: var(--text-accent);
+  .true-recall-donut:hover {
+    transform: scale(1.2);
+  }
+  .true-recall-donut-svg {
+    width: 100%;
+    height: 100%;
+  }
+  .true-recall-donut-bg {
+    stroke: var(--text-faint);
     @supports (color: color-mix(in lab, red, red)) {
-      background: color-mix(in srgb, var(--text-accent) 10%, transparent);
+      stroke: color-mix(in srgb, var(--text-faint) 20%, transparent);
     }
   }
-  .true-recall-summary-banner {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    padding: 8px 0;
-    margin-bottom: 8px;
-    width: 100%;
-    font-size: var(--font-ui-smaller);
-    color: var(--text-muted);
-    border-bottom: 1px solid var(--background-modifier-border);
+  .true-recall-donut-due {
+    stroke: var(--color-blue);
+    transition: stroke-dashoffset 0.5s ease;
   }
-  .true-recall-summary-icon {
-    --icon-size: 16px;
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    color: var(--text-muted);
+  .true-recall-donut-new {
+    stroke: var(--color-green);
+    transition: stroke-dashoffset 0.5s ease;
   }
-  .true-recall-summary-stats {
-    display: inline-flex;
-    align-items: center;
-    gap: 6px;
+  .true-recall-donut-learning {
+    stroke: var(--color-orange);
+    transition: stroke-dashoffset 0.5s ease;
   }
-  .true-recall-summary-actions {
+  .true-recall-donut-count {
+    fill: var(--text-normal);
+    font-size: 10px;
+    font-weight: 700;
+    font-family: var(--font-interface);
+    text-anchor: middle;
+    dominant-baseline: central;
+  }
+  .true-recall-heading-summary {
     display: inline-flex;
     align-items: center;
     gap: 4px;
-    margin-left: auto;
-  }
-  .true-recall-summary-action {
-    --icon-size: 16px;
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    cursor: pointer;
-    color: var(--text-faint);
-    border-radius: 8px;
-    padding: 2px;
-    transition: color 0.15s ease, background 0.15s ease;
-  }
-  .true-recall-summary-action:hover {
-    color: var(--text-accent);
-    background: var(--text-accent);
-    @supports (color: color-mix(in lab, red, red)) {
-      background: color-mix(in srgb, var(--text-accent) 10%, transparent);
-    }
-  }
-  .true-recall-section-summary {
-    display: flex;
-    align-items: center;
-    gap: 6px;
-    padding: 2px 0;
-    margin: 2px 0 6px 0;
-    width: 100%;
+    float: right;
     font-size: var(--font-ui-smaller);
     color: var(--text-muted);
+    cursor: pointer;
+    transition: color 0.15s ease;
   }
-  .true-recall-section-summary .true-recall-pill {
-    font-size: calc(var(--font-ui-smaller) - 1px);
-    padding: 2px 6px;
+  .true-recall-heading-summary:hover {
+    color: var(--text-accent);
   }
-  .true-recall-summary-action-section {
-    --icon-size: 14px;
-    padding: 2px;
+  .true-recall-heading-summary .true-recall-donut {
+    width: 1em;
+    height: 1em;
+  }
+  .true-recall-heading-due-text {
+    font-variant-numeric: tabular-nums;
   }
   .ep-drag-ghost {
     opacity: 0.4;
@@ -1841,6 +1768,11 @@
   }
   .true-recall-pulse-collect {
     animation: none;
+  }
+  .true-recall-donut-due,
+	.true-recall-donut-new,
+	.true-recall-donut-learning {
+    transition: none;
   }
 }
 .ep\:simulator-slider {
