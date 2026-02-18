@@ -3,12 +3,14 @@ import {
 	ViewPlugin,
 	Decoration,
 	WidgetType,
+	gutter,
+	GutterMarker,
 	type DecorationSet,
 	type EditorView,
 	type ViewUpdate,
 } from "@codemirror/view";
 // eslint-disable-next-line import/no-extraneous-dependencies -- provided by Obsidian at runtime
-import { RangeSetBuilder } from "@codemirror/state";
+import { RangeSetBuilder, RangeSet, type Extension } from "@codemirror/state";
 import type { App, TFile } from "obsidian";
 import type { NoteStatusCacheService } from "../../services/cache/note-status-cache.service";
 import type { NoteStatusInfo } from "../../services/cache/note-status-cache.service";
@@ -62,6 +64,26 @@ class LinkTextCountWidget extends WidgetType {
 	}
 }
 
+class DonutGutterMarker extends GutterMarker {
+	constructor(
+		readonly info: NoteStatusInfo,
+		readonly onPlay: () => void,
+		readonly level: number,
+	) {
+		super();
+	}
+
+	toDOM(): Node {
+		const el = createLinkStatusElement({ info: this.info, onPlay: this.onPlay, small: true });
+		el.classList.add(`true-recall-gutter-h${this.level}`);
+		return el;
+	}
+
+	eq(other: DonutGutterMarker): boolean {
+		return infoEqual(this.info, other.info) && this.level === other.level;
+	}
+}
+
 // Matches [[link]], [[link|alias]], [[link#heading]], [[link#heading|alias]]
 const WIKI_LINK_RE = /\[\[([^\]|#]+)(?:#[^\]|]*)?(?:\|[^\]]+)?\]\]/g;
 const HEADING_RE = /^(#{1,6})\s/;
@@ -71,21 +93,23 @@ interface ResolvedLink {
 	info: NoteStatusInfo;
 }
 
-export function createLinkStatusViewPlugin(
+export function createLinkStatusExtensions(
 	app: App,
 	noteStatusCache: NoteStatusCacheService,
 	frontmatterIndex: FrontmatterIndexService,
 	getEnabled: () => boolean,
 	onReviewNote: (file: TFile) => void,
 	onReviewNotes: (noteNames: string[], dueOnly: boolean) => void,
-) {
-	return ViewPlugin.fromClass(
+): Extension[] {
+	const viewPlugin = ViewPlugin.fromClass(
 		class {
 			decorations: DecorationSet;
+			gutterMarkers: RangeSet<GutterMarker> = RangeSet.empty;
 			private lastCacheVersion = -1;
 
 			constructor(view: EditorView) {
-				this.decorations = this.buildDecorations(view);
+				this.decorations = Decoration.none;
+				this.buildDecorations(view);
 			}
 
 			update(update: ViewUpdate): void {
@@ -95,14 +119,16 @@ export function createLinkStatusViewPlugin(
 					update.viewportChanged ||
 					currentVersion !== this.lastCacheVersion
 				) {
-					this.decorations = this.buildDecorations(update.view);
+					this.buildDecorations(update.view);
 				}
 			}
 
-			private buildDecorations(view: EditorView): DecorationSet {
+			private buildDecorations(view: EditorView): void {
 				if (!getEnabled() || !noteStatusCache.hasData()) {
 					this.lastCacheVersion = noteStatusCache.getVersion();
-					return Decoration.none;
+					this.decorations = Decoration.none;
+					this.gutterMarkers = RangeSet.empty;
+					return;
 				}
 
 				const builder = new RangeSetBuilder<Decoration>();
@@ -121,6 +147,7 @@ export function createLinkStatusViewPlugin(
 				// Two-pass approach: first collect all decorations, then add in order.
 				// RangeSetBuilder requires positions in ascending order.
 				const decorations: { pos: number; decoration: Decoration }[] = [];
+				const gutterDecorations: { pos: number; marker: DonutGutterMarker }[] = [];
 
 				for (const { from, to } of view.visibleRanges) {
 					const text = view.state.doc.sliceString(from, to);
@@ -183,13 +210,17 @@ export function createLinkStatusViewPlugin(
 						charPos += line.length + 1;
 					}
 
+					const doc = view.state.doc;
+
 					for (let i = 0; i < headings.length; i++) {
 						const heading = headings[i]!;
-						// Section spans from heading end to next heading of same/higher level
-						let sectionEnd = from + text.length;
-						for (let j = i + 1; j < headings.length; j++) {
-							if (headings[j]!.level <= heading.level) {
-								sectionEnd = lineStartPositions[j]!;
+						// Find section end from the full document so folded content is included
+						const nextLineNum = doc.lineAt(heading.lineEndPos).number + 1;
+						let sectionEnd = doc.length;
+						for (let ln = nextLineNum; ln <= doc.lines; ln++) {
+							const m = HEADING_RE.exec(doc.line(ln).text);
+							if (m && m[1]!.length <= heading.level) {
+								sectionEnd = doc.line(ln).from;
 								break;
 							}
 						}
@@ -213,12 +244,9 @@ export function createLinkStatusViewPlugin(
 						const noteNames = sectionLinks.map((l) => l.noteName);
 						const reviewSection = () => onReviewNotes(noteNames, true);
 
-						decorations.push({
+						gutterDecorations.push({
 							pos: lineStartPositions[i]!,
-							decoration: Decoration.widget({
-								widget: new LinkStatusWidget(aggregated, reviewSection, true),
-								side: -1,
-							}),
+							marker: new DonutGutterMarker(aggregated, reviewSection, heading.level),
 						});
 
 						decorations.push({
@@ -237,12 +265,28 @@ export function createLinkStatusViewPlugin(
 					builder.add(pos, pos, decoration);
 				}
 
+				// Build gutter marker RangeSet
+				gutterDecorations.sort((a, b) => a.pos - b.pos);
+				const gutterBuilder = new RangeSetBuilder<GutterMarker>();
+				for (const { pos, marker } of gutterDecorations) {
+					gutterBuilder.add(pos, pos, marker);
+				}
+
 				this.lastCacheVersion = noteStatusCache.getVersion();
-				return builder.finish();
+				this.decorations = builder.finish();
+				this.gutterMarkers = gutterBuilder.finish();
 			}
 		},
 		{
 			decorations: (v) => v.decorations,
 		},
 	);
+
+	const headingGutter = gutter({
+		class: "true-recall-heading-gutter",
+		markers: (view) => view.plugin(viewPlugin)?.gutterMarkers ?? RangeSet.empty,
+		lineMarkerChange: (update) => update.docChanged || update.viewportChanged,
+	});
+
+	return [viewPlugin, headingGutter];
 }
