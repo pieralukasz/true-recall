@@ -16,7 +16,6 @@ import type { FrontmatterIndexService } from "../../services/core/frontmatter-in
 import {
 	createLinkStatusElement,
 	createLinkTextCountElement,
-	createHeadingSummaryElement,
 	aggregateInfos,
 	infoEqual,
 } from "./LinkStatusWidget";
@@ -25,6 +24,7 @@ class LinkStatusWidget extends WidgetType {
 	constructor(
 		readonly info: NoteStatusInfo,
 		readonly onPlay: () => void,
+		readonly small: boolean = false,
 	) {
 		super();
 	}
@@ -33,11 +33,12 @@ class LinkStatusWidget extends WidgetType {
 		return createLinkStatusElement({
 			info: this.info,
 			onPlay: this.onPlay,
+			small: this.small,
 		});
 	}
 
 	eq(other: LinkStatusWidget): boolean {
-		return infoEqual(this.info, other.info);
+		return infoEqual(this.info, other.info) && this.small === other.small;
 	}
 }
 
@@ -58,27 +59,6 @@ class LinkTextCountWidget extends WidgetType {
 
 	eq(other: LinkTextCountWidget): boolean {
 		return infoEqual(this.info, other.info);
-	}
-}
-
-class HeadingSummaryWidget extends WidgetType {
-	constructor(
-		readonly info: NoteStatusInfo,
-		readonly noteNames: string[],
-		readonly onReviewNotes: (noteNames: string[], dueOnly: boolean) => void,
-	) {
-		super();
-	}
-
-	toDOM(): HTMLElement {
-		return createHeadingSummaryElement({
-			info: this.info,
-			onClick: () => this.onReviewNotes(this.noteNames, true),
-		});
-	}
-
-	eq(other: HeadingSummaryWidget): boolean {
-		return infoEqual(this.info, other.info) && this.noteNames.length === other.noteNames.length;
 	}
 }
 
@@ -231,11 +211,20 @@ export function createLinkStatusViewPlugin(
 
 						const aggregated = aggregateInfos(sectionLinks.map((l) => l.info));
 						const noteNames = sectionLinks.map((l) => l.noteName);
+						const reviewSection = () => onReviewNotes(noteNames, true);
+
+						decorations.push({
+							pos: lineStartPositions[i]!,
+							decoration: Decoration.widget({
+								widget: new LinkStatusWidget(aggregated, reviewSection, true),
+								side: -1,
+							}),
+						});
 
 						decorations.push({
 							pos: heading.lineEndPos,
 							decoration: Decoration.widget({
-								widget: new HeadingSummaryWidget(aggregated, noteNames, onReviewNotes),
+								widget: new LinkTextCountWidget(aggregated, reviewSection),
 								side: 1,
 							}),
 						});
