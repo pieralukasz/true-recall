@@ -1640,8 +1640,8 @@
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    width: 1.6em;
-    height: 1.6em;
+    width: calc(1.6em - 2px);
+    height: calc(1.6em - 2px);
     vertical-align: middle;
     margin-right: 4px;
     cursor: pointer;
@@ -1712,6 +1712,19 @@
   .true-recall-hcount-sep {
     color: var(--text-faint);
     margin: 0 1px;
+  }
+  .true-recall-link-count {
+    display: inline-flex;
+    align-items: center;
+    gap: 3px;
+    vertical-align: middle;
+    margin-left: 4px;
+    font-size: var(--font-ui-smaller);
+    cursor: pointer;
+    transition: color 0.15s ease;
+  }
+  .true-recall-link-count:hover {
+    color: var(--text-accent);
   }
   .ep-drag-ghost {
     opacity: 0.4;

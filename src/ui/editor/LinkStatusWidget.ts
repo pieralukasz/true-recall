@@ -57,17 +57,6 @@ export function createLinkStatusElement(options: LinkStatusOptions): HTMLSpanEle
 		svg.appendChild(createSegment(learningPercent, offset, "true-recall-donut-learning"));
 	}
 
-	// Center number: actionable cards (due + learning + new)
-	const actionable = info.dueToday + info.learning + info.new;
-	if (actionable > 0) {
-		const text = document.createElementNS(SVG_NS, "text");
-		text.setAttribute("x", "18");
-		text.setAttribute("y", "18");
-		text.setAttribute("class", "true-recall-donut-count");
-		text.textContent = actionable > 99 ? "99+" : String(actionable);
-		svg.appendChild(text);
-	}
-
 	wrapper.appendChild(svg);
 	return wrapper;
 }
@@ -139,6 +128,47 @@ export function createHeadingSummaryElement(options: HeadingSummaryOptions): HTM
 			wrapper.appendChild(span);
 		}
 	}
+
+	return wrapper;
+}
+
+export function createLinkTextCountElement(options: LinkStatusOptions): HTMLSpanElement {
+	const { info, onPlay } = options;
+
+	const wrapper = document.createElement("span");
+	wrapper.className = "true-recall-link-count";
+	wrapper.title = `Due: ${info.dueToday}, Learning: ${info.learning}, New: ${info.new}, Total: ${info.total}`;
+
+	if (onPlay) {
+		wrapper.addEventListener("click", (e) => {
+			e.preventDefault();
+			e.stopPropagation();
+			onPlay();
+		});
+	}
+
+	const parts: { count: number; label: string; cls: string }[] = [];
+	if (info.new > 0) parts.push({ count: info.new, label: "new", cls: "true-recall-hcount-new" });
+	if (info.learning > 0) parts.push({ count: info.learning, label: "lrn", cls: "true-recall-hcount-learning" });
+	if (info.dueToday > 0) parts.push({ count: info.dueToday, label: "due", cls: "true-recall-hcount-due" });
+
+	for (let i = 0; i < parts.length; i++) {
+		if (i > 0) {
+			const sep = document.createElement("span");
+			sep.className = "true-recall-hcount-sep";
+			sep.textContent = "\u00B7";
+			wrapper.appendChild(sep);
+		}
+		const span = document.createElement("span");
+		span.className = parts[i]!.cls;
+		span.textContent = `${parts[i]!.count} ${parts[i]!.label}`;
+		wrapper.appendChild(span);
+	}
+
+	const totalSpan = document.createElement("span");
+	totalSpan.className = "true-recall-hcount-muted";
+	totalSpan.textContent = parts.length > 0 ? `(${info.total})` : `(${info.total} cards)`;
+	wrapper.appendChild(totalSpan);
 
 	return wrapper;
 }
