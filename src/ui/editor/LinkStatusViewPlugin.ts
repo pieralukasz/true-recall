@@ -15,6 +15,7 @@ import type { NoteStatusInfo } from "../../services/cache/note-status-cache.serv
 import type { FrontmatterIndexService } from "../../services/core/frontmatter-index.service";
 import {
 	createLinkStatusElement,
+	createLinkTextCountElement,
 	createHeadingSummaryElement,
 	aggregateInfos,
 	infoEqual,
@@ -36,6 +37,26 @@ class LinkStatusWidget extends WidgetType {
 	}
 
 	eq(other: LinkStatusWidget): boolean {
+		return infoEqual(this.info, other.info);
+	}
+}
+
+class LinkTextCountWidget extends WidgetType {
+	constructor(
+		readonly info: NoteStatusInfo,
+		readonly onPlay: () => void,
+	) {
+		super();
+	}
+
+	toDOM(): HTMLElement {
+		return createLinkTextCountElement({
+			info: this.info,
+			onPlay: this.onPlay,
+		});
+	}
+
+	eq(other: LinkTextCountWidget): boolean {
 		return infoEqual(this.info, other.info);
 	}
 }
@@ -146,6 +167,14 @@ export function createLinkStatusViewPlugin(
 							decoration: Decoration.widget({
 								widget: new LinkStatusWidget(info, () => onReviewNote(targetFile)),
 								side: -1,
+							}),
+						});
+
+						decorations.push({
+							pos: absoluteStart + match[0]!.length,
+							decoration: Decoration.widget({
+								widget: new LinkTextCountWidget(info, () => onReviewNote(targetFile)),
+								side: 1,
 							}),
 						});
 					}

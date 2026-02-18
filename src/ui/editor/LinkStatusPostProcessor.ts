@@ -1,7 +1,7 @@
 import type { App, MarkdownPostProcessorContext, TFile } from "obsidian";
 import type { NoteStatusCacheService, NoteStatusInfo } from "../../services/cache/note-status-cache.service";
 import type { FrontmatterIndexService } from "../../services/core/frontmatter-index.service";
-import { createLinkStatusElement, createHeadingSummaryElement, aggregateInfos } from "./LinkStatusWidget";
+import { createLinkStatusElement, createLinkTextCountElement, createHeadingSummaryElement, aggregateInfos } from "./LinkStatusWidget";
 
 export function createLinkStatusPostProcessor(
 	app: App,
@@ -42,6 +42,14 @@ export function createLinkStatusPostProcessor(
 				onPlay: () => onReviewNote(targetFile),
 			});
 			linkEl.insertAdjacentElement("beforebegin", statusEl);
+
+			if (!linkEl.nextElementSibling?.classList.contains("true-recall-link-count")) {
+				const textCountEl = createLinkTextCountElement({
+					info,
+					onPlay: () => onReviewNote(targetFile),
+				});
+				linkEl.insertAdjacentElement("afterend", textCountEl);
+			}
 		}
 
 		// Heading summaries
