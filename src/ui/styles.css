@@ -479,8 +479,8 @@
 		display: inline-flex;
 		align-items: center;
 		justify-content: center;
-		width: calc(1.6em - 2px);
-		height: calc(1.6em - 2px);
+		width: calc(1.6em - 8px);
+		height: calc(1.6em - 8px);
 		vertical-align: middle;
 		margin-right: 6px;
 		cursor: pointer;
