@@ -1710,41 +1710,35 @@
     color: var(--text-faint);
     margin: 0 1px;
   }
-  .true-recall-heading-gutter {
-    width: 24px;
-  }
-  .true-recall-heading-gutter .cm-gutterElement {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    padding: 0;
-  }
-  .true-recall-heading-gutter .true-recall-donut {
-    margin-right: 0;
-  }
-  .true-recall-gutter-h1 {
+  .true-recall-heading-donut-h1 {
     width: 24px;
     height: 24px;
+    margin-right: 10px;
   }
-  .true-recall-gutter-h2 {
+  .true-recall-heading-donut-h2 {
     width: 22px;
     height: 22px;
+    margin-right: 10px;
   }
-  .true-recall-gutter-h3 {
+  .true-recall-heading-donut-h3 {
     width: 18px;
     height: 18px;
+    margin-right: 8px;
   }
-  .true-recall-gutter-h4 {
+  .true-recall-heading-donut-h4 {
     width: 15px;
     height: 15px;
+    margin-right: 8px;
   }
-  .true-recall-gutter-h5 {
+  .true-recall-heading-donut-h5 {
     width: 13px;
     height: 13px;
+    margin-right: 6px;
   }
-  .true-recall-gutter-h6 {
+  .true-recall-heading-donut-h6 {
     width: 12px;
     height: 12px;
+    margin-right: 6px;
   }
   .true-recall-link-count {
     display: inline-flex;
