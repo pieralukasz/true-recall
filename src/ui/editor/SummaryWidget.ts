@@ -4,6 +4,13 @@ import { setIcon } from "obsidian";
 import type { AggregatedStats } from "./summary-helpers";
 import { aggregatedStatsEqual } from "./summary-helpers";
 
+function createPill(label: string, count: number, variant: string): HTMLSpanElement {
+	const pill = document.createElement("span");
+	pill.className = `true-recall-pill true-recall-pill-${variant}`;
+	pill.textContent = `${count} ${label}`;
+	return pill;
+}
+
 export function createSummaryBannerElement(opts: {
 	stats: AggregatedStats;
 	onReviewAll: () => void;
@@ -22,31 +29,16 @@ export function createSummaryBannerElement(opts: {
 	const statsContainer = document.createElement("span");
 	statsContainer.className = "true-recall-summary-stats";
 
-	const newSpan = document.createElement("span");
-	newSpan.className = "true-recall-summary-stat-new";
-	newSpan.textContent = `${stats.new} new`;
-	statsContainer.appendChild(newSpan);
-
-	statsContainer.appendChild(createDot());
-
-	const learningSpan = document.createElement("span");
-	learningSpan.className = "true-recall-summary-stat-learning";
-	learningSpan.textContent = `${stats.learning} learning`;
-	statsContainer.appendChild(learningSpan);
-
-	statsContainer.appendChild(createDot());
-
-	const dueSpan = document.createElement("span");
-	dueSpan.className = "true-recall-summary-stat-due";
-	dueSpan.textContent = `${stats.dueToday} due`;
-	statsContainer.appendChild(dueSpan);
-
-	const totalSpan = document.createElement("span");
-	totalSpan.className = "true-recall-summary-total";
-	totalSpan.textContent = `(${stats.total})`;
-	statsContainer.appendChild(totalSpan);
+	statsContainer.appendChild(createPill("new", stats.new, "new"));
+	statsContainer.appendChild(createPill("learning", stats.learning, "learning"));
+	statsContainer.appendChild(createPill("due", stats.dueToday, "due"));
 
 	wrapper.appendChild(statsContainer);
+
+	const totalPill = document.createElement("span");
+	totalPill.className = "true-recall-pill true-recall-pill-total";
+	totalPill.textContent = `${stats.total} total`;
+	wrapper.appendChild(totalPill);
 
 	const actions = document.createElement("span");
 	actions.className = "true-recall-summary-actions";
@@ -89,22 +81,13 @@ export function createSectionSummaryElement(opts: {
 	const wrapper = document.createElement("div");
 	wrapper.className = "true-recall-section-summary";
 
-	const newSpan = document.createElement("span");
-	newSpan.className = "true-recall-summary-stat-new";
-	newSpan.textContent = `${stats.new} new`;
-	wrapper.appendChild(newSpan);
+	wrapper.appendChild(createPill("new", stats.new, "new"));
+	wrapper.appendChild(createPill("due", stats.dueToday, "due"));
 
-	wrapper.appendChild(createDot());
-
-	const dueSpan = document.createElement("span");
-	dueSpan.className = "true-recall-summary-stat-due";
-	dueSpan.textContent = `${stats.dueToday} due`;
-	wrapper.appendChild(dueSpan);
-
-	const totalSpan = document.createElement("span");
-	totalSpan.className = "true-recall-summary-total";
-	totalSpan.textContent = `(${stats.total})`;
-	wrapper.appendChild(totalSpan);
+	const totalPill = document.createElement("span");
+	totalPill.className = "true-recall-pill true-recall-pill-total";
+	totalPill.textContent = `${stats.total} total`;
+	wrapper.appendChild(totalPill);
 
 	const btn = document.createElement("span");
 	btn.className = "true-recall-summary-action true-recall-summary-action-section";
@@ -119,13 +102,6 @@ export function createSectionSummaryElement(opts: {
 	wrapper.appendChild(btn);
 
 	return wrapper;
-}
-
-function createDot(): HTMLSpanElement {
-	const dot = document.createElement("span");
-	dot.className = "true-recall-summary-dot";
-	dot.textContent = "\u00B7";
-	return dot;
 }
 
 export class SummaryBannerWidget extends WidgetType {
