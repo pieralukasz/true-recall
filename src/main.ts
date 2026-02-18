@@ -31,7 +31,7 @@ import {
 } from "./services";
 import { NoteStatusCacheService } from "./services/cache/note-status-cache.service";
 import {
-	createLinkStatusViewPlugin,
+	createLinkStatusExtensions,
 	createLinkStatusPostProcessor,
 } from "./ui/editor";
 import { BackgroundBackupManager } from "./services/persistence/background-backup.service";
@@ -913,7 +913,7 @@ ${cardList}${moreText}
 			});
 		};
 
-		const viewPlugin = createLinkStatusViewPlugin(
+		const editorExtensions = createLinkStatusExtensions(
 			this.app,
 			this.noteStatusCache,
 			this.frontmatterIndex,
@@ -921,7 +921,7 @@ ${cardList}${moreText}
 			onReviewNote,
 			onReviewNotes,
 		);
-		this.registerEditorExtension([viewPlugin]);
+		this.registerEditorExtension(editorExtensions);
 
 		const postProcessor = createLinkStatusPostProcessor(
 			this.app,

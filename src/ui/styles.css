@@ -167,42 +167,94 @@
  */
 @layer utilities {
 	/* 15% background opacity - badges and state indicators */
-	.ep-bg-obs-blue-15 { background: rgba(var(--color-blue-rgb), 0.15); }
-	.ep-bg-obs-orange-15 { background: rgba(var(--color-orange-rgb), 0.15); }
-	.ep-bg-obs-green-15 { background: rgba(var(--color-green-rgb), 0.15); }
-	.ep-bg-obs-yellow-15 { background: rgba(var(--color-yellow-rgb), 0.15); }
-	.ep-bg-obs-red-15 { background: rgba(var(--color-red-rgb), 0.15); }
-	.ep-bg-obs-cyan-15 { background: rgba(var(--color-cyan-rgb), 0.15); }
-	.ep-bg-obs-purple-15 { background: rgba(var(--color-purple-rgb), 0.15); }
+	.ep-bg-obs-blue-15 {
+		background: rgba(var(--color-blue-rgb), 0.15);
+	}
+	.ep-bg-obs-orange-15 {
+		background: rgba(var(--color-orange-rgb), 0.15);
+	}
+	.ep-bg-obs-green-15 {
+		background: rgba(var(--color-green-rgb), 0.15);
+	}
+	.ep-bg-obs-yellow-15 {
+		background: rgba(var(--color-yellow-rgb), 0.15);
+	}
+	.ep-bg-obs-red-15 {
+		background: rgba(var(--color-red-rgb), 0.15);
+	}
+	.ep-bg-obs-cyan-15 {
+		background: rgba(var(--color-cyan-rgb), 0.15);
+	}
+	.ep-bg-obs-purple-15 {
+		background: rgba(var(--color-purple-rgb), 0.15);
+	}
 
 	/* 20% background opacity - review badge backgrounds */
-	.ep-bg-obs-blue-20 { background: rgba(var(--color-blue-rgb), 0.20); }
-	.ep-bg-obs-orange-20 { background: rgba(var(--color-orange-rgb), 0.20); }
-	.ep-bg-obs-green-20 { background: rgba(var(--color-green-rgb), 0.20); }
+	.ep-bg-obs-blue-20 {
+		background: rgba(var(--color-blue-rgb), 0.2);
+	}
+	.ep-bg-obs-orange-20 {
+		background: rgba(var(--color-orange-rgb), 0.2);
+	}
+	.ep-bg-obs-green-20 {
+		background: rgba(var(--color-green-rgb), 0.2);
+	}
 
 	/* 10% background opacity - alert boxes and lighter backgrounds */
-	.ep-bg-obs-blue-10 { background: rgba(var(--color-blue-rgb), 0.10); }
-	.ep-bg-obs-orange-10 { background: rgba(var(--color-orange-rgb), 0.10); }
-	.ep-bg-obs-green-10 { background: rgba(var(--color-green-rgb), 0.10); }
-	.ep-bg-obs-red-10 { background: rgba(var(--color-red-rgb), 0.10); }
+	.ep-bg-obs-blue-10 {
+		background: rgba(var(--color-blue-rgb), 0.1);
+	}
+	.ep-bg-obs-orange-10 {
+		background: rgba(var(--color-orange-rgb), 0.1);
+	}
+	.ep-bg-obs-green-10 {
+		background: rgba(var(--color-green-rgb), 0.1);
+	}
+	.ep-bg-obs-red-10 {
+		background: rgba(var(--color-red-rgb), 0.1);
+	}
 
 	/* 30% border opacity - alert box borders */
-	.ep-border-obs-blue-30 { border-color: rgba(var(--color-blue-rgb), 0.30); }
-	.ep-border-obs-orange-30 { border-color: rgba(var(--color-orange-rgb), 0.30); }
-	.ep-border-obs-green-30 { border-color: rgba(var(--color-green-rgb), 0.30); }
-	.ep-border-obs-red-30 { border-color: rgba(var(--color-red-rgb), 0.30); }
+	.ep-border-obs-blue-30 {
+		border-color: rgba(var(--color-blue-rgb), 0.3);
+	}
+	.ep-border-obs-orange-30 {
+		border-color: rgba(var(--color-orange-rgb), 0.3);
+	}
+	.ep-border-obs-green-30 {
+		border-color: rgba(var(--color-green-rgb), 0.3);
+	}
+	.ep-border-obs-red-30 {
+		border-color: rgba(var(--color-red-rgb), 0.3);
+	}
 
 	/* Hover variants */
-	.ep-hover-bg-obs-red-10:hover { background: rgba(var(--color-red-rgb), 0.10); }
-	.ep-hover-bg-obs-red-20:hover { background: rgba(var(--color-red-rgb), 0.20); }
+	.ep-hover-bg-obs-red-10:hover {
+		background: rgba(var(--color-red-rgb), 0.1);
+	}
+	.ep-hover-bg-obs-red-20:hover {
+		background: rgba(var(--color-red-rgb), 0.2);
+	}
 
 	/* Dynamic color via CSS custom property (avoids hardcoded el.style assignments) */
-	.ep-dynamic-bg { background-color: var(--ep-dynamic-color); }
-	.ep-dynamic-color { color: var(--ep-dynamic-color); }
-	.ep-dynamic-accent { accent-color: var(--ep-dynamic-color); }
-	.ep-hidden { display: none; }
-	.ep-tree-indent { padding-left: var(--ep-indent, 12px); }
-	.ep-modal-width { width: var(--ep-modal-width, fit-content); }
+	.ep-dynamic-bg {
+		background-color: var(--ep-dynamic-color);
+	}
+	.ep-dynamic-color {
+		color: var(--ep-dynamic-color);
+	}
+	.ep-dynamic-accent {
+		accent-color: var(--ep-dynamic-color);
+	}
+	.ep-hidden {
+		display: none;
+	}
+	.ep-tree-indent {
+		padding-left: var(--ep-indent, 12px);
+	}
+	.ep-modal-width {
+		width: var(--ep-modal-width, fit-content);
+	}
 }
 
 /*
@@ -497,6 +549,26 @@
 		margin: 0 1px;
 	}
 
+	/* Heading aggregate donut in editor gutter (next to fold arrow) */
+	.true-recall-heading-gutter {
+		width: 24px;
+	}
+	.true-recall-heading-gutter .cm-gutterElement {
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		padding: 0;
+	}
+	.true-recall-heading-gutter .true-recall-donut {
+		margin-right: 0;
+	}
+	.true-recall-gutter-h1 { width: 24px; height: 24px; }
+	.true-recall-gutter-h2 { width: 22px; height: 22px; }
+	.true-recall-gutter-h3 { width: 18px; height: 18px; }
+	.true-recall-gutter-h4 { width: 15px; height: 15px; }
+	.true-recall-gutter-h5 { width: 13px; height: 13px; }
+	.true-recall-gutter-h6 { width: 12px; height: 12px; }
+
 	/* Inline text count next to [[links]] (right side) */
 	.true-recall-link-count {
 		display: inline-flex;
@@ -557,7 +629,9 @@
 
 	/* Drop target highlight when dragging a note over a project header */
 	.ep-note-dragging .ep-project-row {
-		transition: border-left 0.15s ease, background-color 0.15s ease;
+		transition:
+			border-left 0.15s ease,
+			background-color 0.15s ease;
 	}
 	.ep-note-dragging .ep-project-row:hover {
 		border-left: 3px solid var(--interactive-accent);
@@ -616,9 +690,7 @@
 	.true-recall-donut-learning {
 		transition: none;
 	}
-
 }
-
 
 /*
  * Legacy CSS imports - these will be progressively removed during migration.
@@ -665,4 +737,3 @@
 	color: var(--text-normal);
 	overflow-y: auto;
 }
-
