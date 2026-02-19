@@ -4,8 +4,6 @@
 
 True Recall is an Obsidian plugin for FSRS v6 spaced repetition. All data is stored locally in SQLite with optional cloud sync (coming soon).
 
-**[Documentation](http://localhost:4321/)**
-
 ---
 
 ## Features at a Glance
@@ -19,6 +17,7 @@ True Recall is an Obsidian plugin for FSRS v6 spaced repetition. All data is sto
 | **Card Browser**             | Search, filter, and manage all flashcards in one place          |
 | **FSRS Simulator**           | Visualize scheduling behavior with different parameters         |
 | **Cloud Sync** (coming soon) | Optional sync across devices                                    |
+| **Anki Import/Export**       | Import .apkg decks and export to Anki or CSV/TSV               |
 | **Natural Language Queries** | Ask questions about your stats                                  |
 
 ---
@@ -85,7 +84,7 @@ Then enable the plugin in Obsidian settings.
 
 After installation, you should see:
 
-1. **Ribbon icons**: A brain icon (purple) and a chart icon (orange) in the left sidebar
+1. **Ribbon icons**: Brain, bar chart, and grid icons in the left sidebar
 2. **Commands**: Open Command Palette (`Cmd/Ctrl+P`) and search for "True Recall"
 3. **Settings tab**: Settings → True Recall with configuration options
 
@@ -103,23 +102,29 @@ After installation, you should see:
 
 ---
 
-## Commands (13)
+## Commands (17)
 
 Access via Command Palette (`Cmd/Ctrl+P`):
 
 | Command                                  | Description                                                              |
 | ---------------------------------------- | ------------------------------------------------------------------------ |
 | **Open flashcard panel**                 | Opens the sidebar showing flashcards for the current note                |
-| **Generate flashcards for current note** | Opens panel and triggers AI generation for the active note               |
 | **Start review session**                 | Opens session builder to configure and start a review                    |
 | **Review flashcards from current note**  | Reviews ONLY cards from the currently open note                          |
 | **Review today's new cards**             | Reviews flashcards created today regardless of scheduling                |
 | **Open statistics panel**                | Displays analytics: retention, forecasts, charts, and heatmap            |
-| **Open projects panel**                  | Shows all projects with card counts. Start project-filtered reviews      |
 | **Add current note to project**          | Add/remove current note from projects                                    |
 | **Open FSRS simulator**                  | Interactive simulator to visualize FSRS scheduling with different params |
+| **Open orphaned cards panel**            | Shows cards whose source notes have been deleted                         |
+| **Open note hub**                        | Overview of all notes with flashcard status                              |
+| **Open card browser**                    | Search, filter, and manage all flashcards in one place                   |
 | **Create database backup**               | Creates a timestamped backup of your flashcard database                  |
 | **Add flashcard UID to current note**    | Adds a unique identifier to link flashcards to the source note           |
+| **Undo last flashcard action**           | Reverts the most recent card operation                                   |
+| **Import Anki deck (.apkg)**             | Imports flashcards from an Anki deck file                                |
+| **Export to Anki (.apkg)**               | Exports flashcards as an Anki-compatible deck                            |
+| **Export as CSV/TSV**                     | Exports flashcards to CSV or TSV format                                  |
+| **Set FSRS preset for current note**     | Assigns an FSRS scheduling preset to the active note                     |
 
 ---
 
@@ -139,9 +144,8 @@ All shortcuts work during review sessions:
 | **-**           | Bury card               | Hides until tomorrow                          |
 | **=**           | Bury note               | Buries ALL cards from same source note        |
 | **M**           | Move card               | Opens modal to transfer to different note     |
-| **N**           | New flashcard           | Opens editor to add card manually             |
-| **G**           | AI Generate             | Generate flashcard with AI instructions       |
-| **B**           | Branch/copy card        | Duplicates the card                           |
+| **A**           | Add new flashcard       | Opens editor to add card manually             |
+| **B**           | Copy card (branch)      | Duplicates the card                           |
 | **E**           | Edit card               | Opens editor for question/answer              |
 
 ---
@@ -191,16 +195,7 @@ Advanced session builder for filtered reviews:
 - **Ignore Daily Limits**: Override new/review limits
 - **Bypass Scheduling**: Study cards regardless of due dates
 
-### 5. Projects View
-
-Project organization interface:
-
-- All projects with card counts
-- Due/New cards per project
-- Click to start filtered review
-- Create/rename/delete projects
-
-### 6. Simulator View
+### 5. Simulator View
 
 FSRS algorithm simulator:
 
@@ -209,14 +204,36 @@ FSRS algorithm simulator:
 - Compare different configurations
 - Understand FSRS behavior
 
+### 6. Orphaned Cards View
+
+Manage cards whose source notes have been deleted:
+
+- List of orphaned flashcards
+- Reassign or delete orphaned cards
+
+### 7. Note Hub View
+
+Overview of all notes with flashcards:
+
+- Notes with flashcard counts and status
+- Quick access to review or manage per-note cards
+
+### 8. Card Browser View
+
+Search and manage all flashcards:
+
+- Search, filter, and sort across all cards
+- Bulk actions and card management
+
 ---
 
-## Ribbon Icons (2)
+## Ribbon Icons (3)
 
-| Icon      | Color  | Action                 |
-| --------- | ------ | ---------------------- |
-| Brain     | Purple | Opens session builder  |
-| Bar Chart | Orange | Opens statistics panel |
+| Icon        | Action                 |
+| ----------- | ---------------------- |
+| Brain       | Opens session builder  |
+| Bar Chart   | Opens statistics panel |
+| Layout Grid | Opens note hub         |
 
 ---
 
