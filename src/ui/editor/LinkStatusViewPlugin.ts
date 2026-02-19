@@ -23,21 +23,11 @@ import {
 	infoEqual,
 } from "./LinkStatusWidget";
 
-const HEADING_DONUT_CLS: Record<number, string> = {
-	1: "ep:w-[30px] ep:h-[30px] ep:mr-[22px] ep:mb-[3px]",
-	2: "ep:w-[28px] ep:h-[28px] ep:mr-[21px] ep:mb-0.5",
-	3: "ep:w-6 ep:h-6 ep:mr-[19px] ep:mb-0.5",
-	4: "ep:w-[21px] ep:h-[21px] ep:mr-5 ep:mb-0.5",
-	5: "ep:w-[19px] ep:h-[19px] ep:mr-5 ep:mb-0.5",
-	6: "ep:w-[18px] ep:h-[18px] ep:mr-5 ep:mb-0.5",
-};
-
 class LinkStatusWidget extends WidgetType {
 	constructor(
 		readonly info: NoteStatusInfo,
 		readonly onPlay: () => void,
-		readonly small: boolean = false,
-		readonly headingLevel: number = 0,
+		readonly variant: "link" | "h1" | "h2" | "h3" | "h4" | "h5" | "h6" = "link",
 	) {
 		super();
 	}
@@ -46,17 +36,12 @@ class LinkStatusWidget extends WidgetType {
 		return createLinkStatusElement({
 			info: this.info,
 			onPlay: this.onPlay,
-			small: this.small,
-			class: HEADING_DONUT_CLS[this.headingLevel],
+			variant: this.variant,
 		});
 	}
 
 	eq(other: LinkStatusWidget): boolean {
-		return (
-			infoEqual(this.info, other.info) &&
-			this.small === other.small &&
-			this.headingLevel === other.headingLevel
-		);
+		return infoEqual(this.info, other.info) && this.variant === other.variant;
 	}
 }
 
@@ -64,6 +49,7 @@ class LinkTextCountWidget extends WidgetType {
 	constructor(
 		readonly info: NoteStatusInfo,
 		readonly onPlay: () => void,
+		readonly variant: "link" | "h1" | "h2" | "h3" | "h4" | "h5" | "h6" = "link",
 	) {
 		super();
 	}
@@ -72,11 +58,12 @@ class LinkTextCountWidget extends WidgetType {
 		return createLinkTextCountElement({
 			info: this.info,
 			onPlay: this.onPlay,
+			variant: this.variant,
 		});
 	}
 
 	eq(other: LinkTextCountWidget): boolean {
-		return infoEqual(this.info, other.info);
+		return infoEqual(this.info, other.info) && this.variant === other.variant;
 	}
 }
 
@@ -184,7 +171,7 @@ export function createLinkStatusViewPlugin(
 							pos: absoluteStart + (match[0]?.length ?? 0),
 							decoration: Decoration.widget({
 								widget: new LinkTextCountWidget(info, () =>
-									onReviewNote(targetFile),
+									onReviewNote(targetFile), "link",
 								),
 								side: 1,
 							}),
@@ -263,8 +250,7 @@ export function createLinkStatusViewPlugin(
 								widget: new LinkStatusWidget(
 									aggregated,
 									reviewSection,
-									true,
-									heading.level,
+									`h${heading.level}` as "h1" | "h2" | "h3" | "h4" | "h5" | "h6",
 								),
 								side: -1,
 							}),
@@ -273,7 +259,7 @@ export function createLinkStatusViewPlugin(
 						decorations.push({
 							pos: heading.lineEndPos,
 							decoration: Decoration.widget({
-								widget: new LinkTextCountWidget(aggregated, reviewSection),
+								widget: new LinkTextCountWidget(aggregated, reviewSection, `h${heading.level}` as "h1" | "h2" | "h3" | "h4" | "h5" | "h6"),
 								side: 1,
 							}),
 						});
