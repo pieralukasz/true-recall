@@ -102,7 +102,10 @@ export class SqlJsAdapter {
 
 			const sampleResult = this.db.exec(`SELECT * FROM "${table}" LIMIT 3`);
 			let sampleSection = "";
-			if (sampleResult.length > 0 && (sampleResult[0]?.values.length ?? 0) > 0) {
+			if (
+				sampleResult.length > 0 &&
+				(sampleResult[0]?.values.length ?? 0) > 0
+			) {
 				const sampleRows = sampleResult[0]?.values
 					.map((row) =>
 						row

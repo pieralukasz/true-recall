@@ -56,17 +56,10 @@ function RadioOption({
 	onChange: () => void;
 }) {
 	return (
-		<div
-			class={`ep:flex ep:items-start ep:gap-3 ep:p-3 ep:rounded-md ep:mb-2 ep:cursor-pointer ep:bg-obs-secondary ep:transition-colors ep:hover:bg-obs-modifier-hover ${checked ? "ep-radio-active" : ""}`}
-			role="button"
-			tabIndex={0}
+		<button
+			type="button"
+			class={`ep:flex ep:items-start ep:gap-3 ep:p-3 ep:rounded-md ep:mb-2 ep:cursor-pointer ep:bg-obs-secondary ep:transition-colors ep:hover:bg-obs-modifier-hover ep:border-none ep:font-inherit ep:text-left ep:w-full ${checked ? "ep-radio-active" : ""}`}
 			onClick={() => onChange()}
-			onKeyDown={(e: KeyboardEvent) => {
-				if (e.key === "Enter" || e.key === " ") {
-					e.preventDefault();
-					onChange();
-				}
-			}}
 		>
 			<input
 				type="radio"
@@ -81,7 +74,7 @@ function RadioOption({
 				<div class="ep:font-medium">{label}</div>
 				<div class="setting-item-description ep:mt-0.5">{description}</div>
 			</div>
-		</div>
+		</button>
 	);
 }
 

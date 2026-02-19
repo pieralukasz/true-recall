@@ -67,9 +67,10 @@ function SelectNoteBody({
 						{displayNotes.map((note) => {
 							const folderPath = note.parent?.path;
 							return (
-								<div
+								<button
+									type="button"
 									key={note.path}
-									class="ep:flex ep:items-center ep:justify-between ep:p-3 ep:border-b ep:border-obs-border ep:cursor-pointer ep:transition-colors ep:hover:bg-obs-modifier-hover ep:last:border-b-0 ep:group"
+									class="ep:bg-transparent ep:border-none ep:p-0 ep:font-inherit ep:cursor-pointer ep:text-left ep:w-full ep:flex ep:items-center ep:justify-between ep:p-3 ep:border-b ep:border-obs-border ep:transition-colors ep:hover:bg-obs-modifier-hover ep:last:border-b-0 ep:group"
 									onClick={() =>
 										onResolve({
 											cancelled: false,
@@ -88,19 +89,10 @@ function SelectNoteBody({
 											</span>
 										)}
 									</div>
-									<button
-										class="ep:shrink-0 ep:py-1 ep:px-3 ep:rounded-md ep:bg-obs-interactive ep:text-obs-on-accent ep:border-none ep:text-ui-smaller ep:cursor-pointer ep:opacity-0 ep:group-hover:opacity-100"
-										onClick={(e) => {
-											e.stopPropagation();
-											onResolve({
-												cancelled: false,
-												selectedNote: note,
-											});
-										}}
-									>
+									<span class="ep:shrink-0 ep:py-1 ep:px-3 ep:rounded-md ep:bg-obs-interactive ep:text-obs-on-accent ep:text-ui-smaller ep:opacity-0 ep:group-hover:opacity-100">
 										Select
-									</button>
-								</div>
+									</span>
+								</button>
 							);
 						})}
 						{filteredNotes.length > MAX_DISPLAY_NOTES && (

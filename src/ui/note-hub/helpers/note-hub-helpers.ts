@@ -45,6 +45,8 @@ export function sortNotes(
 				return multiplier * (a.dueCount - b.dueCount);
 			case "cards":
 				return multiplier * (a.cardCount - b.cardCount);
+			default:
+				return 0;
 		}
 	});
 

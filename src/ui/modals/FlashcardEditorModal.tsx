@@ -131,7 +131,7 @@ function MarkdownPreview({
 	field,
 	onClick,
 }: MarkdownPreviewProps) {
-	const ref = useRef<HTMLDivElement>(null);
+	const ref = useRef<HTMLButtonElement>(null);
 
 	useEffect(() => {
 		const el = ref.current;
@@ -152,18 +152,11 @@ function MarkdownPreview({
 	const answerCls = field === "answer" ? "ep:text-obs-muted" : "";
 
 	return (
-		<div
+		<button
+			type="button"
 			ref={ref}
-			class={`ep:p-4 ep:min-h-20 ep:cursor-text ep:rounded-lg ep:border ep:border-obs-border ep:bg-obs-primary ep:text-ui-small ep:text-center ep:hover:border-obs-interactive ep:transition-colors ${answerCls} true-recall-card-markdown`}
-			role="button"
-			tabIndex={0}
+			class={`ep:min-h-20 ep:cursor-text ep:rounded-lg ep:border ep:border-obs-border ep:bg-obs-primary ep:text-ui-small ep:text-center ep:hover:border-obs-interactive ep:transition-colors ep:font-inherit ep:w-full ep:p-4 ${answerCls} true-recall-card-markdown`}
 			onClick={onClick}
-			onKeyDown={(e: KeyboardEvent) => {
-				if (e.key === "Enter" || e.key === " ") {
-					e.preventDefault();
-					onClick();
-				}
-			}}
 		/>
 	);
 }
@@ -322,22 +315,15 @@ function EditorField({
 					onClick={onStartEdit}
 				/>
 			) : (
-				<div
-					class="ep:p-4 ep:min-h-20 ep:cursor-text ep:rounded-lg ep:border ep:border-dashed ep:border-obs-border ep:text-obs-muted ep:text-ui-small ep:text-center ep:hover:border-obs-interactive ep:transition-colors ep:flex ep:items-center ep:justify-center"
-					role="button"
-					tabIndex={0}
+				<button
+					type="button"
+					class="ep:p-4 ep:min-h-20 ep:cursor-text ep:rounded-lg ep:border ep:border-dashed ep:border-obs-border ep:text-obs-muted ep:text-ui-small ep:text-center ep:hover:border-obs-interactive ep:transition-colors ep:flex ep:items-center ep:justify-center ep:bg-transparent ep:font-inherit ep:w-full"
 					onClick={onStartEdit}
-					onKeyDown={(e: KeyboardEvent) => {
-						if (e.key === "Enter" || e.key === " ") {
-							e.preventDefault();
-							onStartEdit();
-						}
-					}}
 				>
 					{field === "question"
 						? "Click to add question..."
 						: "Click to add answer..."}
-				</div>
+				</button>
 			)}
 		</div>
 	);
@@ -578,7 +564,10 @@ function FlashcardEditorBody({
 	);
 
 	return (
-		<div role="group" onKeyDown={handleContainerKeyDown}>
+		<fieldset
+			class="ep:border-none ep:p-0 ep:m-0"
+			onKeyDown={handleContainerKeyDown}
+		>
 			{/* AI Assist */}
 			<AiAssistSection
 				isExpanded={isAiExpanded}
@@ -634,30 +623,28 @@ function FlashcardEditorBody({
 				<div class="ep:flex ep:items-center ep:justify-end ep:mt-3">
 					<div class="ep:flex ep:items-center ep:gap-1.5 ep:text-obs-faint ep:text-ui-smaller">
 						<span>Source:</span>
-						<span
-							class={`ep:text-obs-muted ${mode === "edit" ? "ep:cursor-pointer ep:transition-all ep:hover:text-obs-normal ep:hover:underline" : ""}`}
-							role={mode === "edit" ? "button" : undefined}
-							tabIndex={mode === "edit" ? 0 : undefined}
-							onClick={() => {
-								if (mode === "edit")
-									notify().info("Source editing is not available");
-							}}
-							onKeyDown={(e: KeyboardEvent) => {
-								if ((e.key === "Enter" || e.key === " ") && mode === "edit") {
-									e.preventDefault();
-									notify().info("Source editing is not available");
-								}
-							}}
-						>
-							{displaySourceName}
-						</span>
+						{mode === "edit" ? (
+							<button
+								type="button"
+								class="ep:bg-transparent ep:border-none ep:p-0 ep:font-inherit ep:cursor-pointer ep:text-obs-muted ep:transition-all ep:hover:text-obs-normal ep:hover:underline"
+								onClick={() => notify().info("Source editing is not available")}
+							>
+								{displaySourceName}
+							</button>
+						) : (
+							<span class="ep:text-obs-muted">{displaySourceName}</span>
+						)}
 					</div>
 				</div>
 			)}
 
 			{/* Buttons */}
 			<div class="ep:flex ep:justify-end ep:gap-3 ep:mt-5 ep:pt-4 ep:border-t ep:border-obs-border">
-				<button type="button" class={SECONDARY_BUTTON_CLASSES} onClick={onClose}>
+				<button
+					type="button"
+					class={SECONDARY_BUTTON_CLASSES}
+					onClick={onClose}
+				>
 					Cancel
 				</button>
 				<button
@@ -669,7 +656,7 @@ function FlashcardEditorBody({
 					{buttonText}
 				</button>
 			</div>
-		</div>
+		</fieldset>
 	);
 }
 

@@ -37,6 +37,7 @@ function TabBar({
 		>
 			{TABS.map((tab) => (
 				<button
+					type="button"
 					key={tab.id}
 					class={`${TAB_BTN_BASE} ${activeTab === tab.id ? TAB_BTN_ACTIVE : ""}`}
 					role="tab"

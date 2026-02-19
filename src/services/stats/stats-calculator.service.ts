@@ -23,7 +23,6 @@ import {
 
 export class StatsCalculatorService {
 	private sessionPersistence: SessionPersistenceService;
-	private sqliteStore: SqliteStoreService | undefined;
 
 	// Specialized calculators
 	private streakCalculator = new StreakCalculator();
@@ -43,7 +42,6 @@ export class StatsCalculatorService {
 	 * When set, uses SQL aggregations instead of iterating all cards
 	 */
 	setSqliteStore(store: SqliteStoreService): void {
-		this.sqliteStore = store;
 		this.maturityCalculator.setSqliteStore(store);
 		this.chartDataCalculator.setSqliteStore(store);
 	}

@@ -99,7 +99,6 @@ export function FSRSTab({ selectedPresetId, onPresetChange }: FSRSTabProps) {
 			<ScheduledBreaksSection
 				settings={settings}
 				save={save}
-				plugin={plugin}
 				onRefresh={refresh}
 			/>
 
@@ -727,12 +726,10 @@ function SiblingDisperseSection({
 function ScheduledBreaksSection({
 	settings,
 	save,
-	plugin,
 	onRefresh,
 }: {
 	settings: any;
 	save: (patch: any) => Promise<void>;
-	plugin: any;
 	onRefresh: () => void;
 }) {
 	const breaks = settings.scheduledBreaks as Array<{
@@ -797,6 +794,7 @@ function ScheduledBreaksSection({
 								{brk.startDate} to {brk.endDate}
 							</span>
 							<button
+								type="button"
 								class="ep:text-ui-small"
 								onClick={() => handleDeleteBreak(index)}
 							>

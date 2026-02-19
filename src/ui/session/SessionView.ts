@@ -41,7 +41,9 @@ export class SessionView extends ItemView {
 	}
 
 	private get session(): SessionApi {
-		return this.plugin.store!.getState().session;
+		const store = this.plugin.store;
+		if (!store) throw new Error("Store not initialized");
+		return store.getState().session;
 	}
 
 	getViewType(): string {
@@ -63,7 +65,8 @@ export class SessionView extends ItemView {
 		container.addClass("ep:h-full", "ep:flex", "ep:flex-col");
 
 		// Header actions are Obsidian-native, subscribe to store for them
-		this.unsubscribe = this.plugin.store!.subscribe(
+		if (!this.plugin.store) return;
+		this.unsubscribe = this.plugin.store.subscribe(
 			(state) => state.session,
 			() => {
 				this.updateHeaderActions();

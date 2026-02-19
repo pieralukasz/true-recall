@@ -194,7 +194,11 @@ export class AnkiExportService {
 		const mediaRegex = /!\[\[([^\]]+)\]\]/g;
 		for (const card of cards) {
 			const content = (card.question ?? "") + (card.answer ?? "");
-			for (let match = mediaRegex.exec(content); match !== null; match = mediaRegex.exec(content)) {
+			for (
+				let match = mediaRegex.exec(content);
+				match !== null;
+				match = mediaRegex.exec(content)
+			) {
 				if (match[1]) filenames.add(match[1]);
 			}
 		}

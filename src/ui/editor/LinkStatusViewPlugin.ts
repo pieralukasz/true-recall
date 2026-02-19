@@ -137,7 +137,11 @@ export function createLinkStatusViewPlugin(
 
 					// Pass 1: per-link donuts
 					WIKI_LINK_RE.lastIndex = 0;
-					for (let match = WIKI_LINK_RE.exec(text); match !== null; match = WIKI_LINK_RE.exec(text)) {
+					for (
+						let match = WIKI_LINK_RE.exec(text);
+						match !== null;
+						match = WIKI_LINK_RE.exec(text)
+					) {
 						const linkText = match[1];
 						if (!linkText) continue;
 						const absoluteStart = from + match.index;
@@ -170,8 +174,10 @@ export function createLinkStatusViewPlugin(
 						decorations.push({
 							pos: absoluteStart + (match[0]?.length ?? 0),
 							decoration: Decoration.widget({
-								widget: new LinkTextCountWidget(info, () =>
-									onReviewNote(targetFile), "link",
+								widget: new LinkTextCountWidget(
+									info,
+									() => onReviewNote(targetFile),
+									"link",
 								),
 								side: 1,
 							}),
@@ -226,7 +232,11 @@ export function createLinkStatusViewPlugin(
 						const sectionLinks: ResolvedLink[] = [];
 						const seen = new Set<string>();
 
-						for (let linkMatch = WIKI_LINK_RE.exec(sectionText); linkMatch !== null; linkMatch = WIKI_LINK_RE.exec(sectionText)) {
+						for (
+							let linkMatch = WIKI_LINK_RE.exec(sectionText);
+							linkMatch !== null;
+							linkMatch = WIKI_LINK_RE.exec(sectionText)
+						) {
 							const linkText = linkMatch[1];
 							if (!linkText) continue;
 							const resolved = resolveLink(linkText);
@@ -250,7 +260,13 @@ export function createLinkStatusViewPlugin(
 								widget: new LinkStatusWidget(
 									aggregated,
 									reviewSection,
-									`h${heading.level}` as "h1" | "h2" | "h3" | "h4" | "h5" | "h6",
+									`h${heading.level}` as
+										| "h1"
+										| "h2"
+										| "h3"
+										| "h4"
+										| "h5"
+										| "h6",
 								),
 								side: -1,
 							}),
@@ -259,7 +275,17 @@ export function createLinkStatusViewPlugin(
 						decorations.push({
 							pos: heading.lineEndPos,
 							decoration: Decoration.widget({
-								widget: new LinkTextCountWidget(aggregated, reviewSection, `h${heading.level}` as "h1" | "h2" | "h3" | "h4" | "h5" | "h6"),
+								widget: new LinkTextCountWidget(
+									aggregated,
+									reviewSection,
+									`h${heading.level}` as
+										| "h1"
+										| "h2"
+										| "h3"
+										| "h4"
+										| "h5"
+										| "h6",
+								),
 								side: 1,
 							}),
 						});

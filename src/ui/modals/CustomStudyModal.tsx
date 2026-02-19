@@ -126,7 +126,9 @@ function CustomStudyBody({
 			)}
 
 			<div class={sectionCls}>
-				<label htmlFor="cs-state" class={labelCls}>Card state</label>
+				<label htmlFor="cs-state" class={labelCls}>
+					Card state
+				</label>
 				<select
 					id="cs-state"
 					class={inputCls}
@@ -194,7 +196,9 @@ function CustomStudyBody({
 			</div>
 
 			<div class={sectionCls}>
-				<label htmlFor="cs-lapses" class={labelCls}>Minimum lapses</label>
+				<label htmlFor="cs-lapses" class={labelCls}>
+					Minimum lapses
+				</label>
 				<input
 					id="cs-lapses"
 					type="number"
@@ -212,7 +216,9 @@ function CustomStudyBody({
 			</div>
 
 			<div class={sectionCls}>
-				<label htmlFor="cs-ahead" class={labelCls}>Study ahead (days, 0 = off)</label>
+				<label htmlFor="cs-ahead" class={labelCls}>
+					Study ahead (days, 0 = off)
+				</label>
 				<input
 					id="cs-ahead"
 					type="number"
@@ -230,7 +236,9 @@ function CustomStudyBody({
 			</div>
 
 			<div class={sectionCls}>
-				<label htmlFor="cs-order" class={labelCls}>Sort order</label>
+				<label htmlFor="cs-order" class={labelCls}>
+					Sort order
+				</label>
 				<select
 					id="cs-order"
 					class={inputCls}
@@ -251,7 +259,9 @@ function CustomStudyBody({
 			</div>
 
 			<div class={sectionCls}>
-				<label htmlFor="cs-limit" class={labelCls}>Card limit (0 = no limit)</label>
+				<label htmlFor="cs-limit" class={labelCls}>
+					Card limit (0 = no limit)
+				</label>
 				<input
 					id="cs-limit"
 					type="number"
@@ -269,17 +279,10 @@ function CustomStudyBody({
 			</div>
 
 			<div class={sectionCls}>
-				<div
-					class="ep:flex ep:items-center ep:gap-2 ep:cursor-pointer"
-					role="button"
-					tabIndex={0}
+				<button
+					type="button"
+					class="ep:flex ep:items-center ep:gap-2 ep:cursor-pointer ep:bg-transparent ep:border-none ep:p-0 ep:font-inherit ep:text-left ep:w-full"
 					onClick={() => updateConfig("crammingMode", !config.crammingMode)}
-					onKeyDown={(e: KeyboardEvent) => {
-						if (e.key === "Enter" || e.key === " ") {
-							e.preventDefault();
-							updateConfig("crammingMode", !config.crammingMode);
-						}
-					}}
 				>
 					<input
 						id="cs-cramming"
@@ -294,14 +297,19 @@ function CustomStudyBody({
 							)
 						}
 					/>
-					<label htmlFor="cs-cramming" class="ep:text-ui-small ep:text-obs-normal ep:cursor-pointer">
+					<label
+						htmlFor="cs-cramming"
+						class="ep:text-ui-small ep:text-obs-normal ep:cursor-pointer"
+					>
 						Cramming mode (no scheduling changes)
 					</label>
-				</div>
+				</button>
 			</div>
 
 			<div class={sectionCls}>
-				<label htmlFor="cs-preset" class={labelCls}>Save as preset (optional)</label>
+				<label htmlFor="cs-preset" class={labelCls}>
+					Save as preset (optional)
+				</label>
 				<input
 					id="cs-preset"
 					ref={presetInputRef}

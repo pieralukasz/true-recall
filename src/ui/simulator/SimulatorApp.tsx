@@ -257,6 +257,7 @@ function SimulatorControls({
 	return (
 		<div class="ep:bg-obs-secondary ep:rounded-lg ep:p-4">
 			<button
+				type="button"
 				class={[
 					"ep:w-full ep:mb-3 ep:px-3 ep:py-2",
 					"ep:bg-obs-primary ep:text-obs-normal",
@@ -598,10 +599,11 @@ function ParametersBar({
 				{parametersString}
 			</div>
 			<div class="ep:flex ep:gap-2 ep:items-center">
-				<button class={BUTTON_CLS} onClick={onReset}>
+				<button type="button" class={BUTTON_CLS} onClick={onReset}>
 					Reset parameters
 				</button>
 				<button
+					type="button"
 					class={`${BUTTON_CLS}${!canUndo ? " ep:opacity-50" : ""}`}
 					disabled={!canUndo}
 					onClick={onUndo}
@@ -609,6 +611,7 @@ function ParametersBar({
 					Undo
 				</button>
 				<button
+					type="button"
 					class={`${BUTTON_CLS}${!canRedo ? " ep:opacity-50" : ""}`}
 					disabled={!canRedo}
 					onClick={onRedo}
@@ -625,7 +628,7 @@ function ParametersBar({
 
 export function SimulatorApp() {
 	const plugin = usePlugin();
-	const simulator = plugin.store!.getState().simulator;
+	const simulator = plugin.store?.getState().simulator;
 	const simulatorService = useMemo(() => new FSRSSimulatorService(), []);
 
 	// Reactive signals to drive re-renders
@@ -637,6 +640,7 @@ export function SimulatorApp() {
 	const sliderVersion = useSignal(0);
 
 	const runSimulation = useCallback(() => {
+		if (!simulator) return;
 		const sequences = simulator.getSequences();
 		const parameters = simulator.getParameters();
 		const retention = simulator.getDesiredRetention();
@@ -674,6 +678,7 @@ export function SimulatorApp() {
 
 	// Chart-only re-render: just read fresh simulations without re-running
 	const refreshChart = useCallback(() => {
+		if (!simulator) return;
 		simulations.value = [...simulator.getSimulations()];
 	}, [simulator, simulations]);
 
@@ -684,22 +689,27 @@ export function SimulatorApp() {
 
 	// Parameters bar handlers
 	const handleResetParams = useCallback(() => {
+		if (!simulator) return;
 		simulator.resetParameters();
 		sliderVersion.value = sliderVersion.peek() + 1;
 		scheduleUpdate();
 	}, [simulator, sliderVersion, scheduleUpdate]);
 
 	const handleUndo = useCallback(() => {
+		if (!simulator) return;
 		simulator.undo();
 		sliderVersion.value = sliderVersion.peek() + 1;
 		scheduleUpdate();
 	}, [simulator, sliderVersion, scheduleUpdate]);
 
 	const handleRedo = useCallback(() => {
+		if (!simulator) return;
 		simulator.redo();
 		sliderVersion.value = sliderVersion.peek() + 1;
 		scheduleUpdate();
 	}, [simulator, sliderVersion, scheduleUpdate]);
+
+	if (!simulator) return null;
 
 	return (
 		<div class="ep:p-2 ep:max-w-[1400px] ep:mx-auto">

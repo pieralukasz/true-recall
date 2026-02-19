@@ -361,7 +361,11 @@ export class CardRepository {
 		_sourceNoteName?: string,
 	): void {
 		const siblings = this.store.getClozeSiblings(sourceUid, oldTemplate);
-		const siblingsByIndex = new Map(siblings.filter((s) => s.clozeIndex !== undefined).map((s) => [s.clozeIndex as number, s]));
+		const siblingsByIndex = new Map(
+			siblings
+				.filter((s) => s.clozeIndex !== undefined)
+				.map((s) => [s.clozeIndex as number, s]),
+		);
 
 		const newClozeCards = parseClozeTemplate(newTemplate);
 		const newIndices = new Set(newClozeCards.map((c) => c.clozeIndex));

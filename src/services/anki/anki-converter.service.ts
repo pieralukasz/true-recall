@@ -259,13 +259,21 @@ export class AnkiConverterService {
 
 		// <img src="filename">
 		const imgRegex = /<img[^>]+src=["']([^"']+)["'][^>]*>/gi;
-		for (let match = imgRegex.exec(content); match !== null; match = imgRegex.exec(content)) {
+		for (
+			let match = imgRegex.exec(content);
+			match !== null;
+			match = imgRegex.exec(content)
+		) {
 			if (match[1]) files.add(match[1]);
 		}
 
 		// [sound:filename.mp3]
 		const soundRegex = /\[sound:([^\]]+)\]/g;
-		for (let match = soundRegex.exec(content); match !== null; match = soundRegex.exec(content)) {
+		for (
+			let match = soundRegex.exec(content);
+			match !== null;
+			match = soundRegex.exec(content)
+		) {
 			if (match[1]) files.add(match[1]);
 		}
 

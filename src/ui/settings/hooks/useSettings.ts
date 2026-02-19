@@ -28,7 +28,9 @@ export function usePreset(selectedPresetId: string) {
 	const preset = useMemo(() => {
 		void version;
 		const presets = plugin.settings.fsrsPresets;
-		return presets.find((p) => p.id === selectedPresetId) ?? presets[0]!;
+		const found = presets.find((p) => p.id === selectedPresetId) ?? presets[0];
+		if (!found) throw new Error("No FSRS presets configured");
+		return found;
 	}, [plugin.settings.fsrsPresets, selectedPresetId, version]);
 
 	const updatePreset = useCallback(

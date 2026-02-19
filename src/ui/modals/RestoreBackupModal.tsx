@@ -28,8 +28,9 @@ function BackupItem({
 	onDelete: () => void;
 }) {
 	return (
-		<div
-			class={`ep:flex ep:items-center ep:justify-between ep:p-3 ep:border-b ep:border-obs-border ep:cursor-pointer ep:transition-colors ep:hover:bg-obs-modifier-hover ep:last:border-b-0 ${isSelected ? "ep:bg-obs-interactive/10 ep:border-l-2 ep:border-l-obs-interactive" : ""}`}
+		<button
+			type="button"
+			class={`ep:bg-transparent ep:border-none ep:p-0 ep:font-inherit ep:cursor-pointer ep:text-left ep:w-full ep:flex ep:items-center ep:justify-between ep:p-3 ep:border-b ep:border-obs-border ep:transition-colors ep:hover:bg-obs-modifier-hover ep:last:border-b-0 ${isSelected ? "ep:bg-obs-interactive/10 ep:border-l-2 ep:border-l-obs-interactive" : ""}`}
 			onClick={onSelect}
 		>
 			<div class="ep:flex-1 ep:overflow-hidden">
@@ -41,6 +42,7 @@ function BackupItem({
 			<div class="ep:flex ep:items-center ep:gap-3">
 				<span class="ep:text-obs-muted">{backup.formattedSize}</span>
 				<button
+					type="button"
 					class="ep:text-ui-smaller"
 					onClick={(e) => {
 						e.stopPropagation();
@@ -50,7 +52,7 @@ function BackupItem({
 					Delete
 				</button>
 			</div>
-		</div>
+		</button>
 	);
 }
 
@@ -116,12 +118,14 @@ function RestoreBackupBody({
 
 			<div class="ep:flex ep:justify-end ep:gap-2 ep:pt-2 ep:border-t ep:border-obs-border">
 				<button
+					type="button"
 					class="ep:py-2.5 ep:px-5 ep:rounded-md ep:text-ui-small ep:font-medium ep:cursor-pointer ep:transition-all ep:bg-obs-secondary ep:text-obs-normal ep:border ep:border-obs-border ep:hover:bg-obs-modifier-hover"
 					onClick={onClose}
 				>
 					Cancel
 				</button>
 				<button
+					type="button"
 					class={`mod-warning ep:py-2.5 ep:px-5 ep:rounded-md ep:text-ui-small ep:font-medium ep:cursor-pointer ep:transition-all ${!selectedBackup ? "ep:opacity-50 ep:cursor-not-allowed" : ""}`}
 					disabled={!selectedBackup}
 					onClick={() => void handleRestore()}

@@ -259,11 +259,12 @@ function GroupRow({ group, onDelete, onCreateNote, onMove }: GroupRowProps) {
 	return (
 		<div class="ep:border-b ep:border-obs-border ep:last:border-b-0">
 			{/* Group header */}
-			<div
-				class="ep:flex ep:items-center ep:justify-between ep:p-3 ep:bg-obs-secondary ep:cursor-pointer ep:hover:bg-obs-modifier-hover"
-				onClick={() => setExpanded((v) => !v)}
-			>
-				<div class="ep:flex ep:items-center ep:gap-3">
+			<div class="ep:flex ep:items-center ep:justify-between ep:p-3 ep:bg-obs-secondary">
+				<button
+					type="button"
+					class="ep:bg-transparent ep:border-none ep:p-0 ep:font-inherit ep:cursor-pointer ep:text-left ep:flex ep:items-center ep:gap-3 ep:flex-1 ep:hover:opacity-80"
+					onClick={() => setExpanded((v) => !v)}
+				>
 					<span class="ep:text-lg">{icon}</span>
 					<div>
 						<div class="ep:text-ui-small ep:font-medium ep:text-obs-normal">
@@ -273,33 +274,27 @@ function GroupRow({ group, onDelete, onCreateNote, onMove }: GroupRowProps) {
 							{group.cards.length} card{group.cards.length === 1 ? "" : "s"}
 						</div>
 					</div>
-				</div>
+				</button>
 
 				<div class="ep:flex ep:items-center ep:gap-2">
 					<button
+						type="button"
 						class="ep:py-1 ep:px-2 ep:rounded-md ep:bg-obs-interactive ep:text-obs-on-accent ep:text-ui-smaller ep:cursor-pointer ep:hover:opacity-80 ep:border-none"
-						onClick={(e) => {
-							e.stopPropagation();
-							onMove(group);
-						}}
+						onClick={() => onMove(group)}
 					>
 						Move
 					</button>
 					<button
+						type="button"
 						class="ep:py-1 ep:px-2 ep:rounded-md ep:bg-obs-secondary ep:text-obs-normal ep:text-ui-smaller ep:cursor-pointer ep:hover:bg-obs-modifier-hover ep:border ep:border-obs-border"
-						onClick={(e) => {
-							e.stopPropagation();
-							onCreateNote(group);
-						}}
+						onClick={() => onCreateNote(group)}
 					>
 						Create note
 					</button>
 					<button
+						type="button"
 						class="ep:py-1 ep:px-2 ep:rounded-md ep:bg-obs-red ep:text-obs-on-accent ep:text-ui-smaller ep:cursor-pointer ep:hover:opacity-90 ep:border-none"
-						onClick={(e) => {
-							e.stopPropagation();
-							onDelete(group);
-						}}
+						onClick={() => onDelete(group)}
 					>
 						Delete
 					</button>
@@ -400,6 +395,7 @@ function MoveSection({
 			</div>
 
 			<button
+				type="button"
 				class="ep:mt-3 ep:py-2 ep:px-4 ep:rounded-md ep:bg-obs-secondary ep:text-obs-normal ep:border ep:border-obs-border ep:cursor-pointer ep:hover:bg-obs-modifier-hover"
 				onClick={onCancel}
 			>
@@ -418,8 +414,9 @@ interface NoteRowProps {
 
 function NoteRow({ note, onSelect }: NoteRowProps) {
 	return (
-		<div
-			class="ep:flex ep:items-center ep:gap-3 ep:p-3 ep:border-b ep:border-obs-border ep:last:border-b-0 ep:cursor-pointer ep:hover:bg-obs-modifier-hover"
+		<button
+			type="button"
+			class="ep:bg-transparent ep:border-none ep:p-0 ep:font-inherit ep:cursor-pointer ep:text-left ep:w-full ep:flex ep:items-center ep:gap-3 ep:p-3 ep:border-b ep:border-obs-border ep:last:border-b-0 ep:hover:bg-obs-modifier-hover"
 			onClick={onSelect}
 		>
 			<span class="ep:text-lg">📄</span>
@@ -433,6 +430,6 @@ function NoteRow({ note, onSelect }: NoteRowProps) {
 					</div>
 				)}
 			</div>
-		</div>
+		</button>
 	);
 }

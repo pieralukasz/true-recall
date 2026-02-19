@@ -21,7 +21,11 @@ export function hasClozeContent(text: string): boolean {
 export function extractClozeIndices(template: string): number[] {
 	const indices = new Set<number>();
 	const regex = new RegExp(CLOZE_REGEX.source, CLOZE_REGEX.flags);
-	for (let match = regex.exec(template); match !== null; match = regex.exec(template)) {
+	for (
+		let match = regex.exec(template);
+		match !== null;
+		match = regex.exec(template)
+	) {
 		const indexStr = match[1];
 		if (indexStr) {
 			indices.add(parseInt(indexStr, 10));

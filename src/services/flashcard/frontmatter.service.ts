@@ -75,7 +75,8 @@ export class FrontmatterService {
 				// Check if line is a list item (starts with whitespace + dash)
 				const itemMatch = line.match(FrontmatterService.LIST_ITEM_REGEX);
 				if (itemMatch) {
-					const itemValue = itemMatch[1]?.trim().replace(/^["']|["']$/g, "") ?? "";
+					const itemValue =
+						itemMatch[1]?.trim().replace(/^["']|["']$/g, "") ?? "";
 					listItems.push(itemValue);
 				} else if (line.trim() && !line.match(/^\s/)) {
 					// Non-empty, non-indented line means end of list
