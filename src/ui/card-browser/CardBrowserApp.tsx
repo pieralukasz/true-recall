@@ -473,6 +473,7 @@ function BrowserToolbar({
 				<div class="ep:flex ep:items-center ep:gap-1 ep:flex-wrap">
 					{STATE_FILTERS.map((f) => (
 						<button
+							type="button"
 							key={f.value}
 							class={stateFilter === f.value ? PILL_ACTIVE : PILL_INACTIVE}
 							onClick={() => onStateFilterChange(f.value)}
@@ -601,7 +602,15 @@ function VirtualTable({
 							class={`ep:flex ep:items-center ep:gap-1 ep:px-2 ep:text-ui-smaller ep:font-semibold ep:text-obs-muted ep:uppercase ep:tracking-wide ep:select-none ${
 								col.align === "right" ? "ep:justify-end" : ""
 							} ${col.sortable ? "ep:cursor-pointer ep:hover:text-obs-normal" : ""}`}
+							role={col.sortable ? "button" : undefined}
+							tabIndex={col.sortable ? 0 : undefined}
 							onClick={col.sortable ? () => onSortChange(col.key) : undefined}
+							onKeyDown={col.sortable ? (e) => {
+								if (e.key === "Enter" || e.key === " ") {
+									e.preventDefault();
+									onSortChange(col.key);
+								}
+							} : undefined}
 						>
 							<span>{col.label}</span>
 							{col.sortable && sortColumn === col.key && (
@@ -638,6 +647,8 @@ function VirtualTable({
 							<div
 								key={card.id}
 								class={`ep:absolute ep:left-0 ep:right-0 ep:grid ep:items-center ep:cursor-pointer ep:border-b ep:border-obs-border/50 ep:transition-colors ${bgCls}`}
+								role="button"
+								tabIndex={0}
 								style={{
 									top: `${top}px`,
 									height: `${ROW_HEIGHT}px`,
@@ -648,6 +659,16 @@ function VirtualTable({
 										onRowSelect(card.id);
 									} else {
 										onRowClick(card);
+									}
+								}}
+								onKeyDown={(e) => {
+									if (e.key === "Enter" || e.key === " ") {
+										e.preventDefault();
+										if (selectionMode === "selecting") {
+											onRowSelect(card.id);
+										} else {
+											onRowClick(card);
+										}
 									}
 								}}
 							>
@@ -757,15 +778,15 @@ function CardDetailPanel({
 				<div class="ep:flex-1" />
 
 				{card.sourceNoteName && card.sourceNotePath && (
-					<a
-						class="ep:text-ui-smaller ep:text-obs-accent ep:hover:underline ep:cursor-pointer ep:truncate ep:max-w-[200px]"
-						onClick={(e) => {
-							e.preventDefault();
+					<button
+						type="button"
+						class="ep:text-ui-smaller ep:text-obs-accent ep:hover:underline ep:cursor-pointer ep:truncate ep:max-w-[200px] ep:bg-transparent ep:border-none ep:p-0"
+						onClick={() => {
 							if (card.sourceNotePath) onOpenSource(card.sourceNotePath);
 						}}
 					>
 						{card.sourceNoteName}
-					</a>
+					</button>
 				)}
 
 				<div class="ep:flex ep:items-center ep:gap-1">

@@ -331,10 +331,12 @@ export function createReviewSlice(
 								candidate.fsrs.state === State.Learning ||
 								candidate.fsrs.state === State.Relearning;
 							if (!candidateIsLearning || isCardDueNowInternal(candidate)) {
-								[newQueue[nextIndex], newQueue[i]] = [
-									newQueue[i]!,
-									newQueue[nextIndex]!,
-								];
+								const a = newQueue[nextIndex];
+								const b = newQueue[i];
+								if (a && b) {
+									newQueue[nextIndex] = b;
+									newQueue[i] = a;
+								}
 								if (requeueData) {
 									if (requeueData.position === nextIndex) {
 										requeueData.position = i;

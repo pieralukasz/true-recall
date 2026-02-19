@@ -134,7 +134,9 @@ export function createLinkStatusViewPlugin(
 					if (!file) return null;
 					const uids = frontmatterIndex.getValues("flashcard_uid", file.path);
 					if (uids.length === 0) return null;
-					const info = noteStatusCache.get(uids[0]!);
+					const uid = uids[0];
+					if (!uid) return null;
+					const info = noteStatusCache.get(uid);
 					if (!info) return null;
 					return { noteName: file.basename, info };
 				};
@@ -148,9 +150,9 @@ export function createLinkStatusViewPlugin(
 
 					// Pass 1: per-link donuts
 					WIKI_LINK_RE.lastIndex = 0;
-					let match: RegExpExecArray | null;
-					while ((match = WIKI_LINK_RE.exec(text)) !== null) {
-						const linkText = match[1]!;
+					for (let match = WIKI_LINK_RE.exec(text); match !== null; match = WIKI_LINK_RE.exec(text)) {
+						const linkText = match[1];
+						if (!linkText) continue;
 						const absoluteStart = from + match.index;
 
 						const file = app.metadataCache.getFirstLinkpathDest(
@@ -162,7 +164,9 @@ export function createLinkStatusViewPlugin(
 						const uids = frontmatterIndex.getValues("flashcard_uid", file.path);
 						if (uids.length === 0) continue;
 
-						const info = noteStatusCache.get(uids[0]!);
+						const uid = uids[0];
+						if (!uid) continue;
+						const info = noteStatusCache.get(uid);
 						if (!info) continue;
 
 						const targetFile = file;
@@ -177,7 +181,7 @@ export function createLinkStatusViewPlugin(
 						});
 
 						decorations.push({
-							pos: absoluteStart + match[0]?.length,
+							pos: absoluteStart + (match[0]?.length ?? 0),
 							decoration: Decoration.widget({
 								widget: new LinkTextCountWidget(info, () =>
 									onReviewNote(targetFile),
@@ -203,7 +207,7 @@ export function createLinkStatusViewPlugin(
 						const headingMatch = HEADING_RE.exec(line);
 						if (headingMatch) {
 							headings.push({
-								level: headingMatch[1]?.length,
+								level: headingMatch[1]?.length ?? 0,
 								lineEndPos: charPos + line.length,
 							});
 							lineStartPositions.push(charPos);
@@ -214,13 +218,14 @@ export function createLinkStatusViewPlugin(
 					const doc = view.state.doc;
 
 					for (let i = 0; i < headings.length; i++) {
-						const heading = headings[i]!;
+						const heading = headings[i];
+						if (!heading) continue;
 						// Find section end from the full document so folded content is included
 						const nextLineNum = doc.lineAt(heading.lineEndPos).number + 1;
 						let sectionEnd = doc.length;
 						for (let ln = nextLineNum; ln <= doc.lines; ln++) {
 							const m = HEADING_RE.exec(doc.line(ln).text);
-							if (m && m[1]?.length <= heading.level) {
+							if (m && (m[1]?.length ?? 0) <= heading.level) {
 								sectionEnd = doc.line(ln).from;
 								break;
 							}
@@ -234,9 +239,10 @@ export function createLinkStatusViewPlugin(
 						const sectionLinks: ResolvedLink[] = [];
 						const seen = new Set<string>();
 
-						let linkMatch: RegExpExecArray | null;
-						while ((linkMatch = WIKI_LINK_RE.exec(sectionText)) !== null) {
-							const resolved = resolveLink(linkMatch[1]!);
+						for (let linkMatch = WIKI_LINK_RE.exec(sectionText); linkMatch !== null; linkMatch = WIKI_LINK_RE.exec(sectionText)) {
+							const linkText = linkMatch[1];
+							if (!linkText) continue;
+							const resolved = resolveLink(linkText);
 							if (!resolved || seen.has(resolved.noteName)) continue;
 							seen.add(resolved.noteName);
 							sectionLinks.push(resolved);
@@ -248,8 +254,11 @@ export function createLinkStatusViewPlugin(
 						const noteNames = sectionLinks.map((l) => l.noteName);
 						const reviewSection = () => onReviewNotes(noteNames, true);
 
+						const lineStartPos = lineStartPositions[i];
+						if (lineStartPos === undefined) continue;
+
 						decorations.push({
-							pos: lineStartPositions[i]!,
+							pos: lineStartPos,
 							decoration: Decoration.widget({
 								widget: new LinkStatusWidget(
 									aggregated,

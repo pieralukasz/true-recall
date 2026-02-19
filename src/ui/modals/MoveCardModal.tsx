@@ -51,9 +51,10 @@ function extractBacklinks(
 	const content = `${cardQuestion ?? ""} ${cardAnswer ?? ""}`;
 	const linkRegex = /\[\[([^\]|]+)(?:\|[^\]]+)?\]\]/g;
 	const links: string[] = [];
-	let match;
-	while ((match = linkRegex.exec(content)) !== null) {
+	let match: RegExpExecArray | null = linkRegex.exec(content);
+	while (match !== null) {
 		if (match[1]) links.push(match[1]);
+		match = linkRegex.exec(content);
 	}
 	return [...new Set(links)];
 }
@@ -77,7 +78,15 @@ function NoteItem({
 	return (
 		<div
 			class={isSuggested ? `${baseCls} ${suggestedCls}` : baseCls}
+			role="option"
+			tabIndex={0}
 			onClick={() => onSelect(note.path)}
+			onKeyDown={(e: KeyboardEvent) => {
+				if (e.key === "Enter" || e.key === " ") {
+					e.preventDefault();
+					onSelect(note.path);
+				}
+			}}
 		>
 			<div class="ep:flex ep:items-center ep:gap-2 ep:overflow-hidden ep:flex-1">
 				<span class="ep:shrink-0">
@@ -93,6 +102,7 @@ function NoteItem({
 				)}
 			</div>
 			<button
+				type="button"
 				class="ep:shrink-0 ep:py-1 ep:px-3 ep:rounded-md ep:bg-obs-interactive ep:text-obs-on-accent ep:border-none ep:text-ui-smaller ep:cursor-pointer ep:opacity-0 ep:group-hover:opacity-100 ep:hover:opacity-100"
 				onClick={(e) => {
 					e.stopPropagation();

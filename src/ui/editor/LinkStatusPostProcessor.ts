@@ -42,7 +42,9 @@ export function createLinkStatusPostProcessor(
 			const uids = frontmatterIndex.getValues("flashcard_uid", file.path);
 			if (uids.length === 0) continue;
 
-			const info = noteStatusCache.get(uids[0]!);
+			const uid = uids[0];
+			if (!uid) continue;
+			const info = noteStatusCache.get(uid);
 			if (!info) continue;
 
 			const targetFile = file;
@@ -107,14 +109,14 @@ function collectFlashcardLinksAfterHeading(
 	noteStatusCache: NoteStatusCacheService,
 ): { noteName: string; info: NoteStatusInfo }[] {
 	const results: { noteName: string; info: NoteStatusInfo }[] = [];
-	const headingLevel = parseInt(heading.tagName[1]!, 10);
+	const headingLevel = parseInt(heading.tagName[1] ?? "0", 10);
 	const seen = new Set<string>();
 
 	let sibling = heading.nextElementSibling;
 	while (sibling) {
 		const tagName = sibling.tagName;
 		if (/^H[1-6]$/.test(tagName)) {
-			const siblingLevel = parseInt(tagName[1]!, 10);
+			const siblingLevel = parseInt(tagName[1] ?? "0", 10);
 			if (siblingLevel <= headingLevel) break;
 		}
 
@@ -131,8 +133,8 @@ function collectFlashcardLinksAfterHeading(
 			const uids = frontmatterIndex.getValues("flashcard_uid", resolved.path);
 			if (uids.length === 0) continue;
 
-			const uid = uids[0]!;
-			if (seen.has(uid)) continue;
+			const uid = uids[0];
+			if (!uid || seen.has(uid)) continue;
 			seen.add(uid);
 
 			const info = noteStatusCache.get(uid);

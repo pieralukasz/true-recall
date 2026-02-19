@@ -82,6 +82,7 @@ function ActionButton({
 
 	return (
 		<button
+			type="button"
 			class={`ep:w-full ep:py-3 ep:px-4 ep:rounded-md ep:border ep:border-obs-border ep:cursor-pointer ep:transition-colors ep:text-left ${btnCls}`}
 			onClick={onClick}
 		>
@@ -102,7 +103,15 @@ function NoteItem({ note, onSelect }: { note: TFile; onSelect: () => void }) {
 	return (
 		<div
 			class="ep:flex ep:items-center ep:justify-between ep:p-3 ep:border-b ep:border-obs-border ep:cursor-pointer ep:transition-colors ep:hover:bg-obs-modifier-hover ep:last:border-b-0 ep:group"
+			role="option"
+			tabIndex={0}
 			onClick={onSelect}
+			onKeyDown={(e: KeyboardEvent) => {
+				if (e.key === "Enter" || e.key === " ") {
+					e.preventDefault();
+					onSelect();
+				}
+			}}
 		>
 			<div class="ep:flex ep:items-center ep:gap-2 ep:overflow-hidden ep:flex-1">
 				<span class="ep:shrink-0">{"\u{1F4C4}"}</span>
@@ -116,6 +125,7 @@ function NoteItem({ note, onSelect }: { note: TFile; onSelect: () => void }) {
 				)}
 			</div>
 			<button
+				type="button"
 				class="ep:shrink-0 ep:py-1 ep:px-3 ep:rounded-md ep:bg-obs-interactive ep:text-obs-on-accent ep:border-none ep:text-ui-smaller ep:cursor-pointer ep:opacity-0 ep:group-hover:opacity-100 ep:hover:opacity-100"
 				onClick={(e) => {
 					e.stopPropagation();
@@ -211,6 +221,7 @@ function MoveSection({
 			</div>
 
 			<button
+				type="button"
 				class="ep:mt-3 ep:py-2 ep:px-4 ep:rounded-md ep:bg-obs-secondary ep:text-obs-normal ep:border ep:border-obs-border ep:cursor-pointer ep:hover:bg-obs-modifier-hover"
 				onClick={onCancel}
 			>

@@ -189,7 +189,7 @@ export class TrueRetentionCalculator {
 			}
 
 			result.push({
-				date: entries[i]?.date,
+				date: entries[i]?.date ?? "",
 				retention: totalReviews > 0 ? totalRetention / totalReviews : 0,
 				reviewCount: totalReviews,
 			});
