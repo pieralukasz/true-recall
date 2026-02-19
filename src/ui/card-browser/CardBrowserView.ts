@@ -1,7 +1,7 @@
 import { ItemView, type WorkspaceLeaf } from "obsidian";
 import { VIEW_TYPE_CARD_BROWSER } from "../../constants";
 import { notify } from "../../services";
-import { effect } from "@preact/signals-core";
+import { effect } from "@preact/signals";
 import { dataVersion, notifyCardChange, track } from "../../services/core/signals";
 import { SelectionFooter } from "../components";
 import { renderStateBadge } from "../components/StateBadge";

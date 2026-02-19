@@ -24,7 +24,7 @@ import type {
 	CardMaturityBreakdown,
 	FSRSFlashcardItem,
 } from "../../types";
-import { effect } from "@preact/signals-core";
+import { effect } from "@preact/signals";
 import { dataVersion, settingsVersion, syncVersion, track } from "../../services/core/signals";
 import {
 	TodaySection,
