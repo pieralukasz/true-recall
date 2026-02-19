@@ -169,16 +169,16 @@ export class TodaySection extends BaseComponent {
 		});
 
 		// Value - use Obsidian's interface font
-		const valueEl = card.createSpan({
+		card.createSpan({
 			cls: [
 				"ep:text-3xl",
 				"ep:font-semibold",
 				"ep:text-obs-normal",
 				"ep:mb-1",
+				"ep:font-interface",
 			].join(" "),
 			text: metric.value,
 		});
-		valueEl.setCssProps({ "font-family": "var(--font-interface)" });
 
 		// Label
 		card.createSpan({

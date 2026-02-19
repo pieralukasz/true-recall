@@ -1,11 +1,7 @@
-/**
- * Device Selection Modal
- * Shown at first run when other device databases are available.
- * Allows user to start fresh or import from another device.
- */
 import { App } from "obsidian";
 import { BasePromiseModal, type CancellableResult } from "./BasePromiseModal";
 import type { DeviceDatabaseInfo } from "../../services/device";
+import { createSelectableListItem, type SelectableListItem } from "../components";
 
 export interface DeviceSelectionResult extends CancellableResult {
     action: "fresh" | "import";
@@ -24,6 +20,7 @@ export class DeviceSelectionModal extends BasePromiseModal<DeviceSelectionResult
     private selectedDatabase: DeviceDatabaseInfo | null = null;
     private selectedAction: "fresh" | "import" = "fresh";
     private continueButton: HTMLButtonElement | null = null;
+    private dbItems: SelectableListItem[] = [];
 
     constructor(app: App, options: DeviceSelectionModalOptions) {
         super(app, {
@@ -39,24 +36,23 @@ export class DeviceSelectionModal extends BasePromiseModal<DeviceSelectionResult
     }
 
     protected renderBody(container: HTMLElement): void {
-        const introEl = container.createDiv({ cls: "true-recall-device-intro" });
+        const introEl = container.createDiv({ cls: "ep:mb-4" });
         introEl.createEl("p", {
             text: "Choose how to initialize the database on this device:",
         });
-        introEl.setCssProps({ "margin-bottom": "16px" });
 
-        const optionsEl = container.createDiv({ cls: "true-recall-device-options" });
+        const optionsEl = container.createDiv();
 
-        const freshOption = this.createRadioOption(
+        const freshRadio = this.createRadioOption(
             optionsEl,
             "fresh",
             "Start fresh",
             "Create a new, empty database"
         );
-        freshOption.radioEl.checked = true;
+        freshRadio.checked = true;
 
         if (this.databases.length > 0) {
-            const importOption = this.createRadioOption(
+            const importRadio = this.createRadioOption(
                 optionsEl,
                 "import",
                 "Import from another device",
@@ -64,52 +60,35 @@ export class DeviceSelectionModal extends BasePromiseModal<DeviceSelectionResult
             );
 
             const dbListContainer = container.createDiv({
-                cls: "true-recall-device-db-list",
-            });
-            dbListContainer.setCssProps({
-                display: "none",
-                "margin-left": "28px",
-                "margin-top": "8px",
-                "margin-bottom": "16px",
+                cls: "ep:hidden ep:ml-7 ep:mt-2 ep:mb-4",
             });
 
             for (const db of this.databases) {
                 this.renderDatabaseItem(dbListContainer, db);
             }
 
-            freshOption.radioEl.addEventListener("change", () => {
-                if (freshOption.radioEl.checked) {
+            this.addDomEvent(freshRadio, "change", () => {
+                if (freshRadio.checked) {
                     this.selectedAction = "fresh";
-                    dbListContainer.setCssProps({ display: "none" });
+                    dbListContainer.addClass("ep:hidden");
                     this.updateContinueButton();
                 }
             });
 
-            importOption.radioEl.addEventListener("change", () => {
-                if (importOption.radioEl.checked) {
+            this.addDomEvent(importRadio, "change", () => {
+                if (importRadio.checked) {
                     this.selectedAction = "import";
-                    dbListContainer.setCssProps({ display: "block" });
+                    dbListContainer.removeClass("ep:hidden");
                     this.updateContinueButton();
                 }
             });
         }
 
-        const actionsEl = container.createDiv({ cls: "true-recall-modal-actions" });
-        actionsEl.setCssProps({
-            display: "flex",
-            "justify-content": "flex-end",
-            gap: "8px",
-            "margin-top": "24px",
-        });
-
-        const cancelBtn = actionsEl.createEl("button", { text: "Cancel" });
-        cancelBtn.addEventListener("click", () => this.close());
-
-        this.continueButton = actionsEl.createEl("button", {
-            text: "Continue",
-            cls: "mod-cta",
-        });
-        this.continueButton.addEventListener("click", () => this.handleContinue());
+        const buttonsEl = this.createButtonsSection(container, [
+            { text: "Cancel", type: "secondary", onClick: () => this.close() },
+            { text: "Continue", type: "primary", onClick: () => this.handleContinue() },
+        ]);
+        this.continueButton = buttonsEl.querySelector("button:last-child") as HTMLButtonElement;
     }
 
     private createRadioOption(
@@ -117,145 +96,95 @@ export class DeviceSelectionModal extends BasePromiseModal<DeviceSelectionResult
         value: string,
         label: string,
         description: string
-    ): { itemEl: HTMLElement; radioEl: HTMLInputElement } {
-        const itemEl = container.createDiv({ cls: "true-recall-device-option" });
-        itemEl.setCssProps({
-            display: "flex",
-            "align-items": "flex-start",
-            gap: "12px",
-            padding: "12px",
-            "border-radius": "6px",
-            "margin-bottom": "8px",
-            cursor: "pointer",
-            "background-color": "var(--background-secondary)",
+    ): HTMLInputElement {
+        const itemEl = container.createDiv({
+            cls: "ep:flex ep:items-start ep:gap-3 ep:p-3 ep:rounded-md ep:mb-2 ep:cursor-pointer ep:bg-obs-secondary ep:transition-colors ep:hover:bg-obs-modifier-hover",
         });
 
         const radioEl = itemEl.createEl("input", {
             type: "radio",
             attr: { name: "device-action", value },
+            cls: "ep:mt-0.5 ep:shrink-0",
         });
-        radioEl.setCssProps({ "margin-top": "2px" });
 
         const textEl = itemEl.createDiv();
-        const labelEl = textEl.createDiv({ text: label });
-        labelEl.setCssProps({ "font-weight": "500" });
-        const descEl = textEl.createDiv({
-            text: description,
-            cls: "setting-item-description",
+        textEl.createDiv({
+            text: label,
+            cls: "ep:font-medium",
         });
-        descEl.setCssProps({ "margin-top": "2px" });
+        textEl.createDiv({
+            text: description,
+            cls: "setting-item-description ep:mt-0.5",
+        });
 
-        itemEl.addEventListener("click", (e) => {
+        this.addDomEvent(itemEl, "click", (e: MouseEvent) => {
             if (e.target !== radioEl) {
                 radioEl.checked = true;
                 radioEl.dispatchEvent(new Event("change"));
             }
         });
 
-        radioEl.addEventListener("change", () => {
+        // Selection highlight on change
+        this.addDomEvent(radioEl, "change", () => {
             container
-                .querySelectorAll(".true-recall-device-option")
+                .querySelectorAll(":scope > div")
                 .forEach((el) => {
-                    (el as HTMLElement).setCssProps({
-                        "background-color": "var(--background-secondary)",
-                        border: "none",
-                    });
+                    (el as HTMLElement).removeClass("ep-radio-active");
                 });
             if (radioEl.checked) {
-                itemEl.setCssProps({
-                    "background-color": "var(--background-modifier-hover)",
-                    border: "1px solid var(--interactive-accent)",
-                });
+                itemEl.addClass("ep-radio-active");
             }
         });
 
-        return { itemEl, radioEl };
+        return radioEl;
     }
 
     private renderDatabaseItem(
         container: HTMLElement,
         db: DeviceDatabaseInfo
     ): void {
-        const itemEl = container.createDiv({ cls: "true-recall-device-db-item" });
-        itemEl.setCssProps({
-            display: "flex",
-            "justify-content": "space-between",
-            "align-items": "center",
-            padding: "10px 12px",
-            "border-radius": "6px",
-            "margin-bottom": "4px",
-            cursor: "pointer",
-            "background-color": "var(--background-secondary)",
-            transition: "background-color 0.2s ease",
-        });
-
-        const infoEl = itemEl.createDiv();
-        const headerEl = infoEl.createDiv();
-        headerEl.setCssProps({
-            display: "flex",
-            "align-items": "center",
-            gap: "8px",
-        });
-
-        headerEl.createSpan({ text: "device" });
-        const deviceIdEl = headerEl.createSpan({
-            text: db.deviceId,
-            cls: "true-recall-device-id",
-        });
-        deviceIdEl.setCssProps({ "font-family": "monospace" });
-
-        const statsEl = infoEl.createDiv();
-        statsEl.setCssProps({
-            "font-size": "0.85em",
-            color: "var(--text-muted)",
-            "margin-top": "4px",
-        });
-
-        const statsParts: string[] = [];
-        if (db.cardCount !== null) {
-            statsParts.push(`${db.cardCount.toLocaleString()} cards`);
-        }
-        if (db.lastReviewDate) {
-            statsParts.push(`Last: ${this.formatDate(db.lastReviewDate)}`);
-        }
-        statsEl.textContent = statsParts.join(" | ");
-
-        const rightEl = itemEl.createDiv();
-        rightEl.setCssProps({
-            "text-align": "right",
-            "font-size": "0.85em",
-            color: "var(--text-muted)",
-        });
-
-        rightEl.createDiv({ text: db.formattedSize });
-        rightEl.createDiv({ text: `Mod: ${this.formatRelativeTime(db.lastModified)}` });
-
-        itemEl.addEventListener("click", () => {
-            container.querySelectorAll(".true-recall-device-db-item").forEach((el) => {
-                (el as HTMLElement).setCssProps({
-                    "background-color": "var(--background-secondary)",
-                    border: "none",
+        const item = createSelectableListItem(container, {
+            renderContent: (el) => {
+                const headerEl = el.createDiv({
+                    cls: "ep:flex ep:items-center ep:gap-2",
                 });
-            });
+                headerEl.createSpan({ text: "device" });
+                headerEl.createSpan({
+                    text: db.deviceId,
+                    cls: "ep:font-mono",
+                });
 
-            itemEl.setCssProps({
-                "background-color": "var(--interactive-accent)",
-                border: "2px solid var(--interactive-accent-hover)",
-            });
-            this.selectedDatabase = db;
-            this.updateContinueButton();
+                const statsEl = el.createDiv({
+                    cls: "ep:text-ui-smaller ep:text-obs-muted ep:mt-1",
+                });
+                const statsParts: string[] = [];
+                if (db.cardCount !== null) {
+                    statsParts.push(`${db.cardCount.toLocaleString()} cards`);
+                }
+                if (db.lastReviewDate) {
+                    statsParts.push(`Last: ${this.formatDate(db.lastReviewDate)}`);
+                }
+                statsEl.textContent = statsParts.join(" | ");
+            },
+            renderRight: (el) => {
+                el.addClass("ep:text-right", "ep:text-ui-smaller", "ep:text-obs-muted");
+                el.createDiv({ text: db.formattedSize });
+                el.createDiv({ text: `Mod: ${this.formatRelativeTime(db.lastModified)}` });
+            },
+            onSelect: () => {
+                this.deselectAllDbItems();
+                item.setSelected(true);
+                this.selectedDatabase = db;
+                this.updateContinueButton();
+            },
         });
+        this.dbItems.push(item);
+    }
 
-        itemEl.addEventListener("mouseenter", () => {
-            if (this.selectedDatabase !== db) {
-                itemEl.setCssProps({ "background-color": "var(--background-modifier-hover)" });
-            }
-        });
-        itemEl.addEventListener("mouseleave", () => {
-            if (this.selectedDatabase !== db) {
-                itemEl.setCssProps({ "background-color": "var(--background-secondary)" });
-            }
-        });
+    private deselectAllDbItems(): void {
+        for (const item of this.dbItems) {
+            item.setSelected(false);
+        }
     }
 
     private updateContinueButton(): void {

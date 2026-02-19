@@ -1,0 +1,28 @@
+/* Flashcard panel — collect button pulse animation */
+@layer components {
+	@keyframes true-recall-pulse-collect {
+		0%,
+		100% {
+			opacity: 1;
+			transform: scale(1);
+		}
+		50% {
+			opacity: 0.7;
+			transform: scale(1.1);
+		}
+	}
+
+	.true-recall-pulse-collect {
+		animation: true-recall-pulse-collect 2s ease-in-out infinite;
+		color: var(--color-yellow) !important;
+	}
+	.true-recall-pulse-collect:hover {
+		animation: none;
+	}
+}
+
+@media (prefers-reduced-motion: reduce) {
+	.true-recall-pulse-collect {
+		animation: none;
+	}
+}

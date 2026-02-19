@@ -123,3 +123,9 @@ export {
 	createNoteListItem,
 	type NoteListItemProps,
 } from "./NoteListItem";
+
+export {
+	SelectableListItem,
+	createSelectableListItem,
+	type SelectableListItemProps,
+} from "./SelectableListItem";

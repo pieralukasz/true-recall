@@ -64,14 +64,14 @@ export class NoteListItem extends BaseComponent {
 		// Note item container
 		const indentCls = indent ? "ep:pl-6" : "";
 		this.element = this.container.createDiv({
-			cls: `ep-note-item ep:flex ep:items-center ep:gap-3 ep:py-2 ep:px-3 ${indentCls} ep:h-full ep:border-b ep:border-obs-border ep:cursor-pointer ep:transition-colors ep:hover:bg-obs-modifier-hover${
+			cls: `ep:group/note ep:flex ep:items-center ep:gap-3 ep:py-2 ep:px-3 ${indentCls} ep:h-full ep:border-b ep:border-obs-border ep:cursor-pointer ep:transition-colors ep:hover:bg-obs-modifier-hover${
 				isSelected ? " ep:bg-obs-interactive/10" : ""
 			}`,
 		});
 
 		if (showDragHandle && !Platform.isMobile) {
 			const handle = this.element.createDiv({
-				cls: "ep-note-drag-handle ep:flex ep:items-center ep:justify-center ep:w-4 ep:h-4 ep:shrink-0 ep:text-obs-faint [&_svg]:ep:w-3 [&_svg]:ep:h-3",
+				cls: "ep:flex ep:items-center ep:justify-center ep:w-4 ep:h-4 ep:shrink-0 ep:text-obs-faint ep:cursor-grab ep:opacity-0 ep:transition-opacity ep:group-hover/note:opacity-40 ep:hover:opacity-100 [&_svg]:ep:w-3 [&_svg]:ep:h-3",
 			});
 			setIcon(handle, "grip-vertical");
 		}

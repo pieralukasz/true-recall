@@ -1388,7 +1388,7 @@ export class FlashcardPanelView extends ItemView {
 
         // Create status element
         this.mobileStatusEl = document.createElement("div");
-        this.mobileStatusEl.addClass("true-recall-mobile-status");
+        this.mobileStatusEl.addClass("ep:flex", "ep:gap-1", "ep:items-center", "ep:text-ui-smaller");
         titleContainer.appendChild(this.mobileStatusEl);
     }
 
