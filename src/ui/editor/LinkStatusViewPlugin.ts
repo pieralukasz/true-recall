@@ -20,6 +20,15 @@ import {
 	infoEqual,
 } from "./LinkStatusWidget";
 
+const HEADING_DONUT_CLS: Record<number, string> = {
+	1: "ep:w-[30px] ep:h-[30px] ep:mr-[22px] ep:mb-[3px]",
+	2: "ep:w-[28px] ep:h-[28px] ep:mr-[21px] ep:mb-0.5",
+	3: "ep:w-6 ep:h-6 ep:mr-[19px] ep:mb-0.5",
+	4: "ep:w-[21px] ep:h-[21px] ep:mr-5 ep:mb-0.5",
+	5: "ep:w-[19px] ep:h-[19px] ep:mr-5 ep:mb-0.5",
+	6: "ep:w-[18px] ep:h-[18px] ep:mr-5 ep:mb-0.5",
+};
+
 class LinkStatusWidget extends WidgetType {
 	constructor(
 		readonly info: NoteStatusInfo,
@@ -36,8 +45,11 @@ class LinkStatusWidget extends WidgetType {
 			onPlay: this.onPlay,
 			small: this.small,
 		});
-		if (this.headingLevel > 0) {
-			el.classList.add(`true-recall-heading-donut-h${this.headingLevel}`);
+		const headingCls = HEADING_DONUT_CLS[this.headingLevel];
+		if (headingCls) {
+			for (const cls of headingCls.split(" ")) {
+				el.classList.add(cls);
+			}
 		}
 		return el;
 	}

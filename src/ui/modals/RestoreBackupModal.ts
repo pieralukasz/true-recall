@@ -1,10 +1,7 @@
-/**
- * Restore Backup Modal
- * Allows user to select and restore a database backup
- */
 import { App } from "obsidian";
 import { BasePromiseModal, type CancellableResult } from "./BasePromiseModal";
 import type { BackupInfo, BackupService } from "../../services/persistence/backup.service";
+import { createSelectableListItem, type SelectableListItem } from "../components";
 
 export interface RestoreBackupResult extends CancellableResult {
     restoredPath?: string;
@@ -19,6 +16,8 @@ export class RestoreBackupModal extends BasePromiseModal<RestoreBackupResult> {
     private backups: BackupInfo[];
     private backupService: BackupService;
     private selectedBackup: BackupInfo | null = null;
+    private restoreButton: HTMLButtonElement | null = null;
+    private items: SelectableListItem[] = [];
 
     constructor(app: App, options: RestoreBackupModalOptions) {
         super(app, {
@@ -34,29 +33,21 @@ export class RestoreBackupModal extends BasePromiseModal<RestoreBackupResult> {
     }
 
     protected renderBody(container: HTMLElement): void {
-        const warningEl = container.createDiv({ cls: "true-recall-backup-warning" });
+        const warningEl = container.createDiv({
+            cls: "ep:bg-obs-modifier-error ep:p-3 ep:rounded-md ep:mb-4 ep:text-obs-on-accent",
+        });
         warningEl.createEl("p", {
             text: "Restoring a backup will replace your current database. A safety backup will be created automatically before restoration.",
         });
-        warningEl.setCssProps({
-            "background-color": "var(--background-modifier-error)",
-            padding: "12px",
-            "border-radius": "6px",
-            "margin-bottom": "16px",
-            color: "var(--text-on-accent)",
-        });
 
-        const listContainer = container.createDiv({ cls: "true-recall-backup-list" });
-        listContainer.setCssProps({
-            "max-height": "300px",
-            "overflow-y": "auto",
-            "margin-bottom": "16px",
+        const listContainer = container.createDiv({
+            cls: "ep:max-h-[300px] ep:overflow-y-auto ep:mb-4",
         });
 
         if (this.backups.length === 0) {
             listContainer.createEl("p", {
                 text: "No backups available.",
-                cls: "true-recall-no-backups",
+                cls: "ep:text-obs-muted ep:p-3",
             });
         } else {
             for (const backup of this.backups) {
@@ -64,112 +55,71 @@ export class RestoreBackupModal extends BasePromiseModal<RestoreBackupResult> {
             }
         }
 
-        const actionsEl = container.createDiv({ cls: "true-recall-modal-actions" });
-        actionsEl.setCssProps({
-            display: "flex",
-            "justify-content": "flex-end",
-            gap: "8px",
-        });
-
-        const cancelBtn = actionsEl.createEl("button", { text: "Cancel" });
-        cancelBtn.addEventListener("click", () => this.close());
-
-        const restoreBtn = actionsEl.createEl("button", {
-            text: "Restore selected",
-            cls: "mod-warning",
-        });
-        restoreBtn.disabled = true;
-        restoreBtn.addEventListener("click", () => {
-            void this.handleRestore();
-        });
-
-        this.restoreButton = restoreBtn;
+        const buttonsEl = this.createButtonsSection(container, [
+            { text: "Cancel", type: "secondary", onClick: () => this.close() },
+            {
+                text: "Restore selected",
+                type: "danger",
+                onClick: () => void this.handleRestore(),
+                disabled: true,
+            },
+        ]);
+        this.restoreButton = buttonsEl.querySelector("button:last-child") as HTMLButtonElement;
     }
-
-    private restoreButton: HTMLButtonElement | null = null;
 
     private renderBackupItem(container: HTMLElement, backup: BackupInfo): void {
-        const itemEl = container.createDiv({ cls: "true-recall-backup-item" });
-        itemEl.setCssProps({
-            display: "flex",
-            "justify-content": "space-between",
-            "align-items": "center",
-            padding: "10px 12px",
-            "border-radius": "6px",
-            "margin-bottom": "4px",
-            cursor: "pointer",
-            "background-color": "var(--background-secondary)",
-            transition: "background-color 0.2s ease",
-        });
-
-        const infoEl = itemEl.createDiv();
-        const dateEl = infoEl.createDiv({
-            text: backup.formattedDate,
-            cls: "true-recall-backup-date",
-        });
-        dateEl.setCssProps({ "font-weight": "500" });
-
-        const filenameEl = infoEl.createDiv({
-            text: backup.filename,
-            cls: "true-recall-backup-filename",
-        });
-        filenameEl.setCssProps({
-            "font-size": "0.85em",
-            color: "var(--text-muted)",
-        });
-
-        const rightEl = itemEl.createDiv();
-        rightEl.setCssProps({
-            display: "flex",
-            "align-items": "center",
-            gap: "12px",
-        });
-
-        const sizeEl = rightEl.createSpan({
-            text: backup.formattedSize,
-            cls: "true-recall-backup-size",
-        });
-        sizeEl.setCssProps({ color: "var(--text-muted)" });
-
-        const deleteBtn = rightEl.createEl("button", { text: "Delete" });
-        deleteBtn.setCssProps({ "font-size": "0.85em" });
-        deleteBtn.addEventListener("click", (e) => {
-            e.stopPropagation();
-            void this.handleDeleteBackup(backup, itemEl);
-        });
-
-        itemEl.addEventListener("click", () => {
-            container.querySelectorAll(".true-recall-backup-item").forEach(el => {
-                (el as HTMLElement).setCssProps({
-                    "background-color": "var(--background-secondary)",
-                    border: "none",
+        const item = createSelectableListItem(container, {
+            renderContent: (el) => {
+                el.createDiv({
+                    text: backup.formattedDate,
+                    cls: "ep:font-medium",
                 });
-            });
-
-            itemEl.setCssProps({
-                "background-color": "var(--interactive-accent)",
-                border: "2px solid var(--interactive-accent-hover)",
-            });
-            this.selectedBackup = backup;
-
-            if (this.restoreButton) {
-                this.restoreButton.disabled = false;
-            }
+                el.createDiv({
+                    text: backup.filename,
+                    cls: "ep:text-ui-smaller ep:text-obs-muted",
+                });
+            },
+            renderRight: (el) => {
+                const rightEl = el.createDiv({
+                    cls: "ep:flex ep:items-center ep:gap-3",
+                });
+                rightEl.createSpan({
+                    text: backup.formattedSize,
+                    cls: "ep:text-obs-muted",
+                });
+                const deleteBtn = rightEl.createEl("button", {
+                    text: "Delete",
+                    cls: "ep:text-ui-smaller",
+                });
+                deleteBtn.addEventListener("click", (e) => {
+                    e.stopPropagation();
+                    void this.handleDeleteBackup(backup, item);
+                });
+            },
+            onSelect: () => {
+                this.deselectAll();
+                item.setSelected(true);
+                this.selectedBackup = backup;
+                this.enableRestoreButton();
+            },
         });
-
-        itemEl.addEventListener("mouseenter", () => {
-            if (this.selectedBackup !== backup) {
-                itemEl.setCssProps({ "background-color": "var(--background-modifier-hover)" });
-            }
-        });
-        itemEl.addEventListener("mouseleave", () => {
-            if (this.selectedBackup !== backup) {
-                itemEl.setCssProps({ "background-color": "var(--background-secondary)" });
-            }
-        });
+        this.items.push(item);
     }
 
-    private async handleDeleteBackup(backup: BackupInfo, itemEl: HTMLElement): Promise<void> {
+    private deselectAll(): void {
+        for (const item of this.items) {
+            item.setSelected(false);
+        }
+    }
+
+    private enableRestoreButton(): void {
+        if (this.restoreButton) {
+            this.restoreButton.disabled = false;
+            this.restoreButton.removeClass("ep:opacity-50", "ep:cursor-not-allowed");
+        }
+    }
+
+    private async handleDeleteBackup(backup: BackupInfo, item: SelectableListItem): Promise<void> {
         // eslint-disable-next-line no-alert
         const confirmed = confirm(`Delete backup from ${backup.formattedDate}?`);
         if (!confirmed) return;
@@ -177,12 +127,14 @@ export class RestoreBackupModal extends BasePromiseModal<RestoreBackupResult> {
         const success = await this.backupService.deleteBackup(backup.path);
         if (success) {
             this.backups = this.backups.filter(b => b.path !== backup.path);
-            itemEl.remove();
+            this.items = this.items.filter(i => i !== item);
+            item.destroy();
 
             if (this.selectedBackup === backup) {
                 this.selectedBackup = null;
                 if (this.restoreButton) {
                     this.restoreButton.disabled = true;
+                    this.restoreButton.addClass("ep:opacity-50", "ep:cursor-not-allowed");
                 }
             }
         }

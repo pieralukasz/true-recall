@@ -1,0 +1,72 @@
+/* Review view — descendant selectors targeting rendered markdown content */
+@layer components {
+	/* Reset padding for fullscreen review view */
+	[data-type="true-recall-review"] .view-content {
+		padding: 0;
+	}
+
+	/* Override Obsidian default button height */
+	.true-recall-review-buttons button {
+		height: auto !important;
+		padding: 0.5rem 1rem !important;
+	}
+	.true-recall-review-buttons {
+		gap: 1rem !important;
+	}
+
+	/* Enable text selection + max-width for readability */
+	.true-recall-review-question,
+	.true-recall-review-answer {
+		user-select: text;
+		-webkit-user-select: text;
+		white-space: pre-line;
+		max-width: 60rem;
+		margin-left: auto;
+		margin-right: auto;
+	}
+
+	/* Code blocks — preserve formatting, center, style */
+	.true-recall-review-question pre,
+	.true-recall-review-answer pre {
+		text-align: left;
+		white-space: pre;
+		overflow-x: auto;
+		width: fit-content;
+		max-width: 100%;
+		margin-left: auto;
+		margin-right: auto;
+		background-color: var(--code-background);
+		padding: 1rem;
+		border-radius: 0.5rem;
+	}
+
+	.true-recall-review-question code,
+	.true-recall-review-answer code {
+		text-align: left;
+	}
+
+	/* Center images */
+	.true-recall-review-question img,
+	.true-recall-review-answer img {
+		margin-left: auto;
+		margin-right: auto;
+	}
+
+	/* Card markdown content styling */
+	.true-recall-card-markdown p {
+		margin: 0;
+	}
+	.true-recall-card-markdown p + p {
+		margin-top: 0.25rem;
+	}
+	.true-recall-card-markdown strong,
+	.true-recall-card-markdown em,
+	.true-recall-card-markdown code,
+	.true-recall-card-markdown a {
+		display: inline;
+	}
+	.true-recall-card-markdown .internal-link {
+		color: var(--text-accent);
+		text-decoration: none;
+	}
+}
