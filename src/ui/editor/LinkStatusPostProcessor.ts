@@ -83,7 +83,13 @@ export function createLinkStatusPostProcessor(
 			const aggregated = aggregateInfos(sectionLinks.map((l) => l.info));
 			const noteNames = sectionLinks.map((l) => l.noteName);
 			const reviewSection = () => onReviewNotes(noteNames, true);
-			const headingLevel = parseInt(heading.tagName[1] ?? "1", 10) as 1 | 2 | 3 | 4 | 5 | 6;
+			const headingLevel = parseInt(heading.tagName[1] ?? "1", 10) as
+				| 1
+				| 2
+				| 3
+				| 4
+				| 5
+				| 6;
 
 			const donutEl = createLinkStatusElement({
 				info: aggregated,
@@ -96,7 +102,11 @@ export function createLinkStatusPostProcessor(
 			summaryEl.className =
 				"ep-heading-summary ep:inline-flex ep:items-center ep:gap-1 ep:float-right";
 			summaryEl.appendChild(
-				createLinkTextCountElement({ info: aggregated, onPlay: reviewSection, variant: `h${headingLevel}` }),
+				createLinkTextCountElement({
+					info: aggregated,
+					onPlay: reviewSection,
+					variant: `h${headingLevel}`,
+				}),
 			);
 			heading.appendChild(summaryEl);
 		}

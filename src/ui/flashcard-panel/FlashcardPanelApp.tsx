@@ -4,6 +4,7 @@ import {
 	Menu,
 	Component as ObsidianComponent,
 	Platform,
+	type TFile,
 } from "obsidian";
 import {
 	useCallback,
@@ -20,7 +21,12 @@ import {
 	settingsVersion,
 	track,
 } from "../../services/core/signals";
-import type { PanelApi, SelectionMode } from "../../state/store";
+import type {
+	PanelApi,
+	ProcessingStatus,
+	SelectionMode,
+	ViewMode,
+} from "../../state/store";
 import type { FlashcardInfo, FlashcardItem } from "../../types";
 import type { FSRSFlashcardItem } from "../../types/fsrs/card.types";
 import { stripBrTags } from "../../utils";
@@ -38,13 +44,30 @@ import { groupCards } from "./group-cards";
 // ── Hooks ──────────────────────────────────────────────────────
 
 function usePanelApi(): PanelApi {
-	return usePlugin().store?.getState().panel;
+	const store = usePlugin().store;
+	if (!store) throw new Error("Store not initialized");
+	return store.getState().panel;
 }
 
 function usePanelState() {
 	const plugin = usePlugin();
 	const [state, setState] = useState(() => {
 		const p = plugin.store?.getState().panel;
+		if (!p) {
+			return {
+				currentFile: null as TFile | null,
+				flashcardInfo: null as FlashcardInfo | null,
+				status: "idle" as ProcessingStatus,
+				viewMode: "list" as ViewMode,
+				uncollectedCount: 0,
+				isFollowingReview: false,
+				isAddCardExpanded: false,
+				selectionMode: "idle" as SelectionMode,
+				selectedCardIds: new Set<string>(),
+				expandedCardIds: new Set<string>(),
+				searchQuery: "",
+			};
+		}
 		return {
 			currentFile: p.currentFile,
 			flashcardInfo: p.flashcardInfo,
@@ -61,10 +84,12 @@ function usePanelState() {
 	});
 
 	useEffect(() => {
-		const unsub = plugin.store?.subscribe(
+		if (!plugin.store) return;
+		const unsub = plugin.store.subscribe(
 			(s) => s.panel,
 			() => {
 				const p = plugin.store?.getState().panel;
+				if (!p) return;
 				setState({
 					currentFile: p.currentFile,
 					flashcardInfo: p.flashcardInfo,
@@ -464,16 +489,9 @@ function CompactCard({
 			class={`ep:flex ep:flex-col ep:mb-2 ep:rounded-lg ep:bg-obs-secondary ep:border ep:border-obs-border ep:shadow-sm ${borderCls}`}
 		>
 			{/* Main row (always visible) */}
-			<div
-				class="ep:flex ep:items-center ep:gap-2 ep:p-3 ep:cursor-pointer ep:hover:bg-obs-modifier-hover ep:rounded-md ep:transition-colors"
-				role="button"
-				tabIndex={0}
-				onKeyDown={(e) => {
-					if (e.key === "Enter" || e.key === " ") {
-						e.preventDefault();
-						handleRowClick(e as unknown as MouseEvent);
-					}
-				}}
+			<button
+				type="button"
+				class="ep:flex ep:items-center ep:gap-2 ep:p-3 ep:cursor-pointer ep:hover:bg-obs-modifier-hover ep:rounded-md ep:transition-colors ep:bg-transparent ep:border-none ep:font-inherit ep:text-left ep:w-full"
 				onClick={handleRowClick}
 				onPointerDown={handlePointerDown}
 				onPointerUp={handlePointerUp}
@@ -525,7 +543,7 @@ function CompactCard({
 				>
 					<span ref={menuIconRef} />
 				</button>
-			</div>
+			</button>
 
 			{/* Expanded content (answer) */}
 			{isExpanded && (
@@ -690,16 +708,9 @@ function CardGroup({
 			class={`ep:flex ep:flex-col ep:mb-2 ep:rounded-lg ep:bg-obs-secondary ep:border ep:border-obs-border ep:shadow-sm ${borderCls}`}
 		>
 			{/* Header row */}
-			<div
-				class="ep:flex ep:items-center ep:gap-2 ep:p-3 ep:cursor-pointer ep:hover:bg-obs-modifier-hover ep:rounded-md ep:transition-colors"
-				role="button"
-				tabIndex={0}
-				onKeyDown={(e) => {
-					if (e.key === "Enter" || e.key === " ") {
-						e.preventDefault();
-						handleRowClick(e as unknown as MouseEvent);
-					}
-				}}
+			<button
+				type="button"
+				class="ep:flex ep:items-center ep:gap-2 ep:p-3 ep:cursor-pointer ep:hover:bg-obs-modifier-hover ep:rounded-md ep:transition-colors ep:bg-transparent ep:border-none ep:font-inherit ep:text-left ep:w-full"
 				onClick={handleRowClick}
 				onPointerDown={handlePointerDown}
 				onPointerUp={handlePointerUp}
@@ -740,7 +751,7 @@ function CardGroup({
 				>
 					<span ref={menuIconRef} />
 				</button>
-			</div>
+			</button>
 
 			{/* Expanded content */}
 			{isExpanded && (
@@ -1537,12 +1548,15 @@ export function FlashcardPanelApp({
 						);
 						notify().success("Updated cloze group");
 					} else {
-						plugin.flashcardManager.updateCardContent(
-							cards[0]?.id,
-							firstFlashcard.question,
-							firstFlashcard.answer,
-						);
-						notify().cardUpdated();
+						const cardId = cards[0]?.id;
+						if (cardId) {
+							plugin.flashcardManager.updateCardContent(
+								cardId,
+								firstFlashcard.question,
+								firstFlashcard.answer,
+							);
+							notify().cardUpdated();
+						}
 					}
 
 					requestAnimationFrame(() => {
@@ -1564,12 +1578,12 @@ export function FlashcardPanelApp({
 	const handleDeleteGroup = useCallback(
 		async (cards: FlashcardItem[]) => {
 			if (cards.length === 0) return;
+			const cardId = cards[0]?.id;
+			if (!cardId) return;
 			const { notify } = await import("../../services");
 			const scrollPosition = contentRef.current?.scrollTop ?? 0;
 
-			const removed = await plugin.flashcardManager.removeFlashcardById(
-				cards[0]?.id,
-			);
+			const removed = await plugin.flashcardManager.removeFlashcardById(cardId);
 			if (removed) {
 				notify().cardsDeleted(cards.length);
 				requestAnimationFrame(() => {

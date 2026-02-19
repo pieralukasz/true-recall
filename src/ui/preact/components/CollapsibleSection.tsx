@@ -42,18 +42,11 @@ export function CollapsibleSection({
 
 	return (
 		<div class={containerCls || undefined}>
-			<div
-				class="ep:flex ep:items-center ep:gap-2 ep:cursor-pointer ep:text-obs-muted ep:hover:text-obs-normal ep:transition-colors"
-				role="button"
-				tabIndex={0}
+			<button
+				type="button"
+				class="ep:flex ep:items-center ep:gap-2 ep:cursor-pointer ep:text-obs-muted ep:hover:text-obs-normal ep:transition-colors ep:bg-transparent ep:border-none ep:p-0 ep:font-inherit ep:text-left ep:w-full"
 				aria-expanded={expanded}
 				onClick={toggle}
-				onKeyDown={(e) => {
-					if (e.key === "Enter" || e.key === " ") {
-						e.preventDefault();
-						toggle();
-					}
-				}}
 			>
 				<span class="ep:w-4 ep:h-4 ep:transition-transform" ref={chevronRef} />
 				{leadingIconRef && <span class="ep:w-4 ep:h-4" ref={leadingIconRef} />}
@@ -61,7 +54,7 @@ export function CollapsibleSection({
 				{description && (
 					<span class="ep:text-ui-smaller ep:opacity-70">({description})</span>
 				)}
-			</div>
+			</button>
 			{expanded && <div class="ep:mt-2">{children}</div>}
 		</div>
 	);

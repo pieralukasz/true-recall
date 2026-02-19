@@ -84,7 +84,9 @@ export class ReviewView extends ItemView {
 	private sessionSignalDisposer: (() => void) | null = null;
 
 	private get review(): ReviewApi {
-		return this.plugin.store!.getState().review;
+		const store = this.plugin.store;
+		if (!store) throw new Error("Store not initialized");
+		return store.getState().review;
 	}
 
 	constructor(leaf: WorkspaceLeaf, plugin: TrueRecallPlugin) {
@@ -224,7 +226,8 @@ export class ReviewView extends ItemView {
 		if (!(container instanceof HTMLElement)) return;
 		container.empty();
 
-		this.unsubscribe = this.plugin.store!.subscribe(
+		if (!this.plugin.store) return;
+		this.unsubscribe = this.plugin.store.subscribe(
 			(state) => state.review,
 			() => {
 				this.updateHeaderActions();

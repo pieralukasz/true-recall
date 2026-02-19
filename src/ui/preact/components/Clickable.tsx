@@ -14,12 +14,12 @@ export function Clickable({
 	disabled,
 }: ClickableProps) {
 	return (
-		<span
-			role="button"
-			tabIndex={disabled ? -1 : 0}
+		<button
+			type="button"
 			aria-label={ariaLabel}
 			aria-disabled={disabled}
-			class={cls}
+			disabled={disabled}
+			class={`ep:bg-transparent ep:border-none ep:p-0 ep:font-inherit ep:cursor-pointer ${cls ?? ""}`}
 			onClick={
 				disabled
 					? undefined
@@ -29,19 +29,8 @@ export function Clickable({
 							onClick();
 						}
 			}
-			onKeyDown={
-				disabled
-					? undefined
-					: (e) => {
-							if (e.key === "Enter" || e.key === " ") {
-								e.preventDefault();
-								e.stopPropagation();
-								onClick();
-							}
-						}
-			}
 		>
 			{children}
-		</span>
+		</button>
 	);
 }

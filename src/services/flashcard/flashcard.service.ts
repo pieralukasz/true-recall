@@ -40,7 +40,6 @@ export interface FlashcardInfo {
 
 export class FlashcardManager {
 	private app: App;
-	private settings: TrueRecallSettings;
 	private store: SqliteStoreService | null = null;
 	private frontmatterService: FrontmatterService;
 	private parserService: FlashcardParserService;
@@ -52,11 +51,10 @@ export class FlashcardManager {
 
 	constructor(
 		app: App,
-		settings: TrueRecallSettings,
+		_settings: TrueRecallSettings,
 		frontmatterIndex?: FrontmatterIndexService,
 	) {
 		this.app = app;
-		this.settings = settings;
 		this.frontmatterService = new FrontmatterService(app);
 		this.parserService = new FlashcardParserService();
 		this.sourceNoteService = new SourceNoteService(app, frontmatterIndex);
@@ -80,8 +78,8 @@ export class FlashcardManager {
 		return this.cardRepository.setIfNotExists(cardId, fsrsData);
 	}
 
-	updateSettings(settings: TrueRecallSettings): void {
-		this.settings = settings;
+	updateSettings(_settings: TrueRecallSettings): void {
+		// Settings consumed by sub-services, not directly by FlashcardManager
 	}
 
 	getFrontmatterService(): FrontmatterService {

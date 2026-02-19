@@ -1024,7 +1024,8 @@ ${cardList}${moreText}
 			"fsrs_preset",
 			file.path,
 		);
-		const currentPreset = currentValues.length > 0 ? (currentValues[0] ?? null) : null;
+		const currentPreset =
+			currentValues.length > 0 ? (currentValues[0] ?? null) : null;
 
 		const modal = new SetPresetModal(this.app, presetNames, currentPreset);
 		const result = await modal.openAndWait();

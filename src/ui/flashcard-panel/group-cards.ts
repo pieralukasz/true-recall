@@ -41,12 +41,14 @@ export function groupCards(cards: FlashcardItem[]): PanelItem[] {
 		if (card.cardType === "cloze" && card.clozeTemplate) {
 			if (!emittedClozeTemplates.has(card.clozeTemplate)) {
 				emittedClozeTemplates.add(card.clozeTemplate);
-				const group = clozeGroups.get(card.clozeTemplate)!;
-				result.push({
-					type: "cloze-group",
-					template: card.clozeTemplate,
-					cards: group,
-				});
+				const group = clozeGroups.get(card.clozeTemplate);
+				if (group) {
+					result.push({
+						type: "cloze-group",
+						template: card.clozeTemplate,
+						cards: group,
+					});
+				}
 			}
 			continue;
 		}

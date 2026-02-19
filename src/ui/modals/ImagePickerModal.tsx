@@ -172,15 +172,9 @@ function ImagePickerBody({
 	return (
 		<div>
 			{/* Paste zone */}
-			<div
-				class={`ep:flex ep:flex-col ep:items-center ep:justify-center ep:p-6 ep:mb-4 ep:border-2 ep:border-dashed ep:rounded-lg ep:cursor-pointer ep:transition-all ep:hover:border-obs-interactive ${dragActive ? "true-recall-paste-zone-active" : "ep:border-obs-border"}`}
-				role="button"
-				tabIndex={0}
-				onKeyDown={(e: KeyboardEvent) => {
-					if (e.key === "Enter" || e.key === " ") {
-						e.preventDefault();
-					}
-				}}
+			<button
+				type="button"
+				class={`ep:flex ep:flex-col ep:items-center ep:justify-center ep:p-6 ep:mb-4 ep:border-2 ep:border-dashed ep:rounded-lg ep:cursor-pointer ep:transition-all ep:hover:border-obs-interactive ep:bg-transparent ep:font-inherit ep:w-full ${dragActive ? "true-recall-paste-zone-active" : "ep:border-obs-border"}`}
 				onDragOver={(e) => {
 					e.preventDefault();
 					setDragActive(true);
@@ -209,7 +203,7 @@ function ImagePickerBody({
 				<div class="ep:text-ui-smaller ep:text-obs-muted">
 					Ctrl+V or drag & drop
 				</div>
-			</div>
+			</button>
 
 			{/* Recent images */}
 			<div class="ep:flex ep:flex-col ep:gap-2">
@@ -256,7 +250,10 @@ function ImagePickerBody({
 
 			{/* Size control */}
 			<div class="ep:flex ep:items-center ep:gap-3 ep:p-3 ep:bg-obs-secondary ep:rounded-md">
-				<label htmlFor="img-width" class="ep:text-ui-small ep:font-medium ep:text-obs-normal">
+				<label
+					htmlFor="img-width"
+					class="ep:text-ui-small ep:font-medium ep:text-obs-normal"
+				>
 					Width:
 				</label>
 				<input

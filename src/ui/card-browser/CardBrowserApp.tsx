@@ -146,13 +146,29 @@ const PILL_INACTIVE = `${PILL_BASE} ep:bg-obs-modifier-hover ep:text-obs-muted e
 // ── Hooks ──────────────────────────────────────────────────────
 
 function useBrowser(): BrowserApi {
-	return usePlugin().store!.getState().browser;
+	const store = usePlugin().store;
+	if (!store) throw new Error("Store not initialized");
+	return store.getState().browser;
 }
 
 function useBrowserState() {
 	const plugin = usePlugin();
 	const [state, setState] = useState(() => {
-		const b = plugin.store!.getState().browser;
+		const b = plugin.store?.getState().browser;
+		if (!b) {
+			return {
+				isLoading: true,
+				allCards: [] as FSRSFlashcardItem[],
+				searchQuery: "",
+				stateFilter: "all" as BrowserStateFilter,
+				sortColumn: "question" as BrowserSortColumn,
+				sortDirection: "asc" as "asc" | "desc",
+				selectionMode: "idle" as SelectionMode,
+				selectedCardIds: new Set<string>(),
+				previewCardId: null as string | null,
+				filteredCards: [] as FSRSFlashcardItem[],
+			};
+		}
 		return {
 			isLoading: b.isLoading,
 			allCards: b.allCards,
@@ -168,10 +184,12 @@ function useBrowserState() {
 	});
 
 	useEffect(() => {
-		const unsub = plugin.store!.subscribe(
+		if (!plugin.store) return;
+		const unsub = plugin.store.subscribe(
 			(s) => s.browser,
 			() => {
-				const b = plugin.store!.getState().browser;
+				const b = plugin.store?.getState().browser;
+				if (!b) return;
 				setState({
 					isLoading: b.isLoading,
 					allCards: b.allCards,
@@ -196,7 +214,8 @@ function useLoadData() {
 	const plugin = usePlugin();
 
 	return useCallback(() => {
-		const browser = plugin.store!.getState().browser;
+		const browser = plugin.store?.getState().browser;
+		if (!browser) return;
 		browser.setLoading(true);
 
 		try {
@@ -596,31 +615,35 @@ function VirtualTable({
 							/>
 						)}
 					</div>
-					{columns.map((col) => (
-						<div
-							key={col.key}
-							class={`ep:flex ep:items-center ep:gap-1 ep:px-2 ep:text-ui-smaller ep:font-semibold ep:text-obs-muted ep:uppercase ep:tracking-wide ep:select-none ${
-								col.align === "right" ? "ep:justify-end" : ""
-							} ${col.sortable ? "ep:cursor-pointer ep:hover:text-obs-normal" : ""}`}
-							role={col.sortable ? "button" : undefined}
-							tabIndex={col.sortable ? 0 : undefined}
-							onClick={col.sortable ? () => onSortChange(col.key) : undefined}
-							onKeyDown={col.sortable ? (e) => {
-								if (e.key === "Enter" || e.key === " ") {
-									e.preventDefault();
-									onSortChange(col.key);
-								}
-							} : undefined}
-						>
-							<span>{col.label}</span>
-							{col.sortable && sortColumn === col.key && (
-								<span
-									class="ep:flex ep:items-center ep:w-3 ep:h-3"
-									ref={sortDirIcon}
-								/>
-							)}
-						</div>
-					))}
+					{columns.map((col) =>
+						col.sortable ? (
+							<button
+								type="button"
+								key={col.key}
+								class={`ep:bg-transparent ep:border-none ep:p-0 ep:font-inherit ep:cursor-pointer ep:flex ep:items-center ep:gap-1 ep:px-2 ep:text-ui-smaller ep:font-semibold ep:text-obs-muted ep:uppercase ep:tracking-wide ep:select-none ep:hover:text-obs-normal ${
+									col.align === "right" ? "ep:justify-end" : ""
+								}`}
+								onClick={() => onSortChange(col.key)}
+							>
+								<span>{col.label}</span>
+								{sortColumn === col.key && (
+									<span
+										class="ep:flex ep:items-center ep:w-3 ep:h-3"
+										ref={sortDirIcon}
+									/>
+								)}
+							</button>
+						) : (
+							<div
+								key={col.key}
+								class={`ep:flex ep:items-center ep:gap-1 ep:px-2 ep:text-ui-smaller ep:font-semibold ep:text-obs-muted ep:uppercase ep:tracking-wide ep:select-none ${
+									col.align === "right" ? "ep:justify-end" : ""
+								}`}
+							>
+								<span>{col.label}</span>
+							</div>
+						),
+					)}
 				</div>
 			</div>
 
@@ -644,11 +667,10 @@ function VirtualTable({
 						else if (isSelected) bgCls = "ep:bg-obs-modifier-hover";
 
 						return (
-							<div
+							<button
+								type="button"
 								key={card.id}
-								class={`ep:absolute ep:left-0 ep:right-0 ep:grid ep:items-center ep:cursor-pointer ep:border-b ep:border-obs-border/50 ep:transition-colors ${bgCls}`}
-								role="button"
-								tabIndex={0}
+								class={`ep:bg-transparent ep:border-none ep:p-0 ep:font-inherit ep:cursor-pointer ep:text-left ep:absolute ep:left-0 ep:right-0 ep:grid ep:items-center ep:border-b ep:border-obs-border/50 ep:transition-colors ${bgCls}`}
 								style={{
 									top: `${top}px`,
 									height: `${ROW_HEIGHT}px`,
@@ -659,16 +681,6 @@ function VirtualTable({
 										onRowSelect(card.id);
 									} else {
 										onRowClick(card);
-									}
-								}}
-								onKeyDown={(e) => {
-									if (e.key === "Enter" || e.key === " ") {
-										e.preventDefault();
-										if (selectionMode === "selecting") {
-											onRowSelect(card.id);
-										} else {
-											onRowClick(card);
-										}
 									}
 								}}
 							>
@@ -695,7 +707,7 @@ function VirtualTable({
 										{col.render(card)}
 									</div>
 								))}
-							</div>
+							</button>
 						);
 					})}
 				</div>

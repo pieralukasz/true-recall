@@ -17,7 +17,12 @@ export interface SectionHeaderProps {
 function ActionIcon({ icon, ariaLabel, onClick }: SectionHeaderAction) {
 	const iconRef = useIcon(icon);
 	return (
-		<button type="button" class="clickable-icon" aria-label={ariaLabel} onClick={onClick}>
+		<button
+			type="button"
+			class="clickable-icon"
+			aria-label={ariaLabel}
+			onClick={onClick}
+		>
 			<span ref={iconRef} />
 		</button>
 	);

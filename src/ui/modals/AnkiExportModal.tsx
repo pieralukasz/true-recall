@@ -225,7 +225,9 @@ function AnkiExportBody({
 						checked={exportMode === "all"}
 						onChange={() => setExportMode("all")}
 					/>
-					<label htmlFor="export-scope-all" class="ep:text-ui-small">All cards ({totalCards})</label>
+					<label htmlFor="export-scope-all" class="ep:text-ui-small">
+						All cards ({totalCards})
+					</label>
 				</div>
 				<div class="ep:flex ep:items-center ep:gap-2 ep:py-1">
 					<input
@@ -236,7 +238,9 @@ function AnkiExportBody({
 						checked={exportMode === "projects"}
 						onChange={() => setExportMode("projects")}
 					/>
-					<label htmlFor="export-scope-projects" class="ep:text-ui-small">Selected projects only</label>
+					<label htmlFor="export-scope-projects" class="ep:text-ui-small">
+						Selected projects only
+					</label>
 				</div>
 				<div class="ep:flex ep:items-center ep:gap-2 ep:py-1">
 					<input
@@ -247,7 +251,9 @@ function AnkiExportBody({
 						checked={exportMode === "notes"}
 						onChange={() => setExportMode("notes")}
 					/>
-					<label htmlFor="export-scope-notes" class="ep:text-ui-small">Selected notes only</label>
+					<label htmlFor="export-scope-notes" class="ep:text-ui-small">
+						Selected notes only
+					</label>
 				</div>
 
 				{allProjects.length > 0 && exportMode === "projects" && (
@@ -301,7 +307,11 @@ function AnkiExportBody({
 				<button type="button" class={SECONDARY_BTN} onClick={onClose}>
 					Cancel
 				</button>
-				<button type="button" class={PRIMARY_BTN} onClick={() => void handleExport()}>
+				<button
+					type="button"
+					class={PRIMARY_BTN}
+					onClick={() => void handleExport()}
+				>
 					Export
 				</button>
 			</div>

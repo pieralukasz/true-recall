@@ -69,7 +69,9 @@ export class FlashcardPanelView extends ItemView {
 	}
 
 	private get panel(): PanelApi {
-		return this.plugin.store!.getState().panel;
+		const store = this.plugin.store;
+		if (!store) throw new Error("Store not initialized");
+		return store.getState().panel;
 	}
 
 	getViewType(): string {
@@ -156,10 +158,12 @@ export class FlashcardPanelView extends ItemView {
 		);
 
 		// Subscribe to store for Obsidian native header actions
-		this.headerActionsUnsub = this.plugin.store!.subscribe(
-			(s) => ({ status: s.panel.status, file: s.panel.currentFile }),
-			() => this.updateHeaderActions(),
-		);
+		if (this.plugin.store) {
+			this.headerActionsUnsub = this.plugin.store.subscribe(
+				(s) => ({ status: s.panel.status, file: s.panel.currentFile }),
+				() => this.updateHeaderActions(),
+			);
+		}
 
 		this.subscribeToDataChanges();
 		this.subscribeToReviewState();
@@ -198,7 +202,8 @@ export class FlashcardPanelView extends ItemView {
 			this.deleteAllAction = null;
 		}
 
-		if (state.status === "exists" && state.currentFile) {
+		const currentFile = state.currentFile;
+		if (state.status === "exists" && currentFile) {
 			if (!Platform.isMobile) {
 				this.deleteAllAction = this.addAction(
 					"trash-2",
@@ -216,7 +221,7 @@ export class FlashcardPanelView extends ItemView {
 			this.reviewAction = this.addAction(
 				"brain",
 				"Review flashcards",
-				() => void this.plugin.reviewNoteFlashcards(state.currentFile!),
+				() => void this.plugin.reviewNoteFlashcards(currentFile),
 			);
 		}
 	}
