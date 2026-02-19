@@ -25,6 +25,7 @@ export {
 	EmptyStateMessages,
 	type EmptyStateProps,
 } from "./EmptyState";
+export { ErrorBoundary, type ErrorBoundaryProps } from "./ErrorBoundary";
 export { FormLabel, type FormLabelProps } from "./FormLabel";
 export { IconButton, type IconButtonProps } from "./IconButton";
 export { InfoBlock, type InfoBlockProps } from "./InfoBlock";

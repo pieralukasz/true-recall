@@ -611,8 +611,16 @@ export function NoteHubApp() {
 
 	// React to dataVersion signal changes with debounced refresh
 	useEffect(() => {
+		// Load immediately, then debounce subsequent signal-driven refreshes
+		void loadData();
+
+		let isFirstRun = true;
 		const dispose = effect(() => {
 			track(dataVersion);
+			if (isFirstRun) {
+				isFirstRun = false;
+				return;
+			}
 			if (refreshTimerRef.current) clearTimeout(refreshTimerRef.current);
 			refreshTimerRef.current = setTimeout(() => {
 				void loadData();
@@ -622,11 +630,6 @@ export function NoteHubApp() {
 			dispose();
 			if (refreshTimerRef.current) clearTimeout(refreshTimerRef.current);
 		};
-	}, [loadData]);
-
-	// Initial data load
-	useEffect(() => {
-		void loadData();
 	}, [loadData]);
 
 	return (

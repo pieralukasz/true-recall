@@ -1046,37 +1046,14 @@ function PanelContent({
 	searchQuery,
 	handlers,
 }: PanelContentProps) {
-	if (!currentFile) {
-		return <EmptyState message={EmptyStateMessages.NO_FILE} />;
-	}
-
-	if (currentFile.extension !== "md") {
-		return <EmptyState message={EmptyStateMessages.NOT_MARKDOWN} />;
-	}
-
-	if (!flashcardInfo?.exists) {
-		return (
-			<div class="ep:py-4 ep:text-center">
-				<p class="ep:text-ui-small ep:text-obs-muted ep:m-0">No flashcards</p>
-			</div>
-		);
-	}
-
-	const filePath = currentFile.path;
-
-	// Build FSRS lookup map
 	const fsrsMap = useMemo(
 		() => new Map(cardsWithFsrs.map((c) => [c.id, c])),
 		[cardsWithFsrs],
 	);
 
-	// Group cards
-	const grouped = useMemo(
-		() => groupCards(flashcardInfo.flashcards),
-		[flashcardInfo.flashcards],
-	);
+	const flashcards = flashcardInfo?.exists ? flashcardInfo.flashcards : [];
+	const grouped = useMemo(() => groupCards(flashcards), [flashcards]);
 
-	// Filter
 	const filteredItems = useMemo(() => {
 		if (!searchQuery) return grouped;
 		return grouped.filter((item) => {
@@ -1101,6 +1078,24 @@ function PanelContent({
 			);
 		});
 	}, [grouped, searchQuery]);
+
+	if (!currentFile) {
+		return <EmptyState message={EmptyStateMessages.NO_FILE} />;
+	}
+
+	if (currentFile.extension !== "md") {
+		return <EmptyState message={EmptyStateMessages.NOT_MARKDOWN} />;
+	}
+
+	if (!flashcardInfo?.exists) {
+		return (
+			<div class="ep:py-4 ep:text-center">
+				<p class="ep:text-ui-small ep:text-obs-muted ep:m-0">No flashcards</p>
+			</div>
+		);
+	}
+
+	const filePath = currentFile.path;
 
 	return (
 		<div class="ep:flex ep:flex-col">

@@ -99,6 +99,29 @@ function ImagePickerBody({
 		updatePreview(selectedImage, selectedWidth);
 	}, [selectedImage, selectedWidth, updatePreview]);
 
+	const handlePastedImage = useCallback(
+		async (blob: Blob) => {
+			if (imageService.isBlobTooLarge(blob)) {
+				const size = imageService.formatFileSize(blob.size);
+				notify().imageTooLarge(size);
+				return;
+			}
+			try {
+				notify().imageSaving();
+				const path = await imageService.saveImageFromClipboard(blob);
+				const file = app.vault.getAbstractFileByPath(path);
+				if (file instanceof TFile) {
+					setSelectedImage(file);
+					notify().imageSaved();
+				}
+			} catch (error) {
+				console.error("[True Recall] Failed to save pasted image:", error);
+				notify().operationFailed("save image", error);
+			}
+		},
+		[app, imageService],
+	);
+
 	// Global paste handler
 	useEffect(() => {
 		const handler = (e: ClipboardEvent) => {
@@ -116,27 +139,7 @@ function ImagePickerBody({
 		};
 		document.addEventListener("paste", handler);
 		return () => document.removeEventListener("paste", handler);
-	}, []);
-
-	const handlePastedImage = async (blob: Blob) => {
-		if (imageService.isBlobTooLarge(blob)) {
-			const size = imageService.formatFileSize(blob.size);
-			notify().imageTooLarge(size);
-			return;
-		}
-		try {
-			notify().imageSaving();
-			const path = await imageService.saveImageFromClipboard(blob);
-			const file = app.vault.getAbstractFileByPath(path);
-			if (file instanceof TFile) {
-				setSelectedImage(file);
-				notify().imageSaved();
-			}
-		} catch (error) {
-			console.error("[True Recall] Failed to save pasted image:", error);
-			notify().operationFailed("save image", error);
-		}
-	};
+	}, [handlePastedImage]);
 
 	const handleDroppedFile = async (file: File) => {
 		if (file.size > 5 * 1024 * 1024) {

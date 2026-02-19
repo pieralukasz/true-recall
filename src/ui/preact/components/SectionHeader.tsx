@@ -45,8 +45,8 @@ export function SectionHeader({
 			</div>
 			{actions && actions.length > 0 && (
 				<div class="ep:flex ep:items-center ep:gap-1">
-					{actions.map((action, i) => (
-						<ActionIcon key={i} {...action} />
+					{actions.map((action) => (
+						<ActionIcon key={action.icon} {...action} />
 					))}
 				</div>
 			)}
