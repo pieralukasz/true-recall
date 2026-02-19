@@ -129,8 +129,16 @@ export class WorkloadForecastCalculator {
 
 		// Calculate statistics
 		let total = 0;
-		let peakDay = forecast[0] ?? { date: "", dueCount: 0, breakdown: { review: 0, learning: 0 } };
-		let minDay = forecast[0] ?? { date: "", dueCount: 0, breakdown: { review: 0, learning: 0 } };
+		let peakDay = forecast[0] ?? {
+			date: "",
+			dueCount: 0,
+			breakdown: { review: 0, learning: 0 },
+		};
+		let minDay = forecast[0] ?? {
+			date: "",
+			dueCount: 0,
+			breakdown: { review: 0, learning: 0 },
+		};
 		let daysAboveTarget = 0;
 
 		for (const entry of forecast) {

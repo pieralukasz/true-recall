@@ -59,13 +59,31 @@ const ICON_BTN_CLS =
 // ── Hooks ──────────────────────────────────────────────────────
 
 function useNoteHub(): NoteHubApi {
-	return usePlugin().store!.getState().noteHub;
+	const store = usePlugin().store;
+	if (!store) throw new Error("Store not initialized");
+	return store.getState().noteHub;
 }
 
 function useNoteHubState() {
 	const plugin = usePlugin();
 	const [state, setState] = useState(() => {
-		const nh = plugin.store!.getState().noteHub;
+		const nh = plugin.store?.getState().noteHub;
+		if (!nh) {
+			return {
+				isLoading: true,
+				projects: [] as ProjectInfo[],
+				unassignedNotes: [] as ProjectNoteInfo[],
+				searchQuery: "",
+				expandedProjectIds: new Set<string>(),
+				selectionMode: "idle" as SelectionMode,
+				selectedNotePaths: new Set<string>(),
+				statusFilter: "all" as NoteHubStatusFilter,
+				sortBy: "name" as NoteHubSortBy,
+				sortDirection: "asc" as NoteHubSortDirection,
+				filteredProjects: [] as ProjectInfo[],
+				filteredUnassigned: [] as ProjectNoteInfo[],
+			};
+		}
 		return {
 			isLoading: nh.isLoading,
 			projects: nh.projects,
@@ -83,10 +101,12 @@ function useNoteHubState() {
 	});
 
 	useEffect(() => {
-		const unsub = plugin.store!.subscribe(
+		if (!plugin.store) return;
+		const unsub = plugin.store.subscribe(
 			(s) => s.noteHub,
 			() => {
-				const nh = plugin.store!.getState().noteHub;
+				const nh = plugin.store?.getState().noteHub;
+				if (!nh) return;
 				setState({
 					isLoading: nh.isLoading,
 					projects: nh.projects,
@@ -116,7 +136,8 @@ function useLoadData() {
 	const app = useApp();
 
 	return useCallback(async () => {
-		const noteHub = plugin.store!.getState().noteHub;
+		const noteHub = plugin.store?.getState().noteHub;
+		if (!noteHub) return;
 		noteHub.setLoading(true);
 
 		try {
@@ -209,7 +230,8 @@ function useLoadData() {
 						dueCount: 0,
 					});
 				}
-				const uidStats = uidStateCounts.get(card.sourceUid)!;
+				const uidStats = uidStateCounts.get(card.sourceUid);
+				if (!uidStats) continue;
 
 				const dueDate = new Date(card.due);
 				const isNew = card.state === State.New;
@@ -230,11 +252,13 @@ function useLoadData() {
 					if (!noteCardCounts.has(projectName)) {
 						noteCardCounts.set(projectName, new Map());
 					}
-					const noteCounts = noteCardCounts.get(projectName)!;
-					noteCounts.set(
-						sourceFile.path,
-						(noteCounts.get(sourceFile.path) || 0) + 1,
-					);
+					const noteCounts = noteCardCounts.get(projectName);
+					if (noteCounts) {
+						noteCounts.set(
+							sourceFile.path,
+							(noteCounts.get(sourceFile.path) || 0) + 1,
+						);
+					}
 
 					if (isNew) {
 						projectNewCounts.set(
@@ -494,7 +518,8 @@ function useNoteHubActions(loadData: () => Promise<void>) {
 	);
 
 	const handleBulkAddToProject = useCallback(async () => {
-		const noteHub = plugin.store!.getState().noteHub;
+		const noteHub = plugin.store?.getState().noteHub;
+		if (!noteHub) return;
 		const selectedPaths = Array.from(noteHub.selectedNotePaths);
 
 		if (selectedPaths.length === 0) {
@@ -534,7 +559,8 @@ function useNoteHubActions(loadData: () => Promise<void>) {
 	}, [app, plugin, loadData]);
 
 	const handleBulkReview = useCallback(async () => {
-		const noteHub = plugin.store!.getState().noteHub;
+		const noteHub = plugin.store?.getState().noteHub;
+		if (!noteHub) return;
 		const selectedPaths = Array.from(noteHub.selectedNotePaths);
 
 		if (selectedPaths.length === 0) {
@@ -737,7 +763,12 @@ function NoteHubToolbar({
 				</button>
 			</div>
 
-			<button type="button" class="clickable-icon" aria-label="Refresh" onClick={onRefresh}>
+			<button
+				type="button"
+				class="clickable-icon"
+				aria-label="Refresh"
+				onClick={onRefresh}
+			>
 				<span ref={refreshIcon} />
 			</button>
 		</div>
@@ -899,17 +930,10 @@ function ProjectGroup({
 
 	return (
 		<div class="ep:flex ep:flex-col">
-			<div
-				class="ep:flex ep:items-center ep:gap-3 ep:py-3 ep:px-4 ep:cursor-pointer ep:hover:bg-obs-modifier-hover ep:transition-colors ep:border-b ep:border-obs-modifier-border"
-				role="button"
-				tabIndex={0}
+			<button
+				type="button"
+				class="ep:flex ep:items-center ep:gap-3 ep:py-3 ep:px-4 ep:cursor-pointer ep:hover:bg-obs-modifier-hover ep:transition-colors ep:border-b ep:border-obs-modifier-border ep:bg-transparent ep:border-x-0 ep:border-t-0 ep:font-inherit ep:text-left ep:w-full"
 				onClick={handleHeaderClick}
-				onKeyDown={(e) => {
-					if (e.key === "Enter" || e.key === " ") {
-						e.preventDefault();
-						handleHeaderClick(e as unknown as MouseEvent);
-					}
-				}}
 			>
 				<div class="ep:shrink-0 ep:flex ep:items-center ep:text-obs-muted [&_svg]:ep:w-4 [&_svg]:ep:h-4">
 					<span ref={chevronRef} />
@@ -952,7 +976,7 @@ function ProjectGroup({
 						onClick={() => onAddNotesToProject(project.name)}
 					/>
 				</div>
-			</div>
+			</button>
 
 			{isExpanded &&
 				project.notes.map((note) => (
@@ -1040,17 +1064,10 @@ function UnassignedSection({
 
 	return (
 		<div class="ep:flex ep:flex-col">
-			<div
-				class="ep:flex ep:items-center ep:gap-3 ep:py-3 ep:px-4 ep:cursor-pointer ep:hover:bg-obs-modifier-hover ep:transition-colors ep:border-b ep:border-obs-modifier-border"
-				role="button"
-				tabIndex={0}
+			<button
+				type="button"
+				class="ep:flex ep:items-center ep:gap-3 ep:py-3 ep:px-4 ep:cursor-pointer ep:hover:bg-obs-modifier-hover ep:transition-colors ep:border-b ep:border-obs-modifier-border ep:bg-transparent ep:border-x-0 ep:border-t-0 ep:font-inherit ep:text-left ep:w-full"
 				onClick={handleHeaderClick}
-				onKeyDown={(e) => {
-					if (e.key === "Enter" || e.key === " ") {
-						e.preventDefault();
-						handleHeaderClick(e as unknown as MouseEvent);
-					}
-				}}
 			>
 				<div class="ep:shrink-0 ep:flex ep:items-center ep:text-obs-muted [&_svg]:ep:w-4 [&_svg]:ep:h-4">
 					<span ref={chevronRef} />
@@ -1072,7 +1089,7 @@ function UnassignedSection({
 						/>
 					</div>
 				)}
-			</div>
+			</button>
 
 			{isExpanded &&
 				notes.map((note) => (
@@ -1214,24 +1231,16 @@ function NoteHubNoteRow({
 				/>
 			</div>
 
-			<div
-				class="ep:flex-1 ep:min-w-0 ep:truncate ep:text-ui-small ep:font-medium ep:text-obs-normal ep:cursor-pointer ep:hover:text-obs-link ep:hover:underline"
-				role="button"
-				tabIndex={0}
+			<button
+				type="button"
+				class="ep:flex-1 ep:min-w-0 ep:truncate ep:text-ui-small ep:font-medium ep:text-obs-normal ep:cursor-pointer ep:hover:text-obs-link ep:hover:underline ep:bg-transparent ep:border-none ep:p-0 ep:font-inherit ep:text-left"
 				onClick={(e) => {
 					e.stopPropagation();
 					onOpenNote(note.path);
 				}}
-				onKeyDown={(e) => {
-					if (e.key === "Enter" || e.key === " ") {
-						e.preventDefault();
-						e.stopPropagation();
-						onOpenNote(note.path);
-					}
-				}}
 			>
 				{note.name}
-			</div>
+			</button>
 
 			<div class="ep:shrink-0">
 				<CardCountDisplay

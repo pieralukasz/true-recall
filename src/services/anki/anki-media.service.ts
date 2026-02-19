@@ -108,7 +108,11 @@ export class AnkiMediaService {
 
 		// Reset lastIndex since the regex is global
 		const regex = new RegExp(WIKILINK_EMBED_REGEX.source, "g");
-		for (let match = regex.exec(content); match !== null; match = regex.exec(content)) {
+		for (
+			let match = regex.exec(content);
+			match !== null;
+			match = regex.exec(content)
+		) {
 			const ref = match[1]?.trim();
 			if (ref && this.isMediaFile(ref)) {
 				refs.push(ref);

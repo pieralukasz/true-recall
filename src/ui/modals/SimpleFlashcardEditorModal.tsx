@@ -308,10 +308,15 @@ function SimpleEditorBody({
 
 				{/* Right: Cancel + Save */}
 				<div class="ep:flex ep:gap-3">
-					<button class={SECONDARY_BUTTON_CLASSES} onClick={onClose}>
+					<button
+						type="button"
+						class={SECONDARY_BUTTON_CLASSES}
+						onClick={onClose}
+					>
 						Cancel
 					</button>
 					<button
+						type="button"
 						class="ep:py-3 ep:px-5 ep:bg-obs-interactive ep:text-obs-on-accent ep:border-none ep:rounded-md ep:cursor-pointer ep:font-medium ep:transition-colors ep:hover:bg-obs-interactive-hover"
 						onClick={handleSave}
 					>
@@ -356,12 +361,13 @@ export class SimpleFlashcardEditorModal extends BaseModal {
 	}
 
 	protected renderBody(container: HTMLElement): void {
+		if (!this.imageService) return;
 		render(
 			<SimpleEditorBody
 				app={this.app}
 				options={this.options}
 				parser={this.parser}
-				imageService={this.imageService!}
+				imageService={this.imageService}
 				onSubmit={(result) => {
 					this.hasSubmitted = true;
 					if (this.resolvePromise) {

@@ -72,7 +72,11 @@ export class ImageService {
 		// Match ![[image.png]], ![[image.png|300]], ![[path/to/image.png]]
 		const wikiLinkRegex = /!\[\[([^\]|]+)(?:\|[^\]]+)?\]\]/g;
 
-		for (let match = wikiLinkRegex.exec(content); match !== null; match = wikiLinkRegex.exec(content)) {
+		for (
+			let match = wikiLinkRegex.exec(content);
+			match !== null;
+			match = wikiLinkRegex.exec(content)
+		) {
 			const ref = match[1]?.trim();
 			// Check if it's an image file
 			const ext = ref?.split(".").pop()?.toLowerCase() ?? "";
@@ -83,7 +87,11 @@ export class ImageService {
 
 		// Also match standard markdown images ![alt](path)
 		const mdImageRegex = /!\[[^\]]*\]\(([^)]+)\)/g;
-		for (let match = mdImageRegex.exec(content); match !== null; match = mdImageRegex.exec(content)) {
+		for (
+			let match = mdImageRegex.exec(content);
+			match !== null;
+			match = mdImageRegex.exec(content)
+		) {
 			const ref = match[1]?.trim();
 			const ext = ref?.split(".").pop()?.toLowerCase() ?? "";
 			if (ref && isImageExtension(ext)) {

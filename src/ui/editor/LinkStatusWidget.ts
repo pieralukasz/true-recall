@@ -29,7 +29,11 @@ export function createLinkTextCountElement(
 ): HTMLSpanElement {
 	const container = document.createElement("div");
 	render(
-		h(LinkTextCount, { info: options.info, onPlay: options.onPlay, variant: options.variant }),
+		h(LinkTextCount, {
+			info: options.info,
+			onPlay: options.onPlay,
+			variant: options.variant,
+		}),
 		container,
 	);
 	return container.firstElementChild as HTMLSpanElement;

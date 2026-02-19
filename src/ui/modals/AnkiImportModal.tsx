@@ -258,7 +258,11 @@ function AnkiImportBody({
 					<button type="button" class={SECONDARY_BTN} onClick={onClose}>
 						Cancel
 					</button>
-					<button type="button" class={PRIMARY_BTN} onClick={() => void handleImport()}>
+					<button
+						type="button"
+						class={PRIMARY_BTN}
+						onClick={() => void handleImport()}
+					>
 						Import
 					</button>
 				</div>
@@ -273,21 +277,14 @@ function AnkiImportBody({
 				Select an .apkg file exported from Anki to import your flashcards.
 			</div>
 
-			<div
-				class={`ep:border-2 ep:border-dashed ep:rounded-lg ep:p-8 ep:text-center ep:cursor-pointer ep:transition-colors ${
+			<button
+				type="button"
+				class={`ep:border-2 ep:border-dashed ep:rounded-lg ep:p-8 ep:text-center ep:cursor-pointer ep:transition-colors ep:bg-transparent ep:font-inherit ep:w-full ${
 					isDragging
 						? "ep:border-obs-interactive ep:bg-obs-modifier-hover"
 						: "ep:border-obs-border ep:hover:border-obs-interactive ep:hover:bg-obs-modifier-hover"
 				}`}
-				role="button"
-				tabIndex={0}
 				onClick={() => fileInputRef.current?.click()}
-				onKeyDown={(e: KeyboardEvent) => {
-					if (e.key === "Enter" || e.key === " ") {
-						e.preventDefault();
-						fileInputRef.current?.click();
-					}
-				}}
 				onDragOver={(e) => {
 					e.preventDefault();
 					setIsDragging(true);
@@ -315,7 +312,7 @@ function AnkiImportBody({
 				<div class="ep:text-ui-small ep:text-obs-muted">
 					Click to select .apkg file
 				</div>
-			</div>
+			</button>
 		</>
 	);
 }

@@ -217,7 +217,9 @@ function CsvExportBody({
 						checked={exportMode === "all"}
 						onChange={() => setExportMode("all")}
 					/>
-					<label htmlFor="csv-scope-all" class="ep:text-ui-small">All cards ({totalCards})</label>
+					<label htmlFor="csv-scope-all" class="ep:text-ui-small">
+						All cards ({totalCards})
+					</label>
 				</div>
 				<div class="ep:flex ep:items-center ep:gap-2 ep:py-1">
 					<input
@@ -228,7 +230,9 @@ function CsvExportBody({
 						checked={exportMode === "projects"}
 						onChange={() => setExportMode("projects")}
 					/>
-					<label htmlFor="csv-scope-projects" class="ep:text-ui-small">Selected projects only</label>
+					<label htmlFor="csv-scope-projects" class="ep:text-ui-small">
+						Selected projects only
+					</label>
 				</div>
 				<div class="ep:flex ep:items-center ep:gap-2 ep:py-1">
 					<input
@@ -239,7 +243,9 @@ function CsvExportBody({
 						checked={exportMode === "notes"}
 						onChange={() => setExportMode("notes")}
 					/>
-					<label htmlFor="csv-scope-notes" class="ep:text-ui-small">Selected notes only</label>
+					<label htmlFor="csv-scope-notes" class="ep:text-ui-small">
+						Selected notes only
+					</label>
 				</div>
 
 				{allProjects.length > 0 && exportMode === "projects" && (
@@ -277,7 +283,10 @@ function CsvExportBody({
 				{separators.map((sep) => {
 					const sepId = `csv-sep-${sep.label.replace(/[^a-zA-Z]/g, "")}`;
 					return (
-						<div key={sep.value} class="ep:flex ep:items-center ep:gap-2 ep:py-1">
+						<div
+							key={sep.value}
+							class="ep:flex ep:items-center ep:gap-2 ep:py-1"
+						>
 							<input
 								id={sepId}
 								type="radio"
@@ -286,7 +295,9 @@ function CsvExportBody({
 								checked={separator === sep.value}
 								onChange={() => setSeparator(sep.value)}
 							/>
-							<label htmlFor={sepId} class="ep:text-ui-small">{sep.label}</label>
+							<label htmlFor={sepId} class="ep:text-ui-small">
+								{sep.label}
+							</label>
 						</div>
 					);
 				})}
@@ -308,7 +319,11 @@ function CsvExportBody({
 				<button type="button" class={SECONDARY_BTN} onClick={onClose}>
 					Cancel
 				</button>
-				<button type="button" class={PRIMARY_BTN} onClick={() => void handleExport()}>
+				<button
+					type="button"
+					class={PRIMARY_BTN}
+					onClick={() => void handleExport()}
+				>
 					Export
 				</button>
 			</div>

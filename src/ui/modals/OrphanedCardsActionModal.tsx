@@ -288,6 +288,7 @@ function OrphanedCardsBody({
 					onClick={onCreateNote}
 				/>
 				<button
+					type="button"
 					class="ep:w-full ep:py-2 ep:px-3 ep:rounded-md ep:text-ui-smaller ep:text-obs-muted ep:bg-transparent ep:border ep:border-obs-border ep:cursor-pointer ep:hover:bg-obs-modifier-hover ep:mt-2"
 					onClick={() =>
 						onResolve({ cancelled: false, action: "leave_orphaned" })

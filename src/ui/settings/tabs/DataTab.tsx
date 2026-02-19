@@ -13,7 +13,7 @@ import {
 import { useSettings } from "../hooks/useSettings";
 
 function DeviceDatabaseSection() {
-	const { settings, save, plugin } = useSettings();
+	const { plugin } = useSettings();
 
 	const deviceId = plugin.deviceIdService?.getDeviceId() || "unknown";
 	const deviceLabel = plugin.deviceIdService?.getDeviceLabel();
@@ -107,7 +107,7 @@ function DeviceDatabaseSection() {
 				name="Switch database"
 				description="Import data from another device"
 			>
-				<button class="mod-cta" onClick={handleSwitchDatabase}>
+				<button type="button" class="mod-cta" onClick={handleSwitchDatabase}>
 					Switch...
 				</button>
 			</SettingRow>
@@ -157,7 +157,7 @@ function BackupSettingsSection() {
 }
 
 function BackgroundBackupSection() {
-	const { settings, save, plugin } = useSettings();
+	const { settings, save } = useSettings();
 
 	return (
 		<>
@@ -350,7 +350,11 @@ function ManualBackupSection() {
 				name="Create backup now"
 				description="Manually create a backup of the current database"
 			>
-				<button class="mod-cta" onClick={() => plugin.createManualBackup()}>
+				<button
+					type="button"
+					class="mod-cta"
+					onClick={() => plugin.createManualBackup()}
+				>
 					Create backup
 				</button>
 			</SettingRow>
@@ -360,6 +364,7 @@ function ManualBackupSection() {
 				description="Restore the database from a previous backup (requires Obsidian reload)"
 			>
 				<button
+					type="button"
 					class="mod-warning"
 					onClick={() => plugin.openRestoreBackupModal()}
 				>
@@ -381,7 +386,11 @@ function ImportExportSection() {
 				name="Import Anki deck"
 				description="Import flashcards from an Anki .apkg file with optional scheduling data"
 			>
-				<button class="mod-cta" onClick={() => plugin.importAnki()}>
+				<button
+					type="button"
+					class="mod-cta"
+					onClick={() => plugin.importAnki()}
+				>
 					Import .apkg
 				</button>
 			</SettingRow>
@@ -390,7 +399,11 @@ function ImportExportSection() {
 				name="Export to Anki"
 				description="Export your flashcards as an Anki-compatible .apkg file"
 			>
-				<button class="mod-cta" onClick={() => plugin.exportAnki()}>
+				<button
+					type="button"
+					class="mod-cta"
+					onClick={() => plugin.exportAnki()}
+				>
 					Export .apkg
 				</button>
 			</SettingRow>
@@ -399,7 +412,11 @@ function ImportExportSection() {
 				name="Export as CSV/TSV"
 				description="Export your flashcards as a CSV or TSV file for use in spreadsheets or other tools"
 			>
-				<button class="mod-cta" onClick={() => plugin.exportCsv()}>
+				<button
+					type="button"
+					class="mod-cta"
+					onClick={() => plugin.exportCsv()}
+				>
 					Export CSV
 				</button>
 			</SettingRow>

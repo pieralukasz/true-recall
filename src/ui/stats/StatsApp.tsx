@@ -592,7 +592,7 @@ function FutureDueChart({
 								title: (items) => {
 									if (items.length > 0)
 										return formatDateForDisplay(
-											data[items[0]!.dataIndex]?.date ?? "",
+											data[items[0]?.dataIndex ?? 0]?.date ?? "",
 										);
 									return "";
 								},
@@ -611,7 +611,7 @@ function FutureDueChart({
 					},
 					onClick: (_event, elements) => {
 						if (elements.length > 0) {
-							const entry = data[elements[0]!.index];
+							const entry = data[elements[0]?.index ?? 0];
 							if (entry && entry.count > 0) {
 								const cards = statsCalculator.getCardsDueOnDate(entry.date);
 								onCardPreview(entry.date, cards);
@@ -752,7 +752,7 @@ function ReviewsChart({
 								title: (items) => {
 									if (items.length > 0)
 										return formatDateForDisplay(
-											data[items[0]!.dataIndex]?.date ?? "",
+											data[items[0]?.dataIndex ?? 0]?.date ?? "",
 										);
 									return "";
 								},
@@ -771,7 +771,7 @@ function ReviewsChart({
 					},
 					onClick: (_event, elements) => {
 						if (elements.length > 0) {
-							const entry = data[elements[0]!.index];
+							const entry = data[elements[0]?.index ?? 0];
 							if (entry && (entry.created > 0 || entry.reviewed > 0)) {
 								const cards = statsCalculator.getCardsDueOnDate(entry.date);
 								onCardPreview(entry.date, cards);
@@ -820,18 +820,11 @@ function ReviewsChart({
 	const controls = (
 		<div class="ep:flex ep:flex-wrap ep:gap-4 ep:justify-center ep:mb-3 ep:pb-3 ep:border-b ep:border-obs-border">
 			{controlDefs.map(({ key, label, color }) => (
-				<div
+				<button
+					type="button"
 					key={key}
-					class="ep:flex ep:items-center ep:gap-1.5 ep:cursor-pointer ep:select-none"
-					role="button"
-					tabIndex={0}
+					class="ep:flex ep:items-center ep:gap-1.5 ep:cursor-pointer ep:select-none ep:bg-transparent ep:border-none ep:p-0 ep:font-inherit"
 					onClick={() => toggleVisibility(key)}
-					onKeyDown={(e) => {
-						if (e.key === "Enter" || e.key === " ") {
-							e.preventDefault();
-							toggleVisibility(key);
-						}
-					}}
 				>
 					<input
 						id={`reviews-toggle-${key}`}
@@ -854,7 +847,7 @@ function ReviewsChart({
 					>
 						{label}
 					</label>
-				</div>
+				</button>
 			))}
 		</div>
 	);
@@ -933,7 +926,7 @@ function RetentionChart({
 								title: (items) => {
 									if (items.length > 0)
 										return formatDateForDisplay(
-											data[items[0]!.dataIndex]?.date ?? "",
+											data[items[0]?.dataIndex ?? 0]?.date ?? "",
 										);
 									return "";
 								},
@@ -1152,22 +1145,12 @@ function CardCountsChart({
 					{legendItems.map((item) => {
 						const percentage = Math.round((item.value / total) * 100);
 						return (
-							<div
+							<button
+								type="button"
 								key={item.category}
-								class="ep:flex ep:items-center ep:gap-3 ep:py-2 ep:px-3 ep:rounded-md ep:transition-all ep:cursor-pointer ep:hover:bg-obs-primary ep:hover:-translate-x-0.5"
-								role="button"
-								tabIndex={0}
+								class="ep:flex ep:items-center ep:gap-3 ep:py-2 ep:px-3 ep:rounded-md ep:transition-all ep:cursor-pointer ep:hover:bg-obs-primary ep:hover:-translate-x-0.5 ep:bg-transparent ep:border-none ep:font-inherit ep:text-left ep:w-full"
 								onClick={() => {
 									if (item.value > 0) {
-										const cards = statsCalculator.getCardsByCategory(
-											item.category,
-										);
-										onCategoryClick(item.category, item.label, cards);
-									}
-								}}
-								onKeyDown={(e) => {
-									if ((e.key === "Enter" || e.key === " ") && item.value > 0) {
-										e.preventDefault();
 										const cards = statsCalculator.getCardsByCategory(
 											item.category,
 										);
@@ -1190,7 +1173,7 @@ function CardCountsChart({
 								<span class="ep:ml-auto ep:text-ui-small ep:font-semibold ep:text-obs-muted">
 									{item.value} ({percentage}%)
 								</span>
-							</div>
+							</button>
 						);
 					})}
 				</div>
@@ -1277,28 +1260,18 @@ function CalendarHeatmap({
 				{weeks.map((week, wi) => (
 					<div key={wi} class="ep:flex ep:flex-col ep:gap-0.5">
 						{week.map((cell) => (
-							<div
+							<button
+								type="button"
 								key={cell.dateKey}
 								class={[
-									"ep:w-3 ep:h-3 ep:rounded-sm ep:cursor-pointer ep:transition-all ep:duration-200 ep:hover:scale-110 ep:hover:opacity-80",
+									"ep:w-3 ep:h-3 ep:rounded-sm ep:cursor-pointer ep:transition-all ep:duration-200 ep:hover:scale-110 ep:hover:opacity-80 ep:border-none ep:p-0",
 									getHeatmapLevelClasses(cell.count),
 									cell.isFuture ? "ep:opacity-30" : "",
 								].join(" ")}
-								role="button"
-								tabIndex={0}
 								title={`${cell.dateKey}: ${cell.count} reviews`}
 								aria-label={`${cell.dateKey}: ${cell.count} reviews`}
 								onClick={() => {
 									if (cell.count > 0) {
-										const cards = statsCalculator.getCardsDueOnDate(
-											cell.dateKey,
-										);
-										onCardPreview(cell.dateKey, cards);
-									}
-								}}
-								onKeyDown={(e) => {
-									if ((e.key === "Enter" || e.key === " ") && cell.count > 0) {
-										e.preventDefault();
 										const cards = statsCalculator.getCardsDueOnDate(
 											cell.dateKey,
 										);

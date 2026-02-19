@@ -25,7 +25,6 @@ export interface BackupStatus {
 }
 
 export class BackgroundBackupManager {
-	private app: App;
 	private backupService: BackupService;
 	private config: BackgroundBackupConfig;
 
@@ -39,11 +38,10 @@ export class BackgroundBackupManager {
 	private consecutiveFailures = 0;
 
 	constructor(
-		app: App,
+		_app: App,
 		backupService: BackupService,
 		settings: TrueRecallSettings,
 	) {
-		this.app = app;
 		this.backupService = backupService;
 		this.config = this.extractConfig(settings);
 	}

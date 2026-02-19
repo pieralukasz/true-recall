@@ -18,21 +18,24 @@ interface SessionAppProps {
 
 export function SessionApp({ logic, onSelectAndClose }: SessionAppProps) {
 	const plugin = usePlugin();
-	const session = plugin.store!.getState().session;
+	const session = plugin.store?.getState().session;
 
 	const [currentNoteName, setCurrentNoteName] = useState(
-		session.currentNoteName,
+		session?.currentNoteName ?? null,
 	);
-	const [allCards, setAllCards] = useState(session.allCards);
-	const [selectedNotes, setSelectedNotes] = useState(session.selectedNotes);
-	const [searchQuery, setSearchQuery] = useState(session.searchQuery);
-	const [now, setNow] = useState(session.now);
+	const [allCards, setAllCards] = useState(session?.allCards ?? []);
+	const [selectedNotes, setSelectedNotes] = useState(
+		session?.selectedNotes ?? new Set<string>(),
+	);
+	const [searchQuery, setSearchQuery] = useState(session?.searchQuery ?? "");
+	const [now, setNow] = useState(session?.now ?? new Date());
 	const [sessionPresets, setSessionPresets] = useState(
 		plugin.settings.sessionPresets,
 	);
 
 	useEffect(() => {
-		const unsub = plugin.store!.subscribe(
+		if (!plugin.store) return;
+		const unsub = plugin.store.subscribe(
 			(state) => state.session,
 			(s) => {
 				setCurrentNoteName(s.currentNoteName);
@@ -601,20 +604,13 @@ function SavedPresets({
 					if (preset.cardLimit) details.push(`limit ${preset.cardLimit}`);
 
 					return (
-						<div
+						<button
+							type="button"
 							key={preset.id}
-							class="ep:flex ep:items-center ep:gap-2 ep:px-3 ep:py-2 ep:bg-obs-secondary ep:border ep:border-obs-border ep:rounded-md ep:cursor-pointer ep:transition-colors ep:hover:bg-obs-modifier-hover ep:hover:border-obs-interactive ep:group"
-							role="button"
-							tabIndex={0}
+							class="ep:flex ep:items-center ep:gap-2 ep:px-3 ep:py-2 ep:bg-obs-secondary ep:border ep:border-obs-border ep:rounded-md ep:cursor-pointer ep:transition-colors ep:hover:bg-obs-modifier-hover ep:hover:border-obs-interactive ep:group ep:font-inherit ep:text-left ep:w-full"
 							onClick={(e) => {
 								if ((e.target as HTMLElement).tagName !== "BUTTON")
 									onAction(preset);
-							}}
-							onKeyDown={(e) => {
-								if (e.key === "Enter" || e.key === " ") {
-									e.preventDefault();
-									onAction(preset);
-								}
 							}}
 						>
 							<div class="ep:flex-1 ep:min-w-0">
@@ -638,7 +634,7 @@ function SavedPresets({
 							>
 								&times;
 							</button>
-						</div>
+						</button>
 					);
 				})}
 			</div>
@@ -706,20 +702,13 @@ function NoteRow({
 	const hasCards = stat.newCount > 0 || stat.dueCount > 0;
 
 	return (
-		<div
-			class={`ep:flex ep:items-center ep:gap-3 ep:py-2.5 ep:px-3 ep:border-b ep:border-obs-modifier-border ep:cursor-pointer ep:transition-colors ep:hover:bg-obs-modifier-hover ep:last:border-b-0${isSelected ? " ep:bg-obs-interactive/10" : ""}`}
-			role="button"
-			tabIndex={0}
+		<button
+			type="button"
+			class={`ep:flex ep:items-center ep:gap-3 ep:py-2.5 ep:px-3 ep:border-b ep:border-obs-modifier-border ep:cursor-pointer ep:transition-colors ep:hover:bg-obs-modifier-hover ep:last:border-b-0 ep:bg-transparent ep:border-x-0 ep:border-t-0 ep:font-inherit ep:text-left ep:w-full${isSelected ? " ep:bg-obs-interactive/10" : ""}`}
 			onClick={(e) => {
 				const target = e.target as HTMLElement;
 				if (target.tagName !== "INPUT" && target.tagName !== "A" && hasCards)
 					onToggle();
-			}}
-			onKeyDown={(e) => {
-				if ((e.key === "Enter" || e.key === " ") && hasCards) {
-					e.preventDefault();
-					onToggle();
-				}
 			}}
 		>
 			{hasCards ? (
@@ -767,7 +756,7 @@ function NoteRow({
 					)}
 				</div>
 			</div>
-		</div>
+		</button>
 	);
 }
 

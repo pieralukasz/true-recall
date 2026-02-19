@@ -44,15 +44,18 @@ export interface ReviewAppProps {
 
 export function ReviewApp(props: ReviewAppProps) {
 	const plugin = usePlugin();
-	const review = plugin.store!.getState().review;
+	const review = plugin.store?.getState().review;
 
 	const [, setTick] = useState(0);
 	useEffect(() => {
-		return plugin.store!.subscribe(
+		if (!plugin.store) return;
+		return plugin.store.subscribe(
 			(state) => state.review,
 			() => setTick((t) => t + 1),
 		);
 	}, [plugin]);
+
+	if (!review) return null;
 
 	const phase = review.getPhase();
 
@@ -254,7 +257,11 @@ function CardContainer({
 	);
 
 	return (
-		<div class={containerCls} role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); handleContainerClick(e as unknown as MouseEvent); } }} onClick={handleContainerClick}>
+		<button
+			type="button"
+			class={`${containerCls} ep:bg-transparent ep:border-none ep:p-0 ep:font-inherit ep:cursor-pointer ep:text-left ep:w-full`}
+			onClick={handleContainerClick}
+		>
 			<div class="ep:w-full ep:text-center">
 				{/* Card type label */}
 				{card.cardType === "cloze" && card.clozeIndex !== undefined && (
@@ -341,7 +348,7 @@ function CardContainer({
 					</>
 				)}
 			</div>
-		</div>
+		</button>
 	);
 }
 
@@ -779,7 +786,9 @@ function WaitingScreen({
 					</div>
 
 					<div class="ep:flex ep:gap-3 ep:justify-center">
-						<button type="button" class={`${btnCls} mod-cta`}>Wait</button>
+						<button type="button" class={`${btnCls} mod-cta`}>
+							Wait
+						</button>
 						<button
 							type="button"
 							class={`${btnCls} ep:bg-obs-border ep:text-obs-normal ep:hover:bg-obs-modifier-hover`}
@@ -868,7 +877,11 @@ function SummaryScreen({
 					<div class="ep:flex ep:gap-3 ep:py-4 ep:justify-center">
 						{isCustomSession && continuousCustomReviews ? (
 							<>
-								<button type="button" class={`${btnCls} mod-cta`} onClick={onNextSession}>
+								<button
+									type="button"
+									class={`${btnCls} mod-cta`}
+									onClick={onNextSession}
+								>
 									Next session
 								</button>
 								<button
@@ -880,7 +893,11 @@ function SummaryScreen({
 								</button>
 							</>
 						) : (
-							<button type="button" class={`${btnCls} mod-cta`} onClick={onClose}>
+							<button
+								type="button"
+								class={`${btnCls} mod-cta`}
+								onClick={onClose}
+							>
 								Close
 							</button>
 						)}
