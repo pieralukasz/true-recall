@@ -146,13 +146,13 @@ const PILL_INACTIVE = `${PILL_BASE} ep:bg-obs-modifier-hover ep:text-obs-muted e
 // ── Hooks ──────────────────────────────────────────────────────
 
 function useBrowser(): BrowserApi {
-	return usePlugin().store?.getState().browser;
+	return usePlugin().store!.getState().browser;
 }
 
 function useBrowserState() {
 	const plugin = usePlugin();
 	const [state, setState] = useState(() => {
-		const b = plugin.store?.getState().browser;
+		const b = plugin.store!.getState().browser;
 		return {
 			isLoading: b.isLoading,
 			allCards: b.allCards,
@@ -168,10 +168,10 @@ function useBrowserState() {
 	});
 
 	useEffect(() => {
-		const unsub = plugin.store?.subscribe(
+		const unsub = plugin.store!.subscribe(
 			(s) => s.browser,
 			() => {
-				const b = plugin.store?.getState().browser;
+				const b = plugin.store!.getState().browser;
 				setState({
 					isLoading: b.isLoading,
 					allCards: b.allCards,
@@ -196,7 +196,7 @@ function useLoadData() {
 	const plugin = usePlugin();
 
 	return useCallback(() => {
-		const browser = plugin.store?.getState().browser;
+		const browser = plugin.store!.getState().browser;
 		browser.setLoading(true);
 
 		try {

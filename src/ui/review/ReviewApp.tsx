@@ -44,11 +44,11 @@ export interface ReviewAppProps {
 
 export function ReviewApp(props: ReviewAppProps) {
 	const plugin = usePlugin();
-	const review = plugin.store?.getState().review;
+	const review = plugin.store!.getState().review;
 
 	const [, setTick] = useState(0);
 	useEffect(() => {
-		return plugin.store?.subscribe(
+		return plugin.store!.subscribe(
 			(state) => state.review,
 			() => setTick((t) => t + 1),
 		);

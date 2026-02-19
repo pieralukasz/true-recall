@@ -625,7 +625,7 @@ function ParametersBar({
 
 export function SimulatorApp() {
 	const plugin = usePlugin();
-	const simulator = plugin.store?.getState().simulator;
+	const simulator = plugin.store!.getState().simulator;
 	const simulatorService = useMemo(() => new FSRSSimulatorService(), []);
 
 	// Reactive signals to drive re-renders

@@ -1,7 +1,8 @@
 import type { NoteStatusInfo } from "../../../services/cache/note-status-cache.service";
+import { Clickable } from "../../preact/components";
 
 const WRAPPER_CLS =
-	"ep-link-count ep:inline-flex ep:items-center ep:gap-0.5 ep:align-middle ep:ml-1 ep:text-ui-smaller";
+	"ep-link-count ep:inline-flex ep:items-center ep:gap-0.5 ep:align-middle ep:cursor-pointer ep:transition-colors ep:hover:text-obs-accent ep:mb-[6px]";
 
 const COUNT_CLS = {
 	new: "ep:text-obs-green ep:tabular-nums",
@@ -54,20 +55,11 @@ export function LinkTextCount({ info, onPlay }: LinkTextCountProps) {
 			<span class={COUNT_CLS.muted}>
 				{parts.length > 0 ? `(${info.total})` : `(${info.total} cards)`}
 			</span>
-			<span
-				class={PLAY_BTN_CLS}
-				onClick={
-					onPlay
-						? (e) => {
-								e.preventDefault();
-								e.stopPropagation();
-								onPlay();
-							}
-						: undefined
-				}
-			>
-				{"\u2026"}
-			</span>
+			{onPlay && (
+				<Clickable class={PLAY_BTN_CLS} onClick={onPlay}>
+					{"\u2026"}
+				</Clickable>
+			)}
 		</span>
 	);
 }

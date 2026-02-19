@@ -1,3 +1,4 @@
+import { Clickable } from "ui/preact";
 import type { NoteStatusInfo } from "../../../services/cache/note-status-cache.service";
 
 const CIRCUMFERENCE = 100;
@@ -54,19 +55,12 @@ export function DonutChart({ info, onPlay, class: extraCls }: DonutChartProps) {
 	}
 
 	return (
-		<span
+		<Clickable
 			class={`${DONUT_CLS}${extraCls ? ` ${extraCls}` : ""}`}
 			aria-label={`Flashcards: ${info.new} new, ${info.learning} learning, ${info.dueToday} due today (${info.total} total)`}
-			title={`Due: ${info.dueToday}, New: ${info.new}, Total: ${info.total}`}
-			onClick={
-				onPlay
-					? (e) => {
-							e.preventDefault();
-							e.stopPropagation();
-							onPlay();
-						}
-					: undefined
-			}
+			onClick={() => {
+				onPlay?.();
+			}}
 		>
 			<svg viewBox="0 0 36 36" class="true-recall-donut-svg">
 				<title>{`Flashcards: ${info.new} new, ${info.learning} learning, ${info.dueToday} due today (${info.total} total)`}</title>
@@ -92,6 +86,6 @@ export function DonutChart({ info, onPlay, class: extraCls }: DonutChartProps) {
 					/>
 				))}
 			</svg>
-		</span>
+		</Clickable>
 	);
 }

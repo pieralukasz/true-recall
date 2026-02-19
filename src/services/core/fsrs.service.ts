@@ -19,6 +19,7 @@ import { getTomorrowBoundary } from "../../utils";
 
 export class FSRSService {
 	private fsrs: FSRS;
+	private settings: FSRSSettings;
 
 	constructor(settings: FSRSSettings) {
 		this.settings = settings;

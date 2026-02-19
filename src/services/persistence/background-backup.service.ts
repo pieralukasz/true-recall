@@ -25,6 +25,7 @@ export interface BackupStatus {
 }
 
 export class BackgroundBackupManager {
+	private app: App;
 	private backupService: BackupService;
 	private config: BackgroundBackupConfig;
 

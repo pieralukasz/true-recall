@@ -38,13 +38,13 @@ import { groupCards } from "./group-cards";
 // ── Hooks ──────────────────────────────────────────────────────
 
 function usePanelApi(): PanelApi {
-	return usePlugin().store?.getState().panel;
+	return usePlugin().store!.getState().panel;
 }
 
 function usePanelState() {
 	const plugin = usePlugin();
 	const [state, setState] = useState(() => {
-		const p = plugin.store?.getState().panel;
+		const p = plugin.store!.getState().panel;
 		return {
 			currentFile: p.currentFile,
 			flashcardInfo: p.flashcardInfo,
@@ -61,10 +61,10 @@ function usePanelState() {
 	});
 
 	useEffect(() => {
-		const unsub = plugin.store?.subscribe(
+		const unsub = plugin.store!.subscribe(
 			(s) => s.panel,
 			() => {
-				const p = plugin.store?.getState().panel;
+				const p = plugin.store!.getState().panel;
 				setState({
 					currentFile: p.currentFile,
 					flashcardInfo: p.flashcardInfo,
@@ -1528,7 +1528,7 @@ export function FlashcardPanelApp({
 						notify().success("Updated cloze group");
 					} else {
 						plugin.flashcardManager.updateCardContent(
-							cards[0]?.id,
+							cards[0]!.id,
 							firstFlashcard.question,
 							firstFlashcard.answer,
 						);
@@ -1558,7 +1558,7 @@ export function FlashcardPanelApp({
 			const scrollPosition = contentRef.current?.scrollTop ?? 0;
 
 			const removed = await plugin.flashcardManager.removeFlashcardById(
-				cards[0]?.id,
+				cards[0]!.id,
 			);
 			if (removed) {
 				notify().cardsDeleted(cards.length);
