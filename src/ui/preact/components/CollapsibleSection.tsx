@@ -25,7 +25,7 @@ export function CollapsibleSection({
 }: CollapsibleSectionProps) {
 	const [expanded, setExpanded] = useState(defaultExpanded);
 	const chevronRef = useIcon(expanded ? "chevron-down" : "chevron-right");
-	const leadingIconRef = icon ? useIcon(icon) : null;
+	const leadingIconRef = useIcon(icon ?? "");
 
 	const toggle = () => {
 		const next = !expanded;

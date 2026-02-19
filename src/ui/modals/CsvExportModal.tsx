@@ -1,6 +1,6 @@
 import type { App } from "obsidian";
 import { render } from "preact";
-import { useCallback, useState } from "preact/hooks";
+import { useCallback, useRef, useState } from "preact/hooks";
 import type { FrontmatterIndexService } from "../../services/core/frontmatter-index.service";
 import {
 	CsvExportService,
@@ -127,42 +127,35 @@ function CsvExportBody({
 	);
 	const [separator, setSeparator] = useState<CsvSeparator>(",");
 	const [includeScheduling, setIncludeScheduling] = useState(false);
-	const [selectedProjects] = useState(() => new Set<string>());
-	const [selectedSourceUids] = useState(() => new Set<string>());
+	const selectedProjects = useRef(new Set<string>());
+	const selectedSourceUids = useRef(new Set<string>());
 
 	const handleToggleProject = useCallback(
 		(key: string, checked: boolean) => {
-			if (checked) selectedProjects.add(key);
-			else selectedProjects.delete(key);
+			if (checked) selectedProjects.current.add(key);
+			else selectedProjects.current.delete(key);
 		},
-		[selectedProjects],
+		[],
 	);
 
 	const handleToggleNote = useCallback(
 		(key: string, checked: boolean) => {
-			if (checked) selectedSourceUids.add(key);
-			else selectedSourceUids.delete(key);
+			if (checked) selectedSourceUids.current.add(key);
+			else selectedSourceUids.current.delete(key);
 		},
-		[selectedSourceUids],
+		[],
 	);
 
 	const handleExport = useCallback(async () => {
 		const result = await onExport({
 			exportMode,
-			selectedProjects,
-			selectedSourceUids,
+			selectedProjects: selectedProjects.current,
+			selectedSourceUids: selectedSourceUids.current,
 			includeScheduling,
 			separator,
 		});
 		setPhase(result);
-	}, [
-		exportMode,
-		selectedProjects,
-		selectedSourceUids,
-		includeScheduling,
-		separator,
-		onExport,
-	]);
+	}, [exportMode, includeScheduling, separator, onExport]);
 
 	if (phase.type === "success") {
 		return (
@@ -255,7 +248,7 @@ function CsvExportBody({
 								key={project}
 								label={project}
 								itemKey={project}
-								selectedSet={selectedProjects}
+								selectedSet={selectedProjects.current}
 								onToggle={handleToggleProject}
 							/>
 						))}
@@ -269,7 +262,7 @@ function CsvExportBody({
 								key={note.uid}
 								label={note.name}
 								itemKey={note.uid}
-								selectedSet={selectedSourceUids}
+								selectedSet={selectedSourceUids.current}
 								onToggle={handleToggleNote}
 							/>
 						))}

@@ -29,7 +29,7 @@ export function ActionButton({
 	fullWidth = false,
 	class: cls,
 }: ActionButtonProps) {
-	const iconRef = icon ? useIcon(icon) : null;
+	const iconRef = useIcon(icon ?? "");
 
 	const classes = [
 		"ep:border-none ep:py-2.5 ep:px-4 ep:rounded-md ep:cursor-pointer ep:font-medium ep:text-ui-small ep:transition-colors",

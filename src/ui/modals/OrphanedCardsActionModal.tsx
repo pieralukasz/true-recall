@@ -32,13 +32,13 @@ function CardPreview({ cards }: { cards: FSRSCardData[] }) {
 			<h4 class="ep:text-ui-smaller ep:text-obs-muted ep:m-0 ep:mb-2">
 				Card preview
 			</h4>
-			{cardsToShow.map((card, i) => {
+			{cardsToShow.map((card) => {
 				const question = card.question ?? "No question";
 				const truncatedQ =
 					question.length > 80 ? `${question.slice(0, 80)}...` : question;
 				return (
 					<div
-						key={i}
+						key={card.id}
 						class="ep:py-1.5 ep:border-b ep:border-obs-border ep:last:border-b-0"
 					>
 						<div class="ep:text-ui-smaller ep:text-obs-normal">
@@ -151,7 +151,8 @@ function MoveSection({
 	const searchRef = useRef<HTMLInputElement>(null);
 
 	useEffect(() => {
-		setTimeout(() => searchRef.current?.focus(), 50);
+		const id = setTimeout(() => searchRef.current?.focus(), 50);
+		return () => clearTimeout(id);
 	}, []);
 
 	const filteredNotes = (() => {

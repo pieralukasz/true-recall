@@ -1,5 +1,6 @@
 import { type ComponentChildren, render } from "preact";
 import type TrueRecallPlugin from "../../main";
+import { ErrorBoundary } from "./components/ErrorBoundary";
 import { ObsidianProvider } from "./ObsidianContext";
 
 export function mountPreact(
@@ -9,7 +10,7 @@ export function mountPreact(
 ): () => void {
 	render(
 		<ObsidianProvider value={{ app: plugin.app, plugin }}>
-			{children}
+			<ErrorBoundary>{children}</ErrorBoundary>
 		</ObsidianProvider>,
 		container,
 	);

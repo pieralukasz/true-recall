@@ -18,9 +18,9 @@ export function SearchInput({
 	const inputRef = useRef<HTMLInputElement>(null);
 
 	useEffect(() => {
-		if (autoFocus) {
-			setTimeout(() => inputRef.current?.focus(), 50);
-		}
+		if (!autoFocus) return;
+		const id = setTimeout(() => inputRef.current?.focus(), 50);
+		return () => clearTimeout(id);
 	}, [autoFocus]);
 
 	return (
