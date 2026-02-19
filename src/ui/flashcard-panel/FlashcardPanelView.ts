@@ -22,7 +22,7 @@ import type { FlashcardItem } from "../../types";
 import { countCardsByState } from "../shared/helpers";
 import type TrueRecallPlugin from "../../main";
 import type { PanelApi } from "../../state/store";
-import { effect } from "@preact/signals-core";
+import { effect } from "@preact/signals";
 import { dataVersion, settingsVersion, track } from "../../services/core/signals";
 import { shallow } from "zustand/vanilla/shallow";
 

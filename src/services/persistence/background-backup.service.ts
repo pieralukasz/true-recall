@@ -1,7 +1,7 @@
 import type { App } from "obsidian";
 import type { BackupService } from "./backup.service";
 import type { TrueRecallSettings, RetentionPolicy, BackupInterval } from "../../types/settings.types";
-import { effect } from "@preact/signals-core";
+import { effect } from "@preact/signals";
 import { dataVersion, lastMutation, track } from "../core/signals";
 import { notify } from "../ui/notification.service";
 

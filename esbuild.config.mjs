@@ -96,6 +96,8 @@ const context = await esbuild.context({
 		"@lezer/highlight",
 		"@lezer/lr",
 		...builtinModules],
+	jsx: 'automatic',
+	jsxImportSource: 'preact',
 	format: "cjs",
 	target: "es2018",
 	logLevel: "info",

@@ -18,7 +18,7 @@ import {
 import { ImageService } from "../../services/image";
 import { extractFSRSSettings, type FSRSFlashcardItem } from "../../types";
 import type { ReviewApi } from "../../state/store";
-import { effect } from "@preact/signals-core";
+import { effect } from "@preact/signals";
 import { notifyCardChange, lastMutation, type CardMutation } from "../../services/core/signals";
 import { SubscriptionManager } from "../utils";
 import type TrueRecallPlugin from "../../main";
