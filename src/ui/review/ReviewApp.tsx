@@ -13,7 +13,7 @@ import {
 	type ToolbarButtonAction,
 	toggleTextareaWrap,
 } from "../editor/edit-toolbar.utils";
-import { useMarkdown } from "../preact/hooks";
+import { useIcon, useMarkdown } from "../preact/hooks";
 import { usePlugin } from "../preact/ObsidianContext";
 
 // ─── Props ───────────────────────────────────────────────────────────────────
@@ -631,14 +631,7 @@ function ButtonBar({
 	onAnswer,
 	onActionsMenu,
 }: ButtonBarProps) {
-	const menuIconRef = useRef<HTMLDivElement>(null);
-
-	useEffect(() => {
-		if (menuIconRef.current) {
-			const { setIcon } = require("obsidian");
-			setIcon(menuIconRef.current, "more-vertical");
-		}
-	}, []);
+	const menuIconRef = useIcon("more-vertical");
 
 	return (
 		<div class="true-recall-review-buttons ep:flex ep:justify-center ep:gap-3 ep:border-t ep:border-obs-border ep:flex-nowrap ep:shrink-0 ep:p-4">
@@ -825,12 +818,12 @@ function SummaryScreen({
 	const durationMin = Math.floor(stats.duration / 60000);
 	const durationSec = Math.floor((stats.duration % 60000) / 1000);
 
-	// End session to capture final stats
+	// End session to capture final stats (once on mount)
 	useEffect(() => {
 		if (review.isActive) {
 			review.endSession();
 		}
-	}, [review]);
+	}, []); // eslint-disable-line react-hooks/exhaustive-deps -- intentionally fire once on mount
 
 	const btnCls =
 		"ep:py-3 ep:px-8 ep:border-none ep:rounded-lg ep:cursor-pointer ep:font-medium ep:text-ui-small ep:transition-transform ep:hover:brightness-110 ep:active:scale-98";

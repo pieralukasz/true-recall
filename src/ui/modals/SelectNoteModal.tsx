@@ -26,7 +26,8 @@ function SelectNoteBody({
 	const searchRef = useRef<HTMLInputElement>(null);
 
 	useEffect(() => {
-		setTimeout(() => searchRef.current?.focus(), 50);
+		const id = setTimeout(() => searchRef.current?.focus(), 50);
+		return () => clearTimeout(id);
 	}, []);
 
 	const filteredNotes = filterNotesByQuery(allNotes, searchQuery);

@@ -1,6 +1,8 @@
 import type { ReadonlySignal } from "@preact/signals";
+import { effect } from "@preact/signals-core";
 import { normalizePath, type TFile } from "obsidian";
 import { useCallback, useEffect, useMemo, useState } from "preact/hooks";
+import { track } from "../../services/core/signals";
 import type { OrphanedCardGroup } from "../../services/flashcard/orphaned-cards.service";
 import { useApp, usePlugin } from "../preact";
 import { ActionButton, Panel, SearchInput } from "../preact/components";
@@ -54,12 +56,13 @@ export function OrphanedCardsApp({ refreshSignal }: OrphanedCardsAppProps) {
 
 	// External refresh trigger (e.g. native header action button)
 	useEffect(() => {
-		if (refreshSignal) {
-			// Subscribe by reading .value -- Preact signals auto-track
-			const v = refreshSignal.value;
-			if (v > 0) refresh();
-		}
-	}, [refreshSignal?.value, refresh]);
+		if (!refreshSignal) return;
+		const dispose = effect(() => {
+			track(refreshSignal);
+			refresh();
+		});
+		return dispose;
+	}, [refreshSignal, refresh]);
 
 	const handleDeleteAll = useCallback(() => {
 		// eslint-disable-next-line no-alert -- destructive operation requires explicit user confirmation

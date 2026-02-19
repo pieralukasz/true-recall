@@ -1,4 +1,5 @@
 import { effect } from "@preact/signals";
+import { Fragment } from "preact";
 import {
 	useCallback,
 	useEffect,
@@ -240,8 +241,15 @@ export function CardBrowserApp() {
 	const refreshTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
 	useEffect(() => {
+		loadData();
+
+		let isFirstRun = true;
 		const dispose = effect(() => {
 			track(dataVersion);
+			if (isFirstRun) {
+				isFirstRun = false;
+				return;
+			}
 			if (refreshTimerRef.current) clearTimeout(refreshTimerRef.current);
 			refreshTimerRef.current = setTimeout(() => {
 				loadData();
@@ -251,10 +259,6 @@ export function CardBrowserApp() {
 			dispose();
 			if (refreshTimerRef.current) clearTimeout(refreshTimerRef.current);
 		};
-	}, [loadData]);
-
-	useEffect(() => {
-		loadData();
 	}, [loadData]);
 
 	// Reset store on unmount
@@ -857,14 +861,14 @@ function CardDetailPanel({
 					{/* Right: Metadata */}
 					<div class="ep:grid ep:grid-cols-2 ep:gap-x-4 ep:gap-y-1 ep:p-3 ep:content-start ep:overflow-y-auto">
 						{fields.map(([label, value]) => (
-							<>
+							<Fragment key={label}>
 								<span class="ep:text-ui-smaller ep:text-obs-muted ep:font-medium">
 									{label}
 								</span>
 								<span class="ep:text-ui-smaller ep:text-obs-normal">
 									{value}
 								</span>
-							</>
+							</Fragment>
 						))}
 					</div>
 				</div>
