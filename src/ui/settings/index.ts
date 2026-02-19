@@ -1,8 +1,3 @@
-/**
- * Central export for settings UI
- */
-export {
-    TrueRecallSettingTab,
-    type TrueRecallSettings,
-    DEFAULT_SETTINGS,
-} from "./SettingsTab";
+export { TrueRecallSettingTab } from "./SettingsTab";
+export { DEFAULT_SETTINGS } from "../../constants";
+export type { TrueRecallSettings } from "../../types";

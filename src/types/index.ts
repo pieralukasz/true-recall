@@ -6,12 +6,14 @@ export type {
 export type {
     TrueRecallSettings,
     FSRSSettings,
+    FSRSPreset,
     NewCardOrder,
     ReviewOrder,
     NewReviewMix,
     OptimizationMetrics,
     ScheduledBreak,
     EasyDaysConfig,
+    BackupInterval,
 } from "./settings.types";
 export { extractFSRSSettings } from "./settings.types";
 
