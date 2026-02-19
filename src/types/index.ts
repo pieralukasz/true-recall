@@ -1,10 +1,8 @@
-// Flashcard types
 export type {
     FlashcardItem,
     FlashcardInfo,
 } from "./flashcard.types";
 
-// Settings types
 export type {
     TrueRecallSettings,
     FSRSSettings,
@@ -17,7 +15,6 @@ export type {
 } from "./settings.types";
 export { extractFSRSSettings } from "./settings.types";
 
-// FSRS types (from ./fsrs subdirectory)
 export type {
     CardType,
     CardReviewLogEntry,
@@ -55,14 +52,11 @@ export {
     formatInterval,
 } from "./fsrs";
 
-// Session types
 export type { SessionResult } from "./events.types";
 
-// Re-export ts-fsrs enums (for isolatedModules compatibility)
 export { State, Rating } from "./fsrs";
 export type { Grade } from "./fsrs";
 
-// Image types
 export type {
     ImageInsertOptions,
     ImageExtension,
@@ -80,7 +74,6 @@ export {
     isMediaExtension,
 } from "./image.types";
 
-// NL Query types
 export type {
     NLQueryResult,
     NLQueryStep,
@@ -91,14 +84,12 @@ export type {
     TimeToMasteryStats,
 } from "./nl-query.types";
 
-// Sync types
 export type {
     SyncResult,
     SyncOptions,
     FirstSyncStatus,
 } from "./sync.types";
 
-// Anki types
 export type {
     AnkiNote,
     AnkiCard,

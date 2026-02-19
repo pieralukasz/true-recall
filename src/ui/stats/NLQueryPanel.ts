@@ -258,7 +258,7 @@ export class NLQueryPanel {
         this.resultsEl.empty();
 
         const errorEl = this.resultsEl.createDiv({
-            cls: "ep:p-3 ep-bg-obs-red-10 ep:border ep-border-obs-red-30 ep:rounded-md ep:text-obs-red",
+            cls: "ep:p-3 ep:bg-obs-red/10 ep:border ep:border-obs-red/30 ep:rounded-md ep:text-obs-red",
         });
         errorEl.createEl("strong", { text: "Error: " });
         errorEl.createEl("span", { text: message });

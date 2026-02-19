@@ -132,7 +132,7 @@ export class SelectionFooter extends BaseComponent {
 				variantCls = "mod-cta";
 				break;
 			case "danger":
-				variantCls = "ep-bg-obs-red-10 ep:text-obs-red ep:hover:bg-obs-red ep:hover:text-obs-on-accent";
+				variantCls = "ep:bg-obs-red/10 ep:text-obs-red ep:hover:bg-obs-red ep:hover:text-obs-on-accent";
 				break;
 			case "secondary":
 			default:

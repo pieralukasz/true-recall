@@ -19,14 +19,14 @@ export interface BadgeProps {
 
 const VARIANT_CLASSES: Record<BadgeVariant, string> = {
 	default: "ep:bg-obs-secondary ep:text-obs-muted",
-	success: "ep-bg-obs-green-15 ep:text-obs-green",
-	warning: "ep-bg-obs-orange-15 ep:text-obs-orange",
-	error: "ep-bg-obs-red-15 ep:text-obs-red",
-	info: "ep-bg-obs-blue-15 ep:text-obs-blue",
+	success: "ep:bg-obs-green/15 ep:text-obs-green",
+	warning: "ep:bg-obs-orange/15 ep:text-obs-orange",
+	error: "ep:bg-obs-red/15 ep:text-obs-red",
+	info: "ep:bg-obs-blue/15 ep:text-obs-blue",
 	// FSRS-specific variants
-	new: "ep-bg-obs-green-15 ep:text-obs-green",
-	learning: "ep-bg-obs-orange-15 ep:text-obs-orange",
-	review: "ep-bg-obs-blue-15 ep:text-obs-blue",
+	new: "ep:bg-obs-green/15 ep:text-obs-green",
+	learning: "ep:bg-obs-orange/15 ep:text-obs-orange",
+	review: "ep:bg-obs-blue/15 ep:text-obs-blue",
 };
 
 const SIZE_CLASSES: Record<BadgeSize, string> = {

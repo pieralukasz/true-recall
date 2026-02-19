@@ -20,9 +20,3 @@
 		animation: none;
 	}
 }
-
-@media (prefers-reduced-motion: reduce) {
-	.true-recall-pulse-collect {
-		animation: none;
-	}
-}
