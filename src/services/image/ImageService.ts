@@ -213,7 +213,7 @@ export class ImageService {
 			);
 
 		if (files.length > 0) {
-			return files[0]?.path;
+			return files[0]?.path ?? null;
 		}
 
 		return null;

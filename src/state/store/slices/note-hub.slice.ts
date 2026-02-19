@@ -66,6 +66,8 @@ function sortNotes(
 				return modifier * (a.dueCount - b.dueCount);
 			case "cards":
 				return modifier * (a.cardCount - b.cardCount);
+			default:
+				return 0;
 		}
 	});
 }
