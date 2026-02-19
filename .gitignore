@@ -35,6 +35,7 @@ CLAUDE.md
 .claude/plans/
 .claude/agents/supabase-sync-updater.md
 .claude/agents/sql-migration.md
+.claude/skills/
 
 # Documentation and plans
 docs/

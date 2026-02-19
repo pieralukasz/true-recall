@@ -1,3 +1,4 @@
+import { cva, type VariantProps } from "class-variance-authority";
 import { Clickable } from "ui/preact";
 import type { NoteStatusInfo } from "../../../services/cache/note-status-cache.service";
 
@@ -5,8 +6,23 @@ const CIRCUMFERENCE = 100;
 const RADIUS = 15.91549430918954; // circumference / (2 * PI)
 const STROKE_WIDTH = 3.8;
 
-const DONUT_CLS =
-	"ep-donut ep:inline-flex ep:items-center ep:justify-center ep:w-[calc(1.6em-8px)] ep:h-[calc(1.6em-8px)] ep:align-middle ep:mr-1.5 ep:cursor-pointer ep:transition-transform ep:mb-0.5 ep:hover:scale-[1.2]";
+const donutVariants = cva(
+	"ep-donut ep:inline-flex ep:items-center ep:justify-center ep:align-middle ep:cursor-pointer ep:transition-transform ep:hover:scale-[1.2]",
+	{
+		variants: {
+			variant: {
+				link: "ep:w-[calc(1.6em-8px)] ep:h-[calc(1.6em-8px)] ep:mr-1.5",
+				h1: "ep:w-[30px] ep:h-[30px] ep:mr-[22px] ep:mb-1",
+				h2: "ep:w-[28px] ep:h-[28px] ep:mr-[21px] ep:mb-1",
+				h3: "ep:w-6 ep:h-6 ep:mr-[19px] ep:mb-1",
+				h4: "ep:w-[21px] ep:h-[21px] ep:mr-5 ep:mb-0.5",
+				h5: "ep:w-[19px] ep:h-[19px] ep:mr-5 ep:mb-0.5",
+				h6: "ep:w-[18px] ep:h-[18px] ep:mr-5 ep:mb-0.5",
+			},
+		},
+		defaultVariants: { variant: "link" },
+	},
+);
 
 interface DonutSegment {
 	length: number;
@@ -14,13 +30,12 @@ interface DonutSegment {
 	cls: string;
 }
 
-export interface DonutChartProps {
+export interface DonutChartProps extends VariantProps<typeof donutVariants> {
 	info: NoteStatusInfo;
 	onPlay?: () => void;
-	class?: string;
 }
 
-export function DonutChart({ info, onPlay, class: extraCls }: DonutChartProps) {
+export function DonutChart({ info, onPlay, variant }: DonutChartProps) {
 	const segments: DonutSegment[] = [];
 	let offset = 0;
 
@@ -56,7 +71,7 @@ export function DonutChart({ info, onPlay, class: extraCls }: DonutChartProps) {
 
 	return (
 		<Clickable
-			class={`${DONUT_CLS}${extraCls ? ` ${extraCls}` : ""}`}
+			class={donutVariants({ variant })}
 			aria-label={`Flashcards: ${info.new} new, ${info.learning} learning, ${info.dueToday} due today (${info.total} total)`}
 			onClick={() => {
 				onPlay?.();

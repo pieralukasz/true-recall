@@ -6,8 +6,7 @@ import { LinkTextCount } from "./components/LinkTextCount";
 export interface LinkStatusOptions {
 	info: NoteStatusInfo;
 	onPlay?: () => void;
-	small?: boolean;
-	class?: string;
+	variant?: "link" | "h1" | "h2" | "h3" | "h4" | "h5" | "h6";
 }
 
 export function createLinkStatusElement(
@@ -18,7 +17,7 @@ export function createLinkStatusElement(
 		h(DonutChart, {
 			info: options.info,
 			onPlay: options.onPlay,
-			class: options.class,
+			variant: options.variant,
 		}),
 		container,
 	);
@@ -30,7 +29,7 @@ export function createLinkTextCountElement(
 ): HTMLSpanElement {
 	const container = document.createElement("div");
 	render(
-		h(LinkTextCount, { info: options.info, onPlay: options.onPlay }),
+		h(LinkTextCount, { info: options.info, onPlay: options.onPlay, variant: options.variant }),
 		container,
 	);
 	return container.firstElementChild as HTMLSpanElement;
