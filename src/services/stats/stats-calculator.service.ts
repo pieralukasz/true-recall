@@ -23,6 +23,7 @@ import {
 
 export class StatsCalculatorService {
 	private sessionPersistence: SessionPersistenceService;
+	private sqliteStore: SqliteStoreService | undefined;
 
 	// Specialized calculators
 	private streakCalculator = new StreakCalculator();

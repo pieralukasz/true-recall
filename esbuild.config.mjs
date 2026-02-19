@@ -1,9 +1,9 @@
 import esbuild from "esbuild";
 import process from "process";
 import { builtinModules } from 'node:module';
-import { copyFileSync, writeFileSync, existsSync, mkdirSync, readFileSync } from "fs";
+import { copyFileSync, writeFileSync, existsSync, mkdirSync, watch } from "fs";
 import { join } from "path";
-import { execSync } from "child_process";
+import { execSync, spawn } from "child_process";
 
 const banner =
 `/*
@@ -123,4 +123,27 @@ if (prod) {
 	process.exit(0);
 } else {
 	await context.watch();
+
+	// Watch CSS separately — esbuild doesn't track non-bundled files
+	const cssWatcher = spawn(
+		"npx",
+		["@tailwindcss/cli", "-i", "src/ui/styles.css", "-o", "styles.css", "--watch"],
+		{ stdio: "inherit" }
+	);
+	cssWatcher.on("error", (err) => console.error("CSS watcher error:", err.message));
+
+	// Copy styles.css to vault whenever Tailwind rebuilds it
+	if (vaultPluginDir) {
+		watch("styles.css", () => {
+			try {
+				copyFileSync("styles.css", join(vaultPluginDir, "styles.css"));
+			} catch {
+				// File may not exist yet on first watch event
+			}
+		});
+	}
+
+	const cleanup = () => { cssWatcher.kill(); process.exit(0); };
+	process.on("SIGINT", cleanup);
+	process.on("SIGTERM", cleanup);
 }

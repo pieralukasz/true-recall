@@ -102,7 +102,7 @@ export class SqlJsAdapter {
 
 			const sampleResult = this.db.exec(`SELECT * FROM "${table}" LIMIT 3`);
 			let sampleSection = "";
-			if (sampleResult.length > 0 && sampleResult[0]?.values.length > 0) {
+			if (sampleResult.length > 0 && (sampleResult[0]?.values.length ?? 0) > 0) {
 				const sampleRows = sampleResult[0]?.values
 					.map((row) =>
 						row
@@ -123,7 +123,7 @@ export class SqlJsAdapter {
 			const rowCount = countResult[0]?.values[0]?.[0] ?? 0;
 
 			schemaInfo.push(
-				`Table: ${table} (${String(rowCount)} rows)\nColumns:\n${columns.join("\n")}${fsrsNotesSection}${sampleSection}`,
+				`Table: ${table} (${String(rowCount)} rows)\nColumns:\n${(columns ?? []).join("\n")}${fsrsNotesSection}${sampleSection}`,
 			);
 		}
 
@@ -162,7 +162,7 @@ export class SqlJsAdapter {
 		);
 		if (result.length === 0) return [];
 
-		return result[0]?.values.map((row) => row[0] as string);
+		return result[0]?.values.map((row) => row[0] as string) ?? [];
 	}
 
 	/**
@@ -172,7 +172,7 @@ export class SqlJsAdapter {
 		const result = this.db.exec(`PRAGMA table_info("${tableName}")`);
 		if (result.length === 0) return [];
 
-		return result[0]?.values.map((row) => row[1] as string);
+		return result[0]?.values.map((row) => row[1] as string) ?? [];
 	}
 
 	/**

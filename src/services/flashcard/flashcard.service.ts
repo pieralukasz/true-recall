@@ -40,6 +40,7 @@ export interface FlashcardInfo {
 
 export class FlashcardManager {
 	private app: App;
+	private settings: TrueRecallSettings;
 	private store: SqliteStoreService | null = null;
 	private frontmatterService: FrontmatterService;
 	private parserService: FlashcardParserService;
@@ -68,7 +69,7 @@ export class FlashcardManager {
 	}
 
 	hasStore(): boolean {
-		return this.store?.isReady();
+		return this.store?.isReady() ?? false;
 	}
 
 	/** Returns true if card was saved, false if skipped (already exists) */
