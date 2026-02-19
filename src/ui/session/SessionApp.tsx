@@ -18,7 +18,7 @@ interface SessionAppProps {
 
 export function SessionApp({ logic, onSelectAndClose }: SessionAppProps) {
 	const plugin = usePlugin();
-	const session = plugin.store?.getState().session;
+	const session = plugin.store!.getState().session;
 
 	const [currentNoteName, setCurrentNoteName] = useState(
 		session.currentNoteName,
@@ -32,7 +32,7 @@ export function SessionApp({ logic, onSelectAndClose }: SessionAppProps) {
 	);
 
 	useEffect(() => {
-		const unsub = plugin.store?.subscribe(
+		const unsub = plugin.store!.subscribe(
 			(state) => state.session,
 			(s) => {
 				setCurrentNoteName(s.currentNoteName);

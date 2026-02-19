@@ -19,7 +19,7 @@ export class StreakCalculator {
 	calculate(allStats: Record<string, ExtendedDailyStats>): StreakInfo {
 		// Get dates with reviews, sorted descending
 		const reviewDates = Object.keys(allStats)
-			.filter((date) => allStats[date]?.reviewsCompleted > 0)
+			.filter((date) => (allStats[date]?.reviewsCompleted ?? 0) > 0)
 			.sort((a, b) => b.localeCompare(a)); // Descending
 
 		if (reviewDates.length === 0) {

@@ -69,7 +69,7 @@ export class FlashcardPanelView extends ItemView {
 	}
 
 	private get panel(): PanelApi {
-		return this.plugin.store?.getState().panel;
+		return this.plugin.store!.getState().panel;
 	}
 
 	getViewType(): string {
@@ -156,7 +156,7 @@ export class FlashcardPanelView extends ItemView {
 		);
 
 		// Subscribe to store for Obsidian native header actions
-		this.headerActionsUnsub = this.plugin.store?.subscribe(
+		this.headerActionsUnsub = this.plugin.store!.subscribe(
 			(s) => ({ status: s.panel.status, file: s.panel.currentFile }),
 			() => this.updateHeaderActions(),
 		);

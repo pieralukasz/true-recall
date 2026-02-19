@@ -59,13 +59,13 @@ const ICON_BTN_CLS =
 // ── Hooks ──────────────────────────────────────────────────────
 
 function useNoteHub(): NoteHubApi {
-	return usePlugin().store?.getState().noteHub;
+	return usePlugin().store!.getState().noteHub;
 }
 
 function useNoteHubState() {
 	const plugin = usePlugin();
 	const [state, setState] = useState(() => {
-		const nh = plugin.store?.getState().noteHub;
+		const nh = plugin.store!.getState().noteHub;
 		return {
 			isLoading: nh.isLoading,
 			projects: nh.projects,
@@ -83,10 +83,10 @@ function useNoteHubState() {
 	});
 
 	useEffect(() => {
-		const unsub = plugin.store?.subscribe(
+		const unsub = plugin.store!.subscribe(
 			(s) => s.noteHub,
 			() => {
-				const nh = plugin.store?.getState().noteHub;
+				const nh = plugin.store!.getState().noteHub;
 				setState({
 					isLoading: nh.isLoading,
 					projects: nh.projects,
@@ -116,7 +116,7 @@ function useLoadData() {
 	const app = useApp();
 
 	return useCallback(async () => {
-		const noteHub = plugin.store?.getState().noteHub;
+		const noteHub = plugin.store!.getState().noteHub;
 		noteHub.setLoading(true);
 
 		try {
@@ -209,7 +209,7 @@ function useLoadData() {
 						dueCount: 0,
 					});
 				}
-				const uidStats = uidStateCounts.get(card.sourceUid);
+				const uidStats = uidStateCounts.get(card.sourceUid)!;
 
 				const dueDate = new Date(card.due);
 				const isNew = card.state === State.New;
@@ -230,7 +230,7 @@ function useLoadData() {
 					if (!noteCardCounts.has(projectName)) {
 						noteCardCounts.set(projectName, new Map());
 					}
-					const noteCounts = noteCardCounts.get(projectName);
+					const noteCounts = noteCardCounts.get(projectName)!;
 					noteCounts.set(
 						sourceFile.path,
 						(noteCounts.get(sourceFile.path) || 0) + 1,
@@ -494,7 +494,7 @@ function useNoteHubActions(loadData: () => Promise<void>) {
 	);
 
 	const handleBulkAddToProject = useCallback(async () => {
-		const noteHub = plugin.store?.getState().noteHub;
+		const noteHub = plugin.store!.getState().noteHub;
 		const selectedPaths = Array.from(noteHub.selectedNotePaths);
 
 		if (selectedPaths.length === 0) {
@@ -534,7 +534,7 @@ function useNoteHubActions(loadData: () => Promise<void>) {
 	}, [app, plugin, loadData]);
 
 	const handleBulkReview = useCallback(async () => {
-		const noteHub = plugin.store?.getState().noteHub;
+		const noteHub = plugin.store!.getState().noteHub;
 		const selectedPaths = Array.from(noteHub.selectedNotePaths);
 
 		if (selectedPaths.length === 0) {

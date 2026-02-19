@@ -592,7 +592,7 @@ function FutureDueChart({
 								title: (items) => {
 									if (items.length > 0)
 										return formatDateForDisplay(
-											data[items[0]?.dataIndex]?.date,
+											data[items[0]!.dataIndex]?.date ?? "",
 										);
 									return "";
 								},
@@ -611,7 +611,7 @@ function FutureDueChart({
 					},
 					onClick: (_event, elements) => {
 						if (elements.length > 0) {
-							const entry = data[elements[0]?.index];
+							const entry = data[elements[0]!.index];
 							if (entry && entry.count > 0) {
 								const cards = statsCalculator.getCardsDueOnDate(entry.date);
 								onCardPreview(entry.date, cards);
@@ -752,7 +752,7 @@ function ReviewsChart({
 								title: (items) => {
 									if (items.length > 0)
 										return formatDateForDisplay(
-											data[items[0]?.dataIndex]?.date,
+											data[items[0]!.dataIndex]?.date ?? "",
 										);
 									return "";
 								},
@@ -771,7 +771,7 @@ function ReviewsChart({
 					},
 					onClick: (_event, elements) => {
 						if (elements.length > 0) {
-							const entry = data[elements[0]?.index];
+							const entry = data[elements[0]!.index];
 							if (entry && (entry.created > 0 || entry.reviewed > 0)) {
 								const cards = statsCalculator.getCardsDueOnDate(entry.date);
 								onCardPreview(entry.date, cards);
@@ -933,7 +933,7 @@ function RetentionChart({
 								title: (items) => {
 									if (items.length > 0)
 										return formatDateForDisplay(
-											data[items[0]?.dataIndex]?.date,
+											data[items[0]!.dataIndex]?.date ?? "",
 										);
 									return "";
 								},

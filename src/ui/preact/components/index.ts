@@ -15,6 +15,7 @@ export {
 	CardCountDisplay,
 	type CardCountDisplayProps,
 } from "./CardCountDisplay";
+export { Clickable, type ClickableProps } from "./Clickable";
 export {
 	CollapsibleSection,
 	type CollapsibleSectionProps,
