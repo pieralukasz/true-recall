@@ -31,9 +31,3 @@
 		background: var(--interactive-accent);
 	}
 }
-
-@media (prefers-reduced-motion: reduce) {
-	.true-recall-chart-fade-in {
-		animation: none;
-	}
-}

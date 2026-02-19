@@ -111,15 +111,15 @@ export class FlashcardPanelHeader extends BaseComponent {
             const badgeCls = "ep:flex ep:items-center ep:justify-center ep:min-w-5 ep:h-5 ep:px-1.5 ep:rounded-full ep:text-ui-smaller ep:font-semibold";
             countsEl.createDiv({
                 text: String(counts.new),
-                cls: `${badgeCls} ep-bg-obs-green-20 ep:text-obs-green`,
+                cls: `${badgeCls} ep:bg-obs-green/20 ep:text-obs-green`,
             });
             countsEl.createDiv({
                 text: String(counts.learning),
-                cls: `${badgeCls} ep-bg-obs-orange-20 ep:text-obs-orange`,
+                cls: `${badgeCls} ep:bg-obs-orange/20 ep:text-obs-orange`,
             });
             countsEl.createDiv({
                 text: String(counts.review),
-                cls: `${badgeCls} ep-bg-obs-blue-20 ep:text-obs-blue`,
+                cls: `${badgeCls} ep:bg-obs-blue/20 ep:text-obs-blue`,
             });
         }
 
