@@ -1,4 +1,4 @@
-import { signal, batch, type ReadonlySignal } from "@preact/signals-core";
+import { signal, batch, type ReadonlySignal } from "@preact/signals";
 
 // eslint-disable-next-line @typescript-eslint/no-unused-expressions
 export function track(...signals: ReadonlySignal[]): void { for (const s of signals) s.value; }

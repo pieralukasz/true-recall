@@ -10,7 +10,7 @@ import { filterActiveCardsOnly } from "../shared/helpers";
 import type TrueRecallPlugin from "../../main";
 import type { ProjectNoteInfo } from "../../types";
 import type { NoteHubApi } from "../../state/store";
-import { effect } from "@preact/signals-core";
+import { effect } from "@preact/signals";
 import { dataVersion, track } from "../../services/core/signals";
 
 export class NoteHubView extends ItemView {

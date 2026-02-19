@@ -1,5 +1,5 @@
-import type { ReadonlySignal } from "@preact/signals-core";
-import { effect } from "@preact/signals-core";
+import type { ReadonlySignal } from "@preact/signals";
+import { effect } from "@preact/signals";
 import { track } from "../core/signals";
 
 export interface ReactiveCacheOptions<T> {

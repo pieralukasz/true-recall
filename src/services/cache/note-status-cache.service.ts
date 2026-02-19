@@ -1,6 +1,6 @@
 import { State } from "ts-fsrs";
 import type { SqliteStoreService } from "../persistence/sqlite/SqliteStoreService";
-import { effect } from "@preact/signals-core";
+import { effect } from "@preact/signals";
 import { lastMutation, syncVersion, track, type CardMutation } from "../core/signals";
 
 export interface NoteStatusInfo {
