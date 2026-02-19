@@ -1,7 +1,43 @@
 /**
  * Edit Toolbar Utilities
- * Pure functions for text formatting operations on textareas
+ * Pure functions for text formatting operations on textareas,
+ * toolbar button definitions, and related types.
  */
+
+// ─── Toolbar Button Types & Data ───────────────────────────────────
+
+export type ToolbarButtonAction =
+	| { type: "toggle"; before: string; after: string }
+	| { type: "insert"; text: string }
+	| { type: "custom"; handler: (textarea: HTMLTextAreaElement) => void };
+
+export interface ToolbarButton {
+	id: string;
+	label: string;
+	title: string;
+	action: ToolbarButtonAction;
+	shortcut?: string;
+}
+
+export const TOOLBAR_BUTTONS = {
+	UNIFIED: [
+		{ id: "bold", label: "B", title: "Bold", shortcut: "Ctrl+B", action: { type: "toggle", before: "**", after: "**" } },
+		{ id: "italic", label: "I", title: "Italic", shortcut: "Ctrl+I", action: { type: "toggle", before: "*", after: "*" } },
+		{ id: "underline", label: "U", title: "Underline", shortcut: "Ctrl+U", action: { type: "toggle", before: "<u>", after: "</u>" } },
+		{ id: "wiki", label: "[[]]", title: "Wiki Link", shortcut: "Ctrl+K", action: { type: "toggle", before: "[[", after: "]]" } },
+		{ id: "math", label: "$", title: "Math", shortcut: "Ctrl+M", action: { type: "toggle", before: "$", after: "$" } },
+		{ id: "h1", label: "H1", title: "Heading 1", shortcut: "Ctrl+1", action: { type: "insert", text: "# " } },
+		{ id: "h2", label: "H2", title: "Heading 2", shortcut: "Ctrl+2", action: { type: "insert", text: "## " } },
+		{ id: "list", label: "-", title: "List", shortcut: "Ctrl+L", action: { type: "insert", text: "- " } },
+		{ id: "quote", label: ">", title: "Quote", shortcut: "Ctrl+.", action: { type: "insert", text: "> " } },
+		{ id: "code", label: "`", title: "Code", shortcut: "Ctrl+`", action: { type: "toggle", before: "`", after: "`" } },
+		{ id: "codeblock", label: "```", title: "Code Block", shortcut: "Ctrl+Shift+C", action: { type: "toggle", before: "```\n", after: "\n```" } },
+		{ id: "superscript", label: "x\u00B2", title: "Superscript", action: { type: "toggle", before: "<sup>", after: "</sup>" } },
+		{ id: "subscript", label: "x\u2082", title: "Subscript", action: { type: "toggle", before: "<sub>", after: "</sub>" } },
+	] as ToolbarButton[],
+};
+
+// ─── Textarea Utilities ────────────────────────────────────────────
 
 /**
  * Toggle wrap selected text with before/after strings
