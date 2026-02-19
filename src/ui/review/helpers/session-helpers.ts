@@ -11,7 +11,7 @@ export interface CardFilterOptions {
  */
 export function filterActiveCards(
 	cards: FSRSFlashcardItem[],
-	options: CardFilterOptions = {}
+	options: CardFilterOptions = {},
 ): FSRSFlashcardItem[] {
 	const now = new Date();
 	const { stateFilter } = options;
@@ -43,7 +43,7 @@ export function filterActiveCards(
  */
 export function buildSourceUidToProjectsMap(
 	app: App,
-	projectFilters: string[] | undefined
+	projectFilters: string[] | undefined,
 ): Map<string, string[]> | undefined {
 	if (!projectFilters || projectFilters.length === 0) {
 		return undefined;
@@ -77,7 +77,7 @@ export function buildSourceUidToProjectsMap(
 
 export function getEmptyQueueMessage(
 	stateFilter?: string,
-	projectFilters?: string[]
+	projectFilters?: string[],
 ): string {
 	if (stateFilter === "buried") {
 		return "No buried cards found.";

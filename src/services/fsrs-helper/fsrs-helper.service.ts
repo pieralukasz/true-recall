@@ -1,34 +1,45 @@
-import type { TrueRecallSettings, FSRSSettings } from "../../types";
+import type { FSRSSettings, TrueRecallSettings } from "../../types";
 import type { SqliteStoreService } from "../persistence/sqlite/SqliteStoreService";
-
-import { ParameterOptimizerService } from "./optimizer/parameter-optimizer.service";
 import type {
 	OptimizationInput,
 	OptimizationOutput,
 	OptimizerOptions,
 } from "./optimizer/optimizer.types";
-
-import { LoadBalanceService } from "./scheduler/load-balance.service";
-import { EasyDaysService, type EasyDaysOptions } from "./scheduler/easy-days.service";
-import { PostponeAdvanceService } from "./scheduler/postpone-advance.service";
+import { ParameterOptimizerService } from "./optimizer/parameter-optimizer.service";
+import {
+	type EasyDaysOptions,
+	EasyDaysService,
+} from "./scheduler/easy-days.service";
 import { FlattenService } from "./scheduler/flatten.service";
-import { SiblingDisperseService } from "./scheduler/sibling-disperse.service";
-import { ScheduleBreakService } from "./scheduler/schedule-break.service";
+import { LoadBalanceService } from "./scheduler/load-balance.service";
+import { PostponeAdvanceService } from "./scheduler/postpone-advance.service";
 import { RescheduleService } from "./scheduler/reschedule.service";
+import { ScheduleBreakService } from "./scheduler/schedule-break.service";
 import type {
-	LoadBalanceOptions,
-	ShiftOptions,
-	FlattenOptions,
-	DisperseOptions,
-	RescheduleOptions,
 	BreakScheduleOptions,
+	DisperseOptions,
+	FlattenOptions,
+	LoadBalanceOptions,
+	RescheduleOptions,
 	SchedulingResult,
+	ShiftOptions,
 	WorkloadDistribution,
 } from "./scheduler/scheduler.types";
-
-import { TrueRetentionCalculator, type TrueRetentionSummary } from "./statistics/true-retention.calculator";
-import { WorkloadForecastCalculator, type WorkloadForecastEntry, type WorkloadForecastSummary } from "./statistics/workload-forecast.calculator";
-import { DistributionCalculator, type HistogramBucket, type DistributionStats } from "./statistics/distribution.calculator";
+import { SiblingDisperseService } from "./scheduler/sibling-disperse.service";
+import {
+	DistributionCalculator,
+	type DistributionStats,
+	type HistogramBucket,
+} from "./statistics/distribution.calculator";
+import {
+	TrueRetentionCalculator,
+	type TrueRetentionSummary,
+} from "./statistics/true-retention.calculator";
+import {
+	WorkloadForecastCalculator,
+	type WorkloadForecastEntry,
+	type WorkloadForecastSummary,
+} from "./statistics/workload-forecast.calculator";
 
 export class FSRSHelperService {
 	private optimizer: ParameterOptimizerService;
@@ -46,7 +57,7 @@ export class FSRSHelperService {
 
 	constructor(
 		private cardStore: SqliteStoreService,
-		private settings: TrueRecallSettings
+		private settings: TrueRecallSettings,
 	) {
 		this.optimizer = new ParameterOptimizerService();
 
@@ -56,7 +67,10 @@ export class FSRSHelperService {
 		this.flatten = new FlattenService(cardStore);
 		this.siblingDisperse = new SiblingDisperseService(cardStore);
 		this.scheduleBreak = new ScheduleBreakService(cardStore);
-		this.reschedule = new RescheduleService(cardStore, this.extractFSRSSettings());
+		this.reschedule = new RescheduleService(
+			cardStore,
+			this.extractFSRSSettings(),
+		);
 
 		this.trueRetention = new TrueRetentionCalculator(cardStore);
 		this.workloadForecast = new WorkloadForecastCalculator(cardStore);
@@ -67,20 +81,20 @@ export class FSRSHelperService {
 		this.settings = settings;
 		this.reschedule = new RescheduleService(
 			this.cardStore,
-			this.extractFSRSSettings()
+			this.extractFSRSSettings(),
 		);
 	}
 
 	async optimizeParameters(
 		options?: OptimizerOptions,
 		presetName?: string,
-		currentWeights?: number[] | null
+		currentWeights?: number[] | null,
 	): Promise<OptimizationOutput> {
 		const reviews = this.cardStore.getReviewDataForOptimization(presetName);
 
 		const input: OptimizationInput = {
 			reviews,
-			currentWeights: (currentWeights ?? this.settings.fsrsWeights) ?? undefined,
+			currentWeights: currentWeights ?? this.settings.fsrsWeights ?? undefined,
 			minReviews: 400,
 		};
 
@@ -91,13 +105,17 @@ export class FSRSHelperService {
 		return this.optimizer.validateWeights(weights);
 	}
 
-	async balanceWorkload(options?: Partial<LoadBalanceOptions>): Promise<SchedulingResult> {
+	async balanceWorkload(
+		options?: Partial<LoadBalanceOptions>,
+	): Promise<SchedulingResult> {
 		return this.loadBalancer.balance({
 			targetPerDay: options?.targetPerDay ?? this.settings.loadBalanceTarget,
-			maxDeviation: options?.maxDeviation ?? this.settings.loadBalanceMaxDeviation,
+			maxDeviation:
+				options?.maxDeviation ?? this.settings.loadBalanceMaxDeviation,
 			days: options?.days ?? 30,
 			easyDays: options?.easyDays ?? this.settings.easyDays,
-			easyDaysMultiplier: options?.easyDaysMultiplier ?? this.settings.easyDaysMultiplier,
+			easyDaysMultiplier:
+				options?.easyDaysMultiplier ?? this.settings.easyDaysMultiplier,
 			dryRun: options?.dryRun ?? true,
 		});
 	}
@@ -106,7 +124,9 @@ export class FSRSHelperService {
 		return this.loadBalancer.getDistribution(days);
 	}
 
-	async applyEasyDays(options?: Partial<EasyDaysOptions>): Promise<SchedulingResult> {
+	async applyEasyDays(
+		options?: Partial<EasyDaysOptions>,
+	): Promise<SchedulingResult> {
 		return this.easyDays.applyEasyDays({
 			easyDays: options?.easyDays ?? this.settings.easyDays,
 			multiplier: options?.multiplier ?? this.settings.easyDaysMultiplier,
@@ -116,11 +136,14 @@ export class FSRSHelperService {
 		});
 	}
 
-	previewEasyDays(): { totalMoved: number; byDay: { day: string; moved: number }[] } {
+	previewEasyDays(): {
+		totalMoved: number;
+		byDay: { day: string; moved: number }[];
+	} {
 		return this.easyDays.previewImpact(
 			this.settings.easyDays,
 			this.settings.easyDaysMultiplier,
-			this.settings.loadBalanceTarget
+			this.settings.loadBalanceTarget,
 		);
 	}
 
@@ -132,11 +155,16 @@ export class FSRSHelperService {
 		return this.flatten.flatten(options);
 	}
 
-	findOverloadedDays(maxCards: number, days: number = 30): { date: string; count: number; excess: number }[] {
+	findOverloadedDays(
+		maxCards: number,
+		days: number = 30,
+	): { date: string; count: number; excess: number }[] {
 		return this.flatten.findOverloadedDays(maxCards, days);
 	}
 
-	async disperseSiblings(options?: Partial<DisperseOptions>): Promise<SchedulingResult> {
+	async disperseSiblings(
+		options?: Partial<DisperseOptions>,
+	): Promise<SchedulingResult> {
 		return this.siblingDisperse.disperse({
 			minInterval: options?.minInterval ?? this.settings.siblingMinInterval,
 			sourceUid: options?.sourceUid,
@@ -144,15 +172,26 @@ export class FSRSHelperService {
 		});
 	}
 
-	findSiblingViolations(): { sourceUid: string; cardCount: number; violations: number }[] {
-		return this.siblingDisperse.findViolations(this.settings.siblingMinInterval);
+	findSiblingViolations(): {
+		sourceUid: string;
+		cardCount: number;
+		violations: number;
+	}[] {
+		return this.siblingDisperse.findViolations(
+			this.settings.siblingMinInterval,
+		);
 	}
 
-	async scheduleBreakPeriod(options: BreakScheduleOptions): Promise<SchedulingResult> {
+	async scheduleBreakPeriod(
+		options: BreakScheduleOptions,
+	): Promise<SchedulingResult> {
 		return this.scheduleBreak.scheduleBreak(options);
 	}
 
-	previewBreak(startDate: string, endDate: string): { cardsAffected: number; breakDays: number } {
+	previewBreak(
+		startDate: string,
+		endDate: string,
+	): { cardsAffected: number; breakDays: number } {
 		return this.scheduleBreak.previewBreak(startDate, endDate);
 	}
 
@@ -163,11 +202,13 @@ export class FSRSHelperService {
 	getTrueRetentionSummary(days: number = 30): TrueRetentionSummary {
 		return this.trueRetention.getSummary(
 			this.settings.fsrsRequestRetention,
-			days
+			days,
 		);
 	}
 
-	getTrueRetentionHistory(days: number = 30): { date: string; retention: number; reviewCount: number }[] {
+	getTrueRetentionHistory(
+		days: number = 30,
+	): { date: string; retention: number; reviewCount: number }[] {
 		return this.trueRetention.getRollingAverage(days);
 	}
 
@@ -178,11 +219,13 @@ export class FSRSHelperService {
 	getWorkloadForecastSummary(days: number = 30): WorkloadForecastSummary {
 		return this.workloadForecast.getSummary(
 			this.settings.loadBalanceTarget,
-			days
+			days,
 		);
 	}
 
-	getWorkloadByDayOfWeek(days: number = 30): { day: number; dayName: string; avgCount: number }[] {
+	getWorkloadByDayOfWeek(
+		days: number = 30,
+	): { day: number; dayName: string; avgCount: number }[] {
 		return this.workloadForecast.getWorkloadByDayOfWeek(days);
 	}
 

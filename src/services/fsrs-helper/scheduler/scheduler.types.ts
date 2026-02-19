@@ -25,7 +25,7 @@ export interface SchedulerCardStore {
 	updateCardDue(cardId: string, newDue: string): Promise<void>;
 	updateCardScheduling(
 		cardId: string,
-		data: { due: string; scheduledDays: number }
+		data: { due: string; scheduledDays: number },
 	): Promise<void>;
 }
 

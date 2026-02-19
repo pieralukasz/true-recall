@@ -1,25 +1,25 @@
-import { Rating, State, type Grade } from "ts-fsrs";
-import { stripWikiLinkSyntax, getTodayBoundary } from "../../utils";
+import { type Grade, Rating, State } from "ts-fsrs";
+import {
+	LEARN_AHEAD_LIMIT_MINUTES,
+	RANDOM_QUEUE_INSERT_MAX_POS,
+	WEAK_CARD_STABILITY_THRESHOLD,
+} from "../../constants";
 import type {
+	DailyStats,
 	FSRSFlashcardItem,
 	ReviewResult,
 	ReviewSessionStats,
-	DailyStats,
 } from "../../types";
 import type {
 	NewCardOrder,
-	ReviewOrder,
 	NewReviewMix,
+	ReviewOrder,
 } from "../../types/settings.types";
-import type { FSRSService } from "../core/fsrs.service";
-import type { FlashcardManager } from "../flashcard/flashcard.service";
+import { getTodayBoundary, stripWikiLinkSyntax } from "../../utils";
 import type { DayBoundaryService } from "../core/day-boundary.service";
-import {
-	LEARN_AHEAD_LIMIT_MINUTES,
-	WEAK_CARD_STABILITY_THRESHOLD,
-	RANDOM_QUEUE_INSERT_MAX_POS,
-} from "../../constants";
+import type { FSRSService } from "../core/fsrs.service";
 import { notifyCardChange } from "../core/signals";
+import type { FlashcardManager } from "../flashcard/flashcard.service";
 
 export interface QueueBuildOptions {
 	newCardsLimit: number;
@@ -70,7 +70,9 @@ export class ReviewService {
 		const result = [...array];
 		for (let i = result.length - 1; i > 0; i--) {
 			const j = Math.floor(Math.random() * (i + 1));
-			[result[i], result[j]] = [result[j]!, result[i]!];
+			const temp = result[i] as T;
+			result[i] = result[j] as T;
+			result[j] = temp;
 		}
 		return result;
 	}
@@ -84,25 +86,22 @@ export class ReviewService {
 		let primaryIndex = 0;
 		let secondaryIndex = 0;
 
-		while (
-			primaryIndex < primary.length ||
-			secondaryIndex < secondary.length
-		) {
+		while (primaryIndex < primary.length || secondaryIndex < secondary.length) {
 			const targetPrimary = Math.floor((secondaryIndex + 1) * ratio);
-			while (
-				primaryIndex < targetPrimary &&
-				primaryIndex < primary.length
-			) {
-				result.push(primary[primaryIndex]!);
+			while (primaryIndex < targetPrimary && primaryIndex < primary.length) {
+				const item = primary[primaryIndex];
+				if (item !== undefined) result.push(item);
 				primaryIndex++;
 			}
 			if (secondaryIndex < secondary.length) {
-				result.push(secondary[secondaryIndex]!);
+				const item = secondary[secondaryIndex];
+				if (item !== undefined) result.push(item);
 				secondaryIndex++;
 			}
 		}
 		while (primaryIndex < primary.length) {
-			result.push(primary[primaryIndex]!);
+			const item = primary[primaryIndex];
+			if (item !== undefined) result.push(item);
 			primaryIndex++;
 		}
 
@@ -119,9 +118,7 @@ export class ReviewService {
 		});
 	}
 
-	private sortByCreatedAtDesc(
-		cards: FSRSFlashcardItem[]
-	): FSRSFlashcardItem[] {
+	private sortByCreatedAtDesc(cards: FSRSFlashcardItem[]): FSRSFlashcardItem[] {
 		return [...cards].sort((a, b) => {
 			const aTime = a.fsrs.createdAt ?? 0;
 			const bTime = b.fsrs.createdAt ?? 0;
@@ -148,7 +145,7 @@ export class ReviewService {
 		cards: FSRSFlashcardItem[],
 		options: QueueBuildOptions,
 		todayBoundary: Date,
-		weekAgoBoundary: Date
+		weekAgoBoundary: Date,
 	): FSRSFlashcardItem[] {
 		const noteSet = options.sourceNoteFilters?.length
 			? new Set(options.sourceNoteFilters)
@@ -163,8 +160,7 @@ export class ReviewService {
 				if (!card.sourceNoteName || !noteSet.has(card.sourceNoteName))
 					return false;
 			} else if (options.sourceNoteFilter) {
-				if (card.sourceNoteName !== options.sourceNoteFilter)
-					return false;
+				if (card.sourceNoteName !== options.sourceNoteFilter) return false;
 			}
 
 			// File path filter (uses sourceNotePath)
@@ -178,15 +174,13 @@ export class ReviewService {
 			// Created today filter
 			if (options.createdTodayOnly) {
 				const createdAt = card.fsrs.createdAt;
-				if (!createdAt || createdAt < todayBoundary.getTime())
-					return false;
+				if (!createdAt || createdAt < todayBoundary.getTime()) return false;
 			}
 
 			// Created this week filter
 			if (options.createdThisWeek) {
 				const createdAt = card.fsrs.createdAt;
-				if (!createdAt || createdAt < weekAgoBoundary.getTime())
-					return false;
+				if (!createdAt || createdAt < weekAgoBoundary.getTime()) return false;
 			}
 
 			// Weak cards filter
@@ -260,14 +254,14 @@ export class ReviewService {
 			if (options.recentlyFailed) {
 				const history = card.fsrs.history;
 				if (!history || history.length === 0) return false;
-				if (history[history.length - 1]!.r !== Rating.Again) return false;
+				if (history[history.length - 1]?.r !== Rating.Again) return false;
 			}
 
 			// Study ahead: include cards due within the next N days
 			if (options.studyAheadDays !== undefined && options.studyAheadDays > 0) {
 				if (card.fsrs.state === State.Review) {
 					const cutoff = new Date(
-						Date.now() + options.studyAheadDays * 86_400_000
+						Date.now() + options.studyAheadDays * 86_400_000,
 					);
 					if (new Date(card.fsrs.due) > cutoff) return false;
 				}
@@ -283,12 +277,11 @@ export class ReviewService {
 					card.sourceUid &&
 					options.sourceUidToProjects
 				) {
-					cardProjects =
-						options.sourceUidToProjects.get(card.sourceUid) || [];
+					cardProjects = options.sourceUidToProjects.get(card.sourceUid) || [];
 				}
 
 				const matches = cardProjects.some((p) =>
-					projectSet.has(stripWikiLinkSyntax(p))
+					projectSet.has(stripWikiLinkSyntax(p)),
 				);
 				if (!matches) {
 					return false;
@@ -301,7 +294,7 @@ export class ReviewService {
 
 	private sortNewCards(
 		cards: FSRSFlashcardItem[],
-		order: NewCardOrder
+		order: NewCardOrder,
 	): FSRSFlashcardItem[] {
 		switch (order) {
 			case "random":
@@ -318,7 +311,7 @@ export class ReviewService {
 	private sortReviewCards(
 		cards: FSRSFlashcardItem[],
 		order: ReviewOrder,
-		fsrsService: FSRSService
+		fsrsService: FSRSService,
 	): FSRSFlashcardItem[] {
 		switch (order) {
 			case "due-date":
@@ -331,12 +324,11 @@ export class ReviewService {
 				const groupedByDue = new Map<string, FSRSFlashcardItem[]>();
 				for (const card of sorted) {
 					const dueDay =
-						new Date(card.fsrs.due).toISOString().split("T")[0] ??
-						"";
+						new Date(card.fsrs.due).toISOString().split("T")[0] ?? "";
 					if (!groupedByDue.has(dueDay)) {
 						groupedByDue.set(dueDay, []);
 					}
-					groupedByDue.get(dueDay)!.push(card);
+					groupedByDue.get(dueDay)?.push(card);
 				}
 				const result: FSRSFlashcardItem[] = [];
 				for (const [, group] of groupedByDue) {
@@ -361,9 +353,7 @@ export class ReviewService {
 				});
 			}
 			case "lowest-stability":
-				return [...cards].sort(
-					(a, b) => a.fsrs.stability - b.fsrs.stability
-				);
+				return [...cards].sort((a, b) => a.fsrs.stability - b.fsrs.stability);
 			case "order-added":
 				return this.sortByCreatedAt(cards);
 			default:
@@ -374,14 +364,13 @@ export class ReviewService {
 	private mixQueues(
 		reviews: FSRSFlashcardItem[],
 		newCards: FSRSFlashcardItem[],
-		mix: NewReviewMix
+		mix: NewReviewMix,
 	): FSRSFlashcardItem[] {
 		switch (mix) {
 			case "show-after-reviews":
 				return [...reviews, ...newCards];
 			case "show-before-reviews":
 				return [...newCards, ...reviews];
-			case "mix-with-reviews":
 			default:
 				return this.interleave(reviews, newCards);
 		}
@@ -390,7 +379,7 @@ export class ReviewService {
 	private buildCustomStudyQueue(
 		availableCards: FSRSFlashcardItem[],
 		fsrsService: FSRSService,
-		options: QueueBuildOptions
+		options: QueueBuildOptions,
 	): FSRSFlashcardItem[] {
 		const allLearningCards = fsrsService.getLearningCards(availableCards);
 
@@ -399,18 +388,18 @@ export class ReviewService {
 
 		// All review state cards included
 		const reviewCards = availableCards.filter(
-			(card) => card.fsrs.state === State.Review
+			(card) => card.fsrs.state === State.Review,
 		);
 		const effectiveReviewsLimit = options.ignoreDailyLimits
 			? reviewCards.length
 			: Math.max(
 					0,
-					options.reviewsLimit - (options.reviewsCompletedToday ?? 0)
-			  );
+					options.reviewsLimit - (options.reviewsCompletedToday ?? 0),
+				);
 		const limitedReviewCards = this.sortReviewCards(
 			reviewCards.slice(0, effectiveReviewsLimit),
 			options.reviewOrder ?? "due-date",
-			fsrsService
+			fsrsService,
 		);
 
 		// New cards
@@ -419,13 +408,13 @@ export class ReviewService {
 			: options.newCardsLimit - (options.newCardsStudiedToday ?? 0);
 		const newCards = this.sortNewCards(
 			fsrsService.getNewCards(availableCards, Math.max(0, newLimit)),
-			options.newCardOrder ?? "random"
+			options.newCardOrder ?? "random",
 		);
 
 		const mainQueue = this.mixQueues(
 			limitedReviewCards,
 			newCards,
-			options.newReviewMix ?? "mix-with-reviews"
+			options.newReviewMix ?? "mix-with-reviews",
 		);
 
 		return [...fsrsService.sortByDue(dueLearningCards), ...mainQueue];
@@ -435,7 +424,7 @@ export class ReviewService {
 		availableCards: FSRSFlashcardItem[],
 		fsrsService: FSRSService,
 		options: QueueBuildOptions,
-		now: Date
+		now: Date,
 	): FSRSFlashcardItem[] {
 		const allLearningCards = fsrsService.getLearningCards(availableCards);
 
@@ -443,28 +432,28 @@ export class ReviewService {
 		// For Learning cards: use strict check (must be actually due, not just within learn-ahead)
 		// This aligns with isCardDueNow() which doesn't apply learn-ahead to Learning cards
 		const dueLearningCards = allLearningCards.filter(
-			(card) => new Date(card.fsrs.due) <= now
+			(card) => new Date(card.fsrs.due) <= now,
 		);
 		const pendingLearningCards = allLearningCards.filter(
-			(card) => new Date(card.fsrs.due) > now
+			(card) => new Date(card.fsrs.due) > now,
 		);
 
 		const dayStartHour = options.dayStartHour ?? 4;
 		const reviewCards = fsrsService.getReviewCards(
 			availableCards,
 			now,
-			dayStartHour
+			dayStartHour,
 		);
 		const effectiveReviewsLimit = options.ignoreDailyLimits
 			? reviewCards.length
 			: Math.max(
 					0,
-					options.reviewsLimit - (options.reviewsCompletedToday ?? 0)
-			  );
+					options.reviewsLimit - (options.reviewsCompletedToday ?? 0),
+				);
 		const limitedReviewCards = this.sortReviewCards(
 			reviewCards.slice(0, effectiveReviewsLimit),
 			options.reviewOrder ?? "due-date",
-			fsrsService
+			fsrsService,
 		);
 
 		// New cards
@@ -472,17 +461,17 @@ export class ReviewService {
 			? Infinity
 			: Math.max(
 					0,
-					options.newCardsLimit - (options.newCardsStudiedToday ?? 0)
-			  );
+					options.newCardsLimit - (options.newCardsStudiedToday ?? 0),
+				);
 		const newCards = this.sortNewCards(
 			fsrsService.getNewCards(availableCards, newLimit),
-			options.newCardOrder ?? "random"
+			options.newCardOrder ?? "random",
 		);
 
 		const mainQueue = this.mixQueues(
 			limitedReviewCards,
 			newCards,
-			options.newReviewMix ?? "mix-with-reviews"
+			options.newReviewMix ?? "mix-with-reviews",
 		);
 
 		return [
@@ -496,10 +485,11 @@ export class ReviewService {
 	buildQueue(
 		allCards: FSRSFlashcardItem[],
 		fsrsService: FSRSService,
-		options: QueueBuildOptions
+		options: QueueBuildOptions,
 	): FSRSFlashcardItem[] {
-		const { now, todayBoundary, weekAgoBoundary } =
-			this.calculateBoundaries(options.dayStartHour);
+		const { now, todayBoundary, weekAgoBoundary } = this.calculateBoundaries(
+			options.dayStartHour,
+		);
 		const reviewedToday = options.reviewedToday ?? new Set<string>();
 
 		// Filter cards based on options
@@ -507,7 +497,7 @@ export class ReviewService {
 			allCards,
 			options,
 			todayBoundary,
-			weekAgoBoundary
+			weekAgoBoundary,
 		);
 
 		// Exclude already reviewed cards (but keep learning cards - they need multiple reviews)
@@ -521,21 +511,21 @@ export class ReviewService {
 		let queue: FSRSFlashcardItem[];
 
 		if (options.bypassScheduling) {
-			queue = this.buildCustomStudyQueue(
-				availableCards,
-				fsrsService,
-				options
-			);
+			queue = this.buildCustomStudyQueue(availableCards, fsrsService, options);
 		} else {
 			queue = this.buildStandardQueue(
 				availableCards,
 				fsrsService,
 				options,
-				now
+				now,
 			);
 		}
 
-		if (options.cardLimit && options.cardLimit > 0 && queue.length > options.cardLimit) {
+		if (
+			options.cardLimit &&
+			options.cardLimit > 0 &&
+			queue.length > options.cardLimit
+		) {
 			// Preserve pending learning cards that would be cut off - they need
 			// follow-up reviews within the session
 			const pendingLearning = queue.slice(options.cardLimit).filter((card) => {
@@ -555,7 +545,7 @@ export class ReviewService {
 		rating: Grade,
 		fsrsService: FSRSService,
 		responseTime: number,
-		presetSettings?: import("../../types/settings.types").FSRSSettings
+		presetSettings?: import("../../types/settings.types").FSRSSettings,
 	): {
 		updatedCard: FSRSFlashcardItem;
 		result: ReviewResult;
@@ -569,14 +559,18 @@ export class ReviewService {
 			? Math.max(
 					0,
 					Math.floor(
-						(now.getTime() -
-							new Date(card.fsrs.lastReview).getTime()) /
-							(1000 * 60 * 60 * 24)
-					)
-			  )
+						(now.getTime() - new Date(card.fsrs.lastReview).getTime()) /
+							(1000 * 60 * 60 * 24),
+					),
+				)
 			: 0;
 
-		const newFsrsData = fsrsService.scheduleCard(card.fsrs, rating, now, presetSettings);
+		const newFsrsData = fsrsService.scheduleCard(
+			card.fsrs,
+			rating,
+			now,
+			presetSettings,
+		);
 
 		const updatedCard: FSRSFlashcardItem = {
 			...card,
@@ -601,14 +595,14 @@ export class ReviewService {
 		rating: Grade,
 		fsrsService: FSRSService,
 		flashcardManager: FlashcardManager,
-		responseTime: number = 0
+		responseTime: number = 0,
 	): Promise<{ updatedCard: FSRSFlashcardItem; result: ReviewResult }> {
 		// 1. Calculate new FSRS data
 		const { updatedCard, result } = this.processAnswer(
 			card,
 			rating,
 			fsrsService,
-			responseTime
+			responseTime,
 		);
 
 		// 2. Save to store
@@ -629,7 +623,7 @@ export class ReviewService {
 	calculateSessionStats(
 		results: ReviewResult[],
 		totalCards: number,
-		startTime: number
+		startTime: number,
 	): ReviewSessionStats {
 		const now = Date.now();
 
@@ -688,7 +682,7 @@ export class ReviewService {
 		allCards: FSRSFlashcardItem[],
 		todayResults: ReviewResult[],
 		settings: { newCardsPerDay: number; reviewsPerDay: number },
-		dayBoundaryService?: import("../core/day-boundary.service").DayBoundaryService
+		dayBoundaryService?: import("../core/day-boundary.service").DayBoundaryService,
 	): DailyStats {
 		const now = new Date();
 		const todayStart = new Date(now);
@@ -698,7 +692,7 @@ export class ReviewService {
 
 		// Count new cards reviewed today
 		const newReviewedToday = todayResults.filter(
-			(r) => r.previousState === State.New
+			(r) => r.previousState === State.New,
 		).length;
 
 		// Count due cards for today using day-based scheduling if service provided
@@ -707,12 +701,12 @@ export class ReviewService {
 			: allCards.filter((card) => {
 					const dueDate = new Date(card.fsrs.due);
 					return dueDate <= todayEnd && card.fsrs.state !== State.New;
-			  }).length;
+				}).length;
 
 		// Calculate remaining new cards
 		const newRemaining = Math.max(
 			0,
-			settings.newCardsPerDay - newReviewedToday
+			settings.newCardsPerDay - newReviewedToday,
 		);
 
 		return {
@@ -732,8 +726,7 @@ export class ReviewService {
 	 */
 	shouldRequeue(card: FSRSFlashcardItem): boolean {
 		return (
-			card.fsrs.state === State.Learning ||
-			card.fsrs.state === State.Relearning
+			card.fsrs.state === State.Learning || card.fsrs.state === State.Relearning
 		);
 	}
 
@@ -741,7 +734,7 @@ export class ReviewService {
 		queue: FSRSFlashcardItem[],
 		startIndex: number,
 		card: FSRSFlashcardItem,
-		reviewOrder?: ReviewOrder
+		reviewOrder?: ReviewOrder,
 	): number {
 		const dueDate = new Date(card.fsrs.due);
 		const now = new Date();
@@ -750,7 +743,7 @@ export class ReviewService {
 		// Using due-date ordering in a shuffled queue would place cards incorrectly
 		if (reviewOrder === "random") {
 			const learnAheadTime = new Date(
-				now.getTime() + LEARN_AHEAD_LIMIT_MINUTES * 60 * 1000
+				now.getTime() + LEARN_AHEAD_LIMIT_MINUTES * 60 * 1000,
 			);
 			if (dueDate <= learnAheadTime) {
 				// Card is due soon - insert randomly in first positions after startIndex
@@ -788,7 +781,7 @@ export class ReviewService {
 		if (results.length === 0) return 0;
 
 		const successfulReviews = results.filter(
-			(r) => r.rating >= Rating.Good
+			(r) => r.rating >= Rating.Good,
 		).length;
 
 		return successfulReviews / results.length;
@@ -796,7 +789,7 @@ export class ReviewService {
 
 	getStreakInfo(
 		reviewHistory: ReviewResult[],
-		dayBoundaryService?: DayBoundaryService
+		dayBoundaryService?: DayBoundaryService,
 	): {
 		currentStreak: number;
 		longestStreak: number;
@@ -810,7 +803,7 @@ export class ReviewService {
 			if (dayBoundaryService) {
 				// Use dayStartHour-aware formatting: a 3 AM review counts as "yesterday"
 				const boundary = dayBoundaryService.getTodayBoundary(
-					new Date(timestamp)
+					new Date(timestamp),
 				);
 				return dayBoundaryService.formatLocalDate(boundary);
 			}
@@ -823,7 +816,7 @@ export class ReviewService {
 		};
 
 		const reviewDays = new Set(
-			reviewHistory.map((r) => formatDate(r.timestamp))
+			reviewHistory.map((r) => formatDate(r.timestamp)),
 		);
 
 		const sortedDays = Array.from(reviewDays).sort();
@@ -839,7 +832,11 @@ export class ReviewService {
 		// Helper to add one day to YYYY-MM-DD string (avoids Date object creation in loop)
 		const addOneDay = (dateStr: string): string => {
 			const parts = dateStr.split("-").map(Number);
-			const d = new Date(parts[0] as number, (parts[1] as number) - 1, parts[2] as number);
+			const d = new Date(
+				parts[0] as number,
+				(parts[1] as number) - 1,
+				parts[2] as number,
+			);
 			d.setDate(d.getDate() + 1);
 			return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
 		};

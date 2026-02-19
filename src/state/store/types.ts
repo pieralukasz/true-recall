@@ -1,23 +1,20 @@
 import type { App, TFile } from "obsidian";
 import type { Grade } from "ts-fsrs";
-import type { SqliteStoreService } from "../../services/persistence/sqlite";
+import type { AppError } from "../../errors";
 import type { DayBoundaryService } from "../../services/core/day-boundary.service";
 import type { FrontmatterIndexService } from "../../services/core/frontmatter-index.service";
-import type { TrueRecallSettings } from "../../ui/settings";
+import type { SqliteStoreService } from "../../services/persistence/sqlite";
 import type {
-	FSRSFlashcardItem,
-	ReviewResult,
-	ReviewSessionStats,
 	FlashcardInfo,
+	FSRSFlashcardItem,
 	ProjectInfo,
 	ProjectNoteInfo,
+	ReviewResult,
+	ReviewSessionStats,
 	SchedulingPreview,
 } from "../../types";
-import type { AppError } from "../../errors";
-import type {
-	MetricType,
-	SequenceSimulation,
-} from "../../ui/simulator/types";
+import type { TrueRecallSettings } from "../../ui/settings";
+import type { MetricType, SequenceSimulation } from "../../ui/simulator/types";
 
 export interface AppStoreDeps {
 	app: App;
@@ -74,7 +71,7 @@ export interface ReviewSliceActions {
 	recordAnswerAndNext: (
 		rating: Grade,
 		updatedCard: FSRSFlashcardItem,
-		requeueData?: { card: FSRSFlashcardItem; position: number }
+		requeueData?: { card: FSRSFlashcardItem; position: number },
 	) => boolean;
 
 	// Queue manipulation
@@ -89,7 +86,7 @@ export interface ReviewSliceActions {
 	undoLastAnswer: (
 		previousIndex: number,
 		restoredCard: FSRSFlashcardItem,
-		requeuedAtIndex?: number
+		requeuedAtIndex?: number,
 	) => void;
 
 	// Edit mode (stored outside state to avoid triggering subscriptions)
@@ -178,7 +175,10 @@ export interface SessionSliceState {
 export interface SessionSliceActions {
 	setState: (partial: Partial<SessionSliceState>) => void;
 	reset: () => void;
-	initialize: (currentNoteName: string | null, allCards: FSRSFlashcardItem[]) => void;
+	initialize: (
+		currentNoteName: string | null,
+		allCards: FSRSFlashcardItem[],
+	) => void;
 	setSearchQuery: (query: string) => void;
 	toggleNoteSelection: (noteName: string) => void;
 	setNoteSelection: (noteName: string, selected: boolean) => void;
@@ -245,7 +245,12 @@ export type StatsApi = StatsSliceState & StatsSliceActions;
 
 export type ReviewApi = ReviewSliceState & ReviewSliceActions;
 
-export type NoteHubStatusFilter = "all" | "has-due" | "has-new" | "needs-cards" | "no-due";
+export type NoteHubStatusFilter =
+	| "all"
+	| "has-due"
+	| "has-new"
+	| "needs-cards"
+	| "no-due";
 export type NoteHubSortBy = "name" | "due" | "cards";
 export type NoteHubSortDirection = "asc" | "desc";
 
@@ -288,12 +293,24 @@ export type NoteHubApi = NoteHubSliceState & NoteHubSliceActions;
 // ── Card Browser ──
 
 export type BrowserSortColumn =
-	| "question" | "answer" | "state" | "due" | "interval"
-	| "lapses" | "stability" | "difficulty" | "source";
+	| "question"
+	| "answer"
+	| "state"
+	| "due"
+	| "interval"
+	| "lapses"
+	| "stability"
+	| "difficulty"
+	| "source";
 
 export type BrowserStateFilter =
-	| "all" | "new" | "learning" | "review" | "relearning"
-	| "suspended" | "buried";
+	| "all"
+	| "new"
+	| "learning"
+	| "review"
+	| "relearning"
+	| "suspended"
+	| "buried";
 
 export interface BrowserSliceState {
 	isLoading: boolean;
@@ -342,5 +359,5 @@ export interface AppState {
 export type SliceCreator<T> = (
 	set: (fn: (state: AppState) => Partial<AppState>) => void,
 	get: () => AppState,
-	deps: AppStoreDeps
+	deps: AppStoreDeps,
 ) => T;

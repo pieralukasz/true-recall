@@ -1,14 +1,18 @@
-import type { FSRSPreset, FSRSSettings, TrueRecallSettings } from "../../types/settings.types";
-import { extractFSRSSettingsFromPreset } from "../../types/settings.types";
-import type { FrontmatterIndexService } from "./frontmatter-index.service";
 import type { FSRSFlashcardItem } from "../../types/fsrs";
+import type {
+	FSRSPreset,
+	FSRSSettings,
+	TrueRecallSettings,
+} from "../../types/settings.types";
+import { extractFSRSSettingsFromPreset } from "../../types/settings.types";
 import { buildProjectGraph } from "../../utils/project-hierarchy";
+import type { FrontmatterIndexService } from "./frontmatter-index.service";
 
 export class PresetService {
 	constructor(
 		private getSettings: () => TrueRecallSettings,
 		private persistSettings: () => Promise<void>,
-		private frontmatterIndex: FrontmatterIndexService
+		private frontmatterIndex: FrontmatterIndexService,
 	) {}
 
 	getPresets(): FSRSPreset[] {
@@ -17,20 +21,26 @@ export class PresetService {
 
 	getDefaultPreset(): FSRSPreset {
 		const settings = this.getSettings();
-		const preset = settings.fsrsPresets.find(p => p.id === settings.defaultPresetId);
-		if (!preset) return settings.fsrsPresets[0]!;
-		return preset;
+		const preset = settings.fsrsPresets.find(
+			(p) => p.id === settings.defaultPresetId,
+		);
+		const fallback = settings.fsrsPresets[0];
+		if (preset) return preset;
+		if (fallback) return fallback;
+		throw new Error("No FSRS presets configured");
 	}
 
 	getPresetById(id: string): FSRSPreset | undefined {
-		return this.getSettings().fsrsPresets.find(p => p.id === id);
+		return this.getSettings().fsrsPresets.find((p) => p.id === id);
 	}
 
 	getPresetByName(name: string): FSRSPreset | undefined {
-		return this.getSettings().fsrsPresets.find(p => p.name === name);
+		return this.getSettings().fsrsPresets.find((p) => p.name === name);
 	}
 
-	async createPreset(data: Omit<FSRSPreset, "id" | "createdAt">): Promise<FSRSPreset> {
+	async createPreset(
+		data: Omit<FSRSPreset, "id" | "createdAt">,
+	): Promise<FSRSPreset> {
 		const settings = this.getSettings();
 		const preset: FSRSPreset = {
 			...data,
@@ -42,18 +52,23 @@ export class PresetService {
 		return preset;
 	}
 
-	async updatePreset(id: string, changes: Partial<Omit<FSRSPreset, "id">>): Promise<void> {
+	async updatePreset(
+		id: string,
+		changes: Partial<Omit<FSRSPreset, "id">>,
+	): Promise<void> {
 		const settings = this.getSettings();
-		const idx = settings.fsrsPresets.findIndex(p => p.id === id);
+		const idx = settings.fsrsPresets.findIndex((p) => p.id === id);
 		if (idx === -1) return;
-		settings.fsrsPresets[idx] = { ...settings.fsrsPresets[idx]!, ...changes };
+		const existing = settings.fsrsPresets[idx];
+		if (!existing) return;
+		settings.fsrsPresets[idx] = { ...existing, ...changes };
 		await this.persistSettings();
 	}
 
 	async deletePreset(id: string): Promise<void> {
 		const settings = this.getSettings();
 		if (id === settings.defaultPresetId) return;
-		settings.fsrsPresets = settings.fsrsPresets.filter(p => p.id !== id);
+		settings.fsrsPresets = settings.fsrsPresets.filter((p) => p.id !== id);
 		await this.persistSettings();
 	}
 
@@ -68,16 +83,25 @@ export class PresetService {
 	 */
 	resolvePresetForCard(
 		card: FSRSFlashcardItem,
-		sessionProjectFilters?: string[]
+		sessionProjectFilters?: string[],
 	): FSRSPreset {
 		// 1. Check note-level explicit preset
 		if (card.sourceUid) {
-			const file = this.frontmatterIndex.getFileByValue("flashcard_uid", card.sourceUid);
+			const file = this.frontmatterIndex.getFileByValue(
+				"flashcard_uid",
+				card.sourceUid,
+			);
 			if (file) {
-				const presetValues = this.frontmatterIndex.getValues("fsrs_preset", file.path);
+				const presetValues = this.frontmatterIndex.getValues(
+					"fsrs_preset",
+					file.path,
+				);
 				if (presetValues.length > 0) {
-					const found = this.getPresetByName(presetValues[0]!);
-					if (found) return found;
+					const presetName = presetValues[0];
+					if (presetName) {
+						const found = this.getPresetByName(presetName);
+						if (found) return found;
+					}
 				}
 			}
 		}
@@ -87,7 +111,10 @@ export class PresetService {
 			const graph = buildProjectGraph(this.frontmatterIndex);
 
 			for (const projectName of sessionProjectFilters) {
-				const preset = this.resolvePresetFromProjectHierarchy(projectName, graph.parentMap);
+				const preset = this.resolvePresetFromProjectHierarchy(
+					projectName,
+					graph.parentMap,
+				);
 				if (preset) return preset;
 			}
 		}
@@ -103,26 +130,39 @@ export class PresetService {
 	private resolvePresetFromProjectHierarchy(
 		projectName: string,
 		parentMap: Map<string, string[]>,
-		visited: Set<string> = new Set()
+		visited: Set<string> = new Set(),
 	): FSRSPreset | null {
 		if (visited.has(projectName)) return null;
 		visited.add(projectName);
 
 		// Check this project note's fsrs_preset
-		const files = this.frontmatterIndex.getFilesByValue("projects", projectName);
-		const projectFile = files.find(f => f.basename === projectName);
+		const files = this.frontmatterIndex.getFilesByValue(
+			"projects",
+			projectName,
+		);
+		const projectFile = files.find((f) => f.basename === projectName);
 		if (projectFile) {
-			const presetValues = this.frontmatterIndex.getValues("fsrs_preset", projectFile.path);
+			const presetValues = this.frontmatterIndex.getValues(
+				"fsrs_preset",
+				projectFile.path,
+			);
 			if (presetValues.length > 0) {
-				const found = this.getPresetByName(presetValues[0]!);
-				if (found) return found;
+				const presetName = presetValues[0];
+				if (presetName) {
+					const found = this.getPresetByName(presetName);
+					if (found) return found;
+				}
 			}
 		}
 
 		// Walk up to parents
 		const parents = parentMap.get(projectName) ?? [];
 		for (const parent of parents) {
-			const found = this.resolvePresetFromProjectHierarchy(parent, parentMap, visited);
+			const found = this.resolvePresetFromProjectHierarchy(
+				parent,
+				parentMap,
+				visited,
+			);
 			if (found) return found;
 		}
 

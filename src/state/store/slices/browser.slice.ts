@@ -1,14 +1,14 @@
 import { State } from "ts-fsrs";
+import type { FSRSFlashcardItem } from "../../../types";
+import { createSelectionActions } from "../helpers/slice-helpers";
 import type {
 	AppState,
 	AppStoreDeps,
-	BrowserSliceState,
 	BrowserSliceActions,
+	BrowserSliceState,
 	BrowserSortColumn,
 	BrowserStateFilter,
 } from "../types";
-import type { FSRSFlashcardItem } from "../../../types";
-import { createSelectionActions } from "../helpers/slice-helpers";
 
 type BrowserSlice = BrowserSliceState & BrowserSliceActions;
 
@@ -36,7 +36,10 @@ function matchesSearch(card: FSRSFlashcardItem, query: string): boolean {
 	);
 }
 
-function matchesStateFilter(card: FSRSFlashcardItem, filter: BrowserStateFilter): boolean {
+function matchesStateFilter(
+	card: FSRSFlashcardItem,
+	filter: BrowserStateFilter,
+): boolean {
 	if (filter === "all") return true;
 
 	const now = new Date();
@@ -47,13 +50,18 @@ function matchesStateFilter(card: FSRSFlashcardItem, filter: BrowserStateFilter)
 
 	// Exclude suspended/buried from FSRS state filters
 	if (card.fsrs.suspended) return false;
-	if (card.fsrs.buriedUntil && new Date(card.fsrs.buriedUntil) > now) return false;
+	if (card.fsrs.buriedUntil && new Date(card.fsrs.buriedUntil) > now)
+		return false;
 
 	switch (filter) {
-		case "new": return card.fsrs.state === State.New;
-		case "learning": return card.fsrs.state === State.Learning;
-		case "review": return card.fsrs.state === State.Review;
-		case "relearning": return card.fsrs.state === State.Relearning;
+		case "new":
+			return card.fsrs.state === State.New;
+		case "learning":
+			return card.fsrs.state === State.Learning;
+		case "review":
+			return card.fsrs.state === State.Review;
+		case "relearning":
+			return card.fsrs.state === State.Relearning;
 	}
 }
 
@@ -61,7 +69,7 @@ function compareCards(
 	a: FSRSFlashcardItem,
 	b: FSRSFlashcardItem,
 	column: BrowserSortColumn,
-	direction: "asc" | "desc"
+	direction: "asc" | "desc",
 ): number {
 	const mod = direction === "asc" ? 1 : -1;
 
@@ -73,7 +81,9 @@ function compareCards(
 		case "state":
 			return mod * (a.fsrs.state - b.fsrs.state);
 		case "due":
-			return mod * (new Date(a.fsrs.due).getTime() - new Date(b.fsrs.due).getTime());
+			return (
+				mod * (new Date(a.fsrs.due).getTime() - new Date(b.fsrs.due).getTime())
+			);
 		case "interval":
 			return mod * (a.fsrs.scheduledDays - b.fsrs.scheduledDays);
 		case "lapses":
@@ -83,14 +93,16 @@ function compareCards(
 		case "difficulty":
 			return mod * (a.fsrs.difficulty - b.fsrs.difficulty);
 		case "source":
-			return mod * (a.sourceNoteName ?? "").localeCompare(b.sourceNoteName ?? "");
+			return (
+				mod * (a.sourceNoteName ?? "").localeCompare(b.sourceNoteName ?? "")
+			);
 	}
 }
 
 export function createBrowserSlice(
 	set: (fn: (state: AppState) => Partial<AppState>) => void,
 	get: () => AppState,
-	deps: AppStoreDeps
+	_deps: AppStoreDeps,
 ): BrowserSlice {
 	const initial = createInitialState();
 
@@ -98,7 +110,13 @@ export function createBrowserSlice(
 	let filteredCache: FSRSFlashcardItem[] | null = null;
 	let filteredCacheKey = "";
 
-	const selection = createSelectionActions(set, get, "browser", "selectionMode", "selectedCardIds");
+	const selection = createSelectionActions(
+		set,
+		get,
+		"browser",
+		"selectionMode",
+		"selectedCardIds",
+	);
 
 	const slice: BrowserSlice = {
 		...initial,
@@ -197,7 +215,8 @@ export function createBrowserSlice(
 
 		getFilteredAndSortedCards: () => {
 			const state = get().browser;
-			const { allCards, searchQuery, stateFilter, sortColumn, sortDirection } = state;
+			const { allCards, searchQuery, stateFilter, sortColumn, sortDirection } =
+				state;
 
 			const cacheKey = `${allCards.length}:${searchQuery}:${stateFilter}:${sortColumn}:${sortDirection}`;
 			if (filteredCache && filteredCacheKey === cacheKey) {
@@ -214,7 +233,9 @@ export function createBrowserSlice(
 				cards = cards.filter((c) => matchesStateFilter(c, stateFilter));
 			}
 
-			filteredCache = [...cards].sort((a, b) => compareCards(a, b, sortColumn, sortDirection));
+			filteredCache = [...cards].sort((a, b) =>
+				compareCards(a, b, sortColumn, sortDirection),
+			);
 			filteredCacheKey = cacheKey;
 			return filteredCache;
 		},

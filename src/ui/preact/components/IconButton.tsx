@@ -32,14 +32,24 @@ export function IconButton({
 		danger ? "ep:hover:text-obs-red" : "",
 		disabled ? "ep:opacity-50 ep:cursor-not-allowed" : "",
 		cls ?? "",
-	].filter(Boolean).join(" ");
+	]
+		.filter(Boolean)
+		.join(" ");
 
 	return (
 		<button
+			type="button"
 			class={classes}
 			aria-label={ariaLabel}
 			disabled={disabled}
-			onClick={disabled ? undefined : (e) => { e.stopPropagation(); onClick(); }}
+			onClick={
+				disabled
+					? undefined
+					: (e) => {
+							e.stopPropagation();
+							onClick();
+						}
+			}
 		>
 			<span ref={iconRef} />
 			{label && <span class="ep:text-ui-small">{label}</span>}

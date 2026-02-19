@@ -1,20 +1,20 @@
-import { useState, useEffect, useRef, useCallback } from "preact/hooks";
 import { Platform } from "obsidian";
-import { Rating, type Grade } from "ts-fsrs";
-import { useApp, usePlugin } from "../preact/ObsidianContext";
-import { useMarkdown } from "../preact/hooks";
+import { useCallback, useEffect, useRef, useState } from "preact/hooks";
+import { type Grade, Rating } from "ts-fsrs";
+import { UI_CONFIG } from "../../constants";
+import type { EditModeState, ReviewApi } from "../../state/store";
+import type { FSRSFlashcardItem, SchedulingPreview } from "../../types";
 import { stripBrTags } from "../../utils";
 import {
-	toggleTextareaWrap,
 	insertAtTextareaCursor,
 	setupAutoResize,
 	TOOLBAR_BUTTONS,
 	type ToolbarButton,
 	type ToolbarButtonAction,
+	toggleTextareaWrap,
 } from "../editor/edit-toolbar.utils";
-import { UI_CONFIG } from "../../constants";
-import type { ReviewApi, SessionPhase, BadgeCounts, EditModeState } from "../../state/store";
-import type { FSRSFlashcardItem, ReviewSessionStats, SchedulingPreview } from "../../types";
+import { useMarkdown } from "../preact/hooks";
+import { usePlugin } from "../preact/ObsidianContext";
 
 // ─── Props ───────────────────────────────────────────────────────────────────
 
@@ -22,7 +22,10 @@ export interface ReviewAppProps {
 	onShowAnswer: () => void;
 	onAnswer: (rating: Grade) => void;
 	onStartEdit: (field: "question" | "answer") => void;
-	onSaveEdit: (textarea: HTMLTextAreaElement, field: "question" | "answer") => void;
+	onSaveEdit: (
+		textarea: HTMLTextAreaElement,
+		field: "question" | "answer",
+	) => void;
 	onImagePaste: (file: File, textarea: HTMLTextAreaElement) => void;
 	onOpenSourceNote: () => void;
 	onClose: () => void;
@@ -41,11 +44,11 @@ export interface ReviewAppProps {
 
 export function ReviewApp(props: ReviewAppProps) {
 	const plugin = usePlugin();
-	const review = plugin.store!.getState().review;
+	const review = plugin.store?.getState().review;
 
 	const [, setTick] = useState(0);
 	useEffect(() => {
-		return plugin.store!.subscribe(
+		return plugin.store?.subscribe(
 			(state) => state.review,
 			() => setTick((t) => t + 1),
 		);
@@ -75,13 +78,7 @@ export function ReviewApp(props: ReviewAppProps) {
 				/>
 			);
 		case "active":
-			return (
-				<ActiveReview
-					card={phase.card}
-					review={review}
-					{...props}
-				/>
-			);
+			return <ActiveReview card={phase.card} review={review} {...props} />;
 	}
 }
 
@@ -101,7 +98,7 @@ function ActiveReview({
 	onSaveEdit,
 	onImagePaste,
 	onOpenSourceNote,
-	onClose,
+	onClose: _onClose,
 	onActionsMenu,
 	crammingMode,
 	showHeader,
@@ -185,7 +182,9 @@ const BADGE_COLORS: Record<string, string> = {
 
 function StatBadge({ type, count }: { type: string; count: number }) {
 	return (
-		<div class={`ep:flex ep:items-center ep:justify-center ep:min-w-5 ep:h-5 ep:px-1.5 ep:rounded-full ep:text-ui-smaller ep:font-semibold ${BADGE_COLORS[type]}`}>
+		<div
+			class={`ep:flex ep:items-center ep:justify-center ep:min-w-5 ep:h-5 ep:px-1.5 ep:rounded-full ep:text-ui-smaller ep:font-semibold ${BADGE_COLORS[type]}`}
+		>
 			<span>{count}</span>
 		</div>
 	);
@@ -198,7 +197,10 @@ interface CardContainerProps {
 	editState: EditModeState;
 	isAnswerRevealed: boolean;
 	onStartEdit: (field: "question" | "answer") => void;
-	onSaveEdit: (textarea: HTMLTextAreaElement, field: "question" | "answer") => void;
+	onSaveEdit: (
+		textarea: HTMLTextAreaElement,
+		field: "question" | "answer",
+	) => void;
 	onImagePaste: (file: File, textarea: HTMLTextAreaElement) => void;
 	onOpenSourceNote: () => void;
 }
@@ -220,38 +222,46 @@ function CardContainer({
 	const containerCls = `true-recall-review-card-container ep:flex-1 ep:min-h-0 ep:flex ep:items-start ep:justify-center ep:p-2 ep:mt-8 ep:overflow-y-auto${isEditing ? " true-recall-review-card-container--editing" : ""}`;
 
 	// Handle clicks on internal links and edit triggers
-	const handleContainerClick = useCallback((e: MouseEvent) => {
-		const target = e.target as HTMLElement;
+	const handleContainerClick = useCallback(
+		(e: MouseEvent) => {
+			const target = e.target as HTMLElement;
 
-		// Handle field clicks for internal links + edit mode
-		const fieldEl = target.closest<HTMLElement>("[data-field]");
-		if (fieldEl) {
-			const field = fieldEl.dataset.field as "question" | "answer" | undefined;
-			if (field) {
-				const linkEl = target.closest("a.internal-link");
-				if (linkEl) {
-					e.preventDefault();
-					e.stopPropagation();
+			// Handle field clicks for internal links + edit mode
+			const fieldEl = target.closest<HTMLElement>("[data-field]");
+			if (fieldEl) {
+				const field = fieldEl.dataset.field as
+					| "question"
+					| "answer"
+					| undefined;
+				if (field) {
+					const linkEl = target.closest("a.internal-link");
+					if (linkEl) {
+						e.preventDefault();
+						e.stopPropagation();
+						if (e.metaKey || e.ctrlKey) {
+							onStartEdit(field);
+						}
+						// Normal link click is handled by Obsidian's MarkdownRenderer
+						return;
+					}
 					if (e.metaKey || e.ctrlKey) {
 						onStartEdit(field);
 					}
-					// Normal link click is handled by Obsidian's MarkdownRenderer
-					return;
-				}
-				if (e.metaKey || e.ctrlKey) {
-					onStartEdit(field);
 				}
 			}
-		}
-	}, [onStartEdit]);
+		},
+		[onStartEdit],
+	);
 
 	return (
-		<div class={containerCls} onClick={handleContainerClick}>
+		<div class={containerCls} role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); handleContainerClick(e as unknown as MouseEvent); } }} onClick={handleContainerClick}>
 			<div class="ep:w-full ep:text-center">
 				{/* Card type label */}
 				{card.cardType === "cloze" && card.clozeIndex !== undefined && (
 					<div class="ep:text-xs ep:text-obs-faint ep:mb-2 ep:uppercase ep:tracking-wider">
-						{isEditingQuestion ? "Editing cloze template (all cards will update)" : `Cloze ${card.clozeIndex}`}
+						{isEditingQuestion
+							? "Editing cloze template (all cards will update)"
+							: `Cloze ${card.clozeIndex}`}
 					</div>
 				)}
 				{card.cardType === "reversed" && (
@@ -263,7 +273,11 @@ function CardContainer({
 				{/* Question */}
 				{isEditingQuestion ? (
 					<EditableField
-						content={card.cardType === "cloze" && card.clozeTemplate ? card.clozeTemplate : card.question}
+						content={
+							card.cardType === "cloze" && card.clozeTemplate
+								? card.clozeTemplate
+								: card.question
+						}
 						field="question"
 						sourcePath={sourcePath}
 						isAnswerRevealed={isAnswerRevealed}
@@ -312,12 +326,13 @@ function CardContainer({
 					<>
 						{card.sourceNoteName && (
 							<div class="ep:mt-6 ep:text-center">
-								<a
-									class="ep:text-obs-accent ep:text-ui-small ep:cursor-pointer ep:no-underline ep:hover:underline ep:transition-colors"
+								<button
+									type="button"
+									class="ep:text-obs-accent ep:text-ui-small ep:cursor-pointer ep:no-underline ep:hover:underline ep:transition-colors ep:bg-transparent ep:border-none ep:p-0"
 									onClick={onOpenSourceNote}
 								>
 									{card.sourceNoteName}
-								</a>
+								</button>
 							</div>
 						)}
 						{card.projects && card.projects.length > 0 && (
@@ -350,7 +365,10 @@ function MarkdownField({
 
 	// Mobile long-press to edit
 	const handleTouchStart = useCallback(() => {
-		timerRef.current = window.setTimeout(onLongPress, UI_CONFIG.longPressDuration);
+		timerRef.current = window.setTimeout(
+			onLongPress,
+			UI_CONFIG.longPressDuration,
+		);
 	}, [onLongPress]);
 
 	const cancelTouch = useCallback(() => {
@@ -361,7 +379,11 @@ function MarkdownField({
 	}, []);
 
 	const touchHandlers = Platform.isMobile
-		? { onTouchStart: handleTouchStart, onTouchEnd: cancelTouch, onTouchMove: cancelTouch }
+		? {
+				onTouchStart: handleTouchStart,
+				onTouchEnd: cancelTouch,
+				onTouchMove: cancelTouch,
+			}
 		: {};
 
 	return (
@@ -416,41 +438,50 @@ function EditableField({
 		return () => cleanupRef.current?.();
 	}, []);
 
-	const handleKeyDown = useCallback((e: KeyboardEvent) => {
-		if (e.key === "Escape") {
-			e.preventDefault();
-			if (textareaRef.current) onSave(textareaRef.current, field);
-		} else if (e.key === "Tab") {
-			e.preventDefault();
-			const textarea = textareaRef.current;
-			if (!textarea) return;
-			const nextField = field === "question" ? "answer" : "question";
-			if (nextField === "answer" && !isAnswerRevealed) return;
-			onSave(textarea, field);
-			onStartEdit(nextField);
-		}
-	}, [field, isAnswerRevealed, onSave, onStartEdit]);
-
-	const handleBlur = useCallback((e: FocusEvent) => {
-		const relatedTarget = e.relatedTarget as HTMLElement | null;
-		if (relatedTarget?.closest(".true-recall-edit-toolbar")) return;
-		if (textareaRef.current) onSave(textareaRef.current, field);
-	}, [field, onSave]);
-
-	const handlePaste = useCallback((e: ClipboardEvent) => {
-		const items = e.clipboardData?.items;
-		if (!items) return;
-		for (const item of Array.from(items)) {
-			if (item.type.startsWith("image/")) {
+	const handleKeyDown = useCallback(
+		(e: KeyboardEvent) => {
+			if (e.key === "Escape") {
 				e.preventDefault();
-				const file = item.getAsFile();
-				if (file && textareaRef.current) {
-					onImagePaste(file, textareaRef.current);
-				}
-				return;
+				if (textareaRef.current) onSave(textareaRef.current, field);
+			} else if (e.key === "Tab") {
+				e.preventDefault();
+				const textarea = textareaRef.current;
+				if (!textarea) return;
+				const nextField = field === "question" ? "answer" : "question";
+				if (nextField === "answer" && !isAnswerRevealed) return;
+				onSave(textarea, field);
+				onStartEdit(nextField);
 			}
-		}
-	}, [onImagePaste]);
+		},
+		[field, isAnswerRevealed, onSave, onStartEdit],
+	);
+
+	const handleBlur = useCallback(
+		(e: FocusEvent) => {
+			const relatedTarget = e.relatedTarget as HTMLElement | null;
+			if (relatedTarget?.closest(".true-recall-edit-toolbar")) return;
+			if (textareaRef.current) onSave(textareaRef.current, field);
+		},
+		[field, onSave],
+	);
+
+	const handlePaste = useCallback(
+		(e: ClipboardEvent) => {
+			const items = e.clipboardData?.items;
+			if (!items) return;
+			for (const item of Array.from(items)) {
+				if (item.type.startsWith("image/")) {
+					e.preventDefault();
+					const file = item.getAsFile();
+					if (file && textareaRef.current) {
+						onImagePaste(file, textareaRef.current);
+					}
+					return;
+				}
+			}
+		},
+		[onImagePaste],
+	);
 
 	const executeAction = useCallback((action: ToolbarButtonAction) => {
 		const textarea = textareaRef.current;
@@ -469,9 +500,10 @@ function EditableField({
 		textarea.focus();
 	}, []);
 
-	const fieldCls = field === "question"
-		? "true-recall-review-question ep:text-xl ep:leading-relaxed ep:text-obs-normal ep:mb-6 ep:relative"
-		: "true-recall-review-answer ep:text-lg ep:leading-relaxed ep:text-obs-muted ep:relative";
+	const fieldCls =
+		field === "question"
+			? "true-recall-review-question ep:text-xl ep:leading-relaxed ep:text-obs-normal ep:mb-6 ep:relative"
+			: "true-recall-review-answer ep:text-lg ep:leading-relaxed ep:text-obs-muted ep:relative";
 
 	return (
 		<div class={fieldCls} data-field={field} data-source-path={sourcePath}>
@@ -484,7 +516,10 @@ function EditableField({
 					onBlur={handleBlur}
 					onPaste={handlePaste}
 				/>
-				<EditToolbar buttons={TOOLBAR_BUTTONS.UNIFIED} onAction={executeAction} />
+				<EditToolbar
+					buttons={TOOLBAR_BUTTONS.UNIFIED}
+					onAction={executeAction}
+				/>
 			</div>
 		</div>
 	);
@@ -502,9 +537,12 @@ function EditToolbar({
 	return (
 		<div class="true-recall-edit-toolbar ep:flex ep:flex-wrap ep:justify-center ep:gap-1 ep:py-2 ep:border-t ep:border-obs-border ep:absolute ep:left-0 ep:right-0 ep:top-full ep:mt-1 ep:z-10">
 			{buttons.map((btn) => {
-				const title = btn.shortcut ? `${btn.title} (${btn.shortcut})` : btn.title;
+				const title = btn.shortcut
+					? `${btn.title} (${btn.shortcut})`
+					: btn.title;
 				return (
 					<button
+						type="button"
 						key={btn.id}
 						class="ep:px-2 ep:py-1 ep:text-ui-smaller ep:bg-obs-secondary ep:text-obs-normal ep:border ep:border-obs-border ep:rounded-md ep:cursor-pointer ep:hover:bg-obs-modifier-hover ep:hover:border-obs-interactive ep:transition-colors"
 						title={title}
@@ -525,13 +563,20 @@ function EditToolbar({
 
 // ─── Project Badges ──────────────────────────────────────────────────────────
 
-function ProjectBadges({ projects, cardId }: { projects: string[]; cardId: string }) {
+function ProjectBadges({
+	projects,
+	cardId: _cardId,
+}: {
+	projects: string[];
+	cardId: string;
+}) {
 	const [expanded, setExpanded] = useState(false);
 
 	if (!expanded) {
 		return (
 			<div class="ep:mt-6 ep:flex ep:flex-col ep:items-center">
 				<button
+					type="button"
 					class="ep:text-ui-small ep:text-obs-muted ep:cursor-pointer ep:hover:text-obs-normal ep:hover:underline ep:transition-colors ep:bg-transparent ep:border-none ep:p-0"
 					onClick={() => setExpanded(true)}
 				>
@@ -594,6 +639,7 @@ function ButtonBar({
 				<div class="ep:flex ep:justify-center ep:gap-3 ep:flex-nowrap ep:py-4">
 					{!isAnswerRevealed ? (
 						<button
+							type="button"
 							class={`${BASE_BTN_CLS} mod-cta ep:py-2 ep:px-4`}
 							onClick={onShowAnswer}
 						>
@@ -601,15 +647,44 @@ function ButtonBar({
 						</button>
 					) : (
 						<>
-							<RatingButton label="Again" rating={Rating.Again} cls={`${BASE_BTN_CLS} ep:bg-obs-red ep:text-obs-on-accent`} interval={preview?.again.interval} showInterval={showNextReviewTime} onAnswer={onAnswer} />
-							<RatingButton label="Hard" rating={Rating.Hard} cls={`${BASE_BTN_CLS} ep:bg-obs-orange ep:text-obs-on-accent`} interval={preview?.hard.interval} showInterval={showNextReviewTime} onAnswer={onAnswer} />
-							<RatingButton label="Good" rating={Rating.Good} cls={`${BASE_BTN_CLS} ep:bg-obs-green ep:text-obs-on-accent`} interval={preview?.good.interval} showInterval={showNextReviewTime} onAnswer={onAnswer} />
-							<RatingButton label="Easy" rating={Rating.Easy} cls={`${BASE_BTN_CLS} ep:bg-obs-cyan ep:text-obs-on-accent`} interval={preview?.easy.interval} showInterval={showNextReviewTime} onAnswer={onAnswer} />
+							<RatingButton
+								label="Again"
+								rating={Rating.Again}
+								cls={`${BASE_BTN_CLS} ep:bg-obs-red ep:text-obs-on-accent`}
+								interval={preview?.again.interval}
+								showInterval={showNextReviewTime}
+								onAnswer={onAnswer}
+							/>
+							<RatingButton
+								label="Hard"
+								rating={Rating.Hard}
+								cls={`${BASE_BTN_CLS} ep:bg-obs-orange ep:text-obs-on-accent`}
+								interval={preview?.hard.interval}
+								showInterval={showNextReviewTime}
+								onAnswer={onAnswer}
+							/>
+							<RatingButton
+								label="Good"
+								rating={Rating.Good}
+								cls={`${BASE_BTN_CLS} ep:bg-obs-green ep:text-obs-on-accent`}
+								interval={preview?.good.interval}
+								showInterval={showNextReviewTime}
+								onAnswer={onAnswer}
+							/>
+							<RatingButton
+								label="Easy"
+								rating={Rating.Easy}
+								cls={`${BASE_BTN_CLS} ep:bg-obs-cyan ep:text-obs-on-accent`}
+								interval={preview?.easy.interval}
+								showInterval={showNextReviewTime}
+								onAnswer={onAnswer}
+							/>
 						</>
 					)}
 				</div>
 
 				<button
+					type="button"
 					class="ep:flex ep:items-center ep:justify-center ep:w-10 ep:h-10 ep:p-0 ep:border-none ep:rounded-lg ep:bg-obs-modifier-hover ep:text-obs-muted ep:cursor-pointer ep:transition-colors ep:absolute ep:right-0 ep:hover:bg-obs-border ep:hover:text-obs-normal ep:active:scale-95"
 					aria-label="Card actions"
 					onClick={onActionsMenu}
@@ -637,7 +712,7 @@ function RatingButton({
 	onAnswer: (rating: Grade) => void;
 }) {
 	return (
-		<button class={cls} onClick={() => onAnswer(rating)}>
+		<button type="button" class={cls} onClick={() => onAnswer(rating)}>
 			<div class="ep:font-semibold">{label}</div>
 			{interval && showInterval && (
 				<div class="ep:text-ui-smaller ep:opacity-90">{interval}</div>
@@ -679,18 +754,24 @@ function WaitingScreen({
 		return `${minutes}:${seconds.toString().padStart(2, "0")}`;
 	};
 
-	const btnCls = "ep:py-3 ep:px-8 ep:border-none ep:rounded-lg ep:cursor-pointer ep:font-medium ep:text-ui-small ep:transition-transform ep:hover:brightness-110 ep:active:scale-98";
+	const btnCls =
+		"ep:py-3 ep:px-8 ep:border-none ep:rounded-lg ep:cursor-pointer ep:font-medium ep:text-ui-small ep:transition-transform ep:hover:brightness-110 ep:active:scale-98";
 
 	return (
 		<div class="true-recall-review ep:flex ep:flex-col ep:h-full ep:p-0">
 			<div class="true-recall-review-card-container ep:flex-1 ep:min-h-0 ep:flex ep:items-start ep:justify-center ep:p-2 ep:mt-8 ep:overflow-y-auto">
 				<div class="ep:text-center ep:py-8 ep:px-6 ep:max-w-md ep:mx-auto">
-					<h2 class="ep:text-2xl ep:m-0 ep:mb-4 ep:text-obs-normal">Congratulations!</h2>
-					<p class="ep:text-obs-muted ep:m-0 ep:mb-6">You've reviewed all available cards.</p>
+					<h2 class="ep:text-2xl ep:m-0 ep:mb-4 ep:text-obs-normal">
+						Congratulations!
+					</h2>
+					<p class="ep:text-obs-muted ep:m-0 ep:mb-6">
+						You've reviewed all available cards.
+					</p>
 
 					<div class="ep:mb-6">
 						<p class="ep:text-obs-muted ep:text-ui-small ep:m-0 ep:mb-2">
-							{pendingCards.length} learning card{pendingCards.length === 1 ? "" : "s"} due in:
+							{pendingCards.length} learning card
+							{pendingCards.length === 1 ? "" : "s"} due in:
 						</p>
 						<div class="ep:text-5xl ep:font-bold ep:text-obs-interactive ep:tabular-nums">
 							{formatCountdown(remaining)}
@@ -698,8 +779,9 @@ function WaitingScreen({
 					</div>
 
 					<div class="ep:flex ep:gap-3 ep:justify-center">
-						<button class={`${btnCls} mod-cta`}>Wait</button>
+						<button type="button" class={`${btnCls} mod-cta`}>Wait</button>
 						<button
+							type="button"
 							class={`${btnCls} ep:bg-obs-border ep:text-obs-normal ep:hover:bg-obs-modifier-hover`}
 							onClick={() => {
 								review.endSession();
@@ -741,30 +823,56 @@ function SummaryScreen({
 		}
 	}, [review]);
 
-	const btnCls = "ep:py-3 ep:px-8 ep:border-none ep:rounded-lg ep:cursor-pointer ep:font-medium ep:text-ui-small ep:transition-transform ep:hover:brightness-110 ep:active:scale-98";
+	const btnCls =
+		"ep:py-3 ep:px-8 ep:border-none ep:rounded-lg ep:cursor-pointer ep:font-medium ep:text-ui-small ep:transition-transform ep:hover:brightness-110 ep:active:scale-98";
 
 	return (
 		<div class="true-recall-review ep:flex ep:flex-col ep:h-full ep:p-0">
 			<div class="true-recall-review-card-container ep:flex-1 ep:min-h-0 ep:flex ep:items-start ep:justify-center ep:p-2 ep:mt-8 ep:overflow-y-auto">
 				<div class="ep:text-center ep:py-8 ep:px-6 ep:max-w-md ep:mx-auto">
-					<h2 class="ep:text-2xl ep:m-0 ep:mb-6 ep:text-obs-normal">Session complete!</h2>
+					<h2 class="ep:text-2xl ep:m-0 ep:mb-6 ep:text-obs-normal">
+						Session complete!
+					</h2>
 
 					<div class="ep:grid ep:grid-cols-2 ep:gap-3 ep:mb-6">
-						<StatItem label="Total reviewed" value={stats.reviewed.toString()} />
-						<StatItem label="Again" value={stats.again.toString()} colorCls="ep:text-obs-red" />
-						<StatItem label="Hard" value={stats.hard.toString()} colorCls="ep:text-obs-orange" />
-						<StatItem label="Good" value={stats.good.toString()} colorCls="ep:text-obs-green" />
-						<StatItem label="Easy" value={stats.easy.toString()} colorCls="ep:text-obs-cyan" />
-						<StatItem label="Duration" value={`${durationMin}m ${durationSec}s`} />
+						<StatItem
+							label="Total reviewed"
+							value={stats.reviewed.toString()}
+						/>
+						<StatItem
+							label="Again"
+							value={stats.again.toString()}
+							colorCls="ep:text-obs-red"
+						/>
+						<StatItem
+							label="Hard"
+							value={stats.hard.toString()}
+							colorCls="ep:text-obs-orange"
+						/>
+						<StatItem
+							label="Good"
+							value={stats.good.toString()}
+							colorCls="ep:text-obs-green"
+						/>
+						<StatItem
+							label="Easy"
+							value={stats.easy.toString()}
+							colorCls="ep:text-obs-cyan"
+						/>
+						<StatItem
+							label="Duration"
+							value={`${durationMin}m ${durationSec}s`}
+						/>
 					</div>
 
 					<div class="ep:flex ep:gap-3 ep:py-4 ep:justify-center">
 						{isCustomSession && continuousCustomReviews ? (
 							<>
-								<button class={`${btnCls} mod-cta`} onClick={onNextSession}>
+								<button type="button" class={`${btnCls} mod-cta`} onClick={onNextSession}>
 									Next session
 								</button>
 								<button
+									type="button"
 									class={`${btnCls} ep:bg-obs-border ep:text-obs-normal ep:hover:bg-obs-modifier-hover`}
 									onClick={onClose}
 								>
@@ -772,7 +880,7 @@ function SummaryScreen({
 								</button>
 							</>
 						) : (
-							<button class={`${btnCls} mod-cta`} onClick={onClose}>
+							<button type="button" class={`${btnCls} mod-cta`} onClick={onClose}>
 								Close
 							</button>
 						)}
@@ -783,25 +891,46 @@ function SummaryScreen({
 	);
 }
 
-function StatItem({ label, value, colorCls }: { label: string; value: string; colorCls?: string }) {
+function StatItem({
+	label,
+	value,
+	colorCls,
+}: {
+	label: string;
+	value: string;
+	colorCls?: string;
+}) {
 	return (
 		<div class="ep:p-3 ep:bg-obs-secondary ep:rounded-lg">
 			<div class="ep:text-ui-smaller ep:text-obs-muted ep:mb-1">{label}</div>
-			<div class={`ep:text-xl ep:font-semibold ep:text-obs-normal ${colorCls ?? ""}`}>{value}</div>
+			<div
+				class={`ep:text-xl ep:font-semibold ep:text-obs-normal ${colorCls ?? ""}`}
+			>
+				{value}
+			</div>
 		</div>
 	);
 }
 
 // ─── Empty State ─────────────────────────────────────────────────────────────
 
-export function ReviewEmptyState({ message, onClose }: { message: string; onClose: () => void }) {
+export function ReviewEmptyState({
+	message,
+	onClose,
+}: {
+	message: string;
+	onClose: () => void;
+}) {
 	return (
 		<div class="true-recall-review ep:flex ep:flex-col ep:h-full ep:p-0">
 			<div class="true-recall-review-card-container ep:flex-1 ep:min-h-0 ep:flex ep:items-start ep:justify-center ep:p-2 ep:mt-8 ep:overflow-y-auto">
 				<div class="ep:text-center ep:py-12 ep:px-6">
 					<div class="ep:text-5xl ep:mb-4">🎉</div>
-					<div class="ep:text-ui-medium ep:text-obs-muted ep:mb-6">{message}</div>
+					<div class="ep:text-ui-medium ep:text-obs-muted ep:mb-6">
+						{message}
+					</div>
 					<button
+						type="button"
 						class="ep:flex ep:flex-col ep:items-center ep:gap-1 ep:py-3 ep:px-8 ep:border-none ep:rounded-lg ep:cursor-pointer ep:font-medium ep:text-ui-small mod-cta"
 						onClick={onClose}
 					>

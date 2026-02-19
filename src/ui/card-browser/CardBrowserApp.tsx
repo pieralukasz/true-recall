@@ -1,24 +1,38 @@
-import { useState, useEffect, useCallback, useRef, useMemo } from "preact/hooks";
 import { effect } from "@preact/signals";
-import { useApp, usePlugin } from "../preact";
-import { useMarkdown, useIcon } from "../preact/hooks";
 import {
-	SearchInput,
-	IconButton,
-	StateBadge,
-	LoadingSpinner,
-	ActionButton,
-} from "../preact/components";
+	useCallback,
+	useEffect,
+	useMemo,
+	useRef,
+	useState,
+} from "preact/hooks";
 import { notify } from "../../services";
-import { dataVersion, notifyCardChange, track } from "../../services/core/signals";
-import { truncateText, formatDueDate, formatIntervalDays } from "./helpers/browser-helpers";
-import type { FSRSFlashcardItem } from "../../types";
+import {
+	dataVersion,
+	notifyCardChange,
+	track,
+} from "../../services/core/signals";
 import type {
 	BrowserApi,
-	BrowserStateFilter,
 	BrowserSortColumn,
+	BrowserStateFilter,
 	SelectionMode,
 } from "../../state/store";
+import type { FSRSFlashcardItem } from "../../types";
+import { useApp, usePlugin } from "../preact";
+import {
+	ActionButton,
+	IconButton,
+	LoadingSpinner,
+	SearchInput,
+	StateBadge,
+} from "../preact/components";
+import { useIcon, useMarkdown } from "../preact/hooks";
+import {
+	formatDueDate,
+	formatIntervalDays,
+	truncateText,
+} from "./helpers/browser-helpers";
 
 // ── Constants ──────────────────────────────────────────────────
 
@@ -102,7 +116,8 @@ const COLUMNS: ColumnDef[] = [
 		width: "65px",
 		sortable: true,
 		align: "right",
-		render: (card) => card.fsrs.stability > 0 ? card.fsrs.stability.toFixed(1) : "-",
+		render: (card) =>
+			card.fsrs.stability > 0 ? card.fsrs.stability.toFixed(1) : "-",
 	},
 	{
 		key: "difficulty",
@@ -117,7 +132,9 @@ const COLUMNS: ColumnDef[] = [
 		label: "Source",
 		width: "minmax(100px, 1fr)",
 		sortable: true,
-		render: (card) => <span class="ep:truncate">{card.sourceNoteName ?? "-"}</span>,
+		render: (card) => (
+			<span class="ep:truncate">{card.sourceNoteName ?? "-"}</span>
+		),
 	},
 ];
 
@@ -129,13 +146,13 @@ const PILL_INACTIVE = `${PILL_BASE} ep:bg-obs-modifier-hover ep:text-obs-muted e
 // ── Hooks ──────────────────────────────────────────────────────
 
 function useBrowser(): BrowserApi {
-	return usePlugin().store!.getState().browser;
+	return usePlugin().store?.getState().browser;
 }
 
 function useBrowserState() {
 	const plugin = usePlugin();
 	const [state, setState] = useState(() => {
-		const b = plugin.store!.getState().browser;
+		const b = plugin.store?.getState().browser;
 		return {
 			isLoading: b.isLoading,
 			allCards: b.allCards,
@@ -151,10 +168,10 @@ function useBrowserState() {
 	});
 
 	useEffect(() => {
-		const unsub = plugin.store!.subscribe(
+		const unsub = plugin.store?.subscribe(
 			(s) => s.browser,
 			() => {
-				const b = plugin.store!.getState().browser;
+				const b = plugin.store?.getState().browser;
 				setState({
 					isLoading: b.isLoading,
 					allCards: b.allCards,
@@ -179,7 +196,7 @@ function useLoadData() {
 	const plugin = usePlugin();
 
 	return useCallback(() => {
-		const browser = plugin.store!.getState().browser;
+		const browser = plugin.store?.getState().browser;
 		browser.setLoading(true);
 
 		try {
@@ -280,7 +297,11 @@ export function CardBrowserApp() {
 	const handleSingleUnsuspend = useCallback(
 		(cardId: string) => {
 			plugin.cardStore.cards.bulkUnsuspend([cardId]);
-			notifyCardChange({ type: "bulk", cardIds: [cardId], action: "unsuspend" });
+			notifyCardChange({
+				type: "bulk",
+				cardIds: [cardId],
+				action: "unsuspend",
+			});
 			notify().success("Card unsuspended");
 		},
 		[plugin],
@@ -374,7 +395,9 @@ export function CardBrowserApp() {
 					sortDirection={state.sortDirection}
 					onRowClick={handleRowClick}
 					onRowSelect={handleRowSelect}
-					onSortChange={(col) => browser.cycleSortOnColumn(col as BrowserSortColumn)}
+					onSortChange={(col) =>
+						browser.cycleSortOnColumn(col as BrowserSortColumn)
+					}
 					onSelectAll={handleSelectAll}
 				/>
 			</div>
@@ -383,7 +406,9 @@ export function CardBrowserApp() {
 					<CardDetailPanel
 						card={previewCard}
 						onClose={() => browser.setPreviewCardId(null)}
-						onOpenSource={(path) => void app.workspace.openLinkText(path, "", false)}
+						onOpenSource={(path) =>
+							void app.workspace.openLinkText(path, "", false)
+						}
 						onSuspend={handleSingleSuspend}
 						onUnsuspend={handleSingleUnsuspend}
 						onDelete={handleSingleDelete}
@@ -456,7 +481,10 @@ function BrowserToolbar({
 						</button>
 					))}
 				</div>
-				<span class="ep:text-ui-smaller ep:text-obs-muted ep:whitespace-nowrap" aria-live="polite">
+				<span
+					class="ep:text-ui-smaller ep:text-obs-muted ep:whitespace-nowrap"
+					aria-live="polite"
+				>
 					{countText}
 				</span>
 			</div>
@@ -524,8 +552,14 @@ function VirtualTable({
 	}, [columns]);
 
 	const totalHeight = data.length * ROW_HEIGHT;
-	const startIndex = Math.max(0, Math.floor(scrollTop / ROW_HEIGHT) - BUFFER_SIZE);
-	const endIndex = Math.min(data.length, Math.ceil((scrollTop + containerHeight) / ROW_HEIGHT) + BUFFER_SIZE);
+	const startIndex = Math.max(
+		0,
+		Math.floor(scrollTop / ROW_HEIGHT) - BUFFER_SIZE,
+	);
+	const endIndex = Math.min(
+		data.length,
+		Math.ceil((scrollTop + containerHeight) / ROW_HEIGHT) + BUFFER_SIZE,
+	);
 	const visibleItems = data.slice(startIndex, endIndex);
 
 	const allSelected = useMemo(
@@ -533,7 +567,9 @@ function VirtualTable({
 		[data, selectedIds],
 	);
 
-	const sortDirIcon = useIcon(sortDirection === "asc" ? "arrow-up" : "arrow-down");
+	const sortDirIcon = useIcon(
+		sortDirection === "asc" ? "arrow-up" : "arrow-down",
+	);
 
 	return (
 		<div class="ep:flex ep:flex-col ep:flex-1 ep:min-h-0 ep:overflow-x-auto">
@@ -541,7 +577,10 @@ function VirtualTable({
 			<div class="ep:shrink-0 ep:border-b ep:border-obs-border ep:bg-obs-secondary">
 				<div
 					class="ep:grid ep:items-center ep:min-w-max"
-					style={{ gridTemplateColumns: gridTemplate, height: `${ROW_HEIGHT}px` }}
+					style={{
+						gridTemplateColumns: gridTemplate,
+						height: `${ROW_HEIGHT}px`,
+					}}
 				>
 					<div class="ep:flex ep:items-center ep:justify-center">
 						{selectionMode === "selecting" && (
@@ -566,7 +605,10 @@ function VirtualTable({
 						>
 							<span>{col.label}</span>
 							{col.sortable && sortColumn === col.key && (
-								<span class="ep:flex ep:items-center ep:w-3 ep:h-3" ref={sortDirIcon} />
+								<span
+									class="ep:flex ep:items-center ep:w-3 ep:h-3"
+									ref={sortDirIcon}
+								/>
 							)}
 						</div>
 					))}
@@ -574,8 +616,14 @@ function VirtualTable({
 			</div>
 
 			{/* Body */}
-			<div ref={containerRef} class="ep:flex-1 ep:min-h-0 ep:overflow-y-auto ep:overflow-x-hidden">
-				<div class="ep:relative ep:min-w-max" style={{ height: `${totalHeight}px` }}>
+			<div
+				ref={containerRef}
+				class="ep:flex-1 ep:min-h-0 ep:overflow-y-auto ep:overflow-x-hidden"
+			>
+				<div
+					class="ep:relative ep:min-w-max"
+					style={{ height: `${totalHeight}px` }}
+				>
 					{visibleItems.map((card, i) => {
 						const index = startIndex + i;
 						const isSelected = selectedIds.has(card.id);
@@ -663,12 +711,25 @@ function CardDetailPanel({
 		() => [
 			["Due", formatDueDate(card.fsrs.due)],
 			["Interval", formatIntervalDays(card.fsrs.scheduledDays)],
-			["Stability", card.fsrs.stability > 0 ? `${card.fsrs.stability.toFixed(1)}d` : "-"],
+			[
+				"Stability",
+				card.fsrs.stability > 0 ? `${card.fsrs.stability.toFixed(1)}d` : "-",
+			],
 			["Difficulty", card.fsrs.difficulty.toFixed(1)],
 			["Lapses", String(card.fsrs.lapses)],
 			["Reps", String(card.fsrs.reps)],
-			["Created", card.fsrs.createdAt ? new Date(card.fsrs.createdAt).toLocaleDateString() : "-"],
-			["Last review", card.fsrs.lastReview ? new Date(card.fsrs.lastReview).toLocaleDateString() : "-"],
+			[
+				"Created",
+				card.fsrs.createdAt
+					? new Date(card.fsrs.createdAt).toLocaleDateString()
+					: "-",
+			],
+			[
+				"Last review",
+				card.fsrs.lastReview
+					? new Date(card.fsrs.lastReview).toLocaleDateString()
+					: "-",
+			],
 			["Projects", card.projects.length > 0 ? card.projects.join(", ") : "-"],
 		],
 		[card],
@@ -688,7 +749,9 @@ function CardDetailPanel({
 				/>
 
 				{card.cardType && card.cardType !== "basic" && (
-					<span class="ep:text-ui-smaller ep:text-obs-muted ep:uppercase">{card.cardType}</span>
+					<span class="ep:text-ui-smaller ep:text-obs-muted ep:uppercase">
+						{card.cardType}
+					</span>
 				)}
 
 				<div class="ep:flex-1" />
@@ -707,12 +770,29 @@ function CardDetailPanel({
 
 				<div class="ep:flex ep:items-center ep:gap-1">
 					{card.fsrs.suspended ? (
-						<IconButton icon="play" ariaLabel="Unsuspend" onClick={() => onUnsuspend(card.id)} />
+						<IconButton
+							icon="play"
+							ariaLabel="Unsuspend"
+							onClick={() => onUnsuspend(card.id)}
+						/>
 					) : (
-						<IconButton icon="pause" ariaLabel="Suspend" onClick={() => onSuspend(card.id)} />
+						<IconButton
+							icon="pause"
+							ariaLabel="Suspend"
+							onClick={() => onSuspend(card.id)}
+						/>
 					)}
-					<IconButton icon="rotate-ccw" ariaLabel="Reset" onClick={() => onReset(card.id)} />
-					<IconButton icon="trash-2" ariaLabel="Delete" danger onClick={() => onDelete(card.id)} />
+					<IconButton
+						icon="rotate-ccw"
+						ariaLabel="Reset"
+						onClick={() => onReset(card.id)}
+					/>
+					<IconButton
+						icon="trash-2"
+						ariaLabel="Delete"
+						danger
+						onClick={() => onDelete(card.id)}
+					/>
 				</div>
 			</div>
 
@@ -722,12 +802,22 @@ function CardDetailPanel({
 					{/* Left: Q & A */}
 					<div class="ep:flex ep:flex-col ep:gap-2 ep:p-3 ep:border-r ep:border-obs-border ep:overflow-y-auto">
 						<div>
-							<div class="ep:text-ui-smaller ep:font-semibold ep:text-obs-muted ep:mb-1">Q:</div>
-							<div class="ep:text-ui-small ep:text-obs-normal" ref={questionRef} />
+							<div class="ep:text-ui-smaller ep:font-semibold ep:text-obs-muted ep:mb-1">
+								Q:
+							</div>
+							<div
+								class="ep:text-ui-small ep:text-obs-normal"
+								ref={questionRef}
+							/>
 						</div>
 						<div>
-							<div class="ep:text-ui-smaller ep:font-semibold ep:text-obs-muted ep:mb-1">A:</div>
-							<div class="ep:text-ui-small ep:text-obs-normal" ref={answerRef} />
+							<div class="ep:text-ui-smaller ep:font-semibold ep:text-obs-muted ep:mb-1">
+								A:
+							</div>
+							<div
+								class="ep:text-ui-small ep:text-obs-normal"
+								ref={answerRef}
+							/>
 						</div>
 					</div>
 
@@ -735,8 +825,12 @@ function CardDetailPanel({
 					<div class="ep:grid ep:grid-cols-2 ep:gap-x-4 ep:gap-y-1 ep:p-3 ep:content-start ep:overflow-y-auto">
 						{fields.map(([label, value]) => (
 							<>
-								<span class="ep:text-ui-smaller ep:text-obs-muted ep:font-medium">{label}</span>
-								<span class="ep:text-ui-smaller ep:text-obs-normal">{value}</span>
+								<span class="ep:text-ui-smaller ep:text-obs-muted ep:font-medium">
+									{label}
+								</span>
+								<span class="ep:text-ui-smaller ep:text-obs-normal">
+									{value}
+								</span>
 							</>
 						))}
 					</div>

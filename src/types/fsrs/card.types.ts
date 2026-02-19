@@ -3,7 +3,7 @@
  * Core data structures for flashcard FSRS metadata
  */
 
-import { State, Rating, type Card, type Grade } from "ts-fsrs";
+import { type Card, type Grade, Rating, State } from "ts-fsrs";
 
 // Re-export ts-fsrs types for convenience
 export { State, Rating };
@@ -17,14 +17,14 @@ export type CardType = "basic" | "cloze" | "reversed";
  * Compact format: ~50 bytes per entry
  */
 export interface CardReviewLogEntry {
-    /** Timestamp of review (Unix ms) */
-    t: number;
-    /** Rating: 1=Again, 2=Hard, 3=Good, 4=Easy */
-    r: Grade;
-    /** Scheduled days at time of review */
-    s: number;
-    /** Elapsed days since last review */
-    e: number;
+	/** Timestamp of review (Unix ms) */
+	t: number;
+	/** Rating: 1=Again, 2=Hard, 3=Good, 4=Easy */
+	r: Grade;
+	/** Scheduled days at time of review */
+	s: number;
+	/** Elapsed days since last review */
+	e: number;
 }
 
 /**
@@ -32,64 +32,64 @@ export interface CardReviewLogEntry {
  * Table: cards in .true-recall/true-recall.db
  */
 export interface FSRSCardData {
-    /** Unique card ID (UUID) */
-    id: string;
-    /** Next review date (ISO string) */
-    due: string;
-    /** Memory stability (days) */
-    stability: number;
-    /** Card difficulty (1-10, 1=easy, 10=hard) */
-    difficulty: number;
-    /** Review count */
-    reps: number;
-    /** Lapse count */
-    lapses: number;
-    /** Card state: 0=New, 1=Learning, 2=Review, 3=Relearning */
-    state: State;
-    /** Last review date (ISO string or null) */
-    lastReview: string | null;
-    /** Scheduled days until next review */
-    scheduledDays: number;
-    /** Current learning step (for Learning/Relearning) */
-    learningStep: number;
-    /** Is card suspended (excluded from review) */
-    suspended?: boolean;
-    /** Date until card is buried (ISO string) - auto-unbury after this date */
-    buriedUntil?: string;
-    /** Review history for FSRS optimization (last 20 reviews, optional) */
-    history?: CardReviewLogEntry[];
-    /** Card creation timestamp (Unix ms, optional for backwards compatibility) */
-    createdAt?: number;
-    /** Last update timestamp (Unix ms, for sync LWW comparison) */
-    updatedAt?: number;
+	/** Unique card ID (UUID) */
+	id: string;
+	/** Next review date (ISO string) */
+	due: string;
+	/** Memory stability (days) */
+	stability: number;
+	/** Card difficulty (1-10, 1=easy, 10=hard) */
+	difficulty: number;
+	/** Review count */
+	reps: number;
+	/** Lapse count */
+	lapses: number;
+	/** Card state: 0=New, 1=Learning, 2=Review, 3=Relearning */
+	state: State;
+	/** Last review date (ISO string or null) */
+	lastReview: string | null;
+	/** Scheduled days until next review */
+	scheduledDays: number;
+	/** Current learning step (for Learning/Relearning) */
+	learningStep: number;
+	/** Is card suspended (excluded from review) */
+	suspended?: boolean;
+	/** Date until card is buried (ISO string) - auto-unbury after this date */
+	buriedUntil?: string;
+	/** Review history for FSRS optimization (last 20 reviews, optional) */
+	history?: CardReviewLogEntry[];
+	/** Card creation timestamp (Unix ms, optional for backwards compatibility) */
+	createdAt?: number;
+	/** Last update timestamp (Unix ms, for sync LWW comparison) */
+	updatedAt?: number;
 
-    // === SQL-based storage fields (schema v2) ===
+	// === SQL-based storage fields (schema v2) ===
 
-    /** Card question (Markdown) - stored in SQL */
-    question?: string;
-    /** Card answer (Markdown) - stored in SQL */
-    answer?: string;
-    /** Source note UID (8-char hex) - link to MD note */
-    sourceUid?: string;
-    /** Source note name (resolved from vault at runtime via sourceUid) */
-    sourceNoteName?: string;
-    /** Source note path (resolved from vault at runtime via sourceUid) */
-    sourceNotePath?: string;
-    /** Projects associated with this card (resolved from frontmatter at runtime) */
-    projects?: string[];
-    /** Anki deck key for export (resolved at runtime, not stored) */
-    deckKey?: string;
+	/** Card question (Markdown) - stored in SQL */
+	question?: string;
+	/** Card answer (Markdown) - stored in SQL */
+	answer?: string;
+	/** Source note UID (8-char hex) - link to MD note */
+	sourceUid?: string;
+	/** Source note name (resolved from vault at runtime via sourceUid) */
+	sourceNoteName?: string;
+	/** Source note path (resolved from vault at runtime via sourceUid) */
+	sourceNotePath?: string;
+	/** Projects associated with this card (resolved from frontmatter at runtime) */
+	projects?: string[];
+	/** Anki deck key for export (resolved at runtime, not stored) */
+	deckKey?: string;
 
-    // === Card type fields (schema v21) ===
+	// === Card type fields (schema v21) ===
 
-    /** Card type: 'basic' (default), 'cloze', or 'reversed' */
-    cardType?: CardType;
-    /** For cloze cards: original template with {{cN::...}} syntax */
-    clozeTemplate?: string;
-    /** For cloze cards: which cloze number this card tests */
-    clozeIndex?: number;
-    /** For reversed cards: ID of the original card this is the reverse of */
-    reverseOf?: string;
+	/** Card type: 'basic' (default), 'cloze', or 'reversed' */
+	cardType?: CardType;
+	/** For cloze cards: original template with {{cN::...}} syntax */
+	clozeTemplate?: string;
+	/** For cloze cards: which cloze number this card tests */
+	clozeIndex?: number;
+	/** For reversed cards: ID of the original card this is the reverse of */
+	reverseOf?: string;
 }
 
 /**
@@ -97,28 +97,28 @@ export interface FSRSCardData {
  * Used in UI (ReviewView, FlashcardPanel)
  */
 export interface FSRSFlashcardItem {
-    /** Unique ID (from FSRSCardData) */
-    id: string;
-    /** Question */
-    question: string;
-    /** Answer */
-    answer: string;
-    /** FSRS data */
-    fsrs: FSRSCardData;
-    /** Projects associated with this card (resolved from frontmatter at runtime) */
-    projects: string[];
-    /** Source note name (resolved from vault at runtime via sourceUid) */
-    sourceNoteName?: string;
-    /** Source note UID (for MD note association) */
-    sourceUid?: string;
-    /** Path to source note (resolved from vault at runtime via sourceUid) */
-    sourceNotePath?: string;
-    /** Card type: 'basic' (default), 'cloze', or 'reversed' */
-    cardType?: CardType;
-    /** For cloze cards: original template with {{cN::...}} syntax */
-    clozeTemplate?: string;
-    /** For cloze cards: which cloze number this card tests */
-    clozeIndex?: number;
-    /** For reversed cards: ID of the original card this is the reverse of */
-    reverseOf?: string;
+	/** Unique ID (from FSRSCardData) */
+	id: string;
+	/** Question */
+	question: string;
+	/** Answer */
+	answer: string;
+	/** FSRS data */
+	fsrs: FSRSCardData;
+	/** Projects associated with this card (resolved from frontmatter at runtime) */
+	projects: string[];
+	/** Source note name (resolved from vault at runtime via sourceUid) */
+	sourceNoteName?: string;
+	/** Source note UID (for MD note association) */
+	sourceUid?: string;
+	/** Path to source note (resolved from vault at runtime via sourceUid) */
+	sourceNotePath?: string;
+	/** Card type: 'basic' (default), 'cloze', or 'reversed' */
+	cardType?: CardType;
+	/** For cloze cards: original template with {{cN::...}} syntax */
+	clozeTemplate?: string;
+	/** For cloze cards: which cloze number this card tests */
+	clozeIndex?: number;
+	/** For reversed cards: ID of the original card this is the reverse of */
+	reverseOf?: string;
 }

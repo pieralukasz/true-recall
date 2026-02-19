@@ -1,10 +1,10 @@
+import { type App, Component, MarkdownRenderer, TFile } from "obsidian";
 import { render } from "preact";
-import { useState, useEffect, useRef, useCallback } from "preact/hooks";
-import { App, TFile, Component, MarkdownRenderer } from "obsidian";
-import { BasePromiseModal } from "./BasePromiseModal";
+import { useCallback, useEffect, useRef, useState } from "preact/hooks";
+import { notify } from "../../services";
 import { ImageService } from "../../services/image";
 import { isVideoExtension } from "../../types";
-import { notify } from "../../services";
+import { BasePromiseModal } from "./BasePromiseModal";
 
 export interface MediaPickerResult {
 	cancelled: boolean;
@@ -60,11 +60,19 @@ function VideoIcon() {
 	);
 }
 
-function MediaPickerBody({ app, imageService, currentFilePath, onResolve, onClose }: MediaPickerBodyProps) {
+function MediaPickerBody({
+	app,
+	imageService,
+	currentFilePath,
+	onResolve,
+	onClose,
+}: MediaPickerBodyProps) {
 	const [selectedFile, setSelectedFile] = useState<TFile | null>(null);
 	const [selectedWidth, setSelectedWidth] = useState(500);
 	const [dragActive, setDragActive] = useState(false);
-	const [mediaFiles, setMediaFiles] = useState(() => imageService.getRecentMedia(12));
+	const [mediaFiles, setMediaFiles] = useState(() =>
+		imageService.getRecentMedia(12),
+	);
 	const previewRef = useRef<HTMLDivElement>(null);
 	const renderComponentRef = useRef<Component | null>(null);
 
@@ -77,47 +85,52 @@ function MediaPickerBody({ app, imageService, currentFilePath, onResolve, onClos
 		};
 	}, []);
 
-	const updatePreview = useCallback((file: TFile | null, width: number) => {
-		if (!previewRef.current || !file || !renderComponentRef.current) return;
-		const el = previewRef.current;
-		el.empty();
+	const updatePreview = useCallback(
+		(file: TFile | null, width: number) => {
+			if (!previewRef.current || !file || !renderComponentRef.current) return;
+			const el = previewRef.current;
+			el.empty();
 
-		const isVideo = isVideoExtension(file.extension);
-		const w = width > 0 ? width : undefined;
+			const isVideo = isVideoExtension(file.extension);
+			const w = width > 0 ? width : undefined;
 
-		let markdown: string;
-		if (isVideo) {
-			markdown = imageService.buildVideoHtml(file, w);
-		} else {
-			markdown = imageService.buildImageMarkdown(file.path, w);
-		}
+			let markdown: string;
+			if (isVideo) {
+				markdown = imageService.buildVideoHtml(file, w);
+			} else {
+				markdown = imageService.buildImageMarkdown(file.path, w);
+			}
 
-		el.createEl("code", {
-			text: markdown,
-			cls: "ep:block ep:py-2 ep:px-3 ep:bg-obs-primary ep:rounded-lg ep:text-ui-smaller ep:mb-2",
-		});
-
-		const previewEl = el.createDiv({ cls: "ep:max-h-[200px] ep:overflow-auto" });
-
-		if (isVideo) {
-			const video = previewEl.createEl("video", {
-				attr: {
-					src: app.vault.getResourcePath(file),
-					controls: "true",
-					...(w ? { width: String(w) } : {}),
-				},
+			el.createEl("code", {
+				text: markdown,
+				cls: "ep:block ep:py-2 ep:px-3 ep:bg-obs-primary ep:rounded-lg ep:text-ui-smaller ep:mb-2",
 			});
-			video.muted = true;
-		} else {
-			void MarkdownRenderer.render(
-				app,
-				markdown,
-				previewEl,
-				currentFilePath,
-				renderComponentRef.current
-			);
-		}
-	}, [app, imageService, currentFilePath]);
+
+			const previewEl = el.createDiv({
+				cls: "ep:max-h-[200px] ep:overflow-auto",
+			});
+
+			if (isVideo) {
+				const video = previewEl.createEl("video", {
+					attr: {
+						src: app.vault.getResourcePath(file),
+						controls: "true",
+						...(w ? { width: String(w) } : {}),
+					},
+				});
+				video.muted = true;
+			} else {
+				void MarkdownRenderer.render(
+					app,
+					markdown,
+					previewEl,
+					currentFilePath,
+					renderComponentRef.current,
+				);
+			}
+		},
+		[app, imageService, currentFilePath],
+	);
 
 	useEffect(() => {
 		updatePreview(selectedFile, selectedWidth);
@@ -130,7 +143,7 @@ function MediaPickerBody({ app, imageService, currentFilePath, onResolve, onClos
 			if (!items) return;
 			for (let i = 0; i < items.length; i++) {
 				const item = items[i];
-				if (item && item.type.startsWith("image/")) {
+				if (item?.type.startsWith("image/")) {
 					e.preventDefault();
 					const blob = item.getAsFile();
 					if (blob) void handlePastedImage(blob);
@@ -205,7 +218,10 @@ function MediaPickerBody({ app, imageService, currentFilePath, onResolve, onClos
 			{/* Paste zone */}
 			<div
 				class={`ep:flex ep:flex-col ep:items-center ep:justify-center ep:p-6 ep:mb-4 ep:border-2 ep:border-dashed ep:rounded-lg ep:cursor-pointer ep:transition-all ep:hover:border-obs-interactive ${dragActive ? "true-recall-paste-zone-active" : "ep:border-obs-border"}`}
-				onDragOver={(e) => { e.preventDefault(); setDragActive(true); }}
+				onDragOver={(e) => {
+					e.preventDefault();
+					setDragActive(true);
+				}}
 				onDragLeave={() => setDragActive(false)}
 				onDrop={(e) => {
 					e.preventDefault();
@@ -221,17 +237,27 @@ function MediaPickerBody({ app, imageService, currentFilePath, onResolve, onClos
 					}
 				}}
 			>
-				<div class="ep:text-obs-muted"><PasteZoneIcon /></div>
-				<div class="ep:text-ui-small ep:font-medium ep:text-obs-normal">Paste image from clipboard</div>
-				<div class="ep:text-ui-smaller ep:text-obs-muted">Ctrl+V or drag & drop</div>
+				<div class="ep:text-obs-muted">
+					<PasteZoneIcon />
+				</div>
+				<div class="ep:text-ui-small ep:font-medium ep:text-obs-normal">
+					Paste image from clipboard
+				</div>
+				<div class="ep:text-ui-smaller ep:text-obs-muted">
+					Ctrl+V or drag & drop
+				</div>
 			</div>
 
 			{/* Media grid */}
 			<div class="ep:flex ep:flex-col ep:gap-2">
-				<h4 class="ep:text-ui-small ep:font-semibold ep:text-obs-muted ep:m-0">Recent media</h4>
+				<h4 class="ep:text-ui-small ep:font-semibold ep:text-obs-muted ep:m-0">
+					Recent media
+				</h4>
 				<div class="ep:grid ep:grid-cols-4 ep:gap-2 ep:max-h-[180px] ep:overflow-y-auto">
 					{mediaFiles.length === 0 ? (
-						<div class="ep:text-center ep:text-obs-muted ep:py-6 ep:italic">No media in vault</div>
+						<div class="ep:text-center ep:text-obs-muted ep:py-6 ep:italic">
+							No media in vault
+						</div>
 					) : (
 						mediaFiles.map((file) => {
 							const isVideo = isVideoExtension(file.extension);
@@ -264,7 +290,9 @@ function MediaPickerBody({ app, imageService, currentFilePath, onResolve, onClos
 										/>
 									)}
 									{isTooLarge && (
-										<div class="ep:absolute ep:top-1 ep:right-1 ep:py-1 ep:px-2 ep:bg-obs-red ep:text-obs-on-accent ep:text-ui-smaller ep:rounded">Large</div>
+										<div class="ep:absolute ep:top-1 ep:right-1 ep:py-1 ep:px-2 ep:bg-obs-red ep:text-obs-on-accent ep:text-ui-smaller ep:rounded">
+											Large
+										</div>
 									)}
 								</div>
 							);
@@ -275,7 +303,9 @@ function MediaPickerBody({ app, imageService, currentFilePath, onResolve, onClos
 
 			{/* Size control */}
 			<div class="ep:flex ep:items-center ep:gap-3 ep:p-3 ep:bg-obs-secondary ep:rounded-md">
-				<label class="ep:text-ui-small ep:font-medium ep:text-obs-normal">Width:</label>
+				<label class="ep:text-ui-small ep:font-medium ep:text-obs-normal">
+					Width:
+				</label>
 				<input
 					class="ep:flex-1 ep:h-1 ep:accent-obs-interactive"
 					type="range"
@@ -283,7 +313,9 @@ function MediaPickerBody({ app, imageService, currentFilePath, onResolve, onClos
 					max="800"
 					step="50"
 					value={selectedWidth}
-					onInput={(e) => setSelectedWidth(parseInt((e.target as HTMLInputElement).value, 10))}
+					onInput={(e) =>
+						setSelectedWidth(parseInt((e.target as HTMLInputElement).value, 10))
+					}
 				/>
 				<span class="ep:text-ui-small ep:font-medium ep:text-obs-interactive ep:min-w-[50px] ep:text-right">
 					{selectedWidth === 0 ? "Auto" : `${selectedWidth}px`}
@@ -292,10 +324,17 @@ function MediaPickerBody({ app, imageService, currentFilePath, onResolve, onClos
 
 			{/* Preview */}
 			<div class="ep:flex ep:flex-col ep:gap-2">
-				<h4 class="ep:text-ui-small ep:font-semibold ep:text-obs-muted ep:m-0">Preview</h4>
-				<div ref={previewRef} class="ep:p-3 ep:bg-obs-secondary ep:rounded-md ep:min-h-[100px] ep:overflow-hidden">
+				<h4 class="ep:text-ui-small ep:font-semibold ep:text-obs-muted ep:m-0">
+					Preview
+				</h4>
+				<div
+					ref={previewRef}
+					class="ep:p-3 ep:bg-obs-secondary ep:rounded-md ep:min-h-[100px] ep:overflow-hidden"
+				>
 					{!selectedFile && (
-						<div class="ep:text-obs-muted ep:italic ep:text-center ep:py-6">Select or paste media</div>
+						<div class="ep:text-obs-muted ep:italic ep:text-center ep:py-6">
+							Select or paste media
+						</div>
 					)}
 				</div>
 			</div>
@@ -352,7 +391,7 @@ export class MediaPickerModal extends BasePromiseModal<MediaPickerResult> {
 				onResolve={(result) => this.resolve(result)}
 				onClose={() => this.close()}
 			/>,
-			container
+			container,
 		);
 		this.unmountBody = () => render(null, container);
 	}

@@ -1,8 +1,12 @@
-import { App, normalizePath } from "obsidian";
-import { State, Rating } from "ts-fsrs";
-import type { PersistentStatsData, ExtendedDailyStats, Grade } from "../../types";
-import type { SqliteStoreService } from "./sqlite";
+import { type App, normalizePath } from "obsidian";
+import { Rating, State } from "ts-fsrs";
+import type {
+	ExtendedDailyStats,
+	Grade,
+	PersistentStatsData,
+} from "../../types";
 import type { DayBoundaryService } from "../core/day-boundary.service";
+import type { SqliteStoreService } from "./sqlite";
 
 const STATS_FOLDER = ".true-recall";
 const STATS_FILE = "stats.json";
@@ -12,7 +16,11 @@ export class SessionPersistenceService {
 	private store: SqliteStoreService;
 	private dayBoundaryService: DayBoundaryService;
 
-	constructor(app: App, store: SqliteStoreService, dayBoundaryService: DayBoundaryService) {
+	constructor(
+		app: App,
+		store: SqliteStoreService,
+		dayBoundaryService: DayBoundaryService,
+	) {
 		this.app = app;
 		this.store = store;
 		this.dayBoundaryService = dayBoundaryService;
@@ -51,7 +59,7 @@ export class SessionPersistenceService {
 		previousState?: State,
 		scheduledDays?: number,
 		elapsedDays?: number,
-		presetName?: string
+		presetName?: string,
 	): void {
 		const today = this.getTodayKey();
 
@@ -70,7 +78,10 @@ export class SessionPersistenceService {
 			easy: rating === Rating.Easy ? 1 : 0,
 			// Card type breakdown
 			newCards: previousState === State.New ? 1 : 0,
-			learningCards: (previousState === State.Learning || previousState === State.Relearning) ? 1 : 0,
+			learningCards:
+				previousState === State.Learning || previousState === State.Relearning
+					? 1
+					: 0,
 			reviewCards: previousState === State.Review ? 1 : 0,
 		};
 
@@ -85,7 +96,7 @@ export class SessionPersistenceService {
 				elapsedDays ?? 0,
 				previousState ?? 0,
 				durationMs,
-				presetName
+				presetName,
 			);
 		}
 	}
@@ -121,10 +132,10 @@ export class SessionPersistenceService {
 	 * Remove the last review (for undo functionality)
 	 */
 	removeLastReview(
-		cardId: string,
+		_cardId: string,
 		wasNewCard: boolean,
 		rating?: Grade,
-		previousState?: State
+		previousState?: State,
 	): void {
 		const today = this.getTodayKey();
 
@@ -139,7 +150,10 @@ export class SessionPersistenceService {
 			easy: rating === Rating.Easy ? 1 : 0,
 			// Card type breakdown
 			newCards: previousState === State.New ? 1 : 0,
-			learningCards: (previousState === State.Learning || previousState === State.Relearning) ? 1 : 0,
+			learningCards:
+				previousState === State.Learning || previousState === State.Relearning
+					? 1
+					: 0,
 			reviewCards: previousState === State.Review ? 1 : 0,
 		};
 
@@ -207,8 +221,8 @@ export class SessionPersistenceService {
 			const content = await this.app.vault.adapter.read(statsPath);
 			const data = JSON.parse(content) as PersistentStatsData;
 
-			let migratedDays = 0;
-			let migratedCards = 0;
+			let _migratedDays = 0;
+			let _migratedCards = 0;
 
 			for (const [date, dayStats] of Object.entries(data.daily)) {
 				const extendedStats = dayStats as ExtendedDailyStats;
@@ -226,12 +240,12 @@ export class SessionPersistenceService {
 					learningCards: extendedStats.learningCards || 0,
 					reviewCards: extendedStats.reviewCards || 0,
 				});
-				migratedDays++;
+				_migratedDays++;
 
 				// Migrate reviewed card IDs
 				for (const cardId of extendedStats.reviewedCardIds || []) {
 					this.store.stats.recordReviewedCard(date, cardId);
-					migratedCards++;
+					_migratedCards++;
 				}
 			}
 

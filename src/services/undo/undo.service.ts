@@ -1,19 +1,22 @@
 import type TrueRecallPlugin from "../../main";
-import type { FSRSCardData } from "../../types";
 import type { ReviewApi } from "../../state/store";
-import { notify } from "../index";
+import type { FSRSCardData } from "../../types";
 import { notifyCardChange } from "../core/signals";
+import { notify } from "../index";
 import type {
-	UndoEntry,
 	AnswerUndoPayload,
 	BuryUndoPayload,
-	SuspendUndoPayload,
 	FSRSHelperUndoPayload,
+	SuspendUndoPayload,
+	UndoEntry,
 } from "./undo.types";
 
 export interface ReviewUndoCallbacks {
 	onUpdateSchedulingPreview: () => void;
-	onUndoAnswer: (payload: AnswerUndoPayload, writeCancelled: boolean) => Promise<void>;
+	onUndoAnswer: (
+		payload: AnswerUndoPayload,
+		writeCancelled: boolean,
+	) => Promise<void>;
 }
 
 export class UndoService {
@@ -31,7 +34,7 @@ export class UndoService {
 
 	setReviewStateManager(
 		manager: ReviewApi | null,
-		callbacks: ReviewUndoCallbacks | null
+		callbacks: ReviewUndoCallbacks | null,
 	): void {
 		this.reviewStateManager = manager;
 		this.reviewCallbacks = callbacks;
@@ -95,7 +98,7 @@ export class UndoService {
 				flashcardManager.updateCardContent(
 					payload.cardId,
 					payload.previousQuestion,
-					payload.previousAnswer
+					payload.previousAnswer,
 				);
 				return true;
 
@@ -142,10 +145,16 @@ export class UndoService {
 		}
 	}
 
-	private async undoAnswer(payload: AnswerUndoPayload, writeCancelled: boolean): Promise<boolean> {
+	private async undoAnswer(
+		payload: AnswerUndoPayload,
+		writeCancelled: boolean,
+	): Promise<boolean> {
 		// If the deferred write was cancelled, DB still has original FSRS — no write needed
 		if (!writeCancelled) {
-			this.plugin.flashcardManager.updateCardFSRS(payload.card.id, payload.originalFsrs);
+			this.plugin.flashcardManager.updateCardFSRS(
+				payload.card.id,
+				payload.originalFsrs,
+			);
 		}
 
 		if (this.reviewCallbacks) {
@@ -166,7 +175,7 @@ export class UndoService {
 		if (this.reviewStateManager) {
 			this.reviewStateManager.insertCardAtPosition(
 				{ ...payload.card, fsrs: payload.originalFsrs },
-				payload.previousIndex
+				payload.previousIndex,
 			);
 		}
 
@@ -175,7 +184,7 @@ export class UndoService {
 				if (!writeCancelled) {
 					flashcardManager.updateCardFSRS(
 						additionalCard.card.id,
-						additionalCard.originalFsrs
+						additionalCard.originalFsrs,
 					);
 				}
 			}
@@ -188,15 +197,21 @@ export class UndoService {
 		return true;
 	}
 
-	private undoSuspend(payload: SuspendUndoPayload, writeCancelled: boolean): boolean {
+	private undoSuspend(
+		payload: SuspendUndoPayload,
+		writeCancelled: boolean,
+	): boolean {
 		if (!writeCancelled) {
-			this.plugin.flashcardManager.updateCardFSRS(payload.card.id, payload.originalFsrs);
+			this.plugin.flashcardManager.updateCardFSRS(
+				payload.card.id,
+				payload.originalFsrs,
+			);
 		}
 
 		if (this.reviewStateManager) {
 			this.reviewStateManager.insertCardAtPosition(
 				{ ...payload.card, fsrs: payload.originalFsrs },
-				payload.previousIndex
+				payload.previousIndex,
 			);
 		}
 
@@ -223,7 +238,10 @@ export class UndoService {
 
 			return true;
 		} catch (error) {
-			console.error("[UndoService] Failed to undo FSRS Helper operation:", error);
+			console.error(
+				"[UndoService] Failed to undo FSRS Helper operation:",
+				error,
+			);
 			return false;
 		}
 	}
@@ -235,7 +253,7 @@ export class UndoService {
 	clearSessionEntries(): void {
 		const sessionTypes = new Set(["answer", "bury", "suspend"]);
 		this.stack = this.stack.filter(
-			(entry) => !sessionTypes.has(entry.payload.type)
+			(entry) => !sessionTypes.has(entry.payload.type),
 		);
 	}
 }

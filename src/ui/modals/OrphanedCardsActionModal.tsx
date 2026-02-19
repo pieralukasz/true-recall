@@ -1,8 +1,8 @@
+import { type App, normalizePath, type TFile } from "obsidian";
 import { render } from "preact";
-import { useState, useRef, useEffect, useCallback } from "preact/hooks";
-import { App, TFile, normalizePath } from "obsidian";
-import { BasePromiseModal } from "./BasePromiseModal";
+import { useCallback, useEffect, useRef, useState } from "preact/hooks";
 import type { FSRSCardData } from "../../types";
+import { BasePromiseModal } from "./BasePromiseModal";
 
 export type OrphanedCardsAction =
 	| "delete"
@@ -29,13 +29,21 @@ function CardPreview({ cards }: { cards: FSRSCardData[] }) {
 
 	return (
 		<div class="ep:mb-4 ep:p-3 ep:bg-obs-secondary ep:rounded-md ep:border ep:border-obs-border">
-			<h4 class="ep:text-ui-smaller ep:text-obs-muted ep:m-0 ep:mb-2">Card preview</h4>
+			<h4 class="ep:text-ui-smaller ep:text-obs-muted ep:m-0 ep:mb-2">
+				Card preview
+			</h4>
 			{cardsToShow.map((card, i) => {
 				const question = card.question ?? "No question";
-				const truncatedQ = question.length > 80 ? question.slice(0, 80) + "..." : question;
+				const truncatedQ =
+					question.length > 80 ? `${question.slice(0, 80)}...` : question;
 				return (
-					<div key={i} class="ep:py-1.5 ep:border-b ep:border-obs-border ep:last:border-b-0">
-						<div class="ep:text-ui-smaller ep:text-obs-normal">Q: {truncatedQ}</div>
+					<div
+						key={i}
+						class="ep:py-1.5 ep:border-b ep:border-obs-border ep:last:border-b-0"
+					>
+						<div class="ep:text-ui-smaller ep:text-obs-normal">
+							Q: {truncatedQ}
+						</div>
 					</div>
 				);
 			})}
@@ -63,13 +71,14 @@ function ActionButton({
 }) {
 	const iconMap: Record<string, string> = {
 		"trash-2": "\u{1F5D1}\u{FE0F}",
-		"folder": "\u{1F4C1}",
+		folder: "\u{1F4C1}",
 		"file-plus": "\u{1F4DD}",
 	};
 
-	const btnCls = type === "danger"
-		? "ep:bg-obs-red ep:text-obs-on-accent ep:hover:opacity-90"
-		: "ep:bg-obs-secondary ep:text-obs-normal ep:hover:bg-obs-modifier-hover";
+	const btnCls =
+		type === "danger"
+			? "ep:bg-obs-red ep:text-obs-on-accent ep:hover:opacity-90"
+			: "ep:bg-obs-secondary ep:text-obs-normal ep:hover:bg-obs-modifier-hover";
 
 	return (
 		<button
@@ -87,13 +96,7 @@ function ActionButton({
 	);
 }
 
-function NoteItem({
-	note,
-	onSelect,
-}: {
-	note: TFile;
-	onSelect: () => void;
-}) {
+function NoteItem({ note, onSelect }: { note: TFile; onSelect: () => void }) {
 	const folderPath = note.parent?.path;
 
 	return (
@@ -103,14 +106,21 @@ function NoteItem({
 		>
 			<div class="ep:flex ep:items-center ep:gap-2 ep:overflow-hidden ep:flex-1">
 				<span class="ep:shrink-0">{"\u{1F4C4}"}</span>
-				<span class="ep:font-medium ep:overflow-hidden ep:text-ellipsis ep:whitespace-nowrap">{note.basename}</span>
+				<span class="ep:font-medium ep:overflow-hidden ep:text-ellipsis ep:whitespace-nowrap">
+					{note.basename}
+				</span>
 				{folderPath && folderPath !== "/" && (
-					<span class="ep:text-ui-smaller ep:text-obs-muted ep:ml-2">{folderPath}</span>
+					<span class="ep:text-ui-smaller ep:text-obs-muted ep:ml-2">
+						{folderPath}
+					</span>
 				)}
 			</div>
 			<button
 				class="ep:shrink-0 ep:py-1 ep:px-3 ep:rounded-md ep:bg-obs-interactive ep:text-obs-on-accent ep:border-none ep:text-ui-smaller ep:cursor-pointer ep:opacity-0 ep:group-hover:opacity-100 ep:hover:opacity-100"
-				onClick={(e) => { e.stopPropagation(); onSelect(); }}
+				onClick={(e) => {
+					e.stopPropagation();
+					onSelect();
+				}}
 			>
 				Select
 			</button>
@@ -140,9 +150,10 @@ function MoveSection({
 		}
 		const query = searchQuery.toLowerCase();
 		return allNotes
-			.filter((note) =>
-				note.basename.toLowerCase().includes(query) ||
-				note.path.toLowerCase().includes(query)
+			.filter(
+				(note) =>
+					note.basename.toLowerCase().includes(query) ||
+					note.path.toLowerCase().includes(query),
 			)
 			.sort((a, b) => {
 				const aExact = a.basename.toLowerCase().startsWith(query);
@@ -157,7 +168,9 @@ function MoveSection({
 
 	return (
 		<div class="ep:mt-4 ep:pt-4 ep:border-t ep:border-obs-border">
-			<h4 class="ep:text-ui-small ep:text-obs-normal ep:m-0 ep:mb-3">Select target note</h4>
+			<h4 class="ep:text-ui-small ep:text-obs-normal ep:m-0 ep:mb-3">
+				Select target note
+			</h4>
 
 			<div class="ep:mb-3">
 				<input
@@ -165,17 +178,28 @@ function MoveSection({
 					type="text"
 					placeholder="Search notes..."
 					class="ep:w-full ep:py-2.5 ep:px-3 ep:border ep:border-obs-border ep:rounded-md ep:bg-obs-primary ep:text-obs-normal ep:text-ui-small ep:focus:outline-none ep:focus:border-obs-interactive ep:placeholder:text-obs-muted"
-					onInput={(e) => setSearchQuery((e.target as HTMLInputElement).value.toLowerCase())}
+					onInput={(e) =>
+						setSearchQuery((e.target as HTMLInputElement).value.toLowerCase())
+					}
 				/>
 			</div>
 
-			<div class="ep:border ep:border-obs-border ep:rounded-md ep:overflow-y-auto" style="max-height: 250px">
+			<div
+				class="ep:border ep:border-obs-border ep:rounded-md ep:overflow-y-auto"
+				style="max-height: 250px"
+			>
 				{filteredNotes.length === 0 ? (
-					<div class="ep:py-6 ep:px-4 ep:text-center ep:text-obs-muted ep:italic">No notes found</div>
+					<div class="ep:py-6 ep:px-4 ep:text-center ep:text-obs-muted ep:italic">
+						No notes found
+					</div>
 				) : (
 					<>
-						{displayNotes.map(note => (
-							<NoteItem key={note.path} note={note} onSelect={() => onSelect(note.path)} />
+						{displayNotes.map((note) => (
+							<NoteItem
+								key={note.path}
+								note={note}
+								onSelect={() => onSelect(note.path)}
+							/>
 						))}
 						{filteredNotes.length > 30 && (
 							<div class="ep:p-3 ep:text-center ep:text-obs-muted ep:text-ui-smaller">
@@ -214,7 +238,7 @@ function OrphanedCardsBody({
 	const handleDelete = useCallback(() => {
 		// eslint-disable-next-line no-alert -- destructive operation requires explicit user confirmation
 		const confirmed = window.confirm(
-			`Are you sure you want to delete ${cards.length} flashcard${cards.length === 1 ? "" : "s"}? This cannot be undone.`
+			`Are you sure you want to delete ${cards.length} flashcard${cards.length === 1 ? "" : "s"}? This cannot be undone.`,
 		);
 		if (confirmed) {
 			onResolve({ cancelled: false, action: "delete" });
@@ -224,7 +248,8 @@ function OrphanedCardsBody({
 	return (
 		<>
 			<p class="ep:text-obs-normal ep:text-ui-small ep:mb-4">
-				The note "{deletedNoteName}" was deleted. What would you like to do with its {cards.length} flashcard{cards.length === 1 ? "" : "s"}?
+				The note "{deletedNoteName}" was deleted. What would you like to do with
+				its {cards.length} flashcard{cards.length === 1 ? "" : "s"}?
 			</p>
 
 			<CardPreview cards={cards} />
@@ -253,7 +278,9 @@ function OrphanedCardsBody({
 				/>
 				<button
 					class="ep:w-full ep:py-2 ep:px-3 ep:rounded-md ep:text-ui-smaller ep:text-obs-muted ep:bg-transparent ep:border ep:border-obs-border ep:cursor-pointer ep:hover:bg-obs-modifier-hover ep:mt-2"
-					onClick={() => onResolve({ cancelled: false, action: "leave_orphaned" })}
+					onClick={() =>
+						onResolve({ cancelled: false, action: "leave_orphaned" })
+					}
 				>
 					Leave as orphaned (can manage later in settings)
 				</button>
@@ -262,7 +289,13 @@ function OrphanedCardsBody({
 			{showMoveSection && (
 				<MoveSection
 					allNotes={allNotes}
-					onSelect={(path) => onResolve({ cancelled: false, action: "move", targetNotePath: path })}
+					onSelect={(path) =>
+						onResolve({
+							cancelled: false,
+							action: "move",
+							targetNotePath: path,
+						})
+					}
 					onCancel={() => setShowMoveSection(false)}
 				/>
 			)}

@@ -4,8 +4,8 @@
 
 // Flashcard Validators
 export {
-    validateFlashcardItem,
-    validateFlashcardItems,
+	validateFlashcardItem,
+	validateFlashcardItems,
 } from "./flashcard.validator";
 
 // Re-export schemas and their types

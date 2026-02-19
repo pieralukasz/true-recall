@@ -1,5 +1,5 @@
+import type { App } from "obsidian";
 import { render } from "preact";
-import { App } from "obsidian";
 import { BasePromiseModal } from "./BasePromiseModal";
 
 export type FirstSyncChoice = "upload" | "download" | "cancel";
@@ -37,10 +37,9 @@ function FirstSyncConflictBody({
 						local data is more complete.
 					</p>
 					<button
+						type="button"
 						class="mod-warning ep:py-2.5 ep:px-5 ep:rounded-md ep:text-ui-small ep:font-medium ep:cursor-pointer ep:transition-all"
-						onClick={() =>
-							onResolve({ cancelled: false, choice: "upload" })
-						}
+						onClick={() => onResolve({ cancelled: false, choice: "upload" })}
 					>
 						Upload local → server
 					</button>
@@ -55,10 +54,9 @@ function FirstSyncConflictBody({
 						device has your main data.
 					</p>
 					<button
+						type="button"
 						class="mod-warning ep:py-2.5 ep:px-5 ep:rounded-md ep:text-ui-small ep:font-medium ep:cursor-pointer ep:transition-all"
-						onClick={() =>
-							onResolve({ cancelled: false, choice: "download" })
-						}
+						onClick={() => onResolve({ cancelled: false, choice: "download" })}
 					>
 						Download server → local
 					</button>
@@ -67,10 +65,9 @@ function FirstSyncConflictBody({
 
 			<div class="ep:flex ep:justify-center ep:pt-2 ep:border-t ep:border-obs-border">
 				<button
+					type="button"
 					class="ep:py-2.5 ep:px-5 ep:rounded-md ep:text-ui-small ep:font-medium ep:cursor-pointer ep:transition-all ep:bg-obs-secondary ep:text-obs-normal ep:border ep:border-obs-border ep:hover:bg-obs-modifier-hover"
-					onClick={() =>
-						onResolve({ cancelled: true, choice: "cancel" })
-					}
+					onClick={() => onResolve({ cancelled: true, choice: "cancel" })}
 				>
 					Cancel
 				</button>
@@ -95,9 +92,7 @@ export class FirstSyncConflictModal extends BasePromiseModal<FirstSyncConflictRe
 
 	protected renderBody(container: HTMLElement): void {
 		render(
-			<FirstSyncConflictBody
-				onResolve={(result) => this.resolve(result)}
-			/>,
+			<FirstSyncConflictBody onResolve={(result) => this.resolve(result)} />,
 			container,
 		);
 		this.unmountBody = () => render(null, container);

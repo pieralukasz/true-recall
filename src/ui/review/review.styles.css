@@ -7,11 +7,11 @@
 
 	/* Override Obsidian default button height */
 	.true-recall-review-buttons button {
-		height: auto !important;
-		padding: 0.5rem 1rem !important;
+		height: auto;
+		padding: 0.5rem 1rem;
 	}
 	.true-recall-review-buttons {
-		gap: 1rem !important;
+		gap: 1rem;
 	}
 
 	/* Enable text selection + max-width for readability */

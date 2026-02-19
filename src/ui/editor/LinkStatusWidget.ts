@@ -1,4 +1,4 @@
-import { render, h } from "preact";
+import { h, render } from "preact";
 import type { NoteStatusInfo } from "../../services/cache/note-status-cache.service";
 import { DonutChart } from "./components/DonutChart";
 import { LinkTextCount } from "./components/LinkTextCount";
@@ -10,25 +10,39 @@ export interface LinkStatusOptions {
 	class?: string;
 }
 
-
-export function createLinkStatusElement(options: LinkStatusOptions): HTMLSpanElement {
+export function createLinkStatusElement(
+	options: LinkStatusOptions,
+): HTMLSpanElement {
 	const container = document.createElement("div");
 	render(
-		h(DonutChart, { info: options.info, onPlay: options.onPlay, class: options.class }),
+		h(DonutChart, {
+			info: options.info,
+			onPlay: options.onPlay,
+			class: options.class,
+		}),
 		container,
 	);
 	return container.firstElementChild as HTMLSpanElement;
 }
 
-
-export function createLinkTextCountElement(options: LinkStatusOptions): HTMLSpanElement {
+export function createLinkTextCountElement(
+	options: LinkStatusOptions,
+): HTMLSpanElement {
 	const container = document.createElement("div");
-	render(h(LinkTextCount, { info: options.info, onPlay: options.onPlay }), container);
+	render(
+		h(LinkTextCount, { info: options.info, onPlay: options.onPlay }),
+		container,
+	);
 	return container.firstElementChild as HTMLSpanElement;
 }
 
 export function infoEqual(a: NoteStatusInfo, b: NoteStatusInfo): boolean {
-	return a.new === b.new && a.learning === b.learning && a.dueToday === b.dueToday && a.total === b.total;
+	return (
+		a.new === b.new &&
+		a.learning === b.learning &&
+		a.dueToday === b.dueToday &&
+		a.total === b.total
+	);
 }
 
 export function aggregateInfos(infos: NoteStatusInfo[]): NoteStatusInfo {

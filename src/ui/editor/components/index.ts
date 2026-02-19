@@ -1,4 +1,4 @@
-export { DonutChart } from "./DonutChart";
 export type { DonutChartProps } from "./DonutChart";
-export { LinkTextCount } from "./LinkTextCount";
+export { DonutChart } from "./DonutChart";
 export type { LinkTextCountProps } from "./LinkTextCount";
+export { LinkTextCount } from "./LinkTextCount";

@@ -6,9 +6,9 @@
 
 import type { EasyDaysConfig } from "../../../types";
 import type {
+	CardScheduleChange,
 	SchedulerCardStore,
 	SchedulingResult,
-	CardScheduleChange,
 	WorkloadDistribution,
 } from "./scheduler.types";
 
@@ -27,7 +27,7 @@ export interface EasyDaysOptions {
 
 export function isEasyDay(date: Date, easyDays: EasyDaysConfig): boolean {
 	const dayOfWeek = date.getDay();
-	const dateStr = date.toISOString().split("T")[0]!;
+	const dateStr = date.toISOString().split("T")[0] ?? "";
 
 	// Check recurring weekdays
 	if (easyDays.recurringDays.includes(dayOfWeek)) {
@@ -55,7 +55,8 @@ export class EasyDaysService {
 		} = options;
 
 		// Check if there are any easy days configured
-		const hasEasyDays = easyDays.recurringDays.length > 0 || easyDays.specificDates.length > 0;
+		const hasEasyDays =
+			easyDays.recurringDays.length > 0 || easyDays.specificDates.length > 0;
 		if (!hasEasyDays) {
 			return {
 				affectedCount: 0,
@@ -73,7 +74,10 @@ export class EasyDaysService {
 		const endDateStr = this.formatDate(endDate);
 
 		// Get all cards in range
-		const cards = this.cardStore.getDueCardsByDateRange(startDateStr, endDateStr);
+		const cards = this.cardStore.getDueCardsByDateRange(
+			startDateStr,
+			endDateStr,
+		);
 
 		// Build distribution map
 		const distribution = new Map<string, { id: string; due: string }[]>();
@@ -110,7 +114,7 @@ export class EasyDaysService {
 						const targetDate = this.findNextNonEasyDay(
 							currentDate,
 							easyDays,
-							days
+							days,
 						);
 
 						if (targetDate) {
@@ -165,7 +169,7 @@ export class EasyDaysService {
 	private findNextNonEasyDay(
 		from: Date,
 		easyDays: EasyDaysConfig,
-		maxDays: number
+		maxDays: number,
 	): Date | null {
 		const candidate = new Date(from);
 		candidate.setDate(candidate.getDate() + 1);
@@ -184,7 +188,7 @@ export class EasyDaysService {
 		easyDays: EasyDaysConfig,
 		multiplier: number,
 		targetPerDay: number,
-		days: number = 30
+		days: number = 30,
 	): { totalMoved: number; byDay: { day: string; moved: number }[] } {
 		const today = new Date();
 		const endDate = new Date(today);
@@ -193,7 +197,10 @@ export class EasyDaysService {
 		const startDateStr = this.formatDate(today);
 		const endDateStr = this.formatDate(endDate);
 
-		const cards = this.cardStore.getDueCardsByDateRange(startDateStr, endDateStr);
+		const cards = this.cardStore.getDueCardsByDateRange(
+			startDateStr,
+			endDateStr,
+		);
 
 		// Build distribution
 		const distribution = new Map<string, number>();
@@ -210,7 +217,7 @@ export class EasyDaysService {
 
 		// Check recurring weekdays
 		for (const dayOfWeek of easyDays.recurringDays) {
-			const dayName = dayNames[dayOfWeek]!;
+			const dayName = dayNames[dayOfWeek] ?? "Unknown";
 			let movedForDay = 0;
 
 			const currentDate = new Date(today);
@@ -247,12 +254,10 @@ export class EasyDaysService {
 	}
 
 	private formatDate(date: Date): string {
-		return date.toISOString().split("T")[0]!;
+		return date.toISOString().split("T")[0] ?? "";
 	}
 
-	private mapToDistribution(
-		map: Map<string, number>
-	): WorkloadDistribution[] {
+	private mapToDistribution(map: Map<string, number>): WorkloadDistribution[] {
 		return Array.from(map.entries())
 			.map(([date, count]) => ({ date, count }))
 			.sort((a, b) => a.date.localeCompare(b.date));

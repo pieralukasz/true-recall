@@ -1,10 +1,13 @@
+import type { App } from "obsidian";
 import { render } from "preact";
-import { useState, useCallback } from "preact/hooks";
-import { App } from "obsidian";
-import { BaseModal } from "./BaseModal";
-import type { SqliteStoreService } from "../../services/persistence/sqlite/SqliteStoreService";
+import { useCallback, useState } from "preact/hooks";
 import type { FrontmatterIndexService } from "../../services/core/frontmatter-index.service";
-import { CsvExportService, type CsvSeparator } from "../../services/export/csv-export.service";
+import {
+	CsvExportService,
+	type CsvSeparator,
+} from "../../services/export/csv-export.service";
+import type { SqliteStoreService } from "../../services/persistence/sqlite/SqliteStoreService";
+import { BaseModal } from "./BaseModal";
 
 interface NoteEntry {
 	uid: string;
@@ -38,7 +41,16 @@ function CheckboxItem({
 	return (
 		<div
 			class="ep:flex ep:items-center ep:gap-2 ep:p-2 ep:border-b ep:border-obs-border ep:last:border-b-0 ep:cursor-pointer ep:hover:bg-obs-modifier-hover"
+			role="option"
+			tabIndex={0}
+			aria-selected={checked}
 			onClick={toggle}
+			onKeyDown={(e: KeyboardEvent) => {
+				if (e.key === "Enter" || e.key === " ") {
+					e.preventDefault();
+					toggle();
+				}
+			}}
 		>
 			<input
 				type="checkbox"
@@ -110,7 +122,9 @@ function CsvExportBody({
 	onClose: () => void;
 }) {
 	const [phase, setPhase] = useState<ExportPhase>({ type: "form" });
-	const [exportMode, setExportMode] = useState<"all" | "projects" | "notes">("all");
+	const [exportMode, setExportMode] = useState<"all" | "projects" | "notes">(
+		"all",
+	);
 	const [separator, setSeparator] = useState<CsvSeparator>(",");
 	const [includeScheduling, setIncludeScheduling] = useState(false);
 	const [selectedProjects] = useState(() => new Set<string>());
@@ -141,7 +155,14 @@ function CsvExportBody({
 			separator,
 		});
 		setPhase(result);
-	}, [exportMode, selectedProjects, selectedSourceUids, includeScheduling, separator, onExport]);
+	}, [
+		exportMode,
+		selectedProjects,
+		selectedSourceUids,
+		includeScheduling,
+		separator,
+		onExport,
+	]);
 
 	if (phase.type === "success") {
 		return (
@@ -152,7 +173,9 @@ function CsvExportBody({
 					</div>
 				</div>
 				<div class="ep:flex ep:justify-end ep:gap-2 ep:pt-2 ep:border-t ep:border-obs-border">
-					<button class={PRIMARY_BTN} onClick={onClose}>Done</button>
+					<button type="button" class={PRIMARY_BTN} onClick={onClose}>
+						Done
+					</button>
 				</div>
 			</>
 		);
@@ -165,7 +188,9 @@ function CsvExportBody({
 					Export failed: {phase.message}
 				</div>
 				<div class="ep:flex ep:justify-end ep:gap-2 ep:pt-2 ep:border-t ep:border-obs-border">
-					<button class={SECONDARY_BTN} onClick={onClose}>Close</button>
+					<button type="button" class={SECONDARY_BTN} onClick={onClose}>
+						Close
+					</button>
 				</div>
 			</>
 		);
@@ -185,33 +210,36 @@ function CsvExportBody({
 
 				<div class="ep:flex ep:items-center ep:gap-2 ep:py-1">
 					<input
+						id="csv-scope-all"
 						type="radio"
 						name="csv-scope"
 						class="ep:w-4 ep:h-4 ep:accent-obs-interactive"
 						checked={exportMode === "all"}
 						onChange={() => setExportMode("all")}
 					/>
-					<label class="ep:text-ui-small">All cards ({totalCards})</label>
+					<label htmlFor="csv-scope-all" class="ep:text-ui-small">All cards ({totalCards})</label>
 				</div>
 				<div class="ep:flex ep:items-center ep:gap-2 ep:py-1">
 					<input
+						id="csv-scope-projects"
 						type="radio"
 						name="csv-scope"
 						class="ep:w-4 ep:h-4 ep:accent-obs-interactive"
 						checked={exportMode === "projects"}
 						onChange={() => setExportMode("projects")}
 					/>
-					<label class="ep:text-ui-small">Selected projects only</label>
+					<label htmlFor="csv-scope-projects" class="ep:text-ui-small">Selected projects only</label>
 				</div>
 				<div class="ep:flex ep:items-center ep:gap-2 ep:py-1">
 					<input
+						id="csv-scope-notes"
 						type="radio"
 						name="csv-scope"
 						class="ep:w-4 ep:h-4 ep:accent-obs-interactive"
 						checked={exportMode === "notes"}
 						onChange={() => setExportMode("notes")}
 					/>
-					<label class="ep:text-ui-small">Selected notes only</label>
+					<label htmlFor="csv-scope-notes" class="ep:text-ui-small">Selected notes only</label>
 				</div>
 
 				{allProjects.length > 0 && exportMode === "projects" && (
@@ -246,18 +274,22 @@ function CsvExportBody({
 			{/* Separator selection */}
 			<div class="ep:mb-4">
 				<div class="ep:text-ui-small ep:font-medium ep:mb-2">Separator</div>
-				{separators.map((sep) => (
-					<div key={sep.value} class="ep:flex ep:items-center ep:gap-2 ep:py-1">
-						<input
-							type="radio"
-							name="csv-separator"
-							class="ep:w-4 ep:h-4 ep:accent-obs-interactive"
-							checked={separator === sep.value}
-							onChange={() => setSeparator(sep.value)}
-						/>
-						<label class="ep:text-ui-small">{sep.label}</label>
-					</div>
-				))}
+				{separators.map((sep) => {
+					const sepId = `csv-sep-${sep.label.replace(/[^a-zA-Z]/g, "")}`;
+					return (
+						<div key={sep.value} class="ep:flex ep:items-center ep:gap-2 ep:py-1">
+							<input
+								id={sepId}
+								type="radio"
+								name="csv-separator"
+								class="ep:w-4 ep:h-4 ep:accent-obs-interactive"
+								checked={separator === sep.value}
+								onChange={() => setSeparator(sep.value)}
+							/>
+							<label htmlFor={sepId} class="ep:text-ui-small">{sep.label}</label>
+						</div>
+					);
+				})}
 			</div>
 
 			{/* Options */}
@@ -273,8 +305,12 @@ function CsvExportBody({
 
 			{/* Buttons */}
 			<div class="ep:flex ep:justify-end ep:gap-2 ep:pt-2 ep:border-t ep:border-obs-border">
-				<button class={SECONDARY_BTN} onClick={onClose}>Cancel</button>
-				<button class={PRIMARY_BTN} onClick={() => void handleExport()}>Export</button>
+				<button type="button" class={SECONDARY_BTN} onClick={onClose}>
+					Cancel
+				</button>
+				<button type="button" class={PRIMARY_BTN} onClick={() => void handleExport()}>
+					Export
+				</button>
 			</div>
 		</>
 	);
@@ -287,7 +323,11 @@ export class CsvExportModal extends BaseModal {
 	private allNotes: NoteEntry[] = [];
 	private unmountBody?: () => void;
 
-	constructor(app: App, store: SqliteStoreService, frontmatterIndex: FrontmatterIndexService) {
+	constructor(
+		app: App,
+		store: SqliteStoreService,
+		frontmatterIndex: FrontmatterIndexService,
+	) {
 		super(app, { title: "Export as CSV", width: "520px" });
 		this.store = store;
 		this.frontmatterIndex = frontmatterIndex;
@@ -328,8 +368,14 @@ export class CsvExportModal extends BaseModal {
 			const service = new CsvExportService(this.app, this.store);
 
 			const { content, filename } = service.export({
-				projects: opts.exportMode === "projects" ? [...opts.selectedProjects] : undefined,
-				sourceUids: opts.exportMode === "notes" ? [...opts.selectedSourceUids] : undefined,
+				projects:
+					opts.exportMode === "projects"
+						? [...opts.selectedProjects]
+						: undefined,
+				sourceUids:
+					opts.exportMode === "notes"
+						? [...opts.selectedSourceUids]
+						: undefined,
 				includeScheduling: opts.includeScheduling,
 				separator: opts.separator,
 			});
@@ -366,7 +412,7 @@ export class CsvExportModal extends BaseModal {
 			const cache = this.app.metadataCache.getFileCache(file);
 			if (!cache?.frontmatter) continue;
 
-			const uid = cache.frontmatter["flashcard_uid"] as string | undefined;
+			const uid = cache.frontmatter.flashcard_uid as string | undefined;
 			if (!uid) continue;
 
 			notes.push({ uid, name: file.basename });

@@ -1,9 +1,14 @@
 import { useMemo } from "preact/hooks";
-import { SettingRow, TextInput, SelectInput, InfoBlock } from "../../preact/components";
-import type { SelectOptionGroup } from "../../preact/components";
-import { useSettings } from "../hooks/useSettings";
+import type { AIModelInfo, AIModelKey } from "../../../constants";
 import { AI_MODELS_EXTENDED } from "../../../constants";
-import type { AIModelKey, AIModelInfo } from "../../../constants";
+import type { SelectOptionGroup } from "../../preact/components";
+import {
+	InfoBlock,
+	SelectInput,
+	SettingRow,
+	TextInput,
+} from "../../preact/components";
+import { useSettings } from "../hooks/useSettings";
 
 function groupModelsByProvider(): SelectOptionGroup[] {
 	const groups: Record<string, [string, AIModelInfo][]> = {
@@ -53,7 +58,9 @@ export function AITab() {
 			<SettingRow heading name="AI (OpenRouter)" />
 
 			<InfoBlock>
-				<p>OpenRouter provides access to multiple AI models through a single API.</p>
+				<p>
+					OpenRouter provides access to multiple AI models through a single API.
+				</p>
 				<p>
 					<a href="https://openrouter.ai/keys" target="_blank" rel="noopener">
 						Get your API key at openrouter.ai/keys

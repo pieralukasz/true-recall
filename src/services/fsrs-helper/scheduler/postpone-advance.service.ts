@@ -5,10 +5,10 @@
  */
 
 import type {
-	SchedulerCardStore,
-	ShiftOptions,
-	SchedulingResult,
 	CardScheduleChange,
+	SchedulerCardStore,
+	SchedulingResult,
+	ShiftOptions,
 	WorkloadDistribution,
 } from "./scheduler.types";
 
@@ -57,11 +57,11 @@ export class PostponeAdvanceService {
 			// Track distribution
 			beforeDistribution.set(
 				originalDateStr,
-				(beforeDistribution.get(originalDateStr) ?? 0) + 1
+				(beforeDistribution.get(originalDateStr) ?? 0) + 1,
 			);
 			afterDistribution.set(
 				newDateStr,
-				(afterDistribution.get(newDateStr) ?? 0) + 1
+				(afterDistribution.get(newDateStr) ?? 0) + 1,
 			);
 
 			const change: CardScheduleChange = {
@@ -93,7 +93,7 @@ export class PostponeAdvanceService {
 	 */
 	private async getCardsForScope(
 		scope: ShiftOptions["scope"],
-		cardIds?: string[]
+		cardIds?: string[],
 	): Promise<{ id: string; due: string }[]> {
 		const today = new Date();
 		today.setHours(0, 0, 0, 0);
@@ -114,7 +114,7 @@ export class PostponeAdvanceService {
 				return this.cardStore
 					.getDueCardsByDateRange(
 						this.formatDate(today),
-						this.formatDate(tomorrow)
+						this.formatDate(tomorrow),
 					)
 					.map((c) => ({ id: c.id, due: c.due }));
 			}
@@ -125,8 +125,6 @@ export class PostponeAdvanceService {
 					.filter((c) => new Date(c.due) < today && !c.suspended)
 					.map((c) => ({ id: c.id, due: c.due }));
 			}
-
-			case "all":
 			default: {
 				const allCards = this.cardStore.getCards();
 				return allCards
@@ -140,15 +138,13 @@ export class PostponeAdvanceService {
 	 * Format date as YYYY-MM-DD
 	 */
 	private formatDate(date: Date): string {
-		return date.toISOString().split("T")[0]!;
+		return date.toISOString().split("T")[0] ?? "";
 	}
 
 	/**
 	 * Convert distribution map to array
 	 */
-	private mapToDistribution(
-		map: Map<string, number>
-	): WorkloadDistribution[] {
+	private mapToDistribution(map: Map<string, number>): WorkloadDistribution[] {
 		return Array.from(map.entries())
 			.map(([date, count]) => ({ date, count }))
 			.sort((a, b) => a.date.localeCompare(b.date));

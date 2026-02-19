@@ -36,7 +36,7 @@ export class CopilotIntegrationService {
 	 */
 	getCopilotPlugin(): Record<string, unknown> | null {
 		const plugins = this.appWithPlugins.plugins?.plugins;
-		return (plugins?.["copilot"] as Record<string, unknown>) ?? null;
+		return (plugins?.copilot as Record<string, unknown>) ?? null;
 	}
 
 	/**
@@ -75,7 +75,7 @@ export class CopilotIntegrationService {
 		return commands
 			.filter(
 				(c) =>
-					c.id.includes("copilot") || c.name.toLowerCase().includes("copilot")
+					c.id.includes("copilot") || c.name.toLowerCase().includes("copilot"),
 			)
 			.map((c) => ({ id: c.id, name: c.name }));
 	}
@@ -131,11 +131,13 @@ export class CopilotIntegrationService {
 			(c) =>
 				c.id.includes("add-context") ||
 				c.id.includes("add-note") ||
-				c.id.includes("context-add")
+				c.id.includes("context-add"),
 		);
 
 		if (addContextCmd) {
-			await this.appWithPlugins.commands?.executeCommandById?.(addContextCmd.id);
+			await this.appWithPlugins.commands?.executeCommandById?.(
+				addContextCmd.id,
+			);
 			return true;
 		}
 

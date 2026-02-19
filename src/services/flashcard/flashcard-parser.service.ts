@@ -16,7 +16,7 @@
  * - Reversed cards via #flashcard-reverse tag
  */
 import { FLASHCARD_CONFIG } from "../../constants";
-import { type FlashcardItem } from "../../types";
+import type { FlashcardItem } from "../../types";
 import { hasClozeContent, parseClozeTemplate } from "./cloze-parser.service";
 
 /**
@@ -30,7 +30,7 @@ export class FlashcardParserService {
 		// Matches line ending with #flashcard-reverse or #flashcard
 		// Captures: [1] text before tag, [2] the matched tag
 		this.tagPattern = new RegExp(
-			`^(.*)\\s*(${FLASHCARD_CONFIG.reverseTag}|${FLASHCARD_CONFIG.tag})\\s*$`
+			`^(.*)\\s*(${FLASHCARD_CONFIG.reverseTag}|${FLASHCARD_CONFIG.tag})\\s*$`,
 		);
 	}
 
@@ -124,7 +124,9 @@ export class FlashcardParserService {
 				if (hasClozeContent(question)) {
 					const clozeCards = parseClozeTemplate(question);
 					for (const cloze of clozeCards) {
-						const fullAnswer = answer ? `${cloze.answer}\n\n${answer}` : cloze.answer;
+						const fullAnswer = answer
+							? `${cloze.answer}\n\n${answer}`
+							: cloze.answer;
 						flashcards.push({
 							question: cloze.question,
 							answer: fullAnswer,

@@ -6,13 +6,13 @@
  */
 
 import { FSRS, State } from "ts-fsrs";
-import type { FSRSSettings } from "../../../types";
 import { DEFAULT_FSRS_WEIGHTS } from "../../../constants";
+import type { FSRSSettings } from "../../../types";
 import type {
-	SchedulerCardStore,
-	RescheduleOptions,
-	SchedulingResult,
 	CardScheduleChange,
+	RescheduleOptions,
+	SchedulerCardStore,
+	SchedulingResult,
 	WorkloadDistribution,
 } from "./scheduler.types";
 
@@ -21,7 +21,7 @@ export class RescheduleService {
 
 	constructor(
 		private cardStore: SchedulerCardStore,
-		private fsrsSettings: FSRSSettings
+		fsrsSettings: FSRSSettings,
 	) {
 		this.fsrs = new FSRS({
 			request_retention: fsrsSettings.requestRetention,
@@ -50,13 +50,14 @@ export class RescheduleService {
 				card.state === (State.New as number) ||
 				card.state === (State.Learning as number) ||
 				card.state === (State.Relearning as number)
-			) continue;
+			)
+				continue;
 
 			// Record before
 			const beforeDateStr = this.formatDate(new Date(card.due));
 			beforeDistribution.set(
 				beforeDateStr,
-				(beforeDistribution.get(beforeDateStr) ?? 0) + 1
+				(beforeDistribution.get(beforeDateStr) ?? 0) + 1,
 			);
 
 			const lastReview = card.lastReview
@@ -64,7 +65,7 @@ export class RescheduleService {
 				: new Date();
 			const elapsedDays = Math.max(
 				0,
-				Math.floor((Date.now() - lastReview.getTime()) / 86400000)
+				Math.floor((Date.now() - lastReview.getTime()) / 86400000),
 			);
 
 			// Delegate to ts-fsrs which uses the correct FSRS-6 power-law formula
@@ -77,7 +78,7 @@ export class RescheduleService {
 			const afterDateStr = this.formatDate(newDue);
 			afterDistribution.set(
 				afterDateStr,
-				(afterDistribution.get(afterDateStr) ?? 0) + 1
+				(afterDistribution.get(afterDateStr) ?? 0) + 1,
 			);
 
 			const originalDueMs = new Date(card.due).getTime();
@@ -96,9 +97,14 @@ export class RescheduleService {
 
 		if (!dryRun) {
 			for (const change of changes) {
-				const lastReview = cards.find(c => c.id === change.cardId)?.lastReview;
+				const lastReview = cards.find(
+					(c) => c.id === change.cardId,
+				)?.lastReview;
 				const reviewDate = lastReview ? new Date(lastReview) : new Date();
-				const scheduledDays = Math.max(1, this.daysBetween(reviewDate, new Date(change.newDue)));
+				const scheduledDays = Math.max(
+					1,
+					this.daysBetween(reviewDate, new Date(change.newDue)),
+				);
 
 				await this.cardStore.updateCardScheduling(change.cardId, {
 					due: change.newDue,
@@ -120,7 +126,7 @@ export class RescheduleService {
 	 */
 	private async getCardsForScope(
 		scope: RescheduleOptions["scope"],
-		cardIds?: string[]
+		cardIds?: string[],
 	): Promise<
 		{
 			id: string;
@@ -151,14 +157,14 @@ export class RescheduleService {
 					})
 					.filter(
 						(
-							c
+							c,
 						): c is {
 							id: string;
 							due: string;
 							state: number;
 							stability: number;
 							lastReview: string | null;
-						} => c !== null
+						} => c !== null,
 					);
 
 			case "due": {
@@ -166,9 +172,7 @@ export class RescheduleService {
 				return allCards
 					.filter(
 						(c) =>
-							new Date(c.due) <= today &&
-							!c.suspended &&
-							c.state !== State.New
+							new Date(c.due) <= today && !c.suspended && c.state !== State.New,
 					)
 					.map((c) => ({
 						id: c.id,
@@ -186,9 +190,7 @@ export class RescheduleService {
 				return allCards
 					.filter(
 						(c) =>
-							new Date(c.due) < today &&
-							!c.suspended &&
-							c.state !== State.New
+							new Date(c.due) < today && !c.suspended && c.state !== State.New,
 					)
 					.map((c) => ({
 						id: c.id,
@@ -198,8 +200,6 @@ export class RescheduleService {
 						lastReview: c.lastReview,
 					}));
 			}
-
-			case "all":
 			default: {
 				const allCards = this.cardStore.getCards();
 				return allCards
@@ -227,15 +227,13 @@ export class RescheduleService {
 	 * Format date as YYYY-MM-DD
 	 */
 	private formatDate(date: Date): string {
-		return date.toISOString().split("T")[0]!;
+		return date.toISOString().split("T")[0] ?? "";
 	}
 
 	/**
 	 * Convert distribution map to array
 	 */
-	private mapToDistribution(
-		map: Map<string, number>
-	): WorkloadDistribution[] {
+	private mapToDistribution(map: Map<string, number>): WorkloadDistribution[] {
 		return Array.from(map.entries())
 			.map(([date, count]) => ({ date, count }))
 			.sort((a, b) => a.date.localeCompare(b.date));

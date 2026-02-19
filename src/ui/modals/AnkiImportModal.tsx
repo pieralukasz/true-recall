@@ -1,13 +1,13 @@
+import type { App } from "obsidian";
 import { render } from "preact";
-import { useState, useCallback, useRef } from "preact/hooks";
-import { App } from "obsidian";
-import { BaseModal } from "./BaseModal";
-import type { AnkiImportResult, ApkgData } from "../../types";
-import type { SqliteStoreService } from "../../services/persistence/sqlite/SqliteStoreService";
-import type { FSRSService } from "../../services/core/fsrs.service";
-import { ApkgParserService } from "../../services/anki/apkg-parser.service";
+import { useCallback, useRef, useState } from "preact/hooks";
 import { AnkiConverterService } from "../../services/anki/anki-converter.service";
 import { AnkiImportService } from "../../services/anki/anki-import.service";
+import { ApkgParserService } from "../../services/anki/apkg-parser.service";
+import type { FSRSService } from "../../services/core/fsrs.service";
+import type { SqliteStoreService } from "../../services/persistence/sqlite/SqliteStoreService";
+import type { AnkiImportResult, ApkgData } from "../../types";
+import { BaseModal } from "./BaseModal";
 
 interface ImportPreview {
 	totalCards: number;
@@ -80,7 +80,10 @@ function AnkiImportBody({
 	onUpdateTitle,
 }: {
 	onFileSelected: (file: File) => Promise<ImportPhase>;
-	onImport: (opts: { importScheduling: boolean; importMedia: boolean }) => Promise<ImportPhase>;
+	onImport: (opts: {
+		importScheduling: boolean;
+		importMedia: boolean;
+	}) => Promise<ImportPhase>;
 	onClose: () => void;
 	onUpdateTitle: (title: string) => void;
 }) {
@@ -112,9 +115,7 @@ function AnkiImportBody({
 	}, [onImport, importScheduling, importMedia, onUpdateTitle]);
 
 	if (phase.type === "parsing") {
-		return (
-			<div class="ep:text-center ep:py-6">Parsing deck...</div>
-		);
+		return <div class="ep:text-center ep:py-6">Parsing deck...</div>;
 	}
 
 	if (phase.type === "importing") {
@@ -132,15 +133,22 @@ function AnkiImportBody({
 		return (
 			<>
 				<div class="ep:text-ui-small ep:text-red-500 ep:py-4 ep:text-center">
-					{phase.canRetry ? "Failed to parse file: " : "Import failed: "}{phase.message}
+					{phase.canRetry ? "Failed to parse file: " : "Import failed: "}
+					{phase.message}
 				</div>
 				<div class="ep:flex ep:justify-end ep:gap-2 ep:pt-2 ep:border-t ep:border-obs-border">
 					{phase.canRetry && (
-						<button class={SECONDARY_BTN} onClick={() => setPhase({ type: "file-select" })}>
+						<button
+							type="button"
+							class={SECONDARY_BTN}
+							onClick={() => setPhase({ type: "file-select" })}
+						>
 							Try again
 						</button>
 					)}
-					<button class={SECONDARY_BTN} onClick={onClose}>Close</button>
+					<button type="button" class={SECONDARY_BTN} onClick={onClose}>
+						Close
+					</button>
 				</div>
 			</>
 		);
@@ -176,7 +184,10 @@ function AnkiImportBody({
 							</div>
 							<div class="ep:border ep:border-obs-border ep:rounded-md ep:max-h-[100px] ep:overflow-y-auto ep:p-2">
 								{result.errors.slice(0, 20).map((err, i) => (
-									<div key={i} class="ep:text-ui-smaller ep:text-obs-muted ep:py-0.5">
+									<div
+										key={i}
+										class="ep:text-ui-smaller ep:text-obs-muted ep:py-0.5"
+									>
 										{err}
 									</div>
 								))}
@@ -190,7 +201,9 @@ function AnkiImportBody({
 					)}
 				</div>
 				<div class="ep:flex ep:justify-end ep:gap-2 ep:pt-2 ep:border-t ep:border-obs-border">
-					<button class={PRIMARY_BTN} onClick={onClose}>Done</button>
+					<button type="button" class={PRIMARY_BTN} onClick={onClose}>
+						Done
+					</button>
 				</div>
 			</>
 		);
@@ -214,7 +227,10 @@ function AnkiImportBody({
 						</div>
 						<div class="ep:border ep:border-obs-border ep:rounded-md ep:max-h-[120px] ep:overflow-y-auto ep:p-2">
 							{preview.decks.map((deck) => (
-								<div key={deck} class="ep:text-ui-smaller ep:text-obs-muted ep:py-0.5">
+								<div
+									key={deck}
+									class="ep:text-ui-smaller ep:text-obs-muted ep:py-0.5"
+								>
 									{deck}
 								</div>
 							))}
@@ -239,8 +255,12 @@ function AnkiImportBody({
 				</div>
 
 				<div class="ep:flex ep:justify-end ep:gap-2 ep:pt-2 ep:border-t ep:border-obs-border">
-					<button class={SECONDARY_BTN} onClick={onClose}>Cancel</button>
-					<button class={PRIMARY_BTN} onClick={() => void handleImport()}>Import</button>
+					<button type="button" class={SECONDARY_BTN} onClick={onClose}>
+						Cancel
+					</button>
+					<button type="button" class={PRIMARY_BTN} onClick={() => void handleImport()}>
+						Import
+					</button>
 				</div>
 			</>
 		);
@@ -259,7 +279,15 @@ function AnkiImportBody({
 						? "ep:border-obs-interactive ep:bg-obs-modifier-hover"
 						: "ep:border-obs-border ep:hover:border-obs-interactive ep:hover:bg-obs-modifier-hover"
 				}`}
+				role="button"
+				tabIndex={0}
 				onClick={() => fileInputRef.current?.click()}
+				onKeyDown={(e: KeyboardEvent) => {
+					if (e.key === "Enter" || e.key === " ") {
+						e.preventDefault();
+						fileInputRef.current?.click();
+					}
+				}}
 				onDragOver={(e) => {
 					e.preventDefault();
 					setIsDragging(true);
@@ -269,7 +297,7 @@ function AnkiImportBody({
 					e.preventDefault();
 					setIsDragging(false);
 					const file = e.dataTransfer?.files[0];
-					if (file && file.name.endsWith(".apkg")) {
+					if (file?.name.endsWith(".apkg")) {
 						void handleFile(file);
 					}
 				}}
@@ -336,7 +364,8 @@ export class AnkiImportModal extends BaseModal {
 				totalCards: convertedCards.length,
 				basicCards: convertedCards.filter((c) => c.cardType === "basic").length,
 				clozeCards: convertedCards.filter((c) => c.cardType === "cloze").length,
-				reversedCards: convertedCards.filter((c) => c.cardType === "reversed").length,
+				reversedCards: convertedCards.filter((c) => c.cardType === "reversed")
+					.length,
 				decks: this.getUniqueDecks(apkgData),
 				mediaCount: Object.keys(apkgData.mediaMap).length,
 			};

@@ -1,9 +1,10 @@
 /**
  * FSRS Simulator Constants
  */
-import type { SliderConfig } from "./types";
+
 import { DEFAULT_FSRS_WEIGHTS } from "../../constants";
 import { getThemeColor } from "../utils/theme-colors";
+import type { SliderConfig } from "./types";
 
 /** Default review sequences */
 export const DEFAULT_SEQUENCES = [
@@ -243,4 +244,7 @@ export const FSRS_WEIGHT_SLIDERS: SliderConfig[] = [
 ];
 
 /** All sliders (retention + 21 weights) */
-export const ALL_SLIDERS: SliderConfig[] = [RETENTION_SLIDER, ...FSRS_WEIGHT_SLIDERS];
+export const ALL_SLIDERS: SliderConfig[] = [
+	RETENTION_SLIDER,
+	...FSRS_WEIGHT_SLIDERS,
+];

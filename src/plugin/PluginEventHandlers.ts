@@ -1,47 +1,49 @@
 import { ItemView, TFile } from "obsidian";
-import type TrueRecallPlugin from "../main";
-import { FlashcardPanelView } from "../ui/flashcard-panel/FlashcardPanelView";
 import { VIEW_TYPE_FLASHCARD_PANEL, VIEW_TYPE_REVIEW } from "../constants";
+import type TrueRecallPlugin from "../main";
 import type { DeletionHandlerService } from "../services/flashcard/deletion-handler.service";
+import { FlashcardPanelView } from "../ui/flashcard-panel/FlashcardPanelView";
 
 export function registerEventHandlers(plugin: TrueRecallPlugin): void {
 	// Single file context menu
 	plugin.registerEvent(
 		plugin.app.workspace.on("file-menu", (menu, file) => {
 			if (file instanceof TFile && file.extension === "md") {
-
 				menu.addItem((item) => {
-					item.setTitle("Review flashcards from this note")
+					item
+						.setTitle("Review flashcards from this note")
 						.setIcon("brain")
 						.onClick(() => void plugin.reviewNoteFlashcards(file));
 				});
 
 				menu.addItem((item) => {
-					item.setTitle("Create project from this note")
+					item
+						.setTitle("Create project from this note")
 						.setIcon("folder-plus")
 						.onClick(() => void plugin.createProjectFromNote(file));
 				});
 
 				menu.addItem((item) => {
-					item.setTitle("Open flashcard panel")
+					item
+						.setTitle("Open flashcard panel")
 						.setIcon("book-text")
 						.onClick(() => void plugin.activateView());
 				});
 			}
-		})
+		}),
 	);
 
 	plugin.registerEvent(
 		plugin.app.workspace.on("file-open", (file) => {
 			updatePanelView(plugin, file);
-		})
+		}),
 	);
 
 	plugin.registerEvent(
 		plugin.app.workspace.on("active-leaf-change", () => {
 			const file = plugin.app.workspace.getActiveFile();
 			updatePanelView(plugin, file);
-		})
+		}),
 	);
 }
 
@@ -61,9 +63,7 @@ function updatePanelView(plugin: TrueRecallPlugin, file: TFile | null): void {
 		return;
 	}
 
-	const leaves = workspace.getLeavesOfType(
-		VIEW_TYPE_FLASHCARD_PANEL
-	);
+	const leaves = workspace.getLeavesOfType(VIEW_TYPE_FLASHCARD_PANEL);
 	leaves.forEach((leaf) => {
 		const view = leaf.view;
 		if (view instanceof FlashcardPanelView) {
@@ -103,13 +103,13 @@ function updatePanelView(plugin: TrueRecallPlugin, file: TFile | null): void {
  */
 export function registerDeletionHandler(
 	plugin: TrueRecallPlugin,
-	deletionHandler: DeletionHandlerService
+	deletionHandler: DeletionHandlerService,
 ): void {
 	plugin.registerEvent(
 		plugin.app.vault.on("delete", (file) => {
 			if (file instanceof TFile && file.extension === "md") {
 				void deletionHandler.handleFileDeletion(file);
 			}
-		})
+		}),
 	);
 }

@@ -2,19 +2,19 @@
  * Undo Service Exports
  */
 
-export { UndoService } from "./undo.service";
 export type { ReviewUndoCallbacks } from "./undo.service";
+export { UndoService } from "./undo.service";
 export type {
+	AnswerUndoPayload,
+	BatchCreateUndoPayload,
+	BuryUndoPayload,
+	CreateUndoPayload,
+	DeleteUndoPayload,
+	FSRSHelperOperationType,
+	FSRSHelperUndoPayload,
+	SuspendUndoPayload,
 	UndoActionType,
 	UndoEntry,
 	UndoPayload,
-	CreateUndoPayload,
 	UpdateUndoPayload,
-	DeleteUndoPayload,
-	BatchCreateUndoPayload,
-	AnswerUndoPayload,
-	BuryUndoPayload,
-	SuspendUndoPayload,
-	FSRSHelperOperationType,
-	FSRSHelperUndoPayload,
 } from "./undo.types";

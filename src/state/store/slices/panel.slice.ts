@@ -1,15 +1,18 @@
 import type { TFile } from "obsidian";
+import type { AppError } from "../../../errors";
+import type { FlashcardInfo } from "../../../types";
+import {
+	createSelectionActions,
+	toggleSetItem,
+} from "../helpers/slice-helpers";
 import type {
 	AppState,
 	AppStoreDeps,
-	PanelSliceState,
 	PanelSliceActions,
+	PanelSliceState,
 	ProcessingStatus,
 	ViewMode,
 } from "../types";
-import type { FlashcardInfo } from "../../../types";
-import type { AppError } from "../../../errors";
-import { createSelectionActions, toggleSetItem } from "../helpers/slice-helpers";
 
 type PanelSlice = PanelSliceState & PanelSliceActions;
 
@@ -36,7 +39,7 @@ function createInitialState(): PanelSliceState {
 export function createPanelSlice(
 	set: (fn: (state: AppState) => Partial<AppState>) => void,
 	get: () => AppState,
-	deps: AppStoreDeps
+	_deps: AppStoreDeps,
 ): PanelSlice {
 	const initial = createInitialState();
 
@@ -131,7 +134,13 @@ export function createPanelSlice(
 		},
 
 		...(() => {
-			const sel = createSelectionActions(set, get, "panel", "selectionMode", "selectedCardIds");
+			const sel = createSelectionActions(
+				set,
+				get,
+				"panel",
+				"selectionMode",
+				"selectedCardIds",
+			);
 			return {
 				enterSelectionMode: sel.enterSelectionMode,
 				exitSelectionMode: sel.exitSelectionMode,

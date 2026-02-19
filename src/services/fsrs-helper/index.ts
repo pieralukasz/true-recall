@@ -9,39 +9,51 @@
 
 // Main service
 export { FSRSHelperService } from "./fsrs-helper.service";
-
-// Optimizer
-export { ParameterOptimizerService } from "./optimizer/parameter-optimizer.service";
 export type {
 	OptimizationInput,
 	OptimizationOutput,
+	OptimizationProgressCallback,
 	OptimizationReviewEntry,
 	OptimizerOptions,
-	OptimizationProgressCallback,
 } from "./optimizer/optimizer.types";
-
+// Optimizer
+export { ParameterOptimizerService } from "./optimizer/parameter-optimizer.service";
+export {
+	type EasyDaysOptions,
+	EasyDaysService,
+} from "./scheduler/easy-days.service";
+export { FlattenService } from "./scheduler/flatten.service";
 // Scheduler services
 export { LoadBalanceService } from "./scheduler/load-balance.service";
-export { EasyDaysService, type EasyDaysOptions } from "./scheduler/easy-days.service";
 export { PostponeAdvanceService } from "./scheduler/postpone-advance.service";
-export { FlattenService } from "./scheduler/flatten.service";
-export { SiblingDisperseService } from "./scheduler/sibling-disperse.service";
-export { ScheduleBreakService } from "./scheduler/schedule-break.service";
 export { RescheduleService } from "./scheduler/reschedule.service";
+export { ScheduleBreakService } from "./scheduler/schedule-break.service";
 export type {
-	CardDueInfo,
-	WorkloadDistribution,
-	SchedulingResult,
-	CardScheduleChange,
-	LoadBalanceOptions,
-	ShiftOptions,
-	FlattenOptions,
-	DisperseOptions,
-	RescheduleOptions,
 	BreakScheduleOptions,
+	CardDueInfo,
+	CardScheduleChange,
+	DisperseOptions,
+	FlattenOptions,
+	LoadBalanceOptions,
+	RescheduleOptions,
+	SchedulingResult,
+	ShiftOptions,
+	WorkloadDistribution,
 } from "./scheduler/scheduler.types";
-
+export { SiblingDisperseService } from "./scheduler/sibling-disperse.service";
+export {
+	DistributionCalculator,
+	type DistributionStats,
+	type HistogramBucket,
+} from "./statistics/distribution.calculator";
 // Statistics
-export { TrueRetentionCalculator, type TrueRetentionEntry, type TrueRetentionSummary } from "./statistics/true-retention.calculator";
-export { WorkloadForecastCalculator, type WorkloadForecastEntry, type WorkloadForecastSummary } from "./statistics/workload-forecast.calculator";
-export { DistributionCalculator, type HistogramBucket, type DistributionStats } from "./statistics/distribution.calculator";
+export {
+	TrueRetentionCalculator,
+	type TrueRetentionEntry,
+	type TrueRetentionSummary,
+} from "./statistics/true-retention.calculator";
+export {
+	WorkloadForecastCalculator,
+	type WorkloadForecastEntry,
+	type WorkloadForecastSummary,
+} from "./statistics/workload-forecast.calculator";

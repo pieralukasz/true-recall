@@ -1,8 +1,6 @@
-import {
-	FlashcardItemSchema,
-} from "./schemas/flashcard.schema";
-import type { FlashcardItem } from "../types";
 import { ValidationError } from "../errors";
+import type { FlashcardItem } from "../types";
+import { FlashcardItemSchema } from "./schemas/flashcard.schema";
 
 export type ValidationResult<T> =
 	| { success: true; data: T }
@@ -15,12 +13,12 @@ export function validateFlashcardItem(data: unknown): FlashcardItem {
 		// Zod v4 uses 'issues' with PropertyKey[] paths
 		const zodErrors = result.error.issues ?? [];
 		const errors = zodErrors.map(
-			(e) => `${e.path.map(String).join(".")}: ${e.message}`
+			(e) => `${e.path.map(String).join(".")}: ${e.message}`,
 		);
 		throw new ValidationError(
 			`Invalid flashcard: ${errors.join(", ")}`,
 			"flashcard",
-			errors
+			errors,
 		);
 	}
 

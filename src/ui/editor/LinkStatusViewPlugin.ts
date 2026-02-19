@@ -1,22 +1,25 @@
 // eslint-disable-next-line import/no-extraneous-dependencies -- provided by Obsidian at runtime
-import {
-	ViewPlugin,
-	Decoration,
-	WidgetType,
-	type DecorationSet,
-	type EditorView,
-	type ViewUpdate,
-} from "@codemirror/view";
+
 // eslint-disable-next-line import/no-extraneous-dependencies -- provided by Obsidian at runtime
 import { RangeSetBuilder } from "@codemirror/state";
+import {
+	Decoration,
+	type DecorationSet,
+	type EditorView,
+	ViewPlugin,
+	type ViewUpdate,
+	WidgetType,
+} from "@codemirror/view";
 import type { App, TFile } from "obsidian";
-import type { NoteStatusCacheService } from "../../services/cache/note-status-cache.service";
-import type { NoteStatusInfo } from "../../services/cache/note-status-cache.service";
+import type {
+	NoteStatusCacheService,
+	NoteStatusInfo,
+} from "../../services/cache/note-status-cache.service";
 import type { FrontmatterIndexService } from "../../services/core/frontmatter-index.service";
 import {
+	aggregateInfos,
 	createLinkStatusElement,
 	createLinkTextCountElement,
-	aggregateInfos,
 	infoEqual,
 } from "./LinkStatusWidget";
 
@@ -49,7 +52,11 @@ class LinkStatusWidget extends WidgetType {
 	}
 
 	eq(other: LinkStatusWidget): boolean {
-		return infoEqual(this.info, other.info) && this.small === other.small && this.headingLevel === other.headingLevel;
+		return (
+			infoEqual(this.info, other.info) &&
+			this.small === other.small &&
+			this.headingLevel === other.headingLevel
+		);
 	}
 }
 
@@ -120,7 +127,10 @@ export function createLinkStatusViewPlugin(
 				const sourcePath = app.workspace.getActiveFile()?.path ?? "";
 
 				const resolveLink = (linkText: string): ResolvedLink | null => {
-					const file = app.metadataCache.getFirstLinkpathDest(linkText, sourcePath);
+					const file = app.metadataCache.getFirstLinkpathDest(
+						linkText,
+						sourcePath,
+					);
 					if (!file) return null;
 					const uids = frontmatterIndex.getValues("flashcard_uid", file.path);
 					if (uids.length === 0) return null;
@@ -143,7 +153,10 @@ export function createLinkStatusViewPlugin(
 						const linkText = match[1]!;
 						const absoluteStart = from + match.index;
 
-						const file = app.metadataCache.getFirstLinkpathDest(linkText, sourcePath);
+						const file = app.metadataCache.getFirstLinkpathDest(
+							linkText,
+							sourcePath,
+						);
 						if (!file) continue;
 
 						const uids = frontmatterIndex.getValues("flashcard_uid", file.path);
@@ -156,15 +169,19 @@ export function createLinkStatusViewPlugin(
 						decorations.push({
 							pos: absoluteStart,
 							decoration: Decoration.widget({
-								widget: new LinkStatusWidget(info, () => onReviewNote(targetFile)),
+								widget: new LinkStatusWidget(info, () =>
+									onReviewNote(targetFile),
+								),
 								side: -1,
 							}),
 						});
 
 						decorations.push({
-							pos: absoluteStart + match[0]!.length,
+							pos: absoluteStart + match[0]?.length,
 							decoration: Decoration.widget({
-								widget: new LinkTextCountWidget(info, () => onReviewNote(targetFile)),
+								widget: new LinkTextCountWidget(info, () =>
+									onReviewNote(targetFile),
+								),
 								side: 1,
 							}),
 						});
@@ -186,7 +203,7 @@ export function createLinkStatusViewPlugin(
 						const headingMatch = HEADING_RE.exec(line);
 						if (headingMatch) {
 							headings.push({
-								level: headingMatch[1]!.length,
+								level: headingMatch[1]?.length,
 								lineEndPos: charPos + line.length,
 							});
 							lineStartPositions.push(charPos);
@@ -203,13 +220,16 @@ export function createLinkStatusViewPlugin(
 						let sectionEnd = doc.length;
 						for (let ln = nextLineNum; ln <= doc.lines; ln++) {
 							const m = HEADING_RE.exec(doc.line(ln).text);
-							if (m && m[1]!.length <= heading.level) {
+							if (m && m[1]?.length <= heading.level) {
 								sectionEnd = doc.line(ln).from;
 								break;
 							}
 						}
 
-						const sectionText = view.state.doc.sliceString(heading.lineEndPos, sectionEnd);
+						const sectionText = view.state.doc.sliceString(
+							heading.lineEndPos,
+							sectionEnd,
+						);
 						WIKI_LINK_RE.lastIndex = 0;
 						const sectionLinks: ResolvedLink[] = [];
 						const seen = new Set<string>();
@@ -231,7 +251,12 @@ export function createLinkStatusViewPlugin(
 						decorations.push({
 							pos: lineStartPositions[i]!,
 							decoration: Decoration.widget({
-								widget: new LinkStatusWidget(aggregated, reviewSection, true, heading.level),
+								widget: new LinkStatusWidget(
+									aggregated,
+									reviewSection,
+									true,
+									heading.level,
+								),
 								side: -1,
 							}),
 						});

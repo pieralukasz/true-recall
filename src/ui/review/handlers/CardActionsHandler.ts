@@ -2,16 +2,21 @@
  * Card Actions Handler for ReviewView
  * Handles card operations: suspend, bury, move, add, copy, edit
  */
-import { App } from "obsidian";
+import type { App } from "obsidian";
 import { Rating } from "ts-fsrs";
-import type { FlashcardManager, FSRSService, ReviewService, SqliteStoreService } from "../../../services";
+import type TrueRecallPlugin from "../../../main";
+import type {
+	FlashcardManager,
+	FSRSService,
+	ReviewService,
+	SqliteStoreService,
+} from "../../../services";
+import { notify } from "../../../services";
+import { DuplicateQuestionError } from "../../../services/flashcard/card-repository.service";
+import { cardToMarkdown } from "../../../services/flashcard/flashcard-format.util";
+import type { ReviewApi } from "../../../state/store";
 import type { TrueRecallSettings } from "../../../types";
 import { MoveCardModal, SimpleFlashcardEditorModal } from "../../modals";
-import { notify } from "../../../services";
-import { cardToMarkdown } from "../../../services/flashcard/flashcard-format.util";
-import { DuplicateQuestionError } from "../../../services/flashcard/card-repository.service";
-import type TrueRecallPlugin from "../../../main";
-import type { ReviewApi } from "../../../state/store";
 
 /**
  * Dependencies required by CardActionsHandler
@@ -49,10 +54,7 @@ export class CardActionsHandler {
 	private deps: CardActionsHandlerDeps;
 	private callbacks: CardActionsCallbacks;
 
-	constructor(
-		deps: CardActionsHandlerDeps,
-		callbacks: CardActionsCallbacks
-	) {
+	constructor(deps: CardActionsHandlerDeps, callbacks: CardActionsCallbacks) {
 		this.deps = deps;
 		this.callbacks = callbacks;
 	}
@@ -84,7 +86,10 @@ export class CardActionsHandler {
 		undoService?.push({
 			id: crypto.randomUUID(),
 			actionType: "suspend",
-			description: siblingIds.length > 1 ? `Suspend ${siblingIds.length} cards` : "Suspend card",
+			description:
+				siblingIds.length > 1
+					? `Suspend ${siblingIds.length} cards`
+					: "Suspend card",
 			timestamp: Date.now(),
 			payload: {
 				type: "suspend",
@@ -121,7 +126,10 @@ export class CardActionsHandler {
 				for (const id of siblingIds) {
 					const siblingData = this.deps.cardStore.get(id);
 					if (siblingData) {
-						this.deps.flashcardManager.updateCardFSRS(id, { ...siblingData, suspended: true });
+						this.deps.flashcardManager.updateCardFSRS(id, {
+							...siblingData,
+							suspended: true,
+						});
 					}
 				}
 			} catch (error) {
@@ -153,7 +161,8 @@ export class CardActionsHandler {
 		undoService?.push({
 			id: crypto.randomUUID(),
 			actionType: "bury",
-			description: siblingIds.length > 1 ? `Bury ${siblingIds.length} cards` : "Bury card",
+			description:
+				siblingIds.length > 1 ? `Bury ${siblingIds.length} cards` : "Bury card",
 			timestamp: Date.now(),
 			payload: {
 				type: "bury",
@@ -190,7 +199,10 @@ export class CardActionsHandler {
 				for (const id of siblingIds) {
 					const siblingData = this.deps.cardStore.get(id);
 					if (siblingData) {
-						this.deps.flashcardManager.updateCardFSRS(id, { ...siblingData, buriedUntil });
+						this.deps.flashcardManager.updateCardFSRS(id, {
+							...siblingData,
+							buriedUntil,
+						});
 					}
 				}
 			} catch (error) {
@@ -216,7 +228,9 @@ export class CardActionsHandler {
 
 		// Find all cards from the same source note in the queue
 		const queue = this.deps.getReview().queue;
-		const siblingCards = queue.filter(c => c.sourceNoteName === sourceNoteName);
+		const siblingCards = queue.filter(
+			(c) => c.sourceNoteName === sourceNoteName,
+		);
 
 		const firstSibling = siblingCards[0];
 		if (siblingCards.length === 0 || !firstSibling) {
@@ -232,7 +246,7 @@ export class CardActionsHandler {
 		const buriedUntil = tomorrow.toISOString();
 
 		// Capture undo data for all sibling cards BEFORE making changes
-		const additionalCards = siblingCards.slice(1).map(c => ({
+		const additionalCards = siblingCards.slice(1).map((c) => ({
 			card: { ...c },
 			originalFsrs: { ...c.fsrs },
 		}));
@@ -247,7 +261,10 @@ export class CardActionsHandler {
 				this.deps.flashcardManager.updateCardFSRS(siblingCard.id, updatedFsrs);
 				buriedCount++;
 			} catch (error) {
-				console.error(`[CardActionsHandler] Error burying card ${siblingCard.id}:`, error);
+				console.error(
+					`[CardActionsHandler] Error burying card ${siblingCard.id}:`,
+					error,
+				);
 			}
 
 			// Remove from queue (by ID since indices change)
@@ -266,7 +283,8 @@ export class CardActionsHandler {
 					card: { ...firstSibling },
 					originalFsrs: { ...firstSibling.fsrs },
 					previousIndex: currentIndex,
-					additionalCards: additionalCards.length > 0 ? additionalCards : undefined,
+					additionalCards:
+						additionalCards.length > 0 ? additionalCards : undefined,
 				},
 			});
 		}
@@ -304,13 +322,13 @@ export class CardActionsHandler {
 				card,
 				Rating.Good,
 				this.deps.fsrsService,
-				this.deps.flashcardManager
+				this.deps.flashcardManager,
 			);
 
 			// Move the card
 			const success = await this.deps.flashcardManager.moveCard(
 				card.id,
-				result.targetNotePath
+				result.targetNotePath,
 			);
 
 			if (success) {
@@ -352,18 +370,26 @@ export class CardActionsHandler {
 				await this.deps.flashcardManager.addSingleFlashcard(
 					flashcard.question,
 					flashcard.answer,
-					card.sourceUid
+					card.sourceUid,
 				);
 			}
 
-			const noteName = card.sourceNotePath?.split("/").pop()?.replace(/\.md$/, "");
+			const noteName = card.sourceNotePath
+				?.split("/")
+				.pop()
+				?.replace(/\.md$/, "");
 			notify().cardsCreated(result.flashcards.length, noteName);
 		} catch (error) {
 			if (error instanceof DuplicateQuestionError) {
 				const sourceInfo = error.existingSourceUid
-					? this.deps.flashcardManager.getSourceNoteService().resolveSourceNote(error.existingSourceUid)
+					? this.deps.flashcardManager
+							.getSourceNoteService()
+							.resolveSourceNote(error.existingSourceUid)
 					: {};
-				notify().duplicateFound(result.flashcards[0]?.question ?? "", sourceInfo.noteName);
+				notify().duplicateFound(
+					result.flashcards[0]?.question ?? "",
+					sourceInfo.noteName,
+				);
 			} else {
 				console.error("[CardActionsHandler] Error adding flashcards:", error);
 				notify().operationFailed("add flashcards", error);
@@ -395,18 +421,26 @@ export class CardActionsHandler {
 				await this.deps.flashcardManager.addSingleFlashcard(
 					flashcard.question,
 					flashcard.answer,
-					card.sourceUid
+					card.sourceUid,
 				);
 			}
 
-			const noteName = card.sourceNotePath?.split("/").pop()?.replace(/\.md$/, "");
+			const noteName = card.sourceNotePath
+				?.split("/")
+				.pop()
+				?.replace(/\.md$/, "");
 			notify().cardsCreated(result.flashcards.length, noteName);
 		} catch (error) {
 			if (error instanceof DuplicateQuestionError) {
 				const sourceInfo = error.existingSourceUid
-					? this.deps.flashcardManager.getSourceNoteService().resolveSourceNote(error.existingSourceUid)
+					? this.deps.flashcardManager
+							.getSourceNoteService()
+							.resolveSourceNote(error.existingSourceUid)
 					: {};
-				notify().duplicateFound(result.flashcards[0]?.question ?? "", sourceInfo.noteName);
+				notify().duplicateFound(
+					result.flashcards[0]?.question ?? "",
+					sourceInfo.noteName,
+				);
 			} else {
 				console.error("[CardActionsHandler] Error copying flashcard:", error);
 				notify().operationFailed("copy flashcard", error);
@@ -437,17 +471,26 @@ export class CardActionsHandler {
 			if (!firstFlashcard) return;
 
 			// Cloze template editing: parser sets clozeTemplate on each parsed FlashcardItem
-			if (card.cardType === "cloze" && card.clozeTemplate && card.sourceUid && firstFlashcard.clozeTemplate) {
+			if (
+				card.cardType === "cloze" &&
+				card.clozeTemplate &&
+				card.sourceUid &&
+				firstFlashcard.clozeTemplate
+			) {
 				this.deps.flashcardManager.updateClozeTemplate(
 					card.sourceUid,
 					card.clozeTemplate,
 					firstFlashcard.clozeTemplate,
-					card.sourceNoteName
+					card.sourceNoteName,
 				);
 				// Update current card in review queue with re-derived Q/A
-				const thisCard = result.flashcards.find(c => c.clozeIndex === card.clozeIndex);
+				const thisCard = result.flashcards.find(
+					(c) => c.clozeIndex === card.clozeIndex,
+				);
 				if (thisCard) {
-					this.deps.getReview().updateCurrentCardContent(thisCard.question, thisCard.answer);
+					this.deps
+						.getReview()
+						.updateCurrentCardContent(thisCard.question, thisCard.answer);
 				}
 				notify().success("Updated cloze template");
 				return;
@@ -457,12 +500,14 @@ export class CardActionsHandler {
 			this.deps.flashcardManager.updateCardContent(
 				card.id,
 				firstFlashcard.question,
-				firstFlashcard.answer
+				firstFlashcard.answer,
 			);
-			this.deps.getReview().updateCurrentCardContent(
-				firstFlashcard.question,
-				firstFlashcard.answer
-			);
+			this.deps
+				.getReview()
+				.updateCurrentCardContent(
+					firstFlashcard.question,
+					firstFlashcard.answer,
+				);
 
 			// Additional flashcards (if any) are created as new cards directly
 			if (result.flashcards.length > 1) {
@@ -472,18 +517,22 @@ export class CardActionsHandler {
 						await this.deps.flashcardManager.addSingleFlashcard(
 							flashcard.question,
 							flashcard.answer,
-							card.sourceUid
+							card.sourceUid,
 						);
 					}
 				}
-				notify().success(`Updated card and created ${result.flashcards.length - 1} new cards`);
+				notify().success(
+					`Updated card and created ${result.flashcards.length - 1} new cards`,
+				);
 			} else {
 				notify().cardUpdated();
 			}
 		} catch (error) {
 			if (error instanceof DuplicateQuestionError) {
 				const sourceInfo = error.existingSourceUid
-					? this.deps.flashcardManager.getSourceNoteService().resolveSourceNote(error.existingSourceUid)
+					? this.deps.flashcardManager
+							.getSourceNoteService()
+							.resolveSourceNote(error.existingSourceUid)
 					: {};
 				const question = result.flashcards[0]?.question ?? "";
 				notify().duplicateFound(question, sourceInfo.noteName);
@@ -514,10 +563,19 @@ export class CardActionsHandler {
 	 * Get IDs of all group siblings for cloze/reverse cards.
 	 * Returns [card.id] for basic cards (no siblings).
 	 */
-	private getGroupSiblingIds(card: { id: string; cardType?: string; sourceUid?: string; clozeTemplate?: string; reverseOf?: string }): string[] {
+	private getGroupSiblingIds(card: {
+		id: string;
+		cardType?: string;
+		sourceUid?: string;
+		clozeTemplate?: string;
+		reverseOf?: string;
+	}): string[] {
 		// Cloze card: get all cards sharing the same template
 		if (card.cardType === "cloze" && card.sourceUid && card.clozeTemplate) {
-			const siblings = this.deps.cardStore.getClozeSiblings(card.sourceUid, card.clozeTemplate);
+			const siblings = this.deps.cardStore.getClozeSiblings(
+				card.sourceUid,
+				card.clozeTemplate,
+			);
 			if (siblings.length > 0) {
 				return siblings.map((s) => s.id);
 			}

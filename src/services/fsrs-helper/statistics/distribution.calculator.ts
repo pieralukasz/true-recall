@@ -60,7 +60,7 @@ export class DistributionCalculator {
 		stats: DistributionStats;
 	} {
 		const cards = this.cardStore.getCards().filter(
-			(c) => !c.suspended && c.state === State.Review // Review state only
+			(c) => !c.suspended && c.state === State.Review, // Review state only
 		);
 
 		const intervals = cards.map((c) => c.scheduledDays);
@@ -98,7 +98,7 @@ export class DistributionCalculator {
 		stats: DistributionStats;
 	} {
 		const cards = this.cardStore.getCards().filter(
-			(c) => !c.suspended && c.state !== State.New // Exclude new cards
+			(c) => !c.suspended && c.state !== State.New, // Exclude new cards
 		);
 
 		const stabilities = cards.map((c) => c.stability);
@@ -136,7 +136,7 @@ export class DistributionCalculator {
 		stats: DistributionStats;
 	} {
 		const cards = this.cardStore.getCards().filter(
-			(c) => !c.suspended && c.state !== State.New // Exclude new cards
+			(c) => !c.suspended && c.state !== State.New, // Exclude new cards
 		);
 
 		const difficulties = cards.map((c) => c.difficulty);
@@ -188,7 +188,7 @@ export class DistributionCalculator {
 	 */
 	private buildHistogram(
 		values: number[],
-		buckets: [number, number, string][]
+		buckets: [number, number, string][],
 	): HistogramBucket[] {
 		const total = values.length;
 		const counts = new Map<string, number>();
@@ -230,19 +230,19 @@ export class DistributionCalculator {
 		const sorted = [...values].sort((a, b) => a - b);
 		const n = sorted.length;
 
-		const min = sorted[0]!;
-		const max = sorted[n - 1]!;
+		const min = sorted[0] ?? 0;
+		const max = sorted[n - 1] ?? 0;
 		const sum = sorted.reduce((a, b) => a + b, 0);
 		const mean = sum / n;
 
 		// Median
 		const median =
 			n % 2 === 0
-				? (sorted[n / 2 - 1]! + sorted[n / 2]!) / 2
-				: sorted[Math.floor(n / 2)]!;
+				? ((sorted[n / 2 - 1] ?? 0) + (sorted[n / 2] ?? 0)) / 2
+				: (sorted[Math.floor(n / 2)] ?? 0);
 
 		// Standard deviation
-		const squaredDiffs = sorted.map((v) => Math.pow(v - mean, 2));
+		const squaredDiffs = sorted.map((v) => (v - mean) ** 2);
 		const variance = squaredDiffs.reduce((a, b) => a + b, 0) / n;
 		const stdDev = Math.sqrt(variance);
 

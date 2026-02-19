@@ -29,15 +29,27 @@ export function DonutChart({ info, onPlay, class: extraCls }: DonutChartProps) {
 		const learningPercent = (info.learning / info.total) * CIRCUMFERENCE;
 
 		if (duePercent > 0) {
-			segments.push({ length: duePercent, offset, cls: "true-recall-donut-due" });
+			segments.push({
+				length: duePercent,
+				offset,
+				cls: "true-recall-donut-due",
+			});
 			offset += duePercent;
 		}
 		if (newPercent > 0) {
-			segments.push({ length: newPercent, offset, cls: "true-recall-donut-new" });
+			segments.push({
+				length: newPercent,
+				offset,
+				cls: "true-recall-donut-new",
+			});
 			offset += newPercent;
 		}
 		if (learningPercent > 0) {
-			segments.push({ length: learningPercent, offset, cls: "true-recall-donut-learning" });
+			segments.push({
+				length: learningPercent,
+				offset,
+				cls: "true-recall-donut-learning",
+			});
 		}
 	}
 
@@ -57,6 +69,7 @@ export function DonutChart({ info, onPlay, class: extraCls }: DonutChartProps) {
 			}
 		>
 			<svg viewBox="0 0 36 36" class="true-recall-donut-svg">
+				<title>{`Flashcards: ${info.new} new, ${info.learning} learning, ${info.dueToday} due today (${info.total} total)`}</title>
 				<circle
 					cx={18}
 					cy={18}

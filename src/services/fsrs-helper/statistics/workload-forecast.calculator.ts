@@ -58,19 +58,18 @@ export class WorkloadForecastCalculator {
 		endDate.setDate(endDate.getDate() + days);
 
 		// Get all cards with due dates in range
-		const cards = this.cardStore.getCards().filter(
-			(c) =>
-				!c.suspended &&
-				(!c.buriedUntil || new Date(c.buriedUntil) <= today) &&
-				new Date(c.due) >= today &&
-				new Date(c.due) <= endDate
-		);
+		const cards = this.cardStore
+			.getCards()
+			.filter(
+				(c) =>
+					!c.suspended &&
+					(!c.buriedUntil || new Date(c.buriedUntil) <= today) &&
+					new Date(c.due) >= today &&
+					new Date(c.due) <= endDate,
+			);
 
 		// Build forecast by date
-		const forecast = new Map<
-			string,
-			{ review: number; learning: number }
-		>();
+		const forecast = new Map<string, { review: number; learning: number }>();
 
 		// Initialize all dates
 		const currentDate = new Date(today);
@@ -90,7 +89,10 @@ export class WorkloadForecastCalculator {
 				// State.Review = 2
 				if (card.state === State.Review) {
 					existing.review++;
-				} else if (card.state === State.Learning || card.state === State.Relearning) {
+				} else if (
+					card.state === State.Learning ||
+					card.state === State.Relearning
+				) {
 					existing.learning++;
 				}
 			}
@@ -127,8 +129,8 @@ export class WorkloadForecastCalculator {
 
 		// Calculate statistics
 		let total = 0;
-		let peakDay = forecast[0]!;
-		let minDay = forecast[0]!;
+		let peakDay = forecast[0] ?? { date: "", dueCount: 0, breakdown: { review: 0, learning: 0 } };
+		let minDay = forecast[0] ?? { date: "", dueCount: 0, breakdown: { review: 0, learning: 0 } };
 		let daysAboveTarget = 0;
 
 		for (const entry of forecast) {
@@ -165,7 +167,9 @@ export class WorkloadForecastCalculator {
 	/**
 	 * Get cumulative workload (total reviews needed by each date)
 	 */
-	getCumulativeForecast(days: number = 30): { date: string; cumulative: number }[] {
+	getCumulativeForecast(
+		days: number = 30,
+	): { date: string; cumulative: number }[] {
 		const forecast = this.getForecast(days);
 
 		let cumulative = 0;
@@ -181,7 +185,9 @@ export class WorkloadForecastCalculator {
 	/**
 	 * Get workload by day of week
 	 */
-	getWorkloadByDayOfWeek(days: number = 30): { day: number; dayName: string; avgCount: number }[] {
+	getWorkloadByDayOfWeek(
+		days: number = 30,
+	): { day: number; dayName: string; avgCount: number }[] {
 		const forecast = this.getForecast(days);
 
 		// Group by day of week
@@ -195,15 +201,24 @@ export class WorkloadForecastCalculator {
 			byDay.get(dayOfWeek)?.push(entry.dueCount);
 		}
 
-		const dayNames = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
+		const dayNames = [
+			"Sunday",
+			"Monday",
+			"Tuesday",
+			"Wednesday",
+			"Thursday",
+			"Friday",
+			"Saturday",
+		];
 
 		return Array.from(byDay.entries())
 			.map(([day, counts]) => ({
 				day,
-				dayName: dayNames[day]!,
-				avgCount: counts.length > 0
-					? Math.round(counts.reduce((a, b) => a + b, 0) / counts.length)
-					: 0,
+				dayName: dayNames[day] ?? "Unknown",
+				avgCount:
+					counts.length > 0
+						? Math.round(counts.reduce((a, b) => a + b, 0) / counts.length)
+						: 0,
 			}))
 			.sort((a, b) => a.day - b.day);
 	}
@@ -212,6 +227,6 @@ export class WorkloadForecastCalculator {
 	 * Format date as YYYY-MM-DD
 	 */
 	private formatDate(date: Date): string {
-		return date.toISOString().split("T")[0]!;
+		return date.toISOString().split("T")[0] ?? "";
 	}
 }

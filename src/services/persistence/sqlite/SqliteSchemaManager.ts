@@ -4,8 +4,9 @@
  *
  * Uses modular migration functions from the migrations/ folder
  */
-import { getQueryResult, type DatabaseLike } from "./sqlite.types";
+
 import * as migrations from "./migrations";
+import { type DatabaseLike, getQueryResult } from "./sqlite.types";
 
 type MigrationFn = (db: DatabaseLike) => void;
 
@@ -145,9 +146,7 @@ export class SqliteSchemaManager {
 					throw e;
 				}
 			} else {
-				console.error(
-					`[True Recall] No migration found for version v${v}`
-				);
+				console.error(`[True Recall] No migration found for version v${v}`);
 				throw new Error(`Missing migration for schema version ${v}`);
 			}
 
@@ -163,18 +162,15 @@ export class SqliteSchemaManager {
 	private validateDatabaseIntegrity(): boolean {
 		try {
 			const tables = this.db.exec(
-				"SELECT name FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite_%'"
+				"SELECT name FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite_%'",
 			);
 
 			const requiredTables = ["cards", "meta"];
-			const existingTables =
-				tables[0]?.values.map((r) => r[0] as string) || [];
+			const existingTables = tables[0]?.values.map((r) => r[0] as string) || [];
 
 			for (const table of requiredTables) {
 				if (!existingTables.includes(table)) {
-					console.error(
-						`[True Recall] Missing required table: ${table}`
-					);
+					console.error(`[True Recall] Missing required table: ${table}`);
 					return false;
 				}
 			}
@@ -189,11 +185,11 @@ export class SqliteSchemaManager {
 	private getSchemaVersion(): number {
 		try {
 			const result = this.db.exec(
-				"SELECT value FROM meta WHERE key = 'schema_version'"
+				"SELECT value FROM meta WHERE key = 'schema_version'",
 			);
 			const data = getQueryResult(result);
 			if (data && data.values.length > 0) {
-				return parseInt(data.values[0]![0] as string, 10) || 1;
+				return parseInt(data.values[0]?.[0] as string, 10) || 1;
 			}
 		} catch {
 			// meta table might not exist

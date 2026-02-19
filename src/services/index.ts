@@ -11,90 +11,86 @@
  * - ui: UI-specific services
  */
 
-export { FSRSService } from "./core/fsrs.service";
-export { FSRSSimulatorService } from "./core/fsrs-simulator.service";
+export { SqlJsAdapter } from "./ai/langchain-sqlite.adapter";
+export { NLQueryService } from "./ai/nl-query.service";
+export { type AuthResult, AuthService, type AuthState } from "./auth";
+export {
+	NoteStatusCacheService,
+	ReactiveCache,
+	type ReactiveCacheOptions,
+} from "./cache";
 export { DayBoundaryService } from "./core/day-boundary.service";
 export {
-	FrontmatterIndexService,
 	type FieldConfig,
+	FrontmatterIndexService,
 } from "./core/frontmatter-index.service";
-
+export { FSRSService } from "./core/fsrs.service";
+export { FSRSSimulatorService } from "./core/fsrs-simulator.service";
 export {
-	FlashcardManager,
-	type FlashcardInfo,
-	type ScanResult,
-} from "./flashcard/flashcard.service";
-export { CardRepository } from "./flashcard/card-repository.service";
+	type DeviceDatabaseInfo,
+	DeviceDiscoveryService,
+	DeviceIdService,
+} from "./device";
 export { CardQueryService } from "./flashcard/card-query.service";
-export { FrontmatterService } from "./flashcard/frontmatter.service";
-export { FlashcardParserService } from "./flashcard/flashcard-parser.service";
-export { SourceNoteService } from "./flashcard/source-note.service";
+export { CardRepository } from "./flashcard/card-repository.service";
 export {
-	OrphanedCardsService,
-	type OrphanReason,
-	type OrphanedCardInfo,
-	type OrphanedCardGroup,
-} from "./flashcard/orphaned-cards.service";
+	type CollectResult,
+	CollectService,
+} from "./flashcard/collect.service";
 export {
-	DeletionHandlerService,
 	type DeletionHandlerDeps,
+	DeletionHandlerService,
 	type OrphanedCardsContext,
 } from "./flashcard/deletion-handler.service";
 export {
-	CollectService,
-	type CollectResult,
-} from "./flashcard/collect.service";
-
-export { SqliteStoreService } from "./persistence/sqlite";
-export { SessionPersistenceService } from "./persistence/session-persistence.service";
-export { BackupService, type BackupInfo, type PruneResult } from "./persistence/backup.service";
+	type FlashcardInfo,
+	FlashcardManager,
+	type ScanResult,
+} from "./flashcard/flashcard.service";
+export { FlashcardParserService } from "./flashcard/flashcard-parser.service";
+export { FrontmatterService } from "./flashcard/frontmatter.service";
 export {
-	BackgroundBackupManager,
+	type OrphanedCardGroup,
+	type OrphanedCardInfo,
+	OrphanedCardsService,
+	type OrphanReason,
+} from "./flashcard/orphaned-cards.service";
+export { SourceNoteService } from "./flashcard/source-note.service";
+export {
 	type BackgroundBackupConfig,
+	BackgroundBackupManager,
 	type BackupStatus,
 } from "./persistence/background-backup.service";
-
 export {
-	StatsService,
+	type BackupInfo,
+	BackupService,
+	type PruneResult,
+} from "./persistence/backup.service";
+export { SessionPersistenceService } from "./persistence/session-persistence.service";
+export { SqliteStoreService } from "./persistence/sqlite";
+export {
+	type QueueBuildOptions,
+	ReviewService,
+} from "./review/review.service";
+export {
 	type GlobalFlashcardStats,
+	StatsService,
 } from "./stats/stats.service";
 export { StatsCalculatorService } from "./stats/stats-calculator.service";
-
+export { type SyncOptions, type SyncResult, SyncService } from "./sync";
 export {
-	ReviewService,
-	type QueueBuildOptions,
-} from "./review/review.service";
-
-export { NLQueryService } from "./ai/nl-query.service";
-export { SqlJsAdapter } from "./ai/langchain-sqlite.adapter";
-
-export {
-	NotificationService,
-	notify,
 	getNotificationService,
 	NOTIFICATION_DURATION,
+	NotificationService,
+	notify,
 } from "./ui/notification.service";
-
 export {
-	DeviceIdService,
-	DeviceDiscoveryService,
-	type DeviceDatabaseInfo,
-} from "./device";
-
-export { AuthService, type AuthState, type AuthResult } from "./auth";
-
-export { SyncService, type SyncResult, type SyncOptions } from "./sync";
-
-export {
-	UndoService,
-	type UndoEntry,
-	type UndoActionType,
-	type UndoPayload,
-	type CreateUndoPayload,
-	type UpdateUndoPayload,
-	type DeleteUndoPayload,
 	type BatchCreateUndoPayload,
+	type CreateUndoPayload,
+	type DeleteUndoPayload,
+	type UndoActionType,
+	type UndoEntry,
+	type UndoPayload,
+	UndoService,
+	type UpdateUndoPayload,
 } from "./undo";
-
-export { ReactiveCache, type ReactiveCacheOptions } from "./cache";
-export { NoteStatusCacheService } from "./cache";

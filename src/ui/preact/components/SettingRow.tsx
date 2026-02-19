@@ -8,16 +8,20 @@ export interface SettingRowProps {
 	children?: ComponentChildren;
 }
 
-export function SettingRow({ name, description, heading, class: cls, children }: SettingRowProps) {
+export function SettingRow({
+	name,
+	description,
+	heading,
+	class: cls,
+	children,
+}: SettingRowProps) {
 	if (heading) {
 		return (
 			<div class={`setting-item setting-item-heading ${cls ?? ""}`}>
 				<div class="setting-item-info">
 					<div class="setting-item-name">{name}</div>
 					{description && (
-						<div class="setting-item-description">
-							{description}
-						</div>
+						<div class="setting-item-description">{description}</div>
 					)}
 				</div>
 			</div>
@@ -29,14 +33,10 @@ export function SettingRow({ name, description, heading, class: cls, children }:
 			<div class="setting-item-info">
 				<div class="setting-item-name">{name}</div>
 				{description && (
-					<div class="setting-item-description">
-						{description}
-					</div>
+					<div class="setting-item-description">{description}</div>
 				)}
 			</div>
-			<div class="setting-item-control">
-				{children}
-			</div>
+			<div class="setting-item-control">{children}</div>
 		</div>
 	);
 }

@@ -17,7 +17,8 @@ export function CardCountDisplay({
 	size = "smaller",
 	bold = true,
 }: CardCountDisplayProps) {
-	const sizeClass = size === "small" ? "ep:text-ui-small" : "ep:text-ui-smaller";
+	const sizeClass =
+		size === "small" ? "ep:text-ui-small" : "ep:text-ui-smaller";
 	const fontClass = bold ? "ep:font-medium" : "";
 
 	return (

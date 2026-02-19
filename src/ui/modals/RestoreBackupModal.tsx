@@ -1,8 +1,11 @@
+import type { App } from "obsidian";
 import { render } from "preact";
-import { useState, useCallback } from "preact/hooks";
-import { App } from "obsidian";
+import { useCallback, useState } from "preact/hooks";
+import type {
+	BackupInfo,
+	BackupService,
+} from "../../services/persistence/backup.service";
 import { BasePromiseModal, type CancellableResult } from "./BasePromiseModal";
-import type { BackupInfo, BackupService } from "../../services/persistence/backup.service";
 
 export interface RestoreBackupResult extends CancellableResult {
 	restoredPath?: string;
@@ -31,13 +34,18 @@ function BackupItem({
 		>
 			<div class="ep:flex-1 ep:overflow-hidden">
 				<div class="ep:font-medium">{backup.formattedDate}</div>
-				<div class="ep:text-ui-smaller ep:text-obs-muted">{backup.filename}</div>
+				<div class="ep:text-ui-smaller ep:text-obs-muted">
+					{backup.filename}
+				</div>
 			</div>
 			<div class="ep:flex ep:items-center ep:gap-3">
 				<span class="ep:text-obs-muted">{backup.formattedSize}</span>
 				<button
 					class="ep:text-ui-smaller"
-					onClick={(e) => { e.stopPropagation(); onDelete(); }}
+					onClick={(e) => {
+						e.stopPropagation();
+						onDelete();
+					}}
 				>
 					Delete
 				</button>
@@ -62,13 +70,16 @@ function RestoreBackupBody({
 	const [backups, setBackups] = useState(initialBackups);
 	const [selectedBackup, setSelectedBackup] = useState<BackupInfo | null>(null);
 
-	const handleDelete = useCallback(async (backup: BackupInfo) => {
-		const success = await onDeleteBackup(backup);
-		if (success) {
-			setBackups(prev => prev.filter(b => b.path !== backup.path));
-			setSelectedBackup(prev => prev === backup ? null : prev);
-		}
-	}, [onDeleteBackup]);
+	const handleDelete = useCallback(
+		async (backup: BackupInfo) => {
+			const success = await onDeleteBackup(backup);
+			if (success) {
+				setBackups((prev) => prev.filter((b) => b.path !== backup.path));
+				setSelectedBackup((prev) => (prev === backup ? null : prev));
+			}
+		},
+		[onDeleteBackup],
+	);
 
 	const handleRestore = useCallback(async () => {
 		if (!selectedBackup) return;
@@ -81,14 +92,17 @@ function RestoreBackupBody({
 	return (
 		<>
 			<div class="ep:bg-obs-modifier-error ep:p-3 ep:rounded-md ep:mb-4 ep:text-obs-on-accent">
-				<p>Restoring a backup will replace your current database. A safety backup will be created automatically before restoration.</p>
+				<p>
+					Restoring a backup will replace your current database. A safety backup
+					will be created automatically before restoration.
+				</p>
 			</div>
 
 			<div class="ep:max-h-[300px] ep:overflow-y-auto ep:mb-4">
 				{backups.length === 0 ? (
 					<p class="ep:text-obs-muted ep:p-3">No backups available.</p>
 				) : (
-					backups.map(backup => (
+					backups.map((backup) => (
 						<BackupItem
 							key={backup.path}
 							backup={backup}
@@ -167,8 +181,8 @@ export class RestoreBackupModal extends BasePromiseModal<RestoreBackupResult> {
 		// eslint-disable-next-line no-alert
 		const confirmed = confirm(
 			`Are you sure you want to restore the backup from ${backup.formattedDate}?\n\n` +
-			"Your current database will be replaced. A safety backup will be created first.\n\n" +
-			"You will need to reload Obsidian after restoration."
+				"Your current database will be replaced. A safety backup will be created first.\n\n" +
+				"You will need to reload Obsidian after restoration.",
 		);
 		if (!confirmed) return false;
 		return this.backupService.restoreFromBackup(backup.path);

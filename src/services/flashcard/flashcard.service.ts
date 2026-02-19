@@ -3,21 +3,24 @@
  * CardRepository (CRUD), CardQueryService (reads), FrontmatterService,
  * SourceNoteService, FlashcardParserService
  */
-import { App, TFile, WorkspaceLeaf } from "obsidian";
+import { type App, TFile, type WorkspaceLeaf } from "obsidian";
 import type {
-	TrueRecallSettings,
-	FSRSCardData,
-	FSRSFlashcardItem,
 	CardReviewLogEntry,
 	FlashcardItem,
+	FSRSCardData,
+	FSRSFlashcardItem,
+	TrueRecallSettings,
 } from "../../types";
-import type { SqliteStoreService } from "../persistence/sqlite/SqliteStoreService";
-import { FrontmatterService } from "./frontmatter.service";
-import { FlashcardParserService } from "./flashcard-parser.service";
-import { SourceNoteService } from "./source-note.service";
-import { CardRepository, type CreateBatchResult } from "./card-repository.service";
-import { CardQueryService } from "./card-query.service";
 import type { FrontmatterIndexService } from "../core/frontmatter-index.service";
+import type { SqliteStoreService } from "../persistence/sqlite/SqliteStoreService";
+import { CardQueryService } from "./card-query.service";
+import {
+	CardRepository,
+	type CreateBatchResult,
+} from "./card-repository.service";
+import { FlashcardParserService } from "./flashcard-parser.service";
+import { FrontmatterService } from "./frontmatter.service";
+import { SourceNoteService } from "./source-note.service";
 
 export interface ScanResult {
 	totalCards: number;
@@ -37,7 +40,6 @@ export interface FlashcardInfo {
 
 export class FlashcardManager {
 	private app: App;
-	private settings: TrueRecallSettings;
 	private store: SqliteStoreService | null = null;
 	private frontmatterService: FrontmatterService;
 	private parserService: FlashcardParserService;
@@ -47,7 +49,11 @@ export class FlashcardManager {
 	private cardRepository: CardRepository | null = null;
 	private cardQueryService: CardQueryService | null = null;
 
-	constructor(app: App, settings: TrueRecallSettings, frontmatterIndex?: FrontmatterIndexService) {
+	constructor(
+		app: App,
+		settings: TrueRecallSettings,
+		frontmatterIndex?: FrontmatterIndexService,
+	) {
 		this.app = app;
 		this.settings = settings;
 		this.frontmatterService = new FrontmatterService(app);
@@ -62,7 +68,7 @@ export class FlashcardManager {
 	}
 
 	hasStore(): boolean {
-		return this.store !== null && this.store.isReady();
+		return this.store?.isReady();
 	}
 
 	/** Returns true if card was saved, false if skipped (already exists) */
@@ -104,7 +110,8 @@ export class FlashcardManager {
 	}
 
 	async getFlashcardInfo(sourceFile: TFile): Promise<FlashcardInfo> {
-		const sourceUid = await this.frontmatterService.getSourceNoteUid(sourceFile);
+		const sourceUid =
+			await this.frontmatterService.getSourceNoteUid(sourceFile);
 
 		if (!sourceUid) {
 			return this.createEmptyFlashcardInfo(sourceFile);
@@ -132,7 +139,9 @@ export class FlashcardManager {
 
 	private getLatestCardTimestamp(cards: FSRSFlashcardItem[]): number | null {
 		if (cards.length === 0) return null;
-		const timestamps = cards.map(c => c.fsrs.createdAt).filter((t): t is number => t !== undefined);
+		const timestamps = cards
+			.map((c) => c.fsrs.createdAt)
+			.filter((t): t is number => t !== undefined);
 		if (timestamps.length === 0) return null;
 		return Math.max(...timestamps);
 	}
@@ -152,7 +161,10 @@ export class FlashcardManager {
 		try {
 			return await this.app.vault.read(sourceFile);
 		} catch (error) {
-			console.error(`[FlashcardManager] Failed to read file ${sourceFile.path}:`, error);
+			console.error(
+				`[FlashcardManager] Failed to read file ${sourceFile.path}:`,
+				error,
+			);
 			return null;
 		}
 	}
@@ -167,7 +179,7 @@ export class FlashcardManager {
 			clozeTemplate?: string;
 			clozeIndex?: number;
 			reverseOfBatchId?: string;
-		}>
+		}>,
 	): Promise<CreateBatchResult> {
 		if (!this.cardRepository) {
 			throw new Error("Card store not initialized");
@@ -180,13 +192,17 @@ export class FlashcardManager {
 			await this.frontmatterService.setSourceNoteUid(sourceFile, sourceUid);
 		}
 
-		return this.cardRepository.createBatch(flashcards, sourceUid, sourceFile.basename);
+		return this.cardRepository.createBatch(
+			flashcards,
+			sourceUid,
+			sourceFile.basename,
+		);
 	}
 
 	async addSingleFlashcard(
 		question: string,
 		answer: string,
-		sourceUid?: string
+		sourceUid?: string,
 	): Promise<FSRSFlashcardItem> {
 		return this.addSingleFlashcardToSql(question, answer, sourceUid);
 	}
@@ -194,7 +210,7 @@ export class FlashcardManager {
 	async addSingleFlashcardToSql(
 		question: string,
 		answer: string,
-		sourceUid?: string
+		sourceUid?: string,
 	): Promise<FSRSFlashcardItem> {
 		if (!this.cardRepository) {
 			throw new Error("Card store not initialized");
@@ -239,7 +255,7 @@ export class FlashcardManager {
 	updateCardFSRS(
 		cardId: string,
 		newFSRSData: FSRSCardData,
-		reviewLogEntry?: CardReviewLogEntry
+		reviewLogEntry?: CardReviewLogEntry,
 	): void {
 		if (!this.cardRepository) {
 			throw new Error("Store not initialized");
@@ -247,7 +263,11 @@ export class FlashcardManager {
 		this.cardRepository.updateFSRS(cardId, newFSRSData, reviewLogEntry);
 	}
 
-	updateCardContent(cardId: string, newQuestion: string, newAnswer: string): void {
+	updateCardContent(
+		cardId: string,
+		newQuestion: string,
+		newAnswer: string,
+	): void {
 		if (!this.cardRepository) {
 			throw new Error("Store not initialized");
 		}
@@ -258,12 +278,17 @@ export class FlashcardManager {
 		sourceUid: string,
 		oldTemplate: string,
 		newTemplate: string,
-		sourceNoteName?: string
+		sourceNoteName?: string,
 	): void {
 		if (!this.cardRepository) {
 			throw new Error("Store not initialized");
 		}
-		this.cardRepository.updateClozeTemplate(sourceUid, oldTemplate, newTemplate, sourceNoteName);
+		this.cardRepository.updateClozeTemplate(
+			sourceUid,
+			oldTemplate,
+			newTemplate,
+			sourceNoteName,
+		);
 	}
 
 	getFlashcardsBySourceUid(sourceUid: string): FSRSFlashcardItem[] {
@@ -280,7 +305,10 @@ export class FlashcardManager {
 		return this.cardQueryService.getOrphaned();
 	}
 
-	async assignCardToSourceNote(cardId: string, targetNotePath: string): Promise<boolean> {
+	async assignCardToSourceNote(
+		cardId: string,
+		targetNotePath: string,
+	): Promise<boolean> {
 		if (!this.cardRepository) {
 			throw new Error("Store not initialized");
 		}
@@ -297,17 +325,24 @@ export class FlashcardManager {
 		}
 
 		// Get or create source UID for target note
-		let targetSourceUid = await this.frontmatterService.getSourceNoteUid(targetNote);
+		let targetSourceUid =
+			await this.frontmatterService.getSourceNoteUid(targetNote);
 		if (!targetSourceUid) {
 			targetSourceUid = this.frontmatterService.generateUid();
-			await this.frontmatterService.setSourceNoteUid(targetNote, targetSourceUid);
+			await this.frontmatterService.setSourceNoteUid(
+				targetNote,
+				targetSourceUid,
+			);
 		}
 
 		// Update card's source UID (CardRepository calls notifyCardChange)
 		return this.cardRepository.updateSourceUid(cardId, targetSourceUid);
 	}
 
-	async assignCardsToSourceNote(cardIds: string[], targetNotePath: string): Promise<number> {
+	async assignCardsToSourceNote(
+		cardIds: string[],
+		targetNotePath: string,
+	): Promise<number> {
 		let successCount = 0;
 		for (const cardId of cardIds) {
 			const success = await this.assignCardToSourceNote(cardId, targetNotePath);
@@ -318,10 +353,7 @@ export class FlashcardManager {
 		return successCount;
 	}
 
-	async moveCard(
-		cardId: string,
-		targetNotePath: string
-	): Promise<boolean> {
+	async moveCard(cardId: string, targetNotePath: string): Promise<boolean> {
 		return this.assignCardToSourceNote(cardId, targetNotePath);
 	}
 
@@ -340,9 +372,5 @@ export class FlashcardManager {
 			}
 		}
 		return this.app.workspace.getLeaf("tab");
-	}
-
-	private generateCardId(): string {
-		return crypto.randomUUID();
 	}
 }
