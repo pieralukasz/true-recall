@@ -282,6 +282,7 @@ function NLQueryPanel({
 					onKeyDown={handleKeyDown}
 				/>
 				<button
+					type="button"
 					class="mod-cta ep:py-2 ep:px-4 ep:text-ui-small ep:rounded-md ep:cursor-pointer ep:transition-opacity ep:disabled:opacity-50 ep:disabled:cursor-not-allowed ep:self-stretch"
 					disabled={!isReady || isLoading}
 					onClick={() => void submitQuery(query)}
@@ -297,6 +298,7 @@ function NLQueryPanel({
 				</span>
 				{EXAMPLE_QUERIES.map((ex) => (
 					<button
+						type="button"
 						key={ex.text}
 						class="ep:py-1 ep:px-3 ep:text-ui-smaller ep:border ep:border-obs-border ep:rounded-xl ep:bg-obs-primary ep:text-obs-muted ep:cursor-pointer ep:transition-all ep:hover:border-obs-interactive ep:hover:text-obs-normal"
 						onClick={() => {
@@ -510,6 +512,7 @@ function TimeRangeSelector({
 				const isActive = value === currentRange;
 				return (
 					<button
+						type="button"
 						key={value}
 						class={[
 							"ep:py-2 ep:px-4 ep:rounded-lg ep:text-ui-small ep:font-medium ep:transition-all ep:duration-200 ep:cursor-pointer",
@@ -820,9 +823,18 @@ function ReviewsChart({
 				<div
 					key={key}
 					class="ep:flex ep:items-center ep:gap-1.5 ep:cursor-pointer ep:select-none"
+					role="button"
+					tabIndex={0}
 					onClick={() => toggleVisibility(key)}
+					onKeyDown={(e) => {
+						if (e.key === "Enter" || e.key === " ") {
+							e.preventDefault();
+							toggleVisibility(key);
+						}
+					}}
 				>
 					<input
+						id={`reviews-toggle-${key}`}
 						type="checkbox"
 						class="ep:cursor-pointer ep-dynamic-accent"
 						checked={visibility[key]}
@@ -830,6 +842,7 @@ function ReviewsChart({
 						onChange={() => toggleVisibility(key)}
 					/>
 					<label
+						htmlFor={`reviews-toggle-${key}`}
 						class="ep:text-ui-small ep:cursor-pointer ep-dynamic-color"
 						style={
 							{
@@ -1142,8 +1155,19 @@ function CardCountsChart({
 							<div
 								key={item.category}
 								class="ep:flex ep:items-center ep:gap-3 ep:py-2 ep:px-3 ep:rounded-md ep:transition-all ep:cursor-pointer ep:hover:bg-obs-primary ep:hover:-translate-x-0.5"
+								role="button"
+								tabIndex={0}
 								onClick={() => {
 									if (item.value > 0) {
+										const cards = statsCalculator.getCardsByCategory(
+											item.category,
+										);
+										onCategoryClick(item.category, item.label, cards);
+									}
+								}}
+								onKeyDown={(e) => {
+									if ((e.key === "Enter" || e.key === " ") && item.value > 0) {
+										e.preventDefault();
 										const cards = statsCalculator.getCardsByCategory(
 											item.category,
 										);
@@ -1228,7 +1252,7 @@ function CalendarHeatmap({
 			for (let day = 0; day < 7; day++) {
 				const cellDate = new Date(startDate);
 				cellDate.setDate(cellDate.getDate() + week * 7 + day);
-				const dateKey = cellDate.toISOString().split("T")[0]!;
+				const dateKey = cellDate.toISOString().split("T")[0] ?? "";
 				const stats = allStats[dateKey];
 				days.push({
 					dateKey,
@@ -1260,10 +1284,21 @@ function CalendarHeatmap({
 									getHeatmapLevelClasses(cell.count),
 									cell.isFuture ? "ep:opacity-30" : "",
 								].join(" ")}
+								role="button"
+								tabIndex={0}
 								title={`${cell.dateKey}: ${cell.count} reviews`}
 								aria-label={`${cell.dateKey}: ${cell.count} reviews`}
 								onClick={() => {
 									if (cell.count > 0) {
+										const cards = statsCalculator.getCardsDueOnDate(
+											cell.dateKey,
+										);
+										onCardPreview(cell.dateKey, cards);
+									}
+								}}
+								onKeyDown={(e) => {
+									if ((e.key === "Enter" || e.key === " ") && cell.count > 0) {
+										e.preventDefault();
 										const cards = statsCalculator.getCardsDueOnDate(
 											cell.dateKey,
 										);

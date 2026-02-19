@@ -26,6 +26,7 @@ interface MediaPickerBodyProps {
 function PasteZoneIcon() {
 	return (
 		<svg
+			aria-hidden="true"
 			xmlns="http://www.w3.org/2000/svg"
 			width="32"
 			height="32"
@@ -45,6 +46,7 @@ function PasteZoneIcon() {
 function VideoIcon() {
 	return (
 		<svg
+			aria-hidden="true"
 			xmlns="http://www.w3.org/2000/svg"
 			width="32"
 			height="32"
@@ -218,6 +220,13 @@ function MediaPickerBody({
 			{/* Paste zone */}
 			<div
 				class={`ep:flex ep:flex-col ep:items-center ep:justify-center ep:p-6 ep:mb-4 ep:border-2 ep:border-dashed ep:rounded-lg ep:cursor-pointer ep:transition-all ep:hover:border-obs-interactive ${dragActive ? "true-recall-paste-zone-active" : "ep:border-obs-border"}`}
+				role="button"
+				tabIndex={0}
+				onKeyDown={(e: KeyboardEvent) => {
+					if (e.key === "Enter" || e.key === " ") {
+						e.preventDefault();
+					}
+				}}
 				onDragOver={(e) => {
 					e.preventDefault();
 					setDragActive(true);
@@ -228,8 +237,8 @@ function MediaPickerBody({
 					setDragActive(false);
 					const files = e.dataTransfer?.files;
 					if (files && files.length > 0) {
-						const file = files[0]!;
-						if (file.type.startsWith("image/")) {
+						const file = files[0];
+						if (file?.type.startsWith("image/")) {
 							void handleDroppedFile(file);
 						} else {
 							notify().warning("Please drop an image file");
@@ -271,7 +280,16 @@ function MediaPickerBody({
 									key={file.path}
 									class={`media-item ep:relative ep:aspect-square ep:rounded-md ep:overflow-hidden ep:cursor-pointer ep:border-2 ep:transition-all ep:hover:border-obs-interactive ep:hover:scale-[1.02] ${isVideo ? "ep:flex ep:flex-col" : ""} ${isSelected ? "ep:border-obs-interactive ep:ring-2 ep:ring-obs-interactive/30" : "ep:border-transparent"}`}
 									title={file.name}
+									role="option"
+									tabIndex={0}
+									aria-selected={isSelected}
 									onClick={() => setSelectedFile(file)}
+									onKeyDown={(e: KeyboardEvent) => {
+										if (e.key === "Enter" || e.key === " ") {
+											e.preventDefault();
+											setSelectedFile(file);
+										}
+									}}
 								>
 									{isVideo ? (
 										<>
@@ -303,10 +321,11 @@ function MediaPickerBody({
 
 			{/* Size control */}
 			<div class="ep:flex ep:items-center ep:gap-3 ep:p-3 ep:bg-obs-secondary ep:rounded-md">
-				<label class="ep:text-ui-small ep:font-medium ep:text-obs-normal">
+				<label htmlFor="media-width" class="ep:text-ui-small ep:font-medium ep:text-obs-normal">
 					Width:
 				</label>
 				<input
+					id="media-width"
 					class="ep:flex-1 ep:h-1 ep:accent-obs-interactive"
 					type="range"
 					min="0"
@@ -342,12 +361,14 @@ function MediaPickerBody({
 			{/* Buttons */}
 			<div class="ep:flex ep:justify-end ep:gap-2 ep:pt-2 ep:border-t ep:border-obs-border">
 				<button
+					type="button"
 					class="ep:py-2.5 ep:px-5 ep:rounded-md ep:text-ui-small ep:font-medium ep:cursor-pointer ep:transition-all ep:bg-obs-secondary ep:text-obs-normal ep:border ep:border-obs-border ep:hover:bg-obs-modifier-hover"
 					onClick={onClose}
 				>
 					Cancel
 				</button>
 				<button
+					type="button"
 					class="mod-cta ep:py-2.5 ep:px-5 ep:rounded-md ep:text-ui-small ep:font-medium ep:cursor-pointer ep:transition-all"
 					disabled={!selectedFile}
 					onClick={handleInsert}

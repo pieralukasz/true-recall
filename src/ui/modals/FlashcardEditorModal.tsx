@@ -324,7 +324,15 @@ function EditorField({
 			) : (
 				<div
 					class="ep:p-4 ep:min-h-20 ep:cursor-text ep:rounded-lg ep:border ep:border-dashed ep:border-obs-border ep:text-obs-muted ep:text-ui-small ep:text-center ep:hover:border-obs-interactive ep:transition-colors ep:flex ep:items-center ep:justify-center"
+					role="button"
+					tabIndex={0}
 					onClick={onStartEdit}
+					onKeyDown={(e: KeyboardEvent) => {
+						if (e.key === "Enter" || e.key === " ") {
+							e.preventDefault();
+							onStartEdit();
+						}
+					}}
 				>
 					{field === "question"
 						? "Click to add question..."
@@ -570,7 +578,7 @@ function FlashcardEditorBody({
 	);
 
 	return (
-		<div onKeyDown={handleContainerKeyDown}>
+		<div role="group" onKeyDown={handleContainerKeyDown}>
 			{/* AI Assist */}
 			<AiAssistSection
 				isExpanded={isAiExpanded}
@@ -628,9 +636,17 @@ function FlashcardEditorBody({
 						<span>Source:</span>
 						<span
 							class={`ep:text-obs-muted ${mode === "edit" ? "ep:cursor-pointer ep:transition-all ep:hover:text-obs-normal ep:hover:underline" : ""}`}
+							role={mode === "edit" ? "button" : undefined}
+							tabIndex={mode === "edit" ? 0 : undefined}
 							onClick={() => {
 								if (mode === "edit")
 									notify().info("Source editing is not available");
+							}}
+							onKeyDown={(e: KeyboardEvent) => {
+								if ((e.key === "Enter" || e.key === " ") && mode === "edit") {
+									e.preventDefault();
+									notify().info("Source editing is not available");
+								}
 							}}
 						>
 							{displaySourceName}
@@ -641,10 +657,11 @@ function FlashcardEditorBody({
 
 			{/* Buttons */}
 			<div class="ep:flex ep:justify-end ep:gap-3 ep:mt-5 ep:pt-4 ep:border-t ep:border-obs-border">
-				<button class={SECONDARY_BUTTON_CLASSES} onClick={onClose}>
+				<button type="button" class={SECONDARY_BUTTON_CLASSES} onClick={onClose}>
 					Cancel
 				</button>
 				<button
+					type="button"
 					class="ep:py-3 ep:px-5 ep:bg-obs-interactive ep:text-obs-on-accent ep:border-none ep:rounded-md ep:cursor-pointer ep:font-medium ep:transition-colors ep:hover:bg-obs-interactive-hover ep:disabled:opacity-50 ep:disabled:cursor-not-allowed"
 					disabled={!isFormValid}
 					onClick={handleSubmit}
@@ -692,7 +709,7 @@ export class FlashcardEditorModal extends BaseModal {
 			<FlashcardEditorBody
 				app={this.app}
 				options={this.options}
-				imageService={this.imageService!}
+				imageService={this.imageService as ImageService}
 				onSubmit={(result) => {
 					this.hasSubmitted = true;
 					if (this.resolvePromise) {

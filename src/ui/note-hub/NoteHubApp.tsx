@@ -1042,7 +1042,15 @@ function UnassignedSection({
 		<div class="ep:flex ep:flex-col">
 			<div
 				class="ep:flex ep:items-center ep:gap-3 ep:py-3 ep:px-4 ep:cursor-pointer ep:hover:bg-obs-modifier-hover ep:transition-colors ep:border-b ep:border-obs-modifier-border"
+				role="button"
+				tabIndex={0}
 				onClick={handleHeaderClick}
+				onKeyDown={(e) => {
+					if (e.key === "Enter" || e.key === " ") {
+						e.preventDefault();
+						handleHeaderClick(e as unknown as MouseEvent);
+					}
+				}}
 			>
 				<div class="ep:shrink-0 ep:flex ep:items-center ep:text-obs-muted [&_svg]:ep:w-4 [&_svg]:ep:h-4">
 					<span ref={chevronRef} />
@@ -1208,9 +1216,18 @@ function NoteHubNoteRow({
 
 			<div
 				class="ep:flex-1 ep:min-w-0 ep:truncate ep:text-ui-small ep:font-medium ep:text-obs-normal ep:cursor-pointer ep:hover:text-obs-link ep:hover:underline"
+				role="button"
+				tabIndex={0}
 				onClick={(e) => {
 					e.stopPropagation();
 					onOpenNote(note.path);
+				}}
+				onKeyDown={(e) => {
+					if (e.key === "Enter" || e.key === " ") {
+						e.preventDefault();
+						e.stopPropagation();
+						onOpenNote(note.path);
+					}
 				}}
 			>
 				{note.name}

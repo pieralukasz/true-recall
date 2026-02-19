@@ -58,7 +58,7 @@ export function SessionApp({ logic, onSelectAndClose }: SessionAppProps) {
 
 	const handleCustomStudyAction = useCallback(
 		(action: "failed" | "difficult" | "study-ahead" | "most-forgotten") => {
-			let result;
+			let result: SessionResult;
 			switch (action) {
 				case "failed":
 					result = SessionResultFactory.createFailedCardsResult();
@@ -112,7 +112,9 @@ export function SessionApp({ logic, onSelectAndClose }: SessionAppProps) {
 			notify().success(`Preset "${result.presetName}" saved`);
 		}
 
-		onSelectAndClose(result.sessionResult!);
+		if (result.sessionResult) {
+			onSelectAndClose(result.sessionResult);
+		}
 	}, [plugin, onSelectAndClose]);
 
 	const handlePresetAction = useCallback(
@@ -183,7 +185,7 @@ export function SessionApp({ logic, onSelectAndClose }: SessionAppProps) {
 			if (success) movedCount++;
 		}
 		notify().cardsMoved(movedCount, result.targetNotePath);
-		session.clearSelection();
+		session?.clearSelection();
 	}, [plugin, selectedNotes, allCards, session]);
 
 	const handleAddToProject = useCallback(async () => {
@@ -215,19 +217,19 @@ export function SessionApp({ logic, onSelectAndClose }: SessionAppProps) {
 			updatedCount++;
 		}
 		notify().success(`Added ${updatedCount} note(s) to project(s)`);
-		session.clearSelection();
+		session?.clearSelection();
 	}, [plugin, selectedNotes, session]);
 
 	const handleNoteToggle = useCallback(
 		(noteName: string) => {
-			session.toggleNoteSelection(noteName);
+			session?.toggleNoteSelection(noteName);
 		},
 		[session],
 	);
 
 	const handleSearchChange = useCallback(
 		(query: string) => {
-			session.setSearchQuery(query);
+			session?.setSearchQuery(query);
 		},
 		[session],
 	);
@@ -238,7 +240,7 @@ export function SessionApp({ logic, onSelectAndClose }: SessionAppProps) {
 			const availableNotes = filteredStats
 				.filter((s) => s.newCount > 0 || s.dueCount > 0)
 				.map((s) => s.noteName);
-			session.setAllNotesSelected(availableNotes, select);
+			session?.setAllNotesSelected(availableNotes, select);
 		},
 		[logic, searchQuery, now, session],
 	);
@@ -316,7 +318,7 @@ export function SessionApp({ logic, onSelectAndClose }: SessionAppProps) {
 							onStart={handleStartSession}
 							onMove={() => void handleMoveSelectedNotes()}
 							onAddProject={() => void handleAddToProject()}
-							onClear={() => session.clearSelection()}
+							onClear={() => session?.clearSelection()}
 						/>
 					)}
 				</div>
@@ -438,6 +440,7 @@ function QuickActionBtn({
 	const disabled = !stats;
 	return (
 		<button
+			type="button"
 			class={disabled ? DISABLED_BTN : BASE_BTN}
 			disabled={disabled}
 			onClick={disabled ? undefined : onClick}
@@ -487,6 +490,7 @@ function CustomStudySection({
 					Custom study
 				</div>
 				<button
+					type="button"
 					class="ep:text-ui-smaller ep:text-obs-muted ep:bg-transparent ep:border-none ep:cursor-pointer ep:hover:text-obs-normal ep:px-1"
 					aria-label="Open custom study modal"
 					onClick={onOpenModal}
@@ -550,6 +554,7 @@ function CustomStudyBtn({
 	const disabled = count === 0;
 	return (
 		<button
+			type="button"
 			class={disabled ? disabledCls : cls}
 			disabled={disabled}
 			onClick={disabled ? undefined : onClick}
@@ -599,9 +604,17 @@ function SavedPresets({
 						<div
 							key={preset.id}
 							class="ep:flex ep:items-center ep:gap-2 ep:px-3 ep:py-2 ep:bg-obs-secondary ep:border ep:border-obs-border ep:rounded-md ep:cursor-pointer ep:transition-colors ep:hover:bg-obs-modifier-hover ep:hover:border-obs-interactive ep:group"
+							role="button"
+							tabIndex={0}
 							onClick={(e) => {
 								if ((e.target as HTMLElement).tagName !== "BUTTON")
 									onAction(preset);
+							}}
+							onKeyDown={(e) => {
+								if (e.key === "Enter" || e.key === " ") {
+									e.preventDefault();
+									onAction(preset);
+								}
 							}}
 						>
 							<div class="ep:flex-1 ep:min-w-0">
@@ -615,6 +628,7 @@ function SavedPresets({
 								)}
 							</div>
 							<button
+								type="button"
 								class="ep:text-ui-smaller ep:text-obs-faint ep:bg-transparent ep:border-none ep:cursor-pointer ep:hover:text-obs-red ep:opacity-0 ep:group-hover:opacity-100 ep:px-1"
 								aria-label="Delete preset"
 								onClick={(e) => {
@@ -668,7 +682,9 @@ function NoteList({
 					isSelected={selectedNotes.has(stat.noteName)}
 					onToggle={() => onToggle(stat.noteName)}
 					onNavigate={
-						stat.notePath ? () => onNavigate(stat.notePath!) : undefined
+						stat.notePath
+							? () => onNavigate(stat.notePath as string)
+							: undefined
 					}
 				/>
 			))}
@@ -692,10 +708,18 @@ function NoteRow({
 	return (
 		<div
 			class={`ep:flex ep:items-center ep:gap-3 ep:py-2.5 ep:px-3 ep:border-b ep:border-obs-modifier-border ep:cursor-pointer ep:transition-colors ep:hover:bg-obs-modifier-hover ep:last:border-b-0${isSelected ? " ep:bg-obs-interactive/10" : ""}`}
+			role="button"
+			tabIndex={0}
 			onClick={(e) => {
 				const target = e.target as HTMLElement;
 				if (target.tagName !== "INPUT" && target.tagName !== "A" && hasCards)
 					onToggle();
+			}}
+			onKeyDown={(e) => {
+				if ((e.key === "Enter" || e.key === " ") && hasCards) {
+					e.preventDefault();
+					onToggle();
+				}
 			}}
 		>
 			{hasCards ? (
@@ -714,17 +738,16 @@ function NoteRow({
 			<div class="ep:flex-1 ep:min-w-0">
 				<div class="ep:text-ui-small ep:font-medium ep:text-obs-normal ep:leading-snug ep:line-clamp-2">
 					{onNavigate ? (
-						<a
-							href="#"
-							class="ep:text-obs-normal ep:no-underline ep:hover:text-obs-link ep:hover:underline"
+						<button
+							type="button"
+							class="ep:text-obs-normal ep:no-underline ep:hover:text-obs-link ep:hover:underline ep:bg-transparent ep:border-none ep:p-0 ep:cursor-pointer ep:text-left ep:font-inherit"
 							onClick={(e) => {
-								e.preventDefault();
 								e.stopPropagation();
 								onNavigate();
 							}}
 						>
 							{stat.noteName}
-						</a>
+						</button>
 					) : (
 						stat.noteName
 					)}
@@ -769,16 +792,17 @@ function SelectionBar({
 				{count} note{count > 1 ? "s" : ""} selected
 			</span>
 			<div class="ep:flex ep:gap-2">
-				<button class={btnCls} onClick={onMove}>
+				<button type="button" class={btnCls} onClick={onMove}>
 					Move
 				</button>
-				<button class={btnCls} onClick={onAddProject}>
+				<button type="button" class={btnCls} onClick={onAddProject}>
 					Add to project
 				</button>
-				<button class={btnCls} onClick={onClear}>
+				<button type="button" class={btnCls} onClick={onClear}>
 					Clear
 				</button>
 				<button
+					type="button"
 					class="mod-cta ep:py-1.5 ep:px-4 ep:text-ui-small"
 					onClick={onStart}
 				>

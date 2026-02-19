@@ -66,7 +66,9 @@ export class SiblingDisperseService {
 			}
 
 			// Disperse siblings
-			let previousDue = new Date(sortedCards[0]?.due);
+			const firstCard = sortedCards[0];
+			if (!firstCard) continue;
+			let previousDue = new Date(firstCard.due);
 			afterDistribution.set(
 				this.formatDate(previousDue),
 				(afterDistribution.get(this.formatDate(previousDue)) ?? 0) + 1,
@@ -218,8 +220,11 @@ export class SiblingDisperseService {
 
 			let violations = 0;
 			for (let i = 1; i < cards.length; i++) {
-				const prev = new Date(cards[i - 1]?.due);
-				const curr = new Date(cards[i]?.due);
+				const prevCard = cards[i - 1];
+				const currCard = cards[i];
+				if (!prevCard || !currCard) continue;
+				const prev = new Date(prevCard.due);
+				const curr = new Date(currCard.due);
 				if (this.daysBetween(prev, curr) < minInterval) {
 					violations++;
 				}
