@@ -13,7 +13,7 @@ import {
 	type ToolbarButtonAction,
 	insertAtTextareaCursor,
 	toggleTextareaWrap,
-} from "../components/edit-toolbar.utils";
+} from "../editor/edit-toolbar.utils";
 import { SECONDARY_BUTTON_CLASSES } from "../utils/tailwind";
 
 export interface FlashcardEditorResult {

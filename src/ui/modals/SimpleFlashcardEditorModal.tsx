@@ -8,7 +8,7 @@ import type { FlashcardItem } from "../../types";
 import { FLASHCARD_CONFIG } from "../../constants";
 import { SECONDARY_BUTTON_CLASSES } from "../utils/tailwind";
 import { stripBrTags } from "../../utils";
-import { toggleTextareaWrap, insertAtTextareaCursor } from "../components/edit-toolbar.utils";
+import { toggleTextareaWrap, insertAtTextareaCursor } from "../editor/edit-toolbar.utils";
 
 export interface SimpleFlashcardEditorResult {
 	cancelled: boolean;

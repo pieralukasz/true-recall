@@ -11,7 +11,7 @@ import {
 	TOOLBAR_BUTTONS,
 	type ToolbarButton,
 	type ToolbarButtonAction,
-} from "../components/edit-toolbar.utils";
+} from "../editor/edit-toolbar.utils";
 import { UI_CONFIG } from "../../constants";
 import type { ReviewApi, SessionPhase, BadgeCounts, EditModeState } from "../../state/store";
 import type { FSRSFlashcardItem, ReviewSessionStats, SchedulingPreview } from "../../types";

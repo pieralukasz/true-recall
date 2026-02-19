@@ -40,18 +40,12 @@ class LinkStatusWidget extends WidgetType {
 	}
 
 	toDOM(): HTMLElement {
-		const el = createLinkStatusElement({
+		return createLinkStatusElement({
 			info: this.info,
 			onPlay: this.onPlay,
 			small: this.small,
+			class: HEADING_DONUT_CLS[this.headingLevel],
 		});
-		const headingCls = HEADING_DONUT_CLS[this.headingLevel];
-		if (headingCls) {
-			for (const cls of headingCls.split(" ")) {
-				el.classList.add(cls);
-			}
-		}
-		return el;
 	}
 
 	eq(other: LinkStatusWidget): boolean {
