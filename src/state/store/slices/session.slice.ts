@@ -1,5 +1,10 @@
-import type { AppState, AppStoreDeps, SessionSliceState, SessionSliceActions } from "../types";
 import type { FSRSFlashcardItem } from "../../../types";
+import type {
+	AppState,
+	AppStoreDeps,
+	SessionSliceActions,
+	SessionSliceState,
+} from "../types";
 
 type SessionSlice = SessionSliceState & SessionSliceActions;
 
@@ -16,7 +21,7 @@ function createInitialState(): SessionSliceState {
 export function createSessionSlice(
 	set: (fn: (state: AppState) => Partial<AppState>) => void,
 	get: () => AppState,
-	_deps: AppStoreDeps
+	_deps: AppStoreDeps,
 ): SessionSlice {
 	const initial = createInitialState();
 
@@ -27,9 +32,10 @@ export function createSessionSlice(
 			set((s) => {
 				let selectedNotes = s.session.selectedNotes;
 				if (partial.selectedNotes !== undefined) {
-					selectedNotes = partial.selectedNotes instanceof Set
-						? new Set(partial.selectedNotes)
-						: new Set(partial.selectedNotes);
+					selectedNotes =
+						partial.selectedNotes instanceof Set
+							? new Set(partial.selectedNotes)
+							: new Set(partial.selectedNotes);
 				}
 				return {
 					session: {
@@ -47,7 +53,10 @@ export function createSessionSlice(
 			}));
 		},
 
-		initialize: (currentNoteName: string | null, allCards: FSRSFlashcardItem[]) => {
+		initialize: (
+			currentNoteName: string | null,
+			allCards: FSRSFlashcardItem[],
+		) => {
 			set((s) => ({
 				session: {
 					...s.session,

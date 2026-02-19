@@ -5,13 +5,13 @@
  * Uses gradient descent optimization to minimize prediction error.
  */
 
-import { FSRS, State, Rating } from "ts-fsrs";
+import { FSRS, type Rating, type State } from "ts-fsrs";
 import { DEFAULT_FSRS_WEIGHTS } from "../../../constants";
 import type {
 	OptimizationInput,
 	OptimizationOutput,
-	OptimizerOptions,
 	OptimizationReviewEntry,
+	OptimizerOptions,
 } from "./optimizer.types";
 
 /**
@@ -45,7 +45,7 @@ export class ParameterOptimizerService {
 	 */
 	async optimize(
 		input: OptimizationInput,
-		options?: OptimizerOptions
+		options?: OptimizerOptions,
 	): Promise<OptimizationOutput> {
 		const minReviews = input.minReviews ?? MIN_REVIEWS_FOR_OPTIMIZATION;
 
@@ -85,7 +85,7 @@ export class ParameterOptimizerService {
 			// Calculate loss and gradients
 			const { loss, gradients } = this.calculateLossAndGradients(
 				weights,
-				trainingData
+				trainingData,
 			);
 
 			// Report progress
@@ -120,7 +120,7 @@ export class ParameterOptimizerService {
 		if (input.currentWeights) {
 			const currentMetrics = this.calculateMetrics(
 				input.currentWeights,
-				trainingData
+				trainingData,
 			);
 			if (currentMetrics.logLoss > 0) {
 				improvement =
@@ -145,7 +145,7 @@ export class ParameterOptimizerService {
 	 * Prepare training data from review entries
 	 */
 	private prepareTrainingData(
-		reviews: OptimizationReviewEntry[]
+		reviews: OptimizationReviewEntry[],
 	): TrainingDataPoint[] {
 		const dataPoints: TrainingDataPoint[] = [];
 
@@ -190,7 +190,7 @@ export class ParameterOptimizerService {
 	 */
 	private calculateLossAndGradients(
 		weights: number[],
-		data: TrainingDataPoint[]
+		data: TrainingDataPoint[],
 	): { loss: number; gradients: number[] } {
 		// Create FSRS instance with current weights
 		new FSRS({ w: weights });
@@ -203,7 +203,7 @@ export class ParameterOptimizerService {
 		for (const point of data) {
 			// Calculate retrievability (probability of recall)
 			const retrievability = Math.exp(
-				(-Math.LN10 * point.elapsedDays) / Math.max(point.stability, 0.1)
+				(-Math.LN10 * point.elapsedDays) / Math.max(point.stability, 0.1),
 			);
 
 			// Clip retrievability to avoid log(0)
@@ -240,12 +240,12 @@ export class ParameterOptimizerService {
 	/**
 	 * Calculate loss only (no gradients)
 	 */
-	private calculateLoss(weights: number[], data: TrainingDataPoint[]): number {
+	private calculateLoss(_weights: number[], data: TrainingDataPoint[]): number {
 		let totalLoss = 0;
 
 		for (const point of data) {
 			const retrievability = Math.exp(
-				(-Math.LN10 * point.elapsedDays) / Math.max(point.stability, 0.1)
+				(-Math.LN10 * point.elapsedDays) / Math.max(point.stability, 0.1),
 			);
 			const clippedR = Math.max(0.001, Math.min(0.999, retrievability));
 
@@ -263,15 +263,15 @@ export class ParameterOptimizerService {
 	 * Calculate final metrics
 	 */
 	private calculateMetrics(
-		weights: number[],
-		data: TrainingDataPoint[]
+		_weights: number[],
+		data: TrainingDataPoint[],
 	): { rmse: number; logLoss: number } {
 		let totalLoss = 0;
 		let totalSquaredError = 0;
 
 		for (const point of data) {
 			const retrievability = Math.exp(
-				(-Math.LN10 * point.elapsedDays) / Math.max(point.stability, 0.1)
+				(-Math.LN10 * point.elapsedDays) / Math.max(point.stability, 0.1),
 			);
 			const clippedR = Math.max(0.001, Math.min(0.999, retrievability));
 
@@ -284,7 +284,7 @@ export class ParameterOptimizerService {
 
 			// RMSE (prediction error)
 			const actual = point.wasRecalled ? 1 : 0;
-			totalSquaredError += Math.pow(retrievability - actual, 2);
+			totalSquaredError += (retrievability - actual) ** 2;
 		}
 
 		const n = Math.max(data.length, 1);
@@ -333,7 +333,9 @@ export class ParameterOptimizerService {
 	validateWeights(weights: number[]): boolean {
 		if (!Array.isArray(weights)) return false;
 		if (weights.length !== 21) return false;
-		return weights.every((w) => typeof w === "number" && isFinite(w) && w > 0);
+		return weights.every(
+			(w) => typeof w === "number" && Number.isFinite(w) && w > 0,
+		);
 	}
 }
 

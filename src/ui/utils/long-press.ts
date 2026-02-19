@@ -42,7 +42,7 @@ export interface LongPressResult {
 export function setupLongPress(
 	element: HTMLElement,
 	events: EventRegistry,
-	options: LongPressOptions
+	options: LongPressOptions,
 ): LongPressResult {
 	const duration = options.duration ?? LONG_PRESS_DURATION;
 	let longPressTimer: ReturnType<typeof setTimeout> | null = null;

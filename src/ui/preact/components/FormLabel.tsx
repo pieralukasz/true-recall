@@ -9,7 +9,11 @@ export interface FormLabelProps {
 export function FormLabel({ text, htmlFor, class: cls }: FormLabelProps) {
 	const classes = cls ? `${FORM_LABEL_CLASSES} ${cls}` : FORM_LABEL_CLASSES;
 	if (htmlFor) {
-		return <label class={classes} for={htmlFor}>{text}</label>;
+		return (
+			<label class={classes} for={htmlFor}>
+				{text}
+			</label>
+		);
 	}
 	return <div class={classes}>{text}</div>;
 }

@@ -1,7 +1,14 @@
+import type {
+	NoteHubSortBy,
+	NoteHubSortDirection,
+	NoteHubStatusFilter,
+} from "../../../state/store/types";
 import type { ProjectInfo, ProjectNoteInfo } from "../../../types";
-import type { NoteHubStatusFilter, NoteHubSortBy, NoteHubSortDirection } from "../../../state/store/types";
 
-export function filterNotesByStatus(notes: ProjectNoteInfo[], filter: NoteHubStatusFilter): ProjectNoteInfo[] {
+export function filterNotesByStatus(
+	notes: ProjectNoteInfo[],
+	filter: NoteHubStatusFilter,
+): ProjectNoteInfo[] {
 	switch (filter) {
 		case "all":
 			return notes;
@@ -12,11 +19,21 @@ export function filterNotesByStatus(notes: ProjectNoteInfo[], filter: NoteHubSta
 		case "needs-cards":
 			return notes.filter((n) => n.cardCount === 0);
 		case "no-due":
-			return notes.filter((n) => n.cardCount > 0 && n.dueCount === 0 && n.newCount === 0 && n.learningCount === 0);
+			return notes.filter(
+				(n) =>
+					n.cardCount > 0 &&
+					n.dueCount === 0 &&
+					n.newCount === 0 &&
+					n.learningCount === 0,
+			);
 	}
 }
 
-export function sortNotes(notes: ProjectNoteInfo[], sortBy: NoteHubSortBy, direction: NoteHubSortDirection): ProjectNoteInfo[] {
+export function sortNotes(
+	notes: ProjectNoteInfo[],
+	sortBy: NoteHubSortBy,
+	direction: NoteHubSortDirection,
+): ProjectNoteInfo[] {
 	const sorted = [...notes];
 	const multiplier = direction === "asc" ? 1 : -1;
 
@@ -34,13 +51,19 @@ export function sortNotes(notes: ProjectNoteInfo[], sortBy: NoteHubSortBy, direc
 	return sorted;
 }
 
-export function searchNotes(notes: ProjectNoteInfo[], query: string): ProjectNoteInfo[] {
+export function searchNotes(
+	notes: ProjectNoteInfo[],
+	query: string,
+): ProjectNoteInfo[] {
 	if (!query) return notes;
 	const lower = query.toLowerCase();
 	return notes.filter((n) => n.name.toLowerCase().includes(lower));
 }
 
-export function searchProjects(projects: ProjectInfo[], query: string): ProjectInfo[] {
+export function searchProjects(
+	projects: ProjectInfo[],
+	query: string,
+): ProjectInfo[] {
 	if (!query) return projects;
 	const lower = query.toLowerCase();
 
@@ -52,7 +75,9 @@ export function searchProjects(projects: ProjectInfo[], query: string): ProjectI
 			return result;
 		}
 
-		const matchingNotes = project.notes.filter((n) => n.name.toLowerCase().includes(lower));
+		const matchingNotes = project.notes.filter((n) =>
+			n.name.toLowerCase().includes(lower),
+		);
 
 		if (matchingNotes.length > 0) {
 			result.push({ ...project, notes: matchingNotes });

@@ -1,7 +1,11 @@
-import { SettingRow, TextInput, SelectInput, InfoBlock } from "../../preact/components";
-import { useSettings } from "../hooks/useSettings";
-import { usePreset } from "../hooks/useSettings";
-import type { NewCardOrder, ReviewOrder, NewReviewMix } from "../../../types";
+import type { NewCardOrder, NewReviewMix, ReviewOrder } from "../../../types";
+import {
+	InfoBlock,
+	SelectInput,
+	SettingRow,
+	TextInput,
+} from "../../preact/components";
+import { usePreset, useSettings } from "../hooks/useSettings";
 
 interface SchedulingTabProps {
 	selectedPresetId: string;
@@ -17,8 +21,8 @@ export function SchedulingTab({ selectedPresetId }: SchedulingTabProps) {
 
 			<InfoBlock>
 				<p>
-					Learning steps are configured per-preset. Currently editing: "{preset.name}".
-					Change preset in the FSRS tab.
+					Learning steps are configured per-preset. Currently editing: "
+					{preset.name}". Change preset in the FSRS tab.
 				</p>
 			</InfoBlock>
 
@@ -31,9 +35,11 @@ export function SchedulingTab({ selectedPresetId }: SchedulingTabProps) {
 					onChange={(v) => {
 						const steps = v
 							.split(",")
-							.map((s) => parseInt(s.trim()))
-							.filter((n) => !isNaN(n) && n > 0);
-						void updatePreset({ learningSteps: steps.length > 0 ? steps : [1, 10] });
+							.map((s) => parseInt(s.trim(), 10))
+							.filter((n) => !Number.isNaN(n) && n > 0);
+						void updatePreset({
+							learningSteps: steps.length > 0 ? steps : [1, 10],
+						});
 					}}
 					placeholder="1, 10"
 				/>
@@ -48,9 +54,11 @@ export function SchedulingTab({ selectedPresetId }: SchedulingTabProps) {
 					onChange={(v) => {
 						const steps = v
 							.split(",")
-							.map((s) => parseInt(s.trim()))
-							.filter((n) => !isNaN(n) && n > 0);
-						void updatePreset({ relearningSteps: steps.length > 0 ? steps : [10] });
+							.map((s) => parseInt(s.trim(), 10))
+							.filter((n) => !Number.isNaN(n) && n > 0);
+						void updatePreset({
+							relearningSteps: steps.length > 0 ? steps : [10],
+						});
 					}}
 					placeholder="10"
 				/>
@@ -67,8 +75,14 @@ export function SchedulingTab({ selectedPresetId }: SchedulingTabProps) {
 					onChange={(v) => save({ newCardOrder: v as NewCardOrder })}
 					options={[
 						{ value: "random", label: "Random" },
-						{ value: "oldest-first", label: "Oldest first (by position in file)" },
-						{ value: "newest-first", label: "Newest first (by position in file)" },
+						{
+							value: "oldest-first",
+							label: "Oldest first (by position in file)",
+						},
+						{
+							value: "newest-first",
+							label: "Newest first (by position in file)",
+						},
 					]}
 				/>
 			</SettingRow>
@@ -84,7 +98,10 @@ export function SchedulingTab({ selectedPresetId }: SchedulingTabProps) {
 						{ value: "due-date", label: "By due date" },
 						{ value: "random", label: "Random" },
 						{ value: "due-date-random", label: "Due date, then random" },
-						{ value: "by-retrievability", label: "By retrievability (lowest R first)" },
+						{
+							value: "by-retrievability",
+							label: "By retrievability (lowest R first)",
+						},
 					]}
 				/>
 			</SettingRow>

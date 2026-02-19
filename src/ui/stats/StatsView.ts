@@ -1,24 +1,24 @@
-import { ItemView, WorkspaceLeaf } from "obsidian";
 import {
-	Chart,
-	CategoryScale,
-	LinearScale,
-	BarElement,
-	BarController,
 	ArcElement,
+	BarController,
+	BarElement,
+	CategoryScale,
+	Chart,
 	DoughnutController,
-	LineElement,
+	Legend,
+	LinearScale,
 	LineController,
+	LineElement,
 	PointElement,
 	Title,
 	Tooltip,
-	Legend,
 } from "chart.js";
+import { ItemView, type WorkspaceLeaf } from "obsidian";
 import { h } from "preact";
 import { VIEW_TYPE_STATS } from "../../constants";
+import type TrueRecallPlugin from "../../main";
 import { mountPreact } from "../preact";
 import { StatsApp } from "./StatsApp";
-import type TrueRecallPlugin from "../../main";
 
 Chart.register(
 	CategoryScale,

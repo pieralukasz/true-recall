@@ -53,10 +53,7 @@ export class TrueRetentionCalculator {
 		const reviews = this.cardStore.getReviewsForRetention(startDate, endDate);
 
 		// Group by date
-		const byDate = new Map<
-			string,
-			{ success: number; total: number }
-		>();
+		const byDate = new Map<string, { success: number; total: number }>();
 
 		for (const review of reviews) {
 			const dateStr = review.date;
@@ -94,7 +91,7 @@ export class TrueRetentionCalculator {
 
 		const entries = this.calculate(
 			this.formatDate(startDate),
-			this.formatDate(endDate)
+			this.formatDate(endDate),
 		);
 
 		if (entries.length === 0) {
@@ -164,14 +161,17 @@ export class TrueRetentionCalculator {
 	/**
 	 * Get rolling average retention
 	 */
-	getRollingAverage(days: number = 30, window: number = 7): TrueRetentionEntry[] {
+	getRollingAverage(
+		days: number = 30,
+		window: number = 7,
+	): TrueRetentionEntry[] {
 		const endDate = new Date();
 		const startDate = new Date();
 		startDate.setDate(startDate.getDate() - days - window);
 
 		const entries = this.calculate(
 			this.formatDate(startDate),
-			this.formatDate(endDate)
+			this.formatDate(endDate),
 		);
 
 		if (entries.length < window) return entries;
@@ -189,7 +189,7 @@ export class TrueRetentionCalculator {
 			}
 
 			result.push({
-				date: entries[i]!.date,
+				date: entries[i]?.date,
 				retention: totalReviews > 0 ? totalRetention / totalReviews : 0,
 				reviewCount: totalReviews,
 			});
@@ -202,6 +202,6 @@ export class TrueRetentionCalculator {
 	 * Format date as YYYY-MM-DD
 	 */
 	private formatDate(date: Date): string {
-		return date.toISOString().split("T")[0]!;
+		return date.toISOString().split("T")[0] ?? "";
 	}
 }

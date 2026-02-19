@@ -1,13 +1,10 @@
+import type { App } from "obsidian";
 import { render } from "preact";
-import { useState, useRef } from "preact/hooks";
-import { App } from "obsidian";
-import {
-	BasePromiseModal,
-	type CancellableResult,
-} from "./BasePromiseModal";
-import type { BaseModalOptions } from "./BaseModal";
+import { useRef, useState } from "preact/hooks";
 import type { SessionResult } from "../../types/events.types";
 import type { ReviewOrder } from "../../types/settings.types";
+import type { BaseModalOptions } from "./BaseModal";
+import { BasePromiseModal, type CancellableResult } from "./BasePromiseModal";
 
 export interface CustomStudyModalResult extends CancellableResult {
 	sessionResult?: SessionResult;
@@ -61,7 +58,9 @@ function CustomStudyBody({
 	scopeLabel?: string;
 	onResolve: (result: CustomStudyModalResult) => void;
 }) {
-	const [config, setConfig] = useState<CustomStudyConfig>({ ...DEFAULT_CONFIG });
+	const [config, setConfig] = useState<CustomStudyConfig>({
+		...DEFAULT_CONFIG,
+	});
 	const presetInputRef = useRef<HTMLInputElement>(null);
 
 	const sectionCls = "ep:mb-4";
@@ -96,8 +95,7 @@ function CustomStudyBody({
 			lapsesRange: hasLapsesFilter
 				? { min: config.lapsesMin, max: Infinity }
 				: undefined,
-			cardLimit:
-				config.cardLimit > 0 ? config.cardLimit : undefined,
+			cardLimit: config.cardLimit > 0 ? config.cardLimit : undefined,
 			studyAheadDays:
 				config.studyAheadDays > 0 ? config.studyAheadDays : undefined,
 			crammingMode: config.crammingMode || undefined,
@@ -128,14 +126,16 @@ function CustomStudyBody({
 			)}
 
 			<div class={sectionCls}>
-				<label class={labelCls}>Card state</label>
+				<label htmlFor="cs-state" class={labelCls}>Card state</label>
 				<select
+					id="cs-state"
 					class={inputCls}
 					value={config.stateFilter}
 					onChange={(e) =>
 						updateConfig(
 							"stateFilter",
-							(e.target as HTMLSelectElement).value as CustomStudyConfig["stateFilter"],
+							(e.target as HTMLSelectElement)
+								.value as CustomStudyConfig["stateFilter"],
 						)
 					}
 				>
@@ -147,7 +147,7 @@ function CustomStudyBody({
 			</div>
 
 			<div class={sectionCls}>
-				<label class={labelCls}>Difficulty range (1-10)</label>
+				<span class={labelCls}>Difficulty range (1-10)</span>
 				<div class="ep:flex ep:gap-2 ep:items-center">
 					<input
 						type="number"
@@ -194,8 +194,9 @@ function CustomStudyBody({
 			</div>
 
 			<div class={sectionCls}>
-				<label class={labelCls}>Minimum lapses</label>
+				<label htmlFor="cs-lapses" class={labelCls}>Minimum lapses</label>
 				<input
+					id="cs-lapses"
 					type="number"
 					class={inputCls}
 					min="0"
@@ -204,18 +205,16 @@ function CustomStudyBody({
 					onChange={(e) =>
 						updateConfig(
 							"lapsesMin",
-							Math.max(
-								0,
-								Number((e.target as HTMLInputElement).value) || 0,
-							),
+							Math.max(0, Number((e.target as HTMLInputElement).value) || 0),
 						)
 					}
 				/>
 			</div>
 
 			<div class={sectionCls}>
-				<label class={labelCls}>Study ahead (days, 0 = off)</label>
+				<label htmlFor="cs-ahead" class={labelCls}>Study ahead (days, 0 = off)</label>
 				<input
+					id="cs-ahead"
 					type="number"
 					class={inputCls}
 					min="0"
@@ -224,18 +223,16 @@ function CustomStudyBody({
 					onChange={(e) =>
 						updateConfig(
 							"studyAheadDays",
-							Math.max(
-								0,
-								Number((e.target as HTMLInputElement).value) || 0,
-							),
+							Math.max(0, Number((e.target as HTMLInputElement).value) || 0),
 						)
 					}
 				/>
 			</div>
 
 			<div class={sectionCls}>
-				<label class={labelCls}>Sort order</label>
+				<label htmlFor="cs-order" class={labelCls}>Sort order</label>
 				<select
+					id="cs-order"
 					class={inputCls}
 					value={config.reviewOrder}
 					onChange={(e) =>
@@ -254,8 +251,9 @@ function CustomStudyBody({
 			</div>
 
 			<div class={sectionCls}>
-				<label class={labelCls}>Card limit (0 = no limit)</label>
+				<label htmlFor="cs-limit" class={labelCls}>Card limit (0 = no limit)</label>
 				<input
+					id="cs-limit"
 					type="number"
 					class={inputCls}
 					min="0"
@@ -264,10 +262,7 @@ function CustomStudyBody({
 					onChange={(e) =>
 						updateConfig(
 							"cardLimit",
-							Math.max(
-								0,
-								Number((e.target as HTMLInputElement).value) || 0,
-							),
+							Math.max(0, Number((e.target as HTMLInputElement).value) || 0),
 						)
 					}
 				/>
@@ -276,11 +271,18 @@ function CustomStudyBody({
 			<div class={sectionCls}>
 				<div
 					class="ep:flex ep:items-center ep:gap-2 ep:cursor-pointer"
-					onClick={() =>
-						updateConfig("crammingMode", !config.crammingMode)
-					}
+					role="button"
+					tabIndex={0}
+					onClick={() => updateConfig("crammingMode", !config.crammingMode)}
+					onKeyDown={(e: KeyboardEvent) => {
+						if (e.key === "Enter" || e.key === " ") {
+							e.preventDefault();
+							updateConfig("crammingMode", !config.crammingMode);
+						}
+					}}
 				>
 					<input
+						id="cs-cramming"
 						type="checkbox"
 						class="ep:w-4 ep:h-4"
 						checked={config.crammingMode}
@@ -292,15 +294,16 @@ function CustomStudyBody({
 							)
 						}
 					/>
-					<label class="ep:text-ui-small ep:text-obs-normal ep:cursor-pointer">
+					<label htmlFor="cs-cramming" class="ep:text-ui-small ep:text-obs-normal ep:cursor-pointer">
 						Cramming mode (no scheduling changes)
 					</label>
 				</div>
 			</div>
 
 			<div class={sectionCls}>
-				<label class={labelCls}>Save as preset (optional)</label>
+				<label htmlFor="cs-preset" class={labelCls}>Save as preset (optional)</label>
 				<input
+					id="cs-preset"
 					ref={presetInputRef}
 					type="text"
 					class={inputCls}
@@ -310,12 +313,14 @@ function CustomStudyBody({
 
 			<div class="ep:flex ep:justify-end ep:gap-2 ep:pt-2 ep:border-t ep:border-obs-border">
 				<button
+					type="button"
 					class="ep:py-2.5 ep:px-5 ep:rounded-md ep:text-ui-small ep:font-medium ep:cursor-pointer ep:transition-all ep:bg-obs-secondary ep:text-obs-normal ep:border ep:border-obs-border ep:hover:bg-obs-modifier-hover"
 					onClick={() => onResolve({ cancelled: true })}
 				>
 					Cancel
 				</button>
 				<button
+					type="button"
 					class="mod-cta ep:py-2.5 ep:px-5 ep:rounded-md ep:text-ui-small ep:font-medium ep:cursor-pointer ep:transition-all"
 					onClick={handleStart}
 				>
@@ -330,7 +335,11 @@ export class CustomStudyModal extends BasePromiseModal<CustomStudyModalResult> {
 	private studyScope?: CustomStudyModalScope;
 	private unmountBody?: () => void;
 
-	constructor(app: App, options: BaseModalOptions, studyScope?: CustomStudyModalScope) {
+	constructor(
+		app: App,
+		options: BaseModalOptions,
+		studyScope?: CustomStudyModalScope,
+	) {
 		super(app, options);
 		this.studyScope = studyScope;
 	}

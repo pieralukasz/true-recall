@@ -15,7 +15,7 @@ export function filterNotesByQuery(notes: TFile[], query: string): TFile[] {
 		.filter(
 			(note) =>
 				note.basename.toLowerCase().includes(lowerQuery) ||
-				note.path.toLowerCase().includes(lowerQuery)
+				note.path.toLowerCase().includes(lowerQuery),
 		)
 		.sort((a, b) => {
 			const aExact = a.basename.toLowerCase().startsWith(lowerQuery);

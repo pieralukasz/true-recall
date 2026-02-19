@@ -1,14 +1,17 @@
+import { type App, Component, MarkdownRenderer } from "obsidian";
 import { render } from "preact";
-import { useState, useEffect, useRef, useCallback } from "preact/hooks";
-import { App, Component, MarkdownRenderer } from "obsidian";
-import { BaseModal } from "./BaseModal";
+import { useCallback, useEffect, useRef, useState } from "preact/hooks";
+import { FLASHCARD_CONFIG } from "../../constants";
 import { FlashcardParserService, notify } from "../../services";
 import { ImageService } from "../../services/image";
 import type { FlashcardItem } from "../../types";
-import { FLASHCARD_CONFIG } from "../../constants";
-import { SECONDARY_BUTTON_CLASSES } from "../utils/tailwind";
 import { stripBrTags } from "../../utils";
-import { toggleTextareaWrap, insertAtTextareaCursor } from "../editor/edit-toolbar.utils";
+import {
+	insertAtTextareaCursor,
+	toggleTextareaWrap,
+} from "../editor/edit-toolbar.utils";
+import { SECONDARY_BUTTON_CLASSES } from "../utils/tailwind";
+import { BaseModal } from "./BaseModal";
 
 export interface SimpleFlashcardEditorResult {
 	cancelled: boolean;
@@ -41,7 +44,14 @@ const SHORTCUTS = [
 	{ key: "Ctrl+Enter", action: "save" },
 ];
 
-function SimpleEditorBody({ app, options, parser, imageService, onSubmit, onClose }: SimpleEditorBodyProps) {
+function SimpleEditorBody({
+	app,
+	options,
+	parser,
+	imageService,
+	onSubmit,
+	onClose,
+}: SimpleEditorBodyProps) {
 	const [isPreviewMode, setIsPreviewMode] = useState(false);
 	const [content, setContent] = useState(options.prefillContent ?? "");
 	const textareaRef = useRef<HTMLTextAreaElement>(null);
@@ -79,7 +89,7 @@ function SimpleEditorBody({ app, options, parser, imageService, onSubmit, onClos
 			stripBrTags(contentRef.current),
 			el,
 			options.currentFilePath,
-			previewComponentRef.current
+			previewComponentRef.current,
 		);
 
 		return () => {
@@ -126,77 +136,83 @@ function SimpleEditorBody({ app, options, parser, imageService, onSubmit, onClos
 		ta.focus();
 	}, []);
 
-	const handleKeyDown = useCallback((e: KeyboardEvent) => {
-		const isMod = e.ctrlKey || e.metaKey;
-		const ta = textareaRef.current;
+	const handleKeyDown = useCallback(
+		(e: KeyboardEvent) => {
+			const isMod = e.ctrlKey || e.metaKey;
+			const ta = textareaRef.current;
 
-		if (isMod && (e.key === "3" || e.key === "#")) {
-			e.preventDefault();
-			insertFlashcardTag();
-			return;
-		}
-		if (isMod && e.key === "b") {
-			e.preventDefault();
-			if (ta) toggleTextareaWrap(ta, "**", "**");
-			return;
-		}
-		if (isMod && e.key === "i") {
-			e.preventDefault();
-			if (ta) toggleTextareaWrap(ta, "*", "*");
-			return;
-		}
-		if (isMod && e.key === "k") {
-			e.preventDefault();
-			if (ta) toggleTextareaWrap(ta, "[[", "]]");
-			return;
-		}
-		if (isMod && e.shiftKey && e.key.toLowerCase() === "c") {
-			e.preventDefault();
-			if (ta) toggleTextareaWrap(ta, "```\n", "\n```");
-			return;
-		}
-		if (isMod && e.key === "Enter") {
-			e.preventDefault();
-			handleSave();
-			return;
-		}
-		if (e.key === "Escape" && !e.isComposing) {
-			e.preventDefault();
-			onClose();
-			return;
-		}
-	}, [insertFlashcardTag, onClose]);
-
-	const handlePaste = useCallback(async (e: ClipboardEvent) => {
-		const items = e.clipboardData?.items;
-		if (!items) return;
-
-		for (const item of Array.from(items)) {
-			if (item.type.startsWith("image/")) {
+			if (isMod && (e.key === "3" || e.key === "#")) {
 				e.preventDefault();
-				const file = item.getAsFile();
-				if (!file) return;
-
-				try {
-					const savedPath = await imageService.saveImageFromClipboard(file);
-					if (!savedPath) {
-						notify().warning("Failed to save image");
-						return;
-					}
-					const markdown = imageService.buildImageMarkdown(savedPath, 500);
-					if (textareaRef.current) {
-						insertAtTextareaCursor(textareaRef.current, markdown);
-						setContent(textareaRef.current.value);
-						textareaRef.current.focus();
-					}
-				} catch (error) {
-					console.error("Error saving image:", error);
-					notify().operationFailed("save image", error);
-				}
+				insertFlashcardTag();
 				return;
 			}
-		}
-	}, [imageService]);
+			if (isMod && e.key === "b") {
+				e.preventDefault();
+				if (ta) toggleTextareaWrap(ta, "**", "**");
+				return;
+			}
+			if (isMod && e.key === "i") {
+				e.preventDefault();
+				if (ta) toggleTextareaWrap(ta, "*", "*");
+				return;
+			}
+			if (isMod && e.key === "k") {
+				e.preventDefault();
+				if (ta) toggleTextareaWrap(ta, "[[", "]]");
+				return;
+			}
+			if (isMod && e.shiftKey && e.key.toLowerCase() === "c") {
+				e.preventDefault();
+				if (ta) toggleTextareaWrap(ta, "```\n", "\n```");
+				return;
+			}
+			if (isMod && e.key === "Enter") {
+				e.preventDefault();
+				handleSave();
+				return;
+			}
+			if (e.key === "Escape" && !e.isComposing) {
+				e.preventDefault();
+				onClose();
+				return;
+			}
+		},
+		[insertFlashcardTag, onClose],
+	);
+
+	const handlePaste = useCallback(
+		async (e: ClipboardEvent) => {
+			const items = e.clipboardData?.items;
+			if (!items) return;
+
+			for (const item of Array.from(items)) {
+				if (item.type.startsWith("image/")) {
+					e.preventDefault();
+					const file = item.getAsFile();
+					if (!file) return;
+
+					try {
+						const savedPath = await imageService.saveImageFromClipboard(file);
+						if (!savedPath) {
+							notify().warning("Failed to save image");
+							return;
+						}
+						const markdown = imageService.buildImageMarkdown(savedPath, 500);
+						if (textareaRef.current) {
+							insertAtTextareaCursor(textareaRef.current, markdown);
+							setContent(textareaRef.current.value);
+							textareaRef.current.focus();
+						}
+					} catch (error) {
+						console.error("Error saving image:", error);
+						notify().operationFailed("save image", error);
+					}
+					return;
+				}
+			}
+		},
+		[imageService],
+	);
 
 	const handleSave = useCallback(() => {
 		const currentContent = isPreviewMode
@@ -210,7 +226,9 @@ function SimpleEditorBody({ app, options, parser, imageService, onSubmit, onClos
 
 		const flashcards = parser.extractFlashcards(currentContent);
 		if (flashcards.length === 0) {
-			notify().warning(`No flashcards found. Use "${FLASHCARD_CONFIG.tag}" tag after questions.`);
+			notify().warning(
+				`No flashcards found. Use "${FLASHCARD_CONFIG.tag}" tag after questions.`,
+			);
 			return;
 		}
 
@@ -228,7 +246,8 @@ function SimpleEditorBody({ app, options, parser, imageService, onSubmit, onClos
 		setIsPreviewMode((prev) => !prev);
 	}, [isPreviewMode]);
 
-	const buttonText = options.mode === "add" ? "Save Flashcards" : "Save Changes";
+	const buttonText =
+		options.mode === "add" ? "Save Flashcards" : "Save Changes";
 
 	return (
 		<div>
@@ -289,7 +308,9 @@ function SimpleEditorBody({ app, options, parser, imageService, onSubmit, onClos
 
 				{/* Right: Cancel + Save */}
 				<div class="ep:flex ep:gap-3">
-					<button class={SECONDARY_BUTTON_CLASSES} onClick={onClose}>Cancel</button>
+					<button class={SECONDARY_BUTTON_CLASSES} onClick={onClose}>
+						Cancel
+					</button>
 					<button
 						class="ep:py-3 ep:px-5 ep:bg-obs-interactive ep:text-obs-on-accent ep:border-none ep:rounded-md ep:cursor-pointer ep:font-medium ep:transition-colors ep:hover:bg-obs-interactive-hover"
 						onClick={handleSave}
@@ -304,7 +325,9 @@ function SimpleEditorBody({ app, options, parser, imageService, onSubmit, onClos
 
 export class SimpleFlashcardEditorModal extends BaseModal {
 	private options: SimpleFlashcardEditorOptions;
-	private resolvePromise: ((result: SimpleFlashcardEditorResult) => void) | null = null;
+	private resolvePromise:
+		| ((result: SimpleFlashcardEditorResult) => void)
+		| null = null;
 	private hasSubmitted = false;
 	private parser: FlashcardParserService;
 	private imageService: ImageService | null = null;
@@ -349,7 +372,7 @@ export class SimpleFlashcardEditorModal extends BaseModal {
 				}}
 				onClose={() => this.close()}
 			/>,
-			container
+			container,
 		);
 		this.unmountBody = () => render(null, container);
 	}
@@ -370,4 +393,7 @@ export class SimpleFlashcardEditorModal extends BaseModal {
 	}
 }
 
-export { cardToMarkdown, cardsToMarkdown } from "../../services/flashcard/flashcard-format.util";
+export {
+	cardsToMarkdown,
+	cardToMarkdown,
+} from "../../services/flashcard/flashcard-format.util";

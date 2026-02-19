@@ -1,23 +1,19 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
+import type { FirstSyncStatus, SyncOptions, SyncResult } from "../../types";
 import type { AuthService } from "../auth";
-import type { SqliteStoreService } from "../persistence/sqlite";
-import type {
-	SyncResult,
-	SyncOptions,
-	FirstSyncStatus,
-} from "../../types";
-import type { ReviewLogForSync } from "../persistence/sqlite/modules/StatsActions";
 import { syncVersion } from "../core/signals";
-import {
-	mapRemoteCardToLocal,
-	mapRemoteReviewLogToLocal,
-	mapLocalCardToRemote,
-	mapLocalReviewLogToRemote,
-} from "./card-mapper";
+import type { SqliteStoreService } from "../persistence/sqlite";
+import type { ReviewLogForSync } from "../persistence/sqlite/modules/StatsActions";
 import type {
+	LocalCardForSync,
 	RemoteCardRow,
 	RemoteReviewLogRow,
-	LocalCardForSync,
+} from "./card-mapper";
+import {
+	mapLocalCardToRemote,
+	mapLocalReviewLogToRemote,
+	mapRemoteCardToLocal,
+	mapRemoteReviewLogToLocal,
 } from "./card-mapper";
 
 interface SyncRpcResponse {
@@ -129,8 +125,7 @@ export class SyncService {
 
 			return { success: true, pulled, pushed };
 		} catch (error) {
-			const message =
-				error instanceof Error ? error.message : String(error);
+			const message = error instanceof Error ? error.message : String(error);
 			console.error("[SyncService] Sync failed:", error);
 			return { success: false, error: message, pulled: 0, pushed: 0 };
 		}
@@ -138,18 +133,14 @@ export class SyncService {
 
 	private async pullAllTables(
 		client: SupabaseClient,
-		lastSync: number
+		lastSync: number,
 	): Promise<{
 		cards: RemoteCardRow[];
 		reviewLog: RemoteReviewLogRow[];
 	}> {
 		// Note: Supabase default limit is 1000 rows - we need explicit high limit
 		const [cardsRes, reviewLogRes] = await Promise.all([
-			client
-				.from("cards")
-				.select("*")
-				.gt("updated_at", lastSync)
-				.limit(100000),
+			client.from("cards").select("*").gt("updated_at", lastSync).limit(100000),
 			client
 				.from("review_log")
 				.select("*")
@@ -161,9 +152,7 @@ export class SyncService {
 		if (cardsRes.error)
 			throw new Error(`Pull cards failed: ${cardsRes.error.message}`);
 		if (reviewLogRes.error)
-			throw new Error(
-				`Pull review_log failed: ${reviewLogRes.error.message}`
-			);
+			throw new Error(`Pull review_log failed: ${reviewLogRes.error.message}`);
 
 		return {
 			cards: (cardsRes.data ?? []) as RemoteCardRow[],
@@ -186,9 +175,7 @@ export class SyncService {
 					| undefined;
 				const localUpdatedAt = local?.updatedAt ?? 0;
 				if (!local || remote.updated_at > localUpdatedAt) {
-					this.cardStore.cards.upsertFromRemote(
-						mapRemoteCardToLocal(remote)
-					);
+					this.cardStore.cards.upsertFromRemote(mapRemoteCardToLocal(remote));
 					pulled++;
 				}
 			}
@@ -198,7 +185,7 @@ export class SyncService {
 				const local = this.cardStore.stats.getReviewLogForSync(remote.id);
 				if (!local || remote.updated_at > local.updatedAt) {
 					this.cardStore.stats.upsertReviewLogFromRemote(
-						mapRemoteReviewLogToLocal(remote)
+						mapRemoteReviewLogToLocal(remote),
 					);
 					pulled++;
 				}
@@ -223,7 +210,7 @@ export class SyncService {
 		localChanges: {
 			cards: LocalCardForSync[];
 			reviewLog: ReviewLogForSync[];
-		}
+		},
 	): Promise<number> {
 		const { cards, reviewLog } = localChanges;
 
@@ -236,9 +223,7 @@ export class SyncService {
 		// Map to remote format (snake_case)
 		const payload = {
 			p_cards: cards.map((c) => mapLocalCardToRemote(c)),
-			p_review_log: reviewLog.map((rl) =>
-				mapLocalReviewLogToRemote(rl)
-			),
+			p_review_log: reviewLog.map((rl) => mapLocalReviewLogToRemote(rl)),
 		};
 
 		// Single atomic RPC call
@@ -252,9 +237,7 @@ export class SyncService {
 		// Check response from RPC function (catches SQL-level errors)
 		const response = data as SyncRpcResponse | null;
 		if (response?.status === "error") {
-			throw new Error(
-				`Push RPC error: ${response.message ?? "Unknown error"}`
-			);
+			throw new Error(`Push RPC error: ${response.message ?? "Unknown error"}`);
 		}
 
 		// Validate response structure for successful case
@@ -266,16 +249,14 @@ export class SyncService {
 	}
 
 	getLastSyncTimestamp(): number {
-		const value = this.cardStore.cards.getSyncMetadata(
-			"last_sync_timestamp"
-		);
+		const value = this.cardStore.cards.getSyncMetadata("last_sync_timestamp");
 		return value ? parseInt(value, 10) : 0;
 	}
 
 	private setLastSyncTimestamp(timestamp: number): void {
 		this.cardStore.cards.setSyncMetadata(
 			"last_sync_timestamp",
-			String(timestamp)
+			String(timestamp),
 		);
 	}
 
@@ -310,20 +291,15 @@ export class SyncService {
 
 			// Map to remote format
 			const payload = {
-				p_cards: allLocalData.cards.map((c) =>
-					mapLocalCardToRemote(c)
-				),
+				p_cards: allLocalData.cards.map((c) => mapLocalCardToRemote(c)),
 				p_review_log: allLocalData.reviewLog.map((rl) =>
-					mapLocalReviewLogToRemote(rl)
+					mapLocalReviewLogToRemote(rl),
 				),
 			};
 
 			// Call replace RPC (deletes all user data, then inserts fresh)
 			// eslint-disable-next-line @typescript-eslint/no-unsafe-assignment -- Supabase client returns any for RPC data
-			const { data, error } = await client.rpc(
-				"replace_all_data",
-				payload
-			);
+			const { data, error } = await client.rpc("replace_all_data", payload);
 
 			if (error) {
 				throw new Error(`Force replace failed: ${error.message}`);
@@ -333,9 +309,7 @@ export class SyncService {
 			const response = data as SyncRpcResponse | null;
 			if (response?.status === "error") {
 				throw new Error(
-					`Force replace RPC error: ${
-						response.message ?? "Unknown error"
-					}`
+					`Force replace RPC error: ${response.message ?? "Unknown error"}`,
 				);
 			}
 
@@ -350,8 +324,7 @@ export class SyncService {
 
 			return { success: true, pulled: 0, pushed: totalPushed };
 		} catch (error) {
-			const message =
-				error instanceof Error ? error.message : String(error);
+			const message = error instanceof Error ? error.message : String(error);
 			console.error("[SyncService] Force replace failed:", error);
 			return { success: false, error: message, pulled: 0, pushed: 0 };
 		}
@@ -398,16 +371,14 @@ export class SyncService {
 
 			// Cards
 			for (const remote of pullResults.cards) {
-				this.cardStore.cards.upsertFromRemote(
-					mapRemoteCardToLocal(remote)
-				);
+				this.cardStore.cards.upsertFromRemote(mapRemoteCardToLocal(remote));
 				pulled++;
 			}
 
 			// Review log (depends on cards)
 			for (const remote of pullResults.reviewLog) {
 				this.cardStore.stats.upsertReviewLogFromRemote(
-					mapRemoteReviewLogToLocal(remote)
+					mapRemoteReviewLogToLocal(remote),
 				);
 				pulled++;
 			}
@@ -423,8 +394,7 @@ export class SyncService {
 
 			return { success: true, pulled, pushed: 0 };
 		} catch (error) {
-			const message =
-				error instanceof Error ? error.message : String(error);
+			const message = error instanceof Error ? error.message : String(error);
 			console.error("[SyncService] Force pull failed:", error);
 			return { success: false, error: message, pulled: 0, pushed: 0 };
 		}
@@ -435,5 +405,4 @@ export class SyncService {
 		this.cardStore.stats.deleteAllReviewLogForSync();
 		this.cardStore.cards.deleteAllForSync();
 	}
-
 }

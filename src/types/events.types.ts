@@ -1,6 +1,13 @@
 export interface SessionResult {
 	cancelled: boolean;
-	sessionType: "current-note" | "created-today" | "select-notes" | "state-filter" | "default" | "custom-study" | null;
+	sessionType:
+		| "current-note"
+		| "created-today"
+		| "select-notes"
+		| "state-filter"
+		| "default"
+		| "custom-study"
+		| null;
 	sourceNoteFilter?: string;
 	sourceNoteFilters?: string[];
 	filePathFilter?: string;

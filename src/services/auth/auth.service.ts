@@ -5,7 +5,12 @@
  * Note: Credentials are hardcoded (SaaS model). The anon key is public
  * by design - security relies on RLS (Row Level Security) policies.
  */
-import { createClient, SupabaseClient, User, Session } from "@supabase/supabase-js";
+import {
+	createClient,
+	type Session,
+	type SupabaseClient,
+	type User,
+} from "@supabase/supabase-js";
 import { TRUE_RECALL_CLOUD } from "../../constants";
 
 export interface AuthState {

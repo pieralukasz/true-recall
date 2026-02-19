@@ -23,7 +23,7 @@ export interface InternalLinkHandlerOptions {
  */
 export function setupInternalLinkHandler(
 	element: HTMLElement,
-	options: InternalLinkHandlerOptions
+	options: InternalLinkHandlerOptions,
 ): () => void {
 	const { app, filePath, onCtrlClick } = options;
 
@@ -57,4 +57,3 @@ export function setupInternalLinkHandler(
 	// Return cleanup function
 	return () => element.removeEventListener("click", handler, true);
 }
-

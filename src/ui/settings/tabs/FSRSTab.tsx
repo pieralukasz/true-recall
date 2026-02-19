@@ -1,20 +1,19 @@
-import { useState, useCallback } from "preact/hooks";
-import {
-	SettingRow,
-	ToggleInput,
-	TextInput,
-	SliderInput,
-	SelectInput,
-	TextAreaInput,
-	InfoBlock,
-	ActionButton,
-} from "../../preact/components";
-import { useSettings } from "../hooks/useSettings";
-import { usePreset } from "../hooks/useSettings";
-import { useApp, usePlugin } from "../../preact";
+import { useCallback, useState } from "preact/hooks";
 import { FSRS_CONFIG } from "../../../constants";
 import { notify } from "../../../services";
 import { EasyDaysModal } from "../../modals";
+import { useApp } from "../../preact";
+import {
+	ActionButton,
+	InfoBlock,
+	SelectInput,
+	SettingRow,
+	SliderInput,
+	TextAreaInput,
+	TextInput,
+	ToggleInput,
+} from "../../preact/components";
+import { usePreset, useSettings } from "../hooks/useSettings";
 
 interface FSRSTabProps {
 	selectedPresetId: string;
@@ -85,13 +84,24 @@ export function FSRSTab({ selectedPresetId, onPresetChange }: FSRSTabProps) {
 				onRefresh={refresh}
 			/>
 
-			<EasyDaysSection plugin={plugin} settings={settings} save={save} app={app} onRefresh={refresh} />
+			<EasyDaysSection
+				plugin={plugin}
+				settings={settings}
+				save={save}
+				app={app}
+				onRefresh={refresh}
+			/>
 
 			<LoadBalanceSection settings={settings} save={save} plugin={plugin} />
 
 			<SiblingDisperseSection settings={settings} save={save} plugin={plugin} />
 
-			<ScheduledBreaksSection settings={settings} save={save} plugin={plugin} onRefresh={refresh} />
+			<ScheduledBreaksSection
+				settings={settings}
+				save={save}
+				plugin={plugin}
+				onRefresh={refresh}
+			/>
 
 			<BulkOperationsSection plugin={plugin} />
 		</>
@@ -154,7 +164,13 @@ function PresetSection({
 
 // ── Algorithm Section ──
 
-function AlgorithmSection({ preset, updatePreset }: { preset: any; updatePreset: (c: any) => Promise<void> }) {
+function AlgorithmSection({
+	preset,
+	updatePreset,
+}: {
+	preset: any;
+	updatePreset: (c: any) => Promise<void>;
+}) {
 	return (
 		<>
 			<SettingRow heading name="FSRS algorithm" />
@@ -180,7 +196,7 @@ function AlgorithmSection({ preset, updatePreset }: { preset: any; updatePreset:
 				<TextInput
 					value={String(preset.maximumInterval)}
 					onChange={(v) => {
-						const num = parseInt(v) || 36500;
+						const num = parseInt(v, 10) || 36500;
 						void updatePreset({ maximumInterval: Math.max(1, num) });
 					}}
 					placeholder="36500"
@@ -192,7 +208,13 @@ function AlgorithmSection({ preset, updatePreset }: { preset: any; updatePreset:
 
 // ── Daily Limits Section ──
 
-function DailyLimitsSection({ preset, updatePreset }: { preset: any; updatePreset: (c: any) => Promise<void> }) {
+function DailyLimitsSection({
+	preset,
+	updatePreset,
+}: {
+	preset: any;
+	updatePreset: (c: any) => Promise<void>;
+}) {
 	return (
 		<>
 			<SettingRow heading name="Daily limits" />
@@ -204,7 +226,7 @@ function DailyLimitsSection({ preset, updatePreset }: { preset: any; updatePrese
 				<TextInput
 					value={String(preset.newCardsPerDay)}
 					onChange={(v) => {
-						const num = parseInt(v) || 20;
+						const num = parseInt(v, 10) || 20;
 						void updatePreset({ newCardsPerDay: Math.max(0, num) });
 					}}
 					placeholder="20"
@@ -218,7 +240,7 @@ function DailyLimitsSection({ preset, updatePreset }: { preset: any; updatePrese
 				<TextInput
 					value={String(preset.reviewsPerDay)}
 					onChange={(v) => {
-						const num = parseInt(v) || 200;
+						const num = parseInt(v, 10) || 200;
 						void updatePreset({ reviewsPerDay: Math.max(0, num) });
 					}}
 					placeholder="200"
@@ -264,7 +286,9 @@ function ParametersSection({
 					lastOptimizationReviewCount: result.metrics.reviewCount,
 					lastOptimizationMetrics: result.metrics,
 				});
-				notify().success(`Optimization complete! RMSE: ${result.metrics.rmse.toFixed(4)}`);
+				notify().success(
+					`Optimization complete! RMSE: ${result.metrics.rmse.toFixed(4)}`,
+				);
 				onRefresh();
 			} else {
 				notify().error("Optimization failed: insufficient data");
@@ -298,10 +322,12 @@ function ParametersSection({
 			const parts = trimmed.split(",").map((s) => parseFloat(s.trim()));
 			const validLengths = [17, 19, 21];
 			if (!validLengths.includes(parts.length)) {
-				notify().error(`Invalid weights count: ${parts.length}. Expected 17, 19, or 21 values.`);
+				notify().error(
+					`Invalid weights count: ${parts.length}. Expected 17, 19, or 21 values.`,
+				);
 				return;
 			}
-			if (parts.some((n) => isNaN(n))) {
+			if (parts.some((n) => Number.isNaN(n))) {
 				notify().error("Invalid weights: some values are not numbers.");
 				return;
 			}
@@ -320,16 +346,22 @@ function ParametersSection({
 			<SettingRow heading name="FSRS parameters" />
 
 			<InfoBlock>
-				<p>FSRS parameters affect how cards are scheduled. You can optimize them based on your review history.</p>
+				<p>
+					FSRS parameters affect how cards are scheduled. You can optimize them
+					based on your review history.
+				</p>
 				<p>
 					<strong>Current reviews: </strong>
 					{totalReviews.toLocaleString()}{" "}
-					{canOptimize ? "(ready for optimization)" : `(need ${FSRS_CONFIG.minReviewsForOptimization}+ for optimization)`}
+					{canOptimize
+						? "(ready for optimization)"
+						: `(need ${FSRS_CONFIG.minReviewsForOptimization}+ for optimization)`}
 				</p>
 				{lastOpt && (
 					<p>
 						<strong>Last optimized: </strong>
-						{new Date(lastOpt).toLocaleDateString()} ({lastOptCount?.toLocaleString() ?? "unknown"} reviews used)
+						{new Date(lastOpt).toLocaleDateString()} (
+						{lastOptCount?.toLocaleString() ?? "unknown"} reviews used)
 					</p>
 				)}
 			</InfoBlock>
@@ -420,14 +452,20 @@ function EasyDaysSection({
 		if (!result.cancelled && result.easyDays) {
 			await save({
 				easyDays: result.easyDays,
-				...(result.multiplier !== undefined && { easyDaysMultiplier: result.multiplier }),
+				...(result.multiplier !== undefined && {
+					easyDaysMultiplier: result.multiplier,
+				}),
 			});
 
 			if (result.applyNow) {
-				const applyResult = await plugin.fsrsHelper?.applyEasyDays({ dryRun: false });
+				const applyResult = await plugin.fsrsHelper?.applyEasyDays({
+					dryRun: false,
+				});
 				if (applyResult && applyResult.affectedCount > 0) {
 					pushUndo(applyResult.affectedCount, applyResult.changes);
-					notify().success(`Applied easy days: ${applyResult.affectedCount} cards moved (Ctrl+Z to undo)`);
+					notify().success(
+						`Applied easy days: ${applyResult.affectedCount} cards moved (Ctrl+Z to undo)`,
+					);
 				} else if (applyResult) {
 					notify().info("No cards needed to be moved");
 				}
@@ -437,10 +475,14 @@ function EasyDaysSection({
 	}, [app, settings, save, plugin, pushUndo, onRefresh]);
 
 	const handleApplyNow = useCallback(async () => {
-		const applyResult = await plugin.fsrsHelper?.applyEasyDays({ dryRun: false });
+		const applyResult = await plugin.fsrsHelper?.applyEasyDays({
+			dryRun: false,
+		});
 		if (applyResult && applyResult.affectedCount > 0) {
 			pushUndo(applyResult.affectedCount, applyResult.changes);
-			notify().success(`Applied easy days: ${applyResult.affectedCount} cards moved (Ctrl+Z to undo)`);
+			notify().success(
+				`Applied easy days: ${applyResult.affectedCount} cards moved (Ctrl+Z to undo)`,
+			);
 		} else if (applyResult) {
 			notify().info("No cards needed to be moved");
 		}
@@ -451,15 +493,27 @@ function EasyDaysSection({
 			<SettingRow heading name="Easy days" />
 
 			<InfoBlock>
-				<p>Reduce your review workload on specific days (recurring weekdays or specific dates). Cards due on easy days will be moved to adjacent days.</p>
+				<p>
+					Reduce your review workload on specific days (recurring weekdays or
+					specific dates). Cards due on easy days will be moved to adjacent
+					days.
+				</p>
 			</InfoBlock>
 
 			<SettingRow
 				name="Easy days"
 				description={`Recurring: ${recurringDaysText} | Specific dates: ${specificDatesCount} | Workload: ${Math.round(settings.easyDaysMultiplier * 100)}%`}
 			>
-				<ActionButton label="Configure..." variant="secondary" onClick={handleConfigure} />
-				<ActionButton label="Apply now" variant="secondary" onClick={handleApplyNow} />
+				<ActionButton
+					label="Configure..."
+					variant="secondary"
+					onClick={handleConfigure}
+				/>
+				<ActionButton
+					label="Apply now"
+					variant="secondary"
+					onClick={handleApplyNow}
+				/>
 			</SettingRow>
 		</>
 	);
@@ -481,7 +535,9 @@ function LoadBalanceSection({
 	const handleBalance = useCallback(async () => {
 		setBalancing(true);
 		try {
-			const result = await plugin.fsrsHelper?.balanceWorkload({ dryRun: false });
+			const result = await plugin.fsrsHelper?.balanceWorkload({
+				dryRun: false,
+			});
 			if (result && result.affectedCount > 0) {
 				plugin.undoService?.push({
 					id: crypto.randomUUID(),
@@ -498,7 +554,9 @@ function LoadBalanceSection({
 						})),
 					},
 				});
-				notify().success(`Balanced ${result.affectedCount} cards (Ctrl+Z to undo)`);
+				notify().success(
+					`Balanced ${result.affectedCount} cards (Ctrl+Z to undo)`,
+				);
 			} else if (result) {
 				notify().info("No cards needed balancing");
 			}
@@ -530,7 +588,7 @@ function LoadBalanceSection({
 				<TextInput
 					value={String(settings.loadBalanceTarget)}
 					onChange={(v) => {
-						const num = parseInt(v) || 100;
+						const num = parseInt(v, 10) || 100;
 						void save({ loadBalanceTarget: Math.max(1, num) });
 					}}
 					placeholder="100"
@@ -582,7 +640,9 @@ function SiblingDisperseSection({
 	const handleDisperse = useCallback(async () => {
 		setDispersing(true);
 		try {
-			const result = await plugin.fsrsHelper?.disperseSiblings({ dryRun: false });
+			const result = await plugin.fsrsHelper?.disperseSiblings({
+				dryRun: false,
+			});
 			if (result && result.affectedCount > 0) {
 				plugin.undoService?.push({
 					id: crypto.randomUUID(),
@@ -599,7 +659,9 @@ function SiblingDisperseSection({
 						})),
 					},
 				});
-				notify().success(`Dispersed ${result.affectedCount} cards (Ctrl+Z to undo)`);
+				notify().success(
+					`Dispersed ${result.affectedCount} cards (Ctrl+Z to undo)`,
+				);
 			} else if (result) {
 				notify().info("No siblings needed dispersing");
 			}
@@ -615,7 +677,10 @@ function SiblingDisperseSection({
 			<SettingRow heading name="Sibling dispersal" />
 
 			<InfoBlock>
-				<p>Cards from the same source note are "siblings". Spreading them apart helps avoid interference during review.</p>
+				<p>
+					Cards from the same source note are "siblings". Spreading them apart
+					helps avoid interference during review.
+				</p>
 			</InfoBlock>
 
 			<SettingRow
@@ -635,7 +700,7 @@ function SiblingDisperseSection({
 				<TextInput
 					value={String(settings.siblingMinInterval)}
 					onChange={(v) => {
-						const num = parseInt(v) || 3;
+						const num = parseInt(v, 10) || 3;
 						void save({ siblingMinInterval: Math.max(1, num) });
 					}}
 					placeholder="3"
@@ -715,7 +780,10 @@ function ScheduledBreaksSection({
 			<SettingRow heading name="Scheduled breaks" />
 
 			<InfoBlock>
-				<p>Schedule breaks (vacations) to redistribute reviews and prevent backlog accumulation.</p>
+				<p>
+					Schedule breaks (vacations) to redistribute reviews and prevent
+					backlog accumulation.
+				</p>
 			</InfoBlock>
 
 			{breaks.length > 0 && (
@@ -739,8 +807,15 @@ function ScheduledBreaksSection({
 				</div>
 			)}
 
-			<SettingRow name="Add scheduled break" description="Schedule a break period">
-				<ActionButton label="Add break..." variant="secondary" onClick={handleAddBreak} />
+			<SettingRow
+				name="Add scheduled break"
+				description="Schedule a break period"
+			>
+				<ActionButton
+					label="Add break..."
+					variant="secondary"
+					onClick={handleAddBreak}
+				/>
 			</SettingRow>
 		</>
 	);
@@ -786,7 +861,9 @@ function BulkOperationsSection({ plugin }: { plugin: any }) {
 								})),
 							},
 						});
-						notify().success(`Rescheduled ${result.affectedCount} cards (Ctrl+Z to undo)`);
+						notify().success(
+							`Rescheduled ${result.affectedCount} cards (Ctrl+Z to undo)`,
+						);
 					}
 				}
 			} else if (previewResult) {
@@ -800,7 +877,7 @@ function BulkOperationsSection({ plugin }: { plugin: any }) {
 	}, [plugin]);
 
 	const handlePostpone = useCallback(async () => {
-		const days = parseInt(postponeDays) || 7;
+		const days = parseInt(postponeDays, 10) || 7;
 		setPostponing(true);
 		try {
 			const result = await plugin.fsrsHelper?.shiftDueDates({
@@ -825,7 +902,9 @@ function BulkOperationsSection({ plugin }: { plugin: any }) {
 						})),
 					},
 				});
-				notify().success(`Postponed ${result.affectedCount} cards by ${days} days (Ctrl+Z to undo)`);
+				notify().success(
+					`Postponed ${result.affectedCount} cards by ${days} days (Ctrl+Z to undo)`,
+				);
 			} else if (result) {
 				notify().info("No cards to postpone");
 			}

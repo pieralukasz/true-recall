@@ -1,6 +1,6 @@
+import type { App } from "obsidian";
 import { render } from "preact";
 import { useState } from "preact/hooks";
-import { App } from "obsidian";
 import { BasePromiseModal } from "./BasePromiseModal";
 
 export interface AddToProjectResult {
@@ -63,7 +63,16 @@ function AddToProjectBody({
 										? "ep:bg-obs-interactive/10 ep:border-l-2 ep:border-l-obs-interactive ep:pl-2"
 										: ""
 								}`}
+								role="option"
+								tabIndex={0}
+								aria-selected={isChecked}
 								onClick={() => toggleProject(projectName)}
+								onKeyDown={(e: KeyboardEvent) => {
+									if (e.key === "Enter" || e.key === " ") {
+										e.preventDefault();
+										toggleProject(projectName);
+									}
+								}}
 							>
 								<input
 									type="checkbox"
@@ -83,14 +92,14 @@ function AddToProjectBody({
 
 			<div class="ep:flex ep:justify-end ep:gap-2 ep:pt-2 ep:border-t ep:border-obs-border">
 				<button
+					type="button"
 					class="ep:py-2.5 ep:px-5 ep:rounded-md ep:text-ui-small ep:font-medium ep:cursor-pointer ep:transition-all ep:bg-obs-secondary ep:text-obs-normal ep:border ep:border-obs-border ep:hover:bg-obs-modifier-hover"
-					onClick={() =>
-						onResolve({ cancelled: true, projects: [] })
-					}
+					onClick={() => onResolve({ cancelled: true, projects: [] })}
 				>
 					Cancel
 				</button>
 				<button
+					type="button"
 					class="mod-cta ep:py-2.5 ep:px-5 ep:rounded-md ep:text-ui-small ep:font-medium ep:cursor-pointer ep:transition-all"
 					onClick={() =>
 						onResolve({

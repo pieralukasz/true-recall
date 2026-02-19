@@ -10,5 +10,7 @@ export function migrate(db: DatabaseLike): void {
 	db.exec("DROP TABLE IF EXISTS source_notes");
 
 	// Update schema version
-	db.run(`INSERT OR REPLACE INTO meta (key, value) VALUES ('schema_version', '17')`);
+	db.run(
+		`INSERT OR REPLACE INTO meta (key, value) VALUES ('schema_version', '17')`,
+	);
 }

@@ -21,7 +21,8 @@ export interface LinkTextCountProps {
 
 export function LinkTextCount({ info, onPlay }: LinkTextCountProps) {
 	const parts: { count: number; label: string; cls: string }[] = [];
-	if (info.new > 0) parts.push({ count: info.new, label: "new", cls: COUNT_CLS.new });
+	if (info.new > 0)
+		parts.push({ count: info.new, label: "new", cls: COUNT_CLS.new });
 	if (info.learning > 0)
 		parts.push({ count: info.learning, label: "lrn", cls: COUNT_CLS.learning });
 	if (info.dueToday > 0)

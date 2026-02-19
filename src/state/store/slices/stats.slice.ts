@@ -1,11 +1,16 @@
-import type { AppState, AppStoreDeps, StatsSliceState, StatsSliceActions } from "../types";
+import type {
+	AppState,
+	AppStoreDeps,
+	StatsSliceActions,
+	StatsSliceState,
+} from "../types";
 
 type StatsSlice = StatsSliceState & StatsSliceActions;
 
 export function createStatsSlice(
 	set: (fn: (state: AppState) => Partial<AppState>) => void,
 	_get: () => AppState,
-	_deps: AppStoreDeps
+	_deps: AppStoreDeps,
 ): StatsSlice {
 	return {
 		lastRefreshed: 0,

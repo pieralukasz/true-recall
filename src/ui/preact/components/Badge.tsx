@@ -1,4 +1,12 @@
-export type BadgeVariant = "default" | "success" | "warning" | "error" | "info" | "new" | "learning" | "review";
+export type BadgeVariant =
+	| "default"
+	| "success"
+	| "warning"
+	| "error"
+	| "info"
+	| "new"
+	| "learning"
+	| "review";
 export type BadgeSize = "sm" | "md";
 
 const VARIANT_CLASSES: Record<BadgeVariant, string> = {
@@ -24,17 +32,27 @@ export interface BadgeProps {
 	class?: string;
 }
 
-export function Badge({ text, variant = "default", size = "md", class: cls }: BadgeProps) {
+export function Badge({
+	text,
+	variant = "default",
+	size = "md",
+	class: cls,
+}: BadgeProps) {
 	return (
-		<span class={`ep:rounded ep:font-medium ep:inline-block ${VARIANT_CLASSES[variant]} ${SIZE_CLASSES[size]} ${cls ?? ""}`}>
+		<span
+			class={`ep:rounded ep:font-medium ep:inline-block ${VARIANT_CLASSES[variant]} ${SIZE_CLASSES[size]} ${cls ?? ""}`}
+		>
 			{text}
 		</span>
 	);
 }
 
-const CHIP_BASE = "ep:py-1 ep:px-2.5 ep:text-ui-smaller ep:border ep:rounded-xl ep:cursor-pointer ep:transition-all";
-const CHIP_INACTIVE = "ep:border-obs-border ep:bg-obs-primary ep:text-obs-muted ep:hover:border-obs-interactive ep:hover:text-obs-normal";
-const CHIP_ACTIVE = "ep:border-obs-interactive ep:bg-obs-interactive/10 ep:text-obs-interactive";
+const CHIP_BASE =
+	"ep:py-1 ep:px-2.5 ep:text-ui-smaller ep:border ep:rounded-xl ep:cursor-pointer ep:transition-all";
+const CHIP_INACTIVE =
+	"ep:border-obs-border ep:bg-obs-primary ep:text-obs-muted ep:hover:border-obs-interactive ep:hover:text-obs-normal";
+const CHIP_ACTIVE =
+	"ep:border-obs-interactive ep:bg-obs-interactive/10 ep:text-obs-interactive";
 
 export interface ChipProps {
 	text: string;
@@ -43,10 +61,19 @@ export interface ChipProps {
 	class?: string;
 }
 
-export function Chip({ text, isActive = false, onClick, class: cls }: ChipProps) {
+export function Chip({
+	text,
+	isActive = false,
+	onClick,
+	class: cls,
+}: ChipProps) {
 	const classes = `${CHIP_BASE} ${isActive ? CHIP_ACTIVE : CHIP_INACTIVE} ${cls ?? ""}`;
 	if (onClick) {
-		return <button class={classes} onClick={onClick}>{text}</button>;
+		return (
+			<button type="button" class={classes} onClick={onClick}>
+				{text}
+			</button>
+		);
 	}
 	return <span class={classes}>{text}</span>;
 }

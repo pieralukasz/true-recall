@@ -7,14 +7,14 @@ import type {
 	ConvertedCard,
 	FSRSCardData,
 } from "types";
-import type { SqliteStoreService } from "../persistence/sqlite/SqliteStoreService";
 import type { FSRSService } from "../core/fsrs.service";
-import { generateUUID } from "../persistence/sqlite/sqlite.types";
 import { notifyCardChange } from "../core/signals";
-import { ApkgParserService } from "./apkg-parser.service";
+import type { SqliteStoreService } from "../persistence/sqlite/SqliteStoreService";
+import { generateUUID } from "../persistence/sqlite/sqlite.types";
 import { AnkiConverterService } from "./anki-converter.service";
-import { AnkiSchedulingService } from "./anki-scheduling.service";
 import { AnkiMediaService } from "./anki-media.service";
+import { AnkiSchedulingService } from "./anki-scheduling.service";
+import { ApkgParserService } from "./apkg-parser.service";
 
 const IMPORT_FOLDER = "Anki Import";
 
@@ -117,9 +117,7 @@ export class AnkiImportService {
 					}
 				} catch (err) {
 					const msg = err instanceof Error ? err.message : String(err);
-					result.errors.push(
-						`Card ${converted.ankiCardId}: ${msg}`,
-					);
+					result.errors.push(`Card ${converted.ankiCardId}: ${msg}`);
 					result.skipped++;
 				}
 			}
@@ -145,7 +143,11 @@ export class AnkiImportService {
 		}
 
 		if (importedCardIds.length > 0) {
-			notifyCardChange({ type: "bulk", cardIds: importedCardIds, action: "added" });
+			notifyCardChange({
+				type: "bulk",
+				cardIds: importedCardIds,
+				action: "added",
+			});
 		}
 
 		return result;
@@ -160,19 +162,15 @@ export class AnkiImportService {
 		mediaPathMapping: Map<string, string>,
 		options: AnkiImportOptions,
 		ankiToTrCardId: Map<number, string>,
-	): { status: "imported"; cardId: string } | { status: "duplicate" | "skipped" } {
+	):
+		| { status: "imported"; cardId: string }
+		| { status: "duplicate" | "skipped" } {
 		let question = converted.question;
 		let answer = converted.answer;
 
 		if (mediaPathMapping.size > 0) {
-			question = mediaService.updateImportedContent(
-				question,
-				mediaPathMapping,
-			);
-			answer = mediaService.updateImportedContent(
-				answer,
-				mediaPathMapping,
-			);
+			question = mediaService.updateImportedContent(question, mediaPathMapping);
+			answer = mediaService.updateImportedContent(answer, mediaPathMapping);
 		}
 
 		if (!question.trim()) {
@@ -181,7 +179,10 @@ export class AnkiImportService {
 
 		const existingId =
 			converted.cardType === "cloze" && converted.clozeIndex !== undefined
-				? this.store.cards.getCardIdByQuestionAndClozeIndex(question, converted.clozeIndex)
+				? this.store.cards.getCardIdByQuestionAndClozeIndex(
+						question,
+						converted.clozeIndex,
+					)
 				: this.store.cards.getCardIdByQuestion(question);
 		if (existingId) {
 			ankiToTrCardId.set(converted.ankiCardId, existingId);
@@ -194,7 +195,9 @@ export class AnkiImportService {
 		let cardData: FSRSCardData;
 
 		if (options.importScheduling) {
-			const ankiCard = ankiCardMap.get(converted.ankiCardId) ?? this.buildMinimalAnkiCard(converted);
+			const ankiCard =
+				ankiCardMap.get(converted.ankiCardId) ??
+				this.buildMinimalAnkiCard(converted);
 			const revlogs = revlogByCard.get(converted.ankiCardId) ?? [];
 			cardData = schedulingService.convert(cardId, ankiCard, revlogs);
 		} else {
@@ -221,9 +224,7 @@ export class AnkiImportService {
 			converted.cardType === "reversed" &&
 			converted.reverseOfAnkiCardId !== undefined
 		) {
-			const originalTrId = ankiToTrCardId.get(
-				converted.reverseOfAnkiCardId,
-			);
+			const originalTrId = ankiToTrCardId.get(converted.reverseOfAnkiCardId);
 			if (originalTrId) {
 				cardData.reverseOf = originalTrId;
 			}
@@ -249,7 +250,7 @@ export class AnkiImportService {
 			const revlogs = revlogByCard.get(converted.ankiCardId) ?? [];
 			const sorted = [...revlogs].sort((a, b) => a.id - b.id);
 
-				for (const entry of sorted) {
+			for (const entry of sorted) {
 				this.store.stats.upsertReviewLogFromRemote({
 					id: generateUUID(),
 					cardId: trCardId,
@@ -305,7 +306,10 @@ export class AnkiImportService {
 					if (!parentToChildren.has(parentPath)) {
 						parentToChildren.set(parentPath, new Set());
 					}
-					parentToChildren.get(parentPath)!.add(segments[i]!);
+					const segmentName = segments[i];
+					if (segmentName) {
+						parentToChildren.get(parentPath)?.add(segmentName);
+					}
 				}
 			}
 		}
@@ -317,7 +321,7 @@ export class AnkiImportService {
 
 		for (const deckPath of sortedPaths) {
 			const segments = deckPath.split("::");
-			const name = segments[segments.length - 1]!;
+			const name = segments[segments.length - 1] ?? "Default";
 			const safeName = name.replace(/[\\/:*?"<>|]/g, " - ").trim() || "Default";
 
 			// Build hierarchical tag: Math/Calculus/Integrals
@@ -326,16 +330,19 @@ export class AnkiImportService {
 				.join("/");
 
 			// Build filesystem path
-			const folderSegments = segments.slice(0, -1).map((s) =>
-				s.replace(/[\\/:*?"<>|]/g, " - ").trim(),
-			);
+			const folderSegments = segments
+				.slice(0, -1)
+				.map((s) => s.replace(/[\\/:*?"<>|]/g, " - ").trim());
 			const folderPath =
 				folderSegments.length > 0
 					? normalizePath(`${IMPORT_FOLDER}/${folderSegments.join("/")}`)
 					: basePath;
 
 			// Ensure folder exists
-			if (folderPath !== basePath && !this.app.vault.getAbstractFileByPath(folderPath)) {
+			if (
+				folderPath !== basePath &&
+				!this.app.vault.getAbstractFileByPath(folderPath)
+			) {
 				await this.ensureFolderRecursive(folderPath);
 			}
 
@@ -366,11 +373,15 @@ export class AnkiImportService {
 		tagPath: string,
 		children?: Set<string>,
 	): Promise<string> {
-		const existingFile = this.app.vault.getAbstractFileByPath(notePath) as TFile | null;
+		const existingFile = this.app.vault.getAbstractFileByPath(
+			notePath,
+		) as TFile | null;
 
 		if (existingFile) {
 			const cache = this.app.metadataCache.getFileCache(existingFile);
-			const existingUid = cache?.frontmatter?.["flashcard_uid"] as string | undefined;
+			const existingUid = cache?.frontmatter?.flashcard_uid as
+				| string
+				| undefined;
 
 			if (existingUid) {
 				// Update child links if this is a parent note
@@ -383,7 +394,10 @@ export class AnkiImportService {
 			// No UID: prepend frontmatter
 			const uid = this.generateUid();
 			const frontmatter = this.buildFrontmatter(uid, tagPath);
-			await this.app.vault.process(existingFile, (content) => `${frontmatter}\n\n${content}`);
+			await this.app.vault.process(
+				existingFile,
+				(content) => `${frontmatter}\n\n${content}`,
+			);
 			return uid;
 		}
 
@@ -402,7 +416,10 @@ export class AnkiImportService {
 			bodyParts.push("Imported from Anki.", "");
 		}
 
-		await this.app.vault.create(notePath, `${frontmatter}\n\n${bodyParts.join("\n")}`);
+		await this.app.vault.create(
+			notePath,
+			`${frontmatter}\n\n${bodyParts.join("\n")}`,
+		);
 		return uid;
 	}
 
@@ -425,7 +442,9 @@ export class AnkiImportService {
 				(child) => !content.includes(`[[${child}]]`),
 			);
 			if (missingChildren.length === 0) return content;
-			const newLinks = missingChildren.map((child) => `- [[${child}]]`).join("\n");
+			const newLinks = missingChildren
+				.map((child) => `- [[${child}]]`)
+				.join("\n");
 			return `${content}\n${newLinks}\n`;
 		});
 	}

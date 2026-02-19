@@ -1,11 +1,8 @@
+import { type App, normalizePath, type TFile } from "obsidian";
 import { render } from "preact";
-import { useState, useRef, useEffect } from "preact/hooks";
-import { App, TFile, normalizePath } from "obsidian";
+import { useEffect, useRef, useState } from "preact/hooks";
 import { BasePromiseModal } from "./BasePromiseModal";
-import {
-	filterNotesByQuery,
-	MAX_DISPLAY_NOTES,
-} from "./note-filter.utils";
+import { filterNotesByQuery, MAX_DISPLAY_NOTES } from "./note-filter.utils";
 
 export interface SelectNoteResult {
 	cancelled: boolean;
@@ -52,9 +49,7 @@ function SelectNoteBody({
 					placeholder="Search notes..."
 					class="ep:w-full ep:py-2.5 ep:px-3 ep:border ep:border-obs-border ep:rounded-md ep:bg-obs-primary ep:text-obs-normal ep:text-ui-small ep:focus:outline-none ep:focus:border-obs-interactive ep:placeholder:text-obs-muted"
 					onInput={(e) =>
-						setSearchQuery(
-							(e.target as HTMLInputElement).value.toLowerCase(),
-						)
+						setSearchQuery((e.target as HTMLInputElement).value.toLowerCase())
 					}
 				/>
 			</div>
@@ -110,9 +105,8 @@ function SelectNoteBody({
 						})}
 						{filteredNotes.length > MAX_DISPLAY_NOTES && (
 							<div class="ep:p-3 ep:text-center ep:text-obs-muted ep:text-ui-small">
-								Showing {MAX_DISPLAY_NOTES} of{" "}
-								{filteredNotes.length} notes. Type to search for
-								more.
+								Showing {MAX_DISPLAY_NOTES} of {filteredNotes.length} notes.
+								Type to search for more.
 							</div>
 						)}
 					</>
@@ -162,7 +156,7 @@ export class SelectNoteModal extends BasePromiseModal<SelectNoteResult> {
 			: null;
 
 		return this.app.vault.getMarkdownFiles().filter((file) => {
-			if (excludeFolder && file.path.startsWith(excludeFolder + "/")) {
+			if (excludeFolder && file.path.startsWith(`${excludeFolder}/`)) {
 				return false;
 			}
 			return true;

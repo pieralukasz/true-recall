@@ -1,17 +1,4 @@
-/**
- * Base Promise Modal
- * Extends BaseModal with generic promise-based open/close pattern
- *
- * This eliminates the duplicate openAndWait() pattern found in:
- * - SessionModal
- * - FlashcardEditorModal
- * - MoveCardModal
- * - MediaPickerModal
- * - ImagePickerModal
- * - FlashcardReviewModal
- */
-import { App } from "obsidian";
-import { BaseModal, type BaseModalOptions } from "./BaseModal";
+import { BaseModal } from "./BaseModal";
 
 /**
  * Abstract base class for modals that return a result via promise
@@ -38,10 +25,6 @@ import { BaseModal, type BaseModalOptions } from "./BaseModal";
 export abstract class BasePromiseModal<T> extends BaseModal {
 	protected resolvePromise: ((result: T) => void) | null = null;
 	protected hasResolved = false;
-
-	constructor(app: App, options: BaseModalOptions) {
-		super(app, options);
-	}
 
 	/**
 	 * Open the modal and wait for a result
@@ -105,7 +88,7 @@ export interface CancellableResult {
  * Helper to create a cancelled result
  */
 export function createCancelledResult<T extends CancellableResult>(
-	additionalProps?: Partial<Omit<T, "cancelled">>
+	additionalProps?: Partial<Omit<T, "cancelled">>,
 ): T {
 	return {
 		cancelled: true,

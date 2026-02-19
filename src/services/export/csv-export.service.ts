@@ -1,7 +1,7 @@
 import type { App } from "obsidian";
 import type { FSRSCardData } from "types";
-import type { SqliteStoreService } from "../persistence/sqlite/SqliteStoreService";
 import { stripWikiLinkSyntax } from "../../utils";
+import type { SqliteStoreService } from "../persistence/sqlite/SqliteStoreService";
 
 export type CsvSeparator = "," | "\t" | ";";
 
@@ -23,7 +23,12 @@ export class CsvExportService {
 	export(options: CsvExportOptions): { content: string; filename: string } {
 		const allCards = this.store.getAll();
 		const sourceUidToInfo = this.buildSourceUidMap();
-		const cards = this.filterAndEnrich(allCards, sourceUidToInfo, options.projects, options.sourceUids);
+		const cards = this.filterAndEnrich(
+			allCards,
+			sourceUidToInfo,
+			options.projects,
+			options.sourceUids,
+		);
 
 		if (cards.length === 0) {
 			throw new Error("No cards to export");
@@ -105,7 +110,9 @@ export class CsvExportService {
 
 		if (sourceUidFilter && sourceUidFilter.length > 0) {
 			const uidSet = new Set(sourceUidFilter);
-			return enriched.filter((card) => card.sourceUid && uidSet.has(card.sourceUid));
+			return enriched.filter(
+				(card) => card.sourceUid && uidSet.has(card.sourceUid),
+			);
 		}
 
 		if (projectFilter && projectFilter.length > 0) {
@@ -119,7 +126,10 @@ export class CsvExportService {
 		return enriched;
 	}
 
-	private buildSourceUidMap(): Map<string, { name: string; projects: string[] }> {
+	private buildSourceUidMap(): Map<
+		string,
+		{ name: string; projects: string[] }
+	> {
 		const map = new Map<string, { name: string; projects: string[] }>();
 		const files = this.app.vault.getMarkdownFiles();
 
@@ -127,7 +137,7 @@ export class CsvExportService {
 			const cache = this.app.metadataCache.getFileCache(file);
 			if (!cache?.frontmatter) continue;
 
-			const uid = cache.frontmatter["flashcard_uid"] as string | undefined;
+			const uid = cache.frontmatter.flashcard_uid as string | undefined;
 			if (!uid) continue;
 
 			const projects = this.extractProjects(cache.frontmatter);
@@ -138,7 +148,7 @@ export class CsvExportService {
 	}
 
 	private extractProjects(frontmatter: Record<string, unknown>): string[] {
-		const raw = frontmatter["projects"];
+		const raw = frontmatter.projects;
 		if (!Array.isArray(raw)) return [];
 
 		return raw

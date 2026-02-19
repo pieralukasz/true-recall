@@ -1,9 +1,9 @@
-import { ItemView, WorkspaceLeaf } from "obsidian";
+import { ItemView, type WorkspaceLeaf } from "obsidian";
 import { h } from "preact";
 import { VIEW_TYPE_NOTE_HUB } from "../../constants";
+import type TrueRecallPlugin from "../../main";
 import { mountPreact } from "../preact";
 import { NoteHubApp } from "./NoteHubApp";
-import type TrueRecallPlugin from "../../main";
 
 export class NoteHubView extends ItemView {
 	private plugin: TrueRecallPlugin;
@@ -31,9 +31,19 @@ export class NoteHubView extends ItemView {
 		const container = this.containerEl.children[1];
 		if (!(container instanceof HTMLElement)) return;
 		container.empty();
-		container.addClass("ep:flex", "ep:flex-col", "ep:h-full", "ep:overflow-hidden", "ep:bg-obs-primary");
+		container.addClass(
+			"ep:flex",
+			"ep:flex-col",
+			"ep:h-full",
+			"ep:overflow-hidden",
+			"ep:bg-obs-primary",
+		);
 
-		this.unmountPreact = mountPreact(container, this.plugin, h(NoteHubApp, null));
+		this.unmountPreact = mountPreact(
+			container,
+			this.plugin,
+			h(NoteHubApp, null),
+		);
 	}
 
 	async onClose(): Promise<void> {

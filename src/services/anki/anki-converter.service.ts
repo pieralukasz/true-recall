@@ -1,9 +1,9 @@
 import type {
+	AnkiCard,
+	AnkiModel,
+	AnkiNote,
 	ApkgData,
 	ConvertedCard,
-	AnkiCard,
-	AnkiNote,
-	AnkiModel,
 } from "../../types";
 
 const FIELD_SEPARATOR = "\x1f";
@@ -13,14 +13,14 @@ const HTML_ENTITIES: Record<string, string> = {
 	"&lt;": "<",
 	"&gt;": ">",
 	"&nbsp;": " ",
-	"&quot;": "\"",
+	"&quot;": '"',
 	"&#39;": "'",
 	"&apos;": "'",
 };
 
 const HTML_ENTITY_REGEX = new RegExp(
 	Object.keys(HTML_ENTITIES).join("|"),
-	"gi"
+	"gi",
 );
 
 export class AnkiConverterService {
@@ -40,7 +40,14 @@ export class AnkiConverterService {
 			const tags = note.tags.trim().split(/\s+/).filter(Boolean);
 			const fields = note.flds.split(FIELD_SEPARATOR);
 
-			const converted = this.convertCard(card, note, model, fields, deckName, tags);
+			const converted = this.convertCard(
+				card,
+				note,
+				model,
+				fields,
+				deckName,
+				tags,
+			);
 			if (converted) results.push(converted);
 		}
 
@@ -55,19 +62,34 @@ export class AnkiConverterService {
 		model: AnkiModel,
 		fields: string[],
 		deckName: string,
-		tags: string[]
+		tags: string[],
 	): ConvertedCard | null {
 		const rawFront = fields[0] ?? "";
 		const rawBack = fields[1] ?? "";
 
 		if (model.type === 1) {
-			return this.convertClozeCard(card, note, rawFront, rawBack, deckName, tags);
+			return this.convertClozeCard(
+				card,
+				note,
+				rawFront,
+				rawBack,
+				deckName,
+				tags,
+			);
 		}
 
-		const isReversed = model.type === 0 && model.tmpls.length > 1 && card.ord === 1;
+		const isReversed =
+			model.type === 0 && model.tmpls.length > 1 && card.ord === 1;
 
 		if (isReversed) {
-			return this.convertReversedCard(card, note, rawFront, rawBack, deckName, tags);
+			return this.convertReversedCard(
+				card,
+				note,
+				rawFront,
+				rawBack,
+				deckName,
+				tags,
+			);
 		}
 
 		return this.convertBasicCard(card, note, rawFront, rawBack, deckName, tags);
@@ -79,7 +101,7 @@ export class AnkiConverterService {
 		rawFront: string,
 		rawBack: string,
 		deckName: string,
-		tags: string[]
+		tags: string[],
 	): ConvertedCard {
 		const question = this.htmlToMarkdown(rawFront);
 		const answer = this.htmlToMarkdown(rawBack);
@@ -103,7 +125,7 @@ export class AnkiConverterService {
 		rawTemplate: string,
 		rawExtra: string,
 		deckName: string,
-		tags: string[]
+		tags: string[],
 	): ConvertedCard {
 		// Anki cloze syntax is identical to True Recall: {{c1::text}} / {{c1::text::hint}}
 		// card.ord is 0-based, cloze numbers are 1-based
@@ -132,7 +154,7 @@ export class AnkiConverterService {
 		rawFront: string,
 		rawBack: string,
 		deckName: string,
-		tags: string[]
+		tags: string[],
 	): ConvertedCard {
 		const question = this.htmlToMarkdown(rawBack);
 		const answer = this.htmlToMarkdown(rawFront);
@@ -180,16 +202,22 @@ export class AnkiConverterService {
 		text = text.replace(/<br\s*\/?>/gi, "\n");
 
 		// Pre-formatted blocks (before other tag stripping)
-		text = text.replace(/<pre[^>]*>([\s\S]*?)<\/pre>/gi, (_match, content: string) => {
-			const inner = this.stripTags(content);
-			return `\n\`\`\`\n${inner}\n\`\`\`\n`;
-		});
+		text = text.replace(
+			/<pre[^>]*>([\s\S]*?)<\/pre>/gi,
+			(_match, content: string) => {
+				const inner = this.stripTags(content);
+				return `\n\`\`\`\n${inner}\n\`\`\`\n`;
+			},
+		);
 
 		// Inline code
-		text = text.replace(/<code[^>]*>([\s\S]*?)<\/code>/gi, (_match, content: string) => {
-			const inner = this.stripTags(content);
-			return `\`${inner}\``;
-		});
+		text = text.replace(
+			/<code[^>]*>([\s\S]*?)<\/code>/gi,
+			(_match, content: string) => {
+				const inner = this.stripTags(content);
+				return `\`${inner}\``;
+			},
+		);
 
 		// Bold
 		text = text.replace(/<(?:b|strong)>([\s\S]*?)<\/(?:b|strong)>/gi, "**$1**");
@@ -231,14 +259,13 @@ export class AnkiConverterService {
 
 		// <img src="filename">
 		const imgRegex = /<img[^>]+src=["']([^"']+)["'][^>]*>/gi;
-		let match: RegExpExecArray | null;
-		while ((match = imgRegex.exec(content)) !== null) {
+		for (let match = imgRegex.exec(content); match !== null; match = imgRegex.exec(content)) {
 			if (match[1]) files.add(match[1]);
 		}
 
 		// [sound:filename.mp3]
 		const soundRegex = /\[sound:([^\]]+)\]/g;
-		while ((match = soundRegex.exec(content)) !== null) {
+		for (let match = soundRegex.exec(content); match !== null; match = soundRegex.exec(content)) {
 			if (match[1]) files.add(match[1]);
 		}
 

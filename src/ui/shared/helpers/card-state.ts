@@ -37,10 +37,9 @@ export interface ActiveCardFilterOptions {
  * @param options Filter options
  * @returns Active cards only
  */
-export function filterActiveCardsOnly<T extends { suspended?: boolean; buriedUntil?: string | null }>(
-	cards: T[],
-	options: ActiveCardFilterOptions = {}
-): T[] {
+export function filterActiveCardsOnly<
+	T extends { suspended?: boolean; buriedUntil?: string | null },
+>(cards: T[], options: ActiveCardFilterOptions = {}): T[] {
 	const now = options.now ?? new Date();
 
 	return cards.filter((card) => {
@@ -71,7 +70,8 @@ export function countCardsByState(cards: FSRSFlashcardItem[]): CardStateCounts {
 	for (const card of cards) {
 		// Skip buried/suspended cards
 		if (card.fsrs.suspended) continue;
-		if (card.fsrs.buriedUntil && new Date(card.fsrs.buriedUntil) > now) continue;
+		if (card.fsrs.buriedUntil && new Date(card.fsrs.buriedUntil) > now)
+			continue;
 
 		switch (card.fsrs.state) {
 			case State.New:
@@ -99,10 +99,20 @@ export function countCardsByState(cards: FSRSFlashcardItem[]): CardStateCounts {
  * @returns Counts by state including due count
  */
 export function countCardsByStateWithDue(
-	cards: { state: State; due: string; suspended?: boolean; buriedUntil?: string | null }[],
-	tomorrowBoundary: Date
+	cards: {
+		state: State;
+		due: string;
+		suspended?: boolean;
+		buriedUntil?: string | null;
+	}[],
+	tomorrowBoundary: Date,
 ): CardStateCountsWithDue {
-	const counts: CardStateCountsWithDue = { new: 0, learning: 0, review: 0, due: 0 };
+	const counts: CardStateCountsWithDue = {
+		new: 0,
+		learning: 0,
+		review: 0,
+		due: 0,
+	};
 	const now = new Date();
 
 	for (const card of cards) {
@@ -145,7 +155,7 @@ export function countCardsByStateWithDue(
  * @returns Aggregated counts
  */
 export function aggregateCardStateCounts(
-	countsList: CardStateCounts[]
+	countsList: CardStateCounts[],
 ): CardStateCounts {
 	return countsList.reduce(
 		(acc, counts) => ({
@@ -153,6 +163,6 @@ export function aggregateCardStateCounts(
 			learning: acc.learning + counts.learning,
 			review: acc.review + counts.review,
 		}),
-		{ new: 0, learning: 0, review: 0 }
+		{ new: 0, learning: 0, review: 0 },
 	);
 }

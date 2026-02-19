@@ -1,9 +1,6 @@
 import { FLASHCARD_CONFIG } from "../../constants";
 import type { CardType } from "../../types/fsrs/card.types";
-import {
-	parseClozeTemplate,
-	renderClozeAnswer,
-} from "./cloze-parser.service";
+import { parseClozeTemplate, renderClozeAnswer } from "./cloze-parser.service";
 
 const CLOZE_DETECT = /\{\{c\d+::[^}]*?(?:::[^}]*?)?\}\}/;
 
@@ -120,7 +117,7 @@ export function previewCards(content: string): CardPreview[] {
 
 	const previews: CardPreview[] = [];
 	const tagPattern = new RegExp(
-		`^(.*)\\s*(${FLASHCARD_CONFIG.reverseTag}|${FLASHCARD_CONFIG.tag})\\s*$`
+		`^(.*)\\s*(${FLASHCARD_CONFIG.reverseTag}|${FLASHCARD_CONFIG.tag})\\s*$`,
 	);
 	const codeBlockPattern = /^\s*(```|~~~)/;
 	const lines = content.split("\n");
@@ -151,7 +148,6 @@ export function previewCards(content: string): CardPreview[] {
 
 			const isReverse = matchedTag === FLASHCARD_CONFIG.reverseTag;
 
-		
 			const answerLines: string[] = [];
 			let inAnswerCodeBlock = false;
 			i++;
@@ -159,9 +155,16 @@ export function previewCards(content: string): CardPreview[] {
 
 			while (i < lines.length) {
 				const answerLine = lines[i] ?? "";
-				if (/^ID:\s*\d+/.test(answerLine)) { i++; continue; }
-				if (codeBlockPattern.test(answerLine)) inAnswerCodeBlock = !inAnswerCodeBlock;
-				if ((answerLine.trim() === "" && !inAnswerCodeBlock) || tagPattern.test(answerLine)) {
+				if (/^ID:\s*\d+/.test(answerLine)) {
+					i++;
+					continue;
+				}
+				if (codeBlockPattern.test(answerLine))
+					inAnswerCodeBlock = !inAnswerCodeBlock;
+				if (
+					(answerLine.trim() === "" && !inAnswerCodeBlock) ||
+					tagPattern.test(answerLine)
+				) {
 					i--;
 					break;
 				}
@@ -174,7 +177,9 @@ export function previewCards(content: string): CardPreview[] {
 			if (CLOZE_DETECT.test(question)) {
 				const clozeCards = parseClozeTemplate(question);
 				for (const cloze of clozeCards) {
-					const fullAnswer = answer ? `${cloze.answer}\n\n${answer}` : cloze.answer;
+					const fullAnswer = answer
+						? `${cloze.answer}\n\n${answer}`
+						: cloze.answer;
 					previews.push({
 						label: `Cloze ${cloze.clozeIndex}`,
 						question: cloze.question,

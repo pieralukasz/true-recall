@@ -1,7 +1,14 @@
 import type { App, MarkdownPostProcessorContext, TFile } from "obsidian";
-import type { NoteStatusCacheService, NoteStatusInfo } from "../../services/cache/note-status-cache.service";
+import type {
+	NoteStatusCacheService,
+	NoteStatusInfo,
+} from "../../services/cache/note-status-cache.service";
 import type { FrontmatterIndexService } from "../../services/core/frontmatter-index.service";
-import { createLinkStatusElement, createLinkTextCountElement, aggregateInfos } from "./LinkStatusWidget";
+import {
+	aggregateInfos,
+	createLinkStatusElement,
+	createLinkTextCountElement,
+} from "./LinkStatusWidget";
 
 export function createLinkStatusPostProcessor(
 	app: App,
@@ -17,7 +24,9 @@ export function createLinkStatusPostProcessor(
 		const sourcePath = ctx.sourcePath;
 
 		// Per-link donuts
-		const links = Array.from(el.querySelectorAll<HTMLAnchorElement>("a.internal-link"));
+		const links = Array.from(
+			el.querySelectorAll<HTMLAnchorElement>("a.internal-link"),
+		);
 
 		for (const linkEl of links) {
 			const href = linkEl.getAttribute("data-href");
@@ -53,12 +62,18 @@ export function createLinkStatusPostProcessor(
 		}
 
 		// Heading summaries
-		const headings = Array.from(el.querySelectorAll<HTMLElement>("h1, h2, h3, h4, h5, h6"));
+		const headings = Array.from(
+			el.querySelectorAll<HTMLElement>("h1, h2, h3, h4, h5, h6"),
+		);
 		for (const heading of headings) {
 			if (heading.querySelector(".ep-heading-summary")) continue;
 
 			const sectionLinks = collectFlashcardLinksAfterHeading(
-				heading, app, sourcePath, frontmatterIndex, noteStatusCache,
+				heading,
+				app,
+				sourcePath,
+				frontmatterIndex,
+				noteStatusCache,
 			);
 			if (sectionLinks.length < 2) continue;
 
@@ -66,12 +81,19 @@ export function createLinkStatusPostProcessor(
 			const noteNames = sectionLinks.map((l) => l.noteName);
 			const reviewSection = () => onReviewNotes(noteNames, true);
 
-			const donutEl = createLinkStatusElement({ info: aggregated, onPlay: reviewSection, small: true });
+			const donutEl = createLinkStatusElement({
+				info: aggregated,
+				onPlay: reviewSection,
+				small: true,
+			});
 			heading.prepend(donutEl);
 
 			const summaryEl = document.createElement("span");
-			summaryEl.className = "ep-heading-summary ep:inline-flex ep:items-center ep:gap-1 ep:float-right";
-			summaryEl.appendChild(createLinkTextCountElement({ info: aggregated, onPlay: reviewSection }));
+			summaryEl.className =
+				"ep-heading-summary ep:inline-flex ep:items-center ep:gap-1 ep:float-right";
+			summaryEl.appendChild(
+				createLinkTextCountElement({ info: aggregated, onPlay: reviewSection }),
+			);
 			heading.appendChild(summaryEl);
 		}
 	};
@@ -96,7 +118,9 @@ function collectFlashcardLinksAfterHeading(
 			if (siblingLevel <= headingLevel) break;
 		}
 
-		const anchorLinks = Array.from(sibling.querySelectorAll<HTMLAnchorElement>("a.internal-link"));
+		const anchorLinks = Array.from(
+			sibling.querySelectorAll<HTMLAnchorElement>("a.internal-link"),
+		);
 		for (const anchor of anchorLinks) {
 			const href = anchor.getAttribute("data-href");
 			if (!href) continue;

@@ -1,8 +1,15 @@
-import { useRef, useEffect } from "preact/hooks";
-import { MarkdownRenderer, Component as ObsidianComponent, setIcon } from "obsidian";
+import {
+	MarkdownRenderer,
+	Component as ObsidianComponent,
+	setIcon,
+} from "obsidian";
+import { useEffect, useRef } from "preact/hooks";
 import { useApp } from "./ObsidianContext";
 
-export function useMarkdown(markdown: string, sourcePath = ""): preact.RefObject<HTMLDivElement> {
+export function useMarkdown(
+	markdown: string,
+	sourcePath = "",
+): preact.RefObject<HTMLDivElement> {
 	const app = useApp();
 	const ref = useRef<HTMLDivElement>(null);
 

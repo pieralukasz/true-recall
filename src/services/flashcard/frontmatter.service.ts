@@ -1,4 +1,4 @@
-import { App, TFile } from "obsidian";
+import type { App, TFile } from "obsidian";
 import { stripWikiLinkSyntax } from "../../utils";
 
 export class FrontmatterService {
@@ -40,7 +40,7 @@ export class FrontmatterService {
 	 */
 	extractProjectsFromFrontmatter(content: string): string[] {
 		const frontmatterMatch = content.match(
-			FrontmatterService.FRONTMATTER_REGEX
+			FrontmatterService.FRONTMATTER_REGEX,
 		);
 		if (!frontmatterMatch) {
 			return [];
@@ -50,7 +50,7 @@ export class FrontmatterService {
 
 		// Try array format: projects: ["Project 1", "Project 2"]
 		const arrayMatch = frontmatter.match(
-			FrontmatterService.PROJECTS_ARRAY_REGEX
+			FrontmatterService.PROJECTS_ARRAY_REGEX,
 		);
 		if (arrayMatch) {
 			const arrayContent = arrayMatch[1] ?? "";
@@ -63,10 +63,10 @@ export class FrontmatterService {
 
 		// Try list format: projects:\n  - Project 1
 		const listStartMatch = frontmatter.match(
-			FrontmatterService.PROJECTS_LIST_START_REGEX
+			FrontmatterService.PROJECTS_LIST_START_REGEX,
 		);
-		if (listStartMatch) {
-			const startIndex = listStartMatch.index! + listStartMatch[0].length;
+		if (listStartMatch && listStartMatch.index !== undefined) {
+			const startIndex = listStartMatch.index + listStartMatch[0].length;
 			const remainingContent = frontmatter.slice(startIndex);
 			// Match all lines that start with whitespace and dash (list items)
 			const listItems: string[] = [];
@@ -75,7 +75,7 @@ export class FrontmatterService {
 				// Check if line is a list item (starts with whitespace + dash)
 				const itemMatch = line.match(FrontmatterService.LIST_ITEM_REGEX);
 				if (itemMatch) {
-					listItems.push(itemMatch[1]!.trim().replace(/^["']|["']$/g, ""));
+					listItems.push(itemMatch[1]?.trim().replace(/^["']|["']$/g, ""));
 				} else if (line.trim() && !line.match(/^\s/)) {
 					// Non-empty, non-indented line means end of list
 					break;
@@ -107,14 +107,14 @@ export class FrontmatterService {
 
 		// Extract frontmatter tags
 		const frontmatterMatch = content.match(
-			FrontmatterService.FRONTMATTER_REGEX
+			FrontmatterService.FRONTMATTER_REGEX,
 		);
 		if (frontmatterMatch) {
 			const frontmatter = frontmatterMatch[1] ?? "";
 
 			// Array format: tags: [science, history]
 			const tagsArrayMatch = frontmatter.match(
-				FrontmatterService.TAGS_ARRAY_REGEX
+				FrontmatterService.TAGS_ARRAY_REGEX,
 			);
 			if (tagsArrayMatch) {
 				const arrayTags =
@@ -126,12 +126,12 @@ export class FrontmatterService {
 
 			// List format: tags:\n  - science
 			const tagsListMatch = frontmatter.match(
-				FrontmatterService.TAGS_LIST_REGEX
+				FrontmatterService.TAGS_LIST_REGEX,
 			);
 			if (tagsListMatch) {
 				const tagLines = tagsListMatch[0].match(/-\s+(\S+)/g) ?? [];
 				const listTags = tagLines.map((t) =>
-					t.replace(/^-\s+/, "").replace(/^["']|["']$/g, "")
+					t.replace(/^-\s+/, "").replace(/^["']|["']$/g, ""),
 				);
 				tags.push(...listTags);
 			}
@@ -140,18 +140,20 @@ export class FrontmatterService {
 		return tags;
 	}
 
-
 	async setProjectsInFrontmatter(
 		file: TFile,
-		projects: string[]
+		projects: string[],
 	): Promise<void> {
-		await this.app.fileManager.processFrontMatter(file, (fm: Record<string, unknown>) => {
-			if (projects.length > 0) {
-				fm["projects"] = projects.map((p) => `[[${p}]]`);
-			} else {
-				delete fm["projects"];
-			}
-		});
+		await this.app.fileManager.processFrontMatter(
+			file,
+			(fm: Record<string, unknown>) => {
+				if (projects.length > 0) {
+					fm.projects = projects.map((p) => `[[${p}]]`);
+				} else {
+					delete fm.projects;
+				}
+			},
+		);
 	}
 
 	/** UID field name in source note frontmatter */
@@ -173,19 +175,25 @@ export class FrontmatterService {
 	}
 
 	async setSourceNoteUid(sourceFile: TFile, uid: string): Promise<void> {
-		await this.app.fileManager.processFrontMatter(sourceFile, (fm: Record<string, unknown>) => {
-			fm[this.SOURCE_UID_FIELD] = uid;
-		});
+		await this.app.fileManager.processFrontMatter(
+			sourceFile,
+			(fm: Record<string, unknown>) => {
+				fm[this.SOURCE_UID_FIELD] = uid;
+			},
+		);
 	}
 
 	async setFsrsPreset(file: TFile, presetName: string | null): Promise<void> {
-		await this.app.fileManager.processFrontMatter(file, (fm: Record<string, unknown>) => {
-			if (presetName) {
-				fm["fsrs_preset"] = presetName;
-			} else {
-				delete fm["fsrs_preset"];
-			}
-		});
+		await this.app.fileManager.processFrontMatter(
+			file,
+			(fm: Record<string, unknown>) => {
+				if (presetName) {
+					fm.fsrs_preset = presetName;
+				} else {
+					delete fm.fsrs_preset;
+				}
+			},
+		);
 	}
 
 	/**

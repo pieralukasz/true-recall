@@ -1,18 +1,18 @@
+import { ItemView, type WorkspaceLeaf } from "obsidian";
 import { h } from "preact";
-import { ItemView, WorkspaceLeaf } from "obsidian";
 import { VIEW_TYPE_SESSION } from "../../constants";
-import { notify } from "../../services";
-import { SessionLogic } from "./SessionLogic";
-import { SessionApp } from "./SessionApp";
-import { mountPreact } from "../preact";
-import { MoveCardModal } from "../modals/MoveCardModal";
-import { AddToProjectModal } from "../modals/AddToProjectModal";
-import { SessionResultFactory } from "../../utils/session-result-factory";
-import type { DayBoundaryService } from "../../services";
-import type { SessionResult } from "../../types/events.types";
-import type { FSRSFlashcardItem } from "../../types";
 import type TrueRecallPlugin from "../../main";
+import type { DayBoundaryService } from "../../services";
+import { notify } from "../../services";
 import type { SessionApi } from "../../state/store";
+import type { FSRSFlashcardItem } from "../../types";
+import type { SessionResult } from "../../types/events.types";
+import { SessionResultFactory } from "../../utils/session-result-factory";
+import { AddToProjectModal } from "../modals/AddToProjectModal";
+import { MoveCardModal } from "../modals/MoveCardModal";
+import { mountPreact } from "../preact";
+import { SessionApp } from "./SessionApp";
+import { SessionLogic } from "./SessionLogic";
 
 export interface SessionViewOptions {
 	currentNoteName: string | null;
@@ -41,7 +41,7 @@ export class SessionView extends ItemView {
 	}
 
 	private get session(): SessionApi {
-		return this.plugin.store!.getState().session;
+		return this.plugin.store?.getState().session;
 	}
 
 	getViewType(): string {
@@ -63,7 +63,7 @@ export class SessionView extends ItemView {
 		container.addClass("ep:h-full", "ep:flex", "ep:flex-col");
 
 		// Header actions are Obsidian-native, subscribe to store for them
-		this.unsubscribe = this.plugin.store!.subscribe(
+		this.unsubscribe = this.plugin.store?.subscribe(
 			(state) => state.session,
 			() => {
 				this.updateHeaderActions();
@@ -83,7 +83,8 @@ export class SessionView extends ItemView {
 			this.plugin,
 			h(SessionApp, {
 				logic: this.logic,
-				onSelectAndClose: (result: SessionResult) => this.selectAndClose(result),
+				onSelectAndClose: (result: SessionResult) =>
+					this.selectAndClose(result),
 			}),
 		);
 	}
@@ -118,16 +119,30 @@ export class SessionView extends ItemView {
 			this.startSessionAction = this.addAction("play", "Start session", () => {
 				const selectedNotes = this.session.selectedNotes;
 				if (selectedNotes.size === 0) return;
-				const result = SessionResultFactory.createSelectedNotesResult(Array.from(selectedNotes));
+				const result = SessionResultFactory.createSelectedNotesResult(
+					Array.from(selectedNotes),
+				);
 				this.selectAndClose(result);
 			});
 
-			this.moveAction = this.addAction("folder-input", "Move flashcards", () => void this.handleMoveSelectedNotes());
-			this.addToProjectAction = this.addAction("folder-plus", "Add to project", () => void this.handleAddToProject());
+			this.moveAction = this.addAction(
+				"folder-input",
+				"Move flashcards",
+				() => void this.handleMoveSelectedNotes(),
+			);
+			this.addToProjectAction = this.addAction(
+				"folder-plus",
+				"Add to project",
+				() => void this.handleAddToProject(),
+			);
 
-			this.clearSelectionAction = this.addAction("x-circle", "Clear selection", () => {
-				this.session.clearSelection();
-			});
+			this.clearSelectionAction = this.addAction(
+				"x-circle",
+				"Clear selection",
+				() => {
+					this.session.clearSelection();
+				},
+			);
 		}
 	}
 
@@ -135,7 +150,8 @@ export class SessionView extends ItemView {
 		const selectionCount = this.session.selectedNotes.size;
 		const titleEl = this.containerEl.querySelector(".view-header-title");
 		if (titleEl) {
-			titleEl.textContent = selectionCount > 0 ? `Session (${selectionCount})` : "Session";
+			titleEl.textContent =
+				selectionCount > 0 ? `Session (${selectionCount})` : "Session";
 		}
 	}
 
@@ -144,19 +160,26 @@ export class SessionView extends ItemView {
 		if (selectedNotes.size === 0) return;
 
 		const allCards = this.session.allCards;
-		const cardsToMove = allCards.filter((card) => card.sourceNoteName && selectedNotes.has(card.sourceNoteName));
+		const cardsToMove = allCards.filter(
+			(card) => card.sourceNoteName && selectedNotes.has(card.sourceNoteName),
+		);
 		if (cardsToMove.length === 0) {
 			notify().warning("No flashcards found in selected notes");
 			return;
 		}
 
-		const modal = new MoveCardModal(this.app, { cardCount: cardsToMove.length });
+		const modal = new MoveCardModal(this.app, {
+			cardCount: cardsToMove.length,
+		});
 		const result = await modal.openAndWait();
 		if (result.cancelled || !result.targetNotePath) return;
 
 		let movedCount = 0;
 		for (const card of cardsToMove) {
-			const success = await this.plugin.flashcardManager.moveCard(card.id, result.targetNotePath);
+			const success = await this.plugin.flashcardManager.moveCard(
+				card.id,
+				result.targetNotePath,
+			);
 			if (success) movedCount++;
 		}
 		notify().cardsMoved(movedCount, result.targetNotePath);
@@ -167,19 +190,30 @@ export class SessionView extends ItemView {
 		const selectedNotes = this.session.selectedNotes;
 		if (selectedNotes.size === 0) return;
 
-		const availableProjects = Array.from(this.plugin.frontmatterIndex.getAllValues("projects"));
-		const modal = new AddToProjectModal(this.app, { availableProjects, currentProjects: [] });
+		const availableProjects = Array.from(
+			this.plugin.frontmatterIndex.getAllValues("projects"),
+		);
+		const modal = new AddToProjectModal(this.app, {
+			availableProjects,
+			currentProjects: [],
+		});
 		const result = await modal.openAndWait();
 		if (result.cancelled || result.projects.length === 0) return;
 
-		const frontmatterService = this.plugin.flashcardManager.getFrontmatterService();
+		const frontmatterService =
+			this.plugin.flashcardManager.getFrontmatterService();
 		let updatedCount = 0;
 		for (const noteName of selectedNotes) {
-			const noteFile = this.app.vault.getMarkdownFiles().find((f) => f.basename === noteName);
+			const noteFile = this.app.vault
+				.getMarkdownFiles()
+				.find((f) => f.basename === noteName);
 			if (!noteFile) continue;
 			const content = await this.app.vault.cachedRead(noteFile);
-			const currentProjects = frontmatterService.extractProjectsFromFrontmatter(content);
-			const newProjects = [...new Set([...currentProjects, ...result.projects])];
+			const currentProjects =
+				frontmatterService.extractProjectsFromFrontmatter(content);
+			const newProjects = [
+				...new Set([...currentProjects, ...result.projects]),
+			];
 			await frontmatterService.setProjectsInFrontmatter(noteFile, newProjects);
 			updatedCount++;
 		}

@@ -1,7 +1,7 @@
-import type { FlashcardManager } from "../flashcard/flashcard.service";
-import type { FSRSService } from "../core/fsrs.service";
 import { ReactiveCache } from "../cache";
+import type { FSRSService } from "../core/fsrs.service";
 import { dataVersion } from "../core/signals";
+import type { FlashcardManager } from "../flashcard/flashcard.service";
 
 export interface GlobalFlashcardStats {
 	total: number;
@@ -15,10 +15,7 @@ export class StatsService {
 	private fsrsService: FSRSService;
 	private statsCache: ReactiveCache<GlobalFlashcardStats>;
 
-	constructor(
-		flashcardManager: FlashcardManager,
-		fsrsService: FSRSService,
-	) {
+	constructor(flashcardManager: FlashcardManager, fsrsService: FSRSService) {
 		this.flashcardManager = flashcardManager;
 		this.fsrsService = fsrsService;
 

@@ -6,10 +6,10 @@
  */
 
 import type {
-	SchedulerCardStore,
 	BreakScheduleOptions,
-	SchedulingResult,
 	CardScheduleChange,
+	SchedulerCardStore,
+	SchedulingResult,
 	WorkloadDistribution,
 } from "./scheduler.types";
 
@@ -25,7 +25,9 @@ export class ScheduleBreakService {
 	/**
 	 * Schedule a break and redistribute cards
 	 */
-	async scheduleBreak(options: BreakScheduleOptions): Promise<SchedulingResult> {
+	async scheduleBreak(
+		options: BreakScheduleOptions,
+	): Promise<SchedulingResult> {
 		const {
 			startDate,
 			endDate,
@@ -38,7 +40,10 @@ export class ScheduleBreakService {
 		const breakEnd = new Date(endDate);
 
 		// Get cards due during the break
-		const cardsInBreak = this.cardStore.getDueCardsByDateRange(startDate, endDate);
+		const cardsInBreak = this.cardStore.getDueCardsByDateRange(
+			startDate,
+			endDate,
+		);
 
 		const changes: CardScheduleChange[] = [];
 		const beforeDistribution = new Map<string, number>();
@@ -49,7 +54,7 @@ export class ScheduleBreakService {
 			const dateStr = this.formatDate(new Date(card.due));
 			beforeDistribution.set(
 				dateStr,
-				(beforeDistribution.get(dateStr) ?? 0) + 1
+				(beforeDistribution.get(dateStr) ?? 0) + 1,
 			);
 		}
 
@@ -102,24 +107,30 @@ export class ScheduleBreakService {
 
 				afterDistribution.set(
 					this.formatDate(newDue),
-					(afterDistribution.get(this.formatDate(newDue)) ?? 0) + 1
+					(afterDistribution.get(this.formatDate(newDue)) ?? 0) + 1,
 				);
 			}
 		} else {
 			// Distribute cards evenly across redistribution days
-			const cardsPerDay = Math.ceil(cardsInBreak.length / redistributionDays.length);
+			const cardsPerDay = Math.ceil(
+				cardsInBreak.length / redistributionDays.length,
+			);
 
 			let dayIndex = 0;
 			let cardsOnCurrentDay = 0;
 
 			for (const card of cardsInBreak) {
 				// Move to next day if current is full
-				if (cardsOnCurrentDay >= cardsPerDay && dayIndex < redistributionDays.length - 1) {
+				if (
+					cardsOnCurrentDay >= cardsPerDay &&
+					dayIndex < redistributionDays.length - 1
+				) {
 					dayIndex++;
 					cardsOnCurrentDay = 0;
 				}
 
-				const targetDay = redistributionDays[dayIndex]!;
+				const targetDay = redistributionDays[dayIndex];
+				if (!targetDay) continue;
 				const newDue = new Date(card.due);
 				newDue.setFullYear(targetDay.getFullYear());
 				newDue.setMonth(targetDay.getMonth());
@@ -135,7 +146,7 @@ export class ScheduleBreakService {
 
 				afterDistribution.set(
 					this.formatDate(newDue),
-					(afterDistribution.get(this.formatDate(newDue)) ?? 0) + 1
+					(afterDistribution.get(this.formatDate(newDue)) ?? 0) + 1,
 				);
 
 				cardsOnCurrentDay++;
@@ -162,7 +173,7 @@ export class ScheduleBreakService {
 	 */
 	previewBreak(
 		startDate: string,
-		endDate: string
+		endDate: string,
 	): { cardsAffected: number; breakDays: number } {
 		const cards = this.cardStore.getDueCardsByDateRange(startDate, endDate);
 		const breakDays =
@@ -186,15 +197,13 @@ export class ScheduleBreakService {
 	 * Format date as YYYY-MM-DD
 	 */
 	private formatDate(date: Date): string {
-		return date.toISOString().split("T")[0]!;
+		return date.toISOString().split("T")[0] ?? "";
 	}
 
 	/**
 	 * Convert distribution map to array
 	 */
-	private mapToDistribution(
-		map: Map<string, number>
-	): WorkloadDistribution[] {
+	private mapToDistribution(map: Map<string, number>): WorkloadDistribution[] {
 		return Array.from(map.entries())
 			.map(([date, count]) => ({ date, count }))
 			.sort((a, b) => a.date.localeCompare(b.date));

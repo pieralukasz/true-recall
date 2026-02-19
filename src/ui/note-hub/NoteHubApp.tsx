@@ -1,30 +1,36 @@
-import { useState, useEffect, useCallback, useRef, useMemo } from "preact/hooks";
-import { Menu, TFile } from "obsidian";
-import { State } from "ts-fsrs";
 import { effect } from "@preact/signals";
-import { useApp, usePlugin } from "../preact";
-import { useIcon } from "../preact/hooks";
+import type { WorkspaceLeaf } from "obsidian";
+import { Menu, TFile } from "obsidian";
 import {
-	SearchInput,
-	CardCountDisplay,
-	IconButton,
-	EmptyState,
-	LoadingSpinner,
-} from "../preact/components";
+	useCallback,
+	useEffect,
+	useMemo,
+	useRef,
+	useState,
+} from "preact/hooks";
+import { State } from "ts-fsrs";
 import { VIEW_TYPE_REVIEW } from "../../constants";
 import { notify } from "../../services";
-import { AddToProjectModal, SelectNoteModal } from "../modals";
 import { dataVersion, track } from "../../services/core/signals";
-import { filterActiveCardsOnly } from "../shared/helpers";
-import type { ProjectInfo, ProjectNoteInfo } from "../../types";
 import type {
-	NoteHubStatusFilter,
+	NoteHubApi,
 	NoteHubSortBy,
 	NoteHubSortDirection,
-	NoteHubApi,
+	NoteHubStatusFilter,
 	SelectionMode,
 } from "../../state/store";
-import type { WorkspaceLeaf } from "obsidian";
+import type { ProjectInfo, ProjectNoteInfo } from "../../types";
+import { AddToProjectModal, SelectNoteModal } from "../modals";
+import { useApp, usePlugin } from "../preact";
+import {
+	CardCountDisplay,
+	EmptyState,
+	IconButton,
+	LoadingSpinner,
+	SearchInput,
+} from "../preact/components";
+import { useIcon } from "../preact/hooks";
+import { filterActiveCardsOnly } from "../shared/helpers";
 
 // ── Constants ──────────────────────────────────────────────────
 
@@ -53,13 +59,13 @@ const ICON_BTN_CLS =
 // ── Hooks ──────────────────────────────────────────────────────
 
 function useNoteHub(): NoteHubApi {
-	return usePlugin().store!.getState().noteHub;
+	return usePlugin().store?.getState().noteHub;
 }
 
 function useNoteHubState() {
 	const plugin = usePlugin();
 	const [state, setState] = useState(() => {
-		const nh = plugin.store!.getState().noteHub;
+		const nh = plugin.store?.getState().noteHub;
 		return {
 			isLoading: nh.isLoading,
 			projects: nh.projects,
@@ -77,10 +83,10 @@ function useNoteHubState() {
 	});
 
 	useEffect(() => {
-		const unsub = plugin.store!.subscribe(
+		const unsub = plugin.store?.subscribe(
 			(s) => s.noteHub,
 			() => {
-				const nh = plugin.store!.getState().noteHub;
+				const nh = plugin.store?.getState().noteHub;
 				setState({
 					isLoading: nh.isLoading,
 					projects: nh.projects,
@@ -110,7 +116,7 @@ function useLoadData() {
 	const app = useApp();
 
 	return useCallback(async () => {
-		const noteHub = plugin.store!.getState().noteHub;
+		const noteHub = plugin.store?.getState().noteHub;
 		noteHub.setLoading(true);
 
 		try {
@@ -155,12 +161,16 @@ function useLoadData() {
 			const projectLearningCounts = new Map<string, number>();
 			const projectDueCounts = new Map<string, number>();
 			const noteCardCounts = new Map<string, Map<string, number>>();
-			const uidStateCounts = new Map<string, { newCount: number; learningCount: number; dueCount: number }>();
+			const uidStateCounts = new Map<
+				string,
+				{ newCount: number; learningCount: number; dueCount: number }
+			>();
 			const uidCardCounts = new Map<string, number>();
 			const sourceUidToPath = new Map<string, string>();
 			const allCards = plugin.cardStore.cards.getAll();
 			const now = new Date();
-			const tomorrowBoundary = plugin.dayBoundaryService.getTomorrowBoundary(now);
+			const tomorrowBoundary =
+				plugin.dayBoundaryService.getTomorrowBoundary(now);
 			const activeCards = filterActiveCardsOnly(allCards, { now });
 
 			const sourceUidToFile = new Map<string, TFile | null>();
@@ -168,7 +178,10 @@ function useLoadData() {
 				if (card.sourceUid && !sourceUidToFile.has(card.sourceUid)) {
 					sourceUidToFile.set(
 						card.sourceUid,
-						frontmatterIndex.getFilesByValue("flashcard_uid", card.sourceUid)[0] ?? null,
+						frontmatterIndex.getFilesByValue(
+							"flashcard_uid",
+							card.sourceUid,
+						)[0] ?? null,
 					);
 				}
 			}
@@ -176,7 +189,10 @@ function useLoadData() {
 			for (const card of activeCards) {
 				if (!card.sourceUid) continue;
 
-				uidCardCounts.set(card.sourceUid, (uidCardCounts.get(card.sourceUid) || 0) + 1);
+				uidCardCounts.set(
+					card.sourceUid,
+					(uidCardCounts.get(card.sourceUid) || 0) + 1,
+				);
 
 				const projects = sourceUidToProjects.get(card.sourceUid) || [];
 				const sourceFile = sourceUidToFile.get(card.sourceUid);
@@ -187,13 +203,18 @@ function useLoadData() {
 				}
 
 				if (!uidStateCounts.has(card.sourceUid)) {
-					uidStateCounts.set(card.sourceUid, { newCount: 0, learningCount: 0, dueCount: 0 });
+					uidStateCounts.set(card.sourceUid, {
+						newCount: 0,
+						learningCount: 0,
+						dueCount: 0,
+					});
 				}
-				const uidStats = uidStateCounts.get(card.sourceUid)!;
+				const uidStats = uidStateCounts.get(card.sourceUid);
 
 				const dueDate = new Date(card.due);
 				const isNew = card.state === State.New;
-				const isLearning = card.state === State.Learning || card.state === State.Relearning;
+				const isLearning =
+					card.state === State.Learning || card.state === State.Relearning;
 				const isDue = card.state === State.Review && dueDate < tomorrowBoundary;
 
 				if (isNew) uidStats.newCount++;
@@ -201,22 +222,37 @@ function useLoadData() {
 				if (isDue) uidStats.dueCount++;
 
 				for (const projectName of projects) {
-					projectCardCounts.set(projectName, (projectCardCounts.get(projectName) || 0) + 1);
+					projectCardCounts.set(
+						projectName,
+						(projectCardCounts.get(projectName) || 0) + 1,
+					);
 
 					if (!noteCardCounts.has(projectName)) {
 						noteCardCounts.set(projectName, new Map());
 					}
-					const noteCounts = noteCardCounts.get(projectName)!;
-					noteCounts.set(sourceFile.path, (noteCounts.get(sourceFile.path) || 0) + 1);
+					const noteCounts = noteCardCounts.get(projectName);
+					noteCounts.set(
+						sourceFile.path,
+						(noteCounts.get(sourceFile.path) || 0) + 1,
+					);
 
 					if (isNew) {
-						projectNewCounts.set(projectName, (projectNewCounts.get(projectName) || 0) + 1);
+						projectNewCounts.set(
+							projectName,
+							(projectNewCounts.get(projectName) || 0) + 1,
+						);
 					}
 					if (isLearning) {
-						projectLearningCounts.set(projectName, (projectLearningCounts.get(projectName) || 0) + 1);
+						projectLearningCounts.set(
+							projectName,
+							(projectLearningCounts.get(projectName) || 0) + 1,
+						);
 					}
 					if (isDue) {
-						projectDueCounts.set(projectName, (projectDueCounts.get(projectName) || 0) + 1);
+						projectDueCounts.set(
+							projectName,
+							(projectDueCounts.get(projectName) || 0) + 1,
+						);
 					}
 				}
 			}
@@ -298,12 +334,15 @@ function useNoteHubActions(loadData: () => Promise<void>) {
 	);
 
 	const handleStartReview = useCallback(
-		async (filter: { sourceNoteFilters?: string[]; projectFilters?: string[] }) => {
+		async (filter: {
+			sourceNoteFilters?: string[];
+			projectFilters?: string[];
+		}) => {
 			const leaves = app.workspace.getLeavesOfType(VIEW_TYPE_REVIEW);
 			let leaf: WorkspaceLeaf;
 
-			if (leaves.length > 0) {
-				leaf = leaves[0]!;
+			if (leaves.length > 0 && leaves[0]) {
+				leaf = leaves[0];
 			} else {
 				leaf = app.workspace.getLeaf("tab");
 			}
@@ -363,16 +402,25 @@ function useNoteHubActions(loadData: () => Promise<void>) {
 			const file = app.vault.getAbstractFileByPath(notePath);
 			if (!(file instanceof TFile)) return;
 
-			const availableProjects = [...plugin.frontmatterIndex.getAllValues("projects")];
-			const frontmatterService = plugin.flashcardManager.getFrontmatterService();
+			const availableProjects = [
+				...plugin.frontmatterIndex.getAllValues("projects"),
+			];
+			const frontmatterService =
+				plugin.flashcardManager.getFrontmatterService();
 			const content = await app.vault.cachedRead(file);
-			const currentProjects = frontmatterService.extractProjectsFromFrontmatter(content);
+			const currentProjects =
+				frontmatterService.extractProjectsFromFrontmatter(content);
 
-			const modal = new AddToProjectModal(app, { availableProjects, currentProjects });
+			const modal = new AddToProjectModal(app, {
+				availableProjects,
+				currentProjects,
+			});
 			const result = await modal.openAndWait();
 			if (result.cancelled || result.projects.length === 0) return;
 
-			const newProjects = [...new Set([...currentProjects, ...result.projects])];
+			const newProjects = [
+				...new Set([...currentProjects, ...result.projects]),
+			];
 			await frontmatterService.setProjectsInFrontmatter(file, newProjects);
 
 			await loadData();
@@ -386,9 +434,11 @@ function useNoteHubActions(loadData: () => Promise<void>) {
 			const file = app.vault.getAbstractFileByPath(notePath);
 			if (!(file instanceof TFile)) return;
 
-			const frontmatterService = plugin.flashcardManager.getFrontmatterService();
+			const frontmatterService =
+				plugin.flashcardManager.getFrontmatterService();
 			const content = await app.vault.cachedRead(file);
-			const currentProjects = frontmatterService.extractProjectsFromFrontmatter(content);
+			const currentProjects =
+				frontmatterService.extractProjectsFromFrontmatter(content);
 			const newProjects = currentProjects.filter((p) => p !== projectName);
 			await frontmatterService.setProjectsInFrontmatter(file, newProjects);
 
@@ -407,9 +457,11 @@ function useNoteHubActions(loadData: () => Promise<void>) {
 			const result = await modal.openAndWait();
 			if (result.cancelled || !result.selectedNote) return;
 
-			const frontmatterService = plugin.flashcardManager.getFrontmatterService();
+			const frontmatterService =
+				plugin.flashcardManager.getFrontmatterService();
 			const content = await app.vault.cachedRead(result.selectedNote);
-			const currentProjects = frontmatterService.extractProjectsFromFrontmatter(content);
+			const currentProjects =
+				frontmatterService.extractProjectsFromFrontmatter(content);
 
 			if (currentProjects.includes(projectName)) {
 				notify().info(`Note already in project "${projectName}"`);
@@ -417,22 +469,32 @@ function useNoteHubActions(loadData: () => Promise<void>) {
 			}
 
 			const newProjects = [...currentProjects, projectName];
-			await frontmatterService.setProjectsInFrontmatter(result.selectedNote, newProjects);
+			await frontmatterService.setProjectsInFrontmatter(
+				result.selectedNote,
+				newProjects,
+			);
 
-			let sourceUid = await frontmatterService.getSourceNoteUid(result.selectedNote);
+			let sourceUid = await frontmatterService.getSourceNoteUid(
+				result.selectedNote,
+			);
 			if (!sourceUid) {
 				sourceUid = frontmatterService.generateUid();
-				await frontmatterService.setSourceNoteUid(result.selectedNote, sourceUid);
+				await frontmatterService.setSourceNoteUid(
+					result.selectedNote,
+					sourceUid,
+				);
 			}
 
 			await loadData();
-			notify().success(`Added "${result.selectedNote.basename}" to "${projectName}"`);
+			notify().success(
+				`Added "${result.selectedNote.basename}" to "${projectName}"`,
+			);
 		},
 		[app, plugin, loadData],
 	);
 
 	const handleBulkAddToProject = useCallback(async () => {
-		const noteHub = plugin.store!.getState().noteHub;
+		const noteHub = plugin.store?.getState().noteHub;
 		const selectedPaths = Array.from(noteHub.selectedNotePaths);
 
 		if (selectedPaths.length === 0) {
@@ -440,8 +502,13 @@ function useNoteHubActions(loadData: () => Promise<void>) {
 			return;
 		}
 
-		const availableProjects = [...plugin.frontmatterIndex.getAllValues("projects")];
-		const modal = new AddToProjectModal(app, { availableProjects, currentProjects: [] });
+		const availableProjects = [
+			...plugin.frontmatterIndex.getAllValues("projects"),
+		];
+		const modal = new AddToProjectModal(app, {
+			availableProjects,
+			currentProjects: [],
+		});
 		const result = await modal.openAndWait();
 		if (result.cancelled || result.projects.length === 0) return;
 
@@ -451,18 +518,23 @@ function useNoteHubActions(loadData: () => Promise<void>) {
 			if (!(file instanceof TFile)) continue;
 
 			const content = await app.vault.cachedRead(file);
-			const currentProjects = frontmatterService.extractProjectsFromFrontmatter(content);
-			const newProjects = [...new Set([...currentProjects, ...result.projects])];
+			const currentProjects =
+				frontmatterService.extractProjectsFromFrontmatter(content);
+			const newProjects = [
+				...new Set([...currentProjects, ...result.projects]),
+			];
 			await frontmatterService.setProjectsInFrontmatter(file, newProjects);
 		}
 
 		noteHub.exitSelectionMode();
 		await loadData();
-		notify().success(`Added ${selectedPaths.length} note(s) to ${result.projects.length} project(s)`);
+		notify().success(
+			`Added ${selectedPaths.length} note(s) to ${result.projects.length} project(s)`,
+		);
 	}, [app, plugin, loadData]);
 
 	const handleBulkReview = useCallback(async () => {
-		const noteHub = plugin.store!.getState().noteHub;
+		const noteHub = plugin.store?.getState().noteHub;
 		const selectedPaths = Array.from(noteHub.selectedNotePaths);
 
 		if (selectedPaths.length === 0) {
@@ -564,7 +636,9 @@ export function NoteHubApp() {
 					onCustomStudyNote={(f) => void actions.handleCustomStudyNote(f)}
 					onGenerateCards={(p) => void actions.handleGenerateCards(p)}
 					onAddToProject={(p) => void actions.handleAddNoteToProject(p)}
-					onRemoveFromProject={(np, proj) => void actions.handleRemoveFromProject(np, proj)}
+					onRemoveFromProject={(np, proj) =>
+						void actions.handleRemoveFromProject(np, proj)
+					}
 					onAddNotesToProject={(pn) => void actions.handleAddNotesToProject(pn)}
 				/>
 			</div>
@@ -608,7 +682,9 @@ function NoteHubToolbar({
 	onSortDirectionToggle,
 	onRefresh,
 }: NoteHubToolbarProps) {
-	const sortDirIcon = useIcon(sortDirection === "asc" ? "arrow-up" : "arrow-down");
+	const sortDirIcon = useIcon(
+		sortDirection === "asc" ? "arrow-up" : "arrow-down",
+	);
 	const refreshIcon = useIcon("refresh-cw");
 
 	return (
@@ -622,6 +698,7 @@ function NoteHubToolbar({
 			<div class="ep:flex ep:items-center ep:gap-1">
 				{STATUS_FILTERS.map((f) => (
 					<button
+						type="button"
 						key={f.value}
 						class={statusFilter === f.value ? PILL_ACTIVE : PILL_INACTIVE}
 						onClick={() => onStatusFilterChange(f.value)}
@@ -635,7 +712,11 @@ function NoteHubToolbar({
 				<select
 					class="ep:bg-obs-primary ep:text-obs-normal ep:border ep:border-obs-border ep:rounded-lg ep:px-2 ep:py-1 ep:text-ui-smaller ep:cursor-pointer"
 					value={sortBy}
-					onChange={(e) => onSortByChange((e.target as HTMLSelectElement).value as NoteHubSortBy)}
+					onChange={(e) =>
+						onSortByChange(
+							(e.target as HTMLSelectElement).value as NoteHubSortBy,
+						)
+					}
 				>
 					{SORT_OPTIONS.map((o) => (
 						<option key={o.value} value={o.value}>
@@ -645,15 +726,18 @@ function NoteHubToolbar({
 				</select>
 
 				<button
+					type="button"
 					class="clickable-icon"
-					aria-label={sortDirection === "asc" ? "Sort ascending" : "Sort descending"}
+					aria-label={
+						sortDirection === "asc" ? "Sort ascending" : "Sort descending"
+					}
 					onClick={onSortDirectionToggle}
 				>
 					<span ref={sortDirIcon} />
 				</button>
 			</div>
 
-			<button class="clickable-icon" aria-label="Refresh" onClick={onRefresh}>
+			<button type="button" class="clickable-icon" aria-label="Refresh" onClick={onRefresh}>
 				<span ref={refreshIcon} />
 			</button>
 		</div>
@@ -673,7 +757,10 @@ interface NoteHubContentProps {
 	onToggleNoteSelection: (notePath: string) => void;
 	onEnterSelectionMode: (notePath: string) => void;
 	onOpenNote: (path: string) => void;
-	onStartReview: (filter: { sourceNoteFilters?: string[]; projectFilters?: string[] }) => void;
+	onStartReview: (filter: {
+		sourceNoteFilters?: string[];
+		projectFilters?: string[];
+	}) => void;
 	onStartReviewProject: (projectName: string) => void;
 	onCustomStudyProject: (projectName: string) => void;
 	onCustomStudyNote: (filter: { sourceNoteFilters: string[] }) => void;
@@ -767,7 +854,10 @@ interface ProjectGroupProps {
 	onToggleNoteSelection: (notePath: string) => void;
 	onEnterSelectionMode: (notePath: string) => void;
 	onOpenNote: (path: string) => void;
-	onStartReview: (filter: { sourceNoteFilters?: string[]; projectFilters?: string[] }) => void;
+	onStartReview: (filter: {
+		sourceNoteFilters?: string[];
+		projectFilters?: string[];
+	}) => void;
 	onStartReviewProject: (projectName: string) => void;
 	onCustomStudyProject: (projectName: string) => void;
 	onCustomStudyNote: (filter: { sourceNoteFilters: string[] }) => void;
@@ -796,7 +886,8 @@ function ProjectGroup({
 	onAddNotesToProject,
 }: ProjectGroupProps) {
 	const chevronRef = useIcon(isExpanded ? "chevron-down" : "chevron-right");
-	const noteText = project.noteCount === 1 ? "1 note" : `${project.noteCount} notes`;
+	const noteText =
+		project.noteCount === 1 ? "1 note" : `${project.noteCount} notes`;
 
 	const handleHeaderClick = useCallback(
 		(e: MouseEvent) => {
@@ -810,13 +901,23 @@ function ProjectGroup({
 		<div class="ep:flex ep:flex-col">
 			<div
 				class="ep:flex ep:items-center ep:gap-3 ep:py-3 ep:px-4 ep:cursor-pointer ep:hover:bg-obs-modifier-hover ep:transition-colors ep:border-b ep:border-obs-modifier-border"
+				role="button"
+				tabIndex={0}
 				onClick={handleHeaderClick}
+				onKeyDown={(e) => {
+					if (e.key === "Enter" || e.key === " ") {
+						e.preventDefault();
+						handleHeaderClick(e as unknown as MouseEvent);
+					}
+				}}
 			>
 				<div class="ep:shrink-0 ep:flex ep:items-center ep:text-obs-muted [&_svg]:ep:w-4 [&_svg]:ep:h-4">
 					<span ref={chevronRef} />
 				</div>
 
-				<div class="ep:font-medium ep:text-obs-normal ep:text-ui-small">{project.name}</div>
+				<div class="ep:font-medium ep:text-obs-normal ep:text-ui-small">
+					{project.name}
+				</div>
 
 				<div class="ep:text-obs-muted ep:text-ui-smaller">{noteText}</div>
 
@@ -886,7 +987,10 @@ interface UnassignedSectionProps {
 	onToggleNoteSelection: (notePath: string) => void;
 	onEnterSelectionMode: (notePath: string) => void;
 	onOpenNote: (path: string) => void;
-	onStartReview: (filter: { sourceNoteFilters?: string[]; projectFilters?: string[] }) => void;
+	onStartReview: (filter: {
+		sourceNoteFilters?: string[];
+		projectFilters?: string[];
+	}) => void;
 	onCustomStudyNote: (filter: { sourceNoteFilters: string[] }) => void;
 	onGenerateCards: (notePath: string) => void;
 	onAddToProject: (notePath: string) => void;
@@ -944,7 +1048,9 @@ function UnassignedSection({
 					<span ref={chevronRef} />
 				</div>
 
-				<div class="ep:font-medium ep:text-obs-normal ep:text-ui-small">Unassigned Notes</div>
+				<div class="ep:font-medium ep:text-obs-normal ep:text-ui-small">
+					Unassigned Notes
+				</div>
 
 				<div class="ep:text-obs-muted ep:text-ui-smaller">{noteText}</div>
 
@@ -1070,11 +1176,23 @@ function NoteHubNoteRow({
 
 			menu.showAtMouseEvent(e);
 		},
-		[note, projectName, onOpenNote, onStartReview, onCustomStudy, onGenerateCards, onAddToProject, onRemoveFromProject],
+		[
+			note,
+			projectName,
+			onOpenNote,
+			onStartReview,
+			onCustomStudy,
+			onGenerateCards,
+			onAddToProject,
+			onRemoveFromProject,
+		],
 	);
 
 	const rowCls = `ep:group ep:flex ep:items-center ep:gap-3 ep:py-2.5 ep:px-4 ep:pl-8 ep:border-b ep:border-obs-modifier-border ep:transition-colors ep:hover:bg-obs-modifier-hover ep:last:border-b-0${isSelected ? " ep:bg-obs-interactive/10" : ""}`;
-	const checkboxVisibility = selectionMode === "selecting" ? "" : " ep:opacity-0 ep:group-hover:opacity-100";
+	const checkboxVisibility =
+		selectionMode === "selecting"
+			? ""
+			: " ep:opacity-0 ep:group-hover:opacity-100";
 
 	return (
 		<div class={rowCls}>
@@ -1121,6 +1239,7 @@ function NoteHubNoteRow({
 						onClick={() => onGenerateCards(note.path)}
 					/>
 					<button
+						type="button"
 						class={ICON_BTN_CLS}
 						aria-label="More actions"
 						onClick={showContextMenu}
@@ -1190,7 +1309,12 @@ function SelectionFooter({
 	return (
 		<div class="ep:flex ep:items-center ep:justify-between ep:py-2 ep:px-3 ep:border-t ep:border-obs-border ep:bg-obs-secondary">
 			<div class="ep:flex ep:items-center ep:gap-2">
-				<button class="clickable-icon" aria-label="Cancel selection" onClick={onCancel}>
+				<button
+					type="button"
+					class="clickable-icon"
+					aria-label="Cancel selection"
+					onClick={onCancel}
+				>
 					<span ref={cancelIcon} />
 				</button>
 
@@ -1205,6 +1329,7 @@ function SelectionFooter({
 
 			<div class="ep:flex ep:items-center ep:gap-2">
 				<button
+					type="button"
 					class={`${btnBase} ep:bg-obs-modifier-hover ep:text-obs-normal ep:hover:bg-obs-interactive ep:hover:text-obs-on-accent`}
 					onClick={onBulkAddToProject}
 				>
@@ -1213,6 +1338,7 @@ function SelectionFooter({
 				</button>
 
 				<button
+					type="button"
 					class={`${btnBase} mod-cta${totalDue === 0 ? " ep:opacity-50 ep:cursor-not-allowed" : ""}`}
 					disabled={totalDue === 0}
 					onClick={totalDue === 0 ? undefined : onBulkReview}

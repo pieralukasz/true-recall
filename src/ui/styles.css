@@ -1,6 +1,14 @@
 /* Tailwind CSS v4 entry point with Obsidian theme integration */
 @import "tailwindcss" prefix(ep);
 
+/* Domain-specific CSS (complex selectors, SVG, animations that can't be Tailwind utilities) */
+@import "./editor/editor.styles.css";
+@import "./review/review.styles.css";
+@import "./modals/modals.styles.css";
+@import "./stats/stats.styles.css";
+@import "./flashcard-panel/panel.styles.css";
+@import "./simulator/styles.css";
+
 /*
  * Obsidian Theme Variables - Runtime Inheritance
  *
@@ -12,12 +20,8 @@
 .theme-light {
 	--ep-color-obs-modifier-hover: var(--background-modifier-hover);
 	--ep-color-obs-modifier-border: var(--background-modifier-border);
-	--ep-color-obs-modifier-border-hover: var(
-		--background-modifier-border-hover
-	);
-	--ep-color-obs-modifier-border-focus: var(
-		--background-modifier-border-focus
-	);
+	--ep-color-obs-modifier-border-hover: var(--background-modifier-border-hover);
+	--ep-color-obs-modifier-border-focus: var(--background-modifier-border-focus);
 	--ep-color-obs-border: var(--background-modifier-border);
 	--ep-color-obs-primary: var(--background-primary);
 	--ep-color-obs-primary-alt: var(--background-primary-alt);
@@ -166,15 +170,19 @@
 		width: var(--ep-modal-width, fit-content);
 	}
 	.ep-selectable-highlight {
-		background-color: var(--interactive-accent) !important;
-		border: 2px solid var(--interactive-accent-hover) !important;
+		background-color: var(--interactive-accent);
+		border: 2px solid var(--interactive-accent-hover);
 	}
 	.ep-radio-active {
-		background-color: var(--background-modifier-hover) !important;
-		border: 1px solid var(--interactive-accent) !important;
+		background-color: var(--background-modifier-hover);
+		border: 1px solid var(--interactive-accent);
 	}
 	.ep-bg-collect-gradient {
-		background: linear-gradient(135deg, var(--color-yellow), var(--color-orange));
+		background: linear-gradient(
+			135deg,
+			var(--color-yellow),
+			var(--color-orange)
+		);
 	}
 	.ep-textarea-invisible {
 		font-size: inherit;
@@ -187,14 +195,6 @@
 		box-shadow: none;
 	}
 }
-
-/* Domain-specific CSS (complex selectors, SVG, animations that can't be Tailwind utilities) */
-@import "./editor/editor.styles.css";
-@import "./review/review.styles.css";
-@import "./modals/modals.styles.css";
-@import "./stats/stats.styles.css";
-@import "./flashcard-panel/panel.styles.css";
-@import "./simulator/styles.css";
 
 /* Reduced motion preferences (consolidated) */
 @media (prefers-reduced-motion: reduce) {

@@ -1,7 +1,15 @@
-import type { AppState, AppStoreDeps, SimulatorSliceState, SimulatorSliceActions } from "../types";
-import type { MetricType, SequenceSimulation } from "../../../ui/simulator/types";
-import { DEFAULT_SEQUENCES } from "../../../ui/simulator/constants";
 import { DEFAULT_FSRS_WEIGHTS } from "../../../constants";
+import { DEFAULT_SEQUENCES } from "../../../ui/simulator/constants";
+import type {
+	MetricType,
+	SequenceSimulation,
+} from "../../../ui/simulator/types";
+import type {
+	AppState,
+	AppStoreDeps,
+	SimulatorSliceActions,
+	SimulatorSliceState,
+} from "../types";
 
 const MAX_HISTORY_SIZE = 50;
 
@@ -9,7 +17,9 @@ type SimulatorSlice = SimulatorSliceState & SimulatorSliceActions;
 
 function createInitialState(deps: AppStoreDeps): SimulatorSliceState {
 	const settings = deps.getSettings();
-	const initialParams = settings.fsrsWeights ? [...settings.fsrsWeights] : [...DEFAULT_FSRS_WEIGHTS];
+	const initialParams = settings.fsrsWeights
+		? [...settings.fsrsWeights]
+		: [...DEFAULT_FSRS_WEIGHTS];
 	const initialRetention = settings.fsrsRequestRetention ?? 0.9;
 
 	return {
@@ -28,7 +38,7 @@ function createInitialState(deps: AppStoreDeps): SimulatorSliceState {
 export function createSimulatorSlice(
 	set: (fn: (state: AppState) => Partial<AppState>) => void,
 	get: () => AppState,
-	deps: AppStoreDeps
+	deps: AppStoreDeps,
 ): SimulatorSlice {
 	const initial = createInitialState(deps);
 
@@ -206,7 +216,9 @@ export function createSimulatorSlice(
 		},
 
 		getParametersString: () => {
-			return get().simulator.parameters.map((p) => p.toFixed(4)).join(", ");
+			return get()
+				.simulator.parameters.map((p) => p.toFixed(4))
+				.join(", ");
 		},
 	};
 

@@ -7,7 +7,7 @@
  * - Array fields (non-unique: many files per value, like projects)
  * - Nested paths (e.g., "metadata.category")
  */
-import { TFile, type App, type CachedMetadata, type Plugin } from "obsidian";
+import { type App, type CachedMetadata, type Plugin, TFile } from "obsidian";
 import { stripWikiLinkSyntax } from "../../utils";
 
 export interface FieldConfig {
@@ -57,12 +57,19 @@ export class FrontmatterIndexService {
 	 * Get value from frontmatter using dot notation path
 	 * e.g., "metadata.category" extracts frontmatter.metadata.category
 	 */
-	private getNestedValue(frontmatter: Record<string, unknown>, path: string): unknown {
+	private getNestedValue(
+		frontmatter: Record<string, unknown>,
+		path: string,
+	): unknown {
 		const parts = path.split(".");
 		let current: unknown = frontmatter;
 
 		for (const part of parts) {
-			if (current === null || current === undefined || typeof current !== "object") {
+			if (
+				current === null ||
+				current === undefined ||
+				typeof current !== "object"
+			) {
 				return undefined;
 			}
 			current = (current as Record<string, unknown>)[part];
@@ -75,7 +82,10 @@ export class FrontmatterIndexService {
 		return stripWikiLinkSyntax(value);
 	}
 
-	private extractValues(frontmatter: Record<string, unknown> | undefined, config: FieldConfig): string[] {
+	private extractValues(
+		frontmatter: Record<string, unknown> | undefined,
+		config: FieldConfig,
+	): string[] {
 		if (!frontmatter) return [];
 
 		const raw = this.getNestedValue(frontmatter, config.field);
@@ -112,23 +122,31 @@ export class FrontmatterIndexService {
 			const cache = this.app.metadataCache.getFileCache(file);
 			this.indexFile(file.path, cache?.frontmatter);
 		}
-
 	}
 
-	private indexFile(path: string, frontmatter: Record<string, unknown> | undefined): void {
+	private indexFile(
+		path: string,
+		frontmatter: Record<string, unknown> | undefined,
+	): void {
 		for (const index of this.fields.values()) {
 			const values = this.extractValues(frontmatter, index.config);
 			this.updateFieldIndex(index, path, values);
 		}
 	}
 
-	private updateFieldIndex(index: FieldIndex, path: string, newValues: string[]): void {
+	private updateFieldIndex(
+		index: FieldIndex,
+		path: string,
+		newValues: string[],
+	): void {
 		const { config, valueToPath, pathToValue } = index;
 
 		// Get old values for this path
 		const oldEntry = pathToValue.get(path);
 		const oldValues: string[] = oldEntry
-			? (oldEntry instanceof Set ? Array.from(oldEntry) : [oldEntry])
+			? oldEntry instanceof Set
+				? Array.from(oldEntry)
+				: [oldEntry]
 			: [];
 
 		// Remove old mappings
@@ -156,7 +174,10 @@ export class FrontmatterIndexService {
 		if (config.type === "array") {
 			pathToValue.set(path, new Set(newValues));
 		} else {
-			pathToValue.set(path, newValues[0]!);
+			const firstValue = newValues[0];
+			if (firstValue !== undefined) {
+				pathToValue.set(path, firstValue);
+			}
 		}
 
 		for (const val of newValues) {
@@ -228,13 +249,16 @@ export class FrontmatterIndexService {
 
 	registerEvents(plugin: Plugin): void {
 		plugin.registerEvent(
-			this.app.metadataCache.on("changed", this.handleMetadataChanged.bind(this))
+			this.app.metadataCache.on(
+				"changed",
+				this.handleMetadataChanged.bind(this),
+			),
 		);
 		plugin.registerEvent(
-			this.app.vault.on("delete", this.handleFileDeleted.bind(this))
+			this.app.vault.on("delete", this.handleFileDeleted.bind(this)),
 		);
 		plugin.registerEvent(
-			this.app.vault.on("rename", this.handleFileRenamed.bind(this))
+			this.app.vault.on("rename", this.handleFileRenamed.bind(this)),
 		);
 	}
 
@@ -263,7 +287,11 @@ export class FrontmatterIndexService {
 		this.directEventHandlers = {};
 	}
 
-	private handleMetadataChanged(file: TFile, _data: string, cache: CachedMetadata): void {
+	private handleMetadataChanged(
+		file: TFile,
+		_data: string,
+		cache: CachedMetadata,
+	): void {
 		this.indexFile(file.path, cache?.frontmatter);
 	}
 
@@ -303,7 +331,10 @@ export class FrontmatterIndexService {
 			if (config.type === "array") {
 				pathToValue.set(file.path, new Set(values));
 			} else {
-				pathToValue.set(file.path, values[0]!);
+				const firstValue = values[0];
+				if (firstValue !== undefined) {
+					pathToValue.set(file.path, firstValue);
+				}
 			}
 		}
 	}

@@ -4,8 +4,8 @@
  * Used by SessionView
  */
 import { Rating, State } from "ts-fsrs";
-import type { FSRSFlashcardItem } from "../../types";
 import type { DayBoundaryService } from "../../services";
+import type { FSRSFlashcardItem } from "../../types";
 
 export interface NoteStats {
 	noteName: string;
@@ -29,7 +29,7 @@ export interface CardStats {
 export class SessionLogic {
 	constructor(
 		private allCards: FSRSFlashcardItem[],
-		private dayBoundaryService: DayBoundaryService
+		private dayBoundaryService: DayBoundaryService,
 	) {}
 
 	/**
@@ -39,10 +39,11 @@ export class SessionLogic {
 		if (!noteName) return null;
 
 		const cards = this.allCards.filter(
-			(c) => c.sourceNoteName === noteName &&
+			(c) =>
+				c.sourceNoteName === noteName &&
 				this.isCardAvailable(c, now) &&
 				!c.fsrs.suspended &&
-				!this.isCardBuried(c, now)
+				!this.isCardBuried(c, now),
 		);
 
 		if (cards.length === 0) return null;
@@ -60,11 +61,13 @@ export class SessionLogic {
 	getTodayStats(now: Date, todayStart: Date): CardStats {
 		const cards = this.allCards.filter((c) => {
 			const createdAt = c.fsrs.createdAt;
-			return createdAt &&
+			return (
+				createdAt &&
 				createdAt >= todayStart.getTime() &&
 				this.isCardAvailable(c, now) &&
 				!c.fsrs.suspended &&
-				!this.isCardBuried(c, now);
+				!this.isCardBuried(c, now)
+			);
 		});
 
 		return {
@@ -78,10 +81,11 @@ export class SessionLogic {
 	 * Get stats for all available cards
 	 */
 	getAllCardsStats(now: Date): CardStats {
-		const cards = this.allCards.filter((c) =>
-			this.isCardAvailable(c, now) &&
-			!c.fsrs.suspended &&
-			!this.isCardBuried(c, now)
+		const cards = this.allCards.filter(
+			(c) =>
+				this.isCardAvailable(c, now) &&
+				!c.fsrs.suspended &&
+				!this.isCardBuried(c, now),
 		);
 
 		return {
@@ -124,20 +128,25 @@ export class SessionLogic {
 		const stats: NoteStats[] = [];
 
 		for (const [noteName, cards] of noteMap) {
-			const availableCards = cards.filter((c) =>
-				this.isCardAvailable(c, now) &&
-				!c.fsrs.suspended &&
-				!this.isCardBuried(c, now)
+			const availableCards = cards.filter(
+				(c) =>
+					this.isCardAvailable(c, now) &&
+					!c.fsrs.suspended &&
+					!this.isCardBuried(c, now),
 			);
-			const newCount = availableCards.filter((c) => c.fsrs.state === State.New).length;
-			const dueCount = availableCards.filter((c) => c.fsrs.state !== State.New).length;
+			const newCount = availableCards.filter(
+				(c) => c.fsrs.state === State.New,
+			).length;
+			const dueCount = availableCards.filter(
+				(c) => c.fsrs.state !== State.New,
+			).length;
 
 			// Check if completed (no new cards remaining for this note)
 			const allNewCards = cards.filter((c) => c.fsrs.state === State.New);
 			const isCompleted = allNewCards.length === 0 && cards.length > 0;
 
 			// Get notePath from first card that has it
-			const notePath = cards.find(c => c.sourceNotePath)?.sourceNotePath;
+			const notePath = cards.find((c) => c.sourceNotePath)?.sourceNotePath;
 
 			stats.push({
 				noteName,
@@ -182,13 +191,13 @@ export class SessionLogic {
 			if (c.fsrs.suspended) return false;
 			const history = c.fsrs.history;
 			if (!history || history.length === 0) return false;
-			return history[history.length - 1]!.r === Rating.Again;
+			return history[history.length - 1]?.r === Rating.Again;
 		}).length;
 	}
 
 	getDifficultCardsCount(): number {
 		return this.allCards.filter(
-			(c) => !c.fsrs.suspended && c.fsrs.difficulty >= 7
+			(c) => !c.fsrs.suspended && c.fsrs.difficulty >= 7,
 		).length;
 	}
 
@@ -204,7 +213,7 @@ export class SessionLogic {
 
 	getMostForgottenCount(minLapses: number = 1): number {
 		return this.allCards.filter(
-			(c) => !c.fsrs.suspended && c.fsrs.lapses >= minLapses
+			(c) => !c.fsrs.suspended && c.fsrs.lapses >= minLapses,
 		).length;
 	}
 
@@ -215,9 +224,10 @@ export class SessionLogic {
 		const allNoteStats = this.getAllNoteStats(now);
 
 		// Filter by search query and exclude notes with no available cards
-		const filteredStats = allNoteStats.filter((stat) =>
-			stat.noteName.toLowerCase().includes(searchQuery) &&
-			(stat.newCount > 0 || stat.dueCount > 0)
+		const filteredStats = allNoteStats.filter(
+			(stat) =>
+				stat.noteName.toLowerCase().includes(searchQuery) &&
+				(stat.newCount > 0 || stat.dueCount > 0),
 		);
 
 		// Sort: notes with cards first, then completed, alphabetically within groups

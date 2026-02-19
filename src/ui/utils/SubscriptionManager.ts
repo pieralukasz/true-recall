@@ -70,9 +70,14 @@ export class SubscriptionManager {
 	 * Create a tracked setInterval that auto-clears on dispose
 	 * @returns interval id for manual cancellation if needed
 	 */
-	setInterval(callback: () => void, ms: number): ReturnType<typeof setInterval> {
+	setInterval(
+		callback: () => void,
+		ms: number,
+	): ReturnType<typeof setInterval> {
 		if (this.disposed) {
-			console.error("[SubscriptionManager] Cannot create interval after dispose");
+			console.error(
+				"[SubscriptionManager] Cannot create interval after dispose",
+			);
 			return setInterval(() => {}, 0);
 		}
 		const id = setInterval(callback, ms);
@@ -141,7 +146,11 @@ export class SubscriptionManager {
 	/**
 	 * Get count of tracked items (for debugging)
 	 */
-	getTrackedCount(): { unsubscribers: number; timeouts: number; intervals: number } {
+	getTrackedCount(): {
+		unsubscribers: number;
+		timeouts: number;
+		intervals: number;
+	} {
 		return {
 			unsubscribers: this.unsubscribers.length,
 			timeouts: this.timeouts.size,

@@ -1,15 +1,19 @@
-import { useState, useCallback, useMemo, useEffect } from "preact/hooks";
 import type { ReadonlySignal } from "@preact/signals";
-import { type TFile, normalizePath } from "obsidian";
-import { useApp, usePlugin } from "../preact";
-import { Panel, SearchInput, ActionButton } from "../preact/components";
+import { normalizePath, type TFile } from "obsidian";
+import { useCallback, useEffect, useMemo, useState } from "preact/hooks";
 import type { OrphanedCardGroup } from "../../services/flashcard/orphaned-cards.service";
+import { useApp, usePlugin } from "../preact";
+import { ActionButton, Panel, SearchInput } from "../preact/components";
 
 function useOrphanedCards() {
 	const plugin = usePlugin();
 
 	const load = useCallback((): OrphanedCardGroup[] => {
-		if (!plugin.orphanedCardsService || !plugin.cardStore || !plugin.frontmatterIndex) {
+		if (
+			!plugin.orphanedCardsService ||
+			!plugin.cardStore ||
+			!plugin.frontmatterIndex
+		) {
 			return [];
 		}
 		const orphans = plugin.orphanedCardsService.getOrphanedCardsExtended(
@@ -86,7 +90,8 @@ export function OrphanedCardsApp({ refreshSignal }: OrphanedCardsAppProps) {
 
 	const handleCreateNote = useCallback(
 		async (group: OrphanedCardGroup) => {
-			const frontmatterService = plugin.flashcardManager.getFrontmatterService();
+			const frontmatterService =
+				plugin.flashcardManager.getFrontmatterService();
 			const folderPath = app.fileManager.getNewFileParent("")?.path ?? "";
 			const baseName =
 				group.reason === "missing_source_file"
@@ -104,7 +109,10 @@ export function OrphanedCardsApp({ refreshSignal }: OrphanedCardsAppProps) {
 
 			const cardList = group.cards
 				.slice(0, 10)
-				.map((c) => `- ${c.question.slice(0, 80)}${c.question.length > 80 ? "..." : ""}`)
+				.map(
+					(c) =>
+						`- ${c.question.slice(0, 80)}${c.question.length > 80 ? "..." : ""}`,
+				)
 				.join("\n");
 
 			const moreText =
@@ -143,7 +151,8 @@ ${cardList}${moreText}
 		async (targetNote: TFile) => {
 			if (!moveTarget) return;
 
-			const frontmatterService = plugin.flashcardManager.getFrontmatterService();
+			const frontmatterService =
+				plugin.flashcardManager.getFrontmatterService();
 
 			let targetUid = await frontmatterService.getSourceNoteUid(targetNote);
 			if (!targetUid) {
@@ -306,8 +315,9 @@ function GroupRow({ group, onDelete, onCreateNote, onMove }: GroupRowProps) {
 							class="ep:py-2 ep:border-b ep:border-obs-border ep:last:border-b-0"
 						>
 							<div class="ep:text-ui-smaller ep:text-obs-normal">
-								Q: {card.question.length > 100
-									? card.question.slice(0, 100) + "..."
+								Q:{" "}
+								{card.question.length > 100
+									? `${card.question.slice(0, 100)}...`
 									: card.question}
 							</div>
 						</div>

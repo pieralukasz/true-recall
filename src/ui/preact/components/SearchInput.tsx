@@ -1,4 +1,4 @@
-import { useRef, useEffect } from "preact/hooks";
+import { useEffect, useRef } from "preact/hooks";
 
 export interface SearchInputProps {
 	value: string;
@@ -31,7 +31,9 @@ export function SearchInput({
 				class="ep:w-full ep:py-2 ep:px-3 ep:border ep:border-obs-border ep:rounded-md ep:bg-obs-primary ep:text-obs-normal ep:text-ui-small ep:focus:outline-none ep:focus:border-obs-interactive ep:placeholder:text-obs-muted"
 				placeholder={placeholder}
 				value={value}
-				onInput={(e) => onChange((e.target as HTMLInputElement).value.toLowerCase())}
+				onInput={(e) =>
+					onChange((e.target as HTMLInputElement).value.toLowerCase())
+				}
 			/>
 		</div>
 	);

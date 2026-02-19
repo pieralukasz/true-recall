@@ -1,4 +1,4 @@
-import { App, Platform, WorkspaceLeaf } from "obsidian";
+import { type App, Platform, type WorkspaceLeaf } from "obsidian";
 
 export interface ViewActivationOptions {
 	useMainArea?: boolean;
@@ -10,7 +10,7 @@ export interface ViewActivationOptions {
 export async function activateView(
 	app: App,
 	viewType: string,
-	options: ViewActivationOptions = {}
+	options: ViewActivationOptions = {},
 ): Promise<WorkspaceLeaf | null> {
 	const { workspace } = app;
 	const { useMainArea = false, state, skipReveal = false } = options;
@@ -46,7 +46,7 @@ export async function activateView(
 export async function activateMainAreaView(
 	app: App,
 	viewType: string,
-	state?: Record<string, unknown>
+	state?: Record<string, unknown>,
 ): Promise<WorkspaceLeaf> {
 	const { workspace } = app;
 
@@ -65,7 +65,7 @@ export async function activateReviewView(
 	app: App,
 	viewType: string,
 	reviewMode: "fullscreen" | "panel",
-	state?: Record<string, unknown>
+	state?: Record<string, unknown>,
 ): Promise<WorkspaceLeaf | null> {
 	const { workspace } = app;
 

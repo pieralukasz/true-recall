@@ -20,7 +20,7 @@ export function isProjectNote(basename: string, projects: string[]): boolean {
  * of that parent project.
  */
 export function buildProjectGraph(
-	frontmatterIndex: FrontmatterIndexService
+	frontmatterIndex: FrontmatterIndexService,
 ): ProjectGraph {
 	const allProjectNames = frontmatterIndex.getAllValues("projects");
 	const validProjects = new Set<string>();
@@ -34,15 +34,16 @@ export function buildProjectGraph(
 		if (!projectFile) continue;
 
 		// Verify self-reference: the project note must list itself
-		const fileProjects = frontmatterIndex.getValues("projects", projectFile.path);
+		const fileProjects = frontmatterIndex.getValues(
+			"projects",
+			projectFile.path,
+		);
 		if (!isProjectNote(name, fileProjects)) continue;
 
 		validProjects.add(name);
 
 		// Other projects listed = parent projects
-		const parents = fileProjects.filter(
-			(p) => p !== name
-		);
+		const parents = fileProjects.filter((p) => p !== name);
 		parentMap.set(name, parents);
 	}
 
@@ -79,7 +80,7 @@ export function buildProjectGraph(
 export function getDescendantProjects(
 	projectName: string,
 	childrenMap: Map<string, string[]>,
-	visited: Set<string> = new Set()
+	visited: Set<string> = new Set(),
 ): Set<string> {
 	const result = new Set<string>();
 	if (visited.has(projectName)) return result;

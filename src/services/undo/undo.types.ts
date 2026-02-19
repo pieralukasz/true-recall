@@ -3,7 +3,7 @@
  * Type definitions for the undo/redo system
  */
 
-import type { State, Grade } from "ts-fsrs";
+import type { Grade, State } from "ts-fsrs";
 import type { FSRSCardData, FSRSFlashcardItem } from "../../types";
 
 /**

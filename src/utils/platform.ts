@@ -1,11 +1,11 @@
-import { Platform } from 'obsidian';
+import { Platform } from "obsidian";
 
 export function isMobile(): boolean {
-  return Platform.isMobile;
+	return Platform.isMobile;
 }
 
 export function isDesktop(): boolean {
-  return !Platform.isMobile;
+	return !Platform.isMobile;
 }
 
 /**
@@ -21,7 +21,7 @@ export function isDesktop(): boolean {
  * @param syncEnabled - Whether the sync server is configured and enabled
  */
 export function canModifyData(syncEnabled: boolean): boolean {
-  // Desktop: always can modify
-  // Mobile: only if sync is enabled
-  return isDesktop() || syncEnabled;
+	// Desktop: always can modify
+	// Mobile: only if sync is enabled
+	return isDesktop() || syncEnabled;
 }

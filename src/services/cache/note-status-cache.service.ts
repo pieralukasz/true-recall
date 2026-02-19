@@ -1,7 +1,12 @@
-import { State } from "ts-fsrs";
-import type { SqliteStoreService } from "../persistence/sqlite/SqliteStoreService";
 import { effect } from "@preact/signals";
-import { lastMutation, syncVersion, track, type CardMutation } from "../core/signals";
+import { State } from "ts-fsrs";
+import {
+	type CardMutation,
+	lastMutation,
+	syncVersion,
+	track,
+} from "../core/signals";
+import type { SqliteStoreService } from "../persistence/sqlite/SqliteStoreService";
 
 export interface NoteStatusInfo {
 	new: number;
@@ -15,9 +20,7 @@ export class NoteStatusCacheService {
 	private version = 0;
 	private disposers: (() => void)[] = [];
 
-	constructor(
-		private store: SqliteStoreService,
-	) {}
+	constructor(private store: SqliteStoreService) {}
 
 	buildFromStore(): void {
 		this.cache.clear();

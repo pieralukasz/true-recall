@@ -3,30 +3,25 @@
  */
 
 export {
-    EventRegistry,
-    createEventRegistry,
-    debounce,
-    throttle,
-    type CleanupFn,
-} from "./event.utils";
-
-export { SessionResultFactory } from "./session-result-factory";
-
-export { getErrorMessage } from "./error.utils";
-
-export {
-    formatLocalDate,
-    getTodayBoundary,
-    getTomorrowBoundary,
-    getTodayKey,
-    isTimestampToday,
+	formatLocalDate,
+	getTodayBoundary,
+	getTodayKey,
+	getTomorrowBoundary,
+	isTimestampToday,
 } from "./date.utils";
-
-export { BR_REGEX, stripBrTags, stripWikiLinkSyntax } from "./string.utils";
-
+export { getErrorMessage } from "./error.utils";
 export {
-    buildProjectGraph,
-    getDescendantProjects,
-    isProjectNote,
-    type ProjectGraph,
+	type CleanupFn,
+	createEventRegistry,
+	debounce,
+	EventRegistry,
+	throttle,
+} from "./event.utils";
+export {
+	buildProjectGraph,
+	getDescendantProjects,
+	isProjectNote,
+	type ProjectGraph,
 } from "./project-hierarchy";
+export { SessionResultFactory } from "./session-result-factory";
+export { BR_REGEX, stripBrTags, stripWikiLinkSyntax } from "./string.utils";

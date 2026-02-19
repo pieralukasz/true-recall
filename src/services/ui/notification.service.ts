@@ -1,10 +1,10 @@
 import { Notice } from "obsidian";
 
 export const NOTIFICATION_DURATION = {
-	SHORT: 3000,    // Quick confirmations
-	NORMAL: 5000,   // Standard notifications (Obsidian default)
-	LONG: 8000,     // Important messages
-	PERSIST: 0,     // Stay until dismissed
+	SHORT: 3000, // Quick confirmations
+	NORMAL: 5000, // Standard notifications (Obsidian default)
+	LONG: 8000, // Important messages
+	PERSIST: 0, // Stay until dismissed
 } as const;
 
 export class NotificationService {
@@ -28,28 +28,40 @@ export class NotificationService {
 	}
 
 	cardsCreated(count: number, noteName?: string): void {
-		const msg = count === 1
-			? noteName ? `1 flashcard created in "${noteName}"` : "1 flashcard created"
-			: noteName ? `${count} flashcards created in "${noteName}"` : `${count} flashcards created`;
+		const msg =
+			count === 1
+				? noteName
+					? `1 flashcard created in "${noteName}"`
+					: "1 flashcard created"
+				: noteName
+					? `${count} flashcards created in "${noteName}"`
+					: `${count} flashcards created`;
 		this.success(msg);
 	}
 
-	cardsCreatedWithDuplicates(created: number, duplicates: number, noteName?: string): void {
+	cardsCreatedWithDuplicates(
+		created: number,
+		duplicates: number,
+		noteName?: string,
+	): void {
 		const createdMsg = created === 1 ? "1 card" : `${created} cards`;
-		const dupMsg = duplicates === 1 ? "1 duplicate skipped" : `${duplicates} duplicates skipped`;
+		const dupMsg =
+			duplicates === 1
+				? "1 duplicate skipped"
+				: `${duplicates} duplicates skipped`;
 		const noteMsg = noteName ? ` in "${noteName}"` : "";
 		this.warning(`${createdMsg} created${noteMsg}. ${dupMsg}.`);
 	}
 
 	allCardsDuplicates(count: number): void {
-		const msg = count === 1
-			? "Card already exists"
-			: `All ${count} cards already exist`;
+		const msg =
+			count === 1 ? "Card already exists" : `All ${count} cards already exist`;
 		this.warning(msg);
 	}
 
 	duplicateFound(question: string, sourceNoteName?: string): void {
-		const truncated = question.length > 50 ? question.slice(0, 50) + "..." : question;
+		const truncated =
+			question.length > 50 ? `${question.slice(0, 50)}...` : question;
 		const msg = sourceNoteName
 			? `Duplicate: "${truncated}" exists in "${sourceNoteName}"`
 			: `Duplicate: "${truncated}" already exists`;
@@ -85,31 +97,35 @@ export class NotificationService {
 	}
 
 	cardsBuried(count: number): void {
-		this.success(`Buried ${count} card${count !== 1 ? "s" : ""} until tomorrow`);
+		this.success(
+			`Buried ${count} card${count !== 1 ? "s" : ""} until tomorrow`,
+		);
 	}
 
 	cardsUpdated(count: number): void {
-		const msg = count === 1
-			? "Flashcard updated"
-			: `${count} flashcards updated`;
+		const msg =
+			count === 1 ? "Flashcard updated" : `${count} flashcards updated`;
 		this.success(msg);
 	}
 
 	cardsDeleted(count: number): void {
-		const msg = count === 1
-			? "Flashcard deleted"
-			: `${count} flashcards deleted`;
+		const msg =
+			count === 1 ? "Flashcard deleted" : `${count} flashcards deleted`;
 		this.success(msg);
 	}
 
 	cardsMoved(count: number, targetNote: string): void {
-		const msg = count === 1
-			? `Flashcard moved to "${targetNote}"`
-			: `${count} flashcards moved to "${targetNote}"`;
+		const msg =
+			count === 1
+				? `Flashcard moved to "${targetNote}"`
+				: `${count} flashcards moved to "${targetNote}"`;
 		this.success(msg);
 	}
 
-	cardsStatusChanged(count: number, action: "suspended" | "buried" | "unburied"): void {
+	cardsStatusChanged(
+		count: number,
+		action: "suspended" | "buried" | "unburied",
+	): void {
 		const cardWord = count === 1 ? "card" : "cards";
 		this.success(`${count} ${cardWord} ${action}`);
 	}
@@ -142,9 +158,8 @@ export class NotificationService {
 	}
 
 	generationComplete(count: number): void {
-		const msg = count === 1
-			? "Generated 1 flashcard"
-			: `Generated ${count} flashcards`;
+		const msg =
+			count === 1 ? "Generated 1 flashcard" : `Generated ${count} flashcards`;
 		this.success(msg);
 	}
 
@@ -154,11 +169,15 @@ export class NotificationService {
 	}
 
 	flashcardsGeneratedAndAdded(count: number): void {
-		this.success(`${count} flashcard${count > 1 ? "s" : ""} generated and added to queue!`);
+		this.success(
+			`${count} flashcard${count > 1 ? "s" : ""} generated and added to queue!`,
+		);
 	}
 
 	aiNotConfigured(): void {
-		this.error("AI service not configured. Please add your API key in settings.");
+		this.error(
+			"AI service not configured. Please add your API key in settings.",
+		);
 	}
 
 	fileNotFound(fileName: string): void {
@@ -195,7 +214,11 @@ export class NotificationService {
 		this.error(`Image is too large (${size}). Maximum size is ${maxSize}.`);
 	}
 
-	sourceNotesSynced(synced: number, orphaned: number = 0, orphanedCards: number = 0): void {
+	sourceNotesSynced(
+		synced: number,
+		orphaned: number = 0,
+		orphanedCards: number = 0,
+	): void {
 		let msg = `Synced ${synced} source note(s)`;
 		if (orphaned > 0) {
 			msg += `. Removed ${orphaned} orphaned entries`;

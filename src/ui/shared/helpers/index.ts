@@ -4,11 +4,11 @@
  */
 
 export {
-	filterActiveCardsOnly,
-	countCardsByState,
-	countCardsByStateWithDue,
+	type ActiveCardFilterOptions,
 	aggregateCardStateCounts,
 	type CardStateCounts,
 	type CardStateCountsWithDue,
-	type ActiveCardFilterOptions,
+	countCardsByState,
+	countCardsByStateWithDue,
+	filterActiveCardsOnly,
 } from "./card-state";

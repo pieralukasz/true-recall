@@ -1,15 +1,15 @@
 import { State } from "ts-fsrs";
 import type {
-	FutureDueEntry,
 	CardsCreatedEntry,
 	CardsCreatedVsReviewedEntry,
 	ExtendedDailyStats,
-	StatsTimeRange,
 	FSRSFlashcardItem,
+	FutureDueEntry,
 	RetentionEntry,
+	StatsTimeRange,
 } from "../../../types";
-import type { SqliteStoreService } from "../../persistence/sqlite";
 import { formatLocalDate } from "../../../utils";
+import type { SqliteStoreService } from "../../persistence/sqlite";
 
 export class ChartDataCalculator {
 	constructor(private sqliteStore: SqliteStoreService | null = null) {}
@@ -18,7 +18,10 @@ export class ChartDataCalculator {
 		this.sqliteStore = store;
 	}
 
-	getFutureDueStats(allCards: FSRSFlashcardItem[], range: StatsTimeRange): FutureDueEntry[] {
+	getFutureDueStats(
+		allCards: FSRSFlashcardItem[],
+		range: StatsTimeRange,
+	): FutureDueEntry[] {
 		const today = new Date();
 		today.setHours(0, 0, 0, 0);
 
@@ -62,7 +65,7 @@ export class ChartDataCalculator {
 
 	getFutureDueStatsFilled(
 		allCards: FSRSFlashcardItem[],
-		range: StatsTimeRange
+		range: StatsTimeRange,
 	): FutureDueEntry[] {
 		const today = new Date();
 		today.setHours(0, 0, 0, 0);
@@ -115,7 +118,7 @@ export class ChartDataCalculator {
 
 	async getCardsCreatedHistoryFilled(
 		allCards: FSRSFlashcardItem[],
-		range: StatsTimeRange
+		range: StatsTimeRange,
 	): Promise<CardsCreatedEntry[]> {
 		if (range === "backlog") {
 			return [];
@@ -140,7 +143,10 @@ export class ChartDataCalculator {
 
 		// Get actual data from SQLite
 		if (this.sqliteStore) {
-			const rawData = this.sqliteStore.stats.getCardsCreatedByDate(startDateStr, endDateStr);
+			const rawData = this.sqliteStore.stats.getCardsCreatedByDate(
+				startDateStr,
+				endDateStr,
+			);
 			for (const entry of rawData) {
 				if (createdMap.has(entry.date)) {
 					createdMap.set(entry.date, entry.count);
@@ -177,7 +183,7 @@ export class ChartDataCalculator {
 
 	getRetentionHistory(
 		allStats: Record<string, ExtendedDailyStats>,
-		range: StatsTimeRange
+		range: StatsTimeRange,
 	): RetentionEntry[] {
 		const today = new Date();
 		today.setHours(0, 0, 0, 0);
@@ -212,7 +218,9 @@ export class ChartDataCalculator {
 		return entries.sort((a, b) => a.date.localeCompare(b.date));
 	}
 
-	getCardsCreatedVsReviewedHistory(range: StatsTimeRange): CardsCreatedVsReviewedEntry[] {
+	getCardsCreatedVsReviewedHistory(
+		range: StatsTimeRange,
+	): CardsCreatedVsReviewedEntry[] {
 		if (range === "backlog") {
 			return [];
 		}
@@ -226,14 +234,20 @@ export class ChartDataCalculator {
 
 		// Use SQLite when available
 		if (this.sqliteStore) {
-			return this.sqliteStore.stats.getCardsCreatedVsReviewed(startDateStr, endDateStr);
+			return this.sqliteStore.stats.getCardsCreatedVsReviewed(
+				startDateStr,
+				endDateStr,
+			);
 		}
 
 		// Fallback: return empty (would need complex iteration without SQLite)
 		return [];
 	}
 
-	getCardsDueOnDate(allCards: FSRSFlashcardItem[], date: string): FSRSFlashcardItem[] {
+	getCardsDueOnDate(
+		allCards: FSRSFlashcardItem[],
+		date: string,
+	): FSRSFlashcardItem[] {
 		// Parse date as local (not UTC)
 		const parts = date.split("-").map(Number);
 		const [year, month, day] = parts;
@@ -253,7 +267,10 @@ export class ChartDataCalculator {
 		});
 	}
 
-	getCardsCreatedOnDate(allCards: FSRSFlashcardItem[], date: string): FSRSFlashcardItem[] {
+	getCardsCreatedOnDate(
+		allCards: FSRSFlashcardItem[],
+		date: string,
+	): FSRSFlashcardItem[] {
 		// Use SQLite when available
 		if (this.sqliteStore) {
 			const cardIds = this.sqliteStore.stats.getCardsCreatedOnDate(date);

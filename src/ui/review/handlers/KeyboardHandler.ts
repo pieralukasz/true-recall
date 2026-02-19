@@ -9,18 +9,18 @@ import type { ReviewApi } from "../../../state/store";
  * Keyboard shortcut configuration
  */
 export interface KeyboardShortcuts {
-	showAnswer: string;        // Space
-	again: string;             // 1
-	hard: string;              // 2
-	good: string;              // 3 or Space (when revealed)
-	easy: string;              // 4
-	undo: string;              // Cmd/Ctrl+Z
-	suspend: string;           // Shift+1 (!)
-	buryCard: string;          // -
-	buryNote: string;          // =
-	moveCard: string;          // M
-	copyCard: string;          // B
-	editCard: string;          // E
+	showAnswer: string; // Space
+	again: string; // 1
+	hard: string; // 2
+	good: string; // 3 or Space (when revealed)
+	easy: string; // 4
+	undo: string; // Cmd/Ctrl+Z
+	suspend: string; // Shift+1 (!)
+	buryCard: string; // -
+	buryNote: string; // =
+	moveCard: string; // M
+	copyCard: string; // B
+	editCard: string; // E
 }
 
 /**
@@ -52,10 +52,7 @@ export class KeyboardHandler {
 	private getReview: () => ReviewApi;
 	private callbacks: KeyboardActionCallbacks;
 
-	constructor(
-		getReview: () => ReviewApi,
-		callbacks: KeyboardActionCallbacks
-	) {
+	constructor(getReview: () => ReviewApi, callbacks: KeyboardActionCallbacks) {
 		this.getReview = getReview;
 		this.callbacks = callbacks;
 	}

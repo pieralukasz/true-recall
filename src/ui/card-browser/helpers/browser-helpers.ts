@@ -1,6 +1,6 @@
 import { State } from "ts-fsrs";
-import type { FSRSFlashcardItem } from "../../../types";
 import type { BrowserStateFilter } from "../../../state/store";
+import type { FSRSFlashcardItem } from "../../../types";
 
 const TAG_RE = /<[^>]*>/g;
 const CLOZE_RE = /\{\{c\d+::(.*?)(?:::[^}]*)?\}\}/g;
@@ -8,7 +8,7 @@ const CLOZE_RE = /\{\{c\d+::(.*?)(?:::[^}]*)?\}\}/g;
 export function truncateText(text: string, maxLength: number): string {
 	const plain = text.replace(TAG_RE, "").replace(CLOZE_RE, "$1").trim();
 	if (plain.length <= maxLength) return plain;
-	return plain.slice(0, maxLength) + "\u2026";
+	return `${plain.slice(0, maxLength)}\u2026`;
 }
 
 export function formatDueDate(due: string): string {
@@ -33,7 +33,10 @@ export function formatIntervalDays(scheduledDays: number): string {
 	return `${(scheduledDays / 365).toFixed(1)}y`;
 }
 
-export function matchesSearchQuery(card: FSRSFlashcardItem, query: string): boolean {
+export function matchesSearchQuery(
+	card: FSRSFlashcardItem,
+	query: string,
+): boolean {
 	if (!query) return true;
 	const q = query.toLowerCase();
 	return (
@@ -43,7 +46,10 @@ export function matchesSearchQuery(card: FSRSFlashcardItem, query: string): bool
 	);
 }
 
-export function matchesBrowserStateFilter(card: FSRSFlashcardItem, filter: BrowserStateFilter): boolean {
+export function matchesBrowserStateFilter(
+	card: FSRSFlashcardItem,
+	filter: BrowserStateFilter,
+): boolean {
 	if (filter === "all") return true;
 
 	const now = new Date();
@@ -53,12 +59,17 @@ export function matchesBrowserStateFilter(card: FSRSFlashcardItem, filter: Brows
 	}
 
 	if (card.fsrs.suspended) return false;
-	if (card.fsrs.buriedUntil && new Date(card.fsrs.buriedUntil) > now) return false;
+	if (card.fsrs.buriedUntil && new Date(card.fsrs.buriedUntil) > now)
+		return false;
 
 	switch (filter) {
-		case "new": return card.fsrs.state === State.New;
-		case "learning": return card.fsrs.state === State.Learning;
-		case "review": return card.fsrs.state === State.Review;
-		case "relearning": return card.fsrs.state === State.Relearning;
+		case "new":
+			return card.fsrs.state === State.New;
+		case "learning":
+			return card.fsrs.state === State.Learning;
+		case "review":
+			return card.fsrs.state === State.Review;
+		case "relearning":
+			return card.fsrs.state === State.Relearning;
 	}
 }

@@ -1,15 +1,23 @@
-import { useRef, useEffect, useCallback, useMemo } from "preact/hooks";
-import { useSignal, useComputed } from "@preact/signals";
+import { useSignal } from "@preact/signals";
 import { Chart, type ChartConfiguration } from "chart.js";
-import { usePlugin } from "../preact";
+import { useCallback, useEffect, useMemo, useRef } from "preact/hooks";
 import { FSRSSimulatorService } from "../../services/core/fsrs-simulator.service";
-import { ALL_SLIDERS, GRADE_NAMES } from "./constants";
 import type { SimulatorApi } from "../../state/store";
-import type { MetricType, SequenceSimulation, SequenceReview, SliderConfig } from "./types";
+import { usePlugin } from "../preact";
+import { ALL_SLIDERS, GRADE_NAMES } from "./constants";
+import type {
+	MetricType,
+	SequenceReview,
+	SequenceSimulation,
+	SliderConfig,
+} from "./types";
 
 // ─── Helpers ────────────────────────────────────────────────────────
 
-function getMetricData(reviews: SequenceReview[], metricType: MetricType): number[] {
+function getMetricData(
+	reviews: SequenceReview[],
+	metricType: MetricType,
+): number[] {
 	return reviews.map((r) => {
 		switch (metricType) {
 			case "interval":
@@ -63,7 +71,12 @@ interface SimulatorChartProps {
 	useAnimation: boolean;
 }
 
-function SimulatorChart({ simulations, metricType, useLogarithmic, useAnimation }: SimulatorChartProps) {
+function SimulatorChart({
+	simulations,
+	metricType,
+	useLogarithmic,
+	useAnimation,
+}: SimulatorChartProps) {
 	const canvasRef = useRef<HTMLCanvasElement>(null);
 	const chartRef = useRef<Chart | null>(null);
 
@@ -150,7 +163,10 @@ function SimulatorChart({ simulations, metricType, useLogarithmic, useAnimation 
 		}));
 
 		if (chart.options.scales?.y) {
-			const yScale = chart.options.scales.y as { type?: string; title?: { display: boolean; text: string } };
+			const yScale = chart.options.scales.y as {
+				type?: string;
+				title?: { display: boolean; text: string };
+			};
 			yScale.type = useLogarithmic ? "logarithmic" : "linear";
 			yScale.title = { display: true, text: getMetricLabel(metricType) };
 		}
@@ -178,7 +194,9 @@ function ChartLegend({ simulations }: { simulations: SequenceSimulation[] }) {
 				<div key={sim.sequence} class="ep:flex ep:items-center ep:gap-1.5">
 					<div
 						class="ep:w-4 ep:h-4 ep:rounded-sm ep-dynamic-bg"
-						style={{ "--ep-dynamic-color": sim.color } as Record<string, string>}
+						style={
+							{ "--ep-dynamic-color": sim.color } as Record<string, string>
+						}
 					/>
 					<span class="ep:text-ui-small ep:text-obs-muted">{sim.sequence}</span>
 				</div>
@@ -196,7 +214,12 @@ interface SimulatorControlsProps {
 	onOptionsChange: () => void;
 }
 
-function SimulatorControls({ simulator, onSequencesChange, onMetricChange, onOptionsChange }: SimulatorControlsProps) {
+function SimulatorControls({
+	simulator,
+	onSequencesChange,
+	onMetricChange,
+	onOptionsChange,
+}: SimulatorControlsProps) {
 	const textareaRef = useRef<HTMLTextAreaElement>(null);
 
 	const handleReset = useCallback(() => {
@@ -266,7 +289,10 @@ function SimulatorControls({ simulator, onSequencesChange, onMetricChange, onOpt
 			{/* Metric type radio buttons */}
 			<div class="ep:mb-4">
 				{metrics.map((metric) => (
-					<label key={metric.value} class="ep:flex ep:items-center ep:gap-2 ep:mb-1 ep:cursor-pointer ep:text-ui-small">
+					<label
+						key={metric.value}
+						class="ep:flex ep:items-center ep:gap-2 ep:mb-1 ep:cursor-pointer ep:text-ui-small"
+					>
 						<input
 							type="radio"
 							class="ep:cursor-pointer"
@@ -303,7 +329,9 @@ function SimulatorControls({ simulator, onSequencesChange, onMetricChange, onOpt
 						class="ep:cursor-pointer"
 						checked={currentLogarithmic}
 						onChange={(e) => {
-							simulator.setUseLogarithmic((e.target as HTMLInputElement).checked);
+							simulator.setUseLogarithmic(
+								(e.target as HTMLInputElement).checked,
+							);
 							onOptionsChange();
 						}}
 					/>
@@ -330,7 +358,8 @@ function SimulatorSliderRow({ config, value, onValueChange }: SliderRowProps) {
 	// Sync inputs when value changes externally (undo/redo/reset)
 	useEffect(() => {
 		if (rangeRef.current) rangeRef.current.value = String(value);
-		if (numberRef.current) numberRef.current.value = formatSliderValue(value, config);
+		if (numberRef.current)
+			numberRef.current.value = formatSliderValue(value, config);
 	}, [value, config]);
 
 	useEffect(() => {
@@ -339,24 +368,31 @@ function SimulatorSliderRow({ config, value, onValueChange }: SliderRowProps) {
 		};
 	}, []);
 
-	const debouncedUpdate = useCallback((newValue: number) => {
-		if (debounceRef.current) clearTimeout(debounceRef.current);
-		debounceRef.current = setTimeout(() => {
-			onValueChange(config.index, newValue);
-			debounceRef.current = null;
-		}, 150);
-	}, [config.index, onValueChange]);
+	const debouncedUpdate = useCallback(
+		(newValue: number) => {
+			if (debounceRef.current) clearTimeout(debounceRef.current);
+			debounceRef.current = setTimeout(() => {
+				onValueChange(config.index, newValue);
+				debounceRef.current = null;
+			}, 150);
+		},
+		[config.index, onValueChange],
+	);
 
-	const handleRangeInput = useCallback((e: Event) => {
-		const val = parseFloat((e.target as HTMLInputElement).value);
-		if (numberRef.current) numberRef.current.value = formatSliderValue(val, config);
-		debouncedUpdate(val);
-	}, [config, debouncedUpdate]);
+	const handleRangeInput = useCallback(
+		(e: Event) => {
+			const val = parseFloat((e.target as HTMLInputElement).value);
+			if (numberRef.current)
+				numberRef.current.value = formatSliderValue(val, config);
+			debouncedUpdate(val);
+		},
+		[config, debouncedUpdate],
+	);
 
 	const handleNumberChange = useCallback(() => {
 		if (!numberRef.current) return;
 		let val = parseFloat(numberRef.current.value);
-		if (isNaN(val)) val = config.defaultValue;
+		if (Number.isNaN(val)) val = config.defaultValue;
 		val = Math.max(config.min, Math.min(config.max, val));
 		numberRef.current.value = formatSliderValue(val, config);
 		if (rangeRef.current) rangeRef.current.value = String(val);
@@ -369,7 +405,10 @@ function SimulatorSliderRow({ config, value, onValueChange }: SliderRowProps) {
 
 	return (
 		<div class="ep:flex ep:items-center ep:gap-2">
-			<div class="ep:w-[200px] ep:text-ui-smaller ep:text-obs-muted ep:truncate" title={config.description}>
+			<div
+				class="ep:w-[200px] ep:text-ui-smaller ep:text-obs-muted ep:truncate"
+				title={config.description}
+			>
 				{config.name}
 			</div>
 			<input
@@ -414,21 +453,31 @@ interface SimulatorSlidersProps {
 	version: number;
 }
 
-function SimulatorSliders({ simulator, onParameterChange, version }: SimulatorSlidersProps) {
-	const handleValueChange = useCallback((index: number, value: number) => {
-		if (index === -1) {
-			simulator.setDesiredRetention(value);
-		} else {
-			simulator.setParameter(index, value);
-		}
-		onParameterChange();
-	}, [simulator, onParameterChange]);
+function SimulatorSliders({
+	simulator,
+	onParameterChange,
+	version,
+}: SimulatorSlidersProps) {
+	const handleValueChange = useCallback(
+		(index: number, value: number) => {
+			if (index === -1) {
+				simulator.setDesiredRetention(value);
+			} else {
+				simulator.setParameter(index, value);
+			}
+			onParameterChange();
+		},
+		[simulator, onParameterChange],
+	);
 
 	// Read current values, keyed off version to react to undo/redo/reset
-	const getSliderValue = useCallback((index: number): number => {
-		if (index === -1) return simulator.getDesiredRetention();
-		return simulator.getParameters()[index] ?? 0;
-	}, [simulator, version]);
+	const getSliderValue = useCallback(
+		(index: number): number => {
+			if (index === -1) return simulator.getDesiredRetention();
+			return simulator.getParameters()[index] ?? 0;
+		},
+		[simulator, version],
+	);
 
 	return (
 		<div class="ep:bg-obs-secondary ep:rounded-lg ep:p-4 ep:mb-4">
@@ -448,7 +497,11 @@ function SimulatorSliders({ simulator, onParameterChange, version }: SimulatorSl
 
 // ─── SimulatorResultsTable ──────────────────────────────────────────
 
-function SimulatorResultsTable({ simulations }: { simulations: SequenceSimulation[] }) {
+function SimulatorResultsTable({
+	simulations,
+}: {
+	simulations: SequenceSimulation[];
+}) {
 	const maxReviews = Math.max(...simulations.map((s) => s.reviews.length), 1);
 
 	const headerCellCls = [
@@ -467,18 +520,28 @@ function SimulatorResultsTable({ simulations }: { simulations: SequenceSimulatio
 					<tr>
 						<th class={headerCellCls}>Grade</th>
 						{Array.from({ length: maxReviews }, (_, i) => (
-							<th key={i} class={headerCellCls}>Ivl-{i}</th>
+							<th key={i} class={headerCellCls}>
+								Ivl-{i}
+							</th>
 						))}
 					</tr>
 				</thead>
 				<tbody>
 					{simulations.map((sim) => (
-						<tr key={sim.sequence} class="ep:border-b ep:border-obs-border last:ep:border-b-0">
+						<tr
+							key={sim.sequence}
+							class="ep:border-b ep:border-obs-border last:ep:border-b-0"
+						>
 							<td class={bodyCellCls}>
 								<div class="ep:flex ep:items-center ep:gap-2">
 									<div
 										class="ep:w-3 ep:h-3 ep:rounded-full ep:flex-shrink-0 ep-dynamic-bg"
-										style={{ "--ep-dynamic-color": sim.color } as Record<string, string>}
+										style={
+											{ "--ep-dynamic-color": sim.color } as Record<
+												string,
+												string
+											>
+										}
 									/>
 									<span class="ep:font-mono">{sim.sequence}</span>
 								</div>
@@ -487,7 +550,10 @@ function SimulatorResultsTable({ simulations }: { simulations: SequenceSimulatio
 								const review = sim.reviews[i];
 								const interval = review ? Math.round(review.interval) : "-";
 								return (
-									<td key={i} class={`${bodyCellCls} ep:text-center ep:font-mono`}>
+									<td
+										key={i}
+										class={`${bodyCellCls} ep:text-center ep:font-mono`}
+									>
 										{interval}
 									</td>
 								);
@@ -512,18 +578,29 @@ interface ParametersBarProps {
 	onRedo: () => void;
 }
 
-function ParametersBar({ parametersString, canUndo, canRedo, onReset, onUndo, onRedo }: ParametersBarProps) {
+function ParametersBar({
+	parametersString,
+	canUndo,
+	canRedo,
+	onReset,
+	onUndo,
+	onRedo,
+}: ParametersBarProps) {
 	return (
 		<div class="ep:mb-4">
-			<div class={[
-				"ep:text-ui-smaller ep:text-obs-muted",
-				"ep:bg-obs-secondary ep:p-2 ep:rounded-lg",
-				"ep:font-mono ep:mb-2",
-			].join(" ")}>
+			<div
+				class={[
+					"ep:text-ui-smaller ep:text-obs-muted",
+					"ep:bg-obs-secondary ep:p-2 ep:rounded-lg",
+					"ep:font-mono ep:mb-2",
+				].join(" ")}
+			>
 				{parametersString}
 			</div>
 			<div class="ep:flex ep:gap-2 ep:items-center">
-				<button class={BUTTON_CLS} onClick={onReset}>Reset parameters</button>
+				<button class={BUTTON_CLS} onClick={onReset}>
+					Reset parameters
+				</button>
 				<button
 					class={`${BUTTON_CLS}${!canUndo ? " ep:opacity-50" : ""}`}
 					disabled={!canUndo}
@@ -548,7 +625,7 @@ function ParametersBar({ parametersString, canUndo, canRedo, onReset, onUndo, on
 
 export function SimulatorApp() {
 	const plugin = usePlugin();
-	const simulator = plugin.store!.getState().simulator;
+	const simulator = plugin.store?.getState().simulator;
 	const simulatorService = useMemo(() => new FSRSSimulatorService(), []);
 
 	// Reactive signals to drive re-renders
@@ -569,7 +646,14 @@ export function SimulatorApp() {
 		parametersString.value = simulator.getParametersString();
 		canUndoSig.value = simulator.canUndo();
 		canRedoSig.value = simulator.canRedo();
-	}, [simulator, simulatorService, simulations, parametersString, canUndoSig, canRedoSig]);
+	}, [
+		simulator,
+		simulatorService,
+		simulations,
+		parametersString,
+		canUndoSig,
+		canRedoSig,
+	]);
 
 	// Debounced simulation trigger
 	const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -622,7 +706,9 @@ export function SimulatorApp() {
 			{/* Header */}
 			<div class="ep:flex ep:items-center ep:justify-between ep:mb-4">
 				{/* eslint-disable-next-line obsidianmd/ui/sentence-case -- FSRS is an acronym */}
-				<h2 class="ep:text-xl ep:font-bold ep:text-obs-normal ep:m-0">FSRS 6</h2>
+				<h2 class="ep:text-xl ep:font-bold ep:text-obs-normal ep:m-0">
+					FSRS 6
+				</h2>
 			</div>
 
 			{/* Main content: left panel + chart area */}
