@@ -1,13 +1,13 @@
+import { CARD_HISTORY_LIMIT } from "../../constants";
 import type {
-	FSRSCardData,
-	FSRSFlashcardItem,
 	CardReviewLogEntry,
 	CardType,
+	FSRSCardData,
+	FSRSFlashcardItem,
 } from "../../types";
-import type { SqliteStoreService } from "../persistence/sqlite/SqliteStoreService";
 import { createDefaultFSRSData } from "../../types";
-import { notifyCardChange, type CardMutation } from "../core/signals";
-import { CARD_HISTORY_LIMIT } from "../../constants";
+import { type CardMutation, notifyCardChange } from "../core/signals";
+import type { SqliteStoreService } from "../persistence/sqlite/SqliteStoreService";
 import { parseClozeTemplate } from "./cloze-parser.service";
 
 export interface DuplicateInfo {
@@ -18,7 +18,10 @@ export interface DuplicateInfo {
 }
 
 export class DuplicateQuestionError extends Error {
-	constructor(public existingCardId: string, public existingSourceUid?: string) {
+	constructor(
+		public existingCardId: string,
+		public existingSourceUid?: string,
+	) {
 		super("A card with this question already exists");
 		this.name = "DuplicateQuestionError";
 	}
@@ -38,7 +41,12 @@ export class CardRepository {
 		answer: string,
 		sourceUid?: string,
 		sourceNoteName?: string,
-		options?: { cardType?: CardType; clozeTemplate?: string; clozeIndex?: number; reverseOf?: string }
+		options?: {
+			cardType?: CardType;
+			clozeTemplate?: string;
+			clozeIndex?: number;
+			reverseOf?: string;
+		},
 	): FSRSFlashcardItem {
 		const existingInfo = this.store.cards.getCardInfoByQuestion(question);
 		if (existingInfo) {
@@ -91,7 +99,7 @@ export class CardRepository {
 			reverseOfBatchId?: string;
 		}>,
 		sourceUid: string,
-		sourceNoteName?: string
+		sourceNoteName?: string,
 	): CreateBatchResult {
 		const createdCards: FSRSFlashcardItem[] = [];
 		const duplicates: DuplicateInfo[] = [];
@@ -110,9 +118,15 @@ export class CardRepository {
 			}
 
 			// Cloze-specific duplicate check
-			if (flashcard.cardType === "cloze" && flashcard.clozeTemplate && flashcard.clozeIndex !== undefined) {
+			if (
+				flashcard.cardType === "cloze" &&
+				flashcard.clozeTemplate &&
+				flashcard.clozeIndex !== undefined
+			) {
 				const existingCloze = this.store.cards.findClozeCard(
-					sourceUid, flashcard.clozeTemplate, flashcard.clozeIndex
+					sourceUid,
+					flashcard.clozeTemplate,
+					flashcard.clozeIndex,
 				);
 				if (existingCloze) {
 					const existingCard = this.store.get(existingCloze);
@@ -128,7 +142,7 @@ export class CardRepository {
 
 			// Check for existing card with same question
 			const existingInfo = this.store.cards.getCardInfoByQuestion(
-				flashcard.question
+				flashcard.question,
 			);
 			if (existingInfo) {
 				duplicates.push({
@@ -185,7 +199,10 @@ export class CardRepository {
 		}
 
 		if (createdCards.length > 0) {
-			notifyCardChange({ type: "bulk", cardIds: createdCards.map(c => c.id) });
+			notifyCardChange({
+				type: "bulk",
+				cardIds: createdCards.map((c) => c.id),
+			});
 		}
 
 		return { created: createdCards, duplicates };
@@ -207,9 +224,15 @@ export class CardRepository {
 		}
 
 		if (newQuestion !== existing.question) {
-			const duplicateInfo = this.store.cards.getCardInfoByQuestion(newQuestion, cardId);
+			const duplicateInfo = this.store.cards.getCardInfoByQuestion(
+				newQuestion,
+				cardId,
+			);
 			if (duplicateInfo) {
-				throw new DuplicateQuestionError(duplicateInfo.id, duplicateInfo.sourceUid);
+				throw new DuplicateQuestionError(
+					duplicateInfo.id,
+					duplicateInfo.sourceUid,
+				);
 			}
 		}
 
@@ -221,7 +244,11 @@ export class CardRepository {
 
 		this.store.set(cardId, updated);
 
-		notifyCardChange({ type: "updated", cardId, changes: { question: true, answer: true } });
+		notifyCardChange({
+			type: "updated",
+			cardId,
+			changes: { question: true, answer: true },
+		});
 
 		// Sync reversed pair: update the paired card with swapped Q/A
 		this.syncReversePair(cardId, existing, newQuestion, newAnswer);
@@ -231,20 +258,28 @@ export class CardRepository {
 		cardId: string,
 		cardData: FSRSCardData,
 		newQuestion: string,
-		newAnswer: string
+		newAnswer: string,
 	): void {
 		// Case 1: This card IS a reverse - update the original
 		if (cardData.reverseOf) {
 			const original = this.store.get(cardData.reverseOf);
 			if (original) {
-				this.store.cards.updateCardContent(cardData.reverseOf, newAnswer, newQuestion);
+				this.store.cards.updateCardContent(
+					cardData.reverseOf,
+					newAnswer,
+					newQuestion,
+				);
 			}
 		}
 
 		// Case 2: This card HAS a reverse - update the reverse
 		const reverseCard = this.store.cards.getCardByReverseOf(cardId);
 		if (reverseCard) {
-			this.store.cards.updateCardContent(reverseCard.id, newAnswer, newQuestion);
+			this.store.cards.updateCardContent(
+				reverseCard.id,
+				newAnswer,
+				newQuestion,
+			);
 		}
 		// No notification — the caller (updateContent) already calls notifyCardChange
 	}
@@ -252,7 +287,7 @@ export class CardRepository {
 	updateFSRS(
 		cardId: string,
 		newFSRSData: FSRSCardData,
-		reviewLogEntry?: CardReviewLogEntry
+		reviewLogEntry?: CardReviewLogEntry,
 	): void {
 		const existing = this.store.get(cardId);
 		const entry: FSRSCardData = { ...newFSRSData };
@@ -323,12 +358,10 @@ export class CardRepository {
 		sourceUid: string,
 		oldTemplate: string,
 		newTemplate: string,
-		sourceNoteName?: string
+		_sourceNoteName?: string,
 	): void {
 		const siblings = this.store.getClozeSiblings(sourceUid, oldTemplate);
-		const siblingsByIndex = new Map(
-			siblings.map((s) => [s.clozeIndex!, s])
-		);
+		const siblingsByIndex = new Map(siblings.filter((s) => s.clozeIndex !== undefined).map((s) => [s.clozeIndex as number, s]));
 
 		const newClozeCards = parseClozeTemplate(newTemplate);
 		const newIndices = new Set(newClozeCards.map((c) => c.clozeIndex));
@@ -341,7 +374,7 @@ export class CardRepository {
 					existing.id,
 					cloze.question,
 					cloze.answer,
-					newTemplate
+					newTemplate,
 				);
 				affectedCardIds.push(existing.id);
 			} else {
@@ -383,7 +416,10 @@ export class CardRepository {
 
 		// Cascade-delete cloze siblings (all cards sharing the same template)
 		if (card.cardType === "cloze" && card.clozeTemplate && card.sourceUid) {
-			const siblings = this.store.getClozeSiblings(card.sourceUid, card.clozeTemplate);
+			const siblings = this.store.getClozeSiblings(
+				card.sourceUid,
+				card.clozeTemplate,
+			);
 			for (const sibling of siblings) {
 				if (sibling.id !== cardId) {
 					this.store.cards.softDeleteWithCascade(sibling.id);

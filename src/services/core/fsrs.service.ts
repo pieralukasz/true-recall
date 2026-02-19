@@ -1,25 +1,24 @@
 import {
-	FSRS,
-	createEmptyCard,
-	Rating,
-	State,
 	type Card,
+	createEmptyCard,
+	FSRS,
 	type Grade,
+	Rating,
 	type RecordLogItem,
+	State,
 } from "ts-fsrs";
-import type { FSRSSettings } from "../../types/settings.types";
+import { DEFAULT_FSRS_WEIGHTS } from "../../constants";
 import type {
 	FSRSCardData,
 	FSRSFlashcardItem,
 	SchedulingPreview,
 } from "../../types";
 import { formatInterval } from "../../types";
-import { DEFAULT_FSRS_WEIGHTS } from "../../constants";
+import type { FSRSSettings } from "../../types/settings.types";
 import { getTomorrowBoundary } from "../../utils";
 
 export class FSRSService {
 	private fsrs: FSRS;
-	private settings: FSRSSettings;
 
 	constructor(settings: FSRSSettings) {
 		this.settings = settings;
@@ -28,11 +27,9 @@ export class FSRSService {
 
 	private createFSRS(settings: FSRSSettings): FSRS {
 		// Convert minutes to step format (e.g., [1, 10] -> ["1m", "10m"])
-		const learningSteps = settings.learningSteps.map(
-			(m) => `${m}m` as const
-		);
+		const learningSteps = settings.learningSteps.map((m) => `${m}m` as const);
 		const relearningSteps = settings.relearningSteps.map(
-			(m) => `${m}m` as const
+			(m) => `${m}m` as const,
 		);
 
 		return new FSRS({
@@ -77,9 +74,7 @@ export class FSRSService {
 			reps: data.reps,
 			lapses: data.lapses,
 			state: data.state,
-			last_review: data.lastReview
-				? new Date(data.lastReview)
-				: undefined,
+			last_review: data.lastReview ? new Date(data.lastReview) : undefined,
 			learning_steps: data.learningStep,
 		};
 	}
@@ -103,7 +98,7 @@ export class FSRSService {
 		cardData: FSRSCardData,
 		rating: Grade,
 		reviewTime?: Date,
-		presetSettings?: FSRSSettings
+		presetSettings?: FSRSSettings,
 	): FSRSCardData {
 		const card = this.toCard(cardData);
 		const now = reviewTime ?? new Date();
@@ -113,7 +108,10 @@ export class FSRSService {
 		return this.fromCard(result.card, cardData.id);
 	}
 
-	getSchedulingPreview(cardData: FSRSCardData, presetSettings?: FSRSSettings): SchedulingPreview {
+	getSchedulingPreview(
+		cardData: FSRSCardData,
+		presetSettings?: FSRSSettings,
+	): SchedulingPreview {
 		const card = this.toCard(cardData);
 		const now = new Date();
 		const fsrs = presetSettings ? this.createFSRS(presetSettings) : this.fsrs;
@@ -156,13 +154,12 @@ export class FSRSService {
 
 	getDueCards(cards: FSRSFlashcardItem[], now?: Date): FSRSFlashcardItem[] {
 		const currentTimestamp = (now ?? new Date()).getTime();
-		return cards.filter((card) => new Date(card.fsrs.due).getTime() <= currentTimestamp);
+		return cards.filter(
+			(card) => new Date(card.fsrs.due).getTime() <= currentTimestamp,
+		);
 	}
 
-	getNewCards(
-		cards: FSRSFlashcardItem[],
-		limit?: number
-	): FSRSFlashcardItem[] {
+	getNewCards(cards: FSRSFlashcardItem[], limit?: number): FSRSFlashcardItem[] {
 		const newCards = cards.filter((card) => card.fsrs.state === State.New);
 		return limit !== undefined ? newCards.slice(0, limit) : newCards;
 	}
@@ -171,7 +168,7 @@ export class FSRSService {
 		return cards.filter(
 			(card) =>
 				card.fsrs.state === State.Learning ||
-				card.fsrs.state === State.Relearning
+				card.fsrs.state === State.Relearning,
 		);
 	}
 
@@ -182,7 +179,7 @@ export class FSRSService {
 	getReviewCards(
 		cards: FSRSFlashcardItem[],
 		now?: Date,
-		dayStartHour = 4
+		dayStartHour = 4,
 	): FSRSFlashcardItem[] {
 		const tomorrowBoundary = getTomorrowBoundary(dayStartHour, now);
 
@@ -202,7 +199,10 @@ export class FSRSService {
 	}
 
 	/** Sort cards by retrievability (lowest R first - most at risk of forgetting) */
-	sortByRetrievability(cards: FSRSFlashcardItem[], now?: Date): FSRSFlashcardItem[] {
+	sortByRetrievability(
+		cards: FSRSFlashcardItem[],
+		now?: Date,
+	): FSRSFlashcardItem[] {
 		const currentTime = now ?? new Date();
 
 		// Single pass: compute R for all cards
@@ -231,7 +231,10 @@ export class FSRSService {
 		return this.fsrs.get_retrievability(card, currentTime, false) ?? 0;
 	}
 
-	getStats(cards: FSRSFlashcardItem[], dayStartHour = 4): {
+	getStats(
+		cards: FSRSFlashcardItem[],
+		dayStartHour = 4,
+	): {
 		total: number;
 		new: number;
 		learning: number;
@@ -243,7 +246,14 @@ export class FSRSService {
 		const tomorrowBoundary = getTomorrowBoundary(dayStartHour, now);
 		const nowTime = now.getTime();
 
-		const stats = { total: cards.length, new: 0, learning: 0, review: 0, relearning: 0, dueToday: 0 };
+		const stats = {
+			total: cards.length,
+			new: 0,
+			learning: 0,
+			review: 0,
+			relearning: 0,
+			dueToday: 0,
+		};
 
 		for (const c of cards) {
 			switch (c.fsrs.state) {
@@ -263,7 +273,10 @@ export class FSRSService {
 
 			// Learning/Relearning: exact timestamp; Review: day-based boundary
 			const dueTime = new Date(c.fsrs.due).getTime();
-			if (c.fsrs.state === State.Learning || c.fsrs.state === State.Relearning) {
+			if (
+				c.fsrs.state === State.Learning ||
+				c.fsrs.state === State.Relearning
+			) {
 				if (dueTime <= nowTime) stats.dueToday++;
 			} else if (c.fsrs.state === State.Review) {
 				if (dueTime < tomorrowBoundary.getTime()) stats.dueToday++;

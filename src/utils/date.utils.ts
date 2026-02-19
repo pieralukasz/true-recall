@@ -47,7 +47,7 @@ export function getTodayBoundary(dayStartHour: number = 4, now?: Date): Date {
  */
 export function getTomorrowBoundary(
 	dayStartHour: number = 4,
-	now?: Date
+	now?: Date,
 ): Date {
 	const today = getTodayBoundary(dayStartHour, now);
 	const tomorrow = new Date(today);
@@ -77,7 +77,7 @@ export function getTodayKey(dayStartHour: number = 4, now?: Date): string {
 export function isTimestampToday(
 	timestamp: number,
 	dayStartHour: number = 4,
-	now?: Date
+	now?: Date,
 ): boolean {
 	const date = new Date(timestamp);
 	const todayBoundary = getTodayBoundary(dayStartHour, now);

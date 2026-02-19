@@ -14,7 +14,7 @@
 
 	.true-recall-pulse-collect {
 		animation: true-recall-pulse-collect 2s ease-in-out infinite;
-		color: var(--color-yellow) !important;
+		color: var(--color-yellow);
 	}
 	.true-recall-pulse-collect:hover {
 		animation: none;

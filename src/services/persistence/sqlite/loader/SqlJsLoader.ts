@@ -3,7 +3,10 @@
  * Loads sql.js from local WASM files for local-only storage.
  */
 import type { App } from "obsidian";
-import initSqlJs, { type Database as SqlJsDatabase, type SqlJsStatic } from "sql.js";
+import initSqlJs, {
+	type Database as SqlJsDatabase,
+	type SqlJsStatic,
+} from "sql.js";
 
 // Plugin ID for path resolution
 const PLUGIN_ID = "true-recall";
@@ -13,8 +16,8 @@ const PLUGIN_ID = "true-recall";
  * All repositories use this format
  */
 export interface QueryExecResult {
-    columns: string[];
-    values: (string | number | null | Uint8Array)[][];
+	columns: string[];
+	values: (string | number | null | Uint8Array)[][];
 }
 
 /** Bind parameter type */
@@ -25,18 +28,18 @@ export type BindParams = (string | number | null | Uint8Array)[];
  * Used by all repositories
  */
 export interface DatabaseLike {
-    exec(sql: string, params?: BindParams): QueryExecResult[];
-    run(sql: string, params?: BindParams): void;
-    export(): Uint8Array;
-    close(): void;
-    getRowsModified(): number;
+	exec(sql: string, params?: BindParams): QueryExecResult[];
+	run(sql: string, params?: BindParams): void;
+	export(): Uint8Array;
+	close(): void;
+	getRowsModified(): number;
 }
 
 /**
  * Result from loadDatabase()
  */
 export interface DatabaseLoadResult {
-    db: DatabaseLike;
+	db: DatabaseLike;
 }
 
 /**
@@ -44,31 +47,31 @@ export interface DatabaseLoadResult {
  * (mostly passthrough since sql.js already matches the interface)
  */
 class SqlJsWrapper implements DatabaseLike {
-    private sqlDb: SqlJsDatabase;
+	private sqlDb: SqlJsDatabase;
 
-    constructor(sqlDb: SqlJsDatabase) {
-        this.sqlDb = sqlDb;
-    }
+	constructor(sqlDb: SqlJsDatabase) {
+		this.sqlDb = sqlDb;
+	}
 
-    exec(sql: string, params?: BindParams): QueryExecResult[] {
-        return this.sqlDb.exec(sql, params) as QueryExecResult[];
-    }
+	exec(sql: string, params?: BindParams): QueryExecResult[] {
+		return this.sqlDb.exec(sql, params) as QueryExecResult[];
+	}
 
-    run(sql: string, params?: BindParams): void {
-        this.sqlDb.run(sql, params);
-    }
+	run(sql: string, params?: BindParams): void {
+		this.sqlDb.run(sql, params);
+	}
 
-    export(): Uint8Array {
-        return this.sqlDb.export();
-    }
+	export(): Uint8Array {
+		return this.sqlDb.export();
+	}
 
-    close(): void {
-        this.sqlDb.close();
-    }
+	close(): void {
+		this.sqlDb.close();
+	}
 
-    getRowsModified(): number {
-        return this.sqlDb.getRowsModified();
-    }
+	getRowsModified(): number {
+		return this.sqlDb.getRowsModified();
+	}
 }
 
 /**
@@ -76,25 +79,31 @@ class SqlJsWrapper implements DatabaseLike {
  * Returns relative path - vault.adapter.readBinary() adds basePath automatically
  */
 function getPluginWasmPath(filename: string): string {
-    return `.obsidian/plugins/${PLUGIN_ID}/${filename}`;
+	return `.obsidian/plugins/${PLUGIN_ID}/${filename}`;
 }
 
 /**
  * Load WASM file from plugin directory and create a Blob URL
  * This is necessary because WASM loaders expect a URL, not a buffer
  */
-async function loadWasmAsUrl(app: App, filename: string): Promise<string | null> {
-    try {
-        const wasmPath = getPluginWasmPath(filename);
-        // Read the WASM file as binary using Obsidian's adapter
-        const buffer = await app.vault.adapter.readBinary(wasmPath);
-        // Create a Blob URL that the WASM loader can fetch
-        const blob = new Blob([buffer], { type: "application/wasm" });
-        return URL.createObjectURL(blob);
-    } catch (e) {
-        console.error(`[True Recall] Failed to load local WASM file ${filename}:`, e);
-        return null;
-    }
+async function loadWasmAsUrl(
+	app: App,
+	filename: string,
+): Promise<string | null> {
+	try {
+		const wasmPath = getPluginWasmPath(filename);
+		// Read the WASM file as binary using Obsidian's adapter
+		const buffer = await app.vault.adapter.readBinary(wasmPath);
+		// Create a Blob URL that the WASM loader can fetch
+		const blob = new Blob([buffer], { type: "application/wasm" });
+		return URL.createObjectURL(blob);
+	} catch (e) {
+		console.error(
+			`[True Recall] Failed to load local WASM file ${filename}:`,
+			e,
+		);
+		return null;
+	}
 }
 
 // CDN fallback URL for sql.js WASM
@@ -104,25 +113,28 @@ const SQLJS_CDN = "https://sql.js.org/dist";
  * Load sql.js - tries local WASM first, falls back to CDN
  */
 async function loadSqlJs(app: App): Promise<SqlJsStatic> {
-    // Try local WASM first
-    const localWasmUrl = await loadWasmAsUrl(app, "sql-wasm.wasm");
+	// Try local WASM first
+	const localWasmUrl = await loadWasmAsUrl(app, "sql-wasm.wasm");
 
-    if (localWasmUrl) {
-        try {
-            const SQL = await initSqlJs({
-                locateFile: () => localWasmUrl,
-            });
-            return SQL;
-        } catch (e) {
-            console.error("[True Recall] Failed to load sql.js from local WASM, falling back to CDN:", e);
-        }
-    }
+	if (localWasmUrl) {
+		try {
+			const SQL = await initSqlJs({
+				locateFile: () => localWasmUrl,
+			});
+			return SQL;
+		} catch (e) {
+			console.error(
+				"[True Recall] Failed to load sql.js from local WASM, falling back to CDN:",
+				e,
+			);
+		}
+	}
 
-    // Fallback to CDN
-    const SQL = await initSqlJs({
-        locateFile: (file: string) => `${SQLJS_CDN}/${file}`,
-    });
-    return SQL;
+	// Fallback to CDN
+	const SQL = await initSqlJs({
+		locateFile: (file: string) => `${SQLJS_CDN}/${file}`,
+	});
+	return SQL;
 }
 
 // Cached instance
@@ -136,26 +148,26 @@ let cachedSqlJs: SqlJsStatic | null = null;
  * @returns Database wrapper
  */
 export async function loadDatabase(
-    app: App,
-    existingData?: Uint8Array | null
+	app: App,
+	existingData?: Uint8Array | null,
 ): Promise<DatabaseLoadResult> {
-    // Load sql.js
-    if (!cachedSqlJs) {
-        cachedSqlJs = await loadSqlJs(app);
-    }
+	// Load sql.js
+	if (!cachedSqlJs) {
+		cachedSqlJs = await loadSqlJs(app);
+	}
 
-    const sqlDb = existingData
-        ? new cachedSqlJs.Database(existingData)
-        : new cachedSqlJs.Database();
+	const sqlDb = existingData
+		? new cachedSqlJs.Database(existingData)
+		: new cachedSqlJs.Database();
 
-    return {
-        db: new SqlJsWrapper(sqlDb),
-    };
+	return {
+		db: new SqlJsWrapper(sqlDb),
+	};
 }
 
 /**
  * Reset loader state (for testing)
  */
 export function resetLoaderState(): void {
-    cachedSqlJs = null;
+	cachedSqlJs = null;
 }

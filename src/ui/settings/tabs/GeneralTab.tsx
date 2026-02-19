@@ -1,6 +1,11 @@
-import { SettingRow, ToggleInput, TextInput, SliderInput, SelectInput } from "../../preact/components";
-import { useSettings } from "../hooks/useSettings";
 import type { ReviewViewMode } from "../../../types";
+import {
+	SelectInput,
+	SettingRow,
+	SliderInput,
+	ToggleInput,
+} from "../../preact/components";
+import { useSettings } from "../hooks/useSettings";
 
 export function GeneralTab() {
 	const { settings, save } = useSettings();
@@ -9,7 +14,10 @@ export function GeneralTab() {
 		<>
 			<SettingRow heading name="Review interface" />
 
-			<SettingRow name="Review mode" description="Where to open the review session">
+			<SettingRow
+				name="Review mode"
+				description="Where to open the review session"
+			>
 				<SelectInput
 					value={settings.reviewMode}
 					onChange={(v) => save({ reviewMode: v as ReviewViewMode })}

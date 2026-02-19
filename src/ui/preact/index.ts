@@ -1,4 +1,4 @@
-export { ObsidianProvider, useApp, usePlugin } from "./ObsidianContext";
-export { mountPreact } from "./mount";
-export { useMarkdown, useIcon } from "./hooks";
 export * from "./components";
+export { useIcon, useMarkdown } from "./hooks";
+export { mountPreact } from "./mount";
+export { ObsidianProvider, useApp, usePlugin } from "./ObsidianContext";

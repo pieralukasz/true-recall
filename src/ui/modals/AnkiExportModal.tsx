@@ -1,12 +1,12 @@
+import type { App } from "obsidian";
 import { render } from "preact";
-import { useState, useCallback } from "preact/hooks";
-import { App } from "obsidian";
-import { BaseModal } from "./BaseModal";
-import type { SqliteStoreService } from "../../services/persistence/sqlite/SqliteStoreService";
-import type { FSRSService } from "../../services/core/fsrs.service";
-import type { FrontmatterIndexService } from "../../services/core/frontmatter-index.service";
-import { AnkiExportService } from "../../services/anki/anki-export.service";
+import { useCallback, useState } from "preact/hooks";
 import type { AnkiExportOptions } from "types";
+import { AnkiExportService } from "../../services/anki/anki-export.service";
+import type { FrontmatterIndexService } from "../../services/core/frontmatter-index.service";
+import type { FSRSService } from "../../services/core/fsrs.service";
+import type { SqliteStoreService } from "../../services/persistence/sqlite/SqliteStoreService";
+import { BaseModal } from "./BaseModal";
 
 interface NoteEntry {
 	uid: string;
@@ -41,7 +41,16 @@ function CheckboxItem({
 	return (
 		<div
 			class="ep:flex ep:items-center ep:gap-2 ep:p-2 ep:border-b ep:border-obs-border ep:last:border-b-0 ep:cursor-pointer ep:hover:bg-obs-modifier-hover"
+			role="option"
+			tabIndex={0}
+			aria-selected={checked}
 			onClick={toggle}
+			onKeyDown={(e: KeyboardEvent) => {
+				if (e.key === "Enter" || e.key === " ") {
+					e.preventDefault();
+					toggle();
+				}
+			}}
 		>
 			<input
 				type="checkbox"
@@ -113,7 +122,9 @@ function AnkiExportBody({
 	onClose: () => void;
 }) {
 	const [phase, setPhase] = useState<ExportPhase>({ type: "form" });
-	const [exportMode, setExportMode] = useState<"all" | "projects" | "notes">("all");
+	const [exportMode, setExportMode] = useState<"all" | "projects" | "notes">(
+		"all",
+	);
 	const [includeScheduling, setIncludeScheduling] = useState(true);
 	const [includeMedia, setIncludeMedia] = useState(true);
 	const [selectedProjects] = useState(() => new Set<string>());
@@ -145,12 +156,21 @@ function AnkiExportBody({
 			includeMedia,
 		});
 		setPhase(result);
-	}, [exportMode, selectedProjects, selectedSourceUids, includeScheduling, includeMedia, onExport]);
+	}, [
+		exportMode,
+		selectedProjects,
+		selectedSourceUids,
+		includeScheduling,
+		includeMedia,
+		onExport,
+	]);
 
 	if (phase.type === "exporting") {
 		return (
 			<div class="ep:text-center ep:py-6">
-				<div class="ep:text-ui-small ep:font-medium ep:mb-2">Building .apkg file...</div>
+				<div class="ep:text-ui-small ep:font-medium ep:mb-2">
+					Building .apkg file...
+				</div>
 				<div class="ep:text-ui-smaller ep:text-obs-muted">
 					This may take a moment for large collections
 				</div>
@@ -167,7 +187,9 @@ function AnkiExportBody({
 					</div>
 				</div>
 				<div class="ep:flex ep:justify-end ep:gap-2 ep:pt-2 ep:border-t ep:border-obs-border">
-					<button class={PRIMARY_BTN} onClick={onClose}>Done</button>
+					<button type="button" class={PRIMARY_BTN} onClick={onClose}>
+						Done
+					</button>
 				</div>
 			</>
 		);
@@ -180,7 +202,9 @@ function AnkiExportBody({
 					Export failed: {phase.message}
 				</div>
 				<div class="ep:flex ep:justify-end ep:gap-2 ep:pt-2 ep:border-t ep:border-obs-border">
-					<button class={SECONDARY_BTN} onClick={onClose}>Close</button>
+					<button type="button" class={SECONDARY_BTN} onClick={onClose}>
+						Close
+					</button>
 				</div>
 			</>
 		);
@@ -194,33 +218,36 @@ function AnkiExportBody({
 
 				<div class="ep:flex ep:items-center ep:gap-2 ep:py-1">
 					<input
+						id="export-scope-all"
 						type="radio"
 						name="export-scope"
 						class="ep:w-4 ep:h-4 ep:accent-obs-interactive"
 						checked={exportMode === "all"}
 						onChange={() => setExportMode("all")}
 					/>
-					<label class="ep:text-ui-small">All cards ({totalCards})</label>
+					<label htmlFor="export-scope-all" class="ep:text-ui-small">All cards ({totalCards})</label>
 				</div>
 				<div class="ep:flex ep:items-center ep:gap-2 ep:py-1">
 					<input
+						id="export-scope-projects"
 						type="radio"
 						name="export-scope"
 						class="ep:w-4 ep:h-4 ep:accent-obs-interactive"
 						checked={exportMode === "projects"}
 						onChange={() => setExportMode("projects")}
 					/>
-					<label class="ep:text-ui-small">Selected projects only</label>
+					<label htmlFor="export-scope-projects" class="ep:text-ui-small">Selected projects only</label>
 				</div>
 				<div class="ep:flex ep:items-center ep:gap-2 ep:py-1">
 					<input
+						id="export-scope-notes"
 						type="radio"
 						name="export-scope"
 						class="ep:w-4 ep:h-4 ep:accent-obs-interactive"
 						checked={exportMode === "notes"}
 						onChange={() => setExportMode("notes")}
 					/>
-					<label class="ep:text-ui-small">Selected notes only</label>
+					<label htmlFor="export-scope-notes" class="ep:text-ui-small">Selected notes only</label>
 				</div>
 
 				{allProjects.length > 0 && exportMode === "projects" && (
@@ -271,8 +298,12 @@ function AnkiExportBody({
 
 			{/* Buttons */}
 			<div class="ep:flex ep:justify-end ep:gap-2 ep:pt-2 ep:border-t ep:border-obs-border">
-				<button class={SECONDARY_BTN} onClick={onClose}>Cancel</button>
-				<button class={PRIMARY_BTN} onClick={() => void handleExport()}>Export</button>
+				<button type="button" class={SECONDARY_BTN} onClick={onClose}>
+					Cancel
+				</button>
+				<button type="button" class={PRIMARY_BTN} onClick={() => void handleExport()}>
+					Export
+				</button>
 			</div>
 		</>
 	);
@@ -338,8 +369,14 @@ export class AnkiExportModal extends BaseModal {
 
 			const options: AnkiExportOptions = {
 				exportMode: opts.exportMode,
-				projects: opts.exportMode === "projects" ? [...opts.selectedProjects] : undefined,
-				sourceUids: opts.exportMode === "notes" ? [...opts.selectedSourceUids] : undefined,
+				projects:
+					opts.exportMode === "projects"
+						? [...opts.selectedProjects]
+						: undefined,
+				sourceUids:
+					opts.exportMode === "notes"
+						? [...opts.selectedSourceUids]
+						: undefined,
 				includeScheduling: opts.includeScheduling,
 				includeMedia: opts.includeMedia,
 			};
@@ -377,7 +414,7 @@ export class AnkiExportModal extends BaseModal {
 			const cache = this.app.metadataCache.getFileCache(file);
 			if (!cache?.frontmatter) continue;
 
-			const uid = cache.frontmatter["flashcard_uid"] as string | undefined;
+			const uid = cache.frontmatter.flashcard_uid as string | undefined;
 			if (!uid) continue;
 
 			notes.push({ uid, name: file.basename });

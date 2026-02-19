@@ -1,10 +1,10 @@
-import { ItemView, WorkspaceLeaf, Platform, Menu } from "obsidian";
-import { h } from "preact";
 import { signal } from "@preact/signals";
+import { ItemView, type Menu, Platform, type WorkspaceLeaf } from "obsidian";
+import { h } from "preact";
 import { VIEW_TYPE_ORPHANED_CARDS } from "../../constants";
+import type TrueRecallPlugin from "../../main";
 import { mountPreact } from "../preact";
 import { OrphanedCardsApp } from "./OrphanedCardsApp";
-import type TrueRecallPlugin from "../../main";
 
 export class OrphanedCardsView extends ItemView {
 	private plugin: TrueRecallPlugin;
@@ -34,7 +34,8 @@ export class OrphanedCardsView extends ItemView {
 		if (!Platform.isMobile) return;
 
 		menu.addItem((item) => {
-			item.setTitle("Refresh")
+			item
+				.setTitle("Refresh")
 				.setIcon("refresh-cw")
 				.onClick(() => this.refresh());
 		});

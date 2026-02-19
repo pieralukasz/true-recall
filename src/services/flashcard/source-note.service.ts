@@ -1,9 +1,9 @@
 /**
  * Resolves source note info from vault using FrontmatterIndexService for O(1) lookups
  */
-import { App, TFile } from "obsidian";
-import { FrontmatterService } from "./frontmatter.service";
+import { type App, TFile } from "obsidian";
 import type { FrontmatterIndexService } from "../core/frontmatter-index.service";
+import { FrontmatterService } from "./frontmatter.service";
 
 export class SourceNoteService {
 	private app: App;
@@ -40,7 +40,10 @@ export class SourceNoteService {
 		await this.frontmatterService.setSourceNoteUid(file, uid);
 	}
 
-	resolveSourceNote(sourceUid: string | undefined): { noteName?: string; notePath?: string } {
+	resolveSourceNote(sourceUid: string | undefined): {
+		noteName?: string;
+		notePath?: string;
+	} {
 		if (!sourceUid) {
 			return {};
 		}
@@ -81,7 +84,9 @@ export class SourceNoteService {
 	}
 
 	private buildFallbackCache(): void {
-		console.error("[SourceNoteService] FrontmatterIndex not available, building fallback cache");
+		console.error(
+			"[SourceNoteService] FrontmatterIndex not available, building fallback cache",
+		);
 		this.fallbackUidCache = new Map();
 
 		const files = this.app.vault.getMarkdownFiles();
@@ -106,7 +111,9 @@ export class SourceNoteService {
 		return uid !== null;
 	}
 
-	enrichCard<T extends { sourceUid?: string }>(card: T): T & {
+	enrichCard<T extends { sourceUid?: string }>(
+		card: T,
+	): T & {
 		sourceNoteName: string;
 		sourceNotePath: string;
 		projects: string[];
@@ -134,11 +141,15 @@ export class SourceNoteService {
 		};
 	}
 
-	enrichCards<T extends { sourceUid?: string }>(cards: T[]): Array<T & {
-		sourceNoteName: string;
-		sourceNotePath: string;
-		projects: string[];
-	}> {
-		return cards.map(card => this.enrichCard(card));
+	enrichCards<T extends { sourceUid?: string }>(
+		cards: T[],
+	): Array<
+		T & {
+			sourceNoteName: string;
+			sourceNotePath: string;
+			projects: string[];
+		}
+	> {
+		return cards.map((card) => this.enrichCard(card));
 	}
 }

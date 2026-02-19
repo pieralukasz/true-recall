@@ -1,9 +1,9 @@
+import { type App, Component, MarkdownRenderer, TFile } from "obsidian";
 import { render } from "preact";
-import { useState, useEffect, useRef, useCallback } from "preact/hooks";
-import { App, TFile, Component, MarkdownRenderer } from "obsidian";
-import { BasePromiseModal } from "./BasePromiseModal";
-import { ImageService } from "../../services/image";
+import { useCallback, useEffect, useRef, useState } from "preact/hooks";
 import { notify } from "../../services";
+import { ImageService } from "../../services/image";
+import { BasePromiseModal } from "./BasePromiseModal";
 
 export interface ImagePickerResult {
 	cancelled: boolean;
@@ -41,7 +41,13 @@ function PasteZoneIcon() {
 	);
 }
 
-function ImagePickerBody({ app, imageService, currentFilePath, onResolve, onClose }: ImagePickerBodyProps) {
+function ImagePickerBody({
+	app,
+	imageService,
+	currentFilePath,
+	onResolve,
+	onClose,
+}: ImagePickerBodyProps) {
 	const [selectedImage, setSelectedImage] = useState<TFile | null>(null);
 	const [selectedWidth, setSelectedWidth] = useState(0);
 	const [dragActive, setDragActive] = useState(false);
@@ -58,30 +64,35 @@ function ImagePickerBody({ app, imageService, currentFilePath, onResolve, onClos
 		};
 	}, []);
 
-	const updatePreview = useCallback((file: TFile | null, width: number) => {
-		if (!previewRef.current || !file || !renderComponentRef.current) return;
-		const el = previewRef.current;
-		el.empty();
+	const updatePreview = useCallback(
+		(file: TFile | null, width: number) => {
+			if (!previewRef.current || !file || !renderComponentRef.current) return;
+			const el = previewRef.current;
+			el.empty();
 
-		const markdown = imageService.buildImageMarkdown(
-			file.path,
-			width > 0 ? width : undefined
-		);
+			const markdown = imageService.buildImageMarkdown(
+				file.path,
+				width > 0 ? width : undefined,
+			);
 
-		const codeEl = el.createEl("code", {
-			text: markdown,
-			cls: "ep:block ep:py-2 ep:px-3 ep:bg-obs-primary ep:rounded-lg ep:text-ui-smaller ep:mb-2",
-		});
+			const _codeEl = el.createEl("code", {
+				text: markdown,
+				cls: "ep:block ep:py-2 ep:px-3 ep:bg-obs-primary ep:rounded-lg ep:text-ui-smaller ep:mb-2",
+			});
 
-		const previewEl = el.createDiv({ cls: "ep:max-h-[200px] ep:overflow-auto" });
-		void MarkdownRenderer.render(
-			app,
-			markdown,
-			previewEl,
-			currentFilePath,
-			renderComponentRef.current
-		);
-	}, [app, imageService, currentFilePath]);
+			const previewEl = el.createDiv({
+				cls: "ep:max-h-[200px] ep:overflow-auto",
+			});
+			void MarkdownRenderer.render(
+				app,
+				markdown,
+				previewEl,
+				currentFilePath,
+				renderComponentRef.current,
+			);
+		},
+		[app, imageService, currentFilePath],
+	);
 
 	useEffect(() => {
 		updatePreview(selectedImage, selectedWidth);
@@ -94,7 +105,7 @@ function ImagePickerBody({ app, imageService, currentFilePath, onResolve, onClos
 			if (!items) return;
 			for (let i = 0; i < items.length; i++) {
 				const item = items[i];
-				if (item && item.type.startsWith("image/")) {
+				if (item?.type.startsWith("image/")) {
 					e.preventDefault();
 					const blob = item.getAsFile();
 					if (blob) void handlePastedImage(blob);
@@ -152,7 +163,7 @@ function ImagePickerBody({ app, imageService, currentFilePath, onResolve, onClos
 		if (!selectedImage) return;
 		const markdown = imageService.buildImageMarkdown(
 			selectedImage.path,
-			selectedWidth > 0 ? selectedWidth : undefined
+			selectedWidth > 0 ? selectedWidth : undefined,
 		);
 		onResolve({ cancelled: false, markdown });
 	};
@@ -162,7 +173,10 @@ function ImagePickerBody({ app, imageService, currentFilePath, onResolve, onClos
 			{/* Paste zone */}
 			<div
 				class={`ep:flex ep:flex-col ep:items-center ep:justify-center ep:p-6 ep:mb-4 ep:border-2 ep:border-dashed ep:rounded-lg ep:cursor-pointer ep:transition-all ep:hover:border-obs-interactive ${dragActive ? "true-recall-paste-zone-active" : "ep:border-obs-border"}`}
-				onDragOver={(e) => { e.preventDefault(); setDragActive(true); }}
+				onDragOver={(e) => {
+					e.preventDefault();
+					setDragActive(true);
+				}}
 				onDragLeave={() => setDragActive(false)}
 				onDrop={(e) => {
 					e.preventDefault();
@@ -178,17 +192,27 @@ function ImagePickerBody({ app, imageService, currentFilePath, onResolve, onClos
 					}
 				}}
 			>
-				<div class="ep:text-obs-muted"><PasteZoneIcon /></div>
-				<div class="ep:text-ui-small ep:font-medium ep:text-obs-normal">Paste image from clipboard</div>
-				<div class="ep:text-ui-smaller ep:text-obs-muted">Ctrl+V or drag & drop</div>
+				<div class="ep:text-obs-muted">
+					<PasteZoneIcon />
+				</div>
+				<div class="ep:text-ui-small ep:font-medium ep:text-obs-normal">
+					Paste image from clipboard
+				</div>
+				<div class="ep:text-ui-smaller ep:text-obs-muted">
+					Ctrl+V or drag & drop
+				</div>
 			</div>
 
 			{/* Recent images */}
 			<div class="ep:flex ep:flex-col ep:gap-2">
-				<h4 class="ep:text-ui-small ep:font-semibold ep:text-obs-muted ep:m-0">Recent images</h4>
+				<h4 class="ep:text-ui-small ep:font-semibold ep:text-obs-muted ep:m-0">
+					Recent images
+				</h4>
 				<div class="ep:grid ep:grid-cols-4 ep:gap-2 ep:max-h-[180px] ep:overflow-y-auto">
 					{recentImages.length === 0 ? (
-						<div class="ep:text-center ep:text-obs-muted ep:py-6 ep:italic">No images in vault</div>
+						<div class="ep:text-center ep:text-obs-muted ep:py-6 ep:italic">
+							No images in vault
+						</div>
 					) : (
 						recentImages.map((file) => (
 							<div
@@ -203,7 +227,9 @@ function ImagePickerBody({ app, imageService, currentFilePath, onResolve, onClos
 									alt={file.basename}
 								/>
 								{imageService.isFileTooLarge(file) && (
-									<div class="ep:absolute ep:top-1 ep:right-1 ep:py-1 ep:px-2 ep:bg-obs-red ep:text-obs-on-accent ep:text-ui-smaller ep:rounded">Large</div>
+									<div class="ep:absolute ep:top-1 ep:right-1 ep:py-1 ep:px-2 ep:bg-obs-red ep:text-obs-on-accent ep:text-ui-smaller ep:rounded">
+										Large
+									</div>
 								)}
 							</div>
 						))
@@ -213,7 +239,9 @@ function ImagePickerBody({ app, imageService, currentFilePath, onResolve, onClos
 
 			{/* Size control */}
 			<div class="ep:flex ep:items-center ep:gap-3 ep:p-3 ep:bg-obs-secondary ep:rounded-md">
-				<label class="ep:text-ui-small ep:font-medium ep:text-obs-normal">Width:</label>
+				<label class="ep:text-ui-small ep:font-medium ep:text-obs-normal">
+					Width:
+				</label>
 				<input
 					class="ep:flex-1 ep:h-1 ep:accent-obs-interactive"
 					type="range"
@@ -221,7 +249,9 @@ function ImagePickerBody({ app, imageService, currentFilePath, onResolve, onClos
 					max="800"
 					step="50"
 					value={selectedWidth}
-					onInput={(e) => setSelectedWidth(parseInt((e.target as HTMLInputElement).value, 10))}
+					onInput={(e) =>
+						setSelectedWidth(parseInt((e.target as HTMLInputElement).value, 10))
+					}
 				/>
 				<span class="ep:text-ui-small ep:font-medium ep:text-obs-interactive ep:min-w-[50px] ep:text-right">
 					{selectedWidth === 0 ? "Auto" : `${selectedWidth}px`}
@@ -230,10 +260,17 @@ function ImagePickerBody({ app, imageService, currentFilePath, onResolve, onClos
 
 			{/* Preview */}
 			<div class="ep:flex ep:flex-col ep:gap-2">
-				<h4 class="ep:text-ui-small ep:font-semibold ep:text-obs-muted ep:m-0">Preview</h4>
-				<div ref={previewRef} class="ep:p-3 ep:bg-obs-secondary ep:rounded-md ep:min-h-[100px] ep:overflow-hidden">
+				<h4 class="ep:text-ui-small ep:font-semibold ep:text-obs-muted ep:m-0">
+					Preview
+				</h4>
+				<div
+					ref={previewRef}
+					class="ep:p-3 ep:bg-obs-secondary ep:rounded-md ep:min-h-[100px] ep:overflow-hidden"
+				>
 					{!selectedImage && (
-						<div class="ep:text-obs-muted ep:italic ep:text-center ep:py-6">Select or paste an image</div>
+						<div class="ep:text-obs-muted ep:italic ep:text-center ep:py-6">
+							Select or paste an image
+						</div>
 					)}
 				</div>
 			</div>
@@ -290,7 +327,7 @@ export class ImagePickerModal extends BasePromiseModal<ImagePickerResult> {
 				onResolve={(result) => this.resolve(result)}
 				onClose={() => this.close()}
 			/>,
-			container
+			container,
 		);
 		this.unmountBody = () => render(null, container);
 	}

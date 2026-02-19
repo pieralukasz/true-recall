@@ -7,8 +7,8 @@
  * 2. Have a source_uid that doesn't match any existing file (missing_source_file)
  */
 import type { FSRSCardData, FSRSFlashcardItem } from "../../types";
-import type { SqliteStoreService } from "../persistence/sqlite/SqliteStoreService";
 import type { FrontmatterIndexService } from "../core/frontmatter-index.service";
+import type { SqliteStoreService } from "../persistence/sqlite/SqliteStoreService";
 
 export type OrphanReason = "no_source_uid" | "missing_source_file";
 
@@ -63,7 +63,7 @@ export class OrphanedCardsService {
 	 */
 	getOrphanedCardsExtended(
 		store: SqliteStoreService,
-		frontmatterIndex: FrontmatterIndexService
+		frontmatterIndex: FrontmatterIndexService,
 	): OrphanedCardInfo[] {
 		const allCards = store.cards.getAll();
 		const orphans: OrphanedCardInfo[] = [];
@@ -76,12 +76,12 @@ export class OrphanedCardsService {
 				// Check if source file exists
 				const sourceFile = frontmatterIndex.getFileByValue(
 					"flashcard_uid",
-					card.sourceUid
+					card.sourceUid,
 				);
 				if (!sourceFile) {
 					// Type 2: Missing source file
 					orphans.push(
-						this.cardToOrphanInfo(card, "missing_source_file", card.sourceUid)
+						this.cardToOrphanInfo(card, "missing_source_file", card.sourceUid),
 					);
 				}
 			}
@@ -110,13 +110,14 @@ export class OrphanedCardsService {
 					? "Cards without source note"
 					: `Deleted note (${groupKey})`,
 			cards,
-			reason: groupKey === "no_source_uid" ? "no_source_uid" : "missing_source_file",
+			reason:
+				groupKey === "no_source_uid" ? "no_source_uid" : "missing_source_file",
 		}));
 	}
 
 	countOrphanedCardsExtended(
 		store: SqliteStoreService,
-		frontmatterIndex: FrontmatterIndexService
+		frontmatterIndex: FrontmatterIndexService,
 	): number {
 		return this.getOrphanedCardsExtended(store, frontmatterIndex).length;
 	}
@@ -124,7 +125,7 @@ export class OrphanedCardsService {
 	private cardToOrphanInfo(
 		card: FSRSCardData,
 		reason: OrphanReason,
-		missingSourceUid?: string
+		missingSourceUid?: string,
 	): OrphanedCardInfo {
 		return {
 			id: card.id,

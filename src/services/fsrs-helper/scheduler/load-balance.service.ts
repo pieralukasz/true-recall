@@ -6,11 +6,11 @@
 
 import { isEasyDay } from "./easy-days.service";
 import type {
-	SchedulerCardStore,
 	CardDueInfo,
-	LoadBalanceOptions,
-	SchedulingResult,
 	CardScheduleChange,
+	LoadBalanceOptions,
+	SchedulerCardStore,
+	SchedulingResult,
 	WorkloadDistribution,
 } from "./scheduler.types";
 
@@ -38,7 +38,7 @@ export class LoadBalanceService {
 		// Get cards due in range
 		const dueCards = this.cardStore.getDueCardsByDateRange(
 			startDateStr,
-			endDateStr
+			endDateStr,
 		);
 
 		// Build distribution map
@@ -90,14 +90,14 @@ export class LoadBalanceService {
 						distribution,
 						dailyTargets,
 						maxDev,
-						days
+						days,
 					);
 
 					if (newDate && newDate !== date) {
 						const change: CardScheduleChange = {
 							cardId: card.id,
 							originalDue: card.due,
-							newDue: newDate + "T" + card.due.split("T")[1],
+							newDue: `${newDate}T${card.due.split("T")[1]}`,
 							daysChanged: this.daysDiff(date, newDate),
 						};
 						changes.push(change);
@@ -145,7 +145,7 @@ export class LoadBalanceService {
 		distribution: Map<string, CardDueInfo[]>,
 		targets: Map<string, number>,
 		maxDev: number,
-		maxDays: number
+		maxDays: number,
 	): string | null {
 		let bestDate: string | null = null;
 		let bestScore = Infinity;
@@ -178,14 +178,14 @@ export class LoadBalanceService {
 	}
 
 	private formatDate(date: Date): string {
-		return date.toISOString().split("T")[0]!;
+		return date.toISOString().split("T")[0] ?? "";
 	}
 
 	private daysDiff(from: string, to: string): number {
 		const fromDate = new Date(from);
 		const toDate = new Date(to);
 		return Math.round(
-			(toDate.getTime() - fromDate.getTime()) / (1000 * 60 * 60 * 24)
+			(toDate.getTime() - fromDate.getTime()) / (1000 * 60 * 60 * 24),
 		);
 	}
 
@@ -199,7 +199,7 @@ export class LoadBalanceService {
 
 		const dueCards = this.cardStore.getDueCardsByDateRange(
 			startDateStr,
-			endDateStr
+			endDateStr,
 		);
 
 		// Build distribution map

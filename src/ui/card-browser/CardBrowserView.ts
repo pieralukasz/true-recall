@@ -1,9 +1,9 @@
 import { ItemView, type WorkspaceLeaf } from "obsidian";
 import { h } from "preact";
 import { VIEW_TYPE_CARD_BROWSER } from "../../constants";
+import type TrueRecallPlugin from "../../main";
 import { mountPreact } from "../preact";
 import { CardBrowserApp } from "./CardBrowserApp";
-import type TrueRecallPlugin from "../../main";
 
 export class CardBrowserView extends ItemView {
 	private plugin: TrueRecallPlugin;
@@ -30,7 +30,13 @@ export class CardBrowserView extends ItemView {
 		const container = this.containerEl.children[1];
 		if (!(container instanceof HTMLElement)) return;
 		container.empty();
-		container.addClass("ep:flex", "ep:flex-col", "ep:h-full", "ep:overflow-hidden", "ep:bg-obs-primary");
+		container.addClass(
+			"ep:flex",
+			"ep:flex-col",
+			"ep:h-full",
+			"ep:overflow-hidden",
+			"ep:bg-obs-primary",
+		);
 
 		this.unmountPreact = mountPreact(
 			container,

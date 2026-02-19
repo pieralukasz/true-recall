@@ -1,8 +1,8 @@
+import type { App } from "obsidian";
 import { render } from "preact";
-import { useState, useCallback } from "preact/hooks";
-import { App } from "obsidian";
-import { BasePromiseModal, type CancellableResult } from "./BasePromiseModal";
+import { useCallback, useState } from "preact/hooks";
 import type { DeviceDatabaseInfo } from "../../services/device";
+import { BasePromiseModal, type CancellableResult } from "./BasePromiseModal";
 
 export interface DeviceSelectionResult extends CancellableResult {
 	action: "fresh" | "import";
@@ -58,7 +58,15 @@ function RadioOption({
 	return (
 		<div
 			class={`ep:flex ep:items-start ep:gap-3 ep:p-3 ep:rounded-md ep:mb-2 ep:cursor-pointer ep:bg-obs-secondary ep:transition-colors ep:hover:bg-obs-modifier-hover ${checked ? "ep-radio-active" : ""}`}
+			role="button"
+			tabIndex={0}
 			onClick={() => onChange()}
+			onKeyDown={(e: KeyboardEvent) => {
+				if (e.key === "Enter" || e.key === " ") {
+					e.preventDefault();
+					onChange();
+				}
+			}}
 		>
 			<input
 				type="radio"
@@ -97,14 +105,25 @@ function DatabaseItem({
 	return (
 		<div
 			class={`ep:flex ep:items-center ep:justify-between ep:p-3 ep:border-b ep:border-obs-border ep:cursor-pointer ep:transition-colors ep:hover:bg-obs-modifier-hover ep:last:border-b-0 ${isSelected ? "ep:bg-obs-interactive/10 ep:border-l-2 ep:border-l-obs-interactive" : ""}`}
+			role="option"
+			tabIndex={0}
+			aria-selected={isSelected}
 			onClick={onSelect}
+			onKeyDown={(e: KeyboardEvent) => {
+				if (e.key === "Enter" || e.key === " ") {
+					e.preventDefault();
+					onSelect();
+				}
+			}}
 		>
 			<div>
 				<div class="ep:flex ep:items-center ep:gap-2">
 					<span>device</span>
 					<span class="ep:font-mono">{db.deviceId}</span>
 				</div>
-				<div class="ep:text-ui-smaller ep:text-obs-muted ep:mt-1">{statsParts.join(" | ")}</div>
+				<div class="ep:text-ui-smaller ep:text-obs-muted ep:mt-1">
+					{statsParts.join(" | ")}
+				</div>
 			</div>
 			<div class="ep:text-right ep:text-ui-smaller ep:text-obs-muted">
 				<div>{db.formattedSize}</div>
@@ -123,10 +142,14 @@ function DeviceSelectionBody({
 	onResolve: (result: DeviceSelectionResult) => void;
 	onClose: () => void;
 }) {
-	const [selectedAction, setSelectedAction] = useState<"fresh" | "import">("fresh");
-	const [selectedDatabase, setSelectedDatabase] = useState<DeviceDatabaseInfo | null>(null);
+	const [selectedAction, setSelectedAction] = useState<"fresh" | "import">(
+		"fresh",
+	);
+	const [selectedDatabase, setSelectedDatabase] =
+		useState<DeviceDatabaseInfo | null>(null);
 
-	const canContinue = selectedAction === "fresh" ||
+	const canContinue =
+		selectedAction === "fresh" ||
 		(selectedAction === "import" && selectedDatabase !== null);
 
 	const handleContinue = useCallback(() => {
@@ -170,7 +193,7 @@ function DeviceSelectionBody({
 
 			{selectedAction === "import" && databases.length > 0 && (
 				<div class="ep:ml-7 ep:mt-2 ep:mb-4">
-					{databases.map(db => (
+					{databases.map((db) => (
 						<DatabaseItem
 							key={db.deviceId}
 							db={db}
@@ -183,12 +206,14 @@ function DeviceSelectionBody({
 
 			<div class="ep:flex ep:justify-end ep:gap-2 ep:pt-2 ep:border-t ep:border-obs-border">
 				<button
+					type="button"
 					class="ep:py-2.5 ep:px-5 ep:rounded-md ep:text-ui-small ep:font-medium ep:cursor-pointer ep:transition-all ep:bg-obs-secondary ep:text-obs-normal ep:border ep:border-obs-border ep:hover:bg-obs-modifier-hover"
 					onClick={onClose}
 				>
 					Cancel
 				</button>
 				<button
+					type="button"
 					class={`mod-cta ep:py-2.5 ep:px-5 ep:rounded-md ep:text-ui-small ep:font-medium ep:cursor-pointer ep:transition-all ${!canContinue ? "ep:opacity-50 ep:cursor-not-allowed" : ""}`}
 					disabled={!canContinue}
 					onClick={handleContinue}

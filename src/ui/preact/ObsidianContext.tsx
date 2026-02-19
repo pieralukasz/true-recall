@@ -1,6 +1,6 @@
+import type { App } from "obsidian";
 import { createContext } from "preact";
 import { useContext } from "preact/hooks";
-import type { App } from "obsidian";
 import type TrueRecallPlugin from "../../main";
 
 interface ObsidianContextValue {
@@ -8,7 +8,9 @@ interface ObsidianContextValue {
 	plugin: TrueRecallPlugin;
 }
 
-const ObsidianContext = createContext<ObsidianContextValue>(null!);
+const ObsidianContext = createContext<ObsidianContextValue>(
+	null as unknown as ObsidianContextValue,
+);
 
 export const ObsidianProvider = ObsidianContext.Provider;
 

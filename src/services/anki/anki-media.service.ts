@@ -10,7 +10,7 @@ export class AnkiMediaService {
 	async importMedia(
 		media: Map<string, ArrayBuffer>,
 		mediaMap: Record<string, string>,
-		targetFolder: string
+		targetFolder: string,
 	): Promise<Map<string, string>> {
 		const folderPath = normalizePath(targetFolder);
 		await this.ensureFolder(folderPath);
@@ -33,7 +33,7 @@ export class AnkiMediaService {
 			} catch (err) {
 				console.error(
 					`[True Recall] Failed to import media file "${originalName}":`,
-					err
+					err,
 				);
 			}
 		}
@@ -43,22 +43,20 @@ export class AnkiMediaService {
 
 	updateImportedContent(
 		content: string,
-		pathMapping: Map<string, string>
+		pathMapping: Map<string, string>,
 	): string {
 		let result = content;
 		for (const [originalName, vaultPath] of pathMapping) {
 			// Only update if the vault path differs from the bare filename
 			// (i.e., media is stored in a subfolder)
 			if (originalName === vaultPath) continue;
-			result = result
-				.split(`![[${originalName}]]`)
-				.join(`![[${vaultPath}]]`);
+			result = result.split(`![[${originalName}]]`).join(`![[${vaultPath}]]`);
 		}
 		return result;
 	}
 
 	async collectExportMedia(
-		cards: { question: string; answer: string }[]
+		cards: { question: string; answer: string }[],
 	): Promise<{
 		mediaFiles: Map<string, ArrayBuffer>;
 		mediaMap: Record<string, string>;
@@ -107,11 +105,10 @@ export class AnkiMediaService {
 
 	private extractMediaRefs(content: string): string[] {
 		const refs: string[] = [];
-		let match: RegExpExecArray | null;
 
 		// Reset lastIndex since the regex is global
 		const regex = new RegExp(WIKILINK_EMBED_REGEX.source, "g");
-		while ((match = regex.exec(content)) !== null) {
+		for (let match = regex.exec(content); match !== null; match = regex.exec(content)) {
 			const ref = match[1]?.trim();
 			if (ref && this.isMediaFile(ref)) {
 				refs.push(ref);
@@ -141,7 +138,7 @@ export class AnkiMediaService {
 			return await this.app.vault.adapter.readBinary(found.path);
 		} catch {
 			console.error(
-				`[True Recall] Failed to read media file "${found.path}" for export`
+				`[True Recall] Failed to read media file "${found.path}" for export`,
 			);
 			return null;
 		}
@@ -173,9 +170,25 @@ export class AnkiMediaService {
 }
 
 const IMAGE_EXTENSIONS = new Set([
-	"png", "jpg", "jpeg", "gif", "bmp", "svg", "webp", "ico", "tif", "tiff",
+	"png",
+	"jpg",
+	"jpeg",
+	"gif",
+	"bmp",
+	"svg",
+	"webp",
+	"ico",
+	"tif",
+	"tiff",
 ]);
 
 const AUDIO_EXTENSIONS = new Set([
-	"mp3", "ogg", "wav", "m4a", "flac", "aac", "wma", "opus",
+	"mp3",
+	"ogg",
+	"wav",
+	"m4a",
+	"flac",
+	"aac",
+	"wma",
+	"opus",
 ]);

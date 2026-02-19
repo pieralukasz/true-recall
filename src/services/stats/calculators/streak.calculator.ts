@@ -19,7 +19,7 @@ export class StreakCalculator {
 	calculate(allStats: Record<string, ExtendedDailyStats>): StreakInfo {
 		// Get dates with reviews, sorted descending
 		const reviewDates = Object.keys(allStats)
-			.filter((date) => allStats[date]!.reviewsCompleted > 0)
+			.filter((date) => allStats[date]?.reviewsCompleted > 0)
 			.sort((a, b) => b.localeCompare(a)); // Descending
 
 		if (reviewDates.length === 0) {
@@ -30,7 +30,11 @@ export class StreakCalculator {
 		today.setHours(0, 0, 0, 0);
 
 		// Calculate current streak
-		const currentStreak = this.calculateCurrentStreak(reviewDates, allStats, today);
+		const currentStreak = this.calculateCurrentStreak(
+			reviewDates,
+			allStats,
+			today,
+		);
 
 		// Calculate longest streak
 		const longestStreak = this.calculateLongestStreak(reviewDates);
@@ -44,7 +48,7 @@ export class StreakCalculator {
 	private calculateCurrentStreak(
 		reviewDates: string[],
 		allStats: Record<string, ExtendedDailyStats>,
-		today: Date
+		today: Date,
 	): number {
 		// Check if studied today or yesterday
 		const lastStudyDate = reviewDates[0];
@@ -52,7 +56,7 @@ export class StreakCalculator {
 
 		const lastStudy = new Date(lastStudyDate);
 		const daysSinceLastStudy = Math.floor(
-			(today.getTime() - lastStudy.getTime()) / (1000 * 60 * 60 * 24)
+			(today.getTime() - lastStudy.getTime()) / (1000 * 60 * 60 * 24),
 		);
 
 		// If last study was more than 1 day ago, current streak is 0
@@ -95,7 +99,7 @@ export class StreakCalculator {
 				tempStreak = 1;
 			} else {
 				const dayDiff = Math.floor(
-					(currentDate.getTime() - prevDate.getTime()) / (1000 * 60 * 60 * 24)
+					(currentDate.getTime() - prevDate.getTime()) / (1000 * 60 * 60 * 24),
 				);
 				if (dayDiff === 1) {
 					tempStreak++;

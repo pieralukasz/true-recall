@@ -7,10 +7,10 @@
 
 import { State } from "ts-fsrs";
 import type {
-	SchedulerCardStore,
-	DisperseOptions,
-	SchedulingResult,
 	CardScheduleChange,
+	DisperseOptions,
+	SchedulerCardStore,
+	SchedulingResult,
 	WorkloadDistribution,
 } from "./scheduler.types";
 
@@ -53,7 +53,7 @@ export class SiblingDisperseService {
 
 			// Sort cards by due date
 			const sortedCards = [...group.cards].sort(
-				(a, b) => new Date(a.due).getTime() - new Date(b.due).getTime()
+				(a, b) => new Date(a.due).getTime() - new Date(b.due).getTime(),
 			);
 
 			// Track current due dates for before distribution
@@ -61,19 +61,20 @@ export class SiblingDisperseService {
 				const dateStr = this.formatDate(new Date(card.due));
 				beforeDistribution.set(
 					dateStr,
-					(beforeDistribution.get(dateStr) ?? 0) + 1
+					(beforeDistribution.get(dateStr) ?? 0) + 1,
 				);
 			}
 
 			// Disperse siblings
-			let previousDue = new Date(sortedCards[0]!.due);
+			let previousDue = new Date(sortedCards[0]?.due);
 			afterDistribution.set(
 				this.formatDate(previousDue),
-				(afterDistribution.get(this.formatDate(previousDue)) ?? 0) + 1
+				(afterDistribution.get(this.formatDate(previousDue)) ?? 0) + 1,
 			);
 
 			for (let i = 1; i < sortedCards.length; i++) {
-				const card = sortedCards[i]!;
+				const card = sortedCards[i];
+				if (!card) continue;
 				const currentDue = new Date(card.due);
 				const daysDiff = this.daysBetween(previousDue, currentDue);
 
@@ -97,7 +98,7 @@ export class SiblingDisperseService {
 
 				afterDistribution.set(
 					this.formatDate(previousDue),
-					(afterDistribution.get(this.formatDate(previousDue)) ?? 0) + 1
+					(afterDistribution.get(this.formatDate(previousDue)) ?? 0) + 1,
 				);
 			}
 		}
@@ -120,10 +121,15 @@ export class SiblingDisperseService {
 	/**
 	 * Get sibling group for a specific source UID
 	 */
-	private async getSiblingGroup(sourceUid: string): Promise<SiblingGroup | null> {
-		const cards = this.cardStore.getCards().filter(
-			(c) => c.sourceUid === sourceUid && !c.suspended && c.state !== State.New
-		);
+	private async getSiblingGroup(
+		sourceUid: string,
+	): Promise<SiblingGroup | null> {
+		const cards = this.cardStore
+			.getCards()
+			.filter(
+				(c) =>
+					c.sourceUid === sourceUid && !c.suspended && c.state !== State.New,
+			);
 
 		if (cards.length === 0) return null;
 
@@ -141,9 +147,9 @@ export class SiblingDisperseService {
 	 * Get all sibling groups (groups with more than 1 card)
 	 */
 	private async getAllSiblingGroups(): Promise<SiblingGroup[]> {
-		const cards = this.cardStore.getCards().filter(
-			(c) => c.sourceUid && !c.suspended && c.state !== State.New
-		);
+		const cards = this.cardStore
+			.getCards()
+			.filter((c) => c.sourceUid && !c.suspended && c.state !== State.New);
 
 		// Group by source UID
 		const groups = new Map<string, SiblingGroup>();
@@ -179,11 +185,11 @@ export class SiblingDisperseService {
 	 * Find sibling pairs that violate the minimum interval
 	 */
 	findViolations(
-		minInterval: number
+		minInterval: number,
 	): { sourceUid: string; cardCount: number; violations: number }[] {
-		const groups = this.cardStore.getCards().filter(
-			(c) => c.sourceUid && !c.suspended && c.state !== State.New
-		);
+		const groups = this.cardStore
+			.getCards()
+			.filter((c) => c.sourceUid && !c.suspended && c.state !== State.New);
 
 		// Group by source UID
 		const bySource = new Map<string, { id: string; due: string }[]>();
@@ -196,18 +202,24 @@ export class SiblingDisperseService {
 		}
 
 		// Check violations
-		const results: { sourceUid: string; cardCount: number; violations: number }[] = [];
+		const results: {
+			sourceUid: string;
+			cardCount: number;
+			violations: number;
+		}[] = [];
 
 		for (const [sourceUid, cards] of bySource) {
 			if (cards.length < 2) continue;
 
 			// Sort by due date
-			cards.sort((a, b) => new Date(a.due).getTime() - new Date(b.due).getTime());
+			cards.sort(
+				(a, b) => new Date(a.due).getTime() - new Date(b.due).getTime(),
+			);
 
 			let violations = 0;
 			for (let i = 1; i < cards.length; i++) {
-				const prev = new Date(cards[i - 1]!.due);
-				const curr = new Date(cards[i]!.due);
+				const prev = new Date(cards[i - 1]?.due);
+				const curr = new Date(cards[i]?.due);
 				if (this.daysBetween(prev, curr) < minInterval) {
 					violations++;
 				}
@@ -237,15 +249,13 @@ export class SiblingDisperseService {
 	 * Format date as YYYY-MM-DD
 	 */
 	private formatDate(date: Date): string {
-		return date.toISOString().split("T")[0]!;
+		return date.toISOString().split("T")[0] ?? "";
 	}
 
 	/**
 	 * Convert distribution map to array
 	 */
-	private mapToDistribution(
-		map: Map<string, number>
-	): WorkloadDistribution[] {
+	private mapToDistribution(map: Map<string, number>): WorkloadDistribution[] {
 		return Array.from(map.entries())
 			.map(([date, count]) => ({ date, count }))
 			.sort((a, b) => a.date.localeCompare(b.date));

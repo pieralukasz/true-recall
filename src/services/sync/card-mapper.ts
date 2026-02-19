@@ -73,7 +73,7 @@ export function mapRemoteCardToLocal(remote: RemoteCardRow): LocalCardForSync {
 }
 
 export function mapRemoteReviewLogToLocal(
-	remote: RemoteReviewLogRow
+	remote: RemoteReviewLogRow,
 ): ReviewLogForSync {
 	// Convert bigint timestamp back to ISO string with validation
 	let reviewedAt: string;
@@ -81,9 +81,7 @@ export function mapRemoteReviewLogToLocal(
 
 	if (typeof remote.reviewed_at === "number") {
 		if (remote.reviewed_at < MIN_VALID_TIMESTAMP) {
-			throw new Error(
-				`Invalid reviewed_at timestamp: ${remote.reviewed_at}`
-			);
+			throw new Error(`Invalid reviewed_at timestamp: ${remote.reviewed_at}`);
 		}
 		reviewedAt = new Date(remote.reviewed_at).toISOString();
 	} else if (typeof remote.reviewed_at === "string") {
@@ -98,9 +96,7 @@ export function mapRemoteReviewLogToLocal(
 			reviewedAt = remote.reviewed_at;
 		}
 	} else {
-		throw new Error(
-			`Invalid reviewed_at type: ${typeof remote.reviewed_at}`
-		);
+		throw new Error(`Invalid reviewed_at type: ${typeof remote.reviewed_at}`);
 	}
 
 	// Validate ISO format (YYYY-MM-DDTHH:MM:SS...)
@@ -124,7 +120,7 @@ export function mapRemoteReviewLogToLocal(
 }
 
 export function mapLocalCardToRemote(
-	local: LocalCardForSync
+	local: LocalCardForSync,
 ): Record<string, unknown> {
 	return {
 		id: local.id,
@@ -153,7 +149,7 @@ export function mapLocalCardToRemote(
 }
 
 export function mapLocalReviewLogToRemote(
-	local: ReviewLogForSync
+	local: ReviewLogForSync,
 ): Record<string, unknown> {
 	return {
 		id: local.id,

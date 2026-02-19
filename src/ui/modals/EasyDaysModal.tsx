@@ -1,8 +1,8 @@
+import type { App } from "obsidian";
 import { render } from "preact";
 import { useState } from "preact/hooks";
-import { App } from "obsidian";
-import { BasePromiseModal, type CancellableResult } from "./BasePromiseModal";
 import type { EasyDaysConfig } from "../../types";
+import { BasePromiseModal, type CancellableResult } from "./BasePromiseModal";
 
 export interface EasyDaysResult extends CancellableResult {
 	easyDays?: EasyDaysConfig;
@@ -40,7 +40,7 @@ function DayButton({
 }
 
 function formatDate(dateStr: string): string {
-	const date = new Date(dateStr + "T00:00:00");
+	const date = new Date(`${dateStr}T00:00:00`);
 	return date.toLocaleDateString(undefined, {
 		weekday: "short",
 		year: "numeric",
@@ -68,10 +68,10 @@ function EasyDaysBody({
 	);
 	const [multiplier, setMultiplier] = useState(initialMultiplier);
 	const [dateInputValue, setDateInputValue] = useState(
-		() => new Date().toISOString().split("T")[0]!,
+		() => new Date().toISOString().split("T")[0] ?? "",
 	);
 
-	const today = new Date().toISOString().split("T")[0]!;
+	const today = new Date().toISOString().split("T")[0] ?? "";
 
 	const toggleDay = (index: number) => {
 		setRecurringDays((prev) => {
@@ -151,9 +151,7 @@ function EasyDaysBody({
 						min={today}
 						value={dateInputValue}
 						onChange={(e) =>
-							setDateInputValue(
-								(e.target as HTMLInputElement).value,
-							)
+							setDateInputValue((e.target as HTMLInputElement).value)
 						}
 					/>
 					<button
@@ -207,9 +205,7 @@ function EasyDaysBody({
 						value={Math.round(multiplier * 100)}
 						onInput={(e) =>
 							setMultiplier(
-								parseInt(
-									(e.target as HTMLInputElement).value,
-								) / 100,
+								parseInt((e.target as HTMLInputElement).value, 10) / 100,
 							)
 						}
 					/>
@@ -225,18 +221,21 @@ function EasyDaysBody({
 			{/* Buttons */}
 			<div class="ep:flex ep:justify-end ep:gap-2 ep:pt-2 ep:border-t ep:border-obs-border">
 				<button
+					type="button"
 					class="ep:py-2.5 ep:px-5 ep:rounded-md ep:text-ui-small ep:font-medium ep:cursor-pointer ep:transition-all ep:bg-obs-secondary ep:text-obs-normal ep:border ep:border-obs-border ep:hover:bg-obs-modifier-hover"
 					onClick={() => onResolve({ cancelled: true })}
 				>
 					Cancel
 				</button>
 				<button
+					type="button"
 					class="ep:py-2.5 ep:px-5 ep:rounded-md ep:text-ui-small ep:font-medium ep:cursor-pointer ep:transition-all ep:bg-obs-secondary ep:text-obs-normal ep:border ep:border-obs-border ep:hover:bg-obs-modifier-hover"
 					onClick={() => handleSave(false)}
 				>
 					Save
 				</button>
 				<button
+					type="button"
 					class="mod-cta ep:py-2.5 ep:px-5 ep:rounded-md ep:text-ui-small ep:font-medium ep:cursor-pointer ep:transition-all"
 					onClick={() => handleSave(true)}
 				>

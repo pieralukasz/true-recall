@@ -1,4 +1,4 @@
-import { App, Modal } from "obsidian";
+import { type App, Modal } from "obsidian";
 
 export interface BaseModalOptions {
 	title: string;
@@ -47,7 +47,7 @@ export abstract class BaseModal extends Modal {
 	protected addDomEvent<K extends keyof HTMLElementEventMap>(
 		el: HTMLElement,
 		type: K,
-		handler: (ev: HTMLElementEventMap[K]) => void
+		handler: (ev: HTMLElementEventMap[K]) => void,
 	): void {
 		el.addEventListener(type, handler as EventListener);
 		this.registeredEvents.push({ el, type, handler: handler as EventListener });
@@ -98,7 +98,7 @@ export abstract class BaseModal extends Modal {
 
 	protected createButtonsSection(
 		container: HTMLElement,
-		buttons: ModalButton[]
+		buttons: ModalButton[],
 	): HTMLElement {
 		const buttonsEl = container.createDiv({
 			cls: "ep:flex ep:justify-end ep:gap-2 ep:pt-2 ep:border-t ep:border-obs-border",
@@ -134,7 +134,6 @@ export abstract class BaseModal extends Modal {
 				return `mod-cta ${base}`;
 			case "danger":
 				return `mod-warning ${base}`;
-			case "secondary":
 			default:
 				return `${base} ep:bg-obs-secondary ep:text-obs-normal ep:border ep:border-obs-border ep:hover:bg-obs-modifier-hover`;
 		}
@@ -150,7 +149,7 @@ export abstract class BaseModal extends Modal {
 	protected createSearchInput(
 		container: HTMLElement,
 		placeholder: string,
-		onInput: (query: string) => void
+		onInput: (query: string) => void,
 	): HTMLInputElement {
 		const searchContainer = container.createDiv({ cls: "ep:mb-3" });
 
@@ -179,7 +178,7 @@ export abstract class BaseModal extends Modal {
 	 */
 	protected createEmptyState(
 		container: HTMLElement,
-		message: string
+		message: string,
 	): HTMLElement {
 		return container.createDiv({
 			text: message,
@@ -195,7 +194,7 @@ export abstract class BaseModal extends Modal {
 	 */
 	protected createListContainer(
 		container: HTMLElement,
-		maxHeight = "350px"
+		maxHeight = "350px",
 	): HTMLElement {
 		return container.createDiv({
 			cls: `ep:border ep:border-obs-border ep:rounded-md ep:overflow-y-auto`,
@@ -213,7 +212,7 @@ export abstract class BaseModal extends Modal {
 	protected createListItem(
 		container: HTMLElement,
 		item: ListItemConfig,
-		onSelect: () => void
+		onSelect: () => void,
 	): HTMLElement {
 		const itemEl = container.createDiv({
 			cls: "ep:flex ep:items-center ep:justify-between ep:p-3 ep:border-b ep:border-obs-border ep:cursor-pointer ep:transition-colors ep:hover:bg-obs-modifier-hover ep:last:border-b-0 ep:group",
@@ -274,7 +273,7 @@ export abstract class BaseModal extends Modal {
 	 */
 	protected createSelectableItem(
 		container: HTMLElement,
-		item: SelectableItemConfig
+		item: SelectableItemConfig,
 	): HTMLElement {
 		const itemEl = container.createDiv({
 			cls: "ep:flex ep:items-center ep:gap-3 ep:p-3 ep:border-b ep:border-obs-border ep:cursor-pointer ep:transition-colors ep:hover:bg-obs-modifier-hover ep:last:border-b-0",

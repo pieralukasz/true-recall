@@ -1,41 +1,48 @@
-import { h } from "preact";
+import { effect } from "@preact/signals";
 import {
 	ItemView,
-	WorkspaceLeaf,
 	Menu,
 	TFile,
 	type ViewStateResult,
+	type WorkspaceLeaf,
 } from "obsidian";
-import { Rating, State, type Grade } from "ts-fsrs";
+import { h } from "preact";
+import { type Grade, Rating, State } from "ts-fsrs";
 import { VIEW_TYPE_REVIEW } from "../../constants";
-import {
-	FSRSService,
-	ReviewService,
-	FlashcardManager,
-	SessionPersistenceService,
-	notify,
-} from "../../services";
-import { ImageService } from "../../services/image";
-import { extractFSRSSettings, type FSRSFlashcardItem } from "../../types";
-import type { ReviewApi } from "../../state/store";
-import { effect } from "@preact/signals";
-import { notifyCardChange, lastMutation, type CardMutation } from "../../services/core/signals";
-import { mountPreact } from "../preact";
-import { ReviewApp, ReviewEmptyState } from "./ReviewApp";
 import type TrueRecallPlugin from "../../main";
-import type { ReviewViewState } from "./review.types";
+import {
+	type FlashcardManager,
+	FSRSService,
+	notify,
+	ReviewService,
+	type SessionPersistenceService,
+} from "../../services";
+import {
+	type CardMutation,
+	lastMutation,
+	notifyCardChange,
+} from "../../services/core/signals";
+import { DuplicateQuestionError } from "../../services/flashcard/card-repository.service";
+import { ImageService } from "../../services/image";
+import { CopilotIntegrationService } from "../../services/integration/copilot-integration.service";
+import type { ReviewApi } from "../../state/store";
+import { extractFSRSSettings, type FSRSFlashcardItem } from "../../types";
+import {
+	BR_REGEX,
+	buildProjectGraph,
+	getDescendantProjects,
+} from "../../utils";
+import { mountPreact } from "../preact";
 import { CardActionsHandler, KeyboardHandler } from "./handlers";
 import {
-	filterActiveCards,
 	buildSourceUidToProjectsMap,
+	filterActiveCards,
 	getEmptyQueueMessage,
 } from "./helpers";
-import { CopilotIntegrationService } from "../../services/integration/copilot-integration.service";
-import { DuplicateQuestionError } from "../../services/flashcard/card-repository.service";
-import { BR_REGEX, buildProjectGraph, getDescendantProjects } from "../../utils";
+import { ReviewApp, ReviewEmptyState } from "./ReviewApp";
+import type { ReviewViewState } from "./review.types";
 
 export class ReviewView extends ItemView {
-
 	private plugin: TrueRecallPlugin;
 	private fsrsService: FSRSService;
 	private reviewService: ReviewService;
@@ -77,7 +84,7 @@ export class ReviewView extends ItemView {
 	private sessionSignalDisposer: (() => void) | null = null;
 
 	private get review(): ReviewApi {
-		return this.plugin.store!.getState().review;
+		return this.plugin.store?.getState().review;
 	}
 
 	constructor(leaf: WorkspaceLeaf, plugin: TrueRecallPlugin) {
@@ -106,7 +113,7 @@ export class ReviewView extends ItemView {
 			},
 			{
 				onUpdateSchedulingPreview: () => this.updateSchedulingPreview(),
-			}
+			},
 		);
 
 		this.keyboardHandler = new KeyboardHandler(() => this.review, {
@@ -217,7 +224,7 @@ export class ReviewView extends ItemView {
 		if (!(container instanceof HTMLElement)) return;
 		container.empty();
 
-		this.unsubscribe = this.plugin.store!.subscribe(
+		this.unsubscribe = this.plugin.store?.subscribe(
 			(state) => state.review,
 			() => {
 				this.updateHeaderActions();
@@ -249,14 +256,18 @@ export class ReviewView extends ItemView {
 				onShowAnswer: () => this.handleShowAnswer(),
 				onAnswer: (rating: Grade) => void this.handleAnswer(rating),
 				onStartEdit: (field: "question" | "answer") => this.startEdit(field),
-				onSaveEdit: (textarea: HTMLTextAreaElement, field: "question" | "answer") =>
-					void this.saveEditFromTextarea(textarea, field),
+				onSaveEdit: (
+					textarea: HTMLTextAreaElement,
+					field: "question" | "answer",
+				) => void this.saveEditFromTextarea(textarea, field),
 				onImagePaste: (file: File, textarea: HTMLTextAreaElement) =>
 					void this.handleInlineImagePaste(file, textarea),
 				onOpenSourceNote: () => this.handleOpenSourceNote(),
 				onClose: () => this.handleClose(),
 				onNextSession: () => this.handleNextSession(),
-				onEndSession: () => { /* handled in Preact component */ },
+				onEndSession: () => {
+					/* handled in Preact component */
+				},
 				onActionsMenu: (e: MouseEvent) => this.showActionsMenu(e),
 				isCustomSession: this.isCustomSession,
 				crammingMode: this.crammingMode ?? false,
@@ -313,7 +324,7 @@ export class ReviewView extends ItemView {
 		}
 
 		this.openNoteAction = this.addAction("external-link", "Open note", () =>
-			this.handleOpenNote()
+			this.handleOpenNote(),
 		);
 	}
 
@@ -330,7 +341,10 @@ export class ReviewView extends ItemView {
 			const allCards = this.flashcardManager.getAllFSRSCards();
 
 			if (allCards.length === 0) {
-				this.mountEmptyState(container, "No flashcards found. Generate some flashcards first!");
+				this.mountEmptyState(
+					container,
+					"No flashcards found. Generate some flashcards first!",
+				);
 				return;
 			}
 
@@ -339,9 +353,10 @@ export class ReviewView extends ItemView {
 			});
 
 			if (activeCards.length === 0) {
-				const msg = this.stateFilter === "buried"
-					? "No buried cards found."
-					: "All cards are suspended or buried. Unsuspend/unbury some cards to start reviewing.";
+				const msg =
+					this.stateFilter === "buried"
+						? "No buried cards found."
+						: "All cards are suspended or buried. Unsuspend/unbury some cards to start reviewing.";
 				this.mountEmptyState(container, msg);
 				return;
 			}
@@ -351,12 +366,17 @@ export class ReviewView extends ItemView {
 			}
 			if (!this.sessionPersistence) {
 				console.error("[ReviewView] sessionPersistence not initialized");
-				this.mountEmptyState(container, "Session persistence not ready. Please try again.");
+				this.mountEmptyState(
+					container,
+					"Session persistence not ready. Please try again.",
+				);
 				return;
 			}
 			const reviewedToday = this.sessionPersistence.getReviewedToday();
-			const newCardsStudiedToday = this.sessionPersistence.getNewCardsStudiedToday();
-			const reviewsCompletedToday = this.sessionPersistence.getReviewCardsCompletedToday();
+			const newCardsStudiedToday =
+				this.sessionPersistence.getNewCardsStudiedToday();
+			const reviewsCompletedToday =
+				this.sessionPersistence.getReviewCardsCompletedToday();
 
 			// Cascade: expand project filters to include all descendant projects
 			let effectiveProjectFilters = this.projectFilters;
@@ -372,7 +392,7 @@ export class ReviewView extends ItemView {
 
 			const sourceUidToProjects = buildSourceUidToProjectsMap(
 				this.app,
-				effectiveProjectFilters
+				effectiveProjectFilters,
 			);
 
 			const queue = this.reviewService.buildQueue(
@@ -387,7 +407,8 @@ export class ReviewView extends ItemView {
 					projectFilters: effectiveProjectFilters,
 					sourceUidToProjects,
 					newCardOrder: this.plugin.settings.newCardOrder,
-					reviewOrder: this.customReviewOrder ?? this.plugin.settings.reviewOrder,
+					reviewOrder:
+						this.customReviewOrder ?? this.plugin.settings.reviewOrder,
 					newReviewMix: this.plugin.settings.newReviewMix,
 					dayStartHour: this.plugin.settings.dayStartHour,
 					sourceNoteFilter: this.sourceNoteFilter,
@@ -406,13 +427,13 @@ export class ReviewView extends ItemView {
 					recentlyFailed: this.recentlyFailed,
 					cardLimit: this.cardLimit,
 					studyAheadDays: this.studyAheadDays,
-				}
+				},
 			);
 
 			if (queue.length === 0) {
 				this.mountEmptyState(
 					container,
-					getEmptyQueueMessage(this.stateFilter, this.projectFilters)
+					getEmptyQueueMessage(this.stateFilter, this.projectFilters),
 				);
 				return;
 			}
@@ -426,7 +447,7 @@ export class ReviewView extends ItemView {
 		} catch (error) {
 			console.error("Error starting review session:", error);
 			notify().error(
-				`Error: ${error instanceof Error ? error.message : String(error)}`
+				`Error: ${error instanceof Error ? error.message : String(error)}`,
 			);
 		}
 	}
@@ -469,7 +490,7 @@ export class ReviewView extends ItemView {
 					if (updatedData) {
 						this.review.updateCurrentCardContent(
 							updatedData.question ?? currentCard.question,
-							updatedData.answer ?? currentCard.answer
+							updatedData.answer ?? currentCard.answer,
 						);
 					}
 				}
@@ -490,7 +511,10 @@ export class ReviewView extends ItemView {
 				const newCard = cards[0];
 				if (!newCard) return;
 
-				if (this.sourceNoteFilter && newCard.sourceNoteName !== this.sourceNoteFilter) {
+				if (
+					this.sourceNoteFilter &&
+					newCard.sourceNoteName !== this.sourceNoteFilter
+				) {
 					return;
 				}
 				if (this.sourceNoteFilters && this.sourceNoteFilters.length > 0) {
@@ -521,7 +545,7 @@ export class ReviewView extends ItemView {
 
 	private async handleInlineImagePaste(
 		file: File,
-		textarea: HTMLTextAreaElement
+		textarea: HTMLTextAreaElement,
 	): Promise<void> {
 		try {
 			const savedPath = await this.imageService.saveImageFromClipboard(file);
@@ -535,7 +559,8 @@ export class ReviewView extends ItemView {
 			const end = textarea.selectionEnd;
 			const value = textarea.value;
 
-			textarea.value = value.substring(0, start) + markdown + value.substring(end);
+			textarea.value =
+				value.substring(0, start) + markdown + value.substring(end);
 			textarea.selectionStart = textarea.selectionEnd = start + markdown.length;
 			textarea.dispatchEvent(new Event("input", { bubbles: true }));
 		} catch (error) {
@@ -546,7 +571,7 @@ export class ReviewView extends ItemView {
 
 	private async saveEditFromTextarea(
 		textarea: HTMLTextAreaElement,
-		field: "question" | "answer"
+		field: "question" | "answer",
 	): Promise<void> {
 		const card = this.review.getCurrentCard();
 		const editState = this.review.getEditState();
@@ -573,17 +598,17 @@ export class ReviewView extends ItemView {
 							card.sourceUid,
 							card.clozeTemplate,
 							newContent,
-							card.sourceNoteName
+							card.sourceNoteName,
 						);
 
 						const newCards = parseClozeTemplate(newContent);
 						const thisCard = newCards.find(
-							(c) => c.clozeIndex === card.clozeIndex
+							(c) => c.clozeIndex === card.clozeIndex,
 						);
 						if (thisCard) {
 							this.review.updateCurrentCardContent(
 								thisCard.question,
-								thisCard.answer
+								thisCard.answer,
 							);
 						}
 						notify().success("Updated cloze template");
@@ -591,7 +616,7 @@ export class ReviewView extends ItemView {
 						this.flashcardManager.updateCardContent(
 							cardIdBeforeSave,
 							newContent,
-							card.answer
+							card.answer,
 						);
 						this.review.updateCurrentCardContent(newContent, card.answer);
 						notify().cardUpdated();
@@ -599,7 +624,9 @@ export class ReviewView extends ItemView {
 				} catch (error) {
 					if (error instanceof DuplicateQuestionError) {
 						const sourceInfo = error.existingSourceUid
-							? this.flashcardManager.getSourceNoteService().resolveSourceNote(error.existingSourceUid)
+							? this.flashcardManager
+									.getSourceNoteService()
+									.resolveSourceNote(error.existingSourceUid)
 							: {};
 						notify().duplicateFound(newContent, sourceInfo.noteName);
 					} else {
@@ -617,9 +644,10 @@ export class ReviewView extends ItemView {
 		const newAnswer = field === "answer" ? newContent : card.answer;
 
 		// Compare with normalized content (convert legacy <br> to newlines)
-		const normalizedOriginal = field === "question"
-			? editState.originalQuestion.replace(BR_REGEX, "\n")
-			: editState.originalAnswer.replace(BR_REGEX, "\n");
+		const normalizedOriginal =
+			field === "question"
+				? editState.originalQuestion.replace(BR_REGEX, "\n")
+				: editState.originalAnswer.replace(BR_REGEX, "\n");
 		const hasChanges = newContent !== normalizedOriginal;
 
 		if (hasChanges) {
@@ -627,7 +655,7 @@ export class ReviewView extends ItemView {
 				this.flashcardManager.updateCardContent(
 					cardIdBeforeSave,
 					newQuestion,
-					newAnswer
+					newAnswer,
 				);
 
 				const currentCard = this.review.getCurrentCard();
@@ -638,7 +666,9 @@ export class ReviewView extends ItemView {
 			} catch (error) {
 				if (error instanceof DuplicateQuestionError) {
 					const sourceInfo = error.existingSourceUid
-						? this.flashcardManager.getSourceNoteService().resolveSourceNote(error.existingSourceUid)
+						? this.flashcardManager
+								.getSourceNoteService()
+								.resolveSourceNote(error.existingSourceUid)
 						: {};
 					notify().duplicateFound(newQuestion, sourceInfo.noteName);
 				} else {
@@ -656,9 +686,15 @@ export class ReviewView extends ItemView {
 	private updateSchedulingPreview(): void {
 		const card = this.review.getCurrentCard();
 		if (card) {
-			const preset = this.plugin.presetService.resolvePresetForCard(card, this.projectFilters);
+			const preset = this.plugin.presetService.resolvePresetForCard(
+				card,
+				this.projectFilters,
+			);
 			const presetSettings = this.plugin.presetService.toFSRSSettings(preset);
-			const preview = this.fsrsService.getSchedulingPreview(card.fsrs, presetSettings);
+			const preview = this.fsrsService.getSchedulingPreview(
+				card.fsrs,
+				presetSettings,
+			);
 			this.review.setSchedulingPreview(preview);
 		}
 	}
@@ -678,7 +714,10 @@ export class ReviewView extends ItemView {
 		const isNewCard = card.fsrs.state === State.New;
 		const previousState = card.fsrs.state;
 
-		const preset = this.plugin.presetService.resolvePresetForCard(card, this.projectFilters);
+		const preset = this.plugin.presetService.resolvePresetForCard(
+			card,
+			this.projectFilters,
+		);
 		const presetSettings = this.plugin.presetService.toFSRSSettings(preset);
 
 		const { updatedCard, result } = this.reviewService.processAnswer(
@@ -686,7 +725,7 @@ export class ReviewView extends ItemView {
 			rating,
 			this.fsrsService,
 			responseTime,
-			presetSettings
+			presetSettings,
 		);
 
 		// Cramming mode: skip persistence
@@ -705,7 +744,7 @@ export class ReviewView extends ItemView {
 				this.review.queue,
 				this.review.currentIndex + 1,
 				updatedCard,
-				this.plugin.settings.reviewOrder
+				this.plugin.settings.reviewOrder,
 			);
 			requeueData = {
 				card: updatedCard,
@@ -713,7 +752,11 @@ export class ReviewView extends ItemView {
 			};
 		}
 
-		const hasMore = this.review.recordAnswerAndNext(rating, updatedCard, requeueData);
+		const hasMore = this.review.recordAnswerAndNext(
+			rating,
+			updatedCard,
+			requeueData,
+		);
 
 		// Undo entry with deferred persistence
 		let writeExecuted = false;
@@ -760,7 +803,7 @@ export class ReviewView extends ItemView {
 					previousState,
 					result.scheduledDays,
 					result.elapsedDays,
-					preset.name
+					preset.name,
 				);
 			} catch (error) {
 				console.error("Error recording review to persistent storage:", error);
@@ -781,7 +824,7 @@ export class ReviewView extends ItemView {
 
 	private async handleUndoAnswerFromService(
 		payload: import("../../services/undo").AnswerUndoPayload,
-		writeCancelled: boolean
+		writeCancelled: boolean,
 	): Promise<void> {
 		try {
 			if (!writeCancelled) {
@@ -789,14 +832,14 @@ export class ReviewView extends ItemView {
 					payload.card.id,
 					payload.wasNewCard ?? false,
 					payload.rating,
-					payload.previousState
+					payload.previousState,
 				);
 			}
 
 			this.review.undoLastAnswer(
 				payload.previousIndex,
 				{ ...payload.card, fsrs: payload.originalFsrs },
-				payload.requeuedAtIndex
+				payload.requeuedAtIndex,
 			);
 		} catch (error) {
 			console.error("Error undoing answer:", error);
@@ -815,7 +858,7 @@ export class ReviewView extends ItemView {
 
 		const sourceFile = this.plugin.frontmatterIndex?.getFileByValue(
 			"flashcard_uid",
-			card.sourceUid
+			card.sourceUid,
 		);
 		if (!sourceFile) return;
 
@@ -836,38 +879,52 @@ export class ReviewView extends ItemView {
 				item
 					.setTitle("Undo last answer (z)")
 					.setIcon("undo")
-					.onClick(() => this.cardActionsHandler.handleUndo())
+					.onClick(() => this.cardActionsHandler.handleUndo()),
 			);
 			menu.addSeparator();
 		}
 
 		menu.addItem((item) =>
-			item.setTitle("Move card (m)").setIcon("folder-input")
-				.onClick(() => this.cardActionsHandler.handleMoveCard())
+			item
+				.setTitle("Move card (m)")
+				.setIcon("folder-input")
+				.onClick(() => this.cardActionsHandler.handleMoveCard()),
 		);
 		menu.addItem((item) =>
-			item.setTitle("Suspend card").setIcon("pause")
-				.onClick(() => this.cardActionsHandler.handleSuspend())
+			item
+				.setTitle("Suspend card")
+				.setIcon("pause")
+				.onClick(() => this.cardActionsHandler.handleSuspend()),
 		);
 		menu.addItem((item) =>
-			item.setTitle("Bury card (-)").setIcon("eye-off")
-				.onClick(() => this.cardActionsHandler.handleBuryCard())
+			item
+				.setTitle("Bury card (-)")
+				.setIcon("eye-off")
+				.onClick(() => this.cardActionsHandler.handleBuryCard()),
 		);
 		menu.addItem((item) =>
-			item.setTitle("Bury note (=)").setIcon("eye-off")
-				.onClick(() => this.cardActionsHandler.handleBuryNote())
+			item
+				.setTitle("Bury note (=)")
+				.setIcon("eye-off")
+				.onClick(() => this.cardActionsHandler.handleBuryNote()),
 		);
 		menu.addItem((item) =>
-			item.setTitle("Edit card (e)").setIcon("pencil")
-				.onClick(() => void this.cardActionsHandler.handleEditCardModal())
+			item
+				.setTitle("Edit card (e)")
+				.setIcon("pencil")
+				.onClick(() => void this.cardActionsHandler.handleEditCardModal()),
 		);
 		menu.addItem((item) =>
-			item.setTitle("Add flashcard (a)").setIcon("plus")
-				.onClick(() => void this.cardActionsHandler.handleAddNewFlashcard())
+			item
+				.setTitle("Add flashcard (a)")
+				.setIcon("plus")
+				.onClick(() => void this.cardActionsHandler.handleAddNewFlashcard()),
 		);
 		menu.addItem((item) =>
-			item.setTitle("Open source note").setIcon("external-link")
-				.onClick(() => this.handleOpenSourceNote())
+			item
+				.setTitle("Open source note")
+				.setIcon("external-link")
+				.onClick(() => this.handleOpenSourceNote()),
 		);
 
 		menu.showAtMouseEvent(event);
@@ -886,12 +943,14 @@ export class ReviewView extends ItemView {
 		if (card.sourceUid && this.plugin.frontmatterIndex) {
 			sourceFile = this.plugin.frontmatterIndex.getFileByValue(
 				"flashcard_uid",
-				card.sourceUid
+				card.sourceUid,
 			);
 		}
 
 		if (!sourceFile && card.sourceNotePath) {
-			const abstractFile = this.app.vault.getAbstractFileByPath(card.sourceNotePath);
+			const abstractFile = this.app.vault.getAbstractFileByPath(
+				card.sourceNotePath,
+			);
 			if (abstractFile instanceof TFile) {
 				sourceFile = abstractFile;
 			}

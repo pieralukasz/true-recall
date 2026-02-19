@@ -1,24 +1,35 @@
-import { useRef, useEffect, useState, useCallback, useMemo } from "preact/hooks";
 import { useSignal } from "@preact/signals";
+import { effect } from "@preact/signals-core";
 import { Chart, type ChartDataset } from "chart.js";
 import { MarkdownRenderer, Component as ObsidianComponent } from "obsidian";
-import { usePlugin, useApp } from "../preact";
-import { dataVersion, settingsVersion, syncVersion, track } from "../../services/core/signals";
-import { effect } from "@preact/signals-core";
+import {
+	useCallback,
+	useEffect,
+	useMemo,
+	useRef,
+	useState,
+} from "preact/hooks";
 import { StatsCalculatorService } from "../../services";
-import { CardPreviewModal } from "../modals";
-import { getThemeColor, getThemeColorWithAlpha } from "../utils/theme-colors";
+import type { NLQueryService } from "../../services/ai/nl-query.service";
+import {
+	dataVersion,
+	settingsVersion,
+	syncVersion,
+	track,
+} from "../../services/core/signals";
 import type {
-	StatsTimeRange,
 	CardMaturityBreakdown,
+	CardsCreatedVsReviewedEntry,
+	ExampleQuery,
 	FSRSFlashcardItem,
 	FutureDueEntry,
-	RetentionEntry,
-	CardsCreatedVsReviewedEntry,
 	NLQueryResult,
-	ExampleQuery,
+	RetentionEntry,
+	StatsTimeRange,
 } from "../../types";
-import type { NLQueryService } from "../../services/ai/nl-query.service";
+import { CardPreviewModal } from "../modals";
+import { useApp, usePlugin } from "../preact";
+import { getThemeColor, getThemeColorWithAlpha } from "../utils/theme-colors";
 
 // ─── Helpers ────────────────────────────────────────────────────────
 
@@ -155,7 +166,10 @@ function SummaryList({ items }: { items: string[] }) {
 	return (
 		<div class="ep:mt-4 ep:pt-4 ep:border-t ep:border-obs-border ep:flex ep:flex-col ep:gap-1.5">
 			{items.map((item, i) => (
-				<div key={i} class="ep:text-ui-small ep:text-obs-muted ep:flex ep:items-center ep:gap-2">
+				<div
+					key={i}
+					class="ep:text-ui-small ep:text-obs-muted ep:flex ep:items-center ep:gap-2"
+				>
 					<div class="ep:w-1.5 ep:h-1.5 ep:rounded-full ep:bg-obs-interactive ep:shrink-0" />
 					<span>{item}</span>
 				</div>
@@ -167,14 +181,27 @@ function SummaryList({ items }: { items: string[] }) {
 // ─── NLQueryPanel ───────────────────────────────────────────────────
 
 const EXAMPLE_QUERIES: ExampleQuery[] = [
-	{ text: "Today's progress", query: "Summarize my learning progress for today" },
+	{
+		text: "Today's progress",
+		query: "Summarize my learning progress for today",
+	},
 	{ text: "Weekly review", query: "How many cards did I review this week?" },
-	{ text: "Struggling cards", query: "Show me the top 10 cards with the most lapses" },
+	{
+		text: "Struggling cards",
+		query: "Show me the top 10 cards with the most lapses",
+	},
 	{ text: "Success rate", query: "What is my average success rate?" },
-	{ text: "New cards/day", query: "How many new cards have I learned per day this month?" },
+	{
+		text: "New cards/day",
+		query: "How many new cards have I learned per day this month?",
+	},
 ];
 
-function NLQueryPanel({ nlQueryService }: { nlQueryService: NLQueryService | null }) {
+function NLQueryPanel({
+	nlQueryService,
+}: {
+	nlQueryService: NLQueryService | null;
+}) {
 	const app = useApp();
 	const [query, setQuery] = useState("");
 	const [isLoading, setIsLoading] = useState(false);
@@ -213,7 +240,13 @@ function NLQueryPanel({ nlQueryService }: { nlQueryService: NLQueryService | nul
 
 		answerEl.empty();
 		const obsComponent = new ObsidianComponent();
-		void MarkdownRenderer.render(app, result.answer, answerEl, "", obsComponent);
+		void MarkdownRenderer.render(
+			app,
+			result.answer,
+			answerEl,
+			"",
+			obsComponent,
+		);
 		return () => obsComponent.unload();
 	}, [app, result]);
 
@@ -259,7 +292,9 @@ function NLQueryPanel({ nlQueryService }: { nlQueryService: NLQueryService | nul
 
 			{/* Example queries */}
 			<div class="ep:flex ep:flex-wrap ep:items-center ep:gap-2">
-				<span class="ep:text-ui-smaller ep:text-obs-muted">Quick insights:</span>
+				<span class="ep:text-ui-smaller ep:text-obs-muted">
+					Quick insights:
+				</span>
 				{EXAMPLE_QUERIES.map((ex) => (
 					<button
 						key={ex.text}
@@ -359,7 +394,8 @@ function TodaySection({
 			try {
 				const summary = statsCalculator.getTodaySummary();
 				const streak = statsCalculator.getStreakInfo();
-				const rangeSummary = await statsCalculator.getRangeSummary(currentRange);
+				const rangeSummary =
+					await statsCalculator.getRangeSummary(currentRange);
 
 				if (cancelled) return;
 
@@ -368,7 +404,10 @@ function TodaySection({
 					{ label: "Minutes", value: summary.minutes.toString() },
 					{ label: "New", value: summary.newCards.toString() },
 					{ label: "Again", value: summary.again.toString() },
-					{ label: "Correct", value: `${Math.round(summary.correctRate * 100)}%` },
+					{
+						label: "Correct",
+						value: `${Math.round(summary.correctRate * 100)}%`,
+					},
 					{ label: "Streak", value: `${streak.current}d` },
 				]);
 				setSummaryData({
@@ -548,7 +587,10 @@ function FutureDueChart({
 						tooltip: {
 							callbacks: {
 								title: (items) => {
-									if (items.length > 0) return formatDateForDisplay(data[items[0]!.dataIndex]!.date);
+									if (items.length > 0)
+										return formatDateForDisplay(
+											data[items[0]?.dataIndex]?.date,
+										);
 									return "";
 								},
 							},
@@ -556,11 +598,17 @@ function FutureDueChart({
 					},
 					scales: {
 						y: { beginAtZero: true, ticks: { precision: 0 } },
-						x: { ticks: { maxRotation: 45, minRotation: 45, maxTicksLimit: maxTicks } },
+						x: {
+							ticks: {
+								maxRotation: 45,
+								minRotation: 45,
+								maxTicksLimit: maxTicks,
+							},
+						},
 					},
 					onClick: (_event, elements) => {
 						if (elements.length > 0) {
-							const entry = data[elements[0]!.index];
+							const entry = data[elements[0]?.index];
 							if (entry && entry.count > 0) {
 								const cards = statsCalculator.getCardsDueOnDate(entry.date);
 								onCardPreview(entry.date, cards);
@@ -612,7 +660,8 @@ function ReviewsChart({
 			return;
 		}
 		try {
-			const result = statsCalculator.getCardsCreatedVsReviewedHistory(currentRange);
+			const result =
+				statsCalculator.getCardsCreatedVsReviewedHistory(currentRange);
 			setData(result);
 		} catch (err) {
 			console.error("Error fetching reviews data:", err);
@@ -630,9 +679,11 @@ function ReviewsChart({
 		const totalCreated = data.reduce((sum, d) => sum + d.created, 0);
 		const daysStudied = data.filter((d) => d.reviewed > 0).length;
 		const totalDays = data.length;
-		const percentStudied = totalDays > 0 ? ((daysStudied / totalDays) * 100).toFixed(1) : "0";
+		const percentStudied =
+			totalDays > 0 ? ((daysStudied / totalDays) * 100).toFixed(1) : "0";
 		const avgPerDay = totalDays > 0 ? Math.round(totalReviewed / totalDays) : 0;
-		const avgPerStudyDay = daysStudied > 0 ? Math.round(totalReviewed / daysStudied) : 0;
+		const avgPerStudyDay =
+			daysStudied > 0 ? Math.round(totalReviewed / daysStudied) : 0;
 
 		const items: string[] = [
 			`Days studied: ${daysStudied} of ${totalDays} (${percentStudied}%)`,
@@ -696,7 +747,10 @@ function ReviewsChart({
 						tooltip: {
 							callbacks: {
 								title: (items) => {
-									if (items.length > 0) return formatDateForDisplay(data[items[0]!.dataIndex]!.date);
+									if (items.length > 0)
+										return formatDateForDisplay(
+											data[items[0]?.dataIndex]?.date,
+										);
 									return "";
 								},
 							},
@@ -704,11 +758,17 @@ function ReviewsChart({
 					},
 					scales: {
 						y: { beginAtZero: true, ticks: { precision: 0 } },
-						x: { ticks: { maxRotation: 45, minRotation: 45, maxTicksLimit: maxTicks } },
+						x: {
+							ticks: {
+								maxRotation: 45,
+								minRotation: 45,
+								maxTicksLimit: maxTicks,
+							},
+						},
 					},
 					onClick: (_event, elements) => {
 						if (elements.length > 0) {
-							const entry = data[elements[0]!.index];
+							const entry = data[elements[0]?.index];
 							if (entry && (entry.created > 0 || entry.reviewed > 0)) {
 								const cards = statsCalculator.getCardsDueOnDate(entry.date);
 								onCardPreview(entry.date, cards);
@@ -725,8 +785,16 @@ function ReviewsChart({
 
 	const controlDefs = useMemo(
 		() => [
-			{ key: "reviewed" as const, label: "Reviewed", color: getThemeColorWithAlpha("--color-blue", 0.9) },
-			{ key: "created" as const, label: "Created", color: getThemeColorWithAlpha("--color-green", 0.9) },
+			{
+				key: "reviewed" as const,
+				label: "Reviewed",
+				color: getThemeColorWithAlpha("--color-blue", 0.9),
+			},
+			{
+				key: "created" as const,
+				label: "Created",
+				color: getThemeColorWithAlpha("--color-green", 0.9),
+			},
 			{
 				key: "createdAndReviewedSameDay" as const,
 				label: "Same Day",
@@ -765,7 +833,9 @@ function ReviewsChart({
 						class="ep:text-ui-small ep:cursor-pointer ep-dynamic-color"
 						style={
 							{
-								"--ep-dynamic-color": visibility[key] ? color : "var(--text-muted)",
+								"--ep-dynamic-color": visibility[key]
+									? color
+									: "var(--text-muted)",
 							} as Record<string, string>
 						}
 					>
@@ -813,7 +883,9 @@ function RetentionChart({
 
 	const summary = useMemo(() => {
 		if (data.length === 0) return [];
-		const avgRetention = Math.round(data.reduce((sum, d) => sum + d.retention, 0) / data.length);
+		const avgRetention = Math.round(
+			data.reduce((sum, d) => sum + d.retention, 0) / data.length,
+		);
 		const totalReviews = data.reduce((sum, d) => sum + d.total, 0);
 		return [`Average: ${avgRetention}%`, `Total reviews: ${totalReviews}`];
 	}, [data]);
@@ -846,19 +918,34 @@ function RetentionChart({
 						tooltip: {
 							callbacks: {
 								title: (items) => {
-									if (items.length > 0) return formatDateForDisplay(data[items[0]!.dataIndex]!.date);
+									if (items.length > 0)
+										return formatDateForDisplay(
+											data[items[0]?.dataIndex]?.date,
+										);
 									return "";
 								},
 								label: (context) => {
 									const entry = data[context.dataIndex];
-									return entry ? `${entry.retention}% (${entry.total} reviews)` : "";
+									return entry
+										? `${entry.retention}% (${entry.total} reviews)`
+										: "";
 								},
 							},
 						},
 					},
 					scales: {
-						y: { min: 0, max: 100, ticks: { callback: (value) => `${value}%` } },
-						x: { ticks: { maxRotation: 45, minRotation: 45, maxTicksLimit: maxTicks } },
+						y: {
+							min: 0,
+							max: 100,
+							ticks: { callback: (value) => `${value}%` },
+						},
+						x: {
+							ticks: {
+								maxRotation: 45,
+								minRotation: 45,
+								maxTicksLimit: maxTicks,
+							},
+						},
 					},
 				},
 			});
@@ -886,11 +973,17 @@ function CardCountsChart({
 	onCategoryClick,
 }: {
 	statsCalculator: StatsCalculatorService;
-	onCategoryClick: (category: keyof CardMaturityBreakdown, label: string, cards: FSRSFlashcardItem[]) => void;
+	onCategoryClick: (
+		category: keyof CardMaturityBreakdown,
+		label: string,
+		cards: FSRSFlashcardItem[],
+	) => void;
 }) {
 	const canvasRef = useRef<HTMLCanvasElement>(null);
 	const chartRef = useRef<Chart | null>(null);
-	const [breakdown, setBreakdown] = useState<CardMaturityBreakdown | null>(null);
+	const [breakdown, setBreakdown] = useState<CardMaturityBreakdown | null>(
+		null,
+	);
 	const [total, setTotal] = useState(0);
 
 	useEffect(() => {
@@ -928,9 +1021,19 @@ function CardCountsChart({
 			buried: getThemeColor("--text-muted"),
 		};
 
-		const chartData: number[] = [breakdown.new, breakdown.learning, breakdown.young, breakdown.mature];
+		const chartData: number[] = [
+			breakdown.new,
+			breakdown.learning,
+			breakdown.young,
+			breakdown.mature,
+		];
 		const chartLabels: string[] = ["New", "Learning", "Young", "Mature"];
-		const chartColors: string[] = [colors.new, colors.learning, colors.young, colors.mature];
+		const chartColors: string[] = [
+			colors.new,
+			colors.learning,
+			colors.young,
+			colors.mature,
+		];
 
 		if (breakdown.suspended > 0) {
 			chartData.push(breakdown.suspended);
@@ -976,18 +1079,48 @@ function CardCountsChart({
 		buried: getThemeColor("--text-muted"),
 	};
 
-	const legendItems: { label: string; value: number; color: string; category: keyof CardMaturityBreakdown }[] = [
+	const legendItems: {
+		label: string;
+		value: number;
+		color: string;
+		category: keyof CardMaturityBreakdown;
+	}[] = [
 		{ label: "New", value: breakdown.new, color: colors.new, category: "new" },
-		{ label: "Learning", value: breakdown.learning, color: colors.learning, category: "learning" },
-		{ label: "Young", value: breakdown.young, color: colors.young, category: "young" },
-		{ label: "Mature", value: breakdown.mature, color: colors.mature, category: "mature" },
+		{
+			label: "Learning",
+			value: breakdown.learning,
+			color: colors.learning,
+			category: "learning",
+		},
+		{
+			label: "Young",
+			value: breakdown.young,
+			color: colors.young,
+			category: "young",
+		},
+		{
+			label: "Mature",
+			value: breakdown.mature,
+			color: colors.mature,
+			category: "mature",
+		},
 	];
 
 	if (breakdown.suspended > 0) {
-		legendItems.push({ label: "Suspended", value: breakdown.suspended, color: colors.suspended, category: "suspended" });
+		legendItems.push({
+			label: "Suspended",
+			value: breakdown.suspended,
+			color: colors.suspended,
+			category: "suspended",
+		});
 	}
 	if (breakdown.buried > 0) {
-		legendItems.push({ label: "Buried", value: breakdown.buried, color: colors.buried, category: "buried" });
+		legendItems.push({
+			label: "Buried",
+			value: breakdown.buried,
+			color: colors.buried,
+			category: "buried",
+		});
 	}
 
 	return (
@@ -995,7 +1128,10 @@ function CardCountsChart({
 			<div class="ep:flex ep:gap-8 ep:items-center ep:justify-center">
 				{/* Chart */}
 				<div class="ep:w-45 ep:h-45 ep:relative ep:shrink-0">
-					<canvas ref={canvasRef} class="ep:w-full! ep:h-full! true-recall-chart-fade-in" />
+					<canvas
+						ref={canvasRef}
+						class="ep:w-full! ep:h-full! true-recall-chart-fade-in"
+					/>
 				</div>
 
 				{/* Legend */}
@@ -1008,14 +1144,21 @@ function CardCountsChart({
 								class="ep:flex ep:items-center ep:gap-3 ep:py-2 ep:px-3 ep:rounded-md ep:transition-all ep:cursor-pointer ep:hover:bg-obs-primary ep:hover:-translate-x-0.5"
 								onClick={() => {
 									if (item.value > 0) {
-										const cards = statsCalculator.getCardsByCategory(item.category);
+										const cards = statsCalculator.getCardsByCategory(
+											item.category,
+										);
 										onCategoryClick(item.category, item.label, cards);
 									}
 								}}
 							>
 								<div
 									class="ep:w-4 ep:h-4 ep:rounded-sm ep:shrink-0 ep-dynamic-bg"
-									style={{ "--ep-dynamic-color": item.color } as Record<string, string>}
+									style={
+										{ "--ep-dynamic-color": item.color } as Record<
+											string,
+											string
+										>
+									}
 								/>
 								<span class="ep:text-ui-small ep:font-medium ep:text-obs-normal">
 									{item.label}
@@ -1049,7 +1192,9 @@ function CalendarHeatmap({
 	statsCalculator: StatsCalculatorService;
 	onCardPreview: (date: string, cards: FSRSFlashcardItem[]) => void;
 }) {
-	const [allStats, setAllStats] = useState<Record<string, { reviewsCompleted: number }>>({});
+	const [allStats, setAllStats] = useState<
+		Record<string, { reviewsCompleted: number }>
+	>({});
 
 	useEffect(() => {
 		try {
@@ -1079,7 +1224,7 @@ function CalendarHeatmap({
 			}>
 		> = [];
 		for (let week = 0; week < 53; week++) {
-			const days: typeof result[0] = [];
+			const days: (typeof result)[0] = [];
 			for (let day = 0; day < 7; day++) {
 				const cellDate = new Date(startDate);
 				cellDate.setDate(cellDate.getDate() + week * 7 + day);
@@ -1119,7 +1264,9 @@ function CalendarHeatmap({
 								aria-label={`${cell.dateKey}: ${cell.count} reviews`}
 								onClick={() => {
 									if (cell.count > 0) {
-										const cards = statsCalculator.getCardsDueOnDate(cell.dateKey);
+										const cards = statsCalculator.getCardsDueOnDate(
+											cell.dateKey,
+										);
 										onCardPreview(cell.dateKey, cards);
 									}
 								}}
@@ -1135,7 +1282,10 @@ function CalendarHeatmap({
 				{[0, 1, 10, 25, 50].map((count) => (
 					<div
 						key={count}
-						class={["ep:w-3 ep:h-3 ep:rounded-sm ep:cursor-default", getHeatmapLevelClasses(count)].join(" ")}
+						class={[
+							"ep:w-3 ep:h-3 ep:rounded-sm ep:cursor-default",
+							getHeatmapLevelClasses(count),
+						].join(" ")}
 					/>
 				))}
 				<span>More</span>
@@ -1149,18 +1299,15 @@ function CalendarHeatmap({
 export function StatsApp() {
 	const plugin = usePlugin();
 
-	const statsCalculator = useMemo(
-		() => {
-			const calc = new StatsCalculatorService(
-				plugin.fsrsService,
-				plugin.flashcardManager,
-				plugin.sessionPersistence,
-			);
-			calc.setSqliteStore(plugin.cardStore);
-			return calc;
-		},
-		[plugin],
-	);
+	const statsCalculator = useMemo(() => {
+		const calc = new StatsCalculatorService(
+			plugin.fsrsService,
+			plugin.flashcardManager,
+			plugin.sessionPersistence,
+		);
+		calc.setSqliteStore(plugin.cardStore);
+		return calc;
+	}, [plugin]);
 
 	const currentRange = useSignal<StatsTimeRange>("1m");
 
@@ -1195,7 +1342,11 @@ export function StatsApp() {
 	);
 
 	const handleCardPreviewForCategory = useCallback(
-		(category: keyof CardMaturityBreakdown, label: string, cards: FSRSFlashcardItem[]) => {
+		(
+			category: keyof CardMaturityBreakdown,
+			label: string,
+			cards: FSRSFlashcardItem[],
+		) => {
 			new CardPreviewModal(plugin.app, {
 				title: `${label} cards (${cards.length})`,
 				cards,

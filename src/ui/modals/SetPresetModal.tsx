@@ -1,5 +1,5 @@
+import type { App } from "obsidian";
 import { render } from "preact";
-import { App } from "obsidian";
 import { BasePromiseModal } from "./BasePromiseModal";
 
 export interface SetPresetResult {
@@ -24,18 +24,11 @@ function SetPresetBody({
 			>
 				<div
 					class="ep:flex ep:items-center ep:gap-2 ep:px-3 ep:py-2 ep:cursor-pointer ep:rounded-md hover:ep:bg-interactive-hover"
-					onClick={() =>
-						onResolve({ cancelled: false, presetName: null })
-					}
+					onClick={() => onResolve({ cancelled: false, presetName: null })}
 				>
-					<span class="ep:text-ui-small">
-						Default (remove override)
-					</span>
+					<span class="ep:text-ui-small">Default (remove override)</span>
 					{!currentPreset && (
-						<span class="ep:text-ui-small ep:opacity-50">
-							{" "}
-							(current)
-						</span>
+						<span class="ep:text-ui-small ep:opacity-50"> (current)</span>
 					)}
 				</div>
 				{presetNames
@@ -53,10 +46,7 @@ function SetPresetBody({
 						>
 							<span class="ep:text-ui-small">{name}</span>
 							{name === currentPreset && (
-								<span class="ep:text-ui-small ep:opacity-50">
-									{" "}
-									(current)
-								</span>
+								<span class="ep:text-ui-small ep:opacity-50"> (current)</span>
 							)}
 						</div>
 					))}
@@ -64,9 +54,7 @@ function SetPresetBody({
 			<div class="ep:flex ep:justify-end ep:gap-2 ep:pt-2 ep:border-t ep:border-obs-border">
 				<button
 					class="ep:py-2.5 ep:px-5 ep:rounded-md ep:text-ui-small ep:font-medium ep:cursor-pointer ep:transition-all ep:bg-obs-secondary ep:text-obs-normal ep:border ep:border-obs-border ep:hover:bg-obs-modifier-hover"
-					onClick={() =>
-						onResolve({ cancelled: true, presetName: null })
-					}
+					onClick={() => onResolve({ cancelled: true, presetName: null })}
 				>
 					Cancel
 				</button>
@@ -80,11 +68,7 @@ export class SetPresetModal extends BasePromiseModal<SetPresetResult> {
 	private currentPreset: string | null;
 	private unmountBody?: () => void;
 
-	constructor(
-		app: App,
-		presetNames: string[],
-		currentPreset: string | null,
-	) {
+	constructor(app: App, presetNames: string[], currentPreset: string | null) {
 		super(app, {
 			title: "Set FSRS preset",
 			width: "360px",

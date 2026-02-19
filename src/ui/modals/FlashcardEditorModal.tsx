@@ -1,20 +1,20 @@
+import { type App, Component, MarkdownRenderer, setIcon } from "obsidian";
 import { render } from "preact";
-import { useState, useEffect, useRef, useCallback } from "preact/hooks";
-import { App, MarkdownRenderer, Component, setIcon } from "obsidian";
-import { BaseModal } from "./BaseModal";
-import { MediaPickerModal } from "./MediaPickerModal";
-import type { FSRSFlashcardItem } from "../../types";
-import { ImageService } from "../../services/image";
+import { useCallback, useEffect, useRef, useState } from "preact/hooks";
 import { notify } from "../../services";
+import { ImageService } from "../../services/image";
+import type { FSRSFlashcardItem } from "../../types";
 import { stripBrTags } from "../../utils";
 import {
+	insertAtTextareaCursor,
 	TOOLBAR_BUTTONS,
 	type ToolbarButton,
 	type ToolbarButtonAction,
-	insertAtTextareaCursor,
 	toggleTextareaWrap,
 } from "../editor/edit-toolbar.utils";
 import { SECONDARY_BUTTON_CLASSES } from "../utils/tailwind";
+import { BaseModal } from "./BaseModal";
+import { MediaPickerModal } from "./MediaPickerModal";
 
 export interface FlashcardEditorResult {
 	cancelled: boolean;
@@ -35,7 +35,10 @@ export interface FlashcardEditorModalOptions {
 
 // ─── Toolbar Data ────────────────────────────────────────────────────
 
-function getToolbarButtons(onMediaPick: () => void, onShowHelp: () => void): ToolbarButton[] {
+function getToolbarButtons(
+	onMediaPick: () => void,
+	onShowHelp: () => void,
+): ToolbarButton[] {
 	return [
 		...TOOLBAR_BUTTONS.UNIFIED,
 		{
@@ -55,7 +58,10 @@ function getToolbarButtons(onMediaPick: () => void, onShowHelp: () => void): Too
 	];
 }
 
-function executeToolbarAction(action: ToolbarButtonAction, textarea: HTMLTextAreaElement): void {
+function executeToolbarAction(
+	action: ToolbarButtonAction,
+	textarea: HTMLTextAreaElement,
+): void {
 	switch (action.type) {
 		case "toggle":
 			toggleTextareaWrap(textarea, action.before, action.after);
@@ -80,9 +86,12 @@ function Toolbar({ buttons, textareaRef }: ToolbarProps) {
 	return (
 		<div class="ep:flex ep:flex-wrap ep:justify-center ep:gap-1 ep:py-2 ep:border-t ep:border-obs-border">
 			{buttons.map((btn) => {
-				const title = btn.shortcut ? `${btn.title} (${btn.shortcut})` : btn.title;
+				const title = btn.shortcut
+					? `${btn.title} (${btn.shortcut})`
+					: btn.title;
 				return (
 					<button
+						type="button"
 						key={btn.id}
 						class="ep:px-2 ep:py-1 ep:text-ui-smaller ep:bg-obs-secondary ep:text-obs-normal ep:border ep:border-obs-border ep:rounded-md ep:cursor-pointer ep:hover:bg-obs-modifier-hover ep:hover:border-obs-interactive ep:transition-colors"
 						title={title}
@@ -115,7 +124,13 @@ interface MarkdownPreviewProps {
 	onClick: () => void;
 }
 
-function MarkdownPreview({ app, content, sourcePath, field, onClick }: MarkdownPreviewProps) {
+function MarkdownPreview({
+	app,
+	content,
+	sourcePath,
+	field,
+	onClick,
+}: MarkdownPreviewProps) {
 	const ref = useRef<HTMLDivElement>(null);
 
 	useEffect(() => {
@@ -124,7 +139,13 @@ function MarkdownPreview({ app, content, sourcePath, field, onClick }: MarkdownP
 		el.empty();
 		const comp = new Component();
 		comp.load();
-		void MarkdownRenderer.render(app, stripBrTags(content), el, sourcePath, comp);
+		void MarkdownRenderer.render(
+			app,
+			stripBrTags(content),
+			el,
+			sourcePath,
+			comp,
+		);
 		return () => comp.unload();
 	}, [app, content, sourcePath]);
 
@@ -134,7 +155,15 @@ function MarkdownPreview({ app, content, sourcePath, field, onClick }: MarkdownP
 		<div
 			ref={ref}
 			class={`ep:p-4 ep:min-h-20 ep:cursor-text ep:rounded-lg ep:border ep:border-obs-border ep:bg-obs-primary ep:text-ui-small ep:text-center ep:hover:border-obs-interactive ep:transition-colors ${answerCls} true-recall-card-markdown`}
+			role="button"
+			tabIndex={0}
 			onClick={onClick}
+			onKeyDown={(e: KeyboardEvent) => {
+				if (e.key === "Enter" || e.key === " ") {
+					e.preventDefault();
+					onClick();
+				}
+			}}
 		/>
 	);
 }
@@ -148,7 +177,12 @@ interface AiAssistSectionProps {
 	onChange: (value: string) => void;
 }
 
-function AiAssistSection({ isExpanded, onToggle, value, onChange }: AiAssistSectionProps) {
+function AiAssistSection({
+	isExpanded,
+	onToggle,
+	value,
+	onChange,
+}: AiAssistSectionProps) {
 	const iconRef = useRef<HTMLSpanElement>(null);
 
 	useEffect(() => {
@@ -159,16 +193,15 @@ function AiAssistSection({ isExpanded, onToggle, value, onChange }: AiAssistSect
 
 	return (
 		<div class="ep:mb-4 ep:pb-4 ep:border-b ep:border-obs-border">
-			<div
-				class="ep:flex ep:items-center ep:gap-2 ep:cursor-pointer ep:text-obs-muted ep:hover:text-obs-normal ep:transition-colors"
-				role="button"
-				tabIndex={0}
+			<button
+				type="button"
+				class="ep:flex ep:items-center ep:gap-2 ep:cursor-pointer ep:text-obs-muted ep:hover:text-obs-normal ep:transition-colors ep:bg-transparent ep:border-none ep:p-0"
 				aria-expanded={isExpanded}
 				onClick={onToggle}
 			>
 				<span ref={iconRef} class="ep:w-4 ep:h-4 ep:transition-transform" />
 				<span class="ep:text-ui-smaller ep:font-medium">AI Assist</span>
-			</div>
+			</button>
 			{isExpanded && (
 				<div class="ep:mt-2">
 					<textarea
@@ -228,22 +261,28 @@ function EditorField({
 		}
 	}, [isEditing]);
 
-	const handleKeyDown = useCallback((e: KeyboardEvent) => {
-		if (e.key === "Escape") {
-			e.preventDefault();
-			if (textareaRef.current) onSave(textareaRef.current.value);
-		} else if (e.key === "Tab") {
-			e.preventDefault();
-			if (textareaRef.current) onSave(textareaRef.current.value);
-			onTab();
-		}
-	}, [onSave, onTab]);
+	const handleKeyDown = useCallback(
+		(e: KeyboardEvent) => {
+			if (e.key === "Escape") {
+				e.preventDefault();
+				if (textareaRef.current) onSave(textareaRef.current.value);
+			} else if (e.key === "Tab") {
+				e.preventDefault();
+				if (textareaRef.current) onSave(textareaRef.current.value);
+				onTab();
+			}
+		},
+		[onSave, onTab],
+	);
 
-	const handleBlur = useCallback((e: FocusEvent) => {
-		const relatedTarget = e.relatedTarget as HTMLElement | null;
-		if (relatedTarget?.closest("[data-button-id]")) return;
-		if (textareaRef.current) onSave(textareaRef.current.value);
-	}, [onSave]);
+	const handleBlur = useCallback(
+		(e: FocusEvent) => {
+			const relatedTarget = e.relatedTarget as HTMLElement | null;
+			if (relatedTarget?.closest("[data-button-id]")) return;
+			if (textareaRef.current) onSave(textareaRef.current.value);
+		},
+		[onSave],
+	);
 
 	return (
 		<div class={field === "question" ? "ep:mb-4" : ""}>
@@ -256,14 +295,19 @@ function EditorField({
 						<textarea
 							ref={textareaRef}
 							class="ep:w-full ep:text-center ep:text-obs-normal ep:resize-none ep-textarea-invisible"
-							placeholder={field === "question" ? "Type your question here..." : "Type your answer here..."}
+							placeholder={
+								field === "question"
+									? "Type your question here..."
+									: "Type your answer here..."
+							}
 							data-field={field}
 							value={value}
 							onInput={(e) => onChange((e.target as HTMLTextAreaElement).value)}
 							onKeyDown={handleKeyDown}
 							onBlur={handleBlur}
 							onPaste={(e) => {
-								if (textareaRef.current) onPaste(e as unknown as ClipboardEvent, textareaRef.current);
+								if (textareaRef.current)
+									onPaste(e as unknown as ClipboardEvent, textareaRef.current);
 							}}
 						/>
 						<Toolbar buttons={toolbarButtons} textareaRef={textareaRef} />
@@ -282,7 +326,9 @@ function EditorField({
 					class="ep:p-4 ep:min-h-20 ep:cursor-text ep:rounded-lg ep:border ep:border-dashed ep:border-obs-border ep:text-obs-muted ep:text-ui-small ep:text-center ep:hover:border-obs-interactive ep:transition-colors ep:flex ep:items-center ep:justify-center"
 					onClick={onStartEdit}
 				>
-					{field === "question" ? "Click to add question..." : "Click to add answer..."}
+					{field === "question"
+						? "Click to add question..."
+						: "Click to add answer..."}
 				</div>
 			)}
 		</div>
@@ -314,17 +360,17 @@ function FlashcardEditorBody({
 	const initialQuestion = card?.question || options.prefillQuestion || "";
 	const initialAnswer = card?.answer || options.prefillAnswer || "";
 
-	const [editingField, setEditingField] = useState<"question" | "answer" | null>(
-		!initialQuestion.trim() && !initialAnswer.trim() ? "question" : null
-	);
+	const [editingField, setEditingField] = useState<
+		"question" | "answer" | null
+	>(!initialQuestion.trim() && !initialAnswer.trim() ? "question" : null);
 	const [questionValue, setQuestionValue] = useState(initialQuestion);
 	const [answerValue, setAnswerValue] = useState(initialAnswer);
 	const [isAiExpanded, setIsAiExpanded] = useState(false);
 	const [aiInstruction, setAiInstruction] = useState("");
 
 	// Refs for accessing latest textarea from keyboard shortcuts
-	const questionTextareaRef = useRef<HTMLTextAreaElement | null>(null);
-	const answerTextareaRef = useRef<HTMLTextAreaElement | null>(null);
+	const _questionTextareaRef = useRef<HTMLTextAreaElement | null>(null);
+	const _answerTextareaRef = useRef<HTMLTextAreaElement | null>(null);
 
 	const isFormValid = questionValue.trim().length > 0;
 
@@ -334,7 +380,8 @@ function FlashcardEditorBody({
 		return hasAi ? "Save & Generate" : "Save changes";
 	})();
 
-	const displaySourceName = options.card?.sourceNoteName ?? options.sourceNoteName;
+	const displaySourceName =
+		options.card?.sourceNoteName ?? options.sourceNoteName;
 
 	const handleSubmit = useCallback(() => {
 		const question = questionValue.trim();
@@ -349,44 +396,47 @@ function FlashcardEditorBody({
 		});
 	}, [questionValue, answerValue, aiInstruction, onSubmit]);
 
-	const handleImagePaste = useCallback(async (e: ClipboardEvent, textarea: HTMLTextAreaElement) => {
-		const items = e.clipboardData?.items;
-		if (!items) return;
+	const handleImagePaste = useCallback(
+		async (e: ClipboardEvent, textarea: HTMLTextAreaElement) => {
+			const items = e.clipboardData?.items;
+			if (!items) return;
 
-		for (let i = 0; i < items.length; i++) {
-			const item = items[i];
-			if (item && item.type.startsWith("image/")) {
-				e.preventDefault();
-				const blob = item.getAsFile();
-				if (!blob) return;
+			for (let i = 0; i < items.length; i++) {
+				const item = items[i];
+				if (item?.type.startsWith("image/")) {
+					e.preventDefault();
+					const blob = item.getAsFile();
+					if (!blob) return;
 
-				if (imageService.isBlobTooLarge(blob)) {
-					const size = imageService.formatFileSize(blob.size);
-					notify().imageTooLarge(size);
+					if (imageService.isBlobTooLarge(blob)) {
+						const size = imageService.formatFileSize(blob.size);
+						notify().imageTooLarge(size);
+						return;
+					}
+
+					try {
+						notify().imageSaving();
+						const path = await imageService.saveImageFromClipboard(blob);
+						const markdown = imageService.buildImageMarkdown(path);
+						insertAtTextareaCursor(textarea, markdown);
+						textarea.focus();
+
+						// Sync state after insert
+						const field = textarea.getAttribute("data-field");
+						if (field === "question") setQuestionValue(textarea.value);
+						else if (field === "answer") setAnswerValue(textarea.value);
+
+						notify().success("Image inserted");
+					} catch (error) {
+						console.error("[True Recall] Failed to save pasted image:", error);
+						notify().operationFailed("save image", error);
+					}
 					return;
 				}
-
-				try {
-					notify().imageSaving();
-					const path = await imageService.saveImageFromClipboard(blob);
-					const markdown = imageService.buildImageMarkdown(path);
-					insertAtTextareaCursor(textarea, markdown);
-					textarea.focus();
-
-					// Sync state after insert
-					const field = textarea.getAttribute("data-field");
-					if (field === "question") setQuestionValue(textarea.value);
-					else if (field === "answer") setAnswerValue(textarea.value);
-
-					notify().success("Image inserted");
-				} catch (error) {
-					console.error("[True Recall] Failed to save pasted image:", error);
-					notify().operationFailed("save image", error);
-				}
-				return;
 			}
-		}
-	}, [imageService]);
+		},
+		[imageService],
+	);
 
 	const handleMediaPick = useCallback(async () => {
 		const result = await onOpenMediaPicker();
@@ -395,12 +445,18 @@ function FlashcardEditorBody({
 			const activeEl = document.activeElement;
 			let textarea: HTMLTextAreaElement | null = null;
 
-			if (activeEl instanceof HTMLTextAreaElement && activeEl.hasAttribute("data-field")) {
+			if (
+				activeEl instanceof HTMLTextAreaElement &&
+				activeEl.hasAttribute("data-field")
+			) {
 				textarea = activeEl;
 			} else {
 				// Fall back to first available textarea
-				textarea = document.querySelector<HTMLTextAreaElement>("[data-field='question']")
-					?? document.querySelector<HTMLTextAreaElement>("[data-field='answer']");
+				textarea =
+					document.querySelector<HTMLTextAreaElement>(
+						"[data-field='question']",
+					) ??
+					document.querySelector<HTMLTextAreaElement>("[data-field='answer']");
 			}
 
 			if (textarea) {
@@ -415,58 +471,103 @@ function FlashcardEditorBody({
 
 	const toolbarButtons = getToolbarButtons(
 		() => void handleMediaPick(),
-		onShowKeyboardShortcuts
+		onShowKeyboardShortcuts,
 	);
 
 	// Find the focused textarea's field type for keyboard shortcuts
 	const findFocusedTextarea = useCallback((): HTMLTextAreaElement | null => {
 		const active = document.activeElement;
-		if (active instanceof HTMLTextAreaElement && active.hasAttribute("data-field")) {
+		if (
+			active instanceof HTMLTextAreaElement &&
+			active.hasAttribute("data-field")
+		) {
 			return active;
 		}
 		return null;
 	}, []);
 
-	const executeButtonOnFocused = useCallback((buttonId: string) => {
-		const textarea = findFocusedTextarea();
-		if (!textarea) return;
+	const executeButtonOnFocused = useCallback(
+		(buttonId: string) => {
+			const textarea = findFocusedTextarea();
+			if (!textarea) return;
 
-		const btn = toolbarButtons.find((b) => b.id === buttonId);
-		if (btn) {
-			executeToolbarAction(btn.action, textarea);
-		}
-	}, [toolbarButtons, findFocusedTextarea]);
+			const btn = toolbarButtons.find((b) => b.id === buttonId);
+			if (btn) {
+				executeToolbarAction(btn.action, textarea);
+			}
+		},
+		[toolbarButtons, findFocusedTextarea],
+	);
 
 	// Container keyboard shortcuts
-	const handleContainerKeyDown = useCallback((e: KeyboardEvent) => {
-		const isMod = e.metaKey || e.ctrlKey;
+	const handleContainerKeyDown = useCallback(
+		(e: KeyboardEvent) => {
+			const isMod = e.metaKey || e.ctrlKey;
 
-		if (isMod && e.key === "Enter") {
-			e.preventDefault();
-			if (isFormValid) handleSubmit();
-			return;
-		}
-		if (e.key === "Escape" && !(e.target instanceof HTMLTextAreaElement)) {
-			e.preventDefault();
-			onClose();
-			return;
-		}
-		if (isMod && e.key === "/") {
-			e.preventDefault();
-			onShowKeyboardShortcuts();
-			return;
-		}
+			if (isMod && e.key === "Enter") {
+				e.preventDefault();
+				if (isFormValid) handleSubmit();
+				return;
+			}
+			if (e.key === "Escape" && !(e.target instanceof HTMLTextAreaElement)) {
+				e.preventDefault();
+				onClose();
+				return;
+			}
+			if (isMod && e.key === "/") {
+				e.preventDefault();
+				onShowKeyboardShortcuts();
+				return;
+			}
 
-		if (!findFocusedTextarea()) return;
+			if (!findFocusedTextarea()) return;
 
-		if (isMod && e.key === "b") { e.preventDefault(); executeButtonOnFocused("bold"); return; }
-		if (isMod && e.key === "i") { e.preventDefault(); executeButtonOnFocused("italic"); return; }
-		if (isMod && e.key === "k") { e.preventDefault(); executeButtonOnFocused("wiki"); return; }
-		if (isMod && e.key === "m") { e.preventDefault(); executeButtonOnFocused("math"); return; }
-		if (isMod && e.key === "l") { e.preventDefault(); executeButtonOnFocused("list"); return; }
-		if (isMod && e.shiftKey && e.key === "i") { e.preventDefault(); void handleMediaPick(); return; }
-		if (isMod && e.shiftKey && e.key.toLowerCase() === "c") { e.preventDefault(); executeButtonOnFocused("codeblock"); return; }
-	}, [isFormValid, handleSubmit, onClose, onShowKeyboardShortcuts, findFocusedTextarea, executeButtonOnFocused, handleMediaPick]);
+			if (isMod && e.key === "b") {
+				e.preventDefault();
+				executeButtonOnFocused("bold");
+				return;
+			}
+			if (isMod && e.key === "i") {
+				e.preventDefault();
+				executeButtonOnFocused("italic");
+				return;
+			}
+			if (isMod && e.key === "k") {
+				e.preventDefault();
+				executeButtonOnFocused("wiki");
+				return;
+			}
+			if (isMod && e.key === "m") {
+				e.preventDefault();
+				executeButtonOnFocused("math");
+				return;
+			}
+			if (isMod && e.key === "l") {
+				e.preventDefault();
+				executeButtonOnFocused("list");
+				return;
+			}
+			if (isMod && e.shiftKey && e.key === "i") {
+				e.preventDefault();
+				void handleMediaPick();
+				return;
+			}
+			if (isMod && e.shiftKey && e.key.toLowerCase() === "c") {
+				e.preventDefault();
+				executeButtonOnFocused("codeblock");
+				return;
+			}
+		},
+		[
+			isFormValid,
+			handleSubmit,
+			onClose,
+			onShowKeyboardShortcuts,
+			findFocusedTextarea,
+			executeButtonOnFocused,
+			handleMediaPick,
+		],
+	);
 
 	return (
 		<div onKeyDown={handleContainerKeyDown}>
@@ -489,8 +590,13 @@ function FlashcardEditorBody({
 					sourcePath={options.currentFilePath}
 					toolbarButtons={toolbarButtons}
 					onStartEdit={() => setEditingField("question")}
-					onSave={(val) => { setQuestionValue(val); setEditingField(null); }}
-					onTab={() => { setEditingField("answer"); }}
+					onSave={(val) => {
+						setQuestionValue(val);
+						setEditingField(null);
+					}}
+					onTab={() => {
+						setEditingField("answer");
+					}}
 					onChange={setQuestionValue}
 					onPaste={handleImagePaste}
 				/>
@@ -503,8 +609,13 @@ function FlashcardEditorBody({
 					sourcePath={options.currentFilePath}
 					toolbarButtons={toolbarButtons}
 					onStartEdit={() => setEditingField("answer")}
-					onSave={(val) => { setAnswerValue(val); setEditingField(null); }}
-					onTab={() => { setEditingField("question"); }}
+					onSave={(val) => {
+						setAnswerValue(val);
+						setEditingField(null);
+					}}
+					onTab={() => {
+						setEditingField("question");
+					}}
 					onChange={setAnswerValue}
 					onPaste={handleImagePaste}
 				/>
@@ -515,9 +626,11 @@ function FlashcardEditorBody({
 				<div class="ep:flex ep:items-center ep:justify-end ep:mt-3">
 					<div class="ep:flex ep:items-center ep:gap-1.5 ep:text-obs-faint ep:text-ui-smaller">
 						<span>Source:</span>
-						<span class={`ep:text-obs-muted ${mode === "edit" ? "ep:cursor-pointer ep:transition-all ep:hover:text-obs-normal ep:hover:underline" : ""}`}
+						<span
+							class={`ep:text-obs-muted ${mode === "edit" ? "ep:cursor-pointer ep:transition-all ep:hover:text-obs-normal ep:hover:underline" : ""}`}
 							onClick={() => {
-								if (mode === "edit") notify().info("Source editing is not available");
+								if (mode === "edit")
+									notify().info("Source editing is not available");
 							}}
 						>
 							{displaySourceName}
@@ -528,7 +641,9 @@ function FlashcardEditorBody({
 
 			{/* Buttons */}
 			<div class="ep:flex ep:justify-end ep:gap-3 ep:mt-5 ep:pt-4 ep:border-t ep:border-obs-border">
-				<button class={SECONDARY_BUTTON_CLASSES} onClick={onClose}>Cancel</button>
+				<button class={SECONDARY_BUTTON_CLASSES} onClick={onClose}>
+					Cancel
+				</button>
 				<button
 					class="ep:py-3 ep:px-5 ep:bg-obs-interactive ep:text-obs-on-accent ep:border-none ep:rounded-md ep:cursor-pointer ep:font-medium ep:transition-colors ep:hover:bg-obs-interactive-hover ep:disabled:opacity-50 ep:disabled:cursor-not-allowed"
 					disabled={!isFormValid}
@@ -545,7 +660,8 @@ function FlashcardEditorBody({
 
 export class FlashcardEditorModal extends BaseModal {
 	private options: FlashcardEditorModalOptions;
-	private resolvePromise: ((result: FlashcardEditorResult) => void) | null = null;
+	private resolvePromise: ((result: FlashcardEditorResult) => void) | null =
+		null;
 	private hasSubmitted = false;
 	private imageService: ImageService | null = null;
 	private unmountBody?: () => void;
@@ -596,7 +712,7 @@ export class FlashcardEditorModal extends BaseModal {
 					new KeyboardShortcutsModal(this.app).open();
 				}}
 			/>,
-			container
+			container,
 		);
 		this.unmountBody = () => render(null, container);
 	}
@@ -639,11 +755,16 @@ function KeyboardShortcutsBody() {
 	return (
 		<div class="ep:flex ep:flex-col ep:gap-2">
 			{KEYBOARD_SHORTCUTS.map((shortcut) => (
-				<div key={shortcut.key} class="ep:flex ep:justify-between ep:items-center ep:py-2 ep:px-3 ep:bg-obs-secondary ep:rounded-md">
+				<div
+					key={shortcut.key}
+					class="ep:flex ep:justify-between ep:items-center ep:py-2 ep:px-3 ep:bg-obs-secondary ep:rounded-md"
+				>
 					<span class="ep:py-1 ep:px-2 ep:bg-obs-border ep:rounded ep:font-mono ep:text-ui-smaller ep:font-medium ep:text-obs-normal">
 						{shortcut.key}
 					</span>
-					<span class="ep:text-ui-small ep:text-obs-normal">{shortcut.action}</span>
+					<span class="ep:text-ui-small ep:text-obs-normal">
+						{shortcut.action}
+					</span>
 				</div>
 			))}
 		</div>

@@ -66,7 +66,10 @@ export class MaturityCalculator {
 			// Active cards - categorize by state
 			if (c.fsrs.state === State.New) {
 				counts.new++;
-			} else if (c.fsrs.state === State.Learning || c.fsrs.state === State.Relearning) {
+			} else if (
+				c.fsrs.state === State.Learning ||
+				c.fsrs.state === State.Relearning
+			) {
 				counts.learning++;
 			} else if (c.fsrs.state === State.Review) {
 				if (c.fsrs.scheduledDays < 21) {
@@ -85,14 +88,15 @@ export class MaturityCalculator {
 	 */
 	getCardsByCategory(
 		allCards: FSRSFlashcardItem[],
-		category: keyof CardMaturityBreakdown
+		category: keyof CardMaturityBreakdown,
 	): FSRSFlashcardItem[] {
 		const now = new Date();
 
 		// Helper to check if card is active (not suspended and not currently buried)
 		const isActive = (c: FSRSFlashcardItem) => {
 			if (c.fsrs.suspended) return false;
-			if (c.fsrs.buriedUntil && new Date(c.fsrs.buriedUntil) > now) return false;
+			if (c.fsrs.buriedUntil && new Date(c.fsrs.buriedUntil) > now)
+				return false;
 			return true;
 		};
 
@@ -104,22 +108,29 @@ export class MaturityCalculator {
 
 		switch (category) {
 			case "new":
-				return allCards.filter((c) => isActive(c) && c.fsrs.state === State.New);
+				return allCards.filter(
+					(c) => isActive(c) && c.fsrs.state === State.New,
+				);
 			case "learning":
 				return allCards.filter(
 					(c) =>
 						isActive(c) &&
-						(c.fsrs.state === State.Learning || c.fsrs.state === State.Relearning)
+						(c.fsrs.state === State.Learning ||
+							c.fsrs.state === State.Relearning),
 				);
 			case "young":
 				return allCards.filter(
 					(c) =>
-						isActive(c) && c.fsrs.state === State.Review && c.fsrs.scheduledDays < 21
+						isActive(c) &&
+						c.fsrs.state === State.Review &&
+						c.fsrs.scheduledDays < 21,
 				);
 			case "mature":
 				return allCards.filter(
 					(c) =>
-						isActive(c) && c.fsrs.state === State.Review && c.fsrs.scheduledDays >= 21
+						isActive(c) &&
+						c.fsrs.state === State.Review &&
+						c.fsrs.scheduledDays >= 21,
 				);
 			case "suspended":
 				return allCards.filter((c) => c.fsrs.suspended);

@@ -20,10 +20,12 @@ export function hasClozeContent(text: string): boolean {
 
 export function extractClozeIndices(template: string): number[] {
 	const indices = new Set<number>();
-	let match: RegExpExecArray | null;
 	const regex = new RegExp(CLOZE_REGEX.source, CLOZE_REGEX.flags);
-	while ((match = regex.exec(template)) !== null) {
-		indices.add(parseInt(match[1]!, 10));
+	for (let match = regex.exec(template); match !== null; match = regex.exec(template)) {
+		const indexStr = match[1];
+		if (indexStr) {
+			indices.add(parseInt(indexStr, 10));
+		}
 	}
 	return [...indices].sort((a, b) => a - b);
 }
@@ -32,22 +34,31 @@ export function extractClozeIndices(template: string): number[] {
  * Render the question side of a cloze card.
  * Target index clozes become [...] or [hint], other clozes are revealed.
  */
-export function renderClozeQuestion(template: string, targetIndex: number): string {
+export function renderClozeQuestion(
+	template: string,
+	targetIndex: number,
+): string {
 	const regex = new RegExp(CLOZE_REGEX.source, CLOZE_REGEX.flags);
-	return template.replace(regex, (_match, indexStr: string, text: string, hint?: string) => {
-		const idx = parseInt(indexStr, 10);
-		if (idx === targetIndex) {
-			return hint ? `[${hint}]` : "[...]";
-		}
-		return text;
-	});
+	return template.replace(
+		regex,
+		(_match, indexStr: string, text: string, hint?: string) => {
+			const idx = parseInt(indexStr, 10);
+			if (idx === targetIndex) {
+				return hint ? `[${hint}]` : "[...]";
+			}
+			return text;
+		},
+	);
 }
 
 /**
  * Render the answer side of a cloze card.
  * Target index clozes are shown bold, other clozes are revealed normally.
  */
-export function renderClozeAnswer(template: string, targetIndex: number): string {
+export function renderClozeAnswer(
+	template: string,
+	targetIndex: number,
+): string {
 	const regex = new RegExp(CLOZE_REGEX.source, CLOZE_REGEX.flags);
 	return template.replace(regex, (_match, indexStr: string, text: string) => {
 		const idx = parseInt(indexStr, 10);

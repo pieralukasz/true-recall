@@ -5,10 +5,10 @@
  */
 
 import type {
-	SchedulerCardStore,
-	FlattenOptions,
-	SchedulingResult,
 	CardScheduleChange,
+	FlattenOptions,
+	SchedulerCardStore,
+	SchedulingResult,
 	WorkloadDistribution,
 } from "./scheduler.types";
 
@@ -53,7 +53,7 @@ export class FlattenService {
 
 		// Sort cards by scheduled_days (move longer interval cards first)
 		const sortedCards = [...cards].sort(
-			(a, b) => b.scheduledDays - a.scheduledDays
+			(a, b) => b.scheduledDays - a.scheduledDays,
 		);
 
 		// Keep maxCards, redistribute the rest
@@ -91,7 +91,7 @@ export class FlattenService {
 			// Update tracking
 			afterDistribution.set(
 				this.formatDate(newDue),
-				(afterDistribution.get(this.formatDate(newDue)) ?? 0) + 1
+				(afterDistribution.get(this.formatDate(newDue)) ?? 0) + 1,
 			);
 		}
 
@@ -115,7 +115,7 @@ export class FlattenService {
 	 */
 	findOverloadedDays(
 		maxCards: number,
-		days: number = 30
+		days: number = 30,
 	): { date: string; count: number; excess: number }[] {
 		const today = new Date();
 		const endDate = new Date(today);
@@ -123,7 +123,7 @@ export class FlattenService {
 
 		const distribution = this.cardStore.getDueCardsByDateRange(
 			this.formatDate(today),
-			this.formatDate(endDate)
+			this.formatDate(endDate),
 		);
 
 		// Group by date
@@ -152,15 +152,13 @@ export class FlattenService {
 	 * Format date as YYYY-MM-DD
 	 */
 	private formatDate(date: Date): string {
-		return date.toISOString().split("T")[0]!;
+		return date.toISOString().split("T")[0] ?? "";
 	}
 
 	/**
 	 * Convert distribution map to array
 	 */
-	private mapToDistribution(
-		map: Map<string, number>
-	): WorkloadDistribution[] {
+	private mapToDistribution(map: Map<string, number>): WorkloadDistribution[] {
 		return Array.from(map.entries())
 			.map(([date, count]) => ({ date, count }))
 			.sort((a, b) => a.date.localeCompare(b.date));

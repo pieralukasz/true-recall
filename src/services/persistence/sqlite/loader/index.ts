@@ -4,10 +4,10 @@
  */
 
 export {
-    loadDatabase,
-    resetLoaderState,
-    type BindParams,
-    type DatabaseLike,
-    type DatabaseLoadResult,
-    type QueryExecResult,
+	type BindParams,
+	type DatabaseLike,
+	type DatabaseLoadResult,
+	loadDatabase,
+	type QueryExecResult,
+	resetLoaderState,
 } from "./SqlJsLoader";

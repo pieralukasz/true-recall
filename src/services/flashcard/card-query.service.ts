@@ -1,8 +1,6 @@
-import type { FSRSCardData, FSRSFlashcardItem } from "../../types";
+import type { CardType, FSRSCardData, FSRSFlashcardItem } from "../../types";
 import type { SqliteStoreService } from "../persistence/sqlite/SqliteStoreService";
 import type { SourceNoteService } from "./source-note.service";
-
-import type { CardType } from "../../types";
 
 interface RawFlashcardItem {
 	id: string;
@@ -19,7 +17,7 @@ interface RawFlashcardItem {
 export class CardQueryService {
 	constructor(
 		private store: SqliteStoreService,
-		private sourceNoteService: SourceNoteService
+		private sourceNoteService: SourceNoteService,
 	) {}
 
 	getAll(): FSRSFlashcardItem[] {
@@ -46,7 +44,7 @@ export class CardQueryService {
 
 		return cards
 			.filter((card): card is FSRSCardData & { question: string } =>
-				Boolean(card.question)
+				Boolean(card.question),
 			)
 			.map((card) => ({
 				id: card.id,
@@ -67,7 +65,7 @@ export class CardQueryService {
 
 		return cards
 			.filter((card): card is FSRSCardData & { question: string } =>
-				Boolean(card.question)
+				Boolean(card.question),
 			)
 			.map((card) => ({
 				id: card.id,
@@ -98,7 +96,7 @@ export class CardQueryService {
 	private filterAndMapCards(cards: FSRSCardData[]): RawFlashcardItem[] {
 		return cards
 			.filter((card): card is FSRSCardData & { question: string } =>
-				Boolean(card.question)
+				Boolean(card.question),
 			)
 			.map((card) => ({
 				id: card.id,

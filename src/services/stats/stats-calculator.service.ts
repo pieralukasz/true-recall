@@ -1,24 +1,28 @@
 import { State } from "ts-fsrs";
+import type {
+	CardMaturityBreakdown,
+	CardsCreatedEntry,
+	CardsCreatedVsReviewedEntry,
+	ExtendedDailyStats,
+	FSRSFlashcardItem,
+	FutureDueEntry,
+	RetentionEntry,
+	StatsTimeRange,
+	TodaySummary,
+} from "../../types";
 import type { FSRSService } from "../core/fsrs.service";
 import type { FlashcardManager } from "../flashcard/flashcard.service";
 import type { SessionPersistenceService } from "../persistence/session-persistence.service";
 import type { SqliteStoreService } from "../persistence/sqlite";
-import type {
-	CardMaturityBreakdown,
-	FutureDueEntry,
-	CardsCreatedEntry,
-	CardsCreatedVsReviewedEntry,
-	ExtendedDailyStats,
-	TodaySummary,
-	StatsTimeRange,
-	FSRSFlashcardItem,
-	RetentionEntry,
-} from "../../types";
-import { StreakCalculator, MaturityCalculator, ChartDataCalculator, type StreakInfo } from "./calculators";
+import {
+	ChartDataCalculator,
+	MaturityCalculator,
+	StreakCalculator,
+	type StreakInfo,
+} from "./calculators";
 
 export class StatsCalculatorService {
 	private sessionPersistence: SessionPersistenceService;
-	private sqliteStore: SqliteStoreService | null = null;
 
 	// Specialized calculators
 	private streakCalculator = new StreakCalculator();
@@ -26,9 +30,9 @@ export class StatsCalculatorService {
 	private chartDataCalculator = new ChartDataCalculator();
 
 	constructor(
-		private fsrsService: FSRSService,
+		_fsrsService: FSRSService,
 		private flashcardManager: FlashcardManager,
-		sessionPersistence: SessionPersistenceService
+		sessionPersistence: SessionPersistenceService,
 	) {
 		this.sessionPersistence = sessionPersistence;
 	}
@@ -77,9 +81,7 @@ export class StatsCalculatorService {
 	 * Get historical review data for reviews chart
 	 * @param range Time range: '1m' | '3m' | '1y' | 'all'
 	 */
-	async getReviewHistory(
-		range: StatsTimeRange
-	): Promise<ExtendedDailyStats[]> {
+	async getReviewHistory(range: StatsTimeRange): Promise<ExtendedDailyStats[]> {
 		const endDate = new Date();
 		const startDate = this.calculateStartDate(endDate, range);
 
@@ -141,15 +143,13 @@ export class StatsCalculatorService {
 		const endDate = new Date();
 		const startDate = this.calculateStartDate(endDate, range);
 		const totalDays = Math.ceil(
-			(endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24)
+			(endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24),
 		);
 
-		const daysStudied = history.filter(
-			(d) => d.reviewsCompleted > 0
-		).length;
+		const daysStudied = history.filter((d) => d.reviewsCompleted > 0).length;
 		const totalReviews = history.reduce(
 			(sum, d) => sum + d.reviewsCompleted,
-			0
+			0,
 		);
 
 		// Calculate due tomorrow
@@ -171,8 +171,8 @@ export class StatsCalculatorService {
 			futureStats.length > 0
 				? Math.round(
 						futureStats.reduce((sum, d) => sum + d.count, 0) /
-							Math.max(futureStats.length, 1)
-				  )
+							Math.max(futureStats.length, 1),
+					)
 				: 0;
 
 		return {
@@ -246,7 +246,9 @@ export class StatsCalculatorService {
 	 * Get cards by maturity category
 	 * @param category Category key from CardMaturityBreakdown
 	 */
-	getCardsByCategory(category: keyof CardMaturityBreakdown): FSRSFlashcardItem[] {
+	getCardsByCategory(
+		category: keyof CardMaturityBreakdown,
+	): FSRSFlashcardItem[] {
 		const allCards = this.flashcardManager.getAllFSRSCards();
 		return this.maturityCalculator.getCardsByCategory(allCards, category);
 	}
@@ -256,9 +258,14 @@ export class StatsCalculatorService {
 	 * Returns one entry per day for the entire range
 	 * Note: "backlog" range is skipped as it's for future predictions, not creation history
 	 */
-	async getCardsCreatedHistoryFilled(range: StatsTimeRange): Promise<CardsCreatedEntry[]> {
+	async getCardsCreatedHistoryFilled(
+		range: StatsTimeRange,
+	): Promise<CardsCreatedEntry[]> {
 		const allCards = this.flashcardManager.getAllFSRSCards();
-		return this.chartDataCalculator.getCardsCreatedHistoryFilled(allCards, range);
+		return this.chartDataCalculator.getCardsCreatedHistoryFilled(
+			allCards,
+			range,
+		);
 	}
 
 	/**
@@ -275,7 +282,9 @@ export class StatsCalculatorService {
 	 * Shows for each day: created count, reviewed count, and same-day reviewed count
 	 * @param range Time range for the chart
 	 */
-	getCardsCreatedVsReviewedHistory(range: StatsTimeRange): CardsCreatedVsReviewedEntry[] {
+	getCardsCreatedVsReviewedHistory(
+		range: StatsTimeRange,
+	): CardsCreatedVsReviewedEntry[] {
 		return this.chartDataCalculator.getCardsCreatedVsReviewedHistory(range);
 	}
 }

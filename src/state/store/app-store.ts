@@ -1,15 +1,15 @@
-import { createStore } from "zustand/vanilla";
 import { subscribeWithSelector } from "zustand/middleware";
-import type { AppState, AppStoreDeps } from "./types";
+import { createStore } from "zustand/vanilla";
 import {
-	createReviewSlice,
+	createBrowserSlice,
+	createNoteHubSlice,
 	createPanelSlice,
+	createReviewSlice,
 	createSessionSlice,
 	createSimulatorSlice,
 	createStatsSlice,
-	createNoteHubSlice,
-	createBrowserSlice,
 } from "./slices";
+import type { AppState, AppStoreDeps } from "./types";
 
 export type AppStore = ReturnType<typeof createAppStore>;
 
@@ -23,6 +23,6 @@ export function createAppStore(deps: AppStoreDeps) {
 			stats: createStatsSlice(set, get, deps),
 			noteHub: createNoteHubSlice(set, get, deps),
 			browser: createBrowserSlice(set, get, deps),
-		}))
+		})),
 	);
 }

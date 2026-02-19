@@ -1,21 +1,21 @@
-import { ItemView, WorkspaceLeaf } from "obsidian";
 import {
-	Chart,
 	CategoryScale,
+	Chart,
+	Legend,
 	LinearScale,
-	LogarithmicScale,
-	LineElement,
 	LineController,
+	LineElement,
+	LogarithmicScale,
 	PointElement,
 	Title,
 	Tooltip,
-	Legend,
 } from "chart.js";
+import { ItemView, type WorkspaceLeaf } from "obsidian";
 import { h } from "preact";
 import { VIEW_TYPE_SIMULATOR } from "../../constants";
+import type TrueRecallPlugin from "../../main";
 import { mountPreact } from "../preact";
 import { SimulatorApp } from "./SimulatorApp";
-import type TrueRecallPlugin from "../../main";
 
 // Register Chart.js components before any Preact rendering
 Chart.register(
@@ -27,7 +27,7 @@ Chart.register(
 	PointElement,
 	Title,
 	Tooltip,
-	Legend
+	Legend,
 );
 
 export class SimulatorView extends ItemView {
@@ -56,9 +56,17 @@ export class SimulatorView extends ItemView {
 		const container = this.containerEl.children[1];
 		if (!(container instanceof HTMLElement)) return;
 		container.empty();
-		container.addClasses(["ep:overflow-y-auto", "ep:h-full", "ep:bg-obs-primary"]);
+		container.addClasses([
+			"ep:overflow-y-auto",
+			"ep:h-full",
+			"ep:bg-obs-primary",
+		]);
 
-		this.unmountPreact = mountPreact(container, this.plugin, h(SimulatorApp, null));
+		this.unmountPreact = mountPreact(
+			container,
+			this.plugin,
+			h(SimulatorApp, null),
+		);
 	}
 
 	async onClose(): Promise<void> {

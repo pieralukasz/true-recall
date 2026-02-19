@@ -1,22 +1,26 @@
-import { h } from "preact";
+import { effect } from "@preact/signals";
 import {
 	ItemView,
-	WorkspaceLeaf,
-	TFile,
+	type Menu,
 	Platform,
-	Menu,
+	TFile,
+	type WorkspaceLeaf,
 } from "obsidian";
+import { h } from "preact";
 import { VIEW_TYPE_FLASHCARD_PANEL } from "../../constants";
-import { FlashcardManager, notify } from "../../services";
-import { CollectService } from "../../services/flashcard/collect.service";
-import { mountPreact } from "../preact/mount";
-import { FlashcardPanelApp, type PanelAppActions } from "./FlashcardPanelApp";
-import type { FSRSFlashcardItem } from "../../types/fsrs/card.types";
-import { countCardsByState } from "../shared/helpers";
 import type TrueRecallPlugin from "../../main";
+import { type FlashcardManager, notify } from "../../services";
+import {
+	dataVersion,
+	settingsVersion,
+	track,
+} from "../../services/core/signals";
+import { CollectService } from "../../services/flashcard/collect.service";
 import type { PanelApi } from "../../state/store";
-import { effect } from "@preact/signals";
-import { dataVersion, settingsVersion, track } from "../../services/core/signals";
+import type { FSRSFlashcardItem } from "../../types/fsrs/card.types";
+import { mountPreact } from "../preact/mount";
+import { countCardsByState } from "../shared/helpers";
+import { FlashcardPanelApp, type PanelAppActions } from "./FlashcardPanelApp";
 
 export class FlashcardPanelView extends ItemView {
 	private plugin: TrueRecallPlugin;
@@ -65,7 +69,7 @@ export class FlashcardPanelView extends ItemView {
 	}
 
 	private get panel(): PanelApi {
-		return this.plugin.store!.getState().panel;
+		return this.plugin.store?.getState().panel;
 	}
 
 	getViewType(): string {
@@ -90,7 +94,8 @@ export class FlashcardPanelView extends ItemView {
 		if (!state.currentFile) return;
 
 		menu.addItem((item) => {
-			item.setTitle("Refresh")
+			item
+				.setTitle("Refresh")
 				.setIcon("refresh-cw")
 				.onClick(() => void this.loadFlashcardInfo());
 		});
@@ -101,13 +106,15 @@ export class FlashcardPanelView extends ItemView {
 			menu.addSeparator();
 
 			menu.addItem((item) => {
-				item.setTitle("Copy to clipboard")
+				item
+					.setTitle("Copy to clipboard")
 					.setIcon("clipboard-copy")
 					.onClick(() => void this.handleCopyAllToClipboard());
 			});
 
 			menu.addItem((item) => {
-				item.setTitle("Export as CSV")
+				item
+					.setTitle("Export as CSV")
 					.setIcon("file-down")
 					.onClick(() => void this.handleExportCsv());
 			});
@@ -115,13 +122,15 @@ export class FlashcardPanelView extends ItemView {
 			menu.addSeparator();
 
 			menu.addItem((item) => {
-				item.setTitle("Open flashcard file")
+				item
+					.setTitle("Open flashcard file")
 					.setIcon("file-text")
 					.onClick(() => void this.handleOpenFlashcardFile());
 			});
 
 			menu.addItem((item) => {
-				item.setTitle("Delete all flashcards")
+				item
+					.setTitle("Delete all flashcards")
 					.setIcon("trash-2")
 					.onClick(() => void this.handleDeleteAllFlashcards());
 			});
@@ -147,7 +156,7 @@ export class FlashcardPanelView extends ItemView {
 		);
 
 		// Subscribe to store for Obsidian native header actions
-		this.headerActionsUnsub = this.plugin.store!.subscribe(
+		this.headerActionsUnsub = this.plugin.store?.subscribe(
 			(s) => ({ status: s.panel.status, file: s.panel.currentFile }),
 			() => this.updateHeaderActions(),
 		);
@@ -283,7 +292,10 @@ export class FlashcardPanelView extends ItemView {
 				const currentPath = currentCard?.sourceNotePath ?? null;
 				const isActive = review.isActive;
 
-				if (currentPath !== this.lastReviewCardPath || isActive !== this.lastReviewActive) {
+				if (
+					currentPath !== this.lastReviewCardPath ||
+					isActive !== this.lastReviewActive
+				) {
 					this.lastReviewCardPath = currentPath;
 					this.lastReviewActive = isActive;
 					void this.syncWithReviewCard(currentPath, isActive);
@@ -292,7 +304,10 @@ export class FlashcardPanelView extends ItemView {
 		);
 	}
 
-	private async syncWithReviewCard(sourceNotePath: string | null, isActive: boolean): Promise<void> {
+	private async syncWithReviewCard(
+		sourceNotePath: string | null,
+		isActive: boolean,
+	): Promise<void> {
 		this.panel.setReviewFollowState(sourceNotePath, isActive);
 
 		if (!isActive || !sourceNotePath) {
@@ -417,20 +432,31 @@ export class FlashcardPanelView extends ItemView {
 	}
 
 	private setupMobileHeaderStatus(): void {
-		const titleContainer = this.containerEl.querySelector(".view-header-title-container");
+		const titleContainer = this.containerEl.querySelector(
+			".view-header-title-container",
+		);
 		if (!titleContainer) return;
 
-		const titleEl = titleContainer.querySelector(".view-header-title") as HTMLElement;
+		const titleEl = titleContainer.querySelector(
+			".view-header-title",
+		) as HTMLElement;
 		if (titleEl) {
 			titleEl.addClass("ep:hidden");
 		}
 
 		this.mobileStatusEl = document.createElement("div");
-		this.mobileStatusEl.addClass("ep:flex", "ep:gap-1", "ep:items-center", "ep:text-ui-smaller");
+		this.mobileStatusEl.addClass(
+			"ep:flex",
+			"ep:gap-1",
+			"ep:items-center",
+			"ep:text-ui-smaller",
+		);
 		titleContainer.appendChild(this.mobileStatusEl);
 	}
 
-	private updateMobileHeaderStatus(precomputedCards?: FSRSFlashcardItem[]): void {
+	private updateMobileHeaderStatus(
+		precomputedCards?: FSRSFlashcardItem[],
+	): void {
 		if (!this.mobileStatusEl) return;
 
 		const cards = precomputedCards ?? this.getCardsWithFsrs();
@@ -441,14 +467,24 @@ export class FlashcardPanelView extends ItemView {
 		const newEl = this.mobileStatusEl.createSpan({ cls: "ep:text-obs-blue" });
 		newEl.textContent = String(counts.new);
 
-		this.mobileStatusEl.createSpan({ cls: "ep:text-obs-faint", text: "\u00B7" });
+		this.mobileStatusEl.createSpan({
+			cls: "ep:text-obs-faint",
+			text: "\u00B7",
+		});
 
-		const learningEl = this.mobileStatusEl.createSpan({ cls: "ep:text-obs-orange" });
+		const learningEl = this.mobileStatusEl.createSpan({
+			cls: "ep:text-obs-orange",
+		});
 		learningEl.textContent = String(counts.learning);
 
-		this.mobileStatusEl.createSpan({ cls: "ep:text-obs-faint", text: "\u00B7" });
+		this.mobileStatusEl.createSpan({
+			cls: "ep:text-obs-faint",
+			text: "\u00B7",
+		});
 
-		const reviewEl = this.mobileStatusEl.createSpan({ cls: "ep:text-obs-green" });
+		const reviewEl = this.mobileStatusEl.createSpan({
+			cls: "ep:text-obs-green",
+		});
 		reviewEl.textContent = String(counts.review);
 	}
 
@@ -463,11 +499,14 @@ export class FlashcardPanelView extends ItemView {
 
 	private async handleDeleteAllFlashcards(): Promise<void> {
 		const state = this.panel;
-		if (!state.flashcardInfo || state.flashcardInfo.flashcards.length === 0) return;
+		if (!state.flashcardInfo || state.flashcardInfo.flashcards.length === 0)
+			return;
 
 		const count = state.flashcardInfo.flashcards.length;
 		// eslint-disable-next-line no-alert -- destructive operation requires explicit user confirmation
-		const confirmed = window.confirm(`Delete all ${count} flashcard(s) for this note?`);
+		const confirmed = window.confirm(
+			`Delete all ${count} flashcard(s) for this note?`,
+		);
 		if (!confirmed) return;
 
 		const cardIds = state.flashcardInfo.flashcards.map((card) => card.id);
@@ -477,7 +516,10 @@ export class FlashcardPanelView extends ItemView {
 
 	private async handleCopyAllToClipboard(): Promise<void> {
 		const state = this.panel;
-		if (!state.flashcardInfo?.flashcards || state.flashcardInfo.flashcards.length === 0) {
+		if (
+			!state.flashcardInfo?.flashcards ||
+			state.flashcardInfo.flashcards.length === 0
+		) {
 			notify().warning("No flashcards to copy");
 			return;
 		}
@@ -487,12 +529,17 @@ export class FlashcardPanelView extends ItemView {
 			.join("\n\n");
 
 		await navigator.clipboard.writeText(text);
-		notify().success(`Copied ${state.flashcardInfo.flashcards.length} flashcard(s) to clipboard`);
+		notify().success(
+			`Copied ${state.flashcardInfo.flashcards.length} flashcard(s) to clipboard`,
+		);
 	}
 
 	private async handleExportCsv(): Promise<void> {
 		const state = this.panel;
-		if (!state.flashcardInfo?.flashcards || state.flashcardInfo.flashcards.length === 0) {
+		if (
+			!state.flashcardInfo?.flashcards ||
+			state.flashcardInfo.flashcards.length === 0
+		) {
 			notify().warning("No flashcards to export");
 			return;
 		}
@@ -524,7 +571,9 @@ export class FlashcardPanelView extends ItemView {
 		document.body.removeChild(link);
 		URL.revokeObjectURL(url);
 
-		notify().success(`Exported ${state.flashcardInfo.flashcards.length} flashcard(s) to CSV`);
+		notify().success(
+			`Exported ${state.flashcardInfo.flashcards.length} flashcard(s) to CSV`,
+		);
 	}
 
 	private registerEditorChangeTracking(): void {

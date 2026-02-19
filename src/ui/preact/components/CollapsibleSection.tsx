@@ -1,5 +1,5 @@
-import { useState, useRef, useEffect } from "preact/hooks";
 import type { ComponentChildren } from "preact";
+import { useState } from "preact/hooks";
 import { useIcon } from "../hooks";
 
 export interface CollapsibleSectionProps {
@@ -36,7 +36,9 @@ export function CollapsibleSection({
 	const containerCls = [
 		showTopBorder ? "ep:pt-3 ep:border-t ep:border-obs-border" : "",
 		cls ?? "",
-	].filter(Boolean).join(" ");
+	]
+		.filter(Boolean)
+		.join(" ");
 
 	return (
 		<div class={containerCls || undefined}>
@@ -46,6 +48,12 @@ export function CollapsibleSection({
 				tabIndex={0}
 				aria-expanded={expanded}
 				onClick={toggle}
+				onKeyDown={(e) => {
+					if (e.key === "Enter" || e.key === " ") {
+						e.preventDefault();
+						toggle();
+					}
+				}}
 			>
 				<span class="ep:w-4 ep:h-4 ep:transition-transform" ref={chevronRef} />
 				{leadingIconRef && <span class="ep:w-4 ep:h-4" ref={leadingIconRef} />}

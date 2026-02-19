@@ -52,7 +52,7 @@ export class CollectService {
 		// Captures: [1] text before tag, [2] the matched tag
 		// reverseTag must come first in alternation since it's a longer prefix match
 		this.tagPattern = new RegExp(
-			`^(.*)\\s*(${FLASHCARD_CONFIG.reverseTag}|${FLASHCARD_CONFIG.tag})\\s*$`
+			`^(.*)\\s*(${FLASHCARD_CONFIG.reverseTag}|${FLASHCARD_CONFIG.tag})\\s*$`,
 		);
 		// Matches legacy ID lines (old format)
 		this.legacyIdPattern = /^ID:\s*\d+/;
@@ -98,7 +98,11 @@ export class CollectService {
 				if (this.legacyIdPattern.test(line)) {
 					// Skip legacy ID lines from answer, but keep in file content
 					tagsStrippedLines.push(line);
-				} else if (trimmedLine === "" && !inAnswerCodeBlock && currentAnswerLines.length === 0) {
+				} else if (
+					trimmedLine === "" &&
+					!inAnswerCodeBlock &&
+					currentAnswerLines.length === 0
+				) {
 					// Skip leading empty lines between question and answer
 					tagsStrippedLines.push(line);
 					// Don't add to noFlashcardsLines - this is part of the flashcard block
@@ -108,7 +112,12 @@ export class CollectService {
 				) {
 					// Empty line (when NOT in code block) or new flashcard - end current flashcard
 					if (currentQuestion) {
-						this.saveFlashcard(flashcards, currentQuestion, currentAnswerLines, currentIsReverse);
+						this.saveFlashcard(
+							flashcards,
+							currentQuestion,
+							currentAnswerLines,
+							currentIsReverse,
+						);
 					}
 					inFlashcard = false;
 					inAnswerCodeBlock = false;
@@ -189,7 +198,12 @@ export class CollectService {
 
 		// Handle edge case: file ends with flashcard
 		if (inFlashcard && currentQuestion) {
-			this.saveFlashcard(flashcards, currentQuestion, currentAnswerLines, currentIsReverse);
+			this.saveFlashcard(
+				flashcards,
+				currentQuestion,
+				currentAnswerLines,
+				currentIsReverse,
+			);
 		}
 
 		// Flush any remaining accumulated lines as regular text
@@ -214,7 +228,7 @@ export class CollectService {
 		flashcards: FlashcardItem[],
 		question: string,
 		answerLines: string[],
-		isReverse = false
+		isReverse = false,
 	): void {
 		if (!question) return;
 		const answer = answerLines.join("\n").trim();
@@ -224,7 +238,9 @@ export class CollectService {
 			const clozeCards = parseClozeTemplate(question);
 			for (const cloze of clozeCards) {
 				// If user provided answer text, append it to each cloze card's answer
-				const fullAnswer = answer ? `${cloze.answer}\n\n${answer}` : cloze.answer;
+				const fullAnswer = answer
+					? `${cloze.answer}\n\n${answer}`
+					: cloze.answer;
 				flashcards.push({
 					question: cloze.question,
 					answer: fullAnswer,

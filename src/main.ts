@@ -1,85 +1,90 @@
-import { Plugin, TFile } from "obsidian";
+import { normalizePath, Plugin, TFile } from "obsidian";
 import {
+	VIEW_TYPE_CARD_BROWSER,
 	VIEW_TYPE_FLASHCARD_PANEL,
+	VIEW_TYPE_NOTE_HUB,
+	VIEW_TYPE_ORPHANED_CARDS,
 	VIEW_TYPE_REVIEW,
-	VIEW_TYPE_STATS,
 	VIEW_TYPE_SESSION,
 	VIEW_TYPE_SIMULATOR,
-	VIEW_TYPE_ORPHANED_CARDS,
-	VIEW_TYPE_NOTE_HUB,
-	VIEW_TYPE_CARD_BROWSER,
+	VIEW_TYPE_STATS,
 } from "./constants";
-import { normalizePath } from "obsidian";
+import { registerCommands } from "./plugin/PluginCommands";
 import {
-	FlashcardManager,
-	FSRSService,
-	StatsService,
-	SessionPersistenceService,
-	SqliteStoreService,
-	DayBoundaryService,
+	registerDeletionHandler,
+	registerEventHandlers,
+} from "./plugin/PluginEventHandlers";
+import {
+	activateReviewView,
+	activateView,
+	closeAllViews,
+	getView,
+} from "./plugin/ViewActivator";
+import {
 	BackupService,
-	DeviceIdService,
+	DayBoundaryService,
+	DeletionHandlerService,
 	DeviceDiscoveryService,
+	DeviceIdService,
+	FlashcardManager,
 	// Cloud sync - coming soon
 	// AuthService,
 	// SyncService,
 	FrontmatterIndexService,
-	DeletionHandlerService,
-	OrphanedCardsService,
+	FSRSService,
 	notify,
+	OrphanedCardsService,
+	SessionPersistenceService,
+	SqliteStoreService,
+	StatsService,
 	UndoService,
 } from "./services";
+import { SqlJsAdapter } from "./services/ai/langchain-sqlite.adapter";
+import { NLQueryService } from "./services/ai/nl-query.service";
 import { NoteStatusCacheService } from "./services/cache/note-status-cache.service";
-import {
-	createLinkStatusViewPlugin,
-	createLinkStatusPostProcessor,
-} from "./ui/editor";
-import { BackgroundBackupManager } from "./services/persistence/background-backup.service";
-import { FSRSHelperService } from "./services/fsrs-helper";
 import { PresetService } from "./services/core/preset.service";
+import { settingsVersion } from "./services/core/signals";
+import { FSRSHelperService } from "./services/fsrs-helper";
+import { BackgroundBackupManager } from "./services/persistence/background-backup.service";
 import {
 	DB_FOLDER,
 	getDeviceDbFilename,
 } from "./services/persistence/sqlite/sqlite.types";
-import { NLQueryService } from "./services/ai/nl-query.service";
-import { settingsVersion } from "./services/core/signals";
-import { SqlJsAdapter } from "./services/ai/langchain-sqlite.adapter";
+import { type AppStore, createAppStore } from "./state/store";
 import type { FSRSCardData } from "./types";
 import { extractFSRSSettings } from "./types";
-import { FlashcardPanelView } from "./ui/flashcard-panel/FlashcardPanelView";
-import { ReviewView } from "./ui/review/ReviewView";
-import { StatsView } from "./ui/stats/StatsView";
-import { SessionView } from "./ui/session";
-import { SimulatorView } from "./ui/simulator";
-import { OrphanedCardsView } from "./ui/orphaned-cards";
-import { NoteHubView } from "./ui/note-hub";
 import { CardBrowserView } from "./ui/card-browser";
 import {
-	TrueRecallSettingTab,
-	type TrueRecallSettings,
-	DEFAULT_SETTINGS,
-} from "./ui/settings";
+	createLinkStatusPostProcessor,
+	createLinkStatusViewPlugin,
+} from "./ui/editor";
+import { FlashcardPanelView } from "./ui/flashcard-panel/FlashcardPanelView";
 import {
 	AddToProjectModal,
-	RestoreBackupModal,
-	DeviceSelectionModal,
-	OrphanedCardsActionModal,
-	AnkiImportModal,
 	AnkiExportModal,
+	AnkiImportModal,
 	CsvExportModal,
-	SetPresetModal,
+	DeviceSelectionModal,
 	type DeviceSelectionResult,
+	OrphanedCardsActionModal,
+	RestoreBackupModal,
+	SetPresetModal,
 } from "./ui/modals";
-import { CustomStudyModal, type CustomStudyModalScope } from "./ui/modals/CustomStudyModal";
-import { registerCommands } from "./plugin/PluginCommands";
-import { registerEventHandlers, registerDeletionHandler } from "./plugin/PluginEventHandlers";
-import { createAppStore, type AppStore } from "./state/store";
 import {
-	activateView,
-	activateReviewView,
-	getView,
-	closeAllViews,
-} from "./plugin/ViewActivator";
+	CustomStudyModal,
+	type CustomStudyModalScope,
+} from "./ui/modals/CustomStudyModal";
+import { NoteHubView } from "./ui/note-hub";
+import { OrphanedCardsView } from "./ui/orphaned-cards";
+import { ReviewView } from "./ui/review/ReviewView";
+import { SessionView } from "./ui/session";
+import {
+	DEFAULT_SETTINGS,
+	type TrueRecallSettings,
+	TrueRecallSettingTab,
+} from "./ui/settings";
+import { SimulatorView } from "./ui/simulator";
+import { StatsView } from "./ui/stats/StatsView";
 
 export default class TrueRecallPlugin extends Plugin {
 	settings!: TrueRecallSettings;
@@ -110,9 +115,13 @@ export default class TrueRecallPlugin extends Plugin {
 	 * Assert that the card store is initialized and ready.
 	 * Throws an error if called before initialization completes.
 	 */
-	private assertStoreReady(): asserts this is this & { cardStore: SqliteStoreService } {
+	private assertStoreReady(): asserts this is this & {
+		cardStore: SqliteStoreService;
+	} {
 		if (!this.cardStore) {
-			throw new Error("Card store not initialized. Please wait for plugin to fully load.");
+			throw new Error(
+				"Card store not initialized. Please wait for plugin to fully load.",
+			);
 		}
 	}
 
@@ -127,9 +136,21 @@ export default class TrueRecallPlugin extends Plugin {
 		await this.loadSettings();
 
 		this.frontmatterIndex = new FrontmatterIndexService(this.app);
-		this.frontmatterIndex.register({ field: "flashcard_uid", type: "string", unique: true });
-		this.frontmatterIndex.register({ field: "projects", type: "array", unique: false });
-		this.frontmatterIndex.register({ field: "fsrs_preset", type: "string", unique: false });
+		this.frontmatterIndex.register({
+			field: "flashcard_uid",
+			type: "string",
+			unique: true,
+		});
+		this.frontmatterIndex.register({
+			field: "projects",
+			type: "array",
+			unique: false,
+		});
+		this.frontmatterIndex.register({
+			field: "fsrs_preset",
+			type: "string",
+			unique: false,
+		});
 		this.frontmatterIndex.registerEvents(this);
 
 		// Build index after metadataCache is fully loaded
@@ -137,12 +158,16 @@ export default class TrueRecallPlugin extends Plugin {
 			this.frontmatterIndex.rebuildIndex();
 		});
 
-		this.flashcardManager = new FlashcardManager(this.app, this.settings, this.frontmatterIndex);
+		this.flashcardManager = new FlashcardManager(
+			this.app,
+			this.settings,
+			this.frontmatterIndex,
+		);
 
 		this.presetService = new PresetService(
 			() => this.settings,
 			() => this.saveSettings(),
-			this.frontmatterIndex
+			this.frontmatterIndex,
 		);
 
 		const fsrsSettings = extractFSRSSettings(this.settings);
@@ -152,53 +177,49 @@ export default class TrueRecallPlugin extends Plugin {
 			this.fsrsService,
 		);
 
-
 		this.dayBoundaryService = new DayBoundaryService(
-			this.settings.dayStartHour
+			this.settings.dayStartHour,
 		);
 
 		try {
 			await this.initializeDeviceAndStore();
 		} catch (error) {
-			console.error("[True Recall] Critical: Device/store initialization failed:", error);
+			console.error(
+				"[True Recall] Critical: Device/store initialization failed:",
+				error,
+			);
 			notify().error("Failed to initialize database. Please restart Obsidian.");
 		}
 
 		this.registerView(
 			VIEW_TYPE_FLASHCARD_PANEL,
-			(leaf) => new FlashcardPanelView(leaf, this)
+			(leaf) => new FlashcardPanelView(leaf, this),
 		);
 
-		this.registerView(
-			VIEW_TYPE_REVIEW,
-			(leaf) => new ReviewView(leaf, this)
-		);
+		this.registerView(VIEW_TYPE_REVIEW, (leaf) => new ReviewView(leaf, this));
 
 		this.registerView(VIEW_TYPE_STATS, (leaf) => new StatsView(leaf, this));
 
-		this.registerView(
-			VIEW_TYPE_SESSION,
-			(leaf) => new SessionView(leaf, this)
-		);
+		this.registerView(VIEW_TYPE_SESSION, (leaf) => new SessionView(leaf, this));
 
 		this.registerView(
 			VIEW_TYPE_SIMULATOR,
-			(leaf) => new SimulatorView(leaf, this)
+			(leaf) => new SimulatorView(leaf, this),
 		);
 
 		this.registerView(
 			VIEW_TYPE_ORPHANED_CARDS,
-			(leaf) => new OrphanedCardsView(leaf, this)
+			(leaf) => new OrphanedCardsView(leaf, this),
 		);
 
 		this.registerView(
 			VIEW_TYPE_NOTE_HUB,
-			(leaf) => new NoteHubView(leaf, this)
+			(leaf) => new NoteHubView(leaf, this),
 		);
 
 		this.registerView(
 			VIEW_TYPE_CARD_BROWSER,
-			(leaf) => new CardBrowserView(leaf, this)
+			(leaf) => new CardBrowserView(leaf, this),
 		);
 
 		// eslint-disable-next-line obsidianmd/ui/sentence-case -- True Recall is a proper noun
@@ -229,7 +250,6 @@ export default class TrueRecallPlugin extends Plugin {
 		this.undoService = new UndoService(this);
 		// Cloud sync - coming soon
 		// this.authService = new AuthService();
-
 	}
 
 	// Cloud sync - coming soon
@@ -241,7 +261,6 @@ export default class TrueRecallPlugin extends Plugin {
 	// 		);
 	// 	}
 	// }
-
 
 	private initializeDeletionHandler(): void {
 		if (!this.cardStore || !this.frontmatterIndex) return;
@@ -261,7 +280,7 @@ export default class TrueRecallPlugin extends Plugin {
 				const result = await modal.openAndWait();
 
 				if (result.cancelled || result.action === "leave_orphaned") {
-					return; 
+					return;
 				}
 
 				if (result.action === "delete") {
@@ -274,7 +293,7 @@ export default class TrueRecallPlugin extends Plugin {
 					await this.createNoteForOrphanedCards(
 						context.cards,
 						result.newNotePath,
-						context.deletedNoteName
+						context.deletedNoteName,
 					);
 				}
 			},
@@ -285,7 +304,7 @@ export default class TrueRecallPlugin extends Plugin {
 
 	private async moveCardsToNote(
 		cards: FSRSCardData[],
-		targetNotePath: string
+		targetNotePath: string,
 	): Promise<void> {
 		const targetFile = this.app.vault.getAbstractFileByPath(targetNotePath);
 		if (!(targetFile instanceof TFile)) {
@@ -310,19 +329,21 @@ export default class TrueRecallPlugin extends Plugin {
 	private async createNoteForOrphanedCards(
 		cards: FSRSCardData[],
 		newNotePath: string,
-		originalNoteName: string
+		originalNoteName: string,
 	): Promise<void> {
 		const frontmatterService = this.flashcardManager.getFrontmatterService();
 		const newUid = frontmatterService.generateUid();
 
 		const cardList = cards
 			.slice(0, 10)
-			.map((c) => `- ${(c.question ?? "").slice(0, 80)}${(c.question ?? "").length > 80 ? "..." : ""}`)
+			.map(
+				(c) =>
+					`- ${(c.question ?? "").slice(0, 80)}${(c.question ?? "").length > 80 ? "..." : ""}`,
+			)
 			.join("\n");
 
-		const moreText = cards.length > 10
-			? `\n- ... and ${cards.length - 10} more cards`
-			: "";
+		const moreText =
+			cards.length > 10 ? `\n- ... and ${cards.length - 10} more cards` : "";
 
 		const content = `---
 flashcard_uid: ${newUid}
@@ -344,7 +365,9 @@ ${cardList}${moreText}
 			this.cardStore.cards.updateCardSourceUid(card.id, newUid);
 		}
 
-		notify().success(`Created note with ${cards.length} recovered flashcard${cards.length === 1 ? "" : "s"}`);
+		notify().success(
+			`Created note with ${cards.length} recovered flashcard${cards.length === 1 ? "" : "s"}`,
+		);
 	}
 
 	onunload(): void {
@@ -355,16 +378,12 @@ ${cardList}${moreText}
 		if (this.cardStore) {
 			void this.cardStore.saveNow();
 		}
-
 	}
 
 	async loadSettings(): Promise<void> {
-		const rawData = (await this.loadData()) as Partial<TrueRecallSettings> | null;
-		this.settings = Object.assign(
-			{},
-			DEFAULT_SETTINGS,
-			rawData
-		);
+		const rawData =
+			(await this.loadData()) as Partial<TrueRecallSettings> | null;
+		this.settings = Object.assign({}, DEFAULT_SETTINGS, rawData);
 
 		if (Array.isArray(this.settings.easyDays)) {
 			this.settings.easyDays = {
@@ -375,21 +394,24 @@ ${cardList}${moreText}
 
 		// Migrate global FSRS settings → Default preset for existing users
 		if (!rawData?.fsrsPresets) {
-			this.settings.fsrsPresets = [{
-				id: "default",
-				name: "Default",
-				requestRetention: this.settings.fsrsRequestRetention,
-				maximumInterval: this.settings.fsrsMaximumInterval,
-				weights: this.settings.fsrsWeights,
-				learningSteps: this.settings.learningSteps,
-				relearningSteps: this.settings.relearningSteps,
-				newCardsPerDay: this.settings.newCardsPerDay,
-				reviewsPerDay: this.settings.reviewsPerDay,
-				createdAt: Date.now(),
-				lastOptimization: this.settings.lastOptimization,
-				lastOptimizationReviewCount: this.settings.lastOptimizationReviewCount,
-				lastOptimizationMetrics: this.settings.lastOptimizationMetrics,
-			}];
+			this.settings.fsrsPresets = [
+				{
+					id: "default",
+					name: "Default",
+					requestRetention: this.settings.fsrsRequestRetention,
+					maximumInterval: this.settings.fsrsMaximumInterval,
+					weights: this.settings.fsrsWeights,
+					learningSteps: this.settings.learningSteps,
+					relearningSteps: this.settings.relearningSteps,
+					newCardsPerDay: this.settings.newCardsPerDay,
+					reviewsPerDay: this.settings.reviewsPerDay,
+					createdAt: Date.now(),
+					lastOptimization: this.settings.lastOptimization,
+					lastOptimizationReviewCount:
+						this.settings.lastOptimizationReviewCount,
+					lastOptimizationMetrics: this.settings.lastOptimizationMetrics,
+				},
+			];
 			this.settings.defaultPresetId = "default";
 			await this.saveData(this.settings);
 		}
@@ -406,9 +428,7 @@ ${cardList}${moreText}
 			this.fsrsService.updateSettings(fsrsSettings);
 		}
 		if (this.dayBoundaryService) {
-			this.dayBoundaryService.updateDayStartHour(
-				this.settings.dayStartHour
-			);
+			this.dayBoundaryService.updateDayStartHour(this.settings.dayStartHour);
 		}
 		if (this.fsrsHelper) {
 			this.fsrsHelper.updateSettings(this.settings);
@@ -432,7 +452,9 @@ ${cardList}${moreText}
 	async activateSessionView(
 		currentNoteName: string | null,
 		allCards: import("./types").FSRSFlashcardItem[],
-		onSessionSelected: (result: import("./types/events.types").SessionResult) => void
+		onSessionSelected: (
+			result: import("./types/events.types").SessionResult,
+		) => void,
 	): Promise<void> {
 		const leaf = await activateView(this.app, VIEW_TYPE_SESSION);
 
@@ -473,7 +495,6 @@ ${cardList}${moreText}
 		await this.openNewReviewSession();
 	}
 
-
 	async startNewReviewSession(): Promise<void> {
 		closeAllViews(this.app, VIEW_TYPE_REVIEW);
 
@@ -483,7 +504,9 @@ ${cardList}${moreText}
 
 	private async openNewReviewSession(): Promise<void> {
 		if (!this.isStoreReady()) {
-			notify().error("Database not ready. Please wait for plugin to fully load.");
+			notify().error(
+				"Database not ready. Please wait for plugin to fully load.",
+			);
 			return;
 		}
 		const allCards = this.flashcardManager.getAllFSRSCards();
@@ -504,7 +527,7 @@ ${cardList}${moreText}
 	}
 
 	private async handleSessionResult(
-		result: import("./types/events.types").SessionResult
+		result: import("./types/events.types").SessionResult,
 	): Promise<void> {
 		if (result.cancelled) return;
 
@@ -540,7 +563,7 @@ ${cardList}${moreText}
 			this.app,
 			VIEW_TYPE_REVIEW,
 			this.settings.reviewMode,
-			{ deckFilter }
+			{ deckFilter },
 		);
 	}
 
@@ -560,10 +583,16 @@ ${cardList}${moreText}
 	}
 
 	async openCustomStudyModal(scope?: CustomStudyModalScope): Promise<void> {
-		const modal = new CustomStudyModal(this.app, {
-			title: scope?.scopeLabel ? `Custom study — ${scope.scopeLabel}` : "Custom study",
-			width: "480px",
-		}, scope);
+		const modal = new CustomStudyModal(
+			this.app,
+			{
+				title: scope?.scopeLabel
+					? `Custom study — ${scope.scopeLabel}`
+					: "Custom study",
+				width: "480px",
+			},
+			scope,
+		);
 		const result = await modal.openAndWait();
 		if (result.cancelled || !result.sessionResult) return;
 
@@ -584,10 +613,7 @@ ${cardList}${moreText}
 				crammingMode: result.sessionResult.crammingMode,
 				projectFilters: result.sessionResult.projectFilters,
 			};
-			this.settings.sessionPresets = [
-				...this.settings.sessionPresets,
-				preset,
-			];
+			this.settings.sessionPresets = [...this.settings.sessionPresets, preset];
 			await this.saveSettings();
 			notify().success(`Preset "${result.presetName}" saved`);
 		}
@@ -597,7 +623,9 @@ ${cardList}${moreText}
 
 	async reviewCurrentNote(): Promise<void> {
 		if (!this.isStoreReady()) {
-			notify().error("Database not ready. Please wait for plugin to fully load.");
+			notify().error(
+				"Database not ready. Please wait for plugin to fully load.",
+			);
 			return;
 		}
 		const file = this.app.workspace.getActiveFile();
@@ -611,7 +639,7 @@ ${cardList}${moreText}
 	async reviewNoteFlashcards(file: TFile): Promise<void> {
 		const allCards = this.flashcardManager.getAllFSRSCards();
 		const noteCards = allCards.filter(
-			(c) => c.sourceNoteName === file.basename
+			(c) => c.sourceNoteName === file.basename,
 		);
 
 		if (noteCards.length === 0) {
@@ -625,7 +653,7 @@ ${cardList}${moreText}
 
 		if (availableCards.length === 0) {
 			notify().info(
-				`No cards due for "${file.basename}". All ${noteCards.length} cards are scheduled for later.`
+				`No cards due for "${file.basename}". All ${noteCards.length} cards are scheduled for later.`,
 			);
 			return;
 		}
@@ -639,7 +667,9 @@ ${cardList}${moreText}
 
 	async reviewTodaysCards(): Promise<void> {
 		if (!this.isStoreReady()) {
-			notify().error("Database not ready. Please wait for plugin to fully load.");
+			notify().error(
+				"Database not ready. Please wait for plugin to fully load.",
+			);
 			return;
 		}
 		const allCards = this.flashcardManager.getAllFSRSCards();
@@ -714,7 +744,7 @@ ${cardList}${moreText}
 			this.app,
 			VIEW_TYPE_REVIEW,
 			this.settings.reviewMode,
-			state
+			state,
 		);
 	}
 
@@ -725,10 +755,10 @@ ${cardList}${moreText}
 		} catch (error) {
 			console.error(
 				"[True Recall] Failed to initialize device context:",
-				error
+				error,
 			);
 			notify().error(
-				"Failed to initialize device context. Using default configuration."
+				"Failed to initialize device context. Using default configuration.",
 			);
 			this.deviceIdService = new DeviceIdService();
 			await this.initializeCardStore(this.deviceIdService.getDeviceId());
@@ -740,11 +770,9 @@ ${cardList}${moreText}
 		const deviceId = this.deviceIdService.getDeviceId();
 		this.deviceDiscovery = new DeviceDiscoveryService(this.app, deviceId);
 		const deviceDbPath = normalizePath(
-			`${DB_FOLDER}/${getDeviceDbFilename(deviceId)}`
+			`${DB_FOLDER}/${getDeviceDbFilename(deviceId)}`,
 		);
-		const deviceDbExists = await this.app.vault.adapter.exists(
-			deviceDbPath
-		);
+		const deviceDbExists = await this.app.vault.adapter.exists(deviceDbPath);
 
 		if (deviceDbExists) {
 			return deviceId;
@@ -756,14 +784,10 @@ ${cardList}${moreText}
 		if (hasLegacy && databases.length === 0) {
 			await this.migrateLegacyDatabase(deviceId);
 		} else if (databases.length > 0) {
-			const result = await this.showDeviceSelectionModal(
-				databases,
-				hasLegacy
-			);
+			const result = await this.showDeviceSelectionModal(databases, hasLegacy);
 			if (!result.cancelled) {
 				await this.handleDeviceSelection(result, deviceId);
 			}
-			
 		}
 
 		return deviceId;
@@ -772,7 +796,7 @@ ${cardList}${moreText}
 	private async migrateLegacyDatabase(deviceId: string): Promise<void> {
 		const legacyPath = normalizePath(`${DB_FOLDER}/true-recall.db`);
 		const newPath = normalizePath(
-			`${DB_FOLDER}/${getDeviceDbFilename(deviceId)}`
+			`${DB_FOLDER}/${getDeviceDbFilename(deviceId)}`,
 		);
 		const backupPath = normalizePath(`${DB_FOLDER}/true-recall.db.migrated`);
 
@@ -791,7 +815,7 @@ ${cardList}${moreText}
 
 	private async showDeviceSelectionModal(
 		databases: import("./services").DeviceDatabaseInfo[],
-		hasLegacy: boolean
+		hasLegacy: boolean,
 	): Promise<DeviceSelectionResult> {
 		const modal = new DeviceSelectionModal(this.app, {
 			databases,
@@ -802,25 +826,20 @@ ${cardList}${moreText}
 
 	private async handleDeviceSelection(
 		result: DeviceSelectionResult,
-		deviceId: string
+		deviceId: string,
 	): Promise<void> {
 		if (result.action === "import" && result.sourcePath) {
 			const targetPath = normalizePath(
-				`${DB_FOLDER}/${getDeviceDbFilename(deviceId)}`
+				`${DB_FOLDER}/${getDeviceDbFilename(deviceId)}`,
 			);
 
 			try {
 				const sourceData = await this.app.vault.adapter.readBinary(
-					result.sourcePath
+					result.sourcePath,
 				);
-				await this.app.vault.adapter.writeBinary(
-					targetPath,
-					sourceData
-				);
+				await this.app.vault.adapter.writeBinary(targetPath, sourceData);
 
-				notify().success(
-					`Imported data from device ${result.sourceDeviceId}`
-				);
+				notify().success(`Imported data from device ${result.sourceDeviceId}`);
 			} catch (error) {
 				console.error("[True Recall] Database import failed:", error);
 				notify().error("Failed to import database.");
@@ -838,7 +857,7 @@ ${cardList}${moreText}
 			this.sessionPersistence = new SessionPersistenceService(
 				this.app,
 				this.cardStore,
-				this.dayBoundaryService
+				this.dayBoundaryService,
 			);
 
 			await this.sessionPersistence.migrateStatsJsonToSql();
@@ -846,10 +865,13 @@ ${cardList}${moreText}
 			this.backgroundBackupManager = new BackgroundBackupManager(
 				this.app,
 				this.backupService,
-				this.settings
+				this.settings,
 			);
 
-			if (this.settings.periodicBackupEnabled || this.settings.activityTriggeredBackup) {
+			if (
+				this.settings.periodicBackupEnabled ||
+				this.settings.activityTriggeredBackup
+			) {
 				this.backgroundBackupManager.start();
 			}
 
@@ -859,19 +881,14 @@ ${cardList}${moreText}
 
 			await this.initializeNLQueryService();
 			// Cloud sync - coming soon
-		// this.initializeSyncService();
+			// this.initializeSyncService();
 			this.fsrsHelper = new FSRSHelperService(this.cardStore, this.settings);
 			this.initializeDeletionHandler();
 			this.initializeStore();
 			this.initializeLinkStatusIndicators();
 		} catch (error) {
-			console.error(
-				"[True Recall] Failed to initialize SQLite store:",
-				error
-			);
-			notify().error(
-				"Failed to load flashcard data. Please restart Obsidian."
-			);
+			console.error("[True Recall] Failed to initialize SQLite store:", error);
+			notify().error("Failed to load flashcard data. Please restart Obsidian.");
 		}
 	}
 
@@ -892,8 +909,8 @@ ${cardList}${moreText}
 
 		// Build cache after frontmatter index is ready
 		this.app.workspace.onLayoutReady(() => {
-			this.noteStatusCache!.buildFromStore();
-			this.noteStatusCache!.registerEvents();
+			this.noteStatusCache?.buildFromStore();
+			this.noteStatusCache?.registerEvents();
 		});
 
 		const onReviewNote = (file: TFile) => {
@@ -951,7 +968,7 @@ ${cardList}${moreText}
 					apiKey: this.settings.openRouterApiKey,
 					model: this.settings.aiModel,
 				},
-				sqlAdapter
+				sqlAdapter,
 			);
 
 			await this.nlQueryService.initialize();
@@ -967,8 +984,7 @@ ${cardList}${moreText}
 			return;
 		}
 
-		const frontmatterService =
-			this.flashcardManager.getFrontmatterService();
+		const frontmatterService = this.flashcardManager.getFrontmatterService();
 
 		const content = await this.app.vault.read(file);
 		const currentProjects =
@@ -987,10 +1003,7 @@ ${cardList}${moreText}
 		const result = await modal.openAndWait();
 		if (result.cancelled) return;
 
-		await frontmatterService.setProjectsInFrontmatter(
-			file,
-			result.projects
-		);
+		await frontmatterService.setProjectsInFrontmatter(file, result.projects);
 
 		if (result.projects.length > 0) {
 			notify().success(`Projects updated: ${result.projects.join(", ")}`);
@@ -1006,9 +1019,12 @@ ${cardList}${moreText}
 			return;
 		}
 
-		const presetNames = this.settings.fsrsPresets.map(p => p.name);
-		const currentValues = this.frontmatterIndex.getValues("fsrs_preset", file.path);
-		const currentPreset = currentValues.length > 0 ? currentValues[0]! : null;
+		const presetNames = this.settings.fsrsPresets.map((p) => p.name);
+		const currentValues = this.frontmatterIndex.getValues(
+			"fsrs_preset",
+			file.path,
+		);
+		const currentPreset = currentValues.length > 0 ? (currentValues[0] ?? null) : null;
 
 		const modal = new SetPresetModal(this.app, presetNames, currentPreset);
 		const result = await modal.openAndWait();
@@ -1026,13 +1042,12 @@ ${cardList}${moreText}
 
 	async createProjectFromNote(file: TFile): Promise<void> {
 		const projectName = file.basename;
-		const frontmatterService =
-			this.flashcardManager.getFrontmatterService();
+		const frontmatterService = this.flashcardManager.getFrontmatterService();
 
 		if (this.frontmatterIndex) {
 			const existingProjects = this.frontmatterIndex.getAllValues("projects");
 			const projectExists = Array.from(existingProjects).some(
-				(p) => p.toLowerCase() === projectName.toLowerCase()
+				(p) => p.toLowerCase() === projectName.toLowerCase(),
 			);
 			if (projectExists) {
 				notify().warning(`Project "${projectName}" already exists`);
@@ -1077,9 +1092,7 @@ ${cardList}${moreText}
 			notify().success(`Backup created: ${filename}`);
 
 			if (this.settings.maxBackups > 0) {
-				await this.backupService.pruneBackups(
-					this.settings.maxBackups
-				);
+				await this.backupService.pruneBackups(this.settings.maxBackups);
 			}
 		} catch (error) {
 			console.error("[True Recall] Manual backup failed:", error);
@@ -1130,31 +1143,50 @@ ${cardList}${moreText}
 
 	async importAnki(): Promise<void> {
 		if (!this.isStoreReady()) {
-			notify().error("Database not ready. Please wait for plugin to fully load.");
+			notify().error(
+				"Database not ready. Please wait for plugin to fully load.",
+			);
 			return;
 		}
 
-		const modal = new AnkiImportModal(this.app, this.cardStore, this.fsrsService);
+		const modal = new AnkiImportModal(
+			this.app,
+			this.cardStore,
+			this.fsrsService,
+		);
 		modal.open();
 	}
 
 	async exportAnki(): Promise<void> {
 		if (!this.isStoreReady()) {
-			notify().error("Database not ready. Please wait for plugin to fully load.");
+			notify().error(
+				"Database not ready. Please wait for plugin to fully load.",
+			);
 			return;
 		}
 
-		const modal = new AnkiExportModal(this.app, this.cardStore, this.fsrsService, this.frontmatterIndex);
+		const modal = new AnkiExportModal(
+			this.app,
+			this.cardStore,
+			this.fsrsService,
+			this.frontmatterIndex,
+		);
 		modal.open();
 	}
 
 	async exportCsv(): Promise<void> {
 		if (!this.isStoreReady()) {
-			notify().error("Database not ready. Please wait for plugin to fully load.");
+			notify().error(
+				"Database not ready. Please wait for plugin to fully load.",
+			);
 			return;
 		}
 
-		const modal = new CsvExportModal(this.app, this.cardStore, this.frontmatterIndex);
+		const modal = new CsvExportModal(
+			this.app,
+			this.cardStore,
+			this.frontmatterIndex,
+		);
 		modal.open();
 	}
 
@@ -1165,8 +1197,7 @@ ${cardList}${moreText}
 			return;
 		}
 
-		const frontmatterService =
-			this.flashcardManager.getFrontmatterService();
+		const frontmatterService = this.flashcardManager.getFrontmatterService();
 
 		const existingUid = await frontmatterService.getSourceNoteUid(file);
 		if (existingUid) {
@@ -1179,7 +1210,6 @@ ${cardList}${moreText}
 
 		notify().success(`Added flashcard UID: ${newUid}`);
 	}
-
 
 	// Cloud sync - coming soon
 	// async forceReplaceCloud(): Promise<void> {

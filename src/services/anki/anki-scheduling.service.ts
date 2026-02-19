@@ -1,6 +1,5 @@
 import { State } from "ts-fsrs";
-import type { FSRSCardData, Grade } from "types";
-import type { AnkiCard, AnkiRevlogEntry } from "types";
+import type { AnkiCard, AnkiRevlogEntry, FSRSCardData, Grade } from "types";
 import type { FSRSService } from "../core/fsrs.service";
 
 const VALID_EASE_MIN = 1;

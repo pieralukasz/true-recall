@@ -8,12 +8,12 @@
  * 3. Shows a modal asking what to do with them
  */
 import type { App, TFile } from "obsidian";
+import type { FSRSCardData } from "../../types";
 import type { FrontmatterIndexService } from "../core/frontmatter-index.service";
 import type { SqliteStoreService } from "../persistence/sqlite/SqliteStoreService";
-import type { FSRSCardData } from "../../types";
 import {
-	OrphanedCardsService,
 	type OrphanedCardInfo,
+	OrphanedCardsService,
 } from "./orphaned-cards.service";
 
 export interface DeletionHandlerDeps {
@@ -53,7 +53,10 @@ export class DeletionHandlerService {
 		if (file.extension !== "md") return;
 
 		// Get the flashcard_uid from the index (still available at this point)
-		const uid = this.deps.frontmatterIndex.getValues("flashcard_uid", file.path)[0];
+		const uid = this.deps.frontmatterIndex.getValues(
+			"flashcard_uid",
+			file.path,
+		)[0];
 		if (!uid) return;
 
 		// Get cards associated with this source note
@@ -80,7 +83,7 @@ export class DeletionHandlerService {
 	getOrphanedCards(): OrphanedCardInfo[] {
 		return this.orphanedCardsService.getOrphanedCardsExtended(
 			this.deps.store,
-			this.deps.frontmatterIndex
+			this.deps.frontmatterIndex,
 		);
 	}
 
@@ -91,7 +94,7 @@ export class DeletionHandlerService {
 	 * Delegates to OrphanedCardsService for canonical implementation.
 	 */
 	groupOrphansBySourceUid(
-		orphans: OrphanedCardInfo[]
+		orphans: OrphanedCardInfo[],
 	): Map<string, OrphanedCardInfo[]> {
 		const groups = this.orphanedCardsService.groupOrphanedCards(orphans);
 		// Convert OrphanedCardGroup[] to Map for backward compatibility
@@ -112,7 +115,10 @@ export class DeletionHandlerService {
 	/**
 	 * Move orphaned cards to a new source note
 	 */
-	async moveOrphanedCards(cardIds: string[], newSourceUid: string): Promise<void> {
+	async moveOrphanedCards(
+		cardIds: string[],
+		newSourceUid: string,
+	): Promise<void> {
 		for (const cardId of cardIds) {
 			this.deps.store.cards.updateCardSourceUid(cardId, newSourceUid);
 		}

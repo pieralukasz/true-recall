@@ -1,15 +1,19 @@
-import type { App } from "obsidian";
-import JSZip from "jszip";
 import { decompress } from "fzstd";
+import JSZip from "jszip";
+import type { App } from "obsidian";
 import type {
-	ApkgData,
-	AnkiNote,
 	AnkiCard,
-	AnkiRevlogEntry,
-	AnkiModel,
 	AnkiDeck,
+	AnkiModel,
+	AnkiNote,
+	AnkiRevlogEntry,
+	ApkgData,
 } from "types";
-import { loadDatabase, type DatabaseLike, type QueryExecResult } from "../persistence/sqlite/loader";
+import {
+	type DatabaseLike,
+	loadDatabase,
+	type QueryExecResult,
+} from "../persistence/sqlite/loader";
 
 // Legacy format: models/decks stored as JSON in the `col` table
 interface RawAnkiModel {
@@ -109,7 +113,7 @@ export class ApkgParserService {
 
 	private readCards(db: DatabaseLike): AnkiCard[] {
 		const results = db.exec(
-			"SELECT id, nid, did, ord, type, queue, due, ivl, factor, reps, lapses FROM cards"
+			"SELECT id, nid, did, ord, type, queue, due, ivl, factor, reps, lapses FROM cards",
 		);
 		return this.mapRows(results, (row) => ({
 			id: row[0] as number,
@@ -128,7 +132,7 @@ export class ApkgParserService {
 
 	private readRevlog(db: DatabaseLike): AnkiRevlogEntry[] {
 		const results = db.exec(
-			"SELECT id, cid, ease, ivl, lastIvl, factor, time, type FROM revlog"
+			"SELECT id, cid, ease, ivl, lastIvl, factor, time, type FROM revlog",
 		);
 		return this.mapRows(results, (row) => ({
 			id: row[0] as number,
@@ -182,7 +186,7 @@ export class ApkgParserService {
 			// Read fields for this notetype
 			const fieldResults = db.exec(
 				"SELECT ord, name FROM fields WHERE ntid = ? ORDER BY ord",
-				[id]
+				[id],
 			);
 			const flds = (fieldResults[0]?.values ?? []).map((r) => ({
 				ord: r[0] as number,
@@ -192,7 +196,7 @@ export class ApkgParserService {
 			// Read templates for this notetype
 			const tmplResults = db.exec(
 				"SELECT ord, name FROM templates WHERE ntid = ? ORDER BY ord",
-				[id]
+				[id],
 			);
 			const tmpls = (tmplResults[0]?.values ?? []).map((r) => ({
 				ord: r[0] as number,
@@ -222,7 +226,7 @@ export class ApkgParserService {
 	private detectNotetypeKind(config: Uint8Array | null): number {
 		if (!config || config.length < 2) return 0;
 		if (config[0] === 0x08) {
-			return config[1]!;
+			return config[1] ?? 0;
 		}
 		return 0;
 	}
@@ -308,7 +312,7 @@ export class ApkgParserService {
 			extractionPromises.push(
 				mediaEntry.async("arraybuffer").then((data) => {
 					media.set(originalName, data);
-				})
+				}),
 			);
 		}
 
@@ -319,7 +323,7 @@ export class ApkgParserService {
 
 	private mapRows<T>(
 		results: QueryExecResult[],
-		mapper: (row: (string | number | null | Uint8Array)[]) => T
+		mapper: (row: (string | number | null | Uint8Array)[]) => T,
 	): T[] {
 		const result = results[0];
 		if (!result) return [];

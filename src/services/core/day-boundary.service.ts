@@ -70,7 +70,7 @@ export class DayBoundaryService {
 
 	getAvailableCards(
 		cards: FSRSFlashcardItem[],
-		now?: Date
+		now?: Date,
 	): FSRSFlashcardItem[] {
 		return cards.filter((c) => this.isCardAvailable(c, now));
 	}

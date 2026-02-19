@@ -1,13 +1,16 @@
+import type { ProjectInfo, ProjectNoteInfo } from "../../../types";
+import {
+	createSelectionActions,
+	toggleSetItem,
+} from "../helpers/slice-helpers";
 import type {
 	AppState,
 	AppStoreDeps,
-	NoteHubSliceState,
 	NoteHubSliceActions,
-	NoteHubStatusFilter,
+	NoteHubSliceState,
 	NoteHubSortBy,
+	NoteHubStatusFilter,
 } from "../types";
-import type { ProjectInfo, ProjectNoteInfo } from "../../../types";
-import { createSelectionActions, toggleSetItem } from "../helpers/slice-helpers";
 
 type NoteHubSlice = NoteHubSliceState & NoteHubSliceActions;
 
@@ -26,7 +29,10 @@ function createInitialState(): NoteHubSliceState {
 	};
 }
 
-function matchesStatusFilter(note: ProjectNoteInfo, filter: NoteHubStatusFilter): boolean {
+function matchesStatusFilter(
+	note: ProjectNoteInfo,
+	filter: NoteHubStatusFilter,
+): boolean {
 	switch (filter) {
 		case "all":
 			return true;
@@ -37,11 +43,20 @@ function matchesStatusFilter(note: ProjectNoteInfo, filter: NoteHubStatusFilter)
 		case "needs-cards":
 			return note.cardCount === 0;
 		case "no-due":
-			return note.cardCount > 0 && note.dueCount === 0 && note.newCount === 0 && note.learningCount === 0;
+			return (
+				note.cardCount > 0 &&
+				note.dueCount === 0 &&
+				note.newCount === 0 &&
+				note.learningCount === 0
+			);
 	}
 }
 
-function sortNotes(notes: ProjectNoteInfo[], sortBy: NoteHubSortBy, direction: "asc" | "desc"): ProjectNoteInfo[] {
+function sortNotes(
+	notes: ProjectNoteInfo[],
+	sortBy: NoteHubSortBy,
+	direction: "asc" | "desc",
+): ProjectNoteInfo[] {
 	const modifier = direction === "asc" ? 1 : -1;
 	return [...notes].sort((a, b) => {
 		switch (sortBy) {
@@ -58,7 +73,7 @@ function sortNotes(notes: ProjectNoteInfo[], sortBy: NoteHubSortBy, direction: "
 export function createNoteHubSlice(
 	set: (fn: (state: AppState) => Partial<AppState>) => void,
 	get: () => AppState,
-	deps: AppStoreDeps
+	_deps: AppStoreDeps,
 ): NoteHubSlice {
 	const initial = createInitialState();
 
@@ -105,14 +120,25 @@ export function createNoteHubSlice(
 			}));
 		},
 
-		toggleProjectExpanded: toggleSetItem(set, get, "noteHub", "expandedProjectIds"),
+		toggleProjectExpanded: toggleSetItem(
+			set,
+			get,
+			"noteHub",
+			"expandedProjectIds",
+		),
 
 		isProjectExpanded: (projectId: string) => {
 			return get().noteHub.expandedProjectIds.has(projectId);
 		},
 
 		...(() => {
-			const sel = createSelectionActions(set, get, "noteHub", "selectionMode", "selectedNotePaths");
+			const sel = createSelectionActions(
+				set,
+				get,
+				"noteHub",
+				"selectionMode",
+				"selectedNotePaths",
+			);
 			return {
 				enterSelectionMode: sel.enterSelectionMode,
 				exitSelectionMode: sel.exitSelectionMode,
@@ -153,10 +179,11 @@ export function createNoteHubSlice(
 					.map((project) => {
 						const nameMatches = project.name.toLowerCase().includes(query);
 						const filteredNotes = project.notes.filter((n) =>
-							n.name.toLowerCase().includes(query)
+							n.name.toLowerCase().includes(query),
 						);
 						if (nameMatches) return project;
-						if (filteredNotes.length > 0) return { ...project, notes: filteredNotes };
+						if (filteredNotes.length > 0)
+							return { ...project, notes: filteredNotes };
 						return null;
 					})
 					.filter((p): p is ProjectInfo => p !== null);
@@ -166,7 +193,9 @@ export function createNoteHubSlice(
 				projects = projects
 					.map((project) => ({
 						...project,
-						notes: project.notes.filter((n) => matchesStatusFilter(n, state.statusFilter)),
+						notes: project.notes.filter((n) =>
+							matchesStatusFilter(n, state.statusFilter),
+						),
 					}))
 					.filter((p) => p.notes.length > 0);
 			}

@@ -1,6 +1,6 @@
+import type { App, TFile } from "obsidian";
 import { render } from "preact";
-import { useState, useRef, useEffect, useCallback } from "preact/hooks";
-import { App, TFile } from "obsidian";
+import { useCallback, useEffect, useRef, useState } from "preact/hooks";
 import { BasePromiseModal } from "./BasePromiseModal";
 import { filterNotesByQuery, MAX_DISPLAY_NOTES } from "./note-filter.utils";
 
@@ -29,20 +29,25 @@ function noteHasTagPrefix(app: App, file: TFile, tagPrefix: string): boolean {
 
 	for (const tag of normalizedTags) {
 		if (typeof tag !== "string") continue;
-		const normalizedTag = (tag.startsWith("#") ? tag.slice(1) : tag).toLowerCase();
+		const normalizedTag = (
+			tag.startsWith("#") ? tag.slice(1) : tag
+		).toLowerCase();
 		if (normalizedTag.startsWith(prefixLower)) {
 			return true;
 		}
 	}
 
 	const inlineTags = cache.tags ?? [];
-	return inlineTags.some(t => {
+	return inlineTags.some((t) => {
 		const tagWithoutHash = t.tag.slice(1).toLowerCase();
 		return tagWithoutHash.startsWith(prefixLower);
 	});
 }
 
-function extractBacklinks(cardQuestion?: string, cardAnswer?: string): string[] {
+function extractBacklinks(
+	cardQuestion?: string,
+	cardAnswer?: string,
+): string[] {
 	const content = `${cardQuestion ?? ""} ${cardAnswer ?? ""}`;
 	const linkRegex = /\[\[([^\]|]+)(?:\|[^\]]+)?\]\]/g;
 	const links: string[] = [];
@@ -62,8 +67,10 @@ function NoteItem({
 	isSuggested?: boolean;
 	onSelect: (path: string) => void;
 }) {
-	const baseCls = "ep:flex ep:items-center ep:justify-between ep:p-3 ep:border-b ep:border-obs-border ep:cursor-pointer ep:transition-colors ep:hover:bg-obs-modifier-hover ep:last:border-b-0 ep:group";
-	const suggestedCls = "ep:bg-obs-interactive/10 ep:border-l-2 ep:border-l-obs-interactive ep:rounded-lg ep:mb-1";
+	const baseCls =
+		"ep:flex ep:items-center ep:justify-between ep:p-3 ep:border-b ep:border-obs-border ep:cursor-pointer ep:transition-colors ep:hover:bg-obs-modifier-hover ep:last:border-b-0 ep:group";
+	const suggestedCls =
+		"ep:bg-obs-interactive/10 ep:border-l-2 ep:border-l-obs-interactive ep:rounded-lg ep:mb-1";
 
 	const folderPath = note.parent?.path;
 
@@ -73,15 +80,24 @@ function NoteItem({
 			onClick={() => onSelect(note.path)}
 		>
 			<div class="ep:flex ep:items-center ep:gap-2 ep:overflow-hidden ep:flex-1">
-				<span class="ep:shrink-0">{isSuggested ? "\u{1F4A1}" : "\u{1F4C4}"}</span>
-				<span class="ep:font-medium ep:overflow-hidden ep:text-ellipsis ep:whitespace-nowrap">{note.basename}</span>
+				<span class="ep:shrink-0">
+					{isSuggested ? "\u{1F4A1}" : "\u{1F4C4}"}
+				</span>
+				<span class="ep:font-medium ep:overflow-hidden ep:text-ellipsis ep:whitespace-nowrap">
+					{note.basename}
+				</span>
 				{folderPath && folderPath !== "/" && (
-					<span class="ep:text-ui-smaller ep:text-obs-muted ep:ml-2">{folderPath}</span>
+					<span class="ep:text-ui-smaller ep:text-obs-muted ep:ml-2">
+						{folderPath}
+					</span>
 				)}
 			</div>
 			<button
 				class="ep:shrink-0 ep:py-1 ep:px-3 ep:rounded-md ep:bg-obs-interactive ep:text-obs-on-accent ep:border-none ep:text-ui-smaller ep:cursor-pointer ep:opacity-0 ep:group-hover:opacity-100 ep:hover:opacity-100"
-				onClick={(e) => { e.stopPropagation(); onSelect(note.path); }}
+				onClick={(e) => {
+					e.stopPropagation();
+					onSelect(note.path);
+				}}
 			>
 				Select
 			</button>
@@ -109,24 +125,30 @@ function MoveCardBody({
 		setTimeout(() => searchRef.current?.focus(), 50);
 	}, []);
 
-	const handleSelect = useCallback((path: string) => {
-		onResolve({ cancelled: false, targetNotePath: path });
-	}, [onResolve]);
+	const handleSelect = useCallback(
+		(path: string) => {
+			onResolve({ cancelled: false, targetNotePath: path });
+		},
+		[onResolve],
+	);
 
 	// Suggested notes from backlinks
 	const backlinks = extractBacklinks(cardQuestion, cardAnswer);
-	const suggestedNotes = backlinks.length > 0
-		? allNotes.filter(note =>
-			backlinks.some(link => note.basename.toLowerCase() === link.toLowerCase())
-		)
-		: [];
+	const suggestedNotes =
+		backlinks.length > 0
+			? allNotes.filter((note) =>
+					backlinks.some(
+						(link) => note.basename.toLowerCase() === link.toLowerCase(),
+					),
+				)
+			: [];
 
 	// Filtered notes
 	const filteredNotes = (() => {
 		if (searchQuery.startsWith("#")) {
 			const tagPrefix = searchQuery.slice(1).toLowerCase();
 			return [...allNotes]
-				.filter(note => noteHasTagPrefix(app, note, tagPrefix))
+				.filter((note) => noteHasTagPrefix(app, note, tagPrefix))
 				.sort((a, b) => b.stat.mtime - a.stat.mtime);
 		}
 		return filterNotesByQuery(allNotes, searchQuery);
@@ -143,7 +165,8 @@ function MoveCardBody({
 	return (
 		<>
 			<p class="ep:text-obs-muted ep:text-ui-small ep:mb-4">
-				Select a note to move the flashcard(s) to. A flashcard file will be created if it doesn't exist.
+				Select a note to move the flashcard(s) to. A flashcard file will be
+				created if it doesn't exist.
 			</p>
 
 			<div class="ep:mb-3">
@@ -152,30 +175,45 @@ function MoveCardBody({
 					type="text"
 					placeholder="Search notes or #tags..."
 					class="ep:w-full ep:py-2.5 ep:px-3 ep:border ep:border-obs-border ep:rounded-md ep:bg-obs-primary ep:text-obs-normal ep:text-ui-small ep:focus:outline-none ep:focus:border-obs-interactive ep:placeholder:text-obs-muted"
-					onInput={(e) => setSearchQuery((e.target as HTMLInputElement).value.toLowerCase())}
+					onInput={(e) =>
+						setSearchQuery((e.target as HTMLInputElement).value.toLowerCase())
+					}
 				/>
 			</div>
 
 			{suggestedNotes.length > 0 && (
 				<div class="ep:mb-4 ep:pb-3 ep:border-b ep:border-obs-border">
-					<h4 class="ep:text-ui-smaller ep:text-obs-muted ep:m-0 ep:mb-2">Suggested (from backlinks)</h4>
-					{suggestedNotes.map(note => (
-						<NoteItem key={note.path} note={note} isSuggested onSelect={handleSelect} />
+					<h4 class="ep:text-ui-smaller ep:text-obs-muted ep:m-0 ep:mb-2">
+						Suggested (from backlinks)
+					</h4>
+					{suggestedNotes.map((note) => (
+						<NoteItem
+							key={note.path}
+							note={note}
+							isSuggested
+							onSelect={handleSelect}
+						/>
 					))}
 				</div>
 			)}
 
-			<div class="ep:border ep:border-obs-border ep:rounded-md ep:overflow-y-auto" style="max-height: 350px">
+			<div
+				class="ep:border ep:border-obs-border ep:rounded-md ep:overflow-y-auto"
+				style="max-height: 350px"
+			>
 				{filteredNotes.length === 0 ? (
-					<div class="ep:py-6 ep:px-4 ep:text-center ep:text-obs-muted ep:italic">{emptyText}</div>
+					<div class="ep:py-6 ep:px-4 ep:text-center ep:text-obs-muted ep:italic">
+						{emptyText}
+					</div>
 				) : (
 					<>
-						{displayNotes.map(note => (
+						{displayNotes.map((note) => (
 							<NoteItem key={note.path} note={note} onSelect={handleSelect} />
 						))}
 						{filteredNotes.length > MAX_DISPLAY_NOTES && (
 							<div class="ep:p-3 ep:text-center ep:text-obs-muted ep:text-ui-smaller">
-								Showing {MAX_DISPLAY_NOTES} of {filteredNotes.length} notes. Type to search for more.
+								Showing {MAX_DISPLAY_NOTES} of {filteredNotes.length} notes.
+								Type to search for more.
 							</div>
 						)}
 					</>
@@ -232,7 +270,10 @@ export class MoveCardModal extends BasePromiseModal<MoveCardResult> {
 
 	private getValidNotes(): TFile[] {
 		return this.app.vault.getMarkdownFiles().filter((file) => {
-			if (this.options.sourceNoteName && file.basename === this.options.sourceNoteName) {
+			if (
+				this.options.sourceNoteName &&
+				file.basename === this.options.sourceNoteName
+			) {
 				return false;
 			}
 			return true;

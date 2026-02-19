@@ -2,9 +2,12 @@
  * FSRS Simulator Service
  * Simulates FSRS v6 scheduling for visualization
  */
-import { FSRS, createEmptyCard, type Grade } from "ts-fsrs";
-import type { SequenceSimulation, SequenceReview } from "../../ui/simulator/types";
+import { createEmptyCard, FSRS, type Grade } from "ts-fsrs";
 import { getSequenceColors } from "../../ui/simulator/constants";
+import type {
+	SequenceReview,
+	SequenceSimulation,
+} from "../../ui/simulator/types";
 
 /**
  * Service for simulating FSRS review sequences
@@ -16,7 +19,7 @@ export class FSRSSimulatorService {
 	simulate(
 		sequences: string[],
 		weights: number[],
-		desiredRetention: number
+		desiredRetention: number,
 	): SequenceSimulation[] {
 		const colors = getSequenceColors();
 		return sequences.map((seq, i) => ({
@@ -32,7 +35,7 @@ export class FSRSSimulatorService {
 	private simulateSequence(
 		sequence: string,
 		weights: number[],
-		desiredRetention: number
+		desiredRetention: number,
 	): SequenceReview[] {
 		// Create FSRS instance with custom weights
 		const fsrs = new FSRS({
@@ -88,21 +91,13 @@ export class FSRSSimulatorService {
 	}
 
 	/**
-	 * Generate colors for sequences
-	 */
-	private getColor(index: number): string {
-		const colors = getSequenceColors();
-		return colors[index % colors.length] ?? "#3b82f6";
-	}
-
-	/**
 	 * Get default FSRS v6 weights
 	 */
 	getDefaultWeights(): number[] {
 		return [
-			0.212, 1.2931, 2.3065, 8.2956, 6.4133, 0.8334, 3.0194, 0.001,
-			1.8722, 0.1666, 0.796, 1.4835, 0.0614, 0.2629, 1.6483, 0.6014,
-			1.8729, 0.5425, 0.0912, 0.0658, 0.1542,
+			0.212, 1.2931, 2.3065, 8.2956, 6.4133, 0.8334, 3.0194, 0.001, 1.8722,
+			0.1666, 0.796, 1.4835, 0.0614, 0.2629, 1.6483, 0.6014, 1.8729, 0.5425,
+			0.0912, 0.0658, 0.1542,
 		];
 	}
 }

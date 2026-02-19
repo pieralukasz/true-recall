@@ -1,6 +1,6 @@
-import { render, type ComponentChildren } from "preact";
-import { ObsidianProvider } from "./ObsidianContext";
+import { type ComponentChildren, render } from "preact";
 import type TrueRecallPlugin from "../../main";
+import { ObsidianProvider } from "./ObsidianContext";
 
 export function mountPreact(
 	container: HTMLElement,

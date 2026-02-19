@@ -1,9 +1,9 @@
+import { type App, Component } from "obsidian";
 import { render } from "preact";
-import { useState, useCallback } from "preact/hooks";
-import { App, Component } from "obsidian";
-import type { FSRSFlashcardItem, CardMaturityBreakdown } from "../../types";
+import { useCallback, useState } from "preact/hooks";
+import { type FlashcardManager, notify } from "../../services";
+import type { CardMaturityBreakdown, FSRSFlashcardItem } from "../../types";
 import { BaseModal } from "./BaseModal";
-import { notify, type FlashcardManager } from "../../services";
 
 export interface CardPreviewModalOptions {
 	title: string;
@@ -31,15 +31,15 @@ function CardItem({ card, onDelete, onOpen, onUnbury }: CardItemProps) {
 			<div class="ep:text-ui-small ep:text-obs-normal ep:mb-1">{question}</div>
 			<div class="ep:text-ui-smaller ep:text-obs-muted">{answer}</div>
 			<div class="ep:flex ep:gap-2 ep:mt-2">
-				<button class={btnCls} onClick={() => onOpen(card)}>
+				<button type="button" class={btnCls} onClick={() => onOpen(card)}>
 					Open
 				</button>
 				{onUnbury && (
-					<button class={btnCls} onClick={() => onUnbury(card)}>
+					<button type="button" class={btnCls} onClick={() => onUnbury(card)}>
 						Unbury
 					</button>
 				)}
-				<button class={btnCls} onClick={() => onDelete(card)}>
+				<button type="button" class={btnCls} onClick={() => onDelete(card)}>
 					Delete
 				</button>
 			</div>
@@ -59,11 +59,23 @@ function CardPreviewBody({
 }: {
 	initialCards: FSRSFlashcardItem[];
 	category?: keyof CardMaturityBreakdown;
-	onDeleteCard: (card: FSRSFlashcardItem, setCards: (cards: FSRSFlashcardItem[]) => void) => void;
+	onDeleteCard: (
+		card: FSRSFlashcardItem,
+		setCards: (cards: FSRSFlashcardItem[]) => void,
+	) => void;
 	onOpenCard: (card: FSRSFlashcardItem) => void;
-	onUnburyCard: (card: FSRSFlashcardItem, setCards: (cards: FSRSFlashcardItem[]) => void) => void;
-	onUnburyAll: (cards: FSRSFlashcardItem[], setCards: (cards: FSRSFlashcardItem[]) => void) => void;
-	onDeleteAll: (cards: FSRSFlashcardItem[], setCards: (cards: FSRSFlashcardItem[]) => void) => void;
+	onUnburyCard: (
+		card: FSRSFlashcardItem,
+		setCards: (cards: FSRSFlashcardItem[]) => void,
+	) => void;
+	onUnburyAll: (
+		cards: FSRSFlashcardItem[],
+		setCards: (cards: FSRSFlashcardItem[]) => void,
+	) => void;
+	onDeleteAll: (
+		cards: FSRSFlashcardItem[],
+		setCards: (cards: FSRSFlashcardItem[]) => void,
+	) => void;
 	onUpdateTitle: (title: string) => void;
 }) {
 	const [cards, setCards] = useState(initialCards);
@@ -84,6 +96,7 @@ function CardPreviewBody({
 				</div>
 				{category === "buried" && cards.length > 0 && (
 					<button
+						type="button"
 						class="ep:text-ui-smaller ep:py-1.5 ep:px-3 ep:bg-obs-interactive ep:text-obs-on-accent ep:border-none ep:rounded-md ep:cursor-pointer ep:transition-colors ep:hover:opacity-90"
 						onClick={() => onUnburyAll(cards, wrappedSetCards)}
 					>
@@ -92,6 +105,7 @@ function CardPreviewBody({
 				)}
 				{category === "suspended" && cards.length > 0 && (
 					<button
+						type="button"
 						class="ep:text-ui-smaller ep:py-1.5 ep:px-3 ep:bg-obs-red ep:text-obs-on-accent ep:border-none ep:rounded-md ep:cursor-pointer ep:transition-colors ep:hover:opacity-90"
 						onClick={() => onDeleteAll(cards, wrappedSetCards)}
 					>
@@ -149,11 +163,19 @@ export class CardPreviewModal extends BaseModal {
 			<CardPreviewBody
 				initialCards={this.options.cards}
 				category={this.options.category}
-				onDeleteCard={(card, setCards) => void this.handleDeleteCard(card, setCards)}
+				onDeleteCard={(card, setCards) =>
+					void this.handleDeleteCard(card, setCards)
+				}
 				onOpenCard={(card) => void this.openSourceNote(card)}
-				onUnburyCard={(card, setCards) => void this.handleUnburyCard(card, setCards)}
-				onUnburyAll={(cards, setCards) => void this.handleUnburyAll(cards, setCards)}
-				onDeleteAll={(cards, setCards) => void this.handleDeleteAll(cards, setCards)}
+				onUnburyCard={(card, setCards) =>
+					void this.handleUnburyCard(card, setCards)
+				}
+				onUnburyAll={(cards, setCards) =>
+					void this.handleUnburyAll(cards, setCards)
+				}
+				onDeleteAll={(cards, setCards) =>
+					void this.handleDeleteAll(cards, setCards)
+				}
 				onUpdateTitle={(title) => this.updateTitle(title)}
 			/>,
 			container,
@@ -173,7 +195,9 @@ export class CardPreviewModal extends BaseModal {
 		setCards: (cards: FSRSFlashcardItem[]) => void,
 	): Promise<void> {
 		// eslint-disable-next-line no-alert -- destructive operation requires explicit user confirmation
-		const confirmed = window.confirm("Delete this flashcard? This action cannot be undone.");
+		const confirmed = window.confirm(
+			"Delete this flashcard? This action cannot be undone.",
+		);
 		if (!confirmed) return;
 
 		const success = await this.flashcardManager.removeFlashcardById(card.id);
