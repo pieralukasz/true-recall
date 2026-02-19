@@ -28,18 +28,3 @@ export function filterNotesByQuery(notes: TFile[], query: string): TFile[] {
 
 /** Max notes to display in modal lists */
 export const MAX_DISPLAY_NOTES = 50;
-
-/**
- * Render "showing X of Y" truncation message into container
- */
-export function renderTruncationMessage(
-	container: HTMLElement,
-	totalCount: number
-): void {
-	if (totalCount > MAX_DISPLAY_NOTES) {
-		container.createEl("div", {
-			text: `Showing ${MAX_DISPLAY_NOTES} of ${totalCount} notes. Type to search for more.`,
-			cls: "ep:p-3 ep:text-center ep:text-obs-muted ep:text-ui-small",
-		});
-	}
-}

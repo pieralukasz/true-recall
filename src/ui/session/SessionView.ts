@@ -1,21 +1,17 @@
-/**
- * Session View
- * Panel-based view for session selection
- */
+import { h } from "preact";
 import { ItemView, WorkspaceLeaf } from "obsidian";
 import { VIEW_TYPE_SESSION } from "../../constants";
 import { notify } from "../../services";
 import { SessionLogic } from "./SessionLogic";
+import { SessionApp } from "./SessionApp";
+import { mountPreact } from "../preact";
+import { MoveCardModal } from "../modals/MoveCardModal";
+import { AddToProjectModal } from "../modals/AddToProjectModal";
+import { SessionResultFactory } from "../../utils/session-result-factory";
 import type { DayBoundaryService } from "../../services";
 import type { SessionResult } from "../../types/events.types";
 import type { FSRSFlashcardItem } from "../../types";
-import { Panel } from "../components/Panel";
-import { SessionContent } from "./SessionContent";
 import type TrueRecallPlugin from "../../main";
-import { SessionResultFactory } from "../../utils/session-result-factory";
-import { MoveCardModal } from "../modals/MoveCardModal";
-import { AddToProjectModal } from "../modals/AddToProjectModal";
-import { CustomStudyModal } from "../modals/CustomStudyModal";
 import type { SessionApi } from "../../state/store";
 
 export interface SessionViewOptions {
@@ -28,23 +24,15 @@ export interface SessionViewOptions {
 export class SessionView extends ItemView {
 	private plugin: TrueRecallPlugin;
 	private logic: SessionLogic | null = null;
-	private dayBoundaryService: DayBoundaryService | null = null;
+	private unmountPreact?: () => void;
 
-	// UI Components
-	private panelComponent: Panel | null = null;
-	private contentComponent: SessionContent | null = null;
-	private selectionBarEl: HTMLElement | null = null;
-
-	// Native header action elements
+	// Header actions need to stay in the view (Obsidian API)
 	private startSessionAction: HTMLElement | null = null;
 	private clearSelectionAction: HTMLElement | null = null;
 	private moveAction: HTMLElement | null = null;
 	private addToProjectAction: HTMLElement | null = null;
 
-	// Callback for session result
 	private onSessionSelected: ((result: SessionResult) => void) | null = null;
-
-	// State subscription
 	private unsubscribe: (() => void) | null = null;
 
 	constructor(leaf: WorkspaceLeaf, plugin: TrueRecallPlugin) {
@@ -72,491 +60,148 @@ export class SessionView extends ItemView {
 		const container = this.containerEl.children[1];
 		if (!(container instanceof HTMLElement)) return;
 		container.empty();
-
-		// Ensure container fills available space (mobile padding handled by global CSS)
 		container.addClass("ep:h-full", "ep:flex", "ep:flex-col");
 
-		this.panelComponent = new Panel(container, {
-			disableScroll: true,
-		});
-		this.panelComponent.render();
-
-		// Subscribe to state changes - update render, header actions, and title
+		// Header actions are Obsidian-native, subscribe to store for them
 		this.unsubscribe = this.plugin.store!.subscribe(
 			(state) => state.session,
 			() => {
-				this.render();
 				this.updateHeaderActions();
 				this.updateTitle();
-			}
+				// Re-mount Preact when logic exists (initialize may come later)
+				this.mountApp(container);
+			},
 		);
 	}
 
-	/**
-	 * Update native header actions based on selection state
-	 */
-	private updateHeaderActions(): void {
-		const state = this.session;
-		const selectionCount = state.selectedNotes.size;
-
-		if (this.clearSelectionAction) {
-			this.clearSelectionAction.remove();
-			this.clearSelectionAction = null;
-		}
-		if (this.startSessionAction) {
-			this.startSessionAction.remove();
-			this.startSessionAction = null;
-		}
-		if (this.moveAction) {
-			this.moveAction.remove();
-			this.moveAction = null;
-		}
-		if (this.addToProjectAction) {
-			this.addToProjectAction.remove();
-			this.addToProjectAction = null;
-		}
-
-		if (selectionCount > 0) {
-			this.startSessionAction = this.addAction(
-				"play",
-				"Start session",
-				() => this.handleStartSession()
-			);
-
-			this.moveAction = this.addAction(
-				"folder-input",
-				"Move flashcards",
-				() => void this.handleMoveSelectedNotes()
-			);
-
-			this.addToProjectAction = this.addAction(
-				"folder-plus",
-				"Add to project",
-				() => void this.handleAddToProject()
-			);
-
-			this.clearSelectionAction = this.addAction(
-				"x-circle",
-				"Clear selection",
-				() => this.handleClearSelection()
-			);
-		}
-	}
-
-	/**
-	 * Update native header title to show selection count
-	 */
-	private updateTitle(): void {
-		const state = this.session;
-		const selectionCount = state.selectedNotes.size;
-
-		// Access title element in view header
-		const titleEl = this.containerEl.querySelector(".view-header-title");
-		if (titleEl) {
-			titleEl.textContent =
-				selectionCount > 0 ? `Session (${selectionCount})` : "Session";
-		}
-	}
-
-	async onClose(): Promise<void> {
-		this.unsubscribe?.();
-
-		if (this.clearSelectionAction) {
-			this.clearSelectionAction.remove();
-			this.clearSelectionAction = null;
-		}
-		if (this.startSessionAction) {
-			this.startSessionAction.remove();
-			this.startSessionAction = null;
-		}
-		if (this.moveAction) {
-			this.moveAction.remove();
-			this.moveAction = null;
-		}
-		if (this.addToProjectAction) {
-			this.addToProjectAction.remove();
-			this.addToProjectAction = null;
-		}
-
-		if (this.selectionBarEl) {
-			this.selectionBarEl.remove();
-			this.selectionBarEl = null;
-		}
-
-		this.panelComponent?.destroy();
-		this.contentComponent?.destroy();
-	}
-
-	/**
-	 * Initialize the view with session data
-	 * Called by the plugin to set up the view
-	 */
-	initialize(options: SessionViewOptions): void {
-		this.dayBoundaryService = options.dayBoundaryService;
-		this.onSessionSelected = options.onSessionSelected;
-		this.logic = new SessionLogic(
-			options.allCards,
-			options.dayBoundaryService
-		);
-		this.session.initialize(options.currentNoteName, options.allCards);
-		this.session.updateTimestamp();
-	}
-
-	private handleQuickAction(
-		action: "current-note" | "today" | "default" | "buried"
-	): void {
-		const result = SessionResultFactory.createActionResult(
-			action,
-			this.session.currentNoteName
-		);
-		this.selectAndClose(result);
-	}
-
-	private handleNoteToggle(noteName: string): void {
-		this.session.toggleNoteSelection(noteName);
-	}
-
-	private handleSearchChange(query: string): void {
-		this.session.setSearchQuery(query);
-	}
-
-	private handleSelectAll(select: boolean): void {
+	private mountApp(container: HTMLElement): void {
 		if (!this.logic) return;
 
-		const state = this.session;
-		const filteredStats = this.logic.getFilteredNoteStats(
-			state.searchQuery,
-			state.now
+		this.unmountPreact?.();
+		this.unmountPreact = mountPreact(
+			container,
+			this.plugin,
+			h(SessionApp, {
+				logic: this.logic,
+				onSelectAndClose: (result: SessionResult) => this.selectAndClose(result),
+			}),
 		);
-		const availableNotes = filteredStats
-			.filter((s) => s.newCount > 0 || s.dueCount > 0)
-			.map((s) => s.noteName);
-
-		this.session.setAllNotesSelected(availableNotes, select);
 	}
 
-	private handleClearSelection(): void {
-		this.session.clearSelection();
-	}
+	initialize(options: SessionViewOptions): void {
+		this.onSessionSelected = options.onSessionSelected;
+		this.logic = new SessionLogic(options.allCards, options.dayBoundaryService);
+		this.session.initialize(options.currentNoteName, options.allCards);
+		this.session.updateTimestamp();
 
-	private handleNavigateToNote(notePath: string): void {
-		void this.app.workspace.openLinkText(notePath, "", false);
-	}
-
-	private handleCustomStudyAction(
-		action: "failed" | "difficult" | "study-ahead" | "most-forgotten"
-	): void {
-		let result;
-		switch (action) {
-			case "failed":
-				result = SessionResultFactory.createFailedCardsResult();
-				break;
-			case "difficult":
-				result = SessionResultFactory.createDifficultCardsResult();
-				break;
-			case "study-ahead":
-				result = SessionResultFactory.createStudyAheadResult(3);
-				break;
-			case "most-forgotten":
-				result = SessionResultFactory.createMostForgottenResult(50);
-				break;
+		// Mount after logic is ready
+		const container = this.containerEl.children[1];
+		if (container instanceof HTMLElement) {
+			this.mountApp(container);
 		}
-		this.selectAndClose(result);
 	}
 
-	private async handleOpenCustomStudyModal(): Promise<void> {
-		const modal = new CustomStudyModal(this.app, {
-			title: "Custom study",
-			width: "480px",
-		});
-		const result = await modal.openAndWait();
-		if (result.cancelled) return;
+	private updateHeaderActions(): void {
+		const selectionCount = this.session.selectedNotes.size;
 
-		if (result.saveAsPreset && result.presetName && result.sessionResult) {
-			const preset: import("../../types/settings.types").SessionPreset = {
-				id: crypto.randomUUID(),
-				name: result.presetName,
-				createdAt: Date.now(),
-				stateFilter: result.sessionResult.stateFilter,
-				difficultyRange: result.sessionResult.difficultyRange,
-				lapsesRange: result.sessionResult.lapsesRange,
-				stabilityRange: result.sessionResult.stabilityRange,
-				overdueOnly: result.sessionResult.overdueOnly,
-				recentlyFailed: result.sessionResult.recentlyFailed,
-				reviewOrder: result.sessionResult.reviewOrder,
-				cardLimit: result.sessionResult.cardLimit,
-				studyAheadDays: result.sessionResult.studyAheadDays,
-				crammingMode: result.sessionResult.crammingMode,
-				projectFilters: result.sessionResult.projectFilters,
-			};
-			this.plugin.settings.sessionPresets = [
-				...this.plugin.settings.sessionPresets,
-				preset,
-			];
-			await this.plugin.saveSettings();
-			notify().success(`Preset "${result.presetName}" saved`);
+		// Remove existing actions
+		this.clearSelectionAction?.remove();
+		this.startSessionAction?.remove();
+		this.moveAction?.remove();
+		this.addToProjectAction?.remove();
+		this.clearSelectionAction = null;
+		this.startSessionAction = null;
+		this.moveAction = null;
+		this.addToProjectAction = null;
+
+		if (selectionCount > 0) {
+			this.startSessionAction = this.addAction("play", "Start session", () => {
+				const selectedNotes = this.session.selectedNotes;
+				if (selectedNotes.size === 0) return;
+				const result = SessionResultFactory.createSelectedNotesResult(Array.from(selectedNotes));
+				this.selectAndClose(result);
+			});
+
+			this.moveAction = this.addAction("folder-input", "Move flashcards", () => void this.handleMoveSelectedNotes());
+			this.addToProjectAction = this.addAction("folder-plus", "Add to project", () => void this.handleAddToProject());
+
+			this.clearSelectionAction = this.addAction("x-circle", "Clear selection", () => {
+				this.session.clearSelection();
+			});
 		}
-
-		this.selectAndClose(result.sessionResult!);
 	}
 
-	private handlePresetAction(preset: import("../../types/settings.types").SessionPreset): void {
-		const result: import("../../types/events.types").SessionResult = {
-			cancelled: false,
-			sessionType: "custom-study",
-			ignoreDailyLimits: true,
-			bypassScheduling: true,
-			stateFilter: preset.stateFilter,
-			difficultyRange: preset.difficultyRange,
-			lapsesRange: preset.lapsesRange,
-			stabilityRange: preset.stabilityRange,
-			overdueOnly: preset.overdueOnly,
-			recentlyFailed: preset.recentlyFailed,
-			reviewOrder: preset.reviewOrder,
-			cardLimit: preset.cardLimit,
-			studyAheadDays: preset.studyAheadDays,
-			crammingMode: preset.crammingMode,
-			projectFilters: preset.projectFilters,
-		};
-		this.selectAndClose(result);
-	}
-
-	private async handlePresetDelete(presetId: string): Promise<void> {
-		this.plugin.settings.sessionPresets =
-			this.plugin.settings.sessionPresets.filter((p) => p.id !== presetId);
-		await this.plugin.saveSettings();
-		this.render();
-	}
-
-	private handleStartSession(): void {
-		const state = this.session;
-		const selectedNotes = state.selectedNotes;
-
-		if (selectedNotes.size === 0) return;
-
-		const result = SessionResultFactory.createSelectedNotesResult(
-			Array.from(selectedNotes)
-		);
-		this.selectAndClose(result);
+	private updateTitle(): void {
+		const selectionCount = this.session.selectedNotes.size;
+		const titleEl = this.containerEl.querySelector(".view-header-title");
+		if (titleEl) {
+			titleEl.textContent = selectionCount > 0 ? `Session (${selectionCount})` : "Session";
+		}
 	}
 
 	private async handleMoveSelectedNotes(): Promise<void> {
-		const state = this.session;
-		const selectedNotes = state.selectedNotes;
+		const selectedNotes = this.session.selectedNotes;
 		if (selectedNotes.size === 0) return;
 
-		const allCards = state.allCards;
-		const cardsToMove = allCards.filter(
-			(card) =>
-				card.sourceNoteName && selectedNotes.has(card.sourceNoteName)
-		);
-
+		const allCards = this.session.allCards;
+		const cardsToMove = allCards.filter((card) => card.sourceNoteName && selectedNotes.has(card.sourceNoteName));
 		if (cardsToMove.length === 0) {
 			notify().warning("No flashcards found in selected notes");
 			return;
 		}
 
-		// Open MoveCardModal
-		const modal = new MoveCardModal(this.app, {
-			cardCount: cardsToMove.length,
-		});
-
+		const modal = new MoveCardModal(this.app, { cardCount: cardsToMove.length });
 		const result = await modal.openAndWait();
 		if (result.cancelled || !result.targetNotePath) return;
 
-		// Move all cards to target note
 		let movedCount = 0;
 		for (const card of cardsToMove) {
-			const success = await this.plugin.flashcardManager.moveCard(
-				card.id,
-				result.targetNotePath
-			);
+			const success = await this.plugin.flashcardManager.moveCard(card.id, result.targetNotePath);
 			if (success) movedCount++;
 		}
-
 		notify().cardsMoved(movedCount, result.targetNotePath);
-
-		// Clear selection
 		this.session.clearSelection();
 	}
 
-	/**
-	 * Handle add to project - adds selected notes to project(s)
-	 */
 	private async handleAddToProject(): Promise<void> {
-		const state = this.session;
-		const selectedNotes = state.selectedNotes;
+		const selectedNotes = this.session.selectedNotes;
 		if (selectedNotes.size === 0) return;
 
-		// Get available projects from frontmatter index
-		const availableProjects = Array.from(
-			this.plugin.frontmatterIndex.getAllValues("projects")
-		);
-
-		// Open AddToProjectModal
-		const modal = new AddToProjectModal(this.app, {
-			availableProjects,
-			currentProjects: [], // Empty - we're adding to multiple notes
-		});
-
+		const availableProjects = Array.from(this.plugin.frontmatterIndex.getAllValues("projects"));
+		const modal = new AddToProjectModal(this.app, { availableProjects, currentProjects: [] });
 		const result = await modal.openAndWait();
 		if (result.cancelled || result.projects.length === 0) return;
 
-		// Apply projects to all selected notes
-		const frontmatterService =
-			this.plugin.flashcardManager.getFrontmatterService();
+		const frontmatterService = this.plugin.flashcardManager.getFrontmatterService();
 		let updatedCount = 0;
-
 		for (const noteName of selectedNotes) {
-			// Find note file by name
-			const noteFile = this.app.vault
-				.getMarkdownFiles()
-				.find((f) => f.basename === noteName);
+			const noteFile = this.app.vault.getMarkdownFiles().find((f) => f.basename === noteName);
 			if (!noteFile) continue;
-
-				const content = await this.app.vault.cachedRead(noteFile);
-			const currentProjects =
-				frontmatterService.extractProjectsFromFrontmatter(content);
-			const newProjects = [
-				...new Set([...currentProjects, ...result.projects]),
-			];
-
-			await frontmatterService.setProjectsInFrontmatter(
-				noteFile,
-				newProjects
-			);
+			const content = await this.app.vault.cachedRead(noteFile);
+			const currentProjects = frontmatterService.extractProjectsFromFrontmatter(content);
+			const newProjects = [...new Set([...currentProjects, ...result.projects])];
+			await frontmatterService.setProjectsInFrontmatter(noteFile, newProjects);
 			updatedCount++;
 		}
-
 		notify().success(`Added ${updatedCount} note(s) to project(s)`);
-
 		this.session.clearSelection();
 	}
 
 	private selectAndClose(result: SessionResult): void {
 		this.onSessionSelected?.(result);
-
-		// Close the panel view
 		const leaves = this.app.workspace.getLeavesOfType(VIEW_TYPE_SESSION);
 		for (const leaf of leaves) {
 			leaf.detach();
 		}
 	}
 
-	private render(): void {
-		if (!this.logic || !this.panelComponent) return;
+	async onClose(): Promise<void> {
+		this.unsubscribe?.();
+		this.unmountPreact?.();
 
-		const contentContainer = this.panelComponent.getContentContainer();
-
-		// Preserve scroll position before re-render
-		const scrollWrapper = contentContainer.querySelector(".true-recall-session-scroll");
-		const scrollTop = scrollWrapper?.scrollTop ?? 0;
-
-		const state = this.session;
-
-		this.contentComponent?.destroy();
-		contentContainer.empty();
-		this.contentComponent = new SessionContent(contentContainer, {
-			currentNoteName: state.currentNoteName,
-			allCards: state.allCards,
-			selectedNotes: state.selectedNotes,
-			searchQuery: state.searchQuery,
-			now: state.now,
-			logic: this.logic,
-			onQuickAction: (action) => this.handleQuickAction(action),
-			onCustomStudyAction: (action) => this.handleCustomStudyAction(action),
-			onOpenCustomStudyModal: () => void this.handleOpenCustomStudyModal(),
-			onPresetAction: (preset) => this.handlePresetAction(preset),
-			onPresetDelete: (id) => void this.handlePresetDelete(id),
-			sessionPresets: this.plugin.settings.sessionPresets,
-			onNoteToggle: (note) => this.handleNoteToggle(note),
-			onSearchChange: (query) => this.handleSearchChange(query),
-			onSelectAll: (select) => this.handleSelectAll(select),
-			onNavigateToNote: (notePath) => this.handleNavigateToNote(notePath),
-		});
-		this.contentComponent.render();
-
-		// Restore scroll position after re-render
-		const newScrollWrapper = contentContainer.querySelector(
-			".true-recall-session-scroll"
-		);
-		if (newScrollWrapper) {
-			newScrollWrapper.scrollTop = scrollTop;
-		}
-
-		// Add/remove class based on search query content (for mobile CSS)
-		const panelEl = this.panelComponent.getElement();
-		if (state.searchQuery.length > 0) {
-			panelEl?.addClass("true-recall-has-search-query");
-		} else {
-			panelEl?.removeClass("true-recall-has-search-query");
-		}
-
-		this.renderSelectionBar();
-	}
-
-	private renderSelectionBar(): void {
-		const state = this.session;
-		const selectionCount = state.selectedNotes.size;
-
-		if (this.selectionBarEl) {
-			this.selectionBarEl.remove();
-			this.selectionBarEl = null;
-		}
-
-		// Only show when notes are selected
-		if (selectionCount === 0) return;
-
-		const contentContainer = this.panelComponent?.getContentContainer();
-		if (!contentContainer) return;
-
-		const sessionContentEl = contentContainer.querySelector(".true-recall-session-content");
-		if (!sessionContentEl) return;
-
-		// Hidden on mobile - use header actions instead
-		this.selectionBarEl = sessionContentEl.createDiv({
-			cls: "true-recall-session-selection-bar ep:hidden ep:md:flex ep:items-center ep:justify-between ep:p-3 ep:mt-2 ep:bg-obs-secondary ep:rounded-md ep:gap-3 ep:shrink-0",
-		});
-
-		this.selectionBarEl.createSpan({
-			cls: "ep:text-ui-small ep:text-obs-muted ep:font-medium",
-			text: `${selectionCount} note${
-				selectionCount > 1 ? "s" : ""
-			} selected`,
-		});
-
-		const buttons = this.selectionBarEl.createDiv({
-			cls: "ep:flex ep:gap-2",
-		});
-
-		const moveBtn = buttons.createEl("button", {
-			cls: "ep:py-1.5 ep:px-3 ep:text-ui-small ep:bg-obs-border ep:text-obs-normal ep:border-none ep:rounded-md ep:cursor-pointer ep:hover:bg-obs-modifier-hover",
-			text: "Move",
-		});
-		// Use registerDomEvent for automatic cleanup on view close
-		this.registerDomEvent(moveBtn, "click", () =>
-			void this.handleMoveSelectedNotes()
-		);
-
-		const addProjectBtn = buttons.createEl("button", {
-			cls: "ep:py-1.5 ep:px-3 ep:text-ui-small ep:bg-obs-border ep:text-obs-normal ep:border-none ep:rounded-md ep:cursor-pointer ep:hover:bg-obs-modifier-hover",
-			text: "Add to project",
-		});
-		this.registerDomEvent(addProjectBtn, "click", () =>
-			void this.handleAddToProject()
-		);
-
-		const clearBtn = buttons.createEl("button", {
-			cls: "ep:py-1.5 ep:px-3 ep:text-ui-small ep:bg-obs-border ep:text-obs-normal ep:border-none ep:rounded-md ep:cursor-pointer ep:hover:bg-obs-modifier-hover",
-			text: "Clear",
-		});
-		this.registerDomEvent(clearBtn, "click", () => this.handleClearSelection());
-
-		const startBtn = buttons.createEl("button", {
-			cls: "mod-cta ep:py-1.5 ep:px-4 ep:text-ui-small",
-			// eslint-disable-next-line obsidianmd/ui/sentence-case
-			text: "Start Session",
-		});
-		this.registerDomEvent(startBtn, "click", () => this.handleStartSession());
+		this.clearSelectionAction?.remove();
+		this.startSessionAction?.remove();
+		this.moveAction?.remove();
+		this.addToProjectAction?.remove();
 	}
 }

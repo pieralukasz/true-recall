@@ -1,1422 +1,563 @@
+import { h } from "preact";
 import {
-    ItemView,
-    WorkspaceLeaf,
-    TFile,
-    Platform,
-    Menu,
+	ItemView,
+	WorkspaceLeaf,
+	TFile,
+	Platform,
+	Menu,
 } from "obsidian";
 import { VIEW_TYPE_FLASHCARD_PANEL } from "../../constants";
 import { FlashcardManager, notify } from "../../services";
 import { CollectService } from "../../services/flashcard/collect.service";
-import { Panel } from "../components/Panel";
-import { FlashcardPanelContent } from "./FlashcardPanelContent";
-import { FlashcardPanelFooter } from "./FlashcardPanelFooter";
-import { FlashcardPanelHeader } from "./FlashcardPanelHeader";
-import { SelectionFooter } from "../components";
-import { MoveCardModal } from "../modals/MoveCardModal";
+import { mountPreact } from "../preact/mount";
+import { FlashcardPanelApp, type PanelAppActions } from "./FlashcardPanelApp";
 import type { FSRSFlashcardItem } from "../../types/fsrs/card.types";
-import { SimpleFlashcardEditorModal } from "../modals/SimpleFlashcardEditorModal";
-import { cardToMarkdown, cardsToMarkdown } from "../../services/flashcard/flashcard-format.util";
-import { DuplicateQuestionError, type DuplicateInfo } from "../../services/flashcard/card-repository.service";
-import type { FlashcardItem } from "../../types";
 import { countCardsByState } from "../shared/helpers";
 import type TrueRecallPlugin from "../../main";
 import type { PanelApi } from "../../state/store";
 import { effect } from "@preact/signals";
 import { dataVersion, settingsVersion, track } from "../../services/core/signals";
-import { shallow } from "zustand/vanilla/shallow";
 
 export class FlashcardPanelView extends ItemView {
-    private plugin: TrueRecallPlugin;
-    private flashcardManager: FlashcardManager;
-    private collectService: CollectService;
-
-    // UI Components
-    private panelComponent: Panel | null = null;
-    private headerComponent: FlashcardPanelHeader | null = null;
-    private contentComponent: FlashcardPanelContent | null = null;
-    private footerComponent: FlashcardPanelFooter | null = null;
-    private selectionFooterComponent: SelectionFooter | null = null;
-
-    // Container elements (obtained from Panel)
-    private contentContainer!: HTMLElement;
-    private footerContainer!: HTMLElement;
-
-    // Container elements for header and content (created once, reused)
-    private headerDiv: HTMLElement | null = null;
-    private contentDiv: HTMLElement | null = null;
-    private reviewAction: HTMLElement | null = null;
-    private openFileAction: HTMLElement | null = null;
-    private deleteAllAction: HTMLElement | null = null;
-
-    // State subscriptions
-    private unsubscribe: (() => void) | null = null;
-    private interactionUnsub: (() => void) | null = null;
-
-    // Review state subscription (for tracking current review card)
-    private reviewUnsubscribe: (() => void) | null = null;
-    private lastReviewCardPath: string | null = null;
-    private lastReviewActive: boolean = false;
-
-    // Signal effect disposer for data change tracking
-    private signalDisposer: (() => void) | null = null;
-
-    // Editor change timer for real-time #flashcard tag detection
-    private editorChangeTimer: ReturnType<typeof setTimeout> | null = null;
-
-    // Header stats update timer for debouncing (expensive getAllFSRSCards call)
-    private headerStatsTimer: ReturnType<typeof setTimeout> | null = null;
-
-    // Mobile header FSRS status element
-    private mobileStatusEl: HTMLElement | null = null;
-
-    // Track RAF IDs for cleanup
-    private pendingRafIds: Set<number> = new Set();
-
-    // Scroll position to restore after debounced reload
-    private pendingScrollRestore: number | null = null;
-
-    // Render optimization: single key to track state changes
-    private lastRenderKey: string | null = null;
-
-    // Cache for getCardsWithFsrs() to avoid redundant SQLite queries within a render cycle
-    private cachedCardsWithFsrs: FSRSFlashcardItem[] | null = null;
-
-    // Footer memoization — skip destroy/recreate when unchanged
-    private lastFooterSelectionMode: string | null = null;
-    private lastFooterSelectedCount: number = -1;
-
-    constructor(leaf: WorkspaceLeaf, plugin: TrueRecallPlugin) {
-        super(leaf);
-        this.plugin = plugin;
-        this.flashcardManager = plugin.flashcardManager;
-        this.collectService = new CollectService();
-    }
-
-    private get panel(): PanelApi {
-        return this.plugin.store!.getState().panel;
-    }
-
-    private scheduleRaf(callback: () => void): void {
-        const id = requestAnimationFrame(() => {
-            this.pendingRafIds.delete(id);
-            if (!this.containerEl.isConnected) return;
-            callback();
-        });
-        this.pendingRafIds.add(id);
-    }
-
-    getViewType(): string {
-        return VIEW_TYPE_FLASHCARD_PANEL;
-    }
-
-    getDisplayText(): string {
-        // eslint-disable-next-line obsidianmd/ui/sentence-case -- Application name
-        return "True Recall";
-    }
-
-    getIcon(): string {
-        return "layers";
-    }
-
-    onPaneMenu(menu: Menu, source: string): void {
-        super.onPaneMenu(menu, source);
-
-        if (!Platform.isMobile) return;
-
-        const state = this.panel;
-        if (!state.currentFile) return;
-
-        menu.addItem((item) => {
-            item.setTitle("Refresh")
-                .setIcon("refresh-cw")
-                .onClick(() => void this.loadFlashcardInfo());
-        });
-
-        const hasFlashcards = state.status === "exists";
-
-        if (hasFlashcards) {
-            menu.addSeparator();
-
-            menu.addItem((item) => {
-                item.setTitle("Copy to clipboard")
-                    .setIcon("clipboard-copy")
-                    .onClick(() => void this.handleCopyAllToClipboard());
-            });
-
-            menu.addItem((item) => {
-                item.setTitle("Export as CSV")
-                    .setIcon("file-down")
-                    .onClick(() => void this.handleExportCsv());
-            });
-
-            menu.addSeparator();
-
-            menu.addItem((item) => {
-                item.setTitle("Open flashcard file")
-                    .setIcon("file-text")
-                    .onClick(() => void this.handleOpenFlashcardFile());
-            });
-
-            menu.addItem((item) => {
-                item.setTitle("Delete all flashcards")
-                    .setIcon("trash-2")
-                    .onClick(() => void this.handleDeleteAllFlashcards());
-            });
-        }
-    }
-
-    async onOpen(): Promise<void> {
-        const container = this.containerEl.children[1];
-        if (!(container instanceof HTMLElement)) return;
-        container.empty();
-
-        this.panelComponent = new Panel(container, {
-            showFooter: true,
-        });
-        this.panelComponent.render();
-
-        this.contentContainer = this.panelComponent.getContentContainer();
-        const footerContainer = this.panelComponent.getFooterContainer();
-        if (!footerContainer) {
-            console.error("[FlashcardPanelView] Footer container not available");
-            return;
-        }
-        this.footerContainer = footerContainer;
-
-        // Structural changes → full render
-        this.unsubscribe = this.plugin.store!.subscribe(
-            (state) => ({
-                file: state.panel.currentFile,
-                info: state.panel.flashcardInfo,
-                status: state.panel.status,
-                viewMode: state.panel.viewMode,
-                uncollected: state.panel.uncollectedCount,
-                isFollowing: state.panel.isFollowingReview,
-                addCard: state.panel.isAddCardExpanded,
-            }),
-            () => {
-                this.render();
-                this.updateHeaderActions();
-            },
-            { equalityFn: shallow }
-        );
-
-        // Interaction changes → targeted patch (no full rebuild)
-        this.interactionUnsub = this.plugin.store!.subscribe(
-            (state) => ({
-                expanded: state.panel.expandedCardIds,
-                selected: state.panel.selectedCardIds,
-                selectionMode: state.panel.selectionMode,
-                search: state.panel.searchQuery,
-            }),
-            () => this.renderInteractionUpdate(),
-            { equalityFn: shallow }
-        );
-
-        this.subscribeToDataChanges();
-
-        this.subscribeToReviewState();
-
-        this.registerEditorChangeTracking();
-
-        if (Platform.isMobile) {
-            this.setupMobileHeaderStatus();
-        }
-
-        // If a review session is already active, sync with it instead of loading the active file
-        const reviewState = this.plugin.store?.getState()?.review;
-        if (reviewState?.isActive) {
-            const currentCard = reviewState.getCurrentCard();
-            const currentPath = currentCard?.sourceNotePath ?? null;
-            this.lastReviewCardPath = currentPath;
-            this.lastReviewActive = true;
-            void this.syncWithReviewCard(currentPath, true);
-        } else {
-            await this.loadCurrentFile();
-        }
-    }
-
-    private updateHeaderActions(): void {
-        const state = this.panel;
-
-        if (this.reviewAction) {
-            this.reviewAction.remove();
-            this.reviewAction = null;
-        }
-        if (this.openFileAction) {
-            this.openFileAction.remove();
-            this.openFileAction = null;
-        }
-        if (this.deleteAllAction) {
-            this.deleteAllAction.remove();
-            this.deleteAllAction = null;
-        }
-
-        if (state.status === "exists" && state.currentFile) {
-            if (!Platform.isMobile) {
-                this.deleteAllAction = this.addAction(
-                    "trash-2",
-                    "Delete all flashcards",
-                    () => void this.handleDeleteAllFlashcards()
-                );
-
-                this.openFileAction = this.addAction(
-                    "file-text",
-                    "Open flashcard file",
-                    () => void this.handleOpenFlashcardFile()
-                );
-            }
-
-            this.reviewAction = this.addAction(
-                "brain",
-                "Review flashcards",
-                () => void this.plugin.reviewNoteFlashcards(state.currentFile!)
-            );
-        }
-    }
-
-    async onClose(): Promise<void> {
-        // Cleanup subscriptions
-        this.unsubscribe?.();
-        this.interactionUnsub?.();
-        this.reviewUnsubscribe?.();
-        this.signalDisposer?.();
-
-        if (this.editorChangeTimer) {
-            clearTimeout(this.editorChangeTimer);
-            this.editorChangeTimer = null;
-        }
-
-        if (this.flashcardInfoTimer) {
-            clearTimeout(this.flashcardInfoTimer);
-            this.flashcardInfoTimer = null;
-        }
-
-        // Cleanup header stats timer
-        if (this.headerStatsTimer) {
-            clearTimeout(this.headerStatsTimer);
-            this.headerStatsTimer = null;
-        }
-
-        for (const id of this.pendingRafIds) {
-            cancelAnimationFrame(id);
-        }
-        this.pendingRafIds.clear();
-
-        if (this.reviewAction) {
-            this.reviewAction.remove();
-            this.reviewAction = null;
-        }
-        if (this.openFileAction) {
-            this.openFileAction.remove();
-            this.openFileAction = null;
-        }
-        if (this.deleteAllAction) {
-            this.deleteAllAction.remove();
-            this.deleteAllAction = null;
-        }
-
-        // Remove mobile status element
-        if (this.mobileStatusEl) {
-            this.mobileStatusEl.remove();
-            this.mobileStatusEl = null;
-        }
-
-        // Note: Events registered via registerEvent() and registerDomEvent() are
-        // automatically cleaned up by the Component base class
-
-        // Cleanup components
-        this.panelComponent?.destroy();
-        this.headerComponent?.destroy();
-        this.contentComponent?.destroy();
-        this.footerComponent?.destroy();
-        this.selectionFooterComponent?.destroy();
-    }
-
-    private subscribeToDataChanges(): void {
-        this.signalDisposer = effect(() => {
-            track(dataVersion, settingsVersion);
-            this.invalidateCardsCache();
-            this.scheduleHeaderStatsUpdate();
-            this.scheduleFlashcardInfoReload();
-        });
-    }
-
-    private flashcardInfoTimer: ReturnType<typeof setTimeout> | null = null;
-
-    private scheduleFlashcardInfoReload(): void {
-        if (this.flashcardInfoTimer) clearTimeout(this.flashcardInfoTimer);
-        this.flashcardInfoTimer = setTimeout(() => {
-            this.flashcardInfoTimer = null;
-            void this.loadFlashcardInfo();
-        }, 100);
-    }
-
-    private subscribeToReviewState(): void {
-        const store = this.plugin.store;
-        if (!store) return;
-
-        this.reviewUnsubscribe = store.subscribe(
-            (state) => state.review,
-            () => {
-                const review = store.getState().review;
-                const currentCard = review.getCurrentCard();
-                const currentPath = currentCard?.sourceNotePath ?? null;
-                const isActive = review.isActive;
-
-                // Only sync when relevant state changes
-                if (currentPath !== this.lastReviewCardPath || isActive !== this.lastReviewActive) {
-                    this.lastReviewCardPath = currentPath;
-                    this.lastReviewActive = isActive;
-                    void this.syncWithReviewCard(currentPath, isActive);
-                }
-            }
-        );
-    }
-
-    private async syncWithReviewCard(sourceNotePath: string | null, isActive: boolean): Promise<void> {
-        this.panel.setReviewFollowState(sourceNotePath, isActive);
-
-        if (!isActive || !sourceNotePath) {
-            const activeFile = this.app.workspace.getActiveFile();
-            await this.handleFileChange(activeFile);
-            return;
-        }
-
-        const sourceFile = this.app.vault.getAbstractFileByPath(sourceNotePath);
-        if (sourceFile instanceof TFile) {
-            await this.handleFileChange(sourceFile);
-        }
-    }
-
-
-    async handleFileChange(file: TFile | null): Promise<void> {
-        const state = this.panel;
-
-        // Don't reset if same file
-        if (state.currentFile?.path === file?.path) {
-            return;
-        }
-
-        this.panel.setCurrentFile(file);
-        await this.loadFlashcardInfo();
-    }
-
-    isFollowingReview(): boolean {
-        return this.panel.isFollowingReview;
-    }
-
-    clearReviewFollowState(): void {
-        this.panel.setReviewFollowState(null, false);
-    }
-
-    syncWithReviewState(sourceNotePath: string | null, isActive: boolean): void {
-        this.lastReviewCardPath = sourceNotePath;
-        this.lastReviewActive = isActive;
-        void this.syncWithReviewCard(sourceNotePath, isActive);
-    }
-
-    private async loadCurrentFile(): Promise<void> {
-        const file = this.app.workspace.getActiveFile();
-        this.panel.setCurrentFile(file);
-        await this.loadFlashcardInfo();
-    }
-
-    private async loadFlashcardInfo(): Promise<void> {
-        this.invalidateCardsCache();
-        const state = this.panel;
-        const file = state.currentFile;
-
-        if (state.selectionMode === "selecting") {
-            this.panel.exitSelectionMode();
-        }
-
-        if (!this.flashcardManager.hasStore()) {
-            return;
-        }
-
-        if (!file || file.extension !== "md") {
-            this.panel.setFlashcardInfo(null);
-            this.panel.setUncollectedInfo(0);
-            return;
-        }
-
-        const renderVersion = this.panel.incrementRenderVersion();
-
-        try {
-            // Load flashcard info and file content in parallel
-            const [info, content] = await Promise.all([
-                this.flashcardManager.getFlashcardInfo(file),
-                this.app.vault.read(file),
-            ]);
-
-            if (!this.panel.isCurrentRender(renderVersion)) return;
-
-            const uncollectedCount = this.collectService.countFlashcardTags(content);
-
-            // Invalidate before setState to prevent stale cache from premature renders
-            // (exitSelectionMode/incrementRenderVersion trigger synchronous renders that
-            // re-populate the cache with old flashcardInfo before the await completes)
-            this.invalidateCardsCache();
-
-            this.panel.setState({
-                flashcardInfo: info,
-                status: info?.exists ? "exists" : "none",
-                sourceNoteName: null,
-                uncollectedCount,
-            });
-
-            // Restore scroll position if a mutation handler requested it
-            const scrollRestore = this.pendingScrollRestore;
-            if (scrollRestore !== null) {
-                this.pendingScrollRestore = null;
-                this.scheduleRaf(() => {
-                    if (this.contentDiv) this.contentDiv.scrollTop = scrollRestore;
-                });
-            }
-        } catch (error) {
-            console.error("Error loading flashcard info:", error);
-        }
-    }
-
-    private renderInteractionUpdate(): void {
-        const state = this.panel;
-
-        // Patch content component (handles expand/select via CSS toggle, not full rebuild)
-        if (this.contentComponent) {
-            this.contentComponent.updateProps({
-                selectedCardIds: state.selectedCardIds,
-                expandedCardIds: state.expandedCardIds,
-                selectionMode: state.selectionMode,
-                searchQuery: state.searchQuery,
-            });
-        }
-
-        // Update header search + selection state
-        if (this.headerComponent) {
-            this.headerComponent.updateProps({
-                selectionMode: state.selectionMode,
-                selectedCount: state.selectedCardIds.size,
-                searchQuery: state.searchQuery,
-            });
-        }
-
-        // Update footer (guarded — only rebuilds when actually changed)
-        this.renderFooter(state);
-    }
-
-    private render(): void {
-        const state = this.panel;
-
-        // Make content container a flex column so header stays at top (only once)
-        this.contentContainer.addClass("ep:flex", "ep:flex-col", "ep:gap-2");
-
-        // Create or update header component (desktop only)
-        if (!Platform.isMobile) {
-            // Create header container once, then reuse
-            if (!this.headerDiv) {
-                this.headerDiv = this.contentContainer.createDiv({ cls: "ep:shrink-0" });
-            }
-
-            const reviewedToday = this.plugin.sessionPersistence?.getReviewedToday();
-            const dayStartHour = this.plugin.settings.dayStartHour;
-
-            const hasUncollectedFlashcards = state.uncollectedCount > 0;
-
-            if (!this.headerComponent) {
-                this.headerComponent = new FlashcardPanelHeader(this.headerDiv, {
-                    flashcardInfo: state.flashcardInfo,
-                    cardsWithFsrs: this.getCardsWithFsrs(),
-                    hasUncollectedFlashcards,
-                    uncollectedCount: state.uncollectedCount,
-                    selectionMode: state.selectionMode,
-                    selectedCount: state.selectedCardIds.size,
-                    searchQuery: state.searchQuery,
-                    isFollowingReview: state.isFollowingReview,
-                    reviewedToday,
-                    dayStartHour,
-                    onAdd: () => void this.handleAddFlashcard(),
-                    onCollect: () => void this.handleCollect(),
-                    onRefresh: () => void this.loadFlashcardInfo(),
-                    onReview: () => void this.handleReviewFromPanel(),
-                    onExitSelectionMode: () => this.panel.exitSelectionMode(),
-                    onSearchChange: (query) => this.panel.setSearchQuery(query),
-                    onExportCsv: () => void this.handleExportCsv(),
-                    onCopyToClipboard: () => void this.handleCopyAllToClipboard(),
-                    onDeleteAll: () => void this.handleDeleteAllFlashcards(),
-                    onOpenSourceNote: () => this.handleOpenSourceNote(),
-                });
-                this.headerComponent.render();
-            } else {
-                this.headerComponent.updateProps({
-                    flashcardInfo: state.flashcardInfo,
-                    cardsWithFsrs: this.getCardsWithFsrs(),
-                    hasUncollectedFlashcards,
-                    uncollectedCount: state.uncollectedCount,
-                    selectionMode: state.selectionMode,
-                    selectedCount: state.selectedCardIds.size,
-                    searchQuery: state.searchQuery,
-                    isFollowingReview: state.isFollowingReview,
-                    reviewedToday,
-                    dayStartHour,
-                });
-            }
-        } else {
-            // Update mobile header FSRS status
-            this.updateMobileHeaderStatus();
-        }
-
-        // Create content container once, then reuse
-        if (!this.contentDiv) {
-            this.contentDiv = this.contentContainer.createDiv({ cls: "ep:flex-1 ep:overflow-y-auto ep:min-h-0" });
-        }
-
-        // Check if we need full rebuild using single render key
-        const currentFileUid = state.flashcardInfo?.sourceUid ?? "";
-        const currentFlashcardCount = state.flashcardInfo?.flashcards?.length ?? 0;
-        const renderKey = `${currentFileUid}:${currentFlashcardCount}:${state.selectionMode}`;
-        const needsFullRebuild = !this.contentComponent || renderKey !== this.lastRenderKey;
-
-        if (needsFullRebuild) {
-            // Full rebuild: destroy and recreate content component
-            this.contentComponent?.destroy();
-            this.contentDiv.empty();
-
-            this.contentComponent = new FlashcardPanelContent(this.contentDiv, {
-                currentFile: state.currentFile,
-                status: state.status,
-                flashcardInfo: state.flashcardInfo,
-                selectionMode: state.selectionMode,
-                selectedCardIds: state.selectedCardIds,
-                expandedCardIds: state.expandedCardIds,
-                cardsWithFsrs: this.getCardsWithFsrs(),
-                searchQuery: state.searchQuery,
-                isAddCardExpanded: state.isAddCardExpanded,
-                handlers: {
-                    app: this.app,
-                    component: this,
-                    onEditCard: (card) => void this.handleEditCard(card),
-                    onEditButton: (card) => void this.handleEditButton(card),
-                    onCopyCard: (card) => void this.handleCopyCard(card),
-                    onDeleteCard: (card) => void this.handleRemoveCard(card),
-                    onMoveCard: (card) => void this.handleMoveCard(card),
-                    onEditSave: async (card, field, newContent) => void this.handleEditSave(card, field, newContent),
-                    onToggleExpand: (cardId) => {
-                        const scrollPosition = this.contentDiv?.scrollTop ?? 0;
-                        this.panel.toggleCardExpanded(cardId);
-                        this.scheduleRaf(() => {
-                            if (this.contentDiv) this.contentDiv.scrollTop = scrollPosition;
-                        });
-                    },
-                    onToggleSelect: (cardId) => {
-                        const scrollPosition = this.contentDiv?.scrollTop ?? 0;
-                        this.panel.toggleCardSelection(cardId);
-                        this.scheduleRaf(() => {
-                            if (this.contentDiv) this.contentDiv.scrollTop = scrollPosition;
-                        });
-                    },
-                    onEnterSelectionMode: (cardId) => this.panel.enterSelectionMode(cardId),
-                    onAdd: () => void this.handleAddFlashcard(),
-                    onEditGroup: (cards, template) => void this.handleEditGroup(cards, template),
-                    onDeleteGroup: (cards) => void this.handleDeleteGroup(cards),
-                    onCopyGroup: (cards) => void this.handleCopyGroup(cards),
-                    onMoveGroup: (cards) => void this.handleMoveGroup(cards),
-                },
-            });
-            this.contentComponent.render();
-
-            this.lastRenderKey = renderKey;
-        } else if (this.contentComponent) {
-            // Incremental update: just update props (avoids DOM recreation)
-            this.contentComponent.updateProps({
-                flashcardInfo: state.flashcardInfo,
-                selectedCardIds: state.selectedCardIds,
-                expandedCardIds: state.expandedCardIds,
-                cardsWithFsrs: this.getCardsWithFsrs(),
-                searchQuery: state.searchQuery,
-            });
-        }
-
-        // Render Footer — only rebuild when selection state actually changes
-        this.renderFooter(state);
-    }
-
-    private renderFooter(state: PanelApi): void {
-        const selectionMode = state.selectionMode;
-        const selectedCount = state.selectedCardIds.size;
-
-        if (
-            selectionMode === this.lastFooterSelectionMode &&
-            selectedCount === this.lastFooterSelectedCount
-        ) {
-            return;
-        }
-
-        this.lastFooterSelectionMode = selectionMode;
-        this.lastFooterSelectedCount = selectedCount;
-
-        this.footerComponent?.destroy();
-        this.selectionFooterComponent?.destroy();
-        this.footerContainer.empty();
-
-        if (selectionMode === "selecting") {
-            this.selectionFooterComponent = new SelectionFooter(this.footerContainer, {
-                display: { type: "selectedCount", count: selectedCount },
-                actions: [
-                    {
-                        label: "Move",
-                        icon: "folder-input",
-                        onClick: () => void this.handleMoveSelected(),
-                        variant: "secondary",
-                        disabled: selectedCount === 0,
-                    },
-                    {
-                        label: "Delete",
-                        icon: "trash-2",
-                        onClick: () => void this.handleDeleteSelected(),
-                        variant: "danger",
-                        disabled: selectedCount === 0,
-                    },
-                ],
-            });
-            this.selectionFooterComponent.render();
-        }
-    }
-
-    /**
-     * Schedule debounced header stats update
-     * Prevents expensive getCardsByIds() calls on every dataVersion change
-     */
-    private scheduleHeaderStatsUpdate(): void {
-        if (this.headerStatsTimer) {
-            clearTimeout(this.headerStatsTimer);
-        }
-        this.headerStatsTimer = setTimeout(() => {
-            this.updateHeaderStatsOnly();
-            this.headerStatsTimer = null;
-        }, 100); // 100ms debounce - fast enough to feel responsive
-    }
-
-    /**
-     * Update header FSRS stats only (no full re-render)
-     * Called when cards are reviewed to update New/Learning/Review counts
-     */
-    private updateHeaderStatsOnly(): void {
-        const cardsWithFsrs = this.getCardsWithFsrs();
-
-        if (this.headerComponent) {
-            this.headerComponent.updateProps({
-                cardsWithFsrs,
-            });
-        }
-
-        if (Platform.isMobile) {
-            this.updateMobileHeaderStatus(cardsWithFsrs);
-        }
-    }
-
-    private getCardsWithFsrs(): FSRSFlashcardItem[] {
-        if (this.cachedCardsWithFsrs !== null) {
-            return this.cachedCardsWithFsrs;
-        }
-
-        const state = this.panel;
-        if (!state.flashcardInfo?.flashcards) return [];
-
-        if (!this.flashcardManager.hasStore()) {
-            return [];
-        }
-
-        const cardIds = state.flashcardInfo.flashcards.map(c => c.id);
-        this.cachedCardsWithFsrs = this.flashcardManager.getCardsByIds(cardIds);
-        return this.cachedCardsWithFsrs;
-    }
-
-    private invalidateCardsCache(): void {
-        this.cachedCardsWithFsrs = null;
-    }
-
-    private async handleOpenFlashcardFile(): Promise<void> {
-        const state = this.panel;
-        if (state.currentFile) {
-            await this.flashcardManager.openSourceNote(state.currentFile);
-        }
-    }
-
-    private async handleEditCard(card: FlashcardItem): Promise<void> {
-        const state = this.panel;
-        if (!state.currentFile) return;
-
-        await this.flashcardManager.openSourceNote(state.currentFile);
-    }
-
-    private async handleEditButton(card: FlashcardItem): Promise<void> {
-        const state = this.panel;
-        if (!state.currentFile) return;
-
-        const scrollPosition = this.contentDiv?.scrollTop ?? 0;
-
-        const modal = new SimpleFlashcardEditorModal(this.app, {
-            mode: "edit",
-            currentFilePath: state.currentFile.path,
-            prefillContent: cardToMarkdown(card),
-            editCardId: card.id,
-        });
-
-        const result = await modal.openAndWait();
-        if (result.cancelled || result.flashcards.length === 0) return;
-
-        try {
-            // First flashcard updates the original card
-            const firstFlashcard = result.flashcards[0];
-            if (firstFlashcard) {
-                this.flashcardManager.updateCardContent(
-                    card.id,
-                    firstFlashcard.question,
-                    firstFlashcard.answer
-                );
-            }
-
-            // Additional flashcards (if any) are created as new cards
-            if (result.flashcards.length > 1) {
-                const frontmatterService = this.flashcardManager.getFrontmatterService();
-                let sourceUid = await frontmatterService.getSourceNoteUid(state.currentFile);
-                if (!sourceUid) {
-                    sourceUid = frontmatterService.generateUid();
-                    await frontmatterService.setSourceNoteUid(state.currentFile, sourceUid);
-                }
-
-                for (let i = 1; i < result.flashcards.length; i++) {
-                    const flashcard = result.flashcards[i];
-                    if (flashcard) {
-                        await this.flashcardManager.addSingleFlashcard(
-                            flashcard.question,
-                            flashcard.answer,
-                            sourceUid
-                        );
-                    }
-                }
-                notify().success(`Updated card and created ${result.flashcards.length - 1} new cards`);
-            } else {
-                notify().cardUpdated();
-            }
-
-            this.pendingScrollRestore = scrollPosition;
-        } catch (error) {
-            if (error instanceof DuplicateQuestionError) {
-                const question = result.flashcards[0]?.question ?? "";
-                this.notifyDuplicateError(error, question);
-            } else {
-                notify().operationFailed("update flashcard", error);
-            }
-        }
-    }
-
-    private async handleEditSave(
-        card: FlashcardItem,
-        field: "question" | "answer",
-        newContent: string
-    ): Promise<void> {
-        const state = this.panel;
-        if (!state.currentFile || !state.flashcardInfo) return;
-
-        // TODO: In the future, avoid full re-render - aim for targeted DOM update instead
-        const scrollPosition = this.contentDiv?.scrollTop ?? 0;
-
-        try {
-            if (field === "question") {
-                this.flashcardManager.updateCardContent(
-                    card.id,
-                    newContent,
-                    card.answer
-                );
-            } else {
-                this.flashcardManager.updateCardContent(
-                    card.id,
-                    card.question,
-                    newContent
-                );
-            }
-
-            notify().cardUpdated();
-
-            this.pendingScrollRestore = scrollPosition;
-        } catch (error) {
-            if (error instanceof DuplicateQuestionError) {
-                const question = field === "question" ? newContent : card.question;
-                this.notifyDuplicateError(error, question);
-            } else {
-                notify().operationFailed("update flashcard", error);
-            }
-        }
-    }
-
-    private async handleRemoveCard(card: FlashcardItem): Promise<void> {
-        const state = this.panel;
-        if (!state.currentFile) return;
-
-        // Save scroll position before re-render
-        const scrollPosition = this.contentDiv?.scrollTop ?? 0;
-
-        const removed = await this.flashcardManager.removeFlashcardById(card.id);
-
-        if (removed) {
-            notify().cardsDeleted(1);
-            this.pendingScrollRestore = scrollPosition;
-        } else {
-            notify().error("Failed to remove flashcard from file");
-        }
-    }
-
-    private async handleCopyCard(card: FlashcardItem): Promise<void> {
-        const text = `Q: ${card.question}\nA: ${card.answer}`;
-        await navigator.clipboard.writeText(text);
-        notify().success("Copied to clipboard");
-    }
-
-    private async handleCopyAllToClipboard(): Promise<void> {
-        const state = this.panel;
-        if (!state.flashcardInfo?.flashcards || state.flashcardInfo.flashcards.length === 0) {
-            notify().warning("No flashcards to copy");
-            return;
-        }
-
-        const text = state.flashcardInfo.flashcards
-            .map((card, i) => `${i + 1}. Q: ${card.question}\n   A: ${card.answer}`)
-            .join("\n\n");
-
-        await navigator.clipboard.writeText(text);
-        notify().success(`Copied ${state.flashcardInfo.flashcards.length} flashcard(s) to clipboard`);
-    }
-
-    private async handleExportCsv(): Promise<void> {
-        const state = this.panel;
-        if (!state.flashcardInfo?.flashcards || state.flashcardInfo.flashcards.length === 0) {
-            notify().warning("No flashcards to export");
-            return;
-        }
-
-        // Build CSV content with proper escaping
-        const escapeCSV = (str: string): string => {
-            if (str.includes(",") || str.includes("\n") || str.includes('"')) {
-                return `"${str.replace(/"/g, '""')}"`;
-            }
-            return str;
-        };
-
-        const header = "Question,Answer";
-        const rows = state.flashcardInfo.flashcards.map(
-            (card) => `${escapeCSV(card.question)},${escapeCSV(card.answer)}`
-        );
-        const csvContent = [header, ...rows].join("\n");
-
-        // Generate filename from current file
-        const filename = state.currentFile
-            ? `${state.currentFile.basename}-flashcards.csv`
-            : "flashcards.csv";
-
-        // Create blob and download
-        const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
-        const url = URL.createObjectURL(blob);
-        const link = document.createElement("a");
-        link.href = url;
-        link.download = filename;
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
-        URL.revokeObjectURL(url);
-
-        notify().success(`Exported ${state.flashcardInfo.flashcards.length} flashcard(s) to CSV`);
-    }
-
-    private async handleMoveCard(card: FlashcardItem): Promise<void> {
-        const state = this.panel;
-        if (!state.flashcardInfo) return;
-
-        if (!card.id) {
-            notify().error("Cannot move card without UUID. Please regenerate flashcards.");
-            return;
-        }
-
-        const sourceNoteName = await this.getSourceNoteNameFromFile();
-
-        const modal = new MoveCardModal(this.app, {
-            cardCount: 1,
-            sourceNoteName: sourceNoteName,
-            cardQuestion: card.question,
-            cardAnswer: card.answer,
-        });
-
-        const result = await modal.openAndWait();
-        if (result.cancelled || !result.targetNotePath) return;
-
-        try {
-            await this.flashcardManager.moveCard(
-                card.id,
-                result.targetNotePath
-            );
-            notify().cardsMoved(1, result.targetNotePath);
-            await this.loadFlashcardInfo();
-        } catch (error) {
-            notify().operationFailed("move card", error);
-        }
-    }
-
-    private async handleEditGroup(cards: FlashcardItem[], clozeTemplate?: string): Promise<void> {
-        const state = this.panel;
-        if (!state.currentFile) return;
-
-        const scrollPosition = this.contentDiv?.scrollTop ?? 0;
-
-        if (clozeTemplate) {
-            // Cloze group: edit the raw cloze template
-            const modal = new SimpleFlashcardEditorModal(this.app, {
-                mode: "edit",
-                currentFilePath: state.currentFile.path,
-                prefillContent: cardToMarkdown(cards[0]!),
-                editCardId: cards[0]?.id,
-            });
-
-            const result = await modal.openAndWait();
-            if (result.cancelled || result.flashcards.length === 0) return;
-
-            try {
-                const firstFlashcard = result.flashcards[0];
-                if (!firstFlashcard) return;
-
-                const frontmatterService = this.flashcardManager.getFrontmatterService();
-                const sourceUid = await frontmatterService.getSourceNoteUid(state.currentFile);
-                if (!sourceUid) return;
-
-                // Check if the edited content still has cloze syntax
-                const { hasClozeContent } = await import("../../services/flashcard/cloze-parser.service");
-                if (hasClozeContent(firstFlashcard.question)) {
-                    // Re-derive all siblings from the new template
-                    this.flashcardManager.updateClozeTemplate(
-                        sourceUid,
-                        clozeTemplate,
-                        firstFlashcard.question,
-                        state.currentFile.basename
-                    );
-                    notify().success("Updated cloze group");
-                } else {
-                    // Template no longer has cloze syntax - update first card as basic
-                    this.flashcardManager.updateCardContent(
-                        cards[0]!.id,
-                        firstFlashcard.question,
-                        firstFlashcard.answer
-                    );
-                    notify().cardUpdated();
-                }
-
-                await this.loadFlashcardInfo();
-                this.scheduleRaf(() => {
-                    if (this.contentDiv) this.contentDiv.scrollTop = scrollPosition;
-                });
-            } catch (error) {
-                notify().operationFailed("update cloze group", error);
-            }
-        } else {
-            // Reverse group: edit the original card (sync happens automatically via syncReversePair)
-            const originalCard = cards[0];
-            if (!originalCard) return;
-            await this.handleEditButton(originalCard);
-        }
-    }
-
-    private async handleDeleteGroup(cards: FlashcardItem[]): Promise<void> {
-        if (cards.length === 0) return;
-
-        const scrollPosition = this.contentDiv?.scrollTop ?? 0;
-
-        // Deleting any card in the group cascades to siblings (via CardRepository.delete)
-        const removed = await this.flashcardManager.removeFlashcardById(cards[0]!.id);
-        if (removed) {
-            notify().cardsDeleted(cards.length);
-            await this.loadFlashcardInfo();
-            this.scheduleRaf(() => {
-                if (this.contentDiv) this.contentDiv.scrollTop = scrollPosition;
-            });
-        } else {
-            notify().error("Failed to remove card group");
-        }
-    }
-
-    private async handleCopyGroup(cards: FlashcardItem[]): Promise<void> {
-        if (cards.length === 0) return;
-
-        // For cloze: copy the template; for reverse: copy both Q/A pairs
-        const firstCard = cards[0]!;
-        let text: string;
-        if (firstCard.clozeTemplate) {
-            text = firstCard.clozeTemplate;
-        } else {
-            text = cards.map((c) => `Q: ${c.question}\nA: ${c.answer}`).join("\n\n");
-        }
-        await navigator.clipboard.writeText(text);
-        notify().success("Copied to clipboard");
-    }
-
-    private async handleMoveGroup(cards: FlashcardItem[]): Promise<void> {
-        if (cards.length === 0) return;
-
-        const firstCard = cards[0]!;
-        const sourceNoteName = await this.getSourceNoteNameFromFile();
-
-        const modal = new MoveCardModal(this.app, {
-            cardCount: cards.length,
-            sourceNoteName,
-            cardQuestion: firstCard.question,
-            cardAnswer: firstCard.answer,
-        });
-
-        const result = await modal.openAndWait();
-        if (result.cancelled || !result.targetNotePath) return;
-
-        const targetPath = result.targetNotePath;
-        const results = await Promise.allSettled(
-            cards.map((card) => this.flashcardManager.moveCard(card.id, targetPath))
-        );
-
-        const successCount = results.filter((r) => r.status === "fulfilled").length;
-        notify().success(`Moved ${successCount} of ${cards.length} cards`);
-        await this.loadFlashcardInfo();
-    }
-
-    private async handleMoveSelected(): Promise<void> {
-        const state = this.panel;
-        if (!state.flashcardInfo || state.selectedCardIds.size === 0) return;
-
-        // Get selected cards with valid IDs
-        const selectedCards = state.flashcardInfo.flashcards.filter(
-            (card) => state.selectedCardIds.has(card.id)
-        );
-
-        if (selectedCards.length === 0) {
-            notify().error("No cards with valid UUIDs selected. Please regenerate flashcards.");
-            return;
-        }
-
-        // Open modal with first card's content for suggestions
-        const firstCard = selectedCards[0];
-        if (!firstCard) return;
-
-        const sourceNoteName = await this.getSourceNoteNameFromFile();
-
-        const modal = new MoveCardModal(this.app, {
-            cardCount: selectedCards.length,
-            sourceNoteName: sourceNoteName,
-            cardQuestion: firstCard.question,
-            cardAnswer: firstCard.answer,
-        });
-
-        const result = await modal.openAndWait();
-        if (result.cancelled || !result.targetNotePath) return;
-
-        // Move all selected cards in parallel
-        const targetPath = result.targetNotePath;
-        const results = await Promise.allSettled(
-            selectedCards.map((card) =>
-                this.flashcardManager.moveCard(card.id, targetPath)
-            )
-        );
-
-        const successCount = results.filter((r) => r.status === "fulfilled").length;
-        results.forEach((r, i) => {
-            if (r.status === "rejected") {
-                console.error(`Failed to move card ${selectedCards[i]?.id}:`, r.reason);
-            }
-        });
-
-        // Clear selection and refresh
-        this.panel.exitSelectionMode();
-        notify().success(`Moved ${successCount} of ${selectedCards.length} cards`);
-        await this.loadFlashcardInfo();
-    }
-
-    private async handleDeleteSelected(): Promise<void> {
-        const state = this.panel;
-        if (!state.flashcardInfo || !state.currentFile || state.selectedCardIds.size === 0) return;
-
-        // Get selected cards by ID
-        const selectedCards = state.flashcardInfo.flashcards
-            .filter(card => state.selectedCardIds.has(card.id));
-
-        if (selectedCards.length === 0) return;
-
-        // Confirm deletion
-        // eslint-disable-next-line no-alert -- destructive operation requires explicit user confirmation
-        const confirmed = window.confirm(`Delete ${selectedCards.length} selected card(s)?`);
-        if (!confirmed) return;
-
-        const cardIds = selectedCards.map((card) => card.id);
-        const successCount = this.flashcardManager.removeFlashcardsByIds(cardIds);
-
-        // Clear selection — signal effect will trigger debounced reload
-        this.panel.exitSelectionMode();
-        notify().cardsDeleted(successCount);
-    }
-
-    /**
-     * Add flashcards via simple markdown editor modal
-     * Includes AI formatting option if OpenRouter is configured
-     * Handles partial success: adds non-duplicates and re-opens modal with duplicates
-     */
-    private async handleAddFlashcard(prefillFlashcards?: Array<{ question: string; answer: string }>): Promise<void> {
-        const state = this.panel;
-        if (!state.currentFile) return;
-
-        const modal = new SimpleFlashcardEditorModal(this.app, {
-            mode: "add",
-            currentFilePath: state.currentFile.path,
-            prefillContent: prefillFlashcards ? cardsToMarkdown(prefillFlashcards) : undefined,
-        });
-
-        const result = await modal.openAndWait();
-        if (result.cancelled || result.flashcards.length === 0) return;
-
-        try {
-            const flashcardsWithIds = result.flashcards.map((f) => ({
-                id: f.id || crypto.randomUUID(),
-                question: f.question,
-                answer: f.answer,
-                cardType: f.cardType,
-                clozeTemplate: f.clozeTemplate,
-                clozeIndex: f.clozeIndex,
-                reverseOfBatchId: f.reverseOfBatchId,
-            }));
-
-            const saveResult = await this.flashcardManager.saveFlashcardsToSql(
-                state.currentFile,
-                flashcardsWithIds
-            );
-
-            // Handle partial success
-            if (saveResult.duplicates.length > 0) {
-                if (saveResult.created.length > 0) {
-                    notify().cardsCreated(saveResult.created.length, state.currentFile.basename);
-                }
-
-                this.showDuplicateNotifications(saveResult.duplicates);
-
-                // Re-open modal with only the duplicate flashcards for editing
-                const duplicateFlashcards = saveResult.duplicates.map((d) => ({
-                    question: d.flashcard.question,
-                    answer: d.flashcard.answer,
-                }));
-                await this.handleAddFlashcard(duplicateFlashcards);
-            } else {
-                notify().cardsCreated(saveResult.created.length, state.currentFile.basename);
-            }
-        } catch (error) {
-            console.error("Error adding flashcards:", error);
-            notify().operationFailed("add flashcards", error);
-        }
-    }
-
-    private async handleDeleteAllFlashcards(): Promise<void> {
-        const state = this.panel;
-        if (!state.flashcardInfo || state.flashcardInfo.flashcards.length === 0) return;
-
-        const count = state.flashcardInfo.flashcards.length;
-        // eslint-disable-next-line no-alert -- destructive operation requires explicit user confirmation
-        const confirmed = window.confirm(`Delete all ${count} flashcard(s) for this note?`);
-        if (!confirmed) return;
-
-        const cardIds = state.flashcardInfo.flashcards.map((card) => card.id);
-        const successCount = this.flashcardManager.removeFlashcardsByIds(cardIds);
-
-        notify().cardsDeleted(successCount);
-    }
-
-    private async handleReviewFromPanel(): Promise<void> {
-        const state = this.panel;
-        if (!state.currentFile) return;
-
-        await this.plugin.reviewNoteFlashcards(state.currentFile);
-    }
-
-    private handleOpenSourceNote(): void {
-        const state = this.panel;
-        if (!state.currentFile) return;
-
-        // Open the file in a new leaf
-        void this.app.workspace.getLeaf("tab").openFile(state.currentFile);
-    }
-
-    /**
-     * Collect flashcards from markdown (marked with #flashcard tag)
-     * Saves them to SQL and removes the #flashcard tags from the file
-     */
-    private async handleCollect(): Promise<void> {
-        const state = this.panel;
-        if (!state.currentFile) return;
-
-        // Check if store is ready
-        if (!this.flashcardManager.hasStore()) {
-            notify().error("Flashcard store not ready. Please restart Obsidian.");
-            return;
-        }
-
-        try {
-            const content = await this.app.vault.read(state.currentFile);
-            const result = this.collectService.collect(content);
-
-            if (result.collectedCount === 0) {
-                notify().info("No flashcards to collect");
-                return;
-            }
-
-            // Save flashcards to SQL
-            const saveResult = await this.flashcardManager.saveFlashcardsToSql(
-                state.currentFile,
-                result.flashcards.map((f) => ({
-                    id: f.id || crypto.randomUUID(),
-                    question: f.question,
-                    answer: f.answer,
-                }))
-            );
-
-            // Update markdown file based on setting
-            const contentToSave = this.plugin.settings.removeFlashcardContentAfterCollect
-                ? result.newContentWithoutFlashcards
-                : result.newContent;
-            await this.app.vault.process(state.currentFile, () => contentToSave);
-
-            // Handle partial success
-            if (saveResult.duplicates.length > 0) {
-                if (saveResult.created.length > 0) {
-                    notify().success(`Collected ${saveResult.created.length} flashcard(s)`);
-                }
-                this.showDuplicateNotifications(saveResult.duplicates);
-            } else {
-                notify().success(`Collected ${saveResult.created.length} flashcard(s)`);
-            }
-            await this.loadFlashcardInfo();
-        } catch (error) {
-            notify().operationFailed("collect flashcards", error);
-        }
-    }
-
-    private showDuplicateNotifications(duplicates: DuplicateInfo[]): void {
-        const sourceNoteService = this.flashcardManager.getSourceNoteService();
-        for (const dup of duplicates) {
-            const sourceInfo = dup.existingSourceUid
-                ? sourceNoteService.resolveSourceNote(dup.existingSourceUid)
-                : {};
-            notify().duplicateFound(dup.flashcard.question, sourceInfo.noteName);
-        }
-    }
-
-    private notifyDuplicateError(error: DuplicateQuestionError, question: string): void {
-        const sourceNoteService = this.flashcardManager.getSourceNoteService();
-        const sourceInfo = error.existingSourceUid
-            ? sourceNoteService.resolveSourceNote(error.existingSourceUid)
-            : {};
-        notify().duplicateFound(question, sourceInfo.noteName);
-    }
-
-    private registerEditorChangeTracking(): void {
-        this.registerEvent(
-            this.app.workspace.on("editor-change", () => {
-                // Debounce - wait 500ms after last change
-                if (this.editorChangeTimer) {
-                    clearTimeout(this.editorChangeTimer);
-                }
-
-                this.editorChangeTimer = setTimeout(() => {
-                    void this.checkUncollectedFlashcards();
-                }, 500);
-            })
-        );
-    }
-
-    /**
-     * Lightweight check for uncollected flashcards (only updates tag count)
-     * Called on editor changes with debouncing
-     */
-    private async checkUncollectedFlashcards(): Promise<void> {
-        const state = this.panel;
-        const file = state.currentFile;
-
-        if (!file || file.extension !== "md") {
-            return;
-        }
-
-        try {
-            const content = await this.app.vault.read(file);
-            const uncollectedCount = this.collectService.countFlashcardTags(content);
-
-            // Only update if changed (avoids unnecessary renders)
-            if (state.uncollectedCount !== uncollectedCount) {
-                this.panel.setUncollectedInfo(uncollectedCount);
-            }
-        } catch {
-            // Ignore errors (file might be deleted/moved)
-        }
-    }
-
-    /**
-     * Extract source_note name from the flashcard file (legacy)
-     * With SQL-only storage, this method reads source_link from the current file if it exists
-     */
-    private async getSourceNoteNameFromFile(): Promise<string | undefined> {
-        const state = this.panel;
-        if (!state.currentFile || !state.flashcardInfo) return undefined;
-
-        // Try to read source_link from the current file (legacy flashcard files)
-        const file = state.currentFile;
-        try {
-            const content = await this.app.vault.read(file);
-            const match = content.match(/source_link:\s*"\[\[(.+?)\]\]"/);
-            return match?.[1];
-        } catch {
-            return undefined;
-        }
-    }
-
-    private setupMobileHeaderStatus(): void {
-        const titleContainer = this.containerEl.querySelector(".view-header-title-container");
-        if (!titleContainer) return;
-
-        // Hide the "True Recall" title
-        const titleEl = titleContainer.querySelector(".view-header-title") as HTMLElement;
-        if (titleEl) {
-            titleEl.addClass("ep:hidden");
-        }
-
-        // Create status element
-        this.mobileStatusEl = document.createElement("div");
-        this.mobileStatusEl.addClass("ep:flex", "ep:gap-1", "ep:items-center", "ep:text-ui-smaller");
-        titleContainer.appendChild(this.mobileStatusEl);
-    }
-
-    private updateMobileHeaderStatus(precomputedCards?: FSRSFlashcardItem[]): void {
-        if (!this.mobileStatusEl) return;
-
-        const cards = precomputedCards ?? this.getCardsWithFsrs();
-        const counts = countCardsByState(cards);
-
-        this.mobileStatusEl.empty();
-
-        // New count (blue)
-        const newEl = this.mobileStatusEl.createSpan({ cls: "ep:text-obs-blue" });
-        newEl.textContent = String(counts.new);
-
-        // Separator
-        this.mobileStatusEl.createSpan({ cls: "ep:text-obs-faint", text: "·" });
-
-        // Learning count (orange)
-        const learningEl = this.mobileStatusEl.createSpan({ cls: "ep:text-obs-orange" });
-        learningEl.textContent = String(counts.learning);
-
-        // Separator
-        this.mobileStatusEl.createSpan({ cls: "ep:text-obs-faint", text: "·" });
-
-        // Review count (green)
-        const reviewEl = this.mobileStatusEl.createSpan({ cls: "ep:text-obs-green" });
-        reviewEl.textContent = String(counts.review);
-    }
+	private plugin: TrueRecallPlugin;
+	private flashcardManager: FlashcardManager;
+	private collectService: CollectService;
 
+	// Preact cleanup
+	private unmountPreact: (() => void) | null = null;
+
+	// Review state subscription (for tracking current review card)
+	private reviewUnsubscribe: (() => void) | null = null;
+	private lastReviewCardPath: string | null = null;
+	private lastReviewActive: boolean = false;
+
+	// Signal effect disposer for data change tracking
+	private signalDisposer: (() => void) | null = null;
+
+	// Editor change timer for real-time #flashcard tag detection
+	private editorChangeTimer: ReturnType<typeof setTimeout> | null = null;
+
+	// Flashcard info reload timer
+	private flashcardInfoTimer: ReturnType<typeof setTimeout> | null = null;
+
+	// Header actions (Obsidian native view actions)
+	private reviewAction: HTMLElement | null = null;
+	private openFileAction: HTMLElement | null = null;
+	private deleteAllAction: HTMLElement | null = null;
+
+	// Store subscription for header actions
+	private headerActionsUnsub: (() => void) | null = null;
+
+	// Mobile header FSRS status element
+	private mobileStatusEl: HTMLElement | null = null;
+
+	// Header stats update timer for debouncing
+	private headerStatsTimer: ReturnType<typeof setTimeout> | null = null;
+
+	// Cache for getCardsWithFsrs() on mobile
+	private cachedCardsWithFsrs: FSRSFlashcardItem[] | null = null;
+
+	constructor(leaf: WorkspaceLeaf, plugin: TrueRecallPlugin) {
+		super(leaf);
+		this.plugin = plugin;
+		this.flashcardManager = plugin.flashcardManager;
+		this.collectService = new CollectService();
+	}
+
+	private get panel(): PanelApi {
+		return this.plugin.store!.getState().panel;
+	}
+
+	getViewType(): string {
+		return VIEW_TYPE_FLASHCARD_PANEL;
+	}
+
+	getDisplayText(): string {
+		// eslint-disable-next-line obsidianmd/ui/sentence-case -- Application name
+		return "True Recall";
+	}
+
+	getIcon(): string {
+		return "layers";
+	}
+
+	onPaneMenu(menu: Menu, source: string): void {
+		super.onPaneMenu(menu, source);
+
+		if (!Platform.isMobile) return;
+
+		const state = this.panel;
+		if (!state.currentFile) return;
+
+		menu.addItem((item) => {
+			item.setTitle("Refresh")
+				.setIcon("refresh-cw")
+				.onClick(() => void this.loadFlashcardInfo());
+		});
+
+		const hasFlashcards = state.status === "exists";
+
+		if (hasFlashcards) {
+			menu.addSeparator();
+
+			menu.addItem((item) => {
+				item.setTitle("Copy to clipboard")
+					.setIcon("clipboard-copy")
+					.onClick(() => void this.handleCopyAllToClipboard());
+			});
+
+			menu.addItem((item) => {
+				item.setTitle("Export as CSV")
+					.setIcon("file-down")
+					.onClick(() => void this.handleExportCsv());
+			});
+
+			menu.addSeparator();
+
+			menu.addItem((item) => {
+				item.setTitle("Open flashcard file")
+					.setIcon("file-text")
+					.onClick(() => void this.handleOpenFlashcardFile());
+			});
+
+			menu.addItem((item) => {
+				item.setTitle("Delete all flashcards")
+					.setIcon("trash-2")
+					.onClick(() => void this.handleDeleteAllFlashcards());
+			});
+		}
+	}
+
+	async onOpen(): Promise<void> {
+		const container = this.containerEl.children[1];
+		if (!(container instanceof HTMLElement)) return;
+		container.empty();
+
+		// Mount Preact app
+		this.unmountPreact = mountPreact(
+			container,
+			this.plugin,
+			h(FlashcardPanelApp, {
+				onActions: (action: PanelAppActions) => {
+					if (action.type === "refresh") {
+						void this.loadFlashcardInfo();
+					}
+				},
+			}),
+		);
+
+		// Subscribe to store for Obsidian native header actions
+		this.headerActionsUnsub = this.plugin.store!.subscribe(
+			(s) => ({ status: s.panel.status, file: s.panel.currentFile }),
+			() => this.updateHeaderActions(),
+		);
+
+		this.subscribeToDataChanges();
+		this.subscribeToReviewState();
+		this.registerEditorChangeTracking();
+
+		if (Platform.isMobile) {
+			this.setupMobileHeaderStatus();
+		}
+
+		// If a review session is already active, sync with it instead of loading the active file
+		const reviewState = this.plugin.store?.getState()?.review;
+		if (reviewState?.isActive) {
+			const currentCard = reviewState.getCurrentCard();
+			const currentPath = currentCard?.sourceNotePath ?? null;
+			this.lastReviewCardPath = currentPath;
+			this.lastReviewActive = true;
+			void this.syncWithReviewCard(currentPath, true);
+		} else {
+			await this.loadCurrentFile();
+		}
+	}
+
+	private updateHeaderActions(): void {
+		const state = this.panel;
+
+		if (this.reviewAction) {
+			this.reviewAction.remove();
+			this.reviewAction = null;
+		}
+		if (this.openFileAction) {
+			this.openFileAction.remove();
+			this.openFileAction = null;
+		}
+		if (this.deleteAllAction) {
+			this.deleteAllAction.remove();
+			this.deleteAllAction = null;
+		}
+
+		if (state.status === "exists" && state.currentFile) {
+			if (!Platform.isMobile) {
+				this.deleteAllAction = this.addAction(
+					"trash-2",
+					"Delete all flashcards",
+					() => void this.handleDeleteAllFlashcards(),
+				);
+
+				this.openFileAction = this.addAction(
+					"file-text",
+					"Open flashcard file",
+					() => void this.handleOpenFlashcardFile(),
+				);
+			}
+
+			this.reviewAction = this.addAction(
+				"brain",
+				"Review flashcards",
+				() => void this.plugin.reviewNoteFlashcards(state.currentFile!),
+			);
+		}
+	}
+
+	async onClose(): Promise<void> {
+		this.unmountPreact?.();
+		this.unmountPreact = null;
+
+		this.reviewUnsubscribe?.();
+		this.signalDisposer?.();
+		this.headerActionsUnsub?.();
+
+		if (this.editorChangeTimer) {
+			clearTimeout(this.editorChangeTimer);
+			this.editorChangeTimer = null;
+		}
+
+		if (this.flashcardInfoTimer) {
+			clearTimeout(this.flashcardInfoTimer);
+			this.flashcardInfoTimer = null;
+		}
+
+		if (this.headerStatsTimer) {
+			clearTimeout(this.headerStatsTimer);
+			this.headerStatsTimer = null;
+		}
+
+		if (this.reviewAction) {
+			this.reviewAction.remove();
+			this.reviewAction = null;
+		}
+		if (this.openFileAction) {
+			this.openFileAction.remove();
+			this.openFileAction = null;
+		}
+		if (this.deleteAllAction) {
+			this.deleteAllAction.remove();
+			this.deleteAllAction = null;
+		}
+
+		if (this.mobileStatusEl) {
+			this.mobileStatusEl.remove();
+			this.mobileStatusEl = null;
+		}
+	}
+
+	private subscribeToDataChanges(): void {
+		this.signalDisposer = effect(() => {
+			track(dataVersion, settingsVersion);
+			this.invalidateCardsCache();
+			this.scheduleHeaderStatsUpdate();
+			this.scheduleFlashcardInfoReload();
+		});
+	}
+
+	private scheduleFlashcardInfoReload(): void {
+		if (this.flashcardInfoTimer) clearTimeout(this.flashcardInfoTimer);
+		this.flashcardInfoTimer = setTimeout(() => {
+			this.flashcardInfoTimer = null;
+			void this.loadFlashcardInfo();
+		}, 100);
+	}
+
+	private subscribeToReviewState(): void {
+		const store = this.plugin.store;
+		if (!store) return;
+
+		this.reviewUnsubscribe = store.subscribe(
+			(state) => state.review,
+			() => {
+				const review = store.getState().review;
+				const currentCard = review.getCurrentCard();
+				const currentPath = currentCard?.sourceNotePath ?? null;
+				const isActive = review.isActive;
+
+				if (currentPath !== this.lastReviewCardPath || isActive !== this.lastReviewActive) {
+					this.lastReviewCardPath = currentPath;
+					this.lastReviewActive = isActive;
+					void this.syncWithReviewCard(currentPath, isActive);
+				}
+			},
+		);
+	}
+
+	private async syncWithReviewCard(sourceNotePath: string | null, isActive: boolean): Promise<void> {
+		this.panel.setReviewFollowState(sourceNotePath, isActive);
+
+		if (!isActive || !sourceNotePath) {
+			const activeFile = this.app.workspace.getActiveFile();
+			await this.handleFileChange(activeFile);
+			return;
+		}
+
+		const sourceFile = this.app.vault.getAbstractFileByPath(sourceNotePath);
+		if (sourceFile instanceof TFile) {
+			await this.handleFileChange(sourceFile);
+		}
+	}
+
+	async handleFileChange(file: TFile | null): Promise<void> {
+		const state = this.panel;
+
+		if (state.currentFile?.path === file?.path) {
+			return;
+		}
+
+		this.panel.setCurrentFile(file);
+		await this.loadFlashcardInfo();
+	}
+
+	isFollowingReview(): boolean {
+		return this.panel.isFollowingReview;
+	}
+
+	clearReviewFollowState(): void {
+		this.panel.setReviewFollowState(null, false);
+	}
+
+	syncWithReviewState(sourceNotePath: string | null, isActive: boolean): void {
+		this.lastReviewCardPath = sourceNotePath;
+		this.lastReviewActive = isActive;
+		void this.syncWithReviewCard(sourceNotePath, isActive);
+	}
+
+	private async loadCurrentFile(): Promise<void> {
+		const file = this.app.workspace.getActiveFile();
+		this.panel.setCurrentFile(file);
+		await this.loadFlashcardInfo();
+	}
+
+	private async loadFlashcardInfo(): Promise<void> {
+		this.invalidateCardsCache();
+		const state = this.panel;
+		const file = state.currentFile;
+
+		if (state.selectionMode === "selecting") {
+			this.panel.exitSelectionMode();
+		}
+
+		if (!this.flashcardManager.hasStore()) {
+			return;
+		}
+
+		if (!file || file.extension !== "md") {
+			this.panel.setFlashcardInfo(null);
+			this.panel.setUncollectedInfo(0);
+			return;
+		}
+
+		const renderVersion = this.panel.incrementRenderVersion();
+
+		try {
+			const [info, content] = await Promise.all([
+				this.flashcardManager.getFlashcardInfo(file),
+				this.app.vault.read(file),
+			]);
+
+			if (!this.panel.isCurrentRender(renderVersion)) return;
+
+			const uncollectedCount = this.collectService.countFlashcardTags(content);
+
+			this.invalidateCardsCache();
+
+			this.panel.setState({
+				flashcardInfo: info,
+				status: info?.exists ? "exists" : "none",
+				sourceNoteName: null,
+				uncollectedCount,
+			});
+		} catch (error) {
+			console.error("Error loading flashcard info:", error);
+		}
+	}
+
+	// ── Mobile-only methods ─────────────────────────────────
+
+	private scheduleHeaderStatsUpdate(): void {
+		if (!Platform.isMobile) return;
+		if (this.headerStatsTimer) {
+			clearTimeout(this.headerStatsTimer);
+		}
+		this.headerStatsTimer = setTimeout(() => {
+			this.updateMobileHeaderStatus();
+			this.headerStatsTimer = null;
+		}, 100);
+	}
+
+	private getCardsWithFsrs(): FSRSFlashcardItem[] {
+		if (this.cachedCardsWithFsrs !== null) {
+			return this.cachedCardsWithFsrs;
+		}
+
+		const state = this.panel;
+		if (!state.flashcardInfo?.flashcards) return [];
+
+		if (!this.flashcardManager.hasStore()) {
+			return [];
+		}
+
+		const cardIds = state.flashcardInfo.flashcards.map((c) => c.id);
+		this.cachedCardsWithFsrs = this.flashcardManager.getCardsByIds(cardIds);
+		return this.cachedCardsWithFsrs;
+	}
+
+	private invalidateCardsCache(): void {
+		this.cachedCardsWithFsrs = null;
+	}
+
+	private setupMobileHeaderStatus(): void {
+		const titleContainer = this.containerEl.querySelector(".view-header-title-container");
+		if (!titleContainer) return;
+
+		const titleEl = titleContainer.querySelector(".view-header-title") as HTMLElement;
+		if (titleEl) {
+			titleEl.addClass("ep:hidden");
+		}
+
+		this.mobileStatusEl = document.createElement("div");
+		this.mobileStatusEl.addClass("ep:flex", "ep:gap-1", "ep:items-center", "ep:text-ui-smaller");
+		titleContainer.appendChild(this.mobileStatusEl);
+	}
+
+	private updateMobileHeaderStatus(precomputedCards?: FSRSFlashcardItem[]): void {
+		if (!this.mobileStatusEl) return;
+
+		const cards = precomputedCards ?? this.getCardsWithFsrs();
+		const counts = countCardsByState(cards);
+
+		this.mobileStatusEl.empty();
+
+		const newEl = this.mobileStatusEl.createSpan({ cls: "ep:text-obs-blue" });
+		newEl.textContent = String(counts.new);
+
+		this.mobileStatusEl.createSpan({ cls: "ep:text-obs-faint", text: "\u00B7" });
+
+		const learningEl = this.mobileStatusEl.createSpan({ cls: "ep:text-obs-orange" });
+		learningEl.textContent = String(counts.learning);
+
+		this.mobileStatusEl.createSpan({ cls: "ep:text-obs-faint", text: "\u00B7" });
+
+		const reviewEl = this.mobileStatusEl.createSpan({ cls: "ep:text-obs-green" });
+		reviewEl.textContent = String(counts.review);
+	}
+
+	// ── Mobile pane menu handlers ───────────────────────────
+
+	private async handleOpenFlashcardFile(): Promise<void> {
+		const state = this.panel;
+		if (state.currentFile) {
+			await this.flashcardManager.openSourceNote(state.currentFile);
+		}
+	}
+
+	private async handleDeleteAllFlashcards(): Promise<void> {
+		const state = this.panel;
+		if (!state.flashcardInfo || state.flashcardInfo.flashcards.length === 0) return;
+
+		const count = state.flashcardInfo.flashcards.length;
+		// eslint-disable-next-line no-alert -- destructive operation requires explicit user confirmation
+		const confirmed = window.confirm(`Delete all ${count} flashcard(s) for this note?`);
+		if (!confirmed) return;
+
+		const cardIds = state.flashcardInfo.flashcards.map((card) => card.id);
+		const successCount = this.flashcardManager.removeFlashcardsByIds(cardIds);
+		notify().cardsDeleted(successCount);
+	}
+
+	private async handleCopyAllToClipboard(): Promise<void> {
+		const state = this.panel;
+		if (!state.flashcardInfo?.flashcards || state.flashcardInfo.flashcards.length === 0) {
+			notify().warning("No flashcards to copy");
+			return;
+		}
+
+		const text = state.flashcardInfo.flashcards
+			.map((card, i) => `${i + 1}. Q: ${card.question}\n   A: ${card.answer}`)
+			.join("\n\n");
+
+		await navigator.clipboard.writeText(text);
+		notify().success(`Copied ${state.flashcardInfo.flashcards.length} flashcard(s) to clipboard`);
+	}
+
+	private async handleExportCsv(): Promise<void> {
+		const state = this.panel;
+		if (!state.flashcardInfo?.flashcards || state.flashcardInfo.flashcards.length === 0) {
+			notify().warning("No flashcards to export");
+			return;
+		}
+
+		const escapeCSV = (str: string): string => {
+			if (str.includes(",") || str.includes("\n") || str.includes('"')) {
+				return `"${str.replace(/"/g, '""')}"`;
+			}
+			return str;
+		};
+
+		const header = "Question,Answer";
+		const rows = state.flashcardInfo.flashcards.map(
+			(card) => `${escapeCSV(card.question)},${escapeCSV(card.answer)}`,
+		);
+		const csvContent = [header, ...rows].join("\n");
+
+		const filename = state.currentFile
+			? `${state.currentFile.basename}-flashcards.csv`
+			: "flashcards.csv";
+
+		const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+		const url = URL.createObjectURL(blob);
+		const link = document.createElement("a");
+		link.href = url;
+		link.download = filename;
+		document.body.appendChild(link);
+		link.click();
+		document.body.removeChild(link);
+		URL.revokeObjectURL(url);
+
+		notify().success(`Exported ${state.flashcardInfo.flashcards.length} flashcard(s) to CSV`);
+	}
+
+	private registerEditorChangeTracking(): void {
+		this.registerEvent(
+			this.app.workspace.on("editor-change", () => {
+				if (this.editorChangeTimer) {
+					clearTimeout(this.editorChangeTimer);
+				}
+
+				this.editorChangeTimer = setTimeout(() => {
+					void this.checkUncollectedFlashcards();
+				}, 500);
+			}),
+		);
+	}
+
+	private async checkUncollectedFlashcards(): Promise<void> {
+		const state = this.panel;
+		const file = state.currentFile;
+
+		if (!file || file.extension !== "md") {
+			return;
+		}
+
+		try {
+			const content = await this.app.vault.read(file);
+			const uncollectedCount = this.collectService.countFlashcardTags(content);
+
+			if (state.uncollectedCount !== uncollectedCount) {
+				this.panel.setUncollectedInfo(uncollectedCount);
+			}
+		} catch {
+			// Ignore errors (file might be deleted/moved)
+		}
+	}
 }
