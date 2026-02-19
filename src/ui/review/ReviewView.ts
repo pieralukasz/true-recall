@@ -705,7 +705,7 @@ export class ReviewView extends ItemView {
 
 		if (this.crammingMode) {
 			statsContainer.createDiv({
-				cls: "ep:flex ep:items-center ep:justify-center ep:h-5 ep:px-1.5 ep:rounded-full ep:text-ui-smaller ep:font-semibold ep-bg-obs-orange-20 ep:text-obs-orange ep:ml-1",
+				cls: "ep:flex ep:items-center ep:justify-center ep:h-5 ep:px-1.5 ep:rounded-full ep:text-ui-smaller ep:font-semibold ep:bg-obs-orange/20 ep:text-obs-orange ep:ml-1",
 				text: "Cram",
 			});
 		}
@@ -717,9 +717,9 @@ export class ReviewView extends ItemView {
 		count: number
 	): void {
 		const typeColors = {
-			new: "ep-bg-obs-green-20 ep:text-obs-green",
-			learning: "ep-bg-obs-orange-20 ep:text-obs-orange",
-			due: "ep-bg-obs-blue-20 ep:text-obs-blue",
+			new: "ep:bg-obs-green/20 ep:text-obs-green",
+			learning: "ep:bg-obs-orange/20 ep:text-obs-orange",
+			due: "ep:bg-obs-blue/20 ep:text-obs-blue",
 		};
 		const badge = container.createDiv({
 			cls: `ep:flex ep:items-center ep:justify-center ep:min-w-5 ep:h-5 ep:px-1.5 ep:rounded-full ep:text-ui-smaller ep:font-semibold ${typeColors[type]}`,

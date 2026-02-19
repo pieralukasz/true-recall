@@ -203,7 +203,7 @@ export class EasyDaysModal extends BasePromiseModal<EasyDaysResult> {
 			const deleteBtn = dateItem.createEl("button", {
 				text: "×",
 				type: "button",
-				cls: "ep:w-6 ep:h-6 ep:rounded-md ep:bg-transparent ep:border-none ep:text-obs-muted ep:cursor-pointer ep:text-lg ep:hover:text-obs-red ep-hover-bg-obs-red-10",
+				cls: "ep:w-6 ep:h-6 ep:rounded-md ep:bg-transparent ep:border-none ep:text-obs-muted ep:cursor-pointer ep:text-lg ep:hover:text-obs-red ep:hover:bg-obs-red/10",
 			});
 
 			this.addDomEvent(deleteBtn, "click", () => {

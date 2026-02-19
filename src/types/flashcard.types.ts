@@ -7,7 +7,6 @@ export interface FlashcardItem {
     cardType?: CardType;
     clozeTemplate?: string;
     clozeIndex?: number;
-    /** Temporary batch-level link: ID of the original card within the same batch */
     reverseOfBatchId?: string;
 }
 

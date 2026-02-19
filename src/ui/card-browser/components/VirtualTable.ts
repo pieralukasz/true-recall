@@ -181,7 +181,7 @@ export class VirtualTable<T> {
 		const top = index * ROW_HEIGHT;
 
 		let bgCls = "ep:hover:bg-obs-modifier-hover";
-		if (isActive) bgCls = "ep-bg-obs-blue-10";
+		if (isActive) bgCls = "ep:bg-obs-blue/10";
 		else if (isSelected) bgCls = "ep:bg-obs-modifier-hover";
 
 		const row = this.contentContainer!.createDiv({

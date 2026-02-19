@@ -28,10 +28,11 @@ if (vaultPluginDir && !existsSync(vaultPluginDir)) {
 
 function buildCSS() {
 	try {
-		execSync('npx postcss src/ui/styles.css -o styles.css', { stdio: 'pipe' });
-		console.log("✓ CSS processed with PostCSS (Tailwind v4)");
+		const minifyFlag = prod ? ' --minify' : '';
+		execSync(`npx @tailwindcss/cli -i src/ui/styles.css -o styles.css${minifyFlag}`, { stdio: 'pipe' });
+		console.log("✓ CSS built with Tailwind CLI" + (prod ? " (minified)" : ""));
 	} catch (err) {
-		console.error("PostCSS build failed:", err.message);
+		console.error("CSS build failed:", err.message);
 		throw err;
 	}
 }

@@ -32,23 +32,23 @@ interface StateConfig {
 const STATE_CONFIGS: Record<CardStateType, StateConfig> = {
 	new: {
 		label: "New",
-		colorCls: "ep-bg-obs-green-15 ep:text-obs-green",
+		colorCls: "ep:bg-obs-green/15 ep:text-obs-green",
 	},
 	learning: {
 		label: "Learning",
-		colorCls: "ep-bg-obs-orange-15 ep:text-obs-orange",
+		colorCls: "ep:bg-obs-orange/15 ep:text-obs-orange",
 	},
 	review: {
 		label: "Review",
-		colorCls: "ep-bg-obs-blue-15 ep:text-obs-blue",
+		colorCls: "ep:bg-obs-blue/15 ep:text-obs-blue",
 	},
 	relearning: {
 		label: "Relearn",
-		colorCls: "ep-bg-obs-yellow-15 ep:text-obs-yellow",
+		colorCls: "ep:bg-obs-yellow/15 ep:text-obs-yellow",
 	},
 	suspended: {
 		label: "Suspended",
-		colorCls: "ep-bg-obs-red-15 ep:text-obs-error",
+		colorCls: "ep:bg-obs-red/15 ep:text-obs-error",
 	},
 	buried: {
 		label: "Buried",
