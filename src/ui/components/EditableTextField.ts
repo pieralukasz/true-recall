@@ -191,18 +191,8 @@ export class EditableTextField extends BaseComponent {
 			},
 		});
 
-		// Apply inline styles for invisible mode (overrides Obsidian defaults)
 		if (this.props.invisibleTextarea) {
-			this.textarea.setCssProps({
-				"font-size": "inherit",
-				"line-height": "inherit",
-				"padding": "0",
-				"margin": "0",
-				"border": "none",
-				"background": "transparent",
-				"outline": "none",
-				"box-shadow": "none",
-			});
+			this.textarea.addClass("ep-textarea-invisible");
 		}
 
 		this.textarea.value = stripBrTags(this.props.initialValue);

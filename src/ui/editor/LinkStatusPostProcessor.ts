@@ -23,7 +23,7 @@ export function createLinkStatusPostProcessor(
 			const href = linkEl.getAttribute("data-href");
 			if (!href) continue;
 
-			if (linkEl.previousElementSibling?.classList.contains("true-recall-donut")) {
+			if (linkEl.previousElementSibling?.classList.contains("ep-donut")) {
 				continue;
 			}
 
@@ -43,7 +43,7 @@ export function createLinkStatusPostProcessor(
 			});
 			linkEl.insertAdjacentElement("beforebegin", statusEl);
 
-			if (!linkEl.nextElementSibling?.classList.contains("true-recall-link-count")) {
+			if (!linkEl.nextElementSibling?.classList.contains("ep-link-count")) {
 				const textCountEl = createLinkTextCountElement({
 					info,
 					onPlay: () => onReviewNote(targetFile),
@@ -55,7 +55,7 @@ export function createLinkStatusPostProcessor(
 		// Heading summaries
 		const headings = Array.from(el.querySelectorAll<HTMLElement>("h1, h2, h3, h4, h5, h6"));
 		for (const heading of headings) {
-			if (heading.querySelector(".true-recall-heading-summary")) continue;
+			if (heading.querySelector(".ep-heading-summary")) continue;
 
 			const sectionLinks = collectFlashcardLinksAfterHeading(
 				heading, app, sourcePath, frontmatterIndex, noteStatusCache,
@@ -70,7 +70,7 @@ export function createLinkStatusPostProcessor(
 			heading.prepend(donutEl);
 
 			const summaryEl = document.createElement("span");
-			summaryEl.className = "true-recall-heading-summary";
+			summaryEl.className = "ep-heading-summary ep:inline-flex ep:items-center ep:gap-1 ep:float-right";
 			summaryEl.appendChild(createLinkTextCountElement({ info: aggregated, onPlay: reviewSection }));
 			heading.appendChild(summaryEl);
 		}

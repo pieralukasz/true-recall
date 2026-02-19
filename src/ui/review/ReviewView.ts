@@ -651,10 +651,10 @@ export class ReviewView extends ItemView {
 			currentCard.answer !== prev.answer;
 
 		if (this.plugin.settings.showReviewHeader) {
-			this.headerEl.setCssProps({ display: "" });
+			this.headerEl.removeClass("ep:hidden");
 			this.renderHeader();
 		} else {
-			this.headerEl.setCssProps({ display: "none" });
+			this.headerEl.addClass("ep:hidden");
 			this.headerEl.empty();
 		}
 
@@ -980,10 +980,10 @@ export class ReviewView extends ItemView {
 
 		// Prevents keyboard from pushing buttons up on mobile
 		if (isEditing) {
-			this.buttonsEl.setCssProps({ display: "none" });
+			this.buttonsEl.addClass("ep:hidden");
 			return;
 		}
-		this.buttonsEl.setCssProps({ display: "" });
+		this.buttonsEl.removeClass("ep:hidden");
 
 		const cardChanged = currentCardId !== prev.cardId;
 		const answerJustRevealed = answerRevealed && !prev.answerRevealed;

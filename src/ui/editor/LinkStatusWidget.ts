@@ -11,11 +11,22 @@ const CIRCUMFERENCE = 100;
 const RADIUS = 15.91549430918954; // circumference / (2 * PI)
 const STROKE_WIDTH = 3.8;
 
+const DONUT_CLS =
+	"ep-donut ep:inline-flex ep:items-center ep:justify-center ep:w-[calc(1.6em-8px)] ep:h-[calc(1.6em-8px)] ep:align-middle ep:mr-1.5 ep:cursor-pointer ep:transition-transform ep:mb-0.5 ep:hover:scale-[1.2]";
+
+const HCOUNT_CLS = {
+	new: "ep:text-obs-green ep:tabular-nums",
+	learning: "ep:text-obs-orange ep:tabular-nums",
+	due: "ep:text-obs-blue ep:tabular-nums",
+	muted: "ep:text-obs-muted ep:tabular-nums",
+	sep: "ep:text-obs-faint ep:mx-px",
+} as const;
+
 export function createLinkStatusElement(options: LinkStatusOptions): HTMLSpanElement {
 	const { info, onPlay } = options;
 
 	const wrapper = document.createElement("span");
-	wrapper.className = options.small ? "true-recall-donut true-recall-donut-sm" : "true-recall-donut";
+	wrapper.className = DONUT_CLS;
 	wrapper.setAttribute(
 		"aria-label",
 		`Flashcards: ${info.new} new, ${info.learning} learning, ${info.dueToday} due today (${info.total} total)`,
@@ -89,18 +100,18 @@ export function createLinkTextCountElement(options: LinkStatusOptions): HTMLSpan
 	const { info, onPlay } = options;
 
 	const wrapper = document.createElement("span");
-	wrapper.className = "true-recall-link-count";
+	wrapper.className = "ep-link-count ep:inline-flex ep:items-center ep:gap-0.5 ep:align-middle ep:ml-1 ep:text-ui-smaller";
 	wrapper.title = `Due: ${info.dueToday}, Learning: ${info.learning}, New: ${info.new}, Total: ${info.total}`;
 
 	const parts: { count: number; label: string; cls: string }[] = [];
-	if (info.new > 0) parts.push({ count: info.new, label: "new", cls: "true-recall-hcount-new" });
-	if (info.learning > 0) parts.push({ count: info.learning, label: "lrn", cls: "true-recall-hcount-learning" });
-	if (info.dueToday > 0) parts.push({ count: info.dueToday, label: "due", cls: "true-recall-hcount-due" });
+	if (info.new > 0) parts.push({ count: info.new, label: "new", cls: HCOUNT_CLS.new });
+	if (info.learning > 0) parts.push({ count: info.learning, label: "lrn", cls: HCOUNT_CLS.learning });
+	if (info.dueToday > 0) parts.push({ count: info.dueToday, label: "due", cls: HCOUNT_CLS.due });
 
 	for (let i = 0; i < parts.length; i++) {
 		if (i > 0) {
 			const sep = document.createElement("span");
-			sep.className = "true-recall-hcount-sep";
+			sep.className = HCOUNT_CLS.sep;
 			sep.textContent = "\u00B7";
 			wrapper.appendChild(sep);
 		}
@@ -111,12 +122,12 @@ export function createLinkTextCountElement(options: LinkStatusOptions): HTMLSpan
 	}
 
 	const totalSpan = document.createElement("span");
-	totalSpan.className = "true-recall-hcount-muted";
+	totalSpan.className = HCOUNT_CLS.muted;
 	totalSpan.textContent = parts.length > 0 ? `(${info.total})` : `(${info.total} cards)`;
 	wrapper.appendChild(totalSpan);
 
 	const optionsBtn = document.createElement("span");
-	optionsBtn.className = "true-recall-link-options";
+	optionsBtn.className = "ep:text-obs-faint ep:cursor-pointer ep:ml-0.5 ep:font-bold ep:transition-colors ep:hover:text-obs-accent";
 	optionsBtn.textContent = "\u2026";
 	if (onPlay) {
 		optionsBtn.addEventListener("click", (e) => {

@@ -1,0 +1,30 @@
+/* SVG donut ring styling — cannot be expressed as Tailwind utilities */
+@layer components {
+	.true-recall-donut-svg {
+		width: 100%;
+		height: 100%;
+	}
+	.true-recall-donut-bg {
+		stroke: color-mix(in srgb, var(--text-faint) 20%, transparent);
+	}
+	.true-recall-donut-due {
+		stroke: var(--color-blue);
+		transition: stroke-dashoffset 0.5s ease;
+	}
+	.true-recall-donut-new {
+		stroke: var(--color-green);
+		transition: stroke-dashoffset 0.5s ease;
+	}
+	.true-recall-donut-learning {
+		stroke: var(--color-orange);
+		transition: stroke-dashoffset 0.5s ease;
+	}
+	.true-recall-donut-count {
+		fill: var(--text-normal);
+		font-size: 10px;
+		font-weight: 700;
+		font-family: var(--font-interface);
+		text-anchor: middle;
+		dominant-baseline: central;
+	}
+}
