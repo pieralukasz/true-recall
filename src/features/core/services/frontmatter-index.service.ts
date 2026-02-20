@@ -40,8 +40,7 @@ interface FieldIndex {
 export class FrontmatterIndexService {
 	private app: App;
 	private fields: Map<string, FieldIndex> = new Map();
-	private fieldChangeCallbacks: Map<string, FieldChangeCallback[]> =
-		new Map();
+	private fieldChangeCallbacks: Map<string, FieldChangeCallback[]> = new Map();
 	// Track direct event handlers for cleanup
 	private directEventHandlers: {
 		changed?: (file: TFile, data: string, cache: CachedMetadata) => void;
@@ -264,7 +263,7 @@ export class FrontmatterIndexService {
 		if (file instanceof TFile) return file;
 		// Fallback for test mocks that aren't actual TFile instances
 		if (file && typeof file === "object" && "extension" in file) {
-				return file as unknown as TFile;
+			return file as unknown as TFile;
 		}
 		return null;
 	}

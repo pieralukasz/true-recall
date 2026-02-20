@@ -6,8 +6,8 @@ import type {
 import type { FrontmatterService } from "@features/study/services/flashcard/frontmatter.service";
 import { notify } from "@shared/services/notification.service";
 import { notifyCardChange } from "@shared/services/signals";
-import { TFile } from "obsidian";
 import type { App } from "obsidian";
+import { TFile } from "obsidian";
 import { UidRemovedModal } from "../../modals/UidRemovedModal";
 
 export interface UidGuardianDeps {
@@ -56,10 +56,7 @@ export class UidGuardianService {
 
 		switch (result.action) {
 			case "restore":
-				await this.deps.frontmatterService.setSourceNoteUid(
-					file,
-					removedUid,
-				);
+				await this.deps.frontmatterService.setSourceNoteUid(file, removedUid);
 				break;
 
 			case "delete": {

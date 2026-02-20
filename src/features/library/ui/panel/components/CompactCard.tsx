@@ -11,20 +11,7 @@ import { MarkdownContent } from "@shared/ui/components/MarkdownContent";
 import { useIcon } from "@shared/ui/preact/hooks";
 import { useApp } from "@shared/ui/preact/ObsidianContext";
 import { Menu } from "obsidian";
-import { useCallback, useMemo, useRef } from "preact/hooks";
-
-function stripMarkdownForPreview(md: string): string {
-	return md
-		.replace(/!\[\[.*?\]\]/g, "")
-		.replace(/!\[.*?\]\(.*?\)/g, "")
-		.replace(/\[\[(?:[^\]|]*?\|)?([^\]]*?)\]\]/g, "$1")
-		.replace(/\[([^\]]*?)\]\(.*?\)/g, "$1")
-		.replace(/<br\s*\/?>/gi, " ")
-		.replace(/<[^>]+>/g, "")
-		.replace(/[*_~`#]+/g, "")
-		.replace(/\s+/g, " ")
-		.trim();
-}
+import { useCallback, useRef } from "preact/hooks";
 
 export interface CompactCardProps {
 	card: FlashcardItem;
@@ -154,7 +141,6 @@ export function CompactCard({
 		<div
 			class={`ep:flex ep:flex-col ep:mb-2 ep:rounded-lg ep:bg-obs-secondary ep:border ep:border-obs-border ep:shadow-sm ${borderCls}`}
 		>
-			{/* Main row (always visible) */}
 			<button
 				type="button"
 				class="ep:flex ep:items-center ep:gap-2 ep:p-3 ep:cursor-pointer ep:hover:bg-obs-modifier-hover ep:rounded-md ep:transition-colors ep:bg-transparent ep:border-none ep:font-inherit ep:text-left ep:w-full"
