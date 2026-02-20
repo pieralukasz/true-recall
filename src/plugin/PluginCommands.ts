@@ -8,12 +8,6 @@ export function registerCommands(plugin: TrueRecallPlugin): void {
 	});
 
 	plugin.addCommand({
-		id: "start-review",
-		name: "Start review session",
-		callback: () => void plugin.startReviewSession(),
-	});
-
-	plugin.addCommand({
 		id: "review-current-note",
 		name: "Review flashcards from current note",
 		checkCallback: (checking) => {

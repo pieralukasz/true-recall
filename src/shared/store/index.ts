@@ -32,11 +32,7 @@ export type {
 	// Review slice
 	ReviewSliceState,
 	SelectionMode,
-	SessionApi,
 	SessionPhase,
-	SessionSliceActions,
-	// Session slice
-	SessionSliceState,
 	SimulatorApi,
 	SimulatorSliceActions,
 	// Simulator slice
