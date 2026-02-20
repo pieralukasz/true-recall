@@ -8,99 +8,27 @@ import {
 } from "../services/csv-export.service";
 import type { SqliteStoreService } from "../../../features/core/persistence/sqlite/SqliteStoreService";
 import { BaseModal } from "../../../shared/ui/modals/BaseModal";
-
-interface NoteEntry {
-	uid: string;
-	name: string;
-}
+import { OptionCheckbox } from "../../../shared/ui/components/OptionCheckbox";
+import {
+	ModalFooter,
+	PRIMARY_BTN,
+	SECONDARY_BTN,
+} from "../../../shared/ui/components/ModalFooter";
+import {
+	ExportScopeSelector,
+	type ExportMode,
+} from "../components/ExportScopeSelector";
+import {
+	type NoteEntry,
+	resolveProjects,
+	resolveNotes,
+	downloadBlob,
+} from "../utils/export-helpers";
 
 type ExportPhase =
 	| { type: "form" }
 	| { type: "success"; filename: string }
 	| { type: "error"; message: string };
-
-function CheckboxItem({
-	label,
-	itemKey,
-	selectedSet,
-	onToggle,
-}: {
-	label: string;
-	itemKey: string;
-	selectedSet: Set<string>;
-	onToggle: (key: string, checked: boolean) => void;
-}) {
-	const [checked, setChecked] = useState(selectedSet.has(itemKey));
-
-	const toggle = useCallback(() => {
-		const next = !checked;
-		setChecked(next);
-		onToggle(itemKey, next);
-	}, [checked, itemKey, onToggle]);
-
-	return (
-		<div
-			class="ep:flex ep:items-center ep:gap-2 ep:p-2 ep:border-b ep:border-obs-border ep:last:border-b-0 ep:cursor-pointer ep:hover:bg-obs-modifier-hover"
-			role="option"
-			tabIndex={0}
-			aria-selected={checked}
-			onClick={toggle}
-			onKeyDown={(e: KeyboardEvent) => {
-				if (e.key === "Enter" || e.key === " ") {
-					e.preventDefault();
-					toggle();
-				}
-			}}
-		>
-			<input
-				type="checkbox"
-				class="ep:w-4 ep:h-4 ep:accent-obs-interactive"
-				checked={checked}
-				onClick={(e) => e.stopPropagation()}
-				onChange={toggle}
-			/>
-			<span class="ep:text-ui-small">{label}</span>
-		</div>
-	);
-}
-
-function OptionCheckbox({
-	label,
-	description,
-	initialChecked,
-	onChange,
-}: {
-	label: string;
-	description: string;
-	initialChecked: boolean;
-	onChange: (val: boolean) => void;
-}) {
-	const [checked, setChecked] = useState(initialChecked);
-
-	return (
-		<div class="ep:flex ep:items-start ep:gap-3 ep:py-2">
-			<input
-				type="checkbox"
-				class="ep:w-4 ep:h-4 ep:accent-obs-interactive ep:shrink-0 ep:mt-0.5"
-				checked={checked}
-				onChange={() => {
-					const next = !checked;
-					setChecked(next);
-					onChange(next);
-				}}
-			/>
-			<div>
-				<div class="ep:text-ui-small ep:font-medium">{label}</div>
-				<div class="ep:text-ui-smaller ep:text-obs-muted">{description}</div>
-			</div>
-		</div>
-	);
-}
-
-const PRIMARY_BTN =
-	"mod-cta ep:py-2.5 ep:px-5 ep:rounded-md ep:text-ui-small ep:font-medium ep:cursor-pointer ep:transition-all";
-const SECONDARY_BTN =
-	"ep:py-2.5 ep:px-5 ep:rounded-md ep:text-ui-small ep:font-medium ep:cursor-pointer ep:transition-all ep:bg-obs-secondary ep:text-obs-normal ep:border ep:border-obs-border ep:hover:bg-obs-modifier-hover";
 
 function CsvExportBody({
 	totalCards,
@@ -113,7 +41,7 @@ function CsvExportBody({
 	allProjects: string[];
 	allNotes: NoteEntry[];
 	onExport: (opts: {
-		exportMode: "all" | "projects" | "notes";
+		exportMode: ExportMode;
 		selectedProjects: Set<string>;
 		selectedSourceUids: Set<string>;
 		includeScheduling: boolean;
@@ -122,9 +50,7 @@ function CsvExportBody({
 	onClose: () => void;
 }) {
 	const [phase, setPhase] = useState<ExportPhase>({ type: "form" });
-	const [exportMode, setExportMode] = useState<"all" | "projects" | "notes">(
-		"all",
-	);
+	const [exportMode, setExportMode] = useState<ExportMode>("all");
 	const [separator, setSeparator] = useState<CsvSeparator>(",");
 	const [includeScheduling, setIncludeScheduling] = useState(false);
 	const selectedProjects = useRef(new Set<string>());
@@ -197,78 +123,17 @@ function CsvExportBody({
 
 	return (
 		<>
-			{/* Scope selection */}
-			<div class="ep:mb-4">
-				<div class="ep:text-ui-small ep:font-medium ep:mb-2">Scope</div>
-
-				<div class="ep:flex ep:items-center ep:gap-2 ep:py-1">
-					<input
-						id="csv-scope-all"
-						type="radio"
-						name="csv-scope"
-						class="ep:w-4 ep:h-4 ep:accent-obs-interactive"
-						checked={exportMode === "all"}
-						onChange={() => setExportMode("all")}
-					/>
-					<label htmlFor="csv-scope-all" class="ep:text-ui-small">
-						All cards ({totalCards})
-					</label>
-				</div>
-				<div class="ep:flex ep:items-center ep:gap-2 ep:py-1">
-					<input
-						id="csv-scope-projects"
-						type="radio"
-						name="csv-scope"
-						class="ep:w-4 ep:h-4 ep:accent-obs-interactive"
-						checked={exportMode === "projects"}
-						onChange={() => setExportMode("projects")}
-					/>
-					<label htmlFor="csv-scope-projects" class="ep:text-ui-small">
-						Selected projects only
-					</label>
-				</div>
-				<div class="ep:flex ep:items-center ep:gap-2 ep:py-1">
-					<input
-						id="csv-scope-notes"
-						type="radio"
-						name="csv-scope"
-						class="ep:w-4 ep:h-4 ep:accent-obs-interactive"
-						checked={exportMode === "notes"}
-						onChange={() => setExportMode("notes")}
-					/>
-					<label htmlFor="csv-scope-notes" class="ep:text-ui-small">
-						Selected notes only
-					</label>
-				</div>
-
-				{allProjects.length > 0 && exportMode === "projects" && (
-					<div class="ep:border ep:border-obs-border ep:rounded-md ep:max-h-[150px] ep:overflow-y-auto ep:mt-2 ep:ml-6">
-						{allProjects.map((project) => (
-							<CheckboxItem
-								key={project}
-								label={project}
-								itemKey={project}
-								selectedSet={selectedProjects.current}
-								onToggle={handleToggleProject}
-							/>
-						))}
-					</div>
-				)}
-
-				{allNotes.length > 0 && exportMode === "notes" && (
-					<div class="ep:border ep:border-obs-border ep:rounded-md ep:max-h-[150px] ep:overflow-y-auto ep:mt-2 ep:ml-6">
-						{allNotes.map((note) => (
-							<CheckboxItem
-								key={note.uid}
-								label={note.name}
-								itemKey={note.uid}
-								selectedSet={selectedSourceUids.current}
-								onToggle={handleToggleNote}
-							/>
-						))}
-					</div>
-				)}
-			</div>
+			<ExportScopeSelector
+				exportMode={exportMode}
+				onModeChange={setExportMode}
+				totalCards={totalCards}
+				allProjects={allProjects}
+				allNotes={allNotes}
+				selectedProjects={selectedProjects.current}
+				selectedSourceUids={selectedSourceUids.current}
+				onToggleProject={handleToggleProject}
+				onToggleNote={handleToggleNote}
+			/>
 
 			{/* Separator selection */}
 			<div class="ep:mb-4">
@@ -307,19 +172,12 @@ function CsvExportBody({
 				/>
 			</div>
 
-			{/* Buttons */}
-			<div class="ep:flex ep:justify-end ep:gap-2 ep:pt-2 ep:border-t ep:border-obs-border">
-				<button type="button" class={SECONDARY_BTN} onClick={onClose}>
-					Cancel
-				</button>
-				<button
-					type="button"
-					class={PRIMARY_BTN}
-					onClick={() => void handleExport()}
-				>
-					Export
-				</button>
-			</div>
+			<ModalFooter
+				onCancel={onClose}
+				onConfirm={() => void handleExport()}
+				cancelLabel="Cancel"
+				confirmLabel="Export"
+			/>
 		</>
 	);
 }
@@ -339,8 +197,8 @@ export class CsvExportModal extends BaseModal {
 		super(app, { title: "Export as CSV", width: "520px" });
 		this.store = store;
 		this.frontmatterIndex = frontmatterIndex;
-		this.allProjects = this.resolveProjects();
-		this.allNotes = this.resolveNotes();
+		this.allProjects = resolveProjects(this.frontmatterIndex);
+		this.allNotes = resolveNotes(this.app);
 	}
 
 	protected renderBody(container: HTMLElement): void {
@@ -366,7 +224,7 @@ export class CsvExportModal extends BaseModal {
 	}
 
 	private async startExport(opts: {
-		exportMode: "all" | "projects" | "notes";
+		exportMode: ExportMode;
 		selectedProjects: Set<string>;
 		selectedSourceUids: Set<string>;
 		includeScheduling: boolean;
@@ -388,44 +246,11 @@ export class CsvExportModal extends BaseModal {
 				separator: opts.separator,
 			});
 
-			this.downloadFile(content, filename);
+			downloadBlob(content, filename, "text/plain;charset=utf-8");
 			return { type: "success", filename };
 		} catch (err) {
 			const errMsg = err instanceof Error ? err.message : String(err);
 			return { type: "error", message: errMsg };
 		}
-	}
-
-	private downloadFile(content: string, filename: string): void {
-		const blob = new Blob([content], { type: "text/plain;charset=utf-8" });
-		const url = URL.createObjectURL(blob);
-		const a = document.createElement("a");
-		a.href = url;
-		a.download = filename;
-		document.body.appendChild(a);
-		a.click();
-		document.body.removeChild(a);
-		URL.revokeObjectURL(url);
-	}
-
-	private resolveProjects(): string[] {
-		return [...this.frontmatterIndex.getAllValues("projects")].sort();
-	}
-
-	private resolveNotes(): NoteEntry[] {
-		const notes: NoteEntry[] = [];
-		const files = this.app.vault.getMarkdownFiles();
-
-		for (const file of files) {
-			const cache = this.app.metadataCache.getFileCache(file);
-			if (!cache?.frontmatter) continue;
-
-			const uid = cache.frontmatter.flashcard_uid as string | undefined;
-			if (!uid) continue;
-
-			notes.push({ uid, name: file.basename });
-		}
-
-		return notes.sort((a, b) => a.name.localeCompare(b.name));
 	}
 }

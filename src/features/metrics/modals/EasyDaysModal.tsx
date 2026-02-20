@@ -2,7 +2,16 @@ import type { App } from "obsidian";
 import { render } from "preact";
 import { useState } from "preact/hooks";
 import type { EasyDaysConfig } from "../../../shared/types";
-import { BasePromiseModal, type CancellableResult } from "../../../shared/ui/modals/BasePromiseModal";
+import {
+	ModalFooter,
+	SECONDARY_BTN,
+} from "../../../shared/ui/components/ModalFooter";
+import {
+	BasePromiseModal,
+	type CancellableResult,
+} from "../../../shared/ui/modals/BasePromiseModal";
+import { DayOfWeekSelector } from "./easy-days/DayOfWeekSelector";
+import { SpecificDatesList } from "./easy-days/SpecificDatesList";
 
 export interface EasyDaysResult extends CancellableResult {
 	easyDays?: EasyDaysConfig;
@@ -13,40 +22,6 @@ export interface EasyDaysResult extends CancellableResult {
 interface EasyDaysModalOptions {
 	easyDays: EasyDaysConfig;
 	multiplier: number;
-}
-
-const DAY_NAMES = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
-
-function DayButton({
-	name,
-	isSelected,
-	onToggle,
-}: {
-	name: string;
-	isSelected: boolean;
-	onToggle: () => void;
-}) {
-	const base =
-		"ep:px-3 ep:py-1.5 ep:rounded-md ep:border ep:cursor-pointer ep:text-ui-small ep:font-medium ep:transition-colors";
-	const cls = isSelected
-		? `${base} ep:bg-obs-interactive ep:text-obs-on-accent ep:border-obs-interactive`
-		: `${base} ep:bg-transparent ep:border-obs-border ep:text-obs-normal ep:hover:bg-obs-modifier-hover`;
-
-	return (
-		<button type="button" class={cls} onClick={onToggle}>
-			{name}
-		</button>
-	);
-}
-
-function formatDate(dateStr: string): string {
-	const date = new Date(`${dateStr}T00:00:00`);
-	return date.toLocaleDateString(undefined, {
-		weekday: "short",
-		year: "numeric",
-		month: "short",
-		day: "numeric",
-	});
 }
 
 function EasyDaysBody({
@@ -111,84 +86,21 @@ function EasyDaysBody({
 		});
 	};
 
-	const sortedDates = Array.from(specificDates).sort();
-
 	return (
 		<>
-			{/* Recurring Days */}
-			<div class="ep:mb-5">
-				<h4 class="ep:text-ui-small ep:font-semibold ep:mb-2 ep:text-obs-normal">
-					Recurring days
-				</h4>
-				<p class="ep:text-ui-smaller ep:text-obs-muted ep:mb-3">
-					Select days of the week with reduced workload
-				</p>
-				<div class="ep:flex ep:gap-1.5 ep:flex-wrap">
-					{DAY_NAMES.map((name, index) => (
-						<DayButton
-							key={index}
-							name={name}
-							isSelected={recurringDays.has(index)}
-							onToggle={() => toggleDay(index)}
-						/>
-					))}
-				</div>
-			</div>
+			<DayOfWeekSelector
+				selectedDays={recurringDays}
+				onToggleDay={toggleDay}
+			/>
 
-			{/* Specific Dates */}
-			<div class="ep:mb-5">
-				<h4 class="ep:text-ui-small ep:font-semibold ep:mb-2 ep:text-obs-normal">
-					Specific dates
-				</h4>
-				<p class="ep:text-ui-smaller ep:text-obs-muted ep:mb-3">
-					Add individual dates with reduced workload
-				</p>
-
-				<div class="ep:flex ep:gap-2 ep:mb-3">
-					<input
-						type="date"
-						class="ep:flex-1 ep:py-2 ep:px-3 ep:border ep:border-obs-border ep:rounded-md ep:bg-obs-primary ep:text-obs-normal ep:text-ui-small"
-						min={today}
-						value={dateInputValue}
-						onChange={(e) =>
-							setDateInputValue((e.target as HTMLInputElement).value)
-						}
-					/>
-					<button
-						type="button"
-						class="ep:px-4 ep:py-2 ep:rounded-md ep:bg-obs-interactive ep:text-obs-on-accent ep:border-none ep:text-ui-small ep:font-medium ep:cursor-pointer ep:hover:opacity-90"
-						onClick={addDate}
-					>
-						+ add
-					</button>
-				</div>
-
-				<div class="ep:border ep:border-obs-border ep:rounded-md ep:max-h-[150px] ep:overflow-y-auto">
-					{sortedDates.length === 0 ? (
-						<div class="ep:py-4 ep:px-3 ep:text-center ep:text-obs-muted ep:text-ui-smaller ep:italic">
-							No specific dates added
-						</div>
-					) : (
-						sortedDates.map((dateStr) => (
-							<div
-								key={dateStr}
-								class="ep:flex ep:items-center ep:justify-between ep:py-2 ep:px-3 ep:border-b ep:border-obs-border ep:last:border-b-0"
-							>
-								<span class="ep:text-ui-small ep:text-obs-normal">
-									{formatDate(dateStr)}
-								</span>
-								<button
-									type="button"
-									class="ep:w-6 ep:h-6 ep:rounded-md ep:bg-transparent ep:border-none ep:text-obs-muted ep:cursor-pointer ep:text-lg ep:hover:text-obs-red ep:hover:bg-obs-red/10"
-									onClick={() => removeDate(dateStr)}
-								>
-									&times;
-								</button>
-							</div>
-						))
-					)}
-				</div>
-			</div>
+			<SpecificDatesList
+				dates={specificDates}
+				dateInputValue={dateInputValue}
+				today={today}
+				onDateInputChange={setDateInputValue}
+				onAddDate={addDate}
+				onRemoveDate={removeDate}
+			/>
 
 			{/* Workload Multiplier */}
 			<div class="ep:mb-5">
@@ -218,30 +130,19 @@ function EasyDaysBody({
 				</p>
 			</div>
 
-			{/* Buttons */}
-			<div class="ep:flex ep:justify-end ep:gap-2 ep:pt-2 ep:border-t ep:border-obs-border">
+			<ModalFooter
+				onCancel={() => onResolve({ cancelled: true })}
+				onConfirm={() => handleSave(true)}
+				confirmLabel="Apply Now"
+			>
 				<button
 					type="button"
-					class="ep:py-2.5 ep:px-5 ep:rounded-md ep:text-ui-small ep:font-medium ep:cursor-pointer ep:transition-all ep:bg-obs-secondary ep:text-obs-normal ep:border ep:border-obs-border ep:hover:bg-obs-modifier-hover"
-					onClick={() => onResolve({ cancelled: true })}
-				>
-					Cancel
-				</button>
-				<button
-					type="button"
-					class="ep:py-2.5 ep:px-5 ep:rounded-md ep:text-ui-small ep:font-medium ep:cursor-pointer ep:transition-all ep:bg-obs-secondary ep:text-obs-normal ep:border ep:border-obs-border ep:hover:bg-obs-modifier-hover"
+					class={SECONDARY_BTN}
 					onClick={() => handleSave(false)}
 				>
 					Save
 				</button>
-				<button
-					type="button"
-					class="mod-cta ep:py-2.5 ep:px-5 ep:rounded-md ep:text-ui-small ep:font-medium ep:cursor-pointer ep:transition-all"
-					onClick={() => handleSave(true)}
-				>
-					Apply Now
-				</button>
-			</div>
+			</ModalFooter>
 		</>
 	);
 }

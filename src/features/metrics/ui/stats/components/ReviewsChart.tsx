@@ -1,0 +1,242 @@
+import { Chart, type ChartDataset } from "chart.js";
+import { useCallback, useEffect, useMemo, useState } from "preact/hooks";
+import { StatsCalculatorService } from "../../../services/stats/stats-calculator.service";
+import type {
+	CardsCreatedVsReviewedEntry,
+	FSRSFlashcardItem,
+	StatsTimeRange,
+} from "../../../../../shared/types";
+import { getThemeColor, getThemeColorWithAlpha } from "../../../../../shared/ui/utils/theme-colors";
+import {
+	formatDateLabel,
+	formatDateForDisplay,
+	getMaxTicksForRange,
+} from "../utils/chart-helpers";
+import { StatsCard } from "./StatsCard";
+import { ChartCard } from "./ChartCard";
+import { SummaryList } from "./SummaryList";
+
+export function ReviewsChart({
+	statsCalculator,
+	currentRange,
+	onCardPreview,
+}: {
+	statsCalculator: StatsCalculatorService;
+	currentRange: StatsTimeRange;
+	onCardPreview: (date: string, cards: FSRSFlashcardItem[]) => void;
+}) {
+	const [data, setData] = useState<CardsCreatedVsReviewedEntry[]>([]);
+	const [visibility, setVisibility] = useState({
+		created: false,
+		reviewed: true,
+		createdAndReviewedSameDay: false,
+	});
+
+	useEffect(() => {
+		if (currentRange === "backlog") {
+			setData([]);
+			return;
+		}
+		try {
+			const result =
+				statsCalculator.getCardsCreatedVsReviewedHistory(currentRange);
+			setData(result);
+		} catch (err) {
+			console.error("Error fetching reviews data:", err);
+			setData([]);
+		}
+	}, [statsCalculator, currentRange]);
+
+	const toggleVisibility = useCallback((key: keyof typeof visibility) => {
+		setVisibility((prev) => ({ ...prev, [key]: !prev[key] }));
+	}, []);
+
+	const summary = useMemo(() => {
+		if (data.length === 0) return [];
+		const totalReviewed = data.reduce((sum, d) => sum + d.reviewed, 0);
+		const totalCreated = data.reduce((sum, d) => sum + d.created, 0);
+		const daysStudied = data.filter((d) => d.reviewed > 0).length;
+		const totalDays = data.length;
+		const percentStudied =
+			totalDays > 0 ? ((daysStudied / totalDays) * 100).toFixed(1) : "0";
+		const avgPerDay = totalDays > 0 ? Math.round(totalReviewed / totalDays) : 0;
+		const avgPerStudyDay =
+			daysStudied > 0 ? Math.round(totalReviewed / daysStudied) : 0;
+
+		const items: string[] = [
+			`Days studied: ${daysStudied} of ${totalDays} (${percentStudied}%)`,
+			`Total: ${totalReviewed.toLocaleString()} reviews`,
+			`Average over period: ${avgPerDay} reviews/day`,
+		];
+
+		if (daysStudied > 0 && daysStudied !== totalDays) {
+			items.push(`Average for days studied: ${avgPerStudyDay} reviews/day`);
+		}
+		if (visibility.created) {
+			items.push(`Total created: ${totalCreated.toLocaleString()} cards`);
+		}
+		return items;
+	}, [data, visibility.created]);
+
+	const buildChart = useCallback(
+		(canvas: HTMLCanvasElement) => {
+			const maxTicks = getMaxTicksForRange(currentRange);
+			const datasets: ChartDataset<"bar", number[]>[] = [];
+
+			if (visibility.reviewed) {
+				datasets.push({
+					label: "Reviewed",
+					data: data.map((d) => d.reviewed),
+					backgroundColor: getThemeColorWithAlpha("--color-blue", 0.7),
+					borderColor: getThemeColor("--color-blue"),
+					borderWidth: 1,
+				});
+			}
+			if (visibility.created) {
+				datasets.push({
+					label: "Created",
+					data: data.map((d) => d.created),
+					backgroundColor: getThemeColorWithAlpha("--color-green", 0.7),
+					borderColor: getThemeColor("--color-green"),
+					borderWidth: 1,
+				});
+			}
+			if (visibility.createdAndReviewedSameDay) {
+				datasets.push({
+					label: "Same Day",
+					data: data.map((d) => d.createdAndReviewedSameDay),
+					backgroundColor: getThemeColorWithAlpha("--color-orange", 0.8),
+					borderColor: getThemeColor("--color-orange"),
+					borderWidth: 1,
+				});
+			}
+
+			return new Chart(canvas, {
+				type: "bar",
+				data: {
+					labels: data.map((d) => formatDateLabel(d.date)),
+					datasets,
+				},
+				options: {
+					responsive: true,
+					maintainAspectRatio: false,
+					plugins: {
+						legend: { display: false },
+						tooltip: {
+							callbacks: {
+								title: (items) => {
+									if (items.length > 0)
+										return formatDateForDisplay(
+											data[items[0]?.dataIndex ?? 0]?.date ?? "",
+										);
+									return "";
+								},
+							},
+						},
+					},
+					scales: {
+						y: { beginAtZero: true, ticks: { precision: 0 } },
+						x: {
+							ticks: {
+								maxRotation: 45,
+								minRotation: 45,
+								maxTicksLimit: maxTicks,
+							},
+						},
+					},
+					onClick: (_event, elements) => {
+						if (elements.length > 0) {
+							const entry = data[elements[0]?.index ?? 0];
+							if (entry && (entry.created > 0 || entry.reviewed > 0)) {
+								const cards = statsCalculator.getCardsDueOnDate(entry.date);
+								onCardPreview(entry.date, cards);
+							}
+						}
+					},
+				},
+			});
+		},
+		[data, currentRange, visibility, statsCalculator, onCardPreview],
+	);
+
+	const isBacklog = currentRange === "backlog";
+
+	const controlDefs = useMemo(
+		() => [
+			{
+				key: "reviewed" as const,
+				label: "Reviewed",
+				color: getThemeColorWithAlpha("--color-blue", 0.9),
+			},
+			{
+				key: "created" as const,
+				label: "Created",
+				color: getThemeColorWithAlpha("--color-green", 0.9),
+			},
+			{
+				key: "createdAndReviewedSameDay" as const,
+				label: "Same Day",
+				color: getThemeColorWithAlpha("--color-orange", 0.9),
+			},
+		],
+		[],
+	);
+
+	if (isBacklog) {
+		return (
+			<StatsCard title="Reviews">
+				<div class="ep:flex ep:flex-col ep:items-center ep:justify-center ep:h-52 ep:text-obs-muted ep:text-ui-small ep:italic">
+					Select a time range to see reviews
+				</div>
+			</StatsCard>
+		);
+	}
+
+	const controls = (
+		<div class="ep:flex ep:flex-wrap ep:gap-4 ep:justify-center ep:mb-3 ep:pb-3 ep:border-b ep:border-obs-border">
+			{controlDefs.map(({ key, label, color }) => (
+				<button
+					type="button"
+					key={key}
+					class="ep:flex ep:items-center ep:gap-1.5 ep:cursor-pointer ep:select-none ep:bg-transparent ep:border-none ep:p-0 ep:font-inherit"
+					onClick={() => toggleVisibility(key)}
+				>
+					<input
+						id={`reviews-toggle-${key}`}
+						type="checkbox"
+						class="ep:cursor-pointer ep-dynamic-accent"
+						checked={visibility[key]}
+						style={{ "--ep-dynamic-color": color } as Record<string, string>}
+						onChange={() => toggleVisibility(key)}
+					/>
+					<label
+						htmlFor={`reviews-toggle-${key}`}
+						class="ep:text-ui-small ep:cursor-pointer ep-dynamic-color"
+						style={
+							{
+								"--ep-dynamic-color": visibility[key]
+									? color
+									: "var(--text-muted)",
+							} as Record<string, string>
+						}
+					>
+						{label}
+					</label>
+				</button>
+			))}
+		</div>
+	);
+
+	return (
+		<ChartCard
+			title="Reviews"
+			buildChart={buildChart}
+			deps={[data, currentRange, visibility]}
+			isEmpty={data.length === 0}
+			emptyMessage="No data available"
+			aboveCanvas={controls}
+		>
+			<SummaryList items={summary} />
+		</ChartCard>
+	);
+}
