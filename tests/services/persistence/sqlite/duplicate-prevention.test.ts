@@ -11,11 +11,11 @@ import {
 	createTestCard,
 	type TestContext,
 } from "./__setup__/test-database";
-import { CardRepository } from "../../../../src/services/flashcard/card-repository.service";
-import type { SqliteStoreService } from "../../../../src/services/persistence/sqlite/SqliteStoreService";
+import { CardRepository } from "../../../../src/features/study/services/flashcard/card-repository.service";
+import type { SqliteStoreService } from "../../../../src/features/core/persistence/sqlite/SqliteStoreService";
 
 // Mock signals to prevent errors
-vi.mock("../../../../src/services/core/signals", () => ({
+vi.mock("../../../../src/shared/services/signals", () => ({
 	notifyCardChange: vi.fn(),
 }));
 

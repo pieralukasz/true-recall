@@ -4,9 +4,9 @@
  */
 import { describe, it, expect, beforeEach, vi } from "vitest";
 import { State, Rating } from "ts-fsrs";
-import { SessionPersistenceService } from "../../../src/services/persistence/session-persistence.service";
-import type { SqliteStoreService } from "../../../src/services/persistence/sqlite";
-import type { DayBoundaryService } from "../../../src/services/core/day-boundary.service";
+import { SessionPersistenceService } from "../../../src/features/core/persistence/session-persistence.service";
+import type { SqliteStoreService } from "../../../src/features/core/persistence/sqlite";
+import type { DayBoundaryService } from "../../../src/features/core/services/day-boundary.service";
 import type { App } from "obsidian";
 
 describe("SessionPersistenceService", () => {

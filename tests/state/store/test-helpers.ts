@@ -1,11 +1,11 @@
 import { State } from "ts-fsrs";
 import type { App } from "obsidian";
-import type { AppStoreDeps, BadgeCounts } from "../../../src/state/store";
-import type { FSRSFlashcardItem, TrueRecallSettings } from "../../../src/types";
-import type { SqliteStoreService } from "../../../src/services/persistence/sqlite/SqliteStoreService";
-import type { DayBoundaryService } from "../../../src/services/core/day-boundary.service";
-import type { FrontmatterIndexService } from "../../../src/services/core/frontmatter-index.service";
-import { createAppStore } from "../../../src/state/store";
+import type { AppStoreDeps, BadgeCounts } from "../../../src/shared/store";
+import type { FSRSFlashcardItem, TrueRecallSettings } from "../../../src/shared/types";
+import type { SqliteStoreService } from "../../../src/features/core/persistence/sqlite/SqliteStoreService";
+import type { DayBoundaryService } from "../../../src/features/core/services/day-boundary.service";
+import type { FrontmatterIndexService } from "../../../src/features/core/services/frontmatter-index.service";
+import { createAppStore } from "../../../src/shared/store";
 
 export function createMockDeps(): AppStoreDeps {
 	return {

@@ -9,7 +9,7 @@ import {
 	createTestCard,
 	type TestContext,
 } from "./__setup__/test-database";
-import type { FSRSCardData } from "../../../../src/types";
+import type { FSRSCardData } from "../../../../src/shared/types";
 
 describe("Bulk Operations", () => {
 	let ctx: TestContext;

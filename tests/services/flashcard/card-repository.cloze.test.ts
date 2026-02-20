@@ -5,11 +5,11 @@ import {
 	getRawCard,
 	type TestContext,
 } from "../persistence/sqlite/__setup__/test-database";
-import { CardRepository } from "../../../src/services/flashcard/card-repository.service";
-import type { SqliteStoreService } from "../../../src/services/persistence/sqlite/SqliteStoreService";
+import { CardRepository } from "../../../src/features/study/services/flashcard/card-repository.service";
+import type { SqliteStoreService } from "../../../src/features/core/persistence/sqlite/SqliteStoreService";
 
 const mockNotifyCardChange = vi.fn();
-vi.mock("../../../src/services/core/signals", () => ({
+vi.mock("../../../src/shared/services/signals", () => ({
 	notifyCardChange: (...args: unknown[]) => mockNotifyCardChange(...args),
 }));
 

@@ -3,8 +3,8 @@ import {
 	isProjectNote,
 	buildProjectGraph,
 	getDescendantProjects,
-} from "../../src/utils/project-hierarchy";
-import type { FrontmatterIndexService } from "../../src/services/core/frontmatter-index.service";
+} from "../../src/shared/utils/project-hierarchy";
+import type { FrontmatterIndexService } from "../../src/features/core/services/frontmatter-index.service";
 
 function createMockIndex(
 	data: Record<string, string[]>

@@ -1,0 +1,119 @@
+/**
+ * Authentication service using Supabase (True Recall Cloud)
+ * Handles user login, signup, and session management
+ *
+ * Note: Credentials are hardcoded (SaaS model). The anon key is public
+ * by design - security relies on RLS (Row Level Security) policies.
+ */
+import {
+	createClient,
+	type Session,
+	type SupabaseClient,
+	type User,
+} from "@supabase/supabase-js";
+import { TRUE_RECALL_CLOUD } from "../../../../shared/constants";
+
+export interface AuthState {
+	user: User | null;
+	session: Session | null;
+	isAuthenticated: boolean;
+}
+
+export interface AuthResult {
+	success: boolean;
+	error?: string;
+	user?: User;
+}
+
+export class AuthService {
+	private client: SupabaseClient;
+	private supabaseUrl: string;
+	private supabaseAnonKey: string;
+
+	constructor() {
+		this.supabaseUrl = TRUE_RECALL_CLOUD.supabaseUrl;
+		this.supabaseAnonKey = TRUE_RECALL_CLOUD.supabaseAnonKey;
+		this.client = this.createClient();
+	}
+
+	private createClient(): SupabaseClient {
+		// eslint-disable-next-line @typescript-eslint/no-unsafe-return -- Supabase's createClient has complex generic types
+		return createClient(this.supabaseUrl, this.supabaseAnonKey, {
+			auth: {
+				autoRefreshToken: true,
+				persistSession: true,
+				detectSessionInUrl: false,
+			},
+		});
+	}
+
+	// Kept for potential future use (e.g., self-hosted option)
+	updateCredentials(supabaseUrl: string, supabaseAnonKey: string): void {
+		this.supabaseUrl = supabaseUrl;
+		this.supabaseAnonKey = supabaseAnonKey;
+		this.client = this.createClient();
+	}
+
+	// Always true in SaaS model since credentials are hardcoded
+	isConfigured(): boolean {
+		return true;
+	}
+
+	async getAuthState(): Promise<AuthState> {
+		const {
+			data: { session },
+		} = await this.client.auth.getSession();
+		return {
+			user: session?.user ?? null,
+			session: session,
+			isAuthenticated: session !== null,
+		};
+	}
+
+	async getCurrentUser(): Promise<User | null> {
+		const {
+			data: { user },
+		} = await this.client.auth.getUser();
+		return user;
+	}
+
+	async signUp(email: string, password: string): Promise<AuthResult> {
+		const { data, error } = await this.client.auth.signUp({
+			email,
+			password,
+		});
+
+		if (error) {
+			return { success: false, error: error.message };
+		}
+
+		return { success: true, user: data.user ?? undefined };
+	}
+
+	async signIn(email: string, password: string): Promise<AuthResult> {
+		const { data, error } = await this.client.auth.signInWithPassword({
+			email,
+			password,
+		});
+
+		if (error) {
+			return { success: false, error: error.message };
+		}
+
+		return { success: true, user: data.user ?? undefined };
+	}
+
+	async signOut(): Promise<AuthResult> {
+		const { error } = await this.client.auth.signOut();
+
+		if (error) {
+			return { success: false, error: error.message };
+		}
+
+		return { success: true };
+	}
+
+	getClient(): SupabaseClient {
+		return this.client;
+	}
+}

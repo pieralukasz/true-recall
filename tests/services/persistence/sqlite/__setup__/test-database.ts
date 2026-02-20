@@ -4,14 +4,14 @@
  */
 import initSqlJs, { type Database as SqlJsDatabase } from "sql.js";
 import { State } from "ts-fsrs";
-import type { FSRSCardData } from "../../../../../src/types";
+import type { FSRSCardData } from "../../../../../src/shared/types";
 import type {
 	DatabaseLike,
 	QueryExecResult,
 	BindParams,
-} from "../../../../../src/services/persistence/sqlite/loader";
-import { CardActions } from "../../../../../src/services/persistence/sqlite/modules/CardActions";
-import { StatsActions } from "../../../../../src/services/persistence/sqlite/modules/StatsActions";
+} from "../../../../../src/features/core/persistence/sqlite/loader";
+import { CardActions } from "../../../../../src/features/core/persistence/sqlite/modules/CardActions";
+import { StatsActions } from "../../../../../src/features/core/persistence/sqlite/modules/StatsActions";
 
 /**
  * Wrapper that makes sql.js Database compatible with DatabaseLike interface

@@ -4,8 +4,8 @@
  */
 import { describe, it, expect, beforeEach } from "vitest";
 import { State } from "ts-fsrs";
-import { DayBoundaryService } from "../../../src/services/core/day-boundary.service";
-import type { FSRSFlashcardItem } from "../../../src/types";
+import { DayBoundaryService } from "../../../src/features/core/services/day-boundary.service";
+import type { FSRSFlashcardItem } from "../../../src/shared/types";
 import { createMockFlashcard } from "../mocks/fsrs.mocks";
 
 /**

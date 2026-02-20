@@ -1,9 +1,9 @@
 import { describe, it, expect, beforeEach } from "vitest";
 import type { TFile } from "obsidian";
 import { createTestStore } from "./test-helpers";
-import type { AppStore } from "../../../src/state/store";
-import type { FlashcardInfo } from "../../../src/types";
-import type { AppError } from "../../../src/errors";
+import type { AppStore } from "../../../src/shared/store";
+import type { FlashcardInfo } from "../../../src/shared/types";
+import type { AppError } from "../../../src/shared/errors";
 
 describe("Panel Slice", () => {
 	let store: AppStore;

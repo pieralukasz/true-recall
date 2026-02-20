@@ -6,7 +6,7 @@ import type {
 	AnkiDeck,
 	ApkgData,
 	ConvertedCard,
-} from "../../../../src/types";
+} from "../../../../src/shared/types";
 
 export function createAnkiNote(overrides: Partial<AnkiNote> = {}): AnkiNote {
 	return {

@@ -7,8 +7,8 @@ import type {
 	SchedulerCardStore,
 	SchedulerCardData,
 	WorkloadDistribution,
-} from "../../../../src/services/fsrs-helper/scheduler/scheduler.types";
-import type { EasyDaysConfig } from "../../../../src/types";
+} from "../../../../src/features/metrics/services/fsrs-tools/scheduler/scheduler.types";
+import type { EasyDaysConfig } from "../../../../src/shared/types";
 
 /**
  * Mock implementation of SchedulerCardStore for testing.
