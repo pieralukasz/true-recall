@@ -1,6 +1,6 @@
-import { useEffect, useState } from "preact/hooks";
-import { usePlugin } from "@shared/ui/preact/ObsidianContext";
 import type { AppState } from "@shared/store/types";
+import { usePlugin } from "@shared/ui/preact/ObsidianContext";
+import { useEffect, useState } from "preact/hooks";
 
 /**
  * Subscribe to a Zustand store slice and mirror it into Preact state.
@@ -17,7 +17,8 @@ export function useStoreSlice<T>(
 	const plugin = usePlugin();
 	const [state, setState] = useState<T>(() => {
 		const slice = plugin.store?.getState()[sliceKey];
-		if (!slice) return selector(undefined as unknown as AppState[typeof sliceKey]);
+		if (!slice)
+			return selector(undefined as unknown as AppState[typeof sliceKey]);
 		return selector(slice);
 	});
 

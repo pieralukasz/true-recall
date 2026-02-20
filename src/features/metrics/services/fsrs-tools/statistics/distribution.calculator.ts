@@ -4,8 +4,8 @@
  * Calculates distribution statistics for card intervals, stability, and difficulty.
  */
 
-import { State } from "ts-fsrs";
 import type { SqliteStoreService } from "@features/core/persistence/sqlite/SqliteStoreService";
+import { State } from "ts-fsrs";
 
 /**
  * Histogram bucket

@@ -1,11 +1,11 @@
-import { useCallback, useState } from "preact/hooks";
-import { usePlugin } from "@shared/ui/preact";
 import { AITab } from "@features/settings/tabs/AITab";
 import { DataTab } from "@features/settings/tabs/DataTab";
 import { FSRSTab } from "@features/settings/tabs/FSRSTab";
 import { GeneralTab } from "@features/settings/tabs/GeneralTab";
 import { SchedulingTab } from "@features/settings/tabs/SchedulingTab";
 import { SyncTab } from "@features/settings/tabs/SyncTab";
+import { usePlugin } from "@shared/ui/preact";
+import { useCallback, useState } from "preact/hooks";
 
 type SettingsTabId = "general" | "ai" | "scheduling" | "fsrs" | "data" | "sync";
 

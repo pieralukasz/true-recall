@@ -1,10 +1,10 @@
-import { StateBadge } from "@shared/ui/components";
-import type { FSRSFlashcardItem } from "@shared/types";
 import {
 	formatDueDate,
 	formatIntervalDays,
 	truncateText,
 } from "@features/library/ui/browser/helpers/browser-helpers";
+import type { FSRSFlashcardItem } from "@shared/types";
+import { StateBadge } from "@shared/ui/components";
 
 export interface ColumnDef {
 	key: string;

@@ -1,5 +1,5 @@
-import { CheckboxListItem } from "@shared/ui/components/CheckboxListItem";
 import type { NoteEntry } from "@features/integration/utils/export-helpers";
+import { CheckboxListItem } from "@shared/ui/components/CheckboxListItem";
 
 export type ExportMode = "all" | "projects" | "notes";
 

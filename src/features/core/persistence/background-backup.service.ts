@@ -1,13 +1,13 @@
+import type { BackupService } from "@features/core/persistence/backup.service";
 import { effect } from "@preact/signals";
-import type { App } from "obsidian";
+import { notify } from "@shared/services/notification.service";
+import { dataVersion, lastMutation, track } from "@shared/services/signals";
 import type {
 	BackupInterval,
 	RetentionPolicy,
 	TrueRecallSettings,
 } from "@shared/types/settings.types";
-import { dataVersion, lastMutation, track } from "@shared/services/signals";
-import { notify } from "@shared/services/notification.service";
-import type { BackupService } from "@features/core/persistence/backup.service";
+import type { App } from "obsidian";
 
 export interface BackgroundBackupConfig {
 	periodicBackupEnabled: boolean;

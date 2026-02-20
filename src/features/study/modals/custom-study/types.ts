@@ -1,5 +1,5 @@
-import type { CancellableResult } from "@shared/ui/modals/BasePromiseModal";
 import type { SessionResult } from "@shared/types/events.types";
+import type { CancellableResult } from "@shared/ui/modals/BasePromiseModal";
 
 export interface CustomStudyModalResult extends CancellableResult {
 	sessionResult?: SessionResult;

@@ -1,6 +1,6 @@
-import { State } from "ts-fsrs";
 import type { BrowserStateFilter } from "@shared/store";
 import type { FSRSFlashcardItem } from "@shared/types";
+import { State } from "ts-fsrs";
 
 const TAG_RE = /<[^>]*>/g;
 const CLOZE_RE = /\{\{c\d+::(.*?)(?:::[^}]*)?\}\}/g;

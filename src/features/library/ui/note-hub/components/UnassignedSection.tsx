@@ -1,9 +1,9 @@
-import { useCallback, useMemo } from "preact/hooks";
+import { NoteHubNoteRow } from "@features/library/ui/note-hub/components/NoteHubNoteRow";
 import type { SelectionMode } from "@shared/store";
 import type { ProjectNoteInfo } from "@shared/types";
 import { CardCountDisplay } from "@shared/ui/components";
 import { useIcon } from "@shared/ui/preact/hooks";
-import { NoteHubNoteRow } from "@features/library/ui/note-hub/components/NoteHubNoteRow";
+import { useCallback, useMemo } from "preact/hooks";
 
 export interface UnassignedSectionProps {
 	notes: ProjectNoteInfo[];

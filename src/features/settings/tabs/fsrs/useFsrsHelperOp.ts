@@ -1,5 +1,5 @@
-import { useCallback, useState } from "preact/hooks";
 import { notify } from "@shared/services/notification.service";
+import { useCallback, useState } from "preact/hooks";
 
 interface FsrsHelperOpResult {
 	affectedCount: number;
@@ -28,9 +28,7 @@ export function useFsrsHelperOp(config: FsrsHelperOpConfig) {
 	const [running, setRunning] = useState(false);
 
 	const execute = useCallback(
-		async (
-			helperCall: () => Promise<FsrsHelperOpResult | undefined>,
-		) => {
+		async (helperCall: () => Promise<FsrsHelperOpResult | undefined>) => {
 			setRunning(true);
 			try {
 				const result = await helperCall();
@@ -60,7 +58,14 @@ export function useFsrsHelperOp(config: FsrsHelperOpConfig) {
 				setRunning(false);
 			}
 		},
-		[config.plugin, config.operationName, config.undoDescription, config.successMessage, config.emptyMessage, config.errorPrefix],
+		[
+			config.plugin,
+			config.operationName,
+			config.undoDescription,
+			config.successMessage,
+			config.emptyMessage,
+			config.errorPrefix,
+		],
 	);
 
 	return { running, execute };

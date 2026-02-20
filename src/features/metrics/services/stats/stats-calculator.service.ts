@@ -1,4 +1,13 @@
-import { State } from "ts-fsrs";
+import type { SessionPersistenceService } from "@features/core/persistence/session-persistence.service";
+import type { SqliteStoreService } from "@features/core/persistence/sqlite";
+import type { FSRSService } from "@features/core/services/fsrs.service";
+import {
+	ChartDataCalculator,
+	MaturityCalculator,
+	StreakCalculator,
+	type StreakInfo,
+} from "@features/metrics/services/stats/calculators";
+import type { FlashcardManager } from "@features/study/services/flashcard/flashcard.service";
 import type {
 	CardMaturityBreakdown,
 	CardsCreatedEntry,
@@ -10,16 +19,7 @@ import type {
 	StatsTimeRange,
 	TodaySummary,
 } from "@shared/types";
-import type { FSRSService } from "@features/core/services/fsrs.service";
-import type { FlashcardManager } from "@features/study/services/flashcard/flashcard.service";
-import type { SessionPersistenceService } from "@features/core/persistence/session-persistence.service";
-import type { SqliteStoreService } from "@features/core/persistence/sqlite";
-import {
-	ChartDataCalculator,
-	MaturityCalculator,
-	StreakCalculator,
-	type StreakInfo,
-} from "@features/metrics/services/stats/calculators";
+import { State } from "ts-fsrs";
 
 export class StatsCalculatorService {
 	private sessionPersistence: SessionPersistenceService;

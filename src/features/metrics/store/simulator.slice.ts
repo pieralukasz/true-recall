@@ -1,9 +1,9 @@
-import { DEFAULT_FSRS_WEIGHTS } from "@shared/constants";
 import { DEFAULT_SEQUENCES } from "@features/metrics/ui/simulator/constants";
 import type {
 	MetricType,
 	SequenceSimulation,
 } from "@features/metrics/ui/simulator/types";
+import { DEFAULT_FSRS_WEIGHTS } from "@shared/constants";
 import type {
 	AppState,
 	AppStoreDeps,

@@ -1,8 +1,5 @@
-import type TrueRecallPlugin from "../../main";
-import type { ReviewApi } from "@shared/store";
-import type { FSRSCardData } from "@shared/types";
-import { notifyCardChange } from "@shared/services/signals";
 import { notify } from "@shared/services/notification.service";
+import { notifyCardChange } from "@shared/services/signals";
 import type {
 	AnswerUndoPayload,
 	BuryUndoPayload,
@@ -10,6 +7,9 @@ import type {
 	SuspendUndoPayload,
 	UndoEntry,
 } from "@shared/services/undo.types";
+import type { ReviewApi } from "@shared/store";
+import type { FSRSCardData } from "@shared/types";
+import type TrueRecallPlugin from "../../main";
 
 export interface ReviewUndoCallbacks {
 	onUpdateSchedulingPreview: () => void;

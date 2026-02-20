@@ -1,5 +1,5 @@
-import type { FSRSCardData } from "@shared/types";
 import type { ReviewLogForSync } from "@features/core/persistence/sqlite/modules/StatsActions";
+import type { FSRSCardData } from "@shared/types";
 
 export interface RemoteCardRow {
 	id: string;

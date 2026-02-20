@@ -1,3 +1,4 @@
+import { useSettings } from "@features/settings/hooks/useSettings";
 import type { BackupInterval } from "@shared/types";
 import {
 	InfoBlock,
@@ -6,7 +7,6 @@ import {
 	TextInput,
 	ToggleInput,
 } from "@shared/ui/components";
-import { useSettings } from "@features/settings/hooks/useSettings";
 
 export function BackgroundBackupSection() {
 	const { settings, save } = useSettings();

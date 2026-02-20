@@ -1,5 +1,5 @@
-import { Platform } from "obsidian";
 import { useIcon } from "@shared/ui/preact/hooks";
+import { Platform } from "obsidian";
 
 export interface SectionHeaderAction {
 	icon: string;

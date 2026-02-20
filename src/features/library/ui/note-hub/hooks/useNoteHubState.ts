@@ -1,4 +1,3 @@
-import { useEffect, useState } from "preact/hooks";
 import type {
 	NoteHubApi,
 	NoteHubSortBy,
@@ -8,6 +7,7 @@ import type {
 } from "@shared/store";
 import type { ProjectInfo, ProjectNoteInfo } from "@shared/types";
 import { usePlugin } from "@shared/ui/preact";
+import { useEffect, useState } from "preact/hooks";
 
 export function useNoteHub(): NoteHubApi {
 	const store = usePlugin().store;

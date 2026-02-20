@@ -1,3 +1,3 @@
+export { TrueRecallSettingTab } from "@features/settings/SettingsTab";
 export { DEFAULT_SETTINGS } from "@shared/constants";
 export type { TrueRecallSettings } from "@shared/types";
-export { TrueRecallSettingTab } from "@features/settings/SettingsTab";

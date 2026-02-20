@@ -1,20 +1,20 @@
-import { type App, Component, MarkdownRenderer } from "obsidian";
-import { useCallback, useEffect, useRef, useState } from "preact/hooks";
-import { FLASHCARD_CONFIG } from "@shared/constants";
-import { FlashcardParserService } from "@features/study/services/flashcard/flashcard-parser.service";
-import { notify } from "@shared/services/notification.service";
-import { ImageService } from "@features/integration/services/ImageService";
-import { stripBrTags } from "@shared/utils";
+import type { ImageService } from "@features/integration/services/ImageService";
 import {
 	insertAtTextareaCursor,
 	toggleTextareaWrap,
 } from "@features/library/ui/editor/edit-toolbar.utils";
-import { SECONDARY_BUTTON_CLASSES } from "@shared/ui/utils/tailwind";
+import type { FlashcardParserService } from "@features/study/services/flashcard/flashcard-parser.service";
+import { FLASHCARD_CONFIG } from "@shared/constants";
+import { notify } from "@shared/services/notification.service";
 import type {
 	SimpleFlashcardEditorOptions,
 	SimpleFlashcardEditorResult,
 } from "@shared/ui/modals/SimpleFlashcardEditorModal";
 import { KeyboardShortcutsHint } from "@shared/ui/modals/simple-editor/KeyboardShortcutsHint";
+import { SECONDARY_BUTTON_CLASSES } from "@shared/ui/utils/tailwind";
+import { stripBrTags } from "@shared/utils";
+import { type App, Component, MarkdownRenderer } from "obsidian";
+import { useCallback, useEffect, useRef, useState } from "preact/hooks";
 
 export interface SimpleEditorBodyProps {
 	app: App;

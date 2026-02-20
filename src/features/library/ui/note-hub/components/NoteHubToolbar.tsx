@@ -1,3 +1,9 @@
+import {
+	PILL_ACTIVE,
+	PILL_INACTIVE,
+	SORT_OPTIONS,
+	STATUS_FILTERS,
+} from "@features/library/ui/note-hub/constants";
 import type {
 	NoteHubSortBy,
 	NoteHubSortDirection,
@@ -5,7 +11,6 @@ import type {
 } from "@shared/store";
 import { SearchInput } from "@shared/ui/components";
 import { useIcon } from "@shared/ui/preact/hooks";
-import { PILL_ACTIVE, PILL_INACTIVE, SORT_OPTIONS, STATUS_FILTERS } from "@features/library/ui/note-hub/constants";
 
 export interface NoteHubToolbarProps {
 	searchQuery: string;

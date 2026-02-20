@@ -1,17 +1,14 @@
-import type { App } from "obsidian";
-import { render } from "preact";
-import { useState } from "preact/hooks";
+import { DayOfWeekSelector } from "@features/metrics/modals/easy-days/DayOfWeekSelector";
+import { SpecificDatesList } from "@features/metrics/modals/easy-days/SpecificDatesList";
 import type { EasyDaysConfig } from "@shared/types";
-import {
-	ModalFooter,
-	SECONDARY_BTN,
-} from "@shared/ui/components/ModalFooter";
+import { ModalFooter, SECONDARY_BTN } from "@shared/ui/components/ModalFooter";
 import {
 	BasePromiseModal,
 	type CancellableResult,
 } from "@shared/ui/modals/BasePromiseModal";
-import { DayOfWeekSelector } from "@features/metrics/modals/easy-days/DayOfWeekSelector";
-import { SpecificDatesList } from "@features/metrics/modals/easy-days/SpecificDatesList";
+import type { App } from "obsidian";
+import { render } from "preact";
+import { useState } from "preact/hooks";
 
 export interface EasyDaysResult extends CancellableResult {
 	easyDays?: EasyDaysConfig;
@@ -88,10 +85,7 @@ function EasyDaysBody({
 
 	return (
 		<>
-			<DayOfWeekSelector
-				selectedDays={recurringDays}
-				onToggleDay={toggleDay}
-			/>
+			<DayOfWeekSelector selectedDays={recurringDays} onToggleDay={toggleDay} />
 
 			<SpecificDatesList
 				dates={specificDates}

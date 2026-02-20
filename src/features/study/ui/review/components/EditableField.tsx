@@ -1,5 +1,3 @@
-import { useCallback, useEffect, useRef } from "preact/hooks";
-import { stripBrTags } from "@shared/utils";
 import {
 	insertAtTextareaCursor,
 	setupAutoResize,
@@ -8,6 +6,8 @@ import {
 	toggleTextareaWrap,
 } from "@features/library/ui/editor/edit-toolbar.utils";
 import { EditToolbar } from "@features/study/ui/review/components/EditToolbar";
+import { stripBrTags } from "@shared/utils";
+import { useCallback, useEffect, useRef } from "preact/hooks";
 
 export interface EditableFieldProps {
 	content: string;

@@ -1,25 +1,3 @@
-import { effect } from "@preact/signals";
-import {
-	useCallback,
-	useEffect,
-	useMemo,
-	useRef,
-	useState,
-} from "preact/hooks";
-import { notify } from "@shared/services/notification.service";
-import {
-	dataVersion,
-	track,
-} from "@shared/services/signals";
-import type {
-	BrowserApi,
-	BrowserSortColumn,
-	BrowserStateFilter,
-	SelectionMode,
-} from "@shared/store";
-import type { FSRSFlashcardItem } from "@shared/types";
-import { useApp, usePlugin } from "@shared/ui/preact";
-import { LoadingSpinner } from "@shared/ui/components";
 import {
 	BrowserToolbar,
 	CardDetailPanel,
@@ -28,6 +6,25 @@ import {
 	VirtualTable,
 } from "@features/library/ui/browser/components";
 import { useBrowserActions } from "@features/library/ui/browser/hooks/useBrowserActions";
+import { effect } from "@preact/signals";
+import { notify } from "@shared/services/notification.service";
+import { dataVersion, track } from "@shared/services/signals";
+import type {
+	BrowserApi,
+	BrowserSortColumn,
+	BrowserStateFilter,
+	SelectionMode,
+} from "@shared/store";
+import type { FSRSFlashcardItem } from "@shared/types";
+import { LoadingSpinner } from "@shared/ui/components";
+import { useApp, usePlugin } from "@shared/ui/preact";
+import {
+	useCallback,
+	useEffect,
+	useMemo,
+	useRef,
+	useState,
+} from "preact/hooks";
 
 // ── Hooks ──────────────────────────────────────────────────────
 

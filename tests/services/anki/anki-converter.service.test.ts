@@ -33,10 +33,10 @@ describe("AnkiConverterService", () => {
 			const result = converter.convert(data);
 
 			expect(result).toHaveLength(1);
-			expect(result[0].cardType).toBe("basic");
-			expect(result[0].ankiCardId).toBe(card.id);
-			expect(result[0].ankiNoteId).toBe(note.id);
-		});
+			expect(result[0]?.cardType).toBe("basic");
+			expect(result[0]?.ankiCardId).toBe(card.id);
+			expect(result[0]?.ankiNoteId).toBe(note.id);
+		}); 
 
 		it("maps flds field 0 to question and field 1 to answer", () => {
 			const model = createAnkiModel();
@@ -56,8 +56,8 @@ describe("AnkiConverterService", () => {
 
 			const result = converter.convert(data);
 
-			expect(result[0].question).toBe("Capital of France?");
-			expect(result[0].answer).toBe("Paris");
+			expect(result[0]?.question).toBe("Capital of France?");
+			expect(result[0]?.answer).toBe("Paris");
 		});
 
 		it("sets deckName from deck map with :: replaced by /", () => {
@@ -75,7 +75,7 @@ describe("AnkiConverterService", () => {
 
 			const result = converter.convert(data);
 
-			expect(result[0].deckName).toBe("Languages/French/Vocab");
+			expect(result[0]?.deckName).toBe("Languages/French/Vocab");
 		});
 
 		it("falls back to Default when deck not found", () => {
@@ -91,7 +91,7 @@ describe("AnkiConverterService", () => {
 
 			const result = converter.convert(data);
 
-			expect(result[0].deckName).toBe("Default");
+			expect(result[0]?.deckName).toBe("Default");
 		});
 
 		it("extracts tags from note.tags", () => {

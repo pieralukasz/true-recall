@@ -1,4 +1,3 @@
-import { useCallback, useState } from "preact/hooks";
 import { FSRS_CONFIG } from "@shared/constants";
 import { notify } from "@shared/services/notification.service";
 import type { FSRSPreset } from "@shared/types";
@@ -8,6 +7,7 @@ import {
 	SettingRow,
 	TextAreaInput,
 } from "@shared/ui/components";
+import { useCallback, useState } from "preact/hooks";
 
 interface ParametersSectionProps {
 	preset: FSRSPreset;

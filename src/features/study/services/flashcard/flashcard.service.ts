@@ -3,16 +3,9 @@
  * CardRepository (CRUD), CardQueryService (reads), FrontmatterService,
  * SourceNoteService, FlashcardParserService
  */
-import { type App, TFile, type WorkspaceLeaf } from "obsidian";
-import type {
-	CardReviewLogEntry,
-	FlashcardItem,
-	FSRSCardData,
-	FSRSFlashcardItem,
-	TrueRecallSettings,
-} from "@shared/types";
-import type { FrontmatterIndexService } from "@features/core/services/frontmatter-index.service";
+
 import type { SqliteStoreService } from "@features/core/persistence/sqlite/SqliteStoreService";
+import type { FrontmatterIndexService } from "@features/core/services/frontmatter-index.service";
 import { CardQueryService } from "@features/study/services/flashcard/card-query.service";
 import {
 	CardRepository,
@@ -21,6 +14,14 @@ import {
 import { FlashcardParserService } from "@features/study/services/flashcard/flashcard-parser.service";
 import { FrontmatterService } from "@features/study/services/flashcard/frontmatter.service";
 import { SourceNoteService } from "@features/study/services/flashcard/source-note.service";
+import type {
+	CardReviewLogEntry,
+	FlashcardItem,
+	FSRSCardData,
+	FSRSFlashcardItem,
+	TrueRecallSettings,
+} from "@shared/types";
+import { type App, TFile, type WorkspaceLeaf } from "obsidian";
 
 export interface ScanResult {
 	totalCards: number;

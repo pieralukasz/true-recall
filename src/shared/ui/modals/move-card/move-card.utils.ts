@@ -1,6 +1,10 @@
 import type { App, TFile } from "obsidian";
 
-export function noteHasTagPrefix(app: App, file: TFile, tagPrefix: string): boolean {
+export function noteHasTagPrefix(
+	app: App,
+	file: TFile,
+	tagPrefix: string,
+): boolean {
 	const cache = app.metadataCache.getFileCache(file);
 	if (!cache) return false;
 

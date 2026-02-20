@@ -1,12 +1,12 @@
+import type { SqliteStoreService } from "@features/core/persistence/sqlite/SqliteStoreService";
 import { effect } from "@preact/signals";
-import { State } from "ts-fsrs";
 import {
 	type CardMutation,
 	lastMutation,
 	syncVersion,
 	track,
 } from "@shared/services/signals";
-import type { SqliteStoreService } from "@features/core/persistence/sqlite/SqliteStoreService";
+import { State } from "ts-fsrs";
 
 export interface NoteStatusInfo {
 	new: number;

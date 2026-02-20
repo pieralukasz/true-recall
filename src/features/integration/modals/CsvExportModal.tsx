@@ -1,29 +1,29 @@
-import type { App } from "obsidian";
-import { render } from "preact";
-import { useCallback, useRef, useState } from "preact/hooks";
+import type { SqliteStoreService } from "@features/core/persistence/sqlite/SqliteStoreService";
 import type { FrontmatterIndexService } from "@features/core/services/frontmatter-index.service";
+import {
+	type ExportMode,
+	ExportScopeSelector,
+} from "@features/integration/components/ExportScopeSelector";
 import {
 	CsvExportService,
 	type CsvSeparator,
 } from "@features/integration/services/csv-export.service";
-import type { SqliteStoreService } from "@features/core/persistence/sqlite/SqliteStoreService";
-import { BaseModal } from "@shared/ui/modals/BaseModal";
-import { OptionCheckbox } from "@shared/ui/components/OptionCheckbox";
+import {
+	downloadBlob,
+	type NoteEntry,
+	resolveNotes,
+	resolveProjects,
+} from "@features/integration/utils/export-helpers";
 import {
 	ModalFooter,
 	PRIMARY_BTN,
 	SECONDARY_BTN,
 } from "@shared/ui/components/ModalFooter";
-import {
-	ExportScopeSelector,
-	type ExportMode,
-} from "@features/integration/components/ExportScopeSelector";
-import {
-	type NoteEntry,
-	resolveProjects,
-	resolveNotes,
-	downloadBlob,
-} from "@features/integration/utils/export-helpers";
+import { OptionCheckbox } from "@shared/ui/components/OptionCheckbox";
+import { BaseModal } from "@shared/ui/modals/BaseModal";
+import type { App } from "obsidian";
+import { render } from "preact";
+import { useCallback, useRef, useState } from "preact/hooks";
 
 type ExportPhase =
 	| { type: "form" }
@@ -56,21 +56,15 @@ function CsvExportBody({
 	const selectedProjects = useRef(new Set<string>());
 	const selectedSourceUids = useRef(new Set<string>());
 
-	const handleToggleProject = useCallback(
-		(key: string, checked: boolean) => {
-			if (checked) selectedProjects.current.add(key);
-			else selectedProjects.current.delete(key);
-		},
-		[],
-	);
+	const handleToggleProject = useCallback((key: string, checked: boolean) => {
+		if (checked) selectedProjects.current.add(key);
+		else selectedProjects.current.delete(key);
+	}, []);
 
-	const handleToggleNote = useCallback(
-		(key: string, checked: boolean) => {
-			if (checked) selectedSourceUids.current.add(key);
-			else selectedSourceUids.current.delete(key);
-		},
-		[],
-	);
+	const handleToggleNote = useCallback((key: string, checked: boolean) => {
+		if (checked) selectedSourceUids.current.add(key);
+		else selectedSourceUids.current.delete(key);
+	}, []);
 
 	const handleExport = useCallback(async () => {
 		const result = await onExport({

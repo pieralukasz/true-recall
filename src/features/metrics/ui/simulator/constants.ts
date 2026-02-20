@@ -2,9 +2,9 @@
  * FSRS Simulator Constants
  */
 
+import type { SliderConfig } from "@features/metrics/ui/simulator/types";
 import { DEFAULT_FSRS_WEIGHTS } from "@shared/constants";
 import { getThemeColor } from "@shared/ui/utils/theme-colors";
-import type { SliderConfig } from "@features/metrics/ui/simulator/types";
 
 /** Default review sequences */
 export const DEFAULT_SEQUENCES = [

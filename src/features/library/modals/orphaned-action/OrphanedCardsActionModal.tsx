@@ -1,11 +1,11 @@
-import { type App, normalizePath, type TFile } from "obsidian";
-import { render } from "preact";
-import { BasePromiseModal } from "@shared/ui/modals/BasePromiseModal";
+import { OrphanedCardsBody } from "@features/library/modals/orphaned-action/OrphanedCardsBody";
 import type {
 	OrphanedCardsActionModalOptions,
 	OrphanedCardsActionResult,
 } from "@features/library/modals/orphaned-action/types";
-import { OrphanedCardsBody } from "@features/library/modals/orphaned-action/OrphanedCardsBody";
+import { BasePromiseModal } from "@shared/ui/modals/BasePromiseModal";
+import { type App, normalizePath, type TFile } from "obsidian";
+import { render } from "preact";
 
 export class OrphanedCardsActionModal extends BasePromiseModal<OrphanedCardsActionResult> {
 	private options: OrphanedCardsActionModalOptions;

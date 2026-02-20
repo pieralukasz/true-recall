@@ -1,6 +1,6 @@
-import { useCallback, useRef } from "preact/hooks";
-import type { SimulatorApi } from "@shared/store";
 import type { MetricType } from "@features/metrics/ui/simulator/types";
+import type { SimulatorApi } from "@shared/store";
+import { useCallback, useRef } from "preact/hooks";
 
 interface SimulatorControlsProps {
 	simulator: SimulatorApi;

@@ -1,9 +1,6 @@
-import {
-	MarkdownRenderer,
-	Component as ObsidianComponent,
-} from "obsidian";
-import { useCallback, useRef } from "preact/hooks";
 import { useApp } from "@shared/ui/preact/ObsidianContext";
+import { MarkdownRenderer, Component as ObsidianComponent } from "obsidian";
+import { useCallback, useRef } from "preact/hooks";
 
 export interface MarkdownPreview {
 	containerRef: preact.RefObject<HTMLDivElement>;

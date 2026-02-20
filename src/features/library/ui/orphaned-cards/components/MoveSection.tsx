@@ -1,8 +1,8 @@
+import type { OrphanedCardGroup } from "@features/library/services/orphaned-cards.service";
+import { SearchInput } from "@shared/ui/components";
+import { useApp } from "@shared/ui/preact";
 import type { TFile } from "obsidian";
 import { useMemo } from "preact/hooks";
-import type { OrphanedCardGroup } from "@features/library/services/orphaned-cards.service";
-import { useApp } from "@shared/ui/preact";
-import { SearchInput } from "@shared/ui/components";
 
 interface NoteRowProps {
 	note: TFile;
