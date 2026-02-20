@@ -2,11 +2,11 @@ import type { NoteStatusInfo } from "@features/core/cache/note-status-cache.serv
 import { cva, type VariantProps } from "class-variance-authority";
 
 const wrapperVariants = cva(
-	"ep-link-count ep:inline-flex ep:items-center ep:gap-0.5 ep:align-middle ep:transition-colors ep:hover:text-obs-accent",
+	"ep-link-count ep:inline-flex ep:items-center ep:gap-0.5 ep:align-middle  ",
 	{
 		variants: {
 			variant: {
-				link: "ep:mb-[3px] ep:text-xs ep:ml-1",
+				link: "ep:mt-[1px] ep:text-xs ep:ml-1",
 				h1: "ep:mb-[3px] ep:ml-2 ep:text-sm ep:opacity-80",
 				h2: "ep:mb-[3px] ep:ml-2 ep:text-xs ep:opacity-80",
 				h3: "ep:mb-0.5 ep:ml-2 ep:text-[11px] ep:opacity-80",
