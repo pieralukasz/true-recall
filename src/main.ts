@@ -23,15 +23,12 @@ import {
 import { RestoreBackupModal } from "@features/integration/modals/RestoreBackupModal";
 import { DeviceDiscoveryService } from "@features/integration/services/device-discovery.service";
 import { DeviceIdService } from "@features/integration/services/device-id.service";
-import { OrphanedCardsActionModal } from "@features/library/modals/OrphanedCardsActionModal";
-import { OrphanedCardsService } from "@features/library/services/orphaned-cards.service";
 import { CardBrowserView } from "@features/library/ui/browser";
 import {
 	createLinkStatusPostProcessor,
 	createLinkStatusViewPlugin,
 } from "@features/library/ui/editor";
 import { NoteHubView } from "@features/library/ui/note-hub";
-import { OrphanedCardsView } from "@features/library/ui/orphaned-cards";
 import { FSRSHelperService } from "@features/metrics/services/fsrs-tools";
 import { StatsService } from "@features/metrics/services/stats/stats.service";
 import { SimulatorView } from "@features/metrics/ui/simulator";
@@ -47,13 +44,13 @@ import {
 } from "@features/study/modals/CustomStudyModal";
 import { DeletionHandlerService } from "@features/study/services/flashcard/deletion-handler.service";
 import { FlashcardManager } from "@features/study/services/flashcard/flashcard.service";
+import { UidGuardianService } from "@features/study/services/flashcard/uid-guardian.service";
 import { FlashcardPanelView } from "@features/study/ui/panel/FlashcardPanelView";
 import { ReviewView } from "@features/study/ui/review/ReviewView";
 import {
 	VIEW_TYPE_CARD_BROWSER,
 	VIEW_TYPE_FLASHCARD_PANEL,
 	VIEW_TYPE_NOTE_HUB,
-	VIEW_TYPE_ORPHANED_CARDS,
 	VIEW_TYPE_REVIEW,
 	VIEW_TYPE_SIMULATOR,
 	VIEW_TYPE_STATS,
@@ -62,7 +59,6 @@ import { notify } from "@shared/services/notification.service";
 import { settingsVersion } from "@shared/services/signals";
 import { UndoService } from "@shared/services/undo.service";
 import { type AppStore, createAppStore } from "@shared/store";
-import type { FSRSCardData } from "@shared/types";
 import { extractFSRSSettings } from "@shared/types";
 import { AddToProjectModal, SetPresetModal } from "@shared/ui/modals";
 import { normalizePath, Plugin, TFile } from "obsidian";
@@ -95,7 +91,6 @@ export default class TrueRecallPlugin extends Plugin {
 	authService: null = null;
 	syncService: null = null;
 	deletionHandler: DeletionHandlerService | null = null;
-	orphanedCardsService: OrphanedCardsService | null = null;
 	undoService: UndoService | null = null;
 	fsrsHelper: FSRSHelperService | null = null;
 	presetService!: PresetService;
@@ -197,11 +192,6 @@ export default class TrueRecallPlugin extends Plugin {
 		);
 
 		this.registerView(
-			VIEW_TYPE_ORPHANED_CARDS,
-			(leaf) => new OrphanedCardsView(leaf, this),
-		);
-
-		this.registerView(
 			VIEW_TYPE_NOTE_HUB,
 			(leaf) => new NoteHubView(leaf, this),
 		);
@@ -254,109 +244,20 @@ export default class TrueRecallPlugin extends Plugin {
 	private initializeDeletionHandler(): void {
 		if (!this.cardStore || !this.frontmatterIndex) return;
 
-		this.orphanedCardsService = new OrphanedCardsService();
 		this.deletionHandler = new DeletionHandlerService({
-			app: this.app,
 			frontmatterIndex: this.frontmatterIndex,
 			store: this.cardStore,
-			onOrphanedCards: async (context) => {
-				const modal = new OrphanedCardsActionModal(this.app, {
-					cards: context.cards,
-					deletedNoteName: context.deletedNoteName,
-					sourceUid: context.sourceUid,
-				});
-
-				const result = await modal.openAndWait();
-
-				if (result.cancelled || result.action === "leave_orphaned") {
-					return;
-				}
-
-				if (result.action === "delete") {
-					const cardIds = context.cards.map((c) => c.id);
-					this.cardStore.cards.bulkSoftDelete(cardIds);
-					notify().cardsDeleted(cardIds.length);
-				} else if (result.action === "move" && result.targetNotePath) {
-					await this.moveCardsToNote(context.cards, result.targetNotePath);
-				} else if (result.action === "create_note" && result.newNotePath) {
-					await this.createNoteForOrphanedCards(
-						context.cards,
-						result.newNotePath,
-						context.deletedNoteName,
-					);
-				}
-			},
 		});
 
 		registerDeletionHandler(this, this.deletionHandler);
-	}
 
-	private async moveCardsToNote(
-		cards: FSRSCardData[],
-		targetNotePath: string,
-	): Promise<void> {
-		const targetFile = this.app.vault.getAbstractFileByPath(targetNotePath);
-		if (!(targetFile instanceof TFile)) {
-			notify().error("Target note not found");
-			return;
-		}
-
-		const frontmatterService = this.flashcardManager.getFrontmatterService();
-		let targetUid = await frontmatterService.getSourceNoteUid(targetFile);
-		if (!targetUid) {
-			targetUid = frontmatterService.generateUid();
-			await frontmatterService.setSourceNoteUid(targetFile, targetUid);
-		}
-
-		for (const card of cards) {
-			this.cardStore.cards.updateCardSourceUid(card.id, targetUid);
-		}
-
-		notify().cardsMoved(cards.length, targetFile.basename);
-	}
-
-	private async createNoteForOrphanedCards(
-		cards: FSRSCardData[],
-		newNotePath: string,
-		originalNoteName: string,
-	): Promise<void> {
-		const frontmatterService = this.flashcardManager.getFrontmatterService();
-		const newUid = frontmatterService.generateUid();
-
-		const cardList = cards
-			.slice(0, 10)
-			.map(
-				(c) =>
-					`- ${(c.question ?? "").slice(0, 80)}${(c.question ?? "").length > 80 ? "..." : ""}`,
-			)
-			.join("\n");
-
-		const moreText =
-			cards.length > 10 ? `\n- ... and ${cards.length - 10} more cards` : "";
-
-		const content = `---
-flashcard_uid: ${newUid}
-tags:
-  - recovered
----
-
-# Recovered from "${originalNoteName}"
-
-This note was created to recover flashcards from a deleted note.
-
-## Cards
-
-${cardList}${moreText}
-`;
-
-		await this.app.vault.create(newNotePath, content);
-		for (const card of cards) {
-			this.cardStore.cards.updateCardSourceUid(card.id, newUid);
-		}
-
-		notify().success(
-			`Created note with ${cards.length} recovered flashcard${cards.length === 1 ? "" : "s"}`,
-		);
+		const uidGuardian = new UidGuardianService({
+			app: this.app,
+			frontmatterIndex: this.frontmatterIndex,
+			store: this.cardStore,
+			frontmatterService: this.flashcardManager.getFrontmatterService(),
+		});
+		uidGuardian.register();
 	}
 
 	onunload(): void {
@@ -440,10 +341,6 @@ ${cardList}${moreText}
 
 	async openSimulator(): Promise<void> {
 		await activateView(this.app, VIEW_TYPE_SIMULATOR, { useMainArea: true });
-	}
-
-	async openOrphanedCardsView(): Promise<void> {
-		await activateView(this.app, VIEW_TYPE_ORPHANED_CARDS);
 	}
 
 	async openNoteHub(): Promise<void> {

@@ -214,19 +214,8 @@ export class NotificationService {
 		this.error(`Image is too large (${size}). Maximum size is ${maxSize}.`);
 	}
 
-	sourceNotesSynced(
-		synced: number,
-		orphaned: number = 0,
-		orphanedCards: number = 0,
-	): void {
-		let msg = `Synced ${synced} source note(s)`;
-		if (orphaned > 0) {
-			msg += `. Removed ${orphaned} orphaned entries`;
-			if (orphanedCards > 0) {
-				msg += ` (${orphanedCards} cards detached)`;
-			}
-		}
-		this.success(msg);
+	sourceNotesSynced(synced: number): void {
+		this.success(`Synced ${synced} source note(s)`);
 	}
 }
 

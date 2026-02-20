@@ -146,10 +146,6 @@ export class SqliteStoreService {
 		return this.cards.getCardsWithContentCount();
 	}
 
-	getOrphanedCards(): FSRSCardData[] {
-		return this.cards.getOrphanedCards();
-	}
-
 	async flush(): Promise<void> {
 		if (this.saveTimer) {
 			clearTimeout(this.saveTimer);
