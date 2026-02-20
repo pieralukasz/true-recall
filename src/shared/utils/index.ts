@@ -23,7 +23,6 @@ export {
 	isProjectNote,
 	type ProjectGraph,
 } from "@shared/utils/project-hierarchy";
-export { SessionResultFactory } from "@shared/utils/session-result-factory";
 export {
 	BR_REGEX,
 	stripBrTags,

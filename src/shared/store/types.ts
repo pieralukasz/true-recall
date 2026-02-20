@@ -167,34 +167,6 @@ export interface PanelSliceActions {
 // API type for components to depend on
 export type PanelApi = PanelSliceState & PanelSliceActions;
 
-export interface SessionSliceState {
-	currentNoteName: string | null;
-	allCards: FSRSFlashcardItem[];
-	selectedNotes: Set<string>;
-	searchQuery: string;
-	now: Date;
-}
-
-export interface SessionSliceActions {
-	setState: (partial: Partial<SessionSliceState>) => void;
-	reset: () => void;
-	initialize: (
-		currentNoteName: string | null,
-		allCards: FSRSFlashcardItem[],
-	) => void;
-	setSearchQuery: (query: string) => void;
-	toggleNoteSelection: (noteName: string) => void;
-	setNoteSelection: (noteName: string, selected: boolean) => void;
-	setAllNotesSelected: (noteNames: string[], selected: boolean) => void;
-	clearSelection: () => void;
-	getSelectedNotesArray: () => string[];
-	getSelectionCount: () => number;
-	updateTimestamp: () => void;
-}
-
-// API type for components to depend on
-export type SessionApi = SessionSliceState & SessionSliceActions;
-
 export interface SimulatorSliceState {
 	sequences: string[];
 	parameters: number[];
@@ -352,7 +324,6 @@ export type BrowserApi = BrowserSliceState & BrowserSliceActions;
 export interface AppState {
 	review: ReviewSliceState & ReviewSliceActions;
 	panel: PanelSliceState & PanelSliceActions;
-	session: SessionSliceState & SessionSliceActions;
 	simulator: SimulatorSliceState & SimulatorSliceActions;
 	stats: StatsSliceState & StatsSliceActions;
 	noteHub: NoteHubSliceState & NoteHubSliceActions;

@@ -49,14 +49,12 @@ import { DeletionHandlerService } from "@features/study/services/flashcard/delet
 import { FlashcardManager } from "@features/study/services/flashcard/flashcard.service";
 import { FlashcardPanelView } from "@features/study/ui/panel/FlashcardPanelView";
 import { ReviewView } from "@features/study/ui/review/ReviewView";
-import { SessionView } from "@features/study/ui/session";
 import {
 	VIEW_TYPE_CARD_BROWSER,
 	VIEW_TYPE_FLASHCARD_PANEL,
 	VIEW_TYPE_NOTE_HUB,
 	VIEW_TYPE_ORPHANED_CARDS,
 	VIEW_TYPE_REVIEW,
-	VIEW_TYPE_SESSION,
 	VIEW_TYPE_SIMULATOR,
 	VIEW_TYPE_STATS,
 } from "@shared/constants";
@@ -76,7 +74,6 @@ import {
 import {
 	activateReviewView,
 	activateView,
-	closeAllViews,
 	getView,
 } from "./plugin/ViewActivator";
 
@@ -194,8 +191,6 @@ export default class TrueRecallPlugin extends Plugin {
 
 		this.registerView(VIEW_TYPE_STATS, (leaf) => new StatsView(leaf, this));
 
-		this.registerView(VIEW_TYPE_SESSION, (leaf) => new SessionView(leaf, this));
-
 		this.registerView(
 			VIEW_TYPE_SIMULATOR,
 			(leaf) => new SimulatorView(leaf, this),
@@ -218,8 +213,8 @@ export default class TrueRecallPlugin extends Plugin {
 
 		// eslint-disable-next-line obsidianmd/ui/sentence-case -- True Recall is a proper noun
 		this.addRibbonIcon("brain", "True Recall - study", () => {
-			this.startReviewSession().catch((error) => {
-				notify().error("Failed to start review session", error);
+			this.openCustomStudyModal().catch((error) => {
+				notify().error("Failed to open study session", error);
 			});
 		});
 
@@ -443,26 +438,6 @@ ${cardList}${moreText}
 		await activateView(this.app, VIEW_TYPE_FLASHCARD_PANEL);
 	}
 
-	async activateSessionView(
-		currentNoteName: string | null,
-		allCards: import("@shared/types").FSRSFlashcardItem[],
-		onSessionSelected: (
-			result: import("@shared/types/events.types").SessionResult,
-		) => void,
-	): Promise<void> {
-		const leaf = await activateView(this.app, VIEW_TYPE_SESSION);
-
-		if (leaf) {
-			const view = leaf.view as SessionView;
-			view.initialize({
-				currentNoteName,
-				allCards,
-				dayBoundaryService: this.dayBoundaryService,
-				onSessionSelected,
-			});
-		}
-	}
-
 	async openSimulator(): Promise<void> {
 		await activateView(this.app, VIEW_TYPE_SIMULATOR, { useMainArea: true });
 	}
@@ -477,47 +452,6 @@ ${cardList}${moreText}
 
 	async openCardBrowser(): Promise<void> {
 		await activateView(this.app, VIEW_TYPE_CARD_BROWSER, { useMainArea: true });
-	}
-
-	async startReviewSession(): Promise<void> {
-		const existingLeaf = getView(this.app, VIEW_TYPE_REVIEW);
-		if (existingLeaf) {
-			void this.app.workspace.revealLeaf(existingLeaf);
-			return;
-		}
-
-		await this.openNewReviewSession();
-	}
-
-	async startNewReviewSession(): Promise<void> {
-		closeAllViews(this.app, VIEW_TYPE_REVIEW);
-
-		await new Promise((resolve) => setTimeout(resolve, 0));
-		await this.openNewReviewSession();
-	}
-
-	private async openNewReviewSession(): Promise<void> {
-		if (!this.isStoreReady()) {
-			notify().error(
-				"Database not ready. Please wait for plugin to fully load.",
-			);
-			return;
-		}
-		const allCards = this.flashcardManager.getAllFSRSCards();
-		if (allCards.length === 0) {
-			notify().info("No flashcards found. Generate some flashcards first!");
-			return;
-		}
-
-		const currentFile = this.app.workspace.getActiveFile();
-		const currentNoteName = currentFile ? currentFile.basename : null;
-
-		return new Promise<void>((resolve) => {
-			void this.activateSessionView(currentNoteName, allCards, (result) => {
-				void this.handleSessionResult(result);
-				resolve();
-			});
-		});
 	}
 
 	private async handleSessionResult(
