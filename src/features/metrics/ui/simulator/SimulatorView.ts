@@ -44,7 +44,6 @@ export class SimulatorView extends ItemView {
 	}
 
 	getDisplayText(): string {
-		// eslint-disable-next-line obsidianmd/ui/sentence-case -- FSRS is an acronym
 		return "FSRS simulator";
 	}
 

@@ -125,7 +125,6 @@ function UidRemovedBody({
 	const [showMoveSection, setShowMoveSection] = useState(false);
 
 	const handleDelete = useCallback(() => {
-		// eslint-disable-next-line no-alert -- destructive operation requires explicit user confirmation
 		const confirmed = window.confirm(
 			`Are you sure you want to delete ${cardCount} flashcard${cardCount === 1 ? "" : "s"}? This cannot be undone.`,
 		);

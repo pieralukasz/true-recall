@@ -19,7 +19,6 @@ export class NoteHubView extends ItemView {
 	}
 
 	getDisplayText(): string {
-		// eslint-disable-next-line obsidianmd/ui/sentence-case -- Feature name
 		return "Note Hub";
 	}
 

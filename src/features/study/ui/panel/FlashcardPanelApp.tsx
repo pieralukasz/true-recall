@@ -669,7 +669,6 @@ export function FlashcardPanelApp({
 			return;
 
 		const count = state.flashcardInfo.flashcards.length;
-		// eslint-disable-next-line no-alert
 		const confirmed = window.confirm(
 			`Delete all ${count} flashcard(s) for this note?`,
 		);
@@ -754,7 +753,6 @@ export function FlashcardPanelApp({
 		);
 		if (selectedCards.length === 0) return;
 
-		// eslint-disable-next-line no-alert
 		const confirmed = window.confirm(
 			`Delete ${selectedCards.length} selected card(s)?`,
 		);

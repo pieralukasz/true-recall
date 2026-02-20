@@ -38,7 +38,7 @@ export class AuthService {
 	}
 
 	private createClient(): SupabaseClient {
-		// eslint-disable-next-line @typescript-eslint/no-unsafe-return -- Supabase's createClient has complex generic types
+		// Supabase's createClient has complex generic types
 		return createClient(this.supabaseUrl, this.supabaseAnonKey, {
 			auth: {
 				autoRefreshToken: true,

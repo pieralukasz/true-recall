@@ -1,6 +1,5 @@
 import { batch, type ReadonlySignal, signal } from "@preact/signals";
 
-// eslint-disable-next-line @typescript-eslint/no-unused-expressions
 export function track(...signals: ReadonlySignal[]): void {
 	for (const s of signals) s.value;
 }

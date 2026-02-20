@@ -10,7 +10,6 @@ export async function handleDeleteCard(
 	allCards: FSRSFlashcardItem[],
 	flashcardManager: FlashcardManager,
 ): Promise<FSRSFlashcardItem[]> {
-	// eslint-disable-next-line no-alert -- destructive operation requires explicit user confirmation
 	const confirmed = window.confirm(
 		"Delete this flashcard? This action cannot be undone.",
 	);
@@ -82,7 +81,6 @@ export async function handleDeleteAll(
 	setCards: CardsSetter,
 	flashcardManager: FlashcardManager,
 ): Promise<void> {
-	// eslint-disable-next-line no-alert -- destructive operation requires explicit user confirmation
 	const confirmed = window.confirm(
 		`Delete all ${cards.length} suspended cards? This action cannot be undone.`,
 	);
