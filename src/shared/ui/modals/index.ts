@@ -24,10 +24,6 @@ export {
 	KeyboardShortcutsModal,
 } from "@shared/ui/modals/FlashcardEditorModal";
 export {
-	ImagePickerModal,
-	type ImagePickerResult,
-} from "@shared/ui/modals/ImagePickerModal";
-export {
 	MediaPickerModal,
 	type MediaPickerResult,
 } from "@shared/ui/modals/MediaPickerModal";
