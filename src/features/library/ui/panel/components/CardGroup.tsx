@@ -168,9 +168,12 @@ export function CardGroup({
 					class="ep:shrink-0 ep:mt-0.5 ep:text-obs-faint"
 				/>
 
-				<div class="ep:flex-1 ep:text-ui-small ep:text-obs-normal ep:truncate">
-					{displayText}
-				</div>
+				<MarkdownContent
+					markdown={displayText}
+					filePath={filePath}
+					class="ep:flex-1 ep:text-ui-small ep:text-obs-normal true-recall-card-markdown ep:truncate"
+					onLinkClick={handleLinkClick}
+				/>
 
 				<span class="ep:text-ui-smaller ep:text-obs-muted ep:bg-obs-base-25 ep:rounded ep:px-2 ep:py-1 ep:shrink-0">
 					{cards.length}
@@ -210,6 +213,7 @@ export function CardGroup({
 									markdown={card.question}
 									filePath={filePath}
 									class="ep:text-ui-small ep:text-obs-normal true-recall-card-markdown"
+									onLinkClick={handleLinkClick}
 								/>
 							</div>
 						</div>
