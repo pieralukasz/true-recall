@@ -3,7 +3,7 @@
  * Centralizes keyboard shortcut handling for review sessions
  */
 import { Rating } from "ts-fsrs";
-import type { ReviewApi } from "../../../../../shared/store";
+import type { ReviewApi } from "@shared/store";
 
 /**
  * Keyboard shortcut configuration

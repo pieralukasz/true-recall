@@ -1,10 +1,10 @@
 import type { TFile } from "obsidian";
-import type { AppError } from "../../../shared/errors";
-import type { FlashcardInfo } from "../../../shared/types";
+import type { AppError } from "@shared/errors";
+import type { FlashcardInfo } from "@shared/types";
 import {
 	createSelectionActions,
 	toggleSetItem,
-} from "../../../shared/store/helpers/slice-helpers";
+} from "@shared/store/helpers/slice-helpers";
 import type {
 	AppState,
 	AppStoreDeps,
@@ -12,7 +12,7 @@ import type {
 	PanelSliceState,
 	ProcessingStatus,
 	ViewMode,
-} from "../../../shared/store/types";
+} from "@shared/store/types";
 
 type PanelSlice = PanelSliceState & PanelSliceActions;
 

@@ -1,8 +1,8 @@
 import { useCallback } from "preact/hooks";
-import { notify } from "../../../../../shared/services/notification.service";
-import { notifyCardChange } from "../../../../../shared/services/signals";
-import type { BrowserApi } from "../../../../../shared/store";
-import { usePlugin } from "../../../../../shared/ui/preact";
+import { notify } from "@shared/services/notification.service";
+import { notifyCardChange } from "@shared/services/signals";
+import type { BrowserApi } from "@shared/store";
+import { usePlugin } from "@shared/ui/preact";
 
 export function useBrowserActions(browser: BrowserApi) {
 	const plugin = usePlugin();

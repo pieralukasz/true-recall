@@ -1,2 +1,2 @@
-export { NoteStatusCacheService } from "./note-status-cache.service";
-export { ReactiveCache, type ReactiveCacheOptions } from "./ReactiveCache";
+export { NoteStatusCacheService } from "@features/core/cache/note-status-cache.service";
+export { ReactiveCache, type ReactiveCacheOptions } from "@features/core/cache/ReactiveCache";

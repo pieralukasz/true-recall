@@ -4,7 +4,7 @@
  */
 
 import type { Grade, State } from "ts-fsrs";
-import type { FSRSCardData, FSRSFlashcardItem } from "../types";
+import type { FSRSCardData, FSRSFlashcardItem } from "@shared/types";
 
 /**
  * Types of operations that can be undone

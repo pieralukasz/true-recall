@@ -7,15 +7,15 @@ import {
 	type RecordLogItem,
 	State,
 } from "ts-fsrs";
-import { DEFAULT_FSRS_WEIGHTS } from "../../../shared/constants";
+import { DEFAULT_FSRS_WEIGHTS } from "@shared/constants";
 import type {
 	FSRSCardData,
 	FSRSFlashcardItem,
 	SchedulingPreview,
-} from "../../../shared/types";
-import { formatInterval } from "../../../shared/types";
-import type { FSRSSettings } from "../../../shared/types/settings.types";
-import { getTomorrowBoundary } from "../../../shared/utils";
+} from "@shared/types";
+import { formatInterval } from "@shared/types";
+import type { FSRSSettings } from "@shared/types/settings.types";
+import { getTomorrowBoundary } from "@shared/utils";
 
 export class FSRSService {
 	private fsrs: FSRS;

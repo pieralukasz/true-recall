@@ -5,8 +5,8 @@
  * Uses modular migration functions from the migrations/ folder
  */
 
-import * as migrations from "./migrations";
-import { type DatabaseLike, getQueryResult } from "./sqlite.types";
+import * as migrations from "@features/core/persistence/sqlite/migrations";
+import { type DatabaseLike, getQueryResult } from "@features/core/persistence/sqlite/sqlite.types";
 
 type MigrationFn = (db: DatabaseLike) => void;
 

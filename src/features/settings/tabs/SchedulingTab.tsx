@@ -1,11 +1,11 @@
-import type { NewCardOrder, NewReviewMix, ReviewOrder } from "../../../shared/types";
+import type { NewCardOrder, NewReviewMix, ReviewOrder } from "@shared/types";
 import {
 	InfoBlock,
 	SelectInput,
 	SettingRow,
 	TextInput,
-} from "../../../shared/ui/components";
-import { usePreset, useSettings } from "../hooks/useSettings";
+} from "@shared/ui/components";
+import { usePreset, useSettings } from "@features/settings/hooks/useSettings";
 
 interface SchedulingTabProps {
 	selectedPresetId: string;

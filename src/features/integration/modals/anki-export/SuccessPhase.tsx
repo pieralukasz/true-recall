@@ -1,4 +1,4 @@
-import { PRIMARY_BTN } from "../../../../shared/ui/components/ModalFooter";
+import { PRIMARY_BTN } from "@shared/ui/components/ModalFooter";
 
 export interface SuccessPhaseProps {
 	filename: string;

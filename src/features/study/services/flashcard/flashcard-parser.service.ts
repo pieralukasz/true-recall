@@ -15,9 +15,9 @@
  * - Cloze deletions: {{c1::text}} and {{c1::text::hint}}
  * - Reversed cards via #flashcard-reverse tag
  */
-import { FLASHCARD_CONFIG } from "../../../../shared/constants";
-import type { FlashcardItem } from "../../../../shared/types";
-import { hasClozeContent, parseClozeTemplate } from "./cloze-parser.service";
+import { FLASHCARD_CONFIG } from "@shared/constants";
+import type { FlashcardItem } from "@shared/types";
+import { hasClozeContent, parseClozeTemplate } from "@features/study/services/flashcard/cloze-parser.service";
 
 /**
  * Service for parsing flashcard content from markdown files

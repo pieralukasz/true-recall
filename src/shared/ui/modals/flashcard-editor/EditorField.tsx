@@ -1,13 +1,13 @@
 import { type App, Component, MarkdownRenderer } from "obsidian";
 import { useCallback, useEffect, useRef } from "preact/hooks";
-import { stripBrTags } from "../../../utils";
+import { stripBrTags } from "@shared/utils";
 import {
 	insertAtTextareaCursor,
 	TOOLBAR_BUTTONS,
 	type ToolbarButton,
 	type ToolbarButtonAction,
 	toggleTextareaWrap,
-} from "../../../../features/library/ui/editor/edit-toolbar.utils";
+} from "@features/library/ui/editor/edit-toolbar.utils";
 
 // ─── Toolbar Data ────────────────────────────────────────────────────
 

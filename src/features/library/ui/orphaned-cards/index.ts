@@ -1,1 +1,1 @@
-export { OrphanedCardsView } from "./OrphanedCardsView";
+export { OrphanedCardsView } from "@features/library/ui/orphaned-cards/OrphanedCardsView";

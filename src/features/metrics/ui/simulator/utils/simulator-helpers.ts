@@ -1,4 +1,4 @@
-import type { MetricType, SequenceReview, SliderConfig } from "../types";
+import type { MetricType, SequenceReview, SliderConfig } from "@features/metrics/ui/simulator/types";
 
 export function getMetricData(
 	reviews: SequenceReview[],

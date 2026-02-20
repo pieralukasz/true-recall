@@ -1,6 +1,6 @@
 import { useEffect, useState } from "preact/hooks";
-import { usePlugin } from "../preact/ObsidianContext";
-import type { AppState } from "../../store/types";
+import { usePlugin } from "@shared/ui/preact/ObsidianContext";
+import type { AppState } from "@shared/store/types";
 
 /**
  * Subscribe to a Zustand store slice and mirror it into Preact state.

@@ -1,4 +1,4 @@
-import { BUTTON_CLS } from "../utils/simulator-helpers";
+import { BUTTON_CLS } from "@features/metrics/ui/simulator/utils/simulator-helpers";
 
 interface ParametersBarProps {
 	parametersString: string;

@@ -5,8 +5,8 @@ import {
 	lastMutation,
 	syncVersion,
 	track,
-} from "../../../shared/services/signals";
-import type { SqliteStoreService } from "../persistence/sqlite/SqliteStoreService";
+} from "@shared/services/signals";
+import type { SqliteStoreService } from "@features/core/persistence/sqlite/SqliteStoreService";
 
 export interface NoteStatusInfo {
 	new: number;

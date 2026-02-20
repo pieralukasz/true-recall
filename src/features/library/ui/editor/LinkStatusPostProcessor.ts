@@ -2,13 +2,13 @@ import type { App, MarkdownPostProcessorContext, TFile } from "obsidian";
 import type {
 	NoteStatusCacheService,
 	NoteStatusInfo,
-} from "../../../core/cache/note-status-cache.service";
-import type { FrontmatterIndexService } from "../../../core/services/frontmatter-index.service";
+} from "@features/core/cache/note-status-cache.service";
+import type { FrontmatterIndexService } from "@features/core/services/frontmatter-index.service";
 import {
 	aggregateInfos,
 	createLinkStatusElement,
 	createLinkTextCountElement,
-} from "./LinkStatusWidget";
+} from "@features/library/ui/editor/LinkStatusWidget";
 
 export function createLinkStatusPostProcessor(
 	app: App,

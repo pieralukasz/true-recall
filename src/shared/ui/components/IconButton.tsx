@@ -1,4 +1,4 @@
-import { useIcon } from "../preact/hooks";
+import { useIcon } from "@shared/ui/preact/hooks";
 
 export interface IconButtonProps {
 	icon: string;

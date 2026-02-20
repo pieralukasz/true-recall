@@ -1,6 +1,6 @@
 import { State } from "ts-fsrs";
-import type { FSRSFlashcardItem } from "../../../shared/types";
-import { createSelectionActions } from "../../../shared/store/helpers/slice-helpers";
+import type { FSRSFlashcardItem } from "@shared/types";
+import { createSelectionActions } from "@shared/store/helpers/slice-helpers";
 import type {
 	AppState,
 	AppStoreDeps,
@@ -8,7 +8,7 @@ import type {
 	BrowserSliceState,
 	BrowserSortColumn,
 	BrowserStateFilter,
-} from "../../../shared/store/types";
+} from "@shared/store/types";
 
 type BrowserSlice = BrowserSliceState & BrowserSliceActions;
 

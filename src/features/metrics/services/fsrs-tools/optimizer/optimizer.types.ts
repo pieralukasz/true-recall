@@ -2,7 +2,7 @@
  * Types for FSRS parameter optimization
  */
 
-import type { Grade } from "../../../../../shared/types";
+import type { Grade } from "@shared/types";
 
 /**
  * Review data entry for parameter optimization

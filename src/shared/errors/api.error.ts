@@ -1,7 +1,7 @@
 /**
  * API-related error classes
  */
-import { AppError } from "./base.error";
+import { AppError } from "@shared/errors/base.error";
 
 /**
  * Error thrown when an API request fails

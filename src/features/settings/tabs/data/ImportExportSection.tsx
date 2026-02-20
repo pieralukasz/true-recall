@@ -1,5 +1,5 @@
-import { SettingRow } from "../../../../shared/ui/components";
-import { useSettings } from "../../hooks/useSettings";
+import { SettingRow } from "@shared/ui/components";
+import { useSettings } from "@features/settings/hooks/useSettings";
 
 export function ImportExportSection() {
 	const { plugin } = useSettings();

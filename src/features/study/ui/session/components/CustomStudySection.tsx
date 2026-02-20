@@ -1,4 +1,4 @@
-import type { SessionLogic } from "../SessionLogic";
+import type { SessionLogic } from "@features/study/ui/session/SessionLogic";
 
 interface CustomStudySectionProps {
 	logic: SessionLogic;

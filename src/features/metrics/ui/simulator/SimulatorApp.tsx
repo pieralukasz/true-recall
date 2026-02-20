@@ -1,15 +1,15 @@
 import { useSignal } from "@preact/signals";
 import { useCallback, useEffect, useMemo, useRef } from "preact/hooks";
-import { FSRSSimulatorService } from "../../../../features/core/services/fsrs-simulator.service";
-import { usePlugin } from "../../../../shared/ui/preact";
+import { FSRSSimulatorService } from "@features/core/services/fsrs-simulator.service";
+import { usePlugin } from "@shared/ui/preact";
 import {
 	ParametersBar,
 	SimulatorChart,
 	SimulatorControls,
 	SimulatorResultsTable,
 	SimulatorSliders,
-} from "./components";
-import type { SequenceSimulation } from "./types";
+} from "@features/metrics/ui/simulator/components";
+import type { SequenceSimulation } from "@features/metrics/ui/simulator/types";
 
 export function SimulatorApp() {
 	const plugin = usePlugin();

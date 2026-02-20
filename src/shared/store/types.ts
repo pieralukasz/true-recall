@@ -1,9 +1,9 @@
 import type { App, TFile } from "obsidian";
 import type { Grade } from "ts-fsrs";
-import type { AppError } from "../errors";
-import type { DayBoundaryService } from "../../features/core/services/day-boundary.service";
-import type { FrontmatterIndexService } from "../../features/core/services/frontmatter-index.service";
-import type { SqliteStoreService } from "../../features/core/persistence/sqlite";
+import type { AppError } from "@shared/errors";
+import type { DayBoundaryService } from "@features/core/services/day-boundary.service";
+import type { FrontmatterIndexService } from "@features/core/services/frontmatter-index.service";
+import type { SqliteStoreService } from "@features/core/persistence/sqlite";
 import type {
 	FlashcardInfo,
 	FSRSFlashcardItem,
@@ -12,9 +12,9 @@ import type {
 	ReviewResult,
 	ReviewSessionStats,
 	SchedulingPreview,
-} from "../types";
-import type { TrueRecallSettings } from "../../features/settings";
-import type { MetricType, SequenceSimulation } from "../../features/metrics/ui/simulator/types";
+} from "@shared/types";
+import type { TrueRecallSettings } from "@features/settings";
+import type { MetricType, SequenceSimulation } from "@features/metrics/ui/simulator/types";
 
 export interface AppStoreDeps {
 	app: App;

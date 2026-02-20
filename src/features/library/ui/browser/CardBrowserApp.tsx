@@ -6,28 +6,28 @@ import {
 	useRef,
 	useState,
 } from "preact/hooks";
-import { notify } from "../../../../shared/services/notification.service";
+import { notify } from "@shared/services/notification.service";
 import {
 	dataVersion,
 	track,
-} from "../../../../shared/services/signals";
+} from "@shared/services/signals";
 import type {
 	BrowserApi,
 	BrowserSortColumn,
 	BrowserStateFilter,
 	SelectionMode,
-} from "../../../../shared/store";
-import type { FSRSFlashcardItem } from "../../../../shared/types";
-import { useApp, usePlugin } from "../../../../shared/ui/preact";
-import { LoadingSpinner } from "../../../../shared/ui/components";
+} from "@shared/store";
+import type { FSRSFlashcardItem } from "@shared/types";
+import { useApp, usePlugin } from "@shared/ui/preact";
+import { LoadingSpinner } from "@shared/ui/components";
 import {
 	BrowserToolbar,
 	CardDetailPanel,
 	COLUMNS,
 	SelectionBar,
 	VirtualTable,
-} from "./components";
-import { useBrowserActions } from "./hooks/useBrowserActions";
+} from "@features/library/ui/browser/components";
+import { useBrowserActions } from "@features/library/ui/browser/hooks/useBrowserActions";
 
 // ── Hooks ──────────────────────────────────────────────────────
 

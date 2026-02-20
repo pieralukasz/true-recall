@@ -1,4 +1,4 @@
-import type { AppState } from "../types";
+import type { AppState } from "@shared/store/types";
 
 type SetFn = (fn: (state: AppState) => Partial<AppState>) => void;
 type GetFn = () => AppState;

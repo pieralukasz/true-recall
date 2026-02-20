@@ -1,6 +1,6 @@
-import type { CardType, FSRSCardData, FSRSFlashcardItem } from "../../../../shared/types";
-import type { SqliteStoreService } from "../../../../features/core/persistence/sqlite/SqliteStoreService";
-import type { SourceNoteService } from "./source-note.service";
+import type { CardType, FSRSCardData, FSRSFlashcardItem } from "@shared/types";
+import type { SqliteStoreService } from "@features/core/persistence/sqlite/SqliteStoreService";
+import type { SourceNoteService } from "@features/study/services/flashcard/source-note.service";
 
 interface RawFlashcardItem {
 	id: string;

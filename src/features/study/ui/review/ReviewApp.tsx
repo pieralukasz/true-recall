@@ -1,18 +1,18 @@
 import { useEffect, useState } from "preact/hooks";
 import type { Grade } from "ts-fsrs";
-import type { ReviewApi } from "../../../../shared/store";
-import type { FSRSFlashcardItem } from "../../../../shared/types";
-import { usePlugin } from "../../../../shared/ui/preact/ObsidianContext";
+import type { ReviewApi } from "@shared/store";
+import type { FSRSFlashcardItem } from "@shared/types";
+import { usePlugin } from "@shared/ui/preact/ObsidianContext";
 import {
 	ButtonBar,
 	CardContainer,
 	ReviewHeader,
 	SummaryScreen,
 	WaitingScreen,
-} from "./components";
+} from "@features/study/ui/review/components";
 
 // Re-export for consumers that import from this file
-export { ReviewEmptyState } from "./components";
+export { ReviewEmptyState } from "@features/study/ui/review/components";
 
 // ─── Props ───────────────────────────────────────────────────────────────────
 

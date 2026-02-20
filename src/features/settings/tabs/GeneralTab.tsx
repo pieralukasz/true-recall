@@ -1,11 +1,11 @@
-import type { ReviewViewMode } from "../../../shared/types";
+import type { ReviewViewMode } from "@shared/types";
 import {
 	SelectInput,
 	SettingRow,
 	SliderInput,
 	ToggleInput,
-} from "../../../shared/ui/components";
-import { useSettings } from "../hooks/useSettings";
+} from "@shared/ui/components";
+import { useSettings } from "@features/settings/hooks/useSettings";
 
 export function GeneralTab() {
 	const { settings, save } = useSettings();

@@ -1,8 +1,8 @@
 import type { App } from "obsidian";
-import type { FlashcardManager } from "../../../../features/study/services/flashcard/flashcard.service";
-import { notify } from "../../../services/notification.service";
-import type { FSRSFlashcardItem } from "../../../types";
-import type { CardsSetter } from "./CardPreviewBody";
+import type { FlashcardManager } from "@features/study/services/flashcard/flashcard.service";
+import { notify } from "@shared/services/notification.service";
+import type { FSRSFlashcardItem } from "@shared/types";
+import type { CardsSetter } from "@shared/ui/modals/card-preview/CardPreviewBody";
 
 export async function handleDeleteCard(
 	card: FSRSFlashcardItem,

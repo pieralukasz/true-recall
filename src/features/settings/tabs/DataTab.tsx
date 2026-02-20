@@ -7,7 +7,7 @@ import {
 	ImportExportSection,
 	ManualBackupSection,
 	SmartRetentionSection,
-} from "./data";
+} from "@features/settings/tabs/data";
 
 export function DataTab() {
 	return (

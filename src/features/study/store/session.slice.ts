@@ -1,10 +1,10 @@
-import type { FSRSFlashcardItem } from "../../../shared/types";
+import type { FSRSFlashcardItem } from "@shared/types";
 import type {
 	AppState,
 	AppStoreDeps,
 	SessionSliceActions,
 	SessionSliceState,
-} from "../../../shared/store/types";
+} from "@shared/store/types";
 
 type SessionSlice = SessionSliceState & SessionSliceActions;
 

@@ -3,7 +3,7 @@ import {
 	Component as ObsidianComponent,
 } from "obsidian";
 import { useCallback, useRef } from "preact/hooks";
-import { useApp } from "../preact/ObsidianContext";
+import { useApp } from "@shared/ui/preact/ObsidianContext";
 
 export interface MarkdownPreview {
 	containerRef: preact.RefObject<HTMLDivElement>;

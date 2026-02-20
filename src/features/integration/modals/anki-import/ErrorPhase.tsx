@@ -1,5 +1,5 @@
-import { ModalFooter } from "../../../../shared/ui/components/ModalFooter";
-import { SECONDARY_BTN } from "../../../../shared/ui/components/ModalFooter";
+import { ModalFooter } from "@shared/ui/components/ModalFooter";
+import { SECONDARY_BTN } from "@shared/ui/components/ModalFooter";
 
 export interface ErrorPhaseProps {
 	message: string;

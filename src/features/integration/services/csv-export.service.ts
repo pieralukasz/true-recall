@@ -1,7 +1,7 @@
 import type { App } from "obsidian";
 import type { FSRSCardData } from "shared/types";
-import { stripWikiLinkSyntax } from "../../../shared/utils";
-import type { SqliteStoreService } from "../../../features/core/persistence/sqlite/SqliteStoreService";
+import { stripWikiLinkSyntax } from "@shared/utils";
+import type { SqliteStoreService } from "@features/core/persistence/sqlite/SqliteStoreService";
 
 export type CsvSeparator = "," | "\t" | ";";
 

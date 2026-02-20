@@ -1,4 +1,4 @@
-import type { FSRSPreset, TrueRecallSettings } from "./types/settings.types";
+import type { FSRSPreset, TrueRecallSettings } from "@shared/types/settings.types";
 
 export const VIEW_TYPE_FLASHCARD_PANEL = "true-recall-flashcard-panel";
 export const VIEW_TYPE_REVIEW = "true-recall-review";

@@ -10,7 +10,7 @@ import type {
 	SchedulingResult,
 	ShiftOptions,
 	WorkloadDistribution,
-} from "./scheduler.types";
+} from "@features/metrics/services/fsrs-tools/scheduler/scheduler.types";
 
 /**
  * Postpone/Advance Service

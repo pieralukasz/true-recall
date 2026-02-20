@@ -1,11 +1,11 @@
 import { useCallback, useRef, useState } from "preact/hooks";
-import { OptionCheckbox } from "../../../../shared/ui/components/OptionCheckbox";
-import { ModalFooter } from "../../../../shared/ui/components/ModalFooter";
+import { OptionCheckbox } from "@shared/ui/components/OptionCheckbox";
+import { ModalFooter } from "@shared/ui/components/ModalFooter";
 import {
 	ExportScopeSelector,
 	type ExportMode,
-} from "../../components/ExportScopeSelector";
-import type { NoteEntry } from "../../utils/export-helpers";
+} from "@features/integration/components/ExportScopeSelector";
+import type { NoteEntry } from "@features/integration/utils/export-helpers";
 
 export interface ExportFormValues {
 	exportMode: ExportMode;

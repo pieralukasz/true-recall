@@ -5,7 +5,7 @@
  * focusing only on mature cards (Review state) for accuracy.
  */
 
-import type { SqliteStoreService } from "../../../../../features/core/persistence/sqlite/SqliteStoreService";
+import type { SqliteStoreService } from "@features/core/persistence/sqlite/SqliteStoreService";
 
 /**
  * True retention data point

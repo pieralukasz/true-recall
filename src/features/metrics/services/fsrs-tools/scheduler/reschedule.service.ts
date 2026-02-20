@@ -6,15 +6,15 @@
  */
 
 import { FSRS, State } from "ts-fsrs";
-import { DEFAULT_FSRS_WEIGHTS } from "../../../../../shared/constants";
-import type { FSRSSettings } from "../../../../../shared/types";
+import { DEFAULT_FSRS_WEIGHTS } from "@shared/constants";
+import type { FSRSSettings } from "@shared/types";
 import type {
 	CardScheduleChange,
 	RescheduleOptions,
 	SchedulerCardStore,
 	SchedulingResult,
 	WorkloadDistribution,
-} from "./scheduler.types";
+} from "@features/metrics/services/fsrs-tools/scheduler/scheduler.types";
 
 export class RescheduleService {
 	private fsrs: FSRS;

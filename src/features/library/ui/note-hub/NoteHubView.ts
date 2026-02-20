@@ -1,9 +1,9 @@
 import { ItemView, type WorkspaceLeaf } from "obsidian";
 import { h } from "preact";
-import { VIEW_TYPE_NOTE_HUB } from "../../../../shared/constants";
+import { VIEW_TYPE_NOTE_HUB } from "@shared/constants";
 import type TrueRecallPlugin from "../../../../main";
-import { mountPreact } from "../../../../shared/ui/preact";
-import { NoteHubApp } from "./NoteHubApp";
+import { mountPreact } from "@shared/ui/preact";
+import { NoteHubApp } from "@features/library/ui/note-hub/NoteHubApp";
 
 export class NoteHubView extends ItemView {
 	private plugin: TrueRecallPlugin;

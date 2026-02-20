@@ -1,6 +1,6 @@
-import type { SelectionMode } from "../../../../../shared/store";
-import type { ProjectInfo, ProjectNoteInfo } from "../../../../../shared/types";
-import { useIcon } from "../../../../../shared/ui/preact/hooks";
+import type { SelectionMode } from "@shared/store";
+import type { ProjectInfo, ProjectNoteInfo } from "@shared/types";
+import { useIcon } from "@shared/ui/preact/hooks";
 
 export interface SelectionFooterProps {
 	selectionMode: SelectionMode;

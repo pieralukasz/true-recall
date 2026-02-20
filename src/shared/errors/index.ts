@@ -3,18 +3,18 @@ export {
 	InvalidResponseError,
 	NetworkError,
 	TimeoutError,
-} from "./api.error";
-export { AppError } from "./base.error";
+} from "@shared/errors/api.error";
+export { AppError } from "@shared/errors/base.error";
 
 export {
 	ConfigurationError,
 	FileError,
 	ValidationError,
-} from "./validation.error";
+} from "@shared/errors/validation.error";
 
 export function isAppError(
 	error: unknown,
-): error is import("./base.error").AppError {
+): error is import("@shared/errors/base.error").AppError {
 	return error instanceof Error && "code" in error && "isRecoverable" in error;
 }
 

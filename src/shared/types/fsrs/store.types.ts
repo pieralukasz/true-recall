@@ -1,4 +1,4 @@
-import type { FSRSCardData } from "./card.types";
+import type { FSRSCardData } from "@shared/types/fsrs/card.types";
 
 export interface CardStore {
 	isReady(): boolean;

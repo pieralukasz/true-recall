@@ -1,11 +1,11 @@
 import type { ReadonlySignal } from "@preact/signals";
 import { normalizePath, type TFile } from "obsidian";
 import { useCallback } from "preact/hooks";
-import { ActionButton, Panel } from "../../../../shared/ui/components";
-import { useApp, usePlugin } from "../../../../shared/ui/preact";
-import type { OrphanedCardGroup } from "../../services/orphaned-cards.service";
-import { GroupRow, MoveSection, OrphanedEmptyState } from "./components";
-import { useOrphanedData } from "./hooks/useOrphanedData";
+import { ActionButton, Panel } from "@shared/ui/components";
+import { useApp, usePlugin } from "@shared/ui/preact";
+import type { OrphanedCardGroup } from "@features/library/services/orphaned-cards.service";
+import { GroupRow, MoveSection, OrphanedEmptyState } from "@features/library/ui/orphaned-cards/components";
+import { useOrphanedData } from "@features/library/ui/orphaned-cards/hooks/useOrphanedData";
 
 interface OrphanedCardsAppProps {
 	refreshSignal?: ReadonlySignal<number>;

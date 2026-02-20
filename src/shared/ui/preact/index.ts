@@ -1,5 +1,5 @@
-export * from "../components";
-export * from "../hooks";
-export { useIcon, useMarkdown } from "./hooks";
-export { mountPreact } from "./mount";
-export { ObsidianProvider, useApp, usePlugin } from "./ObsidianContext";
+export * from "@shared/ui/components";
+export * from "@shared/ui/hooks";
+export { useIcon, useMarkdown } from "@shared/ui/preact/hooks";
+export { mountPreact } from "@shared/ui/preact/mount";
+export { ObsidianProvider, useApp, usePlugin } from "@shared/ui/preact/ObsidianContext";

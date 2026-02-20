@@ -1,13 +1,13 @@
 import { useCallback, useState } from "preact/hooks";
-import { FSRS_CONFIG } from "../../../../shared/constants";
-import { notify } from "../../../../shared/services/notification.service";
-import type { FSRSPreset } from "../../../../shared/types";
+import { FSRS_CONFIG } from "@shared/constants";
+import { notify } from "@shared/services/notification.service";
+import type { FSRSPreset } from "@shared/types";
 import {
 	ActionButton,
 	InfoBlock,
 	SettingRow,
 	TextAreaInput,
-} from "../../../../shared/ui/components";
+} from "@shared/ui/components";
 
 interface ParametersSectionProps {
 	preset: FSRSPreset;

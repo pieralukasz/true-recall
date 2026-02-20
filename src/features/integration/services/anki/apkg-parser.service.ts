@@ -13,7 +13,7 @@ import {
 	type DatabaseLike,
 	loadDatabase,
 	type QueryExecResult,
-} from "../../../../features/core/persistence/sqlite/loader";
+} from "@features/core/persistence/sqlite/loader";
 
 // Legacy format: models/decks stored as JSON in the `col` table
 interface RawAnkiModel {

@@ -11,28 +11,28 @@ export type {
 	FSRSCardData,
 	FSRSFlashcardItem,
 	Grade,
-} from "./card.types";
-export { Rating, State } from "./card.types";
+} from "@shared/types/fsrs/card.types";
+export { Rating, State } from "@shared/types/fsrs/card.types";
 // Utility functions and types
-export type { ReviewViewMode } from "./fsrs.utils";
+export type { ReviewViewMode } from "@shared/types/fsrs/fsrs.utils";
 export {
 	createDefaultFSRSData,
 	formatInterval,
-} from "./fsrs.utils";
+} from "@shared/types/fsrs/fsrs.utils";
 // Scheduling types
 export type {
 	HistoryValidationResult,
 	OptimizationOptions,
 	OptimizationResult,
 	SchedulingPreview,
-} from "./scheduling.types";
+} from "@shared/types/fsrs/scheduling.types";
 // Session types
 export type {
 	ReviewHistoryEntry,
 	ReviewResult,
 	ReviewSessionState,
 	ReviewSessionStats,
-} from "./session.types";
+} from "@shared/types/fsrs/session.types";
 // Statistics types
 export type {
 	CardMaturityBreakdown,
@@ -49,6 +49,6 @@ export type {
 	StatsTimeRange,
 	StreakInfo,
 	TodaySummary,
-} from "./stats.types";
+} from "@shared/types/fsrs/stats.types";
 // Store types
-export type { CardStore } from "./store.types";
+export type { CardStore } from "@shared/types/fsrs/store.types";

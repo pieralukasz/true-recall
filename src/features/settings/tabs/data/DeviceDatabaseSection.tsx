@@ -1,12 +1,12 @@
 import { useCallback } from "preact/hooks";
-import { notify } from "../../../../shared/services/notification.service";
-import { DeviceSelectionModal } from "../../../../features/integration/modals/DeviceSelectionModal";
+import { notify } from "@shared/services/notification.service";
+import { DeviceSelectionModal } from "@features/integration/modals/DeviceSelectionModal";
 import {
 	InfoBlock,
 	SettingRow,
 	TextInput,
-} from "../../../../shared/ui/components";
-import { useSettings } from "../../hooks/useSettings";
+} from "@shared/ui/components";
+import { useSettings } from "@features/settings/hooks/useSettings";
 
 export function DeviceDatabaseSection() {
 	const { plugin } = useSettings();

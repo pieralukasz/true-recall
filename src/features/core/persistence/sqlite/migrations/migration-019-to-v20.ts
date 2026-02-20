@@ -2,7 +2,7 @@
  * Migration v19 -> v20
  * Add composite indexes for common query patterns
  */
-import type { DatabaseLike } from "../sqlite.types";
+import type { DatabaseLike } from "@features/core/persistence/sqlite/sqlite.types";
 
 export function migration019ToV20(db: DatabaseLike): void {
 	// Add composite indexes for cards table

@@ -1,8 +1,8 @@
 import { Platform } from "obsidian";
 import { useEffect, useState } from "preact/hooks";
-import type { SessionResult } from "../../../../shared/types/events.types";
-import { usePlugin } from "../../../../shared/ui/preact";
-import type { SessionLogic } from "./SessionLogic";
+import type { SessionResult } from "@shared/types/events.types";
+import { usePlugin } from "@shared/ui/preact";
+import type { SessionLogic } from "@features/study/ui/session/SessionLogic";
 import {
 	CustomStudySection,
 	NoteList,
@@ -10,8 +10,8 @@ import {
 	SavedPresets,
 	SearchBar,
 	SelectionBar,
-} from "./components";
-import { useSessionHandlers } from "./hooks/useSessionHandlers";
+} from "@features/study/ui/session/components";
+import { useSessionHandlers } from "@features/study/ui/session/hooks/useSessionHandlers";
 
 interface SessionAppProps {
 	logic: SessionLogic;

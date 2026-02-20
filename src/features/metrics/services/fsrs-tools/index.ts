@@ -8,26 +8,26 @@
  */
 
 // Main service
-export { FSRSHelperService } from "./fsrs-helper.service";
+export { FSRSHelperService } from "@features/metrics/services/fsrs-tools/fsrs-helper.service";
 export type {
 	OptimizationInput,
 	OptimizationOutput,
 	OptimizationProgressCallback,
 	OptimizationReviewEntry,
 	OptimizerOptions,
-} from "./optimizer/optimizer.types";
+} from "@features/metrics/services/fsrs-tools/optimizer/optimizer.types";
 // Optimizer
-export { ParameterOptimizerService } from "./optimizer/parameter-optimizer.service";
+export { ParameterOptimizerService } from "@features/metrics/services/fsrs-tools/optimizer/parameter-optimizer.service";
 export {
 	type EasyDaysOptions,
 	EasyDaysService,
-} from "./scheduler/easy-days.service";
-export { FlattenService } from "./scheduler/flatten.service";
+} from "@features/metrics/services/fsrs-tools/scheduler/easy-days.service";
+export { FlattenService } from "@features/metrics/services/fsrs-tools/scheduler/flatten.service";
 // Scheduler services
-export { LoadBalanceService } from "./scheduler/load-balance.service";
-export { PostponeAdvanceService } from "./scheduler/postpone-advance.service";
-export { RescheduleService } from "./scheduler/reschedule.service";
-export { ScheduleBreakService } from "./scheduler/schedule-break.service";
+export { LoadBalanceService } from "@features/metrics/services/fsrs-tools/scheduler/load-balance.service";
+export { PostponeAdvanceService } from "@features/metrics/services/fsrs-tools/scheduler/postpone-advance.service";
+export { RescheduleService } from "@features/metrics/services/fsrs-tools/scheduler/reschedule.service";
+export { ScheduleBreakService } from "@features/metrics/services/fsrs-tools/scheduler/schedule-break.service";
 export type {
 	BreakScheduleOptions,
 	CardDueInfo,
@@ -39,21 +39,21 @@ export type {
 	SchedulingResult,
 	ShiftOptions,
 	WorkloadDistribution,
-} from "./scheduler/scheduler.types";
-export { SiblingDisperseService } from "./scheduler/sibling-disperse.service";
+} from "@features/metrics/services/fsrs-tools/scheduler/scheduler.types";
+export { SiblingDisperseService } from "@features/metrics/services/fsrs-tools/scheduler/sibling-disperse.service";
 export {
 	DistributionCalculator,
 	type DistributionStats,
 	type HistogramBucket,
-} from "./statistics/distribution.calculator";
+} from "@features/metrics/services/fsrs-tools/statistics/distribution.calculator";
 // Statistics
 export {
 	TrueRetentionCalculator,
 	type TrueRetentionEntry,
 	type TrueRetentionSummary,
-} from "./statistics/true-retention.calculator";
+} from "@features/metrics/services/fsrs-tools/statistics/true-retention.calculator";
 export {
 	WorkloadForecastCalculator,
 	type WorkloadForecastEntry,
 	type WorkloadForecastSummary,
-} from "./statistics/workload-forecast.calculator";
+} from "@features/metrics/services/fsrs-tools/statistics/workload-forecast.calculator";

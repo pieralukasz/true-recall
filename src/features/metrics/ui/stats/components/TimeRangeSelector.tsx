@@ -1,4 +1,4 @@
-import type { StatsTimeRange } from "../../../../../shared/types";
+import type { StatsTimeRange } from "@shared/types";
 
 const TIME_RANGES: { label: string; value: StatsTimeRange }[] = [
 	{ label: "Backlog", value: "backlog" },

@@ -1,4 +1,4 @@
 /**
  * Image Service Exports
  */
-export { ImageService } from "./ImageService";
+export { ImageService } from "@features/integration/services/ImageService";

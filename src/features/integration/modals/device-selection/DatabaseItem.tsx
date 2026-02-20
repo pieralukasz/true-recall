@@ -1,4 +1,4 @@
-import type { DeviceDatabaseInfo } from "../../services/device.index";
+import type { DeviceDatabaseInfo } from "@features/integration/services/device.index";
 
 function formatDate(date: Date): string {
 	return date.toLocaleDateString("en-US", {

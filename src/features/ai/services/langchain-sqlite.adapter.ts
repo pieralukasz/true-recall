@@ -8,7 +8,7 @@
 import type {
 	DatabaseLike,
 	QueryExecResult,
-} from "../../../features/core/persistence/sqlite/loader";
+} from "@features/core/persistence/sqlite/loader";
 
 /**
  * Adapter to make SQLite database compatible with LangChain SQL tools

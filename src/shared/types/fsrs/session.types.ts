@@ -4,7 +4,7 @@
  */
 
 import type { Grade, State } from "ts-fsrs";
-import type { FSRSFlashcardItem } from "./card.types";
+import type { FSRSFlashcardItem } from "@shared/types/fsrs/card.types";
 
 /**
  * Single review result

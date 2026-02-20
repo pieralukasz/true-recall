@@ -1,5 +1,5 @@
 import { useMemo } from "preact/hooks";
-import type { SessionLogic } from "../SessionLogic";
+import type { SessionLogic } from "@features/study/ui/session/SessionLogic";
 
 const BASE_BTN =
 	"ep:flex ep:flex-col ep:items-start ep:gap-1.5 ep:px-3 ep:py-3 ep:min-h-[3rem] ep:bg-obs-secondary ep:border ep:border-obs-border ep:rounded-md ep:cursor-pointer ep:text-left ep:transition-colors ep:hover:bg-obs-modifier-hover ep:hover:border-obs-interactive";

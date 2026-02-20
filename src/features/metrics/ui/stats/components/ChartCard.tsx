@@ -1,6 +1,6 @@
 import type { Chart } from "chart.js";
 import { useEffect, useRef } from "preact/hooks";
-import { StatsCard } from "./StatsCard";
+import { StatsCard } from "@features/metrics/ui/stats/components/StatsCard";
 
 interface ChartCardProps {
 	title: string;

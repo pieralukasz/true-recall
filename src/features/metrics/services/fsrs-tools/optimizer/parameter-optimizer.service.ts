@@ -6,13 +6,13 @@
  */
 
 import { FSRS, type Rating, type State } from "ts-fsrs";
-import { DEFAULT_FSRS_WEIGHTS } from "../../../../../shared/constants";
+import { DEFAULT_FSRS_WEIGHTS } from "@shared/constants";
 import type {
 	OptimizationInput,
 	OptimizationOutput,
 	OptimizationReviewEntry,
 	OptimizerOptions,
-} from "./optimizer.types";
+} from "@features/metrics/services/fsrs-tools/optimizer/optimizer.types";
 
 /**
  * Minimum reviews required for optimization

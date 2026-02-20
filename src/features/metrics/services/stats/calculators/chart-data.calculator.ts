@@ -7,9 +7,9 @@ import type {
 	FutureDueEntry,
 	RetentionEntry,
 	StatsTimeRange,
-} from "../../../../../shared/types";
-import { formatLocalDate } from "../../../../../shared/utils";
-import type { SqliteStoreService } from "../../../../../features/core/persistence/sqlite";
+} from "@shared/types";
+import { formatLocalDate } from "@shared/utils";
+import type { SqliteStoreService } from "@features/core/persistence/sqlite";
 
 export class ChartDataCalculator {
 	constructor(private sqliteStore: SqliteStoreService | null = null) {}

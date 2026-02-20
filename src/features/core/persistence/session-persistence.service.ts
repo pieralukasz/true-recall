@@ -4,9 +4,9 @@ import type {
 	ExtendedDailyStats,
 	Grade,
 	PersistentStatsData,
-} from "../../../shared/types";
-import type { DayBoundaryService } from "../services/day-boundary.service";
-import type { SqliteStoreService } from "./sqlite";
+} from "@shared/types";
+import type { DayBoundaryService } from "@features/core/services/day-boundary.service";
+import type { SqliteStoreService } from "@features/core/persistence/sqlite";
 
 const STATS_FOLDER = ".true-recall";
 const STATS_FILE = "stats.json";
