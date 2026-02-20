@@ -57,12 +57,6 @@ export function registerCommands(plugin: TrueRecallPlugin): void {
 	});
 
 	plugin.addCommand({
-		id: "open-orphaned-cards",
-		name: "Open orphaned cards panel",
-		callback: () => void plugin.openOrphanedCardsView(),
-	});
-
-	plugin.addCommand({
 		id: "open-note-hub",
 		name: "Open note hub",
 		callback: () => void plugin.openNoteHub(),

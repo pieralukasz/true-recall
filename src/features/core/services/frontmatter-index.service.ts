@@ -20,6 +20,15 @@ export interface FieldConfig {
 	unique?: boolean;
 }
 
+export interface FieldChangeEvent {
+	field: string;
+	path: string;
+	oldValues: string[];
+	newValues: string[];
+}
+
+export type FieldChangeCallback = (event: FieldChangeEvent) => void;
+
 interface FieldIndex {
 	config: FieldConfig;
 	/** value → Set<path> (for non-unique) or value → path (for unique) */
@@ -31,6 +40,8 @@ interface FieldIndex {
 export class FrontmatterIndexService {
 	private app: App;
 	private fields: Map<string, FieldIndex> = new Map();
+	private fieldChangeCallbacks: Map<string, FieldChangeCallback[]> =
+		new Map();
 	// Track direct event handlers for cleanup
 	private directEventHandlers: {
 		changed?: (file: TFile, data: string, cache: CachedMetadata) => void;
@@ -52,6 +63,12 @@ export class FrontmatterIndexService {
 			valueToPath: new Map(),
 			pathToValue: new Map(),
 		});
+	}
+
+	onFieldChange(field: string, callback: FieldChangeCallback): void {
+		const callbacks = this.fieldChangeCallbacks.get(field) ?? [];
+		callbacks.push(callback);
+		this.fieldChangeCallbacks.set(field, callbacks);
 	}
 
 	/**
@@ -121,17 +138,19 @@ export class FrontmatterIndexService {
 
 		for (const file of files) {
 			const cache = this.app.metadataCache.getFileCache(file);
-			this.indexFile(file.path, cache?.frontmatter);
+			// Silent during rebuild — no old values exist, so no meaningful changes to report
+			this.indexFile(file.path, cache?.frontmatter, true);
 		}
 	}
 
 	private indexFile(
 		path: string,
 		frontmatter: Record<string, unknown> | undefined,
+		silent = false,
 	): void {
 		for (const index of this.fields.values()) {
 			const values = this.extractValues(frontmatter, index.config);
-			this.updateFieldIndex(index, path, values);
+			this.updateFieldIndex(index, path, values, silent);
 		}
 	}
 
@@ -139,6 +158,7 @@ export class FrontmatterIndexService {
 		index: FieldIndex,
 		path: string,
 		newValues: string[],
+		silent = false,
 	): void {
 		const { config, valueToPath, pathToValue } = index;
 
@@ -168,6 +188,9 @@ export class FrontmatterIndexService {
 		// Clear path entry if no new values
 		if (newValues.length === 0) {
 			pathToValue.delete(path);
+			if (!silent) {
+				this.fireCallbacks(config.field, path, oldValues, newValues);
+			}
 			return;
 		}
 
@@ -191,6 +214,40 @@ export class FrontmatterIndexService {
 					valueToPath.set(val, paths);
 				}
 				paths.add(path);
+			}
+		}
+
+		if (!silent) {
+			this.fireCallbacks(config.field, path, oldValues, newValues);
+		}
+	}
+
+	private fireCallbacks(
+		field: string,
+		path: string,
+		oldValues: string[],
+		newValues: string[],
+	): void {
+		// Only fire if values actually changed
+		if (
+			oldValues.length === newValues.length &&
+			oldValues.every((v, i) => v === newValues[i])
+		) {
+			return;
+		}
+
+		const callbacks = this.fieldChangeCallbacks.get(field);
+		if (!callbacks?.length) return;
+
+		const event: FieldChangeEvent = { field, path, oldValues, newValues };
+		for (const cb of callbacks) {
+			try {
+				cb(event);
+			} catch (e) {
+				console.error(
+					`[FrontmatterIndexService] Callback error for field "${field}":`,
+					e,
+				);
 			}
 		}
 	}
@@ -296,10 +353,11 @@ export class FrontmatterIndexService {
 		this.indexFile(file.path, cache?.frontmatter);
 	}
 
+	// Silent: file deletion is handled by DeletionHandlerService,
+	// not by field change callbacks
 	private handleFileDeleted(file: TFile): void {
-		// Remove from all field indexes
 		for (const index of this.fields.values()) {
-			this.updateFieldIndex(index, file.path, []);
+			this.updateFieldIndex(index, file.path, [], true);
 		}
 	}
 
