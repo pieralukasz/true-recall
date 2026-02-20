@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import type { App, Vault, MetadataCache, TFile, CachedMetadata } from "obsidian";
-import { FrontmatterIndexService } from "../../../src/services/core/frontmatter-index.service";
+import { FrontmatterIndexService } from "../../../src/features/core/services/frontmatter-index.service";
 
 describe("FrontmatterIndexService", () => {
 	let mockApp: App;

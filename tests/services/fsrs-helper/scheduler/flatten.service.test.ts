@@ -2,7 +2,7 @@
  * Flatten Service Tests
  */
 import { describe, it, expect, beforeEach, vi, afterEach } from "vitest";
-import { FlattenService } from "../../../../src/services/fsrs-helper/scheduler/flatten.service";
+import { FlattenService } from "../../../../src/features/metrics/services/fsrs-tools/scheduler/flatten.service";
 import { createMockCardStore, createCardsOnDate } from "../mocks/scheduler.mocks";
 
 describe("FlattenService", () => {

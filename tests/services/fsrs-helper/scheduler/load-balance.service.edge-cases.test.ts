@@ -3,7 +3,7 @@
  * Behavior-first tests for edge cases and boundary conditions
  */
 import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
-import { LoadBalanceService } from "../../../../src/services/fsrs-helper/scheduler/load-balance.service";
+import { LoadBalanceService } from "../../../../src/features/metrics/services/fsrs-tools/scheduler/load-balance.service";
 import {
 	createMockCardStore,
 	createCardsOnDate,

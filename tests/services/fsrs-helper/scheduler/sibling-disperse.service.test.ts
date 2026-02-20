@@ -2,7 +2,7 @@
  * Sibling Disperse Service Tests
  */
 import { describe, it, expect, beforeEach, vi, afterEach } from "vitest";
-import { SiblingDisperseService } from "../../../../src/services/fsrs-helper/scheduler/sibling-disperse.service";
+import { SiblingDisperseService } from "../../../../src/features/metrics/services/fsrs-tools/scheduler/sibling-disperse.service";
 import {
 	createMockCardStore,
 	createSiblingCards,

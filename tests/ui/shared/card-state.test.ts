@@ -8,8 +8,8 @@ import {
 	countCardsByState,
 	countCardsByStateWithDue,
 	aggregateCardStateCounts,
-} from "../../../src/ui/shared/helpers/card-state";
-import type { FSRSFlashcardItem } from "../../../src/types";
+} from "../../../src/shared/ui/helpers/card-state";
+import type { FSRSFlashcardItem } from "../../../src/shared/types";
 
 // Helper to create mock FSRS card
 function createMockFsrsCard(overrides: Partial<FSRSFlashcardItem> = {}): FSRSFlashcardItem {

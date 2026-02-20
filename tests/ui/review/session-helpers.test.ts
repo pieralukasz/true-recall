@@ -5,9 +5,9 @@ import { describe, it, expect } from "vitest";
 import {
 	filterActiveCards,
 	getEmptyQueueMessage,
-} from "../../../src/ui/review/helpers/session-helpers";
+} from "../../../src/features/study/ui/review/helpers/session-helpers";
 import { State } from "ts-fsrs";
-import type { FSRSFlashcardItem } from "../../../src/types";
+import type { FSRSFlashcardItem } from "../../../src/shared/types";
 
 // Helper to create mock card
 function createMockCard(overrides: Partial<FSRSFlashcardItem> = {}): FSRSFlashcardItem {

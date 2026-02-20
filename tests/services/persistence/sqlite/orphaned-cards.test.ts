@@ -13,9 +13,9 @@ import {
 	createOrphanedCard,
 	type TestContext,
 } from "./__setup__/test-database";
-import { OrphanedCardsService } from "../../../../src/services/flashcard/orphaned-cards.service";
-import type { SqliteStoreService } from "../../../../src/services/persistence/sqlite/SqliteStoreService";
-import type { FrontmatterIndexService } from "../../../../src/services/core/frontmatter-index.service";
+import { OrphanedCardsService } from "../../../../src/features/library/services/orphaned-cards.service";
+import type { SqliteStoreService } from "../../../../src/features/core/persistence/sqlite/SqliteStoreService";
+import type { FrontmatterIndexService } from "../../../../src/features/core/services/frontmatter-index.service";
 
 describe("Orphaned Cards", () => {
 	let ctx: TestContext;

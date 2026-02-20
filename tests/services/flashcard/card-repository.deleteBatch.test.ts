@@ -5,13 +5,13 @@ import {
 	createTestCard,
 	type TestContext,
 } from "../persistence/sqlite/__setup__/test-database";
-import { CardRepository } from "../../../src/services/flashcard/card-repository.service";
-import { FlashcardManager } from "../../../src/services/flashcard/flashcard.service";
-import type { SqliteStoreService } from "../../../src/services/persistence/sqlite/SqliteStoreService";
+import { CardRepository } from "../../../src/features/study/services/flashcard/card-repository.service";
+import { FlashcardManager } from "../../../src/features/study/services/flashcard/flashcard.service";
+import type { SqliteStoreService } from "../../../src/features/core/persistence/sqlite/SqliteStoreService";
 import type { App } from "obsidian";
 
 const mockNotifyCardChange = vi.fn();
-vi.mock("../../../src/services/core/signals", () => ({
+vi.mock("../../../src/shared/services/signals", () => ({
 	notifyCardChange: (...args: unknown[]) => mockNotifyCardChange(...args),
 }));
 

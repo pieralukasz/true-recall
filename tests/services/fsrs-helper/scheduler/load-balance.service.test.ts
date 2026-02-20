@@ -10,7 +10,7 @@
  * Review and New cards), as that's what the service receives in production.
  */
 import { describe, it, expect, beforeEach, vi, afterEach } from "vitest";
-import { LoadBalanceService } from "../../../../src/services/fsrs-helper/scheduler/load-balance.service";
+import { LoadBalanceService } from "../../../../src/features/metrics/services/fsrs-tools/scheduler/load-balance.service";
 import {
 	createMockCardStore,
 	createCardsOnDate,

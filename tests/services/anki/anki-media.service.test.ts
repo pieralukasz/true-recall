@@ -1,5 +1,5 @@
 import { vi } from "vitest";
-import { AnkiMediaService } from "../../../src/services/anki/anki-media.service";
+import { AnkiMediaService } from "../../../src/features/integration/services/anki/anki-media.service";
 
 function createMockApp(): any {
 	const files: Record<string, ArrayBuffer> = {};
@@ -10,7 +10,9 @@ function createMockApp(): any {
 				writeBinary: vi.fn(async (path: string, data: ArrayBuffer) => {
 					files[path] = data;
 				}),
-				readBinary: vi.fn(async (path: string) => files[path] ?? new ArrayBuffer(0)),
+				readBinary: vi.fn(
+					async (path: string) => files[path] ?? new ArrayBuffer(0),
+				),
 				mkdir: vi.fn(async () => {}),
 			},
 			getFiles: vi.fn(() => []),
@@ -45,7 +47,9 @@ describe("AnkiMediaService", () => {
 
 			const result = service.updateImportedContent(content, pathMapping);
 
-			expect(result).toBe("Image: ![[media/photo.jpg]] and sound: ![[media/audio.mp3]]");
+			expect(result).toBe(
+				"Image: ![[media/photo.jpg]] and sound: ![[media/audio.mp3]]",
+			);
 		});
 
 		it("skips replacement when name equals path", () => {
@@ -90,7 +94,9 @@ describe("AnkiMediaService", () => {
 		});
 
 		it("converts image with subfolder path (uses basename)", () => {
-			const result = service.convertContentForExport("![[assets/images/photo.jpg]]");
+			const result = service.convertContentForExport(
+				"![[assets/images/photo.jpg]]",
+			);
 
 			expect(result).toBe('<img src="photo.jpg">');
 		});
@@ -102,7 +108,9 @@ describe("AnkiMediaService", () => {
 		});
 
 		it("converts audio with subfolder path", () => {
-			const result = service.convertContentForExport("![[audio/files/pronunciation.ogg]]");
+			const result = service.convertContentForExport(
+				"![[audio/files/pronunciation.ogg]]",
+			);
 
 			expect(result).toBe("[sound:pronunciation.ogg]");
 		});
@@ -118,7 +126,9 @@ describe("AnkiMediaService", () => {
 
 			const result = service.convertContentForExport(content);
 
-			expect(result).toBe('Image: <img src="photo.png"> and audio: [sound:sound.mp3]');
+			expect(result).toBe(
+				'Image: <img src="photo.png"> and audio: [sound:sound.mp3]',
+			);
 		});
 
 		it("leaves non-embed content unchanged", () => {
@@ -138,7 +148,18 @@ describe("AnkiMediaService", () => {
 		});
 
 		it("handles all image extensions", () => {
-			const extensions = ["png", "jpg", "jpeg", "gif", "bmp", "svg", "webp", "ico", "tif", "tiff"];
+			const extensions = [
+				"png",
+				"jpg",
+				"jpeg",
+				"gif",
+				"bmp",
+				"svg",
+				"webp",
+				"ico",
+				"tif",
+				"tiff",
+			];
 			for (const ext of extensions) {
 				const result = service.convertContentForExport(`![[file.${ext}]]`);
 				expect(result).toBe(`<img src="file.${ext}">`);
@@ -146,7 +167,16 @@ describe("AnkiMediaService", () => {
 		});
 
 		it("handles all audio extensions", () => {
-			const extensions = ["mp3", "ogg", "wav", "m4a", "flac", "aac", "wma", "opus"];
+			const extensions = [
+				"mp3",
+				"ogg",
+				"wav",
+				"m4a",
+				"flac",
+				"aac",
+				"wma",
+				"opus",
+			];
 			for (const ext of extensions) {
 				const result = service.convertContentForExport(`![[file.${ext}]]`);
 				expect(result).toBe(`[sound:file.${ext}]`);
@@ -159,9 +189,7 @@ describe("AnkiMediaService", () => {
 			const app = createMockApp();
 			const service = new AnkiMediaService(app);
 
-			const media = new Map([
-				["0", new ArrayBuffer(8)],
-			]);
+			const media = new Map([["0", new ArrayBuffer(8)]]);
 			const mediaMap: Record<string, string> = { "0": "photo.png" };
 
 			await service.importMedia(media, mediaMap, "anki-media");
@@ -276,9 +304,7 @@ describe("AnkiMediaService", () => {
 			app._files["b.jpg"] = new ArrayBuffer(5);
 			const service = new AnkiMediaService(app);
 
-			const cards = [
-				{ question: "![[a.png]] ![[b.jpg]]", answer: "" },
-			];
+			const cards = [{ question: "![[a.png]] ![[b.jpg]]", answer: "" }];
 
 			const result = await service.collectExportMedia(cards);
 
@@ -292,9 +318,7 @@ describe("AnkiMediaService", () => {
 			const app = createMockApp();
 			const service = new AnkiMediaService(app);
 
-			const cards = [
-				{ question: "Plain question", answer: "Plain answer" },
-			];
+			const cards = [{ question: "Plain question", answer: "Plain answer" }];
 
 			const result = await service.collectExportMedia(cards);
 

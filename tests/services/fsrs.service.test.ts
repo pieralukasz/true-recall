@@ -3,7 +3,7 @@
  */
 import { describe, it, expect, beforeEach, vi, afterEach } from "vitest";
 import { State, Rating } from "ts-fsrs";
-import { FSRSService } from "../../src/services/core/fsrs.service";
+import { FSRSService } from "../../src/features/core/services/fsrs.service";
 import {
 	createMockCard,
 	createNewCard,

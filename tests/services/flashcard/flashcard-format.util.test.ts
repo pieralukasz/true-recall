@@ -6,9 +6,9 @@ import {
 	extractClozeExtraAnswer,
 	type CardLike,
 	type CardPreview,
-} from "../../../src/services/flashcard/flashcard-format.util";
-import { renderClozeAnswer } from "../../../src/services/flashcard/cloze-parser.service";
-import { FlashcardParserService } from "../../../src/services/flashcard/flashcard-parser.service";
+} from "../../../src/features/study/services/flashcard/flashcard-format.util";
+import { renderClozeAnswer } from "../../../src/features/study/services/flashcard/cloze-parser.service";
+import { FlashcardParserService } from "../../../src/features/study/services/flashcard/flashcard-parser.service";
 
 // ── Helpers ──────────────────────────────────────────────
 

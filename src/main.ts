@@ -1,14 +1,35 @@
 import { normalizePath, Plugin, TFile } from "obsidian";
+import { SqlJsAdapter } from "./features/ai/services/langchain-sqlite.adapter";
+import { NLQueryService } from "./features/ai/services/nl-query.service";
+import { NoteStatusCacheService } from "./features/core/cache/note-status-cache.service";
+import { BackgroundBackupManager } from "./features/core/persistence/background-backup.service";
 import {
-	VIEW_TYPE_CARD_BROWSER,
-	VIEW_TYPE_FLASHCARD_PANEL,
-	VIEW_TYPE_NOTE_HUB,
-	VIEW_TYPE_ORPHANED_CARDS,
-	VIEW_TYPE_REVIEW,
-	VIEW_TYPE_SESSION,
-	VIEW_TYPE_SIMULATOR,
-	VIEW_TYPE_STATS,
-} from "./constants";
+	DB_FOLDER,
+	getDeviceDbFilename,
+} from "./features/core/persistence/sqlite/sqlite.types";
+import { PresetService } from "./features/core/services/preset.service";
+import { CardBrowserView } from "./features/library/ui/browser";
+import {
+	createLinkStatusPostProcessor,
+	createLinkStatusViewPlugin,
+} from "./features/library/ui/editor";
+import { NoteHubView } from "./features/library/ui/note-hub";
+import { OrphanedCardsView } from "./features/library/ui/orphaned-cards";
+import { FSRSHelperService } from "./features/metrics/services/fsrs-tools";
+import { SimulatorView } from "./features/metrics/ui/simulator";
+import { StatsView } from "./features/metrics/ui/stats/StatsView";
+import {
+	DEFAULT_SETTINGS,
+	type TrueRecallSettings,
+	TrueRecallSettingTab,
+} from "./features/settings";
+import {
+	CustomStudyModal,
+	type CustomStudyModalScope,
+} from "./features/study/modals/CustomStudyModal";
+import { FlashcardPanelView } from "./features/study/ui/panel/FlashcardPanelView";
+import { ReviewView } from "./features/study/ui/review/ReviewView";
+import { SessionView } from "./features/study/ui/session";
 import { registerCommands } from "./plugin/PluginCommands";
 import {
 	registerDeletionHandler,
@@ -20,71 +41,44 @@ import {
 	closeAllViews,
 	getView,
 } from "./plugin/ViewActivator";
+import { BackupService } from "./features/core/persistence/backup.service";
+import { SessionPersistenceService } from "./features/core/persistence/session-persistence.service";
+import { SqliteStoreService } from "./features/core/persistence/sqlite";
+import { DayBoundaryService } from "./features/core/services/day-boundary.service";
+import { FrontmatterIndexService } from "./features/core/services/frontmatter-index.service";
+import { FSRSService } from "./features/core/services/fsrs.service";
+import { AnkiExportModal } from "./features/integration/modals/AnkiExportModal";
+import { AnkiImportModal } from "./features/integration/modals/AnkiImportModal";
+import { CsvExportModal } from "./features/integration/modals/CsvExportModal";
 import {
-	BackupService,
-	DayBoundaryService,
-	DeletionHandlerService,
-	DeviceDiscoveryService,
-	DeviceIdService,
-	FlashcardManager,
-	// Cloud sync - coming soon
-	// AuthService,
-	// SyncService,
-	FrontmatterIndexService,
-	FSRSService,
-	notify,
-	OrphanedCardsService,
-	SessionPersistenceService,
-	SqliteStoreService,
-	StatsService,
-	UndoService,
-} from "./services";
-import { SqlJsAdapter } from "./services/ai/langchain-sqlite.adapter";
-import { NLQueryService } from "./services/ai/nl-query.service";
-import { NoteStatusCacheService } from "./services/cache/note-status-cache.service";
-import { PresetService } from "./services/core/preset.service";
-import { settingsVersion } from "./services/core/signals";
-import { FSRSHelperService } from "./services/fsrs-helper";
-import { BackgroundBackupManager } from "./services/persistence/background-backup.service";
-import {
-	DB_FOLDER,
-	getDeviceDbFilename,
-} from "./services/persistence/sqlite/sqlite.types";
-import { type AppStore, createAppStore } from "./state/store";
-import type { FSRSCardData } from "./types";
-import { extractFSRSSettings } from "./types";
-import { CardBrowserView } from "./ui/card-browser";
-import {
-	createLinkStatusPostProcessor,
-	createLinkStatusViewPlugin,
-} from "./ui/editor";
-import { FlashcardPanelView } from "./ui/flashcard-panel/FlashcardPanelView";
-import {
-	AddToProjectModal,
-	AnkiExportModal,
-	AnkiImportModal,
-	CsvExportModal,
 	DeviceSelectionModal,
 	type DeviceSelectionResult,
-	OrphanedCardsActionModal,
-	RestoreBackupModal,
-	SetPresetModal,
-} from "./ui/modals";
+} from "./features/integration/modals/DeviceSelectionModal";
+import { RestoreBackupModal } from "./features/integration/modals/RestoreBackupModal";
+import { DeviceDiscoveryService } from "./features/integration/services/device-discovery.service";
+import { DeviceIdService } from "./features/integration/services/device-id.service";
+import { OrphanedCardsActionModal } from "./features/library/modals/OrphanedCardsActionModal";
+import { OrphanedCardsService } from "./features/library/services/orphaned-cards.service";
+import { StatsService } from "./features/metrics/services/stats/stats.service";
+import { DeletionHandlerService } from "./features/study/services/flashcard/deletion-handler.service";
+import { FlashcardManager } from "./features/study/services/flashcard/flashcard.service";
+import { UndoService } from "./shared/services/undo.service";
 import {
-	CustomStudyModal,
-	type CustomStudyModalScope,
-} from "./ui/modals/CustomStudyModal";
-import { NoteHubView } from "./ui/note-hub";
-import { OrphanedCardsView } from "./ui/orphaned-cards";
-import { ReviewView } from "./ui/review/ReviewView";
-import { SessionView } from "./ui/session";
-import {
-	DEFAULT_SETTINGS,
-	type TrueRecallSettings,
-	TrueRecallSettingTab,
-} from "./ui/settings";
-import { SimulatorView } from "./ui/simulator";
-import { StatsView } from "./ui/stats/StatsView";
+	VIEW_TYPE_CARD_BROWSER,
+	VIEW_TYPE_FLASHCARD_PANEL,
+	VIEW_TYPE_NOTE_HUB,
+	VIEW_TYPE_ORPHANED_CARDS,
+	VIEW_TYPE_REVIEW,
+	VIEW_TYPE_SESSION,
+	VIEW_TYPE_SIMULATOR,
+	VIEW_TYPE_STATS,
+} from "./shared/constants";
+import { notify } from "./shared/services/notification.service";
+import { settingsVersion } from "./shared/services/signals";
+import { type AppStore, createAppStore } from "./shared/store";
+import type { FSRSCardData } from "./shared/types";
+import { extractFSRSSettings } from "./shared/types";
+import { AddToProjectModal, SetPresetModal } from "./shared/ui/modals";
 
 export default class TrueRecallPlugin extends Plugin {
 	settings!: TrueRecallSettings;
@@ -451,9 +445,9 @@ ${cardList}${moreText}
 
 	async activateSessionView(
 		currentNoteName: string | null,
-		allCards: import("./types").FSRSFlashcardItem[],
+		allCards: import("./shared/types").FSRSFlashcardItem[],
 		onSessionSelected: (
-			result: import("./types/events.types").SessionResult,
+			result: import("./shared/types/events.types").SessionResult,
 		) => void,
 	): Promise<void> {
 		const leaf = await activateView(this.app, VIEW_TYPE_SESSION);
@@ -527,7 +521,7 @@ ${cardList}${moreText}
 	}
 
 	private async handleSessionResult(
-		result: import("./types/events.types").SessionResult,
+		result: import("./shared/types/events.types").SessionResult,
 	): Promise<void> {
 		if (result.cancelled) return;
 
@@ -597,7 +591,7 @@ ${cardList}${moreText}
 		if (result.cancelled || !result.sessionResult) return;
 
 		if (result.saveAsPreset && result.presetName) {
-			const preset: import("./types/settings.types").SessionPreset = {
+			const preset: import("./shared/types/settings.types").SessionPreset = {
 				id: crypto.randomUUID(),
 				name: result.presetName,
 				createdAt: Date.now(),
@@ -713,7 +707,7 @@ ${cardList}${moreText}
 		recentlyFailed?: boolean;
 		cardLimit?: number;
 		studyAheadDays?: number;
-		reviewOrder?: import("./types/settings.types").ReviewOrder;
+		reviewOrder?: import("./shared/types/settings.types").ReviewOrder;
 		projectFilters?: string[];
 		crammingMode?: boolean;
 	}): Promise<void> {
@@ -814,7 +808,7 @@ ${cardList}${moreText}
 	}
 
 	private async showDeviceSelectionModal(
-		databases: import("./services").DeviceDatabaseInfo[],
+		databases: import("./features/integration/services/device-discovery.service").DeviceDatabaseInfo[],
 		hasLegacy: boolean,
 	): Promise<DeviceSelectionResult> {
 		const modal = new DeviceSelectionModal(this.app, {

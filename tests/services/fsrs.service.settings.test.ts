@@ -4,15 +4,15 @@
  */
 import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
 import { State, Rating } from "ts-fsrs";
-import { FSRSService } from "../../src/services/core/fsrs.service";
+import { FSRSService } from "../../src/features/core/services/fsrs.service";
 import {
 	createNewCard,
 	createReviewCard,
 	createRelearningCard,
 	createDefaultFSRSSettings,
 } from "./mocks/fsrs.mocks";
-import type { FSRSSettings } from "../../src/types/settings.types";
-import type { FSRSCardData } from "../../src/types";
+import type { FSRSSettings } from "../../src/shared/types/settings.types";
+import type { FSRSCardData } from "../../src/shared/types";
 
 /**
  * Create settings with specific overrides

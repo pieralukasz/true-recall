@@ -5,7 +5,7 @@ import { describe, it, expect, beforeEach, vi, afterEach } from "vitest";
 import {
 	EasyDaysService,
 	isEasyDay,
-} from "../../../../src/services/fsrs-helper/scheduler/easy-days.service";
+} from "../../../../src/features/metrics/services/fsrs-tools/scheduler/easy-days.service";
 import {
 	createMockCardStore,
 	createCardsOnDate,

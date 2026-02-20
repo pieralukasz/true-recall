@@ -11,7 +11,7 @@ import {
 
 // Mock ApkgParserService so importApkg does not try to unzip real files
 const mockParseApkg = vi.fn();
-vi.mock("../../../src/services/anki/apkg-parser.service", () => ({
+vi.mock("../../../src/features/integration/services/anki/apkg-parser.service", () => ({
 	ApkgParserService: vi.fn().mockImplementation(() => ({
 		parseApkg: mockParseApkg,
 	})),
@@ -19,19 +19,19 @@ vi.mock("../../../src/services/anki/apkg-parser.service", () => ({
 
 // Mock generateUUID to produce deterministic, unique IDs
 let uuidCounter = 0;
-vi.mock("../../../src/services/persistence/sqlite/sqlite.types", () => ({
+vi.mock("../../../src/features/core/persistence/sqlite/sqlite.types", () => ({
 	generateUUID: vi.fn(() => `uuid-${++uuidCounter}`),
 }));
 
 // Mock signals
 const mockNotifyCardChange = vi.fn();
-vi.mock("../../../src/services/core/signals", () => ({
+vi.mock("../../../src/shared/services/signals", () => ({
 	notifyCardChange: (...args: unknown[]) => mockNotifyCardChange(...args),
 }));
 
 // Import after mocks are set up
-import { AnkiImportService } from "../../../src/services/anki/anki-import.service";
-import type { AnkiImportOptions } from "../../../src/types";
+import { AnkiImportService } from "../../../src/features/integration/services/anki/anki-import.service";
+import type { AnkiImportOptions } from "../../../src/shared/types";
 
 function createMockApp(): any {
 	const files: Record<string, ArrayBuffer> = {};
