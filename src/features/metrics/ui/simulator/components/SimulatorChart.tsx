@@ -125,7 +125,7 @@ export function SimulatorChart({
 	return (
 		<div class="ep:bg-obs-secondary ep:rounded-lg ep:p-4 ep:mb-4">
 			<ChartLegend simulations={simulations} />
-			<div class="ep:relative ep:h-[350px]">
+			<div class="ep:relative ep:h-87.5">
 				<canvas ref={canvasRef} />
 			</div>
 		</div>
