@@ -4,7 +4,7 @@ import {
 	TOOLBAR_BUTTONS,
 	type ToolbarButtonAction,
 	toggleTextareaWrap,
-} from "@features/library/ui/editor/edit-toolbar.utils";
+} from "@features/study/ui/editor/edit-toolbar.utils";
 import { EditToolbar } from "@features/study/ui/review/components/EditToolbar";
 import { stripBrTags } from "@shared/utils";
 import { useCallback, useEffect, useRef } from "preact/hooks";

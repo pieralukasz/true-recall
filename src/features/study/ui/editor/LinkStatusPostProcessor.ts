@@ -7,7 +7,7 @@ import {
 	aggregateInfos,
 	createLinkStatusElement,
 	createLinkTextCountElement,
-} from "@features/library/ui/editor/LinkStatusWidget";
+} from "@features/study/ui/editor/LinkStatusWidget";
 import type { App, MarkdownPostProcessorContext, TFile } from "obsidian";
 
 export function createLinkStatusPostProcessor(
