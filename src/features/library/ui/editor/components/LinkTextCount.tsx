@@ -6,7 +6,7 @@ const wrapperVariants = cva(
 	{
 		variants: {
 			variant: {
-				link: "ep:mt-[1px] ep:text-xs ep:ml-1",
+				link: "ep:mt-[1px] ep:text-xs ep:ml-1 ",
 				h1: "ep:mb-[3px] ep:ml-2 ep:text-sm ep:opacity-80",
 				h2: "ep:mb-[3px] ep:ml-2 ep:text-xs ep:opacity-80",
 				h3: "ep:mb-0.5 ep:ml-2 ep:text-[11px] ep:opacity-80",
