@@ -1,4 +1,4 @@
-import { useMemo } from "preact/hooks";
+import { useSettings } from "@features/settings/hooks/useSettings";
 import type { AIModelInfo, AIModelKey } from "@shared/constants";
 import { AI_MODELS_EXTENDED } from "@shared/constants";
 import type { SelectOptionGroup } from "@shared/ui/components";
@@ -8,7 +8,7 @@ import {
 	SettingRow,
 	TextInput,
 } from "@shared/ui/components";
-import { useSettings } from "@features/settings/hooks/useSettings";
+import { useMemo } from "preact/hooks";
 
 function groupModelsByProvider(): SelectOptionGroup[] {
 	const groups: Record<string, [string, AIModelInfo][]> = {

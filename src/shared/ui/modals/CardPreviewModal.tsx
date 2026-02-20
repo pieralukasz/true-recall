@@ -1,5 +1,3 @@
-import { type App, Component } from "obsidian";
-import { render } from "preact";
 import type { FlashcardManager } from "@features/study/services/flashcard/flashcard.service";
 import type { CardMaturityBreakdown, FSRSFlashcardItem } from "@shared/types";
 import { BaseModal } from "@shared/ui/modals/BaseModal";
@@ -11,6 +9,8 @@ import {
 	handleUnburyCard,
 	openSourceNote,
 } from "@shared/ui/modals/card-preview";
+import { type App, Component } from "obsidian";
+import { render } from "preact";
 
 export interface CardPreviewModalOptions {
 	title: string;
@@ -67,22 +67,18 @@ export class CardPreviewModal extends BaseModal {
 					});
 				}}
 				onUnburyAll={(cards, setCards) => {
-					void handleUnburyAll(
-						cards,
-						setCards,
-						this.flashcardManager,
-					).then(() => {
-						this.options.cards = [];
-					});
+					void handleUnburyAll(cards, setCards, this.flashcardManager).then(
+						() => {
+							this.options.cards = [];
+						},
+					);
 				}}
 				onDeleteAll={(cards, setCards) => {
-					void handleDeleteAll(
-						cards,
-						setCards,
-						this.flashcardManager,
-					).then(() => {
-						this.options.cards = [];
-					});
+					void handleDeleteAll(cards, setCards, this.flashcardManager).then(
+						() => {
+							this.options.cards = [];
+						},
+					);
 				}}
 				onUpdateTitle={(title) => this.updateTitle(title)}
 			/>,

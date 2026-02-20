@@ -1,9 +1,14 @@
-import { useRef } from "preact/hooks";
+import { useCustomStudyConfig } from "@features/study/modals/custom-study/hooks/useCustomStudyConfig";
+import {
+	INPUT_CLS,
+	LABEL_CLS,
+	NumberField,
+	SECTION_CLS,
+} from "@features/study/modals/custom-study/NumberField";
+import type { CustomStudyModalResult } from "@features/study/modals/custom-study/types";
 import type { ReviewOrder } from "@shared/types/settings.types";
 import { ModalFooter } from "@shared/ui/components/ModalFooter";
-import { NumberField, SECTION_CLS, LABEL_CLS, INPUT_CLS } from "@features/study/modals/custom-study/NumberField";
-import { useCustomStudyConfig } from "@features/study/modals/custom-study/hooks/useCustomStudyConfig";
-import type { CustomStudyModalResult } from "@features/study/modals/custom-study/types";
+import { useRef } from "preact/hooks";
 
 const REVIEW_ORDER_LABELS: Record<ReviewOrder, string> = {
 	"due-date": "Due date",
@@ -55,7 +60,10 @@ export function CustomStudyBody({
 						updateConfig(
 							"stateFilter",
 							(e.target as HTMLSelectElement).value as
-								"all" | "new" | "learning" | "due",
+								| "all"
+								| "new"
+								| "learning"
+								| "due",
 						)
 					}
 				>
@@ -83,9 +91,7 @@ export function CustomStudyBody({
 									1,
 									Math.min(
 										10,
-										Number(
-											(e.target as HTMLInputElement).value,
-										) || 1,
+										Number((e.target as HTMLInputElement).value) || 1,
 									),
 								),
 							)
@@ -106,9 +112,7 @@ export function CustomStudyBody({
 									1,
 									Math.min(
 										10,
-										Number(
-											(e.target as HTMLInputElement).value,
-										) || 10,
+										Number((e.target as HTMLInputElement).value) || 10,
 									),
 								),
 							)
@@ -146,18 +150,15 @@ export function CustomStudyBody({
 					onChange={(e) =>
 						updateConfig(
 							"reviewOrder",
-							(e.target as HTMLSelectElement)
-								.value as ReviewOrder,
+							(e.target as HTMLSelectElement).value as ReviewOrder,
 						)
 					}
 				>
-					{Object.entries(REVIEW_ORDER_LABELS).map(
-						([value, label]) => (
-							<option key={value} value={value}>
-								{label}
-							</option>
-						),
-					)}
+					{Object.entries(REVIEW_ORDER_LABELS).map(([value, label]) => (
+						<option key={value} value={value}>
+							{label}
+						</option>
+					))}
 				</select>
 			</div>
 
@@ -174,9 +175,7 @@ export function CustomStudyBody({
 				<button
 					type="button"
 					class="ep:flex ep:items-center ep:gap-2 ep:cursor-pointer ep:bg-transparent ep:border-none ep:p-0 ep:font-inherit ep:text-left ep:w-full"
-					onClick={() =>
-						updateConfig("crammingMode", !config.crammingMode)
-					}
+					onClick={() => updateConfig("crammingMode", !config.crammingMode)}
 				>
 					<input
 						id="cs-cramming"

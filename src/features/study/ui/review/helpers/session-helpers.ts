@@ -1,5 +1,5 @@
-import type { App } from "obsidian";
 import type { FSRSFlashcardItem } from "@shared/types";
+import type { App } from "obsidian";
 
 export interface CardFilterOptions {
 	stateFilter?: "due" | "learning" | "new" | "buried";

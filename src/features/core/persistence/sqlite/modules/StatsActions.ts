@@ -1,3 +1,5 @@
+import type { SqliteDatabase } from "@features/core/persistence/sqlite/SqliteDatabase";
+import { generateUUID } from "@features/core/persistence/sqlite/sqlite.types";
 import type {
 	CardMaturityBreakdown,
 	CardReviewLogEntry,
@@ -6,9 +8,7 @@ import type {
 	ProblemCard,
 	StudyPattern,
 	TimeToMasteryStats,
-} from "shared/types";
-import type { SqliteDatabase } from "@features/core/persistence/sqlite/SqliteDatabase";
-import { generateUUID } from "@features/core/persistence/sqlite/sqlite.types";
+} from "@shared/types";
 
 export interface ReviewLogForSync {
 	id: string;

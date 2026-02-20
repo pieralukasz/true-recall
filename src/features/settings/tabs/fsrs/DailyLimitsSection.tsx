@@ -6,7 +6,10 @@ interface DailyLimitsSectionProps {
 	updatePreset: (c: Partial<FSRSPreset>) => Promise<void>;
 }
 
-export function DailyLimitsSection({ preset, updatePreset }: DailyLimitsSectionProps) {
+export function DailyLimitsSection({
+	preset,
+	updatePreset,
+}: DailyLimitsSectionProps) {
 	return (
 		<>
 			<SettingRow heading name="Daily limits" />

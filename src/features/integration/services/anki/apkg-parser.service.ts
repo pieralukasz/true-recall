@@ -1,6 +1,8 @@
-import { decompress } from "fzstd";
-import JSZip from "jszip";
-import type { App } from "obsidian";
+import {
+	type DatabaseLike,
+	loadDatabase,
+	type QueryExecResult,
+} from "@features/core/persistence/sqlite/loader";
 import type {
 	AnkiCard,
 	AnkiDeck,
@@ -8,12 +10,10 @@ import type {
 	AnkiNote,
 	AnkiRevlogEntry,
 	ApkgData,
-} from "shared/types";
-import {
-	type DatabaseLike,
-	loadDatabase,
-	type QueryExecResult,
-} from "@features/core/persistence/sqlite/loader";
+} from "@shared/types";
+import { decompress } from "fzstd";
+import JSZip from "jszip";
+import type { App } from "obsidian";
 
 // Legacy format: models/decks stored as JSON in the `col` table
 interface RawAnkiModel {

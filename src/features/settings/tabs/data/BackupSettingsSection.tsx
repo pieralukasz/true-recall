@@ -1,10 +1,10 @@
+import { useSettings } from "@features/settings/hooks/useSettings";
 import {
 	InfoBlock,
 	SettingRow,
 	TextInput,
 	ToggleInput,
 } from "@shared/ui/components";
-import { useSettings } from "@features/settings/hooks/useSettings";
 
 export function BackupSettingsSection() {
 	const { settings, save } = useSettings();

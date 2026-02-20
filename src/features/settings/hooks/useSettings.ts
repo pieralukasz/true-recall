@@ -1,6 +1,6 @@
-import { useCallback, useMemo, useState } from "preact/hooks";
 import type { FSRSPreset, TrueRecallSettings } from "@shared/types";
 import { usePlugin } from "@shared/ui/preact";
+import { useCallback, useMemo, useState } from "preact/hooks";
 
 export function useSettings() {
 	const plugin = usePlugin();

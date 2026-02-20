@@ -1,7 +1,7 @@
-import { useCallback } from "preact/hooks";
-import { notify } from "@shared/services/notification.service";
-import { ImageService } from "@features/integration/services/ImageService";
+import type { ImageService } from "@features/integration/services/ImageService";
 import { insertAtTextareaCursor } from "@features/library/ui/editor/edit-toolbar.utils";
+import { notify } from "@shared/services/notification.service";
+import { useCallback } from "preact/hooks";
 
 export function useImagePaste(
 	imageService: ImageService,

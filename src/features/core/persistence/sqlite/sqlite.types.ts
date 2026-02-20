@@ -5,7 +5,11 @@
 import type { QueryExecResult } from "@features/core/persistence/sqlite/loader";
 
 // Re-export database types from loader module
-export type { BindParams, DatabaseLike, QueryExecResult } from "@features/core/persistence/sqlite/loader";
+export type {
+	BindParams,
+	DatabaseLike,
+	QueryExecResult,
+} from "@features/core/persistence/sqlite/loader";
 
 export const DB_FOLDER = ".true-recall";
 export const DB_FILE = "true-recall.db"; // legacy single-device database

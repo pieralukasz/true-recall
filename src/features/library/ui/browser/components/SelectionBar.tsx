@@ -1,7 +1,4 @@
-import {
-	ActionButton,
-	IconButton,
-} from "@shared/ui/components";
+import { ActionButton, IconButton } from "@shared/ui/components";
 
 export interface SelectionBarProps {
 	selectedCount: number;

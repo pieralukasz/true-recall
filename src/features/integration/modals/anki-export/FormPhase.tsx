@@ -1,11 +1,11 @@
-import { useCallback, useRef, useState } from "preact/hooks";
-import { OptionCheckbox } from "@shared/ui/components/OptionCheckbox";
-import { ModalFooter } from "@shared/ui/components/ModalFooter";
 import {
-	ExportScopeSelector,
 	type ExportMode,
+	ExportScopeSelector,
 } from "@features/integration/components/ExportScopeSelector";
 import type { NoteEntry } from "@features/integration/utils/export-helpers";
+import { ModalFooter } from "@shared/ui/components/ModalFooter";
+import { OptionCheckbox } from "@shared/ui/components/OptionCheckbox";
+import { useCallback, useRef, useState } from "preact/hooks";
 
 export interface ExportFormValues {
 	exportMode: ExportMode;
@@ -36,21 +36,15 @@ export function FormPhase({
 	const selectedProjects = useRef(new Set<string>());
 	const selectedSourceUids = useRef(new Set<string>());
 
-	const handleToggleProject = useCallback(
-		(key: string, checked: boolean) => {
-			if (checked) selectedProjects.current.add(key);
-			else selectedProjects.current.delete(key);
-		},
-		[],
-	);
+	const handleToggleProject = useCallback((key: string, checked: boolean) => {
+		if (checked) selectedProjects.current.add(key);
+		else selectedProjects.current.delete(key);
+	}, []);
 
-	const handleToggleNote = useCallback(
-		(key: string, checked: boolean) => {
-			if (checked) selectedSourceUids.current.add(key);
-			else selectedSourceUids.current.delete(key);
-		},
-		[],
-	);
+	const handleToggleNote = useCallback((key: string, checked: boolean) => {
+		if (checked) selectedSourceUids.current.add(key);
+		else selectedSourceUids.current.delete(key);
+	}, []);
 
 	const handleExport = useCallback(() => {
 		onExport({

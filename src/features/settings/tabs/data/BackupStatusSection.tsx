@@ -1,5 +1,5 @@
-import { InfoBlock } from "@shared/ui/components";
 import { useSettings } from "@features/settings/hooks/useSettings";
+import { InfoBlock } from "@shared/ui/components";
 
 export function BackupStatusSection() {
 	const { plugin } = useSettings();

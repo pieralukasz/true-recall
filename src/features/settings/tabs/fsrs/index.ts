@@ -1,9 +1,9 @@
-export { PresetSection } from "@features/settings/tabs/fsrs/PresetSection";
 export { AlgorithmSection } from "@features/settings/tabs/fsrs/AlgorithmSection";
+export { BulkOperationsSection } from "@features/settings/tabs/fsrs/BulkOperationsSection";
 export { DailyLimitsSection } from "@features/settings/tabs/fsrs/DailyLimitsSection";
-export { ParametersSection } from "@features/settings/tabs/fsrs/ParametersSection";
 export { EasyDaysSection } from "@features/settings/tabs/fsrs/EasyDaysSection";
 export { LoadBalanceSection } from "@features/settings/tabs/fsrs/LoadBalanceSection";
-export { SiblingDisperseSection } from "@features/settings/tabs/fsrs/SiblingDisperseSection";
+export { ParametersSection } from "@features/settings/tabs/fsrs/ParametersSection";
+export { PresetSection } from "@features/settings/tabs/fsrs/PresetSection";
 export { ScheduledBreaksSection } from "@features/settings/tabs/fsrs/ScheduledBreaksSection";
-export { BulkOperationsSection } from "@features/settings/tabs/fsrs/BulkOperationsSection";
+export { SiblingDisperseSection } from "@features/settings/tabs/fsrs/SiblingDisperseSection";

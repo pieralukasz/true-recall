@@ -1,11 +1,11 @@
-import { useMemo } from "preact/hooks";
+import { CardGroup } from "@features/study/ui/panel/components/CardGroup";
+import { CompactCard } from "@features/study/ui/panel/components/CompactCard";
+import { groupCards } from "@features/study/ui/panel/group-cards";
+import type { SelectionMode } from "@shared/store";
 import type { FlashcardInfo, FlashcardItem } from "@shared/types";
 import type { FSRSFlashcardItem } from "@shared/types/fsrs/card.types";
-import type { SelectionMode } from "@shared/store";
 import { EmptyState, EmptyStateMessages } from "@shared/ui/components";
-import { CompactCard } from "@features/study/ui/panel/components/CompactCard";
-import { CardGroup } from "@features/study/ui/panel/components/CardGroup";
-import { groupCards } from "@features/study/ui/panel/group-cards";
+import { useMemo } from "preact/hooks";
 
 export interface ContentHandlers {
 	onEditButton: (card: FlashcardItem) => void;

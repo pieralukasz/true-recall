@@ -1,4 +1,17 @@
+import { CollectService } from "@features/study/services/flashcard/collect.service";
+import type { FlashcardManager } from "@features/study/services/flashcard/flashcard.service";
+import {
+	FlashcardPanelApp,
+	type PanelAppActions,
+} from "@features/study/ui/panel/FlashcardPanelApp";
 import { effect } from "@preact/signals";
+import { VIEW_TYPE_FLASHCARD_PANEL } from "@shared/constants";
+import { notify } from "@shared/services/notification.service";
+import { dataVersion, settingsVersion, track } from "@shared/services/signals";
+import type { PanelApi } from "@shared/store";
+import type { FSRSFlashcardItem } from "@shared/types/fsrs/card.types";
+import { countCardsByState } from "@shared/ui/helpers";
+import { mountPreact } from "@shared/ui/preact/mount";
 import {
 	ItemView,
 	type Menu,
@@ -7,21 +20,7 @@ import {
 	type WorkspaceLeaf,
 } from "obsidian";
 import { h } from "preact";
-import { VIEW_TYPE_FLASHCARD_PANEL } from "@shared/constants";
 import type TrueRecallPlugin from "../../../../main";
-import { notify } from "@shared/services/notification.service";
-import type { FlashcardManager } from "@features/study/services/flashcard/flashcard.service";
-import {
-	dataVersion,
-	settingsVersion,
-	track,
-} from "@shared/services/signals";
-import { CollectService } from "@features/study/services/flashcard/collect.service";
-import type { PanelApi } from "@shared/store";
-import type { FSRSFlashcardItem } from "@shared/types/fsrs/card.types";
-import { mountPreact } from "@shared/ui/preact/mount";
-import { countCardsByState } from "@shared/ui/helpers";
-import { FlashcardPanelApp, type PanelAppActions } from "@features/study/ui/panel/FlashcardPanelApp";
 
 export class FlashcardPanelView extends ItemView {
 	private plugin: TrueRecallPlugin;

@@ -3,9 +3,10 @@
  * Shared business logic for session selection
  * Used by SessionView
  */
-import { Rating, State } from "ts-fsrs";
+
 import type { DayBoundaryService } from "@features/core/services/day-boundary.service";
 import type { FSRSFlashcardItem } from "@shared/types";
+import { Rating, State } from "ts-fsrs";
 
 export interface NoteStats {
 	noteName: string;

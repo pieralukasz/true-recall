@@ -1,12 +1,9 @@
+import type { StatsCalculatorService } from "@features/metrics/services/stats/stats-calculator.service";
+import { StatsCard } from "@features/metrics/ui/stats/components/StatsCard";
+import type { CardMaturityBreakdown, FSRSFlashcardItem } from "@shared/types";
+import { getThemeColor } from "@shared/ui/utils/theme-colors";
 import { Chart } from "chart.js";
 import { useEffect, useRef, useState } from "preact/hooks";
-import { StatsCalculatorService } from "@features/metrics/services/stats/stats-calculator.service";
-import type {
-	CardMaturityBreakdown,
-	FSRSFlashcardItem,
-} from "@shared/types";
-import { getThemeColor } from "@shared/ui/utils/theme-colors";
-import { StatsCard } from "@features/metrics/ui/stats/components/StatsCard";
 
 export function CardCountsChart({
 	statsCalculator,

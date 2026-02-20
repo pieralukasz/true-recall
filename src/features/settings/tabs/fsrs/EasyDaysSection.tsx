@@ -1,9 +1,9 @@
-import { useCallback } from "preact/hooks";
+import { EasyDaysModal } from "@features/metrics/modals/EasyDaysModal";
 import { notify } from "@shared/services/notification.service";
 import type { TrueRecallSettings } from "@shared/types";
-import { EasyDaysModal } from "@features/metrics/modals/EasyDaysModal";
 import { ActionButton, InfoBlock, SettingRow } from "@shared/ui/components";
 import type { App } from "obsidian";
+import { useCallback } from "preact/hooks";
 
 interface EasyDaysSectionProps {
 	plugin: any;

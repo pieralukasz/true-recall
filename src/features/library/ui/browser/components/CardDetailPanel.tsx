@@ -1,12 +1,12 @@
-import { Fragment } from "preact";
-import { useMemo } from "preact/hooks";
-import type { FSRSFlashcardItem } from "@shared/types";
-import { IconButton, StateBadge } from "@shared/ui/components";
-import { useMarkdown } from "@shared/ui/preact/hooks";
 import {
 	formatDueDate,
 	formatIntervalDays,
 } from "@features/library/ui/browser/helpers/browser-helpers";
+import type { FSRSFlashcardItem } from "@shared/types";
+import { IconButton, StateBadge } from "@shared/ui/components";
+import { useMarkdown } from "@shared/ui/preact/hooks";
+import { Fragment } from "preact";
+import { useMemo } from "preact/hooks";
 
 export interface CardDetailPanelProps {
 	card: FSRSFlashcardItem;

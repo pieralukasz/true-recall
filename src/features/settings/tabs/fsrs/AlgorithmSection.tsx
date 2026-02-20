@@ -7,7 +7,10 @@ interface AlgorithmSectionProps {
 	updatePreset: (c: Partial<FSRSPreset>) => Promise<void>;
 }
 
-export function AlgorithmSection({ preset, updatePreset }: AlgorithmSectionProps) {
+export function AlgorithmSection({
+	preset,
+	updatePreset,
+}: AlgorithmSectionProps) {
 	return (
 		<>
 			<SettingRow heading name="FSRS algorithm" />

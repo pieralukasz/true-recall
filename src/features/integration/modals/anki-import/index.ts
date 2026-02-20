@@ -3,4 +3,7 @@ export { FileSelectPhase } from "@features/integration/modals/anki-import/FileSe
 export { PreviewPhase } from "@features/integration/modals/anki-import/PreviewPhase";
 export { ProgressPhase } from "@features/integration/modals/anki-import/ProgressPhase";
 export { ResultPhase } from "@features/integration/modals/anki-import/ResultPhase";
-export type { ImportPhase, ImportPreview } from "@features/integration/modals/anki-import/types";
+export type {
+	ImportPhase,
+	ImportPreview,
+} from "@features/integration/modals/anki-import/types";

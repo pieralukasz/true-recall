@@ -1,8 +1,8 @@
-import { ItemView, TFile } from "obsidian";
-import { VIEW_TYPE_FLASHCARD_PANEL, VIEW_TYPE_REVIEW } from "@shared/constants";
-import type TrueRecallPlugin from "../main";
 import type { DeletionHandlerService } from "@features/study/services/flashcard/deletion-handler.service";
 import { FlashcardPanelView } from "@features/study/ui/panel/FlashcardPanelView";
+import { VIEW_TYPE_FLASHCARD_PANEL, VIEW_TYPE_REVIEW } from "@shared/constants";
+import { ItemView, TFile } from "obsidian";
+import type TrueRecallPlugin from "../main";
 
 export function registerEventHandlers(plugin: TrueRecallPlugin): void {
 	// Single file context menu

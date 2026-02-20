@@ -1,6 +1,6 @@
-import { useCallback } from "preact/hooks";
 import type { ToolbarButton } from "@features/library/ui/editor/edit-toolbar.utils";
 import { executeToolbarAction } from "@shared/ui/modals/flashcard-editor/EditorField";
+import { useCallback } from "preact/hooks";
 
 export function useEditorKeyboard(opts: {
 	isFormValid: boolean;

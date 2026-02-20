@@ -5,14 +5,14 @@
  * Uses gradient descent optimization to minimize prediction error.
  */
 
-import { FSRS, type Rating, type State } from "ts-fsrs";
-import { DEFAULT_FSRS_WEIGHTS } from "@shared/constants";
 import type {
 	OptimizationInput,
 	OptimizationOutput,
 	OptimizationReviewEntry,
 	OptimizerOptions,
 } from "@features/metrics/services/fsrs-tools/optimizer/optimizer.types";
+import { DEFAULT_FSRS_WEIGHTS } from "@shared/constants";
+import { FSRS, type Rating, type State } from "ts-fsrs";
 
 /**
  * Minimum reviews required for optimization

@@ -2,8 +2,9 @@
  * Keyboard Handler for ReviewView
  * Centralizes keyboard shortcut handling for review sessions
  */
-import { Rating } from "ts-fsrs";
+
 import type { ReviewApi } from "@shared/store";
+import { Rating } from "ts-fsrs";
 
 /**
  * Keyboard shortcut configuration

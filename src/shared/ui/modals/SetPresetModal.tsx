@@ -1,6 +1,6 @@
+import { BasePromiseModal } from "@shared/ui/modals/BasePromiseModal";
 import type { App } from "obsidian";
 import { render } from "preact";
-import { BasePromiseModal } from "@shared/ui/modals/BasePromiseModal";
 
 export interface SetPresetResult {
 	cancelled: boolean;

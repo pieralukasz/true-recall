@@ -1,52 +1,18 @@
-import { normalizePath, Plugin, TFile } from "obsidian";
 import { SqlJsAdapter } from "@features/ai/services/langchain-sqlite.adapter";
 import { NLQueryService } from "@features/ai/services/nl-query.service";
 import { NoteStatusCacheService } from "@features/core/cache/note-status-cache.service";
 import { BackgroundBackupManager } from "@features/core/persistence/background-backup.service";
+import { BackupService } from "@features/core/persistence/backup.service";
+import { SessionPersistenceService } from "@features/core/persistence/session-persistence.service";
+import { SqliteStoreService } from "@features/core/persistence/sqlite";
 import {
 	DB_FOLDER,
 	getDeviceDbFilename,
 } from "@features/core/persistence/sqlite/sqlite.types";
-import { PresetService } from "@features/core/services/preset.service";
-import { CardBrowserView } from "@features/library/ui/browser";
-import {
-	createLinkStatusPostProcessor,
-	createLinkStatusViewPlugin,
-} from "@features/library/ui/editor";
-import { NoteHubView } from "@features/library/ui/note-hub";
-import { OrphanedCardsView } from "@features/library/ui/orphaned-cards";
-import { FSRSHelperService } from "@features/metrics/services/fsrs-tools";
-import { SimulatorView } from "@features/metrics/ui/simulator";
-import { StatsView } from "@features/metrics/ui/stats/StatsView";
-import {
-	DEFAULT_SETTINGS,
-	type TrueRecallSettings,
-	TrueRecallSettingTab,
-} from "@features/settings";
-import {
-	CustomStudyModal,
-	type CustomStudyModalScope,
-} from "@features/study/modals/CustomStudyModal";
-import { FlashcardPanelView } from "@features/study/ui/panel/FlashcardPanelView";
-import { ReviewView } from "@features/study/ui/review/ReviewView";
-import { SessionView } from "@features/study/ui/session";
-import { registerCommands } from "./plugin/PluginCommands";
-import {
-	registerDeletionHandler,
-	registerEventHandlers,
-} from "./plugin/PluginEventHandlers";
-import {
-	activateReviewView,
-	activateView,
-	closeAllViews,
-	getView,
-} from "./plugin/ViewActivator";
-import { BackupService } from "@features/core/persistence/backup.service";
-import { SessionPersistenceService } from "@features/core/persistence/session-persistence.service";
-import { SqliteStoreService } from "@features/core/persistence/sqlite";
 import { DayBoundaryService } from "@features/core/services/day-boundary.service";
 import { FrontmatterIndexService } from "@features/core/services/frontmatter-index.service";
 import { FSRSService } from "@features/core/services/fsrs.service";
+import { PresetService } from "@features/core/services/preset.service";
 import { AnkiExportModal } from "@features/integration/modals/AnkiExportModal";
 import { AnkiImportModal } from "@features/integration/modals/AnkiImportModal";
 import { CsvExportModal } from "@features/integration/modals/CsvExportModal";
@@ -59,10 +25,31 @@ import { DeviceDiscoveryService } from "@features/integration/services/device-di
 import { DeviceIdService } from "@features/integration/services/device-id.service";
 import { OrphanedCardsActionModal } from "@features/library/modals/OrphanedCardsActionModal";
 import { OrphanedCardsService } from "@features/library/services/orphaned-cards.service";
+import { CardBrowserView } from "@features/library/ui/browser";
+import {
+	createLinkStatusPostProcessor,
+	createLinkStatusViewPlugin,
+} from "@features/library/ui/editor";
+import { NoteHubView } from "@features/library/ui/note-hub";
+import { OrphanedCardsView } from "@features/library/ui/orphaned-cards";
+import { FSRSHelperService } from "@features/metrics/services/fsrs-tools";
 import { StatsService } from "@features/metrics/services/stats/stats.service";
+import { SimulatorView } from "@features/metrics/ui/simulator";
+import { StatsView } from "@features/metrics/ui/stats/StatsView";
+import {
+	DEFAULT_SETTINGS,
+	type TrueRecallSettings,
+	TrueRecallSettingTab,
+} from "@features/settings";
+import {
+	CustomStudyModal,
+	type CustomStudyModalScope,
+} from "@features/study/modals/CustomStudyModal";
 import { DeletionHandlerService } from "@features/study/services/flashcard/deletion-handler.service";
 import { FlashcardManager } from "@features/study/services/flashcard/flashcard.service";
-import { UndoService } from "@shared/services/undo.service";
+import { FlashcardPanelView } from "@features/study/ui/panel/FlashcardPanelView";
+import { ReviewView } from "@features/study/ui/review/ReviewView";
+import { SessionView } from "@features/study/ui/session";
 import {
 	VIEW_TYPE_CARD_BROWSER,
 	VIEW_TYPE_FLASHCARD_PANEL,
@@ -75,10 +62,23 @@ import {
 } from "@shared/constants";
 import { notify } from "@shared/services/notification.service";
 import { settingsVersion } from "@shared/services/signals";
+import { UndoService } from "@shared/services/undo.service";
 import { type AppStore, createAppStore } from "@shared/store";
 import type { FSRSCardData } from "@shared/types";
 import { extractFSRSSettings } from "@shared/types";
 import { AddToProjectModal, SetPresetModal } from "@shared/ui/modals";
+import { normalizePath, Plugin, TFile } from "obsidian";
+import { registerCommands } from "./plugin/PluginCommands";
+import {
+	registerDeletionHandler,
+	registerEventHandlers,
+} from "./plugin/PluginEventHandlers";
+import {
+	activateReviewView,
+	activateView,
+	closeAllViews,
+	getView,
+} from "./plugin/ViewActivator";
 
 export default class TrueRecallPlugin extends Plugin {
 	settings!: TrueRecallSettings;

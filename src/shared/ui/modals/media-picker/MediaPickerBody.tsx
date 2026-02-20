@@ -1,14 +1,14 @@
-import { type App, TFile } from "obsidian";
-import { useCallback, useState } from "preact/hooks";
-import { notify } from "@shared/services/notification.service";
 import type { ImageService } from "@features/integration/services/ImageService";
+import { notify } from "@shared/services/notification.service";
 import { isVideoExtension } from "@shared/types";
-import { PasteDropZone } from "@shared/ui/components/PasteDropZone";
 import { MediaWidthSlider } from "@shared/ui/components/MediaWidthSlider";
 import { ModalFooter } from "@shared/ui/components/ModalFooter";
+import { PasteDropZone } from "@shared/ui/components/PasteDropZone";
 import { useClipboardPaste } from "@shared/ui/hooks/useClipboardPaste";
 import { MediaGrid } from "@shared/ui/modals/media-picker/MediaGrid";
 import { MediaPreview } from "@shared/ui/modals/media-picker/MediaPreview";
+import { type App, TFile } from "obsidian";
+import { useCallback, useState } from "preact/hooks";
 
 export interface MediaPickerResult {
 	cancelled: boolean;
@@ -152,10 +152,7 @@ export function MediaPickerBody({
 			/>
 
 			<div class="ep:p-3 ep:bg-obs-secondary ep:rounded-md">
-				<MediaWidthSlider
-					value={selectedWidth}
-					onChange={setSelectedWidth}
-				/>
+				<MediaWidthSlider value={selectedWidth} onChange={setSelectedWidth} />
 			</div>
 
 			<MediaPreview

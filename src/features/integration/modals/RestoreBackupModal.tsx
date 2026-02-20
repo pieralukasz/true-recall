@@ -1,11 +1,14 @@
-import type { App } from "obsidian";
-import { render } from "preact";
-import { useCallback, useState } from "preact/hooks";
 import type {
 	BackupInfo,
 	BackupService,
 } from "@features/core/persistence/backup.service";
-import { BasePromiseModal, type CancellableResult } from "@shared/ui/modals/BasePromiseModal";
+import {
+	BasePromiseModal,
+	type CancellableResult,
+} from "@shared/ui/modals/BasePromiseModal";
+import type { App } from "obsidian";
+import { render } from "preact";
+import { useCallback, useState } from "preact/hooks";
 
 export interface RestoreBackupResult extends CancellableResult {
 	restoredPath?: string;

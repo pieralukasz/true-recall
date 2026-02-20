@@ -1,14 +1,14 @@
-import { useCallback } from "preact/hooks";
+import { CustomStudyModal } from "@features/study/modals/CustomStudyModal";
+import type { SessionLogic } from "@features/study/ui/session/SessionLogic";
 import { notify } from "@shared/services/notification.service";
+import type { FSRSFlashcardItem } from "@shared/types";
 import type { SessionResult } from "@shared/types/events.types";
 import type { SessionPreset } from "@shared/types/settings.types";
-import { SessionResultFactory } from "@shared/utils/session-result-factory";
 import { AddToProjectModal } from "@shared/ui/modals/AddToProjectModal";
-import { CustomStudyModal } from "@features/study/modals/CustomStudyModal";
 import { MoveCardModal } from "@shared/ui/modals/MoveCardModal";
-import type { FSRSFlashcardItem } from "@shared/types";
+import { SessionResultFactory } from "@shared/utils/session-result-factory";
+import { useCallback } from "preact/hooks";
 import type TrueRecallPlugin from "../../../../../main";
-import type { SessionLogic } from "@features/study/ui/session/SessionLogic";
 
 interface SessionSlice {
 	toggleNoteSelection: (noteName: string) => void;

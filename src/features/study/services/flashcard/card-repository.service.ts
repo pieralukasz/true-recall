@@ -1,4 +1,7 @@
+import type { SqliteStoreService } from "@features/core/persistence/sqlite/SqliteStoreService";
+import { parseClozeTemplate } from "@features/study/services/flashcard/cloze-parser.service";
 import { CARD_HISTORY_LIMIT } from "@shared/constants";
+import { type CardMutation, notifyCardChange } from "@shared/services/signals";
 import type {
 	CardReviewLogEntry,
 	CardType,
@@ -6,9 +9,6 @@ import type {
 	FSRSFlashcardItem,
 } from "@shared/types";
 import { createDefaultFSRSData } from "@shared/types";
-import { type CardMutation, notifyCardChange } from "@shared/services/signals";
-import type { SqliteStoreService } from "@features/core/persistence/sqlite/SqliteStoreService";
-import { parseClozeTemplate } from "@features/study/services/flashcard/cloze-parser.service";
 
 export interface DuplicateInfo {
 	flashcard: { id: string; question: string; answer: string };

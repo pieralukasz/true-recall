@@ -1,5 +1,5 @@
-import { useState } from "preact/hooks";
 import type { OrphanedCardGroup } from "@features/library/services/orphaned-cards.service";
+import { useState } from "preact/hooks";
 
 export interface GroupRowProps {
 	group: OrphanedCardGroup;
@@ -8,7 +8,12 @@ export interface GroupRowProps {
 	onMove: (group: OrphanedCardGroup) => void;
 }
 
-export function GroupRow({ group, onDelete, onCreateNote, onMove }: GroupRowProps) {
+export function GroupRow({
+	group,
+	onDelete,
+	onCreateNote,
+	onMove,
+}: GroupRowProps) {
 	const [expanded, setExpanded] = useState(false);
 	const icon = group.reason === "no_source_uid" ? "❓" : "🗑️";
 	const maxPreview = 5;

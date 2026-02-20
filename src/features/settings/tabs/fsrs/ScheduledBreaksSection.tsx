@@ -1,6 +1,6 @@
-import { useCallback } from "preact/hooks";
 import type { TrueRecallSettings } from "@shared/types";
 import { ActionButton, InfoBlock, SettingRow } from "@shared/ui/components";
+import { useCallback } from "preact/hooks";
 
 interface ScheduledBreaksSectionProps {
 	settings: TrueRecallSettings;

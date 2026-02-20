@@ -1,4 +1,3 @@
-import type { FSRSSettings, TrueRecallSettings } from "@shared/types";
 import type { SqliteStoreService } from "@features/core/persistence/sqlite/SqliteStoreService";
 import type {
 	OptimizationInput,
@@ -40,6 +39,7 @@ import {
 	type WorkloadForecastEntry,
 	type WorkloadForecastSummary,
 } from "@features/metrics/services/fsrs-tools/statistics/workload-forecast.calculator";
+import type { FSRSSettings, TrueRecallSettings } from "@shared/types";
 
 export class FSRSHelperService {
 	private optimizer: ParameterOptimizerService;

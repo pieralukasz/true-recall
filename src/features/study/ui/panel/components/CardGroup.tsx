@@ -1,17 +1,17 @@
-import { Menu } from "obsidian";
-import { useCallback, useMemo, useRef } from "preact/hooks";
-import type { FlashcardItem } from "@shared/types";
-import type { FSRSFlashcardItem } from "@shared/types/fsrs/card.types";
-import { useApp } from "@shared/ui/preact/ObsidianContext";
-import { useIcon } from "@shared/ui/preact/hooks";
-import { MarkdownContent } from "@shared/ui/components/MarkdownContent";
 import { StatusDot } from "@features/study/ui/panel/components/StatusDot";
 import {
-	getStatusDotColor,
-	getStatusTitle,
 	getAggregateStatusDotColor,
 	getAggregateStatusTitle,
+	getStatusDotColor,
+	getStatusTitle,
 } from "@features/study/ui/panel/utils/card-status.utils";
+import type { FlashcardItem } from "@shared/types";
+import type { FSRSFlashcardItem } from "@shared/types/fsrs/card.types";
+import { MarkdownContent } from "@shared/ui/components/MarkdownContent";
+import { useIcon } from "@shared/ui/preact/hooks";
+import { useApp } from "@shared/ui/preact/ObsidianContext";
+import { Menu } from "obsidian";
+import { useCallback, useMemo, useRef } from "preact/hooks";
 
 export interface CardGroupProps {
 	groupType: "cloze" | "reverse";

@@ -1,6 +1,6 @@
-import { useCallback, useEffect, useRef } from "preact/hooks";
 import type { SliderConfig } from "@features/metrics/ui/simulator/types";
 import { formatSliderValue } from "@features/metrics/ui/simulator/utils/simulator-helpers";
+import { useCallback, useEffect, useRef } from "preact/hooks";
 
 interface SliderRowProps {
 	config: SliderConfig;

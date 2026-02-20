@@ -6,7 +6,10 @@
  */
 
 import * as migrations from "@features/core/persistence/sqlite/migrations";
-import { type DatabaseLike, getQueryResult } from "@features/core/persistence/sqlite/sqlite.types";
+import {
+	type DatabaseLike,
+	getQueryResult,
+} from "@features/core/persistence/sqlite/sqlite.types";
 
 type MigrationFn = (db: DatabaseLike) => void;
 

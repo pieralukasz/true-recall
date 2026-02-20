@@ -1,7 +1,7 @@
-import { MarkdownRenderer, Component as ObsidianComponent } from "obsidian";
-import { useEffect, useRef } from "preact/hooks";
 import { useApp } from "@shared/ui/preact/ObsidianContext";
 import { stripBrTags } from "@shared/utils";
+import { MarkdownRenderer, Component as ObsidianComponent } from "obsidian";
+import { useEffect, useRef } from "preact/hooks";
 
 export interface MarkdownContentProps {
 	markdown: string;
@@ -25,7 +25,13 @@ export function MarkdownContent({
 
 		el.empty();
 		const obsComponent = new ObsidianComponent();
-		void MarkdownRenderer.render(app, stripBrTags(markdown), el, filePath, obsComponent);
+		void MarkdownRenderer.render(
+			app,
+			stripBrTags(markdown),
+			el,
+			filePath,
+			obsComponent,
+		);
 
 		if (onLinkClick) {
 			const handler = (e: MouseEvent) => {

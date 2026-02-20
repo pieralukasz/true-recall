@@ -1,12 +1,16 @@
-import { effect } from "@preact/signals";
-import { Platform, type TFile } from "obsidian";
 import {
-	useCallback,
-	useEffect,
-	useMemo,
-	useRef,
-	useState,
-} from "preact/hooks";
+	type ContentHandlers,
+	PanelContent,
+	PanelFooter,
+	PanelHeader,
+} from "@features/study/ui/panel/components";
+import {
+	getSourceNoteNameFromFile,
+	notifyDuplicateError,
+	showDuplicateNotifications,
+} from "@features/study/ui/panel/utils/panel-helpers";
+import { effect } from "@preact/signals";
+import { dataVersion, settingsVersion, track } from "@shared/services/signals";
 import type {
 	PanelApi,
 	ProcessingStatus,
@@ -15,24 +19,16 @@ import type {
 } from "@shared/store";
 import type { FlashcardInfo, FlashcardItem } from "@shared/types";
 import type { FSRSFlashcardItem } from "@shared/types/fsrs/card.types";
-import {
-	dataVersion,
-	settingsVersion,
-	track,
-} from "@shared/services/signals";
-import { useApp, usePlugin } from "@shared/ui/preact";
 import { Panel } from "@shared/ui/components";
+import { useApp, usePlugin } from "@shared/ui/preact";
+import { Platform, type TFile } from "obsidian";
 import {
-	PanelHeader,
-	PanelContent,
-	PanelFooter,
-	type ContentHandlers,
-} from "@features/study/ui/panel/components";
-import {
-	getSourceNoteNameFromFile,
-	showDuplicateNotifications,
-	notifyDuplicateError,
-} from "@features/study/ui/panel/utils/panel-helpers";
+	useCallback,
+	useEffect,
+	useMemo,
+	useRef,
+	useState,
+} from "preact/hooks";
 
 // ── Hooks ──────────────────────────────────────────────────────
 

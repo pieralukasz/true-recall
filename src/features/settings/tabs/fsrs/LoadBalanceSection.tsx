@@ -1,4 +1,4 @@
-import { useMemo } from "preact/hooks";
+import { useFsrsHelperOp } from "@features/settings/tabs/fsrs/useFsrsHelperOp";
 import type { TrueRecallSettings } from "@shared/types";
 import {
 	ActionButton,
@@ -7,7 +7,7 @@ import {
 	TextInput,
 	ToggleInput,
 } from "@shared/ui/components";
-import { useFsrsHelperOp } from "@features/settings/tabs/fsrs/useFsrsHelperOp";
+import { useMemo } from "preact/hooks";
 
 interface LoadBalanceSectionProps {
 	settings: TrueRecallSettings;
@@ -15,7 +15,11 @@ interface LoadBalanceSectionProps {
 	plugin: any;
 }
 
-export function LoadBalanceSection({ settings, save, plugin }: LoadBalanceSectionProps) {
+export function LoadBalanceSection({
+	settings,
+	save,
+	plugin,
+}: LoadBalanceSectionProps) {
 	const opConfig = useMemo(
 		() => ({
 			plugin,
@@ -81,9 +85,7 @@ export function LoadBalanceSection({ settings, save, plugin }: LoadBalanceSectio
 					variant="secondary"
 					disabled={balancing}
 					onClick={() =>
-						execute(() =>
-							plugin.fsrsHelper?.balanceWorkload({ dryRun: false }),
-						)
+						execute(() => plugin.fsrsHelper?.balanceWorkload({ dryRun: false }))
 					}
 				/>
 			</SettingRow>

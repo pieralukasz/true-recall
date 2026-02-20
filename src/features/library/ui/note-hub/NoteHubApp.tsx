@@ -1,12 +1,15 @@
-import { effect } from "@preact/signals";
-import { useEffect, useRef } from "preact/hooks";
-import { dataVersion, track } from "@shared/services/signals";
-import { NoteHubToolbar } from "@features/library/ui/note-hub/components/NoteHubToolbar";
 import { NoteHubContent } from "@features/library/ui/note-hub/components/NoteHubContent";
+import { NoteHubToolbar } from "@features/library/ui/note-hub/components/NoteHubToolbar";
 import { SelectionFooter } from "@features/library/ui/note-hub/components/SelectionFooter";
-import { useNoteHubState, useNoteHub } from "@features/library/ui/note-hub/hooks/useNoteHubState";
-import { useLoadData } from "@features/library/ui/note-hub/hooks/useNoteHubData";
 import { useNoteHubActions } from "@features/library/ui/note-hub/hooks/useNoteHubActions";
+import { useLoadData } from "@features/library/ui/note-hub/hooks/useNoteHubData";
+import {
+	useNoteHub,
+	useNoteHubState,
+} from "@features/library/ui/note-hub/hooks/useNoteHubState";
+import { effect } from "@preact/signals";
+import { dataVersion, track } from "@shared/services/signals";
+import { useEffect, useRef } from "preact/hooks";
 
 export function NoteHubApp() {
 	const state = useNoteHubState();

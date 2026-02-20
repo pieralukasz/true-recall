@@ -4,7 +4,11 @@ interface StatsCardProps {
 	children: preact.ComponentChildren;
 }
 
-export function StatsCard({ title, hoverLift = true, children }: StatsCardProps) {
+export function StatsCard({
+	title,
+	hoverLift = true,
+	children,
+}: StatsCardProps) {
 	return (
 		<div
 			class={[

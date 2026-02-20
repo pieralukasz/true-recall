@@ -1,5 +1,8 @@
+import type {
+	NoteStats,
+	SessionLogic,
+} from "@features/study/ui/session/SessionLogic";
 import { CardCountDisplay } from "@shared/ui/components";
-import type { NoteStats, SessionLogic } from "@features/study/ui/session/SessionLogic";
 
 interface NoteListProps {
 	logic: SessionLogic;

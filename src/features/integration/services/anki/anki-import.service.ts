@@ -1,4 +1,11 @@
-import { type App, normalizePath, type TFile } from "obsidian";
+import type { SqliteStoreService } from "@features/core/persistence/sqlite/SqliteStoreService";
+import { generateUUID } from "@features/core/persistence/sqlite/sqlite.types";
+import type { FSRSService } from "@features/core/services/fsrs.service";
+import { AnkiConverterService } from "@features/integration/services/anki/anki-converter.service";
+import { AnkiMediaService } from "@features/integration/services/anki/anki-media.service";
+import { AnkiSchedulingService } from "@features/integration/services/anki/anki-scheduling.service";
+import { ApkgParserService } from "@features/integration/services/anki/apkg-parser.service";
+import { notifyCardChange } from "@shared/services/signals";
 import type {
 	AnkiCard,
 	AnkiImportOptions,
@@ -6,15 +13,8 @@ import type {
 	AnkiRevlogEntry,
 	ConvertedCard,
 	FSRSCardData,
-} from "shared/types";
-import type { FSRSService } from "@features/core/services/fsrs.service";
-import { notifyCardChange } from "@shared/services/signals";
-import type { SqliteStoreService } from "@features/core/persistence/sqlite/SqliteStoreService";
-import { generateUUID } from "@features/core/persistence/sqlite/sqlite.types";
-import { AnkiConverterService } from "@features/integration/services/anki/anki-converter.service";
-import { AnkiMediaService } from "@features/integration/services/anki/anki-media.service";
-import { AnkiSchedulingService } from "@features/integration/services/anki/anki-scheduling.service";
-import { ApkgParserService } from "@features/integration/services/anki/apkg-parser.service";
+} from "@shared/types";
+import { type App, normalizePath, type TFile } from "obsidian";
 
 const IMPORT_FOLDER = "Anki Import";
 
