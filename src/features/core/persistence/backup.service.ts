@@ -91,7 +91,10 @@ export class BackupService {
 		const backupPath = normalizePath(`${this.getBackupFolder()}/${filename}`);
 
 		// Write backup file
-		await this.app.vault.adapter.writeBinary(backupPath, data.buffer as ArrayBuffer);
+		await this.app.vault.adapter.writeBinary(
+			backupPath,
+			data.buffer as ArrayBuffer,
+		);
 
 		return backupPath;
 	}

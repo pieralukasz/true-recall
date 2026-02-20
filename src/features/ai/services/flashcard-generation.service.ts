@@ -3,10 +3,10 @@ import {
 	type GenerationMode,
 } from "@features/ai/prompts/default-prompts";
 import type { FlashcardParserService } from "@features/study/services/flashcard/flashcard-parser.service";
+import { HumanMessage, SystemMessage } from "@langchain/core/messages";
+import { ChatOpenAI } from "@langchain/openai";
 import type { FlashcardItem } from "@shared/types";
 import type { TrueRecallSettings } from "@shared/types/settings.types";
-import { ChatOpenAI } from "@langchain/openai";
-import { HumanMessage, SystemMessage } from "@langchain/core/messages";
 
 export interface GenerationResult {
 	flashcards: FlashcardItem[];

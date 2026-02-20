@@ -1,7 +1,7 @@
+import type { Extension } from "@codemirror/state";
+import { type EditorView, ViewPlugin, type ViewUpdate } from "@codemirror/view";
 import type { GenerationMode } from "@features/ai/prompts/default-prompts";
 import { SelectionToolbar } from "@features/ai/ui/editor/SelectionToolbar";
-import type { Extension } from "@codemirror/state";
-import { EditorView, ViewPlugin, type ViewUpdate } from "@codemirror/view";
 import { h, render } from "preact";
 
 export interface SelectionToolbarCallbacks {
@@ -29,20 +29,14 @@ export function createSelectionToolbarExtension(
 			}
 
 			update(update: ViewUpdate): void {
-				if (
-					update.selectionSet ||
-					update.docChanged ||
-					update.focusChanged
-				) {
+				if (update.selectionSet || update.docChanged || update.focusChanged) {
 					this.scheduleCheck();
 				}
 			}
 
 			private scheduleCheck(): void {
 				cancelAnimationFrame(this.rafId);
-				this.rafId = requestAnimationFrame(() =>
-					this.checkSelection(),
-				);
+				this.rafId = requestAnimationFrame(() => this.checkSelection());
 			}
 
 			destroy(): void {
@@ -87,8 +81,7 @@ export function createSelectionToolbarExtension(
 			private showToolbar(text: string, pos: number): void {
 				if (!this.container) {
 					this.container = document.createElement("div");
-					this.container.className =
-						"true-recall-selection-toolbar-container";
+					this.container.className = "true-recall-selection-toolbar-container";
 					document.body.appendChild(this.container);
 				}
 

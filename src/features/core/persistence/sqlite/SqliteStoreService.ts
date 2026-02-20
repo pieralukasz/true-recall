@@ -237,7 +237,10 @@ export class SqliteStoreService {
 						await this.app.vault.adapter.mkdir(folderPath);
 					}
 
-					await this.app.vault.adapter.writeBinary(dbPath, data.buffer as ArrayBuffer);
+					await this.app.vault.adapter.writeBinary(
+						dbPath,
+						data.buffer as ArrayBuffer,
+					);
 					this.isDirty = false;
 					return true; // Success
 				} catch (error) {

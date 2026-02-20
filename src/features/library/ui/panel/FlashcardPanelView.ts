@@ -1,9 +1,9 @@
-import { CollectService } from "@features/study/services/flashcard/collect.service";
-import type { FlashcardManager } from "@features/study/services/flashcard/flashcard.service";
 import {
 	FlashcardPanelApp,
 	type PanelAppActions,
 } from "@features/library/ui/panel/FlashcardPanelApp";
+import { CollectService } from "@features/study/services/flashcard/collect.service";
+import type { FlashcardManager } from "@features/study/services/flashcard/flashcard.service";
 import { effect } from "@preact/signals";
 import { VIEW_TYPE_FLASHCARD_PANEL } from "@shared/constants";
 import { notify } from "@shared/services/notification.service";
