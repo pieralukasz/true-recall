@@ -2,8 +2,8 @@
  * Plugin settings types
  */
 
-import type { AIModelKey } from "../constants";
-import type { ReviewViewMode } from "./fsrs";
+import type { AIModelKey } from "@shared/constants";
+import type { ReviewViewMode } from "@shared/types/fsrs";
 
 /**
  * Optimization result metrics from FSRS parameter optimization

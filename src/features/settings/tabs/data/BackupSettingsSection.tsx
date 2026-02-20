@@ -3,8 +3,8 @@ import {
 	SettingRow,
 	TextInput,
 	ToggleInput,
-} from "../../../../shared/ui/components";
-import { useSettings } from "../../hooks/useSettings";
+} from "@shared/ui/components";
+import { useSettings } from "@features/settings/hooks/useSettings";
 
 export function BackupSettingsSection() {
 	const { settings, save } = useSettings();

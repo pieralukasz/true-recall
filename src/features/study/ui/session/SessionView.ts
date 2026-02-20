@@ -1,18 +1,18 @@
 import { ItemView, type WorkspaceLeaf } from "obsidian";
 import { h } from "preact";
-import { VIEW_TYPE_SESSION } from "../../../../shared/constants";
+import { VIEW_TYPE_SESSION } from "@shared/constants";
 import type TrueRecallPlugin from "../../../../main";
-import type { DayBoundaryService } from "../../../core/services/day-boundary.service";
-import { notify } from "../../../../shared/services/notification.service";
-import type { SessionApi } from "../../../../shared/store";
-import type { FSRSFlashcardItem } from "../../../../shared/types";
-import type { SessionResult } from "../../../../shared/types/events.types";
-import { SessionResultFactory } from "../../../../shared/utils/session-result-factory";
-import { AddToProjectModal } from "../../../../shared/ui/modals/AddToProjectModal";
-import { MoveCardModal } from "../../../../shared/ui/modals/MoveCardModal";
-import { mountPreact } from "../../../../shared/ui/preact";
-import { SessionApp } from "./SessionApp";
-import { SessionLogic } from "./SessionLogic";
+import type { DayBoundaryService } from "@features/core/services/day-boundary.service";
+import { notify } from "@shared/services/notification.service";
+import type { SessionApi } from "@shared/store";
+import type { FSRSFlashcardItem } from "@shared/types";
+import type { SessionResult } from "@shared/types/events.types";
+import { SessionResultFactory } from "@shared/utils/session-result-factory";
+import { AddToProjectModal } from "@shared/ui/modals/AddToProjectModal";
+import { MoveCardModal } from "@shared/ui/modals/MoveCardModal";
+import { mountPreact } from "@shared/ui/preact";
+import { SessionApp } from "@features/study/ui/session/SessionApp";
+import { SessionLogic } from "@features/study/ui/session/SessionLogic";
 
 export interface SessionViewOptions {
 	currentNoteName: string | null;

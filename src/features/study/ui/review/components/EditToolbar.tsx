@@ -1,7 +1,7 @@
 import type {
 	ToolbarButton,
 	ToolbarButtonAction,
-} from "../../../../library/ui/editor/edit-toolbar.utils";
+} from "@features/library/ui/editor/edit-toolbar.utils";
 
 export function EditToolbar({
 	buttons,

@@ -1,6 +1,6 @@
 import type { App } from "obsidian";
-import type { BindParams, DatabaseLike, DatabaseLoadResult } from "./loader";
-import { loadDatabase } from "./loader";
+import type { BindParams, DatabaseLike, DatabaseLoadResult } from "@features/core/persistence/sqlite/loader";
+import { loadDatabase } from "@features/core/persistence/sqlite/loader";
 
 export class SqliteDatabase {
 	private db: DatabaseLike | null = null;

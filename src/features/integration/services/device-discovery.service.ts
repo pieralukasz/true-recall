@@ -8,7 +8,7 @@ import {
 	DB_FOLDER,
 	extractDeviceIdFromFilename,
 	LEGACY_DB_FILE,
-} from "../../../features/core/persistence/sqlite/sqlite.types";
+} from "@features/core/persistence/sqlite/sqlite.types";
 
 /**
  * Information about a discovered device database.

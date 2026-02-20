@@ -4,7 +4,7 @@ import type {
 	AnkiNote,
 	ApkgData,
 	ConvertedCard,
-} from "../../../../shared/types";
+} from "@shared/types";
 
 const FIELD_SEPARATOR = "\x1f";
 

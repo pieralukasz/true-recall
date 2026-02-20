@@ -1,6 +1,6 @@
-import { FLASHCARD_CONFIG } from "../../../../shared/constants";
-import type { CardType } from "../../../../shared/types/fsrs/card.types";
-import { parseClozeTemplate, renderClozeAnswer } from "./cloze-parser.service";
+import { FLASHCARD_CONFIG } from "@shared/constants";
+import type { CardType } from "@shared/types/fsrs/card.types";
+import { parseClozeTemplate, renderClozeAnswer } from "@features/study/services/flashcard/cloze-parser.service";
 
 const CLOZE_DETECT = /\{\{c\d+::[^}]*?(?:::[^}]*?)?\}\}/;
 

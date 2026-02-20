@@ -1,5 +1,5 @@
-import type { FSRSPreset } from "../../../../shared/types";
-import { SettingRow, TextInput } from "../../../../shared/ui/components";
+import type { FSRSPreset } from "@shared/types";
+import { SettingRow, TextInput } from "@shared/ui/components";
 
 interface DailyLimitsSectionProps {
 	preset: FSRSPreset;

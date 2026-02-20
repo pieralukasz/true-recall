@@ -1,5 +1,5 @@
 import { State } from "ts-fsrs";
-import type { FSRSFlashcardItem } from "../../../../../shared/types";
+import type { FSRSFlashcardItem } from "@shared/types";
 
 export interface StatusCounts {
 	new: number;

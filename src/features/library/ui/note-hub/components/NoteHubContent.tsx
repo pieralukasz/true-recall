@@ -1,8 +1,8 @@
-import type { SelectionMode } from "../../../../../shared/store";
-import type { ProjectInfo, ProjectNoteInfo } from "../../../../../shared/types";
-import { EmptyState, LoadingSpinner } from "../../../../../shared/ui/components";
-import { ProjectGroup } from "./ProjectGroup";
-import { UnassignedSection } from "./UnassignedSection";
+import type { SelectionMode } from "@shared/store";
+import type { ProjectInfo, ProjectNoteInfo } from "@shared/types";
+import { EmptyState, LoadingSpinner } from "@shared/ui/components";
+import { ProjectGroup } from "@features/library/ui/note-hub/components/ProjectGroup";
+import { UnassignedSection } from "@features/library/ui/note-hub/components/UnassignedSection";
 
 export interface NoteHubContentProps {
 	isLoading: boolean;

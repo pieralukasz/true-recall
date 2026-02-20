@@ -6,7 +6,7 @@
  * in a separate table adds fragility without benefit - images are already
  * embedded in card content (question/answer fields) as markdown links.
  */
-import type { DatabaseLike } from "../sqlite.types";
+import type { DatabaseLike } from "@features/core/persistence/sqlite/sqlite.types";
 
 export function migration017ToV18(db: DatabaseLike): void {
 	// Drop card_image_refs table (indexes are dropped automatically)

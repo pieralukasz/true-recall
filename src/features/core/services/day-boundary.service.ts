@@ -2,12 +2,12 @@
  * Implements Anki-style "Next day starts at" logic for day-based scheduling
  */
 import { State } from "ts-fsrs";
-import type { FSRSFlashcardItem } from "../../../shared/types";
+import type { FSRSFlashcardItem } from "@shared/types";
 import {
 	formatLocalDate as formatLocalDateUtil,
 	getTodayBoundary as getTodayBoundaryUtil,
 	getTomorrowBoundary as getTomorrowBoundaryUtil,
-} from "../../../shared/utils";
+} from "@shared/utils";
 
 export class DayBoundaryService {
 	private dayStartHour: number;

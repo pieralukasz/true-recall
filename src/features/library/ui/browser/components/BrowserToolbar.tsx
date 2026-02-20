@@ -1,8 +1,8 @@
-import type { BrowserStateFilter } from "../../../../../shared/store";
+import type { BrowserStateFilter } from "@shared/store";
 import {
 	IconButton,
 	SearchInput,
-} from "../../../../../shared/ui/components";
+} from "@shared/ui/components";
 
 const STATE_FILTERS: { value: BrowserStateFilter; label: string }[] = [
 	{ value: "all", label: "All" },

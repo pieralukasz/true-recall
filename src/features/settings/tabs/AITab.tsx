@@ -1,14 +1,14 @@
 import { useMemo } from "preact/hooks";
-import type { AIModelInfo, AIModelKey } from "../../../shared/constants";
-import { AI_MODELS_EXTENDED } from "../../../shared/constants";
-import type { SelectOptionGroup } from "../../../shared/ui/components";
+import type { AIModelInfo, AIModelKey } from "@shared/constants";
+import { AI_MODELS_EXTENDED } from "@shared/constants";
+import type { SelectOptionGroup } from "@shared/ui/components";
 import {
 	InfoBlock,
 	SelectInput,
 	SettingRow,
 	TextInput,
-} from "../../../shared/ui/components";
-import { useSettings } from "../hooks/useSettings";
+} from "@shared/ui/components";
+import { useSettings } from "@features/settings/hooks/useSettings";
 
 function groupModelsByProvider(): SelectOptionGroup[] {
 	const groups: Record<string, [string, AIModelInfo][]> = {

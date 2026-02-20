@@ -2,8 +2,10 @@ import esbuild from "esbuild";
 import process from "process";
 import { builtinModules } from 'node:module';
 import { copyFileSync, writeFileSync, existsSync, mkdirSync, watch } from "fs";
-import { join } from "path";
+import { join, resolve } from "path";
 import { execSync, spawn } from "child_process";
+
+const __dirname = new URL('.', import.meta.url).pathname;
 
 const banner =
 `/*
@@ -73,6 +75,10 @@ const context = await esbuild.context({
 	},
 	entryPoints: ["src/main.ts"],
 	bundle: true,
+	alias: {
+		"@shared": resolve(__dirname, "src/shared"),
+		"@features": resolve(__dirname, "src/features"),
+	},
 	define: {
 		'process.env.SUPABASE_URL': JSON.stringify(process.env.SUPABASE_URL || ''),
 		'process.env.SUPABASE_ANON_KEY': JSON.stringify(process.env.SUPABASE_ANON_KEY || ''),

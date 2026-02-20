@@ -1,5 +1,5 @@
 import { useCallback, useState } from "preact/hooks";
-import { notify } from "../../../../shared/services/notification.service";
+import { notify } from "@shared/services/notification.service";
 
 interface FsrsHelperOpResult {
 	affectedCount: number;

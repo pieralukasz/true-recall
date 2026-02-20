@@ -1,9 +1,9 @@
 import type { App, TFile } from "obsidian";
 import { useCallback, useState } from "preact/hooks";
-import { SearchInput } from "../../components/SearchInput";
-import { filterNotesByQuery, MAX_DISPLAY_NOTES } from "../note-filter.utils";
-import type { MoveCardResult } from "../MoveCardModal";
-import { extractBacklinks, noteHasTagPrefix } from "./move-card.utils";
+import { SearchInput } from "@shared/ui/components/SearchInput";
+import { filterNotesByQuery, MAX_DISPLAY_NOTES } from "@shared/ui/modals/note-filter.utils";
+import type { MoveCardResult } from "@shared/ui/modals/MoveCardModal";
+import { extractBacklinks, noteHasTagPrefix } from "@shared/ui/modals/move-card/move-card.utils";
 
 function NoteItem({
 	note,

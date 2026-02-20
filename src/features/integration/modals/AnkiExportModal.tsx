@@ -2,24 +2,24 @@ import type { App } from "obsidian";
 import { render } from "preact";
 import { useCallback, useState } from "preact/hooks";
 import type { AnkiExportOptions } from "shared/types";
-import { AnkiExportService } from "../services/anki/anki-export.service";
-import type { FrontmatterIndexService } from "../../../features/core/services/frontmatter-index.service";
-import type { FSRSService } from "../../../features/core/services/fsrs.service";
-import type { SqliteStoreService } from "../../../features/core/persistence/sqlite/SqliteStoreService";
-import { BaseModal } from "../../../shared/ui/modals/BaseModal";
+import { AnkiExportService } from "@features/integration/services/anki/anki-export.service";
+import type { FrontmatterIndexService } from "@features/core/services/frontmatter-index.service";
+import type { FSRSService } from "@features/core/services/fsrs.service";
+import type { SqliteStoreService } from "@features/core/persistence/sqlite/SqliteStoreService";
+import { BaseModal } from "@shared/ui/modals/BaseModal";
 import {
 	resolveProjects,
 	resolveNotes,
 	downloadBlob,
 	type NoteEntry,
-} from "../utils/export-helpers";
+} from "@features/integration/utils/export-helpers";
 import {
 	ExportingPhase,
 	SuccessPhase,
 	ErrorPhase,
 	FormPhase,
 	type ExportFormValues,
-} from "./anki-export";
+} from "@features/integration/modals/anki-export";
 
 type ExportPhase =
 	| { type: "form" }

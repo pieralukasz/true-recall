@@ -1,17 +1,17 @@
 import { Menu } from "obsidian";
 import { useCallback, useRef } from "preact/hooks";
-import type { FlashcardItem } from "../../../../../shared/types";
-import type { FSRSFlashcardItem } from "../../../../../shared/types/fsrs/card.types";
-import { useApp } from "../../../../../shared/ui/preact/ObsidianContext";
-import { useIcon } from "../../../../../shared/ui/preact/hooks";
-import { MarkdownContent } from "../../../../../shared/ui/components/MarkdownContent";
-import { StatusDot } from "./StatusDot";
+import type { FlashcardItem } from "@shared/types";
+import type { FSRSFlashcardItem } from "@shared/types/fsrs/card.types";
+import { useApp } from "@shared/ui/preact/ObsidianContext";
+import { useIcon } from "@shared/ui/preact/hooks";
+import { MarkdownContent } from "@shared/ui/components/MarkdownContent";
+import { StatusDot } from "@features/study/ui/panel/components/StatusDot";
 import {
 	getStatusDotColor,
 	getStatusTitle,
 	isSuspended,
 	isBuried,
-} from "../utils/card-status.utils";
+} from "@features/study/ui/panel/utils/card-status.utils";
 
 export interface CompactCardProps {
 	card: FlashcardItem;

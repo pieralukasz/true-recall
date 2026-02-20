@@ -2,7 +2,7 @@
  * Session Result Factory
  * Provides single source of truth for creating SessionResult objects
  */
-import type { SessionResult } from "../types/events.types";
+import type { SessionResult } from "@shared/types/events.types";
 
 function createCurrentNoteResult(
 	currentNoteName: string | null,

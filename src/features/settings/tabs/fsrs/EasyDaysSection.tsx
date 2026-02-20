@@ -1,8 +1,8 @@
 import { useCallback } from "preact/hooks";
-import { notify } from "../../../../shared/services/notification.service";
-import type { TrueRecallSettings } from "../../../../shared/types";
-import { EasyDaysModal } from "../../../../features/metrics/modals/EasyDaysModal";
-import { ActionButton, InfoBlock, SettingRow } from "../../../../shared/ui/components";
+import { notify } from "@shared/services/notification.service";
+import type { TrueRecallSettings } from "@shared/types";
+import { EasyDaysModal } from "@features/metrics/modals/EasyDaysModal";
+import { ActionButton, InfoBlock, SettingRow } from "@shared/ui/components";
 import type { App } from "obsidian";
 
 interface EasyDaysSectionProps {

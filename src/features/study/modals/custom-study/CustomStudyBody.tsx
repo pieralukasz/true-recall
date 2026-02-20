@@ -1,9 +1,9 @@
 import { useRef } from "preact/hooks";
-import type { ReviewOrder } from "../../../../shared/types/settings.types";
-import { ModalFooter } from "../../../../shared/ui/components/ModalFooter";
-import { NumberField, SECTION_CLS, LABEL_CLS, INPUT_CLS } from "./NumberField";
-import { useCustomStudyConfig } from "./hooks/useCustomStudyConfig";
-import type { CustomStudyModalResult } from "./types";
+import type { ReviewOrder } from "@shared/types/settings.types";
+import { ModalFooter } from "@shared/ui/components/ModalFooter";
+import { NumberField, SECTION_CLS, LABEL_CLS, INPUT_CLS } from "@features/study/modals/custom-study/NumberField";
+import { useCustomStudyConfig } from "@features/study/modals/custom-study/hooks/useCustomStudyConfig";
+import type { CustomStudyModalResult } from "@features/study/modals/custom-study/types";
 
 const REVIEW_ORDER_LABELS: Record<ReviewOrder, string> = {
 	"due-date": "Due date",

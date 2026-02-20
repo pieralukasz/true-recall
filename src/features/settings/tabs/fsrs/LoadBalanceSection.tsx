@@ -1,13 +1,13 @@
 import { useMemo } from "preact/hooks";
-import type { TrueRecallSettings } from "../../../../shared/types";
+import type { TrueRecallSettings } from "@shared/types";
 import {
 	ActionButton,
 	SettingRow,
 	SliderInput,
 	TextInput,
 	ToggleInput,
-} from "../../../../shared/ui/components";
-import { useFsrsHelperOp } from "./useFsrsHelperOp";
+} from "@shared/ui/components";
+import { useFsrsHelperOp } from "@features/settings/tabs/fsrs/useFsrsHelperOp";
 
 interface LoadBalanceSectionProps {
 	settings: TrueRecallSettings;

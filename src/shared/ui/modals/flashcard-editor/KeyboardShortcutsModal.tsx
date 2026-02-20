@@ -1,6 +1,6 @@
 import type { App } from "obsidian";
 import { render } from "preact";
-import { BaseModal } from "../BaseModal";
+import { BaseModal } from "@shared/ui/modals/BaseModal";
 
 const KEYBOARD_SHORTCUTS = [
 	{ key: "Ctrl+Enter", action: "Save and close" },

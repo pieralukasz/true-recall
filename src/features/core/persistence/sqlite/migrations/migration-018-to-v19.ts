@@ -5,7 +5,7 @@
  * Root cause: Data synced from Supabase was stored as numeric strings (e.g., "1769021590000")
  * instead of being converted to ISO format (e.g., "2026-01-21T12:13:10.000Z").
  */
-import type { DatabaseLike } from "../sqlite.types";
+import type { DatabaseLike } from "@features/core/persistence/sqlite/sqlite.types";
 
 export function migration018ToV19(db: DatabaseLike): void {
 	// Convert bigint timestamps (stored as numeric strings) to ISO format

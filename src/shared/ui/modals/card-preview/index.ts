@@ -1,8 +1,8 @@
-export { CardPreviewBody, type CardPreviewBodyProps } from "./CardPreviewBody";
+export { CardPreviewBody, type CardPreviewBodyProps } from "@shared/ui/modals/card-preview/CardPreviewBody";
 export {
 	handleDeleteAll,
 	handleDeleteCard,
 	handleUnburyAll,
 	handleUnburyCard,
 	openSourceNote,
-} from "./card-preview-handlers";
+} from "@shared/ui/modals/card-preview/card-preview-handlers";

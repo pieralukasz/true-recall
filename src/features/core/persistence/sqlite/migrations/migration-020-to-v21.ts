@@ -2,7 +2,7 @@
  * Migration v20 -> v21
  * Add card_type, cloze_template, cloze_index, reverse_of columns for cloze deletions and reversed cards
  */
-import type { DatabaseLike } from "../sqlite.types";
+import type { DatabaseLike } from "@features/core/persistence/sqlite/sqlite.types";
 
 export function migration020ToV21(db: DatabaseLike): void {
 	db.run(

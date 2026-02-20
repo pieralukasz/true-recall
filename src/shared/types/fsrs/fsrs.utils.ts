@@ -4,7 +4,7 @@
  */
 
 import type { State } from "ts-fsrs";
-import type { FSRSCardData } from "./card.types";
+import type { FSRSCardData } from "@shared/types/fsrs/card.types";
 
 /**
  * Review view display mode

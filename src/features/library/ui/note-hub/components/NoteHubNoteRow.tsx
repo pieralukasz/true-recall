@@ -1,13 +1,13 @@
 import { Menu } from "obsidian";
 import { useCallback } from "preact/hooks";
-import type { SelectionMode } from "../../../../../shared/store";
-import type { ProjectNoteInfo } from "../../../../../shared/types";
+import type { SelectionMode } from "@shared/store";
+import type { ProjectNoteInfo } from "@shared/types";
 import {
 	CardCountDisplay,
 	IconButton,
-} from "../../../../../shared/ui/components";
-import { useIcon } from "../../../../../shared/ui/preact/hooks";
-import { ICON_BTN_CLS } from "../constants";
+} from "@shared/ui/components";
+import { useIcon } from "@shared/ui/preact/hooks";
+import { ICON_BTN_CLS } from "@features/library/ui/note-hub/constants";
 
 export interface NoteHubNoteRowProps {
 	note: ProjectNoteInfo;

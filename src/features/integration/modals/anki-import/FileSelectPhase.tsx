@@ -1,5 +1,5 @@
 import { useRef } from "preact/hooks";
-import { PasteDropZone } from "../../../../shared/ui/components/PasteDropZone";
+import { PasteDropZone } from "@shared/ui/components/PasteDropZone";
 
 export interface FileSelectPhaseProps {
 	onFile: (file: File) => void;

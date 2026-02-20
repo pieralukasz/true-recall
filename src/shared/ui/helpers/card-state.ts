@@ -3,7 +3,7 @@
  * Shared utilities for filtering and counting cards by FSRS state
  */
 import { State } from "ts-fsrs";
-import type { FSRSFlashcardItem } from "../../types";
+import type { FSRSFlashcardItem } from "@shared/types";
 
 /**
  * Card state counts (FSRS states)

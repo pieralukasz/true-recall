@@ -1,6 +1,10 @@
 {
 	"compilerOptions": {
 		"baseUrl": "src",
+		"paths": {
+			"@shared/*": ["shared/*"],
+			"@features/*": ["features/*"]
+		},
 		"inlineSourceMap": true,
 		"inlineSources": true,
 		"module": "ESNext",

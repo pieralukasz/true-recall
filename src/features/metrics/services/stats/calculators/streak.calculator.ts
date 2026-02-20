@@ -2,7 +2,7 @@
  * Streak Calculator
  * Calculates current and longest study streaks
  */
-import type { ExtendedDailyStats } from "../../../../../shared/types";
+import type { ExtendedDailyStats } from "@shared/types";
 
 export interface StreakInfo {
 	current: number;

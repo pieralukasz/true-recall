@@ -4,8 +4,8 @@
  * Used by SessionView
  */
 import { Rating, State } from "ts-fsrs";
-import type { DayBoundaryService } from "../../../core/services/day-boundary.service";
-import type { FSRSFlashcardItem } from "../../../../shared/types";
+import type { DayBoundaryService } from "@features/core/services/day-boundary.service";
+import type { FSRSFlashcardItem } from "@shared/types";
 
 export interface NoteStats {
 	noteName: string;

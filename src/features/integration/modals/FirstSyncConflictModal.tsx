@@ -1,6 +1,6 @@
 import type { App } from "obsidian";
 import { render } from "preact";
-import { BasePromiseModal } from "../../../shared/ui/modals/BasePromiseModal";
+import { BasePromiseModal } from "@shared/ui/modals/BasePromiseModal";
 
 export type FirstSyncChoice = "upload" | "download" | "cancel";
 

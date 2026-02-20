@@ -1,7 +1,7 @@
 import { useCallback, useMemo, useState } from "preact/hooks";
-import { notify } from "../../../../shared/services/notification.service";
-import { ActionButton, SettingRow, TextInput } from "../../../../shared/ui/components";
-import { useFsrsHelperOp } from "./useFsrsHelperOp";
+import { notify } from "@shared/services/notification.service";
+import { ActionButton, SettingRow, TextInput } from "@shared/ui/components";
+import { useFsrsHelperOp } from "@features/settings/tabs/fsrs/useFsrsHelperOp";
 
 interface BulkOperationsSectionProps {
 	plugin: any;

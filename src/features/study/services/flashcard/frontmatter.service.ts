@@ -1,5 +1,5 @@
 import type { App, TFile } from "obsidian";
-import { stripWikiLinkSyntax } from "../../../../shared/utils";
+import { stripWikiLinkSyntax } from "@shared/utils";
 
 export class FrontmatterService {
 	/** Matches YAML frontmatter block */

@@ -6,49 +6,49 @@ export {
 	AddToProjectModal,
 	type AddToProjectModalOptions,
 	type AddToProjectResult,
-} from "./AddToProjectModal";
-export { BaseModal, type BaseModalOptions } from "./BaseModal";
+} from "@shared/ui/modals/AddToProjectModal";
+export { BaseModal, type BaseModalOptions } from "@shared/ui/modals/BaseModal";
 export {
 	BasePromiseModal,
 	type CancellableResult,
 	createCancelledResult,
-} from "./BasePromiseModal";
+} from "@shared/ui/modals/BasePromiseModal";
 export {
 	CardPreviewModal,
 	type CardPreviewModalOptions,
-} from "./CardPreviewModal";
+} from "@shared/ui/modals/CardPreviewModal";
 export {
 	FlashcardEditorModal,
 	type FlashcardEditorModalOptions,
 	type FlashcardEditorResult,
 	KeyboardShortcutsModal,
-} from "./FlashcardEditorModal";
+} from "@shared/ui/modals/FlashcardEditorModal";
 export {
 	ImagePickerModal,
 	type ImagePickerResult,
-} from "./ImagePickerModal";
+} from "@shared/ui/modals/ImagePickerModal";
 export {
 	MediaPickerModal,
 	type MediaPickerResult,
-} from "./MediaPickerModal";
+} from "@shared/ui/modals/MediaPickerModal";
 export {
 	MoveCardModal,
 	type MoveCardModalOptions,
 	type MoveCardResult,
-} from "./MoveCardModal";
+} from "@shared/ui/modals/MoveCardModal";
 export {
 	SelectNoteModal,
 	type SelectNoteModalOptions,
 	type SelectNoteResult,
-} from "./SelectNoteModal";
+} from "@shared/ui/modals/SelectNoteModal";
 export {
 	SetPresetModal,
 	type SetPresetResult,
-} from "./SetPresetModal";
+} from "@shared/ui/modals/SetPresetModal";
 export {
 	cardsToMarkdown,
 	cardToMarkdown,
 	SimpleFlashcardEditorModal,
 	type SimpleFlashcardEditorOptions,
 	type SimpleFlashcardEditorResult,
-} from "./SimpleFlashcardEditorModal";
+} from "@shared/ui/modals/SimpleFlashcardEditorModal";

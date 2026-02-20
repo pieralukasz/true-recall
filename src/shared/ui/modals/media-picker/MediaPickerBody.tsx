@@ -1,14 +1,14 @@
 import { type App, TFile } from "obsidian";
 import { useCallback, useState } from "preact/hooks";
-import { notify } from "../../../services/notification.service";
-import type { ImageService } from "../../../../features/integration/services/ImageService";
-import { isVideoExtension } from "../../../types";
-import { PasteDropZone } from "../../components/PasteDropZone";
-import { MediaWidthSlider } from "../../components/MediaWidthSlider";
-import { ModalFooter } from "../../components/ModalFooter";
-import { useClipboardPaste } from "../../hooks/useClipboardPaste";
-import { MediaGrid } from "./MediaGrid";
-import { MediaPreview } from "./MediaPreview";
+import { notify } from "@shared/services/notification.service";
+import type { ImageService } from "@features/integration/services/ImageService";
+import { isVideoExtension } from "@shared/types";
+import { PasteDropZone } from "@shared/ui/components/PasteDropZone";
+import { MediaWidthSlider } from "@shared/ui/components/MediaWidthSlider";
+import { ModalFooter } from "@shared/ui/components/ModalFooter";
+import { useClipboardPaste } from "@shared/ui/hooks/useClipboardPaste";
+import { MediaGrid } from "@shared/ui/modals/media-picker/MediaGrid";
+import { MediaPreview } from "@shared/ui/modals/media-picker/MediaPreview";
 
 export interface MediaPickerResult {
 	cancelled: boolean;

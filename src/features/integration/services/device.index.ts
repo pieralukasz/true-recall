@@ -6,5 +6,5 @@
 export {
 	type DeviceDatabaseInfo,
 	DeviceDiscoveryService,
-} from "./device-discovery.service";
-export { DeviceIdService } from "./device-id.service";
+} from "@features/integration/services/device-discovery.service";
+export { DeviceIdService } from "@features/integration/services/device-id.service";

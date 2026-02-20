@@ -1,6 +1,6 @@
 import { cva, type VariantProps } from "class-variance-authority";
 import { Clickable } from "shared/ui/preact";
-import type { NoteStatusInfo } from "../../../../core/cache/note-status-cache.service";
+import type { NoteStatusInfo } from "@features/core/cache/note-status-cache.service";
 
 const CIRCUMFERENCE = 100;
 const RADIUS = 15.91549430918954; // circumference / (2 * PI)

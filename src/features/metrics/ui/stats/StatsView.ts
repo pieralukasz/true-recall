@@ -15,10 +15,10 @@ import {
 } from "chart.js";
 import { ItemView, type WorkspaceLeaf } from "obsidian";
 import { h } from "preact";
-import { VIEW_TYPE_STATS } from "../../../../shared/constants";
+import { VIEW_TYPE_STATS } from "@shared/constants";
 import type TrueRecallPlugin from "../../../../main";
-import { mountPreact } from "../../../../shared/ui/preact";
-import { StatsApp } from "./StatsApp";
+import { mountPreact } from "@shared/ui/preact";
+import { StatsApp } from "@features/metrics/ui/stats/StatsApp";
 
 Chart.register(
 	CategoryScale,

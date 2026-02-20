@@ -1,5 +1,5 @@
 import { useState } from "preact/hooks";
-import type { OrphanedCardGroup } from "../../../services/orphaned-cards.service";
+import type { OrphanedCardGroup } from "@features/library/services/orphaned-cards.service";
 
 export interface GroupRowProps {
 	group: OrphanedCardGroup;

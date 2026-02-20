@@ -11,7 +11,7 @@ import {
 	type SupabaseClient,
 	type User,
 } from "@supabase/supabase-js";
-import { TRUE_RECALL_CLOUD } from "../../../../shared/constants";
+import { TRUE_RECALL_CLOUD } from "@shared/constants";
 
 export interface AuthState {
 	user: User | null;

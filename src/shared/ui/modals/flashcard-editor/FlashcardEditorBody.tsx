@@ -1,14 +1,14 @@
 import type { App } from "obsidian";
 import { useCallback, useState } from "preact/hooks";
-import { notify } from "../../../services/notification.service";
-import { ImageService } from "../../../../features/integration/services/ImageService";
-import { insertAtTextareaCursor } from "../../../../features/library/ui/editor/edit-toolbar.utils";
-import { SECONDARY_BUTTON_CLASSES } from "../../utils/tailwind";
-import type { FlashcardEditorModalOptions, FlashcardEditorResult } from "../FlashcardEditorModal";
-import { AiAssistSection } from "./AiAssistSection";
-import { EditorField, getToolbarButtons } from "./EditorField";
-import { useEditorKeyboard } from "./useEditorKeyboard";
-import { useImagePaste } from "./useImagePaste";
+import { notify } from "@shared/services/notification.service";
+import { ImageService } from "@features/integration/services/ImageService";
+import { insertAtTextareaCursor } from "@features/library/ui/editor/edit-toolbar.utils";
+import { SECONDARY_BUTTON_CLASSES } from "@shared/ui/utils/tailwind";
+import type { FlashcardEditorModalOptions, FlashcardEditorResult } from "@shared/ui/modals/FlashcardEditorModal";
+import { AiAssistSection } from "@shared/ui/modals/flashcard-editor/AiAssistSection";
+import { EditorField, getToolbarButtons } from "@shared/ui/modals/flashcard-editor/EditorField";
+import { useEditorKeyboard } from "@shared/ui/modals/flashcard-editor/useEditorKeyboard";
+import { useImagePaste } from "@shared/ui/modals/flashcard-editor/useImagePaste";
 
 export interface FlashcardEditorBodyProps {
 	app: App;

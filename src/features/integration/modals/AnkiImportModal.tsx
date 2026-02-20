@@ -1,13 +1,13 @@
 import type { App } from "obsidian";
 import { render } from "preact";
 import { useCallback, useState } from "preact/hooks";
-import { AnkiConverterService } from "../services/anki/anki-converter.service";
-import { AnkiImportService } from "../services/anki/anki-import.service";
-import { ApkgParserService } from "../services/anki/apkg-parser.service";
-import type { FSRSService } from "../../../features/core/services/fsrs.service";
-import type { SqliteStoreService } from "../../../features/core/persistence/sqlite/SqliteStoreService";
-import type { ApkgData } from "../../../shared/types";
-import { BaseModal } from "../../../shared/ui/modals/BaseModal";
+import { AnkiConverterService } from "@features/integration/services/anki/anki-converter.service";
+import { AnkiImportService } from "@features/integration/services/anki/anki-import.service";
+import { ApkgParserService } from "@features/integration/services/anki/apkg-parser.service";
+import type { FSRSService } from "@features/core/services/fsrs.service";
+import type { SqliteStoreService } from "@features/core/persistence/sqlite/SqliteStoreService";
+import type { ApkgData } from "@shared/types";
+import { BaseModal } from "@shared/ui/modals/BaseModal";
 import {
 	ErrorPhase,
 	FileSelectPhase,
@@ -16,7 +16,7 @@ import {
 	ResultPhase,
 	type ImportPhase,
 	type ImportPreview,
-} from "./anki-import";
+} from "@features/integration/modals/anki-import";
 
 function AnkiImportBody({
 	onFileSelected,

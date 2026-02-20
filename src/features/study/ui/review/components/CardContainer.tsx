@@ -1,11 +1,11 @@
 import { Platform } from "obsidian";
 import { useCallback, useRef, useState } from "preact/hooks";
-import { UI_CONFIG } from "../../../../../shared/constants";
-import type { EditModeState } from "../../../../../shared/store";
-import type { FSRSFlashcardItem } from "../../../../../shared/types";
-import { stripBrTags } from "../../../../../shared/utils";
-import { useMarkdown } from "../../../../../shared/ui/preact/hooks";
-import { EditableField } from "./EditableField";
+import { UI_CONFIG } from "@shared/constants";
+import type { EditModeState } from "@shared/store";
+import type { FSRSFlashcardItem } from "@shared/types";
+import { stripBrTags } from "@shared/utils";
+import { useMarkdown } from "@shared/ui/preact/hooks";
+import { EditableField } from "@features/study/ui/review/components/EditableField";
 
 export interface CardContainerProps {
 	card: FSRSFlashcardItem;

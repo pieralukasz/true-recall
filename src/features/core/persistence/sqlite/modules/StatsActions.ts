@@ -7,8 +7,8 @@ import type {
 	StudyPattern,
 	TimeToMasteryStats,
 } from "shared/types";
-import type { SqliteDatabase } from "../SqliteDatabase";
-import { generateUUID } from "../sqlite.types";
+import type { SqliteDatabase } from "@features/core/persistence/sqlite/SqliteDatabase";
+import { generateUUID } from "@features/core/persistence/sqlite/sqlite.types";
 
 export interface ReviewLogForSync {
 	id: string;

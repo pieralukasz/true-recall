@@ -10,17 +10,17 @@ import type {
 	FSRSCardData,
 	FSRSFlashcardItem,
 	TrueRecallSettings,
-} from "../../../../shared/types";
-import type { FrontmatterIndexService } from "../../../../features/core/services/frontmatter-index.service";
-import type { SqliteStoreService } from "../../../../features/core/persistence/sqlite/SqliteStoreService";
-import { CardQueryService } from "./card-query.service";
+} from "@shared/types";
+import type { FrontmatterIndexService } from "@features/core/services/frontmatter-index.service";
+import type { SqliteStoreService } from "@features/core/persistence/sqlite/SqliteStoreService";
+import { CardQueryService } from "@features/study/services/flashcard/card-query.service";
 import {
 	CardRepository,
 	type CreateBatchResult,
-} from "./card-repository.service";
-import { FlashcardParserService } from "./flashcard-parser.service";
-import { FrontmatterService } from "./frontmatter.service";
-import { SourceNoteService } from "./source-note.service";
+} from "@features/study/services/flashcard/card-repository.service";
+import { FlashcardParserService } from "@features/study/services/flashcard/flashcard-parser.service";
+import { FrontmatterService } from "@features/study/services/flashcard/frontmatter.service";
+import { SourceNoteService } from "@features/study/services/flashcard/source-note.service";
 
 export interface ScanResult {
 	totalCards: number;
@@ -174,7 +174,7 @@ export class FlashcardManager {
 			id: string;
 			question: string;
 			answer: string;
-			cardType?: import("../../../../shared/types").CardType;
+			cardType?: import("@shared/types").CardType;
 			clozeTemplate?: string;
 			clozeIndex?: number;
 			reverseOfBatchId?: string;

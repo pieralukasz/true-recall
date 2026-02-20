@@ -1,6 +1,6 @@
 import { useEffect, useState } from "preact/hooks";
-import { UI_CONFIG } from "../../../../../shared/constants";
-import type { ReviewApi } from "../../../../../shared/store";
+import { UI_CONFIG } from "@shared/constants";
+import type { ReviewApi } from "@shared/store";
 
 export function WaitingScreen({
 	review,

@@ -2,8 +2,8 @@ import type {
 	NoteHubSortBy,
 	NoteHubSortDirection,
 	NoteHubStatusFilter,
-} from "../../../../../shared/store/types";
-import type { ProjectInfo, ProjectNoteInfo } from "../../../../../shared/types";
+} from "@shared/store/types";
+import type { ProjectInfo, ProjectNoteInfo } from "@shared/types";
 
 export function filterNotesByStatus(
 	notes: ProjectNoteInfo[],

@@ -1,10 +1,10 @@
 import type { WorkspaceLeaf } from "obsidian";
 import { TFile } from "obsidian";
 import { useCallback } from "preact/hooks";
-import { VIEW_TYPE_REVIEW } from "../../../../../shared/constants";
-import { notify } from "../../../../../shared/services/notification.service";
-import { AddToProjectModal, SelectNoteModal } from "../../../../../shared/ui/modals";
-import { useApp, usePlugin } from "../../../../../shared/ui/preact";
+import { VIEW_TYPE_REVIEW } from "@shared/constants";
+import { notify } from "@shared/services/notification.service";
+import { AddToProjectModal, SelectNoteModal } from "@shared/ui/modals";
+import { useApp, usePlugin } from "@shared/ui/preact";
 
 export function useNoteHubActions(loadData: () => Promise<void>) {
 	const app = useApp();

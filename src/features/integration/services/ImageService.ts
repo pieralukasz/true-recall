@@ -4,7 +4,7 @@ import {
 	isVideoExtension,
 	MAX_IMAGE_SIZE_BYTES,
 	MAX_VIDEO_SIZE_BYTES,
-} from "../../../shared/types";
+} from "@shared/types";
 
 export class ImageService {
 	private app: App;

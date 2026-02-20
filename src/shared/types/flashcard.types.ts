@@ -1,4 +1,4 @@
-import type { CardType } from "./fsrs/card.types";
+import type { CardType } from "@shared/types/fsrs/card.types";
 
 export interface FlashcardItem {
 	question: string;

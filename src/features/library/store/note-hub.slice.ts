@@ -1,8 +1,8 @@
-import type { ProjectInfo, ProjectNoteInfo } from "../../../shared/types";
+import type { ProjectInfo, ProjectNoteInfo } from "@shared/types";
 import {
 	createSelectionActions,
 	toggleSetItem,
-} from "../../../shared/store/helpers/slice-helpers";
+} from "@shared/store/helpers/slice-helpers";
 import type {
 	AppState,
 	AppStoreDeps,
@@ -10,7 +10,7 @@ import type {
 	NoteHubSliceState,
 	NoteHubSortBy,
 	NoteHubStatusFilter,
-} from "../../../shared/store/types";
+} from "@shared/store/types";
 
 type NoteHubSlice = NoteHubSliceState & NoteHubSliceActions;
 

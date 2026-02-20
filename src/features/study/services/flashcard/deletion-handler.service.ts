@@ -8,13 +8,13 @@
  * 3. Shows a modal asking what to do with them
  */
 import type { App, TFile } from "obsidian";
-import type { FSRSCardData } from "../../../../shared/types";
-import type { FrontmatterIndexService } from "../../../../features/core/services/frontmatter-index.service";
-import type { SqliteStoreService } from "../../../../features/core/persistence/sqlite/SqliteStoreService";
+import type { FSRSCardData } from "@shared/types";
+import type { FrontmatterIndexService } from "@features/core/services/frontmatter-index.service";
+import type { SqliteStoreService } from "@features/core/persistence/sqlite/SqliteStoreService";
 import {
 	type OrphanedCardInfo,
 	OrphanedCardsService,
-} from "../../../library/services/orphaned-cards.service";
+} from "@features/library/services/orphaned-cards.service";
 
 export interface DeletionHandlerDeps {
 	app: App;
@@ -126,4 +126,4 @@ export class DeletionHandlerService {
 }
 
 // Re-export types from OrphanedCardsService for backward compatibility
-export type { OrphanedCardInfo, OrphanReason } from "../../../library/services/orphaned-cards.service";
+export type { OrphanedCardInfo, OrphanReason } from "@features/library/services/orphaned-cards.service";

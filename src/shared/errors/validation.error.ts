@@ -1,7 +1,7 @@
 /**
  * Validation-related error classes
  */
-import { AppError } from "./base.error";
+import { AppError } from "@shared/errors/base.error";
 
 /**
  * Error thrown when data validation fails

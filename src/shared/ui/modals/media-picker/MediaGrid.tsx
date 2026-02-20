@@ -1,6 +1,6 @@
 import type { App, TFile } from "obsidian";
-import { isVideoExtension } from "../../../types";
-import type { ImageService } from "../../../../features/integration/services/ImageService";
+import { isVideoExtension } from "@shared/types";
+import type { ImageService } from "@features/integration/services/ImageService";
 
 function VideoIcon() {
 	return (

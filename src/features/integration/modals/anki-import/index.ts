@@ -1,6 +1,6 @@
-export { ErrorPhase } from "./ErrorPhase";
-export { FileSelectPhase } from "./FileSelectPhase";
-export { PreviewPhase } from "./PreviewPhase";
-export { ProgressPhase } from "./ProgressPhase";
-export { ResultPhase } from "./ResultPhase";
-export type { ImportPhase, ImportPreview } from "./types";
+export { ErrorPhase } from "@features/integration/modals/anki-import/ErrorPhase";
+export { FileSelectPhase } from "@features/integration/modals/anki-import/FileSelectPhase";
+export { PreviewPhase } from "@features/integration/modals/anki-import/PreviewPhase";
+export { ProgressPhase } from "@features/integration/modals/anki-import/ProgressPhase";
+export { ResultPhase } from "@features/integration/modals/anki-import/ResultPhase";
+export type { ImportPhase, ImportPreview } from "@features/integration/modals/anki-import/types";

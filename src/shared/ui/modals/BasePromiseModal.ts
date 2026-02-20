@@ -1,4 +1,4 @@
-import { BaseModal } from "./BaseModal";
+import { BaseModal } from "@shared/ui/modals/BaseModal";
 
 /**
  * Abstract base class for modals that return a result via promise

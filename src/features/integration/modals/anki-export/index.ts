@@ -1,8 +1,8 @@
-export { ExportingPhase } from "./ExportingPhase";
-export { SuccessPhase, type SuccessPhaseProps } from "./SuccessPhase";
-export { ErrorPhase, type ErrorPhaseProps } from "./ErrorPhase";
+export { ExportingPhase } from "@features/integration/modals/anki-export/ExportingPhase";
+export { SuccessPhase, type SuccessPhaseProps } from "@features/integration/modals/anki-export/SuccessPhase";
+export { ErrorPhase, type ErrorPhaseProps } from "@features/integration/modals/anki-export/ErrorPhase";
 export {
 	FormPhase,
 	type FormPhaseProps,
 	type ExportFormValues,
-} from "./FormPhase";
+} from "@features/integration/modals/anki-export/FormPhase";

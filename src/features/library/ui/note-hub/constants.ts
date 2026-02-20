@@ -1,4 +1,4 @@
-import type { NoteHubSortBy, NoteHubStatusFilter } from "../../../../shared/store";
+import type { NoteHubSortBy, NoteHubStatusFilter } from "@shared/store";
 
 export const STATUS_FILTERS: { label: string; value: NoteHubStatusFilter }[] = [
 	{ label: "All", value: "all" },

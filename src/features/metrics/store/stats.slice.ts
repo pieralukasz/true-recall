@@ -3,7 +3,7 @@ import type {
 	AppStoreDeps,
 	StatsSliceActions,
 	StatsSliceState,
-} from "../../../shared/store/types";
+} from "@shared/store/types";
 
 type StatsSlice = StatsSliceState & StatsSliceActions;
 

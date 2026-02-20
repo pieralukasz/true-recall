@@ -1,5 +1,5 @@
-import { SettingRow, TextInput } from "../../../../shared/ui/components";
-import { useSettings } from "../../hooks/useSettings";
+import { SettingRow, TextInput } from "@shared/ui/components";
+import { useSettings } from "@features/settings/hooks/useSettings";
 
 export function ContentSection() {
 	const { settings, save } = useSettings();

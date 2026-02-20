@@ -1,20 +1,20 @@
-import type { FSRSSettings, TrueRecallSettings } from "../../../../shared/types";
-import type { SqliteStoreService } from "../../../../features/core/persistence/sqlite/SqliteStoreService";
+import type { FSRSSettings, TrueRecallSettings } from "@shared/types";
+import type { SqliteStoreService } from "@features/core/persistence/sqlite/SqliteStoreService";
 import type {
 	OptimizationInput,
 	OptimizationOutput,
 	OptimizerOptions,
-} from "./optimizer/optimizer.types";
-import { ParameterOptimizerService } from "./optimizer/parameter-optimizer.service";
+} from "@features/metrics/services/fsrs-tools/optimizer/optimizer.types";
+import { ParameterOptimizerService } from "@features/metrics/services/fsrs-tools/optimizer/parameter-optimizer.service";
 import {
 	type EasyDaysOptions,
 	EasyDaysService,
-} from "./scheduler/easy-days.service";
-import { FlattenService } from "./scheduler/flatten.service";
-import { LoadBalanceService } from "./scheduler/load-balance.service";
-import { PostponeAdvanceService } from "./scheduler/postpone-advance.service";
-import { RescheduleService } from "./scheduler/reschedule.service";
-import { ScheduleBreakService } from "./scheduler/schedule-break.service";
+} from "@features/metrics/services/fsrs-tools/scheduler/easy-days.service";
+import { FlattenService } from "@features/metrics/services/fsrs-tools/scheduler/flatten.service";
+import { LoadBalanceService } from "@features/metrics/services/fsrs-tools/scheduler/load-balance.service";
+import { PostponeAdvanceService } from "@features/metrics/services/fsrs-tools/scheduler/postpone-advance.service";
+import { RescheduleService } from "@features/metrics/services/fsrs-tools/scheduler/reschedule.service";
+import { ScheduleBreakService } from "@features/metrics/services/fsrs-tools/scheduler/schedule-break.service";
 import type {
 	BreakScheduleOptions,
 	DisperseOptions,
@@ -24,22 +24,22 @@ import type {
 	SchedulingResult,
 	ShiftOptions,
 	WorkloadDistribution,
-} from "./scheduler/scheduler.types";
-import { SiblingDisperseService } from "./scheduler/sibling-disperse.service";
+} from "@features/metrics/services/fsrs-tools/scheduler/scheduler.types";
+import { SiblingDisperseService } from "@features/metrics/services/fsrs-tools/scheduler/sibling-disperse.service";
 import {
 	DistributionCalculator,
 	type DistributionStats,
 	type HistogramBucket,
-} from "./statistics/distribution.calculator";
+} from "@features/metrics/services/fsrs-tools/statistics/distribution.calculator";
 import {
 	TrueRetentionCalculator,
 	type TrueRetentionSummary,
-} from "./statistics/true-retention.calculator";
+} from "@features/metrics/services/fsrs-tools/statistics/true-retention.calculator";
 import {
 	WorkloadForecastCalculator,
 	type WorkloadForecastEntry,
 	type WorkloadForecastSummary,
-} from "./statistics/workload-forecast.calculator";
+} from "@features/metrics/services/fsrs-tools/statistics/workload-forecast.calculator";
 
 export class FSRSHelperService {
 	private optimizer: ParameterOptimizerService;

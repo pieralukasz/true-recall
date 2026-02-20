@@ -1,10 +1,10 @@
 import type { App } from "obsidian";
 import { render } from "preact";
-import { FlashcardParserService } from "../../../features/study/services/flashcard/flashcard-parser.service";
-import { ImageService } from "../../../features/integration/services/ImageService";
-import type { FlashcardItem } from "../../types";
-import { BaseModal } from "./BaseModal";
-import { SimpleEditorBody } from "./simple-editor/SimpleEditorBody";
+import { FlashcardParserService } from "@features/study/services/flashcard/flashcard-parser.service";
+import { ImageService } from "@features/integration/services/ImageService";
+import type { FlashcardItem } from "@shared/types";
+import { BaseModal } from "@shared/ui/modals/BaseModal";
+import { SimpleEditorBody } from "@shared/ui/modals/simple-editor/SimpleEditorBody";
 
 export interface SimpleFlashcardEditorResult {
 	cancelled: boolean;
@@ -93,4 +93,4 @@ export class SimpleFlashcardEditorModal extends BaseModal {
 export {
 	cardsToMarkdown,
 	cardToMarkdown,
-} from "../../../features/study/services/flashcard/flashcard-format.util";
+} from "@features/study/services/flashcard/flashcard-format.util";

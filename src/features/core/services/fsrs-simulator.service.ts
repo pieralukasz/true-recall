@@ -3,11 +3,11 @@
  * Simulates FSRS v6 scheduling for visualization
  */
 import { createEmptyCard, FSRS, type Grade } from "ts-fsrs";
-import { getSequenceColors } from "../../metrics/ui/simulator/constants";
+import { getSequenceColors } from "@features/metrics/ui/simulator/constants";
 import type {
 	SequenceReview,
 	SequenceSimulation,
-} from "../../metrics/ui/simulator/types";
+} from "@features/metrics/ui/simulator/types";
 
 /**
  * Service for simulating FSRS review sequences

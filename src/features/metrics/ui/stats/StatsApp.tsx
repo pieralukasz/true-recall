@@ -1,21 +1,21 @@
 import { useSignal } from "@preact/signals";
 import { effect } from "@preact/signals-core";
 import { useCallback, useEffect, useMemo, useState } from "preact/hooks";
-import { StatsCalculatorService } from "../../services/stats/stats-calculator.service";
+import { StatsCalculatorService } from "@features/metrics/services/stats/stats-calculator.service";
 import {
 	dataVersion,
 	settingsVersion,
 	syncVersion,
 	track,
-} from "../../../../shared/services/signals";
+} from "@shared/services/signals";
 import type {
 	CardMaturityBreakdown,
 	FSRSFlashcardItem,
 	StatsTimeRange,
-} from "../../../../shared/types";
-import { CardPreviewModal } from "../../../../shared/ui/modals";
-import { usePlugin } from "../../../../shared/ui/preact";
-import { formatDateForDisplay } from "./utils/chart-helpers";
+} from "@shared/types";
+import { CardPreviewModal } from "@shared/ui/modals";
+import { usePlugin } from "@shared/ui/preact";
+import { formatDateForDisplay } from "@features/metrics/ui/stats/utils/chart-helpers";
 import {
 	NLQueryPanel,
 	TodaySection,
@@ -25,7 +25,7 @@ import {
 	RetentionChart,
 	CardCountsChart,
 	CalendarHeatmap,
-} from "./components";
+} from "@features/metrics/ui/stats/components";
 
 export function StatsApp() {
 	const plugin = usePlugin();

@@ -1,17 +1,17 @@
 import type { App } from "obsidian";
 import { render } from "preact";
 import { useState } from "preact/hooks";
-import type { EasyDaysConfig } from "../../../shared/types";
+import type { EasyDaysConfig } from "@shared/types";
 import {
 	ModalFooter,
 	SECONDARY_BTN,
-} from "../../../shared/ui/components/ModalFooter";
+} from "@shared/ui/components/ModalFooter";
 import {
 	BasePromiseModal,
 	type CancellableResult,
-} from "../../../shared/ui/modals/BasePromiseModal";
-import { DayOfWeekSelector } from "./easy-days/DayOfWeekSelector";
-import { SpecificDatesList } from "./easy-days/SpecificDatesList";
+} from "@shared/ui/modals/BasePromiseModal";
+import { DayOfWeekSelector } from "@features/metrics/modals/easy-days/DayOfWeekSelector";
+import { SpecificDatesList } from "@features/metrics/modals/easy-days/SpecificDatesList";
 
 export interface EasyDaysResult extends CancellableResult {
 	easyDays?: EasyDaysConfig;

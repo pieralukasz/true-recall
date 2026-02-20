@@ -1,25 +1,25 @@
-import { type Grade, Rating, State } from "ts-fsrs";
+import type { DayBoundaryService } from "@features/core/services/day-boundary.service";
+import type { FSRSService } from "@features/core/services/fsrs.service";
+import type { FlashcardManager } from "@features/study/services/flashcard/flashcard.service";
 import {
 	LEARN_AHEAD_LIMIT_MINUTES,
 	RANDOM_QUEUE_INSERT_MAX_POS,
 	WEAK_CARD_STABILITY_THRESHOLD,
-} from "../../../shared/constants";
+} from "@shared/constants";
+import { notifyCardChange } from "@shared/services/signals";
 import type {
 	DailyStats,
 	FSRSFlashcardItem,
 	ReviewResult,
 	ReviewSessionStats,
-} from "../../../shared/types";
+} from "@shared/types";
 import type {
 	NewCardOrder,
 	NewReviewMix,
 	ReviewOrder,
-} from "../../../shared/types/settings.types";
-import { getTodayBoundary, stripWikiLinkSyntax } from "../../../shared/utils";
-import type { DayBoundaryService } from "../../../features/core/services/day-boundary.service";
-import type { FSRSService } from "../../../features/core/services/fsrs.service";
-import { notifyCardChange } from "../../../shared/services/signals";
-import type { FlashcardManager } from "./flashcard/flashcard.service";
+} from "@shared/types/settings.types";
+import { getTodayBoundary, stripWikiLinkSyntax } from "@shared/utils";
+import { type Grade, Rating, State } from "ts-fsrs";
 
 export interface QueueBuildOptions {
 	newCardsLimit: number;
@@ -545,7 +545,7 @@ export class ReviewService {
 		rating: Grade,
 		fsrsService: FSRSService,
 		responseTime: number,
-		presetSettings?: import("../../../shared/types/settings.types").FSRSSettings,
+		presetSettings?: import("@shared/types/settings.types").FSRSSettings,
 	): {
 		updatedCard: FSRSFlashcardItem;
 		result: ReviewResult;
@@ -682,7 +682,7 @@ export class ReviewService {
 		allCards: FSRSFlashcardItem[],
 		todayResults: ReviewResult[],
 		settings: { newCardsPerDay: number; reviewsPerDay: number },
-		dayBoundaryService?: import("../../core/services/day-boundary.service").DayBoundaryService,
+		dayBoundaryService?: import("@features/core/services/day-boundary.service").DayBoundaryService,
 	): DailyStats {
 		const now = new Date();
 		const todayStart = new Date(now);

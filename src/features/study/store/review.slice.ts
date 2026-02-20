@@ -1,11 +1,11 @@
 import { type Grade, Rating, State } from "ts-fsrs";
-import { LEARN_AHEAD_LIMIT_MINUTES } from "../../../shared/constants";
+import { LEARN_AHEAD_LIMIT_MINUTES } from "@shared/constants";
 import type {
 	FSRSFlashcardItem,
 	ReviewResult,
 	ReviewSessionStats,
 	SchedulingPreview,
-} from "../../../shared/types";
+} from "@shared/types";
 import type {
 	AppState,
 	AppStoreDeps,
@@ -14,7 +14,7 @@ import type {
 	ReviewSliceActions,
 	ReviewSliceState,
 	SessionPhase,
-} from "../../../shared/store/types";
+} from "@shared/store/types";
 
 type ReviewSlice = ReviewSliceState & ReviewSliceActions;
 

@@ -1,11 +1,11 @@
 import type { App } from "obsidian";
 import { render } from "preact";
 import { useCallback, useState } from "preact/hooks";
-import type { DeviceDatabaseInfo } from "../services/device.index";
-import { BasePromiseModal, type CancellableResult } from "../../../shared/ui/modals/BasePromiseModal";
-import { ModalFooter } from "../../../shared/ui/components/ModalFooter";
-import { RadioOption } from "./device-selection/RadioOption";
-import { DatabaseItem } from "./device-selection/DatabaseItem";
+import type { DeviceDatabaseInfo } from "@features/integration/services/device.index";
+import { BasePromiseModal, type CancellableResult } from "@shared/ui/modals/BasePromiseModal";
+import { ModalFooter } from "@shared/ui/components/ModalFooter";
+import { RadioOption } from "@features/integration/modals/device-selection/RadioOption";
+import { DatabaseItem } from "@features/integration/modals/device-selection/DatabaseItem";
 
 export interface DeviceSelectionResult extends CancellableResult {
 	action: "fresh" | "import";

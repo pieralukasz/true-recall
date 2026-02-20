@@ -8,37 +8,37 @@ import {
 } from "obsidian";
 import { h } from "preact";
 import { type Grade, Rating, State } from "ts-fsrs";
-import { VIEW_TYPE_REVIEW } from "../../../../shared/constants";
+import { VIEW_TYPE_REVIEW } from "@shared/constants";
 import type TrueRecallPlugin from "../../../../main";
-import type { SessionPersistenceService } from "../../../core/persistence/session-persistence.service";
-import { FSRSService } from "../../../core/services/fsrs.service";
-import { notify } from "../../../../shared/services/notification.service";
-import type { FlashcardManager } from "../../services/flashcard/flashcard.service";
-import { ReviewService } from "../../services/review.service";
+import type { SessionPersistenceService } from "@features/core/persistence/session-persistence.service";
+import { FSRSService } from "@features/core/services/fsrs.service";
+import { notify } from "@shared/services/notification.service";
+import type { FlashcardManager } from "@features/study/services/flashcard/flashcard.service";
+import { ReviewService } from "@features/study/services/review.service";
 import {
 	type CardMutation,
 	lastMutation,
 	notifyCardChange,
-} from "../../../../shared/services/signals";
-import { DuplicateQuestionError } from "../../services/flashcard/card-repository.service";
-import { ImageService } from "../../../integration/services/ImageService";
-import { CopilotIntegrationService } from "../../../integration/services/copilot-integration.service";
-import type { ReviewApi } from "../../../../shared/store";
-import { extractFSRSSettings, type FSRSFlashcardItem } from "../../../../shared/types";
+} from "@shared/services/signals";
+import { DuplicateQuestionError } from "@features/study/services/flashcard/card-repository.service";
+import { ImageService } from "@features/integration/services/ImageService";
+import { CopilotIntegrationService } from "@features/integration/services/copilot-integration.service";
+import type { ReviewApi } from "@shared/store";
+import { extractFSRSSettings, type FSRSFlashcardItem } from "@shared/types";
 import {
 	BR_REGEX,
 	buildProjectGraph,
 	getDescendantProjects,
-} from "../../../../shared/utils";
-import { mountPreact } from "../../../../shared/ui/preact";
-import { CardActionsHandler, KeyboardHandler } from "./handlers";
+} from "@shared/utils";
+import { mountPreact } from "@shared/ui/preact";
+import { CardActionsHandler, KeyboardHandler } from "@features/study/ui/review/handlers";
 import {
 	buildSourceUidToProjectsMap,
 	filterActiveCards,
 	getEmptyQueueMessage,
-} from "./helpers";
-import { ReviewApp, ReviewEmptyState } from "./ReviewApp";
-import type { ReviewViewState } from "./review.types";
+} from "@features/study/ui/review/helpers";
+import { ReviewApp, ReviewEmptyState } from "@features/study/ui/review/ReviewApp";
+import type { ReviewViewState } from "@features/study/ui/review/review.types";
 
 export class ReviewView extends ItemView {
 	private plugin: TrueRecallPlugin;
@@ -66,7 +66,7 @@ export class ReviewView extends ItemView {
 	private recentlyFailed?: boolean;
 	private cardLimit?: number;
 	private studyAheadDays?: number;
-	private customReviewOrder?: import("../../../../shared/types/settings.types").ReviewOrder;
+	private customReviewOrder?: import("@shared/types/settings.types").ReviewOrder;
 	private crammingMode?: boolean;
 	private crammedCardIds = new Set<string>();
 
@@ -824,7 +824,7 @@ export class ReviewView extends ItemView {
 	}
 
 	private async handleUndoAnswerFromService(
-		payload: import("../../../../shared/services/undo.types").AnswerUndoPayload,
+		payload: import("@shared/services/undo.types").AnswerUndoPayload,
 		writeCancelled: boolean,
 	): Promise<void> {
 		try {

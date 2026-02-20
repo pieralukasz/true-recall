@@ -1,7 +1,7 @@
 import type { TFile } from "obsidian";
 import { useMemo, useState } from "preact/hooks";
-import { SearchInput } from "./SearchInput";
-import { NoteListItem } from "./NoteListItem";
+import { SearchInput } from "@shared/ui/components/SearchInput";
+import { NoteListItem } from "@shared/ui/components/NoteListItem";
 
 export interface NotePickerProps {
 	notes: TFile[];

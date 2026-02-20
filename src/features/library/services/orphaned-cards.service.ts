@@ -6,9 +6,9 @@
  * 1. Don't have a source_uid (no_source_uid)
  * 2. Have a source_uid that doesn't match any existing file (missing_source_file)
  */
-import type { FSRSCardData, FSRSFlashcardItem } from "../../../shared/types";
-import type { FrontmatterIndexService } from "../../core/services/frontmatter-index.service";
-import type { SqliteStoreService } from "../../core/persistence/sqlite/SqliteStoreService";
+import type { FSRSCardData, FSRSFlashcardItem } from "@shared/types";
+import type { FrontmatterIndexService } from "@features/core/services/frontmatter-index.service";
+import type { SqliteStoreService } from "@features/core/persistence/sqlite/SqliteStoreService";
 
 export type OrphanReason = "no_source_uid" | "missing_source_file";
 

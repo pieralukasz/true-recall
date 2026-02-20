@@ -4,7 +4,7 @@ import {
 	setIcon,
 } from "obsidian";
 import { useEffect, useRef } from "preact/hooks";
-import { useApp } from "./ObsidianContext";
+import { useApp } from "@shared/ui/preact/ObsidianContext";
 
 export function useMarkdown(
 	markdown: string,

@@ -1,10 +1,10 @@
-import type { RetentionPolicy } from "../../../../shared/types/settings.types";
+import type { RetentionPolicy } from "@shared/types/settings.types";
 import {
 	InfoBlock,
 	SettingRow,
 	SliderInput,
-} from "../../../../shared/ui/components";
-import { useSettings } from "../../hooks/useSettings";
+} from "@shared/ui/components";
+import { useSettings } from "@features/settings/hooks/useSettings";
 
 interface RetentionPolicySliderProps {
 	name: string;

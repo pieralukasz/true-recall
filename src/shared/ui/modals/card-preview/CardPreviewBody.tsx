@@ -1,5 +1,5 @@
 import { useCallback, useState } from "preact/hooks";
-import type { CardMaturityBreakdown, FSRSFlashcardItem } from "../../../types";
+import type { CardMaturityBreakdown, FSRSFlashcardItem } from "@shared/types";
 
 interface CardItemProps {
 	card: FSRSFlashcardItem;
