@@ -18,16 +18,6 @@ export {
 	type CardPreviewModalOptions,
 } from "@shared/ui/modals/CardPreviewModal";
 export {
-	FlashcardEditorModal,
-	type FlashcardEditorModalOptions,
-	type FlashcardEditorResult,
-	KeyboardShortcutsModal,
-} from "@shared/ui/modals/FlashcardEditorModal";
-export {
-	MediaPickerModal,
-	type MediaPickerResult,
-} from "@shared/ui/modals/MediaPickerModal";
-export {
 	MoveCardModal,
 	type MoveCardModalOptions,
 	type MoveCardResult,
