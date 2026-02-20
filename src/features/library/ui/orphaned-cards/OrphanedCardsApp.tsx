@@ -1,34 +1,11 @@
 import type { ReadonlySignal } from "@preact/signals";
-import { effect } from "@preact/signals-core";
 import { normalizePath, type TFile } from "obsidian";
-import { useCallback, useEffect, useMemo, useState } from "preact/hooks";
-import { track } from "../../../../shared/services/signals";
-import type { OrphanedCardGroup } from "../../services/orphaned-cards.service";
+import { useCallback } from "preact/hooks";
+import { ActionButton, Panel } from "../../../../shared/ui/components";
 import { useApp, usePlugin } from "../../../../shared/ui/preact";
-import { ActionButton, Panel, SearchInput } from "../../../../shared/ui/components";
-
-function useOrphanedCards() {
-	const plugin = usePlugin();
-
-	const load = useCallback((): OrphanedCardGroup[] => {
-		if (
-			!plugin.orphanedCardsService ||
-			!plugin.cardStore ||
-			!plugin.frontmatterIndex
-		) {
-			return [];
-		}
-		const orphans = plugin.orphanedCardsService.getOrphanedCardsExtended(
-			plugin.cardStore,
-			plugin.frontmatterIndex,
-		);
-		return plugin.orphanedCardsService.groupOrphanedCards(orphans);
-	}, [plugin]);
-
-	return load;
-}
-
-// ── Main App ──────────────────────────────────────────────
+import type { OrphanedCardGroup } from "../../services/orphaned-cards.service";
+import { GroupRow, MoveSection, OrphanedEmptyState } from "./components";
+import { useOrphanedData } from "./hooks/useOrphanedData";
 
 interface OrphanedCardsAppProps {
 	refreshSignal?: ReadonlySignal<number>;
@@ -37,32 +14,15 @@ interface OrphanedCardsAppProps {
 export function OrphanedCardsApp({ refreshSignal }: OrphanedCardsAppProps) {
 	const plugin = usePlugin();
 	const app = useApp();
-	const loadGroups = useOrphanedCards();
-
-	const [groups, setGroups] = useState<OrphanedCardGroup[]>(() => loadGroups());
-	const [moveTarget, setMoveTarget] = useState<OrphanedCardGroup | null>(null);
-	const [searchQuery, setSearchQuery] = useState("");
-
-	const totalCount = useMemo(
-		() => groups.reduce((sum, g) => sum + g.cards.length, 0),
-		[groups],
-	);
-
-	const refresh = useCallback(() => {
-		setGroups(loadGroups());
-		setMoveTarget(null);
-		setSearchQuery("");
-	}, [loadGroups]);
-
-	// External refresh trigger (e.g. native header action button)
-	useEffect(() => {
-		if (!refreshSignal) return;
-		const dispose = effect(() => {
-			track(refreshSignal);
-			refresh();
-		});
-		return dispose;
-	}, [refreshSignal, refresh]);
+	const {
+		groups,
+		totalCount,
+		moveTarget,
+		searchQuery,
+		setMoveTarget,
+		setSearchQuery,
+		refresh,
+	} = useOrphanedData(refreshSignal);
 
 	const handleDeleteAll = useCallback(() => {
 		// eslint-disable-next-line no-alert -- destructive operation requires explicit user confirmation
@@ -226,213 +186,5 @@ ${cardList}${moreText}
 				)}
 			</div>
 		</Panel>
-	);
-}
-
-// ── Empty State ───────────────────────────────────────────
-
-function OrphanedEmptyState() {
-	return (
-		<div class="ep:flex ep:flex-col ep:items-center ep:justify-center ep:py-12">
-			<div class="ep:text-4xl ep:mb-4">✨</div>
-			<div class="ep:text-obs-normal ep:text-ui-small ep:font-medium ep:mb-2">
-				No orphaned cards!
-			</div>
-			<div class="ep:text-obs-muted ep:text-ui-smaller">
-				All your flashcards are properly linked to source notes.
-			</div>
-		</div>
-	);
-}
-
-// ── Group Row ─────────────────────────────────────────────
-
-interface GroupRowProps {
-	group: OrphanedCardGroup;
-	onDelete: (group: OrphanedCardGroup) => void;
-	onCreateNote: (group: OrphanedCardGroup) => void;
-	onMove: (group: OrphanedCardGroup) => void;
-}
-
-function GroupRow({ group, onDelete, onCreateNote, onMove }: GroupRowProps) {
-	const [expanded, setExpanded] = useState(false);
-	const icon = group.reason === "no_source_uid" ? "❓" : "🗑️";
-	const maxPreview = 5;
-
-	return (
-		<div class="ep:border-b ep:border-obs-border ep:last:border-b-0">
-			{/* Group header */}
-			<div class="ep:flex ep:items-center ep:justify-between ep:p-3 ep:bg-obs-secondary">
-				<button
-					type="button"
-					class="ep:bg-transparent ep:border-none ep:p-0 ep:font-inherit ep:cursor-pointer ep:text-left ep:flex ep:items-center ep:gap-3 ep:flex-1 ep:hover:opacity-80"
-					onClick={() => setExpanded((v) => !v)}
-				>
-					<span class="ep:text-lg">{icon}</span>
-					<div>
-						<div class="ep:text-ui-small ep:font-medium ep:text-obs-normal">
-							{group.displayName}
-						</div>
-						<div class="ep:text-ui-smaller ep:text-obs-muted">
-							{group.cards.length} card{group.cards.length === 1 ? "" : "s"}
-						</div>
-					</div>
-				</button>
-
-				<div class="ep:flex ep:items-center ep:gap-2">
-					<button
-						type="button"
-						class="ep:py-1 ep:px-2 ep:rounded-md ep:bg-obs-interactive ep:text-obs-on-accent ep:text-ui-smaller ep:cursor-pointer ep:hover:opacity-80 ep:border-none"
-						onClick={() => onMove(group)}
-					>
-						Move
-					</button>
-					<button
-						type="button"
-						class="ep:py-1 ep:px-2 ep:rounded-md ep:bg-obs-secondary ep:text-obs-normal ep:text-ui-smaller ep:cursor-pointer ep:hover:bg-obs-modifier-hover ep:border ep:border-obs-border"
-						onClick={() => onCreateNote(group)}
-					>
-						Create note
-					</button>
-					<button
-						type="button"
-						class="ep:py-1 ep:px-2 ep:rounded-md ep:bg-obs-red ep:text-obs-on-accent ep:text-ui-smaller ep:cursor-pointer ep:hover:opacity-90 ep:border-none"
-						onClick={() => onDelete(group)}
-					>
-						Delete
-					</button>
-				</div>
-			</div>
-
-			{/* Expandable card preview */}
-			{expanded && (
-				<div class="ep:pl-8 ep:pr-3 ep:pb-2">
-					{group.cards.slice(0, maxPreview).map((card) => (
-						<div
-							key={card.id}
-							class="ep:py-2 ep:border-b ep:border-obs-border ep:last:border-b-0"
-						>
-							<div class="ep:text-ui-smaller ep:text-obs-normal">
-								Q:{" "}
-								{card.question.length > 100
-									? `${card.question.slice(0, 100)}...`
-									: card.question}
-							</div>
-						</div>
-					))}
-					{group.cards.length > maxPreview && (
-						<div class="ep:text-ui-smaller ep:text-obs-muted ep:pt-2">
-							... and {group.cards.length - maxPreview} more
-						</div>
-					)}
-				</div>
-			)}
-		</div>
-	);
-}
-
-// ── Move Section ──────────────────────────────────────────
-
-interface MoveSectionProps {
-	group: OrphanedCardGroup;
-	searchQuery: string;
-	onSearchChange: (query: string) => void;
-	onSelectNote: (note: TFile) => void;
-	onCancel: () => void;
-}
-
-function MoveSection({
-	group,
-	searchQuery,
-	onSearchChange,
-	onSelectNote,
-	onCancel,
-}: MoveSectionProps) {
-	const app = useApp();
-
-	const allNotes = useMemo(() => app.vault.getMarkdownFiles(), [app]);
-
-	const filteredNotes = useMemo(() => {
-		if (!searchQuery) {
-			return allNotes.sort((a, b) => b.stat.mtime - a.stat.mtime);
-		}
-		const q = searchQuery.toLowerCase();
-		return allNotes
-			.filter(
-				(note) =>
-					note.basename.toLowerCase().includes(q) ||
-					note.path.toLowerCase().includes(q),
-			)
-			.sort((a, b) => a.basename.localeCompare(b.basename));
-	}, [allNotes, searchQuery]);
-
-	const displayNotes = filteredNotes.slice(0, 20);
-
-	return (
-		<div class="ep:mt-4 ep:pt-4 ep:border-t ep:border-obs-border">
-			<h4 class="ep:text-ui-small ep:text-obs-normal ep:m-0 ep:mb-3">
-				Move {group.cards.length} cards to:
-			</h4>
-
-			<SearchInput
-				value={searchQuery}
-				placeholder="Search notes..."
-				onChange={onSearchChange}
-				class="ep:mb-3"
-			/>
-
-			<div class="ep:max-h-[200px] ep:overflow-y-auto ep:border ep:border-obs-border ep:rounded-lg">
-				{displayNotes.length === 0 ? (
-					<div class="ep:p-4 ep:text-center ep:text-obs-muted ep:text-ui-smaller">
-						No notes found
-					</div>
-				) : (
-					displayNotes.map((note) => (
-						<NoteRow
-							key={note.path}
-							note={note}
-							onSelect={() => onSelectNote(note)}
-						/>
-					))
-				)}
-			</div>
-
-			<button
-				type="button"
-				class="ep:mt-3 ep:py-2 ep:px-4 ep:rounded-md ep:bg-obs-secondary ep:text-obs-normal ep:border ep:border-obs-border ep:cursor-pointer ep:hover:bg-obs-modifier-hover"
-				onClick={onCancel}
-			>
-				Cancel
-			</button>
-		</div>
-	);
-}
-
-// ── Note Row ──────────────────────────────────────────────
-
-interface NoteRowProps {
-	note: TFile;
-	onSelect: () => void;
-}
-
-function NoteRow({ note, onSelect }: NoteRowProps) {
-	return (
-		<button
-			type="button"
-			class="ep:bg-transparent ep:border-none ep:p-0 ep:font-inherit ep:cursor-pointer ep:text-left ep:w-full ep:flex ep:items-center ep:gap-3 ep:p-3 ep:border-b ep:border-obs-border ep:last:border-b-0 ep:hover:bg-obs-modifier-hover"
-			onClick={onSelect}
-		>
-			<span class="ep:text-lg">📄</span>
-			<div>
-				<div class="ep:text-ui-small ep:font-medium ep:text-obs-normal">
-					{note.basename}
-				</div>
-				{note.parent?.path && note.parent.path !== "/" && (
-					<div class="ep:text-ui-smaller ep:text-obs-muted">
-						{note.parent.path}
-					</div>
-				)}
-			</div>
-		</button>
 	);
 }
