@@ -27,7 +27,6 @@ export interface ScanResult {
 	totalCards: number;
 	newCardsProcessed: number;
 	filesProcessed: number;
-	orphanedRemoved: number;
 }
 
 export interface FlashcardInfo {
@@ -105,7 +104,6 @@ export class FlashcardManager {
 			totalCards: cards.length,
 			newCardsProcessed: 0,
 			filesProcessed: 0,
-			orphanedRemoved: 0,
 		};
 	}
 
@@ -296,13 +294,6 @@ export class FlashcardManager {
 			return [];
 		}
 		return this.cardQueryService.getBySourceUid(sourceUid);
-	}
-
-	getOrphanedCards(): FSRSFlashcardItem[] {
-		if (!this.cardQueryService) {
-			return [];
-		}
-		return this.cardQueryService.getOrphaned();
 	}
 
 	async assignCardToSourceNote(
