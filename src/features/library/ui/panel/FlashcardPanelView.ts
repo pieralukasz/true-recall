@@ -3,7 +3,7 @@ import type { FlashcardManager } from "@features/study/services/flashcard/flashc
 import {
 	FlashcardPanelApp,
 	type PanelAppActions,
-} from "@features/study/ui/panel/FlashcardPanelApp";
+} from "@features/library/ui/panel/FlashcardPanelApp";
 import { effect } from "@preact/signals";
 import { VIEW_TYPE_FLASHCARD_PANEL } from "@shared/constants";
 import { notify } from "@shared/services/notification.service";

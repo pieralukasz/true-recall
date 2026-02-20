@@ -1,6 +1,6 @@
 import type { NoteStatusInfo } from "@features/core/cache/note-status-cache.service";
-import { DonutChart } from "@features/library/ui/editor/components/DonutChart";
-import { LinkTextCount } from "@features/library/ui/editor/components/LinkTextCount";
+import { DonutChart } from "@features/study/ui/editor/components/DonutChart";
+import { LinkTextCount } from "@features/study/ui/editor/components/LinkTextCount";
 import { h, render } from "preact";
 
 export interface LinkStatusOptions {

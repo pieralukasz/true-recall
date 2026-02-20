@@ -2,7 +2,7 @@ import type { ImageService } from "@features/integration/services/ImageService";
 import {
 	insertAtTextareaCursor,
 	toggleTextareaWrap,
-} from "@features/library/ui/editor/edit-toolbar.utils";
+} from "@features/study/ui/editor/edit-toolbar.utils";
 import type { FlashcardParserService } from "@features/study/services/flashcard/flashcard-parser.service";
 import { FLASHCARD_CONFIG } from "@shared/constants";
 import { notify } from "@shared/services/notification.service";

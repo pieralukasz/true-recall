@@ -29,7 +29,7 @@ import { CardBrowserView } from "@features/library/ui/browser";
 import {
 	createLinkStatusPostProcessor,
 	createLinkStatusViewPlugin,
-} from "@features/library/ui/editor";
+} from "@features/study/ui/editor";
 import { NoteHubView } from "@features/library/ui/note-hub";
 import { FSRSHelperService } from "@features/metrics/services/fsrs-tools";
 import { StatsService } from "@features/metrics/services/stats/stats.service";
@@ -48,7 +48,7 @@ import { DeletionHandlerService } from "@features/study/services/flashcard/delet
 import { FlashcardParserService } from "@features/study/services/flashcard/flashcard-parser.service";
 import { FlashcardManager } from "@features/study/services/flashcard/flashcard.service";
 import { UidGuardianService } from "@features/study/services/flashcard/uid-guardian.service";
-import { FlashcardPanelView } from "@features/study/ui/panel/FlashcardPanelView";
+import { FlashcardPanelView } from "@features/library/ui/panel/FlashcardPanelView";
 import { ReviewView } from "@features/study/ui/review/ReviewView";
 import {
 	VIEW_TYPE_CARD_BROWSER,
@@ -68,7 +68,7 @@ import {
 	SetPresetModal,
 	SimpleFlashcardEditorModal,
 } from "@shared/ui/modals";
-import { normalizePath, Plugin, TFile } from "obsidian";
+import { normalizePath, Plugin, type TFile } from "obsidian";
 import { registerCommands } from "./plugin/PluginCommands";
 import {
 	registerDeletionHandler,
@@ -800,11 +800,10 @@ export default class TrueRecallPlugin extends Plugin {
 						notify().warning("No flashcards found in AI response");
 						return;
 					}
-					const batchResult =
-						await this.flashcardManager.saveFlashcardsToSql(
-							file,
-							result.flashcards,
-						);
+					const batchResult = await this.flashcardManager.saveFlashcardsToSql(
+						file,
+						result.flashcards,
+					);
 					const createdCount = batchResult.created.length;
 					const dupCount = batchResult.duplicates.length;
 					if (dupCount > 0) {
@@ -812,13 +811,10 @@ export default class TrueRecallPlugin extends Plugin {
 							`Created ${createdCount} flashcard(s), ${dupCount} duplicate(s) skipped`,
 						);
 					} else {
-						notify().info(
-							`Created ${createdCount} flashcard(s)`,
-						);
+						notify().info(`Created ${createdCount} flashcard(s)`);
 					}
 				} catch (error) {
-					const msg =
-						error instanceof Error ? error.message : String(error);
+					const msg = error instanceof Error ? error.message : String(error);
 					notify().error(`Flashcard generation failed: ${msg}`);
 				}
 			},
@@ -830,11 +826,7 @@ export default class TrueRecallPlugin extends Plugin {
 					currentFilePath: file?.path ?? "",
 				});
 				void modal.openAndWait().then((result) => {
-					if (
-						!result.cancelled &&
-						result.flashcards.length > 0 &&
-						file
-					) {
+					if (!result.cancelled && result.flashcards.length > 0 && file) {
 						void this.flashcardManager
 							.saveFlashcardsToSql(file, result.flashcards)
 							.then((batchResult) => {
@@ -864,8 +856,7 @@ export default class TrueRecallPlugin extends Plugin {
 					]);
 					notify().info("Quick-added 1 flashcard");
 				} catch (error) {
-					const msg =
-						error instanceof Error ? error.message : String(error);
+					const msg = error instanceof Error ? error.message : String(error);
 					notify().error(`Quick add failed: ${msg}`);
 				}
 			},

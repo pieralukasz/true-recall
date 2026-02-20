@@ -17,7 +17,7 @@ import {
 	createLinkStatusElement,
 	createLinkTextCountElement,
 	infoEqual,
-} from "@features/library/ui/editor/LinkStatusWidget";
+} from "@features/study/ui/editor/LinkStatusWidget";
 import type { App, TFile } from "obsidian";
 
 class LinkStatusWidget extends WidgetType {
