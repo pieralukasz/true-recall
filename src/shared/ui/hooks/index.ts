@@ -2,7 +2,6 @@ export {
 	useAutoRefresh,
 	useAutoRefreshAll,
 } from "@shared/ui/hooks/useAutoRefresh";
-export { useClipboardPaste } from "@shared/ui/hooks/useClipboardPaste";
 export { useDebounce } from "@shared/ui/hooks/useDebounce";
 export {
 	type LongPressHandlers,
