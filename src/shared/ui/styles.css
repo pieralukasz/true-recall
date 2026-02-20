@@ -8,6 +8,7 @@
 @import "../../features/metrics/ui/stats/stats.styles.css";
 @import "../../features/study/ui/panel/panel.styles.css";
 @import "../../features/metrics/ui/simulator/styles.css";
+@import "../../features/ai/ui/editor/selection-toolbar.css";
 
 /*
  * Obsidian Theme Variables - Runtime Inheritance
