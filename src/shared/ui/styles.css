@@ -34,6 +34,14 @@
 	--ep-color-obs-accent: var(--text-accent);
 	--ep-color-obs-interactive: var(--interactive-accent);
 	--ep-color-obs-interactive-hover: var(--interactive-accent-hover);
+	--ep-color-obs-red: var(--color-red);
+	--ep-color-obs-orange: var(--color-orange);
+	--ep-color-obs-yellow: var(--color-yellow);
+	--ep-color-obs-green: var(--color-green);
+	--ep-color-obs-cyan: var(--color-cyan);
+	--ep-color-obs-blue: var(--color-blue);
+	--ep-color-obs-purple: var(--color-purple);
+	--ep-color-obs-pink: var(--color-pink);
 }
 
 /*
