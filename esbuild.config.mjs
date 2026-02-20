@@ -31,7 +31,7 @@ if (vaultPluginDir && !existsSync(vaultPluginDir)) {
 function buildCSS() {
 	try {
 		const minifyFlag = prod ? ' --minify' : '';
-		execSync(`npx @tailwindcss/cli -i src/shared/ui/styles.css -o styles.css${minifyFlag}`, { stdio: 'pipe' });
+		execSync(`bunx @tailwindcss/cli -i src/shared/ui/styles.css -o styles.css${minifyFlag}`, { stdio: 'pipe' });
 		console.log("✓ CSS built with Tailwind CLI" + (prod ? " (minified)" : ""));
 	} catch (err) {
 		console.error("CSS build failed:", err.message);
@@ -132,7 +132,7 @@ if (prod) {
 
 	// Watch CSS separately — esbuild doesn't track non-bundled files
 	const cssWatcher = spawn(
-		"npx",
+		"bunx",
 		["@tailwindcss/cli", "-i", "src/shared/ui/styles.css", "-o", "styles.css", "--watch"],
 		{ stdio: "inherit" }
 	);
