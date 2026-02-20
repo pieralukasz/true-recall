@@ -72,7 +72,7 @@ export function SimulatorControls({
 			<textarea
 				ref={textareaRef}
 				class={[
-					"ep:w-full ep:h-[150px] ep:mb-4",
+					"ep:w-full ep:h-37.5 ep:mb-4",
 					"ep:bg-obs-primary ep:text-obs-normal",
 					"ep:border ep:border-obs-border ep:rounded-lg",
 					"ep:p-2 ep:text-ui-small ep:font-mono",

@@ -378,11 +378,17 @@
   .ep\:h-32 {
     height: calc(var(--ep-spacing) * 32);
   }
+  .ep\:h-37\.5 {
+    height: calc(var(--ep-spacing) * 37.5);
+  }
   .ep\:h-45 {
     height: calc(var(--ep-spacing) * 45);
   }
   .ep\:h-52 {
     height: calc(var(--ep-spacing) * 52);
+  }
+  .ep\:h-87\.5 {
+    height: calc(var(--ep-spacing) * 87.5);
   }
   .ep\:h-\[18px\] {
     height: 18px;
@@ -399,14 +405,8 @@
   .ep\:h-\[30px\] {
     height: 30px;
   }
-  .ep\:h-\[150px\] {
-    height: 150px;
-  }
   .ep\:h-\[220px\] {
     height: 220px;
-  }
-  .ep\:h-\[350px\] {
-    height: 350px;
   }
   .ep\:h-\[calc\(1\.6em-8px\)\] {
     height: calc(1.6em - 8px);
