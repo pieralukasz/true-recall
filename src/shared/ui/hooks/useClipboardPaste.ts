@@ -16,8 +16,8 @@ export function useClipboardPaste(
 			const items = e.clipboardData?.items;
 			if (!items) return;
 			for (let i = 0; i < items.length; i++) {
-				const item = items[i]!;
-				if (item.type.startsWith(mimePrefix)) {
+				const item = items[i];
+				if (item?.type.startsWith(mimePrefix)) {
 					e.preventDefault();
 					const blob = item.getAsFile();
 					if (blob) onBlobRef(blob);

@@ -74,7 +74,6 @@ function AnkiExportBody({
 export class AnkiExportModal extends BaseModal {
 	private store: SqliteStoreService;
 	private fsrsService: FSRSService;
-	private frontmatterIndex: FrontmatterIndexService;
 	private allProjects: string[] = [];
 	private allNotes: NoteEntry[] = [];
 	private unmountBody?: () => void;
@@ -88,7 +87,6 @@ export class AnkiExportModal extends BaseModal {
 		super(app, { title: "Export to Anki", width: "520px" });
 		this.store = store;
 		this.fsrsService = fsrsService;
-		this.frontmatterIndex = frontmatterIndex;
 		this.allProjects = resolveProjects(frontmatterIndex);
 		this.allNotes = resolveNotes(app);
 	}
