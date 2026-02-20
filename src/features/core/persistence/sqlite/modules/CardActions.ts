@@ -305,13 +305,6 @@ export class CardActions {
 		);
 	}
 
-	getOrphanedCards(): FSRSCardData[] {
-		const rows = this.db.query<CardRow>(
-			`SELECT ${CARD_SELECT_COLUMNS} FROM cards WHERE deleted_at IS NULL AND source_uid IS NULL AND question IS NOT NULL`,
-		);
-		return rows.map(mapRowToCard);
-	}
-
 	updateCardSourceUid(cardId: string, sourceUid: string): void {
 		this.db.run(
 			`

@@ -60,27 +60,6 @@ export class CardQueryService {
 			}));
 	}
 
-	getOrphaned(): FSRSFlashcardItem[] {
-		const cards = this.store.getOrphanedCards();
-
-		return cards
-			.filter((card): card is FSRSCardData & { question: string } =>
-				Boolean(card.question),
-			)
-			.map((card) => ({
-				id: card.id,
-				question: card.question,
-				answer: card.answer ?? "",
-				fsrs: card,
-				projects: card.projects || [],
-				sourceUid: undefined,
-				cardType: card.cardType,
-				clozeTemplate: card.clozeTemplate,
-				clozeIndex: card.clozeIndex,
-				reverseOf: card.reverseOf,
-			}));
-	}
-
 	getById(cardId: string): FSRSCardData | undefined {
 		return this.store.get(cardId);
 	}
