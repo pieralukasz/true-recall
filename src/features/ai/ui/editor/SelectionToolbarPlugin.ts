@@ -22,8 +22,10 @@ export function createSelectionToolbarExtension(
 			private container: HTMLDivElement | null = null;
 			private currentText = "";
 
+			private rafId = 0;
+
 			constructor(private view: EditorView) {
-				this.checkSelection();
+				this.scheduleCheck();
 			}
 
 			update(update: ViewUpdate): void {
@@ -32,11 +34,19 @@ export function createSelectionToolbarExtension(
 					update.docChanged ||
 					update.focusChanged
 				) {
-					this.checkSelection();
+					this.scheduleCheck();
 				}
 			}
 
+			private scheduleCheck(): void {
+				cancelAnimationFrame(this.rafId);
+				this.rafId = requestAnimationFrame(() =>
+					this.checkSelection(),
+				);
+			}
+
 			destroy(): void {
+				cancelAnimationFrame(this.rafId);
 				this.removeToolbar();
 			}
 
