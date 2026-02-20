@@ -1,5 +1,5 @@
-import type { App, TFile } from "obsidian";
 import type { ImageService } from "@features/integration/services/ImageService";
+import type { App, TFile } from "obsidian";
 
 interface ImageGridProps {
 	app: App;

@@ -1,19 +1,22 @@
-import { Chart } from "chart.js";
-import { useCallback, useEffect, useMemo, useState } from "preact/hooks";
-import { StatsCalculatorService } from "@features/metrics/services/stats/stats-calculator.service";
+import type { StatsCalculatorService } from "@features/metrics/services/stats/stats-calculator.service";
+import { ChartCard } from "@features/metrics/ui/stats/components/ChartCard";
+import { SummaryList } from "@features/metrics/ui/stats/components/SummaryList";
+import {
+	formatDateForDisplay,
+	formatDateLabel,
+	getMaxTicksForRange,
+} from "@features/metrics/ui/stats/utils/chart-helpers";
 import type {
 	FSRSFlashcardItem,
 	FutureDueEntry,
 	StatsTimeRange,
 } from "@shared/types";
-import { getThemeColor, getThemeColorWithAlpha } from "@shared/ui/utils/theme-colors";
 import {
-	formatDateLabel,
-	formatDateForDisplay,
-	getMaxTicksForRange,
-} from "@features/metrics/ui/stats/utils/chart-helpers";
-import { ChartCard } from "@features/metrics/ui/stats/components/ChartCard";
-import { SummaryList } from "@features/metrics/ui/stats/components/SummaryList";
+	getThemeColor,
+	getThemeColorWithAlpha,
+} from "@shared/ui/utils/theme-colors";
+import { Chart } from "chart.js";
+import { useCallback, useEffect, useMemo, useState } from "preact/hooks";
 
 export function FutureDueChart({
 	statsCalculator,

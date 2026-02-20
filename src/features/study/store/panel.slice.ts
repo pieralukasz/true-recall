@@ -1,6 +1,4 @@
-import type { TFile } from "obsidian";
 import type { AppError } from "@shared/errors";
-import type { FlashcardInfo } from "@shared/types";
 import {
 	createSelectionActions,
 	toggleSetItem,
@@ -13,6 +11,8 @@ import type {
 	ProcessingStatus,
 	ViewMode,
 } from "@shared/store/types";
+import type { FlashcardInfo } from "@shared/types";
+import type { TFile } from "obsidian";
 
 type PanelSlice = PanelSliceState & PanelSliceActions;
 

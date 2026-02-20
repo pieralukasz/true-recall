@@ -1,4 +1,3 @@
-import type { ProjectInfo, ProjectNoteInfo } from "@shared/types";
 import {
 	createSelectionActions,
 	toggleSetItem,
@@ -11,6 +10,7 @@ import type {
 	NoteHubSortBy,
 	NoteHubStatusFilter,
 } from "@shared/store/types";
+import type { ProjectInfo, ProjectNoteInfo } from "@shared/types";
 
 type NoteHubSlice = NoteHubSliceState & NoteHubSliceActions;
 

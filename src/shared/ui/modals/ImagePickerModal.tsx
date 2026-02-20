@@ -1,8 +1,8 @@
-import type { App } from "obsidian";
-import { render } from "preact";
 import { ImageService } from "@features/integration/services/ImageService";
 import { BasePromiseModal } from "@shared/ui/modals/BasePromiseModal";
 import { ImagePickerBody } from "@shared/ui/modals/image-picker/ImagePickerBody";
+import type { App } from "obsidian";
+import { render } from "preact";
 
 export interface ImagePickerResult {
 	cancelled: boolean;

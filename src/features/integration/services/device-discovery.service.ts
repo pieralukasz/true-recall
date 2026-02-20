@@ -2,13 +2,14 @@
  * Device Discovery Service
  * Discovers and provides metadata about device-specific databases in the vault.
  */
-import { type App, normalizePath } from "obsidian";
-import initSqlJs, { type Database } from "sql.js";
+
 import {
 	DB_FOLDER,
 	extractDeviceIdFromFilename,
 	LEGACY_DB_FILE,
 } from "@features/core/persistence/sqlite/sqlite.types";
+import { type App, normalizePath } from "obsidian";
+import initSqlJs, { type Database } from "sql.js";
 
 /**
  * Information about a discovered device database.

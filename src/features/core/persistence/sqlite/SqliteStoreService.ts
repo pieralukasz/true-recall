@@ -2,10 +2,11 @@
  * High-performance storage for FSRS card data using sql.js.
  * Uses domain modules: store.cards.*, store.stats.*, store.browser.*
  */
-import { type App, normalizePath } from "obsidian";
-import type { FSRSCardData } from "@shared/types";
-import { NOTIFICATION_DURATION, notify } from "@shared/services/notification.service";
-import { CardActions, StatsActions } from "@features/core/persistence/sqlite/modules";
+
+import {
+	CardActions,
+	StatsActions,
+} from "@features/core/persistence/sqlite/modules";
 import { SqliteDatabase } from "@features/core/persistence/sqlite/SqliteDatabase";
 import { SqliteSchemaManager } from "@features/core/persistence/sqlite/SqliteSchemaManager";
 import {
@@ -13,6 +14,12 @@ import {
 	getDeviceDbFilename,
 	SAVE_DEBOUNCE_MS,
 } from "@features/core/persistence/sqlite/sqlite.types";
+import {
+	NOTIFICATION_DURATION,
+	notify,
+} from "@shared/services/notification.service";
+import type { FSRSCardData } from "@shared/types";
+import { type App, normalizePath } from "obsidian";
 
 export class SqliteStoreService {
 	private app: App;

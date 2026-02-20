@@ -1,5 +1,5 @@
-import type { Grade, State } from "ts-fsrs";
 import type { FSRSFlashcardItem } from "@shared/types";
+import type { Grade, State } from "ts-fsrs";
 
 export interface ReviewViewState extends Record<string, unknown> {
 	projectFilters?: string[];

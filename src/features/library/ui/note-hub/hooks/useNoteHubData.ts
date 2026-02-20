@@ -1,10 +1,10 @@
+import { notify } from "@shared/services/notification.service";
+import type { ProjectNoteInfo } from "@shared/types";
+import { filterActiveCardsOnly } from "@shared/ui/helpers";
+import { useApp, usePlugin } from "@shared/ui/preact";
 import { TFile } from "obsidian";
 import { useCallback } from "preact/hooks";
 import { State } from "ts-fsrs";
-import { notify } from "@shared/services/notification.service";
-import type { ProjectNoteInfo } from "@shared/types";
-import { useApp, usePlugin } from "@shared/ui/preact";
-import { filterActiveCardsOnly } from "@shared/ui/helpers";
 
 export function useLoadData() {
 	const plugin = usePlugin();

@@ -1,12 +1,9 @@
-import { useCallback } from "preact/hooks";
+import { NoteHubNoteRow } from "@features/library/ui/note-hub/components/NoteHubNoteRow";
 import type { SelectionMode } from "@shared/store";
 import type { ProjectInfo } from "@shared/types";
-import {
-	CardCountDisplay,
-	IconButton,
-} from "@shared/ui/components";
+import { CardCountDisplay, IconButton } from "@shared/ui/components";
 import { useIcon } from "@shared/ui/preact/hooks";
-import { NoteHubNoteRow } from "@features/library/ui/note-hub/components/NoteHubNoteRow";
+import { useCallback } from "preact/hooks";
 
 export interface ProjectGroupProps {
 	project: ProjectInfo;

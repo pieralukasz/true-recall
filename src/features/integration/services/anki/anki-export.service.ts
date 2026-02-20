@@ -1,9 +1,9 @@
-import type { App } from "obsidian";
-import type { AnkiExportOptions, FSRSCardData } from "shared/types";
-import { stripWikiLinkSyntax } from "@shared/utils";
-import type { FSRSService } from "@features/core/services/fsrs.service";
 import type { SqliteStoreService } from "@features/core/persistence/sqlite/SqliteStoreService";
+import type { FSRSService } from "@features/core/services/fsrs.service";
 import { ApkgBuilderService } from "@features/integration/services/anki/apkg-builder.service";
+import type { AnkiExportOptions, FSRSCardData } from "@shared/types";
+import { stripWikiLinkSyntax } from "@shared/utils";
+import type { App } from "obsidian";
 
 interface DeckInfo {
 	id: number;

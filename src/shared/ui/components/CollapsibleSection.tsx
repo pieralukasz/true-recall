@@ -1,6 +1,6 @@
+import { useIcon } from "@shared/ui/preact/hooks";
 import type { ComponentChildren } from "preact";
 import { useState } from "preact/hooks";
-import { useIcon } from "@shared/ui/preact/hooks";
 
 export interface CollapsibleSectionProps {
 	title: string;

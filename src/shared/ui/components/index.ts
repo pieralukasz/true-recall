@@ -19,7 +19,10 @@ export {
 	CheckboxListItem,
 	type CheckboxListItemProps,
 } from "@shared/ui/components/CheckboxListItem";
-export { Clickable, type ClickableProps } from "@shared/ui/components/Clickable";
+export {
+	Clickable,
+	type ClickableProps,
+} from "@shared/ui/components/Clickable";
 export {
 	CollapsibleSection,
 	type CollapsibleSectionProps,
@@ -29,11 +32,26 @@ export {
 	EmptyStateMessages,
 	type EmptyStateProps,
 } from "@shared/ui/components/EmptyState";
-export { ErrorBoundary, type ErrorBoundaryProps } from "@shared/ui/components/ErrorBoundary";
-export { FormLabel, type FormLabelProps } from "@shared/ui/components/FormLabel";
-export { IconButton, type IconButtonProps } from "@shared/ui/components/IconButton";
-export { InfoBlock, type InfoBlockProps } from "@shared/ui/components/InfoBlock";
-export { LoadingSpinner, type LoadingSpinnerProps } from "@shared/ui/components/LoadingSpinner";
+export {
+	ErrorBoundary,
+	type ErrorBoundaryProps,
+} from "@shared/ui/components/ErrorBoundary";
+export {
+	FormLabel,
+	type FormLabelProps,
+} from "@shared/ui/components/FormLabel";
+export {
+	IconButton,
+	type IconButtonProps,
+} from "@shared/ui/components/IconButton";
+export {
+	InfoBlock,
+	type InfoBlockProps,
+} from "@shared/ui/components/InfoBlock";
+export {
+	LoadingSpinner,
+	type LoadingSpinnerProps,
+} from "@shared/ui/components/LoadingSpinner";
 export {
 	MarkdownContent,
 	type MarkdownContentProps,
@@ -48,8 +66,14 @@ export {
 	PRIMARY_BTN,
 	SECONDARY_BTN,
 } from "@shared/ui/components/ModalFooter";
-export { NoteListItem, type NoteListItemProps } from "@shared/ui/components/NoteListItem";
-export { NotePicker, type NotePickerProps } from "@shared/ui/components/NotePicker";
+export {
+	NoteListItem,
+	type NoteListItemProps,
+} from "@shared/ui/components/NoteListItem";
+export {
+	NotePicker,
+	type NotePickerProps,
+} from "@shared/ui/components/NotePicker";
 export {
 	OptionCheckbox,
 	type OptionCheckboxProps,
@@ -59,7 +83,10 @@ export {
 	PasteDropZone,
 	type PasteDropZoneProps,
 } from "@shared/ui/components/PasteDropZone";
-export { SearchInput, type SearchInputProps } from "@shared/ui/components/SearchInput";
+export {
+	SearchInput,
+	type SearchInputProps,
+} from "@shared/ui/components/SearchInput";
 export {
 	SectionHeader,
 	type SectionHeaderAction,
@@ -76,12 +103,18 @@ export {
 	type SelectOption,
 	type SelectOptionGroup,
 } from "@shared/ui/components/SelectInput";
-export { SettingRow, type SettingRowProps } from "@shared/ui/components/SettingRow";
-export { SliderInput, type SliderInputProps } from "@shared/ui/components/SliderInput";
+export {
+	SettingRow,
+	type SettingRowProps,
+} from "@shared/ui/components/SettingRow";
+export {
+	SliderInput,
+	type SliderInputProps,
+} from "@shared/ui/components/SliderInput";
 export {
 	StatBadge,
-	StatGrid,
 	type StatBadgeProps,
+	StatGrid,
 	type StatGridProps,
 } from "@shared/ui/components/StatBadge";
 export {
@@ -91,6 +124,15 @@ export {
 	StateBadge,
 	type StateBadgeProps,
 } from "@shared/ui/components/StateBadge";
-export { TextAreaInput, type TextAreaInputProps } from "@shared/ui/components/TextAreaInput";
-export { TextInput, type TextInputProps } from "@shared/ui/components/TextInput";
-export { ToggleInput, type ToggleInputProps } from "@shared/ui/components/ToggleInput";
+export {
+	TextAreaInput,
+	type TextAreaInputProps,
+} from "@shared/ui/components/TextAreaInput";
+export {
+	TextInput,
+	type TextInputProps,
+} from "@shared/ui/components/TextInput";
+export {
+	ToggleInput,
+	type ToggleInputProps,
+} from "@shared/ui/components/ToggleInput";

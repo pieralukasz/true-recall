@@ -1,3 +1,4 @@
+import { usePreset, useSettings } from "@features/settings/hooks/useSettings";
 import type { NewCardOrder, NewReviewMix, ReviewOrder } from "@shared/types";
 import {
 	InfoBlock,
@@ -5,7 +6,6 @@ import {
 	SettingRow,
 	TextInput,
 } from "@shared/ui/components";
-import { usePreset, useSettings } from "@features/settings/hooks/useSettings";
 
 interface SchedulingTabProps {
 	selectedPresetId: string;

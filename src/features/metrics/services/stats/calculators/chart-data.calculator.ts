@@ -1,4 +1,4 @@
-import { State } from "ts-fsrs";
+import type { SqliteStoreService } from "@features/core/persistence/sqlite";
 import type {
 	CardsCreatedEntry,
 	CardsCreatedVsReviewedEntry,
@@ -9,7 +9,7 @@ import type {
 	StatsTimeRange,
 } from "@shared/types";
 import { formatLocalDate } from "@shared/utils";
-import type { SqliteStoreService } from "@features/core/persistence/sqlite";
+import { State } from "ts-fsrs";
 
 export class ChartDataCalculator {
 	constructor(private sqliteStore: SqliteStoreService | null = null) {}

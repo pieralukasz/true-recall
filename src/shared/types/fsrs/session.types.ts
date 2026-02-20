@@ -3,8 +3,8 @@
  * Review session state and results
  */
 
-import type { Grade, State } from "ts-fsrs";
 import type { FSRSFlashcardItem } from "@shared/types/fsrs/card.types";
+import type { Grade, State } from "ts-fsrs";
 
 /**
  * Single review result

@@ -1,7 +1,17 @@
+import { StatsCalculatorService } from "@features/metrics/services/stats/stats-calculator.service";
+import {
+	CalendarHeatmap,
+	CardCountsChart,
+	FutureDueChart,
+	NLQueryPanel,
+	RetentionChart,
+	ReviewsChart,
+	TimeRangeSelector,
+	TodaySection,
+} from "@features/metrics/ui/stats/components";
+import { formatDateForDisplay } from "@features/metrics/ui/stats/utils/chart-helpers";
 import { useSignal } from "@preact/signals";
 import { effect } from "@preact/signals-core";
-import { useCallback, useEffect, useMemo, useState } from "preact/hooks";
-import { StatsCalculatorService } from "@features/metrics/services/stats/stats-calculator.service";
 import {
 	dataVersion,
 	settingsVersion,
@@ -15,17 +25,7 @@ import type {
 } from "@shared/types";
 import { CardPreviewModal } from "@shared/ui/modals";
 import { usePlugin } from "@shared/ui/preact";
-import { formatDateForDisplay } from "@features/metrics/ui/stats/utils/chart-helpers";
-import {
-	NLQueryPanel,
-	TodaySection,
-	TimeRangeSelector,
-	FutureDueChart,
-	ReviewsChart,
-	RetentionChart,
-	CardCountsChart,
-	CalendarHeatmap,
-} from "@features/metrics/ui/stats/components";
+import { useCallback, useEffect, useMemo, useState } from "preact/hooks";
 
 export function StatsApp() {
 	const plugin = usePlugin();

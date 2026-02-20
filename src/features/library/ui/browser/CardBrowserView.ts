@@ -1,9 +1,9 @@
+import { CardBrowserApp } from "@features/library/ui/browser/CardBrowserApp";
+import { VIEW_TYPE_CARD_BROWSER } from "@shared/constants";
+import { mountPreact } from "@shared/ui/preact";
 import { ItemView, type WorkspaceLeaf } from "obsidian";
 import { h } from "preact";
-import { VIEW_TYPE_CARD_BROWSER } from "@shared/constants";
 import type TrueRecallPlugin from "../../../../main";
-import { mountPreact } from "@shared/ui/preact";
-import { CardBrowserApp } from "@features/library/ui/browser/CardBrowserApp";
 
 export class CardBrowserView extends ItemView {
 	private plugin: TrueRecallPlugin;

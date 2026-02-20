@@ -1,8 +1,11 @@
+import { BasePromiseModal } from "@shared/ui/modals/BasePromiseModal";
+import {
+	filterNotesByQuery,
+	MAX_DISPLAY_NOTES,
+} from "@shared/ui/modals/note-filter.utils";
 import { type App, normalizePath, type TFile } from "obsidian";
 import { render } from "preact";
 import { useEffect, useRef, useState } from "preact/hooks";
-import { BasePromiseModal } from "@shared/ui/modals/BasePromiseModal";
-import { filterNotesByQuery, MAX_DISPLAY_NOTES } from "@shared/ui/modals/note-filter.utils";
 
 export interface SelectNoteResult {
 	cancelled: boolean;

@@ -2,9 +2,10 @@
  * Maturity Calculator
  * Calculates card maturity breakdown statistics
  */
-import { State } from "ts-fsrs";
-import type { CardMaturityBreakdown, FSRSFlashcardItem } from "@shared/types";
+
 import type { SqliteStoreService } from "@features/core/persistence/sqlite";
+import type { CardMaturityBreakdown, FSRSFlashcardItem } from "@shared/types";
+import { State } from "ts-fsrs";
 
 /**
  * Calculator for card maturity statistics

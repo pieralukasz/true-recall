@@ -7,14 +7,15 @@
  * 2. Retrieves the associated flashcards
  * 3. Shows a modal asking what to do with them
  */
-import type { App, TFile } from "obsidian";
-import type { FSRSCardData } from "@shared/types";
-import type { FrontmatterIndexService } from "@features/core/services/frontmatter-index.service";
+
 import type { SqliteStoreService } from "@features/core/persistence/sqlite/SqliteStoreService";
+import type { FrontmatterIndexService } from "@features/core/services/frontmatter-index.service";
 import {
 	type OrphanedCardInfo,
 	OrphanedCardsService,
 } from "@features/library/services/orphaned-cards.service";
+import type { FSRSCardData } from "@shared/types";
+import type { App, TFile } from "obsidian";
 
 export interface DeletionHandlerDeps {
 	app: App;
@@ -126,4 +127,7 @@ export class DeletionHandlerService {
 }
 
 // Re-export types from OrphanedCardsService for backward compatibility
-export type { OrphanedCardInfo, OrphanReason } from "@features/library/services/orphaned-cards.service";
+export type {
+	OrphanedCardInfo,
+	OrphanReason,
+} from "@features/library/services/orphaned-cards.service";

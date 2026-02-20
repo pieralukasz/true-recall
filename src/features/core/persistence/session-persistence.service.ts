@@ -1,12 +1,12 @@
-import { type App, normalizePath } from "obsidian";
-import { Rating, State } from "ts-fsrs";
+import type { SqliteStoreService } from "@features/core/persistence/sqlite";
+import type { DayBoundaryService } from "@features/core/services/day-boundary.service";
 import type {
 	ExtendedDailyStats,
 	Grade,
 	PersistentStatsData,
 } from "@shared/types";
-import type { DayBoundaryService } from "@features/core/services/day-boundary.service";
-import type { SqliteStoreService } from "@features/core/persistence/sqlite";
+import { type App, normalizePath } from "obsidian";
+import { Rating, State } from "ts-fsrs";
 
 const STATS_FOLDER = ".true-recall";
 const STATS_FILE = "stats.json";

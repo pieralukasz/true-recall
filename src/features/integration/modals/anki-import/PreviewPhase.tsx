@@ -1,7 +1,7 @@
-import { OptionCheckbox } from "@shared/ui/components/OptionCheckbox";
-import { ModalFooter } from "@shared/ui/components/ModalFooter";
-import { StatBadge, StatGrid } from "@shared/ui/components/StatBadge";
 import type { ImportPreview } from "@features/integration/modals/anki-import/types";
+import { ModalFooter } from "@shared/ui/components/ModalFooter";
+import { OptionCheckbox } from "@shared/ui/components/OptionCheckbox";
+import { StatBadge, StatGrid } from "@shared/ui/components/StatBadge";
 
 export interface PreviewPhaseProps {
 	preview: ImportPreview;

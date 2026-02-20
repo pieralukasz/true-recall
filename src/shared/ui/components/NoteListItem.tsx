@@ -11,7 +11,11 @@ const BASE_CLS =
 const SUGGESTED_CLS =
 	"ep:bg-obs-interactive/10 ep:border-l-2 ep:border-l-obs-interactive ep:rounded-lg ep:mb-1";
 
-export function NoteListItem({ note, onSelect, isSuggested }: NoteListItemProps) {
+export function NoteListItem({
+	note,
+	onSelect,
+	isSuggested,
+}: NoteListItemProps) {
 	const folderPath = note.parent?.path;
 
 	return (

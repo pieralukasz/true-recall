@@ -1,7 +1,4 @@
-import { useSignal } from "@preact/signals";
-import { useCallback, useEffect, useMemo, useRef } from "preact/hooks";
 import { FSRSSimulatorService } from "@features/core/services/fsrs-simulator.service";
-import { usePlugin } from "@shared/ui/preact";
 import {
 	ParametersBar,
 	SimulatorChart,
@@ -10,6 +7,9 @@ import {
 	SimulatorSliders,
 } from "@features/metrics/ui/simulator/components";
 import type { SequenceSimulation } from "@features/metrics/ui/simulator/types";
+import { useSignal } from "@preact/signals";
+import { usePlugin } from "@shared/ui/preact";
+import { useCallback, useEffect, useMemo, useRef } from "preact/hooks";
 
 export function SimulatorApp() {
 	const plugin = usePlugin();

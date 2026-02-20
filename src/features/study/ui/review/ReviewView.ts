@@ -1,4 +1,40 @@
+import type { SessionPersistenceService } from "@features/core/persistence/session-persistence.service";
+import { FSRSService } from "@features/core/services/fsrs.service";
+import { CopilotIntegrationService } from "@features/integration/services/copilot-integration.service";
+import { ImageService } from "@features/integration/services/ImageService";
+import { DuplicateQuestionError } from "@features/study/services/flashcard/card-repository.service";
+import type { FlashcardManager } from "@features/study/services/flashcard/flashcard.service";
+import { ReviewService } from "@features/study/services/review.service";
+import {
+	CardActionsHandler,
+	KeyboardHandler,
+} from "@features/study/ui/review/handlers";
+import {
+	buildSourceUidToProjectsMap,
+	filterActiveCards,
+	getEmptyQueueMessage,
+} from "@features/study/ui/review/helpers";
+import {
+	ReviewApp,
+	ReviewEmptyState,
+} from "@features/study/ui/review/ReviewApp";
+import type { ReviewViewState } from "@features/study/ui/review/review.types";
 import { effect } from "@preact/signals";
+import { VIEW_TYPE_REVIEW } from "@shared/constants";
+import { notify } from "@shared/services/notification.service";
+import {
+	type CardMutation,
+	lastMutation,
+	notifyCardChange,
+} from "@shared/services/signals";
+import type { ReviewApi } from "@shared/store";
+import { extractFSRSSettings, type FSRSFlashcardItem } from "@shared/types";
+import { mountPreact } from "@shared/ui/preact";
+import {
+	BR_REGEX,
+	buildProjectGraph,
+	getDescendantProjects,
+} from "@shared/utils";
 import {
 	ItemView,
 	Menu,
@@ -8,37 +44,7 @@ import {
 } from "obsidian";
 import { h } from "preact";
 import { type Grade, Rating, State } from "ts-fsrs";
-import { VIEW_TYPE_REVIEW } from "@shared/constants";
 import type TrueRecallPlugin from "../../../../main";
-import type { SessionPersistenceService } from "@features/core/persistence/session-persistence.service";
-import { FSRSService } from "@features/core/services/fsrs.service";
-import { notify } from "@shared/services/notification.service";
-import type { FlashcardManager } from "@features/study/services/flashcard/flashcard.service";
-import { ReviewService } from "@features/study/services/review.service";
-import {
-	type CardMutation,
-	lastMutation,
-	notifyCardChange,
-} from "@shared/services/signals";
-import { DuplicateQuestionError } from "@features/study/services/flashcard/card-repository.service";
-import { ImageService } from "@features/integration/services/ImageService";
-import { CopilotIntegrationService } from "@features/integration/services/copilot-integration.service";
-import type { ReviewApi } from "@shared/store";
-import { extractFSRSSettings, type FSRSFlashcardItem } from "@shared/types";
-import {
-	BR_REGEX,
-	buildProjectGraph,
-	getDescendantProjects,
-} from "@shared/utils";
-import { mountPreact } from "@shared/ui/preact";
-import { CardActionsHandler, KeyboardHandler } from "@features/study/ui/review/handlers";
-import {
-	buildSourceUidToProjectsMap,
-	filterActiveCards,
-	getEmptyQueueMessage,
-} from "@features/study/ui/review/helpers";
-import { ReviewApp, ReviewEmptyState } from "@features/study/ui/review/ReviewApp";
-import type { ReviewViewState } from "@features/study/ui/review/review.types";
 
 export class ReviewView extends ItemView {
 	private plugin: TrueRecallPlugin;

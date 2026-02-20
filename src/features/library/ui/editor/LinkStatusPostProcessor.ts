@@ -1,4 +1,3 @@
-import type { App, MarkdownPostProcessorContext, TFile } from "obsidian";
 import type {
 	NoteStatusCacheService,
 	NoteStatusInfo,
@@ -9,6 +8,7 @@ import {
 	createLinkStatusElement,
 	createLinkTextCountElement,
 } from "@features/library/ui/editor/LinkStatusWidget";
+import type { App, MarkdownPostProcessorContext, TFile } from "obsidian";
 
 export function createLinkStatusPostProcessor(
 	app: App,

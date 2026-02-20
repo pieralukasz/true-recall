@@ -1,5 +1,5 @@
-import { useState } from "preact/hooks";
 import type { ComponentChildren } from "preact";
+import { useState } from "preact/hooks";
 
 export interface PasteDropZoneProps {
 	onFileDrop: (file: File) => void;
@@ -43,7 +43,9 @@ export function PasteDropZone({
 			onClick={onClick}
 		>
 			{icon && <div class="ep:text-obs-muted">{icon}</div>}
-			<div class="ep:text-ui-small ep:font-medium ep:text-obs-normal">{label}</div>
+			<div class="ep:text-ui-small ep:font-medium ep:text-obs-normal">
+				{label}
+			</div>
 			<div class="ep:text-ui-smaller ep:text-obs-muted">{hint}</div>
 		</button>
 	);

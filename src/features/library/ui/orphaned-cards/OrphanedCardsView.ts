@@ -1,10 +1,10 @@
+import { OrphanedCardsApp } from "@features/library/ui/orphaned-cards/OrphanedCardsApp";
 import { signal } from "@preact/signals";
+import { VIEW_TYPE_ORPHANED_CARDS } from "@shared/constants";
+import { mountPreact } from "@shared/ui/preact";
 import { ItemView, type Menu, Platform, type WorkspaceLeaf } from "obsidian";
 import { h } from "preact";
-import { VIEW_TYPE_ORPHANED_CARDS } from "@shared/constants";
 import type TrueRecallPlugin from "../../../../main";
-import { mountPreact } from "@shared/ui/preact";
-import { OrphanedCardsApp } from "@features/library/ui/orphaned-cards/OrphanedCardsApp";
 
 export class OrphanedCardsView extends ItemView {
 	private plugin: TrueRecallPlugin;

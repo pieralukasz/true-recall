@@ -1,9 +1,12 @@
+import {
+	type DatabaseLike,
+	loadDatabase,
+} from "@features/core/persistence/sqlite/loader";
+import type { ReviewLogForSync } from "@features/core/persistence/sqlite/modules/StatsActions";
+import type { FSRSCardData } from "@shared/types";
 import JSZip from "jszip";
 import type { App } from "obsidian";
 import { State } from "ts-fsrs";
-import type { FSRSCardData } from "shared/types";
-import { type DatabaseLike, loadDatabase } from "@features/core/persistence/sqlite/loader";
-import type { ReviewLogForSync } from "@features/core/persistence/sqlite/modules/StatsActions";
 
 const FIELD_SEPARATOR = "\x1f";
 

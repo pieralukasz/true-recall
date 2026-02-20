@@ -1,7 +1,7 @@
 import { ReactiveCache } from "@features/core/cache";
 import type { FSRSService } from "@features/core/services/fsrs.service";
-import { dataVersion } from "@shared/services/signals";
 import type { FlashcardManager } from "@features/study/services/flashcard/flashcard.service";
+import { dataVersion } from "@shared/services/signals";
 
 export interface GlobalFlashcardStats {
 	total: number;

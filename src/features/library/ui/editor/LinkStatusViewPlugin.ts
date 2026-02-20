@@ -10,7 +10,6 @@ import {
 	type ViewUpdate,
 	WidgetType,
 } from "@codemirror/view";
-import type { App, TFile } from "obsidian";
 import type {
 	NoteStatusCacheService,
 	NoteStatusInfo,
@@ -22,6 +21,7 @@ import {
 	createLinkTextCountElement,
 	infoEqual,
 } from "@features/library/ui/editor/LinkStatusWidget";
+import type { App, TFile } from "obsidian";
 
 class LinkStatusWidget extends WidgetType {
 	constructor(

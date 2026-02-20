@@ -39,8 +39,7 @@ export function NumberField({
 				step={step}
 				value={value}
 				onChange={(e) => {
-					const raw =
-						Number((e.target as HTMLInputElement).value) || min;
+					const raw = Number((e.target as HTMLInputElement).value) || min;
 					let clamped = Math.max(min, raw);
 					if (max !== undefined) clamped = Math.min(max, clamped);
 					onChange(clamped);

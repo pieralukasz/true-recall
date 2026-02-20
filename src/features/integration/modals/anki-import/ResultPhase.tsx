@@ -1,6 +1,6 @@
+import type { AnkiImportResult } from "@shared/types";
 import { ModalFooter } from "@shared/ui/components/ModalFooter";
 import { StatBadge, StatGrid } from "@shared/ui/components/StatBadge";
-import type { AnkiImportResult } from "@shared/types";
 
 export interface ResultPhaseProps {
 	result: AnkiImportResult;

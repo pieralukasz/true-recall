@@ -43,5 +43,11 @@ export function useLongPress(
 
 	const wasLongPress = useCallback(() => longPressRef.current, []);
 
-	return { onPointerDown, onPointerUp, onPointerLeave, onPointerCancel, wasLongPress };
+	return {
+		onPointerDown,
+		onPointerUp,
+		onPointerLeave,
+		onPointerCancel,
+		wasLongPress,
+	};
 }

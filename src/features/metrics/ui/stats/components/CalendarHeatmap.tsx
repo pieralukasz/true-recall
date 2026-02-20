@@ -1,8 +1,8 @@
-import { useEffect, useMemo, useState } from "preact/hooks";
-import { StatsCalculatorService } from "@features/metrics/services/stats/stats-calculator.service";
-import type { FSRSFlashcardItem } from "@shared/types";
-import { getHeatmapLevelClasses } from "@features/metrics/ui/stats/utils/chart-helpers";
+import type { StatsCalculatorService } from "@features/metrics/services/stats/stats-calculator.service";
 import { StatsCard } from "@features/metrics/ui/stats/components/StatsCard";
+import { getHeatmapLevelClasses } from "@features/metrics/ui/stats/utils/chart-helpers";
+import type { FSRSFlashcardItem } from "@shared/types";
+import { useEffect, useMemo, useState } from "preact/hooks";
 
 export function CalendarHeatmap({
 	statsCalculator,

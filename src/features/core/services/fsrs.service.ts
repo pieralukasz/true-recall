@@ -1,12 +1,3 @@
-import {
-	type Card,
-	createEmptyCard,
-	FSRS,
-	type Grade,
-	Rating,
-	type RecordLogItem,
-	State,
-} from "ts-fsrs";
 import { DEFAULT_FSRS_WEIGHTS } from "@shared/constants";
 import type {
 	FSRSCardData,
@@ -16,6 +7,15 @@ import type {
 import { formatInterval } from "@shared/types";
 import type { FSRSSettings } from "@shared/types/settings.types";
 import { getTomorrowBoundary } from "@shared/utils";
+import {
+	type Card,
+	createEmptyCard,
+	FSRS,
+	type Grade,
+	Rating,
+	type RecordLogItem,
+	State,
+} from "ts-fsrs";
 
 export class FSRSService {
 	private fsrs: FSRS;

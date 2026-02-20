@@ -1,4 +1,4 @@
-import { useMemo } from "preact/hooks";
+import { useFsrsHelperOp } from "@features/settings/tabs/fsrs/useFsrsHelperOp";
 import type { TrueRecallSettings } from "@shared/types";
 import {
 	ActionButton,
@@ -7,7 +7,7 @@ import {
 	TextInput,
 	ToggleInput,
 } from "@shared/ui/components";
-import { useFsrsHelperOp } from "@features/settings/tabs/fsrs/useFsrsHelperOp";
+import { useMemo } from "preact/hooks";
 
 interface SiblingDisperseSectionProps {
 	settings: TrueRecallSettings;
@@ -15,7 +15,11 @@ interface SiblingDisperseSectionProps {
 	plugin: any;
 }
 
-export function SiblingDisperseSection({ settings, save, plugin }: SiblingDisperseSectionProps) {
+export function SiblingDisperseSection({
+	settings,
+	save,
+	plugin,
+}: SiblingDisperseSectionProps) {
 	const opConfig = useMemo(
 		() => ({
 			plugin,
