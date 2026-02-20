@@ -26,11 +26,8 @@ import { RestoreBackupModal } from "@features/integration/modals/RestoreBackupMo
 import { DeviceDiscoveryService } from "@features/integration/services/device-discovery.service";
 import { DeviceIdService } from "@features/integration/services/device-id.service";
 import { CardBrowserView } from "@features/library/ui/browser";
-import {
-	createLinkStatusPostProcessor,
-	createLinkStatusViewPlugin,
-} from "@features/study/ui/editor";
 import { NoteHubView } from "@features/library/ui/note-hub";
+import { FlashcardPanelView } from "@features/library/ui/panel/FlashcardPanelView";
 import { FSRSHelperService } from "@features/metrics/services/fsrs-tools";
 import { StatsService } from "@features/metrics/services/stats/stats.service";
 import { SimulatorView } from "@features/metrics/ui/simulator";
@@ -45,10 +42,13 @@ import {
 	type CustomStudyModalScope,
 } from "@features/study/modals/CustomStudyModal";
 import { DeletionHandlerService } from "@features/study/services/flashcard/deletion-handler.service";
-import { FlashcardParserService } from "@features/study/services/flashcard/flashcard-parser.service";
 import { FlashcardManager } from "@features/study/services/flashcard/flashcard.service";
+import { FlashcardParserService } from "@features/study/services/flashcard/flashcard-parser.service";
 import { UidGuardianService } from "@features/study/services/flashcard/uid-guardian.service";
-import { FlashcardPanelView } from "@features/library/ui/panel/FlashcardPanelView";
+import {
+	createLinkStatusPostProcessor,
+	createLinkStatusViewPlugin,
+} from "@features/study/ui/editor";
 import { ReviewView } from "@features/study/ui/review/ReviewView";
 import {
 	VIEW_TYPE_CARD_BROWSER,

@@ -1,5 +1,5 @@
-import { BasePromiseModal } from "@shared/ui/modals/BasePromiseModal";
 import { NotePicker } from "@shared/ui/components/NotePicker";
+import { BasePromiseModal } from "@shared/ui/modals/BasePromiseModal";
 import type { App, TFile } from "obsidian";
 import { render } from "preact";
 import { useCallback, useState } from "preact/hooks";
@@ -138,8 +138,8 @@ function UidRemovedBody({
 			<p class="ep:text-obs-normal ep:text-ui-small ep:mb-4">
 				The <code>flashcard_uid</code> was removed from "{fileName}".{" "}
 				{cardCount} flashcard{cardCount === 1 ? "" : "s"} linked via UID{" "}
-				<code>{removedUid}</code>{" "}
-				{cardCount === 1 ? "is" : "are"} now disconnected.
+				<code>{removedUid}</code> {cardCount === 1 ? "is" : "are"} now
+				disconnected.
 			</p>
 
 			<div class="ep:flex ep:flex-col ep:gap-2">
@@ -148,9 +148,7 @@ function UidRemovedBody({
 					label="Restore UID"
 					description={`Put flashcard_uid: ${removedUid} back into frontmatter`}
 					type="primary"
-					onClick={() =>
-						onResolve({ cancelled: false, action: "restore" })
-					}
+					onClick={() => onResolve({ cancelled: false, action: "restore" })}
 				/>
 				<ActionButton
 					icon="folder"
