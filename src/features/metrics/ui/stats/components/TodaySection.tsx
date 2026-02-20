@@ -1,7 +1,7 @@
 import { useEffect, useState } from "preact/hooks";
-import { StatsCalculatorService } from "../../../services/stats/stats-calculator.service";
-import type { StatsTimeRange } from "../../../../../shared/types";
-import { StatsCard } from "./StatsCard";
+import { StatsCalculatorService } from "@features/metrics/services/stats/stats-calculator.service";
+import type { StatsTimeRange } from "@shared/types";
+import { StatsCard } from "@features/metrics/ui/stats/components/StatsCard";
 
 interface Metric {
 	label: string;

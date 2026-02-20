@@ -1,8 +1,8 @@
 import type { Grade } from "ts-fsrs";
 import { Rating } from "ts-fsrs";
-import type { SchedulingPreview } from "../../../../../shared/types";
-import { useIcon } from "../../../../../shared/ui/preact/hooks";
-import { RatingButton } from "./RatingButton";
+import type { SchedulingPreview } from "@shared/types";
+import { useIcon } from "@shared/ui/preact/hooks";
+import { RatingButton } from "@features/study/ui/review/components/RatingButton";
 
 const BASE_BTN_CLS =
 	"ep:flex ep:flex-col ep:items-center ep:gap-1 !ep:py-4 ep:px-6 ep:h-auto ep:border-none ep:rounded-lg ep:cursor-pointer ep:font-medium ep:text-ui-small ep:min-w-20 ep:whitespace-nowrap ep:transition-transform ep:hover:brightness-110 ep:active:scale-98";

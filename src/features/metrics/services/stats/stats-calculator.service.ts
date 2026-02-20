@@ -9,17 +9,17 @@ import type {
 	RetentionEntry,
 	StatsTimeRange,
 	TodaySummary,
-} from "../../../../shared/types";
-import type { FSRSService } from "../../../../features/core/services/fsrs.service";
-import type { FlashcardManager } from "../../../../features/study/services/flashcard/flashcard.service";
-import type { SessionPersistenceService } from "../../../../features/core/persistence/session-persistence.service";
-import type { SqliteStoreService } from "../../../../features/core/persistence/sqlite";
+} from "@shared/types";
+import type { FSRSService } from "@features/core/services/fsrs.service";
+import type { FlashcardManager } from "@features/study/services/flashcard/flashcard.service";
+import type { SessionPersistenceService } from "@features/core/persistence/session-persistence.service";
+import type { SqliteStoreService } from "@features/core/persistence/sqlite";
 import {
 	ChartDataCalculator,
 	MaturityCalculator,
 	StreakCalculator,
 	type StreakInfo,
-} from "./calculators";
+} from "@features/metrics/services/stats/calculators";
 
 export class StatsCalculatorService {
 	private sessionPersistence: SessionPersistenceService;

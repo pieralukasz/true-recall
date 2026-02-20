@@ -6,7 +6,7 @@
  * Centralized column definitions and row mapping to avoid duplication
  */
 import type { CardType, FSRSCardData } from "shared/types";
-import type { SqliteDatabase } from "../SqliteDatabase";
+import type { SqliteDatabase } from "@features/core/persistence/sqlite/SqliteDatabase";
 
 const CARD_SELECT_COLUMNS = `
     id, due, stability, difficulty, reps, lapses, state,

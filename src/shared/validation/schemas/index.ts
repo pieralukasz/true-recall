@@ -3,12 +3,12 @@
  */
 
 // Validation-specific types (from Zod schemas)
-export type { FlashcardInfo } from "./flashcard.schema";
+export type { FlashcardInfo } from "@shared/validation/schemas/flashcard.schema";
 // Flashcard Schemas
 export {
 	FlashcardInfoSchema,
 	FlashcardItemSchema,
-} from "./flashcard.schema";
+} from "@shared/validation/schemas/flashcard.schema";
 
 // Settings Schemas
 export {
@@ -19,4 +19,4 @@ export {
 	type Settings,
 	SettingsSchema,
 	SettingsWithApiKeySchema,
-} from "./settings.schema";
+} from "@shared/validation/schemas/settings.schema";

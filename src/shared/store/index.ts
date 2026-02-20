@@ -1,7 +1,7 @@
 // Main store exports
 
-export type { AppStore } from "./app-store";
-export { createAppStore } from "./app-store";
+export type { AppStore } from "@shared/store/app-store";
+export { createAppStore } from "@shared/store/app-store";
 
 // Type exports
 export type {
@@ -48,4 +48,4 @@ export type {
 	// Stats slice
 	StatsSliceState,
 	ViewMode,
-} from "./types";
+} from "@shared/store/types";

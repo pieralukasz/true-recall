@@ -1,4 +1,4 @@
-import type { FrontmatterIndexService } from "../../features/core/services/frontmatter-index.service";
+import type { FrontmatterIndexService } from "@features/core/services/frontmatter-index.service";
 
 export interface ProjectGraph {
 	childrenMap: Map<string, string[]>;

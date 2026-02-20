@@ -1,9 +1,9 @@
 import { MarkdownRenderer, Component as ObsidianComponent } from "obsidian";
 import { useCallback, useEffect, useRef, useState } from "preact/hooks";
-import type { NLQueryService } from "../../../../ai/services/nl-query.service";
-import type { ExampleQuery, NLQueryResult } from "../../../../../shared/types";
-import { useApp } from "../../../../../shared/ui/preact";
-import { StatsCard } from "./StatsCard";
+import type { NLQueryService } from "@features/ai/services/nl-query.service";
+import type { ExampleQuery, NLQueryResult } from "@shared/types";
+import { useApp } from "@shared/ui/preact";
+import { StatsCard } from "@features/metrics/ui/stats/components/StatsCard";
 
 const EXAMPLE_QUERIES: ExampleQuery[] = [
 	{

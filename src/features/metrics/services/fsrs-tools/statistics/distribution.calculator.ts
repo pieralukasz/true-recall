@@ -5,7 +5,7 @@
  */
 
 import { State } from "ts-fsrs";
-import type { SqliteStoreService } from "../../../../../features/core/persistence/sqlite/SqliteStoreService";
+import type { SqliteStoreService } from "@features/core/persistence/sqlite/SqliteStoreService";
 
 /**
  * Histogram bucket

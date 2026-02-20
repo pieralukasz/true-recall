@@ -11,7 +11,7 @@ import type {
 	SchedulerCardStore,
 	SchedulingResult,
 	WorkloadDistribution,
-} from "./scheduler.types";
+} from "@features/metrics/services/fsrs-tools/scheduler/scheduler.types";
 
 /**
  * Schedule Break Service

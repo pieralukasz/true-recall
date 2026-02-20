@@ -3,10 +3,10 @@
  * Handles database backup creation, restoration, and management
  */
 import { type App, normalizePath } from "obsidian";
-import type { RetentionPolicy } from "../../../shared/types/settings.types";
-import { notify } from "../../../shared/services/notification.service";
-import type { SqliteStoreService } from "./sqlite";
-import { DB_FOLDER, getDeviceDbFilename } from "./sqlite";
+import type { RetentionPolicy } from "@shared/types/settings.types";
+import { notify } from "@shared/services/notification.service";
+import type { SqliteStoreService } from "@features/core/persistence/sqlite";
+import { DB_FOLDER, getDeviceDbFilename } from "@features/core/persistence/sqlite";
 
 const BACKUP_PREFIX = "true-recall-backup-";
 

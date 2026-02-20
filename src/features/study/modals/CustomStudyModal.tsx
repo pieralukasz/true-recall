@@ -1,12 +1,12 @@
 import type { App } from "obsidian";
 import { render } from "preact";
-import type { BaseModalOptions } from "../../../shared/ui/modals/BaseModal";
-import { BasePromiseModal } from "../../../shared/ui/modals/BasePromiseModal";
-import { CustomStudyBody } from "./custom-study/CustomStudyBody";
+import type { BaseModalOptions } from "@shared/ui/modals/BaseModal";
+import { BasePromiseModal } from "@shared/ui/modals/BasePromiseModal";
+import { CustomStudyBody } from "@features/study/modals/custom-study/CustomStudyBody";
 import type {
 	CustomStudyModalResult,
 	CustomStudyModalScope,
-} from "./custom-study/types";
+} from "@features/study/modals/custom-study/types";
 
 export type { CustomStudyModalResult, CustomStudyModalScope };
 

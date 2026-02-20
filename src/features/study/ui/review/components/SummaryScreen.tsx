@@ -1,5 +1,5 @@
 import { useEffect } from "preact/hooks";
-import type { ReviewApi } from "../../../../../shared/store";
+import type { ReviewApi } from "@shared/store";
 
 function StatItem({
 	label,

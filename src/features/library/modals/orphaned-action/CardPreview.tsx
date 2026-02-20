@@ -1,4 +1,4 @@
-import type { FSRSCardData } from "../../../../shared/types";
+import type { FSRSCardData } from "@shared/types";
 
 const MAX_PREVIEW = 3;
 const MAX_QUESTION_LENGTH = 80;

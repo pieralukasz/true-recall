@@ -1,2 +1,2 @@
-export { KeyboardShortcutsHint, SHORTCUTS } from "./KeyboardShortcutsHint";
-export { SimpleEditorBody, type SimpleEditorBodyProps } from "./SimpleEditorBody";
+export { KeyboardShortcutsHint, SHORTCUTS } from "@shared/ui/modals/simple-editor/KeyboardShortcutsHint";
+export { SimpleEditorBody, type SimpleEditorBodyProps } from "@shared/ui/modals/simple-editor/SimpleEditorBody";

@@ -1,7 +1,7 @@
 import { effect } from "@preact/signals";
 import { useEffect, useRef } from "preact/hooks";
 import type { ReadonlySignal } from "@preact/signals";
-import { dataVersion, settingsVersion, syncVersion, track } from "../../services/signals";
+import { dataVersion, settingsVersion, syncVersion, track } from "@shared/services/signals";
 
 /**
  * Auto-refresh hook that debounces a callback when reactive signals change.

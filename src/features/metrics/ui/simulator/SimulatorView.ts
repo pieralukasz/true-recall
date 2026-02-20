@@ -12,10 +12,10 @@ import {
 } from "chart.js";
 import { ItemView, type WorkspaceLeaf } from "obsidian";
 import { h } from "preact";
-import { VIEW_TYPE_SIMULATOR } from "../../../../shared/constants";
+import { VIEW_TYPE_SIMULATOR } from "@shared/constants";
 import type TrueRecallPlugin from "../../../../main";
-import { mountPreact } from "../../../../shared/ui/preact";
-import { SimulatorApp } from "./SimulatorApp";
+import { mountPreact } from "@shared/ui/preact";
+import { SimulatorApp } from "@features/metrics/ui/simulator/SimulatorApp";
 
 // Register Chart.js components before any Preact rendering
 Chart.register(

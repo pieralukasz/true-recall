@@ -1,6 +1,6 @@
-export { OrphanedCardsActionModal } from "./OrphanedCardsActionModal";
+export { OrphanedCardsActionModal } from "@features/library/modals/orphaned-action/OrphanedCardsActionModal";
 export type {
 	OrphanedCardsAction,
 	OrphanedCardsActionResult,
 	OrphanedCardsActionModalOptions,
-} from "./types";
+} from "@features/library/modals/orphaned-action/types";

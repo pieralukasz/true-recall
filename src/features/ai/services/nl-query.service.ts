@@ -17,9 +17,9 @@ import type {
 	NLQueryConfig,
 	NLQueryResult,
 	NLQueryStep,
-} from "../../../shared/types/nl-query.types";
-import { FSRS_CONTEXT_FOR_AI } from "./fsrs-context";
-import type { SqlJsAdapter } from "./langchain-sqlite.adapter";
+} from "@shared/types/nl-query.types";
+import { FSRS_CONTEXT_FOR_AI } from "@features/ai/services/fsrs-context";
+import type { SqlJsAdapter } from "@features/ai/services/langchain-sqlite.adapter";
 
 const SYSTEM_PREFIX = `You are a helpful assistant for analyzing FSRS flashcard statistics.
 You help users understand their learning patterns, identify problem cards, and get insights from their review data.

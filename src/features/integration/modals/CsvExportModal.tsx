@@ -1,29 +1,29 @@
 import type { App } from "obsidian";
 import { render } from "preact";
 import { useCallback, useRef, useState } from "preact/hooks";
-import type { FrontmatterIndexService } from "../../../features/core/services/frontmatter-index.service";
+import type { FrontmatterIndexService } from "@features/core/services/frontmatter-index.service";
 import {
 	CsvExportService,
 	type CsvSeparator,
-} from "../services/csv-export.service";
-import type { SqliteStoreService } from "../../../features/core/persistence/sqlite/SqliteStoreService";
-import { BaseModal } from "../../../shared/ui/modals/BaseModal";
-import { OptionCheckbox } from "../../../shared/ui/components/OptionCheckbox";
+} from "@features/integration/services/csv-export.service";
+import type { SqliteStoreService } from "@features/core/persistence/sqlite/SqliteStoreService";
+import { BaseModal } from "@shared/ui/modals/BaseModal";
+import { OptionCheckbox } from "@shared/ui/components/OptionCheckbox";
 import {
 	ModalFooter,
 	PRIMARY_BTN,
 	SECONDARY_BTN,
-} from "../../../shared/ui/components/ModalFooter";
+} from "@shared/ui/components/ModalFooter";
 import {
 	ExportScopeSelector,
 	type ExportMode,
-} from "../components/ExportScopeSelector";
+} from "@features/integration/components/ExportScopeSelector";
 import {
 	type NoteEntry,
 	resolveProjects,
 	resolveNotes,
 	downloadBlob,
-} from "../utils/export-helpers";
+} from "@features/integration/utils/export-helpers";
 
 type ExportPhase =
 	| { type: "form" }

@@ -1,1 +1,1 @@
-export { CardBrowserView } from "./CardBrowserView";
+export { CardBrowserView } from "@features/library/ui/browser/CardBrowserView";

@@ -1,13 +1,13 @@
 import { type App, Component, MarkdownRenderer, TFile } from "obsidian";
 import { useCallback, useEffect, useRef, useState } from "preact/hooks";
-import { notify } from "../../../services/notification.service";
-import type { ImageService } from "../../../../features/integration/services/ImageService";
-import type { ImagePickerResult } from "../ImagePickerModal";
-import { PasteDropZone } from "../../components/PasteDropZone";
-import { MediaWidthSlider } from "../../components/MediaWidthSlider";
-import { ModalFooter } from "../../components/ModalFooter";
-import { useClipboardPaste } from "../../hooks/useClipboardPaste";
-import { ImageGrid } from "./ImageGrid";
+import { notify } from "@shared/services/notification.service";
+import type { ImageService } from "@features/integration/services/ImageService";
+import type { ImagePickerResult } from "@shared/ui/modals/ImagePickerModal";
+import { PasteDropZone } from "@shared/ui/components/PasteDropZone";
+import { MediaWidthSlider } from "@shared/ui/components/MediaWidthSlider";
+import { ModalFooter } from "@shared/ui/components/ModalFooter";
+import { useClipboardPaste } from "@shared/ui/hooks/useClipboardPaste";
+import { ImageGrid } from "@shared/ui/modals/image-picker/ImageGrid";
 
 function PasteZoneIcon() {
 	return (

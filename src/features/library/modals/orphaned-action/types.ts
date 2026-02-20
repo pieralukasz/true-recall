@@ -1,4 +1,4 @@
-import type { FSRSCardData } from "../../../../shared/types";
+import type { FSRSCardData } from "@shared/types";
 
 export type OrphanedCardsAction =
 	| "delete"

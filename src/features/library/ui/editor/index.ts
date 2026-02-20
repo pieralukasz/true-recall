@@ -1,2 +1,2 @@
-export { createLinkStatusPostProcessor } from "./LinkStatusPostProcessor";
-export { createLinkStatusViewPlugin } from "./LinkStatusViewPlugin";
+export { createLinkStatusPostProcessor } from "@features/library/ui/editor/LinkStatusPostProcessor";
+export { createLinkStatusViewPlugin } from "@features/library/ui/editor/LinkStatusViewPlugin";

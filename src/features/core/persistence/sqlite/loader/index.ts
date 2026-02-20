@@ -10,4 +10,4 @@ export {
 	loadDatabase,
 	type QueryExecResult,
 	resetLoaderState,
-} from "./SqlJsLoader";
+} from "@features/core/persistence/sqlite/loader/SqlJsLoader";

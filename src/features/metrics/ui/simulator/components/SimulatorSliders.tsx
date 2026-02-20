@@ -1,7 +1,7 @@
 import { useCallback } from "preact/hooks";
-import type { SimulatorApi } from "../../../../../shared/store";
-import { ALL_SLIDERS } from "../constants";
-import { SimulatorSliderRow } from "./SimulatorSliderRow";
+import type { SimulatorApi } from "@shared/store";
+import { ALL_SLIDERS } from "@features/metrics/ui/simulator/constants";
+import { SimulatorSliderRow } from "@features/metrics/ui/simulator/components/SimulatorSliderRow";
 
 interface SimulatorSlidersProps {
 	simulator: SimulatorApi;

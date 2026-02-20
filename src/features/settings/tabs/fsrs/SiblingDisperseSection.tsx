@@ -1,13 +1,13 @@
 import { useMemo } from "preact/hooks";
-import type { TrueRecallSettings } from "../../../../shared/types";
+import type { TrueRecallSettings } from "@shared/types";
 import {
 	ActionButton,
 	InfoBlock,
 	SettingRow,
 	TextInput,
 	ToggleInput,
-} from "../../../../shared/ui/components";
-import { useFsrsHelperOp } from "./useFsrsHelperOp";
+} from "@shared/ui/components";
+import { useFsrsHelperOp } from "@features/settings/tabs/fsrs/useFsrsHelperOp";
 
 interface SiblingDisperseSectionProps {
 	settings: TrueRecallSettings;

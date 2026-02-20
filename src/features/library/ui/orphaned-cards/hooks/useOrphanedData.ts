@@ -1,9 +1,9 @@
 import type { ReadonlySignal } from "@preact/signals";
 import { effect } from "@preact/signals-core";
 import { useCallback, useEffect, useMemo, useState } from "preact/hooks";
-import { track } from "../../../../../shared/services/signals";
-import type { OrphanedCardGroup } from "../../../services/orphaned-cards.service";
-import { usePlugin } from "../../../../../shared/ui/preact";
+import { track } from "@shared/services/signals";
+import type { OrphanedCardGroup } from "@features/library/services/orphaned-cards.service";
+import { usePlugin } from "@shared/ui/preact";
 
 function useOrphanedCards() {
 	const plugin = usePlugin();

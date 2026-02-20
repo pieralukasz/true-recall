@@ -1,4 +1,4 @@
-import type { ReviewApi } from "../../../../../shared/store";
+import type { ReviewApi } from "@shared/store";
 
 const BADGE_COLORS: Record<string, string> = {
 	new: "ep:bg-obs-green/20 ep:text-obs-green",

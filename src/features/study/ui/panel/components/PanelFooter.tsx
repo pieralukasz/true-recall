@@ -1,5 +1,5 @@
-import type { SelectionMode } from "../../../../../shared/store";
-import { ActionButton } from "../../../../../shared/ui/components";
+import type { SelectionMode } from "@shared/store";
+import { ActionButton } from "@shared/ui/components";
 
 export interface PanelFooterProps {
 	selectionMode: SelectionMode;

@@ -1,9 +1,9 @@
 import { Chart, type ChartConfiguration } from "chart.js";
 import { useEffect, useRef } from "preact/hooks";
-import { GRADE_NAMES } from "../constants";
-import type { MetricType, SequenceSimulation } from "../types";
-import { getMetricData, getMetricLabel } from "../utils/simulator-helpers";
-import { ChartLegend } from "./ChartLegend";
+import { GRADE_NAMES } from "@features/metrics/ui/simulator/constants";
+import type { MetricType, SequenceSimulation } from "@features/metrics/ui/simulator/types";
+import { getMetricData, getMetricLabel } from "@features/metrics/ui/simulator/utils/simulator-helpers";
+import { ChartLegend } from "@features/metrics/ui/simulator/components/ChartLegend";
 
 interface SimulatorChartProps {
 	simulations: SequenceSimulation[];

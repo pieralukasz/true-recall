@@ -1,7 +1,7 @@
 import { useCallback, useState } from "preact/hooks";
-import type { SessionResult } from "../../../../../shared/types/events.types";
-import type { ReviewOrder } from "../../../../../shared/types/settings.types";
-import type { CustomStudyModalResult } from "../types";
+import type { SessionResult } from "@shared/types/events.types";
+import type { ReviewOrder } from "@shared/types/settings.types";
+import type { CustomStudyModalResult } from "@features/study/modals/custom-study/types";
 
 export interface CustomStudyConfig {
 	stateFilter: "all" | "new" | "learning" | "due";

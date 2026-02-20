@@ -1,4 +1,4 @@
-import { FORM_LABEL_CLASSES } from "../utils";
+import { FORM_LABEL_CLASSES } from "@shared/ui/utils";
 
 export interface FormLabelProps {
 	text: string;

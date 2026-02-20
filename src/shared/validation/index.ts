@@ -6,7 +6,7 @@
 export {
 	validateFlashcardItem,
 	validateFlashcardItems,
-} from "./flashcard.validator";
+} from "@shared/validation/flashcard.validator";
 
 // Re-export schemas and their types
-export * from "./schemas";
+export * from "@shared/validation/schemas";

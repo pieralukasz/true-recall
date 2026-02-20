@@ -4,10 +4,10 @@ import type {
 	BackupInterval,
 	RetentionPolicy,
 	TrueRecallSettings,
-} from "../../../shared/types/settings.types";
-import { dataVersion, lastMutation, track } from "../../../shared/services/signals";
-import { notify } from "../../../shared/services/notification.service";
-import type { BackupService } from "./backup.service";
+} from "@shared/types/settings.types";
+import { dataVersion, lastMutation, track } from "@shared/services/signals";
+import { notify } from "@shared/services/notification.service";
+import type { BackupService } from "@features/core/persistence/backup.service";
 
 export interface BackgroundBackupConfig {
 	periodicBackupEnabled: boolean;

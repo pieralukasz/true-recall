@@ -1,20 +1,20 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
-import type { FirstSyncStatus, SyncOptions, SyncResult } from "../../../../shared/types";
-import type { AuthService } from "./auth.service";
-import { syncVersion } from "../../../../shared/services/signals";
-import type { SqliteStoreService } from "../../../../features/core/persistence/sqlite";
-import type { ReviewLogForSync } from "../../../../features/core/persistence/sqlite/modules/StatsActions";
+import type { FirstSyncStatus, SyncOptions, SyncResult } from "@shared/types";
+import type { AuthService } from "@features/integration/services/sync/auth.service";
+import { syncVersion } from "@shared/services/signals";
+import type { SqliteStoreService } from "@features/core/persistence/sqlite";
+import type { ReviewLogForSync } from "@features/core/persistence/sqlite/modules/StatsActions";
 import type {
 	LocalCardForSync,
 	RemoteCardRow,
 	RemoteReviewLogRow,
-} from "./card-mapper";
+} from "@features/integration/services/sync/card-mapper";
 import {
 	mapLocalCardToRemote,
 	mapLocalReviewLogToRemote,
 	mapRemoteCardToLocal,
 	mapRemoteReviewLogToLocal,
-} from "./card-mapper";
+} from "@features/integration/services/sync/card-mapper";
 
 interface SyncRpcResponse {
 	status: "success" | "error";

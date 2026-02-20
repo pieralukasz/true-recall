@@ -5,16 +5,16 @@
 import type { App } from "obsidian";
 import { Rating } from "ts-fsrs";
 import type TrueRecallPlugin from "../../../../../main";
-import type { SqliteStoreService } from "../../../../core/persistence/sqlite";
-import type { FSRSService } from "../../../../core/services/fsrs.service";
-import { notify } from "../../../../../shared/services/notification.service";
-import type { FlashcardManager } from "../../../services/flashcard/flashcard.service";
-import type { ReviewService } from "../../../services/review.service";
-import { DuplicateQuestionError } from "../../../services/flashcard/card-repository.service";
-import { cardToMarkdown } from "../../../services/flashcard/flashcard-format.util";
-import type { ReviewApi } from "../../../../../shared/store";
-import type { TrueRecallSettings } from "../../../../../shared/types";
-import { MoveCardModal, SimpleFlashcardEditorModal } from "../../../../../shared/ui/modals";
+import type { SqliteStoreService } from "@features/core/persistence/sqlite";
+import type { FSRSService } from "@features/core/services/fsrs.service";
+import { notify } from "@shared/services/notification.service";
+import type { FlashcardManager } from "@features/study/services/flashcard/flashcard.service";
+import type { ReviewService } from "@features/study/services/review.service";
+import { DuplicateQuestionError } from "@features/study/services/flashcard/card-repository.service";
+import { cardToMarkdown } from "@features/study/services/flashcard/flashcard-format.util";
+import type { ReviewApi } from "@shared/store";
+import type { TrueRecallSettings } from "@shared/types";
+import { MoveCardModal, SimpleFlashcardEditorModal } from "@shared/ui/modals";
 
 /**
  * Dependencies required by CardActionsHandler

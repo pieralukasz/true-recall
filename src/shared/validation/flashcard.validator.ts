@@ -1,6 +1,6 @@
-import { ValidationError } from "../errors";
-import type { FlashcardItem } from "../types";
-import { FlashcardItemSchema } from "./schemas/flashcard.schema";
+import { ValidationError } from "@shared/errors";
+import type { FlashcardItem } from "@shared/types";
+import { FlashcardItemSchema } from "@shared/validation/schemas/flashcard.schema";
 
 export type ValidationResult<T> =
 	| { success: true; data: T }

@@ -1,15 +1,15 @@
-import { DEFAULT_FSRS_WEIGHTS } from "../../../shared/constants";
-import { DEFAULT_SEQUENCES } from "../ui/simulator/constants";
+import { DEFAULT_FSRS_WEIGHTS } from "@shared/constants";
+import { DEFAULT_SEQUENCES } from "@features/metrics/ui/simulator/constants";
 import type {
 	MetricType,
 	SequenceSimulation,
-} from "../ui/simulator/types";
+} from "@features/metrics/ui/simulator/types";
 import type {
 	AppState,
 	AppStoreDeps,
 	SimulatorSliceActions,
 	SimulatorSliceState,
-} from "../../../shared/store/types";
+} from "@shared/store/types";
 
 const MAX_HISTORY_SIZE = 50;
 

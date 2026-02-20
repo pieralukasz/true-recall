@@ -1,1 +1,1 @@
-export { SessionView } from "./SessionView";
+export { SessionView } from "@features/study/ui/session/SessionView";

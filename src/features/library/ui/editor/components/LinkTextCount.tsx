@@ -1,5 +1,5 @@
 import { cva, type VariantProps } from "class-variance-authority";
-import type { NoteStatusInfo } from "../../../../core/cache/note-status-cache.service";
+import type { NoteStatusInfo } from "@features/core/cache/note-status-cache.service";
 
 const wrapperVariants = cva(
 	"ep-link-count ep:inline-flex ep:items-center ep:gap-0.5 ep:align-middle ep:transition-colors ep:hover:text-obs-accent",

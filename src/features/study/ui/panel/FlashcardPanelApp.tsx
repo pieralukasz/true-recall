@@ -12,27 +12,27 @@ import type {
 	ProcessingStatus,
 	SelectionMode,
 	ViewMode,
-} from "../../../../shared/store";
-import type { FlashcardInfo, FlashcardItem } from "../../../../shared/types";
-import type { FSRSFlashcardItem } from "../../../../shared/types/fsrs/card.types";
+} from "@shared/store";
+import type { FlashcardInfo, FlashcardItem } from "@shared/types";
+import type { FSRSFlashcardItem } from "@shared/types/fsrs/card.types";
 import {
 	dataVersion,
 	settingsVersion,
 	track,
-} from "../../../../shared/services/signals";
-import { useApp, usePlugin } from "../../../../shared/ui/preact";
-import { Panel } from "../../../../shared/ui/components";
+} from "@shared/services/signals";
+import { useApp, usePlugin } from "@shared/ui/preact";
+import { Panel } from "@shared/ui/components";
 import {
 	PanelHeader,
 	PanelContent,
 	PanelFooter,
 	type ContentHandlers,
-} from "./components";
+} from "@features/study/ui/panel/components";
 import {
 	getSourceNoteNameFromFile,
 	showDuplicateNotifications,
 	notifyDuplicateError,
-} from "./utils/panel-helpers";
+} from "@features/study/ui/panel/utils/panel-helpers";
 
 // ── Hooks ──────────────────────────────────────────────────────
 
@@ -156,7 +156,7 @@ export function FlashcardPanelApp({
 			const { cardsToMarkdown } = await import(
 				"../../services/flashcard/flashcard-format.util"
 			);
-			const { notify } = await import("../../../../shared/services/notification.service");
+			const { notify } = await import("@shared/services/notification.service");
 
 			const modal = new SimpleFlashcardEditorModal(app, {
 				mode: "add",
@@ -207,7 +207,7 @@ export function FlashcardPanelApp({
 				}
 			} catch (error) {
 				console.error("Error adding flashcards:", error);
-				(await import("../../../../shared/services/notification.service"))
+				(await import("@shared/services/notification.service"))
 					.notify()
 					.operationFailed("add flashcards", error);
 			}
@@ -224,7 +224,7 @@ export function FlashcardPanelApp({
 			const { cardToMarkdown } = await import(
 				"../../services/flashcard/flashcard-format.util"
 			);
-			const { notify } = await import("../../../../shared/services/notification.service");
+			const { notify } = await import("@shared/services/notification.service");
 			const { DuplicateQuestionError } = await import(
 				"../../services/flashcard/card-repository.service"
 			);
@@ -301,7 +301,7 @@ export function FlashcardPanelApp({
 	const handleDeleteCard = useCallback(
 		async (card: FlashcardItem) => {
 			if (!state.currentFile) return;
-			const { notify } = await import("../../../../shared/services/notification.service");
+			const { notify } = await import("@shared/services/notification.service");
 			const scrollPosition = contentRef.current?.scrollTop ?? 0;
 
 			const removed = await plugin.flashcardManager.removeFlashcardById(
@@ -320,7 +320,7 @@ export function FlashcardPanelApp({
 	);
 
 	const handleCopyCard = useCallback(async (card: FlashcardItem) => {
-		const { notify } = await import("../../../../shared/services/notification.service");
+		const { notify } = await import("@shared/services/notification.service");
 		const text = `Q: ${card.question}\nA: ${card.answer}`;
 		await navigator.clipboard.writeText(text);
 		notify().success("Copied to clipboard");
@@ -330,15 +330,15 @@ export function FlashcardPanelApp({
 		async (card: FlashcardItem) => {
 			if (!state.flashcardInfo) return;
 			if (!card.id) {
-				(await import("../../../../shared/services/notification.service"))
+				(await import("@shared/services/notification.service"))
 					.notify()
 					.error(
 						"Cannot move card without UUID. Please regenerate flashcards.",
 					);
 				return;
 			}
-			const { MoveCardModal } = await import("../../../../shared/ui/modals/MoveCardModal");
-			const { notify } = await import("../../../../shared/services/notification.service");
+			const { MoveCardModal } = await import("@shared/ui/modals/MoveCardModal");
+			const { notify } = await import("@shared/services/notification.service");
 
 			const sourceNoteName = await getSourceNoteNameFromFile(
 				app,
@@ -404,7 +404,7 @@ export function FlashcardPanelApp({
 			const { cardToMarkdown } = await import(
 				"../../services/flashcard/flashcard-format.util"
 			);
-			const { notify } = await import("../../../../shared/services/notification.service");
+			const { notify } = await import("@shared/services/notification.service");
 
 			const scrollPosition = contentRef.current?.scrollTop ?? 0;
 
@@ -474,7 +474,7 @@ export function FlashcardPanelApp({
 			if (cards.length === 0) return;
 			const cardId = cards[0]?.id;
 			if (!cardId) return;
-			const { notify } = await import("../../../../shared/services/notification.service");
+			const { notify } = await import("@shared/services/notification.service");
 			const scrollPosition = contentRef.current?.scrollTop ?? 0;
 
 			const removed = await plugin.flashcardManager.removeFlashcardById(cardId);
@@ -492,7 +492,7 @@ export function FlashcardPanelApp({
 
 	const handleCopyGroup = useCallback(async (cards: FlashcardItem[]) => {
 		if (cards.length === 0) return;
-		const { notify } = await import("../../../../shared/services/notification.service");
+		const { notify } = await import("@shared/services/notification.service");
 		const firstCard = cards[0];
 		if (!firstCard) return;
 		let text: string;
@@ -508,8 +508,8 @@ export function FlashcardPanelApp({
 	const handleMoveGroup = useCallback(
 		async (cards: FlashcardItem[]) => {
 			if (cards.length === 0) return;
-			const { MoveCardModal } = await import("../../../../shared/ui/modals/MoveCardModal");
-			const { notify } = await import("../../../../shared/services/notification.service");
+			const { MoveCardModal } = await import("@shared/ui/modals/MoveCardModal");
+			const { notify } = await import("@shared/services/notification.service");
 
 			const firstCard = cards[0];
 			if (!firstCard) return;
@@ -546,7 +546,7 @@ export function FlashcardPanelApp({
 
 	const handleCollect = useCallback(async () => {
 		if (!state.currentFile) return;
-		const { notify } = await import("../../../../shared/services/notification.service");
+		const { notify } = await import("@shared/services/notification.service");
 		const { CollectService } = await import(
 			"../../services/flashcard/collect.service"
 		);
@@ -606,7 +606,7 @@ export function FlashcardPanelApp({
 	}, [state.currentFile, app]);
 
 	const handleExportCsv = useCallback(async () => {
-		const { notify } = await import("../../../../shared/services/notification.service");
+		const { notify } = await import("@shared/services/notification.service");
 		if (
 			!state.flashcardInfo?.flashcards ||
 			state.flashcardInfo.flashcards.length === 0
@@ -648,7 +648,7 @@ export function FlashcardPanelApp({
 	}, [state.flashcardInfo, state.currentFile]);
 
 	const handleCopyAllToClipboard = useCallback(async () => {
-		const { notify } = await import("../../../../shared/services/notification.service");
+		const { notify } = await import("@shared/services/notification.service");
 		if (
 			!state.flashcardInfo?.flashcards ||
 			state.flashcardInfo.flashcards.length === 0
@@ -668,7 +668,7 @@ export function FlashcardPanelApp({
 	}, [state.flashcardInfo]);
 
 	const handleDeleteAll = useCallback(async () => {
-		const { notify } = await import("../../../../shared/services/notification.service");
+		const { notify } = await import("@shared/services/notification.service");
 		if (!state.flashcardInfo || state.flashcardInfo.flashcards.length === 0)
 			return;
 
@@ -686,8 +686,8 @@ export function FlashcardPanelApp({
 
 	const handleMoveSelected = useCallback(async () => {
 		if (!state.flashcardInfo || state.selectedCardIds.size === 0) return;
-		const { MoveCardModal } = await import("../../../../shared/ui/modals/MoveCardModal");
-		const { notify } = await import("../../../../shared/services/notification.service");
+		const { MoveCardModal } = await import("@shared/ui/modals/MoveCardModal");
+		const { notify } = await import("@shared/services/notification.service");
 
 		const selectedCards = state.flashcardInfo.flashcards.filter((card) =>
 			state.selectedCardIds.has(card.id),
@@ -751,7 +751,7 @@ export function FlashcardPanelApp({
 			state.selectedCardIds.size === 0
 		)
 			return;
-		const { notify } = await import("../../../../shared/services/notification.service");
+		const { notify } = await import("@shared/services/notification.service");
 
 		const selectedCards = state.flashcardInfo.flashcards.filter((card) =>
 			state.selectedCardIds.has(card.id),

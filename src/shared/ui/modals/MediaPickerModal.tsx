@@ -1,13 +1,13 @@
 import type { App } from "obsidian";
 import { render } from "preact";
-import { ImageService } from "../../../features/integration/services/ImageService";
+import { ImageService } from "@features/integration/services/ImageService";
 import {
 	MediaPickerBody,
 	type MediaPickerResult,
-} from "./media-picker/MediaPickerBody";
-import { BasePromiseModal } from "./BasePromiseModal";
+} from "@shared/ui/modals/media-picker/MediaPickerBody";
+import { BasePromiseModal } from "@shared/ui/modals/BasePromiseModal";
 
-export type { MediaPickerResult } from "./media-picker/MediaPickerBody";
+export type { MediaPickerResult } from "@shared/ui/modals/media-picker/MediaPickerBody";
 
 interface MediaPickerModalOptions {
 	currentFilePath: string;

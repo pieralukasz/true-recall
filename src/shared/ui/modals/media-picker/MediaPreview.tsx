@@ -1,7 +1,7 @@
 import { type App, Component, MarkdownRenderer, type TFile } from "obsidian";
 import { useCallback, useEffect, useRef } from "preact/hooks";
-import { isVideoExtension } from "../../../types";
-import type { ImageService } from "../../../../features/integration/services/ImageService";
+import { isVideoExtension } from "@shared/types";
+import type { ImageService } from "@features/integration/services/ImageService";
 
 export interface MediaPreviewProps {
 	app: App;

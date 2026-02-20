@@ -1,10 +1,10 @@
-import type { FSRSPreset } from "../../../../shared/types";
+import type { FSRSPreset } from "@shared/types";
 import {
 	ActionButton,
 	SelectInput,
 	SettingRow,
 	TextInput,
-} from "../../../../shared/ui/components";
+} from "@shared/ui/components";
 
 interface PresetSectionProps {
 	presets: FSRSPreset[];

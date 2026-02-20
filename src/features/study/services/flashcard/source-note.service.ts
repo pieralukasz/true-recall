@@ -2,8 +2,8 @@
  * Resolves source note info from vault using FrontmatterIndexService for O(1) lookups
  */
 import { type App, TFile } from "obsidian";
-import type { FrontmatterIndexService } from "../../../../features/core/services/frontmatter-index.service";
-import { FrontmatterService } from "./frontmatter.service";
+import type { FrontmatterIndexService } from "@features/core/services/frontmatter-index.service";
+import { FrontmatterService } from "@features/study/services/flashcard/frontmatter.service";
 
 export class SourceNoteService {
 	private app: App;

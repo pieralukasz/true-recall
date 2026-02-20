@@ -1,5 +1,5 @@
 import type { Grade, State } from "ts-fsrs";
-import type { FSRSFlashcardItem } from "../../../../shared/types";
+import type { FSRSFlashcardItem } from "@shared/types";
 
 export interface ReviewViewState extends Record<string, unknown> {
 	projectFilters?: string[];
@@ -21,7 +21,7 @@ export interface ReviewViewState extends Record<string, unknown> {
 	recentlyFailed?: boolean;
 	cardLimit?: number;
 	studyAheadDays?: number;
-	reviewOrder?: import("../../../../shared/types/settings.types").ReviewOrder;
+	reviewOrder?: import("@shared/types/settings.types").ReviewOrder;
 	crammingMode?: boolean;
 }
 

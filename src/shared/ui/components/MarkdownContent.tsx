@@ -1,7 +1,7 @@
 import { MarkdownRenderer, Component as ObsidianComponent } from "obsidian";
 import { useEffect, useRef } from "preact/hooks";
-import { useApp } from "../preact/ObsidianContext";
-import { stripBrTags } from "../../utils";
+import { useApp } from "@shared/ui/preact/ObsidianContext";
+import { stripBrTags } from "@shared/utils";
 
 export interface MarkdownContentProps {
 	markdown: string;

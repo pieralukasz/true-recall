@@ -8,7 +8,7 @@
  * - Nested paths (e.g., "metadata.category")
  */
 import { type App, type CachedMetadata, type Plugin, TFile } from "obsidian";
-import { stripWikiLinkSyntax } from "../../../shared/utils";
+import { stripWikiLinkSyntax } from "@shared/utils";
 
 export interface FieldConfig {
 	/** Field path in frontmatter (e.g., "flashcard_uid", "projects", "metadata.category") */

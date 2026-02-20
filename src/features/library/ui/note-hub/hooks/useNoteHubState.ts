@@ -5,9 +5,9 @@ import type {
 	NoteHubSortDirection,
 	NoteHubStatusFilter,
 	SelectionMode,
-} from "../../../../../shared/store";
-import type { ProjectInfo, ProjectNoteInfo } from "../../../../../shared/types";
-import { usePlugin } from "../../../../../shared/ui/preact";
+} from "@shared/store";
+import type { ProjectInfo, ProjectNoteInfo } from "@shared/types";
+import { usePlugin } from "@shared/ui/preact";
 
 export function useNoteHub(): NoteHubApi {
 	const store = usePlugin().store;

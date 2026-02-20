@@ -4,7 +4,7 @@
  * Distributes reviews evenly across days to prevent workload spikes.
  */
 
-import { isEasyDay } from "./easy-days.service";
+import { isEasyDay } from "@features/metrics/services/fsrs-tools/scheduler/easy-days.service";
 import type {
 	CardDueInfo,
 	CardScheduleChange,
@@ -12,7 +12,7 @@ import type {
 	SchedulerCardStore,
 	SchedulingResult,
 	WorkloadDistribution,
-} from "./scheduler.types";
+} from "@features/metrics/services/fsrs-tools/scheduler/scheduler.types";
 
 export class LoadBalanceService {
 	constructor(private cardStore: SchedulerCardStore) {}

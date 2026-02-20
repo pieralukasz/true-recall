@@ -1,11 +1,11 @@
 import { Menu } from "obsidian";
 import { useCallback } from "preact/hooks";
-import type { FlashcardInfo } from "../../../../../shared/types";
-import type { FSRSFlashcardItem } from "../../../../../shared/types/fsrs/card.types";
-import type { SelectionMode } from "../../../../../shared/store";
-import { useIcon } from "../../../../../shared/ui/preact/hooks";
-import { SearchInput } from "../../../../../shared/ui/components";
-import { countByState } from "../utils/card-status.utils";
+import type { FlashcardInfo } from "@shared/types";
+import type { FSRSFlashcardItem } from "@shared/types/fsrs/card.types";
+import type { SelectionMode } from "@shared/store";
+import { useIcon } from "@shared/ui/preact/hooks";
+import { SearchInput } from "@shared/ui/components";
+import { countByState } from "@features/study/ui/panel/utils/card-status.utils";
 
 export interface PanelHeaderProps {
 	flashcardInfo: FlashcardInfo | null;

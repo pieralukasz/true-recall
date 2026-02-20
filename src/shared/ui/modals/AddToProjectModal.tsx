@@ -1,7 +1,7 @@
 import type { App } from "obsidian";
 import { render } from "preact";
 import { useState } from "preact/hooks";
-import { BasePromiseModal } from "./BasePromiseModal";
+import { BasePromiseModal } from "@shared/ui/modals/BasePromiseModal";
 
 export interface AddToProjectResult {
 	cancelled: boolean;

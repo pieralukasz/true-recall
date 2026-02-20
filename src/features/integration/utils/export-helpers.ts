@@ -1,5 +1,5 @@
 import type { App } from "obsidian";
-import type { FrontmatterIndexService } from "../../core/services/frontmatter-index.service";
+import type { FrontmatterIndexService } from "@features/core/services/frontmatter-index.service";
 
 export interface NoteEntry {
 	uid: string;

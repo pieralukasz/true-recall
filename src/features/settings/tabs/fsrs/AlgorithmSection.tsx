@@ -1,6 +1,6 @@
-import { FSRS_CONFIG } from "../../../../shared/constants";
-import type { FSRSPreset } from "../../../../shared/types";
-import { SettingRow, SliderInput, TextInput } from "../../../../shared/ui/components";
+import { FSRS_CONFIG } from "@shared/constants";
+import type { FSRSPreset } from "@shared/types";
+import { SettingRow, SliderInput, TextInput } from "@shared/ui/components";
 
 interface AlgorithmSectionProps {
 	preset: FSRSPreset;

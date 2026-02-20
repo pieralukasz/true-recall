@@ -9,12 +9,12 @@ export type {
 	AnkiRevlogEntry,
 	ApkgData,
 	ConvertedCard,
-} from "./anki.types";
-export type { SessionResult } from "./events.types";
+} from "@shared/types/anki.types";
+export type { SessionResult } from "@shared/types/events.types";
 export type {
 	FlashcardInfo,
 	FlashcardItem,
-} from "./flashcard.types";
+} from "@shared/types/flashcard.types";
 export type {
 	CardMaturityBreakdown,
 	CardReviewLogEntry,
@@ -46,19 +46,19 @@ export type {
 	StatsTimeRange,
 	StreakInfo,
 	TodaySummary,
-} from "./fsrs";
+} from "@shared/types/fsrs";
 export {
 	createDefaultFSRSData,
 	formatInterval,
 	Rating,
 	State,
-} from "./fsrs";
+} from "@shared/types/fsrs";
 export type {
 	ImageExtension,
 	ImageInsertOptions,
 	MediaExtension,
 	VideoExtension,
-} from "./image.types";
+} from "@shared/types/image.types";
 export {
 	IMAGE_EXTENSIONS,
 	isImageExtension,
@@ -68,7 +68,7 @@ export {
 	MAX_VIDEO_SIZE_BYTES,
 	MEDIA_EXTENSIONS,
 	VIDEO_EXTENSIONS,
-} from "./image.types";
+} from "@shared/types/image.types";
 export type {
 	ExampleQuery,
 	NLQueryConfig,
@@ -77,7 +77,7 @@ export type {
 	ProblemCard,
 	StudyPattern,
 	TimeToMasteryStats,
-} from "./nl-query.types";
+} from "@shared/types/nl-query.types";
 export type {
 	BackupInterval,
 	EasyDaysConfig,
@@ -89,10 +89,10 @@ export type {
 	ReviewOrder,
 	ScheduledBreak,
 	TrueRecallSettings,
-} from "./settings.types";
-export { extractFSRSSettings } from "./settings.types";
+} from "@shared/types/settings.types";
+export { extractFSRSSettings } from "@shared/types/settings.types";
 export type {
 	FirstSyncStatus,
 	SyncOptions,
 	SyncResult,
-} from "./sync.types";
+} from "@shared/types/sync.types";

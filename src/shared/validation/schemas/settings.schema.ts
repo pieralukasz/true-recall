@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { AI_MODELS } from "../../constants";
+import { AI_MODELS } from "@shared/constants";
 
 const modelKeys = Object.keys(AI_MODELS) as [string, ...string[]];
 

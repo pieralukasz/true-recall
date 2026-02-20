@@ -1,4 +1,4 @@
-import type { StatsTimeRange } from "../../../../../shared/types";
+import type { StatsTimeRange } from "@shared/types";
 
 export function formatDateLabel(isoDate: string): string {
 	const date = new Date(isoDate);

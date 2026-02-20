@@ -1,5 +1,5 @@
-import type { FSRSCardData } from "../../../../shared/types";
-import type { ReviewLogForSync } from "../../../../features/core/persistence/sqlite/modules/StatsActions";
+import type { FSRSCardData } from "@shared/types";
+import type { ReviewLogForSync } from "@features/core/persistence/sqlite/modules/StatsActions";
 
 export interface RemoteCardRow {
 	id: string;
@@ -65,7 +65,7 @@ export function mapRemoteCardToLocal(remote: RemoteCardRow): LocalCardForSync {
 		question: remote.question ?? undefined,
 		answer: remote.answer ?? undefined,
 		sourceUid: remote.source_uid ?? undefined,
-		cardType: (remote.card_type as import("../../../../shared/types").CardType) ?? "basic",
+		cardType: (remote.card_type as import("@shared/types").CardType) ?? "basic",
 		clozeTemplate: remote.cloze_template ?? undefined,
 		clozeIndex: remote.cloze_index ?? undefined,
 		reverseOf: remote.reverse_of ?? undefined,

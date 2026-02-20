@@ -1,6 +1,6 @@
 import type TrueRecallPlugin from "../../../../../main";
-import { notify } from "../../../../../shared/services/notification.service";
-import type { FlashcardInfo } from "../../../../../shared/types";
+import { notify } from "@shared/services/notification.service";
+import type { FlashcardInfo } from "@shared/types";
 
 export async function getSourceNoteNameFromFile(
 	app: { vault: { read: (file: any) => Promise<string> } },

@@ -1,13 +1,13 @@
 import type { App } from "obsidian";
 import { render } from "preact";
-import { ImageService } from "../../../features/integration/services/ImageService";
-import type { FSRSFlashcardItem } from "../../types";
-import { BaseModal } from "./BaseModal";
-import { FlashcardEditorBody } from "./flashcard-editor/FlashcardEditorBody";
-import { KeyboardShortcutsModal } from "./flashcard-editor/KeyboardShortcutsModal";
-import { MediaPickerModal } from "./MediaPickerModal";
+import { ImageService } from "@features/integration/services/ImageService";
+import type { FSRSFlashcardItem } from "@shared/types";
+import { BaseModal } from "@shared/ui/modals/BaseModal";
+import { FlashcardEditorBody } from "@shared/ui/modals/flashcard-editor/FlashcardEditorBody";
+import { KeyboardShortcutsModal } from "@shared/ui/modals/flashcard-editor/KeyboardShortcutsModal";
+import { MediaPickerModal } from "@shared/ui/modals/MediaPickerModal";
 
-export { KeyboardShortcutsModal } from "./flashcard-editor/KeyboardShortcutsModal";
+export { KeyboardShortcutsModal } from "@shared/ui/modals/flashcard-editor/KeyboardShortcutsModal";
 
 export interface FlashcardEditorResult {
 	cancelled: boolean;

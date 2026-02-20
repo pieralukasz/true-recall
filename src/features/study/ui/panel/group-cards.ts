@@ -1,4 +1,4 @@
-import type { FlashcardItem } from "../../../../shared/types";
+import type { FlashcardItem } from "@shared/types";
 
 export type PanelItem =
 	| { type: "basic"; card: FlashcardItem }

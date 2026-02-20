@@ -1,6 +1,6 @@
 import type { ReadonlySignal } from "@preact/signals";
 import { effect } from "@preact/signals";
-import { track } from "../../../shared/services/signals";
+import { track } from "@shared/services/signals";
 
 export interface ReactiveCacheOptions<T> {
 	compute: () => Promise<T>;

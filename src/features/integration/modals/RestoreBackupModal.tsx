@@ -4,8 +4,8 @@ import { useCallback, useState } from "preact/hooks";
 import type {
 	BackupInfo,
 	BackupService,
-} from "../../../features/core/persistence/backup.service";
-import { BasePromiseModal, type CancellableResult } from "../../../shared/ui/modals/BasePromiseModal";
+} from "@features/core/persistence/backup.service";
+import { BasePromiseModal, type CancellableResult } from "@shared/ui/modals/BasePromiseModal";
 
 export interface RestoreBackupResult extends CancellableResult {
 	restoredPath?: string;

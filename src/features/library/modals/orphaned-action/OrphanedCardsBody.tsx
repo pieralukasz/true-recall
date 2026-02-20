@@ -1,10 +1,10 @@
 import type { TFile } from "obsidian";
 import { useCallback, useState } from "preact/hooks";
-import type { FSRSCardData } from "../../../../shared/types";
-import { NotePicker } from "../../../../shared/ui/components/NotePicker";
-import type { OrphanedCardsActionResult } from "./types";
-import { CardPreview } from "./CardPreview";
-import { OrphanedActionButton } from "./OrphanedActionButton";
+import type { FSRSCardData } from "@shared/types";
+import { NotePicker } from "@shared/ui/components/NotePicker";
+import type { OrphanedCardsActionResult } from "@features/library/modals/orphaned-action/types";
+import { CardPreview } from "@features/library/modals/orphaned-action/CardPreview";
+import { OrphanedActionButton } from "@features/library/modals/orphaned-action/OrphanedActionButton";
 
 export interface OrphanedCardsBodyProps {
 	cards: FSRSCardData[];

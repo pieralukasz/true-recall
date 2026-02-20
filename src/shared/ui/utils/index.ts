@@ -1,15 +1,15 @@
 export {
 	type InternalLinkHandlerOptions,
 	setupInternalLinkHandler,
-} from "./internal-link.utils";
+} from "@shared/ui/utils/internal-link.utils";
 export {
 	LONG_PRESS_DURATION,
 	type LongPressOptions,
 	type LongPressResult,
 	setupLongPress,
-} from "./long-press";
-export { SubscriptionManager } from "./SubscriptionManager";
+} from "@shared/ui/utils/long-press";
+export { SubscriptionManager } from "@shared/ui/utils/SubscriptionManager";
 export {
 	FORM_LABEL_CLASSES,
 	SECONDARY_BUTTON_CLASSES,
-} from "./tailwind";
+} from "@shared/ui/utils/tailwind";

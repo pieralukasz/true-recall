@@ -1,12 +1,12 @@
-import type { FSRSFlashcardItem } from "../../../shared/types/fsrs";
+import type { FSRSFlashcardItem } from "@shared/types/fsrs";
 import type {
 	FSRSPreset,
 	FSRSSettings,
 	TrueRecallSettings,
-} from "../../../shared/types/settings.types";
-import { extractFSRSSettingsFromPreset } from "../../../shared/types/settings.types";
-import { buildProjectGraph } from "../../../shared/utils/project-hierarchy";
-import type { FrontmatterIndexService } from "./frontmatter-index.service";
+} from "@shared/types/settings.types";
+import { extractFSRSSettingsFromPreset } from "@shared/types/settings.types";
+import { buildProjectGraph } from "@shared/utils/project-hierarchy";
+import type { FrontmatterIndexService } from "@features/core/services/frontmatter-index.service";
 
 export class PresetService {
 	constructor(

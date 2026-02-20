@@ -1,4 +1,4 @@
-import type { SessionPreset } from "../../../../../shared/types/settings.types";
+import type { SessionPreset } from "@shared/types/settings.types";
 
 interface SavedPresetsProps {
 	presets: SessionPreset[];

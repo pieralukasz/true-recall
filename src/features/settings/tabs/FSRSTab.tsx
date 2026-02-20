@@ -1,6 +1,6 @@
 import { useCallback, useState } from "preact/hooks";
-import { useApp } from "../../../shared/ui/preact";
-import { usePreset, useSettings } from "../hooks/useSettings";
+import { useApp } from "@shared/ui/preact";
+import { usePreset, useSettings } from "@features/settings/hooks/useSettings";
 import {
 	PresetSection,
 	AlgorithmSection,
@@ -11,7 +11,7 @@ import {
 	SiblingDisperseSection,
 	ScheduledBreaksSection,
 	BulkOperationsSection,
-} from "./fsrs";
+} from "@features/settings/tabs/fsrs";
 
 interface FSRSTabProps {
 	selectedPresetId: string;

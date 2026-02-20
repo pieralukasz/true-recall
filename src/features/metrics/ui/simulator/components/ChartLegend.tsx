@@ -1,4 +1,4 @@
-import type { SequenceSimulation } from "../types";
+import type { SequenceSimulation } from "@features/metrics/ui/simulator/types";
 
 export function ChartLegend({
 	simulations,

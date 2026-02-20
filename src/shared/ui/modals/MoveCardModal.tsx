@@ -1,7 +1,7 @@
 import type { App, TFile } from "obsidian";
 import { render } from "preact";
-import { BasePromiseModal } from "./BasePromiseModal";
-import { MoveCardBody } from "./move-card/MoveCardBody";
+import { BasePromiseModal } from "@shared/ui/modals/BasePromiseModal";
+import { MoveCardBody } from "@shared/ui/modals/move-card/MoveCardBody";
 
 export interface MoveCardResult {
 	cancelled: boolean;
