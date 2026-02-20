@@ -5,8 +5,8 @@
 	"main": "main.js",
 	"type": "module",
 	"scripts": {
-		"dev": "bun build.ts",
-		"build": "tsc -noEmit -skipLibCheck && bun build.ts production",
+		"dev": "bun esbuild.config.mjs",
+		"build": "tsc -noEmit -skipLibCheck && bun esbuild.config.mjs production",
 		"version": "bun version-bump.mjs && git add manifest.json versions.json",
 		"format": "biome format --write src/",
 		"biome": "biome check src/",
@@ -25,6 +25,7 @@
 		"@types/sortablejs": "^1.15.9",
 		"@types/sql.js": "^1.4.9",
 		"@vitest/coverage-v8": "^1.6.1",
+		"esbuild": "^0.27.3",
 		"excalirender": "github:JonRC/excalirender",
 		"tailwindcss": "^4.1.18",
 		"tslib": "2.4.0",

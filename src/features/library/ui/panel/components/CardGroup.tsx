@@ -7,10 +7,14 @@ import {
 } from "@features/library/ui/panel/utils/card-status.utils";
 import type { FlashcardItem } from "@shared/types";
 import type { FSRSFlashcardItem } from "@shared/types/fsrs/card.types";
+import { Clickable } from "@shared/ui/components/Clickable";
 import { MarkdownContent } from "@shared/ui/components/MarkdownContent";
 import { useIcon } from "@shared/ui/preact/hooks";
 import { useApp } from "@shared/ui/preact/ObsidianContext";
-import { Menu } from "obsidian";
+import {
+	useContextMenu,
+	type MenuItem,
+} from "@shared/ui/preact/useContextMenu";
 import { useCallback, useMemo, useRef } from "preact/hooks";
 
 export interface CardGroupProps {
@@ -51,7 +55,7 @@ export function CardGroup({
 	onSelect,
 	onLongPress,
 }: CardGroupProps) {
-	const _app = useApp();
+	const app = useApp();
 	const menuIconRef = useIcon("more-vertical");
 	const typeIconRef = useIcon(
 		groupType === "cloze" ? "brackets" : "arrow-left-right",
@@ -63,6 +67,11 @@ export function CardGroup({
 		timer: null,
 		wasLongPress: false,
 	});
+
+	const handleLinkClick = useCallback(
+		(href: string) => void app.workspace.openLinkText(href, filePath, false),
+		[app, filePath],
+	);
 
 	const handlePointerDown = useCallback(() => {
 		const lp = longPressRef.current;
@@ -89,7 +98,6 @@ export function CardGroup({
 			if (longPressRef.current.wasLongPress) return;
 			if ((e.target as HTMLElement).closest("button")) return;
 			if ((e.target as HTMLElement).closest("a")) return;
-			e.stopPropagation();
 			if (isSelectionMode) {
 				onToggleSelect();
 			} else {
@@ -99,43 +107,19 @@ export function CardGroup({
 		[isSelectionMode, onToggleSelect, onToggleExpand],
 	);
 
-	const handleMenuClick = useCallback(
-		(e: MouseEvent) => {
-			e.stopPropagation();
-			const menu = new Menu();
-
-			menu.addItem((item) =>
-				item.setTitle("Edit group").setIcon("pencil").onClick(onEditGroup),
-			);
-			menu.addItem((item) =>
-				item.setTitle("Copy").setIcon("copy").onClick(onCopyGroup),
-			);
-			menu.addItem((item) =>
-				item.setTitle("Move").setIcon("folder-input").onClick(onMoveGroup),
-			);
-			menu.addSeparator();
-			menu.addItem((item) =>
-				item.setTitle("Delete group").setIcon("trash-2").onClick(onDeleteGroup),
-			);
-
-			if (!isSelectionMode) {
-				menu.addSeparator();
-				menu.addItem((item) =>
-					item.setTitle("Select").setIcon("check-square").onClick(onSelect),
-				);
-			}
-
-			menu.showAtMouseEvent(e);
-		},
-		[
-			onEditGroup,
-			onCopyGroup,
-			onMoveGroup,
-			onDeleteGroup,
-			onSelect,
-			isSelectionMode,
-		],
-	);
+	const handleMenuClick = useContextMenu([
+		{ title: "Edit group", icon: "pencil", onClick: onEditGroup },
+		{ title: "Copy", icon: "copy", onClick: onCopyGroup },
+		{ title: "Move", icon: "folder-input", onClick: onMoveGroup },
+		"separator",
+		{ title: "Delete group", icon: "trash-2", onClick: onDeleteGroup },
+		...(!isSelectionMode
+			? ([
+					"separator",
+					{ title: "Select", icon: "check-square", onClick: onSelect },
+				] as MenuItem[])
+			: []),
+	]);
 
 	const handleCheckboxClick = useCallback(
 		(e: MouseEvent) => {
@@ -158,10 +142,8 @@ export function CardGroup({
 		<div
 			class={`ep:flex ep:flex-col ep:mb-2 ep:rounded-lg ep:bg-obs-secondary ep:border ep:border-obs-border ep:shadow-sm ${borderCls}`}
 		>
-			{/* Header row */}
-			<button
-				type="button"
-				class="ep:flex ep:items-center ep:gap-2 ep:p-3 ep:cursor-pointer ep:hover:bg-obs-modifier-hover ep:rounded-md ep:transition-colors ep:bg-transparent ep:border-none ep:font-inherit ep:text-left ep:w-full"
+			<Clickable
+				class="ep:flex ep:items-center ep:gap-2 ep:p-3 ep:hover:bg-obs-modifier-hover ep:rounded-md ep:transition-colors ep:text-left ep:w-full"
 				onClick={handleRowClick}
 				onPointerDown={handlePointerDown}
 				onPointerUp={handlePointerUp}
@@ -202,9 +184,8 @@ export function CardGroup({
 				>
 					<span ref={menuIconRef} />
 				</button>
-			</button>
+			</Clickable>
 
-			{/* Expanded content */}
 			{isExpanded && (
 				<div class="ep:border-t ep:border-obs-border">
 					{cards.map((card, i) => (
