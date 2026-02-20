@@ -4,14 +4,6 @@ export {
 	type ActionButtonVariant,
 } from "@shared/ui/components/ActionButton";
 export {
-	Badge,
-	type BadgeProps,
-	type BadgeSize,
-	type BadgeVariant,
-	Chip,
-	type ChipProps,
-} from "@shared/ui/components/Badge";
-export {
 	CardCountDisplay,
 	type CardCountDisplayProps,
 } from "@shared/ui/components/CardCountDisplay";
@@ -24,10 +16,6 @@ export {
 	type ClickableProps,
 } from "@shared/ui/components/Clickable";
 export {
-	CollapsibleSection,
-	type CollapsibleSectionProps,
-} from "@shared/ui/components/CollapsibleSection";
-export {
 	EmptyState,
 	EmptyStateMessages,
 	type EmptyStateProps,
@@ -36,10 +24,6 @@ export {
 	ErrorBoundary,
 	type ErrorBoundaryProps,
 } from "@shared/ui/components/ErrorBoundary";
-export {
-	FormLabel,
-	type FormLabelProps,
-} from "@shared/ui/components/FormLabel";
 export {
 	IconButton,
 	type IconButtonProps,
@@ -56,10 +40,6 @@ export {
 	MarkdownContent,
 	type MarkdownContentProps,
 } from "@shared/ui/components/MarkdownContent";
-export {
-	MediaWidthSlider,
-	type MediaWidthSliderProps,
-} from "@shared/ui/components/MediaWidthSlider";
 export {
 	ModalFooter,
 	type ModalFooterProps,
@@ -87,15 +67,6 @@ export {
 	SearchInput,
 	type SearchInputProps,
 } from "@shared/ui/components/SearchInput";
-export {
-	SectionHeader,
-	type SectionHeaderAction,
-	type SectionHeaderProps,
-} from "@shared/ui/components/SectionHeader";
-export {
-	SelectableListItem,
-	type SelectableListItemProps,
-} from "@shared/ui/components/SelectableListItem";
 export {
 	SelectInput,
 	type SelectInputOption,
