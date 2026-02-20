@@ -3,12 +3,12 @@ import {
 	PanelContent,
 	PanelFooter,
 	PanelHeader,
-} from "@features/study/ui/panel/components";
+} from "@features/library/ui/panel/components";
 import {
 	getSourceNoteNameFromFile,
 	notifyDuplicateError,
 	showDuplicateNotifications,
-} from "@features/study/ui/panel/utils/panel-helpers";
+} from "@features/library/ui/panel/utils/panel-helpers";
 import { effect } from "@preact/signals";
 import { dataVersion, settingsVersion, track } from "@shared/services/signals";
 import type {
@@ -150,7 +150,7 @@ export function FlashcardPanelApp({
 				"../../../../shared/ui/modals/SimpleFlashcardEditorModal"
 			);
 			const { cardsToMarkdown } = await import(
-				"../../services/flashcard/flashcard-format.util"
+				"@features/study/services/flashcard/flashcard-format.util"
 			);
 			const { notify } = await import("@shared/services/notification.service");
 
@@ -218,11 +218,11 @@ export function FlashcardPanelApp({
 				"../../../../shared/ui/modals/SimpleFlashcardEditorModal"
 			);
 			const { cardToMarkdown } = await import(
-				"../../services/flashcard/flashcard-format.util"
+				"@features/study/services/flashcard/flashcard-format.util"
 			);
 			const { notify } = await import("@shared/services/notification.service");
 			const { DuplicateQuestionError } = await import(
-				"../../services/flashcard/card-repository.service"
+				"@features/study/services/flashcard/card-repository.service"
 			);
 
 			const scrollPosition = contentRef.current?.scrollTop ?? 0;
@@ -398,7 +398,7 @@ export function FlashcardPanelApp({
 				"../../../../shared/ui/modals/SimpleFlashcardEditorModal"
 			);
 			const { cardToMarkdown } = await import(
-				"../../services/flashcard/flashcard-format.util"
+				"@features/study/services/flashcard/flashcard-format.util"
 			);
 			const { notify } = await import("@shared/services/notification.service");
 
@@ -427,7 +427,7 @@ export function FlashcardPanelApp({
 					if (!sourceUid) return;
 
 					const { hasClozeContent } = await import(
-						"../../services/flashcard/cloze-parser.service"
+						"@features/study/services/flashcard/cloze-parser.service"
 					);
 					if (hasClozeContent(firstFlashcard.question)) {
 						plugin.flashcardManager.updateClozeTemplate(
@@ -544,7 +544,7 @@ export function FlashcardPanelApp({
 		if (!state.currentFile) return;
 		const { notify } = await import("@shared/services/notification.service");
 		const { CollectService } = await import(
-			"../../services/flashcard/collect.service"
+			"@features/study/services/flashcard/collect.service"
 		);
 
 		if (!plugin.flashcardManager.hasStore()) {

@@ -1,4 +1,4 @@
-import { countByState } from "@features/study/ui/panel/utils/card-status.utils";
+import { countByState } from "@features/library/ui/panel/utils/card-status.utils";
 import type { SelectionMode } from "@shared/store";
 import type { FlashcardInfo } from "@shared/types";
 import type { FSRSFlashcardItem } from "@shared/types/fsrs/card.types";

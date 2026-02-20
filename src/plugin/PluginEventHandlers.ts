@@ -1,5 +1,5 @@
 import type { DeletionHandlerService } from "@features/study/services/flashcard/deletion-handler.service";
-import { FlashcardPanelView } from "@features/study/ui/panel/FlashcardPanelView";
+import { FlashcardPanelView } from "@features/library/ui/panel/FlashcardPanelView";
 import { VIEW_TYPE_FLASHCARD_PANEL, VIEW_TYPE_REVIEW } from "@shared/constants";
 import { ItemView, TFile } from "obsidian";
 import type TrueRecallPlugin from "../main";
