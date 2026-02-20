@@ -1,5 +1,7 @@
+import { FlashcardGenerationService } from "@features/ai/services/flashcard-generation.service";
 import { SqlJsAdapter } from "@features/ai/services/langchain-sqlite.adapter";
 import { NLQueryService } from "@features/ai/services/nl-query.service";
+import { createSelectionToolbarExtension } from "@features/ai/ui/editor/SelectionToolbarPlugin";
 import { NoteStatusCacheService } from "@features/core/cache/note-status-cache.service";
 import { BackgroundBackupManager } from "@features/core/persistence/background-backup.service";
 import { BackupService } from "@features/core/persistence/backup.service";
@@ -46,6 +48,7 @@ import {
 	type CustomStudyModalScope,
 } from "@features/study/modals/CustomStudyModal";
 import { DeletionHandlerService } from "@features/study/services/flashcard/deletion-handler.service";
+import { FlashcardParserService } from "@features/study/services/flashcard/flashcard-parser.service";
 import { FlashcardManager } from "@features/study/services/flashcard/flashcard.service";
 import { FlashcardPanelView } from "@features/study/ui/panel/FlashcardPanelView";
 import { ReviewView } from "@features/study/ui/review/ReviewView";
@@ -64,7 +67,11 @@ import { UndoService } from "@shared/services/undo.service";
 import { type AppStore, createAppStore } from "@shared/store";
 import type { FSRSCardData } from "@shared/types";
 import { extractFSRSSettings } from "@shared/types";
-import { AddToProjectModal, SetPresetModal } from "@shared/ui/modals";
+import {
+	AddToProjectModal,
+	SetPresetModal,
+	SimpleFlashcardEditorModal,
+} from "@shared/ui/modals";
 import { normalizePath, Plugin, TFile } from "obsidian";
 import { registerCommands } from "./plugin/PluginCommands";
 import {
@@ -814,6 +821,7 @@ ${cardList}${moreText}
 			this.initializeDeletionHandler();
 			this.initializeStore();
 			this.initializeLinkStatusIndicators();
+			this.initializeSelectionToolbar();
 		} catch (error) {
 			console.error("[True Recall] Failed to initialize SQLite store:", error);
 			notify().error("Failed to load flashcard data. Please restart Obsidian.");
@@ -877,6 +885,101 @@ ${cardList}${moreText}
 			onReviewNotes,
 		);
 		this.registerMarkdownPostProcessor(postProcessor);
+	}
+
+	private initializeSelectionToolbar(): void {
+		const generationService = new FlashcardGenerationService(
+			() => this.settings,
+			new FlashcardParserService(),
+		);
+
+		const extension = createSelectionToolbarExtension({
+			onGenerate: async (text, mode) => {
+				try {
+					const result = await generationService.generate(text, mode);
+					const file = this.app.workspace.getActiveFile();
+					if (!file) {
+						notify().error("No active file");
+						return;
+					}
+					if (result.flashcards.length === 0) {
+						notify().warning("No flashcards found in AI response");
+						return;
+					}
+					const batchResult =
+						await this.flashcardManager.saveFlashcardsToSql(
+							file,
+							result.flashcards,
+						);
+					const createdCount = batchResult.created.length;
+					const dupCount = batchResult.duplicates.length;
+					if (dupCount > 0) {
+						notify().info(
+							`Created ${createdCount} flashcard(s), ${dupCount} duplicate(s) skipped`,
+						);
+					} else {
+						notify().info(
+							`Created ${createdCount} flashcard(s)`,
+						);
+					}
+				} catch (error) {
+					const msg =
+						error instanceof Error ? error.message : String(error);
+					notify().error(`Flashcard generation failed: ${msg}`);
+				}
+			},
+			onEdit: (text) => {
+				const file = this.app.workspace.getActiveFile();
+				const modal = new SimpleFlashcardEditorModal(this.app, {
+					mode: "add",
+					prefillContent: text,
+					currentFilePath: file?.path ?? "",
+				});
+				void modal.openAndWait().then((result) => {
+					if (
+						!result.cancelled &&
+						result.flashcards.length > 0 &&
+						file
+					) {
+						void this.flashcardManager
+							.saveFlashcardsToSql(file, result.flashcards)
+							.then((batchResult) => {
+								notify().info(
+									`Created ${batchResult.created.length} flashcard(s)`,
+								);
+							});
+					}
+				});
+			},
+			onQuickAdd: async (text) => {
+				try {
+					const file = this.app.workspace.getActiveFile();
+					if (!file) {
+						notify().error("No active file");
+						return;
+					}
+					const parts = text.split(/\n\s*\n/);
+					const question = (parts[0] ?? text).trim();
+					const answer = parts.slice(1).join("\n\n").trim();
+					await this.flashcardManager.saveFlashcardsToSql(file, [
+						{
+							id: crypto.randomUUID(),
+							question,
+							answer,
+						},
+					]);
+					notify().info("Quick-added 1 flashcard");
+				} catch (error) {
+					const msg =
+						error instanceof Error ? error.message : String(error);
+					notify().error(`Quick add failed: ${msg}`);
+				}
+			},
+			hasApiKey: () => !!this.settings.openRouterApiKey,
+			isEnabled: () => this.settings.selectionToolbarEnabled,
+		});
+
+		this.registerEditorExtension([extension]);
 	}
 
 	private async initializeNLQueryService(): Promise<void> {

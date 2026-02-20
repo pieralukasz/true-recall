@@ -1,0 +1,61 @@
+/* Selection Toolbar - floating above text selection in editor */
+.true-recall-selection-toolbar-container {
+	position: fixed;
+	z-index: var(--layer-popover);
+	pointer-events: auto;
+}
+
+.true-recall-selection-toolbar {
+	background: var(--background-primary);
+	border: 1px solid var(--background-modifier-border);
+	border-radius: var(--radius-m);
+	box-shadow:
+		0 2px 8px rgba(0, 0, 0, 0.15),
+		0 0 1px rgba(0, 0, 0, 0.1);
+	white-space: nowrap;
+}
+
+.true-recall-st-btn {
+	display: inline-flex;
+	align-items: center;
+	gap: 4px;
+	padding: 3px 8px;
+	border: none;
+	border-radius: var(--radius-s);
+	background: transparent;
+	color: var(--text-normal);
+	font-size: var(--font-ui-smaller);
+	font-family: var(--font-interface);
+	cursor: pointer;
+	line-height: 1.4;
+	transition: background-color 100ms ease;
+}
+
+.true-recall-st-btn:hover:not(:disabled) {
+	background: var(--background-modifier-hover);
+}
+
+.true-recall-st-btn:active:not(:disabled) {
+	background: var(--background-modifier-active-hover);
+}
+
+.true-recall-st-btn:disabled {
+	cursor: not-allowed;
+	opacity: 0.5;
+}
+
+.true-recall-st-btn-disabled {
+	opacity: 0.35;
+}
+
+.true-recall-st-divider {
+	width: 1px;
+	height: 16px;
+	background: var(--background-modifier-border);
+	margin: 0 2px;
+	flex-shrink: 0;
+}
+
+.true-recall-st-spinner {
+	flex-shrink: 0;
+}

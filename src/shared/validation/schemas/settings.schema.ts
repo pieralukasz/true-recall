@@ -5,10 +5,21 @@ const modelKeys = Object.keys(AI_MODELS) as [string, ...string[]];
 
 export const AIModelSchema = z.enum(modelKeys);
 
+const AiFlashcardPromptsSchema = z
+	.object({
+		basic: z.string().optional(),
+		cloze: z.string().optional(),
+		reversed: z.string().optional(),
+		auto: z.string().optional(),
+	})
+	.optional();
+
 export const SettingsSchema = z.object({
 	openRouterApiKey: z.string(),
 	aiModel: AIModelSchema,
 	autoSyncToAnki: z.boolean().default(false),
+	selectionToolbarEnabled: z.boolean().default(true),
+	aiFlashcardPrompts: AiFlashcardPromptsSchema,
 });
 
 export const PartialSettingsSchema = SettingsSchema.partial();
