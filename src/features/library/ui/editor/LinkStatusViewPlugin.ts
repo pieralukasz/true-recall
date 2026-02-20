@@ -1,6 +1,3 @@
-// eslint-disable-next-line import/no-extraneous-dependencies -- provided by Obsidian at runtime
-
-// eslint-disable-next-line import/no-extraneous-dependencies -- provided by Obsidian at runtime
 import { RangeSetBuilder } from "@codemirror/state";
 import {
 	Decoration,

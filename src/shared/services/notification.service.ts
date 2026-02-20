@@ -194,7 +194,7 @@ export class NotificationService {
 
 	operationFailed(operation: string, error?: unknown): void {
 		if (error) {
-			// eslint-disable-next-line @typescript-eslint/no-base-to-string -- Fallback for non-Error objects is intentional
+			// Fallback for non-Error objects is intentional
 			const msg = error instanceof Error ? error.message : String(error);
 			this.error(`Failed to ${operation}: ${msg}`);
 		} else {

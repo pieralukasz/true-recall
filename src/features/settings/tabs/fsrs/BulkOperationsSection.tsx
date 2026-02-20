@@ -36,7 +36,6 @@ export function BulkOperationsSection({ plugin }: BulkOperationsSectionProps) {
 				dryRun: true,
 			});
 			if (previewResult && previewResult.affectedCount > 0) {
-				// eslint-disable-next-line no-alert
 				const confirmed = window.confirm(
 					`This will reschedule ${previewResult.affectedCount} cards. Proceed?`,
 				);

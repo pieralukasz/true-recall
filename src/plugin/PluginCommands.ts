@@ -51,7 +51,6 @@ export function registerCommands(plugin: TrueRecallPlugin): void {
 
 	plugin.addCommand({
 		id: "open-fsrs-simulator",
-		// eslint-disable-next-line obsidianmd/ui/sentence-case -- FSRS is an acronym
 		name: "Open FSRS simulator",
 		callback: () => void plugin.openSimulator(),
 	});
@@ -124,14 +123,12 @@ export function registerCommands(plugin: TrueRecallPlugin): void {
 
 	plugin.addCommand({
 		id: "export-csv",
-		// eslint-disable-next-line obsidianmd/ui/sentence-case -- CSV/TSV is an acronym
 		name: "Export as CSV/TSV",
 		callback: () => void plugin.exportCsv(),
 	});
 
 	plugin.addCommand({
 		id: "set-fsrs-preset",
-		// eslint-disable-next-line obsidianmd/ui/sentence-case -- FSRS is an acronym
 		name: "Set FSRS preset for current note",
 		checkCallback: (checking) => {
 			const file = plugin.app.workspace.getActiveFile();

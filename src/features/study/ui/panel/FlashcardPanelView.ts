@@ -79,7 +79,6 @@ export class FlashcardPanelView extends ItemView {
 	}
 
 	getDisplayText(): string {
-		// eslint-disable-next-line obsidianmd/ui/sentence-case -- Application name
 		return "True Recall";
 	}
 
@@ -508,7 +507,6 @@ export class FlashcardPanelView extends ItemView {
 			return;
 
 		const count = state.flashcardInfo.flashcards.length;
-		// eslint-disable-next-line no-alert -- destructive operation requires explicit user confirmation
 		const confirmed = window.confirm(
 			`Delete all ${count} flashcard(s) for this note?`,
 		);

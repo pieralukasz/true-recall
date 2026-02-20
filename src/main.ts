@@ -208,21 +208,18 @@ export default class TrueRecallPlugin extends Plugin {
 			(leaf) => new CardBrowserView(leaf, this),
 		);
 
-		// eslint-disable-next-line obsidianmd/ui/sentence-case -- True Recall is a proper noun
 		this.addRibbonIcon("brain", "True Recall - study", () => {
 			this.openCustomStudyModal().catch((error) => {
 				notify().error("Failed to open study session", error);
 			});
 		});
 
-		// eslint-disable-next-line obsidianmd/ui/sentence-case -- True Recall is a proper noun
 		this.addRibbonIcon("bar-chart-2", "True Recall - statistics", () => {
 			this.openStatsView().catch((error) => {
 				notify().error("Failed to open statistics view", error);
 			});
 		});
 
-		// eslint-disable-next-line obsidianmd/ui/sentence-case -- True Recall is a proper noun
 		this.addRibbonIcon("layout-grid", "True Recall - note hub", () => {
 			this.openNoteHub().catch((error) => {
 				notify().error("Failed to open note hub", error);

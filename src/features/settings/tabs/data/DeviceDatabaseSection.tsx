@@ -34,7 +34,6 @@ export function DeviceDatabaseSection() {
 			return;
 		}
 
-		// eslint-disable-next-line no-alert
 		const confirmed = confirm(
 			`Are you sure you want to replace the current database with data from device ${result.sourceDeviceId}?\n\nThe current database will be overwritten. This requires restarting Obsidian.`,
 		);

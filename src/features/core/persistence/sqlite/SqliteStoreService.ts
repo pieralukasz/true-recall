@@ -98,7 +98,7 @@ export class SqliteStoreService {
 	}
 
 	delete(cardId: string): void {
-		// eslint-disable-next-line @typescript-eslint/no-deprecated -- Wrapper maintains backward compatibility
+		// Wrapper maintains backward compatibility
 		this.cards.delete(cardId);
 	}
 
