@@ -33,6 +33,7 @@
 		"vitest": "^1.6.1"
 	},
 	"dependencies": {
+		"@floating-ui/dom": "^1.7.5",
 		"@langchain/classic": "^1.0.10",
 		"@langchain/core": "^1.1.15",
 		"@langchain/openai": "^1.2.2",
