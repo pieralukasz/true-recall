@@ -39,3 +39,6 @@ CLAUDE.md
 
 # Documentation and plans
 docs/
+
+# Git worktrees
+.worktrees/
