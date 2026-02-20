@@ -221,6 +221,16 @@ export interface TrueRecallSettings {
 
 	/** Show inline flashcard status indicators next to [[links]] in editor */
 	showLinkStatusIndicators: boolean;
+
+	/** Show floating toolbar above selected text for AI flashcard generation */
+	selectionToolbarEnabled: boolean;
+	/** Custom prompts for AI flashcard generation (per mode) */
+	aiFlashcardPrompts?: {
+		basic?: string;
+		cloze?: string;
+		reversed?: string;
+		auto?: string;
+	};
 }
 
 export interface SessionPreset {
