@@ -1,7 +1,7 @@
 import { describe, it, expect } from "vitest";
-import { groupCards, type PanelItem } from "../../../src/ui/flashcard-panel/group-cards";
-import type { FlashcardItem } from "../../../src/types";
-import { renderClozeQuestion, renderClozeAnswer } from "../../../src/services/flashcard/cloze-parser.service";
+import { groupCards, type PanelItem } from "../../../src/features/study/ui/panel/group-cards";
+import type { FlashcardItem } from "../../../src/shared/types";
+import { renderClozeQuestion, renderClozeAnswer } from "../../../src/features/study/services/flashcard/cloze-parser.service";
 
 // ── Helpers ──────────────────────────────────────────────────
 

@@ -2,7 +2,7 @@
  * Postpone/Advance Service Tests
  */
 import { describe, it, expect, beforeEach, vi, afterEach } from "vitest";
-import { PostponeAdvanceService } from "../../../../src/services/fsrs-helper/scheduler/postpone-advance.service";
+import { PostponeAdvanceService } from "../../../../src/features/metrics/services/fsrs-tools/scheduler/postpone-advance.service";
 import { createMockCardStore, createCardsOnDate } from "../mocks/scheduler.mocks";
 
 describe("PostponeAdvanceService", () => {

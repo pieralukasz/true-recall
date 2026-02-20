@@ -5,7 +5,7 @@ import {
 	renderClozeQuestion,
 	renderClozeAnswer,
 	parseClozeTemplate,
-} from "../../../src/services/flashcard/cloze-parser.service";
+} from "../../../src/features/study/services/flashcard/cloze-parser.service";
 
 describe("cloze-parser.service", () => {
 	describe("hasClozeContent", () => {

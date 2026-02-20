@@ -1,12 +1,12 @@
-import { AnkiConverterService } from "../../../src/services/anki/anki-converter.service";
+import { AnkiConverterService } from "../../../src/features/integration/services/anki/anki-converter.service";
 import {
-	createAnkiNote,
 	createAnkiCard,
+	createAnkiDeck,
 	createAnkiModel,
+	createAnkiNote,
+	createApkgData,
 	createClozeModel,
 	createReversedModel,
-	createAnkiDeck,
-	createApkgData,
 } from "./mocks/anki.mocks";
 
 describe("AnkiConverterService", () => {
@@ -300,7 +300,7 @@ describe("AnkiConverterService", () => {
 
 			expect(basic).toBeDefined();
 			expect(reversed).toBeDefined();
-			expect(reversed!.reverseOfAnkiCardId).toBe(basicCard.id);
+			expect(reversed?.reverseOfAnkiCardId).toBe(basicCard.id);
 		});
 	});
 
@@ -374,7 +374,7 @@ describe("AnkiConverterService", () => {
 
 		it("decodes HTML entities", () => {
 			const result = convertWithHtml("&amp; &lt; &gt; &nbsp; &quot; &#39;");
-			expect(result).toBe('& < >   " \'');
+			expect(result).toBe("& < >   \" '");
 		});
 
 		it("collapses excessive blank lines", () => {
@@ -417,7 +417,7 @@ describe("AnkiConverterService", () => {
 
 		it("deduplicates media files", () => {
 			const files = getMediaFiles(
-				'<img src="same.jpg">\x1f<img src="same.jpg">'
+				'<img src="same.jpg">\x1f<img src="same.jpg">',
 			);
 			expect(files).toEqual(["same.jpg"]);
 		});

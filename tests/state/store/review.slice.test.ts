@@ -1,7 +1,7 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
 import { State, Rating } from "ts-fsrs";
 import { createTestStore, createMockCard, createMockCardWithState, countRemainingCards } from "./test-helpers";
-import type { AppStore } from "../../../src/state/store";
+import type { AppStore } from "../../../src/shared/store";
 
 describe("Review Slice", () => {
 	let store: AppStore;

@@ -2,7 +2,7 @@ import { describe, it, expect } from "vitest";
 import {
     FlashcardItemSchema,
     SettingsSchema,
-} from "../../src/validation/schemas";
+} from "../../src/shared/validation/schemas";
 
 describe("Zod Schemas", () => {
     describe("FlashcardItemSchema", () => {

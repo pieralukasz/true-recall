@@ -8,7 +8,7 @@ import type {
 	ReviewResult,
 	ReviewSessionState,
 	FSRSSettings,
-} from "../../../src/types";
+} from "../../../src/shared/types";
 
 /**
  * Source note information (test-only type)

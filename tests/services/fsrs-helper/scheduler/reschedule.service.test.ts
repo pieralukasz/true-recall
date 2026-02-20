@@ -3,7 +3,7 @@
  */
 import { describe, it, expect, beforeEach, vi, afterEach } from "vitest";
 import { State } from "ts-fsrs";
-import { RescheduleService } from "../../../../src/services/fsrs-helper/scheduler/reschedule.service";
+import { RescheduleService } from "../../../../src/features/metrics/services/fsrs-tools/scheduler/reschedule.service";
 import { createMockCardStore } from "../mocks/scheduler.mocks";
 
 // Helper to create cards with FSRS data

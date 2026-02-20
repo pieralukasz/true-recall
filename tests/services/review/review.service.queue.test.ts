@@ -7,9 +7,9 @@
  */
 import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
 import { State } from "ts-fsrs";
-import { ReviewService, type QueueBuildOptions } from "../../../src/services/review/review.service";
-import { FSRSService } from "../../../src/services/core/fsrs.service";
-import type { FSRSFlashcardItem } from "../../../src/types";
+import { ReviewService, type QueueBuildOptions } from "../../../src/features/study/services/review.service";
+import { FSRSService } from "../../../src/features/core/services/fsrs.service";
+import type { FSRSFlashcardItem } from "../../../src/shared/types";
 import {
 	createMockFlashcard,
 	createDefaultFSRSSettings,

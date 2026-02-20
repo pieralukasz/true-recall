@@ -6,8 +6,8 @@ import { State } from "ts-fsrs";
 import {
 	createDefaultFSRSData,
 	formatInterval,
-} from "../../src/types";
-import type { FSRSFlashcardItem } from "../../src/types";
+} from "../../src/shared/types";
+import type { FSRSFlashcardItem } from "../../src/shared/types";
 import {
 	createMockFlashcard,
 	createMockFlashcardWithSourcePath,

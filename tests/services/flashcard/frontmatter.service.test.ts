@@ -2,7 +2,7 @@
  * Tests for FrontmatterService.extractProjectsFromFrontmatter
  */
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { FrontmatterService } from "../../../src/services/flashcard/frontmatter.service";
+import { FrontmatterService } from "../../../src/features/study/services/flashcard/frontmatter.service";
 
 // Mock Obsidian App
 const mockApp = {

@@ -2,8 +2,8 @@ import { describe, it, expect } from "vitest";
 import {
 	validateFlashcardItem,
 	validateFlashcardItems,
-} from "../../src/validation/flashcard.validator";
-import { ValidationError } from "../../src/errors";
+} from "../../src/shared/validation/flashcard.validator";
+import { ValidationError } from "../../src/shared/errors";
 
 describe("Flashcard Validator", () => {
 	describe("validateFlashcardItem", () => {

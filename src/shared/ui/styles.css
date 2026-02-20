@@ -1,0 +1,212 @@
+/* Tailwind CSS v4 entry point with Obsidian theme integration */
+@import "tailwindcss" prefix(ep);
+
+/* Domain-specific CSS (complex selectors, SVG, animations that can't be Tailwind utilities) */
+@import "../../features/library/ui/editor/editor.styles.css";
+@import "../../features/study/ui/review/review.styles.css";
+@import "./modals/modals.styles.css";
+@import "../../features/metrics/ui/stats/stats.styles.css";
+@import "../../features/study/ui/panel/panel.styles.css";
+@import "../../features/metrics/ui/simulator/styles.css";
+
+/*
+ * Obsidian Theme Variables - Runtime Inheritance
+ *
+ * IMPORTANT: Obsidian sets CSS variables on .theme-dark/.theme-light, NOT :root.
+ * We must define our variables to inherit from these classes, not from :root.
+ * This block runs AFTER @theme and allows proper inheritance.
+ */
+.theme-dark,
+.theme-light {
+	--ep-color-obs-modifier-hover: var(--background-modifier-hover);
+	--ep-color-obs-modifier-border: var(--background-modifier-border);
+	--ep-color-obs-modifier-border-hover: var(--background-modifier-border-hover);
+	--ep-color-obs-modifier-border-focus: var(--background-modifier-border-focus);
+	--ep-color-obs-border: var(--background-modifier-border);
+	--ep-color-obs-primary: var(--background-primary);
+	--ep-color-obs-primary-alt: var(--background-primary-alt);
+	--ep-color-obs-secondary: var(--background-secondary);
+	--ep-color-obs-secondary-alt: var(--background-secondary-alt);
+	--ep-color-obs-normal: var(--text-normal);
+	--ep-color-obs-muted: var(--text-muted);
+	--ep-color-obs-faint: var(--text-faint);
+	--ep-color-obs-accent: var(--text-accent);
+	--ep-color-obs-interactive: var(--interactive-accent);
+	--ep-color-obs-interactive-hover: var(--interactive-accent-hover);
+}
+
+/*
+ * Obsidian Theme Variables Mapping
+ *
+ * These custom theme variables map Obsidian's CSS variables to Tailwind utilities.
+ * Usage: ep:text-obs-normal, ep:bg-obs-primary, ep:border-obs-border, etc.
+ *
+ * NOTE: The @theme block defines fallbacks for :root, but the actual values
+ * are overridden by the .theme-dark/.theme-light block above at runtime.
+ */
+@theme {
+	/* === Base colors (mono scale) === */
+	--color-obs-base-00: var(--color-base-00);
+	--color-obs-base-05: var(--color-base-05);
+	--color-obs-base-10: var(--color-base-10);
+	--color-obs-base-20: var(--color-base-20);
+	--color-obs-base-25: var(--color-base-25);
+	--color-obs-base-30: var(--color-base-30);
+	--color-obs-base-35: var(--color-base-35);
+	--color-obs-base-40: var(--color-base-40);
+	--color-obs-base-50: var(--color-base-50);
+	--color-obs-base-60: var(--color-base-60);
+	--color-obs-base-70: var(--color-base-70);
+	--color-obs-base-100: var(--color-base-100);
+
+	/* === Text colors === */
+	--color-obs-normal: var(--text-normal);
+	--color-obs-muted: var(--text-muted);
+	--color-obs-faint: var(--text-faint);
+	--color-obs-accent: var(--text-accent);
+	--color-obs-accent-hover: var(--text-accent-hover);
+	--color-obs-on-accent: var(--text-on-accent);
+	--color-obs-on-accent-inverted: var(--text-on-accent-inverted);
+	--color-obs-error: var(--text-error);
+	--color-obs-warning: var(--text-warning);
+	--color-obs-success: var(--text-success);
+	--color-obs-selection: var(--text-selection);
+
+	/* === Interactive colors === */
+	--color-obs-interactive: var(--interactive-accent);
+	--color-obs-interactive-hover: var(--interactive-accent-hover);
+	--color-obs-interactive-normal: var(--interactive-normal);
+	--color-obs-interactive-hover-bg: var(--interactive-hover);
+	--color-obs-interactive-accent-hsl: var(--interactive-accent-hsl);
+
+	/* === Background colors === */
+	--color-obs-primary: var(--background-primary);
+	--color-obs-primary-alt: var(--background-primary-alt);
+	--color-obs-secondary: var(--background-secondary);
+	--color-obs-secondary-alt: var(--background-secondary-alt);
+	--color-obs-modifier-hover: var(--background-modifier-hover);
+	--color-obs-modifier-active: var(--background-modifier-active-hover);
+	--color-obs-border: var(--background-modifier-border);
+	--color-obs-modifier-border: var(--background-modifier-border);
+	--color-obs-modifier-border-hover: var(--background-modifier-border-hover);
+	--color-obs-modifier-border-focus: var(--background-modifier-border-focus);
+	--color-obs-modifier-error: var(--background-modifier-error);
+	--color-obs-modifier-error-hover: var(--background-modifier-error-hover);
+	--color-obs-modifier-success: var(--background-modifier-success);
+	--color-obs-modifier-message: var(--background-modifier-message);
+	--color-obs-modifier-form-field: var(--background-modifier-form-field);
+
+	/* === Extended colors === */
+	--color-obs-red: var(--color-red);
+	--color-obs-orange: var(--color-orange);
+	--color-obs-yellow: var(--color-yellow);
+	--color-obs-green: var(--color-green);
+	--color-obs-cyan: var(--color-cyan);
+	--color-obs-blue: var(--color-blue);
+	--color-obs-purple: var(--color-purple);
+	--color-obs-pink: var(--color-pink);
+
+	/* === Caret color === */
+	--color-obs-caret: var(--caret-color);
+
+	/* === Button colors === */
+	--color-btn-primary: var(--interactive-accent);
+	--color-btn-primary-hover: var(--interactive-accent-hover);
+
+	/* === Fonts (legacy) === */
+	--font-obs-interface: var(--font-interface);
+	--font-obs-text: var(--font-text);
+	--font-obs-monospace: var(--font-monospace);
+
+	/* === Font sizes (legacy) === */
+	--font-size-obs-smaller: var(--font-ui-smaller);
+	--font-size-obs-small: var(--font-ui-small);
+	--font-size-obs-medium: var(--font-ui-medium);
+	--font-size-obs-large: var(--font-ui-large);
+
+	/* === UI Font sizes (for ep:text-ui-*) === */
+	--text-ui-smaller: var(--font-ui-smaller); /* 12px */
+	--text-ui-small: var(--font-ui-small); /* 13px */
+	--text-ui-medium: var(--font-ui-medium); /* 15px */
+	--text-ui-large: var(--font-ui-large); /* 20px */
+
+	/* === Fixed font sizes (for ep:text-*) === */
+	--text-lg: 1.125rem; /* 18px - between sm (14px) and xl (20px) */
+	--text-lg--line-height: calc(1.75 / 1.125); /* Proportional line height */
+
+	/* === Font families (for ep:font-*) === */
+	--font-family-interface: var(--font-interface-theme);
+	--font-family-text: var(--font-text-theme);
+	--font-family-mono: var(--font-monospace-theme);
+
+	/* === Line heights (for ep:leading-*) === */
+	--line-height-tight: 1.3;
+	--line-height-normal: 1.5;
+
+	/* === Border radius === */
+	--radius-obs-sm: var(--radius-s);
+	--radius-obs-md: var(--radius-m);
+	--radius-obs-lg: var(--radius-l);
+	--radius-obs-xl: var(--radius-xl);
+}
+
+@layer utilities {
+	.ep-dynamic-bg {
+		background-color: var(--ep-dynamic-color);
+	}
+	.ep-dynamic-color {
+		color: var(--ep-dynamic-color);
+	}
+	.ep-dynamic-accent {
+		accent-color: var(--ep-dynamic-color);
+	}
+	.ep-hidden {
+		display: none;
+	}
+	.ep-tree-indent {
+		padding-left: var(--ep-indent, 12px);
+	}
+	.ep-modal-width {
+		width: var(--ep-modal-width, fit-content);
+	}
+	.ep-selectable-highlight {
+		background-color: var(--interactive-accent);
+		border: 2px solid var(--interactive-accent-hover);
+	}
+	.ep-radio-active {
+		background-color: var(--background-modifier-hover);
+		border: 1px solid var(--interactive-accent);
+	}
+	.ep-bg-collect-gradient {
+		background: linear-gradient(
+			135deg,
+			var(--color-yellow),
+			var(--color-orange)
+		);
+	}
+	.ep-textarea-invisible {
+		font-size: inherit;
+		line-height: inherit;
+		padding: 0;
+		margin: 0;
+		border: none;
+		background: transparent;
+		outline: none;
+		box-shadow: none;
+	}
+}
+
+/* Reduced motion preferences (consolidated) */
+@media (prefers-reduced-motion: reduce) {
+	.true-recall-donut-due,
+	.true-recall-donut-new,
+	.true-recall-donut-learning {
+		transition: none;
+	}
+	.true-recall-chart-fade-in {
+		animation: none;
+	}
+	.true-recall-pulse-collect {
+		animation: none;
+	}
+}
