@@ -44,7 +44,7 @@ export function SummaryScreen({
 		if (review.isActive) {
 			review.endSession();
 		}
-	}, []); // eslint-disable-line react-hooks/exhaustive-deps -- intentionally fire once on mount
+	}, []); // intentionally fire once on mount
 
 	const btnCls =
 		"ep:py-3 ep:px-8 ep:border-none ep:rounded-lg ep:cursor-pointer ep:font-medium ep:text-ui-small ep:transition-transform ep:hover:brightness-110 ep:active:scale-98";

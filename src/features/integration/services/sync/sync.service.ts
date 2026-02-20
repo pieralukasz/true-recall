@@ -227,7 +227,7 @@ export class SyncService {
 		};
 
 		// Single atomic RPC call
-		// eslint-disable-next-line @typescript-eslint/no-unsafe-assignment -- Supabase client returns any for RPC data
+		// Supabase client returns any for RPC data
 		const { data, error } = await client.rpc("sync_all_data", payload);
 
 		if (error) {
@@ -298,7 +298,7 @@ export class SyncService {
 			};
 
 			// Call replace RPC (deletes all user data, then inserts fresh)
-			// eslint-disable-next-line @typescript-eslint/no-unsafe-assignment -- Supabase client returns any for RPC data
+			// Supabase client returns any for RPC data
 			const { data, error } = await client.rpc("replace_all_data", payload);
 
 			if (error) {

@@ -264,8 +264,7 @@ export class FrontmatterIndexService {
 		if (file instanceof TFile) return file;
 		// Fallback for test mocks that aren't actual TFile instances
 		if (file && typeof file === "object" && "extension" in file) {
-			// eslint-disable-next-line obsidianmd/no-tfile-tfolder-cast -- Fallback for test mocks only
-			return file as unknown as TFile;
+				return file as unknown as TFile;
 		}
 		return null;
 	}

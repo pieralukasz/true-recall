@@ -92,7 +92,6 @@ export function SimulatorApp() {
 	return (
 		<div class="ep:p-2 ep:max-w-[1400px] ep:mx-auto">
 			<div class="ep:flex ep:items-center ep:justify-between ep:mb-4">
-				{/* eslint-disable-next-line obsidianmd/ui/sentence-case -- FSRS is an acronym */}
 				<h2 class="ep:text-xl ep:font-bold ep:text-obs-normal ep:m-0">
 					FSRS 6
 				</h2>

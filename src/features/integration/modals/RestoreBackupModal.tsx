@@ -178,14 +178,12 @@ export class RestoreBackupModal extends BasePromiseModal<RestoreBackupResult> {
 	}
 
 	private async handleDeleteBackup(backup: BackupInfo): Promise<boolean> {
-		// eslint-disable-next-line no-alert
 		const confirmed = confirm(`Delete backup from ${backup.formattedDate}?`);
 		if (!confirmed) return false;
 		return this.backupService.deleteBackup(backup.path);
 	}
 
 	private async handleRestore(backup: BackupInfo): Promise<boolean> {
-		// eslint-disable-next-line no-alert
 		const confirmed = confirm(
 			`Are you sure you want to restore the backup from ${backup.formattedDate}?\n\n` +
 				"Your current database will be replaced. A safety backup will be created first.\n\n" +

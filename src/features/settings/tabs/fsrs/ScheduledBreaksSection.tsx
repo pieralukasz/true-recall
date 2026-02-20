@@ -26,9 +26,7 @@ export function ScheduledBreaksSection({
 	);
 
 	const handleAddBreak = useCallback(async () => {
-		// eslint-disable-next-line no-alert
 		const startDate = prompt("Start date (YYYY-MM-DD):");
-		// eslint-disable-next-line no-alert
 		const endDate = prompt("End date (YYYY-MM-DD):");
 		if (startDate && endDate) {
 			await save({
