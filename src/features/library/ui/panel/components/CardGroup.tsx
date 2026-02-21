@@ -2,13 +2,13 @@ import { StatusDot } from "@features/library/ui/panel/components/StatusDot";
 import {
 	getAggregateStatusDotColor,
 	getAggregateStatusTitle,
-	getStatusDotColor,
-	getStatusTitle,
 } from "@features/library/ui/panel/utils/card-status.utils";
 import type { FlashcardItem } from "@shared/types";
 import type { FSRSFlashcardItem } from "@shared/types/fsrs/card.types";
 import { Clickable } from "@shared/ui/components/Clickable";
+import { IconButton } from "@shared/ui/components/IconButton";
 import { MarkdownContent } from "@shared/ui/components/MarkdownContent";
+import { StateBadge } from "@shared/ui/components/StateBadge";
 import { useIcon } from "@shared/ui/preact/hooks";
 import { useApp } from "@shared/ui/preact/ObsidianContext";
 import {
@@ -56,7 +56,6 @@ export function CardGroup({
 	onLongPress,
 }: CardGroupProps) {
 	const app = useApp();
-	const menuIconRef = useIcon("more-vertical");
 	const typeIconRef = useIcon(
 		groupType === "cloze" ? "brackets" : "arrow-left-right",
 	);
@@ -179,45 +178,51 @@ export function CardGroup({
 					{cards.length}
 				</span>
 
-				<button
-					type="button"
-					class="clickable-icon ep:cursor-pointer ep:w-6 ep:h-6 ep:flex ep:items-center ep:justify-center ep:rounded-md ep:text-obs-muted ep:hover:bg-obs-modifier-hover ep:hover:text-obs-normal ep:transition-colors [&_svg]:ep:w-3.5 [&_svg]:ep:h-3.5"
-					aria-label="Group actions"
+				<IconButton
+					icon="more-vertical"
+					ariaLabel="Group actions"
 					onClick={handleMenuClick}
-				>
-					<span ref={menuIconRef} />
-				</button>
+					size="small"
+				/>
 			</Clickable>
 
 			{isExpanded && (
 				<div class="ep:border-t ep:border-obs-border">
-					{cards.map((card, i) => (
-						<div
-							key={card.id}
-							class="ep:flex ep:items-center ep:gap-2 ep:px-3 ep:py-2 ep:border-b ep:border-obs-border last:ep:border-b-0"
-						>
-							<StatusDot
-								color={getStatusDotColor(fsrsCards[i])}
-								title={getStatusTitle(fsrsCards[i])}
-							/>
+					{cards.map((card, i) => {
+						const fsrs = fsrsCards[i];
+						return (
+							<div
+								key={card.id}
+								class="ep:flex ep:items-start ep:gap-2 ep:px-3 ep:py-2 ep:border-b ep:border-obs-border last:ep:border-b-0"
+							>
+								{fsrs ? (
+									<StateBadge
+										state={fsrs.fsrs.state}
+										suspended={fsrs.fsrs.suspended}
+										buriedUntil={fsrs.fsrs.buriedUntil}
+									/>
+								) : (
+									<span class="ep:text-ui-smaller ep:text-obs-faint">—</span>
+								)}
 
-							<div class="ep:flex-1 ep:flex ep:flex-col ep:gap-1">
-								<span class="ep:text-xs ep:text-obs-faint ep:uppercase ep:tracking-wider">
-									{groupType === "cloze"
-										? `Cloze ${card.clozeIndex}`
-										: i === 0
-											? "Original"
-											: "Reversed"}
-								</span>
-								<MarkdownContent
-									markdown={card.question}
-									filePath={filePath}
-									class="ep:text-ui-small ep:text-obs-normal true-recall-card-markdown"
-									onLinkClick={handleLinkClick}
-								/>
+								<div class="ep:flex-1 ep:flex ep:flex-col ep:gap-1">
+									<span class="ep:text-xs ep:text-obs-faint ep:uppercase ep:tracking-wider">
+										{groupType === "cloze"
+											? `Cloze ${card.clozeIndex}`
+											: i === 0
+												? "Original"
+												: "Reversed"}
+									</span>
+									<MarkdownContent
+										markdown={card.question}
+										filePath={filePath}
+										class="ep:text-ui-small ep:text-obs-normal true-recall-card-markdown"
+										onLinkClick={handleLinkClick}
+									/>
+								</div>
 							</div>
-						</div>
-					))}
+						);
+					})}
 				</div>
 			)}
 		</div>

@@ -3,7 +3,7 @@ import { useIcon } from "@shared/ui/preact/hooks";
 export interface IconButtonProps {
 	icon: string;
 	ariaLabel: string;
-	onClick: () => void;
+	onClick: (e: MouseEvent) => void;
 	label?: string;
 	size?: "small" | "medium";
 	danger?: boolean;
@@ -47,7 +47,7 @@ export function IconButton({
 					? undefined
 					: (e) => {
 							e.stopPropagation();
-							onClick();
+							onClick(e as MouseEvent);
 						}
 			}
 		>
