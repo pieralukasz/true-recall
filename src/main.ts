@@ -804,6 +804,7 @@ export default class TrueRecallPlugin extends Plugin {
 						file,
 						result.flashcards,
 						"ai",
+						text,
 					);
 					const createdCount = batchResult.created.length;
 					const dupCount = batchResult.duplicates.length;
@@ -829,7 +830,7 @@ export default class TrueRecallPlugin extends Plugin {
 				void modal.openAndWait().then((result) => {
 					if (!result.cancelled && result.flashcards.length > 0 && file) {
 						void this.flashcardManager
-							.saveFlashcardsToSql(file, result.flashcards)
+							.saveFlashcardsToSql(file, result.flashcards, undefined, text)
 							.then((batchResult) => {
 								notify().info(
 									`Created ${batchResult.created.length} flashcard(s)`,
@@ -848,13 +849,12 @@ export default class TrueRecallPlugin extends Plugin {
 					const parts = text.split(/\n\s*\n/);
 					const question = (parts[0] ?? text).trim();
 					const answer = parts.slice(1).join("\n\n").trim();
-					await this.flashcardManager.saveFlashcardsToSql(file, [
-						{
-							id: crypto.randomUUID(),
-							question,
-							answer,
-						},
-					]);
+					await this.flashcardManager.saveFlashcardsToSql(
+						file,
+						[{ id: crypto.randomUUID(), question, answer }],
+						undefined,
+						text,
+					);
 					notify().info("Quick-added 1 flashcard");
 				} catch (error) {
 					const msg = error instanceof Error ? error.message : String(error);
@@ -866,6 +866,17 @@ export default class TrueRecallPlugin extends Plugin {
 		});
 
 		this.registerEditorExtension([extension]);
+
+		// Source text highlight extension (Card → Text jump)
+		void import("@features/library/ui/editor/SourceHighlightPlugin").then(
+			({ createSourceHighlightExtension }) => {
+				this.registerEditorExtension(
+					createSourceHighlightExtension(
+						() => this.app.workspace.getActiveFile()?.path,
+					),
+				);
+			},
+		);
 	}
 
 	private async initializeNLQueryService(): Promise<void> {

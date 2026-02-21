@@ -101,6 +101,7 @@ export class CardRepository {
 		sourceUid: string,
 		sourceNoteName?: string,
 		createdVia?: string,
+		sourceText?: string,
 	): CreateBatchResult {
 		const createdCards: FSRSFlashcardItem[] = [];
 		const duplicates: DuplicateInfo[] = [];
@@ -176,6 +177,7 @@ export class CardRepository {
 				clozeIndex: flashcard.clozeIndex,
 				reverseOf,
 				createdVia: createdVia ?? "manual",
+				sourceText,
 			};
 
 			this.store.set(flashcard.id, extendedData);
@@ -195,6 +197,7 @@ export class CardRepository {
 				clozeTemplate: flashcard.clozeTemplate,
 				clozeIndex: flashcard.clozeIndex,
 				reverseOf,
+				sourceText,
 			};
 
 			createdCards.push(card);
@@ -328,6 +331,9 @@ export class CardRepository {
 		}
 		if (existing?.reverseOf && !entry.reverseOf) {
 			entry.reverseOf = existing.reverseOf;
+		}
+		if (existing?.sourceText && !entry.sourceText) {
+			entry.sourceText = existing.sourceText;
 		}
 
 		this.store.set(cardId, entry);

@@ -35,3 +35,26 @@ export function notifyCardChange(mutation: CardMutation): void {
 		dataVersion.value++;
 	});
 }
+
+// ── Source text highlight (Card → Text jump) ──────────────────
+
+export interface HighlightRequest {
+	sourceNotePath: string;
+	sourceText: string;
+	requestId: number;
+}
+
+export const highlightRequest = signal<HighlightRequest | null>(null);
+
+let highlightCounter = 0;
+
+export function requestSourceHighlight(
+	sourceNotePath: string,
+	sourceText: string,
+): void {
+	highlightRequest.value = {
+		sourceNotePath,
+		sourceText,
+		requestId: ++highlightCounter,
+	};
+}

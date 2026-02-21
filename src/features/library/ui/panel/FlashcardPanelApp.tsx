@@ -782,6 +782,27 @@ export function FlashcardPanelApp({
 		[panel],
 	);
 
+	const handleJumpToSource = useCallback(
+		async (card: FlashcardItem) => {
+			if (!card.sourceText || !state.currentFile) return;
+			const { requestSourceHighlight } = await import(
+				"@shared/services/signals"
+			);
+
+			const filePath = state.currentFile.path;
+
+			// Ensure the source file is open in the editor
+			const activeFile = app.workspace.getActiveFile();
+			if (!activeFile || activeFile.path !== filePath) {
+				const leaf = app.workspace.getLeaf(false);
+				await leaf.openFile(state.currentFile);
+			}
+
+			requestSourceHighlight(filePath, card.sourceText);
+		},
+		[state.currentFile, app],
+	);
+
 	const contentHandlers: ContentHandlers = useMemo(
 		() => ({
 			onEditButton: handleEditButton,
@@ -796,6 +817,7 @@ export function FlashcardPanelApp({
 			onDeleteGroup: handleDeleteGroup,
 			onCopyGroup: handleCopyGroup,
 			onMoveGroup: handleMoveGroup,
+			onJumpToSource: handleJumpToSource,
 		}),
 		[
 			handleEditButton,
@@ -810,6 +832,7 @@ export function FlashcardPanelApp({
 			handleDeleteGroup,
 			handleCopyGroup,
 			handleMoveGroup,
+			handleJumpToSource,
 		],
 	);
 

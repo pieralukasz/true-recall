@@ -33,6 +33,7 @@ export interface CompactCardProps {
 	onMove: () => void;
 	onSelect: () => void;
 	onLongPress: () => void;
+	onJumpToSource?: () => void;
 }
 
 export function CompactCard({
@@ -50,6 +51,7 @@ export function CompactCard({
 	onMove,
 	onSelect,
 	onLongPress,
+	onJumpToSource,
 }: CompactCardProps) {
 	const app = useApp();
 	const longPressRef = useRef<{
@@ -100,6 +102,16 @@ export function CompactCard({
 	);
 
 	const handleMenuClick = useContextMenu([
+		...(onJumpToSource
+			? ([
+					{
+						title: "Jump to source",
+						icon: "locate",
+						onClick: onJumpToSource,
+					},
+					"separator",
+				] as MenuItem[])
+			: []),
 		{ title: "Edit", icon: "pencil", onClick: onEdit },
 		{ title: "Copy", icon: "copy", onClick: onCopy },
 		{ title: "Move", icon: "folder-input", onClick: onMove },
