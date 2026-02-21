@@ -23,7 +23,11 @@ const CARD_SELECT_COLUMNS = `
     card_type as cardType,
     cloze_template as clozeTemplate,
     cloze_index as clozeIndex,
-    reverse_of as reverseOf
+    reverse_of as reverseOf,
+    io_image_path as ioImagePath,
+    io_regions_json as ioRegionsJson,
+    io_group_key as ioGroupKey,
+    io_parent_id as ioParentId
 `;
 
 const CARD_SELECT_COLUMNS_FOR_SYNC = `
@@ -42,7 +46,11 @@ const CARD_SELECT_COLUMNS_FOR_SYNC = `
     card_type as cardType,
     cloze_template as clozeTemplate,
     cloze_index as clozeIndex,
-    reverse_of as reverseOf
+    reverse_of as reverseOf,
+    io_image_path as ioImagePath,
+    io_regions_json as ioRegionsJson,
+    io_group_key as ioGroupKey,
+    io_parent_id as ioParentId
 `;
 
 interface CardRow {
@@ -68,6 +76,10 @@ interface CardRow {
 	clozeTemplate: string | null;
 	clozeIndex: number | null;
 	reverseOf: string | null;
+	ioImagePath: string | null;
+	ioRegionsJson: string | null;
+	ioGroupKey: string | null;
+	ioParentId: string | null;
 }
 
 function mapRowToCard(row: CardRow): FSRSCardData {
@@ -92,6 +104,10 @@ function mapRowToCard(row: CardRow): FSRSCardData {
 		clozeTemplate: row.clozeTemplate ?? undefined,
 		clozeIndex: row.clozeIndex ?? undefined,
 		reverseOf: row.reverseOf ?? undefined,
+		ioImagePath: row.ioImagePath ?? undefined,
+		ioRegionsJson: row.ioRegionsJson ?? undefined,
+		ioGroupKey: row.ioGroupKey ?? undefined,
+		ioParentId: row.ioParentId ?? undefined,
 	};
 }
 
@@ -136,8 +152,9 @@ export class CardActions {
                 last_review, scheduled_days, learning_step, suspended,
                 buried_until, created_at, updated_at,
                 question, answer, source_uid,
-                card_type, cloze_template, cloze_index, reverse_of
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                card_type, cloze_template, cloze_index, reverse_of,
+                io_image_path, io_regions_json, io_group_key, io_parent_id
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         `,
 			[
 				cardId,
@@ -161,6 +178,10 @@ export class CardActions {
 				data.clozeTemplate ?? null,
 				data.clozeIndex ?? null,
 				data.reverseOf ?? null,
+				data.ioImagePath ?? null,
+				data.ioRegionsJson ?? null,
+				data.ioGroupKey ?? null,
+				data.ioParentId ?? null,
 			],
 		);
 	}
@@ -392,8 +413,9 @@ export class CardActions {
                 last_review, scheduled_days, learning_step, suspended,
                 buried_until, created_at, updated_at, deleted_at,
                 question, answer, source_uid,
-                card_type, cloze_template, cloze_index, reverse_of
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                card_type, cloze_template, cloze_index, reverse_of,
+                io_image_path, io_regions_json, io_group_key, io_parent_id
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         `,
 			[
 				data.id,
@@ -418,6 +440,10 @@ export class CardActions {
 				data.clozeTemplate ?? null,
 				data.clozeIndex ?? null,
 				data.reverseOf ?? null,
+				data.ioImagePath ?? null,
+				data.ioRegionsJson ?? null,
+				data.ioGroupKey ?? null,
+				data.ioParentId ?? null,
 			],
 		);
 	}
@@ -634,6 +660,21 @@ export class CardActions {
 			`SELECT id FROM cards WHERE source_uid = ? AND cloze_template = ? AND cloze_index = ? AND deleted_at IS NULL LIMIT 1`,
 			[sourceUid, clozeTemplate, clozeIndex],
 		)?.id;
+	}
+
+	getIOChildren(parentId: string): FSRSCardData[] {
+		const rows = this.db.query<CardRow>(
+			`SELECT ${CARD_SELECT_COLUMNS} FROM cards WHERE io_parent_id = ? AND deleted_at IS NULL ORDER BY io_group_key ASC`,
+			[parentId],
+		);
+		return rows.map(mapRowToCard);
+	}
+
+	softDeleteIOFamily(parentId: string): string[] {
+		const children = this.getIOChildren(parentId);
+		const allIds = [parentId, ...children.map((c) => c.id)];
+		this.bulkSoftDelete(allIds);
+		return allIds;
 	}
 
 	getClozeSiblings(sourceUid: string, clozeTemplate: string): FSRSCardData[] {
