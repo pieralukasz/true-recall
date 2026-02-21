@@ -24,6 +24,10 @@ export interface RemoteCardRow {
 	cloze_template: string | null;
 	cloze_index: number | null;
 	reverse_of: string | null;
+	io_image_path: string | null;
+	io_regions_json: string | null;
+	io_group_key: string | null;
+	io_parent_id: string | null;
 }
 
 export interface RemoteReviewLogRow {
@@ -69,6 +73,10 @@ export function mapRemoteCardToLocal(remote: RemoteCardRow): LocalCardForSync {
 		clozeTemplate: remote.cloze_template ?? undefined,
 		clozeIndex: remote.cloze_index ?? undefined,
 		reverseOf: remote.reverse_of ?? undefined,
+		ioImagePath: remote.io_image_path ?? undefined,
+		ioRegionsJson: remote.io_regions_json ?? undefined,
+		ioGroupKey: remote.io_group_key ?? undefined,
+		ioParentId: remote.io_parent_id ?? undefined,
 	};
 }
 
@@ -145,6 +153,10 @@ export function mapLocalCardToRemote(
 		cloze_template: local.clozeTemplate ?? null,
 		cloze_index: local.clozeIndex ?? null,
 		reverse_of: local.reverseOf ?? null,
+		io_image_path: local.ioImagePath ?? null,
+		io_regions_json: local.ioRegionsJson ?? null,
+		io_group_key: local.ioGroupKey ?? null,
+		io_parent_id: local.ioParentId ?? null,
 	};
 }
 

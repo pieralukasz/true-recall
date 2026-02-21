@@ -27,6 +27,7 @@ export class SqliteSchemaManager {
 		20: migrations.migration019ToV20,
 		21: migrations.migration020ToV21,
 		22: migrations.migration021ToV22,
+		23: migrations.migration022ToV23,
 	};
 
 	constructor(db: DatabaseLike, onSchemaChange: () => void) {
@@ -59,7 +60,11 @@ export class SqliteSchemaManager {
                 card_type TEXT NOT NULL DEFAULT 'basic',
                 cloze_template TEXT,
                 cloze_index INTEGER,
-                reverse_of TEXT
+                reverse_of TEXT,
+                io_image_path TEXT,
+                io_regions_json TEXT,
+                io_group_key TEXT,
+                io_parent_id TEXT
             );
 
             -- Indexes for common queries
@@ -74,6 +79,7 @@ export class SqliteSchemaManager {
             CREATE INDEX IF NOT EXISTS idx_cards_due_active ON cards(due, deleted_at, suspended);
             CREATE INDEX IF NOT EXISTS idx_cards_card_type ON cards(card_type);
             CREATE INDEX IF NOT EXISTS idx_cards_reverse_of ON cards(reverse_of);
+            CREATE INDEX IF NOT EXISTS idx_cards_io_parent ON cards(io_parent_id);
 
             -- Review history log 
             CREATE TABLE IF NOT EXISTS review_log (
@@ -126,14 +132,14 @@ export class SqliteSchemaManager {
             );
 
             -- Set schema version
-            INSERT OR REPLACE INTO meta (key, value) VALUES ('schema_version', '22');
+            INSERT OR REPLACE INTO meta (key, value) VALUES ('schema_version', '23');
             INSERT OR REPLACE INTO meta (key, value) VALUES ('created_at', datetime('now'));
         `);
 	}
 
 	runMigrations(): void {
 		const currentVersion = this.getSchemaVersion();
-		const latestVersion = 22;
+		const latestVersion = 23;
 
 		if (currentVersion >= latestVersion) {
 			return; // Already at latest version
