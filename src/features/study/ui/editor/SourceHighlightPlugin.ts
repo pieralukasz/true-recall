@@ -1,9 +1,9 @@
 import { StateEffect, StateField, type Extension } from "@codemirror/state";
 import {
 	Decoration,
-	type DecorationSet,
 	EditorView,
 	ViewPlugin,
+	type DecorationSet,
 	type ViewUpdate,
 } from "@codemirror/view";
 import { effect } from "@preact/signals";

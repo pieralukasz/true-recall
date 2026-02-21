@@ -868,7 +868,7 @@ export default class TrueRecallPlugin extends Plugin {
 		this.registerEditorExtension([extension]);
 
 		// Source text highlight extension (Card → Text jump)
-		void import("@features/library/ui/editor/SourceHighlightPlugin").then(
+		void import("@features/study/ui/editor/SourceHighlightPlugin").then(
 			({ createSourceHighlightExtension }) => {
 				this.registerEditorExtension(
 					createSourceHighlightExtension(

@@ -1,6 +1,5 @@
-import { StatusDot } from "@features/library/ui/panel/components/StatusDot";
 import {
-	getStatusDotColor,
+	getStatusBgClass,
 	getStatusTitle,
 	isBuried,
 	isSuspended,
@@ -130,10 +129,12 @@ export function CompactCard({
 	);
 
 	const borderCls = isSelected ? "ep:border-obs-interactive ep:border-2" : "";
+	const bgClass = getStatusBgClass(fsrsCard);
 
 	return (
 		<Clickable
-			class={`ep:flex ep:flex-col ep:mb-2 ep:rounded-lg ep:bg-obs-secondary ep:border ep:border-obs-border ep:shadow-sm ep:hover:bg-obs-modifier-hover ep:transition-colors ${borderCls}`}
+			title={getStatusTitle(fsrsCard)}
+			class={`ep:flex ep:flex-col ep:mb-2 ep:rounded-lg ${bgClass} ep:border ep:border-obs-border ep:shadow-sm ep:hover:bg-obs-modifier-hover ep:transition-colors ${borderCls}`}
 			onClick={handleRowClick}
 			onPointerDown={handlePointerDown}
 			onPointerUp={handlePointerUp}
@@ -150,11 +151,6 @@ export function CompactCard({
 						onClick={handleCheckboxClick}
 					/>
 				)}
-
-				<StatusDot
-					color={getStatusDotColor(fsrsCard)}
-					title={getStatusTitle(fsrsCard)}
-				/>
 
 				{isSuspended(fsrsCard) && (
 					<span
@@ -190,6 +186,9 @@ export function CompactCard({
 
 			{isExpanded && (
 				<div class="ep:px-3 ep:pb-3 ep:pt-2 ep:border-t ep:border-obs-border">
+					{!card.answer && (
+						<span class="ep:text-ui-smaller ep:text-obs-muted">No answer</span>
+					)}
 					<MarkdownContent
 						markdown={card.answer ?? "empty"}
 						filePath={filePath}
