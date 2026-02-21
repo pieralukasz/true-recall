@@ -1,7 +1,11 @@
 export { CalendarHeatmap } from "@features/metrics/ui/stats/components/CalendarHeatmap";
 export { CardCountsChart } from "@features/metrics/ui/stats/components/CardCountsChart";
+export { CollectionHealthCard } from "@features/metrics/ui/stats/components/CollectionHealthCard";
+export { CreationSourceChart } from "@features/metrics/ui/stats/components/CreationSourceChart";
 export { FutureDueChart } from "@features/metrics/ui/stats/components/FutureDueChart";
 export { NLQueryPanel } from "@features/metrics/ui/stats/components/NLQueryPanel";
+export { NotePerformanceTable } from "@features/metrics/ui/stats/components/NotePerformanceTable";
+export { RatingDistributionChart } from "@features/metrics/ui/stats/components/RatingDistributionChart";
 export { RetentionChart } from "@features/metrics/ui/stats/components/RetentionChart";
 export { ReviewsChart } from "@features/metrics/ui/stats/components/ReviewsChart";
 export { TimeRangeSelector } from "@features/metrics/ui/stats/components/TimeRangeSelector";

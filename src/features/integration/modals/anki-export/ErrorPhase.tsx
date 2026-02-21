@@ -11,7 +11,7 @@ export function ErrorPhase({ message, onClose }: ErrorPhaseProps) {
 			<div class="ep:text-ui-small ep:text-red-500 ep:py-4 ep:text-center">
 				Export failed: {message}
 			</div>
-			<div class="ep:flex ep:justify-end ep:gap-2 ep:pt-2 ep:border-t ep:border-obs-border">
+			<div class="ep-modal-footer ep:flex ep:justify-end ep:gap-2">
 				<button type="button" class={SECONDARY_BTN} onClick={onClose}>
 					Close
 				</button>

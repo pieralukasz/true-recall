@@ -230,6 +230,7 @@ export class AnkiImportService {
 			}
 		}
 
+		cardData.createdVia = "anki_import";
 		this.store.set(cardId, cardData);
 
 		return { status: "imported", cardId };

@@ -2,8 +2,12 @@ import { StatsCalculatorService } from "@features/metrics/services/stats/stats-c
 import {
 	CalendarHeatmap,
 	CardCountsChart,
+	CollectionHealthCard,
+	CreationSourceChart,
 	FutureDueChart,
 	NLQueryPanel,
+	NotePerformanceTable,
+	RatingDistributionChart,
 	RetentionChart,
 	ReviewsChart,
 	TimeRangeSelector,
@@ -129,10 +133,31 @@ export function StatsApp() {
 				currentRange={currentRange.value}
 			/>
 
+			<RatingDistributionChart
+				key={`rating-dist-${dataKey}`}
+				statsCalculator={statsCalculator}
+				currentRange={currentRange.value}
+			/>
+
+			<CollectionHealthCard
+				key={`health-${dataKey}`}
+				statsCalculator={statsCalculator}
+			/>
+
 			<CardCountsChart
 				key={`counts-${dataKey}`}
 				statsCalculator={statsCalculator}
 				onCategoryClick={handleCardPreviewForCategory}
+			/>
+
+			<NotePerformanceTable
+				key={`note-perf-${dataKey}`}
+				statsCalculator={statsCalculator}
+			/>
+
+			<CreationSourceChart
+				key={`creation-source-${dataKey}`}
+				statsCalculator={statsCalculator}
 			/>
 
 			<CalendarHeatmap

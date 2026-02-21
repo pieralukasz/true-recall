@@ -91,6 +91,11 @@ export interface FSRSCardData {
 	/** For reversed cards: ID of the original card this is the reverse of */
 	reverseOf?: string;
 
+	// === Creation source tracking (schema v24) ===
+
+	/** How the card was created: 'manual', 'ai', or 'anki_import' */
+	createdVia?: string;
+
 	// === Image occlusion fields (schema v23) ===
 
 	/** Vault-relative path to the source image */

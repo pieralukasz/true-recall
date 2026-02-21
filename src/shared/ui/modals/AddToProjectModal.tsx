@@ -90,17 +90,17 @@ function AddToProjectBody({
 				)}
 			</div>
 
-			<div class="ep:flex ep:justify-end ep:gap-2 ep:pt-2 ep:border-t ep:border-obs-border">
+			<div class="ep-modal-footer ep:flex ep:justify-end ep:gap-2">
 				<button
 					type="button"
-					class="ep:py-2.5 ep:px-5 ep:rounded-md ep:text-ui-small ep:font-medium ep:cursor-pointer ep:transition-all ep:bg-obs-secondary ep:text-obs-normal ep:border ep:border-obs-border ep:hover:bg-obs-modifier-hover"
+					class="ep-btn ep-btn-outline"
 					onClick={() => onResolve({ cancelled: true, projects: [] })}
 				>
 					Cancel
 				</button>
 				<button
 					type="button"
-					class="mod-cta ep:py-2.5 ep:px-5 ep:rounded-md ep:text-ui-small ep:font-medium ep:cursor-pointer ep:transition-all"
+					class="mod-cta ep-btn"
 					onClick={() =>
 						onResolve({
 							cancelled: false,

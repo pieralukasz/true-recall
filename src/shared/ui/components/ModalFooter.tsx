@@ -1,9 +1,7 @@
 import type { ComponentChildren } from "preact";
 
-const PRIMARY_BTN =
-	"mod-cta ep:py-2.5 ep:px-5 ep:rounded-md ep:text-ui-small ep:font-medium ep:cursor-pointer ep:transition-all";
-const SECONDARY_BTN =
-	"ep:py-2.5 ep:px-5 ep:rounded-md ep:text-ui-small ep:font-medium ep:cursor-pointer ep:transition-all ep:bg-obs-secondary ep:text-obs-normal ep:border ep:border-obs-border ep:hover:bg-obs-modifier-hover";
+const PRIMARY_BTN = "mod-cta ep-btn";
+const SECONDARY_BTN = "ep-btn ep-btn-outline";
 
 export { PRIMARY_BTN, SECONDARY_BTN };
 
@@ -27,7 +25,7 @@ export function ModalFooter({
 	children,
 }: ModalFooterProps) {
 	return (
-		<div class="ep:flex ep:justify-end ep:gap-2 ep:pt-4 ep:border-t ep:border-obs-border">
+		<div class="ep-modal-footer ep:flex ep:justify-end ep:gap-2">
 			{children}
 			<button type="button" class={SECONDARY_BTN} onClick={onCancel}>
 				{cancelLabel}

@@ -261,7 +261,7 @@ export function SimpleEditorBody({
 			<KeyboardShortcutsHint />
 
 			{/* Buttons */}
-			<div class="ep:flex ep:justify-between ep:items-center ep:gap-3 ep:mt-4 ep:pt-4 ep:border-t ep:border-obs-border">
+			<div class="ep-modal-footer ep:flex ep:justify-between ep:items-center ep:gap-3 ep:mt-4">
 				{/* Left: Preview toggle */}
 				<div class="ep:flex ep:items-center ep:gap-2">
 					<label class="ep:flex ep:items-center ep:gap-2 ep:cursor-pointer ep:text-ui-smaller ep:text-obs-muted">
@@ -286,7 +286,7 @@ export function SimpleEditorBody({
 					</button>
 					<button
 						type="button"
-						class="ep:py-3 ep:px-5 ep:bg-obs-interactive ep:text-obs-on-accent ep:border-none ep:rounded-md ep:cursor-pointer ep:font-medium ep:transition-colors ep:hover:bg-obs-interactive-hover"
+						class="mod-cta ep-btn"
 						onClick={handleSave}
 					>
 						{buttonText}

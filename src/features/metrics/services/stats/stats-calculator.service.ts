@@ -12,9 +12,14 @@ import type {
 	CardMaturityBreakdown,
 	CardsCreatedEntry,
 	CardsCreatedVsReviewedEntry,
+	CollectionHealthSnapshot,
+	CreationSourceStats,
 	ExtendedDailyStats,
 	FSRSFlashcardItem,
 	FutureDueEntry,
+	HealthBucket,
+	NotePerformanceRow,
+	RatingDistributionEntry,
 	RetentionEntry,
 	StatsTimeRange,
 	TodaySummary,
@@ -23,6 +28,8 @@ import { State } from "ts-fsrs";
 
 export class StatsCalculatorService {
 	private sessionPersistence: SessionPersistenceService;
+	private fsrsService: FSRSService;
+	private sqliteStore: SqliteStoreService | null = null;
 
 	// Specialized calculators
 	private streakCalculator = new StreakCalculator();
@@ -30,11 +37,12 @@ export class StatsCalculatorService {
 	private chartDataCalculator = new ChartDataCalculator();
 
 	constructor(
-		_fsrsService: FSRSService,
+		fsrsService: FSRSService,
 		private flashcardManager: FlashcardManager,
 		sessionPersistence: SessionPersistenceService,
 	) {
 		this.sessionPersistence = sessionPersistence;
+		this.fsrsService = fsrsService;
 	}
 
 	/**
@@ -42,6 +50,7 @@ export class StatsCalculatorService {
 	 * When set, uses SQL aggregations instead of iterating all cards
 	 */
 	setSqliteStore(store: SqliteStoreService): void {
+		this.sqliteStore = store;
 		this.maturityCalculator.setSqliteStore(store);
 		this.chartDataCalculator.setSqliteStore(store);
 	}
@@ -186,6 +195,52 @@ export class StatsCalculatorService {
 		};
 	}
 
+	getRatingDistributionHistory(range: StatsTimeRange): RatingDistributionEntry[] {
+		if (!this.sessionPersistence) {
+			return [];
+		}
+		const allStats = this.sessionPersistence.getAllDailyStatsSummary();
+		return this.chartDataCalculator.getRatingDistributionHistory(allStats, range);
+	}
+
+	getCollectionHealthSnapshot(): CollectionHealthSnapshot {
+		// Only active (non-new, non-suspended, non-deleted) cards have meaningful retrievability
+		const allCards = this.flashcardManager
+			.getAllFSRSCards()
+			.filter((c) => c.fsrs.state !== State.New && !c.fsrs.suspended);
+
+		if (allCards.length === 0) {
+			return { averageRetention: 0, distribution: buildHealthBuckets([]), cardCount: 0 };
+		}
+
+		const now = new Date();
+		const retrievabilities = allCards.map((c) =>
+			this.fsrsService.getRetrievability(c.fsrs, now),
+		);
+
+		const avg = retrievabilities.reduce((s, r) => s + r, 0) / retrievabilities.length;
+
+		return {
+			averageRetention: Math.round(avg * 100),
+			distribution: buildHealthBuckets(retrievabilities),
+			cardCount: allCards.length,
+		};
+	}
+
+	getNotePerformance(): NotePerformanceRow[] {
+		if (this.sqliteStore) {
+			return this.sqliteStore.stats.getNotePerformance();
+		}
+		return [];
+	}
+
+	getCreationSourcePerformance(): CreationSourceStats[] {
+		if (this.sqliteStore) {
+			return this.sqliteStore.stats.getCreationSourcePerformance();
+		}
+		return [];
+	}
+
 	/**
 	 * Get retention rate history for line chart
 	 * Retention = (Good + Easy) / Total reviews
@@ -286,4 +341,28 @@ export class StatsCalculatorService {
 	): CardsCreatedVsReviewedEntry[] {
 		return this.chartDataCalculator.getCardsCreatedVsReviewedHistory(range);
 	}
+}
+
+const HEALTH_BUCKETS: { label: string; threshold: number; colorVar: string }[] = [
+	{ label: "At risk (<50%)", threshold: 0.5, colorVar: "--color-red" },
+	{ label: "Low (50–70%)", threshold: 0.7, colorVar: "--color-orange" },
+	{ label: "Medium (70–85%)", threshold: 0.85, colorVar: "--color-yellow" },
+	{ label: "High (85–95%)", threshold: 0.95, colorVar: "--color-green" },
+	{ label: "Strong (>95%)", threshold: 1, colorVar: "--color-cyan" },
+];
+
+function buildHealthBuckets(retrievabilities: number[]): HealthBucket[] {
+	const counts = new Map<number, number>(
+		HEALTH_BUCKETS.map((_, i) => [i, 0]),
+	);
+	for (const r of retrievabilities) {
+		const idx = HEALTH_BUCKETS.findIndex((b) => r < b.threshold);
+		const bucketIdx = idx === -1 ? HEALTH_BUCKETS.length - 1 : idx;
+		counts.set(bucketIdx, (counts.get(bucketIdx) ?? 0) + 1);
+	}
+	return HEALTH_BUCKETS.map((b, i) => ({
+		label: b.label,
+		count: counts.get(i) ?? 0,
+		colorVar: b.colorVar,
+	}));
 }
