@@ -28,7 +28,8 @@ const CARD_SELECT_COLUMNS = `
     io_regions_json as ioRegionsJson,
     io_group_key as ioGroupKey,
     io_parent_id as ioParentId,
-    created_via as createdVia
+    created_via as createdVia,
+    source_text as sourceText
 `;
 
 const CARD_SELECT_COLUMNS_FOR_SYNC = `
@@ -52,7 +53,8 @@ const CARD_SELECT_COLUMNS_FOR_SYNC = `
     io_regions_json as ioRegionsJson,
     io_group_key as ioGroupKey,
     io_parent_id as ioParentId,
-    created_via as createdVia
+    created_via as createdVia,
+    source_text as sourceText
 `;
 
 interface CardRow {
@@ -83,6 +85,7 @@ interface CardRow {
 	ioGroupKey: string | null;
 	ioParentId: string | null;
 	createdVia: string | null;
+	sourceText: string | null;
 }
 
 function mapRowToCard(row: CardRow): FSRSCardData {
@@ -112,6 +115,7 @@ function mapRowToCard(row: CardRow): FSRSCardData {
 		ioGroupKey: row.ioGroupKey ?? undefined,
 		ioParentId: row.ioParentId ?? undefined,
 		createdVia: row.createdVia ?? undefined,
+		sourceText: row.sourceText ?? undefined,
 	};
 }
 
@@ -158,8 +162,8 @@ export class CardActions {
                 question, answer, source_uid,
                 card_type, cloze_template, cloze_index, reverse_of,
                 io_image_path, io_regions_json, io_group_key, io_parent_id,
-                created_via
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                created_via, source_text
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         `,
 			[
 				cardId,
@@ -188,6 +192,7 @@ export class CardActions {
 				data.ioGroupKey ?? null,
 				data.ioParentId ?? null,
 				data.createdVia ?? "manual",
+				data.sourceText ?? null,
 			],
 		);
 	}
@@ -420,8 +425,9 @@ export class CardActions {
                 buried_until, created_at, updated_at, deleted_at,
                 question, answer, source_uid,
                 card_type, cloze_template, cloze_index, reverse_of,
-                io_image_path, io_regions_json, io_group_key, io_parent_id
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                io_image_path, io_regions_json, io_group_key, io_parent_id,
+                source_text
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         `,
 			[
 				data.id,
@@ -450,6 +456,7 @@ export class CardActions {
 				data.ioRegionsJson ?? null,
 				data.ioGroupKey ?? null,
 				data.ioParentId ?? null,
+				data.sourceText ?? null,
 			],
 		);
 	}

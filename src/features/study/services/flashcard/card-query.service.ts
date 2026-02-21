@@ -57,6 +57,7 @@ export class CardQueryService {
 				clozeTemplate: card.clozeTemplate,
 				clozeIndex: card.clozeIndex,
 				reverseOf: card.reverseOf,
+				sourceText: card.sourceText,
 			}));
 	}
 

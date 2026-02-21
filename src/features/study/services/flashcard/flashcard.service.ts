@@ -129,6 +129,7 @@ export class FlashcardManager {
 				clozeTemplate: c.clozeTemplate,
 				clozeIndex: c.clozeIndex,
 				reverseOfBatchId: c.reverseOf,
+				sourceText: c.sourceText,
 			})),
 			lastModified: this.getLatestCardTimestamp(cards),
 			sourceUid,
@@ -179,6 +180,7 @@ export class FlashcardManager {
 			reverseOfBatchId?: string;
 		}>,
 		createdVia?: string,
+		sourceText?: string,
 	): Promise<CreateBatchResult> {
 		if (!this.cardRepository) {
 			throw new Error("Card store not initialized");
@@ -196,6 +198,7 @@ export class FlashcardManager {
 			sourceUid,
 			sourceFile.basename,
 			createdVia,
+			sourceText,
 		);
 	}
 

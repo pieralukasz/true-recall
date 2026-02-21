@@ -8,6 +8,7 @@ export interface FlashcardItem {
 	clozeTemplate?: string;
 	clozeIndex?: number;
 	reverseOfBatchId?: string;
+	sourceText?: string;
 }
 
 export interface FlashcardInfo {

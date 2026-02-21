@@ -107,7 +107,13 @@ export class TestSqliteDatabase {
 				card_type TEXT NOT NULL DEFAULT 'basic',
 				cloze_template TEXT,
 				cloze_index INTEGER,
-				reverse_of TEXT
+				reverse_of TEXT,
+				io_image_path TEXT,
+				io_regions_json TEXT,
+				io_group_key TEXT,
+				io_parent_id TEXT,
+				created_via TEXT DEFAULT 'manual',
+				source_text TEXT
 			);
 
 			-- Indexes
@@ -272,6 +278,7 @@ export function createTestCard(overrides: Partial<FSRSCardData> = {}): FSRSCardD
 		question: overrides.question ?? `Question for ${id}`,
 		answer: overrides.answer ?? `Answer for ${id}`,
 		sourceUid: overrides.sourceUid,
+		sourceText: overrides.sourceText,
 	};
 }
 
