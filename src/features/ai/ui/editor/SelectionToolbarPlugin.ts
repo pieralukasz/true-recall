@@ -2,6 +2,7 @@ import type { Extension } from "@codemirror/state";
 import { type EditorView, ViewPlugin, type ViewUpdate } from "@codemirror/view";
 import type { GenerationMode } from "@features/ai/prompts/default-prompts";
 import { SelectionToolbar } from "@features/ai/ui/editor/SelectionToolbar";
+import { computePosition, flip, offset, shift } from "@floating-ui/dom";
 import { h, render } from "preact";
 
 export interface SelectionToolbarCallbacks {
@@ -112,26 +113,27 @@ export function createSelectionToolbarExtension(
 					return;
 				}
 
-				const toolbarRect = this.container.getBoundingClientRect();
-				const toolbarHeight = toolbarRect.height || 28;
+				const virtualEl = {
+					getBoundingClientRect: () => ({
+						width: coords.right - coords.left,
+						height: coords.bottom - coords.top,
+						x: coords.left,
+						y: coords.top,
+						top: coords.top,
+						left: coords.left,
+						right: coords.right,
+						bottom: coords.bottom,
+					}),
+				};
 
-				let left = coords.left;
-				let top = coords.top - toolbarHeight - 6;
-
-				// Keep within viewport
-				const vw = window.innerWidth;
-				if (left + toolbarRect.width > vw - 8) {
-					left = vw - toolbarRect.width - 8;
-				}
-				if (left < 8) left = 8;
-
-				// If no space above, show below the selection
-				if (top < 8) {
-					top = coords.bottom + 6;
-				}
-
-				this.container.style.left = `${left}px`;
-				this.container.style.top = `${top}px`;
+				void computePosition(virtualEl, this.container, {
+					placement: "top-start",
+					middleware: [offset(6), flip(), shift({ padding: 8 })],
+				}).then(({ x, y }) => {
+					if (!this.container) return;
+					this.container.style.left = `${x}px`;
+					this.container.style.top = `${y}px`;
+				});
 			}
 
 			private removeToolbar(): void {
