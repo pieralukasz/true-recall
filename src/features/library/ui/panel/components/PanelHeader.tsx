@@ -2,8 +2,7 @@ import { countByState } from "@features/library/ui/panel/utils/card-status.utils
 import type { SelectionMode } from "@shared/store";
 import type { FlashcardInfo } from "@shared/types";
 import type { FSRSFlashcardItem } from "@shared/types/fsrs/card.types";
-import { SearchInput } from "@shared/ui/components";
-import { useIcon } from "@shared/ui/preact/hooks";
+import { IconButton, SearchInput } from "@shared/ui/components";
 import { Menu } from "obsidian";
 import { useCallback } from "preact/hooks";
 
@@ -52,12 +51,6 @@ export function PanelHeader({
 	onDeleteAll,
 	onOpenSourceNote,
 }: PanelHeaderProps) {
-	const moreIconRef = useIcon("more-vertical");
-	const addIconRef = useIcon("plus");
-	const collectIconRef = useIcon("download");
-	const openNoteIconRef = useIcon("file-text");
-	const closeIconRef = useIcon("x");
-
 	const handleMoreMenu = useCallback(
 		(e: MouseEvent) => {
 			const menu = new Menu();
@@ -122,15 +115,13 @@ export function PanelHeader({
 						</div>
 					</div>
 					<div class="ep:flex ep:items-center ep:gap-1">
-						<button
-							type="button"
-							class="clickable-icon ep:flex ep:items-center ep:gap-1"
-							aria-label="Exit selection mode"
-							onClick={onExitSelectionMode}
-						>
-							<span ref={closeIconRef} />
-							<span class="ep:text-ui-smaller ep:text-obs-faint">Cancel</span>
-						</button>
+						<IconButton
+							icon="x"
+							ariaLabel="Exit selection mode"
+							onClick={() => onExitSelectionMode()}
+							size="small"
+							label="Cancel"
+						/>
 					</div>
 				</div>
 			</div>
@@ -172,45 +163,38 @@ export function PanelHeader({
 				{/* Right side: action buttons */}
 				<div class="ep:flex ep:items-center ep:gap-1">
 					{isFollowingReview && (
-						<button
-							type="button"
-							class="clickable-icon"
-							aria-label="Open source note"
-							onClick={onOpenSourceNote}
-						>
-							<span ref={openNoteIconRef} />
-						</button>
+						<IconButton
+							icon="file-text"
+							ariaLabel="Open source note"
+							onClick={() => onOpenSourceNote()}
+							size="small"
+						/>
 					)}
 
 					{hasUncollectedFlashcards && (
-						<button
-							type="button"
-							class="clickable-icon ep:flex ep:items-center ep:gap-1 true-recall-pulse-collect"
-							aria-label={`Collect ${uncollectedCount} flashcards`}
-							onClick={onCollect}
-						>
-							<span ref={collectIconRef} />
-							<span class="ep:text-ui-smaller">{uncollectedCount}</span>
-						</button>
+						<IconButton
+							icon="download"
+							ariaLabel={`Collect ${uncollectedCount} flashcards`}
+							onClick={() => onCollect()}
+							size="small"
+							label={String(uncollectedCount)}
+							class="true-recall-pulse-collect"
+						/>
 					)}
 
-					<button
-						type="button"
-						class="clickable-icon"
-						aria-label="Add flashcard"
-						onClick={onAdd}
-					>
-						<span ref={addIconRef} />
-					</button>
+					<IconButton
+						icon="plus"
+						ariaLabel="Add flashcard"
+						onClick={() => onAdd()}
+						size="small"
+					/>
 
-					<button
-						type="button"
-						class="clickable-icon"
-						aria-label="More actions"
+					<IconButton
+						icon="more-vertical"
+						ariaLabel="More actions"
 						onClick={handleMoreMenu}
-					>
-						<span ref={moreIconRef} />
-					</button>
+						size="small"
+					/>
 				</div>
 			</div>
 
