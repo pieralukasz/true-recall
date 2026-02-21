@@ -10,7 +10,7 @@ export { State, Rating };
 export type { Grade };
 export type { Card as FSRSCard };
 
-export type CardType = "basic" | "cloze" | "reversed";
+export type CardType = "basic" | "cloze" | "reversed" | "image-occlusion";
 
 /**
  * Single review log entry stored per-card for FSRS optimization
@@ -90,6 +90,17 @@ export interface FSRSCardData {
 	clozeIndex?: number;
 	/** For reversed cards: ID of the original card this is the reverse of */
 	reverseOf?: string;
+
+	// === Image occlusion fields (schema v23) ===
+
+	/** Vault-relative path to the source image */
+	ioImagePath?: string;
+	/** JSON-serialized IODefinition (regions + maskMode) */
+	ioRegionsJson?: string;
+	/** Which mask group this child card tests */
+	ioGroupKey?: string;
+	/** Parent card ID (for IO child cards) */
+	ioParentId?: string;
 }
 
 /**
@@ -121,4 +132,12 @@ export interface FSRSFlashcardItem {
 	clozeIndex?: number;
 	/** For reversed cards: ID of the original card this is the reverse of */
 	reverseOf?: string;
+	/** Vault-relative path to the source image (IO cards) */
+	ioImagePath?: string;
+	/** JSON-serialized IODefinition (IO cards) */
+	ioRegionsJson?: string;
+	/** Which mask group this child card tests (IO children) */
+	ioGroupKey?: string;
+	/** Parent card ID (IO children) */
+	ioParentId?: string;
 }
