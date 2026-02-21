@@ -42,6 +42,7 @@ export interface HighlightRequest {
 	sourceNotePath: string;
 	sourceText: string;
 	requestId: number;
+	mode: "jump" | "hover";
 }
 
 export const highlightRequest = signal<HighlightRequest | null>(null);
@@ -51,10 +52,16 @@ let highlightCounter = 0;
 export function requestSourceHighlight(
 	sourceNotePath: string,
 	sourceText: string,
+	mode: "jump" | "hover" = "jump",
 ): void {
 	highlightRequest.value = {
 		sourceNotePath,
 		sourceText,
 		requestId: ++highlightCounter,
+		mode,
 	};
+}
+
+export function clearSourceHighlight(): void {
+	highlightRequest.value = null;
 }
