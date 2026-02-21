@@ -127,8 +127,7 @@ describe("Source text linking", () => {
 	});
 
 	describe("signal communication", () => {
-		it("requestSourceHighlight updates signal with incremented requestId", async () => {
-			// Re-import the real module to test signal behavior
+		it("requestSourceHighlight updates signal with incremented requestId and mode", async () => {
 			const { requestSourceHighlight, highlightRequest } = await vi.importActual<
 				typeof import("../../../src/shared/services/signals")
 			>("../../../src/shared/services/signals");
@@ -139,11 +138,26 @@ describe("Source text linking", () => {
 			expect(req1!.sourceNotePath).toBe("notes/biology.md");
 			expect(req1!.sourceText).toBe("Cell division");
 			expect(req1!.requestId).toBeGreaterThan(0);
+			expect(req1!.mode).toBe("jump");
 
-			requestSourceHighlight("notes/physics.md", "Gravity");
+			requestSourceHighlight("notes/physics.md", "Gravity", "hover");
 			const req2 = highlightRequest.value;
 			expect(req2!.requestId).toBeGreaterThan(req1!.requestId);
 			expect(req2!.sourceNotePath).toBe("notes/physics.md");
+			expect(req2!.mode).toBe("hover");
+		});
+
+		it("clearSourceHighlight sets signal to null", async () => {
+			const { requestSourceHighlight, clearSourceHighlight, highlightRequest } =
+				await vi.importActual<
+					typeof import("../../../src/shared/services/signals")
+				>("../../../src/shared/services/signals");
+
+			requestSourceHighlight("notes/test.md", "Some text");
+			expect(highlightRequest.value).not.toBeNull();
+
+			clearSourceHighlight();
+			expect(highlightRequest.value).toBeNull();
 		});
 	});
 });
