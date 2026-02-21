@@ -1,4 +1,5 @@
 import type { NoteStatusInfo } from "@features/core/cache/note-status-cache.service";
+import { FSRS_COLORS } from "@shared/ui/helpers/fsrs-colors";
 import { Clickable } from "@shared/ui/preact";
 import { cva, type VariantProps } from "class-variance-authority";
 
@@ -27,7 +28,7 @@ const donutVariants = cva(
 interface DonutSegment {
 	length: number;
 	offset: number;
-	cls: string;
+	stroke: string;
 }
 
 export interface DonutChartProps extends VariantProps<typeof donutVariants> {
@@ -48,7 +49,7 @@ export function DonutChart({ info, onPlay, variant }: DonutChartProps) {
 			segments.push({
 				length: duePercent,
 				offset,
-				cls: "true-recall-donut-due",
+				stroke: `var(${FSRS_COLORS.review.cssVar})`,
 			});
 			offset += duePercent;
 		}
@@ -56,7 +57,7 @@ export function DonutChart({ info, onPlay, variant }: DonutChartProps) {
 			segments.push({
 				length: newPercent,
 				offset,
-				cls: "true-recall-donut-new",
+				stroke: `var(${FSRS_COLORS.new.cssVar})`,
 			});
 			offset += newPercent;
 		}
@@ -64,7 +65,7 @@ export function DonutChart({ info, onPlay, variant }: DonutChartProps) {
 			segments.push({
 				length: learningPercent,
 				offset,
-				cls: "true-recall-donut-learning",
+				stroke: `var(${FSRS_COLORS.learning.cssVar})`,
 			});
 		}
 	}
@@ -87,15 +88,16 @@ export function DonutChart({ info, onPlay, variant }: DonutChartProps) {
 					stroke-width={STROKE_WIDTH}
 					class="true-recall-donut-bg"
 				/>
-				{segments.map((seg) => (
+				{segments.map((seg, i) => (
 					<circle
-						key={seg.cls}
+						key={i}
 						cx={18}
 						cy={18}
 						r={RADIUS}
 						fill="none"
 						stroke-width={STROKE_WIDTH}
-						class={seg.cls}
+						class="true-recall-donut-segment"
+						stroke={seg.stroke}
 						stroke-dasharray={`${seg.length} ${CIRCUMFERENCE - seg.length}`}
 						stroke-dashoffset={25 - seg.offset}
 					/>

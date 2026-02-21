@@ -1,4 +1,6 @@
-/* Flashcard panel — collect button pulse animation */
+/* Flashcard panel
+   FSRS state colors: canonical mapping in src/shared/ui/helpers/fsrs-colors.ts
+   Highlight class suffixes (-green, -orange, -blue, -red) match FsrsColorName values. */
 @layer components {
 	@keyframes true-recall-pulse-collect {
 		0%,
@@ -26,6 +28,26 @@
 		border-radius: 2px;
 		animation: true-recall-source-highlight-fade 2s ease-out forwards;
 	}
+	.true-recall-source-highlight-green {
+		background-color: color-mix(in srgb, var(--color-green) 25%, transparent);
+		border-radius: 2px;
+		animation: true-recall-source-highlight-fade-green 2s ease-out forwards;
+	}
+	.true-recall-source-highlight-orange {
+		background-color: color-mix(in srgb, var(--color-orange) 25%, transparent);
+		border-radius: 2px;
+		animation: true-recall-source-highlight-fade-orange 2s ease-out forwards;
+	}
+	.true-recall-source-highlight-blue {
+		background-color: color-mix(in srgb, var(--color-blue) 25%, transparent);
+		border-radius: 2px;
+		animation: true-recall-source-highlight-fade-blue 2s ease-out forwards;
+	}
+	.true-recall-source-highlight-red {
+		background-color: color-mix(in srgb, var(--color-red) 25%, transparent);
+		border-radius: 2px;
+		animation: true-recall-source-highlight-fade-red 2s ease-out forwards;
+	}
 
 	@keyframes true-recall-source-highlight-fade {
 		0%,
@@ -36,16 +58,57 @@
 			background-color: transparent;
 		}
 	}
+	@keyframes true-recall-source-highlight-fade-green {
+		0%, 70% { background-color: color-mix(in srgb, var(--color-green) 25%, transparent); }
+		100% { background-color: transparent; }
+	}
+	@keyframes true-recall-source-highlight-fade-orange {
+		0%, 70% { background-color: color-mix(in srgb, var(--color-orange) 25%, transparent); }
+		100% { background-color: transparent; }
+	}
+	@keyframes true-recall-source-highlight-fade-blue {
+		0%, 70% { background-color: color-mix(in srgb, var(--color-blue) 25%, transparent); }
+		100% { background-color: transparent; }
+	}
+	@keyframes true-recall-source-highlight-fade-red {
+		0%, 70% { background-color: color-mix(in srgb, var(--color-red) 25%, transparent); }
+		100% { background-color: transparent; }
+	}
 
-	/* Source text highlight — persistent while hovering a card */
+	/* Source text highlight — persistent while hovering a card (fades in over 300ms) */
 	.true-recall-source-highlight-hover {
 		background-color: var(--text-highlight-bg, rgba(255, 208, 0, 0.4));
 		border-radius: 2px;
+		animation: true-recall-highlight-fade-in 300ms ease-out;
+	}
+	.true-recall-source-highlight-hover-green {
+		background-color: color-mix(in srgb, var(--color-green) 25%, transparent);
+		border-radius: 2px;
+		animation: true-recall-highlight-fade-in 300ms ease-out;
+	}
+	.true-recall-source-highlight-hover-orange {
+		background-color: color-mix(in srgb, var(--color-orange) 25%, transparent);
+		border-radius: 2px;
+		animation: true-recall-highlight-fade-in 300ms ease-out;
+	}
+	.true-recall-source-highlight-hover-blue {
+		background-color: color-mix(in srgb, var(--color-blue) 25%, transparent);
+		border-radius: 2px;
+		animation: true-recall-highlight-fade-in 300ms ease-out;
+	}
+	.true-recall-source-highlight-hover-red {
+		background-color: color-mix(in srgb, var(--color-red) 25%, transparent);
+		border-radius: 2px;
+		animation: true-recall-highlight-fade-in 300ms ease-out;
+	}
+
+	@keyframes true-recall-highlight-fade-in {
+		from { background-color: transparent; }
 	}
 }
 
 @media (prefers-reduced-motion: reduce) {
-	.true-recall-source-highlight {
+	[class*="true-recall-source-highlight"] {
 		animation: none;
 	}
 }

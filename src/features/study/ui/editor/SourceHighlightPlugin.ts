@@ -87,10 +87,14 @@ export function createSourceHighlightExtension(
 					this.clearTimer = null;
 				}
 
+				const colorSuffix =
+					req.colorHint && req.colorHint !== "default"
+						? `-${req.colorHint}`
+						: "";
 				const className =
 					req.mode === "hover"
-						? "true-recall-source-highlight-hover"
-						: "true-recall-source-highlight";
+						? `true-recall-source-highlight-hover${colorSuffix}`
+						: `true-recall-source-highlight${colorSuffix}`;
 
 				const effects: StateEffect<unknown>[] = [
 					addHighlight.of({

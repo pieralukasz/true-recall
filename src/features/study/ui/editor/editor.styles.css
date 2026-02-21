@@ -1,4 +1,5 @@
-/* SVG donut ring styling — cannot be expressed as Tailwind utilities */
+/* SVG donut ring styling — cannot be expressed as Tailwind utilities
+   FSRS state colors: canonical mapping in src/shared/ui/helpers/fsrs-colors.ts */
 @layer components {
 	.true-recall-donut-svg {
 		width: 100%;
@@ -7,16 +8,7 @@
 	.true-recall-donut-bg {
 		stroke: color-mix(in srgb, var(--text-faint) 20%, transparent);
 	}
-	.true-recall-donut-due {
-		stroke: var(--color-blue);
-		transition: stroke-dashoffset 0.5s ease;
-	}
-	.true-recall-donut-new {
-		stroke: var(--color-green);
-		transition: stroke-dashoffset 0.5s ease;
-	}
-	.true-recall-donut-learning {
-		stroke: var(--color-orange);
+	.true-recall-donut-segment {
 		transition: stroke-dashoffset 0.5s ease;
 	}
 	.true-recall-donut-count {

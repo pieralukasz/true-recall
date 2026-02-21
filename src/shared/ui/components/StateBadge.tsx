@@ -1,3 +1,4 @@
+import { FSRS_COLORS, MUTED_STATES } from "@shared/ui/helpers/fsrs-colors";
 import { State } from "ts-fsrs";
 
 export type CardStateType =
@@ -22,28 +23,13 @@ interface StateConfig {
 }
 
 const STATE_CONFIGS: Record<CardStateType, StateConfig> = {
-	new: { label: "New", colorCls: "ep:bg-obs-green/15 ep:text-obs-green" },
-	learning: {
-		label: "Learning",
-		colorCls: "ep:bg-obs-orange/15 ep:text-obs-orange",
-	},
-	review: { label: "Review", colorCls: "ep:bg-obs-blue/15 ep:text-obs-blue" },
-	relearning: {
-		label: "Relearn",
-		colorCls: "ep:bg-obs-yellow/15 ep:text-obs-yellow",
-	},
-	suspended: {
-		label: "Suspended",
-		colorCls: "ep:bg-obs-red/15 ep:text-obs-error",
-	},
-	buried: {
-		label: "Buried",
-		colorCls: "ep:bg-obs-modifier-hover ep:text-obs-muted",
-	},
-	unknown: {
-		label: "Unknown",
-		colorCls: "ep:bg-obs-modifier-hover ep:text-obs-muted",
-	},
+	new: { label: "New", colorCls: FSRS_COLORS.new.badgeCls },
+	learning: { label: "Learning", colorCls: FSRS_COLORS.learning.badgeCls },
+	review: { label: "Review", colorCls: FSRS_COLORS.review.badgeCls },
+	relearning: { label: "Relearn", colorCls: FSRS_COLORS.relearning.badgeCls },
+	suspended: { label: "Suspended", colorCls: FSRS_COLORS.suspended.badgeCls },
+	buried: { label: "Buried", colorCls: MUTED_STATES.buried.badgeCls },
+	unknown: { label: "Unknown", colorCls: MUTED_STATES.unknown.badgeCls },
 };
 
 export function getCardStateType(props: StateBadgeProps): CardStateType {
