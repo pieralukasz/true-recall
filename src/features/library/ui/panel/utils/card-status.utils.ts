@@ -48,6 +48,23 @@ export function isBuried(fsrsCard?: FSRSFlashcardItem): boolean {
 	return new Date(buriedUntil) > new Date();
 }
 
+export function getStatusBgClass(fsrsCard: FSRSFlashcardItem | undefined): string {
+	if (!fsrsCard) return "ep:bg-obs-secondary";
+	if (isSuspended(fsrsCard)) return "ep:bg-obs-red/10";
+	if (isBuried(fsrsCard)) return "ep:bg-obs-secondary";
+	switch (fsrsCard.fsrs.state) {
+		case State.New:
+			return "ep:bg-obs-green/10";
+		case State.Learning:
+		case State.Relearning:
+			return "ep:bg-obs-orange/10";
+		case State.Review:
+			return "ep:bg-obs-blue/10";
+		default:
+			return "ep:bg-obs-secondary";
+	}
+}
+
 export function getAggregateStatusDotColor(
 	fsrsCards: (FSRSFlashcardItem | undefined)[],
 ): string {
