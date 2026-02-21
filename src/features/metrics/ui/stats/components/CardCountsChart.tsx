@@ -1,6 +1,7 @@
 import type { StatsCalculatorService } from "@features/metrics/services/stats/stats-calculator.service";
 import { StatsCard } from "@features/metrics/ui/stats/components/StatsCard";
 import type { CardMaturityBreakdown, FSRSFlashcardItem } from "@shared/types";
+import { FSRS_COLORS } from "@shared/ui/helpers/fsrs-colors";
 import { getThemeColor } from "@shared/ui/utils/theme-colors";
 import { Chart } from "chart.js";
 import { useEffect, useRef, useState } from "preact/hooks";
@@ -49,8 +50,8 @@ export function CardCountsChart({
 		chartRef.current?.destroy();
 
 		const colors = {
-			new: getThemeColor("--color-green"),
-			learning: getThemeColor("--color-orange"),
+			new: getThemeColor(FSRS_COLORS.new.cssVar),
+			learning: getThemeColor(FSRS_COLORS.learning.cssVar),
 			young: getThemeColor("--color-blue"),
 			mature: getThemeColor("--color-purple"),
 			suspended: getThemeColor("--text-faint"),

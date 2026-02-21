@@ -1,4 +1,11 @@
 import type { FSRSFlashcardItem } from "@shared/types";
+import {
+	FSRS_COLORS,
+	fsrsStateToColor,
+	fsrsStateToColorName,
+	fsrsStateToCssVar,
+	type HighlightColor,
+} from "@shared/ui/helpers/fsrs-colors";
 import { State } from "ts-fsrs";
 
 export interface StatusCounts {
@@ -9,17 +16,7 @@ export interface StatusCounts {
 
 export function getStatusDotColor(fsrsCard?: FSRSFlashcardItem): string {
 	if (!fsrsCard) return "var(--text-muted)";
-	switch (fsrsCard.fsrs.state) {
-		case State.New:
-			return "var(--color-green)";
-		case State.Learning:
-		case State.Relearning:
-			return "var(--color-orange)";
-		case State.Review:
-			return "var(--color-blue)";
-		default:
-			return "var(--text-muted)";
-	}
+	return fsrsStateToCssVar(fsrsCard.fsrs.state);
 }
 
 export function getStatusTitle(fsrsCard?: FSRSFlashcardItem): string {
@@ -48,21 +45,22 @@ export function isBuried(fsrsCard?: FSRSFlashcardItem): boolean {
 	return new Date(buriedUntil) > new Date();
 }
 
-export function getStatusBgClass(fsrsCard: FSRSFlashcardItem | undefined): string {
+export function getStatusBgClass(
+	fsrsCard: FSRSFlashcardItem | undefined,
+): string {
 	if (!fsrsCard) return "ep:bg-obs-secondary";
-	if (isSuspended(fsrsCard)) return "ep:bg-obs-red/10";
+	if (isSuspended(fsrsCard)) return FSRS_COLORS.suspended.bgCls;
 	if (isBuried(fsrsCard)) return "ep:bg-obs-secondary";
-	switch (fsrsCard.fsrs.state) {
-		case State.New:
-			return "ep:bg-obs-green/10";
-		case State.Learning:
-		case State.Relearning:
-			return "ep:bg-obs-orange/10";
-		case State.Review:
-			return "ep:bg-obs-blue/10";
-		default:
-			return "ep:bg-obs-secondary";
-	}
+	return fsrsStateToColor(fsrsCard.fsrs.state)?.bgCls ?? "ep:bg-obs-secondary";
+}
+
+export function getHighlightColor(
+	fsrsCard?: FSRSFlashcardItem,
+): HighlightColor {
+	if (!fsrsCard) return "default";
+	if (isSuspended(fsrsCard)) return FSRS_COLORS.suspended.name;
+	if (isBuried(fsrsCard)) return "default";
+	return fsrsStateToColorName(fsrsCard.fsrs.state) ?? "default";
 }
 
 export function getAggregateStatusDotColor(
@@ -88,9 +86,9 @@ export function getAggregateStatusDotColor(
 		}
 	}
 
-	if (hasNew) return "var(--color-green)";
-	if (hasLearning) return "var(--color-orange)";
-	if (hasReview) return "var(--color-blue)";
+	if (hasNew) return `var(${FSRS_COLORS.new.cssVar})`;
+	if (hasLearning) return `var(${FSRS_COLORS.learning.cssVar})`;
+	if (hasReview) return `var(${FSRS_COLORS.review.cssVar})`;
 	return "var(--text-muted)";
 }
 

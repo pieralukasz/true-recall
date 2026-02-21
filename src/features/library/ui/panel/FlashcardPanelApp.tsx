@@ -4,6 +4,7 @@ import {
 	PanelFooter,
 	PanelHeader,
 } from "@features/library/ui/panel/components";
+import { getHighlightColor } from "@features/library/ui/panel/utils/card-status.utils";
 import {
 	getSourceNoteNameFromFile,
 	notifyDuplicateError,
@@ -790,6 +791,8 @@ export function FlashcardPanelApp({
 			);
 
 			const filePath = state.currentFile.path;
+			const fsrsCard = cardsWithFsrs.find((c) => c.id === card.id);
+			const colorHint = getHighlightColor(fsrsCard);
 
 			// Ensure the source file is open in the editor
 			const activeFile = app.workspace.getActiveFile();
@@ -798,25 +801,28 @@ export function FlashcardPanelApp({
 				await leaf.openFile(state.currentFile);
 			}
 
-			requestSourceHighlight(filePath, card.sourceText);
+			requestSourceHighlight(filePath, card.sourceText, "jump", colorHint);
 		},
-		[state.currentFile, app],
+		[state.currentFile, app, cardsWithFsrs],
 	);
 
 	const handleHoverSource = useCallback(
 		(card: FlashcardItem) => {
 			if (!card.sourceText || !state.currentFile) return;
+			const fsrsCard = cardsWithFsrs.find((c) => c.id === card.id);
+			const colorHint = getHighlightColor(fsrsCard);
 			void import("@shared/services/signals").then(
 				({ requestSourceHighlight }) => {
 					requestSourceHighlight(
 						state.currentFile!.path,
 						card.sourceText!,
 						"hover",
+						colorHint,
 					);
 				},
 			);
 		},
-		[state.currentFile],
+		[state.currentFile, cardsWithFsrs],
 	);
 
 	const handleLeaveSource = useCallback(() => {

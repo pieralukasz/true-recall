@@ -1,11 +1,7 @@
 export {
-	CardGroup,
-	type CardGroupProps,
-} from "@features/library/ui/panel/components/CardGroup";
-export {
-	CompactCard,
-	type CompactCardProps,
-} from "@features/library/ui/panel/components/CompactCard";
+	PanelCard,
+	type PanelCardProps,
+} from "@features/library/ui/panel/components/PanelCard";
 export {
 	type ContentHandlers,
 	PanelContent,
