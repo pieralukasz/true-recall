@@ -8,13 +8,14 @@ import {
 import type { FlashcardItem } from "@shared/types";
 import type { FSRSFlashcardItem } from "@shared/types/fsrs/card.types";
 import { Clickable } from "@shared/ui/components/Clickable";
+import { IconButton } from "@shared/ui/components/IconButton";
 import { MarkdownContent } from "@shared/ui/components/MarkdownContent";
-import { useIcon } from "@shared/ui/preact/hooks";
 import { useApp } from "@shared/ui/preact/ObsidianContext";
 import {
 	useContextMenu,
 	type MenuItem,
 } from "@shared/ui/preact/useContextMenu";
+
 import { useCallback, useRef } from "preact/hooks";
 
 export interface CompactCardProps {
@@ -51,7 +52,6 @@ export function CompactCard({
 	onLongPress,
 }: CompactCardProps) {
 	const app = useApp();
-	const menuIconRef = useIcon("more-vertical");
 	const longPressRef = useRef<{
 		timer: ReturnType<typeof setTimeout> | null;
 		wasLongPress: boolean;
@@ -172,24 +172,39 @@ export function CompactCard({
 					onLinkClick={handleLinkClick}
 				/>
 
-				<button
-					type="button"
-					class="clickable-icon ep:cursor-pointer ep:w-6 ep:h-6 ep:flex ep:items-center ep:justify-center ep:rounded-md ep:text-obs-muted ep:hover:bg-obs-modifier-hover ep:hover:text-obs-normal ep:transition-colors [&_svg]:ep:w-3.5 [&_svg]:ep:h-3.5"
-					aria-label="Card actions"
+				<IconButton
+					icon="more-vertical"
+					ariaLabel="Card actions"
 					onClick={handleMenuClick}
-				>
-					<span ref={menuIconRef} />
-				</button>
+					size="small"
+				/>
 			</Clickable>
 
 			{isExpanded && (
-				<div class="ep:px-3 ep:pb-3 ep:pt-3 ep:border-t ep:border-obs-border">
+				<div class="ep:px-3 ep:pb-3 ep:pt-2 ep:border-t ep:border-obs-border">
 					<MarkdownContent
-						markdown={card.answer}
+						markdown={card.answer ?? "empty"}
 						filePath={filePath}
 						class="ep:text-ui-small ep:text-obs-normal true-recall-panel-card-field"
 						onLinkClick={handleLinkClick}
 					/>
+					{fsrsCard && fsrsCard.fsrs.reps > 0 && (
+						<div class="ep:flex ep:items-center ep:gap-3 ep:mt-2 ep:pt-2 ep:border-t ep:border-obs-border/50">
+							<span class="ep:text-ui-smaller ep:text-obs-faint">
+								{fsrsCard.fsrs.reps} reviews
+							</span>
+							{fsrsCard.fsrs.stability > 0 && (
+								<span class="ep:text-ui-smaller ep:text-obs-faint">
+									S: {fsrsCard.fsrs.stability.toFixed(1)}d
+								</span>
+							)}
+							{fsrsCard.fsrs.lapses > 0 && (
+								<span class="ep:text-ui-smaller ep:text-obs-faint">
+									{fsrsCard.fsrs.lapses} lapses
+								</span>
+							)}
+						</div>
+					)}
 				</div>
 			)}
 		</div>

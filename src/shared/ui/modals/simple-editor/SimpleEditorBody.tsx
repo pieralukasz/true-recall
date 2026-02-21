@@ -247,7 +247,7 @@ export function SimpleEditorBody({
 			) : (
 				<textarea
 					ref={textareaRef}
-					class="ep:w-full ep:min-h-[350px] ep:p-4 ep:font-mono ep:text-ui-small ep:leading-[1.6] ep:bg-obs-primary ep:border ep:border-obs-border ep:rounded-lg ep:resize-y ep:text-obs-normal ep:focus-visible:outline-none ep:focus-visible:border-obs-interactive ep:placeholder:text-obs-faint"
+					class="ep:w-full ep:min-h-[350px] ep:p-4 ep:text-ui-small ep:leading-[1.6] ep:bg-obs-primary ep:border ep:border-obs-border ep:rounded-lg ep:resize-y ep:text-obs-normal ep:focus-visible:outline-none ep:focus-visible:border-obs-interactive ep:placeholder:text-obs-faint"
 					placeholder={`What is photosynthesis? ${FLASHCARD_CONFIG.tag}\nThe process by which plants convert light into energy\n\nWhat are the inputs? ${FLASHCARD_CONFIG.tag}\nSunlight, water, and CO2`}
 					spellcheck={true}
 					value={content}
