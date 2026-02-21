@@ -132,18 +132,16 @@ export function CompactCard({
 	const borderCls = isSelected ? "ep:border-obs-interactive ep:border-2" : "";
 
 	return (
-		<div
-			class={`ep:flex ep:flex-col ep:mb-2 ep:rounded-lg ep:bg-obs-secondary ep:border ep:border-obs-border ep:shadow-sm ${borderCls}`}
+		<Clickable
+			class={`ep:flex ep:flex-col ep:mb-2 ep:rounded-lg ep:bg-obs-secondary ep:border ep:border-obs-border ep:shadow-sm ep:hover:bg-obs-modifier-hover ep:transition-colors ${borderCls}`}
+			onClick={handleRowClick}
+			onPointerDown={handlePointerDown}
+			onPointerUp={handlePointerUp}
+			onPointerCancel={handlePointerCancel}
 			onMouseEnter={onHoverSource}
 			onMouseLeave={onLeaveSource}
 		>
-			<Clickable
-				class="ep:flex ep:items-center ep:gap-2 ep:p-3 ep:hover:bg-obs-modifier-hover ep:rounded-md ep:transition-colors ep:text-left ep:w-full"
-				onClick={handleRowClick}
-				onPointerDown={handlePointerDown}
-				onPointerUp={handlePointerUp}
-				onPointerCancel={handlePointerCancel}
-			>
+			<div class="ep:flex ep:items-center ep:gap-2 ep:p-3 ep:text-left ep:w-full">
 				{isSelectionMode && (
 					<input
 						type="checkbox"
@@ -188,7 +186,7 @@ export function CompactCard({
 					onClick={handleMenuClick}
 					size="small"
 				/>
-			</Clickable>
+			</div>
 
 			{isExpanded && (
 				<div class="ep:px-3 ep:pb-3 ep:pt-2 ep:border-t ep:border-obs-border">
@@ -217,6 +215,6 @@ export function CompactCard({
 					)}
 				</div>
 			)}
-		</div>
+		</Clickable>
 	);
 }
