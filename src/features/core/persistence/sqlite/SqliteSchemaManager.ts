@@ -28,6 +28,7 @@ export class SqliteSchemaManager {
 		21: migrations.migration020ToV21,
 		22: migrations.migration021ToV22,
 		23: migrations.migration022ToV23,
+		24: migrations.migration023ToV24,
 	};
 
 	constructor(db: DatabaseLike, onSchemaChange: () => void) {
@@ -64,7 +65,8 @@ export class SqliteSchemaManager {
                 io_image_path TEXT,
                 io_regions_json TEXT,
                 io_group_key TEXT,
-                io_parent_id TEXT
+                io_parent_id TEXT,
+                created_via TEXT DEFAULT 'manual'
             );
 
             -- Indexes for common queries
@@ -132,14 +134,14 @@ export class SqliteSchemaManager {
             );
 
             -- Set schema version
-            INSERT OR REPLACE INTO meta (key, value) VALUES ('schema_version', '23');
+            INSERT OR REPLACE INTO meta (key, value) VALUES ('schema_version', '24');
             INSERT OR REPLACE INTO meta (key, value) VALUES ('created_at', datetime('now'));
         `);
 	}
 
 	runMigrations(): void {
 		const currentVersion = this.getSchemaVersion();
-		const latestVersion = 23;
+		const latestVersion = 24;
 
 		if (currentVersion >= latestVersion) {
 			return; // Already at latest version

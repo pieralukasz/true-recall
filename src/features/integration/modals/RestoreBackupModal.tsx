@@ -119,17 +119,17 @@ function RestoreBackupBody({
 				)}
 			</div>
 
-			<div class="ep:flex ep:justify-end ep:gap-2 ep:pt-2 ep:border-t ep:border-obs-border">
+			<div class="ep-modal-footer ep:flex ep:justify-end ep:gap-2">
 				<button
 					type="button"
-					class="ep:py-2.5 ep:px-5 ep:rounded-md ep:text-ui-small ep:font-medium ep:cursor-pointer ep:transition-all ep:bg-obs-secondary ep:text-obs-normal ep:border ep:border-obs-border ep:hover:bg-obs-modifier-hover"
+					class="ep-btn ep-btn-outline"
 					onClick={onClose}
 				>
 					Cancel
 				</button>
 				<button
 					type="button"
-					class={`mod-warning ep:py-2.5 ep:px-5 ep:rounded-md ep:text-ui-small ep:font-medium ep:cursor-pointer ep:transition-all ${!selectedBackup ? "ep:opacity-50 ep:cursor-not-allowed" : ""}`}
+					class="mod-warning ep-btn"
 					disabled={!selectedBackup}
 					onClick={() => void handleRestore()}
 				>

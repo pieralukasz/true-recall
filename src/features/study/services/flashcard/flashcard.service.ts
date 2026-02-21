@@ -178,6 +178,7 @@ export class FlashcardManager {
 			clozeIndex?: number;
 			reverseOfBatchId?: string;
 		}>,
+		createdVia?: string,
 	): Promise<CreateBatchResult> {
 		if (!this.cardRepository) {
 			throw new Error("Card store not initialized");
@@ -194,6 +195,7 @@ export class FlashcardManager {
 			flashcards,
 			sourceUid,
 			sourceFile.basename,
+			createdVia,
 		);
 	}
 
