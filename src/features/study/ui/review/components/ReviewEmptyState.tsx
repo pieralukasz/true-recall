@@ -15,7 +15,7 @@ export function ReviewEmptyState({
 					</div>
 					<button
 						type="button"
-						class="ep:flex ep:flex-col ep:items-center ep:gap-1 ep:py-3 ep:px-8 ep:border-none ep:rounded-lg ep:cursor-pointer ep:font-medium ep:text-ui-small mod-cta"
+						class="ep-btn mod-cta"
 						onClick={onClose}
 					>
 						Close

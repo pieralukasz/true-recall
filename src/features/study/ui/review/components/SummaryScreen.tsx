@@ -46,9 +46,6 @@ export function SummaryScreen({
 		}
 	}, []); // intentionally fire once on mount
 
-	const btnCls =
-		"ep:py-3 ep:px-8 ep:border-none ep:rounded-lg ep:cursor-pointer ep:font-medium ep:text-ui-small ep:transition-transform ep:hover:brightness-110 ep:active:scale-98";
-
 	return (
 		<div class="true-recall-review ep:flex ep:flex-col ep:h-full ep:p-0">
 			<div class="true-recall-review-card-container ep:flex-1 ep:min-h-0 ep:flex ep:items-start ep:justify-center ep:p-2 ep:mt-8 ep:overflow-y-auto">
@@ -93,14 +90,14 @@ export function SummaryScreen({
 							<>
 								<button
 									type="button"
-									class={`${btnCls} mod-cta`}
+									class="ep-btn mod-cta"
 									onClick={onNextSession}
 								>
 									Next session
 								</button>
 								<button
 									type="button"
-									class={`${btnCls} ep:bg-obs-border ep:text-obs-normal ep:hover:bg-obs-modifier-hover`}
+									class="ep-btn ep-btn-outline"
 									onClick={onClose}
 								>
 									Finish
@@ -109,7 +106,7 @@ export function SummaryScreen({
 						) : (
 							<button
 								type="button"
-								class={`${btnCls} mod-cta`}
+								class="ep-btn mod-cta"
 								onClick={onClose}
 							>
 								Close
