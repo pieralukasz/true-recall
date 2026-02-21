@@ -21,6 +21,8 @@ export interface ContentHandlers {
 	onCopyGroup: (cards: FlashcardItem[]) => void;
 	onMoveGroup: (cards: FlashcardItem[]) => void;
 	onJumpToSource: (card: FlashcardItem) => void;
+	onHoverSource: (card: FlashcardItem) => void;
+	onLeaveSource: () => void;
 }
 
 export interface PanelContentProps {
@@ -123,6 +125,16 @@ export function PanelContent({
 									? () => handlers.onJumpToSource(item.card)
 									: undefined
 							}
+							onHoverSource={
+								item.card.sourceText
+									? () => handlers.onHoverSource(item.card)
+									: undefined
+							}
+							onLeaveSource={
+								item.card.sourceText
+									? handlers.onLeaveSource
+									: undefined
+							}
 						/>
 					);
 				}
@@ -162,6 +174,16 @@ export function PanelContent({
 									? () => handlers.onJumpToSource(item.cards[0]!)
 									: undefined
 							}
+							onHoverSource={
+								item.cards[0]?.sourceText
+									? () => handlers.onHoverSource(item.cards[0]!)
+									: undefined
+							}
+							onLeaveSource={
+								item.cards[0]?.sourceText
+									? handlers.onLeaveSource
+									: undefined
+							}
 						/>
 					);
 				}
@@ -193,6 +215,16 @@ export function PanelContent({
 						onJumpToSource={
 							item.original.sourceText
 								? () => handlers.onJumpToSource(item.original)
+								: undefined
+						}
+						onHoverSource={
+							item.original.sourceText
+								? () => handlers.onHoverSource(item.original)
+								: undefined
+						}
+						onLeaveSource={
+							item.original.sourceText
+								? handlers.onLeaveSource
 								: undefined
 						}
 					/>

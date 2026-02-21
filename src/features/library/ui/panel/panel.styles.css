@@ -36,6 +36,12 @@
 			background-color: transparent;
 		}
 	}
+
+	/* Source text highlight — persistent while hovering a card */
+	.true-recall-source-highlight-hover {
+		background-color: var(--text-highlight-bg, rgba(255, 208, 0, 0.4));
+		border-radius: 2px;
+	}
 }
 
 @media (prefers-reduced-motion: reduce) {

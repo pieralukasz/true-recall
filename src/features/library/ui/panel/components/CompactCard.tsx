@@ -34,6 +34,8 @@ export interface CompactCardProps {
 	onSelect: () => void;
 	onLongPress: () => void;
 	onJumpToSource?: () => void;
+	onHoverSource?: () => void;
+	onLeaveSource?: () => void;
 }
 
 export function CompactCard({
@@ -52,6 +54,8 @@ export function CompactCard({
 	onSelect,
 	onLongPress,
 	onJumpToSource,
+	onHoverSource,
+	onLeaveSource,
 }: CompactCardProps) {
 	const app = useApp();
 	const longPressRef = useRef<{
@@ -94,24 +98,16 @@ export function CompactCard({
 			if ((e.target as HTMLElement).closest("a")) return;
 			if (isSelectionMode) {
 				onToggleSelect();
+			} else if (onJumpToSource) {
+				onJumpToSource();
 			} else {
 				onToggleExpand();
 			}
 		},
-		[isSelectionMode, onToggleSelect, onToggleExpand],
+		[isSelectionMode, onToggleSelect, onToggleExpand, onJumpToSource],
 	);
 
 	const handleMenuClick = useContextMenu([
-		...(onJumpToSource
-			? ([
-					{
-						title: "Jump to source",
-						icon: "locate",
-						onClick: onJumpToSource,
-					},
-					"separator",
-				] as MenuItem[])
-			: []),
 		{ title: "Edit", icon: "pencil", onClick: onEdit },
 		{ title: "Copy", icon: "copy", onClick: onCopy },
 		{ title: "Move", icon: "folder-input", onClick: onMove },
@@ -138,6 +134,8 @@ export function CompactCard({
 	return (
 		<div
 			class={`ep:flex ep:flex-col ep:mb-2 ep:rounded-lg ep:bg-obs-secondary ep:border ep:border-obs-border ep:shadow-sm ${borderCls}`}
+			onMouseEnter={onHoverSource}
+			onMouseLeave={onLeaveSource}
 		>
 			<Clickable
 				class="ep:flex ep:items-center ep:gap-2 ep:p-3 ep:hover:bg-obs-modifier-hover ep:rounded-md ep:transition-colors ep:text-left ep:w-full"

@@ -12,7 +12,11 @@ import {
 	type HighlightRequest,
 } from "@shared/services/signals";
 
-const addHighlight = StateEffect.define<{ from: number; to: number }>();
+const addHighlight = StateEffect.define<{
+	from: number;
+	to: number;
+	className: string;
+}>();
 const clearHighlight = StateEffect.define<void>();
 
 const highlightField = StateField.define<DecorationSet>({
@@ -24,7 +28,7 @@ const highlightField = StateField.define<DecorationSet>({
 			if (e.is(addHighlight)) {
 				return Decoration.set([
 					Decoration.mark({
-						class: "true-recall-source-highlight",
+						class: e.value.className,
 					}).range(e.value.from, e.value.to),
 				]);
 			}
@@ -49,9 +53,21 @@ export function createSourceHighlightExtension(
 			constructor(private view: EditorView) {
 				this.dispose = effect(() => {
 					const req = highlightRequest.value;
-					if (!req) return;
-					// Can't dispatch during signal effect — schedule for next microtask
+					if (!req) {
+						queueMicrotask(() => this.clearHighlightNow());
+						return;
+					}
 					queueMicrotask(() => this.handleRequest(req));
+				});
+			}
+
+			private clearHighlightNow(): void {
+				if (this.clearTimer) {
+					clearTimeout(this.clearTimer);
+					this.clearTimer = null;
+				}
+				this.view.dispatch({
+					effects: clearHighlight.of(undefined),
 				});
 			}
 
@@ -68,29 +84,40 @@ export function createSourceHighlightExtension(
 
 				if (this.clearTimer) {
 					clearTimeout(this.clearTimer);
+					this.clearTimer = null;
 				}
 
-				this.view.dispatch({
-					effects: [
-						addHighlight.of({
-							from: idx,
-							to: idx + req.sourceText.length,
-						}),
-						EditorView.scrollIntoView(idx, { y: "center" }),
-					],
-				});
+				const className =
+					req.mode === "hover"
+						? "true-recall-source-highlight-hover"
+						: "true-recall-source-highlight";
 
-				this.clearTimer = setTimeout(() => {
-					this.view.dispatch({
-						effects: clearHighlight.of(undefined),
-					});
-					this.clearTimer = null;
-				}, 2000);
+				const effects: StateEffect<unknown>[] = [
+					addHighlight.of({
+						from: idx,
+						to: idx + req.sourceText.length,
+						className,
+					}),
+				];
+
+				if (req.mode === "jump") {
+					effects.push(EditorView.scrollIntoView(idx, { y: "center" }));
+				}
+
+				this.view.dispatch({ effects });
+
+				// Auto-clear only for jump mode
+				if (req.mode === "jump") {
+					this.clearTimer = setTimeout(() => {
+						this.view.dispatch({
+							effects: clearHighlight.of(undefined),
+						});
+						this.clearTimer = null;
+					}, 2000);
+				}
 			}
 
-			update(_update: ViewUpdate): void {
-				// No action needed — StateField handles decoration mapping
-			}
+			update(_update: ViewUpdate): void {}
 
 			destroy(): void {
 				this.dispose?.();

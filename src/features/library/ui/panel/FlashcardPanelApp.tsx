@@ -803,6 +803,30 @@ export function FlashcardPanelApp({
 		[state.currentFile, app],
 	);
 
+	const handleHoverSource = useCallback(
+		(card: FlashcardItem) => {
+			if (!card.sourceText || !state.currentFile) return;
+			void import("@shared/services/signals").then(
+				({ requestSourceHighlight }) => {
+					requestSourceHighlight(
+						state.currentFile!.path,
+						card.sourceText!,
+						"hover",
+					);
+				},
+			);
+		},
+		[state.currentFile],
+	);
+
+	const handleLeaveSource = useCallback(() => {
+		void import("@shared/services/signals").then(
+			({ clearSourceHighlight }) => {
+				clearSourceHighlight();
+			},
+		);
+	}, []);
+
 	const contentHandlers: ContentHandlers = useMemo(
 		() => ({
 			onEditButton: handleEditButton,
@@ -818,6 +842,8 @@ export function FlashcardPanelApp({
 			onCopyGroup: handleCopyGroup,
 			onMoveGroup: handleMoveGroup,
 			onJumpToSource: handleJumpToSource,
+			onHoverSource: handleHoverSource,
+			onLeaveSource: handleLeaveSource,
 		}),
 		[
 			handleEditButton,
@@ -833,6 +859,8 @@ export function FlashcardPanelApp({
 			handleCopyGroup,
 			handleMoveGroup,
 			handleJumpToSource,
+			handleHoverSource,
+			handleLeaveSource,
 		],
 	);
 
