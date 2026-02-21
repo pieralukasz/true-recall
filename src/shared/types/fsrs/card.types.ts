@@ -106,6 +106,11 @@ export interface FSRSCardData {
 	ioGroupKey?: string;
 	/** Parent card ID (for IO child cards) */
 	ioParentId?: string;
+
+	// === Source text linking (schema v25) ===
+
+	/** Original selected text that generated this card (for jump-to-source) */
+	sourceText?: string;
 }
 
 /**
@@ -145,4 +150,6 @@ export interface FSRSFlashcardItem {
 	ioGroupKey?: string;
 	/** Parent card ID (IO children) */
 	ioParentId?: string;
+	/** Original selected text that generated this card (for jump-to-source) */
+	sourceText?: string;
 }

@@ -35,6 +35,7 @@ export interface CardGroupProps {
 	onMoveGroup: () => void;
 	onSelect: () => void;
 	onLongPress: () => void;
+	onJumpToSource?: () => void;
 }
 
 export function CardGroup({
@@ -54,6 +55,7 @@ export function CardGroup({
 	onMoveGroup,
 	onSelect,
 	onLongPress,
+	onJumpToSource,
 }: CardGroupProps) {
 	const app = useApp();
 	const typeIconRef = useIcon(
@@ -107,6 +109,16 @@ export function CardGroup({
 	);
 
 	const handleMenuClick = useContextMenu([
+		...(onJumpToSource
+			? ([
+					{
+						title: "Jump to source",
+						icon: "locate",
+						onClick: onJumpToSource,
+					},
+					"separator",
+				] as MenuItem[])
+			: []),
 		{ title: "Edit group", icon: "pencil", onClick: onEditGroup },
 		{ title: "Copy", icon: "copy", onClick: onCopyGroup },
 		{ title: "Move", icon: "folder-input", onClick: onMoveGroup },

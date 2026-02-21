@@ -20,6 +20,7 @@ export interface ContentHandlers {
 	onDeleteGroup: (cards: FlashcardItem[]) => void;
 	onCopyGroup: (cards: FlashcardItem[]) => void;
 	onMoveGroup: (cards: FlashcardItem[]) => void;
+	onJumpToSource: (card: FlashcardItem) => void;
 }
 
 export interface PanelContentProps {
@@ -117,6 +118,11 @@ export function PanelContent({
 							onMove={() => handlers.onMoveCard(item.card)}
 							onSelect={() => handlers.onEnterSelectionMode(item.card.id)}
 							onLongPress={() => handlers.onEnterSelectionMode(item.card.id)}
+							onJumpToSource={
+								item.card.sourceText
+									? () => handlers.onJumpToSource(item.card)
+									: undefined
+							}
 						/>
 					);
 				}
@@ -151,6 +157,11 @@ export function PanelContent({
 							onLongPress={() =>
 								handlers.onEnterSelectionMode(item.cards[0]?.id ?? "")
 							}
+							onJumpToSource={
+								item.cards[0]?.sourceText
+									? () => handlers.onJumpToSource(item.cards[0]!)
+									: undefined
+							}
 						/>
 					);
 				}
@@ -179,6 +190,11 @@ export function PanelContent({
 						onMoveGroup={() => handlers.onMoveGroup(reverseCards)}
 						onSelect={() => handlers.onEnterSelectionMode(item.original.id)}
 						onLongPress={() => handlers.onEnterSelectionMode(item.original.id)}
+						onJumpToSource={
+							item.original.sourceText
+								? () => handlers.onJumpToSource(item.original)
+								: undefined
+						}
 					/>
 				);
 			})}

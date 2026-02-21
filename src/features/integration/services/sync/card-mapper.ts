@@ -28,6 +28,7 @@ export interface RemoteCardRow {
 	io_regions_json: string | null;
 	io_group_key: string | null;
 	io_parent_id: string | null;
+	source_text: string | null;
 }
 
 export interface RemoteReviewLogRow {
@@ -77,6 +78,7 @@ export function mapRemoteCardToLocal(remote: RemoteCardRow): LocalCardForSync {
 		ioRegionsJson: remote.io_regions_json ?? undefined,
 		ioGroupKey: remote.io_group_key ?? undefined,
 		ioParentId: remote.io_parent_id ?? undefined,
+		sourceText: remote.source_text ?? undefined,
 	};
 }
 
@@ -157,6 +159,7 @@ export function mapLocalCardToRemote(
 		io_regions_json: local.ioRegionsJson ?? null,
 		io_group_key: local.ioGroupKey ?? null,
 		io_parent_id: local.ioParentId ?? null,
+		source_text: local.sourceText ?? null,
 	};
 }
 

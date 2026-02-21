@@ -19,4 +19,27 @@
 	.true-recall-pulse-collect:hover {
 		animation: none;
 	}
+
+	/* Source text highlight — temporary flash when jumping from card to source */
+	.true-recall-source-highlight {
+		background-color: var(--text-highlight-bg, rgba(255, 208, 0, 0.4));
+		border-radius: 2px;
+		animation: true-recall-source-highlight-fade 2s ease-out forwards;
+	}
+
+	@keyframes true-recall-source-highlight-fade {
+		0%,
+		70% {
+			background-color: var(--text-highlight-bg, rgba(255, 208, 0, 0.4));
+		}
+		100% {
+			background-color: transparent;
+		}
+	}
+}
+
+@media (prefers-reduced-motion: reduce) {
+	.true-recall-source-highlight {
+		animation: none;
+	}
 }
