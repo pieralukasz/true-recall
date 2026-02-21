@@ -7,6 +7,8 @@ export interface ClickableProps {
 	onPointerDown?: (e: PointerEvent) => void;
 	onPointerUp?: (e: PointerEvent) => void;
 	onPointerCancel?: (e: PointerEvent) => void;
+	onMouseEnter?: (e: MouseEvent) => void;
+	onMouseLeave?: (e: MouseEvent) => void;
 }
 
 export function Clickable({
@@ -18,6 +20,8 @@ export function Clickable({
 	onPointerDown,
 	onPointerUp,
 	onPointerCancel,
+	onMouseEnter,
+	onMouseLeave,
 }: ClickableProps) {
 	return (
 		// biome-ignore lint/a11y/useSemanticElements: intentionally a span, not a button — used for inline clickable wrappers
@@ -50,6 +54,8 @@ export function Clickable({
 			onPointerDown={disabled ? undefined : onPointerDown}
 			onPointerUp={disabled ? undefined : onPointerUp}
 			onPointerCancel={disabled ? undefined : onPointerCancel}
+			onMouseEnter={onMouseEnter}
+			onMouseLeave={onMouseLeave}
 		>
 			{children}
 		</div>
