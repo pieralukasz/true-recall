@@ -38,7 +38,7 @@ function FirstSyncConflictBody({
 					</p>
 					<button
 						type="button"
-						class="mod-warning ep:py-2.5 ep:px-5 ep:rounded-md ep:text-ui-small ep:font-medium ep:cursor-pointer ep:transition-all"
+						class="mod-warning ep-btn"
 						onClick={() => onResolve({ cancelled: false, choice: "upload" })}
 					>
 						Upload local → server
@@ -55,7 +55,7 @@ function FirstSyncConflictBody({
 					</p>
 					<button
 						type="button"
-						class="mod-warning ep:py-2.5 ep:px-5 ep:rounded-md ep:text-ui-small ep:font-medium ep:cursor-pointer ep:transition-all"
+						class="mod-warning ep-btn"
 						onClick={() => onResolve({ cancelled: false, choice: "download" })}
 					>
 						Download server → local
@@ -63,10 +63,10 @@ function FirstSyncConflictBody({
 				</div>
 			</div>
 
-			<div class="ep:flex ep:justify-center ep:pt-2 ep:border-t ep:border-obs-border">
+			<div class="ep-modal-footer ep:flex ep:justify-center">
 				<button
 					type="button"
-					class="ep:py-2.5 ep:px-5 ep:rounded-md ep:text-ui-small ep:font-medium ep:cursor-pointer ep:transition-all ep:bg-obs-secondary ep:text-obs-normal ep:border ep:border-obs-border ep:hover:bg-obs-modifier-hover"
+					class="ep-btn ep-btn-outline"
 					onClick={() => onResolve({ cancelled: true, choice: "cancel" })}
 				>
 					Cancel

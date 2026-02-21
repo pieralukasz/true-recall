@@ -5,6 +5,7 @@ import type {
 	ExtendedDailyStats,
 	FSRSFlashcardItem,
 	FutureDueEntry,
+	RatingDistributionEntry,
 	RetentionEntry,
 	StatsTimeRange,
 } from "@shared/types";
@@ -179,6 +180,36 @@ export class ChartDataCalculator {
 				cumulative,
 			};
 		});
+	}
+
+	getRatingDistributionHistory(
+		allStats: Record<string, ExtendedDailyStats>,
+		range: StatsTimeRange,
+	): RatingDistributionEntry[] {
+		const today = new Date();
+		today.setHours(0, 0, 0, 0);
+
+		const startDate = this.calculateStartDate(today, range);
+		const startDateStr = formatLocalDate(startDate);
+		const todayStr = formatLocalDate(today);
+
+		const entries: RatingDistributionEntry[] = [];
+
+		for (const [date, stats] of Object.entries(allStats)) {
+			if (date < startDateStr || date > todayStr) continue;
+
+			const again = stats.again ?? 0;
+			const hard = stats.hard ?? 0;
+			const good = stats.good ?? 0;
+			const easy = stats.easy ?? 0;
+			const total = again + hard + good + easy;
+
+			if (total === 0) continue;
+
+			entries.push({ date, again, hard, good, easy, total });
+		}
+
+		return entries.sort((a, b) => a.date.localeCompare(b.date));
 	}
 
 	getRetentionHistory(

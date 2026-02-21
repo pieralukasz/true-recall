@@ -803,6 +803,7 @@ export default class TrueRecallPlugin extends Plugin {
 					const batchResult = await this.flashcardManager.saveFlashcardsToSql(
 						file,
 						result.flashcards,
+						"ai",
 					);
 					const createdCount = batchResult.created.length;
 					const dupCount = batchResult.duplicates.length;

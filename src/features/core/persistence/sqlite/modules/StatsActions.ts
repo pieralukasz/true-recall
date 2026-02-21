@@ -4,7 +4,9 @@ import type {
 	CardMaturityBreakdown,
 	CardReviewLogEntry,
 	CardsCreatedVsReviewedEntry,
+	CreationSourceStats,
 	ExtendedDailyStats,
+	NotePerformanceRow,
 	ProblemCard,
 	StudyPattern,
 	TimeToMasteryStats,
@@ -986,5 +988,67 @@ export class StatsActions {
         `,
 			[sourceUid],
 		);
+	}
+
+	getNotePerformance(): NotePerformanceRow[] {
+		const rows = this.db.query<{
+			sourceUid: string;
+			cardCount: number;
+			avgLapses: number;
+			avgDifficulty: number;
+			reviewCount: number;
+			retentionRate: number | null;
+			lastReviewed: string | null;
+		}>(
+			`
+            SELECT
+                c.source_uid as sourceUid,
+                COUNT(DISTINCT c.id) as cardCount,
+                AVG(c.lapses) as avgLapses,
+                AVG(c.difficulty) as avgDifficulty,
+                COUNT(r.id) as reviewCount,
+                ROUND(100.0 * SUM(CASE WHEN r.rating >= 3 THEN 1 ELSE 0 END) /
+                      NULLIF(COUNT(r.id), 0), 1) as retentionRate,
+                MAX(r.reviewed_at) as lastReviewed
+            FROM cards c
+            LEFT JOIN review_log r
+                ON c.id = r.card_id AND r.deleted_at IS NULL AND r.state = 2
+            WHERE c.deleted_at IS NULL
+              AND c.suspended = 0
+              AND c.source_uid IS NOT NULL
+            GROUP BY c.source_uid
+            ORDER BY retentionRate ASC
+        `,
+			[],
+		);
+
+		return rows;
+	}
+
+	getCreationSourcePerformance(): CreationSourceStats[] {
+		const rows = this.db.query<{
+			source: string;
+			cardCount: number;
+			avgLapses: number;
+			retentionRate: number | null;
+		}>(
+			`
+            SELECT
+                COALESCE(c.created_via, 'manual') as source,
+                COUNT(DISTINCT c.id) as cardCount,
+                AVG(c.lapses) as avgLapses,
+                ROUND(100.0 * SUM(CASE WHEN r.rating >= 3 THEN 1 ELSE 0 END) /
+                      NULLIF(COUNT(r.id), 0), 1) as retentionRate
+            FROM cards c
+            LEFT JOIN review_log r
+                ON c.id = r.card_id AND r.deleted_at IS NULL AND r.state = 2
+            WHERE c.deleted_at IS NULL
+            GROUP BY source
+            ORDER BY source ASC
+        `,
+			[],
+		);
+
+		return rows;
 	}
 }

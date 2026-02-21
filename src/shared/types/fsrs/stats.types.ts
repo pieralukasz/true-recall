@@ -125,6 +125,77 @@ export interface CardsCreatedVsReviewedEntry {
 export type StatsTimeRange = "backlog" | "1m" | "3m" | "1y" | "all";
 
 /**
+ * Single bucket in collection health histogram
+ */
+export interface HealthBucket {
+	/** Human-readable label */
+	label: string;
+	/** Number of cards in this bucket */
+	count: number;
+	/** Bucket color CSS variable (e.g. "--color-red") */
+	colorVar: string;
+}
+
+/**
+ * Snapshot of predicted retention across the full card collection
+ */
+export interface CollectionHealthSnapshot {
+	/** Average predicted retention across all active cards (0-100%) */
+	averageRetention: number;
+	/** Distribution of cards by retention bucket */
+	distribution: HealthBucket[];
+	/** Number of active cards included in the snapshot */
+	cardCount: number;
+}
+
+/**
+ * Rating distribution entry for rating breakdown chart
+ */
+export interface RatingDistributionEntry {
+	/** Date in YYYY-MM-DD format */
+	date: string;
+	/** Again (forgot) count */
+	again: number;
+	/** Hard count */
+	hard: number;
+	/** Good count */
+	good: number;
+	/** Easy count */
+	easy: number;
+	/** Total reviews that day */
+	total: number;
+}
+
+/**
+ * Per-source-note performance row from SQL analytics
+ */
+export interface NotePerformanceRow {
+	sourceUid: string;
+	cardCount: number;
+	avgLapses: number;
+	avgDifficulty: number;
+	reviewCount: number;
+	/** null if no reviews yet */
+	retentionRate: number | null;
+	/** ISO timestamp or null */
+	lastReviewed: string | null;
+}
+
+/**
+ * Per-creation-source performance stats for AI vs manual comparison chart
+ */
+export interface CreationSourceStats {
+	/** Source value: 'manual', 'ai', or 'anki_import' */
+	source: string;
+	/** Total number of cards with this source */
+	cardCount: number;
+	/** Average number of lapses per card */
+	avgLapses: number;
+	/** Retention rate (% of reviews rated Good or Easy), null if no reviews */
+	retentionRate: number | null;
+}
+
+/**
  * Retention rate entry for retention chart
  */
 export interface RetentionEntry {

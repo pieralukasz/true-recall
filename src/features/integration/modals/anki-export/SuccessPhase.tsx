@@ -13,7 +13,7 @@ export function SuccessPhase({ filename, onClose }: SuccessPhaseProps) {
 					Exported as {filename}
 				</div>
 			</div>
-			<div class="ep:flex ep:justify-end ep:gap-2 ep:pt-2 ep:border-t ep:border-obs-border">
+			<div class="ep-modal-footer ep:flex ep:justify-end ep:gap-2">
 				<button type="button" class={PRIMARY_BTN} onClick={onClose}>
 					Done
 				</button>

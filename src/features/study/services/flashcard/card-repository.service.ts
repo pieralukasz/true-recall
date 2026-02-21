@@ -100,6 +100,7 @@ export class CardRepository {
 		}>,
 		sourceUid: string,
 		sourceNoteName?: string,
+		createdVia?: string,
 	): CreateBatchResult {
 		const createdCards: FSRSFlashcardItem[] = [];
 		const duplicates: DuplicateInfo[] = [];
@@ -174,6 +175,7 @@ export class CardRepository {
 				clozeTemplate: flashcard.clozeTemplate,
 				clozeIndex: flashcard.clozeIndex,
 				reverseOf,
+				createdVia: createdVia ?? "manual",
 			};
 
 			this.store.set(flashcard.id, extendedData);

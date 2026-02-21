@@ -76,9 +76,7 @@ export abstract class BaseModal extends Modal {
 		titleEl.setText(this.modalTitle);
 
 		// Render body content (implemented by subclasses)
-		const bodyEl = contentEl.createDiv({
-			cls: "ep:py-2.5 ep:px-3",
-		});
+		const bodyEl = contentEl.createDiv();
 		this.renderBody(bodyEl);
 	}
 
@@ -101,7 +99,7 @@ export abstract class BaseModal extends Modal {
 		buttons: ModalButton[],
 	): HTMLElement {
 		const buttonsEl = container.createDiv({
-			cls: "ep:flex ep:justify-end ep:gap-2 ep:pt-2 ep:border-t ep:border-obs-border",
+			cls: "ep-modal-footer ep:flex ep:justify-end ep:gap-2",
 		});
 
 		for (const btn of buttons) {
@@ -126,16 +124,13 @@ export abstract class BaseModal extends Modal {
 	 * Get CSS classes for button type
 	 */
 	private getButtonClass(type: ModalButton["type"]): string {
-		const base =
-			"ep:py-2.5 ep:px-5 ep:rounded-md ep:text-ui-small ep:font-medium ep:cursor-pointer ep:transition-all";
-
 		switch (type) {
 			case "primary":
-				return `mod-cta ${base}`;
+				return "mod-cta ep-btn";
 			case "danger":
-				return `mod-warning ${base}`;
+				return "mod-warning ep-btn";
 			default:
-				return `${base} ep:bg-obs-secondary ep:text-obs-normal ep:border ep:border-obs-border ep:hover:bg-obs-modifier-hover`;
+				return "ep-btn ep-btn-outline";
 		}
 	}
 

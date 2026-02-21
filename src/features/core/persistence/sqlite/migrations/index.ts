@@ -14,3 +14,4 @@ export { migration019ToV20 } from "@features/core/persistence/sqlite/migrations/
 export { migration020ToV21 } from "@features/core/persistence/sqlite/migrations/migration-020-to-v21";
 export { migration021ToV22 } from "@features/core/persistence/sqlite/migrations/migration-021-to-v22";
 export { migration022ToV23 } from "@features/core/persistence/sqlite/migrations/migration-022-to-v23";
+export { migration023ToV24 } from "@features/core/persistence/sqlite/migrations/migration-023-to-v24";
