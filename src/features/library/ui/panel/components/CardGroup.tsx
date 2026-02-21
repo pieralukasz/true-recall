@@ -106,6 +106,7 @@ export function CardGroup({
 			if (isSelectionMode) {
 				onToggleSelect();
 			} else if (onJumpToSource) {
+				onToggleExpand();
 				onJumpToSource();
 			} else {
 				onToggleExpand();

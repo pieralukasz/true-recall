@@ -99,6 +99,7 @@ export function CompactCard({
 				onToggleSelect();
 			} else if (onJumpToSource) {
 				onJumpToSource();
+				onToggleExpand();
 			} else {
 				onToggleExpand();
 			}
