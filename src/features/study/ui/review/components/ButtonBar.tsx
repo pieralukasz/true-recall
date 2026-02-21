@@ -33,7 +33,7 @@ export function ButtonBar({
 					{!isAnswerRevealed ? (
 						<button
 							type="button"
-							class={`${BASE_BTN_CLS} mod-cta ep:py-2 ep:px-4`}
+							class="ep-btn mod-cta"
 							onClick={onShowAnswer}
 						>
 							Show answer
