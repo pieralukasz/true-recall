@@ -1,34 +1,24 @@
-export interface ClickableProps {
+import type { JSX } from "preact";
+
+export interface ClickableProps
+	extends Omit<JSX.HTMLAttributes<HTMLDivElement>, "role" | "tabIndex" | "onClick"> {
 	onClick: (e: MouseEvent) => void;
-	children: preact.ComponentChildren;
-	class?: string;
-	"aria-label"?: string;
 	disabled?: boolean;
-	onPointerDown?: (e: PointerEvent) => void;
-	onPointerUp?: (e: PointerEvent) => void;
-	onPointerCancel?: (e: PointerEvent) => void;
-	onMouseEnter?: (e: MouseEvent) => void;
-	onMouseLeave?: (e: MouseEvent) => void;
 }
 
 export function Clickable({
 	onClick,
-	children,
-	class: cls,
-	"aria-label": ariaLabel,
 	disabled,
-	onPointerDown,
-	onPointerUp,
-	onPointerCancel,
-	onMouseEnter,
-	onMouseLeave,
+	class: cls,
+	children,
+	...rest
 }: ClickableProps) {
 	return (
-		// biome-ignore lint/a11y/useSemanticElements: intentionally a span, not a button — used for inline clickable wrappers
+		// biome-ignore lint/a11y/useSemanticElements: intentionally a div, not a button — used for inline clickable wrappers
 		<div
+			{...rest}
 			role="button"
 			tabIndex={disabled ? -1 : 0}
-			aria-label={ariaLabel}
 			aria-disabled={disabled}
 			class={`ep:cursor-pointer ${disabled ? "ep:opacity-60 ep:cursor-not-allowed" : ""} ${cls ?? ""}`}
 			onClick={
@@ -51,11 +41,6 @@ export function Clickable({
 							}
 						}
 			}
-			onPointerDown={disabled ? undefined : onPointerDown}
-			onPointerUp={disabled ? undefined : onPointerUp}
-			onPointerCancel={disabled ? undefined : onPointerCancel}
-			onMouseEnter={onMouseEnter}
-			onMouseLeave={onMouseLeave}
 		>
 			{children}
 		</div>

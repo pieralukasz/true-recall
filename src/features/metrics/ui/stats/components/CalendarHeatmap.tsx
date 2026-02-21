@@ -4,6 +4,9 @@ import { getHeatmapLevelClasses } from "@features/metrics/ui/stats/utils/chart-h
 import type { FSRSFlashcardItem } from "@shared/types";
 import { useEffect, useMemo, useState } from "preact/hooks";
 
+const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+const DAY_LABELS = ["", "Mon", "", "Wed", "", "Fri", ""];
+
 export function CalendarHeatmap({
 	statsCalculator,
 	onCardPreview,
@@ -59,40 +62,81 @@ export function CalendarHeatmap({
 		return result;
 	}, [allStats, startDate, today]);
 
+	// Compute month label for each week column:
+	// show month name when the first day of a new month falls in that week
+	const monthLabels = useMemo(() => {
+		return weeks.map((week, wi) => {
+			const firstCell = week[0];
+			if (!firstCell) return null;
+			const d = new Date(firstCell.dateKey);
+			// Show month label on the week that contains the 1st day of the month
+			// (or on week 0 to always show a start label)
+			const dayOfMonth = d.getDate();
+			if (dayOfMonth <= 7 || wi === 0) {
+				return MONTHS[d.getMonth()] ?? null;
+			}
+			return null;
+		});
+	}, [weeks]);
+
 	return (
 		<StatsCard title="Activity calendar">
-			{/* Year header */}
-			<div class="ep:text-center ep:text-ui-small ep:font-semibold ep:mb-3 ep:text-obs-normal">
-				{today.getFullYear()}
-			</div>
+			<div class="ep:flex ep:gap-0.5">
+				{/* Day-of-week labels */}
+				<div class="ep:flex ep:flex-col ep:gap-0.5 ep:mr-1 ep:pt-5">
+					{DAY_LABELS.map((label, i) => (
+						<div
+							key={i}
+							class="ep:h-3 ep:w-6 ep:text-[9px] ep:leading-3 ep:text-obs-faint ep:text-right ep:select-none"
+						>
+							{label}
+						</div>
+					))}
+				</div>
 
-			{/* Calendar grid */}
-			<div class="ep:flex ep:gap-0.5 ep:flex-nowrap ep:overflow-x-auto ep:pb-2 true-recall-scrollbar-thin">
-				{weeks.map((week, wi) => (
-					<div key={wi} class="ep:flex ep:flex-col ep:gap-0.5">
-						{week.map((cell) => (
-							<button
-								type="button"
-								key={cell.dateKey}
-								class={[
-									"ep:w-3 ep:h-3 ep:rounded-sm ep:cursor-pointer ep:transition-all ep:duration-200 ep:hover:scale-110 ep:hover:opacity-80 ep:border-none ep:p-0",
-									getHeatmapLevelClasses(cell.count),
-									cell.isFuture ? "ep:opacity-30" : "",
-								].join(" ")}
-								title={`${cell.dateKey}: ${cell.count} reviews`}
-								aria-label={`${cell.dateKey}: ${cell.count} reviews`}
-								onClick={() => {
-									if (cell.count > 0) {
-										const cards = statsCalculator.getCardsDueOnDate(
-											cell.dateKey,
-										);
-										onCardPreview(cell.dateKey, cards);
-									}
-								}}
-							/>
+				{/* Calendar grid with month labels */}
+				<div class="ep:flex-1 ep:overflow-x-auto ep:pb-2 true-recall-scrollbar-thin">
+					{/* Month labels row */}
+					<div class="ep:flex ep:gap-0.5 ep:mb-1 ep:h-4">
+						{weeks.map((_, wi) => (
+							<div
+								key={wi}
+								class="ep:w-3 ep:shrink-0 ep:text-[9px] ep:leading-4 ep:text-obs-faint ep:select-none ep:overflow-visible ep:whitespace-nowrap"
+							>
+								{monthLabels[wi] ?? ""}
+							</div>
 						))}
 					</div>
-				))}
+
+					{/* Week columns */}
+					<div class="ep:flex ep:gap-0.5 ep:flex-nowrap">
+						{weeks.map((week, wi) => (
+							<div key={wi} class="ep:flex ep:flex-col ep:gap-0.5">
+								{week.map((cell) => (
+									<button
+										type="button"
+										key={cell.dateKey}
+										class={[
+											"ep:w-3 ep:h-3 ep:rounded-sm ep:cursor-pointer ep:transition-all ep:duration-200 ep:hover:scale-110 ep:hover:opacity-80 ep:border-none ep:p-0",
+											getHeatmapLevelClasses(cell.count),
+											cell.isFuture ? "ep:opacity-30" : "",
+										].join(" ")}
+										title={`${cell.dateKey}: ${cell.count} reviews`}
+										aria-label={`${cell.dateKey}: ${cell.count} reviews`}
+										onClick={() => {
+											if (cell.count > 0) {
+												const cards = statsCalculator.getCardsDueOnDate(
+													cell.dateKey,
+												);
+												onCardPreview(cell.dateKey, cards);
+											}
+										}}
+									/>
+								))}
+							</div>
+						))}
+					</div>
+				</div>
 			</div>
 
 			{/* Legend */}
