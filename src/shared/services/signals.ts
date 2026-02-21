@@ -1,4 +1,5 @@
 import { batch, type ReadonlySignal, signal } from "@preact/signals";
+import type { HighlightColor } from "@shared/ui/helpers/fsrs-colors";
 
 export function track(...signals: ReadonlySignal[]): void {
 	for (const s of signals) s.value;
@@ -38,11 +39,14 @@ export function notifyCardChange(mutation: CardMutation): void {
 
 // ── Source text highlight (Card → Text jump) ──────────────────
 
+export type { HighlightColor } from "@shared/ui/helpers/fsrs-colors";
+
 export interface HighlightRequest {
 	sourceNotePath: string;
 	sourceText: string;
 	requestId: number;
 	mode: "jump" | "hover";
+	colorHint?: HighlightColor;
 }
 
 export const highlightRequest = signal<HighlightRequest | null>(null);
@@ -53,12 +57,14 @@ export function requestSourceHighlight(
 	sourceNotePath: string,
 	sourceText: string,
 	mode: "jump" | "hover" = "jump",
+	colorHint?: HighlightColor,
 ): void {
 	highlightRequest.value = {
 		sourceNotePath,
 		sourceText,
 		requestId: ++highlightCounter,
 		mode,
+		colorHint,
 	};
 }
 

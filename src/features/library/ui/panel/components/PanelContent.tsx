@@ -1,6 +1,5 @@
-import { CardGroup } from "@features/library/ui/panel/components/CardGroup";
-import { CompactCard } from "@features/library/ui/panel/components/CompactCard";
-import { groupCards } from "@features/library/ui/panel/group-cards";
+import { PanelCard } from "@features/library/ui/panel/components/PanelCard";
+import { groupCards, type PanelItem } from "@features/library/ui/panel/group-cards";
 import type { SelectionMode } from "@shared/store";
 import type { FlashcardInfo, FlashcardItem } from "@shared/types";
 import type { FSRSFlashcardItem } from "@shared/types/fsrs/card.types";
@@ -35,6 +34,28 @@ export interface PanelContentProps {
 	cardsWithFsrs: FSRSFlashcardItem[];
 	searchQuery: string;
 	handlers: ContentHandlers;
+}
+
+function getItemInfo(item: PanelItem): {
+	key: string;
+	cards: FlashcardItem[];
+	template?: string;
+} {
+	switch (item.type) {
+		case "basic":
+			return { key: item.card.id, cards: [item.card] };
+		case "cloze-group":
+			return {
+				key: `cloze:${item.cards[0]?.id}`,
+				cards: item.cards,
+				template: item.template,
+			};
+		case "reverse-group":
+			return {
+				key: `reverse:${item.original.id}`,
+				cards: [item.original, item.reversed],
+			};
+	}
 }
 
 export function PanelContent({
@@ -92,141 +113,86 @@ export function PanelContent({
 	if (!flashcardInfo?.exists) {
 		return (
 			<div class="ep:py-4 ep:text-center">
-				<p class="ep:text-ui-small ep:text-obs-muted ep:m-0">No flashcards</p>
+				<p class="ep:text-ui-small ep:text-obs-muted ep:m-0">
+					No flashcards
+				</p>
 			</div>
 		);
 	}
 
 	const filePath = currentFile.path;
+	const isSelecting = selectionMode === "selecting";
 
 	return (
 		<div class="ep:flex ep:flex-col">
 			{filteredItems.map((item) => {
+				const { key, cards, template } = getItemInfo(item);
+				const primaryCard = cards[0]!;
+
+				const sharedProps = {
+					filePath,
+					isExpanded: expandedCardIds.has(key),
+					isSelected:
+						item.type === "basic"
+							? selectedCardIds.has(key)
+							: cards.some((c) => selectedCardIds.has(c.id)),
+					isSelectionMode: isSelecting,
+					onToggleExpand: () => handlers.onToggleExpand(key),
+					onToggleSelect:
+						item.type === "basic"
+							? () => handlers.onToggleSelect(key)
+							: () => {
+									for (const c of cards)
+										handlers.onToggleSelect(c.id);
+								},
+					onSelect: () =>
+						handlers.onEnterSelectionMode(primaryCard.id),
+					onLongPress: () =>
+						handlers.onEnterSelectionMode(primaryCard.id),
+					onJumpToSource: primaryCard.sourceText
+						? () => handlers.onJumpToSource(primaryCard)
+						: undefined,
+					onHoverSource: primaryCard.sourceText
+						? () => handlers.onHoverSource(primaryCard)
+						: undefined,
+					onLeaveSource: primaryCard.sourceText
+						? handlers.onLeaveSource
+						: undefined,
+				};
+
 				if (item.type === "basic") {
 					return (
-						<CompactCard
-							key={item.card.id}
+						<PanelCard
+							key={key}
+							variant="basic"
 							card={item.card}
 							fsrsCard={fsrsMap.get(item.card.id)}
-							filePath={filePath}
-							isExpanded={expandedCardIds.has(item.card.id)}
-							isSelected={selectedCardIds.has(item.card.id)}
-							isSelectionMode={selectionMode === "selecting"}
-							onToggleExpand={() => handlers.onToggleExpand(item.card.id)}
-							onToggleSelect={() => handlers.onToggleSelect(item.card.id)}
 							onEdit={() => handlers.onEditButton(item.card)}
 							onDelete={() => handlers.onDeleteCard(item.card)}
 							onCopy={() => handlers.onCopyCard(item.card)}
 							onMove={() => handlers.onMoveCard(item.card)}
-							onSelect={() => handlers.onEnterSelectionMode(item.card.id)}
-							onLongPress={() => handlers.onEnterSelectionMode(item.card.id)}
-							onJumpToSource={
-								item.card.sourceText
-									? () => handlers.onJumpToSource(item.card)
-									: undefined
-							}
-							onHoverSource={
-								item.card.sourceText
-									? () => handlers.onHoverSource(item.card)
-									: undefined
-							}
-							onLeaveSource={
-								item.card.sourceText
-									? handlers.onLeaveSource
-									: undefined
-							}
+							{...sharedProps}
 						/>
 					);
 				}
 
-				if (item.type === "cloze-group") {
-					const groupId = `cloze:${item.cards[0]?.id}`;
-					return (
-						<CardGroup
-							key={groupId}
-							groupType="cloze"
-							cards={item.cards}
-							fsrsCards={item.cards.map((c) => fsrsMap.get(c.id))}
-							template={item.template}
-							filePath={filePath}
-							groupId={groupId}
-							isExpanded={expandedCardIds.has(groupId)}
-							isSelected={item.cards.some((c) => selectedCardIds.has(c.id))}
-							isSelectionMode={selectionMode === "selecting"}
-							onToggleExpand={() => handlers.onToggleExpand(groupId)}
-							onToggleSelect={() => {
-								for (const c of item.cards) handlers.onToggleSelect(c.id);
-							}}
-							onEditGroup={() =>
-								handlers.onEditGroup(item.cards, item.template)
-							}
-							onDeleteGroup={() => handlers.onDeleteGroup(item.cards)}
-							onCopyGroup={() => handlers.onCopyGroup(item.cards)}
-							onMoveGroup={() => handlers.onMoveGroup(item.cards)}
-							onSelect={() =>
-								handlers.onEnterSelectionMode(item.cards[0]?.id ?? "")
-							}
-							onLongPress={() =>
-								handlers.onEnterSelectionMode(item.cards[0]?.id ?? "")
-							}
-							onJumpToSource={
-								item.cards[0]?.sourceText
-									? () => handlers.onJumpToSource(item.cards[0]!)
-									: undefined
-							}
-							onHoverSource={
-								item.cards[0]?.sourceText
-									? () => handlers.onHoverSource(item.cards[0]!)
-									: undefined
-							}
-							onLeaveSource={
-								item.cards[0]?.sourceText
-									? handlers.onLeaveSource
-									: undefined
-							}
-						/>
-					);
-				}
-
-				// reverse-group
-				const groupId = `reverse:${item.original.id}`;
-				const reverseCards = [item.original, item.reversed];
+				const groupType =
+					item.type === "cloze-group"
+						? ("cloze" as const)
+						: ("reverse" as const);
 				return (
-					<CardGroup
-						key={groupId}
-						groupType="reverse"
-						cards={reverseCards}
-						fsrsCards={reverseCards.map((c) => fsrsMap.get(c.id))}
-						filePath={filePath}
-						groupId={groupId}
-						isExpanded={expandedCardIds.has(groupId)}
-						isSelected={reverseCards.some((c) => selectedCardIds.has(c.id))}
-						isSelectionMode={selectionMode === "selecting"}
-						onToggleExpand={() => handlers.onToggleExpand(groupId)}
-						onToggleSelect={() => {
-							for (const c of reverseCards) handlers.onToggleSelect(c.id);
-						}}
-						onEditGroup={() => handlers.onEditGroup(reverseCards)}
-						onDeleteGroup={() => handlers.onDeleteGroup(reverseCards)}
-						onCopyGroup={() => handlers.onCopyGroup(reverseCards)}
-						onMoveGroup={() => handlers.onMoveGroup(reverseCards)}
-						onSelect={() => handlers.onEnterSelectionMode(item.original.id)}
-						onLongPress={() => handlers.onEnterSelectionMode(item.original.id)}
-						onJumpToSource={
-							item.original.sourceText
-								? () => handlers.onJumpToSource(item.original)
-								: undefined
-						}
-						onHoverSource={
-							item.original.sourceText
-								? () => handlers.onHoverSource(item.original)
-								: undefined
-						}
-						onLeaveSource={
-							item.original.sourceText
-								? handlers.onLeaveSource
-								: undefined
-						}
+					<PanelCard
+						key={key}
+						variant="group"
+						groupType={groupType}
+						cards={cards}
+						fsrsCards={cards.map((c) => fsrsMap.get(c.id))}
+						template={template}
+						onEdit={() => handlers.onEditGroup(cards, template)}
+						onDelete={() => handlers.onDeleteGroup(cards)}
+						onCopy={() => handlers.onCopyGroup(cards)}
+						onMove={() => handlers.onMoveGroup(cards)}
+						{...sharedProps}
 					/>
 				);
 			})}

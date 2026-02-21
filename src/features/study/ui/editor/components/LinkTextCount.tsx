@@ -1,4 +1,5 @@
 import type { NoteStatusInfo } from "@features/core/cache/note-status-cache.service";
+import { FSRS_COLORS } from "@shared/ui/helpers/fsrs-colors";
 import { cva, type VariantProps } from "class-variance-authority";
 
 const wrapperVariants = cva(
@@ -20,9 +21,9 @@ const wrapperVariants = cva(
 );
 
 const COUNT_CLS = {
-	new: "ep:text-obs-green ep:tabular-nums",
-	learning: "ep:text-obs-orange ep:tabular-nums",
-	due: "ep:text-obs-blue ep:tabular-nums",
+	new: `${FSRS_COLORS.new.textCls} ep:tabular-nums`,
+	learning: `${FSRS_COLORS.learning.textCls} ep:tabular-nums`,
+	due: `${FSRS_COLORS.review.textCls} ep:tabular-nums`,
 	muted: "ep:text-obs-muted ep:tabular-nums",
 	sep: "ep:text-obs-faint ep:mx-px",
 } as const;
@@ -62,9 +63,6 @@ export function LinkTextCount({ info, variant }: LinkTextCountProps) {
 		return els;
 	});
 
-	// const isHeading = variant != null && variant !== "link";
-	// const playBtnCls = `${isHeading ? "ep:text-obs-muted" : "ep:text-obs-faint"} ${PLAY_BTN_BASE}`;
-	// _playBtnCls;
 	return (
 		<span
 			class={wrapperVariants({ variant })}
@@ -74,11 +72,6 @@ export function LinkTextCount({ info, variant }: LinkTextCountProps) {
 			<span class={COUNT_CLS.muted}>
 				{parts.length > 0 ? `(${info.total})` : `(${info.total} cards)`}
 			</span>
-			{/* {onPlay && (
-				<Clickable class={playBtnCls} onClick={onPlay}>
-					{"\u2026"}
-				</Clickable>
-			)} */}
 		</span>
 	);
 }
