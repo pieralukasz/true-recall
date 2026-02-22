@@ -222,6 +222,12 @@ export interface TrueRecallSettings {
 	/** Show inline flashcard status indicators next to [[links]] in editor */
 	showLinkStatusIndicators: boolean;
 
+	/** Show status bar widget with global due/new/learning counts */
+	showStatusBarWidget: boolean;
+
+	/** Show quick review section at top of flashcard panel */
+	showQuickReviewInPanel: boolean;
+
 	/** Show floating toolbar above selected text for AI flashcard generation */
 	selectionToolbarEnabled: boolean;
 	/** Custom prompts for AI flashcard generation (per mode) */

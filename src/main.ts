@@ -1,3 +1,4 @@
+import type { StatusBarWidget } from "@features/metrics/ui/status-bar/StatusBarWidget";
 import { FlashcardGenerationService } from "@features/ai/services/flashcard-generation.service";
 import { SqlJsAdapter } from "@features/ai/services/langchain-sqlite.adapter";
 import { NLQueryService } from "@features/ai/services/nl-query.service";
@@ -103,6 +104,7 @@ export default class TrueRecallPlugin extends Plugin {
 	presetService!: PresetService;
 	store: AppStore | null = null;
 	noteStatusCache: NoteStatusCacheService | null = null;
+	statusBarWidget: StatusBarWidget | null = null;
 
 	/**
 	 * Assert that the card store is initialized and ready.
@@ -267,6 +269,7 @@ export default class TrueRecallPlugin extends Plugin {
 	onunload(): void {
 		this.undoService?.clear();
 		this.backgroundBackupManager?.stop();
+		this.statusBarWidget?.dispose();
 		this.noteStatusCache?.dispose();
 
 		if (this.cardStore) {
@@ -715,6 +718,8 @@ export default class TrueRecallPlugin extends Plugin {
 			this.initializeDeletionHandler();
 			this.initializeStore();
 			this.initializeLinkStatusIndicators();
+			this.initializeStatusBar();
+			this.initializeDashboardCodeblocks();
 			this.initializeSelectionToolbar();
 		} catch (error) {
 			console.error("[True Recall] Failed to initialize SQLite store:", error);
@@ -767,6 +772,7 @@ export default class TrueRecallPlugin extends Plugin {
 			() => this.settings.showLinkStatusIndicators,
 			onReviewNote,
 			onReviewNotes,
+			this.cardStore,
 		);
 		this.registerEditorExtension([viewPlugin]);
 
@@ -779,6 +785,38 @@ export default class TrueRecallPlugin extends Plugin {
 			onReviewNotes,
 		);
 		this.registerMarkdownPostProcessor(postProcessor);
+	}
+
+	private initializeStatusBar(): void {
+		if (!this.noteStatusCache || !this.sessionPersistence) return;
+
+		void import("@features/metrics/ui/status-bar/StatusBarWidget").then(
+			({ StatusBarWidget }) => {
+				if (!this.noteStatusCache || !this.sessionPersistence) return;
+
+				const statusBarEl = this.addStatusBarItem();
+				this.statusBarWidget = new StatusBarWidget(
+					statusBarEl,
+					this.noteStatusCache,
+					this.flashcardManager,
+					this.fsrsService,
+					this.sessionPersistence,
+					() => {
+						this.openCustomStudyModal().catch(() => {});
+					},
+					() => this.settings.showStatusBarWidget,
+				);
+				this.statusBarWidget.start();
+			},
+		);
+	}
+
+	private initializeDashboardCodeblocks(): void {
+		import("@features/metrics/ui/codeblock/DashboardCodeblock").then(
+			({ registerDashboardCodeblocks }) => {
+				registerDashboardCodeblocks(this);
+			},
+		).catch(() => {});
 	}
 
 	private initializeSelectionToolbar(): void {
