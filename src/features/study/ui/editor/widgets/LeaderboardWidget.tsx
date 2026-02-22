@@ -100,10 +100,6 @@ export function LeaderboardWidget({ source }: { source: string }) {
 		}
 	};
 
-	const handleBrowse = () => {
-		plugin.openCardBrowser().catch(() => {});
-	};
-
 	return (
 		<div class="ep:flex ep:flex-col ep:gap-2 ep:p-3 ep:text-sm">
 			{/* Header */}
@@ -172,12 +168,6 @@ export function LeaderboardWidget({ source }: { source: string }) {
 					onClick={handleReviewWeakest}
 				>
 					Review weakest →
-				</button>
-				<button
-					class="ep:px-2 ep:py-0.5 ep:rounded ep:border ep:border-obs-modifier-border ep:cursor-pointer hover:ep:bg-obs-modifier-hover"
-					onClick={handleBrowse}
-				>
-					See all in browser
 				</button>
 			</div>
 		</div>

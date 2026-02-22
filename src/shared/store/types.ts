@@ -10,8 +10,6 @@ import type { AppError } from "@shared/errors";
 import type {
 	FlashcardInfo,
 	FSRSFlashcardItem,
-	ProjectInfo,
-	ProjectNoteInfo,
 	ReviewResult,
 	ReviewSessionStats,
 	SchedulingPreview,
@@ -157,6 +155,7 @@ export interface PanelSliceActions {
 	enterSelectionMode: (initialCardId?: string) => void;
 	exitSelectionMode: () => void;
 	toggleCardSelection: (cardId: string) => void;
+	selectAll: (cardIds: string[]) => void;
 	toggleCardExpanded: (cardId: string) => void;
 	isInSelectionMode: () => boolean;
 	setSearchQuery: (query: string) => void;
@@ -220,114 +219,11 @@ export type StatsApi = StatsSliceState & StatsSliceActions;
 
 export type ReviewApi = ReviewSliceState & ReviewSliceActions;
 
-export type NoteHubStatusFilter =
-	| "all"
-	| "has-due"
-	| "has-new"
-	| "needs-cards"
-	| "no-due";
-export type NoteHubSortBy = "name" | "due" | "cards";
-export type NoteHubSortDirection = "asc" | "desc";
-
-export interface NoteHubSliceState {
-	isLoading: boolean;
-	projects: ProjectInfo[];
-	unassignedNotes: ProjectNoteInfo[];
-	searchQuery: string;
-	expandedProjectIds: Set<string>;
-	selectionMode: SelectionMode;
-	selectedNotePaths: Set<string>;
-	statusFilter: NoteHubStatusFilter;
-	sortBy: NoteHubSortBy;
-	sortDirection: NoteHubSortDirection;
-}
-
-export interface NoteHubSliceActions {
-	setState: (partial: Partial<NoteHubSliceState>) => void;
-	reset: () => void;
-	setLoading: (isLoading: boolean) => void;
-	setProjects: (projects: ProjectInfo[]) => void;
-	setUnassignedNotes: (notes: ProjectNoteInfo[]) => void;
-	setSearchQuery: (query: string) => void;
-	toggleProjectExpanded: (projectId: string) => void;
-	isProjectExpanded: (projectId: string) => boolean;
-	enterSelectionMode: (initialNotePath?: string) => void;
-	exitSelectionMode: () => void;
-	toggleNoteSelection: (notePath: string) => void;
-	isInSelectionMode: () => boolean;
-	getSelectedNotePaths: () => string[];
-	setStatusFilter: (filter: NoteHubStatusFilter) => void;
-	setSortBy: (sortBy: NoteHubSortBy) => void;
-	toggleSortDirection: () => void;
-	getFilteredProjects: () => ProjectInfo[];
-	getFilteredUnassignedNotes: () => ProjectNoteInfo[];
-}
-
-export type NoteHubApi = NoteHubSliceState & NoteHubSliceActions;
-
-// ── Card Browser ──
-
-export type BrowserSortColumn =
-	| "question"
-	| "answer"
-	| "state"
-	| "due"
-	| "interval"
-	| "lapses"
-	| "stability"
-	| "difficulty"
-	| "source";
-
-export type BrowserStateFilter =
-	| "all"
-	| "new"
-	| "learning"
-	| "review"
-	| "relearning"
-	| "suspended"
-	| "buried";
-
-export interface BrowserSliceState {
-	isLoading: boolean;
-	allCards: FSRSFlashcardItem[];
-	searchQuery: string;
-	stateFilter: BrowserStateFilter;
-	sortColumn: BrowserSortColumn;
-	sortDirection: "asc" | "desc";
-	selectionMode: SelectionMode;
-	selectedCardIds: Set<string>;
-	previewCardId: string | null;
-}
-
-export interface BrowserSliceActions {
-	setState: (partial: Partial<BrowserSliceState>) => void;
-	reset: () => void;
-	setLoading: (isLoading: boolean) => void;
-	setCards: (cards: FSRSFlashcardItem[]) => void;
-	setSearchQuery: (query: string) => void;
-	setStateFilter: (filter: BrowserStateFilter) => void;
-	setSortColumn: (column: BrowserSortColumn) => void;
-	toggleSortDirection: () => void;
-	cycleSortOnColumn: (column: BrowserSortColumn) => void;
-	enterSelectionMode: (initialCardId?: string) => void;
-	exitSelectionMode: () => void;
-	toggleCardSelection: (cardId: string) => void;
-	selectAll: () => void;
-	isInSelectionMode: () => boolean;
-	getSelectedCardIds: () => string[];
-	setPreviewCardId: (cardId: string | null) => void;
-	getFilteredAndSortedCards: () => FSRSFlashcardItem[];
-}
-
-export type BrowserApi = BrowserSliceState & BrowserSliceActions;
-
 export interface AppState {
 	review: ReviewSliceState & ReviewSliceActions;
 	panel: PanelSliceState & PanelSliceActions;
 	simulator: SimulatorSliceState & SimulatorSliceActions;
 	stats: StatsSliceState & StatsSliceActions;
-	noteHub: NoteHubSliceState & NoteHubSliceActions;
-	browser: BrowserSliceState & BrowserSliceActions;
 }
 
 export type SliceCreator<T> = (

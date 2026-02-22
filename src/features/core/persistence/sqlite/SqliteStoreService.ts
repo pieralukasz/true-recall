@@ -1,6 +1,6 @@
 /**
  * High-performance storage for FSRS card data using sql.js.
- * Uses domain modules: store.cards.*, store.stats.*, store.browser.*
+ * Uses domain modules: store.cards.*, store.stats.*
  */
 
 import {
