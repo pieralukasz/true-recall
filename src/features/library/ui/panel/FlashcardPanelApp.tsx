@@ -777,6 +777,12 @@ export function FlashcardPanelApp({
 		panel.exitSelectionMode();
 	}, [panel]);
 
+	const handleSelectAll = useCallback(() => {
+		if (!state.flashcardInfo) return;
+		const cardIds = state.flashcardInfo.flashcards.map((c) => c.id);
+		panel.selectAll(cardIds);
+	}, [panel, state.flashcardInfo]);
+
 	const handleSearchChange = useCallback(
 		(query: string) => {
 			panel.setSearchQuery(query);
@@ -878,6 +884,8 @@ export function FlashcardPanelApp({
 		<PanelFooter
 			selectionMode={state.selectionMode}
 			selectedCount={state.selectedCardIds.size}
+			totalCount={state.flashcardInfo?.flashcards.length ?? 0}
+			onSelectAll={handleSelectAll}
 			onMoveSelected={handleMoveSelected}
 			onDeleteSelected={handleDeleteSelected}
 		/>

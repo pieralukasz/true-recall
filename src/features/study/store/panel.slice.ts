@@ -146,6 +146,15 @@ export function createPanelSlice(
 				exitSelectionMode: sel.exitSelectionMode,
 				toggleCardSelection: sel.toggleSelection,
 				isInSelectionMode: sel.isInSelectionMode,
+				selectAll: (cardIds: string[]) => {
+					set((s) => ({
+						panel: {
+							...s.panel,
+							selectionMode: "selecting",
+							selectedCardIds: new Set(cardIds),
+						},
+					}));
+				},
 			};
 		})(),
 

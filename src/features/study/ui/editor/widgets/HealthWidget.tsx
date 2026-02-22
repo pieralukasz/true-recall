@@ -73,10 +73,6 @@ export function HealthWidget({ source }: { source: string }) {
 		}).catch(() => {});
 	};
 
-	const handleCardCountClick = () => {
-		plugin.openCardBrowser().catch(() => {});
-	};
-
 	const maxBucket = Math.max(1, ...data.distribution.map((b) => b.count));
 
 	return (
@@ -135,11 +131,7 @@ export function HealthWidget({ source }: { source: string }) {
 					))}
 					<div class="ep:flex ep:flex-col ep:items-center ep:gap-1 ep:pl-2">
 						<span class="ep:text-xs ep:text-obs-muted">&nbsp;</span>
-						<span
-							class="ep:text-xs ep:cursor-pointer hover:ep:underline"
-							onClick={handleCardCountClick}
-							title="Open card browser"
-						>
+						<span class="ep:text-xs ep:text-obs-muted">
 							{data.cardCount} active
 						</span>
 					</div>
