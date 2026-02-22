@@ -1,4 +1,3 @@
-import type { StatusBarWidget } from "@features/study/ui/editor/widgets/StatusBarWidget";
 import { FlashcardGenerationService } from "@features/ai/services/flashcard-generation.service";
 import { SqlJsAdapter } from "@features/ai/services/langchain-sqlite.adapter";
 import { NLQueryService } from "@features/ai/services/nl-query.service";
@@ -49,6 +48,7 @@ import {
 	createLinkStatusPostProcessor,
 	createLinkStatusViewPlugin,
 } from "@features/study/ui/editor";
+import type { StatusBarWidget } from "@features/study/ui/editor/widgets/StatusBarWidget";
 import { ReviewView } from "@features/study/ui/review/ReviewView";
 import {
 	VIEW_TYPE_FLASHCARD_PANEL,
@@ -785,11 +785,11 @@ export default class TrueRecallPlugin extends Plugin {
 	}
 
 	private initializeDashboardCodeblocks(): void {
-		import("@features/study/ui/editor/widgets/DashboardCodeblock").then(
-			({ registerDashboardCodeblocks }) => {
+		import("@features/study/ui/editor/widgets/DashboardCodeblock")
+			.then(({ registerDashboardCodeblocks }) => {
 				registerDashboardCodeblocks(this);
-			},
-		).catch(() => {});
+			})
+			.catch(() => {});
 	}
 
 	private initializeSelectionToolbar(): void {
@@ -1118,10 +1118,7 @@ export default class TrueRecallPlugin extends Plugin {
 			return;
 		}
 
-		const modal = new CsvExportModal(
-			this.app,
-			this.cardStore,
-		);
+		const modal = new CsvExportModal(this.app, this.cardStore);
 		modal.open();
 	}
 

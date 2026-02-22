@@ -31,11 +31,7 @@ export function ButtonBar({
 			<div class="ep:flex ep:items-center ep:justify-center ep:w-full ep:relative">
 				<div class="ep:flex ep:justify-center ep:gap-3 ep:flex-nowrap ep:py-4">
 					{!isAnswerRevealed ? (
-						<button
-							type="button"
-							class="ep-btn mod-cta"
-							onClick={onShowAnswer}
-						>
+						<button type="button" class="ep-btn mod-cta" onClick={onShowAnswer}>
 							Show answer
 						</button>
 					) : (

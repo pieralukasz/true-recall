@@ -1,5 +1,5 @@
-import { StatsCalculatorService } from "@features/metrics/services/stats/stats-calculator.service";
 import { WorkloadForecastCalculator } from "@features/metrics/services/fsrs-tools/statistics/workload-forecast.calculator";
+import { StatsCalculatorService } from "@features/metrics/services/stats/stats-calculator.service";
 import { effect } from "@preact/signals";
 import { dataVersion, track } from "@shared/services/signals";
 import { usePlugin } from "@shared/ui/preact";
@@ -45,7 +45,7 @@ export function WorkloadWidget({ source }: { source: string }) {
 
 		const forecastDays = configValue(config, "days", 14) as number;
 		const heavyThreshold = configValue(config, "heavyThreshold", 1.5) as number;
-		const overrideMinPerCard = config["minutesPerCard"];
+		const overrideMinPerCard = config.minutesPerCard;
 
 		const forecast = new WorkloadForecastCalculator(plugin.cardStore);
 		const entries = forecast.getForecast(forecastDays);
@@ -72,7 +72,8 @@ export function WorkloadWidget({ source }: { source: string }) {
 
 		const days: WorkloadDay[] = entries.map((entry, idx) => {
 			const entryDate = new Date(entry.date);
-			const label = entry.date === today ? "Today" : DAY_NAMES[entryDate.getDay()] ?? "";
+			const label =
+				entry.date === today ? "Today" : (DAY_NAMES[entryDate.getDay()] ?? "");
 			return {
 				label,
 				count: entry.dueCount,
@@ -84,9 +85,13 @@ export function WorkloadWidget({ source }: { source: string }) {
 			};
 		});
 
-		const peakEntry = entries.reduce((max, e) => (e.dueCount > max.dueCount ? e : max), entries[0]!);
+		const peakEntry = entries.reduce(
+			(max, e) => (e.dueCount > max.dueCount ? e : max),
+			entries[0]!,
+		);
 		const peakDate = new Date(peakEntry.date);
-		const peakLabel = peakEntry.date === today ? "Today" : DAY_NAMES[peakDate.getDay()] ?? "";
+		const peakLabel =
+			peakEntry.date === today ? "Today" : (DAY_NAMES[peakDate.getDay()] ?? "");
 
 		return {
 			days,
@@ -97,7 +102,9 @@ export function WorkloadWidget({ source }: { source: string }) {
 	}, [plugin, ver, config]);
 
 	if (!data || data.days.length === 0) {
-		return <div class="ep:text-obs-muted ep:text-xs ep:p-3">No forecast data.</div>;
+		return (
+			<div class="ep:text-obs-muted ep:text-xs ep:p-3">No forecast data.</div>
+		);
 	}
 
 	const showTime = configValue(config, "showTime", true);
@@ -113,10 +120,12 @@ export function WorkloadWidget({ source }: { source: string }) {
 			handleTodayReview();
 			return;
 		}
-		plugin.openReviewViewWithFilters({
-			studyAheadDays: daysAhead,
-			ignoreDailyLimits: true,
-		}).catch(() => {});
+		plugin
+			.openReviewViewWithFilters({
+				studyAheadDays: daysAhead,
+				ignoreDailyLimits: true,
+			})
+			.catch(() => {});
 	};
 
 	return (
@@ -136,9 +145,15 @@ export function WorkloadWidget({ source }: { source: string }) {
 						key={`${day.label}-${day.daysAhead}`}
 						class="ep:flex ep:items-center ep:gap-2 ep:text-xs ep:cursor-pointer hover:ep:bg-obs-modifier-hover ep:rounded ep:px-1 ep:py-0.5"
 						onClick={() => handleDayClick(day.daysAhead)}
-						title={day.isToday ? "Start review" : `Study ahead: ${day.daysAhead} days`}
+						title={
+							day.isToday
+								? "Start review"
+								: `Study ahead: ${day.daysAhead} days`
+						}
 					>
-						<span class={`ep:w-10 ep:text-right ${day.isToday ? "ep:font-semibold" : "ep:text-obs-muted"}`}>
+						<span
+							class={`ep:w-10 ep:text-right ${day.isToday ? "ep:font-semibold" : "ep:text-obs-muted"}`}
+						>
 							{day.label}
 						</span>
 						<div class="ep:flex-1 ep:h-3 ep:rounded ep:bg-obs-modifier-hover ep:overflow-hidden">
@@ -155,7 +170,9 @@ export function WorkloadWidget({ source }: { source: string }) {
 								/>
 							)}
 						</div>
-						<span class={`ep:w-6 ep:text-right ${day.count > 0 ? "" : "ep:text-obs-muted"}`}>
+						<span
+							class={`ep:w-6 ep:text-right ${day.count > 0 ? "" : "ep:text-obs-muted"}`}
+						>
 							{day.count}
 						</span>
 						{showTime && (
@@ -169,12 +186,17 @@ export function WorkloadWidget({ source }: { source: string }) {
 							</span>
 						)}
 						{showFlags && !day.isToday && day.isHeavy && (
-							<span class="ep:w-16 ep:text-right" style={{ color: "var(--color-orange)" }}>
+							<span
+								class="ep:w-16 ep:text-right"
+								style={{ color: "var(--color-orange)" }}
+							>
 								heavy
 							</span>
 						)}
 						{showFlags && !day.isToday && day.isLightest && !day.isHeavy && (
-							<span class="ep:w-16 ep:text-right ep:text-obs-muted">lightest</span>
+							<span class="ep:w-16 ep:text-right ep:text-obs-muted">
+								lightest
+							</span>
 						)}
 						{showFlags && !day.isToday && !day.isHeavy && !day.isLightest && (
 							<span class="ep:w-16" />
@@ -185,11 +207,15 @@ export function WorkloadWidget({ source }: { source: string }) {
 
 			{/* Summary footer */}
 			<div class="ep:flex ep:items-center ep:gap-2 ep:text-xs ep:text-obs-muted ep:pt-1 ep:border-t ep:border-obs-modifier-border">
-				<span>Peak: {data.peakDay.label} ({data.peakDay.count})</span>
+				<span>
+					Peak: {data.peakDay.label} ({data.peakDay.count})
+				</span>
 				{data.needsBalancing && (
 					<>
 						<span style={{ opacity: 0.4 }}>│</span>
-						<span style={{ color: "var(--color-orange)" }}>Balance: needs attention</span>
+						<span style={{ color: "var(--color-orange)" }}>
+							Balance: needs attention
+						</span>
 					</>
 				)}
 			</div>

@@ -9,7 +9,7 @@ import {
 	handleUnburyCard,
 	openSourceNote,
 } from "@shared/ui/modals/card-preview";
-import { type App, Component } from "obsidian";
+import type { App } from "obsidian";
 import { render } from "preact";
 
 export interface CardPreviewModalOptions {
@@ -21,19 +21,15 @@ export interface CardPreviewModalOptions {
 
 export class CardPreviewModal extends BaseModal {
 	private options: CardPreviewModalOptions;
-	private component: Component;
 	private flashcardManager: FlashcardManager;
-	private unmountBody?: () => void;
 
 	constructor(app: App, options: CardPreviewModalOptions) {
 		super(app, { title: options.title, width: "700px" });
 		this.options = options;
-		this.component = new Component();
 		this.flashcardManager = options.flashcardManager;
 	}
 
 	onOpen(): void {
-		this.component.load();
 		super.onOpen();
 		this.contentEl.addClass("true-recall-card-preview-modal");
 	}
@@ -84,13 +80,5 @@ export class CardPreviewModal extends BaseModal {
 			/>,
 			container,
 		);
-		this.unmountBody = () => render(null, container);
-	}
-
-	onClose(): void {
-		this.unmountBody?.();
-		this.component.unload();
-		const { contentEl } = this;
-		contentEl.empty();
 	}
 }

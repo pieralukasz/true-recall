@@ -9,19 +9,14 @@ import {
 import { Chart } from "chart.js";
 import { useCallback, useEffect, useState } from "preact/hooks";
 
-const SOURCE_CONFIG: Record<
-	string,
-	{ label: string; color: string }
-> = {
+const SOURCE_CONFIG: Record<string, { label: string; color: string }> = {
 	manual: { label: "Manual", color: "--color-blue" },
 	ai: { label: "AI", color: "--color-purple" },
 	anki_import: { label: "Anki import", color: "--color-orange" },
 };
 
 function getSourceConfig(source: string): { label: string; color: string } {
-	return (
-		SOURCE_CONFIG[source] ?? { label: source, color: "--color-muted" }
-	);
+	return SOURCE_CONFIG[source] ?? { label: source, color: "--color-muted" };
 }
 
 function retentionLabel(rate: number | null): string {
@@ -58,7 +53,9 @@ export function CreationSourceChart({
 	const buildChart = useCallback(
 		(canvas: HTMLCanvasElement) => {
 			const labels = data.map((r) => getSourceConfig(r.source).label);
-			const colors = data.map((r) => getThemeColor(getSourceConfig(r.source).color));
+			const colors = data.map((r) =>
+				getThemeColor(getSourceConfig(r.source).color),
+			);
 			const alphaBg = data.map((r) =>
 				getThemeColorWithAlpha(getSourceConfig(r.source).color, 0.7),
 			);

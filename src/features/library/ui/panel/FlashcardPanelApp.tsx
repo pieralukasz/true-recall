@@ -10,7 +10,6 @@ import {
 	notifyDuplicateError,
 	showDuplicateNotifications,
 } from "@features/library/ui/panel/utils/panel-helpers";
-import { QuickReview } from "@features/study/ui/panel/components/QuickReview";
 import { effect } from "@preact/signals";
 import { dataVersion, settingsVersion, track } from "@shared/services/signals";
 import type {
@@ -833,11 +832,9 @@ export function FlashcardPanelApp({
 	);
 
 	const handleLeaveSource = useCallback(() => {
-		void import("@shared/services/signals").then(
-			({ clearSourceHighlight }) => {
-				clearSourceHighlight();
-			},
-		);
+		void import("@shared/services/signals").then(({ clearSourceHighlight }) => {
+			clearSourceHighlight();
+		});
 	}, []);
 
 	const contentHandlers: ContentHandlers = useMemo(

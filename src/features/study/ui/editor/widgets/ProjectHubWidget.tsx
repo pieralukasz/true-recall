@@ -54,8 +54,8 @@ export function ProjectHubWidget() {
 	if (projects.length === 0) {
 		return (
 			<div class="ep:text-obs-muted ep:text-xs ep:p-3">
-				No projects found. Create a note with{" "}
-				<code>project: true</code> in frontmatter to get started.
+				No projects found. Create a note with <code>project: true</code> in
+				frontmatter to get started.
 			</div>
 		);
 	}
@@ -79,7 +79,9 @@ export function ProjectHubWidget() {
 							.catch(() => {});
 					}}
 					onCustomStudy={() => {
-						const members = plugin.projectLinkService.getMemberPaths(stats.path);
+						const members = plugin.projectLinkService.getMemberPaths(
+							stats.path,
+						);
 						const names = members.map((p) => {
 							const f = plugin.app.vault.getAbstractFileByPath(p);
 							return f?.name?.replace(/\.md$/, "") ?? p;

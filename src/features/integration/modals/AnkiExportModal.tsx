@@ -70,13 +70,8 @@ export class AnkiExportModal extends BaseModal {
 	private store: SqliteStoreService;
 	private fsrsService: FSRSService;
 	private allNotes: NoteEntry[] = [];
-	private unmountBody?: () => void;
 
-	constructor(
-		app: App,
-		store: SqliteStoreService,
-		fsrsService: FSRSService,
-	) {
+	constructor(app: App, store: SqliteStoreService, fsrsService: FSRSService) {
 		super(app, { title: "Export to Anki", width: "520px" });
 		this.store = store;
 		this.fsrsService = fsrsService;
@@ -96,12 +91,6 @@ export class AnkiExportModal extends BaseModal {
 			/>,
 			container,
 		);
-		this.unmountBody = () => render(null, container);
-	}
-
-	onClose(): void {
-		this.unmountBody?.();
-		super.onClose();
 	}
 
 	private async startExport(opts: ExportFormValues): Promise<ExportPhase> {

@@ -14,7 +14,13 @@ interface NoteHealthData {
 	sourceNoteName: string | null;
 }
 
-export function NoteHealthWidget({ sourceUid, source }: { sourceUid: string | null; source: string }) {
+export function NoteHealthWidget({
+	sourceUid,
+	source,
+}: {
+	sourceUid: string | null;
+	source: string;
+}) {
 	const plugin = usePlugin();
 	const [ver, setVer] = useState(0);
 
@@ -79,7 +85,11 @@ export function NoteHealthWidget({ sourceUid, source }: { sourceUid: string | nu
 	}, [plugin, sourceUid, ver]);
 
 	if (!data) {
-		return <div class="ep:text-obs-muted ep:text-xs ep:p-3">No flashcards found in this note.</div>;
+		return (
+			<div class="ep:text-obs-muted ep:text-xs ep:p-3">
+				No flashcards found in this note.
+			</div>
+		);
 	}
 
 	const showActions = configValue(config, "showActions", true);
@@ -97,19 +107,23 @@ export function NoteHealthWidget({ sourceUid, source }: { sourceUid: string | nu
 
 	const handleReviewDue = () => {
 		if (!data.sourceNoteName) return;
-		plugin.openReviewViewWithFilters({
-			sourceNoteFilter: data.sourceNoteName,
-			ignoreDailyLimits: true,
-		}).catch(() => {});
+		plugin
+			.openReviewViewWithFilters({
+				sourceNoteFilter: data.sourceNoteName,
+				ignoreDailyLimits: true,
+			})
+			.catch(() => {});
 	};
 
 	const handleFixWeak = () => {
 		if (!data.sourceNoteName) return;
-		plugin.openReviewViewWithFilters({
-			sourceNoteFilter: data.sourceNoteName,
-			weakCardsOnly: true,
-			ignoreDailyLimits: true,
-		}).catch(() => {});
+		plugin
+			.openReviewViewWithFilters({
+				sourceNoteFilter: data.sourceNoteName,
+				weakCardsOnly: true,
+				ignoreDailyLimits: true,
+			})
+			.catch(() => {});
 	};
 
 	return (

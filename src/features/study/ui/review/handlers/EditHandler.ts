@@ -32,25 +32,20 @@ export class EditHandler {
 		textarea: HTMLTextAreaElement,
 	): Promise<void> {
 		try {
-			const savedPath =
-				await this.imageService.saveImageFromClipboard(file);
+			const savedPath = await this.imageService.saveImageFromClipboard(file);
 			if (!savedPath) {
 				notify().warning("Failed to save image");
 				return;
 			}
 
-			const markdown = this.imageService.buildImageMarkdown(
-				savedPath,
-				500,
-			);
+			const markdown = this.imageService.buildImageMarkdown(savedPath, 500);
 			const start = textarea.selectionStart;
 			const end = textarea.selectionEnd;
 			const value = textarea.value;
 
 			textarea.value =
 				value.substring(0, start) + markdown + value.substring(end);
-			textarea.selectionStart = textarea.selectionEnd =
-				start + markdown.length;
+			textarea.selectionStart = textarea.selectionEnd = start + markdown.length;
 			textarea.dispatchEvent(new Event("input", { bubbles: true }));
 		} catch (error) {
 			console.error("Error saving image:", error);
@@ -93,8 +88,7 @@ export class EditHandler {
 
 						const newCards = parseClozeTemplate(newContent);
 						const thisCard = newCards.find(
-							(c: { clozeIndex: number }) =>
-								c.clozeIndex === card.clozeIndex,
+							(c: { clozeIndex: number }) => c.clozeIndex === card.clozeIndex,
 						);
 						if (thisCard) {
 							review.updateCurrentCardContent(
@@ -119,10 +113,7 @@ export class EditHandler {
 									.getSourceNoteService()
 									.resolveSourceNote(error.existingSourceUid)
 							: {};
-						notify().duplicateFound(
-							newContent,
-							sourceInfo.noteName,
-						);
+						notify().duplicateFound(newContent, sourceInfo.noteName);
 					} else {
 						console.error("Error saving cloze template:", error);
 						notify().operationFailed("save cloze template", error);

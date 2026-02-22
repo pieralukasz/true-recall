@@ -21,7 +21,13 @@ interface DecayData {
 	sourceNoteName: string | null;
 }
 
-export function DecayWidget({ sourceUid, source }: { sourceUid: string | null; source: string }) {
+export function DecayWidget({
+	sourceUid,
+	source,
+}: {
+	sourceUid: string | null;
+	source: string;
+}) {
 	const plugin = usePlugin();
 	const [ver, setVer] = useState(0);
 
@@ -43,7 +49,7 @@ export function DecayWidget({ sourceUid, source }: { sourceUid: string | null; s
 		if (cards.length === 0) return null;
 
 		const now = new Date();
-		const targetRetention = (configValue(config, "target", 0.9) as number);
+		const targetRetention = configValue(config, "target", 0.9) as number;
 		const limit = configValue(config, "limit", 10) as number;
 		const sortBy = configValue(config, "sort", "retrievability") as string;
 
@@ -98,7 +104,11 @@ export function DecayWidget({ sourceUid, source }: { sourceUid: string | null; s
 	}, [plugin, sourceUid, ver, config]);
 
 	if (!data) {
-		return <div class="ep:text-obs-muted ep:text-xs ep:p-3">No flashcards found in this note.</div>;
+		return (
+			<div class="ep:text-obs-muted ep:text-xs ep:p-3">
+				No flashcards found in this note.
+			</div>
+		);
 	}
 
 	const showTarget = configValue(config, "showTarget", true);
@@ -108,11 +118,13 @@ export function DecayWidget({ sourceUid, source }: { sourceUid: string | null; s
 
 	const handleReviewAtRisk = () => {
 		if (!data.sourceNoteName) return;
-		plugin.openReviewViewWithFilters({
-			sourceNoteFilter: data.sourceNoteName,
-			weakCardsOnly: true,
-			ignoreDailyLimits: true,
-		}).catch(() => {});
+		plugin
+			.openReviewViewWithFilters({
+				sourceNoteFilter: data.sourceNoteName,
+				weakCardsOnly: true,
+				ignoreDailyLimits: true,
+			})
+			.catch(() => {});
 	};
 
 	return (
@@ -122,7 +134,9 @@ export function DecayWidget({ sourceUid, source }: { sourceUid: string | null; s
 				<span class="ep:font-semibold">Memory Decay</span>
 				<div class="ep:flex ep:items-center ep:gap-2">
 					<span class="ep:text-obs-muted">{data.totalCards} cards</span>
-					{showTarget && <span class="ep:text-obs-muted">target: {targetPct}%</span>}
+					{showTarget && (
+						<span class="ep:text-obs-muted">target: {targetPct}%</span>
+					)}
 				</div>
 			</div>
 
@@ -188,7 +202,8 @@ export function DecayWidget({ sourceUid, source }: { sourceUid: string | null; s
 			<div class="ep:flex ep:items-center ep:justify-between ep:text-xs ep:pt-1 ep:border-t ep:border-obs-modifier-border">
 				{remainingCount > 0 && (
 					<span class="ep:text-obs-muted">
-						... {remainingCount} more (avg: {Math.round(data.avgRetention * 100)}%)
+						... {remainingCount} more (avg:{" "}
+						{Math.round(data.avgRetention * 100)}%)
 					</span>
 				)}
 				{remainingCount === 0 && (
@@ -213,7 +228,7 @@ export function DecayWidget({ sourceUid, source }: { sourceUid: string | null; s
 function truncateQuestion(q: string): string {
 	const clean = q.replace(/[#*_`~[\]]/g, "").trim();
 	if (clean.length <= 30) return clean;
-	return clean.slice(0, 27) + "...";
+	return `${clean.slice(0, 27)}...`;
 }
 
 function formatStability(days: number): string {

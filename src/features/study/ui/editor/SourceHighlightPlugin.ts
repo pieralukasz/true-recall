@@ -1,15 +1,15 @@
-import { StateEffect, StateField, type Extension } from "@codemirror/state";
+import { type Extension, StateEffect, StateField } from "@codemirror/state";
 import {
 	Decoration,
+	type DecorationSet,
 	EditorView,
 	ViewPlugin,
-	type DecorationSet,
 	type ViewUpdate,
 } from "@codemirror/view";
 import { effect } from "@preact/signals";
 import {
-	highlightRequest,
 	type HighlightRequest,
+	highlightRequest,
 } from "@shared/services/signals";
 
 const addHighlight = StateEffect.define<{

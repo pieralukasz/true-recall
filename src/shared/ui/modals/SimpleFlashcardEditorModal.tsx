@@ -1,7 +1,7 @@
 import { ImageService } from "@features/integration/services/ImageService";
 import { FlashcardParserService } from "@features/study/services/flashcard/flashcard-parser.service";
 import type { FlashcardItem } from "@shared/types";
-import { BaseModal } from "@shared/ui/modals/BaseModal";
+import { BasePromiseModal } from "@shared/ui/modals/BasePromiseModal";
 import { SimpleEditorBody } from "@shared/ui/modals/simple-editor/SimpleEditorBody";
 import type { App } from "obsidian";
 import { render } from "preact";
@@ -19,15 +19,10 @@ export interface SimpleFlashcardEditorOptions {
 	currentFilePath: string;
 }
 
-export class SimpleFlashcardEditorModal extends BaseModal {
+export class SimpleFlashcardEditorModal extends BasePromiseModal<SimpleFlashcardEditorResult> {
 	private options: SimpleFlashcardEditorOptions;
-	private resolvePromise:
-		| ((result: SimpleFlashcardEditorResult) => void)
-		| null = null;
-	private hasSubmitted = false;
 	private parser: FlashcardParserService;
 	private imageService: ImageService | null = null;
-	private unmountBody?: () => void;
 
 	constructor(app: App, options: SimpleFlashcardEditorOptions) {
 		super(app, {
@@ -38,11 +33,8 @@ export class SimpleFlashcardEditorModal extends BaseModal {
 		this.parser = new FlashcardParserService();
 	}
 
-	async openAndWait(): Promise<SimpleFlashcardEditorResult> {
-		return new Promise((resolve) => {
-			this.resolvePromise = resolve;
-			this.open();
-		});
+	protected getDefaultResult(): SimpleFlashcardEditorResult {
+		return { cancelled: true, flashcards: [] };
 	}
 
 	onOpen(): void {
@@ -59,34 +51,11 @@ export class SimpleFlashcardEditorModal extends BaseModal {
 				options={this.options}
 				parser={this.parser}
 				imageService={this.imageService}
-				onSubmit={(result) => {
-					this.hasSubmitted = true;
-					if (this.resolvePromise) {
-						this.resolvePromise(result);
-						this.resolvePromise = null;
-					}
-					this.close();
-				}}
+				onSubmit={(result) => this.resolve(result)}
 				onClose={() => this.close()}
 			/>,
 			container,
 		);
-		this.unmountBody = () => render(null, container);
-	}
-
-	onClose(): void {
-		this.unmountBody?.();
-
-		const { contentEl } = this;
-		contentEl.empty();
-
-		if (!this.hasSubmitted && this.resolvePromise) {
-			this.resolvePromise({
-				cancelled: true,
-				flashcards: [],
-			});
-			this.resolvePromise = null;
-		}
 	}
 }
 

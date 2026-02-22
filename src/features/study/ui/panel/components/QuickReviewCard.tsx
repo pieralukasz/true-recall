@@ -1,7 +1,6 @@
 import type { SchedulingPreview } from "@shared/types";
 import type { FSRSFlashcardItem } from "@shared/types/fsrs/card.types";
-import { Rating, type Grade } from "ts-fsrs";
-import { h } from "preact";
+import { type Grade, Rating } from "ts-fsrs";
 
 const RATING_BTN_BASE =
 	"ep:flex ep:flex-col ep:items-center ep:gap-0.5 ep:py-2 ep:px-3 ep:border-none ep:rounded-md ep:cursor-pointer ep:font-medium ep:text-ui-smaller ep:min-w-14 ep:transition-transform ep:hover:brightness-110 ep:active:scale-95";

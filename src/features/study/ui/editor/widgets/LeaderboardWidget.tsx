@@ -81,17 +81,23 @@ export function LeaderboardWidget({ source }: { source: string }) {
 	}, [plugin, ver, config]);
 
 	if (!data || data.length === 0) {
-		return <div class="ep:text-obs-muted ep:text-xs ep:p-3">No notes with flashcards yet.</div>;
+		return (
+			<div class="ep:text-obs-muted ep:text-xs ep:p-3">
+				No notes with flashcards yet.
+			</div>
+		);
 	}
 
 	const warnBelow = configValue(config, "warnBelow", 75) as number;
 	const dangerBelow = configValue(config, "dangerBelow", 65) as number;
 
 	const handleNoteClick = (name: string) => {
-		plugin.openReviewViewWithFilters({
-			sourceNoteFilter: name,
-			ignoreDailyLimits: true,
-		}).catch(() => {});
+		plugin
+			.openReviewViewWithFilters({
+				sourceNoteFilter: name,
+				ignoreDailyLimits: true,
+			})
+			.catch(() => {});
 	};
 
 	const handleReviewWeakest = () => {
@@ -121,7 +127,8 @@ export function LeaderboardWidget({ source }: { source: string }) {
 
 			{/* Rows */}
 			{data.map((entry, idx) => {
-				const retention = entry.retentionRate != null ? Math.round(entry.retentionRate) : null;
+				const retention =
+					entry.retentionRate != null ? Math.round(entry.retentionRate) : null;
 				const warningLevel =
 					retention != null && retention < dangerBelow
 						? "danger"
@@ -136,7 +143,9 @@ export function LeaderboardWidget({ source }: { source: string }) {
 						onClick={() => handleNoteClick(entry.resolvedName)}
 						title={`Review ${entry.resolvedName}`}
 					>
-						<span class="ep:w-4 ep:text-right ep:text-obs-muted">{idx + 1}</span>
+						<span class="ep:w-4 ep:text-right ep:text-obs-muted">
+							{idx + 1}
+						</span>
 						<span class="ep:flex-1 ep:truncate">{entry.resolvedName}</span>
 						<span class="ep:w-10 ep:text-right">{entry.cardCount}</span>
 						<span

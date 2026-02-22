@@ -1,8 +1,8 @@
 import type { NoteStatusCacheService } from "@features/core/cache/note-status-cache.service";
+import type { SessionPersistenceService } from "@features/core/persistence/session-persistence.service";
+import type { FSRSService } from "@features/core/services/fsrs.service";
 import { StatsCalculatorService } from "@features/metrics/services/stats/stats-calculator.service";
 import type { FlashcardManager } from "@features/study/services/flashcard/flashcard.service";
-import type { FSRSService } from "@features/core/services/fsrs.service";
-import type { SessionPersistenceService } from "@features/core/persistence/session-persistence.service";
 import { effect } from "@preact/signals";
 import { dataVersion, settingsVersion, track } from "@shared/services/signals";
 import { FSRS_COLORS } from "@shared/ui/helpers/fsrs-colors";
@@ -78,9 +78,7 @@ export class StatusBarWidget {
 			return;
 		}
 
-		this.el.innerHTML = parts.join(
-			' <span style="opacity:0.4">·</span> ',
-		);
+		this.el.innerHTML = parts.join(' <span style="opacity:0.4">·</span> ');
 	}
 
 	private aggregateGlobal(): {
@@ -99,7 +97,11 @@ export class StatusBarWidget {
 
 		for (const card of allCards) {
 			const fsrs = card.fsrs;
-			if (fsrs.suspended || (fsrs.buriedUntil && new Date(fsrs.buriedUntil) > now)) continue;
+			if (
+				fsrs.suspended ||
+				(fsrs.buriedUntil && new Date(fsrs.buriedUntil) > now)
+			)
+				continue;
 			total++;
 
 			switch (fsrs.state) {

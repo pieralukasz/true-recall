@@ -59,20 +59,44 @@
 		}
 	}
 	@keyframes true-recall-source-highlight-fade-green {
-		0%, 70% { background-color: color-mix(in srgb, var(--color-green) 25%, transparent); }
-		100% { background-color: transparent; }
+		0%,
+		70% {
+			background-color: color-mix(in srgb, var(--color-green) 25%, transparent);
+		}
+		100% {
+			background-color: transparent;
+		}
 	}
 	@keyframes true-recall-source-highlight-fade-orange {
-		0%, 70% { background-color: color-mix(in srgb, var(--color-orange) 25%, transparent); }
-		100% { background-color: transparent; }
+		0%,
+		70% {
+			background-color: color-mix(
+				in srgb,
+				var(--color-orange) 25%,
+				transparent
+			);
+		}
+		100% {
+			background-color: transparent;
+		}
 	}
 	@keyframes true-recall-source-highlight-fade-blue {
-		0%, 70% { background-color: color-mix(in srgb, var(--color-blue) 25%, transparent); }
-		100% { background-color: transparent; }
+		0%,
+		70% {
+			background-color: color-mix(in srgb, var(--color-blue) 25%, transparent);
+		}
+		100% {
+			background-color: transparent;
+		}
 	}
 	@keyframes true-recall-source-highlight-fade-red {
-		0%, 70% { background-color: color-mix(in srgb, var(--color-red) 25%, transparent); }
-		100% { background-color: transparent; }
+		0%,
+		70% {
+			background-color: color-mix(in srgb, var(--color-red) 25%, transparent);
+		}
+		100% {
+			background-color: transparent;
+		}
 	}
 
 	/* Source text highlight — persistent while hovering a card (fades in over 300ms) */
@@ -103,7 +127,9 @@
 	}
 
 	@keyframes true-recall-highlight-fade-in {
-		from { background-color: transparent; }
+		from {
+			background-color: transparent;
+		}
 	}
 }
 

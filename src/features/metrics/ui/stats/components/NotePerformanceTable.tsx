@@ -2,9 +2,20 @@ import type { StatsCalculatorService } from "@features/metrics/services/stats/st
 import { StatsCard } from "@features/metrics/ui/stats/components/StatsCard";
 import type { NotePerformanceRow } from "@shared/types";
 import { usePlugin } from "@shared/ui/preact";
-import { useCallback, useEffect, useMemo, useRef, useState } from "preact/hooks";
+import {
+	useCallback,
+	useEffect,
+	useMemo,
+	useRef,
+	useState,
+} from "preact/hooks";
 
-type SortKey = "noteName" | "cardCount" | "retentionRate" | "avgLapses" | "lastReviewed";
+type SortKey =
+	| "noteName"
+	| "cardCount"
+	| "retentionRate"
+	| "avgLapses"
+	| "lastReviewed";
 type SortDir = "asc" | "desc";
 
 interface NotePerformanceItem extends NotePerformanceRow {
@@ -48,8 +59,7 @@ export function NotePerformanceTable({
 	useEffect(() => {
 		try {
 			const raw = statsCalculator.getNotePerformance();
-			const sourceNoteService =
-				plugin.flashcardManager.getSourceNoteService();
+			const sourceNoteService = plugin.flashcardManager.getSourceNoteService();
 
 			const enriched: NotePerformanceItem[] = [];
 			for (const r of raw) {
@@ -124,16 +134,22 @@ export function NotePerformanceTable({
 		setScrollTop(scrollRef.current?.scrollTop ?? 0);
 	}, []);
 
-	// Virtual window calculation
-	const totalHeight = sorted.length * ROW_HEIGHT;
 	const needsVirtualization = sorted.length > VISIBLE_ROWS + OVERSCAN * 2;
 
 	const { startIndex, endIndex, topPadding, bottomPadding } = useMemo(() => {
 		if (!needsVirtualization) {
-			return { startIndex: 0, endIndex: sorted.length - 1, topPadding: 0, bottomPadding: 0 };
+			return {
+				startIndex: 0,
+				endIndex: sorted.length - 1,
+				topPadding: 0,
+				bottomPadding: 0,
+			};
 		}
 		const start = Math.max(0, Math.floor(scrollTop / ROW_HEIGHT) - OVERSCAN);
-		const end = Math.min(sorted.length - 1, start + VISIBLE_ROWS + OVERSCAN * 2);
+		const end = Math.min(
+			sorted.length - 1,
+			start + VISIBLE_ROWS + OVERSCAN * 2,
+		);
 		return {
 			startIndex: start,
 			endIndex: end,
@@ -165,7 +181,8 @@ export function NotePerformanceTable({
 	return (
 		<StatsCard title="Notes performance">
 			<p class="ep:text-ui-smaller ep:text-obs-muted ep:mb-2">
-				Worst retention first. Click column headers to sort, click row to open note.
+				Worst retention first. Click column headers to sort, click row to open
+				note.
 				{sorted.length > VISIBLE_ROWS && (
 					<span class="ep:ml-1">({sorted.length} notes)</span>
 				)}
