@@ -61,8 +61,7 @@ export function buildQueueOptions(
 		reviewsLimit: settings.reviewsPerDay,
 		reviewedToday: sessionPersistence.getReviewedToday(),
 		newCardsStudiedToday: sessionPersistence.getNewCardsStudiedToday(),
-		reviewsCompletedToday:
-			sessionPersistence.getReviewCardsCompletedToday(),
+		reviewsCompletedToday: sessionPersistence.getReviewCardsCompletedToday(),
 		newCardOrder: settings.newCardOrder,
 		reviewOrder: filters.customReviewOrder ?? settings.reviewOrder,
 		newReviewMix: settings.newReviewMix,
@@ -145,15 +144,8 @@ export function applyMutation(
 			) {
 				return;
 			}
-			if (
-				filters.sourceNoteFilters &&
-				filters.sourceNoteFilters.length > 0
-			) {
-				if (
-					!filters.sourceNoteFilters.includes(
-						newCard.sourceNoteName ?? "",
-					)
-				) {
+			if (filters.sourceNoteFilters && filters.sourceNoteFilters.length > 0) {
+				if (!filters.sourceNoteFilters.includes(newCard.sourceNoteName ?? "")) {
 					return;
 				}
 			}

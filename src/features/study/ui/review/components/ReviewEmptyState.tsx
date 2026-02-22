@@ -13,11 +13,7 @@ export function ReviewEmptyState({
 					<div class="ep:text-ui-medium ep:text-obs-muted ep:mb-6">
 						{message}
 					</div>
-					<button
-						type="button"
-						class="ep-btn mod-cta"
-						onClick={onClose}
-					>
+					<button type="button" class="ep-btn mod-cta" onClick={onClose}>
 						Close
 					</button>
 				</div>

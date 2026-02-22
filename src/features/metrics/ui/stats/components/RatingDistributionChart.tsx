@@ -73,9 +73,7 @@ export function RatingDistributionChart({
 		if (total === 0) return [];
 
 		const againPct = Math.round((totals.again / total) * 100);
-		const successPct = Math.round(
-			((totals.good + totals.easy) / total) * 100,
-		);
+		const successPct = Math.round(((totals.good + totals.easy) / total) * 100);
 
 		return [
 			`Total reviews: ${total.toLocaleString()}`,
@@ -179,7 +177,10 @@ export function RatingDistributionChart({
 							class="ep:cursor-pointer ep-dynamic-accent"
 							checked={visibility[key]}
 							style={
-								{ "--ep-dynamic-color": resolvedColor } as Record<string, string>
+								{ "--ep-dynamic-color": resolvedColor } as Record<
+									string,
+									string
+								>
 							}
 							onChange={() => toggleVisibility(key)}
 						/>

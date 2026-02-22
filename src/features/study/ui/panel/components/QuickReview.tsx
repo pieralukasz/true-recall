@@ -1,10 +1,9 @@
 import { ReviewService } from "@features/study/services/review.service";
 import { QuickReviewCard } from "@features/study/ui/panel/components/QuickReviewCard";
-import { FSRS_COLORS } from "@shared/ui/helpers/fsrs-colors";
-import { usePlugin } from "@shared/ui/preact/ObsidianContext";
 import type { SchedulingPreview } from "@shared/types";
 import type { FSRSFlashcardItem } from "@shared/types/fsrs/card.types";
-import { h } from "preact";
+import { FSRS_COLORS } from "@shared/ui/helpers/fsrs-colors";
+import { usePlugin } from "@shared/ui/preact/ObsidianContext";
 import { useCallback, useEffect, useMemo, useState } from "preact/hooks";
 import { type Grade, State } from "ts-fsrs";
 
@@ -127,8 +126,7 @@ export function QuickReview({ cardsWithFsrs }: QuickReviewProps) {
 	const dueCount = queue.length;
 	const newCount = queue.filter((c) => c.fsrs.state === State.New).length;
 	const learningCount = queue.filter(
-		(c) =>
-			c.fsrs.state === State.Learning || c.fsrs.state === State.Relearning,
+		(c) => c.fsrs.state === State.Learning || c.fsrs.state === State.Relearning,
 	).length;
 
 	return (

@@ -69,7 +69,9 @@ export function UnassignedNotesWidget() {
 		}
 
 		// Sort by due count descending, then by name
-		result.sort((a, b) => b.dueCount - a.dueCount || a.name.localeCompare(b.name));
+		result.sort(
+			(a, b) => b.dueCount - a.dueCount || a.name.localeCompare(b.name),
+		);
 		return result;
 	}, [plugin, ver]);
 
@@ -97,9 +99,7 @@ export function UnassignedNotesWidget() {
 		}
 
 		// Open review with these UIDs as sourceNoteFilters
-		const noteNames = notes
-			.map((n) => n.name)
-			.filter((n): n is string => !!n);
+		const noteNames = notes.map((n) => n.name).filter((n): n is string => !!n);
 		plugin
 			.openReviewViewWithFilters({
 				sourceNoteFilters: noteNames,

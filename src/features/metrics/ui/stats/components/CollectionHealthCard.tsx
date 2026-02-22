@@ -21,7 +21,9 @@ export function CollectionHealthCard({
 }: {
 	statsCalculator: StatsCalculatorService;
 }) {
-	const [snapshot, setSnapshot] = useState<CollectionHealthSnapshot | null>(null);
+	const [snapshot, setSnapshot] = useState<CollectionHealthSnapshot | null>(
+		null,
+	);
 
 	useEffect(() => {
 		try {
@@ -92,7 +94,9 @@ export function CollectionHealthCard({
 				>
 					{snapshot.averageRetention}%
 				</span>
-				<span class="ep:text-ui-small ep:text-obs-muted">avg. predicted retention</span>
+				<span class="ep:text-ui-small ep:text-obs-muted">
+					avg. predicted retention
+				</span>
 				<span class="ep:text-ui-smaller ep:text-obs-faint ep:mt-0.5">
 					{snapshot.cardCount.toLocaleString()} active cards
 				</span>

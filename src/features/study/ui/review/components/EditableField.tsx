@@ -120,7 +120,7 @@ export function EditableField({
 			<div class="ep:w-full ep:relative">
 				<textarea
 					ref={textareaRef}
-					class="ep:w-full ep:text-center ep:text-obs-normal ep:resize-none ep-textarea-invisible"
+					class="ep:w-full ep:text-left ep:text-obs-normal ep:resize-none ep-textarea-invisible"
 					value={stripBrTags(content)}
 					onKeyDown={handleKeyDown}
 					onBlur={handleBlur}

@@ -31,7 +31,11 @@ export function registerDashboardCodeblocks(plugin: TrueRecallPlugin): void {
 		(_source, el, ctx) => {
 			el.addClass("true-recall-codeblock-note-stats");
 			const sourceUid = resolveSourceUid(plugin, ctx.sourcePath);
-			const unmount = mountPreact(el, plugin, h(NoteStatsWidget, { sourceUid }));
+			const unmount = mountPreact(
+				el,
+				plugin,
+				h(NoteStatsWidget, { sourceUid }),
+			);
 			registerCleanup(el, unmount);
 		},
 	);
@@ -98,7 +102,11 @@ export function registerDashboardCodeblocks(plugin: TrueRecallPlugin): void {
 		"true-recall-project",
 		(source, el, ctx) => {
 			el.addClass("true-recall-codeblock-project");
-			const unmount = mountPreact(el, plugin, h(ProjectWidget, { source, sourcePath: ctx.sourcePath }));
+			const unmount = mountPreact(
+				el,
+				plugin,
+				h(ProjectWidget, { source, sourcePath: ctx.sourcePath }),
+			);
 			registerCleanup(el, unmount);
 		},
 	);
@@ -128,7 +136,11 @@ export function registerDashboardCodeblocks(plugin: TrueRecallPlugin): void {
 		(source, el, ctx) => {
 			el.addClass("true-recall-codeblock-note-health");
 			const sourceUid = resolveSourceUid(plugin, ctx.sourcePath);
-			const unmount = mountPreact(el, plugin, h(NoteHealthWidget, { sourceUid, source }));
+			const unmount = mountPreact(
+				el,
+				plugin,
+				h(NoteHealthWidget, { sourceUid, source }),
+			);
 			registerCleanup(el, unmount);
 		},
 	);
@@ -138,7 +150,11 @@ export function registerDashboardCodeblocks(plugin: TrueRecallPlugin): void {
 		(source, el, ctx) => {
 			el.addClass("true-recall-codeblock-decay");
 			const sourceUid = resolveSourceUid(plugin, ctx.sourcePath);
-			const unmount = mountPreact(el, plugin, h(DecayWidget, { sourceUid, source }));
+			const unmount = mountPreact(
+				el,
+				plugin,
+				h(DecayWidget, { sourceUid, source }),
+			);
 			registerCleanup(el, unmount);
 		},
 	);
@@ -162,5 +178,8 @@ function registerCleanup(el: HTMLElement, unmount: () => void): void {
 			observer.disconnect();
 		}
 	});
-	observer.observe(el.parentElement ?? document.body, { childList: true, subtree: true });
+	observer.observe(el.parentElement ?? document.body, {
+		childList: true,
+		subtree: true,
+	});
 }

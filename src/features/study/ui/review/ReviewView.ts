@@ -19,10 +19,10 @@ import {
 	ReviewEmptyState,
 } from "@features/study/ui/review/ReviewApp";
 import {
-	type SessionFilters,
 	filtersFromViewState,
 	filtersToViewState,
 	isCustomSession,
+	type SessionFilters,
 } from "@features/study/ui/review/review.types";
 import { effect } from "@preact/signals";
 import { VIEW_TYPE_REVIEW } from "@shared/constants";
@@ -119,8 +119,7 @@ export class ReviewView extends ItemView {
 
 		this.keyboardHandler = new KeyboardHandler(() => this.review, {
 			onShowAnswer: () => this.answerHandler.handleShowAnswer(),
-			onAnswer: (rating) =>
-				this.answerHandler.handleAnswer(rating as Grade),
+			onAnswer: (rating) => this.answerHandler.handleAnswer(rating as Grade),
 			onUndo: async () => {
 				await this.cardActionsHandler.handleUndo();
 			},

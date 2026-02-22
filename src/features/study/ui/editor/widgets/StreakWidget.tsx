@@ -98,15 +98,11 @@ export function StreakWidget({ source }: { source: string }) {
 				</span>
 
 				{showLongest && data.longest > 0 && (
-					<span class="ep:text-obs-muted">
-						(longest: {data.longest}d)
-					</span>
+					<span class="ep:text-obs-muted">(longest: {data.longest}d)</span>
 				)}
 
 				{showTodayRate && data.todayStudied > 0 && (
-					<span>
-						{Math.round(data.todayCorrectRate * 100)}% today
-					</span>
+					<span>{Math.round(data.todayCorrectRate * 100)}% today</span>
 				)}
 
 				{showTodayRate && data.todayStudied === 0 && (
@@ -131,7 +127,9 @@ export function StreakWidget({ source }: { source: string }) {
 							key={dot.label}
 							class="ep:flex ep:flex-col ep:items-center ep:gap-0.5"
 						>
-							<span class={dot.isToday ? "ep:font-semibold" : "ep:text-obs-muted"}>
+							<span
+								class={dot.isToday ? "ep:font-semibold" : "ep:text-obs-muted"}
+							>
 								{dot.label}
 							</span>
 							<span

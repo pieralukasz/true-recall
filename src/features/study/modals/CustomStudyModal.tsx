@@ -12,7 +12,6 @@ export type { CustomStudyModalResult, CustomStudyModalScope };
 
 export class CustomStudyModal extends BasePromiseModal<CustomStudyModalResult> {
 	private studyScope?: CustomStudyModalScope;
-	private unmountBody?: () => void;
 
 	constructor(
 		app: App,
@@ -42,11 +41,5 @@ export class CustomStudyModal extends BasePromiseModal<CustomStudyModalResult> {
 			/>,
 			container,
 		);
-		this.unmountBody = () => render(null, container);
-	}
-
-	onClose(): void {
-		this.unmountBody?.();
-		super.onClose();
 	}
 }

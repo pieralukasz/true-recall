@@ -110,10 +110,7 @@ export function registerCommands(plugin: TrueRecallPlugin): void {
 
 			void (async () => {
 				// Ensure project: true in frontmatter
-				const values = plugin.frontmatterIndex.getValues(
-					"project",
-					file.path,
-				);
+				const values = plugin.frontmatterIndex.getValues("project", file.path);
 				if (!values.includes("true")) {
 					await plugin.app.fileManager.processFrontMatter(
 						file,

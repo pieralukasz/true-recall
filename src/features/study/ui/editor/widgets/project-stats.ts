@@ -1,5 +1,5 @@
-import type { ProjectLinkService } from "@features/core/services/project-link.service";
 import type { FSRSService } from "@features/core/services/fsrs.service";
+import type { ProjectLinkService } from "@features/core/services/project-link.service";
 import type { CardStore } from "@shared/types/fsrs/store.types";
 import { State } from "ts-fsrs";
 
@@ -61,15 +61,19 @@ export function computeProjectStats(
 				reviewCardCount++;
 			}
 
-			if (card.lastReview && (!lastReviewed || card.lastReview > lastReviewed)) {
+			if (
+				card.lastReview &&
+				(!lastReviewed || card.lastReview > lastReviewed)
+			) {
 				lastReviewed = card.lastReview;
 			}
 		}
 	}
 
-	const healthPct = reviewCardCount > 0
-		? Math.round((retrievabilitySum / reviewCardCount) * 100)
-		: 0;
+	const healthPct =
+		reviewCardCount > 0
+			? Math.round((retrievabilitySum / reviewCardCount) * 100)
+			: 0;
 
 	return {
 		name: projectName,

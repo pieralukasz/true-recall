@@ -1,5 +1,5 @@
-import { StatsCalculatorService } from "@features/metrics/services/stats/stats-calculator.service";
 import { WorkloadForecastCalculator } from "@features/metrics/services/fsrs-tools/statistics/workload-forecast.calculator";
+import { StatsCalculatorService } from "@features/metrics/services/stats/stats-calculator.service";
 import { effect } from "@preact/signals";
 import { dataVersion, track } from "@shared/services/signals";
 import { FSRS_COLORS } from "@shared/ui/helpers/fsrs-colors";
@@ -78,11 +78,22 @@ export function DashboardWidget() {
 
 		for (const card of allCards) {
 			const fsrs = card.fsrs;
-			if (fsrs.suspended || (fsrs.buriedUntil && new Date(fsrs.buriedUntil) > now)) continue;
+			if (
+				fsrs.suspended ||
+				(fsrs.buriedUntil && new Date(fsrs.buriedUntil) > now)
+			)
+				continue;
 			switch (fsrs.state) {
-				case 0: newCount++; break;
-				case 1: case 3: learning++; break;
-				case 2: if (new Date(fsrs.due) <= now) due++; break;
+				case 0:
+					newCount++;
+					break;
+				case 1:
+				case 3:
+					learning++;
+					break;
+				case 2:
+					if (new Date(fsrs.due) <= now) due++;
+					break;
 			}
 		}
 
@@ -113,18 +124,12 @@ export function DashboardWidget() {
 		<div class="ep:flex ep:flex-col ep:gap-3 ep:p-3 ep:text-sm">
 			{/* Today row */}
 			<div class="ep:flex ep:items-center ep:gap-3 ep:flex-wrap ep:text-xs">
-				{data.today.studied > 0 && (
-					<span>{data.today.studied} studied</span>
-				)}
-				{data.today.minutes > 0 && (
-					<span>{data.today.minutes}m</span>
-				)}
+				{data.today.studied > 0 && <span>{data.today.studied} studied</span>}
+				{data.today.minutes > 0 && <span>{data.today.minutes}m</span>}
 				{data.today.correctRate > 0 && (
 					<span>{Math.round(data.today.correctRate * 100)}%</span>
 				)}
-				{data.today.streak > 0 && (
-					<span>{data.today.streak}d streak</span>
-				)}
+				{data.today.streak > 0 && <span>{data.today.streak}d streak</span>}
 				{data.today.studied === 0 && data.today.streak === 0 && (
 					<span class="ep:text-obs-muted">No reviews today</span>
 				)}
@@ -135,8 +140,13 @@ export function DashboardWidget() {
 				<div class="ep:flex ep:flex-col ep:gap-1">
 					<div class="ep:text-xs ep:text-obs-muted ep:mb-0.5">This week</div>
 					{data.forecastDays.map((day) => (
-						<div key={day.label} class="ep:flex ep:items-center ep:gap-2 ep:text-xs">
-							<span class={`ep:w-10 ep:text-right ${day.isToday ? "ep:font-semibold" : "ep:text-obs-muted"}`}>
+						<div
+							key={day.label}
+							class="ep:flex ep:items-center ep:gap-2 ep:text-xs"
+						>
+							<span
+								class={`ep:w-10 ep:text-right ${day.isToday ? "ep:font-semibold" : "ep:text-obs-muted"}`}
+							>
 								{day.label}
 							</span>
 							<div class="ep:flex-1 ep:h-3 ep:rounded ep:bg-obs-modifier-hover ep:overflow-hidden">
@@ -151,7 +161,9 @@ export function DashboardWidget() {
 									/>
 								)}
 							</div>
-							<span class={`ep:w-6 ep:text-right ${day.count > 0 ? "" : "ep:text-obs-muted"}`}>
+							<span
+								class={`ep:w-6 ep:text-right ${day.count > 0 ? "" : "ep:text-obs-muted"}`}
+							>
 								{day.count}
 							</span>
 						</div>
@@ -205,12 +217,22 @@ export function NoteStatsWidget({ sourceUid }: { sourceUid: string | null }) {
 		let suspended = 0;
 
 		for (const card of cards) {
-			if (card.suspended) { suspended++; continue; }
+			if (card.suspended) {
+				suspended++;
+				continue;
+			}
 			if (card.buriedUntil && new Date(card.buriedUntil) > now) continue;
 			switch (card.state) {
-				case 0: newCount++; break;
-				case 1: case 3: learning++; break;
-				case 2: if (new Date(card.due) <= now) due++; break;
+				case 0:
+					newCount++;
+					break;
+				case 1:
+				case 3:
+					learning++;
+					break;
+				case 2:
+					if (new Date(card.due) <= now) due++;
+					break;
 			}
 		}
 
@@ -249,13 +271,19 @@ export function NoteStatsWidget({ sourceUid }: { sourceUid: string | null }) {
 			learning,
 			due,
 			suspended,
-			lastReviewed: lastReviewed ? new Date(lastReviewed).toLocaleDateString() : null,
+			lastReviewed: lastReviewed
+				? new Date(lastReviewed).toLocaleDateString()
+				: null,
 			forecastDays,
 		};
 	}, [plugin, sourceUid, ver]);
 
 	if (!data) {
-		return <div class="ep:text-obs-muted ep:text-xs ep:p-3">No flashcards found in this note.</div>;
+		return (
+			<div class="ep:text-obs-muted ep:text-xs ep:p-3">
+				No flashcards found in this note.
+			</div>
+		);
 	}
 
 	const maxCount = Math.max(1, ...data.forecastDays.map((d) => d.count));
@@ -296,10 +324,17 @@ export function NoteStatsWidget({ sourceUid }: { sourceUid: string | null }) {
 			{/* 7-day forecast */}
 			{data.forecastDays.some((d) => d.count > 0) && (
 				<div class="ep:flex ep:flex-col ep:gap-1">
-					<div class="ep:text-xs ep:text-obs-muted ep:mb-0.5">Due this week</div>
+					<div class="ep:text-xs ep:text-obs-muted ep:mb-0.5">
+						Due this week
+					</div>
 					{data.forecastDays.map((day) => (
-						<div key={day.label} class="ep:flex ep:items-center ep:gap-2 ep:text-xs">
-							<span class={`ep:w-10 ep:text-right ${day.isToday ? "ep:font-semibold" : "ep:text-obs-muted"}`}>
+						<div
+							key={day.label}
+							class="ep:flex ep:items-center ep:gap-2 ep:text-xs"
+						>
+							<span
+								class={`ep:w-10 ep:text-right ${day.isToday ? "ep:font-semibold" : "ep:text-obs-muted"}`}
+							>
 								{day.label}
 							</span>
 							<div class="ep:flex-1 ep:h-3 ep:rounded ep:bg-obs-modifier-hover ep:overflow-hidden">
@@ -314,7 +349,9 @@ export function NoteStatsWidget({ sourceUid }: { sourceUid: string | null }) {
 									/>
 								)}
 							</div>
-							<span class={`ep:w-6 ep:text-right ${day.count > 0 ? "" : "ep:text-obs-muted"}`}>
+							<span
+								class={`ep:w-6 ep:text-right ${day.count > 0 ? "" : "ep:text-obs-muted"}`}
+							>
 								{day.count}
 							</span>
 						</div>

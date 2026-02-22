@@ -34,7 +34,7 @@ export function CardContainer({
 	const isEditingAnswer = isEditing && editState.field === "answer";
 	const sourcePath = card.sourceNotePath || "";
 
-	const containerCls = `true-recall-review-card-container ep:flex-1 ep:min-h-0 ep:flex ep:items-start ep:justify-center ep:p-2 ep:mt-8 ep:overflow-y-auto${isEditing ? " true-recall-review-card-container--editing" : ""}`;
+	const containerCls = `true-recall-review-card-container ep:flex-1 ep:min-h-0 ep:flex ep:items-start ep:justify-center ep:pt-4 ep:px-6 ep:pb-2 ep:overflow-y-auto${isEditing ? " true-recall-review-card-container--editing" : ""}`;
 
 	const handleContainerClick = useCallback(
 		(e: MouseEvent) => {
@@ -68,10 +68,22 @@ export function CardContainer({
 	return (
 		<button
 			type="button"
-			class={`${containerCls} ep:bg-transparent ep:border-none ep:p-0 ep:font-inherit ep:cursor-pointer ep:text-left ep:w-full`}
+			class={`${containerCls} ep:bg-transparent ep:border-none ep:font-inherit ep:cursor-default ep:text-left ep:w-full ep:max-w-3xl`}
 			onClick={handleContainerClick}
 		>
-			<div class="ep:w-full ep:text-center">
+			<div class="ep:w-full ep:text-left">
+				{card.sourceNoteName && !isEditing && (
+					<div class="ep:mb-3">
+						<button
+							type="button"
+							class="ep:text-obs-faint ep:text-ui-smaller ep:cursor-pointer ep:no-underline ep:hover:text-obs-accent ep:hover:underline ep:transition-colors ep:bg-transparent ep:border-none ep:p-0"
+							onClick={onOpenSourceNote}
+						>
+							{card.sourceNoteName}
+						</button>
+					</div>
+				)}
+
 				{card.cardType === "cloze" && card.clozeIndex !== undefined && (
 					<div class="ep:text-xs ep:text-obs-faint ep:mb-2 ep:uppercase ep:tracking-wider">
 						{isEditingQuestion
@@ -130,22 +142,6 @@ export function CardContainer({
 								cls="true-recall-review-answer ep:text-lg ep:leading-relaxed ep:text-obs-muted"
 								onLongPress={() => onStartEdit("answer")}
 							/>
-						)}
-					</>
-				)}
-
-				{isAnswerRevealed && !isEditing && (
-					<>
-						{card.sourceNoteName && (
-							<div class="ep:mt-6 ep:text-center">
-								<button
-									type="button"
-									class="ep:text-obs-accent ep:text-ui-small ep:cursor-pointer ep:no-underline ep:hover:underline ep:transition-colors ep:bg-transparent ep:border-none ep:p-0"
-									onClick={onOpenSourceNote}
-								>
-									{card.sourceNoteName}
-								</button>
-							</div>
 						)}
 					</>
 				)}

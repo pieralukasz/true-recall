@@ -77,8 +77,6 @@ function FirstSyncConflictBody({
 }
 
 export class FirstSyncConflictModal extends BasePromiseModal<FirstSyncConflictResult> {
-	private unmountBody?: () => void;
-
 	constructor(app: App) {
 		super(app, {
 			title: "First Sync Conflict",
@@ -95,11 +93,5 @@ export class FirstSyncConflictModal extends BasePromiseModal<FirstSyncConflictRe
 			<FirstSyncConflictBody onResolve={(result) => this.resolve(result)} />,
 			container,
 		);
-		this.unmountBody = () => render(null, container);
-	}
-
-	onClose(): void {
-		this.unmountBody?.();
-		super.onClose();
 	}
 }

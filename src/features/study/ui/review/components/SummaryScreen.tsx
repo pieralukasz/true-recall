@@ -48,7 +48,7 @@ export function SummaryScreen({
 
 	return (
 		<div class="true-recall-review ep:flex ep:flex-col ep:h-full ep:p-0">
-			<div class="true-recall-review-card-container ep:flex-1 ep:min-h-0 ep:flex ep:items-start ep:justify-center ep:p-2 ep:mt-8 ep:overflow-y-auto">
+			<div class="true-recall-review-card-container ep:flex-1 ep:min-h-0 ep:flex ep:items-start ep:justify-center ep:pt-4 ep:px-6 ep:pb-2 ep:overflow-y-auto">
 				<div class="ep:text-center ep:py-8 ep:px-6 ep:max-w-md ep:mx-auto">
 					<h2 class="ep:text-2xl ep:m-0 ep:mb-6 ep:text-obs-normal">
 						Session complete!
@@ -104,11 +104,7 @@ export function SummaryScreen({
 								</button>
 							</>
 						) : (
-							<button
-								type="button"
-								class="ep-btn mod-cta"
-								onClick={onClose}
-							>
+							<button type="button" class="ep-btn mod-cta" onClick={onClose}>
 								Close
 							</button>
 						)}

@@ -7,7 +7,9 @@
  * - Blank lines are ignored
  * - Unrecognized keys are silently ignored (consumer picks what it needs)
  */
-export function parseCodeblockConfig(source: string): Record<string, string | number | boolean> {
+export function parseCodeblockConfig(
+	source: string,
+): Record<string, string | number | boolean> {
 	const config: Record<string, string | number | boolean> = {};
 	if (!source.trim()) return config;
 

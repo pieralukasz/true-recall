@@ -1,5 +1,8 @@
 import { PanelCard } from "@features/library/ui/panel/components/PanelCard";
-import { groupCards, type PanelItem } from "@features/library/ui/panel/group-cards";
+import {
+	groupCards,
+	type PanelItem,
+} from "@features/library/ui/panel/group-cards";
 import type { SelectionMode } from "@shared/store";
 import type { FlashcardInfo, FlashcardItem } from "@shared/types";
 import type { FSRSFlashcardItem } from "@shared/types/fsrs/card.types";
@@ -113,9 +116,7 @@ export function PanelContent({
 	if (!flashcardInfo?.exists) {
 		return (
 			<div class="ep:py-4 ep:text-center">
-				<p class="ep:text-ui-small ep:text-obs-muted ep:m-0">
-					No flashcards
-				</p>
+				<p class="ep:text-ui-small ep:text-obs-muted ep:m-0">No flashcards</p>
 			</div>
 		);
 	}
@@ -142,13 +143,10 @@ export function PanelContent({
 						item.type === "basic"
 							? () => handlers.onToggleSelect(key)
 							: () => {
-									for (const c of cards)
-										handlers.onToggleSelect(c.id);
+									for (const c of cards) handlers.onToggleSelect(c.id);
 								},
-					onSelect: () =>
-						handlers.onEnterSelectionMode(primaryCard.id),
-					onLongPress: () =>
-						handlers.onEnterSelectionMode(primaryCard.id),
+					onSelect: () => handlers.onEnterSelectionMode(primaryCard.id),
+					onLongPress: () => handlers.onEnterSelectionMode(primaryCard.id),
 					onJumpToSource: primaryCard.sourceText
 						? () => handlers.onJumpToSource(primaryCard)
 						: undefined,

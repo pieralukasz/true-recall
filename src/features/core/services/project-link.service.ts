@@ -68,10 +68,7 @@ export class ProjectLinkService {
 		const flashcardPaths = new Set<string>();
 		const allUids = this.frontmatterIndex.getAllValues("flashcard_uid");
 		for (const uid of allUids) {
-			const file = this.frontmatterIndex.getFileByValue(
-				"flashcard_uid",
-				uid,
-			);
+			const file = this.frontmatterIndex.getFileByValue("flashcard_uid", uid);
 			if (file) flashcardPaths.add(file.path);
 		}
 

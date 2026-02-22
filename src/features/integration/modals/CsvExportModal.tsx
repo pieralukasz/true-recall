@@ -164,12 +164,8 @@ function CsvExportBody({
 export class CsvExportModal extends BaseModal {
 	private store: SqliteStoreService;
 	private allNotes: NoteEntry[] = [];
-	private unmountBody?: () => void;
 
-	constructor(
-		app: App,
-		store: SqliteStoreService,
-	) {
+	constructor(app: App, store: SqliteStoreService) {
 		super(app, { title: "Export as CSV", width: "520px" });
 		this.store = store;
 		this.allNotes = resolveNotes(this.app);
@@ -188,12 +184,6 @@ export class CsvExportModal extends BaseModal {
 			/>,
 			container,
 		);
-		this.unmountBody = () => render(null, container);
-	}
-
-	onClose(): void {
-		this.unmountBody?.();
-		super.onClose();
 	}
 
 	private async startExport(opts: {

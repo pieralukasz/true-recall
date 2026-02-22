@@ -34,7 +34,8 @@ export function ProjectWidget({
 
 		const file = plugin.app.vault.getAbstractFileByPath(sourcePath);
 		const name = file?.name?.replace(/\.md$/, "") ?? sourcePath;
-		const childCount = plugin.projectLinkService.getChildProjects(sourcePath).length;
+		const childCount =
+			plugin.projectLinkService.getChildProjects(sourcePath).length;
 
 		return computeProjectStats(
 			sourcePath,
