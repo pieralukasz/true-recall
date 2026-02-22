@@ -17,14 +17,20 @@ import {
 	createLinkStatusElement,
 	createLinkTextCountElement,
 	infoEqual,
+	type LinkStatusOptions,
 } from "@features/study/ui/editor/LinkStatusWidget";
+import type { SqliteStoreService } from "@features/core/persistence/sqlite/SqliteStoreService";
 import type { App, TFile } from "obsidian";
+
+type VariantType = "link" | "h1" | "h2" | "h3" | "h4" | "h5" | "h6";
 
 class LinkStatusWidget extends WidgetType {
 	constructor(
 		readonly info: NoteStatusInfo,
 		readonly onPlay: () => void,
-		readonly variant: "link" | "h1" | "h2" | "h3" | "h4" | "h5" | "h6" = "link",
+		readonly variant: VariantType = "link",
+		readonly sourceUid?: string,
+		readonly getTooltipStats?: () => Promise<unknown>,
 	) {
 		super();
 	}
@@ -34,11 +40,13 @@ class LinkStatusWidget extends WidgetType {
 			info: this.info,
 			onPlay: this.onPlay,
 			variant: this.variant,
+			sourceUid: this.sourceUid,
+			getTooltipStats: this.getTooltipStats as LinkStatusOptions["getTooltipStats"],
 		});
 	}
 
 	eq(other: LinkStatusWidget): boolean {
-		return infoEqual(this.info, other.info) && this.variant === other.variant;
+		return infoEqual(this.info, other.info) && this.variant === other.variant && this.sourceUid === other.sourceUid;
 	}
 }
 
@@ -46,7 +54,9 @@ class LinkTextCountWidget extends WidgetType {
 	constructor(
 		readonly info: NoteStatusInfo,
 		readonly onPlay: () => void,
-		readonly variant: "link" | "h1" | "h2" | "h3" | "h4" | "h5" | "h6" = "link",
+		readonly variant: VariantType = "link",
+		readonly sourceUid?: string,
+		readonly getTooltipStats?: () => Promise<unknown>,
 	) {
 		super();
 	}
@@ -56,11 +66,13 @@ class LinkTextCountWidget extends WidgetType {
 			info: this.info,
 			onPlay: this.onPlay,
 			variant: this.variant,
+			sourceUid: this.sourceUid,
+			getTooltipStats: this.getTooltipStats as LinkStatusOptions["getTooltipStats"],
 		});
 	}
 
 	eq(other: LinkTextCountWidget): boolean {
-		return infoEqual(this.info, other.info) && this.variant === other.variant;
+		return infoEqual(this.info, other.info) && this.variant === other.variant && this.sourceUid === other.sourceUid;
 	}
 }
 
@@ -71,6 +83,68 @@ const HEADING_RE = /^(#{1,6})\s/;
 interface ResolvedLink {
 	noteName: string;
 	info: NoteStatusInfo;
+	sourceUid: string;
+}
+
+function createTooltipStatsFetcher(
+	store: SqliteStoreService,
+	sourceUid: string,
+): () => Promise<{
+	retentionRate: number | null;
+	avgDifficulty: number;
+	avgLapses: number;
+	lastReviewed: string | null;
+	reviewCount: number;
+	futureDue: number[];
+} | null> {
+	return async () => {
+		const cards = store.getCardsBySourceUid(sourceUid);
+		if (cards.length === 0) return null;
+
+		let totalDifficulty = 0;
+		let totalLapses = 0;
+		let reviewCount = 0;
+		let lastReviewed: string | null = null;
+		let correctReviews = 0;
+		let totalReviews = 0;
+
+		for (const card of cards) {
+			totalDifficulty += card.difficulty;
+			totalLapses += card.lapses;
+			if (card.lastReview) {
+				reviewCount++;
+				if (!lastReviewed || card.lastReview > lastReviewed) {
+					lastReviewed = card.lastReview;
+				}
+			}
+			totalReviews += card.reps;
+			correctReviews += Math.max(0, card.reps - card.lapses);
+		}
+
+		// 7-day forecast
+		const futureDue: number[] = [];
+		for (let i = 0; i < 7; i++) {
+			const date = new Date();
+			date.setDate(date.getDate() + i);
+			const dateStr = date.toISOString().split("T")[0] ?? "";
+			let count = 0;
+			for (const card of cards) {
+				if (card.suspended) continue;
+				const cardDate = new Date(card.due).toISOString().split("T")[0];
+				if (cardDate === dateStr) count++;
+			}
+			futureDue.push(count);
+		}
+
+		return {
+			retentionRate: totalReviews > 0 ? correctReviews / totalReviews : null,
+			avgDifficulty: cards.length > 0 ? totalDifficulty / cards.length : 0,
+			avgLapses: cards.length > 0 ? totalLapses / cards.length : 0,
+			lastReviewed,
+			reviewCount,
+			futureDue,
+		};
+	};
 }
 
 export function createLinkStatusViewPlugin(
@@ -80,6 +154,7 @@ export function createLinkStatusViewPlugin(
 	getEnabled: () => boolean,
 	onReviewNote: (file: TFile) => void,
 	onReviewNotes: (noteNames: string[], dueOnly: boolean) => void,
+	cardStore?: SqliteStoreService,
 ) {
 	return ViewPlugin.fromClass(
 		class {
@@ -122,7 +197,7 @@ export function createLinkStatusViewPlugin(
 					if (!uid) return null;
 					const info = noteStatusCache.get(uid);
 					if (!info) return null;
-					return { noteName: file.basename, info };
+					return { noteName: file.basename, info, sourceUid: uid };
 				};
 
 				// Two-pass approach: first collect all decorations, then add in order.
@@ -158,11 +233,18 @@ export function createLinkStatusViewPlugin(
 						if (!info) continue;
 
 						const targetFile = file;
+						const tooltipFetcher = cardStore
+							? createTooltipStatsFetcher(cardStore, uid)
+							: undefined;
 						decorations.push({
 							pos: absoluteStart,
 							decoration: Decoration.widget({
-								widget: new LinkStatusWidget(info, () =>
-									onReviewNote(targetFile),
+								widget: new LinkStatusWidget(
+									info,
+									() => onReviewNote(targetFile),
+									"link",
+									uid,
+									tooltipFetcher,
 								),
 								side: -1,
 							}),
@@ -175,6 +257,8 @@ export function createLinkStatusViewPlugin(
 									info,
 									() => onReviewNote(targetFile),
 									"link",
+									uid,
+									tooltipFetcher,
 								),
 								side: 1,
 							}),
