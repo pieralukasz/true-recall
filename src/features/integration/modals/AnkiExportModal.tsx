@@ -1,5 +1,4 @@
 import type { SqliteStoreService } from "@features/core/persistence/sqlite/SqliteStoreService";
-import type { FrontmatterIndexService } from "@features/core/services/frontmatter-index.service";
 import type { FSRSService } from "@features/core/services/fsrs.service";
 import {
 	ErrorPhase,
@@ -13,7 +12,6 @@ import {
 	downloadBlob,
 	type NoteEntry,
 	resolveNotes,
-	resolveProjects,
 } from "@features/integration/utils/export-helpers";
 import type { AnkiExportOptions } from "@shared/types";
 import { BaseModal } from "@shared/ui/modals/BaseModal";
@@ -29,13 +27,11 @@ type ExportPhase =
 
 function AnkiExportBody({
 	totalCards,
-	allProjects,
 	allNotes,
 	onExport,
 	onClose,
 }: {
 	totalCards: number;
-	allProjects: string[];
 	allNotes: NoteEntry[];
 	onExport: (opts: ExportFormValues) => Promise<ExportPhase>;
 	onClose: () => void;
@@ -62,7 +58,6 @@ function AnkiExportBody({
 			return (
 				<FormPhase
 					totalCards={totalCards}
-					allProjects={allProjects}
 					allNotes={allNotes}
 					onExport={(values) => void handleExport(values)}
 					onClose={onClose}
@@ -74,7 +69,6 @@ function AnkiExportBody({
 export class AnkiExportModal extends BaseModal {
 	private store: SqliteStoreService;
 	private fsrsService: FSRSService;
-	private allProjects: string[] = [];
 	private allNotes: NoteEntry[] = [];
 	private unmountBody?: () => void;
 
@@ -82,12 +76,10 @@ export class AnkiExportModal extends BaseModal {
 		app: App,
 		store: SqliteStoreService,
 		fsrsService: FSRSService,
-		frontmatterIndex: FrontmatterIndexService,
 	) {
 		super(app, { title: "Export to Anki", width: "520px" });
 		this.store = store;
 		this.fsrsService = fsrsService;
-		this.allProjects = resolveProjects(frontmatterIndex);
 		this.allNotes = resolveNotes(app);
 	}
 
@@ -98,7 +90,6 @@ export class AnkiExportModal extends BaseModal {
 		render(
 			<AnkiExportBody
 				totalCards={totalCards}
-				allProjects={this.allProjects}
 				allNotes={this.allNotes}
 				onExport={(opts) => this.startExport(opts)}
 				onClose={() => this.close()}
@@ -123,10 +114,6 @@ export class AnkiExportModal extends BaseModal {
 
 			const options: AnkiExportOptions = {
 				exportMode: opts.exportMode,
-				projects:
-					opts.exportMode === "projects"
-						? [...opts.selectedProjects]
-						: undefined,
 				sourceUids:
 					opts.exportMode === "notes"
 						? [...opts.selectedSourceUids]

@@ -34,7 +34,7 @@ export function PreviewPhase({
 			{preview.decks.length > 0 && (
 				<div class="ep:mb-4 ep:mt-4">
 					<div class="ep:text-ui-small ep:font-medium ep:mb-2">
-						Decks (will become projects):
+						Decks:
 					</div>
 					<div class="ep:border ep:border-obs-border ep:rounded-md ep:max-h-[120px] ep:overflow-y-auto ep:p-2">
 						{preview.decks.map((deck) => (

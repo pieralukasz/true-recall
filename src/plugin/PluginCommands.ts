@@ -35,21 +35,6 @@ export function registerCommands(plugin: TrueRecallPlugin): void {
 	});
 
 	plugin.addCommand({
-		id: "add-to-project",
-		name: "Add current note to project",
-		checkCallback: (checking) => {
-			const file = plugin.app.workspace.getActiveFile();
-			if (file && file.extension === "md") {
-				if (!checking) {
-					void plugin.addCurrentNoteToProject();
-				}
-				return true;
-			}
-			return false;
-		},
-	});
-
-	plugin.addCommand({
 		id: "open-fsrs-simulator",
 		name: "Open FSRS simulator",
 		callback: () => void plugin.openSimulator(),
@@ -113,6 +98,41 @@ export function registerCommands(plugin: TrueRecallPlugin): void {
 		id: "export-csv",
 		name: "Export as CSV/TSV",
 		callback: () => void plugin.exportCsv(),
+	});
+
+	plugin.addCommand({
+		id: "insert-project-dashboard",
+		name: "Insert project dashboard",
+		editorCheckCallback: (checking, editor, ctx) => {
+			const file = ctx.file;
+			if (!file || file.extension !== "md") return false;
+			if (checking) return true;
+
+			void (async () => {
+				// Ensure project: true in frontmatter
+				const values = plugin.frontmatterIndex.getValues(
+					"project",
+					file.path,
+				);
+				if (!values.includes("true")) {
+					await plugin.app.fileManager.processFrontMatter(
+						file,
+						(fm: Record<string, unknown>) => {
+							fm.project = true;
+						},
+					);
+				}
+
+				editor.replaceSelection("```true-recall-project\n```\n");
+			})();
+			return true;
+		},
+	});
+
+	plugin.addCommand({
+		id: "create-master-dashboard",
+		name: "Create master dashboard note",
+		callback: () => void plugin.createMasterDashboard(),
 	});
 
 	plugin.addCommand({

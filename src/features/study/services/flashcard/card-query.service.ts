@@ -51,7 +51,6 @@ export class CardQueryService {
 				question: card.question,
 				answer: card.answer ?? "",
 				fsrs: card,
-				projects: card.projects || [],
 				sourceUid: card.sourceUid,
 				cardType: card.cardType,
 				clozeTemplate: card.clozeTemplate,

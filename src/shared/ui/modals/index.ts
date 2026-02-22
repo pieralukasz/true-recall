@@ -2,11 +2,6 @@
  * Shared modals exports - general-purpose modals used across features
  */
 
-export {
-	AddToProjectModal,
-	type AddToProjectModalOptions,
-	type AddToProjectResult,
-} from "@shared/ui/modals/AddToProjectModal";
 export { BaseModal, type BaseModalOptions } from "@shared/ui/modals/BaseModal";
 export {
 	BasePromiseModal,

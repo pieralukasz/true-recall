@@ -47,8 +47,6 @@ export type {
 	NotePerformanceRow,
 	PersistentDailyStats,
 	PersistentStatsData,
-	ProjectInfo,
-	ProjectNoteInfo,
 	RatingDistributionEntry,
 	RetentionEntry,
 	StatsTimeRange,

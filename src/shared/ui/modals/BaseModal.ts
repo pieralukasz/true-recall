@@ -2,7 +2,7 @@ import { type App, Modal } from "obsidian";
 
 export interface BaseModalOptions {
 	title: string;
-	width?: string; // e.g. "500px", defaults to "fit-content"
+	width?: string;
 }
 
 export interface ModalButton {
@@ -41,9 +41,6 @@ export abstract class BaseModal extends Modal {
 		this.modalWidth = options.width ?? "fit-content";
 	}
 
-	/**
-	 * Register a DOM event listener that will be automatically removed on modal close
-	 */
 	protected addDomEvent<K extends keyof HTMLElementEventMap>(
 		el: HTMLElement,
 		type: K,
@@ -54,7 +51,6 @@ export abstract class BaseModal extends Modal {
 	}
 
 	onClose(): void {
-		// Clean up all registered event listeners
 		for (const { el, type, handler } of this.registeredEvents) {
 			el.removeEventListener(type, handler);
 		}
@@ -65,33 +61,22 @@ export abstract class BaseModal extends Modal {
 		const { contentEl, modalEl, titleEl } = this;
 		contentEl.empty();
 
-		// Add base class (keep for CSS selectors that need :has() targeting)
 		contentEl.addClass("true-recall-modal");
 
-		// Set width on .modal container
 		modalEl.addClass("ep-modal-width");
 		modalEl.style.setProperty("--ep-modal-width", this.modalWidth);
 
-		// Use Obsidian's native titleEl (aligned with close button)
 		titleEl.setText(this.modalTitle);
 
-		// Render body content (implemented by subclasses)
 		const bodyEl = contentEl.createDiv();
 		this.renderBody(bodyEl);
 	}
 
-	/**
-	 * Update the modal title dynamically
-	 */
 	protected updateTitle(newTitle: string): void {
 		this.modalTitle = newTitle;
 		this.titleEl.setText(newTitle);
 	}
 
-	/**
-	 * Render the modal body content
-	 * Must be implemented by subclasses
-	 */
 	protected abstract renderBody(container: HTMLElement): void;
 
 	protected createButtonsSection(
@@ -120,9 +105,6 @@ export abstract class BaseModal extends Modal {
 		return buttonsEl;
 	}
 
-	/**
-	 * Get CSS classes for button type
-	 */
 	private getButtonClass(type: ModalButton["type"]): string {
 		switch (type) {
 			case "primary":
@@ -154,12 +136,10 @@ export abstract class BaseModal extends Modal {
 			cls: "ep:w-full ep:py-2.5 ep:px-3 ep:border ep:border-obs-border ep:rounded-md ep:bg-obs-primary ep:text-obs-normal ep:text-ui-small ep:focus:outline-none ep:focus:border-obs-interactive ep:placeholder:text-obs-muted",
 		});
 
-		// Use addDomEvent for automatic cleanup on modal close
 		this.addDomEvent(searchInput, "input", (e: Event) => {
 			onInput((e.target as HTMLInputElement).value.toLowerCase());
 		});
 
-		// Auto-focus
 		setTimeout(() => searchInput.focus(), 50);
 
 		return searchInput;
@@ -274,19 +254,16 @@ export abstract class BaseModal extends Modal {
 			cls: "ep:flex ep:items-center ep:gap-3 ep:p-3 ep:border-b ep:border-obs-border ep:cursor-pointer ep:transition-colors ep:hover:bg-obs-modifier-hover ep:last:border-b-0",
 		});
 
-		// Checkbox
 		const checkbox = itemEl.createEl("input", {
 			type: "checkbox",
 			cls: "ep:w-4 ep:h-4 ep:accent-obs-interactive ep:shrink-0",
 		});
 		checkbox.checked = item.selected;
 
-		// Use addDomEvent for automatic cleanup on modal close
 		this.addDomEvent(checkbox, "change", () => {
 			item.onToggle(checkbox.checked);
 		});
 
-		// Icon and name
 		const infoEl = itemEl.createDiv({
 			cls: "ep:flex ep:items-center ep:gap-2 ep:overflow-hidden ep:flex-1",
 		});
@@ -299,7 +276,6 @@ export abstract class BaseModal extends Modal {
 			text: item.name,
 		});
 
-		// Description
 		if (item.description) {
 			infoEl.createSpan({
 				cls: "ep:text-ui-smaller ep:text-obs-muted ep:ml-2",
@@ -307,7 +283,6 @@ export abstract class BaseModal extends Modal {
 			});
 		}
 
-		// Badge
 		if (item.badge) {
 			infoEl.createSpan({
 				cls: "ep:text-ui-smaller ep:text-obs-muted ep:bg-obs-secondary ep:px-2 ep:py-1 ep:rounded ep:ml-2",
@@ -315,7 +290,6 @@ export abstract class BaseModal extends Modal {
 			});
 		}
 
-		// Row click toggles checkbox
 		this.addDomEvent(itemEl, "click", (e: MouseEvent) => {
 			if (e.target !== checkbox) {
 				checkbox.checked = !checkbox.checked;

@@ -6,7 +6,6 @@ import type {
 	TrueRecallSettings,
 } from "@shared/types/settings.types";
 import { extractFSRSSettingsFromPreset } from "@shared/types/settings.types";
-import { buildProjectGraph } from "@shared/utils/project-hierarchy";
 
 export class PresetService {
 	constructor(
@@ -77,15 +76,9 @@ export class PresetService {
 	 *
 	 * Resolution order:
 	 * 1. Explicit: note has `fsrs_preset: "name"` in frontmatter → use that preset
-	 * 2. Session context: if reviewing from a project, walk up the project hierarchy
-	 *    checking each project note's `fsrs_preset` field
-	 * 3. Fallback: use default preset
+	 * 2. Fallback: use default preset
 	 */
-	resolvePresetForCard(
-		card: FSRSFlashcardItem,
-		sessionProjectFilters?: string[],
-	): FSRSPreset {
-		// 1. Check note-level explicit preset
+	resolvePresetForCard(card: FSRSFlashcardItem): FSRSPreset {
 		if (card.sourceUid) {
 			const file = this.frontmatterIndex.getFileByValue(
 				"flashcard_uid",
@@ -106,67 +99,7 @@ export class PresetService {
 			}
 		}
 
-		// 2. Session context: check project hierarchy
-		if (sessionProjectFilters && sessionProjectFilters.length > 0) {
-			const graph = buildProjectGraph(this.frontmatterIndex);
-
-			for (const projectName of sessionProjectFilters) {
-				const preset = this.resolvePresetFromProjectHierarchy(
-					projectName,
-					graph.parentMap,
-				);
-				if (preset) return preset;
-			}
-		}
-
-		// 3. Fallback
 		return this.getDefaultPreset();
-	}
-
-	/**
-	 * Walk up the project hierarchy looking for a preset assignment.
-	 * Checks the project note itself first, then its parents.
-	 */
-	private resolvePresetFromProjectHierarchy(
-		projectName: string,
-		parentMap: Map<string, string[]>,
-		visited: Set<string> = new Set(),
-	): FSRSPreset | null {
-		if (visited.has(projectName)) return null;
-		visited.add(projectName);
-
-		// Check this project note's fsrs_preset
-		const files = this.frontmatterIndex.getFilesByValue(
-			"projects",
-			projectName,
-		);
-		const projectFile = files.find((f) => f.basename === projectName);
-		if (projectFile) {
-			const presetValues = this.frontmatterIndex.getValues(
-				"fsrs_preset",
-				projectFile.path,
-			);
-			if (presetValues.length > 0) {
-				const presetName = presetValues[0];
-				if (presetName) {
-					const found = this.getPresetByName(presetName);
-					if (found) return found;
-				}
-			}
-		}
-
-		// Walk up to parents
-		const parents = parentMap.get(projectName) ?? [];
-		for (const parent of parents) {
-			const found = this.resolvePresetFromProjectHierarchy(
-				parent,
-				parentMap,
-				visited,
-			);
-			if (found) return found;
-		}
-
-		return null;
 	}
 
 	toFSRSSettings(preset: FSRSPreset): FSRSSettings {

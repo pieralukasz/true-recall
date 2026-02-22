@@ -1,15 +1,8 @@
-import type { FrontmatterIndexService } from "@features/core/services/frontmatter-index.service";
 import type { App } from "obsidian";
 
 export interface NoteEntry {
 	uid: string;
 	name: string;
-}
-
-export function resolveProjects(
-	frontmatterIndex: FrontmatterIndexService,
-): string[] {
-	return [...frontmatterIndex.getAllValues("projects")].sort();
 }
 
 export function resolveNotes(app: App): NoteEntry[] {

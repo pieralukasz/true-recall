@@ -25,6 +25,5 @@ export interface SessionResult {
 	cardLimit?: number;
 	studyAheadDays?: number;
 	reviewOrder?: import("@shared/types/settings.types").ReviewOrder;
-	projectFilters?: string[];
 	crammingMode?: boolean;
 }
