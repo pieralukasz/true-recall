@@ -196,52 +196,6 @@ describe("Queue Building - Advanced", () => {
 		});
 	});
 
-	describe("Project Filter Normalization", () => {
-		it("should match cards with wiki-link brackets stripped", () => {
-			const cards = [
-				createMockFlashcard({
-					id: "math-wiki",
-					projects: ["[[Math]]"], // Wiki-link format
-				}),
-				createMockFlashcard({
-					id: "math-plain",
-					projects: ["Math"], // Plain format
-				}),
-				createMockFlashcard({
-					id: "science",
-					projects: ["Science"],
-				}),
-			];
-
-			const queue = reviewService.buildQueue(cards, fsrsService, {
-				...defaultOptions,
-				projectFilters: ["Math"],
-			});
-
-			// Both Math cards should match
-			expect(queue).toHaveLength(2);
-			expect(queue.map((c) => c.id)).toContain("math-wiki");
-			expect(queue.map((c) => c.id)).toContain("math-plain");
-		});
-
-		it("should handle mixed wiki-link and plain project names", () => {
-			const cards = [
-				createMockFlashcard({
-					id: "mixed",
-					projects: ["[[Math]]", "Science", "[[History]]"],
-				}),
-			];
-
-			const queue = reviewService.buildQueue(cards, fsrsService, {
-				...defaultOptions,
-				projectFilters: ["History"],
-			});
-
-			expect(queue).toHaveLength(1);
-			expect(queue[0]?.id).toBe("mixed");
-		});
-	});
-
 	describe("Daily Limits", () => {
 		it("should cap new cards at newCardsLimit", () => {
 			const cards: FSRSFlashcardItem[] = [];
@@ -445,22 +399,6 @@ describe("Queue Building - Advanced", () => {
 	});
 
 	describe("Edge Cases", () => {
-		it("should handle empty queue after filtering", () => {
-			const cards = [
-				createMockFlashcard({
-					id: "wrong-project",
-					projects: ["Science"],
-				}),
-			];
-
-			const queue = reviewService.buildQueue(cards, fsrsService, {
-				...defaultOptions,
-				projectFilters: ["Math"], // No cards match
-			});
-
-			expect(queue).toHaveLength(0);
-		});
-
 		it("should handle queue with ONLY pending learning cards", () => {
 			const cards = [
 				createCardWithDue("learning-30min", State.Learning, 30),
@@ -484,26 +422,5 @@ describe("Queue Building - Advanced", () => {
 			expect(queue).toHaveLength(0);
 		});
 
-		it("should handle cards with no projects (empty array)", () => {
-			const cards = [
-				createMockFlashcard({
-					id: "no-projects",
-					projects: [],
-				}),
-				createMockFlashcard({
-					id: "has-project",
-					projects: ["Math"],
-				}),
-			];
-
-			// Filter by project should exclude card without projects
-			const queue = reviewService.buildQueue(cards, fsrsService, {
-				...defaultOptions,
-				projectFilters: ["Math"],
-			});
-
-			expect(queue).toHaveLength(1);
-			expect(queue[0]?.id).toBe("has-project");
-		});
 	});
 });

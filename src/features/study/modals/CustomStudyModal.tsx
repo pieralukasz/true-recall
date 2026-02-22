@@ -34,8 +34,6 @@ export class CustomStudyModal extends BasePromiseModal<CustomStudyModalResult> {
 				onResolve={(result) => {
 					// Attach scope filters from the class-level studyScope
 					if (result.sessionResult && this.studyScope) {
-						result.sessionResult.projectFilters =
-							this.studyScope.projectFilters;
 						result.sessionResult.sourceNoteFilters =
 							this.studyScope.sourceNoteFilters;
 					}

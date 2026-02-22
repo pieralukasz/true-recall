@@ -1,5 +1,4 @@
 import type { SqliteStoreService } from "@features/core/persistence/sqlite/SqliteStoreService";
-import type { FrontmatterIndexService } from "@features/core/services/frontmatter-index.service";
 import {
 	type ExportMode,
 	ExportScopeSelector,
@@ -12,7 +11,6 @@ import {
 	downloadBlob,
 	type NoteEntry,
 	resolveNotes,
-	resolveProjects,
 } from "@features/integration/utils/export-helpers";
 import {
 	ModalFooter,
@@ -32,17 +30,14 @@ type ExportPhase =
 
 function CsvExportBody({
 	totalCards,
-	allProjects,
 	allNotes,
 	onExport,
 	onClose,
 }: {
 	totalCards: number;
-	allProjects: string[];
 	allNotes: NoteEntry[];
 	onExport: (opts: {
 		exportMode: ExportMode;
-		selectedProjects: Set<string>;
 		selectedSourceUids: Set<string>;
 		includeScheduling: boolean;
 		separator: CsvSeparator;
@@ -53,13 +48,7 @@ function CsvExportBody({
 	const [exportMode, setExportMode] = useState<ExportMode>("all");
 	const [separator, setSeparator] = useState<CsvSeparator>(",");
 	const [includeScheduling, setIncludeScheduling] = useState(false);
-	const selectedProjects = useRef(new Set<string>());
 	const selectedSourceUids = useRef(new Set<string>());
-
-	const handleToggleProject = useCallback((key: string, checked: boolean) => {
-		if (checked) selectedProjects.current.add(key);
-		else selectedProjects.current.delete(key);
-	}, []);
 
 	const handleToggleNote = useCallback((key: string, checked: boolean) => {
 		if (checked) selectedSourceUids.current.add(key);
@@ -69,7 +58,6 @@ function CsvExportBody({
 	const handleExport = useCallback(async () => {
 		const result = await onExport({
 			exportMode,
-			selectedProjects: selectedProjects.current,
 			selectedSourceUids: selectedSourceUids.current,
 			includeScheduling,
 			separator,
@@ -121,11 +109,8 @@ function CsvExportBody({
 				exportMode={exportMode}
 				onModeChange={setExportMode}
 				totalCards={totalCards}
-				allProjects={allProjects}
 				allNotes={allNotes}
-				selectedProjects={selectedProjects.current}
 				selectedSourceUids={selectedSourceUids.current}
-				onToggleProject={handleToggleProject}
 				onToggleNote={handleToggleNote}
 			/>
 
@@ -178,20 +163,15 @@ function CsvExportBody({
 
 export class CsvExportModal extends BaseModal {
 	private store: SqliteStoreService;
-	private frontmatterIndex: FrontmatterIndexService;
-	private allProjects: string[] = [];
 	private allNotes: NoteEntry[] = [];
 	private unmountBody?: () => void;
 
 	constructor(
 		app: App,
 		store: SqliteStoreService,
-		frontmatterIndex: FrontmatterIndexService,
 	) {
 		super(app, { title: "Export as CSV", width: "520px" });
 		this.store = store;
-		this.frontmatterIndex = frontmatterIndex;
-		this.allProjects = resolveProjects(this.frontmatterIndex);
 		this.allNotes = resolveNotes(this.app);
 	}
 
@@ -202,7 +182,6 @@ export class CsvExportModal extends BaseModal {
 		render(
 			<CsvExportBody
 				totalCards={totalCards}
-				allProjects={this.allProjects}
 				allNotes={this.allNotes}
 				onExport={(opts) => this.startExport(opts)}
 				onClose={() => this.close()}
@@ -219,7 +198,6 @@ export class CsvExportModal extends BaseModal {
 
 	private async startExport(opts: {
 		exportMode: ExportMode;
-		selectedProjects: Set<string>;
 		selectedSourceUids: Set<string>;
 		includeScheduling: boolean;
 		separator: CsvSeparator;
@@ -228,10 +206,6 @@ export class CsvExportModal extends BaseModal {
 			const service = new CsvExportService(this.app, this.store);
 
 			const { content, filename } = service.export({
-				projects:
-					opts.exportMode === "projects"
-						? [...opts.selectedProjects]
-						: undefined,
 				sourceUids:
 					opts.exportMode === "notes"
 						? [...opts.selectedSourceUids]

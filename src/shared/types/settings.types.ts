@@ -253,7 +253,6 @@ export interface SessionPreset {
 	cardLimit?: number;
 	studyAheadDays?: number;
 	crammingMode?: boolean;
-	projectFilters?: string[];
 }
 
 /**

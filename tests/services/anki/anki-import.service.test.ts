@@ -383,28 +383,5 @@ describe("AnkiImportService", () => {
 			expect(result.errors).toContain("No cards found in the .apkg file");
 		});
 
-		it("populates projects from deck names", async () => {
-			const model = createAnkiModel();
-			const deck1 = createAnkiDeck({ id: 1, name: "Languages::French" });
-			const deck2 = createAnkiDeck({ id: 2, name: "Science" });
-			const note1 = createAnkiNote({ id: 1, mid: model.id, flds: "Q1\x1fA1" });
-			const note2 = createAnkiNote({ id: 2, mid: model.id, flds: "Q2\x1fA2" });
-			const card1 = createAnkiCard({ id: 100, nid: 1, did: 1 });
-			const card2 = createAnkiCard({ id: 101, nid: 2, did: 2 });
-
-			mockParseApkg.mockResolvedValue(
-				createApkgData({
-					notes: [note1, note2],
-					cards: [card1, card2],
-					models: [model],
-					decks: [deck1, deck2],
-				}),
-			);
-
-			const result = await service.importApkg(new ArrayBuffer(0), defaultOptions());
-
-			expect(result.projects).toContain("Languages/French");
-			expect(result.projects).toContain("Science");
-		});
 	});
 });

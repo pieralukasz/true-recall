@@ -178,7 +178,6 @@ describe("fsrs.types utilities", () => {
 				question: "Test question?",
 				answer: "Test answer",
 				fsrs: createDefaultFSRSData("card-1"),
-				projects: ["Test"],
 				sourceNotePath: "notes/source.md",
 			};
 
@@ -192,7 +191,6 @@ describe("fsrs.types utilities", () => {
 			expect(card).toHaveProperty("question");
 			expect(card).toHaveProperty("answer");
 			expect(card).toHaveProperty("fsrs");
-			expect(card).toHaveProperty("projects");
 		});
 
 		it("should support sourceUid for source note linking", () => {
@@ -212,13 +210,11 @@ describe("fsrs.types utilities", () => {
 				uid: "test-uid",
 				noteName: "Test Note",
 				notePath: "folder/test-note.md",
-				projects: ["History"],
 			});
 
 			expect(sourceNote.uid).toBe("test-uid");
 			expect(sourceNote.noteName).toBe("Test Note");
 			expect(sourceNote.notePath).toBe("folder/test-note.md");
-			expect(sourceNote.projects).toEqual(["History"]);
 			expect(sourceNote.createdAt).toBeDefined();
 			expect(sourceNote.updatedAt).toBeDefined();
 		});
@@ -238,16 +234,6 @@ describe("fsrs.types utilities", () => {
 			expect(sourceNote.uid).toBeDefined();
 			expect(sourceNote.noteName).toBe("Test Note");
 			expect(sourceNote.notePath).toBe("notes/test-note.md");
-			expect(sourceNote.projects).toBeUndefined(); // Projects are optional now
-		});
-
-		it("should allow overriding individual fields", () => {
-			const sourceNote = createMockSourceNote({
-				projects: ["Science"],
-			});
-
-			expect(sourceNote.projects).toEqual(["Science"]);
-			expect(sourceNote.noteName).toBe("Test Note"); // Default preserved
 		});
 	});
 });

@@ -38,8 +38,6 @@ export type {
 	OptimizationResult,
 	PersistentDailyStats,
 	PersistentStatsData,
-	ProjectInfo,
-	ProjectNoteInfo,
 	RatingDistributionEntry,
 	RetentionEntry,
 	ReviewHistoryEntry,

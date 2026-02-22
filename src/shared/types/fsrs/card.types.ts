@@ -75,11 +75,6 @@ export interface FSRSCardData {
 	sourceNoteName?: string;
 	/** Source note path (resolved from vault at runtime via sourceUid) */
 	sourceNotePath?: string;
-	/** Projects associated with this card (resolved from frontmatter at runtime) */
-	projects?: string[];
-	/** Anki deck key for export (resolved at runtime, not stored) */
-	deckKey?: string;
-
 	// === Card type fields (schema v21) ===
 
 	/** Card type: 'basic' (default), 'cloze', or 'reversed' */
@@ -126,8 +121,6 @@ export interface FSRSFlashcardItem {
 	answer: string;
 	/** FSRS data */
 	fsrs: FSRSCardData;
-	/** Projects associated with this card (resolved from frontmatter at runtime) */
-	projects: string[];
 	/** Source note name (resolved from vault at runtime via sourceUid) */
 	sourceNoteName?: string;
 	/** Source note UID (for MD note association) */

@@ -123,43 +123,43 @@ describe("FrontmatterIndexService", () => {
 		});
 	});
 
-	describe("non-unique array field (like projects)", () => {
+	describe("non-unique array field (like tags)", () => {
 		beforeEach(() => {
 			service = new FrontmatterIndexService(mockApp);
-			service.register({ field: "projects", type: "array", unique: false });
+			service.register({ field: "tags", type: "array", unique: false });
 		});
 
 		it("indexes array field with multiple values per file", () => {
-			addMockFile("note1.md", { projects: ["Project A", "Project B"] });
-			addMockFile("note2.md", { projects: ["Project A"] });
-			addMockFile("note3.md", { projects: ["Project C"] });
+			addMockFile("note1.md", { tags: ["Tag A", "Tag B"] });
+			addMockFile("note2.md", { tags: ["Tag A"] });
+			addMockFile("note3.md", { tags: ["Tag C"] });
 
 			service.rebuildIndex();
 
-			const filesA = service.getFilesByValue("projects", "Project A");
+			const filesA = service.getFilesByValue("tags", "Tag A");
 			expect(filesA.map((f) => f.path).sort()).toEqual(["note1.md", "note2.md"]);
 
-			const filesB = service.getFilesByValue("projects", "Project B");
+			const filesB = service.getFilesByValue("tags", "Tag B");
 			expect(filesB.map((f) => f.path)).toEqual(["note1.md"]);
 
-			expect(service.getFilesByValue("projects", "Project D")).toEqual([]);
+			expect(service.getFilesByValue("tags", "Tag D")).toEqual([]);
 		});
 
 		it("returns all unique values", () => {
-			addMockFile("note1.md", { projects: ["A", "B"] });
-			addMockFile("note2.md", { projects: ["B", "C"] });
+			addMockFile("note1.md", { tags: ["A", "B"] });
+			addMockFile("note2.md", { tags: ["B", "C"] });
 
 			service.rebuildIndex();
 
-			const allProjects = service.getAllValues("projects");
-			expect(allProjects).toEqual(new Set(["A", "B", "C"]));
+			const allTags = service.getAllValues("tags");
+			expect(allTags).toEqual(new Set(["A", "B", "C"]));
 		});
 
 		it("returns values for a specific file path", () => {
-			addMockFile("note.md", { projects: ["X", "Y", "Z"] });
+			addMockFile("note.md", { tags: ["X", "Y", "Z"] });
 			service.rebuildIndex();
 
-			const values = service.getValues("projects", "note.md");
+			const values = service.getValues("tags", "note.md");
 			expect(new Set(values)).toEqual(new Set(["X", "Y", "Z"]));
 		});
 	});

@@ -8,7 +8,6 @@ export interface CustomStudyModalResult extends CancellableResult {
 }
 
 export interface CustomStudyModalScope {
-	projectFilters?: string[];
 	sourceNoteFilters?: string[];
 	scopeLabel?: string;
 }

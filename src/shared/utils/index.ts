@@ -18,12 +18,6 @@ export {
 	throttle,
 } from "@shared/utils/event.utils";
 export {
-	buildProjectGraph,
-	getDescendantProjects,
-	isProjectNote,
-	type ProjectGraph,
-} from "@shared/utils/project-hierarchy";
-export {
 	BR_REGEX,
 	stripBrTags,
 	stripWikiLinkSyntax,

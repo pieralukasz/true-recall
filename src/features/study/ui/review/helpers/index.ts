@@ -4,7 +4,8 @@
  */
 
 export {
-	buildSourceUidToProjectsMap,
+	applyMutation,
+	buildQueueOptions,
 	type CardFilterOptions,
 	filterActiveCards,
 	getEmptyQueueMessage,

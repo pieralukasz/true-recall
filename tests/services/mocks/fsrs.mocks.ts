@@ -17,7 +17,6 @@ export interface SourceNoteInfo {
 	uid: string;
 	noteName: string;
 	notePath?: string;
-	projects?: string[];
 	createdAt?: number;
 	updatedAt?: number;
 }
@@ -135,7 +134,6 @@ export function createMockFlashcard(
 		question: overrides.question ?? "What is the capital of France?",
 		answer: overrides.answer ?? "Paris",
 		fsrs: cardData,
-		projects: overrides.projects ?? ["Geography"],
 		sourceNoteName: overrides.sourceNoteName,
 		sourceUid: overrides.sourceUid,
 		sourceNotePath: overrides.sourceNotePath,
@@ -264,7 +262,6 @@ export function createMockSourceNote(
 		uid: overrides.uid ?? `src-${Math.random().toString(36).slice(2, 10)}`,
 		noteName: overrides.noteName ?? "Test Note",
 		notePath: overrides.notePath ?? "notes/test-note.md",
-		projects: overrides.projects,
 		createdAt: overrides.createdAt ?? now,
 		updatedAt: overrides.updatedAt ?? now,
 	};
@@ -282,7 +279,6 @@ export function createMockFlashcardWithSourcePath(
 		question: overrides.question ?? "What is machine learning?",
 		answer: overrides.answer ?? "A type of AI that learns from data",
 		fsrs: cardData,
-		projects: overrides.projects ?? ["AI/ML"],
 		sourceNoteName: overrides.sourceNoteName ?? "Machine Learning Basics",
 		sourceUid: overrides.sourceUid ?? "abc12345",
 		sourceNotePath: overrides.sourceNotePath ?? "input/machine-learning.md",

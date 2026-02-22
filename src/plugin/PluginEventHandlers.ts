@@ -18,13 +18,6 @@ export function registerEventHandlers(plugin: TrueRecallPlugin): void {
 
 				menu.addItem((item) => {
 					item
-						.setTitle("Create project from this note")
-						.setIcon("folder-plus")
-						.onClick(() => void plugin.createProjectFromNote(file));
-				});
-
-				menu.addItem((item) => {
-					item
 						.setTitle("Open flashcard panel")
 						.setIcon("book-text")
 						.onClick(() => void plugin.activateView());

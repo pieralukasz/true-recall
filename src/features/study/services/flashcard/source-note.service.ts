@@ -117,28 +117,20 @@ export class SourceNoteService {
 	): T & {
 		sourceNoteName: string;
 		sourceNotePath: string;
-		projects: string[];
 	} {
 		if (!card.sourceUid) {
-			return { ...card, sourceNoteName: "", sourceNotePath: "", projects: [] };
+			return { ...card, sourceNoteName: "", sourceNotePath: "" };
 		}
 
 		const file = this.findFileByUidSync(card.sourceUid);
 		if (!file) {
-			return { ...card, sourceNoteName: "", sourceNotePath: "", projects: [] };
+			return { ...card, sourceNoteName: "", sourceNotePath: "" };
 		}
-
-		const frontmatter = this.app.metadataCache.getFileCache(file)?.frontmatter;
-		const rawProjects = frontmatter?.projects as unknown;
-		const projects: string[] = Array.isArray(rawProjects)
-			? rawProjects.filter((p): p is string => typeof p === "string")
-			: [];
 
 		return {
 			...card,
 			sourceNoteName: file.basename,
 			sourceNotePath: file.path,
-			projects,
 		};
 	}
 
@@ -148,7 +140,6 @@ export class SourceNoteService {
 		T & {
 			sourceNoteName: string;
 			sourceNotePath: string;
-			projects: string[];
 		}
 	> {
 		return cards.map((card) => this.enrichCard(card));

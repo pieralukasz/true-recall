@@ -5,7 +5,7 @@ import type { FSRSFlashcardItem } from "@shared/types";
 import { useMarkdown } from "@shared/ui/preact/hooks";
 import { stripBrTags } from "@shared/utils";
 import { Platform } from "obsidian";
-import { useCallback, useRef, useState } from "preact/hooks";
+import { useCallback, useRef } from "preact/hooks";
 
 export interface CardContainerProps {
 	card: FSRSFlashcardItem;
@@ -147,9 +147,6 @@ export function CardContainer({
 								</button>
 							</div>
 						)}
-						{card.projects && card.projects.length > 0 && (
-							<ProjectBadges projects={card.projects} cardId={card.id} />
-						)}
 					</>
 				)}
 			</div>
@@ -203,44 +200,5 @@ function MarkdownField({
 			data-source-path={sourcePath}
 			{...touchHandlers}
 		/>
-	);
-}
-
-function ProjectBadges({
-	projects,
-	cardId: _cardId,
-}: {
-	projects: string[];
-	cardId: string;
-}) {
-	const [expanded, setExpanded] = useState(false);
-
-	if (!expanded) {
-		return (
-			<div class="ep:mt-6 ep:flex ep:flex-col ep:items-center">
-				<button
-					type="button"
-					class="ep:text-ui-small ep:text-obs-muted ep:cursor-pointer ep:hover:text-obs-normal ep:hover:underline ep:transition-colors ep:bg-transparent ep:border-none ep:p-0"
-					onClick={() => setExpanded(true)}
-				>
-					Show projects ({projects.length})
-				</button>
-			</div>
-		);
-	}
-
-	return (
-		<div class="ep:mt-6 ep:flex ep:flex-col ep:items-center">
-			<div class="ep:flex ep:flex-wrap ep:justify-center ep:gap-2">
-				{projects.map((project) => (
-					<span
-						key={project}
-						class="ep:text-obs-accent ep:text-ui-smaller ep:cursor-pointer ep:no-underline ep:hover:underline ep:transition-colors"
-					>
-						{project}
-					</span>
-				))}
-			</div>
-		</div>
 	);
 }

@@ -16,6 +16,7 @@ import { DayBoundaryService } from "@features/core/services/day-boundary.service
 import { FrontmatterIndexService } from "@features/core/services/frontmatter-index.service";
 import { FSRSService } from "@features/core/services/fsrs.service";
 import { PresetService } from "@features/core/services/preset.service";
+import { ProjectLinkService } from "@features/core/services/project-link.service";
 import { AnkiExportModal } from "@features/integration/modals/AnkiExportModal";
 import { AnkiImportModal } from "@features/integration/modals/AnkiImportModal";
 import { CsvExportModal } from "@features/integration/modals/CsvExportModal";
@@ -60,11 +61,7 @@ import { settingsVersion } from "@shared/services/signals";
 import { UndoService } from "@shared/services/undo.service";
 import { type AppStore, createAppStore } from "@shared/store";
 import { extractFSRSSettings } from "@shared/types";
-import {
-	AddToProjectModal,
-	SetPresetModal,
-	SimpleFlashcardEditorModal,
-} from "@shared/ui/modals";
+import { SetPresetModal, SimpleFlashcardEditorModal } from "@shared/ui/modals";
 import { normalizePath, Plugin, type TFile } from "obsidian";
 import { registerCommands } from "./plugin/PluginCommands";
 import {
@@ -98,6 +95,7 @@ export default class TrueRecallPlugin extends Plugin {
 	undoService: UndoService | null = null;
 	fsrsHelper: FSRSHelperService | null = null;
 	presetService!: PresetService;
+	projectLinkService!: ProjectLinkService;
 	store: AppStore | null = null;
 	noteStatusCache: NoteStatusCacheService | null = null;
 	statusBarWidget: StatusBarWidget | null = null;
@@ -133,12 +131,12 @@ export default class TrueRecallPlugin extends Plugin {
 			unique: true,
 		});
 		this.frontmatterIndex.register({
-			field: "projects",
-			type: "array",
+			field: "fsrs_preset",
+			type: "string",
 			unique: false,
 		});
 		this.frontmatterIndex.register({
-			field: "fsrs_preset",
+			field: "project",
 			type: "string",
 			unique: false,
 		});
@@ -148,6 +146,11 @@ export default class TrueRecallPlugin extends Plugin {
 		this.app.workspace.onLayoutReady(() => {
 			this.frontmatterIndex.rebuildIndex();
 		});
+
+		this.projectLinkService = new ProjectLinkService(
+			this.app,
+			this.frontmatterIndex,
+		);
 
 		this.flashcardManager = new FlashcardManager(
 			this.app,
@@ -357,7 +360,6 @@ export default class TrueRecallPlugin extends Plugin {
 			cardLimit: result.cardLimit,
 			studyAheadDays: result.studyAheadDays,
 			reviewOrder: result.reviewOrder,
-			projectFilters: result.projectFilters,
 			crammingMode: result.crammingMode,
 		});
 	}
@@ -415,7 +417,6 @@ export default class TrueRecallPlugin extends Plugin {
 				cardLimit: result.sessionResult.cardLimit,
 				studyAheadDays: result.sessionResult.studyAheadDays,
 				crammingMode: result.sessionResult.crammingMode,
-				projectFilters: result.sessionResult.projectFilters,
 			};
 			this.settings.sessionPresets = [...this.settings.sessionPresets, preset];
 			await this.saveSettings();
@@ -501,6 +502,7 @@ export default class TrueRecallPlugin extends Plugin {
 
 	async openReviewViewWithFilters(filters: {
 		deckFilter?: string | null;
+		projectPath?: string;
 		sourceNoteFilter?: string;
 		sourceNoteFilters?: string[];
 		filePathFilter?: string;
@@ -518,11 +520,11 @@ export default class TrueRecallPlugin extends Plugin {
 		cardLimit?: number;
 		studyAheadDays?: number;
 		reviewOrder?: import("@shared/types/settings.types").ReviewOrder;
-		projectFilters?: string[];
 		crammingMode?: boolean;
 	}): Promise<void> {
 		const state = {
 			deckFilter: filters.deckFilter ?? null,
+			projectPath: filters.projectPath,
 			sourceNoteFilter: filters.sourceNoteFilter,
 			sourceNoteFilters: filters.sourceNoteFilters,
 			filePathFilter: filters.filePathFilter,
@@ -540,7 +542,6 @@ export default class TrueRecallPlugin extends Plugin {
 			cardLimit: filters.cardLimit,
 			studyAheadDays: filters.studyAheadDays,
 			reviewOrder: filters.reviewOrder,
-			projectFilters: filters.projectFilters,
 			crammingMode: filters.crammingMode,
 		};
 
@@ -915,39 +916,62 @@ export default class TrueRecallPlugin extends Plugin {
 		}
 	}
 
-	async addCurrentNoteToProject(): Promise<void> {
-		const file = this.app.workspace.getActiveFile();
-		if (!file || file.extension !== "md") {
-			notify().noActiveFile();
-			return;
+	async createMasterDashboard(): Promise<void> {
+		const fileName = "True Recall Dashboard.md";
+		let file = this.app.vault.getAbstractFileByPath(fileName);
+
+		if (!file) {
+			const content = [
+				"---",
+				"cssclasses:",
+				"  - true-recall-dashboard-note",
+				"---",
+				"",
+				"# True Recall Dashboard",
+				"",
+				"## Today",
+				"",
+				"```true-recall-dashboard",
+				"```",
+				"",
+				"## Streak",
+				"",
+				"```true-recall-streak",
+				"showWeekDots: true",
+				"showTodayRate: true",
+				"```",
+				"",
+				"## Activity",
+				"",
+				"```true-recall-heatmap",
+				"months: 6",
+				"```",
+				"",
+				"## Projects",
+				"",
+				"```true-recall-project-hub",
+				"```",
+				"",
+				"## Workload",
+				"",
+				"```true-recall-workload",
+				"days: 14",
+				"showTime: true",
+				"```",
+				"",
+				"## Health",
+				"",
+				"```true-recall-health",
+				"target: 90",
+				"showBuckets: true",
+				"```",
+				"",
+			].join("\n");
+
+			file = await this.app.vault.create(fileName, content);
 		}
 
-		const frontmatterService = this.flashcardManager.getFrontmatterService();
-
-		const content = await this.app.vault.read(file);
-		const currentProjects =
-			frontmatterService.extractProjectsFromFrontmatter(content);
-
-		const allProjectsSet = this.frontmatterIndex
-			? this.frontmatterIndex.getAllValues("projects")
-			: new Set<string>();
-		const allProjects = Array.from(allProjectsSet).sort();
-
-		const modal = new AddToProjectModal(this.app, {
-			availableProjects: allProjects,
-			currentProjects: currentProjects,
-		});
-
-		const result = await modal.openAndWait();
-		if (result.cancelled) return;
-
-		await frontmatterService.setProjectsInFrontmatter(file, result.projects);
-
-		if (result.projects.length > 0) {
-			notify().success(`Projects updated: ${result.projects.join(", ")}`);
-		} else {
-			notify().info("Removed all projects from note");
-		}
+		await this.app.workspace.openLinkText(fileName, "", false);
 	}
 
 	async setFsrsPresetForCurrentNote(): Promise<void> {
@@ -977,32 +1001,6 @@ export default class TrueRecallPlugin extends Plugin {
 		} else {
 			notify().info("FSRS preset override removed (using default)");
 		}
-	}
-
-	async createProjectFromNote(file: TFile): Promise<void> {
-		const projectName = file.basename;
-		const frontmatterService = this.flashcardManager.getFrontmatterService();
-
-		if (this.frontmatterIndex) {
-			const existingProjects = this.frontmatterIndex.getAllValues("projects");
-			const projectExists = Array.from(existingProjects).some(
-				(p) => p.toLowerCase() === projectName.toLowerCase(),
-			);
-			if (projectExists) {
-				notify().warning(`Project "${projectName}" already exists`);
-				return;
-			}
-		}
-
-		let sourceUid = await frontmatterService.getSourceNoteUid(file);
-		if (!sourceUid) {
-			sourceUid = frontmatterService.generateUid();
-			await frontmatterService.setSourceNoteUid(file, sourceUid);
-		}
-
-		await frontmatterService.setProjectsInFrontmatter(file, [projectName]);
-
-		notify().success(`Project "${projectName}" created`);
 	}
 
 	private async runAutoBackup(): Promise<void> {
@@ -1108,7 +1106,6 @@ export default class TrueRecallPlugin extends Plugin {
 			this.app,
 			this.cardStore,
 			this.fsrsService,
-			this.frontmatterIndex,
 		);
 		modal.open();
 	}
@@ -1124,7 +1121,6 @@ export default class TrueRecallPlugin extends Plugin {
 		const modal = new CsvExportModal(
 			this.app,
 			this.cardStore,
-			this.frontmatterIndex,
 		);
 		modal.open();
 	}

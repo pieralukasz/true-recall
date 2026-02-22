@@ -8,8 +8,10 @@ import { HealthWidget } from "./HealthWidget";
 import { HeatmapWidget } from "./HeatmapWidget";
 import { LeaderboardWidget } from "./LeaderboardWidget";
 import { NoteHealthWidget } from "./NoteHealthWidget";
+import { ProjectHubWidget } from "./ProjectHubWidget";
 import { ProjectWidget } from "./ProjectWidget";
 import { StreakWidget } from "./StreakWidget";
+import { UnassignedNotesWidget } from "./UnassignedNotesWidget";
 import { WorkloadWidget } from "./WorkloadWidget";
 
 export function registerDashboardCodeblocks(plugin: TrueRecallPlugin): void {
@@ -97,6 +99,24 @@ export function registerDashboardCodeblocks(plugin: TrueRecallPlugin): void {
 		(source, el, ctx) => {
 			el.addClass("true-recall-codeblock-project");
 			const unmount = mountPreact(el, plugin, h(ProjectWidget, { source, sourcePath: ctx.sourcePath }));
+			registerCleanup(el, unmount);
+		},
+	);
+
+	plugin.registerMarkdownCodeBlockProcessor(
+		"true-recall-unassigned",
+		(_source, el, _ctx) => {
+			el.addClass("true-recall-codeblock-unassigned");
+			const unmount = mountPreact(el, plugin, h(UnassignedNotesWidget, null));
+			registerCleanup(el, unmount);
+		},
+	);
+
+	plugin.registerMarkdownCodeBlockProcessor(
+		"true-recall-project-hub",
+		(_source, el, _ctx) => {
+			el.addClass("true-recall-codeblock-project-hub");
+			const unmount = mountPreact(el, plugin, h(ProjectHubWidget, null));
 			registerCleanup(el, unmount);
 		},
 	);

@@ -2,7 +2,6 @@ import type { SqliteStoreService } from "@features/core/persistence/sqlite/Sqlit
 import type { FSRSService } from "@features/core/services/fsrs.service";
 import { ApkgBuilderService } from "@features/integration/services/anki/apkg-builder.service";
 import type { AnkiExportOptions, FSRSCardData } from "@shared/types";
-import { stripWikiLinkSyntax } from "@shared/utils";
 import type { App } from "obsidian";
 
 interface DeckInfo {
@@ -12,7 +11,6 @@ interface DeckInfo {
 
 interface SourceNoteInfo {
 	name: string;
-	projects: string[];
 }
 
 export class AnkiExportService {
@@ -63,25 +61,19 @@ export class AnkiExportService {
 
 	private resolveAndFilter(
 		allCards: FSRSCardData[],
-		mode: "all" | "projects" | "notes",
+		mode: "all" | "notes",
 		options: AnkiExportOptions,
 	): FSRSCardData[] {
 		const sourceUidMap = this.buildSourceUidMap();
 
-		// Enrich every card with projects, sourceNoteName, and deckKey
 		const enriched = allCards.map((card) => {
 			const info = card.sourceUid
 				? sourceUidMap.get(card.sourceUid)
 				: undefined;
-			const projects = info?.projects ?? card.projects ?? [];
 			const sourceNoteName = info?.name ?? card.sourceNoteName;
-
-			const deckKey = this.computeDeckKey(mode, projects, sourceNoteName);
-
-			return { ...card, projects, sourceNoteName, deckKey };
+			return { ...card, sourceNoteName };
 		});
 
-		// Filter based on mode
 		if (mode === "notes" && options.sourceUids?.length) {
 			const uidSet = new Set(options.sourceUids);
 			return enriched.filter(
@@ -89,35 +81,7 @@ export class AnkiExportService {
 			);
 		}
 
-		if (mode === "projects" && options.projects?.length) {
-			const filterSet = new Set(options.projects);
-			return enriched.filter((card) => {
-				if (!card.projects || card.projects.length === 0) return false;
-				return card.projects.some((p) => filterSet.has(p));
-			});
-		}
-
 		return enriched;
-	}
-
-	private computeDeckKey(
-		mode: "all" | "projects" | "notes",
-		projects: string[],
-		sourceNoteName?: string,
-	): string {
-		if (mode === "notes") {
-			return sourceNoteName ?? "Default";
-		}
-
-		// For 'all' and 'projects': Project::NoteName hierarchy
-		const project = projects[0];
-		if (project && sourceNoteName) {
-			return `${project}::${sourceNoteName}`;
-		}
-		if (project) {
-			return project;
-		}
-		return "Default";
 	}
 
 	private buildSourceUidMap(): Map<string, SourceNoteInfo> {
@@ -131,49 +95,22 @@ export class AnkiExportService {
 			const uid = cache.frontmatter.flashcard_uid as string | undefined;
 			if (!uid) continue;
 
-			const projects = this.extractProjects(cache.frontmatter);
-			map.set(uid, { name: file.basename, projects });
+			map.set(uid, { name: file.basename });
 		}
 
 		return map;
 	}
 
-	private extractProjects(frontmatter: Record<string, unknown>): string[] {
-		const raw = frontmatter.projects;
-		if (!Array.isArray(raw)) return [];
-
-		return raw
-			.filter((p): p is string => typeof p === "string")
-			.map((p) => stripWikiLinkSyntax(p))
-			.filter((p) => p.length > 0);
-	}
-
 	private buildDeckMap(cards: FSRSCardData[]): Map<string, DeckInfo> {
 		const deckMap = new Map<string, DeckInfo>();
-
 		deckMap.set("Default", { id: 1, name: "Default" });
 
-		// Collect unique deckKeys
 		for (const card of cards) {
-			const key = card.deckKey ?? "Default";
+			const key = card.sourceNoteName ?? "Default";
 			if (key === "Default" || deckMap.has(key)) continue;
 
 			const id = deckIdFromName(key);
 			deckMap.set(key, { id, name: key });
-		}
-
-		// Ensure parent decks exist (Anki requires them for nested decks)
-		for (const key of [...deckMap.keys()]) {
-			const parts = key.split("::");
-			for (let i = 1; i < parts.length; i++) {
-				const parentKey = parts.slice(0, i).join("::");
-				if (!deckMap.has(parentKey)) {
-					deckMap.set(parentKey, {
-						id: deckIdFromName(parentKey),
-						name: parentKey,
-					});
-				}
-			}
 		}
 
 		return deckMap;
