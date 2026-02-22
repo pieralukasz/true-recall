@@ -195,12 +195,17 @@ export class StatsCalculatorService {
 		};
 	}
 
-	getRatingDistributionHistory(range: StatsTimeRange): RatingDistributionEntry[] {
+	getRatingDistributionHistory(
+		range: StatsTimeRange,
+	): RatingDistributionEntry[] {
 		if (!this.sessionPersistence) {
 			return [];
 		}
 		const allStats = this.sessionPersistence.getAllDailyStatsSummary();
-		return this.chartDataCalculator.getRatingDistributionHistory(allStats, range);
+		return this.chartDataCalculator.getRatingDistributionHistory(
+			allStats,
+			range,
+		);
 	}
 
 	getCollectionHealthSnapshot(): CollectionHealthSnapshot {
@@ -210,7 +215,11 @@ export class StatsCalculatorService {
 			.filter((c) => c.fsrs.state !== State.New && !c.fsrs.suspended);
 
 		if (allCards.length === 0) {
-			return { averageRetention: 0, distribution: buildHealthBuckets([]), cardCount: 0 };
+			return {
+				averageRetention: 0,
+				distribution: buildHealthBuckets([]),
+				cardCount: 0,
+			};
 		}
 
 		const now = new Date();
@@ -218,7 +227,8 @@ export class StatsCalculatorService {
 			this.fsrsService.getRetrievability(c.fsrs, now),
 		);
 
-		const avg = retrievabilities.reduce((s, r) => s + r, 0) / retrievabilities.length;
+		const avg =
+			retrievabilities.reduce((s, r) => s + r, 0) / retrievabilities.length;
 
 		return {
 			averageRetention: Math.round(avg * 100),
@@ -343,18 +353,17 @@ export class StatsCalculatorService {
 	}
 }
 
-const HEALTH_BUCKETS: { label: string; threshold: number; colorVar: string }[] = [
-	{ label: "At risk (<50%)", threshold: 0.5, colorVar: "--color-red" },
-	{ label: "Low (50–70%)", threshold: 0.7, colorVar: "--color-orange" },
-	{ label: "Medium (70–85%)", threshold: 0.85, colorVar: "--color-yellow" },
-	{ label: "High (85–95%)", threshold: 0.95, colorVar: "--color-green" },
-	{ label: "Strong (>95%)", threshold: 1, colorVar: "--color-cyan" },
-];
+const HEALTH_BUCKETS: { label: string; threshold: number; colorVar: string }[] =
+	[
+		{ label: "At risk (<50%)", threshold: 0.5, colorVar: "--color-red" },
+		{ label: "Low (50–70%)", threshold: 0.7, colorVar: "--color-orange" },
+		{ label: "Medium (70–85%)", threshold: 0.85, colorVar: "--color-yellow" },
+		{ label: "High (85–95%)", threshold: 0.95, colorVar: "--color-green" },
+		{ label: "Strong (>95%)", threshold: 1, colorVar: "--color-cyan" },
+	];
 
 function buildHealthBuckets(retrievabilities: number[]): HealthBucket[] {
-	const counts = new Map<number, number>(
-		HEALTH_BUCKETS.map((_, i) => [i, 0]),
-	);
+	const counts = new Map<number, number>(HEALTH_BUCKETS.map((_, i) => [i, 0]));
 	for (const r of retrievabilities) {
 		const idx = HEALTH_BUCKETS.findIndex((b) => r < b.threshold);
 		const bucketIdx = idx === -1 ? HEALTH_BUCKETS.length - 1 : idx;

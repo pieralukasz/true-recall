@@ -69,7 +69,6 @@ function SetPresetBody({
 export class SetPresetModal extends BasePromiseModal<SetPresetResult> {
 	private presetNames: string[];
 	private currentPreset: string | null;
-	private unmountBody?: () => void;
 
 	constructor(app: App, presetNames: string[], currentPreset: string | null) {
 		super(app, {
@@ -93,11 +92,5 @@ export class SetPresetModal extends BasePromiseModal<SetPresetResult> {
 			/>,
 			container,
 		);
-		this.unmountBody = () => render(null, container);
-	}
-
-	onClose(): void {
-		this.unmountBody?.();
-		super.onClose();
 	}
 }

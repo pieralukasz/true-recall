@@ -145,7 +145,6 @@ export class EasyDaysModal extends BasePromiseModal<EasyDaysResult> {
 	private initialRecurringDays: number[];
 	private initialSpecificDates: string[];
 	private initialMultiplier: number;
-	private unmountBody?: () => void;
 
 	constructor(app: App, options: EasyDaysModalOptions) {
 		super(app, { title: "Easy Days Configuration", width: "450px" });
@@ -168,11 +167,5 @@ export class EasyDaysModal extends BasePromiseModal<EasyDaysResult> {
 			/>,
 			container,
 		);
-		this.unmountBody = () => render(null, container);
-	}
-
-	onClose(): void {
-		this.unmountBody?.();
-		super.onClose();
 	}
 }

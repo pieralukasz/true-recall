@@ -18,7 +18,6 @@ export interface MoveCardModalOptions {
 export class MoveCardModal extends BasePromiseModal<MoveCardResult> {
 	private options: MoveCardModalOptions;
 	private allNotes: TFile[] = [];
-	private unmountBody?: () => void;
 
 	constructor(app: App, options: MoveCardModalOptions) {
 		super(app, {
@@ -52,12 +51,6 @@ export class MoveCardModal extends BasePromiseModal<MoveCardResult> {
 			/>,
 			container,
 		);
-		this.unmountBody = () => render(null, container);
-	}
-
-	onClose(): void {
-		this.unmountBody?.();
-		super.onClose();
 	}
 
 	private getValidNotes(): TFile[] {

@@ -21,7 +21,6 @@ interface UidRemovedModalOptions {
 export class UidRemovedModal extends BasePromiseModal<UidRemovedResult> {
 	private options: UidRemovedModalOptions;
 	private allNotes: TFile[] = [];
-	private unmountBody?: () => void;
 
 	constructor(app: App, options: UidRemovedModalOptions) {
 		super(app, {
@@ -51,12 +50,6 @@ export class UidRemovedModal extends BasePromiseModal<UidRemovedResult> {
 			/>,
 			container,
 		);
-		this.unmountBody = () => render(null, container);
-	}
-
-	onClose(): void {
-		this.unmountBody?.();
-		super.onClose();
 	}
 }
 

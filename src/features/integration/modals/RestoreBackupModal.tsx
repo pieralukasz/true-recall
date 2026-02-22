@@ -120,11 +120,7 @@ function RestoreBackupBody({
 			</div>
 
 			<div class="ep-modal-footer ep:flex ep:justify-end ep:gap-2">
-				<button
-					type="button"
-					class="ep-btn ep-btn-outline"
-					onClick={onClose}
-				>
+				<button type="button" class="ep-btn ep-btn-outline" onClick={onClose}>
 					Cancel
 				</button>
 				<button
@@ -143,7 +139,6 @@ function RestoreBackupBody({
 export class RestoreBackupModal extends BasePromiseModal<RestoreBackupResult> {
 	private backups: BackupInfo[];
 	private backupService: BackupService;
-	private unmountBody?: () => void;
 
 	constructor(app: App, options: RestoreBackupModalOptions) {
 		super(app, {
@@ -169,12 +164,6 @@ export class RestoreBackupModal extends BasePromiseModal<RestoreBackupResult> {
 			/>,
 			container,
 		);
-		this.unmountBody = () => render(null, container);
-	}
-
-	onClose(): void {
-		this.unmountBody?.();
-		super.onClose();
 	}
 
 	private async handleDeleteBackup(backup: BackupInfo): Promise<boolean> {

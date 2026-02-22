@@ -58,7 +58,11 @@ export function ComparisonWidget({ source }: { source: string }) {
 			currentStart = new Date(today.getFullYear(), today.getMonth(), 1);
 			previousEnd = new Date(currentStart);
 			previousEnd.setDate(previousEnd.getDate() - 1);
-			previousStart = new Date(previousEnd.getFullYear(), previousEnd.getMonth(), 1);
+			previousStart = new Date(
+				previousEnd.getFullYear(),
+				previousEnd.getMonth(),
+				1,
+			);
 			periodLabel = "This Month vs Last Month";
 		} else {
 			// week (default)
@@ -90,7 +94,13 @@ export function ComparisonWidget({ source }: { source: string }) {
 		plugin.openCustomStudyModal().catch(() => {});
 	};
 
-	const rows: { label: string; current: string; previous: string; change: string; improved: boolean }[] = [
+	const rows: {
+		label: string;
+		current: string;
+		previous: string;
+		change: string;
+		improved: boolean;
+	}[] = [
 		{
 			label: "Reviewed",
 			current: String(data.current.reviewed),
@@ -101,14 +111,22 @@ export function ComparisonWidget({ source }: { source: string }) {
 			label: "Correct rate",
 			current: `${Math.round(data.current.correctRate * 100)}%`,
 			previous: `${Math.round(data.previous.correctRate * 100)}%`,
-			...formatDelta(data.current.correctRate * 100, data.previous.correctRate * 100, "pp"),
+			...formatDelta(
+				data.current.correctRate * 100,
+				data.previous.correctRate * 100,
+				"pp",
+			),
 		},
 		{
 			label: "Time spent",
 			current: `${data.current.timeMinutes}m`,
 			previous: `${data.previous.timeMinutes}m`,
 			// Less time is neutral, not necessarily bad
-			...formatDelta(data.current.timeMinutes, data.previous.timeMinutes, "pct"),
+			...formatDelta(
+				data.current.timeMinutes,
+				data.previous.timeMinutes,
+				"pct",
+			),
 		},
 		{
 			label: "New cards",
@@ -121,7 +139,12 @@ export function ComparisonWidget({ source }: { source: string }) {
 	return (
 		<div
 			class="ep:flex ep:flex-col ep:gap-2 ep:p-3 ep:text-sm ep:cursor-pointer"
+			role="button"
+			tabIndex={0}
 			onClick={handleClick}
+			onKeyDown={(e) => {
+				if (e.key === "Enter" || e.key === " ") handleClick();
+			}}
 			title="Start a study session"
 		>
 			{/* Header */}
@@ -138,13 +161,22 @@ export function ComparisonWidget({ source }: { source: string }) {
 				</div>
 
 				{rows.map((row) => (
-					<div key={row.label} class="ep:flex ep:items-center ep:text-xs ep:gap-2">
+					<div
+						key={row.label}
+						class="ep:flex ep:items-center ep:text-xs ep:gap-2"
+					>
 						<span class="ep:flex-1">{row.label}</span>
-						<span class="ep:w-16 ep:text-right ep:font-semibold">{row.current}</span>
-						<span class="ep:w-16 ep:text-right ep:text-obs-muted">{row.previous}</span>
+						<span class="ep:w-16 ep:text-right ep:font-semibold">
+							{row.current}
+						</span>
+						<span class="ep:w-16 ep:text-right ep:text-obs-muted">
+							{row.previous}
+						</span>
 						<span
 							class="ep:w-16 ep:text-right"
-							style={{ color: row.improved ? "var(--color-green)" : "var(--color-red)" }}
+							style={{
+								color: row.improved ? "var(--color-green)" : "var(--color-red)",
+							}}
 						>
 							{row.change}
 						</span>
@@ -156,7 +188,8 @@ export function ComparisonWidget({ source }: { source: string }) {
 			{showStreak && data.streak.current > 0 && (
 				<div class="ep:text-xs ep:text-obs-muted ep:pt-1 ep:border-t ep:border-obs-modifier-border">
 					Streak: {data.streak.current}d
-					{data.streak.longest > data.streak.current && ` (longest: ${data.streak.longest}d)`}
+					{data.streak.longest > data.streak.current &&
+						` (longest: ${data.streak.longest}d)`}
 				</div>
 			)}
 		</div>
@@ -180,7 +213,11 @@ function aggregatePeriod(
 		const stats = allStats[key];
 		if (stats) {
 			reviewed += stats.reviewsCompleted;
-			const dayRatings = (stats.again ?? 0) + (stats.hard ?? 0) + (stats.good ?? 0) + (stats.easy ?? 0);
+			const dayRatings =
+				(stats.again ?? 0) +
+				(stats.hard ?? 0) +
+				(stats.good ?? 0) +
+				(stats.easy ?? 0);
 			totalCorrect += (stats.good ?? 0) + (stats.easy ?? 0);
 			totalRatings += dayRatings;
 			timeMs += stats.totalTimeMs;

@@ -1,7 +1,10 @@
 import type { JSX } from "preact";
 
 export interface ClickableProps
-	extends Omit<JSX.HTMLAttributes<HTMLDivElement>, "role" | "tabIndex" | "onClick"> {
+	extends Omit<
+		JSX.HTMLAttributes<HTMLDivElement>,
+		"role" | "tabIndex" | "onClick"
+	> {
 	onClick: (e: MouseEvent) => void;
 	disabled?: boolean;
 }

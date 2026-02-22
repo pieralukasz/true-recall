@@ -105,7 +105,6 @@ function DeviceSelectionBody({
 export class DeviceSelectionModal extends BasePromiseModal<DeviceSelectionResult> {
 	private databases: DeviceDatabaseInfo[];
 	private hasLegacy: boolean;
-	private unmountBody?: () => void;
 
 	constructor(app: App, options: DeviceSelectionModalOptions) {
 		super(app, {
@@ -129,11 +128,5 @@ export class DeviceSelectionModal extends BasePromiseModal<DeviceSelectionResult
 			/>,
 			container,
 		);
-		this.unmountBody = () => render(null, container);
-	}
-
-	onClose(): void {
-		this.unmountBody?.();
-		super.onClose();
 	}
 }

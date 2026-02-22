@@ -4,7 +4,9 @@ export const FlashcardItemSchema = z.object({
 	question: z.string().min(1, "Question cannot be empty"),
 	answer: z.string().min(1, "Answer cannot be empty"),
 	id: z.string().min(1, "Card ID is required"),
-	cardType: z.enum(["basic", "cloze", "reversed", "image-occlusion"]).optional(),
+	cardType: z
+		.enum(["basic", "cloze", "reversed", "image-occlusion"])
+		.optional(),
 	clozeTemplate: z.string().optional(),
 	clozeIndex: z.number().int().nonnegative().optional(),
 	reverseOfBatchId: z.string().optional(),

@@ -34,7 +34,11 @@ export function HealthWidget({ source }: { source: string }) {
 	}, [plugin, ver]);
 
 	if (!data || data.cardCount === 0) {
-		return <div class="ep:text-obs-muted ep:text-xs ep:p-3">No active cards yet.</div>;
+		return (
+			<div class="ep:text-obs-muted ep:text-xs ep:p-3">
+				No active cards yet.
+			</div>
+		);
 	}
 
 	const showBuckets = configValue(config, "showBuckets", true);
@@ -51,7 +55,9 @@ export function HealthWidget({ source }: { source: string }) {
 					: "var(--color-red)";
 
 	const handleBarClick = () => {
-		plugin.openReviewViewWithFilters({ overdueOnly: true, ignoreDailyLimits: true }).catch(() => {});
+		plugin
+			.openReviewViewWithFilters({ overdueOnly: true, ignoreDailyLimits: true })
+			.catch(() => {});
 	};
 
 	const handleBucketClick = (bucketIdx: number) => {
@@ -67,10 +73,12 @@ export function HealthWidget({ source }: { source: string }) {
 		const range = ranges[bucketIdx];
 		if (!range) return;
 
-		plugin.openReviewViewWithFilters({
-			stabilityRange: range,
-			ignoreDailyLimits: true,
-		}).catch(() => {});
+		plugin
+			.openReviewViewWithFilters({
+				stabilityRange: range,
+				ignoreDailyLimits: true,
+			})
+			.catch(() => {});
 	};
 
 	const maxBucket = Math.max(1, ...data.distribution.map((b) => b.count));
@@ -86,7 +94,12 @@ export function HealthWidget({ source }: { source: string }) {
 			{/* Progress bar */}
 			<div
 				class="ep:cursor-pointer"
+				role="button"
+				tabIndex={0}
 				onClick={handleBarClick}
+				onKeyDown={(e) => {
+					if (e.key === "Enter" || e.key === " ") handleBarClick();
+				}}
 				title="Review overdue cards"
 			>
 				<div class="ep:h-3 ep:rounded-full ep:bg-obs-modifier-hover ep:overflow-hidden ep:relative">

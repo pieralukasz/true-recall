@@ -21,7 +21,20 @@ interface HeatmapData {
 	maxWeeks: number;
 }
 
-const MONTH_NAMES = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+const MONTH_NAMES = [
+	"Jan",
+	"Feb",
+	"Mar",
+	"Apr",
+	"May",
+	"Jun",
+	"Jul",
+	"Aug",
+	"Sep",
+	"Oct",
+	"Nov",
+	"Dec",
+];
 const CELL_SIZE = 11;
 const CELL_GAP = 2;
 const CELL_TOTAL = CELL_SIZE + CELL_GAP;
@@ -38,7 +51,11 @@ const LEVEL_OPACITIES = [1, 0.3, 0.5, 0.7, 1];
 export function HeatmapWidget({ source }: { source: string }) {
 	const plugin = usePlugin();
 	const [ver, setVer] = useState(0);
-	const [tooltip, setTooltip] = useState<{ cell: HeatmapCell; x: number; y: number } | null>(null);
+	const [tooltip, setTooltip] = useState<{
+		cell: HeatmapCell;
+		x: number;
+		y: number;
+	} | null>(null);
 	const containerRef = useRef<HTMLDivElement>(null);
 
 	useEffect(() => {
@@ -126,7 +143,10 @@ export function HeatmapWidget({ source }: { source: string }) {
 
 			// Advance to next day; increment col on Mondays
 			resetCursor.setDate(resetCursor.getDate() + 1);
-			if (resetCursor.getDay() === 1 || (resetCursor.getDay() === 0 && row === 6)) {
+			if (
+				resetCursor.getDay() === 1 ||
+				(resetCursor.getDay() === 0 && row === 6)
+			) {
 				// Moved from Sunday to Monday -> new week
 			}
 			// Recalculate col from next day
@@ -169,7 +189,11 @@ export function HeatmapWidget({ source }: { source: string }) {
 	};
 
 	return (
-		<div class="ep:flex ep:flex-col ep:gap-2 ep:p-3 ep:text-sm" ref={containerRef} style={{ position: "relative" }}>
+		<div
+			class="ep:flex ep:flex-col ep:gap-2 ep:p-3 ep:text-sm"
+			ref={containerRef}
+			style={{ position: "relative" }}
+		>
 			{/* Header */}
 			<div class="ep:flex ep:items-center ep:justify-between ep:text-xs">
 				<span class="ep:font-semibold">
@@ -210,7 +234,9 @@ export function HeatmapWidget({ source }: { source: string }) {
 							rx={2}
 							fill={LEVEL_COLORS[cell.level]}
 							opacity={LEVEL_OPACITIES[cell.level]}
-							onMouseEnter={(e) => handleCellHover(cell, e as unknown as MouseEvent)}
+							onMouseEnter={(e) =>
+								handleCellHover(cell, e as unknown as MouseEvent)
+							}
 							onMouseLeave={handleCellLeave}
 							style={{ cursor: "pointer" }}
 						/>

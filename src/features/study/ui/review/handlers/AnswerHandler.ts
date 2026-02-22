@@ -28,14 +28,13 @@ export interface AnswerHandlerCallbacks {
 export class AnswerHandler {
 	constructor(
 		private deps: AnswerHandlerDeps,
-		private callbacks: AnswerHandlerCallbacks,
+		private _callbacks: AnswerHandlerCallbacks,
 	) {}
 
 	updateSchedulingPreview(): void {
 		const card = this.deps.getReview().getCurrentCard();
 		if (card) {
-			const preset =
-				this.deps.plugin.presetService.resolvePresetForCard(card);
+			const preset = this.deps.plugin.presetService.resolvePresetForCard(card);
 			const presetSettings =
 				this.deps.plugin.presetService.toFSRSSettings(preset);
 			const preview = this.deps.fsrsService.getSchedulingPreview(
@@ -62,8 +61,7 @@ export class AnswerHandler {
 		const isNewCard = card.fsrs.state === State.New;
 		const previousState = card.fsrs.state;
 
-		const preset =
-			this.deps.plugin.presetService.resolvePresetForCard(card);
+		const preset = this.deps.plugin.presetService.resolvePresetForCard(card);
 		const presetSettings =
 			this.deps.plugin.presetService.toFSRSSettings(preset);
 
@@ -85,9 +83,7 @@ export class AnswerHandler {
 			return;
 		}
 
-		let requeueData:
-			| { card: FSRSFlashcardItem; position: number }
-			| undefined;
+		let requeueData: { card: FSRSFlashcardItem; position: number } | undefined;
 		if (this.deps.reviewService.shouldRequeue(updatedCard)) {
 			const relativePosition = this.deps.reviewService.getRequeuePosition(
 				review.queue,
@@ -141,10 +137,7 @@ export class AnswerHandler {
 			writeExecuted = true;
 			pendingTimeoutId = null;
 
-			this.deps.flashcardManager.updateCardFSRS(
-				card.id,
-				updatedCard.fsrs,
-			);
+			this.deps.flashcardManager.updateCardFSRS(card.id, updatedCard.fsrs);
 
 			try {
 				this.deps.sessionPersistence.recordReview(
@@ -158,10 +151,7 @@ export class AnswerHandler {
 					preset.name,
 				);
 			} catch (error) {
-				console.error(
-					"Error recording review to persistent storage:",
-					error,
-				);
+				console.error("Error recording review to persistent storage:", error);
 			}
 
 			notifyCardChange({
@@ -191,11 +181,13 @@ export class AnswerHandler {
 				);
 			}
 
-			this.deps.getReview().undoLastAnswer(
-				payload.previousIndex,
-				{ ...payload.card, fsrs: payload.originalFsrs },
-				payload.requeuedAtIndex,
-			);
+			this.deps
+				.getReview()
+				.undoLastAnswer(
+					payload.previousIndex,
+					{ ...payload.card, fsrs: payload.originalFsrs },
+					payload.requeuedAtIndex,
+				);
 		} catch (error) {
 			console.error("Error undoing answer:", error);
 		}

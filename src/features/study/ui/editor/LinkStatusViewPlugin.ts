@@ -11,6 +11,7 @@ import type {
 	NoteStatusCacheService,
 	NoteStatusInfo,
 } from "@features/core/cache/note-status-cache.service";
+import type { SqliteStoreService } from "@features/core/persistence/sqlite/SqliteStoreService";
 import type { FrontmatterIndexService } from "@features/core/services/frontmatter-index.service";
 import {
 	aggregateInfos,
@@ -19,7 +20,6 @@ import {
 	infoEqual,
 	type LinkStatusOptions,
 } from "@features/study/ui/editor/LinkStatusWidget";
-import type { SqliteStoreService } from "@features/core/persistence/sqlite/SqliteStoreService";
 import type { App, TFile } from "obsidian";
 
 type VariantType = "link" | "h1" | "h2" | "h3" | "h4" | "h5" | "h6";
@@ -41,12 +41,17 @@ class LinkStatusWidget extends WidgetType {
 			onPlay: this.onPlay,
 			variant: this.variant,
 			sourceUid: this.sourceUid,
-			getTooltipStats: this.getTooltipStats as LinkStatusOptions["getTooltipStats"],
+			getTooltipStats: this
+				.getTooltipStats as LinkStatusOptions["getTooltipStats"],
 		});
 	}
 
 	eq(other: LinkStatusWidget): boolean {
-		return infoEqual(this.info, other.info) && this.variant === other.variant && this.sourceUid === other.sourceUid;
+		return (
+			infoEqual(this.info, other.info) &&
+			this.variant === other.variant &&
+			this.sourceUid === other.sourceUid
+		);
 	}
 }
 
@@ -67,12 +72,17 @@ class LinkTextCountWidget extends WidgetType {
 			onPlay: this.onPlay,
 			variant: this.variant,
 			sourceUid: this.sourceUid,
-			getTooltipStats: this.getTooltipStats as LinkStatusOptions["getTooltipStats"],
+			getTooltipStats: this
+				.getTooltipStats as LinkStatusOptions["getTooltipStats"],
 		});
 	}
 
 	eq(other: LinkTextCountWidget): boolean {
-		return infoEqual(this.info, other.info) && this.variant === other.variant && this.sourceUid === other.sourceUid;
+		return (
+			infoEqual(this.info, other.info) &&
+			this.variant === other.variant &&
+			this.sourceUid === other.sourceUid
+		);
 	}
 }
 

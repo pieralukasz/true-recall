@@ -115,7 +115,6 @@ function SelectNoteBody({
 export class SelectNoteModal extends BasePromiseModal<SelectNoteResult> {
 	private options: SelectNoteModalOptions;
 	private allNotes: TFile[] = [];
-	private unmountBody?: () => void;
 
 	constructor(app: App, options: SelectNoteModalOptions = {}) {
 		super(app, {
@@ -143,7 +142,6 @@ export class SelectNoteModal extends BasePromiseModal<SelectNoteResult> {
 			/>,
 			container,
 		);
-		this.unmountBody = () => render(null, container);
 	}
 
 	private getValidNotes(): TFile[] {
@@ -157,10 +155,5 @@ export class SelectNoteModal extends BasePromiseModal<SelectNoteResult> {
 			}
 			return true;
 		});
-	}
-
-	onClose(): void {
-		this.unmountBody?.();
-		super.onClose();
 	}
 }

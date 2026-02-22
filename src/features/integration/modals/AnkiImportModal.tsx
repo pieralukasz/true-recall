@@ -97,7 +97,6 @@ export class AnkiImportModal extends BaseModal {
 	private store: SqliteStoreService;
 	private fsrsService: FSRSService;
 	private fileData: ArrayBuffer | null = null;
-	private unmountBody?: () => void;
 
 	constructor(app: App, store: SqliteStoreService, fsrsService: FSRSService) {
 		super(app, { title: "Import Anki deck", width: "520px" });
@@ -115,12 +114,6 @@ export class AnkiImportModal extends BaseModal {
 			/>,
 			container,
 		);
-		this.unmountBody = () => render(null, container);
-	}
-
-	onClose(): void {
-		this.unmountBody?.();
-		super.onClose();
 	}
 
 	private async handleFileSelected(file: File): Promise<ImportPhase> {

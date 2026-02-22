@@ -16,8 +16,8 @@ import { StateBadge } from "@shared/ui/components/StateBadge";
 import { useIcon } from "@shared/ui/preact/hooks";
 import { useApp } from "@shared/ui/preact/ObsidianContext";
 import {
-	useContextMenu,
 	type MenuItem,
+	useContextMenu,
 } from "@shared/ui/preact/useContextMenu";
 import { useLongPress } from "@shared/ui/preact/useLongPress";
 import type { RefObject } from "preact";

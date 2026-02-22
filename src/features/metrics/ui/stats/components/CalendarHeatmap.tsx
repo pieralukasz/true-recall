@@ -4,7 +4,20 @@ import { getHeatmapLevelClasses } from "@features/metrics/ui/stats/utils/chart-h
 import type { FSRSFlashcardItem } from "@shared/types";
 import { useEffect, useMemo, useState } from "preact/hooks";
 
-const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+const MONTHS = [
+	"Jan",
+	"Feb",
+	"Mar",
+	"Apr",
+	"May",
+	"Jun",
+	"Jul",
+	"Aug",
+	"Sep",
+	"Oct",
+	"Nov",
+	"Dec",
+];
 const DAY_LABELS = ["", "Mon", "", "Wed", "", "Fri", ""];
 
 export function CalendarHeatmap({
