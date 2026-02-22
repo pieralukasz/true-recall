@@ -289,12 +289,39 @@ Visualizes the forgetting curve for each card. The vertical marker shows target 
 
 **Configuration:** `target: 0.9`, `limit: 10`, `sort: retrievability|stability|due`, `showTarget: true`, `showStability: true`
 
+### Project Widget
+
+Add inside a **project note** (a note that self-references in its `projects` frontmatter):
+
+````markdown
+```true-recall-project
+```
+````
+
+```
+┌───────────────────────────────────────────────────────┐
+│  Python                       5 notes · 142 cards     │
+│  12 due · 8 new · 3 lrn               Health: 84%    │
+│                                                       │
+│  [Review project →]          [Custom study →]         │
+└───────────────────────────────────────────────────────┘
+```
+
+Shows aggregated stats for all notes belonging to this project. "Review project →" starts a review session scoped to the entire project. "Custom study →" opens the custom study modal pre-filtered to this project.
+
+**Requirement:** The note must be a project note (its basename must appear in its own `projects` frontmatter, e.g., `Python.md` with `projects: ["[[Python]]"]`). Non-project notes show a helpful message.
+
+With `includeChildren: true` (default), sub-project notes and their cards are also included in the stats.
+
+**Configuration:** `showHealth: true`, `includeChildren: true`
+
 ### Tips
 
 - Put `true-recall-dashboard` in your daily note template for a morning overview.
 - Put `true-recall-streak` alongside for streak motivation.
 - Put `true-recall-note-stats` or `true-recall-note-health` at the top of study topic notes.
 - Put `true-recall-leaderboard` and `true-recall-comparison` in a "Study Hub" note for weekly reviews.
+- Put `true-recall-project` at the top of project notes for a project-scoped overview and quick review.
 - All codeblocks work in both editing (live preview) and reading modes.
 
 ---

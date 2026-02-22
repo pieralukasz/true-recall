@@ -8,6 +8,7 @@ import { HealthWidget } from "./HealthWidget";
 import { HeatmapWidget } from "./HeatmapWidget";
 import { LeaderboardWidget } from "./LeaderboardWidget";
 import { NoteHealthWidget } from "./NoteHealthWidget";
+import { ProjectWidget } from "./ProjectWidget";
 import { StreakWidget } from "./StreakWidget";
 import { WorkloadWidget } from "./WorkloadWidget";
 
@@ -85,6 +86,17 @@ export function registerDashboardCodeblocks(plugin: TrueRecallPlugin): void {
 		(source, el, _ctx) => {
 			el.addClass("true-recall-codeblock-workload");
 			const unmount = mountPreact(el, plugin, h(WorkloadWidget, { source }));
+			registerCleanup(el, unmount);
+		},
+	);
+
+	// ── Project widgets ─────────────────────────────────────────
+
+	plugin.registerMarkdownCodeBlockProcessor(
+		"true-recall-project",
+		(source, el, ctx) => {
+			el.addClass("true-recall-codeblock-project");
+			const unmount = mountPreact(el, plugin, h(ProjectWidget, { source, sourcePath: ctx.sourcePath }));
 			registerCleanup(el, unmount);
 		},
 	);
