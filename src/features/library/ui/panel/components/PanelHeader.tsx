@@ -108,21 +108,15 @@ export function PanelHeader({
 	if (selectionMode === "selecting") {
 		return (
 			<div class="ep:flex ep:flex-col ep:gap-2">
-				<div class="ep:flex ep:items-center ep:justify-between">
-					<div class="ep:flex ep:items-center ep:gap-3">
-						<div class="ep:text-ui-small ep:font-semibold ep:text-obs-normal">
-							{selectedCount} selected
-						</div>
-					</div>
-					<div class="ep:flex ep:items-center ep:gap-1">
-						<IconButton
-							icon="x"
-							ariaLabel="Exit selection mode"
-							onClick={() => onExitSelectionMode()}
-							size="small"
-							label="Cancel"
-						/>
-					</div>
+				<div class="ep:flex ep:items-center ep:gap-2">
+					<IconButton
+						icon="x"
+						ariaLabel="Exit selection mode"
+						onClick={() => onExitSelectionMode()}
+					/>
+					<span class="ep:text-ui-small ep:font-semibold ep:text-obs-normal">
+						{selectedCount} selected
+					</span>
 				</div>
 			</div>
 		);

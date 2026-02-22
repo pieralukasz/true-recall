@@ -26,8 +26,6 @@ import {
 import { RestoreBackupModal } from "@features/integration/modals/RestoreBackupModal";
 import { DeviceDiscoveryService } from "@features/integration/services/device-discovery.service";
 import { DeviceIdService } from "@features/integration/services/device-id.service";
-import { CardBrowserView } from "@features/library/ui/browser";
-import { NoteHubView } from "@features/library/ui/note-hub";
 import { FlashcardPanelView } from "@features/library/ui/panel/FlashcardPanelView";
 import { FSRSHelperService } from "@features/metrics/services/fsrs-tools";
 import { StatsService } from "@features/metrics/services/stats/stats.service";
@@ -52,9 +50,7 @@ import {
 } from "@features/study/ui/editor";
 import { ReviewView } from "@features/study/ui/review/ReviewView";
 import {
-	VIEW_TYPE_CARD_BROWSER,
 	VIEW_TYPE_FLASHCARD_PANEL,
-	VIEW_TYPE_NOTE_HUB,
 	VIEW_TYPE_REVIEW,
 	VIEW_TYPE_SIMULATOR,
 	VIEW_TYPE_STATS,
@@ -200,16 +196,6 @@ export default class TrueRecallPlugin extends Plugin {
 			(leaf) => new SimulatorView(leaf, this),
 		);
 
-		this.registerView(
-			VIEW_TYPE_NOTE_HUB,
-			(leaf) => new NoteHubView(leaf, this),
-		);
-
-		this.registerView(
-			VIEW_TYPE_CARD_BROWSER,
-			(leaf) => new CardBrowserView(leaf, this),
-		);
-
 		this.addRibbonIcon("brain", "True Recall - study", () => {
 			this.openCustomStudyModal().catch((error) => {
 				notify().error("Failed to open study session", error);
@@ -219,12 +205,6 @@ export default class TrueRecallPlugin extends Plugin {
 		this.addRibbonIcon("bar-chart-2", "True Recall - statistics", () => {
 			this.openStatsView().catch((error) => {
 				notify().error("Failed to open statistics view", error);
-			});
-		});
-
-		this.addRibbonIcon("layout-grid", "True Recall - note hub", () => {
-			this.openNoteHub().catch((error) => {
-				notify().error("Failed to open note hub", error);
 			});
 		});
 
@@ -348,14 +328,6 @@ export default class TrueRecallPlugin extends Plugin {
 
 	async openSimulator(): Promise<void> {
 		await activateView(this.app, VIEW_TYPE_SIMULATOR, { useMainArea: true });
-	}
-
-	async openNoteHub(): Promise<void> {
-		await activateView(this.app, VIEW_TYPE_NOTE_HUB, { useMainArea: true });
-	}
-
-	async openCardBrowser(): Promise<void> {
-		await activateView(this.app, VIEW_TYPE_CARD_BROWSER, { useMainArea: true });
 	}
 
 	private async handleSessionResult(

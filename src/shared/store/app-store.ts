@@ -1,5 +1,3 @@
-import { createBrowserSlice } from "@features/library/store/browser.slice";
-import { createNoteHubSlice } from "@features/library/store/note-hub.slice";
 import { createSimulatorSlice } from "@features/metrics/store/simulator.slice";
 import { createStatsSlice } from "@features/metrics/store/stats.slice";
 import { createPanelSlice } from "@features/study/store/panel.slice";
@@ -17,8 +15,6 @@ export function createAppStore(deps: AppStoreDeps) {
 			panel: createPanelSlice(set, get, deps),
 			simulator: createSimulatorSlice(set, get, deps),
 			stats: createStatsSlice(set, get, deps),
-			noteHub: createNoteHubSlice(set, get, deps),
-			browser: createBrowserSlice(set, get, deps),
 		})),
 	);
 }

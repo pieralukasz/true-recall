@@ -7,8 +7,6 @@ export const VIEW_TYPE_FLASHCARD_PANEL = "true-recall-flashcard-panel";
 export const VIEW_TYPE_REVIEW = "true-recall-review";
 export const VIEW_TYPE_STATS = "true-recall-stats";
 export const VIEW_TYPE_SIMULATOR = "true-recall-simulator";
-export const VIEW_TYPE_NOTE_HUB = "true-recall-note-hub";
-export const VIEW_TYPE_CARD_BROWSER = "true-recall-card-browser";
 
 export interface AIModelInfo {
 	name: string;

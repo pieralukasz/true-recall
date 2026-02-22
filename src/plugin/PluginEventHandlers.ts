@@ -56,7 +56,7 @@ function updatePanelView(plugin: TrueRecallPlugin, file: TFile | null): void {
 	const isPanelActive = activeView?.getViewType() === VIEW_TYPE_FLASHCARD_PANEL;
 
 	// Only react to main editor area leaf changes
-	// Sidebar clicks (stats, note hub, etc.) should not affect the panel
+	// Sidebar clicks (stats, etc.) should not affect the panel
 	// Review view and panel itself get special handling below
 	const isMainArea = activeLeaf?.getContainer() === workspace.rootSplit;
 	if (!isMainArea && !isReviewViewActive && !isPanelActive) {
