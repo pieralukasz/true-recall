@@ -65,13 +65,11 @@ export interface AnkiImportResult {
 	skipped: number;
 	duplicates: number;
 	errors: string[];
-	projects: string[];
 }
 
 export interface AnkiExportOptions {
-	projects?: string[];
 	sourceUids?: string[];
-	exportMode?: "all" | "projects" | "notes";
+	exportMode?: "all" | "notes";
 	includeScheduling: boolean;
 	includeMedia: boolean;
 }

@@ -4,6 +4,15 @@
  */
 
 export {
+	AnswerHandler,
+	type AnswerHandlerCallbacks,
+	type AnswerHandlerDeps,
+} from "@features/study/ui/review/handlers/AnswerHandler";
+export {
+	EditHandler,
+	type EditHandlerDeps,
+} from "@features/study/ui/review/handlers/EditHandler";
+export {
 	type CardActionsCallbacks,
 	CardActionsHandler,
 	type CardActionsHandlerDeps,

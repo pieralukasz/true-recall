@@ -9,7 +9,6 @@ import { useCallback, useRef, useState } from "preact/hooks";
 
 export interface ExportFormValues {
 	exportMode: ExportMode;
-	selectedProjects: Set<string>;
 	selectedSourceUids: Set<string>;
 	includeScheduling: boolean;
 	includeMedia: boolean;
@@ -17,7 +16,6 @@ export interface ExportFormValues {
 
 export interface FormPhaseProps {
 	totalCards: number;
-	allProjects: string[];
 	allNotes: NoteEntry[];
 	onExport: (values: ExportFormValues) => void;
 	onClose: () => void;
@@ -25,7 +23,6 @@ export interface FormPhaseProps {
 
 export function FormPhase({
 	totalCards,
-	allProjects,
 	allNotes,
 	onExport,
 	onClose,
@@ -33,13 +30,7 @@ export function FormPhase({
 	const [exportMode, setExportMode] = useState<ExportMode>("all");
 	const [includeScheduling, setIncludeScheduling] = useState(true);
 	const [includeMedia, setIncludeMedia] = useState(true);
-	const selectedProjects = useRef(new Set<string>());
 	const selectedSourceUids = useRef(new Set<string>());
-
-	const handleToggleProject = useCallback((key: string, checked: boolean) => {
-		if (checked) selectedProjects.current.add(key);
-		else selectedProjects.current.delete(key);
-	}, []);
 
 	const handleToggleNote = useCallback((key: string, checked: boolean) => {
 		if (checked) selectedSourceUids.current.add(key);
@@ -49,7 +40,6 @@ export function FormPhase({
 	const handleExport = useCallback(() => {
 		onExport({
 			exportMode,
-			selectedProjects: selectedProjects.current,
 			selectedSourceUids: selectedSourceUids.current,
 			includeScheduling,
 			includeMedia,
@@ -62,11 +52,8 @@ export function FormPhase({
 				exportMode={exportMode}
 				onModeChange={setExportMode}
 				totalCards={totalCards}
-				allProjects={allProjects}
 				allNotes={allNotes}
-				selectedProjects={selectedProjects.current}
 				selectedSourceUids={selectedSourceUids.current}
-				onToggleProject={handleToggleProject}
 				onToggleNote={handleToggleNote}
 			/>
 

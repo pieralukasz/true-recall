@@ -485,22 +485,6 @@ describe("ReviewService", () => {
 			expect(queue).toEqual([]);
 		});
 
-		it("should filter by projects when specified", () => {
-			const cards = [
-				createMockFlashcard({ id: "math-1", projects: ["Math"] }),
-				createMockFlashcard({ id: "science-1", projects: ["Science"] }),
-				createMockFlashcard({ id: "math-2", projects: ["Math", "Advanced"] }),
-			];
-
-			const queue = reviewService.buildQueue(cards, fsrsService, {
-				...defaultOptions,
-				projectFilters: ["Math"],
-			});
-
-			expect(queue.length).toBe(2);
-			queue.forEach((card) => expect(card.projects).toContain("Math"));
-		});
-
 		it("should respect newCardsStudiedToday", () => {
 			const cards = [];
 			for (let i = 0; i < 10; i++) {

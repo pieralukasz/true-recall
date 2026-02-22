@@ -18,7 +18,7 @@ import type {
 	NewReviewMix,
 	ReviewOrder,
 } from "@shared/types/settings.types";
-import { getTodayBoundary, stripWikiLinkSyntax } from "@shared/utils";
+import { getTodayBoundary } from "@shared/utils";
 import { type Grade, Rating, State } from "ts-fsrs";
 
 export interface QueueBuildOptions {
@@ -28,10 +28,8 @@ export interface QueueBuildOptions {
 	newCardsStudiedToday?: number;
 	/** Review-state cards already completed today (for per-day limit like Anki) */
 	reviewsCompletedToday?: number;
-	/** Card matches if it has ANY of these projects */
-	projectFilters?: string[];
-	/** Fallback for project resolution when card.projects is empty */
-	sourceUidToProjects?: Map<string, string[]>;
+	/** Filter to only cards with these source UIDs */
+	sourceUidFilter?: Set<string>;
 	newCardOrder?: NewCardOrder;
 	reviewOrder?: ReviewOrder;
 	newReviewMix?: NewReviewMix;
@@ -150,11 +148,14 @@ export class ReviewService {
 		const noteSet = options.sourceNoteFilters?.length
 			? new Set(options.sourceNoteFilters)
 			: null;
-		const projectSet = options.projectFilters?.length
-			? new Set(options.projectFilters)
-			: null;
 
 		return cards.filter((card) => {
+			// Source UID filter (used for project-scoped review)
+			if (options.sourceUidFilter) {
+				if (!card.sourceUid || !options.sourceUidFilter.has(card.sourceUid))
+					return false;
+			}
+
 			// Source note filter
 			if (noteSet) {
 				if (!card.sourceNoteName || !noteSet.has(card.sourceNoteName))
@@ -264,27 +265,6 @@ export class ReviewService {
 						Date.now() + options.studyAheadDays * 86_400_000,
 					);
 					if (new Date(card.fsrs.due) > cutoff) return false;
-				}
-			}
-
-			// Project filter - use sourceUidToProjects map as fallback
-			if (projectSet) {
-				let cardProjects = card.projects;
-
-				// Fallback: if card.projects empty but has sourceUid, resolve from map
-				if (
-					cardProjects.length === 0 &&
-					card.sourceUid &&
-					options.sourceUidToProjects
-				) {
-					cardProjects = options.sourceUidToProjects.get(card.sourceUid) || [];
-				}
-
-				const matches = cardProjects.some((p) =>
-					projectSet.has(stripWikiLinkSyntax(p)),
-				);
-				if (!matches) {
-					return false;
 				}
 			}
 

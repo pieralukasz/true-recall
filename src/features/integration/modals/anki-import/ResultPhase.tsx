@@ -18,17 +18,6 @@ export function ResultPhase({ result, onClose }: ResultPhaseProps) {
 					<StatBadge label="Errors" count={result.errors.length} />
 				</StatGrid>
 
-				{result.projects.length > 0 && (
-					<div class="ep:mb-3 ep:mt-4">
-						<div class="ep:text-ui-small ep:font-medium ep:mb-1">
-							Projects created:
-						</div>
-						<div class="ep:text-ui-smaller ep:text-obs-muted">
-							{result.projects.join(", ")}
-						</div>
-					</div>
-				)}
-
 				{result.errors.length > 0 && (
 					<div class="ep:mb-3">
 						<div class="ep:text-ui-small ep:font-medium ep:mb-1 ep:text-red-500">

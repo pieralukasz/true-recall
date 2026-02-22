@@ -204,7 +204,6 @@ export class ApkgBuilderService {
 			const guid = generateGuid(card.id);
 			const csum = checksumFirst8(sfld);
 
-			// Resolve deck from card projects
 			const deckId = this.resolveDeckId(card, deckMap);
 
 			db.run(
@@ -432,17 +431,9 @@ export class ApkgBuilderService {
 		card: FSRSCardData,
 		deckMap: Map<string, DeckInfo>,
 	): number {
-		if (card.deckKey) {
-			const deck = deckMap.get(card.deckKey);
+		if (card.sourceNoteName) {
+			const deck = deckMap.get(card.sourceNoteName);
 			if (deck) return deck.id;
-		}
-
-		if (card.projects && card.projects.length > 0) {
-			const projectName = card.projects[0];
-			if (projectName) {
-				const deck = deckMap.get(projectName);
-				if (deck) return deck.id;
-			}
 		}
 
 		return deckMap.get("Default")?.id ?? 1;

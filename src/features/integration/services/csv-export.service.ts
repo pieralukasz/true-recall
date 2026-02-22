@@ -1,12 +1,10 @@
 import type { SqliteStoreService } from "@features/core/persistence/sqlite/SqliteStoreService";
 import type { FSRSCardData } from "@shared/types";
-import { stripWikiLinkSyntax } from "@shared/utils";
 import type { App } from "obsidian";
 
 export type CsvSeparator = "," | "\t" | ";";
 
 export interface CsvExportOptions {
-	projects?: string[];
 	sourceUids?: string[];
 	includeScheduling: boolean;
 	separator: CsvSeparator;
@@ -26,7 +24,6 @@ export class CsvExportService {
 		const cards = this.filterAndEnrich(
 			allCards,
 			sourceUidToInfo,
-			options.projects,
 			options.sourceUids,
 		);
 
@@ -38,7 +35,7 @@ export class CsvExportService {
 		const rows: string[] = [];
 
 		// Header
-		const headers = ["Question", "Answer", "Tags", "Source Note"];
+		const headers = ["Question", "Answer", "Source Note"];
 		if (options.includeScheduling) {
 			headers.push("State", "Due", "Interval", "Lapses");
 		}
@@ -49,7 +46,6 @@ export class CsvExportService {
 			const fields = [
 				card.question ?? "",
 				card.answer ?? "",
-				(card.projects ?? []).join(", "),
 				card.sourceNoteName ?? "",
 			];
 
@@ -90,19 +86,14 @@ export class CsvExportService {
 
 	private filterAndEnrich(
 		allCards: FSRSCardData[],
-		sourceUidToInfo: Map<string, { name: string; projects: string[] }>,
-		projectFilter?: string[],
+		sourceUidToInfo: Map<string, { name: string }>,
 		sourceUidFilter?: string[],
 	): FSRSCardData[] {
 		const enriched = allCards.map((card) => {
 			if (card.sourceUid) {
 				const info = sourceUidToInfo.get(card.sourceUid);
 				if (info) {
-					return {
-						...card,
-						sourceNoteName: info.name,
-						projects: info.projects.length > 0 ? info.projects : card.projects,
-					};
+					return { ...card, sourceNoteName: info.name };
 				}
 			}
 			return card;
@@ -115,22 +106,11 @@ export class CsvExportService {
 			);
 		}
 
-		if (projectFilter && projectFilter.length > 0) {
-			const filterSet = new Set(projectFilter);
-			return enriched.filter((card) => {
-				if (!card.projects || card.projects.length === 0) return false;
-				return card.projects.some((p) => filterSet.has(p));
-			});
-		}
-
 		return enriched;
 	}
 
-	private buildSourceUidMap(): Map<
-		string,
-		{ name: string; projects: string[] }
-	> {
-		const map = new Map<string, { name: string; projects: string[] }>();
+	private buildSourceUidMap(): Map<string, { name: string }> {
+		const map = new Map<string, { name: string }>();
 		const files = this.app.vault.getMarkdownFiles();
 
 		for (const file of files) {
@@ -140,20 +120,9 @@ export class CsvExportService {
 			const uid = cache.frontmatter.flashcard_uid as string | undefined;
 			if (!uid) continue;
 
-			const projects = this.extractProjects(cache.frontmatter);
-			map.set(uid, { name: file.basename, projects });
+			map.set(uid, { name: file.basename });
 		}
 
 		return map;
-	}
-
-	private extractProjects(frontmatter: Record<string, unknown>): string[] {
-		const raw = frontmatter.projects;
-		if (!Array.isArray(raw)) return [];
-
-		return raw
-			.filter((p): p is string => typeof p === "string")
-			.map((p) => stripWikiLinkSyntax(p))
-			.filter((p) => p.length > 0);
 	}
 }

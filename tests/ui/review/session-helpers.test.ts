@@ -122,11 +122,6 @@ describe("getEmptyQueueMessage", () => {
 		expect(message).toBe("No buried cards found.");
 	});
 
-	it("should return project message when project filters active", () => {
-		const message = getEmptyQueueMessage(undefined, ["Project A"]);
-		expect(message).toBe("No cards due for review in selected projects.");
-	});
-
 	it("should return congratulations message by default", () => {
 		const message = getEmptyQueueMessage();
 		expect(message).toBe("Congratulations! No cards due for review.");

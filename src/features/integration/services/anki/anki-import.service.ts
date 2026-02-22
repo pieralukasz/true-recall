@@ -34,7 +34,6 @@ export class AnkiImportService {
 			skipped: 0,
 			duplicates: 0,
 			errors: [],
-			projects: [],
 		};
 
 		// 1. Parse the .apkg file
@@ -79,10 +78,7 @@ export class AnkiImportService {
 		const schedulingService = new AnkiSchedulingService(this.fsrsService);
 		const mediaService = new AnkiMediaService(this.app);
 
-		// 7. Track unique projects from deck names
-		const projectSet = new Set<string>();
-
-		// 8. Process each converted card
+		// 7. Process each converted card
 		const importedCardIds: string[] = [];
 		const deckToCardIds = new Map<string, string[]>();
 
@@ -105,7 +101,6 @@ export class AnkiImportService {
 					if (importResult.status === "imported") {
 						importedCardIds.push(importResult.cardId);
 						result.imported++;
-						projectSet.add(converted.deckName);
 
 						const list = deckToCardIds.get(converted.deckName) ?? [];
 						list.push(importResult.cardId);
@@ -131,8 +126,6 @@ export class AnkiImportService {
 				);
 			}
 		});
-
-		result.projects = [...projectSet];
 
 		await this.store.flush();
 

@@ -122,6 +122,11 @@ export class FrontmatterIndexService {
 			return [raw];
 		}
 
+		// Boolean fields (e.g., project: true) → stored as "true"/"false"
+		if (typeof raw === "boolean") {
+			return [String(raw)];
+		}
+
 		return [];
 	}
 
