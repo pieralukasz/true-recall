@@ -913,9 +913,11 @@ export function FlashcardPanelApp({
 					</div>
 				)}
 
+				{/* TODO: re-enable Quick Review
 				<div class="ep:shrink-0 ep:px-2">
 					<QuickReview cardsWithFsrs={cardsWithFsrs} />
 				</div>
+			*/}
 
 				<div ref={contentRef} class="ep:flex-1 ep:overflow-y-auto ep:min-h-0">
 					<PanelContent
