@@ -1,4 +1,4 @@
-import type { StatusBarWidget } from "@features/metrics/ui/status-bar/StatusBarWidget";
+import type { StatusBarWidget } from "@features/study/ui/editor/widgets/StatusBarWidget";
 import { FlashcardGenerationService } from "@features/ai/services/flashcard-generation.service";
 import { SqlJsAdapter } from "@features/ai/services/langchain-sqlite.adapter";
 import { NLQueryService } from "@features/ai/services/nl-query.service";
@@ -527,7 +527,7 @@ export default class TrueRecallPlugin extends Plugin {
 		});
 	}
 
-	private async openReviewViewWithFilters(filters: {
+	async openReviewViewWithFilters(filters: {
 		deckFilter?: string | null;
 		sourceNoteFilter?: string;
 		sourceNoteFilters?: string[];
@@ -790,7 +790,7 @@ export default class TrueRecallPlugin extends Plugin {
 	private initializeStatusBar(): void {
 		if (!this.noteStatusCache || !this.sessionPersistence) return;
 
-		void import("@features/metrics/ui/status-bar/StatusBarWidget").then(
+		void import("@features/study/ui/editor/widgets/StatusBarWidget").then(
 			({ StatusBarWidget }) => {
 				if (!this.noteStatusCache || !this.sessionPersistence) return;
 
@@ -812,7 +812,7 @@ export default class TrueRecallPlugin extends Plugin {
 	}
 
 	private initializeDashboardCodeblocks(): void {
-		import("@features/metrics/ui/codeblock/DashboardCodeblock").then(
+		import("@features/study/ui/editor/widgets/DashboardCodeblock").then(
 			({ registerDashboardCodeblocks }) => {
 				registerDashboardCodeblocks(this);
 			},

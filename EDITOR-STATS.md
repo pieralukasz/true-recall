@@ -106,11 +106,196 @@ This renders stats scoped to **this specific note's cards only**:
 
 **Requirement:** The note must have a `flashcard_uid` in its frontmatter (this is added automatically when you create flashcards for the note). If there's no UID, the widget shows nothing.
 
+### Streak Widget
+
+Add this to any note:
+
+````markdown
+```true-recall-streak
+```
+````
+
+This renders a compact streak tracker:
+
+```
+┌───────────────────────────────────────────────────────┐
+│  12d streak  (longest: 47d)   87% today  [Review →]  │
+│  Mon  Tue  Wed  Thu  Fri  Sat  Sun                    │
+│   ●    ●    ●    ●    ○    ○    ○                     │
+└───────────────────────────────────────────────────────┘
+```
+
+Click the streak number to open Statistics. Click "Review →" to start a study session. Today's dot pulses if you haven't reviewed yet.
+
+**Configuration:** `showLongest: true`, `showWeekDots: true`, `showTodayRate: true`
+
+### Memory Health Widget
+
+````markdown
+```true-recall-health
+target: 90
+```
+````
+
+```
+┌───────────────────────────────────────────────────────┐
+│  Memory Health                                   87%  │
+│  [═══════════════════════════════───]  (target: 90%)  │
+│                                                       │
+│  Strong  High  Medium  Low  At risk     280 active    │
+│   142     89     34     12     3                       │
+└───────────────────────────────────────────────────────┘
+```
+
+Shows your average predicted retention with a health bucket distribution. Click the bar to review overdue cards. Click any bucket to review cards in that stability range.
+
+**Configuration:** `target: 90`, `showBuckets: true`
+
+### Note Leaderboard Widget
+
+````markdown
+```true-recall-leaderboard
+limit: 5
+sort: retention
+```
+````
+
+```
+┌───────────────────────────────────────────────────────┐
+│  Note Leaderboard                   sort: retention   │
+│                                                       │
+│  #  Note                Cards  Retention  Lapses      │
+│  1  Organic Chemistry     42     62% !!    3.2        │
+│  2  Japanese Kanji N3     89     71% !     2.1        │
+│  3  Data Structures       31     78%       1.4        │
+│                                                       │
+│        [Review weakest →]     [See all in browser]    │
+└───────────────────────────────────────────────────────┘
+```
+
+Ranks notes by retention. Click any row to review that note's cards. Warning icons: `!` below 75%, `!!` below 65%.
+
+**Configuration:** `limit: 5`, `sort: retention|lapses|lastReviewed|cards`, `order: asc|desc`, `warnBelow: 75`, `dangerBelow: 65`
+
+### Activity Heatmap Widget
+
+````markdown
+```true-recall-heatmap
+months: 12
+```
+````
+
+A GitHub-style calendar showing your review activity over time. Hover any cell for details.
+
+**Configuration:** `months: 12`, `showLegend: true`, `showTotal: true`
+
+### Period Comparison Widget
+
+````markdown
+```true-recall-comparison
+period: week
+```
+````
+
+```
+┌───────────────────────────────────────────────────────┐
+│  This Week vs Last Week                               │
+│                                                       │
+│                 Current   Previous   Change            │
+│  Reviewed          142         118   +20%  ↑          │
+│  Correct rate       87%         83%  +4pp  ↑          │
+│  Time spent         45m         52m  -13%  ↓          │
+│  New cards           23          31  -26%  ↓          │
+└───────────────────────────────────────────────────────┘
+```
+
+Compares current period against the previous. Click anywhere to start a study session.
+
+**Configuration:** `period: week|month`, `showStreak: true`
+
+### Workload Planner Widget
+
+````markdown
+```true-recall-workload
+days: 14
+```
+````
+
+```
+┌───────────────────────────────────────────────────────┐
+│  Workload Planner (14 days)        avg: 23 cards/day  │
+│                                                       │
+│  Today ████████████████████  42  ~21m  [Review →]     │
+│  Tue   ████████████          28  ~14m                 │
+│  Wed   ██████████████████    38  ~19m  heavy          │
+│  Thu   ████████              18  ~9m                   │
+│  Sat   ████                   8  ~4m   lightest       │
+│                                                       │
+│  Peak: Wed (38)  │  Balance: needs attention           │
+└───────────────────────────────────────────────────────┘
+```
+
+Forecasts workload with time estimates. Click today to review. **Click any future day to study ahead.**
+
+**Configuration:** `days: 14`, `showTime: true`, `showFlags: true`, `heavyThreshold: 1.5`, `minutesPerCard: auto`
+
+### Per-Note Health Widget
+
+Add inside a note with flashcards:
+
+````markdown
+```true-recall-note-health
+```
+````
+
+```
+┌───────────────────────────────────────────────────────┐
+│  Health: 78%  [════════════════════════════──────]     │
+│  24 cards  │  avg stab: 12d  │  3 at risk  │  2 due  │
+│  [Review 2 due →]                    [Fix 3 weak →]   │
+└───────────────────────────────────────────────────────┘
+```
+
+Shows this note's average retention, stability, and at-risk cards. Different from `true-recall-note-stats` which shows counts — this shows quality.
+
+**Configuration:** `showActions: true`, `showDetails: true`
+
+### Memory Decay Widget
+
+Add inside a note with flashcards:
+
+````markdown
+```true-recall-decay
+limit: 10
+target: 0.9
+```
+````
+
+```
+┌───────────────────────────────────────────────────────┐
+│  Memory Decay                     24 cards  target:90%│
+│                                                       │
+│  Card 1 (3d)  ████████████████│███░░░░░░░░░░░░  78%  │
+│  Card 2 (1d)  █████████████████████│██░░░░░░░░  85%  │
+│  Card 3 (45d) ██████████████████████████████│█  96%  │
+│  Card 4 (0d)  ████████████│░░░░░░░░░░░░░░░░░░  44%  │
+│  ... 20 more (avg: 82%)                               │
+│                                                       │
+│       [Review at-risk cards (4) →]                    │
+└───────────────────────────────────────────────────────┘
+```
+
+Visualizes the forgetting curve for each card. The vertical marker shows target retention. Cards below target are colored orange/red.
+
+**Configuration:** `target: 0.9`, `limit: 10`, `sort: retrievability|stability|due`, `showTarget: true`, `showStability: true`
+
 ### Tips
 
 - Put `true-recall-dashboard` in your daily note template for a morning overview.
-- Put `true-recall-note-stats` at the top of study topic notes (e.g., "Spanish Vocabulary") to track per-topic progress.
-- Both codeblocks work in both editing (live preview) and reading modes.
+- Put `true-recall-streak` alongside for streak motivation.
+- Put `true-recall-note-stats` or `true-recall-note-health` at the top of study topic notes.
+- Put `true-recall-leaderboard` and `true-recall-comparison` in a "Study Hub" note for weekly reviews.
+- All codeblocks work in both editing (live preview) and reading modes.
 
 ---
 
