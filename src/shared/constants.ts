@@ -156,6 +156,9 @@ export const DEFAULT_SETTINGS: TrueRecallSettings = {
 
 	showLinkStatusIndicators: true,
 
+	showStatusBarWidget: true,
+	showQuickReviewInPanel: true,
+
 	selectionToolbarEnabled: true,
 };
 

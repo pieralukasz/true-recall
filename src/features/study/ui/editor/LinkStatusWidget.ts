@@ -7,6 +7,8 @@ export interface LinkStatusOptions {
 	info: NoteStatusInfo;
 	onPlay?: () => void;
 	variant?: "link" | "h1" | "h2" | "h3" | "h4" | "h5" | "h6";
+	sourceUid?: string;
+	getTooltipStats?: () => Promise<unknown>;
 }
 
 export function createLinkStatusElement(
@@ -21,7 +23,19 @@ export function createLinkStatusElement(
 		}),
 		container,
 	);
-	return container.firstElementChild as HTMLSpanElement;
+	const el = container.firstElementChild as HTMLSpanElement;
+
+	if (options.sourceUid && options.getTooltipStats) {
+		const statsFn = options.getTooltipStats;
+		void import("./components/NoteStatsTooltip").then((mod) => {
+			mod.attachTooltipListeners(
+				el,
+				statsFn as Parameters<typeof mod.attachTooltipListeners>[1],
+			);
+		});
+	}
+
+	return el;
 }
 
 export function createLinkTextCountElement(
@@ -36,7 +50,19 @@ export function createLinkTextCountElement(
 		}),
 		container,
 	);
-	return container.firstElementChild as HTMLSpanElement;
+	const el = container.firstElementChild as HTMLSpanElement;
+
+	if (options.sourceUid && options.getTooltipStats) {
+		const statsFn = options.getTooltipStats;
+		void import("./components/NoteStatsTooltip").then((mod) => {
+			mod.attachTooltipListeners(
+				el,
+				statsFn as Parameters<typeof mod.attachTooltipListeners>[1],
+			);
+		});
+	}
+
+	return el;
 }
 
 export function infoEqual(a: NoteStatusInfo, b: NoteStatusInfo): boolean {

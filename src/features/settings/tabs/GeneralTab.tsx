@@ -80,6 +80,26 @@ export function GeneralTab() {
 				/>
 			</SettingRow>
 
+			<SettingRow
+				name="Show status bar widget"
+				description="Display global due/new/learning card counts in the bottom status bar"
+			>
+				<ToggleInput
+					value={settings.showStatusBarWidget}
+					onChange={(v) => save({ showStatusBarWidget: v })}
+				/>
+			</SettingRow>
+
+			<SettingRow
+				name="Show quick review in panel"
+				description="Show a collapsible quick-review section at the top of the flashcard panel"
+			>
+				<ToggleInput
+					value={settings.showQuickReviewInPanel}
+					onChange={(v) => save({ showQuickReviewInPanel: v })}
+				/>
+			</SettingRow>
+
 			<SettingRow heading name="Day boundary" />
 
 			<SettingRow

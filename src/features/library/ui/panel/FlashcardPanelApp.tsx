@@ -10,6 +10,7 @@ import {
 	notifyDuplicateError,
 	showDuplicateNotifications,
 } from "@features/library/ui/panel/utils/panel-helpers";
+import { QuickReview } from "@features/study/ui/panel/components/QuickReview";
 import { effect } from "@preact/signals";
 import { dataVersion, settingsVersion, track } from "@shared/services/signals";
 import type {
@@ -911,6 +912,10 @@ export function FlashcardPanelApp({
 						/>
 					</div>
 				)}
+
+				<div class="ep:shrink-0 ep:px-2">
+					<QuickReview cardsWithFsrs={cardsWithFsrs} />
+				</div>
 
 				<div ref={contentRef} class="ep:flex-1 ep:overflow-y-auto ep:min-h-0">
 					<PanelContent
