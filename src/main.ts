@@ -1,5 +1,5 @@
 import { FlashcardGenerationService } from "@features/ai/services/flashcard-generation.service";
-import { SqlJsAdapter } from "@features/ai/services/langchain-sqlite.adapter";
+import { SqlQueryAdapter } from "@features/ai/services/sql-query.adapter";
 import { NLQueryService } from "@features/ai/services/nl-query.service";
 import { createSelectionToolbarExtension } from "@features/ai/ui/editor/SelectionToolbarPlugin";
 import { NoteStatusCacheService } from "@features/core/cache/note-status-cache.service";
@@ -901,7 +901,7 @@ export default class TrueRecallPlugin extends Plugin {
 				return;
 			}
 
-			const sqlAdapter = new SqlJsAdapter(db);
+			const sqlAdapter = new SqlQueryAdapter(db);
 			this.nlQueryService = new NLQueryService(
 				{
 					apiKey: this.settings.openRouterApiKey,

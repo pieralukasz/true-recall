@@ -92,6 +92,7 @@ const context = await esbuild.context({
 	banner: { js: banner },
 	entryPoints: ["src/main.ts"],
 	bundle: true,
+	metafile: true,
 	alias: {
 		"@shared": resolve("src/shared"),
 		"@features": resolve("src/features"),
@@ -147,7 +148,10 @@ const context = await esbuild.context({
 
 if (prod) {
 	buildCSS();
-	await context.rebuild();
+	const result = await context.rebuild();
+	if (result.metafile) {
+		writeFileSync("meta.json", JSON.stringify(result.metafile));
+	}
 	process.exit(0);
 } else {
 	buildCSS();
