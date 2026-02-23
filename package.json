@@ -41,6 +41,7 @@
 		"clsx": "^2.1.1",
 		"fzstd": "^0.1.1",
 		"jszip": "^3.10.1",
+		"monkey-around": "^3.0.0",
 		"obsidian": "latest",
 		"preact": "^10.28.4",
 		"sortablejs": "^1.15.6",

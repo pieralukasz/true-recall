@@ -196,14 +196,8 @@ export class ReviewView extends ItemView {
 				onShowAnswer: () => this.answerHandler.handleShowAnswer(),
 				onAnswer: (rating: Grade) =>
 					void this.answerHandler.handleAnswer(rating),
-				onStartEdit: (field: "question" | "answer") =>
-					this.editHandler.startEdit(field),
-				onSaveEdit: (
-					textarea: HTMLTextAreaElement,
-					field: "question" | "answer",
-				) => void this.editHandler.saveEditFromTextarea(textarea, field),
-				onImagePaste: (file: File, textarea: HTMLTextAreaElement) =>
-					void this.editHandler.handleInlineImagePaste(file, textarea),
+				onContentChange: (value: string, field: "question" | "answer") =>
+					void this.editHandler.saveContent(value, field),
 				onOpenSourceNote: () => this.handleOpenSourceNote(),
 				onClose: () => this.handleClose(),
 				onNextSession: () => this.handleNextSession(),

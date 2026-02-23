@@ -19,12 +19,7 @@ export { ReviewEmptyState } from "@features/study/ui/review/components";
 export interface ReviewAppProps {
 	onShowAnswer: () => void;
 	onAnswer: (rating: Grade) => void;
-	onStartEdit: (field: "question" | "answer") => void;
-	onSaveEdit: (
-		textarea: HTMLTextAreaElement,
-		field: "question" | "answer",
-	) => void;
-	onImagePaste: (file: File, textarea: HTMLTextAreaElement) => void;
+	onContentChange: (value: string, field: "question" | "answer") => void;
 	onOpenSourceNote: () => void;
 	onClose: () => void;
 	onNextSession: () => void;
@@ -95,9 +90,7 @@ function ActiveReview({
 	review,
 	onShowAnswer,
 	onAnswer,
-	onStartEdit,
-	onSaveEdit,
-	onImagePaste,
+	onContentChange,
 	onOpenSourceNote,
 	onClose: _onClose,
 	onActionsMenu,
@@ -106,9 +99,6 @@ function ActiveReview({
 	showHeaderStats,
 	showNextReviewTime,
 }: ActiveReviewProps) {
-	const editState = review.getEditState();
-	const isEditing = editState.active;
-
 	const hasAnswer = !!card.answer?.trim();
 	const isAnswerRevealed = !hasAnswer || review.isAnswerRevealed;
 
@@ -130,25 +120,19 @@ function ActiveReview({
 
 			<CardContainer
 				card={card}
-				editState={editState}
 				isAnswerRevealed={isAnswerRevealed}
-				onStartEdit={onStartEdit}
-				onSaveEdit={onSaveEdit}
-				onImagePaste={onImagePaste}
+				onContentChange={onContentChange}
 				onOpenSourceNote={onOpenSourceNote}
 			/>
 
-			{!isEditing && (
-				<ButtonBar
-					isAnswerRevealed={isAnswerRevealed}
-					preview={review.getSchedulingPreview()}
-					showNextReviewTime={showNextReviewTime}
-					onShowAnswer={onShowAnswer}
-					onAnswer={onAnswer}
-					onActionsMenu={onActionsMenu}
-				/>
-			)}
-
+			<ButtonBar
+				isAnswerRevealed={isAnswerRevealed}
+				preview={review.getSchedulingPreview()}
+				showNextReviewTime={showNextReviewTime}
+				onShowAnswer={onShowAnswer}
+				onAnswer={onAnswer}
+				onActionsMenu={onActionsMenu}
+			/>
 		</div>
 	);
 }

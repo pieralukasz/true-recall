@@ -76,4 +76,53 @@
 		color: var(--text-accent);
 		text-decoration: none;
 	}
+
+	/* ── Embedded live-preview editor (always-on) ─────────────────── */
+
+	/* Transparent background, inherit typography from review card */
+	.true-recall-review-question .cm-editor,
+	.true-recall-review-answer .cm-editor {
+		font-size: inherit;
+		line-height: inherit;
+		color: inherit;
+		background: transparent;
+	}
+
+	/* Center text in the editor (matching review card layout) */
+	.true-recall-review-question .cm-editor .cm-content,
+	.true-recall-review-answer .cm-editor .cm-content {
+		text-align: center;
+	}
+
+	/* Left-align when content has block elements */
+	.true-recall-review-question:has(pre, ul, ol, table, blockquote, .math-block) .cm-editor .cm-content,
+	.true-recall-review-answer:has(pre, ul, ol, table, blockquote, .math-block) .cm-editor .cm-content {
+		text-align: left;
+	}
+
+	/* Hide editor chrome (gutters, active line highlight) */
+	.true-recall-review-question .cm-gutters,
+	.true-recall-review-answer .cm-gutters {
+		display: none;
+	}
+
+	.true-recall-review-question .cm-activeLineGutter,
+	.true-recall-review-answer .cm-activeLineGutter,
+	.true-recall-review-question .cm-activeLine,
+	.true-recall-review-answer .cm-activeLine {
+		background: transparent;
+	}
+
+	/* Remove editor border/outline */
+	.true-recall-review-question .cm-editor.cm-focused,
+	.true-recall-review-answer .cm-editor.cm-focused {
+		outline: none;
+		box-shadow: none;
+	}
+
+	/* Ensure scroller doesn't add unwanted padding */
+	.true-recall-review-question .cm-scroller,
+	.true-recall-review-answer .cm-scroller {
+		padding: 0;
+	}
 }
