@@ -8,6 +8,7 @@ import type { AIModelInfo, AIModelKey } from "@shared/constants";
 import { AI_MODELS_EXTENDED } from "@shared/constants";
 import type { SelectOptionGroup } from "@shared/ui/components";
 import {
+	Clickable,
 	InfoBlock,
 	SelectInput,
 	SettingRow,
@@ -171,23 +172,23 @@ export function AITab() {
 								>
 									<div class="ep:flex ep:gap-1">
 										{isCustom && (
-											<button
-												type="button"
-												class="ep:text-ui-smaller ep:text-obs-muted ep:cursor-pointer ep:px-2 ep:py-1 ep:rounded-[var(--radius-s)] hover:ep:bg-obs-modifier-hover"
+											<Clickable
+												class="ep:text-ui-smaller ep:text-obs-muted ep:px-2 ep:py-1 ep:rounded-[var(--radius-s)] hover:ep:bg-obs-modifier-hover"
+												stopPropagation={false}
 												onClick={() => resetPrompt(mode)}
 											>
 												Reset
-											</button>
+											</Clickable>
 										)}
-										<button
-											type="button"
-											class="ep:text-ui-smaller ep:text-obs-accent ep:cursor-pointer ep:px-2 ep:py-1 ep:rounded-[var(--radius-s)] hover:ep:bg-obs-modifier-hover"
+										<Clickable
+											class="ep:text-ui-smaller ep:text-obs-accent ep:px-2 ep:py-1 ep:rounded-[var(--radius-s)] hover:ep:bg-obs-modifier-hover"
+											stopPropagation={false}
 											onClick={() =>
 												setExpandedPrompt(isExpanded ? null : mode)
 											}
 										>
 											{isExpanded ? "Collapse" : "Edit"}
-										</button>
+										</Clickable>
 									</div>
 								</SettingRow>
 

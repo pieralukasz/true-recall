@@ -1,5 +1,5 @@
 import { useSettings } from "@features/settings/hooks/useSettings";
-import { SettingRow } from "@shared/ui/components";
+import { Clickable, SettingRow } from "@shared/ui/components";
 
 export function ManualBackupSection() {
 	const { plugin } = useSettings();
@@ -12,26 +12,26 @@ export function ManualBackupSection() {
 				name="Create backup now"
 				description="Manually create a backup of the current database"
 			>
-				<button
-					type="button"
+				<Clickable
 					class="mod-cta"
+					stopPropagation={false}
 					onClick={() => plugin.createManualBackup()}
 				>
 					Create backup
-				</button>
+				</Clickable>
 			</SettingRow>
 
 			<SettingRow
 				name="Restore from backup"
 				description="Restore the database from a previous backup (requires Obsidian reload)"
 			>
-				<button
-					type="button"
+				<Clickable
 					class="mod-warning"
+					stopPropagation={false}
 					onClick={() => plugin.openRestoreBackupModal()}
 				>
 					Restore...
-				</button>
+				</Clickable>
 			</SettingRow>
 		</>
 	);

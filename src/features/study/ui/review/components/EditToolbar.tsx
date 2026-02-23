@@ -17,8 +17,10 @@ export function EditToolbar({
 					? `${btn.title} (${btn.shortcut})`
 					: btn.title;
 				return (
-					<button
-						type="button"
+					// biome-ignore lint/a11y/useSemanticElements: toolbar buttons need tabIndex=-1 to prevent focus steal
+					// biome-ignore lint/a11y/useKeyWithClickEvents: toolbar buttons use tabIndex=-1 and mouse-only interaction
+					<div
+						role="button"
 						key={btn.id}
 						class="ep:px-2 ep:py-1 ep:text-ui-smaller ep:bg-obs-secondary ep:text-obs-normal ep:border ep:border-obs-border ep:rounded-md ep:cursor-pointer ep:hover:bg-obs-modifier-hover ep:hover:border-obs-interactive ep:transition-colors"
 						title={title}
@@ -30,7 +32,7 @@ export function EditToolbar({
 						}}
 					>
 						{btn.label}
-					</button>
+					</div>
 				);
 			})}
 		</div>

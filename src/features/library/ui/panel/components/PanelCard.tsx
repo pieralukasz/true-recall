@@ -2,7 +2,7 @@ import { StatusDot } from "@features/library/ui/panel/components/StatusDot";
 import {
 	getAggregateStatusDotColor,
 	getAggregateStatusTitle,
-	getStatusBgClass,
+	getStatusDotColor,
 	getStatusTitle,
 	isBuried,
 	isSuspended,
@@ -334,9 +334,6 @@ export function PanelCard(props: PanelCardProps) {
 		[onToggleSelect],
 	);
 
-	const bgClass = isGroup
-		? "ep:bg-obs-secondary"
-		: getStatusBgClass(props.fsrsCard);
 	const title = isGroup ? undefined : getStatusTitle(props.fsrsCard);
 	const borderCls = isSelected ? "ep:border-obs-interactive ep:border-2" : "";
 
@@ -359,13 +356,13 @@ export function PanelCard(props: PanelCardProps) {
 	return (
 		<Clickable
 			title={title}
-			class={`ep:flex ep:flex-col ep:mb-2 ep:rounded-lg ${bgClass} ep:border ep:border-obs-border ep:shadow-sm ep:hover:bg-obs-modifier-hover ep:transition-colors ep:duration-300 ${borderCls}`}
+			class={`ep:flex ep:flex-col ep:mb-2 ep:rounded-lg ep:bg-obs-secondary ep:border ep:border-obs-border ep:shadow-sm ep:hover:bg-obs-modifier-hover ep:transition-colors ep:duration-300 ${borderCls}`}
 			onClick={handleRowClick}
 			{...longPressHandlers}
 			onMouseEnter={onHoverSource}
 			onMouseLeave={onLeaveSource}
 		>
-			<div class="ep:flex ep:items-center ep:gap-2 ep:p-3 ep:text-left ep:w-full">
+			<div class="ep:flex ep:items-start ep:gap-2 ep:p-3 ep:text-left ep:w-full">
 				{isSelectionMode && (
 					<input
 						type="checkbox"
@@ -393,13 +390,21 @@ export function PanelCard(props: PanelCardProps) {
 					/>
 				)}
 
-				<IconButton
-					icon="more-vertical"
-					ariaLabel={isGroup ? "Group actions" : "Card actions"}
-					onClick={handleMenuClick}
-					size="small"
-					class="ep:opacity-30 ep:hover:opacity-100 ep:transition-opacity"
-				/>
+				<div class="ep:flex ep:flex-col ep:items-center ep:justify-center ep:gap-1 ep:self-center">
+					{props.variant === "basic" && (
+						<StatusDot
+							color={getStatusDotColor(props.fsrsCard)}
+							title={title ?? "Unknown"}
+						/>
+					)}
+					<IconButton
+						icon="more-vertical"
+						ariaLabel={isGroup ? "Group actions" : "Card actions"}
+						onClick={handleMenuClick}
+						size="small"
+						class="ep:opacity-30 ep:hover:opacity-100 ep:transition-opacity"
+					/>
+				</div>
 			</div>
 
 			{isExpanded &&

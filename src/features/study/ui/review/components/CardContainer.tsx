@@ -2,6 +2,7 @@ import { EditableField } from "@features/study/ui/review/components/EditableFiel
 import { UI_CONFIG } from "@shared/constants";
 import type { EditModeState } from "@shared/store";
 import type { FSRSFlashcardItem } from "@shared/types";
+import { Clickable } from "@shared/ui/components";
 import { useMarkdown } from "@shared/ui/preact/hooks";
 import { stripBrTags } from "@shared/utils";
 import { Platform } from "obsidian";
@@ -64,9 +65,8 @@ export function CardContainer({
 	);
 
 	return (
-		<button
-			type="button"
-			class={`${containerCls} ep:bg-transparent ep:border-none ep:font-inherit ep:cursor-default ep:text-left ep:w-full ep:max-w-3xl`}
+		<Clickable
+			class={`${containerCls} ep:cursor-default ep:text-left ep:w-full ep:max-w-3xl`}
 			onClick={handleContainerClick}
 		>
 			<div class="ep:w-full">
@@ -136,7 +136,7 @@ export function CardContainer({
 					</>
 				)}
 			</div>
-		</button>
+		</Clickable>
 	);
 }
 

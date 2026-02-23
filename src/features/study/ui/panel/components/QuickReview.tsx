@@ -2,6 +2,7 @@ import { ReviewService } from "@features/study/services/review.service";
 import { QuickReviewCard } from "@features/study/ui/panel/components/QuickReviewCard";
 import type { SchedulingPreview } from "@shared/types";
 import type { FSRSFlashcardItem } from "@shared/types/fsrs/card.types";
+import { Clickable } from "@shared/ui/components";
 import { FSRS_COLORS } from "@shared/ui/helpers/fsrs-colors";
 import { usePlugin } from "@shared/ui/preact/ObsidianContext";
 import { useCallback, useEffect, useMemo, useState } from "preact/hooks";
@@ -132,9 +133,8 @@ export function QuickReview({ cardsWithFsrs }: QuickReviewProps) {
 	return (
 		<div class="ep:border ep:border-obs-modifier-border ep:rounded-lg ep:overflow-hidden">
 			{/* Header — always visible */}
-			<button
-				type="button"
-				class="ep:flex ep:items-center ep:justify-between ep:w-full ep:px-3 ep:py-2 ep:bg-obs-modifier-hover/50 ep:border-none ep:cursor-pointer ep:text-left"
+			<Clickable
+				class="ep:flex ep:items-center ep:justify-between ep:w-full ep:px-3 ep:py-2 ep:bg-obs-modifier-hover/50 ep:text-left"
 				onClick={toggleExpanded}
 			>
 				<span class="ep:text-xs ep:font-semibold ep:text-obs-normal">
@@ -170,7 +170,7 @@ export function QuickReview({ cardsWithFsrs }: QuickReviewProps) {
 					)}
 					<span class="ep:ml-2">{expanded ? "\u25B2" : "\u25BC"}</span>
 				</span>
-			</button>
+			</Clickable>
 
 			{/* Body — collapsible */}
 			{expanded && (

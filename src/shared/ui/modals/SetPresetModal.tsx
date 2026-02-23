@@ -1,3 +1,4 @@
+import { Clickable } from "@shared/ui/components";
 import { BasePromiseModal } from "@shared/ui/modals/BasePromiseModal";
 import type { App } from "obsidian";
 import { render } from "preact";
@@ -22,45 +23,45 @@ function SetPresetBody({
 				class="ep:border ep:border-obs-border ep:rounded-md ep:overflow-y-auto"
 				style="max-height: 240px"
 			>
-				<button
-					type="button"
-					class="ep:bg-transparent ep:border-none ep:p-0 ep:font-inherit ep:cursor-pointer ep:text-left ep:w-full ep:flex ep:items-center ep:gap-2 ep:px-3 ep:py-2 ep:rounded-md hover:ep:bg-interactive-hover"
+				<Clickable
+					class="ep:bg-transparent ep:border-none ep:p-0 ep:font-inherit ep:text-left ep:w-full ep:flex ep:items-center ep:gap-2 ep:px-3 ep:py-2 ep:rounded-md hover:ep:bg-interactive-hover"
 					onClick={() => onResolve({ cancelled: false, presetName: null })}
+					stopPropagation={false}
 				>
 					<span class="ep:text-ui-small">Default (remove override)</span>
 					{!currentPreset && (
 						<span class="ep:text-ui-small ep:opacity-50"> (current)</span>
 					)}
-				</button>
+				</Clickable>
 				{presetNames
 					.filter((n) => n !== "Default")
 					.map((name) => (
-						<button
-							type="button"
+						<Clickable
 							key={name}
-							class="ep:bg-transparent ep:border-none ep:p-0 ep:font-inherit ep:cursor-pointer ep:text-left ep:w-full ep:flex ep:items-center ep:gap-2 ep:px-3 ep:py-2 ep:rounded-md hover:ep:bg-interactive-hover"
+							class="ep:bg-transparent ep:border-none ep:p-0 ep:font-inherit ep:text-left ep:w-full ep:flex ep:items-center ep:gap-2 ep:px-3 ep:py-2 ep:rounded-md hover:ep:bg-interactive-hover"
 							onClick={() =>
 								onResolve({
 									cancelled: false,
 									presetName: name,
 								})
 							}
+							stopPropagation={false}
 						>
 							<span class="ep:text-ui-small">{name}</span>
 							{name === currentPreset && (
 								<span class="ep:text-ui-small ep:opacity-50"> (current)</span>
 							)}
-						</button>
+						</Clickable>
 					))}
 			</div>
 			<div class="ep-modal-footer ep:flex ep:justify-end ep:gap-2">
-				<button
-					type="button"
+				<Clickable
 					class="ep-btn ep-btn-outline"
 					onClick={() => onResolve({ cancelled: true, presetName: null })}
+					stopPropagation={false}
 				>
 					Cancel
-				</button>
+				</Clickable>
 			</div>
 		</>
 	);

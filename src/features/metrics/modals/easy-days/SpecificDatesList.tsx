@@ -1,3 +1,5 @@
+import { Clickable } from "@shared/ui/components";
+
 function formatDate(dateStr: string): string {
 	const date = new Date(`${dateStr}T00:00:00`);
 	return date.toLocaleDateString(undefined, {
@@ -46,13 +48,12 @@ export function SpecificDatesList({
 						onDateInputChange((e.target as HTMLInputElement).value)
 					}
 				/>
-				<button
-					type="button"
-					class="ep:px-4 ep:py-2 ep:rounded-md ep:bg-obs-interactive ep:text-obs-on-accent ep:border-none ep:text-ui-small ep:font-medium ep:cursor-pointer ep:hover:opacity-90"
+				<Clickable
+					class="ep:px-4 ep:py-2 ep:rounded-md ep:bg-obs-interactive ep:text-obs-on-accent ep:border-none ep:text-ui-small ep:font-medium ep:hover:opacity-90"
 					onClick={onAddDate}
 				>
 					+ add
-				</button>
+				</Clickable>
 			</div>
 
 			<div class="ep:border ep:border-obs-border ep:rounded-md ep:max-h-[150px] ep:overflow-y-auto">
@@ -69,13 +70,12 @@ export function SpecificDatesList({
 							<span class="ep:text-ui-small ep:text-obs-normal">
 								{formatDate(dateStr)}
 							</span>
-							<button
-								type="button"
-								class="ep:w-6 ep:h-6 ep:rounded-md ep:bg-transparent ep:border-none ep:text-obs-muted ep:cursor-pointer ep:text-lg ep:hover:text-obs-red ep:hover:bg-obs-red/10"
+							<Clickable
+								class="ep:w-6 ep:h-6 ep:rounded-md ep:bg-transparent ep:border-none ep:text-obs-muted ep:text-lg ep:hover:text-obs-red ep:hover:bg-obs-red/10"
 								onClick={() => onRemoveDate(dateStr)}
 							>
 								&times;
-							</button>
+							</Clickable>
 						</div>
 					))
 				)}

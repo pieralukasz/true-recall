@@ -1,3 +1,4 @@
+import { Clickable } from "@shared/ui/components/Clickable";
 import type { ComponentChildren } from "preact";
 import { useErrorBoundary } from "preact/hooks";
 
@@ -23,13 +24,12 @@ export function ErrorBoundary({
 				<div class="ep:text-ui-smaller ep:text-obs-muted ep:max-w-[300px]">
 					{error instanceof Error ? error.message : String(error)}
 				</div>
-				<button
-					type="button"
-					class="ep:py-2 ep:px-4 ep:rounded-md ep:bg-obs-interactive ep:text-obs-on-accent ep:border-none ep:cursor-pointer ep:text-ui-small ep:font-medium"
+				<Clickable
+					class="ep:py-2 ep:px-4 ep:rounded-md ep:bg-obs-interactive ep:text-obs-on-accent ep:border-none ep:text-ui-small ep:font-medium"
 					onClick={resetError}
 				>
 					Try again
-				</button>
+				</Clickable>
 			</div>
 		);
 	}

@@ -1,6 +1,7 @@
 import type { StatsCalculatorService } from "@features/metrics/services/stats/stats-calculator.service";
 import { StatsCard } from "@features/metrics/ui/stats/components/StatsCard";
 import type { CardMaturityBreakdown, FSRSFlashcardItem } from "@shared/types";
+import { Clickable } from "@shared/ui/components";
 import { FSRS_COLORS } from "@shared/ui/helpers/fsrs-colors";
 import { getThemeColor } from "@shared/ui/utils/theme-colors";
 import { Chart } from "chart.js";
@@ -176,10 +177,9 @@ export function CardCountsChart({
 					{legendItems.map((item) => {
 						const percentage = Math.round((item.value / total) * 100);
 						return (
-							<button
-								type="button"
+							<Clickable
 								key={item.category}
-								class="ep:flex ep:items-center ep:gap-3 ep:py-2 ep:px-3 ep:rounded-md ep:transition-all ep:cursor-pointer ep:hover:bg-obs-primary ep:hover:-translate-x-0.5 ep:bg-transparent ep:border-none ep:font-inherit ep:text-left ep:w-full"
+								class="ep:flex ep:items-center ep:gap-3 ep:py-2 ep:px-3 ep:rounded-md ep:transition-all ep:hover:bg-obs-primary ep:hover:-translate-x-0.5 ep:w-full"
 								onClick={() => {
 									if (item.value > 0) {
 										const cards = statsCalculator.getCardsByCategory(
@@ -204,7 +204,7 @@ export function CardCountsChart({
 								<span class="ep:ml-auto ep:text-ui-small ep:font-semibold ep:text-obs-muted">
 									{item.value} ({percentage}%)
 								</span>
-							</button>
+							</Clickable>
 						);
 					})}
 				</div>

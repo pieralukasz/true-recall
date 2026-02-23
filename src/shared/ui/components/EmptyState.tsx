@@ -1,3 +1,5 @@
+import { Clickable } from "@shared/ui/components/Clickable";
+
 export interface EmptyStateProps {
 	message: string;
 	icon?: string;
@@ -16,9 +18,13 @@ export function EmptyState({
 			{icon && <div class="ep:text-3xl ep:mb-2">{icon}</div>}
 			<div>{message}</div>
 			{actionLabel && onAction && (
-				<button type="button" class="ep:mt-3 mod-cta" onClick={onAction}>
+				<Clickable
+					class="ep:mt-3 mod-cta"
+					onClick={onAction}
+					stopPropagation={false}
+				>
 					{actionLabel}
-				</button>
+				</Clickable>
 			)}
 		</div>
 	);

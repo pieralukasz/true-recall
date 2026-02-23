@@ -1,10 +1,15 @@
+import { cva } from "class-variance-authority";
 import type { ReviewApi } from "@shared/store";
 
-const STAT_COLORS: Record<string, string> = {
-	new: "ep:text-obs-green",
-	learning: "ep:text-obs-orange",
-	due: "ep:text-obs-blue",
-};
+const reviewStatVariants = cva("ep:font-bold", {
+	variants: {
+		type: {
+			new: "ep:text-obs-green",
+			learning: "ep:text-obs-orange",
+			due: "ep:text-obs-blue",
+		},
+	},
+});
 
 function ReviewStat({
 	label,
@@ -12,13 +17,13 @@ function ReviewStat({
 	count,
 }: {
 	label: string;
-	type: string;
+	type: "new" | "learning" | "due";
 	count: number;
 }) {
 	return (
 		<span class="ep:flex ep:items-center ep:gap-1.5">
 			<span class="ep:text-obs-muted">{label}</span>
-			<span class={`ep:font-bold ${STAT_COLORS[type]}`}>{count}</span>
+			<span class={reviewStatVariants({ type })}>{count}</span>
 		</span>
 	);
 }

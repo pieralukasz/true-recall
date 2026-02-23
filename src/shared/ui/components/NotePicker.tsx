@@ -1,3 +1,4 @@
+import { Clickable } from "@shared/ui/components/Clickable";
 import { NoteListItem } from "@shared/ui/components/NoteListItem";
 import { SearchInput } from "@shared/ui/components/SearchInput";
 import type { TFile } from "obsidian";
@@ -59,13 +60,12 @@ export function NotePicker({
 				)}
 			</div>
 			{onCancel && (
-				<button
-					type="button"
-					class="ep:text-ui-smaller ep:text-obs-muted ep:cursor-pointer ep:bg-transparent ep:border-none ep:self-start"
+				<Clickable
+					class="ep:text-ui-smaller ep:text-obs-muted ep:bg-transparent ep:border-none ep:self-start"
 					onClick={onCancel}
 				>
 					Cancel
-				</button>
+				</Clickable>
 			)}
 		</div>
 	);

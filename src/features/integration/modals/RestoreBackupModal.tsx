@@ -2,6 +2,7 @@ import type {
 	BackupInfo,
 	BackupService,
 } from "@features/core/persistence/backup.service";
+import { Clickable } from "@shared/ui/components";
 import {
 	BasePromiseModal,
 	type CancellableResult,
@@ -31,8 +32,8 @@ function BackupItem({
 	onDelete: () => void;
 }) {
 	return (
-		<button
-			type="button"
+		<Clickable
+			stopPropagation={false}
 			class={`ep:bg-transparent ep:border-none ep:p-0 ep:font-inherit ep:cursor-pointer ep:text-left ep:w-full ep:flex ep:items-center ep:justify-between ep:p-3 ep:border-b ep:border-obs-border ep:transition-colors ep:hover:bg-obs-modifier-hover ep:last:border-b-0 ${isSelected ? "ep:bg-obs-interactive/10 ep:border-l-2 ep:border-l-obs-interactive" : ""}`}
 			onClick={onSelect}
 		>
@@ -44,18 +45,11 @@ function BackupItem({
 			</div>
 			<div class="ep:flex ep:items-center ep:gap-3">
 				<span class="ep:text-obs-muted">{backup.formattedSize}</span>
-				<button
-					type="button"
-					class="ep:text-ui-smaller"
-					onClick={(e) => {
-						e.stopPropagation();
-						onDelete();
-					}}
-				>
+				<Clickable class="ep:text-ui-smaller" onClick={onDelete}>
 					Delete
-				</button>
+				</Clickable>
 			</div>
-		</button>
+		</Clickable>
 	);
 }
 
@@ -120,17 +114,21 @@ function RestoreBackupBody({
 			</div>
 
 			<div class="ep-modal-footer ep:flex ep:justify-end ep:gap-2">
-				<button type="button" class="ep-btn ep-btn-outline" onClick={onClose}>
+				<Clickable
+					stopPropagation={false}
+					class="ep-btn ep-btn-outline"
+					onClick={onClose}
+				>
 					Cancel
-				</button>
-				<button
-					type="button"
+				</Clickable>
+				<Clickable
+					stopPropagation={false}
 					class="mod-warning ep-btn"
 					disabled={!selectedBackup}
 					onClick={() => void handleRestore()}
 				>
 					Restore selected
-				</button>
+				</Clickable>
 			</div>
 		</>
 	);

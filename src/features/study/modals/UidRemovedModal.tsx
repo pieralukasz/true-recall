@@ -1,3 +1,4 @@
+import { Clickable } from "@shared/ui/components";
 import { NotePicker } from "@shared/ui/components/NotePicker";
 import { BasePromiseModal } from "@shared/ui/modals/BasePromiseModal";
 import type { App, TFile } from "obsidian";
@@ -84,9 +85,8 @@ function ActionButton({
 				: "ep:bg-obs-secondary ep:text-obs-normal ep:hover:bg-obs-modifier-hover";
 
 	return (
-		<button
-			type="button"
-			class={`ep:w-full ep:py-3 ep:px-4 ep:rounded-md ep:border ep:border-obs-border ep:cursor-pointer ep:transition-colors ep:text-left ${btnCls}`}
+		<Clickable
+			class={`ep:w-full ep:py-3 ep:px-4 ep:rounded-md ep:border ep:border-obs-border ep:transition-colors ep:text-left ${btnCls}`}
 			onClick={onClick}
 		>
 			<div class="ep:flex ep:items-center ep:gap-3">
@@ -96,7 +96,7 @@ function ActionButton({
 					<div class="ep:text-ui-smaller ep:opacity-70">{description}</div>
 				</div>
 			</div>
-		</button>
+		</Clickable>
 	);
 }
 

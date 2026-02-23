@@ -1,4 +1,5 @@
 import type { ReviewApi } from "@shared/store";
+import { Clickable } from "@shared/ui/components";
 import { useEffect } from "preact/hooks";
 
 function StatItem({
@@ -88,25 +89,29 @@ export function SummaryScreen({
 					<div class="ep:flex ep:gap-3 ep:py-4 ep:justify-center">
 						{isCustomSession && continuousCustomReviews ? (
 							<>
-								<button
-									type="button"
+								<Clickable
+									stopPropagation={false}
 									class="ep-btn mod-cta"
 									onClick={onNextSession}
 								>
 									Next session
-								</button>
-								<button
-									type="button"
+								</Clickable>
+								<Clickable
+									stopPropagation={false}
 									class="ep-btn ep-btn-outline"
 									onClick={onClose}
 								>
 									Finish
-								</button>
+								</Clickable>
 							</>
 						) : (
-							<button type="button" class="ep-btn mod-cta" onClick={onClose}>
+							<Clickable
+								stopPropagation={false}
+								class="ep-btn mod-cta"
+								onClick={onClose}
+							>
 								Close
-							</button>
+							</Clickable>
 						)}
 					</div>
 				</div>
