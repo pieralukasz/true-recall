@@ -154,13 +154,17 @@ export function FlashcardPanelApp({
 			);
 			const { notify } = await import("@shared/services/notification.service");
 
-			const modal = new SimpleFlashcardEditorModal(app, {
-				mode: "add",
-				currentFilePath: state.currentFile.path,
-				prefillContent: prefillFlashcards
-					? cardsToMarkdown(prefillFlashcards)
-					: undefined,
-			});
+			const modal = new SimpleFlashcardEditorModal(
+				app,
+				{
+					mode: "add",
+					currentFilePath: state.currentFile.path,
+					prefillContent: prefillFlashcards
+						? cardsToMarkdown(prefillFlashcards)
+						: undefined,
+				},
+				plugin.EmbeddableEditor,
+			);
 
 			const result = await modal.openAndWait();
 			if (result.cancelled || result.flashcards.length === 0) return;
@@ -227,12 +231,16 @@ export function FlashcardPanelApp({
 
 			const scrollPosition = contentRef.current?.scrollTop ?? 0;
 
-			const modal = new SimpleFlashcardEditorModal(app, {
-				mode: "edit",
-				currentFilePath: state.currentFile.path,
-				prefillContent: cardToMarkdown(card),
-				editCardId: card.id,
-			});
+			const modal = new SimpleFlashcardEditorModal(
+				app,
+				{
+					mode: "edit",
+					currentFilePath: state.currentFile.path,
+					prefillContent: cardToMarkdown(card),
+					editCardId: card.id,
+				},
+				plugin.EmbeddableEditor,
+			);
 
 			const result = await modal.openAndWait();
 			if (result.cancelled || result.flashcards.length === 0) return;
@@ -405,12 +413,16 @@ export function FlashcardPanelApp({
 			const scrollPosition = contentRef.current?.scrollTop ?? 0;
 
 			if (clozeTemplate) {
-				const modal = new SimpleFlashcardEditorModal(app, {
-					mode: "edit",
-					currentFilePath: state.currentFile.path,
-					prefillContent: cards[0] ? cardToMarkdown(cards[0]) : "",
-					editCardId: cards[0]?.id,
-				});
+				const modal = new SimpleFlashcardEditorModal(
+					app,
+					{
+						mode: "edit",
+						currentFilePath: state.currentFile.path,
+						prefillContent: cards[0] ? cardToMarkdown(cards[0]) : "",
+						editCardId: cards[0]?.id,
+					},
+					plugin.EmbeddableEditor,
+				);
 
 				const result = await modal.openAndWait();
 				if (result.cancelled || result.flashcards.length === 0) return;

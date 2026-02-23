@@ -59,13 +59,18 @@ export function LivePreviewField({
 
 		const normalizedContent = stripBrTags(content);
 
-		const editor = new plugin.EmbeddableEditor(app, el, {
-			value: normalizedContent,
-			onBlur: handleBlur,
-			onEscape: handleEscape,
-		});
-
-		editorRef.current = editor;
+		let editor: import("@shared/ui/editor/embedded-editor").EmbeddableEditorInstance;
+		try {
+			editor = new plugin.EmbeddableEditor(app, el, {
+				value: normalizedContent,
+				onBlur: handleBlur,
+				onEscape: handleEscape,
+			});
+			editorRef.current = editor;
+		} catch (error) {
+			console.error("[LivePreviewField] Failed to create editor:", error);
+			return;
+		}
 
 		return () => {
 			editorRef.current = null;

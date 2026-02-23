@@ -31,6 +31,8 @@ export interface EmbeddableEditorOptions {
 	onBlur?: (editor: EmbeddableEditorInstance) => void;
 	onPaste?: (e: ClipboardEvent, editor: EmbeddableEditorInstance) => void;
 	onChange?: (update: ViewUpdate) => void;
+	onModEnter?: (editor: EmbeddableEditorInstance) => void;
+	extraExtensions?: Extension[];
 }
 
 export interface EmbeddableEditorInstance {
@@ -85,6 +87,8 @@ const defaultOptions: Required<EmbeddableEditorOptions> = {
 	onBlur: () => {},
 	onPaste: () => {},
 	onChange: () => {},
+	onModEnter: () => {},
+	extraExtensions: [],
 };
 
 /**
@@ -142,8 +146,11 @@ export function createEmbeddableEditorClass(app: App) {
 			this.options = { ...defaultOptions, ...options };
 			this.scope = new Scope(editorApp.scope);
 
-			// Override Mod+Enter to prevent "Open link in new leaf" command
-			this.scope.register(["Mod"], "Enter", () => true);
+			// Override Mod+Enter — fires onModEnter callback, prevents "Open link in new leaf"
+			this.scope.register(["Mod"], "Enter", () => {
+				this.options.onModEnter(this);
+				return true;
+			});
 
 			// Mock editMode/editor so Obsidian commands work on this editor
 			this.owner.editMode = this;
@@ -216,6 +223,11 @@ export function createEmbeddableEditorClass(app: App) {
 					]),
 				),
 			);
+
+			// Consumer-provided extensions (e.g. custom keymaps)
+			if (this.options.extraExtensions.length) {
+				extensions.push(...this.options.extraExtensions);
+			}
 
 			return extensions;
 		}

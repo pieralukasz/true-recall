@@ -845,11 +845,15 @@ export default class TrueRecallPlugin extends Plugin {
 			},
 			onEdit: (text) => {
 				const file = this.app.workspace.getActiveFile();
-				const modal = new SimpleFlashcardEditorModal(this.app, {
-					mode: "add",
-					prefillContent: text,
-					currentFilePath: file?.path ?? "",
-				});
+				const modal = new SimpleFlashcardEditorModal(
+					this.app,
+					{
+						mode: "add",
+						prefillContent: text,
+						currentFilePath: file?.path ?? "",
+					},
+					this.EmbeddableEditor,
+				);
 				void modal.openAndWait().then((result) => {
 					if (!result.cancelled && result.flashcards.length > 0 && file) {
 						void this.flashcardManager
