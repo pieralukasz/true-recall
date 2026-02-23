@@ -578,34 +578,57 @@ export function FlashcardPanelApp({
 				return;
 			}
 
+			// Skip flashcards whose question already exists for this note
+			const existingQuestions = new Set(
+				state.flashcardInfo?.flashcards?.map((f) => f.question) ?? [],
+			);
+			const newFlashcards = collectResult.flashcards.filter(
+				(f) => !existingQuestions.has(f.question),
+			);
+			const skippedCount =
+				collectResult.flashcards.length - newFlashcards.length;
+
+			// Always strip tags from note, even if all flashcards were skipped
+			const contentToSave = plugin.settings.removeFlashcardContentAfterCollect
+				? collectResult.newContentWithoutFlashcards
+				: collectResult.newContent;
+			await app.vault.process(state.currentFile, () => contentToSave);
+
+			if (newFlashcards.length === 0) {
+				notify().info(
+					`All ${collectResult.flashcards.length} flashcard(s) already collected`,
+				);
+				return;
+			}
+
 			const saveResult = await plugin.flashcardManager.saveFlashcardsToSql(
 				state.currentFile,
-				collectResult.flashcards.map((f) => ({
+				newFlashcards.map((f) => ({
 					id: f.id || crypto.randomUUID(),
 					question: f.question,
 					answer: f.answer,
 				})),
 			);
 
-			const contentToSave = plugin.settings.removeFlashcardContentAfterCollect
-				? collectResult.newContentWithoutFlashcards
-				: collectResult.newContent;
-			await app.vault.process(state.currentFile, () => contentToSave);
+			const created = saveResult.created.length;
+			const dups = saveResult.duplicates.length;
 
-			if (saveResult.duplicates.length > 0) {
-				if (saveResult.created.length > 0) {
-					notify().success(
-						`Collected ${saveResult.created.length} flashcard(s)`,
-					);
-				}
+			if (skippedCount > 0 && created > 0) {
+				notify().success(
+					`Collected ${created} flashcard(s), skipped ${skippedCount} (already exist)`,
+				);
+			} else if (dups > 0 && created > 0) {
+				notify().success(`Collected ${created} flashcard(s)`);
+				showDuplicateNotifications(plugin, saveResult.duplicates);
+			} else if (dups > 0) {
 				showDuplicateNotifications(plugin, saveResult.duplicates);
 			} else {
-				notify().success(`Collected ${saveResult.created.length} flashcard(s)`);
+				notify().success(`Collected ${created} flashcard(s)`);
 			}
 		} catch (error) {
 			notify().operationFailed("collect flashcards", error);
 		}
-	}, [state.currentFile, app, plugin]);
+	}, [state.currentFile, state.flashcardInfo, app, plugin]);
 
 	const handleGenerateFromNote = useCallback(async () => {
 		if (!state.currentFile) return;
@@ -673,14 +696,32 @@ export function FlashcardPanelApp({
 		}
 
 		const content = await app.vault.read(state.currentFile);
-		const highlights = extractHighlights(content);
+		const allHighlights = extractHighlights(content);
 
-		if (highlights.length === 0) {
+		if (allHighlights.length === 0) {
 			notify().warning("No highlights found in note");
 			return;
 		}
 
-		const joinedHighlights = highlights.join("\n\n");
+		// Skip highlights that already generated cards (exact sourceText match)
+		const existingSourceTexts = new Set(
+			state.flashcardInfo?.flashcards
+				?.map((f) => f.sourceText)
+				.filter(Boolean) ?? [],
+		);
+		const newHighlights = allHighlights.filter(
+			(h) => !existingSourceTexts.has(h),
+		);
+		const skippedCount = allHighlights.length - newHighlights.length;
+
+		if (newHighlights.length === 0) {
+			notify().info(
+				`All ${allHighlights.length} highlights already have flashcards`,
+			);
+			return;
+		}
+
+		const joinedHighlights = newHighlights.join("\n\n");
 
 		const { FlashcardGenerationService } = await import(
 			"@features/ai/services/flashcard-generation.service"
@@ -718,10 +759,14 @@ export function FlashcardPanelApp({
 			);
 		} else if (dups > 0) {
 			notify().allCardsDuplicates(dups);
+		} else if (skippedCount > 0) {
+			notify().success(
+				`Created ${created} card(s), skipped ${skippedCount} highlight(s) (already have cards)`,
+			);
 		} else {
 			notify().cardsCreated(created, state.currentFile.basename);
 		}
-	}, [state.currentFile, app, plugin]);
+	}, [state.currentFile, state.flashcardInfo, app, plugin]);
 
 	const handleReview = useCallback(async () => {
 		if (!state.currentFile) return;
