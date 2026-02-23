@@ -33,6 +33,13 @@ function createDefaultStats(): ReviewSessionStats {
 	};
 }
 
+const INITIAL_EDIT_MODE: EditModeState = {
+	active: false,
+	field: null,
+	originalQuestion: "",
+	originalAnswer: "",
+};
+
 function createInitialState(): ReviewSliceState {
 	return {
 		isActive: false,
@@ -44,6 +51,7 @@ function createInitialState(): ReviewSliceState {
 		questionShownTime: 0,
 		stats: createDefaultStats(),
 		cachedBadgeCounts: { new: 0, learning: 0, due: 0 },
+		editMode: { ...INITIAL_EDIT_MODE },
 	};
 }
 
@@ -74,14 +82,6 @@ export function createReviewSlice(
 	get: () => AppState,
 	_deps: AppStoreDeps,
 ): ReviewSlice {
-	// Edit mode stored outside state to avoid triggering subscriptions
-	let editMode: EditModeState = {
-		active: false,
-		field: null,
-		originalQuestion: "",
-		originalAnswer: "",
-	};
-
 	// Scheduling preview (ephemeral)
 	let schedulingPreview: SchedulingPreview | null = null;
 
@@ -107,15 +107,7 @@ export function createReviewSlice(
 
 	const slice: ReviewSlice = {
 		// State
-		isActive: initial.isActive,
-		queue: initial.queue,
-		currentIndex: initial.currentIndex,
-		isAnswerRevealed: initial.isAnswerRevealed,
-		results: initial.results,
-		startTime: initial.startTime,
-		questionShownTime: initial.questionShownTime,
-		stats: initial.stats,
-		cachedBadgeCounts: initial.cachedBadgeCounts,
+		...initial,
 
 		startSession: (queue: FSRSFlashcardItem[]) => {
 			const cachedBadgeCounts = computeBadgeCounts(queue, 0);
@@ -154,6 +146,7 @@ export function createReviewSlice(
 				review: {
 					...s.review,
 					isActive: false,
+					editMode: { ...INITIAL_EDIT_MODE },
 					stats: {
 						...s.review.stats,
 						duration: Date.now() - s.review.startTime,
@@ -164,25 +157,11 @@ export function createReviewSlice(
 
 		reset: () => {
 			schedulingPreview = null;
-			editMode = {
-				active: false,
-				field: null,
-				originalQuestion: "",
-				originalAnswer: "",
-			};
 			const initialState = createInitialState();
 			set((s) => ({
 				review: {
 					...s.review,
-					isActive: initialState.isActive,
-					queue: initialState.queue,
-					currentIndex: initialState.currentIndex,
-					isAnswerRevealed: initialState.isAnswerRevealed,
-					results: initialState.results,
-					startTime: initialState.startTime,
-					questionShownTime: initialState.questionShownTime,
-					stats: initialState.stats,
-					cachedBadgeCounts: initialState.cachedBadgeCounts,
+					...initialState,
 				},
 			}));
 		},
@@ -609,30 +588,36 @@ export function createReviewSlice(
 			}));
 		},
 
-		getEditState: () => ({ ...editMode }),
+		getEditState: () => ({ ...get().review.editMode }),
 
 		startEdit: (field: "question" | "answer") => {
-			const card = get().review.queue[get().review.currentIndex];
+			const state = get().review;
+			const card = state.queue[state.currentIndex];
 			if (!card) return;
 
-			editMode = {
-				active: true,
-				field,
-				originalQuestion: card.question,
-				originalAnswer: card.answer,
-			};
+			set((s) => ({
+				review: {
+					...s.review,
+					editMode: {
+						active: true,
+						field,
+						originalQuestion: card.question,
+						originalAnswer: card.answer,
+					},
+				},
+			}));
 		},
 
 		cancelEdit: () => {
-			editMode = {
-				active: false,
-				field: null,
-				originalQuestion: "",
-				originalAnswer: "",
-			};
+			set((s) => ({
+				review: {
+					...s.review,
+					editMode: { ...INITIAL_EDIT_MODE },
+				},
+			}));
 		},
 
-		isEditing: () => editMode.active,
+		isEditing: () => get().review.editMode.active,
 
 		updateCurrentCardContent: (question: string, answer: string) => {
 			const state = get().review;

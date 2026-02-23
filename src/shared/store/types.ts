@@ -54,6 +54,7 @@ export interface ReviewSliceState {
 	questionShownTime: number;
 	stats: ReviewSessionStats;
 	cachedBadgeCounts: BadgeCounts;
+	editMode: EditModeState;
 }
 
 export interface ReviewSliceActions {
@@ -90,7 +91,6 @@ export interface ReviewSliceActions {
 		requeuedAtIndex?: number,
 	) => void;
 
-	// Edit mode (stored outside state to avoid triggering subscriptions)
 	getEditState: () => EditModeState;
 	startEdit: (field: "question" | "answer") => void;
 	cancelEdit: () => void;
