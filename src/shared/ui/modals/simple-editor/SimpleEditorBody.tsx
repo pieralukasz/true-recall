@@ -1,4 +1,5 @@
 import type { ImageService } from "@features/integration/services/ImageService";
+import { Clickable } from "@shared/ui/components";
 import type { FlashcardParserService } from "@features/study/services/flashcard/flashcard-parser.service";
 import {
 	insertAtTextareaCursor,
@@ -277,16 +278,20 @@ export function SimpleEditorBody({
 
 				{/* Right: Cancel + Save */}
 				<div class="ep:flex ep:gap-3">
-					<button
-						type="button"
+					<Clickable
 						class={SECONDARY_BUTTON_CLASSES}
 						onClick={onClose}
+						stopPropagation={false}
 					>
 						Cancel
-					</button>
-					<button type="button" class="mod-cta ep-btn" onClick={handleSave}>
+					</Clickable>
+					<Clickable
+						class="mod-cta ep-btn"
+						onClick={handleSave}
+						stopPropagation={false}
+					>
 						{buttonText}
-					</button>
+					</Clickable>
 				</div>
 			</div>
 		</div>

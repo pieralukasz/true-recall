@@ -1,4 +1,5 @@
 import type { GenerationMode } from "@features/ai/prompts/default-prompts";
+import { Clickable } from "@shared/ui/components";
 import { useCallback, useState } from "preact/hooks";
 
 export interface SelectionToolbarProps {
@@ -60,9 +61,8 @@ export function SelectionToolbar({
 	return (
 		<div class="true-recall-selection-toolbar ep:flex ep:items-center ep:gap-0.5 ep:p-1">
 			{AI_BUTTONS.map(({ mode, label }) => (
-				<button
+				<Clickable
 					key={mode}
-					type="button"
 					class={`true-recall-st-btn ${!hasApiKey ? "true-recall-st-btn-disabled" : ""}`}
 					disabled={busy || !hasApiKey}
 					onClick={() => void handleGenerate(mode)}
@@ -74,23 +74,21 @@ export function SelectionToolbar({
 				>
 					{generatingMode === mode ? <SmallSpinner /> : null}
 					<span>{label}</span>
-				</button>
+				</Clickable>
 			))}
 
 			<span class="true-recall-st-divider" />
 
-			<button
-				type="button"
+			<Clickable
 				class="true-recall-st-btn"
 				disabled={busy}
 				onClick={handleEdit}
 				title="Open in flashcard editor"
 			>
 				<span>Edit</span>
-			</button>
+			</Clickable>
 
-			<button
-				type="button"
+			<Clickable
 				class="true-recall-st-btn"
 				disabled={busy}
 				onClick={() => void handleQuickAdd()}
@@ -98,7 +96,7 @@ export function SelectionToolbar({
 			>
 				{isQuickAdding ? <SmallSpinner /> : null}
 				<span>Quick+</span>
-			</button>
+			</Clickable>
 		</div>
 	);
 }

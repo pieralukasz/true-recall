@@ -7,6 +7,7 @@ import {
 } from "@features/study/modals/custom-study/NumberField";
 import type { CustomStudyModalResult } from "@features/study/modals/custom-study/types";
 import type { ReviewOrder } from "@shared/types/settings.types";
+import { Clickable } from "@shared/ui/components";
 import { ModalFooter } from "@shared/ui/components/ModalFooter";
 import { useRef } from "preact/hooks";
 
@@ -172,9 +173,8 @@ export function CustomStudyBody({
 			/>
 
 			<div class={SECTION_CLS}>
-				<button
-					type="button"
-					class="ep:flex ep:items-center ep:gap-2 ep:cursor-pointer ep:bg-transparent ep:border-none ep:p-0 ep:font-inherit ep:text-left ep:w-full"
+				<Clickable
+					class="ep:flex ep:items-center ep:gap-2 ep:p-0 ep:text-left ep:w-full"
 					onClick={() => updateConfig("crammingMode", !config.crammingMode)}
 				>
 					<input
@@ -196,7 +196,7 @@ export function CustomStudyBody({
 					>
 						Cramming mode (no scheduling changes)
 					</label>
-				</button>
+				</Clickable>
 			</div>
 
 			<div class={SECTION_CLS}>

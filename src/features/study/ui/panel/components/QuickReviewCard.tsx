@@ -1,5 +1,6 @@
 import type { SchedulingPreview } from "@shared/types";
 import type { FSRSFlashcardItem } from "@shared/types/fsrs/card.types";
+import { Clickable } from "@shared/ui/components";
 import { type Grade, Rating } from "ts-fsrs";
 
 const RATING_BTN_BASE =
@@ -35,8 +36,7 @@ export function QuickReviewCard({
 					</div>
 
 					<div class="ep:flex ep:justify-center ep:gap-2 ep:pt-1">
-						<button
-							type="button"
+						<Clickable
 							class={`${RATING_BTN_BASE} ep:bg-obs-red ep:text-obs-on-accent`}
 							onClick={() => onRate(Rating.Again)}
 						>
@@ -46,9 +46,8 @@ export function QuickReviewCard({
 									{preview.again.interval}
 								</span>
 							)}
-						</button>
-						<button
-							type="button"
+						</Clickable>
+						<Clickable
 							class={`${RATING_BTN_BASE} ep:bg-obs-orange ep:text-obs-on-accent`}
 							onClick={() => onRate(Rating.Hard)}
 						>
@@ -58,9 +57,8 @@ export function QuickReviewCard({
 									{preview.hard.interval}
 								</span>
 							)}
-						</button>
-						<button
-							type="button"
+						</Clickable>
+						<Clickable
 							class={`${RATING_BTN_BASE} ep:bg-obs-green ep:text-obs-on-accent`}
 							onClick={() => onRate(Rating.Good)}
 						>
@@ -70,9 +68,8 @@ export function QuickReviewCard({
 									{preview.good.interval}
 								</span>
 							)}
-						</button>
-						<button
-							type="button"
+						</Clickable>
+						<Clickable
 							class={`${RATING_BTN_BASE} ep:bg-obs-cyan ep:text-obs-on-accent`}
 							onClick={() => onRate(Rating.Easy)}
 						>
@@ -82,7 +79,7 @@ export function QuickReviewCard({
 									{preview.easy.interval}
 								</span>
 							)}
-						</button>
+						</Clickable>
 					</div>
 
 					<div class="ep:text-[10px] ep:text-obs-muted ep:text-center">
@@ -90,13 +87,13 @@ export function QuickReviewCard({
 					</div>
 				</>
 			) : (
-				<button
-					type="button"
+				<Clickable
+					stopPropagation={false}
 					class="ep-btn mod-cta ep:text-xs ep:py-1.5"
 					onClick={onShowAnswer}
 				>
 					Show Answer
-				</button>
+				</Clickable>
 			)}
 		</div>
 	);

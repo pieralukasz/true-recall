@@ -1,5 +1,6 @@
 import { UI_CONFIG } from "@shared/constants";
 import type { ReviewApi } from "@shared/store";
+import { Clickable } from "@shared/ui/components";
 import { useEffect, useState } from "preact/hooks";
 
 export function WaitingScreen({
@@ -55,11 +56,15 @@ export function WaitingScreen({
 					</div>
 
 					<div class="ep:flex ep:gap-3 ep:justify-center">
-						<button type="button" class="ep-btn mod-cta">
+						<Clickable
+							stopPropagation={false}
+							class="ep-btn mod-cta"
+							onClick={() => {}}
+						>
 							Wait
-						</button>
-						<button
-							type="button"
+						</Clickable>
+						<Clickable
+							stopPropagation={false}
 							class="ep-btn ep-btn-outline"
 							onClick={() => {
 								review.endSession();
@@ -67,7 +72,7 @@ export function WaitingScreen({
 							}}
 						>
 							End session
-						</button>
+						</Clickable>
 					</div>
 				</div>
 			</div>

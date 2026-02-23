@@ -1,3 +1,4 @@
+import { Clickable } from "@shared/ui/components/Clickable";
 import { SearchInput } from "@shared/ui/components/SearchInput";
 import type { MoveCardResult } from "@shared/ui/modals/MoveCardModal";
 import {
@@ -53,16 +54,12 @@ function NoteItem({
 					</span>
 				)}
 			</div>
-			<button
-				type="button"
-				class="ep:shrink-0 ep:py-1 ep:px-3 ep:rounded-md ep:bg-obs-interactive ep:text-obs-on-accent ep:border-none ep:text-ui-smaller ep:cursor-pointer ep:opacity-0 ep:group-hover:opacity-100 ep:hover:opacity-100"
-				onClick={(e) => {
-					e.stopPropagation();
-					onSelect(note.path);
-				}}
+			<Clickable
+				class="ep:shrink-0 ep:py-1 ep:px-3 ep:rounded-md ep:bg-obs-interactive ep:text-obs-on-accent ep:text-ui-smaller ep:opacity-0 ep:group-hover:opacity-100 ep:hover:opacity-100"
+				onClick={() => onSelect(note.path)}
 			>
 				Select
-			</button>
+			</Clickable>
 		</div>
 	);
 }

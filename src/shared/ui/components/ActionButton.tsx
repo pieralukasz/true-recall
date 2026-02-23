@@ -1,4 +1,7 @@
+import { Clickable } from "@shared/ui/components/Clickable";
 import { useIcon } from "@shared/ui/preact/hooks";
+import { cn } from "@shared/ui/utils";
+import { cva } from "class-variance-authority";
 
 export type ActionButtonVariant = "primary" | "secondary" | "danger" | "seed";
 
@@ -12,13 +15,30 @@ export interface ActionButtonProps {
 	class?: string;
 }
 
-const VARIANT_CLASSES: Record<ActionButtonVariant, string> = {
-	primary: "mod-cta",
-	secondary:
-		"ep:bg-obs-border ep:text-obs-normal ep:hover:bg-obs-modifier-hover",
-	danger: "ep:bg-obs-red ep:text-obs-on-accent ep:hover:bg-obs-red",
-	seed: "ep:bg-obs-border ep:text-obs-normal ep:font-semibold ep:hover:bg-obs-yellow ep:hover:text-obs-on-accent",
-};
+const actionButtonVariants = cva(
+	"ep:border-none ep:py-2.5 ep:px-4 ep:rounded-md ep:cursor-pointer ep:font-medium ep:text-ui-small ep:transition-colors",
+	{
+		variants: {
+			variant: {
+				primary: "mod-cta",
+				secondary:
+					"ep:bg-obs-border ep:text-obs-normal ep:hover:bg-obs-modifier-hover",
+				danger: "ep:bg-obs-red ep:text-obs-on-accent ep:hover:bg-obs-red",
+				seed: "ep:bg-obs-border ep:text-obs-normal ep:font-semibold ep:hover:bg-obs-yellow ep:hover:text-obs-on-accent",
+			},
+			fullWidth: {
+				true: "ep:flex-1",
+			},
+			disabled: {
+				true: "ep:opacity-60 ep:cursor-not-allowed",
+			},
+			hasIcon: {
+				true: "ep:flex ep:items-center ep:gap-1.5 ep:justify-center",
+			},
+		},
+		defaultVariants: { variant: "secondary" },
+	},
+);
 
 export function ActionButton({
 	label,
@@ -31,33 +51,22 @@ export function ActionButton({
 }: ActionButtonProps) {
 	const iconRef = useIcon(icon ?? "");
 
-	const classes = [
-		"ep:border-none ep:py-2.5 ep:px-4 ep:rounded-md ep:cursor-pointer ep:font-medium ep:text-ui-small ep:transition-colors",
-		icon ? "ep:flex ep:items-center ep:gap-1.5 ep:justify-center" : "",
-		fullWidth ? "ep:flex-1" : "",
-		disabled ? "ep:opacity-60 ep:cursor-not-allowed" : "",
-		VARIANT_CLASSES[variant],
-		cls ?? "",
-	]
-		.filter(Boolean)
-		.join(" ");
-
 	return (
-		<button
-			type="button"
-			class={classes}
+		<Clickable
+			class={cn(
+				actionButtonVariants({
+					variant,
+					fullWidth,
+					disabled,
+					hasIcon: !!icon,
+				}),
+				cls,
+			)}
 			disabled={disabled}
-			onClick={
-				disabled
-					? undefined
-					: (e) => {
-							e.stopPropagation();
-							onClick?.();
-						}
-			}
+			onClick={() => onClick?.()}
 		>
 			{iconRef && <span ref={iconRef} />}
 			<span>{label}</span>
-		</button>
+		</Clickable>
 	);
 }

@@ -12,6 +12,7 @@ import type {
 	FSRSFlashcardItem,
 	StatsTimeRange,
 } from "@shared/types";
+import { Clickable } from "@shared/ui/components";
 import {
 	getThemeColor,
 	getThemeColorWithAlpha,
@@ -198,10 +199,9 @@ export function ReviewsChart({
 	const controls = (
 		<div class="ep:flex ep:flex-wrap ep:gap-4 ep:justify-center ep:mb-3 ep:pb-3 ep:border-b ep:border-obs-border">
 			{controlDefs.map(({ key, label, color }) => (
-				<button
-					type="button"
+				<Clickable
 					key={key}
-					class="ep:flex ep:items-center ep:gap-1.5 ep:cursor-pointer ep:select-none ep:bg-transparent ep:border-none ep:p-0 ep:font-inherit"
+					class="ep:flex ep:items-center ep:gap-1.5 ep:select-none ep:p-0"
 					onClick={() => toggleVisibility(key)}
 				>
 					<input
@@ -225,7 +225,7 @@ export function ReviewsChart({
 					>
 						{label}
 					</label>
-				</button>
+				</Clickable>
 			))}
 		</div>
 	);

@@ -1,7 +1,6 @@
 import type { FSRSFlashcardItem } from "@shared/types";
 import {
 	FSRS_COLORS,
-	fsrsStateToColor,
 	fsrsStateToColorName,
 	fsrsStateToCssVar,
 	type HighlightColor,
@@ -16,6 +15,8 @@ export interface StatusCounts {
 
 export function getStatusDotColor(fsrsCard?: FSRSFlashcardItem): string {
 	if (!fsrsCard) return "var(--text-muted)";
+	if (isSuspended(fsrsCard)) return `var(${FSRS_COLORS.suspended.cssVar})`;
+	if (isBuried(fsrsCard)) return "var(--text-muted)";
 	return fsrsStateToCssVar(fsrsCard.fsrs.state);
 }
 
@@ -45,14 +46,6 @@ export function isBuried(fsrsCard?: FSRSFlashcardItem): boolean {
 	return new Date(buriedUntil) > new Date();
 }
 
-export function getStatusBgClass(
-	fsrsCard: FSRSFlashcardItem | undefined,
-): string {
-	if (!fsrsCard) return "ep:bg-obs-secondary";
-	if (isSuspended(fsrsCard)) return FSRS_COLORS.suspended.bgCls;
-	if (isBuried(fsrsCard)) return "ep:bg-obs-secondary";
-	return fsrsStateToColor(fsrsCard.fsrs.state)?.bgCls ?? "ep:bg-obs-secondary";
-}
 
 export function getHighlightColor(
 	fsrsCard?: FSRSFlashcardItem,

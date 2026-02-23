@@ -7,6 +7,7 @@ import {
 } from "@features/study/ui/review/components";
 import type { ReviewApi } from "@shared/store";
 import type { FSRSFlashcardItem } from "@shared/types";
+import { Clickable } from "@shared/ui/components";
 import { usePlugin } from "@shared/ui/preact/ObsidianContext";
 import { useEffect, useState } from "preact/hooks";
 import type { Grade } from "ts-fsrs";
@@ -142,13 +143,12 @@ function ActiveReview({
 
 			{card.sourceNoteName && !isEditing && (
 				<div class="ep:flex ep:justify-center ep:py-2 ep:shrink-0">
-					<button
-						type="button"
-						class="ep:text-obs-faint ep:text-ui-smaller ep:cursor-pointer ep:no-underline ep:hover:text-obs-accent ep:hover:underline ep:transition-colors ep:bg-transparent ep:border-none ep:p-0"
+					<Clickable
+						class="ep:text-obs-faint ep:text-ui-smaller ep:no-underline ep:hover:text-obs-accent ep:hover:underline ep:transition-colors ep:p-0"
 						onClick={onOpenSourceNote}
 					>
 						Source: {card.sourceNoteName}
-					</button>
+					</Clickable>
 				</div>
 			)}
 		</div>

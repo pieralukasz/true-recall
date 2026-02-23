@@ -1,6 +1,7 @@
 import type { NLQueryService } from "@features/ai/services/nl-query.service";
 import { StatsCard } from "@features/metrics/ui/stats/components/StatsCard";
 import type { ExampleQuery, NLQueryResult } from "@shared/types";
+import { Clickable } from "@shared/ui/components";
 import { useApp } from "@shared/ui/preact";
 import { MarkdownRenderer, Component as ObsidianComponent } from "obsidian";
 import { useCallback, useEffect, useRef, useState } from "preact/hooks";
@@ -105,14 +106,13 @@ export function NLQueryPanel({
 					onInput={(e) => setQuery((e.target as HTMLTextAreaElement).value)}
 					onKeyDown={handleKeyDown}
 				/>
-				<button
-					type="button"
-					class="mod-cta ep:py-2 ep:px-4 ep:text-ui-small ep:rounded-md ep:cursor-pointer ep:transition-opacity ep:disabled:opacity-50 ep:disabled:cursor-not-allowed ep:self-stretch"
+				<Clickable
+					class="mod-cta ep:py-2 ep:px-4 ep:text-ui-small ep:rounded-md ep:transition-opacity ep:self-stretch"
 					disabled={!isReady || isLoading}
 					onClick={() => void submitQuery(query)}
 				>
 					{!isReady ? "Not configured" : isLoading ? "Analyzing..." : "Explore"}
-				</button>
+				</Clickable>
 			</div>
 
 			{/* Example queries */}
@@ -121,17 +121,16 @@ export function NLQueryPanel({
 					Quick insights:
 				</span>
 				{EXAMPLE_QUERIES.map((ex) => (
-					<button
-						type="button"
+					<Clickable
 						key={ex.text}
-						class="ep:py-1 ep:px-3 ep:text-ui-smaller ep:border ep:border-obs-border ep:rounded-xl ep:bg-obs-primary ep:text-obs-muted ep:cursor-pointer ep:transition-all ep:hover:border-obs-interactive ep:hover:text-obs-normal"
+						class="ep:py-1 ep:px-3 ep:text-ui-smaller ep:border ep:border-obs-border ep:rounded-xl ep:bg-obs-primary ep:text-obs-muted ep:transition-all ep:hover:border-obs-interactive ep:hover:text-obs-normal"
 						onClick={() => {
 							setQuery(ex.query);
 							void submitQuery(ex.query);
 						}}
 					>
 						{ex.text}
-					</button>
+					</Clickable>
 				))}
 			</div>
 

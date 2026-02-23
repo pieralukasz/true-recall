@@ -1,3 +1,4 @@
+import { Clickable } from "@shared/ui/components";
 import { BasePromiseModal } from "@shared/ui/modals/BasePromiseModal";
 import type { App } from "obsidian";
 import { render } from "preact";
@@ -36,13 +37,13 @@ function FirstSyncConflictBody({
 						Replace server data with your local flashcards. Use this if your
 						local data is more complete.
 					</p>
-					<button
-						type="button"
+					<Clickable
+						stopPropagation={false}
 						class="mod-warning ep-btn"
 						onClick={() => onResolve({ cancelled: false, choice: "upload" })}
 					>
 						Upload local → server
-					</button>
+					</Clickable>
 				</div>
 
 				<div class="ep:p-3 ep:bg-obs-secondary ep:border ep:border-obs-border ep:rounded-lg">
@@ -53,24 +54,24 @@ function FirstSyncConflictBody({
 						Replace local data with server flashcards. Use this if another
 						device has your main data.
 					</p>
-					<button
-						type="button"
+					<Clickable
+						stopPropagation={false}
 						class="mod-warning ep-btn"
 						onClick={() => onResolve({ cancelled: false, choice: "download" })}
 					>
 						Download server → local
-					</button>
+					</Clickable>
 				</div>
 			</div>
 
 			<div class="ep-modal-footer ep:flex ep:justify-center">
-				<button
-					type="button"
+				<Clickable
+					stopPropagation={false}
 					class="ep-btn ep-btn-outline"
 					onClick={() => onResolve({ cancelled: true, choice: "cancel" })}
 				>
 					Cancel
-				</button>
+				</Clickable>
 			</div>
 		</>
 	);

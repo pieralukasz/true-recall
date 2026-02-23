@@ -2,6 +2,7 @@ import type { StatsCalculatorService } from "@features/metrics/services/stats/st
 import { StatsCard } from "@features/metrics/ui/stats/components/StatsCard";
 import { getHeatmapLevelClasses } from "@features/metrics/ui/stats/utils/chart-helpers";
 import type { FSRSFlashcardItem } from "@shared/types";
+import { Clickable } from "@shared/ui/components";
 import { useEffect, useMemo, useState } from "preact/hooks";
 
 const MONTHS = [
@@ -126,11 +127,10 @@ export function CalendarHeatmap({
 						{weeks.map((week, wi) => (
 							<div key={wi} class="ep:flex ep:flex-col ep:gap-0.5">
 								{week.map((cell) => (
-									<button
-										type="button"
+									<Clickable
 										key={cell.dateKey}
 										class={[
-											"ep:w-3 ep:h-3 ep:rounded-sm ep:cursor-pointer ep:transition-all ep:duration-200 ep:hover:scale-110 ep:hover:opacity-80 ep:border-none ep:p-0",
+											"ep:w-3 ep:h-3 ep:rounded-sm ep:transition-all ep:duration-200 ep:hover:scale-110 ep:hover:opacity-80 ep:p-0",
 											getHeatmapLevelClasses(cell.count),
 											cell.isFuture ? "ep:opacity-30" : "",
 										].join(" ")}

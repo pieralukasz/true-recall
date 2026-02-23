@@ -1,5 +1,6 @@
 import type { MetricType } from "@features/metrics/ui/simulator/types";
 import type { SimulatorApi } from "@shared/store";
+import { Clickable } from "@shared/ui/components";
 import { useCallback, useRef } from "preact/hooks";
 
 interface SimulatorControlsProps {
@@ -51,19 +52,18 @@ export function SimulatorControls({
 
 	return (
 		<div class="ep:bg-obs-secondary ep:rounded-lg ep:p-4">
-			<button
-				type="button"
+			<Clickable
 				class={[
 					"ep:w-full ep:mb-3 ep:px-3 ep:py-2",
 					"ep:bg-obs-primary ep:text-obs-normal",
 					"ep:border ep:border-obs-border ep:rounded-lg",
-					"ep:cursor-pointer ep:text-ui-small",
+					"ep:text-ui-small",
 					"hover:ep:bg-obs-modifier-hover",
 				].join(" ")}
 				onClick={handleReset}
 			>
 				Reset reviews
-			</button>
+			</Clickable>
 
 			<div class="ep:text-ui-smaller ep:text-obs-muted ep:mb-2">
 				1=Again, 2=Hard, 3=Good, 4=Easy
