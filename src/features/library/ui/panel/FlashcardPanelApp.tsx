@@ -696,28 +696,38 @@ export function FlashcardPanelApp({
 		}
 
 		const content = await app.vault.read(state.currentFile);
-		const allHighlights = extractHighlights(content);
+		const highlights = extractHighlights(content);
 
-		if (allHighlights.length === 0) {
+		if (highlights.length === 0) {
 			notify().warning("No highlights found in note");
 			return;
 		}
 
-		// Skip highlights that already generated cards (exact sourceText match)
-		const existingSourceTexts = new Set(
-			state.flashcardInfo?.flashcards
-				?.map((f) => f.sourceText)
-				.filter(Boolean) ?? [],
+		const frontmatterService = plugin.flashcardManager.getFrontmatterService();
+		const sourceUid = await frontmatterService.getSourceNoteUid(
+			state.currentFile,
 		);
-		const newHighlights = allHighlights.filter(
-			(h) => !existingSourceTexts.has(h),
-		);
-		const skippedCount = allHighlights.length - newHighlights.length;
+
+		const existingSourceTexts = sourceUid
+			? (plugin.cardStore?.getCardsBySourceUid(sourceUid) ?? [])
+					.map((c) => c.sourceText?.trim().toLowerCase())
+					.filter(Boolean) as string[]
+			: [];
+
+		const newHighlights =
+			existingSourceTexts.length > 0
+				? highlights.filter((h) => {
+						const normalized = h.trim().toLowerCase();
+						return !existingSourceTexts.some(
+							(st) =>
+								st.includes(normalized) ||
+								normalized.includes(st),
+						);
+					})
+				: highlights;
 
 		if (newHighlights.length === 0) {
-			notify().info(
-				`All ${allHighlights.length} highlights already have flashcards`,
-			);
+			notify().warning("All highlights already have flashcards");
 			return;
 		}
 
@@ -746,6 +756,7 @@ export function FlashcardPanelApp({
 			state.currentFile,
 			result.flashcards,
 			"ai",
+			joinedHighlights,
 		);
 
 		const created = batchResult.created.length;
@@ -759,14 +770,10 @@ export function FlashcardPanelApp({
 			);
 		} else if (dups > 0) {
 			notify().allCardsDuplicates(dups);
-		} else if (skippedCount > 0) {
-			notify().success(
-				`Created ${created} card(s), skipped ${skippedCount} highlight(s) (already have cards)`,
-			);
 		} else {
 			notify().cardsCreated(created, state.currentFile.basename);
 		}
-	}, [state.currentFile, state.flashcardInfo, app, plugin]);
+	}, [state.currentFile, app, plugin]);
 
 	const handleReview = useCallback(async () => {
 		if (!state.currentFile) return;
