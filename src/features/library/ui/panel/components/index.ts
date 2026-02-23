@@ -15,4 +15,3 @@ export {
 	PanelHeader,
 	type PanelHeaderProps,
 } from "@features/library/ui/panel/components/PanelHeader";
-export { StatusDot } from "@features/library/ui/panel/components/StatusDot";
