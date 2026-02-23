@@ -137,6 +137,7 @@ export interface PanelSliceState {
 	isAddCardExpanded: boolean;
 	isFollowingReview: boolean;
 	reviewSourceNotePath: string | null;
+	hasHighlights: boolean;
 }
 
 export interface PanelSliceActions {
@@ -152,6 +153,7 @@ export interface PanelSliceActions {
 	isCurrentFile: (file: TFile | null) => boolean;
 	setUncollectedInfo: (count: number) => void;
 	hasUncollectedFlashcards: () => boolean;
+	setHasHighlights: (value: boolean) => void;
 	enterSelectionMode: (initialCardId?: string) => void;
 	exitSelectionMode: () => void;
 	toggleCardSelection: (cardId: string) => void;
