@@ -4,7 +4,7 @@ import {
 	usePlugin,
 } from "@shared/ui/preact/ObsidianContext";
 import { stripBrTags } from "@shared/utils";
-import { useCallback, useEffect, useRef } from "preact/hooks";
+import { useCallback, useEffect, useLayoutEffect, useRef } from "preact/hooks";
 
 export interface LivePreviewFieldProps {
 	content: string;
@@ -79,7 +79,8 @@ export function LivePreviewField({
 	}, [app, plugin.EmbeddableEditor]);
 
 	// Update editor content when card changes (new card appears)
-	useEffect(() => {
+	// useLayoutEffect ensures CM content updates before paint — no flash of old card
+	useLayoutEffect(() => {
 		const editor = editorRef.current;
 		if (!editor) return;
 
