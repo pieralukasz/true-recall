@@ -2,6 +2,7 @@ import { WorkloadForecastCalculator } from "@features/metrics/services/fsrs-tool
 import { StatsCalculatorService } from "@features/metrics/services/stats/stats-calculator.service";
 import { effect } from "@preact/signals";
 import { dataVersion, track } from "@shared/services/signals";
+import { Clickable } from "@shared/ui/components";
 import { usePlugin } from "@shared/ui/preact";
 import { useEffect, useMemo, useState } from "preact/hooks";
 import { configValue, parseCodeblockConfig } from "./config-parser";
@@ -141,9 +142,9 @@ export function WorkloadWidget({ source }: { source: string }) {
 			{/* Day rows */}
 			<div class="ep:flex ep:flex-col ep:gap-1">
 				{data.days.map((day) => (
-					<div
+					<Clickable
 						key={`${day.label}-${day.daysAhead}`}
-						class="ep:flex ep:items-center ep:gap-2 ep:text-xs ep:cursor-pointer hover:ep:bg-obs-modifier-hover ep:rounded ep:px-1 ep:py-0.5"
+						class="ep:flex ep:items-center ep:gap-2 ep:text-xs hover:ep:bg-obs-modifier-hover ep:rounded ep:px-1 ep:py-0.5"
 						onClick={() => handleDayClick(day.daysAhead)}
 						title={
 							day.isToday
@@ -201,7 +202,7 @@ export function WorkloadWidget({ source }: { source: string }) {
 						{showFlags && !day.isToday && !day.isHeavy && !day.isLightest && (
 							<span class="ep:w-16" />
 						)}
-					</div>
+					</Clickable>
 				))}
 			</div>
 

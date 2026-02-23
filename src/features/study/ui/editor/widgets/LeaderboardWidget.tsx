@@ -2,9 +2,11 @@ import { StatsCalculatorService } from "@features/metrics/services/stats/stats-c
 import { effect } from "@preact/signals";
 import { dataVersion, track } from "@shared/services/signals";
 import type { NotePerformanceRow } from "@shared/types/fsrs/stats.types";
+import { Clickable } from "@shared/ui/components";
 import { usePlugin } from "@shared/ui/preact";
 import { useEffect, useMemo, useState } from "preact/hooks";
 import { configValue, parseCodeblockConfig } from "./config-parser";
+import { WidgetCta } from "./WidgetCta";
 
 interface LeaderboardEntry extends NotePerformanceRow {
 	resolvedName: string;
@@ -137,9 +139,9 @@ export function LeaderboardWidget({ source }: { source: string }) {
 							: "ok";
 
 				return (
-					<div
+					<Clickable
 						key={entry.sourceUid}
-						class="ep:flex ep:items-center ep:text-xs ep:gap-2 ep:cursor-pointer hover:ep:bg-obs-modifier-hover ep:rounded ep:px-1 ep:py-0.5"
+						class="ep:flex ep:items-center ep:text-xs ep:gap-2 hover:ep:bg-obs-modifier-hover ep:rounded ep:px-1 ep:py-0.5"
 						onClick={() => handleNoteClick(entry.resolvedName)}
 						title={`Review ${entry.resolvedName}`}
 					>
@@ -166,18 +168,13 @@ export function LeaderboardWidget({ source }: { source: string }) {
 						<span class="ep:w-10 ep:text-right ep:text-obs-muted">
 							{entry.avgLapses.toFixed(1)}
 						</span>
-					</div>
+					</Clickable>
 				);
 			})}
 
 			{/* Action buttons */}
 			<div class="ep:flex ep:items-center ep:gap-2 ep:text-xs ep:pt-1 ep:border-t ep:border-obs-modifier-border">
-				<button
-					class="ep:px-2 ep:py-0.5 ep:rounded ep:bg-obs-interactive-accent ep:text-obs-on-accent ep:cursor-pointer hover:ep:opacity-90"
-					onClick={handleReviewWeakest}
-				>
-					Review weakest →
-				</button>
+				<WidgetCta label="Review weakest →" onClick={handleReviewWeakest} />
 			</div>
 		</div>
 	);

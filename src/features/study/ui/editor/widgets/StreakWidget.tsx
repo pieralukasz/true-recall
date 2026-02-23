@@ -1,9 +1,11 @@
 import { StatsCalculatorService } from "@features/metrics/services/stats/stats-calculator.service";
 import { effect } from "@preact/signals";
 import { dataVersion, track } from "@shared/services/signals";
+import { Clickable } from "@shared/ui/components";
 import { usePlugin } from "@shared/ui/preact";
 import { useEffect, useMemo, useState } from "preact/hooks";
 import { configValue, parseCodeblockConfig } from "./config-parser";
+import { WidgetCta } from "./WidgetCta";
 
 interface StreakData {
 	current: number;
@@ -89,13 +91,13 @@ export function StreakWidget({ source }: { source: string }) {
 		<div class="ep:flex ep:flex-col ep:gap-2 ep:p-3 ep:text-sm">
 			{/* Top row: streak + today + action */}
 			<div class="ep:flex ep:items-center ep:gap-3 ep:flex-wrap ep:text-xs">
-				<span
-					class="ep:font-semibold ep:cursor-pointer hover:ep:underline"
+				<Clickable
+					class="ep:font-semibold hover:ep:underline"
 					onClick={handleStreakClick}
 					title="Open statistics"
 				>
 					{data.current}d streak
-				</span>
+				</Clickable>
 
 				{showLongest && data.longest > 0 && (
 					<span class="ep:text-obs-muted">(longest: {data.longest}d)</span>
@@ -110,12 +112,7 @@ export function StreakWidget({ source }: { source: string }) {
 				)}
 
 				<span class="ep:ml-auto">
-					<button
-						class="ep:text-xs ep:px-2 ep:py-0.5 ep:rounded ep:bg-obs-interactive-accent ep:text-obs-on-accent ep:cursor-pointer hover:ep:opacity-90"
-						onClick={handleReviewClick}
-					>
-						Review →
-					</button>
+					<WidgetCta label="Review →" onClick={handleReviewClick} />
 				</span>
 			</div>
 

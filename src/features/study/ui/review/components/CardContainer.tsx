@@ -17,7 +17,6 @@ export interface CardContainerProps {
 		field: "question" | "answer",
 	) => void;
 	onImagePaste: (file: File, textarea: HTMLTextAreaElement) => void;
-	onOpenSourceNote: () => void;
 }
 
 export function CardContainer({
@@ -27,14 +26,13 @@ export function CardContainer({
 	onStartEdit,
 	onSaveEdit,
 	onImagePaste,
-	onOpenSourceNote,
 }: CardContainerProps) {
 	const isEditing = editState.active;
 	const isEditingQuestion = isEditing && editState.field === "question";
 	const isEditingAnswer = isEditing && editState.field === "answer";
 	const sourcePath = card.sourceNotePath || "";
 
-	const containerCls = `true-recall-review-card-container ep:flex-1 ep:min-h-0 ep:flex ep:items-start ep:justify-center ep:pt-4 ep:px-6 ep:pb-2 ep:overflow-y-auto${isEditing ? " true-recall-review-card-container--editing" : ""}`;
+	const containerCls = `true-recall-review-card-container ep:flex-1 ep:min-h-0 ep:flex ep:items-start ep:justify-center ep:pt-8 ep:px-6 ep:pb-2 ep:overflow-y-auto${isEditing ? " true-recall-review-card-container--editing" : ""}`;
 
 	const handleContainerClick = useCallback(
 		(e: MouseEvent) => {
@@ -71,19 +69,7 @@ export function CardContainer({
 			class={`${containerCls} ep:bg-transparent ep:border-none ep:font-inherit ep:cursor-default ep:text-left ep:w-full ep:max-w-3xl`}
 			onClick={handleContainerClick}
 		>
-			<div class="ep:w-full ep:text-left">
-				{card.sourceNoteName && !isEditing && (
-					<div class="ep:mb-3">
-						<button
-							type="button"
-							class="ep:text-obs-faint ep:text-ui-smaller ep:cursor-pointer ep:no-underline ep:hover:text-obs-accent ep:hover:underline ep:transition-colors ep:bg-transparent ep:border-none ep:p-0"
-							onClick={onOpenSourceNote}
-						>
-							{card.sourceNoteName}
-						</button>
-					</div>
-				)}
-
+			<div class="ep:w-full">
 				{card.cardType === "cloze" && card.clozeIndex !== undefined && (
 					<div class="ep:text-xs ep:text-obs-faint ep:mb-2 ep:uppercase ep:tracking-wider">
 						{isEditingQuestion
@@ -123,7 +109,11 @@ export function CardContainer({
 
 				{isAnswerRevealed && !isEditingQuestion && (
 					<>
-						<div class="ep:border-t ep:border-obs-border ep:my-6" />
+						<div class="ep:flex ep:items-center ep:my-6">
+							<div class="ep:flex-1 ep:border-t ep:border-obs-border" />
+							<div class="ep:mx-3 ep:w-1.5 ep:h-1.5 ep:rounded-full ep:bg-obs-faint" />
+							<div class="ep:flex-1 ep:border-t ep:border-obs-border" />
+						</div>
 						{isEditingAnswer ? (
 							<EditableField
 								content={card.answer}

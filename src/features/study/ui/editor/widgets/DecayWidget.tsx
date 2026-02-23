@@ -3,6 +3,7 @@ import { dataVersion, track } from "@shared/services/signals";
 import { usePlugin } from "@shared/ui/preact";
 import { useEffect, useMemo, useState } from "preact/hooks";
 import { configValue, parseCodeblockConfig } from "./config-parser";
+import { WidgetCta } from "./WidgetCta";
 
 interface DecayCard {
 	id: string;
@@ -213,12 +214,10 @@ export function DecayWidget({
 				)}
 
 				{data.atRiskCount > 0 && (
-					<button
-						class="ep:px-2 ep:py-0.5 ep:rounded ep:bg-obs-interactive-accent ep:text-obs-on-accent ep:cursor-pointer hover:ep:opacity-90"
+					<WidgetCta
+						label={`Review at-risk (${data.atRiskCount}) →`}
 						onClick={handleReviewAtRisk}
-					>
-						Review at-risk ({data.atRiskCount}) →
-					</button>
+					/>
 				)}
 			</div>
 		</div>
