@@ -31,15 +31,16 @@
 	transition: background-color 100ms ease;
 }
 
-.true-recall-st-btn:hover:not(:disabled) {
+.true-recall-st-btn:hover:not(:disabled):not([aria-disabled="true"]) {
 	background: var(--background-modifier-hover);
 }
 
-.true-recall-st-btn:active:not(:disabled) {
+.true-recall-st-btn:active:not(:disabled):not([aria-disabled="true"]) {
 	background: var(--background-modifier-active-hover);
 }
 
-.true-recall-st-btn:disabled {
+.true-recall-st-btn:disabled,
+.true-recall-st-btn[aria-disabled="true"] {
 	cursor: not-allowed;
 	opacity: 0.5;
 }

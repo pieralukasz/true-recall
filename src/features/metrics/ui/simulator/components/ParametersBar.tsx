@@ -1,4 +1,5 @@
 import { BUTTON_CLS } from "@features/metrics/ui/simulator/utils/simulator-helpers";
+import { Clickable } from "@shared/ui/components";
 
 interface ParametersBarProps {
 	parametersString: string;
@@ -29,25 +30,15 @@ export function ParametersBar({
 				{parametersString}
 			</div>
 			<div class="ep:flex ep:gap-2 ep:items-center">
-				<button type="button" class={BUTTON_CLS} onClick={onReset}>
+				<Clickable class={BUTTON_CLS} onClick={onReset}>
 					Reset parameters
-				</button>
-				<button
-					type="button"
-					class={`${BUTTON_CLS}${!canUndo ? " ep:opacity-50" : ""}`}
-					disabled={!canUndo}
-					onClick={onUndo}
-				>
+				</Clickable>
+				<Clickable class={BUTTON_CLS} disabled={!canUndo} onClick={onUndo}>
 					Undo
-				</button>
-				<button
-					type="button"
-					class={`${BUTTON_CLS}${!canRedo ? " ep:opacity-50" : ""}`}
-					disabled={!canRedo}
-					onClick={onRedo}
-				>
+				</Clickable>
+				<Clickable class={BUTTON_CLS} disabled={!canRedo} onClick={onRedo}>
 					Redo
-				</button>
+				</Clickable>
 				<div class="ep:text-ui-smaller ep:text-obs-muted ep:ml-2">1 / 1</div>
 			</div>
 		</div>

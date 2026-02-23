@@ -4,6 +4,7 @@ import { FSRSTab } from "@features/settings/tabs/FSRSTab";
 import { GeneralTab } from "@features/settings/tabs/GeneralTab";
 import { SchedulingTab } from "@features/settings/tabs/SchedulingTab";
 import { SyncTab } from "@features/settings/tabs/SyncTab";
+import { Clickable } from "@shared/ui/components";
 import { usePlugin } from "@shared/ui/preact";
 import { useCallback, useState } from "preact/hooks";
 
@@ -36,17 +37,17 @@ function TabBar({
 			role="tablist"
 		>
 			{TABS.map((tab) => (
-				<button
-					type="button"
+				<Clickable
 					key={tab.id}
 					class={`${TAB_BTN_BASE} ${activeTab === tab.id ? TAB_BTN_ACTIVE : ""}`}
 					role="tab"
 					aria-selected={activeTab === tab.id}
 					aria-controls={`true-recall-tabpanel-${tab.id}`}
+					stopPropagation={false}
 					onClick={() => onTabChange(tab.id)}
 				>
 					{tab.label}
-				</button>
+				</Clickable>
 			))}
 		</div>
 	);

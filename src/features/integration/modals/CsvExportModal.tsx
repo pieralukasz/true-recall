@@ -12,6 +12,7 @@ import {
 	type NoteEntry,
 	resolveNotes,
 } from "@features/integration/utils/export-helpers";
+import { Clickable } from "@shared/ui/components";
 import {
 	ModalFooter,
 	PRIMARY_BTN,
@@ -74,9 +75,13 @@ function CsvExportBody({
 					</div>
 				</div>
 				<div class="ep-modal-footer ep:flex ep:justify-end ep:gap-2">
-					<button type="button" class={PRIMARY_BTN} onClick={onClose}>
+					<Clickable
+						stopPropagation={false}
+						class={PRIMARY_BTN}
+						onClick={onClose}
+					>
 						Done
-					</button>
+					</Clickable>
 				</div>
 			</>
 		);
@@ -89,9 +94,13 @@ function CsvExportBody({
 					Export failed: {phase.message}
 				</div>
 				<div class="ep-modal-footer ep:flex ep:justify-end ep:gap-2">
-					<button type="button" class={SECONDARY_BTN} onClick={onClose}>
+					<Clickable
+						stopPropagation={false}
+						class={SECONDARY_BTN}
+						onClick={onClose}
+					>
 						Close
-					</button>
+					</Clickable>
 				</div>
 			</>
 		);

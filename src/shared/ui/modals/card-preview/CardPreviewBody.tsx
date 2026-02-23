@@ -1,4 +1,5 @@
 import type { CardMaturityBreakdown, FSRSFlashcardItem } from "@shared/types";
+import { Clickable } from "@shared/ui/components";
 import { useCallback, useState } from "preact/hooks";
 
 interface CardItemProps {
@@ -9,7 +10,7 @@ interface CardItemProps {
 }
 
 const btnCls =
-	"ep:p-1.5 ep:rounded-md ep:bg-transparent ep:border-none ep:cursor-pointer ep:text-obs-muted ep:hover:text-obs-normal ep:hover:bg-obs-modifier-hover ep:transition-colors ep:text-ui-smaller";
+	"ep:p-1.5 ep:rounded-md ep:text-obs-muted ep:hover:text-obs-normal ep:hover:bg-obs-modifier-hover ep:transition-colors ep:text-ui-smaller";
 
 function CardItem({ card, onDelete, onOpen, onUnbury }: CardItemProps) {
 	const question = (card.question ?? "No question").slice(0, 100);
@@ -20,17 +21,17 @@ function CardItem({ card, onDelete, onOpen, onUnbury }: CardItemProps) {
 			<div class="ep:text-ui-small ep:text-obs-normal ep:mb-1">{question}</div>
 			<div class="ep:text-ui-smaller ep:text-obs-muted">{answer}</div>
 			<div class="ep:flex ep:gap-2 ep:mt-2">
-				<button type="button" class={btnCls} onClick={() => onOpen(card)}>
+				<Clickable class={btnCls} onClick={() => onOpen(card)}>
 					Open
-				</button>
+				</Clickable>
 				{onUnbury && (
-					<button type="button" class={btnCls} onClick={() => onUnbury(card)}>
+					<Clickable class={btnCls} onClick={() => onUnbury(card)}>
 						Unbury
-					</button>
+					</Clickable>
 				)}
-				<button type="button" class={btnCls} onClick={() => onDelete(card)}>
+				<Clickable class={btnCls} onClick={() => onDelete(card)}>
 					Delete
-				</button>
+				</Clickable>
 			</div>
 		</div>
 	);
@@ -76,22 +77,20 @@ export function CardPreviewBody({
 					{cards.length} cards
 				</div>
 				{category === "buried" && cards.length > 0 && (
-					<button
-						type="button"
-						class="ep:text-ui-smaller ep:py-1.5 ep:px-3 ep:bg-obs-interactive ep:text-obs-on-accent ep:border-none ep:rounded-md ep:cursor-pointer ep:transition-colors ep:hover:opacity-90"
+					<Clickable
+						class="ep:text-ui-smaller ep:py-1.5 ep:px-3 ep:bg-obs-interactive ep:text-obs-on-accent ep:rounded-md ep:transition-colors ep:hover:opacity-90"
 						onClick={() => onUnburyAll(cards, wrappedSetCards)}
 					>
 						Unbury all
-					</button>
+					</Clickable>
 				)}
 				{category === "suspended" && cards.length > 0 && (
-					<button
-						type="button"
-						class="ep:text-ui-smaller ep:py-1.5 ep:px-3 ep:bg-obs-red ep:text-obs-on-accent ep:border-none ep:rounded-md ep:cursor-pointer ep:transition-colors ep:hover:opacity-90"
+					<Clickable
+						class="ep:text-ui-smaller ep:py-1.5 ep:px-3 ep:bg-obs-red ep:text-obs-on-accent ep:rounded-md ep:transition-colors ep:hover:opacity-90"
 						onClick={() => onDeleteAll(cards, wrappedSetCards)}
 					>
 						Delete all
-					</button>
+					</Clickable>
 				)}
 			</div>
 

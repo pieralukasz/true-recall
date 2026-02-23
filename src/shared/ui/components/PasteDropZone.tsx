@@ -21,8 +21,10 @@ export function PasteDropZone({
 	const [dragActive, setDragActive] = useState(false);
 
 	return (
-		<button
-			type="button"
+		// biome-ignore lint/a11y/useSemanticElements: intentionally a div — needs drag/drop handlers not supported by Clickable
+		<div
+			role="button"
+			tabIndex={0}
 			class={`ep:flex ep:flex-col ep:items-center ep:justify-center ep:p-6 ep:mb-4 ep:border-2 ep:border-dashed ep:rounded-lg ep:cursor-pointer ep:transition-all ep:hover:border-obs-interactive ep:bg-transparent ep:font-inherit ep:w-full ${dragActive ? "true-recall-paste-zone-active" : "ep:border-obs-border"}`}
 			onDragOver={(e) => {
 				e.preventDefault();
@@ -41,12 +43,18 @@ export function PasteDropZone({
 				}
 			}}
 			onClick={onClick}
+			onKeyDown={(e) => {
+				if (e.key === "Enter" || e.key === " ") {
+					e.preventDefault();
+					onClick?.();
+				}
+			}}
 		>
 			{icon && <div class="ep:text-obs-muted">{icon}</div>}
 			<div class="ep:text-ui-small ep:font-medium ep:text-obs-normal">
 				{label}
 			</div>
 			<div class="ep:text-ui-smaller ep:text-obs-muted">{hint}</div>
-		</button>
+		</div>
 	);
 }

@@ -1,6 +1,7 @@
 import { DayOfWeekSelector } from "@features/metrics/modals/easy-days/DayOfWeekSelector";
 import { SpecificDatesList } from "@features/metrics/modals/easy-days/SpecificDatesList";
 import type { EasyDaysConfig } from "@shared/types";
+import { Clickable } from "@shared/ui/components";
 import { ModalFooter, SECONDARY_BTN } from "@shared/ui/components/ModalFooter";
 import {
 	BasePromiseModal,
@@ -129,13 +130,9 @@ function EasyDaysBody({
 				onConfirm={() => handleSave(true)}
 				confirmLabel="Apply Now"
 			>
-				<button
-					type="button"
-					class={SECONDARY_BTN}
-					onClick={() => handleSave(false)}
-				>
+				<Clickable class={SECONDARY_BTN} onClick={() => handleSave(false)}>
 					Save
-				</button>
+				</Clickable>
 			</ModalFooter>
 		</>
 	);

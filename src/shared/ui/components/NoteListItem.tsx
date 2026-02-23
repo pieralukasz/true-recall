@@ -1,3 +1,4 @@
+import { cn } from "@shared/ui/utils";
 import type { TFile } from "obsidian";
 
 export interface NoteListItemProps {
@@ -20,7 +21,7 @@ export function NoteListItem({
 
 	return (
 		<div
-			class={isSuggested ? `${BASE_CLS} ${SUGGESTED_CLS}` : BASE_CLS}
+			class={cn(BASE_CLS, isSuggested && SUGGESTED_CLS)}
 			role="option"
 			tabIndex={0}
 			onClick={onSelect}

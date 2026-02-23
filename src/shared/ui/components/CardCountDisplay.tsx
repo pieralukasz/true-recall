@@ -1,3 +1,4 @@
+import { cva } from "class-variance-authority";
 import { FSRS_COLORS } from "@shared/ui/helpers/fsrs-colors";
 
 export interface CardCountDisplayProps {
@@ -10,6 +11,19 @@ export interface CardCountDisplayProps {
 	bold?: boolean;
 }
 
+const cardCountVariants = cva("ep:flex ep:items-center ep:gap-1", {
+	variants: {
+		size: {
+			smaller: "ep:text-ui-smaller",
+			small: "ep:text-ui-small",
+		},
+		bold: {
+			true: "ep:font-medium",
+		},
+	},
+	defaultVariants: { size: "smaller", bold: true },
+});
+
 export function CardCountDisplay({
 	newCount,
 	learningCount,
@@ -19,12 +33,8 @@ export function CardCountDisplay({
 	size = "smaller",
 	bold = true,
 }: CardCountDisplayProps) {
-	const sizeClass =
-		size === "small" ? "ep:text-ui-small" : "ep:text-ui-smaller";
-	const fontClass = bold ? "ep:font-medium" : "";
-
 	return (
-		<span class={`ep:flex ep:items-center ep:gap-1 ${fontClass} ${sizeClass}`}>
+		<span class={cardCountVariants({ size, bold })}>
 			<span class={FSRS_COLORS.new.textCls}>{newCount}</span>
 			<span class="ep:text-obs-faint">&middot;</span>
 			{variant === "full" && (

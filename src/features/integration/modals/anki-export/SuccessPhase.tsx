@@ -1,3 +1,4 @@
+import { Clickable } from "@shared/ui/components";
 import { PRIMARY_BTN } from "@shared/ui/components/ModalFooter";
 
 export interface SuccessPhaseProps {
@@ -14,9 +15,13 @@ export function SuccessPhase({ filename, onClose }: SuccessPhaseProps) {
 				</div>
 			</div>
 			<div class="ep-modal-footer ep:flex ep:justify-end ep:gap-2">
-				<button type="button" class={PRIMARY_BTN} onClick={onClose}>
+				<Clickable
+					stopPropagation={false}
+					class={PRIMARY_BTN}
+					onClick={onClose}
+				>
 					Done
-				</button>
+				</Clickable>
 			</div>
 		</>
 	);

@@ -1,3 +1,5 @@
+import { cva } from "class-variance-authority";
+import { cn } from "@shared/ui/utils";
 import { FSRS_COLORS, MUTED_STATES } from "@shared/ui/helpers/fsrs-colors";
 import { State } from "ts-fsrs";
 
@@ -32,6 +34,19 @@ const STATE_CONFIGS: Record<CardStateType, StateConfig> = {
 	unknown: { label: "Unknown", colorCls: MUTED_STATES.unknown.badgeCls },
 };
 
+const stateBadgeVariants = cva(
+	"ep:inline-flex ep:items-center ep:gap-1 ep:rounded-xl ep:font-semibold ep:uppercase ep:tracking-wide",
+	{
+		variants: {
+			size: {
+				sm: "ep:text-ui-smaller ep:py-0.5 ep:px-1.5",
+				md: "ep:text-ui-smaller ep:py-1 ep:px-2",
+			},
+		},
+		defaultVariants: { size: "md" },
+	},
+);
+
 export function getCardStateType(props: StateBadgeProps): CardStateType {
 	const now = new Date();
 	if (props.suspended) return "suspended";
@@ -58,12 +73,9 @@ export function getStateConfig(stateType: CardStateType): StateConfig {
 export function StateBadge(props: StateBadgeProps) {
 	const stateType = getCardStateType(props);
 	const config = getStateConfig(stateType);
-	const sizeCls = "ep:text-ui-smaller ep:py-1 ep:px-2";
 
 	return (
-		<span
-			class={`ep:inline-flex ep:items-center ep:gap-1 ep:rounded-xl ep:font-semibold ep:uppercase ep:tracking-wide ${sizeCls} ${config.colorCls}`}
-		>
+		<span class={cn(stateBadgeVariants({ size: props.size }), config.colorCls)}>
 			{config.label}
 		</span>
 	);

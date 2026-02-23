@@ -1,3 +1,5 @@
+import { Clickable } from "@shared/ui/components";
+
 export function RadioOption({
 	value,
 	label,
@@ -12,8 +14,8 @@ export function RadioOption({
 	onChange: () => void;
 }) {
 	return (
-		<button
-			type="button"
+		<Clickable
+			stopPropagation={false}
 			class={`ep:flex ep:items-start ep:gap-3 ep:p-3 ep:rounded-md ep:mb-2 ep:cursor-pointer ep:bg-obs-secondary ep:transition-colors ep:hover:bg-obs-modifier-hover ep:border-none ep:font-inherit ep:text-left ep:w-full ${checked ? "ep-radio-active" : ""}`}
 			onClick={() => onChange()}
 		>
@@ -30,6 +32,6 @@ export function RadioOption({
 				<div class="ep:font-medium">{label}</div>
 				<div class="setting-item-description ep:mt-0.5">{description}</div>
 			</div>
-		</button>
+		</Clickable>
 	);
 }

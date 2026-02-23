@@ -1,3 +1,4 @@
+export { cn } from "@shared/ui/utils/cn";
 export {
 	type InternalLinkHandlerOptions,
 	setupInternalLinkHandler,

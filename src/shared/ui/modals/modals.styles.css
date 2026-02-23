@@ -151,7 +151,7 @@
 	/* ================================================================
 	   TRANSITIONS — smooth interactive elements
 	   ================================================================ */
-	.modal:has(.true-recall-modal) button,
+	.modal:has(.true-recall-modal) [role="button"],
 	.modal:has(.true-recall-modal) input,
 	.modal:has(.true-recall-modal) select,
 	.modal:has(.true-recall-modal) textarea {
@@ -191,7 +191,8 @@
 			border-color 0.15s !important;
 	}
 
-	.ep-btn:disabled {
+	.ep-btn:disabled,
+	.ep-btn[aria-disabled="true"] {
 		opacity: 0.5 !important;
 		pointer-events: none !important;
 	}
@@ -317,5 +318,31 @@
 	/* Mobile viewport bottom padding for True Recall views */
 	.is-mobile [data-type^="true-recall-"] .view-content {
 		padding-bottom: 60px;
+	}
+
+	/* ================================================================
+	   DIV BUTTON FALLBACKS — ensure Obsidian CTA/warning classes work on
+	   div[role="button"] in case community themes scope to button.mod-cta
+	   ================================================================ */
+	[role="button"].mod-cta {
+		background-color: var(--interactive-accent) !important;
+		color: var(--text-on-accent) !important;
+		border: none !important;
+		font-weight: 500 !important;
+	}
+
+	[role="button"].mod-cta:hover {
+		background-color: var(--interactive-accent-hover) !important;
+	}
+
+	[role="button"].mod-warning {
+		background-color: var(--background-modifier-error) !important;
+		color: var(--text-on-accent) !important;
+		border: none !important;
+		font-weight: 500 !important;
+	}
+
+	[role="button"].mod-warning:hover {
+		opacity: 0.9 !important;
 	}
 }

@@ -1,7 +1,12 @@
 import { DeviceSelectionModal } from "@features/integration/modals/DeviceSelectionModal";
 import { useSettings } from "@features/settings/hooks/useSettings";
 import { notify } from "@shared/services/notification.service";
-import { InfoBlock, SettingRow, TextInput } from "@shared/ui/components";
+import {
+	Clickable,
+	InfoBlock,
+	SettingRow,
+	TextInput,
+} from "@shared/ui/components";
 import { useCallback } from "preact/hooks";
 
 export function DeviceDatabaseSection() {
@@ -98,9 +103,13 @@ export function DeviceDatabaseSection() {
 				name="Switch database"
 				description="Import data from another device"
 			>
-				<button type="button" class="mod-cta" onClick={handleSwitchDatabase}>
+				<Clickable
+					class="mod-cta"
+					stopPropagation={false}
+					onClick={handleSwitchDatabase}
+				>
 					Switch...
-				</button>
+				</Clickable>
 			</SettingRow>
 		</>
 	);

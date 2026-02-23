@@ -1,3 +1,4 @@
+import { Clickable } from "@shared/ui/components/Clickable";
 import type { ComponentChildren } from "preact";
 
 const PRIMARY_BTN = "mod-cta ep-btn";
@@ -27,18 +28,22 @@ export function ModalFooter({
 	return (
 		<div class="ep-modal-footer ep:flex ep:justify-end ep:gap-2">
 			{children}
-			<button type="button" class={SECONDARY_BTN} onClick={onCancel}>
+			<Clickable
+				class={SECONDARY_BTN}
+				onClick={onCancel}
+				stopPropagation={false}
+			>
 				{cancelLabel}
-			</button>
+			</Clickable>
 			{onConfirm && (
-				<button
-					type="button"
+				<Clickable
 					class={PRIMARY_BTN}
 					onClick={onConfirm}
 					disabled={confirmDisabled || loading}
+					stopPropagation={false}
 				>
 					{loading ? "..." : confirmLabel}
-				</button>
+				</Clickable>
 			)}
 		</div>
 	);

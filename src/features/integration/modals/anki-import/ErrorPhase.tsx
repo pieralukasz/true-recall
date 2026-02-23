@@ -1,3 +1,4 @@
+import { Clickable } from "@shared/ui/components";
 import { ModalFooter, SECONDARY_BTN } from "@shared/ui/components/ModalFooter";
 
 export interface ErrorPhaseProps {
@@ -21,9 +22,13 @@ export function ErrorPhase({
 			</div>
 			<ModalFooter onCancel={onClose} cancelLabel="Close">
 				{canRetry && (
-					<button type="button" class={SECONDARY_BTN} onClick={onRetry}>
+					<Clickable
+						stopPropagation={false}
+						class={SECONDARY_BTN}
+						onClick={onRetry}
+					>
 						Try again
-					</button>
+					</Clickable>
 				)}
 			</ModalFooter>
 		</>

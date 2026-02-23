@@ -1,3 +1,5 @@
+import { Clickable } from "@shared/ui/components";
+
 export function ReviewEmptyState({
 	message,
 	onClose,
@@ -13,9 +15,13 @@ export function ReviewEmptyState({
 					<div class="ep:text-ui-medium ep:text-obs-muted ep:mb-6">
 						{message}
 					</div>
-					<button type="button" class="ep-btn mod-cta" onClick={onClose}>
+					<Clickable
+						stopPropagation={false}
+						class="ep-btn mod-cta"
+						onClick={onClose}
+					>
 						Close
-					</button>
+					</Clickable>
 				</div>
 			</div>
 		</div>

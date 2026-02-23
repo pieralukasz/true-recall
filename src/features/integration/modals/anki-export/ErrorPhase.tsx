@@ -1,3 +1,4 @@
+import { Clickable } from "@shared/ui/components";
 import { SECONDARY_BTN } from "@shared/ui/components/ModalFooter";
 
 export interface ErrorPhaseProps {
@@ -12,9 +13,13 @@ export function ErrorPhase({ message, onClose }: ErrorPhaseProps) {
 				Export failed: {message}
 			</div>
 			<div class="ep-modal-footer ep:flex ep:justify-end ep:gap-2">
-				<button type="button" class={SECONDARY_BTN} onClick={onClose}>
+				<Clickable
+					stopPropagation={false}
+					class={SECONDARY_BTN}
+					onClick={onClose}
+				>
 					Close
-				</button>
+				</Clickable>
 			</div>
 		</>
 	);

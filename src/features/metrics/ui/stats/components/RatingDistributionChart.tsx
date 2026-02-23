@@ -8,6 +8,7 @@ import {
 	getMaxTicksForRange,
 } from "@features/metrics/ui/stats/utils/chart-helpers";
 import type { RatingDistributionEntry, StatsTimeRange } from "@shared/types";
+import { Clickable } from "@shared/ui/components";
 import {
 	getThemeColor,
 	getThemeColorWithAlpha,
@@ -165,10 +166,9 @@ export function RatingDistributionChart({
 			{RATING_CONFIG.map(({ key, label, color }) => {
 				const resolvedColor = getThemeColorWithAlpha(color, 0.9);
 				return (
-					<button
-						type="button"
+					<Clickable
 						key={key}
-						class="ep:flex ep:items-center ep:gap-1.5 ep:cursor-pointer ep:select-none ep:bg-transparent ep:border-none ep:p-0 ep:font-inherit"
+						class="ep:flex ep:items-center ep:gap-1.5 ep:select-none ep:p-0"
 						onClick={() => toggleVisibility(key)}
 					>
 						<input
@@ -197,7 +197,7 @@ export function RatingDistributionChart({
 						>
 							{label}
 						</label>
-					</button>
+					</Clickable>
 				);
 			})}
 		</div>

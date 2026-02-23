@@ -1,5 +1,10 @@
 import type { TrueRecallSettings } from "@shared/types";
-import { ActionButton, InfoBlock, SettingRow } from "@shared/ui/components";
+import {
+	ActionButton,
+	Clickable,
+	InfoBlock,
+	SettingRow,
+} from "@shared/ui/components";
 import { useCallback } from "preact/hooks";
 
 interface ScheduledBreaksSectionProps {
@@ -66,13 +71,13 @@ export function ScheduledBreaksSection({
 							<span>
 								{brk.startDate} to {brk.endDate}
 							</span>
-							<button
-								type="button"
+							<Clickable
 								class="ep:text-ui-small"
+								stopPropagation={false}
 								onClick={() => handleDeleteBreak(index)}
 							>
 								Delete
-							</button>
+							</Clickable>
 						</div>
 					))}
 				</div>
