@@ -56,6 +56,7 @@ function usePanelState() {
 				selectedCardIds: new Set<string>(),
 				expandedCardIds: new Set<string>(),
 				searchQuery: "",
+				hasHighlights: false,
 			};
 		}
 		return {
@@ -70,6 +71,7 @@ function usePanelState() {
 			selectedCardIds: p.selectedCardIds,
 			expandedCardIds: p.expandedCardIds,
 			searchQuery: p.searchQuery,
+			hasHighlights: p.hasHighlights,
 		};
 	});
 
@@ -92,6 +94,7 @@ function usePanelState() {
 					selectedCardIds: p.selectedCardIds,
 					expandedCardIds: p.expandedCardIds,
 					searchQuery: p.searchQuery,
+					hasHighlights: p.hasHighlights,
 				});
 			},
 		);
@@ -141,19 +144,6 @@ export function FlashcardPanelApp({
 
 	const reviewedToday = plugin.sessionPersistence?.getReviewedToday();
 	const dayStartHour = plugin.settings.dayStartHour;
-
-	// ── Highlight detection ──────────────────────────────────────
-	const [hasHighlights, setHasHighlights] = useState(false);
-
-	useEffect(() => {
-		if (!state.currentFile || state.currentFile.extension !== "md") {
-			setHasHighlights(false);
-			return;
-		}
-		void app.vault.read(state.currentFile).then((content) => {
-			setHasHighlights(extractHighlights(content).length > 0);
-		});
-	}, [state.currentFile, app]);
 
 	// ── Handlers (stable references) ──────────────────────────────
 
@@ -1048,7 +1038,7 @@ export function FlashcardPanelApp({
 							onCopyToClipboard={handleCopyAllToClipboard}
 							onDeleteAll={handleDeleteAll}
 							onOpenSourceNote={handleOpenSourceNote}
-							hasHighlights={hasHighlights}
+							hasHighlights={state.hasHighlights}
 							onGenerateFromHighlights={handleGenerateFromHighlights}
 						/>
 					</div>
@@ -1074,7 +1064,7 @@ export function FlashcardPanelApp({
 						onGenerateFromNote={handleGenerateFromNote}
 						onGenerateFromHighlights={handleGenerateFromHighlights}
 						hasApiKey={!!plugin.settings.openRouterApiKey}
-						hasHighlights={hasHighlights}
+						hasHighlights={state.hasHighlights}
 					/>
 				</div>
 			</div>

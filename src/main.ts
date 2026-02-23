@@ -99,8 +99,9 @@ export default class TrueRecallPlugin extends Plugin {
 	store: AppStore | null = null;
 	noteStatusCache: NoteStatusCacheService | null = null;
 	statusBarWidget: StatusBarWidget | null = null;
-	EmbeddableEditor: import("@shared/ui/editor/embedded-editor").EmbeddableEditorClass | null =
-		null;
+	EmbeddableEditor:
+		| import("@shared/ui/editor/embedded-editor").EmbeddableEditorClass
+		| null = null;
 
 	/**
 	 * Assert that the card store is initialized and ready.

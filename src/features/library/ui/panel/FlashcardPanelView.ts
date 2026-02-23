@@ -2,6 +2,7 @@ import {
 	FlashcardPanelApp,
 	type PanelAppActions,
 } from "@features/library/ui/panel/FlashcardPanelApp";
+import { extractHighlights } from "@features/library/ui/panel/utils/highlight-extractor";
 import { CollectService } from "@features/study/services/flashcard/collect.service";
 import type { FlashcardManager } from "@features/study/services/flashcard/flashcard.service";
 import { effect } from "@preact/signals";
@@ -387,6 +388,7 @@ export class FlashcardPanelView extends ItemView {
 			if (!this.panel.isCurrentRender(renderVersion)) return;
 
 			const uncollectedCount = this.collectService.countFlashcardTags(content);
+			const hasHighlights = extractHighlights(content).length > 0;
 
 			this.invalidateCardsCache();
 
@@ -395,6 +397,7 @@ export class FlashcardPanelView extends ItemView {
 				status: info?.exists ? "exists" : "none",
 				sourceNoteName: null,
 				uncollectedCount,
+				hasHighlights,
 			});
 		} catch (error) {
 			console.error("Error loading flashcard info:", error);
@@ -604,9 +607,13 @@ export class FlashcardPanelView extends ItemView {
 		try {
 			const content = await this.app.vault.read(file);
 			const uncollectedCount = this.collectService.countFlashcardTags(content);
+			const hasHighlights = extractHighlights(content).length > 0;
 
 			if (state.uncollectedCount !== uncollectedCount) {
 				this.panel.setUncollectedInfo(uncollectedCount);
+			}
+			if (state.hasHighlights !== hasHighlights) {
+				this.panel.setHasHighlights(hasHighlights);
 			}
 		} catch {
 			// Ignore errors (file might be deleted/moved)
