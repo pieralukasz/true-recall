@@ -355,10 +355,14 @@ export class CardActionsHandler {
 		if (!card) return;
 
 		// Open simple markdown editor modal
-		const modal = new SimpleFlashcardEditorModal(this.deps.app, {
-			mode: "add",
-			currentFilePath: card.sourceNotePath || "",
-		});
+		const modal = new SimpleFlashcardEditorModal(
+			this.deps.app,
+			{
+				mode: "add",
+				currentFilePath: card.sourceNotePath || "",
+			},
+			this.deps.plugin.EmbeddableEditor,
+		);
 
 		const result = await modal.openAndWait();
 		if (result.cancelled || result.flashcards.length === 0) return;
@@ -405,11 +409,15 @@ export class CardActionsHandler {
 		if (!card) return;
 
 		// Open modal with pre-filled content in markdown format
-		const modal = new SimpleFlashcardEditorModal(this.deps.app, {
-			mode: "add",
-			currentFilePath: card.sourceNotePath || "",
-			prefillContent: cardToMarkdown(card),
-		});
+		const modal = new SimpleFlashcardEditorModal(
+			this.deps.app,
+			{
+				mode: "add",
+				currentFilePath: card.sourceNotePath || "",
+				prefillContent: cardToMarkdown(card),
+			},
+			this.deps.plugin.EmbeddableEditor,
+		);
 
 		const result = await modal.openAndWait();
 		if (result.cancelled || result.flashcards.length === 0) return;
@@ -455,12 +463,16 @@ export class CardActionsHandler {
 		const card = this.deps.getReview().getCurrentCard();
 		if (!card) return;
 
-		const modal = new SimpleFlashcardEditorModal(this.deps.app, {
-			mode: "edit",
-			currentFilePath: card.sourceNotePath || "",
-			prefillContent: cardToMarkdown(card),
-			editCardId: card.id,
-		});
+		const modal = new SimpleFlashcardEditorModal(
+			this.deps.app,
+			{
+				mode: "edit",
+				currentFilePath: card.sourceNotePath || "",
+				prefillContent: cardToMarkdown(card),
+				editCardId: card.id,
+			},
+			this.deps.plugin.EmbeddableEditor,
+		);
 
 		const result = await modal.openAndWait();
 		if (result.cancelled || result.flashcards.length === 0) return;

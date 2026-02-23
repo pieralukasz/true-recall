@@ -24,6 +24,7 @@ export function EditToolbar({
 						key={btn.id}
 						class="ep:px-2 ep:py-1 ep:text-ui-smaller ep:bg-obs-secondary ep:text-obs-normal ep:border ep:border-obs-border ep:rounded-md ep:cursor-pointer ep:hover:bg-obs-modifier-hover ep:hover:border-obs-interactive ep:transition-colors"
 						title={title}
+						aria-label={title}
 						tabIndex={-1}
 						onMouseDown={(e: MouseEvent) => e.preventDefault()}
 						onClick={(e: MouseEvent) => {

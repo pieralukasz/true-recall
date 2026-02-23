@@ -1,6 +1,7 @@
 import { ImageService } from "@features/integration/services/ImageService";
 import { FlashcardParserService } from "@features/study/services/flashcard/flashcard-parser.service";
 import type { FlashcardItem } from "@shared/types";
+import type { EmbeddableEditorClass } from "@shared/ui/editor/embedded-editor";
 import { BasePromiseModal } from "@shared/ui/modals/BasePromiseModal";
 import { SimpleEditorBody } from "@shared/ui/modals/simple-editor/SimpleEditorBody";
 import type { App } from "obsidian";
@@ -23,14 +24,20 @@ export class SimpleFlashcardEditorModal extends BasePromiseModal<SimpleFlashcard
 	private options: SimpleFlashcardEditorOptions;
 	private parser: FlashcardParserService;
 	private imageService: ImageService | null = null;
+	private editorClass: EmbeddableEditorClass | null;
 
-	constructor(app: App, options: SimpleFlashcardEditorOptions) {
+	constructor(
+		app: App,
+		options: SimpleFlashcardEditorOptions,
+		editorClass?: EmbeddableEditorClass | null,
+	) {
 		super(app, {
 			title: options.mode === "add" ? "Add Flashcards" : "Edit Flashcard",
-			width: "600px",
+			width: "700px",
 		});
 		this.options = options;
 		this.parser = new FlashcardParserService();
+		this.editorClass = editorClass ?? null;
 	}
 
 	protected getDefaultResult(): SimpleFlashcardEditorResult {
@@ -51,6 +58,7 @@ export class SimpleFlashcardEditorModal extends BasePromiseModal<SimpleFlashcard
 				options={this.options}
 				parser={this.parser}
 				imageService={this.imageService}
+				editorClass={this.editorClass}
 				onSubmit={(result) => this.resolve(result)}
 				onClose={() => this.close()}
 			/>,

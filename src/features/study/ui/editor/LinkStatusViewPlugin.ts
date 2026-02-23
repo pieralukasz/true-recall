@@ -338,7 +338,7 @@ export function createLinkStatusViewPlugin(
 
 						const aggregated = aggregateInfos(sectionLinks.map((l) => l.info));
 						const noteNames = sectionLinks.map((l) => l.noteName);
-						const reviewSection = () => onReviewNotes(noteNames, true);
+						const reviewSection = () => onReviewNotes(noteNames, false);
 
 						const lineStartPos = lineStartPositions[i];
 						if (lineStartPos === undefined) continue;

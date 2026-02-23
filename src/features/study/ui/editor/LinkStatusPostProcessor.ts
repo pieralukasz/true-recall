@@ -82,7 +82,7 @@ export function createLinkStatusPostProcessor(
 
 			const aggregated = aggregateInfos(sectionLinks.map((l) => l.info));
 			const noteNames = sectionLinks.map((l) => l.noteName);
-			const reviewSection = () => onReviewNotes(noteNames, true);
+			const reviewSection = () => onReviewNotes(noteNames, false);
 			const headingLevel = parseInt(heading.tagName[1] ?? "1", 10) as
 				| 1
 				| 2
