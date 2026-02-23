@@ -78,9 +78,9 @@ export function CardContainer({
 					/>
 				)}
 
-				{isAnswerRevealed && !isEditingQuestion && (
+				{!isEditingQuestion && !!card.answer?.trim() && (
 					<>
-						<div class="ep:flex ep:items-center ep:my-6">
+						<div class={`ep:flex ep:items-center ep:my-6${isAnswerRevealed ? "" : " ep:hidden"}`}>
 							<div class="ep:flex-1 ep:border-t ep:border-obs-border" />
 						</div>
 						{isEditingAnswer ? (
@@ -94,13 +94,15 @@ export function CardContainer({
 								onImagePaste={onImagePaste}
 							/>
 						) : (
-							<MarkdownField
-								content={stripBrTags(card.answer)}
-								sourcePath={sourcePath}
-								field="answer"
-								cls="true-recall-review-answer ep:text-lg ep:leading-relaxed ep:text-obs-muted"
-								onStartEdit={() => onStartEdit("answer")}
-							/>
+							<div class={isAnswerRevealed ? "ep:mt-6" : "ep:hidden"}>
+								<MarkdownField
+									content={stripBrTags(card.answer)}
+									sourcePath={sourcePath}
+									field="answer"
+									cls="true-recall-review-answer ep:text-lg ep:leading-relaxed ep:text-obs-muted"
+									onStartEdit={() => onStartEdit("answer")}
+								/>
+							</div>
 						)}
 					</>
 				)}

@@ -169,8 +169,6 @@ export class ReviewView extends ItemView {
 			(state) => state.review,
 			() => {
 				this.updateHeaderActions();
-
-				this.mountApp(container);
 			},
 		);
 
