@@ -2,6 +2,7 @@ import { StatsCalculatorService } from "@features/metrics/services/stats/stats-c
 import { effect } from "@preact/signals";
 import { dataVersion, track } from "@shared/services/signals";
 import type { ExtendedDailyStats } from "@shared/types/fsrs/stats.types";
+import { Clickable } from "@shared/ui/components";
 import { usePlugin } from "@shared/ui/preact";
 import { useEffect, useMemo, useState } from "preact/hooks";
 import { configValue, parseCodeblockConfig } from "./config-parser";
@@ -137,14 +138,9 @@ export function ComparisonWidget({ source }: { source: string }) {
 	];
 
 	return (
-		<div
-			class="ep:flex ep:flex-col ep:gap-2 ep:p-3 ep:text-sm ep:cursor-pointer"
-			role="button"
-			tabIndex={0}
+		<Clickable
+			class="ep:flex ep:flex-col ep:gap-2 ep:p-3 ep:text-sm"
 			onClick={handleClick}
-			onKeyDown={(e) => {
-				if (e.key === "Enter" || e.key === " ") handleClick();
-			}}
 			title="Start a study session"
 		>
 			{/* Header */}
@@ -192,7 +188,7 @@ export function ComparisonWidget({ source }: { source: string }) {
 						` (longest: ${data.streak.longest}d)`}
 				</div>
 			)}
-		</div>
+		</Clickable>
 	);
 }
 

@@ -83,22 +83,16 @@ export class ReviewView extends ItemView {
 			flashcardManager: this.flashcardManager,
 		});
 
-		this.answerHandler = new AnswerHandler(
-			{
-				getReview: () => this.review,
-				plugin: this.plugin,
-				fsrsService: this.fsrsService,
-				reviewService: this.reviewService,
-				flashcardManager: this.flashcardManager,
-				sessionPersistence: this.sessionPersistence,
-				getFilters: () => this.filters,
-				getCrammedCardIds: () => this.crammedCardIds,
-			},
-			{
-				onUpdateSchedulingPreview: () =>
-					this.answerHandler.updateSchedulingPreview(),
-			},
-		);
+		this.answerHandler = new AnswerHandler({
+			getReview: () => this.review,
+			plugin: this.plugin,
+			fsrsService: this.fsrsService,
+			reviewService: this.reviewService,
+			flashcardManager: this.flashcardManager,
+			sessionPersistence: this.sessionPersistence,
+			getFilters: () => this.filters,
+			getCrammedCardIds: () => this.crammedCardIds,
+		});
 
 		this.cardActionsHandler = new CardActionsHandler(
 			{

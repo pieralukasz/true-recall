@@ -1,8 +1,10 @@
 import { effect } from "@preact/signals";
 import { dataVersion, track } from "@shared/services/signals";
+import { Clickable } from "@shared/ui/components";
 import { FSRS_COLORS } from "@shared/ui/helpers/fsrs-colors";
 import { usePlugin } from "@shared/ui/preact";
 import { useEffect, useMemo, useState } from "preact/hooks";
+import { WidgetCta } from "./WidgetCta";
 
 interface UnassignedNote {
 	path: string;
@@ -142,9 +144,9 @@ export function UnassignedNotesWidget() {
 			{/* Note list */}
 			<div class="ep:flex ep:flex-col ep:gap-1 ep:max-h-60 ep:overflow-y-auto">
 				{notes.map((note) => (
-					<button
+					<Clickable
 						key={note.path}
-						class="ep:flex ep:items-center ep:justify-between ep:px-2 ep:py-1 ep:rounded ep:text-left ep:bg-obs-secondary hover:ep:bg-obs-tertiary ep:transition-colors ep:cursor-pointer ep:border-0"
+						class="ep:flex ep:items-center ep:justify-between ep:px-2 ep:py-1 ep:rounded ep:bg-obs-secondary hover:ep:bg-obs-tertiary ep:transition-colors"
 						onClick={() => handleOpenNote(note.path)}
 					>
 						<span class="ep:truncate ep:flex-1 ep:text-obs-normal ep:text-xs">
@@ -163,18 +165,16 @@ export function UnassignedNotesWidget() {
 							)}
 							<span class="ep:text-obs-faint">{note.cardCount}</span>
 						</div>
-					</button>
+					</Clickable>
 				))}
 			</div>
 
 			{/* Review button */}
 			{totalDue > 0 && (
-				<button
-					class="ep:w-full ep:px-3 ep:py-1.5 ep:rounded ep:text-xs ep:font-medium ep:bg-obs-interactive-accent ep:text-obs-on-accent hover:ep:bg-obs-interactive-accent-hover ep:transition-colors"
+				<WidgetCta
+					label={`Review Unassigned (${totalDue} due)`}
 					onClick={handleReviewAll}
-				>
-					Review Unassigned ({totalDue} due)
-				</button>
+				/>
 			)}
 		</div>
 	);

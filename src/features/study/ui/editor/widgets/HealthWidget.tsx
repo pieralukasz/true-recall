@@ -2,6 +2,7 @@ import { StatsCalculatorService } from "@features/metrics/services/stats/stats-c
 import { effect } from "@preact/signals";
 import { dataVersion, track } from "@shared/services/signals";
 import type { CollectionHealthSnapshot } from "@shared/types/fsrs/stats.types";
+import { Clickable } from "@shared/ui/components";
 import { usePlugin } from "@shared/ui/preact";
 import { useEffect, useMemo, useState } from "preact/hooks";
 import { configValue, parseCodeblockConfig } from "./config-parser";
@@ -92,16 +93,7 @@ export function HealthWidget({ source }: { source: string }) {
 			</div>
 
 			{/* Progress bar */}
-			<div
-				class="ep:cursor-pointer"
-				role="button"
-				tabIndex={0}
-				onClick={handleBarClick}
-				onKeyDown={(e) => {
-					if (e.key === "Enter" || e.key === " ") handleBarClick();
-				}}
-				title="Review overdue cards"
-			>
+			<Clickable onClick={handleBarClick} title="Review overdue cards">
 				<div class="ep:h-3 ep:rounded-full ep:bg-obs-modifier-hover ep:overflow-hidden ep:relative">
 					<div
 						class="ep:h-full ep:rounded-full ep:transition-all"
@@ -119,15 +111,15 @@ export function HealthWidget({ source }: { source: string }) {
 				<div class="ep:text-right ep:text-xs ep:text-obs-muted ep:mt-0.5">
 					target: {targetPct}%
 				</div>
-			</div>
+			</Clickable>
 
 			{/* Health buckets */}
 			{showBuckets && data.distribution.length > 0 && (
 				<div class="ep:flex ep:items-end ep:gap-2 ep:justify-between">
 					{data.distribution.map((bucket, idx) => (
-						<div
+						<Clickable
 							key={bucket.label}
-							class="ep:flex ep:flex-col ep:items-center ep:gap-1 ep:cursor-pointer hover:ep:opacity-80 ep:flex-1"
+							class="ep:flex ep:flex-col ep:items-center ep:gap-1 hover:ep:opacity-80 ep:flex-1"
 							onClick={() => handleBucketClick(idx)}
 							title={`Review ${bucket.label} cards`}
 						>
@@ -140,7 +132,7 @@ export function HealthWidget({ source }: { source: string }) {
 									backgroundColor: `var(${bucket.colorVar})`,
 								}}
 							/>
-						</div>
+						</Clickable>
 					))}
 					<div class="ep:flex ep:flex-col ep:items-center ep:gap-1 ep:pl-2">
 						<span class="ep:text-xs ep:text-obs-muted">&nbsp;</span>
