@@ -40,6 +40,8 @@ export interface PanelContentProps {
 	handlers: ContentHandlers;
 	onGenerateFromNote: () => Promise<void>;
 	onGenerateFromHighlights: () => Promise<void>;
+	onCollect: () => Promise<void>;
+	uncollectedCount: number;
 	hasApiKey: boolean;
 	hasHighlights: boolean;
 }
@@ -78,6 +80,8 @@ export function PanelContent({
 	handlers,
 	onGenerateFromNote,
 	onGenerateFromHighlights,
+	onCollect,
+	uncollectedCount,
 	hasApiKey,
 	hasHighlights,
 }: PanelContentProps) {
@@ -127,6 +131,8 @@ export function PanelContent({
 			<PanelEmptyState
 				onGenerate={onGenerateFromNote}
 				onGenerateFromHighlights={onGenerateFromHighlights}
+				onCollect={onCollect}
+				uncollectedCount={uncollectedCount}
 				hasApiKey={hasApiKey}
 				hasHighlights={hasHighlights}
 			/>
