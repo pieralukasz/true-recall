@@ -1,11 +1,4 @@
-import {
-	insertAtTextareaCursor,
-	setupAutoResize,
-	TOOLBAR_BUTTONS,
-	type ToolbarButtonAction,
-	toggleTextareaWrap,
-} from "@features/study/ui/editor/edit-toolbar.utils";
-import { EditToolbar } from "@features/study/ui/review/components/EditToolbar";
+import { setupAutoResize } from "@features/study/ui/editor/edit-toolbar.utils";
 import { stripBrTags } from "@shared/utils";
 import { useCallback, useEffect, useRef } from "preact/hooks";
 
@@ -66,14 +59,9 @@ export function EditableField({
 		[field, isAnswerRevealed, onSave, onStartEdit],
 	);
 
-	const handleBlur = useCallback(
-		(e: FocusEvent) => {
-			const relatedTarget = e.relatedTarget as HTMLElement | null;
-			if (relatedTarget?.closest(".true-recall-edit-toolbar")) return;
-			if (textareaRef.current) onSave(textareaRef.current, field);
-		},
-		[field, onSave],
-	);
+	const handleBlur = useCallback(() => {
+		if (textareaRef.current) onSave(textareaRef.current, field);
+	}, [field, onSave]);
 
 	const handlePaste = useCallback(
 		(e: ClipboardEvent) => {
@@ -93,44 +81,21 @@ export function EditableField({
 		[onImagePaste],
 	);
 
-	const executeAction = useCallback((action: ToolbarButtonAction) => {
-		const textarea = textareaRef.current;
-		if (!textarea) return;
-		switch (action.type) {
-			case "toggle":
-				toggleTextareaWrap(textarea, action.before, action.after);
-				break;
-			case "insert":
-				insertAtTextareaCursor(textarea, action.text);
-				break;
-			case "custom":
-				action.handler(textarea);
-				break;
-		}
-		textarea.focus();
-	}, []);
-
 	const fieldCls =
 		field === "question"
-			? "true-recall-review-question ep:text-xl ep:leading-relaxed ep:text-obs-normal ep:mb-6 ep:relative"
-			: "true-recall-review-answer ep:text-lg ep:leading-relaxed ep:text-obs-muted ep:relative";
+			? "true-recall-review-question ep:text-xl ep:leading-relaxed ep:text-obs-normal ep:mb-6"
+			: "true-recall-review-answer ep:text-lg ep:leading-relaxed ep:text-obs-muted";
 
 	return (
 		<div class={fieldCls} data-field={field} data-source-path={sourcePath}>
-			<div class="ep:w-full ep:relative">
-				<textarea
-					ref={textareaRef}
-					class="ep:w-full ep:text-left ep:text-obs-normal ep:resize-none ep-textarea-invisible"
-					value={stripBrTags(content)}
-					onKeyDown={handleKeyDown}
-					onBlur={handleBlur}
-					onPaste={handlePaste}
-				/>
-				<EditToolbar
-					buttons={TOOLBAR_BUTTONS.UNIFIED}
-					onAction={executeAction}
-				/>
-			</div>
+			<textarea
+				ref={textareaRef}
+				class="ep:w-full ep:resize-none ep-textarea-invisible"
+				value={stripBrTags(content)}
+				onKeyDown={handleKeyDown}
+				onBlur={handleBlur}
+				onPaste={handlePaste}
+			/>
 		</div>
 	);
 }
