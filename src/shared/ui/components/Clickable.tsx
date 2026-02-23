@@ -42,7 +42,7 @@ export function Clickable({
 			};
 
 	return (
-		// biome-ignore lint/a11y/useSemanticElements: intentionally a div, not a button — avoids Obsidian's aggressive native button styling
+		// biome-ignore lint/a11y/noStaticElementInteractions: div with role="button" and keyboard handlers
 		<div
 			{...rest}
 			role={roleOverride ?? "button"}

@@ -2,6 +2,7 @@ import { EditableField } from "@features/study/ui/review/components/EditableFiel
 import { UI_CONFIG } from "@shared/constants";
 import type { EditModeState } from "@shared/store";
 import type { FSRSFlashcardItem } from "@shared/types";
+import { Clickable } from "@shared/ui/components";
 import { useMarkdown } from "@shared/ui/preact/hooks";
 import { stripBrTags } from "@shared/utils";
 import { Platform } from "obsidian";
@@ -18,6 +19,7 @@ export interface CardContainerProps {
 		field: "question" | "answer",
 	) => void;
 	onImagePaste: (file: File, textarea: HTMLTextAreaElement) => void;
+	onOpenSourceNote?: () => void;
 }
 
 export function CardContainer({
@@ -27,6 +29,7 @@ export function CardContainer({
 	onStartEdit,
 	onSaveEdit,
 	onImagePaste,
+	onOpenSourceNote,
 }: CardContainerProps) {
 	const isEditing = editState.active;
 	const isEditingQuestion = isEditing && editState.field === "question";
@@ -100,6 +103,17 @@ export function CardContainer({
 							/>
 						)}
 					</>
+				)}
+
+				{card.sourceNoteName && isAnswerRevealed && !isEditing && onOpenSourceNote && (
+					<div class="ep:flex ep:justify-center ep:pt-8">
+						<Clickable
+							class="ep:text-obs-faint ep:text-ui-smaller ep:no-underline ep:hover:text-obs-accent ep:hover:underline ep:transition-colors ep:p-0"
+							onClick={onOpenSourceNote}
+						>
+							Source: {card.sourceNoteName}
+						</Clickable>
+					</div>
 				)}
 			</div>
 		</div>
