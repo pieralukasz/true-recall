@@ -33,6 +33,7 @@ function createInitialState(): PanelSliceState {
 		isAddCardExpanded: false,
 		isFollowingReview: false,
 		reviewSourceNotePath: null,
+		hasHighlights: false,
 	};
 }
 
@@ -131,6 +132,12 @@ export function createPanelSlice(
 
 		hasUncollectedFlashcards: () => {
 			return get().panel.uncollectedCount > 0;
+		},
+
+		setHasHighlights: (value: boolean) => {
+			set((s) => ({
+				panel: { ...s.panel, hasHighlights: value },
+			}));
 		},
 
 		...(() => {
