@@ -13,6 +13,7 @@ export interface PanelHeaderProps {
 	uncollectedCount: number;
 	selectionMode: SelectionMode;
 	selectedCount: number;
+	totalCount: number;
 	searchQuery: string;
 	isFollowingReview: boolean;
 	reviewedToday?: Set<string>;
@@ -22,6 +23,9 @@ export interface PanelHeaderProps {
 	onRefresh: () => void;
 	onReview: () => void;
 	onExitSelectionMode: () => void;
+	onSelectAll: () => void;
+	onMoveSelected: () => void;
+	onDeleteSelected: () => void;
 	onSearchChange: (query: string) => void;
 	onExportCsv: () => void;
 	onCopyToClipboard: () => void;
@@ -36,6 +40,7 @@ export function PanelHeader({
 	uncollectedCount,
 	selectionMode,
 	selectedCount,
+	totalCount,
 	searchQuery,
 	isFollowingReview,
 	reviewedToday,
@@ -45,6 +50,9 @@ export function PanelHeader({
 	onRefresh,
 	onReview,
 	onExitSelectionMode,
+	onSelectAll,
+	onMoveSelected,
+	onDeleteSelected,
 	onSearchChange,
 	onExportCsv,
 	onCopyToClipboard,
@@ -106,17 +114,48 @@ export function PanelHeader({
 	);
 
 	if (selectionMode === "selecting") {
+		const allSelected = selectedCount === totalCount && totalCount > 0;
+		const hasSelection = selectedCount > 0;
+
 		return (
 			<div class="ep:flex ep:flex-col ep:gap-2">
-				<div class="ep:flex ep:items-center ep:gap-2">
-					<IconButton
-						icon="x"
-						ariaLabel="Exit selection mode"
-						onClick={() => onExitSelectionMode()}
-					/>
-					<span class="ep:text-ui-small ep:font-semibold ep:text-obs-normal">
-						{selectedCount} selected
-					</span>
+				<div class="ep:flex ep:items-center ep:justify-between">
+					<div class="ep:flex ep:items-center ep:gap-2">
+						<IconButton
+							icon="x"
+							ariaLabel="Exit selection mode"
+							onClick={() => onExitSelectionMode()}
+							size="small"
+						/>
+						<span class="ep:text-ui-small ep:font-semibold ep:text-obs-normal">
+							{selectedCount} selected
+						</span>
+					</div>
+					<div class="ep:flex ep:items-center ep:gap-1">
+						{!allSelected && (
+							<IconButton
+								icon="check-square"
+								ariaLabel="Select all"
+								onClick={onSelectAll}
+								size="small"
+							/>
+						)}
+						<IconButton
+							icon="folder-input"
+							ariaLabel="Move selected"
+							onClick={onMoveSelected}
+							size="small"
+							disabled={!hasSelection}
+						/>
+						<IconButton
+							icon="trash-2"
+							ariaLabel="Delete selected"
+							onClick={onDeleteSelected}
+							size="small"
+							danger
+							disabled={!hasSelection}
+						/>
+					</div>
 				</div>
 			</div>
 		);
