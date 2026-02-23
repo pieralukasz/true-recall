@@ -2,7 +2,6 @@ import type { FSRSFlashcardItem } from "@shared/types";
 import {
 	FSRS_COLORS,
 	fsrsStateToColorName,
-	fsrsStateToCssVar,
 	type HighlightColor,
 } from "@shared/ui/helpers/fsrs-colors";
 import { State } from "ts-fsrs";
@@ -11,13 +10,6 @@ export interface StatusCounts {
 	new: number;
 	learning: number;
 	review: number;
-}
-
-export function getStatusDotColor(fsrsCard?: FSRSFlashcardItem): string {
-	if (!fsrsCard) return "var(--text-muted)";
-	if (isSuspended(fsrsCard)) return `var(${FSRS_COLORS.suspended.cssVar})`;
-	if (isBuried(fsrsCard)) return "var(--text-muted)";
-	return fsrsStateToCssVar(fsrsCard.fsrs.state);
 }
 
 export function getStatusTitle(fsrsCard?: FSRSFlashcardItem): string {
@@ -56,9 +48,9 @@ export function getHighlightColor(
 	return fsrsStateToColorName(fsrsCard.fsrs.state) ?? "default";
 }
 
-export function getAggregateStatusDotColor(
+export function getAggregateHighlightColor(
 	fsrsCards: (FSRSFlashcardItem | undefined)[],
-): string {
+): HighlightColor {
 	let hasNew = false;
 	let hasLearning = false;
 	let hasReview = false;
@@ -79,10 +71,10 @@ export function getAggregateStatusDotColor(
 		}
 	}
 
-	if (hasNew) return `var(${FSRS_COLORS.new.cssVar})`;
-	if (hasLearning) return `var(${FSRS_COLORS.learning.cssVar})`;
-	if (hasReview) return `var(${FSRS_COLORS.review.cssVar})`;
-	return "var(--text-muted)";
+	if (hasNew) return FSRS_COLORS.new.name;
+	if (hasLearning) return FSRS_COLORS.learning.name;
+	if (hasReview) return FSRS_COLORS.review.name;
+	return "default";
 }
 
 export function getAggregateStatusTitle(

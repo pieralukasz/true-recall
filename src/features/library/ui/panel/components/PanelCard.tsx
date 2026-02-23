@@ -1,8 +1,6 @@
-import { StatusDot } from "@features/library/ui/panel/components/StatusDot";
 import {
-	getAggregateStatusDotColor,
-	getAggregateStatusTitle,
-	getStatusDotColor,
+	getAggregateHighlightColor,
+	getHighlightColor,
 	getStatusTitle,
 	isBuried,
 	isSuspended,
@@ -20,8 +18,27 @@ import {
 	useContextMenu,
 } from "@shared/ui/preact/useContextMenu";
 import { useLongPress } from "@shared/ui/preact/useLongPress";
+import { cva } from "class-variance-authority";
 import type { RefObject } from "preact";
 import { useCallback, useMemo } from "preact/hooks";
+
+// ── Variants ────────────────────────────────────────────────
+
+const panelCardVariants = cva(
+	"ep:flex ep:flex-col ep:mb-2 ep:rounded-lg ep:bg-obs-secondary ep:border-[1px] ep:shadow-sm ep:hover:bg-obs-modifier-hover ep:transition-colors ep:duration-300",
+	{
+		variants: {
+			state: {
+				green: "ep:border-obs-green/30",
+				orange: "ep:border-obs-orange/30",
+				blue: "ep:border-obs-blue/30",
+				red: "ep:border-obs-red/30",
+				default: "ep:border-obs-border",
+			},
+		},
+		defaultVariants: { state: "default" },
+	},
+);
 
 // ── Types ──────────────────────────────────────────────────
 
@@ -110,14 +127,12 @@ function BasicHeader({
 }
 
 function GroupHeader({
-	fsrsCards,
 	displayText,
 	filePath,
 	cardCount,
 	typeIconRef,
 	onLinkClick,
 }: {
-	fsrsCards: (FSRSFlashcardItem | undefined)[];
 	displayText: string;
 	filePath: string;
 	cardCount: number;
@@ -126,10 +141,6 @@ function GroupHeader({
 }) {
 	return (
 		<>
-			<StatusDot
-				color={getAggregateStatusDotColor(fsrsCards)}
-				title={getAggregateStatusTitle(fsrsCards)}
-			/>
 			<span ref={typeIconRef} class="ep:shrink-0 ep:mt-0.5 ep:text-obs-faint" />
 			<MarkdownContent
 				markdown={displayText}
@@ -335,7 +346,10 @@ export function PanelCard(props: PanelCardProps) {
 	);
 
 	const title = isGroup ? undefined : getStatusTitle(props.fsrsCard);
-	const borderCls = isSelected ? "ep:border-obs-interactive ep:border-2" : "";
+	const state = isGroup
+		? getAggregateHighlightColor(props.fsrsCards)
+		: getHighlightColor(props.fsrsCard);
+	const selectedCls = isSelected ? "ep:border-obs-interactive" : "";
 
 	const displayText = useMemo(() => {
 		if (props.variant !== "group") return "";
@@ -356,7 +370,7 @@ export function PanelCard(props: PanelCardProps) {
 	return (
 		<Clickable
 			title={title}
-			class={`ep:flex ep:flex-col ep:mb-2 ep:rounded-lg ep:bg-obs-secondary ep:border ep:border-obs-border ep:shadow-sm ep:hover:bg-obs-modifier-hover ep:transition-colors ep:duration-300 ${borderCls}`}
+			class={`${panelCardVariants({ state: isSelected ? undefined : state })} ${selectedCls}`}
 			onClick={handleRowClick}
 			{...longPressHandlers}
 			onMouseEnter={onHoverSource}
@@ -374,7 +388,6 @@ export function PanelCard(props: PanelCardProps) {
 
 				{props.variant === "group" ? (
 					<GroupHeader
-						fsrsCards={props.fsrsCards}
 						displayText={displayText}
 						filePath={filePath}
 						cardCount={props.cards.length}
@@ -391,12 +404,6 @@ export function PanelCard(props: PanelCardProps) {
 				)}
 
 				<div class="ep:flex ep:flex-col ep:items-center ep:justify-center ep:gap-1 ep:self-center">
-					{props.variant === "basic" && (
-						<StatusDot
-							color={getStatusDotColor(props.fsrsCard)}
-							title={title ?? "Unknown"}
-						/>
-					)}
 					<IconButton
 						icon="more-vertical"
 						ariaLabel={isGroup ? "Group actions" : "Card actions"}
