@@ -2,8 +2,8 @@ export type { ButtonBarProps } from "@features/study/ui/review/components/Button
 export { ButtonBar } from "@features/study/ui/review/components/ButtonBar";
 export type { CardContainerProps } from "@features/study/ui/review/components/CardContainer";
 export { CardContainer } from "@features/study/ui/review/components/CardContainer";
-export type { EditableFieldProps } from "@features/study/ui/review/components/EditableField";
-export { EditableField } from "@features/study/ui/review/components/EditableField";
+export type { LivePreviewFieldProps } from "@features/study/ui/review/components/LivePreviewField";
+export { LivePreviewField } from "@features/study/ui/review/components/LivePreviewField";
 export { EditToolbar } from "@features/study/ui/review/components/EditToolbar";
 export { RatingButton } from "@features/study/ui/review/components/RatingButton";
 export { ReviewEmptyState } from "@features/study/ui/review/components/ReviewEmptyState";
