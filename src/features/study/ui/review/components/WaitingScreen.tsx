@@ -1,7 +1,7 @@
 import { UI_CONFIG } from "@shared/constants";
 import type { ReviewApi } from "@shared/store";
 import { Clickable } from "@shared/ui/components";
-import { useEffect, useState } from "preact/hooks";
+import { useCallback, useEffect, useState } from "preact/hooks";
 
 export function WaitingScreen({
 	review,
@@ -15,16 +15,21 @@ export function WaitingScreen({
 	const [remaining, setRemaining] = useState(timeUntilDue);
 	const pendingCards = review.getPendingLearningCards();
 
+	const getTimeUntilNextDue = useCallback(
+		() => review.getTimeUntilNextDue(),
+		[review],
+	);
+
 	useEffect(() => {
 		const id = setInterval(() => {
-			const newRemaining = review.getTimeUntilNextDue();
+			const newRemaining = getTimeUntilNextDue();
 			if (newRemaining <= 0) {
 				clearInterval(id);
 			}
 			setRemaining(newRemaining);
 		}, UI_CONFIG.timerInterval);
 		return () => clearInterval(id);
-	}, [review]);
+	}, [getTimeUntilNextDue]);
 
 	const formatCountdown = (ms: number): string => {
 		if (ms <= 0) return "0:00";
@@ -50,19 +55,17 @@ export function WaitingScreen({
 							{pendingCards.length} learning card
 							{pendingCards.length === 1 ? "" : "s"} due in:
 						</p>
-						<div class="ep:text-5xl ep:font-bold ep:text-obs-interactive ep:tabular-nums">
+						<div
+							class="ep:text-5xl ep:font-bold ep:text-obs-interactive ep:tabular-nums"
+							role="timer"
+							aria-live="polite"
+							aria-label={`Next card due in ${formatCountdown(remaining)}`}
+						>
 							{formatCountdown(remaining)}
 						</div>
 					</div>
 
 					<div class="ep:flex ep:gap-3 ep:justify-center">
-						<Clickable
-							stopPropagation={false}
-							class="ep-btn mod-cta"
-							onClick={() => {}}
-						>
-							Wait
-						</Clickable>
 						<Clickable
 							stopPropagation={false}
 							class="ep-btn ep-btn-outline"

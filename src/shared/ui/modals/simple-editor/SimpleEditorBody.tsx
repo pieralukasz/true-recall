@@ -1,27 +1,33 @@
 import type { ImageService } from "@features/integration/services/ImageService";
-import { Clickable } from "@shared/ui/components";
 import type { FlashcardParserService } from "@features/study/services/flashcard/flashcard-parser.service";
 import {
 	insertAtTextareaCursor,
 	toggleTextareaWrap,
 } from "@features/study/ui/editor/edit-toolbar.utils";
+import { Prec } from "@codemirror/state";
+import { keymap, placeholder } from "@codemirror/view";
 import { FLASHCARD_CONFIG } from "@shared/constants";
+import type {
+	EmbeddableEditorClass,
+	EmbeddableEditorInstance,
+} from "@shared/ui/editor/embedded-editor";
 import { notify } from "@shared/services/notification.service";
 import type {
 	SimpleFlashcardEditorOptions,
 	SimpleFlashcardEditorResult,
 } from "@shared/ui/modals/SimpleFlashcardEditorModal";
 import { KeyboardShortcutsHint } from "@shared/ui/modals/simple-editor/KeyboardShortcutsHint";
+import { Clickable } from "@shared/ui/components";
 import { SECONDARY_BUTTON_CLASSES } from "@shared/ui/utils/tailwind";
-import { stripBrTags } from "@shared/utils";
-import { type App, Component, MarkdownRenderer } from "obsidian";
-import { useCallback, useEffect, useRef, useState } from "preact/hooks";
+import type { App } from "obsidian";
+import { useCallback, useEffect, useMemo, useRef, useState } from "preact/hooks";
 
 export interface SimpleEditorBodyProps {
 	app: App;
 	options: SimpleFlashcardEditorOptions;
 	parser: FlashcardParserService;
 	imageService: ImageService;
+	editorClass?: EmbeddableEditorClass | null;
 	onSubmit: (result: SimpleFlashcardEditorResult) => void;
 	onClose: () => void;
 }
@@ -31,63 +37,154 @@ export function SimpleEditorBody({
 	options,
 	parser,
 	imageService,
+	editorClass,
 	onSubmit,
 	onClose,
 }: SimpleEditorBodyProps) {
-	const [isPreviewMode, setIsPreviewMode] = useState(false);
-	const [content, setContent] = useState(options.prefillContent ?? "");
+	const useRichEditor = editorClass != null;
+
+	const buttonText =
+		options.mode === "add" ? "Save Flashcards" : "Save Changes";
+
+	// ── Shared refs ──────────────────────────────────────────────────
+	const editorRef = useRef<EmbeddableEditorInstance | null>(null);
 	const textareaRef = useRef<HTMLTextAreaElement>(null);
-	const previewRef = useRef<HTMLDivElement>(null);
-	const previewComponentRef = useRef<Component | null>(null);
+	const editorContainerRef = useRef<HTMLDivElement>(null);
 
-	const contentRef = useRef(content);
-	contentRef.current = content;
+	// ── Save handler ─────────────────────────────────────────────────
+	const handleSave = useCallback(() => {
+		const currentContent = useRichEditor
+			? (editorRef.current?.value ?? "").trim()
+			: (textareaRef.current?.value ?? "").trim();
 
-	useEffect(() => {
-		if (!isPreviewMode || !previewRef.current) return;
-
-		if (previewComponentRef.current) {
-			previewComponentRef.current.unload();
-		}
-
-		const el = previewRef.current;
-		el.empty();
-
-		if (!contentRef.current.trim()) {
-			el.createDiv({
-				text: "No content to preview",
-				cls: "ep:text-obs-muted ep:italic",
-			});
+		if (!currentContent) {
+			notify().warning("Please enter some flashcard content");
 			return;
 		}
 
-		previewComponentRef.current = new Component();
-		previewComponentRef.current.load();
+		const flashcards = parser.extractFlashcards(currentContent);
+		if (flashcards.length === 0) {
+			notify().warning(
+				`No flashcards found. Use "${FLASHCARD_CONFIG.tag}" tag after questions.`,
+			);
+			return;
+		}
 
-		void MarkdownRenderer.render(
-			app,
-			stripBrTags(contentRef.current),
-			el,
-			options.currentFilePath,
-			previewComponentRef.current,
-		);
+		onSubmit({
+			cancelled: false,
+			flashcards,
+			editedCardId: options.editCardId,
+		});
+	}, [useRichEditor, parser, options.editCardId, onSubmit]);
+
+	// Ref indirection so editor callbacks always call the latest handleSave
+	const handleSaveRef = useRef(handleSave);
+	handleSaveRef.current = handleSave;
+	const onCloseRef = useRef(onClose);
+	onCloseRef.current = onClose;
+
+	// ── CM6 extensions ───────────────────────────────────────────────
+	const placeholderExt = useMemo(
+		() =>
+			placeholder(
+				`What is photosynthesis? ${FLASHCARD_CONFIG.tag}\nThe process by which plants convert light into energy`,
+			),
+		[],
+	);
+
+	// Ctrl+3 to insert #flashcard tag
+	const flashcardTagExt = useMemo(
+		() =>
+			Prec.highest(
+				keymap.of([
+					{
+						key: "Mod-3",
+						run: (view) => {
+							const pos = view.state.selection.main.head;
+							const line = view.state.doc.lineAt(pos);
+							if (line.text.includes(FLASHCARD_CONFIG.tag))
+								return true;
+							const tag = ` ${FLASHCARD_CONFIG.tag}`;
+							view.dispatch({
+								changes: { from: line.to, insert: tag },
+								selection: { anchor: line.to + tag.length },
+							});
+							return true;
+						},
+						preventDefault: true,
+					},
+				]),
+			),
+		[],
+	);
+
+	// ── Image paste handler for embedded editor ──────────────────────
+	const handleEditorPaste = useCallback(
+		async (e: ClipboardEvent, editor: EmbeddableEditorInstance) => {
+			const items = e.clipboardData?.items;
+			if (!items) return;
+
+			for (const item of Array.from(items)) {
+				if (item.type.startsWith("image/")) {
+					e.preventDefault();
+					const file = item.getAsFile();
+					if (!file) return;
+
+					try {
+						const savedPath =
+							await imageService.saveImageFromClipboard(file);
+						if (!savedPath) {
+							notify().warning("Failed to save image");
+							return;
+						}
+						const markdown = imageService.buildImageMarkdown(
+							savedPath,
+							500,
+						);
+						const view = editor.cm;
+						const pos = view.state.selection.main.head;
+						view.dispatch({
+							changes: { from: pos, insert: markdown },
+						});
+					} catch (error) {
+						console.error("Error saving image:", error);
+						notify().operationFailed("save image", error);
+					}
+					return;
+				}
+			}
+		},
+		[imageService],
+	);
+
+	// ── Create embedded editor on mount ──────────────────────────────
+	useEffect(() => {
+		if (!useRichEditor || !editorClass || !editorContainerRef.current)
+			return;
+
+		const el = editorContainerRef.current;
+
+		const editor = new editorClass(app, el, {
+			value: options.prefillContent ?? "",
+			onEscape: () => onCloseRef.current(),
+			onModEnter: () => handleSaveRef.current(),
+			onPaste: handleEditorPaste,
+			extraExtensions: [flashcardTagExt, placeholderExt],
+		});
+
+		editorRef.current = editor;
+
+		// Focus the editor after a short delay (modal animation)
+		setTimeout(() => editor.cm.focus(), 50);
 
 		return () => {
-			previewComponentRef.current?.unload();
-			previewComponentRef.current = null;
+			editorRef.current = null;
+			editor.destroy();
 		};
-	}, [isPreviewMode, app, options.currentFilePath]);
+	}, [app, useRichEditor, editorClass, flashcardTagExt, handleEditorPaste]);
 
-	useEffect(() => {
-		if (!isPreviewMode && textareaRef.current) {
-			const ta = textareaRef.current;
-			setTimeout(() => {
-				ta.focus();
-				ta.selectionStart = ta.value.length;
-				ta.selectionEnd = ta.value.length;
-			}, 50);
-		}
-	}, [isPreviewMode]);
+	// ── Textarea-only: state & handlers (for fallback) ───────────────
+	const [content, setContent] = useState(options.prefillContent ?? "");
 
 	const insertFlashcardTag = useCallback(() => {
 		const ta = textareaRef.current;
@@ -156,10 +253,10 @@ export function SimpleEditorBody({
 				return;
 			}
 		},
-		[insertFlashcardTag, onClose],
+		[insertFlashcardTag, onClose, handleSave],
 	);
 
-	const handlePaste = useCallback(
+	const handleTextareaPaste = useCallback(
 		async (e: ClipboardEvent) => {
 			const items = e.clipboardData?.items;
 			if (!items) return;
@@ -171,14 +268,21 @@ export function SimpleEditorBody({
 					if (!file) return;
 
 					try {
-						const savedPath = await imageService.saveImageFromClipboard(file);
+						const savedPath =
+							await imageService.saveImageFromClipboard(file);
 						if (!savedPath) {
 							notify().warning("Failed to save image");
 							return;
 						}
-						const markdown = imageService.buildImageMarkdown(savedPath, 500);
+						const markdown = imageService.buildImageMarkdown(
+							savedPath,
+							500,
+						);
 						if (textareaRef.current) {
-							insertAtTextareaCursor(textareaRef.current, markdown);
+							insertAtTextareaCursor(
+								textareaRef.current,
+								markdown,
+							);
 							setContent(textareaRef.current.value);
 							textareaRef.current.focus();
 						}
@@ -193,41 +297,18 @@ export function SimpleEditorBody({
 		[imageService],
 	);
 
-	const handleSave = useCallback(() => {
-		const currentContent = isPreviewMode
-			? contentRef.current.trim()
-			: (textareaRef.current?.value ?? "").trim();
+	useEffect(() => {
+		if (useRichEditor) return;
+		if (!textareaRef.current) return;
+		const ta = textareaRef.current;
+		setTimeout(() => {
+			ta.focus();
+			ta.selectionStart = ta.value.length;
+			ta.selectionEnd = ta.value.length;
+		}, 50);
+	}, [useRichEditor]);
 
-		if (!currentContent) {
-			notify().warning("Please enter some flashcard content");
-			return;
-		}
-
-		const flashcards = parser.extractFlashcards(currentContent);
-		if (flashcards.length === 0) {
-			notify().warning(
-				`No flashcards found. Use "${FLASHCARD_CONFIG.tag}" tag after questions.`,
-			);
-			return;
-		}
-
-		onSubmit({
-			cancelled: false,
-			flashcards,
-			editedCardId: options.editCardId,
-		});
-	}, [isPreviewMode, parser, options.editCardId, onSubmit]);
-
-	const togglePreview = useCallback(() => {
-		if (!isPreviewMode && textareaRef.current) {
-			setContent(textareaRef.current.value);
-		}
-		setIsPreviewMode((prev) => !prev);
-	}, [isPreviewMode]);
-
-	const buttonText =
-		options.mode === "add" ? "Save Flashcards" : "Save Changes";
-
+	// ── Render ────────────────────────────────────────────────────────
 	return (
 		<div>
 			{/* Hint */}
@@ -240,10 +321,10 @@ export function SimpleEditorBody({
 			</div>
 
 			{/* Content area */}
-			{isPreviewMode ? (
+			{useRichEditor ? (
 				<div
-					ref={previewRef}
-					class="ep:w-full ep:min-h-87.5 ep:max-h-112.5 ep:p-4 ep:text-ui-small ep:leading-[1.6] ep:bg-obs-primary ep:border ep:border-obs-border ep:rounded-lg ep:text-obs-normal ep:overflow-y-auto"
+					ref={editorContainerRef}
+					class="ep-simple-editor-container"
 				/>
 			) : (
 				<textarea
@@ -252,47 +333,33 @@ export function SimpleEditorBody({
 					placeholder={`What is photosynthesis? ${FLASHCARD_CONFIG.tag}\nThe process by which plants convert light into energy\n\nWhat are the inputs? ${FLASHCARD_CONFIG.tag}\nSunlight, water, and CO2`}
 					spellcheck={true}
 					value={content}
-					onInput={(e) => setContent((e.target as HTMLTextAreaElement).value)}
+					onInput={(e) =>
+						setContent((e.target as HTMLTextAreaElement).value)
+					}
 					onKeyDown={handleKeyDown}
-					onPaste={handlePaste}
+					onPaste={handleTextareaPaste}
 				/>
 			)}
 
 			{/* Shortcuts hint */}
-			<KeyboardShortcutsHint />
+			<KeyboardShortcutsHint useRichEditor={useRichEditor} />
 
 			{/* Buttons */}
-			<div class="ep-modal-footer ep:flex ep:justify-between ep:items-center ep:gap-3 ep:mt-4">
-				{/* Left: Preview toggle */}
-				<div class="ep:flex ep:items-center ep:gap-2">
-					<label class="ep:flex ep:items-center ep:gap-2 ep:cursor-pointer ep:text-ui-smaller ep:text-obs-muted">
-						<input
-							type="checkbox"
-							class="ep:cursor-pointer"
-							checked={isPreviewMode}
-							onChange={togglePreview}
-						/>
-						<span>Preview</span>
-					</label>
-				</div>
-
-				{/* Right: Cancel + Save */}
-				<div class="ep:flex ep:gap-3">
-					<Clickable
-						class={SECONDARY_BUTTON_CLASSES}
-						onClick={onClose}
-						stopPropagation={false}
-					>
-						Cancel
-					</Clickable>
-					<Clickable
-						class="mod-cta ep-btn"
-						onClick={handleSave}
-						stopPropagation={false}
-					>
-						{buttonText}
-					</Clickable>
-				</div>
+			<div class="ep-modal-footer ep:flex ep:justify-end ep:items-center ep:gap-3 ep:mt-4">
+				<Clickable
+					class={SECONDARY_BUTTON_CLASSES}
+					onClick={onClose}
+					stopPropagation={false}
+				>
+					Cancel
+				</Clickable>
+				<Clickable
+					class="mod-cta ep-btn"
+					onClick={handleSave}
+					stopPropagation={false}
+				>
+					{buttonText}
+				</Clickable>
 			</div>
 		</div>
 	);

@@ -1,7 +1,7 @@
 import { LivePreviewField } from "@features/study/ui/review/components/LivePreviewField";
 import type { FSRSFlashcardItem } from "@shared/types";
 import { Clickable } from "@shared/ui/components";
-import { stripBrTags } from "@shared/utils";
+import { cn } from "@shared/ui/utils/cn";
 
 export interface CardContainerProps {
 	card: FSRSFlashcardItem;
@@ -40,44 +40,42 @@ export function CardContainer({
 				)}
 
 				<LivePreviewField
-					content={stripBrTags(questionContent)}
+					content={questionContent}
 					field="question"
 					sourcePath={sourcePath}
-					cls="true-recall-review-question ep:text-xl ep:leading-relaxed ep:text-obs-normal ep:mb-6"
+					cls="true-recall-review-question ep:leading-relaxed ep:text-obs-normal ep:mb-6"
 					onContentChange={onContentChange}
 				/>
 
 				{!!card.answer?.trim() && (
 					<>
 						<div
-							class={`ep:flex ep:items-center ep:my-6${isAnswerRevealed ? "" : " ep:hidden"}`}
+							class={cn("ep:flex ep:items-center ep:my-6", !isAnswerRevealed && "ep:hidden")}
 						>
 							<div class="ep:flex-1 ep:border-t ep:border-obs-border" />
 						</div>
 						<div class={isAnswerRevealed ? "ep:mt-6" : "ep:hidden"}>
 							<LivePreviewField
-								content={stripBrTags(card.answer)}
+								content={card.answer}
 								field="answer"
 								sourcePath={sourcePath}
-								cls="true-recall-review-answer ep:text-lg ep:leading-relaxed ep:text-obs-muted"
+								cls="true-recall-review-answer ep:leading-relaxed ep:text-obs-muted"
 								onContentChange={onContentChange}
 							/>
 						</div>
 					</>
 				)}
 
-				{card.sourceNoteName &&
-					isAnswerRevealed &&
-					onOpenSourceNote && (
-						<div class="ep:flex ep:justify-center ep:pt-8">
-							<Clickable
-								class="ep:text-obs-faint ep:text-ui-smaller ep:no-underline ep:hover:text-obs-accent ep:hover:underline ep:transition-colors ep:p-0"
-								onClick={onOpenSourceNote}
-							>
-								Source: {card.sourceNoteName}
-							</Clickable>
-						</div>
-					)}
+				{card.sourceNoteName && isAnswerRevealed && onOpenSourceNote && (
+					<div class="ep:flex ep:justify-center ep:pt-8">
+						<Clickable
+							class="ep:text-obs-faint ep:text-ui-smaller ep:no-underline ep:hover:text-obs-accent ep:hover:underline ep:transition-colors ep:p-0"
+							onClick={onOpenSourceNote}
+						>
+							Source: {card.sourceNoteName}
+						</Clickable>
+					</div>
+				)}
 			</div>
 		</div>
 	);
