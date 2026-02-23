@@ -78,8 +78,8 @@ export function CardContainer({
 					/>
 				)}
 
-				{!isEditingQuestion && (
-					<div class={isAnswerRevealed ? undefined : "ep:hidden"}>
+				{isAnswerRevealed && !isEditingQuestion && (
+					<>
 						<div class="ep:flex ep:items-center ep:my-6">
 							<div class="ep:flex-1 ep:border-t ep:border-obs-border" />
 						</div>
@@ -102,7 +102,7 @@ export function CardContainer({
 								onStartEdit={() => onStartEdit("answer")}
 							/>
 						)}
-					</div>
+					</>
 				)}
 
 				{card.sourceNoteName && isAnswerRevealed && !isEditing && onOpenSourceNote && (
