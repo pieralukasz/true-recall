@@ -5,6 +5,8 @@ import { useState } from "preact/hooks";
 export interface PanelEmptyStateProps {
 	onGenerate: () => Promise<void>;
 	onGenerateFromHighlights: () => Promise<void>;
+	onCollect: () => Promise<void>;
+	uncollectedCount: number;
 	hasApiKey: boolean;
 	hasHighlights: boolean;
 }
@@ -12,6 +14,8 @@ export interface PanelEmptyStateProps {
 export function PanelEmptyState({
 	onGenerate,
 	onGenerateFromHighlights,
+	onCollect,
+	uncollectedCount,
 	hasApiKey,
 	hasHighlights,
 }: PanelEmptyStateProps) {
@@ -19,6 +23,7 @@ export function PanelEmptyState({
 	const [generatingSource, setGeneratingSource] = useState<
 		"note" | "highlights" | null
 	>(null);
+	const [collecting, setCollecting] = useState(false);
 	const iconRef = useIcon("sparkles");
 
 	const handleGenerate = async () => {
@@ -42,6 +47,23 @@ export function PanelEmptyState({
 			setGeneratingSource(null);
 		}
 	};
+
+	const handleCollect = async () => {
+		setCollecting(true);
+		try {
+			await onCollect();
+		} finally {
+			setCollecting(false);
+		}
+	};
+
+	if (collecting) {
+		return (
+			<div class="ep:flex ep:items-center ep:justify-center ep:h-full">
+				<LoadingSpinner message="Collecting flashcards..." />
+			</div>
+		);
+	}
 
 	if (generating) {
 		const message =
@@ -69,8 +91,17 @@ export function PanelEmptyState({
 			</div>
 
 			<div class="ep:flex ep:flex-col ep:gap-2">
+				{uncollectedCount > 0 && (
+					<Clickable
+						class="mod-cta ep:px-4 ep:py-1.5 ep:rounded-md ep:text-ui-small ep:font-medium"
+						onClick={handleCollect}
+					>
+						Collect {uncollectedCount} flashcard{uncollectedCount !== 1 ? "s" : ""}
+					</Clickable>
+				)}
+
 				<Clickable
-					class="mod-cta ep:px-4 ep:py-1.5 ep:rounded-md ep:text-ui-small ep:font-medium"
+					class={`${uncollectedCount > 0 ? "ep:border ep:border-obs-modifier-border" : "mod-cta"} ep:px-4 ep:py-1.5 ep:rounded-md ep:text-ui-small ep:font-medium`}
 					onClick={handleGenerate}
 					disabled={!hasApiKey}
 				>

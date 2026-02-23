@@ -1063,6 +1063,8 @@ export function FlashcardPanelApp({
 						handlers={contentHandlers}
 						onGenerateFromNote={handleGenerateFromNote}
 						onGenerateFromHighlights={handleGenerateFromHighlights}
+						onCollect={handleCollect}
+						uncollectedCount={state.uncollectedCount}
 						hasApiKey={!!plugin.settings.openRouterApiKey}
 						hasHighlights={state.hasHighlights}
 					/>
