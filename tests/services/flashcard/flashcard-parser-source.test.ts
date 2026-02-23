@@ -134,6 +134,67 @@ Second answer`;
 			expect(cards[1]!.sourceText).toBeUndefined();
 		});
 
+		it("handles case-insensitive source comment (capital S)", () => {
+			const content = `What is it? #flashcard
+Answer here
+<!-- Source: Some capitalized source text. -->`;
+
+			const cards = parser.extractFlashcards(content);
+			expect(cards[0]!.sourceText).toBe(
+				"Some capitalized source text.",
+			);
+			expect(cards[0]!.answer).toBe("Answer here");
+		});
+
+		it("handles SOURCE in all caps", () => {
+			const content = `What is it? #flashcard
+Answer here
+<!-- SOURCE: All caps source. -->`;
+
+			const cards = parser.extractFlashcards(content);
+			expect(cards[0]!.sourceText).toBe("All caps source.");
+		});
+
+		it("extracts source comment after blank line (peek ahead)", () => {
+			const content = `What is X? #flashcard
+Answer text
+
+<!-- source: X is a concept from the text. -->`;
+
+			const cards = parser.extractFlashcards(content);
+			expect(cards[0]!.sourceText).toBe(
+				"X is a concept from the text.",
+			);
+			expect(cards[0]!.answer).toBe("Answer text");
+		});
+
+		it("extracts source comment after multiple blank lines", () => {
+			const content = `What is X? #flashcard
+Answer text
+
+
+<!-- source: Source after two blank lines. -->`;
+
+			const cards = parser.extractFlashcards(content);
+			expect(cards[0]!.sourceText).toBe(
+				"Source after two blank lines.",
+			);
+		});
+
+		it("peek ahead does not steal source from next card", () => {
+			const content = `First question? #flashcard
+First answer
+
+Second question? #flashcard
+Second answer
+<!-- source: Source for second only. -->`;
+
+			const cards = parser.extractFlashcards(content);
+			expect(cards).toHaveLength(2);
+			expect(cards[0]!.sourceText).toBeUndefined();
+			expect(cards[1]!.sourceText).toBe("Source for second only.");
+		});
+
 		it("does not treat source comment inside answer as source when it is not the last line", () => {
 			const content = `Question? #flashcard
 First line of answer

@@ -26,7 +26,7 @@ import type { FlashcardItem } from "@shared/types";
 export class FlashcardParserService {
 	private codeBlockPattern: RegExp = /^\s*(```|~~~)/;
 	private tagPattern: RegExp;
-	private sourceCommentPattern: RegExp = /^<!--\s*source:\s*(.*?)\s*-->$/;
+	private sourceCommentPattern: RegExp = /^<!--\s*source:\s*(.*?)\s*-->$/i;
 
 	constructor() {
 		// Matches line ending with #flashcard-reverse or #flashcard
@@ -130,6 +130,25 @@ export class FlashcardParserService {
 						sourceText = sourceMatch[1]?.trim() || undefined;
 						answerLines.splice(j, 1);
 						break;
+					}
+				}
+
+				// AI sometimes puts a blank line before the source comment,
+				// which causes the answer loop to stop before reaching it.
+				// Peek ahead past blank lines to catch it.
+				if (!sourceText) {
+					let peek = i + 1;
+					while (
+						peek < lines.length &&
+						lines[peek]?.trim() === ""
+					) {
+						peek++;
+					}
+					const peekMatch = lines[peek]
+						?.trim()
+						.match(this.sourceCommentPattern);
+					if (peekMatch) {
+						sourceText = peekMatch[1]?.trim() || undefined;
 					}
 				}
 
