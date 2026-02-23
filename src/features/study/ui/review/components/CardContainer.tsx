@@ -78,8 +78,8 @@ export function CardContainer({
 					/>
 				)}
 
-				{isAnswerRevealed && !isEditingQuestion && (
-					<>
+				{!isEditingQuestion && (
+					<div class={isAnswerRevealed ? undefined : "ep:hidden"}>
 						<div class="ep:flex ep:items-center ep:my-6">
 							<div class="ep:flex-1 ep:border-t ep:border-obs-border" />
 						</div>
@@ -102,7 +102,7 @@ export function CardContainer({
 								onStartEdit={() => onStartEdit("answer")}
 							/>
 						)}
-					</>
+					</div>
 				)}
 
 				{card.sourceNoteName && isAnswerRevealed && !isEditing && onOpenSourceNote && (
@@ -141,10 +141,8 @@ function MarkdownField({
 			if (!(e.metaKey || e.ctrlKey)) return;
 
 			const target = e.target as HTMLElement;
-			if (target.closest("a.internal-link")) {
-				e.preventDefault();
-				e.stopPropagation();
-			}
+			if (target.closest("a.internal-link")) return;
+
 			onStartEdit();
 		},
 		[onStartEdit],

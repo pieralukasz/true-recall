@@ -591,6 +591,62 @@ export function FlashcardPanelApp({
 		}
 	}, [state.currentFile, app, plugin]);
 
+	const handleGenerateFromNote = useCallback(async () => {
+		if (!state.currentFile) return;
+		const { notify } = await import("@shared/services/notification.service");
+
+		if (!plugin.settings.openRouterApiKey) {
+			notify().aiNotConfigured();
+			return;
+		}
+
+		const content = await app.vault.read(state.currentFile);
+		if (!content.trim()) {
+			notify().warning("Note is empty");
+			return;
+		}
+
+		const { FlashcardGenerationService } = await import(
+			"@features/ai/services/flashcard-generation.service"
+		);
+		const { FlashcardParserService } = await import(
+			"@features/study/services/flashcard/flashcard-parser.service"
+		);
+
+		const generationService = new FlashcardGenerationService(
+			() => plugin.settings,
+			new FlashcardParserService(),
+		);
+
+		const result = await generationService.generate(content, "auto");
+
+		if (result.flashcards.length === 0) {
+			notify().warning("No flashcards generated from this note");
+			return;
+		}
+
+		const batchResult = await plugin.flashcardManager.saveFlashcardsToSql(
+			state.currentFile,
+			result.flashcards,
+			"ai",
+		);
+
+		const created = batchResult.created.length;
+		const dups = batchResult.duplicates.length;
+
+		if (dups > 0 && created > 0) {
+			notify().cardsCreatedWithDuplicates(
+				created,
+				dups,
+				state.currentFile.basename,
+			);
+		} else if (dups > 0) {
+			notify().allCardsDuplicates(dups);
+		} else {
+			notify().cardsCreated(created, state.currentFile.basename);
+		}
+	}, [state.currentFile, app, plugin]);
+
 	const handleReview = useCallback(async () => {
 		if (!state.currentFile) return;
 		await plugin.reviewNoteFlashcards(state.currentFile);
@@ -927,6 +983,8 @@ export function FlashcardPanelApp({
 						cardsWithFsrs={cardsWithFsrs}
 						searchQuery={state.searchQuery}
 						handlers={contentHandlers}
+						onGenerateFromNote={handleGenerateFromNote}
+						hasApiKey={!!plugin.settings.openRouterApiKey}
 					/>
 				</div>
 			</div>

@@ -8,6 +8,10 @@ export {
 	type PanelContentProps,
 } from "@features/library/ui/panel/components/PanelContent";
 export {
+	PanelEmptyState,
+	type PanelEmptyStateProps,
+} from "@features/library/ui/panel/components/PanelEmptyState";
+export {
 	PanelHeader,
 	type PanelHeaderProps,
 } from "@features/library/ui/panel/components/PanelHeader";
