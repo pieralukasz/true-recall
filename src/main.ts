@@ -99,6 +99,8 @@ export default class TrueRecallPlugin extends Plugin {
 	store: AppStore | null = null;
 	noteStatusCache: NoteStatusCacheService | null = null;
 	statusBarWidget: StatusBarWidget | null = null;
+	EmbeddableEditor: import("@shared/ui/editor/embedded-editor").EmbeddableEditorClass | null =
+		null;
 
 	/**
 	 * Assert that the card store is initialized and ready.
@@ -716,9 +718,19 @@ export default class TrueRecallPlugin extends Plugin {
 		this.noteStatusCache = new NoteStatusCacheService(this.cardStore);
 
 		// Build cache after frontmatter index is ready
-		this.app.workspace.onLayoutReady(() => {
+		this.app.workspace.onLayoutReady(async () => {
 			this.noteStatusCache?.buildFromStore();
 			this.noteStatusCache?.registerEvents();
+
+			// Resolve the embeddable editor prototype for live-preview editing
+			try {
+				const { createEmbeddableEditorClass } = await import(
+					"@shared/ui/editor/embedded-editor"
+				);
+				this.EmbeddableEditor = createEmbeddableEditorClass(this.app);
+			} catch (e) {
+				console.warn("[TrueRecall] Failed to resolve editor prototype:", e);
+			}
 		});
 
 		const onReviewNote = (file: TFile) => {
