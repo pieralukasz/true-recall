@@ -4,30 +4,54 @@ import { useState } from "preact/hooks";
 
 export interface PanelEmptyStateProps {
 	onGenerate: () => Promise<void>;
+	onGenerateFromHighlights: () => Promise<void>;
 	hasApiKey: boolean;
+	hasHighlights: boolean;
 }
 
 export function PanelEmptyState({
 	onGenerate,
+	onGenerateFromHighlights,
 	hasApiKey,
+	hasHighlights,
 }: PanelEmptyStateProps) {
 	const [generating, setGenerating] = useState(false);
+	const [generatingSource, setGeneratingSource] = useState<
+		"note" | "highlights" | null
+	>(null);
 	const iconRef = useIcon("sparkles");
 
 	const handleGenerate = async () => {
 		setGenerating(true);
+		setGeneratingSource("note");
 		try {
 			await onGenerate();
 		} finally {
 			setGenerating(false);
+			setGeneratingSource(null);
+		}
+	};
+
+	const handleGenerateFromHighlights = async () => {
+		setGenerating(true);
+		setGeneratingSource("highlights");
+		try {
+			await onGenerateFromHighlights();
+		} finally {
+			setGenerating(false);
+			setGeneratingSource(null);
 		}
 	};
 
 	if (generating) {
+		const message =
+			generatingSource === "highlights"
+				? "Generating from highlights..."
+				: "Generating flashcards...";
 		return (
 			<div class="ep:flex ep:items-center ep:justify-center ep:h-full">
 				<LoadingSpinner
-					message="Generating flashcards..."
+					message={message}
 					subMessage="This may take a moment"
 				/>
 			</div>
@@ -44,13 +68,25 @@ export function PanelEmptyState({
 				No flashcards yet for this note
 			</div>
 
-			<Clickable
-				class="mod-cta ep:px-4 ep:py-1.5 ep:rounded-md ep:text-ui-small ep:font-medium"
-				onClick={handleGenerate}
-				disabled={!hasApiKey}
-			>
-				Generate flashcards from note
-			</Clickable>
+			<div class="ep:flex ep:flex-col ep:gap-2">
+				<Clickable
+					class="mod-cta ep:px-4 ep:py-1.5 ep:rounded-md ep:text-ui-small ep:font-medium"
+					onClick={handleGenerate}
+					disabled={!hasApiKey}
+				>
+					Generate flashcards from note
+				</Clickable>
+
+				{hasHighlights && (
+					<Clickable
+						class="ep:px-4 ep:py-1.5 ep:rounded-md ep:text-ui-small ep:font-medium ep:border ep:border-obs-modifier-border"
+						onClick={handleGenerateFromHighlights}
+						disabled={!hasApiKey}
+					>
+						Generate from ==highlights==
+					</Clickable>
+				)}
+			</div>
 
 			{!hasApiKey && (
 				<div class="ep:text-ui-smaller ep:text-obs-error">

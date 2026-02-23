@@ -7,6 +7,13 @@ import type { FlashcardItem } from "@shared/types";
 import type { TrueRecallSettings } from "@shared/types/settings.types";
 import { OpenRouterClient } from "./openrouter-client";
 
+// Appended to all prompts (including custom) so per-card source tracking works
+const SOURCE_TRACKING_SUFFIX = `
+
+SOURCE TRACKING (MANDATORY):
+After each answer, on a new line, add: <!-- source: [exact verbatim quote from the input text] -->
+The quote must be EXACTLY copied from the input — same words, same punctuation. Keep it to the specific sentence(s) for that flashcard.`;
+
 export interface GenerationResult {
 	flashcards: FlashcardItem[];
 	mode: GenerationMode;
@@ -51,6 +58,7 @@ export class FlashcardGenerationService {
 	private getPromptForMode(mode: GenerationMode): string {
 		const settings = this.getSettings();
 		const customPrompt = settings.aiFlashcardPrompts?.[mode];
-		return customPrompt?.trim() || DEFAULT_PROMPTS[mode];
+		const basePrompt = customPrompt?.trim() || DEFAULT_PROMPTS[mode];
+		return basePrompt + SOURCE_TRACKING_SUFFIX;
 	}
 }

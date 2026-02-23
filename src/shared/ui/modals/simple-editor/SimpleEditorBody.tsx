@@ -4,8 +4,7 @@ import {
 	insertAtTextareaCursor,
 	toggleTextareaWrap,
 } from "@features/study/ui/editor/edit-toolbar.utils";
-import { Prec } from "@codemirror/state";
-import { keymap, placeholder } from "@codemirror/view";
+import { EditorView, placeholder } from "@codemirror/view";
 import { FLASHCARD_CONFIG } from "@shared/constants";
 import type {
 	EmbeddableEditorClass,
@@ -92,29 +91,27 @@ export function SimpleEditorBody({
 		[],
 	);
 
-	// Ctrl+3 to insert #flashcard tag
+	// Ctrl/Cmd+3 to insert #flashcard tag — DOM handler to bypass Obsidian's scope
 	const flashcardTagExt = useMemo(
 		() =>
-			Prec.highest(
-				keymap.of([
-					{
-						key: "Mod-3",
-						run: (view) => {
-							const pos = view.state.selection.main.head;
-							const line = view.state.doc.lineAt(pos);
-							if (line.text.includes(FLASHCARD_CONFIG.tag))
-								return true;
-							const tag = ` ${FLASHCARD_CONFIG.tag}`;
-							view.dispatch({
-								changes: { from: line.to, insert: tag },
-								selection: { anchor: line.to + tag.length },
-							});
-							return true;
-						},
-						preventDefault: true,
-					},
-				]),
-			),
+			EditorView.domEventHandlers({
+				keydown(event, view) {
+					const isMod = event.ctrlKey || event.metaKey;
+					if (!isMod || (event.key !== "3" && event.key !== "#"))
+						return false;
+					event.preventDefault();
+					event.stopPropagation();
+					const pos = view.state.selection.main.head;
+					const line = view.state.doc.lineAt(pos);
+					if (line.text.includes(FLASHCARD_CONFIG.tag)) return true;
+					const tag = ` ${FLASHCARD_CONFIG.tag}`;
+					view.dispatch({
+						changes: { from: line.to, insert: tag },
+						selection: { anchor: line.to + tag.length },
+					});
+					return true;
+				},
+			}),
 		[],
 	);
 
