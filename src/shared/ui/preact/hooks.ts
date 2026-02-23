@@ -4,7 +4,7 @@ import {
 	Component as ObsidianComponent,
 	setIcon,
 } from "obsidian";
-import { useEffect, useRef } from "preact/hooks";
+import { useEffect, useLayoutEffect, useRef } from "preact/hooks";
 
 export function useMarkdown(
 	markdown: string,
@@ -13,7 +13,7 @@ export function useMarkdown(
 	const app = useApp();
 	const ref = useRef<HTMLDivElement>(null);
 
-	useEffect(() => {
+	useLayoutEffect(() => {
 		const el = ref.current;
 		if (!el) return;
 
