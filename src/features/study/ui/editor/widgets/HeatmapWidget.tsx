@@ -1,6 +1,7 @@
 import { StatsCalculatorService } from "@features/metrics/services/stats/stats-calculator.service";
 import { effect } from "@preact/signals";
 import { dataVersion, track } from "@shared/services/signals";
+import { Clickable } from "@shared/ui/components";
 import { usePlugin } from "@shared/ui/preact";
 import { useEffect, useMemo, useRef, useState } from "preact/hooks";
 import { configValue, parseCodeblockConfig } from "./config-parser";
@@ -199,17 +200,23 @@ export function HeatmapWidget({ source }: { source: string }) {
 				<span class="ep:font-semibold">
 					Activity (last {configValue(config, "months", 12)} months)
 				</span>
-				<span
-					class="ep:text-obs-muted ep:cursor-pointer hover:ep:underline"
+				<Clickable
+					class="ep:text-obs-muted hover:ep:underline"
 					onClick={handleStatsClick}
 				>
 					{data.daysActive} days active
-				</span>
+				</Clickable>
 			</div>
 
 			{/* SVG heatmap */}
 			<div class="ep:overflow-x-auto">
-				<svg width={svgWidth} height={svgHeight} style={{ display: "block" }}>
+				<svg
+					width={svgWidth}
+					height={svgHeight}
+					style={{ display: "block" }}
+					role="img"
+					aria-label="Review activity heatmap"
+				>
 					{/* Month labels */}
 					{data.monthLabels.map((ml) => (
 						<text
@@ -225,6 +232,7 @@ export function HeatmapWidget({ source }: { source: string }) {
 
 					{/* Grid cells */}
 					{data.cells.map((cell) => (
+						// biome-ignore lint/a11y/noStaticElementInteractions: SVG rects are decorative with hover tooltip only
 						<rect
 							key={cell.date}
 							x={cell.col * CELL_TOTAL + 30}
@@ -265,12 +273,9 @@ export function HeatmapWidget({ source }: { source: string }) {
 					</div>
 				)}
 				{showTotal && (
-					<span
-						class="ep:cursor-pointer hover:ep:underline"
-						onClick={handleStatsClick}
-					>
+					<Clickable class="hover:ep:underline" onClick={handleStatsClick}>
 						Total: {data.totalReviews.toLocaleString()}
-					</span>
+					</Clickable>
 				)}
 			</div>
 

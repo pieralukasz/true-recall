@@ -1,9 +1,11 @@
 import { effect } from "@preact/signals";
 import { dataVersion, track } from "@shared/services/signals";
+import { Clickable } from "@shared/ui/components";
 import { FSRS_COLORS } from "@shared/ui/helpers/fsrs-colors";
 import { usePlugin } from "@shared/ui/preact";
 import { useEffect, useMemo, useState } from "preact/hooks";
 import { computeProjectStats, type ProjectStats } from "./project-stats";
+import { WidgetCta } from "./WidgetCta";
 
 export function ProjectWidget({
 	sourcePath,
@@ -111,12 +113,12 @@ export function ProjectCard({
 			{/* Header: name + health bar */}
 			<div class="ep:flex ep:items-center ep:justify-between ep:gap-2">
 				{onClickName ? (
-					<button
-						class="ep:text-sm ep:font-semibold ep:text-obs-normal ep:cursor-pointer ep:hover:underline ep:bg-transparent ep:border-none ep:p-0 ep:text-left"
+					<Clickable
+						class="ep:text-sm ep:font-semibold ep:text-obs-normal ep:hover:underline"
 						onClick={onClickName}
 					>
 						{stats.name}
-					</button>
+					</Clickable>
 				) : (
 					<span class="ep:text-sm ep:font-semibold">{stats.name}</span>
 				)}
@@ -169,18 +171,12 @@ export function ProjectCard({
 			{/* Action buttons */}
 			{activeDue > 0 && (
 				<div class="ep:flex ep:items-center ep:gap-2 ep:pt-1">
-					<button
-						class="ep:text-xs ep:px-2.5 ep:py-1 ep:rounded ep:bg-obs-interactive-accent ep:text-obs-on-accent ep:cursor-pointer ep:border-none ep:hover:opacity-90"
-						onClick={onReview}
-					>
-						Review &rarr;
-					</button>
-					<button
-						class="ep:text-xs ep:px-2.5 ep:py-1 ep:rounded ep:border ep:border-obs-modifier-border ep:bg-transparent ep:text-obs-muted ep:cursor-pointer ep:hover:text-obs-normal"
+					<WidgetCta label="Review →" onClick={onReview} />
+					<WidgetCta
+						label="Custom study →"
 						onClick={onCustomStudy}
-					>
-						Custom study &rarr;
-					</button>
+						variant="secondary"
+					/>
 				</div>
 			)}
 		</div>

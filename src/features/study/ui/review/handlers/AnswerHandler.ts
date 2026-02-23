@@ -21,15 +21,8 @@ export interface AnswerHandlerDeps {
 	getCrammedCardIds: () => Set<string>;
 }
 
-export interface AnswerHandlerCallbacks {
-	onUpdateSchedulingPreview: () => void;
-}
-
 export class AnswerHandler {
-	constructor(
-		private deps: AnswerHandlerDeps,
-		private _callbacks: AnswerHandlerCallbacks,
-	) {}
+	constructor(private deps: AnswerHandlerDeps) {}
 
 	updateSchedulingPreview(): void {
 		const card = this.deps.getReview().getCurrentCard();

@@ -4,6 +4,7 @@ import { FSRS_COLORS } from "@shared/ui/helpers/fsrs-colors";
 import { usePlugin } from "@shared/ui/preact";
 import { useEffect, useMemo, useState } from "preact/hooks";
 import { configValue, parseCodeblockConfig } from "./config-parser";
+import { WidgetCta } from "./WidgetCta";
 
 interface NoteHealthData {
 	totalCards: number;
@@ -169,20 +170,17 @@ export function NoteHealthWidget({
 			{showActions && (data.dueCount > 0 || data.atRiskCount > 0) && (
 				<div class="ep:flex ep:items-center ep:gap-2 ep:text-xs">
 					{data.dueCount > 0 && (
-						<button
-							class="ep:px-2 ep:py-0.5 ep:rounded ep:bg-obs-interactive-accent ep:text-obs-on-accent ep:cursor-pointer hover:ep:opacity-90"
+						<WidgetCta
+							label={`Review ${data.dueCount} due →`}
 							onClick={handleReviewDue}
-						>
-							Review {data.dueCount} due →
-						</button>
+						/>
 					)}
 					{data.atRiskCount > 0 && (
-						<button
-							class="ep:px-2 ep:py-0.5 ep:rounded ep:border ep:border-obs-modifier-border ep:cursor-pointer hover:ep:bg-obs-modifier-hover"
+						<WidgetCta
+							label={`Fix ${data.atRiskCount} weak →`}
 							onClick={handleFixWeak}
-						>
-							Fix {data.atRiskCount} weak →
-						</button>
+							variant="secondary"
+						/>
 					)}
 				</div>
 			)}

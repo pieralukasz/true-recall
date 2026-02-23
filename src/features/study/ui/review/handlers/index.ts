@@ -5,7 +5,6 @@
 
 export {
 	AnswerHandler,
-	type AnswerHandlerCallbacks,
 	type AnswerHandlerDeps,
 } from "@features/study/ui/review/handlers/AnswerHandler";
 export {

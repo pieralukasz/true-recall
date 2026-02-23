@@ -127,7 +127,6 @@ function ActiveReview({
 				onStartEdit={onStartEdit}
 				onSaveEdit={onSaveEdit}
 				onImagePaste={onImagePaste}
-				onOpenSourceNote={onOpenSourceNote}
 			/>
 
 			{!isEditing && (
@@ -139,6 +138,18 @@ function ActiveReview({
 					onAnswer={onAnswer}
 					onActionsMenu={onActionsMenu}
 				/>
+			)}
+
+			{card.sourceNoteName && !isEditing && (
+				<div class="ep:flex ep:justify-center ep:py-2 ep:shrink-0">
+					<button
+						type="button"
+						class="ep:text-obs-faint ep:text-ui-smaller ep:cursor-pointer ep:no-underline ep:hover:text-obs-accent ep:hover:underline ep:transition-colors ep:bg-transparent ep:border-none ep:p-0"
+						onClick={onOpenSourceNote}
+					>
+						Source: {card.sourceNoteName}
+					</button>
+				</div>
 			)}
 		</div>
 	);
