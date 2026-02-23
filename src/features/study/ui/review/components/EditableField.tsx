@@ -35,7 +35,6 @@ export function EditableField({
 			textarea.focus();
 			const len = textarea.value.length;
 			textarea.setSelectionRange(len, len);
-			textarea.scrollIntoView({ behavior: "smooth", block: "center" });
 		}, 10);
 
 		return () => cleanupRef.current?.();

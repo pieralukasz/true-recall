@@ -1,4 +1,5 @@
 import { PanelCard } from "@features/library/ui/panel/components/PanelCard";
+import { PanelEmptyState } from "@features/library/ui/panel/components/PanelEmptyState";
 import {
 	groupCards,
 	type PanelItem,
@@ -37,6 +38,8 @@ export interface PanelContentProps {
 	cardsWithFsrs: FSRSFlashcardItem[];
 	searchQuery: string;
 	handlers: ContentHandlers;
+	onGenerateFromNote: () => Promise<void>;
+	hasApiKey: boolean;
 }
 
 function getItemInfo(item: PanelItem): {
@@ -71,6 +74,8 @@ export function PanelContent({
 	cardsWithFsrs,
 	searchQuery,
 	handlers,
+	onGenerateFromNote,
+	hasApiKey,
 }: PanelContentProps) {
 	const fsrsMap = useMemo(
 		() => new Map(cardsWithFsrs.map((c) => [c.id, c])),
@@ -115,9 +120,10 @@ export function PanelContent({
 
 	if (!flashcardInfo?.exists) {
 		return (
-			<div class="ep:py-4 ep:text-center">
-				<p class="ep:text-ui-small ep:text-obs-muted ep:m-0">No flashcards</p>
-			</div>
+			<PanelEmptyState
+				onGenerate={onGenerateFromNote}
+				hasApiKey={hasApiKey}
+			/>
 		);
 	}
 
