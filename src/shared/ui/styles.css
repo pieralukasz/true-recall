@@ -196,6 +196,8 @@
 	.ep-textarea-invisible {
 		font-size: inherit;
 		line-height: inherit;
+		text-align: inherit;
+		color: inherit;
 		padding: 0;
 		margin: 0;
 		border: none;
