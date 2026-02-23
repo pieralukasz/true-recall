@@ -96,6 +96,7 @@ export class CardRepository {
 			clozeTemplate?: string;
 			clozeIndex?: number;
 			reverseOfBatchId?: string;
+			sourceText?: string;
 		}>,
 		sourceUid: string,
 		sourceNoteName?: string,
@@ -166,6 +167,8 @@ export class CardRepository {
 				reverseOf = batchIdToDbId.get(flashcard.reverseOfBatchId);
 			}
 
+			const cardSourceText = flashcard.sourceText ?? sourceText;
+
 			const extendedData: FSRSCardData = {
 				...fsrsData,
 				question: flashcard.question,
@@ -176,7 +179,7 @@ export class CardRepository {
 				clozeIndex: flashcard.clozeIndex,
 				reverseOf,
 				createdVia: createdVia ?? "manual",
-				sourceText,
+				sourceText: cardSourceText,
 			};
 
 			this.store.set(flashcard.id, extendedData);
@@ -195,7 +198,7 @@ export class CardRepository {
 				clozeTemplate: flashcard.clozeTemplate,
 				clozeIndex: flashcard.clozeIndex,
 				reverseOf,
-				sourceText,
+				sourceText: cardSourceText,
 			};
 
 			createdCards.push(card);

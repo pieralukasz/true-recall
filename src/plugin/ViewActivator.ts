@@ -71,6 +71,11 @@ export async function activateReviewView(
 
 	const existingLeaf = workspace.getLeavesOfType(viewType)[0];
 	if (existingLeaf) {
+		await existingLeaf.setViewState({
+			type: viewType,
+			active: true,
+			state,
+		});
 		void workspace.revealLeaf(existingLeaf);
 		return existingLeaf;
 	}

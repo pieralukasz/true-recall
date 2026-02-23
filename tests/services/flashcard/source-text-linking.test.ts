@@ -126,6 +126,105 @@ describe("Source text linking", () => {
 		});
 	});
 
+	describe("createBatch with per-card sourceText", () => {
+		it("uses per-card sourceText when provided", () => {
+			const result = repository.createBatch(
+				[
+					{
+						id: "card-a",
+						question: "What is A?",
+						answer: "Answer A",
+						sourceText: "Source text for A.",
+					},
+					{
+						id: "card-b",
+						question: "What is B?",
+						answer: "Answer B",
+						sourceText: "Source text for B.",
+					},
+				],
+				"note-123",
+				"TestNote",
+				"ai",
+			);
+
+			expect(result.created).toHaveLength(2);
+			const rawA = getRawCard(ctx.db, "card-a");
+			const rawB = getRawCard(ctx.db, "card-b");
+			expect(rawA!.source_text).toBe("Source text for A.");
+			expect(rawB!.source_text).toBe("Source text for B.");
+		});
+
+		it("per-card sourceText overrides batch-level sourceText", () => {
+			const result = repository.createBatch(
+				[
+					{
+						id: "card-override",
+						question: "Override question?",
+						answer: "Override answer",
+						sourceText: "Per-card source.",
+					},
+				],
+				"note-456",
+				"TestNote",
+				"ai",
+				"Batch-level source text",
+			);
+
+			expect(result.created).toHaveLength(1);
+			const raw = getRawCard(ctx.db, "card-override");
+			expect(raw!.source_text).toBe("Per-card source.");
+		});
+
+		it("falls back to batch-level sourceText when per-card is undefined", () => {
+			const result = repository.createBatch(
+				[
+					{
+						id: "card-fallback",
+						question: "Fallback question?",
+						answer: "Fallback answer",
+					},
+				],
+				"note-789",
+				"TestNote",
+				"ai",
+				"Batch-level fallback",
+			);
+
+			expect(result.created).toHaveLength(1);
+			const raw = getRawCard(ctx.db, "card-fallback");
+			expect(raw!.source_text).toBe("Batch-level fallback");
+		});
+
+		it("mixed batch — some cards with per-card source, some with batch fallback", () => {
+			const result = repository.createBatch(
+				[
+					{
+						id: "card-with",
+						question: "Card with source?",
+						answer: "Has its own",
+						sourceText: "Individual source.",
+					},
+					{
+						id: "card-without",
+						question: "Card without source?",
+						answer: "Falls back",
+					},
+				],
+				"note-mix",
+				"TestNote",
+				"ai",
+				"Batch fallback text",
+			);
+
+			expect(result.created).toHaveLength(2);
+			const rawWith = getRawCard(ctx.db, "card-with");
+			const rawWithout = getRawCard(ctx.db, "card-without");
+			expect(rawWith!.source_text).toBe("Individual source.");
+			expect(rawWithout!.source_text).toBe("Batch fallback text");
+		});
+	});
+
 	describe("signal communication", () => {
 		it("requestSourceHighlight updates signal with incremented requestId and mode", async () => {
 			const { requestSourceHighlight, highlightRequest } = await vi.importActual<

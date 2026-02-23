@@ -23,12 +23,10 @@ import {
 import { FLASHCARD_CONFIG } from "@shared/constants";
 import type { FlashcardItem } from "@shared/types";
 
-/**
- * Service for parsing flashcard content from markdown files
- */
 export class FlashcardParserService {
 	private codeBlockPattern: RegExp = /^\s*(```|~~~)/;
 	private tagPattern: RegExp;
+	private sourceCommentPattern: RegExp = /^<!--\s*source:\s*(.*?)\s*-->$/;
 
 	constructor() {
 		// Matches line ending with #flashcard-reverse or #flashcard
@@ -122,6 +120,19 @@ export class FlashcardParserService {
 					i++;
 				}
 
+				// Extract <!-- source: ... --> from answer lines (scan backward)
+				let sourceText: string | undefined;
+				for (let j = answerLines.length - 1; j >= 0; j--) {
+					const sourceMatch = answerLines[j]
+						?.trim()
+						.match(this.sourceCommentPattern);
+					if (sourceMatch) {
+						sourceText = sourceMatch[1]?.trim() || undefined;
+						answerLines.splice(j, 1);
+						break;
+					}
+				}
+
 				const answer = answerLines.join("\n").trim();
 
 				// Handle cloze syntax
@@ -138,6 +149,7 @@ export class FlashcardParserService {
 							cardType: "cloze",
 							clozeTemplate: question,
 							clozeIndex: cloze.clozeIndex,
+							sourceText,
 						});
 					}
 				} else {
@@ -147,6 +159,7 @@ export class FlashcardParserService {
 						question,
 						answer,
 						id: basicId,
+						sourceText,
 					});
 
 					// If #flashcard-reverse, also generate a reversed card
@@ -157,6 +170,7 @@ export class FlashcardParserService {
 							id: crypto.randomUUID(),
 							cardType: "reversed",
 							reverseOfBatchId: basicId,
+							sourceText,
 						});
 					}
 				}
