@@ -657,7 +657,7 @@ export function FlashcardPanelApp({
 			new FlashcardParserService(),
 		);
 
-		const result = await generationService.generate(content, "auto");
+		const result = await generationService.generate(content, "basic");
 
 		if (result.flashcards.length === 0) {
 			notify().warning("No flashcards generated from this note");
@@ -745,7 +745,7 @@ export function FlashcardPanelApp({
 			new FlashcardParserService(),
 		);
 
-		const result = await generationService.generate(joinedHighlights, "auto");
+		const result = await generationService.generate(joinedHighlights, "basic");
 
 		if (result.flashcards.length === 0) {
 			notify().warning("No flashcards generated from highlights");
