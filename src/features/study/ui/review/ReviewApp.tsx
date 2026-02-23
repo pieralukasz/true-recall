@@ -8,7 +8,7 @@ import {
 import type { ReviewApi } from "@shared/store";
 import type { FSRSFlashcardItem } from "@shared/types";
 import { usePlugin } from "@shared/ui/preact/ObsidianContext";
-import { useEffect, useState } from "preact/hooks";
+import { useEffect, useLayoutEffect, useState } from "preact/hooks";
 import type { Grade } from "ts-fsrs";
 
 // Re-export for consumers that import from this file
@@ -107,8 +107,16 @@ function ActiveReview({
 	showNextReviewTime,
 }: ActiveReviewProps) {
 	const editState = review.getEditState();
-	const isAnswerRevealed = review.isAnswerRevealed;
 	const isEditing = editState.active;
+
+	const hasAnswer = !!card.answer?.trim();
+	const isAnswerRevealed = !hasAnswer || review.isAnswerRevealed;
+
+	useLayoutEffect(() => {
+		if (!hasAnswer && !review.isAnswerRevealed) {
+			onShowAnswer();
+		}
+	}, [card.id, hasAnswer]);
 
 	return (
 		<div class="true-recall-review ep:flex ep:flex-col ep:h-full ep:p-0">

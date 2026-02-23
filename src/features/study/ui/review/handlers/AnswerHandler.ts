@@ -40,7 +40,9 @@ export class AnswerHandler {
 
 	handleShowAnswer(): void {
 		this.deps.getReview().revealAnswer();
-		this.updateSchedulingPreview();
+		if (!this.deps.getReview().getSchedulingPreview()) {
+			this.updateSchedulingPreview();
+		}
 	}
 
 	async handleAnswer(rating: Grade): Promise<void> {
@@ -95,6 +97,10 @@ export class AnswerHandler {
 			updatedCard,
 			requeueData,
 		);
+
+		if (hasMore) {
+			this.updateSchedulingPreview();
+		}
 
 		// Undo entry with deferred persistence
 		let writeExecuted = false;
@@ -153,10 +159,6 @@ export class AnswerHandler {
 				rating: rating as number,
 				newState: updatedCard.fsrs.state,
 			});
-
-			if (hasMore) {
-				this.updateSchedulingPreview();
-			}
 		}, 0);
 	}
 

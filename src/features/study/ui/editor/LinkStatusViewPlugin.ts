@@ -1,4 +1,3 @@
-import { RangeSetBuilder } from "@codemirror/state";
 import {
 	Decoration,
 	type DecorationSet,
@@ -192,7 +191,6 @@ export function createLinkStatusViewPlugin(
 					return Decoration.none;
 				}
 
-				const builder = new RangeSetBuilder<Decoration>();
 				const sourcePath = app.workspace.getActiveFile()?.path ?? "";
 
 				const resolveLink = (linkText: string): ResolvedLink | null => {
@@ -383,14 +381,11 @@ export function createLinkStatusViewPlugin(
 					}
 				}
 
-				// Sort by position and add to builder
-				decorations.sort((a, b) => a.pos - b.pos);
-				for (const { pos, decoration } of decorations) {
-					builder.add(pos, pos, decoration);
-				}
-
 				this.lastCacheVersion = noteStatusCache.getVersion();
-				return builder.finish();
+				return Decoration.set(
+					decorations.map(({ pos, decoration }) => decoration.range(pos)),
+					true,
+				);
 			}
 		},
 		{
