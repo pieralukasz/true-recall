@@ -25,15 +25,15 @@ import { useCallback, useMemo } from "preact/hooks";
 // ── Variants ────────────────────────────────────────────────
 
 const panelCardVariants = cva(
-	"ep:flex ep:flex-col ep:mb-2 ep:rounded-lg ep:bg-obs-secondary ep:border-[1px] ep:shadow-sm ep:hover:bg-obs-modifier-hover ep:transition-colors ep:duration-300",
+	"ep:flex ep:flex-col ep:mb-2 ep:rounded-lg ep:bg-obs-secondary ep:border-[1px] ep:border-obs-border/20 ep:shadow-sm ep:hover:bg-obs-modifier-hover ep:transition-colors ep:duration-300",
 	{
 		variants: {
 			state: {
-				green: "ep:border-obs-green/30",
-				orange: "ep:border-obs-orange/30",
-				blue: "ep:border-obs-blue/30",
-				red: "ep:border-obs-red/30",
-				default: "ep:border-obs-border",
+				green: "ep:hover:border-obs-green/30",
+				orange: "ep:hover:border-obs-orange/30",
+				blue: "ep:hover:border-obs-blue/30",
+				red: "ep:hover:border-obs-red/30",
+				default: "ep:hover:border-obs-border",
 			},
 		},
 		defaultVariants: { state: "default" },
