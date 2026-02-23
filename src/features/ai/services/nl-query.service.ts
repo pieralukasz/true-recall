@@ -1,25 +1,55 @@
-/**
- * Natural Language Query Service
- * Uses LangChain SQL Agent for natural language database queries
- *
- * Enables users to ask questions about their flashcard statistics
- * in natural language, which are then translated to SQL queries.
- */
-
 import { FSRS_CONTEXT_FOR_AI } from "@features/ai/services/fsrs-context";
-import type { SqlJsAdapter } from "@features/ai/services/langchain-sqlite.adapter";
-import {
-	AgentExecutor,
-	createOpenAIToolsAgent,
-} from "@langchain/classic/agents";
-import { ChatPromptTemplate } from "@langchain/core/prompts";
-import { DynamicTool } from "@langchain/core/tools";
-import { ChatOpenAI } from "@langchain/openai";
+import type { SqlQueryAdapter } from "@features/ai/services/sql-query.adapter";
 import type {
 	NLQueryConfig,
 	NLQueryResult,
 	NLQueryStep,
 } from "@shared/types/nl-query.types";
+import {
+	OpenRouterClient,
+	type ChatMessage,
+	type ToolDefinition,
+} from "./openrouter-client";
+
+const SQL_TOOLS: ToolDefinition[] = [
+	{
+		type: "function",
+		function: {
+			name: "sql_db_query",
+			description:
+				"Execute a SELECT SQL query against the database. Input should be a valid SQLite SELECT query. Always include LIMIT clause.",
+			parameters: {
+				type: "object",
+				properties: {
+					query: {
+						type: "string",
+						description: "The SQL SELECT query to execute",
+					},
+				},
+				required: ["query"],
+			},
+		},
+	},
+	{
+		type: "function",
+		function: {
+			name: "sql_db_schema",
+			description:
+				"Get the schema and sample data for all tables in the database. Use this to understand the database structure before writing queries.",
+			parameters: { type: "object", properties: {} },
+		},
+	},
+	{
+		type: "function",
+		function: {
+			name: "sql_db_list_tables",
+			description: "List all tables available in the database.",
+			parameters: { type: "object", properties: {} },
+		},
+	},
+];
+
+const MAX_ITERATIONS = 5;
 
 const SYSTEM_PREFIX = `You are a helpful assistant for analyzing FSRS flashcard statistics.
 You help users understand their learning patterns, identify problem cards, and get insights from their review data.
@@ -45,105 +75,25 @@ ${FSRS_CONTEXT_FOR_AI}
 5. For local time conversions, use 'localtime' modifier: \`date(reviewed_at, 'localtime')\`
 6. Always include error handling - if a query fails, explain why and try a simpler approach`;
 
-/**
- * Service for natural language queries against the flashcard database
- */
 export class NLQueryService {
-	private agent: AgentExecutor | null = null;
 	private config: NLQueryConfig;
-	private sqlAdapter: SqlJsAdapter;
+	private sqlAdapter: SqlQueryAdapter;
+	private initialized = false;
 
-	constructor(config: NLQueryConfig, sqlAdapter: SqlJsAdapter) {
+	constructor(config: NLQueryConfig, sqlAdapter: SqlQueryAdapter) {
 		this.config = config;
 		this.sqlAdapter = sqlAdapter;
 	}
 
-	/**
-	 * Initialize the LangChain agent
-	 * Must be called before querying
-	 */
 	async initialize(): Promise<void> {
 		if (!this.config.apiKey) {
 			throw new Error("API key is required for NL Query Service");
 		}
-
-		// Create LLM with OpenRouter (OpenAI-compatible API)
-		const llm = new ChatOpenAI({
-			modelName: this.config.model,
-			configuration: {
-				baseURL: "https://openrouter.ai/api/v1",
-				apiKey: this.config.apiKey,
-				defaultHeaders: {
-					"HTTP-Referer": "obsidian://true-recall",
-					"X-Title": "True Recall",
-				},
-			},
-			temperature: 0, // Lower temperature for more consistent SQL generation
-		});
-
-		// Create SQL tools that work with our SqlJsAdapter
-		const tools = this.createSqlTools();
-
-		// Create the agent prompt
-		const prompt = ChatPromptTemplate.fromMessages([
-			["system", `${SYSTEM_PREFIX}\n\nDatabase schema:\n{schema}`],
-			["human", "{input}"],
-			["placeholder", "{agent_scratchpad}"],
-		]);
-
-		// Create the agent
-		const agent = await createOpenAIToolsAgent({
-			llm,
-			tools,
-			prompt,
-		});
-
-		this.agent = new AgentExecutor({
-			agent,
-			tools,
-			verbose: false,
-			maxIterations: 5,
-			returnIntermediateSteps: true,
-		});
+		this.initialized = true;
 	}
 
-	/**
-	 * Create SQL tools for the agent
-	 */
-	private createSqlTools(): DynamicTool[] {
-		return [
-			new DynamicTool({
-				name: "sql_db_query",
-				description:
-					"Execute a SELECT SQL query against the database. Input should be a valid SQLite SELECT query. Always include LIMIT clause.",
-				func: async (query: string) => {
-					return this.sqlAdapter.run(query);
-				},
-			}),
-			new DynamicTool({
-				name: "sql_db_schema",
-				description:
-					"Get the schema and sample data for all tables in the database. Use this to understand the database structure before writing queries.",
-				func: async () => {
-					return this.sqlAdapter.getTableInfo();
-				},
-			}),
-			new DynamicTool({
-				name: "sql_db_list_tables",
-				description: "List all tables available in the database.",
-				func: async () => {
-					const tables = this.sqlAdapter.getTableNames();
-					return tables.join(", ");
-				},
-			}),
-		];
-	}
-
-	/**
-	 * Query the database using natural language
-	 */
 	async query(question: string): Promise<NLQueryResult> {
-		if (!this.agent) {
+		if (!this.initialized) {
 			return {
 				question,
 				answer: "Service not initialized. Please try again later.",
@@ -152,52 +102,77 @@ export class NLQueryService {
 			};
 		}
 
+		const client = new OpenRouterClient(
+			this.config.apiKey,
+			this.config.model,
+		);
+		const schema = this.sqlAdapter.getTableInfo();
+		const steps: NLQueryStep[] = [];
+
+		const messages: ChatMessage[] = [
+			{
+				role: "system",
+				content: `${SYSTEM_PREFIX}\n\nDatabase schema:\n${schema}`,
+			},
+			{ role: "user", content: question },
+		];
+
 		try {
-			// Get schema for context
-			const schema = this.sqlAdapter.getTableInfo();
+			for (let i = 0; i < MAX_ITERATIONS; i++) {
+				const response = await client.chat({
+					messages,
+					temperature: 0,
+					tools: SQL_TOOLS,
+					tool_choice: "auto",
+				});
 
-			// Run the agent
-			const result = await this.agent.invoke({
-				input: question,
-				schema,
-			});
+				const choice = response.choices[0];
+				if (!choice) break;
 
-			// Extract intermediate steps (LangChain AgentExecutor returns untyped intermediate steps)
-			const steps: NLQueryStep[] = [];
-			if (result.intermediateSteps && Array.isArray(result.intermediateSteps)) {
-				for (const step of result.intermediateSteps as Array<{
-					action?: { tool?: string; toolInput?: unknown };
-					observation?: unknown;
-				}>) {
-					if (step.action && step.observation !== undefined) {
-						const toolName =
-							typeof step.action.tool === "string"
-								? step.action.tool
-								: "unknown";
-						const toolInput = step.action.toolInput;
-						const observation = step.observation;
-						steps.push({
-							action: toolName,
-							input:
-								typeof toolInput === "string"
-									? toolInput
-									: JSON.stringify(toolInput, null, 2),
-							output:
-								typeof observation === "string"
-									? observation
-									: JSON.stringify(observation),
-						});
-					}
+				const assistantMsg = choice.message;
+				messages.push(assistantMsg);
+
+				// No tool calls → final answer
+				if (
+					!assistantMsg.tool_calls ||
+					assistantMsg.tool_calls.length === 0
+				) {
+					return {
+						question,
+						answer:
+							assistantMsg.content ?? "No response generated",
+						intermediateSteps: steps,
+					};
+				}
+
+				// Execute each tool call and append results
+				for (const toolCall of assistantMsg.tool_calls) {
+					const { name, arguments: argsJson } = toolCall.function;
+					const toolResult = this.executeTool(name, argsJson);
+
+					steps.push({
+						action: name,
+						input: argsJson,
+						output: toolResult,
+					});
+
+					messages.push({
+						role: "tool",
+						content: toolResult,
+						tool_call_id: toolCall.id,
+					});
 				}
 			}
 
-			const output: string =
-				typeof result.output === "string"
-					? result.output
-					: "No response generated";
+			// Exhausted iterations
+			const lastAssistant = [...messages]
+				.reverse()
+				.find((m) => m.role === "assistant");
 			return {
 				question,
-				answer: output,
+				answer:
+					lastAssistant?.content ??
+					"Max iterations reached without a final answer.",
 				intermediateSteps: steps,
 			};
 		} catch (error) {
@@ -212,19 +187,30 @@ export class NLQueryService {
 		}
 	}
 
-	/**
-	 * Check if the service is ready
-	 */
-	isReady(): boolean {
-		return this.agent !== null && this.sqlAdapter.isReady();
+	private executeTool(name: string, argsJson: string): string {
+		try {
+			const args = JSON.parse(argsJson) as Record<string, string>;
+			switch (name) {
+				case "sql_db_query":
+					return this.sqlAdapter.run(args.query ?? argsJson);
+				case "sql_db_schema":
+					return this.sqlAdapter.getTableInfo();
+				case "sql_db_list_tables":
+					return this.sqlAdapter.getTableNames().join(", ");
+				default:
+					return `Unknown tool: ${name}`;
+			}
+		} catch (e) {
+			return `Tool execution error: ${e instanceof Error ? e.message : String(e)}`;
+		}
 	}
 
-	/**
-	 * Update configuration (e.g., when settings change)
-	 */
+	isReady(): boolean {
+		return this.initialized && this.sqlAdapter.isReady();
+	}
+
 	async updateConfig(config: Partial<NLQueryConfig>): Promise<void> {
 		this.config = { ...this.config, ...config };
-		// Re-initialize with new config
 		await this.initialize();
 	}
 }

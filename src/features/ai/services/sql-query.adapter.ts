@@ -1,19 +1,14 @@
 /**
- * LangChain SQLite Adapter
- * Bridges sql.js SQLite with LangChain's SQL tools
- *
- * LangChain expects a DataSource-style interface, but our database uses
- * a different API. This adapter provides the necessary methods.
+ * SQL Query Adapter
+ * Bridges sql.js SQLite with the NL Query tool-calling agent.
+ * Provides read-only query execution, schema introspection, and table listing.
  */
 import type {
 	DatabaseLike,
 	QueryExecResult,
 } from "@features/core/persistence/sqlite/loader";
 
-/**
- * Adapter to make SQLite database compatible with LangChain SQL tools
- */
-export class SqlJsAdapter {
+export class SqlQueryAdapter {
 	private db: DatabaseLike;
 
 	constructor(db: DatabaseLike) {

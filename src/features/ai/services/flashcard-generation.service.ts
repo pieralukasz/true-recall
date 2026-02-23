@@ -3,10 +3,9 @@ import {
 	type GenerationMode,
 } from "@features/ai/prompts/default-prompts";
 import type { FlashcardParserService } from "@features/study/services/flashcard/flashcard-parser.service";
-import { HumanMessage, SystemMessage } from "@langchain/core/messages";
-import { ChatOpenAI } from "@langchain/openai";
 import type { FlashcardItem } from "@shared/types";
 import type { TrueRecallSettings } from "@shared/types/settings.types";
+import { OpenRouterClient } from "./openrouter-client";
 
 export interface GenerationResult {
 	flashcards: FlashcardItem[];
@@ -29,39 +28,21 @@ export class FlashcardGenerationService {
 			throw new Error("OpenRouter API key is not configured");
 		}
 
-		const llm = new ChatOpenAI({
-			modelName: settings.aiModel,
-			configuration: {
-				baseURL: "https://openrouter.ai/api/v1",
-				apiKey: settings.openRouterApiKey,
-				defaultHeaders: {
-					"HTTP-Referer": "obsidian://true-recall",
-					"X-Title": "True Recall",
-				},
-			},
+		const client = new OpenRouterClient(
+			settings.openRouterApiKey,
+			settings.aiModel,
+		);
+		const systemPrompt = this.getPromptForMode(mode);
+
+		const response = await client.chat({
+			messages: [
+				{ role: "system", content: systemPrompt },
+				{ role: "user", content: selectedText },
+			],
 			temperature: 0.7,
 		});
 
-		const systemPrompt = this.getPromptForMode(mode);
-
-		const response = await llm.invoke([
-			new SystemMessage(systemPrompt),
-			new HumanMessage(selectedText),
-		]);
-
-		const responseText =
-			typeof response.content === "string"
-				? response.content
-				: response.content
-						.filter(
-							(block): block is { type: "text"; text: string } =>
-								typeof block === "object" &&
-								"type" in block &&
-								block.type === "text",
-						)
-						.map((block) => block.text)
-						.join("\n");
-
+		const responseText = response.choices[0]?.message?.content ?? "";
 		const flashcards = this.parser.extractFlashcards(responseText);
 
 		return { flashcards, mode };
