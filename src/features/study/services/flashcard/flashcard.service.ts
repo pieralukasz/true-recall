@@ -178,6 +178,7 @@ export class FlashcardManager {
 			clozeTemplate?: string;
 			clozeIndex?: number;
 			reverseOfBatchId?: string;
+			sourceText?: string;
 		}>,
 		createdVia?: string,
 		sourceText?: string,

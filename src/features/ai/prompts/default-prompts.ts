@@ -15,6 +15,7 @@ Transform text into atomic, high-retention flashcards.
 OUTPUT FORMAT:
 [Question text] #flashcard
 [Answer text]
+<!-- source: [exact verbatim quote from source text] -->
 
 (Note: The #flashcard tag belongs to the question line. The answer must NOT contain the #flashcard tag.)
 
@@ -31,6 +32,12 @@ MANDATORY RULES:
 10. BOLD the keyword in every question using **bold**.
 11. If the text contains NO new information for flashcards, return ONLY: NO_NEW_CARDS
 12. Use the same language as the source text for questions and answers.
+
+SOURCE TRACKING:
+- After each answer, on a NEW LINE, add an HTML comment with the exact verbatim quote from the source text.
+- Format: <!-- source: [exact quote] -->
+- The quote must be EXACTLY copied from the input text (same words, same punctuation). Do NOT paraphrase.
+- Keep the quote to the specific sentence(s) that contain the information for that flashcard.
 
 FORMATTING:
 - Backlinks: Wrap key scientific terms and main subjects in [[backlinks]] (lowercase only). If bolding is required by other rules, use **[[backlinks]]**.
@@ -49,9 +56,11 @@ Text: "Rosacea is manifested by intense reddening of the skin. In an advanced de
 
 What is **[[rosacea]]**? #flashcard
 Reddening of the skin
+<!-- source: Rosacea is manifested by intense reddening of the skin. -->
 
 How does advanced **[[rosacea]]** manifest? #flashcard
-Papulopustular changes`,
+Papulopustular changes
+<!-- source: In an advanced degree, papulopustular changes may appear. -->`,
 
 	cloze: `I would like you to help me create cloze deletion flashcards based on text.
 
@@ -60,6 +69,7 @@ Transform text into cloze deletion flashcards where key terms are hidden.
 OUTPUT FORMAT:
 [Sentence with {{c1::hidden term}} and optionally {{c2::another term}}] #flashcard
 [Optional additional context]
+<!-- source: [exact verbatim quote from source text] -->
 
 (Note: The #flashcard tag belongs to the question line. Use {{c1::text}} syntax for cloze deletions.)
 
@@ -78,6 +88,11 @@ MANDATORY RULES:
 6. Use the same language as the source text.
 7. Do NOT number flashcards or add separators.
 
+SOURCE TRACKING:
+- After each answer (or after the cloze line if no additional context), on a NEW LINE, add: <!-- source: [exact verbatim quote] -->
+- The quote must be EXACTLY copied from the input text. Do NOT paraphrase.
+- Keep the quote to the specific sentence(s) for that flashcard.
+
 FORMATTING:
 - Backlinks: Wrap key scientific terms in [[backlinks]] (lowercase only).
 - No Separators: Do NOT place --- between flashcards.
@@ -86,8 +101,10 @@ EXAMPLE:
 Text: "Mitochondria are the powerhouse of the cell. They produce ATP through oxidative phosphorylation."
 
 [[mitochondria|Mitochondria]] are the {{c1::powerhouse}} of the cell #flashcard
+<!-- source: Mitochondria are the powerhouse of the cell. -->
 
-[[mitochondria|Mitochondria]] produce {{c1::ATP}} through {{c2::oxidative phosphorylation}} #flashcard`,
+[[mitochondria|Mitochondria]] produce {{c1::ATP}} through {{c2::oxidative phosphorylation}} #flashcard
+<!-- source: They produce ATP through oxidative phosphorylation. -->`,
 
 	reversed: `I would like you to help me create reversed flashcards based on text. Reversed flashcards create TWO cards from one: the original Q→A and a reversed A→Q card.
 
@@ -96,6 +113,7 @@ Transform text into reversed flashcards for bidirectional recall.
 OUTPUT FORMAT:
 [Question text] #flashcard-reverse
 [Answer text]
+<!-- source: [exact verbatim quote from source text] -->
 
 (Note: Use #flashcard-reverse tag instead of #flashcard. This automatically creates both a forward and backward card.)
 
@@ -109,6 +127,10 @@ MANDATORY RULES:
 7. Use the same language as the source text.
 8. Do NOT number flashcards or add separators.
 
+SOURCE TRACKING:
+- After each answer, on a NEW LINE, add: <!-- source: [exact verbatim quote] -->
+- The quote must be EXACTLY copied from the input text. Do NOT paraphrase.
+
 FORMATTING:
 - Backlinks: Wrap key scientific terms in [[backlinks]] (lowercase only).
 - No Separators: Do NOT place --- between flashcards.
@@ -118,9 +140,11 @@ Text: "The capital of France is Paris. The chemical symbol for gold is Au."
 
 What is the capital of **[[france]]**? #flashcard-reverse
 Paris
+<!-- source: The capital of France is Paris. -->
 
 What is the chemical symbol for **[[gold]]**? #flashcard-reverse
-Au`,
+Au
+<!-- source: The chemical symbol for gold is Au. -->`,
 
 	auto: `I would like you to help me create flashcards based on text. Analyze the content and choose the BEST card type for each piece of information.
 
@@ -129,14 +153,17 @@ You have three card types available:
 1. BASIC (#flashcard) — Standard Q&A. Best for: explanations, processes, "why" questions, definitions.
    Format: [Question] #flashcard
    [Answer]
+   <!-- source: [exact quote] -->
 
 2. CLOZE (#flashcard) — Fill-in-the-blank. Best for: key terms in context, formulas, sequences.
    Format: [Sentence with {{c1::hidden term}}] #flashcard
    [Optional context]
+   <!-- source: [exact quote] -->
 
 3. REVERSED (#flashcard-reverse) — Bidirectional Q&A. Best for: term↔definition, symbol↔name, translation pairs.
    Format: [Question] #flashcard-reverse
    [Answer]
+   <!-- source: [exact quote] -->
 
 MANDATORY RULES:
 1. One flashcard = ONE piece of information.
@@ -148,6 +175,11 @@ MANDATORY RULES:
 7. Use the same language as the source text.
 8. Do NOT number flashcards or add separators (no ---).
 
+SOURCE TRACKING:
+- After each answer, on a NEW LINE, add: <!-- source: [exact verbatim quote from the input text] -->
+- The quote must be EXACTLY copied from the input (same words, same punctuation). Do NOT paraphrase.
+- Keep the quote to the specific sentence(s) for that flashcard.
+
 FORMATTING:
 - Backlinks: Wrap key scientific terms in [[backlinks]] (lowercase only).
 - Use [[term|alias]] for context/readability when needed.
@@ -157,10 +189,13 @@ EXAMPLE:
 Text: "Mitochondria are the powerhouse of the cell. The chemical symbol for gold is Au. Rosacea manifests by intense reddening of the skin."
 
 [[mitochondria|Mitochondria]] are the {{c1::powerhouse}} of the cell #flashcard
+<!-- source: Mitochondria are the powerhouse of the cell. -->
 
 What is the chemical symbol for **[[gold]]**? #flashcard-reverse
 Au
+<!-- source: The chemical symbol for gold is Au. -->
 
 What is **[[rosacea]]**? #flashcard
-Intense reddening of the skin`,
+Intense reddening of the skin
+<!-- source: Rosacea manifests by intense reddening of the skin. -->`,
 };

@@ -39,7 +39,9 @@ export interface PanelContentProps {
 	searchQuery: string;
 	handlers: ContentHandlers;
 	onGenerateFromNote: () => Promise<void>;
+	onGenerateFromHighlights: () => Promise<void>;
 	hasApiKey: boolean;
+	hasHighlights: boolean;
 }
 
 function getItemInfo(item: PanelItem): {
@@ -75,7 +77,9 @@ export function PanelContent({
 	searchQuery,
 	handlers,
 	onGenerateFromNote,
+	onGenerateFromHighlights,
 	hasApiKey,
+	hasHighlights,
 }: PanelContentProps) {
 	const fsrsMap = useMemo(
 		() => new Map(cardsWithFsrs.map((c) => [c.id, c])),
@@ -122,7 +126,9 @@ export function PanelContent({
 		return (
 			<PanelEmptyState
 				onGenerate={onGenerateFromNote}
+				onGenerateFromHighlights={onGenerateFromHighlights}
 				hasApiKey={hasApiKey}
+				hasHighlights={hasHighlights}
 			/>
 		);
 	}

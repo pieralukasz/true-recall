@@ -31,6 +31,8 @@ export interface PanelHeaderProps {
 	onCopyToClipboard: () => void;
 	onDeleteAll: () => void;
 	onOpenSourceNote: () => void;
+	hasHighlights: boolean;
+	onGenerateFromHighlights: () => void;
 }
 
 export function PanelHeader({
@@ -58,6 +60,8 @@ export function PanelHeader({
 	onCopyToClipboard,
 	onDeleteAll,
 	onOpenSourceNote,
+	hasHighlights,
+	onGenerateFromHighlights,
 }: PanelHeaderProps) {
 	const handleMoreMenu = useCallback(
 		(e: MouseEvent) => {
@@ -73,6 +77,15 @@ export function PanelHeader({
 					.setIcon("file-text")
 					.onClick(onOpenSourceNote),
 			);
+
+			if (hasHighlights) {
+				menu.addItem((item) =>
+					item
+						.setTitle("Generate from highlights")
+						.setIcon("highlighter")
+						.onClick(onGenerateFromHighlights),
+				);
+			}
 
 			if (hasFlashcards) {
 				menu.addItem((item) =>
@@ -106,6 +119,8 @@ export function PanelHeader({
 			flashcardInfo,
 			onRefresh,
 			onOpenSourceNote,
+			hasHighlights,
+			onGenerateFromHighlights,
 			onReview,
 			onCopyToClipboard,
 			onExportCsv,
