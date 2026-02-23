@@ -1,7 +1,6 @@
 import {
 	type ContentHandlers,
 	PanelContent,
-	PanelFooter,
 	PanelHeader,
 } from "@features/library/ui/panel/components";
 import { getHighlightColor } from "@features/library/ui/panel/utils/card-status.utils";
@@ -877,19 +876,8 @@ export function FlashcardPanelApp({
 	// Mobile renders without header (uses native Obsidian header actions)
 	const showHeader = !Platform.isMobile;
 
-	const footer = (
-		<PanelFooter
-			selectionMode={state.selectionMode}
-			selectedCount={state.selectedCardIds.size}
-			totalCount={state.flashcardInfo?.flashcards.length ?? 0}
-			onSelectAll={handleSelectAll}
-			onMoveSelected={handleMoveSelected}
-			onDeleteSelected={handleDeleteSelected}
-		/>
-	);
-
 	return (
-		<Panel showFooter footer={footer} disableScroll>
+		<Panel disableScroll>
 			<div class="ep:flex ep:flex-col ep:gap-2 ep:h-full">
 				{showHeader && (
 					<div class="ep:shrink-0">
@@ -900,6 +888,7 @@ export function FlashcardPanelApp({
 							uncollectedCount={state.uncollectedCount}
 							selectionMode={state.selectionMode}
 							selectedCount={state.selectedCardIds.size}
+							totalCount={state.flashcardInfo?.flashcards.length ?? 0}
 							searchQuery={state.searchQuery}
 							isFollowingReview={state.isFollowingReview}
 							reviewedToday={reviewedToday}
@@ -909,6 +898,9 @@ export function FlashcardPanelApp({
 							onRefresh={() => onActions?.({ type: "refresh" })}
 							onReview={handleReview}
 							onExitSelectionMode={handleExitSelectionMode}
+							onSelectAll={handleSelectAll}
+							onMoveSelected={handleMoveSelected}
+							onDeleteSelected={handleDeleteSelected}
 							onSearchChange={handleSearchChange}
 							onExportCsv={handleExportCsv}
 							onCopyToClipboard={handleCopyAllToClipboard}
