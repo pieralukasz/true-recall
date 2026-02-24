@@ -1,8 +1,7 @@
 import type { ProjectNode } from "@features/core/services/project-link.service";
-import { effect } from "@preact/signals";
-import { dataVersion, track } from "@shared/services/signals";
+import { dataVersion, useSignalVersion } from "@shared/services/signals";
 import { usePlugin } from "@shared/ui/preact";
-import { useEffect, useMemo, useState } from "preact/hooks";
+import { useMemo } from "preact/hooks";
 import { ProjectCard } from "./ProjectWidget";
 import { computeProjectStats, type ProjectStats } from "./project-stats";
 
@@ -13,18 +12,9 @@ interface FlatProject {
 
 export function ProjectHubWidget() {
 	const plugin = usePlugin();
-	const [ver, setVer] = useState(0);
-
-	useEffect(() => {
-		const dispose = effect(() => {
-			track(dataVersion);
-			setVer((v) => v + 1);
-		});
-		return dispose;
-	}, []);
+	const ver = useSignalVersion(dataVersion);
 
 	const projects = useMemo((): FlatProject[] => {
-		void ver;
 		if (!plugin.cardStore) return [];
 
 		const hierarchy = plugin.projectLinkService.buildHierarchy();

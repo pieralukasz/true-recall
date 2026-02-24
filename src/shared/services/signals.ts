@@ -5,6 +5,20 @@ export function track(...signals: ReadonlySignal[]): void {
 	for (const s of signals) s.value;
 }
 
+/**
+ * Reads numeric signal values during render, triggering Preact's auto-subscription.
+ * Returns their sum for use as a useMemo/useCallback dependency.
+ *
+ * Replaces the useState(0) + useEffect + effect() + track() workaround.
+ */
+export function useSignalVersion(
+	...signals: ReadonlySignal<number>[]
+): number {
+	let sum = 0;
+	for (const s of signals) sum += s.value;
+	return sum;
+}
+
 export const dataVersion = signal(0);
 
 export interface CardMutation {
