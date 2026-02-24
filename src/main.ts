@@ -51,6 +51,7 @@ import {
 import type { StatusBarWidget } from "@features/study/ui/editor/widgets/StatusBarWidget";
 import { ReviewView } from "@features/study/ui/review/ReviewView";
 import {
+	VIEW_TYPE_DASHBOARD,
 	VIEW_TYPE_FLASHCARD_PANEL,
 	VIEW_TYPE_REVIEW,
 	VIEW_TYPE_SIMULATOR,
@@ -202,9 +203,18 @@ export default class TrueRecallPlugin extends Plugin {
 			(leaf) => new SimulatorView(leaf, this),
 		);
 
-		this.addRibbonIcon("brain", "True Recall - study", () => {
-			this.openCustomStudyModal().catch((error) => {
-				notify().error("Failed to open study session", error);
+		this.registerView(VIEW_TYPE_DASHBOARD, (leaf) => {
+			const {
+				DashboardView,
+			} = require("@features/study/ui/dashboard/DashboardView") as {
+				DashboardView: typeof import("@features/study/ui/dashboard/DashboardView").DashboardView;
+			};
+			return new DashboardView(leaf, this);
+		});
+
+		this.addRibbonIcon("layout-dashboard", "True Recall - dashboard", () => {
+			this.openDashboard().catch((error) => {
+				notify().error("Failed to open dashboard", error);
 			});
 		});
 
@@ -374,6 +384,15 @@ export default class TrueRecallPlugin extends Plugin {
 			this.settings.reviewMode,
 			{ deckFilter },
 		);
+	}
+
+	async openDashboard(): Promise<void> {
+		const existingLeaf = getView(this.app, VIEW_TYPE_DASHBOARD);
+		if (existingLeaf) {
+			void this.app.workspace.revealLeaf(existingLeaf);
+			return;
+		}
+		await activateView(this.app, VIEW_TYPE_DASHBOARD, { useMainArea: true });
 	}
 
 	async openStatsView(): Promise<void> {
@@ -788,7 +807,7 @@ export default class TrueRecallPlugin extends Plugin {
 					this.fsrsService,
 					this.sessionPersistence,
 					() => {
-						this.openCustomStudyModal().catch(() => {});
+						this.openDashboard().catch(() => {});
 					},
 					() => this.settings.showStatusBarWidget,
 				);

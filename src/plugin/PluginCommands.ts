@@ -29,6 +29,12 @@ export function registerCommands(plugin: TrueRecallPlugin): void {
 	});
 
 	plugin.addCommand({
+		id: "open-dashboard",
+		name: "Open dashboard",
+		callback: () => void plugin.openDashboard(),
+	});
+
+	plugin.addCommand({
 		id: "open-statistics",
 		name: "Open statistics panel",
 		callback: () => void plugin.openStatsView(),
