@@ -793,19 +793,17 @@ export default class TrueRecallPlugin extends Plugin {
 	}
 
 	private initializeStatusBar(): void {
-		if (!this.noteStatusCache || !this.sessionPersistence) return;
+		if (!this.noteStatusCache) return;
 
 		void import("@features/study/ui/editor/widgets/StatusBarWidget").then(
 			({ StatusBarWidget }) => {
-				if (!this.noteStatusCache || !this.sessionPersistence) return;
+				if (!this.noteStatusCache) return;
 
 				const statusBarEl = this.addStatusBarItem();
 				this.statusBarWidget = new StatusBarWidget(
 					statusBarEl,
 					this.noteStatusCache,
 					this.flashcardManager,
-					this.fsrsService,
-					this.sessionPersistence,
 					() => {
 						this.openDashboard().catch(() => {});
 					},

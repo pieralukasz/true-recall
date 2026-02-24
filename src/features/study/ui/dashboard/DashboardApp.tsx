@@ -1,17 +1,12 @@
 import { StatsCalculatorService } from "@features/metrics/services/stats/stats-calculator.service";
-import { CalendarHeatmap } from "@features/metrics/ui/stats/components";
-import { formatDateForDisplay } from "@features/metrics/ui/stats/utils/chart-helpers";
-import { effect } from "@preact/signals-core";
 import {
 	dataVersion,
 	settingsVersion,
 	syncVersion,
-	track,
+	useSignalVersion,
 } from "@shared/services/signals";
-import type { FSRSFlashcardItem } from "@shared/types";
-import { CardPreviewModal } from "@shared/ui/modals";
 import { usePlugin } from "@shared/ui/preact";
-import { useCallback, useEffect, useMemo, useState } from "preact/hooks";
+import { useMemo } from "preact/hooks";
 import {
 	DashboardStatCards,
 	type DashboardStats,
@@ -49,27 +44,9 @@ export function DashboardApp() {
 		return calc;
 	}, [plugin]);
 
-	const [refreshTick, setRefreshTick] = useState(0);
-
-	useEffect(() => {
-		let timer: ReturnType<typeof setTimeout> | null = null;
-		const disposer = effect(() => {
-			track(dataVersion, settingsVersion, syncVersion);
-			if (timer) clearTimeout(timer);
-			timer = setTimeout(() => {
-				setRefreshTick((t) => t + 1);
-				timer = null;
-			}, 500);
-		});
-		return () => {
-			disposer();
-			if (timer) clearTimeout(timer);
-		};
-	}, []);
+	const refreshTick = useSignalVersion(dataVersion, settingsVersion, syncVersion);
 
 	const data = useMemo((): AggregatedData => {
-		void refreshTick;
-
 		const allCards = plugin.flashcardManager.getAllFSRSCards();
 		const now = new Date();
 		const streakInfo = statsCalculator.getStreakInfo();
@@ -78,10 +55,7 @@ export function DashboardApp() {
 		let newCount = 0;
 		let learning = 0;
 
-		const noteMap = new Map<
-			string,
-			NoteAggregation
-		>();
+		const noteMap = new Map<string, NoteAggregation>();
 
 		for (const card of allCards) {
 			const fsrs = card.fsrs;
@@ -91,7 +65,6 @@ export function DashboardApp() {
 			)
 				continue;
 
-			// Global counts
 			switch (fsrs.state) {
 				case 0:
 					newCount++;
@@ -105,7 +78,6 @@ export function DashboardApp() {
 					break;
 			}
 
-			// Per-note aggregation
 			const noteName = card.sourceNoteName;
 			if (!noteName) continue;
 
@@ -146,37 +118,22 @@ export function DashboardApp() {
 		}
 
 		return {
-			stats: {
-				due,
-				newCount,
-				learning,
-				streak: streakInfo.current,
-			},
+			stats: { due, newCount, learning, streak: streakInfo.current },
 			notes: Array.from(noteMap.values()),
 			totalDue: due + learning,
 		};
 	}, [plugin, statsCalculator, refreshTick]);
 
-	const handleCardPreviewForDate = useCallback(
-		(date: string, cards: FSRSFlashcardItem[]) => {
-			new CardPreviewModal(plugin.app, {
-				title: `Cards reviewed: ${formatDateForDisplay(date)}`,
-				cards,
-				flashcardManager: plugin.flashcardManager,
-			}).open();
-		},
-		[plugin],
-	);
-
 	return (
-		<div class="ep:p-4 ep:max-w-[700px] ep:mx-auto">
-			<DashboardStatCards stats={data.stats} />
-			<StudyNowButton dueCount={data.totalDue} />
-			<CalendarHeatmap
-				statsCalculator={statsCalculator}
-				onCardPreview={handleCardPreviewForDate}
-			/>
-			<div class="ep:mt-4">
+		<div class="ep:p-4 ep:mx-auto">
+			{/* Top row: stat cards + study button */}
+			<div class="ep:flex ep:items-start ep:gap-4 ep:mb-6">
+				<DashboardStatCards stats={data.stats} />
+				<StudyNowButton dueCount={data.totalDue} />
+			</div>
+
+			{/* 2-column grid: Due Now | Recently Studied */}
+			<div class="ep:grid ep:grid-cols-2 ep:gap-4">
 				<DueProjectsSection notes={data.notes} />
 				<RecentlyStudiedSection notes={data.notes} />
 			</div>
