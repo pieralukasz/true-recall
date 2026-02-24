@@ -13,6 +13,7 @@ import { RecentlyStudiedSection } from "./components/RecentlyStudiedSection";
 import { SessionActions } from "./components/SessionActions";
 import { StudyProgress } from "./components/StudyProgress";
 import { aggregateDashboardData } from "./helpers/note-aggregation";
+import { ProjectsSection } from "./components/ProjectsSection";
 import type { DashboardAggregation } from "./types";
 
 export function DashboardApp() {
@@ -67,6 +68,8 @@ export function DashboardApp() {
 					totalOverdue={data.totalOverdue}
 					estimatedMinutes={data.estimatedTotalMinutes}
 				/>
+
+				<ProjectsSection />
 
 				<RecentlyStudiedSection notes={data.notes} />
 			</div>

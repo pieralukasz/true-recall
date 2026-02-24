@@ -1,5 +1,6 @@
 import type { FSRSService } from "@features/core/services/fsrs.service";
 import type { ProjectLinkService } from "@features/core/services/project-link.service";
+import { FSRS_COLORS } from "@shared/ui/helpers/fsrs-colors";
 import type { CardStore } from "@shared/types/fsrs/store.types";
 import { State } from "ts-fsrs";
 
@@ -86,4 +87,10 @@ export function computeProjectStats(
 		childCount,
 		lastReviewed,
 	};
+}
+
+export function healthColor(pct: number): string {
+	if (pct >= 80) return `var(${FSRS_COLORS.new.cssVar})`;
+	if (pct >= 50) return `var(${FSRS_COLORS.learning.cssVar})`;
+	return `var(${FSRS_COLORS.suspended.cssVar})`;
 }
