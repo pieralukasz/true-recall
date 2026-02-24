@@ -654,7 +654,7 @@ export function createReviewSlice(
 			const state = get().review;
 
 			if (!state.isActive) {
-				if (state.stats.reviewed > 0) {
+				if (state.results.length > 0) {
 					return { type: "complete", stats: get().review.getStats() };
 				}
 				return { type: "idle" };
