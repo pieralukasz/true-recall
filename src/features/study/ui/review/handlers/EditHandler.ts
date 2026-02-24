@@ -1,6 +1,7 @@
 import { DuplicateQuestionError } from "@features/study/services/flashcard/card-repository.service";
 import type { FlashcardManager } from "@features/study/services/flashcard/flashcard.service";
 import { notify } from "@shared/services/notification.service";
+import type { UndoService } from "@shared/services/undo.service";
 import type { ReviewApi } from "@shared/store";
 import type { FSRSFlashcardItem } from "@shared/types";
 import { BR_REGEX } from "@shared/utils";
@@ -10,6 +11,7 @@ export interface EditHandlerDeps {
 	app: App;
 	getReview: () => ReviewApi;
 	flashcardManager: FlashcardManager;
+	undoService?: UndoService;
 }
 
 export class EditHandler {
@@ -63,6 +65,7 @@ export class EditHandler {
 						);
 					}
 				} else {
+					this.pushEditUndo(card, "question");
 					this.deps.flashcardManager.updateCardContent(
 						cardIdBeforeSave,
 						newContent,
@@ -97,6 +100,8 @@ export class EditHandler {
 		const newQuestion = field === "question" ? newContent : card.question;
 		const newAnswer = field === "answer" ? newContent : card.answer;
 
+		this.pushEditUndo(card, field);
+
 		try {
 			this.deps.flashcardManager.updateCardContent(
 				cardIdBeforeSave,
@@ -121,5 +126,23 @@ export class EditHandler {
 				notify().operationFailed("save card", error);
 			}
 		}
+	}
+
+	private pushEditUndo(
+		card: FSRSFlashcardItem,
+		field: "question" | "answer",
+	): void {
+		this.deps.undoService?.push({
+			id: crypto.randomUUID(),
+			actionType: "update-card",
+			description: `Edit card ${field}`,
+			timestamp: Date.now(),
+			payload: {
+				type: "update",
+				cardId: card.id,
+				previousQuestion: card.question,
+				previousAnswer: card.answer ?? "",
+			},
+		});
 	}
 }

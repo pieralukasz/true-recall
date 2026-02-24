@@ -456,8 +456,8 @@ export class CardActionsHandler {
 	}
 
 	/**
-	 * Edit the current card via modal
-	 * Uses direct FlashcardManager calls (no undo support for simplicity)
+	 * Edit the current card via modal.
+	 * Supports undo for basic/reversed cards. Cloze template edits are not undoable.
 	 */
 	async handleEditCardModal(): Promise<void> {
 		const card = this.deps.getReview().getCurrentCard();
@@ -507,6 +507,18 @@ export class CardActionsHandler {
 			}
 
 			// Basic/reversed card: update directly
+			this.deps.plugin.undoService?.push({
+				id: crypto.randomUUID(),
+				actionType: "update-card",
+				description: "Edit card",
+				timestamp: Date.now(),
+				payload: {
+					type: "update",
+					cardId: card.id,
+					previousQuestion: card.question,
+					previousAnswer: card.answer ?? "",
+				},
+			});
 			this.deps.flashcardManager.updateCardContent(
 				card.id,
 				firstFlashcard.question,
