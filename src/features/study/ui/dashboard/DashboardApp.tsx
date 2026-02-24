@@ -7,29 +7,13 @@ import {
 } from "@shared/services/signals";
 import { usePlugin } from "@shared/ui/preact";
 import { useMemo } from "preact/hooks";
-import {
-	DashboardStatCards,
-	type DashboardStats,
-} from "./components/DashboardStatCards";
-import { DueProjectsSection } from "./components/DueProjectsSection";
+import { DashboardHeader } from "./components/DashboardHeader";
+import { NoteList } from "./components/NoteList";
 import { RecentlyStudiedSection } from "./components/RecentlyStudiedSection";
-import { StudyNowButton } from "./components/StudyNowButton";
-
-export interface NoteAggregation {
-	name: string;
-	path: string | null;
-	due: number;
-	newCount: number;
-	learning: number;
-	total: number;
-	lastReview: string | null;
-}
-
-interface AggregatedData {
-	stats: DashboardStats;
-	notes: NoteAggregation[];
-	totalDue: number;
-}
+import { SessionActions } from "./components/SessionActions";
+import { StudyProgress } from "./components/StudyProgress";
+import { aggregateDashboardData } from "./helpers/note-aggregation";
+import type { DashboardAggregation } from "./types";
 
 export function DashboardApp() {
 	const plugin = usePlugin();
@@ -44,99 +28,47 @@ export function DashboardApp() {
 		return calc;
 	}, [plugin]);
 
-	const refreshTick = useSignalVersion(dataVersion, settingsVersion, syncVersion);
+	const refreshTick = useSignalVersion(
+		dataVersion,
+		settingsVersion,
+		syncVersion,
+	);
 
-	const data = useMemo((): AggregatedData => {
+	const data = useMemo((): DashboardAggregation => {
 		const allCards = plugin.flashcardManager.getAllFSRSCards();
-		const now = new Date();
 		const streakInfo = statsCalculator.getStreakInfo();
+		const todaySummary = statsCalculator.getTodaySummary();
 
-		let due = 0;
-		let newCount = 0;
-		let learning = 0;
-
-		const noteMap = new Map<string, NoteAggregation>();
-
-		for (const card of allCards) {
-			const fsrs = card.fsrs;
-			if (
-				fsrs.suspended ||
-				(fsrs.buriedUntil && new Date(fsrs.buriedUntil) > now)
-			)
-				continue;
-
-			switch (fsrs.state) {
-				case 0:
-					newCount++;
-					break;
-				case 1:
-				case 3:
-					learning++;
-					break;
-				case 2:
-					if (new Date(fsrs.due) <= now) due++;
-					break;
-			}
-
-			const noteName = card.sourceNoteName;
-			if (!noteName) continue;
-
-			let entry = noteMap.get(noteName);
-			if (!entry) {
-				entry = {
-					name: noteName,
-					path: fsrs.sourceNotePath ?? null,
-					due: 0,
-					newCount: 0,
-					learning: 0,
-					total: 0,
-					lastReview: null,
-				};
-				noteMap.set(noteName, entry);
-			}
-			entry.total++;
-
-			switch (fsrs.state) {
-				case 0:
-					entry.newCount++;
-					break;
-				case 1:
-				case 3:
-					entry.learning++;
-					break;
-				case 2:
-					if (new Date(fsrs.due) <= now) entry.due++;
-					break;
-			}
-
-			if (
-				fsrs.lastReview &&
-				(!entry.lastReview || fsrs.lastReview > entry.lastReview)
-			) {
-				entry.lastReview = fsrs.lastReview;
-			}
-		}
-
-		return {
-			stats: { due, newCount, learning, streak: streakInfo.current },
-			notes: Array.from(noteMap.values()),
-			totalDue: due + learning,
-		};
+		return aggregateDashboardData({
+			allCards,
+			streakCurrent: streakInfo.current,
+			todaySummary,
+			newCardsCap: plugin.settings.newCardsPerDay,
+			reviewsCap: plugin.settings.reviewsPerDay,
+		});
 	}, [plugin, statsCalculator, refreshTick]);
 
 	return (
-		<div class="ep:p-4 ep:mx-auto">
-			{/* Top row: stat cards + study button */}
-			<div class="ep:flex ep:items-start ep:gap-4 ep:mb-6">
-				<DashboardStatCards stats={data.stats} />
-				<StudyNowButton dueCount={data.totalDue} />
-			</div>
+		<div class="ep:p-4 ep:mx-auto ep:max-w-2xl ep:flex ep:flex-col ep:gap-5">
+			<DashboardHeader
+				totalDue={data.totalDue}
+				totalNew={data.totalNew}
+				noteCount={data.noteCount}
+				estimatedMinutes={data.estimatedTotalMinutes}
+				streak={data.streak}
+			/>
 
-			{/* 2-column grid: Due Now | Recently Studied */}
-			<div class="ep:grid ep:grid-cols-2 ep:gap-4">
-				<DueProjectsSection notes={data.notes} />
-				<RecentlyStudiedSection notes={data.notes} />
-			</div>
+			<StudyProgress progress={data.todayProgress} />
+
+			<SessionActions
+				totalDue={data.totalDue}
+				totalOverdue={data.totalOverdue}
+				estimatedMinutes={data.estimatedTotalMinutes}
+			/>
+
+			<NoteList notes={data.notes} />
+
+			<RecentlyStudiedSection notes={data.notes} />
 		</div>
 	);
 }
