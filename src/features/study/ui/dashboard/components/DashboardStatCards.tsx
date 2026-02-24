@@ -33,7 +33,7 @@ export function DashboardStatCards({ stats }: { stats: DashboardStats }) {
 	];
 
 	return (
-		<div class="ep:grid ep:grid-cols-2 sm:ep:grid-cols-4 ep:gap-3 ep:mb-4">
+		<div class="ep:flex-1 ep:grid ep:grid-cols-4 ep:gap-3">
 			{cards.map((c) => (
 				<div
 					key={c.label}
