@@ -1,5 +1,8 @@
-import { effect } from "@preact/signals";
-import { dataVersion, settingsVersion, track } from "@shared/services/signals";
+import {
+	dataVersion,
+	settingsVersion,
+	useSignalVersion,
+} from "@shared/services/signals";
 import type {
 	PanelApi,
 	ProcessingStatus,
@@ -102,25 +105,14 @@ export function usePanelStore(): PanelStoreResult {
 		return unsub;
 	}, [store]);
 
-	// ── Signal→render bridge for FSRS data reactivity ──
-	const [dataVer, setDataVer] = useState(0);
-
-	useEffect(() => {
-		const dispose = effect(() => {
-			track(dataVersion, settingsVersion);
-			setDataVer((v) => v + 1);
-		});
-		return dispose;
-	}, []);
-
 	// ── Cards enriched with FSRS scheduling data ──
+	const ver = useSignalVersion(dataVersion, settingsVersion);
 	const cardsWithFsrs = useMemo(() => {
-		void dataVer;
 		if (!state.flashcardInfo?.flashcards) return [];
 		if (!plugin.flashcardManager.hasStore()) return [];
 		const cardIds = state.flashcardInfo.flashcards.map((c) => c.id);
 		return plugin.flashcardManager.getCardsByIds(cardIds);
-	}, [state.flashcardInfo, plugin, dataVer]);
+	}, [state.flashcardInfo, plugin, ver]);
 
 	return {
 		...state,

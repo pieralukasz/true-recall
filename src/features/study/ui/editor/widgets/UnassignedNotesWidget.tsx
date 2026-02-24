@@ -1,9 +1,8 @@
-import { effect } from "@preact/signals";
-import { dataVersion, track } from "@shared/services/signals";
+import { dataVersion, useSignalVersion } from "@shared/services/signals";
 import { Clickable } from "@shared/ui/components";
 import { FSRS_COLORS } from "@shared/ui/helpers/fsrs-colors";
 import { usePlugin } from "@shared/ui/preact";
-import { useEffect, useMemo, useState } from "preact/hooks";
+import { useMemo } from "preact/hooks";
 import { WidgetCta } from "./WidgetCta";
 
 interface UnassignedNote {
@@ -16,18 +15,9 @@ interface UnassignedNote {
 
 export function UnassignedNotesWidget() {
 	const plugin = usePlugin();
-	const [ver, setVer] = useState(0);
-
-	useEffect(() => {
-		const dispose = effect(() => {
-			track(dataVersion);
-			setVer((v) => v + 1);
-		});
-		return dispose;
-	}, []);
+	const ver = useSignalVersion(dataVersion);
 
 	const notes = useMemo((): UnassignedNote[] => {
-		void ver;
 		if (!plugin.cardStore) return [];
 
 		const pls = plugin.projectLinkService;

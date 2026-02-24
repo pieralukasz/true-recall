@@ -62,7 +62,6 @@ export class EditHandler {
 							thisCard.answer,
 						);
 					}
-					notify().success("Updated cloze template");
 				} else {
 					this.deps.flashcardManager.updateCardContent(
 						cardIdBeforeSave,
@@ -70,7 +69,6 @@ export class EditHandler {
 						card.answer,
 					);
 					review.updateCurrentCardContent(newContent, card.answer);
-					notify().cardUpdated();
 				}
 			} catch (error) {
 				if (error instanceof DuplicateQuestionError) {
@@ -109,7 +107,6 @@ export class EditHandler {
 			const currentCard = review.getCurrentCard();
 			if (currentCard?.id === cardIdBeforeSave) {
 				review.updateCurrentCardContent(newQuestion, newAnswer);
-				notify().cardUpdated();
 			}
 		} catch (error) {
 			if (error instanceof DuplicateQuestionError) {

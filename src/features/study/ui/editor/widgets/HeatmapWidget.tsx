@@ -1,9 +1,8 @@
 import { StatsCalculatorService } from "@features/metrics/services/stats/stats-calculator.service";
-import { effect } from "@preact/signals";
-import { dataVersion, track } from "@shared/services/signals";
+import { dataVersion, useSignalVersion } from "@shared/services/signals";
 import { Clickable } from "@shared/ui/components";
 import { usePlugin } from "@shared/ui/preact";
-import { useEffect, useMemo, useRef, useState } from "preact/hooks";
+import { useMemo, useRef, useState } from "preact/hooks";
 import { configValue, parseCodeblockConfig } from "./config-parser";
 
 interface HeatmapCell {
@@ -51,7 +50,7 @@ const LEVEL_OPACITIES = [1, 0.3, 0.5, 0.7, 1];
 
 export function HeatmapWidget({ source }: { source: string }) {
 	const plugin = usePlugin();
-	const [ver, setVer] = useState(0);
+	const ver = useSignalVersion(dataVersion);
 	const [tooltip, setTooltip] = useState<{
 		cell: HeatmapCell;
 		x: number;
@@ -59,18 +58,9 @@ export function HeatmapWidget({ source }: { source: string }) {
 	} | null>(null);
 	const containerRef = useRef<HTMLDivElement>(null);
 
-	useEffect(() => {
-		const dispose = effect(() => {
-			track(dataVersion);
-			setVer((v) => v + 1);
-		});
-		return dispose;
-	}, []);
-
 	const config = useMemo(() => parseCodeblockConfig(source), [source]);
 
 	const data = useMemo((): HeatmapData | null => {
-		void ver;
 		if (!plugin.sessionPersistence) return null;
 
 		const statsCalc = new StatsCalculatorService(

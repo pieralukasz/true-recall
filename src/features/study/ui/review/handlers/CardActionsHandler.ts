@@ -503,7 +503,6 @@ export class CardActionsHandler {
 						.getReview()
 						.updateCurrentCardContent(thisCard.question, thisCard.answer);
 				}
-				notify().success("Updated cloze template");
 				return;
 			}
 
@@ -535,8 +534,6 @@ export class CardActionsHandler {
 				notify().success(
 					`Updated card and created ${result.flashcards.length - 1} new cards`,
 				);
-			} else {
-				notify().cardUpdated();
 			}
 		} catch (error) {
 			if (error instanceof DuplicateQuestionError) {

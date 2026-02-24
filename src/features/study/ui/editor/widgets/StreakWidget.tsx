@@ -1,9 +1,8 @@
 import { StatsCalculatorService } from "@features/metrics/services/stats/stats-calculator.service";
-import { effect } from "@preact/signals";
-import { dataVersion, track } from "@shared/services/signals";
+import { dataVersion, useSignalVersion } from "@shared/services/signals";
 import { Clickable } from "@shared/ui/components";
 import { usePlugin } from "@shared/ui/preact";
-import { useEffect, useMemo, useState } from "preact/hooks";
+import { useMemo } from "preact/hooks";
 import { configValue, parseCodeblockConfig } from "./config-parser";
 import { WidgetCta } from "./WidgetCta";
 
@@ -19,20 +18,11 @@ const SHORT_DAY_NAMES = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
 
 export function StreakWidget({ source }: { source: string }) {
 	const plugin = usePlugin();
-	const [ver, setVer] = useState(0);
-
-	useEffect(() => {
-		const dispose = effect(() => {
-			track(dataVersion);
-			setVer((v) => v + 1);
-		});
-		return dispose;
-	}, []);
+	const ver = useSignalVersion(dataVersion);
 
 	const config = useMemo(() => parseCodeblockConfig(source), [source]);
 
 	const data = useMemo((): StreakData | null => {
-		void ver;
 		if (!plugin.sessionPersistence) return null;
 
 		const statsCalc = new StatsCalculatorService(

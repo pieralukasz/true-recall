@@ -1,10 +1,9 @@
 import { WorkloadForecastCalculator } from "@features/metrics/services/fsrs-tools/statistics/workload-forecast.calculator";
 import { StatsCalculatorService } from "@features/metrics/services/stats/stats-calculator.service";
-import { effect } from "@preact/signals";
-import { dataVersion, track } from "@shared/services/signals";
+import { dataVersion, useSignalVersion } from "@shared/services/signals";
 import { FSRS_COLORS } from "@shared/ui/helpers/fsrs-colors";
 import { usePlugin } from "@shared/ui/preact";
-import { useEffect, useMemo, useState } from "preact/hooks";
+import { useMemo } from "preact/hooks";
 
 interface TodayData {
 	studied: number;
@@ -38,18 +37,9 @@ function formatDayLabel(date: Date): string {
 
 export function DashboardWidget() {
 	const plugin = usePlugin();
-	const [ver, setVer] = useState(0);
-
-	useEffect(() => {
-		const dispose = effect(() => {
-			track(dataVersion);
-			setVer((v) => v + 1);
-		});
-		return dispose;
-	}, []);
+	const ver = useSignalVersion(dataVersion);
 
 	const data = useMemo(() => {
-		void ver;
 		if (!plugin.sessionPersistence || !plugin.cardStore) return null;
 
 		const statsCalc = new StatsCalculatorService(
@@ -193,18 +183,9 @@ export function DashboardWidget() {
 
 export function NoteStatsWidget({ sourceUid }: { sourceUid: string | null }) {
 	const plugin = usePlugin();
-	const [ver, setVer] = useState(0);
-
-	useEffect(() => {
-		const dispose = effect(() => {
-			track(dataVersion);
-			setVer((v) => v + 1);
-		});
-		return dispose;
-	}, []);
+	const ver = useSignalVersion(dataVersion);
 
 	const data = useMemo(() => {
-		void ver;
 		if (!sourceUid || !plugin.cardStore) return null;
 
 		const cards = plugin.cardStore.getCardsBySourceUid(sourceUid);
