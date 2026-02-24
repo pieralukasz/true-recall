@@ -100,6 +100,16 @@ export class UndoService {
 					payload.previousQuestion,
 					payload.previousAnswer,
 				);
+				if (this.reviewStateManager) {
+					const currentCard =
+						this.reviewStateManager.getCurrentCard();
+					if (currentCard?.id === payload.cardId) {
+						this.reviewStateManager.updateCurrentCardContent(
+							payload.previousQuestion,
+							payload.previousAnswer,
+						);
+					}
+				}
 				return true;
 
 			case "delete":
