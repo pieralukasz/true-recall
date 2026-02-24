@@ -1,6 +1,6 @@
 import { useSignal } from "@preact/signals";
 import { Clickable } from "@shared/ui/components/Clickable";
-import { IconButton } from "@shared/ui/components/IconButton";
+import { cn } from "@shared/ui/utils";
 import { useIcon } from "@shared/ui/preact/hooks";
 import { usePlugin } from "@shared/ui/preact";
 import { useMemo } from "preact/hooks";
@@ -49,7 +49,7 @@ export function ProjectsSection() {
 	if (projects.length === 0) return null;
 
 	return (
-		<div class="ep:border-t ep:border-obs-border ep:pt-3">
+		<div>
 			<div class="ep:flex ep:items-center ep:justify-between ep:px-3 ep:mb-2">
 				<Clickable
 					class="ep:flex ep:items-center ep:gap-1.5 ep:text-ui-small ep:font-semibold ep:text-obs-muted ep:uppercase ep:tracking-wider ep:hover:text-obs-normal ep:transition-colors"
@@ -104,10 +104,10 @@ function ProjectRow({ stats, onReview }: ProjectRowProps) {
 
 	return (
 		<Clickable
-			class={[
-				"ep:flex ep:items-center ep:gap-3 ep:px-3 ep:py-2 ep:rounded ep:transition-all ep:duration-150 ep:hover:bg-obs-modifier-hover",
-				activeDue === 0 ? "ep:opacity-40" : "",
-			].join(" ")}
+			class={cn(
+				"ep:flex ep:items-center ep:gap-3 ep:px-3 ep:py-2 ep:rounded ep:transition-colors ep:duration-150 ep:hover:bg-obs-modifier-hover",
+				activeDue === 0 && "ep:opacity-40",
+			)}
 			onClick={onReview}
 		>
 			<span
@@ -126,18 +126,6 @@ function ProjectRow({ stats, onReview }: ProjectRowProps) {
 			<span class="ep:text-xs ep:text-obs-muted ep:shrink-0 ep:tabular-nums ep:min-w-[4ch] ep:text-right">
 				{activeDue > 0 ? `${activeDue} due` : "---"}
 			</span>
-
-			<IconButton
-				icon="play"
-				ariaLabel={`Review ${stats.name}`}
-				size="small"
-				disabled={activeDue === 0}
-				onClick={(e) => {
-					e.stopPropagation();
-					onReview();
-				}}
-				class="ep:shrink-0"
-			/>
 		</Clickable>
 	);
 }

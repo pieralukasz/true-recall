@@ -113,14 +113,11 @@ export function NoteList({ notes }: NoteListProps) {
 									top: `${offsetTop}px`,
 									left: 0,
 									right: 0,
-									height: "56px",
+									height: "36px",
 								}}
 							>
 								<NoteRow
 									note={item}
-									onPlay={() =>
-										handleStudyNote(item.name)
-									}
 									onClick={() =>
 										handleStudyNote(item.name)
 									}
