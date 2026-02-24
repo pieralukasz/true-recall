@@ -3,7 +3,11 @@ import { Clickable } from "@shared/ui/components";
 import { FSRS_COLORS } from "@shared/ui/helpers/fsrs-colors";
 import { usePlugin } from "@shared/ui/preact";
 import { useMemo } from "preact/hooks";
-import { computeProjectStats, type ProjectStats } from "./project-stats";
+import {
+	computeProjectStats,
+	healthColor,
+	type ProjectStats,
+} from "./project-stats";
 import { WidgetCta } from "./WidgetCta";
 
 export function ProjectWidget({
@@ -170,12 +174,6 @@ export function ProjectCard({
 			)}
 		</div>
 	);
-}
-
-function healthColor(pct: number): string {
-	if (pct >= 80) return `var(${FSRS_COLORS.new.cssVar})`;
-	if (pct >= 50) return `var(${FSRS_COLORS.learning.cssVar})`;
-	return `var(${FSRS_COLORS.suspended.cssVar})`;
 }
 
 function formatTimeAgo(isoDate: string): string {
