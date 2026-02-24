@@ -44,10 +44,6 @@ export function NoteRow({ note, onPlay, onClick }: NoteRowProps) {
 				"ep:flex ep:items-center ep:gap-3 ep:px-3 ep:py-2.5 ep:rounded-lg ep:transition-all ep:duration-150 ep:hover:bg-obs-modifier-hover",
 				hasActive ? "" : "ep:opacity-40",
 			].join(" ")}
-			style={{
-				contentVisibility: "auto",
-				containIntrinsicSize: "0 56px",
-			}}
 			onClick={onClick}
 		>
 			{/* Play button */}

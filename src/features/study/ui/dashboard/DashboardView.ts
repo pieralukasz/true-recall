@@ -30,7 +30,7 @@ export class DashboardView extends ItemView {
 		const container = this.containerEl.children[1];
 		if (!(container instanceof HTMLElement)) return;
 		container.empty();
-		container.addClasses(["ep:overflow-y-auto", "ep:h-full"]);
+		container.addClasses(["ep:h-full", "ep:overflow-hidden"]);
 
 		this.unmountPreact = mountPreact(
 			container,
