@@ -41,7 +41,7 @@ export function RecentlyStudiedSection({
 	};
 
 	return (
-		<div class="ep:border-t ep:border-obs-border ep:pt-3">
+		<div>
 			{/* Header row: toggle + continue shortcut */}
 			<div class="ep:flex ep:items-center ep:justify-between ep:px-3 ep:mb-2">
 				<Clickable
