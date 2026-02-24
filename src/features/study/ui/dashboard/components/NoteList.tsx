@@ -1,7 +1,8 @@
-import { useMemo } from "preact/hooks";
 import { useSignal } from "@preact/signals";
 import { usePlugin } from "@shared/ui/preact";
+import { useMemo } from "preact/hooks";
 import { prioritySortComparator } from "../helpers/note-priority";
+import { useVirtualList } from "../helpers/use-virtual-list";
 import type { DashboardNoteEntry, NoteFilterMode } from "../types";
 import { NoteFilters } from "./NoteFilters";
 import { NoteRow } from "./NoteRow";
@@ -60,6 +61,9 @@ export function NoteList({ notes }: NoteListProps) {
 		return [...result].sort(prioritySortComparator);
 	}, [notes, searchQuery.value, activeFilter.value]);
 
+	const { containerRef, totalHeight, virtualItems, onScroll } =
+		useVirtualList(filteredNotes);
+
 	const handleStudyNote = (noteName: string) => {
 		void plugin.openReviewViewWithFilters({
 			sourceNoteFilter: noteName,
@@ -68,18 +72,20 @@ export function NoteList({ notes }: NoteListProps) {
 	};
 
 	return (
-		<div class="ep:flex ep:flex-col ep:gap-3">
-			<NoteFilters
-				searchQuery={searchQuery.value}
-				onSearchChange={(q) => {
-					searchQuery.value = q;
-				}}
-				activeFilter={activeFilter.value}
-				onFilterChange={(f) => {
-					activeFilter.value = f;
-				}}
-				counts={counts}
-			/>
+		<div class="ep:flex ep:flex-col ep:flex-1 ep:min-h-0">
+			<div class="ep:shrink-0 ep:mb-3">
+				<NoteFilters
+					searchQuery={searchQuery.value}
+					onSearchChange={(q) => {
+						searchQuery.value = q;
+					}}
+					activeFilter={activeFilter.value}
+					onFilterChange={(f) => {
+						activeFilter.value = f;
+					}}
+					counts={counts}
+				/>
+			</div>
 
 			{filteredNotes.length === 0 ? (
 				<div class="ep:text-sm ep:text-obs-muted ep:p-4 ep:text-center">
@@ -88,15 +94,40 @@ export function NoteList({ notes }: NoteListProps) {
 						: "No matching notes."}
 				</div>
 			) : (
-				<div class="ep:flex ep:flex-col">
-					{filteredNotes.map((note) => (
-						<NoteRow
-							key={note.name}
-							note={note}
-							onPlay={() => handleStudyNote(note.name)}
-							onClick={() => handleStudyNote(note.name)}
-						/>
-					))}
+				<div
+					ref={containerRef}
+					class="ep:flex-1 ep:overflow-y-auto ep:min-h-0"
+					onScroll={onScroll}
+				>
+					<div
+						style={{
+							height: `${totalHeight}px`,
+							position: "relative",
+						}}
+					>
+						{virtualItems.map(({ item, index, offsetTop }) => (
+							<div
+								key={item.name}
+								style={{
+									position: "absolute",
+									top: `${offsetTop}px`,
+									left: 0,
+									right: 0,
+									height: "56px",
+								}}
+							>
+								<NoteRow
+									note={item}
+									onPlay={() =>
+										handleStudyNote(item.name)
+									}
+									onClick={() =>
+										handleStudyNote(item.name)
+									}
+								/>
+							</div>
+						))}
+					</div>
 				</div>
 			)}
 		</div>

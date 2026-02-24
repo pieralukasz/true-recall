@@ -49,26 +49,30 @@ export function DashboardApp() {
 	}, [plugin, statsCalculator, refreshTick]);
 
 	return (
-		<div class="ep:p-4 ep:mx-auto ep:max-w-2xl ep:flex ep:flex-col ep:gap-5">
-			<DashboardHeader
-				totalDue={data.totalDue}
-				totalNew={data.totalNew}
-				noteCount={data.noteCount}
-				estimatedMinutes={data.estimatedTotalMinutes}
-				streak={data.streak}
-			/>
+		<div class="ep:p-4 ep:mx-auto ep:max-w-2xl ep:flex ep:flex-col ep:h-full">
+			{/* Fixed top section */}
+			<div class="ep:shrink-0 ep:flex ep:flex-col ep:gap-5 ep:mb-4">
+				<DashboardHeader
+					totalDue={data.totalDue}
+					totalNew={data.totalNew}
+					noteCount={data.noteCount}
+					estimatedMinutes={data.estimatedTotalMinutes}
+					streak={data.streak}
+				/>
 
-			<StudyProgress progress={data.todayProgress} />
+				<StudyProgress progress={data.todayProgress} />
 
-			<SessionActions
-				totalDue={data.totalDue}
-				totalOverdue={data.totalOverdue}
-				estimatedMinutes={data.estimatedTotalMinutes}
-			/>
+				<SessionActions
+					totalDue={data.totalDue}
+					totalOverdue={data.totalOverdue}
+					estimatedMinutes={data.estimatedTotalMinutes}
+				/>
 
+				<RecentlyStudiedSection notes={data.notes} />
+			</div>
+
+			{/* Scrollable note list fills remaining space */}
 			<NoteList notes={data.notes} />
-
-			<RecentlyStudiedSection notes={data.notes} />
 		</div>
 	);
 }

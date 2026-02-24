@@ -10,7 +10,6 @@ import type { FSRSFlashcardItem } from "@shared/types/fsrs/card.types";
 import { Clickable } from "@shared/ui/components/Clickable";
 import { IconButton } from "@shared/ui/components/IconButton";
 import { MarkdownContent } from "@shared/ui/components/MarkdownContent";
-import { StateBadge } from "@shared/ui/components/StateBadge";
 import { useIcon } from "@shared/ui/preact/hooks";
 import { useApp } from "@shared/ui/preact/ObsidianContext";
 import {
@@ -130,28 +129,40 @@ function GroupHeader({
 	displayText,
 	filePath,
 	cardCount,
+	groupType,
 	typeIconRef,
 	onLinkClick,
 }: {
 	displayText: string;
 	filePath: string;
 	cardCount: number;
+	groupType: "cloze" | "reverse";
 	typeIconRef: RefObject<HTMLSpanElement>;
 	onLinkClick: (href: string) => void;
 }) {
+	const label = groupType === "cloze" ? "Cloze" : "Reversed";
+
 	return (
-		<>
-			<span ref={typeIconRef} class="ep:shrink-0 ep:mt-0.5 ep:text-obs-faint" />
+		<div class="ep:flex ep:flex-col ep:gap-1.5 ep:flex-1 ep:min-w-0">
+			<div class="ep:flex ep:items-center ep:gap-1.5">
+				<span
+					ref={typeIconRef}
+					class="ep:shrink-0 ep:text-obs-faint [&_svg]:ep:w-3 [&_svg]:ep:h-3"
+				/>
+				<span class="ep:text-xs ep:text-obs-muted ep:uppercase ep:tracking-wider ep:font-medium">
+					{label}
+				</span>
+				<span class="ep:text-xs ep:text-obs-muted ep:bg-obs-base-25 ep:rounded-full ep:px-1.5 ep:py-0.5 ep:shrink-0 ep:leading-none">
+					{cardCount}
+				</span>
+			</div>
 			<MarkdownContent
 				markdown={displayText}
 				filePath={filePath}
-				class="ep:flex-1 ep:text-ui-small ep:text-obs-normal true-recall-card-markdown ep:truncate"
+				class="ep:text-ui-small ep:text-obs-normal true-recall-card-markdown"
 				onLinkClick={onLinkClick}
 			/>
-			<span class="ep:text-ui-smaller ep:text-obs-muted ep:bg-obs-base-25 ep:rounded ep:px-2 ep:py-1 ep:shrink-0">
-				{cardCount}
-			</span>
-		</>
+		</div>
 	);
 }
 
@@ -212,38 +223,57 @@ function GroupExpandedContent({
 	onLinkClick: (href: string) => void;
 }) {
 	return (
-		<div class="ep:border-t ep:border-obs-border">
+		<div class="ep:border-t ep:border-obs-border ep:flex ep:flex-col ep:gap-2 ep:p-3">
 			{cards.map((card, i) => {
 				const fsrs = fsrsCards[i];
+				const label =
+					groupType === "cloze"
+						? `Cloze ${card.clozeIndex}`
+						: i === 0
+							? "Original"
+							: "Reversed";
+
 				return (
 					<div
 						key={card.id}
-						class="ep:flex ep:items-start ep:gap-2 ep:px-3 ep:py-2 ep:border-b ep:border-obs-border last:ep:border-b-0"
+						class="ep:rounded-md ep:bg-obs-primary/50 ep:py-2 ep:px-3"
 					>
-						{fsrs ? (
-							<StateBadge
-								state={fsrs.fsrs.state}
-								suspended={fsrs.fsrs.suspended}
-								buriedUntil={fsrs.fsrs.buriedUntil}
-							/>
-						) : (
-							<span class="ep:text-ui-smaller ep:text-obs-faint">—</span>
+						<span class="ep:text-xs ep:text-obs-faint ep:uppercase ep:tracking-wider ep:font-medium">
+							{label}
+						</span>
+						<MarkdownContent
+							markdown={card.question}
+							filePath={filePath}
+							class="ep:text-ui-small ep:text-obs-normal true-recall-card-markdown ep:mt-1"
+							onLinkClick={onLinkClick}
+						/>
+						{card.answer && (
+							<div class="ep:mt-2 ep:pt-2 ep:border-t ep:border-obs-border/50">
+								<MarkdownContent
+									markdown={card.answer}
+									filePath={filePath}
+									class="ep:text-ui-small ep:text-obs-muted true-recall-card-markdown"
+									onLinkClick={onLinkClick}
+								/>
+							</div>
 						)}
-						<div class="ep:flex-1 ep:flex ep:flex-col ep:gap-1">
-							<span class="ep:text-xs ep:text-obs-faint ep:uppercase ep:tracking-wider">
-								{groupType === "cloze"
-									? `Cloze ${card.clozeIndex}`
-									: i === 0
-										? "Original"
-										: "Reversed"}
-							</span>
-							<MarkdownContent
-								markdown={card.question}
-								filePath={filePath}
-								class="ep:text-ui-small ep:text-obs-normal true-recall-card-markdown"
-								onLinkClick={onLinkClick}
-							/>
-						</div>
+						{fsrs && fsrs.fsrs.reps > 0 && (
+							<div class="ep:flex ep:items-center ep:gap-3 ep:mt-2 ep:pt-2 ep:border-t ep:border-obs-border/50">
+								<span class="ep:text-ui-smaller ep:text-obs-faint">
+									{fsrs.fsrs.reps} reviews
+								</span>
+								{fsrs.fsrs.stability > 0 && (
+									<span class="ep:text-ui-smaller ep:text-obs-faint">
+										S: {fsrs.fsrs.stability.toFixed(1)}d
+									</span>
+								)}
+								{fsrs.fsrs.lapses > 0 && (
+									<span class="ep:text-ui-smaller ep:text-obs-faint">
+										{fsrs.fsrs.lapses} lapses
+									</span>
+								)}
+							</div>
+						)}
 					</div>
 				);
 			})}
@@ -391,6 +421,7 @@ export function PanelCard(props: PanelCardProps) {
 						displayText={displayText}
 						filePath={filePath}
 						cardCount={props.cards.length}
+						groupType={props.groupType}
 						typeIconRef={typeIconRef}
 						onLinkClick={handleLinkClick}
 					/>
