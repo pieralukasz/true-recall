@@ -1,10 +1,9 @@
 import { WorkloadForecastCalculator } from "@features/metrics/services/fsrs-tools/statistics/workload-forecast.calculator";
 import { StatsCalculatorService } from "@features/metrics/services/stats/stats-calculator.service";
-import { effect } from "@preact/signals";
-import { dataVersion, track } from "@shared/services/signals";
+import { dataVersion, useSignalVersion } from "@shared/services/signals";
 import { Clickable } from "@shared/ui/components";
 import { usePlugin } from "@shared/ui/preact";
-import { useEffect, useMemo, useState } from "preact/hooks";
+import { useMemo } from "preact/hooks";
 import { configValue, parseCodeblockConfig } from "./config-parser";
 
 const DAY_NAMES = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
@@ -28,20 +27,11 @@ interface WorkloadData {
 
 export function WorkloadWidget({ source }: { source: string }) {
 	const plugin = usePlugin();
-	const [ver, setVer] = useState(0);
-
-	useEffect(() => {
-		const dispose = effect(() => {
-			track(dataVersion);
-			setVer((v) => v + 1);
-		});
-		return dispose;
-	}, []);
+	const ver = useSignalVersion(dataVersion);
 
 	const config = useMemo(() => parseCodeblockConfig(source), [source]);
 
 	const data = useMemo((): WorkloadData | null => {
-		void ver;
 		if (!plugin.cardStore || !plugin.sessionPersistence) return null;
 
 		const forecastDays = configValue(config, "days", 14) as number;

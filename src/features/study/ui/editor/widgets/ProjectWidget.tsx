@@ -1,9 +1,8 @@
-import { effect } from "@preact/signals";
-import { dataVersion, track } from "@shared/services/signals";
+import { dataVersion, useSignalVersion } from "@shared/services/signals";
 import { Clickable } from "@shared/ui/components";
 import { FSRS_COLORS } from "@shared/ui/helpers/fsrs-colors";
 import { usePlugin } from "@shared/ui/preact";
-import { useEffect, useMemo, useState } from "preact/hooks";
+import { useMemo } from "preact/hooks";
 import { computeProjectStats, type ProjectStats } from "./project-stats";
 import { WidgetCta } from "./WidgetCta";
 
@@ -14,24 +13,14 @@ export function ProjectWidget({
 	sourcePath: string;
 }) {
 	const plugin = usePlugin();
-	const [ver, setVer] = useState(0);
-
-	useEffect(() => {
-		const dispose = effect(() => {
-			track(dataVersion);
-			setVer((v) => v + 1);
-		});
-		return dispose;
-	}, []);
+	const ver = useSignalVersion(dataVersion);
 
 	const isProject = useMemo(() => {
-		void ver;
 		const values = plugin.frontmatterIndex.getValues("project", sourcePath);
 		return values.includes("true");
 	}, [plugin, sourcePath, ver]);
 
 	const stats = useMemo((): ProjectStats | null => {
-		void ver;
 		if (!isProject || !plugin.cardStore) return null;
 
 		const file = plugin.app.vault.getAbstractFileByPath(sourcePath);
