@@ -49,14 +49,14 @@ export class StatusBarWidget {
 
 		const parts: string[] = [];
 
-		if (global.dueToday > 0) {
-			parts.push(
-				`<span style="color: var(${FSRS_COLORS.review.cssVar})">${global.dueToday} due</span>`,
-			);
-		}
 		if (global.newCount > 0) {
 			parts.push(
 				`<span style="color: var(${FSRS_COLORS.new.cssVar})">${global.newCount} new</span>`,
+			);
+		}
+		if (global.dueToday > 0) {
+			parts.push(
+				`<span style="color: var(${FSRS_COLORS.review.cssVar})">${global.dueToday} due</span>`,
 			);
 		}
 		if (global.learning > 0) {
@@ -78,7 +78,7 @@ export class StatusBarWidget {
 			return;
 		}
 
-		this.el.innerHTML = parts.join(' <span style="opacity:0.4">·</span> ');
+		this.el.innerHTML = parts.join(' <span style="opacity:0.3; margin: 0 2px">·</span> ');
 	}
 
 	private aggregateGlobal(): {
