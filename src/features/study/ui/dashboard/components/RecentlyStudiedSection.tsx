@@ -6,7 +6,7 @@ import type { DashboardNoteEntry } from "../types";
 import { getTimeAgo } from "../helpers/time-ago";
 import { useMemo } from "preact/hooks";
 
-const MAX_VISIBLE = 5;
+const MAX_VISIBLE = 10;
 
 export function RecentlyStudiedSection({
 	notes,
@@ -15,7 +15,6 @@ export function RecentlyStudiedSection({
 }) {
 	const plugin = usePlugin();
 	const isCollapsed = useSignal(true);
-	const showAll = useSignal(false);
 	const chevronRef = useIcon(
 		isCollapsed.value ? "chevron-right" : "chevron-down",
 	);
@@ -23,16 +22,13 @@ export function RecentlyStudiedSection({
 	const recentNotes = useMemo(() => {
 		return [...notes]
 			.filter((n) => n.lastReview)
-			.sort((a, b) => b.lastReview!.localeCompare(a.lastReview!));
+			.sort((a, b) => b.lastReview!.localeCompare(a.lastReview!))
+			.slice(0, MAX_VISIBLE);
 	}, [notes]);
 
 	if (recentNotes.length === 0) return null;
 
 	const mostRecent = recentNotes[0];
-	const visibleNotes = showAll.value
-		? recentNotes
-		: recentNotes.slice(0, MAX_VISIBLE);
-	const hasMore = recentNotes.length > MAX_VISIBLE;
 
 	const openNote = (note: DashboardNoteEntry) => {
 		if (!note.path) return;
@@ -59,7 +55,7 @@ export function RecentlyStudiedSection({
 						ref={chevronRef}
 						class="[&_svg]:ep:w-3 [&_svg]:ep:h-3"
 					/>
-					Recently Studied ({recentNotes.length})
+					Recently Studied
 				</Clickable>
 
 				{isCollapsed.value && mostRecent && (
@@ -80,14 +76,10 @@ export function RecentlyStudiedSection({
 			{/* Expanded list */}
 			{!isCollapsed.value && (
 				<div class="ep:flex ep:flex-col">
-					{visibleNotes.map((note) => (
+					{recentNotes.map((note) => (
 						<Clickable
 							key={note.name}
 							class="ep:flex ep:items-center ep:justify-between ep:px-3 ep:py-2 ep:rounded ep:transition-all ep:duration-150 ep:hover:bg-obs-modifier-hover"
-							style={{
-								contentVisibility: "auto",
-								containIntrinsicSize: "0 40px",
-							}}
 							onClick={() => openNote(note)}
 						>
 							<span class="ep:text-sm ep:text-obs-normal ep:truncate ep:mr-3 ep:flex-1">
@@ -100,17 +92,6 @@ export function RecentlyStudiedSection({
 							</span>
 						</Clickable>
 					))}
-
-					{hasMore && !showAll.value && (
-						<Clickable
-							class="ep:text-ui-smaller ep:text-obs-interactive ep:px-3 ep:py-1.5 ep:hover:text-obs-normal ep:transition-colors"
-							onClick={() => {
-								showAll.value = true;
-							}}
-						>
-							Show all ({recentNotes.length})
-						</Clickable>
-					)}
 				</div>
 			)}
 		</div>
