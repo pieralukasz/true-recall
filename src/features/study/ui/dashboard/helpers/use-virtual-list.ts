@@ -2,7 +2,7 @@ import { useSignal } from "@preact/signals";
 import { useCallback, useMemo, useRef } from "preact/hooks";
 import type { RefObject } from "preact";
 
-const ROW_HEIGHT = 56;
+const ROW_HEIGHT = 36;
 const OVERSCAN = 5;
 
 export interface VirtualItem<T> {

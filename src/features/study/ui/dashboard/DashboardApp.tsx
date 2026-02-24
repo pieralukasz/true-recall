@@ -7,13 +7,10 @@ import {
 } from "@shared/services/signals";
 import { usePlugin } from "@shared/ui/preact";
 import { useMemo } from "preact/hooks";
-import { DashboardHeader } from "./components/DashboardHeader";
+import { HeroCard } from "./components/HeroCard";
 import { NoteList } from "./components/NoteList";
-import { RecentlyStudiedSection } from "./components/RecentlyStudiedSection";
-import { SessionActions } from "./components/SessionActions";
-import { StudyProgress } from "./components/StudyProgress";
+import { Sidebar } from "./components/Sidebar";
 import { aggregateDashboardData } from "./helpers/note-aggregation";
-import { ProjectsSection } from "./components/ProjectsSection";
 import type { DashboardAggregation } from "./types";
 
 export function DashboardApp() {
@@ -50,32 +47,27 @@ export function DashboardApp() {
 	}, [plugin, statsCalculator, refreshTick]);
 
 	return (
-		<div class="ep:p-4 ep:mx-auto ep:max-w-2xl ep:flex ep:flex-col ep:h-full">
-			{/* Fixed top section */}
-			<div class="ep:shrink-0 ep:flex ep:flex-col ep:gap-5 ep:mb-4">
-				<DashboardHeader
+		<div class="ep-dashboard-container ep:p-4 ep:mx-auto ep:max-w-5xl ep:flex ep:flex-col ep:h-full">
+			<div class="ep:shrink-0 ep:mb-5">
+				<HeroCard
 					totalDue={data.totalDue}
 					totalNew={data.totalNew}
+					totalOverdue={data.totalOverdue}
 					noteCount={data.noteCount}
 					estimatedMinutes={data.estimatedTotalMinutes}
 					streak={data.streak}
+					progress={data.todayProgress}
 				/>
-
-				<StudyProgress progress={data.todayProgress} />
-
-				<SessionActions
-					totalDue={data.totalDue}
-					totalOverdue={data.totalOverdue}
-					estimatedMinutes={data.estimatedTotalMinutes}
-				/>
-
-				<ProjectsSection />
-
-				<RecentlyStudiedSection notes={data.notes} />
 			</div>
 
-			{/* Scrollable note list fills remaining space */}
-			<NoteList notes={data.notes} />
+			<div class="ep:flex-1 ep:min-h-0 ep:grid ep:grid-cols-1 ep:gap-5 ep-dashboard-two-col">
+				<div class="ep:min-h-0 ep:overflow-hidden ep:h-full ep:flex ep:flex-col ep:order-2 ep-dashboard-notes">
+					<NoteList notes={data.notes} />
+				</div>
+				<div class="ep:order-1 ep:overflow-y-auto ep-dashboard-sidebar">
+					<Sidebar notes={data.notes} />
+				</div>
+			</div>
 		</div>
 	);
 }

@@ -205,6 +205,26 @@
 		outline: none;
 		box-shadow: none;
 	}
+	.ep-dashboard-container {
+		container-type: inline-size;
+	}
+}
+
+.ep-dashboard-two-col {
+	grid-template-rows: auto 1fr;
+}
+
+@container (min-width: 600px) {
+	.ep-dashboard-two-col {
+		grid-template-columns: 1fr 260px;
+		grid-template-rows: 1fr;
+	}
+	.ep-dashboard-notes {
+		order: 1;
+	}
+	.ep-dashboard-sidebar {
+		order: 2;
+	}
 }
 
 /* Reduced motion preferences (consolidated) */
