@@ -26,9 +26,16 @@
 		text-align: center;
 	}
 
-	/* Switch to left-align when content has block elements */
-	.true-recall-review-question:has(pre, ul, ol, table, blockquote, .math-block),
-	.true-recall-review-answer:has(pre, ul, ol, table, blockquote, .math-block) {
+	/* Switch to left-align when content has block elements.
+	   CM6 live-preview uses HyperMD classes instead of <pre>/<ul>/<ol>/<table>/<blockquote>. */
+	.true-recall-review-question:has(
+		pre, ul, ol, table, blockquote, .math-block,
+		.HyperMD-codeblock-begin, .HyperMD-list-line, .HyperMD-table-row, .HyperMD-quote
+	),
+	.true-recall-review-answer:has(
+		pre, ul, ol, table, blockquote, .math-block,
+		.HyperMD-codeblock-begin, .HyperMD-list-line, .HyperMD-table-row, .HyperMD-quote
+	) {
 		text-align: left;
 	}
 
@@ -102,8 +109,23 @@
 	text-align: center;
 }
 
-.true-recall-review-question:has(pre, ul, ol, table, blockquote, .math-block) .cm-editor .cm-content,
-.true-recall-review-answer:has(pre, ul, ol, table, blockquote, .math-block) .cm-editor .cm-content {
+.true-recall-review-question:has(
+	pre, ul, ol, table, blockquote, .math-block,
+	.HyperMD-codeblock-begin, .HyperMD-list-line, .HyperMD-table-row, .HyperMD-quote
+) .cm-editor .cm-content,
+.true-recall-review-answer:has(
+	pre, ul, ol, table, blockquote, .math-block,
+	.HyperMD-codeblock-begin, .HyperMD-list-line, .HyperMD-table-row, .HyperMD-quote
+) .cm-editor .cm-content {
+	text-align: left;
+}
+
+.true-recall-review-question .cm-line.HyperMD-codeblock,
+.true-recall-review-question .cm-line.HyperMD-codeblock-begin,
+.true-recall-review-question .cm-line.HyperMD-codeblock-end,
+.true-recall-review-answer .cm-line.HyperMD-codeblock,
+.true-recall-review-answer .cm-line.HyperMD-codeblock-begin,
+.true-recall-review-answer .cm-line.HyperMD-codeblock-end {
 	text-align: left;
 }
 
