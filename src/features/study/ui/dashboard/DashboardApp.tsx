@@ -9,8 +9,8 @@ import { SearchInput } from "@shared/ui/components/SearchInput";
 import { usePlugin } from "@shared/ui/preact";
 import { useMemo } from "preact/hooks";
 import { useSignal } from "@preact/signals";
+import { StreakWidget } from "../editor/widgets/StreakWidget";
 import { DashboardTabs } from "./components/DashboardTabs";
-import { HeroCard } from "./components/HeroCard";
 import { NoteList } from "./components/NoteList";
 import { ProjectsTab } from "./components/ProjectsTab";
 import { RecentlyStudiedBar } from "./components/RecentlyStudiedBar";
@@ -100,16 +100,8 @@ export function DashboardApp() {
 
 	return (
 		<div class="ep-dashboard-container ep:p-4 ep:mx-auto ep:max-w-5xl ep:flex ep:flex-col ep:h-full">
-			<div class="ep:shrink-0 ep:mb-5">
-				<HeroCard
-					totalDue={data.totalDue}
-					totalNew={data.totalNew}
-					totalOverdue={data.totalOverdue}
-					noteCount={data.noteCount}
-					estimatedMinutes={data.estimatedTotalMinutes}
-					streak={data.streak}
-					progress={data.todayProgress}
-				/>
+			<div class="ep:shrink-0 ep:mb-4">
+				<StreakWidget source="" />
 			</div>
 
 			{/* Recently studied bar */}
