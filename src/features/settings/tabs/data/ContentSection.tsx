@@ -1,5 +1,5 @@
 import { useSettings } from "@features/settings/hooks/useSettings";
-import { SettingRow, TextInput } from "@shared/ui/components";
+import { SettingRow, TextInput, ToggleInput } from "@shared/ui/components";
 
 export function ContentSection() {
 	const { settings, save } = useSettings();
@@ -9,8 +9,18 @@ export function ContentSection() {
 			<SettingRow heading name="Content" />
 
 			<SettingRow
+				name="Folder-based projects"
+				description="Automatically detect folders with flashcard notes as projects"
+			>
+				<ToggleInput
+					value={settings.folderProjectsEnabled}
+					onChange={(v) => save({ folderProjectsEnabled: v })}
+				/>
+			</SettingRow>
+
+			<SettingRow
 				name="Excluded folders"
-				description="Comma-separated list of folders to exclude from flashcard search"
+				description="Comma-separated list of folders to exclude from flashcard search and project detection"
 			>
 				<TextInput
 					value={settings.excludedFolders.join(", ")}

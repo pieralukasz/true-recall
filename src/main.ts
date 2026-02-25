@@ -15,6 +15,7 @@ import { DayBoundaryService } from "@features/core/services/day-boundary.service
 import { FrontmatterIndexService } from "@features/core/services/frontmatter-index.service";
 import { FSRSService } from "@features/core/services/fsrs.service";
 import { PresetService } from "@features/core/services/preset.service";
+import { FolderProjectService } from "@features/core/services/folder-project.service";
 import { ProjectLinkService } from "@features/core/services/project-link.service";
 import { AnkiExportModal } from "@features/integration/modals/AnkiExportModal";
 import { AnkiImportModal } from "@features/integration/modals/AnkiImportModal";
@@ -95,6 +96,7 @@ export default class TrueRecallPlugin extends Plugin {
 	undoService: UndoService | null = null;
 	fsrsHelper: FSRSHelperService | null = null;
 	presetService!: PresetService;
+	folderProjectService!: FolderProjectService;
 	projectLinkService!: ProjectLinkService;
 	store: AppStore | null = null;
 	noteStatusCache: NoteStatusCacheService | null = null;
@@ -150,9 +152,27 @@ export default class TrueRecallPlugin extends Plugin {
 			this.frontmatterIndex.rebuildIndex();
 		});
 
+		this.folderProjectService = new FolderProjectService(
+			this.app,
+			this.frontmatterIndex,
+			() => this.settings,
+		);
+		const invalidateFolderCache = () =>
+			this.folderProjectService.invalidateCache();
+		this.registerEvent(
+			this.app.vault.on("create", invalidateFolderCache),
+		);
+		this.registerEvent(
+			this.app.vault.on("delete", invalidateFolderCache),
+		);
+		this.registerEvent(
+			this.app.vault.on("rename", invalidateFolderCache),
+		);
+
 		this.projectLinkService = new ProjectLinkService(
 			this.app,
 			this.frontmatterIndex,
+			this.folderProjectService,
 		);
 
 		this.flashcardManager = new FlashcardManager(
