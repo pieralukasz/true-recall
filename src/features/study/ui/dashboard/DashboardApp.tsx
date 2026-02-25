@@ -13,7 +13,6 @@ import { DashboardTabs } from "./components/DashboardTabs";
 import { NoteList } from "./components/NoteList";
 import { ProjectsTab } from "./components/ProjectsTab";
 import { RecentlyStudiedBar } from "./components/RecentlyStudiedBar";
-import { UnassignedTab } from "./components/UnassignedTab";
 import { aggregateDashboardData } from "./helpers/note-aggregation";
 import { aggregateProjectData } from "./helpers/project-aggregation";
 import type { DashboardAggregation, DashboardTab } from "./types";
@@ -63,6 +62,21 @@ export function DashboardApp() {
 			},
 		});
 	}, [plugin, data.notes]);
+
+	const enrichedNotes = useMemo(() => {
+		return data.notes.map((note) => ({
+			...note,
+			projects: projectData.noteProjectMap.get(note.name) ?? [],
+		}));
+	}, [data.notes, projectData.noteProjectMap]);
+
+	const allProjectNames = useMemo(() => {
+		const names = new Set<string>();
+		for (const projects of projectData.noteProjectMap.values()) {
+			for (const p of projects) names.add(p);
+		}
+		return Array.from(names).sort();
+	}, [projectData.noteProjectMap]);
 
 	const handleNavigateToNote = (noteName: string) => {
 		void plugin.app.workspace.openLinkText(noteName, "");
@@ -124,8 +138,7 @@ export function DashboardApp() {
 						searchQuery.value = "";
 					}}
 					projectCount={projectData.projects.length}
-					unassignedCount={projectData.unassignedNotes.length}
-					allNotesCount={data.notes.length}
+					notesCount={enrichedNotes.length}
 				/>
 			</div>
 
@@ -141,20 +154,11 @@ export function DashboardApp() {
 					/>
 				)}
 
-				{activeTab.value === "unassigned" && (
-					<UnassignedTab
-						notes={projectData.unassignedNotes}
-						searchQuery={searchQuery.value}
-						onNavigateToNote={handleNavigateToNote}
-						onStudyNote={handleStudyNote}
-						onCustomStudyNote={handleCustomStudyNote}
-					/>
-				)}
-
-				{activeTab.value === "all" && (
+				{activeTab.value === "notes" && (
 					<NoteList
-						notes={data.notes}
+						notes={enrichedNotes}
 						searchQuery={searchQuery.value}
+						allProjectNames={allProjectNames}
 					/>
 				)}
 			</div>
