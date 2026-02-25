@@ -11,6 +11,7 @@ import {
 import type { SelectionMode } from "@shared/store";
 import type { FlashcardInfo, FlashcardItem } from "@shared/types";
 import type { FSRSFlashcardItem } from "@shared/types/fsrs/card.types";
+import { useStreamingText } from "@features/library/ui/panel/hooks";
 import { EmptyState, EmptyStateMessages } from "@shared/ui/components";
 import { useEffect, useMemo, useRef } from "preact/hooks";
 
@@ -268,9 +269,16 @@ export function PanelContent({
 function PartialCard({
 	streaming,
 }: { streaming: typeof streamingGeneration.value }) {
-	if (!streaming.partialQuestion) {
+	const { visibleText: question, isTyping: qTyping } = useStreamingText(
+		streaming.partialQuestion ?? "",
+	);
+	const { visibleText: answer, isTyping: aTyping } = useStreamingText(
+		streaming.partialAnswer ?? "",
+	);
+
+	if (!question) {
 		return (
-			<div class="ep:flex ep:flex-col ep:mb-2 ep:rounded-lg ep:bg-obs-secondary ep:border-[1px] ep:border-obs-border/20 ep:shadow-sm ep:p-3 ep:items-center ep:gap-2">
+			<div class="ep:flex ep:flex-col ep:mb-2 ep:rounded-lg ep:bg-obs-secondary ep:border ep:border-obs-border/20 ep:shadow-sm ep:p-3 ep:items-center ep:gap-2">
 				<div class="ep:text-xs ep:text-obs-muted">
 					Generating flashcards...
 				</div>
@@ -279,13 +287,15 @@ function PartialCard({
 	}
 
 	return (
-		<div class="ep:flex ep:flex-col ep:mb-2 ep:rounded-lg ep:bg-obs-secondary ep:border-[1px] ep:border-obs-border/20 ep:shadow-sm ep:p-3 ep-animate-slide-in">
+		<div class="ep:flex ep:flex-col ep:mb-2 ep:rounded-lg ep:bg-obs-secondary ep:border ep:border-obs-border/20 ep:shadow-sm ep:p-3 ep-animate-slide-in">
 			<div class="ep:text-ui-small ep:text-obs-normal">
-				{streaming.partialQuestion}
+				{question}
+				{qTyping && <span class="ep-streaming-cursor" />}
 			</div>
-			{streaming.partialAnswer != null && (
+			{(answer || streaming.partialAnswer != null) && (
 				<div class="ep:text-ui-small ep:text-obs-muted ep:mt-1.5 ep:leading-relaxed">
-					{streaming.partialAnswer}
+					{answer}
+					{aTyping && <span class="ep-streaming-cursor" />}
 				</div>
 			)}
 		</div>
