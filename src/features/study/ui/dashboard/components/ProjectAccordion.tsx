@@ -4,8 +4,10 @@ import { Clickable } from "@shared/ui/components/Clickable";
 import { IconButton } from "@shared/ui/components/IconButton";
 import { useIcon } from "@shared/ui/preact/hooks";
 import { usePlugin } from "@shared/ui/preact";
+import { useMemo } from "preact/hooks";
 import { cn } from "@shared/ui/utils";
 import { healthColor } from "../../editor/widgets/project-stats";
+import { prioritySortComparator } from "../helpers/note-priority";
 import type { DashboardProject } from "../types";
 import { NoteRow } from "./NoteRow";
 
@@ -55,13 +57,15 @@ export function ProjectAccordion({
 	const activeDue = project.due + project.newCount + project.learning;
 	const color = healthColor(project.healthPct);
 
-	// Filter member notes by search query
-	const visibleNotes =
-		searchQuery.length > 0
-			? project.memberNotes.filter((n) =>
-					n.name.toLowerCase().includes(searchQuery),
-				)
-			: project.memberNotes;
+	const visibleNotes = useMemo(() => {
+		const notes =
+			searchQuery.length > 0
+				? project.memberNotes.filter((n) =>
+						n.name.toLowerCase().includes(searchQuery),
+					)
+				: project.memberNotes;
+		return [...notes].sort(prioritySortComparator);
+	}, [project.memberNotes, searchQuery]);
 
 	return (
 		<div>
