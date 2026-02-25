@@ -224,7 +224,7 @@
 }
 
 .ep-animate-slide-in {
-	animation: ep-slide-in 0.3s ease-out forwards;
+	animation: ep-slide-in 0.5s cubic-bezier(0.22, 1, 0.36, 1) forwards;
 }
 
 @keyframes ep-cursor-blink {

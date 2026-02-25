@@ -50,8 +50,7 @@ export function addStreamedCard(card: FlashcardItem): void {
 		...current,
 		completedCards: [...current.completedCards, card],
 		recentCardIds: newRecentIds,
-		partialQuestion: null,
-		partialAnswer: null,
+		// Keep partialQuestion/partialAnswer — acts as visual bridge until next updatePartial() replaces them
 	};
 }
 
