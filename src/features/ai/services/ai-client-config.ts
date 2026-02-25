@@ -5,6 +5,7 @@ export interface AIClientConfig {
 	apiKey: string;
 	model: string;
 	proxyUrl: string | undefined;
+	userId?: string;
 }
 
 /**
@@ -25,6 +26,7 @@ export function resolveAIClientConfig(
 			apiKey: settings.subscriptionKey,
 			model: settings.aiModel,
 			proxyUrl: LITELLM_PROXY_URL,
+			userId: settings.userId,
 		};
 	}
 

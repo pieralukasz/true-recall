@@ -1,7 +1,5 @@
 import { useSignal } from "@preact/signals";
-import { Clickable } from "@shared/ui/components/Clickable";
 import { usePlugin } from "@shared/ui/preact";
-import { cn } from "@shared/ui/utils";
 import { useMemo } from "preact/hooks";
 import { prioritySortComparator } from "../helpers/note-priority";
 import { useVirtualList } from "../helpers/use-virtual-list";
@@ -108,46 +106,8 @@ export function NoteList({ notes, searchQuery, allProjectNames }: NoteListProps)
 		projectFilter.value = { type: "project", name: projectName };
 	};
 
-	const pf = projectFilter.value;
-
 	return (
 		<div class="ep:flex ep:flex-col ep:flex-1 ep:min-h-0">
-			{/* Project filter area */}
-			<div class="ep:flex ep:items-center ep:gap-2 ep:mb-2 ep:flex-wrap ep:shrink-0">
-				<Clickable
-					class={cn(
-						"ep:px-2 ep:py-0.5 ep:rounded-full ep:text-ui-smaller ep:transition-colors",
-						pf.type === "unassigned"
-							? "ep:bg-obs-interactive/15 ep:text-obs-interactive ep:font-medium"
-							: "ep:bg-obs-modifier-hover ep:text-obs-muted ep:hover:text-obs-normal",
-					)}
-					onClick={() => {
-						projectFilter.value =
-							pf.type === "unassigned"
-								? { type: "none" }
-								: { type: "unassigned" };
-					}}
-				>
-					Unassigned ({unassignedCount})
-				</Clickable>
-
-				{pf.type === "project" && (
-					<div class="ep:inline-flex ep:items-center ep:gap-1 ep:px-2 ep:py-0.5 ep:rounded-full ep:bg-obs-interactive/10 ep:text-obs-interactive ep:text-ui-smaller ep:font-medium">
-						{pf.name}
-						<Clickable
-							class="ep:ml-0.5 ep:text-obs-muted ep:hover:text-obs-normal ep:text-[10px]"
-							onClick={() => {
-								projectFilter.value = { type: "none" };
-							}}
-							aria-label="Clear project filter"
-						>
-							✕
-						</Clickable>
-					</div>
-				)}
-			</div>
-
-			{/* State filters */}
 			<div class="ep:shrink-0 ep:mb-3">
 				<NoteFilters
 					activeFilter={activeFilter.value}
@@ -155,6 +115,11 @@ export function NoteList({ notes, searchQuery, allProjectNames }: NoteListProps)
 						activeFilter.value = f;
 					}}
 					counts={counts}
+					projectFilter={projectFilter.value}
+					unassignedCount={unassignedCount}
+					onProjectFilterChange={(pf) => {
+						projectFilter.value = pf;
+					}}
 				/>
 			</div>
 
