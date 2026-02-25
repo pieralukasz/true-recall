@@ -106,6 +106,7 @@ export function createSelectionToolbarExtension(
 						onQuickAdd: async () => {
 							await callbacks.onQuickAdd(text);
 						},
+						onDismiss: () => this.removeToolbar(),
 						hasApiKey: callbacks.hasApiKey(),
 					}),
 					this.container,
