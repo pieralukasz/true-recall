@@ -66,6 +66,7 @@ export class OpenRouterClient {
 		private apiKey: string,
 		private model: string,
 		proxyUrl?: string,
+		private userId?: string,
 	) {
 		this.baseUrl = proxyUrl ?? OPENROUTER_URL;
 	}
@@ -73,15 +74,18 @@ export class OpenRouterClient {
 	async chat(
 		request: ChatCompletionRequest,
 	): Promise<ChatCompletionResponse> {
+		const headers: Record<string, string> = {
+			"Content-Type": "application/json",
+			Authorization: `Bearer ${this.apiKey}`,
+			"HTTP-Referer": "obsidian://true-recall",
+			"X-Title": "True Recall",
+		};
+		if (this.userId) headers["X-User-Id"] = this.userId;
+
 		const response = await requestUrl({
 			url: this.baseUrl,
 			method: "POST",
-			headers: {
-				"Content-Type": "application/json",
-				Authorization: `Bearer ${this.apiKey}`,
-				"HTTP-Referer": "obsidian://true-recall",
-				"X-Title": "True Recall",
-			},
+			headers,
 			body: JSON.stringify({
 				model: this.model,
 				...request,

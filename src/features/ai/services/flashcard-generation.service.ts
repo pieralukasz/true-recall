@@ -39,6 +39,7 @@ export class FlashcardGenerationService {
 			config.apiKey,
 			config.model,
 			config.proxyUrl,
+			config.userId,
 		);
 		const systemPrompt = this.getPromptForMode(mode);
 
@@ -64,6 +65,7 @@ export class FlashcardGenerationService {
 						fallback.apiKey,
 						fallback.model,
 						fallback.proxyUrl,
+						undefined,
 					);
 					const response = await fallbackClient.chat(request);
 					const responseText = response.choices[0]?.message?.content ?? "";

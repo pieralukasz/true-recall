@@ -6,6 +6,7 @@ import type {
 	NLQueryStep,
 } from "@shared/types/nl-query.types";
 import {
+	AIRequestError,
 	OpenRouterClient,
 	type ChatMessage,
 	type ToolDefinition,
@@ -80,9 +81,15 @@ export class NLQueryService {
 	private sqlAdapter: SqlQueryAdapter;
 	private initialized = false;
 
+	private fallbackConfig: NLQueryConfig | null = null;
+
 	constructor(config: NLQueryConfig, sqlAdapter: SqlQueryAdapter) {
 		this.config = config;
 		this.sqlAdapter = sqlAdapter;
+	}
+
+	setFallbackConfig(config: NLQueryConfig | null): void {
+		this.fallbackConfig = config;
 	}
 
 	async initialize(): Promise<void> {
@@ -102,10 +109,36 @@ export class NLQueryService {
 			};
 		}
 
+		try {
+			return await this.queryWithConfig(this.config, question);
+		} catch (error) {
+			if (
+				error instanceof AIRequestError &&
+				error.isBudgetExceeded &&
+				this.fallbackConfig
+			) {
+				return this.queryWithConfig(this.fallbackConfig, question);
+			}
+
+			const errorMessage =
+				error instanceof Error ? error.message : String(error);
+			return {
+				question,
+				answer: `Error processing query: ${errorMessage}`,
+				intermediateSteps: [],
+				error: errorMessage,
+			};
+		}
+	}
+
+	private async queryWithConfig(
+		config: NLQueryConfig,
+		question: string,
+	): Promise<NLQueryResult> {
 		const client = new OpenRouterClient(
-			this.config.apiKey,
-			this.config.model,
-			this.config.proxyUrl,
+			config.apiKey,
+			config.model,
+			config.proxyUrl,
 		);
 		const schema = this.sqlAdapter.getTableInfo();
 		const steps: NLQueryStep[] = [];
@@ -118,74 +151,60 @@ export class NLQueryService {
 			{ role: "user", content: question },
 		];
 
-		try {
-			for (let i = 0; i < MAX_ITERATIONS; i++) {
-				const response = await client.chat({
-					messages,
-					temperature: 0,
-					tools: SQL_TOOLS,
-					tool_choice: "auto",
-				});
+		for (let i = 0; i < MAX_ITERATIONS; i++) {
+			const response = await client.chat({
+				messages,
+				temperature: 0,
+				tools: SQL_TOOLS,
+				tool_choice: "auto",
+			});
 
-				const choice = response.choices[0];
-				if (!choice) break;
+			const choice = response.choices[0];
+			if (!choice) break;
 
-				const assistantMsg = choice.message;
-				messages.push(assistantMsg);
+			const assistantMsg = choice.message;
+			messages.push(assistantMsg);
 
-				// No tool calls → final answer
-				if (
-					!assistantMsg.tool_calls ||
-					assistantMsg.tool_calls.length === 0
-				) {
-					return {
-						question,
-						answer:
-							assistantMsg.content ?? "No response generated",
-						intermediateSteps: steps,
-					};
-				}
-
-				// Execute each tool call and append results
-				for (const toolCall of assistantMsg.tool_calls) {
-					const { name, arguments: argsJson } = toolCall.function;
-					const toolResult = this.executeTool(name, argsJson);
-
-					steps.push({
-						action: name,
-						input: argsJson,
-						output: toolResult,
-					});
-
-					messages.push({
-						role: "tool",
-						content: toolResult,
-						tool_call_id: toolCall.id,
-					});
-				}
+			if (
+				!assistantMsg.tool_calls ||
+				assistantMsg.tool_calls.length === 0
+			) {
+				return {
+					question,
+					answer:
+						assistantMsg.content ?? "No response generated",
+					intermediateSteps: steps,
+				};
 			}
 
-			// Exhausted iterations
-			const lastAssistant = [...messages]
-				.reverse()
-				.find((m) => m.role === "assistant");
-			return {
-				question,
-				answer:
-					lastAssistant?.content ??
-					"Max iterations reached without a final answer.",
-				intermediateSteps: steps,
-			};
-		} catch (error) {
-			const errorMessage =
-				error instanceof Error ? error.message : String(error);
-			return {
-				question,
-				answer: `Error processing query: ${errorMessage}`,
-				intermediateSteps: [],
-				error: errorMessage,
-			};
+			for (const toolCall of assistantMsg.tool_calls) {
+				const { name, arguments: argsJson } = toolCall.function;
+				const toolResult = this.executeTool(name, argsJson);
+
+				steps.push({
+					action: name,
+					input: argsJson,
+					output: toolResult,
+				});
+
+				messages.push({
+					role: "tool",
+					content: toolResult,
+					tool_call_id: toolCall.id,
+				});
+			}
 		}
+
+		const lastAssistant = [...messages]
+			.reverse()
+			.find((m) => m.role === "assistant");
+		return {
+			question,
+			answer:
+				lastAssistant?.content ??
+				"Max iterations reached without a final answer.",
+			intermediateSteps: steps,
+		};
 	}
 
 	private executeTool(name: string, argsJson: string): string {
