@@ -7,6 +7,7 @@ export interface SelectionToolbarProps {
 	onGenerate: (mode: GenerationMode) => Promise<void>;
 	onEdit: () => void;
 	onQuickAdd: () => Promise<void>;
+	onDismiss: () => void;
 	hasApiKey: boolean;
 }
 
@@ -21,6 +22,7 @@ export function SelectionToolbar({
 	onGenerate,
 	onEdit,
 	onQuickAdd,
+	onDismiss,
 	hasApiKey,
 }: SelectionToolbarProps) {
 	const [generatingMode, setGeneratingMode] = useState<GenerationMode | null>(
@@ -33,14 +35,10 @@ export function SelectionToolbar({
 	const handleGenerate = useCallback(
 		async (mode: GenerationMode) => {
 			if (busy || !hasApiKey) return;
-			setGeneratingMode(mode);
-			try {
-				await onGenerate(mode);
-			} finally {
-				setGeneratingMode(null);
-			}
+			onDismiss();
+			await onGenerate(mode);
 		},
-		[busy, hasApiKey, onGenerate],
+		[busy, hasApiKey, onGenerate, onDismiss],
 	);
 
 	const handleQuickAdd = useCallback(async () => {
