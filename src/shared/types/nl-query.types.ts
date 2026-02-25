@@ -38,6 +38,7 @@ export interface TimeToMasteryStats {
 export interface NLQueryConfig {
 	apiKey: string;
 	model: string;
+	proxyUrl?: string;
 	topK?: number;
 }
 

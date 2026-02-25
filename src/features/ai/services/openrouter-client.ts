@@ -37,19 +37,30 @@ export interface ChatCompletionResponse {
 	}>;
 }
 
-const BASE_URL = "https://openrouter.ai/api/v1/chat/completions";
+const OPENROUTER_URL = "https://openrouter.ai/api/v1/chat/completions";
+
+export interface AIClientOptions {
+	apiKey: string;
+	model: string;
+	proxyUrl?: string;
+}
 
 export class OpenRouterClient {
+	private baseUrl: string;
+
 	constructor(
 		private apiKey: string,
 		private model: string,
-	) {}
+		proxyUrl?: string,
+	) {
+		this.baseUrl = proxyUrl ?? OPENROUTER_URL;
+	}
 
 	async chat(
 		request: ChatCompletionRequest,
 	): Promise<ChatCompletionResponse> {
 		const response = await requestUrl({
-			url: BASE_URL,
+			url: this.baseUrl,
 			method: "POST",
 			headers: {
 				"Content-Type": "application/json",

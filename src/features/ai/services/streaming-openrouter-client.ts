@@ -10,19 +10,24 @@ export interface StreamChunk {
 	finishReason: string | null;
 }
 
-const BASE_URL = "https://openrouter.ai/api/v1/chat/completions";
+const OPENROUTER_URL = "https://openrouter.ai/api/v1/chat/completions";
 
 export class StreamingOpenRouterClient {
+	private baseUrl: string;
+
 	constructor(
 		private apiKey: string,
 		private model: string,
-	) {}
+		proxyUrl?: string,
+	) {
+		this.baseUrl = proxyUrl ?? OPENROUTER_URL;
+	}
 
 	async *chatStream(
 		request: StreamingChatRequest,
 		signal?: AbortSignal,
 	): AsyncGenerator<StreamChunk> {
-		const response = await fetch(BASE_URL, {
+		const response = await fetch(this.baseUrl, {
 			method: "POST",
 			headers: {
 				"Content-Type": "application/json",
