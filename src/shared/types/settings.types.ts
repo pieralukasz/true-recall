@@ -167,6 +167,9 @@ export interface TrueRecallSettings {
 	/** Folders excluded from searching notes without flashcards */
 	excludedFolders: string[];
 
+	/** Enable automatic folder-based project detection */
+	folderProjectsEnabled: boolean;
+
 	/** Automatic backup on plugin load */
 	autoBackupOnLoad: boolean;
 	/** Maximum number of backups to keep (0 = unlimited) - legacy, use retentionPolicy instead */

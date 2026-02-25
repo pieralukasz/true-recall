@@ -270,15 +270,13 @@ function PartialCard({
 	streaming,
 }: { streaming: typeof streamingGeneration.value }) {
 	const typedQuestion = useTypewriter(streaming.partialQuestion ?? "");
-	const typedAnswer = useTypewriter(streaming.partialAnswer ?? "");
+	const questionDone =
+		typedQuestion.length >= (streaming.partialQuestion ?? "").length;
+	const typedAnswer = useTypewriter(
+		questionDone ? (streaming.partialAnswer ?? "") : "",
+	);
 
-	// Snap question to full once answer starts — focus shifts to the answer
-	const shownQuestion = streaming.partialAnswer
-		? streaming.partialQuestion
-		: typedQuestion;
-	const shownAnswer = typedAnswer;
-
-	if (!streaming.partialQuestion) {
+	if (!typedQuestion) {
 		return (
 			<div class="ep:flex ep:flex-col ep:mb-2 ep:rounded-lg ep:bg-obs-secondary ep:border-[1px] ep:border-obs-border/20 ep:shadow-sm ep:p-3 ep:items-center ep:gap-2">
 				<div class="ep-streaming-dot" />
@@ -291,16 +289,16 @@ function PartialCard({
 
 	return (
 		<div class="ep:flex ep:flex-col ep:mb-2 ep:rounded-lg ep:bg-obs-secondary ep:border-[1px] ep:border-obs-border/20 ep:shadow-sm ep:p-3 ep-animate-slide-in">
-			<div class="ep:text-xs ep:font-medium ep:text-obs-normal ep:leading-relaxed">
-				{shownQuestion}
+			<div class="ep:text-ui-small ep:text-obs-normal">
+				{typedQuestion}
 			</div>
-			{shownAnswer ? (
-				<div class="ep:text-xs ep:text-obs-muted ep:mt-1.5 ep:leading-relaxed">
-					{shownAnswer}
+			{typedAnswer ? (
+				<div class="ep:text-ui-small ep:text-obs-muted ep:mt-1.5 ep:leading-relaxed">
+					{typedAnswer}
 					<span class="ep-streaming-cursor" />
 				</div>
 			) : (
-				<div class="ep:text-xs ep:text-obs-muted ep:mt-1.5">
+				<div class="ep:text-ui-small ep:text-obs-muted ep:mt-1.5">
 					<span class="ep-streaming-cursor" />
 				</div>
 			)}
