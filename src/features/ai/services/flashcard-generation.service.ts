@@ -5,6 +5,7 @@ import {
 import type { FlashcardParserService } from "@features/study/services/flashcard/flashcard-parser.service";
 import type { FlashcardItem } from "@shared/types";
 import type { TrueRecallSettings } from "@shared/types/settings.types";
+import { resolveAIClientConfig } from "./ai-client-config";
 import { OpenRouterClient } from "./openrouter-client";
 
 // Appended to all prompts (including custom) so per-card source tracking works
@@ -30,14 +31,12 @@ export class FlashcardGenerationService {
 		mode: GenerationMode,
 	): Promise<GenerationResult> {
 		const settings = this.getSettings();
-
-		if (!settings.openRouterApiKey) {
-			throw new Error("OpenRouter API key is not configured");
-		}
+		const config = resolveAIClientConfig(settings);
 
 		const client = new OpenRouterClient(
-			settings.openRouterApiKey,
-			settings.aiModel,
+			config.apiKey,
+			config.model,
+			config.proxyUrl,
 		);
 		const systemPrompt = this.getPromptForMode(mode);
 

@@ -3,9 +3,11 @@ import {
 	GENERATION_MODE_LABELS,
 	type GenerationMode,
 } from "@features/ai/prompts/default-prompts";
+import { SubscriptionService } from "@features/integration/services/subscription.service";
+import type { SubscriptionStatus } from "@features/integration/services/subscription.service";
 import { useSettings } from "@features/settings/hooks/useSettings";
 import type { AIModelInfo, AIModelKey } from "@shared/constants";
-import { AI_MODELS_EXTENDED } from "@shared/constants";
+import { AI_MODELS_EXTENDED, TRUERECALL_WEB_URL } from "@shared/constants";
 import type { SelectOptionGroup } from "@shared/ui/components";
 import {
 	Clickable,
@@ -16,7 +18,9 @@ import {
 	TextInput,
 	ToggleInput,
 } from "@shared/ui/components";
-import { useCallback, useMemo, useState } from "preact/hooks";
+import { useCallback, useEffect, useMemo, useRef, useState } from "preact/hooks";
+
+const subscriptionService = new SubscriptionService();
 
 function groupModelsByProvider(): SelectOptionGroup[] {
 	const groups: Record<string, [string, AIModelInfo][]> = {
@@ -59,6 +63,143 @@ function groupModelsByProvider(): SelectOptionGroup[] {
 
 const PROMPT_MODES: GenerationMode[] = ["basic", "cloze", "reversed", "auto"];
 
+function SubscriptionSection() {
+	const { settings, save } = useSettings();
+	const [status, setStatus] = useState<SubscriptionStatus | null>(null);
+	const [error, setError] = useState("");
+	const [validating, setValidating] = useState(false);
+	const prevKeyRef = useRef(settings.subscriptionKey ?? "");
+
+	const hasSubKey = !!settings.subscriptionKey;
+
+	useEffect(() => {
+		if (!hasSubKey) {
+			setStatus(null);
+			setError("");
+			return;
+		}
+
+		// Only fetch if key changed or no status yet
+		if (
+			settings.subscriptionKey === prevKeyRef.current &&
+			status !== null
+		) {
+			return;
+		}
+		prevKeyRef.current = settings.subscriptionKey ?? "";
+
+		setValidating(true);
+		setError("");
+		subscriptionService
+			.getStatus(settings.subscriptionKey!)
+			.then((s) => {
+				setStatus(s);
+				setError("");
+			})
+			.catch(() => setError("Invalid or expired subscription key."))
+			.finally(() => setValidating(false));
+	}, [settings.subscriptionKey, hasSubKey]);
+
+	const usagePct =
+		status && status.budget_max > 0
+			? Math.min(100, (status.budget_spent / status.budget_max) * 100)
+			: 0;
+	const remaining =
+		status ? (status.budget_max - status.budget_spent).toFixed(2) : "0.00";
+
+	return (
+		<>
+			<SettingRow heading name="True Recall Subscription" />
+
+			<InfoBlock>
+				<p>
+					Subscribe for managed AI access — no API key setup needed.
+					Your subscription includes all AI models with usage tracking.
+				</p>
+				<p>
+					<a
+						href={`${TRUERECALL_WEB_URL}/pricing`}
+						target="_blank"
+						rel="noopener"
+					>
+						View plans at truerecall.app/pricing
+					</a>
+				</p>
+			</InfoBlock>
+
+			<SettingRow
+				name="Subscription key"
+				description="Paste the key from your truerecall.app dashboard."
+			>
+				<TextInput
+					value={settings.subscriptionKey ?? ""}
+					onChange={(v) => {
+						subscriptionService.invalidateCache();
+						save({ subscriptionKey: v || undefined });
+					}}
+					type="password"
+					placeholder="tr-xxxxxxxxxxxx"
+					class="ep:w-[300px]"
+				/>
+			</SettingRow>
+
+			{validating && (
+				<div class="ep:px-4 ep:pb-2 ep:text-obs-muted ep:text-ui-smaller">
+					Validating key...
+				</div>
+			)}
+
+			{error && (
+				<div class="ep:px-4 ep:pb-2 ep:text-obs-error ep:text-ui-smaller">
+					{error}
+				</div>
+			)}
+
+			{status && !error && (
+				<div class="ep:px-4 ep:pb-3">
+					<div class="ep:flex ep:items-center ep:gap-2 ep:mb-2">
+						<span class="ep:inline-block ep:px-2 ep:py-0.5 ep:rounded-[var(--radius-s)] ep:bg-obs-accent/15 ep:text-obs-accent ep:text-ui-smaller ep:font-semibold ep:capitalize">
+							{status.tier}
+						</span>
+						<span class="ep:text-obs-muted ep:text-ui-smaller">
+							${remaining} remaining of ${status.budget_max.toFixed(2)}
+						</span>
+					</div>
+					<div class="ep:w-full ep:h-2 ep:bg-obs-modifier-border ep:rounded-[var(--radius-s)] ep:overflow-hidden">
+						<div
+							class={`ep:h-full ep:rounded-[var(--radius-s)] ep:transition-all ${usagePct > 80 ? "ep:bg-obs-error" : "ep:bg-obs-accent"}`}
+							style={{ width: `${usagePct}%` }}
+						/>
+					</div>
+					<div class="ep:mt-2 ep:flex ep:gap-3">
+						<a
+							href={`${TRUERECALL_WEB_URL}/dashboard`}
+							target="_blank"
+							rel="noopener"
+							class="ep:text-obs-accent ep:text-ui-smaller"
+						>
+							Manage subscription
+						</a>
+					</div>
+				</div>
+			)}
+
+			{!hasSubKey && (
+				<div class="ep:px-4 ep:pb-3">
+					<Clickable
+						class="ep:text-obs-accent ep:text-ui-smaller ep:underline"
+						onClick={() =>
+							window.open(`${TRUERECALL_WEB_URL}/pricing`, "_blank")
+						}
+					>
+						Get a subscription at truerecall.app
+					</Clickable>
+				</div>
+			)}
+		</>
+	);
+}
+
 export function AITab() {
 	const { settings, save } = useSettings();
 	const modelOptions = useMemo(() => groupModelsByProvider(), []);
@@ -67,6 +208,8 @@ export function AITab() {
 	);
 
 	const hasApiKey = !!settings.openRouterApiKey;
+	const hasSubKey = !!settings.subscriptionKey;
+	const hasAnyKey = hasApiKey || hasSubKey;
 
 	const getPromptValue = useCallback(
 		(mode: GenerationMode): string => {
@@ -100,20 +243,40 @@ export function AITab() {
 
 	return (
 		<>
-			<SettingRow heading name="AI (OpenRouter)" />
+			<SubscriptionSection />
+
+			<SettingRow
+				heading
+				name={hasSubKey ? "OpenRouter (BYOK — optional)" : "AI (OpenRouter)"}
+			/>
 
 			<InfoBlock>
 				<p>
-					OpenRouter provides access to multiple AI models through a single API.
+					{hasSubKey
+						? "You have an active subscription. You can optionally configure your own OpenRouter key as a fallback."
+						: "OpenRouter provides access to multiple AI models through a single API."}
 				</p>
-				<p>
-					<a href="https://openrouter.ai/keys" target="_blank" rel="noopener">
-						Get your API key at openrouter.ai/keys
-					</a>
-				</p>
+				{!hasSubKey && (
+					<p>
+						<a
+							href="https://openrouter.ai/keys"
+							target="_blank"
+							rel="noopener"
+						>
+							Get your API key at openrouter.ai/keys
+						</a>
+					</p>
+				)}
 			</InfoBlock>
 
-			<SettingRow name="API key" description="Your OpenRouter API key.">
+			<SettingRow
+				name="API key"
+				description={
+					hasSubKey
+						? "Optional fallback key. Subscription key is used when set."
+						: "Your OpenRouter API key."
+				}
+			>
 				<TextInput
 					value={settings.openRouterApiKey}
 					onChange={(v) => save({ openRouterApiKey: v })}
@@ -143,7 +306,7 @@ export function AITab() {
 				/>
 			</SettingRow>
 
-			{hasApiKey && (
+			{hasAnyKey && (
 				<>
 					<InfoBlock>
 						<p>

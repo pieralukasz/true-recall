@@ -105,6 +105,7 @@ export class NLQueryService {
 		const client = new OpenRouterClient(
 			this.config.apiKey,
 			this.config.model,
+			this.config.proxyUrl,
 		);
 		const schema = this.sqlAdapter.getTableInfo();
 		const steps: NLQueryStep[] = [];

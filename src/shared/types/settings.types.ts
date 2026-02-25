@@ -233,6 +233,10 @@ export interface TrueRecallSettings {
 
 	/** Show floating toolbar above selected text for AI flashcard generation */
 	selectionToolbarEnabled: boolean;
+
+	/** Subscription key for managed AI proxy (replaces BYOK when set) */
+	subscriptionKey?: string;
+
 	/** Custom prompts for AI flashcard generation (per mode) */
 	aiFlashcardPrompts?: {
 		basic?: string;
