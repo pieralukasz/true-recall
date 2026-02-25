@@ -1,4 +1,4 @@
-import type { ChatMessage } from "./openrouter-client";
+import { AIRequestError, type ChatMessage } from "./openrouter-client";
 
 export interface StreamingChatRequest {
 	messages: ChatMessage[];
@@ -45,9 +45,7 @@ export class StreamingOpenRouterClient {
 
 		if (!response.ok) {
 			const errorText = await response.text();
-			throw new Error(
-				`OpenRouter API error (${response.status}): ${errorText}`,
-			);
+			throw new AIRequestError(response.status, errorText);
 		}
 
 		const reader = response.body?.getReader();

@@ -7,6 +7,16 @@ export interface AIClientConfig {
 	proxyUrl: string | undefined;
 }
 
+/**
+ * Resolves which AI backend to use:
+ * - Subscription key present → route through LiteLLM proxy
+ * - Otherwise → direct to OpenRouter with BYOK key
+ *
+ * The cached `isSubscriber` flag is used by UI/init code to know
+ * subscription state instantly on startup (no async call needed).
+ * This function uses the key directly since it's always available
+ * from settings when a subscription is active.
+ */
 export function resolveAIClientConfig(
 	settings: TrueRecallSettings,
 ): AIClientConfig {
@@ -23,6 +33,23 @@ export function resolveAIClientConfig(
 			"No AI key configured. Add a subscription key or your own OpenRouter API key in settings.",
 		);
 	}
+
+	return {
+		apiKey: settings.openRouterApiKey,
+		model: settings.aiModel,
+		proxyUrl: undefined,
+	};
+}
+
+/**
+ * Returns a BYOK OpenRouter config if available, for 429 fallback.
+ * When the subscription budget is exceeded, we can fall back to
+ * the user's own OpenRouter key if they have one configured.
+ */
+export function getBYOKFallbackConfig(
+	settings: TrueRecallSettings,
+): AIClientConfig | null {
+	if (!settings.openRouterApiKey) return null;
 
 	return {
 		apiKey: settings.openRouterApiKey,

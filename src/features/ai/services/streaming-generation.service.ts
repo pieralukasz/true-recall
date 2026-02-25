@@ -4,8 +4,10 @@ import {
 } from "@features/ai/prompts/default-prompts";
 import type { FlashcardManager } from "@features/study/services/flashcard/flashcard.service";
 import type { TrueRecallSettings } from "@shared/types/settings.types";
-import type { TFile } from "obsidian";
+import { Notice, type TFile } from "obsidian";
+import { getBYOKFallbackConfig, resolveAIClientConfig } from "./ai-client-config";
 import { IncrementalFlashcardParser } from "./incremental-flashcard-parser";
+import { AIRequestError } from "./openrouter-client";
 import {
 	addStreamedCard,
 	finishStreaming,
@@ -13,7 +15,6 @@ import {
 	streamingGeneration,
 	updatePartial,
 } from "./streaming-state";
-import { resolveAIClientConfig } from "./ai-client-config";
 import { StreamingOpenRouterClient } from "./streaming-openrouter-client";
 
 const SOURCE_TRACKING_SUFFIX = `
@@ -48,11 +49,56 @@ export class StreamingGenerationService {
 		const abortController = new AbortController();
 		startStreaming(sourceFile.basename, sourceFile.path, abortController);
 
-		const client = new StreamingOpenRouterClient(
-			aiConfig.apiKey,
-			aiConfig.model,
-			aiConfig.proxyUrl,
-		);
+		try {
+			return await this.runStreamingGeneration(
+				aiConfig.apiKey,
+				aiConfig.model,
+				aiConfig.proxyUrl,
+				text,
+				mode,
+				sourceFile,
+				abortController,
+			);
+		} catch (error) {
+			// On 429 (budget exceeded), try BYOK fallback if available
+			if (error instanceof AIRequestError && error.isBudgetExceeded) {
+				const fallback = getBYOKFallbackConfig(settings);
+				if (fallback) {
+					new Notice("Subscription budget exceeded. Falling back to your OpenRouter key.");
+					return await this.runStreamingGeneration(
+						fallback.apiKey,
+						fallback.model,
+						fallback.proxyUrl,
+						text,
+						mode,
+						sourceFile,
+						abortController,
+					);
+				}
+				new Notice("Token budget exceeded. Top up at truerecall.app or add your own OpenRouter API key.");
+			}
+
+			if (abortController.signal.aborted) {
+				finishStreaming();
+			} else {
+				finishStreaming(
+					error instanceof Error ? error.message : String(error),
+				);
+			}
+			throw error;
+		}
+	}
+
+	private async runStreamingGeneration(
+		apiKey: string,
+		model: string,
+		proxyUrl: string | undefined,
+		text: string,
+		mode: GenerationMode,
+		sourceFile: TFile,
+		abortController: AbortController,
+	): Promise<StreamingGenerationResult> {
+		const client = new StreamingOpenRouterClient(apiKey, model, proxyUrl);
 		const parser = new IncrementalFlashcardParser();
 		const systemPrompt = this.getPromptForMode(mode);
 
@@ -77,35 +123,21 @@ export class StreamingGenerationService {
 			}
 		};
 
-		try {
-			const stream = client.chatStream(
-				{
-					messages: [
-						{ role: "system", content: systemPrompt },
-						{ role: "user", content: text },
-					],
-					temperature: 0.7,
-				},
-				abortController.signal,
-			);
+		const stream = client.chatStream(
+			{
+				messages: [
+					{ role: "system", content: systemPrompt },
+					{ role: "user", content: text },
+				],
+				temperature: 0.7,
+			},
+			abortController.signal,
+		);
 
-			for await (const chunk of stream) {
-				const events = parser.feed(chunk.content);
-				await this.processEvents(
-					events,
-					sourceFile,
-					throttledUpdatePartial,
-					(created, dups) => {
-						createdCount += created;
-						duplicateCount += dups;
-					},
-				);
-			}
-
-			// Finalize remaining content
-			const finalEvents = parser.finish();
+		for await (const chunk of stream) {
+			const events = parser.feed(chunk.content);
 			await this.processEvents(
-				finalEvents,
+				events,
 				sourceFile,
 				throttledUpdatePartial,
 				(created, dups) => {
@@ -113,19 +145,21 @@ export class StreamingGenerationService {
 					duplicateCount += dups;
 				},
 			);
-
-			finishStreaming();
-			return { created: createdCount, duplicates: duplicateCount };
-		} catch (error) {
-			if (abortController.signal.aborted) {
-				finishStreaming();
-			} else {
-				finishStreaming(
-					error instanceof Error ? error.message : String(error),
-				);
-			}
-			throw error;
 		}
+
+		const finalEvents = parser.finish();
+		await this.processEvents(
+			finalEvents,
+			sourceFile,
+			throttledUpdatePartial,
+			(created, dups) => {
+				createdCount += created;
+				duplicateCount += dups;
+			},
+		);
+
+		finishStreaming();
+		return { created: createdCount, duplicates: duplicateCount };
 	}
 
 	private async processEvents(
