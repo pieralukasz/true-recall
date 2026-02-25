@@ -304,10 +304,13 @@ export class IncrementalFlashcardParser {
 			if (this.buffer && this.phase === "answer") {
 				answerSoFar.push(this.buffer);
 			}
+			const visibleAnswer = answerSoFar.filter(
+				(line) => !this.sourceCommentPattern.test(line.trim()),
+			);
 			return {
 				type: "partial_update",
 				partialQuestion: question || undefined,
-				partialAnswer: answerSoFar.join("\n").trim() || undefined,
+				partialAnswer: visibleAnswer.join("\n").trim() || undefined,
 			};
 		}
 

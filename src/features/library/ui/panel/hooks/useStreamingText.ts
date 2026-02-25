@@ -1,8 +1,8 @@
 import { useEffect, useRef, useState } from "preact/hooks";
 
 // Fraction of remaining gap revealed per frame (exponential smoothing).
-// At 60fps: burst of 50 chars catches up in ~250ms with natural deceleration.
-const SMOOTHING = 0.12;
+// At 60fps: burst of 50 chars catches up in ~450ms with natural deceleration.
+const SMOOTHING = 0.07;
 
 export function useStreamingText(fullText: string): {
 	visibleText: string;
