@@ -104,18 +104,16 @@ export function DashboardApp() {
 				</div>
 			)}
 
-			{/* Search input — shared for Projects + Unassigned tabs */}
-			{activeTab.value !== "all" && (
-				<div class="ep:shrink-0 ep:mb-3">
-					<SearchInput
-						value={searchQuery.value}
-						placeholder="Search notes or projects..."
-						onChange={(q) => {
-							searchQuery.value = q;
-						}}
-					/>
-				</div>
-			)}
+			{/* Search input — shared across all tabs */}
+			<div class="ep:shrink-0 ep:mb-3">
+				<SearchInput
+					value={searchQuery.value}
+					placeholder="Search notes or projects..."
+					onChange={(q) => {
+						searchQuery.value = q;
+					}}
+				/>
+			</div>
 
 			{/* Tab bar */}
 			<div class="ep:shrink-0 ep:mb-3">
@@ -153,7 +151,12 @@ export function DashboardApp() {
 					/>
 				)}
 
-				{activeTab.value === "all" && <NoteList notes={data.notes} />}
+				{activeTab.value === "all" && (
+					<NoteList
+						notes={data.notes}
+						searchQuery={searchQuery.value}
+					/>
+				)}
 			</div>
 		</div>
 	);
