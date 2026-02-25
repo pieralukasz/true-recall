@@ -41,10 +41,8 @@ export function MarkdownContent({
 				e.preventDefault();
 				e.stopPropagation();
 				e.stopImmediatePropagation();
-				if (e.metaKey || e.ctrlKey) {
-					const href = linkEl.getAttribute("data-href");
-					if (href) onLinkClick(href);
-				}
+				const href = linkEl.getAttribute("data-href");
+				if (href) onLinkClick(href);
 			};
 			el.addEventListener("click", handler, true);
 			return () => {
