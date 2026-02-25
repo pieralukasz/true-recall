@@ -943,7 +943,8 @@ export default class TrueRecallPlugin extends Plugin {
 	}
 
 	private async initializeNLQueryService(): Promise<void> {
-		if (!this.cardStore || !this.settings.openRouterApiKey) {
+		const hasAnyKey = this.settings.openRouterApiKey || this.settings.subscriptionKey;
+		if (!this.cardStore || !hasAnyKey) {
 			return;
 		}
 
@@ -953,11 +954,15 @@ export default class TrueRecallPlugin extends Plugin {
 				return;
 			}
 
+			const { resolveAIClientConfig } = await import("@features/ai/services/ai-client-config");
+			const aiConfig = resolveAIClientConfig(this.settings);
+
 			const sqlAdapter = new SqlQueryAdapter(db);
 			this.nlQueryService = new NLQueryService(
 				{
-					apiKey: this.settings.openRouterApiKey,
-					model: this.settings.aiModel,
+					apiKey: aiConfig.apiKey,
+					model: aiConfig.model,
+					proxyUrl: aiConfig.proxyUrl,
 				},
 				sqlAdapter,
 			);

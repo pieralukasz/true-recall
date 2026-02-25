@@ -13,6 +13,7 @@ import {
 	streamingGeneration,
 	updatePartial,
 } from "./streaming-state";
+import { resolveAIClientConfig } from "./ai-client-config";
 import { StreamingOpenRouterClient } from "./streaming-openrouter-client";
 
 const SOURCE_TRACKING_SUFFIX = `
@@ -42,16 +43,15 @@ export class StreamingGenerationService {
 		}
 
 		const settings = this.getSettings();
-		if (!settings.openRouterApiKey) {
-			throw new Error("OpenRouter API key is not configured");
-		}
+		const aiConfig = resolveAIClientConfig(settings);
 
 		const abortController = new AbortController();
 		startStreaming(sourceFile.basename, sourceFile.path, abortController);
 
 		const client = new StreamingOpenRouterClient(
-			settings.openRouterApiKey,
-			settings.aiModel,
+			aiConfig.apiKey,
+			aiConfig.model,
+			aiConfig.proxyUrl,
 		);
 		const parser = new IncrementalFlashcardParser();
 		const systemPrompt = this.getPromptForMode(mode);
