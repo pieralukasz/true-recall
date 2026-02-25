@@ -1,6 +1,6 @@
 import type { GenerationMode } from "@features/ai/prompts/default-prompts";
 import { Clickable } from "@shared/ui/components";
-import { useCallback, useState } from "preact/hooks";
+import { useCallback } from "preact/hooks";
 
 export interface SelectionToolbarProps {
 	selectedText: string;
@@ -25,36 +25,24 @@ export function SelectionToolbar({
 	onDismiss,
 	hasApiKey,
 }: SelectionToolbarProps) {
-	const [generatingMode, setGeneratingMode] = useState<GenerationMode | null>(
-		null,
-	);
-	const [isQuickAdding, setIsQuickAdding] = useState(false);
-
-	const busy = generatingMode !== null || isQuickAdding;
-
 	const handleGenerate = useCallback(
 		async (mode: GenerationMode) => {
-			if (busy || !hasApiKey) return;
+			if (!hasApiKey) return;
 			onDismiss();
 			await onGenerate(mode);
 		},
-		[busy, hasApiKey, onGenerate, onDismiss],
+		[hasApiKey, onGenerate, onDismiss],
 	);
 
 	const handleQuickAdd = useCallback(async () => {
-		if (busy) return;
-		setIsQuickAdding(true);
-		try {
-			await onQuickAdd();
-		} finally {
-			setIsQuickAdding(false);
-		}
-	}, [busy, onQuickAdd]);
+		onDismiss();
+		await onQuickAdd();
+	}, [onQuickAdd, onDismiss]);
 
 	const handleEdit = useCallback(() => {
-		if (busy) return;
+		onDismiss();
 		onEdit();
-	}, [busy, onEdit]);
+	}, [onEdit, onDismiss]);
 
 	return (
 		<div class="true-recall-selection-toolbar ep:flex ep:items-center ep:gap-0.5 ep:p-1">
@@ -62,7 +50,7 @@ export function SelectionToolbar({
 				<Clickable
 					key={mode}
 					class={`true-recall-st-btn ${!hasApiKey ? "true-recall-st-btn-disabled" : ""}`}
-					disabled={busy || !hasApiKey}
+					disabled={!hasApiKey}
 					onClick={() => void handleGenerate(mode)}
 					title={
 						hasApiKey
@@ -70,7 +58,6 @@ export function SelectionToolbar({
 							: "Configure OpenRouter API key in settings"
 					}
 				>
-					{generatingMode === mode ? <SmallSpinner /> : null}
 					<span>{label}</span>
 				</Clickable>
 			))}
@@ -79,7 +66,6 @@ export function SelectionToolbar({
 
 			<Clickable
 				class="true-recall-st-btn"
-				disabled={busy}
 				onClick={handleEdit}
 				title="Open in flashcard editor"
 			>
@@ -88,45 +74,11 @@ export function SelectionToolbar({
 
 			<Clickable
 				class="true-recall-st-btn"
-				disabled={busy}
 				onClick={() => void handleQuickAdd()}
 				title="Quick add as basic flashcard"
 			>
-				{isQuickAdding ? <SmallSpinner /> : null}
 				<span>Quick+</span>
 			</Clickable>
 		</div>
-	);
-}
-
-function SmallSpinner() {
-	return (
-		<svg
-			viewBox="0 0 16 16"
-			width="12"
-			height="12"
-			class="true-recall-st-spinner"
-			aria-hidden="true"
-		>
-			<circle
-				cx="8"
-				cy="8"
-				r="6"
-				stroke="currentColor"
-				stroke-width="2"
-				fill="none"
-				stroke-dasharray="18.85 18.85"
-				stroke-linecap="round"
-			>
-				<animateTransform
-					attributeName="transform"
-					type="rotate"
-					dur="0.8s"
-					from="0 8 8"
-					to="360 8 8"
-					repeatCount="indefinite"
-				/>
-			</circle>
-		</svg>
 	);
 }

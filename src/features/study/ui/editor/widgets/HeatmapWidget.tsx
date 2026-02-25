@@ -74,7 +74,14 @@ export function HeatmapWidget({ source }: { source: string }) {
 
 		const today = new Date();
 		const startDate = new Date(today);
-		startDate.setMonth(startDate.getMonth() - months);
+		if (months <= 0) {
+			const dateKeys = Object.keys(allStats).sort();
+			if (dateKeys.length > 0) {
+				startDate.setTime(new Date(dateKeys[0]!).getTime());
+			}
+		} else {
+			startDate.setMonth(startDate.getMonth() - months);
+		}
 		// Align to Monday
 		const startDay = startDate.getDay();
 		const startMonday = startDay === 0 ? 6 : startDay - 1;

@@ -955,7 +955,7 @@ export default class TrueRecallPlugin extends Plugin {
 				return;
 			}
 
-			const { resolveAIClientConfig } = await import("@features/ai/services/ai-client-config");
+			const { resolveAIClientConfig, getBYOKFallbackConfig } = await import("@features/ai/services/ai-client-config");
 			const aiConfig = resolveAIClientConfig(this.settings);
 
 			const sqlAdapter = new SqlQueryAdapter(db);
@@ -967,6 +967,15 @@ export default class TrueRecallPlugin extends Plugin {
 				},
 				sqlAdapter,
 			);
+
+			const fallback = getBYOKFallbackConfig(this.settings);
+			if (fallback) {
+				this.nlQueryService.setFallbackConfig({
+					apiKey: fallback.apiKey,
+					model: fallback.model,
+					proxyUrl: fallback.proxyUrl,
+				});
+			}
 
 			await this.nlQueryService.initialize();
 		} catch {

@@ -54,6 +54,7 @@ export class StreamingGenerationService {
 				aiConfig.apiKey,
 				aiConfig.model,
 				aiConfig.proxyUrl,
+				aiConfig.userId,
 				text,
 				mode,
 				sourceFile,
@@ -69,6 +70,7 @@ export class StreamingGenerationService {
 						fallback.apiKey,
 						fallback.model,
 						fallback.proxyUrl,
+						undefined,
 						text,
 						mode,
 						sourceFile,
@@ -93,12 +95,13 @@ export class StreamingGenerationService {
 		apiKey: string,
 		model: string,
 		proxyUrl: string | undefined,
+		userId: string | undefined,
 		text: string,
 		mode: GenerationMode,
 		sourceFile: TFile,
 		abortController: AbortController,
 	): Promise<StreamingGenerationResult> {
-		const client = new StreamingOpenRouterClient(apiKey, model, proxyUrl);
+		const client = new StreamingOpenRouterClient(apiKey, model, proxyUrl, userId);
 		const parser = new IncrementalFlashcardParser();
 		const systemPrompt = this.getPromptForMode(mode);
 
