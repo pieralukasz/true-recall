@@ -5,8 +5,10 @@ import {
 import type { FlashcardParserService } from "@features/study/services/flashcard/flashcard-parser.service";
 import type { FlashcardItem } from "@shared/types";
 import type { TrueRecallSettings } from "@shared/types/settings.types";
-import { resolveAIClientConfig } from "./ai-client-config";
+import { Notice } from "obsidian";
+import { getBYOKFallbackConfig, resolveAIClientConfig } from "./ai-client-config";
 import { OpenRouterClient } from "./openrouter-client";
+import { AIRequestError } from "./openrouter-client";
 
 // Appended to all prompts (including custom) so per-card source tracking works
 const SOURCE_TRACKING_SUFFIX = `
@@ -40,18 +42,38 @@ export class FlashcardGenerationService {
 		);
 		const systemPrompt = this.getPromptForMode(mode);
 
-		const response = await client.chat({
+		const request = {
 			messages: [
-				{ role: "system", content: systemPrompt },
-				{ role: "user", content: selectedText },
+				{ role: "system" as const, content: systemPrompt },
+				{ role: "user" as const, content: selectedText },
 			],
 			temperature: 0.7,
-		});
+		};
 
-		const responseText = response.choices[0]?.message?.content ?? "";
-		const flashcards = this.parser.extractFlashcards(responseText);
-
-		return { flashcards, mode };
+		try {
+			const response = await client.chat(request);
+			const responseText = response.choices[0]?.message?.content ?? "";
+			const flashcards = this.parser.extractFlashcards(responseText);
+			return { flashcards, mode };
+		} catch (error) {
+			if (error instanceof AIRequestError && error.isBudgetExceeded) {
+				const fallback = getBYOKFallbackConfig(settings);
+				if (fallback) {
+					new Notice("Subscription budget exceeded. Falling back to your OpenRouter key.");
+					const fallbackClient = new OpenRouterClient(
+						fallback.apiKey,
+						fallback.model,
+						fallback.proxyUrl,
+					);
+					const response = await fallbackClient.chat(request);
+					const responseText = response.choices[0]?.message?.content ?? "";
+					const flashcards = this.parser.extractFlashcards(responseText);
+					return { flashcards, mode };
+				}
+				new Notice("Token budget exceeded. Top up at truerecall.app or add your own OpenRouter API key.");
+			}
+			throw error;
+		}
 	}
 
 	private getPromptForMode(mode: GenerationMode): string {

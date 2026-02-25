@@ -7,6 +7,7 @@ import { SubscriptionService } from "@features/integration/services/subscription
 import type { SubscriptionStatus } from "@features/integration/services/subscription.service";
 import { useSettings } from "@features/settings/hooks/useSettings";
 import type { AIModelInfo, AIModelKey } from "@shared/constants";
+import type { TrueRecallSettings } from "@shared/types/settings.types";
 import { AI_MODELS_EXTENDED, TRUERECALL_WEB_URL } from "@shared/constants";
 import type { SelectOptionGroup } from "@shared/ui/components";
 import {
@@ -68,37 +69,53 @@ function SubscriptionSection() {
 	const [status, setStatus] = useState<SubscriptionStatus | null>(null);
 	const [error, setError] = useState("");
 	const [validating, setValidating] = useState(false);
-	const prevKeyRef = useRef(settings.subscriptionKey ?? "");
+	const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
 	const hasSubKey = !!settings.subscriptionKey;
 
+	// Debounced validation: validates 1s after key changes
 	useEffect(() => {
+		if (debounceRef.current) clearTimeout(debounceRef.current);
+
 		if (!hasSubKey) {
 			setStatus(null);
 			setError("");
+			if (settings.isSubscriber) {
+				save({ isSubscriber: false, subscriberTier: undefined });
+			}
 			return;
 		}
-
-		// Only fetch if key changed or no status yet
-		if (
-			settings.subscriptionKey === prevKeyRef.current &&
-			status !== null
-		) {
-			return;
-		}
-		prevKeyRef.current = settings.subscriptionKey ?? "";
 
 		setValidating(true);
 		setError("");
-		subscriptionService
-			.getStatus(settings.subscriptionKey!)
-			.then((s) => {
-				setStatus(s);
-				setError("");
-			})
-			.catch(() => setError("Invalid or expired subscription key."))
-			.finally(() => setValidating(false));
-	}, [settings.subscriptionKey, hasSubKey]);
+
+		debounceRef.current = setTimeout(() => {
+			const onCacheUpdate = (update: { isSubscriber: boolean; subscriberTier?: string }) => {
+				const patch: Partial<TrueRecallSettings> = {
+					isSubscriber: update.isSubscriber,
+					subscriberTier: update.subscriberTier,
+				};
+				// Generate userId on first successful validation
+				if (update.isSubscriber && !settings.userId) {
+					patch.userId = subscriptionService.ensureUserId(settings.userId);
+				}
+				save(patch);
+			};
+
+			subscriptionService
+				.getStatus(settings.subscriptionKey!, onCacheUpdate)
+				.then((s) => {
+					setStatus(s);
+					setError("");
+				})
+				.catch(() => setError("Invalid or expired subscription key."))
+				.finally(() => setValidating(false));
+		}, 1000);
+
+		return () => {
+			if (debounceRef.current) clearTimeout(debounceRef.current);
+		};
+	}, [settings.subscriptionKey]);
 
 	const usagePct =
 		status && status.budget_max > 0

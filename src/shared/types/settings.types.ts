@@ -236,6 +236,12 @@ export interface TrueRecallSettings {
 
 	/** Subscription key for managed AI proxy (replaces BYOK when set) */
 	subscriptionKey?: string;
+	/** Cached validation result — enables instant routing on startup without async API call */
+	isSubscriber?: boolean;
+	/** Cached tier from last successful validation */
+	subscriberTier?: string;
+	/** Auto-generated UUID per installation, sent with proxy requests for rate limiting */
+	userId?: string;
 
 	/** Custom prompts for AI flashcard generation (per mode) */
 	aiFlashcardPrompts?: {
