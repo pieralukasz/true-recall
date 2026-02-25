@@ -10,13 +10,14 @@ export interface DashboardNoteEntry {
 	overdueCount: number;
 	estimatedMinutes: number;
 	priority: NotePriority;
+	projects: string[];
 }
 
 export type NotePriority = "overdue" | "hot" | "due" | "light" | "done";
 
 export type NoteFilterMode = "all" | "due" | "new" | "learning" | "overdue";
 
-export type DashboardTab = "projects" | "unassigned" | "all";
+export type DashboardTab = "projects" | "notes";
 
 export interface DashboardProject {
 	name: string;
@@ -32,9 +33,14 @@ export interface DashboardProject {
 	children: DashboardProject[];
 }
 
+export type ProjectFilter =
+	| { type: "none" }
+	| { type: "project"; name: string }
+	| { type: "unassigned" };
+
 export interface DashboardProjectAggregation {
 	projects: DashboardProject[];
-	unassignedNotes: DashboardNoteEntry[];
+	noteProjectMap: Map<string, string[]>;
 	recentlyStudied: DashboardNoteEntry[];
 }
 

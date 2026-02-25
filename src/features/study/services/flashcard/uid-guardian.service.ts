@@ -18,10 +18,13 @@ export interface UidGuardianDeps {
 }
 
 /**
- * Watches for accidental removal of flashcard_uid from frontmatter.
- * When detected, shows a recovery modal (restore UID / delete cards / move cards).
+ * Watches for accidental removal or modification of flashcard_uid in frontmatter.
+ * Value changed → auto-restores original UID (no legitimate reason to edit it).
+ * Value removed → shows recovery modal (restore / delete / move cards).
  */
 export class UidGuardianService {
+	private restoringPaths = new Set<string>();
+
 	constructor(private deps: UidGuardianDeps) {}
 
 	register(): void {
@@ -32,11 +35,16 @@ export class UidGuardianService {
 	}
 
 	private async handleFieldChange(event: FieldChangeEvent): Promise<void> {
-		// Only react to UID removal (had value → now empty)
-		if (event.oldValues.length === 0 || event.newValues.length > 0) return;
+		if (event.oldValues.length === 0) return;
 
 		const removedUid = event.oldValues[0];
 		if (!removedUid) return;
+
+		// Skip bounce-back from our own restore
+		if (this.restoringPaths.has(event.path)) {
+			this.restoringPaths.delete(event.path);
+			return;
+		}
 
 		const cards = this.deps.store.getCardsBySourceUid(removedUid);
 		if (cards.length === 0) return;
@@ -44,6 +52,17 @@ export class UidGuardianService {
 		const file = this.deps.app.vault.getAbstractFileByPath(event.path);
 		if (!(file instanceof TFile)) return;
 
+		// VALUE CHANGED — auto-restore to prevent silent orphaning
+		if (event.newValues.length > 0 && event.newValues[0] !== removedUid) {
+			this.restoringPaths.add(event.path);
+			await this.deps.frontmatterService.setSourceNoteUid(file, removedUid);
+			notify().info(
+				`flashcard_uid restored — ${cards.length} card${cards.length === 1 ? "" : "s"} protected`,
+			);
+			return;
+		}
+
+		// VALUE REMOVED — show recovery modal
 		const modal = new UidRemovedModal(this.deps.app, {
 			fileName: file.basename,
 			removedUid,
@@ -56,6 +75,7 @@ export class UidGuardianService {
 
 		switch (result.action) {
 			case "restore":
+				this.restoringPaths.add(event.path);
 				await this.deps.frontmatterService.setSourceNoteUid(file, removedUid);
 				break;
 
