@@ -1,11 +1,8 @@
 import { Clickable } from "@shared/ui/components/Clickable";
-import { SearchInput } from "@shared/ui/components/SearchInput";
 import { cn } from "@shared/ui/utils";
 import type { NoteFilterMode } from "../types";
 
 interface NoteFiltersProps {
-	searchQuery: string;
-	onSearchChange: (query: string) => void;
 	activeFilter: NoteFilterMode;
 	onFilterChange: (filter: NoteFilterMode) => void;
 	counts: Record<NoteFilterMode, number>;
@@ -20,19 +17,12 @@ const FILTERS: { mode: NoteFilterMode; label: string }[] = [
 ];
 
 export function NoteFilters({
-	searchQuery,
-	onSearchChange,
 	activeFilter,
 	onFilterChange,
 	counts,
 }: NoteFiltersProps) {
 	return (
 		<div class="ep:flex ep:flex-col ep:gap-2">
-			<SearchInput
-				value={searchQuery}
-				placeholder="Search notes..."
-				onChange={onSearchChange}
-			/>
 			<div
 				class="ep:flex ep:rounded-md ep:bg-obs-secondary ep:p-0.5"
 				role="tablist"

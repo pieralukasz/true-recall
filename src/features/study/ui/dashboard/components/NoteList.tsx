@@ -9,6 +9,7 @@ import { NoteRow } from "./NoteRow";
 
 interface NoteListProps {
 	notes: DashboardNoteEntry[];
+	searchQuery: string;
 }
 
 function matchesFilter(
@@ -29,9 +30,8 @@ function matchesFilter(
 	}
 }
 
-export function NoteList({ notes }: NoteListProps) {
+export function NoteList({ notes, searchQuery }: NoteListProps) {
 	const plugin = usePlugin();
-	const searchQuery = useSignal("");
 	const activeFilter = useSignal<NoteFilterMode>("all");
 
 	const counts = useMemo((): Record<NoteFilterMode, number> => {
@@ -51,13 +51,13 @@ export function NoteList({ notes }: NoteListProps) {
 			result = result.filter((n) => matchesFilter(n, activeFilter.value));
 		}
 
-		if (searchQuery.value) {
-			const q = searchQuery.value.toLowerCase();
+		if (searchQuery) {
+			const q = searchQuery.toLowerCase();
 			result = result.filter((n) => n.name.toLowerCase().includes(q));
 		}
 
 		return [...result].sort(prioritySortComparator);
-	}, [notes, searchQuery.value, activeFilter.value]);
+	}, [notes, searchQuery, activeFilter.value]);
 
 	const { containerRef, totalHeight, virtualItems, onScroll } =
 		useVirtualList(filteredNotes);
@@ -84,10 +84,6 @@ export function NoteList({ notes }: NoteListProps) {
 		<div class="ep:flex ep:flex-col ep:flex-1 ep:min-h-0">
 			<div class="ep:shrink-0 ep:mb-3">
 				<NoteFilters
-					searchQuery={searchQuery.value}
-					onSearchChange={(q) => {
-						searchQuery.value = q;
-					}}
 					activeFilter={activeFilter.value}
 					onFilterChange={(f) => {
 						activeFilter.value = f;
