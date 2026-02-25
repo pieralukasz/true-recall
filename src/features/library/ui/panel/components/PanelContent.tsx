@@ -11,8 +11,9 @@ import {
 import type { SelectionMode } from "@shared/store";
 import type { FlashcardInfo, FlashcardItem } from "@shared/types";
 import type { FSRSFlashcardItem } from "@shared/types/fsrs/card.types";
+import { useTypewriter } from "@features/library/ui/panel/hooks";
 import { EmptyState, EmptyStateMessages } from "@shared/ui/components";
-import { useEffect, useMemo } from "preact/hooks";
+import { useEffect, useMemo, useRef } from "preact/hooks";
 
 export interface ContentHandlers {
 	onEditButton: (card: FlashcardItem) => void;
@@ -143,6 +144,14 @@ export function PanelContent({
 		return undefined;
 	}, [streaming.isGenerating, recentCardIds.size]);
 
+	const bottomRef = useRef<HTMLDivElement>(null);
+
+	useEffect(() => {
+		if (isStreamingForFile) {
+			bottomRef.current?.scrollIntoView({ behavior: "smooth", block: "end" });
+		}
+	}, [isStreamingForFile, recentCardIds.size, streaming.partialQuestion]);
+
 	if (!flashcardInfo?.exists) {
 		if (isStreamingForFile) {
 			return (
@@ -252,6 +261,7 @@ export function PanelContent({
 				);
 			})}
 			{isStreamingForFile && <PartialCard streaming={streaming} />}
+			{isStreamingForFile && <div ref={bottomRef} />}
 		</div>
 	);
 }
@@ -259,6 +269,15 @@ export function PanelContent({
 function PartialCard({
 	streaming,
 }: { streaming: typeof streamingGeneration.value }) {
+	const typedQuestion = useTypewriter(streaming.partialQuestion ?? "");
+	const typedAnswer = useTypewriter(streaming.partialAnswer ?? "");
+
+	// Snap question to full once answer starts — focus shifts to the answer
+	const shownQuestion = streaming.partialAnswer
+		? streaming.partialQuestion
+		: typedQuestion;
+	const shownAnswer = typedAnswer;
+
 	if (!streaming.partialQuestion) {
 		return (
 			<div class="ep:flex ep:flex-col ep:mb-2 ep:rounded-lg ep:bg-obs-secondary ep:border-[1px] ep:border-obs-border/20 ep:shadow-sm ep:p-3 ep:items-center ep:gap-2">
@@ -273,11 +292,11 @@ function PartialCard({
 	return (
 		<div class="ep:flex ep:flex-col ep:mb-2 ep:rounded-lg ep:bg-obs-secondary ep:border-[1px] ep:border-obs-border/20 ep:shadow-sm ep:p-3 ep-animate-slide-in">
 			<div class="ep:text-xs ep:font-medium ep:text-obs-normal ep:leading-relaxed">
-				{streaming.partialQuestion}
+				{shownQuestion}
 			</div>
-			{streaming.partialAnswer ? (
+			{shownAnswer ? (
 				<div class="ep:text-xs ep:text-obs-muted ep:mt-1.5 ep:leading-relaxed">
-					{streaming.partialAnswer}
+					{shownAnswer}
 					<span class="ep-streaming-cursor" />
 				</div>
 			) : (
