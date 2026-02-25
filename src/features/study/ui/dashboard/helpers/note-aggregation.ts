@@ -69,6 +69,7 @@ export function aggregateDashboardData(
 				lastReview: null,
 				overdueDays: 0,
 				overdueCount: 0,
+				projects: [],
 			};
 			noteMap.set(noteName, entry);
 		}
@@ -118,7 +119,7 @@ export function aggregateDashboardData(
 				partial.learning,
 			);
 			const priority = computePriority(partial);
-			return { ...partial, estimatedMinutes, priority };
+			return { ...partial, estimatedMinutes, priority, projects: [] };
 		},
 	);
 

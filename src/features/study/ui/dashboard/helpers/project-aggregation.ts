@@ -51,13 +51,8 @@ export function aggregateProjectData(
 		return bActive - aActive;
 	});
 
-	// Unassigned notes
-	const unassignedPaths = plugin.projectLinkService.getUnassignedPaths();
-	const unassignedNotes: DashboardNoteEntry[] = [];
-	for (const path of unassignedPaths) {
-		const note = noteByPath.get(path);
-		if (note) unassignedNotes.push(note);
-	}
+	// Build reverse map: note name → project names
+	const noteProjectMap = buildNoteProjectMap(projects);
 
 	// Recently studied: top N notes sorted by lastReview desc
 	const recentlyStudied = [...notes]
@@ -65,7 +60,7 @@ export function aggregateProjectData(
 		.sort((a, b) => b.lastReview!.localeCompare(a.lastReview!))
 		.slice(0, MAX_RECENTLY_STUDIED);
 
-	return { projects, unassignedNotes, recentlyStudied };
+	return { projects, noteProjectMap, recentlyStudied };
 }
 
 function buildProjectFromNode(
@@ -107,4 +102,27 @@ function buildProjectFromNode(
 		memberNotes,
 		children,
 	};
+}
+
+function buildNoteProjectMap(
+	projects: DashboardProject[],
+): Map<string, string[]> {
+	const map = new Map<string, string[]>();
+
+	function walk(project: DashboardProject) {
+		for (const note of project.memberNotes) {
+			const existing = map.get(note.name);
+			if (existing) {
+				existing.push(project.name);
+			} else {
+				map.set(note.name, [project.name]);
+			}
+		}
+		for (const child of project.children) {
+			walk(child);
+		}
+	}
+
+	for (const p of projects) walk(p);
+	return map;
 }
