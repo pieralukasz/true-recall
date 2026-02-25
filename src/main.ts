@@ -353,6 +353,7 @@ export default class TrueRecallPlugin extends Plugin {
 		});
 
 		this.noteStatusCache?.bumpVersion();
+		this.folderProjectService?.invalidateCache();
 
 		settingsVersion.value++;
 	}

@@ -61,7 +61,7 @@ export function aggregateDashboardData(
 		if (!entry) {
 			entry = {
 				name: noteName,
-				path: fsrs.sourceNotePath ?? null,
+				path: card.sourceNotePath ?? null,
 				due: 0,
 				newCount: 0,
 				learning: 0,
