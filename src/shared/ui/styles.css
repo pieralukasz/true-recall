@@ -227,6 +227,27 @@
 	animation: ep-slide-in 0.5s cubic-bezier(0.22, 1, 0.36, 1) forwards;
 }
 
+@keyframes ep-cursor-blink {
+	0%,
+	100% {
+		opacity: 1;
+	}
+	50% {
+		opacity: 0;
+	}
+}
+
+.ep-streaming-cursor::after {
+	content: "";
+	display: inline-block;
+	width: 2px;
+	height: 1em;
+	background: var(--text-accent);
+	margin-left: 2px;
+	vertical-align: text-bottom;
+	animation: ep-cursor-blink 1s ease-in-out infinite;
+}
+
 /* Reduced motion preferences (consolidated) */
 @media (prefers-reduced-motion: reduce) {
 	.true-recall-donut-due,
@@ -241,6 +262,9 @@
 		animation: none;
 	}
 	.ep-animate-slide-in {
+		animation: none;
+	}
+	.ep-streaming-cursor::after {
 		animation: none;
 	}
 }
