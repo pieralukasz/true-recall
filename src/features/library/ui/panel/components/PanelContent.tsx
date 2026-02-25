@@ -1,3 +1,4 @@
+import { streamingGeneration } from "@features/ai/services/streaming-state";
 import { PanelCard } from "@features/library/ui/panel/components/PanelCard";
 import { PanelEmptyState } from "@features/library/ui/panel/components/PanelEmptyState";
 import {
@@ -126,7 +127,18 @@ export function PanelContent({
 		return <EmptyState message={EmptyStateMessages.NOT_MARKDOWN} />;
 	}
 
+	const streaming = streamingGeneration.value;
+	const isStreamingForFile =
+		streaming.isGenerating && streaming.notePath === currentFile?.path;
+
 	if (!flashcardInfo?.exists) {
+		if (isStreamingForFile) {
+			return (
+				<div class="ep:flex ep:flex-col">
+					<PartialCard streaming={streaming} />
+				</div>
+			);
+		}
 		return (
 			<PanelEmptyState
 				onGenerate={onGenerateFromNote}
@@ -212,6 +224,40 @@ export function PanelContent({
 					/>
 				);
 			})}
+			{isStreamingForFile && <PartialCard streaming={streaming} />}
+		</div>
+	);
+}
+
+function PartialCard({
+	streaming,
+}: { streaming: typeof streamingGeneration.value }) {
+	if (!streaming.partialQuestion) {
+		return (
+			<div class="ep:flex ep:flex-col ep:mb-2 ep:rounded-lg ep:bg-obs-secondary ep:border-[1px] ep:border-obs-border/20 ep:shadow-sm ep:p-3 ep:items-center ep:gap-2">
+				<div class="ep-streaming-dot" />
+				<div class="ep:text-xs ep:text-obs-muted">
+					Generating flashcards...
+				</div>
+			</div>
+		);
+	}
+
+	return (
+		<div class="ep:flex ep:flex-col ep:mb-2 ep:rounded-lg ep:bg-obs-secondary ep:border-[1px] ep:border-obs-border/20 ep:shadow-sm ep:p-3 ep-animate-slide-in">
+			<div class="ep:text-xs ep:font-medium ep:text-obs-normal ep:leading-relaxed">
+				{streaming.partialQuestion}
+			</div>
+			{streaming.partialAnswer ? (
+				<div class="ep:text-xs ep:text-obs-muted ep:mt-1.5 ep:leading-relaxed">
+					{streaming.partialAnswer}
+					<span class="ep-streaming-cursor" />
+				</div>
+			) : (
+				<div class="ep:text-xs ep:text-obs-muted ep:mt-1.5">
+					<span class="ep-streaming-cursor" />
+				</div>
+			)}
 		</div>
 	);
 }
