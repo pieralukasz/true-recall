@@ -1,4 +1,7 @@
-import { streamingGeneration } from "@features/ai/services/streaming-state";
+import {
+	clearRecentCards,
+	streamingGeneration,
+} from "@features/ai/services/streaming-state";
 import { PanelCard } from "@features/library/ui/panel/components/PanelCard";
 import { PanelEmptyState } from "@features/library/ui/panel/components/PanelEmptyState";
 import {
@@ -9,7 +12,7 @@ import type { SelectionMode } from "@shared/store";
 import type { FlashcardInfo, FlashcardItem } from "@shared/types";
 import type { FSRSFlashcardItem } from "@shared/types/fsrs/card.types";
 import { EmptyState, EmptyStateMessages } from "@shared/ui/components";
-import { useMemo } from "preact/hooks";
+import { useEffect, useMemo } from "preact/hooks";
 
 export interface ContentHandlers {
 	onEditButton: (card: FlashcardItem) => void;
@@ -130,6 +133,15 @@ export function PanelContent({
 	const streaming = streamingGeneration.value;
 	const isStreamingForFile =
 		streaming.isGenerating && streaming.notePath === currentFile?.path;
+	const { recentCardIds } = streaming;
+
+	useEffect(() => {
+		if (!streaming.isGenerating && recentCardIds.size > 0) {
+			const timer = setTimeout(() => clearRecentCards(), 500);
+			return () => clearTimeout(timer);
+		}
+		return undefined;
+	}, [streaming.isGenerating, recentCardIds.size]);
 
 	if (!flashcardInfo?.exists) {
 		if (isStreamingForFile) {
@@ -159,6 +171,7 @@ export function PanelContent({
 			{filteredItems.map((item) => {
 				const { key, cards, template } = getItemInfo(item);
 				const primaryCard = cards[0]!;
+				const isNewlyStreamed = recentCardIds.has(primaryCard.id);
 
 				const sharedProps = {
 					filePath,
@@ -189,7 +202,7 @@ export function PanelContent({
 				};
 
 				if (item.type === "basic") {
-					return (
+					const card = (
 						<PanelCard
 							key={key}
 							variant="basic"
@@ -202,13 +215,20 @@ export function PanelContent({
 							{...sharedProps}
 						/>
 					);
+					return isNewlyStreamed ? (
+						<div key={key} class="ep-animate-slide-in">
+							{card}
+						</div>
+					) : (
+						card
+					);
 				}
 
 				const groupType =
 					item.type === "cloze-group"
 						? ("cloze" as const)
 						: ("reverse" as const);
-				return (
+				const groupCard = (
 					<PanelCard
 						key={key}
 						variant="group"
@@ -222,6 +242,13 @@ export function PanelContent({
 						onMove={() => handlers.onMoveGroup(cards)}
 						{...sharedProps}
 					/>
+				);
+				return isNewlyStreamed ? (
+					<div key={key} class="ep-animate-slide-in">
+						{groupCard}
+					</div>
+				) : (
+					groupCard
 				);
 			})}
 			{isStreamingForFile && <PartialCard streaming={streaming} />}
