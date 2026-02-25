@@ -11,7 +11,6 @@ import {
 import type { SelectionMode } from "@shared/store";
 import type { FlashcardInfo, FlashcardItem } from "@shared/types";
 import type { FSRSFlashcardItem } from "@shared/types/fsrs/card.types";
-import { useTypewriter } from "@features/library/ui/panel/hooks";
 import { EmptyState, EmptyStateMessages } from "@shared/ui/components";
 import { useEffect, useMemo, useRef } from "preact/hooks";
 
@@ -269,17 +268,9 @@ export function PanelContent({
 function PartialCard({
 	streaming,
 }: { streaming: typeof streamingGeneration.value }) {
-	const typedQuestion = useTypewriter(streaming.partialQuestion ?? "");
-	const questionDone =
-		typedQuestion.length >= (streaming.partialQuestion ?? "").length;
-	const typedAnswer = useTypewriter(
-		questionDone ? (streaming.partialAnswer ?? "") : "",
-	);
-
-	if (!typedQuestion) {
+	if (!streaming.partialQuestion) {
 		return (
 			<div class="ep:flex ep:flex-col ep:mb-2 ep:rounded-lg ep:bg-obs-secondary ep:border-[1px] ep:border-obs-border/20 ep:shadow-sm ep:p-3 ep:items-center ep:gap-2">
-				<div class="ep-streaming-dot" />
 				<div class="ep:text-xs ep:text-obs-muted">
 					Generating flashcards...
 				</div>
@@ -290,16 +281,11 @@ function PartialCard({
 	return (
 		<div class="ep:flex ep:flex-col ep:mb-2 ep:rounded-lg ep:bg-obs-secondary ep:border-[1px] ep:border-obs-border/20 ep:shadow-sm ep:p-3 ep-animate-slide-in">
 			<div class="ep:text-ui-small ep:text-obs-normal">
-				{typedQuestion}
+				{streaming.partialQuestion}
 			</div>
-			{typedAnswer ? (
+			{streaming.partialAnswer != null && (
 				<div class="ep:text-ui-small ep:text-obs-muted ep:mt-1.5 ep:leading-relaxed">
-					{typedAnswer}
-					<span class="ep-streaming-cursor" />
-				</div>
-			) : (
-				<div class="ep:text-ui-small ep:text-obs-muted ep:mt-1.5">
-					<span class="ep-streaming-cursor" />
+					{streaming.partialAnswer}
 				</div>
 			)}
 		</div>
