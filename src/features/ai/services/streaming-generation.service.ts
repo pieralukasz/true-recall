@@ -58,20 +58,23 @@ export class StreamingGenerationService {
 
 		let createdCount = 0;
 		let duplicateCount = 0;
-		let pendingPartialUpdate: (() => void) | null = null;
+		let pendingQuestion: string | null = null;
+		let pendingAnswer: string | null = null;
+		let rafScheduled = false;
 
 		const throttledUpdatePartial = (
 			question: string | null,
 			answer: string | null,
 		) => {
-			if (pendingPartialUpdate) return;
-			pendingPartialUpdate = () => {
-				updatePartial(question, answer);
-				pendingPartialUpdate = null;
-			};
-			requestAnimationFrame(() => {
-				pendingPartialUpdate?.();
-			});
+			pendingQuestion = question;
+			pendingAnswer = answer;
+			if (!rafScheduled) {
+				rafScheduled = true;
+				requestAnimationFrame(() => {
+					updatePartial(pendingQuestion, pendingAnswer);
+					rafScheduled = false;
+				});
+			}
 		};
 
 		try {
