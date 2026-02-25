@@ -210,21 +210,57 @@
 	}
 }
 
-.ep-dashboard-two-col {
-	grid-template-rows: auto 1fr;
+/* ── Streaming flashcard generation animations ── */
+
+@keyframes ep-slide-in {
+	from {
+		opacity: 0;
+		transform: translateY(-8px);
+	}
+	to {
+		opacity: 1;
+		transform: translateY(0);
+	}
 }
 
-@container (min-width: 600px) {
-	.ep-dashboard-two-col {
-		grid-template-columns: 1fr 260px;
-		grid-template-rows: 1fr;
+.ep-animate-slide-in {
+	animation: ep-slide-in 0.3s ease-out forwards;
+}
+
+@keyframes ep-cursor-blink {
+	0%,
+	100% {
+		opacity: 1;
 	}
-	.ep-dashboard-notes {
-		order: 1;
+	50% {
+		opacity: 0;
 	}
-	.ep-dashboard-sidebar {
-		order: 2;
+}
+
+.ep-streaming-cursor::after {
+	content: "\258E";
+	animation: ep-cursor-blink 1s step-end infinite;
+	color: var(--text-accent);
+	margin-left: 1px;
+}
+
+@keyframes ep-dot-pulse {
+	0%,
+	100% {
+		opacity: 1;
 	}
+	50% {
+		opacity: 0.3;
+	}
+}
+
+.ep-streaming-dot {
+	width: 6px;
+	height: 6px;
+	border-radius: 50%;
+	background: var(--color-green);
+	animation: ep-dot-pulse 1.5s ease-in-out infinite;
+	flex-shrink: 0;
 }
 
 /* Reduced motion preferences (consolidated) */
@@ -238,6 +274,15 @@
 		animation: none;
 	}
 	.true-recall-pulse-collect {
+		animation: none;
+	}
+	.ep-animate-slide-in {
+		animation: none;
+	}
+	.ep-streaming-cursor::after {
+		animation: none;
+	}
+	.ep-streaming-dot {
 		animation: none;
 	}
 }

@@ -41,44 +41,39 @@ export function usePanelActions({
 			return;
 		}
 
-		const { FlashcardGenerationService } = await import(
-			"@features/ai/services/flashcard-generation.service"
-		);
-		const { FlashcardParserService } = await import(
-			"@features/study/services/flashcard/flashcard-parser.service"
+		const { StreamingGenerationService } = await import(
+			"@features/ai/services/streaming-generation.service"
 		);
 
-		const generationService = new FlashcardGenerationService(
+		const streamingService = new StreamingGenerationService(
 			() => plugin.settings,
-			new FlashcardParserService(),
+			plugin.flashcardManager,
 		);
 
-		const result = await generationService.generate(content, "basic");
-
-		if (result.flashcards.length === 0) {
-			notify().warning("No flashcards generated from this note");
-			return;
-		}
-
-		const batchResult = await plugin.flashcardManager.saveFlashcardsToSql(
-			currentFile,
-			result.flashcards,
-			"ai",
-		);
-
-		const created = batchResult.created.length;
-		const dups = batchResult.duplicates.length;
-
-		if (dups > 0 && created > 0) {
-			notify().cardsCreatedWithDuplicates(
-				created,
-				dups,
-				currentFile.basename,
+		try {
+			const result = await streamingService.generateStreaming(
+				content,
+				"basic",
+				currentFile,
 			);
-		} else if (dups > 0) {
-			notify().allCardsDuplicates(dups);
-		} else {
-			notify().cardsCreated(created, currentFile.basename);
+
+			if (result.created === 0 && result.duplicates === 0) {
+				notify().warning("No flashcards generated from this note");
+			} else if (result.duplicates > 0) {
+				notify().cardsCreatedWithDuplicates(
+					result.created,
+					result.duplicates,
+					currentFile.basename,
+				);
+			} else {
+				notify().cardsCreated(result.created, currentFile.basename);
+			}
+		} catch (error) {
+			if (error instanceof DOMException && error.name === "AbortError")
+				return;
+			const msg =
+				error instanceof Error ? error.message : String(error);
+			notify().error(`Flashcard generation failed: ${msg}`);
 		}
 	}, [currentFile, app, plugin]);
 
@@ -129,48 +124,39 @@ export function usePanelActions({
 
 		const joinedHighlights = newHighlights.join("\n\n");
 
-		const { FlashcardGenerationService } = await import(
-			"@features/ai/services/flashcard-generation.service"
-		);
-		const { FlashcardParserService } = await import(
-			"@features/study/services/flashcard/flashcard-parser.service"
+		const { StreamingGenerationService } = await import(
+			"@features/ai/services/streaming-generation.service"
 		);
 
-		const generationService = new FlashcardGenerationService(
+		const streamingService = new StreamingGenerationService(
 			() => plugin.settings,
-			new FlashcardParserService(),
+			plugin.flashcardManager,
 		);
 
-		const result = await generationService.generate(
-			joinedHighlights,
-			"basic",
-		);
-
-		if (result.flashcards.length === 0) {
-			notify().warning("No flashcards generated from highlights");
-			return;
-		}
-
-		const batchResult = await plugin.flashcardManager.saveFlashcardsToSql(
-			currentFile,
-			result.flashcards,
-			"ai",
-			joinedHighlights,
-		);
-
-		const created = batchResult.created.length;
-		const dups = batchResult.duplicates.length;
-
-		if (dups > 0 && created > 0) {
-			notify().cardsCreatedWithDuplicates(
-				created,
-				dups,
-				currentFile.basename,
+		try {
+			const result = await streamingService.generateStreaming(
+				joinedHighlights,
+				"basic",
+				currentFile,
 			);
-		} else if (dups > 0) {
-			notify().allCardsDuplicates(dups);
-		} else {
-			notify().cardsCreated(created, currentFile.basename);
+
+			if (result.created === 0 && result.duplicates === 0) {
+				notify().warning("No flashcards generated from highlights");
+			} else if (result.duplicates > 0) {
+				notify().cardsCreatedWithDuplicates(
+					result.created,
+					result.duplicates,
+					currentFile.basename,
+				);
+			} else {
+				notify().cardsCreated(result.created, currentFile.basename);
+			}
+		} catch (error) {
+			if (error instanceof DOMException && error.name === "AbortError")
+				return;
+			const msg =
+				error instanceof Error ? error.message : String(error);
+			notify().error(`Flashcard generation failed: ${msg}`);
 		}
 	}, [currentFile, app, plugin]);
 
