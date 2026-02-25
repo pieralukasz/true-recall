@@ -36,7 +36,7 @@ export function ProjectsTab({
 		return (
 			<div class="ep:text-sm ep:text-obs-muted ep:p-4 ep:text-center">
 				{projects.length === 0
-					? "No projects found. Create a project by adding project: true to a note's frontmatter."
+					? "No projects found. Organize notes in folders or add project: true to a note's frontmatter."
 					: "No matching projects."}
 			</div>
 		);

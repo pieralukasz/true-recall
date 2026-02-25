@@ -114,6 +114,7 @@ export const DEFAULT_SETTINGS: TrueRecallSettings = {
 	dayStartHour: 4, // 4 AM like Anki - new day starts at this hour
 
 	excludedFolders: [],
+	folderProjectsEnabled: true,
 
 	autoBackupOnLoad: false,
 	maxBackups: 10,
