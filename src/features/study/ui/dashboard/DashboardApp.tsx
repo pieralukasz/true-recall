@@ -5,16 +5,24 @@ import {
 	syncVersion,
 	useSignalVersion,
 } from "@shared/services/signals";
+import { SearchInput } from "@shared/ui/components/SearchInput";
 import { usePlugin } from "@shared/ui/preact";
 import { useMemo } from "preact/hooks";
+import { useSignal } from "@preact/signals";
+import { DashboardTabs } from "./components/DashboardTabs";
 import { HeroCard } from "./components/HeroCard";
 import { NoteList } from "./components/NoteList";
-import { Sidebar } from "./components/Sidebar";
+import { ProjectsTab } from "./components/ProjectsTab";
+import { RecentlyStudiedBar } from "./components/RecentlyStudiedBar";
+import { UnassignedTab } from "./components/UnassignedTab";
 import { aggregateDashboardData } from "./helpers/note-aggregation";
-import type { DashboardAggregation } from "./types";
+import { aggregateProjectData } from "./helpers/project-aggregation";
+import type { DashboardAggregation, DashboardTab } from "./types";
 
 export function DashboardApp() {
 	const plugin = usePlugin();
+	const activeTab = useSignal<DashboardTab>("projects");
+	const searchQuery = useSignal("");
 
 	const statsCalculator = useMemo(() => {
 		const calc = new StatsCalculatorService(
@@ -46,8 +54,38 @@ export function DashboardApp() {
 		});
 	}, [plugin, statsCalculator, refreshTick]);
 
+	const projectData = useMemo(() => {
+		return aggregateProjectData({
+			notes: data.notes,
+			plugin: {
+				projectLinkService: plugin.projectLinkService,
+				cardStore: plugin.cardStore,
+				fsrsService: plugin.fsrsService,
+			},
+		});
+	}, [plugin, data.notes]);
+
+	const handleNavigateToNote = (noteName: string) => {
+		void plugin.app.workspace.openLinkText(noteName, "");
+	};
+
+	const handleStudyNote = (noteName: string) => {
+		void plugin.openReviewViewWithFilters({
+			sourceNoteFilter: noteName,
+			ignoreDailyLimits: true,
+		});
+	};
+
+	const handleCustomStudyNote = (noteName: string) => {
+		void plugin.openCustomStudyModal({
+			sourceNoteFilters: [noteName],
+			scopeLabel: noteName,
+		});
+	};
+
 	return (
 		<div class="ep-dashboard-container ep:p-4 ep:mx-auto ep:max-w-5xl ep:flex ep:flex-col ep:h-full">
+			{/* Hero card */}
 			<div class="ep:shrink-0 ep:mb-5">
 				<HeroCard
 					totalDue={data.totalDue}
@@ -60,13 +98,65 @@ export function DashboardApp() {
 				/>
 			</div>
 
-			<div class="ep:flex-1 ep:min-h-0 ep:grid ep:grid-cols-1 ep:gap-5 ep-dashboard-two-col">
-				<div class="ep:min-h-0 ep:overflow-hidden ep:h-full ep:flex ep:flex-col ep:order-2 ep-dashboard-notes">
+			{/* Recently studied bar */}
+			{projectData.recentlyStudied.length > 0 && (
+				<div class="ep:shrink-0 ep:mb-3">
+					<RecentlyStudiedBar notes={projectData.recentlyStudied} />
+				</div>
+			)}
+
+			{/* Search input — shared for Projects + Unassigned tabs */}
+			{activeTab.value !== "all" && (
+				<div class="ep:shrink-0 ep:mb-3">
+					<SearchInput
+						value={searchQuery.value}
+						placeholder="Search notes or projects..."
+						onChange={(q) => {
+							searchQuery.value = q;
+						}}
+					/>
+				</div>
+			)}
+
+			{/* Tab bar */}
+			<div class="ep:shrink-0 ep:mb-3">
+				<DashboardTabs
+					activeTab={activeTab.value}
+					onTabChange={(tab) => {
+						activeTab.value = tab;
+						searchQuery.value = "";
+					}}
+					projectCount={projectData.projects.length}
+					unassignedCount={projectData.unassignedNotes.length}
+					allNotesCount={data.notes.length}
+				/>
+			</div>
+
+			{/* Tab content */}
+			<div class="ep:flex-1 ep:min-h-0 ep:flex ep:flex-col">
+				{activeTab.value === "projects" && (
+					<ProjectsTab
+						projects={projectData.projects}
+						searchQuery={searchQuery.value}
+						onNavigateToNote={handleNavigateToNote}
+						onStudyNote={handleStudyNote}
+						onCustomStudyNote={handleCustomStudyNote}
+					/>
+				)}
+
+				{activeTab.value === "unassigned" && (
+					<UnassignedTab
+						notes={projectData.unassignedNotes}
+						searchQuery={searchQuery.value}
+						onNavigateToNote={handleNavigateToNote}
+						onStudyNote={handleStudyNote}
+						onCustomStudyNote={handleCustomStudyNote}
+					/>
+				)}
+
+				{activeTab.value === "all" && (
 					<NoteList notes={data.notes} />
-				</div>
-				<div class="ep:order-1 ep:overflow-y-auto ep-dashboard-sidebar">
-					<Sidebar notes={data.notes} />
-				</div>
+				)}
 			</div>
 		</div>
 	);

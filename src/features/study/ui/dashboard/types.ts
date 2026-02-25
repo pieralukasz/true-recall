@@ -16,6 +16,28 @@ export type NotePriority = "overdue" | "hot" | "due" | "light" | "done";
 
 export type NoteFilterMode = "all" | "due" | "new" | "learning" | "overdue";
 
+export type DashboardTab = "projects" | "unassigned" | "all";
+
+export interface DashboardProject {
+	name: string;
+	path: string;
+	healthPct: number;
+	newCount: number;
+	learning: number;
+	due: number;
+	totalCards: number;
+	childCount: number;
+	lastReviewed: string | null;
+	memberNotes: DashboardNoteEntry[];
+	children: DashboardProject[];
+}
+
+export interface DashboardProjectAggregation {
+	projects: DashboardProject[];
+	unassignedNotes: DashboardNoteEntry[];
+	recentlyStudied: DashboardNoteEntry[];
+}
+
 export interface TodayProgress {
 	studied: number;
 	minutes: number;

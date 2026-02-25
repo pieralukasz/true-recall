@@ -1,4 +1,4 @@
-import { FlashcardGenerationService } from "@features/ai/services/flashcard-generation.service";
+import { StreamingGenerationService } from "@features/ai/services/streaming-generation.service";
 import { SqlQueryAdapter } from "@features/ai/services/sql-query.adapter";
 import { NLQueryService } from "@features/ai/services/nl-query.service";
 import { createSelectionToolbarExtension } from "@features/ai/ui/editor/SelectionToolbarPlugin";
@@ -42,7 +42,6 @@ import {
 } from "@features/study/modals/CustomStudyModal";
 import { DeletionHandlerService } from "@features/study/services/flashcard/deletion-handler.service";
 import { FlashcardManager } from "@features/study/services/flashcard/flashcard.service";
-import { FlashcardParserService } from "@features/study/services/flashcard/flashcard-parser.service";
 import { UidGuardianService } from "@features/study/services/flashcard/uid-guardian.service";
 import {
 	createLinkStatusPostProcessor,
@@ -823,40 +822,39 @@ export default class TrueRecallPlugin extends Plugin {
 	}
 
 	private initializeSelectionToolbar(): void {
-		const generationService = new FlashcardGenerationService(
+		const streamingService = new StreamingGenerationService(
 			() => this.settings,
-			new FlashcardParserService(),
+			this.flashcardManager,
 		);
 
 		const extension = createSelectionToolbarExtension({
 			onGenerate: async (text, mode) => {
+				const file = this.app.workspace.getActiveFile();
+				if (!file) {
+					notify().error("No active file");
+					return;
+				}
+
 				try {
-					const result = await generationService.generate(text, mode);
-					const file = this.app.workspace.getActiveFile();
-					if (!file) {
-						notify().error("No active file");
-						return;
-					}
-					if (result.flashcards.length === 0) {
-						notify().warning("No flashcards found in AI response");
-						return;
-					}
-					const batchResult = await this.flashcardManager.saveFlashcardsToSql(
-						file,
-						result.flashcards,
-						"ai",
+					// Open panel so user can see cards streaming in
+					await this.activateView();
+
+					const result = await streamingService.generateStreaming(
 						text,
+						mode,
+						file,
 					);
-					const createdCount = batchResult.created.length;
-					const dupCount = batchResult.duplicates.length;
-					if (dupCount > 0) {
+					if (result.created === 0 && result.duplicates === 0) {
+						notify().warning("No flashcards found in AI response");
+					} else if (result.duplicates > 0) {
 						notify().info(
-							`Created ${createdCount} flashcard(s), ${dupCount} duplicate(s) skipped`,
+							`Created ${result.created} flashcard(s), ${result.duplicates} duplicate(s) skipped`,
 						);
 					} else {
-						notify().info(`Created ${createdCount} flashcard(s)`);
+						notify().info(`Created ${result.created} flashcard(s)`);
 					}
 				} catch (error) {
+					if (error instanceof DOMException && error.name === "AbortError") return;
 					const msg = error instanceof Error ? error.message : String(error);
 					notify().error(`Flashcard generation failed: ${msg}`);
 				}

@@ -48,9 +48,7 @@ export function NoteList({ notes }: NoteListProps) {
 		let result = notes;
 
 		if (activeFilter.value !== "all") {
-			result = result.filter((n) =>
-				matchesFilter(n, activeFilter.value),
-			);
+			result = result.filter((n) => matchesFilter(n, activeFilter.value));
 		}
 
 		if (searchQuery.value) {
@@ -64,10 +62,21 @@ export function NoteList({ notes }: NoteListProps) {
 	const { containerRef, totalHeight, virtualItems, onScroll } =
 		useVirtualList(filteredNotes);
 
+	const handleNavigateToNote = (note: DashboardNoteEntry) => {
+		void plugin.app.workspace.openLinkText(note.name, "");
+	};
+
 	const handleStudyNote = (noteName: string) => {
 		void plugin.openReviewViewWithFilters({
 			sourceNoteFilter: noteName,
 			ignoreDailyLimits: true,
+		});
+	};
+
+	const handleCustomStudy = (note: DashboardNoteEntry) => {
+		void plugin.openCustomStudyModal({
+			sourceNoteFilters: [note.name],
+			scopeLabel: note.name,
 		});
 	};
 
@@ -118,9 +127,9 @@ export function NoteList({ notes }: NoteListProps) {
 							>
 								<NoteRow
 									note={item}
-									onClick={() =>
-										handleStudyNote(item.name)
-									}
+									onNavigate={() => handleNavigateToNote(item)}
+									onStudy={() => handleStudyNote(item.name)}
+									onCustomStudy={() => handleCustomStudy(item)}
 								/>
 							</div>
 						))}

@@ -51,6 +51,11 @@ export function createSelectionToolbarExtension(
 					return;
 				}
 
+				if (!this.view.hasFocus && !this.container?.matches(":hover")) {
+					this.removeToolbar();
+					return;
+				}
+
 				if (this.view.dom.closest(".true-recall-review-card-container")) {
 					this.removeToolbar();
 					return;
