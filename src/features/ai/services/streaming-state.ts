@@ -6,6 +6,7 @@ export interface StreamingGenerationState {
 	noteName: string | null;
 	notePath: string | null;
 	completedCards: FlashcardItem[];
+	recentCardIds: Set<string>;
 	partialQuestion: string | null;
 	partialAnswer: string | null;
 	error: string | null;
@@ -17,6 +18,7 @@ const INITIAL_STATE: StreamingGenerationState = {
 	noteName: null,
 	notePath: null,
 	completedCards: [],
+	recentCardIds: new Set<string>(),
 	partialQuestion: null,
 	partialAnswer: null,
 	error: null,
@@ -42,9 +44,12 @@ export function startStreaming(
 
 export function addStreamedCard(card: FlashcardItem): void {
 	const current = streamingGeneration.value;
+	const newRecentIds = new Set(current.recentCardIds);
+	newRecentIds.add(card.id);
 	streamingGeneration.value = {
 		...current,
 		completedCards: [...current.completedCards, card],
+		recentCardIds: newRecentIds,
 		partialQuestion: null,
 		partialAnswer: null,
 	};
@@ -63,9 +68,18 @@ export function updatePartial(
 }
 
 export function finishStreaming(error?: string): void {
+	const current = streamingGeneration.value;
 	streamingGeneration.value = {
 		...INITIAL_STATE,
+		recentCardIds: current.recentCardIds,
 		error: error ?? null,
+	};
+}
+
+export function clearRecentCards(): void {
+	streamingGeneration.value = {
+		...streamingGeneration.value,
+		recentCardIds: new Set<string>(),
 	};
 }
 
