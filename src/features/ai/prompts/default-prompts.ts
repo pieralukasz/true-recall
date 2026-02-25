@@ -43,7 +43,6 @@ FORMATTING:
 - Backlinks: Wrap key scientific terms and main subjects in [[backlinks]] (lowercase only). If bolding is required by other rules, use **[[backlinks]]**.
 - Use [[term|alias]] for context/readability when needed.
 - NEVER use the format [term](app://obsidian.md/term). Only use double brackets.
-- Line Breaks: Use double newlines to split questions/answers longer than 6 words into logical parts. It's important.
 - No Separators: Do NOT place --- between flashcards.
 
 ANTI-RULES:
@@ -183,7 +182,6 @@ SOURCE TRACKING:
 FORMATTING:
 - Backlinks: Wrap key scientific terms in [[backlinks]] (lowercase only).
 - Use [[term|alias]] for context/readability when needed.
-- Line Breaks: Use double newlines to split long content into logical parts.
 
 EXAMPLE:
 Text: "Mitochondria are the powerhouse of the cell. The chemical symbol for gold is Au. Rosacea manifests by intense reddening of the skin."
