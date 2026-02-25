@@ -39,6 +39,20 @@ export interface ChatCompletionResponse {
 
 const OPENROUTER_URL = "https://openrouter.ai/api/v1/chat/completions";
 
+export class AIRequestError extends Error {
+	constructor(
+		public readonly statusCode: number,
+		responseText: string,
+	) {
+		super(`AI API error (${statusCode}): ${responseText}`);
+		this.name = "AIRequestError";
+	}
+
+	get isBudgetExceeded(): boolean {
+		return this.statusCode === 429;
+	}
+}
+
 export interface AIClientOptions {
 	apiKey: string;
 	model: string;
@@ -75,9 +89,7 @@ export class OpenRouterClient {
 		});
 
 		if (response.status !== 200) {
-			throw new Error(
-				`OpenRouter API error (${response.status}): ${response.text}`,
-			);
+			throw new AIRequestError(response.status, response.text);
 		}
 
 		return response.json as ChatCompletionResponse;
