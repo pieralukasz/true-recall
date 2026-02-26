@@ -121,7 +121,7 @@ export function PanelEmptyState({
 
 			{!hasApiKey && (
 				<div class="ep:text-ui-smaller ep:text-obs-error">
-					Add an OpenRouter API key in settings to use AI generation
+					Add a subscription or OpenRouter API key in settings
 				</div>
 			)}
 

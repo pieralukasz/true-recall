@@ -9,12 +9,12 @@ import { SearchInput } from "@shared/ui/components/SearchInput";
 import { usePlugin } from "@shared/ui/preact";
 import { useMemo } from "preact/hooks";
 import { useSignal } from "@preact/signals";
-import { StreakWidget } from "../editor/widgets/StreakWidget";
+import { StreakWidget } from "../editor/widgets/analytics/StreakWidget";
 import { DashboardTabs } from "./components/DashboardTabs";
 import { NoteList } from "./components/NoteList";
 import { ProjectsTab } from "./components/ProjectsTab";
 import { RecentlyStudiedBar } from "./components/RecentlyStudiedBar";
-import { HeatmapWidget } from "../editor/widgets/HeatmapWidget";
+import { HeatmapWidget } from "../editor/widgets/analytics/HeatmapWidget";
 import { aggregateDashboardData } from "./helpers/note-aggregation";
 import { aggregateProjectData } from "./helpers/project-aggregation";
 import type { DashboardAggregation, DashboardTab } from "./types";
@@ -99,31 +99,27 @@ export function DashboardApp() {
 	};
 
 	return (
-		<div class="ep-dashboard-container ep:p-4 ep:mx-auto ep:max-w-5xl ep:flex ep:flex-col ep:h-full">
-			<div class="ep:shrink-0 ep:mb-4">
+		<div class="ep-dashboard-container ep:p-3 ep:mx-auto ep:max-w-5xl ep:flex ep:flex-col ep:gap-3 ep:h-full">
+			<div class="ep:shrink-0">
 				<StreakWidget source="" />
 			</div>
 
-			{/* Recently studied bar */}
 			{projectData.recentlyStudied.length > 0 && (
-				<div class="ep:shrink-0 ep:mb-3">
+				<div class="ep:shrink-0">
 					<RecentlyStudiedBar notes={projectData.recentlyStudied} />
 				</div>
 			)}
 
-			{/* Search input — shared across all tabs */}
-			<div class="ep:shrink-0 ep:mb-3">
-				<SearchInput
-					value={searchQuery.value}
-					placeholder="Search notes or projects..."
-					onChange={(q) => {
-						searchQuery.value = q;
-					}}
-				/>
-			</div>
+			<SearchInput
+				class="ep:shrink-0"
+				value={searchQuery.value}
+				placeholder="Search notes or projects..."
+				onChange={(q) => {
+					searchQuery.value = q;
+				}}
+			/>
 
-			{/* Tab bar */}
-			<div class="ep:shrink-0 ep:mb-3">
+			<div class="ep:shrink-0">
 				<DashboardTabs
 					activeTab={activeTab.value}
 					onTabChange={(tab) => {
@@ -135,7 +131,6 @@ export function DashboardApp() {
 				/>
 			</div>
 
-			{/* Tab content */}
 			<div class="ep:flex-1 ep:min-h-0 ep:flex ep:flex-col">
 				{activeTab.value === "projects" && (
 					<ProjectsTab
@@ -156,8 +151,7 @@ export function DashboardApp() {
 				)}
 			</div>
 
-			{/* Activity heatmap */}
-			<div class="ep:shrink-0 ep:mt-4">
+			<div class="ep:shrink-0">
 				<HeatmapWidget source="months: 0" />
 			</div>
 		</div>

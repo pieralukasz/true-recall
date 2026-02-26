@@ -3,7 +3,7 @@ import { Clickable } from "@shared/ui/components";
 import { FSRS_COLORS } from "@shared/ui/helpers/fsrs-colors";
 import { usePlugin } from "@shared/ui/preact";
 import { useMemo } from "preact/hooks";
-import { WidgetCta } from "./WidgetCta";
+import { WidgetCta } from "../WidgetCta";
 
 interface UnassignedNote {
 	path: string;

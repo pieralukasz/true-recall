@@ -3,8 +3,8 @@ import { dataVersion, useSignalVersion } from "@shared/services/signals";
 import { Clickable } from "@shared/ui/components";
 import { usePlugin } from "@shared/ui/preact";
 import { useMemo } from "preact/hooks";
-import { configValue, parseCodeblockConfig } from "./config-parser";
-import { WidgetCta } from "./WidgetCta";
+import { configValue, parseCodeblockConfig } from "../config-parser";
+import { WidgetCta } from "../WidgetCta";
 
 interface StreakData {
 	current: number;

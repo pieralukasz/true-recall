@@ -22,3 +22,8 @@ export {
 	stripBrTags,
 	stripWikiLinkSyntax,
 } from "@shared/utils/string.utils";
+export {
+	type SubscriptionTier,
+	getEffectiveTier,
+	isFeatureAllowed,
+} from "@shared/utils/subscription.utils";
