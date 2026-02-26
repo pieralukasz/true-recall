@@ -1,8 +1,10 @@
+import type { Signal } from "@preact/signals";
 import { useSignal } from "@preact/signals";
 import { usePlugin } from "@shared/ui/preact";
-import { useMemo } from "preact/hooks";
+import { useMemo, useRef } from "preact/hooks";
+import type { RefObject } from "preact";
 import { prioritySortComparator } from "../helpers/note-priority";
-import { useVirtualList } from "../helpers/use-virtual-list";
+import { useExternalVirtualList } from "../helpers/use-virtual-list";
 import type {
 	DashboardNoteEntry,
 	NoteFilterMode,
@@ -15,6 +17,8 @@ interface NoteListProps {
 	notes: DashboardNoteEntry[];
 	searchQuery: string;
 	allProjectNames: string[];
+	scrollContainerRef: RefObject<HTMLDivElement>;
+	scrollTop: Signal<number>;
 }
 
 function matchesFilter(
@@ -35,17 +39,23 @@ function matchesFilter(
 	}
 }
 
-export function NoteList({ notes, searchQuery, allProjectNames }: NoteListProps) {
+export function NoteList({
+	notes,
+	searchQuery,
+	allProjectNames,
+	scrollContainerRef,
+	scrollTop,
+}: NoteListProps) {
 	const plugin = usePlugin();
 	const activeFilter = useSignal<NoteFilterMode>("all");
 	const projectFilter = useSignal<ProjectFilter>({ type: "none" });
+	const contentRef = useRef<HTMLDivElement>(null);
 
 	const unassignedCount = useMemo(
 		() => notes.filter((n) => n.projects.length === 0).length,
 		[notes],
 	);
 
-	// First pass: apply project filter
 	const projectFiltered = useMemo(() => {
 		const pf = projectFilter.value;
 		if (pf.type === "project")
@@ -55,7 +65,6 @@ export function NoteList({ notes, searchQuery, allProjectNames }: NoteListProps)
 		return notes;
 	}, [notes, projectFilter.value]);
 
-	// State filter counts reflect the project-filtered subset
 	const counts = useMemo((): Record<NoteFilterMode, number> => {
 		return {
 			all: projectFiltered.length,
@@ -81,8 +90,12 @@ export function NoteList({ notes, searchQuery, allProjectNames }: NoteListProps)
 		return [...result].sort(prioritySortComparator);
 	}, [projectFiltered, searchQuery, activeFilter.value]);
 
-	const { containerRef, totalHeight, virtualItems, onScroll } =
-		useVirtualList(filteredNotes);
+	const { totalHeight, virtualItems } = useExternalVirtualList({
+		items: filteredNotes,
+		scrollContainerRef,
+		scrollTop,
+		contentOffsetRef: contentRef,
+	});
 
 	const handleNavigateToNote = (note: DashboardNoteEntry) => {
 		void plugin.app.workspace.openLinkText(note.name, "");
@@ -107,7 +120,7 @@ export function NoteList({ notes, searchQuery, allProjectNames }: NoteListProps)
 	};
 
 	return (
-		<div class="ep:flex ep:flex-col ep:flex-1 ep:min-h-0">
+		<div class="ep:flex ep:flex-col">
 			<div class="ep:shrink-0 ep:mb-3">
 				<NoteFilters
 					activeFilter={activeFilter.value}
@@ -131,37 +144,32 @@ export function NoteList({ notes, searchQuery, allProjectNames }: NoteListProps)
 				</div>
 			) : (
 				<div
-					ref={containerRef}
-					class="ep:flex-1 ep:overflow-y-auto ep:min-h-0"
-					onScroll={onScroll}
+					ref={contentRef}
+					style={{
+						height: `${totalHeight}px`,
+						position: "relative",
+					}}
 				>
-					<div
-						style={{
-							height: `${totalHeight}px`,
-							position: "relative",
-						}}
-					>
-						{virtualItems.map(({ item, index, offsetTop }) => (
-							<div
-								key={item.name}
-								style={{
-									position: "absolute",
-									top: `${offsetTop}px`,
-									left: 0,
-									right: 0,
-									height: "36px",
-								}}
-							>
-								<NoteRow
-									note={item}
-									onNavigate={() => handleNavigateToNote(item)}
-									onStudy={() => handleStudyNote(item.name)}
-									onCustomStudy={() => handleCustomStudy(item)}
-									onProjectClick={handleProjectClick}
-								/>
-							</div>
-						))}
-					</div>
+					{virtualItems.map(({ item, offsetTop }) => (
+						<div
+							key={item.name}
+							style={{
+								position: "absolute",
+								top: `${offsetTop}px`,
+								left: 0,
+								right: 0,
+								height: "36px",
+							}}
+						>
+							<NoteRow
+								note={item}
+								onNavigate={() => handleNavigateToNote(item)}
+								onStudy={() => handleStudyNote(item.name)}
+								onCustomStudy={() => handleCustomStudy(item)}
+								onProjectClick={handleProjectClick}
+							/>
+						</div>
+					))}
 				</div>
 			)}
 		</div>

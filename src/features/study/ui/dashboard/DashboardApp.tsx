@@ -8,7 +8,7 @@ import {
 } from "@shared/services/signals";
 import { SearchInput } from "@shared/ui/components/SearchInput";
 import { usePlugin } from "@shared/ui/preact";
-import { useMemo } from "preact/hooks";
+import { useCallback, useMemo, useRef } from "preact/hooks";
 import { useSignal } from "@preact/signals";
 import { StreakWidget } from "../editor/widgets/analytics/StreakWidget";
 import { DashboardTabs } from "./components/DashboardTabs";
@@ -100,6 +100,22 @@ export function DashboardApp() {
 		});
 	};
 
+	const scrollContainerRef = useRef<HTMLDivElement>(null);
+	const scrollTop = useSignal(0);
+
+	const onScroll = useCallback((e: Event) => {
+		scrollTop.value = (e.currentTarget as HTMLDivElement).scrollTop;
+	}, []);
+
+	const handleTabChange = (tab: DashboardTab) => {
+		activeTab.value = tab;
+		searchQuery.value = "";
+		scrollTop.value = 0;
+		if (scrollContainerRef.current) {
+			scrollContainerRef.current.scrollTop = 0;
+		}
+	};
+
 	return (
 		<div class="ep-dashboard-container ep:p-3 ep:mx-auto ep:max-w-5xl ep:flex ep:flex-col ep:gap-3 ep:h-full">
 			<div class="ep:shrink-0">
@@ -124,37 +140,46 @@ export function DashboardApp() {
 			<div class="ep:shrink-0">
 				<DashboardTabs
 					activeTab={activeTab.value}
-					onTabChange={(tab) => {
-						activeTab.value = tab;
-						searchQuery.value = "";
-					}}
+					onTabChange={handleTabChange}
 					projectCount={projectData.projects.length}
 					notesCount={enrichedNotes.length}
 				/>
 			</div>
 
-			<div class="ep:flex-1 ep:min-h-0 ep:flex ep:flex-col">
-				{activeTab.value === "projects" && (
-					<ProjectsTab
-						projects={projectData.projects}
-						searchQuery={searchQuery.value}
-						onNavigateToNote={handleNavigateToNote}
-						onStudyNote={handleStudyNote}
-						onCustomStudyNote={handleCustomStudyNote}
-					/>
-				)}
+			<div
+				ref={scrollContainerRef}
+				class="ep:flex-1 ep:min-h-0 ep:overflow-y-auto ep:relative"
+				onScroll={onScroll}
+			>
+				<div class="ep:flex ep:flex-col ep:min-h-full">
+					<div class="ep:flex-1">
+						{activeTab.value === "projects" && (
+							<ProjectsTab
+								projects={projectData.projects}
+								searchQuery={searchQuery.value}
+								scrollContainerRef={scrollContainerRef}
+								scrollTop={scrollTop}
+								onNavigateToNote={handleNavigateToNote}
+								onStudyNote={handleStudyNote}
+								onCustomStudyNote={handleCustomStudyNote}
+							/>
+						)}
 
-				{activeTab.value === "notes" && (
-					<NoteList
-						notes={enrichedNotes}
-						searchQuery={searchQuery.value}
-						allProjectNames={allProjectNames}
-					/>
-				)}
-			</div>
+						{activeTab.value === "notes" && (
+							<NoteList
+								notes={enrichedNotes}
+								searchQuery={searchQuery.value}
+								allProjectNames={allProjectNames}
+								scrollContainerRef={scrollContainerRef}
+								scrollTop={scrollTop}
+							/>
+						)}
+					</div>
 
-			<div class="ep:shrink-0">
-				<HeatmapWidget source="months: 0" />
+					<div class="ep:mt-3">
+						<HeatmapWidget source="months: 0" />
+					</div>
+				</div>
 			</div>
 		</div>
 	);
