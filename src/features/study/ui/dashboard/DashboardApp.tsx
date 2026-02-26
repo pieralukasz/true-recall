@@ -1,6 +1,7 @@
 import { StatsCalculatorService } from "@features/metrics/services/stats/stats-calculator.service";
 import {
 	dataVersion,
+	metadataVersion,
 	settingsVersion,
 	syncVersion,
 	useSignalVersion,
@@ -38,6 +39,7 @@ export function DashboardApp() {
 		dataVersion,
 		settingsVersion,
 		syncVersion,
+		metadataVersion,
 	);
 
 	const data = useMemo((): DashboardAggregation => {

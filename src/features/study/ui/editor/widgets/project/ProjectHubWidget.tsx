@@ -1,5 +1,5 @@
 import type { ProjectNode } from "@features/core/services/project-link.service";
-import { dataVersion, useSignalVersion } from "@shared/services/signals";
+import { dataVersion, metadataVersion, useSignalVersion } from "@shared/services/signals";
 import { usePlugin } from "@shared/ui/preact";
 import { useMemo } from "preact/hooks";
 import { ProjectCard } from "./ProjectWidget";
@@ -12,7 +12,7 @@ interface FlatProject {
 
 export function ProjectHubWidget() {
 	const plugin = usePlugin();
-	const ver = useSignalVersion(dataVersion);
+	const ver = useSignalVersion(dataVersion, metadataVersion);
 
 	const projects = useMemo((): FlatProject[] => {
 		if (!plugin.cardStore) return [];

@@ -1,4 +1,4 @@
-import { dataVersion, useSignalVersion } from "@shared/services/signals";
+import { dataVersion, metadataVersion, useSignalVersion } from "@shared/services/signals";
 import { Clickable } from "@shared/ui/components";
 import { FSRS_COLORS } from "@shared/ui/helpers/fsrs-colors";
 import { usePlugin } from "@shared/ui/preact";
@@ -17,7 +17,7 @@ export function ProjectWidget({
 	sourcePath: string;
 }) {
 	const plugin = usePlugin();
-	const ver = useSignalVersion(dataVersion);
+	const ver = useSignalVersion(dataVersion, metadataVersion);
 
 	const isProject = useMemo(() => {
 		const values = plugin.frontmatterIndex.getValues("project", sourcePath);
