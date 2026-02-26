@@ -62,7 +62,10 @@ import { metadataVersion, settingsVersion } from "@shared/services/signals";
 import { UndoService } from "@shared/services/undo.service";
 import { type AppStore, createAppStore } from "@shared/store";
 import { extractFSRSSettings } from "@shared/types";
-import { SetPresetModal, SimpleFlashcardEditorModal } from "@shared/ui/modals";
+import {
+	PresetInspectorModal,
+	SimpleFlashcardEditorModal,
+} from "@shared/ui/modals";
 import { normalizePath, Plugin, type TFile } from "obsidian";
 import { registerCommands } from "./plugin/PluginCommands";
 import {
@@ -190,6 +193,8 @@ export default class TrueRecallPlugin extends Plugin {
 			() => this.settings,
 			() => this.saveSettings(),
 			this.frontmatterIndex,
+			this.projectLinkService,
+			this.folderProjectService,
 		);
 
 		const fsrsSettings = extractFSRSSettings(this.settings);
@@ -1058,25 +1063,21 @@ export default class TrueRecallPlugin extends Plugin {
 			return;
 		}
 
-		const presetNames = this.settings.fsrsPresets.map((p) => p.name);
-		const currentValues = this.frontmatterIndex.getValues(
-			"fsrs_preset",
+		const modal = new PresetInspectorModal(
+			this.app,
+			this.presetService,
 			file.path,
 		);
-		const currentPreset =
-			currentValues.length > 0 ? (currentValues[0] ?? null) : null;
-
-		const modal = new SetPresetModal(this.app, presetNames, currentPreset);
 		const result = await modal.openAndWait();
-		if (result.cancelled) return;
+		if (result.action === "cancel") return;
 
 		const frontmatterService = this.flashcardManager.getFrontmatterService();
-		await frontmatterService.setFsrsPreset(file, result.presetName);
-
-		if (result.presetName) {
+		if (result.action === "set" && result.presetName) {
+			await frontmatterService.setFsrsPreset(file, result.presetName);
 			notify().success(`FSRS preset set to: ${result.presetName}`);
 		} else {
-			notify().info("FSRS preset override removed (using default)");
+			await frontmatterService.setFsrsPreset(file, null);
+			notify().info("FSRS preset override removed");
 		}
 	}
 

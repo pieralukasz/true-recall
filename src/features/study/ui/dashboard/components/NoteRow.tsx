@@ -40,6 +40,15 @@ export function NoteRow({
 				</div>
 			</Clickable>
 
+			{note.presetName && (
+				<span
+					class="ep:text-[10px] ep:px-1.5 ep:py-0.5 ep:rounded-full ep:bg-obs-modifier-hover ep:text-obs-muted ep:shrink-0"
+					title={`FSRS preset: ${note.presetName}`}
+				>
+					{note.presetName}
+				</span>
+			)}
+
 			{note.projects.length > 0 && (
 				<div
 					class="ep:flex ep:items-center ep:gap-1 ep:shrink-0 ep:max-w-[200px] ep:overflow-hidden"

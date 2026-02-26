@@ -23,6 +23,10 @@ export {
 	type SelectNoteResult,
 } from "@shared/ui/modals/SelectNoteModal";
 export {
+	PresetInspectorModal,
+	type PresetInspectorResult,
+} from "@shared/ui/modals/PresetInspectorModal";
+export {
 	SetPresetModal,
 	type SetPresetResult,
 } from "@shared/ui/modals/SetPresetModal";

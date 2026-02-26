@@ -11,6 +11,7 @@ export interface DashboardNoteEntry {
 	estimatedMinutes: number;
 	priority: NotePriority;
 	projects: string[];
+	presetName?: string;
 }
 
 export type NotePriority = "overdue" | "hot" | "due" | "light" | "done";
@@ -31,6 +32,7 @@ export interface DashboardProject {
 	lastReviewed: string | null;
 	memberNotes: DashboardNoteEntry[];
 	children: DashboardProject[];
+	presetName?: string;
 }
 
 export type ProjectFilter =
