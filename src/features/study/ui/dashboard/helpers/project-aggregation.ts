@@ -1,3 +1,4 @@
+import type { FrontmatterIndexService } from "@features/core/services/frontmatter-index.service";
 import type { FSRSService } from "@features/core/services/fsrs.service";
 import type {
 	ProjectLinkService,
@@ -20,6 +21,7 @@ interface ProjectAggregationDeps {
 		projectLinkService: ProjectLinkService;
 		cardStore: CardStore;
 		fsrsService: FSRSService;
+		frontmatterIndex?: FrontmatterIndexService;
 	};
 }
 
@@ -89,6 +91,10 @@ function buildProjectFromNode(
 		buildProjectFromNode(child, noteByPath, noteByName, plugin),
 	);
 
+	const presetName = plugin.frontmatterIndex
+		? lookupPresetName(plugin.frontmatterIndex, node.path)
+		: undefined;
+
 	return {
 		name: stats.name,
 		path: stats.path,
@@ -101,6 +107,7 @@ function buildProjectFromNode(
 		lastReviewed: stats.lastReviewed,
 		memberNotes,
 		children,
+		presetName,
 	};
 }
 
@@ -125,4 +132,12 @@ function buildNoteProjectMap(
 
 	for (const p of projects) walk(p);
 	return map;
+}
+
+function lookupPresetName(
+	frontmatterIndex: FrontmatterIndexService,
+	path: string,
+): string | undefined {
+	const values = frontmatterIndex.getValues("fsrs_preset", path);
+	return values.length > 0 && values[0] ? values[0] : undefined;
 }

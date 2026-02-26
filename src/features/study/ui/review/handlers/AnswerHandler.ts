@@ -27,7 +27,11 @@ export class AnswerHandler {
 	updateSchedulingPreview(): void {
 		const card = this.deps.getReview().getCurrentCard();
 		if (card) {
-			const preset = this.deps.plugin.presetService.resolvePresetForCard(card);
+			const filters = this.deps.getFilters();
+			const preset = this.deps.plugin.presetService.resolvePresetForCard(
+				card,
+				{ projectPath: filters.projectPath },
+			);
 			const presetSettings =
 				this.deps.plugin.presetService.toFSRSSettings(preset);
 			const preview = this.deps.fsrsService.getSchedulingPreview(
@@ -56,7 +60,10 @@ export class AnswerHandler {
 		const isNewCard = card.fsrs.state === State.New;
 		const previousState = card.fsrs.state;
 
-		const preset = this.deps.plugin.presetService.resolvePresetForCard(card);
+		const filters = this.deps.getFilters();
+		const preset = this.deps.plugin.presetService.resolvePresetForCard(card, {
+			projectPath: filters.projectPath,
+		});
 		const presetSettings =
 			this.deps.plugin.presetService.toFSRSSettings(preset);
 

@@ -54,6 +54,12 @@ export function ProjectHeaderRow({
 					{project.name}
 				</span>
 
+				{project.presetName && (
+					<span class="ep:text-[10px] ep:px-1.5 ep:py-0.5 ep:rounded-full ep:bg-obs-modifier-hover ep:text-obs-muted ep:shrink-0">
+						{project.presetName}
+					</span>
+				)}
+
 				{project.healthPct > 0 && (
 					<span class="ep:text-xs ep:text-obs-muted ep:shrink-0 ep:tabular-nums">
 						{project.healthPct}%
