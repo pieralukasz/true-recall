@@ -1,5 +1,5 @@
-import { useSignal } from "@preact/signals";
-import { useCallback, useMemo, useRef } from "preact/hooks";
+import type { Signal } from "@preact/signals";
+import { useMemo } from "preact/hooks";
 import type { RefObject } from "preact";
 
 const ROW_HEIGHT = 36;
@@ -11,22 +11,38 @@ export interface VirtualItem<T> {
 	offsetTop: number;
 }
 
-export function useVirtualList<T>(items: T[]) {
-	const containerRef = useRef<HTMLDivElement>(null);
-	const scrollTop = useSignal(0);
+export interface ExternalVirtualListOptions<T> {
+	items: T[];
+	scrollContainerRef: RefObject<HTMLDivElement>;
+	scrollTop: Signal<number>;
+	contentOffsetRef: RefObject<HTMLDivElement>;
+	rowHeight?: number;
+}
 
-	const onScroll = useCallback((e: Event) => {
-		const target = e.currentTarget as HTMLDivElement;
-		scrollTop.value = target.scrollTop;
-	}, []);
-
-	const totalHeight = items.length * ROW_HEIGHT;
+export function useExternalVirtualList<T>({
+	items,
+	scrollContainerRef,
+	scrollTop,
+	contentOffsetRef,
+	rowHeight = ROW_HEIGHT,
+}: ExternalVirtualListOptions<T>) {
+	const totalHeight = items.length * rowHeight;
 
 	const virtualItems = useMemo((): VirtualItem<T>[] => {
-		const containerHeight = containerRef.current?.clientHeight ?? 600;
-		const start = Math.floor(scrollTop.value / ROW_HEIGHT);
-		const visibleCount = Math.ceil(containerHeight / ROW_HEIGHT);
+		const containerHeight =
+			scrollContainerRef.current?.clientHeight ?? 600;
+		const contentOffset = contentOffsetRef.current?.offsetTop ?? 0;
+		const effectiveScroll = scrollTop.value - contentOffset;
 
+		if (
+			effectiveScroll + containerHeight < 0 ||
+			effectiveScroll > totalHeight
+		) {
+			return [];
+		}
+
+		const start = Math.floor(Math.max(0, effectiveScroll) / rowHeight);
+		const visibleCount = Math.ceil(containerHeight / rowHeight);
 		const from = Math.max(0, start - OVERSCAN);
 		const to = Math.min(items.length, start + visibleCount + OVERSCAN);
 
@@ -34,15 +50,10 @@ export function useVirtualList<T>(items: T[]) {
 		for (let i = from; i < to; i++) {
 			const item = items[i];
 			if (item === undefined) continue;
-			result.push({ item, index: i, offsetTop: i * ROW_HEIGHT });
+			result.push({ item, index: i, offsetTop: i * rowHeight });
 		}
 		return result;
-	}, [items, scrollTop.value]);
+	}, [items, scrollTop.value, totalHeight, rowHeight]);
 
-	return {
-		containerRef: containerRef as RefObject<HTMLDivElement>,
-		totalHeight,
-		virtualItems,
-		onScroll,
-	};
+	return { totalHeight, virtualItems };
 }
