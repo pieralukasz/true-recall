@@ -24,7 +24,7 @@ export function NoteRow({
 	return (
 		<div
 			class={cn(
-				"ep:flex ep:items-center ep:gap-3 ep:px-3 ep:py-1 ep:rounded-lg ep:transition-colors ep:duration-150 ep:hover:bg-obs-modifier-hover",
+				"ep:flex ep:items-center ep:gap-3 ep:px-3 ep:h-9 ep:overflow-hidden ep:rounded-lg ep:transition-colors ep:duration-150 ep:hover:bg-obs-modifier-hover",
 				!hasActive && "ep:opacity-40",
 			)}
 		>
