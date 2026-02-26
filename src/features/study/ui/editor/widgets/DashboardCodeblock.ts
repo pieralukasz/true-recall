@@ -1,18 +1,28 @@
 import { mountPreact } from "@shared/ui/preact/mount";
 import { h } from "preact";
 import type TrueRecallPlugin from "../../../../../main";
-import { ComparisonWidget } from "./ComparisonWidget";
+import { ComparisonWidget } from "./analytics/ComparisonWidget";
+import { HealthWidget } from "./analytics/HealthWidget";
+import { HeatmapWidget } from "./analytics/HeatmapWidget";
+import { LeaderboardWidget } from "./analytics/LeaderboardWidget";
+import { StreakWidget } from "./analytics/StreakWidget";
+import { WorkloadWidget } from "./analytics/WorkloadWidget";
 import { DashboardWidget, NoteStatsWidget } from "./DashboardWidget";
-import { DecayWidget } from "./DecayWidget";
-import { HealthWidget } from "./HealthWidget";
-import { HeatmapWidget } from "./HeatmapWidget";
-import { LeaderboardWidget } from "./LeaderboardWidget";
-import { NoteHealthWidget } from "./NoteHealthWidget";
-import { ProjectHubWidget } from "./ProjectHubWidget";
-import { ProjectWidget } from "./ProjectWidget";
-import { StreakWidget } from "./StreakWidget";
-import { UnassignedNotesWidget } from "./UnassignedNotesWidget";
-import { WorkloadWidget } from "./WorkloadWidget";
+import { ForecastWidget } from "./fsrs/ForecastWidget";
+import { PresetInfoWidget } from "./fsrs/PresetInfoWidget";
+import { ProblemCardsWidget } from "./fsrs/ProblemCardsWidget";
+import { TrueRetentionWidget } from "./fsrs/TrueRetentionWidget";
+import { AchievementsWidget } from "./gamification/AchievementsWidget";
+import { AnswerStreakWidget } from "./gamification/AnswerStreakWidget";
+import { CountdownWidget } from "./gamification/CountdownWidget";
+import { MaturityWidget } from "./gamification/MaturityWidget";
+import { ProgressWidget } from "./gamification/ProgressWidget";
+import { RatingsWidget } from "./gamification/RatingsWidget";
+import { DecayWidget } from "./note/DecayWidget";
+import { NoteHealthWidget } from "./note/NoteHealthWidget";
+import { ProjectHubWidget } from "./project/ProjectHubWidget";
+import { ProjectWidget } from "./project/ProjectWidget";
+import { UnassignedNotesWidget } from "./project/UnassignedNotesWidget";
 
 export function registerDashboardCodeblocks(plugin: TrueRecallPlugin): void {
 	// ── Existing widgets ────────────────────────────────────────
@@ -125,6 +135,132 @@ export function registerDashboardCodeblocks(plugin: TrueRecallPlugin): void {
 		(_source, el, _ctx) => {
 			el.addClass("true-recall-codeblock-project-hub");
 			const unmount = mountPreact(el, plugin, h(ProjectHubWidget, null));
+			registerCleanup(el, unmount);
+		},
+	);
+
+	// ── New global widgets ──────────────────────────────────────
+
+	plugin.registerMarkdownCodeBlockProcessor(
+		"true-recall-progress",
+		(source, el, _ctx) => {
+			el.addClass("true-recall-codeblock-progress");
+			const unmount = mountPreact(el, plugin, h(ProgressWidget, { source }));
+			registerCleanup(el, unmount);
+		},
+	);
+
+	plugin.registerMarkdownCodeBlockProcessor(
+		"true-recall-achievements",
+		(source, el, _ctx) => {
+			el.addClass("true-recall-codeblock-achievements");
+			const unmount = mountPreact(
+				el,
+				plugin,
+				h(AchievementsWidget, { source }),
+			);
+			registerCleanup(el, unmount);
+		},
+	);
+
+	plugin.registerMarkdownCodeBlockProcessor(
+		"true-recall-answer-streak",
+		(source, el, _ctx) => {
+			el.addClass("true-recall-codeblock-answer-streak");
+			const unmount = mountPreact(
+				el,
+				plugin,
+				h(AnswerStreakWidget, { source }),
+			);
+			registerCleanup(el, unmount);
+		},
+	);
+
+	plugin.registerMarkdownCodeBlockProcessor(
+		"true-recall-countdown",
+		(source, el, _ctx) => {
+			el.addClass("true-recall-codeblock-countdown");
+			const unmount = mountPreact(
+				el,
+				plugin,
+				h(CountdownWidget, { source }),
+			);
+			registerCleanup(el, unmount);
+		},
+	);
+
+	plugin.registerMarkdownCodeBlockProcessor(
+		"true-recall-maturity",
+		(source, el, _ctx) => {
+			el.addClass("true-recall-codeblock-maturity");
+			const unmount = mountPreact(
+				el,
+				plugin,
+				h(MaturityWidget, { source }),
+			);
+			registerCleanup(el, unmount);
+		},
+	);
+
+	plugin.registerMarkdownCodeBlockProcessor(
+		"true-recall-ratings",
+		(source, el, _ctx) => {
+			el.addClass("true-recall-codeblock-ratings");
+			const unmount = mountPreact(el, plugin, h(RatingsWidget, { source }));
+			registerCleanup(el, unmount);
+		},
+	);
+
+	// ── FSRS management widgets ────────────────────────────────
+
+	plugin.registerMarkdownCodeBlockProcessor(
+		"true-recall-true-retention",
+		(source, el, _ctx) => {
+			el.addClass("true-recall-codeblock-true-retention");
+			const unmount = mountPreact(
+				el,
+				plugin,
+				h(TrueRetentionWidget, { source }),
+			);
+			registerCleanup(el, unmount);
+		},
+	);
+
+	plugin.registerMarkdownCodeBlockProcessor(
+		"true-recall-preset-info",
+		(source, el, _ctx) => {
+			el.addClass("true-recall-codeblock-preset-info");
+			const unmount = mountPreact(
+				el,
+				plugin,
+				h(PresetInfoWidget, { source }),
+			);
+			registerCleanup(el, unmount);
+		},
+	);
+
+	plugin.registerMarkdownCodeBlockProcessor(
+		"true-recall-problem-cards",
+		(source, el, _ctx) => {
+			el.addClass("true-recall-codeblock-problem-cards");
+			const unmount = mountPreact(
+				el,
+				plugin,
+				h(ProblemCardsWidget, { source }),
+			);
+			registerCleanup(el, unmount);
+		},
+	);
+
+	plugin.registerMarkdownCodeBlockProcessor(
+		"true-recall-forecast",
+		(source, el, _ctx) => {
+			el.addClass("true-recall-codeblock-forecast");
+			const unmount = mountPreact(
+				el,
+				plugin,
+				h(ForecastWidget, { source }),
+			);
 			registerCleanup(el, unmount);
 		},
 	);

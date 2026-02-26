@@ -3,7 +3,7 @@ import { dataVersion, useSignalVersion } from "@shared/services/signals";
 import { usePlugin } from "@shared/ui/preact";
 import { useMemo } from "preact/hooks";
 import { ProjectCard } from "./ProjectWidget";
-import { computeProjectStats, type ProjectStats } from "./project-stats";
+import { computeProjectStats, type ProjectStats } from "../project-stats";
 
 interface FlatProject {
 	stats: ProjectStats;

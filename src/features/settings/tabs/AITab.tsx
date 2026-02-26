@@ -9,6 +9,7 @@ import { useSettings } from "@features/settings/hooks/useSettings";
 import type { AIModelInfo, AIModelKey } from "@shared/constants";
 import type { TrueRecallSettings } from "@shared/types/settings.types";
 import { AI_MODELS_EXTENDED, TRUERECALL_WEB_URL } from "@shared/constants";
+import { isFeatureAllowed } from "@shared/utils/subscription.utils";
 import type { SelectOptionGroup } from "@shared/ui/components";
 import {
 	Clickable,
@@ -123,6 +124,9 @@ function SubscriptionSection() {
 			: 0;
 	const remaining =
 		status ? (status.budget_max - status.budget_spent).toFixed(2) : "0.00";
+	const approxGenerations = status
+		? Math.floor((status.budget_max - status.budget_spent) / 0.007)
+		: 0;
 
 	return (
 		<>
@@ -179,7 +183,7 @@ function SubscriptionSection() {
 							{status.tier}
 						</span>
 						<span class="ep:text-obs-muted ep:text-ui-smaller">
-							${remaining} remaining of ${status.budget_max.toFixed(2)}
+							~{approxGenerations} generations remaining (${remaining})
 						</span>
 					</div>
 					<div class="ep:w-full ep:h-2 ep:bg-obs-modifier-border ep:rounded-[var(--radius-s)] ep:overflow-hidden">
@@ -323,7 +327,7 @@ export function AITab() {
 				/>
 			</SettingRow>
 
-			{hasAnyKey && (
+			{hasAnyKey && isFeatureAllowed("customPrompts", settings) && (
 				<>
 					<InfoBlock>
 						<p>
@@ -386,6 +390,21 @@ export function AITab() {
 						);
 					})}
 				</>
+			)}
+
+			{hasAnyKey && !isFeatureAllowed("customPrompts", settings) && (
+				<InfoBlock>
+					<p>
+						Custom prompts are available on Starter and Pro plans.{" "}
+						<a
+							href={`${TRUERECALL_WEB_URL}/pricing`}
+							target="_blank"
+							rel="noopener"
+						>
+							Upgrade to customize
+						</a>
+					</p>
+				</InfoBlock>
 			)}
 		</>
 	);

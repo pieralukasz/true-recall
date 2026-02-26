@@ -30,7 +30,7 @@ export function usePanelActions({
 		if (!currentFile) return;
 		const { notify } = await import("@shared/services/notification.service");
 
-		if (!plugin.settings.openRouterApiKey) {
+		if (!plugin.settings.openRouterApiKey && !plugin.settings.subscriptionKey) {
 			notify().aiNotConfigured();
 			return;
 		}
@@ -81,7 +81,7 @@ export function usePanelActions({
 		if (!currentFile) return;
 		const { notify } = await import("@shared/services/notification.service");
 
-		if (!plugin.settings.openRouterApiKey) {
+		if (!plugin.settings.openRouterApiKey && !plugin.settings.subscriptionKey) {
 			notify().aiNotConfigured();
 			return;
 		}

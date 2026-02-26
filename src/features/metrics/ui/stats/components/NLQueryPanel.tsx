@@ -1,8 +1,10 @@
 import type { NLQueryService } from "@features/ai/services/nl-query.service";
 import { StatsCard } from "@features/metrics/ui/stats/components/StatsCard";
 import type { ExampleQuery, NLQueryResult } from "@shared/types";
+import { TRUERECALL_WEB_URL } from "@shared/constants";
 import { Clickable } from "@shared/ui/components";
-import { useApp } from "@shared/ui/preact";
+import { useApp, usePlugin } from "@shared/ui/preact";
+import { isFeatureAllowed } from "@shared/utils/subscription.utils";
 import { MarkdownRenderer, Component as ObsidianComponent } from "obsidian";
 import { useCallback, useEffect, useRef, useState } from "preact/hooks";
 
@@ -29,6 +31,7 @@ export function NLQueryPanel({
 	nlQueryService: NLQueryService | null;
 }) {
 	const app = useApp();
+	const plugin = usePlugin();
 	const [query, setQuery] = useState("");
 	const [isLoading, setIsLoading] = useState(false);
 	const [result, setResult] = useState<NLQueryResult | null>(null);
@@ -36,6 +39,7 @@ export function NLQueryPanel({
 	const resultsRef = useRef<HTMLDivElement>(null);
 
 	const isReady = nlQueryService?.isReady() ?? false;
+	const isTierGated = !isReady && !!plugin.settings.subscriptionKey && !isFeatureAllowed("nlQuery", plugin.settings);
 
 	const submitQuery = useCallback(
 		async (q: string) => {
@@ -98,7 +102,9 @@ export function NLQueryPanel({
 					placeholder={
 						isReady
 							? "What would you like to know about your learning?"
-							: "Configure OpenRouter API key in settings to enable AI queries"
+							: isTierGated
+								? "Upgrade to Starter to use Learning Insights"
+								: "Add a subscription or OpenRouter API key in settings"
 					}
 					aria-label="Learning insights query"
 					rows={2}
@@ -106,13 +112,22 @@ export function NLQueryPanel({
 					onInput={(e) => setQuery((e.target as HTMLTextAreaElement).value)}
 					onKeyDown={handleKeyDown}
 				/>
-				<Clickable
-					class="mod-cta ep:py-2 ep:px-4 ep:text-ui-small ep:rounded-md ep:transition-opacity ep:self-stretch"
-					disabled={!isReady || isLoading}
-					onClick={() => void submitQuery(query)}
-				>
-					{!isReady ? "Not configured" : isLoading ? "Analyzing..." : "Explore"}
-				</Clickable>
+				{isTierGated ? (
+					<Clickable
+						class="mod-cta ep:py-2 ep:px-4 ep:text-ui-small ep:rounded-md ep:transition-opacity ep:self-stretch"
+						onClick={() => window.open(`${TRUERECALL_WEB_URL}/pricing`, "_blank")}
+					>
+						Upgrade
+					</Clickable>
+				) : (
+					<Clickable
+						class="mod-cta ep:py-2 ep:px-4 ep:text-ui-small ep:rounded-md ep:transition-opacity ep:self-stretch"
+						disabled={!isReady || isLoading}
+						onClick={() => void submitQuery(query)}
+					>
+						{!isReady ? "Not configured" : isLoading ? "Analyzing..." : "Explore"}
+					</Clickable>
+				)}
 			</div>
 
 			{/* Example queries */}

@@ -4,7 +4,7 @@ import { dataVersion, useSignalVersion } from "@shared/services/signals";
 import { Clickable } from "@shared/ui/components";
 import { usePlugin } from "@shared/ui/preact";
 import { useMemo } from "preact/hooks";
-import { configValue, parseCodeblockConfig } from "./config-parser";
+import { configValue, parseCodeblockConfig } from "../config-parser";
 
 const DAY_NAMES = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 

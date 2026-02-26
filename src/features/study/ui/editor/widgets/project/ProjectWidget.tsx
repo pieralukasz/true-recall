@@ -7,8 +7,8 @@ import {
 	computeProjectStats,
 	healthColor,
 	type ProjectStats,
-} from "./project-stats";
-import { WidgetCta } from "./WidgetCta";
+} from "../project-stats";
+import { WidgetCta } from "../WidgetCta";
 
 export function ProjectWidget({
 	sourcePath,

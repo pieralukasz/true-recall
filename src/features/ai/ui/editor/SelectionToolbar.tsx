@@ -55,7 +55,7 @@ export function SelectionToolbar({
 					title={
 						hasApiKey
 							? `Generate ${label} flashcard(s) with AI`
-							: "Configure OpenRouter API key in settings"
+							: "Add a subscription or OpenRouter API key in settings"
 					}
 				>
 					<span>{label}</span>

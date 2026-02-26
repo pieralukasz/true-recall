@@ -2,8 +2,8 @@ import { dataVersion, useSignalVersion } from "@shared/services/signals";
 import { FSRS_COLORS } from "@shared/ui/helpers/fsrs-colors";
 import { usePlugin } from "@shared/ui/preact";
 import { useMemo } from "preact/hooks";
-import { configValue, parseCodeblockConfig } from "./config-parser";
-import { WidgetCta } from "./WidgetCta";
+import { configValue, parseCodeblockConfig } from "../config-parser";
+import { WidgetCta } from "../WidgetCta";
 
 interface NoteHealthData {
 	totalCards: number;
