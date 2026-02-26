@@ -4,7 +4,7 @@ import type { CollectionHealthSnapshot } from "@shared/types/fsrs/stats.types";
 import { Clickable } from "@shared/ui/components";
 import { usePlugin } from "@shared/ui/preact";
 import { useMemo } from "preact/hooks";
-import { configValue, parseCodeblockConfig } from "./config-parser";
+import { configValue, parseCodeblockConfig } from "../config-parser";
 
 export function HealthWidget({ source }: { source: string }) {
 	const plugin = usePlugin();

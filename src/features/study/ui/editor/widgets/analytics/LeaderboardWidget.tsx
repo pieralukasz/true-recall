@@ -4,8 +4,8 @@ import type { NotePerformanceRow } from "@shared/types/fsrs/stats.types";
 import { Clickable } from "@shared/ui/components";
 import { usePlugin } from "@shared/ui/preact";
 import { useMemo } from "preact/hooks";
-import { configValue, parseCodeblockConfig } from "./config-parser";
-import { WidgetCta } from "./WidgetCta";
+import { configValue, parseCodeblockConfig } from "../config-parser";
+import { WidgetCta } from "../WidgetCta";
 
 interface LeaderboardEntry extends NotePerformanceRow {
 	resolvedName: string;

@@ -103,6 +103,56 @@ export class StatsActions {
 		);
 	}
 
+	getAnswerStreakInfo(): { current: number; todayBest: number; allTimeBest: number } {
+		const rows = this.db.query<{ rating: number; reviewed_at: string }>(
+			`SELECT rating, reviewed_at FROM review_log
+			 WHERE deleted_at IS NULL
+			 ORDER BY reviewed_at DESC
+			 LIMIT 5000`,
+			[],
+		);
+
+		if (rows.length === 0) {
+			return { current: 0, todayBest: 0, allTimeBest: 0 };
+		}
+
+		// Current streak: consecutive correct (rating >= 3) from most recent
+		let current = 0;
+		for (const row of rows) {
+			if (row.rating >= 3) current++;
+			else break;
+		}
+
+		// All-time best: longest consecutive correct run
+		let allTimeBest = 0;
+		let run = 0;
+		for (const row of rows) {
+			if (row.rating >= 3) {
+				run++;
+				if (run > allTimeBest) allTimeBest = run;
+			} else {
+				run = 0;
+			}
+		}
+
+		// Today's best: longest consecutive correct run within today's reviews
+		const todayStr = new Date().toISOString().split("T")[0] ?? "";
+		let todayBest = 0;
+		let todayRun = 0;
+		for (const row of rows) {
+			const rowDate = row.reviewed_at.split("T")[0] ?? "";
+			if (rowDate !== todayStr) continue;
+			if (row.rating >= 3) {
+				todayRun++;
+				if (todayRun > todayBest) todayBest = todayRun;
+			} else {
+				todayRun = 0;
+			}
+		}
+
+		return { current, todayBest, allTimeBest };
+	}
+
 	getDailyStats(date: string): ExtendedDailyStats | null {
 		const row = this.db.get<{
 			date: string;

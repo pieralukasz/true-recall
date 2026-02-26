@@ -144,7 +144,7 @@ export function FlashcardPanelApp({
 						}
 						onCollect={panelActions.handleCollect}
 						uncollectedCount={store.uncollectedCount}
-						hasApiKey={!!plugin.settings.openRouterApiKey}
+						hasApiKey={!!(plugin.settings.openRouterApiKey || plugin.settings.subscriptionKey)}
 						hasHighlights={store.hasHighlights}
 					/>
 				</div>

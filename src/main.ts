@@ -925,7 +925,7 @@ export default class TrueRecallPlugin extends Plugin {
 					notify().error(`Quick add failed: ${msg}`);
 				}
 			},
-			hasApiKey: () => !!this.settings.openRouterApiKey,
+			hasApiKey: () => !!(this.settings.openRouterApiKey || this.settings.subscriptionKey),
 			isEnabled: () => this.settings.selectionToolbarEnabled,
 		});
 
@@ -946,6 +946,11 @@ export default class TrueRecallPlugin extends Plugin {
 	private async initializeNLQueryService(): Promise<void> {
 		const hasAnyKey = this.settings.openRouterApiKey || this.settings.subscriptionKey;
 		if (!this.cardStore || !hasAnyKey) {
+			return;
+		}
+
+		const { isFeatureAllowed } = await import("@shared/utils/subscription.utils");
+		if (!isFeatureAllowed("nlQuery", this.settings)) {
 			return;
 		}
 
