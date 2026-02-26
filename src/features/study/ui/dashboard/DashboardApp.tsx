@@ -63,16 +63,25 @@ export function DashboardApp() {
 				projectLinkService: plugin.projectLinkService,
 				cardStore: plugin.cardStore,
 				fsrsService: plugin.fsrsService,
+				frontmatterIndex: plugin.frontmatterIndex,
 			},
 		});
 	}, [plugin, data.notes]);
 
 	const enrichedNotes = useMemo(() => {
-		return data.notes.map((note) => ({
-			...note,
-			projects: projectData.noteProjectMap.get(note.name) ?? [],
-		}));
-	}, [data.notes, projectData.noteProjectMap]);
+		return data.notes.map((note) => {
+			const projects = projectData.noteProjectMap.get(note.name) ?? [];
+			let presetName: string | undefined;
+			if (note.path) {
+				const vals = plugin.frontmatterIndex.getValues(
+					"fsrs_preset",
+					note.path,
+				);
+				if (vals.length > 0 && vals[0]) presetName = vals[0];
+			}
+			return { ...note, projects, presetName };
+		});
+	}, [data.notes, projectData.noteProjectMap, plugin]);
 
 	const allProjectNames = useMemo(() => {
 		const names = new Set<string>();
