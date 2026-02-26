@@ -43,6 +43,7 @@ export const lastMutation = signal<CardMutation | null>(null);
 
 export const settingsVersion = signal(0);
 export const syncVersion = signal(0);
+export const metadataVersion = signal(0);
 
 export function notifyCardChange(mutation: CardMutation): void {
 	batch(() => {

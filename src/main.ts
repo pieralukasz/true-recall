@@ -58,7 +58,7 @@ import {
 	VIEW_TYPE_STATS,
 } from "@shared/constants";
 import { notify } from "@shared/services/notification.service";
-import { settingsVersion } from "@shared/services/signals";
+import { metadataVersion, settingsVersion } from "@shared/services/signals";
 import { UndoService } from "@shared/services/undo.service";
 import { type AppStore, createAppStore } from "@shared/store";
 import { extractFSRSSettings } from "@shared/types";
@@ -145,6 +145,9 @@ export default class TrueRecallPlugin extends Plugin {
 			type: "string",
 			unique: false,
 		});
+		this.frontmatterIndex.onFieldChange("project", () => {
+			metadataVersion.value++;
+		});
 		this.frontmatterIndex.registerEvents(this);
 
 		// Build index after metadataCache is fully loaded
@@ -157,8 +160,10 @@ export default class TrueRecallPlugin extends Plugin {
 			this.frontmatterIndex,
 			() => this.settings,
 		);
-		const invalidateFolderCache = () =>
+		const invalidateFolderCache = () => {
 			this.folderProjectService.invalidateCache();
+			metadataVersion.value++;
+		};
 		this.registerEvent(
 			this.app.vault.on("create", invalidateFolderCache),
 		);
