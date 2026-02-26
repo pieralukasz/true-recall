@@ -148,6 +148,9 @@ export class ProjectLinkService {
 			if (visited.has(pp)) return;
 			visited.add(pp);
 
+			const ownUids = this.frontmatterIndex.getValues("flashcard_uid", pp);
+			for (const uid of ownUids) uids.add(uid);
+
 			for (const memberPath of this.getMemberPaths(pp)) {
 				const memberUids = this.frontmatterIndex.getValues(
 					"flashcard_uid",
