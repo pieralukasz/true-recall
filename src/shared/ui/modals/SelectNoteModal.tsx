@@ -15,15 +15,19 @@ export interface SelectNoteResult {
 
 export interface SelectNoteModalOptions {
 	title?: string;
+	description?: string;
 	excludeFolder?: string;
 	excludeFlashcardFiles?: boolean;
+	excludePaths?: Set<string>;
 }
 
 function SelectNoteBody({
 	allNotes,
+	description,
 	onResolve,
 }: {
 	allNotes: TFile[];
+	description?: string;
 	onResolve: (result: SelectNoteResult) => void;
 }) {
 	const [searchQuery, setSearchQuery] = useState("");
@@ -44,7 +48,7 @@ function SelectNoteBody({
 	return (
 		<>
 			<p class="ep:text-obs-muted ep:text-ui-small ep:mb-4">
-				Select a note to create a project from.
+				{description ?? "Select a note."}
 			</p>
 
 			<div class="ep:mb-3">
@@ -139,6 +143,7 @@ export class SelectNoteModal extends BasePromiseModal<SelectNoteResult> {
 		render(
 			<SelectNoteBody
 				allNotes={this.allNotes}
+				description={this.options.description}
 				onResolve={(result) => this.resolve(result)}
 			/>,
 			container,
@@ -149,9 +154,13 @@ export class SelectNoteModal extends BasePromiseModal<SelectNoteResult> {
 		const excludeFolder = this.options.excludeFolder
 			? normalizePath(this.options.excludeFolder)
 			: null;
+		const excludePaths = this.options.excludePaths;
 
 		return this.app.vault.getMarkdownFiles().filter((file) => {
 			if (excludeFolder && file.path.startsWith(`${excludeFolder}/`)) {
+				return false;
+			}
+			if (excludePaths?.has(file.path)) {
 				return false;
 			}
 			return true;

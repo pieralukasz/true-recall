@@ -35,6 +35,12 @@ export function registerCommands(plugin: TrueRecallPlugin): void {
 	});
 
 	plugin.addCommand({
+		id: "open-card-browser",
+		name: "Open card browser",
+		callback: () => void plugin.openCardBrowser(),
+	});
+
+	plugin.addCommand({
 		id: "open-statistics",
 		name: "Open statistics panel",
 		callback: () => void plugin.openStatsView(),
