@@ -52,6 +52,7 @@ import type { StatusBarWidget } from "@features/study/ui/editor/widgets/StatusBa
 import { ReviewView } from "@features/study/ui/review/ReviewView";
 import {
 	VIEW_TYPE_DASHBOARD,
+	VIEW_TYPE_CARD_BROWSER,
 	VIEW_TYPE_FLASHCARD_PANEL,
 	VIEW_TYPE_REVIEW,
 	VIEW_TYPE_SIMULATOR,
@@ -156,6 +157,7 @@ export default class TrueRecallPlugin extends Plugin {
 		// Build index after metadataCache is fully loaded
 		this.app.workspace.onLayoutReady(() => {
 			this.frontmatterIndex.rebuildIndex();
+			metadataVersion.value++;
 		});
 
 		this.folderProjectService = new FolderProjectService(
@@ -245,6 +247,15 @@ export default class TrueRecallPlugin extends Plugin {
 			this.openDashboard().catch((error) => {
 				notify().error("Failed to open dashboard", error);
 			});
+		});
+
+		this.registerView(VIEW_TYPE_CARD_BROWSER, (leaf) => {
+			const {
+				CardBrowserView,
+			} = require("@features/library/ui/browser/CardBrowserView") as {
+				CardBrowserView: typeof import("@features/library/ui/browser/CardBrowserView").CardBrowserView;
+			};
+			return new CardBrowserView(leaf, this);
 		});
 
 		this.addRibbonIcon("bar-chart-2", "True Recall - statistics", () => {
@@ -414,6 +425,15 @@ export default class TrueRecallPlugin extends Plugin {
 			this.settings.reviewMode,
 			{ deckFilter },
 		);
+	}
+
+	async openCardBrowser(): Promise<void> {
+		const existingLeaf = getView(this.app, VIEW_TYPE_CARD_BROWSER);
+		if (existingLeaf) {
+			void this.app.workspace.revealLeaf(existingLeaf);
+			return;
+		}
+		await activateView(this.app, VIEW_TYPE_CARD_BROWSER, { useMainArea: true });
 	}
 
 	async openDashboard(): Promise<void> {

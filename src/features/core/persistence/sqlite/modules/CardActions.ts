@@ -690,6 +690,23 @@ export class CardActions {
 		return allIds;
 	}
 
+	browserQuery(
+		where: string,
+		params: (string | number)[],
+		orderBy: string,
+		limit: number,
+		offset: number,
+	): FSRSCardData[] {
+		const sql = `SELECT ${CARD_SELECT_COLUMNS} FROM cards WHERE ${where} ORDER BY ${orderBy} LIMIT ? OFFSET ?`;
+		const rows = this.db.query<CardRow>(sql, [...params, limit, offset]);
+		return rows.map(mapRowToCard);
+	}
+
+	browserCount(where: string, params: (string | number)[]): number {
+		const sql = `SELECT COUNT(*) as count FROM cards WHERE ${where}`;
+		return this.db.get<{ count: number }>(sql, params)?.count ?? 0;
+	}
+
 	getClozeSiblings(sourceUid: string, clozeTemplate: string): FSRSCardData[] {
 		const rows = this.db.query<CardRow>(
 			`SELECT ${CARD_SELECT_COLUMNS} FROM cards WHERE source_uid = ? AND cloze_template = ? AND deleted_at IS NULL ORDER BY cloze_index ASC`,

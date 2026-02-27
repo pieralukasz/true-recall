@@ -11,6 +11,7 @@ import { usePlugin } from "@shared/ui/preact";
 import { useCallback, useMemo, useRef } from "preact/hooks";
 import { useSignal } from "@preact/signals";
 import { StreakWidget } from "../editor/widgets/analytics/StreakWidget";
+import { DashboardNavBar } from "./components/DashboardNavBar";
 import { DashboardTabs } from "./components/DashboardTabs";
 import { NoteList } from "./components/NoteList";
 import { ProjectsTab } from "./components/ProjectsTab";
@@ -126,67 +127,65 @@ export function DashboardApp() {
 	};
 
 	return (
-		<div class="ep-dashboard-container ep:p-3 ep:mx-auto ep:max-w-5xl ep:flex ep:flex-col ep:gap-3 ep:h-full">
-			<div class="ep:shrink-0">
-				<StreakWidget source="" />
-			</div>
-
-			{projectData.recentlyStudied.length > 0 && (
-				<div class="ep:shrink-0">
-					<RecentlyStudiedBar notes={projectData.recentlyStudied} />
-				</div>
-			)}
-
-			<SearchInput
-				class="ep:shrink-0"
-				value={searchQuery.value}
-				placeholder="Search notes or projects..."
-				onChange={(q) => {
-					searchQuery.value = q;
-				}}
-			/>
-
-			<div class="ep:shrink-0">
-				<DashboardTabs
-					activeTab={activeTab.value}
-					onTabChange={handleTabChange}
-					projectCount={projectData.projects.length}
-					notesCount={enrichedNotes.length}
-				/>
-			</div>
-
+		<div class="ep-dashboard-container ep:flex ep:flex-col ep:h-full">
+			<DashboardNavBar />
 			<div
 				ref={scrollContainerRef}
-				class="ep:flex-1 ep:min-h-0 ep:overflow-y-auto ep:relative"
+				class="ep:flex-1 ep:min-h-0 ep:overflow-y-auto"
 				onScroll={onScroll}
 			>
-				<div class="ep:flex ep:flex-col ep:min-h-full">
-					<div class="ep:flex-1">
-						{activeTab.value === "projects" && (
-							<ProjectsTab
-								projects={projectData.projects}
-								searchQuery={searchQuery.value}
-								scrollContainerRef={scrollContainerRef}
-								scrollTop={scrollTop}
-								onNavigateToNote={handleNavigateToNote}
-								onStudyNote={handleStudyNote}
-								onCustomStudyNote={handleCustomStudyNote}
-							/>
-						)}
+				<div class="ep:p-3 ep:mx-auto ep:max-w-5xl ep:flex ep:flex-col ep:gap-3 ep:min-h-full">
+					<StreakWidget source="" />
 
-						{activeTab.value === "notes" && (
-							<NoteList
-								notes={enrichedNotes}
-								searchQuery={searchQuery.value}
-								allProjectNames={allProjectNames}
-								scrollContainerRef={scrollContainerRef}
-								scrollTop={scrollTop}
-							/>
-						)}
-					</div>
+					{projectData.recentlyStudied.length > 0 && (
+						<RecentlyStudiedBar
+							notes={projectData.recentlyStudied}
+						/>
+					)}
 
-					<div class="ep:mt-3">
-						<HeatmapWidget source="months: 0" />
+					<SearchInput
+						value={searchQuery.value}
+						placeholder="Search notes or projects..."
+						onChange={(q) => {
+							searchQuery.value = q;
+						}}
+					/>
+
+					<DashboardTabs
+						activeTab={activeTab.value}
+						onTabChange={handleTabChange}
+						projectCount={projectData.projects.length}
+						notesCount={enrichedNotes.length}
+					/>
+
+					<div class="ep:flex ep:flex-col ep:flex-1">
+						<div class="ep:flex-1">
+							{activeTab.value === "projects" && (
+								<ProjectsTab
+									projects={projectData.projects}
+									searchQuery={searchQuery.value}
+									scrollContainerRef={scrollContainerRef}
+									scrollTop={scrollTop}
+									onNavigateToNote={handleNavigateToNote}
+									onStudyNote={handleStudyNote}
+									onCustomStudyNote={handleCustomStudyNote}
+								/>
+							)}
+
+							{activeTab.value === "notes" && (
+								<NoteList
+									notes={enrichedNotes}
+									searchQuery={searchQuery.value}
+									allProjectNames={allProjectNames}
+									scrollContainerRef={scrollContainerRef}
+									scrollTop={scrollTop}
+								/>
+							)}
+						</div>
+
+						<div class="ep:mt-3">
+							<HeatmapWidget source="months: 0" />
+						</div>
 					</div>
 				</div>
 			</div>
