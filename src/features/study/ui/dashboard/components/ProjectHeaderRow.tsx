@@ -2,7 +2,16 @@ import { CardCountDisplay } from "@shared/ui/components/CardCountDisplay";
 import { Clickable } from "@shared/ui/components/Clickable";
 import { IconButton } from "@shared/ui/components/IconButton";
 import { cn } from "@shared/ui/utils";
-import type { DashboardProject } from "../types";
+import { computePriority } from "../helpers/note-priority";
+import type { DashboardProject, NotePriority } from "../types";
+
+const PRIORITY_DOT: Record<NotePriority, string> = {
+	overdue: "ep:bg-obs-red",
+	hot: "ep:bg-obs-orange",
+	due: "ep:bg-obs-blue",
+	light: "ep:bg-obs-green",
+	done: "ep:bg-obs-faint",
+};
 
 interface ProjectHeaderRowProps {
 	project: DashboardProject;
@@ -20,6 +29,7 @@ export function ProjectHeaderRow({
 	onStudyProject,
 }: ProjectHeaderRowProps) {
 	const activeDue = project.due + project.newCount + project.learning;
+	const priority = computePriority({ overdueCount: 0, due: project.due, learning: project.learning, newCount: project.newCount });
 
 	return (
 		<div
@@ -33,6 +43,12 @@ export function ProjectHeaderRow({
 				class="ep:flex ep:items-center ep:gap-2 ep:flex-1 ep:min-w-0"
 				onClick={onToggle}
 			>
+				<span
+					class={cn(
+						"ep:inline-block ep:w-1.5 ep:h-1.5 ep:rounded-full ep:shrink-0",
+						PRIORITY_DOT[priority],
+					)}
+				/>
 				<span class="ep:text-sm ep:text-obs-normal ep:truncate ep:min-w-0 ep:font-medium">
 					{project.name}
 				</span>
