@@ -1,6 +1,8 @@
 import { Clickable } from "@shared/ui/components";
+import { SearchCombobox } from "@shared/ui/components/SearchCombobox";
 import { ALL_COLUMNS } from "../helpers/column-defs";
 import type { SortConfig, StateFilterValue } from "../types";
+import type { SuggestionProvider } from "@shared/ui/helpers/search-suggestions.types";
 import { useSignal } from "@preact/signals";
 import { useRef } from "preact/hooks";
 
@@ -46,6 +48,7 @@ interface BrowserToolbarProps {
 	onToggleSidebar: () => void;
 	visibleColumns: string[];
 	onToggleColumn: (key: string) => void;
+	getSuggestions: SuggestionProvider;
 }
 
 export function BrowserToolbar({
@@ -60,6 +63,7 @@ export function BrowserToolbar({
 	onToggleSidebar,
 	visibleColumns,
 	onToggleColumn,
+	getSuggestions,
 }: BrowserToolbarProps) {
 	const showColumnMenu = useSignal(false);
 	const columnBtnRef = useRef<HTMLDivElement>(null);
@@ -106,31 +110,13 @@ export function BrowserToolbar({
 					</svg>
 				</Clickable>
 
-				<div class="ep:flex-1 ep:relative">
-					<input
-						type="text"
-						class="ep:w-full ep:py-1.5 ep:px-3 ep:pl-8 ep:border ep:border-obs-border ep:rounded-md ep:bg-obs-primary ep:text-obs-normal ep:text-ui-small ep:focus:outline-none ep:focus:border-obs-interactive ep:placeholder:text-obs-muted"
-						placeholder='Search cards... (try "is:new", "prop:lapses>3")'
-						value={searchText}
-						onInput={(e) =>
-							onSearchChange(
-								(e.target as HTMLInputElement).value,
-							)
-						}
-					/>
-					<svg
-						class="ep:absolute ep:left-2.5 ep:top-1/2 ep:-translate-y-1/2 ep:text-obs-muted"
-						width="14"
-						height="14"
-						viewBox="0 0 24 24"
-						fill="none"
-						stroke="currentColor"
-						stroke-width="2"
-					>
-						<circle cx="11" cy="11" r="8" />
-						<line x1="21" y1="21" x2="16.65" y2="16.65" />
-					</svg>
-				</div>
+				<SearchCombobox
+					value={searchText}
+					placeholder='Search cards... (try "is:new", "prop:lapses>3")'
+					onChange={onSearchChange}
+					getSuggestions={getSuggestions}
+					class="ep:flex-1"
+				/>
 
 				<div class="ep:relative" ref={columnBtnRef}>
 					<Clickable

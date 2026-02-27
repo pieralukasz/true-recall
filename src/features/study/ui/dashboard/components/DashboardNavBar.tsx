@@ -33,19 +33,13 @@ export function DashboardNavBar() {
 					const { SimpleFlashcardEditorModal } = await import(
 						"@shared/ui/modals/SimpleFlashcardEditorModal"
 					);
-					const file = app.workspace.getActiveFile();
 					const modal = new SimpleFlashcardEditorModal(
 						app,
-						{ mode: "add", currentFilePath: file?.path ?? "" },
+						{ mode: "add", currentFilePath: "" },
 						plugin.EmbeddableEditor,
+						plugin.flashcardManager,
 					);
-					const result = await modal.openAndWait();
-					if (!result.cancelled && result.flashcards.length > 0 && file) {
-						await plugin.flashcardManager.saveFlashcardsToSql(
-							file,
-							result.flashcards,
-						);
-					}
+					await modal.openAndWait();
 					break;
 				}
 				case "browse":

@@ -1,16 +1,20 @@
 import { ImageService } from "@features/integration/services/ImageService";
-import { FlashcardParserService } from "@features/study/services/flashcard/flashcard-parser.service";
+import type { FlashcardManager } from "@features/study/services/flashcard/flashcard.service";
 import type { FlashcardItem } from "@shared/types";
 import type { EmbeddableEditorClass } from "@shared/ui/editor/embedded-editor";
 import { BasePromiseModal } from "@shared/ui/modals/BasePromiseModal";
-import { SimpleEditorBody } from "@shared/ui/modals/simple-editor/SimpleEditorBody";
-import type { App } from "obsidian";
+import {
+	AddFlashcardsApp,
+	type AddFlashcardsResult,
+} from "@shared/ui/modals/simple-editor/AddFlashcardsApp";
+import type { App, TFile } from "obsidian";
 import { render } from "preact";
 
 export interface SimpleFlashcardEditorResult {
 	cancelled: boolean;
 	flashcards: FlashcardItem[];
 	editedCardId?: string;
+	totalSaved?: number;
 }
 
 export interface SimpleFlashcardEditorOptions {
@@ -22,22 +26,23 @@ export interface SimpleFlashcardEditorOptions {
 
 export class SimpleFlashcardEditorModal extends BasePromiseModal<SimpleFlashcardEditorResult> {
 	private options: SimpleFlashcardEditorOptions;
-	private parser: FlashcardParserService;
 	private imageService: ImageService | null = null;
 	private editorClass: EmbeddableEditorClass | null;
+	private flashcardManager: FlashcardManager | null;
 
 	constructor(
 		app: App,
 		options: SimpleFlashcardEditorOptions,
 		editorClass?: EmbeddableEditorClass | null,
+		flashcardManager?: FlashcardManager | null,
 	) {
 		super(app, {
 			title: options.mode === "add" ? "Add Flashcards" : "Edit Flashcard",
-			width: "700px",
+			width: "800px",
 		});
 		this.options = options;
-		this.parser = new FlashcardParserService();
 		this.editorClass = editorClass ?? null;
+		this.flashcardManager = flashcardManager ?? null;
 	}
 
 	protected getDefaultResult(): SimpleFlashcardEditorResult {
@@ -52,18 +57,41 @@ export class SimpleFlashcardEditorModal extends BasePromiseModal<SimpleFlashcard
 
 	protected renderBody(container: HTMLElement): void {
 		if (!this.imageService) return;
+
+		const initialNote = this.resolveInitialNote();
+
 		render(
-			<SimpleEditorBody
+			<AddFlashcardsApp
 				app={this.app}
-				options={this.options}
-				parser={this.parser}
+				mode={this.options.mode}
+				flashcardManager={this.flashcardManager}
 				imageService={this.imageService}
 				editorClass={this.editorClass}
-				onSubmit={(result) => this.resolve(result)}
+				prefillContent={this.options.prefillContent}
+				editCardId={this.options.editCardId}
+				initialNote={initialNote}
+				onDone={(result: AddFlashcardsResult) =>
+					this.resolve({
+						cancelled: result.cancelled,
+						flashcards: result.flashcards,
+						editedCardId: result.editedCardId,
+						totalSaved: result.totalSaved,
+					})
+				}
 				onClose={() => this.close()}
 			/>,
 			container,
 		);
+	}
+
+	private resolveInitialNote(): TFile | null {
+		const { currentFilePath } = this.options;
+		if (!currentFilePath) {
+			return this.app.workspace.getActiveFile();
+		}
+		const file = this.app.vault.getAbstractFileByPath(currentFilePath);
+		if (file && "stat" in file) return file as TFile;
+		return this.app.workspace.getActiveFile();
 	}
 }
 
