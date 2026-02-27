@@ -67,7 +67,7 @@ export function DashboardApp() {
 				frontmatterIndex: plugin.frontmatterIndex,
 			},
 		});
-	}, [plugin, data.notes]);
+	}, [plugin, data.notes, refreshTick]);
 
 	const enrichedNotes = useMemo(() => {
 		return data.notes.map((note) => {

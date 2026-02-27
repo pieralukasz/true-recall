@@ -1,15 +1,15 @@
-import type { NoteStatusCacheService } from "@features/core/cache/note-status-cache.service";
 import type { FlashcardManager } from "@features/study/services/flashcard/flashcard.service";
 import { effect } from "@preact/signals";
 import { dataVersion, settingsVersion, track } from "@shared/services/signals";
 import { FSRS_COLORS } from "@shared/ui/helpers/fsrs-colors";
+
+const DOT = ' <span style="opacity:0.3; margin: 0 2px">·</span> ';
 
 export class StatusBarWidget {
 	private disposer: (() => void) | null = null;
 
 	constructor(
 		private el: HTMLElement,
-		private noteStatusCache: NoteStatusCacheService,
 		private flashcardManager: FlashcardManager,
 		private onClickDue: () => void,
 		private getEnabled: () => boolean = () => true,
@@ -27,7 +27,7 @@ export class StatusBarWidget {
 	}
 
 	private render(): void {
-		if (!this.getEnabled() || !this.noteStatusCache.hasData()) {
+		if (!this.getEnabled()) {
 			this.el.empty();
 			return;
 		}
@@ -52,11 +52,11 @@ export class StatusBarWidget {
 		}
 
 		if (parts.length === 0) {
-			this.el.empty();
+			this.el.innerHTML = '<span style="opacity:0.5">✓ All done</span>';
 			return;
 		}
 
-		this.el.innerHTML = parts.join(' <span style="opacity:0.3; margin: 0 2px">·</span> ');
+		this.el.innerHTML = parts.join(DOT);
 	}
 
 	private aggregateGlobal(): {

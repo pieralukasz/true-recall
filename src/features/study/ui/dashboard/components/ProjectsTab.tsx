@@ -1,8 +1,9 @@
 import type { Signal } from "@preact/signals";
 import { useSignal } from "@preact/signals";
 import { Clickable } from "@shared/ui/components/Clickable";
-import { SelectNoteModal } from "@shared/ui/modals/SelectNoteModal";
+import { CreateProjectModal } from "@features/study/modals/CreateProjectModal";
 import { usePlugin } from "@shared/ui/preact";
+import { Notice } from "obsidian";
 import { useIcon } from "@shared/ui/preact/hooks";
 import { useCallback, useEffect, useMemo, useRef } from "preact/hooks";
 import type { RefObject } from "preact";
@@ -66,23 +67,23 @@ export function ProjectsTab({
 	};
 
 	const handleAddProject = useCallback(async () => {
-		const existingPaths = new Set(
-			plugin.projectLinkService.getAllProjectPaths(),
-		);
-		const modal = new SelectNoteModal(plugin.app, {
-			title: "Add project",
-			description: "Select a note to mark as a project.",
-			excludePaths: existingPaths,
-		});
+		const modal = new CreateProjectModal(plugin.app);
 		const result = await modal.openAndWait();
-		if (result.cancelled || !result.selectedNote) return;
+		if (result.cancelled) return;
 
-		await plugin.app.fileManager.processFrontMatter(
-			result.selectedNote,
-			(fm: Record<string, unknown>) => {
-				fm.project = true;
-			},
+		const path = CreateProjectModal.buildNotePath(
+			result.name,
+			result.folder,
 		);
+
+		if (plugin.app.vault.getAbstractFileByPath(path)) {
+			new Notice(`A note already exists at "${path}".`);
+			return;
+		}
+
+		const content = ["---", "project: true", "---", ""].join("\n");
+		await plugin.app.vault.create(path, content);
+		await plugin.app.workspace.openLinkText(path, "", false);
 	}, [plugin]);
 
 	const addButton = (

@@ -763,7 +763,6 @@ export default class TrueRecallPlugin extends Plugin {
 			this.initializeDeletionHandler();
 			this.initializeStore();
 			this.initializeLinkStatusIndicators();
-			this.initializeStatusBar();
 			this.initializeDashboardCodeblocks();
 			this.initializeSelectionToolbar();
 		} catch (error) {
@@ -791,6 +790,7 @@ export default class TrueRecallPlugin extends Plugin {
 		this.app.workspace.onLayoutReady(async () => {
 			this.noteStatusCache?.buildFromStore();
 			this.noteStatusCache?.registerEvents();
+			this.initializeStatusBar();
 
 			// Resolve the embeddable editor prototype for live-preview editing
 			try {
@@ -843,16 +843,11 @@ export default class TrueRecallPlugin extends Plugin {
 	}
 
 	private initializeStatusBar(): void {
-		if (!this.noteStatusCache) return;
-
 		void import("@features/study/ui/editor/widgets/StatusBarWidget").then(
 			({ StatusBarWidget }) => {
-				if (!this.noteStatusCache) return;
-
 				const statusBarEl = this.addStatusBarItem();
 				this.statusBarWidget = new StatusBarWidget(
 					statusBarEl,
-					this.noteStatusCache,
 					this.flashcardManager,
 					() => {
 						this.openDashboard().catch(() => {});

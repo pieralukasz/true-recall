@@ -105,6 +105,7 @@ function buildProjectFromNode(
 		totalCards: stats.totalCards,
 		childCount: stats.childCount,
 		lastReviewed: stats.lastReviewed,
+		totalMembers: node.memberPaths.length,
 		memberNotes,
 		children,
 		presetName,

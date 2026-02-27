@@ -56,7 +56,7 @@ export function createSelectionToolbarExtension(
 					return;
 				}
 
-				if (this.view.dom.closest(".true-recall-review-card-container")) {
+				if (this.view.dom.closest(".true-recall-review-card-container, .ep-card-browser")) {
 					this.removeToolbar();
 					return;
 				}

@@ -1,5 +1,7 @@
+import { LivePreviewField } from "@features/study/ui/review/components/LivePreviewField";
 import { FSRS_COLORS, MUTED_STATES } from "@shared/ui/helpers/fsrs-colors";
 import { Clickable } from "@shared/ui/components";
+import { useApp } from "@shared/ui/preact/ObsidianContext";
 import { State } from "ts-fsrs";
 import type { BrowserCard } from "../types";
 
@@ -13,9 +15,19 @@ const STATE_LABELS: Record<number, string> = {
 interface CardPreviewProps {
 	card: BrowserCard;
 	onClose: () => void;
+	onContentChange?: (
+		value: string,
+		field: "question" | "answer",
+	) => void;
 }
 
-export function CardPreview({ card, onClose }: CardPreviewProps) {
+export function CardPreview({
+	card,
+	onClose,
+	onContentChange,
+}: CardPreviewProps) {
+	const app = useApp();
+
 	const stateLabel = card.suspended
 		? "Suspended"
 		: card.buriedUntil && new Date(card.buriedUntil) > new Date()
@@ -72,9 +84,19 @@ export function CardPreview({ card, onClose }: CardPreviewProps) {
 				<div class="ep:text-[10px] ep:uppercase ep:tracking-wider ep:text-obs-muted ep:mb-1.5">
 					Question
 				</div>
-				<div class="ep:text-sm ep:text-obs-normal ep:leading-relaxed ep:whitespace-pre-wrap">
-					{card.question}
-				</div>
+				{card.question ? (
+					<LivePreviewField
+						content={card.question}
+						field="question"
+						sourcePath={card.sourceNotePath ?? ""}
+						cls="true-recall-card-preview-markdown"
+						onContentChange={onContentChange}
+					/>
+				) : (
+					<div class="ep:text-sm ep:text-obs-muted ep:italic">
+						No question
+					</div>
+				)}
 			</div>
 
 			{/* Answer */}
@@ -82,9 +104,19 @@ export function CardPreview({ card, onClose }: CardPreviewProps) {
 				<div class="ep:text-[10px] ep:uppercase ep:tracking-wider ep:text-obs-muted ep:mb-1.5">
 					Answer
 				</div>
-				<div class="ep:text-sm ep:text-obs-normal ep:leading-relaxed ep:whitespace-pre-wrap">
-					{card.answer}
-				</div>
+				{card.answer ? (
+					<LivePreviewField
+						content={card.answer}
+						field="answer"
+						sourcePath={card.sourceNotePath ?? ""}
+						cls="true-recall-card-preview-markdown"
+						onContentChange={onContentChange}
+					/>
+				) : (
+					<div class="ep:text-sm ep:text-obs-muted ep:italic">
+						No answer
+					</div>
+				)}
 			</div>
 
 			{/* FSRS Stats */}
@@ -127,7 +159,21 @@ export function CardPreview({ card, onClose }: CardPreviewProps) {
 				</div>
 				<div class="ep:flex ep:flex-col ep:gap-1.5 ep:text-sm">
 					{card.sourceNoteName && (
-						<MetaRow label="Source" value={card.sourceNoteName} />
+						<div class="ep:flex ep:justify-between ep:items-center">
+							<span class="ep:text-obs-muted">Source</span>
+							<Clickable
+								class="ep:text-obs-accent ep:truncate ep:max-w-[180px] hover:ep:underline"
+								onClick={() =>
+									void app.workspace.openLinkText(
+										card.sourceNotePath ?? card.sourceNoteName!,
+										"",
+										false,
+									)
+								}
+							>
+								{card.sourceNoteName}
+							</Clickable>
+						</div>
 					)}
 					<MetaRow label="Type" value={card.cardType} />
 					<MetaRow

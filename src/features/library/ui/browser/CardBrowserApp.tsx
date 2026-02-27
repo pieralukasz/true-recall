@@ -1,4 +1,7 @@
 import { CardBrowserQueryService } from "@features/library/services/card-browser-query.service";
+import { notifyDuplicateError } from "@features/library/ui/panel/utils/panel-helpers";
+import { DuplicateQuestionError } from "@features/study/services/flashcard/card-repository.service";
+import { notify } from "@shared/services/notification.service";
 import {
 	dataVersion,
 	settingsVersion,
@@ -154,6 +157,36 @@ export function CardBrowserApp() {
 			previewCard.value?.id === card.id ? null : card;
 	}, []);
 
+	const handleContentChange = useCallback(
+		(value: string, field: "question" | "answer") => {
+			const card = previewCard.value;
+			if (!card) return;
+
+			const newQuestion = field === "question" ? value : card.question;
+			const newAnswer = field === "answer" ? value : card.answer;
+
+			try {
+				plugin.flashcardManager.updateCardContent(
+					card.id,
+					newQuestion,
+					newAnswer,
+				);
+				previewCard.value = {
+					...card,
+					question: newQuestion,
+					answer: newAnswer,
+				};
+			} catch (error) {
+				if (error instanceof DuplicateQuestionError) {
+					notifyDuplicateError(plugin, error, newQuestion);
+				} else {
+					notify().operationFailed("save card", error);
+				}
+			}
+		},
+		[plugin],
+	);
+
 	const handleSelectAll = useCallback(() => {
 		if (selectedIds.value.size === result.cards.length) {
 			selectedIds.value = new Set();
@@ -267,6 +300,7 @@ export function CardBrowserApp() {
 						onClose={() => {
 							previewCard.value = null;
 						}}
+						onContentChange={handleContentChange}
 					/>
 				)}
 			</div>
