@@ -2,7 +2,15 @@ import { CardCountDisplay } from "@shared/ui/components/CardCountDisplay";
 import { Clickable } from "@shared/ui/components/Clickable";
 import { IconButton } from "@shared/ui/components/IconButton";
 import { cn } from "@shared/ui/utils";
-import type { DashboardNoteEntry } from "../types";
+import type { DashboardNoteEntry, NotePriority } from "../types";
+
+const PRIORITY_DOT: Record<NotePriority, string> = {
+	overdue: "ep:bg-obs-red",
+	hot: "ep:bg-obs-orange",
+	due: "ep:bg-obs-blue",
+	light: "ep:bg-obs-green",
+	done: "ep:bg-obs-faint",
+};
 
 interface NoteRowProps {
 	note: DashboardNoteEntry;
@@ -29,15 +37,21 @@ export function NoteRow({
 			)}
 		>
 			<Clickable
-				class="ep:flex-1 ep:min-w-0 ep:hover:text-obs-interactive ep:transition-colors"
+				class="ep:flex ep:items-center ep:gap-2 ep:flex-1 ep:min-w-0 ep:hover:text-obs-interactive ep:transition-colors"
 				onClick={onNavigate}
 			>
-				<div
+				<span
+					class={cn(
+						"ep:inline-block ep:w-1.5 ep:h-1.5 ep:rounded-full ep:shrink-0",
+						PRIORITY_DOT[note.priority],
+					)}
+				/>
+				<span
 					class="ep:text-sm ep:text-obs-normal ep:truncate"
 					title={note.name}
 				>
 					{note.name}
-				</div>
+				</span>
 			</Clickable>
 
 			{note.presetName && (
