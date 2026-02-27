@@ -96,6 +96,9 @@ const context = await esbuild.context({
 	alias: {
 		"@shared": resolve("src/shared"),
 		"@features": resolve("src/features"),
+		// downshift imports from 'react' — redirect to preact/compat
+		react: "preact/compat",
+		"react-dom": "preact/compat",
 	},
 	define: {
 		"process.env.SUPABASE_URL": JSON.stringify(

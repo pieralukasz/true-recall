@@ -6,7 +6,8 @@ import {
 	syncVersion,
 	useSignalVersion,
 } from "@shared/services/signals";
-import { SearchInput } from "@shared/ui/components/SearchInput";
+import { SearchCombobox } from "@shared/ui/components/SearchCombobox";
+import type { SearchSuggestion, SuggestionProvider } from "@shared/ui/helpers/search-suggestions.types";
 import { usePlugin } from "@shared/ui/preact";
 import { useCallback, useMemo, useRef } from "preact/hooks";
 import { useSignal } from "@preact/signals";
@@ -92,6 +93,40 @@ export function DashboardApp() {
 		return Array.from(names).sort();
 	}, [projectData.noteProjectMap]);
 
+	const getDashboardSuggestions: SuggestionProvider = useMemo(() => {
+		const noteNames = enrichedNotes.map((n) => n.name);
+		return (inputValue: string): SearchSuggestion[] => {
+			const q = inputValue.toLowerCase().trim();
+			if (!q) return [];
+			const results: SearchSuggestion[] = [];
+			for (const name of noteNames) {
+				if (name.toLowerCase().includes(q)) {
+					results.push({
+						id: `note-${name}`,
+						label: name,
+						insertText: name,
+						category: "note",
+						description: "Note",
+					});
+				}
+				if (results.length >= 8) break;
+			}
+			for (const p of allProjectNames) {
+				if (p.toLowerCase().includes(q)) {
+					results.push({
+						id: `project-${p}`,
+						label: p,
+						insertText: p,
+						category: "project",
+						description: "Project",
+					});
+				}
+				if (results.length >= 12) break;
+			}
+			return results;
+		};
+	}, [enrichedNotes, allProjectNames]);
+
 	const handleNavigateToNote = (noteName: string) => {
 		void plugin.app.workspace.openLinkText(noteName, "");
 	};
@@ -143,12 +178,13 @@ export function DashboardApp() {
 						/>
 					)}
 
-					<SearchInput
+					<SearchCombobox
 						value={searchQuery.value}
 						placeholder="Search notes or projects..."
 						onChange={(q) => {
 							searchQuery.value = q;
 						}}
+						getSuggestions={getDashboardSuggestions}
 					/>
 
 					<DashboardTabs

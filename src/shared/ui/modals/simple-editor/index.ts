@@ -1,5 +1,8 @@
 export { KeyboardShortcutsHint } from "@shared/ui/modals/simple-editor/KeyboardShortcutsHint";
 export {
-	SimpleEditorBody,
-	type SimpleEditorBodyProps,
-} from "@shared/ui/modals/simple-editor/SimpleEditorBody";
+	AddFlashcardsApp,
+	type AddFlashcardsAppProps,
+	type AddFlashcardsResult,
+} from "@shared/ui/modals/simple-editor/AddFlashcardsApp";
+export { NotePickerCombobox } from "@shared/ui/modals/simple-editor/NotePickerCombobox";
+export { CardPreviewPanel } from "@shared/ui/modals/simple-editor/CardPreviewPanel";

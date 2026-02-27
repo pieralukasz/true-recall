@@ -64,6 +64,10 @@ export {
 	type PasteDropZoneProps,
 } from "@shared/ui/components/PasteDropZone";
 export {
+	SearchCombobox,
+	type SearchComboboxProps,
+} from "@shared/ui/components/SearchCombobox";
+export {
 	SearchInput,
 	type SearchInputProps,
 } from "@shared/ui/components/SearchInput";

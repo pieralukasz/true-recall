@@ -27,6 +27,7 @@ import {
 	type StateFilterValue,
 } from "./types";
 import { DEFAULT_VISIBLE_KEYS } from "./helpers/column-defs";
+import { createBrowserSuggestionProvider } from "./helpers/browser-suggestions";
 
 const PAGE_SIZE = 200;
 
@@ -100,6 +101,20 @@ export function CardBrowserApp() {
 	const facetCounts = useMemo(() => {
 		return queryService.getFacetCounts();
 	}, [queryService, refreshTick]);
+
+	const getSuggestions = useMemo(() => {
+		const presetNames = plugin.presetService
+			.getPresets()
+			.map((p) => p.name);
+		const projectNames = Array.from(
+			plugin.frontmatterIndex.getAllValues("project"),
+		).sort();
+		return createBrowserSuggestionProvider({
+			sourceNotes: facetCounts.sourceNotes,
+			presetNames,
+			projectNames,
+		});
+	}, [plugin, facetCounts.sourceNotes]);
 
 	const handleSort = useCallback((column: string) => {
 		sort.value =
@@ -259,6 +274,7 @@ export function CardBrowserApp() {
 				}}
 				visibleColumns={visibleColumns.value}
 				onToggleColumn={handleToggleColumn}
+				getSuggestions={getSuggestions}
 			/>
 
 			{selectedIds.value.size > 0 && (
