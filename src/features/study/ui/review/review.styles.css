@@ -84,6 +84,48 @@
 		text-decoration: none;
 	}
 
+	/* Preview panel (320px) — prevent overflow from images, code, tables, LaTeX */
+	.true-recall-card-preview-markdown img {
+		max-width: 100%;
+		height: auto;
+	}
+	.true-recall-card-preview-markdown pre {
+		overflow-x: auto;
+		max-width: 100%;
+	}
+	.true-recall-card-preview-markdown table {
+		display: block;
+		overflow-x: auto;
+	}
+	.true-recall-card-preview-markdown mjx-container {
+		overflow-x: auto;
+		max-width: 100%;
+	}
+
+}
+
+/* ── CM6 inside Card Browser preview panel (320px) ──────────────────
+   Unlayered so these override Obsidian's own .cm-editor styles.
+   ──────────────────────────────────────────────────────────────────── */
+
+.true-recall-card-preview-markdown .cm-editor {
+	font-size: 0.875rem;
+	line-height: 1.5;
+	color: inherit;
+	background: transparent;
+}
+.true-recall-card-preview-markdown .cm-editor .cm-scroller {
+	overflow-x: auto;
+}
+.true-recall-card-preview-markdown .cm-gutters {
+	display: none;
+}
+.true-recall-card-preview-markdown .cm-editor.cm-focused {
+	outline: none;
+	box-shadow: none;
+}
+.true-recall-card-preview-markdown .cm-editor .cm-content {
+	padding: 0;
 }
 
 /* ── Embedded live-preview editor (always-on) ─────────────────────────

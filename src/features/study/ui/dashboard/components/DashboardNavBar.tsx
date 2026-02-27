@@ -49,7 +49,7 @@ export function DashboardNavBar() {
 					break;
 				}
 				case "browse":
-					await plugin.activateView();
+					await plugin.openCardBrowser();
 					break;
 				case "stats":
 					await plugin.openStatsView();

@@ -30,6 +30,7 @@ export interface DashboardProject {
 	totalCards: number;
 	childCount: number;
 	lastReviewed: string | null;
+	totalMembers: number;
 	memberNotes: DashboardNoteEntry[];
 	children: DashboardProject[];
 	presetName?: string;

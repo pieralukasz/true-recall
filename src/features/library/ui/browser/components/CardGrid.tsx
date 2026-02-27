@@ -1,4 +1,5 @@
 import { FSRS_COLORS, MUTED_STATES } from "@shared/ui/helpers/fsrs-colors";
+import { stripMarkdownSyntax } from "@shared/utils";
 import { State } from "ts-fsrs";
 import type { BrowserCard } from "../types";
 
@@ -69,7 +70,7 @@ export function CardGrid({
 					>
 						<div class="ep:flex ep:items-start ep:justify-between ep:gap-2 ep:mb-1.5">
 							<span class="ep:text-sm ep:text-obs-normal ep:line-clamp-2 ep:flex-1">
-								{card.question}
+								{stripMarkdownSyntax(card.question)}
 							</span>
 							<span
 								class={`ep:px-1.5 ep:py-0.5 ep:rounded-full ep:text-[10px] ep:font-medium ep:shrink-0 ${badge.cls}`}
