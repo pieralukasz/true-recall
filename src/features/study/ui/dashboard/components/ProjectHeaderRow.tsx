@@ -60,11 +60,11 @@ export function ProjectHeaderRow({
 					</span>
 				)}
 
-				{project.healthPct > 0 && (
-					<span class="ep:text-xs ep:text-obs-muted ep:shrink-0 ep:tabular-nums">
-						{project.healthPct}%
-					</span>
-				)}
+				<span class="ep:text-xs ep:text-obs-muted ep:shrink-0 ep:tabular-nums">
+					{project.totalMembers}
+					{project.totalMembers === 1 ? " note" : " notes"}
+					{project.healthPct > 0 && ` · ${project.healthPct}%`}
+				</span>
 			</Clickable>
 
 			<CardCountDisplay

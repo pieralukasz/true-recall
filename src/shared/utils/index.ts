@@ -20,6 +20,7 @@ export {
 export {
 	BR_REGEX,
 	stripBrTags,
+	stripMarkdownSyntax,
 	stripWikiLinkSyntax,
 } from "@shared/utils/string.utils";
 export {

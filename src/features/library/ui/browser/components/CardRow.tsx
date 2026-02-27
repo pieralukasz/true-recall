@@ -1,4 +1,5 @@
 import { FSRS_COLORS, MUTED_STATES } from "@shared/ui/helpers/fsrs-colors";
+import { stripMarkdownSyntax } from "@shared/utils";
 import { State } from "ts-fsrs";
 import type { ColumnDef } from "../helpers/column-defs";
 import type { BrowserCard } from "../types";
@@ -118,7 +119,7 @@ function CellRenderer({
 				class="ep:px-1.5 ep:truncate ep:text-obs-normal"
 				title={value}
 			>
-				{value}
+				{stripMarkdownSyntax(value)}
 			</div>
 		);
 	}
