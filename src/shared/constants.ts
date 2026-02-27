@@ -8,6 +8,7 @@ export const VIEW_TYPE_REVIEW = "true-recall-review";
 export const VIEW_TYPE_STATS = "true-recall-stats";
 export const VIEW_TYPE_SIMULATOR = "true-recall-simulator";
 export const VIEW_TYPE_DASHBOARD = "true-recall-dashboard-view";
+export const VIEW_TYPE_CARD_BROWSER = "true-recall-card-browser";
 
 export interface AIModelInfo {
 	name: string;
