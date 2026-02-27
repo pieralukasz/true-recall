@@ -1,7 +1,6 @@
 import {
 	getSourceNoteNameFromFile,
 	notifyDuplicateError,
-	showDuplicateNotifications,
 } from "@features/library/ui/panel/utils/panel-helpers";
 import type { PanelApi } from "@shared/store";
 import type { FlashcardInfo, FlashcardItem } from "@shared/types";
@@ -118,77 +117,27 @@ export function useCardActions({
 		async (
 			prefillFlashcards?: Array<{ question: string; answer: string }>,
 		) => {
-			if (!currentFile) return;
 			const { SimpleFlashcardEditorModal } = await import(
 				"@shared/ui/modals/SimpleFlashcardEditorModal"
 			);
 			const { cardsToMarkdown } = await import(
 				"@features/study/services/flashcard/flashcard-format.util"
 			);
-			const { notify } = await import(
-				"@shared/services/notification.service"
-			);
 
 			const modal = new SimpleFlashcardEditorModal(
 				app,
 				{
 					mode: "add",
-					currentFilePath: currentFile.path,
+					currentFilePath: currentFile?.path ?? "",
 					prefillContent: prefillFlashcards
 						? cardsToMarkdown(prefillFlashcards)
 						: undefined,
 				},
 				plugin.EmbeddableEditor,
+				plugin.flashcardManager,
 			);
 
-			const result = await modal.openAndWait();
-			if (result.cancelled || result.flashcards.length === 0) return;
-
-			try {
-				const flashcardsWithIds = result.flashcards.map((f) => ({
-					id: f.id || crypto.randomUUID(),
-					question: f.question,
-					answer: f.answer,
-					cardType: f.cardType,
-					clozeTemplate: f.clozeTemplate,
-					clozeIndex: f.clozeIndex,
-					reverseOfBatchId: f.reverseOfBatchId,
-				}));
-
-				const saveResult =
-					await plugin.flashcardManager.saveFlashcardsToSql(
-						currentFile,
-						flashcardsWithIds,
-					);
-
-				if (saveResult.duplicates.length > 0) {
-					if (saveResult.created.length > 0) {
-						notify().cardsCreated(
-							saveResult.created.length,
-							currentFile.basename,
-						);
-					}
-					showDuplicateNotifications(plugin, saveResult.duplicates);
-
-					const duplicateFlashcards = saveResult.duplicates.map(
-						(d) => ({
-							question: d.flashcard.question,
-							answer: d.flashcard.answer,
-						}),
-					);
-					await handleAddFlashcard(duplicateFlashcards);
-				} else {
-					notify().cardsCreated(
-						saveResult.created.length,
-						currentFile.basename,
-					);
-				}
-			} catch (error) {
-				console.error("Error adding flashcards:", error);
-				(await import("@shared/services/notification.service"))
-					.notify()
-					.operationFailed("add flashcards", error);
-			}
+			await modal.openAndWait();
 		},
 		[currentFile, app, plugin],
 	);

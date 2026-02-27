@@ -906,27 +906,17 @@ export default class TrueRecallPlugin extends Plugin {
 				}
 			},
 			onEdit: (text) => {
-				const file = this.app.workspace.getActiveFile();
 				const modal = new SimpleFlashcardEditorModal(
 					this.app,
 					{
 						mode: "add",
 						prefillContent: text,
-						currentFilePath: file?.path ?? "",
+						currentFilePath: "",
 					},
 					this.EmbeddableEditor,
+					this.flashcardManager,
 				);
-				void modal.openAndWait().then((result) => {
-					if (!result.cancelled && result.flashcards.length > 0 && file) {
-						void this.flashcardManager
-							.saveFlashcardsToSql(file, result.flashcards, undefined, text)
-							.then((batchResult) => {
-								notify().info(
-									`Created ${batchResult.created.length} flashcard(s)`,
-								);
-							});
-					}
-				});
+				void modal.openAndWait();
 			},
 			onQuickAdd: async (text) => {
 				try {
