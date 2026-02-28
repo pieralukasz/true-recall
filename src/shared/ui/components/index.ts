@@ -4,6 +4,10 @@ export {
 	type ActionButtonVariant,
 } from "@shared/ui/components/ActionButton";
 export {
+	AppNavBar,
+	type AppNavBarProps,
+} from "@shared/ui/components/AppNavBar";
+export {
 	CardCountDisplay,
 	type CardCountDisplayProps,
 } from "@shared/ui/components/CardCountDisplay";

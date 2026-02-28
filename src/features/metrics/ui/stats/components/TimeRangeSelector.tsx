@@ -11,13 +11,13 @@ const TIME_RANGES: { label: string; value: StatsTimeRange }[] = [
 ];
 
 const timeRangeButtonVariants = cva(
-	"ep:py-2 ep:px-4 ep:rounded-lg ep:text-ui-small ep:font-medium ep:transition-all ep:duration-200",
+	"ep:py-2 ep:px-4 ep:rounded-lg ep:text-ui-small ep:font-medium ep:transition-colors ep:duration-200",
 	{
 		variants: {
 			active: {
 				true: "ep:bg-obs-interactive ep:text-obs-on-accent",
 				false:
-					"ep:bg-obs-secondary ep:text-obs-muted ep:hover:bg-obs-modifier-hover ep:hover:text-obs-normal ep:hover:-translate-y-px",
+					"ep:bg-obs-secondary ep:text-obs-muted ep:hover:bg-obs-modifier-hover ep:hover:text-obs-normal",
 			},
 		},
 		defaultVariants: { active: false },
@@ -32,7 +32,7 @@ export function TimeRangeSelector({
 	onRangeChange: (range: StatsTimeRange) => void;
 }) {
 	return (
-		<div class="ep:flex ep:items-center ep:gap-2 ep:mb-5 ep:flex-wrap">
+		<div class="ep:flex ep:items-center ep:gap-2 ep:flex-wrap">
 			{TIME_RANGES.map(({ label, value }) => (
 				<Clickable
 					key={value}

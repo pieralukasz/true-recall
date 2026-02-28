@@ -1,5 +1,6 @@
 import type { StatsCalculatorService } from "@features/metrics/services/stats/stats-calculator.service";
 import { ChartCard } from "@features/metrics/ui/stats/components/ChartCard";
+import { ChartToggleBar } from "@features/metrics/ui/stats/components/ChartToggleBar";
 import { StatsCard } from "@features/metrics/ui/stats/components/StatsCard";
 import { SummaryList } from "@features/metrics/ui/stats/components/SummaryList";
 import {
@@ -12,7 +13,6 @@ import type {
 	FSRSFlashcardItem,
 	StatsTimeRange,
 } from "@shared/types";
-import { Clickable } from "@shared/ui/components";
 import {
 	getThemeColor,
 	getThemeColorWithAlpha,
@@ -197,37 +197,11 @@ export function ReviewsChart({
 	}
 
 	const controls = (
-		<div class="ep:flex ep:flex-wrap ep:gap-4 ep:justify-center ep:mb-3 ep:pb-3 ep:border-b ep:border-obs-border">
-			{controlDefs.map(({ key, label, color }) => (
-				<Clickable
-					key={key}
-					class="ep:flex ep:items-center ep:gap-1.5 ep:select-none ep:p-0"
-					onClick={() => toggleVisibility(key)}
-				>
-					<input
-						id={`reviews-toggle-${key}`}
-						type="checkbox"
-						class="ep:cursor-pointer ep-dynamic-accent"
-						checked={visibility[key]}
-						style={{ "--ep-dynamic-color": color } as Record<string, string>}
-						onChange={() => toggleVisibility(key)}
-					/>
-					<label
-						htmlFor={`reviews-toggle-${key}`}
-						class="ep:text-ui-small ep:cursor-pointer ep-dynamic-color"
-						style={
-							{
-								"--ep-dynamic-color": visibility[key]
-									? color
-									: "var(--text-muted)",
-							} as Record<string, string>
-						}
-					>
-						{label}
-					</label>
-				</Clickable>
-			))}
-		</div>
+		<ChartToggleBar
+			toggles={controlDefs}
+			visibility={visibility}
+			onToggle={toggleVisibility}
+		/>
 	);
 
 	return (

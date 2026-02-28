@@ -1,5 +1,6 @@
 export { CalendarHeatmap } from "@features/metrics/ui/stats/components/CalendarHeatmap";
 export { CardCountsChart } from "@features/metrics/ui/stats/components/CardCountsChart";
+export { ChartToggleBar } from "@features/metrics/ui/stats/components/ChartToggleBar";
 export { CollectionHealthCard } from "@features/metrics/ui/stats/components/CollectionHealthCard";
 export { CreationSourceChart } from "@features/metrics/ui/stats/components/CreationSourceChart";
 export { FutureDueChart } from "@features/metrics/ui/stats/components/FutureDueChart";
