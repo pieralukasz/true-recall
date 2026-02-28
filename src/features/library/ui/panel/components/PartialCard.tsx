@@ -16,7 +16,7 @@ export function PartialCard({
 	}
 
 	return (
-		<div class="ep-card-writing ep:flex ep:flex-col ep:mb-2 ep:rounded-lg ep:bg-obs-secondary ep:border ep:border-obs-border/20 ep:shadow-sm ep:p-3">
+		<div class="ep:flex ep:flex-col ep:mb-2 ep:rounded-lg ep:bg-obs-secondary ep:border ep:border-obs-border/20 ep:shadow-sm ep:p-3">
 			<div class="ep:text-ui-small ep:text-obs-normal ep:leading-relaxed">
 				{qWords.map((w, i) => (
 					<span key={i} class={w.isNew ? "ep-word-reveal" : undefined}>
@@ -44,7 +44,7 @@ export function PartialCard({
 
 function StreamingSkeleton() {
 	return (
-		<div class="ep-card-skeleton ep:flex ep:flex-col ep:mb-2 ep:rounded-lg ep:bg-obs-secondary ep:border ep:border-obs-border/20 ep:shadow-sm ep:p-3 ep:gap-2.5">
+		<div class="ep:flex ep:flex-col ep:mb-2 ep:rounded-lg ep:bg-obs-secondary ep:border ep:border-obs-border/20 ep:shadow-sm ep:p-3 ep:gap-2.5">
 			<div class="ep-shimmer ep:h-3.5 ep:w-4/5 ep:rounded" />
 			<div class="ep-shimmer ep:h-3.5 ep:w-3/5 ep:rounded" />
 			<div class="ep-shimmer ep:h-3 ep:w-2/5 ep:rounded ep:mt-1 ep:opacity-60" />
