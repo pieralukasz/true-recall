@@ -72,20 +72,13 @@ export function TodaySection({
 	}
 
 	return (
-		<div class="ep:mb-5 ep:p-5 ep:rounded-lg ep:bg-obs-secondary ep:transition-all ep:duration-200">
-			{/* Header */}
-			<div class="ep:flex ep:items-center ep:justify-between ep:mb-4 ep:pb-3 ep:border-b ep:border-obs-border">
-				<span class="ep:text-ui-large ep:font-semibold ep:text-obs-normal ep:tracking-tight">
-					Today
-				</span>
-			</div>
-
+		<StatsCard title="Today">
 			{/* Grid */}
 			<div class="ep:grid ep:gap-3 ep:grid-cols-2 md:ep:grid-cols-3">
 				{metrics.map((m) => (
 					<div
 						key={m.label}
-						class="ep:flex ep:flex-col ep:items-center ep:justify-center ep:p-4 ep:rounded-lg ep:bg-obs-primary ep:transition-all ep:duration-200 ep:hover:-translate-y-0.5 ep:cursor-pointer"
+						class="ep:flex ep:flex-col ep:items-center ep:justify-center ep:p-4 ep:rounded-lg ep:bg-obs-primary"
 					>
 						<span class="ep:text-3xl ep:font-semibold ep:text-obs-normal ep:mb-1 ep:font-interface">
 							{m.value}
@@ -118,6 +111,6 @@ export function TodaySection({
 					)}
 				</div>
 			)}
-		</div>
+		</StatsCard>
 	);
 }

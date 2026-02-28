@@ -11,8 +11,8 @@ import type { SearchSuggestion, SuggestionProvider } from "@shared/ui/helpers/se
 import { usePlugin } from "@shared/ui/preact";
 import { useCallback, useMemo, useRef } from "preact/hooks";
 import { useSignal } from "@preact/signals";
+import { AppNavBar } from "@shared/ui/components";
 import { StreakWidget } from "../editor/widgets/analytics/StreakWidget";
-import { DashboardNavBar } from "./components/DashboardNavBar";
 import { DashboardTabs } from "./components/DashboardTabs";
 import { NoteList } from "./components/NoteList";
 import { ProjectsTab } from "./components/ProjectsTab";
@@ -163,7 +163,7 @@ export function DashboardApp() {
 
 	return (
 		<div class="ep-dashboard-container ep:flex ep:flex-col ep:h-full">
-			<DashboardNavBar />
+			<AppNavBar activeItem="dashboard" />
 			<div
 				ref={scrollContainerRef}
 				class="ep:flex-1 ep:min-h-0 ep:overflow-y-auto"

@@ -3,32 +3,36 @@ import { useApp, useIcon, usePlugin } from "@shared/ui/preact";
 import { cn } from "@shared/ui/utils";
 import { useCallback } from "preact/hooks";
 
+type NavItemId = "dashboard" | "add" | "browse" | "stats";
+
 interface NavItem {
-	id: string;
+	id: NavItemId;
 	label: string;
 	icon: string;
-	isActive?: boolean;
 }
 
 const NAV_ITEMS: NavItem[] = [
-	{
-		id: "dashboard",
-		label: "Dashboard",
-		icon: "layout-dashboard",
-		isActive: true,
-	},
+	{ id: "dashboard", label: "Dashboard", icon: "layout-dashboard" },
 	{ id: "add", label: "Add", icon: "plus" },
 	{ id: "browse", label: "Browse", icon: "list" },
 	{ id: "stats", label: "Stats", icon: "bar-chart-2" },
 ];
 
-export function DashboardNavBar() {
+export interface AppNavBarProps {
+	activeItem: NavItemId;
+}
+
+export function AppNavBar({ activeItem }: AppNavBarProps) {
 	const plugin = usePlugin();
 	const app = useApp();
 
 	const handleClick = useCallback(
-		async (id: string) => {
+		async (id: NavItemId) => {
+			if (id === activeItem) return;
 			switch (id) {
+				case "dashboard":
+					await plugin.openDashboard();
+					break;
 				case "add": {
 					const { SimpleFlashcardEditorModal } = await import(
 						"@shared/ui/modals/SimpleFlashcardEditorModal"
@@ -50,7 +54,7 @@ export function DashboardNavBar() {
 					break;
 			}
 		},
-		[app, plugin],
+		[app, plugin, activeItem],
 	);
 
 	return (
@@ -60,6 +64,7 @@ export function DashboardNavBar() {
 					<NavBarItem
 						key={item.id}
 						item={item}
+						isActive={item.id === activeItem}
 						onClick={() => void handleClick(item.id)}
 					/>
 				))}
@@ -68,16 +73,20 @@ export function DashboardNavBar() {
 	);
 }
 
-function NavBarItem({ item, onClick }: { item: NavItem; onClick: () => void }) {
+function NavBarItem({
+	item,
+	isActive,
+	onClick,
+}: { item: NavItem; isActive: boolean; onClick: () => void }) {
 	const iconRef = useIcon(item.icon);
 
 	return (
 		<Clickable
 			role="tab"
-			aria-selected={item.isActive}
+			aria-selected={isActive}
 			class={cn(
 				"ep:flex ep:items-center ep:gap-1.5 ep:px-3 ep:py-1.5 ep:rounded-md ep:text-sm ep:transition-colors ep:duration-150",
-				item.isActive
+				isActive
 					? "ep:bg-obs-interactive/15 ep:text-obs-interactive ep:font-semibold"
 					: "ep:text-obs-muted ep:hover:text-obs-normal ep:hover:bg-obs-modifier-hover",
 			)}

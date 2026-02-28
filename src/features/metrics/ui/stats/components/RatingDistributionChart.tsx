@@ -1,5 +1,6 @@
 import type { StatsCalculatorService } from "@features/metrics/services/stats/stats-calculator.service";
 import { ChartCard } from "@features/metrics/ui/stats/components/ChartCard";
+import { ChartToggleBar } from "@features/metrics/ui/stats/components/ChartToggleBar";
 import { StatsCard } from "@features/metrics/ui/stats/components/StatsCard";
 import { SummaryList } from "@features/metrics/ui/stats/components/SummaryList";
 import {
@@ -8,7 +9,6 @@ import {
 	getMaxTicksForRange,
 } from "@features/metrics/ui/stats/utils/chart-helpers";
 import type { RatingDistributionEntry, StatsTimeRange } from "@shared/types";
-import { Clickable } from "@shared/ui/components";
 import {
 	getThemeColor,
 	getThemeColorWithAlpha,
@@ -162,45 +162,15 @@ export function RatingDistributionChart({
 	}
 
 	const controls = (
-		<div class="ep:flex ep:flex-wrap ep:gap-4 ep:justify-center ep:mb-3 ep:pb-3 ep:border-b ep:border-obs-border">
-			{RATING_CONFIG.map(({ key, label, color }) => {
-				const resolvedColor = getThemeColorWithAlpha(color, 0.9);
-				return (
-					<Clickable
-						key={key}
-						class="ep:flex ep:items-center ep:gap-1.5 ep:select-none ep:p-0"
-						onClick={() => toggleVisibility(key)}
-					>
-						<input
-							id={`rating-toggle-${key}`}
-							type="checkbox"
-							class="ep:cursor-pointer ep-dynamic-accent"
-							checked={visibility[key]}
-							style={
-								{ "--ep-dynamic-color": resolvedColor } as Record<
-									string,
-									string
-								>
-							}
-							onChange={() => toggleVisibility(key)}
-						/>
-						<label
-							htmlFor={`rating-toggle-${key}`}
-							class="ep:text-ui-small ep:cursor-pointer ep-dynamic-color"
-							style={
-								{
-									"--ep-dynamic-color": visibility[key]
-										? resolvedColor
-										: "var(--text-muted)",
-								} as Record<string, string>
-							}
-						>
-							{label}
-						</label>
-					</Clickable>
-				);
-			})}
-		</div>
+		<ChartToggleBar
+			toggles={RATING_CONFIG.map(({ key, label, color }) => ({
+				key,
+				label,
+				color: getThemeColorWithAlpha(color, 0.9),
+			}))}
+			visibility={visibility}
+			onToggle={toggleVisibility}
+		/>
 	);
 
 	return (
