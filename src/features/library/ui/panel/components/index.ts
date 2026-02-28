@@ -15,3 +15,4 @@ export {
 	PanelHeader,
 	type PanelHeaderProps,
 } from "@features/library/ui/panel/components/PanelHeader";
+export { PartialCard } from "@features/library/ui/panel/components/PartialCard";

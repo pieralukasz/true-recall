@@ -46,6 +46,8 @@ interface PanelCardBase {
 	isExpanded: boolean;
 	isSelected: boolean;
 	isSelectionMode: boolean;
+	enterClass?: string;
+	enterStyle?: Record<string, string | number>;
 	onToggleExpand: () => void;
 	onToggleSelect: () => void;
 	onEdit: () => void;
@@ -289,6 +291,8 @@ export function PanelCard(props: PanelCardProps) {
 		isExpanded,
 		isSelected,
 		isSelectionMode,
+		enterClass,
+		enterStyle,
 		onToggleExpand,
 		onToggleSelect,
 		onEdit,
@@ -400,7 +404,8 @@ export function PanelCard(props: PanelCardProps) {
 	return (
 		<Clickable
 			title={title}
-			class={`${panelCardVariants({ state: isSelected ? undefined : state })} ${selectedCls}`}
+			class={`${panelCardVariants({ state: isSelected ? undefined : state })} ${selectedCls} ${enterClass ?? ""}`}
+			style={enterStyle}
 			onClick={handleRowClick}
 			{...longPressHandlers}
 			onMouseEnter={onHoverSource}
