@@ -273,18 +273,16 @@
    Uses --card-index CSS variable for staggered delays (80ms per card) */
 @keyframes ep-card-enter-anim {
 	from {
-		opacity: 0;
-		transform: translateY(16px) scale(0.97);
+		transform: translateY(8px) scale(0.98);
 	}
 	to {
-		opacity: 1;
 		transform: translateY(0) scale(1);
 	}
 }
 
 .ep-card-enter {
-	animation: ep-card-enter-anim 500ms cubic-bezier(0.22, 1, 0.36, 1) both;
-	animation-delay: calc(var(--card-index, 0) * 80ms);
+	animation: ep-card-enter-anim 400ms cubic-bezier(0.22, 1, 0.36, 1) both;
+	animation-delay: calc(var(--card-index, 0) * 60ms);
 }
 
 /* Streaming cursor: step-end for authentic terminal-like blink */
@@ -333,7 +331,6 @@
 	}
 	.ep-card-enter {
 		animation: none;
-		opacity: 1;
 	}
 	.ep-card-complete {
 		animation: none;
