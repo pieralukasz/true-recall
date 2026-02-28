@@ -1,4 +1,3 @@
-import { useCombobox } from "downshift";
 import type { App, TFile } from "obsidian";
 import { useCallback, useEffect, useMemo, useRef, useState } from "preact/hooks";
 import {
@@ -6,143 +5,155 @@ import {
 	MAX_DISPLAY_NOTES,
 } from "@shared/ui/modals/note-filter.utils";
 import { cn } from "@shared/ui/utils/cn";
+import { Clickable } from "@shared/ui/components";
 
 export interface NotePickerComboboxProps {
 	app: App;
 	selectedNote: TFile | null;
 	onSelect: (note: TFile | null) => void;
-	onCreateNew?: () => void;
-}
-
-interface NoteItem {
-	type: "note";
-	file: TFile;
-}
-
-interface CreateNewItem {
-	type: "create-new";
-}
-
-type ComboItem = NoteItem | CreateNewItem;
-
-function itemToString(item: ComboItem | null): string {
-	if (!item) return "";
-	return item.type === "note" ? item.file.basename : "";
 }
 
 export function NotePickerCombobox({
 	app,
 	selectedNote,
 	onSelect,
-	onCreateNew,
 }: NotePickerComboboxProps) {
 	const inputRef = useRef<HTMLInputElement>(null);
-	const [inputValue, setInputValue] = useState(selectedNote?.basename ?? "");
+	const listRef = useRef<HTMLUListElement>(null);
+	const [query, setQuery] = useState("");
+	const [isOpen, setIsOpen] = useState(false);
+	const [highlightIndex, setHighlightIndex] = useState(-1);
 
-	const allNotes = useMemo(
-		() => app.vault.getMarkdownFiles(),
-		[app],
+	const allNotes = useMemo(() => app.vault.getMarkdownFiles(), [app]);
+
+	const filtered = useMemo(
+		() => filterNotesByQuery(allNotes, query).slice(0, MAX_DISPLAY_NOTES),
+		[allNotes, query],
 	);
 
-	const items: ComboItem[] = useMemo(() => {
-		const filtered = filterNotesByQuery(allNotes, inputValue);
-		const noteItems: ComboItem[] = filtered
-			.slice(0, MAX_DISPLAY_NOTES)
-			.map((file) => ({ type: "note" as const, file }));
-
-		if (onCreateNew) {
-			noteItems.push({ type: "create-new" });
-		}
-		return noteItems;
-	}, [allNotes, inputValue, onCreateNew]);
-
-	// Sync input when selection changes externally
+	// Sync input text when selectedNote changes externally
 	useEffect(() => {
-		setInputValue(selectedNote?.basename ?? "");
+		if (inputRef.current) {
+			inputRef.current.value = selectedNote?.basename ?? "";
+		}
 	}, [selectedNote]);
 
-	const handleSelectedItemChange = useCallback(
-		(item: ComboItem | null | undefined) => {
-			if (!item) return;
-			if (item.type === "create-new") {
-				onCreateNew?.();
-				return;
+	const selectNote = useCallback(
+		(file: TFile) => {
+			onSelect(file);
+			if (inputRef.current) {
+				inputRef.current.value = file.basename;
 			}
-			onSelect(item.file);
-			setInputValue(item.file.basename);
+			setQuery("");
+			setIsOpen(false);
+			setHighlightIndex(-1);
 		},
-		[onSelect, onCreateNew],
+		[onSelect],
 	);
 
-	const {
-		isOpen,
-		highlightedIndex,
-		getMenuProps,
-		getInputProps,
-		getItemProps,
-		getToggleButtonProps,
-	} = useCombobox<ComboItem>({
-		items,
-		inputValue,
-		itemToString,
-		selectedItem: selectedNote ? { type: "note", file: selectedNote } : null,
-		onInputValueChange: ({ inputValue: val }) => {
-			setInputValue(val ?? "");
+	const handleInput = useCallback((e: Event) => {
+		const val = (e.target as HTMLInputElement).value;
+		setQuery(val);
+		setIsOpen(true);
+		setHighlightIndex(-1);
+	}, []);
+
+	const handleFocus = useCallback(() => {
+		setIsOpen(true);
+	}, []);
+
+	const handleBlur = useCallback(
+		(e: FocusEvent) => {
+			// Don't close if focus moved to dropdown items
+			const related = e.relatedTarget as HTMLElement | null;
+			if (related && listRef.current?.contains(related)) return;
+
+			// Restore previous selection on blur without new selection
+			if (inputRef.current && selectedNote) {
+				inputRef.current.value = selectedNote.basename;
+			}
+			setIsOpen(false);
+			setQuery("");
+			setHighlightIndex(-1);
 		},
-		onSelectedItemChange: ({ selectedItem }) => {
-			handleSelectedItemChange(selectedItem);
-		},
-		stateReducer: (_state, actionAndChanges) => {
-			const { type, changes } = actionAndChanges;
-			switch (type) {
-				case useCombobox.stateChangeTypes.InputBlur:
-					// Restore previous selection on blur without choosing
-					if (!changes.selectedItem && selectedNote) {
-						return {
-							...changes,
-							inputValue: selectedNote.basename,
-							isOpen: false,
-						};
+		[selectedNote],
+	);
+
+	const handleKeyDown = useCallback(
+		(e: KeyboardEvent) => {
+			if (!isOpen && e.key !== "ArrowDown" && e.key !== "ArrowUp") return;
+
+			switch (e.key) {
+				case "ArrowDown":
+					e.preventDefault();
+					if (!isOpen) {
+						setIsOpen(true);
+						setHighlightIndex(0);
+					} else {
+						setHighlightIndex((prev) =>
+							prev < filtered.length - 1 ? prev + 1 : 0,
+						);
 					}
-					return { ...changes, isOpen: false };
-				default:
-					return changes;
+					break;
+				case "ArrowUp":
+					e.preventDefault();
+					setHighlightIndex((prev) =>
+						prev > 0 ? prev - 1 : filtered.length - 1,
+					);
+					break;
+				case "Enter": {
+					e.preventDefault();
+					const target = filtered[highlightIndex];
+					if (highlightIndex >= 0 && target) {
+						selectNote(target);
+					}
+					break;
+				}
+				case "Escape":
+					e.preventDefault();
+					setIsOpen(false);
+					setHighlightIndex(-1);
+					if (inputRef.current && selectedNote) {
+						inputRef.current.value = selectedNote.basename;
+					}
+					setQuery("");
+					break;
 			}
 		},
-	});
+		[isOpen, filtered, highlightIndex, selectNote, selectedNote],
+	);
 
-	const inputProps = getInputProps({ ref: inputRef });
+	// Scroll highlighted item into view
+	useEffect(() => {
+		if (highlightIndex < 0 || !listRef.current) return;
+		const item = listRef.current.children[highlightIndex] as HTMLElement;
+		item?.scrollIntoView({ block: "nearest" });
+	}, [highlightIndex]);
+
+	const toggleDropdown = useCallback(() => {
+		setIsOpen((prev) => !prev);
+		inputRef.current?.focus();
+	}, []);
 
 	return (
 		<div class="ep:relative">
-			<label class="ep:block ep:text-ui-smaller ep:font-medium ep:text-obs-muted ep:mb-1.5">
-				Target Note
-			</label>
 			<div class="ep:relative ep:flex ep:items-center">
-				<svg
-					class="ep:absolute ep:left-2.5 ep:top-1/2 ep:-translate-y-1/2 ep:text-obs-muted ep:pointer-events-none"
-					width="14"
-					height="14"
-					viewBox="0 0 24 24"
-					fill="none"
-					stroke="currentColor"
-					stroke-width="2"
-				>
-					<circle cx="11" cy="11" r="8" />
-					<line x1="21" y1="21" x2="16.65" y2="16.65" />
-				</svg>
 				<input
-					{...inputProps}
+					ref={inputRef}
 					type="text"
-					class="ep:w-full ep:py-2 ep:pl-8 ep:pr-8 ep:border ep:border-obs-border ep:rounded-md ep:bg-obs-primary ep:text-obs-normal ep:text-ui-small ep:focus:outline-none ep:focus:border-obs-interactive ep:placeholder:text-obs-muted"
+					defaultValue={selectedNote?.basename ?? ""}
 					placeholder="Search notes..."
+					onInput={handleInput}
+					onFocus={handleFocus}
+					onBlur={handleBlur}
+					onKeyDown={handleKeyDown}
+					class="ep:w-full ep:py-2 ep:pl-3 ep:pr-8 ep:border ep:border-obs-border ep:rounded-md ep:bg-obs-primary ep:text-obs-normal ep:text-ui-small ep:focus:outline-none ep:focus:border-obs-interactive ep:placeholder:text-obs-muted"
 				/>
-				<button
-					{...getToggleButtonProps()}
-					type="button"
-					class="ep:absolute ep:right-2 ep:top-1/2 ep:-translate-y-1/2 ep:text-obs-muted ep:bg-transparent ep:border-none ep:cursor-pointer ep:p-0 ep:flex ep:items-center"
+				<Clickable
+					class="ep:absolute ep:right-2 ep:top-1/2 ep:-translate-y-1/2 ep:text-obs-muted ep:p-0 ep:leading-none"
+					onClick={toggleDropdown}
+					tabindex={-1}
 					aria-label="toggle menu"
-					tabIndex={-1}
 				>
 					<svg
 						width="12"
@@ -152,63 +163,39 @@ export function NotePickerCombobox({
 						stroke="currentColor"
 						stroke-width="2.5"
 					>
-						<polyline points={isOpen ? "18 15 12 9 6 15" : "6 9 12 15 18 9"} />
+						<polyline
+							points={isOpen ? "18 15 12 9 6 15" : "6 9 12 15 18 9"}
+						/>
 					</svg>
-				</button>
+				</Clickable>
 			</div>
 
-			<ul
-				{...getMenuProps()}
-				class={cn(
-					"ep:absolute ep:left-0 ep:top-full ep:mt-1 ep:z-50",
-					"ep:bg-obs-primary ep:border ep:border-obs-border ep:rounded-md ep:shadow-lg",
-					"ep:max-h-[280px] ep:overflow-y-auto ep:py-1 ep:w-full",
-					!(isOpen && items.length > 0) && "ep:hidden",
-				)}
-			>
-				{isOpen &&
-					items.map((item, index) => {
-						if (item.type === "create-new") {
-							return (
-								<li
-									key="__create_new__"
-									{...getItemProps({ item, index })}
-									class={cn(
-										"ep:px-3 ep:py-2 ep:cursor-pointer ep:text-ui-small ep:flex ep:items-center ep:gap-2 ep:border-t ep:border-obs-border",
-										highlightedIndex === index
-											? "ep:bg-obs-modifier-hover ep:text-obs-accent"
-											: "ep:text-obs-accent",
-									)}
-								>
-									<svg
-										width="14"
-										height="14"
-										viewBox="0 0 24 24"
-										fill="none"
-										stroke="currentColor"
-										stroke-width="2"
-									>
-										<line x1="12" y1="5" x2="12" y2="19" />
-										<line x1="5" y1="12" x2="19" y2="12" />
-									</svg>
-									<span class="ep:font-medium">Create new note...</span>
-								</li>
-							);
-						}
-
-						const note = item.file;
+			{isOpen && filtered.length > 0 && (
+				<ul
+					ref={listRef}
+					class={cn(
+						"ep:absolute ep:left-0 ep:top-full ep:mt-1 ep:z-50",
+						"ep:bg-obs-primary ep:border ep:border-obs-border ep:rounded-md ep:shadow-lg",
+						"ep:max-h-[280px] ep:overflow-y-auto ep:py-1 ep:w-full",
+					)}
+				>
+					{filtered.map((note, index) => {
 						const folderPath = note.parent?.path;
-
 						return (
 							<li
 								key={note.path}
-								{...getItemProps({ item, index })}
+								tabIndex={-1}
 								class={cn(
 									"ep:px-3 ep:py-1.5 ep:cursor-pointer ep:text-ui-small ep:flex ep:items-center ep:gap-2",
-									highlightedIndex === index
+									highlightIndex === index
 										? "ep:bg-obs-modifier-hover ep:text-obs-normal"
 										: "ep:text-obs-muted",
 								)}
+								onMouseDown={(e) => {
+									e.preventDefault();
+									selectNote(note);
+								}}
+								onMouseEnter={() => setHighlightIndex(index)}
 							>
 								<span class="ep:font-medium ep:overflow-hidden ep:text-ellipsis ep:whitespace-nowrap ep:shrink">
 									{note.basename}
@@ -221,7 +208,8 @@ export function NotePickerCombobox({
 							</li>
 						);
 					})}
-			</ul>
+				</ul>
+			)}
 		</div>
 	);
 }
