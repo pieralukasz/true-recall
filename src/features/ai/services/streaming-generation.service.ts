@@ -184,6 +184,11 @@ export class StreamingGenerationService {
 						if (batchResult.created.length > 0) {
 							onCount(1, 0);
 							addStreamedCard(card);
+							// Yield to animation frame so Preact renders this card
+							// before the next one is added — prevents batch appearance
+							await new Promise<void>((r) =>
+								requestAnimationFrame(() => r()),
+							);
 						} else {
 							onCount(0, 1);
 						}

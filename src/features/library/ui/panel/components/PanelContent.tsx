@@ -3,6 +3,7 @@ import {
 	streamingGeneration,
 } from "@features/ai/services/streaming-state";
 import { PanelCard } from "@features/library/ui/panel/components/PanelCard";
+import { PartialCard } from "@features/library/ui/panel/components/PartialCard";
 import { PanelEmptyState } from "@features/library/ui/panel/components/PanelEmptyState";
 import {
 	groupCards,
@@ -11,7 +12,6 @@ import {
 import type { SelectionMode } from "@shared/store";
 import type { FlashcardInfo, FlashcardItem } from "@shared/types";
 import type { FSRSFlashcardItem } from "@shared/types/fsrs/card.types";
-import { useStreamingText } from "@features/library/ui/panel/hooks";
 import { EmptyState, EmptyStateMessages } from "@shared/ui/components";
 import { useEffect, useMemo, useRef } from "preact/hooks";
 
@@ -96,7 +96,26 @@ export function PanelContent({
 	);
 
 	const flashcards = flashcardInfo?.exists ? flashcardInfo.flashcards : [];
-	const grouped = useMemo(() => groupCards(flashcards), [flashcards]);
+
+	const streaming = streamingGeneration.value;
+	const isStreamingForFile =
+		streaming.isGenerating && streaming.notePath === currentFile?.path;
+	const { recentCardIds } = streaming;
+
+	// During streaming, merge completed cards that aren't yet in flashcardInfo
+	// to bypass the 100ms debounced SQLite refresh and show each card immediately
+	const allFlashcards = useMemo(() => {
+		if (!isStreamingForFile || streaming.completedCards.length === 0)
+			return flashcards;
+		const existingIds = new Set(flashcards.map((c) => c.id));
+		const newCards = streaming.completedCards.filter(
+			(c) => !existingIds.has(c.id),
+		);
+		if (newCards.length === 0) return flashcards;
+		return [...flashcards, ...newCards];
+	}, [flashcards, isStreamingForFile, streaming.completedCards]);
+
+	const grouped = useMemo(() => groupCards(allFlashcards), [allFlashcards]);
 
 	const filteredItems = useMemo(() => {
 		if (!searchQuery) return grouped;
@@ -123,22 +142,9 @@ export function PanelContent({
 		});
 	}, [grouped, searchQuery]);
 
-	if (!currentFile) {
-		return <EmptyState message={EmptyStateMessages.NO_FILE} />;
-	}
-
-	if (currentFile.extension !== "md") {
-		return <EmptyState message={EmptyStateMessages.NOT_MARKDOWN} />;
-	}
-
-	const streaming = streamingGeneration.value;
-	const isStreamingForFile =
-		streaming.isGenerating && streaming.notePath === currentFile?.path;
-	const { recentCardIds } = streaming;
-
 	useEffect(() => {
 		if (!streaming.isGenerating && recentCardIds.size > 0) {
-			const timer = setTimeout(() => clearRecentCards(), 500);
+			const timer = setTimeout(() => clearRecentCards(), 1000);
 			return () => clearTimeout(timer);
 		}
 		return undefined;
@@ -151,6 +157,14 @@ export function PanelContent({
 			bottomRef.current?.scrollIntoView({ behavior: "smooth", block: "end" });
 		}
 	}, [isStreamingForFile, recentCardIds.size, streaming.partialQuestion]);
+
+	if (!currentFile) {
+		return <EmptyState message={EmptyStateMessages.NO_FILE} />;
+	}
+
+	if (currentFile.extension !== "md") {
+		return <EmptyState message={EmptyStateMessages.NOT_MARKDOWN} />;
+	}
 
 	if (!flashcardInfo?.exists) {
 		if (isStreamingForFile) {
@@ -175,12 +189,24 @@ export function PanelContent({
 	const filePath = currentFile.path;
 	const isSelecting = selectionMode === "selecting";
 
+	let recentIndex = 0;
+
 	return (
 		<div class="ep:flex ep:flex-col">
 			{filteredItems.map((item) => {
 				const { key, cards, template } = getItemInfo(item);
 				const primaryCard = cards[0]!;
 				const isNewlyStreamed = recentCardIds.has(primaryCard.id);
+				const cardIndex = isNewlyStreamed ? recentIndex++ : 0;
+
+				const animationProps = isNewlyStreamed
+					? {
+							enterClass: "ep-card-enter ep-card-complete",
+							enterStyle: {
+								"--card-index": cardIndex,
+							} as Record<string, string | number>,
+						}
+					: {};
 
 				const sharedProps = {
 					filePath,
@@ -190,6 +216,7 @@ export function PanelContent({
 							? selectedCardIds.has(key)
 							: cards.some((c) => selectedCardIds.has(c.id)),
 					isSelectionMode: isSelecting,
+					...animationProps,
 					onToggleExpand: () => handlers.onToggleExpand(key),
 					onToggleSelect:
 						item.type === "basic"
@@ -211,7 +238,7 @@ export function PanelContent({
 				};
 
 				if (item.type === "basic") {
-					const card = (
+					return (
 						<PanelCard
 							key={key}
 							variant="basic"
@@ -224,20 +251,13 @@ export function PanelContent({
 							{...sharedProps}
 						/>
 					);
-					return isNewlyStreamed ? (
-						<div key={key} class="ep-animate-slide-in">
-							{card}
-						</div>
-					) : (
-						card
-					);
 				}
 
 				const groupType =
 					item.type === "cloze-group"
 						? ("cloze" as const)
 						: ("reverse" as const);
-				const groupCard = (
+				return (
 					<PanelCard
 						key={key}
 						variant="group"
@@ -252,52 +272,9 @@ export function PanelContent({
 						{...sharedProps}
 					/>
 				);
-				return isNewlyStreamed ? (
-					<div key={key} class="ep-animate-slide-in">
-						{groupCard}
-					</div>
-				) : (
-					groupCard
-				);
 			})}
 			{isStreamingForFile && <PartialCard streaming={streaming} />}
 			{isStreamingForFile && <div ref={bottomRef} />}
-		</div>
-	);
-}
-
-function PartialCard({
-	streaming,
-}: { streaming: typeof streamingGeneration.value }) {
-	const { visibleText: question, isTyping: qTyping } = useStreamingText(
-		streaming.partialQuestion ?? "",
-	);
-	const { visibleText: answer, isTyping: aTyping } = useStreamingText(
-		streaming.partialAnswer ?? "",
-	);
-
-	if (!question) {
-		return (
-			<div class="ep:flex ep:flex-col ep:mb-2 ep:rounded-lg ep:bg-obs-secondary ep:border ep:border-obs-border/20 ep:shadow-sm ep:p-3 ep:items-center ep:gap-2">
-				<div class="ep:text-xs ep:text-obs-muted">
-					Generating flashcards...
-				</div>
-			</div>
-		);
-	}
-
-	return (
-		<div class="ep:flex ep:flex-col ep:mb-2 ep:rounded-lg ep:bg-obs-secondary ep:border ep:border-obs-border/20 ep:shadow-sm ep:p-3 ep-animate-slide-in">
-			<div class="ep:text-ui-small ep:text-obs-normal">
-				{question}
-				{qTyping && <span class="ep-streaming-cursor" />}
-			</div>
-			{(answer || streaming.partialAnswer != null) && (
-				<div class="ep:text-ui-small ep:text-obs-muted ep:mt-1.5 ep:leading-relaxed">
-					{answer}
-					{aTyping && <span class="ep-streaming-cursor" />}
-				</div>
-			)}
 		</div>
 	);
 }
