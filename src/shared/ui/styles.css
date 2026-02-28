@@ -249,22 +249,6 @@
 	}
 }
 
-/* Writing state: accent left border + subtle tinted background */
-.ep-card-writing {
-	border-left: 3px solid var(--text-accent);
-	background: color-mix(
-		in srgb,
-		var(--text-accent) 3%,
-		var(--background-secondary)
-	);
-}
-
-/* Skeleton card: dimmer accent border to hint at upcoming content */
-.ep-card-skeleton {
-	border-left: 3px solid
-		color-mix(in srgb, var(--text-accent) 40%, transparent);
-}
-
 /* Card completion: brief green glow pulse confirming card is saved */
 .ep-card-complete {
 	animation: ep-completion-glow 700ms ease-out;
