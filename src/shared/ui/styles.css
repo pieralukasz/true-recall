@@ -212,21 +212,98 @@
 
 /* ── Streaming flashcard generation animations ── */
 
-@keyframes ep-slide-in {
+/* Word reveal: each new word fades in with blur-to-sharp effect */
+.ep-word-reveal {
+	animation: ep-word-fade 300ms ease-out both;
+}
+
+@keyframes ep-word-fade {
 	from {
 		opacity: 0;
-		transform: translateY(-8px);
+		filter: blur(2px);
 	}
 	to {
 		opacity: 1;
-		transform: translateY(0);
+		filter: blur(0);
 	}
 }
 
-.ep-animate-slide-in {
-	animation: ep-slide-in 0.5s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+/* Skeleton shimmer for loading state before first AI token */
+.ep-shimmer {
+	background: linear-gradient(
+		90deg,
+		var(--background-secondary) 25%,
+		var(--background-modifier-hover) 50%,
+		var(--background-secondary) 75%
+	);
+	background-size: 200% 100%;
+	animation: ep-shimmer-sweep 1.5s ease-in-out infinite;
 }
 
+@keyframes ep-shimmer-sweep {
+	0% {
+		background-position: 200% 0;
+	}
+	100% {
+		background-position: -200% 0;
+	}
+}
+
+/* Writing state: accent left border + subtle tinted background */
+.ep-card-writing {
+	border-left: 3px solid var(--text-accent);
+	background: color-mix(
+		in srgb,
+		var(--text-accent) 3%,
+		var(--background-secondary)
+	);
+}
+
+/* Skeleton card: dimmer accent border to hint at upcoming content */
+.ep-card-skeleton {
+	border-left: 3px solid
+		color-mix(in srgb, var(--text-accent) 40%, transparent);
+}
+
+/* Card completion: brief green glow pulse confirming card is saved */
+.ep-card-complete {
+	animation: ep-completion-glow 700ms ease-out;
+}
+
+@keyframes ep-completion-glow {
+	0% {
+		box-shadow: 0 0 0 0
+			color-mix(in srgb, var(--color-green) 40%, transparent);
+	}
+	50% {
+		box-shadow: 0 0 12px 2px
+			color-mix(in srgb, var(--color-green) 20%, transparent);
+	}
+	100% {
+		box-shadow: none;
+	}
+}
+
+/* Card entry: keyframe animation is more reliable than @starting-style
+   with VDOM frameworks (Preact) that may recycle DOM nodes.
+   Uses --card-index CSS variable for staggered delays (80ms per card) */
+@keyframes ep-card-enter-anim {
+	from {
+		opacity: 0;
+		transform: translateY(16px) scale(0.97);
+	}
+	to {
+		opacity: 1;
+		transform: translateY(0) scale(1);
+	}
+}
+
+.ep-card-enter {
+	animation: ep-card-enter-anim 500ms cubic-bezier(0.22, 1, 0.36, 1) both;
+	animation-delay: calc(var(--card-index, 0) * 80ms);
+}
+
+/* Streaming cursor: step-end for authentic terminal-like blink */
 @keyframes ep-cursor-blink {
 	0%,
 	100% {
@@ -245,10 +322,11 @@
 	background: var(--text-accent);
 	margin-left: 2px;
 	vertical-align: text-bottom;
-	animation: ep-cursor-blink 1s ease-in-out infinite;
+	animation: ep-cursor-blink 1s step-end infinite;
+	border-radius: 1px;
 }
 
-/* Reduced motion preferences (consolidated) */
+/* Reduced motion: remove spatial motion, keep opacity fades */
 @media (prefers-reduced-motion: reduce) {
 	.true-recall-donut-due,
 	.true-recall-donut-new,
@@ -261,10 +339,23 @@
 	.true-recall-pulse-collect {
 		animation: none;
 	}
-	.ep-animate-slide-in {
+	.ep-word-reveal {
+		animation: none;
+		opacity: 1;
+		filter: none;
+	}
+	.ep-shimmer {
+		animation: none;
+	}
+	.ep-card-enter {
+		animation: none;
+		opacity: 1;
+	}
+	.ep-card-complete {
 		animation: none;
 	}
 	.ep-streaming-cursor::after {
 		animation: none;
+		opacity: 1;
 	}
 }

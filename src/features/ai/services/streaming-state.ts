@@ -1,8 +1,11 @@
 import { signal } from "@preact/signals";
 import type { FlashcardItem } from "@shared/types";
 
+export type StreamingPhase = "idle" | "waiting" | "streaming";
+
 export interface StreamingGenerationState {
 	isGenerating: boolean;
+	phase: StreamingPhase;
 	noteName: string | null;
 	notePath: string | null;
 	completedCards: FlashcardItem[];
@@ -15,6 +18,7 @@ export interface StreamingGenerationState {
 
 const INITIAL_STATE: StreamingGenerationState = {
 	isGenerating: false,
+	phase: "idle",
 	noteName: null,
 	notePath: null,
 	completedCards: [],
@@ -36,6 +40,7 @@ export function startStreaming(
 	streamingGeneration.value = {
 		...INITIAL_STATE,
 		isGenerating: true,
+		phase: "waiting",
 		noteName,
 		notePath,
 		abortController,
@@ -61,6 +66,7 @@ export function updatePartial(
 	const current = streamingGeneration.value;
 	streamingGeneration.value = {
 		...current,
+		phase: current.phase === "waiting" ? "streaming" : current.phase,
 		partialQuestion: question,
 		partialAnswer: answer,
 	};
