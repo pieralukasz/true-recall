@@ -60,7 +60,7 @@ export class StatsView extends ItemView {
 		const container = this.containerEl.children[1];
 		if (!(container instanceof HTMLElement)) return;
 		container.empty();
-		container.addClasses(["ep:overflow-y-auto", "ep:h-full"]);
+		container.addClasses(["ep:overflow-hidden", "ep:h-full"]);
 
 		this.unmountPreact = mountPreact(container, this.plugin, h(StatsApp, null));
 	}

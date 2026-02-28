@@ -26,6 +26,7 @@ import type {
 	FSRSFlashcardItem,
 	StatsTimeRange,
 } from "@shared/types";
+import { AppNavBar } from "@shared/ui/components";
 import { CardPreviewModal } from "@shared/ui/modals";
 import { usePlugin } from "@shared/ui/preact";
 import { useCallback, useMemo } from "preact/hooks";
@@ -77,74 +78,79 @@ export function StatsApp() {
 	const dataKey = refreshTick;
 
 	return (
-		<div class="ep:p-2 ep:max-w-[900px] ep:mx-auto">
-			<NLQueryPanel nlQueryService={plugin.nlQueryService} />
+		<div class="ep:flex ep:flex-col ep:h-full">
+			<AppNavBar activeItem="stats" />
+			<div class="ep:flex-1 ep:min-h-0 ep:overflow-y-auto">
+				<div class="ep:p-3 ep:mx-auto ep:max-w-5xl ep:flex ep:flex-col ep:gap-3">
+					<NLQueryPanel nlQueryService={plugin.nlQueryService} />
 
-			<TodaySection
-				key={`today-${dataKey}`}
-				statsCalculator={statsCalculator}
-				currentRange={currentRange.value}
-			/>
+					<TodaySection
+						key={`today-${dataKey}`}
+						statsCalculator={statsCalculator}
+						currentRange={currentRange.value}
+					/>
 
-			<TimeRangeSelector
-				currentRange={currentRange.value}
-				onRangeChange={(range) => {
-					currentRange.value = range;
-				}}
-			/>
+					<TimeRangeSelector
+						currentRange={currentRange.value}
+						onRangeChange={(range) => {
+							currentRange.value = range;
+						}}
+					/>
 
-			<FutureDueChart
-				key={`future-${dataKey}`}
-				statsCalculator={statsCalculator}
-				currentRange={currentRange.value}
-				onCardPreview={handleCardPreviewForDate}
-			/>
+					<FutureDueChart
+						key={`future-${dataKey}`}
+						statsCalculator={statsCalculator}
+						currentRange={currentRange.value}
+						onCardPreview={handleCardPreviewForDate}
+					/>
 
-			<ReviewsChart
-				key={`reviews-${dataKey}`}
-				statsCalculator={statsCalculator}
-				currentRange={currentRange.value}
-				onCardPreview={handleCardPreviewForDate}
-			/>
+					<ReviewsChart
+						key={`reviews-${dataKey}`}
+						statsCalculator={statsCalculator}
+						currentRange={currentRange.value}
+						onCardPreview={handleCardPreviewForDate}
+					/>
 
-			<RetentionChart
-				key={`retention-${dataKey}`}
-				statsCalculator={statsCalculator}
-				currentRange={currentRange.value}
-			/>
+					<RetentionChart
+						key={`retention-${dataKey}`}
+						statsCalculator={statsCalculator}
+						currentRange={currentRange.value}
+					/>
 
-			<RatingDistributionChart
-				key={`rating-dist-${dataKey}`}
-				statsCalculator={statsCalculator}
-				currentRange={currentRange.value}
-			/>
+					<RatingDistributionChart
+						key={`rating-dist-${dataKey}`}
+						statsCalculator={statsCalculator}
+						currentRange={currentRange.value}
+					/>
 
-			<CollectionHealthCard
-				key={`health-${dataKey}`}
-				statsCalculator={statsCalculator}
-			/>
+					<CollectionHealthCard
+						key={`health-${dataKey}`}
+						statsCalculator={statsCalculator}
+					/>
 
-			<CardCountsChart
-				key={`counts-${dataKey}`}
-				statsCalculator={statsCalculator}
-				onCategoryClick={handleCardPreviewForCategory}
-			/>
+					<CardCountsChart
+						key={`counts-${dataKey}`}
+						statsCalculator={statsCalculator}
+						onCategoryClick={handleCardPreviewForCategory}
+					/>
 
-			<NotePerformanceTable
-				key={`note-perf-${dataKey}`}
-				statsCalculator={statsCalculator}
-			/>
+					<NotePerformanceTable
+						key={`note-perf-${dataKey}`}
+						statsCalculator={statsCalculator}
+					/>
 
-			<CreationSourceChart
-				key={`creation-source-${dataKey}`}
-				statsCalculator={statsCalculator}
-			/>
+					<CreationSourceChart
+						key={`creation-source-${dataKey}`}
+						statsCalculator={statsCalculator}
+					/>
 
-			<CalendarHeatmap
-				key={`heatmap-${dataKey}`}
-				statsCalculator={statsCalculator}
-				onCardPreview={handleCardPreviewForDate}
-			/>
+					<CalendarHeatmap
+						key={`heatmap-${dataKey}`}
+						statsCalculator={statsCalculator}
+						onCardPreview={handleCardPreviewForDate}
+					/>
+				</div>
+			</div>
 		</div>
 	);
 }
