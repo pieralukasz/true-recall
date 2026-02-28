@@ -21,9 +21,7 @@ interface ProjectsTabProps {
 	searchQuery: string;
 	scrollContainerRef: RefObject<HTMLDivElement>;
 	scrollTop: Signal<number>;
-	onNavigateToNote: (noteName: string) => void;
 	onStudyNote: (noteName: string) => void;
-	onCustomStudyNote: (noteName: string) => void;
 }
 
 export function ProjectsTab({
@@ -31,9 +29,7 @@ export function ProjectsTab({
 	searchQuery,
 	scrollContainerRef,
 	scrollTop,
-	onNavigateToNote,
 	onStudyNote,
-	onCustomStudyNote,
 }: ProjectsTabProps) {
 	const plugin = usePlugin();
 	const expandedPaths = useSignal<ReadonlySet<string>>(new Set());
@@ -139,6 +135,18 @@ export function ProjectsTab({
 											ignoreDailyLimits: true,
 										});
 									}}
+									onCustomStudy={() => {
+										void plugin.openCustomStudyModal({
+											sourceNoteFilters: item.project.memberNotes.map((m) => m.name),
+											scopeLabel: item.project.name,
+										});
+									}}
+									onNavigate={() => {
+										void plugin.app.workspace.openLinkText(
+											item.project.name,
+											"",
+										);
+									}}
 								/>
 							</div>
 						);
@@ -160,12 +168,18 @@ export function ProjectsTab({
 								<NoteRow
 									note={item.note}
 									onNavigate={() =>
-										onNavigateToNote(item.note.name)
+										void plugin.app.workspace.openLinkText(
+											item.note.name,
+											"",
+										)
 									}
 									onStudy={() => onStudyNote(item.note.name)}
-									onCustomStudy={() =>
-										onCustomStudyNote(item.note.name)
-									}
+									onCustomStudy={() => {
+										void plugin.openCustomStudyModal({
+											sourceNoteFilters: [item.note.name],
+											scopeLabel: item.note.name,
+										});
+									}}
 								/>
 							</div>
 						);

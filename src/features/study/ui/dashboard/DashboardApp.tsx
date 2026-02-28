@@ -127,21 +127,10 @@ export function DashboardApp() {
 		};
 	}, [enrichedNotes, allProjectNames]);
 
-	const handleNavigateToNote = (noteName: string) => {
-		void plugin.app.workspace.openLinkText(noteName, "");
-	};
-
 	const handleStudyNote = (noteName: string) => {
 		void plugin.openReviewViewWithFilters({
 			sourceNoteFilter: noteName,
 			ignoreDailyLimits: true,
-		});
-	};
-
-	const handleCustomStudyNote = (noteName: string) => {
-		void plugin.openCustomStudyModal({
-			sourceNoteFilters: [noteName],
-			scopeLabel: noteName,
 		});
 	};
 
@@ -202,9 +191,7 @@ export function DashboardApp() {
 									searchQuery={searchQuery.value}
 									scrollContainerRef={scrollContainerRef}
 									scrollTop={scrollTop}
-									onNavigateToNote={handleNavigateToNote}
 									onStudyNote={handleStudyNote}
-									onCustomStudyNote={handleCustomStudyNote}
 								/>
 							)}
 
