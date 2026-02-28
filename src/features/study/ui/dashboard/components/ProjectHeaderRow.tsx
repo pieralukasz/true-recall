@@ -1,6 +1,7 @@
 import { CardCountDisplay } from "@shared/ui/components/CardCountDisplay";
 import { Clickable } from "@shared/ui/components/Clickable";
 import { IconButton } from "@shared/ui/components/IconButton";
+import { useContextMenu } from "@shared/ui/preact/useContextMenu";
 import { cn } from "@shared/ui/utils";
 import { computePriority } from "../helpers/note-priority";
 import type { DashboardProject, NotePriority } from "../types";
@@ -19,6 +20,8 @@ interface ProjectHeaderRowProps {
 	isExpanded: boolean;
 	onToggle: () => void;
 	onStudyProject: () => void;
+	onCustomStudy: () => void;
+	onNavigate: () => void;
 }
 
 export function ProjectHeaderRow({
@@ -27,9 +30,17 @@ export function ProjectHeaderRow({
 	isExpanded,
 	onToggle,
 	onStudyProject,
+	onCustomStudy,
+	onNavigate,
 }: ProjectHeaderRowProps) {
 	const activeDue = project.due + project.newCount + project.learning;
 	const priority = computePriority({ overdueCount: 0, due: project.due, learning: project.learning, newCount: project.newCount });
+
+	const handleContextMenu = useContextMenu([
+		{ title: "Study project", icon: "play", onClick: onStudyProject },
+		{ title: "Custom session", icon: "sliders-horizontal", onClick: onCustomStudy },
+		{ title: "Go to project note", icon: "file-text", onClick: onNavigate },
+	]);
 
 	return (
 		<div
@@ -38,6 +49,7 @@ export function ProjectHeaderRow({
 				activeDue === 0 && "ep:opacity-40",
 			)}
 			style={{ paddingLeft: `${12 + depth * 20}px` }}
+			onContextMenu={handleContextMenu}
 		>
 			<Clickable
 				class="ep:flex ep:items-center ep:gap-2 ep:flex-1 ep:min-w-0"
@@ -73,7 +85,7 @@ export function ProjectHeaderRow({
 			/>
 
 			<IconButton
-				icon="brain"
+				icon="play"
 				ariaLabel={`Study ${project.name}`}
 				onClick={onStudyProject}
 				size="small"

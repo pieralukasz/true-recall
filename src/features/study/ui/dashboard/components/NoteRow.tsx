@@ -1,6 +1,7 @@
 import { CardCountDisplay } from "@shared/ui/components/CardCountDisplay";
 import { Clickable } from "@shared/ui/components/Clickable";
 import { IconButton } from "@shared/ui/components/IconButton";
+import { useContextMenu } from "@shared/ui/preact/useContextMenu";
 import { cn } from "@shared/ui/utils";
 import type { DashboardNoteEntry, NotePriority } from "../types";
 
@@ -29,12 +30,19 @@ export function NoteRow({
 }: NoteRowProps) {
 	const hasActive = note.due + note.newCount + note.learning > 0;
 
+	const handleContextMenu = useContextMenu([
+		{ title: "Study", icon: "play", onClick: onStudy },
+		{ title: "Custom session", icon: "sliders-horizontal", onClick: onCustomStudy },
+		{ title: "Go to note", icon: "file-text", onClick: onNavigate },
+	]);
+
 	return (
 		<div
 			class={cn(
 				"ep:flex ep:items-center ep:gap-3 ep:px-3 ep:h-9 ep:overflow-hidden ep:rounded-lg ep:transition-colors ep:duration-150 ep:hover:bg-obs-modifier-hover",
 				!hasActive && "ep:opacity-40",
 			)}
+			onContextMenu={handleContextMenu}
 		>
 			<Clickable
 				class="ep:flex ep:items-center ep:gap-2 ep:flex-1 ep:min-w-0 ep:hover:text-obs-interactive ep:transition-colors"
@@ -91,17 +99,11 @@ export function NoteRow({
 				dueCount={note.due}
 			/>
 
-			<div class="ep:flex ep:items-center ep:gap-0.5">
+			<div class="ep:flex ep:items-center">
 				<IconButton
 					icon="play"
 					ariaLabel={`Study ${note.name}`}
 					onClick={onStudy}
-					size="small"
-				/>
-				<IconButton
-					icon="settings"
-					ariaLabel={`Custom study ${note.name}`}
-					onClick={onCustomStudy}
 					size="small"
 				/>
 			</div>

@@ -485,51 +485,33 @@ export function AddFlashcardsApp({
 				/>
 			)}
 
-			{/* Format hint */}
-			<div class="ep:text-ui-smaller ep:text-obs-faint ep:flex ep:flex-wrap ep:gap-x-3 ep:gap-y-0.5">
-				<span>
-					Formats:{" "}
-					<code class="ep:px-1 ep:py-0.5 ep:bg-obs-secondary ep:rounded ep:text-ui-smaller">
-						{`Q ${FLASHCARD_CONFIG.tag}`}
-					</code>
-					{" then answer"}
-				</span>
-				<span>
-					<code class="ep:px-1 ep:py-0.5 ep:bg-obs-secondary ep:rounded ep:text-ui-smaller">
-						Q: / A:
-					</code>
-				</span>
-				<span>
-					<code class="ep:px-1 ep:py-0.5 ep:bg-obs-secondary ep:rounded ep:text-ui-smaller">
-						Question::Answer
-					</code>
-				</span>
-			</div>
+			{/* Editor + side preview row */}
+			<div class="ep:flex ep:flex-row ep:gap-2">
+				{/* Editor area */}
+				{useRichEditor ? (
+					<div
+						ref={editorContainerRef}
+						class="ep-simple-editor-container ep:flex-1 ep:min-w-0"
+					/>
+				) : (
+					<textarea
+						ref={textareaRef}
+						class="ep:flex-1 ep:min-w-0 ep:min-h-80 ep:p-4 ep:text-ui-small ep:leading-[1.6] ep:bg-obs-primary ep:border ep:border-obs-border ep:rounded-lg ep:resize-y ep:text-obs-normal ep:focus-visible:outline-none ep:focus-visible:border-obs-interactive ep:placeholder:text-obs-faint"
+						placeholder={isAddMode ? PLACEHOLDER_TEXT : "Edit your flashcard content..."}
+						spellcheck={true}
+						value={content}
+						onInput={handleTextareaInput}
+						onKeyDown={handleKeyDown}
+						onPaste={handleTextareaPaste}
+					/>
+				)}
 
-			{/* Editor area */}
-			{useRichEditor ? (
-				<div
-					ref={editorContainerRef}
-					class="ep-simple-editor-container"
-				/>
-			) : (
-				<textarea
-					ref={textareaRef}
-					class="ep:w-full ep:min-h-80 ep:p-4 ep:text-ui-small ep:leading-[1.6] ep:bg-obs-primary ep:border ep:border-obs-border ep:rounded-lg ep:resize-y ep:text-obs-normal ep:focus-visible:outline-none ep:focus-visible:border-obs-interactive ep:placeholder:text-obs-faint"
-					placeholder={isAddMode ? PLACEHOLDER_TEXT : "Edit your flashcard content..."}
-					spellcheck={true}
-					value={content}
-					onInput={handleTextareaInput}
-					onKeyDown={handleKeyDown}
-					onPaste={handleTextareaPaste}
-				/>
-			)}
+				{/* Side preview (add mode only) */}
+				{isAddMode && <CardPreviewPanel cards={parsedCards} />}
+			</div>
 
 			{/* Shortcuts hint */}
 			<KeyboardShortcutsHint useRichEditor={useRichEditor} />
-
-			{/* Live preview */}
-			{isAddMode && <CardPreviewPanel cards={parsedCards} />}
 
 			{/* Footer */}
 			<div class="ep-modal-footer ep:flex ep:justify-between ep:items-center">

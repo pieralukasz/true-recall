@@ -1,27 +1,35 @@
+import { Platform } from "obsidian";
+
 interface ShortcutDef {
 	key: string;
 	action: string;
 }
 
-const SHORTCUTS_TEXTAREA: ShortcutDef[] = [
-	{ key: "Ctrl+3", action: "#flashcard" },
-	{ key: "Ctrl+B", action: "bold" },
-	{ key: "Ctrl+I", action: "italic" },
-	{ key: "Ctrl+K", action: "[[link]]" },
-	{ key: "Ctrl+Shift+C", action: "```code```" },
-	{ key: "Ctrl+Enter", action: "save" },
-];
+function getShortcuts(useRichEditor: boolean): ShortcutDef[] {
+	const mod = Platform.isMacOS ? "Cmd" : "Ctrl";
 
-const SHORTCUTS_RICH: ShortcutDef[] = [
-	{ key: "Ctrl+3", action: "#flashcard" },
-	{ key: "Ctrl+Enter", action: "save" },
-	{ key: "Esc", action: "close" },
-];
+	if (useRichEditor) {
+		return [
+			{ key: `${mod}+3`, action: "#flashcard" },
+			{ key: `${mod}+Enter`, action: "save" },
+			{ key: "Esc", action: "close" },
+		];
+	}
+
+	return [
+		{ key: `${mod}+3`, action: "#flashcard" },
+		{ key: `${mod}+B`, action: "bold" },
+		{ key: `${mod}+I`, action: "italic" },
+		{ key: `${mod}+K`, action: "[[link]]" },
+		{ key: `${mod}+Shift+C`, action: "```code```" },
+		{ key: `${mod}+Enter`, action: "save" },
+	];
+}
 
 export function KeyboardShortcutsHint({
 	useRichEditor = false,
 }: { useRichEditor?: boolean }) {
-	const shortcuts = useRichEditor ? SHORTCUTS_RICH : SHORTCUTS_TEXTAREA;
+	const shortcuts = getShortcuts(useRichEditor);
 
 	return (
 		<div class="ep:text-ui-smaller ep:text-obs-faint ep:mt-2 ep:flex ep:flex-wrap ep:gap-x-4 ep:gap-y-1">
