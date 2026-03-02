@@ -19,6 +19,7 @@ interface NoteRowProps {
 	onStudy: () => void;
 	onCustomStudy: () => void;
 	onProjectClick?: (projectName: string) => void;
+	onPresetClick?: (notePath: string | null) => void;
 }
 
 export function NoteRow({
@@ -27,6 +28,7 @@ export function NoteRow({
 	onStudy,
 	onCustomStudy,
 	onProjectClick,
+	onPresetClick,
 }: NoteRowProps) {
 	const hasActive = note.due + note.newCount + note.learning > 0;
 
@@ -63,12 +65,13 @@ export function NoteRow({
 			</Clickable>
 
 			{note.presetName && (
-				<span
-					class="ep:text-[10px] ep:px-1.5 ep:py-0.5 ep:rounded-full ep:bg-obs-modifier-hover ep:text-obs-muted ep:shrink-0"
+				<Clickable
+					class="ep:text-[10px] ep:px-1.5 ep:py-0.5 ep:rounded-full ep:bg-obs-modifier-hover ep:text-obs-muted ep:hover:text-obs-normal ep:hover:bg-obs-modifier-active-hover ep:transition-colors ep:shrink-0"
 					title={`FSRS preset: ${note.presetName}`}
+					onClick={() => onPresetClick?.(note.path)}
 				>
 					{note.presetName}
-				</span>
+				</Clickable>
 			)}
 
 			{note.projects.length > 0 && (

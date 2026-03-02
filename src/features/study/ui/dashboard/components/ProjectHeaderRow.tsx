@@ -22,6 +22,7 @@ interface ProjectHeaderRowProps {
 	onStudyProject: () => void;
 	onCustomStudy: () => void;
 	onNavigate: () => void;
+	onPresetClick?: (projectPath: string) => void;
 }
 
 export function ProjectHeaderRow({
@@ -32,6 +33,7 @@ export function ProjectHeaderRow({
 	onStudyProject,
 	onCustomStudy,
 	onNavigate,
+	onPresetClick,
 }: ProjectHeaderRowProps) {
 	const activeDue = project.due + project.newCount + project.learning;
 	const priority = computePriority({ overdueCount: 0, due: project.due, learning: project.learning, newCount: project.newCount });
@@ -66,9 +68,16 @@ export function ProjectHeaderRow({
 				</span>
 
 				{project.presetName && (
-					<span class="ep:text-[10px] ep:px-1.5 ep:py-0.5 ep:rounded-full ep:bg-obs-modifier-hover ep:text-obs-muted ep:shrink-0">
+					<Clickable
+						class="ep:text-[10px] ep:px-1.5 ep:py-0.5 ep:rounded-full ep:bg-obs-modifier-hover ep:text-obs-muted ep:hover:text-obs-normal ep:hover:bg-obs-modifier-active-hover ep:transition-colors ep:shrink-0"
+						onClick={(e: MouseEvent) => {
+							e.stopPropagation();
+							onPresetClick?.(project.path);
+						}}
+						title={`FSRS preset: ${project.presetName}`}
+					>
 						{project.presetName}
-					</span>
+					</Clickable>
 				)}
 
 				<span class="ep:text-xs ep:text-obs-muted ep:shrink-0 ep:tabular-nums">
@@ -88,6 +97,12 @@ export function ProjectHeaderRow({
 				icon="play"
 				ariaLabel={`Study ${project.name}`}
 				onClick={onStudyProject}
+				size="small"
+			/>
+			<IconButton
+				icon="settings-2"
+				ariaLabel={`Preset options for ${project.name}`}
+				onClick={() => onPresetClick?.(project.path)}
 				size="small"
 			/>
 		</div>

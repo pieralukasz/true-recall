@@ -47,6 +47,11 @@ export function FSRSTab({ selectedPresetId, onPresetChange }: FSRSTabProps) {
 			lastOptimization: null,
 			lastOptimizationReviewCount: null,
 			lastOptimizationMetrics: null,
+			leechThreshold: preset.leechThreshold,
+			leechAction: preset.leechAction,
+			newCardOrder: preset.newCardOrder,
+			reviewOrder: preset.reviewOrder,
+			newReviewMix: preset.newReviewMix,
 		});
 		onPresetChange(newPreset.id);
 		refresh();

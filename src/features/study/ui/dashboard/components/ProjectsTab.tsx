@@ -22,6 +22,7 @@ interface ProjectsTabProps {
 	scrollContainerRef: RefObject<HTMLDivElement>;
 	scrollTop: Signal<number>;
 	onStudyNote: (noteName: string) => void;
+	onPresetClick?: (path: string | null) => void;
 }
 
 export function ProjectsTab({
@@ -30,6 +31,7 @@ export function ProjectsTab({
 	scrollContainerRef,
 	scrollTop,
 	onStudyNote,
+	onPresetClick,
 }: ProjectsTabProps) {
 	const plugin = usePlugin();
 	const expandedPaths = useSignal<ReadonlySet<string>>(new Set());
@@ -147,6 +149,7 @@ export function ProjectsTab({
 											"",
 										);
 									}}
+									onPresetClick={onPresetClick}
 								/>
 							</div>
 						);
@@ -180,6 +183,7 @@ export function ProjectsTab({
 											scopeLabel: item.note.name,
 										});
 									}}
+									onPresetClick={onPresetClick}
 								/>
 							</div>
 						);
