@@ -2,18 +2,16 @@ import { AITab } from "@features/settings/tabs/AITab";
 import { DataTab } from "@features/settings/tabs/DataTab";
 import { FSRSTab } from "@features/settings/tabs/FSRSTab";
 import { GeneralTab } from "@features/settings/tabs/GeneralTab";
-import { SchedulingTab } from "@features/settings/tabs/SchedulingTab";
 import { SyncTab } from "@features/settings/tabs/SyncTab";
 import { Clickable } from "@shared/ui/components";
 import { usePlugin } from "@shared/ui/preact";
 import { useCallback, useState } from "preact/hooks";
 
-type SettingsTabId = "general" | "ai" | "scheduling" | "fsrs" | "data" | "sync";
+type SettingsTabId = "general" | "ai" | "fsrs" | "data" | "sync";
 
 const TABS: { id: SettingsTabId; label: string }[] = [
 	{ id: "general", label: "General" },
 	{ id: "ai", label: "AI" },
-	{ id: "scheduling", label: "Scheduling" },
 	{ id: "fsrs", label: "FSRS" },
 	{ id: "data", label: "Data & Backup" },
 	{ id: "sync", label: "Cloud Sync" },
@@ -70,9 +68,6 @@ export function SettingsApp() {
 			<div role="tabpanel" id={`true-recall-tabpanel-${activeTab}`}>
 				{activeTab === "general" && <GeneralTab />}
 				{activeTab === "ai" && <AITab />}
-				{activeTab === "scheduling" && (
-					<SchedulingTab selectedPresetId={selectedPresetId} />
-				)}
 				{activeTab === "fsrs" && (
 					<FSRSTab
 						selectedPresetId={selectedPresetId}
