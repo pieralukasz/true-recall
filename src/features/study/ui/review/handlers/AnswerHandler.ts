@@ -2,6 +2,7 @@ import type { SessionPersistenceService } from "@features/core/persistence/sessi
 import type { FSRSService } from "@features/core/services/fsrs.service";
 import type { FlashcardManager } from "@features/study/services/flashcard/flashcard.service";
 import type { ReviewService } from "@features/study/services/review.service";
+import { shouldTriggerLeech } from "@features/study/ui/review/helpers/leech-helpers";
 import type { SessionFilters } from "@features/study/ui/review/review.types";
 import { notify } from "@shared/services/notification.service";
 import { notifyCardChange } from "@shared/services/signals";
@@ -185,15 +186,10 @@ export class AnswerHandler {
 	 */
 	private checkLeech(card: FSRSFlashcardItem, preset: FSRSPreset): void {
 		const threshold = preset.leechThreshold ?? 8;
-		if (threshold <= 0) return;
-
-		const lapses = card.fsrs.lapses;
-		if (lapses < threshold) return;
-
-		const halfThreshold = Math.max(1, Math.ceil(threshold / 2));
-		if ((lapses - threshold) % halfThreshold !== 0) return;
+		if (!shouldTriggerLeech(card.fsrs.lapses, threshold)) return;
 
 		const action = preset.leechAction ?? "tag-only";
+		const lapses = card.fsrs.lapses;
 		const preview = card.question.slice(0, 50);
 
 		if (action === "suspend") {
