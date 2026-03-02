@@ -310,10 +310,18 @@ export class ReviewView extends ItemView {
 				return;
 			}
 
+			// Resolve session-level preset for ordering & limits
+			const sessionPreset = this.filters.projectPath
+				? this.plugin.presetService.resolvePresetChain(
+						this.filters.projectPath,
+					).effective.preset
+				: this.plugin.presetService.getDefaultPreset();
+
 			const queueOptions = buildQueueOptions(
 				this.filters,
 				this.plugin.settings,
 				this.sessionPersistence,
+				sessionPreset,
 			);
 
 			// Scope to project members via outgoing links

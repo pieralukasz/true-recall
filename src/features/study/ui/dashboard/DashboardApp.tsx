@@ -8,6 +8,7 @@ import {
 } from "@shared/services/signals";
 import { SearchCombobox } from "@shared/ui/components/SearchCombobox";
 import type { SearchSuggestion, SuggestionProvider } from "@shared/ui/helpers/search-suggestions.types";
+import { PresetOptionsModal } from "@shared/ui/modals/PresetOptionsModal";
 import { usePlugin } from "@shared/ui/preact";
 import { useCallback, useMemo, useRef } from "preact/hooks";
 import { useSignal } from "@preact/signals";
@@ -134,6 +135,21 @@ export function DashboardApp() {
 		});
 	};
 
+	const handlePresetClick = useCallback(
+		(path: string | null) => {
+			if (!path) return;
+			const chain = plugin.presetService.resolvePresetChain(path);
+			const presetId = chain.effective.preset.id;
+			const name = path.split("/").pop()?.replace(/\.md$/, "");
+			new PresetOptionsModal(plugin.app, plugin, {
+				initialPresetId: presetId,
+				contextPath: path,
+				contextName: name,
+			}).open();
+		},
+		[plugin],
+	);
+
 	const scrollContainerRef = useRef<HTMLDivElement>(null);
 	const scrollTop = useSignal(0);
 
@@ -192,6 +208,7 @@ export function DashboardApp() {
 									scrollContainerRef={scrollContainerRef}
 									scrollTop={scrollTop}
 									onStudyNote={handleStudyNote}
+									onPresetClick={handlePresetClick}
 								/>
 							)}
 
@@ -202,6 +219,7 @@ export function DashboardApp() {
 									allProjectNames={allProjectNames}
 									scrollContainerRef={scrollContainerRef}
 									scrollTop={scrollTop}
+									onPresetClick={handlePresetClick}
 								/>
 							)}
 						</div>
