@@ -285,6 +285,24 @@
 	animation-delay: calc(var(--card-index, 0) * 60ms);
 }
 
+/* Dashboard section entry: slide-up without scale for full-width blocks.
+   Uses --section-index CSS variable for staggered delays (80ms per section) */
+@keyframes ep-section-enter-anim {
+	from {
+		opacity: 0;
+		transform: translateY(12px);
+	}
+	to {
+		opacity: 1;
+		transform: translateY(0);
+	}
+}
+
+.ep-section-enter {
+	animation: ep-section-enter-anim 300ms cubic-bezier(0.22, 1, 0.36, 1) both;
+	animation-delay: calc(var(--section-index, 0) * 80ms);
+}
+
 /* Streaming cursor: step-end for authentic terminal-like blink */
 @keyframes ep-cursor-blink {
 	0%,
@@ -331,6 +349,10 @@
 	}
 	.ep-card-enter {
 		animation: none;
+	}
+	.ep-section-enter {
+		animation: none;
+		opacity: 1;
 	}
 	.ep-card-complete {
 		animation: none;

@@ -20,19 +20,26 @@ export interface AnswerHandlerDeps {
 	sessionPersistence: SessionPersistenceService;
 	getFilters: () => SessionFilters;
 	getCrammedCardIds: () => Set<string>;
+	getPresetCache: () => Map<string, FSRSPreset>;
 }
 
 export class AnswerHandler {
 	constructor(private deps: AnswerHandlerDeps) {}
 
+	resolvePreset(card: FSRSFlashcardItem): FSRSPreset {
+		const uid = card.sourceUid ?? "";
+		return (
+			this.deps.getPresetCache().get(uid) ??
+			this.deps.plugin.presetService.resolvePresetForCard(card, {
+				projectPath: this.deps.getFilters().projectPath,
+			})
+		);
+	}
+
 	updateSchedulingPreview(): void {
 		const card = this.deps.getReview().getCurrentCard();
 		if (card) {
-			const filters = this.deps.getFilters();
-			const preset = this.deps.plugin.presetService.resolvePresetForCard(
-				card,
-				{ projectPath: filters.projectPath },
-			);
+			const preset = this.resolvePreset(card);
 			const presetSettings =
 				this.deps.plugin.presetService.toFSRSSettings(preset);
 			const preview = this.deps.fsrsService.getSchedulingPreview(
@@ -61,10 +68,7 @@ export class AnswerHandler {
 		const isNewCard = card.fsrs.state === State.New;
 		const previousState = card.fsrs.state;
 
-		const filters = this.deps.getFilters();
-		const preset = this.deps.plugin.presetService.resolvePresetForCard(card, {
-			projectPath: filters.projectPath,
-		});
+		const preset = this.resolvePreset(card);
 		const presetSettings =
 			this.deps.plugin.presetService.toFSRSSettings(preset);
 
