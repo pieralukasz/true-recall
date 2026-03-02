@@ -5,7 +5,7 @@ import {
 	insertAtTextareaCursor,
 	toggleTextareaWrap,
 } from "@features/study/ui/editor/edit-toolbar.utils";
-import { EditorView, placeholder } from "@codemirror/view";
+import { EditorView, type ViewUpdate, placeholder } from "@codemirror/view";
 import { FLASHCARD_CONFIG } from "@shared/constants";
 import type {
 	EmbeddableEditorClass,
@@ -15,7 +15,6 @@ import { notify } from "@shared/services/notification.service";
 import type { FlashcardItem } from "@shared/types";
 import { KeyboardShortcutsHint } from "@shared/ui/modals/simple-editor/KeyboardShortcutsHint";
 import { NotePickerCombobox } from "@shared/ui/modals/simple-editor/NotePickerCombobox";
-import { CardPreviewPanel } from "@shared/ui/modals/simple-editor/CardPreviewPanel";
 import { Clickable } from "@shared/ui/components";
 import { SECONDARY_BUTTON_CLASSES } from "@shared/ui/utils/tailwind";
 import type { App, TFile } from "obsidian";
@@ -67,9 +66,9 @@ export function AddFlashcardsApp({
 	const isAddMode = mode === "add";
 
 	const [selectedNote, setSelectedNote] = useState<TFile | null>(initialNote);
-	const [parsedCards, setParsedCards] = useState<FlashcardItem[]>([]);
 	const [totalSaved, setTotalSaved] = useState(0);
 	const [saving, setSaving] = useState(false);
+	const [cardCount, setCardCount] = useState(0);
 
 	const parser = useMemo(() => new FlashcardParserService(), []);
 
@@ -77,7 +76,6 @@ export function AddFlashcardsApp({
 	const editorRef = useRef<EmbeddableEditorInstance | null>(null);
 	const textareaRef = useRef<HTMLTextAreaElement>(null);
 	const editorContainerRef = useRef<HTMLDivElement>(null);
-	const parseTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
 	// ── Content reading ──────────────────────────────────────────────
 	const getContent = useCallback((): string => {
@@ -86,22 +84,6 @@ export function AddFlashcardsApp({
 		}
 		return (textareaRef.current?.value ?? "").trim();
 	}, [useRichEditor]);
-
-	// ── Live parsing (debounced) ─────────────────────────────────────
-	const parseContent = useCallback(() => {
-		const text = getContent();
-		if (!text) {
-			setParsedCards([]);
-			return;
-		}
-		const cards = parser.extractFlashcards(text);
-		setParsedCards(cards);
-	}, [getContent, parser]);
-
-	const scheduleParseContent = useCallback(() => {
-		if (parseTimerRef.current) clearTimeout(parseTimerRef.current);
-		parseTimerRef.current = setTimeout(parseContent, 300);
-	}, [parseContent]);
 
 	// ── Clear editor ─────────────────────────────────────────────────
 	const clearEditor = useCallback(() => {
@@ -119,8 +101,23 @@ export function AddFlashcardsApp({
 			textareaRef.current.value = "";
 			setTimeout(() => textareaRef.current?.focus(), 50);
 		}
-		setParsedCards([]);
 	}, [useRichEditor]);
+
+	// ── Live card count ──────────────────────────────────────────────
+	const updateCardCount = useCallback(
+		(text: string) => {
+			const count = parser.extractFlashcards(text.trim()).length;
+			setCardCount(count);
+		},
+		[parser],
+	);
+
+	const handleEditorChange = useCallback(
+		(update: ViewUpdate) => {
+			updateCardCount(update.state.doc.toString());
+		},
+		[updateCardCount],
+	);
 
 	// ── Save handler ─────────────────────────────────────────────────
 	const handleSave = useCallback(async () => {
@@ -139,7 +136,6 @@ export function AddFlashcardsApp({
 		}
 
 		if (isAddMode) {
-			// Add mode: save internally
 			if (!selectedNote) {
 				notify().warning("Please select a target note first");
 				return;
@@ -176,7 +172,6 @@ export function AddFlashcardsApp({
 				setSaving(false);
 			}
 		} else {
-			// Edit mode: return to caller
 			onDone({
 				cancelled: false,
 				flashcards,
@@ -230,15 +225,6 @@ export function AddFlashcardsApp({
 		[],
 	);
 
-	// Debounced parsing on CM6 content change
-	const onContentChangeExt = useMemo(
-		() =>
-			EditorView.updateListener.of((update) => {
-				if (update.docChanged) scheduleParseContent();
-			}),
-		[scheduleParseContent],
-	);
-
 	// ── Image paste for embedded editor ──────────────────────────────
 	const handleEditorPaste = useCallback(
 		async (e: ClipboardEvent, editor: EmbeddableEditorInstance) => {
@@ -288,17 +274,13 @@ export function AddFlashcardsApp({
 			value: prefillContent ?? "",
 			onEscape: () => onCloseRef.current(),
 			onModEnter: () => handleSaveRef.current(),
+			onChange: handleEditorChange,
 			onPaste: handleEditorPaste,
-			extraExtensions: [flashcardTagExt, placeholderExt, onContentChangeExt],
+			extraExtensions: [flashcardTagExt, placeholderExt],
 		});
 
 		editorRef.current = editor;
 		setTimeout(() => editor.cm.focus(), 50);
-
-		// Initial parse of prefill content
-		if (prefillContent) {
-			setTimeout(parseContent, 100);
-		}
 
 		return () => {
 			editorRef.current = null;
@@ -309,8 +291,8 @@ export function AddFlashcardsApp({
 		useRichEditor,
 		editorClass,
 		flashcardTagExt,
+		handleEditorChange,
 		handleEditorPaste,
-		onContentChangeExt,
 	]);
 
 	// ── Textarea state & handlers (fallback) ─────────────────────────
@@ -386,11 +368,9 @@ export function AddFlashcardsApp({
 
 	const handleTextareaInput = useCallback(
 		(e: Event) => {
-			const val = (e.target as HTMLTextAreaElement).value;
-			setContent(val);
-			scheduleParseContent();
+			setContent((e.target as HTMLTextAreaElement).value);
 		},
-		[scheduleParseContent],
+		[],
 	);
 
 	const handleTextareaPaste = useCallback(
@@ -443,12 +423,47 @@ export function AddFlashcardsApp({
 			ta.selectionStart = ta.value.length;
 			ta.selectionEnd = ta.value.length;
 		}, 50);
-
-		// Initial parse
-		if (prefillContent) {
-			setTimeout(parseContent, 100);
-		}
 	}, [useRichEditor]);
+
+	// Update card count when textarea content changes
+	useEffect(() => {
+		if (useRichEditor) return;
+		updateCardCount(content);
+	}, [useRichEditor, content, updateCardCount]);
+
+	// Parse prefilled content on mount (rich editor mode)
+	useEffect(() => {
+		if (prefillContent) {
+			updateCardCount(prefillContent);
+		}
+	}, [prefillContent, updateCardCount]);
+
+	// Capture Cmd+3 before Obsidian intercepts it at the app level
+	useEffect(() => {
+		const handler = (e: KeyboardEvent) => {
+			if (!e.metaKey || (e.key !== "3" && e.key !== "#")) return;
+
+			e.preventDefault();
+			e.stopPropagation();
+
+			if (useRichEditor && editorRef.current) {
+				const view = editorRef.current.cm;
+				const pos = view.state.selection.main.head;
+				const line = view.state.doc.lineAt(pos);
+				if (line.text.includes(FLASHCARD_CONFIG.tag)) return;
+				const tag = ` ${FLASHCARD_CONFIG.tag}`;
+				view.dispatch({
+					changes: { from: line.to, insert: tag },
+					selection: { anchor: line.to + tag.length },
+				});
+			} else {
+				insertFlashcardTag();
+			}
+		};
+
+		window.addEventListener("keydown", handler, { capture: true });
+		return () => window.removeEventListener("keydown", handler, { capture: true });
+	}, [useRichEditor, insertFlashcardTag]);
 
 	// ── Handle close (resolve with summary in add mode) ──────────────
 	const handleClose = useCallback(() => {
@@ -471,7 +486,9 @@ export function AddFlashcardsApp({
 	const buttonText = isAddMode
 		? saving
 			? "Saving..."
-			: "Save Flashcards"
+			: cardCount > 0
+				? `Save ${cardCount} Flashcard${cardCount !== 1 ? "s" : ""}`
+				: "Save Flashcards"
 		: "Save Changes";
 
 	return (
@@ -485,30 +502,24 @@ export function AddFlashcardsApp({
 				/>
 			)}
 
-			{/* Editor + side preview row */}
-			<div class="ep:flex ep:flex-row ep:gap-2">
-				{/* Editor area */}
-				{useRichEditor ? (
-					<div
-						ref={editorContainerRef}
-						class="ep-simple-editor-container ep:flex-1 ep:min-w-0"
-					/>
-				) : (
-					<textarea
-						ref={textareaRef}
-						class="ep:flex-1 ep:min-w-0 ep:min-h-80 ep:p-4 ep:text-ui-small ep:leading-[1.6] ep:bg-obs-primary ep:border ep:border-obs-border ep:rounded-lg ep:resize-y ep:text-obs-normal ep:focus-visible:outline-none ep:focus-visible:border-obs-interactive ep:placeholder:text-obs-faint"
-						placeholder={isAddMode ? PLACEHOLDER_TEXT : "Edit your flashcard content..."}
-						spellcheck={true}
-						value={content}
-						onInput={handleTextareaInput}
-						onKeyDown={handleKeyDown}
-						onPaste={handleTextareaPaste}
-					/>
-				)}
-
-				{/* Side preview (add mode only) */}
-				{isAddMode && <CardPreviewPanel cards={parsedCards} />}
-			</div>
+			{/* Editor area */}
+			{useRichEditor ? (
+				<div
+					ref={editorContainerRef}
+					class="ep-simple-editor-container"
+				/>
+			) : (
+				<textarea
+					ref={textareaRef}
+					class="ep:w-full ep:min-h-80 ep:p-4 ep:text-ui-small ep:leading-[1.6] ep:bg-obs-primary ep:border ep:border-obs-border ep:rounded-lg ep:resize-y ep:text-obs-normal ep:focus-visible:outline-none ep:focus-visible:border-obs-interactive ep:placeholder:text-obs-faint"
+					placeholder={isAddMode ? PLACEHOLDER_TEXT : "Edit your flashcard content..."}
+					spellcheck={true}
+					value={content}
+					onInput={handleTextareaInput}
+					onKeyDown={handleKeyDown}
+					onPaste={handleTextareaPaste}
+				/>
+			)}
 
 			{/* Shortcuts hint */}
 			<KeyboardShortcutsHint useRichEditor={useRichEditor} />

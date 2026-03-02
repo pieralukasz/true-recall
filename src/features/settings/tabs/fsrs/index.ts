@@ -6,4 +6,5 @@ export { LoadBalanceSection } from "@features/settings/tabs/fsrs/LoadBalanceSect
 export { ParametersSection } from "@features/settings/tabs/fsrs/ParametersSection";
 export { PresetSection } from "@features/settings/tabs/fsrs/PresetSection";
 export { ScheduledBreaksSection } from "@features/settings/tabs/fsrs/ScheduledBreaksSection";
+export { SchedulingSection } from "@features/settings/tabs/fsrs/SchedulingSection";
 export { SiblingDisperseSection } from "@features/settings/tabs/fsrs/SiblingDisperseSection";

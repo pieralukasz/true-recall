@@ -83,6 +83,11 @@ export const DEFAULT_FSRS_PRESET: FSRSPreset = {
 	lastOptimization: null,
 	lastOptimizationReviewCount: null,
 	lastOptimizationMetrics: null,
+	leechThreshold: 8,
+	leechAction: "tag-only",
+	newCardOrder: "random",
+	reviewOrder: "due-date",
+	newReviewMix: "mix-with-reviews",
 };
 
 export const DEFAULT_SETTINGS: TrueRecallSettings = {

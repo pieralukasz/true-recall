@@ -197,6 +197,7 @@ export default class TrueRecallPlugin extends Plugin {
 			this.frontmatterIndex,
 			this.projectLinkService,
 			this.folderProjectService,
+			() => this.cardStore ?? null,
 		);
 
 		const fsrsSettings = extractFSRSSettings(this.settings);
@@ -323,6 +324,17 @@ export default class TrueRecallPlugin extends Plugin {
 				recurringDays: this.settings.easyDays as unknown as number[],
 				specificDates: [],
 			};
+		}
+
+		// Backfill new preset fields for existing presets
+		if (this.settings.fsrsPresets) {
+			for (const preset of this.settings.fsrsPresets) {
+				preset.leechThreshold ??= 8;
+				preset.leechAction ??= "tag-only";
+				preset.newCardOrder ??= this.settings.newCardOrder;
+				preset.reviewOrder ??= this.settings.reviewOrder;
+				preset.newReviewMix ??= this.settings.newReviewMix;
+			}
 		}
 
 		// Migrate global FSRS settings → Default preset for existing users
