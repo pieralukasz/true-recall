@@ -8,6 +8,7 @@ export interface CardContainerProps {
 	isAnswerRevealed: boolean;
 	onContentChange: (value: string, field: "question" | "answer") => void;
 	onOpenSourceNote?: () => void;
+	presetName?: string;
 }
 
 export function CardContainer({
@@ -15,6 +16,7 @@ export function CardContainer({
 	isAnswerRevealed,
 	onContentChange,
 	onOpenSourceNote,
+	presetName,
 }: CardContainerProps) {
 	const sourcePath = card.sourceNotePath || "";
 
@@ -66,14 +68,21 @@ export function CardContainer({
 					</>
 				)}
 
-				{card.sourceNoteName && isAnswerRevealed && onOpenSourceNote && (
-					<div class="ep:flex ep:justify-center ep:pt-8">
-						<Clickable
-							class="ep:text-obs-faint ep:text-ui-smaller ep:no-underline ep:hover:text-obs-accent ep:hover:underline ep:transition-colors ep:p-0"
-							onClick={onOpenSourceNote}
-						>
-							Source: {card.sourceNoteName}
-						</Clickable>
+				{isAnswerRevealed && (card.sourceNoteName || presetName) && (
+					<div class="ep:flex ep:items-center ep:justify-center ep:gap-3 ep:pt-8">
+						{card.sourceNoteName && onOpenSourceNote && (
+							<Clickable
+								class="ep:text-obs-faint ep:text-ui-smaller ep:no-underline ep:hover:text-obs-accent ep:hover:underline ep:transition-colors ep:p-0"
+								onClick={onOpenSourceNote}
+							>
+								Source: {card.sourceNoteName}
+							</Clickable>
+						)}
+						{presetName && (
+							<span class="ep:text-obs-faint ep:text-ui-smaller">
+								FSRS: {presetName}
+							</span>
+						)}
 					</div>
 				)}
 			</div>
