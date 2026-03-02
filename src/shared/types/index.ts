@@ -86,6 +86,7 @@ export type {
 	EasyDaysConfig,
 	FSRSPreset,
 	FSRSSettings,
+	LeechAction,
 	NewCardOrder,
 	NewReviewMix,
 	OptimizationMetrics,

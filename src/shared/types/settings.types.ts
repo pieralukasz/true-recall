@@ -95,6 +95,11 @@ export type NewReviewMix =
  * Each preset defines retention target, weights, learning steps, and daily limits.
  * Notes reference presets by name via frontmatter `fsrs_preset` field.
  */
+/**
+ * Leech action when a card exceeds the lapse threshold
+ */
+export type LeechAction = "suspend" | "tag-only";
+
 export interface FSRSPreset {
 	id: string;
 	name: string;
@@ -109,6 +114,15 @@ export interface FSRSPreset {
 	lastOptimization: string | null;
 	lastOptimizationReviewCount: number | null;
 	lastOptimizationMetrics: OptimizationMetrics | null;
+
+	// Leech detection (Anki-style)
+	leechThreshold?: number;
+	leechAction?: LeechAction;
+
+	// Per-preset display order (moved from global settings)
+	newCardOrder?: NewCardOrder;
+	reviewOrder?: ReviewOrder;
+	newReviewMix?: NewReviewMix;
 }
 
 /**

@@ -19,6 +19,7 @@ interface NoteListProps {
 	allProjectNames: string[];
 	scrollContainerRef: RefObject<HTMLDivElement>;
 	scrollTop: Signal<number>;
+	onPresetClick?: (path: string | null) => void;
 }
 
 function matchesFilter(
@@ -45,6 +46,7 @@ export function NoteList({
 	allProjectNames,
 	scrollContainerRef,
 	scrollTop,
+	onPresetClick,
 }: NoteListProps) {
 	const plugin = usePlugin();
 	const activeFilter = useSignal<NoteFilterMode>("all");
@@ -167,6 +169,7 @@ export function NoteList({
 								onStudy={() => handleStudyNote(item.name)}
 								onCustomStudy={() => handleCustomStudy(item)}
 								onProjectClick={handleProjectClick}
+								onPresetClick={onPresetClick}
 							/>
 						</div>
 					))}

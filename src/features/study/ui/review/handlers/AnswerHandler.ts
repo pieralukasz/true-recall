@@ -3,10 +3,11 @@ import type { FSRSService } from "@features/core/services/fsrs.service";
 import type { FlashcardManager } from "@features/study/services/flashcard/flashcard.service";
 import type { ReviewService } from "@features/study/services/review.service";
 import type { SessionFilters } from "@features/study/ui/review/review.types";
+import { notify } from "@shared/services/notification.service";
 import { notifyCardChange } from "@shared/services/signals";
 import type { AnswerUndoPayload } from "@shared/services/undo.types";
 import type { ReviewApi } from "@shared/store";
-import type { FSRSFlashcardItem } from "@shared/types";
+import type { FSRSFlashcardItem, FSRSPreset } from "@shared/types";
 import { type Grade, Rating, State } from "ts-fsrs";
 import type TrueRecallPlugin from "../../../../../main";
 
@@ -91,7 +92,7 @@ export class AnswerHandler {
 				review.queue,
 				review.currentIndex + 1,
 				updatedCard,
-				this.deps.plugin.settings.reviewOrder,
+				preset.reviewOrder ?? this.deps.plugin.settings.reviewOrder,
 			);
 			requeueData = {
 				card: updatedCard,
@@ -107,6 +108,11 @@ export class AnswerHandler {
 
 		if (hasMore) {
 			this.updateSchedulingPreview();
+		}
+
+		// Leech detection: check if card has exceeded the lapse threshold
+		if (rating === Rating.Again) {
+			this.checkLeech(updatedCard, preset);
 		}
 
 		// Undo entry with deferred persistence
@@ -167,6 +173,39 @@ export class AnswerHandler {
 				newState: updatedCard.fsrs.state,
 			});
 		}, 0);
+	}
+
+	/**
+	 * Anki-style leech detection: triggers at threshold, then every half-threshold after.
+	 * E.g. with threshold=8: triggers at lapses 8, 12, 16, 20, ...
+	 */
+	private checkLeech(card: FSRSFlashcardItem, preset: FSRSPreset): void {
+		const threshold = preset.leechThreshold ?? 8;
+		if (threshold <= 0) return;
+
+		const lapses = card.fsrs.lapses;
+		if (lapses < threshold) return;
+
+		const halfThreshold = Math.max(1, Math.ceil(threshold / 2));
+		if ((lapses - threshold) % halfThreshold !== 0) return;
+
+		const action = preset.leechAction ?? "tag-only";
+		const preview = card.question.slice(0, 50);
+
+		if (action === "suspend") {
+			this.deps.flashcardManager.updateCardFSRS(card.id, {
+				...card.fsrs,
+				suspended: true,
+			});
+			this.deps.getReview().removeCardById(card.id);
+			notify().warning(
+				`Leech suspended (${lapses} lapses): ${preview}`,
+			);
+		} else {
+			notify().info(
+				`Leech detected (${lapses} lapses): ${preview}`,
+			);
+		}
 	}
 
 	async handleUndoAnswer(

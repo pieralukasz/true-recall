@@ -325,6 +325,17 @@ export default class TrueRecallPlugin extends Plugin {
 			};
 		}
 
+		// Backfill new preset fields for existing presets
+		if (this.settings.fsrsPresets) {
+			for (const preset of this.settings.fsrsPresets) {
+				preset.leechThreshold ??= 8;
+				preset.leechAction ??= "tag-only";
+				preset.newCardOrder ??= this.settings.newCardOrder;
+				preset.reviewOrder ??= this.settings.reviewOrder;
+				preset.newReviewMix ??= this.settings.newReviewMix;
+			}
+		}
+
 		// Migrate global FSRS settings → Default preset for existing users
 		if (!rawData?.fsrsPresets) {
 			this.settings.fsrsPresets = [

@@ -6,7 +6,7 @@ import type { SessionFilters } from "@features/study/ui/review/review.types";
 import type { CardMutation } from "@shared/services/signals";
 import type { ReviewApi } from "@shared/store";
 import type { FSRSFlashcardItem } from "@shared/types";
-import type { TrueRecallSettings } from "@shared/types/settings.types";
+import type { FSRSPreset, TrueRecallSettings } from "@shared/types/settings.types";
 
 export interface CardFilterOptions {
 	stateFilter?: "due" | "learning" | "new" | "buried";
@@ -55,16 +55,17 @@ export function buildQueueOptions(
 	filters: SessionFilters,
 	settings: TrueRecallSettings,
 	sessionPersistence: SessionPersistenceService,
+	preset?: FSRSPreset,
 ): QueueBuildOptions {
 	return {
-		newCardsLimit: settings.newCardsPerDay,
-		reviewsLimit: settings.reviewsPerDay,
+		newCardsLimit: preset?.newCardsPerDay ?? settings.newCardsPerDay,
+		reviewsLimit: preset?.reviewsPerDay ?? settings.reviewsPerDay,
 		reviewedToday: sessionPersistence.getReviewedToday(),
 		newCardsStudiedToday: sessionPersistence.getNewCardsStudiedToday(),
 		reviewsCompletedToday: sessionPersistence.getReviewCardsCompletedToday(),
-		newCardOrder: settings.newCardOrder,
-		reviewOrder: filters.customReviewOrder ?? settings.reviewOrder,
-		newReviewMix: settings.newReviewMix,
+		newCardOrder: preset?.newCardOrder ?? settings.newCardOrder,
+		reviewOrder: filters.customReviewOrder ?? preset?.reviewOrder ?? settings.reviewOrder,
+		newReviewMix: preset?.newReviewMix ?? settings.newReviewMix,
 		dayStartHour: settings.dayStartHour,
 		sourceNoteFilter: filters.sourceNoteFilter,
 		sourceNoteFilters: filters.sourceNoteFilters,

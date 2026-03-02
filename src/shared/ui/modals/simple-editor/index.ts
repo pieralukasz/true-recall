@@ -5,4 +5,3 @@ export {
 	type AddFlashcardsResult,
 } from "@shared/ui/modals/simple-editor/AddFlashcardsApp";
 export { NotePickerCombobox } from "@shared/ui/modals/simple-editor/NotePickerCombobox";
-export { CardPreviewPanel } from "@shared/ui/modals/simple-editor/CardPreviewPanel";
