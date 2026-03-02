@@ -100,3 +100,14 @@ export type {
 	SyncOptions,
 	SyncResult,
 } from "@shared/types/sync.types";
+export type {
+	CardTemplate,
+	Note,
+	NoteType,
+} from "@shared/types/note.types";
+export {
+	BUILTIN_BASIC_ID,
+	BUILTIN_BASIC_REVERSED_ID,
+	BUILTIN_CLOZE_ID,
+	BUILTIN_IMAGE_OCCLUSION_ID,
+} from "@shared/types/note.types";
