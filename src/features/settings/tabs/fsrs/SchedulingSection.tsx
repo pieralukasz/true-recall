@@ -1,30 +1,28 @@
-import { usePreset, useSettings } from "@features/settings/hooks/useSettings";
-import type { NewCardOrder, NewReviewMix, ReviewOrder } from "@shared/types";
-import {
-	InfoBlock,
-	SelectInput,
-	SettingRow,
-	TextInput,
-} from "@shared/ui/components";
+import type {
+	FSRSPreset,
+	NewCardOrder,
+	NewReviewMix,
+	ReviewOrder,
+	TrueRecallSettings,
+} from "@shared/types";
+import { SelectInput, SettingRow, TextInput } from "@shared/ui/components";
 
-interface SchedulingTabProps {
-	selectedPresetId: string;
+interface SchedulingSectionProps {
+	preset: FSRSPreset;
+	updatePreset: (c: Partial<FSRSPreset>) => Promise<void>;
+	settings: TrueRecallSettings;
+	save: (patch: Partial<TrueRecallSettings>) => Promise<void>;
 }
 
-export function SchedulingTab({ selectedPresetId }: SchedulingTabProps) {
-	const { settings, save } = useSettings();
-	const { preset, updatePreset } = usePreset(selectedPresetId);
-
+export function SchedulingSection({
+	preset,
+	updatePreset,
+	settings,
+	save,
+}: SchedulingSectionProps) {
 	return (
 		<>
 			<SettingRow heading name="Learning steps" />
-
-			<InfoBlock>
-				<p>
-					Learning steps are configured per-preset. Currently editing: "
-					{preset.name}". Change preset in the FSRS tab.
-				</p>
-			</InfoBlock>
 
 			<SettingRow
 				name="Learning steps (minutes)"

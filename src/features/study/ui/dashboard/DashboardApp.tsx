@@ -8,6 +8,7 @@ import {
 } from "@shared/services/signals";
 import { SearchCombobox } from "@shared/ui/components/SearchCombobox";
 import type { SearchSuggestion, SuggestionProvider } from "@shared/ui/helpers/search-suggestions.types";
+import { PresetOptionsModal } from "@shared/ui/modals/PresetOptionsModal";
 import { usePlugin } from "@shared/ui/preact";
 import { useCallback, useMemo, useRef } from "preact/hooks";
 import { useSignal } from "@preact/signals";
@@ -19,6 +20,7 @@ import { ProjectsTab } from "./components/ProjectsTab";
 import { RecentlyStudiedBar } from "./components/RecentlyStudiedBar";
 import { HeatmapWidget } from "../editor/widgets/analytics/HeatmapWidget";
 import { aggregateDashboardData } from "./helpers/note-aggregation";
+import { useInitialMount } from "./helpers/use-initial-mount";
 import { aggregateProjectData } from "./helpers/project-aggregation";
 import type { DashboardAggregation, DashboardTab } from "./types";
 
@@ -127,12 +129,28 @@ export function DashboardApp() {
 		};
 	}, [enrichedNotes, allProjectNames]);
 
-	const handleStudyNote = (noteName: string) => {
+	const handleStudyNote = (noteName: string, projectPath?: string) => {
 		void plugin.openReviewViewWithFilters({
 			sourceNoteFilter: noteName,
+			projectPath,
 			ignoreDailyLimits: true,
 		});
 	};
+
+	const handlePresetClick = useCallback(
+		(path: string | null) => {
+			if (!path) return;
+			const chain = plugin.presetService.resolvePresetChain(path);
+			const presetId = chain.effective.preset.id;
+			const name = path.split("/").pop()?.replace(/\.md$/, "");
+			new PresetOptionsModal(plugin.app, plugin, {
+				initialPresetId: presetId,
+				contextPath: path,
+				contextName: name,
+			}).open();
+		},
+		[plugin],
+	);
 
 	const scrollContainerRef = useRef<HTMLDivElement>(null);
 	const scrollTop = useSignal(0);
@@ -150,6 +168,16 @@ export function DashboardApp() {
 		}
 	};
 
+	const initialMount = useInitialMount();
+	let si = 0;
+	const sectionProps = () =>
+		initialMount.current
+			? ({
+					class: "ep-section-enter",
+					style: { "--section-index": si++ },
+				} as Record<string, unknown>)
+			: {};
+
 	return (
 		<div class="ep-dashboard-container ep:flex ep:flex-col ep:h-full">
 			<AppNavBar activeItem="dashboard" />
@@ -159,32 +187,47 @@ export function DashboardApp() {
 				onScroll={onScroll}
 			>
 				<div class="ep:p-3 ep:mx-auto ep:max-w-5xl ep:flex ep:flex-col ep:gap-3 ep:min-h-full">
-					<StreakWidget source="" />
+					<div {...sectionProps()}>
+						<StreakWidget source="" />
+					</div>
 
 					{projectData.recentlyStudied.length > 0 && (
-						<RecentlyStudiedBar
-							notes={projectData.recentlyStudied}
-						/>
+						<div {...sectionProps()}>
+							<RecentlyStudiedBar
+								notes={projectData.recentlyStudied}
+							/>
+						</div>
 					)}
 
-					<SearchCombobox
-						value={searchQuery.value}
-						placeholder="Search notes or projects..."
-						onChange={(q) => {
-							searchQuery.value = q;
-						}}
-						getSuggestions={getDashboardSuggestions}
-					/>
+					<div {...sectionProps()}>
+						<SearchCombobox
+							value={searchQuery.value}
+							placeholder="Search notes or projects..."
+							onChange={(q) => {
+								searchQuery.value = q;
+							}}
+							getSuggestions={getDashboardSuggestions}
+						/>
+					</div>
 
-					<DashboardTabs
-						activeTab={activeTab.value}
-						onTabChange={handleTabChange}
-						projectCount={projectData.projects.length}
-						notesCount={enrichedNotes.length}
-					/>
+					<div {...sectionProps()}>
+						<DashboardTabs
+							activeTab={activeTab.value}
+							onTabChange={handleTabChange}
+							projectCount={projectData.projects.length}
+							notesCount={enrichedNotes.length}
+						/>
+					</div>
 
 					<div class="ep:flex ep:flex-col ep:flex-1">
-						<div class="ep:flex-1">
+						<div
+							class={`ep:flex-1${initialMount.current ? " ep-section-enter" : ""}`}
+							style={
+								initialMount.current
+									? { "--section-index": si++ }
+									: undefined
+							}
+						>
 							{activeTab.value === "projects" && (
 								<ProjectsTab
 									projects={projectData.projects}
@@ -192,6 +235,7 @@ export function DashboardApp() {
 									scrollContainerRef={scrollContainerRef}
 									scrollTop={scrollTop}
 									onStudyNote={handleStudyNote}
+									onPresetClick={handlePresetClick}
 								/>
 							)}
 
@@ -202,11 +246,19 @@ export function DashboardApp() {
 									allProjectNames={allProjectNames}
 									scrollContainerRef={scrollContainerRef}
 									scrollTop={scrollTop}
+									onPresetClick={handlePresetClick}
 								/>
 							)}
 						</div>
 
-						<div class="ep:mt-3">
+						<div
+							class={`ep:mt-3${initialMount.current ? " ep-section-enter" : ""}`}
+							style={
+								initialMount.current
+									? { "--section-index": si++ }
+									: undefined
+							}
+						>
 							<HeatmapWidget source="months: 0" />
 						</div>
 					</div>

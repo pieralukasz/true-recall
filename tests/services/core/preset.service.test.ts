@@ -333,6 +333,75 @@ describe("PresetService — 4-tier resolution", () => {
 		});
 	});
 
+	describe("resolvePresetForCard — deterministic alphabetical ordering", () => {
+		it("when two projects both have presets, alphabetically-first project path wins", () => {
+			addMockFile("Projects/Zoology.md", {
+				project: true,
+				fsrs_preset: "Science",
+			});
+			addMockFile("Projects/Anatomy.md", {
+				project: true,
+				fsrs_preset: "Medical",
+			});
+			addMockFile("Notes/SharedNote.md", {
+				flashcard_uid: "uid-shared",
+			});
+			setLinks("Projects/Zoology.md", ["Notes/SharedNote.md"]);
+			setLinks("Projects/Anatomy.md", ["Notes/SharedNote.md"]);
+			frontmatterIndex.rebuildIndex();
+
+			const card = makeCard("uid-shared");
+			const result = presetService.resolvePresetForCard(card);
+			// Anatomy < Zoology alphabetically → Medical wins
+			expect(result.name).toBe("Medical");
+		});
+
+		it("when alphabetically-first project has no preset, falls through to next", () => {
+			addMockFile("Projects/Anatomy.md", {
+				project: true,
+				// no fsrs_preset
+			});
+			addMockFile("Projects/Zoology.md", {
+				project: true,
+				fsrs_preset: "Science",
+			});
+			addMockFile("Notes/SharedNote.md", {
+				flashcard_uid: "uid-shared",
+			});
+			setLinks("Projects/Anatomy.md", ["Notes/SharedNote.md"]);
+			setLinks("Projects/Zoology.md", ["Notes/SharedNote.md"]);
+			frontmatterIndex.rebuildIndex();
+
+			const card = makeCard("uid-shared");
+			const result = presetService.resolvePresetForCard(card);
+			expect(result.name).toBe("Science");
+		});
+
+		it("explicit context.projectPath bypasses alphabetical ordering", () => {
+			addMockFile("Projects/Anatomy.md", {
+				project: true,
+				fsrs_preset: "Medical",
+			});
+			addMockFile("Projects/Zoology.md", {
+				project: true,
+				fsrs_preset: "Science",
+			});
+			addMockFile("Notes/SharedNote.md", {
+				flashcard_uid: "uid-shared",
+			});
+			setLinks("Projects/Anatomy.md", ["Notes/SharedNote.md"]);
+			setLinks("Projects/Zoology.md", ["Notes/SharedNote.md"]);
+			frontmatterIndex.rebuildIndex();
+
+			const card = makeCard("uid-shared");
+			// Explicitly request Zoology context → Science, not alphabetically-first
+			const result = presetService.resolvePresetForCard(card, {
+				projectPath: "Projects/Zoology.md",
+			});
+			expect(result.name).toBe("Science");
+		});
+	});
+
 	describe("resolvePresetChain", () => {
 		it("returns full chain with correct active tier", () => {
 			addMockFile("Projects/Anatomy.md", {
@@ -393,5 +462,115 @@ describe("PresetService — 4-tier resolution", () => {
 			});
 			expect(effective.source).toBe("default");
 		});
+	});
+});
+
+describe("PresetService — updatePreset rename propagation", () => {
+	let persistSettings: ReturnType<typeof vi.fn>;
+	let mockUpdatePresetName: ReturnType<typeof vi.fn>;
+	let settings: TrueRecallSettings;
+	let presetService: PresetService;
+
+	const presetA = makePreset("OldName", "preset-a");
+
+	beforeEach(() => {
+		persistSettings = vi.fn(() => Promise.resolve());
+		mockUpdatePresetName = vi.fn();
+
+		settings = {
+			fsrsPresets: [
+				makePreset("Default", "default-id"),
+				{ ...presetA },
+			],
+			defaultPresetId: "default-id",
+		} as unknown as TrueRecallSettings;
+	});
+
+	function createServiceWithCardStore(
+		getCardStore?: () => { stats: { updateReviewLogPresetName: ReturnType<typeof vi.fn> } } | null,
+	): PresetService {
+		return new PresetService(
+			() => settings,
+			persistSettings,
+			null as never,
+			null,
+			null,
+			getCardStore as never,
+		);
+	}
+
+	it("calls updateReviewLogPresetName when name changes", async () => {
+		presetService = createServiceWithCardStore(() => ({
+			stats: { updateReviewLogPresetName: mockUpdatePresetName },
+		}));
+
+		await presetService.updatePreset("preset-a", { name: "NewName" });
+
+		expect(mockUpdatePresetName).toHaveBeenCalledOnce();
+		expect(mockUpdatePresetName).toHaveBeenCalledWith("OldName", "NewName");
+	});
+
+	it("does NOT call updateReviewLogPresetName when name is unchanged", async () => {
+		presetService = createServiceWithCardStore(() => ({
+			stats: { updateReviewLogPresetName: mockUpdatePresetName },
+		}));
+
+		await presetService.updatePreset("preset-a", {
+			requestRetention: 0.85,
+		});
+
+		expect(mockUpdatePresetName).not.toHaveBeenCalled();
+	});
+
+	it("does NOT call when changes.name equals existing name", async () => {
+		presetService = createServiceWithCardStore(() => ({
+			stats: { updateReviewLogPresetName: mockUpdatePresetName },
+		}));
+
+		await presetService.updatePreset("preset-a", { name: "OldName" });
+
+		expect(mockUpdatePresetName).not.toHaveBeenCalled();
+	});
+
+	it("does not throw when getCardStore returns null", async () => {
+		presetService = createServiceWithCardStore(() => null);
+
+		await expect(
+			presetService.updatePreset("preset-a", { name: "NewName" }),
+		).resolves.toBeUndefined();
+		expect(persistSettings).toHaveBeenCalledOnce();
+	});
+
+	it("does not throw when getCardStore is undefined", async () => {
+		presetService = createServiceWithCardStore(undefined);
+
+		await expect(
+			presetService.updatePreset("preset-a", { name: "NewName" }),
+		).resolves.toBeUndefined();
+		expect(persistSettings).toHaveBeenCalledOnce();
+	});
+
+	it("still persists settings after rename", async () => {
+		presetService = createServiceWithCardStore(() => ({
+			stats: { updateReviewLogPresetName: mockUpdatePresetName },
+		}));
+
+		await presetService.updatePreset("preset-a", { name: "NewName" });
+
+		expect(persistSettings).toHaveBeenCalledOnce();
+		// Verify the preset was actually updated in settings
+		const updated = settings.fsrsPresets.find((p) => p.id === "preset-a");
+		expect(updated?.name).toBe("NewName");
+	});
+
+	it("does nothing for unknown preset id", async () => {
+		presetService = createServiceWithCardStore(() => ({
+			stats: { updateReviewLogPresetName: mockUpdatePresetName },
+		}));
+
+		await presetService.updatePreset("nonexistent", { name: "Nope" });
+
+		expect(mockUpdatePresetName).not.toHaveBeenCalled();
+		expect(persistSettings).not.toHaveBeenCalled();
 	});
 });

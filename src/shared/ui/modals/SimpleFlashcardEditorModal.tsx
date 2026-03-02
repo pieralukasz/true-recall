@@ -38,7 +38,7 @@ export class SimpleFlashcardEditorModal extends BasePromiseModal<SimpleFlashcard
 	) {
 		super(app, {
 			title: options.mode === "add" ? "Add Flashcards" : "Edit Flashcard",
-			width: options.mode === "add" ? "1000px" : "800px",
+			width: "800px",
 		});
 		this.options = options;
 		this.editorClass = editorClass ?? null;

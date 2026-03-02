@@ -29,7 +29,7 @@ import { VIEW_TYPE_REVIEW } from "@shared/constants";
 import { notify } from "@shared/services/notification.service";
 import { lastMutation } from "@shared/services/signals";
 import type { ReviewApi } from "@shared/store";
-import { extractFSRSSettings, type FSRSFlashcardItem } from "@shared/types";
+import { extractFSRSSettings, type FSRSFlashcardItem, type FSRSPreset } from "@shared/types";
 import { mountPreact } from "@shared/ui/preact";
 import {
 	ItemView,
@@ -51,6 +51,7 @@ export class ReviewView extends ItemView {
 
 	private filters: SessionFilters = {};
 	private crammedCardIds = new Set<string>();
+	private presetCache = new Map<string, FSRSPreset>();
 
 	private answerHandler!: AnswerHandler;
 	private editHandler!: EditHandler;
@@ -93,6 +94,7 @@ export class ReviewView extends ItemView {
 			sessionPersistence: this.sessionPersistence,
 			getFilters: () => this.filters,
 			getCrammedCardIds: () => this.crammedCardIds,
+			getPresetCache: () => this.presetCache,
 		});
 
 		this.cardActionsHandler = new CardActionsHandler(
@@ -212,6 +214,8 @@ export class ReviewView extends ItemView {
 				showHeaderStats: this.plugin.settings.showReviewHeaderStats,
 				showNextReviewTime: this.plugin.settings.showNextReviewTime,
 				continuousCustomReviews: this.plugin.settings.continuousCustomReviews,
+				getPresetName: (card: FSRSFlashcardItem) =>
+					this.answerHandler.resolvePreset(card).name,
 			}),
 		);
 	}
@@ -265,6 +269,31 @@ export class ReviewView extends ItemView {
 		);
 	}
 
+	// ─── Preset resolution ──────────────────────────────────────────────
+
+	private resolveSessionPreset(): FSRSPreset {
+		if (this.filters.projectPath) {
+			return this.plugin.presetService.resolvePresetChain(
+				this.filters.projectPath,
+			).effective.preset;
+		}
+
+		// Single-note study: inherit note's resolved preset for session ordering
+		if (this.filters.sourceNoteFilter) {
+			const file = this.app.metadataCache.getFirstLinkpathDest(
+				this.filters.sourceNoteFilter,
+				"",
+			);
+			if (file) {
+				return this.plugin.presetService.resolvePresetChain(
+					file.path,
+				).effective.preset;
+			}
+		}
+
+		return this.plugin.presetService.getDefaultPreset();
+	}
+
 	// ─── Session lifecycle ───────────────────────────────────────────────
 
 	async startSession(): Promise<void> {
@@ -310,10 +339,14 @@ export class ReviewView extends ItemView {
 				return;
 			}
 
+			// Resolve session-level preset for ordering & limits
+			const sessionPreset = this.resolveSessionPreset();
+
 			const queueOptions = buildQueueOptions(
 				this.filters,
 				this.plugin.settings,
 				this.sessionPersistence,
+				sessionPreset,
 			);
 
 			// Scope to project members via outgoing links
@@ -336,6 +369,20 @@ export class ReviewView extends ItemView {
 					getEmptyQueueMessage(this.filters.stateFilter),
 				);
 				return;
+			}
+
+			// Pre-resolve presets for all cards (keyed by sourceUid for dedup)
+			this.presetCache.clear();
+			for (const card of queue) {
+				const uid = card.sourceUid ?? "";
+				if (!this.presetCache.has(uid)) {
+					this.presetCache.set(
+						uid,
+						this.plugin.presetService.resolvePresetForCard(card, {
+							projectPath: this.filters.projectPath,
+						}),
+					);
+				}
 			}
 
 			this.review.startSession(queue);

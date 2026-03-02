@@ -50,10 +50,10 @@ export function PresetInfoWidget({ source }: { source: string }) {
 		);
 	}
 
-	const totalReviews = plugin.cardStore?.stats?.getTotalReviewCount() ?? 0;
+	const presetReviews = plugin.cardStore?.stats?.getReviewCountForPreset(preset.name) ?? 0;
 	const reviewsSinceOpt = preset.lastOptimizationReviewCount != null
-		? totalReviews - preset.lastOptimizationReviewCount
-		: totalReviews;
+		? presetReviews - preset.lastOptimizationReviewCount
+		: presetReviews;
 	const needsOptimization =
 		!preset.lastOptimization ||
 		reviewsSinceOpt > 500 ||

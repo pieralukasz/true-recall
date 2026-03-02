@@ -8,6 +8,7 @@ import {
 	ParametersSection,
 	PresetSection,
 	ScheduledBreaksSection,
+	SchedulingSection,
 	SiblingDisperseSection,
 } from "@features/settings/tabs/fsrs";
 import { useApp } from "@shared/ui/preact";
@@ -47,6 +48,11 @@ export function FSRSTab({ selectedPresetId, onPresetChange }: FSRSTabProps) {
 			lastOptimization: null,
 			lastOptimizationReviewCount: null,
 			lastOptimizationMetrics: null,
+			leechThreshold: preset.leechThreshold,
+			leechAction: preset.leechAction,
+			newCardOrder: preset.newCardOrder,
+			reviewOrder: preset.reviewOrder,
+			newReviewMix: preset.newReviewMix,
 		});
 		onPresetChange(newPreset.id);
 		refresh();
@@ -74,6 +80,13 @@ export function FSRSTab({ selectedPresetId, onPresetChange }: FSRSTabProps) {
 			<AlgorithmSection preset={preset} updatePreset={updatePreset} />
 
 			<DailyLimitsSection preset={preset} updatePreset={updatePreset} />
+
+			<SchedulingSection
+				preset={preset}
+				updatePreset={updatePreset}
+				settings={settings}
+				save={save}
+			/>
 
 			<ParametersSection
 				preset={preset}

@@ -1,12 +1,8 @@
 import { FSRS_CONFIG } from "@shared/constants";
 import { notify } from "@shared/services/notification.service";
 import type { FSRSPreset } from "@shared/types";
-import {
-	ActionButton,
-	InfoBlock,
-	SettingRow,
-	TextAreaInput,
-} from "@shared/ui/components";
+import { ActionButton, InfoBlock, SettingRow, TextAreaInput } from "@shared/ui/components";
+import { Clickable } from "@shared/ui/components/Clickable";
 import { useCallback, useState } from "preact/hooks";
 
 interface ParametersSectionProps {
@@ -23,6 +19,7 @@ export function ParametersSection({
 	onRefresh,
 }: ParametersSectionProps) {
 	const [optimizing, setOptimizing] = useState(false);
+	const [showWeights, setShowWeights] = useState(false);
 
 	const presetReviews = plugin.cardStore?.stats?.getReviewCountForPreset(preset.name) ?? 0;
 	const canOptimize = presetReviews >= FSRS_CONFIG.minReviewsForOptimization;
@@ -38,7 +35,10 @@ export function ParametersSection({
 				preset.name,
 				preset.weights,
 			);
-			if (result && result.metrics.convergenceStatus !== "insufficient_data") {
+			if (
+				result &&
+				result.metrics.convergenceStatus !== "insufficient_data"
+			) {
 				await updatePreset({
 					weights: result.weights,
 					lastOptimization: new Date().toISOString(),
@@ -87,7 +87,9 @@ export function ParametersSection({
 				return;
 			}
 			if (parts.some((n) => Number.isNaN(n))) {
-				notify().error("Invalid weights: some values are not numbers.");
+				notify().error(
+					"Invalid weights: some values are not numbers.",
+				);
 				return;
 			}
 
@@ -106,54 +108,60 @@ export function ParametersSection({
 
 			<InfoBlock>
 				<p>
-					FSRS parameters affect how cards are scheduled. You can optimize them
-					based on your review history.
-				</p>
-				<p>
-					<strong>Current reviews: </strong>
+					<strong>Reviews: </strong>
 					{presetReviews.toLocaleString()}{" "}
 					{canOptimize
-						? "(ready for optimization)"
-						: `(need ${FSRS_CONFIG.minReviewsForOptimization}+ for optimization)`}
+						? ""
+						: `(need ${FSRS_CONFIG.minReviewsForOptimization}+ to optimize)`}
+					{lastOpt && (
+						<>
+							{" \u00B7 "}
+							<strong>Optimized: </strong>
+							{new Date(lastOpt).toLocaleDateString()}
+							{lastOptCount != null &&
+								` (${lastOptCount.toLocaleString()} reviews)`}
+						</>
+					)}
 				</p>
-				{lastOpt && (
-					<p>
-						<strong>Last optimized: </strong>
-						{new Date(lastOpt).toLocaleDateString()} (
-						{lastOptCount?.toLocaleString() ?? "unknown"} reviews used)
-					</p>
-				)}
 			</InfoBlock>
 
-			<SettingRow
-				name="Optimize parameters"
-				description="Analyze your review history to find optimal FSRS weights for this preset"
-			>
+			<SettingRow name="Optimize parameters">
 				<ActionButton
-					label={optimizing ? "Optimizing..." : "Optimize now"}
+					label={optimizing ? "Optimizing..." : "Optimize"}
 					variant="primary"
 					disabled={!canOptimize || optimizing}
 					onClick={handleOptimize}
 				/>
 				<ActionButton
-					label="Reset to defaults"
+					label="Reset"
 					variant="secondary"
 					onClick={handleReset}
 				/>
 			</SettingRow>
 
-			<SettingRow
-				name="Custom FSRS weights"
-				description="Enter 17, 19, or 21 comma-separated values (from FSRS optimizer). Leave empty to use defaults"
-			>
-				<TextAreaInput
-					value={weightsString}
-					onChange={handleWeightsChange}
-					placeholder="0.40255, 1.18385, 3.173, 15.69105, ..."
-					rows={3}
-					class="ep:w-full ep:font-mono ep:text-ui-small"
-				/>
-			</SettingRow>
+			<div class="ep:px-4 ep:pb-2">
+				<Clickable
+					class="ep:text-ui-smaller ep:text-obs-muted ep:hover:text-obs-normal ep:transition-colors"
+					onClick={() => setShowWeights((s) => !s)}
+				>
+					{showWeights ? "\u25BC" : "\u25B6"} Weights{" "}
+					{preset.weights
+						? `(${preset.weights.length} values)`
+						: "(defaults)"}
+				</Clickable>
+
+				{showWeights && (
+					<div class="ep:mt-2">
+						<TextAreaInput
+							value={weightsString}
+							onChange={handleWeightsChange}
+							placeholder="0.40255, 1.18385, 3.173, 15.69105, ..."
+							rows={3}
+							class="ep:w-full ep:font-mono ep:text-ui-small"
+						/>
+					</div>
+				)}
+			</div>
 		</>
 	);
 }

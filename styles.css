@@ -257,9 +257,6 @@
   .ep\:right-0 {
     right: calc(var(--ep-spacing) * 0);
   }
-  .ep\:right-2 {
-    right: calc(var(--ep-spacing) * 2);
-  }
   .ep\:bottom-\[-1px\] {
     bottom: -1px;
   }
@@ -503,6 +500,9 @@
   .ep\:max-h-\[60vh\] {
     max-height: 60vh;
   }
+  .ep\:max-h-\[70vh\] {
+    max-height: 70vh;
+  }
   .ep\:max-h-\[100px\] {
     max-height: 100px;
   }
@@ -560,9 +560,6 @@
   .ep\:w-4\/5 {
     width: calc(4 / 5 * 100%);
   }
-  .ep\:w-5 {
-    width: calc(var(--ep-spacing) * 5);
-  }
   .ep\:w-6 {
     width: calc(var(--ep-spacing) * 6);
   }
@@ -613,9 +610,6 @@
   }
   .ep\:w-\[220px\] {
     width: 220px;
-  }
-  .ep\:w-\[280px\] {
-    width: 280px;
   }
   .ep\:w-\[300px\] {
     width: 300px;
@@ -734,9 +728,6 @@
   }
   .ep\:flex-col {
     flex-direction: column;
-  }
-  .ep\:flex-row {
-    flex-direction: row;
   }
   .ep\:flex-nowrap {
     flex-wrap: nowrap;
@@ -1149,12 +1140,6 @@
   .ep\:bg-obs-secondary {
     background-color: var(--ep-color-obs-secondary);
   }
-  .ep\:bg-obs-secondary\/30 {
-    background-color: var(--ep-color-obs-secondary);
-    @supports (color: color-mix(in lab, red, red)) {
-      background-color: color-mix(in oklab, var(--ep-color-obs-secondary) 30%, transparent);
-    }
-  }
   .ep\:bg-transparent {
     background-color: transparent;
   }
@@ -1245,6 +1230,9 @@
   .ep\:pt-2 {
     padding-top: calc(var(--ep-spacing) * 2);
   }
+  .ep\:pt-3 {
+    padding-top: calc(var(--ep-spacing) * 3);
+  }
   .ep\:pt-4 {
     padding-top: calc(var(--ep-spacing) * 4);
   }
@@ -1253,9 +1241,6 @@
   }
   .ep\:pt-8 {
     padding-top: calc(var(--ep-spacing) * 8);
-  }
-  .ep\:pr-8 {
-    padding-right: calc(var(--ep-spacing) * 8);
   }
   .ep\:pb-1\.5 {
     padding-bottom: calc(var(--ep-spacing) * 1.5);
@@ -1274,9 +1259,6 @@
   }
   .ep\:pl-2 {
     padding-left: calc(var(--ep-spacing) * 2);
-  }
-  .ep\:pl-3 {
-    padding-left: calc(var(--ep-spacing) * 3);
   }
   .ep\:pl-8 {
     padding-left: calc(var(--ep-spacing) * 8);
@@ -2716,6 +2698,20 @@
   animation: ep-card-enter-anim 400ms cubic-bezier(0.22, 1, 0.36, 1) both;
   animation-delay: calc(var(--card-index, 0) * 60ms);
 }
+@keyframes ep-section-enter-anim {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+.ep-section-enter {
+  animation: ep-section-enter-anim 300ms cubic-bezier(0.22, 1, 0.36, 1) both;
+  animation-delay: calc(var(--section-index, 0) * 80ms);
+}
 @keyframes ep-cursor-blink {
   0%,	100% {
     opacity: 1;
@@ -2755,6 +2751,10 @@
   }
   .ep-card-enter {
     animation: none;
+  }
+  .ep-section-enter {
+    animation: none;
+    opacity: 1;
   }
   .ep-card-complete {
     animation: none;
