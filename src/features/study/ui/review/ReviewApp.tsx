@@ -31,6 +31,7 @@ export interface ReviewAppProps {
 	showHeaderStats: boolean;
 	showNextReviewTime: boolean;
 	continuousCustomReviews: boolean;
+	getPresetName?: (card: FSRSFlashcardItem) => string;
 }
 
 // ─── Main App ────────────────────────────────────────────────────────────────
@@ -98,9 +99,11 @@ function ActiveReview({
 	showHeader,
 	showHeaderStats,
 	showNextReviewTime,
+	getPresetName,
 }: ActiveReviewProps) {
 	const hasAnswer = !!card.answer?.trim();
 	const isAnswerRevealed = !hasAnswer || review.isAnswerRevealed;
+	const presetName = getPresetName?.(card);
 
 	useLayoutEffect(() => {
 		if (!hasAnswer && !review.isAnswerRevealed) {
@@ -123,6 +126,7 @@ function ActiveReview({
 				isAnswerRevealed={isAnswerRevealed}
 				onContentChange={onContentChange}
 				onOpenSourceNote={onOpenSourceNote}
+				presetName={presetName}
 			/>
 
 			<ButtonBar

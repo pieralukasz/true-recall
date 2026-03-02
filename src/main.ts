@@ -197,6 +197,7 @@ export default class TrueRecallPlugin extends Plugin {
 			this.frontmatterIndex,
 			this.projectLinkService,
 			this.folderProjectService,
+			() => this.cardStore ?? null,
 		);
 
 		const fsrsSettings = extractFSRSSettings(this.settings);

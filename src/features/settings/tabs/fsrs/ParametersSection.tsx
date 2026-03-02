@@ -24,8 +24,8 @@ export function ParametersSection({
 }: ParametersSectionProps) {
 	const [optimizing, setOptimizing] = useState(false);
 
-	const totalReviews = plugin.cardStore?.stats?.getTotalReviewCount() ?? 0;
-	const canOptimize = totalReviews >= FSRS_CONFIG.minReviewsForOptimization;
+	const presetReviews = plugin.cardStore?.stats?.getReviewCountForPreset(preset.name) ?? 0;
+	const canOptimize = presetReviews >= FSRS_CONFIG.minReviewsForOptimization;
 	const lastOpt = preset.lastOptimization;
 	const lastOptCount = preset.lastOptimizationReviewCount;
 	const weightsString = preset.weights ? preset.weights.join(", ") : "";
@@ -111,7 +111,7 @@ export function ParametersSection({
 				</p>
 				<p>
 					<strong>Current reviews: </strong>
-					{totalReviews.toLocaleString()}{" "}
+					{presetReviews.toLocaleString()}{" "}
 					{canOptimize
 						? "(ready for optimization)"
 						: `(need ${FSRS_CONFIG.minReviewsForOptimization}+ for optimization)`}

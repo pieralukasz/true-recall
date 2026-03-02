@@ -103,6 +103,25 @@ export class StatsActions {
 		);
 	}
 
+	getReviewCountForPreset(presetName: string): number {
+		const isDefault = presetName === "Default";
+		return (
+			this.db.get<{ count: number }>(
+				`SELECT COUNT(*) as count FROM review_log
+				 WHERE deleted_at IS NULL
+				   AND (preset_name = ? OR (? = 1 AND preset_name IS NULL))`,
+				[presetName, isDefault ? 1 : 0],
+			)?.count ?? 0
+		);
+	}
+
+	updateReviewLogPresetName(oldName: string, newName: string): void {
+		this.db.run(
+			`UPDATE review_log SET preset_name = ?, updated_at = ? WHERE preset_name = ?`,
+			[newName, Date.now(), oldName],
+		);
+	}
+
 	getAnswerStreakInfo(): { current: number; todayBest: number; allTimeBest: number } {
 		const rows = this.db.query<{ rating: number; reviewed_at: string }>(
 			`SELECT rating, reviewed_at FROM review_log

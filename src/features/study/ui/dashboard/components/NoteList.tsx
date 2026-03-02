@@ -3,6 +3,7 @@ import { useSignal } from "@preact/signals";
 import { usePlugin } from "@shared/ui/preact";
 import { useMemo, useRef } from "preact/hooks";
 import type { RefObject } from "preact";
+import { useInitialMount } from "../helpers/use-initial-mount";
 import { prioritySortComparator } from "../helpers/note-priority";
 import { useExternalVirtualList } from "../helpers/use-virtual-list";
 import type {
@@ -49,6 +50,7 @@ export function NoteList({
 	onPresetClick,
 }: NoteListProps) {
 	const plugin = usePlugin();
+	const initialMount = useInitialMount();
 	const activeFilter = useSignal<NoteFilterMode>("all");
 	const projectFilter = useSignal<ProjectFilter>({ type: "none" });
 	const contentRef = useRef<HTMLDivElement>(null);
@@ -152,15 +154,19 @@ export function NoteList({
 						position: "relative",
 					}}
 				>
-					{virtualItems.map(({ item, offsetTop }) => (
+					{virtualItems.map(({ item, offsetTop, index }) => (
 						<div
 							key={item.name}
+							class={initialMount.current ? "ep-card-enter" : undefined}
 							style={{
 								position: "absolute",
 								top: `${offsetTop}px`,
 								left: 0,
 								right: 0,
 								height: "36px",
+								...(initialMount.current
+									? { "--card-index": Math.min(index, 10) }
+									: {}),
 							}}
 						>
 							<NoteRow
