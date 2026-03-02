@@ -5,7 +5,6 @@ import {
 	MAX_DISPLAY_NOTES,
 } from "@shared/ui/modals/note-filter.utils";
 import { cn } from "@shared/ui/utils/cn";
-import { Clickable } from "@shared/ui/components";
 
 export interface NotePickerComboboxProps {
 	app: App;
@@ -130,45 +129,19 @@ export function NotePickerCombobox({
 		item?.scrollIntoView({ block: "nearest" });
 	}, [highlightIndex]);
 
-	const toggleDropdown = useCallback(() => {
-		setIsOpen((prev) => !prev);
-		inputRef.current?.focus();
-	}, []);
-
 	return (
 		<div class="ep:relative">
-			<div class="ep:relative ep:flex ep:items-center">
-				<input
-					ref={inputRef}
-					type="text"
-					defaultValue={selectedNote?.basename ?? ""}
-					placeholder="Search notes..."
-					onInput={handleInput}
-					onFocus={handleFocus}
-					onBlur={handleBlur}
-					onKeyDown={handleKeyDown}
-					class="ep:w-full ep:py-2 ep:pl-3 ep:pr-8 ep:border ep:border-obs-border ep:rounded-md ep:bg-obs-primary ep:text-obs-normal ep:text-ui-small ep:focus:outline-none ep:focus:border-obs-interactive ep:placeholder:text-obs-muted"
-				/>
-				<Clickable
-					class="ep:absolute ep:right-2 ep:top-1/2 ep:-translate-y-1/2 ep:text-obs-muted ep:p-0 ep:leading-none"
-					onClick={toggleDropdown}
-					tabindex={-1}
-					aria-label="toggle menu"
-				>
-					<svg
-						width="12"
-						height="12"
-						viewBox="0 0 24 24"
-						fill="none"
-						stroke="currentColor"
-						stroke-width="2.5"
-					>
-						<polyline
-							points={isOpen ? "18 15 12 9 6 15" : "6 9 12 15 18 9"}
-						/>
-					</svg>
-				</Clickable>
-			</div>
+			<input
+				ref={inputRef}
+				type="text"
+				defaultValue={selectedNote?.basename ?? ""}
+				placeholder="Search notes..."
+				onInput={handleInput}
+				onFocus={handleFocus}
+				onBlur={handleBlur}
+				onKeyDown={handleKeyDown}
+				class="ep:w-full ep:py-2 ep:px-3 ep:border ep:border-obs-border ep:rounded-md ep:bg-obs-primary ep:text-obs-normal ep:text-ui-small ep:focus:outline-none ep:focus:border-obs-interactive ep:placeholder:text-obs-muted"
+			/>
 
 			{isOpen && filtered.length > 0 && (
 				<ul

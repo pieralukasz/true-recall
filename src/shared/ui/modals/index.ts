@@ -27,6 +27,10 @@ export {
 	type PresetInspectorResult,
 } from "@shared/ui/modals/PresetInspectorModal";
 export {
+	PresetOptionsModal,
+	type PresetOptionsModalOptions,
+} from "@shared/ui/modals/PresetOptionsModal";
+export {
 	SetPresetModal,
 	type SetPresetResult,
 } from "@shared/ui/modals/SetPresetModal";

@@ -2,11 +2,13 @@ import type { SessionPersistenceService } from "@features/core/persistence/sessi
 import type { FSRSService } from "@features/core/services/fsrs.service";
 import type { FlashcardManager } from "@features/study/services/flashcard/flashcard.service";
 import type { ReviewService } from "@features/study/services/review.service";
+import { shouldTriggerLeech } from "@features/study/ui/review/helpers/leech-helpers";
 import type { SessionFilters } from "@features/study/ui/review/review.types";
+import { notify } from "@shared/services/notification.service";
 import { notifyCardChange } from "@shared/services/signals";
 import type { AnswerUndoPayload } from "@shared/services/undo.types";
 import type { ReviewApi } from "@shared/store";
-import type { FSRSFlashcardItem } from "@shared/types";
+import type { FSRSFlashcardItem, FSRSPreset } from "@shared/types";
 import { type Grade, Rating, State } from "ts-fsrs";
 import type TrueRecallPlugin from "../../../../../main";
 
@@ -19,19 +21,26 @@ export interface AnswerHandlerDeps {
 	sessionPersistence: SessionPersistenceService;
 	getFilters: () => SessionFilters;
 	getCrammedCardIds: () => Set<string>;
+	getPresetCache: () => Map<string, FSRSPreset>;
 }
 
 export class AnswerHandler {
 	constructor(private deps: AnswerHandlerDeps) {}
 
+	resolvePreset(card: FSRSFlashcardItem): FSRSPreset {
+		const uid = card.sourceUid ?? "";
+		return (
+			this.deps.getPresetCache().get(uid) ??
+			this.deps.plugin.presetService.resolvePresetForCard(card, {
+				projectPath: this.deps.getFilters().projectPath,
+			})
+		);
+	}
+
 	updateSchedulingPreview(): void {
 		const card = this.deps.getReview().getCurrentCard();
 		if (card) {
-			const filters = this.deps.getFilters();
-			const preset = this.deps.plugin.presetService.resolvePresetForCard(
-				card,
-				{ projectPath: filters.projectPath },
-			);
+			const preset = this.resolvePreset(card);
 			const presetSettings =
 				this.deps.plugin.presetService.toFSRSSettings(preset);
 			const preview = this.deps.fsrsService.getSchedulingPreview(
@@ -60,10 +69,7 @@ export class AnswerHandler {
 		const isNewCard = card.fsrs.state === State.New;
 		const previousState = card.fsrs.state;
 
-		const filters = this.deps.getFilters();
-		const preset = this.deps.plugin.presetService.resolvePresetForCard(card, {
-			projectPath: filters.projectPath,
-		});
+		const preset = this.resolvePreset(card);
 		const presetSettings =
 			this.deps.plugin.presetService.toFSRSSettings(preset);
 
@@ -91,7 +97,7 @@ export class AnswerHandler {
 				review.queue,
 				review.currentIndex + 1,
 				updatedCard,
-				this.deps.plugin.settings.reviewOrder,
+				preset.reviewOrder ?? this.deps.plugin.settings.reviewOrder,
 			);
 			requeueData = {
 				card: updatedCard,
@@ -107,6 +113,11 @@ export class AnswerHandler {
 
 		if (hasMore) {
 			this.updateSchedulingPreview();
+		}
+
+		// Leech detection: check if card has exceeded the lapse threshold
+		if (rating === Rating.Again) {
+			this.checkLeech(updatedCard, preset);
 		}
 
 		// Undo entry with deferred persistence
@@ -167,6 +178,34 @@ export class AnswerHandler {
 				newState: updatedCard.fsrs.state,
 			});
 		}, 0);
+	}
+
+	/**
+	 * Anki-style leech detection: triggers at threshold, then every half-threshold after.
+	 * E.g. with threshold=8: triggers at lapses 8, 12, 16, 20, ...
+	 */
+	private checkLeech(card: FSRSFlashcardItem, preset: FSRSPreset): void {
+		const threshold = preset.leechThreshold ?? 8;
+		if (!shouldTriggerLeech(card.fsrs.lapses, threshold)) return;
+
+		const action = preset.leechAction ?? "tag-only";
+		const lapses = card.fsrs.lapses;
+		const preview = card.question.slice(0, 50);
+
+		if (action === "suspend") {
+			this.deps.flashcardManager.updateCardFSRS(card.id, {
+				...card.fsrs,
+				suspended: true,
+			});
+			this.deps.getReview().removeCardById(card.id);
+			notify().warning(
+				`Leech suspended (${lapses} lapses): ${preview}`,
+			);
+		} else {
+			notify().info(
+				`Leech detected (${lapses} lapses): ${preview}`,
+			);
+		}
 	}
 
 	async handleUndoAnswer(

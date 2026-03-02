@@ -1,6 +1,7 @@
 import type { FolderProjectService } from "@features/core/services/folder-project.service";
 import type { FrontmatterIndexService } from "@features/core/services/frontmatter-index.service";
 import type { ProjectLinkService } from "@features/core/services/project-link.service";
+import type { SqliteStoreService } from "@features/core/persistence/sqlite";
 import type { FSRSFlashcardItem } from "@shared/types/fsrs";
 import type {
 	FSRSPreset,
@@ -35,6 +36,7 @@ export class PresetService {
 		private frontmatterIndex: FrontmatterIndexService,
 		private projectLinkService: ProjectLinkService | null,
 		private folderProjectService: FolderProjectService | null,
+		private getCardStore?: () => SqliteStoreService | null,
 	) {}
 
 	getPresets(): FSRSPreset[] {
@@ -83,6 +85,14 @@ export class PresetService {
 		if (idx === -1) return;
 		const existing = settings.fsrsPresets[idx];
 		if (!existing) return;
+
+		if (changes.name && changes.name !== existing.name) {
+			this.getCardStore?.()?.stats?.updateReviewLogPresetName(
+				existing.name,
+				changes.name,
+			);
+		}
+
 		settings.fsrsPresets[idx] = { ...existing, ...changes };
 		await this.persistSettings();
 	}
@@ -233,8 +243,10 @@ export class PresetService {
 			}
 		} else {
 			// Without context: iterate all projects for this note
-			const projectPaths =
-				this.projectLinkService.getProjectsForNote(notePath);
+			// Sort alphabetically for deterministic resolution when multiple projects have presets
+			const projectPaths = [
+				...this.projectLinkService.getProjectsForNote(notePath),
+			].sort();
 			for (const pp of projectPaths) {
 				const preset = this.lookupPreset(pp);
 				if (preset) {

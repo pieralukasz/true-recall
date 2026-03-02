@@ -7,6 +7,7 @@ import { Notice } from "obsidian";
 import { useIcon } from "@shared/ui/preact/hooks";
 import { useCallback, useEffect, useMemo, useRef } from "preact/hooks";
 import type { RefObject } from "preact";
+import { useInitialMount } from "../helpers/use-initial-mount";
 import { useExternalVirtualList } from "../helpers/use-virtual-list";
 import {
 	flattenProjectTree,
@@ -21,7 +22,8 @@ interface ProjectsTabProps {
 	searchQuery: string;
 	scrollContainerRef: RefObject<HTMLDivElement>;
 	scrollTop: Signal<number>;
-	onStudyNote: (noteName: string) => void;
+	onStudyNote: (noteName: string, projectPath?: string) => void;
+	onPresetClick?: (path: string | null) => void;
 }
 
 export function ProjectsTab({
@@ -30,8 +32,10 @@ export function ProjectsTab({
 	scrollContainerRef,
 	scrollTop,
 	onStudyNote,
+	onPresetClick,
 }: ProjectsTabProps) {
 	const plugin = usePlugin();
+	const initialMount = useInitialMount();
 	const expandedPaths = useSignal<ReadonlySet<string>>(new Set());
 	const contentRef = useRef<HTMLDivElement>(null);
 	const plusIconRef = useIcon("plus");
@@ -111,17 +115,23 @@ export function ProjectsTab({
 				ref={contentRef}
 				style={{ height: `${totalHeight}px`, position: "relative" }}
 			>
-				{virtualItems.map(({ item, offsetTop }) => {
+				{virtualItems.map(({ item, offsetTop, index }) => {
+					const animStyle = initialMount.current
+						? { "--card-index": Math.min(index, 10) }
+						: {};
+
 					if (item.type === "project-header") {
 						return (
 							<div
 								key={`p-${item.project.path}`}
+								class={initialMount.current ? "ep-card-enter" : undefined}
 								style={{
 									position: "absolute",
 									top: `${offsetTop}px`,
 									left: 0,
 									right: 0,
 									height: "36px",
+									...animStyle,
 								}}
 							>
 								<ProjectHeaderRow
@@ -147,6 +157,7 @@ export function ProjectsTab({
 											"",
 										);
 									}}
+									onPresetClick={onPresetClick}
 								/>
 							</div>
 						);
@@ -156,6 +167,7 @@ export function ProjectsTab({
 						return (
 							<div
 								key={`n-${item.note.name}`}
+								class={initialMount.current ? "ep-card-enter" : undefined}
 								style={{
 									position: "absolute",
 									top: `${offsetTop}px`,
@@ -163,6 +175,7 @@ export function ProjectsTab({
 									right: 0,
 									height: "36px",
 									paddingLeft: `${item.depth * 20}px`,
+									...animStyle,
 								}}
 							>
 								<NoteRow
@@ -173,13 +186,14 @@ export function ProjectsTab({
 											"",
 										)
 									}
-									onStudy={() => onStudyNote(item.note.name)}
+									onStudy={() => onStudyNote(item.note.name, item.projectPath)}
 									onCustomStudy={() => {
 										void plugin.openCustomStudyModal({
 											sourceNoteFilters: [item.note.name],
 											scopeLabel: item.note.name,
 										});
 									}}
+									onPresetClick={onPresetClick}
 								/>
 							</div>
 						);
@@ -188,12 +202,14 @@ export function ProjectsTab({
 					return (
 						<div
 							key={`e-${item.projectPath}`}
+							class={initialMount.current ? "ep-card-enter" : undefined}
 							style={{
 								position: "absolute",
 								top: `${offsetTop}px`,
 								left: 0,
 								right: 0,
 								height: "36px",
+								...animStyle,
 							}}
 						>
 							<EmptyProjectRow depth={item.depth} />
