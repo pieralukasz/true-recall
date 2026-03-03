@@ -140,6 +140,28 @@ export class NoteTypeActions {
 			);
 		}
 	}
+
+	// Ensures builtin note type templates always match code definitions.
+	// Fixes databases migrated before template changes (e.g. old afmt with <hr>).
+	refreshBuiltins(): void {
+		const builtins = getBuiltinNoteTypes();
+		const now = Date.now();
+		for (const nt of builtins) {
+			this.db.run(
+				`UPDATE note_types
+				 SET templates_json = ?, fields_json = ?, css = ?, name = ?, updated_at = ?
+				 WHERE id = ? AND is_builtin = 1`,
+				[
+					JSON.stringify(nt.templates),
+					JSON.stringify(nt.fields),
+					nt.css,
+					nt.name,
+					now,
+					nt.id,
+				],
+			);
+		}
+	}
 }
 
 export function getBuiltinNoteTypes(): NoteType[] {

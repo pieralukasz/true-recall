@@ -1,17 +1,37 @@
 import { Clickable } from "@shared/ui/components/Clickable";
+import type { NoteType } from "@shared/types/note.types";
 import { useState } from "preact/hooks";
 
-const PROMPT_TEXT = `Generate flashcards about [TOPIC]. Output each flashcard on a single line using this exact format:
+// Legacy static prompt used when no NoteType is provided (old Quick tab).
+const LEGACY_PROMPT = `Generate flashcards about [TOPIC]. Output each flashcard on a single line using this exact format:
 Question :: Answer
 
 Do not add numbering, bullets, or any other formatting.
 One flashcard per line.`;
 
-export function CopyPromptButton() {
+interface CopyPromptButtonProps {
+	/** When provided, generates a NoteType-specific prompt instead of the legacy one. */
+	noteType?: NoteType;
+	getPrompt?: () => string;
+}
+
+export function CopyPromptButton({ noteType, getPrompt }: CopyPromptButtonProps) {
 	const [copied, setCopied] = useState(false);
 
 	const handleCopy = async () => {
-		await navigator.clipboard.writeText(PROMPT_TEXT);
+		let prompt: string;
+		if (getPrompt) {
+			prompt = getPrompt();
+		} else if (noteType) {
+			// Lazy import to avoid bundling prompt-generator in old Quick tab
+			const { generateImportPrompt } = await import(
+				"../import-studio/prompt-generator"
+			);
+			prompt = generateImportPrompt(noteType);
+		} else {
+			prompt = LEGACY_PROMPT;
+		}
+		await navigator.clipboard.writeText(prompt);
 		setCopied(true);
 		setTimeout(() => setCopied(false), 2000);
 	};
