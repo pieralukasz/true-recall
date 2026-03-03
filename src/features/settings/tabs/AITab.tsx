@@ -13,9 +13,10 @@ import { isFeatureAllowed } from "@shared/utils/subscription.utils";
 import type { SelectOptionGroup } from "@shared/ui/components";
 import {
 	Clickable,
+	FormCard,
+	FormField,
 	InfoBlock,
 	SelectInput,
-	SettingRow,
 	TextAreaInput,
 	TextInput,
 	ToggleInput,
@@ -129,9 +130,7 @@ function SubscriptionSection() {
 		: 0;
 
 	return (
-		<>
-			<SettingRow heading name="True Recall Subscription" />
-
+		<FormCard title="True Recall Subscription">
 			<InfoBlock>
 				<p>
 					Subscribe for managed AI access — no API key setup needed.
@@ -148,7 +147,7 @@ function SubscriptionSection() {
 				</p>
 			</InfoBlock>
 
-			<SettingRow
+			<FormField
 				name="Subscription key"
 				description="Paste the key from your truerecall.app dashboard."
 			>
@@ -162,22 +161,22 @@ function SubscriptionSection() {
 					placeholder="tr-xxxxxxxxxxxx"
 					class="ep:w-[300px]"
 				/>
-			</SettingRow>
+			</FormField>
 
 			{validating && (
-				<div class="ep:px-4 ep:pb-2 ep:text-obs-muted ep:text-ui-smaller">
+				<div class="ep:py-2 ep:text-obs-muted ep:text-ui-smaller">
 					Validating key...
 				</div>
 			)}
 
 			{error && (
-				<div class="ep:px-4 ep:pb-2 ep:text-obs-error ep:text-ui-smaller">
+				<div class="ep:py-2 ep:text-obs-error ep:text-ui-smaller">
 					{error}
 				</div>
 			)}
 
 			{status && !error && (
-				<div class="ep:px-4 ep:pb-3">
+				<div class="ep:py-3">
 					<div class="ep:flex ep:items-center ep:gap-2 ep:mb-2">
 						<span class="ep:inline-block ep:px-2 ep:py-0.5 ep:rounded-[var(--radius-s)] ep:bg-obs-accent/15 ep:text-obs-accent ep:text-ui-smaller ep:font-semibold ep:capitalize">
 							{status.tier}
@@ -206,7 +205,7 @@ function SubscriptionSection() {
 			)}
 
 			{!hasSubKey && (
-				<div class="ep:px-4 ep:pb-3">
+				<div class="ep:py-3">
 					<Clickable
 						class="ep:text-obs-accent ep:text-ui-smaller ep:underline"
 						onClick={() =>
@@ -217,7 +216,7 @@ function SubscriptionSection() {
 					</Clickable>
 				</div>
 			)}
-		</>
+		</FormCard>
 	);
 }
 
@@ -263,149 +262,148 @@ export function AITab() {
 	);
 
 	return (
-		<>
+		<div class="ep:flex ep:flex-col ep:gap-3">
 			<SubscriptionSection />
 
-			<SettingRow
-				heading
-				name={hasSubKey ? "OpenRouter (BYOK — optional)" : "AI (OpenRouter)"}
-			/>
-
-			<InfoBlock>
-				<p>
-					{hasSubKey
-						? "You have an active subscription. You can optionally configure your own OpenRouter key as a fallback."
-						: "OpenRouter provides access to multiple AI models through a single API."}
-				</p>
-				{!hasSubKey && (
-					<p>
-						<a
-							href="https://openrouter.ai/keys"
-							target="_blank"
-							rel="noopener"
-						>
-							Get your API key at openrouter.ai/keys
-						</a>
-					</p>
-				)}
-			</InfoBlock>
-
-			<SettingRow
-				name="API key"
-				description={
-					hasSubKey
-						? "Optional fallback key. Subscription key is used when set."
-						: "Your OpenRouter API key."
-				}
+			<FormCard
+				title={hasSubKey ? "OpenRouter (BYOK — optional)" : "AI (OpenRouter)"}
 			>
-				<TextInput
-					value={settings.openRouterApiKey}
-					onChange={(v) => save({ openRouterApiKey: v })}
-					type="password"
-					placeholder="Enter API key"
-					class="ep:w-[300px]"
-				/>
-			</SettingRow>
-
-			<SettingRow name="AI model" description="Select the AI model">
-				<SelectInput
-					value={settings.aiModel}
-					onChange={(v) => save({ aiModel: v as AIModelKey })}
-					options={modelOptions}
-				/>
-			</SettingRow>
-
-			<SettingRow heading name="Flashcard Generation" />
-
-			<SettingRow
-				name="Selection toolbar"
-				description="Show a floating toolbar above selected text for AI-powered flashcard creation."
-			>
-				<ToggleInput
-					value={settings.selectionToolbarEnabled}
-					onChange={(v) => save({ selectionToolbarEnabled: v })}
-				/>
-			</SettingRow>
-
-			{hasAnyKey && isFeatureAllowed("customPrompts", settings) && (
-				<>
-					<InfoBlock>
-						<p>
-							Customize the prompts used for AI flashcard generation. Leave
-							empty to use the built-in defaults. Click a mode to expand its
-							prompt editor.
-						</p>
-					</InfoBlock>
-
-					{PROMPT_MODES.map((mode) => {
-						const isExpanded = expandedPrompt === mode;
-						const customValue = getPromptValue(mode);
-						const isCustom = customValue.trim().length > 0;
-
-						return (
-							<div key={mode} class="ep:mb-1">
-								<SettingRow
-									name={`${GENERATION_MODE_LABELS[mode]} prompt${isCustom ? " (custom)" : ""}`}
-									description={
-										isExpanded
-											? "Edit the system prompt sent to the AI model."
-											: isCustom
-												? "Using custom prompt. Click to edit."
-												: "Using default prompt. Click to customize."
-									}
-								>
-									<div class="ep:flex ep:gap-1">
-										{isCustom && (
-											<Clickable
-												class="ep:text-ui-smaller ep:text-obs-muted ep:px-2 ep:py-1 ep:rounded-[var(--radius-s)] hover:ep:bg-obs-modifier-hover"
-												stopPropagation={false}
-												onClick={() => resetPrompt(mode)}
-											>
-												Reset
-											</Clickable>
-										)}
-										<Clickable
-											class="ep:text-ui-smaller ep:text-obs-accent ep:px-2 ep:py-1 ep:rounded-[var(--radius-s)] hover:ep:bg-obs-modifier-hover"
-											stopPropagation={false}
-											onClick={() =>
-												setExpandedPrompt(isExpanded ? null : mode)
-											}
-										>
-											{isExpanded ? "Collapse" : "Edit"}
-										</Clickable>
-									</div>
-								</SettingRow>
-
-								{isExpanded && (
-									<div class="ep:px-4 ep:pb-3">
-										<TextAreaInput
-											value={customValue || DEFAULT_PROMPTS[mode]}
-											onChange={(v) => savePrompt(mode, v)}
-											rows={12}
-											class="ep:w-full ep:font-mono ep:text-ui-smaller"
-										/>
-									</div>
-								)}
-							</div>
-						);
-					})}
-				</>
-			)}
-
-			{hasAnyKey && !isFeatureAllowed("customPrompts", settings) && (
 				<InfoBlock>
 					<p>
-						Custom prompts are available on Starter and Pro plans.{" "}
-						<a
-							href={`${TRUERECALL_WEB_URL}/pricing`}
-							target="_blank"
-							rel="noopener"
-						>
-							Upgrade to customize
-						</a>
+						{hasSubKey
+							? "You have an active subscription. You can optionally configure your own OpenRouter key as a fallback."
+							: "OpenRouter provides access to multiple AI models through a single API."}
 					</p>
+					{!hasSubKey && (
+						<p>
+							<a
+								href="https://openrouter.ai/keys"
+								target="_blank"
+								rel="noopener"
+							>
+								Get your API key at openrouter.ai/keys
+							</a>
+						</p>
+					)}
 				</InfoBlock>
-			)}
-		</>
+
+				<FormField
+					name="API key"
+					description={
+						hasSubKey
+							? "Optional fallback key. Subscription key is used when set."
+							: "Your OpenRouter API key."
+					}
+				>
+					<TextInput
+						value={settings.openRouterApiKey}
+						onChange={(v) => save({ openRouterApiKey: v })}
+						type="password"
+						placeholder="Enter API key"
+						class="ep:w-[300px]"
+					/>
+				</FormField>
+
+				<FormField name="AI model" description="Select the AI model">
+					<SelectInput
+						value={settings.aiModel}
+						onChange={(v) => save({ aiModel: v as AIModelKey })}
+						options={modelOptions}
+					/>
+				</FormField>
+			</FormCard>
+
+			<FormCard title="Flashcard Generation">
+				<FormField
+					name="Selection toolbar"
+					description="Show a floating toolbar above selected text for AI-powered flashcard creation."
+				>
+					<ToggleInput
+						value={settings.selectionToolbarEnabled}
+						onChange={(v) => save({ selectionToolbarEnabled: v })}
+					/>
+				</FormField>
+
+				{hasAnyKey && isFeatureAllowed("customPrompts", settings) && (
+					<>
+						<InfoBlock>
+							<p>
+								Customize the prompts used for AI flashcard generation. Leave
+								empty to use the built-in defaults. Click a mode to expand its
+								prompt editor.
+							</p>
+						</InfoBlock>
+
+						{PROMPT_MODES.map((mode) => {
+							const isExpanded = expandedPrompt === mode;
+							const customValue = getPromptValue(mode);
+							const isCustom = customValue.trim().length > 0;
+
+							return (
+								<div key={mode} class="ep:mb-1">
+									<FormField
+										name={`${GENERATION_MODE_LABELS[mode]} prompt${isCustom ? " (custom)" : ""}`}
+										description={
+											isExpanded
+												? "Edit the system prompt sent to the AI model."
+												: isCustom
+													? "Using custom prompt. Click to edit."
+													: "Using default prompt. Click to customize."
+										}
+									>
+										<div class="ep:flex ep:gap-1">
+											{isCustom && (
+												<Clickable
+													class="ep:text-ui-smaller ep:text-obs-muted ep:px-2 ep:py-1 ep:rounded-[var(--radius-s)] hover:ep:bg-obs-modifier-hover"
+													stopPropagation={false}
+													onClick={() => resetPrompt(mode)}
+												>
+													Reset
+												</Clickable>
+											)}
+											<Clickable
+												class="ep:text-ui-smaller ep:text-obs-accent ep:px-2 ep:py-1 ep:rounded-[var(--radius-s)] hover:ep:bg-obs-modifier-hover"
+												stopPropagation={false}
+												onClick={() =>
+													setExpandedPrompt(isExpanded ? null : mode)
+												}
+											>
+												{isExpanded ? "Collapse" : "Edit"}
+											</Clickable>
+										</div>
+									</FormField>
+
+									{isExpanded && (
+										<div class="ep:pb-3">
+											<TextAreaInput
+												value={customValue || DEFAULT_PROMPTS[mode]}
+												onChange={(v) => savePrompt(mode, v)}
+												rows={12}
+												class="ep:w-full ep:font-mono ep:text-ui-smaller"
+											/>
+										</div>
+									)}
+								</div>
+							);
+						})}
+					</>
+				)}
+
+				{hasAnyKey && !isFeatureAllowed("customPrompts", settings) && (
+					<InfoBlock>
+						<p>
+							Custom prompts are available on Starter and Pro plans.{" "}
+							<a
+								href={`${TRUERECALL_WEB_URL}/pricing`}
+								target="_blank"
+								rel="noopener"
+							>
+								Upgrade to customize
+							</a>
+						</p>
+					</InfoBlock>
+				)}
+			</FormCard>
+		</div>
 	);
 }

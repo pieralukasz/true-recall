@@ -3,8 +3,9 @@ import { useSettings } from "@features/settings/hooks/useSettings";
 import { notify } from "@shared/services/notification.service";
 import {
 	Clickable,
+	FormCard,
+	FormField,
 	InfoBlock,
-	SettingRow,
 	TextInput,
 } from "@shared/ui/components";
 import { useCallback } from "preact/hooks";
@@ -76,9 +77,7 @@ export function DeviceDatabaseSection() {
 	}, [plugin]);
 
 	return (
-		<>
-			<SettingRow heading name="Device database" />
-
+		<FormCard title="Device database">
 			<InfoBlock>
 				<p>
 					Device ID: <code>{deviceId}</code>
@@ -88,7 +87,7 @@ export function DeviceDatabaseSection() {
 				</p>
 			</InfoBlock>
 
-			<SettingRow
+			<FormField
 				name="Device name"
 				description="Optional name (stored locally)"
 			>
@@ -97,9 +96,9 @@ export function DeviceDatabaseSection() {
 					onChange={(v) => plugin.deviceIdService?.setDeviceLabel(v)}
 					placeholder="e.g., work laptop, phone"
 				/>
-			</SettingRow>
+			</FormField>
 
-			<SettingRow
+			<FormField
 				name="Switch database"
 				description="Import data from another device"
 			>
@@ -110,7 +109,7 @@ export function DeviceDatabaseSection() {
 				>
 					Switch...
 				</Clickable>
-			</SettingRow>
-		</>
+			</FormField>
+		</FormCard>
 	);
 }

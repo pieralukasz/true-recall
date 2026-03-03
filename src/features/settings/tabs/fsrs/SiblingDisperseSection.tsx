@@ -2,8 +2,9 @@ import { useFsrsHelperOp } from "@features/settings/tabs/fsrs/useFsrsHelperOp";
 import type { TrueRecallSettings } from "@shared/types";
 import {
 	ActionButton,
+	FormCard,
+	FormField,
 	InfoBlock,
-	SettingRow,
 	TextInput,
 	ToggleInput,
 } from "@shared/ui/components";
@@ -35,9 +36,7 @@ export function SiblingDisperseSection({
 	const { running: dispersing, execute } = useFsrsHelperOp(opConfig);
 
 	return (
-		<>
-			<SettingRow heading name="Sibling dispersal" />
-
+		<FormCard title="Sibling dispersal">
 			<InfoBlock>
 				<p>
 					Cards from the same source note are "siblings". Spreading them apart
@@ -45,7 +44,7 @@ export function SiblingDisperseSection({
 				</p>
 			</InfoBlock>
 
-			<SettingRow
+			<FormField
 				name="Enable sibling dispersal"
 				description="Automatically space out cards from the same note"
 			>
@@ -53,9 +52,9 @@ export function SiblingDisperseSection({
 					value={settings.siblingDisperseEnabled}
 					onChange={(v) => save({ siblingDisperseEnabled: v })}
 				/>
-			</SettingRow>
+			</FormField>
 
-			<SettingRow
+			<FormField
 				name="Minimum sibling interval"
 				description="Minimum days between siblings from the same source"
 			>
@@ -67,9 +66,9 @@ export function SiblingDisperseSection({
 					}}
 					placeholder="3"
 				/>
-			</SettingRow>
+			</FormField>
 
-			<SettingRow
+			<FormField
 				name="Disperse siblings now"
 				description="Spread out siblings that are currently too close"
 			>
@@ -83,7 +82,7 @@ export function SiblingDisperseSection({
 						)
 					}
 				/>
-			</SettingRow>
-		</>
+			</FormField>
+		</FormCard>
 	);
 }

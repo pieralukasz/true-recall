@@ -15,7 +15,7 @@ export function BackupStatusSection() {
 		: "Not scheduled";
 
 	return (
-		<InfoBlock class="ep:mt-4">
+		<InfoBlock>
 			<p>
 				<strong>Backup status:</strong>
 			</p>
