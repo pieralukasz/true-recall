@@ -1,0 +1,6 @@
+{
+  "shared_dirs": [],
+  "main_branch_policy": "prompt",
+  "force_cleanup": "prompt",
+  "adopt_changes": "always"
+}
