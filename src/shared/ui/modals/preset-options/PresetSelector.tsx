@@ -1,5 +1,5 @@
 import type { FSRSPreset } from "@shared/types";
-import { ActionButton, SelectInput, SettingRow, TextInput } from "@shared/ui/components";
+import { ActionButton, FormCard, FormField, SelectInput, TextInput } from "@shared/ui/components";
 
 interface PresetSelectorProps {
 	presets: FSRSPreset[];
@@ -21,8 +21,8 @@ export function PresetSelector({
 	onRename,
 }: PresetSelectorProps) {
 	return (
-		<div class="ep:mb-2">
-			<SettingRow
+		<FormCard>
+			<FormField
 				name="Preset"
 				description="Each preset has its own retention target, weights, steps, and daily limits"
 			>
@@ -42,18 +42,18 @@ export function PresetSelector({
 						onClick={onDelete}
 					/>
 				)}
-			</SettingRow>
+			</FormField>
 
 			{!isDefault && (
-				<SettingRow name="Preset name">
+				<FormField name="Preset name">
 					<TextInput
 						value={preset.name}
 						onChange={(v) => {
 							if (v.trim()) onRename(v.trim());
 						}}
 					/>
-				</SettingRow>
+				</FormField>
 			)}
-		</div>
+		</FormCard>
 	);
 }

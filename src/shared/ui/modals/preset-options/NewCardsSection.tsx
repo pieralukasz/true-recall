@@ -1,5 +1,5 @@
 import type { FSRSPreset, NewCardOrder, NewReviewMix } from "@shared/types";
-import { SelectInput, SettingRow, TextInput } from "@shared/ui/components";
+import { FormCard, FormField, SelectInput, TextInput } from "@shared/ui/components";
 
 interface NewCardsSectionProps {
 	preset: FSRSPreset;
@@ -23,10 +23,8 @@ export function NewCardsSection({
 	updatePreset,
 }: NewCardsSectionProps) {
 	return (
-		<>
-			<SettingRow heading name="New cards" />
-
-			<SettingRow
+		<FormCard title="New cards">
+			<FormField
 				name="Learning steps (minutes)"
 				description="Comma-separated delays, e.g. 1, 10 = 1min then 10min"
 			>
@@ -43,9 +41,9 @@ export function NewCardsSection({
 					}}
 					placeholder="1, 10"
 				/>
-			</SettingRow>
+			</FormField>
 
-			<SettingRow
+			<FormField
 				name="New card order"
 				description="Order in which new cards are introduced"
 			>
@@ -56,9 +54,9 @@ export function NewCardsSection({
 					}
 					options={ORDER_OPTIONS}
 				/>
-			</SettingRow>
+			</FormField>
 
-			<SettingRow
+			<FormField
 				name="Mix with reviews"
 				description="How new cards are interspersed with review cards"
 			>
@@ -69,7 +67,7 @@ export function NewCardsSection({
 					}
 					options={MIX_OPTIONS}
 				/>
-			</SettingRow>
-		</>
+			</FormField>
+		</FormCard>
 	);
 }

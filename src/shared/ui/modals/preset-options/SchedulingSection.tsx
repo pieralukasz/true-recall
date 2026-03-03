@@ -1,6 +1,6 @@
 import { FSRS_CONFIG } from "@shared/constants";
 import type { FSRSPreset, ReviewOrder } from "@shared/types";
-import { SelectInput, SettingRow, SliderInput, TextInput } from "@shared/ui/components";
+import { FormCard, FormField, SelectInput, SliderInput, TextInput } from "@shared/ui/components";
 
 interface SchedulingSectionProps {
 	preset: FSRSPreset;
@@ -23,10 +23,8 @@ export function SchedulingSection({
 	updatePreset,
 }: SchedulingSectionProps) {
 	return (
-		<>
-			<SettingRow heading name="Scheduling" />
-
-			<SettingRow
+		<FormCard title="Scheduling">
+			<FormField
 				name="Desired retention"
 				description={`Target recall probability (${FSRS_CONFIG.minRetention}\u2013${FSRS_CONFIG.maxRetention}). Default: 0.9`}
 			>
@@ -38,9 +36,9 @@ export function SchedulingSection({
 					step={0.01}
 					formatTooltip={(v) => v.toFixed(2)}
 				/>
-			</SettingRow>
+			</FormField>
 
-			<SettingRow
+			<FormField
 				name="Maximum interval (days)"
 				description="Maximum days between reviews. Default: 36500"
 			>
@@ -54,9 +52,9 @@ export function SchedulingSection({
 					}}
 					placeholder="36500"
 				/>
-			</SettingRow>
+			</FormField>
 
-			<SettingRow
+			<FormField
 				name="Review order"
 				description="Order in which review cards are shown"
 			>
@@ -67,7 +65,7 @@ export function SchedulingSection({
 					}
 					options={REVIEW_ORDER_OPTIONS}
 				/>
-			</SettingRow>
-		</>
+			</FormField>
+		</FormCard>
 	);
 }

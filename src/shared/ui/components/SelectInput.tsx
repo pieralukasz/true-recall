@@ -1,5 +1,8 @@
 import { useCallback } from "preact/hooks";
 
+const BASE_CLS =
+	"ep:py-2 ep:px-3 ep:border ep:border-obs-border ep:rounded-md ep:bg-obs-primary ep:text-obs-normal ep:text-ui-small ep:focus:outline-none ep:focus:border-obs-interactive ep:transition-colors ep:disabled:opacity-50 ep:disabled:cursor-not-allowed";
+
 export interface SelectOption {
 	value: string;
 	label: string;
@@ -41,7 +44,7 @@ export function SelectInput({
 
 	return (
 		<select
-			class={`dropdown ${cls ?? ""}`}
+			class={`${BASE_CLS} ${cls ?? ""}`}
 			value={value}
 			onChange={handleChange}
 			disabled={disabled}

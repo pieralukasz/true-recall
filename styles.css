@@ -517,9 +517,6 @@
   .ep\:max-h-\[60vh\] {
     max-height: 60vh;
   }
-  .ep\:max-h-\[70vh\] {
-    max-height: 70vh;
-  }
   .ep\:max-h-\[100px\] {
     max-height: 100px;
   }
@@ -547,14 +544,23 @@
   .ep\:min-h-80 {
     min-height: calc(var(--ep-spacing) * 80);
   }
+  .ep\:min-h-87\.5 {
+    min-height: calc(var(--ep-spacing) * 87.5);
+  }
   .ep\:min-h-\[2px\] {
     min-height: 2px;
   }
   .ep\:min-h-\[48px\] {
     min-height: 48px;
   }
+  .ep\:min-h-\[60px\] {
+    min-height: 60px;
+  }
   .ep\:min-h-\[80px\] {
     min-height: 80px;
+  }
+  .ep\:min-h-\[200px\] {
+    min-height: 200px;
   }
   .ep\:min-h-\[220px\] {
     min-height: 220px;
@@ -603,6 +609,9 @@
   }
   .ep\:w-16 {
     width: calc(var(--ep-spacing) * 16);
+  }
+  .ep\:w-20 {
+    width: calc(var(--ep-spacing) * 20);
   }
   .ep\:w-24 {
     width: calc(var(--ep-spacing) * 24);
@@ -1800,10 +1809,13 @@
       }
     }
   }
-  .ep\:hover\:bg-obs-interactive {
+  .ep\:hover\:bg-obs-interactive\/15 {
     &:hover {
       @media (hover: hover) {
         background-color: var(--ep-color-obs-interactive);
+        @supports (color: color-mix(in lab, red, red)) {
+          background-color: color-mix(in oklab, var(--ep-color-obs-interactive) 15%, transparent);
+        }
       }
     }
   }
@@ -2001,6 +2013,11 @@
   .ep\:disabled\:cursor-not-allowed {
     &:disabled {
       cursor: not-allowed;
+    }
+  }
+  .ep\:disabled\:opacity-50 {
+    &:disabled {
+      opacity: 50%;
     }
   }
   .ep\:disabled\:opacity-60 {
@@ -2238,10 +2255,10 @@
     flex: 1 !important;
     display: flex !important;
     flex-direction: column !important;
+    scrollbar-gutter: stable !important;
   }
   .modal:has(.true-recall-modal) .true-recall-modal {
     flex: 1 !important;
-    overflow-y: auto !important;
     display: flex !important;
     flex-direction: column !important;
   }
