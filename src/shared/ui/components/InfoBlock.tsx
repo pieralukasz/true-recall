@@ -7,7 +7,7 @@ export interface InfoBlockProps {
 
 export function InfoBlock({ children, class: cls }: InfoBlockProps) {
 	return (
-		<div class={`setting-item-description ep:py-2 ${cls ?? ""}`}>
+		<div class={`ep:text-ui-smaller ep:text-obs-muted ep:leading-relaxed ep:py-2 ${cls ?? ""}`}>
 			{children}
 		</div>
 	);

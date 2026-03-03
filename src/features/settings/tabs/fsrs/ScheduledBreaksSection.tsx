@@ -2,8 +2,9 @@ import type { TrueRecallSettings } from "@shared/types";
 import {
 	ActionButton,
 	Clickable,
+	FormCard,
+	FormField,
 	InfoBlock,
-	SettingRow,
 } from "@shared/ui/components";
 import { useCallback } from "preact/hooks";
 
@@ -51,9 +52,7 @@ export function ScheduledBreaksSection({
 	}, [breaks, save, onRefresh]);
 
 	return (
-		<>
-			<SettingRow heading name="Scheduled breaks" />
-
+		<FormCard title="Scheduled breaks">
 			<InfoBlock>
 				<p>
 					Schedule breaks (vacations) to redistribute reviews and prevent
@@ -83,7 +82,7 @@ export function ScheduledBreaksSection({
 				</div>
 			)}
 
-			<SettingRow
+			<FormField
 				name="Add scheduled break"
 				description="Schedule a break period"
 			>
@@ -92,7 +91,7 @@ export function ScheduledBreaksSection({
 					variant="secondary"
 					onClick={handleAddBreak}
 				/>
-			</SettingRow>
-		</>
+			</FormField>
+		</FormCard>
 	);
 }

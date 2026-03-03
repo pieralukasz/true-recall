@@ -1,5 +1,5 @@
 import type { FSRSPreset, LeechAction } from "@shared/types";
-import { SelectInput, SettingRow, TextInput } from "@shared/ui/components";
+import { FormCard, FormField, SelectInput, TextInput } from "@shared/ui/components";
 
 interface LapsesSectionProps {
 	preset: FSRSPreset;
@@ -16,10 +16,8 @@ export function LapsesSection({
 	updatePreset,
 }: LapsesSectionProps) {
 	return (
-		<>
-			<SettingRow heading name="Lapses" />
-
-			<SettingRow
+		<FormCard title="Lapses">
+			<FormField
 				name="Relearning steps (minutes)"
 				description="Steps after a lapse (Again on a review card). Leave empty to skip relearning."
 			>
@@ -39,9 +37,9 @@ export function LapsesSection({
 					}}
 					placeholder="10"
 				/>
-			</SettingRow>
+			</FormField>
 
-			<SettingRow
+			<FormField
 				name="Leech threshold"
 				description="Number of lapses before a card is flagged as a leech (0 = disabled)"
 			>
@@ -57,9 +55,9 @@ export function LapsesSection({
 					}}
 					placeholder="8"
 				/>
-			</SettingRow>
+			</FormField>
 
-			<SettingRow
+			<FormField
 				name="Leech action"
 				description="What happens when a card exceeds the leech threshold"
 			>
@@ -70,7 +68,7 @@ export function LapsesSection({
 					}
 					options={LEECH_ACTION_OPTIONS}
 				/>
-			</SettingRow>
-		</>
+			</FormField>
+		</FormCard>
 	);
 }

@@ -1,7 +1,7 @@
 import { FSRS_CONFIG } from "@shared/constants";
 import { notify } from "@shared/services/notification.service";
 import type { FSRSPreset } from "@shared/types";
-import { ActionButton, InfoBlock, SettingRow, TextAreaInput } from "@shared/ui/components";
+import { ActionButton, FormCard, FormField, InfoBlock, TextAreaInput } from "@shared/ui/components";
 import { Clickable } from "@shared/ui/components/Clickable";
 import { useCallback, useState } from "preact/hooks";
 
@@ -103,9 +103,7 @@ export function ParametersSection({
 	);
 
 	return (
-		<>
-			<SettingRow heading name="FSRS parameters" />
-
+		<FormCard title="FSRS parameters">
 			<InfoBlock>
 				<p>
 					<strong>Reviews: </strong>
@@ -125,7 +123,7 @@ export function ParametersSection({
 				</p>
 			</InfoBlock>
 
-			<SettingRow name="Optimize parameters">
+			<FormField name="Optimize parameters">
 				<ActionButton
 					label={optimizing ? "Optimizing..." : "Optimize"}
 					variant="primary"
@@ -137,9 +135,9 @@ export function ParametersSection({
 					variant="secondary"
 					onClick={handleReset}
 				/>
-			</SettingRow>
+			</FormField>
 
-			<div class="ep:px-4 ep:pb-2">
+			<div class="ep:pb-2">
 				<Clickable
 					class="ep:text-ui-smaller ep:text-obs-muted ep:hover:text-obs-normal ep:transition-colors"
 					onClick={() => setShowWeights((s) => !s)}
@@ -162,6 +160,6 @@ export function ParametersSection({
 					</div>
 				)}
 			</div>
-		</>
+		</FormCard>
 	);
 }

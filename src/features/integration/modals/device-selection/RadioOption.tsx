@@ -30,7 +30,7 @@ export function RadioOption({
 			/>
 			<div>
 				<div class="ep:font-medium">{label}</div>
-				<div class="setting-item-description ep:mt-0.5">{description}</div>
+				<div class="ep:text-ui-smaller ep:text-obs-muted ep:mt-0.5">{description}</div>
 			</div>
 		</Clickable>
 	);
