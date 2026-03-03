@@ -1,6 +1,7 @@
 import { LivePreviewField } from "@features/study/ui/review/components/LivePreviewField";
 import type { FSRSFlashcardItem } from "@shared/types";
 import { Clickable } from "@shared/ui/components";
+import { SelectInput, type SelectOption } from "@shared/ui/components/SelectInput";
 import { cn } from "@shared/ui/utils/cn";
 
 export interface CardContainerProps {
@@ -9,6 +10,8 @@ export interface CardContainerProps {
 	onContentChange: (value: string, field: "question" | "answer") => void;
 	onOpenSourceNote?: () => void;
 	presetName?: string;
+	presetOptions?: SelectOption[];
+	onPresetChange?: (presetName: string) => void;
 }
 
 export function CardContainer({
@@ -17,6 +20,8 @@ export function CardContainer({
 	onContentChange,
 	onOpenSourceNote,
 	presetName,
+	presetOptions,
+	onPresetChange,
 }: CardContainerProps) {
 	const sourcePath = card.sourceNotePath || "";
 
@@ -69,7 +74,7 @@ export function CardContainer({
 				)}
 
 				{isAnswerRevealed && (card.sourceNoteName || presetName) && (
-					<div class="ep:flex ep:items-center ep:justify-center ep:gap-3 ep:pt-8">
+					<div class="ep:flex ep:flex-col ep:items-center ep:gap-1.5 ep:pt-8">
 						{card.sourceNoteName && onOpenSourceNote && (
 							<Clickable
 								class="ep:text-obs-faint ep:text-ui-smaller ep:no-underline ep:hover:text-obs-accent ep:hover:underline ep:transition-colors ep:p-0"
@@ -78,11 +83,20 @@ export function CardContainer({
 								Source: {card.sourceNoteName}
 							</Clickable>
 						)}
-						{presetName && (
+						{presetName && presetOptions && onPresetChange ? (
+							<div class="ep:flex ep:items-center ep:gap-1.5 ep:text-obs-faint ep:text-ui-smaller">
+								<span>FSRS:</span>
+								<SelectInput
+									value={presetName}
+									options={presetOptions}
+									onChange={onPresetChange}
+								/>
+							</div>
+						) : presetName ? (
 							<span class="ep:text-obs-faint ep:text-ui-smaller">
 								FSRS: {presetName}
 							</span>
-						)}
+						) : null}
 					</div>
 				)}
 			</div>

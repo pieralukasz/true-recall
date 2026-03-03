@@ -30,6 +30,7 @@ import { notify } from "@shared/services/notification.service";
 import { lastMutation } from "@shared/services/signals";
 import type { ReviewApi } from "@shared/store";
 import { extractFSRSSettings, type FSRSFlashcardItem, type FSRSPreset } from "@shared/types";
+import type { SelectOption } from "@shared/ui/components/SelectInput";
 import { mountPreact } from "@shared/ui/preact";
 import {
 	ItemView,
@@ -216,6 +217,9 @@ export class ReviewView extends ItemView {
 				continuousCustomReviews: this.plugin.settings.continuousCustomReviews,
 				getPresetName: (card: FSRSFlashcardItem) =>
 					this.answerHandler.resolvePreset(card).name,
+				getPresetOptions: () => this.getPresetOptions(),
+				onPresetChange: (name: string) =>
+					void this.handlePresetChange(name),
 			}),
 		);
 	}
@@ -292,6 +296,46 @@ export class ReviewView extends ItemView {
 		}
 
 		return this.plugin.presetService.getDefaultPreset();
+	}
+
+	private getPresetOptions(): SelectOption[] {
+		return this.plugin.presetService.getPresets().map((p) => ({
+			value: p.name,
+			label: p.name,
+		}));
+	}
+
+	private async handlePresetChange(newPresetName: string): Promise<void> {
+		const card = this.review.getCurrentCard();
+		if (!card) return;
+
+		const newPreset =
+			this.plugin.presetService.getPresetByName(newPresetName);
+		if (!newPreset) {
+			notify().error(`Preset "${newPresetName}" not found`);
+			return;
+		}
+
+		const sourceFile = this.resolveSourceFile(card);
+		if (!sourceFile) {
+			notify().warning("Cannot save preset: source note not found");
+			return;
+		}
+
+		// Persist to frontmatter (async, fire-and-forget for UI responsiveness)
+		void this.flashcardManager
+			.getFrontmatterService()
+			.setFsrsPreset(sourceFile, newPresetName);
+
+		// Update in-memory cache for all cards from this source note
+		const uid = card.sourceUid ?? "";
+		this.presetCache.set(uid, newPreset);
+
+		// Recalculate button intervals with new preset
+		this.answerHandler.updateSchedulingPreview();
+
+		// Force re-render so ButtonBar picks up new scheduling preview
+		this.review.notifyChange();
 	}
 
 	// ─── Session lifecycle ───────────────────────────────────────────────
@@ -485,6 +529,27 @@ export class ReviewView extends ItemView {
 
 	// ─── Navigation ──────────────────────────────────────────────────────
 
+	private resolveSourceFile(card: FSRSFlashcardItem): TFile | null {
+		if (card.sourceUid && this.plugin.frontmatterIndex) {
+			const file = this.plugin.frontmatterIndex.getFileByValue(
+				"flashcard_uid",
+				card.sourceUid,
+			);
+			if (file) return file;
+		}
+
+		if (card.sourceNotePath) {
+			const abstractFile = this.app.vault.getAbstractFileByPath(
+				card.sourceNotePath,
+			);
+			if (abstractFile instanceof TFile) {
+				return abstractFile;
+			}
+		}
+
+		return null;
+	}
+
 	private handleOpenSourceNote(): void {
 		const card = this.review.getCurrentCard();
 		if (!card || !card.sourceNoteName) {
@@ -492,23 +557,7 @@ export class ReviewView extends ItemView {
 			return;
 		}
 
-		let sourceFile: TFile | null | undefined;
-		if (card.sourceUid && this.plugin.frontmatterIndex) {
-			sourceFile = this.plugin.frontmatterIndex.getFileByValue(
-				"flashcard_uid",
-				card.sourceUid,
-			);
-		}
-
-		if (!sourceFile && card.sourceNotePath) {
-			const abstractFile = this.app.vault.getAbstractFileByPath(
-				card.sourceNotePath,
-			);
-			if (abstractFile instanceof TFile) {
-				sourceFile = abstractFile;
-			}
-		}
-
+		const sourceFile = this.resolveSourceFile(card);
 		if (sourceFile) {
 			void this.app.workspace.openLinkText(sourceFile.path, "", false);
 		} else {

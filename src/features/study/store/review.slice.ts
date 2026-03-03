@@ -642,6 +642,10 @@ export function createReviewSlice(
 			schedulingPreview = preview;
 		},
 
+		notifyChange: () => {
+			set((s) => ({ review: { ...s.review } }));
+		},
+
 		getCurrentCard: () => {
 			const state = get().review;
 			if (!state.isActive || state.currentIndex >= state.queue.length) {
