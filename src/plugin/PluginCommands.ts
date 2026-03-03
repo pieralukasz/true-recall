@@ -60,8 +60,8 @@ export function registerCommands(plugin: TrueRecallPlugin): void {
 
 	plugin.addCommand({
 		id: "add-flashcards",
-		name: "Add flashcards",
-		callback: () => plugin.openAddFlashcards(),
+		name: "Import flashcards",
+		callback: () => plugin.openImportStudio(),
 	});
 
 	plugin.addCommand({
