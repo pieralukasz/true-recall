@@ -11,7 +11,7 @@ export interface CardTemplate {
 	ordinal: number;
 	/** Front template, e.g. "{{Front}}" */
 	qfmt: string;
-	/** Back template, e.g. "{{FrontSide}}<hr>{{Back}}" */
+	/** Back template, e.g. "{{Back}}" */
 	afmt: string;
 }
 

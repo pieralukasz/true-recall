@@ -14,9 +14,11 @@ import {
 import { DayBoundaryService } from "@features/core/services/day-boundary.service";
 import { FrontmatterIndexService } from "@features/core/services/frontmatter-index.service";
 import { FSRSService } from "@features/core/services/fsrs.service";
+import { NoteTypeService } from "@features/core/services/note-type.service";
 import { PresetService } from "@features/core/services/preset.service";
 import { FolderProjectService } from "@features/core/services/folder-project.service";
 import { ProjectLinkService } from "@features/core/services/project-link.service";
+import { NoteTypeManagerModal } from "@features/core/modals/NoteTypeManagerModal";
 import { AnkiExportModal } from "@features/integration/modals/AnkiExportModal";
 import { AnkiImportModal } from "@features/integration/modals/AnkiImportModal";
 import { CsvExportModal } from "@features/integration/modals/CsvExportModal";
@@ -100,6 +102,7 @@ export default class TrueRecallPlugin extends Plugin {
 	undoService: UndoService | null = null;
 	fsrsHelper: FSRSHelperService | null = null;
 	presetService!: PresetService;
+	noteTypeService!: NoteTypeService;
 	folderProjectService!: FolderProjectService;
 	projectLinkService!: ProjectLinkService;
 	store: AppStore | null = null;
@@ -483,6 +486,10 @@ export default class TrueRecallPlugin extends Plugin {
 		await activateView(this.app, VIEW_TYPE_STATS, { useMainArea: true });
 	}
 
+	openNoteTypeManager(): void {
+		new NoteTypeManagerModal(this.app, this).open();
+	}
+
 	async openCustomStudyModal(scope?: CustomStudyModalScope): Promise<void> {
 		const modal = new CustomStudyModal(
 			this.app,
@@ -778,6 +785,15 @@ export default class TrueRecallPlugin extends Plugin {
 			if (this.settings.autoBackupOnLoad) {
 				await this.runAutoBackup();
 			}
+
+			this.noteTypeService = new NoteTypeService({
+				noteTypeActions: this.cardStore.noteTypes,
+				noteActions: {
+					getByNoteTypeId: (id) => this.cardStore.notes.getByNoteTypeId(id),
+					countByNoteType: (id) => this.cardStore.notes.countByNoteType(id),
+				},
+			});
+			this.noteTypeService.initialize();
 
 			await this.initializeNLQueryService();
 			// Cloud sync - coming soon

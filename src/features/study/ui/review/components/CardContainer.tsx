@@ -74,7 +74,7 @@ export function CardContainer({
 				)}
 
 				{isAnswerRevealed && (card.sourceNoteName || presetName) && (
-					<div class="ep:flex ep:flex-col ep:items-center ep:gap-1.5 ep:pt-8">
+					<div class="ep:flex ep:flex-col ep:items-center ep:gap-4 ep:pt-8">
 						{card.sourceNoteName && onOpenSourceNote && (
 							<Clickable
 								class="ep:text-obs-faint ep:text-ui-smaller ep:no-underline ep:hover:text-obs-accent ep:hover:underline ep:transition-colors ep:p-0"

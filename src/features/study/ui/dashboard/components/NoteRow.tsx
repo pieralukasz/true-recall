@@ -46,12 +46,14 @@ export function NoteRow({
 	]);
 
 	return (
-		<div
+		<Clickable
 			class={cn(
 				"ep:flex ep:items-center ep:gap-3 ep:px-3 ep:h-9 ep:overflow-hidden ep:rounded-lg ep:transition-colors ep:duration-150 ep:hover:bg-obs-modifier-hover",
 				!hasActive && "ep:opacity-40",
 			)}
 			onContextMenu={handleContextMenu}
+			onClick={onNavigate}
+			stopPropagation={false}
 		>
 			<Clickable
 				class="ep:flex ep:items-center ep:gap-2 ep:flex-1 ep:min-w-0 ep:hover:text-obs-interactive ep:transition-colors"
@@ -69,17 +71,16 @@ export function NoteRow({
 				>
 					{note.name}
 				</span>
+				{note.presetName && (
+					<Clickable
+						class="ep:text-[10px] ep:px-1.5 ep:py-0.5 ep:rounded-full ep:bg-obs-modifier-hover ep:text-obs-muted ep:hover:text-obs-normal ep:hover:bg-obs-modifier-active-hover ep:transition-colors ep:shrink-0"
+						title={`FSRS preset: ${note.presetName}`}
+						onClick={() => onPresetClick?.(note.path)}
+					>
+						{note.presetName}
+					</Clickable>
+				)}
 			</Clickable>
-
-			{note.presetName && (
-				<Clickable
-					class="ep:text-[10px] ep:px-1.5 ep:py-0.5 ep:rounded-full ep:bg-obs-modifier-hover ep:text-obs-muted ep:hover:text-obs-normal ep:hover:bg-obs-modifier-active-hover ep:transition-colors ep:shrink-0"
-					title={`FSRS preset: ${note.presetName}`}
-					onClick={() => onPresetClick?.(note.path)}
-				>
-					{note.presetName}
-				</Clickable>
-			)}
 
 			{note.projects.length > 0 && (
 				<div
@@ -117,6 +118,6 @@ export function NoteRow({
 					size="small"
 				/>
 			</div>
-		</div>
+		</Clickable>
 	);
 }

@@ -26,7 +26,7 @@ function basicNoteType(overrides: Partial<NoteType> = {}): NoteType {
 		type: 0,
 		fields: ["Front", "Back"],
 		templates: [
-			{ name: "Card 1", ordinal: 0, qfmt: "{{Front}}", afmt: "{{FrontSide}}<hr>{{Back}}" },
+			{ name: "Card 1", ordinal: 0, qfmt: "{{Front}}", afmt: "{{Back}}" },
 		],
 		css: "",
 		isBuiltin: true,
@@ -41,8 +41,8 @@ function reversedNoteType(): NoteType {
 		type: 0,
 		fields: ["Front", "Back"],
 		templates: [
-			{ name: "Card 1", ordinal: 0, qfmt: "{{Front}}", afmt: "{{FrontSide}}<hr>{{Back}}" },
-			{ name: "Card 2", ordinal: 1, qfmt: "{{Back}}", afmt: "{{FrontSide}}<hr>{{Front}}" },
+			{ name: "Card 1", ordinal: 0, qfmt: "{{Front}}", afmt: "{{Back}}" },
+			{ name: "Card 2", ordinal: 1, qfmt: "{{Back}}", afmt: "{{Front}}" },
 		],
 		css: "",
 		isBuiltin: true,

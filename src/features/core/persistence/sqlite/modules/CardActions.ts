@@ -244,7 +244,6 @@ function mapRowV26(row: CardRowV26): FSRSCardData {
 			...context,
 			frontSide: "",
 		});
-		answer = answer.replace(/^\s*<hr\s*\/?>\s*/i, "");
 	}
 
 	const isCloze = noteTypeInfo.type === 1;

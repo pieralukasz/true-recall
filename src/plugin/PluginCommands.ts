@@ -53,6 +53,12 @@ export function registerCommands(plugin: TrueRecallPlugin): void {
 	});
 
 	plugin.addCommand({
+		id: "manage-note-types",
+		name: "Manage note types",
+		callback: () => plugin.openNoteTypeManager(),
+	});
+
+	plugin.addCommand({
 		id: "create-backup",
 		name: "Create database backup",
 		callback: () => void plugin.createManualBackup(),
