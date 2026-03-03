@@ -14,13 +14,9 @@ import {
 	TodaySection,
 } from "@features/metrics/ui/stats/components";
 import { formatDateForDisplay } from "@features/metrics/ui/stats/utils/chart-helpers";
-import { useSignal } from "@preact/signals";
-import {
-	dataVersion,
-	settingsVersion,
-	syncVersion,
-	useSignalVersion,
-} from "@shared/services/signals";
+import { useComputed, useSignal } from "@preact/signals";
+import { cards } from "@shared/services/reactive-card-store";
+import { settingsVersion } from "@shared/services/signals";
 import type {
 	CardMaturityBreakdown,
 	FSRSFlashcardItem,
@@ -29,7 +25,7 @@ import type {
 import { AppNavBar } from "@shared/ui/components";
 import { CardPreviewModal } from "@shared/ui/modals";
 import { usePlugin } from "@shared/ui/preact";
-import { useCallback, useMemo } from "preact/hooks";
+import { useCallback, useMemo, useRef } from "preact/hooks";
 
 export function StatsApp() {
 	const plugin = usePlugin();
@@ -46,7 +42,12 @@ export function StatsApp() {
 
 	const currentRange = useSignal<StatsTimeRange>("1m");
 
-	const refreshTick = useSignalVersion(dataVersion, settingsVersion, syncVersion);
+	const keyCounter = useRef(0);
+	const dataKey = useComputed(() => {
+		cards.value;
+		settingsVersion.value;
+		return ++keyCounter.current;
+	}).value;
 
 	const handleCardPreviewForDate = useCallback(
 		(date: string, cards: FSRSFlashcardItem[]) => {
@@ -74,8 +75,6 @@ export function StatsApp() {
 		},
 		[plugin],
 	);
-
-	const dataKey = refreshTick;
 
 	return (
 		<div class="ep:flex ep:flex-col ep:h-full">

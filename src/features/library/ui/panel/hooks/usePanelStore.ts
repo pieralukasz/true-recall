@@ -1,8 +1,4 @@
-import {
-	dataVersion,
-	settingsVersion,
-	useSignalVersion,
-} from "@shared/services/signals";
+import { cards } from "@shared/services/reactive-card-store";
 import type {
 	PanelApi,
 	ProcessingStatus,
