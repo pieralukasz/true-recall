@@ -1,6 +1,6 @@
 import { FSRS_CONFIG } from "@shared/constants";
 import type { FSRSPreset } from "@shared/types";
-import { SettingRow, SliderInput, TextInput } from "@shared/ui/components";
+import { FormCard, FormField, SliderInput, TextInput } from "@shared/ui/components";
 
 interface AlgorithmSectionProps {
 	preset: FSRSPreset;
@@ -12,10 +12,8 @@ export function AlgorithmSection({
 	updatePreset,
 }: AlgorithmSectionProps) {
 	return (
-		<>
-			<SettingRow heading name="FSRS algorithm" />
-
-			<SettingRow
+		<FormCard title="FSRS algorithm">
+			<FormField
 				name="Desired retention"
 				description={`Target probability of recall (${FSRS_CONFIG.minRetention}-${FSRS_CONFIG.maxRetention}). Default: 0.9 (90%)`}
 			>
@@ -27,9 +25,9 @@ export function AlgorithmSection({
 					step={0.01}
 					formatTooltip={(v) => v.toFixed(2)}
 				/>
-			</SettingRow>
+			</FormField>
 
-			<SettingRow
+			<FormField
 				name="Maximum interval (days)"
 				description="Maximum days between reviews. Default: 36500 (100 years)"
 			>
@@ -41,7 +39,7 @@ export function AlgorithmSection({
 					}}
 					placeholder="36500"
 				/>
-			</SettingRow>
-		</>
+			</FormField>
+		</FormCard>
 	);
 }
