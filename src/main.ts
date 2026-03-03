@@ -20,6 +20,7 @@ import { FolderProjectService } from "@features/core/services/folder-project.ser
 import { ProjectLinkService } from "@features/core/services/project-link.service";
 import { AddFlashcardsModal } from "@features/core/modals/AddFlashcardsModal";
 import { NoteTypeManagerModal } from "@features/core/modals/NoteTypeManagerModal";
+import { QuickNoteEditorModal } from "@features/study/modals/quick-note-editor/QuickNoteEditorModal";
 import { AnkiExportModal } from "@features/integration/modals/AnkiExportModal";
 import { AnkiImportModal } from "@features/integration/modals/AnkiImportModal";
 import { CsvExportModal } from "@features/integration/modals/CsvExportModal";
@@ -496,6 +497,13 @@ export default class TrueRecallPlugin extends Plugin {
 
 	openAddFlashcards(options?: { defaultNoteTypeId?: string }): void {
 		new AddFlashcardsModal(this.app, this, options).open();
+	}
+
+	openQuickNoteEditor(defaultNoteTypeId?: string): void {
+		new QuickNoteEditorModal(this.app, this, {
+			mode: "add",
+			defaultNoteTypeId,
+		}).open();
 	}
 
 	async openCustomStudyModal(scope?: CustomStudyModalScope): Promise<void> {

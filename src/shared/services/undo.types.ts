@@ -12,6 +12,7 @@ import type { Grade, State } from "ts-fsrs";
 export type UndoActionType =
 	| "create-flashcard"
 	| "update-card"
+	| "update-note-fields"
 	| "delete-flashcard"
 	| "save-flashcards"
 	| "answer"
@@ -119,6 +120,15 @@ export type FSRSHelperOperationType =
 	| "reschedule-cards";
 
 /**
+ * Payload for undoing note field update (restore previous field values)
+ */
+export interface UpdateNoteFieldsUndoPayload {
+	type: "update-note-fields";
+	noteId: string;
+	previousFields: Record<string, string>;
+}
+
+/**
  * Payload for undoing FSRS Helper bulk scheduling operations
  */
 export interface FSRSHelperUndoPayload {
@@ -139,6 +149,7 @@ export interface FSRSHelperUndoPayload {
 export type UndoPayload =
 	| CreateUndoPayload
 	| UpdateUndoPayload
+	| UpdateNoteFieldsUndoPayload
 	| DeleteUndoPayload
 	| BatchCreateUndoPayload
 	| AnswerUndoPayload
