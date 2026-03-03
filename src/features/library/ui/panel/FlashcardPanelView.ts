@@ -387,7 +387,7 @@ export class FlashcardPanelView extends ItemView {
 
 			if (!this.panel.isCurrentRender(renderVersion)) return;
 
-			const uncollectedCount = this.collectService.countFlashcardTags(content);
+			const uncollectedCount = this.collectService.countFlashcardLines(content);
 			const hasHighlights = extractHighlights(content).length > 0;
 
 			this.invalidateCardsCache();
@@ -606,7 +606,7 @@ export class FlashcardPanelView extends ItemView {
 
 		try {
 			const content = await this.app.vault.read(file);
-			const uncollectedCount = this.collectService.countFlashcardTags(content);
+			const uncollectedCount = this.collectService.countFlashcardLines(content);
 			const hasHighlights = extractHighlights(content).length > 0;
 
 			if (state.uncollectedCount !== uncollectedCount) {
