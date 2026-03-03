@@ -7,6 +7,7 @@ import {
 } from "@features/study/ui/review/components";
 import type { ReviewApi } from "@shared/store";
 import type { FSRSFlashcardItem } from "@shared/types";
+import type { SelectOption } from "@shared/ui/components/SelectInput";
 import { usePlugin } from "@shared/ui/preact/ObsidianContext";
 import { useEffect, useLayoutEffect, useState } from "preact/hooks";
 import type { Grade } from "ts-fsrs";
@@ -32,6 +33,8 @@ export interface ReviewAppProps {
 	showNextReviewTime: boolean;
 	continuousCustomReviews: boolean;
 	getPresetName?: (card: FSRSFlashcardItem) => string;
+	getPresetOptions?: () => SelectOption[];
+	onPresetChange?: (presetName: string) => void;
 }
 
 // ─── Main App ────────────────────────────────────────────────────────────────
@@ -100,10 +103,13 @@ function ActiveReview({
 	showHeaderStats,
 	showNextReviewTime,
 	getPresetName,
+	getPresetOptions,
+	onPresetChange,
 }: ActiveReviewProps) {
 	const hasAnswer = !!card.answer?.trim();
 	const isAnswerRevealed = !hasAnswer || review.isAnswerRevealed;
 	const presetName = getPresetName?.(card);
+	const presetOptions = getPresetOptions?.();
 
 	useLayoutEffect(() => {
 		if (!hasAnswer && !review.isAnswerRevealed) {
@@ -127,6 +133,8 @@ function ActiveReview({
 				onContentChange={onContentChange}
 				onOpenSourceNote={onOpenSourceNote}
 				presetName={presetName}
+				presetOptions={presetOptions}
+				onPresetChange={onPresetChange}
 			/>
 
 			<ButtonBar
