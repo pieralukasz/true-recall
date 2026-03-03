@@ -21,7 +21,8 @@ export function DailyLimitsSection({
 				<TextInput
 					value={String(preset.newCardsPerDay)}
 					onChange={(v) => {
-						const num = parseInt(v, 10) || 20;
+						const parsed = parseInt(v, 10);
+						const num = Number.isNaN(parsed) ? 20 : parsed;
 						void updatePreset({ newCardsPerDay: Math.max(0, num) });
 					}}
 					placeholder="20"
@@ -35,7 +36,8 @@ export function DailyLimitsSection({
 				<TextInput
 					value={String(preset.reviewsPerDay)}
 					onChange={(v) => {
-						const num = parseInt(v, 10) || 200;
+						const parsed = parseInt(v, 10);
+						const num = Number.isNaN(parsed) ? 200 : parsed;
 						void updatePreset({ reviewsPerDay: Math.max(0, num) });
 					}}
 					placeholder="200"

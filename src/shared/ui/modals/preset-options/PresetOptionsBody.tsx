@@ -82,57 +82,48 @@ export function PresetOptionsBody({
 		refresh();
 	}, [plugin, preset.id, settings.defaultPresetId, refresh]);
 
-	const handleSetForContext = useCallback(async () => {
-		if (!context?.contextPath) return;
-		const file = plugin.app.vault.getFileByPath(context.contextPath);
-		if (!file) return;
-
-		const frontmatterService =
-			plugin.flashcardManager?.getFrontmatterService();
-		if (!frontmatterService) return;
-
-		await frontmatterService.setFsrsPreset(file, preset.name);
-		refresh();
-	}, [plugin, context, preset.name, refresh]);
+	const handleDone = useCallback(async () => {
+		if (context?.contextPath) {
+			const file = plugin.app.vault.getFileByPath(context.contextPath);
+			const frontmatterService =
+				plugin.flashcardManager?.getFrontmatterService();
+			if (file && frontmatterService) {
+				await frontmatterService.setFsrsPreset(file, preset.name);
+			}
+		}
+		onClose();
+	}, [plugin, context, preset.name, onClose]);
 
 	return (
-		<div class="ep:max-h-[70vh] ep:overflow-y-auto">
-			<PresetSelector
-				presets={presets}
-				preset={preset}
-				isDefault={isDefault}
-				onPresetChange={setSelectedPresetId}
-				onCreate={handleCreate}
-				onDelete={handleDelete}
-				onRename={(name) => void updatePreset({ name })}
-			/>
+		<div class="ep:flex ep:flex-col ep:flex-1 ep:min-h-0">
+			<div class="ep:flex-1 ep:overflow-y-auto ep:min-h-0">
+				<PresetSelector
+					presets={presets}
+					preset={preset}
+					isDefault={isDefault}
+					onPresetChange={setSelectedPresetId}
+					onCreate={handleCreate}
+					onDelete={handleDelete}
+					onRename={(name) => void updatePreset({ name })}
+				/>
 
-			<DailyLimitsSection preset={preset} updatePreset={updatePreset} />
-			<NewCardsSection preset={preset} updatePreset={updatePreset} />
-			<LapsesSection preset={preset} updatePreset={updatePreset} />
-			<SchedulingSection preset={preset} updatePreset={updatePreset} />
-			<ParametersSection
-				preset={preset}
-				updatePreset={updatePreset}
-				plugin={plugin}
-				onRefresh={refresh}
-			/>
-			<UsageSection preset={preset} />
+				<DailyLimitsSection preset={preset} updatePreset={updatePreset} />
+				<NewCardsSection preset={preset} updatePreset={updatePreset} />
+				<LapsesSection preset={preset} updatePreset={updatePreset} />
+				<SchedulingSection preset={preset} updatePreset={updatePreset} />
+				<ParametersSection
+					preset={preset}
+					updatePreset={updatePreset}
+					plugin={plugin}
+					onRefresh={refresh}
+				/>
+				<UsageSection preset={preset} />
+			</div>
 
-			<div class="ep-modal-footer ep:flex ep:items-center ep:justify-between ep:gap-2 ep:pt-3 ep:mt-2 ep:border-t ep:border-obs-border">
-				{context?.contextPath && (
-					<Clickable
-						class="ep-btn ep-btn-outline ep:text-ui-small"
-						onClick={handleSetForContext}
-						stopPropagation={false}
-					>
-						Set for {context.contextName ?? "this note"}
-					</Clickable>
-				)}
-				<div class="ep:flex-1" />
+			<div class="ep-modal-footer ep:flex ep:items-center ep:justify-end ep:gap-2 ep:pt-3 ep:mt-2 ep:border-t ep:border-obs-border">
 				<Clickable
 					class="ep-btn mod-cta ep:text-ui-small"
-					onClick={onClose}
+					onClick={() => void handleDone()}
 					stopPropagation={false}
 				>
 					Done

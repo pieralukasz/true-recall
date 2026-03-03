@@ -2,8 +2,9 @@ import type { Signal } from "@preact/signals";
 import { useSignal } from "@preact/signals";
 import { Clickable } from "@shared/ui/components/Clickable";
 import { CreateProjectModal } from "@features/study/modals/CreateProjectModal";
+import { RenameModal } from "@features/study/modals/RenameModal";
 import { usePlugin } from "@shared/ui/preact";
-import { Notice, TFile } from "obsidian";
+import { Notice, TAbstractFile, TFile, TFolder, normalizePath } from "obsidian";
 import { useIcon } from "@shared/ui/preact/hooks";
 import { useCallback, useEffect, useMemo, useRef } from "preact/hooks";
 import type { RefObject } from "preact";
@@ -71,6 +72,35 @@ export function ProjectsTab({
 		if (file instanceof TFile) {
 			void plugin.flashcardManager.getFrontmatterService().setArchive(file, archived);
 		}
+	}, [plugin]);
+
+	const handleRename = useCallback(async (path: string) => {
+		const file = plugin.app.vault.getAbstractFileByPath(path);
+		if (!file) return;
+
+		const modal = new RenameModal(plugin.app, file);
+		const result = await modal.openAndWait();
+		if (result.cancelled) return;
+
+		// Build new path
+		let newPath: string;
+		if (file instanceof TFile) {
+			const ext = file.extension;
+			const parent = file.parent?.path ?? "";
+			newPath = parent ? `${parent}/${result.newName}.${ext}` : `${result.newName}.${ext}`;
+		} else {
+			const parent = file.parent?.path ?? "";
+			newPath = parent ? `${parent}/${result.newName}` : result.newName;
+		}
+		newPath = normalizePath(newPath);
+
+		// Check if target already exists
+		if (plugin.app.vault.getAbstractFileByPath(newPath)) {
+			new Notice(`A ${file instanceof TFolder ? "folder" : "file"} already exists at "${newPath}".`);
+			return;
+		}
+
+		await plugin.app.fileManager.renameFile(file, newPath);
 	}, [plugin]);
 
 	const handleAddProject = useCallback(async () => {
@@ -166,6 +196,7 @@ export function ProjectsTab({
 									onPresetClick={onPresetClick}
 									onArchive={() => handleArchive(item.project.path, true)}
 									onUnarchive={() => handleArchive(item.project.path, false)}
+									onRename={() => handleRename(item.project.path)}
 								/>
 							</div>
 						);
@@ -204,6 +235,7 @@ export function ProjectsTab({
 									onPresetClick={onPresetClick}
 									onArchive={() => item.note.path ? handleArchive(item.note.path, true) : undefined}
 									onUnarchive={() => item.note.path ? handleArchive(item.note.path, false) : undefined}
+									onRename={() => item.note.path ? handleRename(item.note.path) : undefined}
 								/>
 							</div>
 						);
