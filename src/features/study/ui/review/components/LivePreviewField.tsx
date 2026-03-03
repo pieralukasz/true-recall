@@ -6,6 +6,8 @@ import {
 import { stripBrTags } from "@shared/utils";
 import { useCallback, useEffect, useLayoutEffect, useRef } from "preact/hooks";
 
+const AUTOSAVE_DELAY_MS = 1500;
+
 export interface LivePreviewFieldProps {
 	content: string;
 	field: "question" | "answer";
@@ -30,27 +32,70 @@ export function LivePreviewField({
 	const editorRef = useRef<EmbeddableEditorInstance | null>(null);
 	const contentRef = useRef(content);
 
-	// Keep track of current content prop for blur handler
-	contentRef.current = content;
+	// Refs so stale closures (editor callbacks captured at construction) always access latest values
+	const saveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+	const onContentChangeRef = useRef(onContentChange);
+	const fieldRef = useRef(field);
 
-	const handleBlur = useCallback(
-		(editor: EmbeddableEditorInstance) => {
+	contentRef.current = content;
+	onContentChangeRef.current = onContentChange;
+	fieldRef.current = field;
+
+	// Save if dirty — clears timer, compares editor value with last-known content, fires onContentChange.
+	// Updates contentRef.current after save to prevent duplicate saves (blur, next onChange, etc.).
+	const flushPendingSave = useCallback(() => {
+		if (saveTimerRef.current !== null) {
+			clearTimeout(saveTimerRef.current);
+			saveTimerRef.current = null;
+		}
+
+		const editor = editorRef.current;
+		if (!editor) return;
+
+		const currentValue = editor.value;
+		const normalizedOriginal = stripBrTags(contentRef.current);
+		if (currentValue !== normalizedOriginal && onContentChangeRef.current) {
+			onContentChangeRef.current(currentValue, fieldRef.current);
+			contentRef.current = currentValue;
+		}
+	}, []);
+
+	const scheduleSave = useCallback(() => {
+		if (saveTimerRef.current !== null) {
+			clearTimeout(saveTimerRef.current);
+		}
+		saveTimerRef.current = setTimeout(() => {
+			saveTimerRef.current = null;
+
+			const editor = editorRef.current;
+			if (!editor) return;
+
 			const currentValue = editor.value;
 			const normalizedOriginal = stripBrTags(contentRef.current);
-			if (currentValue !== normalizedOriginal && onContentChange) {
-				onContentChange(currentValue, field);
+			if (currentValue !== normalizedOriginal && onContentChangeRef.current) {
+				onContentChangeRef.current(currentValue, fieldRef.current);
+				contentRef.current = currentValue;
 			}
+		}, AUTOSAVE_DELAY_MS);
+	}, []);
+
+	const handleBlur = useCallback(
+		(_editor: EmbeddableEditorInstance) => {
+			flushPendingSave();
 		},
-		[field, onContentChange],
+		[flushPendingSave],
 	);
 
 	const handleEscape = useCallback(
 		(editor: EmbeddableEditorInstance) => {
-			// Blur the editor so keyboard shortcuts resume
 			editor.cm.contentDOM.blur();
 		},
 		[],
 	);
+
+	const handleChange = useCallback(() => {
+		scheduleSave();
+	}, [scheduleSave]);
 
 	// Create editor on mount, destroy on unmount
 	useEffect(() => {
@@ -65,6 +110,7 @@ export function LivePreviewField({
 				value: normalizedContent,
 				onBlur: handleBlur,
 				onEscape: handleEscape,
+				onChange: handleChange,
 			});
 			editorRef.current = editor;
 		} catch (error) {
@@ -73,6 +119,7 @@ export function LivePreviewField({
 		}
 
 		return () => {
+			flushPendingSave();
 			editorRef.current = null;
 			editor.destroy();
 		};
@@ -84,8 +131,10 @@ export function LivePreviewField({
 		const editor = editorRef.current;
 		if (!editor) return;
 
+		// Save edits for the previous card before switching content
+		flushPendingSave();
+
 		const normalizedContent = stripBrTags(content);
-		// Only update if content actually differs (avoid overwriting in-progress edits)
 		if (editor.value !== normalizedContent) {
 			editor.set(normalizedContent);
 		}
