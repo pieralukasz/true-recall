@@ -122,11 +122,11 @@
 		flex: 1 !important;
 		display: flex !important;
 		flex-direction: column !important;
+		scrollbar-gutter: stable !important;
 	}
 
 	.modal:has(.true-recall-modal) .true-recall-modal {
 		flex: 1 !important;
-		overflow-y: auto !important;
 		display: flex !important;
 		flex-direction: column !important;
 	}

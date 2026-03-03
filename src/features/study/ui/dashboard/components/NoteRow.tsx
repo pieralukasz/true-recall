@@ -22,6 +22,7 @@ interface NoteRowProps {
 	onPresetClick?: (notePath: string | null) => void;
 	onArchive?: () => void;
 	onUnarchive?: () => void;
+	onRename?: () => void;
 }
 
 export function NoteRow({
@@ -33,6 +34,7 @@ export function NoteRow({
 	onPresetClick,
 	onArchive,
 	onUnarchive,
+	onRename,
 }: NoteRowProps) {
 	const hasActive = note.due + note.newCount + note.learning > 0;
 
@@ -40,6 +42,7 @@ export function NoteRow({
 		{ title: "Study", icon: "play", onClick: onStudy },
 		{ title: "Custom session", icon: "sliders-horizontal", onClick: onCustomStudy },
 		{ title: "Go to note", icon: "file-text", onClick: onNavigate },
+		{ title: "Rename", icon: "pencil", onClick: () => onRename?.() },
 		note.archived
 			? { title: "Unarchive", icon: "archive-restore", onClick: () => onUnarchive?.() }
 			: { title: "Archive", icon: "archive", onClick: () => onArchive?.() },
