@@ -5,6 +5,8 @@
 
 import {
 	CardActions,
+	NoteActions,
+	NoteTypeActions,
 	StatsActions,
 } from "@features/core/persistence/sqlite/modules";
 import { SqliteDatabase } from "@features/core/persistence/sqlite/SqliteDatabase";
@@ -33,6 +35,8 @@ export class SqliteStoreService {
 	// Domain modules - public for direct access
 	public readonly cards: CardActions;
 	public readonly stats: StatsActions;
+	public readonly notes: NoteActions;
+	public readonly noteTypes: NoteTypeActions;
 
 	constructor(app: App, deviceId: string) {
 		this.app = app;
@@ -42,6 +46,8 @@ export class SqliteStoreService {
 		// Initialize domain modules
 		this.cards = new CardActions(this.db);
 		this.stats = new StatsActions(this.db);
+		this.notes = new NoteActions(this.db);
+		this.noteTypes = new NoteTypeActions(this.db);
 	}
 
 	getDeviceId(): string {

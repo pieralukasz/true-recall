@@ -267,8 +267,7 @@ describe("NoteTypeService", () => {
 				],
 			});
 
-			// Insert a note using this type
-			insertNoteTypeDirect(ctx.db, createTestNoteType({ id: created.id }));
+			// Insert a note using this type (type already in DB from service.create)
 			insertNoteDirect(
 				ctx.db,
 				createTestNote({ noteTypeId: created.id }),
