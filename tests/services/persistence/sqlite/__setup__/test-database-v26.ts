@@ -117,7 +117,6 @@ export class TestSqliteDatabaseV26 {
 				updated_at INTEGER,
 				deleted_at INTEGER DEFAULT NULL,
 				source_uid TEXT,
-				fsrs_preset TEXT,
 				FOREIGN KEY (note_id) REFERENCES notes(id)
 			);
 

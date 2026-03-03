@@ -6,42 +6,142 @@
 import type { SqliteDatabase } from "@features/core/persistence/sqlite/SqliteDatabase";
 import type { Note } from "@shared/types/note.types";
 
+interface NoteRow {
+	id: string;
+	note_type_id: string;
+	fields_json: string;
+	tags: string | null;
+	source_uid: string | null;
+	source_text: string | null;
+	created_via: string | null;
+	created_at: number | null;
+	updated_at: number | null;
+	deleted_at: number | null;
+}
+
+function mapRowToNote(row: NoteRow): Note {
+	return {
+		id: row.id,
+		noteTypeId: row.note_type_id,
+		fields: JSON.parse(row.fields_json) as Record<string, string>,
+		tags: row.tags ? row.tags.split(" ").filter(Boolean) : [],
+		sourceUid: row.source_uid ?? undefined,
+		sourceText: row.source_text ?? undefined,
+		createdVia: row.created_via ?? undefined,
+		createdAt: row.created_at ?? undefined,
+		updatedAt: row.updated_at ?? undefined,
+	};
+}
+
 export class NoteActions {
 	constructor(private db: SqliteDatabase) {}
 
-	getById(_id: string): Note | null {
-		throw new Error("Not implemented");
+	getById(id: string): Note | null {
+		const row = this.db.get<NoteRow>(
+			`SELECT * FROM notes WHERE id = ? AND deleted_at IS NULL`,
+			[id],
+		);
+		return row ? mapRowToNote(row) : null;
 	}
 
-	getBySourceUid(_sourceUid: string): Note[] {
-		throw new Error("Not implemented");
+	getBySourceUid(sourceUid: string): Note[] {
+		const rows = this.db.query<NoteRow>(
+			`SELECT * FROM notes WHERE source_uid = ? AND deleted_at IS NULL`,
+			[sourceUid],
+		);
+		return rows.map(mapRowToNote);
 	}
 
-	getByNoteTypeId(_noteTypeId: string): Note[] {
-		throw new Error("Not implemented");
+	getByNoteTypeId(noteTypeId: string): Note[] {
+		const rows = this.db.query<NoteRow>(
+			`SELECT * FROM notes WHERE note_type_id = ? AND deleted_at IS NULL`,
+			[noteTypeId],
+		);
+		return rows.map(mapRowToNote);
 	}
 
-	create(_note: Note): void {
-		throw new Error("Not implemented");
+	create(note: Note): void {
+		const now = Date.now();
+		this.db.run(
+			`INSERT INTO notes (id, note_type_id, fields_json, tags, source_uid, source_text, created_via, created_at, updated_at)
+			 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+			[
+				note.id,
+				note.noteTypeId,
+				JSON.stringify(note.fields),
+				note.tags.join(" "),
+				note.sourceUid ?? null,
+				note.sourceText ?? null,
+				note.createdVia ?? "manual",
+				note.createdAt ?? now,
+				note.updatedAt ?? now,
+			],
+		);
 	}
 
-	update(_id: string, _updates: Partial<Note>): void {
-		throw new Error("Not implemented");
+	update(id: string, updates: Partial<Note>): void {
+		const now = Date.now();
+		const sets: string[] = [];
+		const params: (string | number | null)[] = [];
+
+		if (updates.fields !== undefined) {
+			sets.push("fields_json = ?");
+			params.push(JSON.stringify(updates.fields));
+		}
+		if (updates.tags !== undefined) {
+			sets.push("tags = ?");
+			params.push(updates.tags.join(" "));
+		}
+		if (updates.sourceUid !== undefined) {
+			sets.push("source_uid = ?");
+			params.push(updates.sourceUid);
+		}
+		if (updates.sourceText !== undefined) {
+			sets.push("source_text = ?");
+			params.push(updates.sourceText);
+		}
+		if (updates.createdVia !== undefined) {
+			sets.push("created_via = ?");
+			params.push(updates.createdVia);
+		}
+
+		sets.push("updated_at = ?");
+		params.push(now);
+		params.push(id);
+
+		this.db.run(
+			`UPDATE notes SET ${sets.join(", ")} WHERE id = ?`,
+			params,
+		);
 	}
 
-	delete(_id: string): void {
-		throw new Error("Not implemented");
+	delete(id: string): void {
+		this.db.run(
+			`UPDATE notes SET deleted_at = ? WHERE id = ?`,
+			[Date.now(), id],
+		);
 	}
 
 	count(): number {
-		throw new Error("Not implemented");
+		const row = this.db.get<{ cnt: number }>(
+			`SELECT COUNT(*) as cnt FROM notes WHERE deleted_at IS NULL`,
+		);
+		return row?.cnt ?? 0;
 	}
 
-	countByNoteType(_noteTypeId: string): number {
-		throw new Error("Not implemented");
+	countByNoteType(noteTypeId: string): number {
+		const row = this.db.get<{ cnt: number }>(
+			`SELECT COUNT(*) as cnt FROM notes WHERE note_type_id = ? AND deleted_at IS NULL`,
+			[noteTypeId],
+		);
+		return row?.cnt ?? 0;
 	}
 
-	search(_query: string): Note[] {
-		throw new Error("Not implemented");
+	search(query: string): Note[] {
+		const rows = this.db.query<NoteRow>(
+			`SELECT * FROM notes WHERE fields_json LIKE ? AND deleted_at IS NULL`,
+			[`%${query}%`],
+		);
+		return rows.map(mapRowToNote);
 	}
 }

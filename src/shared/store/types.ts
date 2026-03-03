@@ -100,6 +100,7 @@ export interface ReviewSliceActions {
 	// Scheduling preview (ephemeral)
 	getSchedulingPreview: () => SchedulingPreview | null;
 	setSchedulingPreview: (preview: SchedulingPreview | null) => void;
+	notifyChange: () => void;
 
 	// Computed getters
 	getCurrentCard: () => FSRSFlashcardItem | null;

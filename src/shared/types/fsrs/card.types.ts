@@ -106,6 +106,15 @@ export interface FSRSCardData {
 
 	/** Original selected text that generated this card (for jump-to-source) */
 	sourceText?: string;
+
+	// === Note-based architecture fields (schema v26) ===
+
+	/** Note ID (links card to its note for template rendering) */
+	noteId?: string;
+	/** Template ordinal (which template of the note type this card uses) */
+	templateOrd?: number;
+	/** Note type ID (for deriving card type and template) */
+	noteTypeId?: string;
 }
 
 /**
@@ -145,4 +154,8 @@ export interface FSRSFlashcardItem {
 	ioParentId?: string;
 	/** Original selected text that generated this card (for jump-to-source) */
 	sourceText?: string;
+	/** Note ID (v26: links card to its note) */
+	noteId?: string;
+	/** Template ordinal (v26: which template this card uses) */
+	templateOrd?: number;
 }

@@ -6,6 +6,7 @@
  */
 
 import * as migrations from "@features/core/persistence/sqlite/migrations";
+import { getBuiltinNoteTypes } from "@features/core/persistence/sqlite/modules/NoteTypeActions";
 import {
 	type DatabaseLike,
 	getQueryResult,
@@ -30,6 +31,7 @@ export class SqliteSchemaManager {
 		23: migrations.migration022ToV23,
 		24: migrations.migration023ToV24,
 		25: migrations.migration024ToV25,
+		26: migrations.migration025ToV26,
 	};
 
 	constructor(db: DatabaseLike, onSchemaChange: () => void) {
@@ -39,9 +41,44 @@ export class SqliteSchemaManager {
 
 	createTables(): void {
 		this.db.run(`
-            -- Cards table with FSRS scheduling data + content
+            -- Note types (v26)
+            CREATE TABLE IF NOT EXISTS note_types (
+                id TEXT PRIMARY KEY NOT NULL,
+                name TEXT NOT NULL,
+                type INTEGER NOT NULL DEFAULT 0,
+                fields_json TEXT NOT NULL,
+                templates_json TEXT NOT NULL,
+                css TEXT DEFAULT '',
+                is_builtin INTEGER NOT NULL DEFAULT 0,
+                created_at INTEGER,
+                updated_at INTEGER,
+                deleted_at INTEGER DEFAULT NULL
+            );
+
+            -- Notes (v26)
+            CREATE TABLE IF NOT EXISTS notes (
+                id TEXT PRIMARY KEY NOT NULL,
+                note_type_id TEXT NOT NULL,
+                fields_json TEXT NOT NULL,
+                tags TEXT DEFAULT '',
+                source_uid TEXT,
+                source_text TEXT,
+                created_via TEXT DEFAULT 'manual',
+                created_at INTEGER,
+                updated_at INTEGER,
+                deleted_at INTEGER DEFAULT NULL,
+                FOREIGN KEY (note_type_id) REFERENCES note_types(id)
+            );
+
+            CREATE INDEX IF NOT EXISTS idx_notes_note_type ON notes(note_type_id);
+            CREATE INDEX IF NOT EXISTS idx_notes_source_uid ON notes(source_uid);
+            CREATE INDEX IF NOT EXISTS idx_notes_deleted ON notes(deleted_at);
+
+            -- Cards table with FSRS scheduling data (v26: no question/answer)
             CREATE TABLE IF NOT EXISTS cards (
                 id TEXT PRIMARY KEY NOT NULL,
+                note_id TEXT NOT NULL,
+                template_ord INTEGER NOT NULL DEFAULT 0,
                 due TEXT NOT NULL,
                 stability REAL DEFAULT 0,
                 difficulty REAL DEFAULT 0,
@@ -56,36 +93,21 @@ export class SqliteSchemaManager {
                 created_at INTEGER,
                 updated_at INTEGER,
                 deleted_at INTEGER DEFAULT NULL,
-                question TEXT,
-                answer TEXT,
                 source_uid TEXT,
-                card_type TEXT NOT NULL DEFAULT 'basic',
-                cloze_template TEXT,
-                cloze_index INTEGER,
-                reverse_of TEXT,
-                io_image_path TEXT,
-                io_regions_json TEXT,
-                io_group_key TEXT,
-                io_parent_id TEXT,
-                created_via TEXT DEFAULT 'manual',
-                source_text TEXT
+                FOREIGN KEY (note_id) REFERENCES notes(id)
             );
 
-            -- Indexes for common queries
+            CREATE INDEX IF NOT EXISTS idx_cards_note_id ON cards(note_id);
+            CREATE INDEX IF NOT EXISTS idx_cards_note_template ON cards(note_id, template_ord);
             CREATE INDEX IF NOT EXISTS idx_cards_due ON cards(due);
             CREATE INDEX IF NOT EXISTS idx_cards_state ON cards(state);
             CREATE INDEX IF NOT EXISTS idx_cards_suspended ON cards(suspended);
             CREATE INDEX IF NOT EXISTS idx_cards_source_uid ON cards(source_uid);
             CREATE INDEX IF NOT EXISTS idx_cards_deleted ON cards(deleted_at);
-
-            -- Composite indexes for common filtered queries
             CREATE INDEX IF NOT EXISTS idx_cards_active ON cards(deleted_at, suspended, state);
             CREATE INDEX IF NOT EXISTS idx_cards_due_active ON cards(due, deleted_at, suspended);
-            CREATE INDEX IF NOT EXISTS idx_cards_card_type ON cards(card_type);
-            CREATE INDEX IF NOT EXISTS idx_cards_reverse_of ON cards(reverse_of);
-            CREATE INDEX IF NOT EXISTS idx_cards_io_parent ON cards(io_parent_id);
 
-            -- Review history log 
+            -- Review history log
             CREATE TABLE IF NOT EXISTS review_log (
                 id TEXT PRIMARY KEY NOT NULL,
                 card_id TEXT NOT NULL,
@@ -136,14 +158,34 @@ export class SqliteSchemaManager {
             );
 
             -- Set schema version
-            INSERT OR REPLACE INTO meta (key, value) VALUES ('schema_version', '25');
+            INSERT OR REPLACE INTO meta (key, value) VALUES ('schema_version', '26');
             INSERT OR REPLACE INTO meta (key, value) VALUES ('created_at', datetime('now'));
         `);
+
+		// Seed built-in note types for fresh installs
+		const builtins = getBuiltinNoteTypes();
+		const now = Date.now();
+		for (const nt of builtins) {
+			this.db.run(
+				`INSERT OR IGNORE INTO note_types (id, name, type, fields_json, templates_json, css, is_builtin, created_at, updated_at)
+				 VALUES (?, ?, ?, ?, ?, ?, 1, ?, ?)`,
+				[
+					nt.id,
+					nt.name,
+					nt.type,
+					JSON.stringify(nt.fields),
+					JSON.stringify(nt.templates),
+					nt.css,
+					now,
+					now,
+				],
+			);
+		}
 	}
 
 	runMigrations(): void {
 		const currentVersion = this.getSchemaVersion();
-		const latestVersion = 25;
+		const latestVersion = 26;
 
 		if (currentVersion >= latestVersion) {
 			return; // Already at latest version
@@ -178,7 +220,7 @@ export class SqliteSchemaManager {
 				"SELECT name FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite_%'",
 			);
 
-			const requiredTables = ["cards", "meta"];
+			const requiredTables = ["cards", "meta", "note_types", "notes"];
 			const existingTables = tables[0]?.values.map((r) => r[0] as string) || [];
 
 			for (const table of requiredTables) {
