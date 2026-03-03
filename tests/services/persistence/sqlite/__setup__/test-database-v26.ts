@@ -261,7 +261,7 @@ export function createTestNoteType(overrides: Partial<NoteType> = {}): NoteType 
 				name: "Card 1",
 				ordinal: 0,
 				qfmt: "{{Front}}",
-				afmt: "{{FrontSide}}<hr>{{Back}}",
+				afmt: "{{Back}}",
 			},
 		],
 		css: overrides.css ?? "",

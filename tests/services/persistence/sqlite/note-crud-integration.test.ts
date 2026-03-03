@@ -62,7 +62,7 @@ function seedBuiltinTypes(db: TestSqliteDatabaseV26): void {
 					name: "Card 1",
 					ordinal: 0,
 					qfmt: "{{Front}}",
-					afmt: "{{FrontSide}}<hr>{{Back}}",
+					afmt: "{{Back}}",
 				},
 			],
 			isBuiltin: true,
@@ -81,13 +81,13 @@ function seedBuiltinTypes(db: TestSqliteDatabaseV26): void {
 					name: "Card 1",
 					ordinal: 0,
 					qfmt: "{{Front}}",
-					afmt: "{{FrontSide}}<hr>{{Back}}",
+					afmt: "{{Back}}",
 				},
 				{
 					name: "Card 2",
 					ordinal: 1,
 					qfmt: "{{Back}}",
-					afmt: "{{FrontSide}}<hr>{{Front}}",
+					afmt: "{{Front}}",
 				},
 			],
 			isBuiltin: true,
@@ -141,7 +141,7 @@ describe("Note CRUD Integration", () => {
 						name: "Card 1",
 						ordinal: 0,
 						qfmt: "{{Front}}",
-						afmt: "{{FrontSide}}<hr>{{Back}}",
+						afmt: "{{Back}}",
 					},
 				],
 			});
@@ -178,12 +178,11 @@ describe("Note CRUD Integration", () => {
 			);
 			expect(question).toBe("What is ATP?");
 
-			const frontSide = question;
 			const answer = renderTemplate(
 				noteType.templates[0]!.afmt,
-				{ fields: note.fields, frontSide },
+				{ fields: note.fields },
 			);
-			expect(answer).toBe("What is ATP?<hr>Adenosine triphosphate");
+			expect(answer).toBe("Adenosine triphosphate");
 		});
 
 		it("edit note Front field → computed question changes", () => {
@@ -226,13 +225,13 @@ describe("Note CRUD Integration", () => {
 						name: "Card 1",
 						ordinal: 0,
 						qfmt: "{{Front}}",
-						afmt: "{{FrontSide}}<hr>{{Back}}",
+						afmt: "{{Back}}",
 					},
 					{
 						name: "Card 2",
 						ordinal: 1,
 						qfmt: "{{Back}}",
-						afmt: "{{FrontSide}}<hr>{{Front}}",
+						afmt: "{{Front}}",
 					},
 				],
 			});
