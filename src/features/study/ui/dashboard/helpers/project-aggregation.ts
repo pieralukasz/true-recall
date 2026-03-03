@@ -18,6 +18,7 @@ import type {
 
 interface ProjectAggregationDeps {
 	notes: DashboardNoteEntry[];
+	showArchived?: boolean;
 	plugin: {
 		projectLinkService: ProjectLinkService;
 		cardStore: CardStore;
@@ -33,7 +34,7 @@ const MAX_RECENTLY_STUDIED = 5;
 export function aggregateProjectData(
 	deps: ProjectAggregationDeps,
 ): DashboardProjectAggregation {
-	const { notes, plugin } = deps;
+	const { notes, showArchived, plugin } = deps;
 
 	// O(1) lookups for notes by path and by name
 	const noteByPath = new Map<string, DashboardNoteEntry>();
@@ -49,10 +50,18 @@ export function aggregateProjectData(
 		buildProjectFromNode(node, noteByPath, noteByName, plugin),
 	);
 
-	// Filter archived projects from the dashboard
-	const projects = allProjects.filter(
-		(p) => !plugin.projectLinkService.isProjectArchived(p.path),
-	);
+	let projects: DashboardProject[];
+	if (showArchived) {
+		// Keep all projects, tag archived ones
+		projects = allProjects.map((p) => ({
+			...p,
+			archived: plugin.projectLinkService.isProjectArchived(p.path),
+		}));
+	} else {
+		projects = allProjects.filter(
+			(p) => !plugin.projectLinkService.isProjectArchived(p.path),
+		);
+	}
 
 	// Sort: most active (due + new + learning) first
 	projects.sort((a, b) => {

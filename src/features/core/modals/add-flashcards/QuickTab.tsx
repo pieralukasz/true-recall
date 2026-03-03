@@ -12,7 +12,7 @@ import { NoteTypePicker } from "./NoteTypePicker";
 interface QuickTabProps {
 	defaultNoteTypeId: string;
 	onNoteTypeChange: (id: string) => void;
-	onSave: (cards: ParsedCard[]) => void;
+	onSave: (cards: ParsedCard[]) => void | Promise<void>;
 	onClose: () => void;
 	sessionCount: number;
 }
