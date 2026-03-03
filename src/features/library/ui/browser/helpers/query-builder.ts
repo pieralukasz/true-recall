@@ -1,4 +1,5 @@
 import { State } from "ts-fsrs";
+import { BUILTIN_IMAGE_OCCLUSION_ID } from "@shared/types/note.types";
 import type { FilterState, PropFilter, SortConfig, StateFilterValue } from "../types";
 
 export interface SqlQuery {
@@ -21,7 +22,7 @@ const STATE_MAP: Record<StateFilterValue, number | "suspended" | "buried"> = {
 const PROP_TO_COLUMN: Record<PropFilter["property"], string> = {
 	s: "stability",
 	d: "difficulty",
-	r: "stability", // retrievability computed from stability; approximate filter
+	r: "stability",
 	ivl: "scheduled_days",
 	reps: "reps",
 	lapses: "lapses",
@@ -44,16 +45,38 @@ const ALLOWED_SORT_COLUMNS = new Set([
 	"created_via",
 ]);
 
+// v26: map logical sort column names to actual SQL expressions
+const SORT_COLUMN_V26: Record<string, string> = {
+	question: "n.fields_json",
+	answer: "n.fields_json",
+	state: "c.state",
+	due: "c.due",
+	stability: "c.stability",
+	difficulty: "c.difficulty",
+	reps: "c.reps",
+	lapses: "c.lapses",
+	scheduled_days: "c.scheduled_days",
+	created_at: "c.created_at",
+	last_review: "c.last_review",
+	card_type: "nt.type",
+	source_uid: "c.source_uid",
+	created_via: "n.created_via",
+};
+
 export function buildBrowserQuery(
 	filter: FilterState,
 	sort: SortConfig,
 	limit: number,
 	offset: number,
+	isV26 = false,
 ): SqlQuery {
-	const conditions: string[] = ["deleted_at IS NULL", "question IS NOT NULL"];
 	const params: (string | number)[] = [];
 
-	// State filters
+	const conditions: string[] = isV26
+		? ["c.deleted_at IS NULL"]
+		: ["deleted_at IS NULL", "question IS NOT NULL"];
+
+	// ── State filters ────────────────────────────────────────
 	const stateNumbers: number[] = [];
 	let wantSuspended = false;
 	let wantBuried = false;
@@ -69,80 +92,115 @@ export function buildBrowserQuery(
 		}
 	}
 
-	// Build state condition with OR logic for suspended/buried
 	const stateConditions: string[] = [];
+	const col = isV26 ? "c." : "";
 
 	if (stateNumbers.length > 0) {
 		const placeholders = stateNumbers.map(() => "?").join(",");
-		stateConditions.push(`(state IN (${placeholders}) AND suspended = 0)`);
+		stateConditions.push(`(${col}state IN (${placeholders}) AND ${col}suspended = 0)`);
 		params.push(...stateNumbers);
 	}
 
 	if (wantSuspended) {
-		stateConditions.push("suspended = 1");
+		stateConditions.push(`${col}suspended = 1`);
 	}
 
 	if (wantBuried) {
-		stateConditions.push("(buried_until IS NOT NULL AND buried_until > datetime('now'))");
+		stateConditions.push(`(${col}buried_until IS NOT NULL AND ${col}buried_until > datetime('now'))`);
 	}
 
 	if (stateConditions.length > 0) {
 		conditions.push(`(${stateConditions.join(" OR ")})`);
 	}
 
-	// Negated states
+	// ── Negated states ───────────────────────────────────────
 	for (const s of filter.negatedStates) {
 		const mapped = STATE_MAP[s];
 		if (mapped === "suspended") {
-			conditions.push("suspended = 0");
+			conditions.push(`${col}suspended = 0`);
 		} else if (mapped === "buried") {
-			conditions.push("(buried_until IS NULL OR buried_until <= datetime('now'))");
+			conditions.push(`(${col}buried_until IS NULL OR ${col}buried_until <= datetime('now'))`);
 		} else {
-			conditions.push("state != ?");
+			conditions.push(`${col}state != ?`);
 			params.push(mapped);
 		}
 	}
 
-	// Text search (LIKE for Phase 1)
+	// ── Text search ──────────────────────────────────────────
 	if (filter.textSearch) {
-		conditions.push("(question LIKE ? OR answer LIKE ?)");
 		const pattern = `%${filter.textSearch}%`;
-		params.push(pattern, pattern);
+		if (isV26) {
+			conditions.push("n.fields_json LIKE ?");
+			params.push(pattern);
+		} else {
+			conditions.push("(question LIKE ? OR answer LIKE ?)");
+			params.push(pattern, pattern);
+		}
 	}
 
-	// Source UIDs (note names resolved to UIDs by the service layer)
+	// ── Source UIDs ──────────────────────────────────────────
 	if (filter.sourceUids.length > 0) {
 		const placeholders = filter.sourceUids.map(() => "?").join(",");
-		conditions.push(`source_uid IN (${placeholders})`);
+		conditions.push(`${col}source_uid IN (${placeholders})`);
 		params.push(...filter.sourceUids);
 	}
 
-	// Card types
+	// ── Card types ───────────────────────────────────────────
 	if (filter.cardTypes.length > 0) {
-		const placeholders = filter.cardTypes.map(() => "?").join(",");
-		conditions.push(`card_type IN (${placeholders})`);
-		params.push(...filter.cardTypes);
+		if (isV26) {
+			const typeConditions: string[] = [];
+			for (const ct of filter.cardTypes) {
+				switch (ct) {
+					case "basic":
+						typeConditions.push(`(nt.type = 0 AND c.template_ord = 0 AND nt.id != ?)`);
+						params.push(BUILTIN_IMAGE_OCCLUSION_ID);
+						break;
+					case "reversed":
+						typeConditions.push(`(nt.type = 0 AND c.template_ord > 0 AND nt.id != ?)`);
+						params.push(BUILTIN_IMAGE_OCCLUSION_ID);
+						break;
+					case "cloze":
+						typeConditions.push("(nt.type = 1)");
+						break;
+					case "image-occlusion":
+						typeConditions.push("(nt.id = ?)");
+						params.push(BUILTIN_IMAGE_OCCLUSION_ID);
+						break;
+				}
+			}
+			if (typeConditions.length > 0) {
+				conditions.push(`(${typeConditions.join(" OR ")})`);
+			}
+		} else {
+			const placeholders = filter.cardTypes.map(() => "?").join(",");
+			conditions.push(`card_type IN (${placeholders})`);
+			params.push(...filter.cardTypes);
+		}
 	}
 
-	// Created via
+	// ── Created via ──────────────────────────────────────────
 	if (filter.createdVia.length > 0) {
 		const placeholders = filter.createdVia.map(() => "?").join(",");
-		conditions.push(`created_via IN (${placeholders})`);
+		if (isV26) {
+			conditions.push(`n.created_via IN (${placeholders})`);
+		} else {
+			conditions.push(`created_via IN (${placeholders})`);
+		}
 		params.push(...filter.createdVia);
 	}
 
-	// Property filters
+	// ── Property filters ─────────────────────────────────────
 	for (const pf of filter.propFilters) {
 		const column = PROP_TO_COLUMN[pf.property];
 		if (!column) continue;
-		conditions.push(`${column} ${pf.operator} ?`);
+		conditions.push(`${col}${column} ${pf.operator} ?`);
 		params.push(pf.value);
 	}
 
-	// Date filters
+	// ── Date filters ─────────────────────────────────────────
 	if (filter.addedDaysAgo != null) {
 		const cutoff = Date.now() - filter.addedDaysAgo * 86_400_000;
-		conditions.push("created_at >= ?");
+		conditions.push(`${col}created_at >= ?`);
 		params.push(cutoff);
 	}
 
@@ -150,14 +208,17 @@ export function buildBrowserQuery(
 		const cutoff = new Date(
 			Date.now() - filter.reviewedDaysAgo * 86_400_000,
 		).toISOString();
-		conditions.push("last_review >= ?");
+		conditions.push(`${col}last_review >= ?`);
 		params.push(cutoff);
 	}
 
-	// Sort - whitelist to prevent SQL injection
-	const sortColumn = ALLOWED_SORT_COLUMNS.has(sort.column)
-		? sort.column
-		: "due";
+	// ── Sort ─────────────────────────────────────────────────
+	let sortColumn: string;
+	if (isV26) {
+		sortColumn = SORT_COLUMN_V26[sort.column] ?? "c.due";
+	} else {
+		sortColumn = ALLOWED_SORT_COLUMNS.has(sort.column) ? sort.column : "due";
+	}
 	const sortDir = sort.direction === "desc" ? "DESC" : "ASC";
 
 	return {

@@ -24,7 +24,7 @@ export class CardBrowserQueryService {
 		// Resolve note: filters from note names to source UIDs
 		const resolvedFilter = this.resolveNoteFilters(filter);
 
-		const sqlQuery = buildBrowserQuery(resolvedFilter, sort, limit, offset);
+		const sqlQuery = buildBrowserQuery(resolvedFilter, sort, limit, offset, this.cardStore.cards.v26);
 
 		const rawCards = this.cardStore.cards.browserQuery(
 			sqlQuery.where,
@@ -59,7 +59,6 @@ export class CardBrowserQueryService {
 
 		const now = new Date();
 		for (const card of allCards) {
-			if (!card.question) continue;
 
 			// State counts (including virtual states)
 			if (card.suspended) {
