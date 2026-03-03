@@ -45,8 +45,13 @@ export function aggregateProjectData(
 
 	const hierarchy = plugin.projectLinkService.buildHierarchy();
 
-	const projects = hierarchy.map((node) =>
+	const allProjects = hierarchy.map((node) =>
 		buildProjectFromNode(node, noteByPath, noteByName, plugin),
+	);
+
+	// Filter archived projects from the dashboard
+	const projects = allProjects.filter(
+		(p) => !plugin.projectLinkService.isProjectArchived(p.path),
 	);
 
 	// Sort: most active (due + new + learning) first

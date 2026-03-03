@@ -50,6 +50,7 @@ export function DashboardApp() {
 		const allCards = plugin.flashcardManager.getAllFSRSCards();
 		const streakInfo = statsCalculator.getStreakInfo();
 		const todaySummary = statsCalculator.getTodaySummary();
+		const archivedSourceUids = plugin.projectLinkService.getArchivedSourceUids();
 
 		return aggregateDashboardData({
 			allCards,
@@ -57,6 +58,7 @@ export function DashboardApp() {
 			todaySummary,
 			newCardsCap: plugin.settings.newCardsPerDay,
 			reviewsCap: plugin.settings.reviewsPerDay,
+			archivedSourceUids,
 		});
 	}, [plugin, statsCalculator, refreshTick]);
 

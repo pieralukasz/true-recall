@@ -93,6 +93,19 @@ export class FrontmatterService {
 		);
 	}
 
+	async setArchive(file: TFile, archived: boolean): Promise<void> {
+		await this.app.fileManager.processFrontMatter(
+			file,
+			(fm: Record<string, unknown>) => {
+				if (archived) {
+					fm.archive = true;
+				} else {
+					delete fm.archive;
+				}
+			},
+		);
+	}
+
 	async setFsrsPreset(file: TFile, presetName: string | null): Promise<void> {
 		await this.app.fileManager.processFrontMatter(
 			file,

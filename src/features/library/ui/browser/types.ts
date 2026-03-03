@@ -56,6 +56,8 @@ export interface FilterState {
 	reviewedDaysAgo: number | null;
 	/** Negated states (prefixed with -) */
 	negatedStates: StateFilterValue[];
+	/** When true, show cards from archived notes/projects. Default false. */
+	showArchived?: boolean;
 }
 
 export interface PropFilter {

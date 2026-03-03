@@ -3,6 +3,7 @@ import { useSignal } from "@preact/signals";
 import { usePlugin } from "@shared/ui/preact";
 import { useMemo, useRef } from "preact/hooks";
 import type { RefObject } from "preact";
+import { TFile } from "obsidian";
 import { useInitialMount } from "../helpers/use-initial-mount";
 import { prioritySortComparator } from "../helpers/note-priority";
 import { useExternalVirtualList } from "../helpers/use-virtual-list";
@@ -122,6 +123,22 @@ export function NoteList({
 		projectFilter.value = { type: "project", name: projectName };
 	};
 
+	const handleArchiveNote = (note: DashboardNoteEntry) => {
+		if (!note.path) return;
+		const file = plugin.app.vault.getAbstractFileByPath(note.path);
+		if (file instanceof TFile) {
+			void plugin.flashcardManager.getFrontmatterService().setArchive(file, true);
+		}
+	};
+
+	const handleUnarchiveNote = (note: DashboardNoteEntry) => {
+		if (!note.path) return;
+		const file = plugin.app.vault.getAbstractFileByPath(note.path);
+		if (file instanceof TFile) {
+			void plugin.flashcardManager.getFrontmatterService().setArchive(file, false);
+		}
+	};
+
 	return (
 		<div class="ep:flex ep:flex-col">
 			<div class="ep:shrink-0 ep:mb-3">
@@ -175,6 +192,8 @@ export function NoteList({
 								onCustomStudy={() => handleCustomStudy(item)}
 								onProjectClick={handleProjectClick}
 								onPresetClick={onPresetClick}
+								onArchive={() => handleArchiveNote(item)}
+								onUnarchive={() => handleUnarchiveNote(item)}
 							/>
 						</div>
 					))}

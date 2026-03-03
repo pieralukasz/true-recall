@@ -30,7 +30,7 @@ import { notify } from "@shared/services/notification.service";
 import { lastMutation } from "@shared/services/signals";
 import type { ReviewApi } from "@shared/store";
 import { extractFSRSSettings, type FSRSFlashcardItem, type FSRSPreset } from "@shared/types";
-import type { SelectOption } from "@shared/ui/components/SelectInput";
+import type { PresetPickerOption } from "@features/study/ui/review/components/PresetPopover";
 import { mountPreact } from "@shared/ui/preact";
 import {
 	ItemView,
@@ -298,10 +298,11 @@ export class ReviewView extends ItemView {
 		return this.plugin.presetService.getDefaultPreset();
 	}
 
-	private getPresetOptions(): SelectOption[] {
+	private getPresetOptions(): PresetPickerOption[] {
 		return this.plugin.presetService.getPresets().map((p) => ({
 			value: p.name,
 			label: p.name,
+			retention: p.requestRetention,
 		}));
 	}
 
@@ -358,8 +359,10 @@ export class ReviewView extends ItemView {
 				return;
 			}
 
+			const archivedSourceUids = this.plugin.projectLinkService.getArchivedSourceUids();
 			const activeCards = filterActiveCards(allCards, {
 				stateFilter: this.filters.stateFilter,
+				archivedSourceUids,
 			});
 
 			if (activeCards.length === 0) {

@@ -402,6 +402,40 @@ export class ProjectLinkService {
 		return uids;
 	}
 
+	/** Returns true if the note at the given path has `archive: true` in frontmatter */
+	isNoteArchived(notePath: string): boolean {
+		const [val] = this.frontmatterIndex.getValues("archive", notePath);
+		return val === "true";
+	}
+
+	isProjectArchived(projectPath: string): boolean {
+		return this.isNoteArchived(projectPath);
+	}
+
+	/**
+	 * Returns the set of source UIDs for all cards that should be excluded from
+	 * study sessions and the browser because they belong to archived notes or projects.
+	 */
+	getArchivedSourceUids(): Set<string> {
+		const archivedFiles = this.frontmatterIndex.getFilesByValue("archive", "true");
+		const projectPathSet = new Set(this.getAllProjectPaths());
+		const uids = new Set<string>();
+
+		for (const file of archivedFiles) {
+			if (projectPathSet.has(file.path)) {
+				// Archived project → collect all member UIDs recursively
+				const projectUids = this.getSourceUidsForProject(file.path, true);
+				for (const uid of projectUids) uids.add(uid);
+			} else {
+				// Archived regular note → just its own UID
+				const [uid] = this.frontmatterIndex.getValues("flashcard_uid", file.path);
+				if (uid) uids.add(uid);
+			}
+		}
+
+		return uids;
+	}
+
 	/** Collect UIDs from child folder-projects (used when a Folder Note is also a link-project) */
 	private collectFolderChildUids(
 		folderPath: string,

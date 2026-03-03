@@ -1,7 +1,7 @@
 import { LivePreviewField } from "@features/study/ui/review/components/LivePreviewField";
+import { PresetPopover, type PresetPickerOption } from "@features/study/ui/review/components/PresetPopover";
 import type { FSRSFlashcardItem } from "@shared/types";
 import { Clickable } from "@shared/ui/components";
-import { SelectInput, type SelectOption } from "@shared/ui/components/SelectInput";
 import { cn } from "@shared/ui/utils/cn";
 
 export interface CardContainerProps {
@@ -10,7 +10,7 @@ export interface CardContainerProps {
 	onContentChange: (value: string, field: "question" | "answer") => void;
 	onOpenSourceNote?: () => void;
 	presetName?: string;
-	presetOptions?: SelectOption[];
+	presetOptions?: PresetPickerOption[];
 	onPresetChange?: (presetName: string) => void;
 }
 
@@ -84,14 +84,11 @@ export function CardContainer({
 							</Clickable>
 						)}
 						{presetName && presetOptions && onPresetChange ? (
-							<div class="ep:flex ep:items-center ep:gap-1.5 ep:text-obs-faint ep:text-ui-smaller">
-								<span>FSRS:</span>
-								<SelectInput
-									value={presetName}
-									options={presetOptions}
-									onChange={onPresetChange}
-								/>
-							</div>
+							<PresetPopover
+								value={presetName}
+								options={presetOptions}
+								onChange={onPresetChange}
+							/>
 						) : presetName ? (
 							<span class="ep:text-obs-faint ep:text-ui-smaller">
 								FSRS: {presetName}
