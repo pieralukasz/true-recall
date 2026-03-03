@@ -133,7 +133,6 @@ export function DashboardApp() {
 		void plugin.openReviewViewWithFilters({
 			sourceNoteFilter: noteName,
 			projectPath,
-			ignoreDailyLimits: true,
 		});
 	};
 
