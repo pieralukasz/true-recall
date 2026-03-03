@@ -193,11 +193,20 @@ export function createEmbeddableEditorClass(app: App) {
 
 		onUpdate(update: ViewUpdate, changed: boolean) {
 			super.onUpdate(update, changed);
-			if (update.docChanged) this.options.onChange(update);
 		}
 
 		buildLocalExtensions(): Extension[] {
 			const extensions: Extension[] = super.buildLocalExtensions();
+
+			// Direct CM6 updateListener — fires reliably on every document change,
+			// without depending on Obsidian's internal 'changed' parameter.
+			if (this.options.onChange !== defaultOptions.onChange) {
+				extensions.push(
+					EditorView.updateListener.of((update: ViewUpdate) => {
+						if (update.docChanged) this.options.onChange(update);
+					}),
+				);
+			}
 
 			// Paste handler
 			extensions.push(
