@@ -1,9 +1,10 @@
 import { useSettings } from "@features/settings/hooks/useSettings";
 import type { BackupInterval } from "@shared/types";
 import {
+	FormCard,
+	FormField,
 	InfoBlock,
 	SelectInput,
-	SettingRow,
 	TextInput,
 	ToggleInput,
 } from "@shared/ui/components";
@@ -12,9 +13,7 @@ export function BackgroundBackupSection() {
 	const { settings, save } = useSettings();
 
 	return (
-		<>
-			<SettingRow heading name="Background backup" />
-
+		<FormCard title="Background backup">
 			<InfoBlock>
 				<p>
 					Automatic periodic backups run in the background to protect your data.
@@ -24,7 +23,7 @@ export function BackgroundBackupSection() {
 				</p>
 			</InfoBlock>
 
-			<SettingRow
+			<FormField
 				name="Enable periodic backups"
 				description="Automatically backup database at regular intervals"
 			>
@@ -32,9 +31,9 @@ export function BackgroundBackupSection() {
 					value={settings.periodicBackupEnabled}
 					onChange={(v) => save({ periodicBackupEnabled: v })}
 				/>
-			</SettingRow>
+			</FormField>
 
-			<SettingRow
+			<FormField
 				name="Backup interval"
 				description="How often to create automatic backups (only when changes exist)"
 			>
@@ -51,9 +50,9 @@ export function BackgroundBackupSection() {
 						{ value: "240", label: "Every 4 hours" },
 					]}
 				/>
-			</SettingRow>
+			</FormField>
 
-			<SettingRow
+			<FormField
 				name="Activity-triggered backup"
 				description="Create backup after completing a certain number of reviews"
 			>
@@ -61,9 +60,9 @@ export function BackgroundBackupSection() {
 					value={settings.activityTriggeredBackup}
 					onChange={(v) => save({ activityTriggeredBackup: v })}
 				/>
-			</SettingRow>
+			</FormField>
 
-			<SettingRow
+			<FormField
 				name="Reviews before backup"
 				description="Number of reviews after which to trigger an automatic backup"
 			>
@@ -75,7 +74,7 @@ export function BackgroundBackupSection() {
 					}}
 					placeholder="50"
 				/>
-			</SettingRow>
-		</>
+			</FormField>
+		</FormCard>
 	);
 }

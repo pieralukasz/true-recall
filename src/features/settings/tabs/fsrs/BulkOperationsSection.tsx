@@ -1,6 +1,6 @@
 import { useFsrsHelperOp } from "@features/settings/tabs/fsrs/useFsrsHelperOp";
 import { notify } from "@shared/services/notification.service";
-import { ActionButton, SettingRow, TextInput } from "@shared/ui/components";
+import { ActionButton, FormCard, FormField, TextInput } from "@shared/ui/components";
 import { useCallback, useMemo, useState } from "preact/hooks";
 
 interface BulkOperationsSectionProps {
@@ -76,10 +76,8 @@ export function BulkOperationsSection({ plugin }: BulkOperationsSectionProps) {
 	}, [plugin]);
 
 	return (
-		<>
-			<SettingRow heading name="Bulk operations" />
-
-			<SettingRow
+		<FormCard title="Bulk operations">
+			<FormField
 				name="Reschedule all cards"
 				description="Recalculate all intervals with current FSRS weights (preview first)"
 			>
@@ -89,9 +87,9 @@ export function BulkOperationsSection({ plugin }: BulkOperationsSectionProps) {
 					disabled={rescheduling}
 					onClick={handleReschedule}
 				/>
-			</SettingRow>
+			</FormField>
 
-			<SettingRow
+			<FormField
 				name="Postpone all due cards"
 				description="Push all due cards forward by N days"
 			>
@@ -116,7 +114,7 @@ export function BulkOperationsSection({ plugin }: BulkOperationsSectionProps) {
 						);
 					}}
 				/>
-			</SettingRow>
-		</>
+			</FormField>
+		</FormCard>
 	);
 }

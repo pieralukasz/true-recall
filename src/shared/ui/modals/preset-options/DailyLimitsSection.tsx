@@ -1,5 +1,5 @@
 import type { FSRSPreset } from "@shared/types";
-import { SettingRow, TextInput } from "@shared/ui/components";
+import { FormCard, FormField, TextInput } from "@shared/ui/components";
 
 interface DailyLimitsSectionProps {
 	preset: FSRSPreset;
@@ -11,10 +11,8 @@ export function DailyLimitsSection({
 	updatePreset,
 }: DailyLimitsSectionProps) {
 	return (
-		<>
-			<SettingRow heading name="Daily limits" />
-
-			<SettingRow
+		<FormCard title="Daily limits">
+			<FormField
 				name="New cards per day"
 				description="Maximum new cards introduced per day"
 			>
@@ -27,9 +25,9 @@ export function DailyLimitsSection({
 					}}
 					placeholder="20"
 				/>
-			</SettingRow>
+			</FormField>
 
-			<SettingRow
+			<FormField
 				name="Reviews per day"
 				description="Maximum reviews per day (0 = unlimited)"
 			>
@@ -42,7 +40,7 @@ export function DailyLimitsSection({
 					}}
 					placeholder="200"
 				/>
-			</SettingRow>
-		</>
+			</FormField>
+		</FormCard>
 	);
 }

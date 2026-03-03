@@ -2,7 +2,8 @@ import { useFsrsHelperOp } from "@features/settings/tabs/fsrs/useFsrsHelperOp";
 import type { TrueRecallSettings } from "@shared/types";
 import {
 	ActionButton,
-	SettingRow,
+	FormCard,
+	FormField,
 	SliderInput,
 	TextInput,
 	ToggleInput,
@@ -35,10 +36,8 @@ export function LoadBalanceSection({
 	const { running: balancing, execute } = useFsrsHelperOp(opConfig);
 
 	return (
-		<>
-			<SettingRow heading name="Load balance" />
-
-			<SettingRow
+		<FormCard title="Load balance">
+			<FormField
 				name="Enable load balancing"
 				description="Automatically distribute reviews to prevent workload spikes"
 			>
@@ -46,9 +45,9 @@ export function LoadBalanceSection({
 					value={settings.loadBalanceEnabled}
 					onChange={(v) => save({ loadBalanceEnabled: v })}
 				/>
-			</SettingRow>
+			</FormField>
 
-			<SettingRow
+			<FormField
 				name="Target daily reviews"
 				description="Target number of reviews per day for balancing"
 			>
@@ -60,9 +59,9 @@ export function LoadBalanceSection({
 					}}
 					placeholder="100"
 				/>
-			</SettingRow>
+			</FormField>
 
-			<SettingRow
+			<FormField
 				name="Maximum deviation (%)"
 				description="Allow this much deviation from target before rebalancing"
 			>
@@ -74,9 +73,9 @@ export function LoadBalanceSection({
 					step={5}
 					formatTooltip={(v) => `${v}%`}
 				/>
-			</SettingRow>
+			</FormField>
 
-			<SettingRow
+			<FormField
 				name="Balance workload now"
 				description="Redistribute reviews for the next 30 days"
 			>
@@ -88,7 +87,7 @@ export function LoadBalanceSection({
 						execute(() => plugin.fsrsHelper?.balanceWorkload({ dryRun: false }))
 					}
 				/>
-			</SettingRow>
-		</>
+			</FormField>
+		</FormCard>
 	);
 }

@@ -1,8 +1,9 @@
 import type { FSRSPreset } from "@shared/types";
 import {
 	ActionButton,
+	FormCard,
+	FormField,
 	SelectInput,
-	SettingRow,
 	TextInput,
 } from "@shared/ui/components";
 
@@ -28,10 +29,8 @@ export function PresetSection({
 	onRename,
 }: PresetSectionProps) {
 	return (
-		<>
-			<SettingRow heading name="FSRS presets" />
-
-			<SettingRow
+		<FormCard title="FSRS presets">
+			<FormField
 				name="Active preset"
 				description="Each preset has its own retention target, weights, steps, and daily limits"
 			>
@@ -44,18 +43,18 @@ export function PresetSection({
 				{!isDefault && (
 					<ActionButton label="Delete" variant="danger" onClick={onDelete} />
 				)}
-			</SettingRow>
+			</FormField>
 
 			{!isDefault && (
-				<SettingRow name="Preset name">
+				<FormField name="Preset name">
 					<TextInput
 						value={preset.name}
 						onChange={(v) => {
 							if (v.trim()) onRename(v.trim());
 						}}
 					/>
-				</SettingRow>
+				</FormField>
 			)}
-		</>
+		</FormCard>
 	);
 }

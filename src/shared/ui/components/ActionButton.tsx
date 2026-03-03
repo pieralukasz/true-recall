@@ -16,7 +16,7 @@ export interface ActionButtonProps {
 }
 
 const actionButtonVariants = cva(
-	"ep:border-none ep:py-2.5 ep:px-4 ep:rounded-md ep:cursor-pointer ep:font-medium ep:text-ui-small ep:transition-colors",
+	"ep:border-none ep:py-2 ep:px-4 ep:rounded-md ep:cursor-pointer ep:font-medium ep:text-ui-small ep:transition-colors",
 	{
 		variants: {
 			variant: {
