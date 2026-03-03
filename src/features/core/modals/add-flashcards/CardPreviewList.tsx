@@ -1,6 +1,8 @@
 import type { ParsedCard } from "@features/study/services/flashcard/bulk-card-parser";
 import { BUILTIN_CLOZE_ID } from "@shared/types/note.types";
 
+const MAX_PREVIEW_ITEMS = 100;
+
 interface CardPreviewListProps {
 	cards: ParsedCard[];
 }
@@ -14,6 +16,8 @@ export function CardPreviewList({ cards }: CardPreviewListProps) {
 	const clozeCount = cards.filter(
 		(c) => c.noteTypeId === BUILTIN_CLOZE_ID,
 	).length;
+	const shown = cards.slice(0, MAX_PREVIEW_ITEMS);
+	const hidden = cards.length - shown.length;
 
 	return (
 		<div class="ep:space-y-2">
@@ -26,9 +30,14 @@ export function CardPreviewList({ cards }: CardPreviewListProps) {
 				)}
 			</div>
 			<div class="ep:max-h-[200px] ep:overflow-y-auto ep:space-y-1">
-				{cards.map((card, i) => (
+				{shown.map((card, i) => (
 					<CardPreviewItem key={i} card={card} index={i} />
 				))}
+				{hidden > 0 && (
+					<div class="ep:text-ui-smaller ep:text-obs-faint ep:px-2 ep:py-1">
+						+{hidden} more card{hidden !== 1 ? "s" : ""}
+					</div>
+				)}
 			</div>
 		</div>
 	);
@@ -43,6 +52,7 @@ function CardPreviewItem({
 }) {
 	const isCloze = card.noteTypeId === BUILTIN_CLOZE_ID;
 	const fieldEntries = Object.entries(card.fields);
+	const isMultiField = fieldEntries.length > 2;
 
 	return (
 		<div class="ep:flex ep:items-start ep:gap-2 ep:px-2 ep:py-1.5 ep:bg-obs-secondary ep:rounded ep:text-ui-smaller">
@@ -54,6 +64,15 @@ function CardPreviewItem({
 					<span class="ep:text-obs-normal ep:line-clamp-2">
 						{card.fields.Text}
 					</span>
+				) : isMultiField ? (
+					<div class="ep:flex ep:flex-wrap ep:gap-x-3 ep:gap-y-0.5">
+						{fieldEntries.map(([key, value]) => (
+							<span key={key} class="ep:line-clamp-1">
+								<span class="ep:text-obs-faint">{key}: </span>
+								<span class="ep:text-obs-normal">{value}</span>
+							</span>
+						))}
+					</div>
 				) : (
 					<span class="ep:text-obs-normal ep:line-clamp-1">
 						{fieldEntries[0]?.[1]}

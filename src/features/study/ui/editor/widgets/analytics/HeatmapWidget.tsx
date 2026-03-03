@@ -60,17 +60,20 @@ export function HeatmapWidget({ source }: { source: string }) {
 
 	const config = useMemo(() => parseCodeblockConfig(source), [source]);
 
-	const data = useMemo((): HeatmapData | null => {
+	const statsCalculator = useMemo(() => {
 		if (!plugin.sessionPersistence) return null;
-
-		const statsCalc = new StatsCalculatorService(
+		return new StatsCalculatorService(
 			plugin.fsrsService,
 			plugin.flashcardManager,
 			plugin.sessionPersistence,
 		);
+	}, [plugin]);
+
+	const data = useMemo((): HeatmapData | null => {
+		if (!statsCalculator) return null;
 
 		const months = configValue(config, "months", 12) as number;
-		const allStats = statsCalc.getAllDailyStats();
+		const allStats = statsCalculator.getAllDailyStats();
 
 		const today = new Date();
 		const startDate = new Date(today);
@@ -156,7 +159,7 @@ export function HeatmapWidget({ source }: { source: string }) {
 		}
 
 		return { cells, monthLabels, daysActive, totalReviews, maxWeeks: col + 1 };
-	}, [plugin, ver, config]);
+	}, [statsCalculator, ver, config]);
 
 	if (!data) {
 		return <div class="ep:text-obs-muted ep:text-xs ep:p-3">Loading...</div>;
