@@ -1,9 +1,10 @@
 import type { ParsedCard } from "@features/study/services/flashcard/bulk-card-parser";
 import { Clickable } from "@shared/ui/components/Clickable";
-import { usePlugin } from "@shared/ui/preact/ObsidianContext";
+import { NotePickerCombobox } from "@shared/ui/modals/simple-editor/NotePickerCombobox";
+import { useApp, usePlugin } from "@shared/ui/preact/ObsidianContext";
 import { cn } from "@shared/ui/utils";
-import { useCallback, useState } from "preact/hooks";
-import { Notice } from "obsidian";
+import { useCallback, useMemo, useState } from "preact/hooks";
+import { Notice, TFile } from "obsidian";
 import { QuickTab } from "./QuickTab";
 import { StructuredTab } from "./StructuredTab";
 import {
@@ -27,6 +28,7 @@ export function AddFlashcardsApp({
 	onClose,
 	defaultNoteTypeId,
 }: AddFlashcardsAppProps) {
+	const app = useApp();
 	const plugin = usePlugin();
 	const prefs = loadAddModalPrefs();
 
@@ -34,6 +36,22 @@ export function AddFlashcardsApp({
 		prefs.activeTab,
 	);
 	const [sessionCount, setSessionCount] = useState(0);
+
+	// Source note state — restored from last session
+	const initialSourceNote = useMemo(() => {
+		if (!prefs.lastSourceNotePath) return null;
+		const file = app.vault.getAbstractFileByPath(prefs.lastSourceNotePath);
+		return file instanceof TFile ? file : null;
+	}, [app, prefs.lastSourceNotePath]);
+
+	const [selectedSourceNote, setSelectedSourceNote] = useState<TFile | null>(
+		initialSourceNote,
+	);
+
+	const handleSourceNoteChange = useCallback((note: TFile | null) => {
+		setSelectedSourceNote(note);
+		saveAddModalPrefs({ lastSourceNotePath: note?.path ?? "" });
+	}, []);
 
 	const quickNoteTypeId = defaultNoteTypeId ?? prefs.lastQuickNoteTypeId;
 	const structuredNoteTypeId = defaultNoteTypeId ?? prefs.lastNoteTypeId;
@@ -43,17 +61,31 @@ export function AddFlashcardsApp({
 		saveAddModalPrefs({ activeTab: tab });
 	}, []);
 
+	const resolveSourceUid = useCallback(async (): Promise<string | undefined> => {
+		if (!selectedSourceNote || !plugin.flashcardManager) return undefined;
+		const fmService = plugin.flashcardManager.getFrontmatterService();
+		let uid = await fmService.getSourceNoteUid(selectedSourceNote);
+		if (!uid) {
+			uid = fmService.generateUid();
+			await fmService.setSourceNoteUid(selectedSourceNote, uid);
+		}
+		return uid;
+	}, [selectedSourceNote, plugin.flashcardManager]);
+
 	const handleQuickSave = useCallback(
-		(cards: ParsedCard[]) => {
+		async (cards: ParsedCard[]) => {
 			if (!plugin.flashcardManager?.hasStore()) {
 				new Notice("Database not initialized");
 				return;
 			}
 
+			const sourceUid = await resolveSourceUid();
+
 			const result = plugin.flashcardManager.createNoteBatch(
 				cards.map((c) => ({
 					noteTypeId: c.noteTypeId,
 					fields: c.fields,
+					sourceUid,
 					createdVia: "manual",
 				})),
 			);
@@ -62,19 +94,22 @@ export function AddFlashcardsApp({
 			setSessionCount((prev) => prev + totalCards);
 			new Notice(`Created ${totalCards} card${totalCards !== 1 ? "s" : ""}`);
 		},
-		[plugin.flashcardManager],
+		[plugin.flashcardManager, resolveSourceUid],
 	);
 
 	const handleStructuredSave = useCallback(
-		(noteTypeId: string, fields: Record<string, string>) => {
+		async (noteTypeId: string, fields: Record<string, string>) => {
 			if (!plugin.flashcardManager?.hasStore()) {
 				new Notice("Database not initialized");
 				return;
 			}
 
+			const sourceUid = await resolveSourceUid();
+
 			const result = plugin.flashcardManager.createNote({
 				noteTypeId,
 				fields,
+				sourceUid,
 				createdVia: "manual",
 			});
 
@@ -82,7 +117,7 @@ export function AddFlashcardsApp({
 			setSessionCount((prev) => prev + totalCards);
 			new Notice(`Created ${totalCards} card${totalCards !== 1 ? "s" : ""}`);
 		},
-		[plugin.flashcardManager],
+		[plugin.flashcardManager, resolveSourceUid],
 	);
 
 	const handleQuickNoteTypeChange = useCallback((id: string) => {
@@ -121,6 +156,28 @@ export function AddFlashcardsApp({
 						);
 					})}
 				</div>
+			</div>
+
+			{/* Source note picker */}
+			<div class="ep:flex ep:items-center ep:gap-3">
+				<label class="ep:text-ui-smaller ep:text-obs-muted ep:shrink-0">
+					Source note:
+				</label>
+				<div class="ep:flex-1">
+					<NotePickerCombobox
+						app={app}
+						selectedNote={selectedSourceNote}
+						onSelect={handleSourceNoteChange}
+					/>
+				</div>
+				{selectedSourceNote && (
+					<Clickable
+						class="ep:text-ui-smaller ep:text-obs-muted ep:hover:text-obs-normal"
+						onClick={() => handleSourceNoteChange(null)}
+					>
+						Clear
+					</Clickable>
+				)}
 			</div>
 
 			{/* Tab content */}

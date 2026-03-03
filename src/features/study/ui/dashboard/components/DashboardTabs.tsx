@@ -1,4 +1,5 @@
 import { Clickable } from "@shared/ui/components/Clickable";
+import { useIcon } from "@shared/ui/preact";
 import { cn } from "@shared/ui/utils";
 import type { DashboardTab } from "../types";
 
@@ -7,6 +8,8 @@ interface DashboardTabsProps {
 	onTabChange: (tab: DashboardTab) => void;
 	projectCount: number;
 	notesCount: number;
+	showArchived: boolean;
+	onToggleArchived: () => void;
 }
 
 const TABS: { id: DashboardTab; label: string }[] = [
@@ -14,12 +17,21 @@ const TABS: { id: DashboardTab; label: string }[] = [
 	{ id: "notes", label: "Notes" },
 ];
 
+const CHIP_BASE =
+	"ep:px-2.5 ep:py-1 ep:rounded-full ep:text-ui-smaller ep:font-medium ep:transition-colors ep:duration-150";
+const CHIP_ACTIVE = "ep:bg-obs-interactive/15 ep:text-obs-interactive";
+const CHIP_INACTIVE =
+	"ep:bg-obs-modifier-hover ep:text-obs-muted ep:hover:text-obs-normal";
+
 export function DashboardTabs({
 	activeTab,
 	onTabChange,
 	projectCount,
 	notesCount,
+	showArchived,
+	onToggleArchived,
 }: DashboardTabsProps) {
+	const archiveIconRef = useIcon("archive");
 	const counts: Record<DashboardTab, number> = {
 		projects: projectCount,
 		notes: notesCount,
@@ -27,7 +39,7 @@ export function DashboardTabs({
 
 	return (
 		<div class="ep:border-b ep:border-obs-border">
-			<div class="ep:flex ep:gap-6" role="tablist">
+			<div class="ep:flex ep:items-center ep:gap-6" role="tablist">
 				{TABS.map(({ id, label }) => {
 					const isActive = activeTab === id;
 					const count = counts[id];
@@ -56,6 +68,19 @@ export function DashboardTabs({
 						</Clickable>
 					);
 				})}
+
+				<Clickable
+					class={cn(
+						CHIP_BASE,
+						"ep:ml-auto ep:mb-1 ep:inline-flex ep:items-center ep:gap-1",
+						showArchived ? CHIP_ACTIVE : CHIP_INACTIVE,
+					)}
+					onClick={onToggleArchived}
+					aria-label="Toggle archived items"
+				>
+					<div ref={archiveIconRef} class="ep:w-3 ep:h-3 ep:[&>svg]:w-3 ep:[&>svg]:h-3" />
+					Archived
+				</Clickable>
 			</div>
 		</div>
 	);

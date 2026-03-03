@@ -9,7 +9,7 @@ import { NoteTypePicker } from "./NoteTypePicker";
 interface StructuredTabProps {
 	defaultNoteTypeId: string;
 	onNoteTypeChange: (id: string) => void;
-	onSave: (noteTypeId: string, fields: Record<string, string>) => void;
+	onSave: (noteTypeId: string, fields: Record<string, string>) => void | Promise<void>;
 	onClose: () => void;
 	sessionCount: number;
 }

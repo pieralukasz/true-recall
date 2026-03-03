@@ -4,6 +4,7 @@ export interface AddModalPrefs {
 	activeTab: AddFlashcardsTab;
 	lastNoteTypeId: string;
 	lastQuickNoteTypeId: string;
+	lastSourceNotePath: string;
 }
 
 export const ADD_MODAL_PREFS_KEY = "true-recall:add-modal-prefs";
@@ -19,6 +20,7 @@ export function loadAddModalPrefs(): AddModalPrefs {
 		activeTab: "quick",
 		lastNoteTypeId: "builtin-basic",
 		lastQuickNoteTypeId: "builtin-basic",
+		lastSourceNotePath: "",
 	};
 }
 
