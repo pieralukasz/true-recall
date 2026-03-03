@@ -29,6 +29,18 @@ export {
 	type ErrorBoundaryProps,
 } from "@shared/ui/components/ErrorBoundary";
 export {
+	FormCard,
+	type FormCardProps,
+} from "@shared/ui/components/FormCard";
+export {
+	FormField,
+	type FormFieldProps,
+} from "@shared/ui/components/FormField";
+export {
+	FormSection,
+	type FormSectionProps,
+} from "@shared/ui/components/FormSection";
+export {
 	IconButton,
 	type IconButtonProps,
 } from "@shared/ui/components/IconButton";
@@ -82,10 +94,6 @@ export {
 	type SelectOption,
 	type SelectOptionGroup,
 } from "@shared/ui/components/SelectInput";
-export {
-	SettingRow,
-	type SettingRowProps,
-} from "@shared/ui/components/SettingRow";
 export {
 	SliderInput,
 	type SliderInputProps,

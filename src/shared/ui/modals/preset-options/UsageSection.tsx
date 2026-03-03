@@ -1,5 +1,5 @@
 import type { FSRSPreset } from "@shared/types";
-import { SettingRow } from "@shared/ui/components";
+import { FormCard } from "@shared/ui/components";
 import { usePlugin } from "@shared/ui/preact";
 import { useMemo } from "preact/hooks";
 
@@ -24,9 +24,8 @@ export function UsageSection({ preset }: UsageSectionProps) {
 	if (usage.count === 0) return null;
 
 	return (
-		<>
-			<SettingRow heading name="Usage" />
-			<div class="ep:px-4 ep:py-2 ep:text-ui-small ep:text-obs-muted">
+		<FormCard title="Usage">
+			<div class="ep:py-2 ep:text-ui-small ep:text-obs-muted">
 				<p>
 					{usage.count} {usage.count === 1 ? "note" : "notes"} using
 					this preset
@@ -38,6 +37,6 @@ export function UsageSection({ preset }: UsageSectionProps) {
 					</p>
 				)}
 			</div>
-		</>
+		</FormCard>
 	);
 }

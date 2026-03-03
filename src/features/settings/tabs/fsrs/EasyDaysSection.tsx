@@ -1,7 +1,7 @@
 import { EasyDaysModal } from "@features/metrics/modals/EasyDaysModal";
 import { notify } from "@shared/services/notification.service";
 import type { TrueRecallSettings } from "@shared/types";
-import { ActionButton, InfoBlock, SettingRow } from "@shared/ui/components";
+import { ActionButton, FormCard, FormField, InfoBlock } from "@shared/ui/components";
 import type { App } from "obsidian";
 import { useCallback } from "preact/hooks";
 
@@ -95,9 +95,7 @@ export function EasyDaysSection({
 	}, [plugin, pushUndo]);
 
 	return (
-		<>
-			<SettingRow heading name="Easy days" />
-
+		<FormCard title="Easy days">
 			<InfoBlock>
 				<p>
 					Reduce your review workload on specific days (recurring weekdays or
@@ -106,7 +104,7 @@ export function EasyDaysSection({
 				</p>
 			</InfoBlock>
 
-			<SettingRow
+			<FormField
 				name="Easy days"
 				description={`Recurring: ${recurringDaysText} | Specific dates: ${specificDatesCount} | Workload: ${Math.round(settings.easyDaysMultiplier * 100)}%`}
 			>
@@ -120,7 +118,7 @@ export function EasyDaysSection({
 					variant="secondary"
 					onClick={handleApplyNow}
 				/>
-			</SettingRow>
-		</>
+			</FormField>
+		</FormCard>
 	);
 }
