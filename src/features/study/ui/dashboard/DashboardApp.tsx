@@ -46,11 +46,16 @@ export function DashboardApp() {
 		metadataVersion,
 	);
 
+	const showArchived = useSignal(false);
+
 	const data = useMemo((): DashboardAggregation => {
 		const allCards = plugin.flashcardManager.getAllFSRSCards();
 		const streakInfo = statsCalculator.getStreakInfo();
 		const todaySummary = statsCalculator.getTodaySummary();
-		const archivedSourceUids = plugin.projectLinkService.getArchivedSourceUids();
+		// When showing archived, pass undefined so no cards are filtered out
+		const archivedSourceUids = showArchived.value
+			? undefined
+			: plugin.projectLinkService.getArchivedSourceUids();
 
 		return aggregateDashboardData({
 			allCards,
@@ -60,11 +65,12 @@ export function DashboardApp() {
 			reviewsCap: plugin.settings.reviewsPerDay,
 			archivedSourceUids,
 		});
-	}, [plugin, statsCalculator, refreshTick]);
+	}, [plugin, statsCalculator, refreshTick, showArchived.value]);
 
 	const projectData = useMemo(() => {
 		return aggregateProjectData({
 			notes: data.notes,
+			showArchived: showArchived.value,
 			plugin: {
 				projectLinkService: plugin.projectLinkService,
 				cardStore: plugin.cardStore,
@@ -74,7 +80,7 @@ export function DashboardApp() {
 				settings: plugin.settings,
 			},
 		});
-	}, [plugin, data.notes, refreshTick]);
+	}, [plugin, data.notes, refreshTick, showArchived.value]);
 
 	const enrichedNotes = useMemo(() => {
 		const newStudied = plugin.sessionPersistence.getNewCardsStudiedToday();
@@ -89,15 +95,21 @@ export function DashboardApp() {
 			const newCap = preset?.newCardsPerDay ?? plugin.settings.newCardsPerDay;
 			const reviewsCap = preset?.reviewsPerDay ?? plugin.settings.reviewsPerDay;
 
+			const archived =
+				showArchived.value && note.path
+					? plugin.projectLinkService.isNoteArchived(note.path)
+					: undefined;
+
 			return {
 				...note,
 				projects,
 				presetName: preset?.name,
 				newCount: Math.min(note.newCount, Math.max(0, newCap - newStudied)),
 				due: Math.min(note.due, Math.max(0, reviewsCap - reviewsCompleted)),
+				...(archived ? { archived } : {}),
 			};
 		});
-	}, [data.notes, projectData.noteProjectMap, plugin, refreshTick]);
+	}, [data.notes, projectData.noteProjectMap, plugin, refreshTick, showArchived.value]);
 
 	const allProjectNames = useMemo(() => {
 		const names = new Set<string>();
@@ -227,6 +239,10 @@ export function DashboardApp() {
 							onTabChange={handleTabChange}
 							projectCount={projectData.projects.length}
 							notesCount={enrichedNotes.length}
+							showArchived={showArchived.value}
+							onToggleArchived={() => {
+								showArchived.value = !showArchived.value;
+							}}
 						/>
 					</div>
 

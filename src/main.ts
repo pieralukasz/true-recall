@@ -61,7 +61,10 @@ import {
 	VIEW_TYPE_SIMULATOR,
 	VIEW_TYPE_STATS,
 } from "@shared/constants";
-import { notify } from "@shared/services/notification.service";
+import {
+	NOTIFICATION_DURATION,
+	notify,
+} from "@shared/services/notification.service";
 import { metadataVersion, settingsVersion } from "@shared/services/signals";
 import { UndoService } from "@shared/services/undo.service";
 import { type AppStore, createAppStore } from "@shared/store";
@@ -763,7 +766,20 @@ export default class TrueRecallPlugin extends Plugin {
 	private async initializeCardStore(deviceId: string): Promise<void> {
 		try {
 			this.cardStore = new SqliteStoreService(this.app, deviceId);
-			await this.cardStore.load();
+
+			try {
+				await this.cardStore.load();
+			} catch (loadError) {
+				console.warn("[True Recall] Database load failed, attempting auto-recovery from backup...");
+				const recovered = await this.tryAutoRecoverFromBackup(deviceId);
+				if (recovered) {
+					this.cardStore = new SqliteStoreService(this.app, deviceId);
+					await this.cardStore.load();
+				} else {
+					throw loadError;
+				}
+			}
+
 			this.flashcardManager.setStore(this.cardStore);
 
 			this.sessionPersistence = new SessionPersistenceService(
@@ -813,6 +829,59 @@ export default class TrueRecallPlugin extends Plugin {
 			console.error("[True Recall] Failed to initialize SQLite store:", error);
 			notify().error("Failed to load flashcard data. Please restart Obsidian.");
 		}
+	}
+
+	private async tryAutoRecoverFromBackup(deviceId: string): Promise<boolean> {
+		const backupFolder = normalizePath(`${DB_FOLDER}/backups/${deviceId}`);
+		const dbPath = normalizePath(`${DB_FOLDER}/${getDeviceDbFilename(deviceId)}`);
+
+		try {
+			const folderExists = await this.app.vault.adapter.exists(backupFolder);
+			if (!folderExists) return false;
+
+			const listing = await this.app.vault.adapter.list(backupFolder);
+			const backupFiles = listing.files
+				.filter((f) => {
+					const name = f.split("/").pop() || "";
+					return name.startsWith("true-recall-backup-") && name.endsWith(".db");
+				})
+				.sort()
+				.reverse(); // newest first (filenames are timestamped)
+
+			for (const backupPath of backupFiles) {
+				try {
+					const stat = await this.app.vault.adapter.stat(backupPath);
+					if (!stat || stat.size < 100) continue;
+
+					const data = await this.app.vault.adapter.readBinary(backupPath);
+					const header = new TextDecoder().decode(new Uint8Array(data).slice(0, 16));
+					if (!header.startsWith("SQLite format 3")) continue;
+
+					// Valid backup found — rename corrupted file and restore
+					const corruptedPath = `${dbPath}.corrupted`;
+					const corruptedExists = await this.app.vault.adapter.exists(corruptedPath);
+					if (corruptedExists) {
+						await this.app.vault.adapter.remove(corruptedPath);
+					}
+					await this.app.vault.adapter.rename(dbPath, corruptedPath);
+					await this.app.vault.adapter.writeBinary(dbPath, data);
+
+					const backupName = backupPath.split("/").pop() || "";
+					console.log(`[True Recall] Auto-recovered from backup: ${backupName}`);
+					notify().success(
+						`Database was corrupted. Auto-restored from backup: ${backupName}`,
+						NOTIFICATION_DURATION.PERSIST,
+					);
+					return true;
+				} catch {
+					continue;
+				}
+			}
+		} catch (error) {
+			console.error("[True Recall] Auto-recovery failed:", error);
+		}
+
+		return false;
 	}
 
 	private initializeStore(): void {

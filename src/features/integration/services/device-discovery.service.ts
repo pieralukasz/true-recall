@@ -167,18 +167,29 @@ export class DeviceDiscoveryService {
 		try {
 			db = new SQL.Database(data);
 
-			// Get card count
-			const countResult = db.exec("SELECT COUNT(*) FROM cards");
-			const cardCount = countResult[0]?.values[0]?.[0] as number | null;
+			let cardCount: number | null = null;
+			let lastReviewDate: Date | null = null;
 
-			// Get last review date from review_log
-			const lastReviewResult = db.exec("SELECT MAX(timestamp) FROM review_log");
-			const lastReviewTimestamp = lastReviewResult[0]?.values[0]?.[0] as
-				| number
-				| null;
-			const lastReviewDate = lastReviewTimestamp
-				? new Date(lastReviewTimestamp)
-				: null;
+			try {
+				const countResult = db.exec("SELECT COUNT(*) FROM cards");
+				cardCount = countResult[0]?.values[0]?.[0] as number | null;
+			} catch {
+				// Table may not exist in old/empty databases
+			}
+
+			try {
+				const lastReviewResult = db.exec(
+					"SELECT MAX(reviewed_at) FROM review_log",
+				);
+				const lastReviewValue = lastReviewResult[0]?.values[0]?.[0] as
+					| string
+					| null;
+				lastReviewDate = lastReviewValue
+					? new Date(lastReviewValue)
+					: null;
+			} catch {
+				// Table may not exist in old/empty databases
+			}
 
 			return { cardCount, lastReviewDate };
 		} finally {
