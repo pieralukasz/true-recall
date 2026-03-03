@@ -19,6 +19,7 @@ import { PresetService } from "@features/core/services/preset.service";
 import { FolderProjectService } from "@features/core/services/folder-project.service";
 import { ProjectLinkService } from "@features/core/services/project-link.service";
 import { AddFlashcardsModal } from "@features/core/modals/AddFlashcardsModal";
+import { ImportStudioModal } from "@features/core/modals/import-studio/ImportStudioModal";
 import { NoteTypeManagerModal } from "@features/core/modals/NoteTypeManagerModal";
 import { QuickNoteEditorModal } from "@features/study/modals/quick-note-editor/QuickNoteEditorModal";
 import { AnkiExportModal } from "@features/integration/modals/AnkiExportModal";
@@ -497,6 +498,10 @@ export default class TrueRecallPlugin extends Plugin {
 
 	openAddFlashcards(options?: { defaultNoteTypeId?: string }): void {
 		new AddFlashcardsModal(this.app, this, options).open();
+	}
+
+	openImportStudio(options?: { defaultNoteTypeId?: string }): void {
+		new ImportStudioModal(this.app, this, options).open();
 	}
 
 	openQuickNoteEditor(defaultNoteTypeId?: string): void {
