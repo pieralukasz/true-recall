@@ -124,13 +124,12 @@ function insertV26Card(
 		lapses?: number;
 		suspended?: boolean;
 		sourceUid?: string;
-		fsrsPreset?: string;
 	},
 ): void {
 	db.run(
 		`INSERT INTO cards (id, note_id, template_ord, due, stability, difficulty,
-		 reps, lapses, state, suspended, created_at, updated_at, source_uid, fsrs_preset)
-		 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+		 reps, lapses, state, suspended, created_at, updated_at, source_uid)
+		 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
 		[
 			card.id,
 			card.noteId,
@@ -145,7 +144,6 @@ function insertV26Card(
 			Date.now(),
 			Date.now(),
 			card.sourceUid ?? null,
-			card.fsrsPreset ?? null,
 		],
 	);
 }

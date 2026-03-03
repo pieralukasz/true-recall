@@ -152,6 +152,9 @@ export default class TrueRecallPlugin extends Plugin {
 		this.frontmatterIndex.onFieldChange("project", () => {
 			metadataVersion.value++;
 		});
+		this.frontmatterIndex.onFieldChange("fsrs_preset", () => {
+			metadataVersion.value++;
+		});
 		this.frontmatterIndex.registerEvents(this);
 
 		// Build index after metadataCache is fully loaded

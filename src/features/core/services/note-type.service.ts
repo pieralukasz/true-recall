@@ -27,50 +27,152 @@ export class NoteTypeService {
 	constructor(private deps: NoteTypeServiceDeps) {}
 
 	initialize(): void {
-		throw new Error("Not implemented");
+		this.deps.noteTypeActions.seedBuiltinTypes();
 	}
 
-	getById(_id: string): NoteType | null {
-		throw new Error("Not implemented");
+	getById(id: string): NoteType | null {
+		return this.deps.noteTypeActions.getById(id);
 	}
 
 	getAll(): NoteType[] {
-		throw new Error("Not implemented");
+		return this.deps.noteTypeActions.getAll();
 	}
 
-	create(_input: {
+	create(input: {
 		name: string;
 		fields: string[];
 		templates: CardTemplate[];
 		css?: string;
 	}): NoteType {
-		throw new Error("Not implemented");
+		const name = input.name.trim();
+
+		if (input.fields.length === 0) {
+			throw new Error("Note type must have at least one field");
+		}
+		if (input.templates.length === 0) {
+			throw new Error("Note type must have at least one template");
+		}
+
+		// Check duplicate name
+		const existing = this.deps.noteTypeActions.getAll();
+		if (existing.some((nt) => nt.name === name)) {
+			throw new Error(`Note type with name "${name}" already exists`);
+		}
+
+		const now = Date.now();
+		const noteType: NoteType = {
+			id: crypto.randomUUID(),
+			name,
+			type: 0,
+			fields: input.fields,
+			templates: input.templates,
+			css: input.css ?? "",
+			isBuiltin: false,
+			createdAt: now,
+			updatedAt: now,
+		};
+
+		this.deps.noteTypeActions.create(noteType);
+		return noteType;
 	}
 
 	update(
-		_id: string,
-		_updates: Partial<Pick<NoteType, "name" | "fields" | "templates" | "css">>,
+		id: string,
+		updates: Partial<Pick<NoteType, "name" | "fields" | "templates" | "css">>,
 	): void {
-		throw new Error("Not implemented");
+		const existing = this.deps.noteTypeActions.getById(id);
+		if (!existing) {
+			throw new Error(`Note type "${id}" not found`);
+		}
+		if (existing.isBuiltin) {
+			throw new Error("Cannot update built-in note types");
+		}
+
+		this.deps.noteTypeActions.update(id, updates);
 	}
 
-	delete(_id: string): void {
-		throw new Error("Not implemented");
+	delete(id: string): void {
+		const existing = this.deps.noteTypeActions.getById(id);
+		if (!existing) {
+			throw new Error(`Note type "${id}" not found`);
+		}
+		if (existing.isBuiltin) {
+			throw new Error("Cannot delete built-in note types");
+		}
+
+		const noteCount = this.deps.noteActions.countByNoteType(id);
+		if (noteCount > 0) {
+			throw new Error(
+				`Cannot delete note type "${existing.name}": ${noteCount} notes are using it`,
+			);
+		}
+
+		this.deps.noteTypeActions.delete(id);
 	}
 
-	addField(_noteTypeId: string, _fieldName: string): void {
-		throw new Error("Not implemented");
+	addField(noteTypeId: string, fieldName: string): void {
+		const existing = this.deps.noteTypeActions.getById(noteTypeId);
+		if (!existing) {
+			throw new Error(`Note type "${noteTypeId}" not found`);
+		}
+		if (existing.isBuiltin) {
+			throw new Error("Cannot modify built-in note types");
+		}
+
+		const fields = [...existing.fields, fieldName];
+		this.deps.noteTypeActions.update(noteTypeId, { fields });
 	}
 
-	removeField(_noteTypeId: string, _fieldName: string): void {
-		throw new Error("Not implemented");
+	removeField(noteTypeId: string, fieldName: string): void {
+		const existing = this.deps.noteTypeActions.getById(noteTypeId);
+		if (!existing) {
+			throw new Error(`Note type "${noteTypeId}" not found`);
+		}
+		if (existing.isBuiltin) {
+			throw new Error("Cannot modify built-in note types");
+		}
+		if (existing.fields.length <= 1) {
+			throw new Error("Cannot remove the last field from a note type");
+		}
+
+		const fields = existing.fields.filter((f) => f !== fieldName);
+		this.deps.noteTypeActions.update(noteTypeId, { fields });
 	}
 
 	renameField(
-		_noteTypeId: string,
-		_oldName: string,
-		_newName: string,
+		noteTypeId: string,
+		oldName: string,
+		newName: string,
 	): void {
-		throw new Error("Not implemented");
+		const existing = this.deps.noteTypeActions.getById(noteTypeId);
+		if (!existing) {
+			throw new Error(`Note type "${noteTypeId}" not found`);
+		}
+		if (existing.isBuiltin) {
+			throw new Error("Cannot modify built-in note types");
+		}
+
+		const fields = existing.fields.map((f) =>
+			f === oldName ? newName : f,
+		);
+
+		// Also update templates that reference the old field name
+		const templates = existing.templates.map((t) => ({
+			...t,
+			qfmt: t.qfmt.replace(
+				new RegExp(`\\{\\{\\s*${escapeRegex(oldName)}\\s*\\}\\}`, "g"),
+				`{{${newName}}}`,
+			),
+			afmt: t.afmt.replace(
+				new RegExp(`\\{\\{\\s*${escapeRegex(oldName)}\\s*\\}\\}`, "g"),
+				`{{${newName}}}`,
+			),
+		}));
+
+		this.deps.noteTypeActions.update(noteTypeId, { fields, templates });
 	}
+}
+
+function escapeRegex(s: string): string {
+	return s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 }
