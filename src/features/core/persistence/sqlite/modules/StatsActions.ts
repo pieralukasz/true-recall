@@ -27,7 +27,19 @@ export interface ReviewLogForSync {
 }
 
 export class StatsActions {
+	private _isV26: boolean | null = null;
+
 	constructor(private db: SqliteDatabase) {}
+
+	private get isV26(): boolean {
+		if (this._isV26 === null) {
+			const meta = this.db.get<{ value: string }>(
+				`SELECT value FROM meta WHERE key = 'schema_version'`,
+			);
+			this._isV26 = meta ? parseInt(meta.value, 10) >= 26 : false;
+		}
+		return this._isV26;
+	}
 
 	addReviewLog(
 		cardId: string,
@@ -554,6 +566,52 @@ export class StatsActions {
 	 * Get problem cards (high lapses, low stability, or relearning state)
 	 */
 	getProblemCards(limit = 20): ProblemCard[] {
+		if (this.isV26) {
+			const rows = this.db.query<{
+				id: string;
+				fieldsJson: string;
+				lapses: number;
+				stability: number;
+				difficulty: number;
+				problem_type: ProblemCard["problemType"];
+			}>(
+				`
+				SELECT
+					c.id,
+					n.fields_json AS fieldsJson,
+					c.lapses,
+					c.stability,
+					c.difficulty,
+					c.state,
+					CASE
+						WHEN c.lapses > 3 THEN 'high_lapses'
+						WHEN c.stability < 2.0 THEN 'low_stability'
+						WHEN c.state = 3 THEN 'relearning'
+						ELSE 'unknown'
+					END as problem_type
+				FROM cards c
+				JOIN notes n ON c.note_id = n.id
+				WHERE c.deleted_at IS NULL AND c.suspended = 0
+				  AND (c.lapses > 3 OR c.stability < 2.0 OR c.state = 3)
+				ORDER BY c.lapses DESC, c.stability ASC
+				LIMIT ?
+			`,
+				[limit],
+			);
+
+			return rows.map((r) => {
+				const fields = JSON.parse(r.fieldsJson) as Record<string, string>;
+				return {
+					id: r.id,
+					question: Object.values(fields)[0] ?? "",
+					lapses: r.lapses,
+					stability: r.stability,
+					difficulty: r.difficulty,
+					problemType: r.problem_type,
+				};
+			});
+		}
+
 		const rows = this.db.query<{
 			id: string;
 			question: string;
@@ -1095,7 +1153,33 @@ export class StatsActions {
 	}
 
 	getCreationSourcePerformance(): CreationSourceStats[] {
-		const rows = this.db.query<{
+		if (this.isV26) {
+			return this.db.query<{
+				source: string;
+				cardCount: number;
+				avgLapses: number;
+				retentionRate: number | null;
+			}>(
+				`
+				SELECT
+					COALESCE(n.created_via, 'manual') as source,
+					COUNT(DISTINCT c.id) as cardCount,
+					AVG(c.lapses) as avgLapses,
+					ROUND(100.0 * SUM(CASE WHEN r.rating >= 3 THEN 1 ELSE 0 END) /
+						  NULLIF(COUNT(r.id), 0), 1) as retentionRate
+				FROM cards c
+				JOIN notes n ON c.note_id = n.id
+				LEFT JOIN review_log r
+					ON c.id = r.card_id AND r.deleted_at IS NULL AND r.state = 2
+				WHERE c.deleted_at IS NULL
+				GROUP BY source
+				ORDER BY source ASC
+			`,
+				[],
+			);
+		}
+
+		return this.db.query<{
 			source: string;
 			cardCount: number;
 			avgLapses: number;
@@ -1117,7 +1201,5 @@ export class StatsActions {
         `,
 			[],
 		);
-
-		return rows;
 	}
 }

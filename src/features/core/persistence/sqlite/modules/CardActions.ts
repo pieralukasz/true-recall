@@ -239,10 +239,12 @@ function mapRowV26(row: CardRowV26): FSRSCardData {
 	if (template) {
 		const context = { fields, clozeIndex: row.templateOrd };
 		question = renderTemplate(template.qfmt, context);
+		// Pass empty frontSide — UI shows question separately, so {{FrontSide}} should not duplicate it
 		answer = renderTemplate(template.afmt, {
 			...context,
-			frontSide: question,
+			frontSide: "",
 		});
+		answer = answer.replace(/^\s*<hr\s*\/?>\s*/i, "");
 	}
 
 	const isCloze = noteTypeInfo.type === 1;
@@ -291,6 +293,10 @@ export class CardActions {
 	private _isV26: boolean | null = null;
 
 	constructor(private db: SqliteDatabase) {}
+
+	get v26(): boolean {
+		return this.isV26;
+	}
 
 	private get isV26(): boolean {
 		if (this._isV26 === null) {

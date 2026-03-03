@@ -184,7 +184,7 @@ describe("CardActions v26 (with note types)", () => {
 			expect(card!.question).toBe("What is ATP?");
 		});
 
-		it("get() returns card with computed answer including FrontSide", () => {
+		it("get() returns card with computed answer without FrontSide (UI shows question separately)", () => {
 			insertNoteDirect(
 				db,
 				createTestNote({
@@ -197,7 +197,7 @@ describe("CardActions v26 (with note types)", () => {
 
 			const card = cards.get("card-2");
 			expect(card).toBeDefined();
-			expect(card!.answer).toBe("Capital of France?<hr>Paris");
+			expect(card!.answer).toBe("Paris");
 		});
 
 		it("get() returns card with cardType = 'basic'", () => {
@@ -311,14 +311,14 @@ describe("CardActions v26 (with note types)", () => {
 			expect(card!.cardType).toBe("reversed");
 		});
 
-		it("template_ord=0 answer includes FrontSide + Back", () => {
+		it("template_ord=0 answer is Back only (FrontSide stripped)", () => {
 			const card = cards.get("rev-card-0");
-			expect(card!.answer).toBe("Dog<hr>Perro");
+			expect(card!.answer).toBe("Perro");
 		});
 
-		it("template_ord=1 answer includes FrontSide + Front", () => {
+		it("template_ord=1 answer is Front only (FrontSide stripped)", () => {
 			const card = cards.get("rev-card-1");
-			expect(card!.answer).toBe("Perro<hr>Dog");
+			expect(card!.answer).toBe("Dog");
 		});
 	});
 
