@@ -82,6 +82,24 @@ export function PresetOptionsBody({
 		refresh();
 	}, [plugin, preset.id, settings.defaultPresetId, refresh]);
 
+	const handlePresetChange = useCallback(
+		async (newPresetId: string) => {
+			setSelectedPresetId(newPresetId);
+
+			if (!context?.contextPath) return;
+			const newPreset = presets.find((p) => p.id === newPresetId);
+			if (!newPreset) return;
+			const file = plugin.app.vault.getFileByPath(context.contextPath);
+			if (!file) return;
+			const frontmatterService =
+				plugin.flashcardManager?.getFrontmatterService();
+			if (!frontmatterService) return;
+			await frontmatterService.setFsrsPreset(file, newPreset.name);
+			refresh();
+		},
+		[plugin, context, presets, refresh],
+	);
+
 	const handleSetForContext = useCallback(async () => {
 		if (!context?.contextPath) return;
 		const file = plugin.app.vault.getFileByPath(context.contextPath);
@@ -96,28 +114,30 @@ export function PresetOptionsBody({
 	}, [plugin, context, preset.name, refresh]);
 
 	return (
-		<div class="ep:max-h-[70vh] ep:overflow-y-auto">
-			<PresetSelector
-				presets={presets}
-				preset={preset}
-				isDefault={isDefault}
-				onPresetChange={setSelectedPresetId}
-				onCreate={handleCreate}
-				onDelete={handleDelete}
-				onRename={(name) => void updatePreset({ name })}
-			/>
+		<div class="ep:flex ep:flex-col ep:flex-1 ep:min-h-0">
+			<div class="ep:flex-1 ep:overflow-y-auto ep:min-h-0">
+				<PresetSelector
+					presets={presets}
+					preset={preset}
+					isDefault={isDefault}
+					onPresetChange={(id) => void handlePresetChange(id)}
+					onCreate={handleCreate}
+					onDelete={handleDelete}
+					onRename={(name) => void updatePreset({ name })}
+				/>
 
-			<DailyLimitsSection preset={preset} updatePreset={updatePreset} />
-			<NewCardsSection preset={preset} updatePreset={updatePreset} />
-			<LapsesSection preset={preset} updatePreset={updatePreset} />
-			<SchedulingSection preset={preset} updatePreset={updatePreset} />
-			<ParametersSection
-				preset={preset}
-				updatePreset={updatePreset}
-				plugin={plugin}
-				onRefresh={refresh}
-			/>
-			<UsageSection preset={preset} />
+				<DailyLimitsSection preset={preset} updatePreset={updatePreset} />
+				<NewCardsSection preset={preset} updatePreset={updatePreset} />
+				<LapsesSection preset={preset} updatePreset={updatePreset} />
+				<SchedulingSection preset={preset} updatePreset={updatePreset} />
+				<ParametersSection
+					preset={preset}
+					updatePreset={updatePreset}
+					plugin={plugin}
+					onRefresh={refresh}
+				/>
+				<UsageSection preset={preset} />
+			</div>
 
 			<div class="ep-modal-footer ep:flex ep:items-center ep:justify-between ep:gap-2 ep:pt-3 ep:mt-2 ep:border-t ep:border-obs-border">
 				{context?.contextPath && (
