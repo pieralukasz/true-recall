@@ -1,9 +1,10 @@
-import type { FrontmatterIndexService } from "@features/core/services/frontmatter-index.service";
 import type { FSRSService } from "@features/core/services/fsrs.service";
+import type { PresetService } from "@features/core/services/preset.service";
 import type {
 	ProjectLinkService,
 	ProjectNode,
 } from "@features/core/services/project-link.service";
+import type { SessionPersistenceService } from "@features/core/persistence/session-persistence.service";
 import type { CardStore } from "@shared/types/fsrs/store.types";
 import {
 	computeProjectStats,
@@ -21,7 +22,9 @@ interface ProjectAggregationDeps {
 		projectLinkService: ProjectLinkService;
 		cardStore: CardStore;
 		fsrsService: FSRSService;
-		frontmatterIndex?: FrontmatterIndexService;
+		presetService: PresetService;
+		sessionPersistence: SessionPersistenceService;
+		settings: { newCardsPerDay: number; reviewsPerDay: number };
 	};
 }
 
@@ -91,17 +94,21 @@ function buildProjectFromNode(
 		buildProjectFromNode(child, noteByPath, noteByName, plugin),
 	);
 
-	const presetName = plugin.frontmatterIndex
-		? lookupPresetName(plugin.frontmatterIndex, node.path)
-		: undefined;
+	// Cap counts at preset daily limits minus today's progress
+	const preset = plugin.presetService.resolvePresetChain(node.path).effective.preset;
+	const presetName = preset.name;
+	const newStudied = plugin.sessionPersistence.getNewCardsStudiedToday();
+	const reviewsCompleted = plugin.sessionPersistence.getReviewCardsCompletedToday();
+	const newCap = preset.newCardsPerDay;
+	const reviewsCap = preset.reviewsPerDay;
 
 	return {
 		name: stats.name,
 		path: stats.path,
 		healthPct: stats.healthPct,
-		newCount: stats.newCount,
+		newCount: Math.min(stats.newCount, Math.max(0, newCap - newStudied)),
 		learning: stats.learning,
-		due: stats.due,
+		due: Math.min(stats.due, Math.max(0, reviewsCap - reviewsCompleted)),
 		totalCards: stats.totalCards,
 		childCount: stats.childCount,
 		lastReviewed: stats.lastReviewed,
@@ -133,12 +140,4 @@ function buildNoteProjectMap(
 
 	for (const p of projects) walk(p);
 	return map;
-}
-
-function lookupPresetName(
-	frontmatterIndex: FrontmatterIndexService,
-	path: string,
-): string | undefined {
-	const values = frontmatterIndex.getValues("fsrs_preset", path);
-	return values.length > 0 && values[0] ? values[0] : undefined;
 }

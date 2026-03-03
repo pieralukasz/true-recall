@@ -67,25 +67,35 @@ export function DashboardApp() {
 				projectLinkService: plugin.projectLinkService,
 				cardStore: plugin.cardStore,
 				fsrsService: plugin.fsrsService,
-				frontmatterIndex: plugin.frontmatterIndex,
+				presetService: plugin.presetService,
+				sessionPersistence: plugin.sessionPersistence,
+				settings: plugin.settings,
 			},
 		});
 	}, [plugin, data.notes, refreshTick]);
 
 	const enrichedNotes = useMemo(() => {
+		const newStudied = plugin.sessionPersistence.getNewCardsStudiedToday();
+		const reviewsCompleted = plugin.sessionPersistence.getReviewCardsCompletedToday();
+
 		return data.notes.map((note) => {
 			const projects = projectData.noteProjectMap.get(note.name) ?? [];
-			let presetName: string | undefined;
-			if (note.path) {
-				const vals = plugin.frontmatterIndex.getValues(
-					"fsrs_preset",
-					note.path,
-				);
-				if (vals.length > 0 && vals[0]) presetName = vals[0];
-			}
-			return { ...note, projects, presetName };
+
+			const preset = note.path
+				? plugin.presetService.resolvePresetChain(note.path).effective.preset
+				: null;
+			const newCap = preset?.newCardsPerDay ?? plugin.settings.newCardsPerDay;
+			const reviewsCap = preset?.reviewsPerDay ?? plugin.settings.reviewsPerDay;
+
+			return {
+				...note,
+				projects,
+				presetName: preset?.name,
+				newCount: Math.min(note.newCount, Math.max(0, newCap - newStudied)),
+				due: Math.min(note.due, Math.max(0, reviewsCap - reviewsCompleted)),
+			};
 		});
-	}, [data.notes, projectData.noteProjectMap, plugin]);
+	}, [data.notes, projectData.noteProjectMap, plugin, refreshTick]);
 
 	const allProjectNames = useMemo(() => {
 		const names = new Set<string>();
