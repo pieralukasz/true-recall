@@ -193,7 +193,7 @@ export function createEmbeddableEditorClass(app: App) {
 
 		onUpdate(update: ViewUpdate, changed: boolean) {
 			super.onUpdate(update, changed);
-			if (changed) this.options.onChange(update);
+			if (update.docChanged) this.options.onChange(update);
 		}
 
 		buildLocalExtensions(): Extension[] {
