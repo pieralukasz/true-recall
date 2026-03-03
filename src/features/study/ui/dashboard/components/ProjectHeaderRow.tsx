@@ -25,6 +25,7 @@ interface ProjectHeaderRowProps {
 	onPresetClick?: (projectPath: string) => void;
 	onArchive?: () => void;
 	onUnarchive?: () => void;
+	onRename?: () => void;
 }
 
 export function ProjectHeaderRow({
@@ -38,6 +39,7 @@ export function ProjectHeaderRow({
 	onPresetClick,
 	onArchive,
 	onUnarchive,
+	onRename,
 }: ProjectHeaderRowProps) {
 	const activeDue = project.due + project.newCount + project.learning;
 	const priority = computePriority({ overdueCount: 0, due: project.due, learning: project.learning, newCount: project.newCount });
@@ -46,6 +48,7 @@ export function ProjectHeaderRow({
 		{ title: "Study project", icon: "play", onClick: onStudyProject },
 		{ title: "Custom session", icon: "sliders-horizontal", onClick: onCustomStudy },
 		{ title: "Go to project note", icon: "file-text", onClick: onNavigate },
+		{ title: "Rename", icon: "pencil", onClick: () => onRename?.() },
 		{ title: "Pick preset", icon: "settings-2", onClick: () => onPresetClick?.(project.path) },
 		project.archived
 			? { title: "Unarchive project", icon: "archive-restore", onClick: () => onUnarchive?.() }
