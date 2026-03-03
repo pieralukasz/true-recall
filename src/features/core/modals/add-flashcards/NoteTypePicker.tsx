@@ -5,9 +5,10 @@ import { useEffect, useMemo, useState } from "preact/hooks";
 interface NoteTypePickerProps {
 	value: string;
 	onChange: (noteTypeId: string) => void;
+	disabled?: boolean;
 }
 
-export function NoteTypePicker({ value, onChange }: NoteTypePickerProps) {
+export function NoteTypePicker({ value, onChange, disabled }: NoteTypePickerProps) {
 	const plugin = usePlugin();
 	const [noteTypes, setNoteTypes] = useState<NoteType[]>([]);
 
@@ -27,8 +28,9 @@ export function NoteTypePicker({ value, onChange }: NoteTypePickerProps) {
 
 	return (
 		<select
-			class="ep:px-2 ep:py-1.5 ep:text-ui-small ep:bg-obs-primary ep:border ep:border-obs-border ep:rounded ep:min-w-[160px]"
+			class="ep:px-2 ep:py-1.5 ep:text-ui-small ep:bg-obs-primary ep:border ep:border-obs-border ep:rounded ep:min-w-[160px] ep:disabled:opacity-60 ep:disabled:cursor-not-allowed"
 			value={value}
+			disabled={disabled}
 			onChange={(e) => onChange((e.target as HTMLSelectElement).value)}
 		>
 			{sorted.map((nt) => (
