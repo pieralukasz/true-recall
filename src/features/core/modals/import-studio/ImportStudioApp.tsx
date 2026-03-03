@@ -8,8 +8,11 @@ import { CardPreviewList } from "@features/core/modals/add-flashcards/CardPrevie
 import { CopyPromptButton } from "@features/core/modals/add-flashcards/CopyPromptButton";
 import { NoteTypePicker } from "@features/core/modals/add-flashcards/NoteTypePicker";
 import { NotePickerCombobox } from "@shared/ui/modals/simple-editor/NotePickerCombobox";
+import type { EmbeddableEditorInstance } from "@shared/ui/editor/embedded-editor";
 import { useApp, usePlugin } from "@shared/ui/preact/ObsidianContext";
 import { SECONDARY_BUTTON_CLASSES } from "@shared/ui/utils/tailwind";
+import { Compartment } from "@codemirror/state";
+import { placeholder } from "@codemirror/view";
 import { Notice, TFile } from "obsidian";
 import { useCallback, useEffect, useMemo, useRef, useState } from "preact/hooks";
 import {
@@ -37,7 +40,6 @@ function buildPlaceholder(noteType: NoteType | null): string {
 		return `${header}\n${example}`;
 	}
 
-	// 2-field (basic / basic-reversed / custom)
 	const [f1, f2] = noteType.fields;
 	return `${f1 ?? "Front"} :: ${f2 ?? "Back"}\n${f1 ?? "Front"} :: ${f2 ?? "Back"}`;
 }
@@ -52,7 +54,11 @@ export function ImportStudioApp({
 	const plugin = usePlugin();
 	const prefs = useMemo(() => loadImportStudioPrefs(), []);
 
-	const textRef = useRef<HTMLTextAreaElement>(null);
+	const editorContainerRef = useRef<HTMLDivElement>(null);
+	const editorRef = useRef<EmbeddableEditorInstance | null>(null);
+	// Compartment lets us hot-swap the placeholder extension without recreating the editor
+	const placeholderCompartment = useRef(new Compartment()).current;
+
 	const [text, setText] = useState("");
 	const [noteTypeId, setNoteTypeId] = useState(
 		defaultNoteTypeId ?? prefs.lastNoteTypeId,
@@ -91,6 +97,46 @@ export function ImportStudioApp({
 		}, 150);
 		return () => clearTimeout(timer);
 	}, [text, noteType]);
+
+	// Create editor on mount. Stable deps — onChange updates text state via callback.
+	useEffect(() => {
+		const el = editorContainerRef.current;
+		if (!el || !plugin.EmbeddableEditor) return;
+
+		let editor: EmbeddableEditorInstance;
+		try {
+			editor = new plugin.EmbeddableEditor(app, el, {
+				onChange: (update) => setText(update.state.doc.toString()),
+				extraExtensions: [
+					placeholderCompartment.of(
+						placeholder(buildPlaceholder(noteType)),
+					),
+				],
+			});
+		} catch (err) {
+			console.error("[ImportStudioApp] Failed to create editor:", err);
+			return;
+		}
+
+		editorRef.current = editor;
+		editor.cm.focus();
+
+		return () => {
+			editorRef.current = null;
+			editor.destroy();
+		};
+	}, [app, plugin.EmbeddableEditor]); // eslint-disable-line react-hooks/exhaustive-deps
+
+	// Hot-swap placeholder when NoteType changes — preserves typed content
+	useEffect(() => {
+		const editor = editorRef.current;
+		if (!editor) return;
+		editor.cm.dispatch({
+			effects: placeholderCompartment.reconfigure(
+				placeholder(buildPlaceholder(noteType)),
+			),
+		});
+	}, [noteType, placeholderCompartment]);
 
 	// Handlers
 
@@ -138,14 +184,17 @@ export function ImportStudioApp({
 		const totalCards = result.cards.length;
 		setSessionCount((prev) => prev + totalCards);
 		new Notice(`Created ${totalCards} card${totalCards !== 1 ? "s" : ""}`);
-		setText("");
-		if (textRef.current) {
-			textRef.current.value = "";
-			textRef.current.focus();
-		}
-	}, [parseResult.cards, plugin.flashcardManager, resolveSourceUid]);
 
-	const placeholder = buildPlaceholder(noteType);
+		// Clear editor — onChange fires and updates text state
+		if (editorRef.current) {
+			editorRef.current.set("");
+			editorRef.current.cm.focus();
+		} else {
+			setText("");
+		}
+		// Clear preview immediately rather than waiting for debounce
+		setParseResult({ cards: [], detectedFormat: "none" });
+	}, [parseResult.cards, plugin.flashcardManager, resolveSourceUid]);
 
 	return (
 		<div class="ep:flex ep:flex-col ep:gap-4">
@@ -178,14 +227,20 @@ export function ImportStudioApp({
 				)}
 			</div>
 
-			{/* Textarea */}
-			<textarea
-				ref={textRef}
-				class="ep:w-full ep:min-h-[220px] ep:px-3 ep:py-2 ep:text-ui-small ep:font-mono ep:bg-obs-primary ep:border ep:border-obs-border ep:rounded-md ep:resize-y ep:placeholder-obs-faint"
-				placeholder={placeholder}
-				value={text}
-				onInput={(e) => setText((e.target as HTMLTextAreaElement).value)}
-			/>
+			{/* Editor — CM6 with fallback textarea */}
+			{plugin.EmbeddableEditor ? (
+				<div
+					ref={editorContainerRef}
+					class="ep:w-full ep:min-h-[220px] ep:bg-obs-primary ep:border ep:border-obs-border ep:rounded-md ep:overflow-hidden"
+				/>
+			) : (
+				<textarea
+					class="ep:w-full ep:min-h-[220px] ep:px-3 ep:py-2 ep:text-ui-small ep:font-mono ep:bg-obs-primary ep:border ep:border-obs-border ep:rounded-md ep:resize-y ep:placeholder-obs-faint"
+					placeholder={buildPlaceholder(noteType)}
+					value={text}
+					onInput={(e) => setText((e.target as HTMLTextAreaElement).value)}
+				/>
+			)}
 
 			{/* Toolbar row: copy prompt + format hint */}
 			<div class="ep:flex ep:items-center ep:justify-between ep:gap-4">
