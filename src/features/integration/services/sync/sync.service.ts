@@ -12,6 +12,7 @@ import {
 	mapRemoteCardToLocal,
 	mapRemoteReviewLogToLocal,
 } from "@features/integration/services/sync/card-mapper";
+import { refreshCards } from "@shared/services/reactive-card-store";
 import { syncVersion } from "@shared/services/signals";
 import type { FirstSyncStatus, SyncOptions, SyncResult } from "@shared/types";
 import type { SupabaseClient } from "@supabase/supabase-js";
@@ -122,6 +123,7 @@ export class SyncService {
 			this.setLastSyncTimestamp(now);
 
 			syncVersion.value++;
+			refreshCards();
 
 			return { success: true, pulled, pushed };
 		} catch (error) {
@@ -318,6 +320,7 @@ export class SyncService {
 			this.setLastSyncTimestamp(now);
 
 			syncVersion.value++;
+			refreshCards();
 
 			const totalPushed =
 				allLocalData.cards.length + allLocalData.reviewLog.length;
@@ -391,6 +394,7 @@ export class SyncService {
 			this.setLastSyncTimestamp(now);
 
 			syncVersion.value++;
+			refreshCards();
 
 			return { success: true, pulled, pushed: 0 };
 		} catch (error) {
