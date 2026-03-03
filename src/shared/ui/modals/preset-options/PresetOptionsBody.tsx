@@ -96,7 +96,7 @@ export function PresetOptionsBody({
 
 	return (
 		<div class="ep:flex ep:flex-col ep:flex-1 ep:min-h-0">
-			<div class="ep:flex-1 ep:overflow-y-auto ep:min-h-0">
+			<div class="ep:flex ep:flex-col ep:gap-3 ep:flex-1 ep:overflow-y-auto ep:min-h-0">
 				<PresetSelector
 					presets={presets}
 					preset={preset}
