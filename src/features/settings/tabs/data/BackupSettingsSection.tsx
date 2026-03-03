@@ -1,7 +1,8 @@
 import { useSettings } from "@features/settings/hooks/useSettings";
 import {
+	FormCard,
+	FormField,
 	InfoBlock,
-	SettingRow,
 	TextInput,
 	ToggleInput,
 } from "@shared/ui/components";
@@ -10,9 +11,7 @@ export function BackupSettingsSection() {
 	const { settings, save } = useSettings();
 
 	return (
-		<>
-			<SettingRow heading name="Database backup" />
-
+		<FormCard title="Database backup">
 			<InfoBlock>
 				<p>Create backups of your flashcard database to prevent data loss.</p>
 				<p>
@@ -20,7 +19,7 @@ export function BackupSettingsSection() {
 				</p>
 			</InfoBlock>
 
-			<SettingRow
+			<FormField
 				name="Automatic backup on load"
 				description="Create a backup automatically when the plugin loads"
 			>
@@ -28,9 +27,9 @@ export function BackupSettingsSection() {
 					value={settings.autoBackupOnLoad}
 					onChange={(v) => save({ autoBackupOnLoad: v })}
 				/>
-			</SettingRow>
+			</FormField>
 
-			<SettingRow
+			<FormField
 				name="Maximum backups to keep (legacy)"
 				description="Simple retention: keep last N backups. Use smart retention below for better control."
 			>
@@ -42,7 +41,7 @@ export function BackupSettingsSection() {
 					}}
 					placeholder="10"
 				/>
-			</SettingRow>
-		</>
+			</FormField>
+		</FormCard>
 	);
 }

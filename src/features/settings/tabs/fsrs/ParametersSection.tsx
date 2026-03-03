@@ -3,8 +3,9 @@ import { notify } from "@shared/services/notification.service";
 import type { FSRSPreset } from "@shared/types";
 import {
 	ActionButton,
+	FormCard,
+	FormField,
 	InfoBlock,
-	SettingRow,
 	TextAreaInput,
 } from "@shared/ui/components";
 import { useCallback, useState } from "preact/hooks";
@@ -101,9 +102,7 @@ export function ParametersSection({
 	);
 
 	return (
-		<>
-			<SettingRow heading name="FSRS parameters" />
-
+		<FormCard title="FSRS parameters">
 			<InfoBlock>
 				<p>
 					FSRS parameters affect how cards are scheduled. You can optimize them
@@ -125,7 +124,7 @@ export function ParametersSection({
 				)}
 			</InfoBlock>
 
-			<SettingRow
+			<FormField
 				name="Optimize parameters"
 				description="Analyze your review history to find optimal FSRS weights for this preset"
 			>
@@ -140,9 +139,9 @@ export function ParametersSection({
 					variant="secondary"
 					onClick={handleReset}
 				/>
-			</SettingRow>
+			</FormField>
 
-			<SettingRow
+			<FormField
 				name="Custom FSRS weights"
 				description="Enter 17, 19, or 21 comma-separated values (from FSRS optimizer). Leave empty to use defaults"
 			>
@@ -153,7 +152,7 @@ export function ParametersSection({
 					rows={3}
 					class="ep:w-full ep:font-mono ep:text-ui-small"
 				/>
-			</SettingRow>
-		</>
+			</FormField>
+		</FormCard>
 	);
 }

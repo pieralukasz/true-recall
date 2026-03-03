@@ -1,14 +1,12 @@
 import { useSettings } from "@features/settings/hooks/useSettings";
-import { Clickable, SettingRow } from "@shared/ui/components";
+import { Clickable, FormCard, FormField } from "@shared/ui/components";
 
 export function ManualBackupSection() {
 	const { plugin } = useSettings();
 
 	return (
-		<>
-			<SettingRow heading name="Manual backup" />
-
-			<SettingRow
+		<FormCard title="Manual backup">
+			<FormField
 				name="Create backup now"
 				description="Manually create a backup of the current database"
 			>
@@ -19,9 +17,9 @@ export function ManualBackupSection() {
 				>
 					Create backup
 				</Clickable>
-			</SettingRow>
+			</FormField>
 
-			<SettingRow
+			<FormField
 				name="Restore from backup"
 				description="Restore the database from a previous backup (requires Obsidian reload)"
 			>
@@ -32,7 +30,7 @@ export function ManualBackupSection() {
 				>
 					Restore...
 				</Clickable>
-			</SettingRow>
-		</>
+			</FormField>
+		</FormCard>
 	);
 }

@@ -1,6 +1,11 @@
 import { useSettings } from "@features/settings/hooks/useSettings";
 import type { RetentionPolicy } from "@shared/types/settings.types";
-import { InfoBlock, SettingRow, SliderInput } from "@shared/ui/components";
+import {
+	FormCard,
+	FormField,
+	InfoBlock,
+	SliderInput,
+} from "@shared/ui/components";
 
 interface RetentionPolicySliderProps {
 	name: string;
@@ -20,7 +25,7 @@ function RetentionPolicySlider({
 	onSave,
 }: RetentionPolicySliderProps) {
 	return (
-		<SettingRow name={name} description={description}>
+		<FormField name={name} description={description}>
 			<SliderInput
 				value={policy[field]}
 				onChange={(v) => onSave({ ...policy, [field]: v })}
@@ -28,7 +33,7 @@ function RetentionPolicySlider({
 				max={max}
 				step={1}
 			/>
-		</SettingRow>
+		</FormField>
 	);
 }
 
@@ -41,9 +46,7 @@ export function SmartRetentionSection() {
 		save({ retentionPolicy });
 
 	return (
-		<>
-			<SettingRow heading name="Smart retention" />
-
+		<FormCard title="Smart retention">
 			<InfoBlock>
 				<p>
 					Multi-tier retention keeps recent backups densely and older ones
@@ -84,6 +87,6 @@ export function SmartRetentionSection() {
 				max={12}
 				onSave={handleSave}
 			/>
-		</>
+		</FormCard>
 	);
 }

@@ -18,9 +18,9 @@ const TABS: { id: SettingsTabId; label: string }[] = [
 ];
 
 const TAB_BTN_BASE =
-	"ep:py-2 ep:px-4 ep:border-none ep:bg-transparent ep:text-obs-muted ep:cursor-pointer ep:rounded-t ep:text-ui-small ep:font-medium ep:transition-colors ep:shrink-0 ep:whitespace-nowrap ep:hover:bg-obs-modifier-hover ep:hover:text-obs-normal";
+	"ep:py-1.5 ep:px-3 ep:border-none ep:bg-transparent ep:text-obs-muted ep:cursor-pointer ep:rounded-md ep:text-ui-small ep:font-medium ep:transition-colors ep:duration-150 ep:shrink-0 ep:whitespace-nowrap ep:hover:text-obs-normal ep:hover:bg-obs-modifier-hover";
 const TAB_BTN_ACTIVE =
-	"ep:bg-obs-interactive ep:text-obs-on-accent ep:hover:bg-obs-interactive ep:hover:text-obs-on-accent";
+	"ep:bg-obs-interactive/15 ep:text-obs-interactive ep:font-semibold ep:hover:bg-obs-interactive/15 ep:hover:text-obs-interactive";
 
 function TabBar({
 	activeTab,
@@ -31,7 +31,7 @@ function TabBar({
 }) {
 	return (
 		<div
-			class="ep:flex ep:gap-1 ep:mb-5 ep:border-b ep:border-obs-border ep:pb-2 ep:overflow-x-auto"
+			class="ep:flex ep:gap-1 ep:mb-4 ep:pb-3 ep:border-b ep:border-obs-border ep:overflow-x-auto"
 			role="tablist"
 		>
 			{TABS.map((tab) => (
@@ -65,7 +65,12 @@ export function SettingsApp() {
 	return (
 		<>
 			<TabBar activeTab={activeTab} onTabChange={handleTabChange} />
-			<div role="tabpanel" id={`true-recall-tabpanel-${activeTab}`}>
+			<div
+				key={activeTab}
+				role="tabpanel"
+				id={`true-recall-tabpanel-${activeTab}`}
+				class="ep:mx-auto ep:max-w-3xl ep:pb-4 ep-section-enter"
+			>
 				{activeTab === "general" && <GeneralTab />}
 				{activeTab === "ai" && <AITab />}
 				{activeTab === "fsrs" && (
