@@ -53,13 +53,15 @@ export function ProjectHeaderRow({
 	]);
 
 	return (
-		<div
+		<Clickable
 			class={cn(
 				"ep:flex ep:items-center ep:gap-2 ep:px-3 ep:h-9 ep:rounded-lg ep:transition-colors ep:duration-150 ep:hover:bg-obs-modifier-hover",
 				activeDue === 0 && "ep:opacity-40",
 			)}
 			style={{ paddingLeft: `${12 + depth * 20}px` }}
 			onContextMenu={handleContextMenu}
+			onClick={onToggle}
+			stopPropagation={false}
 		>
 			<Clickable
 				class="ep:flex ep:items-center ep:gap-2 ep:flex-1 ep:min-w-0"
@@ -107,7 +109,7 @@ export function ProjectHeaderRow({
 				onClick={onStudyProject}
 				size="small"
 			/>
-		</div>
+		</Clickable>
 	);
 }
 
