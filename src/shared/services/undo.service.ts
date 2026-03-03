@@ -6,6 +6,7 @@ import type {
 	FSRSHelperUndoPayload,
 	SuspendUndoPayload,
 	UndoEntry,
+	UpdateNoteFieldsUndoPayload,
 } from "@shared/services/undo.types";
 import type { ReviewApi } from "@shared/store";
 import type { FSRSCardData } from "@shared/types";
@@ -130,6 +131,11 @@ export class UndoService {
 			case "suspend":
 				return this.undoSuspend(payload, writeCancelled);
 
+			case "update-note-fields":
+				return this.undoUpdateNoteFields(
+					payload as UpdateNoteFieldsUndoPayload,
+				);
+
 			case "fsrs-helper-operation":
 				return this.undoFSRSHelperOperation(payload);
 
@@ -230,6 +236,21 @@ export class UndoService {
 		}
 
 		return true;
+	}
+
+	private undoUpdateNoteFields(
+		payload: UpdateNoteFieldsUndoPayload,
+	): boolean {
+		try {
+			this.plugin.flashcardManager.updateNoteFields(
+				payload.noteId,
+				payload.previousFields,
+			);
+			return true;
+		} catch (error) {
+			console.error("[UndoService] Failed to undo note field update:", error);
+			return false;
+		}
 	}
 
 	private undoFSRSHelperOperation(payload: FSRSHelperUndoPayload): boolean {
