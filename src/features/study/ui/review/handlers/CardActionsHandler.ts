@@ -358,7 +358,7 @@ export class CardActionsHandler {
 		const modal = new QuickNoteEditorModal(this.deps.app, this.deps.plugin, {
 			mode: "add",
 			sourceUid: card.sourceUid,
-			defaultNoteTypeId: card.noteTypeId ?? "builtin-basic",
+			defaultNoteTypeId: card.fsrs.noteTypeId ?? "builtin-basic",
 		});
 
 		const result = await modal.openAndWait();
@@ -496,8 +496,8 @@ export class CardActionsHandler {
 				this.deps
 					.getReview()
 					.updateCurrentCardContent(
-						updatedCard.question,
-						updatedCard.answer ?? "",
+						updatedCard.question ?? card.question,
+						updatedCard.answer ?? card.answer ?? "",
 					);
 			}
 		}
