@@ -65,7 +65,7 @@ export function FSRSTab({ selectedPresetId, onPresetChange }: FSRSTabProps) {
 	}, [plugin, preset.id, settings.defaultPresetId, onPresetChange, refresh]);
 
 	return (
-		<>
+		<div class="ep:flex ep:flex-col ep:gap-3">
 			<PresetSection
 				presets={presets}
 				preset={preset}
@@ -114,6 +114,6 @@ export function FSRSTab({ selectedPresetId, onPresetChange }: FSRSTabProps) {
 			/>
 
 			<BulkOperationsSection plugin={plugin} />
-		</>
+		</div>
 	);
 }

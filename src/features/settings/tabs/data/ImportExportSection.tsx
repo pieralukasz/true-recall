@@ -1,14 +1,12 @@
 import { useSettings } from "@features/settings/hooks/useSettings";
-import { Clickable, SettingRow } from "@shared/ui/components";
+import { Clickable, FormCard, FormField } from "@shared/ui/components";
 
 export function ImportExportSection() {
 	const { plugin } = useSettings();
 
 	return (
-		<>
-			<SettingRow heading name="Anki import / export" />
-
-			<SettingRow
+		<FormCard title="Anki import / export">
+			<FormField
 				name="Import Anki deck"
 				description="Import flashcards from an Anki .apkg file with optional scheduling data"
 			>
@@ -19,9 +17,9 @@ export function ImportExportSection() {
 				>
 					Import .apkg
 				</Clickable>
-			</SettingRow>
+			</FormField>
 
-			<SettingRow
+			<FormField
 				name="Export to Anki"
 				description="Export your flashcards as an Anki-compatible .apkg file"
 			>
@@ -32,9 +30,9 @@ export function ImportExportSection() {
 				>
 					Export .apkg
 				</Clickable>
-			</SettingRow>
+			</FormField>
 
-			<SettingRow
+			<FormField
 				name="Export as CSV/TSV"
 				description="Export your flashcards as a CSV or TSV file for use in spreadsheets or other tools"
 			>
@@ -45,7 +43,7 @@ export function ImportExportSection() {
 				>
 					Export CSV
 				</Clickable>
-			</SettingRow>
-		</>
+			</FormField>
+		</FormCard>
 	);
 }
