@@ -1,5 +1,6 @@
 import type { SqliteStoreService } from "@features/core/persistence/sqlite";
 import type { FrontmatterIndexService } from "@features/core/services/frontmatter-index.service";
+import type { ProjectLinkService } from "@features/core/services/project-link.service";
 import type { FSRSCardData } from "@shared/types";
 import { buildBrowserQuery } from "../ui/browser/helpers/query-builder";
 import type {
@@ -13,6 +14,7 @@ export class CardBrowserQueryService {
 	constructor(
 		private cardStore: SqliteStoreService,
 		private frontmatterIndex: FrontmatterIndexService,
+		private projectLinkService?: ProjectLinkService,
 	) {}
 
 	query(
@@ -39,7 +41,15 @@ export class CardBrowserQueryService {
 			sqlQuery.params,
 		);
 
-		const cards = rawCards.map((card) => this.toBrowserCard(card));
+		let cards = rawCards.map((card) => this.toBrowserCard(card));
+
+		// Filter out archived cards unless the user has enabled "Show archived"
+		if (!filter.showArchived && this.projectLinkService) {
+			const archivedUids = this.projectLinkService.getArchivedSourceUids();
+			if (archivedUids.size > 0) {
+				cards = cards.filter((c) => !archivedUids.has(c.sourceUid ?? ""));
+			}
+		}
 
 		return { cards, totalCount };
 	}

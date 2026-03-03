@@ -10,12 +10,13 @@ interface AggregationDeps {
 	todaySummary: TodaySummary;
 	newCardsCap: number;
 	reviewsCap: number;
+	archivedSourceUids?: Set<string>;
 }
 
 export function aggregateDashboardData(
 	deps: AggregationDeps,
 ): DashboardAggregation {
-	const { allCards, streakCurrent, todaySummary, newCardsCap, reviewsCap } =
+	const { allCards, streakCurrent, todaySummary, newCardsCap, reviewsCap, archivedSourceUids } =
 		deps;
 	const now = new Date();
 
@@ -32,6 +33,7 @@ export function aggregateDashboardData(
 
 	for (const card of allCards) {
 		const fsrs = card.fsrs;
+		if (archivedSourceUids?.has(card.sourceUid ?? "")) continue;
 		if (
 			fsrs.suspended ||
 			(fsrs.buriedUntil && new Date(fsrs.buriedUntil) > now)

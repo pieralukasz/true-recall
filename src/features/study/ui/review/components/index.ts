@@ -2,6 +2,8 @@ export type { ButtonBarProps } from "@features/study/ui/review/components/Button
 export { ButtonBar } from "@features/study/ui/review/components/ButtonBar";
 export type { CardContainerProps } from "@features/study/ui/review/components/CardContainer";
 export { CardContainer } from "@features/study/ui/review/components/CardContainer";
+export type { PresetPickerOption, PresetPopoverProps } from "@features/study/ui/review/components/PresetPopover";
+export { PresetPopover } from "@features/study/ui/review/components/PresetPopover";
 export type { LivePreviewFieldProps } from "@features/study/ui/review/components/LivePreviewField";
 export { LivePreviewField } from "@features/study/ui/review/components/LivePreviewField";
 export { EditToolbar } from "@features/study/ui/review/components/EditToolbar";

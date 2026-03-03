@@ -10,10 +10,11 @@ import type { FSRSPreset, TrueRecallSettings } from "@shared/types/settings.type
 
 export interface CardFilterOptions {
 	stateFilter?: "due" | "learning" | "new" | "buried";
+	archivedSourceUids?: Set<string>;
 }
 
 /**
- * Returns active (non-suspended, non-buried) cards, or specifically
+ * Returns active (non-suspended, non-buried, non-archived) cards, or specifically
  * buried cards if stateFilter is "buried"
  */
 export function filterActiveCards(
@@ -21,9 +22,12 @@ export function filterActiveCards(
 	options: CardFilterOptions = {},
 ): FSRSFlashcardItem[] {
 	const now = new Date();
-	const { stateFilter } = options;
+	const { stateFilter, archivedSourceUids } = options;
 
 	return cards.filter((card) => {
+		// Skip archived source notes always
+		if (archivedSourceUids?.has(card.sourceUid ?? "")) return false;
+
 		// Skip suspended cards always
 		if (card.fsrs.suspended) return false;
 

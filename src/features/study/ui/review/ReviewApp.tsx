@@ -7,7 +7,7 @@ import {
 } from "@features/study/ui/review/components";
 import type { ReviewApi } from "@shared/store";
 import type { FSRSFlashcardItem } from "@shared/types";
-import type { SelectOption } from "@shared/ui/components/SelectInput";
+import type { PresetPickerOption } from "@features/study/ui/review/components/PresetPopover";
 import { usePlugin } from "@shared/ui/preact/ObsidianContext";
 import { useEffect, useLayoutEffect, useState } from "preact/hooks";
 import type { Grade } from "ts-fsrs";
@@ -33,7 +33,7 @@ export interface ReviewAppProps {
 	showNextReviewTime: boolean;
 	continuousCustomReviews: boolean;
 	getPresetName?: (card: FSRSFlashcardItem) => string;
-	getPresetOptions?: () => SelectOption[];
+	getPresetOptions?: () => PresetPickerOption[];
 	onPresetChange?: (presetName: string) => void;
 }
 
