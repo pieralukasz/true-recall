@@ -6,6 +6,14 @@
 
 import type { SqliteStoreService } from "@features/core/persistence/sqlite/SqliteStoreService";
 import type { FrontmatterIndexService } from "@features/core/services/frontmatter-index.service";
+import {
+	generateCardsForNote,
+	type GeneratedCard,
+} from "@features/core/services/card-generation.service";
+import {
+	renderTemplate,
+	deriveCardType,
+} from "@features/core/services/template-engine";
 import { CardQueryService } from "@features/study/services/flashcard/card-query.service";
 import {
 	CardRepository,
@@ -14,6 +22,7 @@ import {
 import { FlashcardParserService } from "@features/study/services/flashcard/flashcard-parser.service";
 import { FrontmatterService } from "@features/study/services/flashcard/frontmatter.service";
 import { SourceNoteService } from "@features/study/services/flashcard/source-note.service";
+import { notifyCardChange } from "@shared/services/signals";
 import type {
 	CardReviewLogEntry,
 	FlashcardItem,
@@ -21,6 +30,8 @@ import type {
 	FSRSFlashcardItem,
 	TrueRecallSettings,
 } from "@shared/types";
+import { createDefaultFSRSData } from "@shared/types";
+import type { Note, NoteType } from "@shared/types/note.types";
 import { type App, TFile, type WorkspaceLeaf } from "obsidian";
 
 export interface ScanResult {
@@ -36,6 +47,23 @@ export interface FlashcardInfo {
 	flashcards: FlashcardItem[];
 	lastModified: number | null;
 	sourceUid?: string;
+}
+
+export interface CreateNoteParams {
+	noteTypeId: string;
+	fields: Record<string, string>;
+	sourceUid?: string;
+	sourceText?: string;
+	createdVia?: string;
+}
+
+export interface CreateNoteResult {
+	note: Note;
+	cards: FSRSCardData[];
+}
+
+export interface UpdateNoteFieldsResult {
+	updatedCardIds: string[];
 }
 
 export class FlashcardManager {
@@ -352,6 +380,193 @@ export class FlashcardManager {
 
 	async moveCard(cardId: string, targetNotePath: string): Promise<boolean> {
 		return this.assignCardToSourceNote(cardId, targetNotePath);
+	}
+
+	// ── Note-based creation (v26) ─────────────────────────────
+
+	/**
+	 * Create a Note + generate its cards via the note type's templates.
+	 * This is the v26 replacement for legacy card creation methods.
+	 */
+	createNote(params: CreateNoteParams): CreateNoteResult {
+		if (!this.store) {
+			throw new Error("Store not initialized");
+		}
+
+		const noteType = this.store.noteTypes.getById(params.noteTypeId);
+		if (!noteType) {
+			throw new Error(`Note type "${params.noteTypeId}" not found`);
+		}
+
+		const note: Note = {
+			id: crypto.randomUUID(),
+			noteTypeId: params.noteTypeId,
+			fields: params.fields,
+			tags: [],
+			sourceUid: params.sourceUid,
+			sourceText: params.sourceText,
+			createdVia: params.createdVia ?? "manual",
+		};
+
+		this.store.notes.create(note);
+
+		const generated = generateCardsForNote(note, noteType);
+		const cards: FSRSCardData[] = [];
+
+		for (const gen of generated) {
+			const fsrsData = this.createCardFromGenerated(gen, note, noteType);
+			cards.push(fsrsData);
+		}
+
+		if (cards.length > 0) {
+			notifyCardChange({
+				type: "bulk",
+				cardIds: cards.map((c) => c.id),
+			});
+		}
+
+		return { note, cards };
+	}
+
+	/**
+	 * Create multiple Notes from parsed cards in bulk.
+	 * Returns all created cards for notification.
+	 */
+	createNoteBatch(
+		parsedCards: CreateNoteParams[],
+	): { notes: Note[]; cards: FSRSCardData[] } {
+		if (!this.store) {
+			throw new Error("Store not initialized");
+		}
+
+		const notes: Note[] = [];
+		const cards: FSRSCardData[] = [];
+
+		for (const params of parsedCards) {
+			const noteType = this.store.noteTypes.getById(params.noteTypeId);
+			if (!noteType) continue;
+
+			const note: Note = {
+				id: crypto.randomUUID(),
+				noteTypeId: params.noteTypeId,
+				fields: params.fields,
+				tags: [],
+				sourceUid: params.sourceUid,
+				sourceText: params.sourceText,
+				createdVia: params.createdVia ?? "manual",
+			};
+
+			this.store.notes.create(note);
+			notes.push(note);
+
+			const generated = generateCardsForNote(note, noteType);
+			for (const gen of generated) {
+				cards.push(this.createCardFromGenerated(gen, note, noteType));
+			}
+		}
+
+		if (cards.length > 0) {
+			notifyCardChange({
+				type: "bulk",
+				cardIds: cards.map((c) => c.id),
+			});
+		}
+
+		return { notes, cards };
+	}
+
+	/**
+	 * Update a Note's fields and recompute Q/A for all its cards.
+	 * Returns the IDs of cards that were updated.
+	 */
+	updateNoteFields(
+		noteId: string,
+		fields: Record<string, string>,
+	): UpdateNoteFieldsResult {
+		if (!this.store) {
+			throw new Error("Store not initialized");
+		}
+
+		const note = this.store.notes.getById(noteId);
+		if (!note) {
+			throw new Error(`Note "${noteId}" not found`);
+		}
+
+		const noteType = this.store.noteTypes.getById(note.noteTypeId);
+		if (!noteType) {
+			throw new Error(`Note type "${note.noteTypeId}" not found`);
+		}
+
+		// Update the note
+		this.store.notes.update(noteId, { fields });
+
+		// Recompute Q/A for all cards belonging to this note
+		// Cards are stored with note_id and template_ord; Q/A is computed at read
+		// time via JOIN. But we need to handle incremental card generation if new
+		// cloze indices were added.
+		const updatedNote: Note = { ...note, fields };
+
+		// Check if new cards need to be generated (e.g. new cloze indices)
+		const existingCards = this.store.cards.getCardsByNoteId(noteId);
+		const existingOrds = existingCards.map((c) => c.templateOrd ?? 0);
+		const newGenerated = generateCardsForNote(
+			updatedNote,
+			noteType,
+			existingOrds,
+		);
+
+		const updatedCardIds = existingCards.map((c) => c.id);
+
+		// Create any newly needed cards
+		for (const gen of newGenerated) {
+			const fsrsData = this.createCardFromGenerated(gen, updatedNote, noteType);
+			updatedCardIds.push(fsrsData.id);
+		}
+
+		if (updatedCardIds.length > 0) {
+			notifyCardChange({
+				type: "bulk",
+				cardIds: updatedCardIds,
+			});
+		}
+
+		return { updatedCardIds };
+	}
+
+	private createCardFromGenerated(
+		gen: GeneratedCard,
+		note: Note,
+		noteType: NoteType,
+	): FSRSCardData {
+		const template = noteType.templates.find(
+			(t) => t.ordinal === gen.templateOrd,
+		) ?? noteType.templates[0]!;
+
+		const question = renderTemplate(template.qfmt, {
+			fields: note.fields,
+			clozeIndex: gen.templateOrd,
+		});
+		const answer = renderTemplate(template.afmt, {
+			fields: note.fields,
+			frontSide: question,
+			clozeIndex: gen.templateOrd,
+		});
+
+		const fsrsData: FSRSCardData = {
+			...createDefaultFSRSData(gen.id),
+			question,
+			answer,
+			sourceUid: gen.sourceUid,
+			noteId: gen.noteId,
+			templateOrd: gen.templateOrd,
+			noteTypeId: note.noteTypeId,
+			cardType: deriveCardType(noteType, gen.templateOrd),
+			createdVia: note.createdVia,
+			sourceText: note.sourceText,
+		};
+
+		this.store!.set(gen.id, fsrsData);
+		return fsrsData;
 	}
 
 	async openSourceNote(sourceFile: TFile): Promise<void> {
