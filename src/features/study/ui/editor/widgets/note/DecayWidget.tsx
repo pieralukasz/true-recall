@@ -56,10 +56,11 @@ export function DecayWidget({
 		let atRiskCount = 0;
 
 		for (const card of noteCards) {
-			if (card.suspended) continue;
-			if (card.state === 0) continue; // skip new cards — no retrievability
+			const fsrs = card.fsrs;
+			if (fsrs.suspended) continue;
+			if (fsrs.state === 0) continue; // skip new cards — no retrievability
 
-			const r = plugin.fsrsService.getRetrievability(card, now);
+			const r = plugin.fsrsService.getRetrievability(fsrs, now);
 			totalRetention += r;
 			activeCount++;
 			if (r < 0.5) atRiskCount++;
@@ -68,7 +69,7 @@ export function DecayWidget({
 				id: card.id,
 				question: truncateQuestion(card.question ?? "Card"),
 				retrievability: r,
-				stability: card.stability,
+				stability: fsrs.stability,
 				sourceNoteName,
 			});
 		}

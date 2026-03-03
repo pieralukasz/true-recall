@@ -39,13 +39,14 @@ export function UnassignedNotesWidget() {
 			let activeCount = 0;
 
 			for (const card of uidCards) {
-				if (card.suspended) continue;
-				if (card.buriedUntil && new Date(card.buriedUntil) > now) continue;
+				const fsrs = card.fsrs;
+				if (fsrs.suspended) continue;
+				if (fsrs.buriedUntil && new Date(fsrs.buriedUntil) > now) continue;
 				activeCount++;
 
-				if (card.state === 0) newCount++;
-				else if (card.state === 1 || card.state === 3) dueCount++;
-				else if (card.state === 2 && new Date(card.due) <= now) dueCount++;
+				if (fsrs.state === 0) newCount++;
+				else if (fsrs.state === 1 || fsrs.state === 3) dueCount++;
+				else if (fsrs.state === 2 && new Date(fsrs.due) <= now) dueCount++;
 			}
 
 			const file = plugin.app.vault.getAbstractFileByPath(path);

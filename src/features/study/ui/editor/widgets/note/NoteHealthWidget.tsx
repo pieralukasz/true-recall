@@ -46,18 +46,19 @@ export function NoteHealthWidget({
 		const sourceNoteName = noteCard?.sourceNoteName ?? null;
 
 		for (const card of noteCards) {
-			if (card.suspended) continue;
-			if (card.buriedUntil && new Date(card.buriedUntil) > now) continue;
+			const fsrs = card.fsrs;
+			if (fsrs.suspended) continue;
+			if (fsrs.buriedUntil && new Date(fsrs.buriedUntil) > now) continue;
 
 			// Due check
-			if (card.state === 2 && new Date(card.due) <= now) dueCount++;
-			if (card.state === 1 || card.state === 3) dueCount++; // learning/relearning always "due"
+			if (fsrs.state === 2 && new Date(fsrs.due) <= now) dueCount++;
+			if (fsrs.state === 1 || fsrs.state === 3) dueCount++; // learning/relearning always "due"
 
 			// Retrievability (skip new cards)
-			if (card.state !== 0) {
-				const r = plugin.fsrsService.getRetrievability(card, now);
+			if (fsrs.state !== 0) {
+				const r = plugin.fsrsService.getRetrievability(fsrs, now);
 				totalRetention += r;
-				totalStability += card.stability;
+				totalStability += fsrs.stability;
 				activeCount++;
 				if (r < 0.5) atRiskCount++;
 			}

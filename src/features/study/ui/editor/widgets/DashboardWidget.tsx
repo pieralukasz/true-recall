@@ -1,7 +1,7 @@
 import { WorkloadForecastCalculator } from "@features/metrics/services/fsrs-tools/statistics/workload-forecast.calculator";
 import { StatsCalculatorService } from "@features/metrics/services/stats/stats-calculator.service";
 import { useComputed } from "@preact/signals";
-import { allCardsArray, cards, cardsBySourceUid, globalCounts } from "@shared/services/reactive-card-store";
+import { cards, cardsBySourceUid, globalCounts } from "@shared/services/reactive-card-store";
 import { FSRS_COLORS } from "@shared/ui/helpers/fsrs-colors";
 import { usePlugin } from "@shared/ui/preact";
 
@@ -166,12 +166,13 @@ export function NoteStatsWidget({ sourceUid }: { sourceUid: string | null }) {
 		let suspended = 0;
 
 		for (const card of noteCards) {
-			if (card.suspended) {
+			const fsrs = card.fsrs;
+			if (fsrs.suspended) {
 				suspended++;
 				continue;
 			}
-			if (card.buriedUntil && new Date(card.buriedUntil) > now) continue;
-			switch (card.state) {
+			if (fsrs.buriedUntil && new Date(fsrs.buriedUntil) > now) continue;
+			switch (fsrs.state) {
 				case 0:
 					newCount++;
 					break;
@@ -180,7 +181,7 @@ export function NoteStatsWidget({ sourceUid }: { sourceUid: string | null }) {
 					learning++;
 					break;
 				case 2:
-					if (new Date(card.due) <= now) due++;
+					if (new Date(fsrs.due) <= now) due++;
 					break;
 			}
 		}
@@ -188,9 +189,10 @@ export function NoteStatsWidget({ sourceUid }: { sourceUid: string | null }) {
 		// Get last review date
 		let lastReviewed: string | null = null;
 		for (const card of noteCards) {
-			if (card.lastReview) {
-				if (!lastReviewed || card.lastReview > lastReviewed) {
-					lastReviewed = card.lastReview;
+			const fsrs = card.fsrs;
+			if (fsrs.lastReview) {
+				if (!lastReviewed || fsrs.lastReview > lastReviewed) {
+					lastReviewed = fsrs.lastReview;
 				}
 			}
 		}
@@ -203,8 +205,8 @@ export function NoteStatsWidget({ sourceUid }: { sourceUid: string | null }) {
 			const dateStr = date.toISOString().split("T")[0] ?? "";
 			let count = 0;
 			for (const card of noteCards) {
-				if (card.suspended) continue;
-				const cardDate = new Date(card.due).toISOString().split("T")[0];
+				if (card.fsrs.suspended) continue;
+				const cardDate = new Date(card.fsrs.due).toISOString().split("T")[0];
 				if (cardDate === dateStr) count++;
 			}
 			forecastDays.push({
