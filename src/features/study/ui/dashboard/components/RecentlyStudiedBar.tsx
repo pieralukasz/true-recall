@@ -1,5 +1,6 @@
 import { Clickable } from "@shared/ui/components/Clickable";
 import { usePlugin } from "@shared/ui/preact";
+import { useCallback } from "preact/hooks";
 import type { DashboardNoteEntry, NotePriority } from "../types";
 
 const PRIORITY_BG: Record<NotePriority, string> = {
@@ -17,9 +18,7 @@ interface RecentlyStudiedBarProps {
 export function RecentlyStudiedBar({ notes }: RecentlyStudiedBarProps) {
 	const plugin = usePlugin();
 
-	if (notes.length === 0) return null;
-
-	const handleClick = (note: DashboardNoteEntry) => {
+	const handleClick = useCallback((note: DashboardNoteEntry) => {
 		if (note.priority === "done" && note.path) {
 			void plugin.app.workspace.openLinkText(note.name, "");
 		} else {
@@ -28,7 +27,9 @@ export function RecentlyStudiedBar({ notes }: RecentlyStudiedBarProps) {
 				ignoreDailyLimits: true,
 			});
 		}
-	};
+	}, [plugin]);
+
+	if (notes.length === 0) return null;
 
 	return (
 		<div class="ep:flex ep:items-center ep:gap-2 ep:px-1 ep:overflow-hidden">
