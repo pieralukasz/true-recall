@@ -1,110 +1,6 @@
 import { describe, it, expect } from "vitest";
 import { FlashcardParserService } from "../../../src/features/study/services/flashcard/flashcard-parser.service";
 
-describe("FlashcardParserService — Q:/A: format", () => {
-	const parser = new FlashcardParserService();
-
-	it("parses single Q:/A: card", () => {
-		const content = `Q: What is photosynthesis?
-A: The process by which plants convert light into energy`;
-
-		const cards = parser.extractFlashcards(content);
-		expect(cards).toHaveLength(1);
-		expect(cards[0]!.question).toBe("What is photosynthesis?");
-		expect(cards[0]!.answer).toBe(
-			"The process by which plants convert light into energy",
-		);
-	});
-
-	it("parses multiple Q:/A: cards", () => {
-		const content = `Q: What is photosynthesis?
-A: The process by which plants convert light into energy
-
-Q: What are the inputs?
-A: Sunlight, water, and CO2`;
-
-		const cards = parser.extractFlashcards(content);
-		expect(cards).toHaveLength(2);
-		expect(cards[0]!.question).toBe("What is photosynthesis?");
-		expect(cards[1]!.question).toBe("What are the inputs?");
-		expect(cards[1]!.answer).toBe("Sunlight, water, and CO2");
-	});
-
-	it("handles multi-line answers", () => {
-		const content = `Q: List the stages of mitosis
-A: The four stages are:
-- Prophase
-- Metaphase
-- Anaphase
-- Telophase`;
-
-		const cards = parser.extractFlashcards(content);
-		expect(cards).toHaveLength(1);
-		expect(cards[0]!.answer).toBe(
-			"The four stages are:\n- Prophase\n- Metaphase\n- Anaphase\n- Telophase",
-		);
-	});
-
-	it("handles case-insensitive Q/A prefixes", () => {
-		const content = `q: lowercase question?
-a: lowercase answer`;
-
-		const cards = parser.extractFlashcards(content);
-		expect(cards).toHaveLength(1);
-		expect(cards[0]!.question).toBe("lowercase question?");
-	});
-
-	it("handles Q/A with extra spacing", () => {
-		const content = `Q :  What is X?
-A :  It is Y`;
-
-		const cards = parser.extractFlashcards(content);
-		expect(cards).toHaveLength(1);
-		expect(cards[0]!.question).toBe("What is X?");
-		expect(cards[0]!.answer).toBe("It is Y");
-	});
-
-	it("returns empty array when no Q: lines found", () => {
-		const content = `Just some random text
-without any flashcard format`;
-
-		const cards = parser.extractFlashcards(content);
-		expect(cards).toHaveLength(0);
-	});
-
-	it("prefers #flashcard format over Q:/A: when tags present", () => {
-		const content = `What is X? #flashcard
-It is Y
-
-Q: This should be ignored
-A: Because #flashcard tags take priority`;
-
-		const cards = parser.extractFlashcards(content);
-		expect(cards).toHaveLength(1);
-		expect(cards[0]!.question).toBe("What is X?");
-		expect(cards[0]!.answer).toBe("It is Y");
-	});
-
-	it("handles Q: without a following A: (empty answer)", () => {
-		const content = `Q: What is X?`;
-
-		const cards = parser.extractFlashcards(content);
-		expect(cards).toHaveLength(1);
-		expect(cards[0]!.question).toBe("What is X?");
-		expect(cards[0]!.answer).toBe("");
-	});
-
-	it("handles consecutive Q: lines (second Q starts new card)", () => {
-		const content = `Q: First question?
-A: First answer
-Q: Second question?
-A: Second answer`;
-
-		const cards = parser.extractFlashcards(content);
-		expect(cards).toHaveLength(2);
-	});
-});
-
 describe("FlashcardParserService — :: inline format", () => {
 	const parser = new FlashcardParserService();
 
@@ -139,13 +35,15 @@ ATP::Adenosine triphosphate`;
 		expect(cards).toHaveLength(2);
 	});
 
-	it("does not confuse cloze :: with separator", () => {
+	it("separates cloze :: from separator ::", () => {
 		const content = `{{c1::photosynthesis}}::The process plants use`;
 
 		const cards = parser.extractFlashcards(content);
-		// The cloze :: is inside braces, so the first :: outside braces is the separator
+		// The :: after }} is the separator; question has cloze → cloze card
 		expect(cards).toHaveLength(1);
-		expect(cards[0]!.answer).toBe("The process plants use");
+		expect(cards[0]!.cardType).toBe("cloze");
+		expect(cards[0]!.clozeTemplate).toBe("{{c1::photosynthesis}}");
+		expect(cards[0]!.answer).toContain("The process plants use");
 	});
 
 	it("skips lines without :: separator", () => {
@@ -156,26 +54,6 @@ Another regular line`;
 		const cards = parser.extractFlashcards(content);
 		expect(cards).toHaveLength(1);
 		expect(cards[0]!.question).toBe("Photosynthesis");
-	});
-
-	it("prefers #flashcard format over :: when tags present", () => {
-		const content = `What is X? #flashcard
-It is Y`;
-
-		const cards = parser.extractFlashcards(content);
-		expect(cards).toHaveLength(1);
-		expect(cards[0]!.question).toBe("What is X?");
-	});
-
-	it("prefers Q:/A: format over :: when Q: lines present", () => {
-		const content = `Q: What is X?
-A: It is Y
-Something::Else`;
-
-		const cards = parser.extractFlashcards(content);
-		// Q:/A: takes priority, so only the Q:/A: card is parsed
-		expect(cards).toHaveLength(1);
-		expect(cards[0]!.question).toBe("What is X?");
 	});
 
 	it("returns empty for lines without any separator", () => {
@@ -192,5 +70,44 @@ Something::Else`;
 		expect(cards).toHaveLength(1);
 		expect(cards[0]!.question).toBe("Question");
 		expect(cards[0]!.answer).toBe("Answer");
+	});
+
+	it("detects cloze in question side of :: card", () => {
+		const content = `{{c1::Mitochondria}} is the powerhouse :: Extra info`;
+
+		const cards = parser.extractFlashcards(content);
+		expect(cards).toHaveLength(1);
+		expect(cards[0]!.cardType).toBe("cloze");
+		expect(cards[0]!.clozeTemplate).toBe(
+			"{{c1::Mitochondria}} is the powerhouse",
+		);
+		expect(cards[0]!.answer).toContain("Extra info");
+	});
+
+	it("handles multiple cloze indices in :: card", () => {
+		const content = `{{c1::Tokyo}} is in {{c2::Japan}} :: Geography`;
+
+		const cards = parser.extractFlashcards(content);
+		expect(cards).toHaveLength(2);
+		expect(cards[0]!.cardType).toBe("cloze");
+		expect(cards[0]!.clozeIndex).toBe(1);
+		expect(cards[1]!.clozeIndex).toBe(2);
+		expect(cards[0]!.clozeTemplate).toBe(
+			"{{c1::Tokyo}} is in {{c2::Japan}}",
+		);
+	});
+
+	it("handles cloze with hint syntax in :: card", () => {
+		const content = `{{c1::Tokyo::capital city}} is in Japan :: Geography`;
+
+		const cards = parser.extractFlashcards(content);
+		expect(cards).toHaveLength(1);
+		expect(cards[0]!.cardType).toBe("cloze");
+	});
+
+	it("isFlashcardLine detects :: lines", () => {
+		expect(parser.isFlashcardLine("Question :: Answer")).toBe(true);
+		expect(parser.isFlashcardLine("No separator here")).toBe(false);
+		expect(parser.isFlashcardLine("  Q :: A  ")).toBe(true);
 	});
 });

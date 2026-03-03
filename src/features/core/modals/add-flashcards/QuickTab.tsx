@@ -73,7 +73,7 @@ export function QuickTab({
 			<textarea
 				ref={textRef}
 				class="ep:w-full ep:min-h-[200px] ep:px-3 ep:py-2 ep:text-ui-small ep:font-mono ep:bg-obs-primary ep:border ep:border-obs-border ep:rounded-md ep:resize-y ep:placeholder-obs-faint"
-				placeholder={"Paste or type flashcards...\n\nSupported formats:\n  Question :: Answer\n  Question\\tAnswer (tab-separated)\n  Q: Question\\nA: Answer\n  {{c1::cloze text}} for cloze cards"}
+				placeholder={"Paste or type flashcards...\n\nFormat:\n  Question :: Answer\n  {{c1::cloze text}} :: Extra context"}
 				value={text}
 				onInput={(e) => setText((e.target as HTMLTextAreaElement).value)}
 			/>
