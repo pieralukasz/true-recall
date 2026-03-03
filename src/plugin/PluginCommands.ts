@@ -158,4 +158,38 @@ export function registerCommands(plugin: TrueRecallPlugin): void {
 			return false;
 		},
 	});
+
+	plugin.addCommand({
+		id: "archive-current-note",
+		name: "Archive current note",
+		checkCallback: (checking) => {
+			const file = plugin.app.workspace.getActiveFile();
+			if (file && file.extension === "md") {
+				if (!checking) {
+					void plugin.flashcardManager
+						.getFrontmatterService()
+						.setArchive(file, true);
+				}
+				return true;
+			}
+			return false;
+		},
+	});
+
+	plugin.addCommand({
+		id: "unarchive-current-note",
+		name: "Unarchive current note",
+		checkCallback: (checking) => {
+			const file = plugin.app.workspace.getActiveFile();
+			if (file && file.extension === "md") {
+				if (!checking) {
+					void plugin.flashcardManager
+						.getFrontmatterService()
+						.setArchive(file, false);
+				}
+				return true;
+			}
+			return false;
+		},
+	});
 }

@@ -149,7 +149,15 @@ export default class TrueRecallPlugin extends Plugin {
 			type: "string",
 			unique: false,
 		});
+		this.frontmatterIndex.register({
+			field: "archive",
+			type: "string",
+			unique: false,
+		});
 		this.frontmatterIndex.onFieldChange("project", () => {
+			metadataVersion.value++;
+		});
+		this.frontmatterIndex.onFieldChange("archive", () => {
 			metadataVersion.value++;
 		});
 		this.frontmatterIndex.onFieldChange("fsrs_preset", () => {

@@ -160,7 +160,17 @@ export function BrowserSidebar({
 				})}
 			</SidebarSection>
 
-			{/* Clear all sidebar filters */}
+					{/* Show archived toggle */}
+			<div class="ep:border-b ep:border-obs-border/50">
+				<SidebarRow
+					label="Show archived"
+					count={0}
+					active={!!activeFilter.showArchived}
+					onClick={() => onFilterChange({ showArchived: !activeFilter.showArchived })}
+				/>
+			</div>
+
+						{/* Clear all sidebar filters */}
 			{hasAnyFilter(activeFilter) && (
 				<div class="ep:px-3 ep:py-2 ep:border-t ep:border-obs-border">
 					<Clickable

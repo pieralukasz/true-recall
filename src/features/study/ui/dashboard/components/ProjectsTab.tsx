@@ -3,7 +3,7 @@ import { useSignal } from "@preact/signals";
 import { Clickable } from "@shared/ui/components/Clickable";
 import { CreateProjectModal } from "@features/study/modals/CreateProjectModal";
 import { usePlugin } from "@shared/ui/preact";
-import { Notice } from "obsidian";
+import { Notice, TFile } from "obsidian";
 import { useIcon } from "@shared/ui/preact/hooks";
 import { useCallback, useEffect, useMemo, useRef } from "preact/hooks";
 import type { RefObject } from "preact";
@@ -64,6 +64,13 @@ export function ProjectsTab({
 		if (next.has(path)) next.delete(path);
 		else next.add(path);
 		expandedPaths.value = next;
+	};
+
+	const handleArchive = (path: string, archived: boolean) => {
+		const file = plugin.app.vault.getAbstractFileByPath(path);
+		if (file instanceof TFile) {
+			void plugin.flashcardManager.getFrontmatterService().setArchive(file, archived);
+		}
 	};
 
 	const handleAddProject = useCallback(async () => {
@@ -157,6 +164,8 @@ export function ProjectsTab({
 										);
 									}}
 									onPresetClick={onPresetClick}
+									onArchive={() => handleArchive(item.project.path, true)}
+									onUnarchive={() => handleArchive(item.project.path, false)}
 								/>
 							</div>
 						);
@@ -193,6 +202,8 @@ export function ProjectsTab({
 										});
 									}}
 									onPresetClick={onPresetClick}
+									onArchive={() => item.note.path ? handleArchive(item.note.path, true) : undefined}
+									onUnarchive={() => item.note.path ? handleArchive(item.note.path, false) : undefined}
 								/>
 							</div>
 						);

@@ -50,6 +50,7 @@ export function CardBrowserApp() {
 			new CardBrowserQueryService(
 				plugin.cardStore,
 				plugin.frontmatterIndex,
+				plugin.projectLinkService,
 			),
 		[plugin],
 	);
@@ -86,6 +87,7 @@ export function CardBrowserApp() {
 				...parsed.negatedStates,
 				...sidebarFilter.value.negatedStates,
 			],
+			showArchived: sidebarFilter.value.showArchived ?? false,
 		};
 	}, [searchText.value, stateFilters.value, sidebarFilter.value]);
 

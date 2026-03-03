@@ -23,6 +23,8 @@ interface ProjectHeaderRowProps {
 	onCustomStudy: () => void;
 	onNavigate: () => void;
 	onPresetClick?: (projectPath: string) => void;
+	onArchive?: () => void;
+	onUnarchive?: () => void;
 }
 
 export function ProjectHeaderRow({
@@ -34,6 +36,8 @@ export function ProjectHeaderRow({
 	onCustomStudy,
 	onNavigate,
 	onPresetClick,
+	onArchive,
+	onUnarchive,
 }: ProjectHeaderRowProps) {
 	const activeDue = project.due + project.newCount + project.learning;
 	const priority = computePriority({ overdueCount: 0, due: project.due, learning: project.learning, newCount: project.newCount });
@@ -42,6 +46,10 @@ export function ProjectHeaderRow({
 		{ title: "Study project", icon: "play", onClick: onStudyProject },
 		{ title: "Custom session", icon: "sliders-horizontal", onClick: onCustomStudy },
 		{ title: "Go to project note", icon: "file-text", onClick: onNavigate },
+		{ title: "Pick preset", icon: "settings-2", onClick: () => onPresetClick?.(project.path) },
+		project.archived
+			? { title: "Unarchive project", icon: "archive-restore", onClick: () => onUnarchive?.() }
+			: { title: "Archive project", icon: "archive", onClick: () => onArchive?.() },
 	]);
 
 	return (
@@ -97,12 +105,6 @@ export function ProjectHeaderRow({
 				icon="play"
 				ariaLabel={`Study ${project.name}`}
 				onClick={onStudyProject}
-				size="small"
-			/>
-			<IconButton
-				icon="settings-2"
-				ariaLabel={`Preset options for ${project.name}`}
-				onClick={() => onPresetClick?.(project.path)}
 				size="small"
 			/>
 		</div>
