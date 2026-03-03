@@ -1,5 +1,4 @@
 import { Clickable } from "@shared/ui/components/Clickable";
-import { useIcon } from "@shared/ui/preact";
 import { cn } from "@shared/ui/utils";
 import type { DashboardTab } from "../types";
 
@@ -31,7 +30,6 @@ export function DashboardTabs({
 	showArchived,
 	onToggleArchived,
 }: DashboardTabsProps) {
-	const archiveIconRef = useIcon("archive");
 	const counts: Record<DashboardTab, number> = {
 		projects: projectCount,
 		notes: notesCount,
@@ -71,14 +69,12 @@ export function DashboardTabs({
 
 				<Clickable
 					class={cn(
-						CHIP_BASE,
-						"ep:ml-auto ep:mb-1 ep:inline-flex ep:items-center ep:gap-1",
+						"ep:ml-auto ep:mb-1 ep:px-2 ep:py-0.5 ep:rounded-full ep:text-[10px] ep:font-medium ep:transition-colors ep:duration-150",
 						showArchived ? CHIP_ACTIVE : CHIP_INACTIVE,
 					)}
 					onClick={onToggleArchived}
 					aria-label="Toggle archived items"
 				>
-					<div ref={archiveIconRef} class="ep:w-3 ep:h-3 ep:[&>svg]:w-3 ep:[&>svg]:h-3" />
 					Archived
 				</Clickable>
 			</div>
