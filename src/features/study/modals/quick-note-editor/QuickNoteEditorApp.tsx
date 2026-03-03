@@ -194,17 +194,9 @@ export function QuickNoteEditorApp({
 		],
 	);
 
-	// Cmd/Ctrl+Enter to save
-	useEffect(() => {
-		const handler = (e: KeyboardEvent) => {
-			if ((e.metaKey || e.ctrlKey) && e.key === "Enter") {
-				e.preventDefault();
-				handleSave(false);
-			}
-		};
-		document.addEventListener("keydown", handler);
-		return () => document.removeEventListener("keydown", handler);
-	}, [handleSave]);
+	// Note: Cmd/Ctrl+Enter is handled by EmbeddableEditor's Scope (via onModEnter
+	// passed to NoteFieldsForm). No document listener needed — the Scope intercepts
+	// before the event reaches the document when a CM6 field has focus.
 
 	if (!noteType) {
 		return (
@@ -257,6 +249,7 @@ export function QuickNoteEditorApp({
 				noteType={noteType}
 				fields={fields}
 				onFieldChange={handleFieldChange}
+				onModEnter={() => handleSave(false)}
 			/>
 
 			{/* Card count preview */}

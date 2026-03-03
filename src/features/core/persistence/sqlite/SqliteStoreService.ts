@@ -88,6 +88,9 @@ export class SqliteStoreService {
 			this.isDirty = true;
 		}
 
+		// Keep builtin note type templates in sync with code (idempotent, fixes stale DBs)
+		this.noteTypes.refreshBuiltins();
+
 		this.isLoaded = true;
 	}
 
