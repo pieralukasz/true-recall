@@ -55,10 +55,7 @@ export function NoteRow({
 			onClick={onNavigate}
 			stopPropagation={false}
 		>
-			<Clickable
-				class="ep:flex ep:items-center ep:gap-2 ep:flex-1 ep:min-w-0 ep:hover:text-obs-interactive ep:transition-colors"
-				onClick={onNavigate}
-			>
+			<div class="ep:flex ep:items-center ep:gap-2 ep:flex-1 ep:min-w-0 ep:hover:text-obs-interactive ep:transition-colors">
 				<span
 					class={cn(
 						"ep:inline-block ep:w-1.5 ep:h-1.5 ep:rounded-full ep:shrink-0",
@@ -80,7 +77,7 @@ export function NoteRow({
 						{note.presetName}
 					</Clickable>
 				)}
-			</Clickable>
+			</div>
 
 			{note.projects.length > 0 && (
 				<div

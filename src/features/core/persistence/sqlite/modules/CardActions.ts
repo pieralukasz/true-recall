@@ -517,6 +517,19 @@ export class CardActions {
 		return mapRowV25(row);
 	}
 
+	getCardsByNoteId(noteId: string): FSRSCardData[] {
+		if (this.isV26) {
+			const rows = this.db.query<CardRowV26>(
+				`SELECT ${CARD_SELECT_V26} ${CARD_FROM_V26}
+				 WHERE c.note_id = ? AND c.deleted_at IS NULL
+				 ORDER BY c.template_ord`,
+				[noteId],
+			);
+			return rows.map(mapRowV26);
+		}
+		return [];
+	}
+
 	findClozeCard(
 		sourceUid: string,
 		clozeTemplate: string,

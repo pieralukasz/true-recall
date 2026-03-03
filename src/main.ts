@@ -18,6 +18,7 @@ import { NoteTypeService } from "@features/core/services/note-type.service";
 import { PresetService } from "@features/core/services/preset.service";
 import { FolderProjectService } from "@features/core/services/folder-project.service";
 import { ProjectLinkService } from "@features/core/services/project-link.service";
+import { AddFlashcardsModal } from "@features/core/modals/AddFlashcardsModal";
 import { NoteTypeManagerModal } from "@features/core/modals/NoteTypeManagerModal";
 import { AnkiExportModal } from "@features/integration/modals/AnkiExportModal";
 import { AnkiImportModal } from "@features/integration/modals/AnkiImportModal";
@@ -490,6 +491,10 @@ export default class TrueRecallPlugin extends Plugin {
 		new NoteTypeManagerModal(this.app, this).open();
 	}
 
+	openAddFlashcards(options?: { defaultNoteTypeId?: string }): void {
+		new AddFlashcardsModal(this.app, this, options).open();
+	}
+
 	async openCustomStudyModal(scope?: CustomStudyModalScope): Promise<void> {
 		const modal = new CustomStudyModal(
 			this.app,
@@ -892,6 +897,7 @@ export default class TrueRecallPlugin extends Plugin {
 						this.openDashboard().catch(() => {});
 					},
 					() => this.settings.showStatusBarWidget,
+					() => this.projectLinkService.getArchivedSourceUids(),
 				);
 				this.statusBarWidget.start();
 			},
