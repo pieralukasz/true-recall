@@ -1,6 +1,7 @@
 import type { FlashcardManager } from "@features/study/services/flashcard/flashcard.service";
 import { effect } from "@preact/signals";
-import { dataVersion, metadataVersion, settingsVersion, track } from "@shared/services/signals";
+import { allCardsArray } from "@shared/services/reactive-card-store";
+import { metadataVersion, settingsVersion } from "@shared/services/signals";
 import { FSRS_COLORS } from "@shared/ui/helpers/fsrs-colors";
 
 const DOT = ' <span style="opacity:0.3; margin: 0 2px">·</span> ';
@@ -22,7 +23,9 @@ export class StatusBarWidget {
 
 	start(): void {
 		this.disposer = effect(() => {
-			track(dataVersion, settingsVersion, metadataVersion);
+			allCardsArray.value;
+			settingsVersion.value;
+			metadataVersion.value;
 			this.render();
 		});
 	}
@@ -65,7 +68,7 @@ export class StatusBarWidget {
 		newCount: number;
 		learning: number;
 	} {
-		const allCards = this.flashcardManager.getAllFSRSCards();
+		const allCards = allCardsArray.value;
 		const archivedUids = this.getArchivedSourceUids();
 		const now = new Date();
 		let dueToday = 0;
