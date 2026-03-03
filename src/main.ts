@@ -3,6 +3,7 @@ import { SqlQueryAdapter } from "@features/ai/services/sql-query.adapter";
 import { NLQueryService } from "@features/ai/services/nl-query.service";
 import { createSelectionToolbarExtension } from "@features/ai/ui/editor/SelectionToolbarPlugin";
 import { NoteStatusCacheService } from "@features/core/cache/note-status-cache.service";
+import { initCardStore, refreshCards } from "@shared/services/reactive-card-store";
 import { BackgroundBackupManager } from "@features/core/persistence/background-backup.service";
 import { BackupService } from "@features/core/persistence/backup.service";
 import { SessionPersistenceService } from "@features/core/persistence/session-persistence.service";
@@ -794,6 +795,12 @@ export default class TrueRecallPlugin extends Plugin {
 			}
 
 			this.flashcardManager.setStore(this.cardStore);
+
+			// Reactive card store: cards signal mirrors SQLite, computeds derive all views
+			initCardStore({
+				getAll: () => this.flashcardManager.getAllFSRSCards(),
+			});
+			refreshCards();
 
 			this.sessionPersistence = new SessionPersistenceService(
 				this.app,

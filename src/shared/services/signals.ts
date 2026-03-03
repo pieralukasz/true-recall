@@ -1,4 +1,5 @@
 import { batch, type ReadonlySignal, signal } from "@preact/signals";
+import { refreshCards } from "@shared/services/reactive-card-store";
 import type { HighlightColor } from "@shared/ui/helpers/fsrs-colors";
 
 export function track(...signals: ReadonlySignal[]): void {
@@ -48,7 +49,8 @@ export const metadataVersion = signal(0);
 export function notifyCardChange(mutation: CardMutation): void {
 	batch(() => {
 		lastMutation.value = mutation;
-		dataVersion.value++;
+		refreshCards();
+		dataVersion.value++; // TODO: remove after all consumers migrated to reactive store
 	});
 }
 
