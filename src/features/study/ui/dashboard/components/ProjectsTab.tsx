@@ -59,19 +59,19 @@ export function ProjectsTab({
 		contentOffsetRef: contentRef,
 	});
 
-	const toggleExpand = (path: string) => {
+	const toggleExpand = useCallback((path: string) => {
 		const next = new Set(expandedPaths.value);
 		if (next.has(path)) next.delete(path);
 		else next.add(path);
 		expandedPaths.value = next;
-	};
+	}, [expandedPaths]);
 
-	const handleArchive = (path: string, archived: boolean) => {
+	const handleArchive = useCallback((path: string, archived: boolean) => {
 		const file = plugin.app.vault.getAbstractFileByPath(path);
 		if (file instanceof TFile) {
 			void plugin.flashcardManager.getFrontmatterService().setArchive(file, archived);
 		}
-	};
+	}, [plugin]);
 
 	const handleAddProject = useCallback(async () => {
 		const modal = new CreateProjectModal(plugin.app);
