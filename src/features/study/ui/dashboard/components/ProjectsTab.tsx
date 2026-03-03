@@ -142,7 +142,6 @@ export function ProjectsTab({
 									onStudyProject={() => {
 										void plugin.openReviewViewWithFilters({
 											projectPath: item.project.path,
-											ignoreDailyLimits: true,
 										});
 									}}
 									onCustomStudy={() => {
