@@ -1,7 +1,7 @@
 import type { Signal } from "@preact/signals";
 import { useSignal } from "@preact/signals";
 import { usePlugin } from "@shared/ui/preact";
-import { useMemo, useRef } from "preact/hooks";
+import { useCallback, useMemo, useRef } from "preact/hooks";
 import type { RefObject } from "preact";
 import { TFile } from "obsidian";
 import { useInitialMount } from "../helpers/use-initial-mount";
@@ -123,6 +123,14 @@ export function NoteList({
 		projectFilter.value = { type: "project", name: projectName };
 	};
 
+	const handleFilterChange = useCallback((f: NoteFilterMode) => {
+		activeFilter.value = f;
+	}, []);
+
+	const handleProjectFilterChange = useCallback((pf: ProjectFilter) => {
+		projectFilter.value = pf;
+	}, []);
+
 	const handleArchiveNote = (note: DashboardNoteEntry) => {
 		if (!note.path) return;
 		const file = plugin.app.vault.getAbstractFileByPath(note.path);
@@ -144,15 +152,11 @@ export function NoteList({
 			<div class="ep:shrink-0 ep:mb-3">
 				<NoteFilters
 					activeFilter={activeFilter.value}
-					onFilterChange={(f) => {
-						activeFilter.value = f;
-					}}
+					onFilterChange={handleFilterChange}
 					counts={counts}
 					projectFilter={projectFilter.value}
 					unassignedCount={unassignedCount}
-					onProjectFilterChange={(pf) => {
-						projectFilter.value = pf;
-					}}
+					onProjectFilterChange={handleProjectFilterChange}
 				/>
 			</div>
 
