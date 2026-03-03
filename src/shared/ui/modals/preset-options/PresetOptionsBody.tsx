@@ -82,36 +82,17 @@ export function PresetOptionsBody({
 		refresh();
 	}, [plugin, preset.id, settings.defaultPresetId, refresh]);
 
-	const handlePresetChange = useCallback(
-		async (newPresetId: string) => {
-			setSelectedPresetId(newPresetId);
-
-			if (!context?.contextPath) return;
-			const newPreset = presets.find((p) => p.id === newPresetId);
-			if (!newPreset) return;
+	const handleDone = useCallback(async () => {
+		if (context?.contextPath) {
 			const file = plugin.app.vault.getFileByPath(context.contextPath);
-			if (!file) return;
 			const frontmatterService =
 				plugin.flashcardManager?.getFrontmatterService();
-			if (!frontmatterService) return;
-			await frontmatterService.setFsrsPreset(file, newPreset.name);
-			refresh();
-		},
-		[plugin, context, presets, refresh],
-	);
-
-	const handleSetForContext = useCallback(async () => {
-		if (!context?.contextPath) return;
-		const file = plugin.app.vault.getFileByPath(context.contextPath);
-		if (!file) return;
-
-		const frontmatterService =
-			plugin.flashcardManager?.getFrontmatterService();
-		if (!frontmatterService) return;
-
-		await frontmatterService.setFsrsPreset(file, preset.name);
-		refresh();
-	}, [plugin, context, preset.name, refresh]);
+			if (file && frontmatterService) {
+				await frontmatterService.setFsrsPreset(file, preset.name);
+			}
+		}
+		onClose();
+	}, [plugin, context, preset.name, onClose]);
 
 	return (
 		<div class="ep:flex ep:flex-col ep:flex-1 ep:min-h-0">
@@ -120,7 +101,7 @@ export function PresetOptionsBody({
 					presets={presets}
 					preset={preset}
 					isDefault={isDefault}
-					onPresetChange={(id) => void handlePresetChange(id)}
+					onPresetChange={setSelectedPresetId}
 					onCreate={handleCreate}
 					onDelete={handleDelete}
 					onRename={(name) => void updatePreset({ name })}
@@ -139,20 +120,10 @@ export function PresetOptionsBody({
 				<UsageSection preset={preset} />
 			</div>
 
-			<div class="ep-modal-footer ep:flex ep:items-center ep:justify-between ep:gap-2 ep:pt-3 ep:mt-2 ep:border-t ep:border-obs-border">
-				{context?.contextPath && (
-					<Clickable
-						class="ep-btn ep-btn-outline ep:text-ui-small"
-						onClick={handleSetForContext}
-						stopPropagation={false}
-					>
-						Set for {context.contextName ?? "this note"}
-					</Clickable>
-				)}
-				<div class="ep:flex-1" />
+			<div class="ep-modal-footer ep:flex ep:items-center ep:justify-end ep:gap-2 ep:pt-3 ep:mt-2 ep:border-t ep:border-obs-border">
 				<Clickable
 					class="ep-btn mod-cta ep:text-ui-small"
-					onClick={onClose}
+					onClick={() => void handleDone()}
 					stopPropagation={false}
 				>
 					Done
