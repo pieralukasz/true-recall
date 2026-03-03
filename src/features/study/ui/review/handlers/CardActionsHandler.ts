@@ -8,6 +8,7 @@ import type { FSRSService } from "@features/core/services/fsrs.service";
 import { DuplicateQuestionError } from "@features/study/services/flashcard/card-repository.service";
 import type { FlashcardManager } from "@features/study/services/flashcard/flashcard.service";
 import { cardToMarkdown } from "@features/study/services/flashcard/flashcard-format.util";
+import { QuickNoteEditorModal } from "@features/study/modals/quick-note-editor/QuickNoteEditorModal";
 import type { ReviewService } from "@features/study/services/review.service";
 import { notify } from "@shared/services/notification.service";
 import type { ReviewApi } from "@shared/store";
@@ -348,55 +349,38 @@ export class CardActionsHandler {
 	}
 
 	/**
-	 * Add new flashcards to the same file as the current card
+	 * Add a new flashcard linked to the same source as the current card.
 	 */
 	async handleAddNewFlashcard(): Promise<void> {
 		const card = this.deps.getReview().getCurrentCard();
 		if (!card) return;
 
-		// Open simple markdown editor modal
-		const modal = new SimpleFlashcardEditorModal(
-			this.deps.app,
-			{
-				mode: "add",
-				currentFilePath: card.sourceNotePath || "",
-			},
-			this.deps.plugin.EmbeddableEditor,
-		);
+		const modal = new QuickNoteEditorModal(this.deps.app, this.deps.plugin, {
+			mode: "add",
+			sourceUid: card.sourceUid,
+			defaultNoteTypeId: card.noteTypeId ?? "builtin-basic",
+		});
 
 		const result = await modal.openAndWait();
-		if (result.cancelled || result.flashcards.length === 0) return;
+		if (result.cancelled) return;
 
-		try {
-			// Add all parsed flashcards directly using the current card's sourceUid
-			for (const flashcard of result.flashcards) {
-				await this.deps.flashcardManager.addSingleFlashcard(
-					flashcard.question,
-					flashcard.answer,
-					card.sourceUid,
-				);
-			}
-
+		const cardCount = result.createdCards?.length ?? 0;
+		if (cardCount > 0) {
+			this.deps.plugin.undoService?.push({
+				id: crypto.randomUUID(),
+				actionType: "create-flashcard",
+				description: `Add ${cardCount} card${cardCount !== 1 ? "s" : ""}`,
+				timestamp: Date.now(),
+				payload: {
+					type: "batch-create",
+					cardIds: result.createdCards!.map((c) => c.id),
+				},
+			});
 			const noteName = card.sourceNotePath
 				?.split("/")
 				.pop()
 				?.replace(/\.md$/, "");
-			notify().cardsCreated(result.flashcards.length, noteName);
-		} catch (error) {
-			if (error instanceof DuplicateQuestionError) {
-				const sourceInfo = error.existingSourceUid
-					? this.deps.flashcardManager
-							.getSourceNoteService()
-							.resolveSourceNote(error.existingSourceUid)
-					: {};
-				notify().duplicateFound(
-					result.flashcards[0]?.question ?? "",
-					sourceInfo.noteName,
-				);
-			} else {
-				console.error("[CardActionsHandler] Error adding flashcards:", error);
-				notify().operationFailed("add flashcards", error);
-			}
+			notify().cardsCreated(cardCount, noteName);
 		}
 	}
 
@@ -456,10 +440,74 @@ export class CardActionsHandler {
 	}
 
 	/**
-	 * Edit the current card via modal.
-	 * Supports undo for basic/reversed cards. Cloze template edits are not undoable.
+	 * Edit the current card via the QuickNoteEditor modal (v26 note-aware).
+	 * Falls back to SimpleFlashcardEditorModal for legacy cards without noteId.
 	 */
 	async handleEditCardModal(): Promise<void> {
+		const card = this.deps.getReview().getCurrentCard();
+		if (!card) return;
+
+		// Legacy fallback: v25 cards without a noteId use the old raw Q/A editor
+		if (!card.noteId) {
+			return this.handleEditCardModalLegacy();
+		}
+
+		const note = this.deps.cardStore.notes.getById(card.noteId);
+		if (!note) {
+			notify().error("Note not found");
+			return;
+		}
+		const noteType = this.deps.cardStore.noteTypes.getById(note.noteTypeId);
+		if (!noteType) {
+			notify().error("Note type not found");
+			return;
+		}
+
+		const previousFields = { ...note.fields };
+
+		const modal = new QuickNoteEditorModal(this.deps.app, this.deps.plugin, {
+			mode: "edit",
+			cardId: card.id,
+			noteId: note.id,
+			note,
+			noteType,
+		});
+
+		const result = await modal.openAndWait();
+		if (result.cancelled) return;
+
+		// Push undo entry for note-level field edit
+		this.deps.plugin.undoService?.push({
+			id: crypto.randomUUID(),
+			actionType: "update-note-fields",
+			description: "Edit card",
+			timestamp: Date.now(),
+			payload: {
+				type: "update-note-fields",
+				noteId: note.id,
+				previousFields,
+			},
+		});
+
+		// Refresh the current card display in review
+		if (result.updatedCardIds?.includes(card.id)) {
+			const [updatedCard] = this.deps.cardStore.cards.getByIds([card.id]);
+			if (updatedCard) {
+				this.deps
+					.getReview()
+					.updateCurrentCardContent(
+						updatedCard.question,
+						updatedCard.answer ?? "",
+					);
+			}
+		}
+	}
+
+	/**
+	 * Legacy edit path for v25 cards without noteId.
+	 * Uses raw Q/A editor (SimpleFlashcardEditorModal).
+	 */
+	private async handleEditCardModalLegacy(): Promise<void> {
 		const card = this.deps.getReview().getCurrentCard();
 		if (!card) return;
 
@@ -481,7 +529,6 @@ export class CardActionsHandler {
 			const firstFlashcard = result.flashcards[0];
 			if (!firstFlashcard) return;
 
-			// Cloze template editing: parser sets clozeTemplate on each parsed FlashcardItem
 			if (
 				card.cardType === "cloze" &&
 				card.clozeTemplate &&
@@ -494,7 +541,6 @@ export class CardActionsHandler {
 					firstFlashcard.clozeTemplate,
 					card.sourceNoteName,
 				);
-				// Update current card in review queue with re-derived Q/A
 				const thisCard = result.flashcards.find(
 					(c) => c.clozeIndex === card.clozeIndex,
 				);
@@ -506,7 +552,6 @@ export class CardActionsHandler {
 				return;
 			}
 
-			// Basic/reversed card: update directly
 			this.deps.plugin.undoService?.push({
 				id: crypto.randomUUID(),
 				actionType: "update-card",
@@ -530,23 +575,6 @@ export class CardActionsHandler {
 					firstFlashcard.question,
 					firstFlashcard.answer,
 				);
-
-			// Additional flashcards (if any) are created as new cards directly
-			if (result.flashcards.length > 1) {
-				for (let i = 1; i < result.flashcards.length; i++) {
-					const flashcard = result.flashcards[i];
-					if (flashcard) {
-						await this.deps.flashcardManager.addSingleFlashcard(
-							flashcard.question,
-							flashcard.answer,
-							card.sourceUid,
-						);
-					}
-				}
-				notify().success(
-					`Updated card and created ${result.flashcards.length - 1} new cards`,
-				);
-			}
 		} catch (error) {
 			if (error instanceof DuplicateQuestionError) {
 				const sourceInfo = error.existingSourceUid
