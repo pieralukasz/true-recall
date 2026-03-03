@@ -118,8 +118,20 @@ export function LivePreviewField({
 			return;
 		}
 
+		// On macOS (Electron), clicking a <div tabIndex="0"> does NOT move focus,
+		// so the CM6 blur event never fires when clicking rating buttons.
+		// A document-level mousedown listener fires BEFORE the click handler
+		// and before any card transition, ensuring edits are saved on all platforms.
+		const handleOutsideMouseDown = (e: MouseEvent) => {
+			if (containerRef.current && !containerRef.current.contains(e.target as Node)) {
+				flushPendingSave();
+			}
+		};
+		document.addEventListener("mousedown", handleOutsideMouseDown);
+
 		return () => {
 			flushPendingSave();
+			document.removeEventListener("mousedown", handleOutsideMouseDown);
 			editorRef.current = null;
 			editor.destroy();
 		};
@@ -130,9 +142,6 @@ export function LivePreviewField({
 	useLayoutEffect(() => {
 		const editor = editorRef.current;
 		if (!editor) return;
-
-		// Save edits for the previous card before switching content
-		flushPendingSave();
 
 		const normalizedContent = stripBrTags(content);
 		if (editor.value !== normalizedContent) {
