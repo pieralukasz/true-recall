@@ -1,4 +1,5 @@
-import { dataVersion, useSignalVersion } from "@shared/services/signals";
+import { useComputed } from "@preact/signals";
+import { allCardsArray, cards, cardsBySourceUid } from "@shared/services/reactive-card-store";
 import { FSRS_COLORS } from "@shared/ui/helpers/fsrs-colors";
 import { usePlugin } from "@shared/ui/preact";
 import { useMemo } from "preact/hooks";
@@ -22,15 +23,15 @@ export function NoteHealthWidget({
 	source: string;
 }) {
 	const plugin = usePlugin();
-	const ver = useSignalVersion(dataVersion);
 
 	const config = useMemo(() => parseCodeblockConfig(source), [source]);
 
-	const data = useMemo((): NoteHealthData | null => {
-		if (!sourceUid || !plugin.cardStore) return null;
+	const data = useComputed((): NoteHealthData | null => {
+		cards.value;
+		if (!sourceUid) return null;
 
-		const cards = plugin.cardStore.getCardsBySourceUid(sourceUid);
-		if (cards.length === 0) return null;
+		const noteCards = cardsBySourceUid.value.get(sourceUid) ?? [];
+		if (noteCards.length === 0) return null;
 
 		const now = new Date();
 		let totalRetention = 0;
@@ -40,11 +41,11 @@ export function NoteHealthWidget({
 		let dueCount = 0;
 
 		// Resolve note name from any card
-		const allFsrs = plugin.flashcardManager.getAllFSRSCards();
+		const allFsrs = allCardsArray.value;
 		const noteCard = allFsrs.find((c) => c.fsrs.sourceUid === sourceUid);
 		const sourceNoteName = noteCard?.sourceNoteName ?? null;
 
-		for (const card of cards) {
+		for (const card of noteCards) {
 			if (card.suspended) continue;
 			if (card.buriedUntil && new Date(card.buriedUntil) > now) continue;
 
@@ -66,14 +67,14 @@ export function NoteHealthWidget({
 		const avgStability = activeCount > 0 ? totalStability / activeCount : 0;
 
 		return {
-			totalCards: cards.length,
+			totalCards: noteCards.length,
 			avgRetention,
 			avgStability,
 			atRiskCount,
 			dueCount,
 			sourceNoteName,
 		};
-	}, [plugin, sourceUid, ver]);
+	}).value;
 
 	if (!data) {
 		return (

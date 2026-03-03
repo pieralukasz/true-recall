@@ -1,4 +1,5 @@
-import { dataVersion, useSignalVersion } from "@shared/services/signals";
+import { useComputed } from "@preact/signals";
+import { cards } from "@shared/services/reactive-card-store";
 import { Clickable } from "@shared/ui/components";
 import { usePlugin } from "@shared/ui/preact";
 import { useMemo } from "preact/hooks";
@@ -33,15 +34,15 @@ const FLAMES: Record<Intensity, string> = {
 
 export function AnswerStreakWidget({ source }: { source: string }) {
 	const plugin = usePlugin();
-	const ver = useSignalVersion(dataVersion);
 
 	const config = useMemo(() => parseCodeblockConfig(source), [source]);
 
-	const data = useMemo(() => {
+	const data = useComputed(() => {
+		cards.value;
 		const stats = plugin.cardStore?.stats;
 		if (!stats) return null;
 		return stats.getAnswerStreakInfo();
-	}, [plugin, ver]);
+	}).value;
 
 	if (!data) return null;
 

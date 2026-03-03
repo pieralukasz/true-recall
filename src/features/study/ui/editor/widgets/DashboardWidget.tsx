@@ -1,9 +1,9 @@
 import { WorkloadForecastCalculator } from "@features/metrics/services/fsrs-tools/statistics/workload-forecast.calculator";
 import { StatsCalculatorService } from "@features/metrics/services/stats/stats-calculator.service";
-import { dataVersion, useSignalVersion } from "@shared/services/signals";
+import { useComputed } from "@preact/signals";
+import { allCardsArray, cards, cardsBySourceUid, globalCounts } from "@shared/services/reactive-card-store";
 import { FSRS_COLORS } from "@shared/ui/helpers/fsrs-colors";
 import { usePlugin } from "@shared/ui/preact";
-import { useMemo } from "preact/hooks";
 
 interface TodayData {
 	studied: number;
@@ -18,13 +18,6 @@ interface ForecastDay {
 	isToday: boolean;
 }
 
-interface GlobalCounts {
-	total: number;
-	due: number;
-	newCount: number;
-	learning: number;
-}
-
 const DAY_NAMES = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 
 function formatDayLabel(date: Date): string {
@@ -37,9 +30,9 @@ function formatDayLabel(date: Date): string {
 
 export function DashboardWidget() {
 	const plugin = usePlugin();
-	const ver = useSignalVersion(dataVersion);
 
-	const data = useMemo(() => {
+	const data = useComputed(() => {
+		cards.value;
 		if (!plugin.sessionPersistence || !plugin.cardStore) return null;
 
 		const statsCalc = new StatsCalculatorService(
@@ -60,32 +53,7 @@ export function DashboardWidget() {
 			isToday: e.date === new Date().toISOString().split("T")[0],
 		}));
 
-		const allCards = plugin.flashcardManager.getAllFSRSCards();
-		const now = new Date();
-		let due = 0;
-		let newCount = 0;
-		let learning = 0;
-
-		for (const card of allCards) {
-			const fsrs = card.fsrs;
-			if (
-				fsrs.suspended ||
-				(fsrs.buriedUntil && new Date(fsrs.buriedUntil) > now)
-			)
-				continue;
-			switch (fsrs.state) {
-				case 0:
-					newCount++;
-					break;
-				case 1:
-				case 3:
-					learning++;
-					break;
-				case 2:
-					if (new Date(fsrs.due) <= now) due++;
-					break;
-			}
-		}
+		const counts = globalCounts.value;
 
 		const today: TodayData = {
 			studied: todaySummary.studied,
@@ -94,15 +62,15 @@ export function DashboardWidget() {
 			streak: streakInfo.current,
 		};
 
-		const global: GlobalCounts = {
-			total: allCards.length,
-			due,
-			newCount,
-			learning,
+		const global = {
+			total: counts.total,
+			due: counts.due,
+			newCount: counts.newCount,
+			learning: counts.learning,
 		};
 
 		return { today, forecastDays, global };
-	}, [plugin, ver]);
+	}).value;
 
 	if (!data) {
 		return <div class="ep:text-obs-muted ep:text-xs ep:p-3">Loading...</div>;
@@ -183,13 +151,13 @@ export function DashboardWidget() {
 
 export function NoteStatsWidget({ sourceUid }: { sourceUid: string | null }) {
 	const plugin = usePlugin();
-	const ver = useSignalVersion(dataVersion);
 
-	const data = useMemo(() => {
-		if (!sourceUid || !plugin.cardStore) return null;
+	const data = useComputed(() => {
+		cards.value;
+		if (!sourceUid) return null;
 
-		const cards = plugin.cardStore.getCardsBySourceUid(sourceUid);
-		if (cards.length === 0) return null;
+		const noteCards = cardsBySourceUid.value.get(sourceUid) ?? [];
+		if (noteCards.length === 0) return null;
 
 		const now = new Date();
 		let newCount = 0;
@@ -197,7 +165,7 @@ export function NoteStatsWidget({ sourceUid }: { sourceUid: string | null }) {
 		let due = 0;
 		let suspended = 0;
 
-		for (const card of cards) {
+		for (const card of noteCards) {
 			if (card.suspended) {
 				suspended++;
 				continue;
@@ -219,7 +187,7 @@ export function NoteStatsWidget({ sourceUid }: { sourceUid: string | null }) {
 
 		// Get last review date
 		let lastReviewed: string | null = null;
-		for (const card of cards) {
+		for (const card of noteCards) {
 			if (card.lastReview) {
 				if (!lastReviewed || card.lastReview > lastReviewed) {
 					lastReviewed = card.lastReview;
@@ -234,7 +202,7 @@ export function NoteStatsWidget({ sourceUid }: { sourceUid: string | null }) {
 			date.setDate(date.getDate() + i);
 			const dateStr = date.toISOString().split("T")[0] ?? "";
 			let count = 0;
-			for (const card of cards) {
+			for (const card of noteCards) {
 				if (card.suspended) continue;
 				const cardDate = new Date(card.due).toISOString().split("T")[0];
 				if (cardDate === dateStr) count++;
@@ -247,7 +215,7 @@ export function NoteStatsWidget({ sourceUid }: { sourceUid: string | null }) {
 		}
 
 		return {
-			total: cards.length,
+			total: noteCards.length,
 			newCount,
 			learning,
 			due,
@@ -257,7 +225,7 @@ export function NoteStatsWidget({ sourceUid }: { sourceUid: string | null }) {
 				: null,
 			forecastDays,
 		};
-	}, [plugin, sourceUid, ver]);
+	}).value;
 
 	if (!data) {
 		return (

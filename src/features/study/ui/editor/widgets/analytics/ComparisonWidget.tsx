@@ -1,5 +1,6 @@
+import { useComputed } from "@preact/signals";
 import { StatsCalculatorService } from "@features/metrics/services/stats/stats-calculator.service";
-import { dataVersion, useSignalVersion } from "@shared/services/signals";
+import { cards } from "@shared/services/reactive-card-store";
 import type { ExtendedDailyStats } from "@shared/types/fsrs/stats.types";
 import { Clickable } from "@shared/ui/components";
 import { usePlugin } from "@shared/ui/preact";
@@ -23,11 +24,11 @@ interface ComparisonData {
 
 export function ComparisonWidget({ source }: { source: string }) {
 	const plugin = usePlugin();
-	const ver = useSignalVersion(dataVersion);
 
 	const config = useMemo(() => parseCodeblockConfig(source), [source]);
 
-	const data = useMemo((): ComparisonData | null => {
+	const data = useComputed((): ComparisonData | null => {
+		cards.value;
 		if (!plugin.sessionPersistence) return null;
 
 		const statsCalc = new StatsCalculatorService(
@@ -73,7 +74,7 @@ export function ComparisonWidget({ source }: { source: string }) {
 		const streak = statsCalc.getStreakInfo();
 
 		return { current, previous, streak, periodLabel };
-	}, [plugin, ver, config]);
+	}).value;
 
 	if (!data) {
 		return <div class="ep:text-obs-muted ep:text-xs ep:p-3">Loading...</div>;

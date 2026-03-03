@@ -1,4 +1,6 @@
-import { dataVersion, settingsVersion, useSignalVersion } from "@shared/services/signals";
+import { useComputed } from "@preact/signals";
+import { cards } from "@shared/services/reactive-card-store";
+import { settingsVersion } from "@shared/services/signals";
 import { Clickable } from "@shared/ui/components";
 import { usePlugin } from "@shared/ui/preact";
 import { useMemo } from "preact/hooks";
@@ -20,8 +22,6 @@ function formatDaysAgo(isoDate: string): { text: string; stale: boolean } {
 
 export function PresetInfoWidget({ source }: { source: string }) {
 	const plugin = usePlugin();
-	useSignalVersion(dataVersion);
-	useSignalVersion(settingsVersion);
 
 	const config = useMemo(() => parseCodeblockConfig(source), [source]);
 
@@ -29,7 +29,9 @@ export function PresetInfoWidget({ source }: { source: string }) {
 	const showWeights = configValue(config, "showWeights", false);
 	const showLimits = configValue(config, "showLimits", true);
 
-	const preset = useMemo(() => {
+	const preset = useComputed(() => {
+		cards.value;
+		settingsVersion.value;
 		if (presetName) {
 			return plugin.presetService.getPresetByName(presetName) ?? null;
 		}
@@ -38,7 +40,7 @@ export function PresetInfoWidget({ source }: { source: string }) {
 		} catch {
 			return null;
 		}
-	}, [plugin, presetName]);
+	}).value;
 
 	if (!preset) {
 		return (

@@ -1,8 +1,8 @@
-import { dataVersion, metadataVersion, useSignalVersion } from "@shared/services/signals";
+import { useComputed } from "@preact/signals";
+import { cards, cardsBySourceUid } from "@shared/services/reactive-card-store";
 import { Clickable } from "@shared/ui/components";
 import { FSRS_COLORS } from "@shared/ui/helpers/fsrs-colors";
 import { usePlugin } from "@shared/ui/preact";
-import { useMemo } from "preact/hooks";
 import { WidgetCta } from "../WidgetCta";
 
 interface UnassignedNote {
@@ -15,30 +15,30 @@ interface UnassignedNote {
 
 export function UnassignedNotesWidget() {
 	const plugin = usePlugin();
-	const ver = useSignalVersion(dataVersion, metadataVersion);
 
-	const notes = useMemo((): UnassignedNote[] => {
-		if (!plugin.cardStore) return [];
+	const notes = useComputed((): UnassignedNote[] => {
+		cards.value;
 
 		const pls = plugin.projectLinkService;
 		const unassignedPaths = pls.getUnassignedPaths();
 
 		const result: UnassignedNote[] = [];
 		const now = new Date();
+		const uidMap = cardsBySourceUid.value;
 
 		for (const path of unassignedPaths) {
 			const uids = plugin.frontmatterIndex.getValues("flashcard_uid", path);
 			const uid = uids[0];
 			if (!uid) continue;
 
-			const cards = plugin.cardStore.getCardsBySourceUid(uid);
-			if (cards.length === 0) continue;
+			const uidCards = uidMap.get(uid) ?? [];
+			if (uidCards.length === 0) continue;
 
 			let newCount = 0;
 			let dueCount = 0;
 			let activeCount = 0;
 
-			for (const card of cards) {
+			for (const card of uidCards) {
 				if (card.suspended) continue;
 				if (card.buriedUntil && new Date(card.buriedUntil) > now) continue;
 				activeCount++;
@@ -65,7 +65,7 @@ export function UnassignedNotesWidget() {
 			(a, b) => b.dueCount - a.dueCount || a.name.localeCompare(b.name),
 		);
 		return result;
-	}, [plugin, ver]);
+	}).value;
 
 	if (notes.length === 0) {
 		return (
