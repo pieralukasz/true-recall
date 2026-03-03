@@ -63,10 +63,7 @@ export function ProjectHeaderRow({
 			onClick={onToggle}
 			stopPropagation={false}
 		>
-			<Clickable
-				class="ep:flex ep:items-center ep:gap-2 ep:flex-1 ep:min-w-0"
-				onClick={onToggle}
-			>
+			<div class="ep:flex ep:items-center ep:gap-2 ep:flex-1 ep:min-w-0">
 				<span
 					class={cn(
 						"ep:inline-block ep:w-1.5 ep:h-1.5 ep:rounded-full ep:shrink-0",
@@ -80,10 +77,7 @@ export function ProjectHeaderRow({
 				{project.presetName && (
 					<Clickable
 						class="ep:text-[10px] ep:px-1.5 ep:py-0.5 ep:rounded-full ep:bg-obs-modifier-hover ep:text-obs-muted ep:hover:text-obs-normal ep:hover:bg-obs-modifier-active-hover ep:transition-colors ep:shrink-0"
-						onClick={(e: MouseEvent) => {
-							e.stopPropagation();
-							onPresetClick?.(project.path);
-						}}
+						onClick={() => onPresetClick?.(project.path)}
 						title={`FSRS preset: ${project.presetName}`}
 					>
 						{project.presetName}
@@ -95,7 +89,7 @@ export function ProjectHeaderRow({
 					{project.totalMembers === 1 ? " note" : " notes"}
 					{project.healthPct > 0 && ` · ${project.healthPct}%`}
 				</span>
-			</Clickable>
+			</div>
 
 			<CardCountDisplay
 				newCount={project.newCount}

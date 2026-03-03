@@ -59,6 +59,12 @@ export function registerCommands(plugin: TrueRecallPlugin): void {
 	});
 
 	plugin.addCommand({
+		id: "add-flashcards",
+		name: "Add flashcards",
+		callback: () => plugin.openAddFlashcards(),
+	});
+
+	plugin.addCommand({
 		id: "create-backup",
 		name: "Create database backup",
 		callback: () => void plugin.createManualBackup(),
