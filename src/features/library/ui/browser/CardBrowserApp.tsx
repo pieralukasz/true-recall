@@ -2,14 +2,10 @@ import { CardBrowserQueryService } from "@features/library/services/card-browser
 import { notifyDuplicateError } from "@features/library/ui/panel/utils/panel-helpers";
 import { DuplicateQuestionError } from "@features/study/services/flashcard/card-repository.service";
 import { notify } from "@shared/services/notification.service";
-import {
-	dataVersion,
-	settingsVersion,
-	syncVersion,
-	useSignalVersion,
-} from "@shared/services/signals";
+import { settingsVersion } from "@shared/services/signals";
+import { cards } from "@shared/services/reactive-card-store";
 import { usePlugin } from "@shared/ui/preact";
-import { useSignal } from "@preact/signals";
+import { useComputed, useSignal } from "@preact/signals";
 import { useCallback, useMemo, useRef } from "preact/hooks";
 import { BrowserToolbar } from "./components/BrowserToolbar";
 import { CardTable } from "./components/CardTable";
@@ -55,14 +51,7 @@ export function CardBrowserApp() {
 		[plugin],
 	);
 
-	const refreshTick = useSignalVersion(
-		dataVersion,
-		settingsVersion,
-		syncVersion,
-	);
-
-	// Build combined filter from search text + state chips + sidebar
-	const combinedFilter = useMemo((): FilterState => {
+	const combinedFilter = useComputed((): FilterState => {
 		const parsed = parseSearchQuery(searchText.value);
 		return {
 			...parsed,
@@ -89,20 +78,23 @@ export function CardBrowserApp() {
 			],
 			showArchived: sidebarFilter.value.showArchived ?? false,
 		};
-	}, [searchText.value, stateFilters.value, sidebarFilter.value]);
+	});
 
-	const result = useMemo((): BrowserResult => {
+	const result = useComputed((): BrowserResult => {
+		cards.value;
+		settingsVersion.value;
 		return queryService.query(
-			combinedFilter,
+			combinedFilter.value,
 			sort.value,
 			PAGE_SIZE,
 			0,
 		);
-	}, [queryService, combinedFilter, sort.value, refreshTick]);
+	}).value;
 
-	const facetCounts = useMemo(() => {
+	const facetCounts = useComputed(() => {
+		cards.value;
 		return queryService.getFacetCounts();
-	}, [queryService, refreshTick]);
+	}).value;
 
 	const getSuggestions = useMemo(() => {
 		const presetNames = plugin.presetService
