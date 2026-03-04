@@ -1,6 +1,5 @@
 /* Tailwind CSS v4 entry point with Obsidian theme integration */
-@import "tailwindcss/theme" prefix(ep);
-@import "tailwindcss/utilities" prefix(ep);
+@import "tailwindcss" prefix(ep);
 
 /* Domain-specific CSS (complex selectors, SVG, animations that can't be Tailwind utilities) */
 @import "../../features/study/ui/editor/editor.styles.css";
