@@ -7,7 +7,7 @@ import type { NoteType } from "@shared/types/note.types";
 import { CardPreviewList } from "@features/core/modals/add-flashcards/CardPreviewList";
 import { CopyPromptButton } from "@features/core/modals/add-flashcards/CopyPromptButton";
 import { NoteTypePicker } from "@features/core/modals/add-flashcards/NoteTypePicker";
-import { NotePickerCombobox } from "@shared/ui/modals/simple-editor/NotePickerCombobox";
+import { NotePickerCombobox } from "@shared/ui/components/NotePickerCombobox";
 import type { EmbeddableEditorInstance } from "@shared/ui/editor/embedded-editor";
 import { useApp, usePlugin } from "@shared/ui/preact/ObsidianContext";
 import { SECONDARY_BUTTON_CLASSES } from "@shared/ui/utils/tailwind";
