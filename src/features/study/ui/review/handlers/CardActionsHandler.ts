@@ -6,6 +6,7 @@
 import type { SqliteStoreService } from "@features/core/persistence/sqlite";
 import type { FSRSService } from "@features/core/services/fsrs.service";
 import { QuickNoteEditorModal } from "@features/study/modals/quick-note-editor/QuickNoteEditorModal";
+import type { FlashcardManager } from "@features/study/services/flashcard/flashcard.service";
 import type { ReviewService } from "@features/study/services/review.service";
 import { notify } from "@shared/services/notification.service";
 import type { ReviewApi } from "@shared/store";
