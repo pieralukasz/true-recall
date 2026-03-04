@@ -126,6 +126,8 @@ function ClozeRenderer({ text }: { text: string }) {
 	);
 }
 
+const NEW_WORD_STYLE = { opacity: 0, filter: "blur(4px)", transform: "translateY(4px)" };
+
 export function PartialCard({
 	streaming,
 }: { streaming: StreamingGenerationState }) {
@@ -160,7 +162,7 @@ export function PartialCard({
 						<span
 							key={i}
 							data-wi={i}
-							style={w.isNew ? { opacity: 0, transform: "translateY(3px)" } : undefined}
+							style={w.isNew ? NEW_WORD_STYLE : undefined}
 						>
 							{w.text}
 						</span>
@@ -177,7 +179,7 @@ export function PartialCard({
 						<span
 							key={i}
 							data-wi={i}
-							style={w.isNew ? { opacity: 0, transform: "translateY(3px)" } : undefined}
+							style={w.isNew ? NEW_WORD_STYLE : undefined}
 						>
 							{w.text}
 						</span>
