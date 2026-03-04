@@ -1,4 +1,4 @@
-import type { ProjectNode } from "@features/core/services/project-link.service";
+import type { HierarchyTreeNode } from "@features/core/services/hierarchy.service";
 import { useComputed } from "@preact/signals";
 import { archivedSourceUids, cards } from "@shared/services/reactive-card-store";
 import { usePlugin } from "@shared/ui/preact";
@@ -18,16 +18,16 @@ export function ProjectHubWidget() {
 		archivedSourceUids.value;
 		if (!plugin.cardStore) return [];
 
-		const hierarchy = plugin.projectLinkService.buildHierarchy();
+		const hierarchy = plugin.hierarchyService.buildHierarchy();
 		const flat: FlatProject[] = [];
 
-		const flatten = (nodes: ProjectNode[], depth: number) => {
+		const flatten = (nodes: HierarchyTreeNode[], depth: number) => {
 			for (const node of nodes) {
 				const stats = computeProjectStats(
 					node.path,
 					node.name,
 					node.children.length,
-					plugin.projectLinkService,
+					plugin.hierarchyService,
 					plugin.cardStore,
 					plugin.fsrsService,
 				);
@@ -38,15 +38,15 @@ export function ProjectHubWidget() {
 
 		flatten(hierarchy, 0);
 
-		// Sort roots by due count desc (most urgent first), keep children after their parent
 		return sortByUrgency(flat);
 	}).value;
 
 	if (projects.length === 0) {
 		return (
 			<div class="ep:text-obs-muted ep:text-xs ep:p-3">
-				No projects found. Create a note with <code>project: true</code> in
-				frontmatter to get started.
+				No projects found. Add{" "}
+				<code>parents: ["[[project note]]"]</code> to child notes to
+				create a project hierarchy.
 			</div>
 		);
 	}
@@ -70,7 +70,7 @@ export function ProjectHubWidget() {
 							.catch(() => {});
 					}}
 					onCustomStudy={() => {
-						const members = plugin.projectLinkService.getMemberPaths(
+						const members = plugin.hierarchyService.getChildPaths(
 							stats.path,
 						);
 						const names = members.map((p) => {
@@ -96,7 +96,6 @@ export function ProjectHubWidget() {
  * root-level blocks (a root + its descendants) by the root's due count.
  */
 function sortByUrgency(flat: FlatProject[]): FlatProject[] {
-	// Split into root-level blocks
 	const blocks: FlatProject[][] = [];
 	for (const item of flat) {
 		if (item.depth === 0) {
@@ -106,7 +105,6 @@ function sortByUrgency(flat: FlatProject[]): FlatProject[] {
 		}
 	}
 
-	// Sort blocks by root due count descending
 	blocks.sort((a, b) => {
 		const aDue = a[0]?.stats.due ?? 0;
 		const bDue = b[0]?.stats.due ?? 0;

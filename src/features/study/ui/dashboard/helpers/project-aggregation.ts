@@ -1,9 +1,9 @@
 import type { FSRSService } from "@features/core/services/fsrs.service";
 import type { PresetService } from "@features/core/services/preset.service";
 import type {
-	ProjectLinkService,
-	ProjectNode,
-} from "@features/core/services/project-link.service";
+	HierarchyService,
+	HierarchyTreeNode,
+} from "@features/core/services/hierarchy.service";
 import type { SessionPersistenceService } from "@features/core/persistence/session-persistence.service";
 import type { CardStore } from "@shared/types/fsrs/store.types";
 import {
@@ -20,7 +20,7 @@ interface ProjectAggregationDeps {
 	notes: DashboardNoteEntry[];
 	showArchived?: boolean;
 	plugin: {
-		projectLinkService: ProjectLinkService;
+		hierarchyService: HierarchyService;
 		cardStore: CardStore;
 		fsrsService: FSRSService;
 		presetService: PresetService;
@@ -44,7 +44,7 @@ export function aggregateProjectData(
 		noteByName.set(note.name, note);
 	}
 
-	const hierarchy = plugin.projectLinkService.buildHierarchy();
+	const hierarchy = plugin.hierarchyService.buildHierarchy();
 
 	const allProjects = hierarchy.map((node) =>
 		buildProjectFromNode(node, noteByPath, noteByName, plugin),
@@ -55,11 +55,11 @@ export function aggregateProjectData(
 		// Keep all projects, tag archived ones
 		projects = allProjects.map((p) => ({
 			...p,
-			archived: plugin.projectLinkService.isProjectArchived(p.path),
+			archived: plugin.hierarchyService.isProjectArchived(p.path),
 		}));
 	} else {
 		projects = allProjects.filter(
-			(p) => !plugin.projectLinkService.isProjectArchived(p.path),
+			(p) => !plugin.hierarchyService.isProjectArchived(p.path),
 		);
 	}
 
@@ -83,7 +83,7 @@ export function aggregateProjectData(
 }
 
 function buildProjectFromNode(
-	node: ProjectNode,
+	node: HierarchyTreeNode,
 	noteByPath: Map<string, DashboardNoteEntry>,
 	noteByName: Map<string, DashboardNoteEntry>,
 	plugin: ProjectAggregationDeps["plugin"],
@@ -92,7 +92,7 @@ function buildProjectFromNode(
 		node.path,
 		node.name,
 		node.children.length,
-		plugin.projectLinkService,
+		plugin.hierarchyService,
 		plugin.cardStore,
 		plugin.fsrsService,
 	);

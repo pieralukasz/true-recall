@@ -18,11 +18,12 @@ export function ProjectWidget({
 }) {
 	const plugin = usePlugin();
 
+	// A note is a "project" if any note declares it as a parent
 	const isProject = useComputed(() => {
 		cards.value;
 		archivedSourceUids.value;
-		const values = plugin.frontmatterIndex.getValues("project", sourcePath);
-		return values.includes("true");
+		const children = plugin.hierarchyService.getChildPaths(sourcePath);
+		return children.length > 0;
 	}).value;
 
 	const stats = useComputed((): ProjectStats | null => {
@@ -32,14 +33,17 @@ export function ProjectWidget({
 
 		const file = plugin.app.vault.getAbstractFileByPath(sourcePath);
 		const name = file?.name?.replace(/\.md$/, "") ?? sourcePath;
-		const childCount =
-			plugin.projectLinkService.getChildProjects(sourcePath).length;
+		// Count sub-projects (children that themselves have children)
+		const childPaths = plugin.hierarchyService.getChildPaths(sourcePath);
+		const childCount = childPaths.filter(
+			(cp) => plugin.hierarchyService.getChildPaths(cp).length > 0,
+		).length;
 
 		return computeProjectStats(
 			sourcePath,
 			name,
 			childCount,
-			plugin.projectLinkService,
+			plugin.hierarchyService,
 			plugin.cardStore,
 			plugin.fsrsService,
 		);
@@ -48,8 +52,9 @@ export function ProjectWidget({
 	if (!isProject) {
 		return (
 			<div class="ep:text-obs-muted ep:text-xs ep:p-3">
-				Add <code>project: true</code> to this note's frontmatter to use as a
-				project dashboard.
+				No child notes found. Add{" "}
+				<code>parents: ["[[this note]]"]</code> to other notes to use
+				this as a project.
 			</div>
 		);
 	}
@@ -70,7 +75,7 @@ export function ProjectWidget({
 					.catch(() => {});
 			}}
 			onCustomStudy={() => {
-				const members = plugin.projectLinkService.getMemberPaths(sourcePath);
+				const members = plugin.hierarchyService.getChildPaths(sourcePath);
 				const names = members.map((p) => {
 					const f = plugin.app.vault.getAbstractFileByPath(p);
 					return f?.name?.replace(/\.md$/, "") ?? p;
