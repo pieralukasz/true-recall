@@ -1,13 +1,14 @@
 import { animate } from "motion/mini";
+import { spring } from "motion-dom";
 import type { RefObject } from "preact";
 import { useEffect, useRef } from "preact/hooks";
 import type { StreamingWord } from "./useStreamingText";
 
 /**
- * Imperatively animates new word spans using Motion (Web Animations API + spring physics).
+ * Imperatively animates new word spans using Motion mini (WAAPI + spring physics).
  * Tracks animated indices in a ref to avoid re-triggering on Preact re-renders.
  * Each word span must have a `data-wi="<index>"` attribute for DOM selection.
- * New words must start with inline `opacity: 0; transform: translateY(3px)`.
+ * New words must start with inline `opacity: 0; filter: blur(4px); transform: translateY(4px)`.
  */
 export function useWordReveal(
 	containerRef: RefObject<HTMLElement>,
@@ -38,11 +39,12 @@ export function useWordReveal(
 
 		if (toAnimate.length === 0) return;
 
-		for (const el of toAnimate) {
+		// Blur-fade-rise with spring physics + 30ms micro-stagger between batch words
+		for (let i = 0; i < toAnimate.length; i++) {
 			animate(
-				el,
-				{ opacity: 1, transform: "translateY(0)" },
-				{ type: "spring", stiffness: 400, damping: 30 },
+				toAnimate[i]!,
+				{ opacity: 1, filter: "blur(0px)", transform: "translateY(0px)" },
+				{ type: spring, stiffness: 380, damping: 22, delay: i * 0.03 },
 			);
 		}
 	});
