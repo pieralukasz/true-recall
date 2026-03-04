@@ -1,5 +1,6 @@
 import { StatsCalculatorService } from "@features/metrics/services/stats/stats-calculator.service";
-import { dataVersion, useSignalVersion } from "@shared/services/signals";
+import { useComputed } from "@preact/signals";
+import { cards } from "@shared/services/reactive-card-store";
 import { Clickable } from "@shared/ui/components";
 import { usePlugin } from "@shared/ui/preact";
 import { useMemo } from "preact/hooks";
@@ -206,11 +207,11 @@ function DonutChart({ data }: { data: RatingsData }) {
 
 export function RatingsWidget({ source }: { source: string }) {
 	const plugin = usePlugin();
-	const ver = useSignalVersion(dataVersion);
 
 	const config = useMemo(() => parseCodeblockConfig(source), [source]);
 
-	const data = useMemo((): RatingsData | null => {
+	const data = useComputed((): RatingsData | null => {
+		cards.value;
 		if (!plugin.sessionPersistence) return null;
 
 		const statsCalc = new StatsCalculatorService(
@@ -221,7 +222,7 @@ export function RatingsWidget({ source }: { source: string }) {
 
 		const period = configValue(config, "period", "week");
 		return computeRatingsData(statsCalc, String(period));
-	}, [plugin, config, ver]);
+	}).value;
 
 	if (!data) {
 		return <div class="ep:text-obs-muted ep:text-xs ep:p-3">Loading...</div>;

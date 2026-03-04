@@ -1,19 +1,10 @@
 import type { SqliteStoreService } from "@features/core/persistence/sqlite/SqliteStoreService";
 import { effect } from "@preact/signals";
-import {
-	type CardMutation,
-	lastMutation,
-	syncVersion,
-	track,
-} from "@shared/services/signals";
+import { type NoteStatusInfo, cards } from "@shared/services/reactive-card-store";
+import { type CardMutation, lastMutation } from "@shared/services/signals";
 import { State } from "ts-fsrs";
 
-export interface NoteStatusInfo {
-	new: number;
-	learning: number;
-	dueToday: number;
-	total: number;
-}
+export type { NoteStatusInfo } from "@shared/services/reactive-card-store";
 
 export class NoteStatusCacheService {
 	private cache: Map<string, NoteStatusInfo> = new Map();
@@ -67,7 +58,7 @@ export class NoteStatusCacheService {
 				this.handleMutation(m);
 			}),
 			effect(() => {
-				track(syncVersion);
+				cards.value;
 				this.buildFromStore();
 			}),
 		);

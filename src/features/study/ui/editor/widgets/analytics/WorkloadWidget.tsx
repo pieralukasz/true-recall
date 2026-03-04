@@ -1,6 +1,7 @@
+import { useComputed } from "@preact/signals";
 import { WorkloadForecastCalculator } from "@features/metrics/services/fsrs-tools/statistics/workload-forecast.calculator";
 import { StatsCalculatorService } from "@features/metrics/services/stats/stats-calculator.service";
-import { dataVersion, useSignalVersion } from "@shared/services/signals";
+import { cards } from "@shared/services/reactive-card-store";
 import { Clickable } from "@shared/ui/components";
 import { usePlugin } from "@shared/ui/preact";
 import { useMemo } from "preact/hooks";
@@ -27,11 +28,11 @@ interface WorkloadData {
 
 export function WorkloadWidget({ source }: { source: string }) {
 	const plugin = usePlugin();
-	const ver = useSignalVersion(dataVersion);
 
 	const config = useMemo(() => parseCodeblockConfig(source), [source]);
 
-	const data = useMemo((): WorkloadData | null => {
+	const data = useComputed((): WorkloadData | null => {
+		cards.value;
 		if (!plugin.cardStore || !plugin.sessionPersistence) return null;
 
 		const forecastDays = configValue(config, "days", 14) as number;
@@ -90,7 +91,7 @@ export function WorkloadWidget({ source }: { source: string }) {
 			peakDay: { label: peakLabel, count: peakEntry.dueCount },
 			needsBalancing: summary.needsBalancing,
 		};
-	}, [plugin, ver, config]);
+	}).value;
 
 	if (!data || data.days.length === 0) {
 		return (

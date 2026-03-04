@@ -1,4 +1,4 @@
-import type { NoteStatusInfo } from "@features/core/cache/note-status-cache.service";
+import type { NoteStatusInfo } from "@shared/services/reactive-card-store";
 import { FSRS_COLORS } from "@shared/ui/helpers/fsrs-colors";
 import { cva, type VariantProps } from "class-variance-authority";
 

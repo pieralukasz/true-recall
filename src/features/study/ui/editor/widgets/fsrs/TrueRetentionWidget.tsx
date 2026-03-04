@@ -1,4 +1,5 @@
-import { dataVersion, useSignalVersion } from "@shared/services/signals";
+import { useComputed } from "@preact/signals";
+import { cards } from "@shared/services/reactive-card-store";
 import { Clickable } from "@shared/ui/components";
 import { usePlugin } from "@shared/ui/preact";
 import { useMemo } from "preact/hooks";
@@ -12,7 +13,6 @@ const TREND_ARROWS: Record<number, { symbol: string; color: string }> = {
 
 export function TrueRetentionWidget({ source }: { source: string }) {
 	const plugin = usePlugin();
-	const ver = useSignalVersion(dataVersion);
 
 	const config = useMemo(() => parseCodeblockConfig(source), [source]);
 
@@ -20,7 +20,8 @@ export function TrueRetentionWidget({ source }: { source: string }) {
 	const showSparkline = configValue(config, "showSparkline", true);
 	const showTarget = configValue(config, "showTarget", true);
 
-	const data = useMemo(() => {
+	const data = useComputed(() => {
+		cards.value;
 		if (!plugin.fsrsHelper) return null;
 
 		const summary = plugin.fsrsHelper.getTrueRetentionSummary(days);
@@ -29,7 +30,7 @@ export function TrueRetentionWidget({ source }: { source: string }) {
 			: [];
 
 		return { summary, history };
-	}, [plugin, ver, days, showSparkline]);
+	}).value;
 
 	if (!plugin.fsrsHelper) {
 		return (

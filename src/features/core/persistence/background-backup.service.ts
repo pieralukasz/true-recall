@@ -1,7 +1,8 @@
 import type { BackupService } from "@features/core/persistence/backup.service";
 import { effect } from "@preact/signals";
 import { notify } from "@shared/services/notification.service";
-import { dataVersion, lastMutation, track } from "@shared/services/signals";
+import { cards } from "@shared/services/reactive-card-store";
+import { lastMutation } from "@shared/services/signals";
 import type {
 	BackupInterval,
 	RetentionPolicy,
@@ -108,7 +109,7 @@ export class BackgroundBackupManager {
 	private setupEventListeners(): void {
 		this.signalDisposers.push(
 			effect(() => {
-				track(dataVersion);
+				cards.value;
 				this.isDirty = true;
 			}),
 			effect(() => {
