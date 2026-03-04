@@ -31,6 +31,8 @@ function groupModelsByProvider(): SelectOptionGroup[] {
 		OpenAI: [],
 		Anthropic: [],
 		Meta: [],
+		DeepSeek: [],
+		xAI: [],
 	};
 
 	for (const [key, info] of Object.entries(AI_MODELS_EXTENDED)) {

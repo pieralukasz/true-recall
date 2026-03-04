@@ -12,7 +12,7 @@ export const VIEW_TYPE_CARD_BROWSER = "true-recall-card-browser";
 
 export interface AIModelInfo {
 	name: string;
-	provider: "Google" | "OpenAI" | "Anthropic" | "Meta";
+	provider: "Google" | "OpenAI" | "Anthropic" | "Meta" | "DeepSeek" | "xAI";
 	description: string;
 	recommended?: boolean;
 }
@@ -24,10 +24,20 @@ export const AI_MODELS_EXTENDED: Record<string, AIModelInfo> = {
 		description: "Fast, cost-effective",
 		recommended: true,
 	},
+	"google/gemini-3.1-pro-preview": {
+		name: "Gemini 3.1 Pro",
+		provider: "Google",
+		description: "Top Google reasoning model",
+	},
 	"google/gemini-2.5-pro-preview": {
 		name: "Gemini 2.5 Pro",
 		provider: "Google",
 		description: "High quality reasoning",
+	},
+	"google/gemini-2.5-flash": {
+		name: "Gemini 2.5 Flash",
+		provider: "Google",
+		description: "Cheap mid-tier",
 	},
 	"openai/gpt-5.1": {
 		name: "GPT-5.1",
@@ -39,6 +49,16 @@ export const AI_MODELS_EXTENDED: Record<string, AIModelInfo> = {
 		provider: "OpenAI",
 		description: "Balanced performance",
 	},
+	"openai/gpt-4o-mini": {
+		name: "GPT-4o mini",
+		provider: "OpenAI",
+		description: "Cheap & fast",
+	},
+	"anthropic/claude-sonnet-4.5": {
+		name: "Claude Sonnet 4.5",
+		provider: "Anthropic",
+		description: "Latest Sonnet",
+	},
 	"anthropic/claude-opus-4.5": {
 		name: "Claude Opus 4.5",
 		provider: "Anthropic",
@@ -49,22 +69,44 @@ export const AI_MODELS_EXTENDED: Record<string, AIModelInfo> = {
 		provider: "Anthropic",
 		description: "Fast & smart",
 	},
+	"anthropic/claude-haiku-4.5": {
+		name: "Claude Haiku 4.5",
+		provider: "Anthropic",
+		description: "Cheapest Claude",
+	},
 	"meta-llama/llama-4-maverick": {
 		name: "Llama 4 Maverick",
 		provider: "Meta",
 		description: "Open source",
+	},
+	"deepseek/deepseek-chat": {
+		name: "DeepSeek V3",
+		provider: "DeepSeek",
+		description: "Ultra cheap, high quality",
+	},
+	"x-ai/grok-4.1-fast": {
+		name: "Grok 4.1 Fast",
+		provider: "xAI",
+		description: "2M context, agentic",
 	},
 } as const;
 
 // Legacy format for backward compatibility
 export const AI_MODELS = {
 	"google/gemini-3-flash-preview": "Gemini 3 Flash (Google)",
+	"google/gemini-3.1-pro-preview": "Gemini 3.1 Pro (Google)",
 	"google/gemini-2.5-pro-preview": "Gemini 2.5 Pro (Google)",
+	"google/gemini-2.5-flash": "Gemini 2.5 Flash (Google)",
 	"openai/gpt-5.1": "GPT-5.1 (OpenAI)",
 	"openai/gpt-4o": "GPT-4o (OpenAI)",
+	"openai/gpt-4o-mini": "GPT-4o mini (OpenAI)",
+	"anthropic/claude-sonnet-4.5": "Claude Sonnet 4.5 (Anthropic)",
 	"anthropic/claude-opus-4.5": "Claude Opus 4.5 (Anthropic)",
 	"anthropic/claude-sonnet-4": "Claude Sonnet 4 (Anthropic)",
+	"anthropic/claude-haiku-4.5": "Claude Haiku 4.5 (Anthropic)",
 	"meta-llama/llama-4-maverick": "Llama 4 Maverick (Meta)",
+	"deepseek/deepseek-chat": "DeepSeek V3 (DeepSeek)",
+	"x-ai/grok-4.1-fast": "Grok 4.1 Fast (xAI)",
 } as const;
 
 export type AIModelKey = keyof typeof AI_MODELS;
