@@ -61,6 +61,7 @@ function RenameBody({
 				<Clickable
 					class="ep-btn ep:px-4 ep:py-1.5 ep:rounded-md ep:text-ui-small"
 					onClick={() => onResolve({ cancelled: true, newName: "" })}
+					stopPropagation={false}
 				>
 					Cancel
 				</Clickable>
@@ -68,6 +69,7 @@ function RenameBody({
 					class="mod-cta ep-btn ep:px-4 ep:py-1.5 ep:rounded-md ep:text-ui-small"
 					onClick={handleRename}
 					disabled={!canRename}
+					stopPropagation={false}
 				>
 					Rename
 				</Clickable>
