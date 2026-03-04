@@ -7,3 +7,4 @@ export {
 	useStreamingText,
 	type StreamingWord,
 } from "./useStreamingText";
+export { useWordReveal } from "./useWordReveal";

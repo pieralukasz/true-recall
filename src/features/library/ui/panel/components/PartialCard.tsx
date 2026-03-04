@@ -1,5 +1,9 @@
 import type { StreamingGenerationState } from "@features/ai/services/streaming-state";
-import { useStreamingText } from "@features/library/ui/panel/hooks";
+import {
+	useStreamingText,
+	useWordReveal,
+} from "@features/library/ui/panel/hooks";
+import { useRef } from "preact/hooks";
 
 interface ClozePart {
 	text: string;
@@ -132,6 +136,11 @@ export function PartialCard({
 		streaming.partialAnswer ?? "",
 	);
 
+	const qRef = useRef<HTMLDivElement>(null);
+	const aRef = useRef<HTMLDivElement>(null);
+	useWordReveal(qRef, qWords);
+	useWordReveal(aRef, aWords);
+
 	const hasCloze = hasClozeSyntax(streaming.partialQuestion);
 
 	if (streaming.phase === "waiting" || (qWords.length === 0 && !hasCloze)) {
@@ -140,12 +149,19 @@ export function PartialCard({
 
 	return (
 		<div class="ep:flex ep:flex-col ep:mb-2 ep:rounded-lg ep:bg-obs-secondary ep:border ep:border-obs-border/20 ep:shadow-sm ep:p-3">
-			<div class="ep:text-ui-small ep:text-obs-normal ep:leading-relaxed">
+			<div
+				ref={qRef}
+				class="ep:text-ui-small ep:text-obs-normal ep:leading-relaxed"
+			>
 				{hasCloze ? (
 					<ClozeRenderer text={streaming.partialQuestion ?? ""} />
 				) : (
 					qWords.map((w, i) => (
-						<span key={i} class={w.isNew ? "ep-word-reveal" : undefined}>
+						<span
+							key={i}
+							data-wi={i}
+							style={w.isNew ? { opacity: 0, transform: "translateY(3px)" } : undefined}
+						>
 							{w.text}
 						</span>
 					))
@@ -153,11 +169,15 @@ export function PartialCard({
 				{qTyping && <span class="ep-streaming-cursor" />}
 			</div>
 			{(aWords.length > 0 || streaming.partialAnswer != null) && (
-				<div class="ep:text-ui-small ep:text-obs-muted ep:mt-1.5 ep:leading-relaxed">
+				<div
+					ref={aRef}
+					class="ep:text-ui-small ep:text-obs-muted ep:mt-1.5 ep:leading-relaxed"
+				>
 					{aWords.map((w, i) => (
 						<span
 							key={i}
-							class={w.isNew ? "ep-word-reveal" : undefined}
+							data-wi={i}
+							style={w.isNew ? { opacity: 0, transform: "translateY(3px)" } : undefined}
 						>
 							{w.text}
 						</span>

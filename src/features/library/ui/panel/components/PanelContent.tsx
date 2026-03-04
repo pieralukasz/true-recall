@@ -134,50 +134,43 @@ function StreamingSection({
 	);
 }
 
-interface StreamingSnapshot {
-	isGenerating: boolean;
-	notePath: string | null;
-	completedCards: FlashcardItem[];
-	recentCardIds: Set<string>;
-}
-
 /**
  * Coarse subscription: only re-renders PanelContent when card-level state changes
  * (completedCards.length, recentCardIds.size, isGenerating, notePath).
  * High-frequency partialQuestion/partialAnswer updates are handled by StreamingSection.
+ *
+ * Uses ref comparison + forceUpdate instead of setSnapshot(prev => ...) because
+ * Preact's functional-updater bail-out is unreliable inside useSignalEffect.
  */
-function useStreamingSnapshot(): StreamingSnapshot {
-	const [snapshot, setSnapshot] = useState<StreamingSnapshot>(() => {
-		const s = streamingGeneration.peek();
-		return {
-			isGenerating: s.isGenerating,
-			notePath: s.notePath,
-			completedCards: s.completedCards,
-			recentCardIds: s.recentCardIds,
-		};
+function useStreamingCardState() {
+	const [, forceUpdate] = useState(0);
+	const prevRef = useRef({
+		isGenerating: false,
+		completedCount: 0,
+		recentCount: 0,
+		notePath: null as string | null,
 	});
 
 	useSignalEffect(() => {
 		const s = streamingGeneration.value;
-		setSnapshot((prev) => {
-			if (
-				prev.isGenerating === s.isGenerating &&
-				prev.completedCards.length === s.completedCards.length &&
-				prev.recentCardIds.size === s.recentCardIds.size &&
-				prev.notePath === s.notePath
-			) {
-				return prev;
-			}
-			return {
+		const prev = prevRef.current;
+		if (
+			prev.isGenerating !== s.isGenerating ||
+			prev.completedCount !== s.completedCards.length ||
+			prev.recentCount !== s.recentCardIds.size ||
+			prev.notePath !== s.notePath
+		) {
+			prevRef.current = {
 				isGenerating: s.isGenerating,
+				completedCount: s.completedCards.length,
+				recentCount: s.recentCardIds.size,
 				notePath: s.notePath,
-				completedCards: s.completedCards,
-				recentCardIds: s.recentCardIds,
 			};
-		});
+			forceUpdate((n) => n + 1);
+		}
 	});
 
-	return snapshot;
+	return streamingGeneration.peek();
 }
 
 // ── Main component ──────────────────────────────────────────────
@@ -206,7 +199,7 @@ export function PanelContent({
 
 	const flashcards = flashcardInfo?.exists ? flashcardInfo.flashcards : [];
 
-	const streaming = useStreamingSnapshot();
+	const streaming = useStreamingCardState();
 	const isStreamingForFile =
 		streaming.isGenerating && streaming.notePath === currentFile?.path;
 	const { recentCardIds } = streaming;
@@ -267,16 +260,7 @@ export function PanelContent({
 		return <EmptyState message={EmptyStateMessages.NOT_MARKDOWN} />;
 	}
 
-	if (!flashcardInfo?.exists) {
-		if (isStreamingForFile) {
-			return (
-				<div class="ep:flex ep:flex-col">
-					<StreamingSection
-						currentFilePath={currentFile?.path ?? null}
-					/>
-				</div>
-			);
-		}
+	if (!flashcardInfo?.exists && !isStreamingForFile) {
 		return (
 			<PanelEmptyState
 				onGenerate={onGenerateFromNote}
