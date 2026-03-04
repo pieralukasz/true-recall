@@ -16,13 +16,13 @@ import {
 	BUILTIN_CLOZE_ID,
 } from "../../../src/shared/types/note.types";
 import {
-	type TestContextV26,
-	createTestContextV26,
+	type TestContext,
+	createTestContext,
 	createTestNoteType,
 	createTestNote,
 	insertNoteTypeDirect,
 	insertNoteDirect,
-} from "../../services/persistence/sqlite/__setup__/test-database-v26";
+} from "../../services/persistence/sqlite/__setup__/test-database";
 
 // ── Helpers ────────────────────────────────────────────────────
 
@@ -77,10 +77,10 @@ function clozeNoteType(): NoteType {
 // ── Tests ──────────────────────────────────────────────────────
 
 describe("note-based card creation", () => {
-	let ctx: TestContextV26;
+	let ctx: TestContext;
 
 	beforeEach(async () => {
-		ctx = await createTestContextV26();
+		ctx = await createTestContext();
 	});
 
 	afterEach(() => {

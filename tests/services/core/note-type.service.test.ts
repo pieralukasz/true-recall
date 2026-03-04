@@ -15,20 +15,20 @@ import {
 	BUILTIN_IMAGE_OCCLUSION_ID,
 } from "../../../src/shared/types/note.types";
 import {
-	type TestContextV26,
-	createTestContextV26,
+	type TestContext,
+	createTestContext,
 	createTestNote,
 	insertNoteDirect,
 	insertNoteTypeDirect,
 	createTestNoteType,
-} from "../../services/persistence/sqlite/__setup__/test-database-v26";
+} from "../../services/persistence/sqlite/__setup__/test-database";
 
 describe("NoteTypeService", () => {
-	let ctx: TestContextV26;
+	let ctx: TestContext;
 	let service: NoteTypeService;
 
 	beforeEach(async () => {
-		ctx = await createTestContextV26();
+		ctx = await createTestContext();
 		service = new NoteTypeService({
 			noteTypeActions: ctx.noteTypes,
 			noteActions: ctx.notes,
