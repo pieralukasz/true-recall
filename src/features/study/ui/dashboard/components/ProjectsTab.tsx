@@ -116,7 +116,8 @@ export function ProjectsTab({
 			return;
 		}
 
-		await plugin.app.vault.create(path, "");
+		const content = ["---", "include: folder", "---", ""].join("\n");
+		await plugin.app.vault.create(path, content);
 		await plugin.app.workspace.openLinkText(path, "", false);
 	}, [plugin]);
 

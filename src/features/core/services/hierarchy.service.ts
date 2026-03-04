@@ -175,6 +175,9 @@ export class HierarchyService {
 			}
 		}
 
+		// Add implicit children from `include: folder` notes
+		this.addFolderIncludes(parentMap, childMap);
+
 		// Detect and break cycles
 		this.breakCycles(parentMap, childMap);
 
@@ -235,6 +238,44 @@ export class HierarchyService {
 		while (white.size > 0) {
 			const node = white.values().next().value as string;
 			dfs(node);
+		}
+	}
+
+	private addFolderIncludes(
+		parentMap: Map<string, Set<string>>,
+		childMap: Map<string, Set<string>>,
+	): void {
+		const includeFiles = this.frontmatterIndex.getFilesByValue(
+			"include",
+			"folder",
+		);
+		if (includeFiles.length === 0) return;
+
+		const allFiles = this.app.vault.getMarkdownFiles();
+
+		for (const folderNote of includeFiles) {
+			const lastSlash = folderNote.path.lastIndexOf("/");
+			const dir = lastSlash >= 0 ? folderNote.path.substring(0, lastSlash) : "";
+
+			for (const file of allFiles) {
+				if (file.path === folderNote.path) continue;
+
+				const fileLastSlash = file.path.lastIndexOf("/");
+				const fileDir =
+					fileLastSlash >= 0 ? file.path.substring(0, fileLastSlash) : "";
+				if (fileDir !== dir) continue;
+
+				// Add bidirectional edge: file is child of folder note
+				if (!parentMap.has(file.path)) {
+					parentMap.set(file.path, new Set());
+				}
+				parentMap.get(file.path)!.add(folderNote.path);
+
+				if (!childMap.has(folderNote.path)) {
+					childMap.set(folderNote.path, new Set());
+				}
+				childMap.get(folderNote.path)!.add(file.path);
+			}
 		}
 	}
 
