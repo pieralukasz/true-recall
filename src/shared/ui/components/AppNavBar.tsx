@@ -92,7 +92,7 @@ function NavBarItem({
 			)}
 			onClick={onClick}
 		>
-			<span ref={iconRef} class="[&_svg]:ep:w-4 [&_svg]:ep:h-4" />
+			<span ref={iconRef} class="ep:flex ep:items-center [&_svg]:ep:w-4 [&_svg]:ep:h-4" />
 			<span>{item.label}</span>
 		</Clickable>
 	);
