@@ -1,8 +1,8 @@
-import { dataVersion, metadataVersion, useSignalVersion } from "@shared/services/signals";
+import { useComputed } from "@preact/signals";
+import { archivedSourceUids, cards } from "@shared/services/reactive-card-store";
 import { Clickable } from "@shared/ui/components";
 import { FSRS_COLORS } from "@shared/ui/helpers/fsrs-colors";
 import { usePlugin } from "@shared/ui/preact";
-import { useMemo } from "preact/hooks";
 import {
 	computeProjectStats,
 	healthColor,
@@ -17,14 +17,17 @@ export function ProjectWidget({
 	sourcePath: string;
 }) {
 	const plugin = usePlugin();
-	const ver = useSignalVersion(dataVersion, metadataVersion);
 
-	const isProject = useMemo(() => {
+	const isProject = useComputed(() => {
+		cards.value;
+		archivedSourceUids.value;
 		const values = plugin.frontmatterIndex.getValues("project", sourcePath);
 		return values.includes("true");
-	}, [plugin, sourcePath, ver]);
+	}).value;
 
-	const stats = useMemo((): ProjectStats | null => {
+	const stats = useComputed((): ProjectStats | null => {
+		cards.value;
+		archivedSourceUids.value;
 		if (!isProject || !plugin.cardStore) return null;
 
 		const file = plugin.app.vault.getAbstractFileByPath(sourcePath);
@@ -40,7 +43,7 @@ export function ProjectWidget({
 			plugin.cardStore,
 			plugin.fsrsService,
 		);
-	}, [plugin, sourcePath, isProject, ver]);
+	}).value;
 
 	if (!isProject) {
 		return (

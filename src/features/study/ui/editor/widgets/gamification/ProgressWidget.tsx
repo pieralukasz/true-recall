@@ -1,5 +1,6 @@
 import { StatsCalculatorService } from "@features/metrics/services/stats/stats-calculator.service";
-import { dataVersion, useSignalVersion } from "@shared/services/signals";
+import { useComputed } from "@preact/signals";
+import { cards } from "@shared/services/reactive-card-store";
 import { Clickable } from "@shared/ui/components";
 import { usePlugin } from "@shared/ui/preact";
 import { useMemo } from "preact/hooks";
@@ -70,11 +71,11 @@ function RingTrack({
 
 export function ProgressWidget({ source }: { source: string }) {
 	const plugin = usePlugin();
-	const ver = useSignalVersion(dataVersion);
 
 	const config = useMemo(() => parseCodeblockConfig(source), [source]);
 
-	const data = useMemo((): ProgressData | null => {
+	const data = useComputed((): ProgressData | null => {
+		cards.value;
 		if (!plugin.sessionPersistence) return null;
 
 		const statsCalc = new StatsCalculatorService(
@@ -112,7 +113,7 @@ export function ProgressWidget({ source }: { source: string }) {
 			estimatedMinutesRemaining,
 			allDone,
 		};
-	}, [plugin, ver]);
+	}).value;
 
 	if (!data) {
 		return <div class="ep:text-obs-muted ep:text-xs ep:p-3">Loading...</div>;

@@ -1,5 +1,6 @@
+import { useComputed } from "@preact/signals";
 import { StatsCalculatorService } from "@features/metrics/services/stats/stats-calculator.service";
-import { dataVersion, useSignalVersion } from "@shared/services/signals";
+import { cards } from "@shared/services/reactive-card-store";
 import { Clickable } from "@shared/ui/components";
 import { usePlugin } from "@shared/ui/preact";
 import { useMemo, useRef, useState } from "preact/hooks";
@@ -50,7 +51,6 @@ const LEVEL_OPACITIES = [1, 0.3, 0.5, 0.7, 1];
 
 export function HeatmapWidget({ source }: { source: string }) {
 	const plugin = usePlugin();
-	const ver = useSignalVersion(dataVersion);
 	const [tooltip, setTooltip] = useState<{
 		cell: HeatmapCell;
 		x: number;
@@ -60,17 +60,15 @@ export function HeatmapWidget({ source }: { source: string }) {
 
 	const config = useMemo(() => parseCodeblockConfig(source), [source]);
 
-	const statsCalculator = useMemo(() => {
+	const data = useComputed((): HeatmapData | null => {
+		cards.value;
 		if (!plugin.sessionPersistence) return null;
-		return new StatsCalculatorService(
+
+		const statsCalculator = new StatsCalculatorService(
 			plugin.fsrsService,
 			plugin.flashcardManager,
 			plugin.sessionPersistence,
 		);
-	}, [plugin]);
-
-	const data = useMemo((): HeatmapData | null => {
-		if (!statsCalculator) return null;
 
 		const months = configValue(config, "months", 12) as number;
 		const allStats = statsCalculator.getAllDailyStats();
@@ -159,7 +157,7 @@ export function HeatmapWidget({ source }: { source: string }) {
 		}
 
 		return { cells, monthLabels, daysActive, totalReviews, maxWeeks: col + 1 };
-	}, [statsCalculator, ver, config]);
+	}).value;
 
 	if (!data) {
 		return <div class="ep:text-obs-muted ep:text-xs ep:p-3">Loading...</div>;

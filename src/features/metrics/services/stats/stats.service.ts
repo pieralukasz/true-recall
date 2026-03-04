@@ -1,7 +1,7 @@
 import { ReactiveCache } from "@features/core/cache";
 import type { FSRSService } from "@features/core/services/fsrs.service";
 import type { FlashcardManager } from "@features/study/services/flashcard/flashcard.service";
-import { dataVersion } from "@shared/services/signals";
+import { cards } from "@shared/services/reactive-card-store";
 
 export interface GlobalFlashcardStats {
 	total: number;
@@ -21,7 +21,7 @@ export class StatsService {
 
 		this.statsCache = new ReactiveCache({
 			compute: () => this.computeStats(),
-			invalidateOn: [dataVersion],
+			invalidateOn: [cards],
 			ttlMs: 30000,
 			label: "StatsService",
 		});
