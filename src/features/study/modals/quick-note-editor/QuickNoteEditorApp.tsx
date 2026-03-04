@@ -1,5 +1,5 @@
 import { Clickable } from "@shared/ui/components/Clickable";
-import { NotePickerCombobox } from "@shared/ui/modals/simple-editor/NotePickerCombobox";
+import { NotePickerCombobox } from "@shared/ui/components/NotePickerCombobox";
 import { useApp, usePlugin } from "@shared/ui/preact/ObsidianContext";
 import { SECONDARY_BUTTON_CLASSES } from "@shared/ui/utils/tailwind";
 import { Notice, TFile } from "obsidian";

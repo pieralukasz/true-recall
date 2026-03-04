@@ -5,15 +5,13 @@
 
 import type { SqliteStoreService } from "@features/core/persistence/sqlite";
 import type { FSRSService } from "@features/core/services/fsrs.service";
-import { DuplicateQuestionError } from "@features/study/services/flashcard/card-repository.service";
-import type { FlashcardManager } from "@features/study/services/flashcard/flashcard.service";
-import { cardToMarkdown } from "@features/study/services/flashcard/flashcard-format.util";
 import { QuickNoteEditorModal } from "@features/study/modals/quick-note-editor/QuickNoteEditorModal";
+import type { FlashcardManager } from "@features/study/services/flashcard/flashcard.service";
 import type { ReviewService } from "@features/study/services/review.service";
 import { notify } from "@shared/services/notification.service";
 import type { ReviewApi } from "@shared/store";
 import type { TrueRecallSettings } from "@shared/types";
-import { MoveCardModal, SimpleFlashcardEditorModal } from "@shared/ui/modals";
+import { MoveCardModal } from "@shared/ui/modals";
 import type { App } from "obsidian";
 import { Rating } from "ts-fsrs";
 import type TrueRecallPlugin from "../../../../../main";
@@ -385,71 +383,17 @@ export class CardActionsHandler {
 	}
 
 	/**
-	 * Copy current card to new flashcard
-	 * Opens simple markdown editor with current card's Q&A pre-filled
-	 */
-	async handleCopyCurrentCard(): Promise<void> {
-		const card = this.deps.getReview().getCurrentCard();
-		if (!card) return;
-
-		// Open modal with pre-filled content in markdown format
-		const modal = new SimpleFlashcardEditorModal(
-			this.deps.app,
-			{
-				mode: "add",
-				currentFilePath: card.sourceNotePath || "",
-				prefillContent: cardToMarkdown(card),
-			},
-			this.deps.plugin.EmbeddableEditor,
-		);
-
-		const result = await modal.openAndWait();
-		if (result.cancelled || result.flashcards.length === 0) return;
-
-		try {
-			// Add all parsed flashcards directly using the current card's sourceUid
-			for (const flashcard of result.flashcards) {
-				await this.deps.flashcardManager.addSingleFlashcard(
-					flashcard.question,
-					flashcard.answer,
-					card.sourceUid,
-				);
-			}
-
-			const noteName = card.sourceNotePath
-				?.split("/")
-				.pop()
-				?.replace(/\.md$/, "");
-			notify().cardsCreated(result.flashcards.length, noteName);
-		} catch (error) {
-			if (error instanceof DuplicateQuestionError) {
-				const sourceInfo = error.existingSourceUid
-					? this.deps.flashcardManager
-							.getSourceNoteService()
-							.resolveSourceNote(error.existingSourceUid)
-					: {};
-				notify().duplicateFound(
-					result.flashcards[0]?.question ?? "",
-					sourceInfo.noteName,
-				);
-			} else {
-				console.error("[CardActionsHandler] Error copying flashcard:", error);
-				notify().operationFailed("copy flashcard", error);
-			}
-		}
-	}
-
-	/**
 	 * Edit the current card via the QuickNoteEditor modal (v26 note-aware).
-	 * Falls back to SimpleFlashcardEditorModal for legacy cards without noteId.
 	 */
 	async handleEditCardModal(): Promise<void> {
 		const card = this.deps.getReview().getCurrentCard();
 		if (!card) return;
 
-		// Legacy fallback: v25 cards without a noteId use the old raw Q/A editor
 		if (!card.noteId) {
-			return this.handleEditCardModalLegacy();
+			notify().error(
+				"Cannot edit card: missing note link. Please restart Obsidian to complete database migration.",
+			);
+			return;
 		}
 
 		const note = this.deps.cardStore.notes.getById(card.noteId);
@@ -499,94 +443,6 @@ export class CardActionsHandler {
 						updatedCard.question ?? card.question,
 						updatedCard.answer ?? card.answer ?? "",
 					);
-			}
-		}
-	}
-
-	/**
-	 * Legacy edit path for v25 cards without noteId.
-	 * Uses raw Q/A editor (SimpleFlashcardEditorModal).
-	 */
-	private async handleEditCardModalLegacy(): Promise<void> {
-		const card = this.deps.getReview().getCurrentCard();
-		if (!card) return;
-
-		const modal = new SimpleFlashcardEditorModal(
-			this.deps.app,
-			{
-				mode: "edit",
-				currentFilePath: card.sourceNotePath || "",
-				prefillContent: cardToMarkdown(card),
-				editCardId: card.id,
-			},
-			this.deps.plugin.EmbeddableEditor,
-		);
-
-		const result = await modal.openAndWait();
-		if (result.cancelled || result.flashcards.length === 0) return;
-
-		try {
-			const firstFlashcard = result.flashcards[0];
-			if (!firstFlashcard) return;
-
-			if (
-				card.cardType === "cloze" &&
-				card.clozeTemplate &&
-				card.sourceUid &&
-				firstFlashcard.clozeTemplate
-			) {
-				this.deps.flashcardManager.updateClozeTemplate(
-					card.sourceUid,
-					card.clozeTemplate,
-					firstFlashcard.clozeTemplate,
-					card.sourceNoteName,
-				);
-				const thisCard = result.flashcards.find(
-					(c) => c.clozeIndex === card.clozeIndex,
-				);
-				if (thisCard) {
-					this.deps
-						.getReview()
-						.updateCurrentCardContent(thisCard.question, thisCard.answer);
-				}
-				return;
-			}
-
-			this.deps.plugin.undoService?.push({
-				id: crypto.randomUUID(),
-				actionType: "update-card",
-				description: "Edit card",
-				timestamp: Date.now(),
-				payload: {
-					type: "update",
-					cardId: card.id,
-					previousQuestion: card.question,
-					previousAnswer: card.answer ?? "",
-				},
-			});
-			this.deps.flashcardManager.updateCardContent(
-				card.id,
-				firstFlashcard.question,
-				firstFlashcard.answer,
-			);
-			this.deps
-				.getReview()
-				.updateCurrentCardContent(
-					firstFlashcard.question,
-					firstFlashcard.answer,
-				);
-		} catch (error) {
-			if (error instanceof DuplicateQuestionError) {
-				const sourceInfo = error.existingSourceUid
-					? this.deps.flashcardManager
-							.getSourceNoteService()
-							.resolveSourceNote(error.existingSourceUid)
-					: {};
-				const question = result.flashcards[0]?.question ?? "";
-				notify().duplicateFound(question, sourceInfo.noteName);
-			} else {
-				console.error("[CardActionsHandler] Error updating card:", error);
-				notify().operationFailed("update card", error);
 			}
 		}
 	}
