@@ -74,6 +74,114 @@ function getItemInfo(item: PanelItem): {
 	}
 }
 
+// ── Streaming subscription helpers ──────────────────────────────
+
+const SCROLL_THROTTLE_MS = 300;
+
+/** Subscribes to the full signal at ~60Hz but only renders PartialCard + scroll anchor. */
+function StreamingSection({
+	currentFilePath,
+}: { currentFilePath: string | null }) {
+	const [, forceUpdate] = useState(0);
+	useSignalEffect(() => {
+		const _ = streamingGeneration.value;
+		forceUpdate((n) => n + 1);
+	});
+
+	const streaming = streamingGeneration.value;
+	const isActive =
+		streaming.isGenerating && streaming.notePath === currentFilePath;
+
+	const bottomRef = useRef<HTMLDivElement>(null);
+	const lastScrollRef = useRef(0);
+	const scrollTimerRef = useRef<ReturnType<typeof setTimeout>>();
+
+	// Throttled auto-scroll: runs on every render but scrolls at most once per 300ms.
+	// No dependency array intentional — the throttle gate is time-based, not state-based.
+	useEffect(() => {
+		if (!isActive) return;
+
+		const now = Date.now();
+		const elapsed = now - lastScrollRef.current;
+
+		if (elapsed >= SCROLL_THROTTLE_MS) {
+			bottomRef.current?.scrollIntoView({
+				behavior: "smooth",
+				block: "end",
+			});
+			lastScrollRef.current = now;
+		} else {
+			clearTimeout(scrollTimerRef.current);
+			scrollTimerRef.current = setTimeout(() => {
+				bottomRef.current?.scrollIntoView({
+					behavior: "smooth",
+					block: "end",
+				});
+				lastScrollRef.current = Date.now();
+			}, SCROLL_THROTTLE_MS - elapsed);
+		}
+
+		return () => clearTimeout(scrollTimerRef.current);
+	});
+
+	if (!isActive) return null;
+
+	return (
+		<>
+			<PartialCard streaming={streaming} />
+			<div ref={bottomRef} />
+		</>
+	);
+}
+
+interface StreamingSnapshot {
+	isGenerating: boolean;
+	notePath: string | null;
+	completedCards: FlashcardItem[];
+	recentCardIds: Set<string>;
+}
+
+/**
+ * Coarse subscription: only re-renders PanelContent when card-level state changes
+ * (completedCards.length, recentCardIds.size, isGenerating, notePath).
+ * High-frequency partialQuestion/partialAnswer updates are handled by StreamingSection.
+ */
+function useStreamingSnapshot(): StreamingSnapshot {
+	const [snapshot, setSnapshot] = useState<StreamingSnapshot>(() => {
+		const s = streamingGeneration.peek();
+		return {
+			isGenerating: s.isGenerating,
+			notePath: s.notePath,
+			completedCards: s.completedCards,
+			recentCardIds: s.recentCardIds,
+		};
+	});
+
+	useSignalEffect(() => {
+		const s = streamingGeneration.value;
+		setSnapshot((prev) => {
+			if (
+				prev.isGenerating === s.isGenerating &&
+				prev.completedCards.length === s.completedCards.length &&
+				prev.recentCardIds.size === s.recentCardIds.size &&
+				prev.notePath === s.notePath
+			) {
+				return prev;
+			}
+			return {
+				isGenerating: s.isGenerating,
+				notePath: s.notePath,
+				completedCards: s.completedCards,
+				recentCardIds: s.recentCardIds,
+			};
+		});
+	});
+
+	return snapshot;
+}
+
+// ── Main component ──────────────────────────────────────────────
+
 export function PanelContent({
 	flashcardInfo,
 	currentFile,
@@ -98,15 +206,7 @@ export function PanelContent({
 
 	const flashcards = flashcardInfo?.exists ? flashcardInfo.flashcards : [];
 
-	// Subscribe to streaming signal to force re-render on changes
-	// Direct .value access doesn't create reactive subscription in Preact
-	const [, forceUpdate] = useState(0);
-	useSignalEffect(() => {
-		const _ = streamingGeneration.value;
-		forceUpdate((n) => n + 1);
-	});
-
-	const streaming = streamingGeneration.value;
+	const streaming = useStreamingSnapshot();
 	const isStreamingForFile =
 		streaming.isGenerating && streaming.notePath === currentFile?.path;
 	const { recentCardIds } = streaming;
@@ -159,14 +259,6 @@ export function PanelContent({
 		return undefined;
 	}, [streaming.isGenerating, recentCardIds.size]);
 
-	const bottomRef = useRef<HTMLDivElement>(null);
-
-	useEffect(() => {
-		if (isStreamingForFile) {
-			bottomRef.current?.scrollIntoView({ behavior: "smooth", block: "end" });
-		}
-	}, [isStreamingForFile, recentCardIds.size, streaming.partialQuestion]);
-
 	if (!currentFile) {
 		return <EmptyState message={EmptyStateMessages.NO_FILE} />;
 	}
@@ -179,7 +271,9 @@ export function PanelContent({
 		if (isStreamingForFile) {
 			return (
 				<div class="ep:flex ep:flex-col">
-					<PartialCard streaming={streaming} />
+					<StreamingSection
+						currentFilePath={currentFile?.path ?? null}
+					/>
 				</div>
 			);
 		}
@@ -235,10 +329,13 @@ export function PanelContent({
 						item.type === "basic"
 							? () => handlers.onToggleSelect(key)
 							: () => {
-									for (const c of cards) handlers.onToggleSelect(c.id);
+									for (const c of cards)
+										handlers.onToggleSelect(c.id);
 								},
-					onSelect: () => handlers.onEnterSelectionMode(primaryCard.id),
-					onLongPress: () => handlers.onEnterSelectionMode(primaryCard.id),
+					onSelect: () =>
+						handlers.onEnterSelectionMode(primaryCard.id),
+					onLongPress: () =>
+						handlers.onEnterSelectionMode(primaryCard.id),
 					onJumpToSource: primaryCard.sourceText
 						? () => handlers.onJumpToSource(primaryCard)
 						: undefined,
@@ -286,8 +383,11 @@ export function PanelContent({
 					/>
 				);
 			})}
-			{isStreamingForFile && <PartialCard streaming={streaming} />}
-			{isStreamingForFile && <div ref={bottomRef} />}
+			{isStreamingForFile && (
+				<StreamingSection
+					currentFilePath={currentFile?.path ?? null}
+				/>
+			)}
 		</div>
 	);
 }

@@ -108,18 +108,15 @@ export function ProjectsTab({
 		const result = await modal.openAndWait();
 		if (result.cancelled) return;
 
-		const path = CreateProjectModal.buildNotePath(
-			result.name,
-			result.folder,
-		);
+		const folderBase = result.folder ? `${result.folder}/` : "";
+		const path = normalizePath(`${folderBase}${result.name}/${result.name}.md`);
 
 		if (plugin.app.vault.getAbstractFileByPath(path)) {
 			new Notice(`A note already exists at "${path}".`);
 			return;
 		}
 
-		const content = ["---", "project: true", "---", ""].join("\n");
-		await plugin.app.vault.create(path, content);
+		await plugin.app.vault.create(path, "");
 		await plugin.app.workspace.openLinkText(path, "", false);
 	}, [plugin]);
 
