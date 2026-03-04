@@ -13,7 +13,8 @@ import type { SelectionMode } from "@shared/store";
 import type { FlashcardInfo, FlashcardItem } from "@shared/types";
 import type { FSRSFlashcardItem } from "@shared/types/fsrs/card.types";
 import { EmptyState, EmptyStateMessages } from "@shared/ui/components";
-import { useEffect, useMemo, useRef } from "preact/hooks";
+import { useSignalEffect } from "@preact/signals";
+import { useEffect, useMemo, useRef, useState } from "preact/hooks";
 
 export interface ContentHandlers {
 	onEditButton: (card: FlashcardItem) => void;
@@ -96,6 +97,14 @@ export function PanelContent({
 	);
 
 	const flashcards = flashcardInfo?.exists ? flashcardInfo.flashcards : [];
+
+	// Subscribe to streaming signal to force re-render on changes
+	// Direct .value access doesn't create reactive subscription in Preact
+	const [, forceUpdate] = useState(0);
+	useSignalEffect(() => {
+		const _ = streamingGeneration.value;
+		forceUpdate((n) => n + 1);
+	});
 
 	const streaming = streamingGeneration.value;
 	const isStreamingForFile =
@@ -196,7 +205,11 @@ export function PanelContent({
 			{filteredItems.map((item) => {
 				const { key, cards, template } = getItemInfo(item);
 				const primaryCard = cards[0]!;
-				const isNewlyStreamed = recentCardIds.has(primaryCard.id);
+				// For groups, check if any card is newly streamed (not just the first one)
+				const isNewlyStreamed =
+					item.type === "basic"
+						? recentCardIds.has(primaryCard.id)
+						: cards.some((c) => recentCardIds.has(c.id));
 				const cardIndex = isNewlyStreamed ? recentIndex++ : 0;
 
 				const animationProps = isNewlyStreamed

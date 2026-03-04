@@ -34,3 +34,8 @@ export {
 	SetPresetModal,
 	type SetPresetResult,
 } from "@shared/ui/modals/SetPresetModal";
+export {
+	ConfirmModal,
+	type ConfirmModalOptions,
+	confirm,
+} from "@shared/ui/modals/ConfirmModal";

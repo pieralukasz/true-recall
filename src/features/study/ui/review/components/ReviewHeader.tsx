@@ -1,5 +1,6 @@
 import { cva } from "class-variance-authority";
 import type { ReviewApi } from "@shared/store";
+import { KeyboardShortcutsHelp } from "./KeyboardShortcutsHelp";
 
 const reviewStatVariants = cva("ep:font-bold", {
 	variants: {
@@ -61,6 +62,9 @@ export function ReviewHeader({
 						</span>
 					</>
 				)}
+			</div>
+			<div class="ep:absolute ep:right-2 ep:top-1/2 ep:-translate-y-1/2">
+				<KeyboardShortcutsHelp />
 			</div>
 		</div>
 	);
