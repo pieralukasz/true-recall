@@ -2,9 +2,24 @@ import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
 import {
 	createTestContext,
 	createTestCard,
-	getRawCard,
 	type TestContext,
 } from "../persistence/sqlite/__setup__/test-database";
+import type { TestSqliteDatabase } from "../persistence/sqlite/__setup__/test-database";
+
+function getRawNoteForCard(
+	db: TestSqliteDatabase,
+	cardId: string,
+): Record<string, unknown> | null {
+	const card = db.get<{ note_id: string }>(
+		`SELECT note_id FROM cards WHERE id = ?`,
+		[cardId],
+	);
+	if (!card) return null;
+	return db.get<Record<string, unknown>>(
+		`SELECT * FROM notes WHERE id = ?`,
+		[card.note_id],
+	);
+}
 import { CardRepository } from "../../../src/features/study/services/flashcard/card-repository.service";
 import type { SqliteStoreService } from "../../../src/features/core/persistence/sqlite/SqliteStoreService";
 
@@ -51,9 +66,9 @@ describe("Source text linking", () => {
 			});
 			ctx.cards.set(card.id, card);
 
-			const raw = getRawCard(ctx.db, "card-src-1");
-			expect(raw).not.toBeNull();
-			expect(raw!.source_text).toBe(
+			const rawNote = getRawNoteForCard(ctx.db, "card-src-1");
+			expect(rawNote).not.toBeNull();
+			expect(rawNote!.source_text).toBe(
 				"The mitochondria is the powerhouse of the cell",
 			);
 		});
@@ -82,9 +97,9 @@ describe("Source text linking", () => {
 			});
 			ctx.cards.set(card.id, card);
 
-			const raw = getRawCard(ctx.db, "card-no-src");
-			expect(raw).not.toBeNull();
-			expect(raw!.source_text).toBeNull();
+			const rawNote = getRawNoteForCard(ctx.db, "card-no-src");
+			expect(rawNote).not.toBeNull();
+			expect(rawNote!.source_text).toBeNull();
 		});
 
 		it("retrieves undefined when sourceText is null in DB", () => {
@@ -149,10 +164,10 @@ describe("Source text linking", () => {
 			);
 
 			expect(result.created).toHaveLength(2);
-			const rawA = getRawCard(ctx.db, "card-a");
-			const rawB = getRawCard(ctx.db, "card-b");
-			expect(rawA!.source_text).toBe("Source text for A.");
-			expect(rawB!.source_text).toBe("Source text for B.");
+			const noteA = getRawNoteForCard(ctx.db, "card-a");
+			const noteB = getRawNoteForCard(ctx.db, "card-b");
+			expect(noteA!.source_text).toBe("Source text for A.");
+			expect(noteB!.source_text).toBe("Source text for B.");
 		});
 
 		it("per-card sourceText overrides batch-level sourceText", () => {
@@ -172,8 +187,8 @@ describe("Source text linking", () => {
 			);
 
 			expect(result.created).toHaveLength(1);
-			const raw = getRawCard(ctx.db, "card-override");
-			expect(raw!.source_text).toBe("Per-card source.");
+			const rawNote = getRawNoteForCard(ctx.db, "card-override");
+			expect(rawNote!.source_text).toBe("Per-card source.");
 		});
 
 		it("falls back to batch-level sourceText when per-card is undefined", () => {
@@ -192,8 +207,8 @@ describe("Source text linking", () => {
 			);
 
 			expect(result.created).toHaveLength(1);
-			const raw = getRawCard(ctx.db, "card-fallback");
-			expect(raw!.source_text).toBe("Batch-level fallback");
+			const rawNote = getRawNoteForCard(ctx.db, "card-fallback");
+			expect(rawNote!.source_text).toBe("Batch-level fallback");
 		});
 
 		it("mixed batch — some cards with per-card source, some with batch fallback", () => {
@@ -218,10 +233,10 @@ describe("Source text linking", () => {
 			);
 
 			expect(result.created).toHaveLength(2);
-			const rawWith = getRawCard(ctx.db, "card-with");
-			const rawWithout = getRawCard(ctx.db, "card-without");
-			expect(rawWith!.source_text).toBe("Individual source.");
-			expect(rawWithout!.source_text).toBe("Batch fallback text");
+			const noteWith = getRawNoteForCard(ctx.db, "card-with");
+			const noteWithout = getRawNoteForCard(ctx.db, "card-without");
+			expect(noteWith!.source_text).toBe("Individual source.");
+			expect(noteWithout!.source_text).toBe("Batch fallback text");
 		});
 	});
 

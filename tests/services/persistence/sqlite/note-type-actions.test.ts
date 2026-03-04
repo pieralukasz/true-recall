@@ -13,18 +13,18 @@ import {
 	BUILTIN_IMAGE_OCCLUSION_ID,
 } from "../../../../src/shared/types/note.types";
 import {
-	type TestContextV26,
-	createTestContextV26,
+	type TestContext,
+	createTestContext,
 	createTestNoteType,
 	getRawNoteType,
 	insertNoteTypeDirect,
-} from "./__setup__/test-database-v26";
+} from "./__setup__/test-database";
 
 describe("NoteTypeActions", () => {
-	let ctx: TestContextV26;
+	let ctx: TestContext;
 
 	beforeEach(async () => {
-		ctx = await createTestContextV26();
+		ctx = await createTestContext();
 	});
 
 	afterEach(() => {
@@ -108,7 +108,8 @@ describe("NoteTypeActions", () => {
 			insertNoteTypeDirect(ctx.db, createTestNoteType({ id: "type-2" }));
 
 			const all = ctx.noteTypes.getAll();
-			expect(all).toHaveLength(2);
+			// 4 seeded builtins + 2 inserted above
+			expect(all).toHaveLength(6);
 		});
 
 		it("update: changes name, fields, templates, css", () => {
@@ -148,8 +149,10 @@ describe("NoteTypeActions", () => {
 			]);
 
 			const all = ctx.noteTypes.getAll();
-			expect(all).toHaveLength(1);
-			expect(all[0]!.id).toBe("alive");
+			// 4 seeded builtins + 1 alive (1 soft-deleted excluded)
+			expect(all).toHaveLength(5);
+			expect(all.map((t) => t.id)).toContain("alive");
+			expect(all.map((t) => t.id)).not.toContain("dead");
 		});
 	});
 

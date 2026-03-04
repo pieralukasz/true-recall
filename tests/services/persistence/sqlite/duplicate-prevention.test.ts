@@ -72,16 +72,17 @@ describe("Duplicate Prevention", () => {
 			expect(ctx.cards.getCardIdByQuestion("Question C")).toBeUndefined();
 		});
 
-		it("should be case-sensitive for question matching", async () => {
+		it("should be case-insensitive for question matching (LIKE-based lookup in v26)", async () => {
 			const card = createTestCard({
 				id: "card-1",
 				question: "What is X?",
 			});
 			ctx.cards.set(card.id, card);
 
+			// getCardIdByQuestion uses SQL LIKE on notes.fields_json, which is case-insensitive for ASCII in SQLite
 			expect(ctx.cards.getCardIdByQuestion("What is X?")).toBe("card-1");
-			expect(ctx.cards.getCardIdByQuestion("what is x?")).toBeUndefined();
-			expect(ctx.cards.getCardIdByQuestion("WHAT IS X?")).toBeUndefined();
+			expect(ctx.cards.getCardIdByQuestion("what is x?")).toBe("card-1");
+			expect(ctx.cards.getCardIdByQuestion("WHAT IS X?")).toBe("card-1");
 		});
 
 		it("should match exact whitespace in questions", async () => {

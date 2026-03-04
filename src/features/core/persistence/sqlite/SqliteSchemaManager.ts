@@ -1,47 +1,11 @@
-/**
- * SQLite Schema Manager
- * Database schema creation and migrations
- *
- * Uses modular migration functions from the migrations/ folder
- */
-
-import * as migrations from "@features/core/persistence/sqlite/migrations";
 import { getBuiltinNoteTypes } from "@features/core/persistence/sqlite/modules/NoteTypeActions";
-import {
-	type DatabaseLike,
-	getQueryResult,
-} from "@features/core/persistence/sqlite/sqlite.types";
-
-type MigrationFn = (db: DatabaseLike) => void;
+import type { DatabaseLike } from "@features/core/persistence/sqlite/sqlite.types";
 
 export class SqliteSchemaManager {
-	private db: DatabaseLike;
-	private onSchemaChange: () => void;
-
-	// Map of schema version -> migration function
-	// Note: Old migrations (v1-v14) removed - project not released yet
-	private readonly MIGRATIONS: Record<number, MigrationFn> = {
-		16: migrations.migration015ToV16,
-		17: migrations.migration016ToV17,
-		18: migrations.migration017ToV18,
-		19: migrations.migration018ToV19,
-		20: migrations.migration019ToV20,
-		21: migrations.migration020ToV21,
-		22: migrations.migration021ToV22,
-		23: migrations.migration022ToV23,
-		24: migrations.migration023ToV24,
-		25: migrations.migration024ToV25,
-		26: migrations.migration025ToV26,
-	};
-
-	constructor(db: DatabaseLike, onSchemaChange: () => void) {
-		this.db = db;
-		this.onSchemaChange = onSchemaChange;
-	}
+	constructor(private db: DatabaseLike) {}
 
 	createTables(): void {
 		this.db.run(`
-            -- Note types (v26)
             CREATE TABLE IF NOT EXISTS note_types (
                 id TEXT PRIMARY KEY NOT NULL,
                 name TEXT NOT NULL,
@@ -55,7 +19,6 @@ export class SqliteSchemaManager {
                 deleted_at INTEGER DEFAULT NULL
             );
 
-            -- Notes (v26)
             CREATE TABLE IF NOT EXISTS notes (
                 id TEXT PRIMARY KEY NOT NULL,
                 note_type_id TEXT NOT NULL,
@@ -74,7 +37,6 @@ export class SqliteSchemaManager {
             CREATE INDEX IF NOT EXISTS idx_notes_source_uid ON notes(source_uid);
             CREATE INDEX IF NOT EXISTS idx_notes_deleted ON notes(deleted_at);
 
-            -- Cards table with FSRS scheduling data (v26: no question/answer)
             CREATE TABLE IF NOT EXISTS cards (
                 id TEXT PRIMARY KEY NOT NULL,
                 note_id TEXT NOT NULL,
@@ -107,7 +69,6 @@ export class SqliteSchemaManager {
             CREATE INDEX IF NOT EXISTS idx_cards_active ON cards(deleted_at, suspended, state);
             CREATE INDEX IF NOT EXISTS idx_cards_due_active ON cards(due, deleted_at, suspended);
 
-            -- Review history log
             CREATE TABLE IF NOT EXISTS review_log (
                 id TEXT PRIMARY KEY NOT NULL,
                 card_id TEXT NOT NULL,
@@ -129,7 +90,6 @@ export class SqliteSchemaManager {
             CREATE INDEX IF NOT EXISTS idx_revlog_card_active ON review_log(card_id, deleted_at);
             CREATE INDEX IF NOT EXISTS idx_revlog_preset ON review_log(preset_name);
 
-            -- Daily statistics
             CREATE TABLE IF NOT EXISTS daily_stats (
                 date TEXT PRIMARY KEY NOT NULL,
                 reviews_completed INTEGER DEFAULT 0,
@@ -144,21 +104,18 @@ export class SqliteSchemaManager {
                 review_cards INTEGER DEFAULT 0
             );
 
-            -- Reviewed card IDs per day
             CREATE TABLE IF NOT EXISTS daily_reviewed_cards (
                 date TEXT NOT NULL,
                 card_id TEXT NOT NULL,
                 PRIMARY KEY (date, card_id)
             );
 
-            -- Metadata
             CREATE TABLE IF NOT EXISTS meta (
                 key TEXT PRIMARY KEY NOT NULL,
                 value TEXT
             );
 
-            -- Set schema version
-            INSERT OR REPLACE INTO meta (key, value) VALUES ('schema_version', '26');
+            INSERT OR REPLACE INTO meta (key, value) VALUES ('schema_version', '1');
             INSERT OR REPLACE INTO meta (key, value) VALUES ('created_at', datetime('now'));
         `);
 
@@ -181,74 +138,5 @@ export class SqliteSchemaManager {
 				],
 			);
 		}
-	}
-
-	runMigrations(): void {
-		const currentVersion = this.getSchemaVersion();
-		const latestVersion = 26;
-
-		if (currentVersion >= latestVersion) {
-			return; // Already at latest version
-		}
-
-		for (let v = currentVersion + 1; v <= latestVersion; v++) {
-			const migration = this.MIGRATIONS[v];
-			if (migration) {
-				try {
-					migration(this.db);
-				} catch (e) {
-					console.error(`[True Recall] Migration failed for v${v}:`, e);
-					throw e;
-				}
-			} else {
-				console.error(`[True Recall] No migration found for version v${v}`);
-				throw new Error(`Missing migration for schema version ${v}`);
-			}
-
-			this.onSchemaChange();
-		}
-
-		// Validate database integrity after migrations
-		if (!this.validateDatabaseIntegrity()) {
-			throw new Error("Database integrity check failed after migration");
-		}
-	}
-
-	private validateDatabaseIntegrity(): boolean {
-		try {
-			const tables = this.db.exec(
-				"SELECT name FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite_%'",
-			);
-
-			const requiredTables = ["cards", "meta", "note_types", "notes"];
-			const existingTables = tables[0]?.values.map((r) => r[0] as string) || [];
-
-			for (const table of requiredTables) {
-				if (!existingTables.includes(table)) {
-					console.error(`[True Recall] Missing required table: ${table}`);
-					return false;
-				}
-			}
-
-			return true;
-		} catch (error) {
-			console.error("[True Recall] Integrity check failed:", error);
-			return false;
-		}
-	}
-
-	private getSchemaVersion(): number {
-		try {
-			const result = this.db.exec(
-				"SELECT value FROM meta WHERE key = 'schema_version'",
-			);
-			const data = getQueryResult(result);
-			if (data && data.values.length > 0) {
-				return parseInt(data.values[0]?.[0] as string, 10) || 1;
-			}
-		} catch {
-			// meta table might not exist
-		}
-		return 1;
 	}
 }

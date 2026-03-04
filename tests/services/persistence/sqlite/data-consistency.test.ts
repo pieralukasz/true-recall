@@ -11,6 +11,7 @@ import {
 	createTestContext,
 	createTestCard,
 	getRawCard,
+	getRawNote,
 	type TestContext,
 } from "./__setup__/test-database";
 
@@ -30,16 +31,21 @@ describe("Data Consistency", () => {
 			const card = createTestCard();
 			ctx.cards.set(card.id, card);
 
-			const initial = getRawCard(ctx.db, card.id)?.updated_at as number;
+			// updateCardContent updates the note row, not the card row
+			const rawCard = getRawCard(ctx.db, card.id);
+			const noteId = rawCard?.note_id as string;
+			const initialNote = getRawNote(ctx.db, noteId);
+			const initialNoteUpdatedAt = initialNote?.updated_at as number;
 
 			// Wait to ensure different timestamp
 			await new Promise((resolve) => setTimeout(resolve, 10));
 
-			// Update content
+			// Update content (updates notes table in v26 schema)
 			ctx.cards.updateCardContent(card.id, "New Q", "New A");
 
-			const afterUpdate = getRawCard(ctx.db, card.id)?.updated_at as number;
-			expect(afterUpdate).toBeGreaterThan(initial);
+			const afterNote = getRawNote(ctx.db, noteId);
+			const afterNoteUpdatedAt = afterNote?.updated_at as number;
+			expect(afterNoteUpdatedAt).toBeGreaterThan(initialNoteUpdatedAt);
 		});
 
 		it("should update updated_at when changing source_uid", async () => {
@@ -184,9 +190,12 @@ describe("Data Consistency", () => {
 			const card = createTestCard({ question: "" });
 			ctx.cards.set(card.id, card);
 
-			// Note: get() filters out cards with empty questions
-			const raw = getRawCard(ctx.db, card.id);
-			expect(raw?.question).toBe("");
+			// In v26 schema, question lives in notes.fields_json, not cards.question
+			const rawCard = getRawCard(ctx.db, card.id);
+			const noteId = rawCard?.note_id as string;
+			const rawNote = getRawNote(ctx.db, noteId);
+			const fields = JSON.parse(rawNote?.fields_json as string) as Record<string, string>;
+			expect(fields.Front).toBe("");
 		});
 
 		it("should store empty answer", async () => {

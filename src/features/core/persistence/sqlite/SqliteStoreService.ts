@@ -77,14 +77,10 @@ export class SqliteStoreService {
 		// Initialize database with sql.js
 		await this.db.init(existingData);
 
-		// Schema setup
-		const schemaManager = new SqliteSchemaManager(this.db.raw, () =>
-			this.markDirty(),
-		);
-		if (existingData) {
-			schemaManager.runMigrations();
-		} else {
-			schemaManager.createTables();
+		// Schema setup (CREATE TABLE IF NOT EXISTS — safe for existing DBs)
+		const schemaManager = new SqliteSchemaManager(this.db.raw);
+		schemaManager.createTables();
+		if (!existingData) {
 			this.isDirty = true;
 		}
 
