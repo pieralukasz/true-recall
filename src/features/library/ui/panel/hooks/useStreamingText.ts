@@ -1,11 +1,14 @@
 import { useEffect, useRef, useState } from "preact/hooks";
 
-// Fraction of remaining word gap revealed per frame (exponential smoothing).
-// Coarser than character-level: 0.12 at 60fps catches up in ~250ms.
-const SMOOTHING = 0.12;
+// Adaptive smoothing: faster catch-up when far behind, deliberate pace when close
+const SMOOTHING_BASE = 0.1;
+const SMOOTHING_FAST = 0.18;
 
-// How long a word stays in "new" state (triggers blur+fade CSS animation)
-const NEW_WORD_DURATION_MS = 300;
+// How long a word stays in "new" state (triggers pop-in CSS animation)
+const NEW_WORD_DURATION_MS = 200;
+
+// Punctuation that creates micro-pauses for organic typing feel
+const PAUSE_CHARS = /[.!?;:,]/;
 
 export interface StreamingWord {
 	text: string;
@@ -16,29 +19,31 @@ export function useStreamingText(fullText: string): {
 	words: StreamingWord[];
 	isTyping: boolean;
 } {
-	const [visibleCount, setVisibleCount] = useState(0);
+	const [, triggerRender] = useState(0);
 	const visibleRef = useRef(0);
 	const frameRef = useRef<number>();
-	const fullTextRef = useRef(fullText);
 	const wordsRef = useRef<string[]>([]);
 	const newTimestampsRef = useRef<Map<number, number>>(new Map());
-	const [, forceRender] = useState(0);
 
-	// Split text into words (each word includes its trailing whitespace)
+	// Memoization refs — only rebuild word array when these change
+	const cachedWordsRef = useRef<StreamingWord[]>([]);
+	const lastVisibleRef = useRef(0);
+	const lastNewCountRef = useRef(0);
+
 	const allWords = splitWords(fullText);
 	wordsRef.current = allWords;
-	fullTextRef.current = fullText;
 
 	// Reset when text changes incompatibly (new card started)
 	const prevTextRef = useRef("");
 	if (fullText !== prevTextRef.current) {
 		const prevWords = splitWords(prevTextRef.current);
-		const shownWords = prevWords.slice(0, visibleRef.current);
-		const shownText = shownWords.join("");
+		const shownText = prevWords.slice(0, visibleRef.current).join("");
 		if (shownText && !fullText.startsWith(shownText)) {
 			visibleRef.current = 0;
-			setVisibleCount(0);
 			newTimestampsRef.current.clear();
+			cachedWordsRef.current = [];
+			lastVisibleRef.current = 0;
+			lastNewCountRef.current = 0;
 		}
 		prevTextRef.current = fullText;
 	}
@@ -56,12 +61,24 @@ export function useStreamingText(fullText: string): {
 			const current = visibleRef.current;
 			const gap = targetCount - current;
 			const now = Date.now();
+			let needsRender = false;
 
 			if (gap > 0) {
-				const advance = Math.max(1, Math.round(gap * SMOOTHING));
+				// Adaptive smoothing: faster when far behind, slower when close
+				const smoothing = gap > 5 ? SMOOTHING_FAST : SMOOTHING_BASE;
+				let advance = Math.max(1, Math.round(gap * smoothing));
+
+				// Micro-pause at punctuation for organic typing feel
+				const prevWord = wordsRef.current[current - 1];
+				if (
+					prevWord &&
+					PAUSE_CHARS.test(prevWord.trimEnd().slice(-1))
+				) {
+					advance = Math.min(advance, 1);
+				}
+
 				const newCount = Math.min(current + advance, targetCount);
 
-				// Record timestamps for newly visible words
 				for (let i = current; i < newCount; i++) {
 					if (!newTimestampsRef.current.has(i)) {
 						newTimestampsRef.current.set(i, now);
@@ -69,19 +86,20 @@ export function useStreamingText(fullText: string): {
 				}
 
 				visibleRef.current = newCount;
-				setVisibleCount(newCount);
+				needsRender = true;
 			}
 
-			// Sweep expired "new" timestamps and trigger re-render to remove isNew
-			let expired = false;
+			// Sweep expired "new" timestamps
 			for (const [idx, timestamp] of newTimestampsRef.current) {
 				if (now - timestamp > NEW_WORD_DURATION_MS) {
 					newTimestampsRef.current.delete(idx);
-					expired = true;
+					needsRender = true;
 				}
 			}
-			if (expired) {
-				forceRender((n) => n + 1);
+
+			// Single render trigger for all changes in this frame
+			if (needsRender) {
+				triggerRender((n) => n + 1);
 			}
 
 			frameRef.current = requestAnimationFrame(loop);
@@ -100,17 +118,31 @@ export function useStreamingText(fullText: string): {
 		};
 	}
 
-	const now = Date.now();
-	const visible = allWords.slice(0, visibleCount).map((text, i) => ({
-		text,
-		isNew:
-			newTimestampsRef.current.has(i) &&
-			now - (newTimestampsRef.current.get(i) ?? 0) < NEW_WORD_DURATION_MS,
-	}));
+	// Memoized word array — only rebuild when visible count or isNew set changes
+	const currentVisible = visibleRef.current;
+	const currentNewCount = newTimestampsRef.current.size;
+
+	if (
+		currentVisible !== lastVisibleRef.current ||
+		currentNewCount !== lastNewCountRef.current
+	) {
+		const now = Date.now();
+		cachedWordsRef.current = allWords
+			.slice(0, currentVisible)
+			.map((text, i) => ({
+				text,
+				isNew:
+					newTimestampsRef.current.has(i) &&
+					now - (newTimestampsRef.current.get(i) ?? 0) <
+						NEW_WORD_DURATION_MS,
+			}));
+		lastVisibleRef.current = currentVisible;
+		lastNewCountRef.current = currentNewCount;
+	}
 
 	return {
-		words: visible,
-		isTyping: visibleCount < allWords.length,
+		words: cachedWordsRef.current,
+		isTyping: currentVisible < allWords.length,
 	};
 }
 

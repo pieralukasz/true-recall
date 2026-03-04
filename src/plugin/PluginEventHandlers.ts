@@ -1,7 +1,7 @@
 import { FlashcardPanelView } from "@features/library/ui/panel/FlashcardPanelView";
 import type { DeletionHandlerService } from "@features/study/services/flashcard/deletion-handler.service";
 import { VIEW_TYPE_FLASHCARD_PANEL, VIEW_TYPE_REVIEW } from "@shared/constants";
-import { ItemView, TFile } from "obsidian";
+import { ItemView, normalizePath, TFile, TFolder } from "obsidian";
 import type TrueRecallPlugin from "../main";
 
 export function registerEventHandlers(plugin: TrueRecallPlugin): void {
@@ -22,6 +22,32 @@ export function registerEventHandlers(plugin: TrueRecallPlugin): void {
 						.setIcon("book-text")
 						.onClick(() => void plugin.activateView());
 				});
+			}
+		}),
+	);
+
+	// Folder context menu — create project/folder note
+	plugin.registerEvent(
+		plugin.app.workspace.on("file-menu", (menu, file) => {
+			if (file instanceof TFolder) {
+				const folderName = file.name;
+				const notePath = normalizePath(`${file.path}/${folderName}.md`);
+
+				if (!plugin.app.vault.getAbstractFileByPath(notePath)) {
+					menu.addItem((item) => {
+						item
+							.setTitle("Create project note")
+							.setIcon("folder-plus")
+							.onClick(async () => {
+								await plugin.app.vault.create(notePath, "");
+								await plugin.app.workspace.openLinkText(
+									notePath,
+									"",
+									false,
+								);
+							});
+					});
+				}
 			}
 		}),
 	);
