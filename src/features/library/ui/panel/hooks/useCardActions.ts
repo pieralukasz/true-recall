@@ -1,3 +1,4 @@
+import { QuickNoteEditorModal } from "@features/study/modals/quick-note-editor/QuickNoteEditorModal";
 import {
 	getSourceNoteNameFromFile,
 	notifyDuplicateError,
@@ -5,6 +6,7 @@ import {
 import type { PanelApi } from "@shared/store";
 import type { FlashcardInfo, FlashcardItem } from "@shared/types";
 import type { FSRSFlashcardItem } from "@shared/types/fsrs/card.types";
+import { notify } from "@shared/services/notification.service";
 import { useApp, usePlugin } from "@shared/ui/preact";
 import type { TFile } from "obsidian";
 import { useCallback } from "preact/hooks";
@@ -21,6 +23,7 @@ export interface UseCardActionsParams {
 export function useCardActions({
 	currentFile,
 	flashcardInfo,
+	cardsWithFsrs,
 	panel,
 	preserveScroll,
 	captureScroll,
@@ -28,119 +31,53 @@ export function useCardActions({
 	const plugin = usePlugin();
 	const app = useApp();
 
-	// ── Shared edit modal logic (used by both single-edit and group-edit) ──
+	const findFsrsCard = (cardId: string): FSRSFlashcardItem | undefined => {
+		return cardsWithFsrs.find((c) => c.id === cardId);
+	};
 
 	const openEditModal = useCallback(
 		async (card: FlashcardItem, restoreScroll: () => void) => {
-			if (!currentFile) return;
-			const { SimpleFlashcardEditorModal } = await import(
-				"@shared/ui/modals/SimpleFlashcardEditorModal"
-			);
-			const { cardToMarkdown } = await import(
-				"@features/study/services/flashcard/flashcard-format.util"
-			);
-			const { notify } = await import("@shared/services/notification.service");
-			const { DuplicateQuestionError } = await import(
-				"@features/study/services/flashcard/card-repository.service"
-			);
-
-			const modal = new SimpleFlashcardEditorModal(
-				app,
-				{
-					mode: "edit",
-					currentFilePath: currentFile.path,
-					prefillContent: cardToMarkdown(card),
-					editCardId: card.id,
-				},
-				plugin.EmbeddableEditor,
-			);
-
-			const result = await modal.openAndWait();
-			if (result.cancelled || result.flashcards.length === 0) return;
-
-			try {
-				const firstFlashcard = result.flashcards[0];
-				if (firstFlashcard) {
-					plugin.flashcardManager.updateCardContent(
-						card.id,
-						firstFlashcard.question,
-						firstFlashcard.answer,
-					);
-				}
-
-				if (result.flashcards.length > 1) {
-					const frontmatterService =
-						plugin.flashcardManager.getFrontmatterService();
-					let sourceUid =
-						await frontmatterService.getSourceNoteUid(currentFile);
-					if (!sourceUid) {
-						sourceUid = frontmatterService.generateUid();
-						await frontmatterService.setSourceNoteUid(
-							currentFile,
-							sourceUid,
-						);
-					}
-
-					for (let i = 1; i < result.flashcards.length; i++) {
-						const flashcard = result.flashcards[i];
-						if (flashcard) {
-							await plugin.flashcardManager.addSingleFlashcard(
-								flashcard.question,
-								flashcard.answer,
-								sourceUid,
-							);
-						}
-					}
-					notify().success(
-						`Updated card and created ${result.flashcards.length - 1} new cards`,
-					);
-				} else {
-					notify().cardUpdated();
-				}
-
-				restoreScroll();
-			} catch (error) {
-				if (error instanceof DuplicateQuestionError) {
-					const question = result.flashcards[0]?.question ?? "";
-					notifyDuplicateError(plugin, error, question);
-				} else {
-					notify().operationFailed("update flashcard", error);
-				}
+			const fsrsCard = findFsrsCard(card.id);
+			if (!fsrsCard?.noteId) {
+				notify().error(
+					"Cannot edit card: missing note link. Please restart Obsidian to complete database migration.",
+				);
+				return;
 			}
-		},
-		[currentFile, app, plugin],
-	);
 
-	// ── Single card handlers ──
+			const note = plugin.cardStore.notes.getById(fsrsCard.noteId);
+			if (!note) {
+				notify().error("Note not found");
+				return;
+			}
+			const noteType = plugin.cardStore.noteTypes.getById(note.noteTypeId);
+			if (!noteType) {
+				notify().error("Note type not found");
+				return;
+			}
 
-	const handleAddFlashcard = useCallback(
-		async (
-			prefillFlashcards?: Array<{ question: string; answer: string }>,
-		) => {
-			const { SimpleFlashcardEditorModal } = await import(
-				"@shared/ui/modals/SimpleFlashcardEditorModal"
-			);
-			const { cardsToMarkdown } = await import(
-				"@features/study/services/flashcard/flashcard-format.util"
-			);
-
-			const modal = new SimpleFlashcardEditorModal(
-				app,
-				{
-					mode: "add",
-					currentFilePath: currentFile?.path ?? "",
-					prefillContent: prefillFlashcards
-						? cardsToMarkdown(prefillFlashcards)
-						: undefined,
-				},
-				plugin.EmbeddableEditor,
-				plugin.flashcardManager,
-			);
+			const modal = new QuickNoteEditorModal(app, plugin, {
+				mode: "edit",
+				cardId: card.id,
+				noteId: note.id,
+				note,
+				noteType,
+			});
 
 			await modal.openAndWait();
+			restoreScroll();
 		},
-		[currentFile, app, plugin],
+		[app, plugin, cardsWithFsrs],
 	);
+
+	const handleAddFlashcard = useCallback(async () => {
+		const sourceUid = flashcardInfo?.sourceUid;
+		const modal = new QuickNoteEditorModal(app, plugin, {
+			mode: "add",
+			sourceUid,
+		});
+		await modal.openAndWait();
+	}, [app, plugin, flashcardInfo]);
 
 	const handleEditButton = useCallback(
 		async (card: FlashcardItem) => {
@@ -153,9 +90,6 @@ export function useCardActions({
 	const handleDeleteCard = useCallback(
 		async (card: FlashcardItem) => {
 			if (!currentFile) return;
-			const { notify } = await import(
-				"@shared/services/notification.service"
-			);
 			const restoreScroll = captureScroll();
 			const removed = await plugin.flashcardManager.removeFlashcardById(
 				card.id,
@@ -171,7 +105,6 @@ export function useCardActions({
 	);
 
 	const handleCopyCard = useCallback(async (card: FlashcardItem) => {
-		const { notify } = await import("@shared/services/notification.service");
 		const text = `Q: ${card.question}\nA: ${card.answer}`;
 		await navigator.clipboard.writeText(text);
 		notify().success("Copied to clipboard");
@@ -181,19 +114,11 @@ export function useCardActions({
 		async (card: FlashcardItem) => {
 			if (!flashcardInfo) return;
 			if (!card.id) {
-				(await import("@shared/services/notification.service"))
-					.notify()
-					.error(
-						"Cannot move card without UUID. Please regenerate flashcards.",
-					);
+				notify().error(
+					"Cannot move card without UUID. Please regenerate flashcards.",
+				);
 				return;
 			}
-			const { MoveCardModal } = await import(
-				"@shared/ui/modals/MoveCardModal"
-			);
-			const { notify } = await import(
-				"@shared/services/notification.service"
-			);
 
 			const sourceNoteName = await getSourceNoteNameFromFile(
 				app,
@@ -201,6 +126,9 @@ export function useCardActions({
 				flashcardInfo,
 			);
 
+			const { MoveCardModal } = await import(
+				"@shared/ui/modals/MoveCardModal"
+			);
 			const modal = new MoveCardModal(app, {
 				cardCount: 1,
 				sourceNoteName,
@@ -233,86 +161,48 @@ export function useCardActions({
 		[panel, preserveScroll],
 	);
 
-	// ── Group handlers ──
-
 	const handleEditGroup = useCallback(
 		async (cards: FlashcardItem[], clozeTemplate?: string) => {
 			if (!currentFile) return;
 
-			// Non-cloze groups: delegate to shared edit modal
-			if (!clozeTemplate) {
-				const originalCard = cards[0];
-				if (!originalCard) return;
-				const restoreScroll = captureScroll();
-				await openEditModal(originalCard, restoreScroll);
-				return;
-			}
-
-			const { SimpleFlashcardEditorModal } = await import(
-				"@shared/ui/modals/SimpleFlashcardEditorModal"
-			);
-			const { cardToMarkdown } = await import(
-				"@features/study/services/flashcard/flashcard-format.util"
-			);
-			const { notify } = await import(
-				"@shared/services/notification.service"
-			);
+			const firstCard = cards[0];
+			if (!firstCard) return;
 
 			const restoreScroll = captureScroll();
 
-			const modal = new SimpleFlashcardEditorModal(
-				app,
-				{
-					mode: "edit",
-					currentFilePath: currentFile.path,
-					prefillContent: cards[0] ? cardToMarkdown(cards[0]) : "",
-					editCardId: cards[0]?.id,
-				},
-				plugin.EmbeddableEditor,
-			);
-
-			const result = await modal.openAndWait();
-			if (result.cancelled || result.flashcards.length === 0) return;
-
-			try {
-				const firstFlashcard = result.flashcards[0];
-				if (!firstFlashcard) return;
-
-				const frontmatterService =
-					plugin.flashcardManager.getFrontmatterService();
-				const sourceUid =
-					await frontmatterService.getSourceNoteUid(currentFile);
-				if (!sourceUid) return;
-
-				const { hasClozeContent } = await import(
-					"@features/study/services/flashcard/cloze-parser.service"
+			const fsrsCard = findFsrsCard(firstCard.id);
+			if (!fsrsCard?.noteId) {
+				notify().error(
+					"Cannot edit card: missing note link. Please restart Obsidian to complete database migration.",
 				);
-				if (hasClozeContent(firstFlashcard.question)) {
-					plugin.flashcardManager.updateClozeTemplate(
-						sourceUid,
-						clozeTemplate,
-						firstFlashcard.question,
-						currentFile.basename,
-					);
-					notify().success("Updated cloze group");
-				} else {
-					const cardId = cards[0]?.id;
-					if (cardId) {
-						plugin.flashcardManager.updateCardContent(
-							cardId,
-							firstFlashcard.question,
-							firstFlashcard.answer,
-						);
-						notify().cardUpdated();
-					}
-				}
-
-				restoreScroll();
-			} catch (error) {
-				notify().operationFailed("update cloze group", error);
+				return;
 			}
+
+			const note = plugin.cardStore.notes.getById(fsrsCard.noteId);
+			if (!note) {
+				notify().error("Note not found");
+				restoreScroll();
+				return;
+			}
+			const noteType = plugin.cardStore.noteTypes.getById(note.noteTypeId);
+			if (!noteType) {
+				notify().error("Note type not found");
+				restoreScroll();
+				return;
+			}
+
+			const modal = new QuickNoteEditorModal(app, plugin, {
+				mode: "edit",
+				cardId: firstCard.id,
+				noteId: note.id,
+				note,
+				noteType,
+			});
+
+			await modal.openAndWait();
+			restoreScroll();
 		},
-		[currentFile, app, plugin, openEditModal, captureScroll],
+		[currentFile, app, plugin, cardsWithFsrs, captureScroll],
 	);
 
 	const handleDeleteGroup = useCallback(
@@ -320,9 +210,6 @@ export function useCardActions({
 			if (cards.length === 0) return;
 			const cardId = cards[0]?.id;
 			if (!cardId) return;
-			const { notify } = await import(
-				"@shared/services/notification.service"
-			);
 			const restoreScroll = captureScroll();
 			const removed =
 				await plugin.flashcardManager.removeFlashcardById(cardId);
@@ -338,7 +225,6 @@ export function useCardActions({
 
 	const handleCopyGroup = useCallback(async (cards: FlashcardItem[]) => {
 		if (cards.length === 0) return;
-		const { notify } = await import("@shared/services/notification.service");
 		const firstCard = cards[0];
 		if (!firstCard) return;
 		let text: string;
@@ -356,21 +242,18 @@ export function useCardActions({
 	const handleMoveGroup = useCallback(
 		async (cards: FlashcardItem[]) => {
 			if (cards.length === 0) return;
-			const { MoveCardModal } = await import(
-				"@shared/ui/modals/MoveCardModal"
-			);
-			const { notify } = await import(
-				"@shared/services/notification.service"
-			);
-
 			const firstCard = cards[0];
 			if (!firstCard) return;
+
 			const sourceNoteName = await getSourceNoteNameFromFile(
 				app,
 				currentFile,
 				flashcardInfo,
 			);
 
+			const { MoveCardModal } = await import(
+				"@shared/ui/modals/MoveCardModal"
+			);
 			const modal = new MoveCardModal(app, {
 				cardCount: cards.length,
 				sourceNoteName,
