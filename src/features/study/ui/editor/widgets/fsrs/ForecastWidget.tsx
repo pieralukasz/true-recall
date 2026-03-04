@@ -1,4 +1,5 @@
-import { dataVersion, useSignalVersion } from "@shared/services/signals";
+import { useComputed } from "@preact/signals";
+import { cards } from "@shared/services/reactive-card-store";
 import { Clickable } from "@shared/ui/components";
 import { usePlugin } from "@shared/ui/preact";
 import { useMemo } from "preact/hooks";
@@ -13,14 +14,14 @@ function formatDateLabel(dateStr: string): string {
 
 export function ForecastWidget({ source }: { source: string }) {
 	const plugin = usePlugin();
-	const ver = useSignalVersion(dataVersion);
 
 	const config = useMemo(() => parseCodeblockConfig(source), [source]);
 
 	const days = configValue(config, "days", 14) as number;
 	const showChart = configValue(config, "showChart", true);
 
-	const data = useMemo(() => {
+	const data = useComputed(() => {
+		cards.value;
 		if (!plugin.fsrsHelper) return null;
 
 		const summary = plugin.fsrsHelper.getWorkloadForecastSummary(days);
@@ -29,7 +30,7 @@ export function ForecastWidget({ source }: { source: string }) {
 			: [];
 
 		return { summary, entries };
-	}, [plugin, ver, days, showChart]);
+	}).value;
 
 	if (!plugin.fsrsHelper) {
 		return (

@@ -1,4 +1,4 @@
-import type { NoteStatusInfo } from "@features/core/cache/note-status-cache.service";
+import type { NoteStatusInfo } from "@shared/services/reactive-card-store";
 import { DonutChart } from "@features/study/ui/editor/components/DonutChart";
 import { LinkTextCount } from "@features/study/ui/editor/components/LinkTextCount";
 import { h, render } from "preact";

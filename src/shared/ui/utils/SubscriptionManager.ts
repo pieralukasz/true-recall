@@ -8,7 +8,7 @@
  *   private subs = new SubscriptionManager();
  *
  *   // Track signal effect disposers
- *   this.subs.track(effect(() => { track(dataVersion); reload(); }));
+ *   this.subs.track(effect(() => { cards.value; reload(); }));
  *
  *   // Track timers (auto-cleared on dispose)
  *   this.subs.setTimeout(() => console.log('tick'), 1000);

@@ -6,10 +6,8 @@ import {
 	type ViewUpdate,
 	WidgetType,
 } from "@codemirror/view";
-import type {
-	NoteStatusCacheService,
-	NoteStatusInfo,
-} from "@features/core/cache/note-status-cache.service";
+import type { NoteStatusCacheService } from "@features/core/cache/note-status-cache.service";
+import type { NoteStatusInfo } from "@shared/services/reactive-card-store";
 import type { SqliteStoreService } from "@features/core/persistence/sqlite/SqliteStoreService";
 import type { FrontmatterIndexService } from "@features/core/services/frontmatter-index.service";
 import {
