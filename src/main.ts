@@ -176,12 +176,6 @@ export default class TrueRecallPlugin extends Plugin {
 		);
 		this.frontmatterIndex.registerEvents(this);
 
-		// Build index after metadataCache is fully loaded
-		this.app.workspace.onLayoutReady(() => {
-			this.frontmatterIndex.rebuildIndex();
-			refreshMetadata();
-		});
-
 		this.folderProjectService = new FolderProjectService(
 			this.app,
 			this.frontmatterIndex,
@@ -207,6 +201,14 @@ export default class TrueRecallPlugin extends Plugin {
 			this.folderProjectService,
 		);
 		initMetadataStore(this.projectLinkService);
+
+		// Build index after metadataCache is fully loaded.
+		// Must be AFTER initMetadataStore so refreshMetadata() can populate archivedSourceUids.
+		// onLayoutReady fires synchronously if layout is already ready.
+		this.app.workspace.onLayoutReady(() => {
+			this.frontmatterIndex.rebuildIndex();
+			refreshMetadata();
+		});
 
 		this.flashcardManager = new FlashcardManager(
 			this.app,
