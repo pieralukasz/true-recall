@@ -2,13 +2,12 @@ import {
 	DEFAULT_PROMPTS,
 	type GenerationMode,
 } from "@features/ai/prompts/default-prompts";
-import type { FlashcardParserService } from "@features/study/services/flashcard/flashcard-parser.service";
 import type { FlashcardItem } from "@shared/types";
 import type { TrueRecallSettings } from "@shared/types/settings.types";
 import { Notice } from "obsidian";
 import { getBYOKFallbackConfig, resolveAIClientConfig } from "./ai-client-config";
-import { OpenRouterClient } from "./openrouter-client";
-import { AIRequestError } from "./openrouter-client";
+import { IncrementalFlashcardParser } from "./incremental-flashcard-parser";
+import { AIRequestError, OpenRouterClient } from "./openrouter-client";
 
 // Appended to all prompts (including custom) so per-card source tracking works
 const SOURCE_TRACKING_SUFFIX = `
@@ -23,10 +22,7 @@ export interface GenerationResult {
 }
 
 export class FlashcardGenerationService {
-	constructor(
-		private getSettings: () => TrueRecallSettings,
-		private parser: FlashcardParserService,
-	) {}
+	constructor(private getSettings: () => TrueRecallSettings) {}
 
 	async generate(
 		selectedText: string,
@@ -54,7 +50,7 @@ export class FlashcardGenerationService {
 		try {
 			const response = await client.chat(request);
 			const responseText = response.choices[0]?.message?.content ?? "";
-			const flashcards = this.parser.extractFlashcards(responseText);
+			const flashcards = this.parseResponse(responseText);
 			return { flashcards, mode };
 		} catch (error) {
 			if (error instanceof AIRequestError && error.isBudgetExceeded) {
@@ -69,13 +65,26 @@ export class FlashcardGenerationService {
 					);
 					const response = await fallbackClient.chat(request);
 					const responseText = response.choices[0]?.message?.content ?? "";
-					const flashcards = this.parser.extractFlashcards(responseText);
+					const flashcards = this.parseResponse(responseText);
 					return { flashcards, mode };
 				}
 				new Notice("Token budget exceeded. Top up at truerecall.app or add your own OpenRouter API key.");
 			}
 			throw error;
 		}
+	}
+
+	private parseResponse(text: string): FlashcardItem[] {
+		const parser = new IncrementalFlashcardParser();
+		parser.feed(text);
+		const cards = parser.finish().flatMap((e) => e.cards ?? []);
+		if (text.trim() && cards.length === 0) {
+			console.warn(
+				"[TrueRecall] AI response produced no parseable flashcards",
+				{ responseLength: text.length },
+			);
+		}
+		return cards;
 	}
 
 	private getPromptForMode(mode: GenerationMode): string {

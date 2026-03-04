@@ -120,7 +120,7 @@ export function GeneralTab() {
 			<FormCard title="Flashcard collection">
 				<FormField
 					name="Remove content after collecting"
-					description="Removes the entire flashcard (Q+A) from markdown after collecting. When disabled, only removes the #flashcard tag"
+					description="Removes flashcard lines (Front :: Back) from markdown after collecting. When disabled, lines are kept in the note"
 				>
 					<ToggleInput
 						value={settings.removeFlashcardContentAfterCollect}
