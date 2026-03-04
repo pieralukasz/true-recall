@@ -1,11 +1,9 @@
 import type { Signal } from "@preact/signals";
 import { useSignal } from "@preact/signals";
-import { Clickable } from "@shared/ui/components/Clickable";
-import { CreateProjectModal } from "@features/study/modals/CreateProjectModal";
+import { NamePromptModal } from "@features/study/modals/NamePromptModal";
 import { RenameModal } from "@features/study/modals/RenameModal";
 import { usePlugin } from "@shared/ui/preact";
-import { Notice, TAbstractFile, TFile, TFolder, normalizePath } from "obsidian";
-import { useIcon } from "@shared/ui/preact/hooks";
+import { Notice, TFile, TFolder, normalizePath } from "obsidian";
 import { useCallback, useEffect, useMemo, useRef } from "preact/hooks";
 import type { RefObject } from "preact";
 import { useInitialMount } from "../helpers/use-initial-mount";
@@ -14,9 +12,18 @@ import {
 	flattenProjectTree,
 	collectMatchingPaths,
 } from "../helpers/project-tree-flatten";
+import type { FlatProjectItem } from "../helpers/project-tree-flatten";
 import type { DashboardProject } from "../types";
 import { ProjectHeaderRow, EmptyProjectRow } from "./ProjectHeaderRow";
 import { NoteRow } from "./NoteRow";
+import {
+	type DragItem,
+	type DropResult,
+	DRAG_MIME,
+	dragItemFromFlatItem,
+	validateDrop,
+	executeDrop,
+} from "../helpers/drag-drop";
 
 interface ProjectsTabProps {
 	projects: DashboardProject[];
@@ -25,6 +32,12 @@ interface ProjectsTabProps {
 	scrollTop: Signal<number>;
 	onStudyNote: (noteName: string, projectPath?: string) => void;
 	onPresetClick?: (path: string | null) => void;
+}
+
+interface DragState {
+	item: DragItem;
+	dropTargetPath: string | null;
+	isValid: boolean;
 }
 
 export function ProjectsTab({
@@ -39,7 +52,7 @@ export function ProjectsTab({
 	const initialMount = useInitialMount();
 	const expandedPaths = useSignal<ReadonlySet<string>>(new Set());
 	const contentRef = useRef<HTMLDivElement>(null);
-	const plusIconRef = useIcon("plus");
+	const dragState = useSignal<DragState | null>(null);
 
 	// Auto-expand matching projects when searching
 	useEffect(() => {
@@ -82,7 +95,6 @@ export function ProjectsTab({
 		const result = await modal.openAndWait();
 		if (result.cancelled) return;
 
-		// Build new path
 		let newPath: string;
 		if (file instanceof TFile) {
 			const ext = file.extension;
@@ -94,7 +106,6 @@ export function ProjectsTab({
 		}
 		newPath = normalizePath(newPath);
 
-		// Check if target already exists
 		if (plugin.app.vault.getAbstractFileByPath(newPath)) {
 			new Notice(`A ${file instanceof TFolder ? "folder" : "file"} already exists at "${newPath}".`);
 			return;
@@ -103,43 +114,137 @@ export function ProjectsTab({
 		await plugin.app.fileManager.renameFile(file, newPath);
 	}, [plugin]);
 
-	const handleAddProject = useCallback(async () => {
-		const modal = new CreateProjectModal(plugin.app);
-		const result = await modal.openAndWait();
-		if (result.cancelled) return;
+	// ── Drag & Drop handlers ────────────────────────────
 
-		const folderBase = result.folder ? `${result.folder}/` : "";
-		const path = normalizePath(`${folderBase}${result.name}/${result.name}.md`);
-
-		if (plugin.app.vault.getAbstractFileByPath(path)) {
-			new Notice(`A note already exists at "${path}".`);
-			return;
-		}
-
-		const content = ["---", "include: folder", "---", ""].join("\n");
-		await plugin.app.vault.create(path, content);
-		await plugin.app.workspace.openLinkText(path, "", false);
-	}, [plugin]);
-
-	const addButton = (
-		<div class="ep:py-3">
-			<Clickable
-				class="ep:flex ep:items-center ep:gap-1.5 ep:px-3 ep:py-1.5 ep:rounded-lg ep:text-sm ep:text-obs-muted ep:hover:text-obs-normal ep:hover:bg-obs-modifier-hover ep:transition-colors"
-				onClick={() => void handleAddProject()}
-			>
-				<span ref={plusIconRef} class="[&_svg]:ep:w-4 [&_svg]:ep:h-4" />
-				Add new project
-			</Clickable>
-		</div>
+	const handleDragStart = useCallback(
+		(e: DragEvent, item: FlatProjectItem) => {
+			const dragItem = dragItemFromFlatItem(item);
+			if (!dragItem) {
+				e.preventDefault();
+				return;
+			}
+			e.dataTransfer!.setData(DRAG_MIME, JSON.stringify(dragItem));
+			e.dataTransfer!.effectAllowed = "move";
+			dragState.value = { item: dragItem, dropTargetPath: null, isValid: false };
+		},
+		[dragState],
 	);
+
+	const handleDragEnd = useCallback(() => {
+		dragState.value = null;
+	}, [dragState]);
+
+	const handleDragOver = useCallback(
+		(e: DragEvent, targetItem: FlatProjectItem) => {
+			const ds = dragState.value;
+			if (!ds) return;
+
+			const targetPath =
+				targetItem.type === "project-header"
+					? targetItem.project.path
+					: targetItem.type === "note"
+						? targetItem.note.path
+						: null;
+
+			if (!targetPath || targetPath === ds.dropTargetPath) {
+				if (ds.isValid) e.preventDefault();
+				return;
+			}
+
+			const result = validateDrop(
+				ds.item,
+				targetItem,
+				plugin.hierarchyService,
+			);
+
+			dragState.value = {
+				...ds,
+				dropTargetPath: targetPath,
+				isValid: result !== null,
+			};
+
+			if (result) {
+				e.preventDefault();
+				e.dataTransfer!.dropEffect = "move";
+			}
+		},
+		[dragState, plugin],
+	);
+
+	const handleDrop = useCallback(
+		(e: DragEvent, targetItem: FlatProjectItem) => {
+			e.preventDefault();
+			const ds = dragState.value;
+			dragState.value = null;
+			if (!ds) return;
+
+			const result = validateDrop(
+				ds.item,
+				targetItem,
+				plugin.hierarchyService,
+			);
+			if (!result) return;
+
+			const frontmatterService = plugin.flashcardManager.getFrontmatterService();
+			void executeDrop(result, {
+				app: plugin.app,
+				frontmatterService,
+				promptProjectName: async (defaultName: string) => {
+					const modal = new NamePromptModal(plugin.app, defaultName);
+					const res = await modal.openAndWait();
+					return res.cancelled ? null : res.name;
+				},
+			});
+		},
+		[dragState, plugin],
+	);
+
+	const handleRootDrop = useCallback(
+		(e: DragEvent) => {
+			e.preventDefault();
+			const ds = dragState.value;
+			dragState.value = null;
+			if (!ds || !ds.item.parentPath) return;
+
+			const parentName =
+				(ds.item.parentPath.split("/").pop() ?? ds.item.parentPath).replace(/\.md$/, "");
+
+			const result: DropResult = {
+				action: "unnest",
+				dragPath: ds.item.path,
+				dragName: ds.item.name,
+				parentPath: ds.item.parentPath,
+				parentName,
+			};
+
+			const frontmatterService = plugin.flashcardManager.getFrontmatterService();
+			void executeDrop(result, {
+				app: plugin.app,
+				frontmatterService,
+				promptProjectName: async () => null,
+			});
+		},
+		[dragState, plugin],
+	);
+
+	// ── CSS class helpers ────────────────────────────────
+
+	function getDragClass(itemPath: string | null): string {
+		const ds = dragState.value;
+		if (!ds || !itemPath) return "";
+		if (ds.item.path === itemPath) return "ep-drag-source";
+		if (ds.dropTargetPath === itemPath && ds.isValid) return "ep-drop-target";
+		return "";
+	}
+
+	// ── Render ───────────────────────────────────────────
 
 	if (flatItems.length === 0) {
 		return (
 			<div class="ep:text-sm ep:text-obs-muted ep:p-4 ep:text-center">
 				{projects.length === 0
-					? "No projects found. Organize notes in folders or add project: true to a note's frontmatter."
+					? "No projects found. Organize notes in folders or add include: folder to a note's frontmatter."
 					: "No matching projects."}
-				{projects.length === 0 && addButton}
 			</div>
 		);
 	}
@@ -156,10 +261,16 @@ export function ProjectsTab({
 						: {};
 
 					if (item.type === "project-header") {
+						const dragCls = getDragClass(item.project.path);
 						return (
 							<div
 								key={`p-${item.project.path}`}
-								class={initialMount.current ? "ep-card-enter" : undefined}
+								class={`${initialMount.current ? "ep-card-enter" : ""} ${dragCls}`.trim() || undefined}
+								draggable
+								onDragStart={(e) => handleDragStart(e, item)}
+								onDragEnd={handleDragEnd}
+								onDragOver={(e) => handleDragOver(e, item)}
+								onDrop={(e) => handleDrop(e, item)}
 								style={{
 									position: "absolute",
 									top: `${offsetTop}px`,
@@ -201,10 +312,16 @@ export function ProjectsTab({
 					}
 
 					if (item.type === "note") {
+						const dragCls = getDragClass(item.note.path);
 						return (
 							<div
 								key={`n-${item.note.name}`}
-								class={initialMount.current ? "ep-card-enter" : undefined}
+								class={`${initialMount.current ? "ep-card-enter" : ""} ${dragCls}`.trim() || undefined}
+								draggable={!!item.note.path}
+								onDragStart={(e) => handleDragStart(e, item)}
+								onDragEnd={handleDragEnd}
+								onDragOver={(e) => handleDragOver(e, item)}
+								onDrop={(e) => handleDrop(e, item)}
 								style={{
 									position: "absolute",
 									top: `${offsetTop}px`,
@@ -257,7 +374,24 @@ export function ProjectsTab({
 					);
 				})}
 			</div>
-			{addButton}
+
+			{/* Root drop zone — visible only during drag, allows un-nesting */}
+			{dragState.value && dragState.value.item.parentPath && (
+				<div
+					class="ep:h-10 ep:mx-2 ep:mt-1 ep:border-2 ep:border-dashed ep:border-obs-border ep:rounded-lg ep:flex ep:items-center ep:justify-center ep:text-xs ep:text-obs-muted ep:transition-colors"
+					onDragOver={(e) => {
+						e.preventDefault();
+						e.dataTransfer!.dropEffect = "move";
+						(e.currentTarget as HTMLElement).classList.add("ep-drop-root-zone");
+					}}
+					onDragLeave={(e) => {
+						(e.currentTarget as HTMLElement).classList.remove("ep-drop-root-zone");
+					}}
+					onDrop={handleRootDrop}
+				>
+					Move to root level
+				</div>
+			)}
 		</div>
 	);
 }
