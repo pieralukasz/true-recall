@@ -1,60 +1,40 @@
-# Git Stint Workflow
+# Git Stint Workflow (Opt-In)
 
-All file edits are intercepted by git-stint hooks and redirected to isolated
-worktrees. One stint session = one branch = one PR.
+Stint is available but **not active by default**. Edits go directly to main
+unless the user explicitly requests stint isolation.
 
-## Session Naming
+## When to Use Stint
 
-When creating a session, pick a short descriptive name that captures the task:
-- Good: `fix-auth-refresh`, `add-user-search`, `refactor-db-queries`
-- Bad: `session-1`, `changes`, `test`, `update`
+Only use stint when the user explicitly says so, e.g.:
+- "use stint for this"
+- "start a stint session"
+- "work in a worktree"
+- "I want this on a separate branch"
 
-The name becomes the branch (`stint/<name>`) and the PR title context.
-
-## Multi-Terminal / Multi-Agent Workflow
-
-Each Claude instance must be run **from the worktree directory**, not the main repo:
+## Starting a Session
 
 ```bash
-# Start a new session
-git stint start fix-auth
-cd .stint/fix-auth/
-claude
-
-# Join an existing session from another terminal
-git stint list              # see available sessions
-cd .stint/fix-auth/         # enter the worktree
-claude                      # Claude knows where to write
-
-# Check where you are
-git stint which             # session name
-git stint which --worktree  # full path
+git stint start <descriptive-name>
+cd .stint/<descriptive-name>/
 ```
 
-Session is auto-detected from CWD (current working directory). Hooks check where you are and route edits accordingly.
+Pick a short descriptive name: `fix-auth-refresh`, `add-user-search`, `refactor-db-queries`.
+The name becomes the branch (`stint/<name>`) and the PR title context.
 
 ## Session Lifecycle
 
-- If the hook blocks a write, create a session: `git stint start <descriptive-name>`
-- Any uncommitted files on main are automatically carried into the new session.
-  Do NOT redo work that was already written — it is adopted into the worktree.
-- All edits redirect to `.stint/<session>/` worktree.
-- `git stint commit -m "msg"` to commit logical units of work.
-- `git stint pr` to push and create PR.
-- `git stint end` ONLY after ALL related work is done.
+1. `git stint start <name>` — create session + worktree
+2. Work in `.stint/<name>/` directory
+3. `git stint commit -m "msg"` — commit logical units
+4. `git stint pr` — push and create PR
+5. `git stint end` — ONLY after ALL work is done
 
 ## Rules
 
 - **NEVER end or delete a stint session you didn't create.** Other sessions
-  belong to other conversations or agents. Only operate on your own session
-  (the one auto-created by the hook for your edits). Use `git stint list` to
-  see all sessions — leave others alone.
-- Do NOT call `git stint end` until all changes are committed (code, tests,
-  config updates, follow-up tasks). Premature `end` kills the session; the
-  next edit auto-creates a NEW session, fragmenting work across multiple PRs.
-- Sub-agents share the same session (same PPID). No special handling needed.
-- Files outside the repo bypass hooks — edit freely.
-- Gitignored files bypass hooks — edit freely.
+  belong to other conversations or agents.
+- Do NOT call `git stint end` until all changes are committed.
+- Sub-agents share the same session (same PPID).
+- Files outside the repo and gitignored files bypass hooks.
 - Directories listed under `shared_dirs` in `.stint.json` are symlinked into
-  worktrees pointing to the main repo's real directories. They must never be
-  staged or committed. The hooks auto-add them to the worktree's `.gitignore`.
+  worktrees and must never be staged or committed.
