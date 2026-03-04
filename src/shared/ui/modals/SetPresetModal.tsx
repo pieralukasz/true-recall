@@ -1,4 +1,5 @@
 import { Clickable } from "@shared/ui/components";
+import { ModalFooter } from "@shared/ui/components/ModalFooter";
 import { BasePromiseModal } from "@shared/ui/modals/BasePromiseModal";
 import type { App } from "obsidian";
 import { render } from "preact";
@@ -54,15 +55,10 @@ function SetPresetBody({
 						</Clickable>
 					))}
 			</div>
-			<div class="ep-modal-footer ep:flex ep:justify-end ep:gap-2">
-				<Clickable
-					class="ep-btn ep-btn-outline"
-					onClick={() => onResolve({ cancelled: true, presetName: null })}
-					stopPropagation={false}
-				>
-					Cancel
-				</Clickable>
-			</div>
+			<ModalFooter
+				onCancel={() => onResolve({ cancelled: true, presetName: null })}
+				cancelLabel="Cancel"
+			/>
 		</>
 	);
 }
