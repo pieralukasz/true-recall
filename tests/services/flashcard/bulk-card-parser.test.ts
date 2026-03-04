@@ -1,7 +1,7 @@
 /**
  * Bulk Card Parser Tests
  *
- * Tests multi-format text → ParsedCard[] conversion for the Quick tab.
+ * Tests `Front :: Back` text → ParsedCard[] conversion for the Quick tab.
  */
 import { describe, expect, it } from "vitest";
 import {
@@ -14,56 +14,6 @@ import {
 } from "../../../src/shared/types/note.types";
 
 describe("BulkCardParser", () => {
-	// ── Tab-separated format ──────────────────────────────────
-
-	describe("tab-separated format", () => {
-		it("parses single tab-separated line", () => {
-			const result = parseBulkText("What is ATP?\tAdenosine triphosphate");
-
-			expect(result.detectedFormat).toBe("tab");
-			expect(result.cards).toHaveLength(1);
-			expect(result.cards[0]!.noteTypeId).toBe(BUILTIN_BASIC_ID);
-			expect(result.cards[0]!.fields).toEqual({
-				Front: "What is ATP?",
-				Back: "Adenosine triphosphate",
-			});
-		});
-
-		it("parses multiple tab-separated lines", () => {
-			const input = [
-				"Capital of France\tParis",
-				"Capital of Japan\tTokyo",
-				"Capital of Germany\tBerlin",
-			].join("\n");
-
-			const result = parseBulkText(input);
-
-			expect(result.detectedFormat).toBe("tab");
-			expect(result.cards).toHaveLength(3);
-		});
-
-		it("skips empty lines", () => {
-			const input = "Q1\tA1\n\nQ2\tA2";
-			const result = parseBulkText(input);
-
-			expect(result.cards).toHaveLength(2);
-		});
-
-		it("ignores lines without tabs when majority have tabs", () => {
-			const input = [
-				"Q1\tA1",
-				"Q2\tA2",
-				"This line has no tab",
-				"Q3\tA3",
-			].join("\n");
-
-			const result = parseBulkText(input);
-
-			expect(result.detectedFormat).toBe("tab");
-			expect(result.cards).toHaveLength(3);
-		});
-	});
-
 	// ── Double-colon format ───────────────────────────────────
 
 	describe("double-colon format", () => {
@@ -109,55 +59,12 @@ describe("BulkCardParser", () => {
 				Back: "Answer",
 			});
 		});
-	});
 
-	// ── Q:/A: format ──────────────────────────────────────────
-
-	describe("Q:/A: format", () => {
-		it("parses single Q/A pair", () => {
-			const result = parseBulkText("Q: What is ATP?\nA: Adenosine triphosphate");
-
-			expect(result.detectedFormat).toBe("qa");
-			expect(result.cards).toHaveLength(1);
-			expect(result.cards[0]!.fields).toEqual({
-				Front: "What is ATP?",
-				Back: "Adenosine triphosphate",
-			});
-		});
-
-		it("parses multiple Q/A pairs", () => {
-			const input = [
-				"Q: Capital of France",
-				"A: Paris",
-				"Q: Capital of Japan",
-				"A: Tokyo",
-			].join("\n");
-
+		it("skips empty lines", () => {
+			const input = "Q1 :: A1\n\nQ2 :: A2";
 			const result = parseBulkText(input);
 
-			expect(result.detectedFormat).toBe("qa");
 			expect(result.cards).toHaveLength(2);
-		});
-
-		it("handles multi-line answers", () => {
-			const input = [
-				"Q: Explain photosynthesis",
-				"A: The process by which plants",
-				"convert light energy into",
-				"chemical energy",
-			].join("\n");
-
-			const result = parseBulkText(input);
-
-			expect(result.cards).toHaveLength(1);
-			expect(result.cards[0]!.fields.Back).toContain("convert light energy");
-		});
-
-		it("is case-insensitive for Q:/A: markers", () => {
-			const result = parseBulkText("q: What?\na: Answer");
-
-			expect(result.detectedFormat).toBe("qa");
-			expect(result.cards).toHaveLength(1);
 		});
 	});
 
@@ -188,28 +95,12 @@ describe("BulkCardParser", () => {
 			const input = "{{c1::Mitochondria}} is the powerhouse :: Extra info";
 			const result = parseBulkText(input);
 
-			// The :: separator splits it, but front has cloze → becomes cloze card
 			expect(result.cards).toHaveLength(1);
 			expect(result.cards[0]!.noteTypeId).toBe(BUILTIN_CLOZE_ID);
 			expect(result.cards[0]!.fields.Text).toBe(
 				"{{c1::Mitochondria}} is the powerhouse",
 			);
 			expect(result.cards[0]!.fields.Extra).toBe("Extra info");
-		});
-
-		it("detects cloze in Q/A format", () => {
-			const input = [
-				"Q: {{c1::Paris}} is the capital of France",
-				"A: Geography fact",
-			].join("\n");
-
-			const result = parseBulkText(input);
-
-			expect(result.cards).toHaveLength(1);
-			expect(result.cards[0]!.noteTypeId).toBe(BUILTIN_CLOZE_ID);
-			expect(result.cards[0]!.fields.Text).toBe(
-				"{{c1::Paris}} is the capital of France",
-			);
 		});
 
 		it("detects cloze with hint syntax", () => {
@@ -278,34 +169,21 @@ describe("BulkCardParser", () => {
 			expect(result.cards).toHaveLength(0);
 			expect(result.detectedFormat).toBe("none");
 		});
-
-		it("tab format takes priority over :: format", () => {
-			// Line has both tab and :: — tab format should win
-			const result = parseBulkText("Front :: included\tBack answer");
-
-			expect(result.detectedFormat).toBe("tab");
-			expect(result.cards[0]!.fields.Front).toBe("Front :: included");
-			expect(result.cards[0]!.fields.Back).toBe("Back answer");
-		});
 	});
 
 	// ── Format detection accuracy ─────────────────────────────
 
 	describe("format detection", () => {
-		it("detects tab format", () => {
-			expect(parseBulkText("Q\tA").detectedFormat).toBe("tab");
-		});
-
 		it("detects double-colon format", () => {
 			expect(
 				parseBulkText("Capital of France :: Paris").detectedFormat,
 			).toBe("double-colon");
 		});
 
-		it("detects QA format", () => {
-			expect(parseBulkText("Q: Question\nA: Answer").detectedFormat).toBe(
-				"qa",
-			);
+		it("detects standalone cloze as double-colon format", () => {
+			expect(
+				parseBulkText("{{c1::Paris}} is the capital").detectedFormat,
+			).toBe("double-colon");
 		});
 	});
 });
