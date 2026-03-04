@@ -1,6 +1,5 @@
 import type { ReadonlySignal } from "@preact/signals";
 import { effect } from "@preact/signals";
-import { track } from "@shared/services/signals";
 
 export interface ReactiveCacheOptions<T> {
 	compute: () => Promise<T>;
@@ -30,7 +29,7 @@ export class ReactiveCache<T> {
 		if (options.invalidateOn && options.invalidateOn.length > 0) {
 			const signals = options.invalidateOn;
 			this.disposer = effect(() => {
-				track(...signals);
+				for (const s of signals) s.value;
 				this.invalidate();
 			});
 		}

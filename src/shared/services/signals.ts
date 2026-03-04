@@ -1,25 +1,8 @@
 import { batch, type ReadonlySignal, signal } from "@preact/signals";
+import { refreshCards } from "@shared/services/reactive-card-store";
 import type { HighlightColor } from "@shared/ui/helpers/fsrs-colors";
 
-export function track(...signals: ReadonlySignal[]): void {
-	for (const s of signals) s.value;
-}
-
-/**
- * Reads numeric signal values during render, triggering Preact's auto-subscription.
- * Returns their sum for use as a useMemo/useCallback dependency.
- *
- * Replaces the useState(0) + useEffect + effect() + track() workaround.
- */
-export function useSignalVersion(
-	...signals: ReadonlySignal<number>[]
-): number {
-	let sum = 0;
-	for (const s of signals) sum += s.value;
-	return sum;
-}
-
-export const dataVersion = signal(0);
+// ── Card mutation events ────────────────────────────────────
 
 export interface CardMutation {
 	type: "added" | "updated" | "removed" | "reviewed" | "bulk";
@@ -39,20 +22,17 @@ export interface CardMutation {
 	newState?: number;
 }
 
-export const lastMutation = signal<CardMutation | null>(null);
-
-export const settingsVersion = signal(0);
-export const syncVersion = signal(0);
-export const metadataVersion = signal(0);
+const _lastMutation = signal<CardMutation | null>(null);
+export const lastMutation: ReadonlySignal<CardMutation | null> = _lastMutation;
 
 export function notifyCardChange(mutation: CardMutation): void {
 	batch(() => {
-		lastMutation.value = mutation;
-		dataVersion.value++;
+		_lastMutation.value = mutation;
+		refreshCards();
 	});
 }
 
-// ── Source text highlight (Card → Text jump) ──────────────────
+// ── Source text highlight (Card → Text jump) ────────────────
 
 export type { HighlightColor } from "@shared/ui/helpers/fsrs-colors";
 
@@ -64,7 +44,9 @@ export interface HighlightRequest {
 	colorHint?: HighlightColor;
 }
 
-export const highlightRequest = signal<HighlightRequest | null>(null);
+const _highlightRequest = signal<HighlightRequest | null>(null);
+export const highlightRequest: ReadonlySignal<HighlightRequest | null> =
+	_highlightRequest;
 
 let highlightCounter = 0;
 
@@ -74,7 +56,7 @@ export function requestSourceHighlight(
 	mode: "jump" | "hover" = "jump",
 	colorHint?: HighlightColor,
 ): void {
-	highlightRequest.value = {
+	_highlightRequest.value = {
 		sourceNotePath,
 		sourceText,
 		requestId: ++highlightCounter,
@@ -84,5 +66,5 @@ export function requestSourceHighlight(
 }
 
 export function clearSourceHighlight(): void {
-	highlightRequest.value = null;
+	_highlightRequest.value = null;
 }

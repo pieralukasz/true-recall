@@ -1,7 +1,5 @@
-import type {
-	NoteStatusCacheService,
-	NoteStatusInfo,
-} from "@features/core/cache/note-status-cache.service";
+import type { NoteStatusCacheService } from "@features/core/cache/note-status-cache.service";
+import type { NoteStatusInfo } from "@shared/services/reactive-card-store";
 import type { FrontmatterIndexService } from "@features/core/services/frontmatter-index.service";
 import {
 	aggregateInfos,

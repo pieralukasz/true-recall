@@ -10,7 +10,7 @@ interface AggregationDeps {
 	todaySummary: TodaySummary;
 	newCardsCap: number;
 	reviewsCap: number;
-	archivedSourceUids?: Set<string>;
+	archivedSourceUids?: ReadonlySet<string>;
 }
 
 export function aggregateDashboardData(

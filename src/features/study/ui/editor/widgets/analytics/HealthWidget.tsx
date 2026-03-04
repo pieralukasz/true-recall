@@ -1,5 +1,6 @@
+import { useComputed } from "@preact/signals";
 import { StatsCalculatorService } from "@features/metrics/services/stats/stats-calculator.service";
-import { dataVersion, useSignalVersion } from "@shared/services/signals";
+import { cards } from "@shared/services/reactive-card-store";
 import type { CollectionHealthSnapshot } from "@shared/types/fsrs/stats.types";
 import { Clickable } from "@shared/ui/components";
 import { usePlugin } from "@shared/ui/preact";
@@ -8,11 +9,11 @@ import { configValue, parseCodeblockConfig } from "../config-parser";
 
 export function HealthWidget({ source }: { source: string }) {
 	const plugin = usePlugin();
-	const ver = useSignalVersion(dataVersion);
 
 	const config = useMemo(() => parseCodeblockConfig(source), [source]);
 
-	const data = useMemo((): CollectionHealthSnapshot | null => {
+	const data = useComputed((): CollectionHealthSnapshot | null => {
+		cards.value;
 		if (!plugin.sessionPersistence) return null;
 
 		const statsCalc = new StatsCalculatorService(
@@ -22,7 +23,7 @@ export function HealthWidget({ source }: { source: string }) {
 		);
 
 		return statsCalc.getCollectionHealthSnapshot();
-	}, [plugin, ver]);
+	}).value;
 
 	if (!data || data.cardCount === 0) {
 		return (

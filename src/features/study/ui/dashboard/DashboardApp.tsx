@@ -1,17 +1,15 @@
 import { StatsCalculatorService } from "@features/metrics/services/stats/stats-calculator.service";
 import {
-	dataVersion,
-	metadataVersion,
-	settingsVersion,
-	syncVersion,
-	useSignalVersion,
-} from "@shared/services/signals";
+	allCardsArray,
+	archivedSourceUids as archivedSourceUidsSignal,
+	pluginSettings,
+} from "@shared/services/reactive-card-store";
 import { SearchCombobox } from "@shared/ui/components/SearchCombobox";
 import type { SearchSuggestion, SuggestionProvider } from "@shared/ui/helpers/search-suggestions.types";
 import { PresetOptionsModal } from "@shared/ui/modals/PresetOptionsModal";
 import { usePlugin } from "@shared/ui/preact";
 import { useCallback, useMemo, useRef } from "preact/hooks";
-import { useSignal } from "@preact/signals";
+import { useComputed, useSignal } from "@preact/signals";
 import { AppNavBar } from "@shared/ui/components";
 import { StreakWidget } from "../editor/widgets/analytics/StreakWidget";
 import { DashboardTabs } from "./components/DashboardTabs";
@@ -39,23 +37,14 @@ export function DashboardApp() {
 		return calc;
 	}, [plugin]);
 
-	const refreshTick = useSignalVersion(
-		dataVersion,
-		settingsVersion,
-		syncVersion,
-		metadataVersion,
-	);
-
 	const showArchived = useSignal(false);
 
-	const data = useMemo((): DashboardAggregation => {
-		const allCards = plugin.flashcardManager.getAllFSRSCards();
+	const data = useComputed((): DashboardAggregation => {
+		const allCards = allCardsArray.value;
+		pluginSettings.value;
+		const archived = archivedSourceUidsSignal.value;
 		const streakInfo = statsCalculator.getStreakInfo();
 		const todaySummary = statsCalculator.getTodaySummary();
-		// When showing archived, pass undefined so no cards are filtered out
-		const archivedSourceUids = showArchived.value
-			? undefined
-			: plugin.projectLinkService.getArchivedSourceUids();
 
 		return aggregateDashboardData({
 			allCards,
@@ -63,9 +52,9 @@ export function DashboardApp() {
 			todaySummary,
 			newCardsCap: plugin.settings.newCardsPerDay,
 			reviewsCap: plugin.settings.reviewsPerDay,
-			archivedSourceUids,
+			archivedSourceUids: showArchived.value ? undefined : archived,
 		});
-	}, [plugin, statsCalculator, refreshTick, showArchived.value]);
+	}).value;
 
 	const projectData = useMemo(() => {
 		return aggregateProjectData({
@@ -80,7 +69,7 @@ export function DashboardApp() {
 				settings: plugin.settings,
 			},
 		});
-	}, [plugin, data.notes, refreshTick, showArchived.value]);
+	}, [plugin, data.notes, showArchived.value]);
 
 	const enrichedNotes = useMemo(() => {
 		const newStudied = plugin.sessionPersistence.getNewCardsStudiedToday();
@@ -109,7 +98,7 @@ export function DashboardApp() {
 				...(archived ? { archived } : {}),
 			};
 		});
-	}, [data.notes, projectData.noteProjectMap, plugin, refreshTick, showArchived.value]);
+	}, [data.notes, projectData.noteProjectMap, plugin, showArchived.value]);
 
 	const allProjectNames = useMemo(() => {
 		const names = new Set<string>();

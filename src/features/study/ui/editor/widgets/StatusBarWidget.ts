@@ -1,6 +1,10 @@
 import type { FlashcardManager } from "@features/study/services/flashcard/flashcard.service";
 import { effect } from "@preact/signals";
-import { dataVersion, metadataVersion, settingsVersion, track } from "@shared/services/signals";
+import {
+	allCardsArray,
+	archivedSourceUids,
+	pluginSettings,
+} from "@shared/services/reactive-card-store";
 import { FSRS_COLORS } from "@shared/ui/helpers/fsrs-colors";
 
 const DOT = ' <span style="opacity:0.3; margin: 0 2px">·</span> ';
@@ -13,7 +17,6 @@ export class StatusBarWidget {
 		private flashcardManager: FlashcardManager,
 		private onClickDue: () => void,
 		private getEnabled: () => boolean = () => true,
-		private getArchivedSourceUids: () => Set<string> = () => new Set(),
 	) {
 		this.el.addClass("true-recall-status-bar");
 		this.el.style.cursor = "pointer";
@@ -22,7 +25,9 @@ export class StatusBarWidget {
 
 	start(): void {
 		this.disposer = effect(() => {
-			track(dataVersion, settingsVersion, metadataVersion);
+			allCardsArray.value;
+			pluginSettings.value;
+			archivedSourceUids.value;
 			this.render();
 		});
 	}
@@ -65,15 +70,15 @@ export class StatusBarWidget {
 		newCount: number;
 		learning: number;
 	} {
-		const allCards = this.flashcardManager.getAllFSRSCards();
-		const archivedUids = this.getArchivedSourceUids();
+		const allCards = allCardsArray.value;
+		const archived = archivedSourceUids.value;
 		const now = new Date();
 		let dueToday = 0;
 		let newCount = 0;
 		let learning = 0;
 
 		for (const card of allCards) {
-			if (archivedUids.has(card.sourceUid ?? "")) continue;
+			if (archived.has(card.sourceUid ?? "")) continue;
 			const fsrs = card.fsrs;
 			if (
 				fsrs.suspended ||

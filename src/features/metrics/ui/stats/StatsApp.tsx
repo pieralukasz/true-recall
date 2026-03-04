@@ -14,13 +14,9 @@ import {
 	TodaySection,
 } from "@features/metrics/ui/stats/components";
 import { formatDateForDisplay } from "@features/metrics/ui/stats/utils/chart-helpers";
-import { useSignal } from "@preact/signals";
-import {
-	dataVersion,
-	settingsVersion,
-	syncVersion,
-	useSignalVersion,
-} from "@shared/services/signals";
+import { useSignal, useSignalEffect } from "@preact/signals";
+import { cards } from "@shared/services/reactive-card-store";
+import { pluginSettings } from "@shared/services/reactive-card-store";
 import type {
 	CardMaturityBreakdown,
 	FSRSFlashcardItem,
@@ -46,7 +42,12 @@ export function StatsApp() {
 
 	const currentRange = useSignal<StatsTimeRange>("1m");
 
-	const refreshTick = useSignalVersion(dataVersion, settingsVersion, syncVersion);
+	const dataKey = useSignal(0);
+	useSignalEffect(() => {
+		cards.value;
+		pluginSettings.value;
+		dataKey.value++;
+	});
 
 	const handleCardPreviewForDate = useCallback(
 		(date: string, cards: FSRSFlashcardItem[]) => {
@@ -75,8 +76,6 @@ export function StatsApp() {
 		[plugin],
 	);
 
-	const dataKey = refreshTick;
-
 	return (
 		<div class="ep:flex ep:flex-col ep:h-full">
 			<AppNavBar activeItem="stats" />
@@ -85,7 +84,7 @@ export function StatsApp() {
 					<NLQueryPanel nlQueryService={plugin.nlQueryService} />
 
 					<TodaySection
-						key={`today-${dataKey}`}
+						key={`today-${dataKey.value}`}
 						statsCalculator={statsCalculator}
 						currentRange={currentRange.value}
 					/>
@@ -98,54 +97,54 @@ export function StatsApp() {
 					/>
 
 					<FutureDueChart
-						key={`future-${dataKey}`}
+						key={`future-${dataKey.value}`}
 						statsCalculator={statsCalculator}
 						currentRange={currentRange.value}
 						onCardPreview={handleCardPreviewForDate}
 					/>
 
 					<ReviewsChart
-						key={`reviews-${dataKey}`}
+						key={`reviews-${dataKey.value}`}
 						statsCalculator={statsCalculator}
 						currentRange={currentRange.value}
 						onCardPreview={handleCardPreviewForDate}
 					/>
 
 					<RetentionChart
-						key={`retention-${dataKey}`}
+						key={`retention-${dataKey.value}`}
 						statsCalculator={statsCalculator}
 						currentRange={currentRange.value}
 					/>
 
 					<RatingDistributionChart
-						key={`rating-dist-${dataKey}`}
+						key={`rating-dist-${dataKey.value}`}
 						statsCalculator={statsCalculator}
 						currentRange={currentRange.value}
 					/>
 
 					<CollectionHealthCard
-						key={`health-${dataKey}`}
+						key={`health-${dataKey.value}`}
 						statsCalculator={statsCalculator}
 					/>
 
 					<CardCountsChart
-						key={`counts-${dataKey}`}
+						key={`counts-${dataKey.value}`}
 						statsCalculator={statsCalculator}
 						onCategoryClick={handleCardPreviewForCategory}
 					/>
 
 					<NotePerformanceTable
-						key={`note-perf-${dataKey}`}
+						key={`note-perf-${dataKey.value}`}
 						statsCalculator={statsCalculator}
 					/>
 
 					<CreationSourceChart
-						key={`creation-source-${dataKey}`}
+						key={`creation-source-${dataKey.value}`}
 						statsCalculator={statsCalculator}
 					/>
 
 					<CalendarHeatmap
-						key={`heatmap-${dataKey}`}
+						key={`heatmap-${dataKey.value}`}
 						statsCalculator={statsCalculator}
 						onCardPreview={handleCardPreviewForDate}
 					/>

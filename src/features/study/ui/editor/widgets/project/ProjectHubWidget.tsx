@@ -1,7 +1,7 @@
 import type { ProjectNode } from "@features/core/services/project-link.service";
-import { dataVersion, metadataVersion, useSignalVersion } from "@shared/services/signals";
+import { useComputed } from "@preact/signals";
+import { archivedSourceUids, cards } from "@shared/services/reactive-card-store";
 import { usePlugin } from "@shared/ui/preact";
-import { useMemo } from "preact/hooks";
 import { ProjectCard } from "./ProjectWidget";
 import { computeProjectStats, type ProjectStats } from "../project-stats";
 
@@ -12,9 +12,10 @@ interface FlatProject {
 
 export function ProjectHubWidget() {
 	const plugin = usePlugin();
-	const ver = useSignalVersion(dataVersion, metadataVersion);
 
-	const projects = useMemo((): FlatProject[] => {
+	const projects = useComputed((): FlatProject[] => {
+		cards.value;
+		archivedSourceUids.value;
 		if (!plugin.cardStore) return [];
 
 		const hierarchy = plugin.projectLinkService.buildHierarchy();
@@ -39,7 +40,7 @@ export function ProjectHubWidget() {
 
 		// Sort roots by due count desc (most urgent first), keep children after their parent
 		return sortByUrgency(flat);
-	}, [plugin, ver]);
+	}).value;
 
 	if (projects.length === 0) {
 		return (
