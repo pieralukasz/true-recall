@@ -242,13 +242,7 @@ export class CardRepository {
 			}
 		}
 
-		const updated: FSRSCardData = {
-			...existing,
-			question: newQuestion,
-			answer: newAnswer,
-		};
-
-		this.store.set(cardId, updated);
+		this.store.cards.updateCardContent(cardId, newQuestion, newAnswer);
 
 		notifyCardChange({
 			type: "updated",
