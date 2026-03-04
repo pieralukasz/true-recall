@@ -178,12 +178,6 @@ export interface TrueRecallSettings {
 	/** New day start hour (0-23, default 4 = 4:00 AM like Anki) */
 	dayStartHour: number;
 
-	/** Folders excluded from searching notes without flashcards */
-	excludedFolders: string[];
-
-	/** Enable automatic folder-based project detection */
-	folderProjectsEnabled: boolean;
-
 	/** Automatic backup on plugin load */
 	autoBackupOnLoad: boolean;
 	/** Maximum number of backups to keep (0 = unlimited) - legacy, use retentionPolicy instead */

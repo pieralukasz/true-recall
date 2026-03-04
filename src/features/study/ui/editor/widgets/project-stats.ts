@@ -1,5 +1,5 @@
 import type { FSRSService } from "@features/core/services/fsrs.service";
-import type { ProjectLinkService } from "@features/core/services/project-link.service";
+import type { HierarchyService } from "@features/core/services/hierarchy.service";
 import { FSRS_COLORS } from "@shared/ui/helpers/fsrs-colors";
 import type { CardStore } from "@shared/types/fsrs/store.types";
 import { State } from "ts-fsrs";
@@ -20,11 +20,11 @@ export function computeProjectStats(
 	projectPath: string,
 	projectName: string,
 	childCount: number,
-	projectLinkService: ProjectLinkService,
+	hierarchyService: HierarchyService,
 	cardStore: CardStore,
 	fsrsService: FSRSService,
 ): ProjectStats {
-	const sourceUids = projectLinkService.getSourceUidsForProject(projectPath);
+	const sourceUids = hierarchyService.getSourceUidsForProject(projectPath);
 
 	const now = new Date();
 	let totalCards = 0;

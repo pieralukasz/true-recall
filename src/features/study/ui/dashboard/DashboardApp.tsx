@@ -61,7 +61,7 @@ export function DashboardApp() {
 			notes: data.notes,
 			showArchived: showArchived.value,
 			plugin: {
-				projectLinkService: plugin.projectLinkService,
+				hierarchyService: plugin.hierarchyService,
 				cardStore: plugin.cardStore,
 				fsrsService: plugin.fsrsService,
 				presetService: plugin.presetService,
@@ -86,7 +86,7 @@ export function DashboardApp() {
 
 			const archived =
 				showArchived.value && note.path
-					? plugin.projectLinkService.isNoteArchived(note.path)
+					? plugin.hierarchyService.isNoteArchived(note.path)
 					: undefined;
 
 			return {

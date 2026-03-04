@@ -2,7 +2,6 @@ import {
 	BackgroundBackupSection,
 	BackupSettingsSection,
 	BackupStatusSection,
-	ContentSection,
 	DeviceDatabaseSection,
 	ImportExportSection,
 	ManualBackupSection,
@@ -19,7 +18,6 @@ export function DataTab() {
 			<BackupStatusSection />
 			<ManualBackupSection />
 			<ImportExportSection />
-			<ContentSection />
 		</div>
 	);
 }

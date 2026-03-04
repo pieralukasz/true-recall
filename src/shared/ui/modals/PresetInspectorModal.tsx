@@ -17,8 +17,7 @@ export interface PresetInspectorResult {
 
 const SOURCE_LABELS: Record<PresetSource, string> = {
 	note: "Note",
-	"link-project": "Project",
-	folder: "Folder",
+	parent: "Parent",
 	default: "Default",
 };
 

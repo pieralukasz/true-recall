@@ -358,7 +358,7 @@ export class ReviewView extends ItemView {
 				return;
 			}
 
-			const archivedSourceUids = this.plugin.projectLinkService.getArchivedSourceUids();
+			const archivedSourceUids = this.plugin.hierarchyService.getArchivedSourceUids();
 			const activeCards = filterActiveCards(allCards, {
 				stateFilter: this.filters.stateFilter,
 				archivedSourceUids,
@@ -398,7 +398,7 @@ export class ReviewView extends ItemView {
 			// Scope to project members via outgoing links
 			if (this.filters.projectPath) {
 				queueOptions.sourceUidFilter =
-					this.plugin.projectLinkService.getSourceUidsForProject(
+					this.plugin.hierarchyService.getSourceUidsForProject(
 						this.filters.projectPath,
 					);
 			}

@@ -45,7 +45,7 @@ export function CardBrowserApp() {
 			new CardBrowserQueryService(
 				plugin.cardStore,
 				plugin.frontmatterIndex,
-				plugin.projectLinkService,
+				plugin.hierarchyService,
 			),
 		[plugin],
 	);
@@ -99,9 +99,10 @@ export function CardBrowserApp() {
 		const presetNames = plugin.presetService
 			.getPresets()
 			.map((p) => p.name);
-		const projectNames = Array.from(
-			plugin.frontmatterIndex.getAllValues("project"),
-		).sort();
+		const projectNames = plugin.hierarchyService
+			.buildHierarchy()
+			.map((n) => n.name)
+			.sort();
 		return createBrowserSuggestionProvider({
 			sourceNotes: facetCounts.sourceNotes,
 			presetNames,

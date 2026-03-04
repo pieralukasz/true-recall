@@ -1,6 +1,5 @@
-import type { FolderProjectService } from "@features/core/services/folder-project.service";
 import type { FrontmatterIndexService } from "@features/core/services/frontmatter-index.service";
-import type { ProjectLinkService } from "@features/core/services/project-link.service";
+import type { HierarchyService } from "@features/core/services/hierarchy.service";
 import type { SqliteStoreService } from "@features/core/persistence/sqlite";
 import type { FSRSFlashcardItem } from "@shared/types/fsrs";
 import type {
@@ -14,7 +13,7 @@ export interface PresetResolutionContext {
 	projectPath?: string;
 }
 
-export type PresetSource = "note" | "link-project" | "folder" | "default";
+export type PresetSource = "note" | "parent" | "default";
 
 export interface PresetResolutionResult {
 	preset: FSRSPreset;
@@ -34,8 +33,7 @@ export class PresetService {
 		private getSettings: () => TrueRecallSettings,
 		private persistSettings: () => Promise<void>,
 		private frontmatterIndex: FrontmatterIndexService,
-		private projectLinkService: ProjectLinkService | null,
-		private folderProjectService: FolderProjectService | null,
+		private hierarchyService: HierarchyService,
 		private getCardStore?: () => SqliteStoreService | null,
 	) {}
 
@@ -105,16 +103,10 @@ export class PresetService {
 	}
 
 	/**
-	 * Determines which preset to use for a card during review.
-	 *
 	 * Resolution order (most specific wins):
 	 * 1. Note's own `fsrs_preset` frontmatter
-	 * 2. Link-based project's `fsrs_preset` (context-sensitive)
-	 * 3. Folder project's `fsrs_preset` (walks up hierarchy)
-	 * 4. Global default preset
-	 *
-	 * With project context: step 2 checks that specific project.
-	 * Without context: step 2 iterates all projects linking to this note.
+	 * 2. Nearest ancestor with `fsrs_preset` (walks parents chain)
+	 * 3. Global default preset
 	 */
 	resolvePresetForCard(
 		card: FSRSFlashcardItem,
@@ -128,9 +120,6 @@ export class PresetService {
 		return this.getDefaultPreset();
 	}
 
-	/**
-	 * Returns the full inheritance chain for a note — used by PresetInspectorModal.
-	 */
 	resolvePresetChain(
 		notePath: string,
 		context?: PresetResolutionContext,
@@ -157,33 +146,21 @@ export class PresetService {
 			active: effective?.source === "note",
 		});
 
-		// Tier 2: Link-based project preset
-		const projectResult = this.resolveProjectPreset(notePath, context);
-		if (projectResult && !effective) {
-			effective = projectResult;
+		// Tier 2: Parent chain — walk ancestors until one has fsrs_preset
+		const parentResult = this.resolveParentPreset(notePath, context);
+		if (parentResult && !effective) {
+			effective = parentResult;
 		}
 		chain.push({
-			source: "link-project",
-			sourcePath: projectResult?.sourcePath ?? context?.projectPath,
-			presetName: projectResult
-				? projectResult.preset.name
+			source: "parent",
+			sourcePath: parentResult?.sourcePath ?? context?.projectPath,
+			presetName: parentResult
+				? parentResult.preset.name
 				: this.lookupPresetName(context?.projectPath),
-			active: effective?.source === "link-project",
+			active: effective?.source === "parent",
 		});
 
-		// Tier 3: Folder preset
-		const folderResult = this.resolveFolderPreset(notePath);
-		if (folderResult && !effective) {
-			effective = folderResult;
-		}
-		chain.push({
-			source: "folder",
-			sourcePath: folderResult?.sourcePath,
-			presetName: folderResult ? folderResult.preset.name : null,
-			active: effective?.source === "folder",
-		});
-
-		// Tier 4: Default
+		// Tier 3: Default
 		const defaultPreset = this.getDefaultPreset();
 		if (!effective) {
 			effective = { preset: defaultPreset, source: "default" };
@@ -214,73 +191,50 @@ export class PresetService {
 		const notePreset = this.lookupPreset(notePath);
 		if (notePreset) return notePreset;
 
-		// Tier 2: Link-based project preset
-		const projectResult = this.resolveProjectPreset(notePath, context);
-		if (projectResult) return projectResult.preset;
-
-		// Tier 3: Folder preset
-		const folderResult = this.resolveFolderPreset(notePath);
-		if (folderResult) return folderResult.preset;
+		// Tier 2: Parent chain
+		const parentResult = this.resolveParentPreset(notePath, context);
+		if (parentResult) return parentResult.preset;
 
 		return null;
 	}
 
-	private resolveProjectPreset(
+	/**
+	 * Walks the parent chain (BFS) to find the nearest ancestor with fsrs_preset.
+	 * If a project context is given, checks that project first.
+	 */
+	private resolveParentPreset(
 		notePath: string,
 		context?: PresetResolutionContext,
 	): PresetResolutionResult | null {
-		if (!this.projectLinkService) return null;
-
 		if (context?.projectPath) {
-			// With context: check the specific project
 			const preset = this.lookupPreset(context.projectPath);
 			if (preset) {
 				return {
 					preset,
-					source: "link-project",
+					source: "parent",
 					sourcePath: context.projectPath,
 				};
 			}
-		} else {
-			// Without context: iterate all projects for this note
-			// Sort alphabetically for deterministic resolution when multiple projects have presets
-			const projectPaths = [
-				...this.projectLinkService.getProjectsForNote(notePath),
-			].sort();
-			for (const pp of projectPaths) {
-				const preset = this.lookupPreset(pp);
-				if (preset) {
-					return { preset, source: "link-project", sourcePath: pp };
-				}
-			}
 		}
 
-		return null;
-	}
+		// BFS through parents chain
+		const visited = new Set<string>();
+		const queue = [...this.hierarchyService.getParentsForNote(notePath)];
 
-	private resolveFolderPreset(
-		notePath: string,
-	): PresetResolutionResult | null {
-		if (!this.folderProjectService) return null;
+		while (queue.length > 0) {
+			const current = queue.shift()!;
+			if (visited.has(current)) continue;
+			visited.add(current);
 
-		const parts = notePath.split("/");
-		parts.pop(); // remove filename
-
-		while (parts.length > 0) {
-			const folderPath = parts.join("/");
-			const folderNotePath =
-				this.folderProjectService.getFolderNotePath(folderPath);
-			if (folderNotePath) {
-				const preset = this.lookupPreset(folderNotePath);
-				if (preset) {
-					return {
-						preset,
-						source: "folder",
-						sourcePath: folderNotePath,
-					};
-				}
+			const preset = this.lookupPreset(current);
+			if (preset) {
+				return { preset, source: "parent", sourcePath: current };
 			}
-			parts.pop();
+
+			// Walk further up
+			for (const grandparent of this.hierarchyService.getParentsForNote(current)) {
+				if (!visited.has(grandparent)) queue.push(grandparent);
+			}
 		}
 
 		return null;

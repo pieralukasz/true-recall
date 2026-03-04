@@ -1,3 +1,4 @@
+import { migrateLegacyProjects } from "@features/core/services/migrate-projects";
 import type TrueRecallPlugin from "../main";
 
 export function registerCommands(plugin: TrueRecallPlugin): void {
@@ -127,25 +128,10 @@ export function registerCommands(plugin: TrueRecallPlugin): void {
 	plugin.addCommand({
 		id: "insert-project-dashboard",
 		name: "Insert project dashboard",
-		editorCheckCallback: (checking, editor, ctx) => {
-			const file = ctx.file;
-			if (!file || file.extension !== "md") return false;
+		editorCheckCallback: (checking, editor) => {
 			if (checking) return true;
 
-			void (async () => {
-				// Ensure project: true in frontmatter
-				const values = plugin.frontmatterIndex.getValues("project", file.path);
-				if (!values.includes("true")) {
-					await plugin.app.fileManager.processFrontMatter(
-						file,
-						(fm: Record<string, unknown>) => {
-							fm.project = true;
-						},
-					);
-				}
-
-				editor.replaceSelection("```true-recall-project\n```\n");
-			})();
+			editor.replaceSelection("```true-recall-project\n```\n");
 			return true;
 		},
 	});
@@ -186,6 +172,12 @@ export function registerCommands(plugin: TrueRecallPlugin): void {
 			}
 			return false;
 		},
+	});
+
+	plugin.addCommand({
+		id: "migrate-legacy-projects",
+		name: "Migrate legacy projects to parents",
+		callback: () => void migrateLegacyProjects(plugin.app),
 	});
 
 	plugin.addCommand({
