@@ -126,7 +126,6 @@ export class ReviewView extends ItemView {
 			onBuryNote: () => this.cardActionsHandler.handleBuryNote(),
 			onMoveCard: () => this.cardActionsHandler.handleMoveCard(),
 			onAddCard: () => this.cardActionsHandler.handleAddNewFlashcard(),
-			onCopyCard: () => this.cardActionsHandler.handleCopyCurrentCard(),
 			onEditCard: () => this.cardActionsHandler.handleEditCardModal(),
 		});
 	}
