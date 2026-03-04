@@ -1,5 +1,6 @@
+import { useComputed } from "@preact/signals";
 import { StatsCalculatorService } from "@features/metrics/services/stats/stats-calculator.service";
-import { dataVersion, useSignalVersion } from "@shared/services/signals";
+import { allCardsArray, cards } from "@shared/services/reactive-card-store";
 import type { NotePerformanceRow } from "@shared/types/fsrs/stats.types";
 import { Clickable } from "@shared/ui/components";
 import { usePlugin } from "@shared/ui/preact";
@@ -13,11 +14,11 @@ interface LeaderboardEntry extends NotePerformanceRow {
 
 export function LeaderboardWidget({ source }: { source: string }) {
 	const plugin = usePlugin();
-	const ver = useSignalVersion(dataVersion);
 
 	const config = useMemo(() => parseCodeblockConfig(source), [source]);
 
-	const data = useMemo((): LeaderboardEntry[] | null => {
+	const data = useComputed((): LeaderboardEntry[] | null => {
+		cards.value;
 		if (!plugin.sessionPersistence) return null;
 
 		const statsCalc = new StatsCalculatorService(
@@ -34,7 +35,7 @@ export function LeaderboardWidget({ source }: { source: string }) {
 		const order = configValue(config, "order", "asc") as string;
 
 		// Resolve note names from sourceUid
-		const allCards = plugin.flashcardManager.getAllFSRSCards();
+		const allCards = allCardsArray.value;
 		const uidToName = new Map<string, string>();
 		for (const card of allCards) {
 			if (card.fsrs.sourceUid && card.sourceNoteName) {
@@ -70,7 +71,7 @@ export function LeaderboardWidget({ source }: { source: string }) {
 		});
 
 		return entries.slice(0, limit);
-	}, [plugin, ver, config]);
+	}).value;
 
 	if (!data || data.length === 0) {
 		return (

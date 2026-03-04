@@ -1,4 +1,5 @@
-import { dataVersion, useSignalVersion } from "@shared/services/signals";
+import { useComputed } from "@preact/signals";
+import { allCardsArray, cards, cardsBySourceUid } from "@shared/services/reactive-card-store";
 import { usePlugin } from "@shared/ui/preact";
 import { useMemo } from "preact/hooks";
 import { configValue, parseCodeblockConfig } from "../config-parser";
@@ -29,15 +30,15 @@ export function DecayWidget({
 	source: string;
 }) {
 	const plugin = usePlugin();
-	const ver = useSignalVersion(dataVersion);
 
 	const config = useMemo(() => parseCodeblockConfig(source), [source]);
 
-	const data = useMemo((): DecayData | null => {
-		if (!sourceUid || !plugin.cardStore) return null;
+	const data = useComputed((): DecayData | null => {
+		cards.value;
+		if (!sourceUid) return null;
 
-		const cards = plugin.cardStore.getCardsBySourceUid(sourceUid);
-		if (cards.length === 0) return null;
+		const noteCards = cardsBySourceUid.value.get(sourceUid) ?? [];
+		if (noteCards.length === 0) return null;
 
 		const now = new Date();
 		const targetRetention = configValue(config, "target", 0.9) as number;
@@ -45,7 +46,7 @@ export function DecayWidget({
 		const sortBy = configValue(config, "sort", "retrievability") as string;
 
 		// Resolve note name
-		const allFsrs = plugin.flashcardManager.getAllFSRSCards();
+		const allFsrs = allCardsArray.value;
 		const noteCard = allFsrs.find((c) => c.fsrs.sourceUid === sourceUid);
 		const sourceNoteName = noteCard?.sourceNoteName ?? null;
 
@@ -54,11 +55,12 @@ export function DecayWidget({
 		let activeCount = 0;
 		let atRiskCount = 0;
 
-		for (const card of cards) {
-			if (card.suspended) continue;
-			if (card.state === 0) continue; // skip new cards — no retrievability
+		for (const card of noteCards) {
+			const fsrs = card.fsrs;
+			if (fsrs.suspended) continue;
+			if (fsrs.state === 0) continue; // skip new cards — no retrievability
 
-			const r = plugin.fsrsService.getRetrievability(card, now);
+			const r = plugin.fsrsService.getRetrievability(fsrs, now);
 			totalRetention += r;
 			activeCount++;
 			if (r < 0.5) atRiskCount++;
@@ -67,7 +69,7 @@ export function DecayWidget({
 				id: card.id,
 				question: truncateQuestion(card.question ?? "Card"),
 				retrievability: r,
-				stability: card.stability,
+				stability: fsrs.stability,
 				sourceNoteName,
 			});
 		}
@@ -86,13 +88,13 @@ export function DecayWidget({
 
 		return {
 			cards: decayCards.slice(0, limit),
-			totalCards: cards.length,
+			totalCards: noteCards.length,
 			avgRetention: activeCount > 0 ? totalRetention / activeCount : 0,
 			atRiskCount,
 			targetRetention,
 			sourceNoteName,
 		};
-	}, [plugin, sourceUid, ver, config]);
+	}).value;
 
 	if (!data) {
 		return (

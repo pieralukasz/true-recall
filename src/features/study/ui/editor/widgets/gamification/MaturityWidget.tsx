@@ -1,5 +1,6 @@
 import { StatsCalculatorService } from "@features/metrics/services/stats/stats-calculator.service";
-import { dataVersion, useSignalVersion } from "@shared/services/signals";
+import { useComputed } from "@preact/signals";
+import { cards } from "@shared/services/reactive-card-store";
 import type { CardMaturityBreakdown } from "@shared/types/fsrs/stats.types";
 import { Clickable } from "@shared/ui/components";
 import { usePlugin } from "@shared/ui/preact";
@@ -45,12 +46,12 @@ function buildSegments(
 
 export function MaturityWidget({ source }: { source: string }) {
 	const plugin = usePlugin();
-	const ver = useSignalVersion(dataVersion);
 
 	const config = useMemo(() => parseCodeblockConfig(source), [source]);
 	const showSuspended = configValue(config, "showSuspended", false) as boolean;
 
-	const data = useMemo((): { segments: MaturitySegment[]; total: number } | null => {
+	const data = useComputed((): { segments: MaturitySegment[]; total: number } | null => {
+		cards.value;
 		if (!plugin.sessionPersistence) return null;
 
 		const statsCalc = new StatsCalculatorService(
@@ -64,7 +65,7 @@ export function MaturityWidget({ source }: { source: string }) {
 		const total = segments.reduce((sum, s) => sum + s.count, 0);
 
 		return { segments, total };
-	}, [plugin, ver, showSuspended]);
+	}).value;
 
 	if (!data || data.total === 0) {
 		return (

@@ -1,8 +1,4 @@
-import {
-	dataVersion,
-	settingsVersion,
-	useSignalVersion,
-} from "@shared/services/signals";
+import { cards } from "@shared/services/reactive-card-store";
 import type {
 	PanelApi,
 	ProcessingStatus,
@@ -106,13 +102,13 @@ export function usePanelStore(): PanelStoreResult {
 	}, [store]);
 
 	// ── Cards enriched with FSRS scheduling data ──
-	const ver = useSignalVersion(dataVersion, settingsVersion);
+	const cardsRef = cards.value;
 	const cardsWithFsrs = useMemo(() => {
 		if (!state.flashcardInfo?.flashcards) return [];
 		if (!plugin.flashcardManager.hasStore()) return [];
 		const cardIds = state.flashcardInfo.flashcards.map((c) => c.id);
 		return plugin.flashcardManager.getCardsByIds(cardIds);
-	}, [state.flashcardInfo, plugin, ver]);
+	}, [state.flashcardInfo, plugin, cardsRef]);
 
 	return {
 		...state,

@@ -1,4 +1,5 @@
-import { dataVersion, useSignalVersion } from "@shared/services/signals";
+import { useComputed } from "@preact/signals";
+import { allCardsArray, cards } from "@shared/services/reactive-card-store";
 import { Clickable } from "@shared/ui/components";
 import { usePlugin } from "@shared/ui/preact";
 import { useMemo } from "preact/hooks";
@@ -26,20 +27,20 @@ const URGENCY_COLORS: Record<string, string> = {
 
 export function CountdownWidget({ source }: { source: string }) {
 	const plugin = usePlugin();
-	const ver = useSignalVersion(dataVersion);
 
 	const config = useMemo(() => parseCodeblockConfig(source), [source]);
 
 	const dateStr = configValue(config, "date", "") as string;
 
-	const data = useMemo((): CountdownData | null => {
+	const data = useComputed((): CountdownData | null => {
+		cards.value;
 		if (!dateStr) return null;
 
 		const targetDate = new Date(dateStr);
 		const targetRetention = (configValue(config, "target", 90) as number) / 100;
 		const label = configValue(config, "label", "Exam") as string;
 
-		const allCards = plugin.flashcardManager.getAllFSRSCards();
+		const allCards = allCardsArray.value;
 		const daysRemaining = Math.ceil(
 			(targetDate.getTime() - Date.now()) / (1000 * 60 * 60 * 24),
 		);
@@ -83,7 +84,7 @@ export function CountdownWidget({ source }: { source: string }) {
 			newCardsRemaining: newCards,
 			urgency,
 		};
-	}, [plugin, dateStr, config, ver]);
+	}).value;
 
 	if (!dateStr) {
 		return (
