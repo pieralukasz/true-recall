@@ -10,39 +10,19 @@ import {
 	BUILTIN_CLOZE_ID,
 } from "../../../../src/shared/types/note.types";
 import {
-	type TestContextV26,
-	createTestContextV26,
+	type TestContext,
+	createTestContext,
 	createTestNote,
-	createTestNoteType,
 	getRawNote,
 	insertNoteDirect,
-	insertNoteTypeDirect,
-} from "./__setup__/test-database-v26";
+} from "./__setup__/test-database";
 
 describe("NoteActions", () => {
-	let ctx: TestContextV26;
+	let ctx: TestContext;
 
 	beforeEach(async () => {
-		ctx = await createTestContextV26();
-		// Seed a basic note type for FK constraint
-		insertNoteTypeDirect(
-			ctx.db,
-			createTestNoteType({
-				id: BUILTIN_BASIC_ID,
-				name: "Basic",
-				isBuiltin: true,
-			}),
-		);
-		insertNoteTypeDirect(
-			ctx.db,
-			createTestNoteType({
-				id: BUILTIN_CLOZE_ID,
-				name: "Cloze",
-				type: 1,
-				fields: ["Text", "Extra"],
-				isBuiltin: true,
-			}),
-		);
+		ctx = await createTestContext();
+		// Builtin note types (basic, cloze, etc.) are already seeded by createTestContext()
 	});
 
 	afterEach(() => {

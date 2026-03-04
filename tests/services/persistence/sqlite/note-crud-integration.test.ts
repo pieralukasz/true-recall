@@ -16,17 +16,17 @@ import {
 import { generateCardsForNote } from "../../../../src/features/core/services/card-generation.service";
 import { renderTemplate } from "../../../../src/features/core/services/template-engine";
 import {
-	TestSqliteDatabaseV26,
+	TestSqliteDatabase,
 	createTestNoteType,
 	createTestNote,
 	insertNoteTypeDirect,
 	insertNoteDirect,
-} from "./__setup__/test-database-v26";
+} from "./__setup__/test-database";
 
 // ── Helpers ────────────────────────────────────────────────────
 
 function insertV26Card(
-	db: TestSqliteDatabaseV26,
+	db: TestSqliteDatabase,
 	card: {
 		id: string;
 		noteId: string;
@@ -49,7 +49,7 @@ function insertV26Card(
 	);
 }
 
-function seedBuiltinTypes(db: TestSqliteDatabaseV26): void {
+function seedBuiltinTypes(db: TestSqliteDatabase): void {
 	insertNoteTypeDirect(
 		db,
 		createTestNoteType({
@@ -117,10 +117,10 @@ function seedBuiltinTypes(db: TestSqliteDatabaseV26): void {
 // ── Tests ──────────────────────────────────────────────────────
 
 describe("Note CRUD Integration", () => {
-	let db: TestSqliteDatabaseV26;
+	let db: TestSqliteDatabase;
 
 	beforeEach(async () => {
-		db = new TestSqliteDatabaseV26();
+		db = new TestSqliteDatabase();
 		await db.init();
 		seedBuiltinTypes(db);
 	});

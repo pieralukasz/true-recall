@@ -17,16 +17,16 @@ import {
 	BUILTIN_IMAGE_OCCLUSION_ID,
 } from "../../../../src/shared/types/note.types";
 import {
-	TestSqliteDatabaseV26,
+	TestSqliteDatabase,
 	createTestNoteType,
 	insertNoteTypeDirect,
 	insertNoteDirect,
 	createTestNote,
-} from "./__setup__/test-database-v26";
+} from "./__setup__/test-database";
 
 // ── Helpers ────────────────────────────────────────────────────
 
-function seedBuiltinNoteTypes(db: TestSqliteDatabaseV26): void {
+function seedBuiltinNoteTypes(db: TestSqliteDatabase): void {
 	insertNoteTypeDirect(
 		db,
 		createTestNoteType({
@@ -111,7 +111,7 @@ function seedBuiltinNoteTypes(db: TestSqliteDatabaseV26): void {
 }
 
 function insertV26Card(
-	db: TestSqliteDatabaseV26,
+	db: TestSqliteDatabase,
 	card: {
 		id: string;
 		noteId: string;
@@ -151,11 +151,11 @@ function insertV26Card(
 // ── Tests ──────────────────────────────────────────────────────
 
 describe("CardActions v26 (with note types)", () => {
-	let db: TestSqliteDatabaseV26;
+	let db: TestSqliteDatabase;
 	let cards: CardActions;
 
 	beforeEach(async () => {
-		db = new TestSqliteDatabaseV26();
+		db = new TestSqliteDatabase();
 		await db.init();
 		seedBuiltinNoteTypes(db);
 		cards = new CardActions(db as never);

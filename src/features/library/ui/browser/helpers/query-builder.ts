@@ -28,25 +28,7 @@ const PROP_TO_COLUMN: Record<PropFilter["property"], string> = {
 	lapses: "lapses",
 };
 
-const ALLOWED_SORT_COLUMNS = new Set([
-	"question",
-	"answer",
-	"state",
-	"due",
-	"stability",
-	"difficulty",
-	"reps",
-	"lapses",
-	"scheduled_days",
-	"created_at",
-	"last_review",
-	"card_type",
-	"source_uid",
-	"created_via",
-]);
-
-// v26: map logical sort column names to actual SQL expressions
-const SORT_COLUMN_V26: Record<string, string> = {
+const SORT_COLUMN: Record<string, string> = {
 	question: "n.fields_json",
 	answer: "n.fields_json",
 	state: "c.state",
@@ -68,13 +50,10 @@ export function buildBrowserQuery(
 	sort: SortConfig,
 	limit: number,
 	offset: number,
-	isV26 = false,
 ): SqlQuery {
 	const params: (string | number)[] = [];
 
-	const conditions: string[] = isV26
-		? ["c.deleted_at IS NULL"]
-		: ["deleted_at IS NULL", "question IS NOT NULL"];
+	const conditions: string[] = ["c.deleted_at IS NULL"];
 
 	// ── State filters ────────────────────────────────────────
 	const stateNumbers: number[] = [];
@@ -93,7 +72,7 @@ export function buildBrowserQuery(
 	}
 
 	const stateConditions: string[] = [];
-	const col = isV26 ? "c." : "";
+	const col = "c.";
 
 	if (stateNumbers.length > 0) {
 		const placeholders = stateNumbers.map(() => "?").join(",");
@@ -129,13 +108,8 @@ export function buildBrowserQuery(
 	// ── Text search ──────────────────────────────────────────
 	if (filter.textSearch) {
 		const pattern = `%${filter.textSearch}%`;
-		if (isV26) {
-			conditions.push("n.fields_json LIKE ?");
-			params.push(pattern);
-		} else {
-			conditions.push("(question LIKE ? OR answer LIKE ?)");
-			params.push(pattern, pattern);
-		}
+		conditions.push("n.fields_json LIKE ?");
+		params.push(pattern);
 	}
 
 	// ── Source UIDs ──────────────────────────────────────────
@@ -147,45 +121,35 @@ export function buildBrowserQuery(
 
 	// ── Card types ───────────────────────────────────────────
 	if (filter.cardTypes.length > 0) {
-		if (isV26) {
-			const typeConditions: string[] = [];
-			for (const ct of filter.cardTypes) {
-				switch (ct) {
-					case "basic":
-						typeConditions.push(`(nt.type = 0 AND c.template_ord = 0 AND nt.id != ?)`);
-						params.push(BUILTIN_IMAGE_OCCLUSION_ID);
-						break;
-					case "reversed":
-						typeConditions.push(`(nt.type = 0 AND c.template_ord > 0 AND nt.id != ?)`);
-						params.push(BUILTIN_IMAGE_OCCLUSION_ID);
-						break;
-					case "cloze":
-						typeConditions.push("(nt.type = 1)");
-						break;
-					case "image-occlusion":
-						typeConditions.push("(nt.id = ?)");
-						params.push(BUILTIN_IMAGE_OCCLUSION_ID);
-						break;
-				}
+		const typeConditions: string[] = [];
+		for (const ct of filter.cardTypes) {
+			switch (ct) {
+				case "basic":
+					typeConditions.push(`(nt.type = 0 AND c.template_ord = 0 AND nt.id != ?)`);
+					params.push(BUILTIN_IMAGE_OCCLUSION_ID);
+					break;
+				case "reversed":
+					typeConditions.push(`(nt.type = 0 AND c.template_ord > 0 AND nt.id != ?)`);
+					params.push(BUILTIN_IMAGE_OCCLUSION_ID);
+					break;
+				case "cloze":
+					typeConditions.push("(nt.type = 1)");
+					break;
+				case "image-occlusion":
+					typeConditions.push("(nt.id = ?)");
+					params.push(BUILTIN_IMAGE_OCCLUSION_ID);
+					break;
 			}
-			if (typeConditions.length > 0) {
-				conditions.push(`(${typeConditions.join(" OR ")})`);
-			}
-		} else {
-			const placeholders = filter.cardTypes.map(() => "?").join(",");
-			conditions.push(`card_type IN (${placeholders})`);
-			params.push(...filter.cardTypes);
+		}
+		if (typeConditions.length > 0) {
+			conditions.push(`(${typeConditions.join(" OR ")})`);
 		}
 	}
 
 	// ── Created via ──────────────────────────────────────────
 	if (filter.createdVia.length > 0) {
 		const placeholders = filter.createdVia.map(() => "?").join(",");
-		if (isV26) {
-			conditions.push(`n.created_via IN (${placeholders})`);
-		} else {
-			conditions.push(`created_via IN (${placeholders})`);
-		}
+		conditions.push(`n.created_via IN (${placeholders})`);
 		params.push(...filter.createdVia);
 	}
 
@@ -213,12 +177,7 @@ export function buildBrowserQuery(
 	}
 
 	// ── Sort ─────────────────────────────────────────────────
-	let sortColumn: string;
-	if (isV26) {
-		sortColumn = SORT_COLUMN_V26[sort.column] ?? "c.due";
-	} else {
-		sortColumn = ALLOWED_SORT_COLUMNS.has(sort.column) ? sort.column : "due";
-	}
+	const sortColumn = SORT_COLUMN[sort.column] ?? "c.due";
 	const sortDir = sort.direction === "desc" ? "DESC" : "ASC";
 
 	return {
