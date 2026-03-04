@@ -111,7 +111,7 @@ export const DEFAULT_SETTINGS: TrueRecallSettings = {
 	showReviewHeaderStats: true,
 	continuousCustomReviews: true,
 
-	removeFlashcardContentAfterCollect: false, // keep content, only remove #flashcard tag
+	removeFlashcardContentAfterCollect: false, // keep flashcard lines in note after collecting
 
 	newCardOrder: "random",
 	reviewOrder: "due-date",

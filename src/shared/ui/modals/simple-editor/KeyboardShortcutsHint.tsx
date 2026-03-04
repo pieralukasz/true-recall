@@ -10,14 +10,12 @@ function getShortcuts(useRichEditor: boolean): ShortcutDef[] {
 
 	if (useRichEditor) {
 		return [
-			{ key: `${mod}+3`, action: "#flashcard" },
 			{ key: `${mod}+Enter`, action: "save" },
 			{ key: "Esc", action: "close" },
 		];
 	}
 
 	return [
-		{ key: `${mod}+3`, action: "#flashcard" },
 		{ key: `${mod}+B`, action: "bold" },
 		{ key: `${mod}+I`, action: "italic" },
 		{ key: `${mod}+K`, action: "[[link]]" },
