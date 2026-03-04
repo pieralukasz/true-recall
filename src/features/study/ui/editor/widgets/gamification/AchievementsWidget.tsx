@@ -1,5 +1,6 @@
 import { StatsCalculatorService } from "@features/metrics/services/stats/stats-calculator.service";
-import { dataVersion, useSignalVersion } from "@shared/services/signals";
+import { useComputed } from "@preact/signals";
+import { allCardsArray, cards } from "@shared/services/reactive-card-store";
 import { Clickable } from "@shared/ui/components";
 import { usePlugin } from "@shared/ui/preact";
 import { useMemo } from "preact/hooks";
@@ -89,11 +90,11 @@ function sortAchievements(achievements: ComputedAchievement[]): ComputedAchievem
 
 export function AchievementsWidget({ source }: { source: string }) {
 	const plugin = usePlugin();
-	const ver = useSignalVersion(dataVersion);
 
 	const config = useMemo(() => parseCodeblockConfig(source), [source]);
 
-	const achievements = useMemo((): ComputedAchievement[] | null => {
+	const achievements = useComputed((): ComputedAchievement[] | null => {
+		cards.value;
 		if (!plugin.sessionPersistence) return null;
 
 		const statsCalc = new StatsCalculatorService(
@@ -102,7 +103,7 @@ export function AchievementsWidget({ source }: { source: string }) {
 			plugin.sessionPersistence,
 		);
 
-		const totalCards = plugin.flashcardManager.getAllFSRSCards().length;
+		const totalCards = allCardsArray.value.length;
 		const all = computeAchievements(statsCalc, totalCards);
 
 		const category = configValue(config, "category", "all");
@@ -118,7 +119,7 @@ export function AchievementsWidget({ source }: { source: string }) {
 
 		const limit = configValue(config, "limit", 6);
 		return sortAchievements(visible).slice(0, limit);
-	}, [plugin, ver, config]);
+	}).value;
 
 	if (!achievements) {
 		return <div class="ep:text-obs-muted ep:text-xs ep:p-3">Loading...</div>;

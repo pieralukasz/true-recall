@@ -1,4 +1,5 @@
-import { dataVersion, useSignalVersion } from "@shared/services/signals";
+import { useComputed } from "@preact/signals";
+import { cards } from "@shared/services/reactive-card-store";
 import type { ProblemCard } from "@shared/types/nl-query.types";
 import { Clickable } from "@shared/ui/components";
 import { usePlugin } from "@shared/ui/preact";
@@ -28,17 +29,17 @@ function getMetricLabel(card: ProblemCard): string {
 
 export function ProblemCardsWidget({ source }: { source: string }) {
 	const plugin = usePlugin();
-	const ver = useSignalVersion(dataVersion);
 
 	const config = useMemo(() => parseCodeblockConfig(source), [source]);
 
 	const limit = configValue(config, "limit", 5) as number;
 	const showType = configValue(config, "showType", true);
 
-	const data = useMemo(() => {
+	const data = useComputed(() => {
+		cards.value;
 		if (!plugin.cardStore?.stats) return null;
 		return plugin.cardStore.stats.getProblemCards(limit);
-	}, [plugin, ver, limit]);
+	}).value;
 
 	if (!data) {
 		return (

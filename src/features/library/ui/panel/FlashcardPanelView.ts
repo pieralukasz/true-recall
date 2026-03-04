@@ -8,7 +8,7 @@ import type { FlashcardManager } from "@features/study/services/flashcard/flashc
 import { effect } from "@preact/signals";
 import { VIEW_TYPE_FLASHCARD_PANEL } from "@shared/constants";
 import { notify } from "@shared/services/notification.service";
-import { dataVersion, settingsVersion, track } from "@shared/services/signals";
+import { cards, pluginSettings } from "@shared/services/reactive-card-store";
 import type { PanelApi } from "@shared/store";
 import type { FSRSFlashcardItem } from "@shared/types/fsrs/card.types";
 import { countCardsByState } from "@shared/ui/helpers";
@@ -270,7 +270,8 @@ export class FlashcardPanelView extends ItemView {
 
 	private subscribeToDataChanges(): void {
 		this.signalDisposer = effect(() => {
-			track(dataVersion, settingsVersion);
+			cards.value;
+			pluginSettings.value;
 			this.invalidateCardsCache();
 			this.scheduleHeaderStatsUpdate();
 			this.scheduleFlashcardInfoReload();

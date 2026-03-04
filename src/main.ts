@@ -3,6 +3,13 @@ import { SqlQueryAdapter } from "@features/ai/services/sql-query.adapter";
 import { NLQueryService } from "@features/ai/services/nl-query.service";
 import { createSelectionToolbarExtension } from "@features/ai/ui/editor/SelectionToolbarPlugin";
 import { NoteStatusCacheService } from "@features/core/cache/note-status-cache.service";
+import {
+	initCardStore,
+	initMetadataStore,
+	refreshCards,
+	refreshMetadata,
+	refreshSettings,
+} from "@shared/services/reactive-card-store";
 import { BackgroundBackupManager } from "@features/core/persistence/background-backup.service";
 import { BackupService } from "@features/core/persistence/backup.service";
 import { SessionPersistenceService } from "@features/core/persistence/session-persistence.service";
@@ -67,7 +74,6 @@ import {
 	NOTIFICATION_DURATION,
 	notify,
 } from "@shared/services/notification.service";
-import { metadataVersion, settingsVersion } from "@shared/services/signals";
 import { UndoService } from "@shared/services/undo.service";
 import { type AppStore, createAppStore } from "@shared/store";
 import { extractFSRSSettings } from "@shared/types";
@@ -163,21 +169,21 @@ export default class TrueRecallPlugin extends Plugin {
 			type: "string",
 			unique: false,
 		});
-		this.frontmatterIndex.onFieldChange("project", () => {
-			metadataVersion.value++;
-		});
-		this.frontmatterIndex.onFieldChange("archive", () => {
-			metadataVersion.value++;
-		});
-		this.frontmatterIndex.onFieldChange("fsrs_preset", () => {
-			metadataVersion.value++;
-		});
+		this.frontmatterIndex.onFieldChange("project", () =>
+			refreshMetadata(),
+		);
+		this.frontmatterIndex.onFieldChange("archive", () =>
+			refreshMetadata(),
+		);
+		this.frontmatterIndex.onFieldChange("fsrs_preset", () =>
+			refreshMetadata(),
+		);
 		this.frontmatterIndex.registerEvents(this);
 
 		// Build index after metadataCache is fully loaded
 		this.app.workspace.onLayoutReady(() => {
 			this.frontmatterIndex.rebuildIndex();
-			metadataVersion.value++;
+			refreshMetadata();
 		});
 
 		this.folderProjectService = new FolderProjectService(
@@ -187,7 +193,7 @@ export default class TrueRecallPlugin extends Plugin {
 		);
 		const invalidateFolderCache = () => {
 			this.folderProjectService.invalidateCache();
-			metadataVersion.value++;
+			refreshMetadata();
 		};
 		this.registerEvent(
 			this.app.vault.on("create", invalidateFolderCache),
@@ -204,6 +210,7 @@ export default class TrueRecallPlugin extends Plugin {
 			this.frontmatterIndex,
 			this.folderProjectService,
 		);
+		initMetadataStore(this.projectLinkService);
 
 		this.flashcardManager = new FlashcardManager(
 			this.app,
@@ -380,6 +387,8 @@ export default class TrueRecallPlugin extends Plugin {
 			this.settings.defaultPresetId = "default";
 			await this.saveData(this.settings);
 		}
+
+		refreshSettings(this.settings);
 	}
 
 	async saveSettings(): Promise<void> {
@@ -408,7 +417,7 @@ export default class TrueRecallPlugin extends Plugin {
 		this.noteStatusCache?.bumpVersion();
 		this.folderProjectService?.invalidateCache();
 
-		settingsVersion.value++;
+		refreshSettings(this.settings);
 	}
 
 	async activateView(): Promise<void> {
@@ -795,6 +804,12 @@ export default class TrueRecallPlugin extends Plugin {
 
 			this.flashcardManager.setStore(this.cardStore);
 
+			// Reactive card store: cards signal mirrors SQLite, computeds derive all views
+			initCardStore({
+				getAll: () => this.flashcardManager.getAllFSRSCards(),
+			});
+			refreshCards();
+
 			this.sessionPersistence = new SessionPersistenceService(
 				this.app,
 				this.cardStore,
@@ -979,7 +994,6 @@ export default class TrueRecallPlugin extends Plugin {
 						this.openDashboard().catch(() => {});
 					},
 					() => this.settings.showStatusBarWidget,
-					() => this.projectLinkService.getArchivedSourceUids(),
 				);
 				this.statusBarWidget.start();
 			},
