@@ -280,67 +280,6 @@
 	}
 
 	/* ================================================================
-	   SIMPLE EDITOR — Embedded live-preview editor
-	   ================================================================ */
-
-	.true-recall-simple-flashcard-editor-modal .ep-simple-editor-container {
-		flex: 1;
-		min-height: 280px;
-		max-height: 450px;
-		overflow-y: auto;
-		border: 1px solid var(--background-modifier-border);
-		border-radius: var(--radius-m);
-		background: var(--background-primary);
-		transition: border-color 0.15s ease;
-	}
-
-	.true-recall-simple-flashcard-editor-modal .ep-simple-editor-container:has(.cm-editor.cm-focused) {
-		border-color: var(--interactive-accent);
-	}
-
-	.true-recall-simple-flashcard-editor-modal .ep-simple-editor-container .cm-editor {
-		height: 100%;
-		font-size: var(--font-ui-medium);
-		line-height: 1.6;
-		color: var(--text-normal);
-		background: transparent;
-	}
-
-	.true-recall-simple-flashcard-editor-modal .ep-simple-editor-container .cm-editor.cm-focused {
-		outline: none;
-		box-shadow: none;
-	}
-
-	.true-recall-simple-flashcard-editor-modal .ep-simple-editor-container .cm-contentContainer {
-		padding: 0 !important;
-	}
-
-	.true-recall-simple-flashcard-editor-modal .ep-simple-editor-container .cm-content {
-		padding: 16px !important;
-	}
-
-	.true-recall-simple-flashcard-editor-modal .ep-simple-editor-container .cm-scroller {
-		min-height: 100%;
-		padding: 0 !important;
-	}
-
-	.true-recall-simple-flashcard-editor-modal .ep-simple-editor-container .cm-gutters {
-		background: transparent;
-		border-right: none;
-	}
-
-	.true-recall-simple-flashcard-editor-modal .ep-simple-editor-container .cm-activeLineGutter,
-	.true-recall-simple-flashcard-editor-modal .ep-simple-editor-container .cm-activeLine {
-		background: transparent;
-	}
-
-	.true-recall-simple-flashcard-editor-modal .ep-simple-editor-container .cm-placeholder {
-		color: var(--text-faint);
-		font-style: italic;
-		white-space: pre-wrap;
-	}
-
-	/* ================================================================
 	   SPECIAL MODAL OVERRIDES — wider modals
 	   ================================================================ */
 

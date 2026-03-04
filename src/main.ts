@@ -76,10 +76,7 @@ import {
 import { UndoService } from "@shared/services/undo.service";
 import { type AppStore, createAppStore } from "@shared/store";
 import { extractFSRSSettings } from "@shared/types";
-import {
-	PresetInspectorModal,
-	SimpleFlashcardEditorModal,
-} from "@shared/ui/modals";
+import { PresetInspectorModal } from "@shared/ui/modals";
 import { normalizePath, Plugin, type TFile } from "obsidian";
 import { registerCommands } from "./plugin/PluginCommands";
 import {
@@ -1041,17 +1038,8 @@ export default class TrueRecallPlugin extends Plugin {
 					notify().error(`Flashcard generation failed: ${msg}`);
 				}
 			},
-			onEdit: (text) => {
-				const modal = new SimpleFlashcardEditorModal(
-					this.app,
-					{
-						mode: "add",
-						prefillContent: text,
-						currentFilePath: "",
-					},
-					this.EmbeddableEditor,
-					this.flashcardManager,
-				);
+			onEdit: () => {
+				const modal = new QuickNoteEditorModal(this.app, this, { mode: "add" });
 				void modal.openAndWait();
 			},
 			onQuickAdd: async (text) => {
