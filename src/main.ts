@@ -159,11 +159,20 @@ export default class TrueRecallPlugin extends Plugin {
 			unique: false,
 		});
 		this.frontmatterIndex.register({
+			field: "include",
+			type: "string",
+			unique: false,
+		});
+		this.frontmatterIndex.register({
 			field: "archive",
 			type: "string",
 			unique: false,
 		});
 		this.frontmatterIndex.onFieldChange("parents", () => {
+			this.hierarchyService.invalidateGraph();
+			refreshMetadata();
+		});
+		this.frontmatterIndex.onFieldChange("include", () => {
 			this.hierarchyService.invalidateGraph();
 			refreshMetadata();
 		});

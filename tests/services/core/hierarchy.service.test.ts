@@ -82,6 +82,11 @@ describe("HierarchyService", () => {
 			type: "string",
 			unique: false,
 		});
+		frontmatterIndex.register({
+			field: "include",
+			type: "string",
+			unique: false,
+		});
 
 		service = new HierarchyService(mockApp, frontmatterIndex);
 	});
@@ -465,6 +470,90 @@ describe("HierarchyService", () => {
 
 			const h2 = service.buildHierarchy();
 			expect(h2[0]?.memberPaths).toHaveLength(2);
+		});
+	});
+
+	describe("include: folder", () => {
+		it("folder note with include: folder adds direct files as children", () => {
+			addMockFile("Science/Science.md", { include: "folder" });
+			addMockFile("Science/Physics.md", { flashcard_uid: "uid-phys" });
+			addMockFile("Science/Chemistry.md", { flashcard_uid: "uid-chem" });
+			frontmatterIndex.rebuildIndex();
+
+			const tree = service.buildHierarchy();
+			expect(tree).toHaveLength(1);
+			expect(tree[0]?.name).toBe("Science");
+			expect(tree[0]?.memberPaths).toContain("Science/Physics.md");
+			expect(tree[0]?.memberPaths).toContain("Science/Chemistry.md");
+		});
+
+		it("does NOT include files in subfolders (non-recursive)", () => {
+			addMockFile("Science/Science.md", { include: "folder" });
+			addMockFile("Science/Physics.md", { flashcard_uid: "uid-phys" });
+			addMockFile("Science/Quantum/Spin.md", { flashcard_uid: "uid-spin" });
+			frontmatterIndex.rebuildIndex();
+
+			const tree = service.buildHierarchy();
+			expect(tree[0]?.memberPaths).toContain("Science/Physics.md");
+			expect(tree[0]?.memberPaths).not.toContain("Science/Quantum/Spin.md");
+		});
+
+		it("does not include the folder note itself", () => {
+			addMockFile("Science/Science.md", {
+				include: "folder",
+				flashcard_uid: "uid-sci",
+			});
+			addMockFile("Science/Physics.md", { flashcard_uid: "uid-phys" });
+			frontmatterIndex.rebuildIndex();
+
+			const tree = service.buildHierarchy();
+			expect(tree[0]?.memberPaths).not.toContain("Science/Science.md");
+		});
+
+		it("merges with explicit parents", () => {
+			addMockFile("Science/Science.md", { include: "folder" });
+			addMockFile("Other.md", {});
+			addMockFile("Science/Physics.md", {
+				flashcard_uid: "uid-phys",
+				parents: ["[[Other]]"],
+			});
+			frontmatterIndex.rebuildIndex();
+
+			// Physics is under both Science (via include) and Other (via parents)
+			const parents = service.getParentsForNote("Science/Physics.md");
+			expect(parents).toContain("Science/Science.md");
+			expect(parents).toContain("Other.md");
+		});
+
+		it("collects UIDs from folder-included notes", () => {
+			addMockFile("Science/Science.md", { include: "folder" });
+			addMockFile("Science/Physics.md", { flashcard_uid: "uid-phys" });
+			addMockFile("Science/Chemistry.md", { flashcard_uid: "uid-chem" });
+			frontmatterIndex.rebuildIndex();
+
+			const uids = service.getSourceUidsForProject("Science/Science.md");
+			expect(uids).toContain("uid-phys");
+			expect(uids).toContain("uid-chem");
+		});
+
+		it("folder-included notes are not unassigned", () => {
+			addMockFile("Science/Science.md", { include: "folder" });
+			addMockFile("Science/Physics.md", { flashcard_uid: "uid-phys" });
+			addMockFile("Orphan.md", { flashcard_uid: "uid-orphan" });
+			frontmatterIndex.rebuildIndex();
+
+			const unassigned = service.getUnassignedPaths();
+			expect(unassigned).not.toContain("Science/Physics.md");
+			expect(unassigned).toContain("Orphan.md");
+		});
+
+		it("handles empty folder (no other files)", () => {
+			addMockFile("Empty/Empty.md", { include: "folder" });
+			frontmatterIndex.rebuildIndex();
+
+			// No children → not a project root → doesn't appear in tree
+			const tree = service.buildHierarchy();
+			expect(tree).toHaveLength(0);
 		});
 	});
 });
