@@ -1,6 +1,6 @@
 import type { SqliteStoreService } from "@features/core/persistence/sqlite";
 import type { FrontmatterIndexService } from "@features/core/services/frontmatter-index.service";
-import type { ProjectLinkService } from "@features/core/services/project-link.service";
+import type { HierarchyService } from "@features/core/services/hierarchy.service";
 import type { FSRSCardData } from "@shared/types";
 import { buildBrowserQuery } from "../ui/browser/helpers/query-builder";
 import type {
@@ -14,7 +14,7 @@ export class CardBrowserQueryService {
 	constructor(
 		private cardStore: SqliteStoreService,
 		private frontmatterIndex: FrontmatterIndexService,
-		private projectLinkService?: ProjectLinkService,
+		private hierarchyService?: HierarchyService,
 	) {}
 
 	query(
@@ -44,8 +44,8 @@ export class CardBrowserQueryService {
 		let cards = rawCards.map((card) => this.toBrowserCard(card));
 
 		// Filter out archived cards unless the user has enabled "Show archived"
-		if (!filter.showArchived && this.projectLinkService) {
-			const archivedUids = this.projectLinkService.getArchivedSourceUids();
+		if (!filter.showArchived && this.hierarchyService) {
+			const archivedUids = this.hierarchyService.getArchivedSourceUids();
 			if (archivedUids.size > 0) {
 				cards = cards.filter((c) => !archivedUids.has(c.sourceUid ?? ""));
 			}
@@ -169,7 +169,7 @@ export class CardBrowserQueryService {
 
 		let projects: string[] = [];
 		if (file) {
-			const vals = this.frontmatterIndex.getValues("project", file.path);
+			const vals = this.frontmatterIndex.getValues("parents", file.path);
 			projects = vals.filter(Boolean);
 		}
 

@@ -19,8 +19,7 @@ export function UnassignedNotesWidget() {
 	const notes = useComputed((): UnassignedNote[] => {
 		cards.value;
 
-		const pls = plugin.projectLinkService;
-		const unassignedPaths = pls.getUnassignedPaths();
+		const unassignedPaths = plugin.hierarchyService.getUnassignedPaths();
 
 		const result: UnassignedNote[] = [];
 		const now = new Date();

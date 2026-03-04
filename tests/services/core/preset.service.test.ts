@@ -7,8 +7,7 @@ import type {
 	CachedMetadata,
 } from "obsidian";
 import { FrontmatterIndexService } from "../../../src/features/core/services/frontmatter-index.service";
-import { FolderProjectService } from "../../../src/features/core/services/folder-project.service";
-import { ProjectLinkService } from "../../../src/features/core/services/project-link.service";
+import { HierarchyService } from "../../../src/features/core/services/hierarchy.service";
 import { PresetService } from "../../../src/features/core/services/preset.service";
 import type {
 	FSRSPreset,
@@ -57,16 +56,14 @@ function makeCard(sourceUid?: string): FSRSFlashcardItem {
 	} as FSRSFlashcardItem;
 }
 
-describe("PresetService — 4-tier resolution", () => {
+describe("PresetService — 3-tier resolution", () => {
 	let mockApp: App;
 	let mockVault: Vault;
 	let mockMetadataCache: MetadataCache;
 	let mockFiles: TFile[];
 	let mockCacheData: Map<string, CachedMetadata>;
-	let resolvedLinks: Record<string, Record<string, number>>;
 	let frontmatterIndex: FrontmatterIndexService;
-	let projectLinkService: ProjectLinkService;
-	let folderProjectService: FolderProjectService;
+	let hierarchyService: HierarchyService;
 	let presetService: PresetService;
 	let settings: TrueRecallSettings;
 
@@ -91,17 +88,9 @@ describe("PresetService — 4-tier resolution", () => {
 		return file;
 	}
 
-	function setLinks(from: string, to: string[]) {
-		resolvedLinks[from] = {};
-		for (const t of to) {
-			resolvedLinks[from][t] = 1;
-		}
-	}
-
 	beforeEach(() => {
 		mockFiles = [];
 		mockCacheData = new Map();
-		resolvedLinks = {};
 
 		mockVault = {
 			getMarkdownFiles: vi.fn(() => mockFiles),
@@ -117,7 +106,13 @@ describe("PresetService — 4-tier resolution", () => {
 			getFileCache: vi.fn(
 				(file: TFile) => mockCacheData.get(file.path) ?? null,
 			),
-			resolvedLinks,
+			getFirstLinkpathDest: vi.fn((name: string) => {
+				return (
+					mockFiles.find(
+						(f) => f.name === `${name}.md` || f.name === name,
+					) ?? null
+				);
+			}),
 			on: vi.fn(() => ({ unload: vi.fn() })),
 			off: vi.fn(),
 		} as unknown as MetadataCache;
@@ -139,35 +134,23 @@ describe("PresetService — 4-tier resolution", () => {
 			unique: false,
 		});
 		frontmatterIndex.register({
-			field: "project",
-			type: "string",
+			field: "parents",
+			type: "array",
 			unique: false,
 		});
 
 		settings = {
 			fsrsPresets: [defaultPreset, medicalPreset, sciencePreset, notePreset],
 			defaultPresetId: "default-id",
-			folderProjectsEnabled: true,
-			excludedFolders: [],
 		} as unknown as TrueRecallSettings;
 
-		folderProjectService = new FolderProjectService(
-			mockApp,
-			frontmatterIndex,
-			() => settings,
-		);
-
-		projectLinkService = new ProjectLinkService(
-			mockApp,
-			frontmatterIndex,
-		);
+		hierarchyService = new HierarchyService(mockApp, frontmatterIndex);
 
 		presetService = new PresetService(
 			() => settings,
 			vi.fn(),
 			frontmatterIndex,
-			projectLinkService,
-			folderProjectService,
+			hierarchyService,
 		);
 	});
 
@@ -190,131 +173,96 @@ describe("PresetService — 4-tier resolution", () => {
 			expect(result.name).toBe("NoteSpecific");
 		});
 
-		it("tier 2: uses link-based project preset when note has no preset", () => {
+		it("tier 2: uses parent's preset when note has no preset", () => {
 			addMockFile("Projects/Anatomy.md", {
-				project: true,
 				fsrs_preset: "Medical",
 			});
 			addMockFile("Notes/Bones.md", {
 				flashcard_uid: "uid-bones",
+				parents: ["[[Anatomy]]"],
 			});
-			setLinks("Projects/Anatomy.md", ["Notes/Bones.md"]);
 			frontmatterIndex.rebuildIndex();
+			hierarchyService.invalidateGraph();
 
 			const card = makeCard("uid-bones");
 			const result = presetService.resolvePresetForCard(card);
 			expect(result.name).toBe("Medical");
 		});
 
-		it("tier 2 with context: uses specific project's preset", () => {
+		it("tier 2 with context: uses specific parent's preset", () => {
 			addMockFile("Projects/Anatomy.md", {
-				project: true,
 				fsrs_preset: "Medical",
 			});
 			addMockFile("Projects/Physics.md", {
-				project: true,
 				fsrs_preset: "Science",
 			});
 			addMockFile("Notes/Shared.md", {
 				flashcard_uid: "uid-shared",
+				parents: ["[[Anatomy]]", "[[Physics]]"],
 			});
-			setLinks("Projects/Anatomy.md", ["Notes/Shared.md"]);
-			setLinks("Projects/Physics.md", ["Notes/Shared.md"]);
 			frontmatterIndex.rebuildIndex();
+			hierarchyService.invalidateGraph();
 
 			const card = makeCard("uid-shared");
 
-			// With Anatomy context → Medical
 			const result1 = presetService.resolvePresetForCard(card, {
 				projectPath: "Projects/Anatomy.md",
 			});
 			expect(result1.name).toBe("Medical");
 
-			// With Physics context → Science
 			const result2 = presetService.resolvePresetForCard(card, {
 				projectPath: "Projects/Physics.md",
 			});
 			expect(result2.name).toBe("Science");
 		});
 
-		it("tier 3: uses folder note's preset when no note or project preset", () => {
-			// Folder note with preset
-			addMockFile("Biology/Biology.md", {
+		it("tier 2: walks up parent chain (grandparent preset)", () => {
+			addMockFile("Projects/Science.md", {
 				fsrs_preset: "Science",
 			});
-			// Note inside folder
-			addMockFile("Biology/Cells.md", {
+			addMockFile("Projects/Biology.md", {
+				parents: ["[[Science]]"],
+			});
+			addMockFile("Notes/Cells.md", {
 				flashcard_uid: "uid-cells",
+				parents: ["[[Biology]]"],
 			});
 			frontmatterIndex.rebuildIndex();
+			hierarchyService.invalidateGraph();
 
 			const card = makeCard("uid-cells");
 			const result = presetService.resolvePresetForCard(card);
 			expect(result.name).toBe("Science");
 		});
 
-		it("tier 3: walks up folder hierarchy", () => {
-			addMockFile("Science/Science.md", {
-				fsrs_preset: "Science",
-			});
-			// No folder note at Biology level
-			addMockFile("Science/Biology/Cells.md", {
-				flashcard_uid: "uid-cells-deep",
-			});
-			frontmatterIndex.rebuildIndex();
-
-			const card = makeCard("uid-cells-deep");
-			const result = presetService.resolvePresetForCard(card);
-			expect(result.name).toBe("Science");
-		});
-
 		it("tier 1 takes priority over tier 2", () => {
 			addMockFile("Projects/Anatomy.md", {
-				project: true,
 				fsrs_preset: "Medical",
 			});
 			addMockFile("Notes/Bones.md", {
 				flashcard_uid: "uid-bones",
 				fsrs_preset: "NoteSpecific",
+				parents: ["[[Anatomy]]"],
 			});
-			setLinks("Projects/Anatomy.md", ["Notes/Bones.md"]);
 			frontmatterIndex.rebuildIndex();
+			hierarchyService.invalidateGraph();
 
 			const card = makeCard("uid-bones");
 			const result = presetService.resolvePresetForCard(card);
 			expect(result.name).toBe("NoteSpecific");
 		});
 
-		it("tier 2 takes priority over tier 3", () => {
-			addMockFile("Biology/Biology.md", {
-				fsrs_preset: "Science",
-			});
-			addMockFile("Projects/Anatomy.md", {
-				project: true,
-				fsrs_preset: "Medical",
-			});
-			addMockFile("Biology/Bones.md", {
-				flashcard_uid: "uid-bones",
-			});
-			setLinks("Projects/Anatomy.md", ["Biology/Bones.md"]);
-			frontmatterIndex.rebuildIndex();
-
-			const card = makeCard("uid-bones");
-			const result = presetService.resolvePresetForCard(card);
-			expect(result.name).toBe("Medical");
-		});
-
 		it("falls through invalid preset name to next tier", () => {
 			addMockFile("Notes/MyNote.md", {
 				flashcard_uid: "uid-1",
 				fsrs_preset: "DeletedPreset",
+				parents: ["[[Anatomy]]"],
 			});
 			addMockFile("Projects/Anatomy.md", {
-				project: true,
 				fsrs_preset: "Medical",
 			});
-			setLinks("Projects/Anatomy.md", ["Notes/MyNote.md"]);
 			frontmatterIndex.rebuildIndex();
+			hierarchyService.invalidateGraph();
 
 			const card = makeCard("uid-1");
 			const result = presetService.resolvePresetForCard(card);
@@ -333,70 +281,62 @@ describe("PresetService — 4-tier resolution", () => {
 		});
 	});
 
-	describe("resolvePresetForCard — deterministic alphabetical ordering", () => {
-		it("when two projects both have presets, alphabetically-first project path wins", () => {
-			addMockFile("Projects/Zoology.md", {
-				project: true,
-				fsrs_preset: "Science",
-			});
+	describe("resolvePresetForCard — parent ordering", () => {
+		it("first parent with preset wins (BFS order)", () => {
 			addMockFile("Projects/Anatomy.md", {
-				project: true,
 				fsrs_preset: "Medical",
+			});
+			addMockFile("Projects/Physics.md", {
+				fsrs_preset: "Science",
 			});
 			addMockFile("Notes/SharedNote.md", {
 				flashcard_uid: "uid-shared",
+				parents: ["[[Anatomy]]", "[[Physics]]"],
 			});
-			setLinks("Projects/Zoology.md", ["Notes/SharedNote.md"]);
-			setLinks("Projects/Anatomy.md", ["Notes/SharedNote.md"]);
 			frontmatterIndex.rebuildIndex();
+			hierarchyService.invalidateGraph();
 
 			const card = makeCard("uid-shared");
 			const result = presetService.resolvePresetForCard(card);
-			// Anatomy < Zoology alphabetically → Medical wins
 			expect(result.name).toBe("Medical");
 		});
 
-		it("when alphabetically-first project has no preset, falls through to next", () => {
+		it("when first parent has no preset, falls through to next parent", () => {
 			addMockFile("Projects/Anatomy.md", {
-				project: true,
 				// no fsrs_preset
 			});
-			addMockFile("Projects/Zoology.md", {
-				project: true,
+			addMockFile("Projects/Physics.md", {
 				fsrs_preset: "Science",
 			});
 			addMockFile("Notes/SharedNote.md", {
 				flashcard_uid: "uid-shared",
+				parents: ["[[Anatomy]]", "[[Physics]]"],
 			});
-			setLinks("Projects/Anatomy.md", ["Notes/SharedNote.md"]);
-			setLinks("Projects/Zoology.md", ["Notes/SharedNote.md"]);
 			frontmatterIndex.rebuildIndex();
+			hierarchyService.invalidateGraph();
 
 			const card = makeCard("uid-shared");
 			const result = presetService.resolvePresetForCard(card);
 			expect(result.name).toBe("Science");
 		});
 
-		it("explicit context.projectPath bypasses alphabetical ordering", () => {
+		it("explicit context.projectPath bypasses parent ordering", () => {
 			addMockFile("Projects/Anatomy.md", {
-				project: true,
 				fsrs_preset: "Medical",
 			});
-			addMockFile("Projects/Zoology.md", {
-				project: true,
+			addMockFile("Projects/Physics.md", {
 				fsrs_preset: "Science",
 			});
 			addMockFile("Notes/SharedNote.md", {
 				flashcard_uid: "uid-shared",
+				parents: ["[[Anatomy]]", "[[Physics]]"],
 			});
-			setLinks("Projects/Anatomy.md", ["Notes/SharedNote.md"]);
-			setLinks("Projects/Zoology.md", ["Notes/SharedNote.md"]);
 			frontmatterIndex.rebuildIndex();
+			hierarchyService.invalidateGraph();
 
 			const card = makeCard("uid-shared");
-			// Explicitly request Zoology context → Science, not alphabetically-first
 			const result = presetService.resolvePresetForCard(card, {
-				projectPath: "Projects/Zoology.md",
+				projectPath: "Projects/Physics.md",
 			});
 			expect(result.name).toBe("Science");
 		});
@@ -405,46 +345,38 @@ describe("PresetService — 4-tier resolution", () => {
 	describe("resolvePresetChain", () => {
 		it("returns full chain with correct active tier", () => {
 			addMockFile("Projects/Anatomy.md", {
-				project: true,
 				fsrs_preset: "Medical",
 			});
-			addMockFile("Biology/Biology.md", {
-				fsrs_preset: "Science",
-			});
-			addMockFile("Biology/Bones.md", {
+			addMockFile("Notes/Bones.md", {
 				flashcard_uid: "uid-bones",
+				parents: ["[[Anatomy]]"],
 			});
-			setLinks("Projects/Anatomy.md", ["Biology/Bones.md"]);
 			frontmatterIndex.rebuildIndex();
+			hierarchyService.invalidateGraph();
 
 			const { chain, effective } = presetService.resolvePresetChain(
-				"Biology/Bones.md",
+				"Notes/Bones.md",
 			);
 
-			expect(chain).toHaveLength(4);
+			expect(chain).toHaveLength(3);
 			expect(chain[0]).toMatchObject({
 				source: "note",
 				presetName: null,
 				active: false,
 			});
 			expect(chain[1]).toMatchObject({
-				source: "link-project",
+				source: "parent",
 				presetName: "Medical",
 				active: true,
 			});
 			expect(chain[2]).toMatchObject({
-				source: "folder",
-				presetName: "Science",
-				active: false,
-			});
-			expect(chain[3]).toMatchObject({
 				source: "default",
 				presetName: "Default",
 				active: false,
 			});
 
 			expect(effective.preset.name).toBe("Medical");
-			expect(effective.source).toBe("link-project");
+			expect(effective.source).toBe("parent");
 		});
 
 		it("marks default as active when no overrides exist", () => {
@@ -456,7 +388,7 @@ describe("PresetService — 4-tier resolution", () => {
 			const { chain, effective } =
 				presetService.resolvePresetChain("Notes/Plain.md");
 
-			expect(chain[3]).toMatchObject({
+			expect(chain[2]).toMatchObject({
 				source: "default",
 				active: true,
 			});
@@ -493,8 +425,7 @@ describe("PresetService — updatePreset rename propagation", () => {
 			() => settings,
 			persistSettings,
 			null as never,
-			null,
-			null,
+			null as never,
 			getCardStore as never,
 		);
 	}
@@ -558,7 +489,6 @@ describe("PresetService — updatePreset rename propagation", () => {
 		await presetService.updatePreset("preset-a", { name: "NewName" });
 
 		expect(persistSettings).toHaveBeenCalledOnce();
-		// Verify the preset was actually updated in settings
 		const updated = settings.fsrsPresets.find((p) => p.id === "preset-a");
 		expect(updated?.name).toBe("NewName");
 	});

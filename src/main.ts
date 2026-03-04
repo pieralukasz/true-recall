@@ -23,8 +23,7 @@ import { FrontmatterIndexService } from "@features/core/services/frontmatter-ind
 import { FSRSService } from "@features/core/services/fsrs.service";
 import { NoteTypeService } from "@features/core/services/note-type.service";
 import { PresetService } from "@features/core/services/preset.service";
-import { FolderProjectService } from "@features/core/services/folder-project.service";
-import { ProjectLinkService } from "@features/core/services/project-link.service";
+import { HierarchyService } from "@features/core/services/hierarchy.service";
 import { ImportStudioModal } from "@features/core/modals/import-studio/ImportStudioModal";
 import { NoteTypeManagerModal } from "@features/core/modals/NoteTypeManagerModal";
 import { QuickNoteEditorModal } from "@features/study/modals/quick-note-editor/QuickNoteEditorModal";
@@ -111,8 +110,7 @@ export default class TrueRecallPlugin extends Plugin {
 	fsrsHelper: FSRSHelperService | null = null;
 	presetService!: PresetService;
 	noteTypeService!: NoteTypeService;
-	folderProjectService!: FolderProjectService;
-	projectLinkService!: ProjectLinkService;
+	hierarchyService!: HierarchyService;
 	store: AppStore | null = null;
 	noteStatusCache: NoteStatusCacheService | null = null;
 	statusBarWidget: StatusBarWidget | null = null;
@@ -156,8 +154,8 @@ export default class TrueRecallPlugin extends Plugin {
 			unique: false,
 		});
 		this.frontmatterIndex.register({
-			field: "project",
-			type: "string",
+			field: "parents",
+			type: "array",
 			unique: false,
 		});
 		this.frontmatterIndex.register({
@@ -165,9 +163,10 @@ export default class TrueRecallPlugin extends Plugin {
 			type: "string",
 			unique: false,
 		});
-		this.frontmatterIndex.onFieldChange("project", () =>
-			refreshMetadata(),
-		);
+		this.frontmatterIndex.onFieldChange("parents", () => {
+			this.hierarchyService.invalidateGraph();
+			refreshMetadata();
+		});
 		this.frontmatterIndex.onFieldChange("archive", () =>
 			refreshMetadata(),
 		);
@@ -176,31 +175,11 @@ export default class TrueRecallPlugin extends Plugin {
 		);
 		this.frontmatterIndex.registerEvents(this);
 
-		this.folderProjectService = new FolderProjectService(
+		this.hierarchyService = new HierarchyService(
 			this.app,
 			this.frontmatterIndex,
-			() => this.settings,
 		);
-		const invalidateFolderCache = () => {
-			this.folderProjectService.invalidateCache();
-			refreshMetadata();
-		};
-		this.registerEvent(
-			this.app.vault.on("create", invalidateFolderCache),
-		);
-		this.registerEvent(
-			this.app.vault.on("delete", invalidateFolderCache),
-		);
-		this.registerEvent(
-			this.app.vault.on("rename", invalidateFolderCache),
-		);
-
-		this.projectLinkService = new ProjectLinkService(
-			this.app,
-			this.frontmatterIndex,
-			this.folderProjectService,
-		);
-		initMetadataStore(this.projectLinkService);
+		initMetadataStore(this.hierarchyService);
 
 		// Build index after metadataCache is fully loaded.
 		// Must be AFTER initMetadataStore so refreshMetadata() can populate archivedSourceUids.
@@ -220,8 +199,7 @@ export default class TrueRecallPlugin extends Plugin {
 			() => this.settings,
 			() => this.saveSettings(),
 			this.frontmatterIndex,
-			this.projectLinkService,
-			this.folderProjectService,
+			this.hierarchyService,
 			() => this.cardStore ?? null,
 		);
 
@@ -413,7 +391,7 @@ export default class TrueRecallPlugin extends Plugin {
 		});
 
 		this.noteStatusCache?.bumpVersion();
-		this.folderProjectService?.invalidateCache();
+		this.hierarchyService.invalidateGraph();
 
 		refreshSettings(this.settings);
 	}
