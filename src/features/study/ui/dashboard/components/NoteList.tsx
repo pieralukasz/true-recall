@@ -4,6 +4,7 @@ import { usePlugin } from "@shared/ui/preact";
 import { useCallback, useMemo, useRef } from "preact/hooks";
 import type { RefObject } from "preact";
 import { TFile } from "obsidian";
+import { NamePromptModal } from "@features/study/modals/NamePromptModal";
 import { useInitialMount } from "../helpers/use-initial-mount";
 import { prioritySortComparator } from "../helpers/note-priority";
 import { useExternalVirtualList } from "../helpers/use-virtual-list";
@@ -14,6 +15,12 @@ import type {
 } from "../types";
 import { NoteFilters } from "./NoteFilters";
 import { NoteRow } from "./NoteRow";
+import {
+	type DragItem,
+	type DropResult,
+	DRAG_MIME,
+	executeDrop,
+} from "../helpers/drag-drop";
 
 interface NoteListProps {
 	notes: DashboardNoteEntry[];
@@ -22,6 +29,12 @@ interface NoteListProps {
 	scrollContainerRef: RefObject<HTMLDivElement>;
 	scrollTop: Signal<number>;
 	onPresetClick?: (path: string | null) => void;
+}
+
+interface NoteDragState {
+	item: DragItem;
+	dropTargetPath: string | null;
+	isValid: boolean;
 }
 
 function matchesFilter(
@@ -55,6 +68,7 @@ export function NoteList({
 	const activeFilter = useSignal<NoteFilterMode>("all");
 	const projectFilter = useSignal<ProjectFilter>({ type: "none" });
 	const contentRef = useRef<HTMLDivElement>(null);
+	const dragState = useSignal<NoteDragState | null>(null);
 
 	const unassignedCount = useMemo(
 		() => notes.filter((n) => n.projects.length === 0).length,
@@ -147,6 +161,88 @@ export function NoteList({
 		}
 	};
 
+	// ── Drag & Drop handlers (note-on-note → create project) ──
+
+	const handleDragStart = useCallback(
+		(e: DragEvent, note: DashboardNoteEntry) => {
+			if (!note.path) {
+				e.preventDefault();
+				return;
+			}
+			const item: DragItem = {
+				type: "note",
+				path: note.path,
+				name: note.name,
+				parentPath: null,
+			};
+			e.dataTransfer!.setData(DRAG_MIME, JSON.stringify(item));
+			e.dataTransfer!.effectAllowed = "move";
+			dragState.value = { item, dropTargetPath: null, isValid: false };
+		},
+		[dragState],
+	);
+
+	const handleDragEnd = useCallback(() => {
+		dragState.value = null;
+	}, [dragState]);
+
+	const handleDragOver = useCallback(
+		(e: DragEvent, targetNote: DashboardNoteEntry) => {
+			const ds = dragState.value;
+			if (!ds || !targetNote.path) return;
+			if (targetNote.path === ds.item.path) return;
+
+			if (targetNote.path !== ds.dropTargetPath) {
+				dragState.value = {
+					...ds,
+					dropTargetPath: targetNote.path,
+					isValid: true,
+				};
+			}
+
+			e.preventDefault();
+			e.dataTransfer!.dropEffect = "move";
+		},
+		[dragState],
+	);
+
+	const handleDrop = useCallback(
+		(e: DragEvent, targetNote: DashboardNoteEntry) => {
+			e.preventDefault();
+			const ds = dragState.value;
+			dragState.value = null;
+			if (!ds || !targetNote.path || targetNote.path === ds.item.path) return;
+
+			const result: DropResult = {
+				action: "create-project",
+				dragPath: ds.item.path,
+				dragName: ds.item.name,
+				targetPath: targetNote.path,
+				targetName: targetNote.name,
+			};
+
+			const frontmatterService = plugin.flashcardManager.getFrontmatterService();
+			void executeDrop(result, {
+				app: plugin.app,
+				frontmatterService,
+				promptProjectName: async (defaultName: string) => {
+					const modal = new NamePromptModal(plugin.app, defaultName);
+					const res = await modal.openAndWait();
+					return res.cancelled ? null : res.name;
+				},
+			});
+		},
+		[dragState, plugin],
+	);
+
+	function getDragClass(notePath: string | null): string {
+		const ds = dragState.value;
+		if (!ds || !notePath) return "";
+		if (ds.item.path === notePath) return "ep-drag-source";
+		if (ds.dropTargetPath === notePath && ds.isValid) return "ep-drop-target";
+		return "";
+	}
+
 	return (
 		<div class="ep:flex ep:flex-col">
 			<div class="ep:shrink-0 ep:mb-3">
@@ -174,33 +270,41 @@ export function NoteList({
 						position: "relative",
 					}}
 				>
-					{virtualItems.map(({ item, offsetTop, index }) => (
-						<div
-							key={item.name}
-							class={initialMount.current ? "ep-card-enter" : undefined}
-							style={{
-								position: "absolute",
-								top: `${offsetTop}px`,
-								left: 0,
-								right: 0,
-								height: "36px",
-								...(initialMount.current
-									? { "--card-index": Math.min(index, 10) }
-									: {}),
-							}}
-						>
-							<NoteRow
-								note={item}
-								onNavigate={() => handleNavigateToNote(item)}
-								onStudy={() => handleStudyNote(item.name)}
-								onCustomStudy={() => handleCustomStudy(item)}
-								onProjectClick={handleProjectClick}
-								onPresetClick={onPresetClick}
-								onArchive={() => handleArchiveNote(item)}
-								onUnarchive={() => handleUnarchiveNote(item)}
-							/>
-						</div>
-					))}
+					{virtualItems.map(({ item, offsetTop, index }) => {
+						const dragCls = getDragClass(item.path);
+						return (
+							<div
+								key={item.name}
+								class={`${initialMount.current ? "ep-card-enter" : ""} ${dragCls}`.trim() || undefined}
+								draggable={!!item.path}
+								onDragStart={(e) => handleDragStart(e, item)}
+								onDragEnd={handleDragEnd}
+								onDragOver={(e) => handleDragOver(e, item)}
+								onDrop={(e) => handleDrop(e, item)}
+								style={{
+									position: "absolute",
+									top: `${offsetTop}px`,
+									left: 0,
+									right: 0,
+									height: "36px",
+									...(initialMount.current
+										? { "--card-index": Math.min(index, 10) }
+										: {}),
+								}}
+							>
+								<NoteRow
+									note={item}
+									onNavigate={() => handleNavigateToNote(item)}
+									onStudy={() => handleStudyNote(item.name)}
+									onCustomStudy={() => handleCustomStudy(item)}
+									onProjectClick={handleProjectClick}
+									onPresetClick={onPresetClick}
+									onArchive={() => handleArchiveNote(item)}
+									onUnarchive={() => handleUnarchiveNote(item)}
+								/>
+							</div>
+						);
+					})}
 				</div>
 			)}
 		</div>

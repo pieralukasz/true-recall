@@ -7,6 +7,7 @@ export type FlatProjectItem =
 			project: DashboardProject;
 			depth: number;
 			isExpanded: boolean;
+			parentPath: string | null;
 	  }
 	| {
 			type: "note";
@@ -38,11 +39,16 @@ export function flattenProjectTree(
 	const result: FlatProjectItem[] = [];
 	const query = searchQuery.toLowerCase();
 
-	function walk(project: DashboardProject, depth: number) {
+	function walk(project: DashboardProject, depth: number, parentPath: string | null) {
 		const isExpanded = expandedPaths.has(project.path);
-		result.push({ type: "project-header", project, depth, isExpanded });
+		result.push({ type: "project-header", project, depth, isExpanded, parentPath });
 
 		if (!isExpanded) return;
+
+		// Sub-projects first (like Anki sub-decks above cards)
+		for (const child of project.children) {
+			walk(child, depth + 1, project.path);
+		}
 
 		const notes = query
 			? project.memberNotes.filter((n) =>
@@ -60,10 +66,6 @@ export function flattenProjectTree(
 			});
 		}
 
-		for (const child of project.children) {
-			walk(child, depth + 1);
-		}
-
 		if (sorted.length === 0 && project.children.length === 0) {
 			result.push({
 				type: "empty-project",
@@ -78,7 +80,7 @@ export function flattenProjectTree(
 		: projects;
 
 	for (const project of filtered) {
-		walk(project, 0);
+		walk(project, 0, null);
 	}
 
 	return result;

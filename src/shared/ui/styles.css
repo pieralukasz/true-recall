@@ -212,21 +212,8 @@
 
 /* ── Streaming flashcard generation animations ── */
 
-/* Word reveal: each new word pops in with opacity + translateY (compositor-only, no blur) */
-.ep-word-reveal {
-	animation: ep-word-fade 200ms cubic-bezier(0.16, 1, 0.3, 1) both;
-}
-
-@keyframes ep-word-fade {
-	from {
-		opacity: 0;
-		transform: translateY(2px);
-	}
-	to {
-		opacity: 1;
-		transform: translateY(0);
-	}
-}
+/* Word reveal is handled imperatively by Motion One (useWordReveal hook)
+   via Web Animations API with spring physics — no CSS keyframes needed. */
 
 /* Skeleton shimmer for loading state before first AI token */
 .ep-shimmer {
@@ -326,6 +313,22 @@
 	border-radius: 1px;
 }
 
+/* ── Drag-and-drop indicators ── */
+
+.ep-drag-source {
+	opacity: 0.4;
+}
+
+.ep-drop-target {
+	box-shadow: inset 3px 0 0 var(--interactive-accent);
+	background: color-mix(in srgb, var(--interactive-accent) 8%, transparent);
+}
+
+.ep-drop-root-zone {
+	border-color: var(--interactive-accent);
+	background: color-mix(in srgb, var(--interactive-accent) 6%, transparent);
+}
+
 /* Reduced motion: remove spatial motion, keep opacity fades */
 @media (prefers-reduced-motion: reduce) {
 	.true-recall-donut-due,
@@ -338,10 +341,6 @@
 	}
 	.true-recall-pulse-collect {
 		animation: none;
-	}
-	.ep-word-reveal {
-		animation: none;
-		opacity: 1;
 	}
 	.ep-shimmer {
 		animation: none;
