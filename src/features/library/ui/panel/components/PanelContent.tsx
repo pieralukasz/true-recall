@@ -76,7 +76,26 @@ function getItemInfo(item: PanelItem): {
 
 // ── Streaming subscription helpers ──────────────────────────────
 
-const SCROLL_THROTTLE_MS = 300;
+const SCROLL_THROTTLE_MS = 250;
+// User is "near bottom" if within this many pixels of the scroll end
+const NEAR_BOTTOM_PX = 80;
+
+function findScrollParent(el: HTMLElement): HTMLElement | null {
+	let node = el.parentElement;
+	while (node) {
+		const { overflowY } = getComputedStyle(node);
+		if (overflowY === "auto" || overflowY === "scroll") return node;
+		node = node.parentElement;
+	}
+	return null;
+}
+
+function isNearBottom(scroller: HTMLElement): boolean {
+	return (
+		scroller.scrollHeight - scroller.scrollTop - scroller.clientHeight <
+		NEAR_BOTTOM_PX
+	);
+}
 
 /** Subscribes to the full signal at ~60Hz but only renders PartialCard + scroll anchor. */
 function StreamingSection({
@@ -92,33 +111,52 @@ function StreamingSection({
 	const isActive =
 		streaming.isGenerating && streaming.notePath === currentFilePath;
 
-	const bottomRef = useRef<HTMLDivElement>(null);
+	const sentinelRef = useRef<HTMLDivElement>(null);
+	const scrollerRef = useRef<HTMLElement | null>(null);
 	const lastScrollRef = useRef(0);
 	const scrollTimerRef = useRef<ReturnType<typeof setTimeout>>();
+	// Track if user was near bottom — sticky until user scrolls away
+	const wasNearBottomRef = useRef(true);
 
-	// Throttled auto-scroll: runs on every render but scrolls at most once per 300ms.
-	// No dependency array intentional — the throttle gate is time-based, not state-based.
+	// Resolve scroll container once on mount
+	useEffect(() => {
+		if (sentinelRef.current) {
+			scrollerRef.current = findScrollParent(sentinelRef.current);
+		}
+	}, []);
+
+	// Throttled auto-scroll: only scrolls when user is near the bottom
 	useEffect(() => {
 		if (!isActive) return;
+		const scroller = scrollerRef.current;
+		if (!scroller) return;
+
+		// Check if user is near bottom (or was near bottom recently)
+		const nearBottom = isNearBottom(scroller);
+		if (nearBottom) wasNearBottomRef.current = true;
+		// If user scrolled far up, stop auto-scrolling until they return to bottom
+		if (!nearBottom && !wasNearBottomRef.current) return;
+		if (!nearBottom) {
+			wasNearBottomRef.current = false;
+			return;
+		}
+
+		const scrollToEnd = () => {
+			scroller.scrollTop = scroller.scrollHeight - scroller.clientHeight;
+			lastScrollRef.current = Date.now();
+		};
 
 		const now = Date.now();
 		const elapsed = now - lastScrollRef.current;
 
 		if (elapsed >= SCROLL_THROTTLE_MS) {
-			bottomRef.current?.scrollIntoView({
-				behavior: "smooth",
-				block: "end",
-			});
-			lastScrollRef.current = now;
+			scrollToEnd();
 		} else {
 			clearTimeout(scrollTimerRef.current);
-			scrollTimerRef.current = setTimeout(() => {
-				bottomRef.current?.scrollIntoView({
-					behavior: "smooth",
-					block: "end",
-				});
-				lastScrollRef.current = Date.now();
-			}, SCROLL_THROTTLE_MS - elapsed);
+			scrollTimerRef.current = setTimeout(
+				scrollToEnd,
+				SCROLL_THROTTLE_MS - elapsed,
+			);
 		}
 
 		return () => clearTimeout(scrollTimerRef.current);
@@ -129,7 +167,7 @@ function StreamingSection({
 	return (
 		<>
 			<PartialCard streaming={streaming} />
-			<div ref={bottomRef} />
+			<div ref={sentinelRef} />
 		</>
 	);
 }
