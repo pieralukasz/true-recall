@@ -20,7 +20,6 @@ export interface KeyboardShortcuts {
 	buryCard: string; // -
 	buryNote: string; // =
 	moveCard: string; // M
-	copyCard: string; // B
 	editCard: string; // E
 }
 
@@ -36,7 +35,6 @@ export interface KeyboardActionCallbacks {
 	onBuryNote: () => Promise<void>;
 	onMoveCard: () => Promise<void>;
 	onAddCard: () => Promise<void>;
-	onCopyCard: () => Promise<void>;
 	onEditCard: () => Promise<void>;
 }
 
@@ -126,13 +124,6 @@ export class KeyboardHandler {
 			return true;
 		}
 
-		// B = Copy current card to new flashcard
-		if (e.key === "b" || e.key === "B") {
-			e.preventDefault();
-			void this.callbacks.onCopyCard();
-			return true;
-		}
-
 		// E = Edit current card (modal)
 		if (e.key === "e" || e.key === "E") {
 			e.preventDefault();
@@ -200,7 +191,6 @@ export class KeyboardHandler {
 			{ key: "=", description: "Bury note (all sibling cards)" },
 			{ key: "M", description: "Move card to another note" },
 			{ key: "A", description: "Add new flashcard" },
-			{ key: "B", description: "Copy card (branch)" },
 			{ key: "E", description: "Edit card" },
 		];
 	}

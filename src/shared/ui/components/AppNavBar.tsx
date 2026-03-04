@@ -1,3 +1,4 @@
+import { QuickNoteEditorModal } from "@features/study/modals/quick-note-editor/QuickNoteEditorModal";
 import { Clickable } from "@shared/ui/components/Clickable";
 import { useApp, useIcon, usePlugin } from "@shared/ui/preact";
 import { cn } from "@shared/ui/utils";
@@ -34,15 +35,7 @@ export function AppNavBar({ activeItem }: AppNavBarProps) {
 					await plugin.openDashboard();
 					break;
 				case "add": {
-					const { SimpleFlashcardEditorModal } = await import(
-						"@shared/ui/modals/SimpleFlashcardEditorModal"
-					);
-					const modal = new SimpleFlashcardEditorModal(
-						app,
-						{ mode: "add", currentFilePath: "" },
-						plugin.EmbeddableEditor,
-						plugin.flashcardManager,
-					);
+					const modal = new QuickNoteEditorModal(app, plugin, { mode: "add" });
 					await modal.openAndWait();
 					break;
 				}
