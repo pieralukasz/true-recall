@@ -5,8 +5,7 @@ import {
 	insertAtTextareaCursor,
 	toggleTextareaWrap,
 } from "@features/study/ui/editor/edit-toolbar.utils";
-import { EditorView, type ViewUpdate, placeholder } from "@codemirror/view";
-import { FLASHCARD_CONFIG } from "@shared/constants";
+import { type ViewUpdate, placeholder } from "@codemirror/view";
 import type {
 	EmbeddableEditorClass,
 	EmbeddableEditorInstance,
@@ -40,15 +39,9 @@ export interface AddFlashcardsResult {
 	totalSaved: number;
 }
 
-const PLACEHOLDER_TEXT = `What is photosynthesis? ${FLASHCARD_CONFIG.tag}
-The process by which plants convert light into energy
-
-Or use Q:/A: format:
-Q: What is photosynthesis?
-A: The process by which plants convert light into energy
-
-Or inline format:
-Photosynthesis::Plant energy conversion`;
+const PLACEHOLDER_TEXT = `What is photosynthesis? :: The process by which plants convert light into energy
+Capital of France :: Paris
+{{c1::Mitochondria}} are the powerhouse of the cell :: Extra context`;
 
 export function AddFlashcardsApp({
 	app,
@@ -130,7 +123,7 @@ export function AddFlashcardsApp({
 		const flashcards = parser.extractFlashcards(currentContent);
 		if (flashcards.length === 0) {
 			notify().warning(
-				"No flashcards detected. Use #flashcard tag, Q:/A: format, or :: separator.",
+				"No flashcards detected. Use Front :: Back format (one card per line).",
 			);
 			return;
 		}
@@ -202,29 +195,6 @@ export function AddFlashcardsApp({
 		[isAddMode],
 	);
 
-	const flashcardTagExt = useMemo(
-		() =>
-			EditorView.domEventHandlers({
-				keydown(event, view) {
-					const isMod = event.ctrlKey || event.metaKey;
-					if (!isMod || (event.key !== "3" && event.key !== "#"))
-						return false;
-					event.preventDefault();
-					event.stopPropagation();
-					const pos = view.state.selection.main.head;
-					const line = view.state.doc.lineAt(pos);
-					if (line.text.includes(FLASHCARD_CONFIG.tag)) return true;
-					const tag = ` ${FLASHCARD_CONFIG.tag}`;
-					view.dispatch({
-						changes: { from: line.to, insert: tag },
-						selection: { anchor: line.to + tag.length },
-					});
-					return true;
-				},
-			}),
-		[],
-	);
-
 	// ── Image paste for embedded editor ──────────────────────────────
 	const handleEditorPaste = useCallback(
 		async (e: ClipboardEvent, editor: EmbeddableEditorInstance) => {
@@ -276,7 +246,7 @@ export function AddFlashcardsApp({
 			onModEnter: () => handleSaveRef.current(),
 			onChange: handleEditorChange,
 			onPaste: handleEditorPaste,
-			extraExtensions: [flashcardTagExt, placeholderExt],
+			extraExtensions: [placeholderExt],
 		});
 
 		editorRef.current = editor;
@@ -290,7 +260,6 @@ export function AddFlashcardsApp({
 		app,
 		useRichEditor,
 		editorClass,
-		flashcardTagExt,
 		handleEditorChange,
 		handleEditorPaste,
 	]);
@@ -298,40 +267,11 @@ export function AddFlashcardsApp({
 	// ── Textarea state & handlers (fallback) ─────────────────────────
 	const [content, setContent] = useState(prefillContent ?? "");
 
-	const insertFlashcardTag = useCallback(() => {
-		const ta = textareaRef.current;
-		if (!ta) return;
-
-		const pos = ta.selectionStart;
-		const text = ta.value;
-		let lineEnd = text.indexOf("\n", pos);
-		if (lineEnd === -1) lineEnd = text.length;
-		const lineStart = text.lastIndexOf("\n", pos - 1) + 1;
-		const currentLine = text.slice(lineStart, lineEnd);
-		if (currentLine.includes(FLASHCARD_CONFIG.tag)) return;
-
-		const tagText = ` ${FLASHCARD_CONFIG.tag}`;
-		const before = text.slice(0, lineEnd);
-		const after = text.slice(lineEnd);
-		ta.value = before + tagText + after;
-		setContent(ta.value);
-
-		const newPos = lineEnd + tagText.length;
-		ta.selectionStart = newPos;
-		ta.selectionEnd = newPos;
-		ta.focus();
-	}, []);
-
 	const handleKeyDown = useCallback(
 		(e: KeyboardEvent) => {
 			const isMod = e.ctrlKey || e.metaKey;
 			const ta = textareaRef.current;
 
-			if (isMod && (e.key === "3" || e.key === "#")) {
-				e.preventDefault();
-				insertFlashcardTag();
-				return;
-			}
 			if (isMod && e.key === "b") {
 				e.preventDefault();
 				if (ta) toggleTextareaWrap(ta, "**", "**");
@@ -363,7 +303,7 @@ export function AddFlashcardsApp({
 				return;
 			}
 		},
-		[insertFlashcardTag, onClose, handleSave],
+		[onClose, handleSave],
 	);
 
 	const handleTextareaInput = useCallback(
@@ -437,33 +377,6 @@ export function AddFlashcardsApp({
 			updateCardCount(prefillContent);
 		}
 	}, [prefillContent, updateCardCount]);
-
-	// Capture Cmd+3 before Obsidian intercepts it at the app level
-	useEffect(() => {
-		const handler = (e: KeyboardEvent) => {
-			if (!e.metaKey || (e.key !== "3" && e.key !== "#")) return;
-
-			e.preventDefault();
-			e.stopPropagation();
-
-			if (useRichEditor && editorRef.current) {
-				const view = editorRef.current.cm;
-				const pos = view.state.selection.main.head;
-				const line = view.state.doc.lineAt(pos);
-				if (line.text.includes(FLASHCARD_CONFIG.tag)) return;
-				const tag = ` ${FLASHCARD_CONFIG.tag}`;
-				view.dispatch({
-					changes: { from: line.to, insert: tag },
-					selection: { anchor: line.to + tag.length },
-				});
-			} else {
-				insertFlashcardTag();
-			}
-		};
-
-		window.addEventListener("keydown", handler, { capture: true });
-		return () => window.removeEventListener("keydown", handler, { capture: true });
-	}, [useRichEditor, insertFlashcardTag]);
 
 	// ── Handle close (resolve with summary in add mode) ──────────────
 	const handleClose = useCallback(() => {
