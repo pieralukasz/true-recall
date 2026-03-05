@@ -10,6 +10,7 @@ export interface TextAreaInputProps {
 	rows?: number;
 	class?: string;
 	disabled?: boolean;
+	onKeyDown?: (event: KeyboardEvent) => void;
 }
 
 export function TextAreaInput({
@@ -19,6 +20,7 @@ export function TextAreaInput({
 	rows = 3,
 	class: cls,
 	disabled,
+	onKeyDown,
 }: TextAreaInputProps) {
 	const handleInput = useCallback(
 		(e: Event) => {
@@ -33,6 +35,7 @@ export function TextAreaInput({
 			placeholder={placeholder}
 			rows={rows}
 			onInput={handleInput}
+			onKeyDown={onKeyDown}
 			disabled={disabled}
 			class={`${BASE_CLS} ${cls ?? ""}`}
 		/>

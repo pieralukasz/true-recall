@@ -6,7 +6,11 @@ import {
 	WaitingScreen,
 } from "@features/study/ui/review/components";
 import type { ReviewApi } from "@shared/store";
-import type { FSRSFlashcardItem } from "@shared/types";
+import type {
+	FSRSFlashcardItem,
+	LocalAnswerAssessment,
+	SemanticGradingResult,
+} from "@shared/types";
 import type { PresetPickerOption } from "@features/study/ui/review/components/PresetPopover";
 import { usePlugin } from "@shared/ui/preact/ObsidianContext";
 import { useEffect, useLayoutEffect, useState } from "preact/hooks";
@@ -20,6 +24,8 @@ export { ReviewEmptyState } from "@features/study/ui/review/components";
 export interface ReviewAppProps {
 	onShowAnswer: () => void;
 	onAnswer: (rating: Grade) => void;
+	onTypedAnswerChange: (value: string) => void;
+	onToggleTypeInAI: () => void;
 	onContentChange: (value: string, field: "question" | "answer") => void;
 	onOpenSourceNote: () => void;
 	onClose: () => void;
@@ -32,6 +38,21 @@ export interface ReviewAppProps {
 	showHeaderStats: boolean;
 	showNextReviewTime: boolean;
 	continuousCustomReviews: boolean;
+	onToggleTypeInMode: () => void;
+	getTypeInState: (
+		card: FSRSFlashcardItem,
+		isAnswerRevealed: boolean,
+	) => {
+		isTypeInModeEnabled: boolean;
+		useTypeInMode: boolean;
+		aiEnabled: boolean;
+		typedAnswer: string;
+		isCheckingAnswer: boolean;
+		isRatingLocked: boolean;
+		localAssessment: LocalAnswerAssessment | null;
+		semanticResult: SemanticGradingResult | null;
+		semanticMessage: string | null;
+	};
 	getPresetName?: (card: FSRSFlashcardItem) => string;
 	getPresetOptions?: () => PresetPickerOption[];
 	onPresetChange?: (presetName: string) => void;
@@ -94,6 +115,8 @@ function ActiveReview({
 	review,
 	onShowAnswer,
 	onAnswer,
+	onTypedAnswerChange,
+	onToggleTypeInAI,
 	onContentChange,
 	onOpenSourceNote,
 	onClose: _onClose,
@@ -102,6 +125,8 @@ function ActiveReview({
 	showHeader,
 	showHeaderStats,
 	showNextReviewTime,
+	onToggleTypeInMode,
+	getTypeInState,
 	getPresetName,
 	getPresetOptions,
 	onPresetChange,
@@ -110,6 +135,7 @@ function ActiveReview({
 	const isAnswerRevealed = !hasAnswer || review.isAnswerRevealed;
 	const presetName = getPresetName?.(card);
 	const presetOptions = getPresetOptions?.();
+	const typeInState = getTypeInState(card, isAnswerRevealed);
 
 	useLayoutEffect(() => {
 		if (!hasAnswer && !review.isAnswerRevealed) {
@@ -135,14 +161,27 @@ function ActiveReview({
 				presetName={presetName}
 				presetOptions={presetOptions}
 				onPresetChange={onPresetChange}
+				useTypeInMode={typeInState.useTypeInMode}
+				aiEnabled={typeInState.aiEnabled}
+				typedAnswer={typeInState.typedAnswer}
+				onTypedAnswerChange={onTypedAnswerChange}
+				onToggleTypeInAI={onToggleTypeInAI}
+				onShowAnswer={onShowAnswer}
+				isCheckingAnswer={typeInState.isCheckingAnswer}
+				localAssessment={typeInState.localAssessment}
+				semanticResult={typeInState.semanticResult}
+				semanticMessage={typeInState.semanticMessage}
 			/>
 
 			<ButtonBar
 				isAnswerRevealed={isAnswerRevealed}
 				preview={review.getSchedulingPreview()}
 				showNextReviewTime={showNextReviewTime}
+				isTypeInModeEnabled={typeInState.isTypeInModeEnabled}
+				isRatingLocked={typeInState.isRatingLocked}
 				onShowAnswer={onShowAnswer}
 				onAnswer={onAnswer}
+				onToggleTypeInMode={onToggleTypeInMode}
 				onActionsMenu={onActionsMenu}
 			/>
 		</div>
