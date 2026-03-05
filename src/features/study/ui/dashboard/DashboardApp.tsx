@@ -17,6 +17,7 @@ import { NoteList } from "./components/NoteList";
 import { ProjectsTab } from "./components/ProjectsTab";
 import { RecentlyStudiedBar } from "./components/RecentlyStudiedBar";
 import { HeatmapWidget } from "../editor/widgets/analytics/HeatmapWidget";
+import { BottomActionBar } from "./components/BottomActionBar";
 import { aggregateDashboardData } from "./helpers/note-aggregation";
 import { useDragAutoScroll } from "./helpers/use-drag-auto-scroll";
 import { useInitialMount } from "./helpers/use-initial-mount";
@@ -282,6 +283,7 @@ export function DashboardApp() {
 					</div>
 				</div>
 			</div>
+			<BottomActionBar />
 		</div>
 	);
 }

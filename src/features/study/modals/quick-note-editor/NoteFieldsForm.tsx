@@ -1,5 +1,6 @@
 import type { EditorView } from "@codemirror/view";
 import type { EmbeddableEditorInstance } from "@shared/ui/editor/embedded-editor";
+import { useIcon } from "@shared/ui/preact/hooks";
 import { useApp, usePlugin } from "@shared/ui/preact/ObsidianContext";
 import type { NoteType } from "@shared/types/note.types";
 import {
@@ -10,43 +11,28 @@ import {
 	useState,
 } from "preact/hooks";
 
-// ── Formatting helpers ────────────────────────────────────────────────────
-
-function toggleMarker(view: EditorView, marker: string) {
-	const { from, to } = view.state.selection.main;
-	const selected = view.state.sliceDoc(from, to);
-	const mLen = marker.length;
-	if (
-		selected.startsWith(marker) &&
-		selected.endsWith(marker) &&
-		selected.length > mLen * 2
-	) {
-		view.dispatch({ changes: { from, to, insert: selected.slice(mLen, -mLen) } });
-	} else {
-		view.dispatch({
-			changes: { from, to, insert: `${marker}${selected}${marker}` },
-			selection: { anchor: from + mLen, head: to + mLen },
-		});
-	}
-	view.focus();
-}
-
 // ── NoteFieldsForm ────────────────────────────────────────────────────────
 
 interface NoteFieldsFormProps {
 	noteType: NoteType;
 	fields: Record<string, string>;
 	onFieldChange: (fieldName: string, value: string) => void;
+	onFieldFocus?: (fieldName: string, editorView: EditorView) => void;
 	onModEnter?: () => void;
 	autoFocusFirst?: boolean;
+	pinnedFields?: Set<string>;
+	onTogglePin?: (fieldName: string) => void;
 }
 
 export function NoteFieldsForm({
 	noteType,
 	fields,
 	onFieldChange,
+	onFieldFocus,
 	onModEnter,
 	autoFocusFirst = true,
+	pinnedFields,
+	onTogglePin,
 }: NoteFieldsFormProps) {
 	return (
 		<div class="ep:divide-y ep:divide-obs-divider ep:border ep:border-obs-border ep:rounded-md ep:overflow-hidden">
@@ -57,7 +43,10 @@ export function NoteFieldsForm({
 					content={fields[fieldName] ?? ""}
 					autoFocus={autoFocusFirst && idx === 0}
 					onFieldChange={onFieldChange}
+					onFieldFocus={onFieldFocus}
 					onModEnter={onModEnter}
+					isPinned={pinnedFields?.has(fieldName) ?? false}
+					onTogglePin={onTogglePin}
 				/>
 			))}
 
@@ -80,7 +69,10 @@ interface CMFieldProps {
 	content: string;
 	autoFocus?: boolean;
 	onFieldChange: (fieldName: string, value: string) => void;
+	onFieldFocus?: (fieldName: string, editorView: EditorView) => void;
 	onModEnter?: () => void;
+	isPinned: boolean;
+	onTogglePin?: (fieldName: string) => void;
 }
 
 function CMField({
@@ -88,13 +80,17 @@ function CMField({
 	content,
 	autoFocus,
 	onFieldChange,
+	onFieldFocus,
 	onModEnter,
+	isPinned,
+	onTogglePin,
 }: CMFieldProps) {
 	const app = useApp();
 	const plugin = usePlugin();
 	const containerRef = useRef<HTMLDivElement>(null);
 	const editorRef = useRef<EmbeddableEditorInstance | null>(null);
 	const [isCollapsed, setIsCollapsed] = useState(false);
+	const pinIconRef = useIcon("pin");
 
 	// Track current content for blur handler without triggering editor recreation
 	const contentRef = useRef(content);
@@ -127,6 +123,12 @@ function CMField({
 		}
 
 		editorRef.current = editor;
+
+		// Report focus to parent for shared toolbar
+		editor.cm.contentDOM.addEventListener("focusin", () => {
+			onFieldFocus?.(fieldName, editor.cm);
+		});
+
 		if (autoFocus) editor.cm.focus();
 
 		return () => {
@@ -143,21 +145,6 @@ function CMField({
 		editor.set(content);
 	}, [content]);
 
-	const fmtBtn = (label: string, marker: string, title: string) => (
-		<div
-			role="button"
-			title={title}
-			class="ep:px-1.5 ep:py-0.5 ep:text-ui-smaller ep:text-obs-muted ep:hover:text-obs-normal ep:hover:bg-obs-tertiary ep:rounded ep:cursor-pointer ep:select-none ep:leading-tight"
-			onMouseDown={(e: MouseEvent) => {
-				e.preventDefault();
-				const editor = editorRef.current;
-				if (editor) toggleMarker(editor.cm, marker);
-			}}
-		>
-			{label}
-		</div>
-	);
-
 	const header = (
 		<div
 			class="ep:flex ep:items-center ep:gap-2 ep:px-3 ep:py-2 ep:bg-obs-secondary ep:cursor-pointer ep:select-none ep:group"
@@ -169,21 +156,26 @@ function CMField({
 			<span class="ep:text-ui-small ep:font-medium ep:text-obs-normal ep:flex-1">
 				{fieldName}
 			</span>
-			{/* Formatting toolbar — stop click from toggling collapse */}
-			<div
-				class="ep:flex ep:items-center ep:gap-0.5"
-				onClick={(e: MouseEvent) => e.stopPropagation()}
-			>
-				{fmtBtn("B", "**", "Bold")}
-				{fmtBtn("I", "*", "Italic")}
-				{fmtBtn("U", "__", "Underline")}
-				{fmtBtn("`", "`", "Inline code")}
-			</div>
+			{onTogglePin && (
+				<div
+					ref={pinIconRef}
+					role="button"
+					title={isPinned ? "Unpin field (content kept on Save & Add)" : "Pin field (keep content on Save & Add)"}
+					class={`ep:w-4 ep:h-4 ep:cursor-pointer ep:transition-colors [&>svg]:ep:w-3.5 [&>svg]:ep:h-3.5 ${
+						isPinned
+							? "ep:text-obs-accent"
+							: "ep:text-obs-faint ep:opacity-50 ep:hover:opacity-100"
+					}`}
+					onClick={(e: MouseEvent) => {
+						e.stopPropagation();
+						onTogglePin(fieldName);
+					}}
+				/>
+			)}
 		</div>
 	);
 
 	// Fallback: render plain textarea until EmbeddableEditor is available
-	// (class is lazy-loaded on onLayoutReady — practically instant, but guard anyway)
 	if (!plugin.EmbeddableEditor) {
 		return (
 			<div>
@@ -207,7 +199,7 @@ function CMField({
 			{!isCollapsed && (
 				<div
 					ref={containerRef}
-					class="true-recall-add-field ep:w-full ep:min-h-[2.25rem] ep:bg-obs-primary ep:overflow-hidden"
+					class="true-recall-add-field ep:w-full ep:min-h-[1.6em] ep:bg-obs-primary ep:overflow-hidden ep:px-3 ep:py-2"
 				/>
 			)}
 		</div>
