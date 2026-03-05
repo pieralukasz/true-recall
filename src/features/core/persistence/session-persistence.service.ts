@@ -11,6 +11,11 @@ import { Rating, State } from "ts-fsrs";
 const STATS_FOLDER = ".true-recall";
 const STATS_FILE = "stats.json";
 
+export interface PresetDailyProgress {
+	newStudied: number;
+	reviewsCompleted: number;
+}
+
 export class SessionPersistenceService {
 	private app: App;
 	private store: SqliteStoreService;
@@ -126,6 +131,24 @@ export class SessionPersistenceService {
 		const today = this.getTodayKey();
 		const stats = this.store.stats.getDailyStats(today);
 		return stats?.reviewCards ?? 0;
+	}
+
+	getTodayProgressByPreset(): Map<string, PresetDailyProgress> {
+		const start = this.dayBoundaryService.getTodayBoundary();
+		const end = this.dayBoundaryService.getTomorrowBoundary();
+		const rows = this.store.stats.getPresetProgressInRange(
+			start.toISOString(),
+			end.toISOString(),
+		);
+
+		const progress = new Map<string, PresetDailyProgress>();
+		for (const row of rows) {
+			progress.set(row.presetName, {
+				newStudied: row.newStudied,
+				reviewsCompleted: row.reviewsCompleted,
+			});
+		}
+		return progress;
 	}
 
 	/**

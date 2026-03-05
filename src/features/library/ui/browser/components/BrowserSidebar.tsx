@@ -13,6 +13,8 @@ interface BrowserSidebarProps {
 	};
 	activeFilter: FilterState;
 	onFilterChange: (partial: Partial<FilterState>) => void;
+	orphanedCount: number;
+	onRemoveOrphanedCards: () => void;
 }
 
 const STATE_ITEMS: {
@@ -57,6 +59,8 @@ export function BrowserSidebar({
 	facetCounts,
 	activeFilter,
 	onFilterChange,
+	orphanedCount,
+	onRemoveOrphanedCards,
 }: BrowserSidebarProps) {
 	return (
 		<div class="ep:w-[200px] ep:shrink-0 ep:border-r ep:border-obs-border ep:overflow-y-auto ep:text-sm">
@@ -94,6 +98,8 @@ export function BrowserSidebar({
 				sourceNotes={facetCounts.sourceNotes}
 				activeFilter={activeFilter}
 				onFilterChange={onFilterChange}
+				orphanedCount={orphanedCount}
+				onRemoveOrphanedCards={onRemoveOrphanedCards}
 			/>
 
 			<SidebarSection title="Card Type">
@@ -145,16 +151,6 @@ export function BrowserSidebar({
 				})}
 			</SidebarSection>
 
-			{/* Show archived toggle */}
-			<div class="ep:border-b ep:border-obs-border/50">
-				<SidebarRow
-					label="Show archived"
-					count={0}
-					active={!!activeFilter.showArchived}
-					onClick={() => onFilterChange({ showArchived: !activeFilter.showArchived })}
-				/>
-			</div>
-
 			{/* Clear all sidebar filters */}
 			{hasAnyFilter(activeFilter) && (
 				<div class="ep:px-3 ep:py-2 ep:border-t ep:border-obs-border">
@@ -192,10 +188,14 @@ function SourceNotesSection({
 	sourceNotes,
 	activeFilter,
 	onFilterChange,
+	orphanedCount,
+	onRemoveOrphanedCards,
 }: {
 	sourceNotes: { uid: string; name: string; count: number }[];
 	activeFilter: FilterState;
 	onFilterChange: (partial: Partial<FilterState>) => void;
+	orphanedCount: number;
+	onRemoveOrphanedCards: () => void;
 }) {
 	const open = useSignal(true);
 	const searchQuery = useSignal("");
@@ -256,6 +256,17 @@ function SourceNotesSection({
 							class="ep:w-full ep:px-2 ep:py-1 ep:text-[11px] ep:bg-obs-input ep:border ep:border-obs-border ep:rounded ep:text-obs-normal placeholder:ep:text-obs-faint focus:ep:outline-none focus:ep:border-obs-interactive"
 						/>
 					</div>
+
+					{orphanedCount > 0 && (
+						<div class="ep:px-2 ep:pb-1.5">
+							<Clickable
+								class="ep:w-full ep:px-2 ep:py-1 ep:text-[11px] ep:rounded ep:border ep:border-obs-error/30 ep:text-obs-error hover:ep:bg-obs-error/10"
+								onClick={onRemoveOrphanedCards}
+							>
+								Remove orphaned cards ({orphanedCount})
+							</Clickable>
+						</div>
+					)}
 
 					{/* Notes list */}
 					{visibleNotes.length === 0 ? (

@@ -1,7 +1,9 @@
-import type { SessionPersistenceService } from "@features/core/persistence/session-persistence.service";
-import type { FSRSService } from "@features/core/services/fsrs.service";
-import type { HierarchyService } from "@features/core/services/hierarchy.service";
+import type {
+	PresetDailyProgress,
+	SessionPersistenceService,
+} from "@features/core/persistence/session-persistence.service";
 import type { PresetService } from "@features/core/services/preset.service";
+import { computeActionableSessionSnapshot } from "@features/study/services/actionable-session-snapshot.service";
 import type { FlashcardManager } from "@features/study/services/flashcard/flashcard.service";
 import { effect } from "@preact/signals";
 import {
@@ -9,18 +11,92 @@ import {
 	archivedSourceUids,
 	pluginSettings,
 } from "@shared/services/reactive-card-store";
-import type { CardStore } from "@shared/types/fsrs/store.types";
+import type { FSRSFlashcardItem } from "@shared/types/fsrs";
+import type { FSRSPreset } from "@shared/types/settings.types";
 import { FSRS_COLORS } from "@shared/ui/helpers/fsrs-colors";
-import { computeProjectStats } from "./project-stats";
 
 const DOT = ' <span style="opacity:0.3; margin: 0 2px">·</span> ';
 
 interface StatusBarServices {
 	presetService: PresetService;
 	sessionPersistence: SessionPersistenceService;
-	hierarchyService: HierarchyService;
-	cardStore: CardStore;
-	fsrsService: FSRSService;
+}
+
+interface BucketStats {
+	preset: FSRSPreset;
+	newRaw: number;
+	learning: number;
+	dueRaw: number;
+}
+
+interface CardWithPreset {
+	card: FSRSFlashcardItem;
+	preset: FSRSPreset;
+}
+
+export function aggregateCardsWithPresetLimits(
+	cards: CardWithPreset[],
+	archived: ReadonlySet<string>,
+	progressByPreset: Map<string, PresetDailyProgress>,
+	now: Date = new Date(),
+): { dueToday: number; newCount: number; learning: number } {
+	const buckets = new Map<string, BucketStats>();
+	const seenCardIds = new Set<string>();
+
+	for (const { card, preset } of cards) {
+		if (seenCardIds.has(card.id)) continue;
+		seenCardIds.add(card.id);
+		if (!card.sourceNotePath) continue; // Keep StatusBar aligned with dashboard notes list
+		if (archived.has(card.sourceUid ?? "")) continue;
+		const fsrs = card.fsrs;
+		if (fsrs.suspended || (fsrs.buriedUntil && new Date(fsrs.buriedUntil) > now)) {
+			continue;
+		}
+
+		let bucket = buckets.get(preset.id);
+		if (!bucket) {
+			bucket = { preset, newRaw: 0, learning: 0, dueRaw: 0 };
+			buckets.set(preset.id, bucket);
+		}
+
+		switch (fsrs.state) {
+			case 0:
+				bucket.newRaw++;
+				break;
+			case 1:
+			case 3:
+				bucket.learning++;
+				break;
+			case 2:
+				if (new Date(fsrs.due) <= now) bucket.dueRaw++;
+				break;
+		}
+	}
+
+	let totalNew = 0;
+	let totalLearning = 0;
+	let totalDue = 0;
+
+	for (const bucket of buckets.values()) {
+		const progress = progressByPreset.get(bucket.preset.name) ?? {
+			newStudied: 0,
+			reviewsCompleted: 0,
+		};
+		const remainingNew = Math.max(
+			0,
+			bucket.preset.newCardsPerDay - progress.newStudied,
+		);
+		const remainingReviews = Math.max(
+			0,
+			bucket.preset.reviewsPerDay - progress.reviewsCompleted,
+		);
+
+		totalNew += Math.min(bucket.newRaw, remainingNew);
+		totalDue += Math.min(bucket.dueRaw, remainingReviews);
+		totalLearning += bucket.learning;
+	}
+
+	return { dueToday: totalDue, newCount: totalNew, learning: totalLearning };
 }
 
 export class StatusBarWidget {
@@ -87,72 +163,24 @@ export class StatusBarWidget {
 	} {
 		if (!this.services) return this.aggregateRaw();
 
-		const { presetService, sessionPersistence, hierarchyService, cardStore, fsrsService } =
-			this.services;
-
-		const newStudied = sessionPersistence.getNewCardsStudiedToday();
-		const reviewsCompleted = sessionPersistence.getReviewCardsCompletedToday();
-
-		let totalNew = 0;
-		let totalLearning = 0;
-		let totalDue = 0;
-
-		// Collect all project source UIDs to identify unassigned cards later
-		const projectSourceUids = new Set<string>();
-
-		// Per-project aggregation — mirrors dashboard's project-aggregation.ts
-		// Only root projects: computeProjectStats already includes descendants
-		const hierarchy = hierarchyService.buildHierarchy();
-		for (const node of hierarchy) {
-			if (hierarchyService.isProjectArchived(node.path)) continue;
-
-			const uids = hierarchyService.getSourceUidsForProject(node.path);
-			for (const uid of uids) projectSourceUids.add(uid);
-
-			const stats = computeProjectStats(
-				node.path,
-				node.name,
-				node.children.length,
-				hierarchyService,
-				cardStore,
-				fsrsService,
-			);
-
-			const preset = presetService.resolvePresetChain(node.path).effective.preset;
-			totalNew += Math.min(stats.newCount, Math.max(0, preset.newCardsPerDay - newStudied));
-			totalLearning += stats.learning;
-			totalDue += Math.min(stats.due, Math.max(0, preset.reviewsPerDay - reviewsCompleted));
-		}
-
-		// Unassigned cards (not in any project) — count from allCardsArray, cap with default preset
-		const allCards = allCardsArray.value;
+		const { presetService, sessionPersistence } = this.services;
 		const archived = archivedSourceUids.value;
-		const now = new Date();
-		let unNew = 0;
-		let unLearning = 0;
-		let unDue = 0;
+		const snapshot = computeActionableSessionSnapshot(
+			{
+				allCards: allCardsArray.value,
+				archivedSourceUids: archived,
+				settings: pluginSettings.value,
+				sessionPersistence,
+				presetService,
+			},
+			{},
+		);
 
-		for (const card of allCards) {
-			if (projectSourceUids.has(card.sourceUid ?? "")) continue;
-			if (archived.has(card.sourceUid ?? "")) continue;
-			const fsrs = card.fsrs;
-			if (fsrs.suspended || (fsrs.buriedUntil && new Date(fsrs.buriedUntil) > now)) continue;
-
-			switch (fsrs.state) {
-				case 0: unNew++; break;
-				case 1: case 3: unLearning++; break;
-				case 2: if (new Date(fsrs.due) <= now) unDue++; break;
-			}
-		}
-
-		if (unNew > 0 || unLearning > 0 || unDue > 0) {
-			const defaultPreset = presetService.getDefaultPreset();
-			totalNew += Math.min(unNew, Math.max(0, defaultPreset.newCardsPerDay - newStudied));
-			totalLearning += unLearning;
-			totalDue += Math.min(unDue, Math.max(0, defaultPreset.reviewsPerDay - reviewsCompleted));
-		}
-
-		return { dueToday: totalDue, newCount: totalNew, learning: totalLearning };
+		return {
+			dueToday: snapshot.counts.due,
+			newCount: snapshot.counts.new,
+			learning: snapshot.counts.learning,
+		};
 	}
 
 	/** Fallback when services not available */
@@ -165,6 +193,7 @@ export class StatusBarWidget {
 		let learning = 0;
 
 		for (const card of allCards) {
+			if (!card.sourceNotePath) continue;
 			if (archived.has(card.sourceUid ?? "")) continue;
 			const fsrs = card.fsrs;
 			if (fsrs.suspended || (fsrs.buriedUntil && new Date(fsrs.buriedUntil) > now)) continue;
