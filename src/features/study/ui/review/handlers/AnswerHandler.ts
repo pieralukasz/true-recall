@@ -4,11 +4,18 @@ import type { FlashcardManager } from "@features/study/services/flashcard/flashc
 import type { ReviewService } from "@features/study/services/review.service";
 import { shouldTriggerLeech } from "@features/study/ui/review/helpers/leech-helpers";
 import type { SessionFilters } from "@features/study/ui/review/review.types";
+import { assessTypedAnswer } from "@features/study/ui/review/helpers/answer-assessment";
+import type { SemanticAnswerGradingService } from "@features/ai/services/semantic-answer-grading.service";
 import { notify } from "@shared/services/notification.service";
 import { notifyCardChange } from "@shared/services/signals";
 import type { AnswerUndoPayload } from "@shared/services/undo.types";
 import type { ReviewApi } from "@shared/store";
-import type { FSRSFlashcardItem, FSRSPreset } from "@shared/types";
+import type {
+	FSRSFlashcardItem,
+	FSRSPreset,
+	LocalAnswerAssessment,
+	SemanticGradingResult,
+} from "@shared/types";
 import { type Grade, Rating, State } from "ts-fsrs";
 import type TrueRecallPlugin from "../../../../../main";
 
@@ -22,6 +29,7 @@ export interface AnswerHandlerDeps {
 	getFilters: () => SessionFilters;
 	getCrammedCardIds: () => Set<string>;
 	getPresetCache: () => Map<string, FSRSPreset>;
+	semanticGradingService: SemanticAnswerGradingService;
 }
 
 export class AnswerHandler {
@@ -56,6 +64,48 @@ export class AnswerHandler {
 		if (!this.deps.getReview().getSchedulingPreview()) {
 			this.updateSchedulingPreview();
 		}
+	}
+
+	prepareTypedAnswerAssessment(
+		typedAnswer: string,
+	): {
+		card: FSRSFlashcardItem;
+		localAssessment: LocalAnswerAssessment;
+	} | null {
+		const card = this.deps.getReview().getCurrentCard();
+		if (!card) return null;
+
+		this.handleShowAnswer();
+
+		const localAssessment = assessTypedAnswer(card.answer ?? "", typedAnswer);
+		return { card, localAssessment };
+	}
+
+	async gradeTypedAnswerSemantically(
+		card: FSRSFlashcardItem,
+		typedAnswer: string,
+		localFallbackScore: number,
+		passThreshold: number,
+		options?: {
+			allowLocalFallback?: boolean;
+		},
+	): Promise<SemanticGradingResult | null> {
+		const result = await this.deps.semanticGradingService.gradeAnswer({
+			question: card.question,
+			correctAnswer: card.answer ?? "",
+			userAnswer: typedAnswer,
+			passThreshold,
+			localFallbackScore,
+		});
+
+		if (
+			options?.allowLocalFallback === false &&
+			result.source === "local-fallback"
+		) {
+			throw new Error("AI grading unavailable. Please rate manually.");
+		}
+
+		return result;
 	}
 
 	async handleAnswer(rating: Grade): Promise<void> {

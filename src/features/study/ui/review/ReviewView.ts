@@ -1,5 +1,6 @@
 import type { SessionPersistenceService } from "@features/core/persistence/session-persistence.service";
 import { FSRSService } from "@features/core/services/fsrs.service";
+import { SemanticAnswerGradingService } from "@features/ai/services/semantic-answer-grading.service";
 import type { FlashcardManager } from "@features/study/services/flashcard/flashcard.service";
 import { ReviewService } from "@features/study/services/review.service";
 import {
@@ -13,6 +14,12 @@ import {
 	buildQueueOptions,
 	filterActiveCards,
 	getEmptyQueueMessage,
+	getTypeInModeStorage,
+	isRatingLockedForTypeIn,
+	persistTypeInMode,
+	readPersistedTypeInMode,
+	isTypeInRequiredForCard,
+	shouldRunAIGradingOnReveal,
 } from "@features/study/ui/review/helpers";
 import {
 	ReviewApp,
@@ -29,7 +36,13 @@ import { VIEW_TYPE_REVIEW } from "@shared/constants";
 import { notify } from "@shared/services/notification.service";
 import { lastMutation } from "@shared/services/signals";
 import type { ReviewApi } from "@shared/store";
-import { extractFSRSSettings, type FSRSFlashcardItem, type FSRSPreset } from "@shared/types";
+import {
+	extractFSRSSettings,
+	type FSRSFlashcardItem,
+	type FSRSPreset,
+	type LocalAnswerAssessment,
+	type SemanticGradingResult,
+} from "@shared/types";
 import type { PresetPickerOption } from "@features/study/ui/review/components/PresetPopover";
 import { mountPreact } from "@shared/ui/preact";
 import {
@@ -43,12 +56,35 @@ import { h } from "preact";
 import type { Grade } from "ts-fsrs";
 import type TrueRecallPlugin from "../../../../main";
 
+interface TypeInAssessmentState {
+	cardId: string | null;
+	typedAnswer: string;
+	localAssessment: LocalAnswerAssessment | null;
+	semanticResult: SemanticGradingResult | null;
+	semanticMessage: string | null;
+	isChecking: boolean;
+}
+
+function createEmptyTypeInState(cardId: string | null = null): TypeInAssessmentState {
+	return {
+		cardId,
+		typedAnswer: "",
+		localAssessment: null,
+		semanticResult: null,
+		semanticMessage: null,
+		isChecking: false,
+	};
+}
+
+const SEMANTIC_PASS_THRESHOLD = 85;
+
 export class ReviewView extends ItemView {
 	private plugin: TrueRecallPlugin;
 	private fsrsService: FSRSService;
 	private reviewService: ReviewService;
 	private flashcardManager: FlashcardManager;
 	private sessionPersistence: SessionPersistenceService;
+	private semanticGradingService: SemanticAnswerGradingService;
 
 	private filters: SessionFilters = {};
 	private crammedCardIds = new Set<string>();
@@ -62,6 +98,9 @@ export class ReviewView extends ItemView {
 	private openNoteAction: HTMLElement | null = null;
 	private unsubscribe: (() => void) | null = null;
 	private sessionSignalDisposer: (() => void) | null = null;
+	private typeInState: TypeInAssessmentState = createEmptyTypeInState();
+	private sessionTypeInModeEnabled = false;
+	private aiEnabledForTypeIn = false;
 
 	private get review(): ReviewApi {
 		const store = this.plugin.store;
@@ -75,6 +114,10 @@ export class ReviewView extends ItemView {
 		this.flashcardManager = plugin.flashcardManager;
 		this.reviewService = new ReviewService();
 		this.sessionPersistence = plugin.sessionPersistence;
+		this.semanticGradingService = new SemanticAnswerGradingService(
+			() => this.plugin.settings,
+		);
+		this.sessionTypeInModeEnabled = this.readTypeInModePreference();
 
 		const fsrsSettings = extractFSRSSettings(plugin.settings);
 		this.fsrsService = new FSRSService(fsrsSettings);
@@ -96,6 +139,7 @@ export class ReviewView extends ItemView {
 			getFilters: () => this.filters,
 			getCrammedCardIds: () => this.crammedCardIds,
 			getPresetCache: () => this.presetCache,
+			semanticGradingService: this.semanticGradingService,
 		});
 
 		this.cardActionsHandler = new CardActionsHandler(
@@ -116,8 +160,8 @@ export class ReviewView extends ItemView {
 		);
 
 		this.keyboardHandler = new KeyboardHandler(() => this.review, {
-			onShowAnswer: () => this.answerHandler.handleShowAnswer(),
-			onAnswer: (rating) => this.answerHandler.handleAnswer(rating as Grade),
+			onShowAnswer: () => void this.handleReveal(),
+			onAnswer: (rating) => this.handleAnswer(rating as Grade),
 			onUndo: async () => {
 				await this.cardActionsHandler.handleUndo();
 			},
@@ -127,7 +171,193 @@ export class ReviewView extends ItemView {
 			onMoveCard: () => this.cardActionsHandler.handleMoveCard(),
 			onAddCard: () => this.cardActionsHandler.handleAddNewFlashcard(),
 			onEditCard: () => this.cardActionsHandler.handleEditCardModal(),
+			onToggleTypeInMode: () => this.toggleTypeInMode(),
+			canRateShortcuts: () => !this.isRatingLocked(),
 		});
+	}
+
+	private getCurrentTypeInState(cardId: string): TypeInAssessmentState {
+		if (this.typeInState.cardId !== cardId) {
+			return createEmptyTypeInState(cardId);
+		}
+		return this.typeInState;
+	}
+
+	private setTypeInState(
+		cardId: string,
+		patch: Partial<TypeInAssessmentState>,
+	): void {
+		const current = this.getCurrentTypeInState(cardId);
+		this.typeInState = {
+			...current,
+			...patch,
+			cardId,
+		};
+		this.review.notifyChange();
+	}
+
+	private resetTypeInState(cardId: string | null = null): void {
+		this.typeInState = createEmptyTypeInState(cardId);
+	}
+
+	private readTypeInModePreference(): boolean {
+		return readPersistedTypeInMode(getTypeInModeStorage());
+	}
+
+	private writeTypeInModePreference(): void {
+		persistTypeInMode(
+			getTypeInModeStorage(),
+			this.sessionTypeInModeEnabled,
+		);
+	}
+
+	private toggleTypeInMode(): void {
+		this.sessionTypeInModeEnabled = !this.sessionTypeInModeEnabled;
+		this.writeTypeInModePreference();
+		const currentCard = this.review.getCurrentCard();
+		const currentId = currentCard?.id ?? null;
+		this.resetTypeInState(currentId);
+		this.review.notifyChange();
+		notify().info(
+			this.sessionTypeInModeEnabled
+				? "Type-in mode enabled"
+				: "Type-in mode disabled",
+		);
+	}
+
+	private toggleTypeInAIEnabled(): void {
+		this.aiEnabledForTypeIn = !this.aiEnabledForTypeIn;
+		const card = this.review.getCurrentCard();
+		if (!card) {
+			this.review.notifyChange();
+			return;
+		}
+
+		this.setTypeInState(card.id, {
+			localAssessment: null,
+			semanticResult: null,
+			semanticMessage: null,
+			isChecking: false,
+		});
+	}
+
+	private isTypeInRequiredForCurrentCard(): boolean {
+		return isTypeInRequiredForCard(
+			this.review.getCurrentCard(),
+			this.sessionTypeInModeEnabled,
+		);
+	}
+
+	private isRatingLocked(): boolean {
+		const card = this.review.getCurrentCard();
+		if (!card) return false;
+		const state = this.getCurrentTypeInState(card.id);
+		return isRatingLockedForTypeIn({
+			requiresTypeIn: this.isTypeInRequiredForCurrentCard(),
+			isAnswerRevealed: this.review.isAnswerRevealed,
+			isChecking: state.isChecking,
+		});
+	}
+
+	private handleTypedAnswerChange(value: string): void {
+		const card = this.review.getCurrentCard();
+		if (!card || !this.isTypeInRequiredForCurrentCard()) return;
+
+		this.setTypeInState(card.id, {
+			typedAnswer: value,
+			localAssessment: null,
+			semanticResult: null,
+			semanticMessage: null,
+			isChecking: false,
+		});
+	}
+
+	private async handleReveal(): Promise<void> {
+		const card = this.review.getCurrentCard();
+		if (!card) return;
+		const requiresTypeIn = this.isTypeInRequiredForCurrentCard();
+		if (!requiresTypeIn) {
+			this.answerHandler.handleShowAnswer();
+			return;
+		}
+
+		const state = this.getCurrentTypeInState(card.id);
+		const typedAnswer = state.typedAnswer.trim();
+		const shouldRunAI = shouldRunAIGradingOnReveal({
+			requiresTypeIn,
+			aiEnabled: this.aiEnabledForTypeIn,
+			typedAnswer: state.typedAnswer,
+			isChecking: state.isChecking,
+		});
+
+		// Type-in with AI disabled: local diff-only comparison.
+		if (!this.aiEnabledForTypeIn) {
+			const prepared = this.answerHandler.prepareTypedAnswerAssessment(
+				state.typedAnswer,
+			);
+			if (!prepared) return;
+
+			this.setTypeInState(card.id, {
+				localAssessment: prepared.localAssessment,
+				semanticResult: null,
+				semanticMessage: null,
+				isChecking: false,
+			});
+			return;
+		}
+
+		// AI mode enabled with empty input: plain reveal, no grading.
+		if (!shouldRunAI) {
+			this.answerHandler.handleShowAnswer();
+			this.setTypeInState(card.id, {
+				localAssessment: null,
+				semanticResult: null,
+				semanticMessage: null,
+				isChecking: false,
+			});
+			return;
+		}
+
+		this.answerHandler.handleShowAnswer();
+		this.setTypeInState(card.id, {
+			isChecking: true,
+			localAssessment: null,
+			semanticResult: null,
+			semanticMessage: null,
+		});
+
+		let semanticResult: SemanticGradingResult | null = null;
+		let semanticMessage: string | null = null;
+		try {
+			semanticResult = await this.answerHandler.gradeTypedAnswerSemantically(
+				card,
+				typedAnswer,
+				0,
+				SEMANTIC_PASS_THRESHOLD,
+				{ allowLocalFallback: false },
+			);
+		} catch (error) {
+			semanticMessage =
+				error instanceof Error
+					? error.message
+					: "AI grading unavailable. Please rate manually.";
+		}
+
+		const activeCard = this.review.getCurrentCard();
+		if (!activeCard || activeCard.id !== card.id) return;
+
+		this.setTypeInState(card.id, {
+			isChecking: false,
+			semanticResult,
+			semanticMessage,
+		});
+	}
+
+	private async handleAnswer(rating: Grade): Promise<void> {
+		if (this.isRatingLocked()) return;
+		await this.answerHandler.handleAnswer(rating);
+		const nextCardId = this.review.getCurrentCard()?.id ?? null;
+		this.resetTypeInState(nextCardId);
 	}
 
 	// ─── Obsidian lifecycle ──────────────────────────────────────────────
@@ -137,6 +367,9 @@ export class ReviewView extends ItemView {
 			(state as import("./review.types").ReviewViewState) ?? null,
 		);
 		this.crammedCardIds.clear();
+		this.sessionTypeInModeEnabled = this.readTypeInModePreference();
+		this.aiEnabledForTypeIn = false;
+		this.resetTypeInState();
 
 		await super.setState(state, result);
 		await this.startSession();
@@ -166,6 +399,7 @@ export class ReviewView extends ItemView {
 		const container = this.containerEl.children[1];
 		if (!(container instanceof HTMLElement)) return;
 		container.empty();
+		this.sessionTypeInModeEnabled = this.readTypeInModePreference();
 
 		if (!this.plugin.store) return;
 		this.unsubscribe = this.plugin.store.subscribe(
@@ -196,9 +430,11 @@ export class ReviewView extends ItemView {
 			container,
 			this.plugin,
 			h(ReviewApp, {
-				onShowAnswer: () => this.answerHandler.handleShowAnswer(),
-				onAnswer: (rating: Grade) =>
-					void this.answerHandler.handleAnswer(rating),
+				onShowAnswer: () => void this.handleReveal(),
+				onTypedAnswerChange: (value: string) =>
+					this.handleTypedAnswerChange(value),
+				onToggleTypeInAI: () => this.toggleTypeInAIEnabled(),
+				onAnswer: (rating: Grade) => void this.handleAnswer(rating),
 				onContentChange: (value: string, field: "question" | "answer") =>
 					void this.editHandler.saveContent(value, field),
 				onOpenSourceNote: () => this.handleOpenSourceNote(),
@@ -214,6 +450,29 @@ export class ReviewView extends ItemView {
 				showHeaderStats: this.plugin.settings.showReviewHeaderStats,
 				showNextReviewTime: this.plugin.settings.showNextReviewTime,
 				continuousCustomReviews: this.plugin.settings.continuousCustomReviews,
+				onToggleTypeInMode: () => this.toggleTypeInMode(),
+				getTypeInState: (card, isAnswerRevealed) => {
+					const requiresTypeIn = isTypeInRequiredForCard(
+						card,
+						this.sessionTypeInModeEnabled,
+					);
+					const state = this.getCurrentTypeInState(card.id);
+					return {
+						isTypeInModeEnabled: this.sessionTypeInModeEnabled,
+						useTypeInMode: requiresTypeIn,
+						aiEnabled: this.aiEnabledForTypeIn,
+						typedAnswer: state.typedAnswer,
+						isCheckingAnswer: state.isChecking,
+						isRatingLocked: isRatingLockedForTypeIn({
+							requiresTypeIn,
+							isAnswerRevealed,
+							isChecking: state.isChecking,
+						}),
+						localAssessment: state.localAssessment,
+						semanticResult: state.semanticResult,
+						semanticMessage: state.semanticMessage,
+					};
+				},
 				getPresetName: (card: FSRSFlashcardItem) =>
 					this.answerHandler.resolvePreset(card).name,
 				getPresetOptions: () => this.getPresetOptions(),
@@ -253,6 +512,8 @@ export class ReviewView extends ItemView {
 		}
 
 		this.review.reset();
+		this.aiEnabledForTypeIn = false;
+		this.resetTypeInState();
 	}
 
 	// ─── Header actions (Obsidian native) ────────────────────────────────
@@ -345,6 +606,8 @@ export class ReviewView extends ItemView {
 		if (!(container instanceof HTMLElement)) return;
 
 		try {
+			this.sessionTypeInModeEnabled = this.readTypeInModePreference();
+			this.aiEnabledForTypeIn = false;
 			const fsrsSettings = extractFSRSSettings(this.plugin.settings);
 			this.fsrsService.updateSettings(fsrsSettings);
 
@@ -432,6 +695,7 @@ export class ReviewView extends ItemView {
 			}
 
 			this.review.startSession(queue);
+			this.resetTypeInState(this.review.getCurrentCard()?.id ?? null);
 			this.subscribeToSessionEvents();
 			this.answerHandler.updateSchedulingPreview();
 
@@ -472,6 +736,16 @@ export class ReviewView extends ItemView {
 
 	private showActionsMenu(event: MouseEvent): void {
 		const menu = new Menu();
+
+		menu.addItem((item) =>
+			item
+				.setTitle(
+					`${this.sessionTypeInModeEnabled ? "Disable" : "Enable"} type-in mode (t)`,
+				)
+				.setIcon("text-cursor-input")
+				.onClick(() => this.toggleTypeInMode()),
+		);
+		menu.addSeparator();
 
 		if (this.cardActionsHandler.canUndo()) {
 			menu.addItem((item) =>

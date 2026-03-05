@@ -350,12 +350,12 @@
 	   ADD FLASHCARD FIELD EDITOR — comfortable editing font
 	   ================================================================ */
 	.true-recall-add-field .cm-editor {
-		font-size: 1.15rem;
+		font-size: 1.18rem;
 		line-height: 1.6;
 	}
 
 	.true-recall-add-field .cm-content {
-		padding: 6px 8px;
+		padding: 6px 9px;
 		min-height: 1.6em;
 	}
 }

@@ -17,6 +17,8 @@ export type {
 } from "@shared/types/flashcard.types";
 export type {
 	CardMaturityBreakdown,
+	AnswerDiffToken,
+	AnswerDiffTokenType,
 	CardReviewLogEntry,
 	CardStore,
 	CardsCreatedEntry,
@@ -33,6 +35,7 @@ export type {
 	Grade,
 	HealthBucket,
 	HistoryValidationResult,
+	LocalAnswerAssessment,
 	NotePerformanceRow,
 	OptimizationOptions,
 	OptimizationResult,
@@ -45,6 +48,7 @@ export type {
 	ReviewSessionState,
 	ReviewSessionStats,
 	ReviewViewMode,
+	SemanticGradingResult,
 	SchedulingPreview,
 	StatsTimeRange,
 	StreakInfo,

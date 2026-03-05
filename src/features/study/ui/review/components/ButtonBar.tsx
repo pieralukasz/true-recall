@@ -9,8 +9,11 @@ export interface ButtonBarProps {
 	isAnswerRevealed: boolean;
 	preview: SchedulingPreview | null;
 	showNextReviewTime: boolean;
+	isTypeInModeEnabled: boolean;
+	isRatingLocked: boolean;
 	onShowAnswer: () => void;
 	onAnswer: (rating: Grade) => void;
+	onToggleTypeInMode: () => void;
 	onActionsMenu: (e: MouseEvent) => void;
 }
 
@@ -18,8 +21,11 @@ export function ButtonBar({
 	isAnswerRevealed,
 	preview,
 	showNextReviewTime,
+	isTypeInModeEnabled,
+	isRatingLocked,
 	onShowAnswer,
 	onAnswer,
+	onToggleTypeInMode,
 	onActionsMenu,
 }: ButtonBarProps) {
 	const menuIconRef = useIcon("more-vertical");
@@ -44,6 +50,7 @@ export function ButtonBar({
 								interval={preview?.again.interval}
 								showInterval={showNextReviewTime}
 								onAnswer={onAnswer}
+								disabled={isRatingLocked}
 							/>
 							<RatingButton
 								label="Hard"
@@ -51,6 +58,7 @@ export function ButtonBar({
 								interval={preview?.hard.interval}
 								showInterval={showNextReviewTime}
 								onAnswer={onAnswer}
+								disabled={isRatingLocked}
 							/>
 							<RatingButton
 								label="Good"
@@ -58,6 +66,7 @@ export function ButtonBar({
 								interval={preview?.good.interval}
 								showInterval={showNextReviewTime}
 								onAnswer={onAnswer}
+								disabled={isRatingLocked}
 							/>
 							<RatingButton
 								label="Easy"
@@ -65,18 +74,34 @@ export function ButtonBar({
 								interval={preview?.easy.interval}
 								showInterval={showNextReviewTime}
 								onAnswer={onAnswer}
+								disabled={isRatingLocked}
 							/>
 						</>
 					)}
 				</div>
 
-				<Clickable
-					class="ep:flex ep:items-center ep:justify-center ep:w-10 ep:h-10 ep:p-0 ep:rounded-lg ep:bg-obs-modifier-hover ep:text-obs-muted ep:transition-colors ep:absolute ep:right-0 ep:hover:bg-obs-border ep:hover:text-obs-normal ep:active:scale-95"
-					aria-label="Card actions"
-					onClick={onActionsMenu}
-				>
-					<div ref={menuIconRef} />
-				</Clickable>
+				<div class="ep:flex ep:items-center ep:gap-2 ep:absolute ep:right-0">
+					<Clickable
+						class={
+							isTypeInModeEnabled
+								? "ep:px-2 ep:py-1 ep:rounded-md ep:text-ui-smaller ep:font-medium ep:bg-obs-accent/20 ep:text-obs-accent"
+								: "ep:px-2 ep:py-1 ep:rounded-md ep:text-ui-smaller ep:text-obs-muted ep:bg-obs-modifier-hover ep:hover:bg-obs-border ep:hover:text-obs-normal"
+						}
+						aria-label="Toggle type-in mode"
+						title="Toggle type-in mode (T)"
+						onClick={onToggleTypeInMode}
+					>
+						Type-in
+					</Clickable>
+
+					<Clickable
+						class="ep:flex ep:items-center ep:justify-center ep:w-10 ep:h-10 ep:p-0 ep:rounded-lg ep:bg-obs-modifier-hover ep:text-obs-muted ep:transition-colors ep:hover:bg-obs-border ep:hover:text-obs-normal ep:active:scale-95"
+						aria-label="Card actions"
+						onClick={onActionsMenu}
+					>
+						<div ref={menuIconRef} />
+					</Clickable>
+				</div>
 			</div>
 		</div>
 	);

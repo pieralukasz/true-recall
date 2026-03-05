@@ -87,3 +87,22 @@ export interface ReviewSessionState {
 	/** Session statistics */
 	stats: ReviewSessionStats;
 }
+
+export type AnswerDiffTokenType = "match" | "missing" | "extra";
+
+export interface AnswerDiffToken {
+	text: string;
+	type: AnswerDiffTokenType;
+}
+
+export interface LocalAnswerAssessment {
+	score: number;
+	diff: AnswerDiffToken[];
+}
+
+export interface SemanticGradingResult {
+	score: number;
+	feedback: string;
+	passed: boolean;
+	source: "ai" | "local-fallback";
+}
