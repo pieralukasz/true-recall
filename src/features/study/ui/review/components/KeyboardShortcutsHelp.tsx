@@ -42,13 +42,13 @@ export function KeyboardShortcutsHelp() {
 			</Clickable>
 
 			{isOpen && (
-				<div class="ep:absolute ep:bottom-full ep:right-0 ep:mb-2 ep:z-50 ep:bg-obs-primary ep:border ep:border-obs-border ep:rounded-md ep:shadow-lg ep:py-2 ep:px-3 ep:min-w-[200px]">
+				<div class="ep:absolute ep:bottom-full ep:left-0 ep:mb-2 ep:z-50 ep:bg-obs-primary ep:border ep:border-obs-border ep:rounded-md ep:shadow-lg ep:py-2 ep:px-3 ep:w-[340px] ep:max-w-[92vw]">
 					<div class="ep:text-ui-small ep:font-semibold ep:text-obs-muted ep:mb-2 ep:pb-1 ep:border-b ep:border-obs-border">
 						Keyboard shortcuts
 					</div>
 					<ul class="ep:space-y-1">
 						{shortcuts.map(({ key, description }) => (
-							<li key={key} class="ep:flex ep:items-center ep:justify-between ep:gap-4 ep:text-ui-small">
+							<li key={key} class="ep:flex ep:items-center ep:justify-between ep:gap-6 ep:text-ui-small">
 								<kbd class="ep:px-1.5 ep:py-0.5 ep:rounded ep:bg-obs-secondary ep:border ep:border-obs-border ep:text-obs-muted ep:font-mono ep:text-ui-smaller">
 									{key}
 								</kbd>

@@ -2,6 +2,7 @@ import type { SessionPersistenceService } from "@features/core/persistence/sessi
 import { FSRSService } from "@features/core/services/fsrs.service";
 import { SemanticAnswerGradingService } from "@features/ai/services/semantic-answer-grading.service";
 import type { FlashcardManager } from "@features/study/services/flashcard/flashcard.service";
+import { computeActionableSessionSnapshot } from "@features/study/services/actionable-session-snapshot.service";
 import { ReviewService } from "@features/study/services/review.service";
 import {
 	AnswerHandler,
@@ -11,13 +12,10 @@ import {
 } from "@features/study/ui/review/handlers";
 import {
 	applyMutation,
-	buildGlobalPresetQueueContext,
-	buildQueueOptions,
 	deriveTypeInMode,
 	filterActiveCards,
 	getEmptyQueueMessage,
 	getTypeInModeStorage,
-	isGlobalReviewSession,
 	isRatingLockedForTypeIn,
 	nextTypeInMode,
 	persistTypeInMode,
@@ -547,31 +545,6 @@ export class ReviewView extends ItemView {
 		);
 	}
 
-	// ─── Preset resolution ──────────────────────────────────────────────
-
-	private resolveSessionPreset(): FSRSPreset {
-		if (this.filters.projectPath) {
-			return this.plugin.presetService.resolvePresetChain(
-				this.filters.projectPath,
-			).effective.preset;
-		}
-
-		// Single-note study: inherit note's resolved preset for session ordering
-		if (this.filters.sourceNoteFilter) {
-			const file = this.app.metadataCache.getFirstLinkpathDest(
-				this.filters.sourceNoteFilter,
-				"",
-			);
-			if (file) {
-				return this.plugin.presetService.resolvePresetChain(
-					file.path,
-				).effective.preset;
-			}
-		}
-
-		return this.plugin.presetService.getDefaultPreset();
-	}
-
 	private getPresetOptions(): PresetPickerOption[] {
 		return this.plugin.presetService.getPresets().map((p) => ({
 			value: p.name,
@@ -662,41 +635,22 @@ export class ReviewView extends ItemView {
 				return;
 			}
 
-			// Resolve session-level preset for ordering & limits
-			const sessionPreset = this.resolveSessionPreset();
-
-			const queueOptions = buildQueueOptions(
+			const snapshot = computeActionableSessionSnapshot(
+				{
+					allCards,
+					archivedSourceUids,
+					settings: this.plugin.settings,
+					sessionPersistence: this.sessionPersistence,
+					presetService: this.plugin.presetService,
+					metadataCache: this.app.metadataCache,
+					hierarchyService: this.plugin.hierarchyService,
+					fsrsService: this.fsrsService,
+					reviewService: this.reviewService,
+				},
 				this.filters,
-				this.plugin.settings,
-				this.sessionPersistence,
-				sessionPreset,
+				{ activeCards },
 			);
-
-			if (isGlobalReviewSession(this.filters)) {
-				const presetContext = buildGlobalPresetQueueContext(
-					activeCards,
-					this.plugin.presetService,
-					this.sessionPersistence,
-				);
-				queueOptions.cardPresetById = presetContext.cardPresetById;
-				queueOptions.presetDailyLimits = presetContext.presetDailyLimits;
-				queueOptions.presetProgressToday = presetContext.presetProgressToday;
-				queueOptions.defaultPresetName = presetContext.defaultPresetName;
-			}
-
-			// Scope to project members via outgoing links
-			if (this.filters.projectPath) {
-				queueOptions.sourceUidFilter =
-					this.plugin.hierarchyService.getSourceUidsForProject(
-						this.filters.projectPath,
-					);
-			}
-
-			const queue = this.reviewService.buildQueue(
-				activeCards,
-				this.fsrsService,
-				queueOptions,
-			);
+			const queue = snapshot.queue;
 
 			if (queue.length === 0) {
 				this.mountEmptyState(

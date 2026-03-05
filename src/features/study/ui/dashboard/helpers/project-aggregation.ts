@@ -5,11 +5,17 @@ import type {
 	HierarchyTreeNode,
 } from "@features/core/services/hierarchy.service";
 import type { SessionPersistenceService } from "@features/core/persistence/session-persistence.service";
+import {
+	computeActionableSessionSnapshot,
+	type ActionableSessionSnapshot,
+} from "@features/study/services/actionable-session-snapshot.service";
 import type { CardStore } from "@shared/types/fsrs/store.types";
+import type { FSRSFlashcardItem, TrueRecallSettings } from "@shared/types";
 import {
 	computeProjectStats,
 	type ProjectStats,
 } from "../../editor/widgets/project-stats";
+import type { MetadataCache } from "obsidian";
 import type {
 	DashboardNoteEntry,
 	DashboardProject,
@@ -25,7 +31,11 @@ interface ProjectAggregationDeps {
 		fsrsService: FSRSService;
 		presetService: PresetService;
 		sessionPersistence: SessionPersistenceService;
-		settings: { newCardsPerDay: number; reviewsPerDay: number };
+		settings: TrueRecallSettings;
+		allCards: FSRSFlashcardItem[];
+		archivedSourceUids: ReadonlySet<string>;
+		activeCards: FSRSFlashcardItem[];
+		metadataCache: MetadataCache;
 	};
 }
 
@@ -45,9 +55,16 @@ export function aggregateProjectData(
 	}
 
 	const hierarchy = plugin.hierarchyService.buildHierarchy();
+	const snapshotCache = new Map<string, ActionableSessionSnapshot>();
 
 	const allProjects = hierarchy.map((node) =>
-		buildProjectFromNode(node, noteByPath, noteByName, plugin),
+		buildProjectFromNode(
+			node,
+			noteByPath,
+			noteByName,
+			plugin,
+			snapshotCache,
+		),
 	);
 
 	let projects: DashboardProject[];
@@ -87,6 +104,7 @@ function buildProjectFromNode(
 	noteByPath: Map<string, DashboardNoteEntry>,
 	noteByName: Map<string, DashboardNoteEntry>,
 	plugin: ProjectAggregationDeps["plugin"],
+	snapshotCache: Map<string, ActionableSessionSnapshot>,
 ): DashboardProject {
 	const stats: ProjectStats = computeProjectStats(
 		node.path,
@@ -105,24 +123,40 @@ function buildProjectFromNode(
 	}
 
 	const children = node.children.map((child) =>
-		buildProjectFromNode(child, noteByPath, noteByName, plugin),
+		buildProjectFromNode(
+			child,
+			noteByPath,
+			noteByName,
+			plugin,
+			snapshotCache,
+		),
 	);
 
-	// Cap counts at preset daily limits minus today's progress
+	const snapshot = computeActionableSessionSnapshot(
+		{
+			allCards: plugin.allCards,
+			archivedSourceUids: plugin.archivedSourceUids,
+			settings: plugin.settings,
+			sessionPersistence: plugin.sessionPersistence,
+			presetService: plugin.presetService,
+			metadataCache: plugin.metadataCache,
+			hierarchyService: plugin.hierarchyService,
+			fsrsService: plugin.fsrsService,
+		},
+		{ projectPath: node.path },
+		{ cache: snapshotCache, activeCards: plugin.activeCards },
+	);
+
 	const preset = plugin.presetService.resolvePresetChain(node.path).effective.preset;
 	const presetName = preset.name;
-	const newStudied = plugin.sessionPersistence.getNewCardsStudiedToday();
-	const reviewsCompleted = plugin.sessionPersistence.getReviewCardsCompletedToday();
-	const newCap = preset.newCardsPerDay;
-	const reviewsCap = preset.reviewsPerDay;
 
 	return {
 		name: stats.name,
 		path: stats.path,
 		healthPct: stats.healthPct,
-		newCount: Math.min(stats.newCount, Math.max(0, newCap - newStudied)),
-		learning: stats.learning,
-		due: Math.min(stats.due, Math.max(0, reviewsCap - reviewsCompleted)),
+		newCount: snapshot.counts.new,
+		learning: snapshot.counts.learning,
+		due: snapshot.counts.due,
 		totalCards: stats.totalCards,
 		childCount: stats.childCount,
 		lastReviewed: stats.lastReviewed,

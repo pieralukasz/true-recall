@@ -130,16 +130,16 @@ export function CardContainer({
 					onContentChange={onContentChange}
 				/>
 
-					{showTypeIn && !isAnswerRevealed && (
-						<div class="ep:mb-6">
-							<TypeInCMEditor
-								value={typedAnswer}
-								onChange={onTypedAnswerChange}
-								onSubmit={onShowAnswer}
-								placeholderText="Type your answer in your own words, then show answer."
-							/>
-						</div>
-					)}
+				{showTypeIn && !isAnswerRevealed && (
+					<div class="ep:mb-6">
+						<TypeInCMEditor
+							value={typedAnswer}
+							onChange={onTypedAnswerChange}
+							onSubmit={onShowAnswer}
+							placeholderText="Type your answer in your own words, then show answer."
+						/>
+					</div>
+				)}
 
 				{hasTextAnswer && (
 					<>
