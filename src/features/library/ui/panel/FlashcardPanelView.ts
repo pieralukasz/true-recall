@@ -66,7 +66,9 @@ export class FlashcardPanelView extends ItemView {
 		super(leaf);
 		this.plugin = plugin;
 		this.flashcardManager = plugin.flashcardManager;
-		this.collectService = new CollectService();
+		this.collectService = new CollectService(
+			(slug) => plugin.noteTypeService.getBySlug(slug),
+		);
 	}
 
 	private get panel(): PanelApi {
