@@ -207,7 +207,7 @@ function CMField({
 			{!isCollapsed && (
 				<div
 					ref={containerRef}
-					class="ep:w-full ep:min-h-[2.25rem] ep:bg-obs-primary ep:overflow-hidden"
+					class="true-recall-add-field ep:w-full ep:min-h-[2.25rem] ep:bg-obs-primary ep:overflow-hidden"
 				/>
 			)}
 		</div>

@@ -33,8 +33,25 @@ function mapRowToNote(row: NoteRow): Note {
 	};
 }
 
+/** Escape user input for FTS5 MATCH — wraps in double quotes to treat as phrase */
+export function escapeFts5Query(input: string): string {
+	return `"${input.replace(/"/g, '""')}"`;
+}
+
 export class NoteActions {
+	private fts5Available: boolean | null = null;
+
 	constructor(private db: SqliteDatabase) {}
+
+	isFts5Available(): boolean {
+		if (this.fts5Available === null) {
+			const row = this.db.get<{ value: string }>(
+				`SELECT value FROM meta WHERE key = 'fts5_available'`,
+			);
+			this.fts5Available = row?.value === "1";
+		}
+		return this.fts5Available;
+	}
 
 	getById(id: string): Note | null {
 		const row = this.db.get<NoteRow>(
@@ -138,10 +155,17 @@ export class NoteActions {
 	}
 
 	search(query: string): Note[] {
-		const rows = this.db.query<NoteRow>(
-			`SELECT * FROM notes WHERE fields_json LIKE ? AND deleted_at IS NULL`,
-			[`%${query}%`],
-		);
+		const rows = this.isFts5Available()
+			? this.db.query<NoteRow>(
+					`SELECT * FROM notes WHERE rowid IN (
+						SELECT rowid FROM notes_fts WHERE notes_fts MATCH ?
+					) AND deleted_at IS NULL`,
+					[escapeFts5Query(query)],
+				)
+			: this.db.query<NoteRow>(
+					`SELECT * FROM notes WHERE fields_json LIKE ? AND deleted_at IS NULL`,
+					[`%${query}%`],
+				);
 		return rows.map(mapRowToNote);
 	}
 }
