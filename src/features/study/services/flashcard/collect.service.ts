@@ -1,51 +1,42 @@
 /**
- * Scans for `Front :: Back` lines (:: separator not inside cloze braces)
- * and standalone cloze lines. Supports cloze deletion syntax: {{c1::text}} and {{c1::text::hint}}.
+ * Scans note content for block-format flashcards (#type/<slug> blocks).
+ * Returns parsed blocks ready for createNote/createNoteBatch.
  */
 
-import { parseFlashcardLine } from "@features/study/services/flashcard/flashcard-parser.service";
-import type { FlashcardItem } from "@shared/types";
+import {
+	parseBlocks,
+	countBlocks,
+	type ParsedBlock,
+	type NoteTypeLookup,
+} from "@features/study/services/flashcard/block-parser.service";
 
 export interface CollectResult {
 	collectedCount: number;
-	flashcards: FlashcardItem[];
-	/** Original content unchanged (:: format has no separate tag to strip) */
+	parsedBlocks: ParsedBlock[];
+	/** Original content unchanged */
 	newContent: string;
-	/** Content with :: flashcard lines removed */
+	/** Content with block-format flashcards removed */
 	newContentWithoutFlashcards: string;
 }
 
 export class CollectService {
+	constructor(private getNoteType: NoteTypeLookup) {}
+
 	collect(content: string): CollectResult {
-		const lines = content.split(/\r?\n/);
-		const flashcards: FlashcardItem[] = [];
-		const noFlashcardsLines: string[] = [];
-
-		for (const line of lines) {
-			const trimmed = line.trim();
-			const parsed = trimmed ? parseFlashcardLine(trimmed) : null;
-
-			if (parsed) {
-				flashcards.push(...parsed);
-			} else {
-				noFlashcardsLines.push(line);
-			}
-		}
+		const { blocks, contentWithoutBlocks } = parseBlocks(
+			content,
+			this.getNoteType,
+		);
 
 		return {
-			collectedCount: flashcards.length,
-			flashcards,
+			collectedCount: blocks.length,
+			parsedBlocks: blocks,
 			newContent: content,
-			newContentWithoutFlashcards: noFlashcardsLines.join("\n"),
+			newContentWithoutFlashcards: contentWithoutBlocks,
 		};
 	}
 
 	countFlashcardLines(content: string): number {
-		let count = 0;
-		for (const line of content.split(/\r?\n/)) {
-			const trimmed = line.trim();
-			if (trimmed && parseFlashcardLine(trimmed)) count++;
-		}
-		return count;
+		return countBlocks(content, this.getNoteType);
 	}
 }

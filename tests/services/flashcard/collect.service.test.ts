@@ -1,163 +1,152 @@
 import { describe, it, expect } from "vitest";
 import { CollectService } from "../../../src/features/study/services/flashcard/collect.service";
+import type { NoteType } from "../../../src/shared/types/note.types";
+import {
+	BUILTIN_BASIC_ID,
+	BUILTIN_CLOZE_ID,
+} from "../../../src/shared/types/note.types";
+
+const basicType: NoteType = {
+	id: BUILTIN_BASIC_ID,
+	name: "Basic",
+	type: 0,
+	fields: ["Front", "Back"],
+	templates: [{ name: "Card 1", ordinal: 0, qfmt: "{{Front}}", afmt: "{{Back}}" }],
+	css: "",
+	isBuiltin: true,
+	slug: "basic",
+};
+
+const clozeType: NoteType = {
+	id: BUILTIN_CLOZE_ID,
+	name: "Cloze",
+	type: 1,
+	fields: ["Text", "Extra"],
+	templates: [{ name: "Cloze", ordinal: 0, qfmt: "{{cloze:Text}}", afmt: "{{cloze:Text}}<br>{{Extra}}" }],
+	css: "",
+	isBuiltin: true,
+	slug: "cloze",
+};
+
+const lookup = (slug: string) => {
+	const map: Record<string, NoteType> = { basic: basicType, cloze: clozeType };
+	return map[slug] ?? null;
+};
 
 describe("CollectService", () => {
-	const service = new CollectService();
+	const service = new CollectService(lookup);
 
 	describe("collect", () => {
-		it("collects a single basic flashcard", () => {
-			const result = service.collect("What is X? :: Definition");
+		it("collects a single basic block", () => {
+			const result = service.collect(
+				"#type/basic\nFront: What is X?\nBack: Definition",
+			);
 
 			expect(result.collectedCount).toBe(1);
-			expect(result.flashcards).toHaveLength(1);
-			expect(result.flashcards[0]!.question).toBe("What is X?");
-			expect(result.flashcards[0]!.answer).toBe("Definition");
+			expect(result.parsedBlocks).toHaveLength(1);
+			expect(result.parsedBlocks[0]!.fields.Front).toBe("What is X?");
+			expect(result.parsedBlocks[0]!.fields.Back).toBe("Definition");
 		});
 
-		it("collects multiple flashcards", () => {
-			const content = "Q1 :: A1\nQ2 :: A2\nQ3 :: A3";
+		it("collects multiple blocks separated by ---", () => {
+			const content = [
+				"#type/basic",
+				"Front: Q1",
+				"Back: A1",
+				"---",
+				"#type/basic",
+				"Front: Q2",
+				"Back: A2",
+			].join("\n");
 			const result = service.collect(content);
 
-			expect(result.collectedCount).toBe(3);
-			expect(result.flashcards).toHaveLength(3);
+			expect(result.collectedCount).toBe(2);
+			expect(result.parsedBlocks).toHaveLength(2);
 		});
 
-		it("skips non-flashcard lines", () => {
-			const content = "Some text\nQ :: A\nMore text";
+		it("skips non-block content", () => {
+			const content = "Some text\nNo blocks here";
 			const result = service.collect(content);
-
-			expect(result.collectedCount).toBe(1);
-			expect(result.flashcards[0]!.question).toBe("Q");
-		});
-
-		it("returns empty for content without flashcards", () => {
-			const result = service.collect("Just some text\nNo flashcards here");
 
 			expect(result.collectedCount).toBe(0);
-			expect(result.flashcards).toHaveLength(0);
+			expect(result.parsedBlocks).toHaveLength(0);
 		});
 
 		it("returns empty for empty string", () => {
 			const result = service.collect("");
-
 			expect(result.collectedCount).toBe(0);
-			expect(result.flashcards).toHaveLength(0);
+			expect(result.parsedBlocks).toHaveLength(0);
 		});
 
 		it("returns empty for whitespace-only input", () => {
 			const result = service.collect("   \n  \n  ");
-
 			expect(result.collectedCount).toBe(0);
-			expect(result.flashcards).toHaveLength(0);
+			expect(result.parsedBlocks).toHaveLength(0);
 		});
 
-		it("collects cloze card with :: separator and extra", () => {
-			const content =
-				"{{c1::Tokyo}} is in {{c2::Japan}} :: Geography";
+		it("collects cloze blocks", () => {
+			const content = [
+				"#type/cloze",
+				"Text: {{c1::Tokyo}} is in {{c2::Japan}}",
+				"Extra: Geography",
+			].join("\n");
 			const result = service.collect(content);
 
-			expect(result.collectedCount).toBe(2);
-			expect(result.flashcards[0]!.cardType).toBe("cloze");
-			expect(result.flashcards[0]!.clozeIndex).toBe(1);
-			expect(result.flashcards[1]!.clozeIndex).toBe(2);
-			expect(result.flashcards[0]!.answer).toContain("Geography");
-		});
-
-		it("collects standalone cloze line (no :: separator)", () => {
-			const content = "{{c1::Tokyo}} is in {{c2::Japan}}";
-			const result = service.collect(content);
-
-			expect(result.collectedCount).toBe(2);
-			expect(result.flashcards[0]!.cardType).toBe("cloze");
-			expect(result.flashcards[0]!.clozeTemplate).toBe(content);
-		});
-
-		it("does not collect malformed lines with empty question side", () => {
-			const content = " :: Answer";
-			const result = service.collect(content);
-
-			expect(result.collectedCount).toBe(0);
-		});
-
-		it("does not collect malformed lines with empty answer side", () => {
-			const content = "Question :: ";
-			const result = service.collect(content);
-
-			expect(result.collectedCount).toBe(0);
+			expect(result.collectedCount).toBe(1);
+			expect(result.parsedBlocks[0]!.noteTypeId).toBe(BUILTIN_CLOZE_ID);
+			expect(result.parsedBlocks[0]!.fields.Text).toBe(
+				"{{c1::Tokyo}} is in {{c2::Japan}}",
+			);
 		});
 
 		it("returns original content unchanged as newContent", () => {
-			const content = "Some text\nQ :: A\nMore text";
+			const content = "Some text\n#type/basic\nFront: Q\nBack: A\nMore text";
 			const result = service.collect(content);
-
 			expect(result.newContent).toBe(content);
 		});
 
-		it("strips flashcard lines from newContentWithoutFlashcards", () => {
-			const result = service.collect("Line 1\nQ :: A\nLine 3");
+		it("strips block content from newContentWithoutFlashcards", () => {
+			const content = "Line 1\n#type/basic\nFront: Q\nBack: A\n---\nLine 2";
+			const result = service.collect(content);
 
-			expect(result.newContentWithoutFlashcards).toBe("Line 1\nLine 3");
-		});
-
-		it("strips standalone cloze from newContentWithoutFlashcards", () => {
-			const result = service.collect(
-				"Line 1\n{{c1::Tokyo}} is in Japan\nLine 3",
-			);
-
-			expect(result.newContentWithoutFlashcards).toBe("Line 1\nLine 3");
+			expect(result.newContentWithoutFlashcards).toContain("Line 1");
+			expect(result.newContentWithoutFlashcards).toContain("Line 2");
+			expect(result.newContentWithoutFlashcards).not.toContain("#type/basic");
 		});
 
 		it("handles CRLF line endings", () => {
-			const content = "Q1 :: A1\r\nQ2 :: A2";
+			const content =
+				"#type/basic\r\nFront: Q1\r\nBack: A1\r\n---\r\n#type/basic\r\nFront: Q2\r\nBack: A2";
+			const result = service.collect(content);
+			expect(result.collectedCount).toBe(2);
+		});
+
+		it("extracts source text from blocks", () => {
+			const content = [
+				"#type/basic",
+				"Front: Question",
+				"Back: Answer",
+				"<!-- source: The original text -->",
+			].join("\n");
 			const result = service.collect(content);
 
-			expect(result.collectedCount).toBe(2);
+			expect(result.parsedBlocks[0]!.sourceText).toBe("The original text");
 		});
 	});
 
 	describe("countFlashcardLines", () => {
-		it("counts basic flashcard lines", () => {
-			expect(service.countFlashcardLines("Q1 :: A1\nQ2 :: A2")).toBe(2);
+		it("counts basic blocks", () => {
+			const content =
+				"#type/basic\nFront: Q1\nBack: A1\n---\n#type/basic\nFront: Q2\nBack: A2";
+			expect(service.countFlashcardLines(content)).toBe(2);
 		});
 
-		it("counts standalone cloze lines", () => {
-			expect(
-				service.countFlashcardLines("{{c1::Tokyo}} is in Japan"),
-			).toBe(1);
-		});
-
-		it("returns 0 for non-flashcard content", () => {
+		it("returns 0 for non-block content", () => {
 			expect(service.countFlashcardLines("Just text")).toBe(0);
 		});
 
 		it("returns 0 for empty input", () => {
 			expect(service.countFlashcardLines("")).toBe(0);
-		});
-
-		it("does not count lines with empty question or answer", () => {
-			expect(service.countFlashcardLines(" :: answer")).toBe(0);
-			expect(service.countFlashcardLines("question :: ")).toBe(0);
-		});
-
-		it("matches collect behavior exactly", () => {
-			const content = [
-				"Q1 :: A1",
-				"Regular text",
-				"{{c1::Paris}} is nice",
-				"{{c1::Tokyo}} :: Geography",
-				" :: orphan",
-			].join("\n");
-
-			const count = service.countFlashcardLines(content);
-			const collectResult = service.collect(content);
-
-			// countFlashcardLines counts lines, not expanded cloze cards
-			// Line "Q1 :: A1" = 1 line, "{{c1::Paris}} is nice" = 1 line, "{{c1::Tokyo}} :: Geography" = 1 line
-			expect(count).toBe(3);
-
-			// collect expands cloze: the standalone cloze and the :: cloze are each 1 cloze card
-			// Total: 1 basic + 1 cloze (standalone) + 1 cloze (with extra) = 3 FlashcardItems
-			expect(collectResult.collectedCount).toBe(3);
 		});
 	});
 });

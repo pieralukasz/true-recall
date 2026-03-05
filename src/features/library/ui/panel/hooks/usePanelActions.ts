@@ -177,7 +177,9 @@ export function usePanelActions({
 		}
 
 		try {
-			const collectService = new CollectService();
+			const getNoteType = (slug: string) =>
+				plugin.noteTypeService.getBySlug(slug);
+			const collectService = new CollectService(getNoteType);
 			const content = await app.vault.read(currentFile);
 			const collectResult = collectService.collect(content);
 
@@ -186,14 +188,10 @@ export function usePanelActions({
 				return;
 			}
 
-			const existingQuestions = new Set(
-				flashcardInfo?.flashcards?.map((f) => f.question) ?? [],
-			);
-			const newFlashcards = collectResult.flashcards.filter(
-				(f) => !existingQuestions.has(f.question),
-			);
-			const skippedCount =
-				collectResult.flashcards.length - newFlashcards.length;
+			const frontmatterService =
+				plugin.flashcardManager.getFrontmatterService();
+			const sourceUid =
+				await frontmatterService.getSourceNoteUid(currentFile);
 
 			const contentToSave =
 				plugin.settings.removeFlashcardContentAfterCollect
@@ -201,42 +199,28 @@ export function usePanelActions({
 					: collectResult.newContent;
 			await app.vault.process(currentFile, () => contentToSave);
 
-			if (newFlashcards.length === 0) {
-				notify().info(
-					`All ${collectResult.flashcards.length} flashcard(s) already collected`,
-				);
-				return;
-			}
-
-			const saveResult =
-				await plugin.flashcardManager.saveFlashcardsToSql(
-					currentFile,
-					newFlashcards.map((f) => ({
-						id: f.id || crypto.randomUUID(),
-						question: f.question,
-						answer: f.answer,
+			const { notes, cards } =
+				plugin.flashcardManager.createNoteBatch(
+					collectResult.parsedBlocks.map((block) => ({
+						noteTypeId: block.noteTypeId,
+						fields: block.fields,
+						sourceUid: sourceUid ?? undefined,
+						sourceText: block.sourceText,
+						createdVia: "collect",
 					})),
 				);
 
-			const created = saveResult.created.length;
-			const dups = saveResult.duplicates.length;
-
-			if (skippedCount > 0 && created > 0) {
-				notify().success(
-					`Collected ${created} flashcard(s), skipped ${skippedCount} (already exist)`,
-				);
-			} else if (dups > 0 && created > 0) {
-				notify().success(`Collected ${created} flashcard(s)`);
-				showDuplicateNotifications(plugin, saveResult.duplicates);
-			} else if (dups > 0) {
-				showDuplicateNotifications(plugin, saveResult.duplicates);
+			if (cards.length === 0) {
+				notify().info("No new flashcards collected");
 			} else {
-				notify().success(`Collected ${created} flashcard(s)`);
+				notify().success(
+					`Collected ${notes.length} note(s) → ${cards.length} card(s)`,
+				);
 			}
 		} catch (error) {
 			notify().operationFailed("collect flashcards", error);
 		}
-	}, [currentFile, flashcardInfo, app, plugin]);
+	}, [currentFile, app, plugin]);
 
 	// ── Export ──
 
