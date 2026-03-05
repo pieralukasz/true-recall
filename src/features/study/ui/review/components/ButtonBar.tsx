@@ -6,7 +6,6 @@ import { useIcon } from "@shared/ui/preact/hooks";
 import { cn } from "@shared/ui/utils/cn";
 import type { Grade } from "ts-fsrs";
 import { Rating } from "ts-fsrs";
-import { KeyboardShortcutsHelp } from "./KeyboardShortcutsHelp";
 
 export interface ButtonBarProps {
 	isAnswerRevealed: boolean;
@@ -44,10 +43,6 @@ export function ButtonBar({
 
 	return (
 		<div class="true-recall-review-buttons ep:relative ep:flex ep:justify-center ep:gap-3 ep:border-t ep:border-obs-border ep:flex-nowrap ep:shrink-0 ep:p-4">
-			<div class="ep:absolute ep:left-4 ep:bottom-4 ep:flex ep:items-center ep:justify-center ep:w-10 ep:h-10 ep:rounded-lg ep:bg-obs-modifier-hover">
-				<KeyboardShortcutsHelp />
-			</div>
-
 			<div class="ep:flex ep:items-center ep:justify-center ep:w-full ep:relative">
 				<div class="ep:flex ep:justify-center ep:gap-3 ep:flex-nowrap ep:py-4">
 					{!isAnswerRevealed ? (
