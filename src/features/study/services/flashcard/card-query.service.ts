@@ -57,6 +57,8 @@ export class CardQueryService {
 				clozeIndex: card.clozeIndex,
 				reverseOf: card.reverseOf,
 				sourceText: card.sourceText,
+				noteId: card.noteId,
+				templateOrd: card.templateOrd,
 			}));
 	}
 
@@ -87,6 +89,8 @@ export class CardQueryService {
 				clozeTemplate: card.clozeTemplate,
 				clozeIndex: card.clozeIndex,
 				reverseOf: card.reverseOf,
+				noteId: card.noteId,
+				templateOrd: card.templateOrd,
 			}));
 	}
 }
