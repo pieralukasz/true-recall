@@ -38,16 +38,31 @@ export class NoteTypeSuggestModal extends SuggestModal<SuggestItem> {
 
 	async onChooseSuggestion(item: SuggestItem): Promise<void> {
 		if (item === "create") {
-			const result = await new CreateNoteTypeModal(this.app).openAndWait();
+			const allTypes = this.plugin.noteTypeService.getAll();
+			const result = await new CreateNoteTypeModal(this.app, allTypes).openAndWait();
 			if (result.cancelled) return;
 
 			try {
+				let fields = ["Front", "Back"];
+				let templates = [
+					{ name: "Card 1", ordinal: 0, qfmt: "{{Front}}", afmt: "{{Back}}" },
+				];
+				let css: string | undefined;
+
+				if (result.cloneFromId) {
+					const source = this.plugin.noteTypeService.getById(result.cloneFromId);
+					if (source) {
+						fields = [...source.fields];
+						templates = source.templates.map((t) => ({ ...t }));
+						css = source.css;
+					}
+				}
+
 				const created = this.plugin.noteTypeService.create({
 					name: result.name,
-					fields: ["Front", "Back"],
-					templates: [
-						{ name: "Card 1", ordinal: 0, qfmt: "{{Front}}", afmt: "{{Back}}" },
-					],
+					fields,
+					templates,
+					css,
 				});
 				new CardTypesEditorModal(this.app, this.plugin, created.id).open();
 			} catch (e) {

@@ -1,3 +1,4 @@
+import type { NoteType } from "@shared/types/note.types";
 import { Clickable } from "@shared/ui/components";
 import { BasePromiseModal } from "@shared/ui/modals/BasePromiseModal";
 import type { App } from "obsidian";
@@ -7,14 +8,18 @@ import { useEffect, useRef, useState } from "preact/hooks";
 export interface CreateNoteTypeResult {
 	cancelled: boolean;
 	name: string;
+	cloneFromId: string | null;
 }
 
 function CreateNoteTypeBody({
+	noteTypes,
 	onResolve,
 }: {
+	noteTypes: NoteType[];
 	onResolve: (result: CreateNoteTypeResult) => void;
 }) {
 	const [name, setName] = useState("");
+	const [cloneFromId, setCloneFromId] = useState("");
 	const inputRef = useRef<HTMLInputElement>(null);
 
 	useEffect(() => {
@@ -27,7 +32,11 @@ function CreateNoteTypeBody({
 
 	const handleCreate = () => {
 		if (!canCreate) return;
-		onResolve({ cancelled: false, name: trimmed });
+		onResolve({
+			cancelled: false,
+			name: trimmed,
+			cloneFromId: cloneFromId || null,
+		});
 	};
 
 	return (
@@ -46,6 +55,26 @@ function CreateNoteTypeBody({
 					if (e.key === "Enter") handleCreate();
 				}}
 			/>
+
+			<label class="ep:block ep:text-ui-small ep:text-obs-muted ep:mb-1">
+				Clone from
+			</label>
+			<select
+				class="ep:w-full ep:py-2.5 ep:px-3 ep:border ep:border-obs-border ep:rounded-md ep:bg-obs-primary ep:text-obs-normal ep:text-ui-small ep:mb-4"
+				value={cloneFromId}
+				onChange={(e) =>
+					setCloneFromId((e.target as HTMLSelectElement).value)
+				}
+			>
+				<option value="">None (start empty)</option>
+				{noteTypes.map((nt) => (
+					<option key={nt.id} value={nt.id}>
+						{nt.name}
+						{nt.type === 1 ? " [cloze]" : ""}
+					</option>
+				))}
+			</select>
+
 			<div class="ep:flex ep:justify-end">
 				<Clickable
 					class="mod-cta ep-btn ep:px-4 ep:py-1.5 ep:rounded-md ep:text-ui-small"
@@ -60,7 +89,10 @@ function CreateNoteTypeBody({
 }
 
 export class CreateNoteTypeModal extends BasePromiseModal<CreateNoteTypeResult> {
-	constructor(app: App) {
+	constructor(
+		app: App,
+		private noteTypes: NoteType[],
+	) {
 		super(app, {
 			title: "Create Note Type",
 			width: "400px",
@@ -68,12 +100,13 @@ export class CreateNoteTypeModal extends BasePromiseModal<CreateNoteTypeResult> 
 	}
 
 	protected getDefaultResult(): CreateNoteTypeResult {
-		return { cancelled: true, name: "" };
+		return { cancelled: true, name: "", cloneFromId: null };
 	}
 
 	protected renderBody(container: HTMLElement): void {
 		render(
 			<CreateNoteTypeBody
+				noteTypes={this.noteTypes}
 				onResolve={(result) => this.resolve(result)}
 			/>,
 			container,
