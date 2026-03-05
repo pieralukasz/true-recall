@@ -1,3 +1,4 @@
+import { useMemo } from "preact/hooks";
 import { Clickable } from "@shared/ui/components";
 import { FSRS_COLORS, MUTED_STATES } from "@shared/ui/helpers/fsrs-colors";
 import { useSignal } from "@preact/signals";
@@ -89,27 +90,11 @@ export function BrowserSidebar({
 				})}
 			</SidebarSection>
 
-			<SidebarSection title="Source Notes" defaultOpen>
-				{facetCounts.sourceNotes.slice(0, 50).map((note) => {
-					const active = activeFilter.sourceUids.includes(note.uid);
-					return (
-						<SidebarRow
-							key={note.uid}
-							label={note.name}
-							count={note.count}
-							active={active}
-							onClick={() => {
-								const sourceUids = active
-									? activeFilter.sourceUids.filter(
-											(u) => u !== note.uid,
-										)
-									: [...activeFilter.sourceUids, note.uid];
-								onFilterChange({ sourceUids });
-							}}
-						/>
-					);
-				})}
-			</SidebarSection>
+			<SourceNotesSection
+				sourceNotes={facetCounts.sourceNotes}
+				activeFilter={activeFilter}
+				onFilterChange={onFilterChange}
+			/>
 
 			<SidebarSection title="Card Type">
 				{Object.entries(facetCounts.cardTypes).map(([type, count]) => {
@@ -198,6 +183,128 @@ function hasAnyFilter(f: FilterState): boolean {
 		f.sourceUids.length > 0 ||
 		f.cardTypes.length > 0 ||
 		f.createdVia.length > 0
+	);
+}
+
+const PAGE_SIZE = 50;
+
+function SourceNotesSection({
+	sourceNotes,
+	activeFilter,
+	onFilterChange,
+}: {
+	sourceNotes: { uid: string; name: string; count: number }[];
+	activeFilter: FilterState;
+	onFilterChange: (partial: Partial<FilterState>) => void;
+}) {
+	const open = useSignal(true);
+	const searchQuery = useSignal("");
+	const visibleCount = useSignal(PAGE_SIZE);
+
+	const filteredNotes = useMemo(() => {
+		const query = searchQuery.value.toLowerCase().trim();
+		if (!query) return sourceNotes;
+		return sourceNotes.filter((note) =>
+			note.name.toLowerCase().includes(query),
+		);
+	}, [sourceNotes, searchQuery.value]);
+
+	const visibleNotes = filteredNotes.slice(0, visibleCount.value);
+	const hasMore = visibleNotes.length < filteredNotes.length;
+	const remainingCount = filteredNotes.length - visibleCount.value;
+	const selectedCount = activeFilter.sourceUids.length;
+
+	const handleSearchChange = (value: string) => {
+		searchQuery.value = value;
+		visibleCount.value = PAGE_SIZE;
+	};
+
+	const handleShowMore = () => {
+		visibleCount.value += PAGE_SIZE;
+	};
+
+	return (
+		<div class="ep:border-b ep:border-obs-border/50">
+			<Clickable
+				class="ep:flex ep:items-center ep:justify-between ep:px-3 ep:py-2 hover:ep:bg-obs-modifier-hover ep:w-full"
+				onClick={() => {
+					open.value = !open.value;
+				}}
+			>
+				<span class="ep:text-[11px] ep:font-medium ep:uppercase ep:tracking-wider ep:text-obs-muted">
+					{selectedCount > 0
+						? `Source Notes (${selectedCount} zazn.)`
+						: "Source Notes"}
+				</span>
+				<span class="ep:text-[10px] ep:text-obs-muted">
+					{open.value ? "\u25BE" : "\u25B8"}
+				</span>
+			</Clickable>
+			{open.value && (
+				<div class="ep:pb-1.5">
+					{/* Search input */}
+					<div class="ep:px-2 ep:pb-1.5 ep:pt-1">
+						<input
+							type="text"
+							placeholder="Szukaj notatek..."
+							value={searchQuery.value}
+							onInput={(e) =>
+								handleSearchChange(
+									(e.currentTarget as HTMLInputElement).value,
+								)
+							}
+							class="ep:w-full ep:px-2 ep:py-1 ep:text-[11px] ep:bg-obs-input ep:border ep:border-obs-border ep:rounded ep:text-obs-normal placeholder:ep:text-obs-faint focus:ep:outline-none focus:ep:border-obs-interactive"
+						/>
+					</div>
+
+					{/* Notes list */}
+					{visibleNotes.length === 0 ? (
+						<div class="ep:px-3 ep:py-2 ep:text-[11px] ep:text-obs-muted ep:text-center">
+							{searchQuery.value.trim()
+								? `Brak wyników dla "${searchQuery.value.trim()}"`
+								: "Brak notatek"}
+						</div>
+					) : (
+						<>
+							{visibleNotes.map((note) => {
+								const active = activeFilter.sourceUids.includes(
+									note.uid,
+								);
+								return (
+									<SidebarRow
+										key={note.uid}
+										label={note.name}
+										count={note.count}
+										active={active}
+										onClick={() => {
+											const sourceUids = active
+												? activeFilter.sourceUids.filter(
+														(u) => u !== note.uid,
+													)
+												: [
+														...activeFilter.sourceUids,
+														note.uid,
+													];
+											onFilterChange({ sourceUids });
+										}}
+									/>
+								);
+							})}
+
+							{/* Show more button */}
+							{hasMore && (
+								<Clickable
+									class="ep:w-full ep:px-3 ep:py-1.5 ep:text-[11px] ep:text-obs-interactive ep:text-center hover:ep:bg-obs-modifier-hover"
+									onClick={handleShowMore}
+								>
+									Pokaż więcej ({remainingCount})
+								</Clickable>
+							)}
+						</>
+					)}
+				</div>
+			)}
+		</div>
 	);
 }
 
