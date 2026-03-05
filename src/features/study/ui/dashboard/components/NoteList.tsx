@@ -287,7 +287,9 @@ export function NoteList({
 			};
 			e.dataTransfer!.setData(DRAG_MIME, JSON.stringify(item));
 			e.dataTransfer!.effectAllowed = "move";
-			dragState.value = { item, dropTargetPath: null, isValid: false };
+			requestAnimationFrame(() => {
+				dragState.value = { item, dropTargetPath: null, isValid: false };
+			});
 		},
 		[dragState],
 	);
@@ -432,10 +434,7 @@ export function NoteList({
 							<div
 								key={item.name}
 								class={`${initialMount.current ? "ep-card-enter" : ""} ${dragCls}`.trim() || undefined}
-								draggable={!isSelecting}
-								onMouseDown={(e) => {
-									if ((e.target as HTMLElement) !== e.currentTarget) e.preventDefault();
-								}}
+								draggable={!isSelecting && !!item.path}
 								onDragStart={(e) => handleDragStart(e, item)}
 								onDragEnd={handleDragEnd}
 								onDragOver={(e) => handleDragOver(e, item)}

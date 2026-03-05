@@ -182,7 +182,7 @@ export function CardTypesEditorApp({
 	}
 
 	return (
-		<div class="ep:flex ep:flex-col ep:h-[80vh]">
+		<div class="ep:flex ep:flex-col ep:h-[65vh]">
 			{/* Top bar: Card Type dropdown + Options */}
 			<div class="ep:flex ep:items-center ep:gap-3 ep:pb-3 ep:border-b ep:border-obs-border">
 				<span class="ep:text-ui-small ep:text-obs-muted ep:shrink-0">Card Type:</span>
