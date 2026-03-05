@@ -251,6 +251,24 @@ export function ProjectsTab({
 
 	return (
 		<div>
+			{/* Root drop zone (top) — visible only during drag, allows un-nesting */}
+			{dragState.value && dragState.value.item.parentPath && (
+				<div
+					class="ep:h-10 ep:mx-2 ep:mb-1 ep:border-2 ep:border-dashed ep:border-obs-border ep:rounded-lg ep:flex ep:items-center ep:justify-center ep:text-xs ep:text-obs-muted ep:transition-colors"
+					onDragOver={(e) => {
+						e.preventDefault();
+						e.dataTransfer!.dropEffect = "move";
+						(e.currentTarget as HTMLElement).classList.add("ep-drop-root-zone");
+					}}
+					onDragLeave={(e) => {
+						(e.currentTarget as HTMLElement).classList.remove("ep-drop-root-zone");
+					}}
+					onDrop={handleRootDrop}
+				>
+					Move to root level
+				</div>
+			)}
+
 			<div
 				ref={contentRef}
 				style={{ height: `${totalHeight}px`, position: "relative" }}
@@ -351,6 +369,13 @@ export function ProjectsTab({
 									onArchive={() => item.note.path ? handleArchive(item.note.path, true) : undefined}
 									onUnarchive={() => item.note.path ? handleArchive(item.note.path, false) : undefined}
 									onRename={() => item.note.path ? handleRename(item.note.path) : undefined}
+									onDetach={() => {
+										if (!item.note.path) return;
+										const file = plugin.app.vault.getAbstractFileByPath(item.note.path);
+										if (!(file instanceof TFile)) return;
+										const parentName = item.projectPath.split("/").pop()?.replace(/\.md$/, "") ?? "";
+										void plugin.flashcardManager.getFrontmatterService().removeParent(file, parentName);
+									}}
 								/>
 							</div>
 						);
