@@ -10,6 +10,7 @@ import {
 	BUILTIN_BASIC_REVERSED_ID,
 	BUILTIN_CLOZE_ID,
 	BUILTIN_IMAGE_OCCLUSION_ID,
+	BUILTIN_SLUGS,
 } from "@shared/types/note.types";
 
 interface NoteTypeRow {
@@ -20,6 +21,7 @@ interface NoteTypeRow {
 	templates_json: string;
 	css: string | null;
 	is_builtin: number;
+	slug: string | null;
 	created_at: number | null;
 	updated_at: number | null;
 	deleted_at: number | null;
@@ -34,6 +36,7 @@ function mapRowToNoteType(row: NoteTypeRow): NoteType {
 		templates: JSON.parse(row.templates_json) as CardTemplate[],
 		css: row.css ?? "",
 		isBuiltin: row.is_builtin === 1,
+		slug: row.slug ?? undefined,
 		createdAt: row.created_at ?? undefined,
 		updatedAt: row.updated_at ?? undefined,
 	};
@@ -50,6 +53,14 @@ export class NoteTypeActions {
 		return row ? mapRowToNoteType(row) : null;
 	}
 
+	getBySlug(slug: string): NoteType | null {
+		const row = this.db.get<NoteTypeRow>(
+			`SELECT * FROM note_types WHERE slug = ? AND deleted_at IS NULL`,
+			[slug],
+		);
+		return row ? mapRowToNoteType(row) : null;
+	}
+
 	getAll(): NoteType[] {
 		const rows = this.db.query<NoteTypeRow>(
 			`SELECT * FROM note_types WHERE deleted_at IS NULL`,
@@ -60,8 +71,8 @@ export class NoteTypeActions {
 	create(noteType: NoteType): void {
 		const now = Date.now();
 		this.db.run(
-			`INSERT INTO note_types (id, name, type, fields_json, templates_json, css, is_builtin, created_at, updated_at)
-			 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+			`INSERT INTO note_types (id, name, type, fields_json, templates_json, css, is_builtin, slug, created_at, updated_at)
+			 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
 			[
 				noteType.id,
 				noteType.name,
@@ -70,6 +81,7 @@ export class NoteTypeActions {
 				JSON.stringify(noteType.templates),
 				noteType.css,
 				noteType.isBuiltin ? 1 : 0,
+				noteType.slug ?? null,
 				noteType.createdAt ?? now,
 				noteType.updatedAt ?? now,
 			],
@@ -101,6 +113,10 @@ export class NoteTypeActions {
 			sets.push("css = ?");
 			params.push(updates.css);
 		}
+		if (updates.slug !== undefined) {
+			sets.push("slug = ?");
+			params.push(updates.slug);
+		}
 
 		sets.push("updated_at = ?");
 		params.push(now);
@@ -122,10 +138,10 @@ export class NoteTypeActions {
 	seedBuiltinTypes(): void {
 		const builtins = getBuiltinNoteTypes();
 		for (const nt of builtins) {
-			// INSERT OR IGNORE for idempotency
+			const slug = BUILTIN_SLUGS[nt.id];
 			this.db.run(
-				`INSERT OR IGNORE INTO note_types (id, name, type, fields_json, templates_json, css, is_builtin, created_at, updated_at)
-				 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+				`INSERT OR IGNORE INTO note_types (id, name, type, fields_json, templates_json, css, is_builtin, slug, created_at, updated_at)
+				 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
 				[
 					nt.id,
 					nt.name,
@@ -134,6 +150,7 @@ export class NoteTypeActions {
 					JSON.stringify(nt.templates),
 					nt.css,
 					1,
+					slug ?? null,
 					Date.now(),
 					Date.now(),
 				],
@@ -147,15 +164,17 @@ export class NoteTypeActions {
 		const builtins = getBuiltinNoteTypes();
 		const now = Date.now();
 		for (const nt of builtins) {
+			const slug = BUILTIN_SLUGS[nt.id];
 			this.db.run(
 				`UPDATE note_types
-				 SET templates_json = ?, fields_json = ?, css = ?, name = ?, updated_at = ?
+				 SET templates_json = ?, fields_json = ?, css = ?, name = ?, slug = ?, updated_at = ?
 				 WHERE id = ? AND is_builtin = 1`,
 				[
 					JSON.stringify(nt.templates),
 					JSON.stringify(nt.fields),
 					nt.css,
 					nt.name,
+					slug ?? null,
 					now,
 					nt.id,
 				],
