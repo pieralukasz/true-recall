@@ -31,40 +31,41 @@ export class CardBrowserQueryService {
 			fts5Available,
 		});
 
-		const rawCards = this.cardStore.cards.browserQuery(
+		const archivedUids = this.getArchivedSourceUids(
+			!!resolvedFilter.showArchived,
+		);
+		const sqlWithArchiveFilter = this.applyArchivedFilter(
 			sqlQuery.where,
 			sqlQuery.params,
+			archivedUids,
+		);
+
+		const rawCards = this.cardStore.cards.browserQuery(
+			sqlWithArchiveFilter.where,
+			sqlWithArchiveFilter.params,
 			sqlQuery.orderBy,
 			sqlQuery.limit,
 			sqlQuery.offset,
 		);
 
 		const totalCount = this.cardStore.cards.browserCount(
-			sqlQuery.where,
-			sqlQuery.params,
+			sqlWithArchiveFilter.where,
+			sqlWithArchiveFilter.params,
 		);
 
-		let cards = rawCards.map((card) => this.toBrowserCard(card));
-
-		// Filter out archived cards unless the user has enabled "Show archived"
-		if (!filter.showArchived && this.hierarchyService) {
-			const archivedUids = this.hierarchyService.getArchivedSourceUids();
-			if (archivedUids.size > 0) {
-				cards = cards.filter((c) => !archivedUids.has(c.sourceUid ?? ""));
-			}
-		}
-
+		const cards = rawCards.map((card) => this.toBrowserCard(card));
 		return { cards, totalCount };
 	}
 
 	/** Get sidebar facet counts (states, types, sources, etc.) */
-	getFacetCounts(): {
+	getFacetCounts(showArchived = false): {
 		states: Record<string, number>;
 		cardTypes: Record<string, number>;
 		createdVia: Record<string, number>;
 		sourceNotes: { uid: string; name: string; count: number }[];
 	} {
 		const allCards = this.cardStore.cards.getAll();
+		const archivedUids = this.getArchivedSourceUids(showArchived);
 		const states: Record<string, number> = {};
 		const cardTypes: Record<string, number> = {};
 		const createdVia: Record<string, number> = {};
@@ -72,6 +73,7 @@ export class CardBrowserQueryService {
 
 		const now = new Date();
 		for (const card of allCards) {
+			if (archivedUids.has(card.sourceUid ?? "")) continue;
 
 			// State counts (including virtual states)
 			if (card.suspended) {
@@ -120,6 +122,45 @@ export class CardBrowserQueryService {
 			.sort((a, b) => a.name.localeCompare(b.name));
 
 		return { states, cardTypes, createdVia, sourceNotes };
+	}
+
+	/** Card IDs whose sourceUid no longer resolves to a vault note */
+	getOrphanedCardIds(): string[] {
+		const allCards = this.cardStore.cards.getAll();
+		const orphanedIds: string[] = [];
+
+		for (const card of allCards) {
+			if (!card.sourceUid) continue;
+			const file = this.frontmatterIndex.getFileByValue(
+				"flashcard_uid",
+				card.sourceUid,
+			);
+			if (!file) orphanedIds.push(card.id);
+		}
+
+		return orphanedIds;
+	}
+
+	private getArchivedSourceUids(showArchived: boolean): Set<string> {
+		if (showArchived || !this.hierarchyService) return new Set<string>();
+		return this.hierarchyService.getArchivedSourceUids();
+	}
+
+	private applyArchivedFilter(
+		where: string,
+		params: (string | number)[],
+		archivedUids: Set<string>,
+	): { where: string; params: (string | number)[] } {
+		if (archivedUids.size === 0) {
+			return { where, params };
+		}
+
+		const ids = [...archivedUids];
+		const placeholders = ids.map(() => "?").join(",");
+		return {
+			where: `(${where}) AND (c.source_uid IS NULL OR c.source_uid NOT IN (${placeholders}))`,
+			params: [...params, ...ids],
+		};
 	}
 
 	private resolveNoteFilters(filter: FilterState): FilterState {

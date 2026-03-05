@@ -61,6 +61,26 @@ export interface QueueBuildOptions {
 	cardLimit?: number;
 	/** Include cards due within the next N days (study ahead) */
 	studyAheadDays?: number;
+	/** Optional per-card preset assignment (global mode) */
+	cardPresetById?: Map<string, string>;
+	/** Optional daily limits per preset (global mode) */
+	presetDailyLimits?: Map<
+		string,
+		{
+			newCardsPerDay: number;
+			reviewsPerDay: number;
+		}
+	>;
+	/** Optional progress today per preset (global mode) */
+	presetProgressToday?: Map<
+		string,
+		{
+			newStudied: number;
+			reviewsCompleted: number;
+		}
+	>;
+	/** Fallback preset name for cards without explicit assignment */
+	defaultPresetName?: string;
 }
 
 export class ReviewService {
@@ -356,6 +376,78 @@ export class ReviewService {
 		}
 	}
 
+	private usePerPresetLimits(options: QueueBuildOptions): boolean {
+		return Boolean(
+			options.cardPresetById &&
+				options.presetDailyLimits &&
+				options.presetProgressToday,
+		);
+	}
+
+	private applyPerPresetLimit(
+		cards: FSRSFlashcardItem[],
+		options: QueueBuildOptions,
+		type: "new" | "review",
+	): FSRSFlashcardItem[] {
+		const presetLimits = options.presetDailyLimits;
+		const presetProgress = options.presetProgressToday;
+		const cardPresetById = options.cardPresetById;
+		if (!presetLimits || !presetProgress || !cardPresetById) return cards;
+
+		const remainingByPreset = new Map<string, number>();
+		for (const [presetName, limits] of presetLimits) {
+			const progress = presetProgress.get(presetName);
+			const dailyLimit =
+				type === "new" ? limits.newCardsPerDay : limits.reviewsPerDay;
+			const completed =
+				type === "new"
+					? (progress?.newStudied ?? 0)
+					: (progress?.reviewsCompleted ?? 0);
+			remainingByPreset.set(presetName, Math.max(0, dailyLimit - completed));
+		}
+
+		const fallbackPresetName = options.defaultPresetName ?? "Default";
+		if (!remainingByPreset.has(fallbackPresetName)) {
+			const fallbackLimit =
+				type === "new" ? options.newCardsLimit : options.reviewsLimit;
+			const fallbackDone =
+				type === "new"
+					? (options.newCardsStudiedToday ?? 0)
+					: (options.reviewsCompletedToday ?? 0);
+			remainingByPreset.set(
+				fallbackPresetName,
+				Math.max(0, fallbackLimit - fallbackDone),
+			);
+		}
+
+		const result: FSRSFlashcardItem[] = [];
+		for (const card of cards) {
+			const presetName = cardPresetById.get(card.id) ?? fallbackPresetName;
+
+			// If preset is missing from limits map, fall back to global limits.
+			if (!remainingByPreset.has(presetName)) {
+				const fallbackLimit =
+					type === "new" ? options.newCardsLimit : options.reviewsLimit;
+				const presetDone =
+					type === "new"
+						? (presetProgress.get(presetName)?.newStudied ?? 0)
+						: (presetProgress.get(presetName)?.reviewsCompleted ?? 0);
+				remainingByPreset.set(
+					presetName,
+					Math.max(0, fallbackLimit - presetDone),
+				);
+			}
+
+			const remaining = remainingByPreset.get(presetName) ?? 0;
+			if (remaining <= 0) continue;
+
+			result.push(card);
+			remainingByPreset.set(presetName, remaining - 1);
+		}
+
+		return result;
+	}
+
 	private buildCustomStudyQueue(
 		availableCards: FSRSFlashcardItem[],
 		fsrsService: FSRSService,
@@ -370,26 +462,39 @@ export class ReviewService {
 		const reviewCards = availableCards.filter(
 			(card) => card.fsrs.state === State.Review,
 		);
-		const effectiveReviewsLimit = options.ignoreDailyLimits
-			? reviewCards.length
-			: Math.max(
-					0,
-					options.reviewsLimit - (options.reviewsCompletedToday ?? 0),
-				);
-		const limitedReviewCards = this.sortReviewCards(
-			reviewCards.slice(0, effectiveReviewsLimit),
+		const sortedReviewCards = this.sortReviewCards(
+			reviewCards,
 			options.reviewOrder ?? "due-date",
 			fsrsService,
 		);
+		const limitedReviewCards = options.ignoreDailyLimits
+			? sortedReviewCards
+			: this.usePerPresetLimits(options)
+				? this.applyPerPresetLimit(sortedReviewCards, options, "review")
+				: sortedReviewCards.slice(
+						0,
+						Math.max(
+							0,
+							options.reviewsLimit - (options.reviewsCompletedToday ?? 0),
+						),
+					);
 
 		// New cards
-		const newLimit = options.ignoreDailyLimits
-			? Infinity
-			: options.newCardsLimit - (options.newCardsStudiedToday ?? 0);
-		const newCards = this.sortNewCards(
-			fsrsService.getNewCards(availableCards, Math.max(0, newLimit)),
+		const sortedNewCards = this.sortNewCards(
+			fsrsService.getNewCards(availableCards),
 			options.newCardOrder ?? "random",
 		);
+		const newCards = options.ignoreDailyLimits
+			? sortedNewCards
+			: this.usePerPresetLimits(options)
+				? this.applyPerPresetLimit(sortedNewCards, options, "new")
+				: sortedNewCards.slice(
+						0,
+						Math.max(
+							0,
+							options.newCardsLimit - (options.newCardsStudiedToday ?? 0),
+						),
+					);
 
 		const mainQueue = this.mixQueues(
 			limitedReviewCards,
@@ -424,29 +529,39 @@ export class ReviewService {
 			now,
 			dayStartHour,
 		);
-		const effectiveReviewsLimit = options.ignoreDailyLimits
-			? reviewCards.length
-			: Math.max(
-					0,
-					options.reviewsLimit - (options.reviewsCompletedToday ?? 0),
-				);
-		const limitedReviewCards = this.sortReviewCards(
-			reviewCards.slice(0, effectiveReviewsLimit),
+		const sortedReviewCards = this.sortReviewCards(
+			reviewCards,
 			options.reviewOrder ?? "due-date",
 			fsrsService,
 		);
+		const limitedReviewCards = options.ignoreDailyLimits
+			? sortedReviewCards
+			: this.usePerPresetLimits(options)
+				? this.applyPerPresetLimit(sortedReviewCards, options, "review")
+				: sortedReviewCards.slice(
+						0,
+						Math.max(
+							0,
+							options.reviewsLimit - (options.reviewsCompletedToday ?? 0),
+						),
+					);
 
 		// New cards
-		const newLimit = options.ignoreDailyLimits
-			? Infinity
-			: Math.max(
-					0,
-					options.newCardsLimit - (options.newCardsStudiedToday ?? 0),
-				);
-		const newCards = this.sortNewCards(
-			fsrsService.getNewCards(availableCards, newLimit),
+		const sortedNewCards = this.sortNewCards(
+			fsrsService.getNewCards(availableCards),
 			options.newCardOrder ?? "random",
 		);
+		const newCards = options.ignoreDailyLimits
+			? sortedNewCards
+			: this.usePerPresetLimits(options)
+				? this.applyPerPresetLimit(sortedNewCards, options, "new")
+				: sortedNewCards.slice(
+						0,
+						Math.max(
+							0,
+							options.newCardsLimit - (options.newCardsStudiedToday ?? 0),
+						),
+					);
 
 		const mainQueue = this.mixQueues(
 			limitedReviewCards,

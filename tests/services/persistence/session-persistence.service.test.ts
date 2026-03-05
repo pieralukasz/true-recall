@@ -17,6 +17,7 @@ describe("SessionPersistenceService", () => {
 		addReviewLog: ReturnType<typeof vi.fn>;
 		getDailyStats: ReturnType<typeof vi.fn>;
 		getReviewedCardIds: ReturnType<typeof vi.fn>;
+		getPresetProgressInRange: ReturnType<typeof vi.fn>;
 	};
 	let mockStore: {
 		stats: typeof mockStats;
@@ -24,6 +25,8 @@ describe("SessionPersistenceService", () => {
 	let mockApp: Partial<App>;
 	let mockDayBoundaryService: {
 		getTodayKey: ReturnType<typeof vi.fn>;
+		getTodayBoundary: ReturnType<typeof vi.fn>;
+		getTomorrowBoundary: ReturnType<typeof vi.fn>;
 	};
 
 	beforeEach(() => {
@@ -33,6 +36,7 @@ describe("SessionPersistenceService", () => {
 			addReviewLog: vi.fn(),
 			getDailyStats: vi.fn().mockReturnValue(null) as ReturnType<typeof vi.fn>,
 			getReviewedCardIds: vi.fn().mockReturnValue([]) as ReturnType<typeof vi.fn>,
+			getPresetProgressInRange: vi.fn().mockReturnValue([]) as ReturnType<typeof vi.fn>,
 		};
 
 		mockStore = {
@@ -43,6 +47,12 @@ describe("SessionPersistenceService", () => {
 
 		mockDayBoundaryService = {
 			getTodayKey: vi.fn().mockReturnValue("2024-01-15") as ReturnType<typeof vi.fn>,
+			getTodayBoundary: vi
+				.fn()
+				.mockReturnValue(new Date("2024-01-15T04:00:00.000Z")) as ReturnType<typeof vi.fn>,
+			getTomorrowBoundary: vi
+				.fn()
+				.mockReturnValue(new Date("2024-01-16T04:00:00.000Z")) as ReturnType<typeof vi.fn>,
 		};
 
 		service = new SessionPersistenceService(
@@ -174,6 +184,38 @@ describe("SessionPersistenceService", () => {
 				2000,
 				undefined
 			);
+		});
+	});
+
+	describe("getTodayProgressByPreset", () => {
+		it("queries stats with day-boundary range and maps rows by preset name", () => {
+			mockStats.getPresetProgressInRange.mockReturnValue([
+				{ presetName: "Default", newStudied: 2, reviewsCompleted: 3 },
+				{ presetName: "Medical", newStudied: 1, reviewsCompleted: 5 },
+			]);
+
+			const result = service.getTodayProgressByPreset();
+
+			expect(mockStats.getPresetProgressInRange).toHaveBeenCalledWith(
+				"2024-01-15T04:00:00.000Z",
+				"2024-01-16T04:00:00.000Z"
+			);
+			expect(result.get("Default")).toEqual({
+				newStudied: 2,
+				reviewsCompleted: 3,
+			});
+			expect(result.get("Medical")).toEqual({
+				newStudied: 1,
+				reviewsCompleted: 5,
+			});
+		});
+
+		it("returns an empty map when no rows are returned", () => {
+			mockStats.getPresetProgressInRange.mockReturnValue([]);
+
+			const result = service.getTodayProgressByPreset();
+
+			expect(result.size).toBe(0);
 		});
 	});
 });

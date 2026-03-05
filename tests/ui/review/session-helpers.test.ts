@@ -3,11 +3,15 @@
  */
 import { describe, it, expect } from "vitest";
 import {
+	buildGlobalPresetQueueContext,
 	filterActiveCards,
 	getEmptyQueueMessage,
+	isGlobalReviewSession,
 } from "../../../src/features/study/ui/review/helpers/session-helpers";
 import { State } from "ts-fsrs";
 import type { FSRSFlashcardItem } from "../../../src/shared/types";
+import type { FSRSPreset } from "../../../src/shared/types/settings.types";
+import type { SessionPersistenceService } from "../../../src/features/core/persistence/session-persistence.service";
 
 // Helper to create mock card
 function createMockCard(overrides: Partial<FSRSFlashcardItem> = {}): FSRSFlashcardItem {
@@ -125,5 +129,140 @@ describe("getEmptyQueueMessage", () => {
 	it("should return congratulations message by default", () => {
 		const message = getEmptyQueueMessage();
 		expect(message).toBe("Congratulations! No cards due for review.");
+	});
+});
+
+function createPreset(
+	name: string,
+	overrides: Partial<FSRSPreset> = {},
+): FSRSPreset {
+	return {
+		id: `${name.toLowerCase()}-id`,
+		name,
+		requestRetention: 0.9,
+		maximumInterval: 36500,
+		weights: null,
+		learningSteps: [1, 10],
+		relearningSteps: [10],
+		newCardsPerDay: 20,
+		reviewsPerDay: 200,
+		createdAt: Date.now(),
+		lastOptimization: null,
+		lastOptimizationReviewCount: null,
+		lastOptimizationMetrics: null,
+		newCardOrder: "random",
+		reviewOrder: "due-date",
+		newReviewMix: "mix-with-reviews",
+		...overrides,
+	};
+}
+
+describe("isGlobalReviewSession", () => {
+	it("returns true for empty filters", () => {
+		expect(isGlobalReviewSession({})).toBe(true);
+	});
+
+	it("returns false for scoped sessions", () => {
+		expect(isGlobalReviewSession({ projectPath: "Projects/A.md" })).toBe(false);
+		expect(isGlobalReviewSession({ sourceNoteFilter: "Note A" })).toBe(false);
+		expect(isGlobalReviewSession({ sourceNoteFilters: ["Note A"] })).toBe(false);
+		expect(isGlobalReviewSession({ filePathFilter: "Notes/A.md" })).toBe(false);
+	});
+
+	it("returns false for custom filters", () => {
+		expect(isGlobalReviewSession({ overdueOnly: true })).toBe(false);
+		expect(isGlobalReviewSession({ cardLimit: 25 })).toBe(false);
+		expect(isGlobalReviewSession({ customReviewOrder: "most-lapses" })).toBe(
+			false,
+		);
+	});
+});
+
+describe("buildGlobalPresetQueueContext", () => {
+	it("builds card->preset map and merges limits/progress", () => {
+		const defaultPreset = createPreset("Default", {
+			newCardsPerDay: 15,
+			reviewsPerDay: 40,
+		});
+		const proPreset = createPreset("Pro", {
+			newCardsPerDay: 50,
+			reviewsPerDay: 300,
+		});
+
+		const cards: FSRSFlashcardItem[] = [
+			createMockCard({ id: "c-default", sourceUid: "default-uid" }),
+			createMockCard({ id: "c-pro", sourceUid: "pro-uid" }),
+		];
+
+		const presetService = {
+			getPresets: () => [defaultPreset, proPreset],
+			getDefaultPreset: () => defaultPreset,
+			resolvePresetForCard: (card: FSRSFlashcardItem) =>
+				card.sourceUid === "pro-uid" ? proPreset : defaultPreset,
+		};
+
+		const sessionPersistence = {
+			getTodayProgressByPreset: () =>
+				new Map([
+					["Default", { newStudied: 3, reviewsCompleted: 9 }],
+					["Pro", { newStudied: 7, reviewsCompleted: 11 }],
+				]),
+		} as unknown as SessionPersistenceService;
+
+		const result = buildGlobalPresetQueueContext(
+			cards,
+			presetService,
+			sessionPersistence,
+		);
+
+		expect(result.defaultPresetName).toBe("Default");
+		expect(result.cardPresetById.get("c-default")).toBe("Default");
+		expect(result.cardPresetById.get("c-pro")).toBe("Pro");
+		expect(result.presetDailyLimits.get("Default")).toEqual({
+			newCardsPerDay: 15,
+			reviewsPerDay: 40,
+		});
+		expect(result.presetDailyLimits.get("Pro")).toEqual({
+			newCardsPerDay: 50,
+			reviewsPerDay: 300,
+		});
+		expect(result.presetProgressToday.get("Default")).toEqual({
+			newStudied: 3,
+			reviewsCompleted: 9,
+		});
+		expect(result.presetProgressToday.get("Pro")).toEqual({
+			newStudied: 7,
+			reviewsCompleted: 11,
+		});
+	});
+
+	it("maps legacy 'Default' progress to renamed default preset", () => {
+		const renamedDefault = createPreset("My Default", {
+			newCardsPerDay: 10,
+			reviewsPerDay: 20,
+		});
+		const cards: FSRSFlashcardItem[] = [
+			createMockCard({ id: "c-1", sourceUid: "x" }),
+		];
+		const presetService = {
+			getPresets: () => [renamedDefault],
+			getDefaultPreset: () => renamedDefault,
+			resolvePresetForCard: () => renamedDefault,
+		};
+		const sessionPersistence = {
+			getTodayProgressByPreset: () =>
+				new Map([["Default", { newStudied: 2, reviewsCompleted: 5 }]]),
+		} as unknown as SessionPersistenceService;
+
+		const result = buildGlobalPresetQueueContext(
+			cards,
+			presetService,
+			sessionPersistence,
+		);
+
+		expect(result.presetProgressToday.get("My Default")).toEqual({
+			newStudied: 2,
+			reviewsCompleted: 5,
+		});
 	});
 });

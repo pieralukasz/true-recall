@@ -1,4 +1,6 @@
 import { StatsCalculatorService } from "@features/metrics/services/stats/stats-calculator.service";
+import { computeActionableSessionSnapshot } from "@features/study/services/actionable-session-snapshot.service";
+import { filterActiveCards } from "@features/study/ui/review/helpers/session-helpers";
 import {
 	allCardsArray,
 	archivedSourceUids as archivedSourceUidsSignal,
@@ -19,6 +21,8 @@ import { RecentlyStudiedBar } from "./components/RecentlyStudiedBar";
 import { HeatmapWidget } from "../editor/widgets/analytics/HeatmapWidget";
 import { BottomActionBar } from "./components/BottomActionBar";
 import { aggregateDashboardData } from "./helpers/note-aggregation";
+import { computePriority } from "./helpers/note-priority";
+import { estimateStudyMinutes } from "./helpers/time-estimate";
 import { useDragAutoScroll } from "./helpers/use-drag-auto-scroll";
 import { useInitialMount } from "./helpers/use-initial-mount";
 import { aggregateProjectData } from "./helpers/project-aggregation";
@@ -47,8 +51,22 @@ export function DashboardApp() {
 		const archived = archivedSourceUidsSignal.value;
 		const streakInfo = statsCalculator.getStreakInfo();
 		const todaySummary = statsCalculator.getTodaySummary();
+		const snapshotDeps = {
+			allCards,
+			archivedSourceUids: archived,
+			settings: plugin.settings,
+			sessionPersistence: plugin.sessionPersistence,
+			presetService: plugin.presetService,
+			metadataCache: plugin.app.metadataCache,
+			hierarchyService: plugin.hierarchyService,
+			fsrsService: plugin.fsrsService,
+		};
+		const activeCards = filterActiveCards(allCards, {
+			archivedSourceUids: new Set(archived),
+		});
+		const snapshotCache = new Map<string, ReturnType<typeof computeActionableSessionSnapshot>>();
 
-		return aggregateDashboardData({
+		const raw = aggregateDashboardData({
 			allCards,
 			streakCurrent: streakInfo.current,
 			todaySummary,
@@ -56,6 +74,49 @@ export function DashboardApp() {
 			reviewsCap: plugin.settings.reviewsPerDay,
 			archivedSourceUids: showArchived.value ? undefined : archived,
 		});
+
+		const globalSnapshot = computeActionableSessionSnapshot(
+			snapshotDeps,
+			{},
+			{ cache: snapshotCache, activeCards },
+		);
+
+		const actionableNotes = raw.notes.map((note) => {
+			const noteSnapshot = computeActionableSessionSnapshot(
+				snapshotDeps,
+				{ sourceNoteFilter: note.name },
+				{ cache: snapshotCache, activeCards },
+			);
+			const due = noteSnapshot.counts.due;
+			const newCount = noteSnapshot.counts.new;
+			const learning = noteSnapshot.counts.learning;
+			return {
+				...note,
+				due,
+				newCount,
+				learning,
+				estimatedMinutes: estimateStudyMinutes(due, newCount, learning),
+				priority: computePriority({
+					...note,
+					due,
+					newCount,
+					learning,
+				}),
+			};
+		});
+
+		return {
+			...raw,
+			notes: actionableNotes,
+			totalDue: globalSnapshot.counts.due,
+			totalNew: globalSnapshot.counts.new,
+			totalLearning: globalSnapshot.counts.learning,
+			estimatedTotalMinutes: estimateStudyMinutes(
+				globalSnapshot.counts.due,
+				globalSnapshot.counts.new,
+				globalSnapshot.counts.learning,
+			),
+		};
 	}).value;
 
 	const visibleNotes = useMemo(() => {
@@ -87,6 +148,11 @@ export function DashboardApp() {
 	}, [data.notes, plugin, showArchived.value]);
 
 	const projectData = useMemo(() => {
+		const allCards = allCardsArray.value;
+		const archived = archivedSourceUidsSignal.value;
+		const activeCards = filterActiveCards(allCards, {
+			archivedSourceUids: new Set(archived),
+		});
 		return aggregateProjectData({
 			notes: visibleNotes,
 			showArchived: showArchived.value,
@@ -97,22 +163,21 @@ export function DashboardApp() {
 				presetService: plugin.presetService,
 				sessionPersistence: plugin.sessionPersistence,
 				settings: plugin.settings,
+				allCards,
+				archivedSourceUids: archived,
+				activeCards,
+				metadataCache: plugin.app.metadataCache,
 			},
 		});
 	}, [plugin, visibleNotes, showArchived.value]);
 
 	const enrichedNotes = useMemo(() => {
-		const newStudied = plugin.sessionPersistence.getNewCardsStudiedToday();
-		const reviewsCompleted = plugin.sessionPersistence.getReviewCardsCompletedToday();
-
 		return visibleNotes.map((note) => {
 			const projects = projectData.noteProjectMap.get(note.name) ?? [];
 
 			const preset = note.path
 				? plugin.presetService.resolvePresetChain(note.path).effective.preset
 				: null;
-			const newCap = preset?.newCardsPerDay ?? plugin.settings.newCardsPerDay;
-			const reviewsCap = preset?.reviewsPerDay ?? plugin.settings.reviewsPerDay;
 
 			const archived =
 				showArchived.value && note.path
@@ -123,8 +188,6 @@ export function DashboardApp() {
 				...note,
 				projects,
 				presetName: preset?.name,
-				newCount: Math.min(note.newCount, Math.max(0, newCap - newStudied)),
-				due: Math.min(note.due, Math.max(0, reviewsCap - reviewsCompleted)),
 				...(archived ? { archived } : {}),
 			};
 		});
