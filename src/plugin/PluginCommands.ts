@@ -56,7 +56,7 @@ export function registerCommands(plugin: TrueRecallPlugin): void {
 	plugin.addCommand({
 		id: "manage-note-types",
 		name: "Manage note types",
-		callback: () => plugin.openNoteTypeManager(),
+		callback: () => plugin.openCardTypesEditor(),
 	});
 
 	plugin.addCommand({

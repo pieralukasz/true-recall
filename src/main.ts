@@ -25,7 +25,8 @@ import { NoteTypeService } from "@features/core/services/note-type.service";
 import { PresetService } from "@features/core/services/preset.service";
 import { HierarchyService } from "@features/core/services/hierarchy.service";
 import { ImportStudioModal } from "@features/core/modals/import-studio/ImportStudioModal";
-import { NoteTypeManagerModal } from "@features/core/modals/NoteTypeManagerModal";
+import { CardTypesEditorModal } from "@features/core/modals/card-types-editor/CardTypesEditorModal";
+import { NoteTypeSuggestModal } from "@features/core/modals/card-types-editor/NoteTypeSuggestModal";
 import { QuickNoteEditorModal } from "@features/study/modals/quick-note-editor/QuickNoteEditorModal";
 import { AnkiExportModal } from "@features/integration/modals/AnkiExportModal";
 import { AnkiImportModal } from "@features/integration/modals/AnkiImportModal";
@@ -487,8 +488,12 @@ export default class TrueRecallPlugin extends Plugin {
 		await activateView(this.app, VIEW_TYPE_STATS, { useMainArea: true });
 	}
 
-	openNoteTypeManager(): void {
-		new NoteTypeManagerModal(this.app, this).open();
+	openCardTypesEditor(noteTypeId?: string): void {
+		if (noteTypeId) {
+			new CardTypesEditorModal(this.app, this, noteTypeId).open();
+			return;
+		}
+		new NoteTypeSuggestModal(this.app, this).open();
 	}
 
 	openImportStudio(options?: { defaultNoteTypeId?: string }): void {

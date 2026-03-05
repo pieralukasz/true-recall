@@ -335,7 +335,10 @@ export function ProjectsTab({
 							<div
 								key={`n-${item.note.name}`}
 								class={`${initialMount.current ? "ep-card-enter" : ""} ${dragCls}`.trim() || undefined}
-								draggable={!!item.note.path}
+								draggable
+								onMouseDown={(e) => {
+									if ((e.target as HTMLElement) !== e.currentTarget) e.preventDefault();
+								}}
 								onDragStart={(e) => handleDragStart(e, item)}
 								onDragEnd={handleDragEnd}
 								onDragOver={(e) => handleDragOver(e, item)}

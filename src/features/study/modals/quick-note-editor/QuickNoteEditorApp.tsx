@@ -208,39 +208,52 @@ export function QuickNoteEditorApp({
 
 	return (
 		<div class="ep:flex ep:flex-col ep:gap-4">
-			{/* Note type picker */}
-			<div class="ep:flex ep:items-center ep:gap-3">
-				<label class="ep:text-ui-smaller ep:text-obs-muted">
-					Note type:
-				</label>
-				<NoteTypePicker
-					value={noteTypeId}
-					onChange={handleNoteTypeChange}
-					disabled={isEdit}
-				/>
-			</div>
-
-			{/* Source note picker (add mode, no pre-set sourceUid) */}
-			{showSourcePicker && (
-				<div class="ep:flex ep:items-center ep:gap-3">
-					<label class="ep:text-ui-smaller ep:text-obs-muted ep:shrink-0">
-						Source note:
-					</label>
-					<div class="ep:flex-1">
-						<NotePickerCombobox
-							app={app}
-							selectedNote={selectedSourceNote}
-							onSelect={setSelectedSourceNote}
+			{/* Note type + Source note — side by side when both visible */}
+			{showSourcePicker ? (
+				<div class="ep:grid ep:grid-cols-[1fr_2fr] ep:gap-4 ep:items-start">
+					<div class="ep:flex ep:flex-col ep:gap-1">
+						<label class="ep:text-ui-smaller ep:text-obs-muted">
+							Note type
+						</label>
+						<NoteTypePicker
+							value={noteTypeId}
+							onChange={handleNoteTypeChange}
+							disabled={isEdit}
 						/>
 					</div>
-					{selectedSourceNote && (
-						<Clickable
-							class="ep:text-ui-smaller ep:text-obs-muted ep:hover:text-obs-normal"
-							onClick={() => setSelectedSourceNote(null)}
-						>
-							Clear
-						</Clickable>
-					)}
+					<div class="ep:flex ep:flex-col ep:gap-1">
+						<label class="ep:text-ui-smaller ep:text-obs-muted">
+							Source note
+						</label>
+						<div class="ep:flex ep:items-center ep:gap-2">
+							<div class="ep:flex-1">
+								<NotePickerCombobox
+									app={app}
+									selectedNote={selectedSourceNote}
+									onSelect={setSelectedSourceNote}
+								/>
+							</div>
+							{selectedSourceNote && (
+								<Clickable
+									class="ep:text-ui-smaller ep:text-obs-muted ep:hover:text-obs-normal"
+									onClick={() => setSelectedSourceNote(null)}
+								>
+									Clear
+								</Clickable>
+							)}
+						</div>
+					</div>
+				</div>
+			) : (
+				<div class="ep:flex ep:flex-col ep:gap-1 ep:w-[45%]">
+					<label class="ep:text-ui-smaller ep:text-obs-muted">
+						Note type
+					</label>
+					<NoteTypePicker
+						value={noteTypeId}
+						onChange={handleNoteTypeChange}
+						disabled={isEdit}
+					/>
 				</div>
 			)}
 
@@ -252,20 +265,22 @@ export function QuickNoteEditorApp({
 				onModEnter={() => handleSave(false)}
 			/>
 
-			{/* Card count preview */}
-			{!isEdit && (
-				<CardCountPreview
-					noteType={noteType}
-					noteTypeId={noteTypeId}
-					fields={fields}
-					hasContent={hasContent}
-				/>
-			)}
-
 			{/* Footer */}
-			<div class="ep-modal-footer ep:flex ep:justify-end ep:items-center ep:gap-3">
+			<div class="ep-modal-footer ep:flex ep:items-center ep:gap-3">
+				{/* Card count on the left */}
+				{!isEdit && (
+					<div class="ep:flex-1">
+						<CardCountPreview
+							noteType={noteType}
+							noteTypeId={noteTypeId}
+							fields={fields}
+							hasContent={hasContent}
+						/>
+					</div>
+				)}
+
 				<Clickable
-					class={SECONDARY_BUTTON_CLASSES}
+					class="ep:text-ui-small ep:text-obs-muted ep:hover:text-obs-normal ep:px-3 ep:py-1.5 ep:rounded"
 					onClick={onClose}
 					stopPropagation={false}
 				>
