@@ -18,7 +18,7 @@ export function FormCard({
 			{title && (
 				<div class="ep:flex ep:items-center ep:justify-between ep:mb-3 ep:pb-2.5 ep:border-b ep:border-obs-border">
 					<div>
-						<span class="ep:text-ui-large ep:font-semibold ep:text-obs-normal ep:tracking-tight">
+						<span class="ep:text-ui-medium ep:font-semibold ep:text-obs-normal ep:tracking-tight">
 							{title}
 						</span>
 						{description && (
