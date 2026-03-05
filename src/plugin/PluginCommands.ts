@@ -1,5 +1,7 @@
 import { migrateLegacyProjects } from "@features/core/services/migrate-projects";
+import { migrateVault } from "@features/study/services/flashcard/migration.service";
 import type TrueRecallPlugin from "../main";
+import { Notice } from "obsidian";
 
 export function registerCommands(plugin: TrueRecallPlugin): void {
 	plugin.addCommand({
@@ -178,6 +180,26 @@ export function registerCommands(plugin: TrueRecallPlugin): void {
 		id: "migrate-legacy-projects",
 		name: "Migrate legacy projects to parents",
 		callback: () => void migrateLegacyProjects(plugin.app),
+	});
+
+	plugin.addCommand({
+		id: "migrate-inline-to-block",
+		name: "Migrate flashcards to block format",
+		callback: async () => {
+			new Notice("Migrating flashcards to block format...");
+			const result = await migrateVault(plugin.app);
+			if (result.migratedFiles === 0) {
+				new Notice("No inline flashcards found to migrate.");
+			} else {
+				new Notice(
+					`Migrated ${result.migratedCards} cards in ${result.migratedFiles} files.` +
+					(result.errors.length > 0 ? ` ${result.errors.length} errors.` : ""),
+				);
+			}
+			if (result.errors.length > 0) {
+				console.warn("[TrueRecall] Migration errors:", result.errors);
+			}
+		},
 	});
 
 	plugin.addCommand({
