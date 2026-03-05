@@ -1,4 +1,7 @@
-import type { SessionPersistenceService } from "@features/core/persistence/session-persistence.service";
+import type {
+	PresetDailyProgress,
+	SessionPersistenceService,
+} from "@features/core/persistence/session-persistence.service";
 import type { SqliteStoreService } from "@features/core/persistence/sqlite";
 import type { FlashcardManager } from "@features/study/services/flashcard/flashcard.service";
 import type { QueueBuildOptions } from "@features/study/services/review.service";
@@ -11,6 +14,25 @@ import type { FSRSPreset, TrueRecallSettings } from "@shared/types/settings.type
 export interface CardFilterOptions {
 	stateFilter?: "due" | "learning" | "new" | "buried";
 	archivedSourceUids?: Set<string>;
+}
+
+interface PresetServiceLike {
+	getPresets(): FSRSPreset[];
+	getDefaultPreset(): FSRSPreset;
+	resolvePresetForCard(card: FSRSFlashcardItem): FSRSPreset;
+}
+
+export interface GlobalPresetQueueContext {
+	cardPresetById: Map<string, string>;
+	presetDailyLimits: Map<
+		string,
+		{
+			newCardsPerDay: number;
+			reviewsPerDay: number;
+		}
+	>;
+	presetProgressToday: Map<string, PresetDailyProgress>;
+	defaultPresetName: string;
 }
 
 /**
@@ -87,6 +109,83 @@ export function buildQueueOptions(
 		recentlyFailed: filters.recentlyFailed,
 		cardLimit: filters.cardLimit,
 		studyAheadDays: filters.studyAheadDays,
+	};
+}
+
+export function isGlobalReviewSession(filters: SessionFilters): boolean {
+	return !(
+		filters.projectPath ||
+		filters.sourceNoteFilter ||
+		(filters.sourceNoteFilters && filters.sourceNoteFilters.length > 0) ||
+		filters.filePathFilter ||
+		filters.createdTodayOnly ||
+		filters.createdThisWeek ||
+		filters.weakCardsOnly ||
+		filters.stateFilter ||
+		filters.ignoreDailyLimits ||
+		filters.bypassScheduling ||
+		filters.difficultyRange ||
+		filters.lapsesRange ||
+		filters.stabilityRange ||
+		filters.overdueOnly ||
+		filters.recentlyFailed ||
+		filters.cardLimit ||
+		filters.studyAheadDays ||
+		filters.customReviewOrder ||
+		filters.crammingMode
+	);
+}
+
+export function buildGlobalPresetQueueContext(
+	cards: FSRSFlashcardItem[],
+	presetService: PresetServiceLike,
+	sessionPersistence: SessionPersistenceService,
+): GlobalPresetQueueContext {
+	const defaultPreset = presetService.getDefaultPreset();
+	const presetDailyLimits = new Map<
+		string,
+		{
+			newCardsPerDay: number;
+			reviewsPerDay: number;
+		}
+	>();
+	for (const preset of presetService.getPresets()) {
+		presetDailyLimits.set(preset.name, {
+			newCardsPerDay: preset.newCardsPerDay,
+			reviewsPerDay: preset.reviewsPerDay,
+		});
+	}
+
+	if (!presetDailyLimits.has(defaultPreset.name)) {
+		presetDailyLimits.set(defaultPreset.name, {
+			newCardsPerDay: defaultPreset.newCardsPerDay,
+			reviewsPerDay: defaultPreset.reviewsPerDay,
+		});
+	}
+
+	const cardPresetById = new Map<string, string>();
+	for (const card of cards) {
+		const preset = presetService.resolvePresetForCard(card);
+		cardPresetById.set(card.id, preset?.name ?? defaultPreset.name);
+	}
+
+	const presetProgressToday = new Map(sessionPersistence.getTodayProgressByPreset());
+	if (
+		defaultPreset.name !== "Default" &&
+		presetProgressToday.has("Default") &&
+		!presetProgressToday.has(defaultPreset.name)
+	) {
+		const legacyDefaultProgress = presetProgressToday.get("Default");
+		if (legacyDefaultProgress) {
+			presetProgressToday.set(defaultPreset.name, legacyDefaultProgress);
+		}
+	}
+
+	return {
+		cardPresetById,
+		presetDailyLimits,
+		presetProgressToday,
+		defaultPresetName: defaultPreset.name,
 	};
 }
 
