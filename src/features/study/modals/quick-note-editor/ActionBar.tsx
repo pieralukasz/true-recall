@@ -31,7 +31,7 @@ export function ActionBar({
 			/>
 
 			{showSourcePicker && (
-				<div class="ep:flex-1 ep:min-w-[140px] ep:flex ep:items-center ep:gap-1">
+				<div class="ep:flex-1 ep:min-w-[60%] ep:flex ep:items-center ep:gap-1">
 					<div class="ep:flex-1">
 						<NotePickerCombobox
 							app={app}

@@ -90,6 +90,7 @@ function CMField({
 	const containerRef = useRef<HTMLDivElement>(null);
 	const editorRef = useRef<EmbeddableEditorInstance | null>(null);
 	const [isCollapsed, setIsCollapsed] = useState(false);
+	const shouldFocusRef = useRef(false);
 	const pinIconRef = useIcon("pin");
 
 	// Track current content for blur handler without triggering editor recreation
@@ -129,7 +130,12 @@ function CMField({
 			onFieldFocus?.(fieldName, editor.cm);
 		});
 
-		if (autoFocus) editor.cm.focus();
+		if (autoFocus || shouldFocusRef.current) {
+			shouldFocusRef.current = false;
+			const endPos = editor.cm.state.doc.length;
+			editor.cm.dispatch({ selection: { anchor: endPos } });
+			editor.cm.focus();
+		}
 
 		return () => {
 			editorRef.current = null;
@@ -148,7 +154,12 @@ function CMField({
 	const header = (
 		<div
 			class="ep:flex ep:items-center ep:gap-2 ep:px-3 ep:py-2 ep:bg-obs-secondary ep:cursor-pointer ep:select-none ep:group"
-			onClick={() => setIsCollapsed((v) => !v)}
+			onClick={() => {
+				setIsCollapsed((v) => {
+					if (v) shouldFocusRef.current = true;
+					return !v;
+				});
+			}}
 		>
 			<span class="ep:text-obs-faint ep:text-ui-smaller ep:w-3 ep:shrink-0">
 				{isCollapsed ? "▸" : "▾"}
