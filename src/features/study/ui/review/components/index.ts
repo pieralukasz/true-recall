@@ -12,4 +12,3 @@ export { ReviewEmptyState } from "@features/study/ui/review/components/ReviewEmp
 export { ReviewHeader } from "@features/study/ui/review/components/ReviewHeader";
 export { SummaryScreen } from "@features/study/ui/review/components/SummaryScreen";
 export { WaitingScreen } from "@features/study/ui/review/components/WaitingScreen";
-export { KeyboardShortcutsHelp } from "@features/study/ui/review/components/KeyboardShortcutsHelp";
