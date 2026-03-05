@@ -145,7 +145,7 @@
 	.modal:has(.true-recall-modal) input[type="text"],
 	.modal:has(.true-recall-modal) input[type="number"],
 	.modal:has(.true-recall-modal) select {
-		min-height: 36px;
+		min-height: 28px;
 	}
 
 	/* ================================================================
@@ -344,5 +344,13 @@
 
 	[role="button"].mod-warning:hover {
 		opacity: 0.9 !important;
+	}
+
+	/* ================================================================
+	   ADD FLASHCARD FIELD EDITOR — match review view font size
+	   ================================================================ */
+	.true-recall-add-field .cm-editor {
+		font-size: 1rem;
+		line-height: 1.6;
 	}
 }

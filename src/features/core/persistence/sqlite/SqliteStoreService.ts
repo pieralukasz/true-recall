@@ -9,6 +9,7 @@ import {
 	NoteTypeActions,
 	StatsActions,
 } from "@features/core/persistence/sqlite/modules";
+import { IntegrityCheckService } from "@features/core/services/integrity-check.service";
 import { SqliteDatabase } from "@features/core/persistence/sqlite/SqliteDatabase";
 import { SqliteSchemaManager } from "@features/core/persistence/sqlite/SqliteSchemaManager";
 import {
@@ -37,6 +38,7 @@ export class SqliteStoreService {
 	public readonly stats: StatsActions;
 	public readonly notes: NoteActions;
 	public readonly noteTypes: NoteTypeActions;
+	public readonly integrity: IntegrityCheckService;
 
 	constructor(app: App, deviceId: string) {
 		this.app = app;
@@ -48,6 +50,7 @@ export class SqliteStoreService {
 		this.stats = new StatsActions(this.db);
 		this.notes = new NoteActions(this.db);
 		this.noteTypes = new NoteTypeActions(this.db);
+		this.integrity = new IntegrityCheckService(this.db);
 	}
 
 	getDeviceId(): string {
@@ -83,6 +86,10 @@ export class SqliteStoreService {
 		if (!existingData) {
 			this.isDirty = true;
 		}
+
+		// Detect and soft-delete orphaned records (runs once, skips on subsequent loads)
+		const integrity = new IntegrityCheckService(this.db);
+		integrity.checkAndRepairOnce();
 
 		// Keep builtin note type templates in sync with code (idempotent, fixes stale DBs)
 		this.noteTypes.refreshBuiltins();

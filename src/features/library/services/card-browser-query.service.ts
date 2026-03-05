@@ -26,7 +26,10 @@ export class CardBrowserQueryService {
 		// Resolve note: filters from note names to source UIDs
 		const resolvedFilter = this.resolveNoteFilters(filter);
 
-		const sqlQuery = buildBrowserQuery(resolvedFilter, sort, limit, offset);
+		const fts5Available = this.cardStore.notes.isFts5Available();
+		const sqlQuery = buildBrowserQuery(resolvedFilter, sort, limit, offset, {
+			fts5Available,
+		});
 
 		const rawCards = this.cardStore.cards.browserQuery(
 			sqlQuery.where,
