@@ -28,10 +28,14 @@ export type {
 } from "@shared/types/fsrs/scheduling.types";
 // Session types
 export type {
+	AnswerDiffToken,
+	AnswerDiffTokenType,
+	LocalAnswerAssessment,
 	ReviewHistoryEntry,
 	ReviewResult,
 	ReviewSessionState,
 	ReviewSessionStats,
+	SemanticGradingResult,
 } from "@shared/types/fsrs/session.types";
 // Statistics types
 export type {

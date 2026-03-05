@@ -5,6 +5,7 @@ import { StudyProgress } from "./StudyProgress";
 
 interface HeroCardProps {
 	totalDue: number;
+	startReviewCount?: number;
 	totalNew: number;
 	totalOverdue: number;
 	noteCount: number;
@@ -15,6 +16,7 @@ interface HeroCardProps {
 
 export function HeroCard({
 	totalDue,
+	startReviewCount,
 	totalNew,
 	totalOverdue,
 	noteCount,
@@ -34,6 +36,7 @@ export function HeroCard({
 			<StudyProgress progress={progress} />
 			<SessionActions
 				totalDue={totalDue}
+				startReviewCount={startReviewCount}
 				totalOverdue={totalOverdue}
 				estimatedMinutes={estimatedMinutes}
 			/>
