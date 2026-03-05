@@ -125,7 +125,10 @@ export function ProjectsTab({
 			}
 			e.dataTransfer!.setData(DRAG_MIME, JSON.stringify(dragItem));
 			e.dataTransfer!.effectAllowed = "move";
-			dragState.value = { item: dragItem, dropTargetPath: null, isValid: false };
+			// Defer so root drop zones don't cause layout shift during dragstart
+			requestAnimationFrame(() => {
+				dragState.value = { item: dragItem, dropTargetPath: null, isValid: false };
+			});
 		},
 		[dragState],
 	);
@@ -335,10 +338,7 @@ export function ProjectsTab({
 							<div
 								key={`n-${item.note.name}`}
 								class={`${initialMount.current ? "ep-card-enter" : ""} ${dragCls}`.trim() || undefined}
-								draggable
-								onMouseDown={(e) => {
-									if ((e.target as HTMLElement) !== e.currentTarget) e.preventDefault();
-								}}
+								draggable={!!item.note.path}
 								onDragStart={(e) => handleDragStart(e, item)}
 								onDragEnd={handleDragEnd}
 								onDragOver={(e) => handleDragOver(e, item)}
