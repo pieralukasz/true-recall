@@ -1,7 +1,6 @@
 import { useIcon } from "@shared/ui/preact/hooks";
 import type { App, TFile } from "obsidian";
 import { SuggestModal } from "obsidian";
-import type { RefObject } from "preact";
 import { useCallback, useEffect, useRef, useState } from "preact/hooks";
 import {
 	clearFormatting,
@@ -9,16 +8,12 @@ import {
 	toggleAsymmetricMarker,
 	toggleMarker,
 } from "./cm6-formatting";
-import type { FocusedFieldRef } from "./types";
-
-// ── Types ────────────────────────────────────────────────────────────────
+import type { GetFormattingEditorView } from "./types";
 
 interface FormattingToolbarProps {
-	focusedFieldRef: RefObject<FocusedFieldRef | null>;
 	app: App;
+	getEditorView: GetFormattingEditorView;
 }
-
-// ── Color presets ────────────────────────────────────────────────────────
 
 const COLOR_SWATCHES = [
 	{ name: "Red", css: "var(--color-red)" },
@@ -30,8 +25,6 @@ const COLOR_SWATCHES = [
 	{ name: "Purple", css: "var(--color-purple)" },
 	{ name: "Pink", css: "var(--color-pink)" },
 ];
-
-// ── Media file picker ────────────────────────────────────────────────────
 
 const IMAGE_EXTENSIONS = new Set([
 	"png",
@@ -77,7 +70,6 @@ class MediaFilePicker extends SuggestModal<TFile> {
 	}
 
 	onClose(): void {
-		// If closed without selection, resolve null
 		setTimeout(() => this.resolve?.(null), 0);
 	}
 
@@ -89,16 +81,13 @@ class MediaFilePicker extends SuggestModal<TFile> {
 	}
 }
 
-// ── Component ────────────────────────────────────────────────────────────
-
 export function FormattingToolbar({
-	focusedFieldRef,
 	app,
+	getEditorView,
 }: FormattingToolbarProps) {
 	const [showColors, setShowColors] = useState(false);
 	const colorRef = useRef<HTMLDivElement>(null);
 
-	// Close color dropdown on click-outside
 	useEffect(() => {
 		if (!showColors) return;
 		const handleClick = (e: MouseEvent) => {
@@ -110,21 +99,19 @@ export function FormattingToolbar({
 		return () => document.removeEventListener("mousedown", handleClick);
 	}, [showColors]);
 
-	const getView = useCallback(() => focusedFieldRef.current?.editorView ?? null, [focusedFieldRef]);
-
 	const handleMedia = useCallback(async () => {
-		const view = getView();
+		const view = getEditorView();
 		if (!view) return;
 		const picker = new MediaFilePicker(app);
 		const file = await picker.pick();
 		if (file) {
 			insertAtCursor(view, `![[${file.name}]]`);
 		}
-	}, [app, getView]);
+	}, [app, getEditorView]);
 
 	const handleColor = useCallback(
 		(css: string) => {
-			const view = getView();
+			const view = getEditorView();
 			if (!view) return;
 			toggleAsymmetricMarker(
 				view,
@@ -133,15 +120,14 @@ export function FormattingToolbar({
 			);
 			setShowColors(false);
 		},
-		[getView],
+		[getEditorView],
 	);
 
 	const handleClear = useCallback(() => {
-		const view = getView();
+		const view = getEditorView();
 		if (view) clearFormatting(view);
-	}, [getView]);
+	}, [getEditorView]);
 
-	// Prevent focus theft from CM6 editors
 	const prevent = (e: MouseEvent) => e.preventDefault();
 
 	const btnCls =
@@ -149,14 +135,13 @@ export function FormattingToolbar({
 
 	return (
 		<div class="ep:flex ep:items-center ep:gap-0.5 ep:px-2 ep:py-1 ep:bg-obs-secondary ep:rounded-md ep:border ep:border-obs-border">
-			{/* Text formatting */}
 			<div
 				role="button"
 				title="Bold (Ctrl+B)"
 				class={`${btnCls} ep:font-bold`}
 				onMouseDown={(e: MouseEvent) => {
 					prevent(e);
-					const v = getView();
+					const v = getEditorView();
 					if (v) toggleMarker(v, "**");
 				}}
 			>
@@ -168,7 +153,7 @@ export function FormattingToolbar({
 				class={`${btnCls} ep:italic`}
 				onMouseDown={(e: MouseEvent) => {
 					prevent(e);
-					const v = getView();
+					const v = getEditorView();
 					if (v) toggleMarker(v, "*");
 				}}
 			>
@@ -180,7 +165,7 @@ export function FormattingToolbar({
 				class={`${btnCls} ep:underline`}
 				onMouseDown={(e: MouseEvent) => {
 					prevent(e);
-					const v = getView();
+					const v = getEditorView();
 					if (v) toggleAsymmetricMarker(v, "<u>", "</u>");
 				}}
 			>
@@ -189,14 +174,13 @@ export function FormattingToolbar({
 
 			<Separator />
 
-			{/* Code & Math */}
 			<div
 				role="button"
 				title="Inline code"
 				class={`${btnCls} ep:font-mono`}
 				onMouseDown={(e: MouseEvent) => {
 					prevent(e);
-					const v = getView();
+					const v = getEditorView();
 					if (v) toggleMarker(v, "`");
 				}}
 			>
@@ -208,7 +192,7 @@ export function FormattingToolbar({
 				class={btnCls}
 				onMouseDown={(e: MouseEvent) => {
 					prevent(e);
-					const v = getView();
+					const v = getEditorView();
 					if (v) toggleMarker(v, "$");
 				}}
 			>
@@ -220,7 +204,7 @@ export function FormattingToolbar({
 				class={`${btnCls} ep:text-[11px]`}
 				onMouseDown={(e: MouseEvent) => {
 					prevent(e);
-					const v = getView();
+					const v = getEditorView();
 					if (v) toggleAsymmetricMarker(v, "[[", "]]");
 				}}
 			>
@@ -229,17 +213,15 @@ export function FormattingToolbar({
 
 			<Separator />
 
-			{/* Media */}
 			<IconButton
 				iconId="image"
 				title="Insert image"
 				onMouseDown={(e: MouseEvent) => {
 					prevent(e);
-					handleMedia();
+					void handleMedia();
 				}}
 			/>
 
-			{/* Color */}
 			<div ref={colorRef} class="ep:relative">
 				<IconButton
 					iconId="palette"
@@ -268,7 +250,6 @@ export function FormattingToolbar({
 				)}
 			</div>
 
-			{/* Clear */}
 			<IconButton
 				iconId="eraser"
 				title="Clear formatting"
@@ -280,8 +261,6 @@ export function FormattingToolbar({
 		</div>
 	);
 }
-
-// ── Subcomponents ────────────────────────────────────────────────────────
 
 function Separator() {
 	return (

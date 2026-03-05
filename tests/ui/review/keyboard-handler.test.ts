@@ -37,7 +37,6 @@ describe("KeyboardHandler", () => {
 		const onShowAnswer = vi.fn();
 		const handler = new KeyboardHandler(() => createReviewState(), {
 			onShowAnswer,
-			onRevealWithAI: vi.fn(),
 			onAnswer: vi.fn(async () => {}),
 			onUndo: vi.fn(async () => {}),
 			onSuspend: vi.fn(async () => {}),
@@ -46,7 +45,7 @@ describe("KeyboardHandler", () => {
 			onMoveCard: vi.fn(async () => {}),
 			onAddCard: vi.fn(async () => {}),
 			onEditCard: vi.fn(async () => {}),
-			onToggleTypeInMode: vi.fn(),
+			onCycleTypeInMode: vi.fn(),
 		});
 
 		const event = createEvent({ key: " ", code: "Space" });
@@ -56,11 +55,10 @@ describe("KeyboardHandler", () => {
 		expect(onShowAnswer).toHaveBeenCalledOnce();
 	});
 
-	it("triggers AI reveal on Cmd/Ctrl+Enter before reveal", () => {
-		const onRevealWithAI = vi.fn();
+	it("triggers show answer on Cmd/Ctrl+Enter before reveal", () => {
+		const onShowAnswer = vi.fn();
 		const handler = new KeyboardHandler(() => createReviewState(), {
-			onShowAnswer: vi.fn(),
-			onRevealWithAI,
+			onShowAnswer,
 			onAnswer: vi.fn(async () => {}),
 			onUndo: vi.fn(async () => {}),
 			onSuspend: vi.fn(async () => {}),
@@ -69,22 +67,20 @@ describe("KeyboardHandler", () => {
 			onMoveCard: vi.fn(async () => {}),
 			onAddCard: vi.fn(async () => {}),
 			onEditCard: vi.fn(async () => {}),
-			onToggleTypeInMode: vi.fn(),
-			canRevealWithAIShortcut: () => true,
+			onCycleTypeInMode: vi.fn(),
 		});
 
 		const event = createEvent({ key: "Enter", ctrlKey: true });
 		handler.handleKeyDown(event);
 
 		expect(event.preventDefault).toHaveBeenCalledOnce();
-		expect(onRevealWithAI).toHaveBeenCalledOnce();
+		expect(onShowAnswer).toHaveBeenCalledOnce();
 	});
 
-	it("toggles type-in mode with T", () => {
-		const onToggleTypeInMode = vi.fn();
+	it("cycles type-in mode with T", () => {
+		const onCycleTypeInMode = vi.fn();
 		const handler = new KeyboardHandler(() => createReviewState(), {
 			onShowAnswer: vi.fn(),
-			onRevealWithAI: vi.fn(),
 			onAnswer: vi.fn(async () => {}),
 			onUndo: vi.fn(async () => {}),
 			onSuspend: vi.fn(async () => {}),
@@ -93,14 +89,14 @@ describe("KeyboardHandler", () => {
 			onMoveCard: vi.fn(async () => {}),
 			onAddCard: vi.fn(async () => {}),
 			onEditCard: vi.fn(async () => {}),
-			onToggleTypeInMode,
+			onCycleTypeInMode,
 		});
 
 		const event = createEvent({ key: "t" });
 		handler.handleKeyDown(event);
 
 		expect(event.preventDefault).toHaveBeenCalledOnce();
-		expect(onToggleTypeInMode).toHaveBeenCalledOnce();
+		expect(onCycleTypeInMode).toHaveBeenCalledOnce();
 	});
 
 	it("blocks 1-4 shortcuts only while ratings are locked", () => {
@@ -112,7 +108,6 @@ describe("KeyboardHandler", () => {
 				}),
 			{
 				onShowAnswer: vi.fn(),
-				onRevealWithAI: vi.fn(),
 				onAnswer,
 				onUndo: vi.fn(async () => {}),
 				onSuspend: vi.fn(async () => {}),
@@ -121,7 +116,7 @@ describe("KeyboardHandler", () => {
 				onMoveCard: vi.fn(async () => {}),
 				onAddCard: vi.fn(async () => {}),
 				onEditCard: vi.fn(async () => {}),
-				onToggleTypeInMode: vi.fn(),
+				onCycleTypeInMode: vi.fn(),
 				canRateShortcuts: () => false,
 			},
 		);
@@ -138,7 +133,6 @@ describe("KeyboardHandler", () => {
 				}),
 			{
 				onShowAnswer: vi.fn(),
-				onRevealWithAI: vi.fn(),
 				onAnswer,
 				onUndo: vi.fn(async () => {}),
 				onSuspend: vi.fn(async () => {}),
@@ -147,7 +141,7 @@ describe("KeyboardHandler", () => {
 				onMoveCard: vi.fn(async () => {}),
 				onAddCard: vi.fn(async () => {}),
 				onEditCard: vi.fn(async () => {}),
-				onToggleTypeInMode: vi.fn(),
+				onCycleTypeInMode: vi.fn(),
 				canRateShortcuts: () => true,
 			},
 		);
@@ -158,4 +152,3 @@ describe("KeyboardHandler", () => {
 		expect(onAnswer).toHaveBeenCalledWith(Rating.Again);
 	});
 });
-

@@ -2,16 +2,21 @@ import { CardBrowserQueryService } from "@features/library/services/card-browser
 import { notifyDuplicateError } from "@features/library/ui/panel/utils/panel-helpers";
 import { DuplicateQuestionError } from "@features/study/services/flashcard/card-repository.service";
 import { notify } from "@shared/services/notification.service";
+import { notifyCardChange } from "@shared/services/signals";
 import { cards, pluginSettings } from "@shared/services/reactive-card-store";
 import { usePlugin } from "@shared/ui/preact";
 import { useComputed, useSignal } from "@preact/signals";
-import { useCallback, useMemo, useRef } from "preact/hooks";
+import { useCallback, useEffect, useMemo, useRef } from "preact/hooks";
 import { BrowserToolbar } from "./components/BrowserToolbar";
 import { CardTable } from "./components/CardTable";
 import { CardPreview } from "./components/CardPreview";
 import { BrowserSidebar } from "./components/BrowserSidebar";
 import { BulkActionsBar } from "./components/BulkActionsBar";
 import { useKeyboardNav } from "./hooks/useKeyboardNav";
+import {
+	BROWSER_PAGE_SIZE,
+	getBrowserQueryResetKey,
+} from "./helpers/infinite-scroll";
 import { parseSearchQuery } from "./helpers/search-parser";
 import {
 	EMPTY_FILTER,
@@ -24,7 +29,7 @@ import {
 import { DEFAULT_VISIBLE_KEYS } from "./helpers/column-defs";
 import { createBrowserSuggestionProvider } from "./helpers/browser-suggestions";
 
-const PAGE_SIZE = 200;
+const PAGE_SIZE = BROWSER_PAGE_SIZE;
 
 export function CardBrowserApp() {
 	const plugin = usePlugin();
@@ -35,8 +40,10 @@ export function CardBrowserApp() {
 	const selectedIds = useSignal<Set<string>>(new Set());
 	const previewCard = useSignal<BrowserCard | null>(null);
 	const sidebarVisible = useSignal(true);
+	const showArchived = useSignal(false);
 	const visibleColumns = useSignal<string[]>(DEFAULT_VISIBLE_KEYS);
 	const sidebarFilter = useSignal<FilterState>(EMPTY_FILTER);
+	const loadedLimit = useSignal(PAGE_SIZE);
 
 	const scrollContainerRef = useRef<HTMLDivElement>(null);
 
@@ -75,7 +82,7 @@ export function CardBrowserApp() {
 				...parsed.negatedStates,
 				...sidebarFilter.value.negatedStates,
 			],
-			showArchived: sidebarFilter.value.showArchived ?? false,
+			showArchived: showArchived.value,
 		};
 	});
 
@@ -85,14 +92,23 @@ export function CardBrowserApp() {
 		return queryService.query(
 			combinedFilter.value,
 			sort.value,
-			PAGE_SIZE,
+			loadedLimit.value,
 			0,
 		);
 	}).value;
 
+	const queryResetKey = useComputed(() =>
+		getBrowserQueryResetKey(combinedFilter.value, sort.value),
+	).value;
+
 	const facetCounts = useComputed(() => {
 		cards.value;
-		return queryService.getFacetCounts();
+		return queryService.getFacetCounts(showArchived.value);
+	}).value;
+
+	const orphanedCardIds = useComputed(() => {
+		cards.value;
+		return queryService.getOrphanedCardIds();
 	}).value;
 
 	const getSuggestions = useMemo(() => {
@@ -236,7 +252,53 @@ export function CardBrowserApp() {
 			: [...current, key];
 	}, []);
 
+	const handleToggleShowArchived = useCallback(() => {
+		showArchived.value = !showArchived.value;
+	}, []);
+
+	const hasMore = result.cards.length < result.totalCount;
+
+	const loadMore = useCallback(() => {
+		if (!hasMore) return;
+		loadedLimit.value += PAGE_SIZE;
+	}, [hasMore]);
+
+	const handleRemoveOrphanedCards = useCallback(() => {
+		const orphanedIds = queryService.getOrphanedCardIds();
+		if (orphanedIds.length === 0) return;
+
+		const cardWord = orphanedIds.length === 1 ? "card" : "cards";
+		const confirmed = confirm(
+			`Remove ${orphanedIds.length} orphaned ${cardWord}? This cannot be undone.`,
+		);
+		if (!confirmed) return;
+
+		const deletedCount = plugin.cardStore.cards.bulkSoftDelete(orphanedIds);
+		notifyCardChange({
+			type: "bulk",
+			cardIds: orphanedIds,
+			action: "delete",
+		});
+		notify().cardsDeleted(deletedCount);
+
+		const deletedSet = new Set(orphanedIds);
+		selectedIds.value = new Set(
+			[...selectedIds.value].filter((id) => !deletedSet.has(id)),
+		);
+		if (
+			previewCard.value &&
+			deletedSet.has(previewCard.value.id)
+		) {
+			previewCard.value = null;
+		}
+	}, [plugin, queryService]);
+
 	const searchInputRef = useRef<HTMLInputElement>(null);
+
+	useEffect(() => {
+		loadedLimit.value = PAGE_SIZE;
+		scrollContainerRef.current?.scrollTo({ top: 0 });
+	}, [queryResetKey]);
 
 	useKeyboardNav({
 		cards: result.cards,
@@ -261,7 +323,8 @@ export function CardBrowserApp() {
 				onRemoveStateFilter={handleRemoveStateFilter}
 				sort={sort.value}
 				totalCount={result.totalCount}
-				shownCount={result.cards.length}
+				showArchived={showArchived.value}
+				onToggleShowArchived={handleToggleShowArchived}
 				sidebarVisible={sidebarVisible.value}
 				onToggleSidebar={() => {
 					sidebarVisible.value = !sidebarVisible.value;
@@ -287,6 +350,8 @@ export function CardBrowserApp() {
 						facetCounts={facetCounts}
 						activeFilter={sidebarFilter.value}
 						onFilterChange={handleSidebarFilter}
+						orphanedCount={orphanedCardIds.length}
+						onRemoveOrphanedCards={handleRemoveOrphanedCards}
 					/>
 				)}
 
@@ -301,6 +366,8 @@ export function CardBrowserApp() {
 						previewCardId={previewCard.value?.id ?? null}
 						visibleColumns={visibleColumns.value}
 						scrollContainerRef={scrollContainerRef}
+						hasMore={hasMore}
+						onReachEnd={loadMore}
 					/>
 				</div>
 

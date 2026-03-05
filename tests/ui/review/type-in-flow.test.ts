@@ -1,7 +1,9 @@
 import { describe, expect, it } from "vitest";
 import {
+	deriveTypeInMode,
 	isRatingLockedForTypeIn,
 	isTypeInRequiredForCard,
+	nextTypeInMode,
 	shouldRunAIGradingOnReveal,
 } from "../../../src/features/study/ui/review/helpers/type-in-flow";
 import type { FSRSFlashcardItem } from "../../../src/shared/types";
@@ -27,6 +29,19 @@ function createCard(answer: string): FSRSFlashcardItem {
 }
 
 describe("type-in flow helpers", () => {
+	it("derives mode from enabled + AI flags", () => {
+		expect(deriveTypeInMode(false, false)).toBe("off");
+		expect(deriveTypeInMode(false, true)).toBe("off");
+		expect(deriveTypeInMode(true, true)).toBe("ai");
+		expect(deriveTypeInMode(true, false)).toBe("diff");
+	});
+
+	it("cycles modes in fixed order", () => {
+		expect(nextTypeInMode("off")).toBe("ai");
+		expect(nextTypeInMode("ai")).toBe("diff");
+		expect(nextTypeInMode("diff")).toBe("off");
+	});
+
 	it("requires type-in only when mode is enabled and card has text answer", () => {
 		expect(isTypeInRequiredForCard(createCard("A"), true)).toBe(true);
 		expect(isTypeInRequiredForCard(createCard(""), true)).toBe(false);

@@ -4,6 +4,7 @@ import { formatEstimatedTime } from "../helpers/time-estimate";
 
 interface SessionActionsProps {
 	totalDue: number;
+	startReviewCount?: number;
 	totalOverdue: number;
 	estimatedMinutes: number;
 }
@@ -13,10 +14,12 @@ const AVG_SECONDS_PER_CARD = 10;
 
 export function SessionActions({
 	totalDue,
+	startReviewCount,
 	totalOverdue,
 	estimatedMinutes,
 }: SessionActionsProps) {
 	const plugin = usePlugin();
+	const effectiveStartCount = startReviewCount ?? totalDue;
 
 	const quickCardLimit = Math.ceil(
 		(QUICK_SESSION_MINUTES * 60) / AVG_SECONDS_PER_CARD,
@@ -41,8 +44,8 @@ export function SessionActions({
 	};
 
 	const primaryLabel =
-		totalDue > 0
-			? `Start Review: ${totalDue} cards (~${formatEstimatedTime(estimatedMinutes)})`
+		effectiveStartCount > 0
+			? `Start Review: ${effectiveStartCount} cards (~${formatEstimatedTime(estimatedMinutes)})`
 			: "Start Review";
 
 	return (
@@ -52,7 +55,7 @@ export function SessionActions({
 				variant="primary"
 				onClick={handleStartReview}
 				fullWidth
-				disabled={totalDue === 0}
+				disabled={effectiveStartCount === 0}
 			/>
 			<div class="ep:flex ep:gap-2">
 				<ActionButton
@@ -60,7 +63,7 @@ export function SessionActions({
 					variant="secondary"
 					onClick={handleQuickReview}
 					fullWidth
-					disabled={totalDue === 0}
+					disabled={effectiveStartCount === 0}
 					icon="zap"
 				/>
 				{totalOverdue > 0 && (
