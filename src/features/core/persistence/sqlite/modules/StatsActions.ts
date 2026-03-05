@@ -26,6 +26,12 @@ export interface ReviewLogForSync {
 	presetName: string | null;
 }
 
+export interface PresetDailyProgressRow {
+	presetName: string;
+	newStudied: number;
+	reviewsCompleted: number;
+}
+
 export class StatsActions {
 	constructor(private db: SqliteDatabase) {}
 
@@ -113,6 +119,34 @@ export class StatsActions {
 				[presetName, isDefault ? 1 : 0],
 			)?.count ?? 0
 		);
+	}
+
+	getPresetProgressInRange(
+		startIso: string,
+		endIso: string,
+	): PresetDailyProgressRow[] {
+		const rows = this.db.query<{
+			presetName: string;
+			newStudied: number;
+			reviewsCompleted: number;
+		}>(
+			`SELECT
+				COALESCE(preset_name, 'Default') as presetName,
+				SUM(CASE WHEN state = 0 THEN 1 ELSE 0 END) as newStudied,
+				SUM(CASE WHEN state = 2 THEN 1 ELSE 0 END) as reviewsCompleted
+			FROM review_log
+			WHERE deleted_at IS NULL
+			  AND reviewed_at >= ?
+			  AND reviewed_at < ?
+			GROUP BY COALESCE(preset_name, 'Default')`,
+			[startIso, endIso],
+		);
+
+		return rows.map((row) => ({
+			presetName: row.presetName,
+			newStudied: row.newStudied ?? 0,
+			reviewsCompleted: row.reviewsCompleted ?? 0,
+		}));
 	}
 
 	updateReviewLogPresetName(oldName: string, newName: string): void {

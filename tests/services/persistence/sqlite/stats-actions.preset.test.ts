@@ -9,8 +9,9 @@ function addReview(
 	ctx: TestContext,
 	cardId: string,
 	presetName?: string,
+	state = 2,
 ): void {
-	ctx.stats.addReviewLog(cardId, 3, 7, 0, 2, 5000, presetName);
+	ctx.stats.addReviewLog(cardId, 3, 7, 0, state, 5000, presetName);
 }
 
 function softDeleteReview(ctx: TestContext, reviewId: string): void {
@@ -182,6 +183,68 @@ describe("StatsActions — preset methods", () => {
 			);
 
 			expect(after!.updated_at).toBeGreaterThan(before!.updated_at);
+		});
+	});
+
+	describe("getPresetProgressInRange", () => {
+		it("aggregates new/review progress per preset in a time range", () => {
+			const cardA = createTestCard({ id: "card-a" });
+			const cardB = createTestCard({ id: "card-b" });
+			ctx.cards.set(cardA.id, cardA);
+			ctx.cards.set(cardB.id, cardB);
+
+			// Outside range (before day boundary)
+			vi.setSystemTime(new Date("2026-03-01T03:59:59.000Z"));
+			addReview(ctx, cardA.id, "Medical", 0);
+
+			// In range
+			vi.setSystemTime(new Date("2026-03-01T04:01:00.000Z"));
+			addReview(ctx, cardA.id, "Medical", 0); // new
+
+			vi.setSystemTime(new Date("2026-03-01T04:10:00.000Z"));
+			addReview(ctx, cardA.id, "Medical", 2); // review
+
+			vi.setSystemTime(new Date("2026-03-01T05:00:00.000Z"));
+			addReview(ctx, cardB.id, undefined, 0); // Default (NULL) new
+
+			vi.setSystemTime(new Date("2026-03-01T05:05:00.000Z"));
+			addReview(ctx, cardB.id, undefined, 2); // Default (NULL) review
+
+			const rows = ctx.stats.getPresetProgressInRange(
+				"2026-03-01T04:00:00.000Z",
+				"2026-03-02T04:00:00.000Z",
+			);
+			const byPreset = new Map(rows.map((row) => [row.presetName, row]));
+
+			expect(byPreset.get("Medical")).toMatchObject({
+				newStudied: 1,
+				reviewsCompleted: 1,
+			});
+			expect(byPreset.get("Default")).toMatchObject({
+				newStudied: 1,
+				reviewsCompleted: 1,
+			});
+		});
+
+		it("ignores soft-deleted rows", () => {
+			const card = createTestCard({ id: "card-soft-delete" });
+			ctx.cards.set(card.id, card);
+
+			vi.setSystemTime(new Date("2026-03-01T10:00:00.000Z"));
+			addReview(ctx, card.id, "Medical", 2);
+			addReview(ctx, card.id, "Medical", 2);
+
+			const ids = getReviewIds(ctx, card.id);
+			softDeleteReview(ctx, ids[0]!);
+
+			const rows = ctx.stats.getPresetProgressInRange(
+				"2026-03-01T04:00:00.000Z",
+				"2026-03-02T04:00:00.000Z",
+			);
+			const medical = rows.find((row) => row.presetName === "Medical");
+
+			expect(medical).toBeDefined();
+			expect(medical?.reviewsCompleted).toBe(1);
 		});
 	});
 });

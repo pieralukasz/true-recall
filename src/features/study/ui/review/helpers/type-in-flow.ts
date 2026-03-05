@@ -1,5 +1,21 @@
 import type { FSRSFlashcardItem } from "@shared/types";
 
+export type TypeInMode = "off" | "ai" | "diff";
+
+export function deriveTypeInMode(
+	typeInModeEnabled: boolean,
+	aiEnabled: boolean,
+): TypeInMode {
+	if (!typeInModeEnabled) return "off";
+	return aiEnabled ? "ai" : "diff";
+}
+
+export function nextTypeInMode(mode: TypeInMode): TypeInMode {
+	if (mode === "off") return "ai";
+	if (mode === "ai") return "diff";
+	return "off";
+}
+
 export function isTypeInRequiredForCard(
 	card: FSRSFlashcardItem | null,
 	typeInModeEnabled: boolean,
