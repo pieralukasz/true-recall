@@ -58,9 +58,37 @@ export function DashboardApp() {
 		});
 	}).value;
 
+	const visibleNotes = useMemo(() => {
+		if (showArchived.value) return data.notes;
+
+		return data.notes.filter((note) => {
+			if (!note.path) return true;
+			if (plugin.hierarchyService.isNoteArchived(note.path)) return false;
+
+			// Hide notes that live under archived projects, including nested parents.
+			const stack = [...plugin.hierarchyService.getParentsForNote(note.path)];
+			const visited = new Set<string>();
+
+			while (stack.length > 0) {
+				const parentPath = stack.pop();
+				if (!parentPath || visited.has(parentPath)) continue;
+				visited.add(parentPath);
+
+				if (plugin.hierarchyService.isProjectArchived(parentPath)) {
+					return false;
+				}
+
+				const grandParents = plugin.hierarchyService.getParentsForNote(parentPath);
+				for (const gp of grandParents) stack.push(gp);
+			}
+
+			return true;
+		});
+	}, [data.notes, plugin, showArchived.value]);
+
 	const projectData = useMemo(() => {
 		return aggregateProjectData({
-			notes: data.notes,
+			notes: visibleNotes,
 			showArchived: showArchived.value,
 			plugin: {
 				hierarchyService: plugin.hierarchyService,
@@ -71,13 +99,13 @@ export function DashboardApp() {
 				settings: plugin.settings,
 			},
 		});
-	}, [plugin, data.notes, showArchived.value]);
+	}, [plugin, visibleNotes, showArchived.value]);
 
 	const enrichedNotes = useMemo(() => {
 		const newStudied = plugin.sessionPersistence.getNewCardsStudiedToday();
 		const reviewsCompleted = plugin.sessionPersistence.getReviewCardsCompletedToday();
 
-		return data.notes.map((note) => {
+		return visibleNotes.map((note) => {
 			const projects = projectData.noteProjectMap.get(note.name) ?? [];
 
 			const preset = note.path
@@ -100,7 +128,7 @@ export function DashboardApp() {
 				...(archived ? { archived } : {}),
 			};
 		});
-	}, [data.notes, projectData.noteProjectMap, plugin, showArchived.value]);
+	}, [visibleNotes, projectData.noteProjectMap, plugin, showArchived.value]);
 
 	const allProjectNames = useMemo(() => {
 		const names = new Set<string>();
