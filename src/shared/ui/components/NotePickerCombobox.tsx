@@ -147,9 +147,9 @@ export function NotePickerCombobox({
 				<ul
 					ref={listRef}
 					class={cn(
-						"ep:absolute ep:left-0 ep:top-full ep:mt-1 ep:z-50",
+						"ep:absolute ep:right-0 ep:top-full ep:mt-1 ep:z-50",
 						"ep:bg-obs-primary ep:border ep:border-obs-border ep:rounded-md ep:shadow-lg",
-						"ep:max-h-[280px] ep:overflow-y-auto ep:py-1 ep:w-full",
+						"ep:max-h-[280px] ep:overflow-y-auto ep:py-1 ep:min-w-full ep:w-[420px] ep:max-w-[90vw]",
 					)}
 				>
 					{filtered.map((note, index) => {
