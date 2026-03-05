@@ -1,7 +1,9 @@
 import type { EditorView } from "@codemirror/view";
+import { CardTypesEditorModal } from "@features/core/modals/card-types-editor/CardTypesEditorModal";
+import { NoteTypeManagerModal } from "@features/core/modals/NoteTypeManagerModal";
 import { Clickable } from "@shared/ui/components/Clickable";
+import { useIcon } from "@shared/ui/preact/hooks";
 import { useApp, usePlugin } from "@shared/ui/preact/ObsidianContext";
-import { SECONDARY_BUTTON_CLASSES } from "@shared/ui/utils/tailwind";
 import { Notice, TFile } from "obsidian";
 import { useCallback, useEffect, useMemo, useRef, useState } from "preact/hooks";
 import { ActionBar } from "./ActionBar";
@@ -19,13 +21,11 @@ import type {
 interface QuickNoteEditorAppProps {
 	mode: QuickNoteEditorMode;
 	onDone: (result: QuickNoteEditorResult) => void;
-	onClose: () => void;
 }
 
 export function QuickNoteEditorApp({
 	mode,
 	onDone,
-	onClose,
 }: QuickNoteEditorAppProps) {
 	const app = useApp();
 	const plugin = usePlugin();
@@ -121,6 +121,26 @@ export function QuickNoteEditorApp({
 		setRefreshCounter((c) => c + 1);
 	}, []);
 
+	const openFields = useCallback(() => {
+		const modal = new NoteTypeManagerModal(app, plugin);
+		const origClose = modal.onClose.bind(modal);
+		modal.onClose = () => {
+			origClose();
+			handleNoteTypeRefresh();
+		};
+		modal.open();
+	}, [app, plugin, handleNoteTypeRefresh]);
+
+	const openCards = useCallback(() => {
+		const modal = new CardTypesEditorModal(app, plugin, noteTypeId);
+		const origClose = modal.onClose.bind(modal);
+		modal.onClose = () => {
+			origClose();
+			handleNoteTypeRefresh();
+		};
+		modal.open();
+	}, [app, plugin, noteTypeId, handleNoteTypeRefresh]);
+
 	const resolveSourceUid = useCallback(async (): Promise<
 		string | undefined
 	> => {
@@ -142,7 +162,7 @@ export function QuickNoteEditorApp({
 	}, [isEdit, editMode, addMode, selectedSourceNote, plugin.flashcardManager]);
 
 	const handleSave = useCallback(
-		async (andAddAnother: boolean) => {
+		async () => {
 			if (!noteType || !hasContent || saving) return;
 			if (!plugin.flashcardManager?.hasStore()) {
 				new Notice("Database not initialized");
@@ -153,7 +173,6 @@ export function QuickNoteEditorApp({
 
 			try {
 				if (isEdit) {
-					// Check if fields actually changed
 					const unchanged = noteType.fields.every(
 						(f) => fields[f] === editMode!.note.fields[f],
 					);
@@ -187,24 +206,15 @@ export function QuickNoteEditorApp({
 						`Created ${totalCards} card${totalCards !== 1 ? "s" : ""}`,
 					);
 
-					if (andAddAnother) {
-						// Clear unpinned fields, keep pinned + note type + source
-						const next: Record<string, string> = {};
-						for (const field of noteType.fields) {
-							next[field] = pinnedFields.has(field)
-								? (fields[field] ?? "")
-								: "";
-						}
-						setFields(next);
-						setSaving(false);
-						return;
+					// Clear unpinned fields, keep pinned — modal stays open
+					const next: Record<string, string> = {};
+					for (const field of noteType.fields) {
+						next[field] = pinnedFields.has(field)
+							? (fields[field] ?? "")
+							: "";
 					}
-
-					onDone({
-						cancelled: false,
-						createdNote: result.note,
-						createdCards: result.cards,
-					});
+					setFields(next);
+					setSaving(false);
 				}
 			} catch (error) {
 				const msg =
@@ -242,17 +252,15 @@ export function QuickNoteEditorApp({
 
 	return (
 		<div class="ep:flex ep:flex-col ep:gap-3">
-			{/* Action bar: Note type, Source note, Fields/Cards/AI */}
+			{/* Action bar: Note type, Source note, AI */}
 			<ActionBar
 				app={app}
-				plugin={plugin}
 				noteTypeId={noteTypeId}
 				onNoteTypeChange={handleNoteTypeChange}
 				isEdit={isEdit}
 				showSourcePicker={showSourcePicker}
 				selectedSourceNote={selectedSourceNote}
 				onSourceSelect={setSelectedSourceNote}
-				onNoteTypeRefresh={handleNoteTypeRefresh}
 			/>
 
 			{/* Shared formatting toolbar */}
@@ -264,52 +272,104 @@ export function QuickNoteEditorApp({
 				fields={fields}
 				onFieldChange={handleFieldChange}
 				onFieldFocus={handleFieldFocus}
-				onModEnter={() => handleSave(false)}
+				onModEnter={handleSave}
 				pinnedFields={pinnedFields}
 				onTogglePin={togglePin}
 			/>
 
 			{/* Footer */}
-			<div class="ep-modal-footer ep:flex ep:items-center ep:gap-3">
-				{!isEdit && (
-					<div class="ep:flex-1">
-						<CardCountPreview
-							noteType={noteType}
-							noteTypeId={noteTypeId}
-							fields={fields}
-							hasContent={hasContent}
-						/>
-					</div>
-				)}
+			<FooterBar
+				isEdit={isEdit}
+				hasContent={hasContent}
+				saving={saving}
+				noteType={noteType}
+				noteTypeId={noteTypeId}
+				fields={fields}
+				onSave={handleSave}
+				onOpenFields={openFields}
+				onOpenCards={openCards}
+			/>
+		</div>
+	);
+}
 
-				<Clickable
-					class="ep:text-ui-small ep:text-obs-muted ep:hover:text-obs-normal ep:px-3 ep:py-1.5 ep:rounded"
-					onClick={onClose}
-					stopPropagation={false}
-				>
-					Cancel
-				</Clickable>
+// ── Footer ───────────────────────────────────────────────────────────────
 
-				{!isEdit && (
-					<Clickable
-						class={SECONDARY_BUTTON_CLASSES}
-						onClick={() => handleSave(true)}
-						disabled={!hasContent || saving}
-						stopPropagation={false}
-					>
-						Save & Add Another
-					</Clickable>
-				)}
+interface FooterBarProps {
+	isEdit: boolean;
+	hasContent: boolean;
+	saving: boolean;
+	noteType: import("@shared/types/note.types").NoteType;
+	noteTypeId: string;
+	fields: Record<string, string>;
+	onSave: () => void;
+	onOpenFields: () => void;
+	onOpenCards: () => void;
+}
 
-				<Clickable
-					class="mod-cta ep-btn"
-					onClick={() => handleSave(false)}
-					disabled={!hasContent || saving}
-					stopPropagation={false}
-				>
-					{isEdit ? "Save Changes" : "Save & Close"}
-				</Clickable>
-			</div>
+const ghostBtnCls =
+	"ep-btn ep-btn-ghost ep:text-ui-smaller ep:px-2 ep:py-1 ep:min-h-[28px] ep:max-h-[28px]";
+
+function FooterBar({
+	isEdit,
+	hasContent,
+	saving,
+	noteType,
+	noteTypeId,
+	fields,
+	onSave,
+	onOpenFields,
+	onOpenCards,
+}: FooterBarProps) {
+	const aiIconRef = useIcon("wand");
+
+	const openAI = useCallback(() => {
+		new Notice("AI generation coming soon");
+	}, []);
+
+	return (
+		<div class="ep-modal-footer ep:flex ep:items-center ep:gap-2">
+			<Clickable
+				class={ghostBtnCls}
+				onClick={onOpenFields}
+				stopPropagation={false}
+			>
+				Fields
+			</Clickable>
+			<Clickable
+				class={ghostBtnCls}
+				onClick={onOpenCards}
+				stopPropagation={false}
+			>
+				Cards
+			</Clickable>
+
+			{!isEdit && (
+				<div class="ep:flex-1">
+					<CardCountPreview
+						noteType={noteType}
+						noteTypeId={noteTypeId}
+						fields={fields}
+						hasContent={hasContent}
+					/>
+				</div>
+			)}
+
+			<div
+				ref={aiIconRef}
+				role="button"
+				title="Generate with AI (coming soon)"
+				class={`${ghostBtnCls} ep:ml-auto [&>svg]:ep:w-4 [&>svg]:ep:h-4`}
+				onClick={openAI}
+			/>
+			<Clickable
+				class="mod-cta ep-btn"
+				onClick={onSave}
+				disabled={!hasContent || saving}
+				stopPropagation={false}
+			>
+				{isEdit ? "Save Changes" : "Save"}
+			</Clickable>
 		</div>
 	);
 }

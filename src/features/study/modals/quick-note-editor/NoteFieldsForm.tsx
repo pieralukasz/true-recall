@@ -35,7 +35,7 @@ export function NoteFieldsForm({
 	onTogglePin,
 }: NoteFieldsFormProps) {
 	return (
-		<div class="ep:divide-y ep:divide-obs-divider ep:border ep:border-obs-border ep:rounded-md ep:overflow-hidden">
+		<div class="ep:flex ep:flex-col ep:gap-3">
 			{noteType.fields.map((fieldName, idx) => (
 				<CMField
 					key={fieldName}
@@ -51,7 +51,7 @@ export function NoteFieldsForm({
 			))}
 
 			{noteType.type === 1 && (
-				<div class="ep:text-ui-smaller ep:text-obs-faint ep:bg-obs-secondary ep:px-3 ep:py-2">
+				<div class="ep:text-ui-smaller ep:text-obs-faint ep:bg-obs-secondary ep:px-3 ep:py-2 ep:border ep:border-obs-border ep:rounded-md">
 					Use{" "}
 					<code class="ep:text-obs-accent">{"{{c1::text}}"}</code>{" "}
 					syntax for cloze deletions. Multiple indices create
@@ -107,7 +107,7 @@ function CMField({
 	// Stable deps — editor is only recreated if app or EmbeddableEditor class changes.
 	useEffect(() => {
 		const el = containerRef.current;
-		if (!el || !plugin.EmbeddableEditor) return;
+		if (!el || !plugin.EmbeddableEditor || isCollapsed) return;
 
 		let editor: EmbeddableEditorInstance;
 		try {
@@ -135,7 +135,7 @@ function CMField({
 			editorRef.current = null;
 			editor.destroy();
 		};
-	}, [app, plugin.EmbeddableEditor]); // eslint-disable-line react-hooks/exhaustive-deps
+	}, [app, plugin.EmbeddableEditor, isCollapsed]); // eslint-disable-line react-hooks/exhaustive-deps
 
 	// Sync content when parent updates fields (e.g. NoteType switch resets values).
 	// useLayoutEffect prevents a visible flash of stale content.
@@ -178,7 +178,7 @@ function CMField({
 	// Fallback: render plain textarea until EmbeddableEditor is available
 	if (!plugin.EmbeddableEditor) {
 		return (
-			<div>
+			<div class="ep:border ep:border-obs-border ep:rounded-md ep:overflow-hidden">
 				{header}
 				{!isCollapsed && (
 					<textarea
@@ -194,7 +194,7 @@ function CMField({
 	}
 
 	return (
-		<div>
+		<div class="ep:border ep:border-obs-border ep:rounded-md ep:overflow-hidden">
 			{header}
 			{!isCollapsed && (
 				<div
