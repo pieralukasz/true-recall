@@ -11,15 +11,20 @@ import {
 } from "@features/study/ui/review/handlers";
 import {
 	applyMutation,
+	buildGlobalPresetQueueContext,
 	buildQueueOptions,
+	deriveTypeInMode,
 	filterActiveCards,
 	getEmptyQueueMessage,
 	getTypeInModeStorage,
+	isGlobalReviewSession,
 	isRatingLockedForTypeIn,
+	nextTypeInMode,
 	persistTypeInMode,
 	readPersistedTypeInMode,
 	isTypeInRequiredForCard,
 	shouldRunAIGradingOnReveal,
+	type TypeInMode,
 } from "@features/study/ui/review/helpers";
 import {
 	ReviewApp,
@@ -167,13 +172,13 @@ export class ReviewView extends ItemView {
 			},
 			onSuspend: () => this.cardActionsHandler.handleSuspend(),
 			onBuryCard: () => this.cardActionsHandler.handleBuryCard(),
-			onBuryNote: () => this.cardActionsHandler.handleBuryNote(),
-			onMoveCard: () => this.cardActionsHandler.handleMoveCard(),
-			onAddCard: () => this.cardActionsHandler.handleAddNewFlashcard(),
-			onEditCard: () => this.cardActionsHandler.handleEditCardModal(),
-			onToggleTypeInMode: () => this.toggleTypeInMode(),
-			canRateShortcuts: () => !this.isRatingLocked(),
-		});
+				onBuryNote: () => this.cardActionsHandler.handleBuryNote(),
+				onMoveCard: () => this.cardActionsHandler.handleMoveCard(),
+				onAddCard: () => this.cardActionsHandler.handleAddNewFlashcard(),
+				onEditCard: () => this.cardActionsHandler.handleEditCardModal(),
+				onCycleTypeInMode: () => this.cycleTypeInMode(),
+				canRateShortcuts: () => !this.isRatingLocked(),
+			});
 	}
 
 	private getCurrentTypeInState(cardId: string): TypeInAssessmentState {
@@ -211,34 +216,44 @@ export class ReviewView extends ItemView {
 		);
 	}
 
-	private toggleTypeInMode(): void {
-		this.sessionTypeInModeEnabled = !this.sessionTypeInModeEnabled;
-		this.writeTypeInModePreference();
-		const currentCard = this.review.getCurrentCard();
-		const currentId = currentCard?.id ?? null;
-		this.resetTypeInState(currentId);
-		this.review.notifyChange();
-		notify().info(
-			this.sessionTypeInModeEnabled
-				? "Type-in mode enabled"
-				: "Type-in mode disabled",
+	private getTypeInMode(): TypeInMode {
+		return deriveTypeInMode(
+			this.sessionTypeInModeEnabled,
+			this.aiEnabledForTypeIn,
 		);
 	}
 
-	private toggleTypeInAIEnabled(): void {
-		this.aiEnabledForTypeIn = !this.aiEnabledForTypeIn;
-		const card = this.review.getCurrentCard();
-		if (!card) {
+	private cycleTypeInMode(): void {
+		const currentMode = this.getTypeInMode();
+		const nextMode = nextTypeInMode(currentMode);
+		const currentId = this.review.getCurrentCard()?.id ?? null;
+
+		this.sessionTypeInModeEnabled = nextMode !== "off";
+		this.aiEnabledForTypeIn = nextMode === "ai";
+		this.writeTypeInModePreference();
+
+		if (nextMode === "off" || nextMode === "ai") {
+			this.resetTypeInState(currentId);
 			this.review.notifyChange();
-			return;
+		} else if (currentId) {
+			// Keep typed input while switching AI -> Diff, clear grading state only.
+			this.setTypeInState(currentId, {
+				localAssessment: null,
+				semanticResult: null,
+				semanticMessage: null,
+				isChecking: false,
+			});
+		} else {
+			this.review.notifyChange();
 		}
 
-		this.setTypeInState(card.id, {
-			localAssessment: null,
-			semanticResult: null,
-			semanticMessage: null,
-			isChecking: false,
-		});
+		notify().info(this.getTypeInModeMessage(nextMode));
+	}
+
+	private getTypeInModeMessage(mode: TypeInMode): string {
+		if (mode === "ai") return "Type in: AI";
+		if (mode === "diff") return "Type in: Diff";
+		return "Type in: Off";
 	}
 
 	private isTypeInRequiredForCurrentCard(): boolean {
@@ -433,7 +448,6 @@ export class ReviewView extends ItemView {
 				onShowAnswer: () => void this.handleReveal(),
 				onTypedAnswerChange: (value: string) =>
 					this.handleTypedAnswerChange(value),
-				onToggleTypeInAI: () => this.toggleTypeInAIEnabled(),
 				onAnswer: (rating: Grade) => void this.handleAnswer(rating),
 				onContentChange: (value: string, field: "question" | "answer") =>
 					void this.editHandler.saveContent(value, field),
@@ -450,7 +464,7 @@ export class ReviewView extends ItemView {
 				showHeaderStats: this.plugin.settings.showReviewHeaderStats,
 				showNextReviewTime: this.plugin.settings.showNextReviewTime,
 				continuousCustomReviews: this.plugin.settings.continuousCustomReviews,
-				onToggleTypeInMode: () => this.toggleTypeInMode(),
+				onCycleTypeInMode: () => this.cycleTypeInMode(),
 				getTypeInState: (card, isAnswerRevealed) => {
 					const requiresTypeIn = isTypeInRequiredForCard(
 						card,
@@ -458,7 +472,7 @@ export class ReviewView extends ItemView {
 					);
 					const state = this.getCurrentTypeInState(card.id);
 					return {
-						isTypeInModeEnabled: this.sessionTypeInModeEnabled,
+						typeInMode: this.getTypeInMode(),
 						useTypeInMode: requiresTypeIn,
 						aiEnabled: this.aiEnabledForTypeIn,
 						typedAnswer: state.typedAnswer,
@@ -658,6 +672,18 @@ export class ReviewView extends ItemView {
 				sessionPreset,
 			);
 
+			if (isGlobalReviewSession(this.filters)) {
+				const presetContext = buildGlobalPresetQueueContext(
+					activeCards,
+					this.plugin.presetService,
+					this.sessionPersistence,
+				);
+				queueOptions.cardPresetById = presetContext.cardPresetById;
+				queueOptions.presetDailyLimits = presetContext.presetDailyLimits;
+				queueOptions.presetProgressToday = presetContext.presetProgressToday;
+				queueOptions.defaultPresetName = presetContext.defaultPresetName;
+			}
+
 			// Scope to project members via outgoing links
 			if (this.filters.projectPath) {
 				queueOptions.sourceUidFilter =
@@ -736,14 +762,19 @@ export class ReviewView extends ItemView {
 
 	private showActionsMenu(event: MouseEvent): void {
 		const menu = new Menu();
+		const typeInMode = this.getTypeInMode();
+		const typeInMenuLabel =
+			typeInMode === "ai"
+				? "Type in: AI (t)"
+				: typeInMode === "diff"
+					? "Type in: Diff (t)"
+					: "Type in: Off (t)";
 
 		menu.addItem((item) =>
 			item
-				.setTitle(
-					`${this.sessionTypeInModeEnabled ? "Disable" : "Enable"} type-in mode (t)`,
-				)
+				.setTitle(typeInMenuLabel)
 				.setIcon("text-cursor-input")
-				.onClick(() => this.toggleTypeInMode()),
+				.onClick(() => this.cycleTypeInMode()),
 		);
 		menu.addSeparator();
 

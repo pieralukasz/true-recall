@@ -36,7 +36,7 @@ export interface KeyboardActionCallbacks {
 	onMoveCard: () => Promise<void>;
 	onAddCard: () => Promise<void>;
 	onEditCard: () => Promise<void>;
-	onToggleTypeInMode: () => void;
+	onCycleTypeInMode: () => void;
 	canRateShortcuts?: () => boolean;
 }
 
@@ -156,10 +156,10 @@ export class KeyboardHandler {
 			return true;
 		}
 
-		// T = Toggle type-in mode
+		// T = Cycle type-in mode (off -> AI -> Diff -> off)
 		if (e.key === "t" || e.key === "T") {
 			e.preventDefault();
-			this.callbacks.onToggleTypeInMode();
+			this.callbacks.onCycleTypeInMode();
 			return true;
 		}
 
@@ -232,7 +232,7 @@ export class KeyboardHandler {
 			{ key: "M", description: "Move card to another note" },
 			{ key: "A", description: "Add new flashcard" },
 			{ key: "E", description: "Edit card" },
-			{ key: "T", description: "Toggle type-in mode" },
-		];
+				{ key: "T", description: "Cycle type-in mode" },
+			];
 	}
 }

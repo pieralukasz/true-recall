@@ -2,18 +2,20 @@ import type { EditorView } from "@codemirror/view";
 import { CardTypesEditorModal } from "@features/core/modals/card-types-editor/CardTypesEditorModal";
 import { NoteTypeManagerModal } from "@features/core/modals/NoteTypeManagerModal";
 import { Clickable } from "@shared/ui/components/Clickable";
+import {
+	FormattingToolbar,
+	type FormattingTargetRef,
+} from "@shared/ui/editor/formatting";
 import { useIcon } from "@shared/ui/preact/hooks";
 import { useApp, usePlugin } from "@shared/ui/preact/ObsidianContext";
 import { Notice, TFile } from "obsidian";
 import { useCallback, useEffect, useMemo, useRef, useState } from "preact/hooks";
 import { ActionBar } from "./ActionBar";
 import { CardCountPreview } from "./CardCountPreview";
-import { FormattingToolbar } from "./FormattingToolbar";
 import { NoteFieldsForm } from "./NoteFieldsForm";
 import type {
 	AddMode,
 	EditMode,
-	FocusedFieldRef,
 	QuickNoteEditorMode,
 	QuickNoteEditorResult,
 } from "./types";
@@ -52,7 +54,7 @@ export function QuickNoteEditorApp({
 	const [refreshCounter, setRefreshCounter] = useState(0);
 
 	// Focus tracking for shared formatting toolbar
-	const focusedFieldRef = useRef<FocusedFieldRef | null>(null);
+	const focusedFieldRef = useRef<FormattingTargetRef | null>(null);
 	const handleFieldFocus = useCallback(
 		(fieldName: string, editorView: EditorView) => {
 			focusedFieldRef.current = { fieldName, editorView };
@@ -264,7 +266,10 @@ export function QuickNoteEditorApp({
 			/>
 
 			{/* Shared formatting toolbar */}
-			<FormattingToolbar focusedFieldRef={focusedFieldRef} app={app} />
+			<FormattingToolbar
+				app={app}
+				getEditorView={() => focusedFieldRef.current?.editorView ?? null}
+			/>
 
 			{/* Dynamic fields */}
 			<NoteFieldsForm

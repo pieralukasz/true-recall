@@ -1,7 +1,5 @@
 import type { EditorView } from "@codemirror/view";
 
-// ── Surrounding marker detection ─────────────────────────────────────────
-
 const SCAN_RANGE = 200;
 
 interface MarkerSpan {
@@ -39,22 +37,11 @@ function findSurroundingMarkers(
 	};
 }
 
-// ── Toggle functions ─────────────────────────────────────────────────────
-
-/**
- * Toggle symmetric marker (e.g. `**`, `*`, `` ` ``, `$`).
- *
- * Three modes:
- * 1. Selection includes markers at boundaries → unwrap
- * 2. Cursor/selection sits inside markers → scan outward, remove them
- * 3. Otherwise → wrap selection (or insert empty pair at cursor)
- */
 export function toggleMarker(view: EditorView, marker: string): void {
 	const { from, to } = view.state.selection.main;
 	const selected = view.state.sliceDoc(from, to);
 	const mLen = marker.length;
 
-	// Case 1: selection itself is wrapped
 	if (
 		selected.startsWith(marker) &&
 		selected.endsWith(marker) &&
@@ -67,7 +54,6 @@ export function toggleMarker(view: EditorView, marker: string): void {
 		return;
 	}
 
-	// Case 2: check if text immediately outside selection is the marker
 	const outerBefore = view.state.sliceDoc(from - mLen, from);
 	const outerAfter = view.state.sliceDoc(to, to + mLen);
 	if (outerBefore === marker && outerAfter === marker) {
@@ -80,7 +66,6 @@ export function toggleMarker(view: EditorView, marker: string): void {
 		return;
 	}
 
-	// Case 3: cursor inside markers (scan outward)
 	const span = findSurroundingMarkers(view, from, marker, marker);
 	if (span && span.openEnd <= from && span.closeStart >= to) {
 		const inner = view.state.sliceDoc(span.openEnd, span.closeStart);
@@ -95,7 +80,6 @@ export function toggleMarker(view: EditorView, marker: string): void {
 		return;
 	}
 
-	// Case 4: wrap
 	view.dispatch({
 		changes: { from, to, insert: `${marker}${selected}${marker}` },
 		selection: { anchor: from + mLen, head: to + mLen },
@@ -103,10 +87,6 @@ export function toggleMarker(view: EditorView, marker: string): void {
 	view.focus();
 }
 
-/**
- * Toggle asymmetric markers (e.g. `<u>`/`</u>`, `[[`/`]]`).
- * Same three-mode logic as toggleMarker.
- */
 export function toggleAsymmetricMarker(
 	view: EditorView,
 	before: string,
@@ -117,7 +97,6 @@ export function toggleAsymmetricMarker(
 	const bLen = before.length;
 	const aLen = after.length;
 
-	// Case 1: selection itself is wrapped
 	if (
 		selected.startsWith(before) &&
 		selected.endsWith(after) &&
@@ -130,7 +109,6 @@ export function toggleAsymmetricMarker(
 		return;
 	}
 
-	// Case 2: markers immediately outside selection
 	const outerBefore = view.state.sliceDoc(from - bLen, from);
 	const outerAfter = view.state.sliceDoc(to, to + aLen);
 	if (outerBefore === before && outerAfter === after) {
@@ -143,7 +121,6 @@ export function toggleAsymmetricMarker(
 		return;
 	}
 
-	// Case 3: cursor inside markers (scan outward)
 	const span = findSurroundingMarkers(view, from, before, after);
 	if (span && span.openEnd <= from && span.closeStart >= to) {
 		const inner = view.state.sliceDoc(span.openEnd, span.closeStart);
@@ -158,7 +135,6 @@ export function toggleAsymmetricMarker(
 		return;
 	}
 
-	// Case 4: wrap
 	view.dispatch({
 		changes: { from, to, insert: `${before}${selected}${after}` },
 		selection: { anchor: from + bLen, head: to + bLen },
@@ -166,9 +142,6 @@ export function toggleAsymmetricMarker(
 	view.focus();
 }
 
-/**
- * Insert text at the current cursor position.
- */
 export function insertAtCursor(view: EditorView, text: string): void {
 	const { from, to } = view.state.selection.main;
 	view.dispatch({
@@ -178,24 +151,18 @@ export function insertAtCursor(view: EditorView, text: string): void {
 	view.focus();
 }
 
-/**
- * Strip known markdown formatting markers from selection.
- */
 export function clearFormatting(view: EditorView): void {
 	const { from, to } = view.state.selection.main;
 	if (from === to) return;
 
 	let text = view.state.sliceDoc(from, to);
 
-	// Strip symmetric markers
 	for (const m of ["**", "*", "`", "$$", "$"]) {
-		// Avoid stripping `*` when `**` was already stripped
 		if (m === "*" && !text.includes("*")) continue;
 		const escaped = m.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 		text = text.replace(new RegExp(`${escaped}(.+?)${escaped}`, "g"), "$1");
 	}
 
-	// Strip asymmetric markers
 	const pairs: [string, string][] = [
 		["<u>", "</u>"],
 		["<sup>", "</sup>"],
@@ -208,7 +175,6 @@ export function clearFormatting(view: EditorView): void {
 		text = text.replace(new RegExp(`${bE}(.+?)${aE}`, "g"), "$1");
 	}
 
-	// Strip color spans
 	text = text.replace(
 		/<span style="color:[^"]*">(.+?)<\/span>/g,
 		"$1",

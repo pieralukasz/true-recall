@@ -1,11 +1,12 @@
 import { LivePreviewField } from "@features/study/ui/review/components/LivePreviewField";
 import { PresetPopover, type PresetPickerOption } from "@features/study/ui/review/components/PresetPopover";
+import { TypeInCMEditor } from "@features/study/ui/review/components/TypeInCMEditor";
 import type {
 	FSRSFlashcardItem,
 	LocalAnswerAssessment,
 	SemanticGradingResult,
 } from "@shared/types";
-import { Clickable, TextAreaInput } from "@shared/ui/components";
+import { Clickable } from "@shared/ui/components";
 import { cn } from "@shared/ui/utils/cn";
 
 export interface CardContainerProps {
@@ -20,7 +21,6 @@ export interface CardContainerProps {
 	aiEnabled: boolean;
 	typedAnswer: string;
 	onTypedAnswerChange: (value: string) => void;
-	onToggleTypeInAI: () => void;
 	onShowAnswer: () => void;
 	isCheckingAnswer: boolean;
 	localAssessment: LocalAnswerAssessment | null;
@@ -86,7 +86,6 @@ export function CardContainer({
 	aiEnabled,
 	typedAnswer,
 	onTypedAnswerChange,
-	onToggleTypeInAI,
 	onShowAnswer,
 	isCheckingAnswer,
 	localAssessment,
@@ -131,37 +130,16 @@ export function CardContainer({
 					onContentChange={onContentChange}
 				/>
 
-				{showTypeIn && !isAnswerRevealed && (
-					<div class="true-recall-typein-panel ep:mb-6 ep:p-4 ep:rounded-lg ep:border ep:border-obs-border ep:bg-obs-secondary/30">
-						<div class="ep:text-ui-smaller ep:text-obs-muted ep:mb-2">
-							Type your answer before reveal
-						</div>
-						<label class="ep:flex ep:items-center ep:gap-2 ep:mb-3 ep:text-ui-smaller ep:text-obs-muted ep:cursor-pointer ep:w-fit">
-							<input
-								type="checkbox"
-								class="ep:w-4 ep:h-4 ep:accent-obs-interactive"
-								checked={aiEnabled}
-								onChange={() => onToggleTypeInAI()}
+					{showTypeIn && !isAnswerRevealed && (
+						<div class="ep:mb-6">
+							<TypeInCMEditor
+								value={typedAnswer}
+								onChange={onTypedAnswerChange}
+								onSubmit={onShowAnswer}
+								placeholderText="Type your answer in your own words, then show answer."
 							/>
-							<span>AI</span>
-						</label>
-						<TextAreaInput
-							value={typedAnswer}
-							onChange={onTypedAnswerChange}
-							rows={3}
-							placeholder="Type your answer..."
-							onKeyDown={(e) => {
-								if ((e.metaKey || e.ctrlKey) && e.key === "Enter") {
-									e.preventDefault();
-									onShowAnswer();
-								}
-							}}
-						/>
-						<div class="ep:mt-2 ep:text-ui-smaller ep:text-obs-faint">
-							Press Cmd/Ctrl+Enter to show answer
 						</div>
-					</div>
-				)}
+					)}
 
 				{hasTextAnswer && (
 					<>

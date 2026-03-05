@@ -1,6 +1,7 @@
 import { Clickable } from "@shared/ui/components";
 import { SearchCombobox } from "@shared/ui/components/SearchCombobox";
 import { ALL_COLUMNS } from "../helpers/column-defs";
+import { formatBrowserTotalCount } from "../helpers/infinite-scroll";
 import type { SortConfig, StateFilterValue } from "../types";
 import type { SuggestionProvider } from "@shared/ui/helpers/search-suggestions.types";
 import { useSignal } from "@preact/signals";
@@ -43,7 +44,8 @@ interface BrowserToolbarProps {
 	onRemoveStateFilter: (state: StateFilterValue) => void;
 	sort: SortConfig;
 	totalCount: number;
-	shownCount: number;
+	showArchived: boolean;
+	onToggleShowArchived: () => void;
 	sidebarVisible: boolean;
 	onToggleSidebar: () => void;
 	visibleColumns: string[];
@@ -58,7 +60,8 @@ export function BrowserToolbar({
 	onToggleStateFilter,
 	sort,
 	totalCount,
-	shownCount,
+	showArchived,
+	onToggleShowArchived,
 	sidebarVisible,
 	onToggleSidebar,
 	visibleColumns,
@@ -211,10 +214,19 @@ export function BrowserToolbar({
 					);
 				})}
 
-				<span class="ep:ml-auto ep:text-[11px] ep:text-obs-muted">
-					{shownCount < totalCount
-						? `${shownCount} of ${totalCount} cards`
-						: `${totalCount} cards`}
+				<Clickable
+					class={`ep:ml-auto ep:px-2 ep:py-0.5 ep:rounded-full ep:text-[11px] ep:font-medium ep:transition-opacity ${
+						showArchived
+							? "ep:bg-obs-interactive/15 ep:text-obs-interactive"
+							: "ep:bg-obs-modifier-hover ep:text-obs-muted ep:opacity-70 hover:ep:opacity-100"
+					}`}
+					onClick={onToggleShowArchived}
+				>
+					Show archived
+				</Clickable>
+
+				<span class="ep:text-[11px] ep:text-obs-muted">
+					{formatBrowserTotalCount(totalCount)}
 				</span>
 			</div>
 		</div>

@@ -255,6 +255,88 @@ describe("Queue Building - Advanced", () => {
 			const newCards = queue.filter((c) => c.fsrs.state === State.New);
 			expect(newCards).toHaveLength(0);
 		});
+
+		it("should apply review limits per preset in global mode", () => {
+			const cards: FSRSFlashcardItem[] = [
+				createCardWithDue("default-1", State.Review, -300),
+				createCardWithDue("default-2", State.Review, -290),
+				createCardWithDue("default-3", State.Review, -280),
+				createCardWithDue("pro-1", State.Review, -270),
+				createCardWithDue("pro-2", State.Review, -260),
+				createCardWithDue("pro-3", State.Review, -250),
+			];
+
+			const cardPresetById = new Map<string, string>([
+				["default-1", "Default"],
+				["default-2", "Default"],
+				["default-3", "Default"],
+				["pro-1", "Pro"],
+				["pro-2", "Pro"],
+				["pro-3", "Pro"],
+			]);
+
+			const queue = reviewService.buildQueue(cards, fsrsService, {
+				...defaultOptions,
+				reviewsLimit: 1,
+				cardPresetById,
+				presetDailyLimits: new Map([
+					["Default", { newCardsPerDay: 20, reviewsPerDay: 1 }],
+					["Pro", { newCardsPerDay: 20, reviewsPerDay: 10 }],
+				]),
+				presetProgressToday: new Map([
+					["Default", { newStudied: 0, reviewsCompleted: 0 }],
+					["Pro", { newStudied: 0, reviewsCompleted: 0 }],
+				]),
+				defaultPresetName: "Default",
+			});
+
+			const defaultCards = queue.filter(
+				(c) => cardPresetById.get(c.id) === "Default",
+			);
+			const proCards = queue.filter((c) => cardPresetById.get(c.id) === "Pro");
+
+			expect(defaultCards).toHaveLength(1);
+			expect(proCards).toHaveLength(3);
+		});
+
+		it("should still exclude reviewedToday review cards in global mode", () => {
+			const cards: FSRSFlashcardItem[] = [
+				createCardWithDue("default-done", State.Review, -120),
+				createCardWithDue("pro-open", State.Review, -110),
+			];
+			const cardPresetById = new Map<string, string>([
+				["default-done", "Default"],
+				["pro-open", "Pro"],
+			]);
+
+			const queue = reviewService.buildQueue(cards, fsrsService, {
+				...defaultOptions,
+				reviewedToday: new Set(["default-done"]),
+				cardPresetById,
+				presetDailyLimits: new Map([
+					["Default", { newCardsPerDay: 20, reviewsPerDay: 50 }],
+					["Pro", { newCardsPerDay: 20, reviewsPerDay: 50 }],
+				]),
+				presetProgressToday: new Map(),
+				defaultPresetName: "Default",
+			});
+
+			expect(queue.map((c) => c.id)).toEqual(["pro-open"]);
+		});
+
+		it("should keep single-limit behavior when per-preset maps are not provided", () => {
+			const cards: FSRSFlashcardItem[] = [
+				createCardWithDue("review-1", State.Review, -60),
+				createCardWithDue("review-2", State.Review, -50),
+			];
+
+			const queue = reviewService.buildQueue(cards, fsrsService, {
+				...defaultOptions,
+				reviewsLimit: 1,
+			});
+
+			expect(queue).toHaveLength(1);
+		});
 	});
 
 	describe("State Filters", () => {
