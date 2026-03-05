@@ -3,6 +3,7 @@ import type {
 	SessionPersistenceService,
 } from "@features/core/persistence/session-persistence.service";
 import type { PresetService } from "@features/core/services/preset.service";
+import { computeActionableSessionSnapshot } from "@features/study/services/actionable-session-snapshot.service";
 import type { FlashcardManager } from "@features/study/services/flashcard/flashcard.service";
 import { effect } from "@preact/signals";
 import {
@@ -164,22 +165,22 @@ export class StatusBarWidget {
 
 		const { presetService, sessionPersistence } = this.services;
 		const archived = archivedSourceUids.value;
-		const progressByPreset = sessionPersistence.getTodayProgressByPreset();
-		const cardsWithPresets: CardWithPreset[] = allCardsArray.value.map((card) => {
-			let preset: FSRSPreset;
-			try {
-				preset = presetService.resolvePresetForCard(card);
-			} catch {
-				preset = presetService.getDefaultPreset();
-			}
-			return { card, preset };
-		});
-
-		return aggregateCardsWithPresetLimits(
-			cardsWithPresets,
-			archived,
-			progressByPreset,
+		const snapshot = computeActionableSessionSnapshot(
+			{
+				allCards: allCardsArray.value,
+				archivedSourceUids: archived,
+				settings: pluginSettings.value,
+				sessionPersistence,
+				presetService,
+			},
+			{},
 		);
+
+		return {
+			dueToday: snapshot.counts.due,
+			newCount: snapshot.counts.new,
+			learning: snapshot.counts.learning,
+		};
 	}
 
 	/** Fallback when services not available */
