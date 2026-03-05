@@ -17,7 +17,7 @@ export class QuickNoteEditorModal extends BasePromiseModal<QuickNoteEditorResult
 				editorMode.mode === "add"
 					? "Add Flashcard"
 					: "Edit Flashcard",
-			width: "560px",
+			width: "660px",
 		});
 	}
 

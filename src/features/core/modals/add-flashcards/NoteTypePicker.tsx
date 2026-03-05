@@ -1,5 +1,6 @@
 import { usePlugin } from "@shared/ui/preact/ObsidianContext";
 import type { NoteType } from "@shared/types/note.types";
+import { BUILTIN_IMAGE_OCCLUSION_ID } from "@shared/types/note.types";
 import { useEffect, useMemo, useState } from "preact/hooks";
 
 interface NoteTypePickerProps {
@@ -19,8 +20,10 @@ export function NoteTypePicker({ value, onChange, disabled }: NoteTypePickerProp
 	}, [plugin.cardStore]);
 
 	const sorted = useMemo(() => {
-		const builtins = noteTypes.filter((nt) => nt.isBuiltin);
-		const custom = noteTypes
+		// Hide Image Occlusion from the add-flashcard picker (not supported here)
+		const filtered = noteTypes.filter((nt) => nt.id !== BUILTIN_IMAGE_OCCLUSION_ID);
+		const builtins = filtered.filter((nt) => nt.isBuiltin);
+		const custom = filtered
 			.filter((nt) => !nt.isBuiltin)
 			.sort((a, b) => a.name.localeCompare(b.name));
 		return [...builtins, ...custom];
