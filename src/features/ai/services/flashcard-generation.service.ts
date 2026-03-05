@@ -2,14 +2,14 @@ import {
 	DEFAULT_PROMPTS,
 	type GenerationMode,
 } from "@features/ai/prompts/default-prompts";
-import type { FlashcardItem } from "@shared/types";
+import type { ParsedBlock } from "@features/study/services/flashcard/block-parser.service";
+import type { NoteType } from "@shared/types/note.types";
 import type { TrueRecallSettings } from "@shared/types/settings.types";
 import { Notice } from "obsidian";
 import { getBYOKFallbackConfig, resolveAIClientConfig } from "./ai-client-config";
 import { IncrementalFlashcardParser } from "./incremental-flashcard-parser";
 import { AIRequestError, OpenRouterClient } from "./openrouter-client";
 
-// Appended to all prompts (including custom) so per-card source tracking works
 const SOURCE_TRACKING_SUFFIX = `
 
 SOURCE TRACKING (MANDATORY):
@@ -17,12 +17,15 @@ After each answer, on a new line, add: <!-- source: [exact verbatim quote from t
 The quote must be EXACTLY copied from the input — same words, same punctuation. Keep it to the specific sentence(s) for that flashcard.`;
 
 export interface GenerationResult {
-	flashcards: FlashcardItem[];
+	blocks: ParsedBlock[];
 	mode: GenerationMode;
 }
 
 export class FlashcardGenerationService {
-	constructor(private getSettings: () => TrueRecallSettings) {}
+	constructor(
+		private getSettings: () => TrueRecallSettings,
+		private getNoteType: (slug: string) => NoteType | null,
+	) {}
 
 	async generate(
 		selectedText: string,
@@ -50,8 +53,8 @@ export class FlashcardGenerationService {
 		try {
 			const response = await client.chat(request);
 			const responseText = response.choices[0]?.message?.content ?? "";
-			const flashcards = this.parseResponse(responseText);
-			return { flashcards, mode };
+			const blocks = this.parseResponse(responseText);
+			return { blocks, mode };
 		} catch (error) {
 			if (error instanceof AIRequestError && error.isBudgetExceeded) {
 				const fallback = getBYOKFallbackConfig(settings);
@@ -65,8 +68,8 @@ export class FlashcardGenerationService {
 					);
 					const response = await fallbackClient.chat(request);
 					const responseText = response.choices[0]?.message?.content ?? "";
-					const flashcards = this.parseResponse(responseText);
-					return { flashcards, mode };
+					const blocks = this.parseResponse(responseText);
+					return { blocks, mode };
 				}
 				new Notice("Token budget exceeded. Top up at truerecall.app or add your own OpenRouter API key.");
 			}
@@ -74,17 +77,20 @@ export class FlashcardGenerationService {
 		}
 	}
 
-	private parseResponse(text: string): FlashcardItem[] {
-		const parser = new IncrementalFlashcardParser();
+	private parseResponse(text: string): ParsedBlock[] {
+		const parser = new IncrementalFlashcardParser(this.getNoteType);
 		parser.feed(text);
-		const cards = parser.finish().flatMap((e) => e.cards ?? []);
-		if (text.trim() && cards.length === 0) {
+		const blocks = parser
+			.finish()
+			.filter((e) => e.type === "card_complete" && e.block)
+			.map((e) => e.block!);
+		if (text.trim() && blocks.length === 0) {
 			console.warn(
 				"[TrueRecall] AI response produced no parseable flashcards",
 				{ responseLength: text.length },
 			);
 		}
-		return cards;
+		return blocks;
 	}
 
 	private getPromptForMode(mode: GenerationMode): string {

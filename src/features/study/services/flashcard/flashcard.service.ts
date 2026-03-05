@@ -110,6 +110,10 @@ export class FlashcardManager {
 		// Settings consumed by sub-services, not directly by FlashcardManager
 	}
 
+	getNoteTypeBySlug(slug: string): NoteType | null {
+		return this.store?.noteTypes.getBySlug(slug) ?? null;
+	}
+
 	getFrontmatterService(): FrontmatterService {
 		return this.frontmatterService;
 	}

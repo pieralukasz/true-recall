@@ -1,45 +1,33 @@
-import {
-	hasClozeContent,
-	parseClozeTemplate,
-} from "@features/study/services/flashcard/cloze-parser.service";
-import { FLASHCARD_CONFIG } from "@shared/constants";
-import type { FlashcardItem } from "@shared/types";
+/**
+ * Incremental Block Format Parser for streaming AI responses.
+ *
+ * Processes text chunks as they arrive and emits events when blocks
+ * are complete (#type/<slug> ... ---) or when partial content updates.
+ */
+
+import type { NoteType } from "@shared/types/note.types";
+import type { ParsedBlock } from "@features/study/services/flashcard/block-parser.service";
 
 export interface IncrementalParseEvent {
 	type: "card_complete" | "partial_update";
-	cards?: FlashcardItem[];
+	block?: ParsedBlock;
 	partialQuestion?: string;
 	partialAnswer?: string;
 }
 
-type Phase = "question" | "answer" | "post_answer";
+export type NoteTypeLookup = (slug: string) => NoteType | null;
 
-/**
- * Stateful incremental parser that processes streaming text chunks
- * and emits FlashcardItem objects as soon as each card is fully parsed.
- *
- * Card boundary: a card ends when the next #flashcard tag appears
- * on a new line, or at end-of-stream via finish().
- */
+const TYPE_TAG_RE = /^#type\/([a-z0-9-]+)$/;
+const SOURCE_COMMENT_RE = /^<!--\s*source:\s*([\s\S]*?)\s*-->$/;
+const BLOCK_SEPARATOR_RE = /^---\s*$/;
+
 export class IncrementalFlashcardParser {
 	private buffer = "";
-	private processedLines: string[] = [];
-	private phase: Phase = "question";
-	private questionLines: string[] = [];
-	private answerLines: string[] = [];
-	private isReverse = false;
-	private inCodeBlock = false;
-	private skippingLeadingBlanks = false;
+	private currentSlug: string | null = null;
+	private currentNoteType: NoteType | null = null;
+	private blockLines: string[] = [];
 
-	private readonly tagPattern: RegExp;
-	private readonly sourceCommentPattern = /^<!--\s*source:\s*(.*?)\s*-->$/i;
-	private readonly codeBlockPattern = /^\s*(```|~~~)/;
-
-	constructor() {
-		this.tagPattern = new RegExp(
-			`^(.*)\\s*(${FLASHCARD_CONFIG.reverseTag}|${FLASHCARD_CONFIG.tag})\\s*$`,
-		);
-	}
+	constructor(private getNoteType: NoteTypeLookup) {}
 
 	feed(chunk: string): IncrementalParseEvent[] {
 		this.buffer += chunk;
@@ -52,38 +40,61 @@ export class IncrementalFlashcardParser {
 
 	private processBuffer(isEnd: boolean): IncrementalParseEvent[] {
 		const events: IncrementalParseEvent[] = [];
-
-		// Split buffer into complete lines, keeping incomplete last line
 		const parts = this.buffer.split("\n");
+
 		if (isEnd) {
-			// On finish, treat everything as complete lines
-			this.processedLines.push(...parts);
 			this.buffer = "";
 		} else {
-			// Keep the last (possibly incomplete) line in buffer
 			this.buffer = parts.pop() ?? "";
-			this.processedLines.push(...parts);
 		}
 
-		// Process all available complete lines
-		while (this.processedLines.length > 0) {
-			const line = this.processedLines.shift()!;
-			const result = this.processLine(line);
-			if (result) {
-				events.push(result);
+		for (const line of (isEnd ? parts : parts)) {
+			const trimmed = line.trim();
+
+			// Check for block separator
+			if (BLOCK_SEPARATOR_RE.test(trimmed)) {
+				const block = this.finalizeBlock();
+				if (block) {
+					events.push({ type: "card_complete", block });
+				}
+				continue;
+			}
+
+			// Check for new type tag
+			const typeMatch = trimmed.match(TYPE_TAG_RE);
+			if (typeMatch) {
+				// Finalize any existing block first
+				const prevBlock = this.finalizeBlock();
+				if (prevBlock) {
+					events.push({ type: "card_complete", block: prevBlock });
+				}
+
+				const slug = typeMatch[1]!;
+				const noteType = this.getNoteType(slug);
+				if (noteType) {
+					this.currentSlug = slug;
+					this.currentNoteType = noteType;
+					this.blockLines = [];
+				}
+				continue;
+			}
+
+			// Accumulate lines for current block
+			if (this.currentNoteType) {
+				this.blockLines.push(line);
 			}
 		}
 
-		// Finalize remaining card on stream end
-		if (isEnd && this.questionLines.length > 0 && (this.phase === "answer" || this.phase === "post_answer")) {
-			const cards = this.finalizeCurrentCard();
-			if (cards.length > 0) {
-				events.push({ type: "card_complete", cards });
+		// Finalize on end
+		if (isEnd) {
+			const block = this.finalizeBlock();
+			if (block) {
+				events.push({ type: "card_complete", block });
 			}
 		}
 
-		// Emit partial update if we have partial content
-		if (!isEnd) {
+		// Emit partial update if we have content being built
+		if (!isEnd && this.currentNoteType && this.blockLines.length > 0) {
 			const partial = this.getPartialUpdate();
 			if (partial) {
 				events.push(partial);
@@ -93,227 +104,99 @@ export class IncrementalFlashcardParser {
 		return events;
 	}
 
-	private processLine(line: string): IncrementalParseEvent | null {
-		if (this.codeBlockPattern.test(line)) {
-			this.inCodeBlock = !this.inCodeBlock;
-		}
+	private finalizeBlock(): ParsedBlock | null {
+		if (!this.currentNoteType || !this.currentSlug) return null;
 
-		const tagMatch = line.match(this.tagPattern);
+		const noteTypeId = this.currentNoteType.id;
+		const slug = this.currentSlug;
+		const fieldNames = this.currentNoteType.fields;
+		const { fields, sourceText } = this.parseFieldValues(this.blockLines, fieldNames);
+		const hasContent = Object.values(fields).some((v) => v.trim().length > 0);
 
-		if (tagMatch && !this.inCodeBlock) {
-			// Found a #flashcard tag
-			const beforeTag = tagMatch[1] ?? "";
-			const matchedTag = tagMatch[2] ?? "";
+		this.currentSlug = null;
+		this.currentNoteType = null;
+		this.blockLines = [];
 
-			if (this.phase === "answer" || this.phase === "post_answer") {
-				// We were collecting an answer — finalize previous card
-				const cards = this.finalizeCurrentCard();
+		if (!hasContent) return null;
 
-				// Start new card with the part before the tag
-				this.questionLines = [beforeTag];
-				this.isReverse = matchedTag === FLASHCARD_CONFIG.reverseTag;
-				this.phase = "answer";
-				this.answerLines = [];
-				this.inCodeBlock = false;
-				this.skippingLeadingBlanks = true;
-
-				const question = this.questionLines.join("\n").trim();
-				if (!question) {
-					this.phase = "question";
-					this.questionLines = [];
-				}
-
-				if (cards.length > 0) {
-					return { type: "card_complete", cards };
-				}
-				return null;
-			}
-
-			// We were accumulating question lines
-			this.questionLines.push(beforeTag);
-			const question = this.questionLines.join("\n").trim();
-
-			if (!question) {
-				this.questionLines = [];
-				return null;
-			}
-
-			this.isReverse = matchedTag === FLASHCARD_CONFIG.reverseTag;
-			this.phase = "answer";
-			this.answerLines = [];
-			this.inCodeBlock = false;
-			this.skippingLeadingBlanks = true;
-			return null;
-		}
-
-		if (this.phase === "question") {
-			const trimmed = line.trim();
-			if (trimmed === "" && !this.inCodeBlock) {
-				// Empty line resets question accumulation
-				this.questionLines = [];
-			} else {
-				this.questionLines.push(line);
-			}
-			return null;
-		}
-
-		if (this.phase === "answer") {
-			// Skip leading empty lines after tag
-			if (this.skippingLeadingBlanks) {
-				if (line.trim() === "") return null;
-				this.skippingLeadingBlanks = false;
-			}
-
-			// Skip legacy ID lines
-			if (/^ID:\s*\d+/.test(line)) return null;
-
-			// Check for source comment — part of answer but will be extracted
-			const sourceMatch = line.trim().match(this.sourceCommentPattern);
-			if (sourceMatch) {
-				this.answerLines.push(line);
-				return null;
-			}
-
-			// Empty line outside code block ends answer, enters post-answer phase
-			if (line.trim() === "" && !this.inCodeBlock) {
-				this.phase = "post_answer";
-				return null;
-			}
-
-			this.answerLines.push(line);
-			return null;
-		}
-
-		if (this.phase === "post_answer") {
-			// After empty line: check if this is a source comment
-			const sourceMatch = line.trim().match(this.sourceCommentPattern);
-			if (sourceMatch) {
-				this.answerLines.push(line);
-				return null;
-			}
-
-			// Another empty line — still in post_answer
-			if (line.trim() === "") return null;
-
-			// Non-empty, non-source line — finalize card and start fresh
-			const cards = this.finalizeCurrentCard();
-
-			// This line is the start of a new question
-			this.questionLines = [line];
-			this.phase = "question";
-
-			if (cards.length > 0) {
-				return { type: "card_complete", cards };
-			}
-			return null;
-		}
-
-		return null;
+		return { noteTypeId, noteTypeSlug: slug, fields, sourceText };
 	}
 
-	private finalizeCurrentCard(): FlashcardItem[] {
-		const question = this.questionLines.join("\n").trim();
-		if (!question) {
-			this.resetCardState();
-			return [];
-		}
-
-		// Extract source comment from answer lines (scan backward)
+	private parseFieldValues(
+		lines: string[],
+		fieldNames: string[],
+	): { fields: Record<string, string>; sourceText?: string } {
+		const fields: Record<string, string> = {};
 		let sourceText: string | undefined;
-		for (let j = this.answerLines.length - 1; j >= 0; j--) {
-			const match = this.answerLines[j]
-				?.trim()
-				.match(this.sourceCommentPattern);
-			if (match) {
-				sourceText = match[1]?.trim() || undefined;
-				this.answerLines.splice(j, 1);
-				break;
+
+		for (const name of fieldNames) {
+			fields[name] = "";
+		}
+
+		const fieldSet = new Set(fieldNames);
+		let currentField: string | null = null;
+		const valueLines: string[] = [];
+
+		const flushField = () => {
+			if (currentField && fieldSet.has(currentField)) {
+				fields[currentField] = valueLines.join("\n").trim();
+			}
+			valueLines.length = 0;
+		};
+
+		for (const line of lines) {
+			const trimmed = line.trim();
+
+			const sourceMatch = trimmed.match(SOURCE_COMMENT_RE);
+			if (sourceMatch) {
+				sourceText = sourceMatch[1]!.trim();
+				continue;
+			}
+
+			const colonIdx = trimmed.indexOf(":");
+			if (colonIdx > 0) {
+				const candidate = trimmed.slice(0, colonIdx);
+				if (fieldSet.has(candidate)) {
+					flushField();
+					currentField = candidate;
+					valueLines.push(trimmed.slice(colonIdx + 1).trimStart());
+					continue;
+				}
+			}
+
+			if (currentField) {
+				valueLines.push(line);
 			}
 		}
 
-		const answer = this.answerLines.join("\n").trim();
-		const cards: FlashcardItem[] = [];
+		flushField();
 
-		if (hasClozeContent(question)) {
-			const clozeCards = parseClozeTemplate(question);
-			for (const cloze of clozeCards) {
-				const fullAnswer = answer
-					? `${cloze.answer}\n\n${answer}`
-					: cloze.answer;
-				cards.push({
-					question: cloze.question,
-					answer: fullAnswer,
-					id: crypto.randomUUID(),
-					cardType: "cloze",
-					clozeTemplate: question,
-					clozeIndex: cloze.clozeIndex,
-					sourceText,
-				});
-			}
-		} else {
-			const basicId = crypto.randomUUID();
-			cards.push({
-				question,
-				answer,
-				id: basicId,
-				sourceText,
-			});
-
-			if (this.isReverse && answer) {
-				cards.push({
-					question: answer,
-					answer: question,
-					id: crypto.randomUUID(),
-					cardType: "reversed",
-					reverseOfBatchId: basicId,
-					sourceText,
-				});
-			}
-		}
-
-		this.resetCardState();
-		return cards;
+		return { fields, sourceText };
 	}
 
-	private resetCardState(): void {
-		this.questionLines = [];
-		this.answerLines = [];
-		this.isReverse = false;
-		this.phase = "question";
-		this.inCodeBlock = false;
-		this.skippingLeadingBlanks = false;
-	}
-
+	/**
+	 * Build partial update from current block being built.
+	 * Maps first field → partialQuestion, second field → partialAnswer
+	 * for backward-compatible UI display.
+	 */
 	private getPartialUpdate(): IncrementalParseEvent | null {
-		if (this.phase === "question" && this.questionLines.length > 0) {
-			const lines = [...this.questionLines];
-			if (this.buffer) lines.push(this.buffer);
-			return {
-				type: "partial_update",
-				partialQuestion: lines.join("\n").trim() || undefined,
-				partialAnswer: undefined,
-			};
-		}
+		if (!this.currentNoteType) return null;
 
-		if (
-			this.phase === "answer" ||
-			this.phase === "post_answer"
-		) {
-			const question = this.questionLines.join("\n").trim();
-			const answerSoFar = [...this.answerLines];
-			if (this.buffer && this.phase === "answer") {
-				answerSoFar.push(this.buffer);
-			}
-			const visibleAnswer = answerSoFar.filter(
-				(line) => !this.sourceCommentPattern.test(line.trim()),
-			);
-			return {
-				type: "partial_update",
-				partialQuestion: question || undefined,
-				partialAnswer: visibleAnswer.join("\n").trim() || undefined,
-			};
-		}
+		const { fields } = this.parseFieldValues(
+			this.blockLines,
+			this.currentNoteType.fields,
+		);
 
-		return null;
+		const fieldNames = this.currentNoteType.fields;
+		const firstField = fieldNames[0] ? fields[fieldNames[0]] : undefined;
+		const secondField = fieldNames[1] ? fields[fieldNames[1]] : undefined;
+
+		if (!firstField && !secondField) return null;
+
+		return {
+			type: "partial_update",
+			partialQuestion: firstField?.trim() || undefined,
+			partialAnswer: secondField?.trim() || undefined,
+		};
 	}
 }
