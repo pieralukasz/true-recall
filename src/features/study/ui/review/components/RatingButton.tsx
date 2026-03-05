@@ -23,17 +23,20 @@ export function RatingButton({
 	interval,
 	showInterval,
 	onAnswer,
+	disabled = false,
 }: {
 	label: string;
 	rating: Grade;
 	interval?: string;
 	showInterval: boolean;
 	onAnswer: (rating: Grade) => void;
+	disabled?: boolean;
 }) {
 	return (
 		<Clickable
 			class={ratingButtonVariants({ rating })}
 			onClick={() => onAnswer(rating)}
+			disabled={disabled}
 		>
 			<div class="ep:font-semibold">{label}</div>
 			{interval && showInterval && (

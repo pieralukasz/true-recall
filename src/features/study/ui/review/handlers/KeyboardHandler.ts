@@ -36,6 +36,8 @@ export interface KeyboardActionCallbacks {
 	onMoveCard: () => Promise<void>;
 	onAddCard: () => Promise<void>;
 	onEditCard: () => Promise<void>;
+	onToggleTypeInMode: () => void;
+	canRateShortcuts?: () => boolean;
 }
 
 /**
@@ -86,9 +88,25 @@ export class KeyboardHandler {
 	 * Check if an input element is focused
 	 */
 	private isInputFocused(target: EventTarget | null): boolean {
-		if (target instanceof HTMLInputElement) return true;
-		if (target instanceof HTMLTextAreaElement) return true;
-		if (target instanceof HTMLElement && target.isContentEditable) return true;
+		if (
+			typeof HTMLInputElement !== "undefined" &&
+			target instanceof HTMLInputElement
+		) {
+			return true;
+		}
+		if (
+			typeof HTMLTextAreaElement !== "undefined" &&
+			target instanceof HTMLTextAreaElement
+		) {
+			return true;
+		}
+		if (
+			typeof HTMLElement !== "undefined" &&
+			target instanceof HTMLElement &&
+			target.isContentEditable
+		) {
+			return true;
+		}
 		return false;
 	}
 
@@ -138,6 +156,13 @@ export class KeyboardHandler {
 			return true;
 		}
 
+		// T = Toggle type-in mode
+		if (e.key === "t" || e.key === "T") {
+			e.preventDefault();
+			this.callbacks.onToggleTypeInMode();
+			return true;
+		}
+
 		return false;
 	}
 
@@ -149,12 +174,26 @@ export class KeyboardHandler {
 		if (!review.isActive || review.isComplete()) return;
 
 		if (!this.getReview().isAnswerRevealed) {
+			if ((e.metaKey || e.ctrlKey) && e.key === "Enter") {
+				e.preventDefault();
+				this.callbacks.onShowAnswer();
+				return;
+			}
+
 			// Show answer on Space
 			if (e.code === "Space") {
 				e.preventDefault();
 				this.callbacks.onShowAnswer();
 			}
 		} else {
+			const canRate = this.callbacks.canRateShortcuts?.() ?? true;
+			if (!canRate) {
+				if (["1", "2", "3", "4", " "].includes(e.key)) {
+					e.preventDefault();
+				}
+				return;
+			}
+
 			// Rating buttons: 1=Again, 2=Hard, 3=Good, 4=Easy
 			switch (e.key) {
 				case "1":
@@ -183,7 +222,8 @@ export class KeyboardHandler {
 	 */
 	static getShortcutsHelp(): Array<{ key: string; description: string }> {
 		return [
-			{ key: "Space", description: "Show answer / Good rating" },
+			{ key: "Space", description: "Reveal / Good rating" },
+			{ key: "Cmd/Ctrl+Enter", description: "Show answer (in input)" },
 			{ key: "1-4", description: "Rate: Again(1), Hard(2), Good(3), Easy(4)" },
 			{ key: "Cmd/Ctrl+Z", description: "Undo last action" },
 			{ key: "!", description: "Suspend card" },
@@ -192,6 +232,7 @@ export class KeyboardHandler {
 			{ key: "M", description: "Move card to another note" },
 			{ key: "A", description: "Add new flashcard" },
 			{ key: "E", description: "Edit card" },
+			{ key: "T", description: "Toggle type-in mode" },
 		];
 	}
 }
