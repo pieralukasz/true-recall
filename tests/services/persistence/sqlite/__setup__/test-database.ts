@@ -15,6 +15,7 @@ import { NoteTypeActions, getBuiltinNoteTypes } from "../../../../../src/feature
 import { StatsActions } from "../../../../../src/features/core/persistence/sqlite/modules/StatsActions";
 import type { FSRSCardData } from "../../../../../src/shared/types";
 import type { Note, NoteType } from "../../../../../src/shared/types/note.types";
+import { BUILTIN_SLUGS } from "../../../../../src/shared/types/note.types";
 
 class TestSqlJsWrapper implements DatabaseLike {
 	constructor(private sqlDb: SqlJsDatabase) {}
@@ -81,6 +82,7 @@ export class TestSqliteDatabase {
 				templates_json TEXT NOT NULL,
 				css TEXT DEFAULT '',
 				is_builtin INTEGER NOT NULL DEFAULT 0,
+				slug TEXT,
 				created_at INTEGER,
 				updated_at INTEGER,
 				deleted_at INTEGER DEFAULT NULL
@@ -180,9 +182,10 @@ export class TestSqliteDatabase {
 		const builtins = getBuiltinNoteTypes();
 		const now = Date.now();
 		for (const nt of builtins) {
+			const slug = BUILTIN_SLUGS[nt.id];
 			this.run(
-				`INSERT OR IGNORE INTO note_types (id, name, type, fields_json, templates_json, css, is_builtin, created_at, updated_at)
-				 VALUES (?, ?, ?, ?, ?, ?, 1, ?, ?)`,
+				`INSERT OR IGNORE INTO note_types (id, name, type, fields_json, templates_json, css, is_builtin, slug, created_at, updated_at)
+				 VALUES (?, ?, ?, ?, ?, ?, 1, ?, ?, ?)`,
 				[
 					nt.id,
 					nt.name,
@@ -190,6 +193,7 @@ export class TestSqliteDatabase {
 					JSON.stringify(nt.fields),
 					JSON.stringify(nt.templates),
 					nt.css,
+					slug ?? null,
 					now,
 					now,
 				],
@@ -405,8 +409,8 @@ export function insertNoteTypeDirect(
 	noteType: NoteType,
 ): void {
 	db.run(
-		`INSERT INTO note_types (id, name, type, fields_json, templates_json, css, is_builtin, created_at, updated_at)
-		 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+		`INSERT INTO note_types (id, name, type, fields_json, templates_json, css, is_builtin, slug, created_at, updated_at)
+		 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
 		[
 			noteType.id,
 			noteType.name,
@@ -415,6 +419,7 @@ export function insertNoteTypeDirect(
 			JSON.stringify(noteType.templates),
 			noteType.css,
 			noteType.isBuiltin ? 1 : 0,
+			noteType.slug ?? null,
 			noteType.createdAt ?? null,
 			noteType.updatedAt ?? null,
 		],

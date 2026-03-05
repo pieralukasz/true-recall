@@ -1,5 +1,6 @@
 import { getBuiltinNoteTypes } from "@features/core/persistence/sqlite/modules/NoteTypeActions";
 import type { DatabaseLike } from "@features/core/persistence/sqlite/sqlite.types";
+import { BUILTIN_SLUGS } from "@shared/types/note.types";
 
 export class SqliteSchemaManager {
 	constructor(private db: DatabaseLike) {}
@@ -16,6 +17,7 @@ export class SqliteSchemaManager {
                 templates_json TEXT NOT NULL,
                 css TEXT DEFAULT '',
                 is_builtin INTEGER NOT NULL DEFAULT 0,
+                slug TEXT,
                 created_at INTEGER,
                 updated_at INTEGER,
                 deleted_at INTEGER DEFAULT NULL
@@ -122,13 +124,23 @@ export class SqliteSchemaManager {
             INSERT OR REPLACE INTO meta (key, value) VALUES ('created_at', datetime('now'));
         `);
 
+		// Add slug column for existing databases (idempotent — SQLite errors silently if column exists)
+		try {
+			this.db.run(
+				`ALTER TABLE note_types ADD COLUMN slug TEXT`,
+			);
+		} catch {
+			// Column already exists — expected for new installs
+		}
+
 		// Seed built-in note types for fresh installs
 		const builtins = getBuiltinNoteTypes();
 		const now = Date.now();
 		for (const nt of builtins) {
+			const slug = BUILTIN_SLUGS[nt.id];
 			this.db.run(
-				`INSERT OR IGNORE INTO note_types (id, name, type, fields_json, templates_json, css, is_builtin, created_at, updated_at)
-				 VALUES (?, ?, ?, ?, ?, ?, 1, ?, ?)`,
+				`INSERT OR IGNORE INTO note_types (id, name, type, fields_json, templates_json, css, is_builtin, slug, created_at, updated_at)
+				 VALUES (?, ?, ?, ?, ?, ?, 1, ?, ?, ?)`,
 				[
 					nt.id,
 					nt.name,
@@ -136,6 +148,7 @@ export class SqliteSchemaManager {
 					JSON.stringify(nt.fields),
 					JSON.stringify(nt.templates),
 					nt.css,
+					slug ?? null,
 					now,
 					now,
 				],

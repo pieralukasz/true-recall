@@ -6,11 +6,13 @@
  * and cascading updates to notes and cards.
  */
 
+import { slugifyNoteTypeName } from "@features/study/services/flashcard/note-type-slug";
 import type { NoteType, CardTemplate } from "@shared/types/note.types";
 
 export interface NoteTypeServiceDeps {
 	noteTypeActions: {
 		getById(id: string): NoteType | null;
+		getBySlug(slug: string): NoteType | null;
 		getAll(): NoteType[];
 		create(noteType: NoteType): void;
 		update(id: string, updates: Partial<NoteType>): void;
@@ -38,11 +40,16 @@ export class NoteTypeService {
 		return this.deps.noteTypeActions.getAll();
 	}
 
+	getBySlug(slug: string): NoteType | null {
+		return this.deps.noteTypeActions.getBySlug(slug);
+	}
+
 	create(input: {
 		name: string;
 		fields: string[];
 		templates: CardTemplate[];
 		css?: string;
+		slug?: string;
 	}): NoteType {
 		const name = input.name.trim();
 
@@ -59,6 +66,16 @@ export class NoteTypeService {
 			throw new Error(`Note type with name "${name}" already exists`);
 		}
 
+		// Auto-generate slug if not provided, ensure uniqueness
+		let slug = input.slug ?? slugifyNoteTypeName(name);
+		if (this.deps.noteTypeActions.getBySlug(slug)) {
+			let counter = 2;
+			while (this.deps.noteTypeActions.getBySlug(`${slug}-${counter}`)) {
+				counter++;
+			}
+			slug = `${slug}-${counter}`;
+		}
+
 		const now = Date.now();
 		const noteType: NoteType = {
 			id: crypto.randomUUID(),
@@ -68,6 +85,7 @@ export class NoteTypeService {
 			templates: input.templates,
 			css: input.css ?? "",
 			isBuiltin: false,
+			slug,
 			createdAt: now,
 			updatedAt: now,
 		};
