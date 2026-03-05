@@ -3,11 +3,19 @@ import type { NoteType } from "@shared/types/note.types";
 import { useState } from "preact/hooks";
 
 // Legacy static prompt used when no NoteType is provided (old Quick tab).
-const LEGACY_PROMPT = `Generate flashcards about [TOPIC]. Output each flashcard on a single line using this exact format:
-Question :: Answer
+const LEGACY_PROMPT = `Generate flashcards about [TOPIC] using this exact block format:
 
-Do not add numbering, bullets, or any other formatting.
-One flashcard per line.`;
+#type/basic
+Front: [question]
+Back: [answer]
+---
+
+Rules:
+- Each card starts with #type/basic
+- Separate cards with --- on its own line
+- One atomic fact per card
+- Bold key terms with **bold**
+- No numbering or bullets`;
 
 interface CopyPromptButtonProps {
 	/** When provided, generates a NoteType-specific prompt instead of the legacy one. */
