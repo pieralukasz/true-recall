@@ -10,6 +10,10 @@
  * - Cloze auto-detection is restricted to noteType.type === 1
  */
 
+import {
+	parseBlocks,
+	type NoteTypeLookup,
+} from "@features/study/services/flashcard/block-parser.service";
 import { CLOZE_DETECT, INLINE_SEPARATOR_RE } from "@features/study/services/flashcard/parsing-patterns";
 import type { NoteType } from "@shared/types/note.types";
 import {
@@ -26,7 +30,7 @@ export interface ParsedCard {
 
 export interface BulkParseResult {
 	cards: ParsedCard[];
-	detectedFormat: "tab" | "double-colon" | "none";
+	detectedFormat: "block" | "tab" | "double-colon" | "none";
 }
 
 export interface ParseOptions {
@@ -34,7 +38,9 @@ export interface ParseOptions {
 	 * When provided, the parser maps columns to this NoteType's field names
 	 * and restricts cloze auto-detection to cloze NoteTypes (type === 1).
 	 */
-	noteType: NoteType;
+	noteType?: NoteType;
+	/** Required for block format parsing (#type/<slug>) */
+	getNoteType?: NoteTypeLookup;
 }
 
 // ── Main parser ───────────────────────────────────────────────
@@ -48,10 +54,24 @@ export function parseBulkText(
 		return { cards: [], detectedFormat: "none" };
 	}
 
+	// Block format auto-detection: if text contains #type/, try block parser first
+	if (trimmed.includes("#type/") && options?.getNoteType) {
+		const { blocks } = parseBlocks(trimmed, options.getNoteType);
+		if (blocks.length > 0) {
+			return {
+				cards: blocks.map((b) => ({
+					noteTypeId: b.noteTypeId,
+					fields: b.fields,
+				})),
+				detectedFormat: "block",
+			};
+		}
+	}
+
 	const lines = trimmed.split("\n");
 
 	if (options?.noteType) {
-		return parseBulkTextWithNoteType(lines, options.noteType);
+		return parseBulkTextWithNoteType(lines, options.noteType, options.getNoteType);
 	}
 
 	const colonCards = parseDoubleColon(lines);
@@ -67,6 +87,7 @@ export function parseBulkText(
 function parseBulkTextWithNoteType(
 	lines: string[],
 	noteType: NoteType,
+	_getNoteType?: NoteTypeLookup,
 ): BulkParseResult {
 	// Cloze NoteTypes: detect cloze patterns, map to Text/Extra fields
 	if (noteType.type === 1) {

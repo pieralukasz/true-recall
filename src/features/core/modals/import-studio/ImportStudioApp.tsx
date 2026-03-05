@@ -28,20 +28,13 @@ interface ImportStudioAppProps {
 // ── Placeholder text per NoteType ─────────────────────────────────────────
 
 function buildPlaceholder(noteType: NoteType | null): string {
-	if (!noteType) return "Paste or type flashcards...";
-
-	if (noteType.type === 1) {
-		return "{{c1::Paris}} is the capital of France.\n{{c2::Berlin}} is the capital of Germany.";
+	if (!noteType) {
+		return "#type/basic\nFront: Question\nBack: Answer\n---";
 	}
 
-	if (noteType.fields.length >= 3) {
-		const header = noteType.fields.join("\t");
-		const example = noteType.fields.map((f) => `[${f}]`).join("\t");
-		return `${header}\n${example}`;
-	}
-
-	const [f1, f2] = noteType.fields;
-	return `${f1 ?? "Front"} :: ${f2 ?? "Back"}\n${f1 ?? "Front"} :: ${f2 ?? "Back"}`;
+	const slug = noteType.slug ?? noteType.name.toLowerCase().replace(/[^a-z0-9]+/g, "-");
+	const fieldLines = noteType.fields.map((f) => `${f}: [${f.toLowerCase()}]`).join("\n");
+	return `#type/${slug}\n${fieldLines}\n---`;
 }
 
 // ── Component ─────────────────────────────────────────────────────────────
@@ -87,16 +80,19 @@ export function ImportStudioApp({
 		detectedFormat: string;
 	}>({ cards: [], detectedFormat: "none" });
 
+	const getNoteType = useCallback(
+		(slug: string) => plugin.noteTypeService.getBySlug(slug),
+		[plugin],
+	);
+
 	useEffect(() => {
 		const timer = setTimeout(() => {
-			if (noteType) {
-				setParseResult(parseBulkText(text, { noteType }));
-			} else {
-				setParseResult(parseBulkText(text));
-			}
+			setParseResult(
+				parseBulkText(text, noteType ? { noteType, getNoteType } : { getNoteType }),
+			);
 		}, 150);
 		return () => clearTimeout(timer);
-	}, [text, noteType]);
+	}, [text, noteType, getNoteType]);
 
 	// Create editor on mount. Stable deps — onChange updates text state via callback.
 	useEffect(() => {
