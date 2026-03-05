@@ -2,10 +2,7 @@ import {
 	buildAutoPrompt,
 	buildBlockPrompt,
 } from "@features/ai/prompts/block-prompt-builder";
-import {
-	DEFAULT_PROMPTS,
-	type GenerationMode,
-} from "@features/ai/prompts/default-prompts";
+import type { GenerationMode } from "@features/ai/prompts/default-prompts";
 import type {
 	CreateNoteParams,
 	FlashcardManager,
@@ -268,7 +265,16 @@ export class StreamingGenerationService {
 			return buildBlockPrompt(noteType) + SOURCE_TRACKING_SUFFIX;
 		}
 
-		// Fallback for legacy callers without noteType
-		return (DEFAULT_PROMPTS[mode] ?? DEFAULT_PROMPTS.basic) + SOURCE_TRACKING_SUFFIX;
+		// Fallback: use block format with builtin Basic type
+		return buildBlockPrompt({
+			id: "builtin-basic",
+			name: "Basic",
+			type: 0,
+			fields: ["Front", "Back"],
+			templates: [],
+			css: "",
+			isBuiltin: true,
+			slug: "basic",
+		} as NoteType) + SOURCE_TRACKING_SUFFIX;
 	}
 }

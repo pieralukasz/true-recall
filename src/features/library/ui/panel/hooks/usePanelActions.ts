@@ -3,6 +3,7 @@ import { extractHighlights } from "@features/library/ui/panel/utils/highlight-ex
 import { showDuplicateNotifications } from "@features/library/ui/panel/utils/panel-helpers";
 import type { PanelApi } from "@shared/store";
 import type { FlashcardInfo, FlashcardItem } from "@shared/types";
+import { BUILTIN_BASIC_ID } from "@shared/types/note.types";
 import type { FSRSFlashcardItem } from "@shared/types/fsrs/card.types";
 import { useApp, usePlugin } from "@shared/ui/preact";
 import type { TFile } from "obsidian";
@@ -51,10 +52,12 @@ export function usePanelActions({
 		);
 
 		try {
+			const basicNoteType = plugin.cardStore?.noteTypes?.getById(BUILTIN_BASIC_ID) ?? null;
 			const result = await streamingService.generateStreaming(
 				content,
 				"basic",
 				currentFile,
+				basicNoteType,
 			);
 
 			if (result.created === 0 && result.duplicates === 0) {
@@ -134,10 +137,12 @@ export function usePanelActions({
 		);
 
 		try {
+			const basicNoteType = plugin.cardStore?.noteTypes?.getById(BUILTIN_BASIC_ID) ?? null;
 			const result = await streamingService.generateStreaming(
 				joinedHighlights,
 				"basic",
 				currentFile,
+				basicNoteType,
 			);
 
 			if (result.created === 0 && result.duplicates === 0) {
