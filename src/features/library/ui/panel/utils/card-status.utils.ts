@@ -48,61 +48,6 @@ export function getHighlightColor(
 	return fsrsStateToColorName(fsrsCard.fsrs.state) ?? "default";
 }
 
-export function getAggregateHighlightColor(
-	fsrsCards: (FSRSFlashcardItem | undefined)[],
-): HighlightColor {
-	let hasNew = false;
-	let hasLearning = false;
-	let hasReview = false;
-
-	for (const fsrs of fsrsCards) {
-		if (!fsrs) continue;
-		switch (fsrs.fsrs.state) {
-			case State.New:
-				hasNew = true;
-				break;
-			case State.Learning:
-			case State.Relearning:
-				hasLearning = true;
-				break;
-			case State.Review:
-				hasReview = true;
-				break;
-		}
-	}
-
-	if (hasNew) return FSRS_COLORS.new.name;
-	if (hasLearning) return FSRS_COLORS.learning.name;
-	if (hasReview) return FSRS_COLORS.review.name;
-	return "default";
-}
-
-export function getAggregateStatusTitle(
-	fsrsCards: (FSRSFlashcardItem | undefined)[],
-): string {
-	const counts = { new: 0, learning: 0, review: 0 };
-	for (const fsrs of fsrsCards) {
-		if (!fsrs) continue;
-		switch (fsrs.fsrs.state) {
-			case State.New:
-				counts.new++;
-				break;
-			case State.Learning:
-			case State.Relearning:
-				counts.learning++;
-				break;
-			case State.Review:
-				counts.review++;
-				break;
-		}
-	}
-	const parts: string[] = [];
-	if (counts.new > 0) parts.push(`${counts.new} new`);
-	if (counts.learning > 0) parts.push(`${counts.learning} learning`);
-	if (counts.review > 0) parts.push(`${counts.review} review`);
-	return parts.join(", ") || "Unknown";
-}
-
 export function countByState(
 	cards: FSRSFlashcardItem[],
 	reviewedToday?: Set<string>,

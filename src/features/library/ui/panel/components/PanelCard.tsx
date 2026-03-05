@@ -1,5 +1,4 @@
 import {
-	getAggregateHighlightColor,
 	getHighlightColor,
 	getStatusTitle,
 	isBuried,
@@ -10,7 +9,6 @@ import type { FSRSFlashcardItem } from "@shared/types/fsrs/card.types";
 import { Clickable } from "@shared/ui/components/Clickable";
 import { IconButton } from "@shared/ui/components/IconButton";
 import { MarkdownContent } from "@shared/ui/components/MarkdownContent";
-import { useIcon } from "@shared/ui/preact/hooks";
 import { useApp } from "@shared/ui/preact/ObsidianContext";
 import {
 	type MenuItem,
@@ -18,8 +16,7 @@ import {
 } from "@shared/ui/preact/useContextMenu";
 import { useLongPress } from "@shared/ui/preact/useLongPress";
 import { cva } from "class-variance-authority";
-import type { RefObject } from "preact";
-import { useCallback, useMemo } from "preact/hooks";
+import { useCallback } from "preact/hooks";
 
 // ── Variants ────────────────────────────────────────────────
 
@@ -41,7 +38,9 @@ const panelCardVariants = cva(
 
 // ── Types ──────────────────────────────────────────────────
 
-interface PanelCardBase {
+export interface PanelCardProps {
+	card: FlashcardItem;
+	fsrsCard?: FSRSFlashcardItem;
 	filePath: string;
 	isExpanded: boolean;
 	isSelected: boolean;
@@ -61,23 +60,7 @@ interface PanelCardBase {
 	onLeaveSource?: () => void;
 }
 
-export type PanelCardProps = PanelCardBase &
-	(
-		| {
-				variant: "basic";
-				card: FlashcardItem;
-				fsrsCard?: FSRSFlashcardItem;
-		  }
-		| {
-				variant: "group";
-				groupType: "cloze" | "reverse";
-				cards: FlashcardItem[];
-				fsrsCards: (FSRSFlashcardItem | undefined)[];
-				template?: string;
-		  }
-	);
-
-// ── File-local sub-components ──────────────────────────────
+// ── Sub-components ──────────────────────────────────────────
 
 function CardStatusBadge({ fsrsCard }: { fsrsCard?: FSRSFlashcardItem }) {
 	if (isSuspended(fsrsCard)) {
@@ -103,190 +86,36 @@ function CardStatusBadge({ fsrsCard }: { fsrsCard?: FSRSFlashcardItem }) {
 	return null;
 }
 
-function BasicHeader({
-	card,
-	fsrsCard,
-	filePath,
-	onLinkClick,
-}: {
-	card: FlashcardItem;
-	fsrsCard?: FSRSFlashcardItem;
-	filePath: string;
-	onLinkClick: (href: string) => void;
-}) {
-	return (
-		<>
-			<CardStatusBadge fsrsCard={fsrsCard} />
-			<MarkdownContent
-				markdown={card.question}
-				filePath={filePath}
-				class="ep:flex-1 ep:text-ui-small ep:text-obs-normal true-recall-card-markdown"
-				onLinkClick={onLinkClick}
-			/>
-		</>
-	);
-}
-
-function GroupHeader({
-	displayText,
-	filePath,
-	cardCount,
-	groupType,
-	typeIconRef,
-	onLinkClick,
-}: {
-	displayText: string;
-	filePath: string;
-	cardCount: number;
-	groupType: "cloze" | "reverse";
-	typeIconRef: RefObject<HTMLSpanElement>;
-	onLinkClick: (href: string) => void;
-}) {
-	const label = groupType === "cloze" ? "Cloze" : "Reversed";
-
-	return (
-		<div class="ep:flex ep:flex-col ep:gap-1.5 ep:flex-1 ep:min-w-0">
-			<div class="ep:flex ep:items-center ep:gap-1.5">
-				<span
-					ref={typeIconRef}
-					class="ep:shrink-0 ep:text-obs-faint [&_svg]:ep:w-3 [&_svg]:ep:h-3"
-				/>
-				<span class="ep:text-xs ep:text-obs-muted ep:uppercase ep:tracking-wider ep:font-medium">
-					{label}
-				</span>
-				<span class="ep:text-xs ep:text-obs-muted ep:bg-obs-base-25 ep:rounded-full ep:px-1.5 ep:py-0.5 ep:shrink-0 ep:leading-none">
-					{cardCount}
-				</span>
-			</div>
-			<MarkdownContent
-				markdown={displayText}
-				filePath={filePath}
-				class="ep:text-ui-small ep:text-obs-normal true-recall-card-markdown"
-				onLinkClick={onLinkClick}
-			/>
-		</div>
-	);
-}
-
-function BasicExpandedContent({
-	card,
-	fsrsCard,
-	filePath,
-	onLinkClick,
-}: {
-	card: FlashcardItem;
-	fsrsCard?: FSRSFlashcardItem;
-	filePath: string;
-	onLinkClick: (href: string) => void;
-}) {
-	return (
-		<div class="ep:px-3 ep:pb-3 ep:pt-2 ep:border-t ep:border-obs-border">
-			{!card.answer && (
-				<span class="ep:text-ui-smaller ep:text-obs-muted">No answer</span>
-			)}
-			<MarkdownContent
-				markdown={card.answer ?? "empty"}
-				filePath={filePath}
-				class="ep:text-ui-small ep:text-obs-normal true-recall-panel-card-field"
-				onLinkClick={onLinkClick}
-			/>
-			{fsrsCard && fsrsCard.fsrs.reps > 0 && (
-				<div class="ep:flex ep:items-center ep:gap-3 ep:mt-2 ep:pt-2 ep:border-t ep:border-obs-border/50">
-					<span class="ep:text-ui-smaller ep:text-obs-faint">
-						{fsrsCard.fsrs.reps} reviews
-					</span>
-					{fsrsCard.fsrs.stability > 0 && (
-						<span class="ep:text-ui-smaller ep:text-obs-faint">
-							S: {fsrsCard.fsrs.stability.toFixed(1)}d
-						</span>
-					)}
-					{fsrsCard.fsrs.lapses > 0 && (
-						<span class="ep:text-ui-smaller ep:text-obs-faint">
-							{fsrsCard.fsrs.lapses} lapses
-						</span>
-					)}
-				</div>
-			)}
-		</div>
-	);
-}
-
-function GroupExpandedContent({
-	cards,
-	fsrsCards,
-	groupType,
-	filePath,
-	onLinkClick,
-}: {
-	cards: FlashcardItem[];
-	fsrsCards: (FSRSFlashcardItem | undefined)[];
-	groupType: "cloze" | "reverse";
-	filePath: string;
-	onLinkClick: (href: string) => void;
-}) {
-	return (
-		<div class="ep:border-t ep:border-obs-border ep:flex ep:flex-col ep:gap-2 ep:p-3">
-			{cards.map((card, i) => {
-				const fsrs = fsrsCards[i];
-				const label =
-					groupType === "cloze"
-						? `Cloze ${card.clozeIndex}`
-						: i === 0
-							? "Original"
-							: "Reversed";
-
-				return (
-					<div
-						key={card.id}
-						class="ep:rounded-md ep:bg-obs-primary/50 ep:py-2 ep:px-3"
-					>
-						<span class="ep:text-xs ep:text-obs-faint ep:uppercase ep:tracking-wider ep:font-medium">
-							{label}
-						</span>
-						<MarkdownContent
-							markdown={card.question}
-							filePath={filePath}
-							class="ep:text-ui-small ep:text-obs-normal true-recall-card-markdown ep:mt-1"
-							onLinkClick={onLinkClick}
-						/>
-						{card.answer && (
-							<div class="ep:mt-2 ep:pt-2 ep:border-t ep:border-obs-border/50">
-								<MarkdownContent
-									markdown={card.answer}
-									filePath={filePath}
-									class="ep:text-ui-small ep:text-obs-muted true-recall-card-markdown"
-									onLinkClick={onLinkClick}
-								/>
-							</div>
-						)}
-						{fsrs && fsrs.fsrs.reps > 0 && (
-							<div class="ep:flex ep:items-center ep:gap-3 ep:mt-2 ep:pt-2 ep:border-t ep:border-obs-border/50">
-								<span class="ep:text-ui-smaller ep:text-obs-faint">
-									{fsrs.fsrs.reps} reviews
-								</span>
-								{fsrs.fsrs.stability > 0 && (
-									<span class="ep:text-ui-smaller ep:text-obs-faint">
-										S: {fsrs.fsrs.stability.toFixed(1)}d
-									</span>
-								)}
-								{fsrs.fsrs.lapses > 0 && (
-									<span class="ep:text-ui-smaller ep:text-obs-faint">
-										{fsrs.fsrs.lapses} lapses
-									</span>
-								)}
-							</div>
-						)}
-					</div>
-				);
-			})}
-		</div>
-	);
+function CardTypeBadge({ card }: { card: FlashcardItem }) {
+	if (card.cardType === "cloze" && card.clozeIndex != null) {
+		return (
+			<span
+				class="ep:text-xs ep:text-obs-muted ep:bg-obs-base-25 ep:rounded-full ep:px-1.5 ep:py-0.5 ep:shrink-0 ep:leading-none"
+				title="Cloze deletion"
+			>
+				C{card.clozeIndex}
+			</span>
+		);
+	}
+	if (card.cardType === "reversed") {
+		return (
+			<span
+				class="ep:text-xs ep:text-obs-muted ep:bg-obs-base-25 ep:rounded-full ep:px-1.5 ep:py-0.5 ep:shrink-0 ep:leading-none"
+				title="Reversed card"
+			>
+				⇄
+			</span>
+		);
+	}
+	return null;
 }
 
 // ── Main component ─────────────────────────────────────────
 
 export function PanelCard(props: PanelCardProps) {
 	const {
+		card,
+		fsrsCard,
 		filePath,
 		isExpanded,
 		isSelected,
@@ -307,15 +136,6 @@ export function PanelCard(props: PanelCardProps) {
 	} = props;
 
 	const app = useApp();
-	const isGroup = props.variant === "group";
-
-	const typeIconRef = useIcon(
-		isGroup
-			? props.groupType === "cloze"
-				? "brackets"
-				: "arrow-left-right"
-			: "file-text",
-	);
 
 	const { handlers: longPressHandlers, wasLongPress } = useLongPress({
 		onLongPress: onLongPressProp,
@@ -350,19 +170,11 @@ export function PanelCard(props: PanelCardProps) {
 	);
 
 	const handleMenuClick = useContextMenu([
-		{
-			title: isGroup ? "Edit group" : "Edit",
-			icon: "pencil",
-			onClick: onEdit,
-		},
+		{ title: "Edit", icon: "pencil", onClick: onEdit },
 		{ title: "Copy", icon: "copy", onClick: onCopy },
 		{ title: "Move", icon: "folder-input", onClick: onMove },
 		"separator",
-		{
-			title: isGroup ? "Delete group" : "Delete",
-			icon: "trash-2",
-			onClick: onDelete,
-		},
+		{ title: "Delete", icon: "trash-2", onClick: onDelete },
 		...(!isSelectionMode
 			? ([
 					"separator",
@@ -379,27 +191,9 @@ export function PanelCard(props: PanelCardProps) {
 		[onToggleSelect],
 	);
 
-	const title = isGroup ? undefined : getStatusTitle(props.fsrsCard);
-	const state = isGroup
-		? getAggregateHighlightColor(props.fsrsCards)
-		: getHighlightColor(props.fsrsCard);
+	const title = getStatusTitle(fsrsCard);
+	const state = getHighlightColor(fsrsCard);
 	const selectedCls = isSelected ? "ep:border-obs-interactive" : "";
-
-	const displayText = useMemo(() => {
-		if (props.variant !== "group") return "";
-		if (props.groupType === "cloze" && props.template) {
-			return props.template.replace(
-				/\{\{c\d+::([^}]*?)(?:::[^}]*?)?\}\}/g,
-				"$1",
-			);
-		}
-		return props.cards[0]?.question ?? "";
-	}, [
-		props.variant,
-		props.variant === "group" ? props.groupType : undefined,
-		props.variant === "group" ? props.template : undefined,
-		props.variant === "group" ? props.cards : undefined,
-	]);
 
 	return (
 		<Clickable
@@ -421,28 +215,19 @@ export function PanelCard(props: PanelCardProps) {
 					/>
 				)}
 
-				{props.variant === "group" ? (
-					<GroupHeader
-						displayText={displayText}
-						filePath={filePath}
-						cardCount={props.cards.length}
-						groupType={props.groupType}
-						typeIconRef={typeIconRef}
-						onLinkClick={handleLinkClick}
-					/>
-				) : (
-					<BasicHeader
-						card={props.card}
-						fsrsCard={props.fsrsCard}
-						filePath={filePath}
-						onLinkClick={handleLinkClick}
-					/>
-				)}
+				<CardStatusBadge fsrsCard={fsrsCard} />
+				<CardTypeBadge card={card} />
+				<MarkdownContent
+					markdown={card.question}
+					filePath={filePath}
+					class="ep:flex-1 ep:text-ui-small ep:text-obs-normal true-recall-card-markdown"
+					onLinkClick={handleLinkClick}
+				/>
 
 				<div class="ep:flex ep:flex-col ep:items-center ep:justify-center ep:gap-1 ep:self-center">
 					<IconButton
 						icon="more-vertical"
-						ariaLabel={isGroup ? "Group actions" : "Card actions"}
+						ariaLabel="Card actions"
 						onClick={handleMenuClick}
 						size="small"
 						class="ep:opacity-30 ep:hover:opacity-100 ep:transition-opacity"
@@ -450,23 +235,36 @@ export function PanelCard(props: PanelCardProps) {
 				</div>
 			</div>
 
-			{isExpanded &&
-				(props.variant === "group" ? (
-					<GroupExpandedContent
-						cards={props.cards}
-						fsrsCards={props.fsrsCards}
-						groupType={props.groupType}
+			{isExpanded && (
+				<div class="ep:px-3 ep:pb-3 ep:pt-2 ep:border-t ep:border-obs-border">
+					{!card.answer && (
+						<span class="ep:text-ui-smaller ep:text-obs-muted">No answer</span>
+					)}
+					<MarkdownContent
+						markdown={card.answer ?? "empty"}
 						filePath={filePath}
+						class="ep:text-ui-small ep:text-obs-normal true-recall-panel-card-field"
 						onLinkClick={handleLinkClick}
 					/>
-				) : (
-					<BasicExpandedContent
-						card={props.card}
-						fsrsCard={props.fsrsCard}
-						filePath={filePath}
-						onLinkClick={handleLinkClick}
-					/>
-				))}
+					{fsrsCard && fsrsCard.fsrs.reps > 0 && (
+						<div class="ep:flex ep:items-center ep:gap-3 ep:mt-2 ep:pt-2 ep:border-t ep:border-obs-border/50">
+							<span class="ep:text-ui-smaller ep:text-obs-faint">
+								{fsrsCard.fsrs.reps} reviews
+							</span>
+							{fsrsCard.fsrs.stability > 0 && (
+								<span class="ep:text-ui-smaller ep:text-obs-faint">
+									S: {fsrsCard.fsrs.stability.toFixed(1)}d
+								</span>
+							)}
+							{fsrsCard.fsrs.lapses > 0 && (
+								<span class="ep:text-ui-smaller ep:text-obs-faint">
+									{fsrsCard.fsrs.lapses} lapses
+								</span>
+							)}
+						</div>
+					)}
+				</div>
+			)}
 		</Clickable>
 	);
 }
