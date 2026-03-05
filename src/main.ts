@@ -1,3 +1,4 @@
+import type { GenerationMode } from "@features/ai/prompts/default-prompts";
 import { StreamingGenerationService } from "@features/ai/services/streaming-generation.service";
 import { SqlQueryAdapter } from "@features/ai/services/sql-query.adapter";
 import { NLQueryService } from "@features/ai/services/nl-query.service";
@@ -76,6 +77,12 @@ import {
 import { UndoService } from "@shared/services/undo.service";
 import { type AppStore, createAppStore } from "@shared/store";
 import { extractFSRSSettings } from "@shared/types";
+import {
+	BUILTIN_BASIC_ID,
+	BUILTIN_BASIC_REVERSED_ID,
+	BUILTIN_CLOZE_ID,
+	type NoteType,
+} from "@shared/types/note.types";
 import { PresetInspectorModal } from "@shared/ui/modals";
 import { normalizePath, Plugin, type TFile } from "obsidian";
 import { registerCommands } from "./plugin/PluginCommands";
@@ -1013,10 +1020,16 @@ export default class TrueRecallPlugin extends Plugin {
 					// Open panel so user can see cards streaming in
 					await this.activateView();
 
+					const noteType = this.resolveNoteTypeForMode(mode);
+					const allNoteTypes = mode === "auto"
+						? this.cardStore?.noteTypes?.getAll() ?? []
+						: undefined;
 					const result = await streamingService.generateStreaming(
 						text,
 						mode,
 						file,
+						noteType,
+						allNoteTypes,
 					);
 					if (result.created === 0 && result.duplicates === 0) {
 						notify().warning("No flashcards found in AI response");
@@ -1075,6 +1088,21 @@ export default class TrueRecallPlugin extends Plugin {
 				);
 			},
 		);
+	}
+
+	private resolveNoteTypeForMode(mode: GenerationMode): NoteType | null {
+		const store = this.cardStore;
+		if (!store) return null;
+		switch (mode) {
+			case "basic":
+				return store.noteTypes.getById(BUILTIN_BASIC_ID) ?? null;
+			case "cloze":
+				return store.noteTypes.getById(BUILTIN_CLOZE_ID) ?? null;
+			case "reversed":
+				return store.noteTypes.getById(BUILTIN_BASIC_REVERSED_ID) ?? null;
+			case "auto":
+				return null;
+		}
 	}
 
 	private async initializeNLQueryService(): Promise<void> {
