@@ -1,9 +1,10 @@
 import type { Signal } from "@preact/signals";
 import { useSignal } from "@preact/signals";
+import { Clickable } from "@shared/ui/components/Clickable";
 import { usePlugin } from "@shared/ui/preact";
-import { useCallback, useMemo, useRef } from "preact/hooks";
+import { useCallback, useEffect, useMemo, useRef } from "preact/hooks";
 import type { RefObject } from "preact";
-import { TFile } from "obsidian";
+import { Notice, TFile, normalizePath } from "obsidian";
 import { NamePromptModal } from "@features/study/modals/NamePromptModal";
 import { useInitialMount } from "../helpers/use-initial-mount";
 import { prioritySortComparator } from "../helpers/note-priority";
@@ -69,6 +70,8 @@ export function NoteList({
 	const projectFilter = useSignal<ProjectFilter>({ type: "none" });
 	const contentRef = useRef<HTMLDivElement>(null);
 	const dragState = useSignal<NoteDragState | null>(null);
+	const selectionMode = useSignal(false);
+	const selectedPaths = useSignal<ReadonlySet<string>>(new Set());
 
 	const unassignedCount = useMemo(
 		() => notes.filter((n) => n.projects.length === 0).length,
@@ -115,6 +118,113 @@ export function NoteList({
 		scrollTop,
 		contentOffsetRef: contentRef,
 	});
+
+	// ── Selection ───────────────────────────────────────
+
+	const exitSelection = useCallback(() => {
+		selectionMode.value = false;
+		selectedPaths.value = new Set();
+	}, [selectionMode, selectedPaths]);
+
+	// ESC exits selection mode
+	useEffect(() => {
+		if (!selectionMode.value) return;
+		const handler = (e: KeyboardEvent) => {
+			if (e.key === "Escape") exitSelection();
+		};
+		document.addEventListener("keydown", handler);
+		return () => document.removeEventListener("keydown", handler);
+	}, [selectionMode.value, exitSelection]);
+
+	const toggleSelect = useCallback(
+		(path: string) => {
+			const next = new Set(selectedPaths.value);
+			if (next.has(path)) next.delete(path);
+			else next.add(path);
+			selectedPaths.value = next;
+		},
+		[selectedPaths],
+	);
+
+	const enterSelection = useCallback(
+		(path: string) => {
+			selectionMode.value = true;
+			selectedPaths.value = new Set([path]);
+		},
+		[selectionMode, selectedPaths],
+	);
+
+	const selectAll = useCallback(() => {
+		const paths = new Set(
+			filteredNotes.filter((n) => n.path).map((n) => n.path as string),
+		);
+		selectedPaths.value = paths;
+	}, [filteredNotes, selectedPaths]);
+
+	const selectedCount = selectedPaths.value.size;
+
+	// ── Bulk actions ────────────────────────────────────
+
+	const handleCreateProjectFromSelected = useCallback(async () => {
+		if (selectedCount === 0) return;
+
+		const modal = new NamePromptModal(plugin.app, "New Project");
+		const result = await modal.openAndWait();
+		if (result.cancelled) return;
+
+		const name = result.name;
+		const projectPath = normalizePath(`${name}.md`);
+
+		if (plugin.app.vault.getAbstractFileByPath(projectPath)) {
+			new Notice(`A note already exists at "${projectPath}".`);
+			return;
+		}
+
+		await plugin.app.vault.create(projectPath, "");
+
+		const frontmatterService = plugin.flashcardManager.getFrontmatterService();
+		for (const path of selectedPaths.value) {
+			const file = plugin.app.vault.getAbstractFileByPath(path);
+			if (file instanceof TFile) {
+				await frontmatterService.addParent(file, name);
+			}
+		}
+
+		new Notice(`Created project "${name}" with ${selectedCount} notes`);
+		exitSelection();
+	}, [plugin, selectedPaths, selectedCount, exitSelection]);
+
+	const handleArchiveSelected = useCallback(async () => {
+		if (selectedCount === 0) return;
+
+		const frontmatterService = plugin.flashcardManager.getFrontmatterService();
+		for (const path of selectedPaths.value) {
+			const file = plugin.app.vault.getAbstractFileByPath(path);
+			if (file instanceof TFile) {
+				await frontmatterService.setArchive(file, true);
+			}
+		}
+
+		new Notice(`Archived ${selectedCount} notes`);
+		exitSelection();
+	}, [plugin, selectedPaths, selectedCount, exitSelection]);
+
+	const handleStudySelected = useCallback(() => {
+		if (selectedCount === 0) return;
+
+		const noteNames = filteredNotes
+			.filter((n) => n.path && selectedPaths.value.has(n.path))
+			.map((n) => n.name);
+
+		void plugin.openCustomStudyModal({
+			sourceNoteFilters: noteNames,
+			scopeLabel: `${noteNames.length} notes`,
+		});
+
+		exitSelection();
+	}, [plugin, filteredNotes, selectedPaths, selectedCount, exitSelection]);
+
+	// ── Note handlers ───────────────────────────────────
 
 	const handleNavigateToNote = (note: DashboardNoteEntry) => {
 		void plugin.app.workspace.openLinkText(note.name, "");
@@ -243,6 +353,10 @@ export function NoteList({
 		return "";
 	}
 
+	// ── Render ──────────────────────────────────────────
+
+	const isSelecting = selectionMode.value;
+
 	return (
 		<div class="ep:flex ep:flex-col">
 			<div class="ep:shrink-0 ep:mb-3">
@@ -255,6 +369,48 @@ export function NoteList({
 					onProjectFilterChange={handleProjectFilterChange}
 				/>
 			</div>
+
+			{isSelecting && (
+				<div class="ep:flex ep:items-center ep:gap-2 ep:px-3 ep:py-2 ep:bg-obs-secondary ep:rounded-lg ep:mb-2 ep:text-ui-small">
+					<span class="ep:text-obs-muted">
+						{selectedCount} selected
+					</span>
+					<div class="ep:flex-1" />
+					<Clickable
+						class="ep:px-2 ep:py-1 ep:rounded ep:text-obs-muted ep:hover:text-obs-normal ep:hover:bg-obs-modifier-hover ep:transition-colors"
+						onClick={selectAll}
+					>
+						All
+					</Clickable>
+					<Clickable
+						class="ep:px-2 ep:py-1 ep:rounded ep:text-obs-muted ep:hover:text-obs-normal ep:hover:bg-obs-modifier-hover ep:transition-colors"
+						onClick={() => void handleCreateProjectFromSelected()}
+						disabled={selectedCount === 0}
+					>
+						Create project
+					</Clickable>
+					<Clickable
+						class="ep:px-2 ep:py-1 ep:rounded ep:text-obs-muted ep:hover:text-obs-normal ep:hover:bg-obs-modifier-hover ep:transition-colors"
+						onClick={() => void handleArchiveSelected()}
+						disabled={selectedCount === 0}
+					>
+						Archive
+					</Clickable>
+					<Clickable
+						class="ep:px-2 ep:py-1 ep:rounded ep:text-obs-muted ep:hover:text-obs-normal ep:hover:bg-obs-modifier-hover ep:transition-colors"
+						onClick={handleStudySelected}
+						disabled={selectedCount === 0}
+					>
+						Study
+					</Clickable>
+					<Clickable
+						class="ep:px-2 ep:py-1 ep:rounded ep:text-obs-muted ep:hover:text-obs-normal ep:hover:bg-obs-modifier-hover ep:transition-colors"
+						onClick={exitSelection}
+					>
+						Cancel
+					</Clickable>
+				</div>
+			)}
 
 			{filteredNotes.length === 0 ? (
 				<div class="ep:text-sm ep:text-obs-muted ep:p-4 ep:text-center">
@@ -276,7 +432,7 @@ export function NoteList({
 							<div
 								key={item.name}
 								class={`${initialMount.current ? "ep-card-enter" : ""} ${dragCls}`.trim() || undefined}
-								draggable={!!item.path}
+								draggable={!isSelecting && !!item.path}
 								onDragStart={(e) => handleDragStart(e, item)}
 								onDragEnd={handleDragEnd}
 								onDragOver={(e) => handleDragOver(e, item)}
@@ -301,6 +457,10 @@ export function NoteList({
 									onPresetClick={onPresetClick}
 									onArchive={() => handleArchiveNote(item)}
 									onUnarchive={() => handleUnarchiveNote(item)}
+									isSelectionMode={isSelecting}
+									isSelected={item.path ? selectedPaths.value.has(item.path) : false}
+									onToggleSelect={item.path ? () => toggleSelect(item.path!) : undefined}
+									onEnterSelection={item.path ? () => enterSelection(item.path!) : undefined}
 								/>
 							</div>
 						);
