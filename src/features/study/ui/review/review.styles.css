@@ -5,6 +5,11 @@
 		padding: 0;
 	}
 
+	/* Reset padding for dashboard so bottom bar sits flush */
+	[data-type="true-recall-dashboard-view"] .view-content {
+		padding: 0;
+	}
+
 	/* Override Obsidian default button height */
 	.true-recall-review-buttons button {
 		height: auto;

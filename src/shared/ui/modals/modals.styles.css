@@ -347,10 +347,15 @@
 	}
 
 	/* ================================================================
-	   ADD FLASHCARD FIELD EDITOR — match review view font size
+	   ADD FLASHCARD FIELD EDITOR — comfortable editing font
 	   ================================================================ */
 	.true-recall-add-field .cm-editor {
-		font-size: 1rem;
+		font-size: 1.15rem;
 		line-height: 1.6;
+	}
+
+	.true-recall-add-field .cm-content {
+		padding: 6px 8px;
+		min-height: 1.6em;
 	}
 }

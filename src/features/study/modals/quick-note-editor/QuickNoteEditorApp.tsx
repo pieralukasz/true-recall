@@ -1,15 +1,17 @@
+import type { EditorView } from "@codemirror/view";
 import { Clickable } from "@shared/ui/components/Clickable";
-import { NotePickerCombobox } from "@shared/ui/components/NotePickerCombobox";
 import { useApp, usePlugin } from "@shared/ui/preact/ObsidianContext";
 import { SECONDARY_BUTTON_CLASSES } from "@shared/ui/utils/tailwind";
 import { Notice, TFile } from "obsidian";
-import { useCallback, useEffect, useMemo, useState } from "preact/hooks";
-import { NoteTypePicker } from "@features/core/modals/add-flashcards/NoteTypePicker";
+import { useCallback, useEffect, useMemo, useRef, useState } from "preact/hooks";
+import { ActionBar } from "./ActionBar";
 import { CardCountPreview } from "./CardCountPreview";
+import { FormattingToolbar } from "./FormattingToolbar";
 import { NoteFieldsForm } from "./NoteFieldsForm";
 import type {
 	AddMode,
 	EditMode,
+	FocusedFieldRef,
 	QuickNoteEditorMode,
 	QuickNoteEditorResult,
 } from "./types";
@@ -46,6 +48,17 @@ export function QuickNoteEditorApp({
 	});
 
 	const [saving, setSaving] = useState(false);
+	const [pinnedFields, setPinnedFields] = useState<Set<string>>(new Set());
+	const [refreshCounter, setRefreshCounter] = useState(0);
+
+	// Focus tracking for shared formatting toolbar
+	const focusedFieldRef = useRef<FocusedFieldRef | null>(null);
+	const handleFieldFocus = useCallback(
+		(fieldName: string, editorView: EditorView) => {
+			focusedFieldRef.current = { fieldName, editorView };
+		},
+		[],
+	);
 
 	// Source note picker — only shown in add mode without pre-set sourceUid
 	const showSourcePicker = !isEdit && !addMode!.sourceUid;
@@ -57,7 +70,7 @@ export function QuickNoteEditorApp({
 	const noteType = useMemo(() => {
 		if (isEdit) return editMode!.noteType;
 		return plugin.cardStore?.noteTypes?.getById(noteTypeId) ?? null;
-	}, [isEdit, editMode, plugin.cardStore, noteTypeId]);
+	}, [isEdit, editMode, plugin.cardStore, noteTypeId, refreshCounter]);
 
 	const hasContent = useMemo(
 		() => Object.values(fields).some((v) => v.trim().length > 0),
@@ -70,10 +83,15 @@ export function QuickNoteEditorApp({
 		setFields((prev) => {
 			const next: Record<string, string> = {};
 			for (const fieldName of noteType.fields) {
-				// Carry over values for fields with matching names
 				next[fieldName] = prev[fieldName] ?? "";
 			}
 			return next;
+		});
+		// Clean up stale pins for fields no longer in the note type
+		setPinnedFields((prev) => {
+			const valid = new Set(noteType.fields);
+			const next = new Set([...prev].filter((f) => valid.has(f)));
+			return next.size === prev.size ? prev : next;
 		});
 	}, [noteType, isEdit]);
 
@@ -88,6 +106,19 @@ export function QuickNoteEditorApp({
 
 	const handleNoteTypeChange = useCallback((id: string) => {
 		setNoteTypeId(id);
+	}, []);
+
+	const togglePin = useCallback((fieldName: string) => {
+		setPinnedFields((prev) => {
+			const next = new Set(prev);
+			if (next.has(fieldName)) next.delete(fieldName);
+			else next.add(fieldName);
+			return next;
+		});
+	}, []);
+
+	const handleNoteTypeRefresh = useCallback(() => {
+		setRefreshCounter((c) => c + 1);
 	}, []);
 
 	const resolveSourceUid = useCallback(async (): Promise<
@@ -157,12 +188,14 @@ export function QuickNoteEditorApp({
 					);
 
 					if (andAddAnother) {
-						// Clear fields, keep note type and source note
-						const empty: Record<string, string> = {};
+						// Clear unpinned fields, keep pinned + note type + source
+						const next: Record<string, string> = {};
 						for (const field of noteType.fields) {
-							empty[field] = "";
+							next[field] = pinnedFields.has(field)
+								? (fields[field] ?? "")
+								: "";
 						}
-						setFields(empty);
+						setFields(next);
 						setSaving(false);
 						return;
 					}
@@ -191,6 +224,7 @@ export function QuickNoteEditorApp({
 			resolveSourceUid,
 			plugin.flashcardManager,
 			onDone,
+			pinnedFields,
 		],
 	);
 
@@ -207,67 +241,36 @@ export function QuickNoteEditorApp({
 	}
 
 	return (
-		<div class="ep:flex ep:flex-col ep:gap-4">
-			{/* Note type + Source note — side by side when both visible */}
-			{showSourcePicker ? (
-				<div class="ep:grid ep:grid-cols-[1fr_2fr] ep:gap-4 ep:items-start">
-					<div class="ep:flex ep:flex-col ep:gap-1">
-						<label class="ep:text-ui-smaller ep:text-obs-muted">
-							Note type
-						</label>
-						<NoteTypePicker
-							value={noteTypeId}
-							onChange={handleNoteTypeChange}
-							disabled={isEdit}
-						/>
-					</div>
-					<div class="ep:flex ep:flex-col ep:gap-1">
-						<label class="ep:text-ui-smaller ep:text-obs-muted">
-							Source note
-						</label>
-						<div class="ep:flex ep:items-center ep:gap-2">
-							<div class="ep:flex-1">
-								<NotePickerCombobox
-									app={app}
-									selectedNote={selectedSourceNote}
-									onSelect={setSelectedSourceNote}
-								/>
-							</div>
-							{selectedSourceNote && (
-								<Clickable
-									class="ep:text-ui-smaller ep:text-obs-muted ep:hover:text-obs-normal"
-									onClick={() => setSelectedSourceNote(null)}
-								>
-									Clear
-								</Clickable>
-							)}
-						</div>
-					</div>
-				</div>
-			) : (
-				<div class="ep:flex ep:flex-col ep:gap-1 ep:w-[45%]">
-					<label class="ep:text-ui-smaller ep:text-obs-muted">
-						Note type
-					</label>
-					<NoteTypePicker
-						value={noteTypeId}
-						onChange={handleNoteTypeChange}
-						disabled={isEdit}
-					/>
-				</div>
-			)}
+		<div class="ep:flex ep:flex-col ep:gap-3">
+			{/* Action bar: Note type, Source note, Fields/Cards/AI */}
+			<ActionBar
+				app={app}
+				plugin={plugin}
+				noteTypeId={noteTypeId}
+				onNoteTypeChange={handleNoteTypeChange}
+				isEdit={isEdit}
+				showSourcePicker={showSourcePicker}
+				selectedSourceNote={selectedSourceNote}
+				onSourceSelect={setSelectedSourceNote}
+				onNoteTypeRefresh={handleNoteTypeRefresh}
+			/>
+
+			{/* Shared formatting toolbar */}
+			<FormattingToolbar focusedFieldRef={focusedFieldRef} app={app} />
 
 			{/* Dynamic fields */}
 			<NoteFieldsForm
 				noteType={noteType}
 				fields={fields}
 				onFieldChange={handleFieldChange}
+				onFieldFocus={handleFieldFocus}
 				onModEnter={() => handleSave(false)}
+				pinnedFields={pinnedFields}
+				onTogglePin={togglePin}
 			/>
 
 			{/* Footer */}
 			<div class="ep-modal-footer ep:flex ep:items-center ep:gap-3">
-				{/* Card count on the left */}
 				{!isEdit && (
 					<div class="ep:flex-1">
 						<CardCountPreview

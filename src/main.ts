@@ -205,6 +205,7 @@ export default class TrueRecallPlugin extends Plugin {
 			this.frontmatterIndex.rebuildIndex();
 			this.hierarchyService.invalidateGraph();
 			refreshMetadata();
+			refreshCards();
 		});
 
 		this.flashcardManager = new FlashcardManager(

@@ -1,5 +1,13 @@
 import type { Note, NoteType } from "@shared/types/note.types";
 import type { FSRSCardData } from "@shared/types";
+import type { EditorView } from "@codemirror/view";
+
+// ── Focus tracking for shared toolbar ──
+
+export interface FocusedFieldRef {
+	fieldName: string;
+	editorView: EditorView;
+}
 
 // ── Mode: discriminated union ──
 
