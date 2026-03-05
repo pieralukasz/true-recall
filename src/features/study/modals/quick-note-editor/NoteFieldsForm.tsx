@@ -1,3 +1,4 @@
+import type { EditorView } from "@codemirror/view";
 import type { EmbeddableEditorInstance } from "@shared/ui/editor/embedded-editor";
 import { useApp, usePlugin } from "@shared/ui/preact/ObsidianContext";
 import type { NoteType } from "@shared/types/note.types";
@@ -6,7 +7,31 @@ import {
 	useEffect,
 	useLayoutEffect,
 	useRef,
+	useState,
 } from "preact/hooks";
+
+// ── Formatting helpers ────────────────────────────────────────────────────
+
+function toggleMarker(view: EditorView, marker: string) {
+	const { from, to } = view.state.selection.main;
+	const selected = view.state.sliceDoc(from, to);
+	const mLen = marker.length;
+	if (
+		selected.startsWith(marker) &&
+		selected.endsWith(marker) &&
+		selected.length > mLen * 2
+	) {
+		view.dispatch({ changes: { from, to, insert: selected.slice(mLen, -mLen) } });
+	} else {
+		view.dispatch({
+			changes: { from, to, insert: `${marker}${selected}${marker}` },
+			selection: { anchor: from + mLen, head: to + mLen },
+		});
+	}
+	view.focus();
+}
+
+// ── NoteFieldsForm ────────────────────────────────────────────────────────
 
 interface NoteFieldsFormProps {
 	noteType: NoteType;
@@ -24,24 +49,20 @@ export function NoteFieldsForm({
 	autoFocusFirst = true,
 }: NoteFieldsFormProps) {
 	return (
-		<div class="ep:space-y-3">
+		<div class="ep:divide-y ep:divide-obs-divider ep:border ep:border-obs-border ep:rounded-md ep:overflow-hidden">
 			{noteType.fields.map((fieldName, idx) => (
-				<div key={fieldName}>
-					<label class="ep:text-ui-smaller ep:text-obs-muted ep:mb-1 ep:block">
-						{fieldName}:
-					</label>
-					<CMField
-						fieldName={fieldName}
-						content={fields[fieldName] ?? ""}
-						autoFocus={autoFocusFirst && idx === 0}
-						onFieldChange={onFieldChange}
-						onModEnter={onModEnter}
-					/>
-				</div>
+				<CMField
+					key={fieldName}
+					fieldName={fieldName}
+					content={fields[fieldName] ?? ""}
+					autoFocus={autoFocusFirst && idx === 0}
+					onFieldChange={onFieldChange}
+					onModEnter={onModEnter}
+				/>
 			))}
 
 			{noteType.type === 1 && (
-				<div class="ep:text-ui-smaller ep:text-obs-faint ep:bg-obs-secondary ep:px-3 ep:py-2 ep:rounded">
+				<div class="ep:text-ui-smaller ep:text-obs-faint ep:bg-obs-secondary ep:px-3 ep:py-2">
 					Use{" "}
 					<code class="ep:text-obs-accent">{"{{c1::text}}"}</code>{" "}
 					syntax for cloze deletions. Multiple indices create
@@ -73,6 +94,8 @@ function CMField({
 	const plugin = usePlugin();
 	const containerRef = useRef<HTMLDivElement>(null);
 	const editorRef = useRef<EmbeddableEditorInstance | null>(null);
+	const [isCollapsed, setIsCollapsed] = useState(false);
+
 	// Track current content for blur handler without triggering editor recreation
 	const contentRef = useRef(content);
 	contentRef.current = content;
@@ -120,24 +143,73 @@ function CMField({
 		editor.set(content);
 	}, [content]);
 
+	const fmtBtn = (label: string, marker: string, title: string) => (
+		<div
+			role="button"
+			title={title}
+			class="ep:px-1.5 ep:py-0.5 ep:text-ui-smaller ep:text-obs-muted ep:hover:text-obs-normal ep:hover:bg-obs-tertiary ep:rounded ep:cursor-pointer ep:select-none ep:leading-tight"
+			onMouseDown={(e: MouseEvent) => {
+				e.preventDefault();
+				const editor = editorRef.current;
+				if (editor) toggleMarker(editor.cm, marker);
+			}}
+		>
+			{label}
+		</div>
+	);
+
+	const header = (
+		<div
+			class="ep:flex ep:items-center ep:gap-2 ep:px-3 ep:py-2 ep:bg-obs-secondary ep:cursor-pointer ep:select-none ep:group"
+			onClick={() => setIsCollapsed((v) => !v)}
+		>
+			<span class="ep:text-obs-faint ep:text-ui-smaller ep:w-3 ep:shrink-0">
+				{isCollapsed ? "▸" : "▾"}
+			</span>
+			<span class="ep:text-ui-small ep:font-medium ep:text-obs-normal ep:flex-1">
+				{fieldName}
+			</span>
+			{/* Formatting toolbar — stop click from toggling collapse */}
+			<div
+				class="ep:flex ep:items-center ep:gap-0.5"
+				onClick={(e: MouseEvent) => e.stopPropagation()}
+			>
+				{fmtBtn("B", "**", "Bold")}
+				{fmtBtn("I", "*", "Italic")}
+				{fmtBtn("U", "__", "Underline")}
+				{fmtBtn("`", "`", "Inline code")}
+			</div>
+		</div>
+	);
+
 	// Fallback: render plain textarea until EmbeddableEditor is available
 	// (class is lazy-loaded on onLayoutReady — practically instant, but guard anyway)
 	if (!plugin.EmbeddableEditor) {
 		return (
-			<textarea
-				class="ep:w-full ep:px-3 ep:py-2 ep:text-ui-small ep:bg-obs-primary ep:border ep:border-obs-border ep:rounded-md ep:min-h-[80px] ep:resize-y"
-				value={content}
-				onInput={(e) =>
-					onFieldChange(fieldName, (e.target as HTMLTextAreaElement).value)
-				}
-			/>
+			<div>
+				{header}
+				{!isCollapsed && (
+					<textarea
+						class="ep:w-full ep:px-3 ep:py-2 ep:text-ui-small ep:bg-obs-primary ep:min-h-[2.25rem] ep:resize-y"
+						value={content}
+						onInput={(e) =>
+							onFieldChange(fieldName, (e.target as HTMLTextAreaElement).value)
+						}
+					/>
+				)}
+			</div>
 		);
 	}
 
 	return (
-		<div
-			ref={containerRef}
-			class="ep:w-full ep:min-h-[80px] ep:bg-obs-primary ep:border ep:border-obs-border ep:rounded-md ep:overflow-hidden"
-		/>
+		<div>
+			{header}
+			{!isCollapsed && (
+				<div
+					ref={containerRef}
+					class="ep:w-full ep:min-h-[2.25rem] ep:bg-obs-primary ep:overflow-hidden"
+				/>
+			)}
+		</div>
 	);
 }
