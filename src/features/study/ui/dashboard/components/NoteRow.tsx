@@ -2,6 +2,7 @@ import { CardCountDisplay } from "@shared/ui/components/CardCountDisplay";
 import { Clickable } from "@shared/ui/components/Clickable";
 import { IconButton } from "@shared/ui/components/IconButton";
 import { useContextMenu } from "@shared/ui/preact/useContextMenu";
+import type { MenuItem } from "@shared/ui/preact/useContextMenu";
 import { cn } from "@shared/ui/utils";
 import type { DashboardNoteEntry, NotePriority } from "../types";
 
@@ -23,6 +24,11 @@ interface NoteRowProps {
 	onArchive?: () => void;
 	onUnarchive?: () => void;
 	onRename?: () => void;
+	onDetach?: () => void;
+	isSelectionMode?: boolean;
+	isSelected?: boolean;
+	onToggleSelect?: () => void;
+	onEnterSelection?: () => void;
 }
 
 export function NoteRow({
@@ -35,10 +41,15 @@ export function NoteRow({
 	onArchive,
 	onUnarchive,
 	onRename,
+	onDetach,
+	isSelectionMode,
+	isSelected,
+	onToggleSelect,
+	onEnterSelection,
 }: NoteRowProps) {
 	const hasActive = note.due + note.newCount + note.learning > 0;
 
-	const handleContextMenu = useContextMenu([
+	const menuItems: MenuItem[] = [
 		{ title: "Study", icon: "play", onClick: onStudy },
 		{ title: "Custom session", icon: "sliders-horizontal", onClick: onCustomStudy },
 		{ title: "Go to note", icon: "file-text", onClick: onNavigate },
@@ -46,18 +57,41 @@ export function NoteRow({
 		note.archived
 			? { title: "Unarchive", icon: "archive-restore", onClick: () => onUnarchive?.() }
 			: { title: "Archive", icon: "archive", onClick: () => onArchive?.() },
-	]);
+		...(onDetach
+			? ["separator" as const, { title: "Detach from project", icon: "unlink", onClick: onDetach }]
+			: []),
+		...(onEnterSelection
+			? ["separator" as const, { title: "Select", icon: "check-square", onClick: onEnterSelection }]
+			: []),
+	];
+
+	const handleContextMenu = useContextMenu(menuItems);
+
+	const handleClick = isSelectionMode ? (onToggleSelect ?? onNavigate) : onNavigate;
 
 	return (
 		<Clickable
 			class={cn(
 				"ep:flex ep:items-center ep:gap-3 ep:px-3 ep:h-9 ep:overflow-hidden ep:rounded-lg ep:transition-colors ep:duration-150 ep:hover:bg-obs-modifier-hover",
 				(!hasActive || note.archived) && "ep:opacity-40",
+				isSelected && "ep:bg-obs-modifier-hover",
 			)}
-			onContextMenu={handleContextMenu}
-			onClick={onNavigate}
+			onContextMenu={isSelectionMode ? undefined : handleContextMenu}
+			onClick={handleClick}
 			stopPropagation={false}
 		>
+			{isSelectionMode && (
+				<input
+					type="checkbox"
+					checked={isSelected}
+					class="ep:shrink-0"
+					onClick={(e) => {
+						e.stopPropagation();
+						onToggleSelect?.();
+					}}
+				/>
+			)}
+
 			<div class="ep:flex ep:items-center ep:gap-2 ep:flex-1 ep:min-w-0 ep:hover:text-obs-interactive ep:transition-colors">
 				<span
 					class={cn(
@@ -110,14 +144,16 @@ export function NoteRow({
 				dueCount={note.due}
 			/>
 
-			<div class="ep:flex ep:items-center">
-				<IconButton
-					icon="play"
-					ariaLabel={`Study ${note.name}`}
-					onClick={onStudy}
-					size="small"
-				/>
-			</div>
+			{!isSelectionMode && (
+				<div class="ep:flex ep:items-center">
+					<IconButton
+						icon="play"
+						ariaLabel={`Study ${note.name}`}
+						onClick={onStudy}
+						size="small"
+					/>
+				</div>
+			)}
 		</Clickable>
 	);
 }

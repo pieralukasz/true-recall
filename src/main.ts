@@ -195,6 +195,7 @@ export default class TrueRecallPlugin extends Plugin {
 		// onLayoutReady fires synchronously if layout is already ready.
 		this.app.workspace.onLayoutReady(() => {
 			this.frontmatterIndex.rebuildIndex();
+			this.hierarchyService.invalidateGraph();
 			refreshMetadata();
 		});
 

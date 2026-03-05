@@ -18,6 +18,7 @@ import { ProjectsTab } from "./components/ProjectsTab";
 import { RecentlyStudiedBar } from "./components/RecentlyStudiedBar";
 import { HeatmapWidget } from "../editor/widgets/analytics/HeatmapWidget";
 import { aggregateDashboardData } from "./helpers/note-aggregation";
+import { useDragAutoScroll } from "./helpers/use-drag-auto-scroll";
 import { useInitialMount } from "./helpers/use-initial-mount";
 import { aggregateProjectData } from "./helpers/project-aggregation";
 import type { DashboardAggregation, DashboardTab } from "./types";
@@ -166,6 +167,7 @@ export function DashboardApp() {
 
 	const scrollContainerRef = useRef<HTMLDivElement>(null);
 	const scrollTop = useSignal(0);
+	useDragAutoScroll(scrollContainerRef);
 
 	const onScroll = useCallback((e: Event) => {
 		scrollTop.value = (e.currentTarget as HTMLDivElement).scrollTop;
