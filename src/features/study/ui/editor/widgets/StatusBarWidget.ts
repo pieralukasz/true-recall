@@ -1,3 +1,5 @@
+import type { SessionPersistenceService } from "@features/core/persistence/session-persistence.service";
+import type { PresetService } from "@features/core/services/preset.service";
 import type { FlashcardManager } from "@features/study/services/flashcard/flashcard.service";
 import { effect } from "@preact/signals";
 import {
@@ -17,6 +19,8 @@ export class StatusBarWidget {
 		private flashcardManager: FlashcardManager,
 		private onClickDue: () => void,
 		private getEnabled: () => boolean = () => true,
+		private presetService?: PresetService,
+		private sessionPersistence?: SessionPersistenceService,
 	) {
 		this.el.addClass("true-recall-status-bar");
 		this.el.style.cursor = "pointer";
@@ -73,9 +77,9 @@ export class StatusBarWidget {
 		const allCards = allCardsArray.value;
 		const archived = archivedSourceUids.value;
 		const now = new Date();
-		let dueToday = 0;
-		let newCount = 0;
+		let rawNew = 0;
 		let learning = 0;
+		let rawDue = 0;
 
 		for (const card of allCards) {
 			if (archived.has(card.sourceUid ?? "")) continue;
@@ -87,22 +91,31 @@ export class StatusBarWidget {
 				continue;
 
 			switch (fsrs.state) {
-				case 0: // State.New
-					newCount++;
+				case 0:
+					rawNew++;
 					break;
-				case 1: // State.Learning
-				case 3: // State.Relearning
+				case 1:
+				case 3:
 					learning++;
 					break;
-				case 2: // State.Review
-					if (new Date(fsrs.due) <= now) {
-						dueToday++;
-					}
+				case 2:
+					if (new Date(fsrs.due) <= now) rawDue++;
 					break;
 			}
 		}
 
-		return { dueToday, newCount, learning };
+		// Apply default preset's daily caps to raw totals
+		const preset = this.presetService?.getDefaultPreset();
+		const newCap = preset?.newCardsPerDay ?? 20;
+		const reviewsCap = preset?.reviewsPerDay ?? 200;
+		const newStudied = this.sessionPersistence?.getNewCardsStudiedToday() ?? 0;
+		const reviewsCompleted = this.sessionPersistence?.getReviewCardsCompletedToday() ?? 0;
+
+		return {
+			newCount: Math.min(rawNew, Math.max(0, newCap - newStudied)),
+			dueToday: Math.min(rawDue, Math.max(0, reviewsCap - reviewsCompleted)),
+			learning,
+		};
 	}
 
 	dispose(): void {

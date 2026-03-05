@@ -210,6 +210,11 @@
 	}
 }
 
+/* Reset padding for dashboard — must be unlayered to override Obsidian defaults */
+[data-type="true-recall-dashboard-view"] .view-content {
+	padding: 0 !important;
+}
+
 /* ── Streaming flashcard generation animations ── */
 
 /* Word reveal is handled imperatively by Motion One (useWordReveal hook)

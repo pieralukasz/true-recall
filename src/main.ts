@@ -989,6 +989,8 @@ export default class TrueRecallPlugin extends Plugin {
 						this.openDashboard().catch(() => {});
 					},
 					() => this.settings.showStatusBarWidget,
+					this.presetService,
+					this.sessionPersistence,
 				);
 				this.statusBarWidget.start();
 			},
