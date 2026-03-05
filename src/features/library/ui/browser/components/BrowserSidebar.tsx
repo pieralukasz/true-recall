@@ -233,7 +233,7 @@ function SourceNotesSection({
 			>
 				<span class="ep:text-[11px] ep:font-medium ep:uppercase ep:tracking-wider ep:text-obs-muted">
 					{selectedCount > 0
-						? `Source Notes (${selectedCount} zazn.)`
+						? `Source Notes (${selectedCount} selected)`
 						: "Source Notes"}
 				</span>
 				<span class="ep:text-[10px] ep:text-obs-muted">
@@ -246,7 +246,7 @@ function SourceNotesSection({
 					<div class="ep:px-2 ep:pb-1.5 ep:pt-1">
 						<input
 							type="text"
-							placeholder="Szukaj notatek..."
+							placeholder="Search notes..."
 							value={searchQuery.value}
 							onInput={(e) =>
 								handleSearchChange(
@@ -261,8 +261,8 @@ function SourceNotesSection({
 					{visibleNotes.length === 0 ? (
 						<div class="ep:px-3 ep:py-2 ep:text-[11px] ep:text-obs-muted ep:text-center">
 							{searchQuery.value.trim()
-								? `Brak wyników dla "${searchQuery.value.trim()}"`
-								: "Brak notatek"}
+								? `No results for "${searchQuery.value.trim()}"`
+								: "No notes"}
 						</div>
 					) : (
 						<>
@@ -297,7 +297,7 @@ function SourceNotesSection({
 									class="ep:w-full ep:px-3 ep:py-1.5 ep:text-[11px] ep:text-obs-interactive ep:text-center hover:ep:bg-obs-modifier-hover"
 									onClick={handleShowMore}
 								>
-									Pokaż więcej ({remainingCount})
+									Show more ({remainingCount})
 								</Clickable>
 							)}
 						</>
