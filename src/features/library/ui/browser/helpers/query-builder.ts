@@ -1,4 +1,5 @@
 import { State } from "ts-fsrs";
+import { escapeFts5Query } from "@features/core/persistence/sqlite/modules/NoteActions";
 import { BUILTIN_IMAGE_OCCLUSION_ID } from "@shared/types/note.types";
 import type { FilterState, PropFilter, SortConfig, StateFilterValue } from "../types";
 
@@ -45,11 +46,16 @@ const SORT_COLUMN: Record<string, string> = {
 	created_via: "n.created_via",
 };
 
+export interface BuildQueryOptions {
+	fts5Available?: boolean;
+}
+
 export function buildBrowserQuery(
 	filter: FilterState,
 	sort: SortConfig,
 	limit: number,
 	offset: number,
+	options?: BuildQueryOptions,
 ): SqlQuery {
 	const params: (string | number)[] = [];
 
@@ -107,9 +113,15 @@ export function buildBrowserQuery(
 
 	// ── Text search ──────────────────────────────────────────
 	if (filter.textSearch) {
-		const pattern = `%${filter.textSearch}%`;
-		conditions.push("n.fields_json LIKE ?");
-		params.push(pattern);
+		if (options?.fts5Available) {
+			conditions.push(
+				"n.rowid IN (SELECT rowid FROM notes_fts WHERE notes_fts MATCH ?)",
+			);
+			params.push(escapeFts5Query(filter.textSearch));
+		} else {
+			conditions.push("n.fields_json LIKE ?");
+			params.push(`%${filter.textSearch}%`);
+		}
 	}
 
 	// ── Source UIDs ──────────────────────────────────────────

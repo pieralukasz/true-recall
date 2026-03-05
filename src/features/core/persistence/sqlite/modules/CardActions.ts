@@ -1,4 +1,5 @@
 import type { SqliteDatabase } from "@features/core/persistence/sqlite/SqliteDatabase";
+import { escapeFts5Query } from "@features/core/persistence/sqlite/modules/NoteActions";
 import {
 	deriveCardType,
 	renderTemplate,
@@ -215,7 +216,29 @@ function resolveNoteMapping(data: FSRSCardData): {
 // ── CardActions class ─────────────────────────────────────────
 
 export class CardActions {
+	private fts5Available: boolean | null = null;
+
 	constructor(private db: SqliteDatabase) {}
+
+	private isFts5Available(): boolean {
+		if (this.fts5Available === null) {
+			const row = this.db.get<{ value: string }>(
+				`SELECT value FROM meta WHERE key = 'fts5_available'`,
+			);
+			this.fts5Available = row?.value === "1";
+		}
+		return this.fts5Available;
+	}
+
+	private noteMatchCondition(param: string): { sql: string; param: string } {
+		if (this.isFts5Available()) {
+			return {
+				sql: "n.rowid IN (SELECT rowid FROM notes_fts WHERE notes_fts MATCH ?)",
+				param: escapeFts5Query(param),
+			};
+		}
+		return { sql: "n.fields_json LIKE ?", param: `%${param}%` };
+	}
 
 	// ── Read methods ──────────────────────────────────────────
 
@@ -580,12 +603,13 @@ export class CardActions {
 	// ── Lookup methods ────────────────────────────────────────
 
 	getCardIdByQuestion(question: string): string | undefined {
+		const match = this.noteMatchCondition(question);
 		return this.db.get<{ id: string }>(
 			`SELECT c.id FROM cards c
                  JOIN notes n ON c.note_id = n.id
-                 WHERE n.fields_json LIKE ? AND c.deleted_at IS NULL
+                 WHERE ${match.sql} AND c.deleted_at IS NULL
                  LIMIT 1`,
-			[`%${question}%`],
+			[match.param],
 		)?.id;
 	}
 
@@ -593,16 +617,17 @@ export class CardActions {
 		question: string,
 		excludeCardId?: string,
 	): { id: string; sourceUid?: string } | undefined {
+		const match = this.noteMatchCondition(question);
 		const sql = excludeCardId
 			? `SELECT c.id, c.source_uid AS sourceUid FROM cards c
                    JOIN notes n ON c.note_id = n.id
-                   WHERE n.fields_json LIKE ? AND c.id != ? AND c.deleted_at IS NULL LIMIT 1`
+                   WHERE ${match.sql} AND c.id != ? AND c.deleted_at IS NULL LIMIT 1`
 			: `SELECT c.id, c.source_uid AS sourceUid FROM cards c
                    JOIN notes n ON c.note_id = n.id
-                   WHERE n.fields_json LIKE ? AND c.deleted_at IS NULL LIMIT 1`;
+                   WHERE ${match.sql} AND c.deleted_at IS NULL LIMIT 1`;
 		const params = excludeCardId
-			? [`%${question}%`, excludeCardId]
-			: [`%${question}%`];
+			? [match.param, excludeCardId]
+			: [match.param];
 		const row = this.db.get<{
 			id: string;
 			sourceUid: string | null;
@@ -615,12 +640,13 @@ export class CardActions {
 		question: string,
 		clozeIndex: number,
 	): string | undefined {
+		const match = this.noteMatchCondition(question);
 		return this.db.get<{ id: string }>(
 			`SELECT c.id FROM cards c
                  JOIN notes n ON c.note_id = n.id
-                 WHERE n.fields_json LIKE ? AND c.template_ord = ? AND c.deleted_at IS NULL
+                 WHERE ${match.sql} AND c.template_ord = ? AND c.deleted_at IS NULL
                  LIMIT 1`,
-			[`%${question}%`, clozeIndex],
+			[match.param, clozeIndex],
 		)?.id;
 	}
 

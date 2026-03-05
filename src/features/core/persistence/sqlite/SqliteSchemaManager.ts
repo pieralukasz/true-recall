@@ -6,6 +6,8 @@ export class SqliteSchemaManager {
 
 	createTables(): void {
 		this.db.run(`
+            PRAGMA foreign_keys = ON;
+
             CREATE TABLE IF NOT EXISTS note_types (
                 id TEXT PRIMARY KEY NOT NULL,
                 name TEXT NOT NULL,
@@ -36,6 +38,7 @@ export class SqliteSchemaManager {
             CREATE INDEX IF NOT EXISTS idx_notes_note_type ON notes(note_type_id);
             CREATE INDEX IF NOT EXISTS idx_notes_source_uid ON notes(source_uid);
             CREATE INDEX IF NOT EXISTS idx_notes_deleted ON notes(deleted_at);
+            CREATE INDEX IF NOT EXISTS idx_notes_created_via ON notes(created_via);
 
             CREATE TABLE IF NOT EXISTS cards (
                 id TEXT PRIMARY KEY NOT NULL,
@@ -136,6 +139,51 @@ export class SqliteSchemaManager {
 					now,
 					now,
 				],
+			);
+		}
+
+		this.createFts5();
+	}
+
+	/**
+	 * FTS5 full-text search on notes.fields_json.
+	 * External content table — no data duplication, reads from notes via rowid.
+	 * Wrapped in try/catch because FTS5 requires the extension compiled into the WASM binary.
+	 */
+	private createFts5(): void {
+		try {
+			this.db.run(`
+				CREATE VIRTUAL TABLE IF NOT EXISTS notes_fts USING fts5(
+					fields_json,
+					content='notes',
+					content_rowid='rowid'
+				);
+
+				CREATE TRIGGER IF NOT EXISTS notes_fts_insert AFTER INSERT ON notes BEGIN
+					INSERT INTO notes_fts(rowid, fields_json) VALUES (new.rowid, new.fields_json);
+				END;
+
+				CREATE TRIGGER IF NOT EXISTS notes_fts_delete AFTER DELETE ON notes BEGIN
+					INSERT INTO notes_fts(notes_fts, rowid, fields_json) VALUES ('delete', old.rowid, old.fields_json);
+				END;
+
+				CREATE TRIGGER IF NOT EXISTS notes_fts_update AFTER UPDATE OF fields_json ON notes BEGIN
+					INSERT INTO notes_fts(notes_fts, rowid, fields_json) VALUES ('delete', old.rowid, old.fields_json);
+					INSERT INTO notes_fts(rowid, fields_json) VALUES (new.rowid, new.fields_json);
+				END;
+			`);
+
+			// Rebuild index from existing data (idempotent — safe to run on every load)
+			this.db.run(`INSERT INTO notes_fts(notes_fts) VALUES('rebuild')`);
+			this.db.run(
+				`INSERT OR REPLACE INTO meta (key, value) VALUES ('fts5_available', '1')`,
+			);
+		} catch {
+			console.warn(
+				"[True Recall] FTS5 not available in this sql.js build — falling back to LIKE queries",
+			);
+			this.db.run(
+				`INSERT OR REPLACE INTO meta (key, value) VALUES ('fts5_available', '0')`,
 			);
 		}
 	}
