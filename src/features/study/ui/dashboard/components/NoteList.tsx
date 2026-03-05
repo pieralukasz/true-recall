@@ -432,7 +432,10 @@ export function NoteList({
 							<div
 								key={item.name}
 								class={`${initialMount.current ? "ep-card-enter" : ""} ${dragCls}`.trim() || undefined}
-								draggable={!isSelecting && !!item.path}
+								draggable={!isSelecting}
+								onMouseDown={(e) => {
+									if ((e.target as HTMLElement) !== e.currentTarget) e.preventDefault();
+								}}
 								onDragStart={(e) => handleDragStart(e, item)}
 								onDragEnd={handleDragEnd}
 								onDragOver={(e) => handleDragOver(e, item)}
