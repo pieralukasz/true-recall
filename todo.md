@@ -19,3 +19,18 @@ Feature: Type-in answer mode
   Popular for language learning, medical terms, anything requiring exact recall.
   Reference: Anki's {{type:cta}} field functionality.
   Source: Discord feedback from SleepVain1
+
+Feature: AI-powered leech intervention (Auto-Simplification)
+  W Anki "pijawki" to fiszki, o których użytkownik zapomina wielokrotnie — system je blokuje bez wyjaśnienia.
+  Ulepszenie: po N kolejnych oblaniach tej samej fiszki, AI automatycznie interweniuje:
+  "Hej, widzę że ciągle zapominasz tej definicji. Chcesz żebym uprościł pytanie / dodał wskazówkę / podzielił na mniejsze karty?"
+  AI może zaproponować: przepisanie pytania prostszym językiem, dodanie przykładu, split na 2-3 atomowe karty.
+  Użytkownik akceptuje lub odrzuca propozycję — pełna kontrola, AI tylko sugeruje.
+
+Feature: Hands-Free Voice AI mode
+  Anki wymaga patrzenia w ekran i klikania — niemożliwe podczas biegania, jazdy autem czy zmywania naczyń.
+  Rozwiązanie: tryb głosowy łączący TTS + STT napędzane AI.
+  Flow: wtyczka czyta fiszkę na głos (TTS) → użytkownik odpowiada naturalnym językiem (STT) →
+  LLM ocenia poprawność odpowiedzi (semantycznie, nie literalnie) → podaje prawidłową odpowiedź →
+  automatycznie wybiera odpowiedni interwał FSRS (Again/Hard/Good/Easy) bez dotykania ekranu.
+  Przydatne do: nauki języków, medycyny, prawa — wszystkiego wymagającego aktywnego przypominania.
