@@ -1,7 +1,7 @@
 /**
  * Facade for flashcard operations - delegates to specialized services:
  * CardRepository (CRUD), CardQueryService (reads), FrontmatterService,
- * SourceNoteService, FlashcardParserService
+ * SourceNoteService
  */
 
 import type { SqliteStoreService } from "@features/core/persistence/sqlite/SqliteStoreService";
@@ -19,7 +19,6 @@ import {
 	CardRepository,
 	type CreateBatchResult,
 } from "@features/study/services/flashcard/card-repository.service";
-import { FlashcardParserService } from "@features/study/services/flashcard/flashcard-parser.service";
 import { FrontmatterService } from "@features/study/services/flashcard/frontmatter.service";
 import { SourceNoteService } from "@features/study/services/flashcard/source-note.service";
 import { notifyCardChange } from "@shared/services/signals";
@@ -70,7 +69,6 @@ export class FlashcardManager {
 	private app: App;
 	private store: SqliteStoreService | null = null;
 	private frontmatterService: FrontmatterService;
-	private parserService: FlashcardParserService;
 	private sourceNoteService: SourceNoteService;
 
 	// Specialized services (initialized after setStore)
@@ -84,7 +82,6 @@ export class FlashcardManager {
 	) {
 		this.app = app;
 		this.frontmatterService = new FrontmatterService(app);
-		this.parserService = new FlashcardParserService();
 		this.sourceNoteService = new SourceNoteService(app, frontmatterIndex);
 	}
 
@@ -120,10 +117,6 @@ export class FlashcardManager {
 
 	getSourceNoteService(): SourceNoteService {
 		return this.sourceNoteService;
-	}
-
-	parseFlashcards(content: string): FlashcardItem[] {
-		return this.parserService.extractFlashcards(content);
 	}
 
 	async scanVault(): Promise<ScanResult> {
