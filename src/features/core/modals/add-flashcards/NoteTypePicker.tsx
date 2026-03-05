@@ -28,7 +28,7 @@ export function NoteTypePicker({ value, onChange, disabled }: NoteTypePickerProp
 
 	return (
 		<select
-			class="ep:px-2 ep:py-1.5 ep:text-ui-small ep:bg-obs-primary ep:border ep:border-obs-border ep:rounded ep:min-w-[160px] ep:disabled:opacity-60 ep:disabled:cursor-not-allowed"
+			class="ep:w-full ep:px-2 ep:py-1.5 ep:text-ui-small ep:bg-obs-primary ep:border ep:border-obs-border ep:rounded ep:min-w-[160px] ep:disabled:opacity-60 ep:disabled:cursor-not-allowed"
 			value={value}
 			disabled={disabled}
 			onChange={(e) => onChange((e.target as HTMLSelectElement).value)}
