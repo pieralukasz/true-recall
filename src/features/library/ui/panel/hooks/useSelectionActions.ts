@@ -131,6 +131,69 @@ export function useSelectionActions({
 		notify().cardsDeleted(successCount);
 	}, [flashcardInfo, currentFile, selectedCardIds, plugin, panel]);
 
+	const handleChangeNoteType = useCallback(async () => {
+		if (!flashcardInfo || selectedCardIds.size === 0) return;
+		const { ChangeNoteTypeModal } = await import(
+			"@features/library/modals/ChangeNoteTypeModal"
+		);
+		const { notify } = await import("@shared/services/notification.service");
+		const { notifyCardChange } = await import("@shared/services/signals");
+
+		const cardIds = Array.from(selectedCardIds);
+		const noteInfos =
+			plugin.cardStore.cards.getNoteInfoForCardIds(cardIds);
+		if (noteInfos.length === 0) return;
+
+		const uniqueTypeIds = new Set(noteInfos.map((n) => n.noteTypeId));
+		if (uniqueTypeIds.size > 1) {
+			notify().error(
+				"Selected cards have different note types. Select cards of one type.",
+			);
+			return;
+		}
+
+		const currentTypeId = noteInfos[0]!.noteTypeId;
+		const currentNoteType =
+			plugin.cardStore.noteTypes.getById(currentTypeId);
+		if (!currentNoteType) return;
+
+		const allNoteTypes = plugin.cardStore.noteTypes.getAll();
+
+		const modal = new ChangeNoteTypeModal(app, {
+			currentNoteType,
+			availableNoteTypes: allNoteTypes,
+			noteCount: noteInfos.length,
+		});
+
+		const result = await modal.openAndWait();
+		if (result.cancelled || !result.targetNoteTypeId || !result.fieldMapping)
+			return;
+
+		let totalCreated = 0;
+		let totalDeleted = 0;
+
+		for (const info of noteInfos) {
+			const r = plugin.flashcardManager.changeNoteType(
+				info.noteId,
+				result.targetNoteTypeId,
+				result.fieldMapping,
+			);
+			totalCreated += r.createdCardIds.length;
+			totalDeleted += r.deletedCardIds.length;
+		}
+
+		const parts: string[] = [`${noteInfos.length} note(s) changed`];
+		if (totalCreated > 0) parts.push(`${totalCreated} cards created`);
+		if (totalDeleted > 0) parts.push(`${totalDeleted} cards removed`);
+		notifyCardChange({
+			type: "bulk",
+			cardIds,
+			action: "update",
+		});
+		notify().success(parts.join(", "));
+		panel.exitSelectionMode();
+	}, [flashcardInfo, selectedCardIds, app, plugin, panel]);
+
 	const handleDeleteAll = useCallback(async () => {
 		const { notify } = await import("@shared/services/notification.service");
 		if (!flashcardInfo || flashcardInfo.flashcards.length === 0) return;
@@ -153,6 +216,7 @@ export function useSelectionActions({
 		handleExitSelectionMode,
 		handleSelectAll,
 		handleMoveSelected,
+		handleChangeNoteType,
 		handleDeleteSelected,
 		handleDeleteAll,
 	};

@@ -159,6 +159,70 @@ export function useCardActions({
 		[currentFile, flashcardInfo, app, plugin],
 	);
 
+	const handleChangeType = useCallback(
+		async (card: FlashcardItem) => {
+			const fsrsCard = findFsrsCard(card.id);
+			if (!fsrsCard?.noteId) {
+				notify().error("Cannot change type: missing note link.");
+				return;
+			}
+
+			const note = plugin.cardStore.notes.getById(fsrsCard.noteId);
+			if (!note) {
+				notify().error("Note not found");
+				return;
+			}
+
+			const currentNoteType = plugin.cardStore.noteTypes.getById(
+				note.noteTypeId,
+			);
+			if (!currentNoteType) {
+				notify().error("Note type not found");
+				return;
+			}
+
+			const { ChangeNoteTypeModal } = await import(
+				"@features/library/modals/ChangeNoteTypeModal"
+			);
+			const { notifyCardChange } = await import("@shared/services/signals");
+
+			const allNoteTypes = plugin.cardStore.noteTypes.getAll();
+
+			const modal = new ChangeNoteTypeModal(app, {
+				currentNoteType,
+				availableNoteTypes: allNoteTypes,
+				noteCount: 1,
+			});
+
+			const result = await modal.openAndWait();
+			if (
+				result.cancelled ||
+				!result.targetNoteTypeId ||
+				!result.fieldMapping
+			)
+				return;
+
+			const r = plugin.flashcardManager.changeNoteType(
+				fsrsCard.noteId,
+				result.targetNoteTypeId,
+				result.fieldMapping,
+			);
+
+			const parts: string[] = ["Note type changed"];
+			if (r.createdCardIds.length > 0)
+				parts.push(`${r.createdCardIds.length} cards created`);
+			if (r.deletedCardIds.length > 0)
+				parts.push(`${r.deletedCardIds.length} cards removed`);
+			notifyCardChange({
+				type: "bulk",
+				cardIds: [card.id, ...r.createdCardIds, ...r.deletedCardIds],
+				action: "update",
+			});
+			notify().success(parts.join(", "));
+		},
+		[app, plugin, cardsWithFsrs],
+	);
+
 	const handleToggleExpand = useCallback(
 		(cardId: string) => {
 			preserveScroll(() => {
@@ -174,6 +238,7 @@ export function useCardActions({
 		handleDeleteCard,
 		handleCopyCard,
 		handleMoveCard,
+		handleChangeType,
 		handleToggleExpand,
 	};
 }

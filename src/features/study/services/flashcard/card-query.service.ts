@@ -16,6 +16,7 @@ interface RawFlashcardItem {
 	ioRegionsJson?: string;
 	ioGroupKey?: string;
 	ioParentId?: string;
+	noteTypeName?: string;
 	alwaysTypeIn?: boolean;
 }
 
@@ -64,6 +65,7 @@ export class CardQueryService {
 				sourceText: card.sourceText,
 				noteId: card.noteId,
 				templateOrd: card.templateOrd,
+				noteTypeName: card.noteTypeName,
 				ioImagePath: card.ioImagePath,
 				ioRegionsJson: card.ioRegionsJson,
 				ioGroupKey: card.ioGroupKey,
@@ -101,6 +103,7 @@ export class CardQueryService {
 				reverseOf: card.reverseOf,
 				noteId: card.noteId,
 				templateOrd: card.templateOrd,
+				noteTypeName: card.noteTypeName,
 				ioImagePath: card.ioImagePath,
 				ioRegionsJson: card.ioRegionsJson,
 				ioGroupKey: card.ioGroupKey,

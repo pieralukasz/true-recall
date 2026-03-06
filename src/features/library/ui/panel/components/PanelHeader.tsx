@@ -25,6 +25,7 @@ export interface PanelHeaderProps {
 	onExitSelectionMode: () => void;
 	onSelectAll: () => void;
 	onMoveSelected: () => void;
+	onChangeNoteType: () => void;
 	onDeleteSelected: () => void;
 	onSearchChange: (query: string) => void;
 	onExportCsv: () => void;
@@ -54,6 +55,7 @@ export function PanelHeader({
 	onExitSelectionMode,
 	onSelectAll,
 	onMoveSelected,
+	onChangeNoteType,
 	onDeleteSelected,
 	onSearchChange,
 	onExportCsv,
@@ -159,6 +161,13 @@ export function PanelHeader({
 							icon="folder-input"
 							ariaLabel="Move selected"
 							onClick={onMoveSelected}
+							size="small"
+							disabled={!hasSelection}
+						/>
+						<IconButton
+							icon="replace"
+							ariaLabel="Change note type"
+							onClick={onChangeNoteType}
 							size="small"
 							disabled={!hasSelection}
 						/>

@@ -55,6 +55,7 @@ export function FlashcardPanelApp({
 			onDeleteCard: cardActions.handleDeleteCard,
 			onCopyCard: cardActions.handleCopyCard,
 			onMoveCard: cardActions.handleMoveCard,
+			onChangeType: cardActions.handleChangeType,
 			onToggleExpand: cardActions.handleToggleExpand,
 			onToggleSelect: selectionActions.handleToggleSelect,
 			onEnterSelectionMode: selectionActions.handleEnterSelectionMode,
@@ -98,6 +99,9 @@ export function FlashcardPanelApp({
 							}
 							onSelectAll={selectionActions.handleSelectAll}
 							onMoveSelected={selectionActions.handleMoveSelected}
+							onChangeNoteType={
+								selectionActions.handleChangeNoteType
+							}
 							onDeleteSelected={
 								selectionActions.handleDeleteSelected
 							}
