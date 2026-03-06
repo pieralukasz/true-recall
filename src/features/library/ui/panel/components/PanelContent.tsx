@@ -3,6 +3,7 @@ import {
 	streamingGeneration,
 } from "@features/ai/services/streaming-state";
 import { PanelCard } from "@features/library/ui/panel/components/PanelCard";
+import { PanelIOGroup } from "@features/library/ui/panel/components/PanelIOGroup";
 import { PartialCard } from "@features/library/ui/panel/components/PartialCard";
 import { PanelEmptyState } from "@features/library/ui/panel/components/PanelEmptyState";
 import { matchesCardSearch } from "@features/library/ui/panel/utils/search-query.utils";
@@ -214,13 +215,21 @@ export function PanelContent({
 		return [...flashcards, ...newCards];
 	}, [flashcards, isStreamingForFile, streaming.completedCards]);
 
-	const items = useMemo(() => groupCards(allFlashcards), [allFlashcards]);
+	const items = useMemo(
+		() => groupCards(allFlashcards, fsrsMap),
+		[allFlashcards, fsrsMap],
+	);
 
 	const filteredItems = useMemo(() => {
 		if (!searchQuery.trim()) return items;
-		return items.filter((item) =>
-			matchesCardSearch(item.card.question, item.card.answer, searchQuery),
-		);
+		return items.filter((item) => {
+			if (item.type === "io-group") {
+				return item.cards.some((c) =>
+					matchesCardSearch(c.question, c.answer, searchQuery),
+				);
+			}
+			return matchesCardSearch(item.card.question, item.card.answer, searchQuery);
+		});
 	}, [items, searchQuery]);
 
 	useEffect(() => {
@@ -260,6 +269,33 @@ export function PanelContent({
 	return (
 		<div class="ep:flex ep:flex-col">
 			{filteredItems.map((item) => {
+				if (item.type === "io-group") {
+					const firstCard = item.cards[0]!;
+					const groupKey = firstCard.id;
+					const allSelected = item.cards.every((c) => selectedCardIds.has(c.id));
+					return (
+						<PanelIOGroup
+							key={`io-${groupKey}`}
+							cards={item.cards}
+							fsrsCards={item.fsrsCards}
+							filePath={filePath}
+							isExpanded={expandedCardIds.has(groupKey)}
+							isSelected={allSelected}
+							isSelectionMode={isSelecting}
+							onToggleExpand={() => handlers.onToggleExpand(groupKey)}
+							onToggleSelect={() => {
+								for (const c of item.cards) handlers.onToggleSelect(c.id);
+							}}
+							onEdit={() => handlers.onEditButton(firstCard)}
+							onDelete={() => {
+								for (const c of item.cards) handlers.onDeleteCard(c);
+							}}
+							onMove={() => handlers.onMoveCard(firstCard)}
+							onSelect={() => handlers.onEnterSelectionMode(firstCard.id)}
+						/>
+					);
+				}
+
 				const { card } = item;
 				const isNewlyStreamed = recentCardIds.has(card.id);
 				const cardIndex = isNewlyStreamed ? recentIndex++ : 0;
