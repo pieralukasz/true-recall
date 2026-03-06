@@ -266,6 +266,8 @@ export interface TrueRecallSettings {
 
 	/** Custom system prompt for AI semantic grading in review type-in mode */
 	aiTypeInGradingPrompt?: string;
+	/** Custom user prompt for AI image occlusion region detection */
+	aiIODetectionPrompt?: string;
 }
 
 export interface SessionPreset {

@@ -376,40 +376,39 @@
 	}
 
 	.true-recall-io-shape {
-		stroke-width: 0.0038;
+		stroke: none;
+		stroke-width: 0;
 		transition:
 			fill 180ms ease,
-			stroke 180ms ease,
 			opacity 180ms ease;
 	}
 
 	.true-recall-io-shape.is-mask-active {
 		fill: color-mix(in srgb, var(--background-primary) 32%, var(--interactive-accent) 68%);
 		fill-opacity: 1;
-		stroke: color-mix(in srgb, var(--interactive-accent) 92%, var(--background-primary) 8%);
 	}
 
 	.true-recall-io-shape.is-mask-passive {
 		fill: color-mix(in srgb, var(--background-primary) 46%, var(--interactive-accent) 54%);
 		fill-opacity: 1;
-		stroke: color-mix(in srgb, var(--interactive-accent) 76%, var(--background-primary) 24%);
 	}
 
 	.true-recall-io-shape.is-outline-passive {
 		fill: transparent;
 		stroke: color-mix(in srgb, var(--text-muted) 65%, transparent);
+		stroke-width: 0.002;
 		opacity: 0.85;
 	}
 
 	.true-recall-io-shape.is-revealed-passive {
 		fill: transparent;
 		stroke: color-mix(in srgb, var(--text-faint) 80%, transparent);
+		stroke-width: 0.002;
 		opacity: 0.7;
 	}
 
 	.true-recall-io-shape.is-revealed-active {
-		fill: transparent;
-		stroke: color-mix(in srgb, var(--color-green) 92%, transparent);
+		fill: color-mix(in srgb, var(--color-green) 25%, transparent);
 		animation: true-recall-io-pulse 820ms ease-out 1;
 	}
 
@@ -429,16 +428,16 @@
 
 	@keyframes true-recall-io-pulse {
 		0% {
+			fill: color-mix(in srgb, var(--color-green) 25%, transparent);
 			filter: drop-shadow(0 0 0 color-mix(in srgb, var(--color-green) 70%, transparent));
-			stroke-width: 0.0038;
 		}
 		55% {
+			fill: color-mix(in srgb, var(--color-green) 40%, transparent);
 			filter: drop-shadow(0 0 8px color-mix(in srgb, var(--color-green) 70%, transparent));
-			stroke-width: 0.0058;
 		}
 		100% {
+			fill: color-mix(in srgb, var(--color-green) 25%, transparent);
 			filter: drop-shadow(0 0 0 transparent);
-			stroke-width: 0.0038;
 		}
 	}
 

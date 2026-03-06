@@ -330,6 +330,22 @@ export function AITab() {
 						class="ep:w-full ep:font-mono ep:text-ui-smaller"
 					/>
 				</FormField>
+				<FormField
+					name="Image occlusion detection prompt"
+					description="Custom prompt for AI region detection in image occlusion. Leave empty to use built-in prompt."
+				>
+					<TextAreaInput
+						value={settings.aiIODetectionPrompt ?? ""}
+						onChange={(v) =>
+							save({
+								aiIODetectionPrompt:
+									v.trim().length > 0 ? v : undefined,
+							})
+						}
+						rows={4}
+						class="ep:w-full ep:font-mono ep:text-ui-smaller"
+					/>
+				</FormField>
 			</FormCard>
 
 			<FormCard title="Flashcard Generation">

@@ -8,7 +8,7 @@ import type { TrueRecallSettings } from "@shared/types/settings.types";
 import { Notice } from "obsidian";
 import { getBYOKFallbackConfig, resolveAIClientConfig } from "./ai-client-config";
 import { IncrementalFlashcardParser } from "./incremental-flashcard-parser";
-import { AIRequestError, OpenRouterClient } from "./openrouter-client";
+import { AIRequestError, OpenRouterClient, getTextContent } from "./openrouter-client";
 
 const SOURCE_TRACKING_SUFFIX = `
 
@@ -52,7 +52,7 @@ export class FlashcardGenerationService {
 
 		try {
 			const response = await client.chat(request);
-			const responseText = response.choices[0]?.message?.content ?? "";
+			const responseText = getTextContent(response.choices[0]?.message);
 			const blocks = this.parseResponse(responseText);
 			return { blocks, mode };
 		} catch (error) {
@@ -67,7 +67,7 @@ export class FlashcardGenerationService {
 						undefined,
 					);
 					const response = await fallbackClient.chat(request);
-					const responseText = response.choices[0]?.message?.content ?? "";
+					const responseText = getTextContent(response.choices[0]?.message);
 					const blocks = this.parseResponse(responseText);
 					return { blocks, mode };
 				}
