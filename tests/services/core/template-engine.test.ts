@@ -102,25 +102,23 @@ describe("renderTemplate", () => {
 
 	// ── {{FrontSide}} substitution ──────────────────────────────
 
-	describe("{{FrontSide}} substitution", () => {
-		it("replaces {{FrontSide}} with provided frontSide string", () => {
+	describe("{{FrontSide}} stripping", () => {
+		it("strips {{FrontSide}} from template (Q/A shown separately)", () => {
 			const result = renderTemplate("{{FrontSide}}<hr>{{Back}}", {
 				fields: { Back: "Paris" },
 				frontSide: "What is the capital of France?",
 			});
-			expect(result).toBe(
-				"What is the capital of France?<hr>Paris",
-			);
+			expect(result).toBe("<hr>Paris");
 		});
 
-		it("replaces {{FrontSide}} with empty string when frontSide not provided", () => {
+		it("strips {{FrontSide}} even when frontSide not provided", () => {
 			const result = renderTemplate("{{FrontSide}}<hr>{{Back}}", {
 				fields: { Back: "answer" },
 			});
 			expect(result).toBe("<hr>answer");
 		});
 
-		it("handles {{FrontSide}} appearing multiple times", () => {
+		it("strips all {{FrontSide}} occurrences", () => {
 			const result = renderTemplate(
 				"{{FrontSide}} -- {{FrontSide}}",
 				{
@@ -128,13 +126,45 @@ describe("renderTemplate", () => {
 					frontSide: "Q",
 				},
 			);
-			expect(result).toBe("Q -- Q");
+			expect(result).toBe(" -- ");
 		});
 
-		it("{{FrontSide}} in qfmt resolves to empty (prevents infinite recursion)", () => {
-			// When rendering the front side (no frontSide in context),
-			// FrontSide should be empty to prevent self-reference
+		it("strips {{FrontSide}} in qfmt too", () => {
 			const result = renderTemplate("{{FrontSide}}{{Front}}", {
+				fields: { Front: "question" },
+			});
+			expect(result).toBe("question");
+		});
+	});
+
+	// ── {{edit:Field}} modifier stripping ───────────────────────
+
+	describe("{{edit:Field}} modifier stripping", () => {
+		it("renders {{edit:Front}} as plain field substitution", () => {
+			const result = renderTemplate("{{edit:Front}}", {
+				fields: { Front: "What is ATP?" },
+			});
+			expect(result).toBe("What is ATP?");
+		});
+
+		it("renders {{edit:Back}} in afmt as plain field substitution", () => {
+			const result = renderTemplate("{{edit:Back}}", {
+				fields: { Back: "Adenosine triphosphate" },
+				frontSide: "What is ATP?",
+			});
+			expect(result).toBe("Adenosine triphosphate");
+		});
+
+		it("handles {{FrontSide}} + {{edit:Back}} together (FrontSide stripped)", () => {
+			const result = renderTemplate("{{FrontSide}}\n{{edit:Back}}", {
+				fields: { Back: "4" },
+				frontSide: "",
+			});
+			expect(result).toBe("\n4");
+		});
+
+		it("handles whitespace in edit modifier: {{ edit:Front }}", () => {
+			const result = renderTemplate("{{ edit:Front }}", {
 				fields: { Front: "question" },
 			});
 			expect(result).toBe("question");
