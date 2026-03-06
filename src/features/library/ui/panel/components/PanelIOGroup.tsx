@@ -72,12 +72,9 @@ export function PanelIOGroup({
 		[isSelectionMode, onToggleSelect, onToggleExpand],
 	);
 
-	const handleRegionClick = useCallback(
-		(ord: number) => {
-			setRevealedOrd((prev) => (prev === ord ? null : ord));
-		},
-		[],
-	);
+	const handleRegionClick = useCallback((ord: number) => {
+		setRevealedOrd((prev) => (prev === ord ? null : ord));
+	}, []);
 
 	const handleCheckboxClick = useCallback(
 		(e: MouseEvent) => {
@@ -117,20 +114,14 @@ export function PanelIOGroup({
 					/>
 				)}
 
-				<span
-					class="ep:text-xs ep:text-obs-muted ep:bg-obs-base-25 ep:rounded-full ep:px-1.5 ep:py-0.5 ep:shrink-0 ep:leading-none"
-					title="Image occlusion group"
-				>
-					IO
-				</span>
-
-				<div class="ep:flex-1 ep:overflow-hidden ep:rounded ep:max-h-16">
+				<div class="ep:flex-1 ep:overflow-hidden ep:rounded">
 					<IOCardRenderer
 						imagePath={imagePath}
 						regionsJson={regionsJson}
-						templateOrd={-1}
-						revealed={false}
+						templateOrd={revealedOrd ?? -1}
+						revealed={revealedOrd !== null}
 						maskModeOverride="all"
+						onRegionClick={handleRegionClick}
 					/>
 				</div>
 				<span class="ep:text-ui-smaller ep:text-obs-faint ep:shrink-0">
@@ -148,16 +139,6 @@ export function PanelIOGroup({
 
 			{isExpanded && (
 				<div class="ep:px-3 ep:pb-3 ep:pt-2 ep:border-t ep:border-obs-border">
-					<div class="ep:overflow-hidden ep:rounded-md ep:mb-3">
-						<IOCardRenderer
-							imagePath={imagePath}
-							regionsJson={regionsJson}
-							templateOrd={revealedOrd ?? -1}
-							revealed={revealedOrd !== null}
-							maskModeOverride="all"
-						/>
-					</div>
-
 					<div class="ep:flex ep:flex-wrap ep:gap-1.5">
 						{regionLabels.map(([ord, label]) => (
 							<Clickable

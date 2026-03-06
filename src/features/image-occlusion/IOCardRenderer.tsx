@@ -11,6 +11,7 @@ export interface IOCardRendererProps {
 	revealed: boolean;
 	class?: string;
 	maskModeOverride?: "solo" | "all";
+	onRegionClick?: (ord: number) => void;
 }
 
 interface RegionRenderInfo {
@@ -44,6 +45,7 @@ export function IOCardRenderer({
 	revealed,
 	class: className,
 	maskModeOverride,
+	onRegionClick,
 }: IOCardRendererProps) {
 	const app = useApp();
 
@@ -107,7 +109,11 @@ export function IOCardRenderer({
 							templateOrd,
 							revealed,
 							maskModeOverride ?? definition.maskMode,
-						)}`;
+						)}${onRegionClick ? " true-recall-io-shape-clickable" : ""}`;
+
+						const handleShapeClick = onRegionClick
+							? (e: Event) => { e.stopPropagation(); onRegionClick(info.ord); }
+							: undefined;
 
 						if (info.region.shape === "ellipse") {
 							return (
@@ -118,6 +124,7 @@ export function IOCardRenderer({
 									cy={info.region.y + info.region.h / 2}
 									rx={info.region.w / 2}
 									ry={info.region.h / 2}
+									onClick={handleShapeClick}
 								/>
 							);
 						}
@@ -132,6 +139,7 @@ export function IOCardRenderer({
 								height={info.region.h}
 								rx={0.01}
 								ry={0.01}
+								onClick={handleShapeClick}
 							/>
 						);
 					})}
