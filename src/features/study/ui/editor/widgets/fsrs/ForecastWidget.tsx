@@ -139,6 +139,7 @@ function MiniBarChart({
 				height={chartHeight}
 				viewBox={`0 0 ${totalWidth} ${chartHeight}`}
 				preserveAspectRatio="none"
+				aria-hidden="true"
 			>
 				{entries.map((entry, i) => {
 					const barH =

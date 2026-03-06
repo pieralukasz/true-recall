@@ -148,6 +148,7 @@ function Sparkline({
 			viewBox={`0 0 ${width} ${height}`}
 			preserveAspectRatio="none"
 			class="ep:rounded"
+			aria-hidden="true"
 		>
 			{/* Target line */}
 			<line

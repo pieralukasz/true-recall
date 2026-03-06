@@ -135,6 +135,7 @@ export const DEFAULT_FSRS_PRESET: FSRSPreset = {
 export const DEFAULT_SETTINGS: TrueRecallSettings = {
 	openRouterApiKey: "",
 	aiModel: "google/gemini-3-flash-preview" as AIModelKey,
+	generationLanguage: "auto",
 	fsrsRequestRetention: 0.9,
 	fsrsMaximumInterval: 36500, // 100 years
 	newCardsPerDay: 20,

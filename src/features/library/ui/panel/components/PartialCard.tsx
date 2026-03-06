@@ -23,11 +23,10 @@ function parseClozeText(text: string): ClozePart[] {
 	const parts: ClozePart[] = [];
 	let lastIndex = 0;
 
-	// Reset regex state
-	CLOZE_PATTERN.lastIndex = 0;
+	// Use matchAll to get all matches without assignment in expression
+	const matches = Array.from(text.matchAll(CLOZE_PATTERN));
 
-	let match;
-	while ((match = CLOZE_PATTERN.exec(text)) !== null) {
+	for (const match of matches) {
 		const clozeStart = match.index;
 		const clozeIndex = parseInt(match[1] ?? "0", 10);
 		const contentStart = clozeStart + match[0].length;

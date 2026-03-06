@@ -175,7 +175,7 @@ function RingView({ data }: { data: ProgressData }) {
 
 	return (
 		<div class="ep:flex ep:flex-col ep:items-center ep:gap-1">
-			<svg width={size} height={size}>
+			<svg width={size} height={size} aria-hidden="true">
 				<RingTrack radius={outerRadius} stroke={stroke} />
 				<ProgressRing
 					value={data.reviewDone}

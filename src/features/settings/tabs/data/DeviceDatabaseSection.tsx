@@ -2,7 +2,7 @@ import { DeviceSelectionModal } from "@features/integration/modals/DeviceSelecti
 import { useSettings } from "@features/settings/hooks/useSettings";
 import { notify } from "@shared/services/notification.service";
 import {
-	Clickable,
+	ActionButton,
 	FormCard,
 	FormField,
 	InfoBlock,
@@ -102,13 +102,11 @@ export function DeviceDatabaseSection() {
 				name="Switch database"
 				description="Import data from another device"
 			>
-				<Clickable
-					class="mod-cta"
-					stopPropagation={false}
+				<ActionButton
+					label="Switch..."
+					variant="primary"
 					onClick={handleSwitchDatabase}
-				>
-					Switch...
-				</Clickable>
+				/>
 			</FormField>
 		</FormCard>
 	);
