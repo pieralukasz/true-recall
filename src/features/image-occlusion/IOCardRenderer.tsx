@@ -1,11 +1,7 @@
-import {
-	normalizeIOImagePath,
-	parseIODefinition,
-} from "@features/image-occlusion/io-definition";
+import { parseIODefinition } from "@features/image-occlusion/io-definition";
+import { resolveImageFile } from "@features/image-occlusion/resolve-image";
 import type { IORegion } from "@features/image-occlusion/types";
-import { isImageExtension } from "@shared/types";
 import { useApp } from "@shared/ui/preact/ObsidianContext";
-import { TFile } from "obsidian";
 import { useCallback, useMemo, useState } from "preact/hooks";
 
 export interface IOCardRendererProps {
@@ -28,22 +24,6 @@ function parseGroupOrd(region: IORegion, fallbackOrd: number): number {
 		return parsed;
 	}
 	return fallbackOrd;
-}
-
-function resolveImageFile(app: ReturnType<typeof useApp>, imagePath: string): TFile | null {
-	const normalized = normalizeIOImagePath(imagePath);
-	if (!normalized) return null;
-
-	const direct = app.vault.getAbstractFileByPath(normalized);
-	if (direct instanceof TFile && isImageExtension(direct.extension)) {
-		return direct;
-	}
-
-	const filename = normalized.split("/").pop() ?? normalized;
-	const byName = app.vault
-		.getFiles()
-		.find((file) => isImageExtension(file.extension) && file.name === filename);
-	return byName ?? null;
 }
 
 function getRegionClass(info: RegionRenderInfo, activeOrd: number, revealed: boolean, maskMode: "solo" | "all"): string {

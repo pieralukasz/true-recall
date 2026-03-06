@@ -29,6 +29,7 @@ export interface IODefinition {
 export interface IOEditorAddMode {
 	mode: "add";
 	sourceUid?: string;
+	imagePath?: string;
 }
 
 export interface IOEditorEditMode {
