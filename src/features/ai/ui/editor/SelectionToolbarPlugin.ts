@@ -9,8 +9,17 @@ export interface SelectionToolbarCallbacks {
 	onGenerate: (text: string, mode: GenerationMode) => Promise<void>;
 	onEdit: (text: string) => void;
 	onQuickAdd: (text: string) => Promise<void>;
+	onImageOcclusion: (imagePath: string) => void;
 	hasApiKey: () => boolean;
 	isEnabled: () => boolean;
+}
+
+function extractFirstImagePath(text: string): string | null {
+	const wiki = text.match(/!\[\[([^\]|]+)(?:\|[^\]]+)?\]\]/);
+	if (wiki?.[1]) return wiki[1].trim();
+	const md = text.match(/!\[[^\]]*\]\(([^)]+)\)/);
+	if (md?.[1]) return md[1].trim();
+	return null;
 }
 
 const MIN_SELECTION_LENGTH = 3;
@@ -96,6 +105,8 @@ export function createSelectionToolbarExtension(
 					document.body.appendChild(this.container);
 				}
 
+				const detectedImagePath = extractFirstImagePath(text);
+
 				render(
 					h(SelectionToolbar, {
 						selectedText: text,
@@ -107,6 +118,8 @@ export function createSelectionToolbarExtension(
 							await callbacks.onQuickAdd(text);
 						},
 						onDismiss: () => this.removeToolbar(),
+						onImageOcclusion: (path) => callbacks.onImageOcclusion(path),
+						detectedImagePath,
 						hasApiKey: callbacks.hasApiKey(),
 					}),
 					this.container,
