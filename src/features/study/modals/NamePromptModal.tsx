@@ -37,9 +37,9 @@ function NamePromptBody({
 
 	return (
 		<>
-			<label class="ep:block ep:text-ui-small ep:text-obs-muted ep:mb-1">
+			<div class="ep:block ep:text-ui-small ep:text-obs-muted ep:mb-1">
 				Project name
-			</label>
+			</div>
 			<input
 				ref={inputRef}
 				type="text"

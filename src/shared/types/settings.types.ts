@@ -253,6 +253,8 @@ export interface TrueRecallSettings {
 	isSubscriber?: boolean;
 	/** Cached tier from last successful validation */
 	subscriberTier?: string;
+	/** Cached allowed models from last subscription status check */
+	cachedAllowedModels?: string[];
 	/** Auto-generated UUID per installation, sent with proxy requests for rate limiting */
 	userId?: string;
 
@@ -264,6 +266,8 @@ export interface TrueRecallSettings {
 		auto?: string;
 	};
 
+	/** Language for AI-generated flashcards ("auto" = match source text) */
+	generationLanguage?: string;
 	/** Custom system prompt for AI semantic grading in review type-in mode */
 	aiTypeInGradingPrompt?: string;
 	/** Custom user prompt for AI image occlusion region detection */

@@ -9,7 +9,9 @@ interface NoteTypeManagerAppProps {
 	onClose: () => void;
 }
 
-export function NoteTypeManagerApp({ onClose: _onClose }: NoteTypeManagerAppProps) {
+export function NoteTypeManagerApp({
+	onClose: _onClose,
+}: NoteTypeManagerAppProps) {
 	const plugin = usePlugin();
 	const noteTypeService = plugin.noteTypeService;
 

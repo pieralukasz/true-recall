@@ -144,7 +144,7 @@ function DonutChart({ data }: { data: RatingsData }) {
 
 	return (
 		<div class="ep:flex ep:flex-col ep:items-center ep:gap-2">
-			<svg viewBox={`0 0 ${DONUT_SIZE} ${DONUT_SIZE}`} class="ep:w-24 ep:h-24">
+			<svg viewBox={`0 0 ${DONUT_SIZE} ${DONUT_SIZE}`} class="ep:w-24 ep:h-24" aria-hidden="true">
 				{/* Background circle */}
 				<circle
 					cx={DONUT_CENTER}
