@@ -47,6 +47,9 @@ export function DeviceDatabaseSection() {
 		if (!confirmed) return;
 
 		try {
+			// Safety backup before database switch
+			await plugin.backupService?.createBackup();
+
 			const currentDeviceId = plugin.deviceIdService?.getDeviceId();
 			const { normalizePath } = await import("obsidian");
 			const { DB_FOLDER, getDeviceDbFilename } = await import(
@@ -56,11 +59,6 @@ export function DeviceDatabaseSection() {
 			const targetPath = normalizePath(
 				`${DB_FOLDER}/${getDeviceDbFilename(currentDeviceId)}`,
 			);
-			const backupPath = normalizePath(
-				`${DB_FOLDER}/${getDeviceDbFilename(currentDeviceId)}.backup`,
-			);
-			const currentData = await plugin.app.vault.adapter.readBinary(targetPath);
-			await plugin.app.vault.adapter.writeBinary(backupPath, currentData);
 
 			const sourceData = await plugin.app.vault.adapter.readBinary(
 				result.sourcePath,

@@ -152,11 +152,27 @@ export function PartialCard({
 
 	const hasCloze = hasClozeSyntax(streaming.partialQuestion);
 
+	const chunkProgress =
+		streaming.totalChunks != null ? (
+			<div class="ep:text-ui-smaller ep:text-obs-muted ep:mb-1 ep:px-3">
+				Section {streaming.completedChunks + 1}/{streaming.totalChunks}
+				{streaming.currentChunkLabel &&
+					` — ${streaming.currentChunkLabel}`}
+			</div>
+		) : null;
+
 	if (streaming.phase === "waiting" || (qWords.length === 0 && !hasCloze)) {
-		return <StreamingSkeleton />;
+		return (
+			<>
+				{chunkProgress}
+				<StreamingSkeleton />
+			</>
+		);
 	}
 
 	return (
+		<>
+		{chunkProgress}
 		<div class="ep:flex ep:flex-col ep:mb-2 ep:rounded-lg ep:bg-obs-secondary ep:border ep:border-obs-border/20 ep:shadow-sm ep:p-3">
 			<div
 				ref={qRef}
@@ -195,6 +211,7 @@ export function PartialCard({
 				</div>
 			)}
 		</div>
+		</>
 	);
 }
 

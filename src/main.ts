@@ -1328,32 +1328,27 @@ export default class TrueRecallPlugin extends Plugin {
 	}
 
 	private async runAutoBackup(): Promise<void> {
-		if (!this.backupService) return;
+		if (!this.backgroundBackupManager) return;
 
 		try {
-			await this.backupService.createBackup();
-
-			if (this.settings.maxBackups > 0) {
-				await this.backupService.pruneBackups(this.settings.maxBackups);
-			}
+			await this.backgroundBackupManager.triggerBackup(true);
 		} catch {
 			// Auto-backup failure is non-critical
 		}
 	}
 
 	async createManualBackup(): Promise<void> {
-		if (!this.backupService) {
+		if (!this.backgroundBackupManager) {
 			notify().error("Backup service not available");
 			return;
 		}
 
 		try {
-			const backupPath = await this.backupService.createBackup();
-			const filename = backupPath.split("/").pop();
-			notify().success(`Backup created: ${filename}`);
-
-			if (this.settings.maxBackups > 0) {
-				await this.backupService.pruneBackups(this.settings.maxBackups);
+			const created = await this.backgroundBackupManager.triggerBackup(true);
+			if (created) {
+				notify().success("Backup created");
+			} else {
+				notify().info("No changes to backup");
 			}
 		} catch (error) {
 			console.error("[True Recall] Manual backup failed:", error);
@@ -1408,6 +1403,13 @@ export default class TrueRecallPlugin extends Plugin {
 				"Database not ready. Please wait for plugin to fully load.",
 			);
 			return;
+		}
+
+		// Safety backup before import (like Anki does)
+		try {
+			await this.backupService?.createBackup();
+		} catch {
+			console.warn("[True Recall] Pre-import backup failed, proceeding anyway");
 		}
 
 		const modal = new AnkiImportModal(

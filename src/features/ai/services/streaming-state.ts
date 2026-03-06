@@ -14,6 +14,9 @@ export interface StreamingGenerationState {
 	partialAnswer: string | null;
 	error: string | null;
 	abortController: AbortController | null;
+	totalChunks: number | null;
+	completedChunks: number;
+	currentChunkLabel: string | null;
 }
 
 const INITIAL_STATE: StreamingGenerationState = {
@@ -27,6 +30,9 @@ const INITIAL_STATE: StreamingGenerationState = {
 	partialAnswer: null,
 	error: null,
 	abortController: null,
+	totalChunks: null,
+	completedChunks: 0,
+	currentChunkLabel: null,
 };
 
 export const streamingGeneration =
@@ -36,6 +42,7 @@ export function startStreaming(
 	noteName: string,
 	notePath: string | null,
 	abortController: AbortController,
+	totalChunks?: number,
 ): void {
 	streamingGeneration.value = {
 		...INITIAL_STATE,
@@ -44,6 +51,7 @@ export function startStreaming(
 		noteName,
 		notePath,
 		abortController,
+		totalChunks: totalChunks ?? null,
 	};
 }
 
@@ -69,6 +77,18 @@ export function updatePartial(
 		phase: current.phase === "waiting" ? "streaming" : current.phase,
 		partialQuestion: question,
 		partialAnswer: answer,
+	};
+}
+
+export function updateChunkProgress(
+	completedChunks: number,
+	currentChunkLabel: string | null,
+): void {
+	const current = streamingGeneration.value;
+	streamingGeneration.value = {
+		...current,
+		completedChunks,
+		currentChunkLabel,
 	};
 }
 
