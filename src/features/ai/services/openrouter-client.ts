@@ -51,6 +51,19 @@ export interface ChatCompletionResponse {
 
 const OPENROUTER_URL = "https://openrouter.ai/api/v1/chat/completions";
 
+/** Extract text content from a ChatMessage response (handles both string and ContentPart[] content). */
+export function getTextContent(message: ChatMessage | undefined): string {
+	if (!message) return "";
+	if (typeof message.content === "string") return message.content;
+	if (Array.isArray(message.content)) {
+		return message.content
+			.filter((p): p is TextContentPart => p.type === "text")
+			.map((p) => p.text)
+			.join("");
+	}
+	return "";
+}
+
 export class AIRequestError extends Error {
 	constructor(
 		public readonly statusCode: number,

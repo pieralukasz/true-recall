@@ -8,6 +8,7 @@ import type {
 import {
 	AIRequestError,
 	OpenRouterClient,
+	getTextContent,
 	type ChatMessage,
 	type ToolDefinition,
 } from "./openrouter-client";
@@ -172,7 +173,7 @@ export class NLQueryService {
 				return {
 					question,
 					answer:
-						assistantMsg.content ?? "No response generated",
+						getTextContent(assistantMsg) || "No response generated",
 					intermediateSteps: steps,
 				};
 			}
@@ -201,7 +202,7 @@ export class NLQueryService {
 		return {
 			question,
 			answer:
-				lastAssistant?.content ??
+				getTextContent(lastAssistant) ||
 				"Max iterations reached without a final answer.",
 			intermediateSteps: steps,
 		};

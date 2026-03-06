@@ -1,6 +1,7 @@
 import { ImageService } from "@features/integration/services/ImageService";
-import { createEmptyIODefinition, parseIODefinition } from "@features/image-occlusion/io-definition";
+import { createEmptyIODefinition, getNextIOGroupKey, parseIODefinition } from "@features/image-occlusion/io-definition";
 import { IOCanvas } from "@features/image-occlusion/IOCanvas";
+import { detectRegions } from "@features/image-occlusion/io-ai.service";
 import {
 	shouldImagePanelStartExpanded,
 	truncateMiddlePath,
@@ -149,6 +150,9 @@ export function IOEditorApp({ mode, onDone }: IOEditorAppProps) {
 	const [isImagePanelExpanded, setIsImagePanelExpanded] = useState(() =>
 		shouldImagePanelStartExpanded(buildInitialImagePath(mode)),
 	);
+	const [aiLoading, setAiLoading] = useState(false);
+	const [aiPromptVisible, setAiPromptVisible] = useState(false);
+	const [aiCustomHint, setAiCustomHint] = useState("");
 
 	const imageService = useMemo(() => new ImageService(app), [app]);
 	const isEdit = mode.mode === "edit";
@@ -227,6 +231,12 @@ export function IOEditorApp({ mode, onDone }: IOEditorAppProps) {
 		}
 	}, [imagePath]);
 
+	useEffect(() => {
+		if (hasRegions && isImagePanelExpanded && imagePath) {
+			setIsImagePanelExpanded(false);
+		}
+	}, [hasRegions, imagePath, isImagePanelExpanded]);
+
 	const selectedRegion = useMemo(
 		() => definition.regions.find((region) => region.id === selectedRegionId) ?? null,
 		[definition.regions, selectedRegionId],
@@ -257,6 +267,59 @@ export function IOEditorApp({ mode, onDone }: IOEditorAppProps) {
 		}));
 		setSelectedRegionId(null);
 	}, [selectedRegionId]);
+
+	useEffect(() => {
+		const onKeyDown = (event: KeyboardEvent) => {
+			if (event.key !== "Delete" && event.key !== "Backspace") return;
+			if (!selectedRegionId) return;
+			const tag = (event.target as HTMLElement)?.tagName;
+			if (tag === "INPUT" || tag === "TEXTAREA" || tag === "SELECT") return;
+			event.preventDefault();
+			deleteSelected();
+		};
+		window.addEventListener("keydown", onKeyDown);
+		return () => window.removeEventListener("keydown", onKeyDown);
+	}, [selectedRegionId, deleteSelected]);
+
+	const hasAIKey = Boolean(
+		plugin.settings.subscriptionKey || plugin.settings.openRouterApiKey,
+	);
+
+	const handleAIDetect = useCallback(async (hint?: string) => {
+		if (!imagePath || aiLoading) return;
+		setAiLoading(true);
+		setAiPromptVisible(false);
+		try {
+			const newRegions = await detectRegions(
+				app, imagePath, plugin.settings, hint, plugin.settings.aiIODetectionPrompt,
+			);
+			if (newRegions.length === 0) {
+				new Notice("AI could not detect any regions in this image");
+				return;
+			}
+			setDefinition((prev) => {
+				let nextKey = Number(getNextIOGroupKey(prev));
+				const regionsWithKeys = newRegions.map((region) => ({
+					...region,
+					groupKey: String(nextKey++),
+				}));
+				return {
+					...prev,
+					regions: [...prev.regions, ...regionsWithKeys],
+				};
+			});
+			setTool("select");
+			new Notice(
+				`AI detected ${newRegions.length} region${newRegions.length !== 1 ? "s" : ""}`,
+			);
+		} catch (error) {
+			new Notice(
+				error instanceof Error ? error.message : "AI detection failed",
+			);
+		} finally {
+			setAiLoading(false);
+		}
+	}, [app, imagePath, aiLoading, plugin.settings]);
 
 	const applySelectedVaultImage = useCallback(() => {
 		if (!selectedVaultPath) return;
@@ -501,6 +564,8 @@ export function IOEditorApp({ mode, onDone }: IOEditorAppProps) {
 								<Clickable
 									class="true-recall-io-inline-link"
 									onClick={() => setIsImagePanelExpanded((v) => !v)}
+									disabled={hasRegions}
+									title={hasRegions ? "Remove all regions before replacing image" : undefined}
 								>
 									{isImagePanelExpanded ? "Collapse" : "Replace image"}
 								</Clickable>
@@ -521,7 +586,7 @@ export function IOEditorApp({ mode, onDone }: IOEditorAppProps) {
 								/>
 							)}
 						</div>
-						{(!imagePath || isImagePanelExpanded) && (
+						{(!imagePath || (isImagePanelExpanded && !hasRegions)) && (
 							<>
 								<select
 									class="ep:w-full ep:px-2 ep:py-1.5 ep:text-ui-small ep:bg-obs-primary ep:border ep:border-obs-border ep:rounded"
@@ -586,6 +651,13 @@ export function IOEditorApp({ mode, onDone }: IOEditorAppProps) {
 										setTool("ellipse");
 									}}
 								/>
+								<IconToolButton
+									icon="sparkles"
+									label="AI detect regions"
+									active={aiPromptVisible}
+									disabled={!imagePath || aiLoading || !hasAIKey}
+									onClick={() => setAiPromptVisible((v) => !v)}
+								/>
 							{selectedRegionId && (
 								<IconToolButton
 									icon="trash-2"
@@ -599,6 +671,48 @@ export function IOEditorApp({ mode, onDone }: IOEditorAppProps) {
 						<div class="true-recall-io-hint-text">
 							Shortcuts: Delete to remove, Space + drag to pan, Ctrl/Cmd+V to paste.
 						</div>
+						{aiPromptVisible && !aiLoading && (
+							<div class="ep:flex ep:flex-col ep:gap-1.5 ep:mt-1">
+								<input
+									type="text"
+									class="ep:w-full ep:px-2 ep:py-1.5 ep:text-ui-small ep:bg-obs-primary ep:border ep:border-obs-border ep:rounded"
+									placeholder="Optional hint, e.g. 'label the bones'"
+									value={aiCustomHint}
+									onInput={(e) => setAiCustomHint((e.target as HTMLInputElement).value)}
+									onKeyDown={(e) => {
+										if (e.key === "Enter") {
+											void handleAIDetect(aiCustomHint);
+										} else if (e.key === "Escape") {
+											setAiPromptVisible(false);
+										}
+									}}
+								/>
+								<div class="ep:flex ep:gap-2">
+									<Clickable
+										class="ep:px-3 ep:py-1 ep:text-ui-smaller ep:rounded ep:bg-obs-accent/10 ep:text-obs-accent ep:border ep:border-obs-accent ep:transition-colors"
+										onClick={() => void handleAIDetect(aiCustomHint)}
+									>
+										Detect
+									</Clickable>
+									<Clickable
+										class="ep:px-3 ep:py-1 ep:text-ui-smaller ep:text-obs-muted ep:hover:text-obs-normal ep:transition-colors"
+										onClick={() => setAiPromptVisible(false)}
+									>
+										Cancel
+									</Clickable>
+								</div>
+							</div>
+						)}
+						{aiLoading && (
+							<div class="true-recall-io-hint-text ep:flex ep:items-center ep:gap-2">
+								<svg viewBox="0 0 24 24" width="14" height="14" class="ep:text-obs-muted">
+									<circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="3" fill="none" stroke-dasharray="31.4 31.4" stroke-linecap="round">
+										<animateTransform attributeName="transform" type="rotate" dur="1s" from="0 12 12" to="360 12 12" repeatCount="indefinite" />
+									</circle>
+								</svg>
+								Detecting regions…
+							</div>
+						)}
 					</div>
 
 					<div class="true-recall-io-side-section">
