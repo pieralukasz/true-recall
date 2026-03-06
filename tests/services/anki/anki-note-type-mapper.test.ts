@@ -252,4 +252,26 @@ describe("stripHtmlFromTemplate", () => {
 	it("returns empty string for empty input", () => {
 		expect(stripHtmlFromTemplate("")).toBe("");
 	});
+
+	it("strips {{edit:Field}} to {{Field}}", () => {
+		expect(stripHtmlFromTemplate("{{edit:Front}}")).toBe("{{Front}}");
+	});
+
+	it("strips {{edit:Field}} with HTML wrapper", () => {
+		expect(
+			stripHtmlFromTemplate('<div>{{edit:Front}}</div><br>{{edit:Back}}'),
+		).toBe("{{Front}}\n{{Back}}");
+	});
+
+	it("preserves {{FrontSide}} in back template", () => {
+		expect(
+			stripHtmlFromTemplate("{{FrontSide}}\n{{Back}}"),
+		).toBe("{{FrontSide}}\n{{Back}}");
+	});
+
+	it("preserves {{FrontSide}} while stripping HTML", () => {
+		expect(
+			stripHtmlFromTemplate('<div>{{FrontSide}}</div><hr id=answer><div>{{Back}}</div>'),
+		).toBe("{{FrontSide}}{{Back}}");
+	});
 });

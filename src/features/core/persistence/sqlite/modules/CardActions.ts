@@ -8,6 +8,7 @@ import {
 	deriveCardType,
 	renderTemplate,
 } from "@features/core/services/template-engine";
+import { FLASHCARD_CONFIG } from "@shared/constants";
 import type { FSRSCardData } from "@shared/types";
 import type { CardTemplate } from "@shared/types/note.types";
 import {
@@ -31,6 +32,7 @@ const CARD_SELECT = `
     c.note_id AS noteId,
     c.template_ord AS templateOrd,
     n.fields_json AS fieldsJson,
+    n.tags AS noteTags,
     n.source_text AS sourceText,
     n.created_via AS createdVia,
     n.note_type_id AS noteTypeId,
@@ -53,6 +55,7 @@ const CARD_SELECT_SYNC = `
     c.note_id AS noteId,
     c.template_ord AS templateOrd,
     n.fields_json AS fieldsJson,
+    n.tags AS noteTags,
     n.source_text AS sourceText,
     n.created_via AS createdVia,
     n.note_type_id AS noteTypeId,
@@ -87,6 +90,7 @@ interface CardRow {
 	noteId: string;
 	templateOrd: number;
 	fieldsJson: string;
+	noteTags: string | null;
 	sourceText: string | null;
 	createdVia: string | null;
 	noteTypeId: string;
@@ -97,6 +101,8 @@ interface CardRow {
 
 function mapRow(row: CardRow): FSRSCardData {
 	const fields = JSON.parse(row.fieldsJson) as Record<string, string>;
+	const noteTags =
+		row.noteTags?.split(" ").map((t) => t.trim()).filter(Boolean) ?? [];
 	const templates = JSON.parse(row.templatesJson) as CardTemplate[];
 
 	// Cloze types: always use first template (templateOrd = cloze index, not template ordinal)
@@ -136,7 +142,6 @@ function mapRow(row: CardRow): FSRSCardData {
 	} else if (template) {
 		const context = { fields, clozeIndex: row.templateOrd };
 		question = renderTemplate(template.qfmt, context);
-		// Pass empty frontSide — UI shows question separately, so {{FrontSide}} should not duplicate it
 		answer = renderTemplate(template.afmt, {
 			...context,
 			frontSide: "",
@@ -181,6 +186,7 @@ function mapRow(row: CardRow): FSRSCardData {
 		ioRegionsJson,
 		ioGroupKey:
 			cardType === "image-occlusion" ? String(row.templateOrd) : undefined,
+		alwaysTypeIn: noteTags.includes(FLASHCARD_CONFIG.alwaysTypeInTag),
 	};
 }
 
@@ -508,13 +514,17 @@ export class CardActions {
 
 		if (!noteId) {
 			noteId = crypto.randomUUID();
+			const noteTags = data.alwaysTypeIn
+				? FLASHCARD_CONFIG.alwaysTypeInTag
+				: "";
 			this.db.run(
 				`INSERT OR IGNORE INTO notes (id, note_type_id, fields_json, tags, source_uid, source_text, created_via, created_at, updated_at)
-                     VALUES (?, ?, ?, '', ?, ?, ?, ?, ?)`,
+                     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
 				[
 					noteId,
 					noteTypeId,
 					fieldsJson,
+					noteTags,
 					data.sourceUid ?? null,
 					data.sourceText ?? null,
 					data.createdVia ?? null,
@@ -616,13 +626,17 @@ export class CardActions {
 		let noteId = data.noteId;
 		if (!noteId) {
 			noteId = crypto.randomUUID();
+			const noteTags = data.alwaysTypeIn
+				? FLASHCARD_CONFIG.alwaysTypeInTag
+				: "";
 			this.db.run(
 				`INSERT OR IGNORE INTO notes (id, note_type_id, fields_json, tags, source_uid, source_text, created_via, created_at, updated_at)
-                     VALUES (?, ?, ?, '', ?, ?, ?, ?, ?)`,
+                     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
 				[
 					noteId,
 					noteTypeId,
 					fieldsJson,
+					noteTags,
 					data.sourceUid ?? null,
 					data.sourceText ?? null,
 					data.createdVia ?? null,

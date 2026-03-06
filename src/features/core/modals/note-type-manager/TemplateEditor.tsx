@@ -64,6 +64,14 @@ export function TemplateEditor({
 				onChange={(val) => onTemplateChange({ ...template, afmt: val })}
 			/>
 
+			{template.afmt.includes("{{FrontSide}}") && (
+				<div class="ep:text-ui-smaller ep:text-obs-muted ep:leading-relaxed">
+					<code class="ep:text-obs-accent/70">{`{{FrontSide}}`}</code>{" "}
+					is an Anki-only feature — True Recall shows the question
+					separately. You can safely remove it from this template.
+				</div>
+			)}
+
 			{!readOnly && (
 				<div class="ep:flex ep:flex-wrap ep:gap-1.5">
 					<span class="ep:text-ui-smaller ep:text-obs-muted ep:mr-1">

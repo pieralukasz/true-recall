@@ -18,6 +18,7 @@ import {
 	renderTemplate,
 	deriveCardType,
 } from "@features/core/services/template-engine";
+import { FLASHCARD_CONFIG } from "@shared/constants";
 import { CardQueryService } from "@features/study/services/flashcard/card-query.service";
 import {
 	CardRepository,
@@ -60,6 +61,7 @@ export interface FlashcardInfo {
 export interface CreateNoteParams {
 	noteTypeId: string;
 	fields: Record<string, string>;
+	alwaysTypeIn?: boolean;
 	sourceUid?: string;
 	sourceText?: string;
 	createdVia?: string;
@@ -177,6 +179,7 @@ export class FlashcardManager {
 				clozeIndex: c.clozeIndex,
 				reverseOfBatchId: c.reverseOf,
 				sourceText: c.sourceText,
+				alwaysTypeIn: c.alwaysTypeIn,
 			})),
 			lastModified: this.getLatestCardTimestamp(cards),
 			sourceUid,
@@ -421,7 +424,7 @@ export class FlashcardManager {
 			id: crypto.randomUUID(),
 			noteTypeId: params.noteTypeId,
 			fields: params.fields,
-			tags: [],
+			tags: params.alwaysTypeIn ? [FLASHCARD_CONFIG.alwaysTypeInTag] : [],
 			sourceUid: params.sourceUid,
 			sourceText: params.sourceText,
 			createdVia: params.createdVia ?? "manual",
@@ -504,7 +507,9 @@ export class FlashcardManager {
 				id: crypto.randomUUID(),
 				noteTypeId: params.noteTypeId,
 				fields: params.fields,
-				tags: [],
+				tags: params.alwaysTypeIn
+					? [FLASHCARD_CONFIG.alwaysTypeInTag]
+					: [],
 				sourceUid: params.sourceUid,
 				sourceText: params.sourceText,
 				createdVia: params.createdVia ?? "manual",
@@ -659,7 +664,7 @@ export class FlashcardManager {
 		});
 		const answer = renderTemplate(template.afmt, {
 			fields: note.fields,
-			frontSide: question,
+			frontSide: "",
 			clozeIndex: gen.templateOrd,
 		});
 
@@ -674,6 +679,7 @@ export class FlashcardManager {
 			cardType: deriveCardType(noteType, gen.templateOrd),
 			createdVia: note.createdVia,
 			sourceText: note.sourceText,
+			alwaysTypeIn: note.tags.includes(FLASHCARD_CONFIG.alwaysTypeInTag),
 		};
 
 		this.store!.set(gen.id, fsrsData);

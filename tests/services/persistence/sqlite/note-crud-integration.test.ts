@@ -272,12 +272,12 @@ describe("Note CRUD Integration", () => {
 			const q1 = renderTemplate("{{Back}}", { fields });
 			expect(q1).toBe("Gato");
 
-			// Answer side also uses FrontSide
+			// {{FrontSide}} is stripped (True Recall shows Q/A separately)
 			const a0 = renderTemplate("{{FrontSide}}<hr>{{Back}}", {
 				fields,
-				frontSide: "Updated",
+				frontSide: "",
 			});
-			expect(a0).toBe("Updated<hr>Gato");
+			expect(a0).toBe("<hr>Gato");
 		});
 	});
 
