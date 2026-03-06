@@ -146,4 +146,43 @@ describe("SemanticAnswerGradingService", () => {
 		expect(result.source).toBe("ai");
 		expect(result.passed).toBe(true);
 	});
+
+	it("uses custom type-in grading prompt from settings when provided", async () => {
+		const settings = createSettings({
+			openRouterApiKey: "byok-key",
+			aiTypeInGradingPrompt: "CUSTOM_GRADING_PROMPT",
+		});
+		let capturedSystem = "";
+
+		const service = new SemanticAnswerGradingService(
+			() => settings,
+			() => ({
+				chat: async (request) => {
+					capturedSystem = request.messages[0]?.content ?? "";
+					return {
+						id: "resp-custom",
+						choices: [
+							{
+								message: {
+									role: "assistant",
+									content: '{"score": 90, "feedback": "Correct."}',
+								},
+								finish_reason: "stop",
+							},
+						],
+					};
+				},
+			}),
+		);
+
+		await service.gradeAnswer({
+			question: "Q",
+			correctAnswer: "A",
+			userAnswer: "B",
+			passThreshold: 85,
+			localFallbackScore: 10,
+		});
+
+		expect(capturedSystem).toBe("CUSTOM_GRADING_PROMPT");
+	});
 });

@@ -52,6 +52,7 @@ export function QuickNoteEditorApp({
 	const [saving, setSaving] = useState(false);
 	const [pinnedFields, setPinnedFields] = useState<Set<string>>(new Set());
 	const [refreshCounter, setRefreshCounter] = useState(0);
+	const [alwaysTypeIn, setAlwaysTypeIn] = useState(false);
 
 	// Focus tracking for shared formatting toolbar
 	const focusedFieldRef = useRef<FormattingTargetRef | null>(null);
@@ -199,6 +200,7 @@ export function QuickNoteEditorApp({
 					const result = plugin.flashcardManager.createNote({
 						noteTypeId,
 						fields,
+						alwaysTypeIn,
 						sourceUid,
 						createdVia: "manual",
 					});
@@ -234,6 +236,7 @@ export function QuickNoteEditorApp({
 			fields,
 			noteTypeId,
 			resolveSourceUid,
+			alwaysTypeIn,
 			plugin.flashcardManager,
 			onDone,
 			pinnedFields,
@@ -269,6 +272,8 @@ export function QuickNoteEditorApp({
 			<FormattingToolbar
 				app={app}
 				getEditorView={() => focusedFieldRef.current?.editorView ?? null}
+				typeInEnabled={alwaysTypeIn}
+				onTypeInToggle={!isEdit ? setAlwaysTypeIn : undefined}
 			/>
 
 			{/* Dynamic fields */}

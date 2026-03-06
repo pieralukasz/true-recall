@@ -9,6 +9,7 @@ export interface FlashcardItem {
 	clozeIndex?: number;
 	reverseOfBatchId?: string;
 	sourceText?: string;
+	alwaysTypeIn?: boolean;
 }
 
 export interface FlashcardInfo {

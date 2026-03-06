@@ -106,6 +106,7 @@ export function CardContainer({
 		card.cardType === "image-occlusion" &&
 		!!card.ioImagePath &&
 		!!card.ioRegionsJson;
+	const isAlwaysTypeIn = card.alwaysTypeIn || card.fsrs.alwaysTypeIn;
 	const showTypeIn = useTypeInMode && hasTextAnswer;
 
 	const expectedTokens =
@@ -163,6 +164,11 @@ export function CardContainer({
 				{card.cardType === "reversed" && (
 					<div class="ep:text-xs ep:text-obs-faint ep:mb-2 ep:uppercase ep:tracking-wider">
 						Reversed
+					</div>
+				)}
+				{isAlwaysTypeIn && (
+					<div class="ep:text-xs ep:text-obs-accent ep:mb-2 ep:uppercase ep:tracking-wider">
+						Always type-in
 					</div>
 				)}
 

@@ -199,6 +199,7 @@ export class StreamingGenerationService {
 					const params: CreateNoteParams = {
 						noteTypeId: event.block.noteTypeId,
 						fields: event.block.fields,
+						alwaysTypeIn: event.block.alwaysTypeIn,
 						sourceUid: sourceUid ?? undefined,
 						sourceText: event.block.sourceText,
 						createdVia: "ai",

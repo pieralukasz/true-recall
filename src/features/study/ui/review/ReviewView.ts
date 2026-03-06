@@ -15,11 +15,8 @@ import {
 	deriveTypeInMode,
 	filterActiveCards,
 	getEmptyQueueMessage,
-	getTypeInModeStorage,
 	isRatingLockedForTypeIn,
 	nextTypeInMode,
-	persistTypeInMode,
-	readPersistedTypeInMode,
 	isTypeInRequiredForCard,
 	shouldRunAIGradingOnReveal,
 	type TypeInMode,
@@ -120,7 +117,7 @@ export class ReviewView extends ItemView {
 		this.semanticGradingService = new SemanticAnswerGradingService(
 			() => this.plugin.settings,
 		);
-		this.sessionTypeInModeEnabled = this.readTypeInModePreference();
+		this.applyDefaultTypeInMode();
 
 		const fsrsSettings = extractFSRSSettings(plugin.settings);
 		this.fsrsService = new FSRSService(fsrsSettings);
@@ -203,15 +200,10 @@ export class ReviewView extends ItemView {
 		this.typeInState = createEmptyTypeInState(cardId);
 	}
 
-	private readTypeInModePreference(): boolean {
-		return readPersistedTypeInMode(getTypeInModeStorage());
-	}
-
-	private writeTypeInModePreference(): void {
-		persistTypeInMode(
-			getTypeInModeStorage(),
-			this.sessionTypeInModeEnabled,
-		);
+	private applyDefaultTypeInMode(): void {
+		const mode = this.plugin.settings.defaultTypeInMode;
+		this.sessionTypeInModeEnabled = mode !== "off";
+		this.aiEnabledForTypeIn = mode === "ai";
 	}
 
 	private getTypeInMode(): TypeInMode {
@@ -228,7 +220,6 @@ export class ReviewView extends ItemView {
 
 		this.sessionTypeInModeEnabled = nextMode !== "off";
 		this.aiEnabledForTypeIn = nextMode === "ai";
-		this.writeTypeInModePreference();
 
 		if (nextMode === "off" || nextMode === "ai") {
 			this.resetTypeInState(currentId);
@@ -380,8 +371,7 @@ export class ReviewView extends ItemView {
 			(state as import("./review.types").ReviewViewState) ?? null,
 		);
 		this.crammedCardIds.clear();
-		this.sessionTypeInModeEnabled = this.readTypeInModePreference();
-		this.aiEnabledForTypeIn = false;
+		this.applyDefaultTypeInMode();
 		this.resetTypeInState();
 
 		await super.setState(state, result);
@@ -412,7 +402,7 @@ export class ReviewView extends ItemView {
 		const container = this.containerEl.children[1];
 		if (!(container instanceof HTMLElement)) return;
 		container.empty();
-		this.sessionTypeInModeEnabled = this.readTypeInModePreference();
+		this.applyDefaultTypeInMode();
 
 		if (!this.plugin.store) return;
 		this.unsubscribe = this.plugin.store.subscribe(
@@ -593,8 +583,7 @@ export class ReviewView extends ItemView {
 		if (!(container instanceof HTMLElement)) return;
 
 		try {
-			this.sessionTypeInModeEnabled = this.readTypeInModePreference();
-			this.aiEnabledForTypeIn = false;
+			this.applyDefaultTypeInMode();
 			const fsrsSettings = extractFSRSSettings(this.plugin.settings);
 			this.fsrsService.updateSettings(fsrsSettings);
 

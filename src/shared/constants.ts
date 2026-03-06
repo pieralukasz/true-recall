@@ -203,6 +203,7 @@ export const DEFAULT_SETTINGS: TrueRecallSettings = {
 
 	showStatusBarWidget: true,
 	showQuickReviewInPanel: true,
+	defaultTypeInMode: "off",
 
 	selectionToolbarEnabled: true,
 };
@@ -243,6 +244,7 @@ export const FLASHCARD_CONFIG = {
 	sourceUidField: "flashcard_uid", // frontmatter field linking source note to cards
 	tag: "#flashcard",
 	reverseTag: "#flashcard-reverse",
+	alwaysTypeInTag: "true-recall/type-in",
 } as const;
 
 // Cards can be shown early if nothing else to study (like Anki)

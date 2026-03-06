@@ -13,6 +13,8 @@ import type { GetFormattingEditorView } from "./types";
 interface FormattingToolbarProps {
 	app: App;
 	getEditorView: GetFormattingEditorView;
+	typeInEnabled?: boolean;
+	onTypeInToggle?: (enabled: boolean) => void;
 }
 
 const COLOR_SWATCHES = [
@@ -84,6 +86,8 @@ class MediaFilePicker extends SuggestModal<TFile> {
 export function FormattingToolbar({
 	app,
 	getEditorView,
+	typeInEnabled = false,
+	onTypeInToggle,
 }: FormattingToolbarProps) {
 	const [showColors, setShowColors] = useState(false);
 	const colorRef = useRef<HTMLDivElement>(null);
@@ -134,7 +138,7 @@ export function FormattingToolbar({
 		"ep:px-1.5 ep:py-1 ep:text-ui-smaller ep:text-obs-muted ep:hover:text-obs-normal ep:hover:bg-obs-tertiary ep:rounded ep:cursor-pointer ep:select-none ep:leading-tight";
 
 	return (
-		<div class="ep:flex ep:items-center ep:gap-0.5 ep:px-2 ep:py-1 ep:bg-obs-secondary ep:rounded-md ep:border ep:border-obs-border">
+		<div class="ep:flex ep:items-center ep:gap-0.5 ep:px-2 ep:py-1 ep:bg-obs-secondary ep:rounded-md ep:border ep:border-obs-border ep:w-full">
 			<div
 				role="button"
 				title="Bold (Ctrl+B)"
@@ -258,6 +262,24 @@ export function FormattingToolbar({
 					handleClear();
 				}}
 			/>
+
+			{onTypeInToggle && (
+				<>
+					<div class="ep:ml-auto" />
+					<Separator />
+					<div
+						role="button"
+						title="Always type-in for created card"
+						class={`${btnCls} ${typeInEnabled ? "ep:text-obs-accent ep:bg-obs-accent/10" : ""}`}
+						onMouseDown={(e: MouseEvent) => {
+							prevent(e);
+							onTypeInToggle(!typeInEnabled);
+						}}
+					>
+						Type in
+					</div>
+				</>
+			)}
 		</div>
 	);
 }

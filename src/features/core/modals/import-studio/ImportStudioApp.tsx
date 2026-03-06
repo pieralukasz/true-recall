@@ -121,6 +121,7 @@ export function ImportStudioApp({
 				parseResult.cards.map((c) => ({
 					noteTypeId: c.noteTypeId,
 					fields: c.fields,
+					alwaysTypeIn: c.alwaysTypeIn,
 					sourceUid,
 					createdVia: "manual",
 				})),

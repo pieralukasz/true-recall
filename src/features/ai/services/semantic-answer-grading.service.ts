@@ -8,6 +8,7 @@ import {
 	OpenRouterClient,
 	type ChatCompletionResponse,
 } from "@features/ai/services/openrouter-client";
+import { buildTypeInGradingMessages } from "@features/ai/prompts/type-in-grading-prompt";
 import type {
 	SemanticGradingResult,
 	TrueRecallSettings,
@@ -124,23 +125,15 @@ export class SemanticAnswerGradingService {
 
 		const response = await this.withTimeout(
 			client.chat({
-				messages: [
+				messages: buildTypeInGradingMessages(
 					{
-						role: "system",
-						content:
-							"You are grading flashcard answers for semantic correctness. " +
-							"Return JSON only with keys: score (0-100 number), feedback (max 2 short sentences). " +
-							"Score by meaning, not exact wording. No markdown, no code fences.",
+						question: input.question,
+						correctAnswer: input.correctAnswer,
+						userAnswer: input.userAnswer,
+						passThreshold: input.passThreshold,
 					},
-					{
-						role: "user",
-						content: [
-							`Question: ${input.question}`,
-							`Correct answer: ${input.correctAnswer}`,
-							`User answer: ${input.userAnswer}`,
-						].join("\n"),
-					},
-				],
+					this.getSettings().aiTypeInGradingPrompt,
+				),
 				temperature: 0,
 			}),
 			timeoutMs,

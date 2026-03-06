@@ -21,9 +21,11 @@ export function isTypeInRequiredForCard(
 	typeInModeEnabled: boolean,
 ): boolean {
 	if (!card) return false;
-	if (!typeInModeEnabled) return false;
 	if (card.cardType === "image-occlusion") return false;
-	return !!card.answer?.trim();
+	if (!card.answer?.trim()) return false;
+	if (card.alwaysTypeIn || card.fsrs.alwaysTypeIn) return true;
+	if (!typeInModeEnabled) return false;
+	return true;
 }
 
 export function shouldRunAIGradingOnReveal(options: {

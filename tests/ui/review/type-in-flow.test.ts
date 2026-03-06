@@ -11,12 +11,14 @@ import type { FSRSFlashcardItem } from "../../../src/shared/types";
 function createCard(
 	answer: string,
 	cardType: FSRSFlashcardItem["cardType"] = "basic",
+	alwaysTypeIn = false,
 ): FSRSFlashcardItem {
 	return {
 		id: "card-1",
 		question: "Q",
 		answer,
 		cardType,
+		alwaysTypeIn,
 		fsrs: {
 			id: "card-1",
 			due: new Date().toISOString(),
@@ -28,6 +30,7 @@ function createCard(
 			lastReview: null,
 			scheduledDays: 0,
 			learningStep: 0,
+			alwaysTypeIn,
 		},
 	};
 }
@@ -56,6 +59,12 @@ describe("type-in flow helpers", () => {
 				true,
 			),
 		).toBe(false);
+	});
+
+	it("requires type-in for always-type-in cards even when mode is off", () => {
+		expect(isTypeInRequiredForCard(createCard("A", "basic", true), false)).toBe(
+			true,
+		);
 	});
 
 	it("runs AI grading only when AI is enabled and typed answer is non-empty", () => {
