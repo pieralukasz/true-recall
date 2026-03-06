@@ -1,5 +1,5 @@
-import { useComputed } from "@preact/signals";
 import { StatsCalculatorService } from "@features/metrics/services/stats/stats-calculator.service";
+import { useComputed } from "@preact/signals";
 import { allCardsArray, cards } from "@shared/services/reactive-card-store";
 import type { NotePerformanceRow } from "@shared/types/fsrs/stats.types";
 import { Clickable } from "@shared/ui/components";
@@ -95,7 +95,7 @@ export function LeaderboardWidget({ source }: { source: string }) {
 
 	const handleReviewWeakest = () => {
 		if (data.length > 0) {
-			handleNoteClick(data[0]!.resolvedName);
+			handleNoteClick(data[0]?.resolvedName);
 		}
 	};
 

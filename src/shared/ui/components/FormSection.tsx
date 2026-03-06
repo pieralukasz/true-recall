@@ -6,7 +6,11 @@ export interface FormSectionProps {
 	children?: ComponentChildren;
 }
 
-export function FormSection({ title, description, children }: FormSectionProps) {
+export function FormSection({
+	title,
+	description,
+	children,
+}: FormSectionProps) {
 	return (
 		<div class="ep:pt-4 first:ep:pt-0">
 			<div class="ep:mb-2">

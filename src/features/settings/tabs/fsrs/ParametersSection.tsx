@@ -25,7 +25,8 @@ export function ParametersSection({
 }: ParametersSectionProps) {
 	const [optimizing, setOptimizing] = useState(false);
 
-	const presetReviews = plugin.cardStore?.stats?.getReviewCountForPreset(preset.name) ?? 0;
+	const presetReviews =
+		plugin.cardStore?.stats?.getReviewCountForPreset(preset.name) ?? 0;
 	const canOptimize = presetReviews >= FSRS_CONFIG.minReviewsForOptimization;
 	const lastOpt = preset.lastOptimization;
 	const lastOptCount = preset.lastOptimizationReviewCount;

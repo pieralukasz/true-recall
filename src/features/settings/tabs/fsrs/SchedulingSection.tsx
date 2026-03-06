@@ -5,7 +5,12 @@ import type {
 	ReviewOrder,
 	TrueRecallSettings,
 } from "@shared/types";
-import { FormCard, FormField, SelectInput, TextInput } from "@shared/ui/components";
+import {
+	FormCard,
+	FormField,
+	SelectInput,
+	TextInput,
+} from "@shared/ui/components";
 
 interface SchedulingSectionProps {
 	preset: FSRSPreset;

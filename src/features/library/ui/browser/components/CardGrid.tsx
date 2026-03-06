@@ -44,8 +44,7 @@ export function CardGrid({
 			{cards.map((card) => {
 				const badgeKey = card.suspended
 					? "suspended"
-					: card.buriedUntil &&
-						  new Date(card.buriedUntil) > new Date()
+					: card.buriedUntil && new Date(card.buriedUntil) > new Date()
 						? "buried"
 						: String(card.state);
 				const badge = STATE_BADGE[badgeKey] ?? {
@@ -92,9 +91,7 @@ export function CardGrid({
 							{card.lapses > 0 && (
 								<>
 									<span class="ep:opacity-30">&middot;</span>
-									<span class="ep:text-obs-error">
-										{card.lapses} lapses
-									</span>
+									<span class="ep:text-obs-error">{card.lapses} lapses</span>
 								</>
 							)}
 						</div>

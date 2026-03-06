@@ -1,4 +1,4 @@
-import { type ReadonlySignal, computed, signal } from "@preact/signals";
+import { computed, type ReadonlySignal, signal } from "@preact/signals";
 import { DEFAULT_SETTINGS } from "@shared/constants";
 import type { FSRSFlashcardItem, TrueRecallSettings } from "@shared/types";
 import { State } from "ts-fsrs";

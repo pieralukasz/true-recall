@@ -20,16 +20,16 @@ export function ActionBar({
 }: ImportStudioActionBarProps) {
 	return (
 		<div class="ep:flex ep:items-center ep:gap-3 ep:flex-wrap">
-			<label class="ep:text-ui-smaller ep:text-obs-muted ep:shrink-0">
+			<span class="ep:text-ui-smaller ep:text-obs-muted ep:shrink-0">
 				Note type:
-			</label>
+			</span>
 			<NoteTypePicker value={noteTypeId} onChange={onNoteTypeChange} />
 
 			<span class="ep:text-obs-faint ep:text-ui-smaller">|</span>
 
-			<label class="ep:text-ui-smaller ep:text-obs-muted ep:shrink-0">
+			<span class="ep:text-ui-smaller ep:text-obs-muted ep:shrink-0">
 				Source:
-			</label>
+			</span>
 			<div class="ep:flex-1 ep:min-w-[160px]">
 				<NotePickerCombobox
 					app={app}

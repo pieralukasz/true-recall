@@ -37,8 +37,7 @@ export function PresetOptionsBody({
 	// Re-read on version bump
 	void version;
 	const presets = settings.fsrsPresets;
-	const preset =
-		presets.find((p) => p.id === selectedPresetId) ?? presets[0];
+	const preset = presets.find((p) => p.id === selectedPresetId) ?? presets[0];
 	if (!preset) return null;
 
 	const isDefault = preset.id === settings.defaultPresetId;

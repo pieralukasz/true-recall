@@ -1,11 +1,17 @@
-import type { App, TFile } from "obsidian";
-import { useCallback, useEffect, useMemo, useRef, useState } from "preact/hooks";
+import { SearchInput } from "@shared/ui/components/SearchInput";
 import {
 	filterNotesByQuery,
 	MAX_DISPLAY_NOTES,
 } from "@shared/ui/modals/note-filter.utils";
-import { SearchInput } from "@shared/ui/components/SearchInput";
 import { cn } from "@shared/ui/utils/cn";
+import type { App, TFile } from "obsidian";
+import {
+	useCallback,
+	useEffect,
+	useMemo,
+	useRef,
+	useState,
+} from "preact/hooks";
 
 export interface NotePickerComboboxProps {
 	app: App;

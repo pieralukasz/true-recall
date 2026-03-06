@@ -37,18 +37,13 @@ export function useKeyboardNav({
 				return;
 			}
 
-			const currentIndex = cards.findIndex(
-				(c) => c.id === previewCardId,
-			);
+			const currentIndex = cards.findIndex((c) => c.id === previewCardId);
 
 			switch (e.key) {
 				case "ArrowDown":
 				case "j": {
 					e.preventDefault();
-					const nextIdx = Math.min(
-						currentIndex + 1,
-						cards.length - 1,
-					);
+					const nextIdx = Math.min(currentIndex + 1, cards.length - 1);
 					const next = cards[nextIdx];
 					if (next) onPreview(next);
 					break;

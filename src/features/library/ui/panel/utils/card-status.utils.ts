@@ -38,7 +38,6 @@ export function isBuried(fsrsCard?: FSRSFlashcardItem): boolean {
 	return new Date(buriedUntil) > new Date();
 }
 
-
 export function getHighlightColor(
 	fsrsCard?: FSRSFlashcardItem,
 ): HighlightColor {

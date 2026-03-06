@@ -23,9 +23,7 @@ export function createBrowserSuggestionProvider(
 
 		if (context.type === "note") {
 			return data.sourceNotes
-				.filter((n) =>
-					n.name.toLowerCase().includes(context.partial),
-				)
+				.filter((n) => n.name.toLowerCase().includes(context.partial))
 				.slice(0, 10)
 				.map((n) => ({
 					id: `note-${n.uid}`,

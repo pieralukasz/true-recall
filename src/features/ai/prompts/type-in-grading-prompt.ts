@@ -19,10 +19,9 @@ export function buildTypeInGradingMessages(
 	input: TypeInGradingPromptInput,
 	customSystemPrompt?: string,
 ): Array<{ role: "system" | "user"; content: string }> {
-	const systemPrompt =
-		customSystemPrompt?.trim().length
-			? customSystemPrompt
-			: DEFAULT_TYPE_IN_GRADING_SYSTEM_PROMPT;
+	const systemPrompt = customSystemPrompt?.trim().length
+		? customSystemPrompt
+		: DEFAULT_TYPE_IN_GRADING_SYSTEM_PROMPT;
 
 	return [
 		{

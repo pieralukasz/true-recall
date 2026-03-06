@@ -3,13 +3,12 @@ import {
 	GENERATION_MODE_LABELS,
 	type GenerationMode,
 } from "@features/ai/prompts/default-prompts";
-import { SubscriptionService } from "@features/integration/services/subscription.service";
 import type { SubscriptionStatus } from "@features/integration/services/subscription.service";
+import { SubscriptionService } from "@features/integration/services/subscription.service";
 import { useSettings } from "@features/settings/hooks/useSettings";
 import type { AIModelInfo, AIModelKey } from "@shared/constants";
-import type { TrueRecallSettings } from "@shared/types/settings.types";
 import { AI_MODELS_EXTENDED, TRUERECALL_WEB_URL } from "@shared/constants";
-import { isFeatureAllowed } from "@shared/utils/subscription.utils";
+import type { TrueRecallSettings } from "@shared/types/settings.types";
 import type { SelectOptionGroup } from "@shared/ui/components";
 import {
 	Clickable,
@@ -21,7 +20,14 @@ import {
 	TextInput,
 	ToggleInput,
 } from "@shared/ui/components";
-import { useCallback, useEffect, useMemo, useRef, useState } from "preact/hooks";
+import { isFeatureAllowed } from "@shared/utils/subscription.utils";
+import {
+	useCallback,
+	useEffect,
+	useMemo,
+	useRef,
+	useState,
+} from "preact/hooks";
 
 const subscriptionService = new SubscriptionService();
 
@@ -94,7 +100,10 @@ function SubscriptionSection() {
 		setError("");
 
 		debounceRef.current = setTimeout(() => {
-			const onCacheUpdate = (update: { isSubscriber: boolean; subscriberTier?: string }) => {
+			const onCacheUpdate = (update: {
+				isSubscriber: boolean;
+				subscriberTier?: string;
+			}) => {
 				const patch: Partial<TrueRecallSettings> = {
 					isSubscriber: update.isSubscriber,
 					subscriberTier: update.subscriberTier,
@@ -125,8 +134,9 @@ function SubscriptionSection() {
 		status && status.budget_max > 0
 			? Math.min(100, (status.budget_spent / status.budget_max) * 100)
 			: 0;
-	const remaining =
-		status ? (status.budget_max - status.budget_spent).toFixed(2) : "0.00";
+	const remaining = status
+		? (status.budget_max - status.budget_spent).toFixed(2)
+		: "0.00";
 	const approxGenerations = status
 		? Math.floor((status.budget_max - status.budget_spent) / 0.007)
 		: 0;
@@ -135,8 +145,8 @@ function SubscriptionSection() {
 		<FormCard title="True Recall Subscription">
 			<InfoBlock>
 				<p>
-					Subscribe for managed AI access — no API key setup needed.
-					Your subscription includes all AI models with usage tracking.
+					Subscribe for managed AI access — no API key setup needed. Your
+					subscription includes all AI models with usage tracking.
 				</p>
 				<p>
 					<a
@@ -172,9 +182,7 @@ function SubscriptionSection() {
 			)}
 
 			{error && (
-				<div class="ep:py-2 ep:text-obs-error ep:text-ui-smaller">
-					{error}
-				</div>
+				<div class="ep:py-2 ep:text-obs-error ep:text-ui-smaller">{error}</div>
 			)}
 
 			{status && !error && (
@@ -322,8 +330,7 @@ export function AITab() {
 						value={settings.aiTypeInGradingPrompt ?? ""}
 						onChange={(v) =>
 							save({
-								aiTypeInGradingPrompt:
-									v.trim().length > 0 ? v : undefined,
+								aiTypeInGradingPrompt: v.trim().length > 0 ? v : undefined,
 							})
 						}
 						rows={6}
@@ -338,8 +345,7 @@ export function AITab() {
 						value={settings.aiIODetectionPrompt ?? ""}
 						onChange={(v) =>
 							save({
-								aiIODetectionPrompt:
-									v.trim().length > 0 ? v : undefined,
+								aiIODetectionPrompt: v.trim().length > 0 ? v : undefined,
 							})
 						}
 						rows={4}

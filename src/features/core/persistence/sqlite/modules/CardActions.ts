@@ -1,13 +1,13 @@
-import type { SqliteDatabase } from "@features/core/persistence/sqlite/SqliteDatabase";
-import {
-	normalizeIOImagePath,
-	parseIODefinition,
-} from "@features/image-occlusion/io-definition";
 import { escapeFts5Query } from "@features/core/persistence/sqlite/modules/NoteActions";
+import type { SqliteDatabase } from "@features/core/persistence/sqlite/SqliteDatabase";
 import {
 	deriveCardType,
 	renderTemplate,
 } from "@features/core/services/template-engine";
+import {
+	normalizeIOImagePath,
+	parseIODefinition,
+} from "@features/image-occlusion/io-definition";
 import { FLASHCARD_CONFIG } from "@shared/constants";
 import type { FSRSCardData } from "@shared/types";
 import type { CardTemplate } from "@shared/types/note.types";
@@ -102,7 +102,10 @@ interface CardRow {
 function mapRow(row: CardRow): FSRSCardData {
 	const fields = JSON.parse(row.fieldsJson) as Record<string, string>;
 	const noteTags =
-		row.noteTags?.split(" ").map((t) => t.trim()).filter(Boolean) ?? [];
+		row.noteTags
+			?.split(" ")
+			.map((t) => t.trim())
+			.filter(Boolean) ?? [];
 	const templates = JSON.parse(row.templatesJson) as CardTemplate[];
 
 	// Cloze types: always use first template (templateOrd = cloze index, not template ordinal)
@@ -121,10 +124,10 @@ function mapRow(row: CardRow): FSRSCardData {
 
 	const ioImagePath =
 		cardType === "image-occlusion"
-			? normalizeIOImagePath(fields["Image"] ?? "")
+			? normalizeIOImagePath(fields.Image ?? "")
 			: undefined;
 	const ioRegionsJson =
-		cardType === "image-occlusion" ? fields["Regions"] ?? "" : undefined;
+		cardType === "image-occlusion" ? (fields.Regions ?? "") : undefined;
 	const ioDefinition =
 		cardType === "image-occlusion" && ioRegionsJson
 			? parseIODefinition(ioRegionsJson)
@@ -349,9 +352,7 @@ export class CardActions {
 	}
 
 	getAllIncludingDeleted(): FSRSCardData[] {
-		const rows = this.db.query<CardRow>(
-			`SELECT ${CARD_SELECT} ${CARD_FROM}`,
-		);
+		const rows = this.db.query<CardRow>(`SELECT ${CARD_SELECT} ${CARD_FROM}`);
 		return rows.map(mapRow);
 	}
 
@@ -365,10 +366,7 @@ export class CardActions {
 		return rows.map(mapRowWithSync);
 	}
 
-	getDueCardsByDateRange(
-		startDate: string,
-		endDate: string,
-	): FSRSCardData[] {
+	getDueCardsByDateRange(startDate: string, endDate: string): FSRSCardData[] {
 		const rows = this.db.query<CardRow>(
 			`SELECT ${CARD_SELECT} ${CARD_FROM}
                  WHERE c.deleted_at IS NULL
@@ -390,11 +388,7 @@ export class CardActions {
 		offset: number,
 	): FSRSCardData[] {
 		const sql = `SELECT ${CARD_SELECT} ${CARD_FROM} WHERE ${where} ORDER BY ${orderBy} LIMIT ? OFFSET ?`;
-		const rows = this.db.query<CardRow>(sql, [
-			...params,
-			limit,
-			offset,
-		]);
+		const rows = this.db.query<CardRow>(sql, [...params, limit, offset]);
 		return rows.map(mapRow);
 	}
 
@@ -482,10 +476,7 @@ export class CardActions {
 		return allIds;
 	}
 
-	getClozeSiblings(
-		sourceUid: string,
-		_clozeTemplate: string,
-	): FSRSCardData[] {
+	getClozeSiblings(sourceUid: string, _clozeTemplate: string): FSRSCardData[] {
 		const rows = this.db.query<CardRow>(
 			`SELECT ${CARD_SELECT} ${CARD_FROM}
                  WHERE n.source_uid = ? AND c.deleted_at IS NULL
@@ -505,8 +496,7 @@ export class CardActions {
 		);
 		const createdAt = data.createdAt ?? existing?.created_at ?? now;
 
-		const { noteTypeId, fieldsJson, templateOrd } =
-			resolveNoteMapping(data);
+		const { noteTypeId, fieldsJson, templateOrd } = resolveNoteMapping(data);
 
 		let noteId = data.noteId;
 
@@ -576,11 +566,7 @@ export class CardActions {
 		);
 	}
 
-	updateCardContent(
-		cardId: string,
-		question: string,
-		answer: string,
-	): void {
+	updateCardContent(cardId: string, question: string, answer: string): void {
 		const card = this.db.get<{ note_id: string; note_type_id: string }>(
 			`SELECT c.note_id, n.note_type_id
 			 FROM cards c
@@ -622,7 +608,7 @@ export class CardActions {
 		const fields = note
 			? (JSON.parse(note.fields_json) as Record<string, string>)
 			: {};
-		fields["Text"] = clozeTemplate;
+		fields.Text = clozeTemplate;
 		this.db.run(
 			`UPDATE notes SET fields_json = ?, updated_at = ? WHERE id = ?`,
 			[JSON.stringify(fields), Date.now(), card.note_id],
@@ -634,8 +620,7 @@ export class CardActions {
 	): void {
 		const now = Date.now();
 
-		const { noteTypeId, fieldsJson, templateOrd } =
-			resolveNoteMapping(data);
+		const { noteTypeId, fieldsJson, templateOrd } = resolveNoteMapping(data);
 
 		let noteId = data.noteId;
 		if (!noteId) {
@@ -714,9 +699,7 @@ export class CardActions {
 			: `SELECT c.id, c.source_uid AS sourceUid FROM cards c
                    JOIN notes n ON c.note_id = n.id
                    WHERE ${match.sql} AND c.deleted_at IS NULL LIMIT 1`;
-		const params = excludeCardId
-			? [match.param, excludeCardId]
-			: [match.param];
+		const params = excludeCardId ? [match.param, excludeCardId] : [match.param];
 		const row = this.db.get<{
 			id: string;
 			sourceUid: string | null;
@@ -814,10 +797,11 @@ export class CardActions {
 	}
 
 	updateCardDue(cardId: string, newDue: string): void {
-		this.db.run(
-			`UPDATE cards SET due = ?, updated_at = ? WHERE id = ?`,
-			[newDue, Date.now(), cardId],
-		);
+		this.db.run(`UPDATE cards SET due = ?, updated_at = ? WHERE id = ?`, [
+			newDue,
+			Date.now(),
+			cardId,
+		]);
 	}
 
 	updateCardScheduling(
@@ -927,10 +911,7 @@ export class CardActions {
 				`DELETE FROM review_log WHERE card_id IN (${placeholders})`,
 				cardIds,
 			);
-			this.db.run(
-				`DELETE FROM cards WHERE id IN (${placeholders})`,
-				cardIds,
-			);
+			this.db.run(`DELETE FROM cards WHERE id IN (${placeholders})`, cardIds);
 		});
 		return cardIds.length;
 	}

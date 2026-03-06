@@ -130,17 +130,14 @@ export class NoteActions {
 		params.push(now);
 		params.push(id);
 
-		this.db.run(
-			`UPDATE notes SET ${sets.join(", ")} WHERE id = ?`,
-			params,
-		);
+		this.db.run(`UPDATE notes SET ${sets.join(", ")} WHERE id = ?`, params);
 	}
 
 	delete(id: string): void {
-		this.db.run(
-			`UPDATE notes SET deleted_at = ? WHERE id = ?`,
-			[Date.now(), id],
-		);
+		this.db.run(`UPDATE notes SET deleted_at = ? WHERE id = ?`, [
+			Date.now(),
+			id,
+		]);
 	}
 
 	count(): number {

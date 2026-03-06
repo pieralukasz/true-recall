@@ -19,16 +19,34 @@ function buildSegments(
 	breakdown: CardMaturityBreakdown,
 	showSuspended: boolean,
 ): MaturitySegment[] {
-	const entries: { label: string; count: number; color: string; opacity?: number }[] = [
+	const entries: {
+		label: string;
+		count: number;
+		color: string;
+		opacity?: number;
+	}[] = [
 		{ label: "New", count: breakdown.new, color: "var(--color-green)" },
-		{ label: "Learning", count: breakdown.learning, color: "var(--color-orange)" },
-		{ label: "Young", count: breakdown.young, color: "var(--color-blue)", opacity: 0.6 },
+		{
+			label: "Learning",
+			count: breakdown.learning,
+			color: "var(--color-orange)",
+		},
+		{
+			label: "Young",
+			count: breakdown.young,
+			color: "var(--color-blue)",
+			opacity: 0.6,
+		},
 		{ label: "Mature", count: breakdown.mature, color: "var(--color-blue)" },
 	];
 
 	if (showSuspended) {
 		entries.push(
-			{ label: "Suspended", count: breakdown.suspended, color: "var(--color-red)" },
+			{
+				label: "Suspended",
+				count: breakdown.suspended,
+				color: "var(--color-red)",
+			},
 			{ label: "Buried", count: breakdown.buried, color: "var(--text-muted)" },
 		);
 	}
@@ -50,27 +68,27 @@ export function MaturityWidget({ source }: { source: string }) {
 	const config = useMemo(() => parseCodeblockConfig(source), [source]);
 	const showSuspended = configValue(config, "showSuspended", false) as boolean;
 
-	const data = useComputed((): { segments: MaturitySegment[]; total: number } | null => {
-		cards.value;
-		if (!plugin.sessionPersistence) return null;
+	const data = useComputed(
+		(): { segments: MaturitySegment[]; total: number } | null => {
+			cards.value;
+			if (!plugin.sessionPersistence) return null;
 
-		const statsCalc = new StatsCalculatorService(
-			plugin.fsrsService,
-			plugin.flashcardManager,
-			plugin.sessionPersistence,
-		);
+			const statsCalc = new StatsCalculatorService(
+				plugin.fsrsService,
+				plugin.flashcardManager,
+				plugin.sessionPersistence,
+			);
 
-		const breakdown = statsCalc.getCardMaturityBreakdown();
-		const segments = buildSegments(breakdown, showSuspended);
-		const total = segments.reduce((sum, s) => sum + s.count, 0);
+			const breakdown = statsCalc.getCardMaturityBreakdown();
+			const segments = buildSegments(breakdown, showSuspended);
+			const total = segments.reduce((sum, s) => sum + s.count, 0);
 
-		return { segments, total };
-	}).value;
+			return { segments, total };
+		},
+	).value;
 
 	if (!data || data.total === 0) {
-		return (
-			<div class="ep:text-obs-muted ep:text-xs ep:p-3">No cards yet</div>
-		);
+		return <div class="ep:text-obs-muted ep:text-xs ep:p-3">No cards yet</div>;
 	}
 
 	const handleLegendClick = () => {

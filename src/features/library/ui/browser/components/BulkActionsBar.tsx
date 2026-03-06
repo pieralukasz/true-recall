@@ -1,7 +1,7 @@
 import { ChangeNoteTypeModal } from "@features/library/modals/ChangeNoteTypeModal";
-import { Clickable } from "@shared/ui/components";
 import { notify } from "@shared/services/notification.service";
 import { notifyCardChange } from "@shared/services/signals";
+import { Clickable } from "@shared/ui/components";
 import { useApp, usePlugin } from "@shared/ui/preact";
 import { useCallback } from "preact/hooks";
 
@@ -57,9 +57,8 @@ export function BulkActionsBar({
 			return;
 		}
 
-		const currentTypeId = noteInfos[0]!.noteTypeId;
-		const currentNoteType =
-			plugin.cardStore.noteTypes.getById(currentTypeId);
+		const currentTypeId = noteInfos[0]?.noteTypeId;
+		const currentNoteType = plugin.cardStore.noteTypes.getById(currentTypeId);
 		if (!currentNoteType) return;
 
 		const allNoteTypes = plugin.cardStore.noteTypes.getAll();
@@ -74,7 +73,7 @@ export function BulkActionsBar({
 		if (result.cancelled || !result.targetNoteTypeId || !result.fieldMapping)
 			return;
 
-		let totalKept = 0;
+		let _totalKept = 0;
 		let totalCreated = 0;
 		let totalDeleted = 0;
 
@@ -84,7 +83,7 @@ export function BulkActionsBar({
 				result.targetNoteTypeId,
 				result.fieldMapping,
 			);
-			totalKept += r.keptCardIds.length;
+			_totalKept += r.keptCardIds.length;
 			totalCreated += r.createdCardIds.length;
 			totalDeleted += r.deletedCardIds.length;
 		}
@@ -97,8 +96,7 @@ export function BulkActionsBar({
 	}, [ids, plugin, app]);
 
 	const handleDelete = useCallback(() => {
-		if (!confirm(`Delete ${ids.length} cards? This cannot be undone.`))
-			return;
+		if (!confirm(`Delete ${ids.length} cards? This cannot be undone.`)) return;
 		const count = plugin.cardStore.cards.bulkSoftDelete(ids);
 		notifyCardChange({ type: "bulk", cardIds: ids, action: "delete" });
 		notify().success(`Deleted ${count} cards`);
@@ -124,15 +122,8 @@ export function BulkActionsBar({
 				<ActionButton label="Suspend" onClick={handleSuspend} />
 				<ActionButton label="Unsuspend" onClick={handleUnsuspend} />
 				<ActionButton label="Reset" onClick={handleReset} />
-				<ActionButton
-					label="Change type"
-					onClick={handleChangeType}
-				/>
-				<ActionButton
-					label="Delete"
-					onClick={handleDelete}
-					danger
-				/>
+				<ActionButton label="Change type" onClick={handleChangeType} />
+				<ActionButton label="Delete" onClick={handleDelete} danger />
 			</div>
 
 			<Clickable

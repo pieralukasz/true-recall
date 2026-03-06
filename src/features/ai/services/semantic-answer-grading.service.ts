@@ -1,19 +1,16 @@
+import { buildTypeInGradingMessages } from "@features/ai/prompts/type-in-grading-prompt";
 import {
+	type AIClientConfig,
 	getBYOKFallbackConfig,
 	resolveAIClientConfig,
-	type AIClientConfig,
 } from "@features/ai/services/ai-client-config";
 import {
 	AIRequestError,
-	OpenRouterClient,
-	getTextContent,
 	type ChatCompletionResponse,
+	getTextContent,
+	OpenRouterClient,
 } from "@features/ai/services/openrouter-client";
-import { buildTypeInGradingMessages } from "@features/ai/prompts/type-in-grading-prompt";
-import type {
-	SemanticGradingResult,
-	TrueRecallSettings,
-} from "@shared/types";
+import type { SemanticGradingResult, TrueRecallSettings } from "@shared/types";
 
 const DEFAULT_TIMEOUT_MS = 8000;
 const MAX_FEEDBACK_LENGTH = 280;

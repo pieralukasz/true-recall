@@ -1,6 +1,6 @@
-import { useComputed } from "@preact/signals";
 import { WorkloadForecastCalculator } from "@features/metrics/services/fsrs-tools/statistics/workload-forecast.calculator";
 import { StatsCalculatorService } from "@features/metrics/services/stats/stats-calculator.service";
+import { useComputed } from "@preact/signals";
 import { cards } from "@shared/services/reactive-card-store";
 import { Clickable } from "@shared/ui/components";
 import { usePlugin } from "@shared/ui/preact";

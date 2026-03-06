@@ -1,8 +1,8 @@
-import { BasePromiseModal } from "@shared/ui/modals/BasePromiseModal";
-import { ChangeNoteTypeBody } from "./change-note-type/ChangeNoteTypeBody";
 import type { NoteType } from "@shared/types/note.types";
+import { BasePromiseModal } from "@shared/ui/modals/BasePromiseModal";
 import type { App } from "obsidian";
 import { render } from "preact";
+import { ChangeNoteTypeBody } from "./change-note-type/ChangeNoteTypeBody";
 
 export interface ChangeNoteTypeResult {
 	cancelled: boolean;

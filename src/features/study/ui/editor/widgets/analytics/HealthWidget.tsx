@@ -1,5 +1,5 @@
-import { useComputed } from "@preact/signals";
 import { StatsCalculatorService } from "@features/metrics/services/stats/stats-calculator.service";
+import { useComputed } from "@preact/signals";
 import { cards } from "@shared/services/reactive-card-store";
 import type { CollectionHealthSnapshot } from "@shared/types/fsrs/stats.types";
 import { Clickable } from "@shared/ui/components";

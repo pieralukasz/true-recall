@@ -1,5 +1,5 @@
-import { Clickable } from "@shared/ui/components/Clickable";
 import type { NoteType } from "@shared/types/note.types";
+import { Clickable } from "@shared/ui/components/Clickable";
 import { useState } from "preact/hooks";
 
 // Legacy static prompt used when no NoteType is provided (old Quick tab).
@@ -23,7 +23,10 @@ interface CopyPromptButtonProps {
 	getPrompt?: () => string;
 }
 
-export function CopyPromptButton({ noteType, getPrompt }: CopyPromptButtonProps) {
+export function CopyPromptButton({
+	noteType,
+	getPrompt,
+}: CopyPromptButtonProps) {
 	const [copied, setCopied] = useState(false);
 
 	const handleCopy = async () => {

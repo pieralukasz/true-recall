@@ -156,7 +156,11 @@ export class StatsActions {
 		);
 	}
 
-	getAnswerStreakInfo(): { current: number; todayBest: number; allTimeBest: number } {
+	getAnswerStreakInfo(): {
+		current: number;
+		todayBest: number;
+		allTimeBest: number;
+	} {
 		const rows = this.db.query<{ rating: number; reviewed_at: string }>(
 			`SELECT rating, reviewed_at FROM review_log
 			 WHERE deleted_at IS NULL

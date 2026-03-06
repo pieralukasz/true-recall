@@ -39,4 +39,3 @@ export function persistTypeInMode(
 		// Ignore storage write failures (private mode / platform restrictions).
 	}
 }
-

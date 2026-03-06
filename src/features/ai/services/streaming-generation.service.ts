@@ -10,9 +10,13 @@ import type {
 import type { NoteType } from "@shared/types/note.types";
 import type { TrueRecallSettings } from "@shared/types/settings.types";
 import { Notice, type TFile } from "obsidian";
-import { getBYOKFallbackConfig, resolveAIClientConfig } from "./ai-client-config";
+import {
+	getBYOKFallbackConfig,
+	resolveAIClientConfig,
+} from "./ai-client-config";
 import { IncrementalFlashcardParser } from "./incremental-flashcard-parser";
 import { AIRequestError } from "./openrouter-client";
+import { StreamingOpenRouterClient } from "./streaming-openrouter-client";
 import {
 	addStreamedCard,
 	finishStreaming,
@@ -20,7 +24,6 @@ import {
 	streamingGeneration,
 	updatePartial,
 } from "./streaming-state";
-import { StreamingOpenRouterClient } from "./streaming-openrouter-client";
 
 const SOURCE_TRACKING_SUFFIX = `
 
@@ -77,7 +80,9 @@ export class StreamingGenerationService {
 			if (error instanceof AIRequestError && error.isBudgetExceeded) {
 				const fallback = getBYOKFallbackConfig(settings);
 				if (fallback) {
-					new Notice("Subscription budget exceeded. Falling back to your OpenRouter key.");
+					new Notice(
+						"Subscription budget exceeded. Falling back to your OpenRouter key.",
+					);
 					return await this.runStreamingGeneration(
 						fallback.apiKey,
 						fallback.model,
@@ -91,15 +96,15 @@ export class StreamingGenerationService {
 						allNoteTypes,
 					);
 				}
-				new Notice("Token budget exceeded. Top up at truerecall.app or add your own OpenRouter API key.");
+				new Notice(
+					"Token budget exceeded. Top up at truerecall.app or add your own OpenRouter API key.",
+				);
 			}
 
 			if (abortController.signal.aborted) {
 				finishStreaming();
 			} else {
-				finishStreaming(
-					error instanceof Error ? error.message : String(error),
-				);
+				finishStreaming(error instanceof Error ? error.message : String(error));
 			}
 			throw error;
 		}
@@ -117,7 +122,12 @@ export class StreamingGenerationService {
 		noteType?: NoteType | null,
 		allNoteTypes?: NoteType[],
 	): Promise<StreamingGenerationResult> {
-		const client = new StreamingOpenRouterClient(apiKey, model, proxyUrl, userId);
+		const client = new StreamingOpenRouterClient(
+			apiKey,
+			model,
+			proxyUrl,
+			userId,
+		);
 		const getNoteType = (slug: string) =>
 			this.flashcardManager.getNoteTypeBySlug?.(slug) ?? null;
 		const parser = new IncrementalFlashcardParser(getNoteType);
@@ -213,14 +223,12 @@ export class StreamingGenerationService {
 						const firstField = Object.values(event.block.fields)[0] ?? "";
 						const secondField = Object.values(event.block.fields)[1] ?? "";
 						addStreamedCard({
-							id: result.cards[0]!.id,
+							id: result.cards[0]?.id,
 							question: firstField,
 							answer: secondField,
 							sourceText: event.block.sourceText,
 						});
-						await new Promise<void>((r) =>
-							requestAnimationFrame(() => r()),
-						);
+						await new Promise<void>((r) => requestAnimationFrame(() => r()));
 					} else {
 						onCount(0, 1);
 					}
@@ -228,10 +236,7 @@ export class StreamingGenerationService {
 					onCount(0, 1);
 				}
 			} else if (event.type === "partial_update") {
-				onPartial(
-					event.partialQuestion ?? null,
-					event.partialAnswer ?? null,
-				);
+				onPartial(event.partialQuestion ?? null, event.partialAnswer ?? null);
 			}
 		}
 	}
@@ -246,12 +251,17 @@ export class StreamingGenerationService {
 		// Check for custom prompt override by slug
 		if (noteType?.slug) {
 			const customKey = `notetype:${noteType.slug}`;
-			const custom = (settings.aiFlashcardPrompts as Record<string, string | undefined>)?.[customKey];
+			const custom = (
+				settings.aiFlashcardPrompts as Record<string, string | undefined>
+			)?.[customKey];
 			if (custom?.trim()) return custom + SOURCE_TRACKING_SUFFIX;
 		}
 
 		// Check for legacy mode-based custom prompt
-		const legacyCustom = settings.aiFlashcardPrompts?.[mode as keyof typeof settings.aiFlashcardPrompts];
+		const legacyCustom =
+			settings.aiFlashcardPrompts?.[
+				mode as keyof typeof settings.aiFlashcardPrompts
+			];
 		if (typeof legacyCustom === "string" && legacyCustom.trim()) {
 			return legacyCustom + SOURCE_TRACKING_SUFFIX;
 		}
@@ -267,15 +277,17 @@ export class StreamingGenerationService {
 		}
 
 		// Fallback: use block format with builtin Basic type
-		return buildBlockPrompt({
-			id: "builtin-basic",
-			name: "Basic",
-			type: 0,
-			fields: ["Front", "Back"],
-			templates: [],
-			css: "",
-			isBuiltin: true,
-			slug: "basic",
-		} as NoteType) + SOURCE_TRACKING_SUFFIX;
+		return (
+			buildBlockPrompt({
+				id: "builtin-basic",
+				name: "Basic",
+				type: 0,
+				fields: ["Front", "Back"],
+				templates: [],
+				css: "",
+				isBuiltin: true,
+				slug: "basic",
+			} as NoteType) + SOURCE_TRACKING_SUFFIX
+		);
 	}
 }

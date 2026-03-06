@@ -16,8 +16,14 @@ interface AggregationDeps {
 export function aggregateDashboardData(
 	deps: AggregationDeps,
 ): DashboardAggregation {
-	const { allCards, streakCurrent, todaySummary, newCardsCap, reviewsCap, archivedSourceUids } =
-		deps;
+	const {
+		allCards,
+		streakCurrent,
+		todaySummary,
+		newCardsCap,
+		reviewsCap,
+		archivedSourceUids,
+	} = deps;
 	const now = new Date();
 
 	let totalDue = 0;
@@ -94,10 +100,7 @@ export function aggregateDashboardData(
 					);
 					if (daysOverdue > 0) {
 						entry.overdueCount++;
-						entry.overdueDays = Math.max(
-							entry.overdueDays,
-							daysOverdue,
-						);
+						entry.overdueDays = Math.max(entry.overdueDays, daysOverdue);
 					}
 					totalOverdue += daysOverdue > 0 ? 1 : 0;
 				}

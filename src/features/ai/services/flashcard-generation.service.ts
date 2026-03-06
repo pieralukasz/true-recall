@@ -6,9 +6,16 @@ import type { ParsedBlock } from "@features/study/services/flashcard/block-parse
 import type { NoteType } from "@shared/types/note.types";
 import type { TrueRecallSettings } from "@shared/types/settings.types";
 import { Notice } from "obsidian";
-import { getBYOKFallbackConfig, resolveAIClientConfig } from "./ai-client-config";
+import {
+	getBYOKFallbackConfig,
+	resolveAIClientConfig,
+} from "./ai-client-config";
 import { IncrementalFlashcardParser } from "./incremental-flashcard-parser";
-import { AIRequestError, OpenRouterClient, getTextContent } from "./openrouter-client";
+import {
+	AIRequestError,
+	getTextContent,
+	OpenRouterClient,
+} from "./openrouter-client";
 
 const SOURCE_TRACKING_SUFFIX = `
 
@@ -59,7 +66,9 @@ export class FlashcardGenerationService {
 			if (error instanceof AIRequestError && error.isBudgetExceeded) {
 				const fallback = getBYOKFallbackConfig(settings);
 				if (fallback) {
-					new Notice("Subscription budget exceeded. Falling back to your OpenRouter key.");
+					new Notice(
+						"Subscription budget exceeded. Falling back to your OpenRouter key.",
+					);
 					const fallbackClient = new OpenRouterClient(
 						fallback.apiKey,
 						fallback.model,
@@ -71,7 +80,9 @@ export class FlashcardGenerationService {
 					const blocks = this.parseResponse(responseText);
 					return { blocks, mode };
 				}
-				new Notice("Token budget exceeded. Top up at truerecall.app or add your own OpenRouter API key.");
+				new Notice(
+					"Token budget exceeded. Top up at truerecall.app or add your own OpenRouter API key.",
+				);
 			}
 			throw error;
 		}
@@ -82,8 +93,8 @@ export class FlashcardGenerationService {
 		parser.feed(text);
 		const blocks = parser
 			.finish()
-			.filter((e) => e.type === "card_complete" && e.block)
-			.map((e) => e.block!);
+			.filter((e): e is { type: "card_complete"; block: ParsedBlock } => e.type === "card_complete" && e.block !== null)
+			.map((e) => e.block);
 		if (text.trim() && blocks.length === 0) {
 			console.warn(
 				"[TrueRecall] AI response produced no parseable flashcards",

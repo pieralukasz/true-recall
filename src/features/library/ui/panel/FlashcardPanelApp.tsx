@@ -22,8 +22,7 @@ export function FlashcardPanelApp({
 }) {
 	const plugin = usePlugin();
 	const store = usePanelStore();
-	const { contentRef, preserveScroll, captureScroll } =
-		useScrollPreservation();
+	const { contentRef, preserveScroll, captureScroll } = useScrollPreservation();
 
 	const cardActions = useCardActions({
 		currentFile: store.currentFile,
@@ -83,9 +82,7 @@ export function FlashcardPanelApp({
 							uncollectedCount={store.uncollectedCount}
 							selectionMode={store.selectionMode}
 							selectedCount={store.selectedCardIds.size}
-							totalCount={
-								store.flashcardInfo?.flashcards.length ?? 0
-							}
+							totalCount={store.flashcardInfo?.flashcards.length ?? 0}
 							searchQuery={store.searchQuery}
 							isFollowingReview={store.isFollowingReview}
 							reviewedToday={reviewedToday}
@@ -94,26 +91,16 @@ export function FlashcardPanelApp({
 							onCollect={panelActions.handleCollect}
 							onRefresh={() => onActions?.({ type: "refresh" })}
 							onReview={panelActions.handleReview}
-							onExitSelectionMode={
-								selectionActions.handleExitSelectionMode
-							}
+							onExitSelectionMode={selectionActions.handleExitSelectionMode}
 							onSelectAll={selectionActions.handleSelectAll}
 							onMoveSelected={selectionActions.handleMoveSelected}
-							onChangeNoteType={
-								selectionActions.handleChangeNoteType
-							}
-							onDeleteSelected={
-								selectionActions.handleDeleteSelected
-							}
+							onChangeNoteType={selectionActions.handleChangeNoteType}
+							onDeleteSelected={selectionActions.handleDeleteSelected}
 							onSearchChange={panelActions.handleSearchChange}
 							onExportCsv={panelActions.handleExportCsv}
-							onCopyToClipboard={
-								panelActions.handleCopyAllToClipboard
-							}
+							onCopyToClipboard={panelActions.handleCopyAllToClipboard}
 							onDeleteAll={selectionActions.handleDeleteAll}
-							onOpenSourceNote={
-								panelActions.handleOpenSourceNote
-							}
+							onOpenSourceNote={panelActions.handleOpenSourceNote}
 							hasHighlights={store.hasHighlights}
 							onGenerateFromHighlights={
 								panelActions.handleGenerateFromHighlights
@@ -122,10 +109,7 @@ export function FlashcardPanelApp({
 					</div>
 				) : null}
 
-				<div
-					ref={contentRef}
-					class="ep:flex-1 ep:overflow-y-auto ep:min-h-0"
-				>
+				<div ref={contentRef} class="ep:flex-1 ep:overflow-y-auto ep:min-h-0">
 					<PanelContent
 						flashcardInfo={store.flashcardInfo}
 						currentFile={store.currentFile}
@@ -136,15 +120,16 @@ export function FlashcardPanelApp({
 						cardsWithFsrs={store.cardsWithFsrs}
 						searchQuery={store.searchQuery}
 						handlers={contentHandlers}
-						onGenerateFromNote={
-							panelActions.handleGenerateFromNote
-						}
-						onGenerateFromHighlights={
-							panelActions.handleGenerateFromHighlights
-						}
+						onGenerateFromNote={panelActions.handleGenerateFromNote}
+						onGenerateFromHighlights={panelActions.handleGenerateFromHighlights}
 						onCollect={panelActions.handleCollect}
 						uncollectedCount={store.uncollectedCount}
-						hasApiKey={!!(plugin.settings.openRouterApiKey || plugin.settings.subscriptionKey)}
+						hasApiKey={
+							!!(
+								plugin.settings.openRouterApiKey ||
+								plugin.settings.subscriptionKey
+							)
+						}
 						hasHighlights={store.hasHighlights}
 					/>
 				</div>

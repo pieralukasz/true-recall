@@ -60,7 +60,9 @@ function parseClozeText(text: string): ClozePart[] {
 
 		// Extract content between {{cN:: and }}
 		const content =
-			depth === 0 ? text.slice(contentStart, contentEnd) : text.slice(contentStart);
+			depth === 0
+				? text.slice(contentStart, contentEnd)
+				: text.slice(contentStart);
 		const isIncomplete = depth > 0;
 
 		parts.push({
@@ -126,11 +128,17 @@ function ClozeRenderer({ text }: { text: string }) {
 	);
 }
 
-const NEW_WORD_STYLE = { opacity: 0, filter: "blur(4px)", transform: "translateY(4px)" };
+const NEW_WORD_STYLE = {
+	opacity: 0,
+	filter: "blur(4px)",
+	transform: "translateY(4px)",
+};
 
 export function PartialCard({
 	streaming,
-}: { streaming: StreamingGenerationState }) {
+}: {
+	streaming: StreamingGenerationState;
+}) {
 	const { words: qWords, isTyping: qTyping } = useStreamingText(
 		streaming.partialQuestion ?? "",
 	);

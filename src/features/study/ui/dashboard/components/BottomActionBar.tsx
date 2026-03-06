@@ -1,7 +1,7 @@
 import { Clickable } from "@shared/ui/components/Clickable";
 import { usePlugin } from "@shared/ui/preact";
-import { useEffect, useRef } from "preact/hooks";
 import { setIcon } from "obsidian";
+import { useEffect, useRef } from "preact/hooks";
 
 const ANKI_SHARED_DECKS_URL = "https://ankiweb.net/shared/decks";
 
@@ -25,7 +25,11 @@ function BarButton({
 	label,
 	icon,
 	onClick,
-}: { label: string; icon: string; onClick: () => void }) {
+}: {
+	label: string;
+	icon: string;
+	onClick: () => void;
+}) {
 	return (
 		<Clickable
 			class="ep:flex ep:items-center ep:gap-1.5 ep:py-1 ep:px-3 ep:rounded-md ep:text-xs ep:text-obs-muted ep:bg-obs-border/50 ep:hover:bg-obs-modifier-hover ep:hover:text-obs-normal ep:transition-colors ep:border-none ep:cursor-pointer"

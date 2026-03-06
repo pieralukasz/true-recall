@@ -1,6 +1,6 @@
 import type { Signal } from "@preact/signals";
-import { useMemo } from "preact/hooks";
 import type { RefObject } from "preact";
+import { useMemo } from "preact/hooks";
 
 const ROW_HEIGHT = 36;
 const OVERSCAN = 5;
@@ -29,8 +29,7 @@ export function useExternalVirtualList<T>({
 	const totalHeight = items.length * rowHeight;
 
 	const virtualItems = useMemo((): VirtualItem<T>[] => {
-		const containerHeight =
-			scrollContainerRef.current?.clientHeight ?? 600;
+		const containerHeight = scrollContainerRef.current?.clientHeight ?? 600;
 		const contentOffset = contentOffsetRef.current?.offsetTop ?? 0;
 		const effectiveScroll = scrollTop.value - contentOffset;
 

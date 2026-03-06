@@ -3,7 +3,11 @@ import type { FSRSFlashcardItem } from "@shared/types/fsrs/card.types";
 
 export type PanelItem =
 	| { type: "card"; card: FlashcardItem }
-	| { type: "io-group"; cards: FlashcardItem[]; fsrsCards: FSRSFlashcardItem[] };
+	| {
+			type: "io-group";
+			cards: FlashcardItem[];
+			fsrsCards: FSRSFlashcardItem[];
+	  };
 
 /**
  * Groups IO cards sharing the same image into a single panel entry.
@@ -14,7 +18,10 @@ export function groupCards(
 	fsrsMap: Map<string, FSRSFlashcardItem>,
 ): PanelItem[] {
 	const items: PanelItem[] = [];
-	const ioGroups = new Map<string, { cards: FlashcardItem[]; fsrsCards: FSRSFlashcardItem[] }>();
+	const ioGroups = new Map<
+		string,
+		{ cards: FlashcardItem[]; fsrsCards: FSRSFlashcardItem[] }
+	>();
 	const consumedIds = new Set<string>();
 
 	for (const card of cards) {
@@ -42,7 +49,9 @@ export function groupCards(
 			const key = fsrs.ioImagePath!;
 			const group = ioGroups.get(key);
 			if (group) {
-				group.fsrsCards.sort((a, b) => (a.templateOrd ?? 0) - (b.templateOrd ?? 0));
+				group.fsrsCards.sort(
+					(a, b) => (a.templateOrd ?? 0) - (b.templateOrd ?? 0),
+				);
 				items.push({ type: "io-group", ...group });
 				ioGroups.delete(key);
 			}

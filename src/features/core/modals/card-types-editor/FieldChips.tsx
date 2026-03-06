@@ -6,16 +6,12 @@ interface FieldChipsProps {
 export function FieldChips({ fields, noteTypeType }: FieldChipsProps) {
 	return (
 		<div class="ep:flex ep:flex-wrap ep:gap-1.5 ep:pt-2">
-			<span class="ep:text-ui-smaller ep:text-obs-muted ep:mr-1">
-				Insert:
-			</span>
+			<span class="ep:text-ui-smaller ep:text-obs-muted ep:mr-1">Insert:</span>
 			{fields.map((f) => (
 				<Chip key={f} label={`{{${f}}}`} />
 			))}
 			{noteTypeType === 1 &&
-				fields.map((f) => (
-					<Chip key={`cloze-${f}`} label={`{{cloze:${f}}}`} />
-				))}
+				fields.map((f) => <Chip key={`cloze-${f}`} label={`{{cloze:${f}}}`} />)}
 		</div>
 	);
 }

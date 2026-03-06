@@ -1,7 +1,7 @@
-import type { EmbeddableEditorInstance } from "@shared/ui/editor/embedded-editor";
-import { useApp, usePlugin } from "@shared/ui/preact/ObsidianContext";
 import type { CardTemplate } from "@shared/types/note.types";
 import { Clickable } from "@shared/ui/components";
+import type { EmbeddableEditorInstance } from "@shared/ui/editor/embedded-editor";
+import { useApp, usePlugin } from "@shared/ui/preact/ObsidianContext";
 import { useEffect, useLayoutEffect, useRef } from "preact/hooks";
 import { TemplatePreview } from "./TemplatePreview";
 
@@ -35,7 +35,8 @@ export function TemplateEditor({
 					onBlur={(e) =>
 						onTemplateChange({
 							...template,
-							name: (e.target as HTMLInputElement).value.trim() || template.name,
+							name:
+								(e.target as HTMLInputElement).value.trim() || template.name,
 						})
 					}
 				/>
@@ -66,9 +67,9 @@ export function TemplateEditor({
 
 			{template.afmt.includes("{{FrontSide}}") && (
 				<div class="ep:text-ui-smaller ep:text-obs-muted ep:leading-relaxed">
-					<code class="ep:text-obs-accent/70">{`{{FrontSide}}`}</code>{" "}
-					is an Anki-only feature — True Recall shows the question
-					separately. You can safely remove it from this template.
+					<code class="ep:text-obs-accent/70">{`{{FrontSide}}`}</code> is an
+					Anki-only feature — True Recall shows the question separately. You can
+					safely remove it from this template.
 				</div>
 			)}
 
@@ -151,17 +152,13 @@ function TemplateCodeEditor({
 
 	return (
 		<div>
-			<div class="ep:text-ui-smaller ep:text-obs-muted ep:mb-1">
-				{label}
-			</div>
+			<div class="ep:text-ui-smaller ep:text-obs-muted ep:mb-1">{label}</div>
 			{readOnly || !plugin.EmbeddableEditor ? (
 				<textarea
 					class="ep:w-full ep:px-2 ep:py-1.5 ep:text-ui-small ep:font-mono ep:bg-obs-primary ep:border ep:border-obs-border ep:rounded-md ep:min-h-[48px] ep:resize-y"
 					value={value}
 					disabled={readOnly}
-					onBlur={(e) =>
-						onChange((e.target as HTMLTextAreaElement).value)
-					}
+					onBlur={(e) => onChange((e.target as HTMLTextAreaElement).value)}
 				/>
 			) : (
 				<div

@@ -127,9 +127,7 @@ export class FrontmatterService {
 					? (fm.parents as string[])
 					: [];
 				const names = new Set(
-					existing.map((p) =>
-						(p as string).replace(/^\[\[|\]\]$/g, ""),
-					),
+					existing.map((p) => (p as string).replace(/^\[\[|\]\]$/g, "")),
 				);
 				if (!names.has(parentName)) {
 					existing.push(`[[${parentName}]]`);
@@ -147,9 +145,7 @@ export class FrontmatterService {
 					? (fm.parents as string[])
 					: [];
 				fm.parents = existing.filter(
-					(p) =>
-						(p as string).replace(/^\[\[|\]\]$/g, "") !==
-						parentName,
+					(p) => (p as string).replace(/^\[\[|\]\]$/g, "") !== parentName,
 				);
 				if ((fm.parents as string[]).length === 0) delete fm.parents;
 			},

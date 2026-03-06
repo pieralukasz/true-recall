@@ -1,12 +1,10 @@
-import { QuickNoteEditorModal } from "@features/study/modals/quick-note-editor/QuickNoteEditorModal";
 import { openPanelCardEditor } from "@features/library/ui/panel/helpers/panel-edit-routing";
-import {
-	getSourceNoteNameFromFile,
-} from "@features/library/ui/panel/utils/panel-helpers";
+import { getSourceNoteNameFromFile } from "@features/library/ui/panel/utils/panel-helpers";
+import { QuickNoteEditorModal } from "@features/study/modals/quick-note-editor/QuickNoteEditorModal";
+import { notify } from "@shared/services/notification.service";
 import type { PanelApi } from "@shared/store";
 import type { FlashcardInfo, FlashcardItem } from "@shared/types";
 import type { FSRSFlashcardItem } from "@shared/types/fsrs/card.types";
-import { notify } from "@shared/services/notification.service";
 import { useApp, usePlugin } from "@shared/ui/preact";
 import type { TFile } from "obsidian";
 import { useCallback } from "preact/hooks";
@@ -51,30 +49,30 @@ export function useCardActions({
 				return;
 			}
 			const noteType = plugin.cardStore.noteTypes.getById(note.noteTypeId);
-				if (!noteType) {
-					notify().error("Note type not found");
-					return;
-				}
+			if (!noteType) {
+				notify().error("Note type not found");
+				return;
+			}
 
-				await openPanelCardEditor({
-					note,
-					noteType,
-					openImageOcclusionEditor: (mode) =>
-						plugin.openImageOcclusionEditor(mode),
-					openQuickEditor: async () => {
-						const modal = new QuickNoteEditorModal(app, plugin, {
-							mode: "edit",
-							cardId: card.id,
-							noteId: note.id,
-							note,
-							noteType,
-						});
-						await modal.openAndWait();
-					},
-				});
-				restoreScroll();
-			},
-			[app, plugin, cardsWithFsrs],
+			await openPanelCardEditor({
+				note,
+				noteType,
+				openImageOcclusionEditor: (mode) =>
+					plugin.openImageOcclusionEditor(mode),
+				openQuickEditor: async () => {
+					const modal = new QuickNoteEditorModal(app, plugin, {
+						mode: "edit",
+						cardId: card.id,
+						noteId: note.id,
+						note,
+						noteType,
+					});
+					await modal.openAndWait();
+				},
+			});
+			restoreScroll();
+		},
+		[app, plugin, cardsWithFsrs],
 	);
 
 	const handleAddFlashcard = useCallback(async () => {
@@ -133,9 +131,7 @@ export function useCardActions({
 				flashcardInfo,
 			);
 
-			const { MoveCardModal } = await import(
-				"@shared/ui/modals/MoveCardModal"
-			);
+			const { MoveCardModal } = await import("@shared/ui/modals/MoveCardModal");
 			const modal = new MoveCardModal(app, {
 				cardCount: 1,
 				sourceNoteName,
@@ -147,10 +143,7 @@ export function useCardActions({
 			if (result.cancelled || !result.targetNotePath) return;
 
 			try {
-				await plugin.flashcardManager.moveCard(
-					card.id,
-					result.targetNotePath,
-				);
+				await plugin.flashcardManager.moveCard(card.id, result.targetNotePath);
 				notify().cardsMoved(1, result.targetNotePath);
 			} catch (error) {
 				notify().operationFailed("move card", error);
@@ -195,11 +188,7 @@ export function useCardActions({
 			});
 
 			const result = await modal.openAndWait();
-			if (
-				result.cancelled ||
-				!result.targetNoteTypeId ||
-				!result.fieldMapping
-			)
+			if (result.cancelled || !result.targetNoteTypeId || !result.fieldMapping)
 				return;
 
 			const r = plugin.flashcardManager.changeNoteType(

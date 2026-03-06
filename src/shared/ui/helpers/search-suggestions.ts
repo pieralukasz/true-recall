@@ -270,15 +270,15 @@ function buildPrefixSuggestions(
 	negated: boolean,
 ): SearchSuggestion[] {
 	const neg = negated ? "-" : "";
-	return TOP_LEVEL_PREFIXES.filter((p) =>
-		p.prefix.startsWith(partial),
-	).map((p) => ({
-		id: `prefix-${neg}${p.prefix}`,
-		label: `${neg}${p.prefix}`,
-		insertText: `${neg}${p.prefix}`,
-		category: "keyword" as const,
-		description: p.description,
-	}));
+	return TOP_LEVEL_PREFIXES.filter((p) => p.prefix.startsWith(partial)).map(
+		(p) => ({
+			id: `prefix-${neg}${p.prefix}`,
+			label: `${neg}${p.prefix}`,
+			insertText: `${neg}${p.prefix}`,
+			category: "keyword" as const,
+			description: p.description,
+		}),
+	);
 }
 
 function buildStateSuggestions(
@@ -321,8 +321,7 @@ function buildTypeSuggestions(partial: string): SearchSuggestion[] {
 		label: `type:${t}`,
 		insertText: `type:${t}`,
 		category: "type",
-		description:
-			t.charAt(0).toUpperCase() + t.slice(1).replace("-", " ") + " cards",
+		description: `${t.charAt(0).toUpperCase() + t.slice(1).replace("-", " ")} cards`,
 	}));
 }
 

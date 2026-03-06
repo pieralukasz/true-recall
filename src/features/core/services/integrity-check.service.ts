@@ -40,9 +40,7 @@ export class IntegrityCheckService {
 			orphanedNotes,
 			orphanedReviewLogs,
 			totalIssues:
-				orphanedCards.length +
-				orphanedNotes.length +
-				orphanedReviewLogs.length,
+				orphanedCards.length + orphanedNotes.length + orphanedReviewLogs.length,
 		};
 	}
 
@@ -54,30 +52,30 @@ export class IntegrityCheckService {
 
 			if (report.orphanedCards.length > 0) {
 				for (const id of report.orphanedCards) {
-					this.db.run(
-						`UPDATE cards SET deleted_at = ? WHERE id = ?`,
-						[now, id],
-					);
+					this.db.run(`UPDATE cards SET deleted_at = ? WHERE id = ?`, [
+						now,
+						id,
+					]);
 				}
 				fixed += report.orphanedCards.length;
 			}
 
 			if (report.orphanedNotes.length > 0) {
 				for (const id of report.orphanedNotes) {
-					this.db.run(
-						`UPDATE notes SET deleted_at = ? WHERE id = ?`,
-						[now, id],
-					);
+					this.db.run(`UPDATE notes SET deleted_at = ? WHERE id = ?`, [
+						now,
+						id,
+					]);
 				}
 				fixed += report.orphanedNotes.length;
 			}
 
 			if (report.orphanedReviewLogs.length > 0) {
 				for (const id of report.orphanedReviewLogs) {
-					this.db.run(
-						`UPDATE review_log SET deleted_at = ? WHERE id = ?`,
-						[now, id],
-					);
+					this.db.run(`UPDATE review_log SET deleted_at = ? WHERE id = ?`, [
+						now,
+						id,
+					]);
 				}
 				fixed += report.orphanedReviewLogs.length;
 			}

@@ -20,10 +20,7 @@ export function TemplatePreview({
 	const sampleFields = useMemo(() => {
 		const result: Record<string, string> = {};
 		for (const f of fields) {
-			result[f] =
-				noteTypeType === 1
-					? `{{c1::sample ${f} text}}`
-					: `(${f})`;
+			result[f] = noteTypeType === 1 ? `{{c1::sample ${f} text}}` : `(${f})`;
 		}
 		return result;
 	}, [fields, noteTypeType]);
@@ -68,10 +65,7 @@ export function TemplatePreview({
 					<div class="ep:text-ui-smaller ep:text-obs-muted ep:mb-1 ep:uppercase ep:tracking-wider">
 						Back
 					</div>
-					<MarkdownContent
-						markdown={renderedBack}
-						class="ep:text-ui-small"
-					/>
+					<MarkdownContent markdown={renderedBack} class="ep:text-ui-small" />
 				</div>
 			)}
 		</div>

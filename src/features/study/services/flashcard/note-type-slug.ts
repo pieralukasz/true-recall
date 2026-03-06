@@ -1,5 +1,5 @@
-import { BUILTIN_SLUGS } from "@shared/types/note.types";
 import type { NoteType } from "@shared/types/note.types";
+import { BUILTIN_SLUGS } from "@shared/types/note.types";
 
 export function slugifyNoteTypeName(name: string): string {
 	return name

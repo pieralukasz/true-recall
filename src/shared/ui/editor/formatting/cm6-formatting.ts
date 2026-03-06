@@ -175,10 +175,7 @@ export function clearFormatting(view: EditorView): void {
 		text = text.replace(new RegExp(`${bE}(.+?)${aE}`, "g"), "$1");
 	}
 
-	text = text.replace(
-		/<span style="color:[^"]*">(.+?)<\/span>/g,
-		"$1",
-	);
+	text = text.replace(/<span style="color:[^"]*">(.+?)<\/span>/g, "$1");
 
 	if (text !== view.state.sliceDoc(from, to)) {
 		view.dispatch({ changes: { from, to, insert: text } });

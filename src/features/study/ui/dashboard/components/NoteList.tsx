@@ -1,13 +1,19 @@
+import { NamePromptModal } from "@features/study/modals/NamePromptModal";
 import type { Signal } from "@preact/signals";
 import { useSignal } from "@preact/signals";
 import { Clickable } from "@shared/ui/components/Clickable";
 import { usePlugin } from "@shared/ui/preact";
-import { useCallback, useEffect, useMemo, useRef } from "preact/hooks";
+import { Notice, normalizePath, TFile } from "obsidian";
 import type { RefObject } from "preact";
-import { Notice, TFile, normalizePath } from "obsidian";
-import { NamePromptModal } from "@features/study/modals/NamePromptModal";
-import { useInitialMount } from "../helpers/use-initial-mount";
+import { useCallback, useEffect, useMemo, useRef } from "preact/hooks";
+import {
+	DRAG_MIME,
+	type DragItem,
+	type DropResult,
+	executeDrop,
+} from "../helpers/drag-drop";
 import { prioritySortComparator } from "../helpers/note-priority";
+import { useInitialMount } from "../helpers/use-initial-mount";
 import { useExternalVirtualList } from "../helpers/use-virtual-list";
 import type {
 	DashboardNoteEntry,
@@ -16,12 +22,6 @@ import type {
 } from "../types";
 import { NoteFilters } from "./NoteFilters";
 import { NoteRow } from "./NoteRow";
-import {
-	type DragItem,
-	type DropResult,
-	DRAG_MIME,
-	executeDrop,
-} from "../helpers/drag-drop";
 
 interface NoteListProps {
 	notes: DashboardNoteEntry[];
@@ -259,7 +259,9 @@ export function NoteList({
 		if (!note.path) return;
 		const file = plugin.app.vault.getAbstractFileByPath(note.path);
 		if (file instanceof TFile) {
-			void plugin.flashcardManager.getFrontmatterService().setArchive(file, true);
+			void plugin.flashcardManager
+				.getFrontmatterService()
+				.setArchive(file, true);
 		}
 	};
 
@@ -267,7 +269,9 @@ export function NoteList({
 		if (!note.path) return;
 		const file = plugin.app.vault.getAbstractFileByPath(note.path);
 		if (file instanceof TFile) {
-			void plugin.flashcardManager.getFrontmatterService().setArchive(file, false);
+			void plugin.flashcardManager
+				.getFrontmatterService()
+				.setArchive(file, false);
 		}
 	};
 
@@ -285,7 +289,7 @@ export function NoteList({
 				name: note.name,
 				parentPath: null,
 			};
-			e.dataTransfer!.setData(DRAG_MIME, JSON.stringify(item));
+			e.dataTransfer?.setData(DRAG_MIME, JSON.stringify(item));
 			e.dataTransfer!.effectAllowed = "move";
 			requestAnimationFrame(() => {
 				dragState.value = { item, dropTargetPath: null, isValid: false };
@@ -333,7 +337,8 @@ export function NoteList({
 				targetName: targetNote.name,
 			};
 
-			const frontmatterService = plugin.flashcardManager.getFrontmatterService();
+			const frontmatterService =
+				plugin.flashcardManager.getFrontmatterService();
 			void executeDrop(result, {
 				app: plugin.app,
 				frontmatterService,
@@ -374,9 +379,7 @@ export function NoteList({
 
 			{isSelecting && (
 				<div class="ep:flex ep:items-center ep:gap-2 ep:px-3 ep:py-2 ep:bg-obs-secondary ep:rounded-lg ep:mb-2 ep:text-ui-small">
-					<span class="ep:text-obs-muted">
-						{selectedCount} selected
-					</span>
+					<span class="ep:text-obs-muted">{selectedCount} selected</span>
 					<div class="ep:flex-1" />
 					<Clickable
 						class="ep:px-2 ep:py-1 ep:rounded ep:text-obs-muted ep:hover:text-obs-normal ep:hover:bg-obs-modifier-hover ep:transition-colors"
@@ -433,7 +436,10 @@ export function NoteList({
 						return (
 							<div
 								key={item.name}
-								class={`${initialMount.current ? "ep-card-enter" : ""} ${dragCls}`.trim() || undefined}
+								class={
+									`${initialMount.current ? "ep-card-enter" : ""} ${dragCls}`.trim() ||
+									undefined
+								}
 								draggable={!isSelecting && !!item.path}
 								onDragStart={(e) => handleDragStart(e, item)}
 								onDragEnd={handleDragEnd}
@@ -460,9 +466,15 @@ export function NoteList({
 									onArchive={() => handleArchiveNote(item)}
 									onUnarchive={() => handleUnarchiveNote(item)}
 									isSelectionMode={isSelecting}
-									isSelected={item.path ? selectedPaths.value.has(item.path) : false}
-									onToggleSelect={item.path ? () => toggleSelect(item.path!) : undefined}
-									onEnterSelection={item.path ? () => enterSelection(item.path!) : undefined}
+									isSelected={
+										item.path ? selectedPaths.value.has(item.path) : false
+									}
+									onToggleSelect={
+										item.path ? () => toggleSelect(item.path!) : undefined
+									}
+									onEnterSelection={
+										item.path ? () => enterSelection(item.path!) : undefined
+									}
 								/>
 							</div>
 						);

@@ -126,9 +126,7 @@ export class SqliteSchemaManager {
 
 		// Add slug column for existing databases (idempotent — SQLite errors silently if column exists)
 		try {
-			this.db.run(
-				`ALTER TABLE note_types ADD COLUMN slug TEXT`,
-			);
+			this.db.run(`ALTER TABLE note_types ADD COLUMN slug TEXT`);
 		} catch {
 			// Column already exists — expected for new installs
 		}

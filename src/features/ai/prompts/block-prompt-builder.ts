@@ -7,8 +7,8 @@
  * to NoteType-aware blocks.
  */
 
-import type { NoteType } from "@shared/types/note.types";
 import { resolveSlug } from "@features/study/services/flashcard/note-type-slug";
+import type { NoteType } from "@shared/types/note.types";
 
 const SHARED_RULES = `MANDATORY RULES:
 1. One flashcard = ONE piece of information. If answer has multiple facts, create SEPARATE flashcards.
@@ -148,7 +148,8 @@ function getFieldDescription(noteType: NoteType, field: string): string {
 	const isCloze = noteType.type === 1;
 	const fieldLower = field.toLowerCase();
 
-	if (isCloze && fieldLower === "text") return "sentence with {{c1::hidden term}}";
+	if (isCloze && fieldLower === "text")
+		return "sentence with {{c1::hidden term}}";
 	if (isCloze && fieldLower === "extra") return "optional additional context";
 	if (fieldLower === "front") return "question text";
 	if (fieldLower === "back") return "answer text";
@@ -157,10 +158,12 @@ function getFieldDescription(noteType: NoteType, field: string): string {
 }
 
 function getTypeHint(noteType: NoteType): string {
-	if (noteType.type === 1) return " — Fill-in-the-blank. Best for: key terms in context, formulas, sequences.";
+	if (noteType.type === 1)
+		return " — Fill-in-the-blank. Best for: key terms in context, formulas, sequences.";
 
 	const hasMultipleTemplates = noteType.templates.length > 1;
-	if (hasMultipleTemplates) return " — Bidirectional Q&A. Best for: term↔definition, symbol↔name pairs.";
+	if (hasMultipleTemplates)
+		return " — Bidirectional Q&A. Best for: term↔definition, symbol↔name pairs.";
 
 	return " — Standard Q&A. Best for: explanations, processes, definitions.";
 }

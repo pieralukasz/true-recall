@@ -22,9 +22,7 @@ export function loadImportStudioPrefs(): ImportStudioPrefs {
 	};
 }
 
-export function saveImportStudioPrefs(
-	prefs: Partial<ImportStudioPrefs>,
-): void {
+export function saveImportStudioPrefs(prefs: Partial<ImportStudioPrefs>): void {
 	const current = loadImportStudioPrefs();
 	localStorage.setItem(
 		IMPORT_STUDIO_PREFS_KEY,

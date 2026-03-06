@@ -1,5 +1,5 @@
-import { Notice, TFile } from "obsidian";
 import type { App } from "obsidian";
+import { Notice, TFile } from "obsidian";
 
 interface MigrationPlan {
 	/** project note path → array of member note paths */
@@ -70,7 +70,7 @@ async function executeMigration(
 
 		for (const memberPath of memberPaths) {
 			if (!additions.has(memberPath)) additions.set(memberPath, new Set());
-			additions.get(memberPath)!.add(projectName);
+			additions.get(memberPath)?.add(projectName);
 		}
 	}
 
@@ -89,9 +89,7 @@ async function executeMigration(
 
 					// Strip [[]] for deduplication check
 					const existingNames = new Set(
-						existing.map((p) =>
-							p.replace(/^\[\[/, "").replace(/\]\]$/, ""),
-						),
+						existing.map((p) => p.replace(/^\[\[/, "").replace(/\]\]$/, "")),
 					);
 
 					for (const name of parentNames) {
@@ -152,5 +150,5 @@ export async function migrateLegacyProjects(app: App): Promise<void> {
 		parts.push(`${result.errors.length} error(s)`);
 		console.error("[MigrateProjects] Errors:", result.errors);
 	}
-	new Notice(parts.join(", ") + ".");
+	new Notice(`${parts.join(", ")}.`);
 }

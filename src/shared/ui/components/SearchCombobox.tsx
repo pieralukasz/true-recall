@@ -1,12 +1,12 @@
-import { useApp } from "@shared/ui/preact/ObsidianContext";
-import { cn } from "@shared/ui/utils/cn";
-import { replaceTokenAtCursor } from "@shared/ui/helpers/search-suggestions";
-import type { SuggestionProvider } from "@shared/ui/helpers/search-suggestions.types";
 import {
 	type SectionedSuggestion,
 	withSectionLabels,
 } from "@shared/ui/components/search-combobox.utils";
-import { AbstractInputSuggest, SearchComponent, type App } from "obsidian";
+import { replaceTokenAtCursor } from "@shared/ui/helpers/search-suggestions";
+import type { SuggestionProvider } from "@shared/ui/helpers/search-suggestions.types";
+import { useApp } from "@shared/ui/preact/ObsidianContext";
+import { cn } from "@shared/ui/utils/cn";
+import { AbstractInputSuggest, type App, SearchComponent } from "obsidian";
 import { useEffect, useRef } from "preact/hooks";
 
 export interface SearchComboboxProps {

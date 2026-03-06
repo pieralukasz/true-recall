@@ -5,8 +5,6 @@
 		padding: 0;
 	}
 
-
-
 	/* Override Obsidian default button height */
 	.true-recall-review-buttons button {
 		height: auto;
@@ -31,13 +29,29 @@
 	/* Switch to left-align when content has block elements.
 	   CM6 live-preview uses HyperMD classes instead of <pre>/<ul>/<ol>/<table>/<blockquote>. */
 	.true-recall-review-question:has(
-		pre, ul, ol, table, blockquote, .math-block,
-		.HyperMD-codeblock-begin, .HyperMD-list-line, .HyperMD-table-row, .HyperMD-quote
-	),
+			pre,
+			ul,
+			ol,
+			table,
+			blockquote,
+			.math-block,
+			.HyperMD-codeblock-begin,
+			.HyperMD-list-line,
+			.HyperMD-table-row,
+			.HyperMD-quote
+		),
 	.true-recall-review-answer:has(
-		pre, ul, ol, table, blockquote, .math-block,
-		.HyperMD-codeblock-begin, .HyperMD-list-line, .HyperMD-table-row, .HyperMD-quote
-	) {
+			pre,
+			ul,
+			ol,
+			table,
+			blockquote,
+			.math-block,
+			.HyperMD-codeblock-begin,
+			.HyperMD-list-line,
+			.HyperMD-table-row,
+			.HyperMD-quote
+		) {
 		text-align: left;
 	}
 
@@ -103,7 +117,6 @@
 		overflow-x: auto;
 		max-width: 100%;
 	}
-
 }
 
 /* ── CM6 inside Card Browser preview panel (320px) ──────────────────
@@ -154,13 +167,33 @@
 }
 
 .true-recall-review-question:has(
-	pre, ul, ol, table, blockquote, .math-block,
-	.HyperMD-codeblock-begin, .HyperMD-list-line, .HyperMD-table-row, .HyperMD-quote
-) .cm-editor .cm-content,
+		pre,
+		ul,
+		ol,
+		table,
+		blockquote,
+		.math-block,
+		.HyperMD-codeblock-begin,
+		.HyperMD-list-line,
+		.HyperMD-table-row,
+		.HyperMD-quote
+	)
+	.cm-editor
+	.cm-content,
 .true-recall-review-answer:has(
-	pre, ul, ol, table, blockquote, .math-block,
-	.HyperMD-codeblock-begin, .HyperMD-list-line, .HyperMD-table-row, .HyperMD-quote
-) .cm-editor .cm-content {
+		pre,
+		ul,
+		ol,
+		table,
+		blockquote,
+		.math-block,
+		.HyperMD-codeblock-begin,
+		.HyperMD-list-line,
+		.HyperMD-table-row,
+		.HyperMD-quote
+	)
+	.cm-editor
+	.cm-content {
 	text-align: left;
 }
 

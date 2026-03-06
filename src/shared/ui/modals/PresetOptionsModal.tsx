@@ -26,13 +26,12 @@ export class PresetOptionsModal extends BaseModal {
 	}
 
 	protected renderBody(container: HTMLElement): void {
-		const context: PresetOptionsContext | undefined =
-			this.options.contextPath
-				? {
-						contextPath: this.options.contextPath,
-						contextName: this.options.contextName,
-					}
-				: undefined;
+		const context: PresetOptionsContext | undefined = this.options.contextPath
+			? {
+					contextPath: this.options.contextPath,
+					contextName: this.options.contextName,
+				}
+			: undefined;
 
 		render(
 			<ObsidianProvider value={{ app: this.app, plugin: this.plugin }}>

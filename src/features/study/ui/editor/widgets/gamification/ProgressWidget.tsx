@@ -50,13 +50,7 @@ function ProgressRing({
 	);
 }
 
-function RingTrack({
-	radius,
-	stroke,
-}: {
-	radius: number;
-	stroke: number;
-}) {
+function RingTrack({ radius, stroke }: { radius: number; stroke: number }) {
 	return (
 		<circle
 			r={radius}
@@ -156,11 +150,7 @@ export function ProgressWidget({ source }: { source: string }) {
 				class="ep:flex ep:flex-col ep:items-center ep:gap-2"
 				onClick={handleClick}
 			>
-				{style === "ring" ? (
-					<RingView data={data} />
-				) : (
-					<BarView data={data} />
-				)}
+				{style === "ring" ? <RingView data={data} /> : <BarView data={data} />}
 			</Clickable>
 
 			<div class="ep:flex ep:items-center ep:justify-between ep:text-xs">
@@ -235,7 +225,8 @@ function RingView({ data }: { data: ProgressData }) {
 }
 
 function BarView({ data }: { data: ProgressData }) {
-	const newPct = data.newCap > 0 ? Math.min(data.newDone / data.newCap, 1) * 100 : 0;
+	const newPct =
+		data.newCap > 0 ? Math.min(data.newDone / data.newCap, 1) * 100 : 0;
 	const reviewPct =
 		data.reviewCap > 0
 			? Math.min(data.reviewDone / data.reviewCap, 1) * 100
@@ -277,7 +268,10 @@ function ProgressBar({
 	return (
 		<div class="ep:flex ep:items-center ep:gap-2 ep:text-xs">
 			<span class="ep:w-14 ep:text-obs-muted">{label}</span>
-			<div class="ep:flex-1 ep:h-2 ep:rounded-full ep:overflow-hidden" style={{ background: "var(--background-modifier-hover)" }}>
+			<div
+				class="ep:flex-1 ep:h-2 ep:rounded-full ep:overflow-hidden"
+				style={{ background: "var(--background-modifier-hover)" }}
+			>
 				<div
 					class="ep:h-full ep:rounded-full ep:transition-all"
 					style={{ width: `${pct}%`, background: color }}

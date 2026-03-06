@@ -98,9 +98,7 @@ export function CountdownWidget({ source }: { source: string }) {
 	}
 
 	if (!data) {
-		return (
-			<div class="ep:text-obs-muted ep:text-xs ep:p-3">Loading...</div>
-		);
+		return <div class="ep:text-obs-muted ep:text-xs ep:p-3">Loading...</div>;
 	}
 
 	if (data.totalCards === 0) {
@@ -145,7 +143,10 @@ export function CountdownWidget({ source }: { source: string }) {
 				<div class="ep:flex ep:items-center ep:justify-between ep:text-xs">
 					<span>Readiness</span>
 					{data.readiness === 100 ? (
-						<span class="ep:font-semibold" style={{ color: "var(--color-green)" }}>
+						<span
+							class="ep:font-semibold"
+							style={{ color: "var(--color-green)" }}
+						>
 							Ready!
 						</span>
 					) : (
@@ -189,9 +190,7 @@ export function CountdownWidget({ source }: { source: string }) {
 				<div class="ep:flex ep:justify-end">
 					<WidgetCta
 						label="Review at-risk cards →"
-						onClick={() =>
-							plugin.openCustomStudyModal().catch(() => {})
-						}
+						onClick={() => plugin.openCustomStudyModal().catch(() => {})}
 					/>
 				</div>
 			)}

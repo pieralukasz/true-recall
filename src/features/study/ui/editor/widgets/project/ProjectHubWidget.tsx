@@ -1,9 +1,12 @@
 import type { HierarchyTreeNode } from "@features/core/services/hierarchy.service";
 import { useComputed } from "@preact/signals";
-import { archivedSourceUids, cards } from "@shared/services/reactive-card-store";
+import {
+	archivedSourceUids,
+	cards,
+} from "@shared/services/reactive-card-store";
 import { usePlugin } from "@shared/ui/preact";
-import { ProjectCard } from "./ProjectWidget";
 import { computeProjectStats, type ProjectStats } from "../project-stats";
+import { ProjectCard } from "./ProjectWidget";
 
 interface FlatProject {
 	stats: ProjectStats;
@@ -44,9 +47,8 @@ export function ProjectHubWidget() {
 	if (projects.length === 0) {
 		return (
 			<div class="ep:text-obs-muted ep:text-xs ep:p-3">
-				No projects found. Add{" "}
-				<code>parents: ["[[project note]]"]</code> to child notes to
-				create a project hierarchy.
+				No projects found. Add <code>parents: ["[[project note]]"]</code> to
+				child notes to create a project hierarchy.
 			</div>
 		);
 	}
@@ -70,9 +72,7 @@ export function ProjectHubWidget() {
 							.catch(() => {});
 					}}
 					onCustomStudy={() => {
-						const members = plugin.hierarchyService.getChildPaths(
-							stats.path,
-						);
+						const members = plugin.hierarchyService.getChildPaths(stats.path);
 						const names = members.map((p) => {
 							const f = plugin.app.vault.getAbstractFileByPath(p);
 							return f?.name?.replace(/\.md$/, "") ?? p;

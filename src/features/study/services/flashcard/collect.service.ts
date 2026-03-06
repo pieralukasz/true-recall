@@ -4,10 +4,10 @@
  */
 
 import {
-	parseBlocks,
 	countBlocks,
-	type ParsedBlock,
 	type NoteTypeLookup,
+	type ParsedBlock,
+	parseBlocks,
 } from "@features/study/services/flashcard/block-parser.service";
 
 export interface CollectResult {
