@@ -107,6 +107,16 @@ function CardTypeBadge({ card }: { card: FlashcardItem }) {
 			</span>
 		);
 	}
+	if (card.cardType === "image-occlusion") {
+		return (
+			<span
+				class="ep:text-xs ep:text-obs-muted ep:bg-obs-base-25 ep:rounded-full ep:px-1.5 ep:py-0.5 ep:shrink-0 ep:leading-none"
+				title="Image occlusion card"
+			>
+				IO
+			</span>
+		);
+	}
 	return null;
 }
 

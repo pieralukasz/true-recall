@@ -249,6 +249,7 @@ export function PanelHeader({
 			<SearchInput
 				value={searchQuery}
 				placeholder="Search flashcards..."
+				ariaLabel="Search flashcards"
 				onChange={onSearchChange}
 			/>
 		</div>
