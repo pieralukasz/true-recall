@@ -34,33 +34,64 @@ export function TodayActionBar({
 	const reviewPct = totalCap > 0 ? Math.min(reviewCards / totalCap, 1) : 0;
 	const progressPct = totalCap > 0 ? Math.min(studied / totalCap, 1) : 0;
 
-	const primaryLabel =
+	const reviewLabel =
 		totalActionable > 0
-			? `Start Review: ${totalActionable} cards (~${formatEstimatedTime(estimatedMinutes)})`
+			? `Review: ${totalActionable} (~${formatEstimatedTime(estimatedMinutes)})`
 			: "All caught up!";
+
+	const counts: { value: number; label: string; colorCls: string }[] = [];
+	if (totalDue > 0)
+		counts.push({
+			value: totalDue,
+			label: "due",
+			colorCls: FSRS_COLORS.review.textCls,
+		});
+	if (totalNew > 0)
+		counts.push({
+			value: totalNew,
+			label: "new",
+			colorCls: FSRS_COLORS.new.textCls,
+		});
+	if (totalLearning > 0)
+		counts.push({
+			value: totalLearning,
+			label: "lrn",
+			colorCls: FSRS_COLORS.learning.textCls,
+		});
 
 	return (
 		<div class="ep:flex ep:flex-col ep:gap-3 ep:rounded-lg ep:border ep:border-obs-border ep:bg-obs-primary ep:p-4">
-			{/* Counts */}
-			<div class="ep:flex ep:items-center ep:gap-4 ep:text-sm ep:font-medium">
-				{totalDue > 0 && (
-					<span class={FSRS_COLORS.review.textCls}>
-						{totalDue} due
-					</span>
-				)}
-				{totalNew > 0 && (
-					<span class={FSRS_COLORS.new.textCls}>
-						{totalNew} new
-					</span>
-				)}
-				{totalLearning > 0 && (
-					<span class={FSRS_COLORS.learning.textCls}>
-						{totalLearning} lrn
-					</span>
-				)}
-				{totalActionable === 0 && (
-					<span class="ep:text-obs-muted">Nothing to review</span>
-				)}
+			{/* Top row: count cards + button */}
+			<div class="ep:flex ep:items-center ep:justify-between ep:gap-3">
+				<div class="ep:flex ep:items-center ep:gap-2">
+					{counts.map((c) => (
+						<div
+							key={c.label}
+							class="ep:flex ep:flex-col ep:items-center ep:rounded-md ep:bg-obs-secondary/50 ep:px-3 ep:py-1.5"
+						>
+							<span
+								class={`ep:text-lg ep:font-semibold ${c.colorCls}`}
+							>
+								{c.value}
+							</span>
+							<span class="ep:text-ui-smaller ep:text-obs-muted">
+								{c.label}
+							</span>
+						</div>
+					))}
+					{totalActionable === 0 && (
+						<span class="ep:text-sm ep:text-obs-muted">
+							Nothing to review
+						</span>
+					)}
+				</div>
+
+				<ActionButton
+					label={reviewLabel}
+					variant="primary"
+					onClick={handleStartReview}
+					disabled={totalActionable === 0}
+				/>
 			</div>
 
 			{/* Progress bar */}
@@ -100,15 +131,6 @@ export function TodayActionBar({
 					</span>
 				)}
 			</div>
-
-			{/* Start Review */}
-			<ActionButton
-				label={primaryLabel}
-				variant="primary"
-				onClick={handleStartReview}
-				fullWidth
-				disabled={totalActionable === 0}
-			/>
 		</div>
 	);
 }
