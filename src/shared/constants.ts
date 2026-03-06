@@ -272,6 +272,8 @@ export const TRUE_RECALL_CLOUD = {
 } as const;
 
 // Managed AI proxy (LiteLLM) for subscription users
-export const LITELLM_PROXY_URL = "https://ai.truerecall.app/v1/chat/completions";
-export const SUBSCRIPTION_STATUS_URL = "https://www.truerecall.app/api/subscription/status";
+export const LITELLM_PROXY_URL =
+	"https://ai.truerecall.app/v1/chat/completions";
+export const SUBSCRIPTION_STATUS_URL =
+	"https://www.truerecall.app/api/subscription/status";
 export const TRUERECALL_WEB_URL = "https://www.truerecall.app";

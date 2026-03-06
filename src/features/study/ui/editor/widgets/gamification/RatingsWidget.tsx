@@ -69,9 +69,7 @@ function computeRatingsData(
 
 	// "month" -> "1m", "all" -> "all"
 	const range = period === "month" ? "1m" : "all";
-	const entries = statsCalc.getRatingDistributionHistory(
-		range as "1m" | "all",
-	);
+	const entries = statsCalc.getRatingDistributionHistory(range as "1m" | "all");
 	let again = 0;
 	let hard = 0;
 	let good = 0;
@@ -128,7 +126,13 @@ function BarChart({ data }: { data: RatingsData }) {
 }
 
 function DonutChart({ data }: { data: RatingsData }) {
-	const segments: { color: string; pct: number; key: string; label: string; count: number }[] = [];
+	const segments: {
+		color: string;
+		pct: number;
+		key: string;
+		label: string;
+		count: number;
+	}[] = [];
 
 	for (const r of RATINGS) {
 		const count = data[r.key];
@@ -140,10 +144,7 @@ function DonutChart({ data }: { data: RatingsData }) {
 
 	return (
 		<div class="ep:flex ep:flex-col ep:items-center ep:gap-2">
-			<svg
-				viewBox={`0 0 ${DONUT_SIZE} ${DONUT_SIZE}`}
-				class="ep:w-24 ep:h-24"
-			>
+			<svg viewBox={`0 0 ${DONUT_SIZE} ${DONUT_SIZE}`} class="ep:w-24 ep:h-24">
 				{/* Background circle */}
 				<circle
 					cx={DONUT_CENTER}
@@ -241,7 +242,11 @@ export function RatingsWidget({ source }: { source: string }) {
 			<div class="ep:flex ep:flex-col ep:gap-2 ep:p-3 ep:text-sm">
 				<div class="ep:flex ep:items-center ep:justify-between ep:text-xs">
 					<span class="ep:text-obs-muted">{periodLabel}</span>
-					<WidgetCta label="Stats →" onClick={handleClick} variant="secondary" />
+					<WidgetCta
+						label="Stats →"
+						onClick={handleClick}
+						variant="secondary"
+					/>
 				</div>
 				<div class="ep:text-obs-muted ep:text-xs">
 					No reviews in this period

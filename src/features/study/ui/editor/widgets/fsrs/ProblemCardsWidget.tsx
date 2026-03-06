@@ -42,9 +42,7 @@ export function ProblemCardsWidget({ source }: { source: string }) {
 	}).value;
 
 	if (!data) {
-		return (
-			<div class="ep:text-obs-muted ep:text-xs ep:p-3">Loading...</div>
-		);
+		return <div class="ep:text-obs-muted ep:text-xs ep:p-3">Loading...</div>;
 	}
 
 	if (data.length === 0) {

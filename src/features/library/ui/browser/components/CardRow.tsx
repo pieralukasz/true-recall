@@ -75,11 +75,7 @@ export function CardRow({
 			}}
 		>
 			{columns.map((col) => (
-				<CellRenderer
-					key={col.key}
-					column={col}
-					card={card}
-				/>
+				<CellRenderer key={col.key} column={col} card={card} />
 			))}
 		</div>
 	);
@@ -115,10 +111,7 @@ function CellRenderer({
 
 	if (column.key === "question" || column.key === "answer") {
 		return (
-			<div
-				class="ep:px-1.5 ep:truncate ep:text-obs-normal"
-				title={value}
-			>
+			<div class="ep:px-1.5 ep:truncate ep:text-obs-normal" title={value}>
 				{stripMarkdownSyntax(value)}
 			</div>
 		);

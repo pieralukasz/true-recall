@@ -1,7 +1,12 @@
 import { EasyDaysModal } from "@features/metrics/modals/EasyDaysModal";
 import { notify } from "@shared/services/notification.service";
 import type { TrueRecallSettings } from "@shared/types";
-import { ActionButton, FormCard, FormField, InfoBlock } from "@shared/ui/components";
+import {
+	ActionButton,
+	FormCard,
+	FormField,
+	InfoBlock,
+} from "@shared/ui/components";
 import type { App } from "obsidian";
 import { useCallback } from "preact/hooks";
 

@@ -96,9 +96,7 @@ export class OpenRouterClient {
 		this.baseUrl = proxyUrl ?? OPENROUTER_URL;
 	}
 
-	async chat(
-		request: ChatCompletionRequest,
-	): Promise<ChatCompletionResponse> {
+	async chat(request: ChatCompletionRequest): Promise<ChatCompletionResponse> {
 		const headers: Record<string, string> = {
 			"Content-Type": "application/json",
 			Authorization: `Bearer ${this.apiKey}`,

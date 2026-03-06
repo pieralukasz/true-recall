@@ -1,5 +1,9 @@
 import { useComputed } from "@preact/signals";
-import { allCardsArray, cards, cardsBySourceUid } from "@shared/services/reactive-card-store";
+import {
+	allCardsArray,
+	cards,
+	cardsBySourceUid,
+} from "@shared/services/reactive-card-store";
 import { usePlugin } from "@shared/ui/preact";
 import { useMemo } from "preact/hooks";
 import { configValue, parseCodeblockConfig } from "../config-parser";

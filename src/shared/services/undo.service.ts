@@ -102,8 +102,7 @@ export class UndoService {
 					payload.previousAnswer,
 				);
 				if (this.reviewStateManager) {
-					const currentCard =
-						this.reviewStateManager.getCurrentCard();
+					const currentCard = this.reviewStateManager.getCurrentCard();
 					if (currentCard?.id === payload.cardId) {
 						this.reviewStateManager.updateCurrentCardContent(
 							payload.previousQuestion,
@@ -238,9 +237,7 @@ export class UndoService {
 		return true;
 	}
 
-	private undoUpdateNoteFields(
-		payload: UpdateNoteFieldsUndoPayload,
-	): boolean {
+	private undoUpdateNoteFields(payload: UpdateNoteFieldsUndoPayload): boolean {
 		try {
 			this.plugin.flashcardManager.updateNoteFields(
 				payload.noteId,

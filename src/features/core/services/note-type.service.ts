@@ -7,7 +7,7 @@
  */
 
 import { slugifyNoteTypeName } from "@features/study/services/flashcard/note-type-slug";
-import type { NoteType, CardTemplate } from "@shared/types/note.types";
+import type { CardTemplate, NoteType } from "@shared/types/note.types";
 
 export interface NoteTypeServiceDeps {
 	noteTypeActions: {
@@ -158,11 +158,7 @@ export class NoteTypeService {
 		this.deps.noteTypeActions.update(noteTypeId, { fields });
 	}
 
-	renameField(
-		noteTypeId: string,
-		oldName: string,
-		newName: string,
-	): void {
+	renameField(noteTypeId: string, oldName: string, newName: string): void {
 		const existing = this.deps.noteTypeActions.getById(noteTypeId);
 		if (!existing) {
 			throw new Error(`Note type "${noteTypeId}" not found`);
@@ -171,9 +167,7 @@ export class NoteTypeService {
 			throw new Error("Cannot modify built-in note types");
 		}
 
-		const fields = existing.fields.map((f) =>
-			f === oldName ? newName : f,
-		);
+		const fields = existing.fields.map((f) => (f === oldName ? newName : f));
 
 		// Also update templates that reference the old field name
 		const templates = existing.templates.map((t) => ({

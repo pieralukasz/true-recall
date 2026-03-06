@@ -1,16 +1,15 @@
-import type { NoteType } from "@shared/types/note.types";
-import { Notice } from "obsidian";
 import { usePlugin } from "@shared/ui/preact/ObsidianContext";
+import { Notice } from "obsidian";
 import { useCallback, useEffect, useMemo, useState } from "preact/hooks";
 import { NoteTypeEditor } from "./NoteTypeEditor";
 import { NoteTypeList } from "./NoteTypeList";
-import { type NoteTypeDraft, createDefaultDraft } from "./types";
+import { createDefaultDraft, type NoteTypeDraft } from "./types";
 
 interface NoteTypeManagerAppProps {
 	onClose: () => void;
 }
 
-export function NoteTypeManagerApp({ onClose }: NoteTypeManagerAppProps) {
+export function NoteTypeManagerApp({ onClose: _onClose }: NoteTypeManagerAppProps) {
 	const plugin = usePlugin();
 	const noteTypeService = plugin.noteTypeService;
 
@@ -27,12 +26,15 @@ export function NoteTypeManagerApp({ onClose }: NoteTypeManagerAppProps) {
 	// Auto-select first type on mount
 	useEffect(() => {
 		if (noteTypes.length > 0 && selectedId === null && draft === null) {
-			setSelectedId(noteTypes[0]!.id);
+			setSelectedId(noteTypes[0]?.id);
 		}
 	}, [noteTypes, selectedId, draft]);
 
 	const selected = useMemo(
-		() => (selectedId ? noteTypes.find((nt) => nt.id === selectedId) ?? null : null),
+		() =>
+			selectedId
+				? (noteTypes.find((nt) => nt.id === selectedId) ?? null)
+				: null,
 		[noteTypes, selectedId],
 	);
 
@@ -69,7 +71,7 @@ export function NoteTypeManagerApp({ onClose }: NoteTypeManagerAppProps) {
 	const handleCreateCancel = useCallback(() => {
 		setDraft(null);
 		if (noteTypes.length > 0) {
-			setSelectedId(noteTypes[0]!.id);
+			setSelectedId(noteTypes[0]?.id);
 		}
 	}, [noteTypes]);
 

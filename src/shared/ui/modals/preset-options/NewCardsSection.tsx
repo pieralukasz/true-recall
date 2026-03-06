@@ -1,5 +1,10 @@
 import type { FSRSPreset, NewCardOrder, NewReviewMix } from "@shared/types";
-import { FormCard, FormField, SelectInput, TextInput } from "@shared/ui/components";
+import {
+	FormCard,
+	FormField,
+	SelectInput,
+	TextInput,
+} from "@shared/ui/components";
 
 interface NewCardsSectionProps {
 	preset: FSRSPreset;

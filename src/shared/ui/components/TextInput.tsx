@@ -122,7 +122,10 @@ export function TextInput({
 		textComponent.inputEl.type = type;
 
 		if (ariaLabel ?? placeholder) {
-			textComponent.inputEl.setAttribute("aria-label", ariaLabel ?? placeholder ?? "");
+			textComponent.inputEl.setAttribute(
+				"aria-label",
+				ariaLabel ?? placeholder ?? "",
+			);
 		}
 		if (autoComplete !== undefined) {
 			textComponent.inputEl.setAttribute("autocomplete", autoComplete);

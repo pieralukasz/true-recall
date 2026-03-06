@@ -1,6 +1,6 @@
-import { cva } from "class-variance-authority";
-import { cn } from "@shared/ui/utils";
 import { FSRS_COLORS, MUTED_STATES } from "@shared/ui/helpers/fsrs-colors";
+import { cn } from "@shared/ui/utils";
+import { cva } from "class-variance-authority";
 import { State } from "ts-fsrs";
 
 export type CardStateType =

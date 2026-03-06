@@ -1,33 +1,33 @@
 import { CardBrowserQueryService } from "@features/library/services/card-browser-query.service";
 import { notifyDuplicateError } from "@features/library/ui/panel/utils/panel-helpers";
 import { DuplicateQuestionError } from "@features/study/services/flashcard/card-repository.service";
-import { notify } from "@shared/services/notification.service";
-import { notifyCardChange } from "@shared/services/signals";
-import { cards, pluginSettings } from "@shared/services/reactive-card-store";
-import { usePlugin } from "@shared/ui/preact";
 import { useComputed, useSignal } from "@preact/signals";
+import { notify } from "@shared/services/notification.service";
+import { cards, pluginSettings } from "@shared/services/reactive-card-store";
+import { notifyCardChange } from "@shared/services/signals";
+import { usePlugin } from "@shared/ui/preact";
 import { useCallback, useEffect, useMemo, useRef } from "preact/hooks";
-import { BrowserToolbar } from "./components/BrowserToolbar";
-import { CardTable } from "./components/CardTable";
-import { CardPreview } from "./components/CardPreview";
 import { BrowserSidebar } from "./components/BrowserSidebar";
+import { BrowserToolbar } from "./components/BrowserToolbar";
 import { BulkActionsBar } from "./components/BulkActionsBar";
-import { useKeyboardNav } from "./hooks/useKeyboardNav";
+import { CardPreview } from "./components/CardPreview";
+import { CardTable } from "./components/CardTable";
+import { createBrowserSuggestionProvider } from "./helpers/browser-suggestions";
+import { DEFAULT_VISIBLE_KEYS } from "./helpers/column-defs";
 import {
 	BROWSER_PAGE_SIZE,
 	getBrowserQueryResetKey,
 } from "./helpers/infinite-scroll";
 import { parseSearchQuery } from "./helpers/search-parser";
+import { useKeyboardNav } from "./hooks/useKeyboardNav";
 import {
-	EMPTY_FILTER,
 	type BrowserCard,
 	type BrowserResult,
+	EMPTY_FILTER,
 	type FilterState,
 	type SortConfig,
 	type StateFilterValue,
 } from "./types";
-import { DEFAULT_VISIBLE_KEYS } from "./helpers/column-defs";
-import { createBrowserSuggestionProvider } from "./helpers/browser-suggestions";
 
 const PAGE_SIZE = BROWSER_PAGE_SIZE;
 
@@ -66,18 +66,9 @@ export function CardBrowserApp() {
 				...stateFilters.value,
 				...sidebarFilter.value.states,
 			],
-			sourceUids: [
-				...parsed.sourceUids,
-				...sidebarFilter.value.sourceUids,
-			],
-			cardTypes: [
-				...parsed.cardTypes,
-				...sidebarFilter.value.cardTypes,
-			],
-			createdVia: [
-				...parsed.createdVia,
-				...sidebarFilter.value.createdVia,
-			],
+			sourceUids: [...parsed.sourceUids, ...sidebarFilter.value.sourceUids],
+			cardTypes: [...parsed.cardTypes, ...sidebarFilter.value.cardTypes],
+			createdVia: [...parsed.createdVia, ...sidebarFilter.value.createdVia],
 			negatedStates: [
 				...parsed.negatedStates,
 				...sidebarFilter.value.negatedStates,
@@ -112,9 +103,7 @@ export function CardBrowserApp() {
 	}).value;
 
 	const getSuggestions = useMemo(() => {
-		const presetNames = plugin.presetService
-			.getPresets()
-			.map((p) => p.name);
+		const presetNames = plugin.presetService.getPresets().map((p) => p.name);
 		const projectNames = plugin.hierarchyService
 			.buildHierarchy()
 			.map((n) => n.name)
@@ -131,14 +120,16 @@ export function CardBrowserApp() {
 			sort.value.column === column
 				? {
 						column,
-						direction:
-							sort.value.direction === "asc" ? "desc" : "asc",
+						direction: sort.value.direction === "asc" ? "desc" : "asc",
 					}
 				: { column, direction: "asc" };
 	}, []);
 
 	const handleSelect = useCallback(
-		(cardId: string, event?: { shiftKey?: boolean; ctrlKey?: boolean; metaKey?: boolean }) => {
+		(
+			cardId: string,
+			event?: { shiftKey?: boolean; ctrlKey?: boolean; metaKey?: boolean },
+		) => {
 			const next = new Set(selectedIds.value);
 			if (event?.ctrlKey || event?.metaKey) {
 				if (next.has(cardId)) next.delete(cardId);
@@ -147,17 +138,11 @@ export function CardBrowserApp() {
 				// Range select from last selected to current
 				const lastSelected = Array.from(selectedIds.value).pop();
 				if (lastSelected) {
-					const lastIdx = result.cards.findIndex(
-						(c) => c.id === lastSelected,
-					);
-					const currIdx = result.cards.findIndex(
-						(c) => c.id === cardId,
-					);
+					const lastIdx = result.cards.findIndex((c) => c.id === lastSelected);
+					const currIdx = result.cards.findIndex((c) => c.id === cardId);
 					if (lastIdx >= 0 && currIdx >= 0) {
 						const [from, to] =
-							lastIdx < currIdx
-								? [lastIdx, currIdx]
-								: [currIdx, lastIdx];
+							lastIdx < currIdx ? [lastIdx, currIdx] : [currIdx, lastIdx];
 						for (let i = from; i <= to; i++) {
 							const c = result.cards[i];
 							if (c) next.add(c.id);
@@ -178,8 +163,7 @@ export function CardBrowserApp() {
 	);
 
 	const handlePreview = useCallback((card: BrowserCard) => {
-		previewCard.value =
-			previewCard.value?.id === card.id ? null : card;
+		previewCard.value = previewCard.value?.id === card.id ? null : card;
 	}, []);
 
 	const handleContentChange = useCallback(
@@ -237,19 +221,13 @@ export function CardBrowserApp() {
 			: [...current, state];
 	}, []);
 
-	const handleRemoveStateFilter = useCallback(
-		(state: StateFilterValue) => {
-			stateFilters.value = stateFilters.value.filter((s) => s !== state);
-		},
-		[],
-	);
+	const handleRemoveStateFilter = useCallback((state: StateFilterValue) => {
+		stateFilters.value = stateFilters.value.filter((s) => s !== state);
+	}, []);
 
-	const handleSidebarFilter = useCallback(
-		(partial: Partial<FilterState>) => {
-			sidebarFilter.value = { ...sidebarFilter.value, ...partial } as FilterState;
-		},
-		[],
-	);
+	const handleSidebarFilter = useCallback((partial: Partial<FilterState>) => {
+		sidebarFilter.value = { ...sidebarFilter.value, ...partial } as FilterState;
+	}, []);
 
 	const handleToggleColumn = useCallback((key: string) => {
 		const current = visibleColumns.value;
@@ -291,10 +269,7 @@ export function CardBrowserApp() {
 		selectedIds.value = new Set(
 			[...selectedIds.value].filter((id) => !deletedSet.has(id)),
 		);
-		if (
-			previewCard.value &&
-			deletedSet.has(previewCard.value.id)
-		) {
+		if (previewCard.value && deletedSet.has(previewCard.value.id)) {
 			previewCard.value = null;
 		}
 	}, [plugin, queryService]);

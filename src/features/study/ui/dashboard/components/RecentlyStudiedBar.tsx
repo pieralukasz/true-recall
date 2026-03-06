@@ -18,16 +18,19 @@ interface RecentlyStudiedBarProps {
 export function RecentlyStudiedBar({ notes }: RecentlyStudiedBarProps) {
 	const plugin = usePlugin();
 
-	const handleClick = useCallback((note: DashboardNoteEntry) => {
-		if (note.priority === "done" && note.path) {
-			void plugin.app.workspace.openLinkText(note.name, "");
-		} else {
-			void plugin.openReviewViewWithFilters({
-				sourceNoteFilter: note.name,
-				ignoreDailyLimits: true,
-			});
-		}
-	}, [plugin]);
+	const handleClick = useCallback(
+		(note: DashboardNoteEntry) => {
+			if (note.priority === "done" && note.path) {
+				void plugin.app.workspace.openLinkText(note.name, "");
+			} else {
+				void plugin.openReviewViewWithFilters({
+					sourceNoteFilter: note.name,
+					ignoreDailyLimits: true,
+				});
+			}
+		},
+		[plugin],
+	);
 
 	if (notes.length === 0) return null;
 

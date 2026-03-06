@@ -39,7 +39,10 @@ export class NoteTypeSuggestModal extends SuggestModal<SuggestItem> {
 	async onChooseSuggestion(item: SuggestItem): Promise<void> {
 		if (item === "create") {
 			const allTypes = this.plugin.noteTypeService.getAll();
-			const result = await new CreateNoteTypeModal(this.app, allTypes).openAndWait();
+			const result = await new CreateNoteTypeModal(
+				this.app,
+				allTypes,
+			).openAndWait();
 			if (result.cancelled) return;
 
 			try {
@@ -50,7 +53,9 @@ export class NoteTypeSuggestModal extends SuggestModal<SuggestItem> {
 				let css: string | undefined;
 
 				if (result.cloneFromId) {
-					const source = this.plugin.noteTypeService.getById(result.cloneFromId);
+					const source = this.plugin.noteTypeService.getById(
+						result.cloneFromId,
+					);
 					if (source) {
 						fields = [...source.fields];
 						templates = source.templates.map((t) => ({ ...t }));

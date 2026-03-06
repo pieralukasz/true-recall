@@ -36,8 +36,7 @@ export function TypeInCMEditor({
 		try {
 			editor = new plugin.EmbeddableEditor(app, el, {
 				value,
-				onChange: (update) =>
-					onChangeRef.current(update.state.doc.toString()),
+				onChange: (update) => onChangeRef.current(update.state.doc.toString()),
 				onModEnter: () => onSubmitRef.current(),
 				extraExtensions: [
 					placeholderCompartment.of(placeholder(placeholderText)),
@@ -68,9 +67,7 @@ export function TypeInCMEditor({
 		const editor = editorRef.current;
 		if (!editor) return;
 		editor.cm.dispatch({
-			effects: placeholderCompartment.reconfigure(
-				placeholder(placeholderText),
-			),
+			effects: placeholderCompartment.reconfigure(placeholder(placeholderText)),
 		});
 	}, [placeholderText, placeholderCompartment]);
 
@@ -80,9 +77,7 @@ export function TypeInCMEditor({
 				class="ep:w-full ep:min-h-[1.6em] ep:px-3 ep:py-2 ep:text-ui-small ep:bg-obs-primary ep:border ep:border-obs-border ep:rounded-md ep:resize-y"
 				value={value}
 				placeholder={placeholderText}
-				onInput={(e) =>
-					onChange((e.target as HTMLTextAreaElement).value)
-				}
+				onInput={(e) => onChange((e.target as HTMLTextAreaElement).value)}
 				onKeyDown={(e) => {
 					if ((e.metaKey || e.ctrlKey) && e.key === "Enter") {
 						e.preventDefault();

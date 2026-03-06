@@ -1,9 +1,9 @@
 import { Compartment } from "@codemirror/state";
 import type { EditorView } from "@codemirror/view";
 import { placeholder } from "@codemirror/view";
+import type { NoteType } from "@shared/types/note.types";
 import type { EmbeddableEditorInstance } from "@shared/ui/editor/embedded-editor";
 import { usePlugin } from "@shared/ui/preact/ObsidianContext";
-import type { NoteType } from "@shared/types/note.types";
 import type { App } from "obsidian";
 import { useEffect, useRef } from "preact/hooks";
 import { buildPlaceholder } from "./placeholder";

@@ -1,8 +1,8 @@
-import { cn } from "@shared/ui/utils";
 import {
 	clearSearchValue,
 	getSearchValueAfterEscape,
 } from "@shared/ui/components/search-input.utils";
+import { cn } from "@shared/ui/utils";
 import { SearchComponent } from "obsidian";
 import { useEffect, useRef } from "preact/hooks";
 

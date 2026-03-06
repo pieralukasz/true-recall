@@ -70,7 +70,11 @@ function NavBarItem({
 	item,
 	isActive,
 	onClick,
-}: { item: NavItem; isActive: boolean; onClick: () => void }) {
+}: {
+	item: NavItem;
+	isActive: boolean;
+	onClick: () => void;
+}) {
 	const iconRef = useIcon(item.icon);
 
 	return (

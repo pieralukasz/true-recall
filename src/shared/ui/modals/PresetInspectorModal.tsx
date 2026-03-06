@@ -1,9 +1,9 @@
 import type {
 	PresetChainEntry,
 	PresetResolutionContext,
+	PresetService,
 	PresetSource,
 } from "@features/core/services/preset.service";
-import type { PresetService } from "@features/core/services/preset.service";
 import { Clickable } from "@shared/ui/components";
 import { BasePromiseModal } from "@shared/ui/modals/BasePromiseModal";
 import { SetPresetModal } from "@shared/ui/modals/SetPresetModal";
@@ -48,11 +48,7 @@ function ChainRow({ entry }: { entry: PresetChainEntry }) {
 			)}
 			<span class="ep:ml-auto ep:text-ui-small">
 				{entry.presetName ? (
-					<span
-						class={
-							entry.active ? "ep:font-semibold" : "ep:opacity-50"
-						}
-					>
+					<span class={entry.active ? "ep:font-semibold" : "ep:opacity-50"}>
 						{entry.presetName}
 					</span>
 				) : (
@@ -159,9 +155,7 @@ export class PresetInspectorModal extends BasePromiseModal<PresetInspectorResult
 	private async openPresetPicker(
 		_partialResult: PresetInspectorResult,
 	): Promise<void> {
-		const presetNames = this.presetService
-			.getPresets()
-			.map((p) => p.name);
+		const presetNames = this.presetService.getPresets().map((p) => p.name);
 		const currentPreset =
 			this.presetService.resolvePresetChain(this.notePath, this.context)
 				.chain[0]?.presetName ?? null;

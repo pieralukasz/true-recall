@@ -31,7 +31,7 @@ export function withSectionLabels(
 			groups.set(suggestion.category, []);
 			orderedCategories.push(suggestion.category);
 		}
-		groups.get(suggestion.category)!.push(suggestion);
+		groups.get(suggestion.category)?.push(suggestion);
 	}
 
 	const sectioned: SectionedSuggestion[] = [];

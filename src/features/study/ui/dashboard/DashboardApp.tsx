@@ -1,31 +1,34 @@
 import { StatsCalculatorService } from "@features/metrics/services/stats/stats-calculator.service";
 import { computeActionableSessionSnapshot } from "@features/study/services/actionable-session-snapshot.service";
 import { filterActiveCards } from "@features/study/ui/review/helpers/session-helpers";
+import { useComputed, useSignal } from "@preact/signals";
 import {
 	allCardsArray,
 	archivedSourceUids as archivedSourceUidsSignal,
 	pluginSettings,
 } from "@shared/services/reactive-card-store";
+import { AppNavBar } from "@shared/ui/components";
 import { SearchCombobox } from "@shared/ui/components/SearchCombobox";
-import type { SearchSuggestion, SuggestionProvider } from "@shared/ui/helpers/search-suggestions.types";
+import type {
+	SearchSuggestion,
+	SuggestionProvider,
+} from "@shared/ui/helpers/search-suggestions.types";
 import { PresetOptionsModal } from "@shared/ui/modals/PresetOptionsModal";
 import { usePlugin } from "@shared/ui/preact";
 import { useCallback, useMemo, useRef } from "preact/hooks";
-import { useComputed, useSignal } from "@preact/signals";
-import { AppNavBar } from "@shared/ui/components";
-import { TodayActionBar } from "./components/TodayActionBar";
+import { HeatmapWidget } from "../editor/widgets/analytics/HeatmapWidget";
+import { BottomActionBar } from "./components/BottomActionBar";
 import { DashboardTabs } from "./components/DashboardTabs";
 import { NoteList } from "./components/NoteList";
 import { ProjectsTab } from "./components/ProjectsTab";
 import { RecentlyStudiedBar } from "./components/RecentlyStudiedBar";
-import { HeatmapWidget } from "../editor/widgets/analytics/HeatmapWidget";
-import { BottomActionBar } from "./components/BottomActionBar";
+import { TodayActionBar } from "./components/TodayActionBar";
 import { aggregateDashboardData } from "./helpers/note-aggregation";
 import { computePriority } from "./helpers/note-priority";
+import { aggregateProjectData } from "./helpers/project-aggregation";
 import { estimateStudyMinutes } from "./helpers/time-estimate";
 import { useDragAutoScroll } from "./helpers/use-drag-auto-scroll";
 import { useInitialMount } from "./helpers/use-initial-mount";
-import { aggregateProjectData } from "./helpers/project-aggregation";
 import type { DashboardAggregation, DashboardTab } from "./types";
 
 export function DashboardApp() {
@@ -64,7 +67,10 @@ export function DashboardApp() {
 		const activeCards = filterActiveCards(allCards, {
 			archivedSourceUids: new Set(archived),
 		});
-		const snapshotCache = new Map<string, ReturnType<typeof computeActionableSessionSnapshot>>();
+		const snapshotCache = new Map<
+			string,
+			ReturnType<typeof computeActionableSessionSnapshot>
+		>();
 
 		const raw = aggregateDashboardData({
 			allCards,
@@ -139,7 +145,8 @@ export function DashboardApp() {
 					return false;
 				}
 
-				const grandParents = plugin.hierarchyService.getParentsForNote(parentPath);
+				const grandParents =
+					plugin.hierarchyService.getParentsForNote(parentPath);
 				for (const gp of grandParents) stack.push(gp);
 			}
 
@@ -295,19 +302,17 @@ export function DashboardApp() {
 				<div class="ep:p-3 ep:mx-auto ep:max-w-5xl ep:flex ep:flex-col ep:gap-3 ep:min-h-full">
 					<div {...sectionProps()}>
 						<TodayActionBar
-						totalDue={data.totalDue}
-						totalNew={data.totalNew}
-						totalLearning={data.totalLearning}
-						estimatedMinutes={data.estimatedTotalMinutes}
-						progress={data.todayProgress}
-					/>
+							totalDue={data.totalDue}
+							totalNew={data.totalNew}
+							totalLearning={data.totalLearning}
+							estimatedMinutes={data.estimatedTotalMinutes}
+							progress={data.todayProgress}
+						/>
 					</div>
 
 					{projectData.recentlyStudied.length > 0 && (
 						<div {...sectionProps()}>
-							<RecentlyStudiedBar
-								notes={projectData.recentlyStudied}
-							/>
+							<RecentlyStudiedBar notes={projectData.recentlyStudied} />
 						</div>
 					)}
 
@@ -340,9 +345,7 @@ export function DashboardApp() {
 						<div
 							class={`ep:flex-1${initialMount.current ? " ep-section-enter" : ""}`}
 							style={
-								initialMount.current
-									? { "--section-index": si++ }
-									: undefined
+								initialMount.current ? { "--section-index": si++ } : undefined
 							}
 						>
 							{activeTab.value === "projects" && (
@@ -371,9 +374,7 @@ export function DashboardApp() {
 						<div
 							class={`ep:mt-3${initialMount.current ? " ep-section-enter" : ""}`}
 							style={
-								initialMount.current
-									? { "--section-index": si++ }
-									: undefined
+								initialMount.current ? { "--section-index": si++ } : undefined
 							}
 						>
 							<HeatmapWidget source="months: 0" />

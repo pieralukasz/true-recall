@@ -44,8 +44,7 @@ export function CardTable({
 	const lastLoadTriggerForCount = useRef<number>(-1);
 
 	const columns = useMemo(
-		() =>
-			ALL_COLUMNS.filter((col) => visibleColumns.includes(col.key)),
+		() => ALL_COLUMNS.filter((col) => visibleColumns.includes(col.key)),
 		[visibleColumns],
 	);
 
@@ -94,24 +93,27 @@ export function CardTable({
 		}
 	}, [cards.length, hasMore, onReachEnd, scrollContainerRef]);
 
-	const handleScroll = useCallback((e: Event) => {
-		const target = e.currentTarget as HTMLDivElement;
-		scrollTop.value = target.scrollTop;
+	const handleScroll = useCallback(
+		(e: Event) => {
+			const target = e.currentTarget as HTMLDivElement;
+			scrollTop.value = target.scrollTop;
 
-		const shouldLoad = shouldLoadMoreCards(
-			{
-				scrollTop: target.scrollTop,
-				clientHeight: target.clientHeight,
-				scrollHeight: target.scrollHeight,
-			},
-			hasMore,
-		);
+			const shouldLoad = shouldLoadMoreCards(
+				{
+					scrollTop: target.scrollTop,
+					clientHeight: target.clientHeight,
+					scrollHeight: target.scrollHeight,
+				},
+				hasMore,
+			);
 
-		if (shouldLoad && lastLoadTriggerForCount.current === cards.length) {
-			lastLoadTriggerForCount.current = -1;
-			onReachEnd();
-		}
-	}, [cards.length, hasMore, onReachEnd]);
+			if (shouldLoad && lastLoadTriggerForCount.current === cards.length) {
+				lastLoadTriggerForCount.current = -1;
+				onReachEnd();
+			}
+		},
+		[cards.length, hasMore, onReachEnd],
+	);
 
 	if (cards.length === 0) {
 		return (
@@ -129,12 +131,7 @@ export function CardTable({
 				style={{ gridTemplateColumns: gridTemplate }}
 			>
 				{columns.map((col) => (
-					<TableHeader
-						key={col.key}
-						column={col}
-						sort={sort}
-						onSort={onSort}
-					/>
+					<TableHeader key={col.key} column={col} sort={sort} onSort={onSort} />
 				))}
 			</div>
 
@@ -144,9 +141,7 @@ export function CardTable({
 				class="ep:flex-1 ep:overflow-y-auto ep:relative"
 				onScroll={handleScroll}
 			>
-				<div
-					style={{ height: `${totalHeight}px`, position: "relative" }}
-				>
+				<div style={{ height: `${totalHeight}px`, position: "relative" }}>
 					{virtualItems.map(({ card, top }) => (
 						<CardRow
 							key={card.id}
@@ -179,10 +174,7 @@ function TableHeader({
 
 	if (!column.sortable) {
 		return (
-			<div
-				class="ep:px-1.5 ep:truncate"
-				style={{ textAlign: column.align }}
-			>
+			<div class="ep:px-1.5 ep:truncate" style={{ textAlign: column.align }}>
 				{column.label}
 			</div>
 		);
@@ -194,8 +186,7 @@ function TableHeader({
 				isActive ? "ep:text-obs-normal" : ""
 			}`}
 			style={{
-				justifyContent:
-					column.align === "right" ? "flex-end" : "flex-start",
+				justifyContent: column.align === "right" ? "flex-end" : "flex-start",
 			}}
 			onClick={() => onSort(column.sqlColumn)}
 		>

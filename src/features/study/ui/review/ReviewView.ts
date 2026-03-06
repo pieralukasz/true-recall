@@ -1,9 +1,10 @@
+import { SemanticAnswerGradingService } from "@features/ai/services/semantic-answer-grading.service";
 import type { SessionPersistenceService } from "@features/core/persistence/session-persistence.service";
 import { FSRSService } from "@features/core/services/fsrs.service";
-import { SemanticAnswerGradingService } from "@features/ai/services/semantic-answer-grading.service";
-import type { FlashcardManager } from "@features/study/services/flashcard/flashcard.service";
 import { computeActionableSessionSnapshot } from "@features/study/services/actionable-session-snapshot.service";
+import type { FlashcardManager } from "@features/study/services/flashcard/flashcard.service";
 import { ReviewService } from "@features/study/services/review.service";
+import type { PresetPickerOption } from "@features/study/ui/review/components/PresetPopover";
 import {
 	AnswerHandler,
 	CardActionsHandler,
@@ -16,8 +17,8 @@ import {
 	filterActiveCards,
 	getEmptyQueueMessage,
 	isRatingLockedForTypeIn,
-	nextTypeInMode,
 	isTypeInRequiredForCard,
+	nextTypeInMode,
 	shouldRunAIGradingOnReveal,
 	type TypeInMode,
 } from "@features/study/ui/review/helpers";
@@ -43,7 +44,6 @@ import {
 	type LocalAnswerAssessment,
 	type SemanticGradingResult,
 } from "@shared/types";
-import type { PresetPickerOption } from "@features/study/ui/review/components/PresetPopover";
 import { mountPreact } from "@shared/ui/preact";
 import {
 	ItemView,
@@ -65,7 +65,9 @@ interface TypeInAssessmentState {
 	isChecking: boolean;
 }
 
-function createEmptyTypeInState(cardId: string | null = null): TypeInAssessmentState {
+function createEmptyTypeInState(
+	cardId: string | null = null,
+): TypeInAssessmentState {
 	return {
 		cardId,
 		typedAnswer: "",
@@ -167,13 +169,13 @@ export class ReviewView extends ItemView {
 			},
 			onSuspend: () => this.cardActionsHandler.handleSuspend(),
 			onBuryCard: () => this.cardActionsHandler.handleBuryCard(),
-				onBuryNote: () => this.cardActionsHandler.handleBuryNote(),
-				onMoveCard: () => this.cardActionsHandler.handleMoveCard(),
-				onAddCard: () => this.cardActionsHandler.handleAddNewFlashcard(),
-				onEditCard: () => this.cardActionsHandler.handleEditCardModal(),
-				onCycleTypeInMode: () => this.cycleTypeInMode(),
-				canRateShortcuts: () => !this.isRatingLocked(),
-			});
+			onBuryNote: () => this.cardActionsHandler.handleBuryNote(),
+			onMoveCard: () => this.cardActionsHandler.handleMoveCard(),
+			onAddCard: () => this.cardActionsHandler.handleAddNewFlashcard(),
+			onEditCard: () => this.cardActionsHandler.handleEditCardModal(),
+			onCycleTypeInMode: () => this.cycleTypeInMode(),
+			canRateShortcuts: () => !this.isRatingLocked(),
+		});
 	}
 
 	private getCurrentTypeInState(cardId: string): TypeInAssessmentState {
@@ -478,8 +480,7 @@ export class ReviewView extends ItemView {
 				getPresetName: (card: FSRSFlashcardItem) =>
 					this.answerHandler.resolvePreset(card).name,
 				getPresetOptions: () => this.getPresetOptions(),
-				onPresetChange: (name: string) =>
-					void this.handlePresetChange(name),
+				onPresetChange: (name: string) => void this.handlePresetChange(name),
 			}),
 		);
 	}
@@ -547,8 +548,7 @@ export class ReviewView extends ItemView {
 		const card = this.review.getCurrentCard();
 		if (!card) return;
 
-		const newPreset =
-			this.plugin.presetService.getPresetByName(newPresetName);
+		const newPreset = this.plugin.presetService.getPresetByName(newPresetName);
 		if (!newPreset) {
 			notify().error(`Preset "${newPresetName}" not found`);
 			return;
@@ -597,7 +597,8 @@ export class ReviewView extends ItemView {
 				return;
 			}
 
-			const archivedSourceUids = this.plugin.hierarchyService.getArchivedSourceUids();
+			const archivedSourceUids =
+				this.plugin.hierarchyService.getArchivedSourceUids();
 			const activeCards = filterActiveCards(allCards, {
 				stateFilter: this.filters.stateFilter,
 				archivedSourceUids,
@@ -765,9 +766,7 @@ export class ReviewView extends ItemView {
 			item
 				.setTitle("Change note type")
 				.setIcon("replace")
-				.onClick(
-					() => void this.cardActionsHandler.handleChangeNoteType(),
-				),
+				.onClick(() => void this.cardActionsHandler.handleChangeNoteType()),
 		);
 		menu.addItem((item) =>
 			item

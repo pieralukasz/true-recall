@@ -1,7 +1,12 @@
-import { State } from "ts-fsrs";
 import { escapeFts5Query } from "@features/core/persistence/sqlite/modules/NoteActions";
 import { BUILTIN_IMAGE_OCCLUSION_ID } from "@shared/types/note.types";
-import type { FilterState, PropFilter, SortConfig, StateFilterValue } from "../types";
+import { State } from "ts-fsrs";
+import type {
+	FilterState,
+	PropFilter,
+	SortConfig,
+	StateFilterValue,
+} from "../types";
 
 export interface SqlQuery {
 	where: string;
@@ -82,7 +87,9 @@ export function buildBrowserQuery(
 
 	if (stateNumbers.length > 0) {
 		const placeholders = stateNumbers.map(() => "?").join(",");
-		stateConditions.push(`(${col}state IN (${placeholders}) AND ${col}suspended = 0)`);
+		stateConditions.push(
+			`(${col}state IN (${placeholders}) AND ${col}suspended = 0)`,
+		);
 		params.push(...stateNumbers);
 	}
 
@@ -91,7 +98,9 @@ export function buildBrowserQuery(
 	}
 
 	if (wantBuried) {
-		stateConditions.push(`(${col}buried_until IS NOT NULL AND ${col}buried_until > datetime('now'))`);
+		stateConditions.push(
+			`(${col}buried_until IS NOT NULL AND ${col}buried_until > datetime('now'))`,
+		);
 	}
 
 	if (stateConditions.length > 0) {
@@ -104,7 +113,9 @@ export function buildBrowserQuery(
 		if (mapped === "suspended") {
 			conditions.push(`${col}suspended = 0`);
 		} else if (mapped === "buried") {
-			conditions.push(`(${col}buried_until IS NULL OR ${col}buried_until <= datetime('now'))`);
+			conditions.push(
+				`(${col}buried_until IS NULL OR ${col}buried_until <= datetime('now'))`,
+			);
 		} else {
 			conditions.push(`${col}state != ?`);
 			params.push(mapped);
@@ -137,11 +148,15 @@ export function buildBrowserQuery(
 		for (const ct of filter.cardTypes) {
 			switch (ct) {
 				case "basic":
-					typeConditions.push(`(nt.type = 0 AND c.template_ord = 0 AND nt.id != ?)`);
+					typeConditions.push(
+						`(nt.type = 0 AND c.template_ord = 0 AND nt.id != ?)`,
+					);
 					params.push(BUILTIN_IMAGE_OCCLUSION_ID);
 					break;
 				case "reversed":
-					typeConditions.push(`(nt.type = 0 AND c.template_ord > 0 AND nt.id != ?)`);
+					typeConditions.push(
+						`(nt.type = 0 AND c.template_ord > 0 AND nt.id != ?)`,
+					);
 					params.push(BUILTIN_IMAGE_OCCLUSION_ID);
 					break;
 				case "cloze":

@@ -1,10 +1,9 @@
 import { getHighlightColor } from "@features/library/ui/panel/utils/card-status.utils";
 import { extractHighlights } from "@features/library/ui/panel/utils/highlight-extractor";
-import { showDuplicateNotifications } from "@features/library/ui/panel/utils/panel-helpers";
 import type { PanelApi } from "@shared/store";
 import type { FlashcardInfo, FlashcardItem } from "@shared/types";
-import { BUILTIN_BASIC_ID } from "@shared/types/note.types";
 import type { FSRSFlashcardItem } from "@shared/types/fsrs/card.types";
+import { BUILTIN_BASIC_ID } from "@shared/types/note.types";
 import { useApp, usePlugin } from "@shared/ui/preact";
 import type { TFile } from "obsidian";
 import { useCallback } from "preact/hooks";
@@ -52,7 +51,8 @@ export function usePanelActions({
 		);
 
 		try {
-			const basicNoteType = plugin.cardStore?.noteTypes?.getById(BUILTIN_BASIC_ID) ?? null;
+			const basicNoteType =
+				plugin.cardStore?.noteTypes?.getById(BUILTIN_BASIC_ID) ?? null;
 			const result = await streamingService.generateStreaming(
 				content,
 				"basic",
@@ -72,10 +72,8 @@ export function usePanelActions({
 				notify().cardsCreated(result.created, currentFile.basename);
 			}
 		} catch (error) {
-			if (error instanceof DOMException && error.name === "AbortError")
-				return;
-			const msg =
-				error instanceof Error ? error.message : String(error);
+			if (error instanceof DOMException && error.name === "AbortError") return;
+			const msg = error instanceof Error ? error.message : String(error);
 			notify().error(`Flashcard generation failed: ${msg}`);
 		}
 	}, [currentFile, app, plugin]);
@@ -97,15 +95,13 @@ export function usePanelActions({
 			return;
 		}
 
-		const frontmatterService =
-			plugin.flashcardManager.getFrontmatterService();
-		const sourceUid =
-			await frontmatterService.getSourceNoteUid(currentFile);
+		const frontmatterService = plugin.flashcardManager.getFrontmatterService();
+		const sourceUid = await frontmatterService.getSourceNoteUid(currentFile);
 
 		const existingSourceTexts = sourceUid
-			? (plugin.cardStore?.getCardsBySourceUid(sourceUid) ?? [])
+			? ((plugin.cardStore?.getCardsBySourceUid(sourceUid) ?? [])
 					.map((c) => c.sourceText?.trim().toLowerCase())
-					.filter(Boolean) as string[]
+					.filter(Boolean) as string[])
 			: [];
 
 		const newHighlights =
@@ -113,9 +109,7 @@ export function usePanelActions({
 				? highlights.filter((h) => {
 						const normalized = h.trim().toLowerCase();
 						return !existingSourceTexts.some(
-							(st) =>
-								st.includes(normalized) ||
-								normalized.includes(st),
+							(st) => st.includes(normalized) || normalized.includes(st),
 						);
 					})
 				: highlights;
@@ -137,7 +131,8 @@ export function usePanelActions({
 		);
 
 		try {
-			const basicNoteType = plugin.cardStore?.noteTypes?.getById(BUILTIN_BASIC_ID) ?? null;
+			const basicNoteType =
+				plugin.cardStore?.noteTypes?.getById(BUILTIN_BASIC_ID) ?? null;
 			const result = await streamingService.generateStreaming(
 				joinedHighlights,
 				"basic",
@@ -157,10 +152,8 @@ export function usePanelActions({
 				notify().cardsCreated(result.created, currentFile.basename);
 			}
 		} catch (error) {
-			if (error instanceof DOMException && error.name === "AbortError")
-				return;
-			const msg =
-				error instanceof Error ? error.message : String(error);
+			if (error instanceof DOMException && error.name === "AbortError") return;
+			const msg = error instanceof Error ? error.message : String(error);
 			notify().error(`Flashcard generation failed: ${msg}`);
 		}
 	}, [currentFile, app, plugin]);
@@ -175,9 +168,7 @@ export function usePanelActions({
 		);
 
 		if (!plugin.flashcardManager.hasStore()) {
-			notify().error(
-				"Flashcard store not ready. Please restart Obsidian.",
-			);
+			notify().error("Flashcard store not ready. Please restart Obsidian.");
 			return;
 		}
 
@@ -195,26 +186,23 @@ export function usePanelActions({
 
 			const frontmatterService =
 				plugin.flashcardManager.getFrontmatterService();
-			const sourceUid =
-				await frontmatterService.getSourceNoteUid(currentFile);
+			const sourceUid = await frontmatterService.getSourceNoteUid(currentFile);
 
-			const contentToSave =
-				plugin.settings.removeFlashcardContentAfterCollect
-					? collectResult.newContentWithoutFlashcards
-					: collectResult.newContent;
+			const contentToSave = plugin.settings.removeFlashcardContentAfterCollect
+				? collectResult.newContentWithoutFlashcards
+				: collectResult.newContent;
 			await app.vault.process(currentFile, () => contentToSave);
 
-			const { notes, cards } =
-				plugin.flashcardManager.createNoteBatch(
-					collectResult.parsedBlocks.map((block) => ({
-						noteTypeId: block.noteTypeId,
-						fields: block.fields,
-						sourceUid: sourceUid ?? undefined,
-						sourceText: block.sourceText,
-						alwaysTypeIn: block.alwaysTypeIn,
-						createdVia: "collect",
-					})),
-				);
+			const { notes, cards } = plugin.flashcardManager.createNoteBatch(
+				collectResult.parsedBlocks.map((block) => ({
+					noteTypeId: block.noteTypeId,
+					fields: block.fields,
+					sourceUid: sourceUid ?? undefined,
+					sourceText: block.sourceText,
+					alwaysTypeIn: block.alwaysTypeIn,
+					createdVia: "collect",
+				})),
+			);
 
 			if (cards.length === 0) {
 				notify().info("No new flashcards collected");
@@ -232,20 +220,13 @@ export function usePanelActions({
 
 	const handleExportCsv = useCallback(async () => {
 		const { notify } = await import("@shared/services/notification.service");
-		if (
-			!flashcardInfo?.flashcards ||
-			flashcardInfo.flashcards.length === 0
-		) {
+		if (!flashcardInfo?.flashcards || flashcardInfo.flashcards.length === 0) {
 			notify().warning("No flashcards to export");
 			return;
 		}
 
 		const escapeCSV = (str: string): string => {
-			if (
-				str.includes(",") ||
-				str.includes("\n") ||
-				str.includes('"')
-			) {
+			if (str.includes(",") || str.includes("\n") || str.includes('"')) {
 				return `"${str.replace(/"/g, '""')}"`;
 			}
 			return str;
@@ -253,8 +234,7 @@ export function usePanelActions({
 
 		const header = "Question,Answer";
 		const rows = flashcardInfo.flashcards.map(
-			(card) =>
-				`${escapeCSV(card.question)},${escapeCSV(card.answer)}`,
+			(card) => `${escapeCSV(card.question)},${escapeCSV(card.answer)}`,
 		);
 		const csvContent = [header, ...rows].join("\n");
 
@@ -281,19 +261,13 @@ export function usePanelActions({
 
 	const handleCopyAllToClipboard = useCallback(async () => {
 		const { notify } = await import("@shared/services/notification.service");
-		if (
-			!flashcardInfo?.flashcards ||
-			flashcardInfo.flashcards.length === 0
-		) {
+		if (!flashcardInfo?.flashcards || flashcardInfo.flashcards.length === 0) {
 			notify().warning("No flashcards to copy");
 			return;
 		}
 
 		const text = flashcardInfo.flashcards
-			.map(
-				(card, i) =>
-					`${i + 1}. Q: ${card.question}\n   A: ${card.answer}`,
-			)
+			.map((card, i) => `${i + 1}. Q: ${card.question}\n   A: ${card.answer}`)
 			.join("\n\n");
 
 		await navigator.clipboard.writeText(text);
@@ -333,12 +307,7 @@ export function usePanelActions({
 				await leaf.openFile(currentFile);
 			}
 
-			requestSourceHighlight(
-				filePath,
-				card.sourceText,
-				"jump",
-				colorHint,
-			);
+			requestSourceHighlight(filePath, card.sourceText, "jump", colorHint);
 		},
 		[currentFile, app, cardsWithFsrs],
 	);
@@ -351,7 +320,7 @@ export function usePanelActions({
 			void import("@shared/services/signals").then(
 				({ requestSourceHighlight }) => {
 					requestSourceHighlight(
-						currentFile!.path,
+						currentFile?.path,
 						card.sourceText!,
 						"hover",
 						colorHint,
@@ -363,11 +332,9 @@ export function usePanelActions({
 	);
 
 	const handleLeaveSource = useCallback(() => {
-		void import("@shared/services/signals").then(
-			({ clearSourceHighlight }) => {
-				clearSourceHighlight();
-			},
-		);
+		void import("@shared/services/signals").then(({ clearSourceHighlight }) => {
+			clearSourceHighlight();
+		});
 	}, []);
 
 	// ── Search ──

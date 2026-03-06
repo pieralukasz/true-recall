@@ -52,9 +52,7 @@ export function NoteFilters({
 							<span
 								class={cn(
 									"ep:ml-1 ep:tabular-nums",
-									isActive
-										? "ep:text-obs-interactive/70"
-										: "ep:text-obs-faint",
+									isActive ? "ep:text-obs-interactive/70" : "ep:text-obs-faint",
 								)}
 							>
 								{count}
@@ -71,9 +69,7 @@ export function NoteFilters({
 			<Clickable
 				class={cn(
 					CHIP_BASE,
-					projectFilter.type === "unassigned"
-						? CHIP_ACTIVE
-						: CHIP_INACTIVE,
+					projectFilter.type === "unassigned" ? CHIP_ACTIVE : CHIP_INACTIVE,
 				)}
 				onClick={() => {
 					onProjectFilterChange(

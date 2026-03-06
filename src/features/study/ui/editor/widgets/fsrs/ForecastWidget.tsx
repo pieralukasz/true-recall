@@ -33,16 +33,12 @@ export function ForecastWidget({ source }: { source: string }) {
 	}).value;
 
 	if (!plugin.fsrsHelper) {
-		return (
-			<div class="ep:text-obs-muted ep:text-xs ep:p-3">Loading...</div>
-		);
+		return <div class="ep:text-obs-muted ep:text-xs ep:p-3">Loading...</div>;
 	}
 
 	if (!data || data.summary.avgDaily === 0) {
 		return (
-			<div class="ep:text-obs-muted ep:text-xs ep:p-3">
-				No upcoming reviews
-			</div>
+			<div class="ep:text-obs-muted ep:text-xs ep:p-3">No upcoming reviews</div>
 		);
 	}
 
@@ -77,10 +73,7 @@ export function ForecastWidget({ source }: { source: string }) {
 					label="Lightest"
 					value={`${formatDateLabel(summary.minDay.date)} (${summary.minDay.count})`}
 				/>
-				<StatCell
-					label="Above avg"
-					value={`${summary.daysAboveTarget} days`}
-				/>
+				<StatCell label="Above avg" value={`${summary.daysAboveTarget} days`} />
 				<StatCell
 					label="Balance"
 					value={summary.needsBalancing ? "Needs attention" : "OK"}
@@ -94,10 +87,7 @@ export function ForecastWidget({ source }: { source: string }) {
 
 			{/* Mini bar chart */}
 			{showChart && entries.length > 0 && (
-				<MiniBarChart
-					entries={entries}
-					avgDaily={summary.avgDaily}
-				/>
+				<MiniBarChart entries={entries} avgDaily={summary.avgDaily} />
 			)}
 		</Clickable>
 	);
@@ -151,9 +141,10 @@ function MiniBarChart({
 				preserveAspectRatio="none"
 			>
 				{entries.map((entry, i) => {
-					const barH = maxCount > 0
-						? Math.max(1, (entry.dueCount / maxCount) * chartHeight)
-						: 1;
+					const barH =
+						maxCount > 0
+							? Math.max(1, (entry.dueCount / maxCount) * chartHeight)
+							: 1;
 					const isToday = entry.date === today;
 					const isHeavy = entry.dueCount > avgDaily * 1.5;
 

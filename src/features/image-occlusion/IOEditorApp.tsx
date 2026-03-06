@@ -1,17 +1,22 @@
-import { ImageService } from "@features/integration/services/ImageService";
-import { createEmptyIODefinition, getNextIOGroupKey, parseIODefinition } from "@features/image-occlusion/io-definition";
 import { IOCanvas } from "@features/image-occlusion/IOCanvas";
 import { detectRegions } from "@features/image-occlusion/io-ai.service";
 import {
-	shouldImagePanelStartExpanded,
-	truncateMiddlePath,
-} from "@features/image-occlusion/ui-helpers";
+	createEmptyIODefinition,
+	getNextIOGroupKey,
+	parseIODefinition,
+} from "@features/image-occlusion/io-definition";
 import type {
 	IODefinition,
 	IOEditorMode,
 	IOEditorResult,
 	IORegion,
 } from "@features/image-occlusion/types";
+import {
+	shouldImagePanelStartExpanded,
+	truncateMiddlePath,
+} from "@features/image-occlusion/ui-helpers";
+import { ImageService } from "@features/integration/services/ImageService";
+import { isImageExtension } from "@shared/types";
 import { Clickable } from "@shared/ui/components/Clickable";
 import { NotePickerCombobox } from "@shared/ui/components/NotePickerCombobox";
 import { PasteDropZone } from "@shared/ui/components/PasteDropZone";
@@ -19,7 +24,6 @@ import { useIcon } from "@shared/ui/preact/hooks";
 import { useApp, usePlugin } from "@shared/ui/preact/ObsidianContext";
 import { cn } from "@shared/ui/utils/cn";
 import { isDesktop } from "@shared/utils/platform";
-import { isImageExtension } from "@shared/types";
 import { Notice, TFile } from "obsidian";
 import { useCallback, useEffect, useMemo, useState } from "preact/hooks";
 
@@ -33,7 +37,7 @@ interface IOEditorAppProps {
 
 function buildInitialDefinition(mode: IOEditorMode): IODefinition {
 	if (mode.mode === "edit") {
-		const parsed = parseIODefinition(mode.note.fields["Regions"]);
+		const parsed = parseIODefinition(mode.note.fields.Regions);
 		return parsed ?? createEmptyIODefinition("solo");
 	}
 	return createEmptyIODefinition("solo");
@@ -41,7 +45,7 @@ function buildInitialDefinition(mode: IOEditorMode): IODefinition {
 
 function buildInitialImagePath(mode: IOEditorMode): string {
 	if (mode.mode === "edit") {
-		return mode.note.fields["Image"] ?? "";
+		return mode.note.fields.Image ?? "";
 	}
 	return mode.imagePath ?? "";
 }
@@ -238,7 +242,9 @@ export function IOEditorApp({ mode, onDone }: IOEditorAppProps) {
 	}, [hasRegions, imagePath, isImagePanelExpanded]);
 
 	const selectedRegion = useMemo(
-		() => definition.regions.find((region) => region.id === selectedRegionId) ?? null,
+		() =>
+			definition.regions.find((region) => region.id === selectedRegionId) ??
+			null,
 		[definition.regions, selectedRegionId],
 	);
 
@@ -285,41 +291,48 @@ export function IOEditorApp({ mode, onDone }: IOEditorAppProps) {
 		plugin.settings.subscriptionKey || plugin.settings.openRouterApiKey,
 	);
 
-	const handleAIDetect = useCallback(async (hint?: string) => {
-		if (!imagePath || aiLoading) return;
-		setAiLoading(true);
-		setAiPromptVisible(false);
-		try {
-			const newRegions = await detectRegions(
-				app, imagePath, plugin.settings, hint, plugin.settings.aiIODetectionPrompt,
-			);
-			if (newRegions.length === 0) {
-				new Notice("AI could not detect any regions in this image");
-				return;
+	const handleAIDetect = useCallback(
+		async (hint?: string) => {
+			if (!imagePath || aiLoading) return;
+			setAiLoading(true);
+			setAiPromptVisible(false);
+			try {
+				const newRegions = await detectRegions(
+					app,
+					imagePath,
+					plugin.settings,
+					hint,
+					plugin.settings.aiIODetectionPrompt,
+				);
+				if (newRegions.length === 0) {
+					new Notice("AI could not detect any regions in this image");
+					return;
+				}
+				setDefinition((prev) => {
+					let nextKey = Number(getNextIOGroupKey(prev));
+					const regionsWithKeys = newRegions.map((region) => ({
+						...region,
+						groupKey: String(nextKey++),
+					}));
+					return {
+						...prev,
+						regions: [...prev.regions, ...regionsWithKeys],
+					};
+				});
+				setTool("select");
+				new Notice(
+					`AI detected ${newRegions.length} region${newRegions.length !== 1 ? "s" : ""}`,
+				);
+			} catch (error) {
+				new Notice(
+					error instanceof Error ? error.message : "AI detection failed",
+				);
+			} finally {
+				setAiLoading(false);
 			}
-			setDefinition((prev) => {
-				let nextKey = Number(getNextIOGroupKey(prev));
-				const regionsWithKeys = newRegions.map((region) => ({
-					...region,
-					groupKey: String(nextKey++),
-				}));
-				return {
-					...prev,
-					regions: [...prev.regions, ...regionsWithKeys],
-				};
-			});
-			setTool("select");
-			new Notice(
-				`AI detected ${newRegions.length} region${newRegions.length !== 1 ? "s" : ""}`,
-			);
-		} catch (error) {
-			new Notice(
-				error instanceof Error ? error.message : "AI detection failed",
-			);
-		} finally {
-			setAiLoading(false);
-		}
-	}, [app, imagePath, aiLoading, plugin.settings]);
+		},
+		[app, imagePath, aiLoading, plugin.settings],
+	);
 
 	const applySelectedVaultImage = useCallback(() => {
 		if (!selectedVaultPath) return;
@@ -357,7 +370,13 @@ export function IOEditorApp({ mode, onDone }: IOEditorAppProps) {
 			return `Source: ${linkedSourceNote.noteName}`;
 		}
 		return "Source: linked note";
-	}, [linkedSourceNote, mode, plugin.flashcardManager, selectedSourceNote, showSourcePicker]);
+	}, [
+		linkedSourceNote,
+		mode,
+		plugin.flashcardManager,
+		selectedSourceNote,
+		showSourcePicker,
+	]);
 
 	const truncatedSourceTargetLabel = useMemo(
 		() => truncateMiddlePath(sourceTargetLabel),
@@ -382,9 +401,17 @@ export function IOEditorApp({ mode, onDone }: IOEditorAppProps) {
 			return selectedSourceNote?.path ?? "";
 		}
 		return linkedSourceNote?.notePath ?? "";
-	}, [linkedSourceNote, mode, plugin.flashcardManager, selectedSourceNote, showSourcePicker]);
+	}, [
+		linkedSourceNote,
+		mode,
+		plugin.flashcardManager,
+		selectedSourceNote,
+		showSourcePicker,
+	]);
 
-	const resolveSourceUid = useCallback(async (): Promise<string | undefined> => {
+	const resolveSourceUid = useCallback(async (): Promise<
+		string | undefined
+	> => {
 		if (mode.mode === "edit") return mode.note.sourceUid;
 		if (mode.sourceUid) return mode.sourceUid;
 		if (!selectedSourceNote) return undefined;
@@ -472,7 +499,9 @@ export function IOEditorApp({ mode, onDone }: IOEditorAppProps) {
 			});
 		} catch (error) {
 			new Notice(
-				error instanceof Error ? error.message : "Failed to save image occlusion",
+				error instanceof Error
+					? error.message
+					: "Failed to save image occlusion",
 			);
 			setSaving(false);
 		}
@@ -565,7 +594,11 @@ export function IOEditorApp({ mode, onDone }: IOEditorAppProps) {
 									class="true-recall-io-inline-link"
 									onClick={() => setIsImagePanelExpanded((v) => !v)}
 									disabled={hasRegions}
-									title={hasRegions ? "Remove all regions before replacing image" : undefined}
+									title={
+										hasRegions
+											? "Remove all regions before replacing image"
+											: undefined
+									}
 								>
 									{isImagePanelExpanded ? "Collapse" : "Replace image"}
 								</Clickable>
@@ -619,45 +652,45 @@ export function IOEditorApp({ mode, onDone }: IOEditorAppProps) {
 						)}
 					</div>
 
-						<div class="true-recall-io-side-section">
-							<div class="ep:text-ui-small ep:font-medium ep:mb-1">Tools</div>
-							<div class="true-recall-io-tool-row">
-								{hasRegions && (
-									<IconToolButton
-										icon="mouse-pointer-2"
-										label="Select"
-										shortcut="V"
-										active={tool === "select"}
-										onClick={() => setTool("select")}
-									/>
-								)}
+					<div class="true-recall-io-side-section">
+						<div class="ep:text-ui-small ep:font-medium ep:mb-1">Tools</div>
+						<div class="true-recall-io-tool-row">
+							{hasRegions && (
 								<IconToolButton
-									icon="square"
-									label="Rectangle"
-									shortcut="R"
-									active={tool === "rect"}
-									onClick={() => {
-										setLastNonSelectTool("rect");
-										setTool("rect");
-									}}
+									icon="mouse-pointer-2"
+									label="Select"
+									shortcut="V"
+									active={tool === "select"}
+									onClick={() => setTool("select")}
 								/>
-								<IconToolButton
-									icon="circle"
-									label="Ellipse"
-									shortcut="E"
-									active={tool === "ellipse"}
-									onClick={() => {
-										setLastNonSelectTool("ellipse");
-										setTool("ellipse");
-									}}
-								/>
-								<IconToolButton
-									icon="sparkles"
-									label="AI detect regions"
-									active={aiPromptVisible}
-									disabled={!imagePath || aiLoading || !hasAIKey}
-									onClick={() => setAiPromptVisible((v) => !v)}
-								/>
+							)}
+							<IconToolButton
+								icon="square"
+								label="Rectangle"
+								shortcut="R"
+								active={tool === "rect"}
+								onClick={() => {
+									setLastNonSelectTool("rect");
+									setTool("rect");
+								}}
+							/>
+							<IconToolButton
+								icon="circle"
+								label="Ellipse"
+								shortcut="E"
+								active={tool === "ellipse"}
+								onClick={() => {
+									setLastNonSelectTool("ellipse");
+									setTool("ellipse");
+								}}
+							/>
+							<IconToolButton
+								icon="sparkles"
+								label="AI detect regions"
+								active={aiPromptVisible}
+								disabled={!imagePath || aiLoading || !hasAIKey}
+								onClick={() => setAiPromptVisible((v) => !v)}
+							/>
 							{selectedRegionId && (
 								<IconToolButton
 									icon="trash-2"
@@ -669,7 +702,8 @@ export function IOEditorApp({ mode, onDone }: IOEditorAppProps) {
 							)}
 						</div>
 						<div class="true-recall-io-hint-text">
-							Shortcuts: Delete to remove, Space + drag to pan, Ctrl/Cmd+V to paste.
+							Shortcuts: Delete to remove, Space + drag to pan, Ctrl/Cmd+V to
+							paste.
 						</div>
 						{aiPromptVisible && !aiLoading && (
 							<div class="ep:flex ep:flex-col ep:gap-1.5 ep:mt-1">
@@ -679,7 +713,9 @@ export function IOEditorApp({ mode, onDone }: IOEditorAppProps) {
 									placeholder="Optional hint, e.g. 'label the bones'"
 									maxLength={50}
 									value={aiCustomHint}
-									onInput={(e) => setAiCustomHint((e.target as HTMLInputElement).value)}
+									onInput={(e) =>
+										setAiCustomHint((e.target as HTMLInputElement).value)
+									}
 									onKeyDown={(e) => {
 										if (e.key === "Enter") {
 											void handleAIDetect(aiCustomHint);
@@ -706,9 +742,30 @@ export function IOEditorApp({ mode, onDone }: IOEditorAppProps) {
 						)}
 						{aiLoading && (
 							<div class="true-recall-io-hint-text ep:flex ep:items-center ep:gap-2">
-								<svg viewBox="0 0 24 24" width="14" height="14" class="ep:text-obs-muted">
-									<circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="3" fill="none" stroke-dasharray="31.4 31.4" stroke-linecap="round">
-										<animateTransform attributeName="transform" type="rotate" dur="1s" from="0 12 12" to="360 12 12" repeatCount="indefinite" />
+								<svg
+									viewBox="0 0 24 24"
+									width="14"
+									height="14"
+									class="ep:text-obs-muted"
+								>
+									<circle
+										cx="12"
+										cy="12"
+										r="10"
+										stroke="currentColor"
+										stroke-width="3"
+										fill="none"
+										stroke-dasharray="31.4 31.4"
+										stroke-linecap="round"
+									>
+										<animateTransform
+											attributeName="transform"
+											type="rotate"
+											dur="1s"
+											from="0 12 12"
+											to="360 12 12"
+											repeatCount="indefinite"
+										/>
 									</circle>
 								</svg>
 								Detecting regions…

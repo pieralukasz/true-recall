@@ -5,20 +5,20 @@
  */
 
 import type { SqliteStoreService } from "@features/core/persistence/sqlite/SqliteStoreService";
+import {
+	type GeneratedCard,
+	generateCardsForNote,
+} from "@features/core/services/card-generation.service";
 import type { FrontmatterIndexService } from "@features/core/services/frontmatter-index.service";
 import {
-	generateCardsForNote,
-	type GeneratedCard,
-} from "@features/core/services/card-generation.service";
+	deriveCardType,
+	renderTemplate,
+} from "@features/core/services/template-engine";
 import {
 	normalizeIOImagePath,
 	serializeIODefinition,
 } from "@features/image-occlusion/io-definition";
-import {
-	renderTemplate,
-	deriveCardType,
-} from "@features/core/services/template-engine";
-import { FLASHCARD_CONFIG } from "@shared/constants";
+import type { IODefinition } from "@features/image-occlusion/types";
 import { CardQueryService } from "@features/study/services/flashcard/card-query.service";
 import {
 	CardRepository,
@@ -26,6 +26,7 @@ import {
 } from "@features/study/services/flashcard/card-repository.service";
 import { FrontmatterService } from "@features/study/services/flashcard/frontmatter.service";
 import { SourceNoteService } from "@features/study/services/flashcard/source-note.service";
+import { FLASHCARD_CONFIG } from "@shared/constants";
 import { notifyCardChange } from "@shared/services/signals";
 import type {
 	CardReviewLogEntry,
@@ -35,7 +36,6 @@ import type {
 	TrueRecallSettings,
 } from "@shared/types";
 import { createDefaultFSRSData } from "@shared/types";
-import type { IODefinition } from "@features/image-occlusion/types";
 import {
 	BUILTIN_IMAGE_OCCLUSION_ID,
 	type Note,
@@ -495,9 +495,10 @@ export class FlashcardManager {
 	 * Create multiple Notes from parsed cards in bulk.
 	 * Returns all created cards for notification.
 	 */
-	createNoteBatch(
-		parsedCards: CreateNoteParams[],
-	): { notes: Note[]; cards: FSRSCardData[] } {
+	createNoteBatch(parsedCards: CreateNoteParams[]): {
+		notes: Note[];
+		cards: FSRSCardData[];
+	} {
 		if (!this.store) {
 			throw new Error("Store not initialized");
 		}
@@ -513,9 +514,7 @@ export class FlashcardManager {
 				id: crypto.randomUUID(),
 				noteTypeId: params.noteTypeId,
 				fields: params.fields,
-				tags: params.alwaysTypeIn
-					? [FLASHCARD_CONFIG.alwaysTypeInTag]
-					: [],
+				tags: params.alwaysTypeIn ? [FLASHCARD_CONFIG.alwaysTypeInTag] : [],
 				sourceUid: params.sourceUid,
 				sourceText: params.sourceText,
 				createdVia: params.createdVia ?? "manual",
@@ -633,7 +632,11 @@ export class FlashcardManager {
 		});
 
 		// Reconcile cards
-		const updatedNote: Note = { ...note, noteTypeId: newNoteTypeId, fields: newFields };
+		const updatedNote: Note = {
+			...note,
+			noteTypeId: newNoteTypeId,
+			fields: newFields,
+		};
 		const existingCards = this.store.cards.getCardsByNoteId(noteId);
 		const existingOrds = new Set(existingCards.map((c) => c.templateOrd ?? 0));
 
@@ -662,7 +665,11 @@ export class FlashcardManager {
 			createdCardIds.push(card.id);
 		}
 
-		const allAffectedIds = [...keptCardIds, ...createdCardIds, ...deletedCardIds];
+		const allAffectedIds = [
+			...keptCardIds,
+			...createdCardIds,
+			...deletedCardIds,
+		];
 		if (allAffectedIds.length > 0) {
 			notifyCardChange({ type: "bulk", cardIds: allAffectedIds });
 		}
@@ -676,13 +683,15 @@ export class FlashcardManager {
 		fields: Record<string, string>,
 	): UpdateNoteFieldsResult {
 		const updatedNote: Note = { ...note, fields };
-		const existingCards = this.store!.cards.getCardsByNoteId(note.id);
+		const existingCards = this.store?.cards.getCardsByNoteId(note.id);
 		const existingOrds = new Set(
 			existingCards.map((card) => card.templateOrd ?? 0),
 		);
 
 		const desiredGenerated = generateCardsForNote(updatedNote, noteType);
-		const desiredOrds = new Set(desiredGenerated.map((card) => card.templateOrd));
+		const desiredOrds = new Set(
+			desiredGenerated.map((card) => card.templateOrd),
+		);
 
 		// Keep existing cards whose ord still exists in new definition.
 		const keptCards = existingCards.filter((card) =>
@@ -696,11 +705,13 @@ export class FlashcardManager {
 		const createdCards: FSRSCardData[] = [];
 		for (const gen of desiredGenerated) {
 			if (existingOrds.has(gen.templateOrd)) continue;
-			createdCards.push(this.createCardFromGenerated(gen, updatedNote, noteType));
+			createdCards.push(
+				this.createCardFromGenerated(gen, updatedNote, noteType),
+			);
 		}
 
 		if (removedCardIds.length > 0) {
-			this.store!.cards.bulkSoftDelete(removedCardIds);
+			this.store?.cards.bulkSoftDelete(removedCardIds);
 			notifyCardChange({
 				type: "bulk",
 				cardIds: removedCardIds,
@@ -728,9 +739,9 @@ export class FlashcardManager {
 		note: Note,
 		noteType: NoteType,
 	): FSRSCardData {
-		const template = noteType.templates.find(
-			(t) => t.ordinal === gen.templateOrd,
-		) ?? noteType.templates[0]!;
+		const template =
+			noteType.templates.find((t) => t.ordinal === gen.templateOrd) ??
+			noteType.templates[0]!;
 
 		const question = renderTemplate(template.qfmt, {
 			fields: note.fields,
@@ -756,7 +767,7 @@ export class FlashcardManager {
 			alwaysTypeIn: note.tags.includes(FLASHCARD_CONFIG.alwaysTypeInTag),
 		};
 
-		this.store!.set(gen.id, fsrsData);
+		this.store?.set(gen.id, fsrsData);
 		return fsrsData;
 	}
 

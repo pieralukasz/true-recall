@@ -41,9 +41,9 @@ function CreateNoteTypeBody({
 
 	return (
 		<>
-			<label class="ep:block ep:text-ui-small ep:text-obs-muted ep:mb-1">
+			<div class="ep:block ep:text-ui-small ep:text-obs-muted ep:mb-1">
 				Name
-			</label>
+			</div>
 			<input
 				ref={inputRef}
 				type="text"
@@ -56,15 +56,13 @@ function CreateNoteTypeBody({
 				}}
 			/>
 
-			<label class="ep:block ep:text-ui-small ep:text-obs-muted ep:mb-1">
+			<div class="ep:block ep:text-ui-small ep:text-obs-muted ep:mb-1">
 				Clone from
-			</label>
+			</div>
 			<select
 				class="ep:w-full ep:py-2.5 ep:px-3 ep:border ep:border-obs-border ep:rounded-md ep:bg-obs-primary ep:text-obs-normal ep:text-ui-small ep:mb-4"
 				value={cloneFromId}
-				onChange={(e) =>
-					setCloneFromId((e.target as HTMLSelectElement).value)
-				}
+				onChange={(e) => setCloneFromId((e.target as HTMLSelectElement).value)}
 			>
 				<option value="">None (start empty)</option>
 				{noteTypes.map((nt) => (

@@ -11,15 +11,15 @@
  */
 
 import {
-	parseBlocks,
 	type NoteTypeLookup,
+	parseBlocks,
 } from "@features/study/services/flashcard/block-parser.service";
-import { CLOZE_DETECT, INLINE_SEPARATOR_RE } from "@features/study/services/flashcard/parsing-patterns";
-import type { NoteType } from "@shared/types/note.types";
 import {
-	BUILTIN_BASIC_ID,
-	BUILTIN_CLOZE_ID,
-} from "@shared/types/note.types";
+	CLOZE_DETECT,
+	INLINE_SEPARATOR_RE,
+} from "@features/study/services/flashcard/parsing-patterns";
+import type { NoteType } from "@shared/types/note.types";
+import { BUILTIN_BASIC_ID, BUILTIN_CLOZE_ID } from "@shared/types/note.types";
 
 // ── Types ─────────────────────────────────────────────────────
 
@@ -73,7 +73,11 @@ export function parseBulkText(
 	const lines = trimmed.split("\n");
 
 	if (options?.noteType) {
-		return parseBulkTextWithNoteType(lines, options.noteType, options.getNoteType);
+		return parseBulkTextWithNoteType(
+			lines,
+			options.noteType,
+			options.getNoteType,
+		);
 	}
 
 	const colonCards = parseDoubleColon(lines);
@@ -133,8 +137,8 @@ function parseClozeLines(lines: string[], noteType: NoteType): ParsedCard[] {
 				cards.push({
 					noteTypeId: noteType.id,
 					fields: {
-						[textField]: match[1]!.trim(),
-						[extraField]: match[2]!.trim(),
+						[textField]: match[1]?.trim(),
+						[extraField]: match[2]?.trim(),
 					},
 				});
 			} else {
@@ -214,8 +218,8 @@ function parseDoubleColonNoteType(
 
 		const match = trimmed.match(INLINE_SEPARATOR_RE);
 		if (match) {
-			const v1 = match[1]!.trim();
-			const v2 = match[2]!.trim();
+			const v1 = match[1]?.trim();
+			const v2 = match[2]?.trim();
 			if (v1 && v2) {
 				cards.push({ noteTypeId: noteType.id, fields: { [f1]: v1, [f2]: v2 } });
 			}
@@ -236,8 +240,8 @@ function parseDoubleColon(lines: string[]): ParsedCard[] {
 
 		const match = trimmed.match(INLINE_SEPARATOR_RE);
 		if (match) {
-			const front = match[1]!.trim();
-			const back = match[2]!.trim();
+			const front = match[1]?.trim();
+			const back = match[2]?.trim();
 			if (front && back) {
 				cards.push(makeCard(front, back));
 				continue;

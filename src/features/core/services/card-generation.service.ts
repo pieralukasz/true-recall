@@ -6,14 +6,14 @@
  * and image-occlusion (1 per region) note types.
  */
 
-import { extractClozeIndices } from "@features/study/services/flashcard/cloze-parser.service";
 import {
 	getIOGroupOrds,
 	parseIODefinition,
 } from "@features/image-occlusion/io-definition";
+import { extractClozeIndices } from "@features/study/services/flashcard/cloze-parser.service";
 import type { Note, NoteType } from "@shared/types/note.types";
 import { BUILTIN_IMAGE_OCCLUSION_ID } from "@shared/types/note.types";
-import { renderTemplate, fieldIsEmpty } from "./template-engine";
+import { fieldIsEmpty, renderTemplate } from "./template-engine";
 
 export interface GeneratedCard {
 	id: string;
@@ -63,7 +63,8 @@ function getClozeOrds(note: Note, noteType: NoteType): number[] {
 	for (const tmpl of noteType.templates) {
 		const clozeMatch = tmpl.qfmt.match(/\{\{\s*cloze:(\w+)\s*\}\}/);
 		if (clozeMatch) {
-			const fieldName = clozeMatch[1]!;
+			const fieldName = clozeMatch[1];
+			if (!fieldName) continue;
 			const fieldValue = note.fields[fieldName] ?? "";
 			const indices = extractClozeIndices(fieldValue);
 			// Anki ensure_not_empty: at least 1 card
@@ -76,7 +77,7 @@ function getClozeOrds(note: Note, noteType: NoteType): number[] {
 }
 
 function getImageOcclusionOrds(note: Note): number[] {
-	const regionsStr = note.fields["Regions"] ?? "[]";
+	const regionsStr = note.fields.Regions ?? "[]";
 	const definition = parseIODefinition(regionsStr);
 	if (!definition || definition.regions.length === 0) {
 		return [0];

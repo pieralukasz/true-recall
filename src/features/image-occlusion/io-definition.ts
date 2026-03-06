@@ -80,7 +80,9 @@ function parseRegion(raw: unknown, fallbackOrd: number): IORegion | null {
  * - v1 IODefinition object ({ regions, maskMode, version })
  * - legacy region array (converted to v1, maskMode="solo")
  */
-export function parseIODefinition(raw: string | null | undefined): IODefinition | null {
+export function parseIODefinition(
+	raw: string | null | undefined,
+): IODefinition | null {
 	if (!raw || raw.trim().length === 0) return null;
 
 	let parsed: unknown;
@@ -129,8 +131,7 @@ export function serializeIODefinition(definition: IODefinition): string {
 			w: normalizeCoord(region.w),
 			h: normalizeCoord(region.h),
 			groupKey:
-				typeof region.groupKey === "string" &&
-				region.groupKey.trim().length > 0
+				typeof region.groupKey === "string" && region.groupKey.trim().length > 0
 					? region.groupKey
 					: String(index),
 			shape: normalizeShape(region.shape),
@@ -170,7 +171,9 @@ export function getNextIOGroupKey(definition: IODefinition): string {
 	return String(next);
 }
 
-export function createEmptyIODefinition(maskMode: IOMaskMode = "solo"): IODefinition {
+export function createEmptyIODefinition(
+	maskMode: IOMaskMode = "solo",
+): IODefinition {
 	return {
 		version: 1,
 		maskMode,
@@ -198,4 +201,3 @@ export function normalizeIOImagePath(value: string): string {
 
 	return trimmed;
 }
-

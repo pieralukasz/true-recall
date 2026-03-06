@@ -24,7 +24,7 @@ export {
 	stripWikiLinkSyntax,
 } from "@shared/utils/string.utils";
 export {
-	type SubscriptionTier,
 	getEffectiveTier,
 	isFeatureAllowed,
+	type SubscriptionTier,
 } from "@shared/utils/subscription.utils";

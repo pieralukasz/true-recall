@@ -27,7 +27,12 @@ function parseGroupOrd(region: IORegion, fallbackOrd: number): number {
 	return fallbackOrd;
 }
 
-function getRegionClass(info: RegionRenderInfo, activeOrd: number, revealed: boolean, maskMode: "solo" | "all"): string {
+function getRegionClass(
+	info: RegionRenderInfo,
+	activeOrd: number,
+	revealed: boolean,
+	maskMode: "solo" | "all",
+): string {
 	const isActive = info.ord === activeOrd;
 	if (revealed) {
 		return isActive ? "is-revealed-active" : "is-revealed-passive";
@@ -87,65 +92,76 @@ export function IOCardRenderer({
 	const imageUrl = app.vault.getResourcePath(imageFile);
 
 	return (
-		<div class={`true-recall-io-render ${revealed ? "is-revealed" : ""} ${className ?? ""}`}>
+		<div
+			class={`true-recall-io-render ${revealed ? "is-revealed" : ""} ${className ?? ""}`}
+		>
 			<div
 				class="true-recall-io-render-frame"
 				style={aspectRatio ? { aspectRatio: `${aspectRatio}` } : undefined}
 			>
 				<img
 					src={imageUrl}
-					alt={`Image occlusion ${templateOrd + 1}`}
+					alt={`Occlusion ${templateOrd + 1}`}
 					class="true-recall-io-render-image"
 					onLoad={handleImageLoad}
 				/>
-				{aspectRatio !== null && <svg
-					class="true-recall-io-render-svg"
-					viewBox="0 0 1 1"
-					preserveAspectRatio="none"
-				>
-					{renderRegions.map((info) => {
-						const shapeClass = `true-recall-io-shape ${getRegionClass(
-							info,
-							templateOrd,
-							revealed,
-							maskModeOverride ?? definition.maskMode,
-						)}${onRegionClick ? " true-recall-io-shape-clickable" : ""}`;
+			{aspectRatio !== null && (
+					<svg
+						class="true-recall-io-render-svg"
+						viewBox="0 0 1 1"
+						preserveAspectRatio="none"
+						aria-hidden="true"
+					>
+						{renderRegions.map((info) => {
+							const shapeClass = `true-recall-io-shape ${getRegionClass(
+								info,
+								templateOrd,
+								revealed,
+								maskModeOverride ?? definition.maskMode,
+							)}${onRegionClick ? " true-recall-io-shape-clickable" : ""}`;
 
-						const handleShapeClick = onRegionClick
-							? (e: Event) => { e.stopPropagation(); onRegionClick(info.ord); }
-							: undefined;
+							const handleShapeClick = onRegionClick
+								? (e: Event) => {
+										e.stopPropagation();
+										onRegionClick(info.ord);
+									}
+								: undefined;
 
-						if (info.region.shape === "ellipse") {
+							if (info.region.shape === "ellipse") {
+								return (
+									<ellipse
+										key={info.region.id}
+										class={shapeClass}
+										cx={info.region.x + info.region.w / 2}
+										cy={info.region.y + info.region.h / 2}
+										rx={info.region.w / 2}
+										ry={info.region.h / 2}
+										onClick={handleShapeClick}
+										role={onRegionClick ? "button" : undefined}
+										tabIndex={onRegionClick ? 0 : undefined}
+									/>
+								);
+							}
+
 							return (
-								<ellipse
+								<rect
 									key={info.region.id}
 									class={shapeClass}
-									cx={info.region.x + info.region.w / 2}
-									cy={info.region.y + info.region.h / 2}
-									rx={info.region.w / 2}
-									ry={info.region.h / 2}
+									x={info.region.x}
+									y={info.region.y}
+									width={info.region.w}
+									height={info.region.h}
+									rx={0.01}
+									ry={0.01}
 									onClick={handleShapeClick}
+									role={onRegionClick ? "button" : undefined}
+									tabIndex={onRegionClick ? 0 : undefined}
 								/>
 							);
-						}
-
-						return (
-							<rect
-								key={info.region.id}
-								class={shapeClass}
-								x={info.region.x}
-								y={info.region.y}
-								width={info.region.w}
-								height={info.region.h}
-								rx={0.01}
-								ry={0.01}
-								onClick={handleShapeClick}
-							/>
-						);
-					})}
-				</svg>}
+						})}
+					</svg>
+				)}
 			</div>
 		</div>
 	);
 }
-

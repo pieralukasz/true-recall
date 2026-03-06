@@ -1,7 +1,13 @@
 import { FSRS_CONFIG } from "@shared/constants";
 import { notify } from "@shared/services/notification.service";
 import type { FSRSPreset } from "@shared/types";
-import { ActionButton, FormCard, FormField, InfoBlock, TextAreaInput } from "@shared/ui/components";
+import {
+	ActionButton,
+	FormCard,
+	FormField,
+	InfoBlock,
+	TextAreaInput,
+} from "@shared/ui/components";
 import { Clickable } from "@shared/ui/components/Clickable";
 import { useCallback, useState } from "preact/hooks";
 
@@ -21,7 +27,8 @@ export function ParametersSection({
 	const [optimizing, setOptimizing] = useState(false);
 	const [showWeights, setShowWeights] = useState(false);
 
-	const presetReviews = plugin.cardStore?.stats?.getReviewCountForPreset(preset.name) ?? 0;
+	const presetReviews =
+		plugin.cardStore?.stats?.getReviewCountForPreset(preset.name) ?? 0;
 	const canOptimize = presetReviews >= FSRS_CONFIG.minReviewsForOptimization;
 	const lastOpt = preset.lastOptimization;
 	const lastOptCount = preset.lastOptimizationReviewCount;
@@ -35,10 +42,7 @@ export function ParametersSection({
 				preset.name,
 				preset.weights,
 			);
-			if (
-				result &&
-				result.metrics.convergenceStatus !== "insufficient_data"
-			) {
+			if (result && result.metrics.convergenceStatus !== "insufficient_data") {
 				await updatePreset({
 					weights: result.weights,
 					lastOptimization: new Date().toISOString(),
@@ -87,9 +91,7 @@ export function ParametersSection({
 				return;
 			}
 			if (parts.some((n) => Number.isNaN(n))) {
-				notify().error(
-					"Invalid weights: some values are not numbers.",
-				);
+				notify().error("Invalid weights: some values are not numbers.");
 				return;
 			}
 
@@ -130,11 +132,7 @@ export function ParametersSection({
 					disabled={!canOptimize || optimizing}
 					onClick={handleOptimize}
 				/>
-				<ActionButton
-					label="Reset"
-					variant="secondary"
-					onClick={handleReset}
-				/>
+				<ActionButton label="Reset" variant="secondary" onClick={handleReset} />
 			</FormField>
 
 			<div class="ep:pb-2">
@@ -143,9 +141,7 @@ export function ParametersSection({
 					onClick={() => setShowWeights((s) => !s)}
 				>
 					{showWeights ? "\u25BC" : "\u25B6"} Weights{" "}
-					{preset.weights
-						? `(${preset.weights.length} values)`
-						: "(defaults)"}
+					{preset.weights ? `(${preset.weights.length} values)` : "(defaults)"}
 				</Clickable>
 
 				{showWeights && (

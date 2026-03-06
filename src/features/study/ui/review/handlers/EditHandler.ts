@@ -55,14 +55,10 @@ export class EditHandler {
 
 					const newCards = parseClozeTemplate(newContent);
 					const thisCard = newCards.find(
-						(c: { clozeIndex: number }) =>
-							c.clozeIndex === card.clozeIndex,
+						(c: { clozeIndex: number }) => c.clozeIndex === card.clozeIndex,
 					);
 					if (thisCard) {
-						review.updateCurrentCardContent(
-							thisCard.question,
-							thisCard.answer,
-						);
+						review.updateCurrentCardContent(thisCard.question, thisCard.answer);
 					}
 				} else {
 					this.pushEditUndo(card, "question");

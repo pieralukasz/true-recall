@@ -1,7 +1,10 @@
-import { LivePreviewField } from "@features/study/ui/review/components/LivePreviewField";
-import { PresetPopover, type PresetPickerOption } from "@features/study/ui/review/components/PresetPopover";
-import { TypeInCMEditor } from "@features/study/ui/review/components/TypeInCMEditor";
 import { IOCardRenderer } from "@features/image-occlusion/IOCardRenderer";
+import { LivePreviewField } from "@features/study/ui/review/components/LivePreviewField";
+import {
+	type PresetPickerOption,
+	PresetPopover,
+} from "@features/study/ui/review/components/PresetPopover";
+import { TypeInCMEditor } from "@features/study/ui/review/components/TypeInCMEditor";
 import type {
 	FSRSFlashcardItem,
 	LocalAnswerAssessment,
@@ -57,13 +60,9 @@ function TokenRow({
 							key={`${token.type}-${token.text}-${index}`}
 							class={cn(
 								"ep:px-1.5 ep:py-0.5 ep:rounded-sm ep:text-ui-smaller",
-								isMatch &&
-									"ep:bg-obs-green/20 ep:text-obs-green",
-								isError &&
-									"ep:bg-obs-red/20 ep:text-obs-red",
-								!isMatch &&
-									!isError &&
-									"ep:text-obs-faint",
+								isMatch && "ep:bg-obs-green/20 ep:text-obs-green",
+								isError && "ep:bg-obs-red/20 ep:text-obs-red",
+								!isMatch && !isError && "ep:text-obs-faint",
 							)}
 						>
 							{token.text}
@@ -194,7 +193,10 @@ export function CardContainer({
 				{hasTextAnswer && (
 					<>
 						<div
-							class={cn("ep:flex ep:items-center ep:my-6", !isAnswerRevealed && "ep:hidden")}
+							class={cn(
+								"ep:flex ep:items-center ep:my-6",
+								!isAnswerRevealed && "ep:hidden",
+							)}
 						>
 							<div class="ep:flex-1 ep:border-t ep:border-obs-border" />
 						</div>
@@ -225,65 +227,61 @@ export function CardContainer({
 							tokens={expectedTokens}
 							variant="expected"
 						/>
-						<TokenRow
-							label="Your answer"
-							tokens={userTokens}
-							variant="user"
-						/>
+						<TokenRow label="Your answer" tokens={userTokens} variant="user" />
 					</div>
 				)}
 
 				{isAnswerRevealed &&
 					aiEnabled &&
 					(isCheckingAnswer || !!semanticResult || !!semanticMessage) && (
-					<div class="true-recall-semantic-assessment ep:mt-4 ep:p-4 ep:rounded-lg ep:border ep:border-obs-border ep:bg-obs-secondary/20 ep:flex ep:flex-col ep:gap-2">
-						<div class="ep:flex ep:items-center ep:justify-between ep:gap-2">
-							<span class="ep:text-ui-small ep:font-medium">
-								Semantic grading
-							</span>
-							{isCheckingAnswer ? (
-								<span class="ep:text-ui-smaller ep:text-obs-muted">
-									Checking...
+						<div class="true-recall-semantic-assessment ep:mt-4 ep:p-4 ep:rounded-lg ep:border ep:border-obs-border ep:bg-obs-secondary/20 ep:flex ep:flex-col ep:gap-2">
+							<div class="ep:flex ep:items-center ep:justify-between ep:gap-2">
+								<span class="ep:text-ui-small ep:font-medium">
+									Semantic grading
 								</span>
-							) : semanticResult ? (
-								<span
-									class={cn(
-										"ep:text-ui-smaller ep:font-medium",
-										semanticResult.passed
-											? "ep:text-obs-green"
-											: "ep:text-obs-red",
-									)}
-								>
-									{semanticResult.score}% ·{" "}
-									{semanticResult.passed ? "Passed" : "Not passed"}
-								</span>
-							) : semanticMessage ? (
-								<span class="ep:text-ui-smaller ep:text-obs-muted">
-									Unavailable
-								</span>
-							) : (
-								<span class="ep:text-ui-smaller ep:text-obs-faint">
-									Not graded yet
-								</span>
+								{isCheckingAnswer ? (
+									<span class="ep:text-ui-smaller ep:text-obs-muted">
+										Checking...
+									</span>
+								) : semanticResult ? (
+									<span
+										class={cn(
+											"ep:text-ui-smaller ep:font-medium",
+											semanticResult.passed
+												? "ep:text-obs-green"
+												: "ep:text-obs-red",
+										)}
+									>
+										{semanticResult.score}% ·{" "}
+										{semanticResult.passed ? "Passed" : "Not passed"}
+									</span>
+								) : semanticMessage ? (
+									<span class="ep:text-ui-smaller ep:text-obs-muted">
+										Unavailable
+									</span>
+								) : (
+									<span class="ep:text-ui-smaller ep:text-obs-faint">
+										Not graded yet
+									</span>
+								)}
+							</div>
+							{semanticResult?.feedback && (
+								<div class="ep:text-ui-smaller ep:text-obs-muted">
+									{semanticResult.feedback}
+								</div>
+							)}
+							{semanticMessage && (
+								<div class="ep:text-ui-smaller ep:text-obs-muted">
+									{semanticMessage}
+								</div>
+							)}
+							{semanticResult?.source === "local-fallback" && (
+								<div class="ep:text-ui-smaller ep:text-obs-faint">
+									Using local fallback
+								</div>
 							)}
 						</div>
-						{semanticResult?.feedback && (
-							<div class="ep:text-ui-smaller ep:text-obs-muted">
-								{semanticResult.feedback}
-							</div>
-						)}
-						{semanticMessage && (
-							<div class="ep:text-ui-smaller ep:text-obs-muted">
-								{semanticMessage}
-							</div>
-						)}
-						{semanticResult?.source === "local-fallback" && (
-							<div class="ep:text-ui-smaller ep:text-obs-faint">
-								Using local fallback
-							</div>
-						)}
-					</div>
-				)}
+					)}
 
 				{isAnswerRevealed && (card.sourceNoteName || presetName) && (
 					<div class="ep:flex ep:flex-col ep:items-center ep:gap-4 ep:pt-8">

@@ -375,7 +375,7 @@ export class CardActionsHandler {
 				timestamp: Date.now(),
 				payload: {
 					type: "batch-create",
-					cardIds: result.createdCards!.map((c) => c.id),
+					cardIds: result.createdCards?.map((c) => c.id),
 				},
 			});
 			const noteName = card.sourceNotePath
@@ -408,7 +408,7 @@ export class CardActionsHandler {
 				timestamp: Date.now(),
 				payload: {
 					type: "batch-create",
-					cardIds: result.createdCards!.map((c) => c.id),
+					cardIds: result.createdCards?.map((c) => c.id),
 				},
 			});
 			const noteName = card.sourceNotePath
@@ -540,11 +540,7 @@ export class CardActionsHandler {
 		});
 
 		const result = await modal.openAndWait();
-		if (
-			result.cancelled ||
-			!result.targetNoteTypeId ||
-			!result.fieldMapping
-		)
+		if (result.cancelled || !result.targetNoteTypeId || !result.fieldMapping)
 			return;
 
 		const r = this.deps.flashcardManager.changeNoteType(

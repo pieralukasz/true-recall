@@ -77,12 +77,9 @@ export class CardBrowserQueryService {
 
 			// State counts (including virtual states)
 			if (card.suspended) {
-				states["suspended"] = (states["suspended"] ?? 0) + 1;
-			} else if (
-				card.buriedUntil &&
-				new Date(card.buriedUntil) > now
-			) {
-				states["buried"] = (states["buried"] ?? 0) + 1;
+				states.suspended = (states.suspended ?? 0) + 1;
+			} else if (card.buriedUntil && new Date(card.buriedUntil) > now) {
+				states.buried = (states.buried ?? 0) + 1;
 			} else {
 				const stateKey = ["new", "learning", "review", "relearning"][
 					card.state
@@ -100,19 +97,13 @@ export class CardBrowserQueryService {
 
 			// Source note counts
 			if (card.sourceUid) {
-				sourceMap.set(
-					card.sourceUid,
-					(sourceMap.get(card.sourceUid) ?? 0) + 1,
-				);
+				sourceMap.set(card.sourceUid, (sourceMap.get(card.sourceUid) ?? 0) + 1);
 			}
 		}
 
 		const sourceNotes = Array.from(sourceMap.entries())
 			.map(([uid, count]) => {
-				const file = this.frontmatterIndex.getFileByValue(
-					"flashcard_uid",
-					uid,
-				);
+				const file = this.frontmatterIndex.getFileByValue("flashcard_uid", uid);
 				return {
 					uid,
 					name: file?.basename ?? "(orphaned)",
@@ -171,10 +162,7 @@ export class CardBrowserQueryService {
 		const allUids = this.frontmatterIndex.getAllValues("flashcard_uid");
 		const basenameToUid = new Map<string, string>();
 		for (const uid of allUids) {
-			const file = this.frontmatterIndex.getFileByValue(
-				"flashcard_uid",
-				uid,
-			);
+			const file = this.frontmatterIndex.getFileByValue("flashcard_uid", uid);
 			if (file) {
 				basenameToUid.set(file.basename.toLowerCase(), uid);
 			}
@@ -196,18 +184,12 @@ export class CardBrowserQueryService {
 
 	private toBrowserCard(card: FSRSCardData): BrowserCard {
 		const file = card.sourceUid
-			? this.frontmatterIndex.getFileByValue(
-					"flashcard_uid",
-					card.sourceUid,
-				)
+			? this.frontmatterIndex.getFileByValue("flashcard_uid", card.sourceUid)
 			: null;
 
 		let presetName: string | null = null;
 		if (file) {
-			const vals = this.frontmatterIndex.getValues(
-				"fsrs_preset",
-				file.path,
-			);
+			const vals = this.frontmatterIndex.getValues("fsrs_preset", file.path);
 			if (vals.length > 0 && vals[0]) presetName = vals[0];
 		}
 

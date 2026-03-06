@@ -1,16 +1,16 @@
-import { TFile, type App } from "obsidian";
 import {
-	OpenRouterClient,
+	getBYOKFallbackConfig,
+	resolveAIClientConfig,
+} from "@features/ai/services/ai-client-config";
+import {
 	AIRequestError,
-	getTextContent,
 	type ChatMessage,
 	type ContentPart,
+	getTextContent,
+	OpenRouterClient,
 } from "@features/ai/services/openrouter-client";
-import {
-	resolveAIClientConfig,
-	getBYOKFallbackConfig,
-} from "@features/ai/services/ai-client-config";
 import type { TrueRecallSettings } from "@shared/types/settings.types";
+import { type App, TFile } from "obsidian";
 import type { IORegion } from "./types";
 
 // Gemini is the only model family trained for spatial coordinate output
@@ -101,7 +101,16 @@ function parseBox(raw: RawBox): IORegion | null {
 		if (w < 0.01 || h < 0.01) return null;
 		if (w > 0.95 && h > 0.95) return null;
 		const label = typeof raw.label === "string" ? raw.label.trim() : undefined;
-		return { id: crypto.randomUUID(), x, y, w, h, groupKey: "0", shape: "rect", label: label || undefined };
+		return {
+			id: crypto.randomUUID(),
+			x,
+			y,
+			w,
+			h,
+			groupKey: "0",
+			shape: "rect",
+			label: label || undefined,
+		};
 	}
 
 	const rx = toNum(raw.x);
@@ -119,7 +128,16 @@ function parseBox(raw: RawBox): IORegion | null {
 	if (w > 0.95 && h > 0.95) return null;
 
 	const label = typeof raw.label === "string" ? raw.label.trim() : undefined;
-	return { id: crypto.randomUUID(), x, y, w, h, groupKey: "0", shape: "rect", label: label || undefined };
+	return {
+		id: crypto.randomUUID(),
+		x,
+		y,
+		w,
+		h,
+		groupKey: "0",
+		shape: "rect",
+		label: label || undefined,
+	};
 }
 
 export function parseAIRegions(responseText: string): IORegion[] {

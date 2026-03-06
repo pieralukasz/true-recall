@@ -3,13 +3,19 @@ import { CardTypesEditorModal } from "@features/core/modals/card-types-editor/Ca
 import { NoteTypeManagerModal } from "@features/core/modals/NoteTypeManagerModal";
 import { Clickable } from "@shared/ui/components/Clickable";
 import {
-	FormattingToolbar,
 	type FormattingTargetRef,
+	FormattingToolbar,
 } from "@shared/ui/editor/formatting";
 import { useIcon } from "@shared/ui/preact/hooks";
 import { useApp, usePlugin } from "@shared/ui/preact/ObsidianContext";
-import { Notice, TFile } from "obsidian";
-import { useCallback, useEffect, useMemo, useRef, useState } from "preact/hooks";
+import { Notice, type TFile } from "obsidian";
+import {
+	useCallback,
+	useEffect,
+	useMemo,
+	useRef,
+	useState,
+} from "preact/hooks";
 import { ActionBar } from "./ActionBar";
 import { CardCountPreview } from "./CardCountPreview";
 import { NoteFieldsForm } from "./NoteFieldsForm";
@@ -25,10 +31,7 @@ interface QuickNoteEditorAppProps {
 	onDone: (result: QuickNoteEditorResult) => void;
 }
 
-export function QuickNoteEditorApp({
-	mode,
-	onDone,
-}: QuickNoteEditorAppProps) {
+export function QuickNoteEditorApp({ mode, onDone }: QuickNoteEditorAppProps) {
 	const app = useApp();
 	const plugin = usePlugin();
 
@@ -40,12 +43,12 @@ export function QuickNoteEditorApp({
 
 	const [noteTypeId, setNoteTypeId] = useState(
 		isEdit
-			? editMode!.noteType.id
-			: addMode!.defaultNoteTypeId ?? "builtin-basic",
+			? editMode?.noteType.id
+			: (addMode?.defaultNoteTypeId ?? "builtin-basic"),
 	);
 
 	const [fields, setFields] = useState<Record<string, string>>(() => {
-		if (isEdit) return { ...editMode!.note.fields };
+		if (isEdit) return { ...editMode?.note.fields };
 		return {};
 	});
 
@@ -64,14 +67,15 @@ export function QuickNoteEditorApp({
 	);
 
 	// Source note picker — only shown in add mode without pre-set sourceUid
-	const showSourcePicker = !isEdit && !addMode!.sourceUid;
-	const [selectedSourceNote, setSelectedSourceNote] =
-		useState<TFile | null>(null);
+	const showSourcePicker = !isEdit && !addMode?.sourceUid;
+	const [selectedSourceNote, setSelectedSourceNote] = useState<TFile | null>(
+		null,
+	);
 
 	// ── Derived ──
 
 	const noteType = useMemo(() => {
-		if (isEdit) return editMode!.noteType;
+		if (isEdit) return editMode?.noteType;
 		return plugin.cardStore?.noteTypes?.getById(noteTypeId) ?? null;
 	}, [isEdit, editMode, plugin.cardStore, noteTypeId, refreshCounter]);
 
@@ -100,12 +104,9 @@ export function QuickNoteEditorApp({
 
 	// ── Handlers ──
 
-	const handleFieldChange = useCallback(
-		(fieldName: string, value: string) => {
-			setFields((prev) => ({ ...prev, [fieldName]: value }));
-		},
-		[],
-	);
+	const handleFieldChange = useCallback((fieldName: string, value: string) => {
+		setFields((prev) => ({ ...prev, [fieldName]: value }));
+	}, []);
 
 	const handleNoteTypeChange = useCallback((id: string) => {
 		setNoteTypeId(id);
@@ -126,11 +127,7 @@ export function QuickNoteEditorApp({
 		});
 
 		const result = await modal.openAndWait();
-		if (
-			result.cancelled ||
-			!result.targetNoteTypeId ||
-			!result.fieldMapping
-		)
+		if (result.cancelled || !result.targetNoteTypeId || !result.fieldMapping)
 			return;
 
 		plugin.flashcardManager.changeNoteType(
@@ -179,10 +176,10 @@ export function QuickNoteEditorApp({
 		string | undefined
 	> => {
 		// Edit mode: keep existing sourceUid
-		if (isEdit) return editMode!.note.sourceUid;
+		if (isEdit) return editMode?.note.sourceUid;
 
 		// Add mode with pre-set sourceUid (from review card)
-		if (addMode!.sourceUid) return addMode!.sourceUid;
+		if (addMode?.sourceUid) return addMode?.sourceUid;
 
 		// Add mode with selected source note
 		if (!selectedSourceNote || !plugin.flashcardManager) return undefined;
@@ -195,84 +192,75 @@ export function QuickNoteEditorApp({
 		return uid;
 	}, [isEdit, editMode, addMode, selectedSourceNote, plugin.flashcardManager]);
 
-	const handleSave = useCallback(
-		async () => {
-			if (!noteType || !hasContent || saving) return;
-			if (!plugin.flashcardManager?.hasStore()) {
-				new Notice("Database not initialized");
-				return;
-			}
+	const handleSave = useCallback(async () => {
+		if (!noteType || !hasContent || saving) return;
+		if (!plugin.flashcardManager?.hasStore()) {
+			new Notice("Database not initialized");
+			return;
+		}
 
-			setSaving(true);
+		setSaving(true);
 
-			try {
-				if (isEdit) {
-					const unchanged = noteType.fields.every(
-						(f) => fields[f] === editMode!.note.fields[f],
-					);
-					if (unchanged) {
-						onDone({ cancelled: true });
-						return;
-					}
-
-					const result =
-						plugin.flashcardManager.updateNoteFields(
-							editMode!.noteId,
-							fields,
-						);
-
-					onDone({
-						cancelled: false,
-						updatedCardIds: result.updatedCardIds,
-					});
-				} else {
-					const sourceUid = await resolveSourceUid();
-
-					const result = plugin.flashcardManager.createNote({
-						noteTypeId,
-						fields,
-						alwaysTypeIn,
-						sourceUid,
-						createdVia: "manual",
-					});
-
-					const totalCards = result.cards.length;
-					new Notice(
-						`Created ${totalCards} card${totalCards !== 1 ? "s" : ""}`,
-					);
-
-					// Clear unpinned fields, keep pinned — modal stays open
-					const next: Record<string, string> = {};
-					for (const field of noteType.fields) {
-						next[field] = pinnedFields.has(field)
-							? (fields[field] ?? "")
-							: "";
-					}
-					setFields(next);
-					setSaving(false);
+		try {
+			if (isEdit) {
+				const unchanged = noteType.fields.every(
+					(f) => fields[f] === editMode?.note.fields[f],
+				);
+				if (unchanged) {
+					onDone({ cancelled: true });
+					return;
 				}
-			} catch (error) {
-				const msg =
-					error instanceof Error ? error.message : String(error);
-				new Notice(`Error: ${msg}`);
+
+				const result = plugin.flashcardManager.updateNoteFields(
+					editMode?.noteId,
+					fields,
+				);
+
+				onDone({
+					cancelled: false,
+					updatedCardIds: result.updatedCardIds,
+				});
+			} else {
+				const sourceUid = await resolveSourceUid();
+
+				const result = plugin.flashcardManager.createNote({
+					noteTypeId,
+					fields,
+					alwaysTypeIn,
+					sourceUid,
+					createdVia: "manual",
+				});
+
+				const totalCards = result.cards.length;
+				new Notice(`Created ${totalCards} card${totalCards !== 1 ? "s" : ""}`);
+
+				// Clear unpinned fields, keep pinned — modal stays open
+				const next: Record<string, string> = {};
+				for (const field of noteType.fields) {
+					next[field] = pinnedFields.has(field) ? (fields[field] ?? "") : "";
+				}
+				setFields(next);
 				setSaving(false);
 			}
-		},
-		[
-			noteType,
-			hasContent,
-			saving,
-			isEdit,
-			editMode,
-			fields,
-			noteTypeId,
-			resolveSourceUid,
-			alwaysTypeIn,
-			plugin.flashcardManager,
-			onDone,
-			pinnedFields,
-		],
-	);
+		} catch (error) {
+			const msg = error instanceof Error ? error.message : String(error);
+			new Notice(`Error: ${msg}`);
+			setSaving(false);
+		}
+	}, [
+		noteType,
+		hasContent,
+		saving,
+		isEdit,
+		editMode,
+		fields,
+		noteTypeId,
+		resolveSourceUid,
+		alwaysTypeIn,
+		plugin.flashcardManager,
+		onDone,
+		pinnedFields,
+	]);
 
 	// Note: Cmd/Ctrl+Enter is handled by EmbeddableEditor's Scope (via onModEnter
 	// passed to NoteFieldsForm). No document listener needed — the Scope intercepts

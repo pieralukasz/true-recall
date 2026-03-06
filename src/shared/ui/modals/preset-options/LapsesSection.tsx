@@ -1,5 +1,10 @@
 import type { FSRSPreset, LeechAction } from "@shared/types";
-import { FormCard, FormField, SelectInput, TextInput } from "@shared/ui/components";
+import {
+	FormCard,
+	FormField,
+	SelectInput,
+	TextInput,
+} from "@shared/ui/components";
 
 interface LapsesSectionProps {
 	preset: FSRSPreset;
@@ -11,10 +16,7 @@ const LEECH_ACTION_OPTIONS = [
 	{ value: "suspend", label: "Suspend card" },
 ];
 
-export function LapsesSection({
-	preset,
-	updatePreset,
-}: LapsesSectionProps) {
+export function LapsesSection({ preset, updatePreset }: LapsesSectionProps) {
 	return (
 		<FormCard title="Lapses">
 			<FormField
@@ -63,9 +65,7 @@ export function LapsesSection({
 			>
 				<SelectInput
 					value={preset.leechAction ?? "tag-only"}
-					onChange={(v) =>
-						void updatePreset({ leechAction: v as LeechAction })
-					}
+					onChange={(v) => void updatePreset({ leechAction: v as LeechAction })}
 					options={LEECH_ACTION_OPTIONS}
 				/>
 			</FormField>

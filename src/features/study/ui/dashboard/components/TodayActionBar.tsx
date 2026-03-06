@@ -1,5 +1,5 @@
-import { FSRS_COLORS } from "@shared/ui/helpers/fsrs-colors";
 import { ActionButton } from "@shared/ui/components";
+import { FSRS_COLORS } from "@shared/ui/helpers/fsrs-colors";
 import { usePlugin } from "@shared/ui/preact";
 import { formatEstimatedTime } from "../helpers/time-estimate";
 import type { TodayProgress } from "../types";
@@ -69,9 +69,7 @@ export function TodayActionBar({
 							key={c.label}
 							class="ep:flex ep:flex-col ep:items-center ep:rounded-md ep:bg-obs-secondary/50 ep:px-3 ep:py-1.5"
 						>
-							<span
-								class={`ep:text-lg ep:font-semibold ${c.colorCls}`}
-							>
+							<span class={`ep:text-lg ep:font-semibold ${c.colorCls}`}>
 								{c.value}
 							</span>
 							<span class="ep:text-ui-smaller ep:text-obs-muted">
@@ -80,9 +78,7 @@ export function TodayActionBar({
 						</div>
 					))}
 					{totalActionable === 0 && (
-						<span class="ep:text-sm ep:text-obs-muted">
-							Nothing to review
-						</span>
+						<span class="ep:text-sm ep:text-obs-muted">Nothing to review</span>
 					)}
 				</div>
 

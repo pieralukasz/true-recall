@@ -1,7 +1,7 @@
 import type { FSRSService } from "@features/core/services/fsrs.service";
 import type { HierarchyService } from "@features/core/services/hierarchy.service";
-import { FSRS_COLORS } from "@shared/ui/helpers/fsrs-colors";
 import type { CardStore } from "@shared/types/fsrs/store.types";
+import { FSRS_COLORS } from "@shared/ui/helpers/fsrs-colors";
 import { State } from "ts-fsrs";
 
 export interface ProjectStats {

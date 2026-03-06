@@ -1,6 +1,11 @@
 import { useFsrsHelperOp } from "@features/settings/tabs/fsrs/useFsrsHelperOp";
 import { notify } from "@shared/services/notification.service";
-import { ActionButton, FormCard, FormField, TextInput } from "@shared/ui/components";
+import {
+	ActionButton,
+	FormCard,
+	FormField,
+	TextInput,
+} from "@shared/ui/components";
 import { confirm } from "@shared/ui/modals";
 import { useCallback, useMemo, useState } from "preact/hooks";
 

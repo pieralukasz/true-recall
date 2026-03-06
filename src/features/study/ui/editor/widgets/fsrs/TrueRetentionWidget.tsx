@@ -33,9 +33,7 @@ export function TrueRetentionWidget({ source }: { source: string }) {
 	}).value;
 
 	if (!plugin.fsrsHelper) {
-		return (
-			<div class="ep:text-obs-muted ep:text-xs ep:p-3">Loading...</div>
-		);
+		return <div class="ep:text-obs-muted ep:text-xs ep:p-3">Loading...</div>;
 	}
 
 	if (!data || data.summary.totalReviews === 0) {

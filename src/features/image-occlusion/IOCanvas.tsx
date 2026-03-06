@@ -1,9 +1,16 @@
-import { clamp, normalizePointFromRect } from "@features/image-occlusion/canvas-geometry";
-import type { IODefinition, IORegion, IOShape } from "@features/image-occlusion/types";
+import {
+	clamp,
+	normalizePointFromRect,
+} from "@features/image-occlusion/canvas-geometry";
+import type {
+	IODefinition,
+	IORegion,
+	IOShape,
+} from "@features/image-occlusion/types";
 import { Clickable } from "@shared/ui/components/Clickable";
 import { useIcon } from "@shared/ui/preact/hooks";
-import { getNextIOGroupKey } from "./io-definition";
 import { useEffect, useMemo, useState } from "preact/hooks";
+import { getNextIOGroupKey } from "./io-definition";
 
 type Tool = "select" | IOShape;
 type ResizeCorner = "nw" | "ne" | "sw" | "se";
@@ -132,7 +139,8 @@ export function IOCanvas({
 
 	const selectedRegion = useMemo(
 		() =>
-			definition.regions.find((region) => region.id === selectedRegionId) ?? null,
+			definition.regions.find((region) => region.id === selectedRegionId) ??
+			null,
 		[definition.regions, selectedRegionId],
 	);
 
@@ -392,13 +400,10 @@ export function IOCanvas({
 						transform: `translate(${panX}px, ${panY}px) scale(${zoom})`,
 					}}
 				>
-					<div
-						ref={(el) => setMediaEl(el)}
-						class="true-recall-io-canvas-media"
-					>
+					<div ref={(el) => setMediaEl(el)} class="true-recall-io-canvas-media">
 						<img
 							src={imageUrl}
-							alt="Image occlusion source"
+							alt="Occlusion source"
 							draggable={false}
 							class="true-recall-io-canvas-image"
 						/>
@@ -406,6 +411,7 @@ export function IOCanvas({
 							class="true-recall-io-canvas-svg"
 							viewBox="0 0 1 1"
 							preserveAspectRatio="none"
+							aria-hidden="true"
 						>
 							{allRegions.map((region) => {
 								const isSelected = selectedRegionId === region.id;

@@ -1,7 +1,7 @@
-import { LivePreviewField } from "@features/study/ui/review/components/LivePreviewField";
 import { IOCardRenderer } from "@features/image-occlusion/IOCardRenderer";
-import { FSRS_COLORS, MUTED_STATES } from "@shared/ui/helpers/fsrs-colors";
+import { LivePreviewField } from "@features/study/ui/review/components/LivePreviewField";
 import { Clickable } from "@shared/ui/components";
+import { FSRS_COLORS, MUTED_STATES } from "@shared/ui/helpers/fsrs-colors";
 import { useApp } from "@shared/ui/preact/ObsidianContext";
 import { State } from "ts-fsrs";
 import type { BrowserCard } from "../types";
@@ -16,10 +16,7 @@ const STATE_LABELS: Record<number, string> = {
 interface CardPreviewProps {
 	card: BrowserCard;
 	onClose: () => void;
-	onContentChange?: (
-		value: string,
-		field: "question" | "answer",
-	) => void;
+	onContentChange?: (value: string, field: "question" | "answer") => void;
 }
 
 export function CardPreview({
@@ -37,25 +34,23 @@ export function CardPreview({
 		? "Suspended"
 		: card.buriedUntil && new Date(card.buriedUntil) > new Date()
 			? "Buried"
-			: STATE_LABELS[card.state] ?? "Unknown";
+			: (STATE_LABELS[card.state] ?? "Unknown");
 
 	const stateColors = card.suspended
 		? FSRS_COLORS.suspended
 		: card.buriedUntil && new Date(card.buriedUntil) > new Date()
 			? null
 			: (() => {
-					const key =
-						STATE_LABELS[card.state]?.toLowerCase() as
-							| "new"
-							| "learning"
-							| "review"
-							| "relearning"
-							| undefined;
+					const key = STATE_LABELS[card.state]?.toLowerCase() as
+						| "new"
+						| "learning"
+						| "review"
+						| "relearning"
+						| undefined;
 					return key ? FSRS_COLORS[key] : null;
 				})();
 
-	const badgeCls =
-		stateColors?.badgeCls ?? MUTED_STATES.buried.badgeCls;
+	const badgeCls = stateColors?.badgeCls ?? MUTED_STATES.buried.badgeCls;
 
 	return (
 		<div class="ep:w-[320px] ep:border-l ep:border-obs-border ep:flex ep:flex-col ep:shrink-0 ep:overflow-y-auto ep:bg-obs-primary">
@@ -105,9 +100,7 @@ export function CardPreview({
 						onContentChange={onContentChange}
 					/>
 				) : (
-					<div class="ep:text-sm ep:text-obs-muted ep:italic">
-						No question
-					</div>
+					<div class="ep:text-sm ep:text-obs-muted ep:italic">No question</div>
 				)}
 			</div>
 
@@ -132,9 +125,7 @@ export function CardPreview({
 						onContentChange={onContentChange}
 					/>
 				) : (
-					<div class="ep:text-sm ep:text-obs-muted ep:italic">
-						No answer
-					</div>
+					<div class="ep:text-sm ep:text-obs-muted ep:italic">No answer</div>
 				)}
 			</div>
 
@@ -144,27 +135,16 @@ export function CardPreview({
 					FSRS Statistics
 				</div>
 				<div class="ep:grid ep:grid-cols-2 ep:gap-x-4 ep:gap-y-1.5 ep:text-sm">
-					<StatRow
-						label="Stability"
-						value={formatStability(card.stability)}
-					/>
-					<StatRow
-						label="Difficulty"
-						value={card.difficulty.toFixed(2)}
-					/>
+					<StatRow label="Stability" value={formatStability(card.stability)} />
+					<StatRow label="Difficulty" value={card.difficulty.toFixed(2)} />
 					<StatRow label="Reviews" value={String(card.reps)} />
 					<StatRow label="Lapses" value={String(card.lapses)} />
-					<StatRow
-						label="Interval"
-						value={`${card.scheduledDays}d`}
-					/>
+					<StatRow label="Interval" value={`${card.scheduledDays}d`} />
 					<StatRow
 						label="Last Review"
 						value={
 							card.lastReview
-								? new Date(
-										card.lastReview,
-									).toLocaleDateString()
+								? new Date(card.lastReview).toLocaleDateString()
 								: "Never"
 						}
 					/>
@@ -195,18 +175,12 @@ export function CardPreview({
 						</div>
 					)}
 					<MetaRow label="Type" value={card.cardType} />
-					<MetaRow
-						label="Created"
-						value={card.createdVia ?? "manual"}
-					/>
+					<MetaRow label="Created" value={card.createdVia ?? "manual"} />
 					{card.presetName && (
 						<MetaRow label="Preset" value={card.presetName} />
 					)}
 					{card.projects.length > 0 && (
-						<MetaRow
-							label="Projects"
-							value={card.projects.join(", ")}
-						/>
+						<MetaRow label="Projects" value={card.projects.join(", ")} />
 					)}
 				</div>
 			</div>

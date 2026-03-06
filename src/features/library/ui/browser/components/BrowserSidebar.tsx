@@ -1,8 +1,8 @@
-import { useMemo } from "preact/hooks";
-import { Clickable, SearchInput } from "@shared/ui/components";
-import { FSRS_COLORS, MUTED_STATES } from "@shared/ui/helpers/fsrs-colors";
 import { useSignal } from "@preact/signals";
-import { EMPTY_FILTER, type FilterState } from "../types";
+import { Clickable, SearchInput } from "@shared/ui/components";
+import { FSRS_COLORS } from "@shared/ui/helpers/fsrs-colors";
+import { useMemo } from "preact/hooks";
+import type { FilterState } from "../types";
 
 interface BrowserSidebarProps {
 	facetCounts: {
@@ -80,9 +80,7 @@ export function BrowserSidebar({
 							dotCls={item.dotCls}
 							onClick={() => {
 								const states = active
-									? activeFilter.states.filter(
-											(s) => s !== item.key,
-										)
+									? activeFilter.states.filter((s) => s !== item.key)
 									: [
 											...activeFilter.states,
 											item.key as FilterState["states"][number],
@@ -115,9 +113,7 @@ export function BrowserSidebar({
 							active={active}
 							onClick={() => {
 								const cardTypes = active
-									? activeFilter.cardTypes.filter(
-											(t) => t !== type,
-										)
+									? activeFilter.cardTypes.filter((t) => t !== type)
 									: [
 											...activeFilter.cardTypes,
 											type as FilterState["cardTypes"][number],
@@ -140,9 +136,7 @@ export function BrowserSidebar({
 							active={active}
 							onClick={() => {
 								const createdVia = active
-									? activeFilter.createdVia.filter(
-											(v) => v !== via,
-										)
+									? activeFilter.createdVia.filter((v) => v !== via)
 									: [...activeFilter.createdVia, via];
 								onFilterChange({ createdVia });
 							}}
@@ -274,9 +268,7 @@ function SourceNotesSection({
 					) : (
 						<>
 							{visibleNotes.map((note) => {
-								const active = activeFilter.sourceUids.includes(
-									note.uid,
-								);
+								const active = activeFilter.sourceUids.includes(note.uid);
 								return (
 									<SidebarRow
 										key={note.uid}
@@ -285,13 +277,8 @@ function SourceNotesSection({
 										active={active}
 										onClick={() => {
 											const sourceUids = active
-												? activeFilter.sourceUids.filter(
-														(u) => u !== note.uid,
-													)
-												: [
-														...activeFilter.sourceUids,
-														note.uid,
-													];
+												? activeFilter.sourceUids.filter((u) => u !== note.uid)
+												: [...activeFilter.sourceUids, note.uid];
 											onFilterChange({ sourceUids });
 										}}
 									/>
@@ -341,9 +328,7 @@ function SidebarSection({
 					{open.value ? "\u25BE" : "\u25B8"}
 				</span>
 			</Clickable>
-			{open.value && (
-				<div class="ep:pb-1.5">{children}</div>
-			)}
+			{open.value && <div class="ep:pb-1.5">{children}</div>}
 		</div>
 	);
 }

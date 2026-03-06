@@ -88,10 +88,7 @@ export class RenameModal extends BasePromiseModal<RenameResult> {
 			width: "400px",
 		});
 		// For files, strip the .md extension for display
-		this.currentName =
-			file instanceof TFile
-				? file.basename
-				: file.name;
+		this.currentName = file instanceof TFile ? file.basename : file.name;
 		this.isFolder = file instanceof TFolder;
 	}
 

@@ -1,7 +1,7 @@
 import type { HierarchyService } from "@features/core/services/hierarchy.service";
 import type { FrontmatterService } from "@features/study/services/flashcard/frontmatter.service";
-import { Notice, TFile, normalizePath } from "obsidian";
 import type { App } from "obsidian";
+import { Notice, normalizePath, TFile } from "obsidian";
 import type { FlatProjectItem } from "./project-tree-flatten";
 
 // ── DnD data types ──────────────────────────────────────
@@ -100,9 +100,7 @@ export function validateDrop(
 	if (target.type === "empty-project") return null;
 
 	const targetPath =
-		target.type === "project-header"
-			? target.project.path
-			: target.note.path;
+		target.type === "project-header" ? target.project.path : target.note.path;
 
 	// Target must have a path
 	if (!targetPath) return null;

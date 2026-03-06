@@ -1,11 +1,11 @@
+import type { SemanticAnswerGradingService } from "@features/ai/services/semantic-answer-grading.service";
 import type { SessionPersistenceService } from "@features/core/persistence/session-persistence.service";
 import type { FSRSService } from "@features/core/services/fsrs.service";
 import type { FlashcardManager } from "@features/study/services/flashcard/flashcard.service";
 import type { ReviewService } from "@features/study/services/review.service";
+import { assessTypedAnswer } from "@features/study/ui/review/helpers/answer-assessment";
 import { shouldTriggerLeech } from "@features/study/ui/review/helpers/leech-helpers";
 import type { SessionFilters } from "@features/study/ui/review/review.types";
-import { assessTypedAnswer } from "@features/study/ui/review/helpers/answer-assessment";
-import type { SemanticAnswerGradingService } from "@features/ai/services/semantic-answer-grading.service";
 import { notify } from "@shared/services/notification.service";
 import { notifyCardChange } from "@shared/services/signals";
 import type { AnswerUndoPayload } from "@shared/services/undo.types";
@@ -66,9 +66,7 @@ export class AnswerHandler {
 		}
 	}
 
-	prepareTypedAnswerAssessment(
-		typedAnswer: string,
-	): {
+	prepareTypedAnswerAssessment(typedAnswer: string): {
 		card: FSRSFlashcardItem;
 		localAssessment: LocalAnswerAssessment;
 	} | null {
@@ -248,13 +246,9 @@ export class AnswerHandler {
 				suspended: true,
 			});
 			this.deps.getReview().removeCardById(card.id);
-			notify().warning(
-				`Leech suspended (${lapses} lapses): ${preview}`,
-			);
+			notify().warning(`Leech suspended (${lapses} lapses): ${preview}`);
 		} else {
-			notify().info(
-				`Leech detected (${lapses} lapses): ${preview}`,
-			);
+			notify().info(`Leech detected (${lapses} lapses): ${preview}`);
 		}
 	}
 

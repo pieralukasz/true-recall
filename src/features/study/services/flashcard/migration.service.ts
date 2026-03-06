@@ -7,16 +7,13 @@
  * 3. Replace the old lines in the note content
  */
 
+import { blockToText } from "@features/study/services/flashcard/block-parser.service";
 import {
 	CLOZE_DETECT,
 	INLINE_SEPARATOR_RE,
 } from "@features/study/services/flashcard/parsing-patterns";
-import { blockToText } from "@features/study/services/flashcard/block-parser.service";
-import {
-	BUILTIN_BASIC_ID,
-	BUILTIN_CLOZE_ID,
-} from "@shared/types/note.types";
-import type { App, TFile } from "obsidian";
+import { BUILTIN_BASIC_ID, BUILTIN_CLOZE_ID } from "@shared/types/note.types";
+import type { App } from "obsidian";
 
 export interface MigrationResult {
 	migratedFiles: number;
@@ -66,22 +63,32 @@ export function migrateContent(content: string): string | null {
 		// Try :: separator
 		const colonMatch = trimmed.match(INLINE_SEPARATOR_RE);
 		if (colonMatch) {
-			const front = colonMatch[1]!.trim();
-			const back = colonMatch[2]!.trim();
+			const front = colonMatch[1]?.trim();
+			const back = colonMatch[2]?.trim();
 			if (front && back) {
 				const isCloze = CLOZE_DETECT.test(front);
 				if (isCloze) {
-					result.push(blockToText({
-						noteTypeId: BUILTIN_CLOZE_ID,
-						noteTypeSlug: "cloze",
-						fields: { Text: front, Extra: back },
-					}, ["Text", "Extra"]) + "\n---");
+					result.push(
+						`${blockToText(
+							{
+								noteTypeId: BUILTIN_CLOZE_ID,
+								noteTypeSlug: "cloze",
+								fields: { Text: front, Extra: back },
+							},
+							["Text", "Extra"],
+						)}\n---`,
+					);
 				} else {
-					result.push(blockToText({
-						noteTypeId: BUILTIN_BASIC_ID,
-						noteTypeSlug: "basic",
-						fields: { Front: front, Back: back },
-					}, ["Front", "Back"]) + "\n---");
+					result.push(
+						`${blockToText(
+							{
+								noteTypeId: BUILTIN_BASIC_ID,
+								noteTypeSlug: "basic",
+								fields: { Front: front, Back: back },
+							},
+							["Front", "Back"],
+						)}\n---`,
+					);
 				}
 				changed = true;
 				continue;
@@ -90,11 +97,16 @@ export function migrateContent(content: string): string | null {
 
 		// Standalone cloze line
 		if (CLOZE_DETECT.test(trimmed) && trimmed.length > 0) {
-			result.push(blockToText({
-				noteTypeId: BUILTIN_CLOZE_ID,
-				noteTypeSlug: "cloze",
-				fields: { Text: trimmed, Extra: "" },
-			}, ["Text", "Extra"]) + "\n---");
+			result.push(
+				`${blockToText(
+					{
+						noteTypeId: BUILTIN_CLOZE_ID,
+						noteTypeSlug: "cloze",
+						fields: { Text: trimmed, Extra: "" },
+					},
+					["Text", "Extra"],
+				)}\n---`,
+			);
 			changed = true;
 			continue;
 		}
@@ -126,7 +138,9 @@ export async function migrateVault(app: App): Promise<MigrationResult> {
 				migratedCards += blockCount;
 			}
 		} catch (err) {
-			errors.push(`${file.path}: ${err instanceof Error ? err.message : String(err)}`);
+			errors.push(
+				`${file.path}: ${err instanceof Error ? err.message : String(err)}`,
+			);
 		}
 	}
 

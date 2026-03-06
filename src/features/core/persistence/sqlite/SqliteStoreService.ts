@@ -9,7 +9,6 @@ import {
 	NoteTypeActions,
 	StatsActions,
 } from "@features/core/persistence/sqlite/modules";
-import { IntegrityCheckService } from "@features/core/services/integrity-check.service";
 import { SqliteDatabase } from "@features/core/persistence/sqlite/SqliteDatabase";
 import { SqliteSchemaManager } from "@features/core/persistence/sqlite/SqliteSchemaManager";
 import {
@@ -17,6 +16,7 @@ import {
 	getDeviceDbFilename,
 	SAVE_DEBOUNCE_MS,
 } from "@features/core/persistence/sqlite/sqlite.types";
+import { IntegrityCheckService } from "@features/core/services/integrity-check.service";
 import {
 	NOTIFICATION_DURATION,
 	notify,

@@ -13,15 +13,15 @@ export {
 	type CardPreviewModalOptions,
 } from "@shared/ui/modals/CardPreviewModal";
 export {
+	ConfirmModal,
+	type ConfirmModalOptions,
+	confirm,
+} from "@shared/ui/modals/ConfirmModal";
+export {
 	MoveCardModal,
 	type MoveCardModalOptions,
 	type MoveCardResult,
 } from "@shared/ui/modals/MoveCardModal";
-export {
-	SelectNoteModal,
-	type SelectNoteModalOptions,
-	type SelectNoteResult,
-} from "@shared/ui/modals/SelectNoteModal";
 export {
 	PresetInspectorModal,
 	type PresetInspectorResult,
@@ -31,11 +31,11 @@ export {
 	type PresetOptionsModalOptions,
 } from "@shared/ui/modals/PresetOptionsModal";
 export {
+	SelectNoteModal,
+	type SelectNoteModalOptions,
+	type SelectNoteResult,
+} from "@shared/ui/modals/SelectNoteModal";
+export {
 	SetPresetModal,
 	type SetPresetResult,
 } from "@shared/ui/modals/SetPresetModal";
-export {
-	ConfirmModal,
-	type ConfirmModalOptions,
-	confirm,
-} from "@shared/ui/modals/ConfirmModal";

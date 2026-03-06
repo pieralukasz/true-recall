@@ -1,6 +1,12 @@
 import { FSRS_CONFIG } from "@shared/constants";
 import type { FSRSPreset, ReviewOrder } from "@shared/types";
-import { FormCard, FormField, SelectInput, SliderInput, TextInput } from "@shared/ui/components";
+import {
+	FormCard,
+	FormField,
+	SelectInput,
+	SliderInput,
+	TextInput,
+} from "@shared/ui/components";
 
 interface SchedulingSectionProps {
 	preset: FSRSPreset;
@@ -60,9 +66,7 @@ export function SchedulingSection({
 			>
 				<SelectInput
 					value={preset.reviewOrder ?? "due-date"}
-					onChange={(v) =>
-						void updatePreset({ reviewOrder: v as ReviewOrder })
-					}
+					onChange={(v) => void updatePreset({ reviewOrder: v as ReviewOrder })}
 					options={REVIEW_ORDER_OPTIONS}
 				/>
 			</FormField>

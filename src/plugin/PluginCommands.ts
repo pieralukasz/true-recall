@@ -1,7 +1,7 @@
 import { migrateLegacyProjects } from "@features/core/services/migrate-projects";
 import { migrateVault } from "@features/study/services/flashcard/migration.service";
-import type TrueRecallPlugin from "../main";
 import { Notice } from "obsidian";
+import type TrueRecallPlugin from "../main";
 
 export function registerCommands(plugin: TrueRecallPlugin): void {
 	plugin.addCommand({
@@ -199,7 +199,9 @@ export function registerCommands(plugin: TrueRecallPlugin): void {
 			} else {
 				new Notice(
 					`Migrated ${result.migratedCards} cards in ${result.migratedFiles} files.` +
-					(result.errors.length > 0 ? ` ${result.errors.length} errors.` : ""),
+						(result.errors.length > 0
+							? ` ${result.errors.length} errors.`
+							: ""),
 				);
 			}
 			if (result.errors.length > 0) {

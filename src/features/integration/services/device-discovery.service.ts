@@ -184,9 +184,7 @@ export class DeviceDiscoveryService {
 				const lastReviewValue = lastReviewResult[0]?.values[0]?.[0] as
 					| string
 					| null;
-				lastReviewDate = lastReviewValue
-					? new Date(lastReviewValue)
-					: null;
+				lastReviewDate = lastReviewValue ? new Date(lastReviewValue) : null;
 			} catch {
 				// Table may not exist in old/empty databases
 			}

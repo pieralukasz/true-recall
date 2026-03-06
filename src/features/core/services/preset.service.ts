@@ -1,6 +1,6 @@
+import type { SqliteStoreService } from "@features/core/persistence/sqlite";
 import type { FrontmatterIndexService } from "@features/core/services/frontmatter-index.service";
 import type { HierarchyService } from "@features/core/services/hierarchy.service";
-import type { SqliteStoreService } from "@features/core/persistence/sqlite";
 import type { FSRSFlashcardItem } from "@shared/types/fsrs";
 import type {
 	FSRSPreset,
@@ -222,7 +222,8 @@ export class PresetService {
 		const queue = [...this.hierarchyService.getParentsForNote(notePath)];
 
 		while (queue.length > 0) {
-			const current = queue.shift()!;
+			const current = queue.shift();
+			if (current === undefined) break;
 			if (visited.has(current)) continue;
 			visited.add(current);
 
@@ -232,7 +233,9 @@ export class PresetService {
 			}
 
 			// Walk further up
-			for (const grandparent of this.hierarchyService.getParentsForNote(current)) {
+			for (const grandparent of this.hierarchyService.getParentsForNote(
+				current,
+			)) {
 				if (!visited.has(grandparent)) queue.push(grandparent);
 			}
 		}
