@@ -46,6 +46,7 @@ export class NoteTypeService {
 
 	create(input: {
 		name: string;
+		type?: 0 | 1;
 		fields: string[];
 		templates: CardTemplate[];
 		css?: string;
@@ -80,7 +81,7 @@ export class NoteTypeService {
 		const noteType: NoteType = {
 			id: crypto.randomUUID(),
 			name,
-			type: 0,
+			type: input.type ?? 0,
 			fields: input.fields,
 			templates: input.templates,
 			css: input.css ?? "",

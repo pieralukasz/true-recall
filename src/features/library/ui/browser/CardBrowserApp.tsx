@@ -186,6 +186,12 @@ export function CardBrowserApp() {
 		(value: string, field: "question" | "answer") => {
 			const card = previewCard.value;
 			if (!card) return;
+			if (card.cardType === "image-occlusion") {
+				notify().warning(
+					"Image occlusion cards are edited in the image occlusion editor.",
+				);
+				return;
+			}
 
 			const newQuestion = field === "question" ? value : card.question;
 			const newAnswer = field === "answer" ? value : card.answer;

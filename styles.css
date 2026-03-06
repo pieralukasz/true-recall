@@ -59,16 +59,12 @@
     --ep-color-obs-error: var(--text-error);
     --ep-color-obs-warning: var(--text-warning);
     --ep-color-obs-interactive: var(--interactive-accent);
-    --ep-color-obs-interactive-hover: var(--interactive-accent-hover);
     --ep-color-obs-primary: var(--background-primary);
-    --ep-color-obs-primary-alt: var(--background-primary-alt);
     --ep-color-obs-secondary: var(--background-secondary);
-    --ep-color-obs-secondary-alt: var(--background-secondary-alt);
     --ep-color-obs-modifier-hover: var(--background-modifier-hover);
     --ep-color-obs-border: var(--background-modifier-border);
     --ep-color-obs-modifier-border: var(--background-modifier-border);
     --ep-color-obs-modifier-border-hover: var(--background-modifier-border-hover);
-    --ep-color-obs-modifier-border-focus: var(--background-modifier-border-focus);
     --ep-color-obs-modifier-error: var(--background-modifier-error);
     --ep-color-obs-red: var(--color-red);
     --ep-color-obs-orange: var(--color-orange);
@@ -76,8 +72,6 @@
     --ep-color-obs-green: var(--color-green);
     --ep-color-obs-cyan: var(--color-cyan);
     --ep-color-obs-blue: var(--color-blue);
-    --ep-color-obs-purple: var(--color-purple);
-    --ep-color-obs-pink: var(--color-pink);
     --ep-text-ui-smaller: var(--font-ui-smaller);
     --ep-text-ui-small: var(--font-ui-small);
     --ep-text-ui-medium: var(--font-ui-medium);
@@ -289,6 +283,9 @@
   }
   .ep\:mx-1 {
     margin-inline: calc(var(--ep-spacing) * 1);
+  }
+  .ep\:mx-2 {
+    margin-inline: calc(var(--ep-spacing) * 2);
   }
   .ep\:mx-auto {
     margin-inline: auto;
@@ -521,6 +518,9 @@
   .ep\:max-h-60 {
     max-height: calc(var(--ep-spacing) * 60);
   }
+  .ep\:max-h-\[28px\] {
+    max-height: 28px;
+  }
   .ep\:max-h-\[60vh\] {
     max-height: 60vh;
   }
@@ -536,9 +536,6 @@
   .ep\:max-h-\[200px\] {
     max-height: 200px;
   }
-  .ep\:max-h-\[250px\] {
-    max-height: 250px;
-  }
   .ep\:max-h-\[280px\] {
     max-height: 280px;
   }
@@ -548,14 +545,20 @@
   .ep\:min-h-0 {
     min-height: calc(var(--ep-spacing) * 0);
   }
+  .ep\:min-h-\[1\.6em\] {
+    min-height: 1.6em;
+  }
+  .ep\:min-h-\[2\.25rem\] {
+    min-height: 2.25rem;
+  }
   .ep\:min-h-\[2px\] {
     min-height: 2px;
   }
+  .ep\:min-h-\[28px\] {
+    min-height: 28px;
+  }
   .ep\:min-h-\[48px\] {
     min-height: 48px;
-  }
-  .ep\:min-h-\[80px\] {
-    min-height: 80px;
   }
   .ep\:min-h-\[220px\] {
     min-height: 220px;
@@ -614,6 +617,9 @@
   .ep\:w-45 {
     width: calc(var(--ep-spacing) * 45);
   }
+  .ep\:w-52 {
+    width: calc(var(--ep-spacing) * 52);
+  }
   .ep\:w-56 {
     width: calc(var(--ep-spacing) * 56);
   }
@@ -650,6 +656,9 @@
   .ep\:w-\[320px\] {
     width: 320px;
   }
+  .ep\:w-\[420px\] {
+    width: 420px;
+  }
   .ep\:w-\[calc\(1\.6em-8px\)\] {
     width: calc(1.6em - 8px);
   }
@@ -671,6 +680,9 @@
   .ep\:max-w-\[90px\] {
     max-width: 90px;
   }
+  .ep\:max-w-\[90vw\] {
+    max-width: 90vw;
+  }
   .ep\:max-w-\[120px\] {
     max-width: 120px;
   }
@@ -688,6 +700,9 @@
   }
   .ep\:max-w-\[300px\] {
     max-width: 300px;
+  }
+  .ep\:max-w-\[360px\] {
+    max-width: 360px;
   }
   .ep\:max-w-\[1400px\] {
     max-width: 1400px;
@@ -710,11 +725,17 @@
   .ep\:min-w-\[3em\] {
     min-width: 3em;
   }
+  .ep\:min-w-\[60\%\] {
+    min-width: 60%;
+  }
   .ep\:min-w-\[160px\] {
     min-width: 160px;
   }
   .ep\:min-w-\[180px\] {
     min-width: 180px;
+  }
+  .ep\:min-w-\[260px\] {
+    min-width: 260px;
   }
   .ep\:min-w-full {
     min-width: 100%;
@@ -929,6 +950,10 @@
     border-top-left-radius: 0.25rem;
     border-top-right-radius: 0.25rem;
   }
+  .ep\:rounded-t-md {
+    border-top-left-radius: var(--ep-radius-md);
+    border-top-right-radius: var(--ep-radius-md);
+  }
   .ep\:border {
     border-style: var(--tw-border-style);
     border-width: 1px;
@@ -953,6 +978,10 @@
     border-bottom-style: var(--tw-border-style);
     border-bottom-width: 1px;
   }
+  .ep\:border-b-2 {
+    border-bottom-style: var(--tw-border-style);
+    border-bottom-width: 2px;
+  }
   .ep\:border-l {
     border-left-style: var(--tw-border-style);
     border-left-width: 1px;
@@ -976,6 +1005,12 @@
   .ep\:border-obs-accent {
     border-color: var(--ep-color-obs-accent);
   }
+  .ep\:border-obs-blue\/35 {
+    border-color: var(--ep-color-obs-blue);
+    @supports (color: color-mix(in lab, red, red)) {
+      border-color: color-mix(in oklab, var(--ep-color-obs-blue) 35%, transparent);
+    }
+  }
   .ep\:border-obs-border {
     border-color: var(--ep-color-obs-border);
   }
@@ -995,6 +1030,12 @@
     border-color: var(--ep-color-obs-cyan);
     @supports (color: color-mix(in lab, red, red)) {
       border-color: color-mix(in oklab, var(--ep-color-obs-cyan) 30%, transparent);
+    }
+  }
+  .ep\:border-obs-error\/30 {
+    border-color: var(--ep-color-obs-error);
+    @supports (color: color-mix(in lab, red, red)) {
+      border-color: color-mix(in oklab, var(--ep-color-obs-error) 30%, transparent);
     }
   }
   .ep\:border-obs-green\/30 {
@@ -1018,6 +1059,12 @@
       border-color: color-mix(in oklab, var(--ep-color-obs-interactive) 30%, transparent);
     }
   }
+  .ep\:border-obs-interactive\/45 {
+    border-color: var(--ep-color-obs-interactive);
+    @supports (color: color-mix(in lab, red, red)) {
+      border-color: color-mix(in oklab, var(--ep-color-obs-interactive) 45%, transparent);
+    }
+  }
   .ep\:border-obs-modifier-border {
     border-color: var(--ep-color-obs-modifier-border);
   }
@@ -1032,6 +1079,9 @@
     @supports (color: color-mix(in lab, red, red)) {
       border-color: color-mix(in oklab, var(--ep-color-obs-red) 30%, transparent);
     }
+  }
+  .ep\:border-transparent {
+    border-color: transparent;
   }
   .ep\:border-l-obs-interactive {
     border-left-color: var(--ep-color-obs-interactive);
@@ -1053,6 +1103,12 @@
   }
   .ep\:bg-obs-accent {
     background-color: var(--ep-color-obs-accent);
+  }
+  .ep\:bg-obs-accent\/5 {
+    background-color: var(--ep-color-obs-accent);
+    @supports (color: color-mix(in lab, red, red)) {
+      background-color: color-mix(in oklab, var(--ep-color-obs-accent) 5%, transparent);
+    }
   }
   .ep\:bg-obs-accent\/10 {
     background-color: var(--ep-color-obs-accent);
@@ -1092,6 +1148,12 @@
   }
   .ep\:bg-obs-border {
     background-color: var(--ep-color-obs-border);
+  }
+  .ep\:bg-obs-border\/50 {
+    background-color: var(--ep-color-obs-border);
+    @supports (color: color-mix(in lab, red, red)) {
+      background-color: color-mix(in oklab, var(--ep-color-obs-border) 50%, transparent);
+    }
   }
   .ep\:bg-obs-cyan {
     background-color: var(--ep-color-obs-cyan);
@@ -1210,8 +1272,20 @@
       background-color: color-mix(in oklab, var(--ep-color-obs-red) 15%, transparent);
     }
   }
+  .ep\:bg-obs-red\/20 {
+    background-color: var(--ep-color-obs-red);
+    @supports (color: color-mix(in lab, red, red)) {
+      background-color: color-mix(in oklab, var(--ep-color-obs-red) 20%, transparent);
+    }
+  }
   .ep\:bg-obs-secondary {
     background-color: var(--ep-color-obs-secondary);
+  }
+  .ep\:bg-obs-secondary\/20 {
+    background-color: var(--ep-color-obs-secondary);
+    @supports (color: color-mix(in lab, red, red)) {
+      background-color: color-mix(in oklab, var(--ep-color-obs-secondary) 20%, transparent);
+    }
   }
   .ep\:bg-transparent {
     background-color: transparent;
@@ -1719,6 +1793,16 @@
       }
     }
   }
+  .ep\:hover\:border-obs-blue\/45 {
+    &:hover {
+      @media (hover: hover) {
+        border-color: var(--ep-color-obs-blue);
+        @supports (color: color-mix(in lab, red, red)) {
+          border-color: color-mix(in oklab, var(--ep-color-obs-blue) 45%, transparent);
+        }
+      }
+    }
+  }
   .ep\:hover\:border-obs-border {
     &:hover {
       @media (hover: hover) {
@@ -1740,6 +1824,23 @@
     &:hover {
       @media (hover: hover) {
         border-color: var(--ep-color-obs-interactive);
+      }
+    }
+  }
+  .ep\:hover\:border-obs-interactive\/60 {
+    &:hover {
+      @media (hover: hover) {
+        border-color: var(--ep-color-obs-interactive);
+        @supports (color: color-mix(in lab, red, red)) {
+          border-color: color-mix(in oklab, var(--ep-color-obs-interactive) 60%, transparent);
+        }
+      }
+    }
+  }
+  .ep\:hover\:border-obs-modifier-border-hover {
+    &:hover {
+      @media (hover: hover) {
+        border-color: var(--ep-color-obs-modifier-border-hover);
       }
     }
   }
@@ -1769,6 +1870,16 @@
         background-color: var(--ep-color-obs-accent);
         @supports (color: color-mix(in lab, red, red)) {
           background-color: color-mix(in oklab, var(--ep-color-obs-accent) 10%, transparent);
+        }
+      }
+    }
+  }
+  .ep\:hover\:bg-obs-blue\/16 {
+    &:hover {
+      @media (hover: hover) {
+        background-color: var(--ep-color-obs-blue);
+        @supports (color: color-mix(in lab, red, red)) {
+          background-color: color-mix(in oklab, var(--ep-color-obs-blue) 16%, transparent);
         }
       }
     }
@@ -1806,6 +1917,16 @@
         background-color: var(--ep-color-obs-interactive);
         @supports (color: color-mix(in lab, red, red)) {
           background-color: color-mix(in oklab, var(--ep-color-obs-interactive) 15%, transparent);
+        }
+      }
+    }
+  }
+  .ep\:hover\:bg-obs-interactive\/16 {
+    &:hover {
+      @media (hover: hover) {
+        background-color: var(--ep-color-obs-interactive);
+        @supports (color: color-mix(in lab, red, red)) {
+          background-color: color-mix(in oklab, var(--ep-color-obs-interactive) 16%, transparent);
         }
       }
     }
@@ -1974,6 +2095,26 @@
       outline-style: none;
     }
   }
+  .ep\:focus-visible\:ring-2 {
+    &:focus-visible {
+      --tw-ring-shadow: var(--tw-ring-inset,) 0 0 0 calc(2px + var(--tw-ring-offset-width)) var(--tw-ring-color, currentcolor);
+      box-shadow: var(--tw-inset-shadow), var(--tw-inset-ring-shadow), var(--tw-ring-offset-shadow), var(--tw-ring-shadow), var(--tw-shadow);
+    }
+  }
+  .ep\:focus-visible\:ring-obs-interactive\/45 {
+    &:focus-visible {
+      --tw-ring-color: var(--ep-color-obs-interactive);
+      @supports (color: color-mix(in lab, red, red)) {
+        --tw-ring-color: color-mix(in oklab, var(--ep-color-obs-interactive) 45%, transparent);
+      }
+    }
+  }
+  .ep\:focus-visible\:outline-none {
+    &:focus-visible {
+      --tw-outline-style: none;
+      outline-style: none;
+    }
+  }
   .ep\:active\:scale-95 {
     &:active {
       --tw-scale-x: 95%;
@@ -2121,13 +2262,13 @@
   padding: 0;
 }
 .true-recall-review-question .cm-editor {
-  font-size: 1.4rem;
+  font-size: 1.2rem;
   line-height: 1.6;
   color: inherit;
   background: transparent;
 }
 .true-recall-review-answer .cm-editor {
-  font-size: 1.15rem;
+  font-size: 1rem;
   line-height: 1.6;
   color: inherit;
   background: transparent;
@@ -2248,7 +2389,7 @@
     outline: none !important;
   }
   .modal:has(.true-recall-modal) input[type="text"],	.modal:has(.true-recall-modal) input[type="number"],	.modal:has(.true-recall-modal) select {
-    min-height: 36px;
+    min-height: 28px;
   }
   .modal:has(.true-recall-modal) [role="button"],	.modal:has(.true-recall-modal) input,	.modal:has(.true-recall-modal) select,	.modal:has(.true-recall-modal) textarea {
     transition: background 0.15s ease,	color 0.15s ease,	border-color 0.15s ease;
@@ -2383,6 +2524,14 @@
   }
   [role="button"].mod-warning:hover {
     opacity: 0.9 !important;
+  }
+  .true-recall-add-field .cm-editor {
+    font-size: 1.18rem;
+    line-height: 1.6;
+  }
+  .true-recall-add-field .cm-content {
+    padding: 6px 9px;
+    min-height: 1.6em;
   }
 }
 @layer components {
@@ -2657,6 +2806,294 @@
 .true-recall-st-spinner {
   flex-shrink: 0;
 }
+@layer components {
+  .true-recall-io-editor-layout {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 260px;
+    gap: 12px;
+    min-height: 420px;
+  }
+  .true-recall-io-editor-left {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    min-width: 0;
+  }
+  .true-recall-io-editor-right {
+    border: 1px solid var(--background-modifier-border);
+    border-radius: var(--radius-m);
+    padding: 10px;
+    background: var(--background-secondary);
+    @supports (color: color-mix(in lab, red, red)) {
+      background: color-mix(in srgb, var(--background-secondary) 65%, transparent);
+    }
+  }
+  .true-recall-io-tool-row {
+    display: flex;
+    gap: 6px;
+    flex-wrap: wrap;
+  }
+  .true-recall-io-tool-row .ep-btn.is-active,	.true-recall-io-editor-right .ep-btn.is-active {
+    background: var(--interactive-accent) !important;
+    @supports (color: color-mix(in lab, red, red)) {
+      background: color-mix(in srgb, var(--interactive-accent) 20%, transparent) !important;
+    }
+    border-color: var(--interactive-accent) !important;
+    @supports (color: color-mix(in lab, red, red)) {
+      border-color: color-mix(in srgb, var(--interactive-accent) 40%, transparent) !important;
+    }
+    color: var(--text-accent) !important;
+  }
+  .true-recall-io-region-list {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    max-height: 180px;
+    overflow-y: auto;
+    padding-right: 2px;
+  }
+  .true-recall-io-region-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    border: 1px solid var(--background-modifier-border);
+    border-radius: var(--radius-s);
+    padding: 4px 8px;
+    font-size: var(--font-ui-smaller);
+    background: var(--background-primary);
+  }
+  .true-recall-io-region-item.is-selected {
+    border-color: var(--interactive-accent);
+    @supports (color: color-mix(in lab, red, red)) {
+      border-color: color-mix(in srgb, var(--interactive-accent) 55%, transparent);
+    }
+    background: var(--interactive-accent);
+    @supports (color: color-mix(in lab, red, red)) {
+      background: color-mix(in srgb, var(--interactive-accent) 13%, transparent);
+    }
+  }
+  .true-recall-io-field {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: var(--font-ui-smaller);
+    color: var(--text-muted);
+  }
+  .true-recall-io-field input {
+    flex: 1;
+    min-width: 0;
+    border: 1px solid var(--background-modifier-border);
+    border-radius: var(--radius-s);
+    padding: 4px 6px;
+    background: var(--background-primary);
+    color: var(--text-normal);
+    font-size: var(--font-ui-smaller);
+  }
+  .true-recall-io-canvas-wrap {
+    border: 1px solid var(--background-modifier-border);
+    border-radius: var(--radius-m);
+    background: var(--background-primary);
+    padding: 10px;
+  }
+  .true-recall-io-canvas-toolbar {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    margin-bottom: 8px;
+    color: var(--text-muted);
+    font-size: var(--font-ui-smaller);
+  }
+  .true-recall-io-canvas-stage {
+    position: relative;
+    overflow: hidden;
+    height: 430px;
+    border-radius: var(--radius-m);
+    background: radial-gradient(	circle at 1px 1px,	var(--text-faint) 1px,	transparent 0	)	0 0 / 22px 22px,	var(--background-secondary);
+    @supports (color: color-mix(in lab, red, red)) {
+      background: radial-gradient(	circle at 1px 1px,	color-mix(in srgb, var(--text-faint) 25%, transparent) 1px,	transparent 0	)	0 0 / 22px 22px,	var(--background-secondary);
+    }
+    user-select: none;
+    touch-action: none;
+    cursor: crosshair;
+  }
+  .true-recall-io-canvas-transform {
+    position: absolute;
+    inset: 0;
+    transform-origin: center center;
+    display: grid;
+    place-items: center;
+  }
+  .true-recall-io-canvas-image {
+    max-width: 100%;
+    max-height: 100%;
+    width: auto;
+    height: auto;
+    pointer-events: none;
+    display: block;
+  }
+  .true-recall-io-canvas-svg {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+  }
+  .true-recall-io-canvas-region {
+    fill: var(--color-red);
+    @supports (color: color-mix(in lab, red, red)) {
+      fill: color-mix(in srgb, var(--color-red) 45%, transparent);
+    }
+    stroke: var(--color-red);
+    @supports (color: color-mix(in lab, red, red)) {
+      stroke: color-mix(in srgb, var(--color-red) 88%, transparent);
+    }
+    stroke-width: 0.0045;
+    cursor: move;
+  }
+  .true-recall-io-canvas-region.is-draft {
+    fill: var(--color-blue);
+    @supports (color: color-mix(in lab, red, red)) {
+      fill: color-mix(in srgb, var(--color-blue) 30%, transparent);
+    }
+    stroke: var(--color-blue);
+    @supports (color: color-mix(in lab, red, red)) {
+      stroke: color-mix(in srgb, var(--color-blue) 70%, transparent);
+    }
+  }
+  .true-recall-io-canvas-region.is-selected {
+    fill: var(--interactive-accent);
+    @supports (color: color-mix(in lab, red, red)) {
+      fill: color-mix(in srgb, var(--interactive-accent) 30%, transparent);
+    }
+    stroke: var(--interactive-accent);
+    @supports (color: color-mix(in lab, red, red)) {
+      stroke: color-mix(in srgb, var(--interactive-accent) 85%, transparent);
+    }
+    stroke-width: 0.006;
+  }
+  .true-recall-io-canvas-handle {
+    fill: var(--interactive-accent);
+    stroke: var(--text-on-accent);
+    stroke-width: 0.003;
+    cursor: nwse-resize;
+  }
+  .true-recall-io-canvas-empty {
+    height: 430px;
+    display: grid;
+    place-items: center;
+    text-align: center;
+    color: var(--text-muted);
+    border: 1px dashed var(--background-modifier-border);
+    border-radius: var(--radius-m);
+    background: var(--background-secondary);
+    padding: 12px;
+  }
+  .true-recall-io-render {
+    width: min(100%, 760px);
+    margin-inline: auto;
+  }
+  .true-recall-io-render-frame {
+    position: relative;
+    border: 1px solid var(--background-modifier-border);
+    @supports (color: color-mix(in lab, red, red)) {
+      border: 1px solid color-mix(in srgb, var(--background-modifier-border) 80%, transparent);
+    }
+    border-radius: var(--radius-l);
+    background: var(--background-secondary);
+    overflow: hidden;
+    box-shadow: 0 8px 24px var(--background-primary);
+    @supports (color: color-mix(in lab, red, red)) {
+      box-shadow: 0 8px 24px color-mix(in srgb, var(--background-primary) 50%, transparent);
+    }
+  }
+  .true-recall-io-render-image {
+    display: block;
+    width: 100%;
+    height: auto;
+    max-height: min(58vh, 620px);
+    object-fit: contain;
+    background: var(--background-primary);
+  }
+  .true-recall-io-render-svg {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+  }
+  .true-recall-io-shape {
+    stroke-width: 0.0038;
+    transition: fill 180ms ease,	stroke 180ms ease,	opacity 180ms ease;
+  }
+  .true-recall-io-shape.is-mask-active {
+    fill: var(--color-red);
+    @supports (color: color-mix(in lab, red, red)) {
+      fill: color-mix(in srgb, var(--color-red) 62%, transparent);
+    }
+    stroke: var(--color-red);
+    @supports (color: color-mix(in lab, red, red)) {
+      stroke: color-mix(in srgb, var(--color-red) 88%, transparent);
+    }
+    opacity: 1;
+  }
+  .true-recall-io-shape.is-mask-passive {
+    fill: var(--color-red);
+    @supports (color: color-mix(in lab, red, red)) {
+      fill: color-mix(in srgb, var(--color-red) 38%, transparent);
+    }
+    stroke: var(--color-red);
+    @supports (color: color-mix(in lab, red, red)) {
+      stroke: color-mix(in srgb, var(--color-red) 70%, transparent);
+    }
+    opacity: 0.88;
+  }
+  .true-recall-io-shape.is-outline-passive {
+    fill: transparent;
+    stroke: var(--text-muted);
+    @supports (color: color-mix(in lab, red, red)) {
+      stroke: color-mix(in srgb, var(--text-muted) 65%, transparent);
+    }
+    opacity: 0.85;
+  }
+  .true-recall-io-shape.is-revealed-passive {
+    fill: transparent;
+    stroke: var(--text-faint);
+    @supports (color: color-mix(in lab, red, red)) {
+      stroke: color-mix(in srgb, var(--text-faint) 80%, transparent);
+    }
+    opacity: 0.7;
+  }
+  .true-recall-io-shape.is-revealed-active {
+    fill: transparent;
+    stroke: var(--color-green);
+    @supports (color: color-mix(in lab, red, red)) {
+      stroke: color-mix(in srgb, var(--color-green) 92%, transparent);
+    }
+    animation: true-recall-io-pulse 820ms ease-out 1;
+  }
+  .true-recall-io-fallback {
+    padding: 1rem;
+    text-align: center;
+    color: var(--text-muted);
+    border: 1px dashed var(--background-modifier-border);
+    border-radius: var(--radius-m);
+  }
+  @keyframes true-recall-io-pulse {
+    0% {
+      filter: drop-shadow(0 0 0 color-mix(in srgb, var(--color-green) 70%, transparent));
+      stroke-width: 0.0038;
+    }
+    55% {
+      filter: drop-shadow(0 0 8px color-mix(in srgb, var(--color-green) 70%, transparent));
+      stroke-width: 0.0058;
+    }
+    100% {
+      filter: drop-shadow(0 0 0 transparent);
+      stroke-width: 0.0038;
+    }
+  }
+  .is-mobile .true-recall-io-editor-layout {
+    grid-template-columns: 1fr;
+  }
+}
 .theme-dark, .theme-light {
   --ep-color-obs-modifier-hover: var(--background-modifier-hover);
   --ep-color-obs-modifier-border: var(--background-modifier-border);
@@ -2728,18 +3165,8 @@
     container-type: inline-size;
   }
 }
-.ep-word-reveal {
-  animation: ep-word-fade 300ms ease-out both;
-}
-@keyframes ep-word-fade {
-  from {
-    opacity: 0;
-    filter: blur(2px);
-  }
-  to {
-    opacity: 1;
-    filter: blur(0);
-  }
+[data-type="true-recall-dashboard-view"] .view-content {
+  padding: 0 !important;
 }
 .ep-shimmer {
   background: linear-gradient(	90deg,	var(--background-secondary) 25%,	var(--background-modifier-hover) 50%,	var(--background-secondary) 75%	);
@@ -2813,6 +3240,23 @@
   animation: ep-cursor-blink 1s step-end infinite;
   border-radius: 1px;
 }
+.ep-drag-source {
+  opacity: 0.4;
+}
+.ep-drop-target {
+  box-shadow: inset 3px 0 0 var(--interactive-accent);
+  background: var(--interactive-accent);
+  @supports (color: color-mix(in lab, red, red)) {
+    background: color-mix(in srgb, var(--interactive-accent) 8%, transparent);
+  }
+}
+.ep-drop-root-zone {
+  border-color: var(--interactive-accent);
+  background: var(--interactive-accent);
+  @supports (color: color-mix(in lab, red, red)) {
+    background: color-mix(in srgb, var(--interactive-accent) 6%, transparent);
+  }
+}
 @media (prefers-reduced-motion: reduce) {
   .true-recall-donut-due,	.true-recall-donut-new,	.true-recall-donut-learning {
     transition: none;
@@ -2822,11 +3266,6 @@
   }
   .true-recall-pulse-collect {
     animation: none;
-  }
-  .ep-word-reveal {
-    animation: none;
-    opacity: 1;
-    filter: none;
   }
   .ep-shimmer {
     animation: none;

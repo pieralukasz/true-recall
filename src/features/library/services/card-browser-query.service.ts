@@ -239,6 +239,9 @@ export class CardBrowserQueryService {
 			createdVia: card.createdVia ?? null,
 			presetName,
 			projects,
+			ioImagePath: card.ioImagePath,
+			ioRegionsJson: card.ioRegionsJson,
+			templateOrd: card.templateOrd,
 		};
 	}
 }

@@ -158,12 +158,15 @@ export function createConvertedCard(
 	return {
 		ankiCardId: 100,
 		ankiNoteId: 1,
+		ankiModelId: 1000,
 		question: "Q",
 		answer: "A",
 		cardType: "basic",
 		tags: [],
 		deckName: "Default",
 		mediaFiles: [],
+		fieldValues: { Front: "Q", Back: "A" },
+		templateOrd: 0,
 		...overrides,
 	};
 }

@@ -49,6 +49,7 @@ export interface ActionableSessionSnapshotOptions {
 function buildScopeCacheKey(filters: SessionFilters): string {
 	return JSON.stringify({
 		projectPath: filters.projectPath ?? null,
+		sourceUidFilter: filters.sourceUidFilter ?? null,
 		sourceNoteFilter: filters.sourceNoteFilter ?? null,
 		sourceNoteFilters: filters.sourceNoteFilters ?? null,
 		filePathFilter: filters.filePathFilter ?? null,
@@ -142,6 +143,10 @@ export function computeActionableSessionSnapshot(
 		sessionPreset,
 	);
 
+	if (filters.sourceUidFilter) {
+		queueOptions.sourceUidFilter = new Set([filters.sourceUidFilter]);
+	}
+
 	if (isGlobalReviewSession(filters)) {
 		const presetContext = buildGlobalPresetQueueContext(
 			activeCards,
@@ -155,8 +160,20 @@ export function computeActionableSessionSnapshot(
 	}
 
 	if (filters.projectPath && deps.hierarchyService) {
-		queueOptions.sourceUidFilter =
-			deps.hierarchyService.getSourceUidsForProject(filters.projectPath);
+		const projectSourceUids = deps.hierarchyService.getSourceUidsForProject(
+			filters.projectPath,
+		);
+		if (!queueOptions.sourceUidFilter) {
+			queueOptions.sourceUidFilter = projectSourceUids;
+		} else {
+			const intersected = new Set<string>();
+			for (const uid of queueOptions.sourceUidFilter) {
+				if (projectSourceUids.has(uid)) {
+					intersected.add(uid);
+				}
+			}
+			queueOptions.sourceUidFilter = intersected;
+		}
 	}
 
 	const reviewService = deps.reviewService ?? new ReviewService();

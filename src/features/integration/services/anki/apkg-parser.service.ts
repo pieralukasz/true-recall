@@ -21,6 +21,65 @@ interface RawAnkiModel {
 	flds: { name: string; ord: number }[];
 	type: number;
 	tmpls: { name: string; qfmt: string; afmt: string; ord: number }[];
+	css?: string;
+}
+
+// ── Minimal protobuf decoder ─────────────────────────────────
+// Anki v18+ stores template formats and notetype CSS in protobuf config blobs.
+// Wire format: tag = (field_number << 3) | wire_type
+//   wire_type 0 = varint, 2 = length-delimited (string/bytes)
+
+function readProtobufVarint(blob: Uint8Array, offset: number): { value: number; next: number } | null {
+	let value = 0;
+	let shift = 0;
+	let pos = offset;
+	while (pos < blob.length) {
+		const byte = blob[pos]!;
+		value |= (byte & 0x7f) << shift;
+		pos++;
+		if ((byte & 0x80) === 0) return { value, next: pos };
+		shift += 7;
+		if (shift > 35) return null;
+	}
+	return null;
+}
+
+function readProtobufString(blob: Uint8Array, fieldNumber: number): string {
+	const targetTag = (fieldNumber << 3) | 2; // wire type 2 = length-delimited
+	let pos = 0;
+
+	while (pos < blob.length) {
+		const tag = readProtobufVarint(blob, pos);
+		if (!tag) break;
+		pos = tag.next;
+
+		const wireType = tag.value & 0x07;
+
+		if (wireType === 2) {
+			const len = readProtobufVarint(blob, pos);
+			if (!len) break;
+			pos = len.next;
+
+			if (tag.value === targetTag) {
+				const bytes = blob.slice(pos, pos + len.value);
+				return new TextDecoder().decode(bytes);
+			}
+			pos += len.value;
+		} else if (wireType === 0) {
+			// Varint — skip
+			const v = readProtobufVarint(blob, pos);
+			if (!v) break;
+			pos = v.next;
+		} else if (wireType === 5) {
+			pos += 4; // 32-bit
+		} else if (wireType === 1) {
+			pos += 8; // 64-bit
+		} else {
+			break; // Unknown wire type
+		}
+	}
+
+	return "";
 }
 
 interface RawAnkiDeck {
@@ -182,6 +241,8 @@ export class ApkgParserService {
 			const configBlob = row[2] as Uint8Array | null;
 
 			const type = this.detectNotetypeKind(configBlob);
+			// Notetype.Config field 3 = css (string)
+			const css = configBlob ? readProtobufString(configBlob, 3) : "";
 
 			// Read fields for this notetype
 			const fieldResults = db.exec(
@@ -194,18 +255,22 @@ export class ApkgParserService {
 			}));
 
 			// Read templates for this notetype
+			// Template.Config: field 1 = q_format, field 2 = a_format
 			const tmplResults = db.exec(
-				"SELECT ord, name FROM templates WHERE ntid = ? ORDER BY ord",
+				"SELECT ord, name, config FROM templates WHERE ntid = ? ORDER BY ord",
 				[id],
 			);
-			const tmpls = (tmplResults[0]?.values ?? []).map((r) => ({
-				ord: r[0] as number,
-				name: r[1] as string,
-				qfmt: "",
-				afmt: "",
-			}));
+			const tmpls = (tmplResults[0]?.values ?? []).map((r) => {
+				const tmplConfig = r[2] as Uint8Array | null;
+				return {
+					ord: r[0] as number,
+					name: r[1] as string,
+					qfmt: tmplConfig ? readProtobufString(tmplConfig, 1) : "",
+					afmt: tmplConfig ? readProtobufString(tmplConfig, 2) : "",
+				};
+			});
 
-			models.set(id, { id, name, flds, type, tmpls });
+			models.set(id, { id, name, flds, type, tmpls, css });
 		}
 
 		// Read decks
@@ -257,6 +322,7 @@ export class ApkgParserService {
 					afmt: t.afmt,
 					ord: t.ord,
 				})),
+				css: model.css,
 			});
 		}
 

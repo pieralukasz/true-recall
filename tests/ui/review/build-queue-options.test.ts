@@ -211,6 +211,12 @@ describe("buildQueueOptions — filter passthrough", () => {
 		expect(result.sourceNoteFilter).toBe("uid-123");
 	});
 
+	it("passes sourceUidFilter through", () => {
+		const filters = makeFilters({ sourceUidFilter: "uid-123" });
+		const result = buildQueueOptions(filters, settings, sp);
+		expect(result.sourceUidFilter).toEqual(new Set(["uid-123"]));
+	});
+
 	it("passes stateFilter through", () => {
 		const filters = makeFilters({ stateFilter: "new" });
 		const result = buildQueueOptions(filters, settings, sp);

@@ -177,4 +177,34 @@ describe("computeActionableSessionSnapshot", () => {
 		expect(snapshot.queueLength).toBe(1);
 		expect(snapshot.queue[0]?.id).toBe("in-project");
 	});
+
+	it("intersects explicit sourceUidFilter with project scope", () => {
+		const cards = [
+			createMockFlashcard({
+				id: "in-project",
+				sourceUid: "uid-in",
+				fsrs: { state: State.Review, due: "2024-01-01T00:00:00.000Z" },
+			}),
+			createMockFlashcard({
+				id: "out-project",
+				sourceUid: "uid-out",
+				fsrs: { state: State.Review, due: "2024-01-01T00:00:00.000Z" },
+			}),
+		];
+
+		const snapshot = computeActionableSessionSnapshot(
+			createDeps({
+				allCards: cards,
+				hierarchyService: {
+					getSourceUidsForProject: () => new Set(["uid-in"]),
+				} as unknown as HierarchyService,
+			}),
+			{
+				projectPath: "Projects/Test.md",
+				sourceUidFilter: "uid-out",
+			},
+		);
+
+		expect(snapshot.queueLength).toBe(0);
+	});
 });
