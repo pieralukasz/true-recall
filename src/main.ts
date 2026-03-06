@@ -1122,6 +1122,17 @@ export default class TrueRecallPlugin extends Plugin {
 					notify().error(`Quick add failed: ${msg}`);
 				}
 			},
+			onImageOcclusion: (imagePath) => {
+				const activeFile = this.app.workspace.getActiveFile();
+				const resolved = this.app.metadataCache.getFirstLinkpathDest(
+					imagePath,
+					activeFile?.path ?? "",
+				);
+				void this.openImageOcclusionEditor({
+					mode: "add",
+					imagePath: resolved?.path ?? imagePath,
+				});
+			},
 			hasApiKey: () => !!(this.settings.openRouterApiKey || this.settings.subscriptionKey),
 			isEnabled: () => this.settings.selectionToolbarEnabled,
 		});

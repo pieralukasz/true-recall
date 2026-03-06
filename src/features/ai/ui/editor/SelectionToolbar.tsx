@@ -9,6 +9,8 @@ export interface SelectionToolbarProps {
 	onQuickAdd: () => Promise<void>;
 	onDismiss: () => void;
 	hasApiKey: boolean;
+	detectedImagePath?: string | null;
+	onImageOcclusion?: (path: string) => void;
 }
 
 const AI_BUTTONS: { mode: GenerationMode; label: string }[] = [
@@ -24,6 +26,8 @@ export function SelectionToolbar({
 	onQuickAdd,
 	onDismiss,
 	hasApiKey,
+	detectedImagePath,
+	onImageOcclusion,
 }: SelectionToolbarProps) {
 	const handleGenerate = useCallback(
 		async (mode: GenerationMode) => {
@@ -63,6 +67,16 @@ export function SelectionToolbar({
 			))}
 
 			<span class="true-recall-st-divider" />
+
+			{detectedImagePath && onImageOcclusion && (
+				<Clickable
+					class="true-recall-st-btn"
+					onClick={() => { onDismiss(); onImageOcclusion(detectedImagePath); }}
+					title="Create image occlusion card"
+				>
+					<span>IO</span>
+				</Clickable>
+			)}
 
 			<Clickable
 				class="true-recall-st-btn"

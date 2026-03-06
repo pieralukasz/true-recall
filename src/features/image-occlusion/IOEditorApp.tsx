@@ -43,7 +43,7 @@ function buildInitialImagePath(mode: IOEditorMode): string {
 	if (mode.mode === "edit") {
 		return mode.note.fields["Image"] ?? "";
 	}
-	return "";
+	return mode.imagePath ?? "";
 }
 
 function buildInitialTool(mode: IOEditorMode): Tool {
@@ -677,6 +677,7 @@ export function IOEditorApp({ mode, onDone }: IOEditorAppProps) {
 									type="text"
 									class="ep:w-full ep:px-2 ep:py-1.5 ep:text-ui-small ep:bg-obs-primary ep:border ep:border-obs-border ep:rounded"
 									placeholder="Optional hint, e.g. 'label the bones'"
+									maxLength={50}
 									value={aiCustomHint}
 									onInput={(e) => setAiCustomHint((e.target as HTMLInputElement).value)}
 									onKeyDown={(e) => {

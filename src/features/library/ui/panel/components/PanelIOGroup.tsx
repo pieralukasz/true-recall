@@ -60,8 +60,6 @@ export function PanelIOGroup({
 		return [...labelMap.entries()].sort((a, b) => a[0] - b[0]);
 	}, [regionsJson]);
 
-	const imageFileName = imagePath?.split("/").pop() ?? "Image occlusion";
-
 	const handleClick = useCallback(
 		(e: MouseEvent) => {
 			if ((e.target as HTMLElement).closest("button")) return;
@@ -126,9 +124,15 @@ export function PanelIOGroup({
 					IO
 				</span>
 
-				<span class="ep:flex-1 ep:text-ui-small ep:text-obs-normal ep:truncate">
-					{imageFileName}
-				</span>
+				<div class="ep:flex-1 ep:overflow-hidden ep:rounded ep:max-h-16">
+					<IOCardRenderer
+						imagePath={imagePath}
+						regionsJson={regionsJson}
+						templateOrd={-1}
+						revealed={false}
+						maskModeOverride="all"
+					/>
+				</div>
 				<span class="ep:text-ui-smaller ep:text-obs-faint ep:shrink-0">
 					{cards.length} cards
 				</span>
