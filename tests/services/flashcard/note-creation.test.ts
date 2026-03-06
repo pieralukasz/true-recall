@@ -27,6 +27,7 @@ import {
 	insertNoteTypeDirect,
 	insertNoteDirect,
 } from "../../services/persistence/sqlite/__setup__/test-database";
+import { FLASHCARD_CONFIG } from "../../../src/shared/constants";
 
 // ── Helpers ────────────────────────────────────────────────────
 
@@ -322,6 +323,20 @@ describe("note-based card creation", () => {
 	});
 
 	describe("image occlusion create/update reconciliation", () => {
+		it("createNote sets alwaysTypeIn from note tags when requested", () => {
+			const manager = new FlashcardManager({} as App, {} as never, {} as never);
+			manager.setStore(createMockStore(ctx));
+
+			const result = manager.createNote({
+				noteTypeId: BUILTIN_BASIC_ID,
+				fields: { Front: "Q", Back: "A" },
+				alwaysTypeIn: true,
+			});
+
+			expect(result.note.tags).toContain(FLASHCARD_CONFIG.alwaysTypeInTag);
+			expect(result.cards[0]?.alwaysTypeIn).toBe(true);
+		});
+
 		it("createImageOcclusionNote creates one card per group key", () => {
 			const manager = new FlashcardManager({} as App, {} as never, {} as never);
 			manager.setStore(createMockStore(ctx));

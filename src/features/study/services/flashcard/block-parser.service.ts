@@ -20,6 +20,7 @@ export interface ParsedBlock {
 	noteTypeSlug: string;
 	fields: Record<string, string>;
 	sourceText?: string;
+	alwaysTypeIn?: boolean;
 }
 
 export type NoteTypeLookup = (slug: string) => NoteType | null;
@@ -27,6 +28,7 @@ export type NoteTypeLookup = (slug: string) => NoteType | null;
 const TYPE_TAG_RE = /^#type\/([a-z0-9-]+)$/;
 const SOURCE_COMMENT_RE = /^<!--\s*source:\s*([\s\S]*?)\s*-->$/;
 const BLOCK_SEPARATOR_RE = /^---\s*$/;
+const ALWAYS_TYPE_IN_TOKEN = "@typein";
 
 /**
  * Parse content containing block-format flashcards.
@@ -78,10 +80,19 @@ export function parseBlocks(
 			const slug = typeMatch[1]!;
 			const noteType = getNoteType(slug);
 			if (noteType) {
-				const { fields, sourceText } = parseFieldValues(blockLines, noteType.fields);
+				const { fields, sourceText, alwaysTypeIn } = parseFieldValues(
+					blockLines,
+					noteType.fields,
+				);
 				const hasContent = Object.values(fields).some((v) => v.trim().length > 0);
 				if (hasContent) {
-					blocks.push({ noteTypeId: noteType.id, noteTypeSlug: slug, fields, sourceText });
+					blocks.push({
+						noteTypeId: noteType.id,
+						noteTypeSlug: slug,
+						fields,
+						sourceText,
+						alwaysTypeIn,
+					});
 					// Skip the --- separator if present
 					if (i < lines.length) i++;
 					continue;
@@ -118,9 +129,14 @@ export function parseBlocks(
 function parseFieldValues(
 	lines: string[],
 	fieldNames: string[],
-): { fields: Record<string, string>; sourceText?: string } {
+): {
+	fields: Record<string, string>;
+	sourceText?: string;
+	alwaysTypeIn?: boolean;
+} {
 	const fields: Record<string, string> = {};
 	let sourceText: string | undefined;
+	let alwaysTypeIn = false;
 
 	// Initialize all fields to empty
 	for (const name of fieldNames) {
@@ -148,6 +164,10 @@ function parseFieldValues(
 			sourceText = sourceMatch[1]!.trim();
 			continue;
 		}
+		if (trimmed === ALWAYS_TYPE_IN_TOKEN) {
+			alwaysTypeIn = true;
+			continue;
+		}
 
 		// Check if this line starts a new field
 		const fieldMatch = matchFieldStart(trimmed, fieldSet);
@@ -164,7 +184,7 @@ function parseFieldValues(
 
 	flushField();
 
-	return { fields, sourceText };
+	return { fields, sourceText, alwaysTypeIn: alwaysTypeIn || undefined };
 }
 
 /**
@@ -205,6 +225,9 @@ export function blockToText(block: ParsedBlock, fieldNames: string[]): string {
 
 	if (block.sourceText) {
 		lines.push(`<!-- source: ${block.sourceText} -->`);
+	}
+	if (block.alwaysTypeIn) {
+		lines.push(ALWAYS_TYPE_IN_TOKEN);
 	}
 
 	return lines.join("\n");

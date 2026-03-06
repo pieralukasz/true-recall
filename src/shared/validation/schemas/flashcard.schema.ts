@@ -10,6 +10,7 @@ export const FlashcardItemSchema = z.object({
 	clozeTemplate: z.string().optional(),
 	clozeIndex: z.number().int().nonnegative().optional(),
 	reverseOfBatchId: z.string().optional(),
+	alwaysTypeIn: z.boolean().optional(),
 });
 
 export const FlashcardInfoSchema = z.object({

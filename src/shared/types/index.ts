@@ -96,6 +96,7 @@ export type {
 	OptimizationMetrics,
 	ReviewOrder,
 	ScheduledBreak,
+	TypeInMode,
 	TrueRecallSettings,
 } from "@shared/types/settings.types";
 export { extractFSRSSettings } from "@shared/types/settings.types";

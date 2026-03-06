@@ -90,6 +90,8 @@ export type NewReviewMix =
 	| "mix-with-reviews"
 	| "show-before-reviews";
 
+export type TypeInMode = "off" | "ai" | "diff";
+
 /**
  * Named group of FSRS scheduling parameters (like Anki's "Deck Options").
  * Each preset defines retention target, weights, learning steps, and daily limits.
@@ -239,6 +241,9 @@ export interface TrueRecallSettings {
 	/** Show quick review section at top of flashcard panel */
 	showQuickReviewInPanel: boolean;
 
+	/** Default type-in mode at the start of each review session */
+	defaultTypeInMode: TypeInMode;
+
 	/** Show floating toolbar above selected text for AI flashcard generation */
 	selectionToolbarEnabled: boolean;
 
@@ -258,6 +263,9 @@ export interface TrueRecallSettings {
 		reversed?: string;
 		auto?: string;
 	};
+
+	/** Custom system prompt for AI semantic grading in review type-in mode */
+	aiTypeInGradingPrompt?: string;
 }
 
 export interface SessionPreset {

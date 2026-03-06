@@ -330,6 +330,9 @@ export class CardRepository {
 		if (existing?.sourceText && !entry.sourceText) {
 			entry.sourceText = existing.sourceText;
 		}
+		if (existing?.alwaysTypeIn && entry.alwaysTypeIn === undefined) {
+			entry.alwaysTypeIn = existing.alwaysTypeIn;
+		}
 
 		this.store.set(cardId, entry);
 

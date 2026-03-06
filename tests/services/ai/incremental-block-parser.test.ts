@@ -124,6 +124,22 @@ describe("IncrementalFlashcardParser (block format)", () => {
 		expect(complete!.block!.sourceText).toBe("The source text");
 	});
 
+	it("should parse @typein metadata token", () => {
+		const parser = new IncrementalFlashcardParser(lookup);
+		const text = [
+			"#type/basic",
+			"Front: Q",
+			"Back: A",
+			"@typein",
+			"---",
+		].join("\n");
+
+		const events = [...parser.feed(text), ...parser.finish()];
+		const complete = events.find((e) => e.type === "card_complete");
+		expect(complete).toBeDefined();
+		expect(complete!.block!.alwaysTypeIn).toBe(true);
+	});
+
 	it("should handle reversed type", () => {
 		const parser = new IncrementalFlashcardParser(lookup);
 		parser.feed("#type/basic-reversed\nFront: Capital of France\nBack: Paris\n---\n");

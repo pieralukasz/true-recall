@@ -168,6 +168,18 @@ Back: Process of converting light to energy
 			);
 		});
 
+		it("should parse @typein metadata token", () => {
+			const content = `#type/basic
+Front: Q
+Back: A
+@typein`;
+
+			const { blocks } = parseBlocks(content, lookup);
+			expect(blocks).toHaveLength(1);
+			expect(blocks[0]!.alwaysTypeIn).toBe(true);
+			expect(blocks[0]!.fields.Back).toBe("A");
+		});
+
 		it("should skip YAML frontmatter", () => {
 			const content = `---
 title: My Note
@@ -322,6 +334,19 @@ Back: A`;
 				["Front", "Back"],
 			);
 			expect(text).toContain("<!-- source: The source quote -->");
+		});
+
+		it("should include @typein token when alwaysTypeIn is true", () => {
+			const text = blockToText(
+				{
+					noteTypeId: BUILTIN_BASIC_ID,
+					noteTypeSlug: "basic",
+					fields: { Front: "Q", Back: "A" },
+					alwaysTypeIn: true,
+				},
+				["Front", "Back"],
+			);
+			expect(text).toContain("@typein");
 		});
 	});
 

@@ -115,6 +115,8 @@ export interface FSRSCardData {
 	templateOrd?: number;
 	/** Note type ID (for deriving card type and template) */
 	noteTypeId?: string;
+	/** Force type-in mode for this card regardless of session default */
+	alwaysTypeIn?: boolean;
 
 	// === Import fields (transient, not stored directly) ===
 
@@ -163,4 +165,6 @@ export interface FSRSFlashcardItem {
 	noteId?: string;
 	/** Template ordinal (v26: which template this card uses) */
 	templateOrd?: number;
+	/** Force type-in mode for this card regardless of session default */
+	alwaysTypeIn?: boolean;
 }
