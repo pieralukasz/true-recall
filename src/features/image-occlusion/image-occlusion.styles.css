@@ -327,10 +327,9 @@
 	}
 
 	.true-recall-io-canvas-handle {
-		fill: color-mix(in srgb, var(--interactive-accent) 85%, var(--background-primary) 15%);
-		stroke: color-mix(in srgb, var(--background-primary) 70%, var(--text-on-accent) 30%);
-		stroke-width: 0.004;
-		filter: drop-shadow(0 0 2px color-mix(in srgb, var(--background-primary) 70%, transparent));
+		fill: var(--background-primary);
+		stroke: var(--interactive-accent);
+		stroke-width: 0.003;
 		cursor: nwse-resize;
 	}
 
