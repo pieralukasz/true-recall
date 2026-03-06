@@ -16,12 +16,14 @@ import { NotePickerCombobox } from "@shared/ui/components/NotePickerCombobox";
 import { PasteDropZone } from "@shared/ui/components/PasteDropZone";
 import { useIcon } from "@shared/ui/preact/hooks";
 import { useApp, usePlugin } from "@shared/ui/preact/ObsidianContext";
+import { cn } from "@shared/ui/utils/cn";
 import { isDesktop } from "@shared/utils/platform";
 import { isImageExtension } from "@shared/types";
 import { Notice, TFile } from "obsidian";
 import { useCallback, useEffect, useMemo, useState } from "preact/hooks";
 
 type Tool = "select" | "rect" | "ellipse";
+type NonSelectTool = Exclude<Tool, "select">;
 
 interface IOEditorAppProps {
 	mode: IOEditorMode;
@@ -41,6 +43,11 @@ function buildInitialImagePath(mode: IOEditorMode): string {
 		return mode.note.fields["Image"] ?? "";
 	}
 	return "";
+}
+
+function buildInitialTool(mode: IOEditorMode): Tool {
+	const definition = buildInitialDefinition(mode);
+	return definition.regions.length > 0 ? "select" : "rect";
 }
 
 interface IconToolButtonProps {
@@ -66,16 +73,19 @@ function IconToolButton({
 	const tooltip = shortcut ? `${label} (${shortcut})` : label;
 
 	return (
-		<button
-			type="button"
-			class={`true-recall-io-icon-btn ${active ? "is-active" : ""} ${danger ? "is-danger" : ""}`}
+		<Clickable
+			class={cn(
+				"true-recall-io-icon-btn",
+				active && "is-active",
+				danger && "is-danger",
+			)}
 			aria-label={label}
 			title={tooltip}
-			onClick={onClick}
+			onClick={() => onClick()}
 			disabled={disabled}
 		>
 			<span ref={iconRef} />
-		</button>
+		</Clickable>
 	);
 }
 
@@ -123,7 +133,9 @@ export function IOEditorApp({ mode, onDone }: IOEditorAppProps) {
 	const [definition, setDefinition] = useState<IODefinition>(() =>
 		buildInitialDefinition(mode),
 	);
-	const [tool, setTool] = useState<Tool>("select");
+	const [tool, setTool] = useState<Tool>(() => buildInitialTool(mode));
+	const [lastNonSelectTool, setLastNonSelectTool] =
+		useState<NonSelectTool>("rect");
 	const [selectedRegionId, setSelectedRegionId] = useState<string | null>(null);
 	const [saving, setSaving] = useState(false);
 	const [zoom, setZoom] = useState(1);
@@ -141,6 +153,13 @@ export function IOEditorApp({ mode, onDone }: IOEditorAppProps) {
 	const imageService = useMemo(() => new ImageService(app), [app]);
 	const isEdit = mode.mode === "edit";
 	const showSourcePicker = mode.mode === "add" && !mode.sourceUid;
+	const hasRegions = definition.regions.length > 0;
+
+	useEffect(() => {
+		if (!hasRegions && tool === "select") {
+			setTool(lastNonSelectTool);
+		}
+	}, [hasRegions, lastNonSelectTool, tool]);
 
 	useEffect(() => {
 		const files = app.vault
@@ -479,13 +498,12 @@ export function IOEditorApp({ mode, onDone }: IOEditorAppProps) {
 						<div class="ep:flex ep:items-center ep:justify-between ep:gap-2">
 							<div class="ep:text-ui-small ep:font-medium">Image</div>
 							{imagePath && (
-								<button
-									type="button"
+								<Clickable
 									class="true-recall-io-inline-link"
 									onClick={() => setIsImagePanelExpanded((v) => !v)}
 								>
 									{isImagePanelExpanded ? "Collapse" : "Replace image"}
-								</button>
+								</Clickable>
 							)}
 						</div>
 						<div
@@ -521,13 +539,12 @@ export function IOEditorApp({ mode, onDone }: IOEditorAppProps) {
 										</option>
 									))}
 								</select>
-								<button
-									type="button"
-									class="ep-btn ep-btn-outline"
-									onClick={applySelectedVaultImage}
+								<Clickable
+									class="ep:px-3 ep:py-1.5 ep:text-ui-small ep:border ep:border-obs-border ep:rounded ep:text-obs-muted ep:hover:bg-obs-hover ep:hover:text-obs-normal ep:transition-colors ep:text-center ep:justify-center"
+									onClick={() => applySelectedVaultImage()}
 								>
 									Use selected image
-								</button>
+								</Clickable>
 								<PasteDropZone
 									onFileDrop={(file) => void persistBlob(file)}
 									label="Paste or drag image"
@@ -537,30 +554,38 @@ export function IOEditorApp({ mode, onDone }: IOEditorAppProps) {
 						)}
 					</div>
 
-					<div class="true-recall-io-side-section">
-						<div class="ep:text-ui-small ep:font-medium ep:mb-1">Tools</div>
-						<div class="true-recall-io-tool-row">
-							<IconToolButton
-								icon="mouse-pointer-2"
-								label="Select"
-								shortcut="V"
-								active={tool === "select"}
-								onClick={() => setTool("select")}
-							/>
-							<IconToolButton
-								icon="square"
-								label="Rectangle"
-								shortcut="R"
-								active={tool === "rect"}
-								onClick={() => setTool("rect")}
-							/>
-							<IconToolButton
-								icon="circle"
-								label="Ellipse"
-								shortcut="E"
-								active={tool === "ellipse"}
-								onClick={() => setTool("ellipse")}
-							/>
+						<div class="true-recall-io-side-section">
+							<div class="ep:text-ui-small ep:font-medium ep:mb-1">Tools</div>
+							<div class="true-recall-io-tool-row">
+								{hasRegions && (
+									<IconToolButton
+										icon="mouse-pointer-2"
+										label="Select"
+										shortcut="V"
+										active={tool === "select"}
+										onClick={() => setTool("select")}
+									/>
+								)}
+								<IconToolButton
+									icon="square"
+									label="Rectangle"
+									shortcut="R"
+									active={tool === "rect"}
+									onClick={() => {
+										setLastNonSelectTool("rect");
+										setTool("rect");
+									}}
+								/>
+								<IconToolButton
+									icon="circle"
+									label="Ellipse"
+									shortcut="E"
+									active={tool === "ellipse"}
+									onClick={() => {
+										setLastNonSelectTool("ellipse");
+										setTool("ellipse");
+									}}
+								/>
 							{selectedRegionId && (
 								<IconToolButton
 									icon="trash-2"
@@ -579,24 +604,32 @@ export function IOEditorApp({ mode, onDone }: IOEditorAppProps) {
 					<div class="true-recall-io-side-section">
 						<div class="ep:text-ui-small ep:font-medium ep:mb-1">Mask mode</div>
 						<div class="ep:flex ep:gap-2">
-							<button
-								type="button"
-								class={`ep-btn ep-btn-outline ${definition.maskMode === "solo" ? "is-active" : ""}`}
+							<Clickable
+								class={cn(
+									"ep:px-3 ep:py-1.5 ep:text-ui-small ep:rounded ep:border ep:border-obs-border ep:transition-colors",
+									definition.maskMode === "solo"
+										? "ep:bg-obs-accent/10 ep:text-obs-accent ep:border-obs-accent"
+										: "ep:text-obs-muted ep:hover:bg-obs-hover",
+								)}
 								onClick={() =>
 									setDefinition((prev) => ({ ...prev, maskMode: "solo" }))
 								}
 							>
 								Solo
-							</button>
-							<button
-								type="button"
-								class={`ep-btn ep-btn-outline ${definition.maskMode === "all" ? "is-active" : ""}`}
+							</Clickable>
+							<Clickable
+								class={cn(
+									"ep:px-3 ep:py-1.5 ep:text-ui-small ep:rounded ep:border ep:border-obs-border ep:transition-colors",
+									definition.maskMode === "all"
+										? "ep:bg-obs-accent/10 ep:text-obs-accent ep:border-obs-accent"
+										: "ep:text-obs-muted ep:hover:bg-obs-hover",
+								)}
 								onClick={() =>
 									setDefinition((prev) => ({ ...prev, maskMode: "all" }))
 								}
 							>
 								All
-							</button>
+							</Clickable>
 						</div>
 					</div>
 
@@ -690,22 +723,20 @@ export function IOEditorApp({ mode, onDone }: IOEditorAppProps) {
 				</div>
 			</div>
 
-				<div class="ep-modal-footer true-recall-io-footer ep:flex ep:justify-end ep:gap-2">
-					<button
-						type="button"
-						class="ep-btn ep-btn-outline"
-						onClick={() => onDone({ cancelled: true })}
-					>
-						Cancel
-				</button>
-				<button
-					type="button"
+			<div class="ep-modal-footer true-recall-io-footer ep:flex ep:justify-end ep:gap-2">
+				<Clickable
+					class="ep:px-3 ep:py-1.5 ep:text-ui-small ep:border ep:border-obs-border ep:rounded ep:text-obs-muted ep:hover:bg-obs-hover ep:hover:text-obs-normal ep:transition-colors"
+					onClick={() => onDone({ cancelled: true })}
+				>
+					Cancel
+				</Clickable>
+				<Clickable
 					class="mod-cta ep-btn"
 					onClick={() => void handleSave()}
 					disabled={saving}
 				>
 					{isEdit ? "Save changes" : "Create cards"}
-				</button>
+				</Clickable>
 			</div>
 		</div>
 	);

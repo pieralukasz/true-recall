@@ -42,6 +42,7 @@ export function NotePicker({
 				value={search}
 				onChange={setSearch}
 				placeholder="Search notes..."
+				ariaLabel="Search notes"
 			/>
 			<div class="ep:max-h-[200px] ep:overflow-y-auto ep:border ep:border-obs-border ep:rounded-md">
 				{filtered.length === 0 ? (

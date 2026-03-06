@@ -5,6 +5,7 @@ import {
 import { PanelCard } from "@features/library/ui/panel/components/PanelCard";
 import { PartialCard } from "@features/library/ui/panel/components/PartialCard";
 import { PanelEmptyState } from "@features/library/ui/panel/components/PanelEmptyState";
+import { matchesCardSearch } from "@features/library/ui/panel/utils/search-query.utils";
 import {
 	groupCards,
 	type PanelItem,
@@ -215,10 +216,9 @@ export function PanelContent({
 	const items = useMemo(() => groupCards(allFlashcards), [allFlashcards]);
 
 	const filteredItems = useMemo(() => {
-		if (!searchQuery) return items;
+		if (!searchQuery.trim()) return items;
 		return items.filter((item) =>
-			item.card.question.toLowerCase().includes(searchQuery) ||
-			item.card.answer.toLowerCase().includes(searchQuery),
+			matchesCardSearch(item.card.question, item.card.answer, searchQuery),
 		);
 	}, [items, searchQuery]);
 

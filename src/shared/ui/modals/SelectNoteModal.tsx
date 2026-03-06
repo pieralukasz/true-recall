@@ -1,4 +1,4 @@
-import { Clickable } from "@shared/ui/components";
+import { Clickable, SearchInput } from "@shared/ui/components";
 import { BasePromiseModal } from "@shared/ui/modals/BasePromiseModal";
 import {
 	filterNotesByQuery,
@@ -6,7 +6,7 @@ import {
 } from "@shared/ui/modals/note-filter.utils";
 import { type App, normalizePath, type TFile } from "obsidian";
 import { render } from "preact";
-import { useEffect, useRef, useState } from "preact/hooks";
+import { useState } from "preact/hooks";
 
 export interface SelectNoteResult {
 	cancelled: boolean;
@@ -31,12 +31,6 @@ function SelectNoteBody({
 	onResolve: (result: SelectNoteResult) => void;
 }) {
 	const [searchQuery, setSearchQuery] = useState("");
-	const searchRef = useRef<HTMLInputElement>(null);
-
-	useEffect(() => {
-		const id = setTimeout(() => searchRef.current?.focus(), 50);
-		return () => clearTimeout(id);
-	}, []);
 
 	const filteredNotes = filterNotesByQuery(allNotes, searchQuery);
 	const displayNotes = filteredNotes.slice(0, MAX_DISPLAY_NOTES);
@@ -52,14 +46,12 @@ function SelectNoteBody({
 			</p>
 
 			<div class="ep:mb-3">
-				<input
-					ref={searchRef}
-					type="text"
+				<SearchInput
+					autoFocus
+					value={searchQuery}
 					placeholder="Search notes..."
-					class="ep:w-full ep:py-2.5 ep:px-3 ep:border ep:border-obs-border ep:rounded-md ep:bg-obs-primary ep:text-obs-normal ep:text-ui-small ep:focus:outline-none ep:focus:border-obs-interactive ep:placeholder:text-obs-muted"
-					onInput={(e) =>
-						setSearchQuery((e.target as HTMLInputElement).value.toLowerCase())
-					}
+					ariaLabel="Search notes"
+					onChange={setSearchQuery}
 				/>
 			</div>
 
