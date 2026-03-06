@@ -3,7 +3,7 @@
  *
  * Supported syntax:
  * - {{FieldName}} — field value substitution
- * - {{FrontSide}} — rendered front template (only in afmt)
+ * - {{FrontSide}} — stripped (True Recall shows Q/A separately)
  * - {{cloze:FieldName}} — cloze deletion rendering
  * - {{#FieldName}}...{{/FieldName}} — conditional (non-empty field)
  * - {{^FieldName}}...{{/FieldName}} — inverse conditional (empty field)
@@ -23,7 +23,7 @@ const NESTED_CLOZE_PATTERN = /\{\{c\d+::.*\{\{c/;
 
 export interface TemplateContext {
 	fields: Record<string, string>;
-	/** Rendered front template (only for afmt / answer side) */
+	/** Set to any string (even "") to signal answer-side rendering (affects cloze display) */
 	frontSide?: string;
 	/** Active cloze index (only for cloze note types) */
 	clozeIndex?: number;
@@ -54,11 +54,11 @@ export function renderTemplate(
 		return `\x00COMMENT_${idx}\x00`;
 	});
 
-	// 2. Replace {{FrontSide}}
-	working = working.replace(
-		/\{\{\s*FrontSide\s*\}\}/g,
-		context.frontSide ?? "",
-	);
+	// 1.5. Strip Anki field modifiers: {{edit:Field}} → {{Field}}
+	working = working.replace(/\{\{\s*edit:(\w+)\s*\}\}/g, "{{$1}}");
+
+	// 2. Strip {{FrontSide}} — True Recall's review UI shows Q/A separately
+	working = working.replace(/\{\{\s*FrontSide\s*\}\}/g, "");
 
 	// 3. Replace {{cloze:FieldName}}
 	working = working.replace(
