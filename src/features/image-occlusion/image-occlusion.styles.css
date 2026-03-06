@@ -412,6 +412,14 @@
 		animation: true-recall-io-pulse 820ms ease-out 1;
 	}
 
+	.true-recall-io-shape-clickable {
+		cursor: pointer;
+	}
+
+	.true-recall-io-shape-clickable:hover {
+		filter: brightness(1.2);
+	}
+
 	.true-recall-io-fallback {
 		padding: 1rem;
 		text-align: center;

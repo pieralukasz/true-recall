@@ -1128,10 +1128,28 @@ export default class TrueRecallPlugin extends Plugin {
 					imagePath,
 					activeFile?.path ?? "",
 				);
-				void this.openImageOcclusionEditor({
-					mode: "add",
-					imagePath: resolved?.path ?? imagePath,
-				});
+				const resolvedPath = resolved?.path ?? imagePath;
+
+				if (activeFile && activeFile.extension === "md") {
+					const frontmatterService = this.flashcardManager.getFrontmatterService();
+					void (async () => {
+						let sourceUid = await frontmatterService.getSourceNoteUid(activeFile);
+						if (!sourceUid) {
+							sourceUid = frontmatterService.generateUid();
+							await frontmatterService.setSourceNoteUid(activeFile, sourceUid);
+						}
+						await this.openImageOcclusionEditor({
+							mode: "add",
+							sourceUid,
+							imagePath: resolvedPath,
+						});
+					})();
+				} else {
+					void this.openImageOcclusionEditor({
+						mode: "add",
+						imagePath: resolvedPath,
+					});
+				}
 			},
 			hasApiKey: () => !!(this.settings.openRouterApiKey || this.settings.subscriptionKey),
 			isEnabled: () => this.settings.selectionToolbarEnabled,
