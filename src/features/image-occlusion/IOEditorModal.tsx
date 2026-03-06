@@ -13,12 +13,12 @@ export class IOEditorModal extends BasePromiseModal<IOEditorResult> {
 		private mode: IOEditorMode,
 	) {
 		super(app, {
-			title:
-				mode.mode === "edit"
-					? "Edit image occlusion"
-					: "Create image occlusion",
-			width: "900px",
-		});
+				title:
+					mode.mode === "edit"
+						? "Edit image occlusion"
+						: "Create image occlusion",
+				width: "1120px",
+			});
 	}
 
 	protected getDefaultResult(): IOEditorResult {
@@ -34,4 +34,3 @@ export class IOEditorModal extends BasePromiseModal<IOEditorResult> {
 		);
 	}
 }
-

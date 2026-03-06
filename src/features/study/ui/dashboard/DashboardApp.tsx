@@ -13,7 +13,7 @@ import { usePlugin } from "@shared/ui/preact";
 import { useCallback, useMemo, useRef } from "preact/hooks";
 import { useComputed, useSignal } from "@preact/signals";
 import { AppNavBar } from "@shared/ui/components";
-import { StreakWidget } from "../editor/widgets/analytics/StreakWidget";
+import { TodayActionBar } from "./components/TodayActionBar";
 import { DashboardTabs } from "./components/DashboardTabs";
 import { NoteList } from "./components/NoteList";
 import { ProjectsTab } from "./components/ProjectsTab";
@@ -294,7 +294,13 @@ export function DashboardApp() {
 			>
 				<div class="ep:p-3 ep:mx-auto ep:max-w-5xl ep:flex ep:flex-col ep:gap-3 ep:min-h-full">
 					<div {...sectionProps()}>
-						<StreakWidget source="" />
+						<TodayActionBar
+						totalDue={data.totalDue}
+						totalNew={data.totalNew}
+						totalLearning={data.totalLearning}
+						estimatedMinutes={data.estimatedTotalMinutes}
+						progress={data.todayProgress}
+					/>
 					</div>
 
 					{projectData.recentlyStudied.length > 0 && (
@@ -309,6 +315,7 @@ export function DashboardApp() {
 						<SearchCombobox
 							value={searchQuery.value}
 							placeholder="Search notes or projects..."
+							ariaLabel="Search notes or projects"
 							onChange={(q) => {
 								searchQuery.value = q;
 							}}

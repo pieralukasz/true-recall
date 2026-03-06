@@ -73,7 +73,7 @@ export function NoteRow({
 		<Clickable
 			class={cn(
 				"ep:flex ep:items-center ep:gap-3 ep:px-3 ep:h-9 ep:overflow-hidden ep:rounded-lg ep:transition-colors ep:duration-150 ep:hover:bg-obs-modifier-hover",
-				(!hasActive || note.archived) && "ep:opacity-40",
+				note.archived && "ep:opacity-50",
 				isSelected && "ep:bg-obs-modifier-hover",
 			)}
 			onContextMenu={isSelectionMode ? undefined : handleContextMenu}
@@ -100,7 +100,10 @@ export function NoteRow({
 					)}
 				/>
 				<span
-					class="ep:text-sm ep:text-obs-normal ep:truncate"
+					class={cn(
+						"ep:text-sm ep:text-obs-normal ep:truncate",
+						note.archived && "ep:line-through",
+					)}
 					title={note.name}
 				>
 					{note.name}

@@ -1,6 +1,10 @@
 import { ImageService } from "@features/integration/services/ImageService";
 import { createEmptyIODefinition, parseIODefinition } from "@features/image-occlusion/io-definition";
 import { IOCanvas } from "@features/image-occlusion/IOCanvas";
+import {
+	shouldImagePanelStartExpanded,
+	truncateMiddlePath,
+} from "@features/image-occlusion/ui-helpers";
 import type {
 	IODefinition,
 	IOEditorMode,
@@ -10,13 +14,16 @@ import type {
 import { Clickable } from "@shared/ui/components/Clickable";
 import { NotePickerCombobox } from "@shared/ui/components/NotePickerCombobox";
 import { PasteDropZone } from "@shared/ui/components/PasteDropZone";
+import { useIcon } from "@shared/ui/preact/hooks";
 import { useApp, usePlugin } from "@shared/ui/preact/ObsidianContext";
+import { cn } from "@shared/ui/utils/cn";
 import { isDesktop } from "@shared/utils/platform";
 import { isImageExtension } from "@shared/types";
 import { Notice, TFile } from "obsidian";
 import { useCallback, useEffect, useMemo, useState } from "preact/hooks";
 
 type Tool = "select" | "rect" | "ellipse";
+type NonSelectTool = Exclude<Tool, "select">;
 
 interface IOEditorAppProps {
 	mode: IOEditorMode;
@@ -38,6 +45,86 @@ function buildInitialImagePath(mode: IOEditorMode): string {
 	return "";
 }
 
+function buildInitialTool(mode: IOEditorMode): Tool {
+	const definition = buildInitialDefinition(mode);
+	return definition.regions.length > 0 ? "select" : "rect";
+}
+
+interface IconToolButtonProps {
+	icon: string;
+	label: string;
+	shortcut?: string;
+	active?: boolean;
+	danger?: boolean;
+	disabled?: boolean;
+	onClick: () => void;
+}
+
+function IconToolButton({
+	icon,
+	label,
+	shortcut,
+	active = false,
+	danger = false,
+	disabled = false,
+	onClick,
+}: IconToolButtonProps) {
+	const iconRef = useIcon(icon);
+	const tooltip = shortcut ? `${label} (${shortcut})` : label;
+
+	return (
+		<Clickable
+			class={cn(
+				"true-recall-io-icon-btn",
+				active && "is-active",
+				danger && "is-danger",
+			)}
+			aria-label={label}
+			title={tooltip}
+			onClick={() => onClick()}
+			disabled={disabled}
+		>
+			<span ref={iconRef} />
+		</Clickable>
+	);
+}
+
+interface RegionListItemProps {
+	region: IORegion;
+	selected: boolean;
+	onSelect: () => void;
+	onDelete: () => void;
+}
+
+function RegionListItem({
+	region,
+	selected,
+	onSelect,
+	onDelete,
+}: RegionListItemProps) {
+	return (
+		<div class={`true-recall-io-region-item ${selected ? "is-selected" : ""}`}>
+			<Clickable
+				class="true-recall-io-region-main"
+				onClick={() => onSelect()}
+				title={`Select region #${region.groupKey}`}
+			>
+				<span>#{region.groupKey}</span>
+				<span>{region.shape}</span>
+			</Clickable>
+			{selected && (
+				<IconToolButton
+					icon="trash-2"
+					label={`Delete region #${region.groupKey}`}
+					shortcut="Delete"
+					danger
+					onClick={onDelete}
+				/>
+			)}
+		</div>
+	);
+}
+
 export function IOEditorApp({ mode, onDone }: IOEditorAppProps) {
 	const app = useApp();
 	const plugin = usePlugin();
@@ -46,7 +133,9 @@ export function IOEditorApp({ mode, onDone }: IOEditorAppProps) {
 	const [definition, setDefinition] = useState<IODefinition>(() =>
 		buildInitialDefinition(mode),
 	);
-	const [tool, setTool] = useState<Tool>("select");
+	const [tool, setTool] = useState<Tool>(() => buildInitialTool(mode));
+	const [lastNonSelectTool, setLastNonSelectTool] =
+		useState<NonSelectTool>("rect");
 	const [selectedRegionId, setSelectedRegionId] = useState<string | null>(null);
 	const [saving, setSaving] = useState(false);
 	const [zoom, setZoom] = useState(1);
@@ -57,10 +146,20 @@ export function IOEditorApp({ mode, onDone }: IOEditorAppProps) {
 	const [selectedSourceNote, setSelectedSourceNote] = useState<TFile | null>(
 		null,
 	);
+	const [isImagePanelExpanded, setIsImagePanelExpanded] = useState(() =>
+		shouldImagePanelStartExpanded(buildInitialImagePath(mode)),
+	);
 
 	const imageService = useMemo(() => new ImageService(app), [app]);
 	const isEdit = mode.mode === "edit";
 	const showSourcePicker = mode.mode === "add" && !mode.sourceUid;
+	const hasRegions = definition.regions.length > 0;
+
+	useEffect(() => {
+		if (!hasRegions && tool === "select") {
+			setTool(lastNonSelectTool);
+		}
+	}, [hasRegions, lastNonSelectTool, tool]);
 
 	useEffect(() => {
 		const files = app.vault
@@ -71,7 +170,7 @@ export function IOEditorApp({ mode, onDone }: IOEditorAppProps) {
 		if (!selectedVaultPath && files[0]) {
 			setSelectedVaultPath(files[0].path);
 		}
-	}, [app, selectedVaultPath]);
+	}, [app]);
 
 	const imageUrl = useMemo(() => {
 		if (!imagePath) return null;
@@ -121,6 +220,12 @@ export function IOEditorApp({ mode, onDone }: IOEditorAppProps) {
 		window.addEventListener("paste", handlePaste);
 		return () => window.removeEventListener("paste", handlePaste);
 	}, [handlePaste]);
+
+	useEffect(() => {
+		if (!imagePath) {
+			setIsImagePanelExpanded(true);
+		}
+	}, [imagePath]);
 
 	const selectedRegion = useMemo(
 		() => definition.regions.find((region) => region.id === selectedRegionId) ?? null,
@@ -191,6 +296,31 @@ export function IOEditorApp({ mode, onDone }: IOEditorAppProps) {
 		return "Source: linked note";
 	}, [linkedSourceNote, mode, plugin.flashcardManager, selectedSourceNote, showSourcePicker]);
 
+	const truncatedSourceTargetLabel = useMemo(
+		() => truncateMiddlePath(sourceTargetLabel),
+		[sourceTargetLabel],
+	);
+
+	const truncatedImagePath = useMemo(
+		() => truncateMiddlePath(imagePath || "No image selected"),
+		[imagePath],
+	);
+
+	const sourcePathForCopy = useMemo(() => {
+		if (mode.mode === "edit") {
+			const sourceUid = mode.note.sourceUid;
+			if (!sourceUid) return "";
+			const source = plugin.flashcardManager
+				.getSourceNoteService()
+				.resolveSourceNote(sourceUid);
+			return source.notePath ?? "";
+		}
+		if (showSourcePicker) {
+			return selectedSourceNote?.path ?? "";
+		}
+		return linkedSourceNote?.notePath ?? "";
+	}, [linkedSourceNote, mode, plugin.flashcardManager, selectedSourceNote, showSourcePicker]);
+
 	const resolveSourceUid = useCallback(async (): Promise<string | undefined> => {
 		if (mode.mode === "edit") return mode.note.sourceUid;
 		if (mode.sourceUid) return mode.sourceUid;
@@ -204,6 +334,16 @@ export function IOEditorApp({ mode, onDone }: IOEditorAppProps) {
 		}
 		return uid;
 	}, [mode, plugin.flashcardManager, selectedSourceNote]);
+
+	const copyPathToClipboard = useCallback(async (value: string) => {
+		if (!value) return;
+		try {
+			await navigator.clipboard.writeText(value);
+			new Notice("Path copied to clipboard");
+		} catch {
+			new Notice("Failed to copy path");
+		}
+	}, []);
 
 	const handleSave = useCallback(async () => {
 		if (saving) return;
@@ -294,95 +434,13 @@ export function IOEditorApp({ mode, onDone }: IOEditorAppProps) {
 
 	return (
 		<div class="true-recall-io-editor-modal ep:flex ep:flex-col ep:gap-3">
-			{showSourcePicker && (
-				<div class="ep:flex ep:items-center ep:gap-2">
-					<div class="ep:flex-1">
-						<NotePickerCombobox
-							app={app}
-							selectedNote={selectedSourceNote}
-							onSelect={setSelectedSourceNote}
-						/>
-					</div>
-					{selectedSourceNote && (
-						<Clickable
-							class="ep:text-ui-smaller ep:text-obs-muted ep:hover:text-obs-normal"
-							onClick={() => setSelectedSourceNote(null)}
-						>
-							Clear
-						</Clickable>
-					)}
-				</div>
-			)}
-
-			<div class="ep:text-ui-smaller ep:text-obs-muted">{sourceTargetLabel}</div>
-
-			<div class="ep:flex ep:items-center ep:gap-2 ep:flex-wrap">
-				<select
-					class="ep:px-2 ep:py-1.5 ep:text-ui-small ep:bg-obs-primary ep:border ep:border-obs-border ep:rounded ep:min-w-[260px]"
-					value={selectedVaultPath}
-					onChange={(event) =>
-						setSelectedVaultPath((event.target as HTMLSelectElement).value)
-					}
-				>
-					<option value="">Select image from vault…</option>
-					{vaultImages.map((file) => (
-						<option key={file.path} value={file.path}>
-							{file.path}
-						</option>
-					))}
-				</select>
-				<button type="button" class="ep-btn ep-btn-outline" onClick={applySelectedVaultImage}>
-					Use selected
-				</button>
-				<div class="ep:text-ui-smaller ep:text-obs-muted ep:truncate ep:max-w-[360px]">
-					{imagePath || "No image selected"}
-				</div>
-			</div>
-
-			<PasteDropZone
-				onFileDrop={(file) => void persistBlob(file)}
-				label="Paste or drag image"
-				hint="Ctrl/Cmd+V or drag & drop"
-			/>
-
 			<div class="true-recall-io-editor-layout">
 				<div class="true-recall-io-editor-left">
-					<div class="true-recall-io-tool-row">
-						<button
-							type="button"
-							class={`ep-btn ep-btn-ghost ${tool === "select" ? "is-active" : ""}`}
-							onClick={() => setTool("select")}
-						>
-							Select
-						</button>
-						<button
-							type="button"
-							class={`ep-btn ep-btn-ghost ${tool === "rect" ? "is-active" : ""}`}
-							onClick={() => setTool("rect")}
-						>
-							Rect
-						</button>
-						<button
-							type="button"
-							class={`ep-btn ep-btn-ghost ${tool === "ellipse" ? "is-active" : ""}`}
-							onClick={() => setTool("ellipse")}
-						>
-							Ellipse
-						</button>
-						<button
-							type="button"
-							class="ep-btn ep-btn-ghost"
-							onClick={deleteSelected}
-							disabled={!selectedRegionId}
-						>
-							Delete
-						</button>
-					</div>
-
 					<IOCanvas
 						imageUrl={imageUrl}
 						definition={definition}
 						tool={tool}
+						onToolChange={setTool}
 						selectedRegionId={selectedRegionId}
 						zoom={zoom}
 						panX={panX}
@@ -398,50 +456,207 @@ export function IOEditorApp({ mode, onDone }: IOEditorAppProps) {
 				</div>
 
 				<div class="true-recall-io-editor-right">
-					<div class="ep:text-ui-small ep:font-medium ep:mb-1">Mask mode</div>
-					<div class="ep:flex ep:gap-2 ep:mb-4">
-						<button
-							type="button"
-							class={`ep-btn ep-btn-outline ${definition.maskMode === "solo" ? "is-active" : ""}`}
-							onClick={() =>
-								setDefinition((prev) => ({ ...prev, maskMode: "solo" }))
-							}
-						>
-							Solo
-						</button>
-						<button
-							type="button"
-							class={`ep-btn ep-btn-outline ${definition.maskMode === "all" ? "is-active" : ""}`}
-							onClick={() =>
-								setDefinition((prev) => ({ ...prev, maskMode: "all" }))
-							}
-						>
-							All
-						</button>
+					<div class="true-recall-io-side-section">
+						<div class="ep:text-ui-small ep:font-medium ep:mb-1">Source</div>
+						{showSourcePicker && (
+							<div class="ep:flex ep:items-center ep:gap-2">
+								<div class="ep:flex-1">
+									<NotePickerCombobox
+										app={app}
+										selectedNote={selectedSourceNote}
+										onSelect={setSelectedSourceNote}
+									/>
+								</div>
+								{selectedSourceNote && (
+									<Clickable
+										class="ep:text-ui-smaller ep:text-obs-muted ep:hover:text-obs-normal"
+										onClick={() => setSelectedSourceNote(null)}
+									>
+										Clear
+									</Clickable>
+								)}
+							</div>
+						)}
+						<div class="ep:flex ep:items-center ep:gap-2">
+							<div
+								class="ep:text-ui-smaller ep:text-obs-muted ep:flex-1"
+								title={sourceTargetLabel}
+							>
+								{truncatedSourceTargetLabel}
+							</div>
+							{sourcePathForCopy && (
+								<IconToolButton
+									icon="copy"
+									label="Copy source path"
+									onClick={() => void copyPathToClipboard(sourcePathForCopy)}
+								/>
+							)}
+						</div>
 					</div>
 
-					<div class="ep:text-ui-small ep:font-medium ep:mb-1">
-						Regions ({definition.regions.length})
-					</div>
-					<div class="true-recall-io-region-list">
-						{definition.regions.length === 0 && (
-							<div class="ep:text-ui-smaller ep:text-obs-muted">No regions yet</div>
+					<div class="true-recall-io-side-section">
+						<div class="ep:flex ep:items-center ep:justify-between ep:gap-2">
+							<div class="ep:text-ui-small ep:font-medium">Image</div>
+							{imagePath && (
+								<Clickable
+									class="true-recall-io-inline-link"
+									onClick={() => setIsImagePanelExpanded((v) => !v)}
+								>
+									{isImagePanelExpanded ? "Collapse" : "Replace image"}
+								</Clickable>
+							)}
+						</div>
+						<div
+							class="ep:flex ep:items-center ep:gap-2"
+							title={imagePath || "No image selected"}
+						>
+							<div class="ep:text-ui-smaller ep:text-obs-muted ep:flex-1">
+								{truncatedImagePath}
+							</div>
+							{imagePath && (
+								<IconToolButton
+									icon="copy"
+									label="Copy image path"
+									onClick={() => void copyPathToClipboard(imagePath)}
+								/>
+							)}
+						</div>
+						{(!imagePath || isImagePanelExpanded) && (
+							<>
+								<select
+									class="ep:w-full ep:px-2 ep:py-1.5 ep:text-ui-small ep:bg-obs-primary ep:border ep:border-obs-border ep:rounded"
+									value={selectedVaultPath}
+									onChange={(event) =>
+										setSelectedVaultPath(
+											(event.target as HTMLSelectElement).value,
+										)
+									}
+								>
+									<option value="">Select image from vault…</option>
+									{vaultImages.map((file) => (
+										<option key={file.path} value={file.path}>
+											{file.path}
+										</option>
+									))}
+								</select>
+								<Clickable
+									class="ep:px-3 ep:py-1.5 ep:text-ui-small ep:border ep:border-obs-border ep:rounded ep:text-obs-muted ep:hover:bg-obs-hover ep:hover:text-obs-normal ep:transition-colors ep:text-center ep:justify-center"
+									onClick={() => applySelectedVaultImage()}
+								>
+									Use selected image
+								</Clickable>
+								<PasteDropZone
+									onFileDrop={(file) => void persistBlob(file)}
+									label="Paste or drag image"
+									hint="Ctrl/Cmd+V or drag & drop"
+								/>
+							</>
 						)}
-						{definition.regions.map((region) => (
-							<button
-								type="button"
-								key={region.id}
-								class={`true-recall-io-region-item ${selectedRegionId === region.id ? "is-selected" : ""}`}
-								onClick={() => setSelectedRegionId(region.id)}
+					</div>
+
+						<div class="true-recall-io-side-section">
+							<div class="ep:text-ui-small ep:font-medium ep:mb-1">Tools</div>
+							<div class="true-recall-io-tool-row">
+								{hasRegions && (
+									<IconToolButton
+										icon="mouse-pointer-2"
+										label="Select"
+										shortcut="V"
+										active={tool === "select"}
+										onClick={() => setTool("select")}
+									/>
+								)}
+								<IconToolButton
+									icon="square"
+									label="Rectangle"
+									shortcut="R"
+									active={tool === "rect"}
+									onClick={() => {
+										setLastNonSelectTool("rect");
+										setTool("rect");
+									}}
+								/>
+								<IconToolButton
+									icon="circle"
+									label="Ellipse"
+									shortcut="E"
+									active={tool === "ellipse"}
+									onClick={() => {
+										setLastNonSelectTool("ellipse");
+										setTool("ellipse");
+									}}
+								/>
+							{selectedRegionId && (
+								<IconToolButton
+									icon="trash-2"
+									label="Delete selected region"
+									shortcut="Delete"
+									danger
+									onClick={deleteSelected}
+								/>
+							)}
+						</div>
+						<div class="true-recall-io-hint-text">
+							Shortcuts: Delete to remove, Space + drag to pan, Ctrl/Cmd+V to paste.
+						</div>
+					</div>
+
+					<div class="true-recall-io-side-section">
+						<div class="ep:text-ui-small ep:font-medium ep:mb-1">Mask mode</div>
+						<div class="ep:flex ep:gap-2">
+							<Clickable
+								class={cn(
+									"ep:px-3 ep:py-1.5 ep:text-ui-small ep:rounded ep:border ep:border-obs-border ep:transition-colors",
+									definition.maskMode === "solo"
+										? "ep:bg-obs-accent/10 ep:text-obs-accent ep:border-obs-accent"
+										: "ep:text-obs-muted ep:hover:bg-obs-hover",
+								)}
+								onClick={() =>
+									setDefinition((prev) => ({ ...prev, maskMode: "solo" }))
+								}
 							>
-								<span>#{region.groupKey}</span>
-								<span>{region.shape}</span>
-							</button>
-						))}
+								Solo
+							</Clickable>
+							<Clickable
+								class={cn(
+									"ep:px-3 ep:py-1.5 ep:text-ui-small ep:rounded ep:border ep:border-obs-border ep:transition-colors",
+									definition.maskMode === "all"
+										? "ep:bg-obs-accent/10 ep:text-obs-accent ep:border-obs-accent"
+										: "ep:text-obs-muted ep:hover:bg-obs-hover",
+								)}
+								onClick={() =>
+									setDefinition((prev) => ({ ...prev, maskMode: "all" }))
+								}
+							>
+								All
+							</Clickable>
+						</div>
+					</div>
+
+					<div class="true-recall-io-side-section">
+						<div class="ep:text-ui-small ep:font-medium ep:mb-1">
+							Regions ({definition.regions.length})
+						</div>
+						<div class="true-recall-io-region-list">
+							{definition.regions.length === 0 && (
+								<div class="ep:text-ui-smaller ep:text-obs-muted">
+									No regions yet
+								</div>
+							)}
+							{definition.regions.map((region) => (
+								<RegionListItem
+									key={region.id}
+									region={region}
+									selected={selectedRegionId === region.id}
+									onSelect={() => setSelectedRegionId(region.id)}
+									onDelete={deleteSelected}
+								/>
+							))}
+						</div>
 					</div>
 
 					{selectedRegion && (
-						<div class="ep:mt-3 ep:flex ep:flex-col ep:gap-2">
+						<div class="true-recall-io-side-section ep:flex ep:flex-col ep:gap-2">
 							<div class="ep:text-ui-small ep:font-medium">Selected region</div>
 							<label class="true-recall-io-field">
 								X
@@ -508,22 +723,20 @@ export function IOEditorApp({ mode, onDone }: IOEditorAppProps) {
 				</div>
 			</div>
 
-			<div class="ep-modal-footer ep:flex ep:justify-end ep:gap-2">
-				<button
-					type="button"
-					class="ep-btn ep-btn-ghost"
+			<div class="ep-modal-footer true-recall-io-footer ep:flex ep:justify-end ep:gap-2">
+				<Clickable
+					class="ep:px-3 ep:py-1.5 ep:text-ui-small ep:border ep:border-obs-border ep:rounded ep:text-obs-muted ep:hover:bg-obs-hover ep:hover:text-obs-normal ep:transition-colors"
 					onClick={() => onDone({ cancelled: true })}
 				>
 					Cancel
-				</button>
-				<button
-					type="button"
+				</Clickable>
+				<Clickable
 					class="mod-cta ep-btn"
 					onClick={() => void handleSave()}
 					disabled={saving}
 				>
 					{isEdit ? "Save changes" : "Create cards"}
-				</button>
+				</Clickable>
 			</div>
 		</div>
 	);

@@ -24,6 +24,7 @@ import {
 	validateDrop,
 	executeDrop,
 } from "../helpers/drag-drop";
+import { UNASSIGNED_PATH } from "../helpers/project-aggregation";
 
 interface ProjectsTabProps {
 	projects: DashboardProject[];
@@ -282,16 +283,17 @@ export function ProjectsTab({
 						: {};
 
 					if (item.type === "project-header") {
+						const isVirtual = item.project.path === UNASSIGNED_PATH;
 						const dragCls = getDragClass(item.project.path);
 						return (
 							<div
 								key={`p-${item.project.path}`}
 								class={`${initialMount.current ? "ep-card-enter" : ""} ${dragCls}`.trim() || undefined}
-								draggable
-								onDragStart={(e) => handleDragStart(e, item)}
-								onDragEnd={handleDragEnd}
-								onDragOver={(e) => handleDragOver(e, item)}
-								onDrop={(e) => handleDrop(e, item)}
+								draggable={!isVirtual}
+								onDragStart={isVirtual ? undefined : (e) => handleDragStart(e, item)}
+								onDragEnd={isVirtual ? undefined : handleDragEnd}
+								onDragOver={isVirtual ? undefined : (e) => handleDragOver(e, item)}
+								onDrop={isVirtual ? undefined : (e) => handleDrop(e, item)}
 								style={{
 									position: "absolute",
 									top: `${offsetTop}px`,
@@ -305,11 +307,19 @@ export function ProjectsTab({
 									project={item.project}
 									depth={item.depth}
 									isExpanded={item.isExpanded}
+									isVirtual={isVirtual}
 									onToggle={() => toggleExpand(item.project.path)}
 									onStudyProject={() => {
-										void plugin.openReviewViewWithFilters({
-											projectPath: item.project.path,
-										});
+										if (isVirtual) {
+											void plugin.openCustomStudyModal({
+												sourceNoteFilters: item.project.memberNotes.map((m) => m.name),
+												scopeLabel: "Unassigned",
+											});
+										} else {
+											void plugin.openReviewViewWithFilters({
+												projectPath: item.project.path,
+											});
+										}
 									}}
 									onCustomStudy={() => {
 										void plugin.openCustomStudyModal({
@@ -317,16 +327,16 @@ export function ProjectsTab({
 											scopeLabel: item.project.name,
 										});
 									}}
-									onNavigate={() => {
+									onNavigate={isVirtual ? undefined : () => {
 										void plugin.app.workspace.openLinkText(
 											item.project.name,
 											"",
 										);
 									}}
-									onPresetClick={onPresetClick}
-									onArchive={() => handleArchive(item.project.path, true)}
-									onUnarchive={() => handleArchive(item.project.path, false)}
-									onRename={() => handleRename(item.project.path)}
+									onPresetClick={isVirtual ? undefined : onPresetClick}
+									onArchive={isVirtual ? undefined : () => handleArchive(item.project.path, true)}
+									onUnarchive={isVirtual ? undefined : () => handleArchive(item.project.path, false)}
+									onRename={isVirtual ? undefined : () => handleRename(item.project.path)}
 								/>
 							</div>
 						);
