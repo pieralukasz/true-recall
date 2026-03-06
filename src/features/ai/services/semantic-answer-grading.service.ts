@@ -6,6 +6,7 @@ import {
 import {
 	AIRequestError,
 	OpenRouterClient,
+	getTextContent,
 	type ChatCompletionResponse,
 } from "@features/ai/services/openrouter-client";
 import { buildTypeInGradingMessages } from "@features/ai/prompts/type-in-grading-prompt";
@@ -139,7 +140,7 @@ export class SemanticAnswerGradingService {
 			timeoutMs,
 		);
 
-		const content = response.choices[0]?.message?.content ?? "";
+		const content = getTextContent(response.choices[0]?.message);
 		const parsed = this.parsePayload(content);
 		const score = clampScore(parsed.score);
 
