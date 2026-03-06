@@ -39,6 +39,8 @@ interface ProjectAggregationDeps {
 	};
 }
 
+export const UNASSIGNED_PATH = "__unassigned__";
+
 const MAX_RECENTLY_STUDIED = 5;
 
 export function aggregateProjectData(
@@ -89,6 +91,26 @@ export function aggregateProjectData(
 
 	// Build reverse map: note name → project names
 	const noteProjectMap = buildNoteProjectMap(projects);
+
+	// Virtual "Unassigned" project for orphan notes
+	const assignedNoteNames = new Set(noteProjectMap.keys());
+	const unassignedNotes = notes.filter((n) => !assignedNoteNames.has(n.name));
+	if (unassignedNotes.length > 0) {
+		projects.push({
+			name: "Unassigned",
+			path: UNASSIGNED_PATH,
+			healthPct: 0,
+			newCount: unassignedNotes.reduce((s, n) => s + n.newCount, 0),
+			learning: unassignedNotes.reduce((s, n) => s + n.learning, 0),
+			due: unassignedNotes.reduce((s, n) => s + n.due, 0),
+			totalCards: unassignedNotes.reduce((s, n) => s + n.total, 0),
+			childCount: 0,
+			lastReviewed: null,
+			totalMembers: unassignedNotes.length,
+			memberNotes: unassignedNotes,
+			children: [],
+		});
+	}
 
 	// Recently studied: top N notes sorted by lastReview desc
 	const recentlyStudied = [...notes]

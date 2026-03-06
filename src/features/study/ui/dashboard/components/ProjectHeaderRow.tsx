@@ -18,10 +18,11 @@ interface ProjectHeaderRowProps {
 	project: DashboardProject;
 	depth: number;
 	isExpanded: boolean;
+	isVirtual?: boolean;
 	onToggle: () => void;
 	onStudyProject: () => void;
 	onCustomStudy: () => void;
-	onNavigate: () => void;
+	onNavigate?: () => void;
 	onPresetClick?: (projectPath: string) => void;
 	onArchive?: () => void;
 	onUnarchive?: () => void;
@@ -32,6 +33,7 @@ export function ProjectHeaderRow({
 	project,
 	depth,
 	isExpanded,
+	isVirtual,
 	onToggle,
 	onStudyProject,
 	onCustomStudy,
@@ -44,22 +46,29 @@ export function ProjectHeaderRow({
 	const activeDue = project.due + project.newCount + project.learning;
 	const priority = computePriority({ overdueCount: 0, due: project.due, learning: project.learning, newCount: project.newCount });
 
-	const handleContextMenu = useContextMenu([
-		{ title: "Study project", icon: "play", onClick: onStudyProject },
-		{ title: "Custom session", icon: "sliders-horizontal", onClick: onCustomStudy },
-		{ title: "Go to project note", icon: "file-text", onClick: onNavigate },
-		{ title: "Rename", icon: "pencil", onClick: () => onRename?.() },
-		{ title: "Pick preset", icon: "settings-2", onClick: () => onPresetClick?.(project.path) },
-		project.archived
-			? { title: "Unarchive project", icon: "archive-restore", onClick: () => onUnarchive?.() }
-			: { title: "Archive project", icon: "archive", onClick: () => onArchive?.() },
-	]);
+	const menuItems = isVirtual
+		? [
+				{ title: "Study", icon: "play" as const, onClick: onStudyProject },
+				{ title: "Custom session", icon: "sliders-horizontal" as const, onClick: onCustomStudy },
+			]
+		: [
+				{ title: "Study project", icon: "play" as const, onClick: onStudyProject },
+				{ title: "Custom session", icon: "sliders-horizontal" as const, onClick: onCustomStudy },
+				{ title: "Go to project note", icon: "file-text" as const, onClick: onNavigate! },
+				{ title: "Rename", icon: "pencil" as const, onClick: () => onRename?.() },
+				{ title: "Pick preset", icon: "settings-2" as const, onClick: () => onPresetClick?.(project.path) },
+				project.archived
+					? { title: "Unarchive project", icon: "archive-restore" as const, onClick: () => onUnarchive?.() }
+					: { title: "Archive project", icon: "archive" as const, onClick: () => onArchive?.() },
+			];
+
+	const handleContextMenu = useContextMenu(menuItems);
 
 	return (
 		<Clickable
 			class={cn(
 				"ep:flex ep:items-center ep:gap-2 ep:px-3 ep:h-9 ep:rounded-lg ep:transition-colors ep:duration-150 ep:hover:bg-obs-modifier-hover",
-				(activeDue === 0 || project.archived) && "ep:opacity-40",
+				project.archived && "ep:opacity-50",
 			)}
 			style={{ paddingLeft: `${12 + depth * 20}px` }}
 			onContextMenu={handleContextMenu}
@@ -73,7 +82,7 @@ export function ProjectHeaderRow({
 						PRIORITY_DOT[priority],
 					)}
 				/>
-				<span class="ep:text-sm ep:text-obs-normal ep:truncate ep:min-w-0 ep:font-medium">
+				<span class={cn("ep:text-sm ep:truncate ep:min-w-0 ep:font-medium", isVirtual ? "ep:text-obs-muted ep:italic" : "ep:text-obs-normal", project.archived && "ep:line-through")}>
 					{project.name}
 				</span>
 
