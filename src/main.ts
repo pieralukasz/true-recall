@@ -29,6 +29,8 @@ import { ImportStudioModal } from "@features/core/modals/import-studio/ImportStu
 import { CardTypesEditorModal } from "@features/core/modals/card-types-editor/CardTypesEditorModal";
 import { NoteTypeSuggestModal } from "@features/core/modals/card-types-editor/NoteTypeSuggestModal";
 import { QuickNoteEditorModal } from "@features/study/modals/quick-note-editor/QuickNoteEditorModal";
+import { IOEditorModal } from "@features/image-occlusion/IOEditorModal";
+import type { IOEditorMode, IOEditorResult } from "@features/image-occlusion/types";
 import { AnkiExportModal } from "@features/integration/modals/AnkiExportModal";
 import { AnkiImportModal } from "@features/integration/modals/AnkiImportModal";
 import { CsvExportModal } from "@features/integration/modals/CsvExportModal";
@@ -77,6 +79,7 @@ import {
 import { UndoService } from "@shared/services/undo.service";
 import { type AppStore, createAppStore } from "@shared/store";
 import { extractFSRSSettings } from "@shared/types";
+import { isDesktop } from "@shared/utils/platform";
 import {
 	BUILTIN_BASIC_ID,
 	BUILTIN_BASIC_REVERSED_ID,
@@ -515,6 +518,41 @@ export default class TrueRecallPlugin extends Plugin {
 		}).open();
 	}
 
+	async openImageOcclusionEditor(
+		mode: IOEditorMode = { mode: "add" },
+	): Promise<IOEditorResult> {
+		if (!isDesktop()) {
+			notify().warning("Image occlusion editor is available on desktop only.");
+			return { cancelled: true };
+		}
+
+		const modal = new IOEditorModal(this.app, this, mode);
+		return await modal.openAndWait();
+	}
+
+	async openImageOcclusionEditorForActiveNote(): Promise<IOEditorResult> {
+		const activeFile = this.app.workspace.getActiveFile();
+		if (!activeFile || activeFile.extension !== "md") {
+			return await this.openImageOcclusionEditor({ mode: "add" });
+		}
+
+		try {
+			const frontmatterService = this.flashcardManager.getFrontmatterService();
+			let sourceUid = await frontmatterService.getSourceNoteUid(activeFile);
+			if (!sourceUid) {
+				sourceUid = frontmatterService.generateUid();
+				await frontmatterService.setSourceNoteUid(activeFile, sourceUid);
+			}
+			return await this.openImageOcclusionEditor({
+				mode: "add",
+				sourceUid,
+			});
+		} catch (error) {
+			notify().operationFailed("prepare image occlusion source", error);
+			return await this.openImageOcclusionEditor({ mode: "add" });
+		}
+	}
+
 	async openCustomStudyModal(scope?: CustomStudyModalScope): Promise<void> {
 		const modal = new CustomStudyModal(
 			this.app,
@@ -569,10 +607,15 @@ export default class TrueRecallPlugin extends Plugin {
 	}
 
 	async reviewNoteFlashcards(file: TFile): Promise<void> {
+		const sourceUid =
+			await this.flashcardManager.getFrontmatterService().getSourceNoteUid(file);
+		if (!sourceUid) {
+			notify().info(`No flashcards found for "${file.basename}"`);
+			return;
+		}
+
 		const allCards = this.flashcardManager.getAllFSRSCards();
-		const noteCards = allCards.filter(
-			(c) => c.sourceNoteName === file.basename,
-		);
+		const noteCards = allCards.filter((c) => c.sourceUid === sourceUid);
 
 		if (noteCards.length === 0) {
 			notify().info(`No flashcards found for "${file.basename}"`);
@@ -592,7 +635,7 @@ export default class TrueRecallPlugin extends Plugin {
 
 		await this.openReviewViewWithFilters({
 			deckFilter: null,
-			sourceNoteFilter: file.basename,
+			sourceUidFilter: sourceUid,
 			ignoreDailyLimits: true,
 		});
 	}
@@ -630,6 +673,7 @@ export default class TrueRecallPlugin extends Plugin {
 	async openReviewViewWithFilters(filters: {
 		deckFilter?: string | null;
 		projectPath?: string;
+		sourceUidFilter?: string;
 		sourceNoteFilter?: string;
 		sourceNoteFilters?: string[];
 		filePathFilter?: string;
@@ -652,6 +696,7 @@ export default class TrueRecallPlugin extends Plugin {
 		const state = {
 			deckFilter: filters.deckFilter ?? null,
 			projectPath: filters.projectPath,
+			sourceUidFilter: filters.sourceUidFilter,
 			sourceNoteFilter: filters.sourceNoteFilter,
 			sourceNoteFilters: filters.sourceNoteFilters,
 			filePathFilter: filters.filePathFilter,

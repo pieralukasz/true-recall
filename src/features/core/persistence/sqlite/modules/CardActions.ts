@@ -1,4 +1,8 @@
 import type { SqliteDatabase } from "@features/core/persistence/sqlite/SqliteDatabase";
+import {
+	normalizeIOImagePath,
+	parseIODefinition,
+} from "@features/image-occlusion/io-definition";
 import { escapeFts5Query } from "@features/core/persistence/sqlite/modules/NoteActions";
 import {
 	deriveCardType,
@@ -10,6 +14,7 @@ import {
 	BUILTIN_BASIC_ID,
 	BUILTIN_BASIC_REVERSED_ID,
 	BUILTIN_CLOZE_ID,
+	BUILTIN_IMAGE_OCCLUSION_ID,
 } from "@shared/types/note.types";
 
 // ── Column definitions (JOIN-based, computed q/a) ──────────────
@@ -108,10 +113,27 @@ function mapRow(row: CardRow): FSRSCardData {
 	};
 	const cardType = deriveCardType(noteTypeInfo, row.templateOrd);
 
+	const ioImagePath =
+		cardType === "image-occlusion"
+			? normalizeIOImagePath(fields["Image"] ?? "")
+			: undefined;
+	const ioRegionsJson =
+		cardType === "image-occlusion" ? fields["Regions"] ?? "" : undefined;
+	const ioDefinition =
+		cardType === "image-occlusion" && ioRegionsJson
+			? parseIODefinition(ioRegionsJson)
+			: null;
+
 	let question = "";
 	let answer = "";
 
-	if (template) {
+	if (cardType === "image-occlusion") {
+		question =
+			ioImagePath && ioDefinition
+				? `Image occlusion ${row.templateOrd + 1}`
+				: "Image occlusion";
+		answer = "Reveal image occlusion";
+	} else if (template) {
 		const context = { fields, clozeIndex: row.templateOrd };
 		question = renderTemplate(template.qfmt, context);
 		// Pass empty frontSide — UI shows question separately, so {{FrontSide}} should not duplicate it
@@ -122,6 +144,13 @@ function mapRow(row: CardRow): FSRSCardData {
 	}
 
 	const isCloze = noteTypeInfo.type === 1;
+
+	// Derive cloze field name from template's {{cloze:FieldName}} instead of hardcoding "Text"
+	let clozeFieldName = "Text";
+	if (isCloze && template) {
+		const m = template.qfmt.match(/\{\{\s*cloze:(\w+)\s*\}\}/);
+		if (m?.[1]) clozeFieldName = m[1];
+	}
 
 	return {
 		id: row.id,
@@ -141,13 +170,17 @@ function mapRow(row: CardRow): FSRSCardData {
 		answer,
 		sourceUid: row.sourceUid ?? undefined,
 		cardType,
-		clozeTemplate: isCloze ? (fields["Text"] ?? undefined) : undefined,
+		clozeTemplate: isCloze ? (fields[clozeFieldName] ?? undefined) : undefined,
 		clozeIndex: isCloze ? row.templateOrd : undefined,
 		createdVia: row.createdVia ?? undefined,
 		sourceText: row.sourceText ?? undefined,
 		noteId: row.noteId,
 		templateOrd: row.templateOrd,
 		noteTypeId: row.noteTypeId,
+		ioImagePath,
+		ioRegionsJson,
+		ioGroupKey:
+			cardType === "image-occlusion" ? String(row.templateOrd) : undefined,
 	};
 }
 
@@ -169,7 +202,27 @@ function resolveNoteMapping(data: FSRSCardData): {
 	templateOrd: number;
 } {
 	if (data.noteTypeId) {
-		// Already has explicit note type — trust the caller's fields
+		if (data.noteTypeId === BUILTIN_IMAGE_OCCLUSION_ID) {
+			return {
+				noteTypeId: BUILTIN_IMAGE_OCCLUSION_ID,
+				fieldsJson: JSON.stringify({
+					Image: data.ioImagePath ?? "",
+					Regions: data.ioRegionsJson ?? "[]",
+				}),
+				templateOrd: data.templateOrd ?? 0,
+			};
+		}
+
+		// Caller provides explicit field values (e.g. Anki import with custom note types)
+		if (data.fields) {
+			return {
+				noteTypeId: data.noteTypeId,
+				fieldsJson: JSON.stringify(data.fields),
+				templateOrd: data.templateOrd ?? 0,
+			};
+		}
+
+		// Fallback: derive fields from question/answer for legacy callers
 		return {
 			noteTypeId: data.noteTypeId,
 			fieldsJson: JSON.stringify(
@@ -504,11 +557,19 @@ export class CardActions {
 		question: string,
 		answer: string,
 	): void {
-		const card = this.db.get<{ note_id: string }>(
-			`SELECT note_id FROM cards WHERE id = ?`,
+		const card = this.db.get<{ note_id: string; note_type_id: string }>(
+			`SELECT c.note_id, n.note_type_id
+			 FROM cards c
+			 JOIN notes n ON c.note_id = n.id
+			 WHERE c.id = ?`,
 			[cardId],
 		);
 		if (!card) return;
+		if (card.note_type_id === BUILTIN_IMAGE_OCCLUSION_ID) {
+			throw new Error(
+				"Image occlusion cards must be edited in the image occlusion editor.",
+			);
+		}
 		this.db.run(
 			`UPDATE notes SET fields_json = ?, updated_at = ? WHERE id = ?`,
 			[

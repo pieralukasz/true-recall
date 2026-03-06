@@ -22,6 +22,7 @@ export function isTypeInRequiredForCard(
 ): boolean {
 	if (!card) return false;
 	if (!typeInModeEnabled) return false;
+	if (card.cardType === "image-occlusion") return false;
 	return !!card.answer?.trim();
 }
 
