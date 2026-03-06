@@ -22,6 +22,7 @@ export interface ContentHandlers {
 	onDeleteCard: (card: FlashcardItem) => void;
 	onCopyCard: (card: FlashcardItem) => void;
 	onMoveCard: (card: FlashcardItem) => void;
+	onChangeType: (card: FlashcardItem) => void;
 	onToggleExpand: (cardId: string) => void;
 	onToggleSelect: (cardId: string) => void;
 	onEnterSelectionMode: (cardId: string) => void;
@@ -290,6 +291,7 @@ export function PanelContent({
 						onDelete={() => handlers.onDeleteCard(card)}
 						onCopy={() => handlers.onCopyCard(card)}
 						onMove={() => handlers.onMoveCard(card)}
+						onChangeType={() => handlers.onChangeType(card)}
 						onJumpToSource={card.sourceText ? () => handlers.onJumpToSource(card) : undefined}
 						onHoverSource={card.sourceText ? () => handlers.onHoverSource(card) : undefined}
 						onLeaveSource={card.sourceText ? handlers.onLeaveSource : undefined}

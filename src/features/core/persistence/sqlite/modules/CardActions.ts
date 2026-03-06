@@ -182,6 +182,7 @@ function mapRow(row: CardRow): FSRSCardData {
 		noteId: row.noteId,
 		templateOrd: row.templateOrd,
 		noteTypeId: row.noteTypeId,
+		noteTypeName: row.noteTypeName,
 		ioImagePath,
 		ioRegionsJson,
 		ioGroupKey:
@@ -430,6 +431,19 @@ export class CardActions {
 			[noteId],
 		);
 		return rows.map(mapRow);
+	}
+
+	getNoteInfoForCardIds(
+		cardIds: string[],
+	): Array<{ noteId: string; noteTypeId: string }> {
+		if (cardIds.length === 0) return [];
+		const placeholders = cardIds.map(() => "?").join(",");
+		return this.db.query<{ noteId: string; noteTypeId: string }>(
+			`SELECT DISTINCT c.note_id AS noteId, n.note_type_id AS noteTypeId
+			 FROM cards c JOIN notes n ON c.note_id = n.id
+			 WHERE c.id IN (${placeholders}) AND c.deleted_at IS NULL`,
+			cardIds,
+		);
 	}
 
 	findClozeCard(
