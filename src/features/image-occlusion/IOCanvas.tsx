@@ -449,7 +449,7 @@ export function IOCanvas({
 											data-io-handle={corner}
 											cx={point.x}
 											cy={point.y}
-											r={0.012}
+											r={0.008}
 											class="true-recall-io-canvas-handle"
 										/>
 									);
