@@ -11,7 +11,7 @@ export function getEffectiveTier(
 }
 
 export function isFeatureAllowed(
-	_feature: "nlQuery" | "customPrompts",
+	_feature: "nlQuery",
 	settings: TrueRecallSettings,
 ): boolean {
 	if (settings.openRouterApiKey) return true;

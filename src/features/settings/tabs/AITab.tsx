@@ -19,7 +19,6 @@ import {
 	TextInput,
 	ToggleInput,
 } from "@shared/ui/components";
-import { isFeatureAllowed } from "@shared/utils/subscription.utils";
 import {
 	useCallback,
 	useEffect,
@@ -354,7 +353,7 @@ export function AITab() {
 					/>
 				</FormField>
 
-				{hasAnyKey && isFeatureAllowed("customPrompts", settings) && (
+				{hasAnyKey && (
 					<>
 						<InfoBlock>
 							<p>
@@ -417,21 +416,6 @@ export function AITab() {
 							);
 						})}
 					</>
-				)}
-
-				{hasAnyKey && !isFeatureAllowed("customPrompts", settings) && (
-					<InfoBlock>
-						<p>
-							Custom prompts are available on the Starter plan.{" "}
-							<a
-								href={`${TRUERECALL_WEB_URL}/pricing`}
-								target="_blank"
-								rel="noopener"
-							>
-								Upgrade to customize
-							</a>
-						</p>
-					</InfoBlock>
 				)}
 			</FormCard>
 		</div>
